@@ -50,6 +50,7 @@ import { execWithShellEnv } from "../workspaces/utils/shell-env";
 import { getDefaultProjectColor } from "./utils/colors";
 import { discoverAndSaveProjectIcon } from "./utils/favicon-discovery";
 import { fetchGitHubOwner } from "./utils/github";
+import { parsePullRequests } from "./utils/pull-requests";
 
 type Project = SelectProject;
 
@@ -60,44 +61,6 @@ type OpenNewResult =
 	| { canceled: false; project: Project }
 	| { canceled: false; needsGitInit: true; selectedPath: string }
 	| OpenNewError;
-
-/**
- * Parses and transforms raw GitHub PR data from CLI output.
- * Filters valid PR objects and maps them to our internal format.
- */
-function isRawPullRequest(item: unknown): item is {
-	number: number;
-	title: string;
-	url: string;
-	state: string;
-	isDraft: boolean;
-} {
-	if (typeof item !== "object" || item === null) return false;
-
-	const value = item as Record<string, unknown>;
-	return (
-		typeof value.number === "number" &&
-		typeof value.title === "string" &&
-		typeof value.url === "string" &&
-		typeof value.state === "string" &&
-		typeof value.isDraft === "boolean"
-	);
-}
-
-function parsePullRequests(raw: unknown) {
-	if (!Array.isArray(raw)) return [];
-
-	return raw.filter(isRawPullRequest).map((pr) => ({
-		prNumber: pr.number,
-		title: pr.title,
-		url: pr.url,
-		state: pr.isDraft
-			? "draft"
-			: pr.state === "OPEN"
-				? "open"
-				: pr.state.toLowerCase(),
-	}));
-}
 
 type FolderOutcome =
 	| { status: "success"; project: Project }
