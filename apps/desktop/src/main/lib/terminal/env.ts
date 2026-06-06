@@ -419,15 +419,6 @@ export function buildSafeEnv(
 	return safe;
 }
 
-/**
- * @deprecated Use buildSafeEnv instead. Kept for backward compatibility.
- */
-export function removeAppEnvVars(
-	env: Record<string, string>,
-): Record<string, string> {
-	return buildSafeEnv(env);
-}
-
 export function buildTerminalEnv(params: {
 	shell: string;
 	paneId: string;

@@ -5,7 +5,6 @@ import {
 	FALLBACK_SHELL,
 	getLocale,
 	normalizeDefaultShell,
-	removeAppEnvVars,
 	resetTerminalEnvCachesForTests,
 	SHELL_CRASH_THRESHOLD_MS,
 	sanitizeEnv,
@@ -559,15 +558,6 @@ describe("env", () => {
 				expect(result.systemroot).toBe("C:\\Windows");
 				expect(result.HOME).toBe("/home/user");
 			});
-		});
-	});
-
-	describe("removeAppEnvVars (deprecated wrapper)", () => {
-		it("should delegate to buildSafeEnv", () => {
-			const env = { NODE_ENV: "production", PATH: "/usr/bin" };
-			const result = removeAppEnvVars(env);
-			expect(result.NODE_ENV).toBeUndefined();
-			expect(result.PATH).toBe("/usr/bin");
 		});
 	});
 
