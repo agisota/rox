@@ -12,6 +12,7 @@ import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
 import { organizationRouter } from "./router/organization";
 import { projectRouter } from "./router/project";
+import { skillRouter } from "./router/skill";
 import { supportRouter } from "./router/support/support";
 import { taskRouter } from "./router/task";
 import { teamRouter } from "./router/team";
@@ -19,6 +20,7 @@ import { userRouter } from "./router/user";
 import { v2HostRouter } from "./router/v2-host";
 import { v2ProjectRouter } from "./router/v2-project";
 import { v2WorkspaceRouter } from "./router/v2-workspace";
+import { workflowRouter } from "./router/workflow";
 import { workspaceRouter } from "./router/workspace";
 import { createCallerFactory, createTRPCRouter } from "./trpc";
 
@@ -35,6 +37,7 @@ export const appRouter = createTRPCRouter({
 	integration: integrationRouter,
 	organization: organizationRouter,
 	project: projectRouter,
+	skill: skillRouter,
 	support: supportRouter,
 	task: taskRouter,
 	team: teamRouter,
@@ -42,6 +45,7 @@ export const appRouter = createTRPCRouter({
 	v2Host: v2HostRouter,
 	v2Project: v2ProjectRouter,
 	v2Workspace: v2WorkspaceRouter,
+	workflow: workflowRouter,
 	workspace: workspaceRouter,
 });
 

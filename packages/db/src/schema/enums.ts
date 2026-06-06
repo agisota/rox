@@ -92,3 +92,175 @@ export const automationPromptSourceValues = [
 ] as const;
 export const automationPromptSourceEnum = z.enum(automationPromptSourceValues);
 export type AutomationPromptSource = z.infer<typeof automationPromptSourceEnum>;
+
+// ---------------------------------------------------------------------------
+// Automation Fabric: workflow / skill / run enums
+// New graph-based workflow + skill layer that lives ALONGSIDE the legacy
+// scheduled `automations` above. Append-only string unions (DB pgEnums).
+// ---------------------------------------------------------------------------
+
+export const workflowEngineValues = [
+	"superset",
+	"sim_sidecar",
+	"legacy_automation",
+	"external_tool",
+] as const;
+export const workflowEngineEnum = z.enum(workflowEngineValues);
+export type WorkflowEngine = z.infer<typeof workflowEngineEnum>;
+
+export const workflowStatusValues = [
+	"draft",
+	"published",
+	"deprecated",
+	"archived",
+] as const;
+export const workflowStatusEnum = z.enum(workflowStatusValues);
+export type WorkflowStatus = z.infer<typeof workflowStatusEnum>;
+
+export const workflowDeploymentStatusValues = [
+	"active",
+	"inactive",
+	"failed",
+] as const;
+export const workflowDeploymentStatusEnum = z.enum(
+	workflowDeploymentStatusValues,
+);
+export type WorkflowDeploymentStatus = z.infer<
+	typeof workflowDeploymentStatusEnum
+>;
+
+export const skillKindValues = [
+	"instruction",
+	"workflow",
+	"tool",
+	"agent",
+	"template",
+] as const;
+export const skillKindEnum = z.enum(skillKindValues);
+export type SkillKind = z.infer<typeof skillKindEnum>;
+
+export const skillStatusValues = [
+	"draft",
+	"published",
+	"deprecated",
+	"archived",
+] as const;
+export const skillStatusEnum = z.enum(skillStatusValues);
+export type SkillStatus = z.infer<typeof skillStatusEnum>;
+
+export const skillVisibilityValues = [
+	"private",
+	"project",
+	"organization",
+	"public",
+] as const;
+export const skillVisibilityEnum = z.enum(skillVisibilityValues);
+export type SkillVisibility = z.infer<typeof skillVisibilityEnum>;
+
+export const skillBindingSurfaceValues = [
+	"object_action",
+	"command_palette",
+	"workflow_node",
+	"agent_tool",
+	"api",
+	"mcp",
+] as const;
+export const skillBindingSurfaceEnum = z.enum(skillBindingSurfaceValues);
+export type SkillBindingSurface = z.infer<typeof skillBindingSurfaceEnum>;
+
+export const workflowRunStatusValues = [
+	"queued",
+	"running",
+	"waiting_approval",
+	"succeeded",
+	"failed",
+	"canceled",
+	"timeout",
+] as const;
+export const workflowRunStatusEnum = z.enum(workflowRunStatusValues);
+export type WorkflowRunStatus = z.infer<typeof workflowRunStatusEnum>;
+
+export const workflowStepStatusValues = [
+	"pending",
+	"running",
+	"succeeded",
+	"failed",
+	"skipped",
+	"waiting_approval",
+	"canceled",
+] as const;
+export const workflowStepStatusEnum = z.enum(workflowStepStatusValues);
+export type WorkflowStepStatus = z.infer<typeof workflowStepStatusEnum>;
+
+export const triggerKindValues = [
+	"manual",
+	"command",
+	"chat",
+	"schedule",
+	"webhook",
+	"api",
+	"mcp",
+	"repo_connected",
+	"branch_created",
+	"commit_pushed",
+	"pr_opened",
+	"task_created",
+	"task_status_changed",
+	"file_uploaded",
+	"approval_resolved",
+	"agent_run_finished",
+] as const;
+export const triggerKindEnum = z.enum(triggerKindValues);
+export type TriggerKind = z.infer<typeof triggerKindEnum>;
+
+export const objectTypeValues = [
+	"organization",
+	"project",
+	"workspace",
+	"repo",
+	"task",
+	"issue",
+	"pr",
+	"chat_session",
+	"workflow",
+	"skill",
+	"run",
+	"artifact",
+	"approval",
+	"policy",
+] as const;
+export const objectTypeEnum = z.enum(objectTypeValues);
+export type ObjectType = z.infer<typeof objectTypeEnum>;
+
+export const approvalStatusValues = [
+	"pending",
+	"approved",
+	"rejected",
+	"expired",
+	"canceled",
+] as const;
+export const approvalStatusEnum = z.enum(approvalStatusValues);
+export type ApprovalStatus = z.infer<typeof approvalStatusEnum>;
+
+export const artifactKindValues = [
+	"markdown_doc",
+	"json",
+	"table",
+	"file",
+	"repo_report",
+	"task_plan",
+	"pr_plan",
+	"meeting_summary",
+] as const;
+export const artifactKindEnum = z.enum(artifactKindValues);
+export type ArtifactKind = z.infer<typeof artifactKindEnum>;
+
+export const evaluationStatusValues = [
+	"pending",
+	"running",
+	"passed",
+	"failed",
+	"error",
+] as const;
+export const evaluationStatusEnum = z.enum(evaluationStatusValues);
+export type EvaluationStatus = z.infer<typeof evaluationStatusEnum>;

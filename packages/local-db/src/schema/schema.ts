@@ -426,3 +426,270 @@ export const browserHistory = sqliteTable(
 
 export type InsertBrowserHistory = typeof browserHistory.$inferInsert;
 export type SelectBrowserHistory = typeof browserHistory.$inferSelect;
+
+// ===========================================================================
+// Automation Fabric — Electric-synced read models
+//
+// Local SQLite mirrors of the server workflow/skill/run tables. Columns use
+// snake_case to match the synced shape; timestamps are ISO strings (text) and
+// jsonb columns are `text({ mode: "json" })`. Enum columns are plain text.
+//
+// Sync shapes (electric-proxy) are wired up alongside the desktop Automations
+// UI; these tables only carry data once their shapes are subscribed. Per
+// AGENTS.md, render persisted rows cache-first and never blank them on
+// `!isReady`.
+// ===========================================================================
+
+/** Mirror of server `workflow_definitions`. */
+export const workflowDefinitions = sqliteTable(
+	"workflow_definitions",
+	{
+		id: text("id").primaryKey(),
+		organization_id: text("organization_id").notNull(),
+		v2_project_id: text("v2_project_id"),
+		owner_user_id: text("owner_user_id").notNull(),
+		name: text("name").notNull(),
+		slug: text("slug").notNull(),
+		description: text("description"),
+		engine: text("engine").notNull(),
+		draft_state: text("draft_state", { mode: "json" }).$type<
+			Record<string, unknown>
+		>(),
+		status: text("status").notNull(),
+		created_at: text("created_at").notNull(),
+		updated_at: text("updated_at").notNull(),
+	},
+	(table) => [
+		index("workflow_definitions_org_idx").on(table.organization_id),
+		index("workflow_definitions_project_idx").on(table.v2_project_id),
+	],
+);
+
+export type InsertWorkflowDefinition = typeof workflowDefinitions.$inferInsert;
+export type SelectWorkflowDefinition = typeof workflowDefinitions.$inferSelect;
+
+/** Mirror of server `skills`. */
+export const skills = sqliteTable(
+	"skills",
+	{
+		id: text("id").primaryKey(),
+		organization_id: text("organization_id").notNull(),
+		v2_project_id: text("v2_project_id"),
+		owner_user_id: text("owner_user_id").notNull(),
+		slug: text("slug").notNull(),
+		name: text("name").notNull(),
+		description: text("description"),
+		kind: text("kind").notNull(),
+		status: text("status").notNull(),
+		visibility: text("visibility").notNull(),
+		current_version_id: text("current_version_id"),
+		icon: text("icon"),
+		category: text("category"),
+		created_at: text("created_at").notNull(),
+		updated_at: text("updated_at").notNull(),
+	},
+	(table) => [
+		index("skills_org_idx").on(table.organization_id),
+		index("skills_kind_idx").on(table.kind),
+	],
+);
+
+export type InsertSkill = typeof skills.$inferInsert;
+export type SelectSkill = typeof skills.$inferSelect;
+
+/** Mirror of server `skill_versions`. */
+export const skillVersions = sqliteTable(
+	"skill_versions",
+	{
+		id: text("id").primaryKey(),
+		skill_id: text("skill_id").notNull(),
+		organization_id: text("organization_id").notNull(),
+		version_number: integer("version_number").notNull(),
+		input_schema: text("input_schema", { mode: "json" }).$type<
+			Record<string, unknown>
+		>(),
+		output_schema: text("output_schema", { mode: "json" }).$type<
+			Record<string, unknown>
+		>(),
+		workflow_deployment_id: text("workflow_deployment_id"),
+		legacy_automation_id: text("legacy_automation_id"),
+		sim_workflow_external_id: text("sim_workflow_external_id"),
+		run_modes: text("run_modes", { mode: "json" }).$type<string[]>(),
+		documentation_md: text("documentation_md"),
+		created_at: text("created_at").notNull(),
+	},
+	(table) => [index("skill_versions_skill_idx").on(table.skill_id)],
+);
+
+export type InsertSkillVersion = typeof skillVersions.$inferInsert;
+export type SelectSkillVersion = typeof skillVersions.$inferSelect;
+
+/** Mirror of server `skill_bindings`. */
+export const skillBindings = sqliteTable(
+	"skill_bindings",
+	{
+		id: text("id").primaryKey(),
+		organization_id: text("organization_id").notNull(),
+		skill_id: text("skill_id").notNull(),
+		surface: text("surface").notNull(),
+		object_type: text("object_type"),
+		placement: text("placement"),
+		label: text("label"),
+		enabled: integer("enabled", { mode: "boolean" }).notNull(),
+		config: text("config", { mode: "json" }).$type<Record<string, unknown>>(),
+		created_at: text("created_at").notNull(),
+	},
+	(table) => [
+		index("skill_bindings_skill_idx").on(table.skill_id),
+		index("skill_bindings_surface_idx").on(table.surface, table.object_type),
+	],
+);
+
+export type InsertSkillBinding = typeof skillBindings.$inferInsert;
+export type SelectSkillBinding = typeof skillBindings.$inferSelect;
+
+/** Mirror of server `workflow_runs`. */
+export const workflowRuns = sqliteTable(
+	"workflow_runs",
+	{
+		id: text("id").primaryKey(),
+		organization_id: text("organization_id").notNull(),
+		v2_project_id: text("v2_project_id"),
+		workflow_id: text("workflow_id"),
+		workflow_version_id: text("workflow_version_id"),
+		skill_id: text("skill_id"),
+		skill_version_id: text("skill_version_id"),
+		parent_run_id: text("parent_run_id"),
+		trigger_kind: text("trigger_kind").notNull(),
+		trigger_ref: text("trigger_ref", { mode: "json" }).$type<
+			Record<string, unknown>
+		>(),
+		status: text("status").notNull(),
+		input: text("input", { mode: "json" }).$type<Record<string, unknown>>(),
+		output: text("output", { mode: "json" }).$type<Record<string, unknown>>(),
+		error: text("error", { mode: "json" }).$type<Record<string, unknown>>(),
+		context_pack_id: text("context_pack_id"),
+		cost: text("cost", { mode: "json" }).$type<Record<string, unknown>>(),
+		started_at: text("started_at"),
+		ended_at: text("ended_at"),
+		created_by_user_id: text("created_by_user_id"),
+		created_at: text("created_at").notNull(),
+	},
+	(table) => [
+		index("workflow_runs_org_idx").on(table.organization_id),
+		index("workflow_runs_workflow_idx").on(table.workflow_id),
+		index("workflow_runs_skill_idx").on(table.skill_id),
+		index("workflow_runs_parent_idx").on(table.parent_run_id),
+		index("workflow_runs_status_idx").on(table.status),
+	],
+);
+
+export type InsertWorkflowRun = typeof workflowRuns.$inferInsert;
+export type SelectWorkflowRun = typeof workflowRuns.$inferSelect;
+
+/** Mirror of server `workflow_run_steps`. */
+export const workflowRunSteps = sqliteTable(
+	"workflow_run_steps",
+	{
+		id: text("id").primaryKey(),
+		run_id: text("run_id").notNull(),
+		parent_step_id: text("parent_step_id"),
+		block_id: text("block_id").notNull(),
+		block_type: text("block_type").notNull(),
+		block_name: text("block_name"),
+		status: text("status").notNull(),
+		input: text("input", { mode: "json" }).$type<Record<string, unknown>>(),
+		output: text("output", { mode: "json" }).$type<Record<string, unknown>>(),
+		error: text("error", { mode: "json" }).$type<Record<string, unknown>>(),
+		started_at: text("started_at"),
+		ended_at: text("ended_at"),
+		duration_ms: integer("duration_ms"),
+		cost: text("cost", { mode: "json" }).$type<Record<string, unknown>>(),
+	},
+	(table) => [
+		index("workflow_run_steps_run_idx").on(table.run_id),
+		index("workflow_run_steps_parent_idx").on(table.parent_step_id),
+	],
+);
+
+export type InsertWorkflowRunStep = typeof workflowRunSteps.$inferInsert;
+export type SelectWorkflowRunStep = typeof workflowRunSteps.$inferSelect;
+
+/** Mirror of server `artifacts`. */
+export const artifacts = sqliteTable(
+	"artifacts",
+	{
+		id: text("id").primaryKey(),
+		organization_id: text("organization_id").notNull(),
+		v2_project_id: text("v2_project_id"),
+		run_id: text("run_id"),
+		kind: text("kind").notNull(),
+		title: text("title"),
+		body: text("body", { mode: "json" }).$type<Record<string, unknown>>(),
+		markdown: text("markdown"),
+		blob_pathname: text("blob_pathname"),
+		media_type: text("media_type"),
+		created_by_user_id: text("created_by_user_id"),
+		created_at: text("created_at").notNull(),
+	},
+	(table) => [
+		index("artifacts_org_idx").on(table.organization_id),
+		index("artifacts_run_idx").on(table.run_id),
+	],
+);
+
+export type InsertArtifact = typeof artifacts.$inferInsert;
+export type SelectArtifact = typeof artifacts.$inferSelect;
+
+/** Mirror of server `approval_requests`. */
+export const approvalRequests = sqliteTable(
+	"approval_requests",
+	{
+		id: text("id").primaryKey(),
+		organization_id: text("organization_id").notNull(),
+		run_id: text("run_id"),
+		step_id: text("step_id"),
+		status: text("status").notNull(),
+		title: text("title"),
+		payload: text("payload", { mode: "json" }).$type<Record<string, unknown>>(),
+		reason: text("reason"),
+		requested_by_user_id: text("requested_by_user_id"),
+		resolved_by_user_id: text("resolved_by_user_id"),
+		resolved_at: text("resolved_at"),
+		expires_at: text("expires_at"),
+		created_at: text("created_at").notNull(),
+	},
+	(table) => [
+		index("approval_requests_org_idx").on(table.organization_id),
+		index("approval_requests_run_idx").on(table.run_id),
+		index("approval_requests_status_idx").on(table.status),
+	],
+);
+
+export type InsertApprovalRequest = typeof approvalRequests.$inferInsert;
+export type SelectApprovalRequest = typeof approvalRequests.$inferSelect;
+
+/** Mirror of server `object_relations`. */
+export const objectRelations = sqliteTable(
+	"object_relations",
+	{
+		id: text("id").primaryKey(),
+		organization_id: text("organization_id").notNull(),
+		source_type: text("source_type").notNull(),
+		source_id: text("source_id").notNull(),
+		relation_type: text("relation_type").notNull(),
+		target_type: text("target_type").notNull(),
+		target_id: text("target_id").notNull(),
+		metadata: text("metadata", { mode: "json" }).$type<
+			Record<string, unknown>
+		>(),
+		created_at: text("created_at").notNull(),
+	},
+	(table) => [
+		index("object_relations_source_idx").on(table.source_type, table.source_id),
+		index("object_relations_target_idx").on(table.target_type, table.target_id),
+	],
+);
+
+export type InsertObjectRelation = typeof objectRelations.$inferInsert;
+export type SelectObjectRelation = typeof objectRelations.$inferSelect;

@@ -32,6 +32,20 @@ import {
 	v2Workspaces,
 	workspaces,
 } from "./schema";
+import {
+	approvalRequests,
+	artifacts,
+	contextPacks,
+	objectRelations,
+	skillBindings,
+	skills,
+	skillVersions,
+	workflowDefinitions,
+	workflowDeployments,
+	workflowRunSteps,
+	workflowRuns,
+	workflowVersions,
+} from "./workflow";
 
 export const usersRelations = relations(users, ({ many }) => ({
 	sessions: many(sessions),
@@ -406,3 +420,197 @@ export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
 		references: [v2Workspaces.id],
 	}),
 }));
+
+// ---------------------------------------------------------------------------
+// Automation Fabric relations
+// ---------------------------------------------------------------------------
+
+export const workflowDefinitionsRelations = relations(
+	workflowDefinitions,
+	({ one, many }) => ({
+		organization: one(organizations, {
+			fields: [workflowDefinitions.organizationId],
+			references: [organizations.id],
+		}),
+		v2Project: one(v2Projects, {
+			fields: [workflowDefinitions.v2ProjectId],
+			references: [v2Projects.id],
+		}),
+		owner: one(users, {
+			fields: [workflowDefinitions.ownerUserId],
+			references: [users.id],
+		}),
+		versions: many(workflowVersions),
+		deployments: many(workflowDeployments),
+	}),
+);
+
+export const workflowVersionsRelations = relations(
+	workflowVersions,
+	({ one, many }) => ({
+		workflow: one(workflowDefinitions, {
+			fields: [workflowVersions.workflowId],
+			references: [workflowDefinitions.id],
+		}),
+		createdBy: one(users, {
+			fields: [workflowVersions.createdByUserId],
+			references: [users.id],
+		}),
+		deployments: many(workflowDeployments),
+	}),
+);
+
+export const workflowDeploymentsRelations = relations(
+	workflowDeployments,
+	({ one }) => ({
+		workflow: one(workflowDefinitions, {
+			fields: [workflowDeployments.workflowId],
+			references: [workflowDefinitions.id],
+		}),
+		version: one(workflowVersions, {
+			fields: [workflowDeployments.workflowVersionId],
+			references: [workflowVersions.id],
+		}),
+		deployedBy: one(users, {
+			fields: [workflowDeployments.deployedByUserId],
+			references: [users.id],
+		}),
+	}),
+);
+
+export const skillsRelations = relations(skills, ({ one, many }) => ({
+	organization: one(organizations, {
+		fields: [skills.organizationId],
+		references: [organizations.id],
+	}),
+	v2Project: one(v2Projects, {
+		fields: [skills.v2ProjectId],
+		references: [v2Projects.id],
+	}),
+	owner: one(users, {
+		fields: [skills.ownerUserId],
+		references: [users.id],
+	}),
+	// `currentVersionId` is a soft pointer queried directly to avoid a second
+	// (ambiguous) relation between skills and skill_versions.
+	versions: many(skillVersions),
+	bindings: many(skillBindings),
+}));
+
+export const skillVersionsRelations = relations(skillVersions, ({ one }) => ({
+	skill: one(skills, {
+		fields: [skillVersions.skillId],
+		references: [skills.id],
+	}),
+	workflowDeployment: one(workflowDeployments, {
+		fields: [skillVersions.workflowDeploymentId],
+		references: [workflowDeployments.id],
+	}),
+	createdBy: one(users, {
+		fields: [skillVersions.createdByUserId],
+		references: [users.id],
+	}),
+}));
+
+export const skillBindingsRelations = relations(skillBindings, ({ one }) => ({
+	skill: one(skills, {
+		fields: [skillBindings.skillId],
+		references: [skills.id],
+	}),
+}));
+
+export const workflowRunsRelations = relations(
+	workflowRuns,
+	({ one, many }) => ({
+		organization: one(organizations, {
+			fields: [workflowRuns.organizationId],
+			references: [organizations.id],
+		}),
+		workflow: one(workflowDefinitions, {
+			fields: [workflowRuns.workflowId],
+			references: [workflowDefinitions.id],
+		}),
+		skill: one(skills, {
+			fields: [workflowRuns.skillId],
+			references: [skills.id],
+		}),
+		contextPack: one(contextPacks, {
+			fields: [workflowRuns.contextPackId],
+			references: [contextPacks.id],
+		}),
+		parentRun: one(workflowRuns, {
+			fields: [workflowRuns.parentRunId],
+			references: [workflowRuns.id],
+			relationName: "runHierarchy",
+		}),
+		childRuns: many(workflowRuns, { relationName: "runHierarchy" }),
+		steps: many(workflowRunSteps),
+		artifacts: many(artifacts),
+	}),
+);
+
+export const workflowRunStepsRelations = relations(
+	workflowRunSteps,
+	({ one, many }) => ({
+		run: one(workflowRuns, {
+			fields: [workflowRunSteps.runId],
+			references: [workflowRuns.id],
+		}),
+		parentStep: one(workflowRunSteps, {
+			fields: [workflowRunSteps.parentStepId],
+			references: [workflowRunSteps.id],
+			relationName: "stepHierarchy",
+		}),
+		childSteps: many(workflowRunSteps, { relationName: "stepHierarchy" }),
+	}),
+);
+
+export const contextPacksRelations = relations(
+	contextPacks,
+	({ one, many }) => ({
+		organization: one(organizations, {
+			fields: [contextPacks.organizationId],
+			references: [organizations.id],
+		}),
+		runs: many(workflowRuns),
+	}),
+);
+
+export const artifactsRelations = relations(artifacts, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [artifacts.organizationId],
+		references: [organizations.id],
+	}),
+	run: one(workflowRuns, {
+		fields: [artifacts.runId],
+		references: [workflowRuns.id],
+	}),
+}));
+
+export const objectRelationsRelations = relations(
+	objectRelations,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [objectRelations.organizationId],
+			references: [organizations.id],
+		}),
+	}),
+);
+
+export const approvalRequestsRelations = relations(
+	approvalRequests,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [approvalRequests.organizationId],
+			references: [organizations.id],
+		}),
+		run: one(workflowRuns, {
+			fields: [approvalRequests.runId],
+			references: [workflowRuns.id],
+		}),
+		step: one(workflowRunSteps, {
+			fields: [approvalRequests.stepId],
+			references: [workflowRunSteps.id],
+		}),
+	}),
+);
