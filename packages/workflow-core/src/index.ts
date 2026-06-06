@@ -18,6 +18,7 @@ export const WORKFLOW_CORE_VERSION = "0.1.0";
 export * from "./blocks";
 export * from "./errors";
 export * from "./graph";
+export * from "./policies";
 export * from "./schema";
 export * from "./skills";
 export * from "./types";
