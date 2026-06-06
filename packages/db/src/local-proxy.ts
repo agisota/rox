@@ -1,6 +1,7 @@
 import { neonConfig } from "@neondatabase/serverless";
 
 const LOCAL_DATABASE_HOST = "db.localtest.me";
+const LOCAL_PROXY_REQUEST_HOST = "localhost";
 
 export function isLocalProxy(databaseUrl: string): boolean {
 	try {
@@ -11,7 +12,9 @@ export function isLocalProxy(databaseUrl: string): boolean {
 }
 
 export function configureLocalProxy(): void {
-	neonConfig.fetchEndpoint = (host, port) => `http://${host}:${port}/sql`;
-	neonConfig.wsProxy = (host, port) => `${host}:${port}/v2`;
+	neonConfig.fetchEndpoint = (_host, port) =>
+		`http://${LOCAL_PROXY_REQUEST_HOST}:${port}/sql`;
+	neonConfig.wsProxy = (_host, port) =>
+		`${LOCAL_PROXY_REQUEST_HOST}:${port}/v2`;
 	neonConfig.useSecureWebSocket = false;
 }
