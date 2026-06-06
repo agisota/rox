@@ -19,11 +19,3 @@ export async function fetchGitHubOwner(
 		return null;
 	}
 }
-
-/**
- * Constructs the GitHub avatar URL for a user or organization.
- * GitHub serves avatars at https://github.com/{owner}.png
- */
-export function getGitHubAvatarUrl(owner: string): string {
-	return `https://github.com/${owner}.png`;
-}

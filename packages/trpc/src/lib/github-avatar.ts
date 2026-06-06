@@ -1,3 +1,4 @@
+import { githubAvatarUrl } from "@superset/shared/github-remote";
 import { del, put } from "@vercel/blob";
 
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -22,10 +23,10 @@ export async function fetchAndStoreGitHubAvatar({
 		const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 		let response: Response;
 		try {
-			response = await fetch(
-				`https://github.com/${encodeURIComponent(owner)}.png?size=200`,
-				{ signal: controller.signal, redirect: "follow" },
-			);
+			response = await fetch(githubAvatarUrl(owner, 200), {
+				signal: controller.signal,
+				redirect: "follow",
+			});
 		} finally {
 			clearTimeout(timeoutId);
 		}

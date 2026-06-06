@@ -12,6 +12,7 @@ import {
 	worktrees,
 } from "@superset/local-db";
 import { getErrorMessage } from "@superset/shared/error";
+import { githubAvatarUrl } from "@superset/shared/github-remote";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, isNotNull, isNull, not } from "drizzle-orm";
 import type { BrowserWindow } from "electron";
@@ -48,7 +49,7 @@ import { getSimpleGitWithShellPath } from "../workspaces/utils/git-client";
 import { execWithShellEnv } from "../workspaces/utils/shell-env";
 import { getDefaultProjectColor } from "./utils/colors";
 import { discoverAndSaveProjectIcon } from "./utils/favicon-discovery";
-import { fetchGitHubOwner, getGitHubAvatarUrl } from "./utils/github";
+import { fetchGitHubOwner } from "./utils/github";
 
 type Project = SelectProject;
 
@@ -1655,7 +1656,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					);
 					return {
 						owner: project.githubOwner,
-						avatarUrl: getGitHubAvatarUrl(project.githubOwner),
+						avatarUrl: githubAvatarUrl(project.githubOwner),
 					};
 				}
 
@@ -1680,7 +1681,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 
 				return {
 					owner,
-					avatarUrl: getGitHubAvatarUrl(owner),
+					avatarUrl: githubAvatarUrl(owner),
 				};
 			}),
 

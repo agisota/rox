@@ -1,3 +1,4 @@
+import { githubAvatarUrl } from "@superset/shared/github-remote";
 import { cn } from "@superset/ui/utils";
 import { useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -11,10 +12,6 @@ interface ProjectThumbnailProps {
 	hideImage?: boolean;
 	iconUrl?: string | null;
 	className?: string;
-}
-
-function getGitHubAvatarUrl(owner: string): string {
-	return `https://github.com/${owner}.png?size=64`;
 }
 
 /**
@@ -119,7 +116,7 @@ export function ProjectThumbnail({
 				style={borderStyle}
 			>
 				<img
-					src={getGitHubAvatarUrl(owner)}
+					src={githubAvatarUrl(owner, 64)}
 					alt={`${projectName} avatar`}
 					className="size-full object-cover"
 					onError={() => setImageError(true)}

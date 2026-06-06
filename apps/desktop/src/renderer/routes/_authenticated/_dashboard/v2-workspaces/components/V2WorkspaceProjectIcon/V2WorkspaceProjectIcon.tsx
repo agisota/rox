@@ -1,3 +1,4 @@
+import { githubAvatarUrl } from "@superset/shared/github-remote";
 import { cn } from "@superset/ui/utils";
 import { useState } from "react";
 
@@ -15,10 +16,6 @@ const SIZE_CLASSES: Record<
 	sm: "size-5 text-[10px]",
 	md: "size-6 text-xs",
 };
-
-function githubAvatarUrl(owner: string): string {
-	return `https://github.com/${owner}.png?size=64`;
-}
 
 export function V2WorkspaceProjectIcon({
 	projectName,
@@ -41,7 +38,7 @@ export function V2WorkspaceProjectIcon({
 				)}
 			>
 				<img
-					src={githubAvatarUrl(githubOwner)}
+					src={githubAvatarUrl(githubOwner, 64)}
 					alt=""
 					aria-hidden
 					className="size-full object-cover"
