@@ -11,6 +11,7 @@ import {
 	workspaces,
 	worktrees,
 } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, isNotNull, isNull, not } from "drizzle-orm";
 import type { BrowserWindow } from "electron";
@@ -120,7 +121,7 @@ async function initGitRepo(path: string): Promise<{ defaultBranch: string }> {
 	try {
 		await git.raw(["commit", "--allow-empty", "-m", "Initial commit"]);
 	} catch (err) {
-		const errorMessage = err instanceof Error ? err.message : String(err);
+		const errorMessage = getErrorMessage(err);
 		if (
 			errorMessage.includes("empty ident") ||
 			errorMessage.includes("user.email") ||
@@ -545,7 +546,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					);
 					throw new TRPCError({
 						code: "INTERNAL_SERVER_ERROR",
-						message: `Failed to fetch issue #${input.issueNumber}: ${err instanceof Error ? err.message : String(err)}`,
+						message: `Failed to fetch issue #${input.issueNumber}: ${getErrorMessage(err)}`,
 					});
 				}
 			}),
@@ -1095,8 +1096,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					if (gitError instanceof NotGitRepoError) {
 						outcomes.push({ status: "needsGitInit", selectedPath });
 					} else {
-						const msg =
-							gitError instanceof Error ? gitError.message : String(gitError);
+						const msg = getErrorMessage(gitError);
 						console.error(
 							"[projects/openNew] Failed to open project:",
 							selectedPath,
@@ -1330,8 +1330,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						project,
 					};
 				} catch (error) {
-					const errorMessage =
-						error instanceof Error ? error.message : String(error);
+					const errorMessage = getErrorMessage(error);
 					return {
 						canceled: false as const,
 						success: false as const,
@@ -1391,8 +1390,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						project,
 					};
 				} catch (error) {
-					const errorMessage =
-						error instanceof Error ? error.message : String(error);
+					const errorMessage = getErrorMessage(error);
 					return {
 						canceled: false as const,
 						success: false as const,

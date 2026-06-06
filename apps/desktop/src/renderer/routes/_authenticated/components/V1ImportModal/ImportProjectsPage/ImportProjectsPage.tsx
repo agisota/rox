@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { Button } from "@superset/ui/button";
 import { Spinner } from "@superset/ui/spinner";
 import type { QueryClient } from "@tanstack/react-query";
@@ -277,7 +278,7 @@ async function importProject({
 				return {
 					kind: "needs-relocate",
 					v2ProjectId: targetCandidate.id,
-					message: err instanceof Error ? err.message : String(err),
+					message: getErrorMessage(err),
 				};
 			}
 			throw err;
@@ -368,7 +369,7 @@ function ProjectRow({
 			setLinkedV2Id(result.v2ProjectId);
 			await invalidateProjectImportQueries(queryClient, project);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
+			const message = getErrorMessage(err);
 			setErrorMessage(message);
 			console.error("[v1-import] project import failed", {
 				v1ProjectId: project.id,

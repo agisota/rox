@@ -17,6 +17,7 @@
 import { createWriteStream, promises as fs, type WriteStream } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import { SUPERSET_DIR_NAME } from "shared/constants";
 
 const MAX_HISTORY_BYTES = 5 * 1024 * 1024; // 5MB per session
@@ -457,7 +458,7 @@ export class HistoryWriter {
 		} catch (error) {
 			console.warn(
 				`[HistoryWriter] Failed to write metadata for ${this.paneId}:`,
-				error instanceof Error ? error.message : String(error),
+				getErrorMessage(error),
 			);
 		}
 	}
@@ -547,7 +548,7 @@ export class HistoryReader {
 		await fs.rm(this.dir, { recursive: true, force: true }).catch((error) => {
 			console.warn(
 				`[HistoryReader] Failed to cleanup history for ${this.paneId}:`,
-				error instanceof Error ? error.message : String(error),
+				getErrorMessage(error),
 			);
 		});
 	}

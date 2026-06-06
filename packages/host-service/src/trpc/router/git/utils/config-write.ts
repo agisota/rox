@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import type { SimpleGit } from "simple-git";
 
 /**
@@ -31,7 +32,7 @@ export async function gitConfigWrite(
 			return await git.raw(args);
 		} catch (err) {
 			lastErr = err;
-			const message = err instanceof Error ? err.message : String(err);
+			const message = getErrorMessage(err);
 			if (!message.includes("could not lock config file")) throw err;
 			if (attempt === retries) break;
 			await new Promise((resolve) =>

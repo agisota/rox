@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
@@ -119,8 +120,7 @@ export const createGitOperationsRouter = () => {
 				try {
 					await git.pull(["--rebase"]);
 				} catch (error) {
-					const message =
-						error instanceof Error ? error.message : String(error);
+					const message = getErrorMessage(error);
 					if (isUpstreamMissingError(message)) {
 						throw new Error(
 							"No upstream branch to pull from. The remote branch may have been deleted.",
@@ -145,8 +145,7 @@ export const createGitOperationsRouter = () => {
 				try {
 					await git.pull(["--rebase"]);
 				} catch (error) {
-					const message =
-						error instanceof Error ? error.message : String(error);
+					const message = getErrorMessage(error);
 					if (isUpstreamMissingError(message)) {
 						const localBranch = await getLocalBranchOrThrow({
 							worktreePath: input.worktreePath,
@@ -236,8 +235,7 @@ export const createGitOperationsRouter = () => {
 								localBranch: branch,
 							});
 						} catch (error) {
-							const message =
-								error instanceof Error ? error.message : String(error);
+							const message = getErrorMessage(error);
 							if (
 								input.allowOutOfDate &&
 								isBehindUpstream &&
@@ -301,8 +299,7 @@ export const createGitOperationsRouter = () => {
 					try {
 						return await mergePullRequest(input);
 					} catch (error) {
-						const message =
-							error instanceof Error ? error.message : String(error);
+						const message = getErrorMessage(error);
 						console.error("[git/mergePR] Failed to merge PR:", message);
 
 						if (isNoPullRequestFoundMessage(message)) {

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { Button } from "@superset/ui/button";
 import {
 	Dialog,
@@ -89,7 +90,7 @@ export function NewProjectModal({
 				setParentDir(result.path);
 			}
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : String(err));
+			toast.error(getErrorMessage(err));
 		}
 	};
 
@@ -128,7 +129,7 @@ export function NewProjectModal({
 			reset();
 			onOpenChange(false);
 		} catch (err) {
-			const raw = err instanceof Error ? err.message : String(err);
+			const raw = getErrorMessage(err);
 			// Drizzle / pg errors arrive as "Failed query: insert into ..."
 			// which is useless to a user. Hide that envelope in favor of a
 			// short generic message; details land in the console for devs.

@@ -1,5 +1,6 @@
 import * as p from "@clack/prompts";
 import { CLIError, string } from "@superset/cli-framework";
+import { getErrorMessage } from "@superset/shared/error";
 import { render } from "ink";
 import { createElement } from "react";
 import { type ApiClient, createApiClient } from "../../../lib/api-client";
@@ -104,10 +105,7 @@ async function runApiKeyLogin({
 	try {
 		user = await api.user.me.query();
 	} catch (error) {
-		throw new CLIError(
-			"API key rejected",
-			error instanceof Error ? error.message : String(error),
-		);
+		throw new CLIError("API key rejected", getErrorMessage(error));
 	}
 	p.log.info(`${user.name} (${user.email})`);
 
@@ -284,9 +282,7 @@ export default command({
 			user = await api.user.me.query();
 			p.log.info(`${user.name} (${user.email})`);
 		} catch (error) {
-			p.log.warn(
-				`Could not fetch user profile: ${error instanceof Error ? error.message : String(error)}`,
-			);
+			p.log.warn(`Could not fetch user profile: ${getErrorMessage(error)}`);
 		}
 
 		const { chosen, cancelled: orgCancelled } = await pickOrganization({

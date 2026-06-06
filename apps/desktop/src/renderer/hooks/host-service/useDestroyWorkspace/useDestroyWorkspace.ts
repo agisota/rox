@@ -2,6 +2,7 @@ import type {
 	DeleteInProgressCause,
 	TeardownFailureCause,
 } from "@superset/host-service";
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback } from "react";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
@@ -152,7 +153,7 @@ function normalizeError(err: unknown): DestroyWorkspaceError {
 	}
 	return {
 		kind: "unknown",
-		message: err instanceof Error ? err.message : String(err),
+		message: getErrorMessage(err),
 	};
 }
 

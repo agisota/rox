@@ -1,4 +1,5 @@
 import { basename, resolve as resolvePath } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	type ParsedGitHubRemote,
 	parseGitHubRemote,
@@ -256,7 +257,7 @@ export const projectRouter = router({
 						cloudErrors: [
 							{
 								url: parsed.url,
-								message: err instanceof Error ? err.message : String(err),
+								message: getErrorMessage(err),
 							},
 						],
 					};
@@ -322,7 +323,7 @@ export const projectRouter = router({
 						}
 					}
 				} catch (err) {
-					const message = err instanceof Error ? err.message : String(err);
+					const message = getErrorMessage(err);
 					cloudErrors.push({ url: parsed.url, message });
 					console.warn(
 						"[project.findByPath] cloud findByGitHubRemote failed for",
@@ -364,7 +365,7 @@ export const projectRouter = router({
 						} else {
 							cloudErrors.push({
 								url: `v2Project.get(${localProject.id})`,
-								message: err instanceof Error ? err.message : String(err),
+								message: getErrorMessage(err),
 							});
 						}
 					}

@@ -8,6 +8,10 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./error": {
+			"types": "./src/error.ts",
+			"default": "./src/error.ts"
+		},
 		"./dev-credentials": {
 			"types": "./src/dev-credentials.ts",
 			"default": "./src/dev-credentials.ts"

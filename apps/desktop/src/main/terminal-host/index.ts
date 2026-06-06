@@ -24,6 +24,7 @@ import {
 import { createServer, type Server, Socket } from "node:net";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import { SUPERSET_DIR_NAME } from "shared/constants";
 import {
 	type CancelCreateOrAttachRequest,
@@ -581,7 +582,7 @@ async function handleRequest(
 	try {
 		await handler(socket, request.id, request.payload, clientState);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		sendError(socket, request.id, "INTERNAL_ERROR", message);
 		log("error", `Handler error for ${request.type}`, { error: message });
 	}
@@ -607,7 +608,7 @@ function handleConnection(socket: Socket) {
 		for (const message of messages) {
 			handleRequest(socket, message, clientState).catch((error) => {
 				log("error", "Unhandled request error", {
-					error: error instanceof Error ? error.message : String(error),
+					error: getErrorMessage(error),
 				});
 			});
 		}

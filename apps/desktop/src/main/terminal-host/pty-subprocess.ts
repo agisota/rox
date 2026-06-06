@@ -15,6 +15,7 @@ import {
 	signalProcessTargets,
 	signalProcessTreeAndGroups,
 } from "@superset/pty-daemon/process-tree";
+import { getErrorMessage } from "@superset/shared/error";
 import type { IPty } from "node-pty";
 import * as pty from "node-pty";
 import treeKill from "tree-kill";
@@ -202,9 +203,7 @@ function flush(): void {
 					return;
 				}
 
-				sendError(
-					`Write failed: ${err instanceof Error ? err.message : String(err)}`,
-				);
+				sendError(`Write failed: ${getErrorMessage(err)}`);
 				writeQueue.length = 0;
 				queuedBytes = 0;
 				flushing = false;
@@ -246,9 +245,7 @@ function flush(): void {
 	try {
 		ptyProcess.write(chunk.toString("utf8"));
 	} catch (error) {
-		sendError(
-			`Write failed: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		sendError(`Write failed: ${getErrorMessage(error)}`);
 		writeQueue.length = 0;
 		queuedBytes = 0;
 		flushing = false;
@@ -297,9 +294,7 @@ function handleSpawn(payload: Buffer): void {
 	try {
 		msg = JSON.parse(payload.toString("utf8")) as SpawnPayload;
 	} catch (error) {
-		sendError(
-			`Spawn payload parse failed: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		sendError(`Spawn payload parse failed: ${getErrorMessage(error)}`);
 		return;
 	}
 
@@ -355,9 +350,7 @@ function handleSpawn(payload: Buffer): void {
 		pidPayload.writeUInt32LE(ptyProcess.pid ?? 0, 0);
 		send(PtySubprocessIpcType.Spawned, pidPayload);
 	} catch (error) {
-		sendError(
-			`Spawn failed: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		sendError(`Spawn failed: ${getErrorMessage(error)}`);
 		// Exit so the daemon does not keep a live subprocess with no PTY.
 		setTimeout(() => process.exit(1), 100);
 	}
@@ -521,9 +514,7 @@ process.stdin.on("data", (chunk: Buffer) => {
 			}
 		}
 	} catch (error) {
-		sendError(
-			`Failed to parse frame: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		sendError(`Failed to parse frame: ${getErrorMessage(error)}`);
 	}
 });
 

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { Button } from "@superset/ui/button";
 import { Spinner } from "@superset/ui/spinner";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -251,7 +252,7 @@ export function ImportWorkspacesPage({
 					queryKey: WORKSPACE_CLOUD_LIST_KEY,
 				});
 			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
+				const message = getErrorMessage(err);
 				updateAdoptStatus(workspace.id, { kind: "error", message });
 				console.error("[v1-import] workspace adopt failed", {
 					v1WorkspaceId: workspace.id,

@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import { parseGitHubRemote } from "@superset/shared/github-remote";
 import { TRPCError } from "@trpc/server";
 import { createUserSimpleGit } from "../../../../runtime/git/simple-git";
@@ -53,9 +54,7 @@ function claimEmptyTargetDir(targetPath: string): void {
 		}
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: `Could not create target directory: ${
-				err instanceof Error ? err.message : String(err)
-			}`,
+			message: `Could not create target directory: ${getErrorMessage(err)}`,
 		});
 	}
 }
@@ -67,7 +66,7 @@ function claimEmptyTargetDir(targetPath: string): void {
  * failures.
  */
 function asInitialCommitTrpcError(err: unknown): TRPCError {
-	const message = err instanceof Error ? err.message : String(err);
+	const message = getErrorMessage(err);
 	if (
 		message.includes("empty ident") ||
 		message.includes("user.email") ||
@@ -347,9 +346,7 @@ export async function cloneRepoInto(
 		rmSync(targetPath, { recursive: true, force: true });
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: `Failed to clone repository: ${
-				err instanceof Error ? err.message : String(err)
-			}`,
+			message: `Failed to clone repository: ${getErrorMessage(err)}`,
 		});
 	}
 

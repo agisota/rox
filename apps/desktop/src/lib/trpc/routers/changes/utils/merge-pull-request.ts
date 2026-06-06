@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	getCurrentBranch,
 	isUnbornHeadError,
@@ -61,7 +62,7 @@ export async function mergePullRequest({
 			"[git/mergePR] Explicit PR resolution failed; falling back to branch merge.",
 			{
 				worktreePath,
-				error: error instanceof Error ? error.message : String(error),
+				error: getErrorMessage(error),
 			},
 		);
 		return runMerge(legacyMergeArgs);
@@ -88,7 +89,7 @@ export async function mergePullRequest({
 	try {
 		return await runMerge(args);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		if (isNoPullRequestFoundMessage(message)) {
 			return runMerge(legacyMergeArgs);
 		}

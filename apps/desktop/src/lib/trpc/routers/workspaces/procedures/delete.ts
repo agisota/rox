@@ -2,6 +2,7 @@ import { existsSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import type { SelectWorktree } from "@superset/local-db";
 import { worktrees } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { eq } from "drizzle-orm";
 import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
@@ -140,7 +141,7 @@ export const createDeleteProcedures = () => {
 					} catch (error) {
 						return {
 							canDelete: false,
-							reason: `Failed to check worktree status: ${error instanceof Error ? error.message : String(error)}`,
+							reason: `Failed to check worktree status: ${getErrorMessage(error)}`,
 							workspace,
 							activeTerminalCount,
 							hasChanges: false,
@@ -318,7 +319,7 @@ export const createDeleteProcedures = () => {
 						} catch (error) {
 							console.error(
 								`[workspace/delete] Branch cleanup failed (non-blocking):`,
-								error instanceof Error ? error.message : String(error),
+								getErrorMessage(error),
 							);
 						}
 					}
@@ -445,7 +446,7 @@ export const createDeleteProcedures = () => {
 				} catch (error) {
 					return {
 						canDelete: false,
-						reason: `Failed to check worktree status: ${error instanceof Error ? error.message : String(error)}`,
+						reason: `Failed to check worktree status: ${getErrorMessage(error)}`,
 						worktree,
 						hasChanges: false,
 						hasUnpushedCommits: false,

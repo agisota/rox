@@ -39,6 +39,7 @@
 		"@mastra/core": "1.33.1",
 		"@mastra/mcp": "1.7.0",
 		"@mastra/memory": "1.18.0",
+		"@superset/shared": "workspace:*",
 		"@superset/trpc": "workspace:*",
 		"@superset/workspace-fs": "workspace:*",
 		"@trpc/client": "11.16.0",

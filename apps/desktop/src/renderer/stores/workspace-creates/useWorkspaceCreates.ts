@@ -1,4 +1,5 @@
 import type { SelectV2Workspace } from "@superset/db/schema";
+import { getErrorMessage } from "@superset/shared/error";
 import { useCallback } from "react";
 import { resolveHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";
@@ -145,8 +146,7 @@ export function useWorkspaceCreates(): UseWorkspaceCreatesApi {
 					return { ok: true, workspaceId: result.workspace.id };
 				})
 				.catch<SubmitOutcome>((error: unknown) => {
-					const message =
-						error instanceof Error ? error.message : String(error);
+					const message = getErrorMessage(error);
 					deleteWorkspaceLocalState(workspaceId);
 					recordFailure(message);
 					return { ok: false, error: message };

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { primeRelayAffinity } from "@superset/workspace-client";
 import type { Terminal as XTerm } from "@xterm/xterm";
 
@@ -360,9 +361,9 @@ export function connect(
 			pushLog(
 				transport,
 				"error",
-				`WebSocket construction failed for ${formatWsEndpoint(actualUrl)}: ${
-					err instanceof Error ? err.message : String(err)
-				}`,
+				`WebSocket construction failed for ${formatWsEndpoint(actualUrl)}: ${getErrorMessage(
+					err,
+				)}`,
 			);
 			setConnectionState(transport, "closed");
 			scheduleReconnect(transport);

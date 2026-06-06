@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	getCommandShellArgs,
 	getShellEnv,
@@ -126,7 +127,7 @@ export async function runTeardown({
 
 		return { success: true, output: output || undefined };
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 		console.error(
 			`Teardown failed for workspace ${workspaceName}:`,
 			errorMessage,
@@ -150,7 +151,7 @@ export async function removeWorktreeFromDisk({
 		await removeWorktree(mainRepoPath, worktreePath);
 		return { success: true };
 	} catch (error) {
-		const msg = error instanceof Error ? error.message : String(error);
+		const msg = getErrorMessage(error);
 		if (
 			msg.includes("is not a working tree") ||
 			msg.includes("No such file or directory")

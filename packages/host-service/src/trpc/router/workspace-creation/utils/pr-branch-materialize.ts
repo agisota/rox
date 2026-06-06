@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import type { GitClient } from "../shared/types";
 
 export type PrBranchSourceKind = "head-branch" | "synthetic-pr-ref";
@@ -448,7 +449,7 @@ export async function materializePrBranch(args: {
 				});
 			} catch (cleanupErr) {
 				throw new Error(
-					`Failed to materialize PR branch "${args.branch}": ${err instanceof Error ? err.message : String(err)}. Failed to roll back created branch: ${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)}`,
+					`Failed to materialize PR branch "${args.branch}": ${getErrorMessage(err)}. Failed to roll back created branch: ${getErrorMessage(cleanupErr)}`,
 				);
 			}
 		}

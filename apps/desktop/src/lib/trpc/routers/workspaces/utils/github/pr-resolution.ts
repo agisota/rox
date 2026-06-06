@@ -3,7 +3,9 @@
 // backing `git.getPullRequest` + `pullRequests.getByWorkspaces`). Everything
 // under `renderer/screens/main/` + `routes/_authenticated/_dashboard/workspace/`
 // gets deleted together; no port needed.
+
 import type { CheckItem, GitHubStatus } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { execGitWithShellPath } from "../git-client";
 import { execWithShellEnv } from "../shell-env";
 import { getPullRequestRepoArgs } from "./repo-context";
@@ -325,7 +327,7 @@ function parsePRResponse(stdout: string): GHPRResponse | null {
 	} catch (error) {
 		console.warn(
 			"[GitHub] Failed to parse PR response JSON:",
-			error instanceof Error ? error.message : String(error),
+			getErrorMessage(error),
 		);
 		return null;
 	}
@@ -350,7 +352,7 @@ function parsePRListResponse(stdout: string): GHPRResponse[] {
 	} catch (error) {
 		console.warn(
 			"[GitHub] Failed to parse PR list response JSON:",
-			error instanceof Error ? error.message : String(error),
+			getErrorMessage(error),
 		);
 		return [];
 	}

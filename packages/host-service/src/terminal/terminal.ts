@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { NodeWebSocket } from "@hono/node-ws";
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	createScanState,
 	SHELLS_WITH_READY_MARKER,
@@ -969,7 +970,7 @@ export async function createTerminalSessionInternal({
 				// exists". The daemon kept the buffer + the live shell; we just
 				// need to stitch up a TerminalSession record on this side and
 				// subscribe-with-replay below.
-				const msg = err instanceof Error ? err.message : String(err);
+				const msg = getErrorMessage(err);
 				if (msg.includes("session already exists")) {
 					const list = await daemon.list();
 					const found = list.find((s) => s.id === terminalId && s.alive);

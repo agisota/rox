@@ -1,4 +1,5 @@
 import { createServer, type Server } from "node:http";
+import { getErrorMessage } from "@superset/shared/error";
 
 interface LoopbackOptions {
 	host: string;
@@ -76,7 +77,7 @@ export class OpenAIOAuthLoopback {
 					res.end(SUCCESS_PAGE);
 					options.onCallback(requestUrl.toString());
 				} catch (err) {
-					const message = err instanceof Error ? err.message : String(err);
+					const message = getErrorMessage(err);
 					try {
 						res.writeHead(500, { "content-type": "text/plain" });
 						res.end(message);

@@ -19,6 +19,7 @@ export {
 
 import fs from "node:fs";
 import os from "node:os";
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	augmentPathForMacOS,
 	clearStrictShellEnvCache,
@@ -68,7 +69,7 @@ export async function resolveTerminalBaseEnv(): Promise<
 	try {
 		return await getStrictShellEnvironment();
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		console.warn(
 			`[host-service] Shell env snapshot failed, falling back to process.env: ${message}`,
 		);

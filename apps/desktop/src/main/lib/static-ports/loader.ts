@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseStaticPortsConfig } from "@superset/port-scanner";
+import { getErrorMessage } from "@superset/shared/error";
 import { PORTS_FILE_NAME, PROJECT_SUPERSET_DIR_NAME } from "shared/constants";
 import type { StaticPortsResult } from "shared/types";
 
@@ -25,7 +26,7 @@ export function loadStaticPorts(worktreePath: string): StaticPortsResult {
 	try {
 		content = readFileSync(portsPath, "utf-8");
 	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
+		const message = getErrorMessage(err);
 		return {
 			exists: true,
 			ports: null,

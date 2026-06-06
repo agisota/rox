@@ -5,6 +5,7 @@ import { mkdir, rename } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { BranchPrefixMode } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	sanitizeAuthorPrefix,
 	sanitizeBranchName,
@@ -59,7 +60,7 @@ export function getWorktreeCreatedAt(worktreePath: string): number {
 	} catch (error) {
 		console.warn("[git] Failed to read worktree created time", {
 			worktreePath,
-			error: error instanceof Error ? error.message : String(error),
+			error: getErrorMessage(error),
 		});
 	}
 
@@ -229,9 +230,7 @@ export async function getStatusNoLock(repoPath: string): Promise<StatusResult> {
 				throw new NotGitRepoError(repoPath);
 			}
 		}
-		throw new Error(
-			`Failed to get git status: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		throw new Error(`Failed to get git status: ${getErrorMessage(error)}`);
 	}
 }
 
@@ -478,7 +477,7 @@ export async function getGitHubUsername(
 	} catch (error) {
 		console.warn(
 			"[git/getGitHubUsername] Failed to get GitHub username:",
-			error instanceof Error ? error.message : String(error),
+			getErrorMessage(error),
 		);
 		cachedGitHubUsername = { value: null, timestamp: Date.now() };
 		return null;
@@ -618,7 +617,7 @@ export async function createWorktree(
 			`Created worktree at ${worktreePath} with branch ${branch} from ${startPoint}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 		const lowerError = errorMessage.toLowerCase();
 
 		const isLockError =
@@ -707,7 +706,7 @@ export async function createWorktreeFromExistingBranch({
 			`Created worktree at ${worktreePath} using existing branch ${branch}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 		const lowerError = errorMessage.toLowerCase();
 
 		const isLockError =
@@ -756,7 +755,7 @@ export async function deleteLocalBranch({
 		});
 		console.log(`[workspace/delete] Deleted local branch "${branch}"`);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 		console.error(
 			`[workspace/delete] Failed to delete local branch "${branch}": ${errorMessage}`,
 		);
@@ -815,7 +814,7 @@ export async function removeWorktree(
 			} catch {}
 			return;
 		}
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 		console.error(`Failed to remove worktree: ${errorMessage}`);
 		throw new Error(`Failed to remove worktree: ${errorMessage}`);
 	}
@@ -827,7 +826,7 @@ export async function getGitRoot(path: string): Promise<string> {
 		const root = await git.revparse(["--show-toplevel"]);
 		return root.trim();
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		if (message.toLowerCase().includes("not a git repository")) {
 			throw new NotGitRepoError(path);
 		}
@@ -1154,7 +1153,7 @@ export async function hasUnpushedCommits(
 				"[git/hasUnpushedCommits] Cherry-pick fallback failed; falling back to remote reachability check.",
 				{
 					worktreePath,
-					error: error instanceof Error ? error.message : String(error),
+					error: getErrorMessage(error),
 				},
 			);
 		}
@@ -1287,7 +1286,7 @@ export async function branchExistsOnRemote(
 		if (!isExecFileException(error)) {
 			return {
 				status: "error",
-				message: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+				message: `Unexpected error: ${getErrorMessage(error)}`,
 			};
 		}
 
@@ -1529,7 +1528,7 @@ export async function checkBranchCheckoutSafety(
 	} catch (error) {
 		return {
 			safe: false,
-			error: `Failed to check repository status: ${error instanceof Error ? error.message : String(error)}`,
+			error: `Failed to check repository status: ${getErrorMessage(error)}`,
 		};
 	}
 }
@@ -1768,9 +1767,7 @@ export async function getPrInfo({
 				throw new Error(`PR #${prNumber} not found in ${owner}/${repo}`);
 			}
 		}
-		throw new Error(
-			`Failed to fetch PR info: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		throw new Error(`Failed to fetch PR info: ${getErrorMessage(error)}`);
 	}
 }
 
@@ -1832,8 +1829,7 @@ export async function createWorktreeFromPr({
 				{ cwd: worktreePath, timeout: 120_000 },
 			);
 		} catch (ghError) {
-			const ghMsg =
-				ghError instanceof Error ? ghError.message : String(ghError);
+			const ghMsg = getErrorMessage(ghError);
 			// `gh pr checkout` can fail with "is not a branch" when the branch name
 			// contains '/' (e.g. "user/feature-branch"). Git has trouble resolving
 			// "origin/user/feature-branch" as a tracking ref inside a worktree.
@@ -1869,7 +1865,7 @@ export async function createWorktreeFromPr({
 			`[git] Created worktree at ${worktreePath} for PR #${prInfo.number}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 		const lowerError = errorMessage.toLowerCase();
 
 		if (

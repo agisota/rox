@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 
 const PROJECT_SUPERSET_DIR_NAME = ".superset";
 const CONFIG_FILE_NAME = "config.json";
@@ -41,7 +42,7 @@ function readJson<T>(filePath: string): T | null {
 		return JSON.parse(readFileSync(filePath, "utf-8")) as T;
 	} catch (error) {
 		console.error(
-			`Failed to read JSON at ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to read JSON at ${filePath}: ${getErrorMessage(error)}`,
 		);
 		return null;
 	}

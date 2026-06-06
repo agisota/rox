@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import * as os from "node:os";
 import { signalProcessTreeAndGroups } from "@superset/pty-daemon/process-tree";
+import { getErrorMessage } from "@superset/shared/error";
 import { resolveConfiguredShell } from "./user-shell.ts";
 
 const SHELL_ENV_TIMEOUT_MS = 8_000;
@@ -205,7 +206,7 @@ function spawnCleanShellEnv(): Promise<Record<string, string>> {
 			try {
 				resolve(parseEnvOutput(stdout));
 			} catch (error) {
-				const detail = error instanceof Error ? error.message : String(error);
+				const detail = getErrorMessage(error);
 				reject(
 					new Error(
 						`${detail} (shell=${shell}` +

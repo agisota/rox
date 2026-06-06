@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from "@superset/shared/error";
 import { buildHostRoutingKey } from "@superset/shared/host-routing";
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
@@ -18,10 +19,6 @@ interface HostTerminal {
 	terminalId: string;
 	title: string | null;
 	exited: boolean;
-}
-
-function getErrorMessage(caught: unknown): string {
-	return caught instanceof Error ? caught.message : String(caught);
 }
 
 export default function WorkspaceTerminalPage({

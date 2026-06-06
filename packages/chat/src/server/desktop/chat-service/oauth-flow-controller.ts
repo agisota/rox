@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import type {
 	AuthStorageCredential,
 	AuthStorageLike,
@@ -149,9 +150,7 @@ export class OAuthFlowController {
 				}),
 			]);
 		} catch (error) {
-			options.onAuthUrlTimeoutOrError?.(
-				error instanceof Error ? error.message : String(error),
-			);
+			options.onAuthUrlTimeoutOrError?.(getErrorMessage(error));
 			this.clear(options);
 			throw error;
 		}

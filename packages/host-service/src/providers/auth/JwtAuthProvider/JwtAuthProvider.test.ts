@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ORGANIZATION_HEADER } from "@superset/shared/constants";
+import { getErrorMessage } from "@superset/shared/error";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import SuperJSON from "superjson";
@@ -307,7 +308,7 @@ describe("JwtApiAuthProvider with config-backed host auth", () => {
 				thrown = error;
 			}
 
-			const message = thrown instanceof Error ? thrown.message : String(thrown);
+			const message = getErrorMessage(thrown);
 			expect(message).toContain("superset auth login");
 			expect(message).not.toContain("access-secret");
 			expect(message).not.toContain("refresh-secret");

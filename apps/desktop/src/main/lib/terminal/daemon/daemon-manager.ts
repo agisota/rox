@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import { workspaces } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { track } from "main/lib/analytics";
 import { appState } from "main/lib/app-state";
 import { localDb } from "main/lib/local-db";
@@ -664,7 +665,7 @@ export class DaemonTerminalManager extends EventEmitter {
 		}
 
 		this.client.resize({ sessionId: paneId, cols, rows }).catch((error) => {
-			const errorMsg = error instanceof Error ? error.message : String(error);
+			const errorMsg = getErrorMessage(error);
 			if (!errorMsg.includes("not found")) {
 				console.error(
 					`[DaemonTerminalManager] Resize failed for ${paneId}:`,
@@ -725,7 +726,7 @@ export class DaemonTerminalManager extends EventEmitter {
 		try {
 			await this.client.kill({ sessionId: paneId, deleteHistory });
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
+			const message = getErrorMessage(error);
 			if (message.toLowerCase().includes("not found")) {
 				return;
 			}

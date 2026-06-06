@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import type { FitAddon } from "@xterm/addon-fit";
 import type { SearchAddon } from "@xterm/addon-search";
 import type { Terminal as XTerm } from "@xterm/xterm";
@@ -373,7 +374,7 @@ export const Terminal = memo(function Terminal({
 			onError: (error) => {
 				console.error("[Terminal] Stream subscription error:", {
 					paneId,
-					error: error instanceof Error ? error.message : String(error),
+					error: getErrorMessage(error),
 				});
 				setConnectionError(
 					error instanceof Error

@@ -1,5 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import { generateFriendlyBranchName } from "@superset/shared/workspace-launch";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
@@ -445,7 +446,7 @@ async function registerCloudAndLocal(args: {
 		await args.rollbackWorktree();
 		throw new TRPCError({
 			code: "INTERNAL_SERVER_ERROR",
-			message: `Failed to register host: ${err instanceof Error ? err.message : String(err)}`,
+			message: `Failed to register host: ${getErrorMessage(err)}`,
 		});
 	}
 
@@ -494,7 +495,7 @@ async function registerCloudAndLocal(args: {
 			});
 		throw new TRPCError({
 			code: "INTERNAL_SERVER_ERROR",
-			message: `Failed to persist workspace locally: ${err instanceof Error ? err.message : String(err)}`,
+			message: `Failed to persist workspace locally: ${getErrorMessage(err)}`,
 		});
 	}
 
@@ -520,7 +521,7 @@ async function dispatchSugarAgents(
 			} catch (err) {
 				return {
 					ok: false as const,
-					error: err instanceof Error ? err.message : String(err),
+					error: getErrorMessage(err),
 				};
 			}
 		}),

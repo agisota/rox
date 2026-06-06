@@ -5,6 +5,7 @@ import {
 	getEnabledAgentConfigs,
 	indexResolvedAgentConfigs,
 } from "@superset/shared/agent-settings";
+import { getErrorMessage } from "@superset/shared/error";
 import { sanitizeBranchNameWithMaxLength } from "@superset/shared/workspace-launch";
 import {
 	PromptInput,
@@ -770,8 +771,7 @@ function PromptGroupInner({
 					} catch (error) {
 						if (timeoutId) clearTimeout(timeoutId);
 
-						const errorMessage =
-							error instanceof Error ? error.message : String(error);
+						const errorMessage = getErrorMessage(error);
 						if (errorMessage.includes("timeout")) {
 							console.warn("[PromptGroup] AI generation timeout");
 							toast.info("Using random branch name (AI generation timed out)");

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { toast } from "@superset/ui/sonner";
 import {
 	BellIcon,
@@ -103,8 +104,7 @@ export const actionsProvider: CommandProvider = {
 					try {
 						await electronTrpcClient.autoUpdate.checkInteractive.mutate();
 					} catch (error) {
-						const message =
-							error instanceof Error ? error.message : String(error);
+						const message = getErrorMessage(error);
 						toast.error(`Failed to check for updates: ${message}`);
 					}
 				},

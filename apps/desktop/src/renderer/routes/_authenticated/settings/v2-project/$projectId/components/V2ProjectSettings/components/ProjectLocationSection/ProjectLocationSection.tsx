@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -71,7 +72,7 @@ export function ProjectLocationSection({
 			if (picked.canceled || !picked.path) return null;
 			return picked.path;
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : String(err));
+			toast.error(getErrorMessage(err));
 			return null;
 		}
 	};
@@ -96,7 +97,7 @@ export function ProjectLocationSection({
 				return;
 			}
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : String(err));
+			toast.error(getErrorMessage(err));
 			return;
 		}
 		setPendingPath(path);
@@ -134,7 +135,7 @@ export function ProjectLocationSection({
 			onChanged?.();
 			setPendingPath(null);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : String(err));
+			toast.error(getErrorMessage(err));
 		} finally {
 			setIsSubmitting(false);
 		}

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { Button } from "@superset/ui/button";
 import {
 	Dialog,
@@ -84,7 +85,7 @@ export function SetupProjectModal({
 			if (target === "parentDir") setParentDir(result.path);
 			else setImportPath(result.path);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : String(err));
+			toast.error(getErrorMessage(err));
 		}
 	};
 
@@ -119,7 +120,7 @@ export function SetupProjectModal({
 			reset();
 			onOpenChange(false);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : String(err));
+			toast.error(getErrorMessage(err));
 		} finally {
 			setWorking(false);
 		}
@@ -165,7 +166,7 @@ export function SetupProjectModal({
 			reset();
 			onOpenChange(false);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : String(err));
+			toast.error(getErrorMessage(err));
 		} finally {
 			setWorking(false);
 		}

@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 
 const ENV_LINE = /^(?:export\s+)?[a-zA-Z_]\w*\s*=/;
 const CONFIG_FILE_NAME = "chat-anthropic-env.json";
@@ -55,7 +56,7 @@ function normalizeAnthropicBaseUrl(
 	} catch (error) {
 		console.warn(
 			"[chat-service][anthropic-env] Invalid ANTHROPIC_BASE_URL; using raw value.",
-			{ error: error instanceof Error ? error.message : String(error) },
+			{ error: getErrorMessage(error) },
 		);
 		return baseUrl;
 	}
@@ -145,7 +146,7 @@ function readPersistedAnthropicEnvConfig(
 			"[chat-service][anthropic-env] Failed to read persisted env config.",
 			{
 				configPath,
-				error: error instanceof Error ? error.message : String(error),
+				error: getErrorMessage(error),
 			},
 		);
 		return null;
@@ -176,7 +177,7 @@ export function getAnthropicEnvConfig(
 			"[chat-service][anthropic-env] Persisted env config is invalid and will be ignored.",
 			{
 				configPath: getAnthropicEnvConfigPath(options),
-				error: error instanceof Error ? error.message : String(error),
+				error: getErrorMessage(error),
 			},
 		);
 		return {

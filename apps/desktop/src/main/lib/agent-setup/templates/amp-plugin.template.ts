@@ -1,6 +1,7 @@
 {{MARKER}}
 // @i-know-the-amp-plugin-api-is-wip-and-very-experimental-right-now
 
+import { getErrorMessage } from "@superset/shared/error";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
@@ -132,7 +133,7 @@ export default function supersetAmpLifecyclePlugin(amp: AmpApi) {
 				"spawn threw event=" +
 					hookEventName +
 					" error=" +
-					(error instanceof Error ? error.message : String(error)),
+					(getErrorMessage(error)),
 			);
 		}
 	};

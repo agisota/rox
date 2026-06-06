@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import type {
 	BuildLaunchContextInputs,
 	ContextSection,
@@ -92,7 +93,7 @@ async function resolveOne(
 	} catch (err) {
 		return {
 			kind: "error",
-			error: err instanceof Error ? err.message : String(err),
+			error: getErrorMessage(err),
 		};
 	}
 }

@@ -1,6 +1,7 @@
 import { cpSync, existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import {
 	CONFIG_FILE_NAME,
 	LOCAL_CONFIG_FILE_NAME,
@@ -26,7 +27,7 @@ export function copySupersetConfigToWorktree(
 			cpSync(mainSupersetDir, worktreeSupersetDir, { recursive: true });
 		} catch (error) {
 			console.error(
-				`Failed to copy ${PROJECT_SUPERSET_DIR_NAME} to worktree: ${error instanceof Error ? error.message : String(error)}`,
+				`Failed to copy ${PROJECT_SUPERSET_DIR_NAME} to worktree: ${getErrorMessage(error)}`,
 			);
 		}
 	}
@@ -63,7 +64,7 @@ function readConfigFile(configPath: string): SetupConfig | null {
 		return parsed;
 	} catch (error) {
 		console.error(
-			`Failed to read setup config at ${configPath}: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to read setup config at ${configPath}: ${getErrorMessage(error)}`,
 		);
 		return null;
 	}
@@ -108,7 +109,7 @@ function readLocalConfigFile(filePath: string): LocalSetupConfig | null {
 		return parsed;
 	} catch (error) {
 		console.error(
-			`Failed to read local config at ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to read local config at ${filePath}: ${getErrorMessage(error)}`,
 		);
 		return null;
 	}

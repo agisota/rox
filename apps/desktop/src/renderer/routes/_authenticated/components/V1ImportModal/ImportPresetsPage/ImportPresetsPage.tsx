@@ -4,6 +4,7 @@ import {
 	AGENT_TYPES,
 	type AgentType,
 } from "@superset/shared/agent-command";
+import { getErrorMessage } from "@superset/shared/error";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo, useState } from "react";
 import { LuTerminal } from "react-icons/lu";
@@ -150,7 +151,7 @@ function PresetRow({
 			};
 			collections.v2TerminalPresets.insert(row);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
+			const message = getErrorMessage(err);
 			setErrorMessage(message);
 			console.error("[v1-import] preset import failed", {
 				v1PresetId: preset.id,

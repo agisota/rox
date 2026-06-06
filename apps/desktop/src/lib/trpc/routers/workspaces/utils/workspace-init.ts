@@ -1,4 +1,5 @@
 import { projects, worktrees } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { eq } from "drizzle-orm";
 import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
@@ -65,7 +66,7 @@ export async function initializeWorkspaceWorktree({
 		} catch (error) {
 			console.warn("[workspace-init] Auto naming failed", {
 				workspaceId,
-				error: error instanceof Error ? error.message : String(error),
+				error: getErrorMessage(error),
 			});
 			warning = "Couldn't auto-name this workspace.";
 		}
@@ -527,7 +528,7 @@ export async function initializeWorkspaceWorktree({
 			base_branch: effectiveCompareBaseBranch,
 		});
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 		console.error(
 			`[workspace-init] Failed to initialize ${workspaceId}:`,
 			errorMessage,

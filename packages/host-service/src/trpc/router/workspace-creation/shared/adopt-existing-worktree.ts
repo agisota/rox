@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { and, eq, ne, or } from "drizzle-orm";
 import { workspaces } from "../../../../db/schema";
@@ -152,7 +153,7 @@ export async function adoptExistingWorktree(
 		if (err instanceof TRPCError) throw err;
 		throw new TRPCError({
 			code: "INTERNAL_SERVER_ERROR",
-			message: `Failed to register host: ${err instanceof Error ? err.message : String(err)}`,
+			message: `Failed to register host: ${getErrorMessage(err)}`,
 		});
 	}
 
@@ -170,7 +171,7 @@ export async function adoptExistingWorktree(
 			if (err instanceof TRPCError) throw err;
 			throw new TRPCError({
 				code: "INTERNAL_SERVER_ERROR",
-				message: `Failed to create workspace: ${err instanceof Error ? err.message : String(err)}`,
+				message: `Failed to create workspace: ${getErrorMessage(err)}`,
 			});
 		});
 
@@ -210,7 +211,7 @@ export async function adoptExistingWorktree(
 			});
 		throw new TRPCError({
 			code: "INTERNAL_SERVER_ERROR",
-			message: `Failed to persist workspace locally: ${err instanceof Error ? err.message : String(err)}`,
+			message: `Failed to persist workspace locally: ${getErrorMessage(err)}`,
 		});
 	}
 

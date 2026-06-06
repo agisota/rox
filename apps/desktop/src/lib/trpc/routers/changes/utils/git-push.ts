@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import type { RemoteWithRefs, SimpleGit } from "simple-git";
 import { getCurrentBranch } from "../../workspaces/utils/git";
@@ -39,7 +40,7 @@ export async function hasUpstreamBranch(git: SimpleGit): Promise<boolean> {
 		return true;
 	} catch (error) {
 		// Expected for branches without a tracking upstream; log unexpected errors.
-		const msg = error instanceof Error ? error.message : String(error);
+		const msg = getErrorMessage(error);
 		if (
 			!msg.includes("no upstream configured") &&
 			!msg.includes("@{upstream}")
@@ -69,7 +70,7 @@ export async function fetchCurrentBranch(
 	try {
 		await git.fetch([remote, branch]);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		if (isUpstreamMissingError(message)) {
 			try {
 				await git.fetch([remote]);
@@ -272,7 +273,7 @@ export async function pushCurrentBranch({
 	try {
 		await git.push();
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		if (shouldRetryPushWithUpstream(message)) {
 			await pushWithResolvedUpstream({
 				git,
@@ -324,7 +325,7 @@ export async function getTrackingBranchStatus(
 			hasUpstream: true,
 		};
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		if (isUpstreamMissingError(message)) {
 			return { pushCount: 0, pullCount: 0, hasUpstream: false };
 		}

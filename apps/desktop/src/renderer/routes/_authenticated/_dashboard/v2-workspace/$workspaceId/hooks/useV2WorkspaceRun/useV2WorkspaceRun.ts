@@ -1,4 +1,5 @@
 import type { CreatePaneInput, WorkspaceStore } from "@superset/panes";
+import { getErrorMessage } from "@superset/shared/error";
 import { toast } from "@superset/ui/sonner";
 import { workspaceTrpc } from "@superset/workspace-client";
 import { eq } from "@tanstack/db";
@@ -25,7 +26,7 @@ const TERMINAL_GONE_ERROR_MESSAGES = [
 ] as const;
 
 function isTerminalGoneError(error: unknown): boolean {
-	const message = error instanceof Error ? error.message : String(error);
+	const message = getErrorMessage(error);
 	return TERMINAL_GONE_ERROR_MESSAGES.some((terminalMessage) =>
 		message.includes(terminalMessage),
 	);

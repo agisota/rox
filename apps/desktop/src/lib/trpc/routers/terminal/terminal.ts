@@ -1,4 +1,5 @@
 import { workspaces, worktrees } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { eq } from "drizzle-orm";
@@ -188,7 +189,7 @@ export const createTerminalRouter = () => {
 							callId,
 							paneId,
 							durationMs: Date.now() - startedAt,
-							error: error instanceof Error ? error.message : String(error),
+							error: getErrorMessage(error),
 						});
 					}
 					console.error("[Terminal Router] createOrAttach ERROR:", error);

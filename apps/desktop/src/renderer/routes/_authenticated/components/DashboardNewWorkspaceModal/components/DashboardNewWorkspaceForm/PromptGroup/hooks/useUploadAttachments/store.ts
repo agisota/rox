@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
@@ -88,7 +89,7 @@ export function startUpload(hostUrl: string, file: StartUploadInput): void {
 		} catch (err) {
 			const next: UploadState = {
 				kind: "error",
-				message: err instanceof Error ? err.message : String(err),
+				message: getErrorMessage(err),
 			};
 			setEntry(file.id, hostUrl, next);
 			return next;

@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -272,7 +273,7 @@ async function runDestroy(
 			warnings.push(`${killed.failed} terminal(s) may still be running`);
 		}
 	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
+		const message = getErrorMessage(err);
 		warnings.push(`Failed to dispose terminal sessions: ${message}`);
 	}
 
@@ -294,7 +295,7 @@ async function runDestroy(
 		try {
 			git = await ctx.git(project.repoPath);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
+			const message = getErrorMessage(err);
 			if (!worktreeRemoved) {
 				throw new TRPCError({
 					code: "INTERNAL_SERVER_ERROR",
@@ -326,7 +327,7 @@ async function runDestroy(
 			try {
 				stillRegistered = await isRegisteredWorktree(git, local.worktreePath);
 			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
+				const message = getErrorMessage(err);
 				throw new TRPCError({
 					code: "INTERNAL_SERVER_ERROR",
 					message: `Failed to verify worktree removal at ${local.worktreePath}: ${message}`,
@@ -362,7 +363,7 @@ async function runDestroy(
 			}
 			branchDeleted = true;
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
+			const message = getErrorMessage(err);
 			warnings.push(`Failed to delete branch ${local.branch}: ${message}`);
 		}
 	}
@@ -375,7 +376,7 @@ async function runDestroy(
 				.where(eq(workspaces.id, input.workspaceId))
 				.run();
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
+			const message = getErrorMessage(err);
 			warnings.push(
 				`Failed to remove local workspace row for ${input.workspaceId}: ${message}`,
 			);
@@ -383,7 +384,7 @@ async function runDestroy(
 		try {
 			invalidateLabelCache(input.workspaceId);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
+			const message = getErrorMessage(err);
 			warnings.push(`Failed to invalidate label cache: ${message}`);
 		}
 	}

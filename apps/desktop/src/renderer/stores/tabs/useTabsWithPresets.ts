@@ -2,6 +2,7 @@ import {
 	normalizeExecutionMode,
 	type TerminalPreset,
 } from "@superset/local-db/schema/zod";
+import { getErrorMessage } from "@superset/shared/error";
 import { useCallback, useMemo } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
 import { useCreateOrAttachWithTheme } from "renderer/hooks/useCreateOrAttachWithTheme";
@@ -141,7 +142,7 @@ export function useTabsWithPresets(projectId?: string | null) {
 					paneId,
 					tabId,
 					workspaceId,
-					error: error instanceof Error ? error.message : String(error),
+					error: getErrorMessage(error),
 				});
 			});
 		},
@@ -349,7 +350,7 @@ export function useTabsWithPresets(projectId?: string | null) {
 								workspaceId,
 								tabId: activeTabId,
 								paneId: activeTerminalPaneId,
-								error: error instanceof Error ? error.message : String(error),
+								error: getErrorMessage(error),
 							},
 						);
 					});
@@ -459,7 +460,7 @@ export function useTabsWithPresets(projectId?: string | null) {
 							workspaceId,
 							tabId: activeTabId,
 							paneId,
-							error: error instanceof Error ? error.message : String(error),
+							error: getErrorMessage(error),
 						},
 					);
 				});

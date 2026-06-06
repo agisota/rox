@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -71,7 +72,7 @@ export const configRouter = router({
 				};
 			} catch (error) {
 				console.error(
-					`[config.getConfigContent] failed to read ${configPath}: ${error instanceof Error ? error.message : String(error)}`,
+					`[config.getConfigContent] failed to read ${configPath}: ${getErrorMessage(error)}`,
 				);
 				return { content: null as string | null, exists: false };
 			}
@@ -120,7 +121,7 @@ export const configRouter = router({
 			} catch (error) {
 				throw new TRPCError({
 					code: "INTERNAL_SERVER_ERROR",
-					message: `Failed to write config: ${error instanceof Error ? error.message : String(error)}`,
+					message: `Failed to write config: ${getErrorMessage(error)}`,
 				});
 			}
 			return { success: true as const };

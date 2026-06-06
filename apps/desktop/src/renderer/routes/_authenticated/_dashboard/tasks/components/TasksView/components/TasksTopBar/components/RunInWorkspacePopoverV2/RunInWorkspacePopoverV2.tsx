@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { Button } from "@superset/ui/button";
 import {
 	Command,
@@ -267,7 +268,7 @@ export function RunInWorkspacePopoverV2({
 		toast.promise(promise, {
 			loading: `Creating ${tasks.length} workspace${tasks.length === 1 ? "" : "s"}...`,
 			success: (count) => `Created ${count} workspace${count === 1 ? "" : "s"}`,
-			error: (err) => (err instanceof Error ? err.message : String(err)),
+			error: (err) => getErrorMessage(err),
 		});
 
 		setOpen(false);

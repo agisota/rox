@@ -1,5 +1,6 @@
 "use client";
 
+import { getErrorMessage } from "@superset/shared/error";
 import { Laptop } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -123,7 +124,7 @@ export default function WorkspacesPage() {
 					})),
 				);
 			} catch (caught) {
-				setError(caught instanceof Error ? caught.message : String(caught));
+				setError(getErrorMessage(caught));
 				setWorkspaces([]);
 			}
 		})();
@@ -187,7 +188,7 @@ export default function WorkspacesPage() {
 			setBranch("");
 			await loadWorkspaces(organizationId);
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : String(caught));
+			setError(getErrorMessage(caught));
 		} finally {
 			setCreating(false);
 		}

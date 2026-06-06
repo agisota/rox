@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { boolean, CLIError, positional } from "@superset/cli-framework";
+import { getErrorMessage } from "@superset/shared/error";
 import { command } from "../../../lib/command";
 
 function openUrl(url: string): Promise<void> {
@@ -52,10 +53,7 @@ export default command({
 			try {
 				await openUrl(url);
 			} catch (err) {
-				throw new CLIError(
-					"Failed to open desktop app",
-					err instanceof Error ? err.message : String(err),
-				);
+				throw new CLIError("Failed to open desktop app", getErrorMessage(err));
 			}
 		}
 

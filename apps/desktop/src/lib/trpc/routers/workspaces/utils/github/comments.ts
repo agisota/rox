@@ -1,4 +1,5 @@
 import type { PullRequestComment } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import type { z } from "zod";
 import { execWithShellEnv } from "../shell-env";
 import {
@@ -158,7 +159,7 @@ export function parsePaginatedApiArray(stdout: string): unknown[] {
 	} catch (error) {
 		console.warn(
 			"[GitHub] Failed to parse paginated API array response:",
-			error instanceof Error ? error.message : String(error),
+			getErrorMessage(error),
 		);
 		return [];
 	}

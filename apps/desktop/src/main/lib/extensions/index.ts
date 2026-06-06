@@ -2,6 +2,7 @@ import type { Dirent } from "node:fs";
 import { existsSync, readdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { getErrorMessage } from "@superset/shared/error";
 import { app, session } from "electron";
 import { env } from "main/env.main";
 
@@ -194,7 +195,7 @@ export async function loadReactDevToolsExtension(): Promise<void> {
 				`[main] React DevTools loaded in ${label} session (v${extension.version})`,
 			);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
+			const message = getErrorMessage(error);
 			if (message.includes("already loaded")) continue;
 			console.error(
 				`[main] Failed to load React DevTools in ${label} session:`,
@@ -219,7 +220,7 @@ export async function loadWebviewBrowserExtension(): Promise<void> {
 			.extensions.loadExtension(extensionPath);
 		console.log("[main] Browser extension loaded");
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		if (message.includes("already loaded")) return;
 		console.error("[main] Failed to load browser extension:", error);
 	}

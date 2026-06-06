@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import type { SimpleGit } from "simple-git";
 import { z } from "zod";
@@ -51,7 +52,7 @@ async function findOpenPRByHeadCommit(
 		const match = parsed.find((candidate) => candidate.headRefOid === headSha);
 		return match?.url?.trim() || null;
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		console.warn(
 			"[git/findExistingOpenPRUrl] Failed commit-based PR lookup:",
 			message,
@@ -82,7 +83,7 @@ export async function findExistingOpenPRUrl(
 			return url;
 		}
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		const isNoPROpenError = message
 			.toLowerCase()
 			.includes("no pull requests found");

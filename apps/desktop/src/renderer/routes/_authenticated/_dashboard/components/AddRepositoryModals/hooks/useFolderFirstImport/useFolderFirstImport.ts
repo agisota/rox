@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { useCallback } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
@@ -48,7 +49,7 @@ export function useFolderFirstImport(options?: {
 			if (picked.canceled || !picked.path) return null;
 			repoPath = picked.path;
 		} catch (err) {
-			onError?.(err instanceof Error ? err.message : String(err));
+			onError?.(getErrorMessage(err));
 			return null;
 		}
 
@@ -77,7 +78,7 @@ export function useFolderFirstImport(options?: {
 				return null;
 			}
 		} catch (err) {
-			onError?.(err instanceof Error ? err.message : String(err));
+			onError?.(getErrorMessage(err));
 			return null;
 		}
 
@@ -114,7 +115,7 @@ export function useFolderFirstImport(options?: {
 			finalizeSetup(activeHostUrl, result);
 			return result;
 		} catch (err) {
-			onError?.(err instanceof Error ? err.message : String(err));
+			onError?.(getErrorMessage(err));
 			return null;
 		}
 	}, [

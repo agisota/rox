@@ -1,4 +1,5 @@
 import type { ExternalApp } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { toast } from "@superset/ui/sonner";
 import { ArrowUpRightIcon } from "lucide-react";
 import {
@@ -39,7 +40,7 @@ async function resolvePath(context: CommandContext): Promise<string | null> {
 		}
 		return workspace.worktreePath;
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		toast.error(`Failed to resolve workspace path: ${message}`);
 		return null;
 	}
@@ -63,7 +64,7 @@ async function openIn(
 			});
 		}
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = getErrorMessage(error);
 		toast.error(`Failed to open in ${app}: ${message}`);
 	}
 }

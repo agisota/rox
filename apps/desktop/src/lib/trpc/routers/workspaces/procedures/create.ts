@@ -1,4 +1,5 @@
 import { projects, workspaces, worktrees } from "@superset/local-db";
+import { getErrorMessage } from "@superset/shared/error";
 import { and, eq, isNull, not } from "drizzle-orm";
 import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
@@ -594,7 +595,7 @@ export const createCreateProcedures = () => {
 						} catch (error) {
 							console.warn("[workspaces/create] Auto naming failed", {
 								workspaceId: workspace.id,
-								error: error instanceof Error ? error.message : String(error),
+								error: getErrorMessage(error),
 							});
 							autoRenameWarning = "Couldn't auto-name this workspace.";
 						}

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { useCallback, useRef, useState } from "react";
 import { electronTrpcClient as trpcClient } from "renderer/lib/trpc-client";
@@ -176,7 +177,7 @@ export function useTerminalColdRestore({
 		trpcClient.terminal.ackColdRestore.mutate({ paneId }).catch((error) => {
 			console.warn("[Terminal] Failed to acknowledge cold restore:", {
 				paneId,
-				error: error instanceof Error ? error.message : String(error),
+				error: getErrorMessage(error),
 			});
 		});
 

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure } from "../../../index";
@@ -51,7 +52,7 @@ export const getContent = protectedProcedure
 		} catch (err) {
 			throw new TRPCError({
 				code: "INTERNAL_SERVER_ERROR",
-				message: `Failed to fetch issue #${input.issueNumber}: ${err instanceof Error ? err.message : String(err)}`,
+				message: `Failed to fetch issue #${input.issueNumber}: ${getErrorMessage(err)}`,
 			});
 		}
 	});

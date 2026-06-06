@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@superset/shared/error";
 import { toast } from "@superset/ui/sonner";
 import { useCallback } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -37,8 +38,7 @@ export function useFileLinkClick({
 							resolvedPath,
 							error,
 						);
-						const errorMessage =
-							error instanceof Error ? error.message : String(error);
+						const errorMessage = getErrorMessage(error);
 						toast.error("Failed to open file in editor", {
 							description: errorMessage,
 						});
