@@ -728,6 +728,7 @@
       "dependencies": {
         "@neondatabase/serverless": "1.0.2",
         "@superset/shared": "workspace:*",
+        "@superset/workflow-core": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "dotenv": "17.3.1",
         "drizzle-orm": "0.45.2",
@@ -956,6 +957,8 @@
         "@superset/auth": "workspace:*",
         "@superset/db": "workspace:*",
         "@superset/shared": "workspace:*",
+        "@superset/workflow-core": "workspace:*",
+        "@superset/workflow-runtime": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "@trpc/server": "11.16.0",
         "@upstash/qstash": "2.10.1",
@@ -1051,6 +1054,44 @@
       },
       "peerDependencies": {
         "react": "19.2.3",
+      },
+    },
+    "packages/workflow-core": {
+      "name": "@superset/workflow-core",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "4.3.6",
+      },
+      "devDependencies": {
+        "@superset/typescript": "workspace:*",
+        "bun-types": "1.3.11",
+        "typescript": "5.9.3",
+      },
+    },
+    "packages/workflow-runtime": {
+      "name": "@superset/workflow-runtime",
+      "version": "0.1.0",
+      "dependencies": {
+        "@superset/workflow-core": "workspace:*",
+        "zod": "4.3.6",
+      },
+      "devDependencies": {
+        "@superset/typescript": "workspace:*",
+        "bun-types": "1.3.11",
+        "typescript": "5.9.3",
+      },
+    },
+    "packages/workflow-sim-adapter": {
+      "name": "@superset/workflow-sim-adapter",
+      "version": "0.1.0",
+      "dependencies": {
+        "@superset/workflow-core": "workspace:*",
+        "zod": "4.3.6",
+      },
+      "devDependencies": {
+        "@superset/typescript": "workspace:*",
+        "bun-types": "1.3.11",
+        "typescript": "5.9.3",
       },
     },
     "packages/workspace-client": {
@@ -2658,6 +2699,12 @@
     "@superset/ui": ["@superset/ui@workspace:packages/ui"],
 
     "@superset/web": ["@superset/web@workspace:apps/web"],
+
+    "@superset/workflow-core": ["@superset/workflow-core@workspace:packages/workflow-core"],
+
+    "@superset/workflow-runtime": ["@superset/workflow-runtime@workspace:packages/workflow-runtime"],
+
+    "@superset/workflow-sim-adapter": ["@superset/workflow-sim-adapter@workspace:packages/workflow-sim-adapter"],
 
     "@superset/workspace-client": ["@superset/workspace-client@workspace:packages/workspace-client"],
 

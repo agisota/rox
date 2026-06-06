@@ -407,6 +407,13 @@
       "when": 1780460225448,
       "tag": "0057_drop_remote_control_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1780755333537,
+      "tag": "0058_automation_fabric_workflow_schema",
+      "breakpoints": true
     }
   ]
 }

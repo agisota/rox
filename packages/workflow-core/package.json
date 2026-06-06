@@ -1,0 +1,61 @@
+{
+	"name": "@superset/workflow-core",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./types": {
+			"types": "./src/types.ts",
+			"default": "./src/types.ts"
+		},
+		"./errors": {
+			"types": "./src/errors.ts",
+			"default": "./src/errors.ts"
+		},
+		"./graph": {
+			"types": "./src/graph/index.ts",
+			"default": "./src/graph/index.ts"
+		},
+		"./schema": {
+			"types": "./src/schema/index.ts",
+			"default": "./src/schema/index.ts"
+		},
+		"./blocks": {
+			"types": "./src/blocks/index.ts",
+			"default": "./src/blocks/index.ts"
+		},
+		"./skills": {
+			"types": "./src/skills/index.ts",
+			"default": "./src/skills/index.ts"
+		},
+		"./policies": {
+			"types": "./src/policies/index.ts",
+			"default": "./src/policies/index.ts"
+		},
+		"./evals": {
+			"types": "./src/evals/index.ts",
+			"default": "./src/evals/index.ts"
+		},
+		"./prompt": {
+			"types": "./src/prompt/index.ts",
+			"default": "./src/prompt/index.ts"
+		}
+	},
+	"scripts": {
+		"clean": "git clean -xdf .cache .turbo dist node_modules",
+		"typecheck": "tsc --noEmit --emitDeclarationOnly false",
+		"test": "bun test"
+	},
+	"dependencies": {
+		"zod": "4.3.6"
+	},
+	"devDependencies": {
+		"@superset/typescript": "workspace:*",
+		"bun-types": "1.3.11",
+		"typescript": "5.9.3"
+	}
+}
