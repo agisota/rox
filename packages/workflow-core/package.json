@@ -39,6 +39,10 @@
 		"./evals": {
 			"types": "./src/evals/index.ts",
 			"default": "./src/evals/index.ts"
+		},
+		"./prompt": {
+			"types": "./src/prompt/index.ts",
+			"default": "./src/prompt/index.ts"
 		}
 	},
 	"scripts": {
