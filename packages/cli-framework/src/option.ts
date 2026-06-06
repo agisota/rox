@@ -43,8 +43,18 @@ export class OptionBuilderBase<
 			config:
 				config ??
 				({ aliases: [], type: "string" } as unknown as TBuilderConfig),
-			$output: undefined as any as TOutput,
+			$output: undefined as unknown as TOutput,
 		};
+	}
+
+	/**
+	 * Build the next immutable builder in the chain with `patch` merged into the
+	 * config. Returns `any` because each public method re-declares the precise
+	 * `Omit<...>` type it exposes; this is the single internal type-erasure point
+	 * (previously an `as any` repeated on every transition method).
+	 */
+	private clone(patch: Partial<BuilderConfig>): any {
+		return new OptionBuilderBase({ ...this._.config, ...patch });
 	}
 
 	// --- Type selectors ---
@@ -59,11 +69,7 @@ export class OptionBuilderBase<
 		>,
 		TOmit | OptionType | "min" | "max" | "int"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			type: "string",
-			name,
-		}) as any;
+		return this.clone({ type: "string", name });
 	}
 
 	public number<TName extends string>(
@@ -76,11 +82,7 @@ export class OptionBuilderBase<
 		>,
 		TOmit | OptionType | "enum" | "variadic"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			type: "number",
-			name,
-		}) as any;
+		return this.clone({ type: "number", name });
 	}
 
 	public boolean<TName extends string>(
@@ -93,11 +95,7 @@ export class OptionBuilderBase<
 		>,
 		TOmit | OptionType | "min" | "max" | "enum" | "int" | "variadic"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			type: "boolean",
-			name,
-		}) as any;
+		return this.clone({ type: "boolean", name });
 	}
 
 	public positional<TName extends string>(
@@ -110,11 +108,7 @@ export class OptionBuilderBase<
 		>,
 		TOmit | OptionType | "min" | "max" | "int" | "alias" | "env" | "conflicts"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			type: "positional",
-			name: displayName,
-		}) as any;
+		return this.clone({ type: "positional", name: displayName });
 	}
 
 	// --- Modifiers ---
@@ -125,10 +119,7 @@ export class OptionBuilderBase<
 		OptionBuilderBase<TBuilderConfig, TOutput, TOmit | "alias", TEnums>,
 		TOmit | "alias"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			aliases,
-		}) as any;
+		return this.clone({ aliases });
 	}
 
 	public desc(
@@ -137,20 +128,14 @@ export class OptionBuilderBase<
 		OptionBuilderBase<TBuilderConfig, TOutput, TOmit | "desc", TEnums>,
 		TOmit | "desc"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			description,
-		}) as any;
+		return this.clone({ description });
 	}
 
 	public hidden(): Omit<
 		OptionBuilderBase<TBuilderConfig, TOutput, TOmit | "hidden", TEnums>,
 		TOmit | "hidden"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			isHidden: true,
-		}) as any;
+		return this.clone({ isHidden: true });
 	}
 
 	public required(): Omit<
@@ -162,10 +147,7 @@ export class OptionBuilderBase<
 		>,
 		TOmit | "required" | "default"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			isRequired: true,
-		}) as any;
+		return this.clone({ isRequired: true });
 	}
 
 	public default<
@@ -189,7 +171,7 @@ export class OptionBuilderBase<
 				`Default value "${value}" is not in enum [${config.enumVals.join(", ")}]`,
 			);
 		}
-		return new OptionBuilderBase({ ...config, default: value }) as any;
+		return this.clone({ default: value });
 	}
 
 	public enum<
@@ -215,7 +197,7 @@ export class OptionBuilderBase<
 				`Enum [${values.join(", ")}] is incompatible with default "${config.default}"`,
 			);
 		}
-		return new OptionBuilderBase({ ...config, enumVals: values }) as any;
+		return this.clone({ enumVals: values });
 	}
 
 	public min(
@@ -227,10 +209,7 @@ export class OptionBuilderBase<
 		if (this._.config.maxVal !== undefined && this._.config.maxVal < value) {
 			throw new CLIError("Min value cannot be higher than max value");
 		}
-		return new OptionBuilderBase({
-			...this._.config,
-			minVal: value,
-		}) as any;
+		return this.clone({ minVal: value });
 	}
 
 	public max(
@@ -242,20 +221,14 @@ export class OptionBuilderBase<
 		if (this._.config.minVal !== undefined && this._.config.minVal > value) {
 			throw new CLIError("Max value cannot be lower than min value");
 		}
-		return new OptionBuilderBase({
-			...this._.config,
-			maxVal: value,
-		}) as any;
+		return this.clone({ maxVal: value });
 	}
 
 	public int(): Omit<
 		OptionBuilderBase<TBuilderConfig, TOutput, TOmit | "int", TEnums>,
 		TOmit | "int"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			isInt: true,
-		}) as any;
+		return this.clone({ isInt: true });
 	}
 
 	// --- New additions (from commander.js patterns) ---
@@ -266,10 +239,7 @@ export class OptionBuilderBase<
 		OptionBuilderBase<TBuilderConfig, TOutput, TOmit | "env", TEnums>,
 		TOmit | "env"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			envVar: varName,
-		}) as any;
+		return this.clone({ envVar: varName });
 	}
 
 	public conflicts(
@@ -278,10 +248,7 @@ export class OptionBuilderBase<
 		OptionBuilderBase<TBuilderConfig, TOutput, TOmit | "conflicts", TEnums>,
 		TOmit | "conflicts"
 	> {
-		return new OptionBuilderBase({
-			...this._.config,
-			conflictsWith: names,
-		}) as any;
+		return this.clone({ conflictsWith: names });
 	}
 
 	public variadic(): Omit<
@@ -301,10 +268,7 @@ export class OptionBuilderBase<
 				"`.variadic()` is only valid on string or positional options",
 			);
 		}
-		return new OptionBuilderBase({
-			...this._.config,
-			isVariadic: true,
-		}) as any;
+		return this.clone({ isVariadic: true });
 	}
 }
 
