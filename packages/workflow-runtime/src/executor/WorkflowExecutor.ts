@@ -110,8 +110,35 @@ export class WorkflowExecutor {
 				liveEdges.map((e) => outputs.get(e.source) ?? {}),
 			);
 
-			// Human approval pauses the run.
+			// Human approval: resolved decisions gate the branch; unresolved pause.
 			if (block.type === "human_approval") {
+				const decision = options.approvals?.[blockId];
+				if (decision === "approved") {
+					outputs.set(blockId, input);
+					chosenHandle.set(blockId, "approved");
+					await record({
+						blockId,
+						blockType: block.type,
+						blockName: block.name,
+						status: "succeeded",
+						input,
+						output: input,
+					});
+					continue;
+				}
+				if (decision === "rejected") {
+					// Prune the gated branch: the block's edges no longer fire.
+					active.set(blockId, false);
+					chosenHandle.set(blockId, "rejected");
+					await record({
+						blockId,
+						blockType: block.type,
+						blockName: block.name,
+						status: "canceled",
+						input,
+					});
+					continue;
+				}
 				await record({
 					blockId,
 					blockType: block.type,

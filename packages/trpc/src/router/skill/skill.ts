@@ -1,9 +1,11 @@
 import { db, dbWs } from "@superset/db/client";
 import {
+	approvalRequests,
 	skillBindings,
 	skills,
 	skillVersions,
 	workflowDeployments,
+	workflowRuns,
 	workflowVersions,
 } from "@superset/db/schema";
 import {
@@ -22,14 +24,17 @@ import {
 	assertPublishable,
 	validatePublishInput,
 } from "./helpers";
+import { runSkill } from "./run-service";
 import {
 	bindSkillSchema,
 	createInstructionSkillSchema,
 	createSkillVersionSchema,
 	listBindingsSchema,
+	listSkillRunsSchema,
 	listSkillsSchema,
 	promoteVersionSchema,
 	publishWorkflowSchema,
+	runSkillSchema,
 	skillIdSchema,
 	unbindSchema,
 	validateRunInputSchema,
@@ -451,5 +456,48 @@ export const skillRouter = {
 			);
 			const issues = validateInput(input.input, version.inputSchema);
 			return { valid: issues.length === 0, issues };
+		}),
+
+	run: protectedProcedure
+		.input(runSkillSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const result = await runSkill({
+				organizationId,
+				userId: ctx.session.user.id,
+				skillId: input.skillId,
+				runMode: input.runMode,
+				triggerKind: "manual",
+				input: input.input,
+			});
+			// A paused run records a pending approval the inbox can resolve.
+			if (result.status === "waiting_approval" && result.approvalBlockId) {
+				await db.insert(approvalRequests).values({
+					organizationId,
+					runId: result.runId,
+					blockId: result.approvalBlockId,
+					status: "pending",
+					requestedByUserId: ctx.session.user.id,
+				});
+			}
+			return result;
+		}),
+
+	listRuns: protectedProcedure
+		.input(listSkillRunsSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			await getSkillForOrg(organizationId, input.skillId);
+			return db
+				.select()
+				.from(workflowRuns)
+				.where(
+					and(
+						eq(workflowRuns.organizationId, organizationId),
+						eq(workflowRuns.skillId, input.skillId),
+					),
+				)
+				.orderBy(desc(workflowRuns.createdAt))
+				.limit(input.limit);
 		}),
 } satisfies TRPCRouterRecord;

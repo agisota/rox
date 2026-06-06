@@ -86,6 +86,13 @@ export interface ExecuteOptions {
 	outputSchema?: JsonSchema;
 	/** Signal cooperative cancellation. */
 	isCanceled?: () => boolean;
+	/**
+	 * Resolved human-approval decisions keyed by approval block id. Resume works
+	 * by re-executing the (idempotent) graph with the now-resolved approvals:
+	 * "approved" passes the gate through, "rejected" prunes the gated branch, and
+	 * an unresolved approval pauses the run again.
+	 */
+	approvals?: Record<string, "approved" | "rejected">;
 }
 
 export interface RunResult {

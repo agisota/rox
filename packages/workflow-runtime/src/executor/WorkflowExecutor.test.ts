@@ -249,4 +249,47 @@ describe("WorkflowExecutor", () => {
 		const r = await exec.execute(wf, {}, { isCanceled: () => true });
 		expect(r.status).toBe("canceled");
 	});
+
+	const approvalWf = state(
+		{
+			start: { type: "start" },
+			approve: { type: "human_approval", name: "Approve" },
+			task: { type: "create_task" },
+		},
+		[
+			{ source: "start", target: "approve" },
+			{ source: "approve", target: "task" },
+		],
+	);
+	const approvalHandlers: ExecuteOptions = {
+		handlers: { create_task: () => ({ output: { task_id: "t1" } }) },
+	};
+
+	test("RUN-08: approval resumes and runs the gated task", async () => {
+		const r = await exec.execute(
+			approvalWf,
+			{},
+			{
+				...approvalHandlers,
+				approvals: { approve: "approved" },
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		expect(r.steps.find((s) => s.blockId === "task")?.status).toBe("succeeded");
+	});
+
+	test("RUN-09: rejection prunes the gated write", async () => {
+		const r = await exec.execute(
+			approvalWf,
+			{},
+			{
+				...approvalHandlers,
+				approvals: { approve: "rejected" },
+			},
+		);
+		expect(r.steps.find((s) => s.blockId === "approve")?.status).toBe(
+			"canceled",
+		);
+		expect(r.steps.find((s) => s.blockId === "task")?.status).toBe("skipped");
+	});
 });

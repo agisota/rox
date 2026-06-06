@@ -90,3 +90,14 @@ export const validateRunInputSchema = z.object({
 	skillId: z.string().uuid(),
 	input: z.record(z.string(), z.unknown()),
 });
+
+export const runSkillSchema = z.object({
+	skillId: z.string().uuid(),
+	input: z.record(z.string(), z.unknown()).default({}),
+	runMode: z.string().default("manual"),
+});
+
+export const listSkillRunsSchema = z.object({
+	skillId: z.string().uuid(),
+	limit: z.number().int().min(1).max(200).default(50),
+});

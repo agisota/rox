@@ -654,6 +654,8 @@ export const approvalRequests = pgTable(
 		}),
 
 		status: approvalStatus().notNull().default("pending"),
+		/** The human_approval block id that paused the run (for resume). */
+		blockId: text("block_id"),
 		title: text(),
 		payload: jsonb().$type<Record<string, unknown>>(),
 		reason: text(),
