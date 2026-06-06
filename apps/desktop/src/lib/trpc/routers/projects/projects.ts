@@ -51,6 +51,7 @@ import { getDefaultProjectColor } from "./utils/colors";
 import { discoverAndSaveProjectIcon } from "./utils/favicon-discovery";
 import { fetchGitHubOwner } from "./utils/github";
 import { parsePullRequests } from "./utils/pull-requests";
+import { extractRepoName, SAFE_REPO_NAME_REGEX } from "./utils/repo-url";
 
 type Project = SelectProject;
 
@@ -217,55 +218,9 @@ async function ensureMainWorkspace(project: Project): Promise<void> {
 	}
 }
 
-// Callers must additionally reject dot-only names (".", "..") to prevent path traversal
-const SAFE_REPO_NAME_REGEX = /^[a-zA-Z0-9._\- ]+$/;
 const ALLOWED_URL_PROTOCOLS = new Set(["http:", "https:", "ssh:", "git:"]);
 const SSH_GIT_URL_REGEX = /^[\w.-]+@[\w.-]+:[\w./-]+$/;
 const BRANCH_SEARCH_LIMIT = 5000;
-
-/** Extract the repository name from a git URL (HTTPS, SSH, or git:// protocol). */
-function extractRepoName(urlInput: string): string | null {
-	let normalized = urlInput.trim().replace(/\/+$/, "");
-
-	if (!normalized) return null;
-
-	let repoSegment: string | undefined;
-
-	try {
-		const parsed = new URL(normalized);
-		if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-			const pathname = parsed.pathname;
-			repoSegment = pathname.split("/").filter(Boolean).pop();
-		}
-	} catch {
-		// Not a standard URL — fall through to SSH-style parsing
-	}
-
-	if (!repoSegment) {
-		const colonIndex = normalized.indexOf(":");
-		if (colonIndex !== -1 && !normalized.includes("://")) {
-			normalized = normalized.slice(colonIndex + 1);
-		}
-		repoSegment = normalized.split("/").filter(Boolean).pop();
-	}
-
-	if (!repoSegment) return null;
-
-	repoSegment = repoSegment.split("?")[0].split("#")[0];
-	repoSegment = repoSegment.replace(/\.git$/, "");
-
-	try {
-		repoSegment = decodeURIComponent(repoSegment);
-	} catch {}
-
-	repoSegment = repoSegment.trim();
-
-	if (!repoSegment || !SAFE_REPO_NAME_REGEX.test(repoSegment)) {
-		return null;
-	}
-
-	return repoSegment;
-}
 
 /** Create the tRPC router for project CRUD, branch listing, and git operations. */
 export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
