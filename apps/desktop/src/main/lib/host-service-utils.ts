@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
+import { sleep } from "@superset/shared/async";
 
 /** Rotate per-org host-service.log once it exceeds this size. */
 export const MAX_HOST_LOG_BYTES = 5 * 1024 * 1024;
@@ -113,7 +114,7 @@ export async function pollHealthCheck(
 		} finally {
 			clearTimeout(timeout);
 		}
-		await new Promise((r) => setTimeout(r, HEALTH_POLL_INTERVAL_MS));
+		await sleep(HEALTH_POLL_INTERVAL_MS);
 	}
 	return false;
 }

@@ -1,4 +1,5 @@
 import type { Socket } from "node:net";
+import { sleep } from "@superset/shared/async";
 import { TerminalAttachCanceledError } from "../lib/terminal/errors";
 import type {
 	CancelCreateOrAttachRequest,
@@ -370,7 +371,7 @@ export class TerminalHost {
 
 		await Promise.race([
 			Promise.all(sessions.map((s) => s.dispose())),
-			new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+			sleep(5000),
 		]);
 	}
 

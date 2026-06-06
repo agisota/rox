@@ -30,6 +30,7 @@ import {
 	isPositiveInteger,
 	signalProcessTreeAndGroups,
 } from "@superset/pty-daemon/process-tree";
+import { sleep } from "@superset/shared/async";
 import { app } from "electron";
 import { SUPERSET_DIR_NAME } from "shared/constants";
 import { throwIfAborted } from "../terminal/abort";
@@ -335,7 +336,7 @@ export class TerminalHostClient extends EventEmitter {
 				);
 			}
 
-			await this.sleep(100);
+			await sleep(100);
 		}
 
 		if (this.controlSocket && this.controlAuthenticated) {
@@ -534,7 +535,7 @@ export class TerminalHostClient extends EventEmitter {
 		const startTime = Date.now();
 		while (Date.now() - startTime < timeoutMs) {
 			if (!this.isPidAlive(pid)) return true;
-			await this.sleep(50);
+			await sleep(50);
 		}
 		return !this.isPidAlive(pid);
 	}
@@ -1050,7 +1051,7 @@ export class TerminalHostClient extends EventEmitter {
 			if (!existsSync(SOCKET_PATH)) return;
 			const live = await this.isSocketLive();
 			if (!live) return;
-			await this.sleep(100);
+			await sleep(100);
 		}
 	}
 
@@ -1321,17 +1322,13 @@ export class TerminalHostClient extends EventEmitter {
 		while (Date.now() - startTime < SPAWN_WAIT_MS) {
 			if (existsSync(SOCKET_PATH)) {
 				// Give it a moment to start listening
-				await this.sleep(200);
+				await sleep(200);
 				return;
 			}
-			await this.sleep(100);
+			await sleep(100);
 		}
 
 		throw new Error("Daemon failed to start in time");
-	}
-
-	private sleep(ms: number): Promise<void> {
-		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
 	// ===========================================================================

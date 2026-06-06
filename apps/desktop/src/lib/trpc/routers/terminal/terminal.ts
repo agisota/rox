@@ -1,4 +1,5 @@
 import { workspaces, worktrees } from "@superset/local-db";
+import { sleep } from "@superset/shared/async";
 import { getErrorMessage } from "@superset/shared/error";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
@@ -351,7 +352,7 @@ export const createTerminalRouter = () => {
 			let afterIds: string[] = [];
 
 			for (let i = 0; i < MAX_RETRIES && remainingCount > 0; i++) {
-				await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+				await sleep(RETRY_DELAY_MS);
 				const after = await client.listSessions();
 				afterIds = after.sessions
 					.filter((s) => s.isAlive)

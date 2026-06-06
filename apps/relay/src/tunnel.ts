@@ -1,3 +1,4 @@
+import { sleep } from "@superset/shared/async";
 import { createApiClient } from "./api-client";
 import * as directory from "./directory";
 import { env } from "./env";
@@ -147,7 +148,7 @@ export class TunnelManager {
 					);
 					return false;
 				}
-				await new Promise((r) => setTimeout(r, 100 * 2 ** i));
+				await sleep(100 * 2 ** i);
 			}
 		}
 		return false;
@@ -212,7 +213,7 @@ export class TunnelManager {
 		}
 		// Give the message frames a moment to reach the host before we
 		// start closing the underlying sockets.
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		await sleep(500);
 
 		let cleared = 0;
 		let clearError: unknown;
@@ -233,7 +234,7 @@ export class TunnelManager {
 		const deadline = Date.now() + 1_500;
 		while (Date.now() < deadline) {
 			if (tunnels.every((t) => t.ws.readyState === WS_CLOSED)) break;
-			await new Promise((resolve) => setTimeout(resolve, 50));
+			await sleep(50);
 		}
 		if (clearError) throw clearError;
 		return cleared;
@@ -331,7 +332,7 @@ export class TunnelManager {
 					SET_ONLINE_RETRY_BASE_MS * 2 ** attempt,
 					SET_ONLINE_RETRY_MAX_MS,
 				);
-				await new Promise((r) => setTimeout(r, delay));
+				await sleep(delay);
 			}
 		}
 	}

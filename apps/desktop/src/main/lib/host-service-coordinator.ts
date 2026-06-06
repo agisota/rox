@@ -4,6 +4,7 @@ import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import path from "node:path";
 import { settings } from "@superset/local-db";
+import { sleep } from "@superset/shared/async";
 import { getHostId, getHostName } from "@superset/shared/host-info";
 import { app } from "electron";
 import log from "electron-log/main";
@@ -284,7 +285,7 @@ export class HostServiceCoordinator extends EventEmitter {
 					lastSize = -1;
 					stableSince = 0;
 				}
-				await new Promise((r) => setTimeout(r, 50));
+				await sleep(50);
 			}
 			return false;
 		};
