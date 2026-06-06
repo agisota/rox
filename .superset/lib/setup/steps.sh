@@ -354,6 +354,18 @@ port_base_is_safe() {
   return 0
 }
 
+port_base_is_available() {
+  local base=$1
+  local range=$2
+  local port
+  for port in $(seq "$base" "$((base + range - 1))"); do
+    if lsof -nP -iTCP:"$port" -sTCP:LISTEN &> /dev/null; then
+      return 1
+    fi
+  done
+  return 0
+}
+
 allocate_port_base() {
   local alloc_file="$HOME/.superset/port-allocations.json"
   local lock_dir="$HOME/.superset/port-allocations.lock"
@@ -379,12 +391,12 @@ allocate_port_base() {
   fi
 
   if [ -n "$existing" ]; then
-    if port_base_is_safe "$existing" "$range"; then
+    if port_base_is_safe "$existing" "$range" && port_base_is_available "$existing" "$range"; then
       export SUPERSET_PORT_BASE="$existing"
       release_port_alloc_lock "$lock_dir"
       return 0
     fi
-    echo "  Existing port base $existing overlaps a reserved port (${SUPERSET_RESERVED_PORTS}); reallocating..."
+    echo "  Existing port base $existing is reserved or already in use; reallocating..."
     local tmp_file="${alloc_file}.tmp.$$"
     if ! jq --arg k "$key" 'del(.[$k])' "$alloc_file" > "$tmp_file"; then
       error "Failed to release stale port allocation"
@@ -411,7 +423,8 @@ allocate_port_base() {
   # Find first available slot, skipping any window that overlaps a reserved port
   local candidate=$start
   while echo "$used" | grep -qx "$candidate" 2>/dev/null \
-    || ! port_base_is_safe "$candidate" "$range"; do
+    || ! port_base_is_safe "$candidate" "$range" \
+    || ! port_base_is_available "$candidate" "$range"; do
     candidate=$((candidate + range))
   done
 
