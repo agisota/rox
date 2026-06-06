@@ -119,7 +119,7 @@
 		"@tiptap/extension-code-block": "3.21.0",
 		"@tiptap/extension-code-block-lowlight": "3.21.0",
 		"@tiptap/extension-document": "3.21.0",
-		"@tiptap/extension-emoji": "3.17.1",
+		"@tiptap/extension-emoji": "3.26.0",
 		"@tiptap/extension-hard-break": "3.21.0",
 		"@tiptap/extension-heading": "3.21.0",
 		"@tiptap/extension-history": "3.21.0",
