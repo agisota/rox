@@ -254,3 +254,13 @@ export const artifactKindValues = [
 ] as const;
 export const artifactKindEnum = z.enum(artifactKindValues);
 export type ArtifactKind = z.infer<typeof artifactKindEnum>;
+
+export const evaluationStatusValues = [
+	"pending",
+	"running",
+	"passed",
+	"failed",
+	"error",
+] as const;
+export const evaluationStatusEnum = z.enum(evaluationStatusValues);
+export type EvaluationStatus = z.infer<typeof evaluationStatusEnum>;

@@ -35,6 +35,7 @@ import {
 	jsonb,
 	pgEnum,
 	pgTable,
+	real,
 	text,
 	timestamp,
 	uniqueIndex,
@@ -44,6 +45,7 @@ import { organizations, users } from "./auth";
 import {
 	approvalStatusValues,
 	artifactKindValues,
+	evaluationStatusValues,
 	objectTypeValues,
 	skillBindingSurfaceValues,
 	skillKindValues,
@@ -678,3 +680,120 @@ export const approvalRequests = pgTable(
 
 export type InsertApprovalRequest = typeof approvalRequests.$inferInsert;
 export type SelectApprovalRequest = typeof approvalRequests.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// Evaluations (M9) — gate skill promotion on golden-output + schema checks
+// ---------------------------------------------------------------------------
+
+export const evaluationStatus = pgEnum(
+	"evaluation_status",
+	evaluationStatusValues,
+);
+
+export const evaluationSuites = pgTable(
+	"evaluation_suites",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		skillId: uuid("skill_id")
+			.notNull()
+			.references(() => skills.id, { onDelete: "cascade" }),
+		name: text().notNull(),
+		description: text(),
+		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [index("evaluation_suites_skill_idx").on(t.skillId)],
+);
+
+export type InsertEvaluationSuite = typeof evaluationSuites.$inferInsert;
+export type SelectEvaluationSuite = typeof evaluationSuites.$inferSelect;
+
+export const evaluationCases = pgTable(
+	"evaluation_cases",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		suiteId: uuid("suite_id")
+			.notNull()
+			.references(() => evaluationSuites.id, { onDelete: "cascade" }),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		name: text(),
+		input: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+		expectedOutput: jsonb("expected_output").$type<Record<string, unknown>>(),
+		outputSchema: jsonb("output_schema").$type<JsonSchema>(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [index("evaluation_cases_suite_idx").on(t.suiteId)],
+);
+
+export type InsertEvaluationCase = typeof evaluationCases.$inferInsert;
+export type SelectEvaluationCase = typeof evaluationCases.$inferSelect;
+
+export const evaluationRuns = pgTable(
+	"evaluation_runs",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		suiteId: uuid("suite_id")
+			.notNull()
+			.references(() => evaluationSuites.id, { onDelete: "cascade" }),
+		skillVersionId: uuid("skill_version_id").references(
+			() => skillVersions.id,
+			{ onDelete: "set null" },
+		),
+		status: evaluationStatus().notNull().default("pending"),
+		passRate: real("pass_rate"),
+		totalCases: integer("total_cases"),
+		passedCases: integer("passed_cases"),
+		startedAt: timestamp("started_at", { withTimezone: true }),
+		endedAt: timestamp("ended_at", { withTimezone: true }),
+		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [
+		index("evaluation_runs_suite_idx").on(t.suiteId),
+		index("evaluation_runs_version_idx").on(t.skillVersionId),
+	],
+);
+
+export type InsertEvaluationRun = typeof evaluationRuns.$inferInsert;
+export type SelectEvaluationRun = typeof evaluationRuns.$inferSelect;
+
+export const evaluationResults = pgTable(
+	"evaluation_results",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		runId: uuid("run_id")
+			.notNull()
+			.references(() => evaluationRuns.id, { onDelete: "cascade" }),
+		caseId: uuid("case_id")
+			.notNull()
+			.references(() => evaluationCases.id, { onDelete: "cascade" }),
+		status: evaluationStatus().notNull(),
+		actualOutput: jsonb("actual_output").$type<Record<string, unknown>>(),
+		failures: jsonb().$type<{ path: string; message: string }[]>(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [index("evaluation_results_run_idx").on(t.runId)],
+);
+
+export type InsertEvaluationResult = typeof evaluationResults.$inferInsert;
+export type SelectEvaluationResult = typeof evaluationResults.$inferSelect;

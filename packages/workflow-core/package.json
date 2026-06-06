@@ -35,6 +35,10 @@
 		"./policies": {
 			"types": "./src/policies/index.ts",
 			"default": "./src/policies/index.ts"
+		},
+		"./evals": {
+			"types": "./src/evals/index.ts",
+			"default": "./src/evals/index.ts"
 		}
 	},
 	"scripts": {
