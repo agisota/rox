@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_LOCALE } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
@@ -21,10 +22,10 @@ function getWeekLabel(offset: number): string {
 	endOfWeek.setDate(startOfWeek.getDate() + 6);
 
 	const formatDate = (d: Date) =>
-		d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+		d.toLocaleDateString(DEFAULT_LOCALE, { month: "short", day: "numeric" });
 
 	if (offset === 0) {
-		return "This week";
+		return "Эта неделя";
 	}
 
 	return `${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}`;

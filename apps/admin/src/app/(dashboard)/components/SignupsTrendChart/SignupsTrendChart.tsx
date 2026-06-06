@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_LOCALE } from "@superset/shared/constants";
 import {
 	Card,
 	CardContent,
@@ -31,7 +32,7 @@ interface SignupsTrendChartProps {
 
 const chartConfig = {
 	count: {
-		label: "Signups",
+		label: "Регистрации",
 		color: "var(--chart-2)",
 	},
 } satisfies ChartConfig;
@@ -52,8 +53,10 @@ export function SignupsTrendChart({
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div>
-						<CardTitle>Signups</CardTitle>
-						<CardDescription>{total} total signups in period</CardDescription>
+						<CardTitle>Регистрации</CardTitle>
+						<CardDescription>
+							{total} регистраций за выбранный период
+						</CardDescription>
 					</div>
 					{headerAction}
 				</div>
@@ -63,12 +66,12 @@ export function SignupsTrendChart({
 					<Skeleton className="h-[200px] w-full" />
 				) : error ? (
 					<div className="flex h-[200px] items-center justify-center">
-						<p className="text-destructive text-sm">Failed to load</p>
+						<p className="text-destructive text-sm">Не удалось загрузить</p>
 					</div>
 				) : !data || data.length === 0 ? (
 					<div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
 						<p className="text-muted-foreground text-sm">
-							No signups data available for this period
+							Нет данных по регистрациям за этот период
 						</p>
 					</div>
 				) : (
@@ -79,7 +82,7 @@ export function SignupsTrendChart({
 								tickLine={false}
 								axisLine={false}
 								tickFormatter={(v) =>
-									new Date(v).toLocaleDateString("en-US", {
+									new Date(v).toLocaleDateString(DEFAULT_LOCALE, {
 										month: "short",
 										day: "numeric",
 									})
@@ -92,7 +95,7 @@ export function SignupsTrendChart({
 							<ChartTooltip
 								content={
 									<ChartTooltipContent
-										formatter={(value) => `${value} signups`}
+										formatter={(value) => `${value} регистраций`}
 									/>
 								}
 							/>

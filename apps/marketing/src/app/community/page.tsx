@@ -3,9 +3,8 @@ import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Community",
-	description:
-		"Join the Superset community to get help, share ideas, and stay up to date with the latest news and updates.",
+	title: "Сообщество",
+	description: `Сообщество ${COMPANY.NAME}: помощь, идеи, новости и обновления.`,
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/community`,
 	},
@@ -38,7 +37,7 @@ const COMMUNITY_LINKS = [
 	{
 		name: "DISCORD",
 		href: COMPANY.DISCORD_URL,
-		cta: "JOIN OUR DISCORD",
+		cta: "ОТКРЫТЬ СООБЩЕСТВО",
 		icon: (
 			<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
 				<title>Discord</title>
@@ -48,8 +47,8 @@ const COMMUNITY_LINKS = [
 	},
 	{
 		name: "YOUTUBE",
-		href: "https://www.youtube.com/@superset-sh",
-		cta: "SUBSCRIBE",
+		href: COMPANY.YOUTUBE_URL,
+		cta: "ПОДПИСАТЬСЯ",
 		icon: (
 			<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
 				<title>YouTube</title>
@@ -59,8 +58,8 @@ const COMMUNITY_LINKS = [
 	},
 	{
 		name: "LINKEDIN",
-		href: "https://www.linkedin.com/company/superset-sh",
-		cta: "FOLLOW US",
+		href: COMPANY.LINKEDIN_URL,
+		cta: "СЛЕДИТЬ",
 		icon: (
 			<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
 				<title>LinkedIn</title>
@@ -71,7 +70,7 @@ const COMMUNITY_LINKS = [
 	{
 		name: "TWITTER",
 		href: COMPANY.X_URL,
-		cta: "FOLLOW ON X",
+		cta: "СЛЕДИТЬ В X",
 		icon: (
 			<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
 				<title>X / Twitter</title>
@@ -82,7 +81,7 @@ const COMMUNITY_LINKS = [
 	{
 		name: "GITHUB",
 		href: COMPANY.GITHUB_URL,
-		cta: "VIEW ON GITHUB",
+		cta: "ОТКРЫТЬ GITHUB",
 		icon: (
 			<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
 				<title>GitHub</title>
@@ -101,12 +100,12 @@ export default async function CommunityPage() {
 				{/* Hero */}
 				<header className="text-center mb-12 sm:mb-16">
 					<h1 className="text-4xl sm:text-5xl font-medium tracking-tight text-foreground">
-						Community
+						Сообщество
 					</h1>
 					<p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-						Join the <span className="font-semibold italic">Superset</span>{" "}
-						community to get help, share ideas, and stay up to date with the
-						latest news and updates.
+						Присоединяйтесь к сообществу{" "}
+						<span className="font-semibold italic">{COMPANY.NAME}</span>:
+						получайте помощь, делитесь идеями и следите за обновлениями.
 					</p>
 				</header>
 

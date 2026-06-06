@@ -70,7 +70,7 @@ export const mockBranches = [
 export const mockWorkspaces: MockWorkspace[] = [
 	{
 		id: "workspace-1",
-		name: "Superset Main",
+		name: "Основной проект",
 		repoId: "1",
 		repoFullName: "supersetai/superset",
 		branch: "main",

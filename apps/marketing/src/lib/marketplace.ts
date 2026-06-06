@@ -44,8 +44,7 @@ export const themeListings: ThemeListing[] = [
 		type: "dark",
 		author: "GitHub (primer/github-vscode-theme)",
 		submittedBy: "tkcel",
-		description:
-			"A GitHub-inspired dark theme adapted for Superset with strong blue, amber, and green contrast.",
+		description: `A GitHub-inspired dark theme adapted for ${COMPANY.NAME} with strong blue, amber, and green contrast.`,
 		addedOn: "March 26, 2026",
 		source: {
 			label: "Download",
@@ -81,7 +80,7 @@ export const themeListings: ThemeListing[] = [
 		type: "dark",
 		author: "Catppuccin",
 		submittedBy: "tamarazuk",
-		description: "The Mocha variant from the Catppuccin theme PR for Superset.",
+		description: `The Mocha variant from the Catppuccin theme PR for ${COMPANY.NAME}.`,
 		addedOn: "March 21, 2026",
 		source: {
 			label: "Download",
@@ -117,8 +116,7 @@ export const themeListings: ThemeListing[] = [
 		type: "dark",
 		author: "Catppuccin",
 		submittedBy: "tamarazuk",
-		description:
-			"The Macchiato variant from the Catppuccin theme PR for Superset.",
+		description: `The Macchiato variant from the Catppuccin theme PR for ${COMPANY.NAME}.`,
 		addedOn: "March 21, 2026",
 		source: {
 			label: "Download",
@@ -154,8 +152,7 @@ export const themeListings: ThemeListing[] = [
 		type: "dark",
 		author: "Catppuccin",
 		submittedBy: "tamarazuk",
-		description:
-			"The Frappé variant from the Catppuccin theme PR for Superset.",
+		description: `The Frappé variant from the Catppuccin theme PR for ${COMPANY.NAME}.`,
 		addedOn: "March 21, 2026",
 		source: {
 			label: "Download",
@@ -191,7 +188,7 @@ export const themeListings: ThemeListing[] = [
 		type: "light",
 		author: "Catppuccin",
 		submittedBy: "tamarazuk",
-		description: "The Latte variant from the Catppuccin theme PR for Superset.",
+		description: `The Latte variant from the Catppuccin theme PR for ${COMPANY.NAME}.`,
 		addedOn: "March 21, 2026",
 		source: {
 			label: "Download",
@@ -225,7 +222,7 @@ export const themeListings: ThemeListing[] = [
 		slug: "ember",
 		name: "Ember",
 		type: "dark",
-		author: "Superset",
+		author: COMPANY.NAME,
 		submittedBy: "AviPeltz",
 		description:
 			"The standalone Ember theme introduced before its palette became the default Dark theme.",
@@ -234,7 +231,7 @@ export const themeListings: ThemeListing[] = [
 			label: "Download",
 			href: "/marketplace/themes/ember.json",
 		},
-		tags: ["Superset", "Dark", "Warm"],
+		tags: [COMPANY.NAME, "Dark", "Warm"],
 		ui: {
 			background: "#151110",
 			foreground: "#eae8e6",

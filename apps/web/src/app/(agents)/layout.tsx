@@ -1,3 +1,4 @@
+import { COMPANY } from "@superset/shared/constants";
 import { api } from "@/trpc/server";
 import { Footer } from "../(dashboard-legacy)/components/Footer";
 import { Header } from "../(dashboard-legacy)/components/Header";
@@ -21,7 +22,7 @@ export default async function AgentsLayout({
 
 	const trpc = await api();
 	const organization = await trpc.user.myOrganization.query();
-	const displayName = organization?.name ?? "Superset";
+	const displayName = organization?.name ?? COMPANY.NAME;
 
 	return (
 		<div className="flex min-h-screen flex-col">

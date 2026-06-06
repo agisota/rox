@@ -1,4 +1,5 @@
 import type { WebClient } from "@slack/web-api";
+import { COMPANY } from "@superset/shared/constants";
 
 const SUPPORTED_IMAGE_MEDIA_TYPES = new Set([
 	"image/jpeg",
@@ -55,11 +56,11 @@ export class SlackImageAssetError extends Error {
 
 export function formatSlackImageAssetError(error: unknown): string {
 	if (!(error instanceof SlackImageAssetError)) {
-		return "I couldn't process the image attachment. Please try again.";
+		return "Не удалось обработать изображение. Попробуйте еще раз.";
 	}
 
 	if (error.code === "reauth_required") {
-		return "I couldn't access one or more Slack images because this workspace needs updated Slack permissions (`files:read`). Please reconnect the Superset Slack integration and try again.";
+		return `Не удалось получить доступ к одному или нескольким изображениям Slack: рабочей области нужны обновленные права Slack (\`files:read\`). Подключите интеграцию ${COMPANY.NAME} для Slack заново и попробуйте еще раз.`;
 	}
 
 	return error.message;

@@ -1,3 +1,4 @@
+import { COMPANY } from "@superset/shared/constants";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GridCross } from "@/app/blog/components/GridCross";
@@ -5,24 +6,21 @@ import { getComparisonPages } from "@/lib/compare";
 import { formatCompareDate } from "@/lib/compare-utils";
 
 export const metadata: Metadata = {
-	title: "Compare Superset | AI Coding Comparisons and Guides",
-	description:
-		"Compare Superset with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+	title: `Сравнения ${COMPANY.NAME}`,
+	description: `Сравните ${COMPANY.NAME} с редакторами, агентами разработки и облачными средами.`,
 	alternates: {
 		canonical: "/compare",
 	},
 	openGraph: {
-		title: "Compare Superset | AI Coding Comparisons and Guides",
-		description:
-			"Compare Superset with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+		title: `Сравнения ${COMPANY.NAME}`,
+		description: `Сравните ${COMPANY.NAME} с редакторами, агентами разработки и облачными средами.`,
 		url: "/compare",
 		images: ["/opengraph-image"],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Compare Superset | AI Coding Comparisons and Guides",
-		description:
-			"Compare Superset with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+		title: `Сравнения ${COMPANY.NAME}`,
+		description: `Сравните ${COMPANY.NAME} с редакторами, агентами разработки и облачными средами.`,
 		images: ["/opengraph-image"],
 	},
 };
@@ -53,14 +51,14 @@ export default async function ComparePage() {
 					<GridCross className="top-0 right-0" />
 
 					<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-						Compare
+						Сравнения
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Superset vs the Alternatives
+						{COMPANY.NAME} и альтернативы
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						See how Superset compares to other AI coding tools — from AI editors
-						to coding agents to cloud-based AI engineers.
+						Смотрите, как {COMPANY.NAME} отличается от редакторов, агентов
+						разработки и облачных рабочих сред.
 					</p>
 
 					<GridCross className="bottom-0 left-0" />
@@ -71,19 +69,19 @@ export default async function ComparePage() {
 			{/* Content */}
 			<div className="relative max-w-3xl mx-auto px-6 py-12">
 				{roundups.length > 0 && (
-					<CompareSection title="Roundups" pages={roundups} />
+					<CompareSection title="Обзоры" pages={roundups} />
 				)}
 
 				{tutorials.length > 0 && (
-					<CompareSection title="Workflow Tutorials" pages={tutorials} />
+					<CompareSection title="Разборы рабочих процессов" pages={tutorials} />
 				)}
 
 				{oneVsOne.length > 0 && (
-					<CompareSection title="Head-to-Head Comparisons" pages={oneVsOne} />
+					<CompareSection title="Прямые сравнения" pages={oneVsOne} />
 				)}
 
 				{pages.length === 0 && (
-					<p className="text-muted-foreground">No comparisons yet.</p>
+					<p className="text-muted-foreground">Сравнений пока нет.</p>
 				)}
 			</div>
 		</main>

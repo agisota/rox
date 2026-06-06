@@ -36,7 +36,7 @@ export function OrganizationJsonLd() {
 		name: COMPANY.NAME,
 		url: COMPANY.MARKETING_URL,
 		logo: `${COMPANY.MARKETING_URL}/logo.png`,
-		description: "Run 10+ parallel coding agents on your machine",
+		description: COMPANY.DESCRIPTION_SHORT,
 		sameAs: [COMPANY.GITHUB_URL, COMPANY.X_URL],
 	};
 
@@ -55,7 +55,7 @@ export function SoftwareApplicationJsonLd() {
 			price: "0",
 			priceCurrency: "USD",
 		},
-		description: "Run 10+ parallel coding agents on your machine",
+		description: COMPANY.DESCRIPTION_SHORT,
 		url: COMPANY.MARKETING_URL,
 	};
 

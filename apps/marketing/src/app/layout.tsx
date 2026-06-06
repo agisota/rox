@@ -1,4 +1,8 @@
-import { COMPANY } from "@superset/shared/constants";
+import {
+	COMPANY,
+	DEFAULT_HTML_LANG,
+	DEFAULT_OPEN_GRAPH_LOCALE,
+} from "@superset/shared/constants";
 import { GeistPixelGrid, GeistPixelSquare } from "geist/font/pixel";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter, Micro_5, Pixelify_Sans } from "next/font/google";
@@ -46,53 +50,48 @@ const pixelifySans = Pixelify_Sans({
 	display: "swap",
 });
 
-const siteDescription =
-	"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish. Quickly switch between tasks as they need your attention.";
+const siteDescription = COMPANY.DESCRIPTION_LONG;
 
 export const metadata: Metadata = {
 	metadataBase: new URL(COMPANY.MARKETING_URL),
+	applicationName: COMPANY.NAME,
 	title: {
-		default: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
+		default: `${COMPANY.NAME} - ${COMPANY.DESCRIPTION_SHORT}`,
 		template: `%s | ${COMPANY.NAME}`,
 	},
 	description: siteDescription,
 	keywords: [
-		"coding agents",
-		"parallel execution",
-		"developer tools",
-		"AI coding",
-		"git worktrees",
-		"code automation",
-		"Claude Code",
-		"Cursor",
-		"Codex",
+		"агенты разработки",
+		"параллельные задачи",
+		"рабочие ветки",
+		"автоматизация разработки",
+		"песочницы",
+		"командная разработка",
 	],
-	authors: [{ name: `${COMPANY.NAME} Team` }],
+	authors: [{ name: `Команда ${COMPANY.NAME}` }],
 	creator: COMPANY.NAME,
 	openGraph: {
 		type: "website",
-		locale: "en_US",
+		locale: DEFAULT_OPEN_GRAPH_LOCALE,
 		url: COMPANY.MARKETING_URL,
 		siteName: COMPANY.NAME,
-		title: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
-		description:
-			"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish.",
+		title: `${COMPANY.NAME} - ${COMPANY.DESCRIPTION_SHORT}`,
+		description: siteDescription,
 		images: [
 			{
 				url: "/og-image.png",
 				width: 1200,
 				height: 630,
-				alt: `${COMPANY.NAME} - The Terminal for Coding Agents`,
+				alt: `${COMPANY.NAME} - рабочая станция для агентов разработки`,
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
-		description:
-			"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish.",
+		title: `${COMPANY.NAME} - ${COMPANY.DESCRIPTION_SHORT}`,
+		description: siteDescription,
 		images: ["/og-image.png"],
-		creator: "@superset_sh",
+		creator: COMPANY.X_HANDLE,
 	},
 	robots: {
 		index: true,
@@ -122,7 +121,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html
-			lang="en"
+			lang={DEFAULT_HTML_LANG}
 			className={`dark overscroll-none ${ibmPlexMono.variable} ${inter.variable} ${micro5.variable} ${pixelifySans.variable} ${GeistPixelSquare.variable} ${GeistPixelGrid.variable}`}
 			suppressHydrationWarning
 		>

@@ -1,3 +1,4 @@
+import { COMPANY, DEFAULT_LOCALE } from "@superset/shared/constants";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
@@ -9,7 +10,7 @@ interface PageProps {
 }
 
 function formatDate(date: string | Date): string {
-	return new Date(date).toLocaleDateString("en-US", {
+	return new Date(date).toLocaleDateString(DEFAULT_LOCALE, {
 		year: "numeric",
 		month: "long",
 		day: "numeric",
@@ -32,7 +33,7 @@ export default async function LegalPage({ params }: PageProps) {
 						{page.title}
 					</h1>
 					<p className="mt-4 text-sm text-muted-foreground">
-						Last updated: {formatDate(page.lastUpdated)}
+						Обновлено: {formatDate(page.lastUpdated)}
 					</p>
 				</header>
 
@@ -66,7 +67,7 @@ export async function generateMetadata({
 	}
 
 	return {
-		title: `${page.title} - Superset`,
+		title: `${page.title} - ${COMPANY.NAME}`,
 		description: page.description,
 	};
 }

@@ -1,4 +1,5 @@
 import { chatServiceTrpc } from "@superset/chat/client";
+import { COMPANY } from "@superset/shared/constants";
 import { Badge } from "@superset/ui/badge";
 import { Button } from "@superset/ui/button";
 import { Spinner } from "@superset/ui/spinner";
@@ -91,14 +92,14 @@ function OnboardingDashboardPage() {
 				<OnboardingRow
 					icon={<FaAws className="size-4.5" />}
 					chipClassName="bg-foreground text-background"
-					name="More providers"
-					description="Bedrock, Vertex, and more."
+					name="Другие провайдеры"
+					description="Bedrock, Vertex и другие."
 					status="disconnected"
-					actionLabel="Provider docs"
+					actionLabel="Документация"
 					actionIcon={<HiArrowUpRight className="size-3.5" />}
 					onAction={() =>
 						window.open(
-							"https://docs.superset.sh/providers",
+							`${COMPANY.DOCS_URL}/providers`,
 							"_blank",
 							"noopener,noreferrer",
 						)

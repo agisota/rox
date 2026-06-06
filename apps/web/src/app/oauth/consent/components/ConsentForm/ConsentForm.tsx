@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@superset/auth/client";
+import { COMPANY } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
 import {
 	Select,
@@ -38,19 +39,19 @@ const SCOPE_DESCRIPTIONS: Record<
 	{ label: string; icon: React.ReactNode }
 > = {
 	openid: {
-		label: "Verify your identity",
+		label: "Проверить вашу личность",
 		icon: <LuShieldCheck className="size-4" />,
 	},
 	profile: {
-		label: "Access your profile information (name, picture)",
+		label: "Получить данные профиля: имя и изображение",
 		icon: <LuUser className="size-4" />,
 	},
 	email: {
-		label: "Access your email address",
+		label: "Получить адрес электронной почты",
 		icon: <LuMail className="size-4" />,
 	},
 	offline_access: {
-		label: "Stay connected (refresh tokens)",
+		label: "Оставаться подключенным через обновляемые токены",
 		icon: <LuKey className="size-4" />,
 	},
 };
@@ -74,7 +75,7 @@ export function ConsentForm({
 
 	const handleConsent = async (accept: boolean) => {
 		if (accept && !selectedOrgId) {
-			setError("Please select an organization");
+			setError("Выберите организацию");
 			return;
 		}
 
@@ -89,7 +90,7 @@ export function ConsentForm({
 					});
 				if (setActiveError) {
 					throw new Error(
-						setActiveError.message ?? "Failed to set organization",
+						setActiveError.message ?? "Не удалось выбрать организацию",
 					);
 				}
 			}
@@ -100,7 +101,9 @@ export function ConsentForm({
 			});
 
 			if (consentError) {
-				throw new Error(consentError.message ?? "Failed to process consent");
+				throw new Error(
+					consentError.message ?? "Не удалось обработать разрешение",
+				);
 			}
 
 			if (data?.url) {
@@ -108,7 +111,7 @@ export function ConsentForm({
 			}
 		} catch (err) {
 			console.error("[oauth/consent] Error:", err);
-			setError(err instanceof Error ? err.message : "An error occurred");
+			setError(err instanceof Error ? err.message : "Произошла ошибка");
 			setIsLoading(false);
 		}
 	};
@@ -119,17 +122,17 @@ export function ConsentForm({
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
 			<div className="flex flex-col space-y-2 text-center">
 				<h1 className="text-2xl font-semibold tracking-tight">
-					Authorize {displayName}
+					Разрешить доступ для {displayName}
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					<span className="font-medium text-foreground">{displayName}</span> is
-					requesting access to your Superset account
+					<span className="font-medium text-foreground">{displayName}</span>{" "}
+					запрашивает доступ к вашему аккаунту {COMPANY.NAME}
 				</p>
 			</div>
 
 			<div className="bg-muted/50 rounded-lg border p-4">
 				<p className="text-muted-foreground mb-3 text-sm">
-					Signed in as{" "}
+					Вы вошли как{" "}
 					<span className="font-medium text-foreground">{userName}</span>
 				</p>
 
@@ -139,11 +142,11 @@ export function ConsentForm({
 							htmlFor="org-select"
 							className="mb-2 block text-sm font-medium"
 						>
-							Select organization
+							Выберите организацию
 						</label>
 						<Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
 							<SelectTrigger id="org-select" className="w-full">
-								<SelectValue placeholder="Select an organization" />
+								<SelectValue placeholder="Выберите организацию" />
 							</SelectTrigger>
 							<SelectContent>
 								{organizations.map((org) => (
@@ -157,22 +160,19 @@ export function ConsentForm({
 							</SelectContent>
 						</Select>
 						<p className="text-muted-foreground mt-1.5 text-xs">
-							This application will have access to data in the selected
-							organization.
+							Приложение получит доступ к данным выбранной организации.
 						</p>
 					</div>
 				) : selectedOrg ? (
 					<p className="text-muted-foreground mb-3 text-sm">
-						Organization:{" "}
+						Организация:{" "}
 						<span className="font-medium text-foreground">
 							{selectedOrg.name}
 						</span>
 					</p>
 				) : null}
 
-				<p className="mb-2 text-sm font-medium">
-					This application will be able to:
-				</p>
+				<p className="mb-2 text-sm font-medium">Приложение сможет:</p>
 				<ul className="space-y-2">
 					{scopes.map((scope) => {
 						const scopeInfo = SCOPE_DESCRIPTIONS[scope];
@@ -189,7 +189,7 @@ export function ConsentForm({
 						<span className="text-muted-foreground">
 							<LuBuilding2 className="size-4" />
 						</span>
-						<span>Access your organization data</span>
+						<span>Получить доступ к данным организации</span>
 					</li>
 				</ul>
 			</div>
@@ -203,20 +203,20 @@ export function ConsentForm({
 					disabled={isLoading}
 					onClick={() => handleConsent(false)}
 				>
-					Deny
+					Отклонить
 				</Button>
 				<Button
 					className="flex-1"
 					disabled={isLoading || !selectedOrgId}
 					onClick={() => handleConsent(true)}
 				>
-					{isLoading ? "Authorizing..." : "Authorize"}
+					{isLoading ? "Разрешаем..." : "Разрешить"}
 				</Button>
 			</div>
 
 			<p className="text-muted-foreground px-8 text-center text-xs">
-				By authorizing, you allow this application to access your data according
-				to its terms of service and privacy policy.
+				Разрешая доступ, вы позволяете приложению использовать ваши данные по
+				его условиям сервиса и политике конфиденциальности.
 			</p>
 		</div>
 	);
@@ -225,13 +225,13 @@ export function ConsentForm({
 function getClientDisplayName(clientId: string): string {
 	const knownClients: Record<string, string> = {
 		"claude-code": "Claude Code",
-		"superset-desktop": "Superset Desktop",
+		"superset-desktop": `${COMPANY.NAME} для компьютера`,
 	};
 	if (knownClients[clientId]) {
 		return knownClients[clientId];
 	}
 	if (clientId.length > 20) {
-		return "External Application";
+		return "Внешнее приложение";
 	}
 	return clientId;
 }

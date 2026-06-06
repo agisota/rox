@@ -1,4 +1,4 @@
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY, DEFAULT_LOCALE } from "@superset/shared/constants";
 import { alert } from "@superset/ui/atoms/Alert";
 import { Button } from "@superset/ui/button";
 import {
@@ -103,9 +103,9 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 	};
 
 	const formatDate = (date: Date | string | null) => {
-		if (!date) return "Never";
+		if (!date) return "Никогда";
 		const d = date instanceof Date ? date : new Date(date);
-		return d.toLocaleDateString("en-US", {
+		return d.toLocaleDateString(DEFAULT_LOCALE, {
 			month: "short",
 			day: "numeric",
 			year: "numeric",

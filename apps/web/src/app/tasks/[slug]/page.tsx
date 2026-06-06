@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
+import { COMPANY } from "@superset/shared/constants";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 
 /**
  * Deep link passthrough page for tasks.
- * Attempts to open the Superset desktop app, falls back to dashboard.
+ * Attempts to open the desktop app, falls back to dashboard.
  */
 export default function TaskDeepLinkPage() {
 	const params = useParams<{ slug: string }>();
@@ -21,21 +21,15 @@ export default function TaskDeepLinkPage() {
 	return (
 		<div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
 			<div className="flex flex-col items-center gap-6">
-				<Image
-					src="/title.svg"
-					alt="Superset"
-					width={280}
-					height={86}
-					priority
-				/>
+				<p className="text-3xl font-semibold tracking-tight">{COMPANY.NAME}</p>
 				<p className="text-xl text-muted-foreground">
-					Redirecting to desktop app...
+					Открываем приложение для компьютера...
 				</p>
 				<Link
 					href={deepLink}
 					className="text-sm text-muted-foreground/70 underline decoration-muted-foreground/40 underline-offset-4 transition-colors hover:text-muted-foreground"
 				>
-					Click here if not redirected
+					Нажмите здесь, если переход не сработал
 				</Link>
 			</div>
 		</div>

@@ -1,7 +1,7 @@
 import { auth } from "@superset/auth/server";
 import { db } from "@superset/db/client";
+import { COMPANY } from "@superset/shared/constants";
 import { headers } from "next/headers";
-import Image from "next/image";
 
 import { env } from "@/env";
 import { api } from "@/trpc/server";
@@ -29,24 +29,22 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 		return (
 			<div className="relative flex min-h-screen flex-col">
 				<header className="container mx-auto px-6 py-6">
-					<a href={env.NEXT_PUBLIC_MARKETING_URL}>
-						<Image
-							src="/title.svg"
-							alt="Superset"
-							width={140}
-							height={24}
-							priority
-						/>
+					<a
+						href={env.NEXT_PUBLIC_MARKETING_URL}
+						className="text-lg font-semibold tracking-tight"
+						aria-label={COMPANY.NAME}
+					>
+						{COMPANY.NAME}
 					</a>
 				</header>
 				<main className="flex flex-1 items-center justify-center">
 					<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
 						<div className="flex flex-col space-y-2 text-center">
 							<h1 className="text-2xl font-semibold tracking-tight text-red-600">
-								Invalid Request
+								Некорректный запрос
 							</h1>
 							<p className="text-muted-foreground text-sm">
-								Missing required authorization parameters.
+								Не хватает обязательных параметров авторизации.
 							</p>
 						</div>
 					</div>
@@ -74,14 +72,12 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 	return (
 		<div className="relative flex min-h-screen flex-col">
 			<header className="container mx-auto px-6 py-6">
-				<a href={env.NEXT_PUBLIC_MARKETING_URL}>
-					<Image
-						src="/title.svg"
-						alt="Superset"
-						width={140}
-						height={24}
-						priority
-					/>
+				<a
+					href={env.NEXT_PUBLIC_MARKETING_URL}
+					className="text-lg font-semibold tracking-tight"
+					aria-label={COMPANY.NAME}
+				>
+					{COMPANY.NAME}
 				</a>
 			</header>
 			<main className="flex flex-1 items-center justify-center">

@@ -1,7 +1,7 @@
 {
 	"name": "@superset/desktop",
-	"productName": "Superset",
-	"description": "The last developer tool you'll ever need",
+	"productName": "Станция Агентов",
+	"description": "Рабочая станция для параллельного запуска агентов разработки",
 	"version": "1.12.3",
 	"main": "./dist/main/index.js",
 	"resources": "src/resources",

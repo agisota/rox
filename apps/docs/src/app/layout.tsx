@@ -1,7 +1,11 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata } from "next";
 import "./global.css";
-import { COMPANY } from "@superset/shared/constants";
+import {
+	COMPANY,
+	DEFAULT_HTML_LANG,
+	DEFAULT_OPEN_GRAPH_LOCALE,
+} from "@superset/shared/constants";
 import { Inter } from "next/font/google";
 import { NavigationBar } from "@/app/components/NavigationBar";
 import { NavbarProvider } from "@/app/components/NavigationBar/components/NavigationMobile";
@@ -12,32 +16,33 @@ const inter = Inter({
 
 export const metadata: Metadata = {
 	metadataBase: new URL(COMPANY.DOCS_URL),
+	applicationName: COMPANY.NAME,
 	title: {
-		default: `${COMPANY.NAME} Documentation`,
-		template: `%s | ${COMPANY.NAME} Docs`,
+		default: `Документация ${COMPANY.NAME}`,
+		template: `%s | Документация ${COMPANY.NAME}`,
 	},
-	description: `Official documentation for ${COMPANY.NAME} - the terminal for coding agents. Learn how to run parallel coding agents on your machine.`,
+	description: `Документация ${COMPANY.NAME}: задачи, рабочие среды, агенты разработки, MCP и самостоятельное размещение.`,
 	keywords: [
-		`${COMPANY.NAME} documentation`,
-		"coding agents docs",
-		"parallel execution guide",
-		"developer tools",
+		`${COMPANY.NAME} документация`,
+		"агенты разработки",
+		"параллельные задачи",
+		"самостоятельное размещение",
 	],
-	authors: [{ name: `${COMPANY.NAME} Team` }],
+	authors: [{ name: `Команда ${COMPANY.NAME}` }],
 	creator: COMPANY.NAME,
 	openGraph: {
 		type: "website",
-		locale: "en_US",
+		locale: DEFAULT_OPEN_GRAPH_LOCALE,
 		url: COMPANY.DOCS_URL,
-		siteName: `${COMPANY.NAME} Docs`,
-		title: `${COMPANY.NAME} Documentation`,
-		description: `Official documentation for ${COMPANY.NAME} - the terminal for coding agents.`,
+		siteName: `Документация ${COMPANY.NAME}`,
+		title: `Документация ${COMPANY.NAME}`,
+		description: `Документация ${COMPANY.NAME}: задачи, рабочие среды, агенты разработки, MCP и самостоятельное размещение.`,
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: `${COMPANY.NAME} Documentation`,
-		description: `Official documentation for ${COMPANY.NAME} - the terminal for coding agents.`,
-		creator: "@superset_sh",
+		title: `Документация ${COMPANY.NAME}`,
+		description: `Документация ${COMPANY.NAME}: задачи, рабочие среды, агенты разработки, MCP и самостоятельное размещение.`,
+		creator: COMPANY.X_HANDLE,
 	},
 	robots: {
 		index: true,
@@ -62,7 +67,7 @@ export const metadata: Metadata = {
 export default function Layout({ children }: LayoutProps<"/">) {
 	return (
 		<html
-			lang="en"
+			lang={DEFAULT_HTML_LANG}
 			className={`${inter.className} overscroll-none`}
 			suppressHydrationWarning
 		>

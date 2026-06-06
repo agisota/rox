@@ -4,6 +4,7 @@ import {
 	subscriptions,
 	usersSlackUsers,
 } from "@superset/db/schema";
+import { COMPANY, SERVICE_URLS } from "@superset/shared/constants";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
 import { generateConnectUrl } from "../utils/generate-connect-url";
@@ -113,13 +114,13 @@ export async function processAssistantMessage({
 		await slack.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.thread_ts ?? event.ts,
-			text: "The Superset Slack integration requires a Pro plan.",
+			text: `Интеграция ${COMPANY.NAME} для Slack требует тариф Pro.`,
 			blocks: [
 				{
 					type: "section",
 					text: {
 						type: "mrkdwn",
-						text: "The Superset Slack integration requires a Pro plan.",
+						text: `Интеграция ${COMPANY.NAME} для Slack требует тариф Pro.`,
 					},
 				},
 				{
@@ -127,8 +128,8 @@ export async function processAssistantMessage({
 					elements: [
 						{
 							type: "button",
-							text: { type: "plain_text", text: "Upgrade to Pro", emoji: true },
-							url: "https://app.superset.sh/settings/billing",
+							text: { type: "plain_text", text: "Перейти на Pro", emoji: true },
+							url: `${SERVICE_URLS.WEB}/settings/billing`,
 							style: "primary",
 						},
 					],
@@ -156,13 +157,13 @@ export async function processAssistantMessage({
 		await slack.chat.postMessage({
 			channel: event.channel,
 			thread_ts: event.thread_ts ?? event.ts,
-			text: "To use Superset, you need to link your Slack account first.",
+			text: `Чтобы использовать ${COMPANY.NAME}, сначала свяжите аккаунт Slack.`,
 			blocks: [
 				{
 					type: "section",
 					text: {
 						type: "mrkdwn",
-						text: "To use Superset, you need to link your Slack account first.",
+						text: `Чтобы использовать ${COMPANY.NAME}, сначала свяжите аккаунт Slack.`,
 					},
 				},
 				{
@@ -172,7 +173,7 @@ export async function processAssistantMessage({
 							type: "button",
 							text: {
 								type: "plain_text",
-								text: "Connect Account",
+								text: "Подключить аккаунт",
 								emoji: true,
 							},
 							url: connectUrl,

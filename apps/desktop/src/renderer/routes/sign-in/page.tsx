@@ -85,7 +85,8 @@ function SignInPage() {
 				});
 				if (!signUp.ok) {
 					throw new Error(
-						signUp.data.message ?? `Sign-up failed (${signUp.status})`,
+						signUp.data.message ??
+							`Не удалось зарегистрироваться (${signUp.status})`,
 					);
 				}
 				result = await postAuth("/api/auth/sign-in/email", {
@@ -95,11 +96,11 @@ function SignInPage() {
 			}
 			if (!result.ok) {
 				throw new Error(
-					result.data.message ?? `Sign-in failed (${result.status})`,
+					result.data.message ?? `Не удалось войти (${result.status})`,
 				);
 			}
 			const token = result.data.token;
-			if (!token) throw new Error("Sign-in did not return a token");
+			if (!token) throw new Error("Вход не вернул токен");
 			const expiresAt = new Date(
 				Date.now() + 1000 * 60 * 60 * 24 * 30,
 			).toISOString();
@@ -108,7 +109,9 @@ function SignInPage() {
 			await navigate({ to: "/workspace", replace: true });
 		} catch (error) {
 			setDevError(
-				error instanceof Error ? error.message : "Dev sign-in failed",
+				error instanceof Error
+					? error.message
+					: "Не удалось войти как dev-user",
 			);
 			setIsLoadingDev(false);
 		}
@@ -126,12 +129,12 @@ function SignInPage() {
 
 					<div className="text-center mb-8">
 						<h1 className="text-xl font-semibold text-foreground mb-2">
-							Welcome to Superset
+							Добро пожаловать в {COMPANY.NAME}
 						</h1>
 						<p className="text-sm text-muted-foreground">
 							{hasLocalToken
-								? "Restoring your session"
-								: "Sign in to get started"}
+								? "Восстанавливаем сессию"
+								: "Войдите, чтобы начать"}
 						</p>
 					</div>
 
@@ -144,9 +147,7 @@ function SignInPage() {
 								className="w-full gap-3"
 								disabled={isLoadingDev}
 							>
-								{isLoadingDev
-									? "Signing in..."
-									: "Sign in as Local Admin (dev)"}
+								{isLoadingDev ? "Входим..." : "Войти как локальный админ (dev)"}
 							</Button>
 						)}
 						{devError && (
@@ -162,7 +163,7 @@ function SignInPage() {
 							disabled={signInMutation.isPending}
 						>
 							<FaGithub className="size-5" />
-							Continue with GitHub
+							Продолжить через GitHub
 						</Button>
 
 						<Button
@@ -173,28 +174,28 @@ function SignInPage() {
 							disabled={signInMutation.isPending}
 						>
 							<FcGoogle className="size-5" />
-							Continue with Google
+							Продолжить через Google
 						</Button>
 					</div>
 
 					<p className="mt-8 text-xs text-muted-foreground/70 text-center max-w-xs">
-						By signing in, you agree to our{" "}
+						Продолжая, вы принимаете{" "}
 						<a
 							href={COMPANY.TERMS_URL}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="underline hover:text-muted-foreground transition-colors"
 						>
-							Terms of Service
+							условия сервиса
 						</a>{" "}
-						and{" "}
+						и{" "}
 						<a
 							href={COMPANY.PRIVACY_URL}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="underline hover:text-muted-foreground transition-colors"
 						>
-							Privacy Policy
+							политику конфиденциальности
 						</a>
 					</p>
 				</div>

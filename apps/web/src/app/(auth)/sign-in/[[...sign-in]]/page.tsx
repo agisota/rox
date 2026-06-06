@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@superset/auth/client";
+import { COMPANY } from "@superset/shared/constants";
 import {
 	DEV_EMAIL,
 	DEV_NAME,
@@ -36,7 +37,7 @@ export default function SignInPage() {
 			});
 		} catch (err) {
 			console.error("Sign in failed:", err);
-			setError("Failed to sign in. Please try again.");
+			setError("Не удалось войти. Попробуйте еще раз.");
 			setIsLoadingGoogle(false);
 		}
 	};
@@ -52,7 +53,7 @@ export default function SignInPage() {
 			});
 		} catch (err) {
 			console.error("Sign in failed:", err);
-			setError("Failed to sign in. Please try again.");
+			setError("Не удалось войти. Попробуйте еще раз.");
 			setIsLoadingGithub(false);
 		}
 	};
@@ -84,7 +85,9 @@ export default function SignInPage() {
 			window.location.href = callbackURL;
 		} catch (err) {
 			console.error("Dev sign in failed:", err);
-			setError(err instanceof Error ? err.message : "Dev sign-in failed");
+			setError(
+				err instanceof Error ? err.message : "Не удалось войти как dev-user",
+			);
 			setIsLoadingDev(false);
 		}
 	};
@@ -94,9 +97,11 @@ export default function SignInPage() {
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
 			<div className="flex flex-col space-y-2 text-center">
-				<h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+				<h1 className="text-2xl font-semibold tracking-tight">
+					С возвращением
+				</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign in to continue to Superset
+					Войдите, чтобы продолжить работу в {COMPANY.NAME}
 				</p>
 			</div>
 			<div className="grid gap-4">
@@ -110,7 +115,7 @@ export default function SignInPage() {
 						onClick={signInAsDev}
 						className="w-full"
 					>
-						{isLoadingDev ? "Signing in..." : "Sign in as Local Admin (dev)"}
+						{isLoadingDev ? "Входим..." : "Войти как локальный админ (dev)"}
 					</Button>
 				)}
 				<Button
@@ -120,7 +125,7 @@ export default function SignInPage() {
 					className="w-full"
 				>
 					<FaGithub className="mr-2 size-4" />
-					{isLoadingGithub ? "Loading..." : "Sign in with GitHub"}
+					{isLoadingGithub ? "Загрузка..." : "Войти через GitHub"}
 				</Button>
 				<Button
 					variant="outline"
@@ -129,36 +134,36 @@ export default function SignInPage() {
 					className="w-full"
 				>
 					<FcGoogle className="mr-2 size-4" />
-					{isLoadingGoogle ? "Loading..." : "Sign in with Google"}
+					{isLoadingGoogle ? "Загрузка..." : "Войти через Google"}
 				</Button>
 				<p className="text-muted-foreground px-8 text-center text-sm">
-					By clicking continue, you agree to our{" "}
+					Продолжая, вы принимаете{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/terms`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Terms of Service
+						условия сервиса
 					</a>{" "}
-					and{" "}
+					и{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/privacy`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Privacy Policy
+						политику конфиденциальности
 					</a>
 					.
 				</p>
 				<p className="text-center text-sm">
-					Don&apos;t have an account?{" "}
+					Нет аккаунта?{" "}
 					<Link
 						href="/sign-up"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Sign up
+						Зарегистрироваться
 					</Link>
 				</p>
 			</div>

@@ -1,9 +1,10 @@
+import { DEFAULT_LOCALE } from "@superset/shared/constants";
 import type Stripe from "stripe";
 
 // --- Helpers ---
 
 export function formatPrice(cents: number): string {
-	return new Intl.NumberFormat("en-US", {
+	return new Intl.NumberFormat(DEFAULT_LOCALE, {
 		style: "currency",
 		currency: "USD",
 	}).format(cents / 100);
@@ -276,7 +277,7 @@ export function formatSubscriptionCancelled(
 	enriched: EnrichedSubscription,
 ): unknown[] {
 	const endsAtStr = enriched.accessEndsAt
-		? enriched.accessEndsAt.toLocaleDateString("en-US", {
+		? enriched.accessEndsAt.toLocaleDateString(DEFAULT_LOCALE, {
 				month: "short",
 				day: "numeric",
 				year: "numeric",
@@ -382,12 +383,15 @@ export function formatPaymentSucceeded(
 	periodStart: number,
 	periodEnd: number,
 ): unknown[] {
-	const startStr = new Date(periodStart * 1000).toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
-	const endStr = new Date(periodEnd * 1000).toLocaleDateString("en-US", {
+	const startStr = new Date(periodStart * 1000).toLocaleDateString(
+		DEFAULT_LOCALE,
+		{
+			month: "short",
+			day: "numeric",
+			year: "numeric",
+		},
+	);
+	const endStr = new Date(periodEnd * 1000).toLocaleDateString(DEFAULT_LOCALE, {
 		month: "short",
 		day: "numeric",
 		year: "numeric",

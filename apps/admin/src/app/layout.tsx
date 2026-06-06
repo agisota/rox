@@ -1,3 +1,4 @@
+import { COMPANY, DEFAULT_HTML_LANG } from "@superset/shared/constants";
 import { Toaster } from "@superset/ui/sonner";
 import { cn } from "@superset/ui/utils";
 import type { Metadata, Viewport } from "next";
@@ -20,8 +21,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-	title: "Superset | Company Dashboard",
-	description: "Analytics, Ops, and more",
+	applicationName: COMPANY.NAME,
+	title: `${COMPANY.NAME} | Панель управления`,
+	description: "Аналитика, операции и управление рабочими средами",
 	icons: {
 		icon: [
 			{ url: "/favicon.ico", sizes: "32x32" },
@@ -43,7 +45,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang={DEFAULT_HTML_LANG} suppressHydrationWarning>
 			<body
 				className={cn(
 					"bg-background text-foreground min-h-screen font-sans antialiased",

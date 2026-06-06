@@ -6,10 +6,11 @@ import type {
 	TaskEntityFields,
 } from "@slack/types";
 import type { tasks } from "@superset/db/schema";
+import { COMPANY } from "@superset/shared/constants";
 
 import { env } from "@/env";
 
-const SUPERSET_PRODUCT_NAME = "Superset";
+const PRODUCT_NAME = COMPANY.NAME;
 
 type TaskWithRelations = typeof tasks.$inferSelect & {
 	status?: { id: string; name: string } | null;
@@ -31,7 +32,7 @@ export function createTaskWorkObject(task: TaskWithRelations): EntityMetadata {
 		// Padded for spacing in Slack
 		value: task.status
 			? `${task.status.name}          `
-			: "No status          ",
+			: "Без статуса          ",
 	};
 	displayOrder.push("status");
 
@@ -60,8 +61,8 @@ export function createTaskWorkObject(task: TaskWithRelations): EntityMetadata {
 					text: task.title,
 				},
 				display_id: task.slug,
-				display_type: "Task",
-				product_name: SUPERSET_PRODUCT_NAME,
+				display_type: "Задача",
+				product_name: PRODUCT_NAME,
 				full_size_preview: {
 					is_supported: false,
 				},
@@ -85,13 +86,13 @@ export function createTaskFlexpaneObject(
 	const displayOrder: string[] = [];
 
 	fields.description = {
-		value: task.description || "No description",
+		value: task.description || "Нет описания",
 		format: "markdown",
 	};
 	displayOrder.push("description");
 
 	fields.status = {
-		value: task.status?.name ?? "No status",
+		value: task.status?.name ?? "Без статуса",
 	};
 	displayOrder.push("status");
 
@@ -106,7 +107,7 @@ export function createTaskFlexpaneObject(
 	} else {
 		fields.assignee = {
 			type: "string",
-			value: "_Unassigned_",
+			value: "_Не назначено_",
 			format: "markdown",
 		};
 	}
@@ -115,7 +116,7 @@ export function createTaskFlexpaneObject(
 	const priorityValue = formatPriorityLabel(task.priority);
 	fields.priority =
 		task.priority === "none"
-			? { value: "_None_", format: "markdown" }
+			? { value: "_Нет_", format: "markdown" }
 			: { value: priorityValue };
 	displayOrder.push("priority");
 
@@ -133,22 +134,22 @@ export function createTaskFlexpaneObject(
 		labels && labels.length > 0
 			? {
 					key: "labels",
-					label: "Labels",
+					label: "Метки",
 					type: "string",
 					value: labels.join(", "),
 				}
 			: {
 					key: "labels",
-					label: "Labels",
+					label: "Метки",
 					type: "string",
-					value: "_None_",
+					value: "_Нет_",
 					format: "markdown",
 				},
 	);
 
 	customFields.push({
 		key: "organization",
-		label: "Organization",
+		label: "Организация",
 		type: "string",
 		value: task.organization?.name ?? "—",
 	});
@@ -156,7 +157,7 @@ export function createTaskFlexpaneObject(
 	if (task.creator) {
 		customFields.push({
 			key: "created_by",
-			label: "Created by",
+			label: "Создал",
 			type: "slack#/types/user",
 			user: {
 				text: task.creator.name ?? task.creator.email,
@@ -166,23 +167,23 @@ export function createTaskFlexpaneObject(
 	} else {
 		customFields.push({
 			key: "created_by",
-			label: "Created by",
+			label: "Создал",
 			type: "string",
-			value: "_Unknown_",
+			value: "_Неизвестно_",
 			format: "markdown",
 		});
 	}
 
 	customFields.push({
 		key: "created",
-		label: "Created",
+		label: "Создано",
 		type: "slack#/types/timestamp",
 		value: Math.floor(new Date(task.createdAt).getTime() / 1000),
 	});
 
 	customFields.push({
 		key: "updated",
-		label: "Updated",
+		label: "Обновлено",
 		type: "slack#/types/timestamp",
 		value: Math.floor(new Date(task.updatedAt).getTime() / 1000),
 	});
@@ -201,8 +202,8 @@ export function createTaskFlexpaneObject(
 					text: task.title,
 				},
 				display_id: task.slug,
-				display_type: "Task",
-				product_name: SUPERSET_PRODUCT_NAME,
+				display_type: "Задача",
+				product_name: PRODUCT_NAME,
 				full_size_preview: {
 					is_supported: false,
 				},
@@ -216,7 +217,7 @@ export function createTaskFlexpaneObject(
 			actions: {
 				primary_actions: [
 					{
-						text: "Open in Superset",
+						text: `Открыть в ${PRODUCT_NAME}`,
 						action_id: "open_task",
 						style: "primary",
 						url: taskUrl,
@@ -229,11 +230,11 @@ export function createTaskFlexpaneObject(
 
 function formatPriorityLabel(priority: string): string {
 	const labels: Record<string, string> = {
-		urgent: "Urgent",
-		high: "High",
-		medium: "Medium",
-		low: "Low",
-		none: "None",
+		urgent: "Срочно",
+		high: "Высокий",
+		medium: "Средний",
+		low: "Низкий",
+		none: "Нет",
 	};
 	return labels[priority] ?? priority;
 }

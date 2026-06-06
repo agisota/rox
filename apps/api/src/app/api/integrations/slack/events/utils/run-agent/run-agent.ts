@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { WebClient } from "@slack/web-api";
-import { FEATURE_FLAGS } from "@superset/shared/constants";
+import { COMPANY, FEATURE_FLAGS } from "@superset/shared/constants";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
 import { DEFAULT_SLACK_MODEL } from "../../../constants";
@@ -399,7 +399,7 @@ async function handleGetChannelHistory({
 	return JSON.stringify({ messages });
 }
 
-const SYSTEM_PROMPT = `You are a helpful assistant in Slack for Superset, a platform for managing tasks and running coding agents in workspaces.
+const SYSTEM_PROMPT = `You are a helpful assistant in Slack for ${COMPANY.NAME}, a platform for managing tasks and running coding agents in workspaces.
 
 You can:
 - Create, update, search, and manage tasks using superset_* tools

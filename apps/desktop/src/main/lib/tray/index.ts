@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { COMPANY } from "@superset/shared/constants";
 import {
 	app,
 	dialog,
@@ -88,13 +89,13 @@ async function confirmAndQuitCompletely(): Promise<void> {
 	try {
 		const { response } = await dialog.showMessageBox({
 			type: "warning",
-			buttons: ["Quit Completely", "Cancel"],
+			buttons: ["Закрыть полностью", "Отмена"],
 			defaultId: 1,
 			cancelId: 1,
-			title: "Quit Superset Completely",
-			message: "Quit Superset and stop all background services?",
+			title: `Полностью закрыть ${COMPANY.NAME}?`,
+			message: `Закрыть ${COMPANY.NAME} и остановить все фоновые службы?`,
 			detail:
-				"All open terminal sessions will be killed and any running host-services will be stopped. Use “Close Superset” instead if you want services to keep running for the next launch.",
+				"Все открытые терминальные сессии будут завершены, а запущенные host-service процессы остановлены. Используйте обычное закрытие, если хотите сохранить службы до следующего запуска.",
 		});
 		if (response === 0) {
 			quitAppCompletely();
@@ -236,15 +237,15 @@ async function updateTrayMenu(): Promise<void> {
 		},
 		{ type: "separator" },
 		{
-			label: "Open Superset",
+			label: `Открыть ${COMPANY.NAME}`,
 			click: focusMainWindow,
 		},
 		{
-			label: "Settings",
+			label: "Настройки",
 			click: openSettings,
 		},
 		{
-			label: "Check for Updates",
+			label: "Проверить обновления",
 			click: () => {
 				// Imported lazily to avoid circular dependency
 				const { checkForUpdatesInteractive } = require("../auto-updater");
@@ -253,12 +254,12 @@ async function updateTrayMenu(): Promise<void> {
 		},
 		{ type: "separator" },
 		{
-			label: "Close Superset",
+			label: `Закрыть ${COMPANY.NAME}`,
 			click: () => quitApp(),
 		},
 		{ type: "separator" },
 		{
-			label: "Quit Superset Completely",
+			label: `Полностью закрыть ${COMPANY.NAME}`,
 			click: () => {
 				void confirmAndQuitCompletely();
 			},
@@ -287,7 +288,7 @@ export function initTray(): void {
 		}
 
 		tray = new Tray(icon);
-		tray.setToolTip("Superset");
+		tray.setToolTip(COMPANY.NAME);
 
 		void updateTrayMenu();
 

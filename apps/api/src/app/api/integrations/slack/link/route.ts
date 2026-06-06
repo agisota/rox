@@ -3,6 +3,7 @@ import { auth } from "@superset/auth/server";
 import { db } from "@superset/db/client";
 import { integrationConnections, usersSlackUsers } from "@superset/db/schema";
 import { findOrgMembership } from "@superset/db/utils";
+import { COMPANY } from "@superset/shared/constants";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { env } from "@/env";
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
 
 	if (!connection) {
 		return new Response(
-			"Slack workspace not connected to any Superset organization.",
+			`Slack workspace is not connected to any ${COMPANY.NAME} organization.`,
 			{ status: 404 },
 		);
 	}

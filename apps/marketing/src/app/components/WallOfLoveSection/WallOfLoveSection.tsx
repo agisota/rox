@@ -83,6 +83,10 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 }
 
 export function WallOfLoveSection() {
+	if (TESTIMONIALS.length === 0) {
+		return null;
+	}
+
 	const leftColumn = TESTIMONIALS.filter((_, i) => i % 3 === 0);
 	const middleColumn = TESTIMONIALS.filter((_, i) => i % 3 === 1);
 	const rightColumn = TESTIMONIALS.filter((_, i) => i % 3 === 2);

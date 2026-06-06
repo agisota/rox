@@ -1,6 +1,7 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
+import { DEFAULT_HTML_LANG } from "@superset/shared/constants";
 import NextError from "next/error";
 import { useEffect } from "react";
 
@@ -14,7 +15,7 @@ export default function GlobalError({
 	}, [error]);
 
 	return (
-		<html lang="en">
+		<html lang={DEFAULT_HTML_LANG}>
 			<body>
 				<NextError statusCode={0} />
 			</body>

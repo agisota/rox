@@ -1,5 +1,6 @@
 "use client";
 
+import { COMPANY } from "@superset/shared/constants";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { GridCross } from "@/app/blog/components/GridCross";
@@ -81,12 +82,14 @@ export function CompareLayout({ page, children }: CompareLayoutProps) {
 					<GridCross className="top-0 right-0" />
 				</div>
 				<div className="max-w-3xl mx-auto px-6 py-10 text-center">
-					<p className="text-muted-foreground mb-4">Ready to try Superset?</p>
+					<p className="text-muted-foreground mb-4">
+						Готовы попробовать {COMPANY.NAME}?
+					</p>
 					<Link
 						href="/"
 						className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors border border-border rounded-md px-4 py-2"
 					>
-						Get started
+						Начать
 					</Link>
 				</div>
 			</footer>

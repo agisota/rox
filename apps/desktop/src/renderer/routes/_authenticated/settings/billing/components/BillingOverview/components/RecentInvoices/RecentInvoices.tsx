@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { DEFAULT_LOCALE } from "@superset/shared/constants";
 import { useEffect, useState } from "react";
 import { HiArrowTopRightOnSquare } from "react-icons/hi2";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
@@ -13,14 +13,18 @@ interface Invoice {
 }
 
 function formatAmount(amount: number, currency: string) {
-	return new Intl.NumberFormat("en-US", {
+	return new Intl.NumberFormat(DEFAULT_LOCALE, {
 		style: "currency",
 		currency: currency.toUpperCase(),
 	}).format(amount / 100);
 }
 
 function formatDate(timestamp: number) {
-	return format(new Date(timestamp * 1000), "MMM d, yyyy");
+	return new Intl.DateTimeFormat(DEFAULT_LOCALE, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	}).format(new Date(timestamp * 1000));
 }
 
 export function RecentInvoices() {

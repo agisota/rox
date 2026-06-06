@@ -1,4 +1,5 @@
 import { ChatServiceProvider } from "@superset/chat/client";
+import { COMPANY } from "@superset/shared/constants";
 import { toast } from "@superset/ui/sonner";
 import {
 	createFileRoute,
@@ -27,14 +28,15 @@ const STEPS = [
 	{
 		path: "/onboarding",
 		match: (p: string) => p === "/onboarding",
-		title: "Setup Superset",
-		subtitle: "Connect your agents and tools to get started.",
+		title: `Настройте ${COMPANY.NAME}`,
+		subtitle: "Подключите агентов и инструменты, чтобы начать работу.",
 	},
 	{
 		path: "/onboarding/project",
 		match: (p: string) => p === "/onboarding/project",
-		title: "Point Superset at some code",
-		subtitle: "Open a folder or clone a repo to finish setup.",
+		title: "Выберите кодовую базу",
+		subtitle:
+			"Откройте папку или клонируйте репозиторий, чтобы завершить настройку.",
 	},
 ] as const;
 
@@ -90,7 +92,7 @@ function OnboardingFlowLayout() {
 			await refetchSession({ query: { disableCookieCache: true } });
 		} catch (error) {
 			console.error("[onboarding] skip failed", error);
-			toast.error("Could not skip setup. Please try again.");
+			toast.error("Не удалось пропустить настройку. Попробуйте еще раз.");
 			setSkipping(false);
 			return;
 		}
@@ -129,7 +131,7 @@ function OnboardingFlowLayout() {
 						onContinue={handleContinue}
 						onSkip={handleSkip}
 						skipDisabled={skipping}
-						continueLabel="Continue"
+						continueLabel="Продолжить"
 					/>
 				)}
 			</div>

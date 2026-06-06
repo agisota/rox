@@ -10,41 +10,41 @@ export interface NavLink {
 export const PRODUCT_LINKS: NavLink[] = [
 	{
 		href: "/",
-		label: "Overview",
-		description: "The terminal for coding agents.",
+		label: "Обзор",
+		description: "Рабочая станция для агентов разработки.",
 	},
 	{
 		href: "/changelog",
-		label: "Changelog",
-		description: "New releases and product updates.",
+		label: "Изменения",
+		description: "Новые версии и обновления продукта.",
 	},
 ];
 
 export const RESOURCE_LINKS: NavLink[] = [
 	{
 		href: COMPANY.DOCS_URL,
-		label: "Documentation",
-		description: "Guides, references, and integrations.",
+		label: "Документация",
+		description: "Руководства, справка и интеграции.",
 		external: true,
 	},
 	{
 		href: "/blog",
-		label: "Blog",
-		description: "Engineering deep-dives and launches.",
+		label: "Блог",
+		description: "Разборы архитектуры и новые запуски.",
 	},
 	{
 		href: "/community",
-		label: "Community",
-		description: "Discord, GitHub, and office hours.",
+		label: "Сообщество",
+		description: "Обсуждения, код и встречи.",
 	},
 	{
 		href: "/team",
-		label: "About",
-		description: "The people behind Superset.",
+		label: "О продукте",
+		description: `Команда ${COMPANY.NAME}.`,
 	},
 ];
 
 export const TOP_LEVEL_LINKS: NavLink[] = [
-	{ href: "/pricing", label: "Pricing" },
-	{ href: "/enterprise", label: "Enterprise" },
+	{ href: "/pricing", label: "Тарифы" },
+	{ href: "/enterprise", label: "Для компаний" },
 ];

@@ -5,7 +5,7 @@ interface GitHubRepoResponse {
 }
 
 function getGitHubApiUrl(): string {
-	// Extract owner/repo from COMPANY.GITHUB_URL (e.g., "https://github.com/superset-sh/superset")
+	// Extract owner/repo when the configured source URL points to GitHub.
 	const match = COMPANY.GITHUB_URL.match(/github\.com\/([^/]+\/[^/]+)/);
 	if (!match) {
 		throw new Error("Invalid GitHub URL format");

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	COMPANY,
 	DOWNLOAD_URL_MAC_ARM64,
 	DOWNLOAD_URL_MAC_X64,
 } from "@superset/shared/constants";
@@ -47,7 +48,7 @@ export function DownloadInterstitial() {
 			<Link
 				href="/"
 				className="inline-flex items-center text-foreground transition-colors hover:text-foreground/80"
-				aria-label="Superset"
+				aria-label={COMPANY.NAME}
 			>
 				<SupersetLogo />
 			</Link>
@@ -60,11 +61,11 @@ export function DownloadInterstitial() {
 								className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl"
 								style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}
 							>
-								Superset is Mac-only for now
+								{COMPANY.NAME} пока доступна только для Mac
 							</h1>
 							<p className="text-sm text-muted-foreground sm:text-base">
-								We're bringing Superset to Windows &amp; Linux. Drop your email
-								and we'll let you know the moment it's ready.
+								Мы готовим версии для Windows и Linux. Оставьте почту, и мы
+								сообщим, когда они будут готовы.
 							</p>
 							<div className="max-w-sm">
 								<WaitlistForm />
@@ -76,17 +77,16 @@ export function DownloadInterstitial() {
 								className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl"
 								style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}
 							>
-								You're about to get Superset
+								Загрузка {COMPANY.NAME} скоро начнется
 							</h1>
 							<p className="text-sm text-muted-foreground sm:text-base">
-								Your download will start automatically. If it didn't start, you
-								can{" "}
+								Загрузка начнется автоматически. Если она не началась,{" "}
 								<a
 									href={macUrlFor(platform)}
 									onClick={() => track("download_manual_clicked", { platform })}
 									className="text-foreground underline underline-offset-4"
 								>
-									download now
+									скачайте вручную
 								</a>
 								.
 							</p>

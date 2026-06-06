@@ -1,3 +1,4 @@
+import { COMPANY } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
 import { toast } from "@superset/ui/sonner";
 import { useLiveQuery } from "@tanstack/react-db";
@@ -137,10 +138,7 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 					<h2 className="text-xl font-semibold">Billing</h2>
 					<p className="text-sm text-muted-foreground mt-1">
 						For questions about billing,{" "}
-						<a
-							href="mailto:founders@superset.sh"
-							className="text-primary hover:underline"
-						>
+						<a href={COMPANY.MAIL_TO} className="text-primary hover:underline">
 							contact us
 						</a>
 						.

@@ -1,4 +1,5 @@
 import type { KnownBlock } from "@slack/types";
+import { COMPANY, SERVICE_URLS } from "@superset/shared/constants";
 import { DEFAULT_SLACK_MODEL, SLACK_MODELS } from "../../constants";
 
 interface BuildHomeViewParams {
@@ -25,7 +26,7 @@ export function buildHomeView({
 			type: "header",
 			text: {
 				type: "plain_text",
-				text: "Welcome to Superset",
+				text: `Добро пожаловать в ${COMPANY.NAME}`,
 				emoji: true,
 			},
 		},
@@ -33,7 +34,7 @@ export function buildHomeView({
 			type: "section",
 			text: {
 				type: "mrkdwn",
-				text: "Superset is your AI coding assistant - spin up cloud agents, plan tasks, do code reviews, and more, all without leaving Slack.",
+				text: `${COMPANY.NAME} помогает ставить задачи, запускать агентов разработки и проверять изменения, не выходя из Slack.`,
 			},
 		},
 		{ type: "divider" },
@@ -42,7 +43,7 @@ export function buildHomeView({
 			type: "header",
 			text: {
 				type: "plain_text",
-				text: "Settings",
+				text: "Настройки",
 				emoji: true,
 			},
 		},
@@ -50,14 +51,14 @@ export function buildHomeView({
 			type: "section",
 			text: {
 				type: "mrkdwn",
-				text: "*AI Model*\nChoose which Claude model to use for conversations.",
+				text: "*Модель*\nВыберите модель для разговоров в Slack.",
 			},
 			accessory: {
 				type: "static_select",
 				action_id: "model_select",
 				placeholder: {
 					type: "plain_text",
-					text: "Select a model",
+					text: "Выберите модель",
 				},
 				options: SLACK_MODELS.map((m) => ({
 					text: { type: "plain_text", text: m.label },
@@ -74,7 +75,7 @@ export function buildHomeView({
 			type: "header",
 			text: {
 				type: "plain_text",
-				text: "Account",
+				text: "Аккаунт",
 				emoji: true,
 			},
 		},
@@ -87,7 +88,7 @@ export function buildHomeView({
 				elements: [
 					{
 						type: "mrkdwn",
-						text: `Connected as *${userName}*${externalOrgName ? ` in ${externalOrgName}` : ""}`,
+						text: `Подключено как *${userName}*${externalOrgName ? ` в ${externalOrgName}` : ""}`,
 					},
 				],
 			},
@@ -99,18 +100,18 @@ export function buildHomeView({
 						action_id: "disconnect_account",
 						text: {
 							type: "plain_text",
-							text: "Disconnect Account",
+							text: "Отключить аккаунт",
 							emoji: true,
 						},
 						style: "danger",
 						confirm: {
-							title: { type: "plain_text", text: "Disconnect Account" },
+							title: { type: "plain_text", text: "Отключить аккаунт" },
 							text: {
 								type: "mrkdwn",
-								text: "Are you sure you want to disconnect your Superset account?",
+								text: `Вы уверены, что хотите отключить аккаунт ${COMPANY.NAME}?`,
 							},
-							confirm: { type: "plain_text", text: "Disconnect" },
-							deny: { type: "plain_text", text: "Cancel" },
+							confirm: { type: "plain_text", text: "Отключить" },
+							deny: { type: "plain_text", text: "Отмена" },
 						},
 					},
 				],
@@ -122,7 +123,7 @@ export function buildHomeView({
 				type: "section",
 				text: {
 					type: "mrkdwn",
-					text: "Link your Slack account to your Superset account to personalize your experience.",
+					text: `Свяжите Slack с аккаунтом ${COMPANY.NAME}, чтобы персонализировать работу.`,
 				},
 			},
 			{
@@ -132,7 +133,7 @@ export function buildHomeView({
 						type: "button",
 						text: {
 							type: "plain_text",
-							text: "Connect Account",
+							text: "Подключить аккаунт",
 							emoji: true,
 						},
 						url: connectUrl,
@@ -148,7 +149,7 @@ export function buildHomeView({
 			type: "header",
 			text: {
 				type: "plain_text",
-				text: "Getting Started",
+				text: "Как начать",
 				emoji: true,
 			},
 		},
@@ -156,7 +157,7 @@ export function buildHomeView({
 			type: "section",
 			text: {
 				type: "mrkdwn",
-				text: "*DM the bot* — Start a direct message with Superset for instant access to AI assistance.\n\n*@mention in channels* — Mention <@superset> in any channel to get help in context.\n\n*Link unfurling* — Paste a Superset task link and it will automatically preview in the conversation.",
+				text: `*Напишите боту в личные сообщения* — получите быстрый доступ к агентам.\n\n*@mention в каналах* — упомяните бота в канале, чтобы дать контекст.\n\n*Предпросмотр ссылок* — вставьте ссылку на задачу ${COMPANY.NAME}, и Slack покажет карточку задачи.`,
 			},
 		},
 		{ type: "divider" },
@@ -167,10 +168,10 @@ export function buildHomeView({
 					type: "button",
 					text: {
 						type: "plain_text",
-						text: "Open Superset",
+						text: `Открыть ${COMPANY.NAME}`,
 						emoji: true,
 					},
-					url: "https://app.superset.sh",
+					url: SERVICE_URLS.WEB,
 					style: "primary",
 				},
 			],

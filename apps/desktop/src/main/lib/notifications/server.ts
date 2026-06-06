@@ -165,11 +165,11 @@ app.get("/auth/callback", async (req, res) => {
 	// Return HTML since the browser navigated here directly (not fetch).
 	res.setHeader("Content-Type", "text/html");
 	return res.send(`<!DOCTYPE html>
-<html><head><title>Superset</title></head>
+<html lang="ru"><head><title>Станция Агентов</title></head>
 <body style="font-family:system-ui,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#0a0a0a;color:#fafafa;">
 <div style="text-align:center">
-<h2 style="margin-bottom:8px">Signed in successfully</h2>
-<p style="opacity:0.6">You can close this tab and return to the desktop app.</p>
+<h2 style="margin-bottom:8px">Вход выполнен</h2>
+<p style="opacity:0.6">Можно закрыть эту вкладку и вернуться в приложение.</p>
 </div>
 </body></html>`);
 });

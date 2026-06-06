@@ -1,6 +1,7 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { settings } from "@superset/local-db";
+import { COMPANY } from "@superset/shared/constants";
 import {
 	app,
 	BrowserWindow,
@@ -63,7 +64,7 @@ void applyShellEnvToProcess().catch((error) => {
 if (IS_DEV) {
 	const workspaceName = resolveDevWorkspaceName();
 	if (workspaceName) {
-		app.setName(`Superset (${workspaceName})`);
+		app.setName(`${COMPANY.NAME} (${workspaceName})`);
 	}
 }
 
@@ -207,11 +208,11 @@ app.on("before-quit", async (event) => {
 		try {
 			const { response } = await dialog.showMessageBox({
 				type: "question",
-				buttons: ["Quit", "Cancel"],
+				buttons: ["Выйти", "Отмена"],
 				defaultId: 0,
 				cancelId: 1,
-				title: "Quit Superset",
-				message: "Are you sure you want to quit?",
+				title: `Выйти из ${COMPANY.NAME}`,
+				message: "Вы уверены, что хотите выйти?",
 			});
 
 			if (response === 1) {

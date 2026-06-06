@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_LOCALE } from "@superset/shared/constants";
 import {
 	Card,
 	CardContent,
@@ -49,9 +50,9 @@ export function WAUTrendChart({
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div>
-						<CardTitle>Weekly Active Users</CardTitle>
+						<CardTitle>Активные пользователи за неделю</CardTitle>
 						<CardDescription>
-							{currentWAU} users active 3+ days this week
+							{currentWAU} пользователей были активны 3+ дня за неделю
 						</CardDescription>
 					</div>
 					{headerAction}
@@ -62,12 +63,12 @@ export function WAUTrendChart({
 					<Skeleton className="h-[200px] w-full" />
 				) : error ? (
 					<div className="flex h-[200px] items-center justify-center">
-						<p className="text-destructive text-sm">Failed to load</p>
+						<p className="text-destructive text-sm">Не удалось загрузить</p>
 					</div>
 				) : !data || data.length === 0 ? (
 					<div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
 						<p className="text-muted-foreground text-sm">
-							No WAU data available for this period
+							Нет данных WAU за этот период
 						</p>
 					</div>
 				) : (
@@ -78,7 +79,7 @@ export function WAUTrendChart({
 								tickLine={false}
 								axisLine={false}
 								tickFormatter={(v) =>
-									new Date(v).toLocaleDateString("en-US", {
+									new Date(v).toLocaleDateString(DEFAULT_LOCALE, {
 										month: "short",
 										day: "numeric",
 									})
@@ -90,7 +91,7 @@ export function WAUTrendChart({
 							<ChartTooltip
 								content={
 									<ChartTooltipContent
-										formatter={(value) => `${value} users`}
+										formatter={(value) => `${value} пользователей`}
 									/>
 								}
 							/>
