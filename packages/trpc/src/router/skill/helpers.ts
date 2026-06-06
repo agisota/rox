@@ -127,3 +127,30 @@ export function bindingMatchesSurface(
 	}
 	return true;
 }
+
+/**
+ * A skill is exposed on a surface only when it has an enabled binding for it.
+ * This is the gate behind API/MCP/agent exposure (MCP-02, API-02, E2E-04): no
+ * binding => not exposed, full stop.
+ */
+export function isSkillExposedVia(
+	bindings: BindingLike[],
+	surface: string,
+	objectType?: string | null,
+): boolean {
+	return bindings.some((b) => bindingMatchesSurface(b, surface, objectType));
+}
+
+/** Throw FORBIDDEN unless the skill is exposed on the requested surface. */
+export function assertExposedVia(
+	bindings: BindingLike[],
+	surface: string,
+	objectType?: string | null,
+): void {
+	if (!isSkillExposedVia(bindings, surface, objectType)) {
+		throw new TRPCError({
+			code: "FORBIDDEN",
+			message: `Skill is not exposed via "${surface}".`,
+		});
+	}
+}

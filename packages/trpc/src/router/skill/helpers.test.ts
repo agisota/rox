@@ -5,10 +5,12 @@ import type {
 } from "@superset/workflow-core";
 import {
 	assertExactlyOneImplementationRef,
+	assertExposedVia,
 	assertRunModeAllowed,
 	bindingMatchesSurface,
 	countImplementationRefs,
 	isRunModeAllowed,
+	isSkillExposedVia,
 	validatePublishInput,
 } from "./helpers";
 
@@ -105,5 +107,30 @@ describe("binding surface filter (SKILL-05/06)", () => {
 		const mcp = { surface: "mcp", objectType: null, enabled: true };
 		expect(bindingMatchesSurface(mcp, "mcp")).toBe(true);
 		expect(bindingMatchesSurface(mcp, "object_action")).toBe(false);
+	});
+});
+
+describe("isSkillExposedVia / assertExposedVia (MCP-02 / API-02 / E2E-04)", () => {
+	const bindings = [
+		{ surface: "object_action", objectType: "repo", enabled: true },
+		{ surface: "mcp", objectType: null, enabled: false },
+	];
+	test("exposed when an enabled binding exists", () => {
+		expect(isSkillExposedVia(bindings, "object_action", "repo")).toBe(true);
+		expect(() =>
+			assertExposedVia(bindings, "object_action", "repo"),
+		).not.toThrow();
+	});
+	test("not exposed when binding is disabled (MCP-02)", () => {
+		expect(isSkillExposedVia(bindings, "mcp")).toBe(false);
+		expect(() => assertExposedVia(bindings, "mcp")).toThrow();
+	});
+	test("not exposed when no binding exists (API-02 / agent_tool)", () => {
+		expect(isSkillExposedVia(bindings, "api")).toBe(false);
+		expect(isSkillExposedVia(bindings, "agent_tool")).toBe(false);
+		expect(() => assertExposedVia(bindings, "api")).toThrow();
+	});
+	test("object action only on the bound object type (E2E-04)", () => {
+		expect(isSkillExposedVia(bindings, "object_action", "task")).toBe(false);
 	});
 });
