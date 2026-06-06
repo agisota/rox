@@ -63,3 +63,30 @@ Type-safety hygiene is already good (≈10 `as any` in renderer, near-zero `@ts-
 ## Recommended sequence
 
 Tier 1 #1 (dead code) → #2 (`getErrorMessage`) for immediate, safe, verifiable wins and momentum → Tier 2 #6 (`git.ts` split) as the flagship structural refactor (its 52 tests make it safe) → Tier 3 #12 (`fuzzy-scorer` tests). Land each as its own small PR with `bun run typecheck` + `bun run lint` + `bun test` green before the next.
+
+---
+
+## Execution status — autonomous run (2026-06-06)
+
+Executed on branch `refactor/audit-2026-06` in an **isolated git worktree** (a concurrent "OMC" agent was building `packages/workflow-*` on the main checkout; the worktree kept the two streams from colliding). Every commit verified with `typecheck` + `biome check` + targeted `bun test`.
+
+**Shipped (10 refactor/test commits):**
+1. remove orphaned dead code — 12 files, 649 lines
+2. consolidate `getErrorMessage` — 142 copies → `@superset/shared/error` (76 files)
+3. consolidate `githubAvatarUrl` — 4 copies → `@superset/shared/github-remote`
+4. add shared `sleep()` — 9 copies → `@superset/shared/async`
+5. extract pure porcelain-status parser — `git.ts` 1881→1687
+6. extract tested error classifier (`git-errors.ts`) — `git.ts` →1618
+7. extract + test pure PR-parsing helpers from `projects.ts`
+8. extract + test `extractRepoName` from `projects.ts`
+9. fuzzy-scorer characterization tests (16)
+10. cli-framework: 17 `as any` → 0 via one typed `clone()` + tests (7)
+
+Final state: biome clean over all 99 changed source files; 11 touched packages typecheck green; suites pass (shared 637, desktop-touched 124, workspace-fs 23, cli-framework 7, cli 12).
+
+**Deferred — assessed, need an app-runnable environment to verify safely:**
+- **#5** web/admin tRPC boilerplate — `packages/trpc` is server-only; no clean shared home and the RSC/`"use client"` boundary is runtime-unverifiable here.
+- **#8 (deep) / #9 gh client / #10 branch dedup / #12 settings collapse** — tRPC procedure bodies doing git/gh I/O across divergent sites with no existing tests; behavior-preservation can't be confirmed by typecheck alone.
+- **Tier 4** migration convergence (chat renderers, zod contracts, terminal-env) — Med-risk, hot v2 zone, large live UI.
+
+Pick these up with the desktop/Next apps runnable for verification.
