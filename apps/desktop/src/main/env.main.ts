@@ -6,6 +6,7 @@
  *
  * For renderer process env vars, use src/renderer/env.renderer.ts instead.
  */
+import { SERVICE_URLS } from "@superset/shared/constants";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod/v4";
 
@@ -14,18 +15,16 @@ export const env = createEnv({
 		NODE_ENV: z
 			.enum(["development", "production", "test"])
 			.default("development"),
-		NEXT_PUBLIC_API_URL: z.url().default("https://api.superset.sh"),
-		NEXT_PUBLIC_STREAMS_URL: z.url().default("https://streams.superset.sh"),
-		NEXT_PUBLIC_ELECTRIC_URL: z
-			.url()
-			.default("https://electric-proxy.avi-6ac.workers.dev"),
-		NEXT_PUBLIC_WEB_URL: z.url().default("https://app.superset.sh"),
-		NEXT_PUBLIC_MARKETING_URL: z.url().default("https://superset.sh"),
+		NEXT_PUBLIC_API_URL: z.url().default(SERVICE_URLS.API),
+		NEXT_PUBLIC_STREAMS_URL: z.url().default(SERVICE_URLS.STREAMS),
+		NEXT_PUBLIC_ELECTRIC_URL: z.url().default(SERVICE_URLS.ELECTRIC),
+		NEXT_PUBLIC_WEB_URL: z.url().default(SERVICE_URLS.WEB),
+		NEXT_PUBLIC_MARKETING_URL: z.url().default(SERVICE_URLS.MARKETING),
 		NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
 		NEXT_PUBLIC_POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
 		SENTRY_DSN_DESKTOP: z.string().optional(),
-		STREAMS_URL: z.url().default("https://superset-stream.fly.dev"),
-		RELAY_URL: z.url().default("https://relay.superset.sh"),
+		STREAMS_URL: z.url().default(SERVICE_URLS.STREAMS),
+		RELAY_URL: z.url().default(SERVICE_URLS.RELAY),
 	},
 
 	runtimeEnv: {

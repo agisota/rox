@@ -11,37 +11,84 @@ export const PROTOCOL_SCHEMES = {
 } as const;
 
 // Company
+const DEFAULT_DOMAIN = "set.t";
+const DEFAULT_GITHUB_OWNER = "agisota";
+const DEFAULT_GITHUB_REPO = "set";
+const DEFAULT_GITHUB_URL = `https://github.com/${DEFAULT_GITHUB_OWNER}/${DEFAULT_GITHUB_REPO}`;
+const DEFAULT_MARKETING_URL = DEFAULT_GITHUB_URL;
+const DEFAULT_API_URL = `https://api.${DEFAULT_DOMAIN}`;
+const DEFAULT_WEB_URL = `https://app.${DEFAULT_DOMAIN}`;
+const DEFAULT_STREAMS_URL = `https://streams.${DEFAULT_DOMAIN}`;
+const DEFAULT_RELAY_URL = `https://relay.${DEFAULT_DOMAIN}`;
+const DEFAULT_RELAY_BACKUP_URL = `https://relay-backup.${DEFAULT_DOMAIN}`;
+const DEFAULT_ELECTRIC_URL = `https://electric.${DEFAULT_DOMAIN}`;
+const DEFAULT_DOCS_URL = `${DEFAULT_GITHUB_URL}#readme`;
+const MARKETING_URL =
+	process.env.NEXT_PUBLIC_MARKETING_URL || DEFAULT_MARKETING_URL;
+const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL || DEFAULT_DOCS_URL;
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "";
+const SUPPORT_URL = process.env.NEXT_PUBLIC_SUPPORT_URL || DEFAULT_GITHUB_URL;
+
+export const DEFAULT_HTML_LANG = "ru";
+export const DEFAULT_LOCALE = "ru-RU";
+export const DEFAULT_OPEN_GRAPH_LOCALE = "ru_RU";
+
 export const COMPANY = {
-	NAME: "Superset",
-	DOMAIN: "superset.sh",
-	EMAIL_DOMAIN: "@superset.sh",
-	GITHUB_URL: "https://github.com/superset-sh/superset",
-	DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.superset.sh",
-	MARKETING_URL: process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh",
-	TERMS_URL: `${process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh"}/terms`,
+	NAME: process.env.NEXT_PUBLIC_COMPANY_NAME || "Станция Агентов",
+	LEGAL_NAME: process.env.NEXT_PUBLIC_COMPANY_LEGAL_NAME || "Станция Агентов",
+	DOMAIN: process.env.NEXT_PUBLIC_COMPANY_DOMAIN || DEFAULT_DOMAIN,
+	EMAIL_DOMAIN: process.env.NEXT_PUBLIC_EMAIL_DOMAIN || `@${DEFAULT_DOMAIN}`,
+	GITHUB_OWNER: process.env.NEXT_PUBLIC_GITHUB_OWNER || DEFAULT_GITHUB_OWNER,
+	GITHUB_REPO: process.env.NEXT_PUBLIC_GITHUB_REPO || DEFAULT_GITHUB_REPO,
+	DESCRIPTION_SHORT: "Запускайте несколько агентов разработки на своей машине",
+	DESCRIPTION_LONG:
+		"Создавайте отдельные задачи, запускайте параллельные рабочие среды и быстро переключайтесь между ними, когда нужна ваша проверка.",
+	GITHUB_URL: process.env.NEXT_PUBLIC_GITHUB_URL || DEFAULT_GITHUB_URL,
+	DOCS_URL,
+	MARKETING_URL,
+	TERMS_URL: process.env.NEXT_PUBLIC_TERMS_URL || `${MARKETING_URL}/terms`,
 	PRIVACY_URL:
-		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh") +
-		"/privacy",
+		process.env.NEXT_PUBLIC_PRIVACY_URL || `${MARKETING_URL}/privacy`,
 	CHANGELOG_URL:
-		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh") +
-		"/changelog",
-	X_URL: "https://x.com/superset_sh",
-	LINKEDIN_URL: "https://www.linkedin.com/company/superset-sh",
-	YOUTUBE_URL: "https://www.youtube.com/@superset-sh",
-	MAIL_TO: "mailto:founders@superset.sh",
-	REPORT_ISSUE_URL: "https://github.com/superset-sh/superset/issues/new",
-	DISCORD_URL: "https://discord.gg/cZeD9WYcV7",
-	STATUS_URL: "https://status.superset.sh",
-	TRUST_URL: "https://trust.superset.sh",
-	CAREERS_URL: "https://www.ycombinator.com/companies/superset/jobs",
+		process.env.NEXT_PUBLIC_CHANGELOG_URL || `${MARKETING_URL}/changelog`,
+	X_URL: process.env.NEXT_PUBLIC_X_URL || `${MARKETING_URL}/news`,
+	X_HANDLE: process.env.NEXT_PUBLIC_X_HANDLE || "",
+	LINKEDIN_URL:
+		process.env.NEXT_PUBLIC_LINKEDIN_URL || `${MARKETING_URL}/company`,
+	YOUTUBE_URL: process.env.NEXT_PUBLIC_YOUTUBE_URL || `${MARKETING_URL}/video`,
+	MAIL_TO: SUPPORT_EMAIL ? `mailto:${SUPPORT_EMAIL}` : SUPPORT_URL,
+	REPORT_ISSUE_URL:
+		process.env.NEXT_PUBLIC_REPORT_ISSUE_URL ||
+		`${DEFAULT_GITHUB_URL}/issues/new`,
+	DISCORD_URL:
+		process.env.NEXT_PUBLIC_DISCORD_URL || `${MARKETING_URL}/community`,
+	STATUS_URL: process.env.NEXT_PUBLIC_STATUS_URL || `${MARKETING_URL}/status`,
+	TRUST_URL: process.env.NEXT_PUBLIC_TRUST_URL || `${MARKETING_URL}/trust`,
+	CAREERS_URL:
+		process.env.NEXT_PUBLIC_CAREERS_URL || `${MARKETING_URL}/careers`,
+} as const;
+
+export const APP_RELEASE_BASENAME =
+	process.env.NEXT_PUBLIC_APP_RELEASE_BASENAME || "Set";
+
+export const SERVICE_URLS = {
+	API: process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL,
+	WEB: process.env.NEXT_PUBLIC_WEB_URL || DEFAULT_WEB_URL,
+	MARKETING: MARKETING_URL,
+	DOCS: DOCS_URL,
+	STREAMS: process.env.NEXT_PUBLIC_STREAMS_URL || DEFAULT_STREAMS_URL,
+	RELAY: process.env.RELAY_URL || DEFAULT_RELAY_URL,
+	RELAY_BACKUP:
+		process.env.NEXT_PUBLIC_RELAY_BACKUP_URL || DEFAULT_RELAY_BACKUP_URL,
+	ELECTRIC: process.env.NEXT_PUBLIC_ELECTRIC_URL || DEFAULT_ELECTRIC_URL,
 } as const;
 
 // Theme
 export const THEME_STORAGE_KEY = "superset-theme";
 
 // Download URLs
-export const DOWNLOAD_URL_MAC_ARM64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Superset-arm64.dmg`;
-export const DOWNLOAD_URL_MAC_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Superset-x64.dmg`;
+export const DOWNLOAD_URL_MAC_ARM64 = `${COMPANY.GITHUB_URL}/releases/latest/download/${APP_RELEASE_BASENAME}-arm64.dmg`;
+export const DOWNLOAD_URL_MAC_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/${APP_RELEASE_BASENAME}-x64.dmg`;
 
 // Auth token configuration
 export const TOKEN_CONFIG = {
@@ -80,10 +127,17 @@ export const FEATURE_FLAGS = {
 	/**
 	 * Routes the Slack agent to the v2 MCP server (`@superset/mcp-v2`)
 	 * instead of v1 (`@superset/mcp`). Evaluated against the linking
-	 * user's id (the Superset user behind the Slack mention) so it
+	 * user's id (the platform user behind the Slack mention) so it
 	 * piggybacks on the existing All Access cohort. Off → v1.
 	 */
 	SLACK_MCP_V2: "slack-mcp-v2",
+	/**
+	 * Gates the v2 desktop terminal's "Share remote control" button.
+	 * Evaluated against the sharer's platform user id — anyone with the
+	 * resulting share link can still open it (the per-session HMAC is
+	 * the credential), so this only controls who can START a session.
+	 */
+	WEB_REMOTE_CONTROL_ACCESS: "web-remote-control-access",
 	/**
 	 * Per-user override for the relay base URL. Payload shape:
 	 * `{ "url": "https://..." }`. When set, both the host-service tunnel and

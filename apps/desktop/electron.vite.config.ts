@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
+import { SERVICE_URLS } from "@superset/shared/constants";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import reactPlugin from "@vitejs/plugin-react";
@@ -34,14 +35,15 @@ const workspaceDependencies = Object.keys(dependencies).filter((dependency) =>
 );
 
 // Sentry plugin for uploading sourcemaps (only in CI with auth token)
-const sentryPlugin = process.env.SENTRY_AUTH_TOKEN
-	? sentryVitePlugin({
-			org: "superset-sh",
-			project: "desktop",
-			authToken: process.env.SENTRY_AUTH_TOKEN,
-			release: { name: version },
-		})
-	: null;
+const sentryPlugin =
+	process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG
+		? sentryVitePlugin({
+				org: process.env.SENTRY_ORG,
+				project: "desktop",
+				authToken: process.env.SENTRY_AUTH_TOKEN,
+				release: { name: version },
+			})
+		: null;
 
 export default defineConfig({
 	main: {
@@ -55,28 +57,31 @@ export default defineConfig({
 			),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,
-				"https://api.superset.sh",
+				SERVICE_URLS.API,
 			),
 			"process.env.NEXT_PUBLIC_STREAMS_URL": defineEnv(
 				process.env.NEXT_PUBLIC_STREAMS_URL,
-				"https://streams.superset.sh",
+				SERVICE_URLS.STREAMS,
 			),
 			"process.env.NEXT_PUBLIC_WEB_URL": defineEnv(
 				process.env.NEXT_PUBLIC_WEB_URL,
-				"https://app.superset.sh",
+				SERVICE_URLS.WEB,
 			),
 			"process.env.NEXT_PUBLIC_MARKETING_URL": defineEnv(
 				process.env.NEXT_PUBLIC_MARKETING_URL,
-				"https://superset.sh",
+				SERVICE_URLS.MARKETING,
 			),
 			"process.env.NEXT_PUBLIC_DOCS_URL": defineEnv(
 				process.env.NEXT_PUBLIC_DOCS_URL,
-				"https://docs.superset.sh",
+				SERVICE_URLS.DOCS,
 			),
 			"process.env.SENTRY_DSN_DESKTOP": defineEnv(
 				process.env.SENTRY_DSN_DESKTOP,
 			),
-			"process.env.RELAY_URL": defineEnv(process.env.RELAY_URL),
+			"process.env.RELAY_URL": defineEnv(
+				process.env.RELAY_URL,
+				SERVICE_URLS.RELAY,
+			),
 			// Must match renderer for analytics in main process
 			"process.env.NEXT_PUBLIC_POSTHOG_KEY": defineEnv(
 				process.env.NEXT_PUBLIC_POSTHOG_KEY,
@@ -86,7 +91,7 @@ export default defineConfig({
 			),
 			"process.env.STREAMS_URL": defineEnv(
 				process.env.STREAMS_URL,
-				"https://superset-stream.fly.dev",
+				SERVICE_URLS.STREAMS,
 			),
 			"process.env.DESKTOP_VITE_PORT": defineEnv(process.env.DESKTOP_VITE_PORT),
 			"process.env.DESKTOP_NOTIFICATIONS_PORT": defineEnv(
@@ -172,23 +177,23 @@ export default defineConfig({
 			"process.platform": defineEnv(process.platform),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,
-				"https://api.superset.sh",
+				SERVICE_URLS.API,
 			),
 			"process.env.NEXT_PUBLIC_WEB_URL": defineEnv(
 				process.env.NEXT_PUBLIC_WEB_URL,
-				"https://app.superset.sh",
+				SERVICE_URLS.WEB,
 			),
 			"process.env.NEXT_PUBLIC_MARKETING_URL": defineEnv(
 				process.env.NEXT_PUBLIC_MARKETING_URL,
-				"https://superset.sh",
+				SERVICE_URLS.MARKETING,
 			),
 			"process.env.NEXT_PUBLIC_ELECTRIC_URL": defineEnv(
 				process.env.NEXT_PUBLIC_ELECTRIC_URL,
-				"https://electric-proxy.avi-6ac.workers.dev",
+				SERVICE_URLS.ELECTRIC,
 			),
 			"process.env.NEXT_PUBLIC_DOCS_URL": defineEnv(
 				process.env.NEXT_PUBLIC_DOCS_URL,
-				"https://docs.superset.sh",
+				SERVICE_URLS.DOCS,
 			),
 			"import.meta.env.DEV_SERVER_PORT": defineEnv(String(DEV_SERVER_PORT)),
 			"import.meta.env.NEXT_PUBLIC_POSTHOG_KEY": defineEnv(
@@ -200,10 +205,13 @@ export default defineConfig({
 			"import.meta.env.SENTRY_DSN_DESKTOP": defineEnv(
 				process.env.SENTRY_DSN_DESKTOP,
 			),
-			"process.env.RELAY_URL": defineEnv(process.env.RELAY_URL),
+			"process.env.RELAY_URL": defineEnv(
+				process.env.RELAY_URL,
+				SERVICE_URLS.RELAY,
+			),
 			"process.env.STREAMS_URL": defineEnv(
 				process.env.STREAMS_URL,
-				"https://superset-stream.fly.dev",
+				SERVICE_URLS.STREAMS,
 			),
 			"process.env.DESKTOP_VITE_PORT": defineEnv(process.env.DESKTOP_VITE_PORT),
 			"process.env.DESKTOP_NOTIFICATIONS_PORT": defineEnv(

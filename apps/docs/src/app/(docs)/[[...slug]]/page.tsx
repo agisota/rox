@@ -1,3 +1,4 @@
+import { COMPANY } from "@superset/shared/constants";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPageImage, source } from "@/lib/source";
@@ -25,8 +26,8 @@ export default async function Page(props: PageProps<"/[[...slug]]">) {
 				header: <div className="w-10 h-4"></div>,
 			}}
 			editOnGithub={{
-				owner: "superset-sh",
-				repo: "superset",
+				owner: COMPANY.GITHUB_OWNER,
+				repo: COMPANY.GITHUB_REPO,
 				path: `apps/docs/content/docs/${page.path}`,
 			}}
 		>
@@ -45,7 +46,7 @@ export default async function Page(props: PageProps<"/[[...slug]]">) {
 				<LLMCopyButton markdownUrl={`${page.url}.mdx`} />
 				<ViewOptions
 					markdownUrl={`${page.url}.mdx`}
-					githubUrl={`https://github.com/superset-sh/superset/blob/main/apps/docs/content/docs/${page.path}`}
+					githubUrl={`${COMPANY.GITHUB_URL}/blob/main/apps/docs/content/docs/${page.path}`}
 				/>
 			</div>
 			<DocsBody>

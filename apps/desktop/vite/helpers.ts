@@ -1,5 +1,6 @@
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, normalize, resolve } from "node:path";
+import { SERVICE_URLS } from "@superset/shared/constants";
 import type { Plugin } from "vite";
 
 import { main, resources } from "../package.json";
@@ -76,7 +77,7 @@ export function htmlEnvTransformPlugin(): Plugin {
 			return html
 				.replace(
 					/%NEXT_PUBLIC_API_URL%/g,
-					process.env.NEXT_PUBLIC_API_URL || "https://api.superset.sh",
+					process.env.NEXT_PUBLIC_API_URL || SERVICE_URLS.API,
 				)
 				.replace(
 					/%NEXT_PUBLIC_ELECTRIC_URL%/g,
@@ -87,12 +88,9 @@ export function htmlEnvTransformPlugin(): Plugin {
 				)
 				.replace(
 					/%NEXT_PUBLIC_STREAMS_URL%/g,
-					process.env.NEXT_PUBLIC_STREAMS_URL || "https://streams.superset.sh",
+					process.env.NEXT_PUBLIC_STREAMS_URL || SERVICE_URLS.STREAMS,
 				)
-				.replace(
-					/%RELAY_URL%/g,
-					process.env.RELAY_URL || "https://relay.superset.sh",
-				);
+				.replace(/%RELAY_URL%/g, process.env.RELAY_URL || SERVICE_URLS.RELAY);
 		},
 	};
 }
