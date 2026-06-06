@@ -1,0 +1,19 @@
+/**
+ * @superset/workflow-core
+ *
+ * Pure-TypeScript domain layer for the Superset Automation Fabric.
+ *
+ * This package contains NO React, NO database access, and NO runtime side
+ * effects. It owns the workflow graph contract, graph validation, JSON-schema
+ * validation for skill input/output, the block registry, skill node
+ * definitions, and policy types. Everything here is deterministic and
+ * unit-testable in isolation.
+ *
+ * Execution (DB writes, host calls, secrets) lives in `@superset/workflow-runtime`.
+ * Sim import/export lives in `@superset/workflow-sim-adapter`.
+ */
+
+export const WORKFLOW_CORE_VERSION = "0.1.0";
+
+export * from "./errors";
+export * from "./types";
