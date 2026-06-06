@@ -8,9 +8,12 @@
  *  - `sidecar`         — call a Sim workflow over an API and wrap the result
  *  - `native_converted`— Superset stores + executes the converted graph itself
  *
- * Skeleton only at Milestone 0 — importers/exporters land in Milestone 10.
+ * The import path (M10) converts Sim `WorkflowState` JSON into a Superset graph.
  */
 
 export const WORKFLOW_SIM_ADAPTER_VERSION = "0.1.0";
 
 export type SimIntegrationMode = "import_only" | "sidecar" | "native_converted";
+
+export * from "./importSimWorkflowState";
+export * from "./simTypes";
