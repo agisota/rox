@@ -28,7 +28,7 @@
 		"@xterm/xterm": "6.1.0-beta.220",
 		"better-auth": "1.6.13",
 		"framer-motion": "12.38.0",
-		"geist": "1.7.0",
+		"geist": "1.7.2",
 		"import-in-the-middle": "2.0.1",
 		"jose": "6.2.2",
 		"lucide-react": "0.563.0",
