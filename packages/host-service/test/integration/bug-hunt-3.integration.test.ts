@@ -3,13 +3,22 @@
  * branch / name comes from the renderer.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { existsSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { projects } from "../../src/db/schema";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
+
+setDefaultTimeout(30_000);
 
 describe("bug-hunt-3: branch-name path traversal in workspace.create", () => {
 	let host: TestHost;

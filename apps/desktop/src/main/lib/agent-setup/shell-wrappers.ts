@@ -126,6 +126,32 @@ function buildPathPrependFunction(binDir: string): string {
 _superset_prepend_bin`;
 }
 
+/** Build a shell snippet that restores the caller-provided PATH entries. */
+function buildInitialPathRestoreFunction(): string {
+	return `_superset_restore_initial_path() {
+  local _superset_path_entry
+  local _superset_restored_path=""
+  IFS=: read -ra _superset_initial_path_entries <<< "$_superset_initial_path"
+  IFS=: read -ra _superset_current_path_entries <<< "$PATH"
+  for _superset_path_entry in "\${_superset_initial_path_entries[@]}"; do
+    [[ -z "$_superset_path_entry" ]] && continue
+    case ":$_superset_restored_path:" in
+      *:"$_superset_path_entry":*) ;;
+      *) _superset_restored_path="\${_superset_restored_path:+$_superset_restored_path:}$_superset_path_entry" ;;
+    esac
+  done
+  for _superset_path_entry in "\${_superset_current_path_entries[@]}"; do
+    [[ -z "$_superset_path_entry" ]] && continue
+    case ":$_superset_restored_path:" in
+      *:"$_superset_path_entry":*) ;;
+      *) _superset_restored_path="\${_superset_restored_path:+$_superset_restored_path:}$_superset_path_entry" ;;
+    esac
+  done
+  export PATH="$_superset_restored_path"
+}
+_superset_restore_initial_path`;
+}
+
 /**
  * Build a zsh precmd hook that re-asserts BIN_DIR in PATH.
  * Tools like mise/asdf register precmd hooks that reconstruct PATH,
@@ -249,6 +275,7 @@ export function createBashWrapper(
 
 # Save Superset env vars before sourcing user config
 ${SUPERSET_ENV_SAVE}
+_superset_initial_path="$PATH"
 
 # Source system profile
 [[ -f /etc/profile ]] && source /etc/profile
@@ -267,6 +294,9 @@ fi
 
 # Restore Superset env vars that user config may have overridden
 ${SUPERSET_ENV_RESTORE}
+
+# Restore caller-provided PATH entries that profile files may have removed.
+${buildInitialPathRestoreFunction()}
 
 # Keep superset bin first without duplicating entries
 ${buildPathPrependFunction(paths.BIN_DIR)}

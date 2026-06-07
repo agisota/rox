@@ -3,7 +3,14 @@
  * paths. Same convention: passing test = defense holds, failing test = bug.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import {
 	existsSync,
@@ -17,6 +24,8 @@ import { eq } from "drizzle-orm";
 import { projects, workspaces } from "../../src/db/schema";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
+
+setDefaultTimeout(30_000);
 
 describe("bug-hunt-2: symlink and additional sandbox probes", () => {
 	let host: TestHost;

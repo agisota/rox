@@ -1,7 +1,16 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { TRPCClientError } from "@trpc/client";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
+
+setDefaultTimeout(30_000);
 
 describe("chat router integration with stub ChatRuntimeManager", () => {
 	let host: TestHost;

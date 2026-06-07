@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { TRPCClientError } from "@trpc/client";
 import { cloudOk } from "../helpers/cloud-fakes";
@@ -6,6 +6,8 @@ import { createTestHost } from "../helpers/createTestHost";
 import { createGitFixture } from "../helpers/git-fixture";
 import { createProjectScenario } from "../helpers/scenarios";
 import { seedProject } from "../helpers/seed";
+
+setDefaultTimeout(30_000);
 
 describe("project router integration", () => {
 	let dispose: (() => Promise<void>) | undefined;

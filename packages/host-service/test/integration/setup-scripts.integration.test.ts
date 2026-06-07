@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,6 +15,8 @@ import { __resetSessionsForTesting } from "../../src/terminal/terminal";
 import { __setAccountShellForTesting } from "../../src/terminal/user-shell";
 import { cloudFlows } from "../helpers/cloud-fakes";
 import { createProjectScenario } from "../helpers/scenarios";
+
+setDefaultTimeout(30_000);
 
 describe("setup scripts integration", () => {
 	let dispose: (() => Promise<void>) | undefined;

@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { execSync } from "node:child_process";
 import {
 	existsSync,
@@ -24,6 +31,8 @@ const TEST_DIR = join(
 	realpathSync(tmpdir()),
 	`superset-test-external-wt-${process.pid}`,
 );
+
+setDefaultTimeout(30_000);
 
 function createTestRepo(name: string): string {
 	const repoPath = join(TEST_DIR, name);

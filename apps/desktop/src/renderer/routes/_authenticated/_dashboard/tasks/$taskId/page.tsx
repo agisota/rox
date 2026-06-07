@@ -18,6 +18,7 @@ import { Route as TasksLayoutRoute } from "../layout";
 import { tasksSearchFromFilters } from "../stores/tasks-filter-state";
 import { ActivitySection } from "./components/ActivitySection";
 import { EditableTitle } from "./components/EditableTitle";
+import { ExecutionCircuitPanel } from "./components/ExecutionCircuitPanel";
 import { PropertiesSidebar } from "./components/PropertiesSidebar";
 import { TaskDetailHeader } from "./components/TaskDetailHeader";
 import { useEscapeToNavigate } from "./hooks/useEscapeToNavigate";
@@ -167,6 +168,8 @@ function TaskDetailPage() {
 							content={task.description ?? ""}
 							onSave={handleSaveDescription}
 						/>
+
+						<ExecutionCircuitPanel taskId={task.id} />
 
 						{creatorName ? (
 							<>

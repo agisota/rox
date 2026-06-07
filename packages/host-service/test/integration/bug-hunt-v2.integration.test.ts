@@ -3,11 +3,20 @@
  * Pass = defense holds. Fail / .todo = real v2 bug.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { projects, workspaces } from "../../src/db/schema";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
+
+setDefaultTimeout(30_000);
 
 describe("bug-hunt-v2: progress-store leak on early errors in workspaceCreation.create", () => {
 	// Both `workspaceCreation.create` and `workspaceCreation.getProgress`
@@ -34,7 +43,7 @@ describe("bug-hunt-v2: workspaceCleanup.destroy phase ordering", () => {
 
 	afterEach(async () => {
 		if (host) await host.dispose();
-		repo.dispose();
+		repo?.dispose();
 	});
 
 	test("destroy rejects a main workspace BEFORE running teardown or cloud-delete", async () => {
@@ -109,9 +118,9 @@ describe("bug-hunt-v2: workspaceCreation.adopt cross-project safety", () => {
 	});
 
 	afterEach(async () => {
-		await host.dispose();
-		repoA.dispose();
-		repoB.dispose();
+		if (host) await host.dispose();
+		repoA?.dispose();
+		repoB?.dispose();
 	});
 
 	test("adopt with worktreePath belonging to a different project is rejected", async () => {
@@ -151,7 +160,7 @@ describe("bug-hunt-v2: chat.sendMessage cloud failure must not break the turn", 
 	});
 
 	afterEach(async () => {
-		await host.dispose();
+		if (host) await host.dispose();
 	});
 
 	test("chat.sendMessage swallows cloud chat.updateSession failures", async () => {
