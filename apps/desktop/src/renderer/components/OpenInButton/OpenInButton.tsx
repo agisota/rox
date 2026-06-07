@@ -1,12 +1,12 @@
-import type { ExternalApp } from "@superset/local-db";
-import { Button } from "@superset/ui/button";
-import { ButtonGroup } from "@superset/ui/button-group";
+import type { ExternalApp } from "@rox/local-db";
+import { Button } from "@rox/ui/button";
+import { ButtonGroup } from "@rox/ui/button-group";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+} from "@rox/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useState } from "react";
 import { HiChevronDown } from "react-icons/hi2";
 import {

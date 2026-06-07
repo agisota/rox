@@ -326,7 +326,7 @@ function sleep(ms) {
 
 async function main() {
 	const args = parseArgs(process.argv.slice(2));
-	const tmpDir = mkdtempSync(path.join(os.tmpdir(), "superset-pty-cleanup-"));
+	const tmpDir = mkdtempSync(path.join(os.tmpdir(), "rox-pty-cleanup-"));
 	const launchedSocketPath = path.join(tmpDir, "pty-daemon.sock");
 	const helperPidPath = path.join(tmpDir, "detached-helper.pid");
 	const sessionId = `cleanup-smoke-${process.pid}-${Date.now()}`;
@@ -373,7 +373,7 @@ async function main() {
 					stdio: ["ignore", "ignore", "pipe"],
 					env: {
 						...process.env,
-						SUPERSET_PTY_DAEMON_VERSION: "cleanup-smoke",
+						ROX_PTY_DAEMON_VERSION: "cleanup-smoke",
 					},
 				},
 			);
@@ -506,8 +506,7 @@ async function findProductionDaemon(orgId) {
 }
 
 function listProductionDaemonManifests() {
-	const home =
-		process.env.SUPERSET_HOME_DIR || path.join(os.homedir(), ".superset");
+	const home = process.env.ROX_HOME_DIR || path.join(os.homedir(), ".rox");
 	const hostDir = path.join(home, "host");
 	if (!existsSync(hostDir)) return [];
 

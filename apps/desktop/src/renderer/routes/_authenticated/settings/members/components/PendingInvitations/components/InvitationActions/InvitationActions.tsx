@@ -1,12 +1,12 @@
-import type { SelectInvitation } from "@superset/db/schema";
-import { Button } from "@superset/ui/button";
+import type { SelectInvitation } from "@rox/db/schema";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
 import { HiEllipsisVertical, HiOutlineXMark } from "react-icons/hi2";
 import { authClient } from "renderer/lib/auth-client";

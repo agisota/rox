@@ -3,7 +3,7 @@ import {
 	createWorkspaceStore,
 	type LayoutNode,
 	type WorkspaceState,
-} from "@superset/panes";
+} from "@rox/panes";
 import type { PaneViewerData } from "../../types";
 import {
 	findTerminalPaneLocation,

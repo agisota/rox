@@ -1,8 +1,8 @@
 import {
 	PromptInputButton,
 	usePromptInputAttachments,
-} from "@superset/ui/ai-elements/prompt-input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+} from "@rox/ui/ai-elements/prompt-input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { PaperclipIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { PILL_BUTTON_CLASS } from "../../types";

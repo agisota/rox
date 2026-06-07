@@ -13,7 +13,7 @@ import {
 	getCurrentOS,
 	type IParsedLink,
 	removeLinkSuffix,
-} from "@superset/shared/terminal-link-parsing";
+} from "@rox/shared/terminal-link-parsing";
 import type { TerminalLinkResolver } from "./link-resolver";
 
 const MAX_LINE_LENGTH = 2000;
@@ -149,7 +149,7 @@ export class LocalLinkDetector {
 			}
 		}
 
-		// SUPERSET ADDITION (not in VSCode's shared fallback matchers):
+		// ROX ADDITION (not in VSCode's shared fallback matchers):
 		// Last resort — treat the whole trimmed line as a path candidate.
 		// Safe because we validate via stat (false positives are filtered out).
 		// Matches VSCode's `/^ *(?<link>(?<path>.+))/` whole-line fallback in

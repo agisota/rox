@@ -4,12 +4,12 @@ import { statSync } from "node:fs";
 import { mkdir, rename } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
-import type { BranchPrefixMode } from "@superset/local-db";
+import type { BranchPrefixMode } from "@rox/local-db";
 import {
 	sanitizeAuthorPrefix,
 	sanitizeBranchName,
 	sanitizeBranchNameWithMaxLength,
-} from "@superset/shared/workspace-launch";
+} from "@rox/shared/workspace-launch";
 import friendlyWords from "friendly-words";
 import type { StatusResult } from "simple-git";
 import { runWithPostCheckoutHookTolerance } from "../../utils/git-hook-tolerance";
@@ -773,10 +773,7 @@ export async function removeWorktree(
 	try {
 		// Rename the worktree to a sibling temp dir (same filesystem to avoid EXDEV),
 		// then `git worktree prune` to clean metadata, then delete in background.
-		const tempPath = join(
-			dirname(worktreePath),
-			`.superset-delete-${randomUUID()}`,
-		);
+		const tempPath = join(dirname(worktreePath), `.rox-delete-${randomUUID()}`);
 		await rename(worktreePath, tempPath);
 
 		await execGitWithShellPath(["-C", mainRepoPath, "worktree", "prune"], {

@@ -1,15 +1,15 @@
 /** @see https://docs.slack.dev/messaging/work-objects/ */
 
+import type { tasks } from "@rox/db/schema";
 import type {
 	EntityMetadata,
 	EntityType,
 	TaskEntityFields,
 } from "@slack/types";
-import type { tasks } from "@superset/db/schema";
 
 import { env } from "@/env";
 
-const SUPERSET_PRODUCT_NAME = "Superset";
+const ROX_PRODUCT_NAME = "Rox";
 
 type TaskWithRelations = typeof tasks.$inferSelect & {
 	status?: { id: string; name: string } | null;
@@ -61,7 +61,7 @@ export function createTaskWorkObject(task: TaskWithRelations): EntityMetadata {
 				},
 				display_id: task.slug,
 				display_type: "Task",
-				product_name: SUPERSET_PRODUCT_NAME,
+				product_name: ROX_PRODUCT_NAME,
 				full_size_preview: {
 					is_supported: false,
 				},
@@ -202,7 +202,7 @@ export function createTaskFlexpaneObject(
 				},
 				display_id: task.slug,
 				display_type: "Task",
-				product_name: SUPERSET_PRODUCT_NAME,
+				product_name: ROX_PRODUCT_NAME,
 				full_size_preview: {
 					is_supported: false,
 				},
@@ -216,7 +216,7 @@ export function createTaskFlexpaneObject(
 			actions: {
 				primary_actions: [
 					{
-						text: "Open in Superset",
+						text: "Open in Rox",
 						action_id: "open_task",
 						style: "primary",
 						url: taskUrl,

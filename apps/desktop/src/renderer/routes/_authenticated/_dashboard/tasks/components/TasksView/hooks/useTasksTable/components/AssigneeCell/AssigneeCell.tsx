@@ -1,10 +1,10 @@
-import { Avatar } from "@superset/ui/atoms/Avatar";
+import { Avatar } from "@rox/ui/atoms/Avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import { useLiveQuery } from "@tanstack/react-db";
 import type { CellContext } from "@tanstack/react-table";
 import { useMemo, useState } from "react";

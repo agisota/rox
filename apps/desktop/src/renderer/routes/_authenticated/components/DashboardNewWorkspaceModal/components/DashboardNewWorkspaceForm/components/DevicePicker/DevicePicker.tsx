@@ -7,8 +7,8 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/dropdown-menu";
+import { cn } from "@rox/ui/utils";
 import {
 	HiCheck,
 	HiChevronUpDown,

@@ -1,5 +1,5 @@
-import { db } from "@superset/db/client";
-import { chatSessions } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { chatSessions } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 import { env } from "@/env";
 import {

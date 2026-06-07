@@ -1,4 +1,4 @@
-import { sanitizeUserBranchName } from "@superset/shared/workspace-launch";
+import { sanitizeUserBranchName } from "@rox/shared/workspace-launch";
 import {
 	PromptInput,
 	PromptInputButton,
@@ -6,12 +6,12 @@ import {
 	PromptInputSubmit,
 	PromptInputTools,
 	useProviderAttachments,
-} from "@superset/ui/ai-elements/prompt-input";
-import { Button } from "@superset/ui/button";
-import { Input } from "@superset/ui/input";
-import { isEnterSubmit } from "@superset/ui/lib/keyboard";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/ai-elements/prompt-input";
+import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { isEnterSubmit } from "@rox/ui/lib/keyboard";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpIcon } from "lucide-react";

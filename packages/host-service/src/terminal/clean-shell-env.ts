@@ -1,11 +1,11 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import * as os from "node:os";
-import { signalProcessTreeAndGroups } from "@superset/pty-daemon/process-tree";
+import { signalProcessTreeAndGroups } from "@rox/pty-daemon/process-tree";
 import { resolveConfiguredShell } from "./user-shell.ts";
 
 const SHELL_ENV_TIMEOUT_MS = 8_000;
 const CACHE_TTL_MS = 60_000;
-const DELIMITER = "__SUPERSET_SHELL_ENV__";
+const DELIMITER = "__ROX_SHELL_ENV__";
 const DIAGNOSTIC_OUTPUT_LIMIT = 200;
 
 const SHELL_BOOTSTRAP_KEYS = [

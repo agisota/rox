@@ -1,13 +1,13 @@
-import type { FileOpenMode } from "@superset/local-db";
-import { Label } from "@superset/ui/label";
+import type { FileOpenMode } from "@rox/local-db";
+import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
-import { Switch } from "@superset/ui/switch";
+} from "@rox/ui/select";
+import { Switch } from "@rox/ui/switch";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
 	isItemVisible,

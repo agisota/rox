@@ -17,7 +17,7 @@ export const FEATURES: Feature[] = [
 		tag: "Universal Compatibility",
 		title: "Works with any CLI agent",
 		description:
-			"Superset is agent-agnostic. Use Claude Code, OpenCode, Cursor, or any CLI-based coding tool. Switch between agents seamlessly.",
+			"Rox is agent-agnostic. Use Claude Code, OpenCode, Cursor, or any CLI-based coding tool. Switch between agents seamlessly.",
 		colors: ["#047857", "#065f46", "#064e3b", "#1a1a2e"],
 	},
 	{

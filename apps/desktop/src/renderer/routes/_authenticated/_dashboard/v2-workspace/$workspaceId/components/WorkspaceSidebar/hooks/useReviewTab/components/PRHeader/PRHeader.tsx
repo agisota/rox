@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { LuArrowUpRight } from "react-icons/lu";
 import { PRIcon } from "renderer/screens/main/components/PRIcon";
 import type { NormalizedPR } from "../../types";

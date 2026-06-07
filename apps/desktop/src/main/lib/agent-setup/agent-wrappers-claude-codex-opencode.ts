@@ -4,15 +4,15 @@ import path from "node:path";
 import {
 	buildWrapperScript,
 	createWrapper,
-	isSupersetManagedHookCommand,
+	isRoxManagedHookCommand,
 	writeFileIfChanged,
 } from "./agent-wrappers-common";
 import { getNotifyScriptPath, NOTIFY_SCRIPT_NAME } from "./notify-hook";
 import { OPENCODE_CONFIG_DIR, OPENCODE_PLUGIN_DIR } from "./paths";
 
-export const OPENCODE_PLUGIN_FILE = "superset-notify.js";
+export const OPENCODE_PLUGIN_FILE = "rox-notify.js";
 
-const OPENCODE_PLUGIN_SIGNATURE = "// Superset opencode plugin";
+const OPENCODE_PLUGIN_SIGNATURE = "// Rox opencode plugin";
 const OPENCODE_PLUGIN_VERSION = "v8";
 export const OPENCODE_PLUGIN_MARKER = `${OPENCODE_PLUGIN_SIGNATURE} ${OPENCODE_PLUGIN_VERSION}`;
 
@@ -28,7 +28,7 @@ const CODEX_WRAPPER_EXEC_TEMPLATE_PATH = path.join(
 );
 
 /**
- * Returns the environment-scoped OpenCode plugin path under Superset home.
+ * Returns the environment-scoped OpenCode plugin path under Rox home.
  */
 export function getOpenCodePluginPath(): string {
 	return path.join(OPENCODE_PLUGIN_DIR, OPENCODE_PLUGIN_FILE);
@@ -66,7 +66,7 @@ interface ClaudeSettingsJson {
 }
 
 const CLAUDE_DYNAMIC_NOTIFY_RELATIVE_PATH = `hooks/${NOTIFY_SCRIPT_NAME}`;
-const CLAUDE_DYNAMIC_NOTIFY_PATH_MARKER = `$SUPERSET_HOME_DIR/${CLAUDE_DYNAMIC_NOTIFY_RELATIVE_PATH}`;
+const CLAUDE_DYNAMIC_NOTIFY_PATH_MARKER = `$ROX_HOME_DIR/${CLAUDE_DYNAMIC_NOTIFY_RELATIVE_PATH}`;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -74,15 +74,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /**
  * Returns the shell command written into Claude's global hook config.
- * The notify path is resolved at runtime from SUPERSET_HOME_DIR so one
+ * The notify path is resolved at runtime from ROX_HOME_DIR so one
  * shared ~/.claude/settings.json works for both dev and prod installs.
  *
- * `SUPERSET_AGENT_ID=claude` is inlined so the v2 hook payload carries the
- * wrapper-level identity even when Claude is launched outside the Superset
+ * `ROX_AGENT_ID=claude` is inlined so the v2 hook payload carries the
+ * wrapper-level identity even when Claude is launched outside the Rox
  * wrapper (system PATH resolves to the real binary directly).
  */
 export function getClaudeManagedHookCommand(): string {
-	return `[ -n "$SUPERSET_HOME_DIR" ] && [ -x "$SUPERSET_HOME_DIR/${CLAUDE_DYNAMIC_NOTIFY_RELATIVE_PATH}" ] && SUPERSET_AGENT_ID=claude "$SUPERSET_HOME_DIR/${CLAUDE_DYNAMIC_NOTIFY_RELATIVE_PATH}" || true`;
+	return `[ -n "$ROX_HOME_DIR" ] && [ -x "$ROX_HOME_DIR/${CLAUDE_DYNAMIC_NOTIFY_RELATIVE_PATH}" ] && ROX_AGENT_ID=claude "$ROX_HOME_DIR/${CLAUDE_DYNAMIC_NOTIFY_RELATIVE_PATH}" || true`;
 }
 
 function isManagedClaudeHookCommand(
@@ -92,7 +92,7 @@ function isManagedClaudeHookCommand(
 	return (
 		command?.includes(notifyScriptPath) ||
 		command?.includes(CLAUDE_DYNAMIC_NOTIFY_PATH_MARKER) ||
-		isSupersetManagedHookCommand(command, NOTIFY_SCRIPT_NAME)
+		isRoxManagedHookCommand(command, NOTIFY_SCRIPT_NAME)
 	);
 }
 
@@ -244,7 +244,7 @@ export function getClaudeGlobalSettingsJsonContent(
 }
 
 /**
- * Writes Superset hook definitions directly into ~/.claude/settings.json.
+ * Writes Rox hook definitions directly into ~/.claude/settings.json.
  * This ensures hooks work regardless of whether the binary wrapper is in PATH,
  * matching the approach used for Cursor, Gemini, Droid, and Mastra.
  */
@@ -274,7 +274,7 @@ export function getOpenCodePluginContent(notifyPath: string): string {
 
 /**
  * Pass-through wrapper for Claude. Hooks live in ~/.claude/settings.json
- * (createClaudeSettingsJson); the wrapper exists only to forward SUPERSET_*
+ * (createClaudeSettingsJson); the wrapper exists only to forward ROX_*
  * env vars into the agent process tree.
  */
 export function createClaudeWrapper(): void {
@@ -285,7 +285,7 @@ export function createClaudeWrapper(): void {
 }
 
 /**
- * Creates the Codex wrapper that injects Superset's notify/session-log logic.
+ * Creates the Codex wrapper that injects Rox's notify/session-log logic.
  */
 export function createCodexWrapper(): void {
 	const notifyPath = getNotifyScriptPath();
@@ -311,7 +311,7 @@ function isManagedCodexHookCommand(
 ): boolean {
 	return (
 		command?.includes(notifyScriptPath) ||
-		isSupersetManagedHookCommand(command, NOTIFY_SCRIPT_NAME)
+		isRoxManagedHookCommand(command, NOTIFY_SCRIPT_NAME)
 	);
 }
 
@@ -359,7 +359,7 @@ export function getCodexGlobalHooksJsonPath(): string {
  * Codex hooks.json uses the same nested structure as Claude/Droid:
  *   { hooks: { EventName: [{ matcher?, hooks: [{ type, command }] }] } }
  *
- * Superset uses native Codex hooks as the durable lifecycle integration path.
+ * Rox uses native Codex hooks as the durable lifecycle integration path.
  * Recent Codex builds no longer emit the older session-log shapes our wrapper
  * watcher depended on, so we register prompt/tool lifecycle hooks directly in
  * ~/.codex/hooks.json and treat the wrapper session-log watcher as best-effort
@@ -376,7 +376,7 @@ export function getCodexGlobalHooksJsonContent(
 		existing.hooks = {};
 	}
 
-	// Remove all stale Superset-managed Codex hook commands, including events we
+	// Remove all stale Rox-managed Codex hook commands, including events we
 	// no longer manage natively (for example UserPromptSubmit from older builds).
 	for (const [eventName, current] of Object.entries(existing.hooks)) {
 		if (!Array.isArray(current)) continue;
@@ -395,11 +395,11 @@ export function getCodexGlobalHooksJsonContent(
 		existing.hooks[eventName] = filtered;
 	}
 
-	// Inline SUPERSET_AGENT_ID like getClaudeManagedHookCommand so the v2
+	// Inline ROX_AGENT_ID like getClaudeManagedHookCommand so the v2
 	// payload carries identity even when codex is launched outside the wrapper.
 	// Quote the path: codex executes via /bin/sh -lc, so a space in $HOME
 	// (e.g. "/Users/Some User/...") would otherwise word-split.
-	const codexCommand = `SUPERSET_AGENT_ID=codex "${notifyScriptPath}"`;
+	const codexCommand = `ROX_AGENT_ID=codex "${notifyScriptPath}"`;
 
 	const managedEvents: Array<{
 		eventName: "SessionStart" | "UserPromptSubmit" | "Stop";
@@ -433,10 +433,10 @@ export function getCodexGlobalHooksJsonContent(
 }
 
 /**
- * Writes Superset hook definitions directly into ~/.codex/hooks.json.
+ * Writes Rox hook definitions directly into ~/.codex/hooks.json.
  * This provides a fallback notification path that works even when the
  * binary wrapper is not in PATH (e.g. user runs codex from outside
- * a Superset terminal).
+ * a Rox terminal).
  *
  * The wrapper still injects Codex's native notify callback and keeps the
  * session-log watcher as a best-effort bridge for older releases, but the

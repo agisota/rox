@@ -123,7 +123,7 @@ export function buildAgentCommandString(
 
 	// stdin: pipe the prompt to the spawned process via heredoc. Delimiter is
 	// constructed to avoid collision with any line in the prompt content.
-	const baseDelimiter = "SUPERSET_PROMPT";
+	const baseDelimiter = "ROX_PROMPT";
 	let delimiter = baseDelimiter;
 	let counter = 0;
 	while (prompt.split("\n").some((line) => line === delimiter)) {
@@ -163,8 +163,8 @@ export type AgentRunResult =
 	| { kind: "terminal"; sessionId: string; label: string }
 	| { kind: "chat"; sessionId: string; label: string };
 
-const SUPERSET_AGENT_ID = "superset";
-const SUPERSET_AGENT_LABEL = "Superset";
+const ROX_AGENT_ID = "rox";
+const ROX_AGENT_LABEL = "Rox";
 
 async function resolveAttachmentsAsFiles(
 	attachmentIds: string[],
@@ -278,8 +278,8 @@ export async function runAgentInWorkspace(
 	ctx: HostServiceContext,
 	input: AgentRunInput,
 ): Promise<AgentRunResult> {
-	if (input.agent === SUPERSET_AGENT_ID) {
-		return runChatAgent(ctx, input, SUPERSET_AGENT_LABEL);
+	if (input.agent === ROX_AGENT_ID) {
+		return runChatAgent(ctx, input, ROX_AGENT_LABEL);
 	}
 	return runTerminalAgent(ctx, input);
 }

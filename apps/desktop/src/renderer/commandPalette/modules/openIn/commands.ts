@@ -1,5 +1,5 @@
-import type { ExternalApp } from "@superset/local-db";
-import { toast } from "@superset/ui/sonner";
+import type { ExternalApp } from "@rox/local-db";
+import { toast } from "@rox/ui/sonner";
 import { ArrowUpRightIcon } from "lucide-react";
 import {
 	APP_OPTIONS,

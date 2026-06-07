@@ -1,4 +1,4 @@
-import { auth } from "@superset/auth/server";
+import { auth } from "@rox/auth/server";
 import { tavily } from "@tavily/core";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";

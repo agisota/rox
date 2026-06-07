@@ -10,7 +10,7 @@ Pair with `V2_LAUNCH_CONTEXT.md` for architectural background and
 2. Ensure your active org has V2 cloud enabled (or you're testing a V2
    project).
 3. Settings → Agents: confirm **Claude** is enabled. For chat-agent
-   tests, enable **Superset Chat**.
+   tests, enable **Rox Chat**.
 4. (Optional) Open devtools console and filter by `[v2-launch]` to trace
    dispatch. `collections` is exposed globally for pending-row inspection:
    ```js
@@ -22,9 +22,9 @@ Pair with `V2_LAUNCH_CONTEXT.md` for architectural background and
 - [ ] **A1. Prompt only** — "add a README explaining this repo." Claude pane
       opens. The command includes the prompt. No errors.
 - [ ] **A2. Prompt + text attachment** — drag `v2-launch-test-artifacts/trace.log`
-      into the modal. After launch: verify `.superset/attachments/trace.log`
-      exists in the worktree (terminal: `ls .superset/attachments/`).
-      Claude prompt contains `![trace.log](.superset/attachments/trace.log)`.
+      into the modal. After launch: verify `.rox/attachments/trace.log`
+      exists in the worktree (terminal: `ls .rox/attachments/`).
+      Claude prompt contains `![trace.log](.rox/attachments/trace.log)`.
 - [ ] **A3. Prompt + image** — drag `v2-launch-test-artifacts/sample.png`.
       Same as A2 with the image.
 - [ ] **A4. Duplicate filename** — drag `trace.log` twice. Both files exist;
@@ -42,9 +42,9 @@ Pair with `V2_LAUNCH_CONTEXT.md` for architectural background and
       drops, drop an image between two text chunks. Image ref sits inline,
       not appended at the end.
 
-## B. Happy-path — chat agent (Superset Chat)
+## B. Happy-path — chat agent (Rox Chat)
 
-Disable Claude (or set Superset Chat as preferred via order in settings).
+Disable Claude (or set Rox Chat as preferred via order in settings).
 
 - [ ] **B1. Prompt only** — chat pane opens; first user message = prompt;
       agent response streams.

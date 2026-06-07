@@ -1,4 +1,4 @@
-import { auth } from "@superset/auth/server";
+import { auth } from "@rox/auth/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -22,7 +22,7 @@ export default async function DashboardLayout({
 
 	const trpc = await api();
 	const organization = await trpc.user.myOrganization.query();
-	const displayName = organization?.name ?? "Superset";
+	const displayName = organization?.name ?? "Rox";
 
 	return (
 		<div className="flex min-h-screen flex-col">

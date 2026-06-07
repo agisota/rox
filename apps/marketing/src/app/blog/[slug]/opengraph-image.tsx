@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 import { getBlogPost } from "@/lib/blog";
 import { formatBlogDate } from "@/lib/blog-utils";
 
-export const alt = "Superset Blog";
+export const alt = "Rox Blog";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -67,7 +67,7 @@ export default async function Image({
 					fontFamily: "Inter",
 				}}
 			>
-				Superset Blog
+				Rox Blog
 			</div>,
 			{
 				...size,
@@ -182,7 +182,7 @@ export default async function Image({
 					</div>
 				</div>
 
-				{/* Superset logo */}
+				{/* Rox logo */}
 				{logoDataUri ? (
 					// biome-ignore lint/a11y/useAltText: ImageResponse requires native <img>
 					// biome-ignore lint/performance/noImgElement: ImageResponse requires native <img>
@@ -195,7 +195,7 @@ export default async function Image({
 							color: "#ffffff",
 						}}
 					>
-						Superset
+						Rox
 					</div>
 				)}
 			</div>

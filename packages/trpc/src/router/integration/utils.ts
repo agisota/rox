@@ -1,7 +1,7 @@
 import {
 	findOrgMembership,
 	findOrgMembershipWithSubscription,
-} from "@superset/db/utils";
+} from "@rox/db/utils";
 import { TRPCError } from "@trpc/server";
 
 export async function verifyOrgMembership(

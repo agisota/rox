@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import { useEffect, useState } from "react";
 import stripeLinkIcon from "renderer/assets/stripe-link.png";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";

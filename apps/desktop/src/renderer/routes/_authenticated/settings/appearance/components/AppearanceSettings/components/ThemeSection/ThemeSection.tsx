@@ -1,5 +1,5 @@
-import { COMPANY } from "@superset/shared/constants";
-import { Button } from "@superset/ui/button";
+import { COMPANY } from "@rox/shared/constants";
+import { Button } from "@rox/ui/button";
 import {
 	Select,
 	SelectContent,
@@ -9,8 +9,8 @@ import {
 	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/select";
+import { toast } from "@rox/ui/sonner";
 import { type ChangeEvent, useRef, useState } from "react";
 import {
 	HiOutlineArrowDownTray,
@@ -261,7 +261,7 @@ export function ThemeSection() {
 			name: "My Custom Theme",
 			type: baseTheme.type,
 			author: "You",
-			description: "Custom Superset theme",
+			description: "Custom Rox theme",
 			ui: baseTheme.ui,
 			terminal: getTerminalColors(baseTheme),
 		};
@@ -272,7 +272,7 @@ export function ThemeSection() {
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
-		link.download = "superset-theme-base.json";
+		link.download = "rox-theme-base.json";
 		link.click();
 		URL.revokeObjectURL(url);
 	};

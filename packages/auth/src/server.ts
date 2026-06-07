@@ -2,21 +2,21 @@ import { apiKey } from "@better-auth/api-key";
 import { expo } from "@better-auth/expo";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { stripe } from "@better-auth/stripe";
-import { db } from "@superset/db/client";
-import { members, subscriptions } from "@superset/db/schema";
-import type { sessions } from "@superset/db/schema/auth";
-import * as authSchema from "@superset/db/schema/auth";
-import { seedDefaultStatuses } from "@superset/db/seed-default-statuses";
-import { MemberAddedEmail } from "@superset/email/emails/member-added";
-import { MemberAddedBillingEmail } from "@superset/email/emails/member-added-billing";
-import { MemberRemovedEmail } from "@superset/email/emails/member-removed";
-import { MemberRemovedBillingEmail } from "@superset/email/emails/member-removed-billing";
-import { OrganizationInvitationEmail } from "@superset/email/emails/organization-invitation";
-import { PaymentFailedEmail } from "@superset/email/emails/payment-failed";
-import { SubscriptionCancelledEmail } from "@superset/email/emails/subscription-cancelled";
-import { SubscriptionStartedEmail } from "@superset/email/emails/subscription-started";
-import { canInvite, type OrganizationRole } from "@superset/shared/auth";
-import { getTrustedVercelPreviewOrigins } from "@superset/shared/vercel-preview-origins";
+import { db } from "@rox/db/client";
+import { members, subscriptions } from "@rox/db/schema";
+import type { sessions } from "@rox/db/schema/auth";
+import * as authSchema from "@rox/db/schema/auth";
+import { seedDefaultStatuses } from "@rox/db/seed-default-statuses";
+import { MemberAddedEmail } from "@rox/email/emails/member-added";
+import { MemberAddedBillingEmail } from "@rox/email/emails/member-added-billing";
+import { MemberRemovedEmail } from "@rox/email/emails/member-removed";
+import { MemberRemovedBillingEmail } from "@rox/email/emails/member-removed-billing";
+import { OrganizationInvitationEmail } from "@rox/email/emails/organization-invitation";
+import { PaymentFailedEmail } from "@rox/email/emails/payment-failed";
+import { SubscriptionCancelledEmail } from "@rox/email/emails/subscription-cancelled";
+import { SubscriptionStartedEmail } from "@rox/email/emails/subscription-started";
+import { canInvite, type OrganizationRole } from "@rox/shared/auth";
+import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { Client } from "@upstash/qstash";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -96,8 +96,8 @@ export const auth = betterAuth({
 		...(env.NEXT_PUBLIC_DESKTOP_URL ? [env.NEXT_PUBLIC_DESKTOP_URL] : []),
 		...getTrustedVercelPreviewOrigins(request?.url ?? env.NEXT_PUBLIC_API_URL),
 		...desktopDevOrigins,
-		"superset://app",
-		"superset://",
+		"rox://app",
+		"rox://",
 		...(process.env.NODE_ENV === "development"
 			? ["exp://", "exp://**", "exp://192.168.*.*:*/**"]
 			: []),
@@ -330,7 +330,7 @@ export const auth = betterAuth({
 				});
 
 				await resend.emails.send({
-					from: "Superset <noreply@superset.sh>",
+					from: "Rox <noreply@rox.one>",
 					to: data.email,
 					subject: `${data.inviter.user.name} invited you to join ${data.organization.name}`,
 					react: OrganizationInvitationEmail({
@@ -602,7 +602,7 @@ export const auth = betterAuth({
 
 					if (acceptedInvitation) {
 						await resend.emails.send({
-							from: "Superset <noreply@superset.sh>",
+							from: "Rox <noreply@rox.one>",
 							to: user.email,
 							subject: `You've been added to ${organization.name}`,
 							react: MemberAddedEmail({
@@ -650,7 +650,7 @@ export const auth = betterAuth({
 
 					await resend.batch.send(
 						owners.map((owner) => ({
-							from: "Superset <noreply@superset.sh>",
+							from: "Rox <noreply@rox.one>",
 							to: owner.email,
 							subject: `Billing update: New member added to ${organization.name}`,
 							react: MemberAddedBillingEmail({
@@ -687,7 +687,7 @@ export const auth = betterAuth({
 
 				afterRemoveMember: async ({ user, organization }) => {
 					await resend.emails.send({
-						from: "Superset <noreply@superset.sh>",
+						from: "Rox <noreply@rox.one>",
 						to: user.email,
 						subject: `You've been removed from ${organization.name}`,
 						react: MemberRemovedEmail({
@@ -739,7 +739,7 @@ export const auth = betterAuth({
 
 					await resend.batch.send(
 						owners.map((owner) => ({
-							from: "Superset <noreply@superset.sh>",
+							from: "Rox <noreply@rox.one>",
 							to: owner.email,
 							subject: `Billing update: Member removed from ${organization.name}`,
 							react: MemberRemovedBillingEmail({
@@ -883,7 +883,7 @@ export const auth = betterAuth({
 				) => {
 					if (plan.name === "enterprise") {
 						throw new Error(
-							"Enterprise subscriptions are managed by admins. Contact founders@superset.sh.",
+							"Enterprise subscriptions are managed by admins. Contact founders@rox.one.",
 						);
 					}
 
@@ -938,9 +938,9 @@ export const auth = betterAuth({
 
 					await resend.batch.send(
 						owners.map((owner) => ({
-							from: "Superset <noreply@superset.sh>",
+							from: "Rox <noreply@rox.one>",
 							to: owner.email,
-							subject: `Welcome to Superset ${plan.name}!`,
+							subject: `Welcome to Rox ${plan.name}!`,
 							react: SubscriptionStartedEmail({
 								ownerName: owner.name,
 								organizationName: org.name,
@@ -991,7 +991,7 @@ export const auth = betterAuth({
 
 					await resend.batch.send(
 						owners.map((owner) => ({
-							from: "Superset <noreply@superset.sh>",
+							from: "Rox <noreply@rox.one>",
 							to: owner.email,
 							subject: `Your ${subscription.plan} subscription has been cancelled`,
 							react: SubscriptionCancelledEmail({
@@ -1057,7 +1057,7 @@ export const auth = betterAuth({
 
 						await resend.batch.send(
 							owners.map((owner) => ({
-								from: "Superset <noreply@superset.sh>",
+								from: "Rox <noreply@rox.one>",
 								to: owner.email,
 								subject: `Payment failed for ${org.name}`,
 								react: PaymentFailedEmail({

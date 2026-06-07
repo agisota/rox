@@ -84,9 +84,8 @@ export function getAnthropicEnvConfigPath(
 	options?: AnthropicEnvConfigDiskOptions,
 ): string {
 	if (options?.configPath) return options.configPath;
-	const supersetHome =
-		process.env.SUPERSET_HOME_DIR?.trim() || join(homedir(), ".superset");
-	return join(supersetHome, CONFIG_FILE_NAME);
+	const roxHome = process.env.ROX_HOME_DIR?.trim() || join(homedir(), ".rox");
+	return join(roxHome, CONFIG_FILE_NAME);
 }
 
 export function parseAnthropicEnvText(envText: string): AnthropicEnvVariables {

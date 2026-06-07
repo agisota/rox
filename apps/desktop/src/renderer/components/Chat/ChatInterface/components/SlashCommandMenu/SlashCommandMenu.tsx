@@ -1,4 +1,4 @@
-import { PopoverContent } from "@superset/ui/popover";
+import { PopoverContent } from "@rox/ui/popover";
 import { useEffect, useRef } from "react";
 import type { SlashCommand } from "../../hooks/useSlashCommands";
 

@@ -1,4 +1,4 @@
-import type { RendererContext } from "@superset/panes";
+import type { RendererContext } from "@rox/panes";
 import {
 	type ReactNode,
 	useCallback,

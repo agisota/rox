@@ -67,23 +67,23 @@ async function pollHealth(port: number, secret: string): Promise<boolean> {
 }
 
 /**
- * Resolve the sibling `superset-host` wrapper binary.
+ * Resolve the sibling `rox-host` wrapper binary.
  *
  * When running as a compiled binary, it's a sibling file in the same bin/
  * directory as the current executable. In dev (`bun run dev`), allow
- * override via SUPERSET_HOST_BIN env var.
+ * override via ROX_HOST_BIN env var.
  */
 function resolveHostBinary(): string {
-	if (process.env.SUPERSET_HOST_BIN) return process.env.SUPERSET_HOST_BIN;
+	if (process.env.ROX_HOST_BIN) return process.env.ROX_HOST_BIN;
 	const cliBin = process.execPath;
-	return join(dirname(cliBin), "superset-host");
+	return join(dirname(cliBin), "rox-host");
 }
 
 function resolveMigrationsFolder(): string {
 	if (process.env.HOST_MIGRATIONS_FOLDER) {
 		return process.env.HOST_MIGRATIONS_FOLDER;
 	}
-	// Compiled layout: <bundle>/bin/superset → <bundle>/share/migrations
+	// Compiled layout: <bundle>/bin/rox → <bundle>/share/migrations
 	const cliBin = process.execPath;
 	const bundleRoot = dirname(dirname(cliBin));
 	return join(bundleRoot, "share", "migrations");
@@ -95,7 +95,7 @@ export async function spawnHostService(
 	const hostBin = resolveHostBinary();
 	if (!existsSync(hostBin)) {
 		throw new Error(
-			`superset-host binary not found at ${hostBin}. Set SUPERSET_HOST_BIN to override.`,
+			`rox-host binary not found at ${hostBin}. Set ROX_HOST_BIN to override.`,
 		);
 	}
 
@@ -112,9 +112,9 @@ export async function spawnHostService(
 			ORGANIZATION_ID: options.organizationId,
 			AUTH_TOKEN: options.sessionToken,
 			...(options.authConfigPath
-				? { SUPERSET_AUTH_CONFIG_PATH: options.authConfigPath }
+				? { ROX_AUTH_CONFIG_PATH: options.authConfigPath }
 				: {}),
-			SUPERSET_API_URL: env.SUPERSET_API_URL,
+			ROX_API_URL: env.ROX_API_URL,
 			RELAY_URL: relayUrl,
 			PORT: String(port),
 			HOST_SERVICE_PORT: String(port),

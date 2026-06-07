@@ -1,4 +1,4 @@
-import { SupersetError } from "../core/error";
+import { RoxError } from "../core/error";
 import { APIResource } from "../core/resource";
 import type { RequestOptions } from "../internal/request-options";
 
@@ -8,7 +8,7 @@ import type { RequestOptions } from "../internal/request-options";
  * (`list`) and the launch action (`create`) are routed to a specific host
  * through the relay tunnel.
  *
- * Mirrors the CLI's `superset agents …` commands.
+ * Mirrors the CLI's `rox agents …` commands.
  */
 export class Agents extends APIResource {
 	/**
@@ -17,7 +17,7 @@ export class Agents extends APIResource {
 	 * label/command/args/env. First call on a fresh host seeds bundled
 	 * defaults.
 	 *
-	 * Mirrors `superset agents list --host <id>`.
+	 * Mirrors `rox agents list --host <id>`.
 	 */
 	list(params: AgentListParams, options?: RequestOptions) {
 		this._requireOrgId();
@@ -35,7 +35,7 @@ export class Agents extends APIResource {
 	 * preset (or HostAgentConfig instance) in a fresh terminal session on that
 	 * host. Pass an explicit `hostId` to skip the lookup.
 	 *
-	 * Mirrors `superset agents create`.
+	 * Mirrors `rox agents create`.
 	 */
 	async create(
 		params: AgentCreateParams,
@@ -52,7 +52,7 @@ export class Agents extends APIResource {
 				},
 			);
 			if (!cloud) {
-				throw new SupersetError(`Workspace not found: ${params.workspaceId}`);
+				throw new RoxError(`Workspace not found: ${params.workspaceId}`);
 			}
 			hostId = cloud.hostId;
 		}
@@ -66,8 +66,8 @@ export class Agents extends APIResource {
 
 	private _requireOrgId(): string {
 		if (!this._client.organizationId) {
-			throw new SupersetError(
-				"organizationId is required. Set SUPERSET_ORGANIZATION_ID, or pass `organizationId` to the Superset constructor.",
+			throw new RoxError(
+				"organizationId is required. Set ROX_ORGANIZATION_ID, or pass `organizationId` to the Rox constructor.",
 			);
 		}
 		return this._client.organizationId;
@@ -99,7 +99,7 @@ export interface AgentListParams {
 export interface AgentCreateParams {
 	/** Workspace UUID to launch the agent session in. */
 	workspaceId: string;
-	/** Agent preset id (e.g. `"claude"`, `"superset"`) or HostAgentConfig instance UUID. */
+	/** Agent preset id (e.g. `"claude"`, `"rox"`) or HostAgentConfig instance UUID. */
 	agent: string;
 	/** Prompt sent to the agent. */
 	prompt: string;

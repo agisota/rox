@@ -10,7 +10,7 @@ describe("cloud router integration", () => {
 			apiOverrides: {
 				"user.me.query": () => ({
 					id: "user-1",
-					email: "test@superset.local",
+					email: "test@rox.local",
 					name: "Test User",
 				}),
 			},
@@ -25,7 +25,7 @@ describe("cloud router integration", () => {
 		const result = await host.trpc.cloud.whoami.query();
 		expect(result).toEqual({
 			id: "user-1",
-			email: "test@superset.local",
+			email: "test@rox.local",
 			name: "Test User",
 		});
 		expect(host.apiCalls.map((c) => c.path)).toContain("user.me.query");

@@ -30,7 +30,7 @@ interface TrackingStatus {
 }
 
 const MAX_LINE_COUNT_SIZE = 1 * 1024 * 1024;
-const WORKER_DEBUG = process.env.SUPERSET_WORKER_DEBUG === "1";
+const WORKER_DEBUG = process.env.ROX_WORKER_DEBUG === "1";
 
 function logWorkerWarning(message: string, error: unknown): void {
 	console.warn(`[changes-git-worker] ${message}`, error);

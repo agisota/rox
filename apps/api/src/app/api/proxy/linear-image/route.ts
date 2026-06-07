@@ -1,6 +1,6 @@
-import { auth } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import { integrationConnections } from "@superset/db/schema";
+import { auth } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import { integrationConnections } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 
 const LINEAR_IMAGE_HOST = "uploads.linear.app";

@@ -1,5 +1,5 @@
-import type { SelectV2Workspace } from "@superset/db/schema";
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import type { SelectV2Workspace } from "@rox/db/schema";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
 import { createContext, type ReactNode, useContext } from "react";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";
 import {

@@ -1,11 +1,11 @@
-import type { AppRouter } from "@superset/host-service";
+import type { AppRouter } from "@rox/host-service";
 import {
 	PromptInputAttachment,
 	type PromptInputMessage,
 	PromptInputProvider,
 	useProviderAttachments,
-} from "@superset/ui/ai-elements/prompt-input";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/ui/ai-elements/prompt-input";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { useQuery } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { ChatStatus } from "ai";

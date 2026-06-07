@@ -1,5 +1,5 @@
-import type { AppRouter } from "@superset/host-service";
-import type { WorkspaceState } from "@superset/panes";
+import type { AppRouter } from "@rox/host-service";
+import type { WorkspaceState } from "@rox/panes";
 import type { inferRouterInputs } from "@trpc/server";
 import { z } from "zod";
 

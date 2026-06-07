@@ -1,4 +1,4 @@
-# Superset CLI Current-State Reference
+# Rox CLI Current-State Reference
 
 This document records the CLI surface implemented in `packages/cli` as of
 2026-05-12. Public user-facing docs live in
@@ -22,27 +22,27 @@ find packages/cli/src/commands -type f -name 'command.ts' | sort
 For rendered help, build or use the bundled binary and run:
 
 ```bash
-superset --help
-superset <group> --help
-superset <group> <command> --help
+rox --help
+rox <group> --help
+rox <group> <command> --help
 ```
 
 ## Top-Level Commands
 
 ```text
-superset agents
-superset auth
-superset automations
-superset hosts
-superset organization
-superset projects
-superset start
-superset status
-superset stop
-superset tasks
-superset terminals
-superset update
-superset workspaces
+rox agents
+rox auth
+rox automations
+rox hosts
+rox organization
+rox projects
+rox start
+rox status
+rox stop
+rox tasks
+rox terminals
+rox update
+rox workspaces
 ```
 
 Aliases:
@@ -116,7 +116,7 @@ server lifecycle is handled by top-level `start`, `status`, and `stop`.
 | --- | --- | --- |
 | `--json` | | Prints the command data payload as formatted JSON. No `{ "data": ... }` envelope. |
 | `--quiet` | | Prints IDs for arrays or single objects when possible; falls back to JSON otherwise. |
-| `--api-key <key>` | `SUPERSET_API_KEY` | Uses an API key instead of stored OAuth credentials. |
+| `--api-key <key>` | `ROX_API_KEY` | Uses an API key instead of stored OAuth credentials. |
 | `--help`, `-h` | | Recognized at root, group, and leaf command levels. |
 | `--version`, `-v` | | Prints the CLI version. |
 
@@ -129,26 +129,26 @@ CLAUDECODE
 CLAUDE_CODE_ENTRYPOINT
 CODEX_CLI
 GEMINI_CLI
-SUPERSET_AGENT
+ROX_AGENT
 CI
 ```
 
 ## Runtime State
 
-CLI runtime state is under `SUPERSET_HOME_DIR`, defaulting to
-`~/.superset`.
+CLI runtime state is under `ROX_HOME_DIR`, defaulting to
+`~/.rox`.
 
 | Path | Purpose |
 | --- | --- |
-| `~/.superset/config.json` | OAuth token, expiry, and active organization ID. |
-| `~/.superset/host/<organizationId>/manifest.json` | Host service PID, endpoint, auth token, and organization ID. |
-| `~/.superset/host/<organizationId>/host.db` | Host service SQLite database. |
+| `~/.rox/config.json` | OAuth token, expiry, and active organization ID. |
+| `~/.rox/host/<organizationId>/manifest.json` | Host service PID, endpoint, auth token, and organization ID. |
+| `~/.rox/host/<organizationId>/host.db` | Host service SQLite database. |
 
 ## Desktop Shim And Standalone Install
 
 The desktop app installs an app-managed shim at
-`<SUPERSET_HOME_DIR>/bin/superset` (`~/.superset/bin/superset` by default)
-when the app starts. Superset desktop terminals prepend that directory to
+`<ROX_HOME_DIR>/bin/rox` (`~/.rox/bin/rox` by default)
+when the app starts. Rox desktop terminals prepend that directory to
 `PATH`, so the bundled CLI is available in app-launched terminals without a
 standalone install.
 
@@ -157,8 +157,8 @@ production, so a desktop-started host service and a CLI-started host
 service can discover each other through the same manifest path.
 
 The standalone install script is separate from runtime state. It installs
-the CLI and host binary under `SUPERSET_HOME` (default `~/superset`) and
-adds `<SUPERSET_HOME>/bin` to the user's shell `PATH`. These locations do
+the CLI and host binary under `ROX_HOME` (default `~/rox`) and
+adds `<ROX_HOME>/bin` to the user's shell `PATH`. These locations do
 not overwrite each other; whichever `bin` directory appears first in `PATH`
 wins for a normal shell.
 
@@ -175,14 +175,14 @@ scripts for:
 
 The desktop app has its own bundling script,
 `apps/desktop/scripts/build-bundled-cli.ts`, which compiles the CLI into
-`apps/desktop/dist/resources/bin/superset` for the Electron package target.
+`apps/desktop/dist/resources/bin/rox` for the Electron package target.
 
 ## Current Notes And Gaps
 
 - Required named options are enforced by the parser, but help output does
   not visually mark named options as required. Positional required args are
   marked.
-- `SUPERSET_API_URL`, `SUPERSET_WEB_URL`, and `RELAY_URL` are baked into
+- `ROX_API_URL`, `ROX_WEB_URL`, and `RELAY_URL` are baked into
   built binaries by `cli.config.ts`. Runtime shell overrides are mainly for
   dev builds and custom compile environments.
 - `readConfig()` parses `config.json` directly. A malformed config file can

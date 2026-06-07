@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Empty,
 	EmptyContent,
@@ -6,9 +6,9 @@ import {
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
-} from "@superset/ui/empty";
-import { ScrollArea } from "@superset/ui/scroll-area";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/empty";
+import { ScrollArea } from "@rox/ui/scroll-area";
+import { cn } from "@rox/ui/utils";
 import { useMatchRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {

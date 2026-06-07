@@ -2,7 +2,7 @@ import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
+} from "@rox/ui/collapsible";
 import { BrainIcon, ChevronRightIcon } from "lucide-react";
 
 interface ReasoningBlockProps {

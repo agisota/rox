@@ -22,7 +22,7 @@ import {
 	v2UsersHosts,
 	v2Workspaces,
 	workspaces,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { QueryBuilder } from "drizzle-orm/pg-core";

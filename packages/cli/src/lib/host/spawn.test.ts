@@ -5,13 +5,13 @@ import { join } from "node:path";
 import type { ApiClient } from "../api-client";
 
 const originalFetch = globalThis.fetch;
-const originalSupersetHomeDir = process.env.SUPERSET_HOME_DIR;
-const originalHostBin = process.env.SUPERSET_HOST_BIN;
-const tempHome = mkdtempSync(join(tmpdir(), "superset-cli-spawn-"));
-const hostBin = join(tempHome, "superset-host");
+const originalRoxHomeDir = process.env.ROX_HOME_DIR;
+const originalHostBin = process.env.ROX_HOST_BIN;
+const tempHome = mkdtempSync(join(tmpdir(), "rox-cli-spawn-"));
+const hostBin = join(tempHome, "rox-host");
 
-process.env.SUPERSET_HOME_DIR = tempHome;
-process.env.SUPERSET_HOST_BIN = hostBin;
+process.env.ROX_HOME_DIR = tempHome;
+process.env.ROX_HOST_BIN = hostBin;
 writeFileSync(hostBin, "");
 
 type SpawnOptions = {
@@ -41,7 +41,7 @@ mock.module("node:child_process", () => ({
 	spawn: spawnMock,
 }));
 
-const { SUPERSET_CONFIG_PATH } = await import("../config");
+const { ROX_CONFIG_PATH } = await import("../config");
 const { spawnHostService } = await import("./spawn");
 
 function createApi(): ApiClient {
@@ -62,20 +62,20 @@ afterEach(() => {
 
 afterAll(() => {
 	rmSync(tempHome, { recursive: true, force: true });
-	if (originalSupersetHomeDir === undefined) {
-		delete process.env.SUPERSET_HOME_DIR;
+	if (originalRoxHomeDir === undefined) {
+		delete process.env.ROX_HOME_DIR;
 	} else {
-		process.env.SUPERSET_HOME_DIR = originalSupersetHomeDir;
+		process.env.ROX_HOME_DIR = originalRoxHomeDir;
 	}
 	if (originalHostBin === undefined) {
-		delete process.env.SUPERSET_HOST_BIN;
+		delete process.env.ROX_HOST_BIN;
 	} else {
-		process.env.SUPERSET_HOST_BIN = originalHostBin;
+		process.env.ROX_HOST_BIN = originalHostBin;
 	}
 });
 
 describe("spawnHostService", () => {
-	test("passes SUPERSET_AUTH_CONFIG_PATH when provided", async () => {
+	test("passes ROX_AUTH_CONFIG_PATH when provided", async () => {
 		globalThis.fetch = mock(
 			async () => new Response("ok", { status: 200 }),
 		) as unknown as typeof fetch;
@@ -83,15 +83,15 @@ describe("spawnHostService", () => {
 		await spawnHostService({
 			organizationId: "00000000-0000-0000-0000-000000000001",
 			sessionToken: "session-token",
-			authConfigPath: SUPERSET_CONFIG_PATH,
+			authConfigPath: ROX_CONFIG_PATH,
 			api: createApi(),
 			port: 54879,
 			daemon: true,
 		});
 
 		expect(spawnMock).toHaveBeenCalledTimes(1);
-		expect(spawnCalls[0]?.options.env?.SUPERSET_AUTH_CONFIG_PATH).toBe(
-			SUPERSET_CONFIG_PATH,
+		expect(spawnCalls[0]?.options.env?.ROX_AUTH_CONFIG_PATH).toBe(
+			ROX_CONFIG_PATH,
 		);
 		expect(spawnCalls[0]?.options.env?.AUTH_TOKEN).toBe("session-token");
 	});

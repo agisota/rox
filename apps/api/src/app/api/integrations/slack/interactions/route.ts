@@ -1,5 +1,5 @@
-import { db } from "@superset/db/client";
-import { usersSlackUsers } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { usersSlackUsers } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
 import { DEFAULT_SLACK_MODEL } from "../constants";

@@ -27,9 +27,9 @@ import type {
 	SelectV2UsersHosts,
 	SelectV2Workspace,
 	SelectWorkspace,
-} from "@superset/db/schema";
-import type { AppRouter as HostServiceAppRouter } from "@superset/host-service";
-import type { AppRouter } from "@superset/trpc";
+} from "@rox/db/schema";
+import type { AppRouter as HostServiceAppRouter } from "@rox/host-service";
+import type { AppRouter } from "@rox/trpc";
 import { BasicIndex } from "@tanstack/db";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import {

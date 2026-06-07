@@ -5,7 +5,7 @@ import {
 	FsWatcherManager,
 	toRelativePath,
 	type WorkspaceFsPathError,
-} from "@superset/workspace-fs/host";
+} from "@rox/workspace-fs/host";
 import { shell } from "electron";
 import { getWorkspace } from "./workspaces/utils/db-helpers";
 import { execWithShellEnv } from "./workspaces/utils/shell-env";

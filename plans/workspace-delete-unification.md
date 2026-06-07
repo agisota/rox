@@ -24,7 +24,7 @@ The ordering is designed to be **easy to revisit later**. The three phases (pref
    - Skipped when we have no local row (nothing to check).
 
 1. Teardown (if !force)
-   - Run .superset/teardown.sh inside the workspace.
+   - Run .rox/teardown.sh inside the workspace.
    - Fail / timeout → throw TEARDOWN_FAILED with output tail.
    - Workspace is fully intact on failure.
 
@@ -225,19 +225,19 @@ Reuses `createTerminalSessionInternal` — the same PTY primitive v2 setup uses 
 ```ts
 runTeardown({ db, workspaceId, worktreePath })
   → { status: "ok"; output?: string }
-  | { status: "skipped" }   // .superset/teardown.sh missing
+  | { status: "skipped" }   // .rox/teardown.sh missing
   | { status: "failed"; exitCode: number | null;
       signal: number | null; timedOut: boolean; outputTail: string }
 ```
 
-- **Script location**: `<worktreePath>/.superset/teardown.sh` (mirrors v2 setup's `.superset/setup.sh`).
+- **Script location**: `<worktreePath>/.rox/teardown.sh` (mirrors v2 setup's `.rox/setup.sh`).
 - **Execution**: PTY session via `createTerminalSessionInternal` with `initialCommand: "bash '<path>' ; exit $?"`. Session is transient, not surfaced as a visible pane; captured via `pty.onData` and torn down via `disposeSession` when the script settles.
 - **Capture**: raw PTY bytes into a 4KB ring buffer; the renderer runs `stripAnsi` for display.
 - **Exit handling**: `pty.onExit` → exit code / signal.
 - **Timeout**: 60s → `pty.kill()` → `status: "failed"` with `timedOut: true` (cross-platform; no process-group SIGKILL).
 - **Missing script**: fast-return `{ status: "skipped" }`.
 - **`force` in destroy**: skips this step entirely.
-- **`TEARDOWN_TIMEOUT_MS` lives in `@superset/shared/constants`** so the renderer can format the timeout reason without value-importing host-service (which would drag node-pty into the renderer bundle).
+- **`TEARDOWN_TIMEOUT_MS` lives in `@rox/shared/constants`** so the renderer can format the timeout reason without value-importing host-service (which would drag node-pty into the renderer bundle).
 
 ## Why no tombstone / reconciler?
 

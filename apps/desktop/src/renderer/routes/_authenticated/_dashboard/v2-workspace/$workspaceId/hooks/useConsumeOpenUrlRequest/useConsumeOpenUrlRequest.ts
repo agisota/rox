@@ -1,4 +1,4 @@
-import type { WorkspaceStore } from "@superset/panes";
+import type { WorkspaceStore } from "@rox/panes";
 import { useEffect, useRef } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { PaneViewerData } from "../../types";

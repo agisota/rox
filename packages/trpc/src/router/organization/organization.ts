@@ -1,14 +1,14 @@
-import { auth } from "@superset/auth/server";
-import { stripeClient } from "@superset/auth/stripe";
-import { db } from "@superset/db/client";
-import { members, organizations } from "@superset/db/schema";
+import { auth } from "@rox/auth/server";
+import { stripeClient } from "@rox/auth/stripe";
+import { db } from "@rox/db/client";
+import { members, organizations } from "@rox/db/schema";
 import {
 	sessions as authSessions,
 	invitations,
 	verifications,
-} from "@superset/db/schema/auth";
-import { findOrgMembership } from "@superset/db/utils";
-import { canRemoveMember, type OrganizationRole } from "@superset/shared/auth";
+} from "@rox/db/schema/auth";
+import { findOrgMembership } from "@rox/db/utils";
+import { canRemoveMember, type OrganizationRole } from "@rox/shared/auth";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";

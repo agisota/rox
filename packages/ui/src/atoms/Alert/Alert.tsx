@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, type buttonVariants } from "@superset/ui/button";
+import { Button, type buttonVariants } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -8,7 +8,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
+} from "@rox/ui/dialog";
 import type { VariantProps } from "class-variance-authority";
 import { useState } from "react";
 

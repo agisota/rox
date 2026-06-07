@@ -1,16 +1,16 @@
-import { db } from "@superset/db/client";
-import { taskStatuses, tasks } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { taskStatuses, tasks } from "@rox/db/schema";
 import {
 	type AGENT_TYPES,
 	buildAgentCommand,
 	buildAgentPromptCommand,
 	buildAgentTaskPrompt,
-} from "@superset/shared/agent-command";
+} from "@rox/shared/agent-command";
 import {
 	type AgentLaunchRequest,
 	STARTABLE_AGENT_LABELS,
 	STARTABLE_AGENT_TYPES,
-} from "@superset/shared/agent-launch";
+} from "@rox/shared/agent-launch";
 import { and, eq, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { type ZodError, z } from "zod";
@@ -147,11 +147,11 @@ export function buildTaskLaunchRequest({
 	agent: (typeof STARTABLE_AGENT_TYPES)[number];
 	task: TaskRecord;
 }): AgentLaunchRequest {
-	if (agent === "superset") {
+	if (agent === "rox") {
 		return {
 			kind: "chat",
 			workspaceId,
-			agentType: "superset",
+			agentType: "rox",
 			source: "mcp",
 			chat: {
 				...(paneId ? { paneId } : {}),
@@ -189,11 +189,11 @@ export function buildPromptLaunchRequest({
 	agent: (typeof STARTABLE_AGENT_TYPES)[number];
 	prompt: string;
 }): AgentLaunchRequest {
-	if (agent === "superset") {
+	if (agent === "rox") {
 		return {
 			kind: "chat",
 			workspaceId,
-			agentType: "superset",
+			agentType: "rox",
 			source: "mcp",
 			chat: {
 				...(paneId ? { paneId } : {}),

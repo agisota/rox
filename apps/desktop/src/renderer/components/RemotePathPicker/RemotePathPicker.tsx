@@ -6,8 +6,8 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 	BreadcrumbSeparator,
-} from "@superset/ui/breadcrumb";
-import { Button } from "@superset/ui/button";
+} from "@rox/ui/breadcrumb";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -15,11 +15,11 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { ScrollArea } from "@superset/ui/scroll-area";
-import { Skeleton } from "@superset/ui/skeleton";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/dialog";
+import { ScrollArea } from "@rox/ui/scroll-area";
+import { Skeleton } from "@rox/ui/skeleton";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Fragment, useEffect, useState } from "react";
 import {

@@ -1,7 +1,7 @@
-import { BashTool } from "@superset/ui/ai-elements/bash-tool";
-import { ClickableFilePath } from "@superset/ui/ai-elements/clickable-file-path";
-import { ReadFileTool } from "@superset/ui/ai-elements/read-file-tool";
-import { ToolCallRow } from "@superset/ui/ai-elements/tool-call-row";
+import { BashTool } from "@rox/ui/ai-elements/bash-tool";
+import { ClickableFilePath } from "@rox/ui/ai-elements/clickable-file-path";
+import { ReadFileTool } from "@rox/ui/ai-elements/read-file-tool";
+import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
 import {
 	CodeIcon,
 	FileIcon,

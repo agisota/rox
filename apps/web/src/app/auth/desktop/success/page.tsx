@@ -1,6 +1,6 @@
-import { auth } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import { sessions } from "@superset/db/schema/auth";
+import { auth } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import { sessions } from "@rox/db/schema/auth";
 import { headers } from "next/headers";
 
 import { DesktopRedirect } from "./components/DesktopRedirect";
@@ -16,7 +16,7 @@ export default async function DesktopSuccessPage({
 }) {
 	const {
 		desktop_state: state,
-		desktop_protocol = "superset",
+		desktop_protocol = "rox",
 		desktop_local_callback: localCallbackBase,
 	} = await searchParams;
 
@@ -59,7 +59,7 @@ export default async function DesktopSuccessPage({
 
 	// Desktop and web need independent sessions with separate activeOrganizationId
 	const headersObj = await headers();
-	const userAgent = headersObj.get("user-agent") || "Superset Desktop App";
+	const userAgent = headersObj.get("user-agent") || "Rox Desktop App";
 	const ipAddress =
 		headersObj.get("x-forwarded-for")?.split(",")[0] ||
 		headersObj.get("x-real-ip") ||

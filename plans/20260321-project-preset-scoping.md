@@ -13,7 +13,7 @@ Use `projectIds: string[] | null`:
 - `null`: preset is available in every project
 - non-empty array: preset is available only in those projects
 
-For v1, do not move presets into `.superset/config.json`. Keep the primary editor in `Settings > Terminal`, and use Project settings only as a contextual shortcut into that same editor.
+For v1, do not move presets into `.rox/config.json`. Keep the primary editor in `Settings > Terminal`, and use Project settings only as a contextual shortcut into that same editor.
 
 ## Why
 
@@ -135,7 +135,7 @@ Pinned presets should also respect project targeting. If a preset does not match
 
 For v1, store project-targeted presets in the existing local settings-backed preset store.
 
-Do not store them in `.superset/config.json` yet.
+Do not store them in `.rox/config.json` yet.
 
 Reason:
 
@@ -173,7 +173,7 @@ Likely files:
 
 ### Project config-backed presets
 
-Do not move presets into `.superset/config.json` yet.
+Do not move presets into `.rox/config.json` yet.
 
 That may become useful later for shared/team presets, but it introduces a bigger design problem:
 

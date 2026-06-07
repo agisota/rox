@@ -13,7 +13,7 @@ describe("buildAgentPromptCommand", () => {
 		});
 
 		expect(command).toContain(
-			"codex --dangerously-bypass-approvals-and-sandbox -- \"$(cat <<'SUPERSET_PROMPT_12345678'",
+			"codex --dangerously-bypass-approvals-and-sandbox -- \"$(cat <<'ROX_PROMPT_12345678'",
 		);
 		expect(command).toContain("- Only modified file: runtime.ts");
 	});
@@ -26,7 +26,7 @@ describe("buildAgentPromptCommand", () => {
 		});
 
 		expect(command).toStartWith(
-			"claude --dangerously-skip-permissions \"$(cat <<'SUPERSET_PROMPT_abcdefgh'",
+			"claude --dangerously-skip-permissions \"$(cat <<'ROX_PROMPT_abcdefgh'",
 		);
 	});
 
@@ -37,17 +37,17 @@ describe("buildAgentPromptCommand", () => {
 			agent: "amp",
 		});
 
-		expect(command).toStartWith("amp <<'SUPERSET_PROMPT_amp1234'");
+		expect(command).toStartWith("amp <<'ROX_PROMPT_amp1234'");
 		expect(command).not.toContain("amp -x");
 	});
 
 	it("uses Amp interactive stdin mode for file launches", () => {
 		const command = buildAgentFileCommand({
-			filePath: ".superset/task-demo.md",
+			filePath: ".rox/task-demo.md",
 			agent: "amp",
 		});
 
-		expect(command).toBe("amp < '.superset/task-demo.md'");
+		expect(command).toBe("amp < '.rox/task-demo.md'");
 	});
 
 	it("uses pi interactive mode for prompt launches", () => {
@@ -57,7 +57,7 @@ describe("buildAgentPromptCommand", () => {
 			agent: "pi",
 		});
 
-		expect(command).toStartWith("pi \"$(cat <<'SUPERSET_PROMPT_pi1234'");
+		expect(command).toStartWith("pi \"$(cat <<'ROX_PROMPT_pi1234'");
 		expect(command).not.toContain("pi -p");
 	});
 });

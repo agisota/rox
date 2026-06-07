@@ -1,4 +1,4 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useMatchRoute } from "@tanstack/react-router";
 import { LuPlus } from "react-icons/lu";
 import { useHotkeyDisplay } from "renderer/hotkeys";

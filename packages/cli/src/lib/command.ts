@@ -1,11 +1,11 @@
-import { createCommand } from "@superset/cli-framework";
+import { createCommand } from "@rox/cli-framework";
 import type { ApiClient } from "./api-client";
-import type { SupersetConfig } from "./config";
+import type { RoxConfig } from "./config";
 import type { AuthSource } from "./resolve-auth";
 
 export interface CliContext {
 	api: ApiClient;
-	config: SupersetConfig;
+	config: RoxConfig;
 	bearer: string;
 	authSource: AuthSource;
 }

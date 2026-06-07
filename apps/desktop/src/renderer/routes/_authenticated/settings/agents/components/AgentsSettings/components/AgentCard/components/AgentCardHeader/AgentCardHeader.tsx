@@ -1,7 +1,7 @@
-import type { ResolvedAgentConfig } from "@superset/shared/agent-settings";
-import { CardDescription, CardHeader, CardTitle } from "@superset/ui/card";
-import { Switch } from "@superset/ui/switch";
-import { cn } from "@superset/ui/utils";
+import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
+import { CardDescription, CardHeader, CardTitle } from "@rox/ui/card";
+import { Switch } from "@rox/ui/switch";
+import { cn } from "@rox/ui/utils";
 import { ChevronDownIcon } from "lucide-react";
 import {
 	getPresetIcon,

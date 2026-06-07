@@ -1,5 +1,5 @@
-import { Button } from "@superset/ui/button";
-import { cn } from "@superset/ui/utils";
+import { Button } from "@rox/ui/button";
+import { cn } from "@rox/ui/utils";
 import type * as React from "react";
 import { HiChevronUpDown } from "react-icons/hi2";
 

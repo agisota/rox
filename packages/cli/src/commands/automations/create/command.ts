@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { string } from "@superset/cli-framework";
+import { string } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { formatAutomationDate } from "../format";
 
@@ -27,7 +27,7 @@ export default command({
 		agent: string()
 			.default("claude")
 			.desc(
-				"Host agent instance id or presetId (claude, codex, ...). Use 'superset' for the built-in chat agent.",
+				"Host agent instance id or presetId (claude, codex, ...). Use 'rox' for the built-in chat agent.",
 			),
 	},
 	run: async ({ ctx, options }) => {

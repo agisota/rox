@@ -1,7 +1,7 @@
-import type { ResolvedAgentConfig } from "@superset/shared/agent-settings";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { Textarea } from "@superset/ui/textarea";
+import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { Textarea } from "@rox/ui/textarea";
 import type { AgentEditableField } from "../../agent-card.types";
 
 interface AgentCardFieldsProps {

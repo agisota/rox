@@ -1,4 +1,4 @@
-import { CLIError, string } from "@superset/cli-framework";
+import { CLIError, string } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { resolveHostTarget } from "../../../lib/host-target";
 import { uploadAttachments } from "../../../lib/upload-attachments";
@@ -10,7 +10,7 @@ export default command({
 		agent: string()
 			.required()
 			.desc(
-				"Agent preset id (e.g. `claude`), HostAgentConfig instance UUID, or `superset` for a Superset session",
+				"Agent preset id (e.g. `claude`), HostAgentConfig instance UUID, or `rox` for a Rox session",
 			),
 		prompt: string().required().desc("Prompt sent to the agent"),
 		attachmentId: string()
@@ -25,7 +25,7 @@ export default command({
 	run: async ({ ctx, options }) => {
 		const organizationId = ctx.config.organizationId;
 		if (!organizationId) {
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 		}
 
 		const cloudWorkspace = await ctx.api.v2Workspace.getFromHost.query({

@@ -1,4 +1,4 @@
-import { positional } from "@superset/cli-framework";
+import { positional } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { formatAutomationDate } from "../format";
 

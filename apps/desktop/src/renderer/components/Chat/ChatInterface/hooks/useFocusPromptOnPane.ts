@@ -1,4 +1,4 @@
-import { usePromptInputController } from "@superset/ui/ai-elements/prompt-input";
+import { usePromptInputController } from "@rox/ui/ai-elements/prompt-input";
 import { useEffect } from "react";
 
 export function useFocusPromptOnPane(isFocused: boolean) {

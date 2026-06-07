@@ -5,7 +5,7 @@ import {
 	ConversationLoadingState,
 	ConversationScrollButton,
 	useConversationContext,
-} from "@superset/ui/ai-elements/conversation";
+} from "@rox/ui/ai-elements/conversation";
 import { useEffect, useMemo, useRef } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 import type {

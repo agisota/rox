@@ -1,4 +1,4 @@
-import type { RendererContext } from "@superset/panes";
+import type { RendererContext } from "@rox/panes";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -6,9 +6,9 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Check, ChevronDown, LoaderCircle, Plus, Trash2 } from "lucide-react";

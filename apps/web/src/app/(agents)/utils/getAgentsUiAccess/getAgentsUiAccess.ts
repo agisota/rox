@@ -1,5 +1,5 @@
-import { auth } from "@superset/auth/server";
-import { FEATURE_FLAGS } from "@superset/shared/constants";
+import { auth } from "@rox/auth/server";
+import { FEATURE_FLAGS } from "@rox/shared/constants";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PostHog } from "posthog-node";

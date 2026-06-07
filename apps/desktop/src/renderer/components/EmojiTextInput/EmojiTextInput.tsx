@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { Extension } from "@tiptap/core";
 import { Document } from "@tiptap/extension-document";
 import { EmojiSuggestionPluginKey } from "@tiptap/extension-emoji";

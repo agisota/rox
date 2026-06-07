@@ -177,7 +177,7 @@ export function ParallelExecutionDemo() {
 					<div className="w-3 h-3 rounded-full bg-[#febc2e]" />
 					<div className="w-3 h-3 rounded-full bg-[#28c840]" />
 				</div>
-				<span className="text-xs text-white/40 ml-2 font-mono">Superset</span>
+				<span className="text-xs text-white/40 ml-2 font-mono">Rox</span>
 			</div>
 
 			<div className="flex h-[360px]">
@@ -282,7 +282,7 @@ export function ParallelExecutionDemo() {
 										href="/download"
 										className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
 									>
-										download Superset
+										download Rox
 									</a>
 								</div>
 								<div>{"\u00A0"}</div>

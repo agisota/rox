@@ -493,7 +493,7 @@ Depends on PR 1 landing.
 ## Out of scope / follow-ups
 
 - Multi-team UI (create/rename/archive teams in org settings).
-- Per-team Linear linkage at scale (multiple Superset teams each linking to different Linear teams).
+- Per-team Linear linkage at scale (multiple Rox teams each linking to different Linear teams).
 - Team-key rename history (`team_keys` table + redirect-on-resolve). Add when rename UI lands.
 - Periodic Linear teams poll for opportunistic detection of Linear-side renames.
 - Drop `tasks.slug` column (PR 3).

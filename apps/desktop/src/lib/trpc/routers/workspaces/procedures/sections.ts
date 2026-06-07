@@ -1,4 +1,4 @@
-import { workspaceSections, workspaces } from "@superset/local-db";
+import { workspaceSections, workspaces } from "@rox/local-db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
 import { PROJECT_CUSTOM_COLORS } from "shared/constants/project-colors";

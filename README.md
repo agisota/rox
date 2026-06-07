@@ -1,13 +1,13 @@
 <div align="center">
 
-<img width="full" alt="Superset" src="apps/marketing/public/images/readme-hero.png" />
+<img width="full" alt="Rox" src="apps/marketing/public/images/readme-hero.png" />
 
 ### The Code Editor for AI Agents
 
-[![GitHub stars](https://img.shields.io/github/stars/superset-sh/superset?style=flat&logo=github)](https://github.com/superset-sh/superset/stargazers)
-[![GitHub release](https://img.shields.io/github/v/release/superset-sh/superset?style=flat&logo=github)](https://github.com/superset-sh/superset/releases)
-[![License](https://img.shields.io/github/license/superset-sh/superset?style=flat)](LICENSE.md)
-[![Twitter](https://img.shields.io/badge/@superset__sh-555?logo=x)](https://x.com/superset_sh)
+[![GitHub stars](https://img.shields.io/github/stars/agisota/set?style=flat&logo=github)](https://github.com/agisota/set/stargazers)
+[![GitHub release](https://img.shields.io/github/v/release/agisota/set?style=flat&logo=github)](https://github.com/agisota/set/releases)
+[![License](https://img.shields.io/github/license/agisota/set?style=flat)](LICENSE.md)
+[![Twitter](https://img.shields.io/badge/@rox__sh-555?logo=x)](https://x.com/rox_sh)
 [![Discord](https://img.shields.io/badge/Discord-555?logo=discord)](https://discord.gg/cZeD9WYcV7)
 
 <br />
@@ -17,7 +17,7 @@ Works with any CLI agent. Built for local worktree-based development.
 
 <br />
 
-[**Download for macOS**](https://github.com/superset-sh/superset/releases/latest) &nbsp;&bull;&nbsp; [Documentation](https://docs.superset.sh) &nbsp;&bull;&nbsp; [Changelog](https://github.com/superset-sh/superset/releases) &nbsp;&bull;&nbsp; [Discord](https://discord.gg/cZeD9WYcV7)
+[**Download for macOS**](https://github.com/agisota/set/releases/latest) &nbsp;&bull;&nbsp; [Documentation](https://docs.rox.one) &nbsp;&bull;&nbsp; [Changelog](https://github.com/agisota/set/releases) &nbsp;&bull;&nbsp; [Discord](https://discord.gg/cZeD9WYcV7)
 
 <br />
 
@@ -26,7 +26,7 @@ Works with any CLI agent. Built for local worktree-based development.
 
 ## Code 10x Faster With No Switching Cost
 
-Superset orchestrates CLI-based coding agents across isolated git worktrees, with built-in terminal, review, and open-in-editor workflows.
+Rox orchestrates CLI-based coding agents across isolated git worktrees, with built-in terminal, review, and open-in-editor workflows.
 
 - **Run multiple agents simultaneously** without context switching overhead
 - **Isolate each task** in its own git worktree so agents don't interfere with each other
@@ -51,7 +51,7 @@ Wait less, ship more.
 
 ## Supported Agents
 
-Superset works with any CLI-based coding agent, including:
+Rox works with any CLI-based coding agent, including:
 
 | Agent | Status |
 |:------|:-------|
@@ -67,7 +67,7 @@ Superset works with any CLI-based coding agent, including:
 | <picture><source media="(prefers-color-scheme: dark)" srcset="packages/ui/src/assets/icons/preset-icons/pi-white.svg" /><img height="16" align="top" src="packages/ui/src/assets/icons/preset-icons/pi.svg" /></picture> &nbsp;[Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | Fully supported |
 | Any other CLI agent | Works without configuration |
 
-If it runs in a terminal, it runs on Superset
+If it runs in a terminal, it runs on Rox
 
 ## Requirements
 
@@ -81,22 +81,22 @@ If it runs in a terminal, it runs on Superset
 
 ## Install
 
-**[Download Superset for macOS](https://github.com/superset-sh/superset/releases/latest)**
+**[Download Rox for macOS](https://github.com/agisota/set/releases/latest)**
 
 Builds for Windows and Linux are not yet available.
 
 ## Development
 
-Want to hack on Superset or contribute a PR? Spin up a local dev environment in one command:
+Want to hack on Rox or contribute a PR? Spin up a local dev environment in one command:
 
 ```bash
-git clone https://github.com/superset-sh/superset.git
-cd superset
-./.superset/setup.local.sh
+git clone https://github.com/agisota/set.git
+cd rox
+./.rox/setup.local.sh
 bun run dev
 ```
 
-No Neon account or third-party credentials needed — `setup.local.sh` brings up a local Postgres + Electric stack via Docker and seeds a dev account. Sign in with the **"Sign in as dev"** button (or `admin@local.test` / `supersetdev`).
+No Neon account or third-party credentials needed — `setup.local.sh` brings up a local Postgres + Electric stack via Docker and seeds a dev account. Sign in with the **"Sign in as dev"** button (or `admin@local.test` / `roxdev`).
 
 Prereqs: `bun`, `docker`, `jq`, `caddy` (`brew install jq caddy && caddy trust`).
 
@@ -104,7 +104,7 @@ See [**DEVELOPMENT.md**](./DEVELOPMENT.md) for the full guide — what the setup
 
 ## Keyboard Shortcuts
 
-All shortcuts are customizable via **Settings > Keyboard Shortcuts** (`⌘/`). See [full documentation](https://docs.superset.sh/keyboard-shortcuts).
+All shortcuts are customizable via **Settings > Keyboard Shortcuts** (`⌘/`). See [full documentation](https://docs.rox.one/keyboard-shortcuts).
 
 ### Workspace Navigation
 
@@ -140,12 +140,12 @@ All shortcuts are customizable via **Settings > Keyboard Shortcuts** (`⌘/`). S
 
 ## Configuration
 
-Configure workspace setup and teardown in `.superset/config.json`. See [full documentation](https://docs.superset.sh/setup-teardown-scripts).
+Configure workspace setup and teardown in `.rox/config.json`. See [full documentation](https://docs.rox.one/setup-teardown-scripts).
 
 ```json
 {
-  "setup": ["./.superset/setup.sh"],
-  "teardown": ["./.superset/teardown.sh"]
+  "setup": ["./.rox/setup.sh"],
+  "teardown": ["./.rox/teardown.sh"]
 }
 ```
 
@@ -158,7 +158,7 @@ Configure workspace setup and teardown in `.superset/config.json`. See [full doc
 
 ```bash
 #!/bin/bash
-# .superset/setup.sh
+# .rox/setup.sh
 
 # Copy environment variables
 cp ../.env .env
@@ -171,8 +171,8 @@ echo "Workspace ready!"
 ```
 
 Scripts have access to environment variables:
-- `SUPERSET_WORKSPACE_NAME` — Name of the workspace
-- `SUPERSET_ROOT_PATH` — Path to the main repository
+- `ROX_WORKSPACE_NAME` — Name of the workspace
+- `ROX_ROOT_PATH` — Path to the main repository
 
 ## Mastra Dependencies
 
@@ -200,7 +200,7 @@ This repo uses the published upstream `mastracode` and `@mastra/*` packages dire
 
 ## Contributing
 
-We welcome contributions! If you have a suggestion that would make Superset better:
+We welcome contributions! If you have a suggestion that would make Rox better:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -208,22 +208,22 @@ We welcome contributions! If you have a suggestion that would make Superset bett
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-You can also [open issues](https://github.com/superset-sh/superset/issues) for bugs or feature requests.
+You can also [open issues](https://github.com/agisota/set/issues) for bugs or feature requests.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed instructions and code of conduct.
 
-<a href="https://github.com/superset-sh/superset/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=superset-sh/superset" />
+<a href="https://github.com/agisota/set/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=agisota/set" />
 </a>
 
 ## Community
 
-Join the Superset community to get help, share feedback, and connect with other users:
+Join the Rox community to get help, share feedback, and connect with other users:
 
 - **[Discord](https://discord.gg/cZeD9WYcV7)** — Chat with the team and community
-- **[Twitter](https://x.com/superset_sh)** — Follow for updates and announcements
-- **[GitHub Issues](https://github.com/superset-sh/superset/issues)** — Report bugs and request features
-- **[GitHub Discussions](https://github.com/superset-sh/superset/discussions)** — Ask questions and share ideas
+- **[Twitter](https://x.com/rox_sh)** — Follow for updates and announcements
+- **[GitHub Issues](https://github.com/agisota/set/issues)** — Report bugs and request features
+- **[GitHub Discussions](https://github.com/agisota/set/discussions)** — Ask questions and share ideas
 
 ### Team
 

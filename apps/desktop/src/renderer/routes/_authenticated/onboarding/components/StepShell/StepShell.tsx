@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { useEffect } from "react";
 import { create } from "zustand";
 
@@ -74,11 +74,11 @@ export function StepHeader({ title, subtitle, icon }: StepHeaderProps) {
 	);
 }
 
-interface SupersetPillProps {
+interface RoxPillProps {
 	children: React.ReactNode;
 }
 
-export function SupersetPill({ children }: SupersetPillProps) {
+export function RoxPill({ children }: RoxPillProps) {
 	return (
 		<div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card p-2">
 			{children}

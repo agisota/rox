@@ -1,11 +1,11 @@
 "use client";
 
-import type { RouterOutputs } from "@superset/trpc";
+import type { RouterOutputs } from "@rox/trpc";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
+} from "@rox/ui/collapsible";
 import {
 	Sidebar,
 	SidebarContent,
@@ -18,7 +18,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
-} from "@superset/ui/sidebar";
+} from "@rox/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { LuChevronRight, LuHouse, LuUsers } from "react-icons/lu";
 

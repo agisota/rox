@@ -2,8 +2,8 @@ import {
 	canInvite,
 	ORGANIZATION_ROLES,
 	type OrganizationRole,
-} from "@superset/shared/auth";
-import { Button } from "@superset/ui/button";
+} from "@rox/shared/auth";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -11,17 +11,17 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/select";
+import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
 import { authClient } from "renderer/lib/auth-client";
 

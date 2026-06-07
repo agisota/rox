@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { db } from "@superset/db/client";
-import { taskStatuses } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { taskStatuses } from "@rox/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getMcpContext } from "../../utils";

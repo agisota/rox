@@ -1,7 +1,7 @@
-import { Button } from "@superset/ui/button";
-import { Card } from "@superset/ui/card";
-import { Input } from "@superset/ui/input";
-import { toast } from "@superset/ui/sonner";
+import { Button } from "@rox/ui/button";
+import { Card } from "@rox/ui/card";
+import { Input } from "@rox/ui/input";
+import { toast } from "@rox/ui/sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { LuFolderOpen, LuGitBranch } from "react-icons/lu";
@@ -26,7 +26,7 @@ function OnboardingProjectPage() {
 	const hostReady = activeHostUrl !== null;
 	const openNewWorkspaceModal = useOpenNewWorkspaceModal();
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
-	const cloneTargetDir = homeDir ? `${homeDir}/.superset/projects` : null;
+	const cloneTargetDir = homeDir ? `${homeDir}/.rox/projects` : null;
 	const [url, setUrl] = useState("");
 	const [busy, setBusy] = useState(false);
 

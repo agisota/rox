@@ -1,6 +1,6 @@
 "use server";
 
-import { EnterpriseInquiryEmail } from "@superset/email/emails/enterprise-inquiry";
+import { EnterpriseInquiryEmail } from "@rox/email/emails/enterprise-inquiry";
 import { Resend } from "resend";
 import { z } from "zod";
 import { env } from "@/env";
@@ -70,8 +70,8 @@ export async function submitEnterpriseInquiry(data: unknown) {
 		}
 
 		const { error } = await resend.emails.send({
-			from: "Superset <noreply@superset.sh>",
-			to: "founders@superset.sh",
+			from: "Rox <noreply@rox.one>",
+			to: "founders@rox.one",
 			replyTo: sanitizedEmail,
 			subject: `Enterprise inquiry from ${sanitizedName} (${sanitizedCompany})`,
 			react: EnterpriseInquiryEmail({

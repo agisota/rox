@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Document Superset's current PR workspace checkout setup, explain how the
+Document Rox's current PR workspace checkout setup, explain how the
 `package-lock.json would be overwritten by checkout` failure can happen, and
 define the more correct v2 flow.
 
@@ -11,7 +11,7 @@ inside a placeholder detached worktree. We should resolve and materialize the PR
 branch first, verify the expected commit, configure branch metadata, then create
 the worktree once with `git worktree add <path> <branch>`.
 
-## Current Superset Setup
+## Current Rox Setup
 
 ### v2 host service
 
@@ -20,7 +20,7 @@ The canonical v2 path is
 
 - `fetchPrMetadata` shells out to `gh pr view --json number,url,title,headRefName,headRefOid,baseRefName,headRepositoryOwner,isCrossRepository,state` (`workspaces.ts:128`).
 - `derivePrLocalBranchName` maps same-repo PRs to `headRefName` and cross-repo PRs to `<fork-owner>/<headRefName>`, falling back to `pr/<number>` if GitHub no longer reports a fork owner (`packages/host-service/src/trpc/router/workspace-creation/utils/pr-branch-name.ts:12`).
-- `workspaces.create` prunes stale worktree registrations, checks for an existing Superset workspace, checks whether a local branch already points at `headRefOid`, and adopts a matching existing worktree when possible (`workspaces.ts:544`).
+- `workspaces.create` prunes stale worktree registrations, checks for an existing Rox workspace, checks whether a local branch already points at `headRefOid`, and adopts a matching existing worktree when possible (`workspaces.ts:544`).
 - If the local branch already exists and matches the PR head, v2 creates a worktree directly from that branch with `git worktree add <path> <branch>` (`workspaces.ts:622`).
 - If the local branch does not exist, v2 creates a detached placeholder worktree with `git worktree add --detach <path>`, then runs `gh pr checkout <pr> --branch <derivedBranch> --force` with `cwd` set to that placeholder (`workspaces.ts:640` and `workspaces.ts:653`).
 - After checkout, v2 enables `push.autoSetupRemote` and registers local/cloud workspace records.
@@ -30,7 +30,7 @@ Recovery after `gh pr checkout` lives in
 It only handles selected `gh` failures:
 
 - `'<remote>/<branch>' is not a branch`, where `gh` likely fetched a valid `FETCH_HEAD` but failed while attaching tracking (`pr-checkout-recovery.ts:18`).
-- Missing/unreadable remote/ref errors, where Superset explicitly fetches `refs/pull/<number>/head` (`pr-checkout-recovery.ts:27`).
+- Missing/unreadable remote/ref errors, where Rox explicitly fetches `refs/pull/<number>/head` (`pr-checkout-recovery.ts:27`).
 - Both paths verify `FETCH_HEAD` against `headRefOid` before `git checkout -B <branch> --no-track FETCH_HEAD` (`pr-checkout-recovery.ts:60` and `pr-checkout-recovery.ts:99`).
 
 It does not recover from a dirty placeholder worktree.
@@ -58,7 +58,7 @@ creation is implemented by `gh pr checkout`:
 - `packages/mcp-v2/src/tools/workspaces/create.ts:43`
 - `packages/sdk/src/resources/workspaces.ts:164`
 - `apps/docs/content/docs/cli/cli-reference.mdx:539`
-- `skills/superset/SKILL.md:39`
+- `skills/rox/SKILL.md:39`
 
 The implementation plan in
 `apps/desktop/plans/20260416-v2-pr-checkout-endpoint.md` explicitly chose the
@@ -82,12 +82,12 @@ This should not be caused by unrelated dirtiness in the user's main checkout if
 
 The likely chain is:
 
-1. Superset runs `git worktree add --detach <worktreePath>`.
+1. Rox runs `git worktree add --detach <worktreePath>`.
 2. That command performs a real checkout into `<worktreePath>`.
 3. During or immediately after that checkout, local hooks, filters, generated
    files, package-manager side effects, or watchers modify a tracked file in the
    new placeholder worktree. In the observed case the file was `package-lock.json`.
-4. Superset then runs `gh pr checkout ... --force` in that already-dirty
+4. Rox then runs `gh pr checkout ... --force` in that already-dirty
    placeholder worktree.
 5. `gh pr checkout` still uses normal `git checkout`/`git fetch`/`git reset`
    commands internally. Its `--force` is not a general "discard any dirty
@@ -148,7 +148,7 @@ mode (`apps/server/src/git/Layers/GitManager.ts:1428`). In worktree mode it:
 - Falls back to fetching `+refs/pull/<pr>/head:refs/heads/<branch>` when richer
   head-repo fetching is unavailable (`GitCore.ts:1919`).
 
-This is effectively the same architecture Superset should use.
+This is effectively the same architecture Rox should use.
 
 ### GitHub CLI
 
@@ -165,7 +165,7 @@ Local clone: `~/workplace/cli`.
 
 There is an open upstream feature request for a native worktree mode:
 https://github.com/cli/cli/issues/5793. That reinforces that `gh pr checkout`
-does not currently expose the worktree primitive Superset needs.
+does not currently expose the worktree primitive Rox needs.
 
 ### Other tools
 
@@ -199,7 +199,7 @@ Reuse `derivePrLocalBranchName`.
 
 Before creating a worktree:
 
-- If a Superset workspace already exists for that branch, return it.
+- If a Rox workspace already exists for that branch, return it.
 - If the local branch exists and its head equals `headRefOid`, adopt it or add a
   worktree from it.
 - If the local branch exists and its head differs from `headRefOid`, keep the
@@ -230,19 +230,19 @@ For cross-repo PRs or deleted head branches:
 1. Fetch GitHub's synthetic PR head ref from the base remote:
 
    ```text
-   git fetch --no-tags --quiet <remote> +refs/pull/<number>/head:refs/superset/pr-fetch/<number>/head
+   git fetch --no-tags --quiet <remote> +refs/pull/<number>/head:refs/rox/pr-fetch/<number>/head
    ```
 
-2. Verify `refs/superset/pr-fetch/<number>/head^{commit}` equals
+2. Verify `refs/rox/pr-fetch/<number>/head^{commit}` equals
    `headRefOid`. This avoids `FETCH_HEAD`, which is shared across concurrent
    fetches in the same clone.
 3. Create the local branch from the verified commit OID, not the mutable
    internal ref.
 4. Configure:
-   - `branch.<branch>.remote = <remote or Superset-managed fork remote>`
+   - `branch.<branch>.remote = <remote or Rox-managed fork remote>`
    - `branch.<branch>.merge = refs/pull/<number>/head` for synthetic-ref fallback,
      or `refs/heads/<headRefName>` when a real fork remote is available.
-   - `branch.<branch>.pushRemote = <Superset-managed fork remote>` and
+   - `branch.<branch>.pushRemote = <Rox-managed fork remote>` and
      `remote.<fork-remote>.push = HEAD:refs/heads/<headRefName>` for cross-repo
      PRs with `headRepository` metadata, so plain `git push` targets the fork
      branch instead of GitHub's read-only synthetic PR ref.
@@ -307,7 +307,7 @@ Then update only the new-branch PR path in
    synthetic-ref fetch and OID verification logic should move into the normal
    materialization path.
 
-Once v2 is changed, update CLI/MCP/SDK/docs descriptions so they say Superset
+Once v2 is changed, update CLI/MCP/SDK/docs descriptions so they say Rox
 checks out PRs by resolving the PR head and creating a worktree from the
 verified branch, not by running `gh pr checkout`.
 
@@ -349,11 +349,11 @@ Implemented for the canonical v2 host-service path:
 - The PR path no longer shells out to `gh pr checkout` in worktree mode.
 - `workspaces.create` uses `ctx.execGh` for PR metadata so integration tests can
   mock GitHub CLI behavior.
-- Cross-repo PRs with `headRepository` metadata get a Superset-managed fork
+- Cross-repo PRs with `headRepository` metadata get a Rox-managed fork
   remote plus a push refspec so plain `git push` targets the contributor branch.
 - Same-repo and synthetic PR fetches create branches from the verified commit
   OID instead of from mutable refs. Synthetic fetches reuse
-  `refs/superset/pr-fetch/<number>/head` instead of accumulating one ref per
+  `refs/rox/pr-fetch/<number>/head` instead of accumulating one ref per
   force-pushed OID.
 - Materialization warnings are returned from `workspaces.create` and surfaced by
   the desktop workspace-create flow.

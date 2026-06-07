@@ -6,13 +6,13 @@ describe("getExecuteCommandViewModel", () => {
 		const model = getExecuteCommandViewModel({
 			args: { command: "pwd" },
 			result: {
-				content: [{ type: "text", text: "/Users/kietho/workplace/superset\n" }],
+				content: [{ type: "text", text: "/Users/kietho/workplace/rox\n" }],
 				isError: false,
 			},
 		});
 
 		expect(model.command).toBe("pwd");
-		expect(model.stdout).toBe("/Users/kietho/workplace/superset\n");
+		expect(model.stdout).toBe("/Users/kietho/workplace/rox\n");
 		expect(model.stderr).toBeUndefined();
 		expect(model.exitCode).toBeUndefined();
 	});

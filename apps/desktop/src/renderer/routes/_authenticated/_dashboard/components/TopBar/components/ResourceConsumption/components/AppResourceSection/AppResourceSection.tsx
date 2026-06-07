@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/lib/utils";
+import { cn } from "@rox/ui/lib/utils";
 import type { AppMetrics, UsageValues } from "../../types";
 import { formatCpu, formatMemory } from "../../utils/formatters";
 import { getUsageSeverity } from "../../utils/resourceSeverity";
@@ -52,7 +52,7 @@ export function AppResourceSection({
 			<div className="flex items-center justify-between px-3.5 py-1.5">
 				<div className="flex items-center gap-1.5 min-w-0 mr-2">
 					<span className="text-[12px] font-medium text-foreground truncate min-w-0">
-						Superset App
+						Rox App
 					</span>
 					<UsageSeverityBadge severity={appSeverity} />
 				</div>

@@ -1,5 +1,5 @@
+import { POSTHOG_COOKIE_NAME } from "@rox/shared/constants";
 import * as Sentry from "@sentry/nextjs";
-import { POSTHOG_COOKIE_NAME } from "@superset/shared/constants";
 import posthog from "posthog-js";
 
 import { env } from "@/env";

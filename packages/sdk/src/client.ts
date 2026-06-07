@@ -114,14 +114,14 @@ import { VERSION } from "./version";
 
 export interface ClientOptions {
 	/**
-	 * Defaults to process.env['SUPERSET_API_KEY'].
+	 * Defaults to process.env['ROX_API_KEY'].
 	 */
 	apiKey?: string | undefined;
 
 	/**
 	 * Organization ID to scope every request to. Sent as the
-	 * `x-superset-organization-id` header. Defaults to
-	 * process.env['SUPERSET_ORGANIZATION_ID'].
+	 * `x-rox-organization-id` header. Defaults to
+	 * process.env['ROX_ORGANIZATION_ID'].
 	 *
 	 * Required for any procedure that calls `requireActiveOrgMembership` —
 	 * which is most resources (tasks, workspaces, projects, hosts, …).
@@ -131,7 +131,7 @@ export interface ClientOptions {
 	/**
 	 * Override the default base URL for the API, e.g., "https://api.example.com/v2/"
 	 *
-	 * Defaults to process.env['SUPERSET_BASE_URL'].
+	 * Defaults to process.env['ROX_BASE_URL'].
 	 */
 	baseURL?: string | null | undefined;
 
@@ -139,7 +139,7 @@ export interface ClientOptions {
 	 * Relay base URL for host-routed operations (e.g. workspace create/delete,
 	 * which physically run on the developer's machine via the relay tunnel).
 	 *
-	 * Defaults to process.env['SUPERSET_RELAY_URL'] or `https://relay.superset.sh`.
+	 * Defaults to process.env['ROX_RELAY_URL'] or `https://relay.rox.one`.
 	 */
 	relayURL?: string | null | undefined;
 
@@ -193,7 +193,7 @@ export interface ClientOptions {
 	/**
 	 * Set the log level.
 	 *
-	 * Defaults to process.env['SUPERSET_LOG'] or 'warn' if it isn't set.
+	 * Defaults to process.env['ROX_LOG'] or 'warn' if it isn't set.
 	 */
 	logLevel?: LogLevel | undefined;
 
@@ -215,9 +215,9 @@ type TRPCEnvelope<T> = {
 };
 
 /**
- * API Client for interfacing with the Superset API.
+ * API Client for interfacing with the Rox API.
  */
-export class Superset {
+export class Rox {
 	apiKey: string;
 	organizationId: string | null;
 	relayURL: string;
@@ -237,10 +237,10 @@ export class Superset {
 	private _jwtInflight: Promise<string> | null = null;
 
 	/**
-	 * API Client for interfacing with the Superset API.
+	 * API Client for interfacing with the Rox API.
 	 *
-	 * @param {string | undefined} [opts.apiKey=process.env['SUPERSET_API_KEY'] ?? undefined]
-	 * @param {string} [opts.baseURL=process.env['SUPERSET_BASE_URL'] ?? https://api.superset.sh] - Override the default base URL for the API.
+	 * @param {string | undefined} [opts.apiKey=process.env['ROX_API_KEY'] ?? undefined]
+	 * @param {string} [opts.baseURL=process.env['ROX_BASE_URL'] ?? https://api.rox.one] - Override the default base URL for the API.
 	 * @param {number} [opts.timeout=1 minute] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
 	 * @param {MergedRequestInit} [opts.fetchOptions] - Additional `RequestInit` options to be passed to `fetch` calls.
 	 * @param {Fetch} [opts.fetch] - Specify a custom `fetch` function implementation.
@@ -249,15 +249,15 @@ export class Superset {
 	 * @param {Record<string, string | undefined>} opts.defaultQuery - Default query parameters to include with every request to the API.
 	 */
 	constructor({
-		baseURL = readEnv("SUPERSET_BASE_URL"),
-		apiKey = readEnv("SUPERSET_API_KEY"),
-		organizationId = readEnv("SUPERSET_ORGANIZATION_ID"),
-		relayURL = readEnv("SUPERSET_RELAY_URL"),
+		baseURL = readEnv("ROX_BASE_URL"),
+		apiKey = readEnv("ROX_API_KEY"),
+		organizationId = readEnv("ROX_ORGANIZATION_ID"),
+		relayURL = readEnv("ROX_RELAY_URL"),
 		...opts
 	}: ClientOptions = {}) {
 		if (apiKey === undefined) {
-			throw new Errors.SupersetError(
-				"The SUPERSET_API_KEY environment variable is missing or empty; either provide it, or instantiate the Superset client with an apiKey option, like new Superset({ apiKey: 'My API Key' }).",
+			throw new Errors.RoxError(
+				"The ROX_API_KEY environment variable is missing or empty; either provide it, or instantiate the Rox client with an apiKey option, like new Rox({ apiKey: 'My API Key' }).",
 			);
 		}
 
@@ -265,11 +265,11 @@ export class Superset {
 			apiKey,
 			organizationId,
 			...opts,
-			baseURL: baseURL || `https://api.superset.sh`,
+			baseURL: baseURL || `https://api.rox.one`,
 		};
 
 		this.baseURL = options.baseURL!;
-		this.timeout = options.timeout ?? Superset.DEFAULT_TIMEOUT /* 1 minute */;
+		this.timeout = options.timeout ?? Rox.DEFAULT_TIMEOUT /* 1 minute */;
 		this.logger = options.logger ?? console;
 		const defaultLogLevel = "warn";
 		// Set default logLevel early so that we can log a warning in parseLogLevel.
@@ -277,8 +277,8 @@ export class Superset {
 		this.logLevel =
 			parseLogLevel(options.logLevel, "ClientOptions.logLevel", this) ??
 			parseLogLevel(
-				readEnv("SUPERSET_LOG"),
-				"process.env['SUPERSET_LOG']",
+				readEnv("ROX_LOG"),
+				"process.env['ROX_LOG']",
 				this,
 			) ??
 			defaultLogLevel;
@@ -287,7 +287,7 @@ export class Superset {
 		this.fetch = options.fetch ?? Shims.getDefaultFetch();
 		this.#encoder = Opts.FallbackEncoder;
 
-		const customHeadersEnv = readEnv("SUPERSET_CUSTOM_HEADERS");
+		const customHeadersEnv = readEnv("ROX_CUSTOM_HEADERS");
 		if (customHeadersEnv) {
 			const parsed: Record<string, string> = {};
 			for (const line of customHeadersEnv.split("\n")) {
@@ -305,7 +305,7 @@ export class Superset {
 
 		this.apiKey = apiKey;
 		this.organizationId = organizationId ?? null;
-		this.relayURL = relayURL || "https://relay.superset.sh";
+		this.relayURL = relayURL || "https://relay.rox.one";
 	}
 
 	/**
@@ -337,7 +337,7 @@ export class Superset {
 	 * Check whether the base URL is set to its default.
 	 */
 	#baseURLOverridden(): boolean {
-		return this.baseURL !== "https://api.superset.sh";
+		return this.baseURL !== "https://api.rox.one";
 	}
 
 	protected defaultQuery(): Record<string, string | undefined> | undefined {
@@ -356,7 +356,7 @@ export class Superset {
 				? { "x-api-key": this.apiKey }
 				: { Authorization: `Bearer ${this.apiKey}` };
 		if (this.organizationId) {
-			auth["x-superset-organization-id"] = this.organizationId;
+			auth["x-rox-organization-id"] = this.organizationId;
 		}
 		return buildHeaders([auth]);
 	}
@@ -514,8 +514,8 @@ export class Superset {
 		options?: RequestOptions,
 	): APIPromise<Rsp> {
 		if (!this.organizationId) {
-			throw new Errors.SupersetError(
-				"organizationId is required for host-routed calls. Set SUPERSET_ORGANIZATION_ID or pass `organizationId` to the constructor.",
+			throw new Errors.RoxError(
+				"organizationId is required for host-routed calls. Set ROX_ORGANIZATION_ID or pass `organizationId` to the constructor.",
 			);
 		}
 		const routingKey = `${this.organizationId}:${hostId}`;
@@ -547,8 +547,8 @@ export class Superset {
 		options?: RequestOptions,
 	): APIPromise<Rsp> {
 		if (!this.organizationId) {
-			throw new Errors.SupersetError(
-				"organizationId is required for host-routed calls. Set SUPERSET_ORGANIZATION_ID or pass `organizationId` to the constructor.",
+			throw new Errors.RoxError(
+				"organizationId is required for host-routed calls. Set ROX_ORGANIZATION_ID or pass `organizationId` to the constructor.",
 			);
 		}
 		const routingKey = `${this.organizationId}:${hostId}`;
@@ -602,13 +602,13 @@ export class Superset {
 			},
 		);
 		if (!res.ok) {
-			throw new Errors.SupersetError(
+			throw new Errors.RoxError(
 				`Failed to exchange API key for JWT (HTTP ${res.status}). The API key may be invalid or revoked.`,
 			);
 		}
 		const body = (await res.json()) as { token?: string };
 		if (!body.token) {
-			throw new Errors.SupersetError("Auth token endpoint returned no token");
+			throw new Errors.RoxError("Auth token endpoint returned no token");
 		}
 		// Server issues 1h JWTs; cache for 55 minutes to be safe.
 		this._jwtCache = {
@@ -1060,7 +1060,7 @@ export class Superset {
 			(typeof body === "string" &&
 				// Preserve legacy string encoding behavior for now
 				headers.values.has("content-type")) ||
-			// `Blob` is superset of `File`
+			// `Blob` is rox of `File`
 			((globalThis as any).Blob && body instanceof (globalThis as any).Blob) ||
 			// `FormData` -> `multipart/form-data`
 			body instanceof FormData ||
@@ -1095,10 +1095,10 @@ export class Superset {
 		}
 	}
 
-	static Superset = this;
+	static Rox = this;
 	static DEFAULT_TIMEOUT = 60000; // 1 minute
 
-	static SupersetError = Errors.SupersetError;
+	static RoxError = Errors.RoxError;
 	static APIError = Errors.APIError;
 	static APIConnectionError = Errors.APIConnectionError;
 	static APIConnectionTimeoutError = Errors.APIConnectionTimeoutError;
@@ -1132,16 +1132,16 @@ export class Superset {
 	organization: API.Organization = new API.Organization(this);
 }
 
-Superset.Tasks = Tasks;
-Superset.Workspaces = Workspaces;
-Superset.Projects = Projects;
-Superset.Hosts = Hosts;
-Superset.Automations = Automations;
-Superset.Agents = Agents;
-Superset.Terminals = Terminals;
-Superset.Organization = Organization;
+Rox.Tasks = Tasks;
+Rox.Workspaces = Workspaces;
+Rox.Projects = Projects;
+Rox.Hosts = Hosts;
+Rox.Automations = Automations;
+Rox.Agents = Agents;
+Rox.Terminals = Terminals;
+Rox.Organization = Organization;
 
-export declare namespace Superset {
+export declare namespace Rox {
 	export type RequestOptions = Opts.RequestOptions;
 
 	export {

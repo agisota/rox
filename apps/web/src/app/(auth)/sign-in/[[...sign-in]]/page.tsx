@@ -1,12 +1,8 @@
 "use client";
 
-import { authClient } from "@superset/auth/client";
-import {
-	DEV_EMAIL,
-	DEV_NAME,
-	DEV_PASSWORD,
-} from "@superset/shared/dev-credentials";
-import { Button } from "@superset/ui/button";
+import { authClient } from "@rox/auth/client";
+import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
+import { Button } from "@rox/ui/button";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -96,7 +92,7 @@ export default function SignInPage() {
 			<div className="flex flex-col space-y-2 text-center">
 				<h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign in to continue to Superset
+					Sign in to continue to Rox
 				</p>
 			</div>
 			<div className="grid gap-4">

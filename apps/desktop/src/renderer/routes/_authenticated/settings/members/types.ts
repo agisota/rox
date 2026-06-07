@@ -2,8 +2,8 @@ import type {
 	SelectInvitation,
 	SelectMember,
 	SelectUser,
-} from "@superset/db/schema/auth";
-import type { OrganizationRole } from "@superset/shared/auth";
+} from "@rox/db/schema/auth";
+import type { OrganizationRole } from "@rox/shared/auth";
 
 export type TeamMember = SelectUser &
 	SelectMember & {

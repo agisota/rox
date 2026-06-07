@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -6,11 +6,11 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
-import { Textarea } from "@superset/ui/textarea";
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { toast } from "@rox/ui/sonner";
+import { Textarea } from "@rox/ui/textarea";
 import { useState } from "react";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 
@@ -70,8 +70,8 @@ export function SubmitPromptDialog({
 				<DialogHeader>
 					<DialogTitle>Submit a prompt</DialogTitle>
 					<DialogDescription>
-						Prompt a coding agent to build what you want to see in Superset. If
-						we like your prompt, we'll run it and merge the result.
+						Prompt a coding agent to build what you want to see in Rox. If we
+						like your prompt, we'll run it and merge the result.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-4 py-2">

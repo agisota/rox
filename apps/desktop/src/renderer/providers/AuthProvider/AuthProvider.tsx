@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { authClient, setAuthToken, setJwt } from "renderer/lib/auth-client";
-import { SupersetLogo } from "renderer/routes/sign-in/components/SupersetLogo/SupersetLogo";
+import { RoxLogo } from "renderer/routes/sign-in/components/RoxLogo/RoxLogo";
 import { electronTrpc } from "../../lib/electron-trpc";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	if (!isHydrated) {
 		return (
 			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<SupersetLogo className="h-8 w-auto" gradient />
+				<RoxLogo className="h-8 w-auto" gradient />
 			</div>
 		);
 	}

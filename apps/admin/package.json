@@ -1,5 +1,5 @@
 {
-	"name": "@superset/admin",
+	"name": "@rox/admin",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -12,11 +12,11 @@
 	},
 	"dependencies": {
 		"@sentry/nextjs": "10.46.0",
-		"@superset/auth": "workspace:*",
-		"@superset/db": "workspace:*",
-		"@superset/shared": "workspace:*",
-		"@superset/trpc": "workspace:*",
-		"@superset/ui": "workspace:*",
+		"@rox/auth": "workspace:*",
+		"@rox/db": "workspace:*",
+		"@rox/shared": "workspace:*",
+		"@rox/trpc": "workspace:*",
+		"@rox/ui": "workspace:*",
 		"@t3-oss/env-nextjs": "0.13.11",
 		"@tanstack/react-query": "5.100.9",
 		"@tanstack/react-query-devtools": "5.95.2",
@@ -40,7 +40,7 @@
 		"zod": "4.3.6"
 	},
 	"devDependencies": {
-		"@superset/typescript": "workspace:*",
+		"@rox/typescript": "workspace:*",
 		"@tailwindcss/postcss": "4.2.2",
 		"@types/node": "24.12.0",
 		"@types/react": "19.2.14",

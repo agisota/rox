@@ -4,8 +4,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/dropdown-menu";
+import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { memo, useCallback } from "react";
 import {

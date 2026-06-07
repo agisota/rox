@@ -1,6 +1,6 @@
-import { COMPANY } from "@superset/shared/constants";
-import { Button } from "@superset/ui/button";
-import { ThemePreviewCard } from "@superset/ui/theme-preview-card";
+import { COMPANY } from "@rox/shared/constants";
+import { Button } from "@rox/ui/button";
+import { ThemePreviewCard } from "@rox/ui/theme-preview-card";
 import { Download } from "lucide-react";
 import type { Metadata } from "next";
 import { themeListings } from "@/lib/marketplace";
@@ -8,7 +8,7 @@ import { themeListings } from "@/lib/marketplace";
 export const metadata: Metadata = {
 	title: "Themes",
 	description:
-		"Browse Superset theme files shared by the community, including GitHub Dark Colorblind, Catppuccin, Ember, and One Dark Pro.",
+		"Browse Rox theme files shared by the community, including GitHub Dark Colorblind, Catppuccin, Ember, and One Dark Pro.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace/themes`,
 	},

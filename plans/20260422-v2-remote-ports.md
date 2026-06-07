@@ -64,7 +64,7 @@ New package. Zero dependencies beyond `pidtree` and node built-ins so it runs in
 - Move `apps/desktop/src/main/lib/terminal/port-scanner.ts` → `packages/port-scanner/src/scanner.ts`.
 - Move the `PortManager` class → `packages/port-scanner/src/port-manager.ts`, but **remove the singleton export**. Callers instantiate their own. The singleton pattern bleeds state in tests and blocks running two managers in one host-service process.
 - Keep `DetectedPort` in `apps/desktop/src/shared/types/ports.ts` for now (UI owns the wire shape); import it from the shared package via a peer type, or duplicate it — v1/v2 duplication is acceptable (per project convention).
-- Update desktop imports: `main/lib/terminal/port-manager` → `@superset/port-scanner`.
+- Update desktop imports: `main/lib/terminal/port-manager` → `@rox/port-scanner`.
 
 No behavior change in this step. Land it alone to de-risk.
 
@@ -77,7 +77,7 @@ No behavior change in this step. Land it alone to de-risk.
 ### 3. Host-service tRPC `ports` router
 
 - `packages/host-service/src/trpc/router/ports/ports.ts`: mirror of `apps/desktop/src/lib/trpc/routers/ports/ports.ts`.
-  - `getAll({ workspaceIds })` → enriched detected ports for the requested workspaces. `.superset/ports.json` is supplemental label metadata only: it names ports that were already detected as listening; it does not create static rows and does not replace dynamic discovery. Host-service can load labels from its own filesystem since it owns the worktree.
+  - `getAll({ workspaceIds })` → enriched detected ports for the requested workspaces. `.rox/ports.json` is supplemental label metadata only: it names ports that were already detected as listening; it does not create static rows and does not replace dynamic discovery. Host-service can load labels from its own filesystem since it owns the worktree.
   - `subscribe({ workspaceIds })` → observable of `{ type: 'add' | 'remove', port }` scoped to the requested workspaces. **Note:** this is a useful router-level API, but the dashboard sidebar should prefer the unified host-service event bus so one WebSocket carries git, terminal, notification, filesystem, and port events for a host.
   - `kill({ workspaceId, terminalId, port })` → forwards to host-service port manager after verifying the tracked port belongs to that workspace and terminal session.
 - Register under the existing host-service router.
@@ -150,7 +150,7 @@ Land these in step 1 so the shared package starts clean.
 
 **Blockers:**
 - `port-manager.ts:124,151` — `scanAbort` can be `undefined` when a lingering `hintScanTimeout` fires after `stopPeriodicScan`. Lazy-allocate at the top of `scanAllSessions`.
-- `ports.ts:36-45` + `usePortsData.ts:28` — DB `SELECT workspace` per unique `workspaceId` per `getAll`, and `getAll` is re-run on every `port:add`/`port:remove`. With a dev server churning ports this is a cascade of sync `better-sqlite3` reads on the main thread. Cache `workspaceId → labels` for supplemental `.superset/ports.json` names (invalidate on workspace CRUD), or coalesce `invalidate()` in the renderer with a 50ms debounce.
+- `ports.ts:36-45` + `usePortsData.ts:28` — DB `SELECT workspace` per unique `workspaceId` per `getAll`, and `getAll` is re-run on every `port:add`/`port:remove`. With a dev server churning ports this is a cascade of sync `better-sqlite3` reads on the main thread. Cache `workspaceId → labels` for supplemental `.rox/ports.json` names (invalidate on workspace CRUD), or coalesce `invalidate()` in the renderer with a 50ms debounce.
 
 **Worth-fixing:**
 - Delete `registerSession`/`unregisterSession` — no production callers (only tests). Only `upsertDaemonSession` is wired from `daemon-manager.ts`. Simplifies the extracted class.
@@ -198,12 +198,12 @@ Polling cadence: replace fixed `SCAN_INTERVAL_MS = 2500` with `max(movingAvg * 2
 
 ## Open questions
 
-- **Resolved: `ports.json` semantics.** `.superset/ports.json` is supplemental
+- **Resolved: `ports.json` semantics.** `.rox/ports.json` is supplemental
   label metadata. It gives friendly names to ports that dynamic scanning already
   detects. It must not create port rows, hide unlabelled detected ports, replace
   dynamic detection, or make malformed label config suppress detected ports.
 - **Resolved: port labels for remote workspaces.** Host-service reads
-  `.superset/ports.json` from its own worktree and returns enriched rows from
+  `.rox/ports.json` from its own worktree and returns enriched rows from
   `ports.getAll`; both desktop and host-service refresh cached labels when the
   file mtime/size changes.
 - **Resolved: port identity.** Shared port records are terminal-owned

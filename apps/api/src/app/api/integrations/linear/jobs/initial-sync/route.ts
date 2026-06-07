@@ -1,7 +1,7 @@
 import type { LinearClient } from "@linear/sdk";
-import { buildConflictUpdateColumns, db } from "@superset/db";
-import { members, taskStatuses, tasks, users } from "@superset/db/schema";
-import { getLinearClient } from "@superset/trpc/integrations/linear";
+import { buildConflictUpdateColumns, db } from "@rox/db";
+import { members, taskStatuses, tasks, users } from "@rox/db/schema";
+import { getLinearClient } from "@rox/trpc/integrations/linear";
 import { Receiver } from "@upstash/qstash";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import chunk from "lodash.chunk";

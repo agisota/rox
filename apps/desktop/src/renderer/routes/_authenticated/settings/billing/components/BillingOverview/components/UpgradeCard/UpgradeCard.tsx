@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import { PLANS } from "../../../../constants";
 
 interface UpgradeCardProps {

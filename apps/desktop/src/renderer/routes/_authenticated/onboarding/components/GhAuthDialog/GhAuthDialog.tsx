@@ -4,7 +4,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
+} from "@rox/ui/dialog";
 import { GhAuthTerminal } from "./GhAuthTerminal";
 
 interface GhAuthDialogProps {

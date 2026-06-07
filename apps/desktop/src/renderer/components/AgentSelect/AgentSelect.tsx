@@ -5,7 +5,7 @@ import {
 	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
+} from "@rox/ui/select";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	getPresetIcon,

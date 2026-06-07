@@ -1,4 +1,4 @@
-import { Checkbox } from "@superset/ui/checkbox";
+import { Checkbox } from "@rox/ui/checkbox";
 import {
 	Command,
 	CommandEmpty,
@@ -6,10 +6,10 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
-import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+} from "@rox/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { toast } from "@rox/ui/sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";

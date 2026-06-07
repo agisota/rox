@@ -1,7 +1,7 @@
-import type { HostAgentConfig } from "@superset/host-service/settings";
-import { normalizeExecutionMode } from "@superset/local-db";
-import { Badge } from "@superset/ui/badge";
-import { cn } from "@superset/ui/utils";
+import type { HostAgentConfig } from "@rox/host-service/settings";
+import { normalizeExecutionMode } from "@rox/local-db";
+import { Badge } from "@rox/ui/badge";
+import { cn } from "@rox/ui/utils";
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";

@@ -1,10 +1,10 @@
 import type {
 	AgentPresetPatch,
 	ResolvedAgentConfig,
-} from "@superset/shared/agent-settings";
-import { Card, CardContent } from "@superset/ui/card";
-import { Collapsible, CollapsibleContent } from "@superset/ui/collapsible";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/shared/agent-settings";
+import { Card, CardContent } from "@rox/ui/card";
+import { Collapsible, CollapsibleContent } from "@rox/ui/collapsible";
+import { toast } from "@rox/ui/sonner";
 import { useMemo, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import type { AgentCardProps, AgentEditableField } from "./agent-card.types";

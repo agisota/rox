@@ -1,5 +1,5 @@
-import { getHostId, getHostName } from "@superset/shared/host-info";
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import { getHostId, getHostName } from "@rox/shared/host-info";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
 import type { JwtApiAuthProvider } from "../providers/auth/JwtAuthProvider/JwtAuthProvider";
 import type { ApiClient } from "../types";
 import { TunnelClient } from "./tunnel-client";

@@ -66,7 +66,7 @@ export async function generateMetadata({
 	}
 
 	return {
-		title: `${page.title} - Superset`,
+		title: `${page.title} - Rox`,
 		description: page.description,
 	};
 }

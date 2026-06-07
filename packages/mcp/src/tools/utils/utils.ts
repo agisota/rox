@@ -4,8 +4,8 @@ import type {
 	ServerNotification,
 	ServerRequest,
 } from "@modelcontextprotocol/sdk/types.js";
-import { db } from "@superset/db/client";
-import { agentCommands, devicePresence } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { agentCommands, devicePresence } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 import type { McpContext } from "../../auth";
 

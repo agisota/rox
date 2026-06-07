@@ -1,6 +1,6 @@
 # Daemon Supervision
 
-Host-service owns the lifecycle of `@superset/pty-daemon` — the long-lived
+Host-service owns the lifecycle of `@rox/pty-daemon` — the long-lived
 PTY process. Supervision lives here (not in the desktop app) so
 host-service can be deployed independently of Electron. The daemon
 outlives host-service crashes via detached spawn + manifest adoption.
@@ -13,7 +13,7 @@ outlives host-service crashes via detached spawn + manifest adoption.
 - **Singleton + bootstrap**: `src/daemon/singleton.ts` — process-level
   cache + `startDaemonBootstrap` / `waitForDaemonReady` for the boot
   pattern below.
-- **Manifest**: `src/daemon/manifest.ts` — `$SUPERSET_HOME_DIR/host/{orgId}/pty-daemon-manifest.json`.
+- **Manifest**: `src/daemon/manifest.ts` — `$ROX_HOME_DIR/host/{orgId}/pty-daemon-manifest.json`.
   Read by `tryAdopt` on startup to find a still-running daemon from a
   previous host-service incarnation.
 - **Expected version**: `src/daemon/expected-version.ts` — derives
@@ -39,7 +39,7 @@ exit. On next host-service start, `tryAdopt` reads the manifest, checks
 the PID is alive and the socket is reachable, and reuses the running
 daemon. PTY sessions therefore survive host-service restarts.
 
-The socket path lives in `os.tmpdir()/superset-ptyd-<sha256(orgId).slice(0,12)>.sock`
+The socket path lives in `os.tmpdir()/rox-ptyd-<sha256(orgId).slice(0,12)>.sock`
 — short enough to fit Darwin's 104-byte `sun_path` limit. Owner-only
 file mode (0600) is the auth boundary.
 
@@ -127,7 +127,7 @@ per-line prefixes:
 - `[ptyd:<8-char-orgId>] ...` — daemon stdout, fanned through host-service
 
 Production stdio backs to per-org rotating log files
-(`$SUPERSET_HOME_DIR/host/{orgId}/{host-service,pty-daemon}.log`)
+(`$ROX_HOME_DIR/host/{orgId}/{host-service,pty-daemon}.log`)
 because the detached children must outlive parent teardown.
 
 The `pipeWithPrefix` helper splits incoming chunks on `\n` so
@@ -166,7 +166,7 @@ on host-service yet — promote to real telemetry when the path is needed.
 
 ## Test escape hatch
 
-Setting `SUPERSET_PTY_DAEMON_SOCKET` env var bypasses the supervisor in
+Setting `ROX_PTY_DAEMON_SOCKET` env var bypasses the supervisor in
 `daemon-client-singleton.ts` and connects directly to the given socket.
 Used by `terminal.adoption.node-test.ts` to test host-service against an
 in-process Server instance. Production paths leave this env unset.

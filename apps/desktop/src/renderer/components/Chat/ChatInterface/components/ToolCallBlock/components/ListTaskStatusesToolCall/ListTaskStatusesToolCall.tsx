@@ -1,4 +1,4 @@
-import { TaskItem, TaskItemFile } from "@superset/ui/ai-elements/task";
+import { TaskItem, TaskItemFile } from "@rox/ui/ai-elements/task";
 import { ListChecksIcon } from "lucide-react";
 import {
 	StatusIcon,
@@ -6,7 +6,7 @@ import {
 } from "renderer/routes/_authenticated/_dashboard/tasks/components/TasksView/components/shared/StatusIcon";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getResult } from "../../../../utils/tool-helpers";
-import { SupersetToolCall } from "../SupersetToolCall";
+import { RoxToolCall } from "../RoxToolCall";
 
 interface ListTaskStatusesToolCallProps {
 	part: ToolPart;
@@ -42,7 +42,7 @@ export function ListTaskStatusesToolCall({
 		: [];
 
 	return (
-		<SupersetToolCall
+		<RoxToolCall
 			part={part}
 			toolName="List task statuses"
 			icon={ListChecksIcon}

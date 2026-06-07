@@ -1,7 +1,7 @@
-import { db, dbWs } from "@superset/db/client";
-import { v2UsersHostRoleValues } from "@superset/db/enums";
-import { members, v2Hosts, v2UsersHosts } from "@superset/db/schema";
-import { getCurrentTxid } from "@superset/db/utils";
+import { db, dbWs } from "@rox/db/client";
+import { v2UsersHostRoleValues } from "@rox/db/enums";
+import { members, v2Hosts, v2UsersHosts } from "@rox/db/schema";
+import { getCurrentTxid } from "@rox/db/utils";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";

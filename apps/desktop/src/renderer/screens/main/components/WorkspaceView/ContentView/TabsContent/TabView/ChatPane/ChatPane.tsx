@@ -1,7 +1,7 @@
 import {
 	ChatRuntimeServiceProvider,
 	ChatServiceProvider,
-} from "@superset/chat/client";
+} from "@rox/chat/client";
 import { useCallback } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";

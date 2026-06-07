@@ -1,7 +1,7 @@
 import { DurableStream } from "@durable-streams/client";
-import { auth } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import { chatSessions } from "@superset/db/schema";
+import { auth } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import { chatSessions } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 import { env } from "@/env";
 

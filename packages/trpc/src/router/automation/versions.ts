@@ -1,9 +1,5 @@
-import { db, dbWs } from "@superset/db/client";
-import {
-	automationPromptVersions,
-	automations,
-	users,
-} from "@superset/db/schema";
+import { db, dbWs } from "@rox/db/client";
+import { automationPromptVersions, automations, users } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";

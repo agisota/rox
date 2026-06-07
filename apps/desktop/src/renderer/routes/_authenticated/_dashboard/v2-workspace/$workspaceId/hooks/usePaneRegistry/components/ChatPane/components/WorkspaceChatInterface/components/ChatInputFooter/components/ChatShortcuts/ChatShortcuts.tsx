@@ -1,7 +1,7 @@
 import {
 	usePromptInputAttachments,
 	usePromptInputController,
-} from "@superset/ui/ai-elements/prompt-input";
+} from "@rox/ui/ai-elements/prompt-input";
 import { useHotkey } from "renderer/hotkeys";
 
 interface ChatShortcutsProps {

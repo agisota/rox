@@ -1,10 +1,6 @@
-import type {
-	SelectTask,
-	SelectTaskStatus,
-	SelectUser,
-} from "@superset/db/schema";
-import { Badge } from "@superset/ui/badge";
-import { Checkbox } from "@superset/ui/checkbox";
+import type { SelectTask, SelectTaskStatus, SelectUser } from "@rox/db/schema";
+import { Badge } from "@rox/ui/badge";
+import { Checkbox } from "@rox/ui/checkbox";
 import { eq, isNull } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import {

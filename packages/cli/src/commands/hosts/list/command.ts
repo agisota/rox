@@ -1,5 +1,5 @@
-import { CLIError, table } from "@superset/cli-framework";
-import { getHostId } from "@superset/shared/host-info";
+import { CLIError, table } from "@rox/cli-framework";
+import { getHostId } from "@rox/shared/host-info";
 import { command } from "../../../lib/command";
 
 export default command({
@@ -13,7 +13,7 @@ export default command({
 	run: async ({ ctx }) => {
 		const organizationId = ctx.config.organizationId;
 		if (!organizationId) {
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 		}
 
 		const rows = await ctx.api.host.list.query({ organizationId });

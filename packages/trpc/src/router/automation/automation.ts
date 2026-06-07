@@ -1,4 +1,4 @@
-import { db, dbWs } from "@superset/db/client";
+import { db, dbWs } from "@rox/db/client";
 import {
 	automationRuns,
 	automations,
@@ -6,12 +6,12 @@ import {
 	v2Projects,
 	v2UsersHosts,
 	v2Workspaces,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import {
 	describeSchedule,
 	nextOccurrences,
 	parseRrule,
-} from "@superset/shared/rrule";
+} from "@rox/shared/rrule";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq, getTableColumns, ilike } from "drizzle-orm";
 import { z } from "zod";

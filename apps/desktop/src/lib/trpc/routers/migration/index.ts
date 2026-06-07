@@ -1,4 +1,4 @@
-import { projects, workspaces, worktrees } from "@superset/local-db";
+import { projects, workspaces, worktrees } from "@rox/local-db";
 import { isNotNull, isNull } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
 import { publicProcedure, router } from "../..";

@@ -1,4 +1,4 @@
-import type { Pane, Tab } from "@superset/panes";
+import type { Pane, Tab } from "@rox/panes";
 import {
 	type ActivePaneStatus,
 	getHighestPriorityStatus,

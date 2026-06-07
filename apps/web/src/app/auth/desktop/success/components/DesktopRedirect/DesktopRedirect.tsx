@@ -24,7 +24,7 @@ export function DesktopRedirect({
 
 	return (
 		<div className="flex flex-col items-center gap-6">
-			<Image src="/title.svg" alt="Superset" width={280} height={86} priority />
+			<Image src="/title.svg" alt="Rox" width={280} height={86} priority />
 			<p className="text-xl text-muted-foreground">
 				Redirecting to desktop app...
 			</p>

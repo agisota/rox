@@ -1,4 +1,4 @@
-import type { TerminalPreset } from "@superset/local-db";
+import type { TerminalPreset } from "@rox/local-db";
 
 export type { TerminalPreset };
 

@@ -1,6 +1,6 @@
-import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
-import { Switch } from "@superset/ui/switch";
+import { Label } from "@rox/ui/label";
+import { toast } from "@rox/ui/sonner";
+import { Switch } from "@rox/ui/switch";
 import { useState } from "react";
 import { GATED_FEATURES, usePaywall } from "renderer/components/Paywall";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -94,8 +94,8 @@ export function SecuritySettings({ visibleItems }: SecuritySettingsProps) {
 						</Label>
 						<p className="text-xs text-muted-foreground">
 							When off, your local tools and files cannot be reached from any
-							remote workspace through the Superset relay. This does not affect
-							your ability to connect out to remote sandboxes from this device.
+							remote workspace through the Rox relay. This does not affect your
+							ability to connect out to remote sandboxes from this device.
 						</p>
 					</div>
 					<Switch

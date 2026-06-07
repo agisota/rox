@@ -26,13 +26,13 @@ function createSandbox(): Sandbox {
 }
 
 function writeConfig(repoPath: string, content: object) {
-	const dir = join(repoPath, ".superset");
+	const dir = join(repoPath, ".rox");
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(join(dir, "config.json"), JSON.stringify(content), "utf-8");
 }
 
 function writeFallbackScript(repoPath: string) {
-	const dir = join(repoPath, ".superset");
+	const dir = join(repoPath, ".rox");
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(join(dir, "setup.sh"), "#!/bin/bash\necho hi\n", "utf-8");
 }
@@ -72,22 +72,18 @@ describe("resolveInitialCommand", () => {
 		expect(resolve()).toBe("bun install");
 	});
 
-	it("falls back to bash <repoPath>/.superset/setup.sh when config is empty", () => {
+	it("falls back to bash <repoPath>/.rox/setup.sh when config is empty", () => {
 		writeConfig(sandbox.repoPath, { setup: [], teardown: [] });
 		writeFallbackScript(sandbox.repoPath);
 
 		const cmd = resolve();
-		expect(cmd).toBe(
-			`bash '${join(sandbox.repoPath, ".superset", "setup.sh")}'`,
-		);
+		expect(cmd).toBe(`bash '${join(sandbox.repoPath, ".rox", "setup.sh")}'`);
 	});
 
 	it("falls back to setup.sh when no config.json exists at all", () => {
 		writeFallbackScript(sandbox.repoPath);
 		const cmd = resolve();
-		expect(cmd).toBe(
-			`bash '${join(sandbox.repoPath, ".superset", "setup.sh")}'`,
-		);
+		expect(cmd).toBe(`bash '${join(sandbox.repoPath, ".rox", "setup.sh")}'`);
 	});
 
 	it("config setup wins over the fallback script", () => {
@@ -124,7 +120,7 @@ describe("resolveInitialCommand", () => {
 			expect(cmd).toContain("'\\''");
 			// Verify the escape sequence wraps the single quote correctly.
 			expect(cmd).toBe(
-				`bash '${trickyRepo.replace("'", "'\\''")}/.superset/setup.sh'`,
+				`bash '${trickyRepo.replace("'", "'\\''")}/.rox/setup.sh'`,
 			);
 		} finally {
 			sandboxWithQuote.cleanup();

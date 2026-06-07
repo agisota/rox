@@ -13,27 +13,27 @@ import type { Configuration } from "electron-builder";
 import baseConfig from "./electron-builder";
 import pkg from "./package.json";
 
-const productName = "Superset Canary";
+const productName = "Rox Canary";
 const canaryMacIconPath = join(pkg.resources, "build/icons/icon-canary.icns");
 const canaryLinuxIconPath = join(pkg.resources, "build/icons/icon-canary.png");
 const canaryWinIconPath = join(pkg.resources, "build/icons/icon-canary.ico");
 
 const config: Configuration = {
 	...baseConfig,
-	appId: "com.superset.desktop.canary",
+	appId: "com.rox.desktop.canary",
 	productName,
 
 	publish: {
 		provider: "github",
-		owner: "superset-sh",
-		repo: "superset",
+		owner: "agisota",
+		repo: "set",
 		releaseType: "prerelease",
 	},
 
 	mac: {
 		...baseConfig.mac,
 		...(existsSync(canaryMacIconPath) ? { icon: canaryMacIconPath } : {}),
-		artifactName: `Superset-Canary-\${version}-\${arch}.\${ext}`,
+		artifactName: `Rox-Canary-\${version}-\${arch}.\${ext}`,
 		extendInfo: {
 			...baseConfig.mac?.extendInfo,
 			CFBundleName: productName,
@@ -45,13 +45,13 @@ const config: Configuration = {
 		...baseConfig.linux,
 		...(existsSync(canaryLinuxIconPath) ? { icon: canaryLinuxIconPath } : {}),
 		synopsis: `${pkg.description} (Canary)`,
-		artifactName: `superset-canary-\${version}-\${arch}.\${ext}`,
+		artifactName: `rox-canary-\${version}-\${arch}.\${ext}`,
 	},
 
 	win: {
 		...baseConfig.win,
 		...(existsSync(canaryWinIconPath) ? { icon: canaryWinIconPath } : {}),
-		artifactName: `Superset-Canary-\${version}-\${arch}.\${ext}`,
+		artifactName: `Rox-Canary-\${version}-\${arch}.\${ext}`,
 	},
 };
 

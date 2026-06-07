@@ -1,4 +1,4 @@
-import { SidebarCard } from "@superset/ui/sidebar-card";
+import { SidebarCard } from "@rox/ui/sidebar-card";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
@@ -35,9 +35,9 @@ export function V2AvailableBanner() {
 				>
 					<SidebarCard
 						badge="New"
-						title="Superset v2 is here"
+						title="Rox v2 is here"
 						description="Try the new cloud workspace experience."
-						actionLabel="Try new version of Superset"
+						actionLabel="Try new version of Rox"
 						onAction={handleManage}
 						onDismiss={handleDismiss}
 					/>

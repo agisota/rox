@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { TerminalPreset } from "@superset/local-db";
+import type { TerminalPreset } from "@rox/local-db";
 import { getPresetsForTriggerField } from "./preset-trigger-selection";
 
 function createPreset(

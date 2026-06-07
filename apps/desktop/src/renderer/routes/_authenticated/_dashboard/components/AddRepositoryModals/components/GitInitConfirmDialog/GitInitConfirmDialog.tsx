@@ -5,8 +5,8 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
 import { getBaseName } from "renderer/lib/pathBasename";
 import { useGitInitConfirmStore } from "renderer/stores/git-init-confirm";
 

@@ -1,16 +1,16 @@
 import {
-	type SupersetBlockState,
-	type SupersetEdge,
-	type SupersetVariable,
-	type SupersetWorkflowState,
+	type RoxBlockState,
+	type RoxEdge,
+	type RoxVariable,
+	type RoxWorkflowState,
 	skillCallBlockType,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import type { SimBlockState, SimWorkflowState } from "./simTypes";
 
-/** Block type used for Sim blocks Superset can't yet execute (SIM-02). */
+/** Block type used for Sim blocks Rox can't yet execute (SIM-02). */
 export const UNSUPPORTED_BLOCK_TYPE = "external_unsupported";
 
-/** Maps Sim block types to Superset core block types. */
+/** Maps Sim block types to Rox core block types. */
 const SIM_TYPE_MAP: Record<string, string> = {
 	starter: "start",
 	start: "start",
@@ -22,7 +22,7 @@ const SIM_TYPE_MAP: Record<string, string> = {
 };
 
 export interface ImportSimResult {
-	state: SupersetWorkflowState;
+	state: RoxWorkflowState;
 	/** Human-readable warnings (e.g. unsupported blocks needing mapping). */
 	warnings: string[];
 	/** Child-workflow ids referenced by Sim `workflow` blocks (skill_call deps). */
@@ -42,11 +42,11 @@ function childWorkflowRef(block: SimBlockState): string | undefined {
 
 function convertVariables(
 	vars: SimWorkflowState["variables"],
-): Record<string, SupersetVariable> {
-	const out: Record<string, SupersetVariable> = {};
+): Record<string, RoxVariable> {
+	const out: Record<string, RoxVariable> = {};
 	for (const [k, v] of Object.entries(vars ?? {})) {
 		const t = v.type;
-		const type: SupersetVariable["type"] =
+		const type: RoxVariable["type"] =
 			t === "number" || t === "boolean" || t === "json" ? t : "string";
 		out[k] = { type, value: v.value };
 	}
@@ -54,9 +54,9 @@ function convertVariables(
 }
 
 /**
- * Import a Sim `WorkflowState` JSON into a Superset workflow graph.
+ * Import a Sim `WorkflowState` JSON into a Rox workflow graph.
  *
- * - Known Sim block types map to Superset core blocks (SIM-01).
+ * - Known Sim block types map to Rox core blocks (SIM-01).
  * - Sim `workflow` (child-workflow) blocks map to `skill_call:<ref>` and the
  *   dependency is recorded (SIM-03).
  * - Unknown/unsupported Sim block types become an `external_unsupported`
@@ -66,10 +66,10 @@ function convertVariables(
 export function importSimWorkflowState(sim: SimWorkflowState): ImportSimResult {
 	const warnings: string[] = [];
 	const childWorkflowDependencies: string[] = [];
-	const blocks: Record<string, SupersetBlockState> = {};
+	const blocks: Record<string, RoxBlockState> = {};
 
 	for (const [id, simBlock] of Object.entries(sim.blocks)) {
-		const base: SupersetBlockState = {
+		const base: RoxBlockState = {
 			type: "",
 			name: simBlock.name,
 			enabled: simBlock.enabled,
@@ -103,7 +103,7 @@ export function importSimWorkflowState(sim: SimWorkflowState): ImportSimResult {
 		blocks[id] = base;
 	}
 
-	const edges: SupersetEdge[] = sim.edges.map((e) => ({
+	const edges: RoxEdge[] = sim.edges.map((e) => ({
 		id: e.id,
 		source: e.source,
 		target: e.target,
@@ -111,16 +111,16 @@ export function importSimWorkflowState(sim: SimWorkflowState): ImportSimResult {
 		targetHandle: e.targetHandle ?? undefined,
 	}));
 
-	const loops: SupersetWorkflowState["loops"] = {};
+	const loops: RoxWorkflowState["loops"] = {};
 	for (const [k, v] of Object.entries(sim.loops ?? {})) {
 		loops[k] = { nodes: v.nodes, maxIterations: v.iterations };
 	}
-	const parallels: SupersetWorkflowState["parallels"] = {};
+	const parallels: RoxWorkflowState["parallels"] = {};
 	for (const [k, v] of Object.entries(sim.parallels ?? {})) {
 		parallels[k] = { nodes: v.nodes };
 	}
 
-	const state: SupersetWorkflowState = {
+	const state: RoxWorkflowState = {
 		blocks,
 		edges,
 		variables: convertVariables(sim.variables),

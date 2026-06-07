@@ -3,8 +3,8 @@ import {
 	CommandGroup,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/command";
+import { cn } from "@rox/ui/utils";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useLocation, useNavigate } from "@tanstack/react-router";

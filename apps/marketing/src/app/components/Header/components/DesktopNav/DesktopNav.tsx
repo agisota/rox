@@ -8,8 +8,8 @@ import {
 	NavigationMenuList,
 	NavigationMenuTrigger,
 	navigationMenuTriggerStyle,
-} from "@superset/ui/navigation-menu";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/navigation-menu";
+import { cn } from "@rox/ui/utils";
 import Link from "next/link";
 import {
 	type NavLink,

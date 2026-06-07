@@ -1,4 +1,4 @@
-import type { ToolDisplayState } from "@superset/ui/ai-elements/tool";
+import type { ToolDisplayState } from "@rox/ui/ai-elements/tool";
 import type { UIMessage } from "ai";
 
 // Extract tool part type from UIMessage
@@ -37,7 +37,7 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
 	lsp_inspect: "lsp_inspect",
 	mastra_workspace_lsp_inspect: "lsp_inspect",
 
-	// Legacy Superset MCP names
+	// Legacy Rox MCP names
 	create_worktree: "create_workspace",
 	start_claude_session: "start_agent_session",
 };
@@ -46,8 +46,8 @@ export function normalizeToolName(toolName: string): string {
 	const directAlias = TOOL_NAME_ALIASES[toolName];
 	if (directAlias) return directAlias;
 
-	const unnamespacedToolName = toolName.startsWith("superset_")
-		? toolName.slice("superset_".length)
+	const unnamespacedToolName = toolName.startsWith("rox_")
+		? toolName.slice("rox_".length)
 		: toolName;
 	return TOOL_NAME_ALIASES[unnamespacedToolName] ?? unnamespacedToolName;
 }

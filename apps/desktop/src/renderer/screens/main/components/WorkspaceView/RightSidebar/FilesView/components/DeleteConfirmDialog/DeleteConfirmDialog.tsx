@@ -5,8 +5,8 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
 import type { DirectoryEntry } from "shared/file-tree-types";
 
 interface DeleteConfirmDialogProps {

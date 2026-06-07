@@ -1,8 +1,8 @@
 import { createHmac } from "node:crypto";
-import { auth } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import { integrationConnections, usersSlackUsers } from "@superset/db/schema";
-import { findOrgMembership } from "@superset/db/utils";
+import { auth } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import { integrationConnections, usersSlackUsers } from "@rox/db/schema";
+import { findOrgMembership } from "@rox/db/utils";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { env } from "@/env";
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 
 	if (!connection) {
 		return new Response(
-			"Slack workspace not connected to any Superset organization.",
+			"Slack workspace not connected to any Rox organization.",
 			{ status: 404 },
 		);
 	}

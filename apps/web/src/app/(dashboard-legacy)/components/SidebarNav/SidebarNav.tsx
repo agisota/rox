@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

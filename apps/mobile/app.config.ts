@@ -11,13 +11,13 @@ config({
 
 export default ({ config }: ConfigContext) => ({
 	...config,
-	name: "Superset",
-	slug: "superset",
+	name: "Rox",
+	slug: "rox",
 	version: "1.0.0",
 	orientation: "portrait",
 	icon: "./assets/icon.png",
 	userInterfaceStyle: "dark",
-	scheme: "superset",
+	scheme: "rox",
 	splash: {
 		image: "./assets/splash-icon.png",
 		resizeMode: "contain" as const,
@@ -25,7 +25,7 @@ export default ({ config }: ConfigContext) => ({
 	},
 	ios: {
 		supportsTablet: true,
-		bundleIdentifier: "sh.superset.mobile",
+		bundleIdentifier: "sh.rox.mobile",
 		infoPlist: {
 			ITSAppUsesNonExemptEncryption: false,
 		},
@@ -35,7 +35,7 @@ export default ({ config }: ConfigContext) => ({
 			foregroundImage: "./assets/adaptive-icon.png",
 			backgroundColor: "#ffffff",
 		},
-		package: "sh.superset.mobile",
+		package: "sh.rox.mobile",
 		predictiveBackGestureEnabled: false,
 	},
 	web: {

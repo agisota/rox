@@ -2,8 +2,8 @@ import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/collapsible";
+import { cn } from "@rox/ui/utils";
 import type { ReactNode } from "react";
 import { VscChevronRight } from "react-icons/vsc";
 

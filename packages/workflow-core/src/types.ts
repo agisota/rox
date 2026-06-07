@@ -1,9 +1,9 @@
 /**
- * The Superset-native workflow graph contract.
+ * The Rox-native workflow graph contract.
  *
  * This shape is intentionally compatible-in-spirit with Sim's `WorkflowState`
  * (blocks / edges / loops / parallels / variables / metadata) so that Sim
- * workflows can be imported via `@superset/workflow-sim-adapter`, but Superset
+ * workflows can be imported via `@rox/workflow-sim-adapter`, but Rox
  * owns the canonical definition here.
  */
 
@@ -22,7 +22,7 @@ export type CoreBlockType =
 	| "skill_call"
 	| "error_boundary";
 
-export interface SupersetBlockState {
+export interface RoxBlockState {
 	/** Block type. Either a {@link CoreBlockType} or a `skill_call:<slug>` id. */
 	type: string;
 	/** Optional human-facing name shown on the canvas. */
@@ -37,7 +37,7 @@ export interface SupersetBlockState {
 	metadata?: Record<string, unknown>;
 }
 
-export interface SupersetEdge {
+export interface RoxEdge {
 	id?: string;
 	source: string;
 	target: string;
@@ -46,39 +46,39 @@ export interface SupersetEdge {
 	targetHandle?: string;
 }
 
-export interface SupersetVariable {
+export interface RoxVariable {
 	type: "string" | "number" | "boolean" | "json";
 	value?: unknown;
 }
 
-export interface SupersetLoop {
+export interface RoxLoop {
 	nodes: string[];
 	maxIterations?: number;
 }
 
-export interface SupersetParallel {
+export interface RoxParallel {
 	nodes: string[];
 }
 
-export interface SupersetWorkflowMetadata {
+export interface RoxWorkflowMetadata {
 	name: string;
 	description?: string;
 }
 
-export interface SupersetWorkflowState {
+export interface RoxWorkflowState {
 	id?: string;
-	blocks: Record<string, SupersetBlockState>;
-	edges: SupersetEdge[];
-	variables: Record<string, SupersetVariable>;
-	loops: Record<string, SupersetLoop>;
-	parallels: Record<string, SupersetParallel>;
-	metadata: SupersetWorkflowMetadata;
+	blocks: Record<string, RoxBlockState>;
+	edges: RoxEdge[];
+	variables: Record<string, RoxVariable>;
+	loops: Record<string, RoxLoop>;
+	parallels: Record<string, RoxParallel>;
+	metadata: RoxWorkflowMetadata;
 }
 
 // ---------------------------------------------------------------------------
 // Supporting payload types
 //
-// These are the canonical shapes for jsonb columns persisted by `@superset/db`
+// These are the canonical shapes for jsonb columns persisted by `@rox/db`
 // and for values passed across the tRPC boundary. Keeping them here (the pure
 // domain layer) lets every consumer share one definition.
 // ---------------------------------------------------------------------------
@@ -126,7 +126,7 @@ export interface RunCost {
 	usd?: number;
 }
 
-/** A loose reference to any object in the Superset object graph. */
+/** A loose reference to any object in the Rox object graph. */
 export interface ObjectRef {
 	/** Object type, e.g. `repo` / `project` / `task`. Loosely typed on purpose. */
 	type: string;

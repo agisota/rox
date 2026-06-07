@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { GitHubStatus, PullRequestComment } from "@superset/local-db";
+import type { GitHubStatus, PullRequestComment } from "@rox/local-db";
 import {
 	clearGitHubCachesForWorktree,
 	getCachedGitHubStatus,
@@ -19,8 +19,8 @@ describe("clearGitHubCachesForWorktree", () => {
 
 		const status: GitHubStatus = {
 			pr: null,
-			repoUrl: "https://github.com/superset-sh/superset",
-			upstreamUrl: "https://github.com/superset-sh/superset",
+			repoUrl: "https://github.com/agisota/set",
+			upstreamUrl: "https://github.com/agisota/set",
 			isFork: false,
 			branchExistsOnRemote: true,
 			lastRefreshed: Date.now(),
@@ -36,19 +36,19 @@ describe("clearGitHubCachesForWorktree", () => {
 
 		setCachedGitHubStatus(worktreePath, status);
 		setCachedRepoContext(worktreePath, {
-			repoUrl: "https://github.com/superset-sh/superset",
-			upstreamUrl: "https://github.com/superset-sh/superset",
+			repoUrl: "https://github.com/agisota/set",
+			upstreamUrl: "https://github.com/agisota/set",
 			isFork: false,
 		});
 
 		const commentsCacheKey = makePullRequestCommentsCacheKey({
 			worktreePath,
-			repoNameWithOwner: "superset-sh/superset",
+			repoNameWithOwner: "agisota/set",
 			pullRequestNumber: 2681,
 		});
 		const otherCommentsCacheKey = makePullRequestCommentsCacheKey({
 			worktreePath: otherWorktreePath,
-			repoNameWithOwner: "superset-sh/superset",
+			repoNameWithOwner: "agisota/set",
 			pullRequestNumber: 2682,
 		});
 
@@ -73,8 +73,8 @@ describe("getCachedGitHubStatusState", () => {
 		const worktreePath = "/tmp/worktrees/review-cache-stale-test";
 		const status: GitHubStatus = {
 			pr: null,
-			repoUrl: "https://github.com/superset-sh/superset",
-			upstreamUrl: "https://github.com/superset-sh/superset",
+			repoUrl: "https://github.com/agisota/set",
+			upstreamUrl: "https://github.com/agisota/set",
 			isFork: false,
 			branchExistsOnRemote: true,
 			lastRefreshed: 1000,

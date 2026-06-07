@@ -3,7 +3,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 
 interface PierreRowContextMenuProps extends Record<string, unknown> {
 	anchorRect: ContextMenuOpenContext["anchorRect"];

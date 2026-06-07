@@ -12,7 +12,7 @@ import {
 import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { boolean, CLIError, string } from "@superset/cli-framework";
+import { boolean, CLIError, string } from "@rox/cli-framework";
 import { command } from "../../lib/command";
 import { env } from "../../lib/env";
 
@@ -22,7 +22,7 @@ import { env } from "../../lib/env";
 // CLI's update channel independent of desktop releases — which would otherwise
 // shadow CLI on `/releases/latest`.
 const ROLLING_DOWNLOAD_BASE =
-	"https://github.com/superset-sh/superset/releases/download/cli-latest";
+	"https://github.com/agisota/set/releases/download/cli-latest";
 
 function detectTarget(): string {
 	const arch = process.arch === "arm64" ? "arm64" : "x64";
@@ -55,9 +55,9 @@ async function fetchLatestVersion(): Promise<string> {
 
 function tarballUrl(target: string, version?: string): string {
 	if (!version) {
-		return `${ROLLING_DOWNLOAD_BASE}/superset-${target}.tar.gz`;
+		return `${ROLLING_DOWNLOAD_BASE}/rox-${target}.tar.gz`;
 	}
-	return `https://github.com/superset-sh/superset/releases/download/cli-v${version}/superset-${target}.tar.gz`;
+	return `https://github.com/agisota/set/releases/download/cli-v${version}/rox-${target}.tar.gz`;
 }
 
 const SEMVER_RE = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.]+)?$/;
@@ -119,15 +119,15 @@ function atomicReplace(installRoot: string, newRoot: string): void {
 }
 
 function resolveInstallRoot(): string {
-	if (process.env.SUPERSET_INSTALL_ROOT) {
-		return process.env.SUPERSET_INSTALL_ROOT;
+	if (process.env.ROX_INSTALL_ROOT) {
+		return process.env.ROX_INSTALL_ROOT;
 	}
 	const cliBin = process.execPath;
 	return dirname(dirname(cliBin));
 }
 
 export default command({
-	description: "Update the Superset CLI and host service to the latest release",
+	description: "Update the Rox CLI and host service to the latest release",
 	skipMiddleware: true,
 	options: {
 		check: boolean().desc("Only check for updates; don't install"),
@@ -141,7 +141,7 @@ export default command({
 		const currentVersion = getCurrentVersion();
 		if (currentVersion === "0.0.0-dev") {
 			throw new CLIError(
-				"`superset update` is only available in built binaries",
+				"`rox update` is only available in built binaries",
 				"You're running a dev build (`bun run dev`). Re-run with the released binary.",
 			);
 		}
@@ -193,14 +193,14 @@ export default command({
 		try {
 			await downloadAndExtract(tarballUrl(target, pinnedVersion), tempDir);
 			const newRoot = findExtractedRoot(tempDir);
-			const newBin = join(newRoot, "bin", "superset");
+			const newBin = join(newRoot, "bin", "rox");
 			if (!existsSync(newBin)) {
 				throw new CLIError(
-					`Extracted archive missing bin/superset (expected at ${newBin})`,
+					`Extracted archive missing bin/rox (expected at ${newBin})`,
 				);
 			}
 			chmodSync(newBin, 0o755);
-			const newHostBin = join(newRoot, "bin", "superset-host");
+			const newHostBin = join(newRoot, "bin", "rox-host");
 			if (existsSync(newHostBin)) chmodSync(newHostBin, 0o755);
 
 			atomicReplace(installRoot, newRoot);

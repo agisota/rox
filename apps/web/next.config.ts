@@ -24,12 +24,12 @@ const apiOrigin = process.env.NEXT_PUBLIC_API_URL
 const relayWsOrigin = process.env.RELAY_URL
 	? new URL(process.env.RELAY_URL).origin.replace(/^http/, "ws")
 	: isProduction
-		? "wss://relay.superset.sh"
+		? "wss://relay.rox.one"
 		: null;
 const relayHttpOrigin = process.env.RELAY_URL
 	? new URL(process.env.RELAY_URL).origin
 	: isProduction
-		? "https://relay.superset.sh"
+		? "https://relay.rox.one"
 		: null;
 
 const contentSecurityPolicy = [
@@ -40,8 +40,8 @@ const contentSecurityPolicy = [
 		apiOrigin,
 		relayWsOrigin,
 		relayHttpOrigin,
-		"wss://relay-backup.superset.sh",
-		"https://relay-backup.superset.sh",
+		"wss://relay-backup.rox.one",
+		"https://relay-backup.rox.one",
 		"https://*.ingest.sentry.io",
 		"https://*.sentry.io",
 		"https://us.i.posthog.com",
@@ -138,7 +138,7 @@ const config: NextConfig = {
 };
 
 export default withSentryConfig(config, {
-	org: "superset-sh",
+	org: "agisota",
 	project: "web",
 	silent: !process.env.CI,
 	authToken: process.env.SENTRY_AUTH_TOKEN,

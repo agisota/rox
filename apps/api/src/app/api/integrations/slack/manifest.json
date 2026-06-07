@@ -1,9 +1,9 @@
 {
 	"display_information": {
-		"name": "Superset",
-		"description": "Superset's supercharged AI coding assistant",
+		"name": "Rox",
+		"description": "Rox's supercharged AI coding assistant",
 		"background_color": "#0a0a0a",
-		"long_description": "Supercharge your coding workflows with Superset, an AI Coding agent. Spin up a cloud sandbox, open worktrees on your desktop app, or plan out work. Just start a DM with Superset for instant access without leaving Slack.\r\n\r\nSuperset can make mistakes. Please take care with prompts."
+		"long_description": "Supercharge your coding workflows with Rox, an AI Coding agent. Spin up a cloud sandbox, open worktrees on your desktop app, or plan out work. Just start a DM with Rox for instant access without leaving Slack.\r\n\r\nRox can make mistakes. Please take care with prompts."
 	},
 	"features": {
 		"app_home": {
@@ -12,16 +12,16 @@
 			"messages_tab_read_only_enabled": false
 		},
 		"bot_user": {
-			"display_name": "Superset",
+			"display_name": "Rox",
 			"always_online": true
 		},
-		"unfurl_domains": ["app.superset.sh"],
+		"unfurl_domains": ["app.rox.one"],
 		"assistant_view": {
-			"assistant_description": "Superset's AI Coding Agent - spin up sandboxes, plan out work, run agents and more",
+			"assistant_description": "Rox's AI Coding Agent - spin up sandboxes, plan out work, run agents and more",
 			"suggested_prompts": [
 				{
 					"title": "Create Task",
-					"message": "Help me create a task for learning about how the Superset Slack agent works"
+					"message": "Help me create a task for learning about how the Rox Slack agent works"
 				}
 			]
 		},
@@ -31,9 +31,7 @@
 		}
 	},
 	"oauth_config": {
-		"redirect_urls": [
-			"https://api.superset.sh/api/integrations/slack/callback"
-		],
+		"redirect_urls": ["https://api.rox.one/api/integrations/slack/callback"],
 		"scopes": {
 			"bot": [
 				"app_mentions:read",
@@ -56,7 +54,7 @@
 	},
 	"settings": {
 		"event_subscriptions": {
-			"request_url": "https://api.superset.sh/api/integrations/slack/events",
+			"request_url": "https://api.rox.one/api/integrations/slack/events",
 			"bot_events": [
 				"app_mention",
 				"app_home_opened",
@@ -69,7 +67,7 @@
 		},
 		"interactivity": {
 			"is_enabled": true,
-			"request_url": "https://api.superset.sh/api/integrations/slack/interactions"
+			"request_url": "https://api.rox.one/api/integrations/slack/interactions"
 		},
 		"org_deploy_enabled": false,
 		"socket_mode_enabled": false,

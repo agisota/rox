@@ -15,16 +15,16 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { HostAgentConfig } from "@superset/host-service/settings";
-import type { HostAgentPreset } from "@superset/shared/host-agent-presets";
+import type { HostAgentConfig } from "@rox/host-service/settings";
+import type { HostAgentPreset } from "@rox/shared/host-agent-presets";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/dropdown-menu";
+import { cn } from "@rox/ui/utils";
 import { Plus } from "lucide-react";
 import { useMemo } from "react";
 import { LuGripVertical } from "react-icons/lu";

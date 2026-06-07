@@ -1,4 +1,4 @@
-import { getActiveIdAfterRemoval } from "@superset/panes";
+import { getActiveIdAfterRemoval } from "@rox/panes";
 
 type WorkspaceLike = {
 	id: string;

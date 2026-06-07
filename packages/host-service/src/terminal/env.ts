@@ -11,9 +11,9 @@ export type {
 	ShellLaunchParams,
 } from "./shell-launch.ts";
 export {
+	getRoxShellPaths,
 	getShellBootstrapEnv,
 	getShellLaunchArgs,
-	getSupersetShellPaths,
 	resolveLaunchShell,
 } from "./shell-launch.ts";
 
@@ -119,7 +119,7 @@ export function normalizeUtf8Locale(baseEnv: Record<string, string>): string {
 interface BuildV2TerminalEnvParams {
 	baseEnv: Record<string, string>;
 	shell: string;
-	supersetHomeDir: string;
+	roxHomeDir: string;
 	themeType?: "dark" | "light";
 	cwd: string;
 	terminalId: string;
@@ -127,7 +127,7 @@ interface BuildV2TerminalEnvParams {
 	workspacePath: string;
 	rootPath: string;
 	hostServiceVersion: string;
-	supersetEnv: "development" | "production";
+	roxEnv: "development" | "production";
 	agentHookPort: string;
 	agentHookVersion: string;
 	/**
@@ -148,7 +148,7 @@ export function buildV2TerminalEnv(
 	const {
 		baseEnv,
 		shell,
-		supersetHomeDir,
+		roxHomeDir,
 		themeType,
 		cwd,
 		terminalId,
@@ -156,7 +156,7 @@ export function buildV2TerminalEnv(
 		workspacePath,
 		rootPath,
 		hostServiceVersion,
-		supersetEnv,
+		roxEnv,
 		agentHookPort,
 		agentHookVersion,
 		hostAgentHookUrl,
@@ -166,7 +166,7 @@ export function buildV2TerminalEnv(
 	// to guarantee no runtime keys reach PTYs regardless of call site
 	const env = stripTerminalRuntimeEnv(baseEnv);
 
-	Object.assign(env, getShellBootstrapEnv({ shell, baseEnv, supersetHomeDir }));
+	Object.assign(env, getShellBootstrapEnv({ shell, baseEnv, roxHomeDir }));
 
 	env.TERM = "xterm-256color";
 	env.SHELL = shell;
@@ -181,23 +181,23 @@ export function buildV2TerminalEnv(
 	env.LANG = normalizeUtf8Locale(baseEnv);
 	env.PWD = cwd;
 
-	env.SUPERSET_TERMINAL_ID = terminalId;
-	env.SUPERSET_WORKSPACE_ID = workspaceId;
-	env.SUPERSET_WORKSPACE_PATH = workspacePath;
-	env.SUPERSET_ROOT_PATH = rootPath;
-	env.SUPERSET_ENV = supersetEnv;
-	env.SUPERSET_AGENT_HOOK_PORT = agentHookPort;
-	env.SUPERSET_AGENT_HOOK_VERSION = agentHookVersion;
+	env.ROX_TERMINAL_ID = terminalId;
+	env.ROX_WORKSPACE_ID = workspaceId;
+	env.ROX_WORKSPACE_PATH = workspacePath;
+	env.ROX_ROOT_PATH = rootPath;
+	env.ROX_ENV = roxEnv;
+	env.ROX_AGENT_HOOK_PORT = agentHookPort;
+	env.ROX_AGENT_HOOK_VERSION = agentHookVersion;
 	// v2 — agent posts to host-service so the renderer can play the sound
 	// client-side. No auth token: the endpoint is unauthenticated by design
 	// (it only broadcasts chimes). The notify-hook script falls back to
 	// the electron endpoint when this URL isn't set.
 	if (hostAgentHookUrl) {
-		env.SUPERSET_HOST_AGENT_HOOK_URL = hostAgentHookUrl;
+		env.ROX_HOST_AGENT_HOOK_URL = hostAgentHookUrl;
 	}
 
-	if (supersetHomeDir) {
-		env.SUPERSET_HOME_DIR = supersetHomeDir;
+	if (roxHomeDir) {
+		env.ROX_HOME_DIR = roxHomeDir;
 	}
 
 	// Electron child processes can't access macOS Keychain for TLS cert verification,

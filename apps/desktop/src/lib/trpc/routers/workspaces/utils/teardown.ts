@@ -6,7 +6,7 @@ import {
 	getShellEnv,
 } from "main/lib/agent-setup/shell-wrappers";
 import { buildSafeEnv, sanitizeEnv } from "main/lib/terminal/env";
-import { SUPERSET_DIR_NAME } from "shared/constants";
+import { ROX_DIR_NAME } from "shared/constants";
 import { removeWorktree } from "./git";
 import { loadSetupConfig } from "./setup";
 
@@ -45,12 +45,12 @@ export async function runTeardown({
 		const shell =
 			process.env.SHELL ||
 			(process.platform === "darwin" ? "/bin/zsh" : "/bin/bash");
-		const supersetHomeDir =
-			process.env.SUPERSET_HOME_DIR || join(homedir(), SUPERSET_DIR_NAME);
+		const roxHomeDir =
+			process.env.ROX_HOME_DIR || join(homedir(), ROX_DIR_NAME);
 		const shellWrapperPaths = {
-			BIN_DIR: join(supersetHomeDir, "bin"),
-			ZSH_DIR: join(supersetHomeDir, "zsh"),
-			BASH_DIR: join(supersetHomeDir, "bash"),
+			BIN_DIR: join(roxHomeDir, "bin"),
+			ZSH_DIR: join(roxHomeDir, "zsh"),
+			BASH_DIR: join(roxHomeDir, "bash"),
 		};
 
 		const baseEnv = buildSafeEnv(sanitizeEnv(process.env) || {});
@@ -65,8 +65,8 @@ export async function runTeardown({
 				env: {
 					...baseEnv,
 					...wrapperEnv,
-					SUPERSET_WORKSPACE_NAME: workspaceName,
-					SUPERSET_ROOT_PATH: mainRepoPath,
+					ROX_WORKSPACE_NAME: workspaceName,
+					ROX_ROOT_PATH: mainRepoPath,
 				},
 			});
 

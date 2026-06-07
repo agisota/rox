@@ -1,16 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import type {
-	JsonSchema,
-	SupersetWorkflowState,
-} from "@superset/workflow-core";
+import type { JsonSchema, RoxWorkflowState } from "@rox/workflow-core";
 import { InMemoryRunRecorder } from "./InMemoryRunRecorder";
 import type { BlockHandler, ExecuteOptions } from "./types";
 import { WorkflowExecutor } from "./WorkflowExecutor";
 
 function state(
-	blocks: SupersetWorkflowState["blocks"],
-	edges: SupersetWorkflowState["edges"],
-): SupersetWorkflowState {
+	blocks: RoxWorkflowState["blocks"],
+	edges: RoxWorkflowState["edges"],
+): RoxWorkflowState {
 	return {
 		blocks,
 		edges,

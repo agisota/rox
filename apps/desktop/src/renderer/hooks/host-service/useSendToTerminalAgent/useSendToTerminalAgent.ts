@@ -1,5 +1,5 @@
-import { toast } from "@superset/ui/sonner";
-import { workspaceTrpc } from "@superset/workspace-client";
+import { toast } from "@rox/ui/sonner";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { useCallback } from "react";
 import { normalizeTerminalCommand } from "renderer/lib/terminal/launch-command";
 

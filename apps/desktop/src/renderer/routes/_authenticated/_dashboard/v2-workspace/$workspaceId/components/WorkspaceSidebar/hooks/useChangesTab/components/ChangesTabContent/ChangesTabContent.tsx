@@ -1,4 +1,4 @@
-import type { AppRouter } from "@superset/host-service";
+import type { AppRouter } from "@rox/host-service";
 import type { inferRouterOutputs } from "@trpc/server";
 import { memo, useCallback, useState } from "react";
 import type {

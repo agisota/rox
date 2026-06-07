@@ -16,14 +16,14 @@ const TEST_HOME = path.join(
 const TEST_ORG = "org-manifest-test";
 
 beforeEach(() => {
-	process.env.SUPERSET_HOME_DIR = TEST_HOME;
+	process.env.ROX_HOME_DIR = TEST_HOME;
 	fs.mkdirSync(TEST_HOME, { recursive: true });
 });
 
 afterEach(() => {
 	removePtyDaemonManifest(TEST_ORG);
 	fs.rmSync(TEST_HOME, { recursive: true, force: true });
-	process.env.SUPERSET_HOME_DIR = undefined;
+	process.env.ROX_HOME_DIR = undefined;
 });
 
 function baseManifest(): PtyDaemonManifest {

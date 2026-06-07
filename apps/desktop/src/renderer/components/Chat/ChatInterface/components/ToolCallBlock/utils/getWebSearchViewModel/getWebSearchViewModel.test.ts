@@ -4,63 +4,63 @@ import { getWebSearchViewModel } from "./getWebSearchViewModel";
 describe("getWebSearchViewModel", () => {
 	it("maps structured results array", () => {
 		const viewModel = getWebSearchViewModel({
-			args: { query: "superset" },
+			args: { query: "rox" },
 			result: {
 				results: [
 					{
-						title: "Superset - Run 10+ parallel coding agents on your machine",
-						url: "https://superset.sh/",
+						title: "Rox - Run 10+ parallel coding agents on your machine",
+						url: "https://rox.one/",
 						content: "snippet",
 					},
 				],
 			},
 		});
 
-		expect(viewModel.query).toBe("superset");
+		expect(viewModel.query).toBe("rox");
 		expect(viewModel.results).toEqual([
 			{
-				title: "Superset - Run 10+ parallel coding agents on your machine",
-				url: "https://superset.sh/",
+				title: "Rox - Run 10+ parallel coding agents on your machine",
+				url: "https://rox.one/",
 			},
 		]);
 	});
 
 	it("parses transcript-style text with headings and urls", () => {
 		const viewModel = getWebSearchViewModel({
-			args: { query: "superset.sh terminal for coding agents" },
+			args: { query: "rox.one terminal for coding agents" },
 			result: {
 				text: `Answer: summary
 
-## superset/README.md at main - GitHub
-https://github.com/superset-sh/superset/blob/main/README.md
+## rox/README.md at main - GitHub
+https://github.com/agisota/set/blob/main/README.md
 Description text
 
-## Superset - Run 10+ parallel coding agents on your machine
-https://superset.sh/`,
+## Rox - Run 10+ parallel coding agents on your machine
+https://rox.one/`,
 			},
 		});
 
 		expect(viewModel.results).toEqual([
 			{
-				title: "superset/README.md at main - GitHub",
-				url: "https://github.com/superset-sh/superset/blob/main/README.md",
+				title: "rox/README.md at main - GitHub",
+				url: "https://github.com/agisota/set/blob/main/README.md",
 			},
 			{
-				title: "Superset - Run 10+ parallel coding agents on your machine",
-				url: "https://superset.sh/",
+				title: "Rox - Run 10+ parallel coding agents on your machine",
+				url: "https://rox.one/",
 			},
 		]);
 	});
 
 	it("reads nested text payloads and deduplicates urls", () => {
 		const viewModel = getWebSearchViewModel({
-			args: { query: "superset" },
+			args: { query: "rox" },
 			result: {
 				result: {
 					output: {
-						text: `## Superset
-https://superset.sh/
-https://superset.sh/`,
+						text: `## Rox
+https://rox.one/
+https://rox.one/`,
 					},
 				},
 			},
@@ -68,8 +68,8 @@ https://superset.sh/`,
 
 		expect(viewModel.results).toEqual([
 			{
-				title: "Superset",
-				url: "https://superset.sh/",
+				title: "Rox",
+				url: "https://rox.one/",
 			},
 		]);
 	});

@@ -9,7 +9,7 @@ export interface McpServerOptions {
 
 export function createMcpServer(options?: McpServerOptions): McpServer {
 	const server = new McpServer(
-		{ name: "superset", version: "1.0.0" },
+		{ name: "rox", version: "1.0.0" },
 		{ capabilities: { tools: {} } },
 	);
 

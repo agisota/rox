@@ -1,4 +1,4 @@
-import { Label } from "@superset/ui/label";
+import { Label } from "@rox/ui/label";
 import { useMemo, useState } from "react";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";

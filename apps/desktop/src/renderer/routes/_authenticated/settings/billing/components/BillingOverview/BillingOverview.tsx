@@ -1,5 +1,5 @@
-import { Button } from "@superset/ui/button";
-import { toast } from "@superset/ui/sonner";
+import { Button } from "@rox/ui/button";
+import { toast } from "@rox/ui/sonner";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -138,7 +138,7 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 					<p className="text-sm text-muted-foreground mt-1">
 						For questions about billing,{" "}
 						<a
-							href="mailto:founders@superset.sh"
+							href="mailto:founders@rox.one"
 							className="text-primary hover:underline"
 						>
 							contact us

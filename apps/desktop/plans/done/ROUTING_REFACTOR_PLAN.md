@@ -10,10 +10,10 @@
 **Original Repo State (Pre-Refactor):**
 - **Git Tag:** `pre-router-refactor-20260112`
 - **Commit Hash:** `7eb652e6ee54f6f79d570de97ff6dc3c93f773ba`
-- **Physical Copy:** `/tmp/superset-desktop-pre-refactor` (cloned at pre-refactor state for easy cross-reference)
-- **Original Structure:** `/tmp/superset-desktop-pre-refactor/apps/desktop/src/renderer/screens/main/`
+- **Physical Copy:** `/tmp/rox-desktop-pre-refactor` (cloned at pre-refactor state for easy cross-reference)
+- **Original Structure:** `/tmp/rox-desktop-pre-refactor/apps/desktop/src/renderer/screens/main/`
 - **Compare Command:** `git diff pre-router-refactor-20260112 HEAD`
-- **Checkout Original:** `git checkout pre-router-refactor-20260112` (or reference `/tmp/superset-desktop-pre-refactor`)
+- **Checkout Original:** `git checkout pre-router-refactor-20260112` (or reference `/tmp/rox-desktop-pre-refactor`)
 
 ## Acceptance Criteria
 

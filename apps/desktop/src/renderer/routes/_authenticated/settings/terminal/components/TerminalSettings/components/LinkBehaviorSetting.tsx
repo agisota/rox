@@ -1,12 +1,12 @@
-import type { TerminalLinkBehavior } from "@superset/local-db";
-import { Label } from "@superset/ui/label";
+import type { TerminalLinkBehavior } from "@rox/local-db";
+import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
+} from "@rox/ui/select";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 
 export function LinkBehaviorSetting() {

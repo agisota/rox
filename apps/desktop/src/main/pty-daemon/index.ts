@@ -1,7 +1,7 @@
 /**
  * pty-daemon — Desktop bundle target
  *
- * The supervisor (in @superset/host-service) spawns this script as the
+ * The supervisor (in @rox/host-service) spawns this script as the
  * daemon process. We need a desktop-side entry so electron-vite emits
  * `apps/desktop/dist/main/pty-daemon.js` alongside `host-service.js` —
  * the supervisor's `sideBySide` script-path resolution looks for the
@@ -19,14 +19,14 @@
  * `process.env.X === "Y"` patterns at build time — we lose the
  * receiver branch entirely. argv is fully dynamic and survives.
  *
- * The actual daemon implementation lives in `@superset/pty-daemon`
+ * The actual daemon implementation lives in `@rox/pty-daemon`
  * (Server, snapshot helpers). This file is the entry shim that
  * mirrors the package's main.ts logic — they're kept in sync by hand
  * because the dual-toolchain (Bun-built package vs electron-vite-bundled
  * desktop) catches different bundler quirks.
  *
  * Headless deploy path: in a non-Electron build, this file is unused —
- * the supervisor instead spawns the @superset/pty-daemon package's
+ * the supervisor instead spawns the @rox/pty-daemon package's
  * built-in main.ts directly.
  */
 
@@ -35,8 +35,8 @@ import {
 	DAEMON_PACKAGE_VERSION,
 	readSnapshot,
 	Server,
-} from "@superset/pty-daemon";
-import type { HandoffMessage } from "@superset/pty-daemon/protocol";
+} from "@rox/pty-daemon";
+import type { HandoffMessage } from "@rox/pty-daemon/protocol";
 
 interface CliArgs {
 	socket: string;
@@ -77,7 +77,7 @@ async function runFresh(): Promise<void> {
 	const args = parseFreshArgs(process.argv.slice(2));
 	// Env wins so the supervisor can pin versions; falls back to the bundle.
 	const daemonVersion =
-		process.env.SUPERSET_PTY_DAEMON_VERSION ?? DAEMON_PACKAGE_VERSION;
+		process.env.ROX_PTY_DAEMON_VERSION ?? DAEMON_PACKAGE_VERSION;
 	const server = new Server({
 		socketPath: args.socket,
 		daemonVersion,

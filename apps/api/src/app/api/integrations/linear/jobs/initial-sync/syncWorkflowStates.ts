@@ -1,7 +1,7 @@
 import type { LinearClient } from "@linear/sdk";
-import { buildConflictUpdateColumns } from "@superset/db";
-import { db } from "@superset/db/client";
-import { taskStatuses } from "@superset/db/schema";
+import { buildConflictUpdateColumns } from "@rox/db";
+import { db } from "@rox/db/client";
+import { taskStatuses } from "@rox/db/schema";
 import { calculateProgressForStates } from "./utils";
 
 export async function syncWorkflowStates({

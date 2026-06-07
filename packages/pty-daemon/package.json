@@ -1,5 +1,5 @@
 {
-	"name": "@superset/pty-daemon",
+	"name": "@rox/pty-daemon",
 	"version": "0.2.4",
 	"private": true,
 	"type": "module",
@@ -36,7 +36,7 @@
 		"node-pty": "1.1.0"
 	},
 	"devDependencies": {
-		"@superset/typescript": "workspace:*",
+		"@rox/typescript": "workspace:*",
 		"@types/node": "24.12.0",
 		"bun-types": "1.3.11",
 		"typescript": "5.9.3"

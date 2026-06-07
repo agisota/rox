@@ -1,7 +1,7 @@
 import type {
 	DeleteInProgressCause,
 	TeardownFailureCause,
-} from "@superset/host-service";
+} from "@rox/host-service";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback } from "react";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";

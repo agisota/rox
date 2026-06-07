@@ -19,10 +19,10 @@ function isFishAvailable(): boolean {
 describe("teardown initial command", () => {
 	test("uses exec instead of shell-specific exit status syntax", () => {
 		const command = buildTeardownInitialCommand(
-			"/tmp/worktree/.superset/teardown.sh",
+			"/tmp/worktree/.rox/teardown.sh",
 		);
 
-		expect(command).toBe("exec bash '/tmp/worktree/.superset/teardown.sh'");
+		expect(command).toBe("exec bash '/tmp/worktree/.rox/teardown.sh'");
 		expect(command).not.toContain("$?");
 	});
 

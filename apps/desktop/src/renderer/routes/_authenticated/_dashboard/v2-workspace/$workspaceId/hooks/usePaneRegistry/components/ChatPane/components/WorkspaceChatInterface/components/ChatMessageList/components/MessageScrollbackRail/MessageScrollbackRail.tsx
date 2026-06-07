@@ -1,10 +1,10 @@
-import { useConversationContext } from "@superset/ui/ai-elements/conversation";
+import { useConversationContext } from "@rox/ui/ai-elements/conversation";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from "@superset/ui/hover-card";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/hover-card";
+import { cn } from "@rox/ui/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 

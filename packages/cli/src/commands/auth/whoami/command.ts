@@ -1,4 +1,4 @@
-import { CLIError } from "@superset/cli-framework";
+import { CLIError } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 
 export default command({
@@ -12,7 +12,7 @@ export default command({
 		if (ctx.authSource === "oauth") {
 			authLine = "Session";
 		} else if (ctx.authSource === "override") {
-			authLine = "API key (from --api-key flag or SUPERSET_API_KEY env)";
+			authLine = "API key (from --api-key flag or ROX_API_KEY env)";
 		} else {
 			authLine = "API key (stored via auth login --api-key)";
 		}

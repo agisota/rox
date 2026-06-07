@@ -2,10 +2,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const PROJECT_SUPERSET_DIR_NAME = ".superset";
+const PROJECT_ROX_DIR_NAME = ".rox";
 const CONFIG_FILE_NAME = "config.json";
 const LOCAL_CONFIG_FILE_NAME = "config.local.json";
-const SUPERSET_DIR_NAME = ".superset";
+const ROX_DIR_NAME = ".rox";
 const PROJECTS_DIR_NAME = "projects";
 
 export interface SetupConfig {
@@ -162,7 +162,7 @@ function applyLocalOverlay(
 }
 
 export function getProjectConfigPath(repoPath: string): string {
-	return join(repoPath, PROJECT_SUPERSET_DIR_NAME, CONFIG_FILE_NAME);
+	return join(repoPath, PROJECT_ROX_DIR_NAME, CONFIG_FILE_NAME);
 }
 
 function getUserOverridePath(
@@ -172,7 +172,7 @@ function getUserOverridePath(
 	if (projectId.includes("/") || projectId.includes("\\")) return null;
 	return join(
 		homeDir,
-		SUPERSET_DIR_NAME,
+		ROX_DIR_NAME,
 		PROJECTS_DIR_NAME,
 		projectId,
 		CONFIG_FILE_NAME,
@@ -180,15 +180,15 @@ function getUserOverridePath(
 }
 
 function getLocalOverlayPath(repoPath: string): string {
-	return join(repoPath, PROJECT_SUPERSET_DIR_NAME, LOCAL_CONFIG_FILE_NAME);
+	return join(repoPath, PROJECT_ROX_DIR_NAME, LOCAL_CONFIG_FILE_NAME);
 }
 
 /**
  * Resolve setup/teardown/run config for a v2 project.
  *
- *   1. <repoPath>/.superset/config.json    — canonical
- *   2. ~/.superset/projects/<id>/config.json — per-machine override (later wins)
- *   3. <repoPath>/.superset/config.local.json — overlay with before/after/replace
+ *   1. <repoPath>/.rox/config.json    — canonical
+ *   2. ~/.rox/projects/<id>/config.json — per-machine override (later wins)
+ *   3. <repoPath>/.rox/config.local.json — overlay with before/after/replace
  *
  * Returns null when no source defines anything. Worktrees are not consulted —
  * the main repo path is the single source of truth.

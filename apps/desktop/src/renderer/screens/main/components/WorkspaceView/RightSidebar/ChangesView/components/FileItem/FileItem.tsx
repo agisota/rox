@@ -1,13 +1,13 @@
-import type { ExternalApp } from "@superset/local-db";
+import type { ExternalApp } from "@rox/local-db";
 import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@superset/ui/context-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/context-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	VscAdd,

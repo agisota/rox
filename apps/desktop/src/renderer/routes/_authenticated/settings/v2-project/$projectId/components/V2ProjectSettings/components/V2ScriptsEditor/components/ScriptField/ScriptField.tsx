@@ -1,5 +1,5 @@
-import { Textarea } from "@superset/ui/textarea";
-import { cn } from "@superset/ui/utils";
+import { Textarea } from "@rox/ui/textarea";
+import { cn } from "@rox/ui/utils";
 import { useCallback, useRef, useState } from "react";
 import { HiDocumentArrowUp } from "react-icons/hi2";
 

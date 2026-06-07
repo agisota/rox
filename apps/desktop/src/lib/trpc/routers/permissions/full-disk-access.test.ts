@@ -100,7 +100,7 @@ describe("checkFullDiskAccess", () => {
 
 	it("opens real probe files when using the default read probe", () => {
 		const temporaryHomeDirectory = fs.mkdtempSync(
-			path.join(tmpdir(), "superset-full-disk-access-"),
+			path.join(tmpdir(), "rox-full-disk-access-"),
 		);
 
 		try {

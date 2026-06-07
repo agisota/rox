@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import { CLIError, string } from "@superset/cli-framework";
+import { CLIError, string } from "@rox/cli-framework";
 import { render } from "ink";
 import { createElement } from "react";
 import { type ApiClient, createApiClient } from "../../../lib/api-client";
@@ -96,7 +96,7 @@ async function runApiKeyLogin({
 	apiKey: string;
 	requestedOrganization: string | undefined;
 }): Promise<LoginOutput> {
-	p.intro("superset auth login");
+	p.intro("rox auth login");
 
 	const api = createApiClient({ bearer: apiKey });
 
@@ -143,14 +143,14 @@ async function runApiKeyLogin({
 }
 
 export default command({
-	description: "Authenticate with Superset. Re-run to switch organizations.",
+	description: "Authenticate with Rox. Re-run to switch organizations.",
 	skipMiddleware: true,
 	options: {
 		organization: string().desc(
 			"Organization id or slug — required for non-TTY logins when you belong to multiple orgs",
 		),
 		apiKey: string().desc(
-			"Store a Superset API key (sk_live_…) at ~/.superset/config.json instead of running the OAuth flow",
+			"Store a Rox API key (sk_live_…) at ~/.rox/config.json instead of running the OAuth flow",
 		),
 	},
 	run: async (opts) => {
@@ -200,7 +200,7 @@ export default command({
 		};
 
 		if (!inkInstance) {
-			p.intro("superset auth login");
+			p.intro("rox auth login");
 		}
 
 		let result: Awaited<ReturnType<typeof login>> | null = null;

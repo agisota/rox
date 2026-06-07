@@ -32,7 +32,7 @@ Quick scan of every concrete fix in this plan, ordered by priority. Each links t
 | 7 | MEDIUM | Add `searchFiles` for `@file` mention autocomplete (missing entirely) | P4 |
 | 8 | MEDIUM | Wire `SessionStart` / `SessionEnd` / `UserPromptSubmit` hooks (Stop / Notification hooks deferred) | P4 |
 | 9 | MEDIUM | Wire title generation via cloud `chat.updateTitle` | P4 |
-| 10 | MEDIUM | Decide Superset MCP tools strategy (defer or port) | P4 |
+| 10 | MEDIUM | Decide Rox MCP tools strategy (defer or port) | P4 |
 | 11 | MEDIUM | Decide MCP overview / auth strategy (defer or port) | P4 |
 | 12 | LOW | Real model-provider auth state (no hardcoded `isAnthropicAuthenticated = true`) | P4 |
 | 13 | LOW | Optional: validate `(sessionId, workspaceId)` against cloud at runtime create | P0 (decision) |
@@ -88,7 +88,7 @@ Detailed walk of the existing host-service chat code, what's load-bearing, what'
 3. **Error normalization** (lines 189-228) strips `AI_APICallError` prefix and extracts nested error messages. UX-load-bearing, easy to break, leave alone.
 4. **Workspace DB resolution** at create time (line 392) — `workspaceId` → `worktreePath` lookup is cleaner than v1's `cwd` passthrough.
 5. **Restart-from-message** (lines 247-310) uses Mastra's memory store correctly to clone the thread and re-send from a target message.
-6. **AGENTS.md injection** (lines 359-381) only writes if missing or previously written by Superset — safe re-entrance.
+6. **AGENTS.md injection** (lines 359-381) only writes if missing or previously written by Rox — safe re-entrance.
 7. **Model provider abstraction** (`CloudModelProvider` / `LocalModelProvider`) gates runtime creation on `hasUsableRuntimeEnv()` and tracks env keys for cleanup. Right shape.
 
 ### Stubbed in `ChatRuntimeManager` (lines 594-635)
@@ -104,7 +104,7 @@ The router exposes these procedures and the v2 ChatPane renders the surfaces, so
 
 ### Missing from the router entirely
 
-- **`searchFiles`** — v1 had `workspace.searchFiles` (delegated to `@superset/workspace-fs/host`). Without it, `@file` mention autocomplete is dead.
+- **`searchFiles`** — v1 had `workspace.searchFiles` (delegated to `@rox/workspace-fs/host`). Without it, `@file` mention autocomplete is dead.
 - **`authenticateMcpServer`** — v1 had OAuth callback for new MCP servers. With MCP currently stubbed anyway, this is downstream of `getMcpOverview`.
 
 ### Behaviors v1 runs that host-service runtime doesn't
@@ -114,7 +114,7 @@ The router exposes these procedures and the v2 ChatPane renders the surfaces, so
 | `runSessionStartHook()` after init | `packages/chat/src/server/trpc/utils/runtime/runtime.ts:130` | Not called. Host only sets hook session id at `chat.ts:408`. |
 | `runSessionEnd()` on teardown | v1 hook manager | Not called. Also no teardown path exists. |
 | `onUserPromptSubmit()` before send | v1 hook manager | Not called. |
-| `getSupersetMcpTools()` loaded | v1 `service.ts:113-116` | Not loaded. |
+| `getRoxMcpTools()` loaded | v1 `service.ts:113-116` | Not loaded. |
 | `generateAndSetTitle()` after first / 10th send | v1 `runtime.ts:457`, `service.ts:281` | Not called. |
 | `subscribeToSessionEvents` with `onLifecycleEvent` callback | v1 | Only error / sandbox events surfaced; lifecycle callback not exposed. |
 | `mcpManualStatuses` per-runtime tracking | v1 | Not present. |
@@ -296,7 +296,7 @@ References Verified Bug #2 in §Implementation Audit.
 #### File mention search (missing from router entirely)
 
 - [ ] Add `chat.searchFiles({ workspaceId, query, ... })` procedure to host-service.
-- [ ] Wire to `@superset/workspace-fs/host` (already used elsewhere). Match v1's `workspace.searchFiles` shape so the renderer adapter is trivial.
+- [ ] Wire to `@rox/workspace-fs/host` (already used elsewhere). Match v1's `workspace.searchFiles` shape so the renderer adapter is trivial.
 - [ ] Verify `@file` mention autocomplete works in the host-service-backed chat pane.
 
 #### Session lifecycle + user-prompt hooks (currently uncalled)
@@ -314,10 +314,10 @@ Scope: `SessionStart`, `SessionEnd`, `UserPromptSubmit` only. **`Stop` and `Noti
 - [ ] Wire `generateAndSetTitle()` after the first user message and every 10th message — analogous to v1 `runtime.ts:457` and `service.ts:281`.
 - [ ] Persist via cloud tRPC `chat.updateTitle({ sessionId, title })` so titles survive across devices.
 
-#### Superset MCP tools (currently not loaded)
+#### Rox MCP tools (currently not loaded)
 
-- [ ] Decide product policy: do host-service-backed chat sessions get Superset's built-in MCP tools (analytics queries etc.), or only user-configured MCP?
-- [ ] If yes: load `getSupersetMcpTools()` analogous to v1 `service.ts:113-116` during runtime creation.
+- [ ] Decide product policy: do host-service-backed chat sessions get Rox's built-in MCP tools (analytics queries etc.), or only user-configured MCP?
+- [ ] If yes: load `getRoxMcpTools()` analogous to v1 `service.ts:113-116` during runtime creation.
 - [ ] If no: explicitly note in code so the gap isn't accidentally re-opened.
 
 #### MCP overview / authentication (currently stubbed)

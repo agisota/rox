@@ -1,6 +1,6 @@
-import { COMPANY } from "@superset/shared/constants";
-import { alert } from "@superset/ui/atoms/Alert";
-import { Button } from "@superset/ui/button";
+import { COMPANY } from "@rox/shared/constants";
+import { alert } from "@rox/ui/atoms/Alert";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -8,11 +8,11 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { Skeleton } from "@superset/ui/skeleton";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { Skeleton } from "@rox/ui/skeleton";
+import { toast } from "@rox/ui/sonner";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useState } from "react";
 import {

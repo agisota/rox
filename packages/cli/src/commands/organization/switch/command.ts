@@ -1,4 +1,4 @@
-import { CLIError, positional } from "@superset/cli-framework";
+import { CLIError, positional } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { readConfig, writeConfig } from "../../../lib/config";
 
@@ -16,7 +16,7 @@ export default command({
 		if (!match) {
 			throw new CLIError(
 				`Organization not found: ${idOrSlug}`,
-				"Run: superset organization list",
+				"Run: rox organization list",
 			);
 		}
 

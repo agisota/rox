@@ -9,14 +9,14 @@ import { getDefaultShell } from "../terminal/env";
  */
 function findBinaryPathsUnix(name: string): string[] {
 	const shell = getDefaultShell();
-	const delimiter = "__SUPERSET_WHICH_DELIMITER__";
+	const delimiter = "__ROX_WHICH_DELIMITER__";
 	const result = execFileSync(
 		shell,
 		[
 			"-il",
 			"-c",
 			`echo -n "${delimiter}"; which -a -- "$1"; echo -n "${delimiter}"`,
-			"superset-find-binary",
+			"rox-find-binary",
 			name,
 		],
 		{
@@ -48,7 +48,7 @@ function findBinaryPathsWindows(name: string): string[] {
 
 /**
  * Finds the real path of a binary, skipping our wrapper scripts.
- * Filters out all superset bin directories (prod, dev, and workspace-specific)
+ * Filters out all rox bin directories (prod, dev, and workspace-specific)
  * to avoid wrapper scripts calling each other.
  */
 export function findRealBinary(name: string): string | null {
@@ -59,16 +59,16 @@ export function findRealBinary(name: string): string | null {
 			: findBinaryPathsUnix(name);
 
 		const homedir = os.homedir();
-		// Filter out wrapper scripts from all superset directories:
-		// - ~/.superset/bin
-		// - ~/.superset-*/bin (workspace-specific instances)
-		const supersetBinDir = path.join(homedir, ".superset", "bin");
-		const supersetPrefix = path.join(homedir, ".superset-");
+		// Filter out wrapper scripts from all rox directories:
+		// - ~/.rox/bin
+		// - ~/.rox-*/bin (workspace-specific instances)
+		const roxBinDir = path.join(homedir, ".rox", "bin");
+		const roxPrefix = path.join(homedir, ".rox-");
 		const paths = allPaths.filter(
 			(p) =>
 				p &&
-				!p.startsWith(supersetBinDir) &&
-				!(p.startsWith(supersetPrefix) && p.includes("/bin/")) &&
+				!p.startsWith(roxBinDir) &&
+				!(p.startsWith(roxPrefix) && p.includes("/bin/")) &&
 				(isWindows || isExecutableUnixPath(p)),
 		);
 		return paths[0] || null;

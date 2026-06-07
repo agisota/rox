@@ -1,6 +1,6 @@
 ---
 title: CLI Reference
-description: Complete reference for Superset command-line interface, including commands and flags.
+description: Complete reference for Rox command-line interface, including commands and flags.
 ---
 
 <Callout type="warn">
@@ -10,11 +10,11 @@ The CLI is currently in Beta — commands and flags are still evolving. Make sur
 ## Synopsis
 
 ```text
-superset <command> [subcommand] [options]
+rox <command> [subcommand] [options]
 ```
 
-Run `superset --help` for the top-level command list, or
-`superset <command> --help` for any group.
+Run `rox --help` for the top-level command list, or
+`rox <command> --help` for any group.
 
 ## Global options
 
@@ -24,9 +24,9 @@ These flags are accepted by every command:
 | --- | --- | --- |
 | `--json` | | Print the data payload as formatted JSON. |
 | `--quiet` | | One ID per line for arrays; the ID for single objects; JSON fallback otherwise. |
-| `--api-key <key>` | `SUPERSET_API_KEY` | Use an API key instead of stored OAuth login. |
+| `--api-key <key>` | `ROX_API_KEY` | Use an API key instead of stored OAuth login. |
 | `--help`, `-h` | | Show help for the current command. |
-| `--version`, `-v` | | Print `superset v<version>` and exit. |
+| `--version`, `-v` | | Print `rox v<version>` and exit. |
 
 ---
 
@@ -37,7 +37,7 @@ These flags are accepted by every command:
 Authentication and session inspection.
 
 <Command
-	name="superset auth login"
+	name="rox auth login"
 	options={[
 		{
 			flag: "--organization <idOrSlug>",
@@ -45,30 +45,30 @@ Authentication and session inspection.
 		},
 		{
 			flag: "--api-key <key>",
-			description: "Store a Superset API key (`sk_live_…`) at `~/.superset/config.json` instead of running the OAuth flow.",
+			description: "Store a Rox API key (`sk_live_…`) at `~/.rox/config.json` instead of running the OAuth flow.",
 		},
 	]}
 >
 Authenticate via browser OAuth and store a session token at
-`~/.superset/config.json`.
+`~/.rox/config.json`.
 
 Single-org accounts are selected automatically. With multiple orgs and a
 TTY, the CLI prompts; with multiple orgs and no TTY, you must pass
 `--organization` or the command exits 1 listing the available slugs.
 
 ```bash
-superset auth login
-superset auth login --organization acme
+rox auth login
+rox auth login --organization acme
 ```
 
 To sign in with an API key — useful for CI or any environment where the
 OAuth browser flow isn't an option — pass `--api-key`. The CLI validates
-the key, stores it at `~/.superset/config.json`, and clears any prior
+the key, stores it at `~/.rox/config.json`, and clears any prior
 OAuth session.
 
 ```bash
-superset auth login --api-key sk_live_…
-superset auth login --api-key sk_live_… --organization acme
+rox auth login --api-key sk_live_…
+rox auth login --api-key sk_live_… --organization acme
 ```
 
 <CommandReturns>
@@ -95,13 +95,13 @@ The newly authenticated user and active organization.
 </CommandReturns>
 </Command>
 
-<Command name="superset auth logout">
+<Command name="rox auth logout">
 Clear stored credentials — both an OAuth session and a stored API key.
 Does not call the API and does not clear the active organization (your
 preferred org persists across re-logins).
 
 ```bash
-superset auth logout
+rox auth logout
 ```
 
 <CommandReturns>
@@ -121,11 +121,11 @@ Logged out.
 </CommandReturns>
 </Command>
 
-<Command name="superset auth whoami">
+<Command name="rox auth whoami">
 Show the current user, active organization, and auth source.
 
 ```bash
-superset auth whoami
+rox auth whoami
 ```
 
 <CommandReturns>
@@ -162,7 +162,7 @@ Start the local host server — the daemon the CLI and desktop app both
 talk to when targeting this machine.
 
 <Command
-	name="superset start"
+	name="rox start"
 	options={[
 		{ flag: "--daemon", description: "Run detached." },
 		{ flag: "--port <n>", description: "Specific port. Default: a free loopback port." },
@@ -174,7 +174,7 @@ instance's details. Otherwise spawns the host server binary, polls
 Binds to `127.0.0.1` only.
 
 ```bash
-superset start --daemon
+rox start --daemon
 ```
 
 <CommandReturns>
@@ -196,12 +196,12 @@ The running host server.
 
 Stop the local host server.
 
-<Command name="superset stop">
+<Command name="rox stop">
 Sends SIGTERM, waits up to 10 seconds, sends SIGKILL if still alive. The
 manifest is removed in all cases — including when SIGTERM itself throws.
 
 ```bash
-superset stop
+rox stop
 ```
 
 <CommandReturns>
@@ -223,11 +223,11 @@ The stopped host server, if one was running.
 
 Inspect the local host server.
 
-<Command name="superset status">
+<Command name="rox status">
 `healthy` reflects a live `health.check` request (2-second timeout).
 
 ```bash
-superset status
+rox status
 ```
 
 <CommandReturns>
@@ -263,24 +263,24 @@ The host server state. Three shapes depending on what's running.
 
 ### update
 
-Update the Superset CLI and host server binary.
+Update the Rox CLI and host server binary.
 
 <Command
-	name="superset update"
+	name="rox update"
 	options={[
 		{ flag: "--check", description: "Only check for updates; don't install." },
 		{ flag: "--force", description: "Re-install even if already on that version." },
 		{ flag: "--version <version>", description: "Install a specific version (e.g. `0.1.2`) instead of the rolling latest. Accepts upgrade or downgrade." },
 	]}
 >
-Downloads the matching `superset-<platform>.tar.gz` from GitHub Releases
+Downloads the matching `rox-<platform>.tar.gz` from GitHub Releases
 and atomically replaces the install root. Only available in built
 binaries; running from `bun run dev` errors out.
 
 ```bash
-superset update                     # upgrade to the latest release
-superset update --check             # show current → target without installing
-superset update --version 0.1.2     # install a specific version (up or down)
+rox update                     # upgrade to the latest release
+rox update --check             # show current → target without installing
+rox update --version 0.1.2     # install a specific version (up or down)
 ```
 
 <CommandReturns>
@@ -288,7 +288,7 @@ The current and target version, plus whether anything changed.
 
 <HumanOutput>
 ```text
-Updated 0.1.4 → 0.1.5 (/Users/you/.local/share/superset)
+Updated 0.1.4 → 0.1.5 (/Users/you/.local/share/rox)
 ```
 </HumanOutput>
 
@@ -321,7 +321,7 @@ Updated 0.1.4 → 0.1.5 (/Users/you/.local/share/superset)
 Manage which organization the CLI targets.
 
 <Command
-	name="superset organization list"
+	name="rox organization list"
 	output={`Array<{
   id: string;
   name: string;
@@ -336,22 +336,22 @@ active one.
 </Command>
 
 <Command
-	name="superset organization switch <idOrSlug>"
+	name="rox organization switch <idOrSlug>"
 	args={[
 		{ name: "idOrSlug", required: true, description: "Organization ID or slug." },
 	]}
 	output={`{ id: string; name: string; slug: string }`}
 >
-Set the active organization in `~/.superset/config.json`.
+Set the active organization in `~/.rox/config.json`.
 
 ```bash
-superset organization switch acme
-superset org switch org_…
+rox organization switch acme
+rox org switch org_…
 ```
 </Command>
 
 <Command
-	name="superset organization members list"
+	name="rox organization members list"
 	options={[
 		{ flag: "--search <query>, -s", description: "Search by name or email." },
 		{ flag: "--limit <n>", description: "Default 50." },
@@ -368,8 +368,8 @@ superset org switch org_…
 List members in the active organization.
 
 ```bash
-superset organization members list
-superset org members list -s satya
+rox organization members list
+rox org members list -s satya
 ```
 </Command>
 
@@ -382,7 +382,7 @@ a cloud record (one per repo, shared across the org) and one or more
 host-side checkouts. Workspaces branch off a host's checkout.
 
 <Command
-	name="superset projects list"
+	name="rox projects list"
 	output={`Array<{
   id: string;
   name: string;
@@ -397,7 +397,7 @@ List projects in the active organization. Org-wide; not host-scoped.
 </Command>
 
 <Command
-	name="superset projects create"
+	name="rox projects create"
 	options={[
 		{ flag: "--name <name>", required: true, description: "Display name for the project." },
 		{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
@@ -423,17 +423,17 @@ Either way, a new cloud project record is created and the host's main
 workspace is ensured.
 
 `create` always creates a new cloud project, even if your org already has
-one for the same Git URL. Use [`projects setup`](#superset-projects-setup-id)
+one for the same Git URL. Use [`projects setup`](#rox-projects-setup-id)
 when adopting an existing project on a fresh machine.
 
 ```bash
-superset projects create --name "my-app" --local --clone https://github.com/org/my-app.git --parent-dir ~/code
-superset projects create --name "my-app" --local --import ~/code/my-app
+rox projects create --name "my-app" --local --clone https://github.com/org/my-app.git --parent-dir ~/code
+rox projects create --name "my-app" --local --import ~/code/my-app
 ```
 </Command>
 
 <Command
-	name="superset projects setup <id>"
+	name="rox projects setup <id>"
 	args={[
 		{ name: "id", required: true, description: "Project UUID to adopt." },
 	]}
@@ -450,20 +450,20 @@ superset projects create --name "my-app" --local --import ~/code/my-app
 }`}
 >
 Adopt an existing project onto a host without creating a duplicate cloud
-record. Counterpart to [`create`](#superset-projects-create) for the
+record. Counterpart to [`create`](#rox-projects-create) for the
 "new machine, repo already in the org" case.
 
-Find the project ID via [`projects list`](#superset-projects-list).
+Find the project ID via [`projects list`](#rox-projects-list).
 
 Idempotent: re-running against a project that's already set up at the same
 path is a no-op that returns the existing `mainWorkspaceId`.
 
 ```bash
-# Pick an ID from `superset projects list`, then clone it onto this machine
-superset projects setup 47c31b04-… --local --parent-dir ~/code
+# Pick an ID from `rox projects list`, then clone it onto this machine
+rox projects setup 47c31b04-… --local --parent-dir ~/code
 
 # Or register an existing local checkout
-superset projects setup 47c31b04-… --local --import ~/code/my-app
+rox projects setup 47c31b04-… --local --import ~/code/my-app
 ```
 </Command>
 
@@ -476,7 +476,7 @@ host server running on this machine, use [`start`](#start),
 [`stop`](#stop), and [`status`](#status).
 
 <Command
-	name="superset hosts list"
+	name="rox hosts list"
 	output={`Array<{
   id: string;
   name: string;
@@ -486,11 +486,11 @@ host server running on this machine, use [`start`](#start),
 	quiet="host IDs"
 >
 List hosts registered to the active organization. Host registration
-happens via `superset start` on each machine — there is no
+happens via `rox start` on each machine — there is no
 separate registration command.
 
 ```bash
-superset hosts list
+rox hosts list
 ```
 </Command>
 
@@ -505,11 +505,11 @@ the host server directly over loopback HTTP — no cloud roundtrip, works
 offline. Otherwise it routes through the cloud API and the relay.
 
 If the resolved host is the local machine but the host server isn't
-responding, the CLI errors out and points you at `superset start` rather
+responding, the CLI errors out and points you at `rox start` rather
 than silently falling through to the cloud.
 
 <Command
-	name="superset workspaces list"
+	name="rox workspaces list"
 	options={[
 		{ flag: "--host <id>", description: "Filter to a specific host machineId." },
 		{ flag: "--local", description: "Filter to this machine." },
@@ -531,7 +531,7 @@ List workspaces accessible to the active organization. With neither
 </Command>
 
 <Command
-	name="superset workspaces create"
+	name="rox workspaces create"
 	options={[
 		{ flag: "--project <projectId>", required: true, description: "Project ID." },
 		{ flag: "--name <name>", required: true, description: "Workspace name." },
@@ -540,7 +540,7 @@ List workspaces accessible to the active organization. With neither
 		{ flag: "--base-branch <branch>", description: "Branch to fork from when `--branch` does not exist. Defaults to the project default branch." },
 		{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
 		{ flag: "--local", description: "Target this machine. Mutually exclusive with `--host`; one is required." },
-		{ flag: "--agent <preset|uuid|superset>", description: "Agent to spawn after creation." },
+		{ flag: "--agent <preset|uuid|rox>", description: "Agent to spawn after creation." },
 		{ flag: "--prompt <text>", description: "Initial prompt. Required when `--agent` is set." },
 		{ flag: "--command <cmd>", description: "Shell command to run in the new workspace after creation." },
 		{ flag: "--attachment <path>", description: "Local file to upload for the spawned agent. Repeatable." },
@@ -553,13 +553,13 @@ runs a one-off shell command in the worktree and is independent of
 `--agent`/`--prompt` — pass either or both.
 
 ```bash
-superset workspaces create \
+rox workspaces create \
   --project prj_… \
   --name "fix-login-bug" \
   --branch fix/login-bug \
   --local
 
-superset workspaces create \
+rox workspaces create \
   --project prj_… \
   --name "review-pr-123" \
   --pr 123 \
@@ -568,7 +568,7 @@ superset workspaces create \
 </Command>
 
 <Command
-	name="superset workspaces delete <id...>"
+	name="rox workspaces delete <id...>"
 	args={[
 		{ name: "id", required: true, variadic: true, description: "Workspace IDs to delete." },
 	]}
@@ -581,12 +581,12 @@ superset workspaces create \
 Delete one or more workspaces on the target host.
 
 ```bash
-superset workspaces delete ws_a ws_b ws_c
+rox workspaces delete ws_a ws_b ws_c
 ```
 </Command>
 
 <Command
-	name="superset workspaces update <id>"
+	name="rox workspaces update <id>"
 	args={[
 		{ name: "id", required: true, description: "Workspace UUID." },
 	]}
@@ -600,14 +600,14 @@ superset workspaces delete ws_a ws_b ws_c
 Update a workspace.
 
 ```bash
-superset workspaces update ws_… --name "better-name"
-superset workspaces update ws_… --task-id tsk_…
-superset workspaces update ws_… --clear-task
+rox workspaces update ws_… --name "better-name"
+rox workspaces update ws_… --task-id tsk_…
+rox workspaces update ws_… --clear-task
 ```
 </Command>
 
 <Command
-	name="superset workspaces open <id>"
+	name="rox workspaces open <id>"
 	args={[
 		{ name: "id", required: true, description: "Workspace ID." },
 	]}
@@ -620,11 +620,11 @@ superset workspaces update ws_… --clear-task
   url: string;
 }`}
 >
-Open a workspace in the Superset desktop app.
+Open a workspace in the Rox desktop app.
 
 ```bash
-superset workspaces open ws_…
-superset workspaces open ws_… --print
+rox workspaces open ws_…
+rox workspaces open ws_… --print
 ```
 </Command>
 
@@ -638,7 +638,7 @@ prompt-transport mode, and environment used to launch the agent in a fresh
 terminal session inside a workspace.
 
 <Command
-	name="superset agents list"
+	name="rox agents list"
 	options={[
 		{ flag: "--host <id>", description: "Target host machineId." },
 		{ flag: "--local", description: "Target this machine. Mutually exclusive with --host; exactly one is required." },
@@ -661,16 +661,16 @@ List agents configured on a host. First call on a fresh host seeds the
 bundled defaults.
 
 ```bash
-superset agents list --local
-superset agents list --host host_…
+rox agents list --local
+rox agents list --host host_…
 ```
 </Command>
 
 <Command
-	name="superset agents create"
+	name="rox agents create"
 	options={[
 		{ flag: "--workspace <id>", required: true, description: "Workspace UUID to create the agent session in." },
-		{ flag: "--agent <preset|uuid|superset>", required: true, description: "Agent preset id (e.g. `claude`, `codex`), HostAgentConfig instance UUID, or `superset`." },
+		{ flag: "--agent <preset|uuid|rox>", required: true, description: "Agent preset id (e.g. `claude`, `codex`), HostAgentConfig instance UUID, or `rox`." },
 		{ flag: "--prompt <text>", required: true, description: "Prompt sent to the agent." },
 		{ flag: "--attachment-id <uuid>", description: "Pre-uploaded attachment UUID; pass repeatedly for multiple attachments." },
 		{ flag: "--attachment <path>", description: "Local file path to upload as an attachment. Repeatable." },
@@ -686,8 +686,8 @@ the workspace and starts the named preset (or HostAgentConfig instance) in a
 fresh terminal session on that host.
 
 ```bash
-superset agents create --workspace ws_… --agent claude --prompt "Audit the login flow"
-superset agents create --workspace ws_… --agent codex --prompt "Review this diff" --attachment ./trace.log
+rox agents create --workspace ws_… --agent claude --prompt "Audit the login flow"
+rox agents create --workspace ws_… --agent codex --prompt "Review this diff" --attachment ./trace.log
 ```
 </Command>
 
@@ -699,7 +699,7 @@ Terminals are PTY sessions on a host, scoped to a workspace. Create one to run
 a one-off command in a worktree or to open an interactive shell.
 
 <Command
-	name="superset terminals create"
+	name="rox terminals create"
 	options={[
 		{ flag: "--workspace <id>", required: true, description: "Workspace UUID to create the terminal in." },
 		{ flag: "--command <cmd>", description: "Shell command to run in the terminal. Omit to open an interactive shell." },
@@ -715,8 +715,8 @@ owns the workspace and opens a fresh PTY in the worktree, optionally running
 a command.
 
 ```bash
-superset terminals create --workspace ws_… --command "bun install && bun test"
-superset terminals create --workspace ws_…
+rox terminals create --workspace ws_… --command "bun install && bun test"
+rox terminals create --workspace ws_…
 ```
 </Command>
 
@@ -727,7 +727,7 @@ superset terminals create --workspace ws_…
 Tasks are units of work in your organization's task tracker.
 
 <Command
-	name="superset tasks list"
+	name="rox tasks list"
 	options={[
 		{ flag: "--status <id>", description: "Filter by status ID." },
 		{ flag: "--priority <urgent|high|medium|low|none>", description: "Filter by priority." },
@@ -745,13 +745,13 @@ Tasks are units of work in your organization's task tracker.
 List tasks in the active organization.
 
 ```bash
-superset tasks list --assignee-me
-superset t list -s "auth" --json
+rox tasks list --assignee-me
+rox t list -s "auth" --json
 ```
 </Command>
 
 <Command
-	name="superset tasks get <idOrSlug>"
+	name="rox tasks get <idOrSlug>"
 	args={[
 		{ name: "idOrSlug", required: true, description: "Task ID or slug." },
 	]}
@@ -760,13 +760,13 @@ superset t list -s "auth" --json
 Get a task by ID or slug.
 
 ```bash
-superset tasks get tsk_…
-superset tasks get fix-login-bug
+rox tasks get tsk_…
+rox tasks get fix-login-bug
 ```
 </Command>
 
 <Command
-	name="superset tasks create"
+	name="rox tasks create"
 	options={[
 		{ flag: "--title <title>", required: true, description: "Task title." },
 		{ flag: "--description <text>", description: "Task description." },
@@ -782,12 +782,12 @@ superset tasks get fix-login-bug
 Create a task.
 
 ```bash
-superset tasks create --title "Audit auth flow" --priority high
+rox tasks create --title "Audit auth flow" --priority high
 ```
 </Command>
 
 <Command
-	name="superset tasks update <idOrSlug>"
+	name="rox tasks update <idOrSlug>"
 	args={[
 		{ name: "idOrSlug", required: true, description: "Task ID or slug." },
 	]}
@@ -807,12 +807,12 @@ superset tasks create --title "Audit auth flow" --priority high
 Update a task. Same fields as `create`, all optional.
 
 ```bash
-superset tasks update fix-login-bug --priority urgent
+rox tasks update fix-login-bug --priority urgent
 ```
 </Command>
 
 <Command
-	name="superset tasks delete <idOrSlug...>"
+	name="rox tasks delete <idOrSlug...>"
 	args={[
 		{ name: "idOrSlug", required: true, variadic: true, description: "Task IDs or slugs to delete." },
 	]}
@@ -821,12 +821,12 @@ superset tasks update fix-login-bug --priority urgent
 Delete one or more tasks.
 
 ```bash
-superset tasks delete tsk_a tsk_b
+rox tasks delete tsk_a tsk_b
 ```
 </Command>
 
 <Command
-	name="superset tasks statuses list"
+	name="rox tasks statuses list"
 	output={`Array<{
   id: string;
   name: string;
@@ -841,7 +841,7 @@ List task statuses in the active organization. Use the returned IDs with
 `tasks update --status-id`.
 
 ```bash
-superset tasks statuses list
+rox tasks statuses list
 ```
 </Command>
 
@@ -853,7 +853,7 @@ Scheduled agent runs. Schedules use RFC 5545 RRULE bodies, e.g.
 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0`.
 
 <Command
-	name="superset automations list"
+	name="rox automations list"
 	output="Array<Automation>"
 	humanColumns={["ID", "NAME", "AGENT", "SCHEDULE", "ENABLED", "NEXT RUN"]}
 	quiet="automation IDs"
@@ -862,19 +862,19 @@ List automations in the active organization.
 </Command>
 
 <Command
-	name="superset automations get <id>"
+	name="rox automations get <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
 	output="Automation"
 >
 Get an automation's metadata. The prompt body is omitted — use
-[`automations prompt get`](#superset-automations-prompt-get-id) to read it.
-Use [`automations logs`](#superset-automations-logs-id) for run history.
+[`automations prompt get`](#rox-automations-prompt-get-id) to read it.
+Use [`automations logs`](#rox-automations-logs-id) for run history.
 </Command>
 
 <Command
-	name="superset automations create"
+	name="rox automations create"
 	options={[
 		{ flag: "--name <name>", required: true, description: "Automation name." },
 		{ flag: "--prompt <text>", description: "Inline prompt." },
@@ -885,7 +885,7 @@ Use [`automations logs`](#superset-automations-logs-id) for run history.
 		{ flag: "--workspace <workspaceId>", description: "Reuse an existing workspace." },
 		{ flag: "--project <projectId>", description: "Project ID for new-workspace-per-run mode." },
 		{ flag: "--host <hostId>", description: "Default: owner's online host." },
-		{ flag: "--agent <agent>", description: "Host agent presetId, instance UUID, or 'superset' for built-in chat. Default: claude." },
+		{ flag: "--agent <agent>", description: "Host agent presetId, instance UUID, or 'rox' for built-in chat. Default: claude." },
 	]}
 	output="Automation"
 >
@@ -894,7 +894,7 @@ present, the inline `--prompt` value is used. At least one of `--project`
 or `--workspace` must be provided.
 
 ```bash
-superset automations create \
+rox automations create \
   --name "Weekday triage" \
   --project prj_… \
   --workspace ws_… \
@@ -904,7 +904,7 @@ superset automations create \
 </Command>
 
 <Command
-	name="superset automations update <id>"
+	name="rox automations update <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -916,7 +916,7 @@ superset automations create \
 		{ flag: "--host <hostId>", description: "New target host." },
 		{ flag: "--project <projectId>", description: "New v2 project ID." },
 		{ flag: "--workspace <workspaceId>", description: "New v2 workspace ID." },
-		{ flag: "--agent <agent>", description: "New host agent presetId, instance UUID, or 'superset'." },
+		{ flag: "--agent <agent>", description: "New host agent presetId, instance UUID, or 'rox'." },
 		{ flag: "--mcp-scope <a,b,c>", description: "Comma-separated MCP scope strings." },
 		{ flag: "--enabled / --no-enabled", description: "Calls automation.setEnabled first." },
 	]}
@@ -924,13 +924,13 @@ superset automations create \
 >
 Update an automation's metadata (name, schedule, agent, host). All flags
 optional. Omitting a flag preserves the existing value — `undefined` means
-"no change", not "clear". Use [`automations prompt get`](#superset-automations-prompt-get-id)
-or [`automations prompt set`](#superset-automations-prompt-set-id) to read or
+"no change", not "clear". Use [`automations prompt get`](#rox-automations-prompt-get-id)
+or [`automations prompt set`](#rox-automations-prompt-set-id) to read or
 replace the prompt body.
 </Command>
 
 <Command
-	name="superset automations prompt get <id>"
+	name="rox automations prompt get <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -942,15 +942,15 @@ byte-exactly.
 
 ```bash
 # Read to a file
-superset automations prompt get aut_… > prompt.md
+rox automations prompt get aut_… > prompt.md
 
 # Verify a push landed
-superset automations prompt get aut_… | diff - ./prompt.md
+rox automations prompt get aut_… | diff - ./prompt.md
 ```
 </Command>
 
 <Command
-	name="superset automations prompt set <id>"
+	name="rox automations prompt set <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -964,15 +964,15 @@ old one.
 
 ```bash
 # Write from file
-superset automations prompt set aut_… --from-file ./prompt.md
+rox automations prompt set aut_… --from-file ./prompt.md
 
 # Write from stdin
-cat ./prompt.md | superset automations prompt set aut_… --from-file -
+cat ./prompt.md | rox automations prompt set aut_… --from-file -
 ```
 </Command>
 
 <Command
-	name="superset automations delete <id>"
+	name="rox automations delete <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -981,12 +981,12 @@ cat ./prompt.md | superset automations prompt set aut_… --from-file -
 Delete an automation.
 
 ```bash
-superset automations delete aut_…
+rox automations delete aut_…
 ```
 </Command>
 
 <Command
-	name="superset automations pause <id>"
+	name="rox automations pause <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -995,12 +995,12 @@ superset automations delete aut_…
 Pause an automation (sets `enabled: false`).
 
 ```bash
-superset automations pause aut_…
+rox automations pause aut_…
 ```
 </Command>
 
 <Command
-	name="superset automations resume <id>"
+	name="rox automations resume <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -1010,12 +1010,12 @@ Resume an automation (sets `enabled: true`). The API recomputes
 `nextRunAt` on resume.
 
 ```bash
-superset automations resume aut_…
+rox automations resume aut_…
 ```
 </Command>
 
 <Command
-	name="superset automations run <id>"
+	name="rox automations run <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -1027,12 +1027,12 @@ superset automations resume aut_…
 Dispatch an automation immediately. Does not wait for completion.
 
 ```bash
-superset automations run aut_…
+rox automations run aut_…
 ```
 </Command>
 
 <Command
-	name="superset automations logs <id>"
+	name="rox automations logs <id>"
 	args={[
 		{ name: "id", required: true, description: "Automation ID." },
 	]}
@@ -1046,7 +1046,7 @@ superset automations run aut_…
 List recent runs for an automation.
 
 ```bash
-superset automations logs aut_…
+rox automations logs aut_…
 ```
 </Command>
 
@@ -1063,5 +1063,5 @@ print one ID per line; single objects print their `id`; everything else
 falls back to JSON.
 
 When `CLAUDE_CODE`, `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_CLI`,
-`GEMINI_CLI`, `SUPERSET_AGENT`, or `CI` is set to a non-empty value, output
+`GEMINI_CLI`, `ROX_AGENT`, or `CI` is set to a non-empty value, output
 defaults to JSON unless `--quiet` is provided.

@@ -148,7 +148,7 @@ jobs:
       - name: Build Desktop
         env:
           RELAY_URL: ${{ secrets.RELAY_URL }}
-        run: bun turbo run build --filter=@superset/desktop
+        run: bun turbo run build --filter=@rox/desktop
 
   build-cli:
     name: Build CLI

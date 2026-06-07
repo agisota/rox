@@ -1,15 +1,15 @@
 import {
 	PromptInputProvider,
 	usePromptInputController,
-} from "@superset/ui/ai-elements/prompt-input";
+} from "@rox/ui/ai-elements/prompt-input";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dialog";
+import { toast } from "@rox/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";

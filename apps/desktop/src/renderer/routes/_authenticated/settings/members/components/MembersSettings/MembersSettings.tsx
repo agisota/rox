@@ -2,10 +2,10 @@ import {
 	canRemoveMember,
 	getRoleSortPriority,
 	type OrganizationRole,
-} from "@superset/shared/auth";
-import { Avatar } from "@superset/ui/atoms/Avatar";
-import { Badge } from "@superset/ui/badge";
-import { Skeleton } from "@superset/ui/skeleton";
+} from "@rox/shared/auth";
+import { Avatar } from "@rox/ui/atoms/Avatar";
+import { Badge } from "@rox/ui/badge";
+import { Skeleton } from "@rox/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -13,7 +13,7 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@superset/ui/table";
+} from "@rox/ui/table";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { authClient } from "renderer/lib/auth-client";

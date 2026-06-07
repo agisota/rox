@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import type { Pane } from "../../../types";

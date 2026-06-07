@@ -1,8 +1,4 @@
-import type {
-	SupersetBlockState,
-	SupersetEdge,
-	SupersetWorkflowState,
-} from "../types";
+import type { RoxBlockState, RoxEdge, RoxWorkflowState } from "../types";
 
 /** A single card on the prompt board. */
 export interface PromptCard {
@@ -42,14 +38,12 @@ export interface PromptPlanner {
 }
 
 /**
- * Convert a structured plan into a Superset workflow graph. Each node carries
+ * Convert a structured plan into a Rox workflow graph. Each node carries
  * its `sourcePromptCardId` in metadata so the canvas can trace a block back to
  * the card that produced it (PROMPT-03).
  */
-export function promptPlanToWorkflowState(
-	plan: PromptPlan,
-): SupersetWorkflowState {
-	const blocks: Record<string, SupersetBlockState> = {};
+export function promptPlanToWorkflowState(plan: PromptPlan): RoxWorkflowState {
+	const blocks: Record<string, RoxBlockState> = {};
 	for (const node of plan.nodes) {
 		const metadata: Record<string, unknown> = {};
 		if (node.sourcePromptCardId) {
@@ -62,7 +56,7 @@ export function promptPlanToWorkflowState(
 			metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
 		};
 	}
-	const edges: SupersetEdge[] = plan.edges.map((e) => ({
+	const edges: RoxEdge[] = plan.edges.map((e) => ({
 		source: e.source,
 		target: e.target,
 		sourceHandle: e.sourceHandle,

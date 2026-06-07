@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import { useState } from "react";
 import { env } from "@/env";
 

@@ -1,4 +1,4 @@
-import type { SupersetWorkflowState } from "../types";
+import type { RoxWorkflowState } from "../types";
 
 /**
  * Compute the set of blocks reachable from `start`, following edges only
@@ -6,7 +6,7 @@ import type { SupersetWorkflowState } from "../types";
  * so paths *through* it are cut — this is how disabled blocks break a chain.
  */
 export function reachableFrom(
-	state: SupersetWorkflowState,
+	state: RoxWorkflowState,
 	start: string,
 	allow: (id: string) => boolean,
 ): Set<string> {

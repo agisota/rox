@@ -1,7 +1,7 @@
-import { Button } from "@superset/ui/button";
-import { Label } from "@superset/ui/label";
-import { Switch } from "@superset/ui/switch";
-import { cn } from "@superset/ui/utils";
+import { Button } from "@rox/ui/button";
+import { Label } from "@rox/ui/label";
+import { Switch } from "@rox/ui/switch";
+import { cn } from "@rox/ui/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HiArrowPath, HiCheck, HiPlay, HiPlus, HiStop } from "react-icons/hi2";
 import { electronTrpc } from "renderer/lib/electron-trpc";

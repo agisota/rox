@@ -70,8 +70,7 @@ const DIFF_LINES = [
 	{
 		id: "line-12",
 		type: "added",
-		content:
-			"\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0Superset",
+		content: "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0Rox",
 	},
 	{
 		id: "line-13",

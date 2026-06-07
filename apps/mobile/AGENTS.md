@@ -1,6 +1,6 @@
 # Mobile App Structure
 
-Guidelines for organizing the Superset mobile app mostly follow repo's patterns,
+Guidelines for organizing the Rox mobile app mostly follow repo's patterns,
 with some caveats:
 
 ## Rules

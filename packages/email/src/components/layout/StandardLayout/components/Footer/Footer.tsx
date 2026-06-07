@@ -23,7 +23,7 @@ export function Footer({ showSocial = true }: FooterProps) {
 			<Section className="pb-4">
 				<Img
 					src={`${env.NEXT_PUBLIC_MARKETING_URL}/assets/emails/logo-full.png`}
-					alt="Superset"
+					alt="Rox"
 					width="160"
 				/>
 			</Section>
@@ -31,7 +31,7 @@ export function Footer({ showSocial = true }: FooterProps) {
 			{/* Social Icons */}
 			{showSocial && (
 				<Section className="mb-6">
-					<Link href="https://x.com/superset_sh" className="inline-block mr-4">
+					<Link href="https://x.com/rox_sh" className="inline-block mr-4">
 						<Img
 							src={socialIcons.x}
 							alt="X (Twitter)"
@@ -40,10 +40,7 @@ export function Footer({ showSocial = true }: FooterProps) {
 							className="block"
 						/>
 					</Link>
-					<Link
-						href="https://instagram.com/superset"
-						className="inline-block mr-4"
-					>
+					<Link href="https://instagram.com/rox" className="inline-block mr-4">
 						<Img
 							src={socialIcons.instagram}
 							alt="Instagram"
@@ -53,7 +50,7 @@ export function Footer({ showSocial = true }: FooterProps) {
 						/>
 					</Link>
 					<Link
-						href="https://www.linkedin.com/company/superset-sh"
+						href="https://www.linkedin.com/company/agisota"
 						className="inline-block"
 					>
 						<Img
@@ -98,7 +95,7 @@ export function Footer({ showSocial = true }: FooterProps) {
 
 			{/* Company Info */}
 			<Text className="text-muted text-xs leading-none m-0">
-				© {currentYear} Superset. All rights reserved.
+				© {currentYear} Rox. All rights reserved.
 			</Text>
 		</Section>
 	);

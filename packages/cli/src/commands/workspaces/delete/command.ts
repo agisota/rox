@@ -1,4 +1,4 @@
-import { boolean, CLIError, positional, string } from "@superset/cli-framework";
+import { boolean, CLIError, positional, string } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { resolveHostFilter, resolveHostTarget } from "../../../lib/host-target";
 
@@ -13,7 +13,7 @@ export default command({
 		const ids = args.ids as string[];
 		const organizationId = ctx.config.organizationId;
 		if (!organizationId) {
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 		}
 
 		const explicitHostId = resolveHostFilter({

@@ -5,11 +5,11 @@
 #
 # Targets:
 #   - Dev neon branch via .env DATABASE_URL (must be a non-prod branch)
-#   - superset-dev-data/local.db          (v1 fixtures)
-#   - superset-dev-data/host/<orgId>/host.db  (host.db fixtures)
+#   - rox-dev-data/local.db          (v1 fixtures)
+#   - rox-dev-data/host/<orgId>/host.db  (host.db fixtures)
 #   - ~/code/<repo>                       (on-disk fixture repos)
 #
-# v1 local DB project rows that already exist (superset, cal.com, onbook,
+# v1 local DB project rows that already exist (rox, cal.com, onbook,
 # onlook, mastra, chatbot) are NOT recreated — we just bump their tab_order
 # so they show up in the importer. New synthetic rows (v1v2-no-remote,
 # v1v2-ghost) are inserted with id prefix 22222222-bbbb-...
@@ -17,12 +17,12 @@
 set -euo pipefail
 
 SATYA_TEST_ORG=b2c3d4e5-f6a7-4890-9bcd-ef1234567891
-SUPERSET_ORG=a1b2c3d4-e5f6-7890-abcd-ef1234567890
+ROX_ORG=a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
-DEV_DATA="$(pwd)/superset-dev-data"
+DEV_DATA="$(pwd)/rox-dev-data"
 DEV_DATA_LOCAL_DB="$DEV_DATA/local.db"
 SATYA_TEST_HOST_DB="$DEV_DATA/host/$SATYA_TEST_ORG/host.db"
-SUPERSET_HOST_DB="$DEV_DATA/host/$SUPERSET_ORG/host.db"
+ROX_HOST_DB="$DEV_DATA/host/$ROX_ORG/host.db"
 
 NEW_NO_REMOTE_ID=22222222-bbbb-4bbb-8bbb-000000000001
 NEW_GHOST_ID=22222222-bbbb-4bbb-8bbb-000000000002
@@ -67,8 +67,8 @@ mkdir -p "$HOME/code/v1v2-no-remote"
   cd "$HOME/code/v1v2-no-remote"
   git init -q -b main
   echo "# v1v2-no-remote — local-only fixture" > README.md
-  git -c user.email=test@superset.sh -c user.name=Test add README.md
-  git -c user.email=test@superset.sh -c user.name=Test commit -q -m init
+  git -c user.email=test@rox.one -c user.name=Test add README.md
+  git -c user.email=test@rox.one -c user.name=Test commit -q -m init
 )
 
 echo "→ creating ~/code/v1v2-ghost (single-remote fixture)"
@@ -79,8 +79,8 @@ mkdir -p "$HOME/code/v1v2-ghost"
   git init -q -b main
   git remote add origin https://github.com/satya-fake-org/v1v2-ghost.git
   echo "# v1v2-ghost fixture" > README.md
-  git -c user.email=test@superset.sh -c user.name=Test add README.md
-  git -c user.email=test@superset.sh -c user.name=Test commit -q -m init
+  git -c user.email=test@rox.one -c user.name=Test add README.md
+  git -c user.email=test@rox.one -c user.name=Test commit -q -m init
 )
 
 echo "→ adding worktrees to ~/code/onbook-relocate-clone"
@@ -104,15 +104,15 @@ INSERT INTO public.v2_projects (id, organization_id, name, slug, repo_clone_url)
 ON CONFLICT (id) DO NOTHING;
 SQL
 
-# ---- 3. cloud v2 fixtures (Superset Org — where active session usually is) --
+# ---- 3. cloud v2 fixtures (Rox Org — where active session usually is) --
 
-echo "→ seeding v2 projects in Superset Org"
+echo "→ seeding v2 projects in Rox Org"
 psql "$PGURL" >/dev/null <<SQL
 INSERT INTO public.v2_projects (id, organization_id, name, slug, repo_clone_url) VALUES
-  ('33333333-aaaa-4aaa-8aaa-000000000001', '$SUPERSET_ORG', 'cal.com (calcom)',      'v1v2-test-cal-com-calcom',     'https://github.com/calcom/cal.com'),
-  ('33333333-aaaa-4aaa-8aaa-000000000002', '$SUPERSET_ORG', 'cal.com (onlook fork)', 'v1v2-test-cal-com-onlook-dev', 'https://github.com/onlook-dev/cal.com'),
-  ('33333333-aaaa-4aaa-8aaa-000000000003', '$SUPERSET_ORG', 'onlook (test fixture)', 'v1v2-test-onlook',             'https://github.com/onlook-dev/onlook'),
-  ('$ONBOOK_FIXTURE_V2_ID',                '$SUPERSET_ORG', 'onbook (test fixture)', 'v1v2-test-onbook',             'https://github.com/onlook-dev/onbook')
+  ('33333333-aaaa-4aaa-8aaa-000000000001', '$ROX_ORG', 'cal.com (calcom)',      'v1v2-test-cal-com-calcom',     'https://github.com/calcom/cal.com'),
+  ('33333333-aaaa-4aaa-8aaa-000000000002', '$ROX_ORG', 'cal.com (onlook fork)', 'v1v2-test-cal-com-onlook-dev', 'https://github.com/onlook-dev/cal.com'),
+  ('33333333-aaaa-4aaa-8aaa-000000000003', '$ROX_ORG', 'onlook (test fixture)', 'v1v2-test-onlook',             'https://github.com/onlook-dev/onlook'),
+  ('$ONBOOK_FIXTURE_V2_ID',                '$ROX_ORG', 'onbook (test fixture)', 'v1v2-test-onbook',             'https://github.com/onlook-dev/onbook')
 ON CONFLICT (id) DO NOTHING;
 SQL
 
@@ -137,7 +137,7 @@ ON CONFLICT (id) DO UPDATE SET
   tab_order = excluded.tab_order;
 
 -- Worktrees under onbook for the workspace-tab tests
-INSERT INTO worktrees (id, project_id, path, branch, base_branch, created_at, created_by_superset)
+INSERT INTO worktrees (id, project_id, path, branch, base_branch, created_at, created_by_rox)
 VALUES
   ('44444444-cccc-4ccc-8ccc-000000000001', '$ONBOOK_V1_ID', '$HOME/code/onbook-relocate-clone/.worktrees/v1v2-test-clean',           'v1v2-test-clean',           'main', strftime('%s','now')*1000, 1),
   ('44444444-cccc-4ccc-8ccc-000000000002', '$ONBOOK_V1_ID', '/tmp/v1v2-stale-path-nowhere',                                          'v1v2-test-stale-fallback', 'main', strftime('%s','now')*1000, 1),
@@ -160,8 +160,8 @@ SQL
 
 # ---- 5. host.db row for relocate scenario -----------------------------------
 
-echo "→ inserting host.db relocate row (Superset org)"
-sqlite3 "$SUPERSET_HOST_DB" <<SQL
+echo "→ inserting host.db relocate row (Rox org)"
+sqlite3 "$ROX_HOST_DB" <<SQL
 INSERT INTO projects (id, repo_path, created_at, repo_provider, repo_owner, repo_name, repo_url, remote_name)
 VALUES (
   '$ONBOOK_FIXTURE_V2_ID',

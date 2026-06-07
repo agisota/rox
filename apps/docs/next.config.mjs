@@ -65,7 +65,7 @@ const config = {
 };
 
 export default withSentryConfig(withMDX(config), {
-	org: "superset-sh",
+	org: "agisota",
 	project: "docs",
 	silent: !process.env.CI,
 	widenClientFileUpload: true,

@@ -3,13 +3,13 @@ import {
 	chatServiceTrpc,
 	type UseChatDisplayReturn,
 	useChatDisplay,
-} from "@superset/chat/client";
+} from "@rox/chat/client";
 import {
 	PromptInputAttachment,
 	type PromptInputMessage,
 	PromptInputProvider,
 	useProviderAttachments,
-} from "@superset/ui/ai-elements/prompt-input";
+} from "@rox/ui/ai-elements/prompt-input";
 import { useQuery } from "@tanstack/react-query";
 import type { ChatStatus } from "ai";
 import type React from "react";

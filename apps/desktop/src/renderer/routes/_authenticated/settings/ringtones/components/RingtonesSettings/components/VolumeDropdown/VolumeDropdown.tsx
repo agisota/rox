@@ -1,11 +1,11 @@
-import { Label } from "@superset/ui/label";
+import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
+} from "@rox/ui/select";
 import { useCallback } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 

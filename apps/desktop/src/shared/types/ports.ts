@@ -1,6 +1,6 @@
-export type { DetectedPort } from "@superset/port-scanner";
+export type { DetectedPort } from "@rox/port-scanner";
 
-import type { DetectedPort } from "@superset/port-scanner";
+import type { DetectedPort } from "@rox/port-scanner";
 
 export interface StaticPort {
 	port: number;

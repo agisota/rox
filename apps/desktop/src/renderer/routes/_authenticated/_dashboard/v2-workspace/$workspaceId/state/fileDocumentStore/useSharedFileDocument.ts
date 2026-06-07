@@ -1,4 +1,4 @@
-import { useWorkspaceClient } from "@superset/workspace-client";
+import { useWorkspaceClient } from "@rox/workspace-client";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { acquireDocument, releaseDocument } from "./fileDocumentStore";
 import type { SharedFileDocument } from "./types";

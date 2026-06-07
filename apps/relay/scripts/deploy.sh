@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP=superset-relay
+APP=rox-relay
 REGIONS=(sjc iad fra nrt sin gru)
 COUNT=${#REGIONS[@]}
 REGION_LIST=$(IFS=, ; echo "${REGIONS[*]}")

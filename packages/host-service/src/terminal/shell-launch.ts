@@ -23,15 +23,15 @@ export function resolveLaunchShell(
 	return resolveConfiguredShell(baseEnv, options);
 }
 
-export function getSupersetShellPaths(supersetHomeDir: string): {
+export function getRoxShellPaths(roxHomeDir: string): {
 	BIN_DIR: string;
 	ZSH_DIR: string;
 	BASH_DIR: string;
 } {
 	return {
-		BIN_DIR: path.join(supersetHomeDir, "bin"),
-		ZSH_DIR: path.join(supersetHomeDir, "zsh"),
-		BASH_DIR: path.join(supersetHomeDir, "bash"),
+		BIN_DIR: path.join(roxHomeDir, "bin"),
+		ZSH_DIR: path.join(roxHomeDir, "zsh"),
+		BASH_DIR: path.join(roxHomeDir, "bash"),
 	};
 }
 
@@ -51,10 +51,10 @@ function buildFishInitCommand(binDir: string): string {
 		.replaceAll('"', '\\"')
 		.replaceAll("$", "\\$");
 	return [
-		`set -l _superset_bin "${escaped}"`,
-		`contains -- "$_superset_bin" $PATH`,
-		`or set -gx PATH "$_superset_bin" $PATH`,
-		`function _superset_prompt_mark --on-event fish_prompt`,
+		`set -l _rox_bin "${escaped}"`,
+		`contains -- "$_rox_bin" $PATH`,
+		`or set -gx PATH "$_rox_bin" $PATH`,
+		`function _rox_prompt_mark --on-event fish_prompt`,
 		`printf '\\033]133;A\\007'`,
 		`end`,
 	].join("; ");
@@ -63,7 +63,7 @@ function buildFishInitCommand(binDir: string): string {
 export interface ShellBootstrapParams {
 	shell: string;
 	baseEnv: Record<string, string>;
-	supersetHomeDir: string;
+	roxHomeDir: string;
 }
 
 /**
@@ -73,15 +73,15 @@ export interface ShellBootstrapParams {
 export function getShellBootstrapEnv(
 	params: ShellBootstrapParams,
 ): Record<string, string> {
-	const { shell, baseEnv, supersetHomeDir } = params;
+	const { shell, baseEnv, roxHomeDir } = params;
 	const shellName = getShellName(shell);
-	const paths = getSupersetShellPaths(supersetHomeDir);
+	const paths = getRoxShellPaths(roxHomeDir);
 
 	if (shellName === "zsh") {
 		const zshrc = path.join(paths.ZSH_DIR, ".zshrc");
 		if (existsSync(zshrc)) {
 			return {
-				SUPERSET_ORIG_ZDOTDIR: baseEnv.ZDOTDIR || baseEnv.HOME || homedir(),
+				ROX_ORIG_ZDOTDIR: baseEnv.ZDOTDIR || baseEnv.HOME || homedir(),
 				ZDOTDIR: paths.ZSH_DIR,
 			};
 		}
@@ -92,13 +92,13 @@ export function getShellBootstrapEnv(
 
 export interface ShellLaunchParams {
 	shell: string;
-	supersetHomeDir: string;
+	roxHomeDir: string;
 }
 
 export function getShellLaunchArgs(params: ShellLaunchParams): string[] {
-	const { shell, supersetHomeDir } = params;
+	const { shell, roxHomeDir } = params;
 	const shellName = getShellName(shell);
-	const paths = getSupersetShellPaths(supersetHomeDir);
+	const paths = getRoxShellPaths(roxHomeDir);
 
 	if (shellName === "zsh") {
 		return ["-l"];

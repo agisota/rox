@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { WorkflowErrorCode } from "../errors";
-import type { SupersetBlockState, SupersetWorkflowState } from "../types";
+import type { RoxBlockState, RoxWorkflowState } from "../types";
 import { topologicalSort } from "./topologicalSort";
 import { validateGraph } from "./validateGraph";
 
 function makeState(
-	blocks: Record<string, SupersetBlockState>,
-	edges: SupersetWorkflowState["edges"],
-): SupersetWorkflowState {
+	blocks: Record<string, RoxBlockState>,
+	edges: RoxWorkflowState["edges"],
+): RoxWorkflowState {
 	return {
 		blocks,
 		edges,

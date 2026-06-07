@@ -55,7 +55,7 @@ Used by the Automations route guard (sidebar hide + route 404) and every `automa
 | Completion callback URL | Not in v1. Run state stops at `dispatched`. |
 | REST API surface | tRPC-first everywhere except webhooks/QStash/OAuth. |
 | `machines` table | Table is `v2_hosts`. `is_online` maintained by relay on WS connect/disconnect. |
-| MCP config per-automation | MCP hardcoded `disableMcp: true`. v1 = Superset MCP only. |
+| MCP config per-automation | MCP hardcoded `disableMcp: true`. v1 = Rox MCP only. |
 | Per-token webhook auth for Zapier | No per-token model exists; defer to Phase 3. |
 
 ---
@@ -216,7 +216,7 @@ export const automations = pgTable(
     timezone: text().notNull(),
     enabled: boolean().notNull().default(true),
 
-    // MCP scope. v1: empty = Superset MCP only.
+    // MCP scope. v1: empty = Rox MCP only.
     mcpScope: jsonb("mcp_scope").$type<string[]>().notNull().default([]),
 
     // Dispatcher hot path
@@ -462,7 +462,7 @@ New env vars: `CRON_SECRET`, `RELAY_URL`.
 
 MCP disabled everywhere (`disableMcp: true` in two runtimes). No cloud credential table.
 
-**v1:** Superset MCP only; auths via the dispatch JWT's `userId` / `organizationId`.
+**v1:** Rox MCP only; auths via the dispatch JWT's `userId` / `organizationId`.
 **Follow-up (separate design doc):** `user_mcp_credentials` (encrypted), per-MCP OAuth UI, scope enforcement per-automation.
 
 ---
@@ -473,12 +473,12 @@ Rename `crons` → `automations`. CLI_SPEC.md (lines 1153-1284) updated as Phase
 
 | CLI command | tRPC call |
 |---|---|
-| `superset automations list` | `automation.list` |
-| `superset automations create` | `automation.create` (possibly preceded by `automation.parseCron`) |
-| `superset automations update <id>` | `automation.update` |
-| `superset automations delete <id>` | `automation.delete` |
-| `superset automations logs <id>` | `automation.listRuns` |
-| `superset automations run <id>` | `automation.runNow` |
+| `rox automations list` | `automation.list` |
+| `rox automations create` | `automation.create` (possibly preceded by `automation.parseCron`) |
+| `rox automations update <id>` | `automation.update` |
+| `rox automations delete <id>` | `automation.delete` |
+| `rox automations logs <id>` | `automation.listRuns` |
+| `rox automations run <id>` | `automation.runNow` |
 
 Create flags:
 ```
@@ -488,7 +488,7 @@ Create flags:
 --config <path.json>              full JSON payload for complex cases
 --timezone <IANA>                 default: host's TZ, else UTC
 --dtstart <iso8601>               default: now
---device <machineId>              default: auto-detect from ~/.superset/device.json
+--device <machineId>              default: auto-detect from ~/.rox/device.json
 --project <projectId>             required when --workspace omitted (new-workspace mode)
 --workspace <workspaceId>         optional; if set, existing-workspace mode
 --prompt <text> | --prompt-file <path>   required
@@ -627,9 +627,9 @@ Out of scope: desktop UI, completion tracking, webhooks, third-party MCPs, notif
 ## Verification
 
 1. **Migration.** Neon branch, `bunx drizzle-kit generate --name="add_automations"`, inspect SQL, apply.
-2. **Paid-plan gate.** Confirm `superset automations list` returns `FORBIDDEN` for a free-plan user; passes for a paid one. Same for the `/automations` route in the desktop UI (Phase 2).
+2. **Paid-plan gate.** Confirm `rox automations list` returns `FORBIDDEN` for a free-plan user; passes for a paid one. Same for the `/automations` route in the desktop UI (Phase 2).
 3. **Shared extraction.** After moving `AgentLaunchRequest` + `agent-settings`, the desktop still compiles, the new-workspace modal still launches agents.
-4. **Chat CRUD.** `superset automations create --name "smoke" --cron "*/2 * * * *" --prompt "hi" --project <id> --agent claude` → `list` shows next_run_at ~2 min out; stored rrule is `FREQ=MINUTELY;INTERVAL=2`.
+4. **Chat CRUD.** `rox automations create --name "smoke" --cron "*/2 * * * *" --prompt "hi" --project <id> --agent claude` → `list` shows next_run_at ~2 min out; stored rrule is `FREQ=MINUTELY;INTERVAL=2`.
 5. **Terminal CRUD.** Same as above with `--agent codex` (or another terminal-kind preset).
 6. **Dispatch happy path (chat).** At fire time:
    - `automation_runs` row: `status='dispatched'`, `session_kind='chat'`, `chat_session_id` populated, `v2_workspace_id` populated (auto-created if new-workspace mode)

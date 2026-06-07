@@ -26,7 +26,7 @@ describe("resolveAgentConfigs", () => {
 						enabled: false,
 					},
 					{
-						id: "superset",
+						id: "rox",
 						taskPromptTemplate: "Chat {{slug}}",
 					},
 				],
@@ -34,7 +34,7 @@ describe("resolveAgentConfigs", () => {
 		});
 
 		const claude = presets.find((preset) => preset.id === "claude");
-		const chat = presets.find((preset) => preset.id === "superset");
+		const chat = presets.find((preset) => preset.id === "rox");
 
 		expect(claude).toMatchObject({
 			id: "claude",
@@ -49,7 +49,7 @@ describe("resolveAgentConfigs", () => {
 		);
 
 		expect(chat).toMatchObject({
-			id: "superset",
+			id: "rox",
 			kind: "chat",
 			taskPromptTemplate: "Chat {{slug}}",
 		});
@@ -313,13 +313,13 @@ describe("contextPromptTemplate resolution", () => {
 			version: 1 as const,
 			presets: [
 				{
-					id: "superset",
+					id: "rox",
 					contextPromptTemplateSystem: "custom sys",
 				},
 			],
 		};
 		const chat = resolveAgentConfigs({ overrideEnvelope: override }).find(
-			(p) => p.id === "superset",
+			(p) => p.id === "rox",
 		);
 		expect(chat?.contextPromptTemplateSystem).toBe("custom sys");
 	});

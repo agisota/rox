@@ -61,7 +61,7 @@ export function SubscriptionCancelledEmail({
 			<Text className="text-xs leading-5 text-muted">
 				We'd love to hear your feedback.{" "}
 				<Link
-					href="mailto:support@superset.sh"
+					href="mailto:support@rox.one"
 					className="text-primary no-underline"
 				>
 					Let us know

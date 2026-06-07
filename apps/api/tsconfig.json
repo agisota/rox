@@ -1,5 +1,5 @@
 {
-	"extends": "@superset/typescript/next.json",
+	"extends": "@rox/typescript/next.json",
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {

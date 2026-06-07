@@ -18,9 +18,9 @@ const realFs = {
 	writeFileSync: nodeFs.writeFileSync,
 };
 
-const originalSupersetHomeDir = process.env.SUPERSET_HOME_DIR;
-const tempHome = realFs.mkdtempSync(join(tmpdir(), "superset-cli-config-"));
-process.env.SUPERSET_HOME_DIR = tempHome;
+const originalRoxHomeDir = process.env.ROX_HOME_DIR;
+const tempHome = realFs.mkdtempSync(join(tmpdir(), "rox-cli-config-"));
+process.env.ROX_HOME_DIR = tempHome;
 
 // Per-test mutable state for the mocked fs.
 let renameShouldFail = false;
@@ -47,23 +47,23 @@ mock.module("node:fs", () => ({
 	},
 }));
 
-const { SUPERSET_CONFIG_PATH, writeConfig } = await import("./config");
+const { ROX_CONFIG_PATH, writeConfig } = await import("./config");
 
 beforeEach(() => {
 	writtenPaths.length = 0;
 	unlinkedPaths.length = 0;
 	renameShouldFail = false;
-	if (realFs.existsSync(SUPERSET_CONFIG_PATH)) {
-		realFs.unlinkSync(SUPERSET_CONFIG_PATH);
+	if (realFs.existsSync(ROX_CONFIG_PATH)) {
+		realFs.unlinkSync(ROX_CONFIG_PATH);
 	}
 });
 
 afterAll(() => {
 	realFs.rmSync(tempHome, { recursive: true, force: true });
-	if (originalSupersetHomeDir === undefined) {
-		delete process.env.SUPERSET_HOME_DIR;
+	if (originalRoxHomeDir === undefined) {
+		delete process.env.ROX_HOME_DIR;
 	} else {
-		process.env.SUPERSET_HOME_DIR = originalSupersetHomeDir;
+		process.env.ROX_HOME_DIR = originalRoxHomeDir;
 	}
 });
 
@@ -75,16 +75,14 @@ describe("config writes", () => {
 		const tempWrites = writtenPaths.filter((p) => p.endsWith(".config.tmp"));
 		expect(tempWrites).toHaveLength(2);
 		expect(tempWrites[0]).not.toBe(tempWrites[1]);
-		expect(
-			JSON.parse(realFs.readFileSync(SUPERSET_CONFIG_PATH, "utf-8")),
-		).toEqual({
+		expect(JSON.parse(realFs.readFileSync(ROX_CONFIG_PATH, "utf-8"))).toEqual({
 			apiKey: "sk_live_two",
 		});
 	});
 
 	test("writeConfig preserves old config if rename fails", () => {
 		realFs.writeFileSync(
-			SUPERSET_CONFIG_PATH,
+			ROX_CONFIG_PATH,
 			JSON.stringify({ apiKey: "sk_live_old" }),
 		);
 
@@ -94,21 +92,17 @@ describe("config writes", () => {
 			/rename failed/,
 		);
 
-		expect(
-			JSON.parse(realFs.readFileSync(SUPERSET_CONFIG_PATH, "utf-8")),
-		).toEqual({
+		expect(JSON.parse(realFs.readFileSync(ROX_CONFIG_PATH, "utf-8"))).toEqual({
 			apiKey: "sk_live_old",
 		});
 		expect(unlinkedPaths).toHaveLength(1);
 		expect(realFs.existsSync(unlinkedPaths[0] ?? "")).toBe(false);
 	});
 
-	test("writeConfig writes the exported Superset config path", () => {
+	test("writeConfig writes the exported Rox config path", () => {
 		writeConfig({ organizationId: "org_123" });
 
-		expect(
-			JSON.parse(realFs.readFileSync(SUPERSET_CONFIG_PATH, "utf-8")),
-		).toEqual({
+		expect(JSON.parse(realFs.readFileSync(ROX_CONFIG_PATH, "utf-8"))).toEqual({
 			organizationId: "org_123",
 		});
 	});

@@ -1,4 +1,4 @@
-import type { AppRouter } from "@superset/host-service";
+import type { AppRouter } from "@rox/host-service";
 import { createTRPCClient, httpLink } from "@trpc/client";
 import superjson from "superjson";
 import { getHostServiceHeaders } from "./host-service-auth";

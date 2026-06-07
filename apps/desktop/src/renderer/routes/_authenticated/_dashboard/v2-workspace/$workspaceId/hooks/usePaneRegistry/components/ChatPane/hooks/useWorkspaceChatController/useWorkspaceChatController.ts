@@ -1,4 +1,4 @@
-import { workspaceTrpc } from "@superset/workspace-client";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useMemo } from "react";

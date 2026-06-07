@@ -1,5 +1,5 @@
-import type { WorkspaceState } from "@superset/panes";
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import type { WorkspaceState } from "@rox/panes";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffectEvent, useMemo } from "react";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";

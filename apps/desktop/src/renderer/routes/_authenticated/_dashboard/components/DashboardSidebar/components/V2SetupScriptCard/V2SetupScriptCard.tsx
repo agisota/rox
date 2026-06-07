@@ -1,4 +1,4 @@
-import { SidebarCard } from "@superset/ui/sidebar-card";
+import { SidebarCard } from "@rox/ui/sidebar-card";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";

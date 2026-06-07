@@ -1,11 +1,11 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/dropdown-menu";
+import { cn } from "@rox/ui/utils";
 import { HiMiniCommandLine } from "react-icons/hi2";
 import { LuCheck, LuChevronDown, LuPlus } from "react-icons/lu";
 import { getPresetIcon } from "renderer/assets/app-icons/preset-icons";

@@ -10,7 +10,7 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import type { SelectTaskStatus } from "@superset/db/schema";
+import type { SelectTaskStatus } from "@rox/db/schema";
 import { useCallback, useMemo, useState } from "react";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import type { TaskWithStatus } from "../../hooks/useTasksData";

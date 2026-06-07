@@ -1,13 +1,10 @@
-import { db, dbWs } from "@superset/db/client";
+import { db, dbWs } from "@rox/db/client";
 import {
 	workflowDefinitions,
 	workflowDeployments,
 	workflowVersions,
-} from "@superset/db/schema";
-import {
-	type SupersetWorkflowState,
-	validateGraph,
-} from "@superset/workflow-core";
+} from "@rox/db/schema";
+import { type RoxWorkflowState, validateGraph } from "@rox/workflow-core";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
@@ -23,7 +20,7 @@ import {
 	workflowIdSchema,
 } from "./schema";
 
-function emptyDraft(name: string): SupersetWorkflowState {
+function emptyDraft(name: string): RoxWorkflowState {
 	return {
 		blocks: {
 			start: { type: "start", name: "Start", position: { x: 0, y: 0 } },
@@ -66,7 +63,7 @@ export const workflowRouter = {
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
 			const draftState =
-				(input.draftState as SupersetWorkflowState | undefined) ??
+				(input.draftState as RoxWorkflowState | undefined) ??
 				emptyDraft(input.name);
 			const [row] = await db
 				.insert(workflowDefinitions)
@@ -96,7 +93,7 @@ export const workflowRouter = {
 			await getWorkflowDraftForOrg(organizationId, input.workflowId);
 			const [row] = await db
 				.update(workflowDefinitions)
-				.set({ draftState: input.draftState as SupersetWorkflowState })
+				.set({ draftState: input.draftState as RoxWorkflowState })
 				.where(eq(workflowDefinitions.id, input.workflowId))
 				.returning();
 			return row;
@@ -106,7 +103,7 @@ export const workflowRouter = {
 		.input(validateWorkflowDraftSchema)
 		.query(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
-			let state = input.draftState as SupersetWorkflowState | undefined;
+			let state = input.draftState as RoxWorkflowState | undefined;
 			if (!state && input.workflowId) {
 				const wf = await getWorkflowDraftForOrg(
 					organizationId,

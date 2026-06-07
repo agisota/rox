@@ -1,7 +1,7 @@
 import {
 	BRANCH_PREFIX_MODES,
 	type BranchPrefixMode,
-} from "@superset/shared/workspace-launch";
+} from "@rox/shared/workspace-launch";
 import { z } from "zod";
 import { hostSettings } from "../../../db/schema";
 import { createUserSimpleGit } from "../../../runtime/git/simple-git";

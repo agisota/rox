@@ -1,12 +1,12 @@
-import { getPresetById } from "@superset/shared/host-agent-presets";
+import { getPresetById } from "@rox/shared/host-agent-presets";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { getPresetIcon } from "@superset/ui/icons/preset-icons";
+} from "@rox/ui/dropdown-menu";
+import { getPresetIcon } from "@rox/ui/icons/preset-icons";
 import { useNavigate } from "@tanstack/react-router";
 import { HiCheck } from "react-icons/hi2";
 import { LuCpu, LuSettings } from "react-icons/lu";

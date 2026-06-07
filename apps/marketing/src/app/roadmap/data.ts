@@ -74,7 +74,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "next-1",
 		title: "VS Code extension",
 		description:
-			"Launch and manage Superset agents directly from the VS Code sidebar.",
+			"Launch and manage Rox agents directly from the VS Code sidebar.",
 		category: "Integrations",
 		status: "next",
 	},
@@ -108,7 +108,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "later-1",
 		title: "Self-hosted deployment",
 		description:
-			"Run Superset on your own infrastructure with a single Docker Compose file.",
+			"Run Rox on your own infrastructure with a single Docker Compose file.",
 		category: "Web",
 		status: "later",
 	},
@@ -132,7 +132,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "later-4",
 		title: "JetBrains plugin",
 		description:
-			"Full Superset integration for IntelliJ, WebStorm, and other JetBrains IDEs.",
+			"Full Rox integration for IntelliJ, WebStorm, and other JetBrains IDEs.",
 		category: "Integrations",
 		status: "later",
 	},

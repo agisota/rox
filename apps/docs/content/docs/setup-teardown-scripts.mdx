@@ -7,13 +7,13 @@ description: Automate workspace initialization and dev servers
 
 Run commands automatically when creating or deleting workspaces, and define dev server commands that launch via the Run button.
 
-Create `.superset/config.json` in your project:
+Create `.rox/config.json` in your project:
 
 ```json
 {
-  "setup": ["bun install", "cp \"$SUPERSET_ROOT_PATH/.env\" .env"],
+  "setup": ["bun install", "cp \"$ROX_ROOT_PATH/.env\" .env"],
   "teardown": ["docker-compose down"],
-  "run": ["./.superset/run.sh"]
+  "run": ["./.rox/run.sh"]
 }
 ```
 
@@ -36,7 +36,7 @@ The `run` field defines commands that start your dev server or other long-runnin
 ```json
 {
   "setup": ["npm install"],
-  "run": ["./.superset/run.sh"]
+  "run": ["./.rox/run.sh"]
 }
 ```
 
@@ -44,15 +44,15 @@ The `run` field defines commands that start your dev server or other long-runnin
 
 | Variable | Description |
 |----------|-------------|
-| `SUPERSET_ROOT_PATH` | Path to root repository |
-| `SUPERSET_WORKSPACE_NAME` | Current workspace name |
-| `SUPERSET_WORKSPACE_PATH` | Path to the workspace worktree |
+| `ROX_ROOT_PATH` | Path to root repository |
+| `ROX_WORKSPACE_NAME` | Current workspace name |
+| `ROX_WORKSPACE_PATH` | Path to the workspace worktree |
 
 ## Examples
 
 **Node.js:**
 ```json
-{ "setup": ["bun install", "cp \"$SUPERSET_ROOT_PATH/.env\" .env"] }
+{ "setup": ["bun install", "cp \"$ROX_ROOT_PATH/.env\" .env"] }
 ```
 
 **Docker:**
@@ -66,9 +66,9 @@ The `run` field defines commands that start your dev server or other long-runnin
 **Full config:**
 ```json
 {
-  "setup": ["./.superset/setup.sh"],
-  "teardown": ["./.superset/teardown.sh"],
-  "run": ["./.superset/run.sh"]
+  "setup": ["./.rox/setup.sh"],
+  "teardown": ["./.rox/teardown.sh"],
+  "run": ["./.rox/run.sh"]
 }
 ```
 
@@ -77,17 +77,17 @@ The `run` field defines commands that start your dev server or other long-runnin
 Override project scripts without modifying the repo by placing a `config.json` in your home directory:
 
 ```
-~/.superset/projects/<project-id>/config.json
+~/.rox/projects/<project-id>/config.json
 ```
 
-Where `<project-id>` is your project's unique ID in Superset (visible in the app's project settings).
+Where `<project-id>` is your project's unique ID in Rox (visible in the app's project settings).
 
 ### Priority Order
 
 Config is resolved in this order (first found wins, for setup, teardown, and run):
-1. `~/.superset/projects/<project-id>/config.json` — user override
-2. `<worktree>/.superset/config.json` — worktree-specific
-3. `<repo>/.superset/config.json` — project default
+1. `~/.rox/projects/<project-id>/config.json` — user override
+2. `<worktree>/.rox/config.json` — worktree-specific
+3. `<repo>/.rox/config.json` — project default
 
 No merging occurs between levels—the first config found is used entirely.
 
@@ -96,8 +96,8 @@ No merging occurs between levels—the first config found is used entirely.
 **Custom setup script:**
 ```json
 {
-  "setup": ["~/.superset/projects/<project-id>/setup.sh"],
-  "teardown": ["~/.superset/projects/<project-id>/teardown.sh"]
+  "setup": ["~/.rox/projects/<project-id>/setup.sh"],
+  "teardown": ["~/.rox/projects/<project-id>/teardown.sh"]
 }
 ```
 
@@ -108,7 +108,7 @@ No merging occurs between levels—the first config found is used entirely.
 
 ## Local Config
 
-Extend or override your team's committed scripts without modifying the repo. Create `.superset/config.local.json` alongside `config.json` — it's gitignored automatically.
+Extend or override your team's committed scripts without modifying the repo. Create `.rox/config.local.json` alongside `config.json` — it's gitignored automatically.
 
 ### Prepend and/or append
 
@@ -118,10 +118,10 @@ Add steps before or after the team's scripts:
 {
   "setup": {
     "before": ["echo 'running pre-setup'"],
-    "after": ["./.superset/my-post-setup.sh"]
+    "after": ["./.rox/my-post-setup.sh"]
   },
   "teardown": {
-    "after": ["./.superset/my-cleanup.sh"]
+    "after": ["./.rox/my-cleanup.sh"]
   }
 }
 ```
@@ -134,7 +134,7 @@ Use a plain array to replace the team's scripts completely:
 
 ```json
 {
-  "setup": ["./.superset/my-custom-setup.sh"]
+  "setup": ["./.rox/my-custom-setup.sh"]
 }
 ```
 
@@ -165,8 +165,8 @@ When teardown fails:
 ## Tips
 
 - Keep setup fast—runs every workspace creation
-- Commit `.superset/` to share with team
-- Use shell scripts for complex logic: `"setup": ["./.superset/setup.sh"]`
+- Commit `.rox/` to share with team
+- Use shell scripts for complex logic: `"setup": ["./.rox/setup.sh"]`
 - Use `config.local.json` to add personal steps without touching the team's config
-- Use user overrides (`~/.superset/projects/`) to replace scripts entirely per-project
+- Use user overrides (`~/.rox/projects/`) to replace scripts entirely per-project
 - Use `run` for dev servers instead of putting them in `setup`—run scripts are restartable and don't block workspace creation

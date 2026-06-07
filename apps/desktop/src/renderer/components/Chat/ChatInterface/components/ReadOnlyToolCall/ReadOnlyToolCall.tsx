@@ -1,7 +1,7 @@
-import { ClickableFilePath } from "@superset/ui/ai-elements/clickable-file-path";
-import { ReadFileTool } from "@superset/ui/ai-elements/read-file-tool";
-import { ToolInput, ToolOutput } from "@superset/ui/ai-elements/tool";
-import { ToolCallRow } from "@superset/ui/ai-elements/tool-call-row";
+import { ClickableFilePath } from "@rox/ui/ai-elements/clickable-file-path";
+import { ReadFileTool } from "@rox/ui/ai-elements/read-file-tool";
+import { ToolInput, ToolOutput } from "@rox/ui/ai-elements/tool";
+import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
 import { getToolName } from "ai";
 import {
 	FileIcon,

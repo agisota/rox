@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { WorkflowErrorCode } from "../errors";
-import type { SupersetWorkflowState } from "../types";
+import type { RoxWorkflowState } from "../types";
 import {
 	evaluateCostPolicy,
 	evaluateGraphPolicy,
@@ -8,7 +8,7 @@ import {
 	policyDenialsToIssues,
 } from "./policyEvaluator";
 
-function state(blocks: SupersetWorkflowState["blocks"]): SupersetWorkflowState {
+function state(blocks: RoxWorkflowState["blocks"]): RoxWorkflowState {
 	return {
 		blocks,
 		edges: [],

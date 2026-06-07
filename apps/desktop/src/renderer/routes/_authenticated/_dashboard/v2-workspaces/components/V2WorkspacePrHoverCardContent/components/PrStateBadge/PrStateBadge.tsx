@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import type { V2WorkspacePrState } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/hooks/useAccessibleV2Workspaces";
 
 const STATE_BADGE_STYLES: Record<V2WorkspacePrState, string> = {

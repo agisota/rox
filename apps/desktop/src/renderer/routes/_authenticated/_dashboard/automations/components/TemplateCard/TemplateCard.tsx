@@ -1,9 +1,4 @@
-import {
-	Card,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@superset/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@rox/ui/card";
 import type { AutomationTemplate } from "../../templates";
 
 interface TemplateCardProps {

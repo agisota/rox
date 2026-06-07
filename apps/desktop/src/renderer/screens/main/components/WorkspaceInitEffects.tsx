@@ -1,8 +1,8 @@
 import {
 	type AgentLaunchRequest,
 	normalizeAgentLaunchRequest,
-} from "@superset/shared/agent-launch";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/shared/agent-launch";
+import { toast } from "@rox/ui/sonner";
 import { useCallback, useEffect, useRef } from "react";
 import { useCreateOrAttachWithTheme } from "renderer/hooks/useCreateOrAttachWithTheme";
 import { launchAgentSession } from "renderer/lib/agent-session-orchestrator";

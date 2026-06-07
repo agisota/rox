@@ -577,7 +577,7 @@ These are the three questions that will bite us if we skip them:
 - [ ] Delete `packages/chat/src/client/hooks/use-chat-display/`.
 - [ ] Delete `withoutActiveTurnAssistantHistory` and related helpers.
 - [ ] Delete the legacy surface in `packages/chat/src/server/trpc/service.ts` (the desktop-only tRPC service). Host-service is the only owner — this finishes Phase 3 of `host-service-chat-architecture.md`.
-- [ ] Remove `@superset/chat/client/provider` re-exports that nothing else imports.
+- [ ] Remove `@rox/chat/client/provider` re-exports that nothing else imports.
 - [ ] Update `AGENTS.md` / relevant docs to point at the new surface.
 
 **Acceptance:** zero references to the deleted surface in `apps/` or `packages/` (excluding `temp/`). CI green.
@@ -652,15 +652,15 @@ Depends on P5 (either P5a or P5b) — the event log has to be cloud-reachable.
   - [ ] Ownership renewal via heartbeat events every N seconds.
   - [ ] New runtime can claim after heartbeat timeout + grace window.
 - [ ] Laptop host-service handoff trigger:
-  - [ ] On graceful shutdown (lid close via macOS power notification, quit, explicit "handoff" command): stage + commit dirty workspace files to `superset/handoff/<sessionId>`, push, emit `handoff_ready`.
+  - [ ] On graceful shutdown (lid close via macOS power notification, quit, explicit "handoff" command): stage + commit dirty workspace files to `rox/handoff/<sessionId>`, push, emit `handoff_ready`.
   - [ ] On ungraceful loss (network drop + grace window expires): cloud coordinator declares the runtime dead, emits `turn_interrupted` if a turn was mid-flight.
 - [ ] On-demand cloud runtime spawn:
   - [ ] Coordinator service watches sessions with pending user messages and no active runtime.
-  - [ ] Spawns a Modal/Daytona/Fly-container sandbox, clones the repo, checks out the handoff branch (or `main` if no handoff branch), runs `.superset/setup.sh` if present.
+  - [ ] Spawns a Modal/Daytona/Fly-container sandbox, clones the repo, checks out the handoff branch (or `main` if no handoff branch), runs `.rox/setup.sh` if present.
   - [ ] New cloud runtime registers with the session via `runtime_registered`, picks up the pending message, runs the turn, streams events back.
 - [ ] Return-to-laptop flow:
   - [ ] Host-service reconnects, sees later events in the log authored by a cloud runtime.
-  - [ ] Pulls any ephemeral branches the cloud runtime pushed (e.g. `superset/cloud/<sessionId>/<turnId>`).
+  - [ ] Pulls any ephemeral branches the cloud runtime pushed (e.g. `rox/cloud/<sessionId>/<turnId>`).
   - [ ] UI surface: "your session ran in the cloud while you were away; here's the diff — merge or discard?"
 - [ ] Speculative runtime warming: when phone sends `typing` and no local runtime is reachable, emit a warming signal so the cloud coordinator starts spawning a sandbox speculatively. Hides cold-start latency.
 - [ ] Honest limitations to document:

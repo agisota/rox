@@ -1,5 +1,5 @@
 import { Agent } from "@mastra/core/agent";
-import { getSmallModel } from "@superset/chat/server/shared";
+import { getSmallModel } from "@rox/chat/server/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { workspaces } from "../../../../db/schema";

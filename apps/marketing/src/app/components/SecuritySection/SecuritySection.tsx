@@ -29,7 +29,7 @@ const SECURITY_FEATURES: {
 		icon: <HiOutlineSignal className="w-5 h-5 text-foreground/70" />,
 		title: "Local Control",
 		description:
-			"Superset runs on your machine and lets you choose which agents and external services to connect.",
+			"Rox runs on your machine and lets you choose which agents and external services to connect.",
 	},
 ];
 

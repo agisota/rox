@@ -6,7 +6,7 @@ import { join } from "node:path";
 import {
 	SIMPLE_GIT_UNSAFE_OPTION_FLAGS,
 	USER_GIT_ENV_SIMPLE_GIT_OPTIONS,
-} from "@superset/shared/simple-git-options";
+} from "@rox/shared/simple-git-options";
 import simpleGit, { type SimpleGit } from "simple-git";
 
 function makeBlockedGitEnv(workRoot: string): Record<string, string> {
@@ -56,7 +56,7 @@ describe("simple-git user env options", () => {
 	let workRoot: string;
 
 	beforeEach(() => {
-		workRoot = mkdtempSync(join(tmpdir(), "superset-git-client-"));
+		workRoot = mkdtempSync(join(tmpdir(), "rox-git-client-"));
 	});
 
 	afterEach(() => {

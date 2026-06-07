@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type {
-	JsonSchema,
-	SupersetWorkflowState,
-} from "@superset/workflow-core";
+import type { JsonSchema, RoxWorkflowState } from "@rox/workflow-core";
 import {
 	assertExactlyOneImplementationRef,
 	assertExposedVia,
@@ -14,7 +11,7 @@ import {
 	validatePublishInput,
 } from "./helpers";
 
-const validState: SupersetWorkflowState = {
+const validState: RoxWorkflowState = {
 	blocks: { start: { type: "start" }, response: { type: "response" } },
 	edges: [{ source: "start", target: "response" }],
 	variables: {},
@@ -50,7 +47,7 @@ describe("validatePublishInput (SKILL-02/03)", () => {
 		);
 	});
 	test("invalid graph => not ok", () => {
-		const cyclic: SupersetWorkflowState = {
+		const cyclic: RoxWorkflowState = {
 			...validState,
 			blocks: { start: { type: "start" }, b: { type: "condition" } },
 			edges: [

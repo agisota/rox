@@ -1,5 +1,5 @@
-import { usePromptInputController } from "@superset/ui/ai-elements/prompt-input";
-import { Popover, PopoverAnchor, PopoverContent } from "@superset/ui/popover";
+import { usePromptInputController } from "@rox/ui/ai-elements/prompt-input";
+import { Popover, PopoverAnchor, PopoverContent } from "@rox/ui/popover";
 import type { Editor } from "@tiptap/core";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";

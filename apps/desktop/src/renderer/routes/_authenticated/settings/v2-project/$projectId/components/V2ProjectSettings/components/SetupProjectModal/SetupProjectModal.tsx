@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -6,11 +6,11 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@superset/ui/tabs";
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { toast } from "@rox/ui/sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import { useEffect, useState } from "react";
 import { LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
 import { RemotePathPicker } from "renderer/components/RemotePathPicker";

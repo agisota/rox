@@ -1,5 +1,5 @@
-import { CLIError } from "@superset/cli-framework";
-import { getHostId } from "@superset/shared/host-info";
+import { CLIError } from "@rox/cli-framework";
+import { getHostId } from "@rox/shared/host-info";
 import { formatDistanceToNowStrict } from "date-fns";
 import type { ApiClient } from "../../lib/api-client";
 import { command } from "../../lib/command";
@@ -41,7 +41,7 @@ export default command({
 	run: async ({ ctx }) => {
 		const organization = await ctx.api.user.myOrganization.query();
 		if (!organization)
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 
 		const localHostId = getHostId();
 		const manifest = readManifest(organization.id);

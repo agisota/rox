@@ -1,5 +1,5 @@
-import type { AgentDefinitionId } from "@superset/shared/agent-catalog";
-import type { ResolvedAgentConfig } from "@superset/shared/agent-settings";
+import type { AgentDefinitionId } from "@rox/shared/agent-catalog";
+import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
 
 /**
  * Discriminated union of every kind of source that can contribute context
@@ -133,7 +133,7 @@ export interface LaunchContext {
  *   - Anthropic Messages API: system blocks + user content parts.
  *   - AI SDK v3: ModelMessage with ContentPart[].
  *   - Terminal adapters: flatten system+user to prompt text, write
- *     attachments to .superset/attachments/, reference by path.
+ *     attachments to .rox/attachments/, reference by path.
  */
 export interface AgentLaunchSpec {
 	agentId: AgentDefinitionId;

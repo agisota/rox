@@ -1,9 +1,9 @@
-import type { WorkspaceState } from "@superset/panes";
+import type { WorkspaceState } from "@rox/panes";
 import type {
 	AgentLifecyclePayload,
 	TerminalLifecyclePayload,
-} from "@superset/workspace-client";
-import { getEventBus } from "@superset/workspace-client";
+} from "@rox/workspace-client";
+import { getEventBus } from "@rox/workspace-client";
 import { useEffect, useEffectEvent, useMemo } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceWsToken } from "renderer/lib/host-service-auth";

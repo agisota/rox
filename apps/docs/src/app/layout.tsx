@@ -1,7 +1,7 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata } from "next";
 import "./global.css";
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY } from "@rox/shared/constants";
 import { Inter } from "next/font/google";
 import { NavigationBar } from "@/app/components/NavigationBar";
 import { NavbarProvider } from "@/app/components/NavigationBar/components/NavigationMobile";
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		title: `${COMPANY.NAME} Documentation`,
 		description: `Official documentation for ${COMPANY.NAME} - the terminal for coding agents.`,
-		creator: "@superset_sh",
+		creator: "@rox_sh",
 	},
 	robots: {
 		index: true,

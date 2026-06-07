@@ -40,7 +40,7 @@ V2's `PRLinkCommand` uses the host-service `searchPullRequests` endpoint for tex
 
 ## Research: V1 vs VS Code vs GitHub Desktop
 
-### V1 (Superset)
+### V1 (Rox)
 
 A single regex that only matches full HTTPS GitHub.com PR URLs:
 
@@ -86,7 +86,7 @@ GitHub Desktop also **does not** support pasting PR URLs in its search. Its appr
 
 **Key takeaway:** GitHub Desktop sidesteps the URL paste problem entirely by pre-loading all PRs and doing client-side fuzzy search. The `#123` syntax works naturally because the subtitle string includes `#${prNumber}`. Their remote parsing is comprehensive (5 regex patterns, GHE support) but only used for git remotes, not browser URLs.
 
-### Other Superset Parsers
+### Other Rox Parsers
 
 The codebase has several git remote URL parsers, none for PR URLs:
 

@@ -1,11 +1,11 @@
-import type { ExternalApp } from "@superset/local-db";
+import type { ExternalApp } from "@rox/local-db";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import { useState } from "react";
 import { LuExternalLink } from "react-icons/lu";
 import { OpenInExternalDropdownItems } from "renderer/components/OpenInExternalDropdown";

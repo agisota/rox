@@ -1,13 +1,13 @@
-import type { GitHubStatus, PullRequestComment } from "@superset/local-db";
-import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
+import type { GitHubStatus, PullRequestComment } from "@rox/local-db";
+import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
-import { Skeleton } from "@superset/ui/skeleton";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/collapsible";
+import { Skeleton } from "@rox/ui/skeleton";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import { useEffect, useRef, useState } from "react";
 import {
 	LuArrowUpRight,

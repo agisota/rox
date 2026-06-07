@@ -1,5 +1,5 @@
-import { db } from "@superset/db/client";
-import { taskStatuses } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { taskStatuses } from "@rox/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";

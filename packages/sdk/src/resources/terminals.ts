@@ -1,4 +1,4 @@
-import { SupersetError } from "../core/error";
+import { RoxError } from "../core/error";
 import { APIResource } from "../core/resource";
 
 /**
@@ -28,7 +28,7 @@ export class Terminals extends APIResource {
 				},
 			);
 			if (!cloud) {
-				throw new SupersetError(`Workspace not found: ${params.workspaceId}`);
+				throw new RoxError(`Workspace not found: ${params.workspaceId}`);
 			}
 			hostId = cloud.hostId;
 		}
@@ -45,8 +45,8 @@ export class Terminals extends APIResource {
 
 	private _requireOrgId(): string {
 		if (!this._client.organizationId) {
-			throw new SupersetError(
-				"organizationId is required. Set SUPERSET_ORGANIZATION_ID, or pass `organizationId` to the Superset constructor.",
+			throw new RoxError(
+				"organizationId is required. Set ROX_ORGANIZATION_ID, or pass `organizationId` to the Rox constructor.",
 			);
 		}
 		return this._client.organizationId;

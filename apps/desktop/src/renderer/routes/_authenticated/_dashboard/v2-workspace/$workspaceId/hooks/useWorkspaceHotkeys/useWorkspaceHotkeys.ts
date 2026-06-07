@@ -4,7 +4,7 @@ import {
 	getSpatialNeighborPaneId,
 	type PaneRegistry,
 	type WorkspaceStore,
-} from "@superset/panes";
+} from "@rox/panes";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { useHotkey } from "renderer/hotkeys";

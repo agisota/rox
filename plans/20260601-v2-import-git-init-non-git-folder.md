@@ -4,7 +4,7 @@
 
 When a user imports a folder that is **not yet a git repository**, v2 hard-errors with
 `Not a git repository: <path>` instead of offering to initialize one. This is the likely
-root cause of issue [#5033](https://github.com/superset-sh/superset/issues/5033) ("why
+root cause of issue [#5033](https://github.com/agisota/set/issues/5033) ("why
 cannot import local git folder without remote?") — the report is really about a *non-git*
 folder, not a remote-less one (remote-less repos already import fine).
 

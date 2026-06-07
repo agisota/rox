@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-	type SupersetWorkflowState,
+	type RoxWorkflowState,
 	WORKFLOW_CORE_VERSION,
 	WorkflowError,
 	WorkflowErrorCode,
@@ -22,7 +22,7 @@ describe("workflow-core smoke", () => {
 	});
 
 	test("workflow state shape is constructible", () => {
-		const state: SupersetWorkflowState = {
+		const state: RoxWorkflowState = {
 			blocks: { start: { type: "start" } },
 			edges: [],
 			variables: {},

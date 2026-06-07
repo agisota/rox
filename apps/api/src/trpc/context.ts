@@ -1,14 +1,14 @@
-import { auth, type Session } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import * as authSchema from "@superset/db/schema/auth";
-import { createTRPCContext } from "@superset/trpc";
+import { auth, type Session } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import * as authSchema from "@rox/db/schema/auth";
+import { createTRPCContext } from "@rox/trpc";
 import { verifyAccessToken } from "better-auth/oauth2";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
 
 const apiUrl = env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
 
-const TRUSTED_API_CLIENTS = new Set(["superset-cli"]);
+const TRUSTED_API_CLIENTS = new Set(["rox-cli"]);
 
 function looksLikeJwt(token: string): boolean {
 	const parts = token.split(".");

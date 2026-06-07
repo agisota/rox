@@ -1,4 +1,4 @@
-import { objectTypeValues } from "@superset/db/enums";
+import { objectTypeValues } from "@rox/db/enums";
 import { z } from "zod";
 import { jsonSchemaSchema } from "../workflow/schema";
 

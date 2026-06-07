@@ -1,7 +1,7 @@
 import { createNodeWebSocket } from "@hono/node-ws";
 import { trpcServer } from "@hono/trpc-server";
 import { Octokit } from "@octokit/rest";
-import { ChatService } from "@superset/chat/server/desktop";
+import { ChatService } from "@rox/chat/server/desktop";
 import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";

@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import type { V2WorkspacePrReviewDecision } from "renderer/routes/_authenticated/_dashboard/v2-workspaces/hooks/useAccessibleV2Workspaces";
 
 const REVIEW_BADGE_STYLES: Record<V2WorkspacePrReviewDecision, string> = {

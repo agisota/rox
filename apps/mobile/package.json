@@ -1,5 +1,5 @@
 {
-	"name": "@superset/mobile",
+	"name": "@rox/mobile",
 	"version": "1.0.0",
 	"main": "expo-router/entry",
 	"scripts": {
@@ -41,9 +41,9 @@
 		"@rn-primitives/toggle": "1.4.0",
 		"@rn-primitives/toggle-group": "1.4.0",
 		"@rn-primitives/tooltip": "1.4.0",
-		"@superset/auth": "workspace:*",
-		"@superset/db": "workspace:*",
-		"@superset/trpc": "workspace:*",
+		"@rox/auth": "workspace:*",
+		"@rox/db": "workspace:*",
+		"@rox/trpc": "workspace:*",
 		"@tanstack/db": "0.6.5",
 		"@tanstack/electric-db-collection": "0.3.3",
 		"@tanstack/react-db": "0.1.83",

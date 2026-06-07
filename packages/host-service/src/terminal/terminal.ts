@@ -7,12 +7,12 @@ import {
 	SHELLS_WITH_READY_MARKER,
 	type ShellReadyScanState,
 	scanForShellReady,
-} from "@superset/shared/shell-ready-scanner";
+} from "@rox/shared/shell-ready-scanner";
 import {
 	createTerminalTitleScanState,
 	scanForTerminalTitle,
 	type TerminalTitleScanState,
-} from "@superset/shared/terminal-title-scanner";
+} from "@rox/shared/terminal-title-scanner";
 import { and, eq, ne } from "drizzle-orm";
 import type { Hono } from "hono";
 import { isProcessAlive, readPtyDaemonManifest } from "../daemon/manifest.ts";
@@ -188,7 +188,7 @@ type TerminalSocket = {
 
 // ---------------------------------------------------------------------------
 // OSC 133 shell readiness detection (FinalTerm semantic prompt standard).
-// Scanner logic lives in @superset/shared/shell-ready-scanner.
+// Scanner logic lives in @rox/shared/shell-ready-scanner.
 // ---------------------------------------------------------------------------
 
 /** Flush partial OSC 133;A prefix bytes the scanner is holding if a full marker never arrives. */
@@ -624,7 +624,7 @@ function isUnknownDaemonSessionError(error: unknown): boolean {
 }
 
 function reachableDaemonSocketPath(): string | null {
-	const explicitSocket = process.env.SUPERSET_PTY_DAEMON_SOCKET;
+	const explicitSocket = process.env.ROX_PTY_DAEMON_SOCKET;
 	if (explicitSocket) return explicitSocket;
 
 	const organizationId = process.env.ORGANIZATION_ID;
@@ -913,13 +913,13 @@ export async function createTerminalSessionInternal({
 
 	// Use the preserved shell snapshot — never live process.env
 	const baseEnv = getTerminalBaseEnv();
-	const supersetHomeDir = process.env.SUPERSET_HOME_DIR || "";
+	const roxHomeDir = process.env.ROX_HOME_DIR || "";
 	const shell = resolveLaunchShell(baseEnv);
-	const shellArgs = getShellLaunchArgs({ shell, supersetHomeDir });
+	const shellArgs = getShellLaunchArgs({ shell, roxHomeDir });
 	const ptyEnv = buildV2TerminalEnv({
 		baseEnv,
 		shell,
-		supersetHomeDir,
+		roxHomeDir,
 		themeType,
 		cwd,
 		terminalId,
@@ -927,10 +927,10 @@ export async function createTerminalSessionInternal({
 		workspacePath: workspace.worktreePath,
 		rootPath,
 		hostServiceVersion: process.env.HOST_SERVICE_VERSION || "unknown",
-		supersetEnv:
+		roxEnv:
 			process.env.NODE_ENV === "development" ? "development" : "production",
-		agentHookPort: process.env.SUPERSET_AGENT_HOOK_PORT || "",
-		agentHookVersion: process.env.SUPERSET_AGENT_HOOK_VERSION || "",
+		agentHookPort: process.env.ROX_AGENT_HOOK_PORT || "",
+		agentHookVersion: process.env.ROX_AGENT_HOOK_VERSION || "",
 		hostAgentHookUrl: getHostAgentHookUrl(),
 	});
 

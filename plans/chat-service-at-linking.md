@@ -174,7 +174,7 @@ Desktop main process routes `workspace.searchFiles` based on workspace type:
 ```
 packages/chat-service/
   package.json                               deps: fast-glob, fuse.js, @electric-sql/client,
-  tsconfig.json                                    @superset/db, @superset/durable-session
+  tsconfig.json                                    @rox/db, @rox/durable-session
   src/                                             peerDeps: react, @trpc/react-query
     index.ts                                 barrel: server-side exports
     router/
@@ -241,8 +241,8 @@ Migrate from: `apps/desktop/src/main/lib/agent-manager/utils/models.ts`
 ### Step 3: Desktop integration
 
 **Modify:** `apps/desktop/src/lib/trpc/routers/agent-manager/` → rename to `chat-service/`
-- Import `searchFiles`, `AgentManager` from `@superset/chat-service`
-- Import Zod schemas from `@superset/chat-service/router`
+- Import `searchFiles`, `AgentManager` from `@rox/chat-service`
+- Import Zod schemas from `@rox/chat-service/router`
 - Add `workspace.searchFiles`, `workspace.getSlashCommands` procedures
 - Add `session.isActive`, `session.activate` procedures
 - Keep agent lifecycle as host-specific procedures (start/stop AgentManager)
@@ -254,7 +254,7 @@ Migrate from: `apps/desktop/src/main/lib/agent-manager/utils/models.ts`
 
 **Modify:** Renderer — wrap chat UI with `chatService.Provider`:
 ```tsx
-import { chatService } from "@superset/chat-service/client";
+import { chatService } from "@rox/chat-service/client";
 // Create IPC client, wrap ChatInterface with chatService.Provider
 ```
 

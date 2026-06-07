@@ -9,16 +9,16 @@ import {
 	settings,
 	TERMINAL_LINK_BEHAVIORS,
 	type TerminalPreset,
-} from "@superset/local-db";
+} from "@rox/local-db";
 import {
 	AGENT_PRESET_COMMANDS,
 	AGENT_PRESET_DESCRIPTIONS,
 	DEFAULT_TERMINAL_PRESET_AGENT_TYPES,
-} from "@superset/shared/agent-command";
+} from "@rox/shared/agent-command";
 import {
 	applyLegacyPermissionsOverrides,
 	terminalPresetsMatchPre3546Seed,
-} from "@superset/shared/agent-permissions-migration";
+} from "@rox/shared/agent-permissions-migration";
 import {
 	type AgentDefinitionId,
 	applyCustomAgentDefinitionPatch,
@@ -31,7 +31,7 @@ import {
 	resetAllAgentPresetOverrides,
 	resolveAgentConfigs,
 	upsertCustomAgentDefinition,
-} from "@superset/shared/agent-settings";
+} from "@rox/shared/agent-settings";
 import { TRPCError } from "@trpc/server";
 import { app } from "electron";
 import { env } from "main/env.main";

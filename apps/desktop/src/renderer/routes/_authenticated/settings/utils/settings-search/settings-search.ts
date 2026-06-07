@@ -49,7 +49,7 @@ export const SETTING_ITEM_ID = {
 	MODELS_ANTHROPIC: "models-anthropic",
 	MODELS_OPENAI: "models-openai",
 
-	EXPERIMENTAL_SUPERSET_V2: "experimental-superset-v2",
+	EXPERIMENTAL_ROX_V2: "experimental-rox-v2",
 	EXPERIMENTAL_V1_MIGRATION: "experimental-v1-migration",
 	EXPERIMENTAL_RERUN_ONBOARDING: "experimental-rerun-onboarding",
 
@@ -159,7 +159,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.MODELS_ANTHROPIC]: "shared",
 	[SETTING_ITEM_ID.MODELS_OPENAI]: "shared",
 
-	[SETTING_ITEM_ID.EXPERIMENTAL_SUPERSET_V2]: "shared",
+	[SETTING_ITEM_ID.EXPERIMENTAL_ROX_V2]: "shared",
 	[SETTING_ITEM_ID.EXPERIMENTAL_V1_MIGRATION]: "v2",
 	[SETTING_ITEM_ID.EXPERIMENTAL_RERUN_ONBOARDING]: "v2",
 
@@ -636,7 +636,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"visible",
 			"show",
 			"hide",
-			"superset chat",
+			"rox chat",
 			"claude",
 			"codex",
 			"pi",
@@ -673,7 +673,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"variables",
 			"prompt",
 			"task",
-			"superset chat",
+			"rox chat",
 			"launch",
 		],
 	},
@@ -862,10 +862,10 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		],
 	},
 	{
-		id: SETTING_ITEM_ID.EXPERIMENTAL_SUPERSET_V2,
+		id: SETTING_ITEM_ID.EXPERIMENTAL_ROX_V2,
 		section: "experimental",
-		title: "Try Superset Version 2 (Early Access)",
-		description: "Switch between Superset V1 and the new V2 experience",
+		title: "Try Rox Version 2 (Early Access)",
+		description: "Switch between Rox V1 and the new V2 experience",
 		keywords: [
 			"experimental",
 			"experiments",
@@ -1106,7 +1106,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		id: SETTING_ITEM_ID.PROJECT_IMPORT_WORKTREES,
 		section: "project",
 		title: "Import Worktrees",
-		description: "Import existing worktrees from disk into Superset",
+		description: "Import existing worktrees from disk into Rox",
 		keywords: [
 			"project",
 			"import",
@@ -1261,7 +1261,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		section: "security",
 		title: "Allow remote workspaces to access this device via relay",
 		description:
-			"Controls whether remote workspaces can reach your local host service through the Superset relay",
+			"Controls whether remote workspaces can reach your local host service through the Rox relay",
 		keywords: [
 			"security",
 			"relay",

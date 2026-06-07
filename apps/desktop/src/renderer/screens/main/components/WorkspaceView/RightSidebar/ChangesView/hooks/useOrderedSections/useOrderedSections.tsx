@@ -1,5 +1,5 @@
-import { Button } from "@superset/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { Button } from "@rox/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import type { ReactNode } from "react";
 import { VscAdd, VscDiscard, VscRemove } from "react-icons/vsc";
 import { getOrderedChangeSectionIds } from "renderer/stores/changes/section-order";

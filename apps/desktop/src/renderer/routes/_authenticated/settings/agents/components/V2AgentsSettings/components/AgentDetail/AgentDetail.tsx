@@ -1,10 +1,10 @@
-import type { HostAgentConfig } from "@superset/host-service/settings";
-import type { PromptTransport } from "@superset/shared/agent-prompt-launch";
-import { Button } from "@superset/ui/button";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
+import type { HostAgentConfig } from "@rox/host-service/settings";
+import type { PromptTransport } from "@rox/shared/agent-prompt-launch";
+import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import { useMutation } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";

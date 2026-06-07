@@ -12,7 +12,7 @@ mock.module("@/lib/analytics", () => ({
 	posthog: { capture: () => undefined },
 }));
 
-mock.module("@superset/db/client", () => ({
+mock.module("@rox/db/client", () => ({
 	db: {
 		query: { usersSlackUsers: { findFirst: findSlackUser } },
 		update: () => ({ set: () => ({ where: async () => undefined }) }),
@@ -20,7 +20,7 @@ mock.module("@superset/db/client", () => ({
 	},
 }));
 
-mock.module("@superset/db/schema", () => ({
+mock.module("@rox/db/schema", () => ({
 	usersSlackUsers: {
 		slackUserId: "slackUserId",
 		teamId: "teamId",

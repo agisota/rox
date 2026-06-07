@@ -1,4 +1,4 @@
-import type { ThinkingLevel } from "@superset/ui/ai-elements/thinking-toggle";
+import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 
 export type ChatSendMessageInput = {
 	payload: {

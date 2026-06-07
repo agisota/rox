@@ -1,5 +1,5 @@
-import { cn } from "@superset/ui/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { cn } from "@rox/ui/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { ArrowUpIcon, Loader2Icon, PencilIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

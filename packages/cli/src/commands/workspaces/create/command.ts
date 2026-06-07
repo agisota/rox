@@ -1,4 +1,4 @@
-import { boolean, CLIError, number, string } from "@superset/cli-framework";
+import { boolean, CLIError, number, string } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { requireHostTarget, resolveHostTarget } from "../../../lib/host-target";
 import { uploadAttachments } from "../../../lib/upload-attachments";
@@ -16,7 +16,7 @@ export default command({
 			"Branch to fork from when `branch` does not exist (defaults to project default)",
 		),
 		agent: string().desc(
-			"Agent to spawn after creation. Preset id (`claude`, `codex`, …), HostAgentConfig instance UUID, or `superset`",
+			"Agent to spawn after creation. Preset id (`claude`, `codex`, …), HostAgentConfig instance UUID, or `rox`",
 		),
 		prompt: string().desc(
 			"Initial prompt the agent starts with. Required when --agent is set",
@@ -33,7 +33,7 @@ export default command({
 	run: async ({ ctx, options }) => {
 		const organizationId = ctx.config.organizationId;
 		if (!organizationId) {
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 		}
 
 		if (Boolean(options.branch) === Boolean(options.pr)) {

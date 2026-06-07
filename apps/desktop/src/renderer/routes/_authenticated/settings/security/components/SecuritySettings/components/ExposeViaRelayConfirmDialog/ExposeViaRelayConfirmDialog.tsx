@@ -5,10 +5,10 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import { useEffect, useState } from "react";
 
 const CONFIRM_PHRASE = "I understand";
@@ -52,12 +52,12 @@ export function ExposeViaRelayConfirmDialog({
 							{targetEnabled ? (
 								<p>
 									Remote workspaces you grant access to will be able to reach
-									this device through Superset Relay.
+									this device through Rox Relay.
 								</p>
 							) : (
 								<p>
 									Remote workspaces will no longer be able to reach this device
-									through Superset Relay.
+									through Rox Relay.
 								</p>
 							)}
 						</div>

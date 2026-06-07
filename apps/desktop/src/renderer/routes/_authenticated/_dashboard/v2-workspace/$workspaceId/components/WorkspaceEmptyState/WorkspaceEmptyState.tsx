@@ -4,7 +4,7 @@ import { BsTerminalPlus } from "react-icons/bs";
 import { LuSearch } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { useHotkeyDisplay } from "renderer/hotkeys";
-import supersetEmptyStateWordmark from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/assets/superset-empty-state-wordmark.svg";
+import roxEmptyStateWordmark from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/assets/rox-empty-state-wordmark.svg";
 import { EmptyTabActionButton } from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/components/EmptyTabActionButton";
 import { useTheme } from "renderer/stores/theme";
 
@@ -83,14 +83,14 @@ export function WorkspaceEmptyState({
 			<div className="w-full max-w-xl">
 				<div className="mb-7 flex items-center justify-center py-3">
 					<img
-						alt="Superset"
+						alt="Rox"
 						className={`h-8 w-auto select-none ${
 							activeTheme?.type === "dark"
 								? "opacity-85"
 								: "brightness-0 opacity-75"
 						}`}
 						draggable={false}
-						src={supersetEmptyStateWordmark}
+						src={roxEmptyStateWordmark}
 					/>
 				</div>
 				<div className="mx-auto grid w-full max-w-md gap-0.5">

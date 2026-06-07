@@ -14,7 +14,7 @@ import {
 	type ProcessSignalTarget,
 	signalProcessTargets,
 	signalProcessTreeAndGroups,
-} from "@superset/pty-daemon/process-tree";
+} from "@rox/pty-daemon/process-tree";
 import type { IPty } from "node-pty";
 import * as pty from "node-pty";
 import treeKill from "tree-kill";
@@ -70,7 +70,7 @@ const MAX_OUTPUT_BATCH_SIZE_BYTES = 128 * 1024; // 128KB max per flush
 let stdoutDraining = true;
 let ptyPaused = false;
 
-const DEBUG_OUTPUT_BATCHING = process.env.SUPERSET_PTY_SUBPROCESS_DEBUG === "1";
+const DEBUG_OUTPUT_BATCHING = process.env.ROX_PTY_SUBPROCESS_DEBUG === "1";
 
 // =============================================================================
 // Helpers
@@ -311,7 +311,7 @@ function handleSpawn(payload: Buffer): void {
 			cols: msg.cols,
 			rows: msg.rows,
 			ZDOTDIR: msg.env.ZDOTDIR,
-			SUPERSET_ORIG_ZDOTDIR: msg.env.SUPERSET_ORIG_ZDOTDIR,
+			ROX_ORIG_ZDOTDIR: msg.env.ROX_ORIG_ZDOTDIR,
 			PATH_start: msg.env.PATH?.substring(0, 100),
 		});
 	}

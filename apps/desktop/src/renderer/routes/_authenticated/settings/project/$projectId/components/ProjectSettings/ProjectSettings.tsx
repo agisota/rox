@@ -1,8 +1,8 @@
-import type { BranchPrefixMode } from "@superset/local-db";
+import type { BranchPrefixMode } from "@rox/local-db";
 import {
 	resolveBranchPrefix,
 	sanitizeSegment,
-} from "@superset/shared/workspace-launch";
+} from "@rox/shared/workspace-launch";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -13,20 +13,20 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	AlertDialogTrigger,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
-import { toast } from "@superset/ui/sonner";
-import { Switch } from "@superset/ui/switch";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/select";
+import { toast } from "@rox/ui/sonner";
+import { Switch } from "@rox/ui/switch";
+import { cn } from "@rox/ui/utils";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LuImagePlus, LuTrash2 } from "react-icons/lu";
@@ -492,9 +492,9 @@ export function ProjectSettings({
 														{importableExternalWorktrees.length === 1
 															? ""
 															: "s"}{" "}
-														into Superset as workspaces. Each worktree on disk
-														will be tracked and appear in your sidebar. No files
-														will be modified.
+														into Rox as workspaces. Each worktree on disk will
+														be tracked and appear in your sidebar. No files will
+														be modified.
 													</AlertDialogDescription>
 												</AlertDialogHeader>
 												<AlertDialogFooter>

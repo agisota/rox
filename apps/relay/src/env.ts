@@ -11,7 +11,7 @@ export const env = createEnv({
 		FLY_MACHINE_ID: z.string().default("local"),
 		RELAY_SENTRY_DSN: z.string().url().optional(),
 		RELAY_SYNTHETIC_JWT: z.string().min(1).optional(),
-		RELAY_PUBLIC_URL: z.url().default("https://relay.superset.sh"),
+		RELAY_PUBLIC_URL: z.url().default("https://relay.rox.one"),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

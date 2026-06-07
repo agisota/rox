@@ -1,12 +1,12 @@
-import { alert } from "@superset/ui/atoms/Alert";
-import { Button } from "@superset/ui/button";
+import { alert } from "@rox/ui/atoms/Alert";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogClose,
 	DialogContent,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dialog";
+import { toast } from "@rox/ui/sonner";
 import {
 	keepPreviousData,
 	useMutation,

@@ -4,9 +4,9 @@ import {
 	PromptInputAttachments,
 	type PromptInputMessage,
 	usePromptInputController,
-} from "@superset/ui/ai-elements/prompt-input";
-import type { ThinkingLevel } from "@superset/ui/ai-elements/thinking-toggle";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/ui/ai-elements/prompt-input";
+import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
+import { workspaceTrpc } from "@rox/workspace-client";
 import type { ChatStatus, FileUIPart } from "ai";
 import type React from "react";
 import type { ReactNode } from "react";

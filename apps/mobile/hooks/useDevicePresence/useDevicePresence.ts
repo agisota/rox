@@ -6,7 +6,7 @@ import { Platform } from "react-native";
 import { useSession } from "@/lib/auth/client";
 import { apiClient } from "@/lib/trpc/client";
 
-const DEVICE_ID_KEY = "superset-device-id";
+const DEVICE_ID_KEY = "rox-device-id";
 
 async function getOrCreateDeviceId(): Promise<string> {
 	const existingId = await SecureStore.getItemAsync(DEVICE_ID_KEY).catch(

@@ -1,4 +1,4 @@
-import { settings } from "@superset/local-db";
+import { settings } from "@rox/local-db";
 import {
 	CUSTOM_RINGTONE_ID,
 	DEFAULT_RINGTONE_ID,

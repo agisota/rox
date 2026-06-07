@@ -1,4 +1,4 @@
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY } from "@rox/shared/constants";
 import { getBlogPosts } from "@/lib/blog";
 import { getComparisonPages } from "@/lib/compare";
 import { FAQ_ITEMS } from "../components/FAQSection/constants";

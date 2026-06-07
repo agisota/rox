@@ -1,5 +1,5 @@
-import type { ResolvedAgentConfig } from "@superset/shared/agent-settings";
-import { Button } from "@superset/ui/button";
+import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
+import { Button } from "@rox/ui/button";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 
 interface AgentCardPreviewProps {

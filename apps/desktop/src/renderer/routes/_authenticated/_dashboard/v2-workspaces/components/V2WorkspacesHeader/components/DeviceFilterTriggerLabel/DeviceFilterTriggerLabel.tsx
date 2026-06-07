@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { LuLaptop, LuLayers, LuMonitor } from "react-icons/lu";
 import {
 	DEVICE_FILTER_ALL,

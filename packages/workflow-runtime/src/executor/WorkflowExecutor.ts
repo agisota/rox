@@ -1,11 +1,11 @@
 import {
 	isSkillCallType,
-	type SupersetEdge,
-	type SupersetWorkflowState,
+	type RoxEdge,
+	type RoxWorkflowState,
 	skillSlugFromType,
 	validateGraph,
 	validateOutput,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { Redactor } from "../context/Redactor";
 import type {
 	BlockHandler,
@@ -40,7 +40,7 @@ function mergeInputs(
  */
 export class WorkflowExecutor {
 	async execute(
-		state: SupersetWorkflowState,
+		state: RoxWorkflowState,
 		runInput: Record<string, unknown>,
 		options: ExecuteOptions = {},
 	): Promise<RunResult> {
@@ -72,7 +72,7 @@ export class WorkflowExecutor {
 			};
 		}
 
-		const incoming = new Map<string, SupersetEdge[]>();
+		const incoming = new Map<string, RoxEdge[]>();
 		for (const edge of state.edges) {
 			const list = incoming.get(edge.target) ?? [];
 			list.push(edge);
@@ -84,7 +84,7 @@ export class WorkflowExecutor {
 		const outputs = new Map<string, Record<string, unknown>>();
 		let runOutput: Record<string, unknown> | undefined;
 
-		const edgeFires = (edge: SupersetEdge): boolean => {
+		const edgeFires = (edge: RoxEdge): boolean => {
 			if (!active.get(edge.source)) return false;
 			if (edge.sourceHandle == null) return true;
 			return chosenHandle.get(edge.source) === edge.sourceHandle;
@@ -285,7 +285,7 @@ export class WorkflowExecutor {
 	}
 }
 
-function firstStart(state: SupersetWorkflowState): string | undefined {
+function firstStart(state: RoxWorkflowState): string | undefined {
 	for (const [id, block] of Object.entries(state.blocks)) {
 		if (block.type === "start") return id;
 	}

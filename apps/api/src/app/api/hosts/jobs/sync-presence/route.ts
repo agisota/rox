@@ -1,4 +1,4 @@
-import { db } from "@superset/db/client";
+import { db } from "@rox/db/client";
 import { Receiver } from "@upstash/qstash";
 import { Redis } from "@upstash/redis";
 import { sql } from "drizzle-orm";

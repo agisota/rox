@@ -1,21 +1,21 @@
-import type { GitHubStatus } from "@superset/local-db";
-import { Button } from "@superset/ui/button";
+import type { GitHubStatus } from "@rox/local-db";
+import { Button } from "@rox/ui/button";
 import {
 	Command,
 	CommandEmpty,
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
+} from "@rox/ui/command";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+} from "@rox/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	VscCheck,

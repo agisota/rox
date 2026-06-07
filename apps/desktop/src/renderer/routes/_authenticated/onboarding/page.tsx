@@ -1,8 +1,8 @@
-import { chatServiceTrpc } from "@superset/chat/client";
-import { Badge } from "@superset/ui/badge";
-import { Button } from "@superset/ui/button";
-import { Spinner } from "@superset/ui/spinner";
-import { cn } from "@superset/ui/utils";
+import { chatServiceTrpc } from "@rox/chat/client";
+import { Badge } from "@rox/ui/badge";
+import { Button } from "@rox/ui/button";
+import { Spinner } from "@rox/ui/spinner";
+import { cn } from "@rox/ui/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { FaAws } from "react-icons/fa";
@@ -98,7 +98,7 @@ function OnboardingDashboardPage() {
 					actionIcon={<HiArrowUpRight className="size-3.5" />}
 					onAction={() =>
 						window.open(
-							"https://docs.superset.sh/providers",
+							"https://docs.rox.one/providers",
 							"_blank",
 							"noopener,noreferrer",
 						)

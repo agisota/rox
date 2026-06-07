@@ -1,12 +1,12 @@
-import type { SelectV2Workspace } from "@superset/db/schema";
+import type { SelectV2Workspace } from "@rox/db/schema";
 import {
 	Command,
 	CommandGroup,
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
+} from "@rox/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo, useState } from "react";
 import { HiCheck } from "react-icons/hi2";
