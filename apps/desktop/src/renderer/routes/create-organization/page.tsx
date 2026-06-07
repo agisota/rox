@@ -42,7 +42,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export function CreateOrganization() {
-	const { data: session } = authClient.useSession();
+	const { data: session, refetch: refetchSession } = authClient.useSession();
 	const isSignedIn = !!session?.user;
 	const activeOrganizationId = session?.session?.activeOrganizationId;
 	const signOutMutation = electronTrpc.auth.signOut.useMutation();
@@ -139,6 +139,13 @@ export function CreateOrganization() {
 			await authClient.organization.setActive({
 				organizationId: organization.id,
 			});
+
+			// Refresh the cached session so the authenticated layout sees the new
+			// activeOrganizationId before we navigate. Without this, useSession()
+			// still holds a stale null activeOrganizationId and the layout bounces
+			// the user straight back to /create-organization (see _authenticated
+			// layout's `if (!activeOrganizationId)` redirect).
+			await refetchSession();
 
 			toast.success("Organization created successfully!");
 			navigate({ to: "/" });
