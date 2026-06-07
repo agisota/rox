@@ -7,12 +7,14 @@ import {
 	useLocation,
 	useNavigate,
 } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";
 import { track } from "renderer/lib/analytics";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { motionDuration, useShouldAnimate } from "renderer/motion";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
 import { OnboardingNavigation } from "./components/OnboardingNavigation";
 
@@ -51,6 +53,7 @@ function OnboardingFlowLayout() {
 	const navigate = useNavigate();
 	const [skipping, setSkipping] = useState(false);
 	const { rerun } = Route.useSearch();
+	const shouldAnimate = useShouldAnimate("essential");
 
 	if (isPending) return null;
 	// Already-onboarded users are redirected out — unless they explicitly
@@ -106,16 +109,27 @@ function OnboardingFlowLayout() {
 				/>
 				<div className="flex-1 overflow-auto">
 					{currentStep ? (
-						<div className="mx-auto flex w-full max-w-2xl flex-col gap-10 px-8 pt-16 pb-6">
-							<div className="space-y-2">
-								<h1 className="text-2xl font-semibold text-foreground">
-									{currentStep.title}
-								</h1>
-								<p className="text-sm text-muted-foreground">
-									{currentStep.subtitle}
-								</p>
-							</div>
-							<Outlet />
+						<div className="mx-auto flex w-full max-w-2xl flex-col px-8 pt-16 pb-6">
+							<AnimatePresence mode="wait" initial={false}>
+								<motion.div
+									key={currentStepIdx}
+									className="flex flex-col gap-10"
+									initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
+									animate={{ opacity: 1, y: 0 }}
+									exit={shouldAnimate ? { opacity: 0, y: -8 } : undefined}
+									transition={{ duration: motionDuration.fast }}
+								>
+									<div className="space-y-2">
+										<h1 className="text-2xl font-semibold text-foreground">
+											{currentStep.title}
+										</h1>
+										<p className="text-sm text-muted-foreground">
+											{currentStep.subtitle}
+										</p>
+									</div>
+									<Outlet />
+								</motion.div>
+							</AnimatePresence>
 						</div>
 					) : (
 						<Outlet />

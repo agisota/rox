@@ -1,5 +1,6 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useDrop } from "react-dnd";
+import { useDragLayer, useDrop } from "react-dnd";
 import type { StoreApi } from "zustand/vanilla";
 import type { WorkspaceStore } from "../../../../../../../core/store";
 import type {
@@ -77,6 +78,19 @@ export function Pane<TData>({
 	contextMenuActions,
 }: PaneComponentProps<TData>) {
 	const definition = registry[pane.kind];
+
+	// Split-reveal: when a pane is mounted as the result of a split, animate its
+	// root container expanding from the shared split edge (transform+opacity only,
+	// leaving react-resizable-panels' layout math untouched). parentDirection is
+	// null only for the single root pane, which never results from a split.
+	const prefersReducedMotion = useReducedMotion();
+	const animateReveal = !prefersReducedMotion && parentDirection != null;
+	const initialReveal =
+		parentDirection === "horizontal"
+			? { opacity: 0, scaleX: 0.96 }
+			: { opacity: 0, scaleY: 0.96 };
+	const transformOrigin =
+		parentDirection === "horizontal" ? "left center" : "center top";
 
 	const tabs = store.getState().tabs;
 	const tabPosition = tabs.findIndex((t) => t.id === tab.id);
@@ -240,17 +254,48 @@ export function Pane<TData>({
 
 	const isDropTarget = isOver && canDrop;
 
+	// Workspace interaction dimmer: while any pane/tab drag is in flight, fade
+	// every non-target pane so the hovered drop target stays bright. Global drag
+	// detection via react-dnd's useDragLayer (already a dependency) means no new
+	// plumbing is needed. Opacity-only — no transform/layout — so xterm and
+	// CodeMirror pane content never blur or reflow during the interaction.
+	const isDragActive = useDragLayer((monitor) => monitor.isDragging());
+	const dimmed = isDragActive && !isOver;
+	const targetOpacity = dimmed ? 0.5 : 1;
+
 	return (
 		<PaneContextMenu actions={resolvedContextMenuActions} context={context}>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: clicking anywhere in a pane focuses it (standard IDE behavior) */}
-			<div
+			<motion.div
 				ref={setRefs}
 				className={`relative flex h-full w-full ${PANE_MIN_SIZE_CLASS_NAME} flex-col overflow-hidden`}
 				onMouseDown={context.actions.focus}
+				layout
+				initial={animateReveal ? initialReveal : false}
+				animate={
+					animateReveal
+						? { opacity: targetOpacity, scaleX: 1, scaleY: 1 }
+						: { opacity: targetOpacity }
+				}
+				exit={
+					prefersReducedMotion
+						? { opacity: 0, transition: { duration: 0 } }
+						: {
+								opacity: 0,
+								scale: 0.97,
+								transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
+							}
+				}
+				transition={
+					prefersReducedMotion
+						? { duration: 0 }
+						: { type: "spring", stiffness: 420, damping: 36, mass: 0.7 }
+				}
+				style={{ transformOrigin }}
 			>
 				<PaneHeader
 					title={title}
 					icon={icon}
+					iconKey={pane.kind}
 					isActive={isActive}
 					titleContent={titleContent}
 					headerExtras={headerExtras}
@@ -273,8 +318,8 @@ export function Pane<TData>({
 						</div>
 					)}
 				</PaneContent>
-				{isDropTarget && <DropZoneOverlay position={dropPosition} />}
-			</div>
+				<DropZoneOverlay position={isDropTarget ? dropPosition : null} />
+			</motion.div>
 		</PaneContextMenu>
 	);
 }

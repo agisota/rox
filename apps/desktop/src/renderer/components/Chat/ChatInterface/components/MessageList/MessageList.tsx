@@ -14,6 +14,7 @@ import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 import { FileMentionChip } from "renderer/components/Chat/components/FileMentionChip";
 import { LinkedTaskChip } from "renderer/components/Chat/components/LinkedTaskChip";
 import { parseUserMentions } from "renderer/components/Chat/utils/parseUserMentions";
+import { StatusPulse, useShouldAnimate } from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { InterruptedMessagePreview } from "../../types";
 import { normalizeWorkspaceFilePath } from "../../utils/file-paths";
@@ -78,6 +79,7 @@ export function MessageList({
 	const addFileViewerPane = useTabsStore((s) => s.addFileViewerPane);
 	const isThinking =
 		submitStatus === "submitted" || submitStatus === "streaming";
+	const allowDecorative = useShouldAnimate("decorative");
 
 	const handleImageClick = useCallback(
 		(url: string) => {
@@ -227,6 +229,18 @@ export function MessageList({
 
 						return (
 							<Message key={msg.id} from={msg.role}>
+								<div className="flex items-center gap-2">
+									<StatusPulse
+										active={
+											allowDecorative &&
+											(shouldAnimateStreaming || showThinking)
+										}
+									>
+										<span className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+											<HiMiniChatBubbleLeftRight className="size-3.5" />
+										</span>
+									</StatusPulse>
+								</div>
 								<MessageContent>
 									{showThinking ? (
 										<ShimmerLabel className="text-sm text-muted-foreground">
@@ -270,6 +284,13 @@ export function MessageList({
 				)}
 				{isThinking && messages[messages.length - 1]?.role === "user" && (
 					<Message from="assistant">
+						<div className="flex items-center gap-2">
+							<StatusPulse active={allowDecorative}>
+								<span className="flex size-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+									<HiMiniChatBubbleLeftRight className="size-3.5" />
+								</span>
+							</StatusPulse>
+						</div>
 						<MessageContent>
 							<ShimmerLabel className="text-sm text-muted-foreground">
 								Thinking...

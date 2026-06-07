@@ -17,6 +17,8 @@ interface UseDiffCodeViewScrollOptions {
 
 interface UseDiffCodeViewScrollResult {
 	targetItemId?: string;
+	/** Stable string that changes once per focus-jump; consumers key animated overlays on this. */
+	focusSignature?: string;
 }
 
 export function useDiffCodeViewScroll({
@@ -37,6 +39,16 @@ export function useDiffCodeViewScroll({
 		return map;
 	}, [items]);
 	const targetItemId = data.path ? pathToItemId.get(data.path) : undefined;
+
+	const focusSignature = useMemo(() => {
+		if (!data.path || !targetItemId || data.focusLine == null) return undefined;
+		return [
+			targetItemId,
+			data.focusLine ?? "",
+			data.focusSide ?? "",
+			data.focusTick ?? "",
+		].join(":");
+	}, [targetItemId, data.path, data.focusLine, data.focusSide, data.focusTick]);
 
 	useEffect(() => {
 		if (!data.path || !targetItemId) return;
@@ -88,5 +100,5 @@ export function useDiffCodeViewScroll({
 		setCollapsed,
 	]);
 
-	return { targetItemId };
+	return { targetItemId, focusSignature };
 }

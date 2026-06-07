@@ -1,5 +1,11 @@
 "use client";
 
+import {
+	type HTMLMotionProps,
+	motion,
+	type TargetAndTransition,
+	useReducedMotion,
+} from "motion/react";
 import { type ComponentProps, useLayoutEffect, useRef } from "react";
 import {
 	type OverflowFadeState,
@@ -48,6 +54,11 @@ export function OverflowFadeContainer({
 		canScrollLeft,
 	} = useOverflowFade<HTMLDivElement>({ observeChildren });
 
+	const prefersReduced = useReducedMotion();
+
+	const edgeSize = (edge: OverflowFadeEdge, canScroll: boolean) =>
+		fadeEdges.includes(edge) && canScroll ? "var(--fade-edge-size)" : "0px";
+
 	const setRef = (node: HTMLDivElement | null) => {
 		ref.current = node;
 		if (typeof forwardedRef === "function") {
@@ -81,16 +92,21 @@ export function OverflowFadeContainer({
 	]);
 
 	return (
-		<div
+		<motion.div
 			ref={setRef}
-			className={cn(
-				fadeEdges.includes("top") && canScrollTop && "fade-edge-t",
-				fadeEdges.includes("right") && canScrollRight && "fade-edge-r",
-				fadeEdges.includes("bottom") && canScrollBottom && "fade-edge-b",
-				fadeEdges.includes("left") && canScrollLeft && "fade-edge-l",
-				className,
-			)}
-			{...props}
+			className={cn("fade-edge-mask", className)}
+			animate={
+				{
+					"--fade-edge-t-size": edgeSize("top", canScrollTop),
+					"--fade-edge-r-size": edgeSize("right", canScrollRight),
+					"--fade-edge-b-size": edgeSize("bottom", canScrollBottom),
+					"--fade-edge-l-size": edgeSize("left", canScrollLeft),
+				} as TargetAndTransition
+			}
+			transition={
+				prefersReduced ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }
+			}
+			{...(props as HTMLMotionProps<"div">)}
 		/>
 	);
 }

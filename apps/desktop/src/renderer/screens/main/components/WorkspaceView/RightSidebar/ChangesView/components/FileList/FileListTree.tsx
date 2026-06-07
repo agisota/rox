@@ -47,6 +47,7 @@ interface FileListTreeProps {
 	isExpandedView?: boolean;
 	projectId?: string;
 	defaultApp?: ExternalApp | null;
+	activeIndicatorLayoutId?: string;
 }
 
 function buildFileTree(files: ChangedFile[]): FileTreeNode[] {
@@ -120,6 +121,7 @@ interface TreeNodeComponentProps {
 	isExpandedView?: boolean;
 	projectId?: string;
 	defaultApp?: ExternalApp | null;
+	activeIndicatorLayoutId?: string;
 }
 
 function TreeNodeComponent({
@@ -141,6 +143,7 @@ function TreeNodeComponent({
 	isExpandedView,
 	projectId,
 	defaultApp,
+	activeIndicatorLayoutId,
 }: TreeNodeComponentProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 	const hasChildren = node.children && node.children.length > 0;
@@ -215,6 +218,7 @@ function TreeNodeComponent({
 						isExpandedView={isExpandedView}
 						projectId={projectId}
 						defaultApp={defaultApp}
+						activeIndicatorLayoutId={activeIndicatorLayoutId}
 					/>
 				))}
 			</FolderRow>
@@ -240,6 +244,7 @@ function TreeNodeComponent({
 				category={category}
 				commitHash={commitHash}
 				isExpandedView={isExpandedView}
+				activeIndicatorLayoutId={activeIndicatorLayoutId}
 			/>
 		);
 	}
@@ -265,6 +270,7 @@ export function FileListTree({
 	isExpandedView,
 	projectId,
 	defaultApp,
+	activeIndicatorLayoutId,
 }: FileListTreeProps) {
 	const tree = useMemo(() => buildFileTree(files), [files]);
 
@@ -290,6 +296,7 @@ export function FileListTree({
 					isExpandedView={isExpandedView}
 					projectId={projectId}
 					defaultApp={defaultApp}
+					activeIndicatorLayoutId={activeIndicatorLayoutId}
 				/>
 			))}
 		</div>

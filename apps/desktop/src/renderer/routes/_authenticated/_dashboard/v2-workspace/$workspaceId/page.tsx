@@ -1,11 +1,17 @@
 import { Workspace } from "@rox/panes";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { createFileRoute } from "@tanstack/react-router";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuickOpenStore } from "renderer/commandPalette/ui/QuickOpen/quickOpenStore";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { useHotkey } from "renderer/hotkeys";
+import {
+	AnimatedHeight,
+	motionSpring,
+	useShouldAnimate,
+} from "renderer/motion";
 import { CommandPalette } from "renderer/screens/main/components/CommandPalette";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
 import { getV2NotificationSourcesForTab } from "renderer/stores/v2-notifications";
@@ -234,6 +240,9 @@ function V2WorkspaceContent() {
 		},
 		[onSidebarResizeDragging],
 	);
+	// Gate the right-sidebar presence transition on the user's motion preference
+	// (reduced motion / Off collapses it to an instant opacity swap).
+	const shouldAnimate = useShouldAnimate("essential");
 
 	// The sidebar slot lives at the dashboard layout level (next to TopBar) so
 	// the sidebar runs full-height. The slot is mounted by the parent layout
@@ -276,107 +285,132 @@ function V2WorkspaceContent() {
 	);
 
 	return (
-		<FileDocumentStoreProvider>
-			<WorkspaceGitStatusProvider
-				workspaceId={workspaceId}
-				store={store}
-				sidebarOpen={sidebarOpen}
-			>
-				<div className="flex min-h-0 min-w-0 flex-1">
-					<div
-						className="flex min-h-0 min-w-[320px] flex-1 flex-col overflow-hidden"
-						data-workspace-id={workspaceId}
-					>
-						<Workspace<PaneViewerData>
-							key={workspaceId}
-							registry={paneRegistry}
-							paneActions={defaultPaneActions}
-							contextMenuActions={defaultContextMenuActions}
-							renderTabIcon={renderBrowserTabIcon}
-							renderTabAccessory={(tab) => (
-								<V2NotificationStatusIndicator
-									sources={getV2NotificationSourcesForTab(tab)}
-								/>
-							)}
-							renderBelowTabBar={() =>
-								showPresetsBar ? (
-									<V2PresetsBar
-										matchedPresets={matchedPresets}
-										executePreset={executePreset}
+		// LayoutGroup gives the Quick Open exit-flourish and the (portalled) file
+		// pane a single, consistent `layoutId` namespace for the open-file shared
+		// transition (case 047). It only provides layout context — panes carry no
+		// `layoutId` children, so the virtualized/DnD pane tree is unaffected.
+		<LayoutGroup id="quickopen-file-transition">
+			<FileDocumentStoreProvider>
+				<WorkspaceGitStatusProvider
+					workspaceId={workspaceId}
+					store={store}
+					sidebarOpen={sidebarOpen}
+				>
+					<div className="flex min-h-0 min-w-0 flex-1">
+						<div
+							className="flex min-h-0 min-w-[320px] flex-1 flex-col overflow-hidden"
+							data-workspace-id={workspaceId}
+						>
+							<Workspace<PaneViewerData>
+								key={workspaceId}
+								registry={paneRegistry}
+								paneActions={defaultPaneActions}
+								contextMenuActions={defaultContextMenuActions}
+								renderTabIcon={renderBrowserTabIcon}
+								renderTabAccessory={(tab) => (
+									<V2NotificationStatusIndicator
+										sources={getV2NotificationSourcesForTab(tab)}
+									/>
+								)}
+								renderBelowTabBar={() => (
+									<div className="flex min-w-0 flex-col">
+										<AnimatedHeight open={showPresetsBar}>
+											<V2PresetsBar
+												matchedPresets={matchedPresets}
+												executePreset={executePreset}
+												showPresetsBar={showPresetsBar}
+												onToggleShowPresetsBar={setShowPresetsBar}
+											/>
+										</AnimatedHeight>
+										<div className="flex h-8 min-w-0 shrink-0 items-center justify-end border-b border-border bg-background px-2">
+											{workspaceRunButton}
+										</div>
+									</div>
+								)}
+								renderAddTabMenu={() => (
+									<AddTabMenu
+										onAddTerminal={addTerminalTab}
+										onAddChat={addChatTab}
+										onAddBrowser={addBrowserTab}
 										showPresetsBar={showPresetsBar}
 										onToggleShowPresetsBar={setShowPresetsBar}
-										trailing={workspaceRunButton}
 									/>
-								) : (
-									<div className="flex h-8 min-w-0 shrink-0 items-center border-b border-border bg-background px-2">
-										{workspaceRunButton}
-									</div>
-								)
-							}
-							renderAddTabMenu={() => (
-								<AddTabMenu
-									onAddTerminal={addTerminalTab}
-									onAddChat={addChatTab}
-									onAddBrowser={addBrowserTab}
-									showPresetsBar={showPresetsBar}
-									onToggleShowPresetsBar={setShowPresetsBar}
-								/>
-							)}
-							renderTabBarTrailing={() => (
-								<BackgroundTerminalsButton
-									workspaceId={workspaceId}
-									store={store}
-								/>
-							)}
-							renderEmptyState={() => (
-								<WorkspaceEmptyState
-									onOpenBrowser={addBrowserTab}
-									onOpenChat={addChatTab}
-									onOpenQuickOpen={handleQuickOpen}
-									onOpenTerminal={addTerminalTab}
-								/>
-							)}
-							onBeforeCloseTab={onBeforeCloseTab}
-							onInteractionStateChange={onWorkspaceInteractionStateChange}
-							store={store}
-						/>
-					</div>
-				</div>
-				{sidebarOpen &&
-					sidebarSlotEl &&
-					createPortal(
-						<ResizablePanel
-							width={sidebarWidth}
-							onWidthChange={setRightSidebarWidth}
-							isResizing={isSidebarResizing}
-							onResizingChange={handleSidebarResizingChange}
-							minWidth={240}
-							maxWidth={640}
-							handleSide="left"
-							onDoubleClickHandle={() => setRightSidebarWidth(340)}
-						>
-							<WorkspaceSidebar
-								workspaceId={workspaceId}
-								onSelectFile={openFilePaneFromTreeClick}
-								onSelectDiffFile={openDiffPane}
-								onOpenComment={openCommentPane}
-								onSearch={handleQuickOpen}
-								selectedFilePath={selectedFilePath}
-								pendingReveal={pendingReveal}
+								)}
+								renderTabBarTrailing={() => (
+									<BackgroundTerminalsButton
+										workspaceId={workspaceId}
+										store={store}
+									/>
+								)}
+								renderEmptyState={() => (
+									<WorkspaceEmptyState
+										onOpenBrowser={addBrowserTab}
+										onOpenChat={addChatTab}
+										onOpenQuickOpen={handleQuickOpen}
+										onOpenTerminal={addTerminalTab}
+									/>
+								)}
+								onBeforeCloseTab={onBeforeCloseTab}
+								onInteractionStateChange={onWorkspaceInteractionStateChange}
+								store={store}
 							/>
-						</ResizablePanel>,
-						sidebarSlotEl,
-					)}
-			</WorkspaceGitStatusProvider>
-			<CommandPalette
-				workspaceId={workspaceId}
-				open={quickOpenOpen}
-				onOpenChange={handleQuickOpenChange}
-				onSelectFile={handleQuickOpenSelectFile}
-				variant="v2"
-				recentlyViewedFiles={recentFiles}
-				openFilePaths={openFilePaths}
-			/>
-		</FileDocumentStoreProvider>
+						</div>
+					</div>
+					{sidebarSlotEl &&
+						createPortal(
+							// AnimatePresence stays mounted inside the persistent slot so the
+							// right sidebar can play its exit animation; `sidebarOpen` gates the
+							// motion child rather than the portal itself.
+							<AnimatePresence initial={false}>
+								{sidebarOpen && (
+									<motion.div
+										key="right-sidebar"
+										className="flex h-full shrink-0"
+										initial={shouldAnimate ? { x: "100%", opacity: 0 } : false}
+										animate={{ x: 0, opacity: 1 }}
+										exit={
+											shouldAnimate ? { x: "100%", opacity: 0 } : { opacity: 0 }
+										}
+										transition={
+											shouldAnimate ? motionSpring.panel : { duration: 0 }
+										}
+									>
+										<ResizablePanel
+											width={sidebarWidth}
+											onWidthChange={setRightSidebarWidth}
+											isResizing={isSidebarResizing}
+											onResizingChange={handleSidebarResizingChange}
+											minWidth={240}
+											maxWidth={640}
+											handleSide="left"
+											onDoubleClickHandle={() => setRightSidebarWidth(340)}
+										>
+											<WorkspaceSidebar
+												workspaceId={workspaceId}
+												onSelectFile={openFilePaneFromTreeClick}
+												onSelectDiffFile={openDiffPane}
+												onOpenComment={openCommentPane}
+												onSearch={handleQuickOpen}
+												selectedFilePath={selectedFilePath}
+												pendingReveal={pendingReveal}
+											/>
+										</ResizablePanel>
+									</motion.div>
+								)}
+							</AnimatePresence>,
+							sidebarSlotEl,
+						)}
+				</WorkspaceGitStatusProvider>
+				<CommandPalette
+					workspaceId={workspaceId}
+					open={quickOpenOpen}
+					onOpenChange={handleQuickOpenChange}
+					onSelectFile={handleQuickOpenSelectFile}
+					variant="v2"
+					recentlyViewedFiles={recentFiles}
+					openFilePaths={openFilePaths}
+				/>
+			</FileDocumentStoreProvider>
+		</LayoutGroup>
 	);
 }

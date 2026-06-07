@@ -10,6 +10,7 @@ import {
 import { ScrollArea } from "@rox/ui/scroll-area";
 import { cn } from "@rox/ui/utils";
 import { useMatchRoute } from "@tanstack/react-router";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useMemo, useState } from "react";
 import {
 	LuChevronDown,
@@ -17,6 +18,7 @@ import {
 	LuLayers,
 	LuSearchX,
 } from "react-icons/lu";
+import { ease, useShouldAnimate } from "renderer/motion";
 import type {
 	AccessibleV2Workspace,
 	V2WorkspaceHostType,
@@ -124,6 +126,20 @@ const DEFAULT_DIRECTION_BY_FIELD: Record<SortField, SortDirection> = {
 	created: "desc",
 };
 
+// Case 030: staggered entrance for the empty/filtered dashboard state.
+const emptyContainer = {
+	hidden: {},
+	show: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } },
+};
+const emptyItem = {
+	hidden: { opacity: 0, y: 8 },
+	show: {
+		opacity: 1,
+		y: 0,
+		transition: { duration: 0.22, ease: ease.standard },
+	},
+};
+
 export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 	const matchRoute = useMatchRoute();
 	const currentWorkspaceMatch = matchRoute({
@@ -221,37 +237,10 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
 				{columnHeader}
-				<Empty className="flex-1 border-0">
-					<EmptyHeader>
-						<EmptyMedia
-							variant="icon"
-							className="size-14 [&_svg:not([class*='size-'])]:size-7"
-						>
-							{hasActiveFilters ? <LuSearchX /> : <LuLayers />}
-						</EmptyMedia>
-						<EmptyTitle>
-							{hasActiveFilters
-								? "No workspaces match your filters"
-								: "No workspaces yet"}
-						</EmptyTitle>
-						<EmptyDescription>
-							{hasActiveFilters
-								? "Try a different search term or clear the device filter."
-								: "Workspaces you have access to across all your devices will show up here."}
-						</EmptyDescription>
-					</EmptyHeader>
-					{hasActiveFilters ? (
-						<EmptyContent>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => resetFilters()}
-							>
-								Clear filters
-							</Button>
-						</EmptyContent>
-					) : null}
-				</Empty>
+				<V2WorkspacesEmptyState
+					hasActiveFilters={hasActiveFilters}
+					onClearFilters={() => resetFilters()}
+				/>
 			</div>
 		);
 	}
@@ -270,6 +259,101 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 				))}
 			</div>
 		</ScrollArea>
+	);
+}
+
+interface V2WorkspacesEmptyStateProps {
+	hasActiveFilters: boolean;
+	onClearFilters: () => void;
+}
+
+// Case 030: empty/filtered dashboard state with a staggered entrance and a
+// very subtle pointer-driven parallax on the media icon. Both effects are
+// decorative and gated on `useShouldAnimate('decorative')`, so reduced-motion
+// users get the plain static empty state with no transforms or handlers.
+function V2WorkspacesEmptyState({
+	hasActiveFilters,
+	onClearFilters,
+}: V2WorkspacesEmptyStateProps) {
+	const animate = useShouldAnimate("decorative");
+
+	const mx = useMotionValue(0);
+	const my = useMotionValue(0);
+	const sx = useSpring(mx, { stiffness: 150, damping: 18 });
+	const sy = useSpring(my, { stiffness: 150, damping: 18 });
+	const x = useTransform(sx, [-1, 1], [-4, 4]);
+	const y = useTransform(sy, [-1, 1], [-4, 4]);
+
+	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+		if (!animate) return;
+		const rect = event.currentTarget.getBoundingClientRect();
+		const nx = (event.clientX - rect.left) / rect.width;
+		const ny = (event.clientY - rect.top) / rect.height;
+		mx.set(nx * 2 - 1);
+		my.set(ny * 2 - 1);
+	};
+
+	const handleMouseLeave = () => {
+		if (!animate) return;
+		mx.set(0);
+		my.set(0);
+	};
+
+	const icon = hasActiveFilters ? <LuSearchX /> : <LuLayers />;
+
+	return (
+		<Empty
+			className="flex-1 border-0"
+			onMouseMove={animate ? handleMouseMove : undefined}
+			onMouseLeave={animate ? handleMouseLeave : undefined}
+		>
+			<motion.div
+				className="flex flex-col items-center"
+				variants={emptyContainer}
+				initial={animate ? "hidden" : false}
+				animate={animate ? "show" : false}
+			>
+				<EmptyHeader>
+					<motion.div variants={animate ? emptyItem : undefined}>
+						<EmptyMedia
+							variant="icon"
+							className="size-14 [&_svg:not([class*='size-'])]:size-7"
+						>
+							{animate ? (
+								<motion.span className="inline-flex" style={{ x, y }}>
+									{icon}
+								</motion.span>
+							) : (
+								icon
+							)}
+						</EmptyMedia>
+					</motion.div>
+					<motion.div variants={animate ? emptyItem : undefined}>
+						<EmptyTitle>
+							{hasActiveFilters
+								? "No workspaces match your filters"
+								: "No workspaces yet"}
+						</EmptyTitle>
+					</motion.div>
+					<motion.div variants={animate ? emptyItem : undefined}>
+						<EmptyDescription>
+							{hasActiveFilters
+								? "Try a different search term or clear the device filter."
+								: "Workspaces you have access to across all your devices will show up here."}
+						</EmptyDescription>
+					</motion.div>
+				</EmptyHeader>
+				{hasActiveFilters ? (
+					<motion.div variants={animate ? emptyItem : undefined}>
+						<EmptyContent>
+							<Button variant="outline" size="sm" onClick={onClearFilters}>
+								Clear filters
+							</Button>
+						</EmptyContent>
+					</motion.div>
+				) : null}
+			</motion.div>
+		</Empty>
 	);
 }
 

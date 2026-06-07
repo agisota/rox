@@ -8,7 +8,8 @@ import {
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import {
 	LuCheck,
 	LuChevronRight,
@@ -17,6 +18,11 @@ import {
 	LuLoaderCircle,
 } from "react-icons/lu";
 import { CommentMarkdown } from "renderer/components/CommentMarkdown";
+import {
+	AnimatedHeight,
+	motionDuration,
+	useShouldAnimate,
+} from "renderer/motion";
 import "./comment-thread.css";
 
 interface Comment {
@@ -50,6 +56,9 @@ export function CommentThread({
 }: CommentThreadProps) {
 	const [open, setOpen] = useState(!isResolved && !isOutdated);
 	const [isCopied, setIsCopied] = useState(false);
+	const shouldAnimate = useShouldAnimate("decorative");
+	const pulse = useAnimationControls();
+	const focusedOnce = useRef(false);
 	useEffect(() => {
 		if (!isCopied) return;
 		const timer = setTimeout(() => setIsCopied(false), 2000);
@@ -74,10 +83,22 @@ export function CommentThread({
 		if (isResolved || isOutdated) setOpen(false);
 	}, [isResolved, isOutdated]);
 	// Force-expand when the reviewer jumps to this line, even if it was
-	// collapsed for being resolved or outdated.
+	// collapsed for being resolved or outdated. Also fires a ring/bg pulse
+	// so the focused thread is visually obvious.
 	useEffect(() => {
-		if (focusTick != null) setOpen(true);
-	}, [focusTick]);
+		if (focusTick == null) return;
+		setOpen(true);
+		// Skip a spurious pulse if the thread mounts already focused (list remount/scroll-restore).
+		if (!focusedOnce.current) {
+			focusedOnce.current = true;
+			return;
+		}
+		if (!shouldAnimate) return;
+		void pulse.start({
+			opacity: [0, 1, 0],
+			transition: { duration: 0.9, ease: "easeOut", times: [0, 0.12, 1] },
+		});
+	}, [focusTick, shouldAnimate, pulse]);
 	const utils = workspaceTrpc.useUtils();
 	const setResolution = workspaceTrpc.git.setReviewThreadResolution.useMutation(
 		{
@@ -92,101 +113,149 @@ export function CommentThread({
 		},
 	);
 
+	const isDimmed = isResolved || isOutdated;
+
 	return (
-		<Collapsible
-			open={open}
-			onOpenChange={setOpen}
-			className={cn(
-				"diff-comment mx-3 my-1 overflow-hidden rounded-md border border-border bg-card text-card-foreground",
-				isResolved && "opacity-70",
-			)}
+		<motion.div
+			initial={false}
+			animate={shouldAnimate ? { opacity: isDimmed ? 0.7 : 1 } : {}}
+			transition={{ duration: motionDuration.base }}
 		>
-			<div className="flex items-center gap-2 px-2.5 py-1.5">
-				<CollapsibleTrigger
-					className="flex min-w-0 flex-1 items-center gap-2 text-left text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none"
-					aria-label={open ? "Collapse thread" : "Expand thread"}
-				>
-					<LuChevronRight
-						className={cn(
-							"size-3 shrink-0 transition-transform",
-							open && "rotate-90",
-						)}
-					/>
-					<span className="shrink-0">
-						{comments.length === 1
-							? "1 comment"
-							: `${comments.length} comments`}
-					</span>
-					{isOutdated && (
-						<span className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide">
-							Outdated
-						</span>
-					)}
-					{isResolved && (
-						<span className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide">
-							Resolved
-						</span>
-					)}
-				</CollapsibleTrigger>
-				<button
-					type="button"
-					onClick={handleCopy}
-					className="shrink-0 text-muted-foreground hover:text-foreground"
-					aria-label={
-						isCopied
-							? "Copied"
-							: comments.length === 1
-								? "Copy comment"
-								: "Copy comments"
-					}
-				>
-					{isCopied ? (
-						<LuCheck className="size-3 text-green-500" />
-					) : (
-						<LuCopy className="size-3" />
-					)}
-				</button>
-				{url && (
-					<a
-						href={url}
-						target="_blank"
-						rel="noreferrer"
-						onClick={(e) => e.stopPropagation()}
-						className="shrink-0 text-muted-foreground hover:text-foreground"
-						aria-label="Open on GitHub"
-					>
-						<LuExternalLink className="size-3" />
-					</a>
+			<Collapsible
+				open={open}
+				onOpenChange={setOpen}
+				className={cn(
+					"diff-comment relative mx-3 my-1 overflow-hidden rounded-md border border-border bg-card text-card-foreground",
+					!shouldAnimate && isResolved && "opacity-70",
 				)}
-			</div>
-			<CollapsibleContent className="overflow-hidden border-t border-border data-[state=closed]:animate-none">
-				<ul className="divide-y divide-border">
-					{comments.map((comment) => (
-						<CommentRow key={comment.id} comment={comment} />
-					))}
-				</ul>
-				<div className="flex items-center justify-end border-t border-border bg-muted/30 px-2.5 py-1.5">
-					<Button
+			>
+				<motion.div
+					aria-hidden
+					className="pointer-events-none absolute inset-0 z-10 rounded-md bg-primary/10 ring-2 ring-primary/60"
+					initial={{ opacity: 0 }}
+					animate={pulse}
+					style={{ opacity: 0 }}
+				/>
+				<div className="flex items-center gap-2 px-2.5 py-1.5">
+					<CollapsibleTrigger
+						className="flex min-w-0 flex-1 items-center gap-2 text-left text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none"
+						aria-label={open ? "Collapse thread" : "Expand thread"}
+					>
+						<LuChevronRight
+							className={cn(
+								"size-3 shrink-0 transition-transform",
+								open && "rotate-90",
+							)}
+						/>
+						<span className="shrink-0">
+							{comments.length === 1
+								? "1 comment"
+								: `${comments.length} comments`}
+						</span>
+						{shouldAnimate ? (
+							<AnimatePresence initial={false}>
+								{isOutdated && (
+									<motion.span
+										key="outdated"
+										initial={{ opacity: 0, scale: 0.85 }}
+										animate={{ opacity: 1, scale: 1 }}
+										exit={{ opacity: 0, scale: 0.85 }}
+										transition={{ duration: motionDuration.fast }}
+										className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide"
+									>
+										Outdated
+									</motion.span>
+								)}
+								{isResolved && (
+									<motion.span
+										key="resolved"
+										initial={{ opacity: 0, scale: 0.85 }}
+										animate={{ opacity: 1, scale: 1 }}
+										exit={{ opacity: 0, scale: 0.85 }}
+										transition={{ duration: motionDuration.fast }}
+										className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide"
+									>
+										Resolved
+									</motion.span>
+								)}
+							</AnimatePresence>
+						) : (
+							<>
+								{isOutdated && (
+									<span className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide">
+										Outdated
+									</span>
+								)}
+								{isResolved && (
+									<span className="shrink-0 rounded-sm border border-border px-1 py-px text-[10px] font-medium uppercase tracking-wide">
+										Resolved
+									</span>
+								)}
+							</>
+						)}
+					</CollapsibleTrigger>
+					<button
 						type="button"
-						size="xs"
-						variant="outline"
-						disabled={setResolution.isPending}
-						onClick={() =>
-							setResolution.mutate({
-								workspaceId,
-								threadId,
-								resolved: !isResolved,
-							})
+						onClick={handleCopy}
+						className="shrink-0 text-muted-foreground hover:text-foreground"
+						aria-label={
+							isCopied
+								? "Copied"
+								: comments.length === 1
+									? "Copy comment"
+									: "Copy comments"
 						}
 					>
-						{setResolution.isPending && (
-							<LuLoaderCircle className="size-3 animate-spin" />
+						{isCopied ? (
+							<LuCheck className="size-3 text-green-500" />
+						) : (
+							<LuCopy className="size-3" />
 						)}
-						{isResolved ? "Unresolve" : "Resolve conversation"}
-					</Button>
+					</button>
+					{url && (
+						<a
+							href={url}
+							target="_blank"
+							rel="noreferrer"
+							onClick={(e) => e.stopPropagation()}
+							className="shrink-0 text-muted-foreground hover:text-foreground"
+							aria-label="Open on GitHub"
+						>
+							<LuExternalLink className="size-3" />
+						</a>
+					)}
 				</div>
-			</CollapsibleContent>
-		</Collapsible>
+				<CollapsibleContent className="overflow-hidden" forceMount>
+					<AnimatedHeight open={open}>
+						<ul className="divide-y divide-border border-t border-border">
+							{comments.map((comment) => (
+								<CommentRow key={comment.id} comment={comment} />
+							))}
+						</ul>
+						<div className="flex items-center justify-end border-t border-border bg-muted/30 px-2.5 py-1.5">
+							<Button
+								type="button"
+								size="xs"
+								variant="outline"
+								disabled={setResolution.isPending}
+								onClick={() =>
+									setResolution.mutate({
+										workspaceId,
+										threadId,
+										resolved: !isResolved,
+									})
+								}
+							>
+								{setResolution.isPending && (
+									<LuLoaderCircle className="size-3 animate-spin" />
+								)}
+								{isResolved ? "Unresolve" : "Resolve conversation"}
+							</Button>
+						</div>
+					</AnimatedHeight>
+				</CollapsibleContent>
+			</Collapsible>
+		</motion.div>
 	);
 }
 

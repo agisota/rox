@@ -9,6 +9,7 @@ import { workspaceTrpc } from "@rox/workspace-client";
 import { useQuery } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { ChatStatus } from "ai";
+import { motion } from "framer-motion";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -21,6 +22,9 @@ import {
 	isDesktopChatDevMode,
 } from "renderer/lib/dev-chat";
 import { posthog } from "renderer/lib/posthog";
+import { AnimatedPresence } from "renderer/motion/AnimatedPresence";
+import { motionSpring } from "renderer/motion/tokens";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
 import {
 	type UseChatDisplayReturn,
@@ -29,6 +33,7 @@ import {
 import { ChatInputFooter } from "./components/ChatInputFooter";
 import { ChatMessageList } from "./components/ChatMessageList";
 import type { UserMessageRestartRequest } from "./components/ChatMessageList/ChatMessageList.types";
+import { PendingApprovalMessage } from "./components/ChatMessageList/components/PendingApprovalMessage/PendingApprovalMessage";
 import { McpControls } from "./components/McpControls";
 import { useMcpUi } from "./hooks/useMcpUi";
 import { useOptimisticUpload } from "./hooks/useOptimisticUpload";
@@ -497,6 +502,14 @@ export function ChatPaneInterface({
 		bumpFooterScroll();
 	}, [bumpFooterScroll, pendingQuestion]);
 
+	const shouldAnimate = useShouldAnimate("essential");
+
+	// Scroll chat to bottom whenever the approval band appears or changes
+	// biome-ignore lint/correctness/useExhaustiveDependencies: pendingApproval?.toolCallId is an intentional re-run trigger
+	useEffect(() => {
+		bumpFooterScroll();
+	}, [bumpFooterScroll, pendingApproval?.toolCallId]);
+
 	useEffect(() => {
 		messagesLengthRef.current = messages?.length ?? 0;
 	}, [messages]);
@@ -951,6 +964,25 @@ export function ChatPaneInterface({
 					footerScrollTrigger={footerScrollTrigger}
 				/>
 				<McpControls mcpUi={mcpUi} />
+				<AnimatedPresence initial={false}>
+					{pendingApproval ? (
+						<motion.div
+							key={pendingApproval.toolCallId}
+							layout
+							initial={shouldAnimate ? { opacity: 0, y: 12 } : false}
+							animate={{ opacity: 1, y: 0 }}
+							exit={shouldAnimate ? { opacity: 0, y: 12 } : { opacity: 0 }}
+							transition={shouldAnimate ? motionSpring.gentle : { duration: 0 }}
+							className="mx-auto w-full max-w-[680px] px-4"
+						>
+							<PendingApprovalMessage
+								approval={pendingApproval}
+								isSubmitting={approvalResponsePending}
+								onRespond={handleApprovalResponse}
+							/>
+						</motion.div>
+					) : null}
+				</AnimatedPresence>
 				<ChatUploadFooter
 					cwd={cwd}
 					isFocused={isFocused}

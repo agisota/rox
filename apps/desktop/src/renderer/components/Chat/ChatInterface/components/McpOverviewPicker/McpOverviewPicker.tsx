@@ -7,6 +7,8 @@ import {
 	ModelSelectorItem,
 	ModelSelectorList,
 } from "@rox/ui/ai-elements/model-selector";
+import { motion } from "framer-motion";
+import { AnimatedHeight, StatusPulse, useShouldAnimate } from "renderer/motion";
 import type { McpOverviewPayload, McpServerOverviewItem } from "../../types";
 
 interface McpOverviewPickerProps {
@@ -60,6 +62,7 @@ export function McpOverviewPicker({
 	authenticatingServerName,
 }: McpOverviewPickerProps) {
 	const servers = overview?.servers ?? [];
+	const shouldAnimate = useShouldAnimate("decorative");
 
 	return (
 		<ModelSelector open={open} onOpenChange={onOpenChange}>
@@ -100,17 +103,21 @@ export function McpOverviewPicker({
 									<div className="truncate text-xs text-muted-foreground">
 										{server.target}
 									</div>
-									{server.error ? (
+									<AnimatedHeight open={Boolean(server.error)}>
 										<div className="truncate text-xs text-destructive">
 											{server.error}
 										</div>
-									) : null}
+									</AnimatedHeight>
 								</div>
 								<div className="ml-3 flex shrink-0 items-center gap-1.5">
 									{server.connected === true ? (
-										<span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-											Connected
-										</span>
+										<StatusPulse
+											active={shouldAnimate && server.connected === true}
+										>
+											<span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+												Connected
+											</span>
+										</StatusPulse>
 									) : server.connected === false ? (
 										<span className="rounded-full border border-zinc-500/30 bg-zinc-500/10 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
 											Disconnected
@@ -127,7 +134,19 @@ export function McpOverviewPicker({
 									{onAuthenticateServer &&
 									server.transport === "remote" &&
 									server.state !== "disabled" ? (
-										<span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground">
+										<span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground">
+											{authenticatingServerName === server.name ? (
+												<motion.span
+													aria-hidden
+													className="inline-block size-3 rounded-full border border-current border-t-transparent"
+													animate={shouldAnimate ? { rotate: 360 } : undefined}
+													transition={{
+														repeat: Infinity,
+														ease: "linear",
+														duration: 0.8,
+													}}
+												/>
+											) : null}
 											{authenticatingServerName === server.name
 												? "Connecting..."
 												: server.connected

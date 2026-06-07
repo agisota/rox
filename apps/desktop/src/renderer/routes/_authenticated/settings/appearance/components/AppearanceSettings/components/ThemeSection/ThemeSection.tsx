@@ -18,6 +18,7 @@ import {
 	HiOutlineArrowUpTray,
 } from "react-icons/hi2";
 import { ThemeSwatch } from "renderer/components/ThemeSwatch";
+import { AnimatedHeight } from "renderer/motion";
 import {
 	SYSTEM_THEME_ID,
 	useSetSystemThemePreference,
@@ -315,26 +316,24 @@ export function ThemeSection() {
 					lightTheme: systemLightTheme,
 				}}
 			/>
-			{isSystemMode && (
-				<>
-					<ThemeRow
-						label="Light theme"
-						hint="Used when your system is in light mode."
-						value={systemLightThemeId}
-						onValueChange={(id) => setSystemThemePreference("light", id)}
-						currentTheme={systemLightTheme}
-						options={lightOptions}
-					/>
-					<ThemeRow
-						label="Dark theme"
-						hint="Used when your system is in dark mode."
-						value={systemDarkThemeId}
-						onValueChange={(id) => setSystemThemePreference("dark", id)}
-						currentTheme={systemDarkTheme}
-						options={darkOptions}
-					/>
-				</>
-			)}
+			<AnimatedHeight open={isSystemMode}>
+				<ThemeRow
+					label="Light theme"
+					hint="Used when your system is in light mode."
+					value={systemLightThemeId}
+					onValueChange={(id) => setSystemThemePreference("light", id)}
+					currentTheme={systemLightTheme}
+					options={lightOptions}
+				/>
+				<ThemeRow
+					label="Dark theme"
+					hint="Used when your system is in dark mode."
+					value={systemDarkThemeId}
+					onValueChange={(id) => setSystemThemePreference("dark", id)}
+					currentTheme={systemDarkTheme}
+					options={darkOptions}
+				/>
+			</AnimatedHeight>
 			<div className="flex items-center justify-between gap-6 p-4">
 				<div className="min-w-0 flex-1">
 					<div className="text-sm font-medium">Custom themes</div>

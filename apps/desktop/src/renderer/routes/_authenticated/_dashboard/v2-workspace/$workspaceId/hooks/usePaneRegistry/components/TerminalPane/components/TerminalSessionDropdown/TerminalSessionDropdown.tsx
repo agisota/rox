@@ -11,11 +11,20 @@ import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
+import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { Check, ChevronDown, LoaderCircle, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	useSyncExternalStore,
+} from "react";
 import { useRenderStressInstrumentation } from "renderer/lib/performance/stress-instrumentation";
 import { markTerminalForBackground } from "renderer/lib/terminal/terminal-background-intents";
 import { terminalRuntimeRegistry } from "renderer/lib/terminal/terminal-runtime-registry";
+import { motionShake, useShouldAnimate } from "renderer/motion";
 import type { TerminalLauncher } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useV2TerminalLauncher";
 import type {
 	PaneViewerData,
@@ -128,6 +137,10 @@ export function TerminalSessionDropdown({
 		localWorkspaceRows[0]?.workspaceRunTerminals ?? {};
 	const workspaceRunState = workspaceRunTerminals[terminalId]?.state ?? null;
 
+	const shouldAnimate = useShouldAnimate("decorative");
+	const shakeControls = useAnimationControls();
+	const prevErroredRef = useRef(false);
+
 	const sessions = useMemo<VisibleTerminalSession[]>(() => {
 		const liveSessions = sessionsQuery.data?.sessions ?? [];
 		const ordered = [...liveSessions].sort((a, b) => {
@@ -153,6 +166,23 @@ export function TerminalSessionDropdown({
 	const currentSession = sessions.find(
 		(session) => session.terminalId === terminalId,
 	);
+
+	const exitErrored = Boolean(
+		currentSession?.exited && currentSession.exitCode !== 0,
+	);
+	const runFailed =
+		workspaceRunState != null &&
+		workspaceRunState !== "running" &&
+		workspaceRunState !== "stopped-by-user";
+	const errored = exitErrored || runFailed;
+
+	useEffect(() => {
+		if (errored && !prevErroredRef.current && shouldAnimate) {
+			void shakeControls.start(motionShake);
+		}
+		prevErroredRef.current = errored;
+	}, [errored, shouldAnimate, shakeControls]);
+
 	const subscribeTitle = useCallback(
 		(callback: () => void) =>
 			terminalRuntimeRegistry.onTitleChange(
@@ -286,13 +316,14 @@ export function TerminalSessionDropdown({
 	return (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 			<DropdownMenuTrigger asChild>
-				<button
+				<motion.button
 					type="button"
 					aria-label="Terminal sessions"
 					title={triggerTitle}
 					className="flex min-w-32 max-w-96 items-center gap-1.5 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 					onMouseDown={(event) => event.stopPropagation()}
 					onClick={(event) => event.stopPropagation()}
+					animate={shakeControls}
 				>
 					<TerminalPaneIcon workspaceId={workspaceId} terminalId={terminalId} />
 					{workspaceRunState && (
@@ -307,6 +338,23 @@ export function TerminalSessionDropdown({
 							title={`Workspace run: ${workspaceRunState}`}
 						/>
 					)}
+					<AnimatePresence initial={false}>
+						{errored && (
+							<motion.span
+								key="term-error-chip"
+								initial={shouldAnimate ? { opacity: 0, scale: 0.85 } : false}
+								animate={{ opacity: 1, scale: 1 }}
+								exit={
+									shouldAnimate ? { opacity: 0, scale: 0.85 } : { opacity: 0 }
+								}
+								className="shrink-0 rounded bg-destructive/10 px-1 text-[10px] font-medium text-destructive"
+							>
+								{exitErrored && currentSession
+									? `Exit ${currentSession.exitCode}`
+									: "Error"}
+							</motion.span>
+						)}
+					</AnimatePresence>
 					<span className="min-w-0 flex-1 truncate text-left">
 						{triggerTitle}
 					</span>
@@ -315,7 +363,7 @@ export function TerminalSessionDropdown({
 					) : (
 						<ChevronDown className="size-3 shrink-0" />
 					)}
-				</button>
+				</motion.button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-96">
 				<DropdownMenuLabel className="flex items-center gap-2 text-xs">

@@ -1,5 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { FilePlusIcon } from "lucide-react";
+import { useShouldAnimate } from "renderer/motion";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getArgs, getResult } from "../../../../utils/tool-helpers";
 import {
@@ -16,6 +18,7 @@ interface CreateTaskToolCallProps {
 
 export function CreateTaskToolCall({ part }: CreateTaskToolCallProps) {
 	const navigate = useNavigate();
+	const shouldAnimate = useShouldAnimate("decorative");
 	const args = getArgs(part);
 	const result = getResult(part);
 	const resultData =
@@ -50,76 +53,165 @@ export function CreateTaskToolCall({ part }: CreateTaskToolCallProps) {
 							<div className="font-medium text-foreground">
 								Created ({created.length})
 							</div>
-							<div className="space-y-1">
-								{created.map((task) => {
-									const taskId = typeof task.id === "string" ? task.id : null;
-									const slug = typeof task.slug === "string" ? task.slug : null;
-									const requested =
-										requestedTasks.find((candidate) => {
-											if (!candidate) return false;
-											if (
-												taskId &&
-												typeof candidate.taskId === "string" &&
-												candidate.taskId === taskId
-											) {
-												return true;
-											}
-											if (
-												slug &&
-												typeof candidate.slug === "string" &&
-												candidate.slug === slug
-											) {
-												return true;
-											}
-											return false;
-										}) ??
-										(requestedTasks.length === 1 ? requestedTasks[0] : null);
-									const title =
-										typeof task.title === "string"
-											? task.title
-											: typeof requested?.title === "string"
-												? requested.title
-												: "Untitled task";
-									const openTaskId = taskId ?? slug;
-									const priority =
-										typeof requested?.priority === "string"
-											? requested.priority
-											: null;
-									const assignee =
-										typeof requested?.assigneeId === "string"
-											? requested.assigneeId
-											: null;
-									const dueDate = formatTaskDate(requested?.dueDate);
-									const labels = toStringArray(requested?.labels);
-									const description =
-										typeof requested?.description === "string"
-											? requested.description
-											: null;
+							<AnimatePresence initial={false}>
+								{shouldAnimate ? (
+									<motion.div
+										key="created-items"
+										className="space-y-1"
+										initial="hidden"
+										animate="visible"
+										transition={{ staggerChildren: 0.04 }}
+									>
+										{created.map((task) => {
+											const taskId =
+												typeof task.id === "string" ? task.id : null;
+											const slug =
+												typeof task.slug === "string" ? task.slug : null;
+											const requested =
+												requestedTasks.find((candidate) => {
+													if (!candidate) return false;
+													if (
+														taskId &&
+														typeof candidate.taskId === "string" &&
+														candidate.taskId === taskId
+													) {
+														return true;
+													}
+													if (
+														slug &&
+														typeof candidate.slug === "string" &&
+														candidate.slug === slug
+													) {
+														return true;
+													}
+													return false;
+												}) ??
+												(requestedTasks.length === 1
+													? requestedTasks[0]
+													: null);
+											const title =
+												typeof task.title === "string"
+													? task.title
+													: typeof requested?.title === "string"
+														? requested.title
+														: "Untitled task";
+											const openTaskId = taskId ?? slug;
+											const priority =
+												typeof requested?.priority === "string"
+													? requested.priority
+													: null;
+											const assignee =
+												typeof requested?.assigneeId === "string"
+													? requested.assigneeId
+													: null;
+											const dueDate = formatTaskDate(requested?.dueDate);
+											const labels = toStringArray(requested?.labels);
+											const description =
+												typeof requested?.description === "string"
+													? requested.description
+													: null;
 
-									return (
-										<TaskItemDisplay
-											key={taskId ?? slug ?? title}
-											assignee={assignee}
-											description={description}
-											dueDate={dueDate}
-											labels={labels}
-											priority={priority}
-											slug={slug}
-											taskId={taskId}
-											title={title}
-											onClick={
-												openTaskId
-													? () =>
-															navigate({
-																to: "/tasks/$taskId",
-																params: { taskId: openTaskId },
-															})
-													: undefined
-											}
-										/>
-									);
-								})}
-							</div>
+											return (
+												<TaskItemDisplay
+													key={taskId ?? slug ?? title}
+													assignee={assignee}
+													description={description}
+													dueDate={dueDate}
+													labels={labels}
+													priority={priority}
+													slug={slug}
+													taskId={taskId}
+													title={title}
+													onClick={
+														openTaskId
+															? () =>
+																	navigate({
+																		to: "/tasks/$taskId",
+																		params: { taskId: openTaskId },
+																	})
+															: undefined
+													}
+												/>
+											);
+										})}
+									</motion.div>
+								) : (
+									<div className="space-y-1">
+										{created.map((task) => {
+											const taskId =
+												typeof task.id === "string" ? task.id : null;
+											const slug =
+												typeof task.slug === "string" ? task.slug : null;
+											const requested =
+												requestedTasks.find((candidate) => {
+													if (!candidate) return false;
+													if (
+														taskId &&
+														typeof candidate.taskId === "string" &&
+														candidate.taskId === taskId
+													) {
+														return true;
+													}
+													if (
+														slug &&
+														typeof candidate.slug === "string" &&
+														candidate.slug === slug
+													) {
+														return true;
+													}
+													return false;
+												}) ??
+												(requestedTasks.length === 1
+													? requestedTasks[0]
+													: null);
+											const title =
+												typeof task.title === "string"
+													? task.title
+													: typeof requested?.title === "string"
+														? requested.title
+														: "Untitled task";
+											const openTaskId = taskId ?? slug;
+											const priority =
+												typeof requested?.priority === "string"
+													? requested.priority
+													: null;
+											const assignee =
+												typeof requested?.assigneeId === "string"
+													? requested.assigneeId
+													: null;
+											const dueDate = formatTaskDate(requested?.dueDate);
+											const labels = toStringArray(requested?.labels);
+											const description =
+												typeof requested?.description === "string"
+													? requested.description
+													: null;
+
+											return (
+												<TaskItemDisplay
+													key={taskId ?? slug ?? title}
+													assignee={assignee}
+													description={description}
+													dueDate={dueDate}
+													labels={labels}
+													priority={priority}
+													slug={slug}
+													taskId={taskId}
+													title={title}
+													onClick={
+														openTaskId
+															? () =>
+																	navigate({
+																		to: "/tasks/$taskId",
+																		params: { taskId: openTaskId },
+																	})
+															: undefined
+													}
+												/>
+											);
+										})}
+									</div>
+								)}
+							</AnimatePresence>
 						</div>
 					) : (
 						<div className="text-muted-foreground">

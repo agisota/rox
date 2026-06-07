@@ -9,6 +9,7 @@ import { OverflowFadeText } from "@rox/ui/overflow-fade-text";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
+import { motion, useAnimationControls } from "framer-motion";
 import { useCallback, useMemo } from "react";
 import { HiChevronDown } from "react-icons/hi2";
 import {
@@ -17,6 +18,8 @@ import {
 } from "renderer/components/OpenInExternalDropdown";
 import { HotkeyLabel, useHotkey, useHotkeyDisplay } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { ease, motionDuration } from "renderer/motion/tokens";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { useV2ProjectDefaultApp } from "renderer/routes/_authenticated/hooks/useV2ProjectDefaultApp";
 import { useThemeStore } from "renderer/stores";
 
@@ -32,6 +35,8 @@ export function V2OpenInMenuButton({
 	projectId,
 }: V2OpenInMenuButtonProps) {
 	const activeTheme = useThemeStore((state) => state.activeTheme);
+	const shouldAnimate = useShouldAnimate("decorative");
+	const iconControls = useAnimationControls();
 
 	const { app: persistedApp, setApp: persistDefaultApp } =
 		useV2ProjectDefaultApp(projectId);
@@ -40,6 +45,9 @@ export function V2OpenInMenuButton({
 	const openInApp = electronTrpc.external.openInApp.useMutation({
 		onSuccess: (_data, variables) => {
 			persistDefaultApp(variables.app);
+			toast.success(
+				`Opening in ${getAppOption(variables.app)?.label ?? "editor"}…`,
+			);
 		},
 		onError: (error) => toast.error(`Failed to open: ${error.message}`),
 	});
@@ -62,7 +70,26 @@ export function V2OpenInMenuButton({
 	const handleOpenInEditor = useCallback(() => {
 		if (openInApp.isPending || copyPath.isPending) return;
 		openInApp.mutate({ path: worktreePath, app: resolvedApp });
-	}, [worktreePath, resolvedApp, openInApp, copyPath.isPending]);
+		if (shouldAnimate) {
+			iconControls.start({
+				x: [0, 3, 0],
+				y: [0, -2, 0],
+				scale: [1, 1.12, 1],
+				transition: {
+					duration: motionDuration.slow,
+					times: [0, 0.5, 1],
+					ease: ease.standard,
+				},
+			});
+		}
+	}, [
+		worktreePath,
+		resolvedApp,
+		openInApp,
+		copyPath.isPending,
+		shouldAnimate,
+		iconControls,
+	]);
 
 	const handleOpenInOtherApp = useCallback(
 		(appId: ExternalApp) => {
@@ -102,7 +129,8 @@ export function V2OpenInMenuButton({
 						)}
 					>
 						{currentApp && (
-							<img
+							<motion.img
+								animate={iconControls}
 								src={isDark ? currentApp.darkIcon : currentApp.lightIcon}
 								alt=""
 								className="size-3.5 object-contain shrink-0"

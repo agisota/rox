@@ -5,6 +5,7 @@ import {
 	ModelSelectorName,
 } from "@rox/ui/ai-elements/model-selector";
 import { claudeIcon } from "@rox/ui/icons/preset-icons";
+import { motion } from "framer-motion";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import {
 	ANTHROPIC_LOGO_PROVIDER,
@@ -27,6 +28,8 @@ interface ModelProviderGroupProps {
 	onOpenOpenAIAuthModal: () => void;
 	onSelectModel: (model: ModelOption) => void;
 	onCloseModelSelector: () => void;
+	selectedModelId?: string;
+	animate?: boolean;
 }
 
 export function ModelProviderGroup({
@@ -42,6 +45,8 @@ export function ModelProviderGroup({
 	onOpenOpenAIAuthModal,
 	onSelectModel,
 	onCloseModelSelector,
+	selectedModelId,
+	animate,
 }: ModelProviderGroupProps) {
 	const groupLogo = providerToLogo(provider);
 	const isAnthropicProvider = groupLogo === ANTHROPIC_LOGO_PROVIDER;
@@ -88,6 +93,7 @@ export function ModelProviderGroup({
 						: logo === OPENAI_LOGO_PROVIDER
 							? `${model.provider} (API key or OAuth required)`
 							: `${model.provider} (connection required)`;
+				const isSelected = animate && selectedModelId === model.id;
 
 				return (
 					<ModelSelectorItem
@@ -99,6 +105,12 @@ export function ModelProviderGroup({
 							onCloseModelSelector();
 						}}
 					>
+						{isSelected && (
+							<motion.div
+								layoutId="model-picker-active-pill"
+								className="pointer-events-none absolute inset-0 rounded-[inherit] bg-accent/20"
+							/>
+						)}
 						{logo === ANTHROPIC_LOGO_PROVIDER ? (
 							<img alt="Claude" className="size-3" src={claudeIcon} />
 						) : (

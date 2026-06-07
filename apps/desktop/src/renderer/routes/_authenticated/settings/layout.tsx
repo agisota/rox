@@ -4,9 +4,11 @@ import {
 	useLocation,
 	useNavigate,
 } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import {
 	type SettingsSection,
 	useSetSettingsSearchQuery,
@@ -156,6 +158,10 @@ function SettingsLayout() {
 		[navigate, location.pathname, originRoute],
 	);
 
+	const shouldAnimate = useShouldAnimate("decorative");
+	const section: string =
+		getSectionFromPath(location.pathname) ?? location.pathname;
+
 	const usesInnerSidebar =
 		location.pathname.startsWith("/settings/projects") ||
 		location.pathname.startsWith("/settings/hosts") ||
@@ -182,13 +188,34 @@ function SettingsLayout() {
 							onClear={() => setSearchQuery("")}
 						/>
 					)}
-					{usesInnerSidebar ? (
-						<Outlet />
-					) : (
-						<div className="mx-auto max-w-4xl">
+					<AnimatePresence mode="wait" initial={false}>
+						{shouldAnimate ? (
+							<motion.div
+								key={section}
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								transition={{
+									duration: motionDuration.fast,
+									ease: ease.standard,
+								}}
+							>
+								{usesInnerSidebar ? (
+									<Outlet />
+								) : (
+									<div className="mx-auto max-w-4xl">
+										<Outlet />
+									</div>
+								)}
+							</motion.div>
+						) : usesInnerSidebar ? (
 							<Outlet />
-						</div>
-					)}
+						) : (
+							<div className="mx-auto max-w-4xl">
+								<Outlet />
+							</div>
+						)}
+					</AnimatePresence>
 				</div>
 			</div>
 		</div>

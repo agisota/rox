@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import {
 	HiOutlineArrowPath,
@@ -24,6 +25,7 @@ import {
 	logStressEvent,
 	useRenderStressInstrumentation,
 } from "renderer/lib/performance/stress-instrumentation";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import {
 	navigateToWorkspace as navigateToV1Workspace,
 	navigateToV2Workspace,
@@ -167,6 +169,7 @@ function ResourceConsumptionContent({
 		new Set(),
 	);
 
+	const shouldAnimate = useShouldAnimate("essential");
 	const navigate = useNavigate();
 	const panes = useTabsStore((state) => state.panes);
 	const setActiveTab = useTabsStore((state) => state.setActiveTab);
@@ -441,16 +444,22 @@ function ResourceConsumptionContent({
 							<MetricBadge
 								label="CPU"
 								value={formatCpu(normalizedSnapshot.totalCpu)}
+								numericValue={normalizedSnapshot.totalCpu}
+								format={formatCpu}
 								tooltip="Sum of CPU used by Rox and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
 							/>
 							<MetricBadge
 								label="Memory"
 								value={formatMemory(normalizedSnapshot.totalMemory)}
+								numericValue={normalizedSnapshot.totalMemory}
+								format={formatMemory}
 								tooltip="Resident memory used by Rox and monitored terminal process trees. If this keeps climbing without dropping, a workspace process may be retaining memory. High values increase swap risk and can cause stutter."
 							/>
 							<MetricBadge
 								label="RAM Share"
 								value={formatPercent(trackedMemorySharePercent)}
+								numericValue={trackedMemorySharePercent}
+								format={formatPercent}
 								tooltip="Percent of total system RAM used by monitored Rox resources only (not all apps). A high share means Rox is a major contributor to system memory pressure; a low share means pressure is likely elsewhere."
 							/>
 						</div>
@@ -464,14 +473,21 @@ function ResourceConsumptionContent({
 									aria-valuemin={0}
 									aria-valuemax={100}
 								>
-									<div
+									<motion.div
 										className={cn(
-											"h-full rounded-full transition-[width] duration-300",
+											"h-full w-full rounded-full",
 											shareBarColorClass,
 										)}
-										style={{
-											width: `${Math.min(100, Math.max(0, trackedMemorySharePercent))}%`,
+										style={{ originX: 0 }}
+										initial={false}
+										animate={{
+											scaleX:
+												Math.min(100, Math.max(0, trackedMemorySharePercent)) /
+												100,
 										}}
+										transition={
+											shouldAnimate ? motionSpring.soft : { duration: 0 }
+										}
 									/>
 								</div>
 							</TooltipTrigger>

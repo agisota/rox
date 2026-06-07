@@ -1,5 +1,7 @@
+import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { TbGlobe } from "react-icons/tb";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import type { HistorySuggestion } from "../../hooks/useUrlAutocomplete";
 
 interface UrlSuggestionsProps {
@@ -14,6 +16,7 @@ export function UrlSuggestions({
 	onSelect,
 }: UrlSuggestionsProps) {
 	const listRef = useRef<HTMLDivElement>(null);
+	const shouldAnimate = useShouldAnimate();
 
 	// Scroll highlighted item into view
 	useEffect(() => {
@@ -26,9 +29,16 @@ export function UrlSuggestions({
 	if (suggestions.length === 0) return null;
 
 	return (
-		<div
+		<motion.div
 			ref={listRef}
 			className="absolute top-full left-0 right-0 mt-1 z-50 max-h-[320px] overflow-y-auto rounded-md border border-border bg-popover shadow-md"
+			initial={shouldAnimate ? { opacity: 0, y: -4 } : false}
+			animate={{ opacity: 1, y: 0 }}
+			exit={shouldAnimate ? { opacity: 0, y: -4 } : { opacity: 0 }}
+			transition={{
+				duration: motionDuration.fast,
+				ease: ease.standard as [number, number, number, number],
+			}}
 		>
 			{suggestions.map((item, index) => (
 				<button
@@ -72,6 +82,6 @@ export function UrlSuggestions({
 					</div>
 				</button>
 			))}
-		</div>
+		</motion.div>
 	);
 }

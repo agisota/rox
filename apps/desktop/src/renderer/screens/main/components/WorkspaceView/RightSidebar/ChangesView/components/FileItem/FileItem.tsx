@@ -18,6 +18,7 @@ import {
 	VscRemove,
 	VscTrash,
 } from "react-icons/vsc";
+import { ActiveIndicator } from "renderer/motion";
 import { toAbsoluteWorkspacePath } from "shared/absolute-paths";
 import type { ChangeCategory, ChangedFile } from "shared/changes-types";
 import { createFileKey, useScrollContext } from "../../../../ChangesContent";
@@ -44,6 +45,8 @@ interface FileItemProps {
 	isExpandedView?: boolean;
 	projectId?: string;
 	defaultApp?: ExternalApp | null;
+	/** When provided, replaces the static bg-accent highlight with a shared-layout gliding indicator. */
+	activeIndicatorLayoutId?: string;
 }
 
 function LevelIndicators({ level }: { level: number }) {
@@ -79,6 +82,7 @@ export function FileItem({
 	isExpandedView = false,
 	projectId,
 	defaultApp,
+	activeIndicatorLayoutId,
 }: FileItemProps) {
 	const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 	const { activeFileKey } = useScrollContext();
@@ -216,11 +220,17 @@ export function FileItem({
 		<div
 			{...fileDragProps}
 			className={cn(
-				"group w-full flex items-stretch gap-1 px-1.5 text-left rounded-sm",
+				"group relative w-full flex items-stretch gap-1 px-1.5 text-left rounded-sm",
 				"hover:bg-accent/50 cursor-pointer transition-colors",
-				isHighlighted && "bg-accent",
+				isHighlighted && !activeIndicatorLayoutId && "bg-accent",
 			)}
 		>
+			{isHighlighted && activeIndicatorLayoutId && (
+				<ActiveIndicator
+					layoutId={activeIndicatorLayoutId}
+					className="-z-10 rounded-sm bg-accent"
+				/>
+			)}
 			{hasIndent && <LevelIndicators level={level} />}
 			<button
 				type="button"

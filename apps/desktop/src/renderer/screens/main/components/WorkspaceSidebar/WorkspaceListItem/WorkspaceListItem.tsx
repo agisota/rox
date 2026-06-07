@@ -3,12 +3,14 @@ import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef } from "react";
 import { HiMiniXMark } from "react-icons/hi2";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useHoverGitHubStatus } from "renderer/lib/githubQueryPolicy";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import { useWorkspaceDeleteHandler } from "renderer/react-query/workspaces";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { WorkspaceRunIndicator } from "renderer/screens/main/components/WorkspaceRunIndicator";
@@ -31,7 +33,11 @@ import { WorkspaceAheadBehind } from "./WorkspaceAheadBehind";
 import { WorkspaceContextMenu } from "./WorkspaceContextMenu";
 import { WorkspaceDiffStats } from "./WorkspaceDiffStats";
 import { WorkspaceIcon } from "./WorkspaceIcon";
-import { WorkspaceStatusBadge } from "./WorkspaceStatusBadge";
+import {
+	WorkspaceConnectionBadge,
+	type WorkspaceConnectionState,
+	WorkspaceStatusBadge,
+} from "./WorkspaceStatusBadge";
 
 interface WorkspaceListItemProps {
 	id: string;
@@ -48,6 +54,15 @@ interface WorkspaceListItemProps {
 	sections?: { id: string; name: string }[];
 	orderedWorkspaceIds?: string[];
 }
+
+const rowHoverVariants = {
+	rest: { y: 0 },
+	hover: { y: -1 },
+};
+const iconHoverVariants = {
+	rest: { scale: 1 },
+	hover: { scale: 1.08 },
+};
 
 export function WorkspaceListItem({
 	id,
@@ -120,6 +135,9 @@ export function WorkspaceListItem({
 		sectionId,
 		index,
 	});
+
+	const animate = useShouldAnimate("decorative");
+	const hoverEnabled = animate && !isDragging && !isMultiDragging;
 
 	const expandedItemRef = useRef<HTMLDivElement>(null);
 	const collapsedItemRef = useRef<HTMLButtonElement>(null);
@@ -258,6 +276,16 @@ export function WorkspaceListItem({
 
 	const showBranchSubtitle = isBranchWorkspace || (!!name && name !== branch);
 
+	// Connection-state badge: branch workspaces live in the main repo ('local'),
+	// worktrees are isolated ('cloud'); a live workspace run surfaces the
+	// transient 'connecting' pulse. Driven entirely by existing in-component
+	// signals — no new store/IPC.
+	const connectionState: WorkspaceConnectionState = isBranchWorkspace
+		? "local"
+		: workspaceRunState === "running"
+			? "connecting"
+			: "cloud";
+
 	if (isCollapsed) {
 		return (
 			<CollapsedWorkspaceItem
@@ -281,8 +309,7 @@ export function WorkspaceListItem({
 	}
 
 	const content = (
-		// biome-ignore lint/a11y/useSemanticElements: Contains nested interactive elements
-		<div
+		<motion.div
 			role="button"
 			tabIndex={0}
 			ref={expandedItemRef}
@@ -312,6 +339,11 @@ export function WorkspaceListItem({
 				(isDragging || isMultiDragging) && "opacity-30",
 			)}
 			style={{ cursor: isDragging ? "grabbing" : "pointer" }}
+			variants={rowHoverVariants}
+			initial="rest"
+			animate="rest"
+			whileHover={hoverEnabled ? "hover" : undefined}
+			transition={motionSpring.snappy}
 		>
 			{isActive && (
 				<div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary rounded-r" />
@@ -325,7 +357,10 @@ export function WorkspaceListItem({
 			>
 				<Tooltip delayDuration={500}>
 					<TooltipTrigger asChild>
-						<div className="relative size-5 flex items-center justify-center">
+						<motion.div
+							className="relative size-5 flex items-center justify-center"
+							variants={iconHoverVariants}
+						>
 							<WorkspaceIcon
 								isBranchWorkspace={isBranchWorkspace}
 								isActive={isActive}
@@ -333,7 +368,7 @@ export function WorkspaceListItem({
 								workspaceStatus={workspaceStatus}
 								variant="expanded"
 							/>
-						</div>
+						</motion.div>
 					</TooltipTrigger>
 					<TooltipContent side="right" sideOffset={8}>
 						{isBranchWorkspace ? (
@@ -394,6 +429,13 @@ export function WorkspaceListItem({
 									behind={aheadBehind.behind}
 								/>
 							)}
+
+							<AnimatePresence initial={false} mode="popLayout">
+								<WorkspaceConnectionBadge
+									key={connectionState}
+									state={connectionState}
+								/>
+							</AnimatePresence>
 
 							<div className="grid shrink-0 h-5 [&>*]:col-start-1 [&>*]:row-start-1 items-center">
 								{diffStats && (
@@ -457,7 +499,7 @@ export function WorkspaceListItem({
 					</div>
 				)}
 			</div>
-		</div>
+		</motion.div>
 	);
 
 	return (

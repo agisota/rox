@@ -3,6 +3,7 @@ import { formatDateTimeInTimezone } from "@rox/shared/rrule";
 import { cn } from "@rox/ui/utils";
 import { useMutation } from "@tanstack/react-query";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { StatusPulse } from "renderer/motion";
 import { DevicePicker } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker";
 import { useWorkspaceHostOptions } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker/hooks/useWorkspaceHostOptions/useWorkspaceHostOptions";
 import { AgentPicker } from "../../../components/AgentPicker";
@@ -56,14 +57,19 @@ export function AutomationDetailSidebar({
 						label="Status"
 						value={
 							<span className="inline-flex items-center gap-2">
-								<span
-									className={cn(
-										"inline-block size-2 shrink-0 rounded-full",
-										automation.enabled
-											? "bg-emerald-500"
-											: "border border-muted-foreground/60",
-									)}
-								/>
+								{automation.enabled ? (
+									<StatusPulse
+										colorClassName="bg-emerald-500"
+										className="shrink-0"
+									/>
+								) : (
+									<span
+										className={cn(
+											"inline-block size-2 shrink-0 rounded-full",
+											"border border-muted-foreground/60",
+										)}
+									/>
+								)}
 								{automation.enabled ? "Active" : "Paused"}
 							</span>
 						}
@@ -89,7 +95,7 @@ export function AutomationDetailSidebar({
 					/>
 				</Section>
 
-				<Section title="Details">
+				<Section title="Details" collapsible defaultOpen={true}>
 					<Row
 						label="Device"
 						value={

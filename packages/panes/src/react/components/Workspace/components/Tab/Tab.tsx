@@ -3,6 +3,7 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "@rox/ui/resizable";
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { WorkspaceStore } from "../../../../../core/store";
@@ -149,16 +150,19 @@ function LayoutNodeView<TData>({
 		if (!pane) return null;
 
 		return (
-			<Pane
-				store={store}
-				tab={tab}
-				pane={pane}
-				isActive={tab.activePaneId === pane.id}
-				registry={registry}
-				paneActions={paneActions}
-				contextMenuActions={contextMenuActions}
-				parentDirection={parentDirection}
-			/>
+			<AnimatePresence initial={false} mode="popLayout">
+				<Pane
+					key={pane.id}
+					store={store}
+					tab={tab}
+					pane={pane}
+					isActive={tab.activePaneId === pane.id}
+					registry={registry}
+					paneActions={paneActions}
+					contextMenuActions={contextMenuActions}
+					parentDirection={parentDirection}
+				/>
+			</AnimatePresence>
 		);
 	}
 

@@ -1,4 +1,6 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { ChangesetFile } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import type { FoldSignal } from "../../ChangesFileList";
 import { FileRow } from "../FileRow";
@@ -45,6 +47,7 @@ export const ChangesFoldersView = memo(function ChangesFoldersView({
 	onOpenFile,
 	onOpenInEditor,
 }: ChangesFoldersViewProps) {
+	const animate = useShouldAnimate("decorative");
 	const groups = useMemo(() => groupFilesByFolder(files), [files]);
 	const [closedFolders, setClosedFolders] = useState<Set<string>>(new Set());
 
@@ -87,19 +90,29 @@ export const ChangesFoldersView = memo(function ChangesFoldersView({
 							isOpen={isOpen}
 							onToggle={() => toggleFolder(group.folderPath)}
 						/>
-						{isOpen &&
-							group.files.map((file) => (
-								<FileRow
-									key={`${file.source.kind}:${file.path}`}
-									file={file}
-									workspaceId={workspaceId}
-									worktreePath={worktreePath}
-									hideDir
-									onSelect={onSelectFile}
-									onOpenFile={onOpenFile}
-									onOpenInEditor={onOpenInEditor}
-								/>
-							))}
+						<AnimatePresence initial={false}>
+							{isOpen &&
+								group.files.map((file) => (
+									<motion.div
+										key={`${file.source.kind}:${file.path}`}
+										layout={animate ? "position" : false}
+										initial={animate ? { opacity: 0, y: -4 } : false}
+										animate={animate ? { opacity: 1, y: 0 } : {}}
+										exit={animate ? { opacity: 0, y: -4 } : {}}
+										transition={motionSpring.soft}
+									>
+										<FileRow
+											file={file}
+											workspaceId={workspaceId}
+											worktreePath={worktreePath}
+											hideDir
+											onSelect={onSelectFile}
+											onOpenFile={onOpenFile}
+											onOpenInEditor={onOpenInEditor}
+										/>
+									</motion.div>
+								))}
+						</AnimatePresence>
 					</div>
 				);
 			})}

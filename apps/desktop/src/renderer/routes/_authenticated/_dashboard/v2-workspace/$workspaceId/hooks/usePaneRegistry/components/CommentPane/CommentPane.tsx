@@ -1,4 +1,5 @@
 import type { RendererContext } from "@rox/panes";
+import { motion } from "framer-motion";
 import {
 	type ReactNode,
 	useCallback,
@@ -9,6 +10,8 @@ import {
 import { LuCheck } from "react-icons/lu";
 import { CommentMarkdown } from "renderer/components/CommentMarkdown";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
+import { ease, motionDuration } from "renderer/motion/tokens";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import type { CommentPaneData, PaneViewerData } from "../../../../types";
 import "./comment-pane.css";
 
@@ -24,13 +27,40 @@ const paneComponents = {
 
 export function CommentPane({ context }: CommentPaneProps) {
 	const data = context.pane.data as CommentPaneData;
+	const animate = useShouldAnimate("decorative");
+
+	if (!animate) {
+		return (
+			<div className="comment-pane-markdown min-h-0 min-w-0 flex-1 overflow-y-auto select-text">
+				<article className="w-full px-6 py-5">
+					<CommentMarkdown body={data.body} components={paneComponents} />
+				</article>
+			</div>
+		);
+	}
 
 	return (
-		<div className="comment-pane-markdown min-h-0 min-w-0 flex-1 overflow-y-auto select-text">
-			<article className="w-full px-6 py-5">
+		<motion.div
+			key={data.commentId}
+			className="comment-pane-markdown min-h-0 min-w-0 flex-1 overflow-y-auto select-text"
+			initial={{ opacity: 0, x: 16 }}
+			animate={{ opacity: 1, x: 0 }}
+			transition={{ duration: motionDuration.base, ease: ease.standard }}
+		>
+			<motion.article
+				key={data.commentId}
+				className="comment-pane-pulse w-full px-6 py-5"
+				initial={{ backgroundColor: "hsl(var(--primary) / 0.10)" }}
+				animate={{ backgroundColor: "hsl(var(--primary) / 0)" }}
+				transition={{
+					duration: motionDuration.slow,
+					ease: ease.standard,
+					delay: motionDuration.fast,
+				}}
+			>
 				<CommentMarkdown body={data.body} components={paneComponents} />
-			</article>
-		</div>
+			</motion.article>
+		</motion.div>
 	);
 }
 

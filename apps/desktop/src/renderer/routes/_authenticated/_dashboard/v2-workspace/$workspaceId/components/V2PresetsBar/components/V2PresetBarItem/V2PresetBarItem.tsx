@@ -8,12 +8,15 @@ import {
 	ContextMenuTrigger,
 } from "@rox/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
-import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { HiMiniCommandLine } from "react-icons/hi2";
 import type { HotkeyId } from "renderer/hotkeys";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { resolveV2PresetIcon } from "renderer/lib/preset-icon";
+import { ease, motionDuration } from "renderer/motion/tokens";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
 
 const V2_PRESET_BAR_ITEM_TYPE = "V2_PRESET_BAR_ITEM";
@@ -42,6 +45,8 @@ export function V2PresetBarItem({
 	onPersistReorder,
 }: V2PresetBarItemProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
+	const [glow, setGlow] = useState(false);
+	const shouldAnimate = useShouldAnimate("decorative");
 	const icon = resolveV2PresetIcon(preset, agents, isDark);
 	const label = preset.description || preset.name || "default";
 
@@ -82,10 +87,20 @@ export function V2PresetBarItem({
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
-				<div
+				<motion.div
 					ref={containerRef}
-					className={isDragging ? "opacity-40" : undefined}
-					style={{ cursor: isDragging ? "grabbing" : "grab" }}
+					layout={shouldAnimate ? "position" : false}
+					initial={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
+					animate={{ opacity: isDragging ? 0.4 : 1, scale: 1 }}
+					exit={shouldAnimate ? { opacity: 0, scale: 0.9 } : undefined}
+					transition={{
+						duration: motionDuration.fast,
+						ease: [...ease.standard],
+					}}
+					style={{
+						cursor: isDragging ? "grabbing" : "grab",
+						position: "relative",
+					}}
 				>
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -93,7 +108,10 @@ export function V2PresetBarItem({
 								variant="ghost"
 								size="sm"
 								className="h-6 max-w-32 min-w-0 shrink-0 gap-1.5 rounded-md px-1.5 text-xs font-normal text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-								onClick={() => onExecutePreset(preset)}
+								onClick={() => {
+									onExecutePreset(preset);
+									if (shouldAnimate) setGlow(true);
+								}}
 							>
 								{icon ? (
 									<img
@@ -113,7 +131,20 @@ export function V2PresetBarItem({
 							<HotkeyLabel label={label} id={hotkeyId} />
 						</TooltipContent>
 					</Tooltip>
-				</div>
+					{shouldAnimate && glow ? (
+						<motion.span
+							aria-hidden
+							className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-primary/60"
+							initial={{ opacity: 0.9, boxShadow: "0 0 0 0 var(--primary)" }}
+							animate={{ opacity: 0, boxShadow: "0 0 12px 2px var(--primary)" }}
+							transition={{
+								duration: motionDuration.base,
+								ease: [...ease.standard],
+							}}
+							onAnimationComplete={() => setGlow(false)}
+						/>
+					) : null}
+				</motion.div>
 			</ContextMenuTrigger>
 			<ContextMenuContent>
 				<ContextMenuItem onSelect={() => onExecutePreset(preset)}>

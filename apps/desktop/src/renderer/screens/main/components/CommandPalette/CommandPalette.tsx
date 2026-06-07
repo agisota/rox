@@ -3,6 +3,7 @@ import { CommandPrimitive, CommandSeparator } from "@rox/ui/command";
 import { SearchIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuChevronDown, LuChevronRight } from "react-icons/lu";
+import { fileLayoutId, useShouldAnimate } from "renderer/motion";
 import type { RecentFile } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useRecentlyViewedFiles";
 import { RECENT_DISPLAY_LIMIT } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useRecentlyViewedFiles";
 import { useFileSearch } from "renderer/screens/main/components/WorkspaceView/RightSidebar/FilesView/hooks/useFileSearch/useFileSearch";
@@ -41,7 +42,12 @@ export function CommandPalette({
 	const [filtersOpen, setFiltersOpen] = useState(false);
 	const [includePattern, setIncludePattern] = useState("");
 	const [excludePattern, setExcludePattern] = useState("");
+	// The path of the row currently playing its open-file exit flourish (case
+	// 047). Drives `isOpening` on the chosen FileResultItem; reset on close.
+	const [openingPath, setOpeningPath] = useState<string | null>(null);
+	const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const shouldAnimate = useShouldAnimate("essential");
 
 	const v1Search = useFileSearch({
 		workspaceId: variant === "v1" && open ? workspaceId : undefined,
@@ -99,18 +105,42 @@ export function CommandPalette({
 	const handleOpenChange = useCallback(
 		(nextOpen: boolean) => {
 			onOpenChange(nextOpen);
-			if (!nextOpen) setQuery("");
+			if (!nextOpen) {
+				setQuery("");
+				setOpeningPath(null);
+			}
 		},
 		[onOpenChange],
 	);
 
 	const handleSelectFile = useCallback(
 		(filePath: string) => {
+			// Reduced motion (or Off): keep the original synchronous behaviour —
+			// open the file and dismiss the dialog in the same tick.
+			if (!shouldAnimate) {
+				onSelectFile(filePath);
+				handleOpenChange(false);
+				return;
+			}
+			// Otherwise open the file immediately but hold the dialog open briefly
+			// so the chosen row can play its lift/morph-and-fade flourish, then
+			// dismiss. Selection/keyboard semantics are unchanged.
+			setOpeningPath(filePath);
 			onSelectFile(filePath);
-			handleOpenChange(false);
+			if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+			closeTimeoutRef.current = setTimeout(() => {
+				handleOpenChange(false);
+			}, 200);
 		},
-		[onSelectFile, handleOpenChange],
+		[shouldAnimate, onSelectFile, handleOpenChange],
 	);
+
+	// Clear any pending close timer on unmount so it can't fire post-teardown.
+	useEffect(() => {
+		return () => {
+			if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+		};
+	}, []);
 
 	useEffect(() => {
 		if (open) requestAnimationFrame(() => inputRef.current?.focus());
@@ -203,6 +233,8 @@ export function CommandPalette({
 									fileName={getFileName(file.relativePath)}
 									relativePath={file.relativePath}
 									onSelect={() => handleSelectFile(file.absolutePath)}
+									isOpening={openingPath === file.absolutePath}
+									layoutId={fileLayoutId(file.absolutePath)}
 								/>
 							))}
 
@@ -217,6 +249,8 @@ export function CommandPalette({
 									fileName={file.name}
 									relativePath={file.relativePath}
 									onSelect={() => handleSelectFile(file.path)}
+									isOpening={openingPath === file.path}
+									layoutId={fileLayoutId(file.path)}
 								/>
 							))}
 						</CommandPrimitive.List>

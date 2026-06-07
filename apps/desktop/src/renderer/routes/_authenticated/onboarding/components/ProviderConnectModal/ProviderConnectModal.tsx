@@ -9,6 +9,7 @@ import {
 } from "@rox/ui/dialog";
 import { Input } from "@rox/ui/input";
 import { toast } from "@rox/ui/sonner";
+import { motion } from "framer-motion";
 import { type FormEvent, useState } from "react";
 import { LuKeyRound } from "react-icons/lu";
 import { AnthropicOAuthDialog } from "renderer/components/Chat/ChatInterface/components/ModelPicker/components/AnthropicOAuthDialog";
@@ -16,6 +17,7 @@ import { OpenAIOAuthDialog } from "renderer/components/Chat/ChatInterface/compon
 import { useAnthropicOAuth } from "renderer/components/Chat/ChatInterface/components/ModelPicker/hooks/useAnthropicOAuth";
 import { useOpenAIOAuth } from "renderer/components/Chat/ChatInterface/components/ModelPicker/hooks/useOpenAIOAuth";
 import { track } from "renderer/lib/analytics";
+import { shakeVariants, useShouldAnimate } from "renderer/motion";
 
 export type Provider = "anthropic" | "openai";
 
@@ -186,6 +188,8 @@ function ConnectDialogShell({
 	const [mode, setMode] = useState<"choose" | "api-key">("choose");
 	const [apiKey, setApiKey] = useState("");
 	const [submitting, setSubmitting] = useState(false);
+	const [shake, setShake] = useState(0);
+	const shouldAnimateEssential = useShouldAnimate("essential");
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
@@ -198,6 +202,7 @@ function ConnectDialogShell({
 			toast.error(
 				err instanceof Error ? err.message : "Failed to save the API key.",
 			);
+			setShake((n) => n + 1);
 		} finally {
 			setSubmitting(false);
 		}
@@ -230,7 +235,19 @@ function ConnectDialogShell({
 						</Button>
 					</div>
 				) : (
-					<form onSubmit={handleSubmit} className="flex flex-col gap-3">
+					<motion.form
+						onSubmit={handleSubmit}
+						className="flex flex-col gap-3"
+						variants={shakeVariants}
+						animate={
+							shouldAnimateEssential
+								? shake > 0
+									? "shake"
+									: "rest"
+								: undefined
+						}
+						onAnimationComplete={() => setShake(0)}
+					>
 						<Input
 							type="password"
 							autoComplete="off"
@@ -262,7 +279,7 @@ function ConnectDialogShell({
 								{submitting ? "Saving…" : "Save & connect"}
 							</Button>
 						</div>
-					</form>
+					</motion.form>
 				)}
 			</DialogContent>
 		</Dialog>

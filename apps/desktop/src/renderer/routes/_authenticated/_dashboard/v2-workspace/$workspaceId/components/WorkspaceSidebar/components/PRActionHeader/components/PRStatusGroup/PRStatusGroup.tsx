@@ -15,6 +15,7 @@ import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useMemo } from "react";
 import { VscChevronDown, VscGitMerge, VscLoading } from "react-icons/vsc";
+import { DangerShake, MenuItemReveal } from "renderer/motion/StaggeredMenuItem";
 import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
 import { computeChecksRollup } from "../../utils/computeChecksStatus";
 import type { PRFlowState } from "../../utils/getPRFlowState";
@@ -177,24 +178,33 @@ export function PRStatusGroup({
 								className="text-xs"
 								disabled={mergePRMutation.isPending}
 							>
-								<VscGitMerge className="size-3.5" />
-								Squash and merge
+								<MenuItemReveal index={0}>
+									<VscGitMerge className="size-3.5" />
+									Squash and merge
+								</MenuItemReveal>
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => handleMerge("merge")}
 								className="text-xs"
 								disabled={mergePRMutation.isPending}
 							>
-								<VscGitMerge className="size-3.5" />
-								Create merge commit
+								<MenuItemReveal index={1}>
+									<VscGitMerge className="size-3.5" />
+									Create merge commit
+								</MenuItemReveal>
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => handleMerge("rebase")}
 								className="text-xs"
 								disabled={mergePRMutation.isPending}
+								variant="destructive"
 							>
-								<VscGitMerge className="size-3.5" />
-								Rebase and merge
+								<DangerShake>
+									<MenuItemReveal index={2}>
+										<VscGitMerge className="size-3.5" />
+										Rebase and merge
+									</MenuItemReveal>
+								</DangerShake>
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>

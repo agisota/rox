@@ -7,9 +7,11 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Play, Settings, Square, X } from "lucide-react";
 import { useCallback } from "react";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { SpinnerRing, useShouldAnimate } from "renderer/motion";
 import { useSetSettingsSearchQuery } from "renderer/stores/settings-state";
 import type { WorkspaceRunDefinition } from "shared/workspace-run-definition";
 
@@ -55,6 +57,17 @@ export function V2WorkspaceRunButton({
 
 	const label = isRunning ? "Stop" : hasRunCommand ? "Run" : "Set Run";
 	const Icon = isRunning ? Square : hasRunCommand ? Play : Settings;
+	const shouldAnimate = useShouldAnimate("decorative");
+
+	const runState =
+		!isRunning && isPending
+			? "pending"
+			: isRunning && (isPending || canForceStop)
+				? "stopping"
+				: isRunning
+					? "running"
+					: "idle";
+	const inFlight = runState === "pending" || runState === "stopping";
 
 	return (
 		<div className="flex shrink-0 items-center no-drag">
@@ -86,7 +99,32 @@ export function V2WorkspaceRunButton({
 							: "Configure workspace run command"
 				}
 			>
-				<Icon className="size-3 shrink-0" />
+				<span className="relative inline-flex size-3 shrink-0 items-center justify-center">
+					<AnimatePresence initial={false} mode="popLayout">
+						<motion.span
+							key={`${runState}:${label}`}
+							initial={
+								shouldAnimate ? { opacity: 0, rotate: -90, scale: 0.6 } : false
+							}
+							animate={{ opacity: 1, rotate: 0, scale: 1 }}
+							exit={
+								shouldAnimate
+									? { opacity: 0, rotate: 90, scale: 0.6 }
+									: { opacity: 0 }
+							}
+							transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
+							className="inline-flex"
+						>
+							<Icon className="size-3 shrink-0" />
+						</motion.span>
+					</AnimatePresence>
+					{inFlight && (
+						<SpinnerRing
+							className="absolute inset-0 size-3"
+							active={shouldAnimate}
+						/>
+					)}
+				</span>
 				<span>{label}</span>
 				{hotkeyText && hotkeyText !== "Unassigned" && (
 					<span className="hidden text-[10px] tracking-wide text-muted-foreground/60 sm:inline">

@@ -1,7 +1,9 @@
 import { OverflowFadeText } from "@rox/ui/overflow-fade-text";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, GitBranch } from "lucide-react";
+import { motionDuration, useShouldAnimate } from "renderer/motion";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 
 interface V2WorkspaceTitleProps {
@@ -24,6 +26,7 @@ export function V2WorkspaceTitle({ workspaceId }: V2WorkspaceTitleProps) {
 	const workspace = workspaces[0] ?? null;
 	const name = workspace?.name ?? null;
 	const branch = workspace?.branch ?? null;
+	const animate = useShouldAnimate("essential");
 
 	if (!name && !branch) {
 		return null;
@@ -32,9 +35,23 @@ export function V2WorkspaceTitle({ workspaceId }: V2WorkspaceTitleProps) {
 	return (
 		<div className="flex min-w-0 max-w-full items-center gap-1.5 text-[13px] tracking-tight">
 			{name && (
-				<OverflowFadeText className="font-medium text-foreground" title={name}>
-					{name}
-				</OverflowFadeText>
+				<AnimatePresence mode="wait" initial={false}>
+					<motion.span
+						key={name}
+						initial={animate ? { opacity: 0, y: 2 } : false}
+						animate={{ opacity: 1, y: 0 }}
+						exit={animate ? { opacity: 0, y: -2 } : { opacity: 0 }}
+						transition={{ duration: motionDuration.fast }}
+						className="min-w-0"
+					>
+						<OverflowFadeText
+							className="font-medium text-foreground"
+							title={name}
+						>
+							{name}
+						</OverflowFadeText>
+					</motion.span>
+				</AnimatePresence>
 			)}
 			{name && branch && (
 				<ChevronRight

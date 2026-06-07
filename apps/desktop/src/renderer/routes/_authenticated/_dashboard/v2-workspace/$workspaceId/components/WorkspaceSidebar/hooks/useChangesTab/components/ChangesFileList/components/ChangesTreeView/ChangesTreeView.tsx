@@ -12,6 +12,7 @@ import {
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { workspaceTrpc } from "@rox/workspace-client";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 import { Undo2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -26,6 +27,7 @@ import {
 	type PierreGitStatusEntry,
 	stripTrailingSlash,
 } from "renderer/lib/pierreTree";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import { DiscardConfirmDialog } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/DiscardConfirmDialog";
 import { PierreRowContextMenu } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/components/PierreRowContextMenu";
 import type { ChangesetFile } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
@@ -154,6 +156,15 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 		contentHeight != null
 			? contentHeight + HEIGHT_CUSHION
 			: (dirs.length + paths.length) * ROW_BOX + HEIGHT_CUSHION;
+
+	// Animate the Pierre host container height so folder expand/collapse
+	// transitions smoothly at the section level rather than snapping.
+	const animate = useShouldAnimate("decorative");
+	const heightMV = useMotionValue(treeHeight);
+	const springHeight = useSpring(heightMV, motionSpring.snappy);
+	useEffect(() => {
+		heightMV.set(treeHeight);
+	}, [treeHeight, heightMV]);
 
 	const setAllDirsExpanded = useCallback(
 		(expanded: boolean) => {
@@ -330,11 +341,18 @@ export const ChangesTreeView = memo(function ChangesTreeView({
 					renderInlineActions={renderHoverInlineActions}
 					renderMenuContent={renderHoverMenuContent}
 				>
-					<PierreFileTree
-						model={model}
-						style={{ ...TREE_STYLE, height: treeHeight }}
-						renderContextMenu={renderContextMenu}
-					/>
+					<motion.div
+						style={{
+							height: animate ? springHeight : treeHeight,
+							overflow: "hidden",
+						}}
+					>
+						<PierreFileTree
+							model={model}
+							style={{ ...TREE_STYLE, height: "100%" }}
+							renderContextMenu={renderContextMenu}
+						/>
+					</motion.div>
 				</ShadowRowHoverActions>
 			</ShadowClickHint>
 			{discardTarget && (

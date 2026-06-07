@@ -1,5 +1,8 @@
+import { toast } from "@rox/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
+import { createElement } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { CompletionBurst } from "renderer/motion/CompletionBurst";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { NOTIFICATION_EVENTS } from "shared/constants";
 import { debugLog } from "shared/debug";
@@ -110,6 +113,12 @@ export function useAgentHookListener() {
 					});
 
 					state.setPaneStatus(paneId, nextStatus);
+
+					if (nextStatus === "review") {
+						toast.success("Agent finished", {
+							icon: createElement(CompletionBurst, { size: 14 }),
+						});
+					}
 				}
 			} else if (event.type === NOTIFICATION_EVENTS.TERMINAL_EXIT) {
 				// Clear transient status for unmounted panes (mounted panes handle this via stream subscription)

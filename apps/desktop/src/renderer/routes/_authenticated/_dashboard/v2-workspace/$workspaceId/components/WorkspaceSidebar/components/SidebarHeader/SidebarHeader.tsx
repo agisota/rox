@@ -2,6 +2,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { getSidebarHeaderTabButtonClassName } from "renderer/screens/main/components/WorkspaceView/RightSidebar/headerTabStyles";
 import type { SidebarTabDefinition } from "../../types";
+import { TabBadge } from "./TabBadge";
 
 interface SidebarHeaderProps {
 	tabs: SidebarTabDefinition[];
@@ -44,18 +45,12 @@ export function SidebarHeader({
 						>
 							{tab.icon && <tab.icon className="size-3" />}
 							{!compact && tab.label}
-							{badge && (
-								<span
-									aria-hidden="true"
-									className={cn(
-										"shrink-0 rounded-full bg-muted px-1.5 text-[10px] font-medium leading-4 tabular-nums text-muted-foreground",
-										isActive && "bg-background/80 text-foreground",
-										compact &&
-											"absolute right-1 top-1 min-w-3 px-1 text-[9px] leading-3",
-									)}
-								>
-									{badge}
-								</span>
+							{typeof tab.badge === "number" && tab.badge > 0 && (
+								<TabBadge
+									count={tab.badge}
+									isActive={isActive}
+									compact={compact}
+								/>
 							)}
 						</button>
 					);

@@ -1,6 +1,5 @@
 import {
 	AlertDialog,
-	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
@@ -13,6 +12,7 @@ import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { AnimatedAlertDialogContent } from "renderer/motion";
 import {
 	useCloseWorkspace,
 	useDeleteWorkspace,
@@ -183,7 +183,8 @@ export function DeleteWorkspaceDialog({
 	if (isBranch) {
 		return (
 			<AlertDialog open={open} onOpenChange={onOpenChange}>
-				<AlertDialogContent
+				<AnimatedAlertDialogContent
+					open={open}
 					className="max-w-[340px] gap-0 p-0"
 					onOpenAutoFocus={(event) => {
 						focusPrimaryDialogAction(event, closeActionButtonRef.current);
@@ -222,14 +223,15 @@ export function DeleteWorkspaceDialog({
 							Close
 						</Button>
 					</AlertDialogFooter>
-				</AlertDialogContent>
+				</AnimatedAlertDialogContent>
 			</AlertDialog>
 		);
 	}
 
 	return (
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent
+			<AnimatedAlertDialogContent
+				open={open}
 				className="max-w-[340px] gap-0 p-0"
 				onOpenAutoFocus={(event) => {
 					focusPrimaryDialogAction(event, closeActionButtonRef.current);
@@ -322,7 +324,7 @@ export function DeleteWorkspaceDialog({
 						</TooltipContent>
 					</Tooltip>
 				</AlertDialogFooter>
-			</AlertDialogContent>
+			</AnimatedAlertDialogContent>
 		</AlertDialog>
 	);
 }

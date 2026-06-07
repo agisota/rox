@@ -1,4 +1,5 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	TbArrowLeft,
@@ -6,6 +7,7 @@ import {
 	TbLoader2,
 	TbRefresh,
 } from "react-icons/tb";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { UrlSuggestions } from "./components/UrlSuggestions";
 import { useUrlAutocomplete } from "./hooks/useUrlAutocomplete";
 
@@ -41,6 +43,7 @@ export function BrowserToolbar({
 	const [isEditing, setIsEditing] = useState(false);
 	const [urlInputValue, setUrlInputValue] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
+	const shouldAnimate = useShouldAnimate();
 
 	const url = displayUrl(currentUrl);
 	const isBlank = !url;
@@ -164,13 +167,17 @@ export function BrowserToolbar({
 				</Tooltip>
 			</div>
 			<div className="mx-1.5 h-3.5 w-px bg-muted-foreground/60" />
-			<div className="relative flex flex-1 min-w-0 items-center">
+			<motion.div
+				className="relative flex flex-1 min-w-0 items-center"
+				layout={shouldAnimate}
+				transition={{ layout: { duration: motionDuration.fast } }}
+			>
 				{isEditing ? (
 					<form
 						onSubmit={handleSubmit}
 						className="flex w-full min-w-0 items-center"
 					>
-						<input
+						<motion.input
 							ref={inputRef}
 							type="text"
 							value={urlInputValue}
@@ -181,6 +188,16 @@ export function BrowserToolbar({
 							className="h-[22px] w-full rounded-sm border border-ring bg-transparent px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground/40"
 							spellCheck={false}
 							autoComplete="off"
+							initial={{ boxShadow: "0 0 0 0px hsl(var(--ring) / 0)" }}
+							animate={
+								shouldAnimate
+									? { boxShadow: "0 0 0 3px hsl(var(--ring) / 0.25)" }
+									: {}
+							}
+							transition={{
+								duration: motionDuration.fast,
+								ease: ease.standard as [number, number, number, number],
+							}}
 						/>
 					</form>
 				) : (
@@ -207,14 +224,17 @@ export function BrowserToolbar({
 						)}
 					</button>
 				)}
-				{isEditing && autocomplete.isOpen && (
-					<UrlSuggestions
-						suggestions={autocomplete.suggestions}
-						highlightedIndex={autocomplete.highlightedIndex}
-						onSelect={autocomplete.selectSuggestion}
-					/>
-				)}
-			</div>
+				<AnimatePresence initial={false}>
+					{isEditing && autocomplete.isOpen && (
+						<UrlSuggestions
+							key="sugg"
+							suggestions={autocomplete.suggestions}
+							highlightedIndex={autocomplete.highlightedIndex}
+							onSelect={autocomplete.selectSuggestion}
+						/>
+					)}
+				</AnimatePresence>
+			</motion.div>
 		</div>
 	);
 }

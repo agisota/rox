@@ -5,7 +5,9 @@ import {
 	HoverCardTrigger,
 } from "@rox/ui/hover-card";
 import { cn } from "@rox/ui/utils";
+import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
@@ -96,6 +98,7 @@ export function MessageScrollbackRail({
 		{ id: string; preview: string; top: number; isLatest: boolean }[]
 	>([]);
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+	const shouldAnimate = useShouldAnimate("decorative");
 	const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 	const [isCardOpen, setIsCardOpen] = useState(false);
 	const [dismissedByClick, setDismissedByClick] = useState(false);
@@ -264,20 +267,44 @@ export function MessageScrollbackRail({
 										: "bg-muted-foreground/30 hover:bg-muted-foreground/45";
 
 								return (
-									<button
-										key={entry.id}
-										type="button"
-										className={cn(
-											"h-0.5 w-full flex-shrink-0 rounded-full transition-all",
-											markerColorClass,
-										)}
-										onMouseEnter={() => setHoveredMessageId(entry.id)}
-										onMouseLeave={() => setHoveredMessageId(null)}
-										onFocus={() => setHoveredMessageId(entry.id)}
-										onBlur={() => setHoveredMessageId(null)}
-										onClick={() => handleJumpToMessage(entry.id)}
-										aria-label={`Jump to message: ${entry.preview}`}
-									/>
+									<div key={entry.id} className="relative w-full flex-shrink-0">
+										<motion.button
+											type="button"
+											className={cn(
+												"h-0.5 w-full rounded-full transition-all",
+												markerColorClass,
+											)}
+											style={{ transformOrigin: "center" }}
+											animate={
+												shouldAnimate
+													? {
+															scaleY: isEmphasized ? 2.4 : 1,
+															opacity: isEmphasized ? 1 : 0.85,
+														}
+													: undefined
+											}
+											whileHover={shouldAnimate ? { scaleY: 2.4 } : undefined}
+											whileTap={shouldAnimate ? { scaleY: 1.8 } : undefined}
+											transition={{
+												type: "spring",
+												stiffness: 420,
+												damping: 32,
+											}}
+											onMouseEnter={() => setHoveredMessageId(entry.id)}
+											onMouseLeave={() => setHoveredMessageId(null)}
+											onFocus={() => setHoveredMessageId(entry.id)}
+											onBlur={() => setHoveredMessageId(null)}
+											onClick={() => handleJumpToMessage(entry.id)}
+											aria-label={`Jump to message: ${entry.preview}`}
+										/>
+										{shouldAnimate && activeMessageId === entry.id ? (
+											<motion.div
+												layoutId="scrollback-active"
+												className="pointer-events-none absolute inset-x-0 top-0 h-0.5 rounded-full bg-foreground"
+												transition={motionSpring.layout}
+											/>
+										) : null}
+									</div>
 								);
 							})}
 						</div>

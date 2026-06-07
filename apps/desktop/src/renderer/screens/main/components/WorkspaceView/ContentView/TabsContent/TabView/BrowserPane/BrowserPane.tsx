@@ -1,9 +1,16 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { motion } from "framer-motion";
 import { GlobeIcon } from "lucide-react";
 import { useCallback } from "react";
 import { TbDeviceDesktop } from "react-icons/tb";
 import type { MosaicBranch } from "react-mosaic-component";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import {
+	BrowserLoadingBar,
+	ease,
+	motionDuration,
+	useShouldAnimate,
+} from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { BasePaneWindow, PaneToolbarActions } from "../components";
 import { BrowserErrorOverlay } from "./components/BrowserErrorOverlay";
@@ -57,6 +64,8 @@ export function BrowserPane({
 		paneId,
 		initialUrl: currentUrl,
 	});
+
+	const shouldAnimate = useShouldAnimate("essential");
 
 	const handleOpenDevTools = useCallback(() => {
 		openDevTools({ paneId });
@@ -115,12 +124,18 @@ export function BrowserPane({
 			)}
 		>
 			<div className="relative flex flex-1 h-full">
+				<BrowserLoadingBar loading={isLoading} />
 				<div ref={containerRef} className="w-full h-full" style={{ flex: 1 }} />
 				{loadError && !isLoading && (
 					<BrowserErrorOverlay error={loadError} onRetry={reload} />
 				)}
 				{isBlankPage && !isLoading && !loadError && (
-					<div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background pointer-events-none">
+					<motion.div
+						className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background pointer-events-none"
+						initial={shouldAnimate ? { opacity: 0, scale: 0.96 } : false}
+						animate={{ opacity: 1, scale: 1 }}
+						transition={{ duration: motionDuration.base, ease: ease.standard }}
+					>
 						<GlobeIcon className="size-10 text-muted-foreground/30" />
 						<div className="text-center">
 							<p className="text-sm font-medium text-muted-foreground/50">
@@ -132,7 +147,7 @@ export function BrowserPane({
 								and use the browser
 							</p>
 						</div>
-					</div>
+					</motion.div>
 				)}
 			</div>
 		</BasePaneWindow>

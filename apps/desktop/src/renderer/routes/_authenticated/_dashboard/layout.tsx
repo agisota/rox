@@ -3,14 +3,18 @@ import { useLiveQuery } from "@tanstack/react-db";
 import {
 	createFileRoute,
 	Outlet,
+	useLocation,
 	useMatchRoute,
 	useNavigate,
 } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { CommandPaletteHost } from "renderer/commandPalette";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { useHotkey } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { shellBootVariants, useShouldAnimate } from "renderer/motion";
+import { RouteTransition } from "renderer/motion/RouteTransition";
 import { DashboardSidebar } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar";
 import { DashboardSidebarDeleteDialog } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarDeleteDialog";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
@@ -55,6 +59,13 @@ function DashboardLayout() {
 	const collections = useCollections();
 	const { removeWorkspaceFromSidebar } = useDashboardSidebarState();
 	useDevSeedV2Sidebar();
+	// Case 002 / PR-02: one-shot first-mount entrance for the shell columns.
+	const shouldAnimate = useShouldAnimate("decorative");
+	// Case 003 / PR-03: key the route transition on the TOP-LEVEL path segment
+	// only (e.g. `/v2-workspace`), never the full pathname — keying by params
+	// would remount the entire panes subtree on every workspace switch.
+	const location = useLocation();
+	const routeKey = `/${location.pathname.split("/")[1] ?? ""}`;
 	// Get current workspace from route to pre-select project in new workspace modal
 	const matchRoute = useMatchRoute();
 	const currentWorkspaceMatch = matchRoute({
@@ -155,29 +166,34 @@ function DashboardLayout() {
 	);
 
 	const sidebarPanel = isWorkspaceSidebarOpen && (
-		<ResizablePanel
-			width={workspaceSidebarWidth}
-			onWidthChange={setWorkspaceSidebarWidth}
-			isResizing={isWorkspaceSidebarResizing}
-			onResizingChange={setWorkspaceSidebarIsResizing}
-			minWidth={COLLAPSED_WORKSPACE_SIDEBAR_WIDTH}
-			maxWidth={MAX_WORKSPACE_SIDEBAR_WIDTH}
-			handleSide="right"
-			clampWidth={false}
-			onDoubleClickHandle={() =>
-				setWorkspaceSidebarWidth(DEFAULT_WORKSPACE_SIDEBAR_WIDTH)
-			}
+		<motion.div
+			className="flex h-full shrink-0"
+			variants={shouldAnimate ? shellBootVariants.sidebar : undefined}
 		>
-			{isV2CloudEnabled ? (
-				<DashboardSidebar isCollapsed={isWorkspaceSidebarCollapsed()} />
-			) : (
-				<WorkspaceSidebar
-					isCollapsed={isWorkspaceSidebarCollapsed()}
-					activeProjectId={currentWorkspace?.projectId ?? null}
-					activeProjectName={currentWorkspace?.project?.name ?? null}
-				/>
-			)}
-		</ResizablePanel>
+			<ResizablePanel
+				width={workspaceSidebarWidth}
+				onWidthChange={setWorkspaceSidebarWidth}
+				isResizing={isWorkspaceSidebarResizing}
+				onResizingChange={setWorkspaceSidebarIsResizing}
+				minWidth={COLLAPSED_WORKSPACE_SIDEBAR_WIDTH}
+				maxWidth={MAX_WORKSPACE_SIDEBAR_WIDTH}
+				handleSide="right"
+				clampWidth={false}
+				onDoubleClickHandle={() =>
+					setWorkspaceSidebarWidth(DEFAULT_WORKSPACE_SIDEBAR_WIDTH)
+				}
+			>
+				{isV2CloudEnabled ? (
+					<DashboardSidebar isCollapsed={isWorkspaceSidebarCollapsed()} />
+				) : (
+					<WorkspaceSidebar
+						isCollapsed={isWorkspaceSidebarCollapsed()}
+						activeProjectId={currentWorkspace?.projectId ?? null}
+						activeProjectName={currentWorkspace?.project?.name ?? null}
+					/>
+				)}
+			</ResizablePanel>
+		</motion.div>
 	);
 
 	// Only lift the sidebar out of the TopBar column when v2 + expanded.
@@ -188,18 +204,28 @@ function DashboardLayout() {
 		!isWorkspaceSidebarCollapsed();
 
 	return (
-		<div className="flex h-full w-full overflow-hidden">
+		<motion.div
+			className="flex h-full w-full overflow-hidden"
+			variants={shouldAnimate ? shellBootVariants.container : undefined}
+			initial={shouldAnimate ? "hidden" : false}
+			animate={shouldAnimate ? "show" : false}
+		>
 			<CommandPaletteHost />
 			{sidebarOutsideColumn && sidebarPanel}
-			<div className="flex flex-1 flex-col min-w-0 min-h-0">
+			<motion.div
+				className="flex flex-1 flex-col min-w-0 min-h-0"
+				variants={shouldAnimate ? shellBootVariants.column : undefined}
+			>
 				<TopBar />
 				<div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
 					{!sidebarOutsideColumn && sidebarPanel}
-					<div className="flex flex-1 min-h-0 min-w-0">
+					<RouteTransition
+						transitionKey={versionMismatch ? "mismatch" : routeKey}
+					>
 						{versionMismatch ? <CrossVersionMismatchState /> : <Outlet />}
-					</div>
+					</RouteTransition>
 				</div>
-			</div>
+			</motion.div>
 			<div id="workspace-right-sidebar-slot" className="flex h-full shrink-0" />
 			<AddRepositoryModals />
 			{deleteTarget?.version === "v1" && (
@@ -229,6 +255,6 @@ function DashboardLayout() {
 					}}
 				/>
 			)}
-		</div>
+		</motion.div>
 	);
 }

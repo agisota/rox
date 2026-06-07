@@ -1,9 +1,18 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import type { MouseEvent } from "react";
 import { LuExternalLink, LuLoaderCircle, LuX } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import {
+	motionDuration,
+	openButtonPulse,
+	portBadgeEnter,
+	portNumberSpring,
+	StatusPulse,
+	useShouldAnimate,
+} from "renderer/motion";
 import { navigateToV2Workspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { STROKE_WIDTH } from "renderer/screens/main/components/WorkspaceSidebar/constants";
 import { useDashboardSidebarPortKill } from "../../hooks/useDashboardSidebarPortKill";
@@ -22,6 +31,8 @@ export function DashboardSidebarPortBadge({
 	const canOpenInBrowser = port.hostType === "local-device";
 	const hostLabel =
 		port.hostType === "local-device" ? "Local device" : "Remote host";
+	const shouldAnimate = useShouldAnimate("essential");
+	const shouldAnimateDecorative = useShouldAnimate("decorative");
 
 	const handleWorkspaceClick = () => {
 		void navigateToV2Workspace(port.workspaceId, navigate, {
@@ -62,13 +73,24 @@ export function DashboardSidebarPortBadge({
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<div
+				<motion.div
 					className={cn(
 						"group relative mb-1 inline-flex max-w-full items-center gap-1 rounded-md",
 						"bg-primary/10 text-xs text-primary transition-colors hover:bg-primary/20",
 						isPending && "opacity-70",
 					)}
+					variants={shouldAnimate ? portBadgeEnter : undefined}
+					initial={shouldAnimate ? "initial" : false}
+					animate={shouldAnimate ? "animate" : undefined}
+					exit={shouldAnimate ? "exit" : undefined}
+					layout={shouldAnimate ? true : undefined}
+					transition={{ duration: motionDuration.base, ease: [0.2, 0, 0, 1] }}
 				>
+					<StatusPulse
+						active={!isPending}
+						colorClassName="bg-primary"
+						className="ml-2 size-1.5 shrink-0"
+					/>
 					<button
 						type="button"
 						onClick={handleWorkspaceClick}
@@ -77,26 +99,46 @@ export function DashboardSidebarPortBadge({
 						{port.label ? (
 							<>
 								<span className="min-w-0 truncate">{port.label}</span>
-								<span className="shrink-0 font-mono font-normal text-muted-foreground">
+								<motion.span
+									className="shrink-0 font-mono font-normal text-muted-foreground"
+									initial={shouldAnimateDecorative ? { scale: 0.8 } : false}
+									animate={shouldAnimateDecorative ? { scale: 1 } : undefined}
+									transition={
+										shouldAnimateDecorative ? portNumberSpring : undefined
+									}
+								>
 									{port.port}
-								</span>
+								</motion.span>
 							</>
 						) : (
-							<span className="font-mono text-muted-foreground">
+							<motion.span
+								className="font-mono text-muted-foreground"
+								initial={shouldAnimateDecorative ? { scale: 0.8 } : false}
+								animate={shouldAnimateDecorative ? { scale: 1 } : undefined}
+								transition={
+									shouldAnimateDecorative ? portNumberSpring : undefined
+								}
+							>
 								{port.port}
-							</span>
+							</motion.span>
 						)}
 					</button>
 					{canOpenInBrowser && (
-						<button
+						<motion.button
 							type="button"
 							onClick={handleOpenInBrowser}
 							disabled={openUrl.isPending}
 							aria-label={`Open ${port.label || `port ${port.port}`} in browser`}
 							className="text-muted-foreground opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 group-hover:opacity-100"
+							animate={shouldAnimateDecorative ? openButtonPulse : undefined}
+							transition={
+								shouldAnimateDecorative
+									? { duration: motionDuration.base }
+									: undefined
+							}
 						>
 							<LuExternalLink className="size-3.5" strokeWidth={STROKE_WIDTH} />
-						</button>
+						</motion.button>
 					)}
 					<button
 						type="button"
@@ -115,7 +157,7 @@ export function DashboardSidebarPortBadge({
 							<LuX className="size-3.5" strokeWidth={STROKE_WIDTH} />
 						)}
 					</button>
-				</div>
+				</motion.div>
 			</TooltipTrigger>
 			<TooltipContent side="top" sideOffset={6} showArrow={false}>
 				<div className="space-y-1 text-xs">

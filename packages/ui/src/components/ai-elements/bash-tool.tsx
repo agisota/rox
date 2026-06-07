@@ -1,6 +1,7 @@
 "use client";
 
 import { TerminalIcon } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useMemo } from "react";
 import { cn } from "../../lib/utils";
 import { ToolCallRow } from "./tool-call-row";
@@ -43,6 +44,15 @@ export const BashTool = ({
 	const isPending = state === "input-streaming" || state === "input-available";
 	const isError = exitCode !== undefined && exitCode !== 0;
 
+	const reduce = useReducedMotion();
+	const stage = reduce
+		? {}
+		: {
+				initial: { opacity: 0, y: 4 },
+				animate: { opacity: 1, y: 0 },
+				transition: { duration: 0.18, ease: "easeOut" as const },
+			};
+
 	const commandSummary = useMemo(
 		() => (command ? extractCommandSummary(command) : ""),
 		[command],
@@ -63,34 +73,44 @@ export const BashTool = ({
 				<div className="pl-2 py-1.5">
 					{/* Command */}
 					{command && (
-						<div className="font-mono text-xs">
+						<motion.div {...stage} className="font-mono text-xs">
 							<span className="text-amber-600 dark:text-amber-400">$ </span>
 							<span className="whitespace-pre-wrap break-all text-foreground">
 								{command}
 							</span>
-						</div>
+						</motion.div>
 					)}
 
 					{/* Stdout */}
-					{stdout && (
-						<div className="mt-1.5 whitespace-pre-wrap break-all font-mono text-xs text-muted-foreground">
-							{stdout}
-						</div>
-					)}
+					<AnimatePresence initial={false}>
+						{stdout && (
+							<motion.div
+								key="stdout"
+								{...stage}
+								className="mt-1.5 whitespace-pre-wrap break-all font-mono text-xs text-muted-foreground"
+							>
+								{stdout}
+							</motion.div>
+						)}
+					</AnimatePresence>
 
 					{/* Stderr */}
-					{stderr && (
-						<div
-							className={cn(
-								"mt-1.5 whitespace-pre-wrap break-all font-mono text-xs",
-								exitCode === 0 || exitCode === undefined
-									? "text-amber-600 dark:text-amber-400"
-									: "text-rose-500 dark:text-rose-400",
-							)}
-						>
-							{stderr}
-						</div>
-					)}
+					<AnimatePresence initial={false}>
+						{stderr && (
+							<motion.div
+								key="stderr"
+								{...stage}
+								className={cn(
+									"mt-1.5 whitespace-pre-wrap break-all font-mono text-xs",
+									exitCode === 0 || exitCode === undefined
+										? "text-amber-600 dark:text-amber-400"
+										: "text-rose-500 dark:text-rose-400",
+								)}
+							>
+								{stderr}
+							</motion.div>
+						)}
+					</AnimatePresence>
 				</div>
 			) : undefined}
 		</ToolCallRow>

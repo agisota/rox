@@ -1,6 +1,7 @@
 import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
 import { Button } from "@rox/ui/button";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
+import { AnimatedHeight } from "renderer/motion";
 
 interface AgentCardPreviewProps {
 	preset: ResolvedAgentConfig;
@@ -33,7 +34,7 @@ export function AgentCardPreview({
 				</Button>
 			</div>
 
-			{showPreview && (
+			<AnimatedHeight open={showPreview}>
 				<div className="space-y-3 rounded-lg border bg-muted/30 p-4">
 					<div className="space-y-1">
 						<p className="text-xs font-medium text-muted-foreground">
@@ -63,7 +64,7 @@ export function AgentCardPreview({
 						</pre>
 					</div>
 				</div>
-			)}
+			</AnimatedHeight>
 		</>
 	);
 }

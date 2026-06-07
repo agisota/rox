@@ -9,6 +9,7 @@ import {
 import { OverflowFadeText } from "@rox/ui/overflow-fade-text";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { PencilIcon, XIcon } from "lucide-react";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
@@ -52,6 +53,9 @@ export function TabItem<TData>({
 	const [isEditing, setIsEditing] = useState(false);
 	const [editValue, setEditValue] = useState("");
 	const title = useTabTitle(tab, tabs, registry);
+	// packages/panes cannot import the apps/desktop motion foundation, so honor
+	// reduced-motion via framer-motion's own hook (shouldAnimate = !reduce).
+	const shouldAnimate = !useReducedMotion();
 
 	const startEditing = () => {
 		setEditValue(title);
@@ -108,12 +112,79 @@ export function TabItem<TData>({
 		[connectDrag, connectPaneDrop],
 	);
 
+	// Rename input branch — `animate` drives the focus-ring scale pop in
+	// TabRenameInput. Identical props in both the animated and plain paths so
+	// every handler/ref/maxLength is preserved verbatim.
+	const renameInput = (
+		<TabRenameInput
+			animate={shouldAnimate}
+			className="w-full min-w-0 rounded border border-border bg-background px-1 py-0.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+			maxLength={64}
+			onCancel={stopEditing}
+			onChange={setEditValue}
+			onSubmit={saveEdit}
+			value={editValue}
+		/>
+	);
+
+	// Title view branch — Tooltip + title + accessory + close button. Shared by
+	// both the animated and plain paths so nothing here is duplicated/altered.
+	const titleView = (
+		<>
+			<Tooltip delayDuration={500} open={isDragging ? false : undefined}>
+				<TooltipTrigger asChild>
+					{/* biome-ignore lint/a11y/noStaticElementInteractions: tab selection is handled by the wrapper's mousedown; this title element is intentionally a non-focusable div so clicking a tab never steals focus from the active pane (issue #4967) */}
+					<div
+						className="flex h-full min-w-0 flex-1 items-center gap-1.5 pl-3 pr-1 text-left text-xs transition-colors"
+						onAuxClick={(event) => {
+							if (event.button === 1) {
+								event.preventDefault();
+								onClose();
+							}
+						}}
+						onDoubleClick={startEditing}
+					>
+						{icon && <span className="shrink-0">{icon}</span>}
+						<OverflowFadeText className="flex-1">{title}</OverflowFadeText>
+					</div>
+				</TooltipTrigger>
+				<TooltipContent side="bottom" showArrow={false}>
+					{title}
+				</TooltipContent>
+			</Tooltip>
+			<div className="relative flex h-full w-7 shrink-0 items-center justify-center">
+				{accessory && (
+					<span className="pointer-events-none absolute inset-0 flex items-center justify-center leading-none opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+						{accessory}
+					</span>
+				)}
+				<Button
+					aria-label="Close tab"
+					className={cn(
+						"pointer-events-none size-5 cursor-pointer text-current opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+						isActive ? "hover:bg-foreground/10" : "hover:bg-muted",
+					)}
+					onClick={(event) => {
+						event.stopPropagation();
+						onClose();
+					}}
+					onMouseDown={(event) => {
+						event.stopPropagation();
+					}}
+					size="icon"
+					type="button"
+					variant="ghost"
+				>
+					<XIcon className="size-3.5" />
+				</Button>
+			</div>
+		</>
+	);
+
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
-				{/* biome-ignore lint/a11y/noStaticElementInteractions: clicking a tab selects it */}
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: tabs are pointer-driven; keyboard nav is out of scope here */}
-				<div
+				<motion.div
 					ref={setRef}
 					className={cn(
 						"group relative flex h-full w-full items-center border-r border-border transition-colors",
@@ -121,81 +192,83 @@ export function TabItem<TData>({
 							? "bg-border/30 text-foreground"
 							: "text-muted-foreground/70 hover:bg-tertiary/20 hover:text-muted-foreground",
 						isPaneOver && "bg-primary/5",
-						isDragging && "opacity-30",
 					)}
+					// Drag ghost depth: lower opacity + slight scale-down + drop shadow on the
+					// in-place source element. Falls back to the prior static opacity-30 feel
+					// when reduced-motion is requested.
+					animate={
+						shouldAnimate
+							? {
+									opacity: isDragging ? 0.6 : 1,
+									scale: isDragging ? 0.97 : 1,
+									boxShadow: isDragging
+										? "0 8px 24px rgba(0,0,0,0.35)"
+										: "0 0 0 rgba(0,0,0,0)",
+								}
+							: { opacity: isDragging ? 0.3 : 1 }
+					}
+					style={{ transformOrigin: "center" }}
+					transition={{ duration: shouldAnimate ? 0.15 : 0, ease: "easeOut" }}
 					// Select on click, not mousedown: the browser suppresses click after a
 					// drag, so starting a drag (reorder, or merging a tab into a pane) no
 					// longer switches the active tab mid-gesture.
 					onClick={() => onSelect()}
 				>
-					{isEditing ? (
+					{/* Tab rename edit morph (case 040): cross-fade + shared-layout
+					morph between the title view and the rename input, keyed by
+					isEditing. Gated behind shouldAnimate (reduced-motion via
+					framer-motion's useReducedMotion since packages/panes cannot
+					import the apps/desktop motion foundation); when off, render
+					the exact prior ternary verbatim. */}
+					{shouldAnimate ? (
+						<AnimatePresence initial={false} mode="wait">
+							{isEditing ? (
+								<motion.div
+									animate={{ opacity: 1 }}
+									className="flex h-full w-full shrink-0 items-center px-2"
+									exit={{ opacity: 0 }}
+									initial={{ opacity: 0 }}
+									key="edit"
+									layoutId={`tab-label-${tab.id}`}
+									transition={{ duration: 0.15, ease: "easeOut" }}
+								>
+									{renameInput}
+								</motion.div>
+							) : (
+								<motion.div
+									animate={{ opacity: 1 }}
+									className="flex h-full w-full items-center"
+									exit={{ opacity: 0 }}
+									initial={{ opacity: 0 }}
+									key="view"
+									layoutId={`tab-label-${tab.id}`}
+									transition={{ duration: 0.15, ease: "easeOut" }}
+								>
+									{titleView}
+								</motion.div>
+							)}
+						</AnimatePresence>
+					) : isEditing ? (
 						<div className="flex h-full w-full shrink-0 items-center px-2">
-							<TabRenameInput
-								className="w-full min-w-0 rounded border border-border bg-background px-1 py-0.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
-								maxLength={64}
-								onCancel={stopEditing}
-								onChange={setEditValue}
-								onSubmit={saveEdit}
-								value={editValue}
-							/>
+							{renameInput}
 						</div>
 					) : (
-						<>
-							<Tooltip
-								delayDuration={500}
-								open={isDragging ? false : undefined}
-							>
-								<TooltipTrigger asChild>
-									{/* biome-ignore lint/a11y/noStaticElementInteractions: tab selection is handled by the wrapper's mousedown; this title element is intentionally a non-focusable div so clicking a tab never steals focus from the active pane (issue #4967) */}
-									<div
-										className="flex h-full min-w-0 flex-1 items-center gap-1.5 pl-3 pr-1 text-left text-xs transition-colors"
-										onAuxClick={(event) => {
-											if (event.button === 1) {
-												event.preventDefault();
-												onClose();
-											}
-										}}
-										onDoubleClick={startEditing}
-									>
-										{icon && <span className="shrink-0">{icon}</span>}
-										<OverflowFadeText className="flex-1">
-											{title}
-										</OverflowFadeText>
-									</div>
-								</TooltipTrigger>
-								<TooltipContent side="bottom" showArrow={false}>
-									{title}
-								</TooltipContent>
-							</Tooltip>
-							<div className="relative flex h-full w-7 shrink-0 items-center justify-center">
-								{accessory && (
-									<span className="pointer-events-none absolute inset-0 flex items-center justify-center leading-none opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
-										{accessory}
-									</span>
-								)}
-								<Button
-									aria-label="Close tab"
-									className={cn(
-										"pointer-events-none size-5 cursor-pointer text-current opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
-										isActive ? "hover:bg-foreground/10" : "hover:bg-muted",
-									)}
-									onClick={(event) => {
-										event.stopPropagation();
-										onClose();
-									}}
-									onMouseDown={(event) => {
-										event.stopPropagation();
-									}}
-									size="icon"
-									type="button"
-									variant="ghost"
-								>
-									<XIcon className="size-3.5" />
-								</Button>
-							</div>
-						</>
+						titleView
 					)}
-				</div>
+					{isActive && (
+						<motion.div
+							aria-hidden
+							className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-primary"
+							layout={shouldAnimate}
+							layoutId="tab-active-underline"
+							transition={
+								shouldAnimate
+									? { type: "spring", stiffness: 500, damping: 40 }
+									: { duration: 0 }
+							}
+						/>
+					)}
+				</motion.div>
 			</ContextMenuTrigger>
 			<ContextMenuContent>
 				<ContextMenuItem onSelect={startEditing}>

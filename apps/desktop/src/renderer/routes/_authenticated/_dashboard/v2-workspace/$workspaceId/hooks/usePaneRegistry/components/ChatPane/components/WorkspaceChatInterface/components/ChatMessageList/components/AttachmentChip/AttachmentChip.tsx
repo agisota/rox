@@ -1,4 +1,5 @@
 import { FileIcon, FileTextIcon } from "lucide-react";
+import { Pressable } from "renderer/motion";
 
 interface AttachmentChipProps {
 	data: string;
@@ -36,9 +37,9 @@ export function AttachmentChip({
 
 	if (onClick) {
 		return (
-			<button type="button" className={className} onClick={onClick}>
+			<Pressable type="button" className={className} onClick={onClick}>
 				{content}
-			</button>
+			</Pressable>
 		);
 	}
 

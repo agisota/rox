@@ -9,6 +9,7 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, LayoutGroup } from "framer-motion";
 import { Eye, EyeOff, Settings } from "lucide-react";
 import {
 	type ReactNode,
@@ -284,23 +285,27 @@ export function V2PresetsBar({
 			{visiblePresets.length > 0 ? (
 				<div className="mx-1 h-3.5 w-px shrink-0 bg-border/60" />
 			) : null}
-			{visiblePresets.map(({ preset }, visibleIndex) => {
-				const hotkeyId = PRESET_HOTKEY_IDS[visibleIndex];
-				return (
-					<V2PresetBarItem
-						key={preset.id}
-						preset={preset}
-						visibleIndex={visibleIndex}
-						hotkeyId={hotkeyId}
-						isDark={isDark}
-						agents={agents}
-						onExecutePreset={executePreset}
-						onEdit={(presetToEdit) => handleEditPreset(presetToEdit.id)}
-						onLocalReorder={handleLocalVisibleReorder}
-						onPersistReorder={handlePersistVisibleReorder}
-					/>
-				);
-			})}
+			<LayoutGroup>
+				<AnimatePresence initial={false}>
+					{visiblePresets.map(({ preset }, visibleIndex) => {
+						const hotkeyId = PRESET_HOTKEY_IDS[visibleIndex];
+						return (
+							<V2PresetBarItem
+								key={preset.id}
+								preset={preset}
+								visibleIndex={visibleIndex}
+								hotkeyId={hotkeyId}
+								isDark={isDark}
+								agents={agents}
+								onExecutePreset={executePreset}
+								onEdit={(presetToEdit) => handleEditPreset(presetToEdit.id)}
+								onLocalReorder={handleLocalVisibleReorder}
+								onPersistReorder={handlePersistVisibleReorder}
+							/>
+						);
+					})}
+				</AnimatePresence>
+			</LayoutGroup>
 			{trailing ? (
 				<div className="ml-auto shrink-0 pl-1">{trailing}</div>
 			) : null}

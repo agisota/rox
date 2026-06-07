@@ -1,11 +1,13 @@
 import { cn } from "@rox/ui/utils";
+import { useEffect, useRef, useState } from "react";
+import { CompletionBurst } from "renderer/motion/CompletionBurst";
 import type { ActivePaneStatus } from "shared/tabs-types";
 
 // Re-export for consumers
 export type { ActivePaneStatus } from "shared/tabs-types";
 
 /** Lookup object for status indicator styling - avoids if/else chains */
-const STATUS_CONFIG = {
+export const STATUS_CONFIG = {
 	permission: {
 		pingColor: "bg-red-400",
 		dotColor: "bg-red-500",
@@ -32,6 +34,12 @@ const STATUS_CONFIG = {
 interface StatusIndicatorProps {
 	status: ActivePaneStatus;
 	className?: string;
+	/**
+	 * When `false`, suppress the continuous Tailwind `animate-ping` overlay so a
+	 * caller can drive a one-shot pulse instead. Defaults to `true` for
+	 * backward compatibility with existing consumers.
+	 */
+	pulse?: boolean;
 }
 
 /**
@@ -40,12 +48,29 @@ interface StatusIndicatorProps {
  * - Amber pulsing: agent working
  * - Green static: ready for review
  */
-export function StatusIndicator({ status, className }: StatusIndicatorProps) {
+export function StatusIndicator({
+	status,
+	className,
+	pulse = true,
+}: StatusIndicatorProps) {
 	const config = STATUS_CONFIG[status];
+	const prevStatusRef = useRef<ActivePaneStatus | null>(null);
+	const [isBursting, setIsBursting] = useState(false);
+
+	useEffect(() => {
+		if (prevStatusRef.current !== "review" && status === "review") {
+			setIsBursting(true);
+		}
+		prevStatusRef.current = status;
+	}, [status]);
+
+	const handleBurstComplete = () => {
+		setIsBursting(false);
+	};
 
 	return (
 		<span className={cn("relative flex size-2 shrink-0", className)}>
-			{config.pulse && (
+			{config.pulse && pulse && (
 				<span
 					className={cn(
 						"absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
@@ -53,12 +78,18 @@ export function StatusIndicator({ status, className }: StatusIndicatorProps) {
 					)}
 				/>
 			)}
-			<span
-				className={cn(
-					"relative inline-flex size-2 rounded-full",
-					config.dotColor,
-				)}
-			/>
+			{isBursting && status === "review" ? (
+				<span className="absolute inset-0 flex items-center justify-center">
+					<CompletionBurst size={8} onAnimationComplete={handleBurstComplete} />
+				</span>
+			) : (
+				<span
+					className={cn(
+						"relative inline-flex size-2 rounded-full",
+						config.dotColor,
+					)}
+				/>
+			)}
 		</span>
 	);
 }

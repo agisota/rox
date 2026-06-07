@@ -1,8 +1,10 @@
 import { Button } from "@rox/ui/button";
+import { motion } from "framer-motion";
 import { GlobeIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { TbCopy } from "react-icons/tb";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { BrowserLoadError } from "shared/tabs-types";
 
 const ERROR_LABELS: Record<number, string> = {
@@ -54,6 +56,8 @@ export function BrowserErrorOverlay({
 		FRIENDLY_MESSAGES[error.code] ?? "The page could not be loaded";
 	const detailsText = `Error Code: ${error.code} URL: ${error.url}`;
 
+	const animate = useShouldAnimate("essential");
+
 	const toggleDetails = useCallback(() => {
 		setShowDetails((prev) => !prev);
 	}, []);
@@ -65,7 +69,12 @@ export function BrowserErrorOverlay({
 
 	return (
 		<div className="absolute inset-0 flex items-center justify-center bg-background z-10">
-			<div className="flex flex-col items-start gap-4 w-80">
+			<motion.div
+				className="flex flex-col items-start gap-4 w-80"
+				initial={animate ? { opacity: 0, scale: 0.92, y: 8 } : false}
+				animate={{ opacity: 1, scale: 1, y: 0 }}
+				transition={animate ? motionSpring.bouncy : { duration: 0 }}
+			>
 				<GlobeIcon className="size-10 text-muted-foreground/30" />
 				<div>
 					<h2 className="text-xl font-medium text-muted-foreground/70">
@@ -100,10 +109,15 @@ export function BrowserErrorOverlay({
 						</button>
 					</div>
 				)}
-				<Button variant="outline" size="sm" onClick={onRetry}>
-					Restart Browser
-				</Button>
-			</div>
+				<motion.div
+					whileTap={animate ? { scale: 0.96 } : undefined}
+					transition={animate ? motionSpring.snappy : { duration: 0 }}
+				>
+					<Button variant="outline" size="sm" onClick={onRetry}>
+						Restart Browser
+					</Button>
+				</motion.div>
+			</motion.div>
 		</div>
 	);
 }

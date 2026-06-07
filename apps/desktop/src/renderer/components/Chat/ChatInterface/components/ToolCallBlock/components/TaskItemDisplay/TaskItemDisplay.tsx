@@ -1,6 +1,8 @@
 import { TaskItem } from "@rox/ui/ai-elements/task";
 import { Badge } from "@rox/ui/badge";
 import { cn } from "@rox/ui/lib/utils";
+import { motion } from "framer-motion";
+import { motionSpring, Pressable, useShouldAnimate } from "renderer/motion";
 
 interface TaskItemDisplayDetail {
 	label: string;
@@ -123,17 +125,57 @@ function renderContent(props: TaskItemDisplayProps) {
 	);
 }
 
+const cardVariants = {
+	hidden: { opacity: 0, y: 6, scale: 0.98 },
+	visible: { opacity: 1, y: 0, scale: 1 },
+	exit: { opacity: 0, y: -4, scale: 0.98 },
+};
+
 export function TaskItemDisplay(props: TaskItemDisplayProps) {
+	const shouldAnimate = useShouldAnimate("decorative");
 	const className = cn(
 		"w-full rounded border border-border/60 bg-background/60 px-2.5 py-2 text-left",
 		props.onClick ? "transition-colors hover:bg-accent/30" : undefined,
 	);
 
 	if (props.onClick) {
+		if (shouldAnimate) {
+			return (
+				<Pressable
+					className={className}
+					onClick={props.onClick}
+					type="button"
+					layout
+					variants={cardVariants}
+					initial="hidden"
+					animate="visible"
+					exit="exit"
+					transition={motionSpring.soft}
+				>
+					{renderContent(props)}
+				</Pressable>
+			);
+		}
 		return (
 			<button className={className} onClick={props.onClick} type="button">
 				{renderContent(props)}
 			</button>
+		);
+	}
+
+	if (shouldAnimate) {
+		return (
+			<motion.div
+				className={className}
+				layout
+				variants={cardVariants}
+				initial="hidden"
+				animate="visible"
+				exit="exit"
+				transition={motionSpring.soft}
+			>
+				{renderContent(props)}
+			</motion.div>
 		);
 	}
 

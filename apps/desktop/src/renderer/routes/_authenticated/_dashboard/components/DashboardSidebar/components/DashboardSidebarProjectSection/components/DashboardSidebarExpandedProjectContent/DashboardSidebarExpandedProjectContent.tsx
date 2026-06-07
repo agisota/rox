@@ -3,8 +3,9 @@ import {
 	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { createPortal } from "react-dom";
+import { useShouldAnimate } from "renderer/motion";
 import { useSidebarDnd } from "../../../../hooks/useSidebarDnd";
 import { parseId } from "../../../../hooks/useSidebarDnd/useSidebarDnd";
 import type { DashboardSidebarProjectChild } from "../../../../types";
@@ -50,6 +51,10 @@ export function DashboardSidebarExpandedProjectContent({
 		handlers,
 	} = useSidebarDnd({ projectId, projectChildren });
 
+	const shouldAnimate = useShouldAnimate("decorative");
+	const isDragging = activeId != null;
+	const layoutEnabled = shouldAnimate && !isDragging;
+
 	return (
 		<AnimatePresence initial={false}>
 			{!isCollapsed && (
@@ -71,67 +76,73 @@ export function DashboardSidebarExpandedProjectContent({
 								items={sortableItems}
 								strategy={verticalListSortingStrategy}
 							>
-								{flatItems.map((id) => {
-									const parsed = parseId(id);
-									if (!parsed) return null;
+								<LayoutGroup id="dashboard-sidebar-rail">
+									{flatItems.map((id) => {
+										const parsed = parseId(id);
+										if (!parsed) return null;
 
-									if (parsed.type === "section") {
-										const section = sectionsById.get(parsed.realId);
-										if (!section) return null;
+										if (parsed.type === "section") {
+											const section = sectionsById.get(parsed.realId);
+											if (!section) return null;
+											return (
+												<SortableSectionHeader
+													key={String(id)}
+													sortableId={String(id)}
+													section={section}
+													onDelete={onDeleteSection}
+													onRename={onRenameSection}
+													onToggleCollapse={onToggleSectionCollapse}
+												/>
+											);
+										}
+
+										const workspace = workspacesById.get(parsed.realId);
+										if (!workspace) return null;
+										const group = groupInfo.get(parsed.realId);
+										const isInSection = !!group;
+										const isInCollapsedSection =
+											isInSection && collapsedSectionIds.has(group.sectionId);
+										const hidden =
+											isInCollapsedSection ||
+											(activeType === "section" && isInSection);
+
 										return (
-											<SortableSectionHeader
-												key={String(id)}
-												sortableId={String(id)}
-												section={section}
-												onDelete={onDeleteSection}
-												onRename={onRenameSection}
-												onToggleCollapse={onToggleSectionCollapse}
-											/>
+											<AnimatePresence key={String(id)} initial={false}>
+												{!hidden && (
+													<motion.div
+														layout={layoutEnabled ? "position" : false}
+														initial={{ height: 0, opacity: 0 }}
+														animate={{ height: "auto", opacity: 1 }}
+														exit={{ height: 0, opacity: 0 }}
+														transition={{
+															duration: shouldAnimate ? 0.15 : 0,
+															ease: "easeOut",
+														}}
+													>
+														<SortableWorkspaceItem
+															sortableId={String(id)}
+															workspace={workspace}
+															accentColor={
+																activeId === id ? predictedColor : group?.color
+															}
+															isInSection={groupInfo.has(parsed.realId)}
+															onHoverCardOpen={() =>
+																onWorkspaceHover(parsed.realId)
+															}
+															shortcutLabel={workspaceShortcutLabels.get(
+																parsed.realId,
+															)}
+															disabled={
+																workspace.type === "main" &&
+																workspace.hostType === "local-device"
+															}
+														/>
+													</motion.div>
+												)}
+											</AnimatePresence>
 										);
-									}
-
-									const workspace = workspacesById.get(parsed.realId);
-									if (!workspace) return null;
-									const group = groupInfo.get(parsed.realId);
-									const isInSection = !!group;
-									const isInCollapsedSection =
-										isInSection && collapsedSectionIds.has(group.sectionId);
-									const hidden =
-										isInCollapsedSection ||
-										(activeType === "section" && isInSection);
-
-									return (
-										<AnimatePresence key={String(id)} initial={false}>
-											{!hidden && (
-												<motion.div
-													initial={{ height: 0, opacity: 0 }}
-													animate={{ height: "auto", opacity: 1 }}
-													exit={{ height: 0, opacity: 0 }}
-													transition={{ duration: 0.15, ease: "easeOut" }}
-												>
-													<SortableWorkspaceItem
-														sortableId={String(id)}
-														workspace={workspace}
-														accentColor={
-															activeId === id ? predictedColor : group?.color
-														}
-														isInSection={groupInfo.has(parsed.realId)}
-														onHoverCardOpen={() =>
-															onWorkspaceHover(parsed.realId)
-														}
-														shortcutLabel={workspaceShortcutLabels.get(
-															parsed.realId,
-														)}
-														disabled={
-															workspace.type === "main" &&
-															workspace.hostType === "local-device"
-														}
-													/>
-												</motion.div>
-											)}
-										</AnimatePresence>
-									);
-								})}
+									})}
+								</LayoutGroup>
 							</SortableContext>
 
 							{createPortal(

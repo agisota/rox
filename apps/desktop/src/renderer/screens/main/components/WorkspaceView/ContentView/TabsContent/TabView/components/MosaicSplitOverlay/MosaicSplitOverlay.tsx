@@ -1,6 +1,8 @@
 import { cn } from "@rox/ui/utils";
-import { useCallback, useRef } from "react";
+import { motion } from "framer-motion";
+import { useCallback, useRef, useState } from "react";
 import type { MosaicNode, MosaicPath } from "react-mosaic-component";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { useDragPaneStore } from "renderer/stores/drag-pane-store";
 import { equalizeSplitPercentages } from "renderer/stores/tabs/utils";
 
@@ -141,7 +143,9 @@ interface SplitHandleProps {
 function SplitHandle({ split, layout, onLayoutChange }: SplitHandleProps) {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const isDragging = useRef(false);
+	const [dragging, setDragging] = useState(false);
 	const setResizing = useDragPaneStore((s) => s.setResizing);
+	const shouldAnimate = useShouldAnimate("decorative");
 
 	const absolutePosition = getAbsoluteSplitPercentage(
 		split.boundingBox,
@@ -163,6 +167,7 @@ function SplitHandle({ split, layout, onLayoutChange }: SplitHandleProps) {
 
 			isDragging.current = true;
 			setResizing(true);
+			setDragging(true);
 
 			document.body.style.userSelect = "none";
 			document.body.style.cursor = isRow ? "col-resize" : "row-resize";
@@ -192,6 +197,7 @@ function SplitHandle({ split, layout, onLayoutChange }: SplitHandleProps) {
 			const onMouseUp = () => {
 				isDragging.current = false;
 				setResizing(false);
+				setDragging(false);
 				document.body.style.userSelect = "";
 				document.body.style.cursor = "";
 				document.removeEventListener("mousemove", onMouseMove);
@@ -250,13 +256,54 @@ function SplitHandle({ split, layout, onLayoutChange }: SplitHandleProps) {
 			className={cn(
 				"absolute z-20",
 				isRow ? "cursor-col-resize" : "cursor-row-resize",
-				"after:absolute after:transition-colors",
-				"hover:after:bg-border",
-				isRow
-					? "after:top-0 after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-px"
-					: "after:left-0 after:right-0 after:top-1/2 after:-translate-y-1/2 after:h-px",
 			)}
 			style={style}
-		/>
+		>
+			{isRow ? (
+				<motion.div
+					aria-hidden
+					className="pointer-events-none absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-border"
+					style={{ transformOrigin: "center" }}
+					animate={
+						shouldAnimate
+							? {
+									opacity: dragging ? 1 : 0.35,
+									scaleX: dragging ? 3 : 1,
+									boxShadow: dragging
+										? "0 0 8px 1px var(--glow, rgba(96,165,250,0.6))"
+										: "0 0 0 0 rgba(0,0,0,0)",
+								}
+							: { opacity: dragging ? 1 : 0.35 }
+					}
+					transition={
+						shouldAnimate
+							? { duration: motionDuration.fast, ease: ease.standard }
+							: { duration: 0 }
+					}
+				/>
+			) : (
+				<motion.div
+					aria-hidden
+					className="pointer-events-none absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-border"
+					style={{ transformOrigin: "center" }}
+					animate={
+						shouldAnimate
+							? {
+									opacity: dragging ? 1 : 0.35,
+									scaleY: dragging ? 3 : 1,
+									boxShadow: dragging
+										? "0 0 8px 1px var(--glow, rgba(96,165,250,0.6))"
+										: "0 0 0 0 rgba(0,0,0,0)",
+								}
+							: { opacity: dragging ? 1 : 0.35 }
+					}
+					transition={
+						shouldAnimate
+							? { duration: motionDuration.fast, ease: ease.standard }
+							: { duration: 0 }
+					}
+				/>
+			)}
+		</div>
 	);
 }

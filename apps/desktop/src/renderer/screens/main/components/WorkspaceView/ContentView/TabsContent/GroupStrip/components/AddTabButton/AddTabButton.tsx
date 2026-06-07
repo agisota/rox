@@ -8,11 +8,19 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { motion } from "framer-motion";
+import { useState } from "react";
 import { BsTerminalPlus } from "react-icons/bs";
 import { HiMiniChevronDown } from "react-icons/hi2";
 import { LuPlus } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { HotkeyMenuShortcut } from "renderer/components/HotkeyMenuShortcut";
+import {
+	motionDuration,
+	motionSpring,
+	Pressable,
+	useShouldAnimate,
+} from "renderer/motion";
 import { NewTabDropZone } from "../../NewTabDropZone";
 import { PresetsSubmenu } from "./components/PresetsSubmenu";
 
@@ -47,10 +55,12 @@ export function AddTabButton({
 }: AddTabButtonProps) {
 	const showBigAddButton = !useCompactAddButton;
 	const showPresetsInDropdown = !showPresetsBar;
+	const [open, setOpen] = useState(false);
+	const animate = useShouldAnimate("decorative");
 
 	return (
 		<NewTabDropZone onDrop={onDropToNewTab} isLastPaneInTab={isLastPaneInTab}>
-			<DropdownMenu>
+			<DropdownMenu open={open} onOpenChange={setOpen}>
 				<div className="flex items-center shrink-0">
 					{showBigAddButton ? (
 						<>
@@ -80,73 +90,102 @@ export function AddTabButton({
 							</Button>
 							<DropdownMenuTrigger asChild>
 								<Button
+									asChild
 									variant="ghost"
 									size="icon"
 									className="size-7 rounded-l-none border border-l-0 border-border/60 bg-muted/30 px-1 text-muted-foreground hover:bg-accent/60 hover:text-foreground"
 								>
-									<HiMiniChevronDown className="size-3" />
+									<Pressable>
+										<motion.span
+											style={{ display: "inline-flex" }}
+											animate={
+												animate ? { rotate: open ? 180 : 0 } : { rotate: 0 }
+											}
+											transition={motionSpring.snappy}
+										>
+											<HiMiniChevronDown className="size-3" />
+										</motion.span>
+									</Pressable>
 								</Button>
 							</DropdownMenuTrigger>
 						</>
 					) : (
 						<DropdownMenuTrigger asChild>
 							<Button
+								asChild
 								variant="ghost"
 								size="icon"
 								className="size-7 px-1 rounded-md border border-border/60 bg-muted/30 text-muted-foreground hover:bg-accent/60 hover:text-foreground"
 							>
-								<LuPlus className="size-3.5" strokeWidth={1.8} />
+								<Pressable>
+									<motion.span
+										style={{ display: "inline-flex" }}
+										animate={
+											animate ? { rotate: open ? 90 : 0 } : { rotate: 0 }
+										}
+										transition={motionSpring.snappy}
+									>
+										<LuPlus className="size-3.5" strokeWidth={1.8} />
+									</motion.span>
+								</Pressable>
 							</Button>
 						</DropdownMenuTrigger>
 					)}
 				</div>
 				<DropdownMenuContent align="end" className="w-56">
-					{!showBigAddButton && (
-						<>
-							<DropdownMenuItem onClick={onAddTerminal} className="gap-2">
-								<BsTerminalPlus className="size-4" />
-								<span>Terminal</span>
-								<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={onAddChat} className="gap-2">
-								<TbMessageCirclePlus className="size-4" />
-								<span>Chat</span>
-								<HotkeyMenuShortcut hotkeyId="NEW_CHAT" />
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={onAddBrowser} className="gap-2">
-								<TbWorld className="size-4" />
-								<span>Browser</span>
-								<HotkeyMenuShortcut hotkeyId="NEW_BROWSER" />
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-						</>
-					)}
-					{showPresetsInDropdown && (
-						<>
-							<PresetsSubmenu
-								presets={presets}
-								onOpenPreset={onOpenPreset}
-								onConfigurePresets={onConfigurePresets}
-							/>
-							<DropdownMenuSeparator />
-						</>
-					)}
-					<DropdownMenuCheckboxItem
-						checked={showPresetsBar}
-						onCheckedChange={onToggleShowPresetsBar}
-						onSelect={(e) => e.preventDefault()}
+					<motion.div
+						initial={animate ? { opacity: 0, scale: 0.96, y: -4 } : false}
+						animate={{ opacity: 1, scale: 1, y: 0 }}
+						transition={{ duration: motionDuration.fast, ease: "easeOut" }}
+						style={{ transformOrigin: "top right" }}
 					>
-						Show Preset Bar
-					</DropdownMenuCheckboxItem>
-					<DropdownMenuCheckboxItem
-						checked={useCompactAddButton}
-						onCheckedChange={(checked) =>
-							onToggleCompactAddButton(checked === true)
-						}
-						onSelect={(e) => e.preventDefault()}
-					>
-						Use Compact Button
-					</DropdownMenuCheckboxItem>
+						{!showBigAddButton && (
+							<>
+								<DropdownMenuItem onClick={onAddTerminal} className="gap-2">
+									<BsTerminalPlus className="size-4" />
+									<span>Terminal</span>
+									<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={onAddChat} className="gap-2">
+									<TbMessageCirclePlus className="size-4" />
+									<span>Chat</span>
+									<HotkeyMenuShortcut hotkeyId="NEW_CHAT" />
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={onAddBrowser} className="gap-2">
+									<TbWorld className="size-4" />
+									<span>Browser</span>
+									<HotkeyMenuShortcut hotkeyId="NEW_BROWSER" />
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+							</>
+						)}
+						{showPresetsInDropdown && (
+							<>
+								<PresetsSubmenu
+									presets={presets}
+									onOpenPreset={onOpenPreset}
+									onConfigurePresets={onConfigurePresets}
+								/>
+								<DropdownMenuSeparator />
+							</>
+						)}
+						<DropdownMenuCheckboxItem
+							checked={showPresetsBar}
+							onCheckedChange={onToggleShowPresetsBar}
+							onSelect={(e) => e.preventDefault()}
+						>
+							Show Preset Bar
+						</DropdownMenuCheckboxItem>
+						<DropdownMenuCheckboxItem
+							checked={useCompactAddButton}
+							onCheckedChange={(checked) =>
+								onToggleCompactAddButton(checked === true)
+							}
+							onSelect={(e) => e.preventDefault()}
+						>
+							Use Compact Button
+						</DropdownMenuCheckboxItem>
+					</motion.div>
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</NewTabDropZone>

@@ -6,6 +6,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { sanitizeTerminalFontFamily } from "renderer/lib/terminal/appearance";
 import { buildTerminalCommand } from "renderer/lib/terminal/launch-command";
+import { RunCelebration } from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { useTerminalTheme } from "renderer/stores/theme";
 import { SessionKilledOverlay } from "./components";
@@ -93,6 +94,8 @@ export const Terminal = memo(function Terminal({
 		null,
 	);
 	const wasKilledByUserRef = useRef(false);
+	const [celebrate, setCelebrate] = useState(false);
+	const celebratedRef = useRef(false);
 	const pendingEventsRef = useRef<TerminalStreamEvent[]>([]);
 	const commandBufferRef = useRef("");
 	const tabIdRef = useRef(tabId);
@@ -423,6 +426,20 @@ export const Terminal = memo(function Terminal({
 		}
 	}, [paneId, fontSettings]);
 
+	useEffect(() => {
+		if (
+			isWorkspaceRunPane &&
+			exitStatus === "exited" &&
+			!wasKilledByUserRef.current &&
+			!celebratedRef.current
+		) {
+			celebratedRef.current = true;
+			setCelebrate(true);
+			const t = setTimeout(() => setCelebrate(false), 800);
+			return () => clearTimeout(t);
+		}
+	}, [isWorkspaceRunPane, exitStatus]);
+
 	const terminalBg = terminalTheme?.background ?? getDefaultTerminalBg();
 
 	const handleDragOver = (event: React.DragEvent) => {
@@ -469,6 +486,7 @@ export const Terminal = memo(function Terminal({
 				!isWorkspaceRunPane && (
 					<SessionKilledOverlay onRestart={restartTerminal} />
 				)}
+			<RunCelebration play={celebrate} />
 			<div className="h-full w-full p-2">
 				<div ref={terminalRef} className="h-full w-full" />
 			</div>

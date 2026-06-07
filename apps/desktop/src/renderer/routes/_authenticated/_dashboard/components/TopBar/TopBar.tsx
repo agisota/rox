@@ -1,9 +1,11 @@
 import { useMatchRoute, useParams } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineWifi } from "react-icons/hi2";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { useOnlineStatus } from "renderer/hooks/useOnlineStatus";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getWorkspaceDisplayName } from "renderer/lib/getWorkspaceDisplayName";
+import { motionDuration, useShouldAnimate } from "renderer/motion";
 import { useWorkspaceSidebarStore } from "renderer/stores/workspace-sidebar-state";
 import { NavigationControls } from "../NavigationControls";
 import { SidebarToggle } from "../SidebarToggle";
@@ -31,6 +33,7 @@ export function TopBar() {
 		{ enabled: !!workspaceId && !isV2WorkspaceRoute },
 	);
 	const isOnline = useOnlineStatus();
+	const animate = useShouldAnimate("essential");
 	const isV2CloudEnabled = useIsV2CloudEnabled();
 	const isSidebarOpen = useWorkspaceSidebarStore((s) => s.isOpen);
 	const isSidebarCollapsed = useWorkspaceSidebarStore((s) => s.isCollapsed());
@@ -87,12 +90,35 @@ export function TopBar() {
 				{!sidebarHostsChrome && (
 					<ResourceConsumption surface={isV2CloudEnabled ? "v2" : "v1"} />
 				)}
-				{!isOnline && (
-					<div className="no-drag flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-						<HiOutlineWifi className="size-3.5" />
-						<span>Offline</span>
-					</div>
-				)}
+				<AnimatePresence initial={false}>
+					{!isOnline && (
+						<motion.div
+							key="offline"
+							className="no-drag flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-2 py-1 rounded"
+							initial={animate ? { opacity: 0, x: 8 } : false}
+							animate={{ opacity: 1, x: 0 }}
+							exit={animate ? { opacity: 0, x: 8 } : { opacity: 0 }}
+							transition={{ duration: motionDuration.fast }}
+						>
+							<motion.span
+								className="flex"
+								animate={
+									animate
+										? { opacity: [1, 0.45, 1], scale: [1, 0.92, 1] }
+										: undefined
+								}
+								transition={
+									animate
+										? { duration: 2, repeat: Infinity, ease: "easeInOut" }
+										: undefined
+								}
+							>
+								<HiOutlineWifi className="size-3.5" />
+							</motion.span>
+							<span>Offline</span>
+						</motion.div>
+					)}
+				</AnimatePresence>
 				{isV2WorkspaceRoute ? (
 					<V2WorkspaceOpenInButton workspaceId={v2WorkspaceId} />
 				) : workspace?.worktreePath ? (

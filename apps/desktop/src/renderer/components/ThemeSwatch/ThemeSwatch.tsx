@@ -1,26 +1,53 @@
+import { motion } from "framer-motion";
+import { ease, motionDuration } from "renderer/motion/tokens";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { getTerminalColors, type Theme } from "shared/themes";
 
 export function ThemeSwatch({ theme }: { theme: Theme }) {
 	const terminal = getTerminalColors(theme);
 	const isDark = theme.type === "dark";
+	const shouldAnimate = useShouldAnimate("decorative");
+
+	const transition = { duration: motionDuration.fast, ease: ease.standard };
+
 	return (
-		<div
+		<motion.div
 			className="flex h-5 w-7 shrink-0 items-center justify-center gap-1 rounded-sm font-semibold"
-			style={{
-				backgroundColor: terminal.background,
-				boxShadow: "inset 0 0 0 0.5px rgba(128, 128, 128, 0.3)",
-			}}
+			animate={
+				shouldAnimate ? { backgroundColor: terminal.background } : undefined
+			}
+			style={
+				shouldAnimate
+					? { boxShadow: "inset 0 0 0 0.5px rgba(128, 128, 128, 0.3)" }
+					: {
+							backgroundColor: terminal.background,
+							boxShadow: "inset 0 0 0 0.5px rgba(128, 128, 128, 0.3)",
+						}
+			}
+			transition={transition}
 		>
-			<span
+			<motion.span
 				className="h-1 w-1 rounded-full"
-				style={{ backgroundColor: terminal.green }}
+				animate={
+					shouldAnimate ? { backgroundColor: terminal.green } : undefined
+				}
+				style={shouldAnimate ? undefined : { backgroundColor: terminal.green }}
+				transition={transition}
 			/>
-			<span
+			<motion.span
 				className="text-[9px] leading-none"
-				style={{ color: isDark ? "#fff" : "#000", opacity: 0.9 }}
+				animate={
+					shouldAnimate ? { color: isDark ? "#fff" : "#000" } : undefined
+				}
+				style={
+					shouldAnimate
+						? { opacity: 0.9 }
+						: { color: isDark ? "#fff" : "#000", opacity: 0.9 }
+				}
+				transition={transition}
 			>
 				Aa
-			</span>
-		</div>
+			</motion.span>
+		</motion.div>
 	);
 }

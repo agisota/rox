@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { LuSearch, LuX } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { MotionList, MotionListItem } from "renderer/motion";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import type { FilterMode, ProjectGroup, WorkspaceItem } from "./types";
 import { WorkspaceRow } from "./WorkspaceRow";
@@ -248,19 +249,25 @@ export function WorkspacesListView() {
 							</span>
 						</div>
 
-						{/* Workspaces in this project */}
-						{group.workspaces.map((ws) => (
-							<WorkspaceRow
-								key={ws.uniqueId}
-								workspace={ws}
-								onSwitch={() => handleSwitch(ws)}
-								onReopen={() => handleReopen(ws)}
-								isOpening={
-									openWorktree.isPending &&
-									openWorktree.variables?.worktreeId === ws.worktreeId
-								}
-							/>
-						))}
+						{/* Workspaces in this project — stagger-in on each new result set.
+						    The composite key remounts the container when the filter or
+						    query changes so results visibly re-stagger on a new search. */}
+						<MotionList key={`${filterMode}:${searchQuery}:${group.projectId}`}>
+							{group.workspaces.map((ws) => (
+								<MotionListItem key={ws.uniqueId}>
+									<WorkspaceRow
+										workspace={ws}
+										query={searchQuery}
+										onSwitch={() => handleSwitch(ws)}
+										onReopen={() => handleReopen(ws)}
+										isOpening={
+											openWorktree.isPending &&
+											openWorktree.variables?.worktreeId === ws.worktreeId
+										}
+									/>
+								</MotionListItem>
+							))}
+						</MotionList>
 					</div>
 				))}
 

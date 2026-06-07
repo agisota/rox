@@ -16,6 +16,7 @@ import {
 } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useHoverGitHubStatus } from "renderer/lib/githubQueryPolicy";
+import { HighlightFlash } from "renderer/motion";
 import { useWorkspaceDeleteHandler } from "renderer/react-query/workspaces/useWorkspaceDeleteHandler";
 import { STROKE_WIDTH } from "../../WorkspaceSidebar/constants";
 import { DeleteWorkspaceDialog } from "../../WorkspaceSidebar/WorkspaceListItem/components/DeleteWorkspaceDialog/DeleteWorkspaceDialog";
@@ -28,6 +29,8 @@ interface WorkspaceRowProps {
 	onSwitch: () => void;
 	onReopen: () => void;
 	isOpening?: boolean;
+	/** Active search query — flashes the matched substring of the name. */
+	query?: string;
 }
 
 export function WorkspaceRow({
@@ -35,6 +38,7 @@ export function WorkspaceRow({
 	onSwitch,
 	onReopen,
 	isOpening,
+	query,
 }: WorkspaceRowProps) {
 	const isBranch = workspace.type === "branch";
 	const { githubStatus, onMouseEnter: onGithubMouseEnter } =
@@ -134,7 +138,7 @@ export function WorkspaceRow({
 					!workspace.isOpen && "text-foreground/50",
 				)}
 			>
-				{workspace.name}
+				<HighlightFlash text={workspace.name} query={query ?? ""} />
 			</span>
 
 			{/* Unread indicator */}

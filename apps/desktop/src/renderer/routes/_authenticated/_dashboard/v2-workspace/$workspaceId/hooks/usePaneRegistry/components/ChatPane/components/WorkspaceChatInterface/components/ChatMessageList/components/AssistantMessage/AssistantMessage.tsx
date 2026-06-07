@@ -1,4 +1,8 @@
-import { Message, MessageContent } from "@rox/ui/ai-elements/message";
+import {
+	Message,
+	MessageContent,
+	type MessageResponseProps,
+} from "@rox/ui/ai-elements/message";
 import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
 import { FileSearchIcon } from "lucide-react";
 import { type ReactNode, useCallback } from "react";
@@ -7,6 +11,7 @@ import { ReasoningBlock } from "renderer/components/Chat/ChatInterface/component
 import { ToolCallBlock } from "renderer/components/Chat/ChatInterface/components/ToolCallBlock";
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import { normalizeToolName } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
+import { AnimatedFileLink } from "renderer/motion/AnimatedFileLink";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { AttachmentChip } from "../AttachmentChip";
@@ -164,6 +169,11 @@ export function AssistantMessage({
 						config: {
 							theme: "default",
 						},
+					}}
+					components={{
+						a: AnimatedFileLink as NonNullable<
+							MessageResponseProps["components"]
+						>["a"],
 					}}
 				/>,
 			);

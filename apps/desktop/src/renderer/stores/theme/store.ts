@@ -7,10 +7,12 @@ import {
 	type Theme,
 	type ThemeMetadata,
 } from "shared/themes";
+import type { UIColors } from "shared/themes/types";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { trpcThemeStorage } from "../../lib/trpc-storage";
-import { applyUIColors, toXtermTheme, updateThemeClass } from "./utils";
+import { animateThemeChange } from "../../motion/animateThemeChange";
+import { toXtermTheme, updateThemeClass } from "./utils";
 
 /** Special theme ID for system preference (follows OS dark/light mode) */
 export const SYSTEM_THEME_ID = "system";
@@ -131,13 +133,21 @@ function syncThemeToLocalStorage(theme: Theme): void {
 }
 
 /**
- * Apply a theme to the UI and terminal
+ * Apply a theme to the UI and terminal.
+ *
+ * `prevColors` is the previously-applied UI palette (the store's current
+ * `activeTheme?.ui`), threaded in so the document-root CSS variables can be
+ * tweened from old→new via framer-motion (case 011). On first paint it is
+ * `null`, which {@link animateThemeChange} treats as a flash-free hard set.
  */
-function applyTheme(theme: Theme): {
+function applyTheme(
+	theme: Theme,
+	prevColors: UIColors | null = null,
+): {
 	terminalTheme: ITheme;
 } {
-	// Apply UI colors to CSS variables
-	applyUIColors(theme.ui);
+	// Apply UI colors to CSS variables (animated transition from prevColors)
+	animateThemeChange(prevColors, theme.ui);
 
 	// Update dark/light class
 	updateThemeClass(theme.type);
@@ -176,7 +186,10 @@ export const useThemeStore = create<ThemeState>()(
 						return;
 					}
 
-					const { terminalTheme } = applyTheme(theme);
+					const { terminalTheme } = applyTheme(
+						theme,
+						state.activeTheme?.ui ?? null,
+					);
 
 					set({
 						activeThemeId: themeId,
@@ -212,7 +225,10 @@ export const useThemeStore = create<ThemeState>()(
 						);
 						const theme = findTheme(resolvedId, state.customThemes);
 						if (theme) {
-							const { terminalTheme } = applyTheme(theme);
+							const { terminalTheme } = applyTheme(
+								theme,
+								state.activeTheme?.ui ?? null,
+							);
 							set({ ...prefUpdate, activeTheme: theme, terminalTheme });
 							return;
 						}
@@ -268,7 +284,10 @@ export const useThemeStore = create<ThemeState>()(
 						return { added, updated, skipped };
 					}
 
-					const { terminalTheme } = applyTheme(resolvedTheme);
+					const { terminalTheme } = applyTheme(
+						resolvedTheme,
+						state.activeTheme?.ui ?? null,
+					);
 					set({
 						customThemes,
 						activeTheme: resolvedTheme,
@@ -316,7 +335,10 @@ export const useThemeStore = create<ThemeState>()(
 						);
 						const theme = findTheme(resolvedId, customThemes);
 						if (theme) {
-							const { terminalTheme } = applyTheme(theme);
+							const { terminalTheme } = applyTheme(
+								theme,
+								state.activeTheme?.ui ?? null,
+							);
 							set({ ...baseUpdate, activeTheme: theme, terminalTheme });
 							return;
 						}
@@ -373,7 +395,11 @@ export const useThemeStore = create<ThemeState>()(
 					const theme = findTheme(resolvedId, state.customThemes);
 
 					if (theme) {
-						const { terminalTheme } = applyTheme(theme);
+						// On init activeTheme is null → animateThemeChange hard-sets (no flash).
+						const { terminalTheme } = applyTheme(
+							theme,
+							state.activeTheme?.ui ?? null,
+						);
 						set({
 							activeTheme: theme,
 							terminalTheme,

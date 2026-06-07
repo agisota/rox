@@ -1,6 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence } from "framer-motion";
 import { LuLoaderCircle, LuX } from "react-icons/lu";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { STROKE_WIDTH } from "../../../constants";
@@ -63,12 +64,14 @@ export function WorkspacePortGroup({ group }: WorkspacePortGroupProps) {
 				</Tooltip>
 			</div>
 			<div className="flex flex-wrap gap-1 px-3">
-				{group.ports.map((port) => (
-					<MergedPortBadge
-						key={`${port.terminalId}:${port.port}`}
-						port={port}
-					/>
-				))}
+				<AnimatePresence initial={false}>
+					{group.ports.map((port) => (
+						<MergedPortBadge
+							key={`${port.terminalId}:${port.port}`}
+							port={port}
+						/>
+					))}
+				</AnimatePresence>
 			</div>
 		</div>
 	);

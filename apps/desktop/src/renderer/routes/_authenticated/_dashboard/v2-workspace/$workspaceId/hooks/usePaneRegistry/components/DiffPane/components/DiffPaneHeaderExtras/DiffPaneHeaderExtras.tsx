@@ -7,14 +7,37 @@ import {
 	MessageSquareOff,
 	SquareSplitHorizontal,
 } from "lucide-react";
+import { useMemo } from "react";
 import { TbScan } from "react-icons/tb";
 import { useSettings } from "renderer/stores/settings";
+import type { ChangesetFile } from "../../../../../useChangeset";
+import { useChangeset } from "../../../../../useChangeset";
+import { useSidebarDiffRef } from "../../../../../useSidebarDiffRef";
+import { DiffPerformanceMeter } from "./DiffPerformanceMeter";
 
-export function DiffPaneHeaderExtras() {
+interface DiffPaneHeaderExtrasProps {
+	workspaceId: string;
+}
+
+export function DiffPaneHeaderExtras({
+	workspaceId,
+}: DiffPaneHeaderExtrasProps) {
 	const diffStyle = useSettings((s) => s.diffStyle);
 	const showDiffComments = useSettings((s) => s.showDiffComments);
 	const expandUnchanged = useSettings((s) => s.expandUnchanged);
 	const updateSetting = useSettings((s) => s.update);
+
+	const ref = useSidebarDiffRef(workspaceId);
+	const { files } = useChangeset({ workspaceId, ref });
+	const totalChanged = useMemo(
+		() =>
+			files.reduce(
+				(n: number, f: ChangesetFile) => n + f.additions + f.deletions,
+				0,
+			),
+		[files],
+	);
+	const isLarge = files.length > 40 || totalChanged > 2000;
 
 	const buttonClass = (active: boolean) =>
 		cn(
@@ -26,6 +49,14 @@ export function DiffPaneHeaderExtras() {
 
 	return (
 		<div className="flex items-center">
+			{isLarge && (
+				<DiffPerformanceMeter
+					totalChanged={totalChanged}
+					fileCount={files.length}
+					expandUnchanged={expandUnchanged}
+					onHideUnchanged={() => updateSetting("expandUnchanged", false)}
+				/>
+			)}
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<button

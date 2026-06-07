@@ -1,12 +1,15 @@
 "use client";
 
 import { ArrowDownIcon } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ComponentProps } from "react";
 import { useCallback } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Loader } from "./loader";
+
+const MotionButton = motion.create(Button);
 
 export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
@@ -119,34 +122,55 @@ export const ConversationLoadingState = ({
 	</ConversationStateContainer>
 );
 
-export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
+export type ConversationScrollButtonProps = Omit<
+	ComponentProps<typeof Button>,
+	"onAnimationStart" | "onDrag" | "onDragStart" | "onDragEnd"
+>;
 
 export const ConversationScrollButton = ({
 	className,
 	...props
 }: ConversationScrollButtonProps) => {
 	const { isAtBottom, scrollToBottom } = useStickToBottomContext();
+	const prefersReducedMotion = useReducedMotion();
 
 	const handleScrollToBottom = useCallback(() => {
 		scrollToBottom();
 	}, [scrollToBottom]);
 
 	return (
-		!isAtBottom && (
-			<Button
-				className={cn(
-					"absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full",
-					className,
-				)}
-				onClick={handleScrollToBottom}
-				size="icon"
-				type="button"
-				variant="outline"
-				{...props}
-			>
-				<ArrowDownIcon className="size-4" />
-			</Button>
-		)
+		<AnimatePresence initial={false}>
+			{!isAtBottom && (
+				<MotionButton
+					key="conversation-scroll-button"
+					className={cn("absolute bottom-4 left-[50%] rounded-full", className)}
+					onClick={handleScrollToBottom}
+					size="icon"
+					type="button"
+					variant="outline"
+					style={{ x: "-50%" }}
+					initial={
+						prefersReducedMotion
+							? { opacity: 0 }
+							: { opacity: 0, scale: 0.85, y: 8 }
+					}
+					animate={
+						prefersReducedMotion
+							? { opacity: 1 }
+							: { opacity: 1, scale: 1, y: 0 }
+					}
+					exit={
+						prefersReducedMotion
+							? { opacity: 0 }
+							: { opacity: 0, scale: 0.85, y: 8 }
+					}
+					transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+					{...props}
+				>
+					<ArrowDownIcon className="size-4" />
+				</MotionButton>
+			)}
+		</AnimatePresence>
 	);
 };
 

@@ -1,15 +1,25 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
+import { AnimatePresence, motion } from "framer-motion";
 import {
 	type ComponentPropsWithoutRef,
 	forwardRef,
 	useEffect,
 	useRef,
+	useState,
 } from "react";
 import { HiMiniMinus, HiMiniXMark } from "react-icons/hi2";
+import { LuStar } from "react-icons/lu";
 import type { DiffStats } from "renderer/hooks/host-service/useDiffStats";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import {
+	ease,
+	motionDuration,
+	motionSpring,
+	PopIn,
+	useShouldAnimate,
+} from "renderer/motion";
 import { RenameInput } from "renderer/screens/main/components/WorkspaceSidebar/RenameInput";
 import type { ActivePaneStatus } from "shared/tabs-types";
 import type {
@@ -39,6 +49,8 @@ interface DashboardSidebarExpandedWorkspaceRowProps
 	diffStats: DiffStats | null;
 	workspaceStatus?: ActivePaneStatus | null;
 	isInSection?: boolean;
+	isPinned?: boolean;
+	onToggleFavoriteClick?: () => void;
 	onClick?: () => void;
 	onDoubleClick?: () => void;
 	onCloseWorkspaceClick: () => void;
@@ -62,6 +74,8 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 			diffStats,
 			workspaceStatus = null,
 			isInSection = false,
+			isPinned = false,
+			onToggleFavoriteClick,
 			onClick,
 			onDoubleClick,
 			onCloseWorkspaceClick,
@@ -85,8 +99,24 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 		} = workspace;
 		const isPending = pendingTransaction?.type === "insert";
 		const showsStandaloneActiveStripe = accentColor == null;
+		const animate = useShouldAnimate("essential");
+		const animateMorph = useShouldAnimate("decorative");
+		const [revealed, setRevealed] = useState(false);
 		const localRef = useRef<HTMLDivElement>(null);
 		const openUrl = electronTrpc.external.openUrl.useMutation();
+
+		// One-shot "go-live" flash when the row morphs from pending → live.
+		const wasPending = useRef(isPending);
+		const [justWentLive, setJustWentLive] = useState(false);
+		useEffect(() => {
+			if (wasPending.current && !isPending && animateMorph) {
+				setJustWentLive(true);
+				const timeout = setTimeout(() => setJustWentLive(false), 600);
+				wasPending.current = isPending;
+				return () => clearTimeout(timeout);
+			}
+			wasPending.current = isPending;
+		}, [isPending, animateMorph]);
 
 		useEffect(() => {
 			if (isActive) {
@@ -105,6 +135,113 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 		const workspaceKindDescription = isMainWorkspace
 			? "Uses the repository checkout on this host"
 			: "Isolated copy for parallel development";
+
+		const quickActions = (
+			<>
+				{shortcutLabel && (
+					<span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+						{shortcutLabel}
+					</span>
+				)}
+				{onToggleFavoriteClick && (
+					<Tooltip delayDuration={300}>
+						<TooltipTrigger asChild>
+							<button
+								type="button"
+								onClick={(event) => {
+									event.stopPropagation();
+									onToggleFavoriteClick();
+								}}
+								onKeyDown={(event) => {
+									if (
+										event.key === "Enter" ||
+										event.key === " " ||
+										event.key === "Spacebar"
+									) {
+										event.stopPropagation();
+									}
+								}}
+								className="flex items-center justify-center text-muted-foreground hover:text-foreground"
+								aria-label={isPinned ? "Unpin workspace" : "Pin workspace"}
+								aria-pressed={isPinned}
+							>
+								<PopIn active={isPinned}>
+									<LuStar
+										className={cn(
+											"size-3.5",
+											isPinned && "fill-current text-amber-400",
+										)}
+									/>
+								</PopIn>
+							</button>
+						</TooltipTrigger>
+						<TooltipContent side="top" sideOffset={4}>
+							{isPinned ? "Unpin workspace" : "Pin workspace"}
+						</TooltipContent>
+					</Tooltip>
+				)}
+				{isMainWorkspace ? (
+					<Tooltip delayDuration={300}>
+						<TooltipTrigger asChild>
+							<button
+								type="button"
+								onClick={(event) => {
+									event.stopPropagation();
+									onRemoveFromSidebarClick();
+								}}
+								onKeyDown={(event) => {
+									if (
+										event.key === "Enter" ||
+										event.key === " " ||
+										event.key === "Spacebar"
+									) {
+										event.stopPropagation();
+									}
+								}}
+								className="flex items-center justify-center text-muted-foreground hover:text-foreground"
+								aria-label="Remove from sidebar"
+							>
+								<HiMiniMinus className="size-3.5" />
+							</button>
+						</TooltipTrigger>
+						<TooltipContent side="top" sideOffset={4}>
+							<HotkeyLabel label="Remove from sidebar" />
+						</TooltipContent>
+					</Tooltip>
+				) : (
+					<Tooltip delayDuration={300}>
+						<TooltipTrigger asChild>
+							<button
+								type="button"
+								onClick={(event) => {
+									event.stopPropagation();
+									onCloseWorkspaceClick();
+								}}
+								onKeyDown={(event) => {
+									if (
+										event.key === "Enter" ||
+										event.key === " " ||
+										event.key === "Spacebar"
+									) {
+										event.stopPropagation();
+									}
+								}}
+								className="flex items-center justify-center text-muted-foreground hover:text-foreground"
+								aria-label="Close workspace"
+							>
+								<HiMiniXMark className="size-3.5" />
+							</button>
+						</TooltipTrigger>
+						<TooltipContent side="top" sideOffset={4}>
+							<HotkeyLabel
+								label="Close workspace"
+								id={isActive ? "CLOSE_WORKSPACE" : undefined}
+							/>
+						</TooltipContent>
+					</Tooltip>
+				)}
+			</>
+		);
 
 		return (
 			// biome-ignore lint/a11y/noStaticElementInteractions: Mirrors the legacy sidebar row UI, which includes nested action buttons.
@@ -125,6 +262,14 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 					}
 				}}
 				onDoubleClick={onDoubleClick}
+				onMouseEnter={() => setRevealed(true)}
+				onMouseLeave={() => setRevealed(false)}
+				onFocus={() => setRevealed(true)}
+				onBlur={(event) => {
+					if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+						setRevealed(false);
+					}
+				}}
 				className={cn(
 					"relative flex w-full items-center pr-2 text-left text-sm",
 					isInSection ? "pl-7" : "pl-5",
@@ -139,12 +284,31 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 				)}
 				{...props}
 			>
-				{isActive && showsStandaloneActiveStripe && (
-					<div
-						className="absolute top-0 bottom-0 left-0 w-0.5 rounded-r"
-						style={{ backgroundColor: "var(--color-foreground)" }}
+				{animateMorph && justWentLive && (
+					<motion.div
+						aria-hidden
+						className="pointer-events-none absolute inset-0 bg-foreground/10"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: [0, 0.35, 0] }}
+						transition={{ duration: 0.6, ease: ease.standard }}
 					/>
 				)}
+
+				{isActive &&
+					showsStandaloneActiveStripe &&
+					(animate ? (
+						<motion.div
+							layoutId="dashboard-sidebar-active-rail"
+							className="absolute top-0 bottom-0 left-0 w-0.5 rounded-r"
+							style={{ backgroundColor: "var(--color-foreground)" }}
+							transition={motionSpring.snappy}
+						/>
+					) : (
+						<div
+							className="absolute top-0 bottom-0 left-0 w-0.5 rounded-r"
+							style={{ backgroundColor: "var(--color-foreground)" }}
+						/>
+					))}
 
 				<Tooltip delayDuration={500}>
 					<TooltipTrigger asChild>
@@ -251,89 +415,65 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 					)}
 
 					<div className="col-start-2 row-start-1 grid h-5 shrink-0 items-center justify-items-end [&>*]:col-start-1 [&>*]:row-start-1">
-						{creationStatusText ? (
-							<span className="text-[11px] text-muted-foreground">
-								{creationStatusText}
-							</span>
-						) : (
-							diffStats &&
-							(diffStats.additions > 0 || diffStats.deletions > 0) && (
-								<DashboardSidebarWorkspaceDiffStats
-									additions={diffStats.additions}
-									deletions={diffStats.deletions}
-									isActive={isActive}
-								/>
-							)
-						)}
-						{!isPending && (
-							<div className="hidden items-center justify-end gap-1.5 group-hover:flex">
-								{shortcutLabel && (
-									<span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-										{shortcutLabel}
-									</span>
-								)}
-								{isMainWorkspace ? (
-									<Tooltip delayDuration={300}>
-										<TooltipTrigger asChild>
-											<button
-												type="button"
-												onClick={(event) => {
-													event.stopPropagation();
-													onRemoveFromSidebarClick();
-												}}
-												onKeyDown={(event) => {
-													if (
-														event.key === "Enter" ||
-														event.key === " " ||
-														event.key === "Spacebar"
-													) {
-														event.stopPropagation();
-													}
-												}}
-												className="flex items-center justify-center text-muted-foreground hover:text-foreground"
-												aria-label="Remove from sidebar"
-											>
-												<HiMiniMinus className="size-3.5" />
-											</button>
-										</TooltipTrigger>
-										<TooltipContent side="top" sideOffset={4}>
-											<HotkeyLabel label="Remove from sidebar" />
-										</TooltipContent>
-									</Tooltip>
-								) : (
-									<Tooltip delayDuration={300}>
-										<TooltipTrigger asChild>
-											<button
-												type="button"
-												onClick={(event) => {
-													event.stopPropagation();
-													onCloseWorkspaceClick();
-												}}
-												onKeyDown={(event) => {
-													if (
-														event.key === "Enter" ||
-														event.key === " " ||
-														event.key === "Spacebar"
-													) {
-														event.stopPropagation();
-													}
-												}}
-												className="flex items-center justify-center text-muted-foreground hover:text-foreground"
-												aria-label="Close workspace"
-											>
-												<HiMiniXMark className="size-3.5" />
-											</button>
-										</TooltipTrigger>
-										<TooltipContent side="top" sideOffset={4}>
-											<HotkeyLabel
-												label="Close workspace"
-												id={isActive ? "CLOSE_WORKSPACE" : undefined}
-											/>
-										</TooltipContent>
-									</Tooltip>
-								)}
-							</div>
-						)}
+						<AnimatePresence initial={false} mode="popLayout">
+							{creationStatusText ? (
+								<motion.span
+									key="creating"
+									className="text-[11px] text-muted-foreground"
+									initial={{ opacity: 0, y: animateMorph ? 2 : 0 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: animateMorph ? -2 : 0 }}
+									transition={{
+										duration: animateMorph ? motionDuration.fast : 0,
+										ease: ease.standard,
+									}}
+								>
+									{creationStatusText}
+								</motion.span>
+							) : (
+								diffStats &&
+								(diffStats.additions > 0 || diffStats.deletions > 0) && (
+									<motion.div
+										key="stats"
+										initial={{ opacity: 0, y: animateMorph ? 2 : 0 }}
+										animate={{ opacity: 1, y: 0 }}
+										exit={{ opacity: 0, y: animateMorph ? -2 : 0 }}
+										transition={{
+											duration: animateMorph ? motionDuration.fast : 0,
+											ease: ease.standard,
+										}}
+									>
+										<DashboardSidebarWorkspaceDiffStats
+											additions={diffStats.additions}
+											deletions={diffStats.deletions}
+											isActive={isActive}
+										/>
+									</motion.div>
+								)
+							)}
+						</AnimatePresence>
+						{!isPending &&
+							(animateMorph ? (
+								<motion.div
+									className="flex items-center justify-end gap-1.5 overflow-hidden"
+									initial={false}
+									animate={{
+										opacity: revealed ? 1 : 0,
+										width: revealed ? "auto" : 0,
+									}}
+									transition={{
+										duration: motionDuration.fast,
+										ease: ease.standard,
+									}}
+									aria-hidden={revealed ? undefined : true}
+								>
+									{quickActions}
+								</motion.div>
+							) : (
+								<div className="hidden items-center justify-end gap-1.5 group-hover:flex">
+									{quickActions}
+								</div>
+							))}
 					</div>
 				</div>
 			</div>

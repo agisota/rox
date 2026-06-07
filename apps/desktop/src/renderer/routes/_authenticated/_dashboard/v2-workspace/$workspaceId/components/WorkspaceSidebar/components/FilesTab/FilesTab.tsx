@@ -20,7 +20,7 @@ import {
 	Loader2,
 	RefreshCw,
 } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGitStatusMap } from "renderer/hooks/host-service/useGitStatusMap";
 import {
 	ShadowClickHint,
@@ -29,6 +29,7 @@ import {
 } from "renderer/lib/clickPolicy";
 import { useFallthroughIcons } from "renderer/lib/fileIcons";
 import { createPierreTreeStyle } from "renderer/lib/pierreTree";
+import { RevealFlash, useShouldAnimate } from "renderer/motion";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import { PierreRowContextMenu } from "../PierreRowContextMenu";
 import { FileMenuItems } from "./components/FileMenuItems";
@@ -79,6 +80,8 @@ export function FilesTab({
 
 	const openInExternalEditor = useOpenInExternalEditor(workspaceId);
 	const filePolicy = useSidebarFilePolicy();
+	const shouldAnimate = useShouldAnimate();
+	const [flashRect, setFlashRect] = useState<DOMRect | null>(null);
 
 	const { fileStatusByPath, folderStatusByPath, ignoredPaths } =
 		useGitStatusMap(gitStatus);
@@ -141,6 +144,8 @@ export function FilesTab({
 			workspaceId,
 			selectedFilePath,
 			onSelectFile,
+			shouldAnimate,
+			onRevealed: setFlashRect,
 		});
 	const drop = useFilesTabDrop({ model, bridge, rootPath, workspaceId });
 
@@ -314,6 +319,8 @@ export function FilesTab({
 			</ShadowClickHint>
 
 			{drop.dropTarget && <FilesTabDropOverlay target={drop.dropTarget} />}
+
+			<RevealFlash rect={flashRect} onDone={() => setFlashRect(null)} />
 		</div>
 	);
 }

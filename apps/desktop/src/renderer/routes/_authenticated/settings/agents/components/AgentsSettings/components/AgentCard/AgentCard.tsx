@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent } from "@rox/ui/collapsible";
 import { toast } from "@rox/ui/sonner";
 import { useMemo, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { AnimatedHeight } from "renderer/motion";
 import type { AgentCardProps, AgentEditableField } from "./agent-card.types";
 import {
 	buildAgentFieldPatch,
@@ -222,28 +223,33 @@ export function AgentCard({
 					onEnabledChange={handleEnabledChange}
 					onToggle={() => handleOpenChange(!isOpen)}
 				/>
-				<CollapsibleContent id={`${preset.id}-settings`}>
-					<CardContent className="space-y-4">
-						<AgentCardFields
-							preset={preset}
-							inputVersion={inputVersion}
-							showCommands={showCommands}
-							showTaskPrompts={showTaskPrompts}
-							validationMessage={validationMessage}
-							onFieldBlur={handleFieldBlur}
-						/>
-						<AgentCardPreview
-							preset={preset}
-							showPreview={showPreview}
-							previewPrompt={previewPrompt}
-							previewNoPromptCommand={previewNoPromptCommand}
-							previewTaskCommand={previewTaskCommand}
-							onToggle={() => setShowPreview((current) => !current)}
-						/>
-					</CardContent>
-					{preset.source === "builtin" && (
-						<AgentCardActions isResetting={isMutating} onReset={handleReset} />
-					)}
+				<CollapsibleContent forceMount id={`${preset.id}-settings`}>
+					<AnimatedHeight open={isOpen}>
+						<CardContent className="space-y-4">
+							<AgentCardFields
+								preset={preset}
+								inputVersion={inputVersion}
+								showCommands={showCommands}
+								showTaskPrompts={showTaskPrompts}
+								validationMessage={validationMessage}
+								onFieldBlur={handleFieldBlur}
+							/>
+							<AgentCardPreview
+								preset={preset}
+								showPreview={showPreview}
+								previewPrompt={previewPrompt}
+								previewNoPromptCommand={previewNoPromptCommand}
+								previewTaskCommand={previewTaskCommand}
+								onToggle={() => setShowPreview((current) => !current)}
+							/>
+						</CardContent>
+						{preset.source === "builtin" && (
+							<AgentCardActions
+								isResetting={isMutating}
+								onReset={handleReset}
+							/>
+						)}
+					</AnimatedHeight>
 				</CollapsibleContent>
 			</Collapsible>
 		</Card>

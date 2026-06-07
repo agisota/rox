@@ -1,19 +1,33 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { AnimatedNumber } from "renderer/motion";
 
 interface MetricBadgeProps {
 	label: string;
 	value: string;
 	tooltip?: string;
+	/** When provided with `format`, the value springs toward each new reading. */
+	numericValue?: number;
+	format?: (value: number) => string;
 }
 
-export function MetricBadge({ label, value, tooltip }: MetricBadgeProps) {
+export function MetricBadge({
+	label,
+	value,
+	tooltip,
+	numericValue,
+	format,
+}: MetricBadgeProps) {
 	const content = (
 		<div className="min-w-0 px-3 first:pl-0 last:pr-0">
 			<div className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground/80">
 				{label}
 			</div>
 			<div className="mt-1.5 text-[15px] leading-none font-medium tabular-nums tracking-tight text-foreground whitespace-nowrap">
-				{value}
+				{numericValue !== undefined && format ? (
+					<AnimatedNumber value={numericValue} format={format} />
+				) : (
+					value
+				)}
 			</div>
 		</div>
 	);

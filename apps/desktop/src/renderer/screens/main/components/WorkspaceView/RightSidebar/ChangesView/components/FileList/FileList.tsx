@@ -1,3 +1,4 @@
+import { LayoutGroup } from "framer-motion";
 import { useDeferredValue } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import type { ChangeCategory, ChangedFile } from "shared/changes-types";
@@ -85,26 +86,30 @@ export function FileList({
 			);
 		}
 
+		const treeLayoutId = `changes-active-file-tree-${category ?? "none"}-${commitHash ?? "none"}`;
 		return (
-			<FileListTree
-				files={filesForRender}
-				selectedFile={selectedFile}
-				selectedCommitHash={selectedCommitHash}
-				onFileSelect={onFileSelect}
-				showStats={showStats}
-				onStage={onStage}
-				onUnstage={onUnstage}
-				onStageFiles={onStageFiles}
-				onUnstageFiles={onUnstageFiles}
-				isActioning={isActioning}
-				worktreePath={worktreePath}
-				onDiscard={onDiscard}
-				category={category}
-				commitHash={commitHash}
-				isExpandedView={isExpandedView}
-				projectId={projectId}
-				defaultApp={defaultApp}
-			/>
+			<LayoutGroup id={treeLayoutId}>
+				<FileListTree
+					files={filesForRender}
+					selectedFile={selectedFile}
+					selectedCommitHash={selectedCommitHash}
+					onFileSelect={onFileSelect}
+					showStats={showStats}
+					onStage={onStage}
+					onUnstage={onUnstage}
+					onStageFiles={onStageFiles}
+					onUnstageFiles={onUnstageFiles}
+					isActioning={isActioning}
+					worktreePath={worktreePath}
+					onDiscard={onDiscard}
+					category={category}
+					commitHash={commitHash}
+					isExpandedView={isExpandedView}
+					projectId={projectId}
+					defaultApp={defaultApp}
+					activeIndicatorLayoutId={treeLayoutId}
+				/>
+			</LayoutGroup>
 		);
 	}
 
@@ -132,25 +137,29 @@ export function FileList({
 		);
 	}
 
+	const groupedLayoutId = `changes-active-file-grouped-${category ?? "none"}-${commitHash ?? "none"}`;
 	return (
-		<FileListGrouped
-			files={filesForRender}
-			selectedFile={selectedFile}
-			selectedCommitHash={selectedCommitHash}
-			onFileSelect={onFileSelect}
-			showStats={showStats}
-			onStage={onStage}
-			onUnstage={onUnstage}
-			onStageFiles={onStageFiles}
-			onUnstageFiles={onUnstageFiles}
-			isActioning={isActioning}
-			worktreePath={worktreePath}
-			onDiscard={onDiscard}
-			category={category}
-			commitHash={commitHash}
-			isExpandedView={isExpandedView}
-			projectId={projectId}
-			defaultApp={defaultApp}
-		/>
+		<LayoutGroup id={groupedLayoutId}>
+			<FileListGrouped
+				files={filesForRender}
+				selectedFile={selectedFile}
+				selectedCommitHash={selectedCommitHash}
+				onFileSelect={onFileSelect}
+				showStats={showStats}
+				onStage={onStage}
+				onUnstage={onUnstage}
+				onStageFiles={onStageFiles}
+				onUnstageFiles={onUnstageFiles}
+				isActioning={isActioning}
+				worktreePath={worktreePath}
+				onDiscard={onDiscard}
+				category={category}
+				commitHash={commitHash}
+				isExpandedView={isExpandedView}
+				projectId={projectId}
+				defaultApp={defaultApp}
+				activeIndicatorLayoutId={groupedLayoutId}
+			/>
+		</LayoutGroup>
 	);
 }

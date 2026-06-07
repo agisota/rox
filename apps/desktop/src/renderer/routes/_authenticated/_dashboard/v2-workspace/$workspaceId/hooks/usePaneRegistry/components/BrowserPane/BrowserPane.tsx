@@ -4,13 +4,52 @@ import { GlobeIcon } from "lucide-react";
 import { useCallback, useSyncExternalStore } from "react";
 import { TbDeviceDesktop } from "react-icons/tb";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
+import { BrowserFullscreenPreview, BrowserLoadingBar } from "renderer/motion";
 import type { BrowserPaneData, PaneViewerData } from "../../../../types";
-
 import { browserRuntimeRegistry } from "./browserRuntimeRegistry";
 import { BrowserErrorOverlay } from "./components/BrowserErrorOverlay";
 import { BrowserOverflowMenu } from "./components/BrowserOverflowMenu";
 import { BrowserToolbar } from "./components/BrowserToolbar";
 import { usePersistentWebview } from "./hooks/usePersistentWebview";
+
+// Module-level per-pane fullscreen state so BrowserPane (content) and
+// BrowserPaneToolbar (toolbar) share the same boolean without prop-drilling.
+const _fsMap = new Map<string, boolean>();
+const _fsSubs = new Map<string, Set<() => void>>();
+
+function _getFSState(paneId: string): boolean {
+	return _fsMap.get(paneId) ?? false;
+}
+function _setFSState(paneId: string, value: boolean): void {
+	_fsMap.set(paneId, value);
+	_fsSubs.get(paneId)?.forEach((cb) => {
+		cb();
+	});
+}
+function _subFSState(paneId: string, cb: () => void): () => void {
+	let subs = _fsSubs.get(paneId);
+	if (!subs) {
+		subs = new Set();
+		_fsSubs.set(paneId, subs);
+	}
+	subs.add(cb);
+	return () => {
+		_fsSubs.get(paneId)?.delete(cb);
+	};
+}
+
+function useFullscreenState(paneId: string) {
+	const isFullscreen = useSyncExternalStore(
+		useCallback((cb) => _subFSState(paneId, cb), [paneId]),
+		useCallback(() => _getFSState(paneId), [paneId]),
+	);
+	const toggle = useCallback(
+		() => _setFSState(paneId, !_getFSState(paneId)),
+		[paneId],
+	);
+	const exit = useCallback(() => _setFSState(paneId, false), [paneId]);
+	return { isFullscreen, toggle, exit };
+}
 
 function getSingleBrowserPane(
 	tab: Tab<PaneViewerData>,
@@ -48,11 +87,18 @@ export function BrowserPane({ ctx }: BrowserPaneProps) {
 	const paneId = ctx.pane.id;
 	const state = useBrowserState(paneId);
 	const { placeholderRef, reload } = usePersistentWebview({ paneId, ctx });
+	const { isFullscreen, exit } = useFullscreenState(paneId);
 
 	const isBlankPage = !state.currentUrl || state.currentUrl === "about:blank";
 
 	return (
-		<div className="relative flex flex-1 h-full">
+		<BrowserFullscreenPreview
+			isFullscreen={isFullscreen}
+			onExit={exit}
+			paneId={paneId}
+			className="relative flex flex-1 h-full"
+		>
+			<BrowserLoadingBar loading={state.isLoading} />
 			<div ref={placeholderRef} className="w-full h-full" style={{ flex: 1 }} />
 			{state.error && !state.isLoading && (
 				<BrowserErrorOverlay error={state.error} onRetry={reload} />
@@ -72,7 +118,7 @@ export function BrowserPane({ ctx }: BrowserPaneProps) {
 					</div>
 				</div>
 			)}
-		</div>
+		</BrowserFullscreenPreview>
 	);
 }
 
@@ -83,6 +129,7 @@ interface BrowserPaneToolbarProps {
 export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 	const paneId = ctx.pane.id;
 	const state = useBrowserState(paneId);
+	const { isFullscreen, toggle } = useFullscreenState(paneId);
 
 	const handleOpenDevTools = useCallback(() => {
 		electronTrpcClient.browser.openDevTools.mutate({ paneId }).catch(() => {});
@@ -143,6 +190,8 @@ export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 					paneId={paneId}
 					currentUrl={state.currentUrl}
 					hasPage={!isBlankPage}
+					isFullscreen={isFullscreen}
+					onToggleFullscreen={toggle}
 				/>
 				<div className="mx-1 h-3.5 w-px bg-muted-foreground/60" />
 				<PaneHeaderActions />

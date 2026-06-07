@@ -1,5 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { motion } from "framer-motion";
+import { useShouldAnimate } from "renderer/motion";
 import type { DashboardSidebarWorkspace } from "../../types";
 import { DashboardSidebarWorkspaceItem } from "../DashboardSidebarWorkspaceItem";
 
@@ -30,10 +32,12 @@ export function SortableWorkspaceItem({
 		transform,
 		transition,
 	} = useSortable({ id: sortableId, disabled });
+	const shouldAnimate = useShouldAnimate("essential");
 
 	return (
-		<div
+		<motion.div
 			ref={setNodeRef}
+			layout={shouldAnimate ? "position" : false}
 			style={{
 				transform: CSS.Translate.toString(transform),
 				transition,
@@ -49,6 +53,6 @@ export function SortableWorkspaceItem({
 				shortcutLabel={shortcutLabel}
 				isInSection={isInSection}
 			/>
-		</div>
+		</motion.div>
 	);
 }

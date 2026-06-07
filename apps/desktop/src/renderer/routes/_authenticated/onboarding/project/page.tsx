@@ -3,6 +3,7 @@ import { Card } from "@rox/ui/card";
 import { Input } from "@rox/ui/input";
 import { toast } from "@rox/ui/sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { LuFolderOpen, LuGitBranch } from "react-icons/lu";
 import { track } from "renderer/lib/analytics";
@@ -10,6 +11,7 @@ import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { motionDuration, useShouldAnimate } from "renderer/motion";
 import { useFinalizeProjectSetup } from "renderer/react-query/projects";
 import { useFolderFirstImport } from "renderer/routes/_authenticated/_dashboard/components/AddRepositoryModals/hooks/useFolderFirstImport";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
@@ -18,6 +20,15 @@ import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
 export const Route = createFileRoute("/_authenticated/onboarding/project/")({
 	component: OnboardingProjectPage,
 });
+
+const cardVariants = {
+	hidden: { opacity: 0, y: 8 },
+	show: (i: number) => ({
+		opacity: 1,
+		y: 0,
+		transition: { duration: motionDuration.base, delay: i * 0.08 },
+	}),
+};
 
 function OnboardingProjectPage() {
 	const navigate = useNavigate();
@@ -29,6 +40,7 @@ function OnboardingProjectPage() {
 	const cloneTargetDir = homeDir ? `${homeDir}/.rox/projects` : null;
 	const [url, setUrl] = useState("");
 	const [busy, setBusy] = useState(false);
+	const shouldAnimate = useShouldAnimate("decorative");
 
 	const folderImport = useFolderFirstImport({
 		onError: (message) => toast.error(message),
@@ -89,53 +101,67 @@ function OnboardingProjectPage() {
 	};
 
 	return (
-		<div className="flex flex-col gap-3">
-			<Card className="flex-row items-center gap-4 p-5">
-				<ProjectIcon icon={<LuFolderOpen className="size-4.5" />} />
-				<div className="min-w-0 flex-1">
-					<p className="text-sm font-medium text-foreground">Open a folder</p>
-					<p className="text-xs text-muted-foreground">
-						Choose any local directory, git repo or not.
-					</p>
-				</div>
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={handleOpenFolder}
-					disabled={!hostReady || busy}
-				>
-					{hostReady ? "Browse…" : "Connecting…"}
-				</Button>
-			</Card>
-
-			<Card className="gap-4 p-5">
-				<div className="flex items-center gap-4">
-					<ProjectIcon icon={<LuGitBranch className="size-4.5" />} />
+		<motion.div
+			className="flex flex-col gap-3"
+			initial={shouldAnimate ? "hidden" : false}
+			animate="show"
+		>
+			<motion.div custom={0} variants={cardVariants}>
+				<Card className="flex-row items-center gap-4 p-5">
+					<ProjectIcon icon={<LuFolderOpen className="size-4.5" />} />
 					<div className="min-w-0 flex-1">
-						<p className="text-sm font-medium text-foreground">Clone a repo</p>
+						<p className="text-sm font-medium text-foreground">Open a folder</p>
 						<p className="text-xs text-muted-foreground">
-							Paste an HTTPS or SSH URL.
+							Choose any local directory, git repo or not.
 						</p>
 					</div>
-				</div>
-				<form onSubmit={handleClone} className="flex items-center gap-2">
-					<Input
-						type="text"
-						placeholder="git@github.com:org/repo.git"
-						value={url}
-						onChange={(e) => setUrl(e.target.value)}
-						disabled={busy || !hostReady}
-						className="flex-1"
-					/>
-					<Button
-						type="submit"
-						disabled={!url.trim() || busy || !hostReady || !cloneTargetDir}
-					>
-						{busy ? "Cloning…" : "Clone"}
-					</Button>
-				</form>
-			</Card>
-		</div>
+					<motion.div whileTap={shouldAnimate ? { scale: 0.97 } : undefined}>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={handleOpenFolder}
+							disabled={!hostReady || busy}
+						>
+							{hostReady ? "Browse…" : "Connecting…"}
+						</Button>
+					</motion.div>
+				</Card>
+			</motion.div>
+
+			<motion.div custom={1} variants={cardVariants}>
+				<Card className="gap-4 p-5">
+					<div className="flex items-center gap-4">
+						<ProjectIcon icon={<LuGitBranch className="size-4.5" />} />
+						<div className="min-w-0 flex-1">
+							<p className="text-sm font-medium text-foreground">
+								Clone a repo
+							</p>
+							<p className="text-xs text-muted-foreground">
+								Paste an HTTPS or SSH URL.
+							</p>
+						</div>
+					</div>
+					<form onSubmit={handleClone} className="flex items-center gap-2">
+						<Input
+							type="text"
+							placeholder="git@github.com:org/repo.git"
+							value={url}
+							onChange={(e) => setUrl(e.target.value)}
+							disabled={busy || !hostReady}
+							className="flex-1"
+						/>
+						<motion.div whileTap={shouldAnimate ? { scale: 0.97 } : undefined}>
+							<Button
+								type="submit"
+								disabled={!url.trim() || busy || !hostReady || !cloneTargetDir}
+							>
+								{busy ? "Cloning…" : "Clone"}
+							</Button>
+						</motion.div>
+					</form>
+				</Card>
+			</motion.div>
+		</motion.div>
 	);
 }
 

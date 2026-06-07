@@ -4,8 +4,10 @@ import { WebFetchTool } from "@rox/ui/ai-elements/web-fetch-tool";
 import { WebSearchTool } from "@rox/ui/ai-elements/web-search-tool";
 import { getToolName } from "ai";
 import { FileIcon, FolderIcon, GlobeIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { useCallback, useMemo } from "react";
 import { posthog } from "renderer/lib/posthog";
+import { AnimatedDiffReveal, ToolCardMotion } from "renderer/motion";
 import { useChangesStore } from "renderer/stores/changes";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { ChangeCategory } from "shared/changes-types";
@@ -277,388 +279,400 @@ export function ToolCallBlock({
 		};
 	};
 
-	// --- Execute command → BashTool ---
-	if (toolName === "mastra_workspace_execute_command") {
-		const { command, stdout, stderr, exitCode } = getExecuteCommandViewModel({
-			args,
-			result,
-		});
-		return (
-			<BashTool
-				command={command}
-				stdout={stdout}
-				stderr={stderr}
-				exitCode={exitCode}
-				state={state}
-			/>
-		);
-	}
-
-	// --- Write file → FileDiffTool (write mode) ---
-	if (toolName === "mastra_workspace_write_file") {
-		const filePath = getFilePath(
-			args.path,
-			args.filePath,
-			args.file_path,
-			args.relative_workspace_path,
-			args.relativePath,
-			args.file,
-			args.filename,
-			toRecord(args.target)?.path,
-		);
-		const content = String(args.content ?? args.data ?? "");
-		return (
-			<FileDiffTool
-				filePath={filePath}
-				content={content}
-				isWriteMode
-				onFilePathClick={openFileInDiffPane}
-				renderExpandedContent={
-					content
-						? () => (
-								<EditToolExpandedDiff
-									filePath={filePath}
-									oldString=""
-									newString={content}
-									hideUnchangedRegions={hideUnchangedRegions}
-								/>
-							)
-						: undefined
-				}
-				state={state}
-			/>
-		);
-	}
-
-	// --- Edit file → FileDiffTool (diff mode) ---
-	if (
-		toolName === "mastra_workspace_edit_file" ||
-		toolName === "ast_smart_edit"
-	) {
-		const editArgs = toRecord(args.edit);
-		const filePath = getFilePath(
-			args.path,
-			args.filePath,
-			args.file_path,
-			args.relative_workspace_path,
-			args.relativePath,
-			args.file,
-			args.filename,
-			args.file_name,
-			args.target_file,
-			args.target_path,
-			args.targetPath,
-			editArgs?.path,
-			editArgs?.filePath,
-			editArgs?.file_path,
-			toRecord(args.target)?.path,
-		);
-		const oldString =
-			firstText(
-				args.oldString,
-				args.old_string,
-				args.old_str,
-				args.oldText,
-				args.old_text,
-				args.oldCode,
-				args.old_code,
-				args.before,
-				args.find,
-				args.search,
-				args.original,
-				args.previous,
-				args.from,
-				editArgs?.oldString,
-				editArgs?.old_string,
-				editArgs?.oldText,
-				editArgs?.before,
-				outputObject?.oldString,
-				outputObject?.old_string,
-				nestedResultObject?.oldString,
-				nestedResultObject?.old_string,
-			) ?? "";
-		const newString =
-			firstText(
-				args.newString,
-				args.new_string,
-				args.new_str,
-				args.newText,
-				args.new_text,
-				args.newCode,
-				args.new_code,
-				args.after,
-				args.replace,
-				args.replacement,
-				args.updated,
-				args.to,
-				editArgs?.newString,
-				editArgs?.new_string,
-				editArgs?.newText,
-				editArgs?.after,
-				outputObject?.newString,
-				outputObject?.new_string,
-				nestedResultObject?.newString,
-				nestedResultObject?.new_string,
-			) ?? "";
-
-		const structuredPatchValue =
-			(Array.isArray(result.structuredPatch)
-				? result.structuredPatch
-				: Array.isArray(outputObject?.structuredPatch)
-					? outputObject?.structuredPatch
-					: Array.isArray(nestedResultObject?.structuredPatch)
-						? nestedResultObject?.structuredPatch
-						: undefined) ??
-			(Array.isArray(result.structured_patch)
-				? result.structured_patch
-				: Array.isArray(outputObject?.structured_patch)
-					? outputObject?.structured_patch
-					: Array.isArray(nestedResultObject?.structured_patch)
-						? nestedResultObject?.structured_patch
-						: undefined);
-		const structuredPatch = structuredPatchValue?.filter(
-			(hunk): hunk is { lines: string[] } => {
-				return Boolean(
-					typeof hunk === "object" &&
-						hunk !== null &&
-						Array.isArray((hunk as { lines?: unknown }).lines),
-				);
-			},
-		);
-		const derivedStrings = deriveStringsFromStructuredPatch(structuredPatch);
-		const expandedOldString = oldString || derivedStrings?.oldString || "";
-		const expandedNewString = newString || derivedStrings?.newString || "";
-
-		return (
-			<FileDiffTool
-				filePath={filePath}
-				oldString={oldString}
-				newString={newString}
-				structuredPatch={structuredPatch}
-				onFilePathClick={openFileInDiffPane}
-				renderExpandedContent={
-					expandedOldString || expandedNewString
-						? () => (
-								<EditToolExpandedDiff
-									filePath={filePath}
-									oldString={expandedOldString}
-									newString={expandedNewString}
-									hideUnchangedRegions={hideUnchangedRegions}
-								/>
-							)
-						: undefined
-				}
-				state={state}
-			/>
-		);
-	}
-
-	// --- Web search → WebSearchTool (with results) or GenericToolCall (without) ---
-	if (toolName === "web_search" || toolName.includes("web_search")) {
-		const { query, results } = getWebSearchViewModel({ args, result });
-		if (results.length > 0) {
-			return <WebSearchTool query={query} results={results} state={state} />;
+	const renderToolContent = (): ReactNode => {
+		// --- Execute command → BashTool ---
+		if (toolName === "mastra_workspace_execute_command") {
+			const { command, stdout, stderr, exitCode } = getExecuteCommandViewModel({
+				args,
+				result,
+			});
+			return (
+				<BashTool
+					command={command}
+					stdout={stdout}
+					stderr={stderr}
+					exitCode={exitCode}
+					state={state}
+				/>
+			);
 		}
-		return (
-			<GenericToolCall
-				part={part}
-				toolName="Web Search"
-				subtitle={query || undefined}
-				icon={GlobeIcon}
-			/>
-		);
-	}
 
-	// --- Web fetch → WebFetchTool ---
-	if (toolName === "web_fetch") {
-		const url = String(args.url ?? "");
-		const content =
-			typeof result.content === "string" ? result.content : undefined;
-		const bytes = typeof result.bytes === "number" ? result.bytes : undefined;
-		const statusCode =
-			typeof result.status_code === "number"
-				? result.status_code
-				: typeof result.statusCode === "number"
-					? result.statusCode
-					: undefined;
-		return (
-			<WebFetchTool
-				url={url}
-				content={content}
-				bytes={bytes}
-				statusCode={statusCode}
-				state={state}
-			/>
-		);
-	}
+		// --- Write file → FileDiffTool (write mode) ---
+		if (toolName === "mastra_workspace_write_file") {
+			const filePath = getFilePath(
+				args.path,
+				args.filePath,
+				args.file_path,
+				args.relative_workspace_path,
+				args.relativePath,
+				args.file,
+				args.filename,
+				toRecord(args.target)?.path,
+			);
+			const content = String(args.content ?? args.data ?? "");
+			return (
+				<FileDiffTool
+					filePath={filePath}
+					content={content}
+					isWriteMode
+					onFilePathClick={openFileInDiffPane}
+					renderExpandedContent={
+						content
+							? () => (
+									<AnimatedDiffReveal>
+										<EditToolExpandedDiff
+											filePath={filePath}
+											oldString=""
+											newString={content}
+											hideUnchangedRegions={hideUnchangedRegions}
+										/>
+									</AnimatedDiffReveal>
+								)
+							: undefined
+					}
+					state={state}
+				/>
+			);
+		}
 
-	// --- Ask user question → UserQuestionTool ---
-	if (toolName === "ask_user_question") {
-		return (
-			<AskUserQuestionToolCall
-				part={part}
-				args={args}
-				result={result}
-				outputObject={outputObject}
-				nestedResultObject={nestedResultObject}
-				isStreaming={isStreaming}
-				isInterrupted={isInterrupted}
-				onAnswer={onAnswer}
-			/>
-		);
-	}
+		// --- Edit file → FileDiffTool (diff mode) ---
+		if (
+			toolName === "mastra_workspace_edit_file" ||
+			toolName === "ast_smart_edit"
+		) {
+			const editArgs = toRecord(args.edit);
+			const filePath = getFilePath(
+				args.path,
+				args.filePath,
+				args.file_path,
+				args.relative_workspace_path,
+				args.relativePath,
+				args.file,
+				args.filename,
+				args.file_name,
+				args.target_file,
+				args.target_path,
+				args.targetPath,
+				editArgs?.path,
+				editArgs?.filePath,
+				editArgs?.file_path,
+				toRecord(args.target)?.path,
+			);
+			const oldString =
+				firstText(
+					args.oldString,
+					args.old_string,
+					args.old_str,
+					args.oldText,
+					args.old_text,
+					args.oldCode,
+					args.old_code,
+					args.before,
+					args.find,
+					args.search,
+					args.original,
+					args.previous,
+					args.from,
+					editArgs?.oldString,
+					editArgs?.old_string,
+					editArgs?.oldText,
+					editArgs?.before,
+					outputObject?.oldString,
+					outputObject?.old_string,
+					nestedResultObject?.oldString,
+					nestedResultObject?.old_string,
+				) ?? "";
+			const newString =
+				firstText(
+					args.newString,
+					args.new_string,
+					args.new_str,
+					args.newText,
+					args.new_text,
+					args.newCode,
+					args.new_code,
+					args.after,
+					args.replace,
+					args.replacement,
+					args.updated,
+					args.to,
+					editArgs?.newString,
+					editArgs?.new_string,
+					editArgs?.newText,
+					editArgs?.after,
+					outputObject?.newString,
+					outputObject?.new_string,
+					nestedResultObject?.newString,
+					nestedResultObject?.new_string,
+				) ?? "";
 
-	// --- Rox MCP tools ---
-	if (toolName === "create_task") {
-		return <CreateTaskToolCall part={part} />;
-	}
+			const structuredPatchValue =
+				(Array.isArray(result.structuredPatch)
+					? result.structuredPatch
+					: Array.isArray(outputObject?.structuredPatch)
+						? outputObject?.structuredPatch
+						: Array.isArray(nestedResultObject?.structuredPatch)
+							? nestedResultObject?.structuredPatch
+							: undefined) ??
+				(Array.isArray(result.structured_patch)
+					? result.structured_patch
+					: Array.isArray(outputObject?.structured_patch)
+						? outputObject?.structured_patch
+						: Array.isArray(nestedResultObject?.structured_patch)
+							? nestedResultObject?.structured_patch
+							: undefined);
+			const structuredPatch = structuredPatchValue?.filter(
+				(hunk): hunk is { lines: string[] } => {
+					return Boolean(
+						typeof hunk === "object" &&
+							hunk !== null &&
+							Array.isArray((hunk as { lines?: unknown }).lines),
+					);
+				},
+			);
+			const derivedStrings = deriveStringsFromStructuredPatch(structuredPatch);
+			const expandedOldString = oldString || derivedStrings?.oldString || "";
+			const expandedNewString = newString || derivedStrings?.newString || "";
 
-	if (toolName === "update_task") {
-		return <UpdateTaskToolCall part={part} />;
-	}
+			return (
+				<FileDiffTool
+					filePath={filePath}
+					oldString={oldString}
+					newString={newString}
+					structuredPatch={structuredPatch}
+					onFilePathClick={openFileInDiffPane}
+					renderExpandedContent={
+						expandedOldString || expandedNewString
+							? () => (
+									<AnimatedDiffReveal>
+										<EditToolExpandedDiff
+											filePath={filePath}
+											oldString={expandedOldString}
+											newString={expandedNewString}
+											hideUnchangedRegions={hideUnchangedRegions}
+										/>
+									</AnimatedDiffReveal>
+								)
+							: undefined
+					}
+					state={state}
+				/>
+			);
+		}
 
-	if (toolName === "list_tasks") {
-		return <ListTasksToolCall part={part} />;
-	}
+		// --- Web search → WebSearchTool (with results) or GenericToolCall (without) ---
+		if (toolName === "web_search" || toolName.includes("web_search")) {
+			const { query, results } = getWebSearchViewModel({ args, result });
+			if (results.length > 0) {
+				return <WebSearchTool query={query} results={results} state={state} />;
+			}
+			return (
+				<GenericToolCall
+					part={part}
+					toolName="Web Search"
+					subtitle={query || undefined}
+					icon={GlobeIcon}
+				/>
+			);
+		}
 
-	if (toolName === "get_task") {
-		return <GetTaskToolCall part={part} />;
-	}
+		// --- Web fetch → WebFetchTool ---
+		if (toolName === "web_fetch") {
+			const url = String(args.url ?? "");
+			const content =
+				typeof result.content === "string" ? result.content : undefined;
+			const bytes = typeof result.bytes === "number" ? result.bytes : undefined;
+			const statusCode =
+				typeof result.status_code === "number"
+					? result.status_code
+					: typeof result.statusCode === "number"
+						? result.statusCode
+						: undefined;
+			return (
+				<WebFetchTool
+					url={url}
+					content={content}
+					bytes={bytes}
+					statusCode={statusCode}
+					state={state}
+				/>
+			);
+		}
 
-	if (toolName === "delete_task") {
-		return <DeleteTaskToolCall part={part} />;
-	}
+		// --- Ask user question → UserQuestionTool ---
+		if (toolName === "ask_user_question") {
+			return (
+				<AskUserQuestionToolCall
+					part={part}
+					args={args}
+					result={result}
+					outputObject={outputObject}
+					nestedResultObject={nestedResultObject}
+					isStreaming={isStreaming}
+					isInterrupted={isInterrupted}
+					onAnswer={onAnswer}
+				/>
+			);
+		}
 
-	if (toolName === "list_task_statuses") {
-		return <ListTaskStatusesToolCall part={part} />;
-	}
+		// --- Rox MCP tools ---
+		if (toolName === "create_task") {
+			return <CreateTaskToolCall part={part} />;
+		}
 
-	if (toolName === "list_members") {
-		return <ListMembersToolCall part={part} />;
-	}
+		if (toolName === "update_task") {
+			return <UpdateTaskToolCall part={part} />;
+		}
 
-	if (toolName === "list_devices") {
-		return <ListDevicesToolCall part={part} />;
-	}
+		if (toolName === "list_tasks") {
+			return <ListTasksToolCall part={part} />;
+		}
 
-	if (toolName === "list_workspaces") {
-		return <ListWorkspacesToolCall part={part} />;
-	}
+		if (toolName === "get_task") {
+			return <GetTaskToolCall part={part} />;
+		}
 
-	if (toolName === "list_projects") {
-		return <ListProjectsToolCall part={part} />;
-	}
+		if (toolName === "delete_task") {
+			return <DeleteTaskToolCall part={part} />;
+		}
 
-	if (toolName === "get_app_context") {
-		return <GetAppContextToolCall part={part} />;
-	}
+		if (toolName === "list_task_statuses") {
+			return <ListTaskStatusesToolCall part={part} />;
+		}
 
-	if (toolName === "get_workspace_details") {
-		return <GetWorkspaceDetailsToolCall part={part} />;
-	}
+		if (toolName === "list_members") {
+			return <ListMembersToolCall part={part} />;
+		}
 
-	if (toolName === "create_workspace") {
-		return <CreateWorkspaceToolCall part={part} />;
-	}
+		if (toolName === "list_devices") {
+			return <ListDevicesToolCall part={part} />;
+		}
 
-	if (toolName === "switch_workspace") {
-		return <SwitchWorkspaceToolCall part={part} />;
-	}
+		if (toolName === "list_workspaces") {
+			return <ListWorkspacesToolCall part={part} />;
+		}
 
-	if (toolName === "update_workspace") {
-		return <UpdateWorkspaceToolCall part={part} />;
-	}
+		if (toolName === "list_projects") {
+			return <ListProjectsToolCall part={part} />;
+		}
 
-	if (toolName === "delete_workspace") {
-		return <DeleteWorkspaceToolCall part={part} />;
-	}
+		if (toolName === "get_app_context") {
+			return <GetAppContextToolCall part={part} />;
+		}
 
-	if (toolName === "start_agent_session") {
-		return <StartAgentSessionToolCall part={part} />;
-	}
+		if (toolName === "get_workspace_details") {
+			return <GetWorkspaceDetailsToolCall part={part} />;
+		}
 
-	if (toolName === "start_agent_session_with_prompt") {
-		return (
-			<StartAgentSessionToolCall
-				part={part}
-				toolName="Start agent session with prompt"
-			/>
-		);
-	}
+		if (toolName === "create_workspace") {
+			return <CreateWorkspaceToolCall part={part} />;
+		}
 
-	// --- Read-only exploration tools ---
-	if (READ_ONLY_TOOLS.has(toolName)) {
-		return (
-			<ReadOnlyToolCall
-				part={part}
-				workspaceId={workspaceId}
-				workspaceCwd={workspaceCwd}
-				onOpenFileInPane={openFileInPane}
-			/>
-		);
-	}
+		if (toolName === "switch_workspace") {
+			return <SwitchWorkspaceToolCall part={part} />;
+		}
 
-	// --- Destructive workspace tools ---
-	if (toolName === "mastra_workspace_mkdir") {
-		return (
-			<RoxToolCall part={part} toolName="Create directory" icon={FolderIcon} />
-		);
-	}
+		if (toolName === "update_workspace") {
+			return <UpdateWorkspaceToolCall part={part} />;
+		}
 
-	if (toolName === "mastra_workspace_delete") {
-		return <RoxToolCall part={part} toolName="Delete path" icon={FileIcon} />;
-	}
+		if (toolName === "delete_workspace") {
+			return <DeleteWorkspaceToolCall part={part} />;
+		}
 
-	if (toolName === "request_access") {
-		return (
-			<RequestSandboxAccessToolCall
-				part={part}
-				args={args}
-				result={result}
-				isInterrupted={isInterrupted}
-			/>
-		);
-	}
+		if (toolName === "start_agent_session") {
+			return <StartAgentSessionToolCall part={part} />;
+		}
 
-	if (toolName === "lsp_inspect") {
-		return <LspInspectToolCall part={part} />;
-	}
+		if (toolName === "start_agent_session_with_prompt") {
+			return (
+				<StartAgentSessionToolCall
+					part={part}
+					toolName="Start agent session with prompt"
+				/>
+			);
+		}
 
-	if (toolName === "task_write") {
-		return <TaskWriteToolCall part={part} />;
-	}
+		// --- Read-only exploration tools ---
+		if (READ_ONLY_TOOLS.has(toolName)) {
+			return (
+				<ReadOnlyToolCall
+					part={part}
+					workspaceId={workspaceId}
+					workspaceCwd={workspaceCwd}
+					onOpenFileInPane={openFileInPane}
+				/>
+			);
+		}
 
-	if (toolName === "task_check") {
-		return <RoxToolCall part={part} toolName="Update task status" />;
-	}
+		// --- Destructive workspace tools ---
+		if (toolName === "mastra_workspace_mkdir") {
+			return (
+				<RoxToolCall
+					part={part}
+					toolName="Create directory"
+					icon={FolderIcon}
+				/>
+			);
+		}
 
-	if (toolName === "submit_plan") {
-		return <RoxToolCall part={part} toolName="Submit plan" />;
-	}
+		if (toolName === "mastra_workspace_delete") {
+			return <RoxToolCall part={part} toolName="Delete path" icon={FileIcon} />;
+		}
 
-	if (toolName === "subagent") {
-		return (
-			<SubagentToolCall
-				part={part}
-				args={args}
-				result={result}
-				workspaceId={workspaceId}
-				workspaceCwd={workspaceCwd}
-				onOpenFileInPane={openFileInPane}
-			/>
-		);
-	}
+		if (toolName === "request_access") {
+			return (
+				<RequestSandboxAccessToolCall
+					part={part}
+					args={args}
+					result={result}
+					isInterrupted={isInterrupted}
+				/>
+			);
+		}
 
-	if (toolName === "skill" || toolName === "load_skill") {
-		const skillName =
-			typeof args.name === "string"
-				? args.name
-				: typeof args.command === "string"
-					? args.command
-					: toolDisplayName;
-		return <SkillToolCall part={part} skillName={skillName} />;
-	}
+		if (toolName === "lsp_inspect") {
+			return <LspInspectToolCall part={part} />;
+		}
 
-	// --- Fallback: generic tool UI ---
-	return <GenericToolCall part={part} toolName={toolDisplayName} />;
+		if (toolName === "task_write") {
+			return <TaskWriteToolCall part={part} />;
+		}
+
+		if (toolName === "task_check") {
+			return <RoxToolCall part={part} toolName="Update task status" />;
+		}
+
+		if (toolName === "submit_plan") {
+			return <RoxToolCall part={part} toolName="Submit plan" />;
+		}
+
+		if (toolName === "subagent") {
+			return (
+				<SubagentToolCall
+					part={part}
+					args={args}
+					result={result}
+					workspaceId={workspaceId}
+					workspaceCwd={workspaceCwd}
+					onOpenFileInPane={openFileInPane}
+				/>
+			);
+		}
+
+		if (toolName === "skill" || toolName === "load_skill") {
+			const skillName =
+				typeof args.name === "string"
+					? args.name
+					: typeof args.command === "string"
+						? args.command
+						: toolDisplayName;
+			return <SkillToolCall part={part} skillName={skillName} />;
+		}
+
+		// --- Fallback: generic tool UI ---
+		return <GenericToolCall part={part} toolName={toolDisplayName} />;
+	};
+
+	return <ToolCardMotion state={state}>{renderToolContent()}</ToolCardMotion>;
 }

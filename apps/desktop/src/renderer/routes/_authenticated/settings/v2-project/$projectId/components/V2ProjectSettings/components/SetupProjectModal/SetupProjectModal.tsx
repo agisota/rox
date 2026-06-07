@@ -1,7 +1,6 @@
 import { Button } from "@rox/ui/button";
 import {
 	Dialog,
-	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
@@ -16,6 +15,7 @@ import { LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
 import { RemotePathPicker } from "renderer/components/RemotePathPicker";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { AnimatedDialogContent } from "renderer/motion";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 
 type SetupMode = "clone" | "import";
@@ -178,7 +178,12 @@ export function SetupProjectModal({
 	return (
 		<>
 			<Dialog open={open} onOpenChange={handleOpenChange} modal>
-				<DialogContent className="max-w-[480px]">
+				<AnimatedDialogContent
+					open={open}
+					showCloseButton
+					className="bg-background fixed top-[50%] left-[50%] z-50 grid w-full max-w-[480px] gap-4 rounded-lg border p-6 shadow-lg sm:max-w-lg"
+					style={{ y: "-50%" }}
+				>
 					<DialogHeader>
 						<DialogTitle>Set up project on {hostName}</DialogTitle>
 						<DialogDescription>
@@ -334,7 +339,7 @@ export function SetupProjectModal({
 							)}
 						</Button>
 					</DialogFooter>
-				</DialogContent>
+				</AnimatedDialogContent>
 			</Dialog>
 
 			<RemotePathPicker

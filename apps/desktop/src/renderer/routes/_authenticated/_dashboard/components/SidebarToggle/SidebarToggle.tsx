@@ -1,6 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { LuPanelLeft, LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
 import { HotkeyLabel } from "renderer/hotkeys";
+import { MotionPressable } from "renderer/motion";
 import { useWorkspaceSidebarStore } from "renderer/stores";
 
 export function SidebarToggle() {
@@ -25,7 +26,7 @@ export function SidebarToggle() {
 	return (
 		<Tooltip delayDuration={300}>
 			<TooltipTrigger asChild>
-				<button
+				<MotionPressable
 					type="button"
 					onClick={toggleCollapsed}
 					className="no-drag group flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
@@ -34,7 +35,7 @@ export function SidebarToggle() {
 					<span className="hidden group-hover:block">
 						{getToggleIcon(true)}
 					</span>
-				</button>
+				</MotionPressable>
 			</TooltipTrigger>
 			<TooltipContent side="right">
 				<HotkeyLabel label="Toggle sidebar" id="TOGGLE_WORKSPACE_SIDEBAR" />

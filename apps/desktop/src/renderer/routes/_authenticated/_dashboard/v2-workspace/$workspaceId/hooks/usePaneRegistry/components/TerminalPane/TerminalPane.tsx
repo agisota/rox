@@ -2,6 +2,7 @@ import type { RendererContext } from "@rox/panes";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
 import "@xterm/xterm/css/xterm.css";
+import { motion } from "framer-motion";
 import {
 	useCallback,
 	useEffect,
@@ -24,6 +25,13 @@ import {
 	terminalRuntimeRegistry,
 } from "renderer/lib/terminal/terminal-runtime-registry";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
+import {
+	ease,
+	motionDuration,
+	ShellReadyPulse,
+	SweepIndicator,
+	useShouldAnimate,
+} from "renderer/motion";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import type {
 	PaneViewerData,
@@ -68,6 +76,9 @@ export function TerminalPane({
 	const terminalInstanceId = ctx.pane.id;
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
+	const shouldAnimate = useShouldAnimate("decorative");
+	const readyPulsedRef = useRef(false);
+	const [showReadyPulse, setShowReadyPulse] = useState(false);
 
 	const appearance = useTerminalAppearance();
 	const appearanceRef = useRef(appearance);
@@ -118,6 +129,13 @@ export function TerminalPane({
 		[terminalId, terminalInstanceId],
 	);
 	const connectionState = useSyncExternalStore(subscribe, getSnapshot);
+
+	useEffect(() => {
+		if (connectionState === "open" && !readyPulsedRef.current) {
+			readyPulsedRef.current = true;
+			if (shouldAnimate) setShowReadyPulse(true);
+		}
+	}, [connectionState, shouldAnimate]);
 
 	// DOM-first lifecycle (VSCode/Tabby pattern):
 	//   1. mount() attaches xterm to the container synchronously — terminal
@@ -406,15 +424,23 @@ export function TerminalPane({
 	};
 
 	return (
-		<div
+		<motion.div
 			role="application"
 			className="relative flex h-full w-full flex-col p-2"
 			onDragEnter={handleDragEnter}
 			onDragOver={handleDragOver}
 			onDragLeave={handleDragLeave}
 			onDrop={handleDrop}
+			initial={shouldAnimate ? { opacity: 0 } : false}
+			animate={{ opacity: 1 }}
+			transition={{ duration: motionDuration.fast, ease: ease.standard }}
 		>
 			<div className="relative min-h-0 flex-1 overflow-hidden">
+				<SweepIndicator active={connectionState === "connecting"} />
+				<ShellReadyPulse
+					active={showReadyPulse}
+					onDone={() => setShowReadyPulse(false)}
+				/>
 				<TerminalSearch
 					searchAddon={searchAddon}
 					isOpen={isSearchOpen}
@@ -443,7 +469,7 @@ export function TerminalPane({
 				hoverPosition={hoveredLink}
 				clickHint={hint}
 			/>
-		</div>
+		</motion.div>
 	);
 }
 

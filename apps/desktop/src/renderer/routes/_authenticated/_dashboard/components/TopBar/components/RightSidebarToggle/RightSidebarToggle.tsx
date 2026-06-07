@@ -6,6 +6,7 @@ import {
 } from "react-icons/lu";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { HotkeyLabel } from "renderer/hotkeys";
+import { MotionPressable } from "renderer/motion";
 
 export function RightSidebarToggle() {
 	const { preferences, setRightSidebarOpen } = useV2UserPreferences();
@@ -31,7 +32,7 @@ export function RightSidebarToggle() {
 	return (
 		<Tooltip delayDuration={300}>
 			<TooltipTrigger asChild>
-				<button
+				<MotionPressable
 					type="button"
 					onClick={toggle}
 					className="no-drag group flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
@@ -40,7 +41,7 @@ export function RightSidebarToggle() {
 					<span className="hidden group-hover:block">
 						{getToggleIcon(true)}
 					</span>
-				</button>
+				</MotionPressable>
 			</TooltipTrigger>
 			<TooltipContent side="left">
 				<HotkeyLabel label="Toggle sidebar" id="TOGGLE_SIDEBAR" />

@@ -5,7 +5,16 @@ import type {
 } from "@pierre/diffs";
 import { CodeView, type CodeViewHandle } from "@pierre/diffs/react";
 import type { RendererContext } from "@rox/panes";
+import { motion } from "framer-motion";
 import { useCallback, useMemo, useRef } from "react";
+import {
+	DiffSkeleton,
+	ease,
+	FocusMarker,
+	motionDuration,
+	useDiffFlash,
+	useShouldAnimate,
+} from "renderer/motion";
 import type { DiffPaneData, PaneViewerData } from "../../../../types";
 import { type ChangesetFile, useChangeset } from "../../../useChangeset";
 import { useOpenInExternalEditor } from "../../../useOpenInExternalEditor";
@@ -13,6 +22,7 @@ import { useSidebarDiffRef } from "../../../useSidebarDiffRef";
 import { useViewedFiles } from "../../../useViewedFiles";
 import { AgentCommentComposer } from "./components/AgentCommentComposer";
 import { CommentThread } from "./components/CommentThread";
+import { DiffEmptyState } from "./components/DiffEmptyState";
 import { DiffHeaderMetadata } from "./components/DiffHeaderMetadata";
 import { DiffHeaderPrefix } from "./components/DiffHeaderPrefix";
 import {
@@ -109,7 +119,7 @@ export function DiffPane({
 		});
 	fileByItemIdRef.current = fileByItemId;
 
-	const { targetItemId } = useDiffCodeViewScroll({
+	const { targetItemId, focusSignature } = useDiffCodeViewScroll({
 		codeViewRef,
 		data,
 		fileByItemId,
@@ -120,6 +130,7 @@ export function DiffPane({
 	});
 
 	const { options, style } = useDiffCodeViewTheme();
+	const shouldAnimate = useShouldAnimate("decorative");
 
 	const codeViewOptions = useMemo(
 		() => ({
@@ -131,6 +142,11 @@ export function DiffPane({
 		}),
 		[options, onGutterUtilityClick, onLineSelectionEnd],
 	);
+
+	// Case 084: stable key derived from the changeset identity — re-arms the
+	// flash when the diff content changes, not on every render.
+	const flashKey = useMemo(() => items.map((i) => i.id).join("|"), [items]);
+	const { flashClass } = useDiffFlash(flashKey);
 
 	const renderHeaderPrefix = useCallback(
 		(item: CodeViewItem<DiffAnnotationMetadata>) => {
@@ -202,20 +218,24 @@ export function DiffPane({
 				(data.focusSide == null || annotationSide === data.focusSide);
 
 			return (
-				<CommentThread
-					workspaceId={workspaceId}
-					threadId={m.threadId}
-					isResolved={m.isResolved}
-					isOutdated={m.isOutdated}
-					url={m.url}
-					comments={m.comments}
-					focusTick={focused ? data.focusTick : undefined}
-				/>
+				<div className="relative">
+					{focused && <FocusMarker signature={focusSignature} />}
+					<CommentThread
+						workspaceId={workspaceId}
+						threadId={m.threadId}
+						isResolved={m.isResolved}
+						isOutdated={m.isOutdated}
+						url={m.url}
+						comments={m.comments}
+						focusTick={focused ? data.focusTick : undefined}
+					/>
+				</div>
 			);
 		},
 		[
 			workspaceId,
 			targetItemId,
+			focusSignature,
 			data.focusLine,
 			data.focusSide,
 			data.focusTick,
@@ -225,29 +245,35 @@ export function DiffPane({
 	);
 
 	if (files.length === 0) {
-		return (
-			<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-				{isLoading ? "Loading…" : "No changes"}
-			</div>
-		);
+		if (isLoading) {
+			return <DiffSkeleton className="h-full w-full" />;
+		}
+		return <DiffEmptyState />;
 	}
 
 	if (items.length === 0) {
-		return (
-			<div className="flex h-full w-full cursor-text select-text items-center justify-center text-sm text-muted-foreground">
-				{hasPendingDiff
-					? "Loading…"
-					: hasDiffError
-						? "Unable to load diff"
-						: null}
-			</div>
-		);
+		if (hasPendingDiff) {
+			return <DiffSkeleton className="h-full w-full" />;
+		}
+		if (hasDiffError) {
+			return (
+				<motion.div
+					className="flex h-full w-full cursor-text select-text items-center justify-center text-sm text-muted-foreground"
+					initial={shouldAnimate ? { opacity: 0 } : false}
+					animate={{ opacity: 1 }}
+					transition={{ duration: motionDuration.base, ease: ease.standard }}
+				>
+					Unable to load diff
+				</motion.div>
+			);
+		}
+		return null;
 	}
 
 	return (
 		<CodeView<DiffAnnotationMetadata>
 			ref={codeViewRef}
-			className="h-full w-full overflow-y-auto overflow-x-clip overscroll-contain [overflow-anchor:none]"
+			className={`h-full w-full overflow-y-auto overflow-x-clip overscroll-contain [overflow-anchor:none] ${flashClass}`.trim()}
 			style={style}
 			items={items}
 			options={codeViewOptions}

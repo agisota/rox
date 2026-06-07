@@ -2,6 +2,8 @@ import type { CodeViewOptions } from "@pierre/diffs";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
+import { ease, motionDuration } from "renderer/motion/tokens";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import {
 	getDiffsTheme,
 	getDiffViewerStyle,
@@ -14,6 +16,10 @@ export function useDiffCodeViewTheme() {
 	const diffStyle = useSettings((s) => s.diffStyle);
 	const expandUnchanged = useSettings((s) => s.expandUnchanged);
 	const activeTheme = useResolvedTheme();
+	// Case 082: gate gutter utility transition duration on decorative motion.
+	const animate = useShouldAnimate("decorative");
+	const gutterDurMs = animate ? Math.round(motionDuration.fast * 1000) : 0;
+	const gutterEase = `cubic-bezier(${ease.standard.join(", ")})`;
 	const terminalTheme = useTerminalTheme();
 	const { data: fontSettings } = useQuery({
 		queryKey: ["electron", "settings", "getFontSettings"],
@@ -129,14 +135,55 @@ export function useDiffCodeViewTheme() {
 					margin-inline: 0 !important;
 					padding-inline: 0 !important;
 				}
+				/* Case 082: gutter utility (+) hover affordance.
+				 * Reserve space (opacity+transform only) so code columns never shift.
+				 * Duration is 0 when decorative motion is off → instant reveal. */
+				[data-line] [data-gutter-utility] {
+					opacity: 0;
+					transform: translateX(-2px);
+					transition: opacity ${gutterDurMs}ms ${gutterEase}, transform ${gutterDurMs}ms ${gutterEase};
+					will-change: opacity, transform;
+				}
+				[data-line]:hover [data-gutter-utility],
+				[data-line]:focus-within [data-gutter-utility],
+				[data-gutter-utility]:focus-visible {
+					opacity: 1;
+					transform: translateX(0);
+				}
+				${
+					animate
+						? `
+				/* Case 084: one-shot changed-line flash when a new diff mounts.
+				 * Scoped to .odw-diff-flash (applied transiently by useDiffFlash)
+				 * so virtualized rows scrolled in later do NOT re-flash. */
+				@keyframes odwLineFlash {
+					from { background-color: color-mix(in srgb, ${additionColor} 22%, transparent); }
+					to { background-color: transparent; }
+				}
+				@keyframes odwLineFlashDel {
+					from { background-color: color-mix(in srgb, ${deletionColor} 22%, transparent); }
+					to { background-color: transparent; }
+				}
+				.odw-diff-flash [data-line-type=change-addition] {
+					animation: odwLineFlash 600ms ease-out 1 both;
+				}
+				.odw-diff-flash [data-line-type=change-deletion] {
+					animation: odwLineFlashDel 600ms ease-out 1 both;
+				}
+				`
+						: ""
+				}
 			`,
 		}),
 		[
 			activeTheme,
 			additionColor,
+			animate,
 			deletionColor,
 			diffStyle,
 			expandUnchanged,
+			gutterDurMs,
+			gutterEase,
 			surfaceBg,
 		],
 	);

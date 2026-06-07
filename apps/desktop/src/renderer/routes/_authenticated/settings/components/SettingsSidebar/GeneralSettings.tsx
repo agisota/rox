@@ -1,5 +1,6 @@
 import { cn } from "@rox/ui/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useMemo } from "react";
 import {
 	HiOutlineBeaker,
@@ -23,6 +24,7 @@ import {
 import { LuBrain, LuGitBranch, LuKeyboard } from "react-icons/lu";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { SettingsSection } from "renderer/stores/settings-state";
 import { getAllowedSectionsForVariant } from "../../utils/settings-search";
 
@@ -218,6 +220,7 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 		() => getAllowedSectionsForVariant(isV2CloudEnabled),
 		[isV2CloudEnabled],
 	);
+	const shouldAnimate = useShouldAnimate("decorative");
 
 	return (
 		<>
@@ -250,12 +253,22 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 										key={section.id}
 										to={section.id}
 										className={cn(
-											"flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
+											"relative flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
 											isActive
-												? "bg-accent text-accent-foreground"
+												? cn(
+														"text-accent-foreground",
+														!shouldAnimate && "bg-accent",
+													)
 												: "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground",
 										)}
 									>
+										{isActive && shouldAnimate && (
+											<motion.div
+												layoutId="settings-nav-active"
+												className="absolute inset-0 -z-10 rounded-md bg-accent"
+												transition={motionSpring.snappy}
+											/>
+										)}
 										{section.icon}
 										<span className="flex-1">{section.label}</span>
 										{count !== undefined && count > 0 && (

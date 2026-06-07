@@ -5,11 +5,18 @@ import {
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
 import { OverflowFadeContainer } from "@rox/ui/overflow-fade-container";
+import {
+	AnimatePresence,
+	LayoutGroup,
+	motion,
+	useReducedMotion,
+} from "framer-motion";
 import { PlusIcon } from "lucide-react";
 import {
 	type ComponentProps,
 	type ReactNode,
 	useCallback,
+	useId,
 	useRef,
 	useState,
 } from "react";
@@ -88,6 +95,14 @@ export function TabBar<TData>({
 }: TabBarProps<TData>) {
 	const tabsTrackRef = useRef<HTMLDivElement>(null);
 	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
+
+	const reduce = useReducedMotion();
+	// Namespace the active-tab underline's shared layoutId per TabBar instance so
+	// the indicator never tweens between separate (split-pane) tab bars.
+	const layoutGroupId = useId();
+	const tabTransition = reduce
+		? { duration: 0 }
+		: { type: "spring" as const, stiffness: 600, damping: 42, mass: 0.7 };
 
 	const insertIndexRef = useRef<number | null>(null);
 	const [insertIndex, setInsertIndex] = useState<number | null>(null);
@@ -195,34 +210,57 @@ export function TabBar<TData>({
 				className="hide-scrollbar flex min-w-0 flex-1 items-stretch overflow-x-auto overflow-y-hidden"
 			>
 				<div ref={tabsTrackRef} className="relative flex h-full items-stretch">
-					{tabs.map((tab, i) => (
-						<div
-							className="h-full shrink-0"
-							key={tab.id}
-							style={{ width: TAB_WIDTH }}
-						>
-							<TabItem
-								tab={tab}
-								tabs={tabs}
-								registry={registry}
-								index={i}
-								isActive={tab.id === activeTabId}
-								onSelect={() => onSelectTab(tab.id)}
-								onClose={() => onCloseTab(tab.id)}
-								onCloseOthers={() => onCloseOtherTabs(tab.id)}
-								onCloseAll={onCloseAllTabs}
-								onRename={(title) => onRenameTab(tab.id, title)}
-								icon={renderTabIcon?.(tab)}
-								accessory={renderTabAccessory?.(tab)}
+					<LayoutGroup id={layoutGroupId}>
+						<AnimatePresence initial={false}>
+							{tabs.map((tab, i) => (
+								<motion.div
+									animate={{ width: TAB_WIDTH, opacity: 1 }}
+									className="h-full shrink-0 overflow-hidden"
+									exit={reduce ? { opacity: 0 } : { width: 0, opacity: 0 }}
+									initial={reduce ? false : { width: 0, opacity: 0 }}
+									key={tab.id}
+									layout
+									transition={tabTransition}
+								>
+									<div className="h-full" style={{ width: TAB_WIDTH }}>
+										<TabItem
+											tab={tab}
+											tabs={tabs}
+											registry={registry}
+											index={i}
+											isActive={tab.id === activeTabId}
+											onSelect={() => onSelectTab(tab.id)}
+											onClose={() => onCloseTab(tab.id)}
+											onCloseOthers={() => onCloseOtherTabs(tab.id)}
+											onCloseAll={onCloseAllTabs}
+											onRename={(title) => onRenameTab(tab.id, title)}
+											icon={renderTabIcon?.(tab)}
+											accessory={renderTabAccessory?.(tab)}
+										/>
+									</div>
+								</motion.div>
+							))}
+						</AnimatePresence>
+					</LayoutGroup>
+					<AnimatePresence initial={false}>
+						{insertLineLeft !== null && (
+							<motion.div
+								key="tab-insert-line"
+								className="pointer-events-none absolute top-0 left-0 z-10 h-full w-0.5 bg-primary"
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 0.85, x: insertLineLeft }}
+								exit={{ opacity: 0 }}
+								transition={
+									reduce
+										? { duration: 0 }
+										: {
+												x: { type: "spring", stiffness: 700, damping: 40 },
+												opacity: { duration: 0.12 },
+											}
+								}
 							/>
-						</div>
-					))}
-					{insertLineLeft !== null && (
-						<div
-							className="pointer-events-none absolute top-0 z-10 h-full w-0.5 bg-primary opacity-85"
-							style={{ left: insertLineLeft }}
-						/>
-					)}
+						)}
+					</AnimatePresence>
 					{!hasHorizontalOverflow && (
 						<div className="flex h-full w-10 shrink-0 items-center justify-center">
 							<AddTabButton renderAddTabMenu={renderAddTabMenu} />

@@ -6,8 +6,10 @@ import {
 	ConversationScrollButton,
 	useConversationContext,
 } from "@rox/ui/ai-elements/conversation";
+import { AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
+import { MessageRow } from "renderer/motion";
 import type {
 	ChatMessage,
 	ChatMessageListProps,
@@ -184,67 +186,80 @@ export function ChatMessageList({
 							icon={<HiMiniChatBubbleLeftRight className="size-8" />}
 						/>
 					) : (
-						renderedMessages.map((message, messageIndex) => {
-							if (message.role === "user") {
-								return (
-									<UserMessage
-										key={message.id}
-										message={message}
-										prefixMessages={renderedMessages.slice(0, messageIndex)}
-										workspaceId={workspaceId}
-										workspaceCwd={workspaceCwd}
-										isEditing={editingUserMessageId === message.id}
-										isSubmitting={isEditSubmitting}
-										onStartEdit={onStartEditUserMessage}
-										onCancelEdit={onCancelEditUserMessage}
-										onSubmitEdit={onSubmitEditedUserMessage}
-										onRestart={onRestartUserMessage}
-										actionDisabled={isAwaitingAssistant}
-									/>
-								);
-							}
+						<AnimatePresence initial={false}>
+							{renderedMessages.map((message, messageIndex) => {
+								if (message.role === "user") {
+									return (
+										<MessageRow key={message.id} messageId={message.id}>
+											<UserMessage
+												message={message}
+												prefixMessages={renderedMessages.slice(0, messageIndex)}
+												workspaceId={workspaceId}
+												workspaceCwd={workspaceCwd}
+												isEditing={editingUserMessageId === message.id}
+												isSubmitting={isEditSubmitting}
+												onStartEdit={onStartEditUserMessage}
+												onCancelEdit={onCancelEditUserMessage}
+												onSubmitEdit={onSubmitEditedUserMessage}
+												onRestart={onRestartUserMessage}
+												actionDisabled={isAwaitingAssistant}
+											/>
+										</MessageRow>
+									);
+								}
 
-							return (
-								<AssistantMessage
-									key={message.id}
-									message={message}
-									workspaceId={workspaceId}
-									sessionId={sessionId}
-									organizationId={organizationId}
-									workspaceCwd={workspaceCwd}
-									isStreaming={false}
-									previewToolParts={[]}
-									{...inlineToolStateProps}
-								/>
-							);
-						})
-					)}
-					{interruptedPreview && (
-						<AssistantMessage
-							key={interruptedPreview.id}
-							message={interruptedPreview}
-							workspaceId={workspaceId}
-							sessionId={sessionId}
-							organizationId={organizationId}
-							workspaceCwd={workspaceCwd}
-							isStreaming={false}
-							previewToolParts={[]}
-							{...inlineToolStateProps}
-							footer={<InterruptedFooter />}
-						/>
-					)}
-					{isRunning && currentMessage && (
-						<AssistantMessage
-							key={`current-${currentMessage.id}`}
-							message={currentMessage}
-							workspaceId={workspaceId}
-							sessionId={sessionId}
-							organizationId={organizationId}
-							workspaceCwd={workspaceCwd}
-							isStreaming
-							previewToolParts={previewToolParts}
-							{...inlineToolStateProps}
-						/>
+								return (
+									<MessageRow key={message.id} messageId={message.id}>
+										<AssistantMessage
+											message={message}
+											workspaceId={workspaceId}
+											sessionId={sessionId}
+											organizationId={organizationId}
+											workspaceCwd={workspaceCwd}
+											isStreaming={false}
+											previewToolParts={[]}
+											{...inlineToolStateProps}
+										/>
+									</MessageRow>
+								);
+							})}
+							{interruptedPreview && (
+								<MessageRow
+									key={interruptedPreview.id}
+									messageId={interruptedPreview.id}
+								>
+									<AssistantMessage
+										message={interruptedPreview}
+										workspaceId={workspaceId}
+										sessionId={sessionId}
+										organizationId={organizationId}
+										workspaceCwd={workspaceCwd}
+										isStreaming={false}
+										previewToolParts={[]}
+										{...inlineToolStateProps}
+										footer={<InterruptedFooter />}
+									/>
+								</MessageRow>
+							)}
+							{isRunning && currentMessage && (
+								<MessageRow
+									key={`current-${currentMessage.id}`}
+									messageId={currentMessage.id}
+									isStreaming
+								>
+									<AssistantMessage
+										message={currentMessage}
+										workspaceId={workspaceId}
+										sessionId={sessionId}
+										organizationId={organizationId}
+										workspaceCwd={workspaceCwd}
+										isStreaming
+										previewToolParts={previewToolParts}
+										{...inlineToolStateProps}
+									/>
+								</MessageRow>
+							)}
+						</AnimatePresence>
 					)}
 					{shouldShowThinking ? <ThinkingMessage /> : null}
 					{shouldShowToolPreview ? (

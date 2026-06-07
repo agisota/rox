@@ -2,7 +2,6 @@ import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
-	AlertDialogContent,
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
@@ -17,6 +16,7 @@ import { useState } from "react";
 import { authClient } from "renderer/lib/auth-client";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
+import { AnimatedAlertDialogContent } from "renderer/motion";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 
 interface DeleteProjectSectionProps {
@@ -98,7 +98,7 @@ export function DeleteProjectSection({
 							Delete project
 						</Button>
 					</AlertDialogTrigger>
-					<AlertDialogContent>
+					<AnimatedAlertDialogContent open={isOpen}>
 						<AlertDialogHeader>
 							<AlertDialogTitle>Delete "{projectName}"?</AlertDialogTitle>
 							<AlertDialogDescription>
@@ -123,7 +123,7 @@ export function DeleteProjectSection({
 								{isDeleting ? "Deleting…" : "Delete"}
 							</AlertDialogAction>
 						</AlertDialogFooter>
-					</AlertDialogContent>
+					</AnimatedAlertDialogContent>
 				</AlertDialog>
 			)}
 		</div>

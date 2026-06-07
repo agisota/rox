@@ -2,10 +2,19 @@ import { Checkbox } from "@rox/ui/checkbox";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { workspaceTrpc } from "@rox/workspace-client";
-import { useCallback, useId, useMemo, useState } from "react";
+import { motion, useAnimation } from "framer-motion";
+import {
+	useCallback,
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { LuArrowUpRight, LuCheck, LuCopy, LuUndo2 } from "react-icons/lu";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { useSidebarFilePolicy } from "renderer/lib/clickPolicy";
+import { DrawCheck, motionDuration, useShouldAnimate } from "renderer/motion";
 import { DiscardConfirmDialog } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/DiscardConfirmDialog";
 import { StatusIndicator } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/StatusIndicator";
 import type { ChangesetFile } from "../../../../../useChangeset";
@@ -33,6 +42,20 @@ export function DiffHeaderMetadata({
 	const { copyToClipboard, copied } = useCopyToClipboard();
 	const policy = useSidebarFilePolicy();
 
+	const shouldAnimateDecorative = useShouldAnimate("decorative");
+	const [nudgeKey, setNudgeKey] = useState(0);
+	const flashControls = useAnimation();
+	const prevViewedRef = useRef(viewed);
+	useEffect(() => {
+		if (viewed && !prevViewedRef.current && shouldAnimateDecorative) {
+			void flashControls.start({
+				backgroundColor: ["rgba(120,180,120,0.18)", "rgba(0,0,0,0)"],
+				transition: { duration: motionDuration.base, ease: "easeOut" },
+			});
+		}
+		prevViewedRef.current = viewed;
+	}, [viewed, shouldAnimateDecorative, flashControls]);
+
 	const handleToggleViewed = useCallback(() => {
 		const next = !viewed;
 		onSetViewed(file.path, next);
@@ -52,8 +75,13 @@ export function DiffHeaderMetadata({
 				return;
 			}
 			const action = policy.getAction(event);
-			if (action === "external") onOpenInExternalEditor(file.path);
-			else if (action === "newTab") onOpenFile(file.path, true);
+			if (action === "external") {
+				onOpenInExternalEditor(file.path);
+				setNudgeKey((k) => k + 1);
+				toast.success("Opening in external editor", {
+					description: file.path.split("/").pop() ?? file.path,
+				});
+			} else if (action === "newTab") onOpenFile(file.path, true);
 			else if (action === "pane") onOpenFile(file.path, false);
 		},
 		[
@@ -100,7 +128,19 @@ export function DiffHeaderMetadata({
 							aria-label="Open in file viewer"
 							className="rounded p-1 text-muted-foreground/60 transition-colors hover:bg-accent hover:text-muted-foreground"
 						>
-							<LuArrowUpRight className="size-3.5" />
+							<motion.span
+								key={nudgeKey}
+								className="inline-flex"
+								initial={{ x: 0, y: 0, opacity: 1 }}
+								animate={
+									nudgeKey > 0 && shouldAnimateDecorative
+										? { x: [0, 2.5, 0], y: [0, -2.5, 0], opacity: [1, 0.7, 1] }
+										: {}
+								}
+								transition={{ duration: 0.28, ease: "easeOut" }}
+							>
+								<LuArrowUpRight className="size-3.5" />
+							</motion.span>
 						</button>
 					</TooltipTrigger>
 					<TooltipContent side="bottom" showArrow={false}>
@@ -127,20 +167,30 @@ export function DiffHeaderMetadata({
 					</TooltipContent>
 				</Tooltip>
 				<StatusIndicator status={file.status} iconClassName="size-3.5" />
-				<div className="flex items-center gap-1">
-					<Checkbox
-						id={viewedId}
-						checked={viewed}
-						onCheckedChange={() => handleToggleViewed()}
-						className="size-3 border-muted-foreground/50"
-					/>
+				<motion.div
+					className="flex items-center gap-1 rounded"
+					animate={flashControls}
+					initial={{ backgroundColor: "rgba(0,0,0,0)" }}
+				>
+					<div className="relative">
+						<Checkbox
+							id={viewedId}
+							checked={viewed}
+							onCheckedChange={() => handleToggleViewed()}
+							className="size-3 border-muted-foreground/50"
+						/>
+						<DrawCheck
+							checked={viewed}
+							className="pointer-events-none absolute inset-0 size-3 text-primary"
+						/>
+					</div>
 					<label
 						htmlFor={viewedId}
 						className="hidden cursor-pointer select-none text-xs text-muted-foreground @min-[380px]/diff-header:inline"
 					>
 						Viewed
 					</label>
-				</div>
+				</motion.div>
 				{requestDiscard ? (
 					<Tooltip>
 						<TooltipTrigger asChild>

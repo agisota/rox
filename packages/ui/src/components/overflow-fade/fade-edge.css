@@ -7,10 +7,14 @@
  */
 
 @layer utilities {
-	.fade-edge-t,
-	.fade-edge-r,
-	.fade-edge-b,
-	.fade-edge-l {
+	/**
+	 * Always-on mask base. With all four edge sizes at 0px the gradient is fully
+	 * opaque, so an element carrying only this class is visually identical to an
+	 * unmasked element. The per-edge `--fade-edge-*-size` variables are driven by
+	 * inline style (animated by OverflowFadeContainer) so the mask eases in/out
+	 * instead of snapping when overflow state changes.
+	 */
+	.fade-edge-mask {
 		--fade-edge-size: 1.5rem;
 		--fade-edge-t-size: 0px;
 		--fade-edge-r-size: 0px;
@@ -49,18 +53,5 @@
 			);
 		mask-composite: intersect;
 		-webkit-mask-composite: source-in;
-	}
-
-	.fade-edge-t {
-		--fade-edge-t-size: var(--fade-edge-size);
-	}
-	.fade-edge-r {
-		--fade-edge-r-size: var(--fade-edge-size);
-	}
-	.fade-edge-b {
-		--fade-edge-b-size: var(--fade-edge-size);
-	}
-	.fade-edge-l {
-		--fade-edge-l-size: var(--fade-edge-size);
 	}
 }

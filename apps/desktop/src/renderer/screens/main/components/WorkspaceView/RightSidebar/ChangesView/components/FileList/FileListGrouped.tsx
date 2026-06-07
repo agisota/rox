@@ -22,6 +22,7 @@ interface FileListGroupedProps {
 	isExpandedView?: boolean;
 	projectId?: string;
 	defaultApp?: ExternalApp | null;
+	activeIndicatorLayoutId?: string;
 }
 
 interface FolderGroup {
@@ -80,6 +81,7 @@ interface FolderGroupItemProps {
 	isExpandedView?: boolean;
 	projectId?: string;
 	defaultApp?: ExternalApp | null;
+	activeIndicatorLayoutId?: string;
 }
 
 function FolderGroupItem({
@@ -99,6 +101,7 @@ function FolderGroupItem({
 	isExpandedView,
 	projectId,
 	defaultApp,
+	activeIndicatorLayoutId,
 }: FolderGroupItemProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 	const displayName = group.folderPath || "Root Path";
@@ -163,6 +166,7 @@ function FolderGroupItem({
 					category={category}
 					commitHash={commitHash}
 					isExpandedView={isExpandedView}
+					activeIndicatorLayoutId={activeIndicatorLayoutId}
 				/>
 			))}
 		</FolderRow>
@@ -186,6 +190,7 @@ export function FileListGrouped({
 	isExpandedView,
 	projectId,
 	defaultApp,
+	activeIndicatorLayoutId,
 }: FileListGroupedProps) {
 	const groups = useMemo(() => groupFilesByFolder(files), [files]);
 
@@ -210,6 +215,7 @@ export function FileListGrouped({
 					isExpandedView={isExpandedView}
 					projectId={projectId}
 					defaultApp={defaultApp}
+					activeIndicatorLayoutId={activeIndicatorLayoutId}
 				/>
 			))}
 		</div>

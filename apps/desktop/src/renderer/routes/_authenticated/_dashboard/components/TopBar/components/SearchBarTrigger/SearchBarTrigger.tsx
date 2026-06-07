@@ -2,6 +2,7 @@ import { Kbd, KbdGroup } from "@rox/ui/kbd";
 import { useCallback } from "react";
 import { LuSearch } from "react-icons/lu";
 import { getDispatchChord, useHotkeyDisplay } from "renderer/hotkeys";
+import { Pressable } from "renderer/motion";
 
 interface SearchBarTriggerProps {
 	workspaceName?: string;
@@ -49,9 +50,10 @@ export function SearchBarTrigger({ workspaceName }: SearchBarTriggerProps) {
 		: "Search files...";
 
 	return (
-		<button
+		<Pressable
 			type="button"
 			onClick={handleClick}
+			layoutId="global-search-pill"
 			className="no-drag flex items-center gap-2 h-7 px-3 rounded-md border border-border bg-muted/50 hover:bg-muted text-muted-foreground text-sm transition-colors cursor-pointer min-w-[100px] md:min-w-[200px] max-w-[280px]"
 		>
 			<LuSearch className="size-3.5 shrink-0" />
@@ -68,6 +70,6 @@ export function SearchBarTrigger({ workspaceName }: SearchBarTriggerProps) {
 					))}
 				</KbdGroup>
 			)}
-		</button>
+		</Pressable>
 	);
 }

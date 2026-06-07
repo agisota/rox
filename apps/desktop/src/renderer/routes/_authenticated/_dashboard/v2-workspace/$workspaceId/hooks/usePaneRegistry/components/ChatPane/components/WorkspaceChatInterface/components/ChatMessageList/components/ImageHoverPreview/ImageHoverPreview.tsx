@@ -4,7 +4,9 @@ import {
 	HoverCardTrigger,
 } from "@rox/ui/hover-card";
 import { cn } from "@rox/ui/utils";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 
 interface ImageHoverPreviewProps {
 	src: string;
@@ -23,6 +25,7 @@ export function ImageHoverPreview({
 	triggerClassName,
 	children,
 }: ImageHoverPreviewProps) {
+	const shouldAnimate = useShouldAnimate("decorative");
 	return (
 		<HoverCard openDelay={200} closeDelay={50}>
 			<HoverCardTrigger asChild>
@@ -33,10 +36,13 @@ export function ImageHoverPreview({
 			<HoverCardContent align="start" className="w-auto p-2">
 				<div className="w-auto space-y-3">
 					<div className="relative flex max-h-96 w-96 items-center justify-center overflow-hidden rounded-md border">
-						<img
+						<motion.img
 							alt={alt ?? filename ?? "image preview"}
 							className="max-h-full max-w-full object-contain"
 							src={src}
+							initial={shouldAnimate ? { scale: 0.98, opacity: 0 } : false}
+							animate={{ scale: 1, opacity: 1 }}
+							transition={shouldAnimate ? motionSpring.soft : { duration: 0 }}
 						/>
 					</div>
 					{(filename || mediaType) && (

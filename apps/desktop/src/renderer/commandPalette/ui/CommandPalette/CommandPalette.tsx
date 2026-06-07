@@ -1,11 +1,11 @@
 import { Command, CommandInput } from "@rox/ui/command";
 import {
 	Dialog,
-	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from "@rox/ui/dialog";
+import { motion } from "framer-motion";
 import { ArrowLeftIcon } from "lucide-react";
 import {
 	createContext,
@@ -14,6 +14,11 @@ import {
 	useEffect,
 	useState,
 } from "react";
+import {
+	AnimatedDialogContent,
+	motionSpring,
+	useShouldAnimate,
+} from "renderer/motion";
 import { useCommandContext } from "../../core/ContextProvider";
 import { executeCommand } from "../../core/execute";
 import { useFrameStackStore } from "../../core/frames";
@@ -35,6 +40,7 @@ export function CommandPalette() {
 	const reset = useFrameStackStore((s) => s.reset);
 
 	const context = useCommandContext();
+	const animate = useShouldAnimate("essential");
 	const [query, setQuery] = useState("");
 	const depth = frames.length;
 	const currentFrame = frames[depth - 1] ?? null;
@@ -99,9 +105,10 @@ export function CommandPalette() {
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent
+			<AnimatedDialogContent
+				open={open}
 				showCloseButton={false}
-				className="!max-w-[720px] sm:!max-w-[720px] translate-y-0 max-h-[80vh] overflow-hidden p-0"
+				className="bg-background z-50 grid w-full max-w-[720px] max-h-[80vh] overflow-hidden rounded-lg border p-0 shadow-lg fixed left-[50%]"
 				style={{ top: "max(16px, calc(50% - 278px))" }}
 			>
 				<DialogHeader className="sr-only">
@@ -110,29 +117,36 @@ export function CommandPalette() {
 						Run commands and navigate the application.
 					</DialogDescription>
 				</DialogHeader>
-				<Command
-					shouldFilter={!currentFrame || !currentFrame.command.renderFrame}
-					className="[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-list]]:max-h-[min(500px,calc(80vh-3rem))]"
+				<motion.div
+					layoutId={animate ? "global-search-pill" : undefined}
+					initial={animate ? { opacity: 0, scale: 0.97 } : false}
+					animate={{ opacity: 1, scale: 1 }}
+					transition={motionSpring.snappy}
 				>
-					<CommandInput
-						value={query}
-						onValueChange={setQuery}
-						placeholder={placeholder}
-						onKeyDown={handleKeyDown}
-						leading={depth > 0 ? backButton : undefined}
-					/>
-					<QueryContext.Provider value={query}>
-						{currentFrame ? (
-							<SubPaletteView
-								parent={currentFrame.command}
-								onSelect={handleSelect}
-							/>
-						) : (
-							<CommandListView onSelect={handleSelect} />
-						)}
-					</QueryContext.Provider>
-				</Command>
-			</DialogContent>
+					<Command
+						shouldFilter={!currentFrame || !currentFrame.command.renderFrame}
+						className="[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 [&_[cmdk-list]]:max-h-[min(500px,calc(80vh-3rem))]"
+					>
+						<CommandInput
+							value={query}
+							onValueChange={setQuery}
+							placeholder={placeholder}
+							onKeyDown={handleKeyDown}
+							leading={depth > 0 ? backButton : undefined}
+						/>
+						<QueryContext.Provider value={query}>
+							{currentFrame ? (
+								<SubPaletteView
+									parent={currentFrame.command}
+									onSelect={handleSelect}
+								/>
+							) : (
+								<CommandListView onSelect={handleSelect} />
+							)}
+						</QueryContext.Provider>
+					</Command>
+				</motion.div>
+			</AnimatedDialogContent>
 		</Dialog>
 	);
 }

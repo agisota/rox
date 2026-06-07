@@ -6,6 +6,8 @@ import {
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
 import {
+	TbArrowsMaximize,
+	TbArrowsMinimize,
 	TbCamera,
 	TbClock,
 	TbCopy,
@@ -21,12 +23,16 @@ interface BrowserOverflowMenuProps {
 	paneId: string;
 	currentUrl: string;
 	hasPage: boolean;
+	isFullscreen?: boolean;
+	onToggleFullscreen?: () => void;
 }
 
 export function BrowserOverflowMenu({
 	paneId,
 	currentUrl,
 	hasPage,
+	isFullscreen = false,
+	onToggleFullscreen,
 }: BrowserOverflowMenuProps) {
 	const { copyToClipboard } = useCopyToClipboard();
 
@@ -111,6 +117,16 @@ export function BrowserOverflowMenu({
 					<TbExternalLink className="size-4" />
 					Open in Browser
 				</DropdownMenuItem>
+				{onToggleFullscreen && (
+					<DropdownMenuItem onClick={onToggleFullscreen} className="gap-2">
+						{isFullscreen ? (
+							<TbArrowsMinimize className="size-4" />
+						) : (
+							<TbArrowsMaximize className="size-4" />
+						)}
+						{isFullscreen ? "Exit Full Screen" : "Full Screen Preview"}
+					</DropdownMenuItem>
+				)}
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={handleClearHistory} className="gap-2">
 					<TbClock className="size-4" />

@@ -1,10 +1,12 @@
 import { Button } from "@rox/ui/button";
 import { cn } from "@rox/ui/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuCornerDownLeft, LuLoaderCircle } from "react-icons/lu";
 import { useTerminalAgentBindings } from "renderer/hooks/host-service/useTerminalAgentBindings";
 import { useWorkspaceHostUrl } from "renderer/hooks/host-service/useWorkspaceHostUrl";
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { AgentPickerSelect } from "./components/AgentPickerSelect";
 import { AgentPlacementToggle } from "./components/AgentPlacementToggle";
 import {
@@ -54,13 +56,19 @@ export function AgentCommentComposer({
 	const [submitting, setSubmitting] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-	useEffect(() => {
+	const shouldAnimate = useShouldAnimate("essential");
+
+	const focusTextarea = useCallback(() => {
 		const el = textareaRef.current;
 		if (!el) return;
 		el.focus();
 		const len = el.value.length;
 		el.setSelectionRange(len, len);
 	}, []);
+
+	useEffect(() => {
+		if (!shouldAnimate) focusTextarea();
+	}, [shouldAnimate, focusTextarea]);
 
 	const lineLabel =
 		startLine === endLine
@@ -86,7 +94,7 @@ export function AgentCommentComposer({
 	};
 
 	return (
-		<form
+		<motion.form
 			className={cn(
 				"diff-comment mx-3 my-1.5 overflow-hidden rounded-lg border border-border/80 bg-popover text-popover-foreground",
 				"shadow-[0_4px_16px_-4px_rgba(0,0,0,0.12),0_2px_4px_-2px_rgba(0,0,0,0.06)]",
@@ -104,6 +112,13 @@ export function AgentCommentComposer({
 					e.preventDefault();
 					handleSubmit();
 				}
+			}}
+			initial={shouldAnimate ? { opacity: 0, scaleY: 0.96, y: -4 } : false}
+			animate={{ opacity: 1, scaleY: 1, y: 0 }}
+			transition={{ duration: motionDuration.fast, ease: ease.standard }}
+			style={{ transformOrigin: "top" }}
+			onAnimationComplete={() => {
+				if (shouldAnimate) focusTextarea();
 			}}
 		>
 			<div className="flex items-center justify-between px-3 pt-2 pb-1">
@@ -172,7 +187,7 @@ export function AgentCommentComposer({
 					</Button>
 				</div>
 			</div>
-		</form>
+		</motion.form>
 	);
 }
 

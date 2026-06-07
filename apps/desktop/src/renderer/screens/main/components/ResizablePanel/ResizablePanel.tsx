@@ -1,5 +1,11 @@
 import { cn } from "@rox/ui/utils";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef } from "react";
+import {
+	motionDuration,
+	motionSpring,
+	useShouldAnimate,
+} from "renderer/motion";
 
 interface ResizablePanelProps {
 	/** The content to render inside the panel */
@@ -44,6 +50,11 @@ export function ResizablePanel({
 	clampWidth = true,
 	onDoubleClickHandle,
 }: ResizablePanelProps) {
+	// Sidebar geometry conveys layout state, so it's the essential motion tier.
+	const shouldAnimate = useShouldAnimate("essential");
+	// The drag glow + width tooltip are pure affordance, so they ride the
+	// decorative tier and degrade to instant toggles under reduced motion.
+	const animate = useShouldAnimate("decorative");
 	const startXRef = useRef(0);
 	const startWidthRef = useRef(0);
 	const pendingWidthRef = useRef<number | null>(null);
@@ -122,12 +133,19 @@ export function ResizablePanel({
 	}, [isResizing, handleMouseMove, handleMouseUp]);
 
 	return (
-		<div
+		<motion.div
 			className={cn(
 				"relative h-full shrink-0 overflow-hidden border-border",
 				handleSide === "right" ? "border-r" : "border-l",
 				className,
 			)}
+			// Spring the width on discrete open/collapse/double-click changes, but
+			// track raw width instantly during drag so the panel stays 1:1 with the
+			// cursor (and reduced motion gets the instant value too).
+			animate={{ width }}
+			transition={
+				isResizing || !shouldAnimate ? { duration: 0 } : motionSpring.panel
+			}
 			style={{ width }}
 		>
 			{children}
@@ -151,6 +169,44 @@ export function ResizablePanel({
 						: "-right-2 after:left-2",
 				)}
 			/>
-		</div>
+			{/* Decorative glow over the handle column while dragging. Sibling of
+			    the separator, pointer-events-none so it never intercepts drag. */}
+			<motion.div
+				aria-hidden
+				className={cn(
+					"pointer-events-none absolute top-0 z-0 h-full w-1",
+					handleSide === "left" ? "left-0" : "right-0",
+				)}
+				initial={false}
+				animate={{
+					opacity: isResizing ? 1 : 0,
+					boxShadow: isResizing
+						? "0 0 8px 1px rgba(96,165,250,0.7)"
+						: "0 0 0 0 rgba(96,165,250,0)",
+				}}
+				transition={
+					animate ? { duration: motionDuration.fast } : { duration: 0 }
+				}
+			/>
+			{/* Width readout near the handle while dragging. Reads the already
+			    RAF-throttled `width` prop, so it adds zero work to mousemove. */}
+			<AnimatePresence initial={false}>
+				{isResizing && (
+					<motion.div
+						aria-hidden
+						className={cn(
+							"pointer-events-none absolute top-2 z-20 rounded bg-popover px-1.5 py-0.5 text-xs tabular-nums text-popover-foreground shadow",
+							handleSide === "left" ? "left-2" : "right-2",
+						)}
+						initial={animate ? { opacity: 0, y: -4 } : false}
+						animate={{ opacity: 1, y: 0 }}
+						exit={animate ? { opacity: 0, y: -4 } : { opacity: 0 }}
+						transition={{ duration: motionDuration.fast }}
+					>
+						{Math.round(width)}px
+					</motion.div>
+				)}
+			</AnimatePresence>
+		</motion.div>
 	);
 }

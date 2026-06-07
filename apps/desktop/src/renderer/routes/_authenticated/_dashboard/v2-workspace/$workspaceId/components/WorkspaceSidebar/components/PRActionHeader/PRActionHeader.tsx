@@ -1,5 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { AnimatePresence, motion } from "framer-motion";
 import { VscGitPullRequest, VscLoading } from "react-icons/vsc";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import type { PRFlowDispatch } from "../../hooks/usePRFlowDispatch";
 import { PRStatusGroup } from "./components/PRStatusGroup";
 import {
@@ -29,18 +31,44 @@ export function PRActionHeader({
 	createPREnabled = true,
 }: PRActionHeaderProps) {
 	const action = selectActionButton(state);
+	const animate = useShouldAnimate("decorative");
+
+	// Key by state.kind for richer discrimination (loading|unavailable|no-pr|pr-exists|busy|error)
+	const animKey = state.kind;
+
+	const slot = (
+		<ActionSlot
+			variant={action}
+			state={state}
+			dispatch={dispatch}
+			onRetry={onRetry}
+			createPREnabled={createPREnabled}
+			workspaceId={workspaceId}
+			animate={animate}
+		/>
+	);
 
 	return (
 		<div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-muted/45 px-2 dark:bg-muted/35">
 			<div className="ml-auto flex items-center">
-				<ActionSlot
-					variant={action}
-					state={state}
-					dispatch={dispatch}
-					onRetry={onRetry}
-					createPREnabled={createPREnabled}
-					workspaceId={workspaceId}
-				/>
+				{animate ? (
+					<AnimatePresence mode="wait" initial={false}>
+						<motion.div
+							key={animKey}
+							initial={{ opacity: 0, scale: 0.96, y: 2 }}
+							animate={{ opacity: 1, scale: 1, y: 0 }}
+							exit={{ opacity: 0, scale: 0.96, y: -2 }}
+							transition={{
+								duration: motionDuration.fast,
+								ease: ease.standard,
+							}}
+						>
+							{slot}
+						</motion.div>
+					</AnimatePresence>
+				) : (
+					slot
+				)}
 			</div>
 		</div>
 	);
@@ -58,6 +86,7 @@ function ActionSlot({
 	onRetry,
 	createPREnabled,
 	workspaceId,
+	animate,
 }: {
 	variant: ReturnType<typeof selectActionButton>;
 	state: PRFlowState;
@@ -65,6 +94,7 @@ function ActionSlot({
 	onRetry?: () => void;
 	createPREnabled: boolean;
 	workspaceId: string;
+	animate: boolean;
 }) {
 	switch (variant.kind) {
 		case "hidden":
@@ -78,7 +108,7 @@ function ActionSlot({
 			);
 
 		case "disabled-tooltip":
-			return <UnavailableIcon reason={variant.reasonKind} />;
+			return <UnavailableIcon reason={variant.reasonKind} animate={animate} />;
 
 		case "create-pr-dropdown":
 			if (!createPREnabled) {
@@ -86,10 +116,17 @@ function ActionSlot({
 					<UnavailableIcon
 						reason="create-disabled"
 						tooltip="Create PR coming soon"
+						animate={animate}
 					/>
 				);
 			}
-			return <CreatePRIconButton state={state} dispatch={dispatch} />;
+			return (
+				<CreatePRIconButton
+					state={state}
+					dispatch={dispatch}
+					animate={animate}
+				/>
+			);
 
 		case "cancel-busy":
 			return (
@@ -111,7 +148,12 @@ function ActionSlot({
 					aria-label="Retry loading pull request"
 					className="flex items-center text-muted-foreground/60 transition-colors hover:text-muted-foreground"
 				>
-					<VscGitPullRequest className="size-4" />
+					<motion.span
+						layoutId={animate ? "pr-action-glyph" : undefined}
+						className="flex"
+					>
+						<VscGitPullRequest className="size-4" />
+					</motion.span>
 				</button>
 			);
 	}
@@ -120,16 +162,23 @@ function ActionSlot({
 function UnavailableIcon({
 	reason,
 	tooltip,
+	animate,
 }: {
 	reason: UnavailableReason | "create-disabled";
 	tooltip?: string;
+	animate: boolean;
 }) {
 	const tooltipText = tooltip ?? unavailableTooltip(reason);
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<span className="flex items-center text-muted-foreground/40">
-					<VscGitPullRequest className="size-4" />
+					<motion.span
+						layoutId={animate ? "pr-action-glyph" : undefined}
+						className="flex"
+					>
+						<VscGitPullRequest className="size-4" />
+					</motion.span>
 				</span>
 			</TooltipTrigger>
 			<TooltipContent side="bottom">{tooltipText}</TooltipContent>
@@ -155,9 +204,11 @@ function unavailableTooltip(
 function CreatePRIconButton({
 	state,
 	dispatch,
+	animate,
 }: {
 	state: PRFlowState;
 	dispatch: PRFlowDispatch;
+	animate: boolean;
 }) {
 	return (
 		<Tooltip>
@@ -168,7 +219,12 @@ function CreatePRIconButton({
 					aria-label="Create pull request"
 					className="flex items-center text-muted-foreground transition-colors hover:text-foreground"
 				>
-					<VscGitPullRequest className="size-4" />
+					<motion.span
+						layoutId={animate ? "pr-action-glyph" : undefined}
+						className="flex"
+					>
+						<VscGitPullRequest className="size-4" />
+					</motion.span>
 				</button>
 			</TooltipTrigger>
 			<TooltipContent side="bottom">Create Pull Request</TooltipContent>

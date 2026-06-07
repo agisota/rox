@@ -4,12 +4,13 @@ import { Button } from "@rox/ui/button";
 import { Spinner } from "@rox/ui/spinner";
 import { cn } from "@rox/ui/utils";
 import { createFileRoute } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { type ReactNode, useState } from "react";
 import { FaAws } from "react-icons/fa";
 import { HiArrowUpRight } from "react-icons/hi2";
-import { LuCheck } from "react-icons/lu";
 import { SiGithub, SiOpenai } from "react-icons/si";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { DrawnCheck, motionDuration, useShouldAnimate } from "renderer/motion";
 import { GhAuthDialog } from "./components/GhAuthDialog";
 import {
 	type Provider,
@@ -21,9 +22,19 @@ export const Route = createFileRoute("/_authenticated/onboarding/")({
 	component: OnboardingDashboardPage,
 });
 
+const rowVariants = {
+	hidden: { opacity: 0, y: 6 },
+	show: (i: number) => ({
+		opacity: 1,
+		y: 0,
+		transition: { duration: motionDuration.fast, delay: i * 0.06 },
+	}),
+};
+
 function OnboardingDashboardPage() {
 	const [connectProvider, setConnectProvider] = useState<Provider | null>(null);
 	const [ghAuthOpen, setGhAuthOpen] = useState(false);
+	const shouldAnimateDecorative = useShouldAnimate("decorative");
 
 	const {
 		data: ghStatus,
@@ -53,58 +64,72 @@ function OnboardingDashboardPage() {
 
 	return (
 		<>
-			<div className="divide-y divide-border">
-				<OnboardingRow
-					icon={<SiGithub className="size-4.5" />}
-					chipClassName="bg-foreground text-background"
-					name="GitHub CLI"
-					description="Clone, push, and create PRs."
-					status={rowStatus(isFetchingGh, ghReady)}
-					required
-					actionLabel={ghInstalled ? "Sign in" : "Install"}
-					actionIcon={
-						ghInstalled ? undefined : <HiArrowUpRight className="size-3.5" />
-					}
-					onAction={ghInstalled ? () => setGhAuthOpen(true) : openGitHubInstall}
-					onRecheck={() => void refetchGh()}
-				/>
-				<OnboardingRow
-					icon={<ClaudeLogo className="size-4.5 text-white" />}
-					chipClassName="bg-[#D97757]"
-					name="Claude Code"
-					description="Anthropic's coding agent."
-					status={rowStatus(isFetchingAnthropic, claudeConnected)}
-					actionLabel="Sign in"
-					onAction={() => setConnectProvider("anthropic")}
-					onRecheck={() => void refetchAnthropic()}
-				/>
-				<OnboardingRow
-					icon={<SiOpenai className="size-4.5" />}
-					chipClassName="bg-foreground text-background"
-					name="Codex"
-					description="OpenAI's coding agent."
-					status={rowStatus(isFetchingOpenAI, codexConnected)}
-					actionLabel="Sign in"
-					onAction={() => setConnectProvider("openai")}
-					onRecheck={() => void refetchOpenAI()}
-				/>
-				<OnboardingRow
-					icon={<FaAws className="size-4.5" />}
-					chipClassName="bg-foreground text-background"
-					name="More providers"
-					description="Bedrock, Vertex, and more."
-					status="disconnected"
-					actionLabel="Provider docs"
-					actionIcon={<HiArrowUpRight className="size-3.5" />}
-					onAction={() =>
-						window.open(
-							"https://docs.rox.one/providers",
-							"_blank",
-							"noopener,noreferrer",
-						)
-					}
-				/>
-			</div>
+			<motion.div
+				className="divide-y divide-border"
+				initial={shouldAnimateDecorative ? "hidden" : false}
+				animate="show"
+			>
+				<motion.div custom={0} variants={rowVariants}>
+					<OnboardingRow
+						icon={<SiGithub className="size-4.5" />}
+						chipClassName="bg-foreground text-background"
+						name="GitHub CLI"
+						description="Clone, push, and create PRs."
+						status={rowStatus(isFetchingGh, ghReady)}
+						required
+						actionLabel={ghInstalled ? "Sign in" : "Install"}
+						actionIcon={
+							ghInstalled ? undefined : <HiArrowUpRight className="size-3.5" />
+						}
+						onAction={
+							ghInstalled ? () => setGhAuthOpen(true) : openGitHubInstall
+						}
+						onRecheck={() => void refetchGh()}
+					/>
+				</motion.div>
+				<motion.div custom={1} variants={rowVariants}>
+					<OnboardingRow
+						icon={<ClaudeLogo className="size-4.5 text-white" />}
+						chipClassName="bg-[#D97757]"
+						name="Claude Code"
+						description="Anthropic's coding agent."
+						status={rowStatus(isFetchingAnthropic, claudeConnected)}
+						actionLabel="Sign in"
+						onAction={() => setConnectProvider("anthropic")}
+						onRecheck={() => void refetchAnthropic()}
+					/>
+				</motion.div>
+				<motion.div custom={2} variants={rowVariants}>
+					<OnboardingRow
+						icon={<SiOpenai className="size-4.5" />}
+						chipClassName="bg-foreground text-background"
+						name="Codex"
+						description="OpenAI's coding agent."
+						status={rowStatus(isFetchingOpenAI, codexConnected)}
+						actionLabel="Sign in"
+						onAction={() => setConnectProvider("openai")}
+						onRecheck={() => void refetchOpenAI()}
+					/>
+				</motion.div>
+				<motion.div custom={3} variants={rowVariants}>
+					<OnboardingRow
+						icon={<FaAws className="size-4.5" />}
+						chipClassName="bg-foreground text-background"
+						name="More providers"
+						description="Bedrock, Vertex, and more."
+						status="disconnected"
+						actionLabel="Provider docs"
+						actionIcon={<HiArrowUpRight className="size-3.5" />}
+						onAction={() =>
+							window.open(
+								"https://docs.rox.one/providers",
+								"_blank",
+								"noopener,noreferrer",
+							)
+						}
+					/>
+				</motion.div>
+			</motion.div>
 
 			<ProviderConnectModal
 				provider={connectProvider}
@@ -154,6 +179,9 @@ function OnboardingRow({
 	onAction,
 	onRecheck,
 }: OnboardingRowProps) {
+	const shouldAnimateEssential = useShouldAnimate("essential");
+	const shouldAnimateDecorative = useShouldAnimate("decorative");
+
 	return (
 		<div className="flex items-center gap-4 py-7 first:pt-0 last:pb-0">
 			<div
@@ -169,32 +197,72 @@ function OnboardingRow({
 				<p className="text-xs text-muted-foreground">{description}</p>
 			</div>
 			<div className="flex shrink-0 items-center gap-2">
-				{status === "loading" ? (
-					<span className="flex items-center gap-1.5 px-3 text-sm text-muted-foreground">
-						<Spinner className="size-3.5" />
-						Checking…
-					</span>
-				) : status === "connected" ? (
-					<Button
-						type="button"
-						size="sm"
-						variant="ghost"
-						onClick={onRecheck}
-						disabled={!onRecheck}
-						className="text-emerald-500 hover:text-emerald-500"
-					>
-						<LuCheck className="size-3.5" strokeWidth={2.5} />
-						Connected
-					</Button>
-				) : (
-					<>
-						{required && <Badge variant="outline">Required</Badge>}
-						<Button type="button" size="sm" onClick={onAction}>
-							{actionLabel}
-							{actionIcon}
-						</Button>
-					</>
-				)}
+				<AnimatePresence initial={false} mode="wait">
+					{status === "loading" && (
+						<motion.span
+							key="loading"
+							className="flex items-center gap-1.5 px-3 text-sm text-muted-foreground"
+							initial={shouldAnimateEssential ? { opacity: 0, y: 4 } : false}
+							animate={{ opacity: 1, y: 0 }}
+							exit={shouldAnimateEssential ? { opacity: 0, y: -4 } : undefined}
+							transition={{ duration: motionDuration.fast }}
+						>
+							<motion.span
+								className="flex items-center gap-1.5"
+								animate={
+									shouldAnimateDecorative
+										? { opacity: [0.6, 1, 0.6] }
+										: { opacity: 1 }
+								}
+								transition={
+									shouldAnimateDecorative
+										? { duration: 1.4, ease: "easeInOut", repeat: Infinity }
+										: { duration: 0 }
+								}
+							>
+								<Spinner className="size-3.5" />
+								Checking…
+							</motion.span>
+						</motion.span>
+					)}
+					{status === "connected" && (
+						<motion.div
+							key="connected"
+							initial={shouldAnimateEssential ? { opacity: 0, y: 4 } : false}
+							animate={{ opacity: 1, y: 0 }}
+							exit={shouldAnimateEssential ? { opacity: 0, y: -4 } : undefined}
+							transition={{ duration: motionDuration.fast }}
+						>
+							<Button
+								type="button"
+								size="sm"
+								variant="ghost"
+								onClick={onRecheck}
+								disabled={!onRecheck}
+								className="text-emerald-500 hover:text-emerald-500"
+							>
+								<DrawnCheck className="size-3.5" />
+								Connected
+							</Button>
+						</motion.div>
+					)}
+					{status === "disconnected" && (
+						<motion.div
+							key="disconnected"
+							className="flex items-center gap-2"
+							initial={shouldAnimateEssential ? { opacity: 0, y: 4 } : false}
+							animate={{ opacity: 1, y: 0 }}
+							exit={shouldAnimateEssential ? { opacity: 0, y: -4 } : undefined}
+							transition={{ duration: motionDuration.fast }}
+						>
+							{required && <Badge variant="outline">Required</Badge>}
+							<Button type="button" size="sm" onClick={onAction}>
+								{actionLabel}
+								{actionIcon}
+							</Button>
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</div>
 		</div>
 	);

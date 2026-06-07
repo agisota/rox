@@ -1,12 +1,13 @@
 import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
 import { CardDescription, CardHeader, CardTitle } from "@rox/ui/card";
 import { Switch } from "@rox/ui/switch";
-import { cn } from "@rox/ui/utils";
+import { motion } from "framer-motion";
 import { ChevronDownIcon } from "lucide-react";
 import {
 	getPresetIcon,
 	useIsDarkTheme,
 } from "renderer/assets/app-icons/preset-icons";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 
 interface AgentCardHeaderProps {
 	preset: ResolvedAgentConfig;
@@ -30,6 +31,7 @@ export function AgentCardHeader({
 	const isDark = useIsDarkTheme();
 	const icon = getPresetIcon(preset.id, isDark);
 	const contentId = `${preset.id}-settings`;
+	const shouldAnimate = useShouldAnimate("essential");
 
 	return (
 		<CardHeader
@@ -63,24 +65,40 @@ export function AgentCardHeader({
 				<div className="flex shrink-0 items-center gap-3">
 					{showEnabled && (
 						<div className="flex items-center">
-							<Switch
-								id={`${preset.id}-enabled`}
-								aria-label={`Enable ${preset.label}`}
-								checked={enabled}
-								disabled={isUpdatingEnabled}
-								onCheckedChange={onEnabledChange}
-								onClick={(event) => event.stopPropagation()}
-								onKeyDown={(event) => event.stopPropagation()}
-							/>
+							<motion.div
+								key={String(enabled)}
+								initial={shouldAnimate ? { opacity: 0.8, scale: 0.97 } : false}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{
+									duration: motionDuration.fast,
+									ease: [...ease.standard],
+								}}
+							>
+								<Switch
+									id={`${preset.id}-enabled`}
+									aria-label={`Enable ${preset.label}`}
+									checked={enabled}
+									disabled={isUpdatingEnabled}
+									onCheckedChange={onEnabledChange}
+									onClick={(event) => event.stopPropagation()}
+									onKeyDown={(event) => event.stopPropagation()}
+								/>
+							</motion.div>
 						</div>
 					)}
-					<ChevronDownIcon
-						aria-hidden="true"
-						className={cn(
-							"size-4 text-muted-foreground transition-transform duration-200",
-							isOpen && "rotate-180",
-						)}
-					/>
+					<motion.div
+						animate={{ rotate: isOpen ? 180 : 0 }}
+						transition={
+							shouldAnimate
+								? { duration: motionDuration.base, ease: [...ease.standard] }
+								: { duration: 0 }
+						}
+					>
+						<ChevronDownIcon
+							aria-hidden="true"
+							className="size-4 text-muted-foreground"
+						/>
+					</motion.div>
 				</div>
 			</div>
 		</CardHeader>

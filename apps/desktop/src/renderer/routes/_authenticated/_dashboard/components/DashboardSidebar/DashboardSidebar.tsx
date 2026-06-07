@@ -26,6 +26,7 @@ import { createPortal } from "react-dom";
 import { HiOutlineCog6Tooth } from "react-icons/hi2";
 import { V2AvailableBanner } from "renderer/components/V2AvailableBanner";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { CollapseLabel } from "renderer/motion";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { DashboardSidebarHeader } from "./components/DashboardSidebarHeader";
@@ -278,7 +279,12 @@ export function DashboardSidebar({
 									)}
 								>
 									<HiOutlineCog6Tooth className="size-4 shrink-0" />
-									<span className="flex-1 text-left">Settings</span>
+									<CollapseLabel
+										show={!isCollapsed}
+										className="flex-1 text-left"
+									>
+										Settings
+									</CollapseLabel>
 									{settingsHotkey !== "Unassigned" && (
 										<span
 											className={cn(

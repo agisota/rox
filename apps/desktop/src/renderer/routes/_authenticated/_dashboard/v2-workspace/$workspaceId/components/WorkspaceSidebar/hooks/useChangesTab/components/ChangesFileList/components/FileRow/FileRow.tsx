@@ -16,6 +16,7 @@ import {
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { workspaceTrpc } from "@rox/workspace-client";
+import { AnimatePresence, motion } from "framer-motion";
 import {
 	ChevronDown,
 	ExternalLink,
@@ -31,6 +32,12 @@ import {
 	useChangesSidebarFilePolicy,
 } from "renderer/lib/clickPolicy";
 import { FileIcon } from "renderer/lib/fileIcons";
+import {
+	AnimatedNumber,
+	ease,
+	motionDuration,
+	useShouldAnimate,
+} from "renderer/motion";
 import { DiscardConfirmDialog } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/DiscardConfirmDialog";
 import { StatusIndicator } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/StatusIndicator";
 import { PathActionsMenuItems } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/components/PathActionsMenuItems";
@@ -93,6 +100,8 @@ export const FileRow = memo(function FileRow({
 		discardMutation.mutate({ workspaceId, filePath: file.path });
 	};
 
+	const animate = useShouldAnimate("essential");
+
 	const policy = useChangesSidebarFilePolicy();
 	const diffNewTabTier = policy.tierForIntent("diffNewTab");
 	const fileTier = policy.tierForIntent("file");
@@ -125,20 +134,47 @@ export const FileRow = memo(function FileRow({
 						{basename}
 					</span>
 				</span>
-				<span className="ml-auto flex shrink-0 items-center gap-1.5 group-hover:invisible">
+				<motion.span
+					className="ml-auto flex shrink-0 items-center gap-1.5 group-hover:invisible"
+					layout={animate}
+					transition={{
+						layout: { duration: motionDuration.fast, ease: ease.standard },
+					}}
+				>
 					{(file.additions > 0 || file.deletions > 0) && (
 						<span className="text-[10px] text-muted-foreground">
 							{file.additions > 0 && (
-								<span className="text-green-400">+{file.additions}</span>
+								<span className="text-green-400">
+									+<AnimatedNumber value={file.additions} />
+								</span>
 							)}
 							{file.additions > 0 && file.deletions > 0 && " "}
 							{file.deletions > 0 && (
-								<span className="text-red-400">-{file.deletions}</span>
+								<span className="text-red-400">
+									-<AnimatedNumber value={file.deletions} />
+								</span>
 							)}
 						</span>
 					)}
-					<StatusIndicator status={file.status} />
-				</span>
+					{animate ? (
+						<AnimatePresence mode="popLayout" initial={false}>
+							<motion.span
+								key={file.status}
+								initial={{ opacity: 0, scale: 0.85 }}
+								animate={{ opacity: 1, scale: 1 }}
+								exit={{ opacity: 0, scale: 0.85 }}
+								transition={{
+									duration: motionDuration.fast,
+									ease: ease.standard,
+								}}
+							>
+								<StatusIndicator status={file.status} />
+							</motion.span>
+						</AnimatePresence>
+					) : (
+						<StatusIndicator status={file.status} />
+					)}
+				</motion.span>
 			</button>
 			<div className="pointer-events-none absolute inset-y-0 right-2 flex items-center gap-0.5 opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 has-[[data-state=open]]:pointer-events-auto has-[[data-state=open]]:opacity-100">
 				{canDiscard && (

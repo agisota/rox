@@ -1,12 +1,16 @@
 import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
+import { AnimatePresence, motion } from "framer-motion";
 import {
 	CheckIcon,
 	CircleXIcon,
 	ClockIcon,
 	FolderLockIcon,
+	FolderOpenIcon,
 	XIcon,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import { useCallback } from "react";
+import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import type { ToolStatusBadgeVariant } from "../ToolStatusBadge";
 import { ToolStatusBadge } from "../ToolStatusBadge";
@@ -34,6 +38,62 @@ const ACCESS_STATUS_CONFIG: Record<
 	cancelled: { icon: XIcon, label: "Cancelled" },
 	error: { icon: CircleXIcon, label: "Error", variant: "danger" },
 };
+
+/**
+ * Stable wrapper passed as ToolCallRow's `icon`. Reads the live `status` and
+ * renders the lock glyph with framer-motion: a restrained looping pulse while
+ * pending, and a one-shot lock→unlock pop (FolderLock → FolderOpen) on grant.
+ * Transform + opacity only; gated on the motion-preference foundation hook so
+ * reduced-motion renders a static glyph (case 058).
+ */
+function SandboxAccessIcon({
+	status,
+	className,
+}: {
+	status: AccessStatus;
+	className?: string;
+}) {
+	const shouldAnimate = useShouldAnimate("decorative");
+	const isPending = status === "pending";
+	const isGranted = status === "granted";
+
+	return (
+		<motion.span
+			className="inline-flex"
+			animate={
+				shouldAnimate && isPending
+					? { scale: [1, 1.08, 1], opacity: [0.7, 1, 0.7] }
+					: { scale: 1, opacity: 1 }
+			}
+			transition={{
+				duration: 1.4,
+				repeat: shouldAnimate && isPending ? Number.POSITIVE_INFINITY : 0,
+				ease: "easeInOut",
+			}}
+		>
+			<AnimatePresence mode="wait" initial={false}>
+				<motion.span
+					key={isGranted ? "open" : "locked"}
+					className="inline-flex"
+					initial={{
+						scale: shouldAnimate ? 0.8 : 1,
+						opacity: shouldAnimate ? 0 : 1,
+						rotate: shouldAnimate ? -8 : 0,
+					}}
+					animate={{ scale: 1, opacity: 1, rotate: 0 }}
+					exit={{ opacity: 0, scale: 0.9 }}
+					transition={shouldAnimate ? motionSpring.pop : { duration: 0 }}
+				>
+					{isGranted ? (
+						<FolderOpenIcon className={className} />
+					) : (
+						<FolderLockIcon className={className} />
+					)}
+				</motion.span>
+			</AnimatePresence>
+		</motion.span>
+	);
+}
 
 function toAccessDecision(content: string): "granted" | "denied" | null {
 	if (content.startsWith("Access already granted")) return "granted";
@@ -82,13 +142,22 @@ export function RequestSandboxAccessToolCall({
 		<ToolStatusBadge icon={icon} label={label} variant={variant} />
 	);
 
+	// Stable wrapper so ToolCallRow keeps one mounted icon instance: swapping the
+	// prop to an inline closure would remount each render and kill the pulse loop.
+	const StatusIcon = useCallback(
+		({ className }: { className?: string }) => (
+			<SandboxAccessIcon status={status} className={className} />
+		),
+		[status],
+	);
+
 	const isPending = status === "pending";
 	const isCancelledOrError = status === "cancelled" || status === "error";
 	const hasContext = Boolean(requestedPath || reason);
 
 	return (
 		<ToolCallRow
-			icon={FolderLockIcon}
+			icon={StatusIcon}
 			isPending={false}
 			isError={false}
 			title="Request Access"

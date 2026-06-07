@@ -2,6 +2,7 @@ import { OverflowFadeContainer } from "@rox/ui/overflow-fade-container";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence } from "framer-motion";
 import { LuLoaderCircle, LuX } from "react-icons/lu";
 import { navigateToV2Workspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { STROKE_WIDTH } from "renderer/screens/main/components/WorkspaceSidebar/constants";
@@ -72,12 +73,14 @@ export function DashboardSidebarPortGroup({
 				observeChildren
 				className="grid auto-cols-max grid-flow-col grid-rows-2 gap-1 overflow-x-auto px-3 pb-1 hide-scrollbar"
 			>
-				{group.ports.map((port) => (
-					<DashboardSidebarPortBadge
-						key={`${port.hostId}:${port.terminalId}:${port.port}`}
-						port={port}
-					/>
-				))}
+				<AnimatePresence initial={false}>
+					{group.ports.map((port) => (
+						<DashboardSidebarPortBadge
+							key={`${port.hostId}:${port.terminalId}:${port.port}`}
+							port={port}
+						/>
+					))}
+				</AnimatePresence>
 			</OverflowFadeContainer>
 		</div>
 	);

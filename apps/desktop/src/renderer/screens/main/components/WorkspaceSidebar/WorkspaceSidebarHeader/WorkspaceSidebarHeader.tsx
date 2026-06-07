@@ -4,6 +4,7 @@ import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 import { LuLayers } from "react-icons/lu";
 import { GATED_FEATURES, usePaywall } from "renderer/components/Paywall";
+import { CollapseLabel } from "renderer/motion";
 import {
 	tasksSearchFromFilters,
 	useTasksFilterStore,
@@ -119,7 +120,12 @@ export function WorkspaceSidebarHeader({
 				<div className="flex items-center justify-center size-5">
 					<LuLayers className="size-4" strokeWidth={STROKE_WIDTH} />
 				</div>
-				<span className="text-sm font-medium flex-1 text-left">Workspaces</span>
+				<CollapseLabel
+					show={!isCollapsed}
+					className="text-sm font-medium flex-1 text-left"
+				>
+					Workspaces
+				</CollapseLabel>
 			</button>
 
 			<button
@@ -138,9 +144,12 @@ export function WorkspaceSidebarHeader({
 						strokeWidth={STROKE_WIDTH}
 					/>
 				</div>
-				<span className="text-sm font-medium flex-1 text-left">
+				<CollapseLabel
+					show={!isCollapsed}
+					className="text-sm font-medium flex-1 text-left"
+				>
 					Tasks & PRs
-				</span>
+				</CollapseLabel>
 			</button>
 
 			<NewWorkspaceButton />

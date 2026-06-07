@@ -14,6 +14,7 @@ import {
 	SETTING_ITEM_ID,
 	type SettingItemId,
 } from "../../../utils/settings-search";
+import { AnimationAuditPanel } from "../AnimationAuditPanel";
 
 interface ExperimentalSettingsProps {
 	visibleItems?: SettingItemId[] | null;
@@ -124,6 +125,7 @@ export function ExperimentalSettings({
 						</Button>
 					</div>
 				)}
+				{import.meta.env.DEV && <AnimationAuditPanel />}
 			</div>
 		</div>
 	);

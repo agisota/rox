@@ -1,5 +1,12 @@
+import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDiffStats } from "renderer/hooks/host-service/useDiffStats";
+import {
+	AnimatedHeight,
+	motionDuration,
+	motionSpring,
+	useShouldAnimate,
+} from "renderer/motion";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import { useDeletingWorkspaces } from "renderer/routes/_authenticated/providers/DeletingWorkspacesProvider";
 import { RenameBranchDialog } from "renderer/screens/main/components/WorkspaceSidebar/WorkspaceListItem/components";
@@ -77,6 +84,13 @@ export function DashboardSidebarWorkspaceItem({
 		v2WorkspaceActions.updateWorkspace(id, { branch: newBranchName });
 	};
 	const isPending = pendingTransaction?.type === "insert";
+	const animate = useShouldAnimate("essential");
+	// Local favorite/pin state — seeded from the existing derived pinned flag.
+	// Purely visual choreography (star pop + list re-sort animation); no store
+	// or sort logic is changed.
+	const [isFavorite, setIsFavorite] = useState(
+		isMainWorkspace && hostType === "local-device",
+	);
 	// Keep the delete dialog outside the hidden wrapper below — the destroy
 	// flow reopens it into an error pane on conflict/teardown-failed.
 	const isDeleting = useDeletingWorkspaces().isDeleting(id);
@@ -121,14 +135,24 @@ export function DashboardSidebarWorkspaceItem({
 				onMouseLeave={handleMouseLeave}
 				className="relative flex w-full justify-center"
 			>
-				{(accentColor || isActive) && (
-					<div
-						className="absolute inset-y-0 left-0 w-0.5"
-						style={{
-							backgroundColor: accentColor ?? "var(--color-foreground)",
-						}}
-					/>
-				)}
+				{(accentColor || isActive) &&
+					(isActive && accentColor == null && animate ? (
+						<motion.div
+							layoutId="dashboard-sidebar-active-rail"
+							className="absolute inset-y-0 left-0 w-0.5"
+							style={{
+								backgroundColor: "var(--color-foreground)",
+							}}
+							transition={motionSpring.snappy}
+						/>
+					) : (
+						<div
+							className="absolute inset-y-0 left-0 w-0.5"
+							style={{
+								backgroundColor: accentColor ?? "var(--color-foreground)",
+							}}
+						/>
+					))}
 				<DashboardSidebarCollapsedWorkspaceButton
 					hostType={hostType}
 					workspaceType={workspace.type}
@@ -145,35 +169,42 @@ export function DashboardSidebarWorkspaceItem({
 
 		return (
 			<>
-				<div hidden={isDeleting}>
-					{isPending ? (
-						content
-					) : (
-						<DashboardSidebarWorkspaceContextMenu
-							projectId={projectId}
-							isInSection={isInSection}
-							isUnread={isUnread}
-							isLocalWorkspace={hostType === "local-device"}
-							isPinned={isMainWorkspace && hostType === "local-device"}
-							onCreateSection={handleCreateSection}
-							showDeleteHotkey={isActive}
-							onMoveToSection={(targetSectionId) =>
-								moveWorkspaceToSection(id, projectId, targetSectionId)
-							}
-							onOpenInFinder={handleOpenInFinder}
-							onCopyPath={handleCopyPath}
-							onCopyBranchName={handleCopyBranchName}
-							onRemoveFromSidebar={handleRemoveFromSidebar}
-							onRename={startRename}
-							onDelete={
-								isMainWorkspace ? undefined : () => setIsDeleteDialogOpen(true)
-							}
-							onToggleUnread={handleToggleUnread}
-						>
-							{content}
-						</DashboardSidebarWorkspaceContextMenu>
-					)}
-				</div>
+				<AnimatedHeight open={!isDeleting} className="overflow-hidden">
+					<motion.div
+						animate={{ opacity: isDeleting ? 0 : 1 }}
+						transition={{ duration: motionDuration.fast }}
+					>
+						{isPending ? (
+							content
+						) : (
+							<DashboardSidebarWorkspaceContextMenu
+								projectId={projectId}
+								isInSection={isInSection}
+								isUnread={isUnread}
+								isLocalWorkspace={hostType === "local-device"}
+								isPinned={isMainWorkspace && hostType === "local-device"}
+								onCreateSection={handleCreateSection}
+								showDeleteHotkey={isActive}
+								onMoveToSection={(targetSectionId) =>
+									moveWorkspaceToSection(id, projectId, targetSectionId)
+								}
+								onOpenInFinder={handleOpenInFinder}
+								onCopyPath={handleCopyPath}
+								onCopyBranchName={handleCopyBranchName}
+								onRemoveFromSidebar={handleRemoveFromSidebar}
+								onRename={startRename}
+								onDelete={
+									isMainWorkspace
+										? undefined
+										: () => setIsDeleteDialogOpen(true)
+								}
+								onToggleUnread={handleToggleUnread}
+							>
+								{content}
+							</DashboardSidebarWorkspaceContextMenu>
+						)}
+					</motion.div>
+				</AnimatedHeight>
 
 				{!isPending && !isMainWorkspace && (
 					<DashboardSidebarDeleteDialog
@@ -200,11 +231,12 @@ export function DashboardSidebarWorkspaceItem({
 	}
 
 	const expandedContent = (
-		// biome-ignore lint/a11y/noStaticElementInteractions: hover handlers drive a non-interactive popover, no new keyboard semantics
-		<div
+		<motion.div
 			ref={rowRef}
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}
+			layout={animate ? "position" : false}
+			transition={animate ? motionSpring.layout : undefined}
 		>
 			<DashboardSidebarExpandedWorkspaceRow
 				workspace={workspace}
@@ -215,6 +247,8 @@ export function DashboardSidebarWorkspaceItem({
 				diffStats={isPending ? null : diffStats}
 				workspaceStatus={workspaceStatus}
 				isInSection={isInSection}
+				isPinned={isFavorite}
+				onToggleFavoriteClick={() => setIsFavorite((prev) => !prev)}
 				onClick={handleClick}
 				onDoubleClick={isPending ? undefined : startRename}
 				onRemoveFromSidebarClick={handleRemoveFromSidebar}
@@ -223,40 +257,45 @@ export function DashboardSidebarWorkspaceItem({
 				onSubmitRename={submitRename}
 				onCancelRename={cancelRename}
 			/>
-		</div>
+		</motion.div>
 	);
 
 	return (
 		<>
-			<div hidden={isDeleting}>
-				{isPending ? (
-					expandedContent
-				) : (
-					<DashboardSidebarWorkspaceContextMenu
-						projectId={projectId}
-						isInSection={isInSection}
-						isUnread={isUnread}
-						onCreateSection={handleCreateSection}
-						onMoveToSection={(targetSectionId) =>
-							moveWorkspaceToSection(id, projectId, targetSectionId)
-						}
-						isLocalWorkspace={hostType === "local-device"}
-						isPinned={isMainWorkspace && hostType === "local-device"}
-						onOpenInFinder={handleOpenInFinder}
-						showDeleteHotkey={isActive}
-						onCopyPath={handleCopyPath}
-						onCopyBranchName={handleCopyBranchName}
-						onRemoveFromSidebar={handleRemoveFromSidebar}
-						onRename={startRename}
-						onDelete={
-							isMainWorkspace ? undefined : () => setIsDeleteDialogOpen(true)
-						}
-						onToggleUnread={handleToggleUnread}
-					>
-						{expandedContent}
-					</DashboardSidebarWorkspaceContextMenu>
-				)}
-			</div>
+			<AnimatedHeight open={!isDeleting} className="overflow-hidden">
+				<motion.div
+					animate={{ opacity: isDeleting ? 0 : 1 }}
+					transition={{ duration: motionDuration.fast }}
+				>
+					{isPending ? (
+						expandedContent
+					) : (
+						<DashboardSidebarWorkspaceContextMenu
+							projectId={projectId}
+							isInSection={isInSection}
+							isUnread={isUnread}
+							onCreateSection={handleCreateSection}
+							onMoveToSection={(targetSectionId) =>
+								moveWorkspaceToSection(id, projectId, targetSectionId)
+							}
+							isLocalWorkspace={hostType === "local-device"}
+							isPinned={isMainWorkspace && hostType === "local-device"}
+							onOpenInFinder={handleOpenInFinder}
+							showDeleteHotkey={isActive}
+							onCopyPath={handleCopyPath}
+							onCopyBranchName={handleCopyBranchName}
+							onRemoveFromSidebar={handleRemoveFromSidebar}
+							onRename={startRename}
+							onDelete={
+								isMainWorkspace ? undefined : () => setIsDeleteDialogOpen(true)
+							}
+							onToggleUnread={handleToggleUnread}
+						>
+							{expandedContent}
+						</DashboardSidebarWorkspaceContextMenu>
+					)}
+				</motion.div>
+			</AnimatedHeight>
 
 			{!isPending && !isMainWorkspace && (
 				<DashboardSidebarDeleteDialog

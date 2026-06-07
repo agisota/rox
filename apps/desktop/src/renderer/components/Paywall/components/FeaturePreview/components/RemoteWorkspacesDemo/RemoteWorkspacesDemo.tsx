@@ -1,6 +1,10 @@
+import { motion } from "framer-motion";
 import { HiOutlineComputerDesktop, HiOutlineSignal } from "react-icons/hi2";
+import { motionSpring, StatusPulse, useShouldAnimate } from "renderer/motion";
 
 export function RemoteWorkspacesDemo() {
+	const animate = useShouldAnimate("decorative");
+
 	return (
 		<div className="w-full h-full flex items-center justify-center">
 			<div className="w-[300px] bg-card/90 backdrop-blur-sm rounded-lg border border-border shadow-2xl overflow-hidden">
@@ -29,7 +33,10 @@ export function RemoteWorkspacesDemo() {
 						</div>
 						<div className="flex items-center gap-1">
 							<div className="w-6 h-px bg-foreground/20" />
-							<HiOutlineSignal className="size-4 text-pink-400 animate-pulse" />
+							{/* Connecting pulse — replaced Tailwind animate-pulse with framer-motion StatusPulse */}
+							<StatusPulse active={true}>
+								<HiOutlineSignal className="size-4 text-pink-400" />
+							</StatusPulse>
 							<div className="w-6 h-px bg-foreground/20" />
 						</div>
 						<div className="flex flex-col items-center gap-1.5">
@@ -40,15 +47,34 @@ export function RemoteWorkspacesDemo() {
 						</div>
 					</div>
 
+					{/* Animated checklist — status rows stagger in on mount */}
 					<div className="mt-2 space-y-1.5">
-						<div className="flex items-center justify-between px-2 py-1.5 rounded bg-foreground/5 text-xs">
+						<motion.div
+							className="flex items-center justify-between px-2 py-1.5 rounded bg-foreground/5 text-xs"
+							initial={animate ? { opacity: 0, y: 6 } : false}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ delay: 0, ...motionSpring.soft }}
+						>
 							<span className="text-foreground/80">Tunnel established</span>
-							<span className="text-emerald-400 text-[10px]">live</span>
-						</div>
-						<div className="flex items-center justify-between px-2 py-1.5 rounded bg-foreground/5 text-xs">
+							{/* Connected check — spring-pops in after the row enters */}
+							<motion.span
+								className="text-emerald-400 text-[10px]"
+								initial={animate ? { scale: 0.6, opacity: 0 } : false}
+								animate={{ scale: 1, opacity: 1 }}
+								transition={{ delay: 0.16, ...motionSpring.snappy }}
+							>
+								live
+							</motion.span>
+						</motion.div>
+						<motion.div
+							className="flex items-center justify-between px-2 py-1.5 rounded bg-foreground/5 text-xs"
+							initial={animate ? { opacity: 0, y: 6 } : false}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ delay: 0.12, ...motionSpring.soft }}
+						>
 							<span className="text-foreground/80">Latency</span>
 							<span className="text-foreground/60 text-[10px]">42ms</span>
-						</div>
+						</motion.div>
 					</div>
 				</div>
 			</div>

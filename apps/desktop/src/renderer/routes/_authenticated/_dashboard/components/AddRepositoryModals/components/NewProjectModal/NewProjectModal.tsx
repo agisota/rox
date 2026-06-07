@@ -10,11 +10,17 @@ import {
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { toast } from "@rox/ui/sonner";
-import { useEffect, useState } from "react";
-import { LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
+import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { LuCheck, LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
+import { Shake } from "renderer/motion/Shake";
+import {
+	useMotionPreference,
+	useShouldAnimate,
+} from "renderer/motion/useMotionPreference";
 import {
 	type ProjectSetupResult,
 	useFinalizeProjectSetup,
@@ -55,6 +61,12 @@ export function NewProjectModal({
 	const [name, setName] = useState("");
 	const [nameTouched, setNameTouched] = useState(false);
 	const [working, setWorking] = useState(false);
+	const [phase, setPhase] = useState<"idle" | "success" | "error">("idle");
+
+	const shake = useAnimationControls();
+	const shouldAnimateEssential = useShouldAnimate("essential");
+	const prefersMotion = useMotionPreference();
+	const dwellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
 		if (parentDir || !homeDir) return;
@@ -66,11 +78,18 @@ export function NewProjectModal({
 		setName(deriveProjectNameFromUrl(url));
 	}, [url, nameTouched]);
 
+	useEffect(() => {
+		return () => {
+			if (dwellTimerRef.current) clearTimeout(dwellTimerRef.current);
+		};
+	}, []);
+
 	const reset = () => {
 		setUrl("");
 		setName("");
 		setNameTouched(false);
 		setWorking(false);
+		setPhase("idle");
 	};
 
 	const handleOpenChange = (next: boolean) => {
@@ -92,6 +111,8 @@ export function NewProjectModal({
 			toast.error(err instanceof Error ? err.message : String(err));
 		}
 	};
+
+	const clearErrorPhase = () => setPhase((p) => (p === "error" ? "idle" : p));
 
 	const createFromClone = async () => {
 		if (!activeHostUrl) {
@@ -123,10 +144,20 @@ export function NewProjectModal({
 				name: trimmedName,
 				mode: { kind: "clone", parentDir: trimmedParent, url: trimmedUrl },
 			});
+			// Fire product callbacks immediately — no delay on product logic.
 			finalizeSetup(activeHostUrl, result);
 			onSuccess?.(result);
-			reset();
-			onOpenChange(false);
+			setPhase("success");
+			if (prefersMotion === "off") {
+				reset();
+				onOpenChange(false);
+			} else {
+				// Dwell briefly so the success check is visible, then close.
+				dwellTimerRef.current = setTimeout(() => {
+					reset();
+					onOpenChange(false);
+				}, 700);
+			}
 		} catch (err) {
 			const raw = err instanceof Error ? err.message : String(err);
 			// Drizzle / pg errors arrive as "Failed query: insert into ..."
@@ -139,6 +170,13 @@ export function NewProjectModal({
 				: raw;
 			toast.error("Could not create project", { description: message });
 			onError?.(message);
+			setPhase("error");
+			if (shouldAnimateEssential) {
+				void shake.start({
+					x: [0, -8, 8, -6, 6, 0],
+					transition: { duration: 0.4 },
+				});
+			}
 		} finally {
 			setWorking(false);
 		}
@@ -154,7 +192,8 @@ export function NewProjectModal({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="flex flex-col gap-4">
+				{/* Error shake wraps the form fields */}
+				<Shake controls={shake} className="flex flex-col gap-4">
 					<div className="flex flex-col gap-1.5">
 						<Label htmlFor="clone-url" className="text-xs">
 							Repository URL or path
@@ -162,7 +201,10 @@ export function NewProjectModal({
 						<Input
 							id="clone-url"
 							value={url}
-							onChange={(e) => setUrl(e.target.value)}
+							onChange={(e) => {
+								setUrl(e.target.value);
+								clearErrorPhase();
+							}}
 							placeholder="https://github.com/owner/repo.git or /path/to/repo"
 							disabled={working}
 							onKeyDown={(e) => {
@@ -184,6 +226,7 @@ export function NewProjectModal({
 							onChange={(e) => {
 								setName(e.target.value);
 								setNameTouched(true);
+								clearErrorPhase();
 							}}
 							placeholder="my-project"
 							disabled={working}
@@ -215,7 +258,7 @@ export function NewProjectModal({
 							</Button>
 						</div>
 					</div>
-				</div>
+				</Shake>
 
 				<DialogFooter>
 					<Button
@@ -227,14 +270,44 @@ export function NewProjectModal({
 						Cancel
 					</Button>
 					<Button onClick={() => void createFromClone()} disabled={working}>
-						{working ? (
-							<>
-								<LuLoaderCircle className="size-4 animate-spin" />
-								Cloning…
-							</>
-						) : (
-							"Clone"
-						)}
+						{/* Crossfaded label: Clone ↔ Cloning… ↔ Cloned ✓ */}
+						<AnimatePresence mode="wait" initial={false}>
+							{working ? (
+								<motion.span
+									key="cloning"
+									className="flex items-center gap-1.5"
+									initial={{ opacity: 0, y: 4 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -4 }}
+									transition={{ duration: 0.12 }}
+								>
+									<LuLoaderCircle className="size-4 animate-spin" />
+									Cloning…
+								</motion.span>
+							) : phase === "success" ? (
+								<motion.span
+									key="success"
+									className="flex items-center gap-1.5"
+									initial={{ scale: 0.6, opacity: 0 }}
+									animate={{ scale: 1, opacity: 1 }}
+									exit={{ opacity: 0, scale: 0.8 }}
+									transition={{ type: "spring", stiffness: 520, damping: 36 }}
+								>
+									<LuCheck className="size-4" />
+									Cloned
+								</motion.span>
+							) : (
+								<motion.span
+									key="clone"
+									initial={{ opacity: 0, y: 4 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -4 }}
+									transition={{ duration: 0.12 }}
+								>
+									Clone
+								</motion.span>
+							)}
+						</AnimatePresence>
 					</Button>
 				</DialogFooter>
 			</DialogContent>

@@ -28,6 +28,14 @@ interface UseFilesTabActionsOptions {
 	/** Absolute path of the file currently open in the diff/editor pane, if any. */
 	selectedFilePath: string | undefined;
 	onSelectFile: (absolutePath: string, openInNewTab?: boolean) => void;
+	/** Smooth-scroll the reveal instead of jumping (gated on motion preference). */
+	shouldAnimate?: boolean;
+	/**
+	 * Called with the revealed row's bounding rect once it's selected + scrolled
+	 * into view, so the caller can flash it (case 048). The shadow-DOM query
+	 * stays here next to the scroll logic.
+	 */
+	onRevealed?: (rect: DOMRect) => void;
 }
 
 export interface FilesTabActions {
@@ -56,6 +64,8 @@ export function useFilesTabActions({
 	workspaceId,
 	selectedFilePath,
 	onSelectFile,
+	shouldAnimate = false,
+	onRevealed,
 }: UseFilesTabActionsOptions): FilesTabActions {
 	const writeFile = workspaceTrpc.filesystem.writeFile.useMutation();
 	const createDirectory =
@@ -120,10 +130,32 @@ export function useFilesTabActions({
 					bridge.knownPaths,
 					targetKey,
 					FILE_EXPLORER_ROW_HEIGHT,
+					shouldAnimate,
 				);
+
+				// Flash the revealed row by handing its rect to the caller. Pierre
+				// owns the row DOM inside an open shadow root, so we read the rect
+				// here (next to the scroll logic) rather than animate the row.
+				if (onRevealed) {
+					const rowEl = model
+						.getFileTreeContainer()
+						?.shadowRoot?.querySelector(
+							`[data-item-path="${CSS.escape(targetKey)}"]`,
+						);
+					if (rowEl instanceof HTMLElement) {
+						onRevealed(rowEl.getBoundingClientRect());
+					}
+				}
 			});
 		},
-		[model, rootPath, bridge.fetchDir, bridge.knownPaths],
+		[
+			model,
+			rootPath,
+			bridge.fetchDir,
+			bridge.knownPaths,
+			shouldAnimate,
+			onRevealed,
+		],
 	);
 
 	const startCreating = useCallback(

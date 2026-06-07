@@ -1,5 +1,7 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type {
 	UserMessageActionPayload,
@@ -40,6 +42,7 @@ export function UserMessage({
 	actionDisabled = false,
 }: UserMessageProps) {
 	const addFileViewerPane = useTabsStore((store) => store.addFileViewerPane);
+	const animate = useShouldAnimate("essential");
 	const draft = getUserMessageDraft(message);
 	const fullText = draft.text;
 	const [copied, setCopied] = useState(false);
@@ -107,20 +110,58 @@ export function UserMessage({
 			data-chat-user-message="true"
 			data-message-id={message.id}
 		>
-			{isEditing ? (
-				<UserMessageEditor
-					initialDraft={draft}
-					isSubmitting={isSubmitting}
-					onCancel={onCancelEdit}
-					onSubmit={(payload) =>
-						onSubmitEdit({
-							messageId: message.id,
-							prefixMessages,
-							payload,
-						})
-					}
-				/>
-			) : null}
+			<AnimatePresence mode="wait" initial={false}>
+				{isEditing ? (
+					<motion.div
+						key="editor"
+						layout={animate}
+						layoutId={animate ? `user-msg-morph-${message.id}` : undefined}
+						initial={animate ? { opacity: 0 } : false}
+						animate={{ opacity: 1 }}
+						exit={animate ? { opacity: 0 } : undefined}
+						transition={
+							animate
+								? { duration: motionDuration.fast, ease: ease.standard }
+								: { duration: 0 }
+						}
+						className="flex w-full justify-end"
+					>
+						<UserMessageEditor
+							initialDraft={draft}
+							isSubmitting={isSubmitting}
+							onCancel={onCancelEdit}
+							onSubmit={(payload) =>
+								onSubmitEdit({
+									messageId: message.id,
+									prefixMessages,
+									payload,
+								})
+							}
+						/>
+					</motion.div>
+				) : (
+					<motion.div
+						key="display"
+						layout={animate}
+						layoutId={animate ? `user-msg-morph-${message.id}` : undefined}
+						initial={animate ? { opacity: 0 } : false}
+						animate={{ opacity: 1 }}
+						exit={animate ? { opacity: 0 } : undefined}
+						transition={
+							animate
+								? { duration: motionDuration.fast, ease: ease.standard }
+								: { duration: 0 }
+						}
+						className="flex w-full flex-col items-end gap-2"
+					>
+						<UserMessageText
+							message={message}
+							workspaceCwd={workspaceCwd}
+							onOpenMentionedFile={openMentionedFile}
+						/>
+					</motion.div>
+				)}
+			</AnimatePresence>
 			{message.content.some(
 				(part) =>
 					part.type === "image" || (part as { type?: string }).type === "file",
@@ -131,13 +172,6 @@ export function UserMessage({
 						onOpenAttachment={openAttachment}
 					/>
 				)}
-			{!isEditing ? (
-				<UserMessageText
-					message={message}
-					workspaceCwd={workspaceCwd}
-					onOpenMentionedFile={openMentionedFile}
-				/>
-			) : null}
 			{showActions ? (
 				<UserMessageActions
 					actionDisabled={actionDisabled}

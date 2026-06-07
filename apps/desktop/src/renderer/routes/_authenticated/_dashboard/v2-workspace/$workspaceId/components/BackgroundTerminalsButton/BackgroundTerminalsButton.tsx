@@ -10,6 +10,7 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
+import { AnimatePresence, motion } from "framer-motion";
 import { Archive, ChevronDown, Trash2 } from "lucide-react";
 import {
 	memo,
@@ -30,6 +31,8 @@ import {
 	getTerminalBackgroundMarkerIdsKey,
 	subscribeTerminalBackgroundMarkers,
 } from "renderer/lib/terminal/terminal-background-intents";
+import { AnimatedNumber, StatusPulse } from "renderer/motion";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { getRelativeTime } from "renderer/screens/main/components/WorkspacesListView/utils";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
@@ -194,6 +197,8 @@ export const BackgroundTerminalsButton = memo(
 						optimisticBackgroundCount,
 					);
 
+		const shouldAnimate = useShouldAnimate("decorative");
+
 		if (!isOpen && backgroundCount === 0) return null;
 
 		const label = `${backgroundCount} background terminal session${
@@ -229,13 +234,18 @@ export const BackgroundTerminalsButton = memo(
 			<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 				<DropdownMenuTrigger asChild>
 					<Button
+						aria-label={label}
+						title={label}
 						className="h-7 gap-1 rounded-md border border-border/60 bg-muted/30 px-2 text-xs text-muted-foreground shadow-none hover:bg-accent/60 hover:text-foreground"
 						size="sm"
 						type="button"
 						variant="ghost"
 					>
 						<Archive className="size-3.5" />
-						<span>{label}</span>
+						<span>
+							<AnimatedNumber value={backgroundCount} /> background terminal
+							session{backgroundCount === 1 ? "" : "s"}
+						</span>
 						<ChevronDown className="size-3" />
 					</Button>
 				</DropdownMenuTrigger>
@@ -255,40 +265,60 @@ export const BackgroundTerminalsButton = memo(
 								No background terminal sessions
 							</div>
 						)}
-						{backgroundSessions.map((session) => (
-							<DropdownMenuItem
-								key={session.terminalId}
-								className="group flex items-center gap-2"
-								onSelect={() => handleAdopt(session.terminalId)}
-							>
-								<Archive className="size-3.5 shrink-0 text-muted-foreground" />
-								<span className="min-w-0 flex-1 truncate text-xs">
-									{session.title ?? "Terminal"}
-								</span>
-								{session.createdAt > 0 && (
-									<span className="shrink-0 text-xs text-muted-foreground/70">
-										{getRelativeTime(session.createdAt, { format: "compact" })}
-									</span>
-								)}
-								<button
-									type="button"
-									aria-label="Close terminal session"
-									title="Close terminal session"
-									disabled={
-										killSession.isPending &&
-										killSession.variables?.terminalId === session.terminalId
-									}
-									className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 group-hover:opacity-100"
-									onClick={(event) => {
-										event.preventDefault();
-										event.stopPropagation();
-										void handleKill(session.terminalId);
-									}}
+						<AnimatePresence initial={false}>
+							{backgroundSessions.map((session, index) => (
+								<DropdownMenuItem
+									key={session.terminalId}
+									asChild
+									onSelect={() => handleAdopt(session.terminalId)}
 								>
-									<Trash2 className="size-3" />
-								</button>
-							</DropdownMenuItem>
-						))}
+									<motion.div
+										className="group flex w-full items-center gap-2"
+										initial={shouldAnimate ? { opacity: 0, x: -8 } : false}
+										animate={{ opacity: 1, x: 0 }}
+										transition={{
+											delay: shouldAnimate ? Math.min(index, 6) * 0.025 : 0,
+											duration: 0.18,
+											ease: "easeOut",
+										}}
+									>
+										<span className="relative flex shrink-0 items-center">
+											<Archive className="size-3.5 text-muted-foreground" />
+											{shouldAnimate && (
+												<StatusPulse className="absolute -right-0.5 -top-0.5 size-1.5" />
+											)}
+										</span>
+										<span className="min-w-0 flex-1 truncate text-xs">
+											{session.title ?? "Terminal"}
+										</span>
+										{session.createdAt > 0 && (
+											<span className="shrink-0 text-xs text-muted-foreground/70">
+												{getRelativeTime(session.createdAt, {
+													format: "compact",
+												})}
+											</span>
+										)}
+										<button
+											type="button"
+											aria-label="Close terminal session"
+											title="Close terminal session"
+											disabled={
+												killSession.isPending &&
+												killSession.variables?.terminalId === session.terminalId
+											}
+											className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30 group-hover:opacity-100"
+											onClick={(event) => {
+												event.preventDefault();
+												event.stopPropagation();
+												void handleKill(session.terminalId);
+											}}
+										>
+											<Trash2 className="size-3" />
+										</button>
+									</motion.div>
+								</DropdownMenuItem>
+							))}
+						</AnimatePresence>
 					</div>
 				</DropdownMenuContent>
 			</DropdownMenu>

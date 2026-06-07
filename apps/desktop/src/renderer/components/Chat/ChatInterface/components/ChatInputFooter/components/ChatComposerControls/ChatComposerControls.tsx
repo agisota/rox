@@ -3,13 +3,11 @@ import {
 	PromptInputSubmit,
 	PromptInputTools,
 } from "@rox/ui/ai-elements/prompt-input";
-import {
-	type ThinkingLevel,
-	ThinkingToggle,
-} from "@rox/ui/ai-elements/thinking-toggle";
+import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";
+import { ReasoningLevelSlider } from "renderer/motion/ReasoningLevelSlider";
 import { PILL_BUTTON_CLASS } from "../../../../styles";
 import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";
@@ -61,7 +59,7 @@ export function ChatComposerControls({
 					open={modelSelectorOpen}
 					onOpenChange={setModelSelectorOpen}
 				/>
-				<ThinkingToggle
+				<ReasoningLevelSlider
 					level={thinkingLevel}
 					onLevelChange={setThinkingLevel}
 					className={PILL_BUTTON_CLASS}

@@ -5,7 +5,6 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@rox/ui/collapsible";
-import { Skeleton } from "@rox/ui/skeleton";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { useEffect, useRef, useState } from "react";
@@ -19,6 +18,7 @@ import {
 } from "react-icons/lu";
 import { VscChevronRight } from "react-icons/vsc";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { AnimatedSkeleton } from "renderer/motion";
 import { PRIcon } from "renderer/screens/main/components/PRIcon";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import {
@@ -551,9 +551,9 @@ export function ReviewPanel({
 				<CollapsibleContent className="px-0.5 pb-1 min-w-0 overflow-hidden">
 					{isCommentsLoading ? (
 						<div className="space-y-1 px-1">
-							<Skeleton className="h-11 w-full rounded-sm" />
-							<Skeleton className="h-11 w-full rounded-sm" />
-							<Skeleton className="h-11 w-full rounded-sm" />
+							<AnimatedSkeleton className="h-11 w-full rounded-sm" />
+							<AnimatedSkeleton className="h-11 w-full rounded-sm" />
+							<AnimatedSkeleton className="h-11 w-full rounded-sm" />
 						</div>
 					) : comments.length === 0 ? (
 						<div className="px-1.5 py-1 text-xs text-muted-foreground">

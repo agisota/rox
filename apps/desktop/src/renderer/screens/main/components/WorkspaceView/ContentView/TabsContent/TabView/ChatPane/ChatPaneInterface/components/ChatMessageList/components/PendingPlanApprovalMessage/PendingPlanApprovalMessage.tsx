@@ -7,7 +7,10 @@ import {
 import { Button } from "@rox/ui/button";
 import { Switch } from "@rox/ui/switch";
 import { Textarea } from "@rox/ui/textarea";
+import { motion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
+import { useShouldAnimate } from "renderer/motion";
+import { ease, motionDuration, motionSpring } from "renderer/motion/tokens";
 
 type PendingPlanApproval = UseChatDisplayReturn["pendingPlanApproval"];
 
@@ -48,6 +51,8 @@ export function PendingPlanApprovalMessage({
 		setResolvedPlanId(null);
 	}, [planApproval]);
 
+	const shouldAnimate = useShouldAnimate("decorative");
+
 	if (!planApproval) return null;
 
 	const planId = planApproval.planId?.trim() ?? "";
@@ -82,7 +87,12 @@ export function PendingPlanApprovalMessage({
 	};
 
 	const content = (
-		<div className="w-full max-w-none space-y-3 rounded-xl border bg-card/95 p-3">
+		<motion.div
+			className="w-full max-w-none space-y-3 rounded-xl border bg-card/95 p-3"
+			initial={shouldAnimate ? { opacity: 0, y: 8, scale: 0.98 } : false}
+			animate={shouldAnimate ? { opacity: 1, y: 0, scale: 1 } : undefined}
+			transition={motionSpring.soft}
+		>
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="text-sm text-foreground">{title}</div>
 				<label
@@ -136,37 +146,61 @@ export function PendingPlanApprovalMessage({
 				</div>
 			</div>
 			<div className="flex flex-wrap items-center justify-end gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					className={
-						selectedAction === "rejected"
-							? "border-destructive text-destructive"
-							: ""
+				<motion.span
+					className="inline-flex"
+					whileHover={shouldAnimate ? { scale: 1.02 } : undefined}
+					whileTap={shouldAnimate ? { scale: 0.96 } : undefined}
+					animate={
+						shouldAnimate && selectedAction === "rejected"
+							? { scale: [1, 1.06, 1] }
+							: undefined
 					}
-					disabled={isSubmitting || !canRespond}
-					onClick={() => {
-						void handleRespond("rejected");
-					}}
+					transition={{ duration: motionDuration.slow, ease: ease.standard }}
 				>
-					Request changes
-				</Button>
-				<Button
-					type="button"
-					className={
-						selectedAction === "approved"
-							? "border-primary bg-primary/10 text-primary"
-							: ""
+					<Button
+						type="button"
+						variant="outline"
+						className={
+							selectedAction === "rejected"
+								? "border-destructive text-destructive"
+								: ""
+						}
+						disabled={isSubmitting || !canRespond}
+						onClick={() => {
+							void handleRespond("rejected");
+						}}
+					>
+						Request changes
+					</Button>
+				</motion.span>
+				<motion.span
+					className="inline-flex"
+					whileHover={shouldAnimate ? { scale: 1.02 } : undefined}
+					whileTap={shouldAnimate ? { scale: 0.96 } : undefined}
+					animate={
+						shouldAnimate && selectedAction === "approved"
+							? { scale: [1, 1.06, 1] }
+							: undefined
 					}
-					disabled={isSubmitting || !canRespond}
-					onClick={() => {
-						void handleRespond("approved");
-					}}
+					transition={{ duration: motionDuration.slow, ease: ease.standard }}
 				>
-					Approve plan
-				</Button>
+					<Button
+						type="button"
+						className={
+							selectedAction === "approved"
+								? "border-primary bg-primary/10 text-primary"
+								: ""
+						}
+						disabled={isSubmitting || !canRespond}
+						onClick={() => {
+							void handleRespond("approved");
+						}}
+					>
+						Approve plan
+					</Button>
+				</motion.span>
 			</div>
-		</div>
+		</motion.div>
 	);
 
 	if (inline) return content;

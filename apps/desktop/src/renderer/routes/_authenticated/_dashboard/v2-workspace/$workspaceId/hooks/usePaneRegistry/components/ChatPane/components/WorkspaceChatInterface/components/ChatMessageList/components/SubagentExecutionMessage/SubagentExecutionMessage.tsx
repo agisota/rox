@@ -4,7 +4,14 @@ import {
 	MessageResponse,
 } from "@rox/ui/ai-elements/message";
 import { cn } from "@rox/ui/lib/utils";
+import { motion } from "framer-motion";
 import { SubagentInnerToolCall } from "renderer/components/Chat/components/SubagentInnerToolCall";
+import {
+	AnimatedHeight,
+	motionSpring,
+	StatusPulse,
+	useShouldAnimate,
+} from "renderer/motion";
 import {
 	type SubagentEntries,
 	toSubagentViewModels,
@@ -35,6 +42,7 @@ export function SubagentExecutionMessage({
 	subagents,
 	inline = false,
 }: SubagentExecutionMessageProps) {
+	const animate = useShouldAnimate("decorative");
 	if (subagents.length === 0) return null;
 	const viewModels = toSubagentViewModels(subagents);
 
@@ -43,14 +51,36 @@ export function SubagentExecutionMessage({
 			<div className="text-sm font-medium text-foreground">
 				Subagent activity
 			</div>
-			<div className="space-y-3">
+			<motion.div
+				className="space-y-3"
+				initial={animate ? "hidden" : false}
+				animate={animate ? "visible" : undefined}
+				variants={
+					animate
+						? { visible: { transition: { staggerChildren: 0.05 } } }
+						: undefined
+				}
+			>
 				{viewModels.map((subagent) => (
-					<div
+					<motion.div
 						key={subagent.toolCallId}
 						className="space-y-2 rounded-md border bg-muted/20 p-3"
+						layout={animate}
+						variants={
+							animate
+								? {
+										hidden: { opacity: 0, y: 6 },
+										visible: { opacity: 1, y: 0 },
+									}
+								: undefined
+						}
+						transition={animate ? motionSpring.soft : undefined}
 					>
 						<div className="flex flex-wrap items-center justify-between gap-2">
-							<div className="text-sm font-medium text-foreground">
+							<div className="flex items-center gap-2 text-sm font-medium text-foreground">
+								{animate && subagent.status === "running" ? (
+									<StatusPulse colorClassName="bg-primary" />
+								) : null}
 								{subagent.task}
 							</div>
 							<span
@@ -62,35 +92,41 @@ export function SubagentExecutionMessage({
 								{getStatusLabel(subagent.status)}
 							</span>
 						</div>
-						{subagent.toolCalls.length > 0 ? (
-							<div className="space-y-1">
-								{subagent.toolCalls.map((tool, index) => (
-									<SubagentInnerToolCall
-										key={`${subagent.toolCallId}-${tool.name}-${index}`}
-										name={tool.name}
-										isError={tool.isError}
-										isPending={
-											subagent.status === "running" &&
-											index === subagent.toolCalls.length - 1
-										}
-										args={tool.args}
-										result={tool.result}
-									/>
-								))}
+						<AnimatedHeight
+							open={animate ? subagent.status === "running" : true}
+						>
+							<div className="space-y-2">
+								{subagent.toolCalls.length > 0 ? (
+									<div className="space-y-1">
+										{subagent.toolCalls.map((tool, index) => (
+											<SubagentInnerToolCall
+												key={`${subagent.toolCallId}-${tool.name}-${index}`}
+												name={tool.name}
+												isError={tool.isError}
+												isPending={
+													subagent.status === "running" &&
+													index === subagent.toolCalls.length - 1
+												}
+												args={tool.args}
+												result={tool.result}
+											/>
+										))}
+									</div>
+								) : null}
+								{subagent.text ? (
+									<MessageResponse
+										animated={false}
+										isAnimating={false}
+										mermaid={{ config: { theme: "default" } }}
+									>
+										{subagent.text}
+									</MessageResponse>
+								) : null}
 							</div>
-						) : null}
-						{subagent.text ? (
-							<MessageResponse
-								animated={false}
-								isAnimating={false}
-								mermaid={{ config: { theme: "default" } }}
-							>
-								{subagent.text}
-							</MessageResponse>
-						) : null}
-					</div>
+						</AnimatedHeight>
+					</motion.div>
 				))}
-			</div>
+			</motion.div>
 		</div>
 	);
 

@@ -1,6 +1,8 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import { useCallback } from "react";
 import { FileIcon } from "renderer/lib/fileIcons";
+import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import type { ChangesetFile } from "../../../../../useChangeset";
 
 interface DiffHeaderPrefixProps {
@@ -19,6 +21,8 @@ export function DiffHeaderPrefix({
 		[onSetCollapsed, file.path, collapsed],
 	);
 
+	const shouldAnimate = useShouldAnimate();
+
 	return (
 		// Flex wrapper: Tailwind preflight sets `img { display: block }`,
 		// so without this the FileIcon drops below the chevron button.
@@ -29,11 +33,18 @@ export function DiffHeaderPrefix({
 				aria-label={collapsed ? "Expand file" : "Collapse file"}
 				className="rounded p-1 text-muted-foreground/60 transition-colors hover:bg-accent hover:text-muted-foreground"
 			>
-				{collapsed ? (
-					<ChevronRight className="size-3.5" />
-				) : (
+				<motion.span
+					style={{ display: "inline-flex" }}
+					animate={{ rotate: collapsed ? -90 : 0 }}
+					initial={false}
+					transition={
+						shouldAnimate
+							? { duration: motionDuration.fast, ease: ease.standard }
+							: { duration: 0 }
+					}
+				>
 					<ChevronDown className="size-3.5" />
-				)}
+				</motion.span>
 			</button>
 			<FileIcon fileName={file.path} className="size-3.5 shrink-0" />
 		</div>

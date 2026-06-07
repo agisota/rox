@@ -14,6 +14,7 @@ import { toast } from "@rox/ui/sonner";
 import { Switch } from "@rox/ui/switch";
 import { cn } from "@rox/ui/utils";
 import { createFileRoute } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";
 import {
@@ -27,6 +28,13 @@ import {
 	useKeyboardPreferencesStore,
 	useRecordHotkeys,
 } from "renderer/hotkeys";
+import {
+	ease,
+	KeyCapGroup,
+	motionDuration,
+	useShouldAnimate,
+} from "renderer/motion";
+import { staggerContainer, staggerItem } from "renderer/motion/variants";
 
 const CATEGORY_ORDER: HotkeyCategory[] = [
 	"Navigation",
@@ -53,6 +61,7 @@ function HotkeyRow({
 	onReset: () => void;
 }) {
 	const { keys } = useHotkeyDisplay(id);
+	const animate = useShouldAnimate("decorative");
 
 	return (
 		<div
@@ -68,7 +77,7 @@ function HotkeyRow({
 				)}
 			</div>
 			<div className="flex items-center gap-2">
-				<button
+				<motion.button
 					type="button"
 					onClick={onStartRecording}
 					className={cn(
@@ -77,17 +86,41 @@ function HotkeyRow({
 							? "border-destructive/50 bg-destructive/10 text-destructive ring-2 ring-destructive/20"
 							: "border-border bg-accent/20 text-foreground hover:bg-accent/40",
 					)}
+					animate={
+						isRecording && animate
+							? { scale: [1, 1.03, 1], opacity: [1, 0.85, 1] }
+							: false
+					}
+					transition={
+						isRecording && animate
+							? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
+							: undefined
+					}
 				>
-					{isRecording ? (
-						<span>Press a key…</span>
-					) : (
-						<KbdGroup>
-							{keys.map((key) => (
-								<Kbd key={key}>{key}</Kbd>
-							))}
-						</KbdGroup>
-					)}
-				</button>
+					<AnimatePresence initial={false} mode="wait">
+						{isRecording ? (
+							<motion.span
+								key="recording"
+								initial={animate ? { opacity: 0 } : false}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								transition={{ duration: motionDuration.fast }}
+							>
+								Press a key…
+							</motion.span>
+						) : (
+							<motion.span
+								key="keys"
+								initial={animate ? { opacity: 0 } : false}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								transition={{ duration: motionDuration.fast }}
+							>
+								<KeyCapGroup keys={keys} />
+							</motion.span>
+						)}
+					</AnimatePresence>
+				</motion.button>
 				<Button variant="ghost" size="sm" onClick={onReset}>
 					Reset
 				</Button>
@@ -196,9 +229,15 @@ function KeyboardShortcutsPage() {
 	};
 
 	const conflictDisplay = useFormatBinding(pendingConflict?.binding ?? null);
+	const animate = useShouldAnimate("decorative");
 
 	return (
-		<div className="p-6 max-w-4xl w-full">
+		<motion.div
+			className="p-6 max-w-4xl w-full"
+			initial={animate ? { opacity: 0, y: 4 } : false}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: motionDuration.base, ease: ease.standard }}
+		>
 			{/* Header */}
 			<div className="mb-6 flex items-start justify-between gap-4">
 				<div>
@@ -258,13 +297,18 @@ function KeyboardShortcutsPage() {
 			</div>
 
 			{/* Tables by Category */}
-			<div className="space-y-6">
+			<motion.div
+				className="space-y-6"
+				variants={staggerContainer}
+				initial={animate ? "hidden" : false}
+				animate="visible"
+			>
 				{CATEGORY_ORDER.map((category) => {
 					const hotkeys = filteredHotkeysByCategory[category] ?? [];
 					if (hotkeys.length === 0) return null;
 
 					return (
-						<div key={category}>
+						<motion.div key={category} variants={staggerItem}>
 							<h3 className="text-sm font-medium text-muted-foreground mb-2">
 								{category}
 							</h3>
@@ -286,7 +330,7 @@ function KeyboardShortcutsPage() {
 									/>
 								))}
 							</div>
-						</div>
+						</motion.div>
 					);
 				})}
 
@@ -297,7 +341,7 @@ function KeyboardShortcutsPage() {
 						No shortcuts found matching "{searchQuery}"
 					</div>
 				)}
-			</div>
+			</motion.div>
 
 			{/* Conflict dialog */}
 			<AlertDialog
@@ -340,6 +384,6 @@ function KeyboardShortcutsPage() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-		</div>
+		</motion.div>
 	);
 }

@@ -3,6 +3,7 @@ import {
 	type MessageResponseProps,
 } from "@rox/ui/ai-elements/message";
 import { useEffect, useState } from "react";
+import { StreamingShimmer } from "renderer/motion/StreamingShimmer";
 
 const STREAM_TEXT_TICK_MS = 16;
 const STREAM_TEXT_CHARS_PER_TICK = 2;
@@ -45,13 +46,15 @@ export function StreamingMessageText({
 	}, [text, isAnimating]);
 
 	return (
-		<MessageResponse
-			animated={false}
-			isAnimating={isAnimating}
-			mermaid={mermaid}
-			components={components}
-		>
-			{displayText}
-		</MessageResponse>
+		<StreamingShimmer active={isAnimating}>
+			<MessageResponse
+				animated={false}
+				isAnimating={isAnimating}
+				mermaid={mermaid}
+				components={components}
+			>
+				{displayText}
+			</MessageResponse>
+		</StreamingShimmer>
 	);
 }

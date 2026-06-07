@@ -5,10 +5,38 @@ import {
 } from "@rox/ui/ai-elements/message";
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 
 type PendingQuestion = UseChatDisplayReturn["pendingQuestion"];
+
+const cardVariants = {
+	hidden: { opacity: 0, y: 8, scale: 0.98 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		scale: 1,
+		transition: {
+			type: "spring" as const,
+			stiffness: 420,
+			damping: 32,
+			mass: 0.7,
+			staggerChildren: 0.04,
+			delayChildren: 0.03,
+		},
+	},
+};
+
+const optionVariants = {
+	hidden: { opacity: 0, y: 6 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		transition: { type: "spring" as const, stiffness: 500, damping: 34 },
+	},
+};
 
 interface QuestionOption {
 	label: string;
@@ -26,6 +54,7 @@ export function PendingQuestionMessage({
 	isSubmitting,
 	onRespond,
 }: PendingQuestionMessageProps) {
+	const shouldAnimate = useShouldAnimate("decorative");
 	const [freeText, setFreeText] = useState("");
 	const [optimisticAnswer, setOptimisticAnswer] = useState<string | null>(null);
 	const [selectedOptionLabel, setSelectedOptionLabel] = useState<string | null>(
@@ -112,7 +141,12 @@ export function PendingQuestionMessage({
 	return (
 		<Message from="assistant">
 			<MessageContent>
-				<div className="w-full max-w-none space-y-3 rounded-xl border bg-card/95 p-3">
+				<motion.div
+					className="w-full max-w-none space-y-3 rounded-xl border bg-card/95 p-3"
+					variants={shouldAnimate ? cardVariants : undefined}
+					initial={shouldAnimate ? "hidden" : false}
+					animate={shouldAnimate ? "visible" : undefined}
+				>
 					<div className="rounded-md border bg-muted/20 p-3">
 						<MessageResponse
 							animated={false}
@@ -142,29 +176,33 @@ export function PendingQuestionMessage({
 					) : options.length > 0 ? (
 						<div className="space-y-2">
 							{options.map((option, index) => (
-								<Button
+								<motion.div
 									key={`${option.label}-${index}`}
-									type="button"
-									variant="outline"
-									className={`h-auto w-full justify-start px-3 py-2 text-left ${
-										selectedOptionLabel === option.label
-											? "border-primary bg-primary/10 text-primary"
-											: ""
-									}`}
-									disabled={controlsDisabled}
-									onClick={() => {
-										void handleOptionSelect(option.label);
-									}}
+									variants={shouldAnimate ? optionVariants : undefined}
 								>
-									<span className="flex flex-col">
-										<span className="font-medium">{option.label}</span>
-										{option.description ? (
-											<span className="text-xs text-muted-foreground">
-												{option.description}
-											</span>
-										) : null}
-									</span>
-								</Button>
+									<Button
+										type="button"
+										variant="outline"
+										className={`h-auto w-full justify-start px-3 py-2 text-left ${
+											selectedOptionLabel === option.label
+												? "border-primary bg-primary/10 text-primary"
+												: ""
+										}`}
+										disabled={controlsDisabled}
+										onClick={() => {
+											void handleOptionSelect(option.label);
+										}}
+									>
+										<span className="flex flex-col">
+											<span className="font-medium">{option.label}</span>
+											{option.description ? (
+												<span className="text-xs text-muted-foreground">
+													{option.description}
+												</span>
+											) : null}
+										</span>
+									</Button>
+								</motion.div>
 							))}
 						</div>
 					) : (
@@ -190,7 +228,7 @@ export function PendingQuestionMessage({
 							</Button>
 						</form>
 					)}
-				</div>
+				</motion.div>
 			</MessageContent>
 		</Message>
 	);

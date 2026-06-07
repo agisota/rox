@@ -1,4 +1,5 @@
 import { type FileTree, prepareFileTreeInput } from "@pierre/trees";
+import { animateScrollTo } from "renderer/motion";
 import { asDirectoryHandle } from "../treePath";
 
 /**
@@ -23,6 +24,7 @@ export function scrollTreeToRow(
 	knownPaths: ReadonlySet<string>,
 	targetKey: string,
 	itemHeight: number,
+	shouldAnimate = false,
 ): boolean {
 	const scrollEl = model
 		.getFileTreeContainer()
@@ -39,9 +41,10 @@ export function scrollTreeToRow(
 	const currentBottom = currentTop + viewportHeight;
 
 	if (targetTop >= currentTop && targetBottom <= currentBottom) return true;
-	scrollEl.scrollTop = Math.max(
-		0,
-		targetTop - (viewportHeight - itemHeight) / 2,
+	animateScrollTo(
+		scrollEl,
+		Math.max(0, targetTop - (viewportHeight - itemHeight) / 2),
+		shouldAnimate,
 	);
 	return true;
 }
