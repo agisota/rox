@@ -7,6 +7,40 @@
 @source "../../../../packages/ui/node_modules/streamdown/dist/*.js";
 
 /**
+ * Victor Mono — bundled app font (#25). Source: github.com/agisota/victor-mono
+ * (fork of rubjo/victor-mono). Monospace, so it satisfies the terminal font
+ * validator. Used for UI, terminal, and code editor.
+ */
+@font-face {
+	font-family: "Victor Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("./assets/fonts/VictorMono-Regular.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Victor Mono";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("./assets/fonts/VictorMono-Bold.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Victor Mono";
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url("./assets/fonts/VictorMono-Italic.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Victor Mono";
+	font-style: italic;
+	font-weight: 700;
+	font-display: swap;
+	src: url("./assets/fonts/VictorMono-BoldItalic.woff2") format("woff2");
+}
+
+/**
  * Theme CSS Variables
  *
  * Dark theme fallback values are used by default.
@@ -167,6 +201,8 @@
 		scroll-behavior: smooth;
 		-webkit-app-region: no-drag;
 		-webkit-font-smoothing: antialiased;
+		/* Victor Mono as the default UI typeface (#25). */
+		font-family: "Victor Mono", ui-monospace, monospace;
 	}
 
 	/* Ensure the React root fills the viewport and provides a positioning context */
