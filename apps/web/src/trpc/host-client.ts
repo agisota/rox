@@ -4,7 +4,7 @@ import { getRelayUrl } from "./relay-url";
 
 // Direct browser → relay → host-service tRPC calls, the same path the
 // desktop uses. Inputs/outputs are typed at the boundary rather than via
-// the host AppRouter: importing `@superset/host-service` drags host-only
+// the host AppRouter: importing `@rox/host-service` drags host-only
 // modules into the web's type-check, which is the reason the cloud's
 // `relay-client.ts` also hand-types its host calls.
 

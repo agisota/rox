@@ -3,12 +3,12 @@ title: Host Server
 description: Set up the daemon the CLI and desktop app talk to when targeting the local machine.
 ---
 
-The `superset start` command runs a headless HTTP server that any Superset desktop app or CLI can communicate with.
+The `rox start` command runs a headless HTTP server that any Rox desktop app or CLI can communicate with.
 
 It manages workspaces, ports, and agent runs on the machine it's running on. The desktop app starts it automatically; on a CLI-only or headless machine you start it yourself.
 
 If you installed the desktop app, it already includes the CLI and installs a
-`~/.superset/bin/superset` shim on app launch. Superset terminals prepend
+`~/.rox/bin/rox` shim on app launch. Rox terminals prepend
 that directory to `PATH` automatically. On a headless machine, use the
 standalone installer from [Getting Started](/cli/getting-started).
 
@@ -37,12 +37,12 @@ If you plan to run AI agents inside workspaces, install whichever agent CLIs you
 
 None are required to start the host server or create workspaces — install only what you plan to run.
 
-## Authenticate the Superset CLI
+## Authenticate the Rox CLI
 
-The host server starts under your Superset session. If you haven't already:
+The host server starts under your Rox session. If you haven't already:
 
 ```bash
-superset auth login
+rox auth login
 ```
 
 See [Getting Started](/cli/getting-started) for the full sign-in flow,
@@ -51,24 +51,24 @@ including API-key auth for CI.
 ## Start the host server
 
 ```bash
-superset start --daemon
+rox start --daemon
 ```
 
 Spawns the daemon in the background and writes a manifest at
-`~/.superset/host/<organizationId>/manifest.json` so other clients can find
+`~/.rox/host/<organizationId>/manifest.json` so other clients can find
 it. Binds to `127.0.0.1` only.
 
 Verify it's healthy:
 
 ```bash
-superset status
+rox status
 ```
 
 ## Getting started
 
 ### Create or adopt a project
 
-A workspace branches off a project — a repo registered with Superset.
+A workspace branches off a project — a repo registered with Rox.
 
 Each repo gets one cloud project record, shared across the organization.
 The first machine to register the repo runs `projects create`; every
@@ -78,7 +78,7 @@ project instead of creating a duplicate.
 Start by checking what's already in your org:
 
 ```bash
-superset projects list
+rox projects list
 ```
 
 #### First machine — `projects create`
@@ -88,14 +88,14 @@ existing local one:
 
 ```bash
 # Clone from a Git URL
-superset projects create \
+rox projects create \
   --name "My Project" \
   --local \
   --clone https://github.com/org/repo.git \
   --parent-dir ~/code
 
 # Or import a repo that's already on disk
-superset projects create \
+rox projects create \
   --name "My Project" \
   --local \
   --import ~/code/existing-repo
@@ -113,10 +113,10 @@ then:
 
 ```bash
 # Clone the project's repo onto this machine
-superset projects setup 47c31b04-… --local --parent-dir ~/code
+rox projects setup 47c31b04-… --local --parent-dir ~/code
 
 # Or attach to an existing local checkout
-superset projects setup 47c31b04-… --local --import ~/code/repo
+rox projects setup 47c31b04-… --local --import ~/code/repo
 ```
 
 The URL for clone mode comes from the cloud project record, so `setup`
@@ -126,8 +126,8 @@ project that's already set up here is a no-op.
 ### Create your first workspace
 
 ```bash
-superset projects list
-superset workspaces create \
+rox projects list
+rox workspaces create \
   --project prj_… \
   --name "fix-login-bug" \
   --branch fix/login-bug
@@ -139,7 +139,7 @@ a git worktree at the chosen branch, and registers the workspace.
 You can also create a workspace from a pull request number:
 
 ```bash
-superset workspaces create \
+rox workspaces create \
   --project prj_… \
   --name "review-pr-123" \
   --pr 123 \
@@ -149,25 +149,25 @@ superset workspaces create \
 ## Stop the host server
 
 ```bash
-superset stop
+rox stop
 ```
 
 ## Shared state
 
-State lives under `~/.superset/host/<organizationId>/`:
+State lives under `~/.rox/host/<organizationId>/`:
 
 ```text
-~/.superset/host/<organizationId>/manifest.json    # endpoint + auth token
-~/.superset/host/<organizationId>/host.db          # local host server DB
+~/.rox/host/<organizationId>/manifest.json    # endpoint + auth token
+~/.rox/host/<organizationId>/host.db          # local host server DB
 ```
 
 A host server started by the desktop app is visible to the CLI and
-vice-versa. `SUPERSET_HOME_DIR` relocates the whole tree.
+vice-versa. `ROX_HOME_DIR` relocates the whole tree.
 
 ## Command details
 
 For full flags, exit codes, and output shapes:
 
-- [`superset start`](/cli/cli-reference#superset-start)
-- [`superset status`](/cli/cli-reference#superset-status)
-- [`superset stop`](/cli/cli-reference#superset-stop)
+- [`rox start`](/cli/cli-reference#rox-start)
+- [`rox status`](/cli/cli-reference#rox-status)
+- [`rox stop`](/cli/cli-reference#rox-stop)

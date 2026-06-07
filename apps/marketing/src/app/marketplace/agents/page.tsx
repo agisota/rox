@@ -1,5 +1,5 @@
-import { COMPANY } from "@superset/shared/constants";
-import { Button } from "@superset/ui/button";
+import { COMPANY } from "@rox/shared/constants";
+import { Button } from "@rox/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import { marketplaceSubmissionLinks } from "@/lib/marketplace";
@@ -7,7 +7,7 @@ import { marketplaceSubmissionLinks } from "@/lib/marketplace";
 export const metadata: Metadata = {
 	title: "Agent Configs",
 	description:
-		"The future home for reusable Superset agent configs, prompts, and setup guides.",
+		"The future home for reusable Rox agent configs, prompts, and setup guides.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace/agents`,
 	},

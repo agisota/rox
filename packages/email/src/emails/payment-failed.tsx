@@ -74,7 +74,7 @@ export function PaymentFailedEmail({
 			<Text className="text-xs leading-5 text-muted">
 				Need help?{" "}
 				<Link
-					href="mailto:support@superset.sh"
+					href="mailto:support@rox.one"
 					className="text-primary no-underline"
 				>
 					Contact our support team

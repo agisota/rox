@@ -1,23 +1,23 @@
 ---
 title: SDK Reference
-description: Method-by-method reference for the Superset TypeScript SDK.
+description: Method-by-method reference for the Rox TypeScript SDK.
 ---
 
 <Callout type="warn">
-The SDK is in early alpha — it is not meant for production use and may be removed in the future. Stay on the latest version (`@superset_sh/sdk@latest`) while we iterate.
+The SDK is in early alpha — it is not meant for production use and may be removed in the future. Stay on the latest version (`@rox_sh/sdk@latest`) while we iterate.
 </Callout>
 
 ## Client
 
 ```ts
-import Superset from '@superset_sh/sdk';
+import Rox from '@rox_sh/sdk';
 
-const client = new Superset({
+const client = new Rox({
   apiKey: 'sk_live_…',
   organizationId: '…',
   // optional:
-  baseURL: 'https://api.superset.sh',
-  relayURL: 'https://relay.superset.sh',
+  baseURL: 'https://api.rox.one',
+  relayURL: 'https://relay.rox.one',
   timeout: 60_000,
   maxRetries: 2,
   logLevel: 'warn', // 'off' | 'error' | 'warn' | 'info' | 'debug'
@@ -292,7 +292,7 @@ Create a recurring automation.
 const a = await client.automations.create({
   name: 'Daily leads',
   prompt: 'Find new leads from Linear and update the CRM…',
-  agent: 'claude', // host agent presetId, instance UUID, or 'superset' for built-in chat
+  agent: 'claude', // host agent presetId, instance UUID, or 'rox' for built-in chat
   rrule: 'FREQ=DAILY;BYHOUR=6;BYMINUTE=0',
   timezone: 'America/Los_Angeles',
   v2ProjectId: '<uuid>',     // one of v2ProjectId or v2WorkspaceId required

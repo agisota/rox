@@ -1,4 +1,4 @@
-import { FEATURE_FLAGS } from "@superset/shared/constants";
+import { FEATURE_FLAGS } from "@rox/shared/constants";
 import type { ApiClient } from "../api-client";
 import { env } from "../env";
 

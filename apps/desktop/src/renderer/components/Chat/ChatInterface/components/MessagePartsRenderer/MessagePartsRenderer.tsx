@@ -1,4 +1,4 @@
-import { ExploringGroup } from "@superset/ui/ai-elements/exploring-group";
+import { ExploringGroup } from "@rox/ui/ai-elements/exploring-group";
 import type { UIMessage } from "ai";
 import { getToolName, isToolUIPart } from "ai";
 import {

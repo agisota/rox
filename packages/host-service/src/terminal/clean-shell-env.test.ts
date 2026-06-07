@@ -62,7 +62,7 @@ describe("augmentPathForMacOS", () => {
 	});
 });
 
-const DELIMITER = "__SUPERSET_SHELL_ENV__";
+const DELIMITER = "__ROX_SHELL_ENV__";
 
 function withDelimiters(body: string): string {
 	return `${DELIMITER}\n${body}\n${DELIMITER}`;

@@ -301,7 +301,7 @@ if [ -n "$COMMIT_INPUT" ]; then
         git push origin --delete "${TEMP_BRANCH}" >/dev/null 2>&1 || true
     fi
 
-    WORKTREE_DIR=$(mktemp -d -t superset-release-XXXXXX)
+    WORKTREE_DIR=$(mktemp -d -t rox-release-XXXXXX)
     cleanup_release_worktree() {
         git worktree remove --force "${WORKTREE_DIR}" >/dev/null 2>&1 || true
         rm -rf "${WORKTREE_DIR}"
@@ -535,8 +535,8 @@ else
         echo -e "${BLUE}Latest URL:${NC}  ${LATEST_URL}"
         echo ""
         echo -e "${BLUE}Direct download:${NC}"
-        echo "  • ${LATEST_URL}/download/Superset-arm64.dmg"
-        echo "  • ${LATEST_URL}/download/Superset-x64.AppImage"
+        echo "  • ${LATEST_URL}/download/Rox-arm64.dmg"
+        echo "  • ${LATEST_URL}/download/Rox-x64.AppImage"
         echo ""
     else
         success "Draft release created!"

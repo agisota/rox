@@ -25,8 +25,7 @@ import {
 const ESC = "\x1b";
 const BEL = "\x07";
 
-const DEBUG_EMULATOR_TIMING =
-	process.env.SUPERSET_TERMINAL_EMULATOR_DEBUG === "1";
+const DEBUG_EMULATOR_TIMING = process.env.ROX_TERMINAL_EMULATOR_DEBUG === "1";
 
 /**
  * DECSET/DECRST mode numbers we track

@@ -1,4 +1,4 @@
-import type { Pane, WorkspaceState } from "@superset/panes";
+import type { Pane, WorkspaceState } from "@rox/panes";
 import { useCallback } from "react";
 import { terminalRuntimeRegistry } from "renderer/lib/terminal/terminal-runtime-registry";
 import { browserRuntimeRegistry } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/BrowserPane/browserRuntimeRegistry";

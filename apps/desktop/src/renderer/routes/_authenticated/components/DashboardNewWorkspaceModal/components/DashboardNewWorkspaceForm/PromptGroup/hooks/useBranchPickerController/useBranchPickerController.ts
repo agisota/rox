@@ -1,4 +1,4 @@
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";

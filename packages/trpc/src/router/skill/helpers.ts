@@ -1,9 +1,9 @@
 import {
 	type JsonSchema,
-	type SupersetWorkflowState,
+	type RoxWorkflowState,
 	validateGraph,
 	type WorkflowIssue,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { TRPCError } from "@trpc/server";
 
 /** The four mutually-exclusive ways a skill version can be implemented. */
@@ -52,7 +52,7 @@ export interface PublishValidationResult {
  * schemas must be present.
  */
 export function validatePublishInput(
-	state: SupersetWorkflowState,
+	state: RoxWorkflowState,
 	inputSchema: JsonSchema | undefined,
 	outputSchema: JsonSchema | undefined,
 ): PublishValidationResult {

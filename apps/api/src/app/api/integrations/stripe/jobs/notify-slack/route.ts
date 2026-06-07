@@ -1,6 +1,6 @@
-import { db } from "@superset/db/client";
-import { subscriptions } from "@superset/db/schema";
-import * as authSchema from "@superset/db/schema/auth";
+import { db } from "@rox/db/client";
+import { subscriptions } from "@rox/db/schema";
+import * as authSchema from "@rox/db/schema/auth";
 import { Receiver } from "@upstash/qstash";
 import { eq } from "drizzle-orm";
 import Stripe from "stripe";

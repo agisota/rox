@@ -1,4 +1,4 @@
-import type { SupersetWorkflowState } from "../types";
+import type { RoxWorkflowState } from "../types";
 
 /**
  * Detect a cycle in the workflow's edge graph using a colored DFS.
@@ -8,7 +8,7 @@ import type { SupersetWorkflowState } from "../types";
  * cycle is deterministic.
  */
 export function detectCycle(
-	state: SupersetWorkflowState,
+	state: RoxWorkflowState,
 	nodes?: Set<string>,
 ): string[] | null {
 	const nodeSet = nodes ?? new Set(Object.keys(state.blocks));

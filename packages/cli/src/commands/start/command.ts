@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
-import { boolean, CLIError, number } from "@superset/cli-framework";
+import { boolean, CLIError, number } from "@rox/cli-framework";
 import { command } from "../../lib/command";
-import { SUPERSET_CONFIG_PATH } from "../../lib/config";
+import { ROX_CONFIG_PATH } from "../../lib/config";
 import { isProcessAlive, readManifest } from "../../lib/host/manifest";
 import { spawnHostService } from "../../lib/host/spawn";
 
@@ -14,7 +14,7 @@ export default command({
 	run: async ({ ctx, options, signal }) => {
 		const organization = await ctx.api.user.myOrganization.query();
 		if (!organization)
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 
 		const existing = readManifest(organization.id);
 		if (existing && isProcessAlive(existing.pid)) {
@@ -24,7 +24,7 @@ export default command({
 			};
 		}
 
-		p.intro(`superset start (${organization.name})`);
+		p.intro(`rox start (${organization.name})`);
 		const spinner = p.spinner();
 		spinner.start("Starting host service...");
 
@@ -33,7 +33,7 @@ export default command({
 				organizationId: organization.id,
 				sessionToken: ctx.bearer,
 				authConfigPath:
-					ctx.authSource === "oauth" ? SUPERSET_CONFIG_PATH : undefined,
+					ctx.authSource === "oauth" ? ROX_CONFIG_PATH : undefined,
 				api: ctx.api,
 				port: options.port,
 				daemon: options.daemon ?? false,

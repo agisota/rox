@@ -1,4 +1,4 @@
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY } from "@rox/shared/constants";
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {

@@ -17,7 +17,7 @@ export function register(server: McpServer): void {
 				.max(200)
 				.optional()
 				.describe(
-					"Host agent instance id (UUID from /settings/agents) or presetId. Use 'superset' for the built-in chat agent.",
+					"Host agent instance id (UUID from /settings/agents) or presetId. Use 'rox' for the built-in chat agent.",
 				),
 			targetHostId: z.string().min(1).nullish(),
 			v2ProjectId: z.string().uuid().optional(),

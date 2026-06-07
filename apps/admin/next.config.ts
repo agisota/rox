@@ -46,7 +46,7 @@ const config: NextConfig = {
 };
 
 export default withSentryConfig(config, {
-	org: "superset-sh",
+	org: "agisota",
 	project: "admin",
 	silent: !process.env.CI,
 	authToken: process.env.SENTRY_AUTH_TOKEN,

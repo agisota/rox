@@ -3,10 +3,10 @@ import {
 	ContextMenuContent,
 	ContextMenuItem,
 	ContextMenuTrigger,
-} from "@superset/ui/context-menu";
-import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/context-menu";
+import { toast } from "@rox/ui/sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
 import {
 	LuArrowRight,
 	LuExternalLink,

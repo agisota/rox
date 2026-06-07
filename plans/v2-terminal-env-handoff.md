@@ -11,7 +11,7 @@ Define and implement a v2 terminal env contract that:
 - includes explicit shell integration behavior for common shells
 - uses only a shell-derived base env for PTYs
 - avoids leaking desktop, Electron, and host-service runtime env into PTYs
-- keeps the useful parts of the v1 Superset notification contract, but renames
+- keeps the useful parts of the v1 Rox notification contract, but renames
   the v2-specific keys to make the contract clearer
 
 This doc is meant to be handed to another agent to implement directly.
@@ -89,11 +89,11 @@ Concrete VS Code pattern to follow:
   stripping Electron and VS Code runtime keys like `ELECTRON_*` and most
   `VSCODE_*`
 
-Superset v2 should follow the same shape:
+Rox v2 should follow the same shape:
 
 - shell-derived env is the base
-- Superset adds a small explicit public contract
-- Superset strips its own runtime env before PTY launch instead of inheriting it
+- Rox adds a small explicit public contract
+- Rox strips its own runtime env before PTY launch instead of inheriting it
   by default
 
 ## Refined v2 contract
@@ -160,7 +160,7 @@ Inject this stable terminal surface by default:
 
 ```sh
 TERM=xterm-256color
-TERM_PROGRAM=Superset
+TERM_PROGRAM=Rox
 TERM_PROGRAM_VERSION=<app version>
 COLORTERM=truecolor
 LANG=<utf8 locale>
@@ -169,7 +169,7 @@ PWD=<cwd>
 
 Notes:
 
-- keep `TERM=xterm-256color` unless Superset ships and maintains terminfo
+- keep `TERM=xterm-256color` unless Rox ships and maintains terminfo
 - `TERM_PROGRAM_VERSION` should come from the app/host-service version, not
   `npm_package_version`
 - `PWD` should reflect the resolved launch cwd
@@ -178,36 +178,36 @@ Notes:
   should come from the shell-derived base env rather than being redefined as
   part of the public contract
 
-### 4. Superset-specific metadata retained in v2
+### 4. Rox-specific metadata retained in v2
 
-We do want to keep a trimmed, explicit Superset contract for v2 notification
+We do want to keep a trimmed, explicit Rox contract for v2 notification
 and integration flows.
 
 Keep these explicit vars in v2:
 
 ```sh
-SUPERSET_TERMINAL_ID=<terminal id>
-SUPERSET_WORKSPACE_ID=<workspace id>
-SUPERSET_WORKSPACE_PATH=<worktree path>
-SUPERSET_ROOT_PATH=<repo root path, when available>
-SUPERSET_ENV=<development|production>
-SUPERSET_AGENT_HOOK_PORT=<desktop local agent hook server port>
-SUPERSET_AGENT_HOOK_VERSION=<agent hook protocol version>
+ROX_TERMINAL_ID=<terminal id>
+ROX_WORKSPACE_ID=<workspace id>
+ROX_WORKSPACE_PATH=<worktree path>
+ROX_ROOT_PATH=<repo root path, when available>
+ROX_ENV=<development|production>
+ROX_AGENT_HOOK_PORT=<desktop local agent hook server port>
+ROX_AGENT_HOOK_VERSION=<agent hook protocol version>
 ```
 
 Rename the old v1 vars as follows:
 
-- `SUPERSET_PANE_ID` -> `SUPERSET_TERMINAL_ID`
-- `SUPERSET_PORT` -> `SUPERSET_AGENT_HOOK_PORT`
-- `SUPERSET_HOOK_VERSION` -> `SUPERSET_AGENT_HOOK_VERSION`
+- `ROX_PANE_ID` -> `ROX_TERMINAL_ID`
+- `ROX_PORT` -> `ROX_AGENT_HOOK_PORT`
+- `ROX_HOOK_VERSION` -> `ROX_AGENT_HOOK_VERSION`
 
 Drop this key entirely in v2:
 
-- `SUPERSET_TAB_ID`
+- `ROX_TAB_ID`
 
-Do not use a blanket `SUPERSET_*` passthrough rule in v2.
+Do not use a blanket `ROX_*` passthrough rule in v2.
 
-The v2 Superset metadata surface should stay explicit and minimal.
+The v2 Rox metadata surface should stay explicit and minimal.
 
 ### 5. Shell behavior and integration
 
@@ -244,21 +244,21 @@ Supported shells for the first v2 implementation:
 - `fish`
 - `sh` and `ksh` as reduced-functionality login-shell fallbacks
 
-Unsupported shells should still launch natively, but without Superset-specific
+Unsupported shells should still launch natively, but without Rox-specific
 shell bootstrap beyond the base env contract.
 
 Per-shell integration design:
 
 - `zsh`
   - use wrapper startup through `ZDOTDIR`
-  - set `SUPERSET_ORIG_ZDOTDIR` and temporary `ZDOTDIR`
+  - set `ROX_ORIG_ZDOTDIR` and temporary `ZDOTDIR`
   - launch as a login shell
 - `bash`
-  - use the generated Superset rcfile when available
+  - use the generated Rox rcfile when available
   - launch with `--rcfile <path>`
 - `fish`
   - use `-l --init-command ...`
-  - prepend Superset bin dir idempotently after fish config loads
+  - prepend Rox bin dir idempotently after fish config loads
   - emit the shell-ready marker using fish-native event hooks
 - `sh` and `ksh`
   - launch as login shells
@@ -272,7 +272,7 @@ it should reuse the proven shell integration behavior and path conventions.
 - safe env filtering
 - shell wrapper bootstrap
 - theme hints like `COLORFGBG`
-- legacy Superset notification metadata
+- legacy Rox notification metadata
 
 That builder should remain v1-oriented.
 
@@ -285,7 +285,7 @@ Instead, v2 should have a separate shell launch config layer that produces:
 from:
 
 - resolved shell path
-- `SUPERSET_HOME_DIR`
+- `ROX_HOME_DIR`
 - wrapper file availability
 
 ### 7. Dynamic state
@@ -327,10 +327,10 @@ SQLite schema.
 
 Implication:
 
-- `SUPERSET_TERMINAL_ID`, `SUPERSET_WORKSPACE_ID`, and
-  `SUPERSET_WORKSPACE_PATH` are straightforward
-- `SUPERSET_ROOT_PATH` is straightforward with a join
-- `SUPERSET_WORKSPACE_NAME` should not be part of the first v2 PTY contract
+- `ROX_TERMINAL_ID`, `ROX_WORKSPACE_ID`, and
+  `ROX_WORKSPACE_PATH` are straightforward
+- `ROX_ROOT_PATH` is straightforward with a join
+- `ROX_WORKSPACE_NAME` should not be part of the first v2 PTY contract
 
 Do not invent a display name from `branch` or `id`.
 
@@ -402,20 +402,20 @@ Secondary follow-up targets:
    - `HOST_DB_PATH`
    - `HOST_MIGRATIONS_PATH`
    - `DESKTOP_VITE_PORT`
-   - `SUPERSET_HOME_DIR`
-   - `SUPERSET_AGENT_HOOK_PORT`
-   - `SUPERSET_AGENT_HOOK_VERSION`
+   - `ROX_HOME_DIR`
+   - `ROX_AGENT_HOOK_PORT`
+   - `ROX_AGENT_HOOK_VERSION`
    - `AUTH_TOKEN` only when present
    - `CLOUD_API_URL` only when present
 
    Source of each value:
 
    - `DESKTOP_VITE_PORT` comes from `shared/env.shared.ts`
-   - `SUPERSET_AGENT_HOOK_PORT` comes from
+   - `ROX_AGENT_HOOK_PORT` comes from
      `shared/env.shared.ts` as `DESKTOP_NOTIFICATIONS_PORT`
-   - `SUPERSET_AGENT_HOOK_VERSION` comes from the existing
+   - `ROX_AGENT_HOOK_VERSION` comes from the existing
      `HOOK_PROTOCOL_VERSION` constant for this change
-   - `SUPERSET_HOME_DIR` comes from the already-resolved desktop app env
+   - `ROX_HOME_DIR` comes from the already-resolved desktop app env
 
    Do not start from `...(process.env as Record<string, string>)`.
 
@@ -430,7 +430,7 @@ Secondary follow-up targets:
 
    - `resolveLaunchShell(baseEnv: Record<string, string>): string`
    - `normalizeUtf8Locale(baseEnv: Record<string, string>): string`
-   - `getSupersetShellPaths(supersetHomeDir: string): { BIN_DIR: string; ZSH_DIR: string; BASH_DIR: string }`
+   - `getRoxShellPaths(roxHomeDir: string): { BIN_DIR: string; ZSH_DIR: string; BASH_DIR: string }`
    - `getShellBootstrapEnv(params): Record<string, string>`
    - `getShellLaunchArgs(params): string[]`
    - `stripTerminalRuntimeEnv(baseEnv: Record<string, string>): Record<string, string>`
@@ -453,11 +453,11 @@ Secondary follow-up targets:
    - `zsh`
      - shell args: `["-l"]`
      - private bootstrap env:
-       - `SUPERSET_ORIG_ZDOTDIR = baseEnv.ZDOTDIR || baseEnv.HOME || homedir()`
-       - `ZDOTDIR = <SUPERSET_HOME_DIR>/zsh`
-     - only apply this bootstrap when `<SUPERSET_HOME_DIR>/zsh/.zshrc` exists
+       - `ROX_ORIG_ZDOTDIR = baseEnv.ZDOTDIR || baseEnv.HOME || homedir()`
+       - `ZDOTDIR = <ROX_HOME_DIR>/zsh`
+     - only apply this bootstrap when `<ROX_HOME_DIR>/zsh/.zshrc` exists
    - `bash`
-     - shell args: `["--rcfile", "<SUPERSET_HOME_DIR>/bash/rcfile"]`
+     - shell args: `["--rcfile", "<ROX_HOME_DIR>/bash/rcfile"]`
      - if the rcfile does not exist, fall back to `["-l"]`
      - no bootstrap env keys
    - `fish`
@@ -473,9 +473,9 @@ Secondary follow-up targets:
 
    Desktop remains responsible for creating:
 
-   - `<SUPERSET_HOME_DIR>/bin`
-   - `<SUPERSET_HOME_DIR>/zsh`
-   - `<SUPERSET_HOME_DIR>/bash`
+   - `<ROX_HOME_DIR>/bin`
+   - `<ROX_HOME_DIR>/zsh`
+   - `<ROX_HOME_DIR>/bash`
 
    Host-service is responsible for selecting shell args and bootstrap env.
 
@@ -521,15 +521,15 @@ Secondary follow-up targets:
    - `HOST_*`
    - `DESKTOP_*`
    - `DEVICE_*`
-   - non-kept `SUPERSET_*`
+   - non-kept `ROX_*`
 
-   Keep these explicit Superset support keys when present:
+   Keep these explicit Rox support keys when present:
 
-   - `SUPERSET_HOME_DIR`
-   - `SUPERSET_AGENT_HOOK_PORT`
-   - `SUPERSET_AGENT_HOOK_VERSION`
+   - `ROX_HOME_DIR`
+   - `ROX_AGENT_HOOK_PORT`
+   - `ROX_AGENT_HOOK_VERSION`
 
-   Do not preserve any other `SUPERSET_*` keys by prefix rule.
+   Do not preserve any other `ROX_*` keys by prefix rule.
 
 7. Make PTY env construction deterministic in `buildV2TerminalEnv(...)`.
 
@@ -539,20 +539,20 @@ Secondary follow-up targets:
    - merge private shell bootstrap env from `getShellBootstrapEnv(...)`
    - inject or override:
      - `TERM=xterm-256color`
-     - `TERM_PROGRAM=Superset`
+     - `TERM_PROGRAM=Rox`
      - `TERM_PROGRAM_VERSION=<HOST_SERVICE_VERSION>`
      - `COLORTERM=truecolor`
      - `LANG=<normalized utf8 locale>`
      - `PWD=<cwd>`
-     - `SUPERSET_TERMINAL_ID=<terminalId>`
-     - `SUPERSET_WORKSPACE_ID=<workspaceId>`
-     - `SUPERSET_WORKSPACE_PATH=<workspacePath>`
-     - `SUPERSET_ROOT_PATH=<rootPath or "">`
-     - `SUPERSET_ENV=<development|production>`
-     - `SUPERSET_AGENT_HOOK_PORT=<SUPERSET_AGENT_HOOK_PORT>`
-     - `SUPERSET_AGENT_HOOK_VERSION=<SUPERSET_AGENT_HOOK_VERSION>`
+     - `ROX_TERMINAL_ID=<terminalId>`
+     - `ROX_WORKSPACE_ID=<workspaceId>`
+     - `ROX_WORKSPACE_PATH=<workspacePath>`
+     - `ROX_ROOT_PATH=<rootPath or "">`
+     - `ROX_ENV=<development|production>`
+     - `ROX_AGENT_HOOK_PORT=<ROX_AGENT_HOOK_PORT>`
+     - `ROX_AGENT_HOOK_VERSION=<ROX_AGENT_HOOK_VERSION>`
 
-   `SUPERSET_WORKSPACE_NAME` is not part of the v2 PTY env.
+   `ROX_WORKSPACE_NAME` is not part of the v2 PTY env.
 
 8. Update `packages/host-service/src/terminal/terminal.ts`.
 
@@ -573,7 +573,7 @@ Secondary follow-up targets:
 9. Keep v1 and v2 separate.
 
    - do not make v2 call `apps/desktop/src/main/lib/terminal/env.ts`
-   - do not make v2 reuse blanket `SUPERSET_*` passthrough
+   - do not make v2 reuse blanket `ROX_*` passthrough
    - do not change v1 desktop terminal behavior in this change
 
 ## Acceptance criteria
@@ -584,19 +584,19 @@ Secondary follow-up targets:
 - v2 terminal creation fails closed when a real shell snapshot cannot be
   resolved
 - user-needed shell env still works for normal tools and version managers
-- zsh, bash, and fish launch with Superset shell integration behavior
-- v2 PTY env includes `TERM_PROGRAM=Superset`
-- v2 PTY env includes `SUPERSET_TERMINAL_ID`
-- v2 PTY env includes `SUPERSET_WORKSPACE_ID`
-- v2 PTY env includes `SUPERSET_WORKSPACE_PATH`
-- v2 PTY env includes `SUPERSET_ROOT_PATH` when it is derivable
-- v2 PTY env includes `SUPERSET_AGENT_HOOK_PORT`
-- v2 PTY env includes `SUPERSET_AGENT_HOOK_VERSION`
-- v2 PTY env does not include `SUPERSET_PANE_ID`
-- v2 PTY env does not include `SUPERSET_TAB_ID`
-- v2 PTY env does not include `SUPERSET_PORT`
-- v2 PTY env does not include `SUPERSET_HOOK_VERSION`
-- v2 PTY env does not require `SUPERSET_WORKSPACE_NAME`
+- zsh, bash, and fish launch with Rox shell integration behavior
+- v2 PTY env includes `TERM_PROGRAM=Rox`
+- v2 PTY env includes `ROX_TERMINAL_ID`
+- v2 PTY env includes `ROX_WORKSPACE_ID`
+- v2 PTY env includes `ROX_WORKSPACE_PATH`
+- v2 PTY env includes `ROX_ROOT_PATH` when it is derivable
+- v2 PTY env includes `ROX_AGENT_HOOK_PORT`
+- v2 PTY env includes `ROX_AGENT_HOOK_VERSION`
+- v2 PTY env does not include `ROX_PANE_ID`
+- v2 PTY env does not include `ROX_TAB_ID`
+- v2 PTY env does not include `ROX_PORT`
+- v2 PTY env does not include `ROX_HOOK_VERSION`
+- v2 PTY env does not require `ROX_WORKSPACE_NAME`
 - the v2 contract is defined in one place and documented
 
 ## Tests
@@ -620,15 +620,15 @@ Required test coverage:
   - dev-runner and Electron runtime vars do not reach PTY env:
     `npm_*`, `npm_config_*`, `ELECTRON_*`
   - removed legacy vars do not reach PTY env:
-    `SUPERSET_PANE_ID`, `SUPERSET_TAB_ID`, `SUPERSET_PORT`,
-    `SUPERSET_HOOK_VERSION`
+    `ROX_PANE_ID`, `ROX_TAB_ID`, `ROX_PORT`,
+    `ROX_HOOK_VERSION`
 
 - retained contract behavior
-  - the minimal v2 Superset metadata needed by real consumers is present:
-    `SUPERSET_TERMINAL_ID`, `SUPERSET_WORKSPACE_ID`,
-    `SUPERSET_WORKSPACE_PATH`, `SUPERSET_AGENT_HOOK_PORT`,
-    `SUPERSET_AGENT_HOOK_VERSION`
-  - `TERM_PROGRAM=Superset` and a UTF-8 locale are present
+  - the minimal v2 Rox metadata needed by real consumers is present:
+    `ROX_TERMINAL_ID`, `ROX_WORKSPACE_ID`,
+    `ROX_WORKSPACE_PATH`, `ROX_AGENT_HOOK_PORT`,
+    `ROX_AGENT_HOOK_VERSION`
+  - `TERM_PROGRAM=Rox` and a UTF-8 locale are present
 
 - shell launch behavior
   - zsh launch config applies wrapper bootstrap only when wrapper files exist
@@ -636,10 +636,10 @@ Required test coverage:
   - bash launch config uses rcfile when present and login-shell fallback when
     absent
   - fish launch config uses the expected init-command path and does not crash
-  - unsupported shells launch natively without Superset-specific bootstrap
+  - unsupported shells launch natively without Rox-specific bootstrap
 
 - workspace-derived metadata
-  - `SUPERSET_ROOT_PATH` is populated when project data is available
+  - `ROX_ROOT_PATH` is populated when project data is available
   - missing project/root metadata degrades to empty string rather than failure
 
 - one integration-level PTY spawn test
@@ -669,6 +669,6 @@ Recommended test location:
 - `packages/host-service/src/terminal/terminal.ts` currently only has
   `workspaceId` on websocket attach, so launch cwd remains the workspace
   worktree path for this change
-- `SUPERSET_WORKSPACE_NAME` is intentionally omitted from the first v2 PTY
+- `ROX_WORKSPACE_NAME` is intentionally omitted from the first v2 PTY
   contract because there is no clean host-service source for it and no concrete
   v2 runtime consumer requiring it

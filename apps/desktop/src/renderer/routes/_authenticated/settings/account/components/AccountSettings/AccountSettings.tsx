@@ -1,7 +1,7 @@
-import { Avatar } from "@superset/ui/atoms/Avatar";
-import { Button } from "@superset/ui/button";
-import { Input } from "@superset/ui/input";
-import { toast } from "@superset/ui/sonner";
+import { Avatar } from "@rox/ui/atoms/Avatar";
+import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { toast } from "@rox/ui/sonner";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useState } from "react";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
@@ -158,7 +158,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 					<div className={showProfile ? "pt-5" : undefined}>
 						<SettingRow
 							label="Sign out of this device"
-							hint="You'll need to sign in again to use Superset on this device."
+							hint="You'll need to sign in again to use Rox on this device."
 						>
 							<Button
 								variant="outline"

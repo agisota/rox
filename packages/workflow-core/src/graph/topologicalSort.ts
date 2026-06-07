@@ -1,4 +1,4 @@
-import type { SupersetWorkflowState } from "../types";
+import type { RoxWorkflowState } from "../types";
 
 export interface TopologicalSortOptions {
 	/** Restrict the sort to this set of block ids (e.g. enabled + reachable). */
@@ -9,7 +9,7 @@ export interface TopologicalSortOptions {
  * Build a source -> [targets] adjacency map limited to the given node set.
  */
 function buildAdjacency(
-	state: SupersetWorkflowState,
+	state: RoxWorkflowState,
 	nodeSet: Set<string>,
 ): Map<string, string[]> {
 	const adjacency = new Map<string, string[]>();
@@ -30,7 +30,7 @@ function buildAdjacency(
  * (no total order exists).
  */
 export function topologicalSort(
-	state: SupersetWorkflowState,
+	state: RoxWorkflowState,
 	options: TopologicalSortOptions = {},
 ): string[] | null {
 	const nodeSet = options.nodes ?? new Set(Object.keys(state.blocks));

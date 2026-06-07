@@ -4,7 +4,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
+} from "@rox/ui/select";
 import { HiOutlineComputerDesktop, HiOutlineServer } from "react-icons/hi2";
 
 export interface HostSelectOption {

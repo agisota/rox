@@ -1,15 +1,15 @@
 import {
 	type BranchPrefixMode,
 	sanitizeSegment,
-} from "@superset/shared/workspace-launch";
-import { Input } from "@superset/ui/input";
+} from "@rox/shared/workspace-launch";
+import { Input } from "@rox/ui/input";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
+} from "@rox/ui/select";
 import { useEffect, useState } from "react";
 import {
 	BRANCH_PREFIX_MODE_LABELS,

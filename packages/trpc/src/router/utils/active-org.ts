@@ -1,4 +1,4 @@
-import type { SelectSubscription } from "@superset/db/schema";
+import type { SelectSubscription } from "@rox/db/schema";
 import { TRPCError } from "@trpc/server";
 import type { TRPCContext } from "../../trpc";
 import {

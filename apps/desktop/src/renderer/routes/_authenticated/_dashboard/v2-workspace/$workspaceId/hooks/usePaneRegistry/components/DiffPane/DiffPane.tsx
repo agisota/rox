@@ -4,7 +4,7 @@ import type {
 	LineAnnotation,
 } from "@pierre/diffs";
 import { CodeView, type CodeViewHandle } from "@pierre/diffs/react";
-import type { RendererContext } from "@superset/panes";
+import type { RendererContext } from "@rox/panes";
 import { useCallback, useMemo, useRef } from "react";
 import type { DiffPaneData, PaneViewerData } from "../../../../types";
 import { type ChangesetFile, useChangeset } from "../../../useChangeset";

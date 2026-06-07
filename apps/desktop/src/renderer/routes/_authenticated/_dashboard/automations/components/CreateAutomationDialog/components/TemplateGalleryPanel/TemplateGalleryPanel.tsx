@@ -1,5 +1,5 @@
-import { Button } from "@superset/ui/button";
-import { DialogClose } from "@superset/ui/dialog";
+import { Button } from "@rox/ui/button";
+import { DialogClose } from "@rox/ui/dialog";
 import { LuArrowLeft, LuX } from "react-icons/lu";
 import {
 	AUTOMATION_TEMPLATE_CATEGORIES,

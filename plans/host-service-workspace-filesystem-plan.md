@@ -194,7 +194,7 @@ mobile.
 
 Package name:
 
-- `@superset/workspace-client`
+- `@rox/workspace-client`
 
 - consumer-facing workspace client surface
 - React-compatible hooks for filesystem state

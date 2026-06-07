@@ -1,4 +1,4 @@
-import { Label } from "@superset/ui/label";
+import { Label } from "@rox/ui/label";
 import type { ReactNode } from "react";
 
 interface SettingsRowProps {

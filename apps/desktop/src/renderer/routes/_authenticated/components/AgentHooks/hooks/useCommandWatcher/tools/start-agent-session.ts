@@ -2,7 +2,7 @@ import {
 	chatLaunchConfigSchema,
 	normalizeAgentLaunchRequest,
 	STARTABLE_AGENT_TYPES,
-} from "@superset/shared/agent-launch";
+} from "@rox/shared/agent-launch";
 import {
 	launchAgentSession,
 	queueAgentSessionLaunch,

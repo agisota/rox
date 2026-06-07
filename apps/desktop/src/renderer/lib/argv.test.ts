@@ -131,13 +131,13 @@ describe("parseLaunchCommandString / joinCommandArgsWithEnv", () => {
 		},
 		{
 			name: "quoted env values with spaces and literal dollar references",
-			input: "FOO='bar baz' CONFIG_PATH='$HOME/.config/superset' claude",
+			input: "FOO='bar baz' CONFIG_PATH='$HOME/.config/rox' claude",
 			expected: {
 				command: "claude",
 				args: [],
 				env: {
 					FOO: "bar baz",
-					CONFIG_PATH: "$HOME/.config/superset",
+					CONFIG_PATH: "$HOME/.config/rox",
 				},
 			},
 		},
@@ -221,7 +221,7 @@ describe("parseLaunchCommandString / joinCommandArgsWithEnv", () => {
 		const joined = joinCommandArgsWithEnv("claude", [], {
 			ANTHROPIC_AUTH_TOKEN: "abc def",
 			CUSTOM_VALUE: "it's secret",
-			CONFIG_PATH: "$HOME/.config/superset",
+			CONFIG_PATH: "$HOME/.config/rox",
 		});
 
 		expect(parseLaunchCommandString(joined)).toEqual({
@@ -230,7 +230,7 @@ describe("parseLaunchCommandString / joinCommandArgsWithEnv", () => {
 			env: {
 				ANTHROPIC_AUTH_TOKEN: "abc def",
 				CUSTOM_VALUE: "it's secret",
-				CONFIG_PATH: "$HOME/.config/superset",
+				CONFIG_PATH: "$HOME/.config/rox",
 			},
 		});
 	});

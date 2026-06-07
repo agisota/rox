@@ -5,7 +5,7 @@ import { Text } from "@/components/ui/text";
 import { signIn, signUp } from "@/lib/auth/client";
 
 const DEV_EMAIL = "admin@local.test";
-const DEV_PASSWORD = "supersetdev";
+const DEV_PASSWORD = "roxdev";
 const DEV_NAME = "Local Admin";
 
 export function DevSignInButton() {

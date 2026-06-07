@@ -1,11 +1,11 @@
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY } from "@rox/shared/constants";
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Community",
 	description:
-		"Join the Superset community to get help, share ideas, and stay up to date with the latest news and updates.",
+		"Join the Rox community to get help, share ideas, and stay up to date with the latest news and updates.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/community`,
 	},
@@ -48,7 +48,7 @@ const COMMUNITY_LINKS = [
 	},
 	{
 		name: "YOUTUBE",
-		href: "https://www.youtube.com/@superset-sh",
+		href: "https://www.youtube.com/@agisota",
 		cta: "SUBSCRIBE",
 		icon: (
 			<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
@@ -59,7 +59,7 @@ const COMMUNITY_LINKS = [
 	},
 	{
 		name: "LINKEDIN",
-		href: "https://www.linkedin.com/company/superset-sh",
+		href: "https://www.linkedin.com/company/agisota",
 		cta: "FOLLOW US",
 		icon: (
 			<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
@@ -104,9 +104,9 @@ export default async function CommunityPage() {
 						Community
 					</h1>
 					<p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-						Join the <span className="font-semibold italic">Superset</span>{" "}
-						community to get help, share ideas, and stay up to date with the
-						latest news and updates.
+						Join the <span className="font-semibold italic">Rox</span> community
+						to get help, share ideas, and stay up to date with the latest news
+						and updates.
 					</p>
 				</header>
 

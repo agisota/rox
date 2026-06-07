@@ -1,5 +1,5 @@
-import { Badge } from "@superset/ui/badge";
-import { ScrollArea } from "@superset/ui/scroll-area";
+import { Badge } from "@rox/ui/badge";
+import { ScrollArea } from "@rox/ui/scroll-area";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import type { TaskWithStatus } from "../../../components/TasksView/hooks/useTasksTable";
 import { AssigneeProperty } from "./components/AssigneeProperty";

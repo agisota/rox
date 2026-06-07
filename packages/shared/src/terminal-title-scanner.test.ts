@@ -164,8 +164,8 @@ describe("terminal title scanner", () => {
 
 describe("normalizeTerminalTitle", () => {
 	it("strips control characters and trims whitespace", () => {
-		expect(normalizeTerminalTitle(" \x00Superset\x1b Terminal\t ")).toBe(
-			"Superset Terminal",
+		expect(normalizeTerminalTitle(" \x00Rox\x1b Terminal\t ")).toBe(
+			"Rox Terminal",
 		);
 	});
 

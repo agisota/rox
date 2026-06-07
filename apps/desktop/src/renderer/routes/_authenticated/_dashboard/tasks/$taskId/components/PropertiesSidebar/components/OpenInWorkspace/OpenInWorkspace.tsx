@@ -1,21 +1,21 @@
-import type { AgentLaunchRequest } from "@superset/shared/agent-launch";
-import { buildTaskAgentLaunchRequest } from "@superset/shared/agent-launch-request";
+import type { AgentLaunchRequest } from "@rox/shared/agent-launch";
+import { buildTaskAgentLaunchRequest } from "@rox/shared/agent-launch-request";
 import {
 	type AgentDefinitionId,
 	getEnabledAgentConfigs,
 	getFallbackAgentId,
 	indexResolvedAgentConfigs,
-} from "@superset/shared/agent-settings";
-import { Button } from "@superset/ui/button";
+} from "@rox/shared/agent-settings";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
-import { Switch } from "@superset/ui/switch";
+} from "@rox/ui/dropdown-menu";
+import { Label } from "@rox/ui/label";
+import { toast } from "@rox/ui/sonner";
+import { Switch } from "@rox/ui/switch";
 import { useMemo } from "react";
 import { HiArrowRight, HiChevronDown } from "react-icons/hi2";
 import { AgentSelect } from "renderer/components/AgentSelect";

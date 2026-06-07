@@ -3,7 +3,7 @@ import { FileSearchIcon } from "lucide-react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getArgs, getResult } from "../../../../utils/tool-helpers";
 import { formatTaskDate, toStringArray } from "../../utils/taskToolCallHelpers";
-import { SupersetToolCall } from "../SupersetToolCall";
+import { RoxToolCall } from "../RoxToolCall";
 import { TaskItemDisplay } from "../TaskItemDisplay";
 
 interface GetTaskToolCallProps {
@@ -83,7 +83,7 @@ export function GetTaskToolCall({ part }: GetTaskToolCallProps) {
 	);
 
 	return (
-		<SupersetToolCall
+		<RoxToolCall
 			part={part}
 			toolName="Get task"
 			icon={FileSearchIcon}

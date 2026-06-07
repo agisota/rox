@@ -1,7 +1,7 @@
 name: Bump Homebrew Formula
 
-# Renders the superset.rb formula for a published CLI release and pushes it to
-# the superset-sh/homebrew-tap repository. Invoked as a reusable job from
+# Renders the rox.rb formula for a published CLI release and pushes it to
+# the agisota/homebrew-tap repository. Invoked as a reusable job from
 # release-cli.yml (needs: release) so the bump runs in the same workflow run as
 # the release. It is NOT driven by `release: published` because a release
 # auto-created by the workflow's GITHUB_TOKEN does not emit an event that can
@@ -53,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           for target in darwin-arm64 linux-x64 linux-arm64; do
-            url="https://github.com/superset-sh/superset/releases/download/${TAG}/superset-${target}.tar.gz"
+            url="https://github.com/agisota/set/releases/download/${TAG}/rox-${target}.tar.gz"
             echo "Fetching SHA for $url"
             tmp=$(mktemp)
             if ! curl -fsSL -o "$tmp" "$url"; then
@@ -69,7 +69,7 @@ jobs:
       - name: Checkout homebrew-tap
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
-          repository: superset-sh/homebrew-tap
+          repository: agisota/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
 
@@ -81,40 +81,40 @@ jobs:
           LINUX_ARM64_SHA: ${{ steps.shas.outputs.linux_arm64_sha }}
         run: |
           set -euo pipefail
-          python3 - <<'PYEOF' > homebrew-tap/Formula/superset.rb
+          python3 - <<'PYEOF' > homebrew-tap/Formula/rox.rb
           import os
-          template = '''class Superset < Formula
-            desc "CLI and host-service for Superset"
-            homepage "https://superset.sh"
+          template = '''class Rox < Formula
+            desc "CLI and host-service for Rox"
+            homepage "https://rox.one"
             version "{version}"
             license "MIT"
 
             on_macos do
               on_arm do
-                url "https://github.com/superset-sh/superset/releases/download/cli-v#{{version}}/superset-darwin-arm64.tar.gz"
+                url "https://github.com/agisota/set/releases/download/cli-v#{{version}}/rox-darwin-arm64.tar.gz"
                 sha256 "{darwin_arm64}"
               end
             end
 
             on_linux do
               on_intel do
-                url "https://github.com/superset-sh/superset/releases/download/cli-v#{{version}}/superset-linux-x64.tar.gz"
+                url "https://github.com/agisota/set/releases/download/cli-v#{{version}}/rox-linux-x64.tar.gz"
                 sha256 "{linux_x64}"
               end
               on_arm do
-                url "https://github.com/superset-sh/superset/releases/download/cli-v#{{version}}/superset-linux-arm64.tar.gz"
+                url "https://github.com/agisota/set/releases/download/cli-v#{{version}}/rox-linux-arm64.tar.gz"
                 sha256 "{linux_arm64}"
               end
             end
 
             def install
               libexec.install Dir["*"]
-              bin.install_symlink libexec/"bin/superset"
-              bin.install_symlink libexec/"bin/superset-host"
+              bin.install_symlink libexec/"bin/rox"
+              bin.install_symlink libexec/"bin/rox-host"
             end
 
             test do
-              assert_match "superset", shell_output("#{{bin}}/superset --version")
+              assert_match "rox", shell_output("#{{bin}}/rox --version")
             end
           end
           '''
@@ -134,12 +134,12 @@ jobs:
           cd homebrew-tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/superset.rb
+          git add Formula/rox.rb
           if git diff --cached --quiet; then
             echo "No changes to formula"
             exit 0
           fi
-          git commit -m "superset ${VERSION}"
+          git commit -m "rox ${VERSION}"
 
           # Retry once on non-fast-forward in case the remote moved between
           # checkout and push (shouldn't happen with the concurrency group,

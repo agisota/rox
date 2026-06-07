@@ -1,6 +1,6 @@
 import { BotIcon } from "lucide-react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
-import { SupersetToolCall } from "../SupersetToolCall";
+import { RoxToolCall } from "../RoxToolCall";
 
 interface StartAgentSessionToolCallProps {
 	part: ToolPart;
@@ -11,5 +11,5 @@ export function StartAgentSessionToolCall({
 	part,
 	toolName = "Start agent session",
 }: StartAgentSessionToolCallProps) {
-	return <SupersetToolCall part={part} toolName={toolName} icon={BotIcon} />;
+	return <RoxToolCall part={part} toolName={toolName} icon={BotIcon} />;
 }

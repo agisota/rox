@@ -8,9 +8,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	AlertDialogTrigger,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import { toast } from "@rox/ui/sonner";
 import { motion } from "framer-motion";
 import { GoGitBranch } from "react-icons/go";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -95,7 +95,7 @@ export function ExternalWorktreesBanner({ projectId }: { projectId: string }) {
 							<AlertDialogTitle>Import all worktrees</AlertDialogTitle>
 							<AlertDialogDescription>
 								This will import {importableWorktrees.length} existing worktree
-								{importableWorktrees.length === 1 ? "" : "s"} into Superset as
+								{importableWorktrees.length === 1 ? "" : "s"} into Rox as
 								workspaces. Each worktree on disk will be tracked and appear in
 								your sidebar. No files will be modified.
 							</AlertDialogDescription>

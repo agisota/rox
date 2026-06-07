@@ -5,13 +5,10 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
-import { toast } from "@superset/ui/sonner";
-import {
-	WorkspaceClientProvider,
-	workspaceTrpc,
-} from "@superset/workspace-client";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import { toast } from "@rox/ui/sonner";
+import { WorkspaceClientProvider, workspaceTrpc } from "@rox/workspace-client";
 import { useEffect, useState } from "react";
 import {
 	getHostServiceHeaders,
@@ -21,7 +18,7 @@ import { useLocalHostService } from "renderer/routes/_authenticated/providers/Lo
 
 const STATUS_REFETCH_MS = 5_000;
 const DISMISSED_FAILURE_STORAGE_KEY_PREFIX =
-	"superset.daemon-auto-update-failure.dismissed.";
+	"rox.daemon-auto-update-failure.dismissed.";
 
 function getDismissedFailureId(storageKey: string): string | null {
 	try {
@@ -136,7 +133,7 @@ function DaemonAutoUpdateFailureDialogInner({
 					<AlertDialogDescription asChild>
 						<div className="space-y-1.5 text-muted-foreground">
 							<span className="block">
-								Superset tried to update the terminal daemon without closing
+								Rox tried to update the terminal daemon without closing
 								sessions, but the handoff did not finish. Reason:
 							</span>
 							<span className="block cursor-text select-text rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] text-foreground">

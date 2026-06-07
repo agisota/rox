@@ -1,7 +1,7 @@
-import { BashTool } from "@superset/ui/ai-elements/bash-tool";
-import { FileDiffTool } from "@superset/ui/ai-elements/file-diff-tool";
-import { WebFetchTool } from "@superset/ui/ai-elements/web-fetch-tool";
-import { WebSearchTool } from "@superset/ui/ai-elements/web-search-tool";
+import { BashTool } from "@rox/ui/ai-elements/bash-tool";
+import { FileDiffTool } from "@rox/ui/ai-elements/file-diff-tool";
+import { WebFetchTool } from "@rox/ui/ai-elements/web-fetch-tool";
+import { WebSearchTool } from "@rox/ui/ai-elements/web-search-tool";
 import { getToolName } from "ai";
 import { FileIcon, FolderIcon, GlobeIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
@@ -37,10 +37,10 @@ import { ListTasksToolCall } from "./components/ListTasksToolCall";
 import { ListWorkspacesToolCall } from "./components/ListWorkspacesToolCall";
 import { LspInspectToolCall } from "./components/LspInspectToolCall";
 import { RequestSandboxAccessToolCall } from "./components/RequestSandboxAccessToolCall";
+import { RoxToolCall } from "./components/RoxToolCall";
 import { SkillToolCall } from "./components/SkillToolCall";
 import { StartAgentSessionToolCall } from "./components/StartAgentSessionToolCall";
 import { SubagentToolCall } from "./components/SubagentToolCall";
-import { SupersetToolCall } from "./components/SupersetToolCall";
 import { SwitchWorkspaceToolCall } from "./components/SwitchWorkspaceToolCall";
 import { TaskWriteToolCall } from "./components/TaskWriteToolCall";
 import { UpdateTaskToolCall } from "./components/UpdateTaskToolCall";
@@ -508,7 +508,7 @@ export function ToolCallBlock({
 		);
 	}
 
-	// --- Superset MCP tools ---
+	// --- Rox MCP tools ---
 	if (toolName === "create_task") {
 		return <CreateTaskToolCall part={part} />;
 	}
@@ -601,18 +601,12 @@ export function ToolCallBlock({
 	// --- Destructive workspace tools ---
 	if (toolName === "mastra_workspace_mkdir") {
 		return (
-			<SupersetToolCall
-				part={part}
-				toolName="Create directory"
-				icon={FolderIcon}
-			/>
+			<RoxToolCall part={part} toolName="Create directory" icon={FolderIcon} />
 		);
 	}
 
 	if (toolName === "mastra_workspace_delete") {
-		return (
-			<SupersetToolCall part={part} toolName="Delete path" icon={FileIcon} />
-		);
+		return <RoxToolCall part={part} toolName="Delete path" icon={FileIcon} />;
 	}
 
 	if (toolName === "request_access") {
@@ -635,11 +629,11 @@ export function ToolCallBlock({
 	}
 
 	if (toolName === "task_check") {
-		return <SupersetToolCall part={part} toolName="Update task status" />;
+		return <RoxToolCall part={part} toolName="Update task status" />;
 	}
 
 	if (toolName === "submit_plan") {
-		return <SupersetToolCall part={part} toolName="Submit plan" />;
+		return <RoxToolCall part={part} toolName="Submit plan" />;
 	}
 
 	if (toolName === "subagent") {

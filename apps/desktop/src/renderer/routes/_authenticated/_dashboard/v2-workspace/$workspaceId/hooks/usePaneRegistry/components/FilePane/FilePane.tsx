@@ -1,5 +1,5 @@
-import type { RendererContext } from "@superset/panes";
-import { alert } from "@superset/ui/atoms/Alert";
+import type { RendererContext } from "@rox/panes";
+import { alert } from "@rox/ui/atoms/Alert";
 import { useCallback, useEffect } from "react";
 import { getBaseName } from "renderer/lib/pathBasename";
 import { useSharedFileDocument } from "../../../../state/fileDocumentStore";

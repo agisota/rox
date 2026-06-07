@@ -6,9 +6,9 @@ import {
 	getImageExtensionFromMimeType,
 	parseBase64DataUrl,
 } from "shared/file-types";
-import { SUPERSET_HOME_DIR } from "./app-environment";
+import { ROX_HOME_DIR } from "./app-environment";
 
-export const PROJECT_ICONS_DIR = join(SUPERSET_HOME_DIR, "project-icons");
+export const PROJECT_ICONS_DIR = join(ROX_HOME_DIR, "project-icons");
 
 /** Max icon file size: 512KB */
 const MAX_ICON_SIZE = 512 * 1024;
@@ -54,7 +54,7 @@ function removeExistingIcon(projectId: string): void {
  * Returns the protocol URL for a project icon with a cache-busting query param.
  */
 export function getProjectIconProtocolUrl(projectId: string): string {
-	return `superset-icon://projects/${projectId}?v=${encodeURIComponent(randomUUID())}`;
+	return `rox-icon://projects/${projectId}?v=${encodeURIComponent(randomUUID())}`;
 }
 
 export function parseProjectIconDataUrl(dataUrl: string): {

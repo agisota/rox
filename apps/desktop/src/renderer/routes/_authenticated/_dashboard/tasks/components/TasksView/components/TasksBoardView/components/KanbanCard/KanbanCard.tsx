@@ -1,8 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Avatar } from "@superset/ui/atoms/Avatar";
-import { Badge } from "@superset/ui/badge";
-import { cn } from "@superset/ui/utils";
+import { Avatar } from "@rox/ui/atoms/Avatar";
+import { Badge } from "@rox/ui/badge";
+import { cn } from "@rox/ui/utils";
 import { format } from "date-fns";
 import { PriorityIcon } from "../../../../components/shared/PriorityIcon";
 import type { TaskWithStatus } from "../../../../hooks/useTasksData";

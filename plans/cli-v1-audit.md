@@ -106,7 +106,7 @@ Implemented in `packages/trpc/src/router/host/host.ts:list`. Joins
 ### CLI-2.2 — Cloud `workspace.list` (cross-device read) — ✅ fixed
 
 Implemented in `packages/trpc/src/router/v2-workspace/v2-workspace.ts:list`.
-Wired into `superset workspaces list`.
+Wired into `rox workspaces list`.
 
 CLI-2.2's previously-planned `create/delete` cloud routing wrappers were
 dropped — CLI talks to host service directly (loopback or relay).
@@ -187,7 +187,7 @@ one of `v2ProjectId/v2WorkspaceId`. Mutation: when only
   and `/oauth/consent` to silently bounce users to the app root after
   sign-in.
 - **Fix**: Middleware now stashes `{path, params}` in a short-lived
-  `superset_pending_auth_redirect` cookie, sends user to
+  `rox_pending_auth_redirect` cookie, sends user to
   `/sign-in?redirect=<path>`. Pages call `consumePendingAuthParams()`
   helper to recover params after sign-in.
 - **Status**: ✅ fixed. Helper at
@@ -208,11 +208,11 @@ manifest would show a stale name. Instead, `host status` now calls
 
 Rename / move work after backend lands. Mostly mechanical.
 
-### CLI-3.1 — Rename `~/superset/` → `~/.superset/` — ✅ fixed
+### CLI-3.1 — Rename `~/rox/` → `~/.rox/` — ✅ fixed
 
-### CLI-3.2 — Honor `SUPERSET_HOME_DIR` env var — ✅ fixed
+### CLI-3.2 — Honor `ROX_HOME_DIR` env var — ✅ fixed
 
-### CLI-3.3 — Drop `--api-url` flag, `apiUrl` config, `SUPERSET_API_URL` env — ✅ fixed
+### CLI-3.3 — Drop `--api-url` flag, `apiUrl` config, `ROX_API_URL` env — ✅ fixed
 
 `env.CLOUD_API_URL` (build-time constant) is now the sole source.
 `getApiUrl(config)` → `getApiUrl()`. `config.apiUrl` deleted.
@@ -222,7 +222,7 @@ Rename / move work after backend lands. Mostly mechanical.
 
 `--device` flags renamed to `--host` (automations create/update). Global
 `--device` option removed from `cli.config.ts`. `DeviceConfig`,
-`readDeviceConfig`, `ctx.deviceId` all removed. `SUPERSET_DEVICE` env var
+`readDeviceConfig`, `ctx.deviceId` all removed. `ROX_DEVICE` env var
 gone.
 
 ### CLI-3.5 — `auth check` → `auth status` — ✅ fixed
@@ -273,25 +273,25 @@ any future per-host CLI command.
 
 Gaps in the spec docs themselves. Need decisions before building.
 
-### CLI-5.1 — `superset update` mechanism — ✅ fixed
+### CLI-5.1 — `rox update` mechanism — ✅ fixed
 
-New `superset update` command at
+New `rox update` command at
 `packages/cli/src/commands/update/command.ts`:
 
 - Detects target (`darwin-arm64`, `linux-x64`).
 - Fetches latest `cli-v*` release from GitHub
-  (`/repos/superset-sh/superset/releases/latest`).
-- Downloads matching `superset-<target>.tar.gz` asset.
-- Extracts to a tempdir; verifies the new layout has `bin/superset`.
+  (`/repos/agisota/set/releases/latest`).
+- Downloads matching `rox-<target>.tar.gz` asset.
+- Extracts to a tempdir; verifies the new layout has `bin/rox`.
 - Atomic-replaces the install root: rename current → `.bak`, move new
   in, on failure roll back; on success delete `.bak`.
 - `--check` flag prints version comparison without installing.
 - `--force` re-installs even when on the latest version.
-- Refuses to run from a dev build (`SUPERSET_VERSION="0.0.0-dev"`).
-- Build-time `SUPERSET_VERSION` define added to cli.config.ts; exposed
+- Refuses to run from a dev build (`ROX_VERSION="0.0.0-dev"`).
+- Build-time `ROX_VERSION` define added to cli.config.ts; exposed
   via `env.VERSION`.
 - Install root is `dirname(dirname(process.execPath))` matching the
-  build-dist layout (`bin/superset`, `lib/`, `share/migrations/`).
+  build-dist layout (`bin/rox`, `lib/`, `share/migrations/`).
 
 Caveats explicitly out of scope: signature/checksum verification (covered
 by CLI-5.3 below), Homebrew-installed binaries (CLI-5.2 — those should
@@ -300,10 +300,10 @@ update via `brew upgrade`).
 ### CLI-5.2 — Distribution channels — design committed
 
 - **GitHub release tarballs**: ✅ canonical channel. `build-cli.yml`
-  produces them; `superset update` consumes them.
+  produces them; `rox update` consumes them.
 - **Homebrew**: ✅ secondary. `bump-homebrew.yml` already wired up; users
-  install via `brew install superset/tap/superset` and update via
-  `brew upgrade`. `superset update` on a brew-installed binary should
+  install via `brew install rox/tap/rox` and update via
+  `brew upgrade`. `rox update` on a brew-installed binary should
   detect that and tell the user to use brew (future CLI tweak).
 - **install.sh**: deferred. Not a v1 blocker — the GitHub release
   already provides direct-download tarballs; `curl | sh` wrapper is

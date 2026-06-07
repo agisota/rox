@@ -1,6 +1,6 @@
-import type { HostAgentConfig } from "@superset/host-service/settings";
-import type { TerminalPreset } from "@superset/local-db";
-import { cn } from "@superset/ui/utils";
+import type { HostAgentConfig } from "@rox/host-service/settings";
+import type { TerminalPreset } from "@rox/local-db";
+import { cn } from "@rox/ui/utils";
 import type { RefObject } from "react";
 import { PresetRow } from "../../../PresetRow";
 import type { PresetProjectOption } from "../../preset-project-options";

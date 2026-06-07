@@ -1,10 +1,10 @@
-# Superset Monorepo Guide
+# Rox Monorepo Guide
 
-You're running inside a Superset workspace — an isolated git-worktree copy of this repo. "Workspace" in any user message refers to this, not VS Code/editor workspaces.
+You're running inside a Rox workspace — an isolated git-worktree copy of this repo. "Workspace" in any user message refers to this, not VS Code/editor workspaces.
 
 ## Question Tool
 
-When you need to ask the user ANY question — including simple yes/no, confirmations, and clarifications — ALWAYS use the `ask_user` tool. Never ask questions in plain text. The Superset UI renders `ask_user` calls as an interactive overlay with clickable option buttons; plain-text questions will not be surfaced to the user in the same way.
+When you need to ask the user ANY question — including simple yes/no, confirmations, and clarifications — ALWAYS use the `ask_user` tool. Never ask questions in plain text. The Rox UI renders `ask_user` calls as an interactive overlay with clickable option buttons; plain-text questions will not be surfaced to the user in the same way.
 
 Guidelines for agents and developers working in this repository.
 
@@ -12,8 +12,8 @@ Guidelines for agents and developers working in this repository.
 
 Bun + Turbo monorepo with:
 - **Apps**:
-  - `apps/web` - Main web application (app.superset.sh)
-  - `apps/marketing` - Marketing site (superset.sh)
+  - `apps/web` - Main web application (app.rox.one)
+  - `apps/marketing` - Marketing site (rox.one)
   - `apps/admin` - Admin dashboard
   - `apps/api` - API backend
   - `apps/desktop` - Electron desktop application

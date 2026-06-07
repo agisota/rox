@@ -1,5 +1,5 @@
 import type { APIPromise } from "../core/api-promise";
-import { SupersetError } from "../core/error";
+import { RoxError } from "../core/error";
 import { APIResource } from "../core/resource";
 import type { RequestOptions } from "../internal/request-options";
 
@@ -10,14 +10,14 @@ import type { RequestOptions } from "../internal/request-options";
  * holds the metadata index — used here for listing and to look up which host
  * a workspace lives on so we can route delete calls to it.
  *
- * Mirrors the CLI's `superset workspaces …` commands.
+ * Mirrors the CLI's `rox workspaces …` commands.
  */
 export class Workspaces extends APIResource {
 	/**
 	 * List workspaces in the organization (cloud index). Optionally scope to a
 	 * single host.
 	 *
-	 * Mirrors `superset workspaces list`.
+	 * Mirrors `rox workspaces list`.
 	 */
 	list(
 		params?: WorkspaceListParams,
@@ -66,7 +66,7 @@ export class Workspaces extends APIResource {
 	 * orchestration and aren't safe to set directly. Pass `taskId: null` to
 	 * unlink the workspace from its current task.
 	 *
-	 * Mirrors `superset workspaces update`.
+	 * Mirrors `rox workspaces update`.
 	 */
 	update(
 		id: string,
@@ -85,7 +85,7 @@ export class Workspaces extends APIResource {
 	 * the cloud index) and routes the delete to that host's service through
 	 * the relay. Pass an explicit `hostId` to skip the lookup.
 	 *
-	 * Mirrors `superset workspaces delete`.
+	 * Mirrors `rox workspaces delete`.
 	 */
 	async delete(
 		id: string,
@@ -97,7 +97,7 @@ export class Workspaces extends APIResource {
 				"v2Workspace.getFromHost",
 				{ organizationId: this._requireOrgId(), id },
 			);
-			if (!cloud) throw new SupersetError(`Workspace not found: ${id}`);
+			if (!cloud) throw new RoxError(`Workspace not found: ${id}`);
 			hostId = cloud.hostId;
 		}
 		return this._client.hostMutation<WorkspaceDeleteResult>(
@@ -109,8 +109,8 @@ export class Workspaces extends APIResource {
 
 	private _requireOrgId(): string {
 		if (!this._client.organizationId) {
-			throw new SupersetError(
-				"organizationId is required. Set SUPERSET_ORGANIZATION_ID, or pass `organizationId` to the Superset constructor.",
+			throw new RoxError(
+				"organizationId is required. Set ROX_ORGANIZATION_ID, or pass `organizationId` to the Rox constructor.",
 			);
 		}
 		return this._client.organizationId;
@@ -168,7 +168,7 @@ export interface WorkspaceCreateParams {
 	pr?: number;
 	/** Branch to fork from when `branch` does not exist. Ignored with `pr`. */
 	baseBranch?: string;
-	/** Optional Superset task id to link to the new workspace. */
+	/** Optional Rox task id to link to the new workspace. */
 	taskId?: string;
 	/** Spawn one or more agents in the workspace immediately after creation. */
 	agents?: WorkspaceAgentLaunch[];
@@ -177,7 +177,7 @@ export interface WorkspaceCreateParams {
 }
 
 export interface WorkspaceAgentLaunch {
-	/** Agent preset id (e.g. `"claude"`, `"superset"`) or HostAgentConfig instance id. */
+	/** Agent preset id (e.g. `"claude"`, `"rox"`) or HostAgentConfig instance id. */
 	agent: string;
 	/** What to tell the agent. */
 	prompt: string;

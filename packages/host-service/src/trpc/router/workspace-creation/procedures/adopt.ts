@@ -1,4 +1,4 @@
-import { getHostId, getHostName } from "@superset/shared/host-info";
+import { getHostId, getHostName } from "@rox/shared/host-info";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure } from "../../../index";
 import { ensureMainWorkspace } from "../../project/utils/ensure-main-workspace";
@@ -12,7 +12,7 @@ import { requireLocalProject } from "../shared/local-project";
 import type { TerminalDescriptor } from "../shared/types";
 
 /**
- * Adopt a worktree that already exists on disk into a Superset workspace
+ * Adopt a worktree that already exists on disk into a Rox workspace
  * row. Currently the only caller is the v1→v2 migration, which passes
  * an explicit `worktreePath`. Branch-name-only callers (the v2 picker,
  * MCP, agent spawn) go through `workspaces.create`, which handles

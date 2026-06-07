@@ -2,9 +2,9 @@ import type {
 	AgentLifecycleEventType,
 	ClientMessage,
 	ServerMessage,
-} from "@superset/host-service/events";
-import type { AgentIdentity } from "@superset/shared/agent-identity";
-import type { FsWatchEvent } from "@superset/workspace-fs/host";
+} from "@rox/host-service/events";
+import type { AgentIdentity } from "@rox/shared/agent-identity";
+import type { FsWatchEvent } from "@rox/workspace-fs/host";
 import { primeRelayAffinity } from "./primeRelayAffinity";
 
 export type { AgentIdentity };
@@ -31,7 +31,7 @@ export interface GitChangedPayload {
 export interface AgentLifecyclePayload {
 	eventType: AgentLifecycleEventType;
 	terminalId: string;
-	// Absent when the hook ran without `SUPERSET_AGENT_ID` set.
+	// Absent when the hook ran without `ROX_AGENT_ID` set.
 	agent?: AgentIdentity;
 	occurredAt: number;
 }

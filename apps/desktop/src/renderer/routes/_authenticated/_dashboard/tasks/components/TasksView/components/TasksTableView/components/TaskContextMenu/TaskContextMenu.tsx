@@ -1,4 +1,4 @@
-import type { SelectTaskStatus } from "@superset/db/schema";
+import type { SelectTaskStatus } from "@rox/db/schema";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -8,7 +8,7 @@ import {
 	ContextMenuSubContent,
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
-} from "@superset/ui/context-menu";
+} from "@rox/ui/context-menu";
 import { useLiveQuery } from "@tanstack/react-db";
 import { type ReactNode, useMemo } from "react";
 import {

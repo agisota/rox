@@ -29,10 +29,10 @@ async function main(): Promise<void> {
 	// daemon takes time to come up or fails entirely.
 	startDaemonBootstrap(env.ORGANIZATION_ID);
 
-	const configTokenSource = env.SUPERSET_AUTH_CONFIG_PATH
+	const configTokenSource = env.ROX_AUTH_CONFIG_PATH
 		? new ConfigFileSessionTokenSource({
-				configPath: env.SUPERSET_AUTH_CONFIG_PATH,
-				apiUrl: env.SUPERSET_API_URL,
+				configPath: env.ROX_AUTH_CONFIG_PATH,
+				apiUrl: env.ROX_API_URL,
 			})
 		: null;
 	const authProvider = new JwtApiAuthProvider({
@@ -42,14 +42,14 @@ async function main(): Promise<void> {
 		onInvalidateCache: configTokenSource
 			? () => configTokenSource.invalidateCache()
 			: undefined,
-		apiUrl: env.SUPERSET_API_URL,
+		apiUrl: env.ROX_API_URL,
 	});
 
 	const { app, injectWebSocket, api } = createApp({
 		config: {
 			organizationId: env.ORGANIZATION_ID,
 			dbPath: env.HOST_DB_PATH,
-			cloudApiUrl: env.SUPERSET_API_URL,
+			cloudApiUrl: env.ROX_API_URL,
 			migrationsFolder: env.HOST_MIGRATIONS_FOLDER,
 			allowedOrigins: env.CORS_ORIGINS ?? [],
 		},

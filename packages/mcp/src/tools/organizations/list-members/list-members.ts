@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { db } from "@superset/db/client";
-import { members, users } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { members, users } from "@rox/db/schema";
 import { and, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { getMcpContext } from "../../utils";

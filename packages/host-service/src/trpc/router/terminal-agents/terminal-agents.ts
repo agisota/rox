@@ -1,7 +1,7 @@
 import {
 	type AgentDefinitionId,
 	BUILTIN_AGENT_IDS,
-} from "@superset/shared/agent-catalog";
+} from "@rox/shared/agent-catalog";
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { z } from "zod";

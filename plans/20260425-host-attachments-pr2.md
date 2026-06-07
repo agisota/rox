@@ -41,9 +41,9 @@ Storage is **per-org under `HOST_MANIFEST_DIR`**, matching where `host.db` lives
 <HOST_MANIFEST_DIR>/attachments/<attachmentId>/metadata.json
 ```
 
-`HOST_MANIFEST_DIR` is set per-org by the desktop coordinator (`host-service-coordinator.ts`) and contains the active org id. Standalone host-service runs fall back to `~/.superset/host/standalone/`.
+`HOST_MANIFEST_DIR` is set per-org by the desktop coordinator (`host-service-coordinator.ts`) and contains the active org id. Standalone host-service runs fall back to `~/.rox/host/standalone/`.
 
-Why per-org rather than `~/.superset/attachments/`:
+Why per-org rather than `~/.rox/attachments/`:
 
 - Same isolation boundary as `host.db`. One rule for "where does this org's data live?"
 - Clean GC when an org is removed: `rm -rf` of the org dir takes attachments with it. A shared root would leave orphans forever.

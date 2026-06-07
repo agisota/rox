@@ -4,7 +4,7 @@ import {
 	PlanDescription,
 	PlanHeader,
 	PlanTitle,
-} from "@superset/ui/ai-elements/plan";
+} from "@rox/ui/ai-elements/plan";
 
 interface PlanData {
 	title: string;

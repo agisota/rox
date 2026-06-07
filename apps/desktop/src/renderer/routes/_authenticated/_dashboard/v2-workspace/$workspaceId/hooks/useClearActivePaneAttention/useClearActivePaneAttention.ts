@@ -1,4 +1,4 @@
-import type { WorkspaceStore } from "@superset/panes";
+import type { WorkspaceStore } from "@rox/panes";
 import { useEffect } from "react";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import {

@@ -1,20 +1,20 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
+} from "@rox/ui/collapsible";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { Skeleton } from "@superset/ui/skeleton";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/ui/dropdown-menu";
+import { Skeleton } from "@rox/ui/skeleton";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
+import { workspaceTrpc } from "@rox/workspace-client";
 import {
 	CheckCheck,
 	ChevronDown,

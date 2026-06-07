@@ -1,4 +1,4 @@
-import { CommandEmpty, CommandGroup, CommandList } from "@superset/ui/command";
+import { CommandEmpty, CommandGroup, CommandList } from "@rox/ui/command";
 import { useCommandContext } from "../../core/ContextProvider";
 import type { Command } from "../../core/types";
 import { useActiveCommands } from "../../core/useActiveCommands";

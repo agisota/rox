@@ -1,15 +1,15 @@
 ---
 title: MCP Server
-description: Connect AI agents directly to Superset via MCP
+description: Connect AI agents directly to Rox via MCP
 ---
 
 <Callout type="info">
-This document covers **MCP v2**. The v1 server is deprecated but still available at `https://api.superset.sh/api/agent/mcp` for existing integrations.
+This document covers **MCP v2**. The v1 server is deprecated but still available at `https://api.rox.one/api/agent/mcp` for existing integrations.
 </Callout>
 
 ## Overview
 
-Superset provides an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI agents interact with your tasks, workspaces, and devices programmatically.
+Rox provides an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI agents interact with your tasks, workspaces, and devices programmatically.
 
 ## Capabilities
 
@@ -28,17 +28,17 @@ Superset provides an [MCP (Model Context Protocol)](https://modelcontextprotocol
 <Tabs items={["Claude Code", "Codex", "Gemini CLI", "Open Code", "Amp CLI"]}>
 <Tab value="Claude Code">
 ```bash title="terminal"
-claude mcp add superset --transport http https://api.superset.sh/api/v2/agent/mcp
+claude mcp add rox --transport http https://api.rox.one/api/v2/agent/mcp
 ```
 </Tab>
 <Tab value="Codex">
 ```bash title="terminal"
-codex mcp add superset --url https://api.superset.sh/api/v2/agent/mcp
+codex mcp add rox --url https://api.rox.one/api/v2/agent/mcp
 ```
 </Tab>
 <Tab value="Gemini CLI">
 ```bash title="terminal"
-gemini mcp add --transport http superset https://api.superset.sh/api/v2/agent/mcp
+gemini mcp add --transport http rox https://api.rox.one/api/v2/agent/mcp
 ```
 </Tab>
 <Tab value="Open Code">
@@ -53,13 +53,13 @@ opencode mcp add
 [2m│[0m  [36mCurrent project[0m
 [2m│[0m
 [2m◇[0m  Enter MCP server name
-[2m│[0m  [36msuperset[0m
+[2m│[0m  [36mrox[0m
 [2m│[0m
 [2m◇[0m  Select MCP server type
 [2m│[0m  [36mRemote[0m
 [2m│[0m
 [2m◇[0m  Enter MCP server URL
-[2m│[0m  [36mhttps://api.superset.sh/api/v2/agent/mcp[0m
+[2m│[0m  [36mhttps://api.rox.one/api/v2/agent/mcp[0m
 [2m│[0m
 [2m◇[0m  Does this server require OAuth authentication?
 [2m│[0m  [36mYes[0m
@@ -72,7 +72,7 @@ opencode mcp add
 </Tab>
 <Tab value="Amp CLI">
 ```bash title="terminal"
-amp mcp add --workspace superset https://api.superset.sh/api/v2/agent/mcp
+amp mcp add --workspace rox https://api.rox.one/api/v2/agent/mcp
 ```
 </Tab>
 </Tabs>
@@ -88,9 +88,9 @@ Add a `.mcp.json` to your project root. Claude Code auto-discovers this file and
 ```json title=".mcp.json"
 {
   "mcpServers": {
-    "superset": {
+    "rox": {
       "type": "http",
-      "url": "https://api.superset.sh/api/v2/agent/mcp"
+      "url": "https://api.rox.one/api/v2/agent/mcp"
     }
   }
 }
@@ -102,9 +102,9 @@ Add to your `claude_desktop_config.json`:
 ```json title="claude_desktop_config.json"
 {
   "mcpServers": {
-    "superset": {
+    "rox": {
       "type": "http",
-      "url": "https://api.superset.sh/api/v2/agent/mcp"
+      "url": "https://api.rox.one/api/v2/agent/mcp"
     }
   }
 }
@@ -116,8 +116,8 @@ Add to `.cursor/mcp.json` in your project root:
 ```json title=".cursor/mcp.json"
 {
   "mcpServers": {
-    "superset": {
-      "url": "https://api.superset.sh/api/v2/agent/mcp"
+    "rox": {
+      "url": "https://api.rox.one/api/v2/agent/mcp"
     }
   }
 }
@@ -127,8 +127,8 @@ Add to `.cursor/mcp.json` in your project root:
 Add to your `~/.codex/config.toml`:
 
 ```toml title="config.toml"
-[mcp_servers.superset]
-url = "https://api.superset.sh/api/v2/agent/mcp"
+[mcp_servers.rox]
+url = "https://api.rox.one/api/v2/agent/mcp"
 ```
 </Tab>
 <Tab value="Gemini CLI">
@@ -137,8 +137,8 @@ Add to your `.gemini/settings.json`:
 ```json title="settings.json"
 {
   "mcpServers": {
-    "superset": {
-      "httpUrl": "https://api.superset.sh/api/v2/agent/mcp"
+    "rox": {
+      "httpUrl": "https://api.rox.one/api/v2/agent/mcp"
     }
   }
 }
@@ -151,9 +151,9 @@ Add to your `opencode.json`:
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "superset": {
+    "rox": {
       "type": "remote",
-      "url": "https://api.superset.sh/api/v2/agent/mcp"
+      "url": "https://api.rox.one/api/v2/agent/mcp"
     }
   }
 }
@@ -165,8 +165,8 @@ Add to `.amp/settings.json` in your project root:
 ```json title=".amp/settings.json"
 {
   "amp.mcpServers": {
-    "superset": {
-      "url": "https://api.superset.sh/api/v2/agent/mcp"
+    "rox": {
+      "url": "https://api.rox.one/api/v2/agent/mcp"
     }
   }
 }
@@ -184,7 +184,7 @@ For headless environments, CI/CD pipelines, or scripts where browser-based OAuth
 
 **Generating an API key:**
 
-1. Open the Superset desktop app
+1. Open the Rox desktop app
 2. Go to **Settings > API Keys**
 3. Click **Create API Key**
 4. Copy the key (it starts with `sk_live_`)—you won't be able to see it again
@@ -202,9 +202,9 @@ MCP clients that support custom headers can use this directly. For Claude Code, 
 ```json
 {
   "mcpServers": {
-    "superset": {
+    "rox": {
       "type": "http",
-      "url": "https://api.superset.sh/api/v2/agent/mcp",
+      "url": "https://api.rox.one/api/v2/agent/mcp",
       "headers": {
         "Authorization": "Bearer sk_live_your_api_key_here"
       }

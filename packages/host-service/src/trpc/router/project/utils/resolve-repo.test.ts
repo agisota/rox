@@ -53,7 +53,7 @@ function eqRealpath(a: string, b: string): boolean {
 let workRoot: string;
 
 beforeEach(() => {
-	workRoot = mkdtempSync(join(tmpdir(), "superset-resolve-repo-"));
+	workRoot = mkdtempSync(join(tmpdir(), "rox-resolve-repo-"));
 });
 
 afterEach(() => {

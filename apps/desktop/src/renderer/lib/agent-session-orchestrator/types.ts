@@ -1,9 +1,9 @@
-import type { TerminalPreset } from "@superset/local-db";
+import type { TerminalPreset } from "@rox/local-db";
 import type {
 	AgentLaunchRequest,
 	AgentLaunchResult,
 	AgentLaunchSource,
-} from "@superset/shared/agent-launch";
+} from "@rox/shared/agent-launch";
 import type { ChatLaunchConfig } from "shared/tabs-types";
 
 export interface AgentLaunchPane {

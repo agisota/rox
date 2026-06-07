@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { boolean, CLIError, positional } from "@superset/cli-framework";
+import { boolean, CLIError, positional } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 
 function openUrl(url: string): Promise<void> {
@@ -21,7 +21,7 @@ function openUrl(url: string): Promise<void> {
 }
 
 export default command({
-	description: "Open a workspace in the Superset desktop app",
+	description: "Open a workspace in the Rox desktop app",
 	args: [positional("id").required().desc("Workspace ID")],
 	options: {
 		print: boolean().desc(
@@ -32,7 +32,7 @@ export default command({
 		const id = args.id as string;
 		const organizationId = ctx.config.organizationId;
 		if (!organizationId) {
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 		}
 
 		const workspace = await ctx.api.v2Workspace.getFromHost.query({
@@ -42,11 +42,11 @@ export default command({
 		if (!workspace) {
 			throw new CLIError(
 				`Workspace not found: ${id}`,
-				"List workspaces with: superset workspaces list",
+				"List workspaces with: rox workspaces list",
 			);
 		}
 
-		const url = `superset://v2-workspace/${workspace.id}`;
+		const url = `rox://v2-workspace/${workspace.id}`;
 
 		if (!options.print) {
 			try {
@@ -63,7 +63,7 @@ export default command({
 			data: { id: workspace.id, name: workspace.name, url },
 			message: options.print
 				? url
-				: `Opening "${workspace.name}" in Superset desktop`,
+				: `Opening "${workspace.name}" in Rox desktop`,
 		};
 	},
 });

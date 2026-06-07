@@ -8,7 +8,7 @@ const agentLaunchSchema = z.object({
 		.string()
 		.min(1)
 		.describe(
-			"Agent preset id (e.g. `claude`, `codex`, `superset`) or HostAgentConfig instance UUID.",
+			"Agent preset id (e.g. `claude`, `codex`, `rox`) or HostAgentConfig instance UUID.",
 		),
 	prompt: z.string().min(1).describe("Initial prompt the agent starts with."),
 	attachmentIds: z
@@ -56,7 +56,7 @@ export function register(server: McpServer): void {
 				.string()
 				.uuid()
 				.optional()
-				.describe("Optional Superset task id to link to the new workspace."),
+				.describe("Optional Rox task id to link to the new workspace."),
 			agents: z
 				.array(agentLaunchSchema)
 				.optional()

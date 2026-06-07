@@ -1,6 +1,6 @@
-import { COMPANY } from "@superset/shared/constants";
-import { Button } from "@superset/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { COMPANY } from "@rox/shared/constants";
+import { Button } from "@rox/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { HiArrowLeft } from "react-icons/hi2";
 import { LuCircleHelp } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";

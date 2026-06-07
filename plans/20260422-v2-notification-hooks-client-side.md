@@ -96,7 +96,7 @@ Important shipped pieces:
 - `packages/workspace-client/src/lib/eventBus.ts`
   - typed `agent:lifecycle` client event
 - `apps/desktop/src/main/lib/agent-setup/templates/notify-hook.template.sh`
-  - posts to `SUPERSET_HOST_AGENT_HOOK_URL`
+  - posts to `ROX_HOST_AGENT_HOOK_URL`
   - falls back to the v1 hook server on missing URL or non-2xx response
 - `apps/desktop/src/renderer/routes/_authenticated/components/V2NotificationController`
   - mounts one host notification subscriber per host-service URL
@@ -126,7 +126,7 @@ The correct design has five layers, each with a narrow responsibility.
 
 ```text
 agent runtime / shell hook
-  emits raw hook payload and stable Superset identifiers
+  emits raw hook payload and stable Rox identifiers
   |
   v
 host-service notification ingress
@@ -158,12 +158,12 @@ The hook script should stay intentionally dumb:
 
 - read the agent hook payload
 - extract known IDs and event type
-- POST JSON to `SUPERSET_HOST_AGENT_HOOK_URL`
+- POST JSON to `ROX_HOST_AGENT_HOOK_URL`
 - time out quickly
 - fall back to the v1 hook server only for v1 compatibility
 - never receive `HOST_SERVICE_SECRET` or any broad host credential
 
-The script can continue to be defensive because hooks run in user shells with inconsistent payloads. Long term, wrappers should pass the normalized Superset identifiers directly so the script does less text parsing.
+The script can continue to be defensive because hooks run in user shells with inconsistent payloads. Long term, wrappers should pass the normalized Rox identifiers directly so the script does less text parsing.
 
 Required v2 hook payload:
 
@@ -474,7 +474,7 @@ Integration tests:
 
 - shell hook POST -> host-service event bus -> client controller receives event.
 - remote/relay host URL uses the same event path.
-- v1 fallback still works when `SUPERSET_HOST_AGENT_HOOK_URL` is absent or non-2xx.
+- v1 fallback still works when `ROX_HOST_AGENT_HOOK_URL` is absent or non-2xx.
 
 Manual QA:
 

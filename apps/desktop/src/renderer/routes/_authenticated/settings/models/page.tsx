@@ -1,4 +1,4 @@
-import { ChatServiceProvider } from "@superset/chat/client";
+import { ChatServiceProvider } from "@rox/chat/client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";

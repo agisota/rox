@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { flexRender, type Table } from "@tanstack/react-table";
 import {
 	defaultRangeExtractor,

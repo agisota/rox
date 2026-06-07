@@ -3,8 +3,8 @@ import {
 	LINEAR_WEBHOOK_SIGNATURE_HEADER,
 	LinearWebhookClient,
 } from "@linear/sdk/webhooks";
-import { db } from "@superset/db/client";
-import type { SelectIntegrationConnection } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import type { SelectIntegrationConnection } from "@rox/db/schema";
 import {
 	integrationConnections,
 	members,
@@ -12,8 +12,8 @@ import {
 	tasks,
 	users,
 	webhookEvents,
-} from "@superset/db/schema";
-import { mapPriorityFromLinear } from "@superset/trpc/integrations/linear";
+} from "@rox/db/schema";
+import { mapPriorityFromLinear } from "@rox/trpc/integrations/linear";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { env } from "@/env";
 
@@ -82,7 +82,7 @@ async function processForConnection(
 	outcome: "processed" | "skipped" | "failed";
 	error?: string;
 }> {
-	// One webhookEvents row per (Linear event × Superset connection) so each
+	// One webhookEvents row per (Linear event × Rox connection) so each
 	// tenant's processing status is independently retryable.
 	const eventId = `${connection.id}-${payload.organizationId}-${payload.webhookTimestamp}`;
 

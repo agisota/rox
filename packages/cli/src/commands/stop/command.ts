@@ -1,4 +1,4 @@
-import { CLIError } from "@superset/cli-framework";
+import { CLIError } from "@rox/cli-framework";
 import { command } from "../../lib/command";
 import {
 	isProcessAlive,
@@ -11,7 +11,7 @@ export default command({
 	run: async ({ ctx }) => {
 		const organization = await ctx.api.user.myOrganization.query();
 		if (!organization)
-			throw new CLIError("No active organization", "Run: superset auth login");
+			throw new CLIError("No active organization", "Run: rox auth login");
 
 		const manifest = readManifest(organization.id);
 		if (!manifest) {

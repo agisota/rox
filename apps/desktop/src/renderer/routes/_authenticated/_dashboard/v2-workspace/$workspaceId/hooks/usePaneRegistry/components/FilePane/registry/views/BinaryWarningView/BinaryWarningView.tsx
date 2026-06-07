@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import type { ViewProps } from "../../types";
 
 export function BinaryWarningView({ filePath, onForceView }: ViewProps) {

@@ -3,7 +3,7 @@ import { WorkflowErrorCode, type WorkflowIssue } from "../errors";
 import { validateSkillInputMapping } from "../schema/validateSkillInputMapping";
 import type {
 	JsonSchema,
-	SupersetWorkflowState,
+	RoxWorkflowState,
 	WorkflowValidationResult,
 } from "../types";
 import { detectCycle } from "./detectCycles";
@@ -23,7 +23,7 @@ export interface ValidateGraphOptions {
 	isKnownBlockType?: (type: string) => boolean;
 }
 
-function isEnabled(state: SupersetWorkflowState, id: string): boolean {
+function isEnabled(state: RoxWorkflowState, id: string): boolean {
 	return state.blocks[id]?.enabled !== false;
 }
 
@@ -33,7 +33,7 @@ function isEnabled(state: SupersetWorkflowState, id: string): boolean {
  * returns a deterministic `executionPlan` when the graph is valid.
  */
 export function validateGraph(
-	state: SupersetWorkflowState,
+	state: RoxWorkflowState,
 	options: ValidateGraphOptions = {},
 ): WorkflowValidationResult {
 	const issues: WorkflowIssue[] = [];

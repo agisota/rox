@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpCircle, Monitor } from "lucide-react";
 
@@ -37,9 +37,8 @@ export function WorkspaceHostIncompatibleState({
 						Host needs an update
 					</h1>
 					<p className="select-text cursor-text text-[13px] leading-relaxed text-muted-foreground">
-						This workspace's host is on an older version of Superset than this
-						client supports. Update the Superset app on that device to
-						reconnect.
+						This workspace's host is on an older version of Rox than this client
+						supports. Update the Rox app on that device to reconnect.
 					</p>
 				</div>
 

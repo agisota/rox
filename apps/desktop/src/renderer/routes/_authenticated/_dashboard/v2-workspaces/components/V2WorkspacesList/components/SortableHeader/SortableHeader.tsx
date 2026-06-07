@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { LuChevronDown, LuChevronsUpDown, LuChevronUp } from "react-icons/lu";
 import type { SortDirection, SortField } from "../../types";
 

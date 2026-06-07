@@ -11,8 +11,8 @@ export default function SlackLinkedPage() {
 				<div className="flex flex-col items-center gap-2 text-center">
 					<h1 className="text-2xl font-semibold">Slack Account Linked</h1>
 					<p className="max-w-sm text-muted-foreground">
-						Your Slack account has been linked to Superset. You can close this
-						tab and return to Slack.
+						Your Slack account has been linked to Rox. You can close this tab
+						and return to Slack.
 					</p>
 				</div>
 				<Link

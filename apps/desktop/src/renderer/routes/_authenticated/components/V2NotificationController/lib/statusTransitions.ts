@@ -1,4 +1,4 @@
-import type { AgentLifecyclePayload } from "@superset/workspace-client";
+import type { AgentLifecyclePayload } from "@rox/workspace-client";
 import {
 	getV2NotificationSourceKey,
 	getV2TerminalNotificationSource,

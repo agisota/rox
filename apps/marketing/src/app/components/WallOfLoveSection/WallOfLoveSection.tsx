@@ -92,7 +92,7 @@ export function WallOfLoveSection() {
 			<div className="max-w-6xl mx-auto">
 				<div className="text-center mb-12">
 					<h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground">
-						What builders say about Superset
+						What builders say about Rox
 					</h2>
 				</div>
 

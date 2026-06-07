@@ -1,7 +1,7 @@
-import { Checkbox } from "@superset/ui/checkbox";
-import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { workspaceTrpc } from "@superset/workspace-client";
+import { Checkbox } from "@rox/ui/checkbox";
+import { toast } from "@rox/ui/sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { useCallback, useId, useMemo, useState } from "react";
 import { LuArrowUpRight, LuCheck, LuCopy, LuUndo2 } from "react-icons/lu";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";

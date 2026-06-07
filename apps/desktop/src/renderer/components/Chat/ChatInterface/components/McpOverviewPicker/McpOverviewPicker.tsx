@@ -6,7 +6,7 @@ import {
 	ModelSelectorInput,
 	ModelSelectorItem,
 	ModelSelectorList,
-} from "@superset/ui/ai-elements/model-selector";
+} from "@rox/ui/ai-elements/model-selector";
 import type { McpOverviewPayload, McpServerOverviewItem } from "../../types";
 
 interface McpOverviewPickerProps {

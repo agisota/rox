@@ -1,7 +1,7 @@
 import { LinearClient } from "@linear/sdk";
-import { db } from "@superset/db/client";
-import { integrationConnections } from "@superset/db/schema";
-import { withConnectionLock } from "@superset/db/utils";
+import { db } from "@rox/db/client";
+import { integrationConnections } from "@rox/db/schema";
+import { withConnectionLock } from "@rox/db/utils";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../../env";

@@ -1,6 +1,6 @@
-import type { SelectUser } from "@superset/db/schema";
-import { Avatar } from "@superset/ui/atoms/Avatar";
-import { Button } from "@superset/ui/button";
+import type { SelectUser } from "@rox/db/schema";
+import { Avatar } from "@rox/ui/atoms/Avatar";
+import { Button } from "@rox/ui/button";
 import {
 	Command,
 	CommandEmpty,
@@ -9,8 +9,8 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from "@superset/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
+} from "@rox/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HiCheck, HiChevronDown, HiOutlineUserCircle } from "react-icons/hi2";

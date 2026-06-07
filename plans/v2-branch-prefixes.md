@@ -25,9 +25,9 @@ host-local there too (per the product decision for this ticket).
 
 ## Changes
 
-1. **`@superset/shared/workspace-launch/branch.ts`** — export
+1. **`@rox/shared/workspace-launch/branch.ts`** — export
    `BRANCH_PREFIX_MODES` + `BranchPrefixMode` (host-service can't depend on
-   `@superset/local-db`). `resolveBranchPrefix` already lived here.
+   `@rox/local-db`). `resolveBranchPrefix` already lived here.
 2. **host-service DB** (`packages/host-service/src/db/schema.ts`) —
    `projects.branchPrefixMode` / `branchPrefixCustom` columns + a single-row
    `host_settings` table for the global default. New drizzle migration

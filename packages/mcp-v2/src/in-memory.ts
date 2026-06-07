@@ -1,8 +1,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { mintUserJwt } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import { members, users } from "@superset/db/schema";
+import { mintUserJwt } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import { members, users } from "@rox/db/schema";
 import { eq } from "drizzle-orm";
 import type { McpContext } from "./auth";
 import type { McpToolCallEmitter } from "./define-tool";
@@ -94,7 +94,7 @@ export async function createInMemoryMcpClient({
 	await server.connect(serverTransport);
 
 	const client = new Client({
-		name: "superset-v2-internal",
+		name: "rox-v2-internal",
 		version: "1.0.0",
 	});
 	await client.connect(clientTransport);

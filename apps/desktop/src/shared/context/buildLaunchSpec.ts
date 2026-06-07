@@ -1,5 +1,5 @@
-import { renderPromptTemplate } from "@superset/shared/agent-prompt-template";
-import type { ResolvedAgentConfig } from "@superset/shared/agent-settings";
+import { renderPromptTemplate } from "@rox/shared/agent-prompt-template";
+import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
 import type {
 	AgentLaunchSpec,
 	ContentPart,
@@ -191,13 +191,13 @@ function renderKindBlock(sections: ContextSection[]): string {
 function renderAttachmentsList(sections: ContextSection[]): string {
 	const refs: string[] = [];
 	for (const section of sectionsOfKind(sections, "attachment")) {
-		refs.push(`- .superset/attachments/${section.label}`);
+		refs.push(`- .rox/attachments/${section.label}`);
 	}
 	for (const section of sectionsOfKind(sections, "user-prompt")) {
 		for (const part of section.content) {
 			if (part.type === "text") continue;
 			const label = part.type === "file" ? part.filename : undefined;
-			refs.push(`- .superset/attachments/${label ?? "inline-attachment"}`);
+			refs.push(`- .rox/attachments/${label ?? "inline-attachment"}`);
 		}
 	}
 	if (refs.length === 0) return "";
@@ -205,7 +205,7 @@ function renderAttachmentsList(sections: ContextSection[]): string {
 		"# Attached files",
 		"",
 		"The user attached these files alongside the prompt. They've been",
-		"written into the worktree at `.superset/attachments/`. Read them",
+		"written into the worktree at `.rox/attachments/`. Read them",
 		"to understand the request — they're part of the task, not",
 		"optional reference.",
 		"",

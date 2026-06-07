@@ -1,10 +1,10 @@
-import { PromptInputButton } from "@superset/ui/ai-elements/prompt-input";
+import { PromptInputButton } from "@rox/ui/ai-elements/prompt-input";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import type { LucideIcon } from "lucide-react";
 import {
 	CheckIcon,

@@ -1,13 +1,13 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { InputGroup, InputGroupInput } from "@superset/ui/input-group";
-import { Label } from "@superset/ui/label";
+} from "@rox/ui/dialog";
+import { InputGroup, InputGroupInput } from "@rox/ui/input-group";
+import { Label } from "@rox/ui/label";
 
 interface AnthropicApiKeyDialogProps {
 	open: boolean;

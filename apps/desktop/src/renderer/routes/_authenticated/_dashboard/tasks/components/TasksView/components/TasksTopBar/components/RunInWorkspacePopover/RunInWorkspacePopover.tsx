@@ -1,23 +1,23 @@
-import type { AgentLaunchRequest } from "@superset/shared/agent-launch";
-import { buildTaskAgentLaunchRequest } from "@superset/shared/agent-launch-request";
+import type { AgentLaunchRequest } from "@rox/shared/agent-launch";
+import { buildTaskAgentLaunchRequest } from "@rox/shared/agent-launch-request";
 import {
 	type AgentDefinitionId,
 	getEnabledAgentConfigs,
 	getFallbackAgentId,
 	indexResolvedAgentConfigs,
-} from "@superset/shared/agent-settings";
-import { Button } from "@superset/ui/button";
+} from "@rox/shared/agent-settings";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { Label } from "@superset/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
-import { toast } from "@superset/ui/sonner";
-import { Spinner } from "@superset/ui/spinner";
-import { Switch } from "@superset/ui/switch";
+} from "@rox/ui/dropdown-menu";
+import { Label } from "@rox/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { toast } from "@rox/ui/sonner";
+import { Spinner } from "@rox/ui/spinner";
+import { Switch } from "@rox/ui/switch";
 import { ChevronDownIcon } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { HiCheck, HiMiniPlay, HiXMark } from "react-icons/hi2";

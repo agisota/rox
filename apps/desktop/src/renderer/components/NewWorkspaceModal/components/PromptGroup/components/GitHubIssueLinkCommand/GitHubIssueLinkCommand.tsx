@@ -1,4 +1,4 @@
-import { Checkbox } from "@superset/ui/checkbox";
+import { Checkbox } from "@rox/ui/checkbox";
 import {
 	Command,
 	CommandEmpty,
@@ -6,8 +6,8 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
-import { Popover, PopoverAnchor, PopoverContent } from "@superset/ui/popover";
+} from "@rox/ui/command";
+import { Popover, PopoverAnchor, PopoverContent } from "@rox/ui/popover";
 import Fuse from "fuse.js";
 import type React from "react";
 import type { RefObject } from "react";

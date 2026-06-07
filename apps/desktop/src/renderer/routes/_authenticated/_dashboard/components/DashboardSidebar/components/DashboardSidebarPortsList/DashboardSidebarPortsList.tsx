@@ -1,5 +1,5 @@
-import { COMPANY } from "@superset/shared/constants";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { COMPANY } from "@rox/shared/constants";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { LuChevronRight, LuCircleHelp, LuRadioTower } from "react-icons/lu";
 import { STROKE_WIDTH } from "renderer/screens/main/components/WorkspaceSidebar/constants";
 import { usePortsStore } from "renderer/stores";

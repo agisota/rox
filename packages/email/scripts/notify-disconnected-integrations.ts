@@ -1,39 +1,39 @@
 #!/usr/bin/env bun
 // One-shot notifier for the integration-connections dup-linkage migration.
 // Sends a per-user email summarizing which Linear/Slack workspaces were
-// disconnected from their Superset org because another org won the linkage.
+// disconnected from their Rox org because another org won the linkage.
 //
 // Run with NEXT_PUBLIC_MARKETING_URL forced to prod so logos/social icons
 // resolve when the recipient opens the email (local .env points at
 // localhost which is fine for dev preview but useless in a real inbox).
 //
 // Usage:
-//   NEXT_PUBLIC_MARKETING_URL=https://superset.sh bun run scripts/notify-disconnected-integrations.ts --dry-run
-//   NEXT_PUBLIC_MARKETING_URL=https://superset.sh bun run scripts/notify-disconnected-integrations.ts --test=satya@superset.sh
-//   NEXT_PUBLIC_MARKETING_URL=https://superset.sh bun run scripts/notify-disconnected-integrations.ts --send
+//   NEXT_PUBLIC_MARKETING_URL=https://rox.one bun run scripts/notify-disconnected-integrations.ts --dry-run
+//   NEXT_PUBLIC_MARKETING_URL=https://rox.one bun run scripts/notify-disconnected-integrations.ts --test=satya@rox.one
+//   NEXT_PUBLIC_MARKETING_URL=https://rox.one bun run scripts/notify-disconnected-integrations.ts --send
 
-if (process.env.NEXT_PUBLIC_MARKETING_URL !== "https://superset.sh") {
+if (process.env.NEXT_PUBLIC_MARKETING_URL !== "https://rox.one") {
 	console.error(
-		"Set NEXT_PUBLIC_MARKETING_URL=https://superset.sh before running so logos/socials in the email resolve.",
+		"Set NEXT_PUBLIC_MARKETING_URL=https://rox.one before running so logos/socials in the email resolve.",
 	);
 	process.exit(1);
 }
 
-import { db } from "@superset/db/client";
+import { db } from "@rox/db/client";
 import {
 	users as authUsers,
 	integrationConnections,
 	organizations,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import {
 	type DisconnectedConnection,
 	IntegrationDisconnectedEmail,
-} from "@superset/email/emails/integration-disconnected";
+} from "@rox/email/emails/integration-disconnected";
 import { aliasedTable, and, eq, isNull } from "drizzle-orm";
 import { Resend } from "resend";
 
-const FROM = "Superset <noreply@superset.sh>";
-const REPLY_TO = "founders@superset.sh";
+const FROM = "Rox <noreply@rox.one>";
+const REPLY_TO = "founders@rox.one";
 
 function parseArgs() {
 	const args = process.argv.slice(2);
@@ -43,7 +43,7 @@ function parseArgs() {
 	const testEmail = testArg
 		? testArg.includes("=")
 			? testArg.split("=")[1]
-			: "satya@superset.sh"
+			: "satya@rox.one"
 		: null;
 	if (!dryRun && !send && !testEmail) {
 		console.error("Pass one of: --dry-run, --test[=email], --send");
@@ -170,7 +170,7 @@ async function main() {
 			from: FROM,
 			to: testEmail,
 			replyTo: REPLY_TO,
-			subject: `[TEST] Your Superset integration was disconnected`,
+			subject: `[TEST] Your Rox integration was disconnected`,
 			react: IntegrationDisconnectedEmail({
 				recipientName: name,
 				connections,
@@ -192,7 +192,7 @@ async function main() {
 				from: FROM,
 				to: email,
 				replyTo: REPLY_TO,
-				subject: "Your Superset integration was disconnected",
+				subject: "Your Rox integration was disconnected",
 				react: IntegrationDisconnectedEmail({
 					recipientName: name,
 					connections,

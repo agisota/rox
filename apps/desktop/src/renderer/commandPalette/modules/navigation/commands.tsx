@@ -40,7 +40,7 @@ export const navigationProvider: CommandProvider = {
 				section: "navigation",
 				icon: BookOpenIcon,
 				run: () => {
-					window.open("https://docs.superset.sh", "_blank", "noreferrer");
+					window.open("https://docs.rox.one", "_blank", "noreferrer");
 				},
 			},
 		];

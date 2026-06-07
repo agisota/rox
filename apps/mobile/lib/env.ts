@@ -6,7 +6,7 @@ const envSchema = z.object({
 		.default("development"),
 	EXPO_PUBLIC_API_URL: z.url(),
 	EXPO_PUBLIC_WEB_URL: z.url().optional(),
-	EXPO_PUBLIC_DEEP_LINK_SCHEME: z.string().default("superset"),
+	EXPO_PUBLIC_DEEP_LINK_SCHEME: z.string().default("rox"),
 	EXPO_PUBLIC_DEEP_LINK_DOMAIN: z.string().optional(),
 	EXPO_PUBLIC_POSTHOG_KEY: z.string(),
 	EXPO_PUBLIC_POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),

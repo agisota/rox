@@ -28,7 +28,7 @@ describe("GitHub pull request REST queries", () => {
 				{
 					number: 42,
 					title: "Fix sidebar",
-					html_url: "https://github.com/superset-sh/superset/pull/42",
+					html_url: "https://github.com/agisota/set/pull/42",
 					state: "open",
 					draft: false,
 					merged_at: null,
@@ -37,13 +37,13 @@ describe("GitHub pull request REST queries", () => {
 						ref: "fix/sidebar",
 						sha: "abc123",
 						repo: {
-							name: "superset",
-							owner: { login: "superset-sh" },
+							name: "rox",
+							owner: { login: "agisota" },
 						},
 					},
 					base: {
 						repo: {
-							full_name: "superset-sh/superset",
+							full_name: "agisota/set",
 						},
 					},
 				},
@@ -52,21 +52,21 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestByHeadFromGh(
 			execGh,
-			{ owner: "superset-sh", name: "superset" },
-			{ owner: "superset-sh", repo: "superset", branch: "fix/sidebar" },
+			{ owner: "agisota", name: "rox" },
+			{ owner: "agisota", repo: "rox", branch: "fix/sidebar" },
 		);
 
 		expect(result).toEqual({
 			number: 42,
 			title: "Fix sidebar",
-			url: "https://github.com/superset-sh/superset/pull/42",
+			url: "https://github.com/agisota/set/pull/42",
 			state: "OPEN",
 			isDraft: false,
 			headRefName: "fix/sidebar",
 			headRefOid: "abc123",
 			isCrossRepository: false,
-			headRepositoryOwner: { login: "superset-sh" },
-			headRepository: { name: "superset" },
+			headRepositoryOwner: { login: "agisota" },
+			headRepository: { name: "rox" },
 			updatedAt: "2026-05-08T12:00:00Z",
 		});
 		expect(calls).toEqual([
@@ -75,11 +75,11 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/superset-sh/superset/pulls",
+					"repos/agisota/set/pulls",
 					"-f",
 					"state=all",
 					"-f",
-					"head=superset-sh:fix/sidebar",
+					"head=agisota:fix/sidebar",
 					"-f",
 					"sort=updated",
 					"-f",
@@ -97,7 +97,7 @@ describe("GitHub pull request REST queries", () => {
 				{
 					number: 41,
 					title: "Wrong fork",
-					html_url: "https://github.com/superset-sh/superset/pull/41",
+					html_url: "https://github.com/agisota/set/pull/41",
 					state: "open",
 					draft: false,
 					merged_at: null,
@@ -112,14 +112,14 @@ describe("GitHub pull request REST queries", () => {
 					},
 					base: {
 						repo: {
-							full_name: "superset-sh/superset",
+							full_name: "agisota/set",
 						},
 					},
 				},
 				{
 					number: 42,
 					title: "Right fork",
-					html_url: "https://github.com/superset-sh/superset/pull/42",
+					html_url: "https://github.com/agisota/set/pull/42",
 					state: "open",
 					draft: false,
 					merged_at: null,
@@ -134,7 +134,7 @@ describe("GitHub pull request REST queries", () => {
 					},
 					base: {
 						repo: {
-							full_name: "superset-sh/superset",
+							full_name: "agisota/set",
 						},
 					},
 				},
@@ -143,7 +143,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestByHeadFromGh(
 			execGh,
-			{ owner: "superset-sh", name: "superset" },
+			{ owner: "agisota", name: "rox" },
 			{ owner: "fork-owner", repo: "fork-repo", branch: "fix/sidebar" },
 		);
 
@@ -170,7 +170,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestReviewDecisionFromGh(
 			execGh,
-			{ owner: "superset-sh", name: "superset" },
+			{ owner: "agisota", name: "rox" },
 			42,
 			"OPEN",
 		);
@@ -182,7 +182,7 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/superset-sh/superset/pulls/42/reviews",
+					"repos/agisota/set/pulls/42/reviews",
 					"-f",
 					"per_page=100",
 				],
@@ -195,7 +195,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestReviewDecisionFromGh(
 			execGh,
-			{ owner: "superset-sh", name: "superset" },
+			{ owner: "agisota", name: "rox" },
 			42,
 			"OPEN",
 		);
@@ -210,7 +210,7 @@ describe("GitHub pull request REST queries", () => {
 					{
 						name: "Typecheck",
 						conclusion: "success",
-						details_url: "https://github.com/superset-sh/superset/actions/1",
+						details_url: "https://github.com/agisota/set/actions/1",
 						status: "completed",
 						started_at: "2026-05-08T12:00:00Z",
 						completed_at: "2026-05-08T12:03:00Z",
@@ -229,7 +229,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestChecksFromGh(
 			execGh,
-			{ owner: "superset-sh", name: "superset" },
+			{ owner: "agisota", name: "rox" },
 			"abc123",
 		);
 
@@ -238,7 +238,7 @@ describe("GitHub pull request REST queries", () => {
 				__typename: "CheckRun",
 				name: "Typecheck",
 				conclusion: "SUCCESS",
-				detailsUrl: "https://github.com/superset-sh/superset/actions/1",
+				detailsUrl: "https://github.com/agisota/set/actions/1",
 				status: "COMPLETED",
 				startedAt: "2026-05-08T12:00:00Z",
 				completedAt: "2026-05-08T12:03:00Z",
@@ -258,7 +258,7 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/superset-sh/superset/commits/abc123/check-runs",
+					"repos/agisota/set/commits/abc123/check-runs",
 					"-f",
 					"per_page=100",
 				],
@@ -268,7 +268,7 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/superset-sh/superset/commits/abc123/statuses",
+					"repos/agisota/set/commits/abc123/statuses",
 					"-f",
 					"per_page=100",
 				],

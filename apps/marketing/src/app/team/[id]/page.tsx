@@ -1,4 +1,4 @@
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY } from "@rox/shared/constants";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -300,7 +300,7 @@ export async function generateMetadata({
 	const url = `${COMPANY.MARKETING_URL}/team/${id}`;
 	const description = person.bio
 		? getTeamBioText(person.bio)
-		: `${person.name}, ${person.role} at Superset`;
+		: `${person.name}, ${person.role} at Rox`;
 
 	return {
 		title: `${person.name} — ${person.role}`,
@@ -309,7 +309,7 @@ export async function generateMetadata({
 			canonical: url,
 		},
 		openGraph: {
-			title: `${person.name} — ${person.role} at Superset`,
+			title: `${person.name} — ${person.role} at Rox`,
 			description,
 			type: "profile",
 			url,
@@ -320,7 +320,7 @@ export async function generateMetadata({
 		},
 		twitter: {
 			card: "summary",
-			title: `${person.name} — ${person.role} at Superset`,
+			title: `${person.name} — ${person.role} at Rox`,
 			description,
 			...(person.avatar && {
 				images: [`${COMPANY.MARKETING_URL}${person.avatar}`],

@@ -1,12 +1,12 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useNavigate } from "@tanstack/react-router";
 import { LuFolderGit, LuFolderOpen, LuFolderPlus } from "react-icons/lu";
 import { useOpenProject } from "renderer/react-query/projects";

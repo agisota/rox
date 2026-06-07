@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { validateGraph } from "@superset/workflow-core";
+import { validateGraph } from "@rox/workflow-core";
 import {
 	importSimWorkflowState,
 	UNSUPPORTED_BLOCK_TYPE,
@@ -33,7 +33,7 @@ describe("importSimWorkflowState", () => {
 		expect(state.parallels.p1?.nodes).toEqual(["c", "r"]);
 		expect(state.variables.topic?.type).toBe("string");
 		expect(state.metadata.name).toBe("My Sim flow");
-		// The converted graph is valid Superset.
+		// The converted graph is valid Rox.
 		expect(validateGraph(state).valid).toBe(true);
 	});
 

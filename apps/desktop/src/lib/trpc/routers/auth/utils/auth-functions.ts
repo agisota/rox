@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import fs from "node:fs/promises";
 import { join } from "node:path";
-import { SUPERSET_HOME_DIR } from "main/lib/app-environment";
+import { ROX_HOME_DIR } from "main/lib/app-environment";
 import { PROTOCOL_SCHEME } from "shared/constants";
 import { decrypt, encrypt } from "./crypto-storage";
 
@@ -10,7 +10,7 @@ interface StoredAuth {
 	expiresAt: string;
 }
 
-export const TOKEN_FILE = join(SUPERSET_HOME_DIR, "auth-token.enc");
+export const TOKEN_FILE = join(ROX_HOME_DIR, "auth-token.enc");
 export const stateStore = new Map<string, number>();
 
 /**

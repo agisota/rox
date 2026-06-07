@@ -5,7 +5,7 @@ import { env } from "shared/env.shared";
 import {
 	buildWrapperScript,
 	createWrapper,
-	isSupersetManagedHookCommand,
+	isRoxManagedHookCommand,
 	reconcileManagedEntries,
 	writeFileIfChanged,
 } from "./agent-wrappers-common";
@@ -13,7 +13,7 @@ import { HOOKS_DIR } from "./paths";
 
 export const GEMINI_HOOK_SCRIPT_NAME = "gemini-hook.sh";
 
-const GEMINI_HOOK_SIGNATURE = "# Superset gemini hook";
+const GEMINI_HOOK_SIGNATURE = "# Rox gemini hook";
 const GEMINI_HOOK_VERSION = "v3";
 export const GEMINI_HOOK_MARKER = `${GEMINI_HOOK_SIGNATURE} ${GEMINI_HOOK_VERSION}`;
 
@@ -101,18 +101,12 @@ export function getGeminiSettingsJsonContent(hookScriptPath: string): string {
 			current,
 			desired: desiredEntries,
 			isManaged: (definition: GeminiHookDefinition) =>
-				isSupersetManagedHookCommand(
-					definition.command,
-					GEMINI_HOOK_SCRIPT_NAME,
-				) ||
+				isRoxManagedHookCommand(definition.command, GEMINI_HOOK_SCRIPT_NAME) ||
 				Boolean(
 					definition.hooks?.some(
 						(hook) =>
 							hook.command?.includes(hookScriptPath) ||
-							isSupersetManagedHookCommand(
-								hook.command,
-								GEMINI_HOOK_SCRIPT_NAME,
-							),
+							isRoxManagedHookCommand(hook.command, GEMINI_HOOK_SCRIPT_NAME),
 					),
 				),
 			isEquivalent: (

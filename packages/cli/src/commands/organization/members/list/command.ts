@@ -1,4 +1,4 @@
-import { number, string, table } from "@superset/cli-framework";
+import { number, string, table } from "@rox/cli-framework";
 import { command } from "../../../../lib/command";
 
 export default command({

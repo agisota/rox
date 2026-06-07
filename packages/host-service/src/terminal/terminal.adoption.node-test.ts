@@ -20,7 +20,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { after, before, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { Server } from "@superset/pty-daemon";
+import { Server } from "@rox/pty-daemon";
 import { eq } from "drizzle-orm";
 import { createDb, type HostDb } from "../db/index.ts";
 import { projects, terminalSessions, workspaces } from "../db/schema.ts";
@@ -63,8 +63,8 @@ before(async () => {
 	});
 	await server.listen();
 
-	process.env.SUPERSET_PTY_DAEMON_SOCKET = SOCK;
-	process.env.SUPERSET_HOME_DIR = TEST_HOME;
+	process.env.ROX_PTY_DAEMON_SOCKET = SOCK;
+	process.env.ROX_HOME_DIR = TEST_HOME;
 	process.env.HOST_SERVICE_VERSION = "0.0.0-adoption-e2e";
 	process.env.NODE_ENV = "development";
 
@@ -170,7 +170,7 @@ describe("createTerminalSessionInternal — host-service restart adoption", () =
 
 	test("initialCommand runs promptly even when OSC 133;A never fires", async () => {
 		// Regression guard against reintroducing the SHELL_READY_TIMEOUT_MS
-		// stall: bash with no Superset wrapper on disk never emits OSC 133;A,
+		// stall: bash with no Rox wrapper on disk never emits OSC 133;A,
 		// but the preset command should still run as soon as the shell reads.
 		__setAccountShellForTesting("/bin/bash");
 		try {

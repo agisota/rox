@@ -1,5 +1,5 @@
-import type { workspaceTrpc } from "@superset/workspace-client";
-import type { FsWatchEvent } from "@superset/workspace-fs/client";
+import type { workspaceTrpc } from "@rox/workspace-client";
+import type { FsWatchEvent } from "@rox/workspace-fs/client";
 import { isImageFile } from "shared/file-types";
 import type {
 	ConflictResolution,

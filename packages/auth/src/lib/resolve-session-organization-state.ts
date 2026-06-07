@@ -1,7 +1,7 @@
-import { db } from "@superset/db/client";
-import { members } from "@superset/db/schema";
-import type { SelectMember } from "@superset/db/schema/auth";
-import * as authSchema from "@superset/db/schema/auth";
+import { db } from "@rox/db/client";
+import { members } from "@rox/db/schema";
+import type { SelectMember } from "@rox/db/schema/auth";
+import * as authSchema from "@rox/db/schema/auth";
 import { and, desc, eq, sql } from "drizzle-orm";
 
 export type SessionOrganizationContext = {

@@ -1,4 +1,4 @@
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 import { useCallback } from "react";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import type { LinkTierMap } from "renderer/lib/clickPolicy";

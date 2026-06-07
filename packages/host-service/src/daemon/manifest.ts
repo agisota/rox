@@ -1,5 +1,5 @@
 // Manifest for a running pty-daemon instance. Lives under
-// $SUPERSET_HOME_DIR/host/{organizationId}/. Different lifecycle from
+// $ROX_HOME_DIR/host/{organizationId}/. Different lifecycle from
 // host-service's own manifest — the daemon outlives host-service restarts.
 
 import {
@@ -30,12 +30,12 @@ export interface PtyDaemonManifest {
 	handoffSuccessorPid?: number;
 }
 
-function supersetHomeDir(): string {
-	return process.env.SUPERSET_HOME_DIR || join(homedir(), ".superset");
+function roxHomeDir(): string {
+	return process.env.ROX_HOME_DIR || join(homedir(), ".rox");
 }
 
 export function ptyDaemonManifestDir(organizationId: string): string {
-	return join(supersetHomeDir(), "host", organizationId);
+	return join(roxHomeDir(), "host", organizationId);
 }
 
 function ptyDaemonManifestPath(organizationId: string): string {
@@ -99,7 +99,7 @@ export function readPtyDaemonManifest(
 }
 
 export function listPtyDaemonManifests(): PtyDaemonManifest[] {
-	const hostDir = join(supersetHomeDir(), "host");
+	const hostDir = join(roxHomeDir(), "host");
 	if (!existsSync(hostDir)) return [];
 	const manifests: PtyDaemonManifest[] = [];
 	try {

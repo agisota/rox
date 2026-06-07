@@ -1,6 +1,6 @@
 # Mobile App Structure Comparison
 
-This document compares the organizational patterns between the Cadra mobile app (reference monorepo) and the Superset mobile app to understand best practices for Expo Router + screens/ colocation.
+This document compares the organizational patterns between the Cadra mobile app (reference monorepo) and the Rox mobile app to understand best practices for Expo Router + screens/ colocation.
 
 ## Overview
 
@@ -64,7 +64,7 @@ apps/mobile/
 │   └── globals.css
 ```
 
-### Superset (Current Implementation)
+### Rox (Current Implementation)
 ```
 apps/mobile/
 ├── app/                             # Expo Router - RE-EXPORTS ONLY
@@ -95,7 +95,7 @@ apps/mobile/
 
 ## Key Differences
 
-| Aspect | Cadra Pattern | Superset Pattern |
+| Aspect | Cadra Pattern | Rox Pattern |
 |--------|---------------|------------------|
 | **Source Root** | `src/` directory | No `src/`, directly in `apps/mobile/` |
 | **Routing Logic** | Stays in `app/` (_layout.tsx, redirects) | Moves to `screens/`, `app/` just re-exports |
@@ -118,7 +118,7 @@ import { NewChatScreen } from '@/screens/(tabs)/chat/new';
 export default NewChatScreen;
 ```
 
-**Superset:**
+**Rox:**
 ```tsx
 // app/(auth)/sign-in.tsx
 export { default } from "@/screens/(auth)/sign-in";
@@ -157,7 +157,7 @@ export default function RootLayout() {
 }
 ```
 
-**Superset:**
+**Rox:**
 ```tsx
 // app/_layout.tsx - RE-EXPORTS FROM SCREENS/
 export { default } from "@/screens/RootLayout";
@@ -169,7 +169,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // ... implementation
 ```
 
-⚠️ **Key Difference:** Cadra keeps root layout in `app/`, Superset moves it to `screens/`
+⚠️ **Key Difference:** Cadra keeps root layout in `app/`, Rox moves it to `screens/`
 
 ---
 
@@ -196,7 +196,7 @@ export default function RootIndex() {
 }
 ```
 
-**Superset:**
+**Rox:**
 ```tsx
 // app/index.tsx - RE-EXPORTS FROM SCREENS/
 export { default } from "@/screens/index";
@@ -221,7 +221,7 @@ export default function HomeScreen() {
 }
 ```
 
-⚠️ **Key Difference:** Cadra keeps redirect-only routes in `app/`, Superset moves them to `screens/`
+⚠️ **Key Difference:** Cadra keeps redirect-only routes in `app/`, Rox moves them to `screens/`
 
 ---
 
@@ -261,9 +261,9 @@ export default function Layout() {
 }
 ```
 
-**Superset:**
+**Rox:**
 ```tsx
-// If we had tabs, following Superset pattern:
+// If we had tabs, following Rox pattern:
 // app/(tabs)/_layout.tsx - RE-EXPORTS FROM SCREENS/
 export { default } from "@/screens/(tabs)/TabsLayout";
 
@@ -272,13 +272,13 @@ import { Tabs } from 'expo-router';
 // ... implementation in screens/
 ```
 
-⚠️ **Key Difference:** Cadra keeps `_layout.tsx` in `app/` for navigation config, Superset would move to `screens/`
+⚠️ **Key Difference:** Cadra keeps `_layout.tsx` in `app/` for navigation config, Rox would move to `screens/`
 
 ---
 
 ### Pattern 5: Component Colocation
 
-**Both Cadra & Superset use the SAME pattern:**
+**Both Cadra & Rox use the SAME pattern:**
 
 ```
 screens/SomeScreen/
@@ -308,7 +308,7 @@ screens/SomeScreen/
 2. **Easier to understand Expo Router flow**: Navigation config lives where Expo expects it
 3. **Less magic**: No need to trace re-exports to find actual layout implementation
 
-### What Superset Does Better
+### What Rox Does Better
 1. **More consistent**: Everything related to a screen lives in `screens/`
 2. **Better colocation**: Even root layout can have colocated utilities/components
 3. **Simpler app/ directory**: Just a thin routing layer
@@ -353,7 +353,7 @@ screens/
 
 ## Migration Path
 
-To migrate Superset to follow Cadra's pattern:
+To migrate Rox to follow Cadra's pattern:
 
 1. **Move `screens/RootLayout/` back to `app/_layout.tsx`**
    - Root layout with providers belongs in `app/`
@@ -391,7 +391,7 @@ Both apps share these patterns:
 
 ## Tech Stack Comparison
 
-| Technology | Cadra | Superset |
+| Technology | Cadra | Rox |
 |------------|-------|----------|
 | **Package Manager** | pnpm | bun |
 | **Monorepo Tool** | Turborepo | Turborepo |
@@ -412,6 +412,6 @@ Both apps share these patterns:
 The key philosophical difference:
 
 - **Cadra**: `app/` owns routing/navigation concerns, `screens/` owns UI/business logic
-- **Superset**: `screens/` owns everything, `app/` is just a thin routing proxy
+- **Rox**: `screens/` owns everything, `app/` is just a thin routing proxy
 
 **Best practice**: Follow **Cadra's pattern** for clearer separation of concerns and better alignment with Expo Router's mental model. Keep navigation configuration and redirect-only routes in `app/`, move UI components to `screens/`.

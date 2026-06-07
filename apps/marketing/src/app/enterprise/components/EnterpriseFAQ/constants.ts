@@ -2,9 +2,9 @@ import type { FAQItem } from "@/app/components/FAQSection";
 
 export const ENTERPRISE_FAQ_ITEMS: FAQItem[] = [
 	{
-		question: "What is Superset Enterprise?",
+		question: "What is Rox Enterprise?",
 		answer:
-			"Superset Enterprise is Superset for teams. Reach out to learn more about what's included and how it can work for your organization.",
+			"Rox Enterprise is Rox for teams. Reach out to learn more about what's included and how it can work for your organization.",
 	},
 	{
 		question: "How do I get started?",
@@ -19,6 +19,6 @@ export const ENTERPRISE_FAQ_ITEMS: FAQItem[] = [
 	{
 		question: "Is my data secure?",
 		answer:
-			"Superset runs locally on your developers' machines. We don't store your code or AI conversations. Contact us to learn more about our security practices.",
+			"Rox runs locally on your developers' machines. We don't store your code or AI conversations. Contact us to learn more about our security practices.",
 	},
 ];

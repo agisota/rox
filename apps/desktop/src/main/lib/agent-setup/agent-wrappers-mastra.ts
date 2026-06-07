@@ -4,7 +4,7 @@ import path from "node:path";
 import {
 	buildWrapperScript,
 	createWrapper,
-	isSupersetManagedHookCommand,
+	isRoxManagedHookCommand,
 	reconcileManagedEntries,
 	writeFileIfChanged,
 } from "./agent-wrappers-common";
@@ -68,7 +68,7 @@ export function getMastraHooksJsonContent(notifyScriptPath: string): string {
 		);
 	}
 
-	const notifyCommand = `SUPERSET_AGENT_ID=mastracode bash ${quoteShellPath(notifyScriptPath)}`;
+	const notifyCommand = `ROX_AGENT_ID=mastracode bash ${quoteShellPath(notifyScriptPath)}`;
 	// Session lifecycle drives the pane icon binding; per-prompt drives status.
 	const managedEvents = [
 		"SessionStart",
@@ -85,7 +85,7 @@ export function getMastraHooksJsonContent(notifyScriptPath: string): string {
 			desired: [{ type: "command", command: notifyCommand }],
 			isManaged: (entry: MastraHookDefinition) =>
 				entry.command?.includes(notifyScriptPath) ||
-				isSupersetManagedHookCommand(entry.command, NOTIFY_SCRIPT_NAME),
+				isRoxManagedHookCommand(entry.command, NOTIFY_SCRIPT_NAME),
 			isEquivalent: (
 				entry: MastraHookDefinition,
 				desiredEntry: MastraHookDefinition,

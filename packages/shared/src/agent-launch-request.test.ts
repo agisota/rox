@@ -55,7 +55,7 @@ describe("buildPromptAgentLaunchRequest", () => {
 		const request = buildPromptAgentLaunchRequest({
 			workspaceId: "workspace-1",
 			source: "new-workspace",
-			selectedAgent: "superset",
+			selectedAgent: "rox",
 			prompt: "hello",
 			initialFiles: [
 				{
@@ -70,7 +70,7 @@ describe("buildPromptAgentLaunchRequest", () => {
 
 		expect(request).toMatchObject({
 			kind: "chat",
-			agentType: "superset",
+			agentType: "rox",
 			chat: {
 				initialPrompt: "hello",
 				initialFiles: [
@@ -103,7 +103,7 @@ describe("buildPromptAgentLaunchRequest", () => {
 		if (request?.kind !== "terminal") {
 			throw new Error("Expected terminal launch request");
 		}
-		expect(request.terminal.command).toStartWith("amp <<'SUPERSET_PROMPT_");
+		expect(request.terminal.command).toStartWith("amp <<'ROX_PROMPT_");
 		expect(request.terminal.command).not.toContain("amp -x");
 	});
 });
@@ -122,14 +122,14 @@ describe("buildTaskAgentLaunchRequest", () => {
 		expect(request).toBeNull();
 	});
 
-	test("uses the chat template configured for superset chat", () => {
+	test("uses the chat template configured for rox chat", () => {
 		const configsById = indexResolvedAgentConfigs(
 			resolveAgentConfigs({
 				overrideEnvelope: {
 					version: 1,
 					presets: [
 						{
-							id: "superset",
+							id: "rox",
 							taskPromptTemplate: "Chat {{title}} / {{slug}}",
 						},
 					],
@@ -139,7 +139,7 @@ describe("buildTaskAgentLaunchRequest", () => {
 		const request = buildTaskAgentLaunchRequest({
 			workspaceId: "workspace-1",
 			source: "open-in-workspace",
-			selectedAgent: "superset",
+			selectedAgent: "rox",
 			task: TASK,
 			autoRun: true,
 			configsById,
@@ -211,9 +211,7 @@ describe("buildTaskAgentLaunchRequest", () => {
 		if (request?.kind !== "terminal") {
 			throw new Error("Expected terminal launch request");
 		}
-		expect(request.terminal.command).toBe(
-			"amp < '.superset/task-demo-task.md'",
-		);
+		expect(request.terminal.command).toBe("amp < '.rox/task-demo-task.md'");
 	});
 
 	test("rejects disabled agents", () => {

@@ -4,7 +4,7 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from "@superset/ui/command";
+} from "@rox/ui/command";
 import { ThemeSwatch } from "renderer/components/ThemeSwatch";
 import {
 	SYSTEM_THEME_ID,

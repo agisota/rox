@@ -1,4 +1,4 @@
-import type { SelectTask, SelectTaskStatus } from "@superset/db/schema";
+import type { SelectTask, SelectTaskStatus } from "@rox/db/schema";
 
 // Status type ordering for table groups (Linear style: in progress → todo → backlog → done → canceled)
 const STATUS_TYPE_ORDER: Record<string, number> = {

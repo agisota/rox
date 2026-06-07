@@ -339,7 +339,7 @@ async function probeMcpServer(
 	let client: MCPClient | null = null;
 	try {
 		client = new MCPClient({
-			id: `superset-chat-mcp-auth-${serverName}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			id: `rox-chat-mcp-auth-${serverName}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 			timeout: MCP_AUTH_TIMEOUT_MS,
 			servers: {
 				[serverName]: serverDefinition,

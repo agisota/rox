@@ -11,7 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Server } from "@superset/pty-daemon";
+import { Server } from "@rox/pty-daemon";
 import { TRPCClientError } from "@trpc/client";
 import {
 	disposeDaemonClient,
@@ -47,8 +47,8 @@ describe("terminal router integration", () => {
 		await disposeDaemonClient();
 		resetTerminalBaseEnvForTests();
 		__setAccountShellForTesting(undefined);
-		delete process.env.SUPERSET_PTY_DAEMON_SOCKET;
-		delete process.env.SUPERSET_HOME_DIR;
+		delete process.env.ROX_PTY_DAEMON_SOCKET;
+		delete process.env.ROX_HOME_DIR;
 		await scenario?.dispose();
 	});
 
@@ -110,8 +110,8 @@ describe("terminal router integration", () => {
 
 		try {
 			await server.listen();
-			process.env.SUPERSET_PTY_DAEMON_SOCKET = socketPath;
-			process.env.SUPERSET_HOME_DIR = tmp;
+			process.env.ROX_PTY_DAEMON_SOCKET = socketPath;
+			process.env.ROX_HOME_DIR = tmp;
 			__setAccountShellForTesting(fakeFishPath);
 			resetTerminalBaseEnvForTests();
 			initTerminalBaseEnv({
@@ -143,7 +143,7 @@ describe("terminal router integration", () => {
 			expect(meta.argv[0]).toBe("-l");
 			expect(meta.argv[1]).toBe("--init-command");
 			expect(meta.env?.SHELL).toBe(fakeFishPath);
-			expect(meta.env?.SUPERSET_TERMINAL_ID).toBe(terminalId);
+			expect(meta.env?.ROX_TERMINAL_ID).toBe(terminalId);
 		} finally {
 			await scenario.host.trpc.terminal.killSession
 				.mutate({
@@ -181,7 +181,7 @@ describe("terminal router integration", () => {
 				stdio: ["ignore", "pipe", "pipe"],
 				env: {
 					...process.env,
-					SUPERSET_PTY_DAEMON_VERSION: "0.0.0-host-service-terminal-test",
+					ROX_PTY_DAEMON_VERSION: "0.0.0-host-service-terminal-test",
 				},
 			});
 			daemonProcess.stdout?.on("data", (chunk) => {
@@ -210,8 +210,8 @@ describe("terminal router integration", () => {
 						`stderr:\n${daemonStderr}`,
 					].join("\n"),
 			);
-			process.env.SUPERSET_PTY_DAEMON_SOCKET = socketPath;
-			process.env.SUPERSET_HOME_DIR = tmp;
+			process.env.ROX_PTY_DAEMON_SOCKET = socketPath;
+			process.env.ROX_HOME_DIR = tmp;
 
 			await scenario.host.trpc.terminal.createSession.mutate({
 				workspaceId: scenario.workspaceId,

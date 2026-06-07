@@ -5,14 +5,14 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
-import { Input } from "@superset/ui/input";
-import { Kbd, KbdGroup } from "@superset/ui/kbd";
-import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
-import { Switch } from "@superset/ui/switch";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { Kbd, KbdGroup } from "@rox/ui/kbd";
+import { Label } from "@rox/ui/label";
+import { toast } from "@rox/ui/sonner";
+import { Switch } from "@rox/ui/switch";
+import { cn } from "@rox/ui/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { HiMagnifyingGlass } from "react-icons/hi2";

@@ -13,8 +13,7 @@ export interface TerminalAppearance {
 	fontSize: number;
 }
 
-export const TERMINAL_FONT_FAMILY_CSS_VARIABLE =
-	"--superset-terminal-font-family";
+export const TERMINAL_FONT_FAMILY_CSS_VARIABLE = "--rox-terminal-font-family";
 
 export function applyTerminalFontFamilyCssVariable(
 	element: HTMLElement,

@@ -15,7 +15,7 @@ interface OrganizationInvitationEmailProps {
 export function OrganizationInvitationEmail({
 	organizationName = "Acme Inc",
 	inviterName = "John Smith",
-	inviteLink = "https://app.superset.sh/accept-invitation/123?token=abc",
+	inviteLink = "https://app.rox.one/accept-invitation/123?token=abc",
 	role = "member",
 	inviteeName = "Satya Patel",
 	inviterEmail = "john@acme.com",
@@ -33,7 +33,7 @@ export function OrganizationInvitationEmail({
 			preview={`${inviterName} invited you to join ${organizationName}`}
 		>
 			<Heading className="text-lg font-normal leading-7 mb-8 text-foreground text-center">
-				Join <strong>{organizationName}</strong> on <strong>Superset</strong>
+				Join <strong>{organizationName}</strong> on <strong>Rox</strong>
 			</Heading>
 
 			{inviteeName && (
@@ -44,12 +44,12 @@ export function OrganizationInvitationEmail({
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
 				{inviterName} ({inviterEmail}) has invited you to join{" "}
-				<strong>{organizationName}</strong> on Superset as a{" "}
+				<strong>{organizationName}</strong> on Rox as a{" "}
 				<strong>{roleDisplay}</strong>.
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				Superset helps teams automate workflows, manage tasks, and collaborate
+				Rox helps teams automate workflows, manage tasks, and collaborate
 				effectively. Accept this invitation to get started.
 			</Text>
 

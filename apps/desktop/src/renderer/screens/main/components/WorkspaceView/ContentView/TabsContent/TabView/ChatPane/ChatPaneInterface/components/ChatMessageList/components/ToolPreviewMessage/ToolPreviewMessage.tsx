@@ -1,4 +1,4 @@
-import { Message, MessageContent } from "@superset/ui/ai-elements/message";
+import { Message, MessageContent } from "@rox/ui/ai-elements/message";
 import { ToolCallBlock } from "renderer/components/Chat/ChatInterface/components/ToolCallBlock";
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import type { ChatPendingPlanApproval } from "../../ChatMessageList.types";

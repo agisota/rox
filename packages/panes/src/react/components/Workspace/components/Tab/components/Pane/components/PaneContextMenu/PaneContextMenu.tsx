@@ -8,7 +8,7 @@ import {
 	ContextMenuSubContent,
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
-} from "@superset/ui/context-menu";
+} from "@rox/ui/context-menu";
 import type { ReactNode } from "react";
 import type {
 	ContextMenuActionConfig,

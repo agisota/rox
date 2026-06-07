@@ -1,10 +1,10 @@
-import type { TaskPriority } from "@superset/db/enums";
+import type { TaskPriority } from "@rox/db/enums";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import type { CellContext } from "@tanstack/react-table";
 import { useState } from "react";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";

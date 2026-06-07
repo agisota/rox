@@ -1,7 +1,4 @@
-import {
-	MessageAction,
-	MessageActions,
-} from "@superset/ui/ai-elements/message";
+import { MessageAction, MessageActions } from "@rox/ui/ai-elements/message";
 import {
 	CheckIcon,
 	CopyIcon,

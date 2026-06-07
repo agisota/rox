@@ -24,13 +24,13 @@ interface StartSetupTerminalResult {
  * Resolve and start the workspace-creation setup terminal, if any.
  *
  * Source order:
- *   1. Configured `setup` array from `.superset/config.json` (+ user override
+ *   1. Configured `setup` array from `.rox/config.json` (+ user override
  *      and `config.local.json` overlay) — joined with ` && ` so failures
  *      short-circuit.
- *   2. Fallback: `bash <repoPath>/.superset/setup.sh` against the main repo
+ *   2. Fallback: `bash <repoPath>/.rox/setup.sh` against the main repo
  *      (NOT the worktree — worktrees skip gitignored files, the main repo is
- *      authoritative). Scripts that need the canonical `.superset/` dir read
- *      `$SUPERSET_ROOT_PATH`, injected by the v2 terminal env builder.
+ *      authoritative). Scripts that need the canonical `.rox/` dir read
+ *      `$ROX_ROOT_PATH`, injected by the v2 terminal env builder.
  *
  * No-op when neither source resolves to anything runnable.
  */
@@ -98,7 +98,7 @@ export function resolveInitialCommand(args: {
 		return commands.join(" && ");
 	}
 
-	const fallbackScript = join(args.repoPath, ".superset", "setup.sh");
+	const fallbackScript = join(args.repoPath, ".rox", "setup.sh");
 	if (existsSync(fallbackScript)) {
 		return `bash ${singleQuote(fallbackScript)}`;
 	}

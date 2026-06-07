@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import {
 	getDefaultSeedPresets,
 	getPresetById,
-} from "@superset/shared/host-agent-presets";
+} from "@rox/shared/host-agent-presets";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import * as schema from "../../../db/schema";
@@ -56,10 +56,10 @@ describe("agentConfigsRouter", () => {
 			expect(result.map((row) => row.order)).toEqual(DEFAULT_PRESET_ORDERS);
 		});
 
-		it("does not seed Superset", async () => {
+		it("does not seed Rox", async () => {
 			const caller = createCaller();
 			const result = await caller.list();
-			expect(result.find((row) => row.presetId === "superset")).toBeUndefined();
+			expect(result.find((row) => row.presetId === "rox")).toBeUndefined();
 		});
 
 		it("seeds Claude with its most permissive flag", async () => {

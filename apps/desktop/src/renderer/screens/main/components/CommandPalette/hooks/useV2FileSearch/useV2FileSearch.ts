@@ -1,4 +1,4 @@
-import { workspaceTrpc } from "@superset/workspace-client";
+import { workspaceTrpc } from "@rox/workspace-client";
 
 const SEARCH_LIMIT = 50;
 

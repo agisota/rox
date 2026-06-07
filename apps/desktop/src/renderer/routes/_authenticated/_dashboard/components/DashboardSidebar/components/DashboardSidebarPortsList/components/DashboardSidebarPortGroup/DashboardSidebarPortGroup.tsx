@@ -1,6 +1,6 @@
-import { OverflowFadeContainer } from "@superset/ui/overflow-fade-container";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { cn } from "@superset/ui/utils";
+import { OverflowFadeContainer } from "@rox/ui/overflow-fade-container";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { LuLoaderCircle, LuX } from "react-icons/lu";
 import { navigateToV2Workspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";

@@ -1,5 +1,5 @@
 {
-	"extends": "@superset/typescript/internal-package.json",
+	"extends": "@rox/typescript/internal-package.json",
 	"compilerOptions": {
 		"rootDir": "src",
 		"jsx": "react-jsx",

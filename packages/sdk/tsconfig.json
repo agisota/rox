@@ -1,5 +1,5 @@
 {
-	"extends": "@superset/typescript/internal-package.json",
+	"extends": "@rox/typescript/internal-package.json",
 	"compilerOptions": {
 		"types": [],
 		"lib": ["ES2022", "DOM", "DOM.Iterable"]

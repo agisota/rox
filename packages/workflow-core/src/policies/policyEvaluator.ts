@@ -1,5 +1,5 @@
 import { WorkflowErrorCode, type WorkflowIssue } from "../errors";
-import type { SupersetBlockState, SupersetWorkflowState } from "../types";
+import type { RoxBlockState, RoxWorkflowState } from "../types";
 import type { PolicyDecision, WorkflowPolicy } from "./policyTypes";
 
 /** Block types treated as external writes (need approval under POLICY-02). */
@@ -19,7 +19,7 @@ function looksLikeExternalWrite(type: string): boolean {
 	return /(^|_)(send|post|create|write|publish|open_pr)(_|$)/.test(type);
 }
 
-function blockModel(block: SupersetBlockState): string | undefined {
+function blockModel(block: RoxBlockState): string | undefined {
 	const m = block.subBlocks?.model;
 	return typeof m === "string" ? m : undefined;
 }
@@ -31,7 +31,7 @@ function blockModel(block: SupersetBlockState): string | undefined {
  * (POLICY-02).
  */
 export function evaluateGraphPolicy(
-	state: SupersetWorkflowState,
+	state: RoxWorkflowState,
 	policy: WorkflowPolicy,
 ): PolicyDecision[] {
 	const decisions: PolicyDecision[] = [];

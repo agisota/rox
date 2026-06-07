@@ -1,6 +1,6 @@
-import type { CreatePaneInput, WorkspaceStore } from "@superset/panes";
-import { toast } from "@superset/ui/sonner";
-import { workspaceTrpc } from "@superset/workspace-client";
+import type { CreatePaneInput, WorkspaceStore } from "@rox/panes";
+import { toast } from "@rox/ui/sonner";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useMemo, useRef, useState } from "react";

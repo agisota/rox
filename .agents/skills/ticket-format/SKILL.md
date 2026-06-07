@@ -1,6 +1,6 @@
 ---
 name: ticket-format
-description: Use when creating, drafting, or grooming a Linear or Superset ticket in this repo. Defines the canonical three-section structure.
+description: Use when creating, drafting, or grooming a Linear or Rox ticket in this repo. Defines the canonical three-section structure.
 ---
 
 # Ticket Format

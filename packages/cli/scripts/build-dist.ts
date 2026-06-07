@@ -1,9 +1,9 @@
 /**
- * Builds a standalone Superset CLI distribution tarball.
+ * Builds a standalone Rox CLI distribution tarball.
  *
- * Bundle layout (extracts into ~/superset/):
- *   bin/superset                 — Bun-compiled CLI binary
- *   bin/superset-host            — Shell wrapper to run the host-service
+ * Bundle layout (extracts into ~/rox/):
+ *   bin/rox                 — Bun-compiled CLI binary
+ *   bin/rox-host            — Shell wrapper to run the host-service
  *   lib/node                     — Standalone Node.js runtime
  *   lib/host-service.js          — Bundled host-service entry
  *   lib/node_modules/            — Full native addon packages (JS wrappers + bindings)
@@ -180,7 +180,7 @@ async function downloadAndExtractNode(
 	target: Target,
 	destDir: string,
 ): Promise<string> {
-	const cacheDir = join(homedir(), ".superset-build-cache");
+	const cacheDir = join(homedir(), ".rox-build-cache");
 	if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
 
 	const archiveName = nodeArchiveName(target);
@@ -335,7 +335,7 @@ async function fixNativeBinariesForNode(
 	const bsqUrl =
 		`https://github.com/WiseLibs/better-sqlite3/releases/download/` +
 		`v${bsqVersion}/better-sqlite3-v${bsqVersion}-node-v${NODE_ABI}-${target}.tar.gz`;
-	const cacheDir = join(homedir(), ".superset-build-cache");
+	const cacheDir = join(homedir(), ".rox-build-cache");
 	if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
 	const cachedTarball = join(
 		cacheDir,
@@ -421,7 +421,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 export NODE_PATH="$SCRIPT_DIR/../lib/node_modules"
 exec "$SCRIPT_DIR/../lib/node" "$SCRIPT_DIR/../lib/host-service.js" "$@"
 `;
-	const wrapperPath = join(binDir, "superset-host");
+	const wrapperPath = join(binDir, "rox-host");
 	writeFileSync(wrapperPath, wrapper, { mode: 0o755 });
 	chmodSync(wrapperPath, 0o755);
 }
@@ -429,7 +429,7 @@ exec "$SCRIPT_DIR/../lib/node" "$SCRIPT_DIR/../lib/host-service.js" "$@"
 async function main(): Promise<void> {
 	const { target } = parseArgs();
 	const cliDir = resolve(import.meta.dir, "..");
-	const stagingRoot = join(cliDir, "dist", `superset-${target}`);
+	const stagingRoot = join(cliDir, "dist", `rox-${target}`);
 
 	if (existsSync(stagingRoot)) rmSync(stagingRoot, { recursive: true });
 	mkdirSync(join(stagingRoot, "bin"), { recursive: true });
@@ -440,7 +440,7 @@ async function main(): Promise<void> {
 	console.log(`[build-dist] staging: ${stagingRoot}`);
 
 	console.log("[build-dist] building CLI binary");
-	await buildCli(target, join(stagingRoot, "bin", "superset"));
+	await buildCli(target, join(stagingRoot, "bin", "rox"));
 
 	console.log("[build-dist] building host-service bundle");
 	const hostServiceBundle = await buildHostService();
@@ -472,10 +472,10 @@ async function main(): Promise<void> {
 	console.log("[build-dist] writing host wrapper");
 	writeHostWrapper(join(stagingRoot, "bin"));
 
-	const tarball = join(cliDir, "dist", `superset-${target}.tar.gz`);
+	const tarball = join(cliDir, "dist", `rox-${target}.tar.gz`);
 	console.log(`[build-dist] creating ${tarball}`);
 	// Tar from inside the staging dir so contents extract directly to the
-	// install target (no top-level superset-<target>/ wrapper).
+	// install target (no top-level rox-<target>/ wrapper).
 	await exec("tar", ["-czf", tarball, "-C", stagingRoot, "."]);
 
 	console.log(`[build-dist] done: ${tarball}`);

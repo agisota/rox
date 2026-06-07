@@ -132,7 +132,7 @@ export const workspaceCleanupRouter = router({
 	 * Destroy a workspace in five phases:
 	 *
 	 *   0. Preflight     — dirty-worktree check (skip if force)
-	 *   1. Teardown      — run .superset/teardown.sh (skip if force)
+	 *   1. Teardown      — run .rox/teardown.sh (skip if force)
 	 *   2. Local cleanup — PTYs, worktree
 	 *   3. Cloud delete  ← authoritative UI state
 	 *   4. Branch delete — optional local branch cleanup

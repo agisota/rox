@@ -52,7 +52,7 @@ describe("ChatRuntimeService runtime creation", () => {
 		createAuthStorageMock.mockClear();
 	});
 
-	it("reasserts the Superset session id after thread selection", async () => {
+	it("reasserts the Rox session id after thread selection", async () => {
 		const service = new ChatRuntimeService({
 			headers: async () => ({}),
 			apiUrl: "http://localhost:3000",

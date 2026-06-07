@@ -5,9 +5,9 @@ Status: implemented
 ## What Shipped
 
 - Added a shared workspace-run resolver that selects one run definition from
-  project-targeted presets, `.superset/config.json` `run`, or global presets.
+  project-targeted presets, `.rox/config.json` `run`, or global presets.
 - Added `useAsWorkspaceRun` to terminal preset schemas and settings UI.
-- Kept `.superset/config.json` `run` as the simple repo-owned script path.
+- Kept `.rox/config.json` `run` as the simple repo-owned script path.
 - Updated the v1 Run button to consume workspace-run definitions while keeping
   v1-style stop semantics.
 - Added v2 workspace Run button support, backed by terminal-id keyed local run

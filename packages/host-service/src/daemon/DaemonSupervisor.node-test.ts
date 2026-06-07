@@ -44,8 +44,8 @@ let originalNodeEnv: string | undefined;
 
 beforeEach(() => {
 	tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pty-daemon-it-"));
-	originalHome = process.env.SUPERSET_HOME_DIR;
-	process.env.SUPERSET_HOME_DIR = tmpHome;
+	originalHome = process.env.ROX_HOME_DIR;
+	process.env.ROX_HOME_DIR = tmpHome;
 	// Force production semantics for these tests: in dev mode the
 	// supervisor kills any leftover daemon on startup, which breaks the
 	// adoption tests that intentionally seed a running daemon. Real dev
@@ -65,9 +65,9 @@ afterEach(async () => {
 		}
 	}
 	if (originalHome !== undefined) {
-		process.env.SUPERSET_HOME_DIR = originalHome;
+		process.env.ROX_HOME_DIR = originalHome;
 	} else {
-		delete process.env.SUPERSET_HOME_DIR;
+		delete process.env.ROX_HOME_DIR;
 	}
 	if (originalNodeEnv !== undefined) {
 		process.env.NODE_ENV = originalNodeEnv;
@@ -127,7 +127,7 @@ describe("DaemonSupervisor.ensure (real spawn)", () => {
 		const orgId = "org-stale";
 		const socketPath = path.join(
 			os.tmpdir(),
-			`superset-ptyd-${crypto
+			`rox-ptyd-${crypto
 				.createHash("sha256")
 				.update(orgId)
 				.digest("hex")
@@ -144,7 +144,7 @@ describe("DaemonSupervisor.ensure (real spawn)", () => {
 			{
 				detached: true,
 				stdio: "ignore",
-				env: { ...process.env, SUPERSET_PTY_DAEMON_VERSION: "0.0.1" },
+				env: { ...process.env, ROX_PTY_DAEMON_VERSION: "0.0.1" },
 			},
 		);
 		child.unref();
@@ -384,7 +384,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 		const orgId = "org-auto-update";
 		const socketPath = path.join(
 			os.tmpdir(),
-			`superset-ptyd-${crypto
+			`rox-ptyd-${crypto
 				.createHash("sha256")
 				.update(orgId)
 				.digest("hex")
@@ -400,7 +400,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 			{
 				detached: true,
 				stdio: "ignore",
-				env: { ...process.env, SUPERSET_PTY_DAEMON_VERSION: "0.0.1" },
+				env: { ...process.env, ROX_PTY_DAEMON_VERSION: "0.0.1" },
 			},
 		);
 		child.unref();
@@ -476,7 +476,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 		const orgId = "org-update-version";
 		const socketPath = path.join(
 			os.tmpdir(),
-			`superset-ptyd-${crypto
+			`rox-ptyd-${crypto
 				.createHash("sha256")
 				.update(orgId)
 				.digest("hex")
@@ -492,7 +492,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 			{
 				detached: true,
 				stdio: "ignore",
-				env: { ...process.env, SUPERSET_PTY_DAEMON_VERSION: "0.0.1-stale" },
+				env: { ...process.env, ROX_PTY_DAEMON_VERSION: "0.0.1-stale" },
 			},
 		);
 		child.unref();
@@ -565,7 +565,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 		const orgId = "org-empty-handoff";
 		const socketPath = path.join(
 			os.tmpdir(),
-			`superset-ptyd-${crypto
+			`rox-ptyd-${crypto
 				.createHash("sha256")
 				.update(orgId)
 				.digest("hex")
@@ -581,7 +581,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 			{
 				detached: true,
 				stdio: "ignore",
-				env: { ...process.env, SUPERSET_PTY_DAEMON_VERSION: "0.0.1" },
+				env: { ...process.env, ROX_PTY_DAEMON_VERSION: "0.0.1" },
 			},
 		);
 		child.unref();
@@ -654,7 +654,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 		const orgId = "org-autoupdate-live-defer";
 		const socketPath = path.join(
 			os.tmpdir(),
-			`superset-ptyd-${crypto
+			`rox-ptyd-${crypto
 				.createHash("sha256")
 				.update(orgId)
 				.digest("hex")
@@ -670,7 +670,7 @@ describe("DaemonSupervisor.update (Phase 2 fd-handoff)", () => {
 			{
 				detached: true,
 				stdio: "ignore",
-				env: { ...process.env, SUPERSET_PTY_DAEMON_VERSION: "0.0.1" },
+				env: { ...process.env, ROX_PTY_DAEMON_VERSION: "0.0.1" },
 			},
 		);
 		child.unref();

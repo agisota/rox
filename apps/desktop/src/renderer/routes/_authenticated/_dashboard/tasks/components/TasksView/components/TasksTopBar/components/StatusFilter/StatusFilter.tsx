@@ -1,11 +1,11 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Command,
 	CommandGroup,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
+} from "@rox/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import { useState } from "react";
 import { HiCheck, HiChevronDown } from "react-icons/hi2";
 import { ActiveIcon } from "../../../shared/icons/ActiveIcon";

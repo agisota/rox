@@ -1,7 +1,4 @@
-import {
-	isActiveSubscriptionStatus,
-	type PlanTier,
-} from "@superset/shared/billing";
+import { isActiveSubscriptionStatus, type PlanTier } from "@rox/shared/billing";
 import { useLiveQuery } from "@tanstack/react-db";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";

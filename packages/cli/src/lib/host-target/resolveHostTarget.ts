@@ -1,7 +1,7 @@
-import { CLIError } from "@superset/cli-framework";
-import type { AppRouter as HostServiceRouter } from "@superset/host-service/trpc";
-import { getHostId } from "@superset/shared/host-info";
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import { CLIError } from "@rox/cli-framework";
+import type { AppRouter as HostServiceRouter } from "@rox/host-service/trpc";
+import { getHostId } from "@rox/shared/host-info";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import SuperJSON from "superjson";
 import { env } from "../env";
@@ -40,13 +40,13 @@ export function resolveHostTarget(
 		if (!manifest) {
 			throw new CLIError(
 				"Host service for this machine isn't running",
-				"Run: superset start",
+				"Run: rox start",
 			);
 		}
 		if (!isProcessAlive(manifest.pid)) {
 			throw new CLIError(
 				"Host service manifest is stale (recorded PID is dead)",
-				"Run: superset start",
+				"Run: rox start",
 			);
 		}
 		return {

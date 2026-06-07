@@ -1,15 +1,15 @@
-import type { WorkspaceState } from "@superset/panes";
-import { Button } from "@superset/ui/button";
+import type { WorkspaceState } from "@rox/panes";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { cn } from "@superset/ui/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+} from "@rox/ui/dropdown-menu";
+import { cn } from "@rox/ui/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -441,17 +441,17 @@ function ResourceConsumptionContent({
 							<MetricBadge
 								label="CPU"
 								value={formatCpu(normalizedSnapshot.totalCpu)}
-								tooltip="Sum of CPU used by Superset and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
+								tooltip="Sum of CPU used by Rox and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
 							/>
 							<MetricBadge
 								label="Memory"
 								value={formatMemory(normalizedSnapshot.totalMemory)}
-								tooltip="Resident memory used by Superset and monitored terminal process trees. If this keeps climbing without dropping, a workspace process may be retaining memory. High values increase swap risk and can cause stutter."
+								tooltip="Resident memory used by Rox and monitored terminal process trees. If this keeps climbing without dropping, a workspace process may be retaining memory. High values increase swap risk and can cause stutter."
 							/>
 							<MetricBadge
 								label="RAM Share"
 								value={formatPercent(trackedMemorySharePercent)}
-								tooltip="Percent of total system RAM used by monitored Superset resources only (not all apps). A high share means Superset is a major contributor to system memory pressure; a low share means pressure is likely elsewhere."
+								tooltip="Percent of total system RAM used by monitored Rox resources only (not all apps). A high share means Rox is a major contributor to system memory pressure; a low share means pressure is likely elsewhere."
 							/>
 						</div>
 						<Tooltip delayDuration={150}>
@@ -476,8 +476,8 @@ function ResourceConsumptionContent({
 								</div>
 							</TooltipTrigger>
 							<TooltipContent side="bottom" sideOffset={6} showArrow={false}>
-								Superset uses {formatPercent(trackedMemorySharePercent)} of
-								system RAM
+								Rox uses {formatPercent(trackedMemorySharePercent)} of system
+								RAM
 							</TooltipContent>
 						</Tooltip>
 					</>

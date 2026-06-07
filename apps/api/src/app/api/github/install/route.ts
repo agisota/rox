@@ -1,5 +1,5 @@
-import { auth } from "@superset/auth/server";
-import { findOrgMembership } from "@superset/db/utils";
+import { auth } from "@rox/auth/server";
+import { findOrgMembership } from "@rox/db/utils";
 
 import { env } from "@/env";
 import { createSignedState } from "@/lib/oauth-state";
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 	});
 
 	const installUrl = new URL(
-		"https://github.com/apps/superset-app/installations/new",
+		"https://github.com/apps/rox-app/installations/new",
 	);
 	installUrl.searchParams.set("state", state);
 	installUrl.searchParams.set(

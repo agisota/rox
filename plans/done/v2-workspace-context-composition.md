@@ -122,7 +122,7 @@ Rename `renderTaskPromptTemplate` → `renderPromptTemplate`. Add
      `ContentPart[]`; AI-SDK shape).
    - **Terminal**: flatten `system + user` to text via existing
      `buildPromptCommandFromAgentConfig` + transport; write attachments
-     to `.superset/attachments/` with refs in user content. Flatten is
+     to `.rox/attachments/` with refs in user content. Flatten is
      per-transport; spec stays structured.
 
 ### Attachment transport — bytes, not base64
@@ -142,7 +142,7 @@ V2 ships `Uint8Array` natively:
 - **Chat provider boundary** (Anthropic/AI SDK HTTP): encode base64
   **once** right before the API call. Nowhere else in V2.
 - **CLI / terminal agents**: never base64. Files land on disk via
-  `writeAttachmentFiles`; prompt text references `.superset/attachments/
+  `writeAttachmentFiles`; prompt text references `.rox/attachments/
   <filename>`. CLIs read the filesystem — that's the right interface
   for them.
 - **Phase 6 (chat only)**: Anthropic Files API — upload once, reference

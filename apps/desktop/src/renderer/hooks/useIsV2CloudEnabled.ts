@@ -1,4 +1,4 @@
-import { isV2OnlyUser } from "@superset/shared/v2-only-user";
+import { isV2OnlyUser } from "@rox/shared/v2-only-user";
 import { authClient } from "renderer/lib/auth-client";
 import { useV2LocalOverrideStore } from "renderer/stores/v2-local-override";
 

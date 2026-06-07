@@ -1,5 +1,5 @@
-import type { SelectWorktree } from "@superset/local-db";
-import { projects, workspaces, worktrees } from "@superset/local-db";
+import type { SelectWorktree } from "@rox/local-db";
+import { projects, workspaces, worktrees } from "@rox/local-db";
 import { and, eq, isNull } from "drizzle-orm";
 import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
@@ -14,7 +14,7 @@ import {
 } from "./db-helpers";
 import { getWorktreeCreatedAt, listExternalWorktrees } from "./git";
 import { resolveWorktreePath } from "./resolve-worktree-path";
-import { copySupersetConfigToWorktree, loadSetupConfig } from "./setup";
+import { copyRoxConfigToWorktree, loadSetupConfig } from "./setup";
 
 interface CreateWorkspaceFromWorktreeParams {
 	projectId: string;
@@ -88,7 +88,7 @@ export interface CreateWorkspaceFromExternalWorktreeResult {
  * 1. Searches for external worktrees matching the branch
  * 2. Filters out invalid candidates (main repo, bare, detached)
  * 3. Selects the best match (exact path match or single candidate)
- * 4. Imports the worktree into the database with createdBySuperset=false
+ * 4. Imports the worktree into the database with createdByRox=false
  * 5. Creates a workspace and configures it
  * 6. Implements transaction rollback on failure
  */
@@ -192,7 +192,7 @@ export async function createWorkspaceFromExternalWorktree({
 					createdAt: worktreeCreatedAt,
 					gitStatus: null,
 					githubStatus: null,
-					createdBySuperset: false,
+					createdByRox: false,
 				}
 			: localDb
 					.insert(worktrees)
@@ -203,7 +203,7 @@ export async function createWorkspaceFromExternalWorktree({
 						baseBranch: compareBaseBranch,
 						createdAt: worktreeCreatedAt,
 						gitStatus: null, // Will be populated by refresh pipeline
-						createdBySuperset: false, // Mark as external
+						createdByRox: false, // Mark as external
 					})
 					.returning()
 					.get();
@@ -217,7 +217,7 @@ export async function createWorkspaceFromExternalWorktree({
 					createdAt: worktreeCreatedAt,
 					gitStatus: null,
 					githubStatus: null,
-					createdBySuperset: false,
+					createdByRox: false,
 				})
 				.where(eq(worktrees.id, existingWorktreeByPath.id))
 				.run();
@@ -236,7 +236,7 @@ export async function createWorkspaceFromExternalWorktree({
 
 		activateProject(project);
 
-		copySupersetConfigToWorktree(project.mainRepoPath, externalMatch.path);
+		copyRoxConfigToWorktree(project.mainRepoPath, externalMatch.path);
 
 		await setBranchBaseConfig({
 			repoPath: project.mainRepoPath,
@@ -390,7 +390,7 @@ export async function openExternalWorktree({
 						lastRefreshed: Date.now(),
 					},
 					githubStatus: null,
-					createdBySuperset: false,
+					createdByRox: false,
 				})
 				.where(eq(worktrees.id, existingWorktree.id))
 				.run();
@@ -407,7 +407,7 @@ export async function openExternalWorktree({
 					lastRefreshed: Date.now(),
 				},
 				githubStatus: null,
-				createdBySuperset: false,
+				createdByRox: false,
 			};
 		}
 
@@ -469,7 +469,7 @@ export async function openExternalWorktree({
 		setLastActiveWorkspace(workspace.id);
 		activateProject(project);
 
-		copySupersetConfigToWorktree(project.mainRepoPath, existingWorktree.path);
+		copyRoxConfigToWorktree(project.mainRepoPath, existingWorktree.path);
 		const setupConfig = loadSetupConfig({
 			mainRepoPath: project.mainRepoPath,
 			worktreePath: existingWorktree.path,
@@ -523,7 +523,7 @@ export async function openExternalWorktree({
 				behind: 0,
 				lastRefreshed: Date.now(),
 			},
-			createdBySuperset: false, // External worktree
+			createdByRox: false, // External worktree
 		})
 		.returning()
 		.get();
@@ -545,7 +545,7 @@ export async function openExternalWorktree({
 	setLastActiveWorkspace(workspace.id);
 	activateProject(project);
 
-	copySupersetConfigToWorktree(project.mainRepoPath, worktreePath);
+	copyRoxConfigToWorktree(project.mainRepoPath, worktreePath);
 	const setupConfig = loadSetupConfig({
 		mainRepoPath: project.mainRepoPath,
 		worktreePath,

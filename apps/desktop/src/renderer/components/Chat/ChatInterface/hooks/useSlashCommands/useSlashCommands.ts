@@ -1,5 +1,5 @@
-import type { ChatServiceRouter } from "@superset/chat/server/desktop";
-import { findSlashCommandByNameOrAlias } from "@superset/chat/shared";
+import type { ChatServiceRouter } from "@rox/chat/server/desktop";
+import { findSlashCommandByNameOrAlias } from "@rox/chat/shared";
 import type { inferRouterOutputs } from "@trpc/server";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

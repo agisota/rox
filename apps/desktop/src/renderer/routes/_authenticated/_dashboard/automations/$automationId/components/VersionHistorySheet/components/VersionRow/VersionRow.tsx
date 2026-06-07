@@ -1,6 +1,6 @@
-import type { AutomationPromptSource } from "@superset/db/schema";
-import { Badge } from "@superset/ui/badge";
-import { cn } from "@superset/ui/utils";
+import type { AutomationPromptSource } from "@rox/db/schema";
+import { Badge } from "@rox/ui/badge";
+import { cn } from "@rox/ui/utils";
 import { format, isSameYear } from "date-fns";
 
 interface VersionRowProps {

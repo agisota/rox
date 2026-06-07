@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { app, session } from "electron";
 
-const PARTITION = "persist:superset";
+const PARTITION = "persist:rox";
 const CURRENT_FILE = "current.json";
 const SESSION_PREFIX = "session-";
 const SESSION_SUFFIX = ".json";

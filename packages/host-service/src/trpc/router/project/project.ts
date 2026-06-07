@@ -2,8 +2,8 @@ import { basename, resolve as resolvePath } from "node:path";
 import {
 	type ParsedGitHubRemote,
 	parseGitHubRemote,
-} from "@superset/shared/github-remote";
-import { BRANCH_PREFIX_MODES } from "@superset/shared/workspace-launch";
+} from "@rox/shared/github-remote";
+import { BRANCH_PREFIX_MODES } from "@rox/shared/workspace-launch";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";

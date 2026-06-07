@@ -18,7 +18,7 @@ export function register(server: McpServer): void {
 				.string()
 				.min(1)
 				.describe(
-					"Agent preset id (e.g. `claude`, `codex`, `superset`) or HostAgentConfig instance UUID.",
+					"Agent preset id (e.g. `claude`, `codex`, `rox`) or HostAgentConfig instance UUID.",
 				),
 			prompt: z.string().min(1).describe("Prompt sent to the agent."),
 			attachmentIds: z

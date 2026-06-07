@@ -1,11 +1,11 @@
-import { Badge } from "@superset/ui/badge";
+import { Badge } from "@rox/ui/badge";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@superset/ui/card";
+} from "@rox/ui/card";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { FaGithub } from "react-icons/fa";
@@ -72,7 +72,7 @@ export default async function GitHubIntegrationPage() {
 				<CardHeader>
 					<CardTitle>Connection</CardTitle>
 					<CardDescription>
-						Install the Superset GitHub App to connect your repositories.
+						Install the Rox GitHub App to connect your repositories.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>

@@ -1,15 +1,15 @@
 "use client";
 
-import { getInitials } from "@superset/shared/names";
-import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
+import { getInitials } from "@rox/shared/names";
+import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@superset/ui/card";
-import { Skeleton } from "@superset/ui/skeleton";
+} from "@rox/ui/card";
+import { Skeleton } from "@rox/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -17,7 +17,7 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@superset/ui/table";
+} from "@rox/ui/table";
 import type { ReactNode } from "react";
 
 interface LeaderboardEntry {

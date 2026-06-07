@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -6,7 +6,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
+} from "@rox/ui/dialog";
 import { LightDiffViewer } from "renderer/screens/main/components/WorkspaceView/ChangesContent/components/LightDiffViewer";
 import { detectLanguage } from "shared/detect-language";
 

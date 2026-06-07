@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, FolderX, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";

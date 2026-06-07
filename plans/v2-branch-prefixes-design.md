@@ -153,7 +153,7 @@ host-wide setting cannot itself defer to a default, so it omits it.
 Custom-prefix behavior worth calling out:
 - The text input is locally controlled and syncs from props via `useEffect`,
   so optimistic edits don't fight the query.
-- `onBlur` sanitizes with `sanitizeSegment` from `@superset/shared`.
+- `onBlur` sanitizes with `sanitizeSegment` from `@rox/shared`.
 - An empty sanitized prefix on blur is treated as "still typing": the input
   clears but no mutation fires. This avoids persisting
   `{ mode: 'custom', customPrefix: null }`, which would lie about user
@@ -164,9 +164,9 @@ Custom-prefix behavior worth calling out:
 - **Why a `host_settings` table and not a key/value store?** YAGNI. One
   global setting today; a real settings store can be introduced when the
   second one appears. The `id = 1` upsert keeps the call site simple.
-- **Why not put `BRANCH_PREFIX_MODES` in `@superset/local-db`?**
+- **Why not put `BRANCH_PREFIX_MODES` in `@rox/local-db`?**
   `host-service` can't depend on `local-db`. The constants moved to
-  `@superset/shared/workspace-launch` (next to `resolveBranchPrefix`); the
+  `@rox/shared/workspace-launch` (next to `resolveBranchPrefix`); the
   old `local-db` export is a re-export so existing v1 callers don't churn.
 - **Why drop the `gh` username cache from the original draft (the refactor
   commit)?** `gh api user --jq .login` is cheap and the call only happens

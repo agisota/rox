@@ -1,6 +1,6 @@
 "use client";
 
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
@@ -12,7 +12,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 		"Failed to fetch installation details. Please try again.",
 	save_failed: "Failed to save installation. Please try again.",
 	already_connected:
-		"This GitHub installation is already connected to another Superset organization. Disconnect it there, or uninstall the Superset GitHub App, then try again.",
+		"This GitHub installation is already connected to another Rox organization. Disconnect it there, or uninstall the Rox GitHub App, then try again.",
 	unexpected: "Something went wrong. Please try again.",
 };
 

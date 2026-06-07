@@ -23,7 +23,7 @@ import {
 	type ServerMessage,
 	type SessionInfo,
 	type SessionMeta,
-} from "@superset/pty-daemon/protocol";
+} from "@rox/pty-daemon/protocol";
 
 export interface OpenResult {
 	id: string;

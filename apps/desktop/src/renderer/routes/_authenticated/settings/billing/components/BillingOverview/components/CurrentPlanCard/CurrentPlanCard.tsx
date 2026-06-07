@@ -1,4 +1,4 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import { format } from "date-fns";
 import { PLANS, type PlanTier } from "../../../../constants";
 

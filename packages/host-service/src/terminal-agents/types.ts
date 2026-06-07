@@ -1,7 +1,7 @@
 import type {
 	AgentDefinitionId,
 	BuiltinAgentId,
-} from "@superset/shared/agent-catalog";
+} from "@rox/shared/agent-catalog";
 
 export type TerminalAgentId = BuiltinAgentId;
 

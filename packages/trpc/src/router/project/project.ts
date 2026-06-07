@@ -1,9 +1,5 @@
-import { dbWs } from "@superset/db/client";
-import {
-	githubRepositories,
-	projects,
-	sandboxImages,
-} from "@superset/db/schema";
+import { dbWs } from "@rox/db/client";
+import { githubRepositories, projects, sandboxImages } from "@rox/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";

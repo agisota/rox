@@ -1,5 +1,5 @@
 /**
- * Superset Automation Fabric — workflow / skill / run schema.
+ * Rox Automation Fabric — workflow / skill / run schema.
  *
  * This is the NEW graph-based workflow + skill layer. It lives alongside the
  * legacy scheduled `automations` tables in `./schema.ts` and does not replace
@@ -21,11 +21,11 @@
 import type {
 	JsonSchema,
 	ObjectRef,
+	RoxWorkflowState,
 	RunCost,
-	SupersetWorkflowState,
 	WorkflowRunError,
 	WorkflowValidationResult,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { sql } from "drizzle-orm";
 import {
 	boolean,
@@ -124,8 +124,8 @@ export const workflowDefinitions = pgTable(
 		slug: text().notNull(),
 		description: text(),
 
-		engine: workflowEngine().notNull().default("superset"),
-		draftState: jsonb("draft_state").$type<SupersetWorkflowState>().notNull(),
+		engine: workflowEngine().notNull().default("rox"),
+		draftState: jsonb("draft_state").$type<RoxWorkflowState>().notNull(),
 		status: workflowStatus().notNull().default("draft"),
 
 		createdAt: timestamp("created_at", { withTimezone: true })
@@ -167,9 +167,7 @@ export const workflowVersions = pgTable(
 			.references(() => organizations.id, { onDelete: "cascade" }),
 
 		versionNumber: integer("version_number").notNull(),
-		stateSnapshot: jsonb("state_snapshot")
-			.$type<SupersetWorkflowState>()
-			.notNull(),
+		stateSnapshot: jsonb("state_snapshot").$type<RoxWorkflowState>().notNull(),
 		validationSnapshot: jsonb(
 			"validation_snapshot",
 		).$type<WorkflowValidationResult>(),
@@ -594,7 +592,7 @@ export type InsertArtifact = typeof artifacts.$inferInsert;
 export type SelectArtifact = typeof artifacts.$inferSelect;
 
 // ---------------------------------------------------------------------------
-// object_relations — the Superset object graph (typed edges between objects)
+// object_relations — the Rox object graph (typed edges between objects)
 //
 // Object ids are stored as text because they reference many different tables.
 // ---------------------------------------------------------------------------

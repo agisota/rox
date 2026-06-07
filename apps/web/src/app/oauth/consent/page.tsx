@@ -1,5 +1,5 @@
-import { auth } from "@superset/auth/server";
-import { db } from "@superset/db/client";
+import { auth } from "@rox/auth/server";
+import { db } from "@rox/db/client";
 import { headers } from "next/headers";
 import Image from "next/image";
 
@@ -32,7 +32,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 					<a href={env.NEXT_PUBLIC_MARKETING_URL}>
 						<Image
 							src="/title.svg"
-							alt="Superset"
+							alt="Rox"
 							width={140}
 							height={24}
 							priority
@@ -75,13 +75,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 		<div className="relative flex min-h-screen flex-col">
 			<header className="container mx-auto px-6 py-6">
 				<a href={env.NEXT_PUBLIC_MARKETING_URL}>
-					<Image
-						src="/title.svg"
-						alt="Superset"
-						width={140}
-						height={24}
-						priority
-					/>
+					<Image src="/title.svg" alt="Rox" width={140} height={24} priority />
 				</a>
 			</header>
 			<main className="flex flex-1 items-center justify-center">

@@ -53,7 +53,7 @@ rewired. Prefer a bounded post-open font-settle step:
 
 **Status:** Mostly invalid as originally written.
 
-**Us:** Superset app code does not add its own DPR listener. However, xterm 6.1
+**Us:** Rox app code does not add its own DPR listener. However, xterm 6.1
 already monitors DPR internally:
 - `@xterm/xterm/src/browser/services/CoreBrowserService.ts` has
   `ScreenDprMonitor`, implemented with `matchMedia("screen and (resolution:

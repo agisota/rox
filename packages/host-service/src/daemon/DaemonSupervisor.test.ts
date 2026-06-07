@@ -19,7 +19,7 @@ import {
 	type ClientMessage,
 	encodeFrame,
 	FrameDecoder,
-} from "@superset/pty-daemon/protocol";
+} from "@rox/pty-daemon/protocol";
 import {
 	DaemonSupervisor,
 	probeDaemonVersion,
@@ -221,7 +221,7 @@ describe("shouldKillStaleDaemonForDev", () => {
 		expect(
 			shouldKillStaleDaemonForDev({
 				NODE_ENV: "development",
-				SUPERSET_PTY_DAEMON_ADOPT_IN_DEV: "1",
+				ROX_PTY_DAEMON_ADOPT_IN_DEV: "1",
 			}),
 		).toBe(false);
 	});
@@ -230,9 +230,9 @@ describe("shouldKillStaleDaemonForDev", () => {
 describe("DaemonSupervisor.tryAdopt", () => {
 	test("recovers adoption from a live expected socket when the manifest is missing", async () => {
 		const orgId = "org-socket-fallback";
-		const originalHome = process.env.SUPERSET_HOME_DIR;
+		const originalHome = process.env.ROX_HOME_DIR;
 		const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pty-daemon-unit-"));
-		process.env.SUPERSET_HOME_DIR = tmpHome;
+		process.env.ROX_HOME_DIR = tmpHome;
 		const socketPath = ptyDaemonSocketPath(orgId);
 		try {
 			try {
@@ -276,9 +276,9 @@ describe("DaemonSupervisor.tryAdopt", () => {
 			}
 		} finally {
 			if (originalHome !== undefined) {
-				process.env.SUPERSET_HOME_DIR = originalHome;
+				process.env.ROX_HOME_DIR = originalHome;
 			} else {
-				delete process.env.SUPERSET_HOME_DIR;
+				delete process.env.ROX_HOME_DIR;
 			}
 			fs.rmSync(tmpHome, { recursive: true, force: true });
 			try {
@@ -304,9 +304,9 @@ describe("DaemonSupervisor.tryAdopt", () => {
 			return;
 		}
 
-		const originalHome = process.env.SUPERSET_HOME_DIR;
+		const originalHome = process.env.ROX_HOME_DIR;
 		const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "pty-daemon-unit-"));
-		process.env.SUPERSET_HOME_DIR = tmpHome;
+		process.env.ROX_HOME_DIR = tmpHome;
 		try {
 			writePtyDaemonManifest({
 				pid: childPid,
@@ -338,9 +338,9 @@ describe("DaemonSupervisor.tryAdopt", () => {
 				}
 			}
 			if (originalHome !== undefined) {
-				process.env.SUPERSET_HOME_DIR = originalHome;
+				process.env.ROX_HOME_DIR = originalHome;
 			} else {
-				delete process.env.SUPERSET_HOME_DIR;
+				delete process.env.ROX_HOME_DIR;
 			}
 			fs.rmSync(tmpHome, { recursive: true, force: true });
 		}

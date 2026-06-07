@@ -59,7 +59,7 @@ describe("normalizeAgentLaunchRequest", () => {
 		expect(normalized).toEqual({
 			kind: "chat",
 			workspaceId: "ws-1",
-			agentType: "superset",
+			agentType: "rox",
 			chat: {
 				paneId: "pane-1",
 				initialPrompt: "summarize this task",

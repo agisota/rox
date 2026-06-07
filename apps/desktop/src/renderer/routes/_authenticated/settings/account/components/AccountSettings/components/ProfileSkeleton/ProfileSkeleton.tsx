@@ -1,4 +1,4 @@
-import { Skeleton } from "@superset/ui/skeleton";
+import { Skeleton } from "@rox/ui/skeleton";
 
 export function ProfileSkeleton() {
 	return (

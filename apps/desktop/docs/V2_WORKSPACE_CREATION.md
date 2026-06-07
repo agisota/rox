@@ -38,7 +38,7 @@ type BranchRow = {
   isLocal: boolean;
   isRemote: boolean;
   recency: number | null;       // reflog ordinal, 0 = most recent
-  worktreePath: string | null;  // only Superset worktrees under <repo>/.worktrees/
+  worktreePath: string | null;  // only Rox worktrees under <repo>/.worktrees/
   hasWorkspace: boolean;        // workspaces row exists for (project, branch) on this host
   isCheckedOut: boolean;        // true if in any git worktree (incl. primary)
 };
@@ -52,7 +52,7 @@ Executed on every `searchBranches` call:
 
 1. If `refresh` is set and the 30s per-project TTL has elapsed, `git fetch --prune --quiet --no-tags`. The TTL prevents keystroke-level thrash.
 2. `git for-each-ref --sort=-committerdate refs/heads/ refs/remotes/origin/` — one call, both namespaces, ~20ms on 10k refs.
-3. `git worktree list --porcelain` → two maps: `worktreeMap` (Superset-managed only, under `.worktrees/<branch>/`) and `checkedOutBranches` (every worktree incl. primary).
+3. `git worktree list --porcelain` → two maps: `worktreeMap` (Rox-managed only, under `.worktrees/<branch>/`) and `checkedOutBranches` (every worktree incl. primary).
 4. `git log -g --pretty=%gs --grep-reflog=checkout: -n 500` → reflog recency ordinals per branch.
 5. Parse refs using the **full** refname prefix (`refs/heads/` vs `refs/remotes/origin/`) — a structural namespace that can't appear inside a branch name. Short-name prefixes like `origin/` are unsafe because a local branch can legitimately be named `origin/foo`. See `GIT_REFS.md`.
 6. Collapse local+remote pairs by name; attach worktree + recency + hasWorkspace flags.
@@ -164,7 +164,7 @@ The router entrypoint is `packages/host-service/src/trpc/router/workspace-creati
 4. `git worktree add --no-track -b <newBranch> <path> <startPoint>` — `--no-track` since the new branch is intentionally untethered.
 5. `ensureV2Host` → cloud `v2Workspace.create` → rollback worktree on cloud failure.
 6. Insert local `workspaces` row.
-7. Optionally spawn setup terminal (`.superset/setup.sh`).
+7. Optionally spawn setup terminal (`.rox/setup.sh`).
 
 **`checkout`** (reuse an existing branch):
 1. Same project-ensure prelude.
@@ -236,7 +236,7 @@ workspaceCleanup.destroy: protectedProcedure
   }))
   .mutation(async ({ ctx, input }) => {
     // 1. Kill PTYs for this workspaceId.
-    // 2. Run .superset/teardown.sh if it exists, 60s timeout, SIGKILL on timeout,
+    // 2. Run .rox/teardown.sh if it exists, 60s timeout, SIGKILL on timeout,
     //    capture stdout/stderr tail. On failure (and no `force`), throw TEARDOWN_FAILED
     //    typed so renderer can prompt "delete anyway" → re-call with force: true.
     // 3. `git worktree remove <path>` (add --force if input.force). Throws CONFLICT
@@ -392,7 +392,7 @@ Branch creation (`create-branch.ts:1-49`):
 
 Freshness: background fetcher every ~1 hour (min 5 min). After each fetch, `git remote set-head -a <remote>` to refresh the remote HEAD symref. No fetch at branch creation time.
 
-### Superset v1
+### Rox v1
 
 `workspace-init.ts:217-273` — `resolveLocalStartPoint`:
 ```
@@ -405,7 +405,7 @@ Fast: `rev-parse` is local I/O only (<5ms). No network calls.
 
 ## Comparison
 
-| | VS Code | T3Code | GitHub Desktop | Superset v1 | **Superset v2** |
+| | VS Code | T3Code | GitHub Desktop | Rox v1 | **Rox v2** |
 |--|---------|--------|----------------|-------------|-----------------|
 | **Strategy** | Upstream tracking lookup | Config → symbolic-ref → candidates | Symbolic-ref → config → "main" + local/remote search | `origin/<branch>` prefix → local → scan | **Local-first** + symbolic-ref default + `origin/<branch>` fallback → HEAD |
 | **Prefers remote ref?** | Yes (via upstream) | Yes (when only remote exists) | Prefers local that tracks remote | Yes (`origin/` first) | **No — local-first** (avoids stale remote refs) |

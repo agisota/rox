@@ -1,16 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
-import { SUPERSET_MANAGED_BINARIES } from "./desktop-agent-capabilities";
+import { ROX_MANAGED_BINARIES } from "./desktop-agent-capabilities";
 import { BIN_DIR } from "./paths";
 
-export const WRAPPER_MARKER = "# Superset agent-wrapper v3";
-export { SUPERSET_MANAGED_BINARIES };
+export const WRAPPER_MARKER = "# Rox agent-wrapper v3";
+export { ROX_MANAGED_BINARIES };
 
-// Dev setup (.superset/lib/setup/steps.sh) points SUPERSET_HOME_DIR at
-// $PWD/superset-dev-data — without a leading dot — so we must recognize that
+// Dev setup (.rox/lib/setup/steps.sh) points ROX_HOME_DIR at
+// $PWD/rox-dev-data — without a leading dot — so we must recognize that
 // variant to reap stale notify.sh paths from deleted worktrees.
-const SUPERSET_MANAGED_HOOK_PATH_PATTERN =
-	/\/(?:\.superset(?:-[^/'"\s\\]+)?|superset-dev-data)\//;
+const ROX_MANAGED_HOOK_PATH_PATTERN =
+	/\/(?:\.rox(?:-[^/'"\s\\]+)?|rox-dev-data)\//;
 
 export function writeFileIfChanged(
 	filePath: string,
@@ -33,14 +33,14 @@ export function writeFileIfChanged(
 	return true;
 }
 
-export function isSupersetManagedHookCommand(
+export function isRoxManagedHookCommand(
 	command: string | undefined,
 	scriptName: string,
 ): boolean {
 	if (!command) return false;
 	const normalized = command.replaceAll("\\", "/");
 	if (!normalized.includes(`/hooks/${scriptName}`)) return false;
-	return SUPERSET_MANAGED_HOOK_PATH_PATTERN.test(normalized);
+	return ROX_MANAGED_HOOK_PATH_PATTERN.test(normalized);
 }
 
 interface ReconcileManagedEntriesOptions<T> {
@@ -89,7 +89,7 @@ function buildRealBinaryResolver(): string {
     [ -z "$dir" ] && continue
     dir="\${dir%/}"
     case "$dir" in
-      "${BIN_DIR}"|"$HOME"/.superset/bin|"$HOME"/.superset-*/bin) continue ;;
+      "${BIN_DIR}"|"$HOME"/.rox/bin|"$HOME"/.rox-*/bin) continue ;;
     esac
     if [ -x "$dir/$name" ] && [ ! -d "$dir/$name" ]; then
       printf "%s\\n" "$dir/$name"
@@ -102,7 +102,7 @@ function buildRealBinaryResolver(): string {
 }
 
 function getMissingBinaryMessage(name: string): string {
-	return `Superset: ${name} not found in PATH. Install it and ensure it is on PATH, then retry.`;
+	return `Rox: ${name} not found in PATH. Install it and ensure it is on PATH, then retry.`;
 }
 
 export function getWrapperPath(binaryName: string): string {
@@ -112,7 +112,7 @@ export function getWrapperPath(binaryName: string): string {
 export interface BuildWrapperScriptOptions {
 	/**
 	 * `BuiltinAgentId` for the wrapped binary (e.g. "claude", "codex"). When
-	 * set, the wrapper exports `SUPERSET_AGENT_ID` so the agent process and
+	 * set, the wrapper exports `ROX_AGENT_ID` so the agent process and
 	 * any hook subprocess it spawns inherit the wrapper-level identity. The
 	 * notify-hook script forwards this into the v2 hook payload.
 	 */
@@ -125,11 +125,11 @@ export function buildWrapperScript(
 	options: BuildWrapperScriptOptions = {},
 ): string {
 	const exportAgentId = options.agentId
-		? `export SUPERSET_AGENT_ID="${options.agentId}"\n\n`
+		? `export ROX_AGENT_ID="${options.agentId}"\n\n`
 		: "";
 	return `#!/bin/bash
 ${WRAPPER_MARKER}
-# Superset wrapper for ${binaryName}
+# Rox wrapper for ${binaryName}
 
 ${buildRealBinaryResolver()}
 REAL_BIN="$(find_real_binary "${binaryName}")"

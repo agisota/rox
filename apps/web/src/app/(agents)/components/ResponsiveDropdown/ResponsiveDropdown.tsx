@@ -1,13 +1,13 @@
 "use client";
 
-import { Drawer, DrawerContent, DrawerTitle } from "@superset/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@rox/ui/drawer";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { useIsMobile } from "@superset/ui/hooks/use-mobile";
+} from "@rox/ui/dropdown-menu";
+import { useIsMobile } from "@rox/ui/hooks/use-mobile";
 import {
 	cloneElement,
 	isValidElement,

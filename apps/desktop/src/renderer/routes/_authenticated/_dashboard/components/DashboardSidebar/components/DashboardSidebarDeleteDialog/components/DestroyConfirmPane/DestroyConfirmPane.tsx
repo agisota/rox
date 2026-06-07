@@ -5,10 +5,10 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
-import { Checkbox } from "@superset/ui/checkbox";
-import { Label } from "@superset/ui/label";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import { Checkbox } from "@rox/ui/checkbox";
+import { Label } from "@rox/ui/label";
 import { useEffect, useId } from "react";
 import { shouldConfirmDeleteDialogKey } from "../../utils/shouldConfirmDeleteDialogKey";
 

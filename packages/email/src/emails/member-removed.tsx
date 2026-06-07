@@ -24,7 +24,7 @@ export function MemberRemovedEmail({
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
 				{removedByName} has removed you from <strong>{organizationName}</strong>{" "}
-				on Superset.
+				on Rox.
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">

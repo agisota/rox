@@ -1,7 +1,7 @@
 "use client";
 
-import { authClient } from "@superset/auth/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
+import { authClient } from "@rox/auth/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, LogOut } from "lucide-react";
 import Image from "next/image";
@@ -54,13 +54,7 @@ export function Header() {
 		<header className="sticky left-0 top-0 z-40 w-full border-b border-border/50 bg-background py-4">
 			<div className="mx-auto flex min-h-8 w-[95vw] max-w-screen-2xl items-center justify-between">
 				<Link href="/" aria-label="Go to home">
-					<Image
-						src="/title.svg"
-						alt="Superset"
-						width={150}
-						height={25}
-						priority
-					/>
+					<Image src="/title.svg" alt="Rox" width={150} height={25} priority />
 				</Link>
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>

@@ -8,7 +8,7 @@ export const PROMPT_TRANSPORTS = ["argv", "stdin"] as const;
 export type PromptTransport = (typeof PROMPT_TRANSPORTS)[number];
 
 function resolveDelimiter(prompt: string, randomId: string): string {
-	let delimiter = `SUPERSET_PROMPT_${randomId.replaceAll("-", "")}`;
+	let delimiter = `ROX_PROMPT_${randomId.replaceAll("-", "")}`;
 	while (prompt.includes(delimiter)) {
 		delimiter = `${delimiter}_X`;
 	}

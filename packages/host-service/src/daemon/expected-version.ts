@@ -4,12 +4,12 @@
 // daemons pending — the only valid daemon-version source of truth in the repo
 // is `pty-daemon/package.json#version`.
 //
-// We pass this to spawned daemons via SUPERSET_PTY_DAEMON_VERSION and
+// We pass this to spawned daemons via ROX_PTY_DAEMON_VERSION and
 // probe it back on adoption. We do NOT auto-kill on mismatch or failed
 // background handoff — sessions live in the daemon; the user explicitly
 // triggers restart.
 
-import ptyDaemonPackageJson from "@superset/pty-daemon/package.json" with {
+import ptyDaemonPackageJson from "@rox/pty-daemon/package.json" with {
 	type: "json",
 };
 

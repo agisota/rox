@@ -3,9 +3,9 @@ import {
 	ConversationContent,
 	ConversationEmptyState,
 	ConversationScrollButton,
-} from "@superset/ui/ai-elements/conversation";
-import { Message, MessageContent } from "@superset/ui/ai-elements/message";
-import { ShimmerLabel } from "@superset/ui/ai-elements/shimmer-label";
+} from "@rox/ui/ai-elements/conversation";
+import { Message, MessageContent } from "@rox/ui/ai-elements/message";
+import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
 import type { ChatStatus, UIMessage } from "ai";
 import { isToolUIPart } from "ai";
 import { FileIcon, FileTextIcon, ImageIcon } from "lucide-react";

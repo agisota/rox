@@ -1,10 +1,10 @@
 import type {
 	JsonSchema,
+	RoxBlockState,
+	RoxWorkflowState,
 	RunCost,
-	SupersetBlockState,
-	SupersetWorkflowState,
 	WorkflowRunError,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 
 export type RunStatus =
 	| "queued"
@@ -39,7 +39,7 @@ export interface StepRecord {
 
 export interface BlockHandlerContext {
 	blockId: string;
-	block: SupersetBlockState;
+	block: RoxBlockState;
 	/** Merged outputs of upstream blocks feeding this one. */
 	input: Record<string, unknown>;
 	/** The workflow run's top-level input. */
@@ -108,4 +108,4 @@ export interface RunResult {
 	};
 }
 
-export type { SupersetWorkflowState };
+export type { RoxWorkflowState };

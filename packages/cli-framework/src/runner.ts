@@ -119,7 +119,7 @@ function processGlobals(
  * passthrough tokens (global flags + everything after the first unknown
  * flag, which belongs to the leaf command's parser). Without this,
  * `routeCommand` would stop at the first `-` token and a leading global
- * flag like `superset --json auth check` would short-circuit to root help.
+ * flag like `rox --json auth check` would short-circuit to root help.
  */
 function splitArgsForRouting(
 	args: string[],
@@ -241,7 +241,7 @@ async function execute(
 
 	// `--version` / `-v` print the CLI's version when no command resolved.
 	// Once a command is in play, the flag is the command's to consume —
-	// e.g. `superset update --version 0.1.2`.
+	// e.g. `rox update --version 0.1.2`.
 	if (
 		commandPath.length === 0 &&
 		(args.includes("--version") || args.includes("-v"))

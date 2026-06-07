@@ -3,9 +3,9 @@ import type {
 	SelectUser,
 	SelectV2Host,
 	SelectV2Workspace,
-} from "@superset/db/schema";
-import { COMPANY } from "@superset/shared/constants";
-import { describeSchedule } from "@superset/shared/rrule";
+} from "@rox/db/schema";
+import { COMPANY } from "@rox/shared/constants";
+import { describeSchedule } from "@rox/shared/rrule";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -15,25 +15,25 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Badge } from "@superset/ui/badge";
-import { Button } from "@superset/ui/button";
+} from "@rox/ui/alert-dialog";
+import { Badge } from "@rox/ui/badge";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import {
 	Empty,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
-} from "@superset/ui/empty";
-import { toast } from "@superset/ui/sonner";
-import { Tabs, TabsList, TabsTrigger } from "@superset/ui/tabs";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/empty";
+import { toast } from "@rox/ui/sonner";
+import { Tabs, TabsList, TabsTrigger } from "@rox/ui/tabs";
+import { cn } from "@rox/ui/utils";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -294,13 +294,13 @@ function AutomationsPage() {
 							<p className="text-sm font-medium text-foreground">
 								Supercharge automations with the{" "}
 								<code className="select-text cursor-text rounded bg-background/80 px-1 py-0.5 font-mono text-[13px]">
-									superset
+									rox
 								</code>{" "}
 								CLI
 							</p>
 							<p className="text-sm leading-relaxed text-muted-foreground">
-								It&apos;s available in every Superset terminal. Tell the agent
-								to use it to spin up workspaces, run tasks, or manage other
+								It&apos;s available in every Rox terminal. Tell the agent to use
+								it to spin up workspaces, run tasks, or manage other
 								automations.{" "}
 								<a
 									href={`${COMPANY.DOCS_URL}/cli/getting-started`}

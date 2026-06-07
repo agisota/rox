@@ -1,16 +1,16 @@
-import type { GitHubStatus } from "@superset/local-db";
-import { Button } from "@superset/ui/button";
-import { ButtonGroup } from "@superset/ui/button-group";
+import type { GitHubStatus } from "@rox/local-db";
+import { Button } from "@rox/ui/button";
+import { ButtonGroup } from "@rox/ui/button-group";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
-import { Textarea } from "@superset/ui/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
+import { Textarea } from "@rox/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useState } from "react";
 import {
 	VscArrowDown,

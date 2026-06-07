@@ -3,13 +3,13 @@ import { randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import path from "node:path";
-import { settings } from "@superset/local-db";
-import { getHostId, getHostName } from "@superset/shared/host-info";
+import { settings } from "@rox/local-db";
+import { getHostId, getHostName } from "@rox/shared/host-info";
 import { app } from "electron";
 import log from "electron-log/main";
 import { env as sharedEnv } from "shared/env.shared";
 import { getProcessEnvWithShellPath } from "../../lib/trpc/routers/workspaces/utils/shell-env";
-import { SUPERSET_HOME_DIR } from "./app-environment";
+import { ROX_HOME_DIR } from "./app-environment";
 import {
 	isProcessAlive,
 	killProcess,
@@ -190,7 +190,7 @@ export class HostServiceCoordinator extends EventEmitter {
 	 * tracked in this process (e.g. a stale manifest left by a CLI-spawned
 	 * host-service) — then removes the manifest so callers can't pick up the
 	 * stale entry, and respawns. Used by the recovery path for
-	 * superset-sh/superset#4299 where a wedged host-service keeps serving
+	 * agisota/set#4299 where a wedged host-service keeps serving
 	 * stale state.
 	 */
 	async reset(
@@ -463,13 +463,13 @@ export class HostServiceCoordinator extends EventEmitter {
 				? path.join(process.resourcesPath, "resources/host-migrations")
 				: path.join(app.getAppPath(), "../../packages/host-service/drizzle"),
 			DESKTOP_VITE_PORT: String(sharedEnv.DESKTOP_VITE_PORT),
-			SUPERSET_HOME_DIR: SUPERSET_HOME_DIR,
-			SUPERSET_LEGACY_WORKTREE_BASE_DIR: row?.worktreeBaseDir ?? "",
-			SUPERSET_AGENT_HOOK_PORT: String(sharedEnv.DESKTOP_NOTIFICATIONS_PORT),
-			SUPERSET_AGENT_HOOK_VERSION: HOOK_PROTOCOL_VERSION,
+			ROX_HOME_DIR: ROX_HOME_DIR,
+			ROX_LEGACY_WORKTREE_BASE_DIR: row?.worktreeBaseDir ?? "",
+			ROX_AGENT_HOOK_PORT: String(sharedEnv.DESKTOP_NOTIFICATIONS_PORT),
+			ROX_AGENT_HOOK_VERSION: HOOK_PROTOCOL_VERSION,
 			AUTH_TOKEN: config.authToken,
-			SUPERSET_AUTH_CONFIG_PATH: path.join(SUPERSET_HOME_DIR, "config.json"),
-			SUPERSET_API_URL: config.cloudApiUrl,
+			ROX_AUTH_CONFIG_PATH: path.join(ROX_HOME_DIR, "config.json"),
+			ROX_API_URL: config.cloudApiUrl,
 			// Read by the child's parent watchdog so it can self-exit if
 			// Electron crashes without sending SIGTERM (orphan reparenting).
 			HOST_PARENT_PID: String(process.pid),

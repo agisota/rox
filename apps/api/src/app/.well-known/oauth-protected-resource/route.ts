@@ -1,4 +1,4 @@
-import { auth } from "@superset/auth/server";
+import { auth } from "@rox/auth/server";
 import { buildProtectedResourceMetadata } from "@/lib/oauth-metadata";
 
 export async function GET(request: Request): Promise<Response> {
@@ -12,7 +12,7 @@ export async function GET(request: Request): Promise<Response> {
 				typeof authServerMetadata.issuer === "string"
 					? authServerMetadata.issuer
 					: undefined,
-			resourceName: "Superset MCP Server",
+			resourceName: "Rox MCP Server",
 			scopesSupported: Array.isArray(authServerMetadata.scopes_supported)
 				? authServerMetadata.scopes_supported
 				: undefined,

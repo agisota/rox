@@ -1,5 +1,5 @@
 import { Memory } from "@mastra/memory";
-import type { AppRouter } from "@superset/trpc";
+import type { AppRouter } from "@rox/trpc";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { initTRPC } from "@trpc/server";
 import { createMastraCode } from "mastracode";
@@ -20,7 +20,7 @@ import {
 	subscribeToSessionEvents,
 	syncRuntimeHookSessionId,
 } from "./utils/runtime";
-import { getSupersetMcpTools } from "./utils/runtime/superset-mcp";
+import { getRoxMcpTools } from "./utils/runtime/rox-mcp";
 import {
 	approvalRespondInput,
 	displayStateInput,
@@ -139,7 +139,7 @@ export class ChatRuntimeService {
 
 		const creationPromise = (async () => {
 			try {
-				const extraTools = await getSupersetMcpTools(
+				const extraTools = await getRoxMcpTools(
 					() => Promise.resolve(this.opts.headers()),
 					this.opts.apiUrl,
 				);

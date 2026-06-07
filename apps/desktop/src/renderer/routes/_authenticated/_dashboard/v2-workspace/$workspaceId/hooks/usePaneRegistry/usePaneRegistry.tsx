@@ -3,11 +3,11 @@ import type {
 	PaneRegistry,
 	RendererContext,
 	WorkspaceStore,
-} from "@superset/panes";
-import { alert } from "@superset/ui/atoms/Alert";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/panes";
+import { alert } from "@rox/ui/atoms/Alert";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { Circle, GitCompareArrows, Globe, MessageSquare } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import {

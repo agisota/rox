@@ -4,7 +4,7 @@ Shipped in PR #3625.
 
 ## The bug
 
-Two workspace → PR match sites keyed on branch name alone. Any cross-fork PR whose `headRefName` collided with a local branch got attached — e.g. PR #3261 (`quueli/superset-windows:main` → `superset-sh/superset:main`) showing on every local `main` workspace.
+Two workspace → PR match sites keyed on branch name alone. Any cross-fork PR whose `headRefName` collided with a local branch got attached — e.g. PR #3261 (`quueli/rox-windows:main` → `agisota/set:main`) showing on every local `main` workspace.
 
 ## Where the symptom came from
 
@@ -41,7 +41,7 @@ Two workspace → PR match sites keyed on branch name alone. Any cross-fork PR w
 
 ## Verification
 
-- PR #3261 (cross-fork): workspace upstream `superset-sh/superset#main` vs PR key `quueli/superset-windows#main` — no match in v2. v1 predicate returns false via `isCrossRepository` check. ✓
+- PR #3261 (cross-fork): workspace upstream `agisota/set#main` vs PR key `quueli/rox-windows#main` — no match in v2. v1 predicate returns false via `isCrossRepository` check. ✓
 - PR #3625 (this PR, same-repo): local branch `pr-3261-detection-in-v1-sidebar` tracking `origin/pr-3261-detection-in-v1-sidebar`. Tuples match in v2. v1 predicate returns true. ✓
 - Fresh untracked branch: upstream null, no match. ✓
 - `gh pr checkout` cross-fork review (local `quueli-main` tracking fork's `main`): `upstream_branch = main`, matches PR's `headRefName = main`. ✓

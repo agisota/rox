@@ -1,4 +1,4 @@
-import type { HostAgentConfig } from "@superset/host-service/settings";
+import type { HostAgentConfig } from "@rox/host-service/settings";
 import {
 	Select,
 	SelectContent,
@@ -8,8 +8,8 @@ import {
 	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/select";
+import { cn } from "@rox/ui/utils";
 import { LuPlus } from "react-icons/lu";
 import { usePresetIcon } from "renderer/assets/app-icons/preset-icons";
 import type { TerminalAgentBinding } from "renderer/hooks/host-service/useTerminalAgentBindings";

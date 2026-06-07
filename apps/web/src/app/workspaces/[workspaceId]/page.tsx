@@ -1,6 +1,6 @@
 "use client";
 
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import { trpcClient } from "../../../trpc/client";

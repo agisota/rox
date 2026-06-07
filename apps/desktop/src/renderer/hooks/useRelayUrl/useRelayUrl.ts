@@ -1,4 +1,4 @@
-import { FEATURE_FLAGS } from "@superset/shared/constants";
+import { FEATURE_FLAGS } from "@rox/shared/constants";
 import { useFeatureFlagPayload } from "posthog-js/react";
 import { env } from "renderer/env.renderer";
 

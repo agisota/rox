@@ -128,7 +128,7 @@ There are **three parallel delete backends** in this repo, and they do not share
 4. **Host-service `workspace.delete` (Path C) is the only unified implementation and is unreachable from the UI.** It already composes cloud + worktree + local cleanup in the right order. Desktop never calls it; it only calls host-service for git-status/diff/terminals (`hooks/host-service/*`).
 5. **v2-workspaces list page has no delete at all.** `V2WorkspaceRow.tsx:125-147` only toggles sidebar membership. Users browsing the list must pin to sidebar first, then delete — UX dead end.
 6. **Analytics divergence.** Path A emits `workspace_deleted`; Path B emits nothing; Path C would emit via whichever layer fires first. Product metrics will undercount v2 deletes.
-7. **Teardown never runs for cloud-originated deletes.** Any `SUPERSET_WORKSPACE_NAME`-dependent cleanup scripts silently skip when users delete via the v2 sidebar.
+7. **Teardown never runs for cloud-originated deletes.** Any `ROX_WORKSPACE_NAME`-dependent cleanup scripts silently skip when users delete via the v2 sidebar.
 
 ## Backend safety (shared, for reference)
 

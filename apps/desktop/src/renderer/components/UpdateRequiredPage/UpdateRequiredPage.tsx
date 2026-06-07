@@ -1,5 +1,5 @@
-import { COMPANY } from "@superset/shared/constants";
-import { Button } from "@superset/ui/button";
+import { COMPANY } from "@rox/shared/constants";
+import { Button } from "@rox/ui/button";
 import { useState } from "react";
 import { HiArrowPath, HiExclamationTriangle } from "react-icons/hi2";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -66,7 +66,7 @@ export function UpdateRequiredPage({
 						<h1 className="text-xl font-semibold">Update Required</h1>
 						<p className="max-w-md text-muted-foreground">
 							{message ||
-								"A new version of Superset is required to continue. Please update to the latest version."}
+								"A new version of Rox is required to continue. Please update to the latest version."}
 						</p>
 					</div>
 

@@ -1,4 +1,4 @@
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 
 export type HostServiceAvailabilityStatus =
 	| "starting"
@@ -42,11 +42,11 @@ function getRecoveryText(status: HostServiceAvailabilityStatus): string {
 		case "starting":
 			return "Retry in a few seconds.";
 		case "stopped":
-			return "Use the Superset tray menu > Host Service > Restart, then retry.";
+			return "Use the Rox tray menu > Host Service > Restart, then retry.";
 		case "running":
 			return "Retry after the connection refreshes.";
 		case "unknown":
-			return "Retry in a few seconds; if it persists, restart Superset.";
+			return "Retry in a few seconds; if it persists, restart Rox.";
 	}
 }
 

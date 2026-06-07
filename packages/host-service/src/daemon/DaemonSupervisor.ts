@@ -17,14 +17,14 @@ import * as path from "node:path";
 import {
 	isPositiveInteger,
 	signalProcessTreeAndGroups,
-} from "@superset/pty-daemon/process-tree";
+} from "@rox/pty-daemon/process-tree";
 import {
 	CURRENT_PROTOCOL_VERSION,
 	encodeFrame,
 	FrameDecoder,
 	type ServerMessage,
 	type SessionInfo,
-} from "@superset/pty-daemon/protocol";
+} from "@rox/pty-daemon/protocol";
 import semver from "semver";
 import { DaemonClient } from "../terminal/DaemonClient/index.ts";
 import { EXPECTED_DAEMON_VERSION } from "./expected-version.ts";
@@ -88,7 +88,7 @@ const CRASH_BUDGET = 3;
 const CRASH_WINDOW_MS = 60_000;
 /** How often to poll an adopted daemon's PID for liveness. */
 const ADOPTED_LIVENESS_INTERVAL_MS = 2_000;
-const ADOPT_IN_DEV_ENV = "SUPERSET_PTY_DAEMON_ADOPT_IN_DEV";
+const ADOPT_IN_DEV_ENV = "ROX_PTY_DAEMON_ADOPT_IN_DEV";
 
 export function shouldKillStaleDaemonForDev(
 	env: NodeJS.ProcessEnv = process.env,
@@ -99,8 +99,8 @@ export function shouldKillStaleDaemonForDev(
 
 /**
  * Per-organization socket path. **Must stay short** — Darwin's `sun_path`
- * is 104 bytes, and `$SUPERSET_HOME_DIR/host/{orgId}/pty-daemon.sock` blows
- * past that in dev (worktree-relative SUPERSET_HOME_DIR + 36-char UUID).
+ * is 104 bytes, and `$ROX_HOME_DIR/host/{orgId}/pty-daemon.sock` blows
+ * past that in dev (worktree-relative ROX_HOME_DIR + 36-char UUID).
  *
  * We put the socket in `os.tmpdir()` with a hash of the org id. Owner-only
  * file mode (0600, set by the daemon's Server.listen) is the auth boundary;
@@ -111,7 +111,7 @@ export function ptyDaemonSocketPath(organizationId: string): string {
 		.update(organizationId)
 		.digest("hex")
 		.slice(0, 12);
-	return path.join(os.tmpdir(), `superset-ptyd-${shortId}.sock`);
+	return path.join(os.tmpdir(), `rox-ptyd-${shortId}.sock`);
 }
 
 /**
@@ -930,7 +930,7 @@ export class DaemonSupervisor {
 			// Source of truth for daemon version. The daemon's main.ts reads
 			// this and surfaces it in the hello-ack so adoption probes can
 			// detect drift against EXPECTED_DAEMON_VERSION.
-			SUPERSET_PTY_DAEMON_VERSION: EXPECTED_DAEMON_VERSION,
+			ROX_PTY_DAEMON_VERSION: EXPECTED_DAEMON_VERSION,
 		};
 
 		console.log(

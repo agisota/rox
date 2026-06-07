@@ -1,6 +1,6 @@
-import { db } from "@superset/db/client";
-import { integrationConnections } from "@superset/db/schema";
-import { refreshLinearToken } from "@superset/trpc/integrations/linear";
+import { db } from "@rox/db/client";
+import { integrationConnections } from "@rox/db/schema";
+import { refreshLinearToken } from "@rox/trpc/integrations/linear";
 import { Receiver } from "@upstash/qstash";
 import { and, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { env } from "@/env";

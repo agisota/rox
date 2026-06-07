@@ -348,7 +348,7 @@ const ALLOWED_ENV_VARS = new Set([
  * These are checked after exact matches fail.
  */
 const ALLOWED_PREFIXES = [
-	"SUPERSET_", // Our own metadata vars
+	"ROX_", // Our own metadata vars
 	"LC_", // Locale settings
 ];
 
@@ -378,7 +378,7 @@ function hasAllowedPrefix(key: string, isWindows: boolean): boolean {
 
 /**
  * Build a safe environment by only including allowlisted variables.
- * This prevents Superset app secrets and build-time config from leaking to terminals.
+ * This prevents Rox app secrets and build-time config from leaking to terminals.
  *
  * Threat model: Prevent app secrets (DATABASE_URL, API keys from .env) from leaking.
  * User shell config vars (proxy, tool paths) are intentionally allowed so terminals
@@ -469,17 +469,17 @@ export function buildTerminalEnv(params: {
 		COLORTERM: "truecolor",
 		COLORFGBG: colorFgBg,
 		LANG: locale,
-		SUPERSET_PANE_ID: paneId,
-		SUPERSET_TAB_ID: tabId,
-		SUPERSET_WORKSPACE_ID: workspaceId,
-		SUPERSET_WORKSPACE_NAME: workspaceName || "",
-		SUPERSET_WORKSPACE_PATH: workspacePath || "",
-		SUPERSET_ROOT_PATH: rootPath || "",
-		SUPERSET_PORT: String(env.DESKTOP_NOTIFICATIONS_PORT),
+		ROX_PANE_ID: paneId,
+		ROX_TAB_ID: tabId,
+		ROX_WORKSPACE_ID: workspaceId,
+		ROX_WORKSPACE_NAME: workspaceName || "",
+		ROX_WORKSPACE_PATH: workspacePath || "",
+		ROX_ROOT_PATH: rootPath || "",
+		ROX_PORT: String(env.DESKTOP_NOTIFICATIONS_PORT),
 		// Environment identifier for dev/prod separation
-		SUPERSET_ENV: env.NODE_ENV === "development" ? "development" : "production",
+		ROX_ENV: env.NODE_ENV === "development" ? "development" : "production",
 		// Hook protocol version for forward compatibility
-		SUPERSET_HOOK_VERSION: HOOK_PROTOCOL_VERSION,
+		ROX_HOOK_VERSION: HOOK_PROTOCOL_VERSION,
 	};
 
 	delete terminalEnv.GOOGLE_API_KEY;

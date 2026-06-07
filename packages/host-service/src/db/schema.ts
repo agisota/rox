@@ -1,4 +1,4 @@
-import type { BranchPrefixMode } from "@superset/shared/workspace-launch";
+import type { BranchPrefixMode } from "@rox/shared/workspace-launch";
 import {
 	index,
 	integer,

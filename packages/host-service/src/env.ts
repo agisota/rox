@@ -12,8 +12,8 @@ export const env = createEnv({
 		HOST_DB_PATH: z.string().min(1),
 		HOST_MIGRATIONS_FOLDER: z.string().min(1),
 		AUTH_TOKEN: z.string().min(1),
-		SUPERSET_AUTH_CONFIG_PATH: z.string().min(1).optional(),
-		SUPERSET_API_URL: z.string().url(),
+		ROX_AUTH_CONFIG_PATH: z.string().min(1).optional(),
+		ROX_API_URL: z.string().url(),
 		CORS_ORIGINS: z
 			.string()
 			.transform((s) => s.split(",").map((o) => o.trim()))

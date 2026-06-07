@@ -1,5 +1,5 @@
-import type { LifecycleEvent } from "@superset/chat/server/trpc";
-import { ChatRuntimeService } from "@superset/chat/server/trpc";
+import type { LifecycleEvent } from "@rox/chat/server/trpc";
+import { ChatRuntimeService } from "@rox/chat/server/trpc";
 import { env } from "main/env.main";
 import { appState } from "main/lib/app-state";
 import { notificationsEmitter } from "main/lib/notifications/server";

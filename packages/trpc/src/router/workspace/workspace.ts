@@ -1,11 +1,11 @@
-import { dbWs } from "@superset/db/client";
+import { dbWs } from "@rox/db/client";
 import {
 	projects,
 	workspaceConfigSchema,
 	workspaces,
 	workspaceTypeEnum,
-} from "@superset/db/schema";
-import { getCurrentTxid } from "@superset/db/utils";
+} from "@rox/db/schema";
+import { getCurrentTxid } from "@rox/db/utils";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";

@@ -29,7 +29,7 @@ function createSandbox(): Sandbox {
 }
 
 function writeRepoConfig(repoPath: string, content: string | object) {
-	const dir = join(repoPath, ".superset");
+	const dir = join(repoPath, ".rox");
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(
 		join(dir, "config.json"),
@@ -39,7 +39,7 @@ function writeRepoConfig(repoPath: string, content: string | object) {
 }
 
 function writeRepoLocalConfig(repoPath: string, content: string | object) {
-	const dir = join(repoPath, ".superset");
+	const dir = join(repoPath, ".rox");
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(
 		join(dir, "config.local.json"),
@@ -53,7 +53,7 @@ function writeUserOverride(
 	projectId: string,
 	content: object,
 ) {
-	const dir = join(homeDir, ".superset", "projects", projectId);
+	const dir = join(homeDir, ".rox", "projects", projectId);
 	mkdirSync(dir, { recursive: true });
 	writeFileSync(join(dir, "config.json"), JSON.stringify(content), "utf-8");
 }
@@ -336,7 +336,7 @@ describe("getResolvedSetupCommands", () => {
 });
 
 describe("getProjectConfigPath", () => {
-	it("appends .superset/config.json to the repoPath", () => {
-		expect(getProjectConfigPath("/tmp/x")).toBe("/tmp/x/.superset/config.json");
+	it("appends .rox/config.json to the repoPath", () => {
+		expect(getProjectConfigPath("/tmp/x")).toBe("/tmp/x/.rox/config.json");
 	});
 });

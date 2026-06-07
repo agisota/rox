@@ -1,6 +1,6 @@
 "use client";
 
-import { useIsMobile } from "@superset/ui/hooks/use-mobile";
+import { useIsMobile } from "@rox/ui/hooks/use-mobile";
 import { type MotionValue, motion, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { type ActiveDemo, AppMockup } from "../AppMockup";

@@ -12,7 +12,7 @@ import path from "node:path";
 import { app } from "electron";
 import { BIN_DIR } from "./agent-setup/paths";
 
-export const BUNDLED_CLI_SHIM_MARKER = "# Superset bundled CLI shim v1";
+export const BUNDLED_CLI_SHIM_MARKER = "# Rox bundled CLI shim v1";
 const SHIM_HEADER_BYTES = 2048;
 
 export type BundledCliInstallStatus = "installed" | "missing" | "skipped";
@@ -26,13 +26,13 @@ interface InstallBundledCliShimOptions {
 export function getBundledCliBinaryName(
 	platform: NodeJS.Platform = process.platform,
 ): string {
-	return platform === "win32" ? "superset.exe" : "superset";
+	return platform === "win32" ? "rox.exe" : "rox";
 }
 
 export function getBundledCliShimName(
 	platform: NodeJS.Platform = process.platform,
 ): string {
-	return platform === "win32" ? "superset.cmd" : "superset";
+	return platform === "win32" ? "rox.cmd" : "rox";
 }
 
 function quoteShellLiteral(value: string): string {
@@ -130,6 +130,6 @@ export function installBundledCliShim(
 		mode: platform === "win32" ? 0o644 : 0o755,
 	});
 
-	console.log(`[bundled-cli] Installed Superset CLI shim at ${shimPath}`);
+	console.log(`[bundled-cli] Installed Rox CLI shim at ${shimPath}`);
 	return "installed";
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { authClient } from "@superset/auth/client";
-import { Button } from "@superset/ui/button";
+import { authClient } from "@rox/auth/client";
+import { Button } from "@rox/ui/button";
 import Link from "next/link";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
@@ -54,7 +54,7 @@ export default function SignUpPage() {
 					Create an account
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign up to get started with Superset
+					Sign up to get started with Rox
 				</p>
 			</div>
 			<div className="grid gap-4">

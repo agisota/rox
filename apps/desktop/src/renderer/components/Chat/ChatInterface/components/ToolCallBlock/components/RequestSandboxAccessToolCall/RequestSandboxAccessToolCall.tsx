@@ -1,4 +1,4 @@
-import { ToolCallRow } from "@superset/ui/ai-elements/tool-call-row";
+import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
 import {
 	CheckIcon,
 	CircleXIcon,

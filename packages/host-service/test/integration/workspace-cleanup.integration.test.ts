@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Server, type ServerOptions } from "@superset/pty-daemon";
+import { Server, type ServerOptions } from "@rox/pty-daemon";
 import { TRPCClientError } from "@trpc/client";
 import { eq } from "drizzle-orm";
 import { workspaces } from "../../src/db/schema";
@@ -35,11 +35,11 @@ describe("workspaceCleanup.destroy integration", () => {
 	let teardownServer: Server | null = null;
 	let teardownTmp: string | null = null;
 	let previousPtyDaemonSocket: string | undefined;
-	let previousSupersetHomeDir: string | undefined;
+	let previousRoxHomeDir: string | undefined;
 
 	beforeEach(async () => {
-		previousPtyDaemonSocket = process.env.SUPERSET_PTY_DAEMON_SOCKET;
-		previousSupersetHomeDir = process.env.SUPERSET_HOME_DIR;
+		previousPtyDaemonSocket = process.env.ROX_PTY_DAEMON_SOCKET;
+		previousRoxHomeDir = process.env.ROX_HOME_DIR;
 		scenario = await createFeatureWorktreeScenario({
 			hostOptions: { apiOverrides: cloudFlows.workspaceDeleteOk() },
 		});
@@ -50,8 +50,8 @@ describe("workspaceCleanup.destroy integration", () => {
 		await disposeDaemonClient();
 		resetTerminalBaseEnvForTests();
 		__setAccountShellForTesting(undefined);
-		restoreEnv("SUPERSET_PTY_DAEMON_SOCKET", previousPtyDaemonSocket);
-		restoreEnv("SUPERSET_HOME_DIR", previousSupersetHomeDir);
+		restoreEnv("ROX_PTY_DAEMON_SOCKET", previousPtyDaemonSocket);
+		restoreEnv("ROX_HOME_DIR", previousRoxHomeDir);
 		if (teardownServer) {
 			await teardownServer.close().catch(() => {});
 			teardownServer = null;
@@ -185,8 +185,8 @@ describe("workspaceCleanup.destroy integration", () => {
 		});
 		await teardownServer.listen();
 
-		process.env.SUPERSET_PTY_DAEMON_SOCKET = socketPath;
-		process.env.SUPERSET_HOME_DIR = teardownTmp;
+		process.env.ROX_PTY_DAEMON_SOCKET = socketPath;
+		process.env.ROX_HOME_DIR = teardownTmp;
 		__setAccountShellForTesting("/bin/bash");
 		initTerminalBaseEnv({
 			HOME: process.env.HOME ?? teardownTmp,
@@ -195,7 +195,7 @@ describe("workspaceCleanup.destroy integration", () => {
 			SHELL: "/bin/bash",
 		});
 
-		const scriptDir = join(scenario.worktreePath, ".superset");
+		const scriptDir = join(scenario.worktreePath, ".rox");
 		mkdirSync(scriptDir, { recursive: true });
 		writeFileSync(
 			join(scriptDir, "teardown.sh"),
@@ -206,7 +206,7 @@ describe("workspaceCleanup.destroy integration", () => {
 			"-C",
 			scenario.worktreePath,
 			"add",
-			".superset/teardown.sh",
+			".rox/teardown.sh",
 		]);
 		await scenario.repo.git.raw([
 			"-C",

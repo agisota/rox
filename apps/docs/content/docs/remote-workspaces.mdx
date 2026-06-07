@@ -8,7 +8,7 @@ pro: true
 
 A workspace lives on the machine that hosts its files, terminal, and ports. **Remote workspaces** let you reach a workspace that's hosted on a different machine, like a Mac mini under your desk, a sandbox your team shares, or a spare laptop in the office.
 
-**Superset Relay** is a service that provides a secure way to route traffic between your different devices. There are two ways to grant a device remote access through the relay:
+**Rox Relay** is a service that provides a secure way to route traffic between your different devices. There are two ways to grant a device remote access through the relay:
 
 ## Option 1 — Desktop
 
@@ -33,16 +33,16 @@ See the CLI's [Getting Started](/cli/getting-started) and [Host Server](/cli/hos
 On the machine you want to add to your shared relay network, sign in and start the host server.
 
 ```bash
-superset auth login
-superset start --daemon
+rox auth login
+rox start --daemon
 ```
 
-`superset start --daemon` runs a small HTTP server in the background and registers the machine with the relay so other clients in your organization can find it.
+`rox start --daemon` runs a small HTTP server in the background and registers the machine with the relay so other clients in your organization can find it.
 
 Verify it's online:
 
 ```bash
-superset status
+rox status
 ```
 
 ## Grant teammates access
@@ -63,11 +63,11 @@ On any other device signed into the same organization, open the desktop app's **
 
 ![Device filter in the workspaces list](/images/remote-workspaces-device-filter.png)
 
-Pick a remote host to see the workspaces hosted there. Open one and you get the full Superset experience — terminals, ports, agent runs, the diff viewer — proxied through the relay to the host machine.
+Pick a remote host to see the workspaces hosted there. Open one and you get the full Rox experience — terminals, ports, agent runs, the diff viewer — proxied through the relay to the host machine.
 
 ## Turning access off
 
 - **Desktop**: flip the toggle in **Settings → Security** back off. The host service restarts and stops accepting relay traffic.
-- **CLI**: run `superset stop` on the host machine.
+- **CLI**: run `rox stop` on the host machine.
 
 In both cases, in-flight terminals and host-backed work on that machine are interrupted.

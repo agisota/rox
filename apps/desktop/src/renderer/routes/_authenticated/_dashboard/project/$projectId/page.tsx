@@ -1,23 +1,23 @@
-import { sanitizeSegment } from "@superset/shared/workspace-launch";
-import { Button } from "@superset/ui/button";
-import { Checkbox } from "@superset/ui/checkbox";
+import { sanitizeSegment } from "@rox/shared/workspace-launch";
+import { Button } from "@rox/ui/button";
+import { Checkbox } from "@rox/ui/checkbox";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
+} from "@rox/ui/collapsible";
 import {
 	Command,
 	CommandEmpty,
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
-import { toast } from "@superset/ui/sonner";
-import { Textarea } from "@superset/ui/textarea";
+} from "@rox/ui/command";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { toast } from "@rox/ui/sonner";
+import { Textarea } from "@rox/ui/textarea";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -328,7 +328,7 @@ function ProjectPage() {
 										These commands run automatically when a workspace is
 										created.{" "}
 										<a
-											href="https://docs.superset.sh/setup-teardown-scripts"
+											href="https://docs.rox.one/setup-teardown-scripts"
 											target="_blank"
 											rel="noopener noreferrer"
 											className="group inline-flex items-center gap-0.5 underline underline-offset-2 hover:text-foreground transition-colors"
@@ -615,13 +615,13 @@ function ProjectPage() {
 													<div className="flex flex-wrap items-center gap-1.5 border-t px-1 pt-2 text-[11px] text-muted-foreground">
 														<span className="mr-1">Variables</span>
 														<span className="rounded bg-muted px-1.5 py-0.5 font-mono">
-															$SUPERSET_ROOT_PATH
+															$ROX_ROOT_PATH
 														</span>
 														<span className="rounded bg-muted px-1.5 py-0.5 font-mono">
-															$SUPERSET_WORKSPACE_PATH
+															$ROX_WORKSPACE_PATH
 														</span>
 														<span className="rounded bg-muted px-1.5 py-0.5 font-mono">
-															$SUPERSET_WORKSPACE_NAME
+															$ROX_WORKSPACE_NAME
 														</span>
 													</div>
 												</div>

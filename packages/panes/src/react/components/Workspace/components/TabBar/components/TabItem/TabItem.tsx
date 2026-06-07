@@ -1,14 +1,14 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@superset/ui/context-menu";
-import { OverflowFadeText } from "@superset/ui/overflow-fade-text";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/context-menu";
+import { OverflowFadeText } from "@rox/ui/overflow-fade-text";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
 import { PencilIcon, XIcon } from "lucide-react";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";

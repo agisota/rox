@@ -2,7 +2,7 @@
 
 ## Background
 
-`superset-sh/superset` publishes multiple distinct release streams to a single
+`agisota/set` publishes multiple distinct release streams to a single
 GitHub repo:
 
 - Desktop stable (`desktop-v*` tags)
@@ -49,15 +49,15 @@ release stream" (what's actually going on). The proper fix is below.
 | --- | --- | --- | --- | --- |
 | Desktop stable | `desktop-v*` | `desktop-latest` (NEW) | Desktop auto-updater (stable build) | no |
 | Desktop canary | rolling `desktop-canary` | n/a (it IS the rolling tag) | Desktop auto-updater (canary build) | yes |
-| CLI stable | `cli-v*` | `cli-latest` | `superset update` | no |
-| CLI canary | TBD (`cli-canary-v*` + rolling `cli-canary`) | `cli-canary` | `superset update --canary` (NEW, optional) | yes |
+| CLI stable | `cli-v*` | `cli-latest` | `rox update` | no |
+| CLI canary | TBD (`cli-canary-v*` + rolling `cli-canary`) | `cli-canary` | `rox update --canary` (NEW, optional) | yes |
 
 ## Source-of-truth URLs per consumer
 
-- **Desktop stable build** → `https://github.com/superset-sh/superset/releases/download/desktop-latest/latest-{mac,linux}.yml`. Today reads from `/releases/latest/download/`. **Must move to `desktop-latest`.**
-- **Desktop canary build** → `https://github.com/superset-sh/superset/releases/download/desktop-canary/latest-{mac,linux}.yml`. Already correct.
-- **CLI stable** → `https://github.com/superset-sh/superset/releases/download/cli-latest/version.txt` and matching tarballs. Already correct.
-- **CLI canary** (future) → `https://github.com/superset-sh/superset/releases/download/cli-canary/version.txt` and tarballs.
+- **Desktop stable build** → `https://github.com/agisota/set/releases/download/desktop-latest/latest-{mac,linux}.yml`. Today reads from `/releases/latest/download/`. **Must move to `desktop-latest`.**
+- **Desktop canary build** → `https://github.com/agisota/set/releases/download/desktop-canary/latest-{mac,linux}.yml`. Already correct.
+- **CLI stable** → `https://github.com/agisota/set/releases/download/cli-latest/version.txt` and matching tarballs. Already correct.
+- **CLI canary** (future) → `https://github.com/agisota/set/releases/download/cli-canary/version.txt` and tarballs.
 
 After migration, **no consumer reads `/releases/latest`**. That endpoint becomes irrelevant for our update flows, which removes the cross-stream collision class entirely.
 
@@ -91,7 +91,7 @@ Mirror the `cli-latest` block in `build-cli.yml:135-153`:
     gh release delete desktop-latest --yes --cleanup-tag || true
     gh release create desktop-latest \
       release-artifacts/* \
-      --title "Latest Superset Desktop" \
+      --title "Latest Rox Desktop" \
       --notes "Rolling pointer to the latest published desktop release. See [${VERSION_TAG}](https://github.com/${{ github.repository }}/releases/tag/${VERSION_TAG}) for changelog." \
       --target "${{ github.sha }}"
 ```
@@ -102,7 +102,7 @@ Bootstrap manually once against the current `desktop-v1.7.2` so existing install
 # Run once after step 1 lands
 gh release download desktop-v1.7.2 --pattern '*' --dir /tmp/desktop-bootstrap
 gh release create desktop-latest /tmp/desktop-bootstrap/* \
-  --title "Latest Superset Desktop" \
+  --title "Latest Rox Desktop" \
   --notes "Rolling pointer to the latest published desktop release." \
   --target $(gh release view desktop-v1.7.2 --json targetCommitish --jq .targetCommitish)
 ```
@@ -112,8 +112,8 @@ gh release create desktop-latest /tmp/desktop-bootstrap/* \
 `apps/desktop/src/main/lib/auto-updater.ts:52`:
 
 ```diff
--  : "https://github.com/superset-sh/superset/releases/latest/download";
-+  : "https://github.com/superset-sh/superset/releases/download/desktop-latest";
+-  : "https://github.com/agisota/set/releases/latest/download";
++  : "https://github.com/agisota/set/releases/download/desktop-latest";
 ```
 
 Ship in next desktop release (`desktop-v1.7.3` or whatever's next). Verify the new build picks up `desktop-latest/latest-mac.yml` correctly in a manual smoke test before publishing.
@@ -134,7 +134,7 @@ Before step 5:
 - ✅ `desktop-latest` rolling release exists and is current.
 - ✅ A test desktop build pointing at `desktop-latest` successfully auto-updates.
 - ✅ The pre-step-2 desktop build (still pointing at `/releases/latest`) successfully auto-updates AS LONG AS no non-prerelease CLI release has been published in the interim.
-- ✅ `gh api repos/superset-sh/superset/releases/latest --jq .tag_name` returns a `desktop-v*` tag (i.e. CLI's `--prerelease` workaround is still effective).
+- ✅ `gh api repos/agisota/set/releases/latest --jq .tag_name` returns a `desktop-v*` tag (i.e. CLI's `--prerelease` workaround is still effective).
 
 ### Step 5 — Drop `--prerelease` workaround from `build-cli.yml`
 
@@ -151,7 +151,7 @@ After this step: `/releases/latest` will start pointing at whichever stream had 
 Mirror the desktop-canary pattern:
 
 - New job in `build-cli.yml` triggered on a different branch or workflow_dispatch input, building artifacts and publishing as a rolling `cli-canary` release marked `--prerelease`.
-- New flag on `superset update --canary` that reads from `releases/download/cli-canary/` instead of `cli-latest`.
+- New flag on `rox update --canary` that reads from `releases/download/cli-canary/` instead of `cli-latest`.
 - Tag pattern TBD: either a real `cli-canary-v0.1.0-rc.1` semver-prerelease tag per build, or pure rolling-only with no per-build tag (matches `desktop-canary` precedent — desktop canary has no per-build tag either, just the rolling one).
 
 Not v1-blocking. File as a follow-up ticket once stable CLI is shipping.
@@ -167,12 +167,12 @@ Not v1-blocking. File as a follow-up ticket once stable CLI is shipping.
 
 - ✅ Publishing a `cli-v*` release does not change `/releases/latest`.
 - ✅ Publishing a `desktop-v*` release does not change `/releases/latest`.
-- ✅ `superset update` always finds the newest stable CLI even when desktop has published more recently.
+- ✅ `rox update` always finds the newest stable CLI even when desktop has published more recently.
 - ✅ Desktop auto-updater always finds the newest stable desktop even when CLI has published more recently.
 - ✅ `desktop-latest` always points at the SHA of the newest stable desktop release.
 - ✅ `cli-latest` always points at the SHA of the newest stable CLI release.
 - ✅ Existing desktops on pre-migration code still update successfully through the transition (mitigated by step ordering 1 → 2 → 3 → 4 → 5).
-- ✅ Future `cli-canary` channel is independent of `cli-latest`; flipping `superset update --canary` does not affect non-canary users.
+- ✅ Future `cli-canary` channel is independent of `cli-latest`; flipping `rox update --canary` does not affect non-canary users.
 
 ## Risks pinned
 

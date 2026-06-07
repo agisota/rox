@@ -48,8 +48,7 @@ const config: NextConfig = {
 	},
 
 	async redirects() {
-		const docsUrl =
-			process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.superset.sh";
+		const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.rox.one";
 		return [
 			{
 				source: "/about",
@@ -93,7 +92,7 @@ const config: NextConfig = {
 };
 
 export default withSentryConfig(config, {
-	org: "superset-sh",
+	org: "agisota",
 	project: "marketing",
 	silent: !process.env.CI,
 	authToken: process.env.SENTRY_AUTH_TOKEN,

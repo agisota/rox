@@ -1,4 +1,4 @@
-import { BUILTIN_AGENT_LABELS } from "@superset/shared/agent-catalog";
+import { BUILTIN_AGENT_LABELS } from "@rox/shared/agent-catalog";
 import { TerminalSquare } from "lucide-react";
 import { usePresetIcon } from "renderer/assets/app-icons/preset-icons";
 import { useTerminalAgentBinding } from "renderer/hooks/host-service/useTerminalAgentBindings";

@@ -1,4 +1,4 @@
-import { usePromptInputController } from "@superset/ui/ai-elements/prompt-input";
+import { usePromptInputController } from "@rox/ui/ai-elements/prompt-input";
 import type React from "react";
 import { useCallback } from "react";
 import { type DragType, useDocumentDrag } from "../../hooks/useDocumentDrag";

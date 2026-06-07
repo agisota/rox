@@ -14,7 +14,7 @@ export function MemberAddedEmail({
 	organizationName = "Acme Inc",
 	role = "member",
 	addedByName = "John Smith",
-	dashboardLink = "https://app.superset.sh",
+	dashboardLink = "https://app.rox.one",
 }: MemberAddedEmailProps) {
 	const roleDisplay =
 		role === "member" ? "Member" : role === "admin" ? "Admin" : "Owner";
@@ -31,7 +31,7 @@ export function MemberAddedEmail({
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
 				{addedByName} has added you to <strong>{organizationName}</strong> on
-				Superset as a <strong>{roleDisplay}</strong>.
+				Rox as a <strong>{roleDisplay}</strong>.
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">

@@ -1,14 +1,14 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createServer, type Server } from "node:http";
-import { CLIError } from "@superset/cli-framework";
+import { CLIError } from "@rox/cli-framework";
 import { env } from "./env";
 
-const CLIENT_ID = "superset-cli";
+const CLIENT_ID = "rox-cli";
 const PASTE_REDIRECT_PATH = "/cli/auth/code";
 const SCOPE = "openid profile email offline_access";
 const LOOPBACK_PORTS = [51789, 51790, 51791, 51792, 51793];
 const CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
-const LOGIN_AGAIN_SUGGESTION = "Run `superset auth login` again.";
+const LOGIN_AGAIN_SUGGESTION = "Run `rox auth login` again.";
 
 export interface LoginResult {
 	accessToken: string;
@@ -52,7 +52,7 @@ async function openBrowser(url: string): Promise<void> {
 }
 
 export function getWebUrl(): string {
-	return env.SUPERSET_WEB_URL;
+	return env.ROX_WEB_URL;
 }
 
 function shouldOpenBrowser(): boolean {
@@ -149,9 +149,7 @@ function waitForCallback({
 			}
 			response
 				.writeHead(200, { "Content-Type": "text/html" })
-				.end(
-					"<h1>Signed in to Superset CLI</h1><p>You can close this tab.</p>",
-				);
+				.end("<h1>Signed in to Rox CLI</h1><p>You can close this tab.</p>");
 			finish(null, code);
 		});
 	});
@@ -247,7 +245,7 @@ async function exchangeCodeForToken({
 export async function refreshAccessToken(
 	refreshToken: string,
 ): Promise<LoginResult> {
-	const apiUrl = env.SUPERSET_API_URL;
+	const apiUrl = env.ROX_API_URL;
 	const response = await fetch(`${apiUrl}/api/auth/oauth2/token`, {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -285,7 +283,7 @@ export async function login(
 	signal: AbortSignal,
 	callbacks: LoginCallbacks,
 ): Promise<LoginResult> {
-	const apiUrl = env.SUPERSET_API_URL;
+	const apiUrl = env.ROX_API_URL;
 	const webUrl = getWebUrl();
 
 	const codeVerifier = generateCodeVerifier();
@@ -378,7 +376,7 @@ export async function login(
 						if (returnedState !== state) {
 							throw new CLIError(
 								"State mismatch",
-								"The pasted code does not match this login attempt. Run `superset auth login` again.",
+								"The pasted code does not match this login attempt. Run `rox auth login` again.",
 							);
 						}
 						settle(() => {

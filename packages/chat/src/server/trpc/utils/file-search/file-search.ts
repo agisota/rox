@@ -2,7 +2,7 @@ import {
 	type FsSearchMatch,
 	searchFiles as rawSearchFiles,
 	type SearchFilesOptions,
-} from "@superset/workspace-fs/host";
+} from "@rox/workspace-fs/host";
 
 export type FileSearchItem = {
 	absolutePath: string;

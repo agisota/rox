@@ -31,7 +31,7 @@ export const PRO_FEATURES: ProFeature[] = [
 		id: "remote-workspaces",
 		title: "Remote Workspaces",
 		description:
-			"Reach this Mac from anywhere via the Superset relay, or spin up cloud workspaces. Connect from any client.",
+			"Reach this Mac from anywhere via the Rox relay, or spin up cloud workspaces. Connect from any client.",
 		icon: HiOutlineSignal,
 		iconColor: "text-pink-500",
 		gradientColors: ["#be185d", "#9d174d", "#831843", "#1a1a2e"],
@@ -49,7 +49,7 @@ export const PRO_FEATURES: ProFeature[] = [
 		id: "tasks",
 		title: "Tasks",
 		description:
-			"Track and manage tasks synced from Linear. Stay on top of your work without leaving Superset.",
+			"Track and manage tasks synced from Linear. Stay on top of your work without leaving Rox.",
 		icon: HiOutlineClipboardDocumentList,
 		iconColor: "text-emerald-500",
 		gradientColors: ["#047857", "#065f46", "#064e3b", "#1a1a2e"],

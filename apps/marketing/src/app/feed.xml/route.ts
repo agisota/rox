@@ -1,4 +1,4 @@
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY } from "@rox/shared/constants";
 import { getBlogPosts } from "@/lib/blog";
 
 export async function GET() {
@@ -16,9 +16,9 @@ export async function GET() {
 	const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Superset Blog</title>
+    <title>Rox Blog</title>
     <link>${baseUrl}/blog</link>
-    <description>News, updates, and insights from the Superset team about parallel coding agents and developer productivity.</description>
+    <description>News, updates, and insights from the Rox team about parallel coding agents and developer productivity.</description>
     <language>en-us</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml"/>

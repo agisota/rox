@@ -1,4 +1,4 @@
-import type { SelectAutomation } from "@superset/db/schema";
+import type { SelectAutomation } from "@rox/db/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { EmojiTextInput } from "renderer/components/EmojiTextInput";

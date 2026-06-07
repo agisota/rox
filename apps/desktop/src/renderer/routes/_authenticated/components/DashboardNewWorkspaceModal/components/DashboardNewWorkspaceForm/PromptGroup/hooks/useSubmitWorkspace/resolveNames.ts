@@ -1,4 +1,4 @@
-import { sanitizeUserBranchName } from "@superset/shared/workspace-launch";
+import { sanitizeUserBranchName } from "@rox/shared/workspace-launch";
 import type { DashboardNewWorkspaceDraft } from "../../../../../DashboardNewWorkspaceDraftContext";
 
 interface ResolvedNames {

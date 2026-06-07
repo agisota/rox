@@ -1,6 +1,6 @@
 "use client";
 
-import { COMPANY } from "@superset/shared/constants";
+import { COMPANY } from "@rox/shared/constants";
 import { useRouter } from "next/navigation";
 import { HiMiniArrowDownTray, HiMiniClock } from "react-icons/hi2";
 import { track } from "@/lib/analytics";

@@ -1,5 +1,5 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import { mermaid } from "@streamdown/mermaid";
-import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
 import {
 	type ReactNode,
 	useCallback,

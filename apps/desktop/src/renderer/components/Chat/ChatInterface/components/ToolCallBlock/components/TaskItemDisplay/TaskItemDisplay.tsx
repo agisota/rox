@@ -1,6 +1,6 @@
-import { TaskItem } from "@superset/ui/ai-elements/task";
-import { Badge } from "@superset/ui/badge";
-import { cn } from "@superset/ui/lib/utils";
+import { TaskItem } from "@rox/ui/ai-elements/task";
+import { Badge } from "@rox/ui/badge";
+import { cn } from "@rox/ui/lib/utils";
 
 interface TaskItemDisplayDetail {
 	label: string;

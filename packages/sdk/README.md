@@ -1,24 +1,24 @@
-# Superset TypeScript SDK
+# Rox TypeScript SDK
 
-Typed wrapper around the Superset API. Mirrors the [`superset` CLI](https://docs.superset.sh/docs/cli/getting-started) 1:1 — same procedures, same shapes.
+Typed wrapper around the Rox API. Mirrors the [`rox` CLI](https://docs.rox.one/docs/cli/getting-started) 1:1 — same procedures, same shapes.
 
-Full docs: **<https://docs.superset.sh/docs/sdk/getting-started>**
+Full docs: **<https://docs.rox.one/docs/sdk/getting-started>**
 
 ## Install
 
 ```bash
-npm install @superset_sh/sdk
-# or: bun add @superset_sh/sdk
+npm install @rox_sh/sdk
+# or: bun add @rox_sh/sdk
 ```
 
 ## Quickstart
 
 ```ts
-import Superset from '@superset_sh/sdk';
+import Rox from '@rox_sh/sdk';
 
-const client = new Superset({
-  apiKey: process.env.SUPERSET_API_KEY,             // sk_live_…
-  organizationId: process.env.SUPERSET_ORGANIZATION_ID, // required for most resources
+const client = new Rox({
+  apiKey: process.env.ROX_API_KEY,             // sk_live_…
+  organizationId: process.env.ROX_ORGANIZATION_ID, // required for most resources
 });
 
 // Tasks
@@ -38,18 +38,18 @@ await client.automations.list();
 await client.automations.run('<automation-id>');
 ```
 
-Both `apiKey` and `organizationId` are picked up automatically from `SUPERSET_API_KEY` / `SUPERSET_ORGANIZATION_ID` environment variables — you can omit them in the constructor.
+Both `apiKey` and `organizationId` are picked up automatically from `ROX_API_KEY` / `ROX_ORGANIZATION_ID` environment variables — you can omit them in the constructor.
 
-Find your `organizationId` via `superset organization list` in the CLI, or in the URL of any org dashboard.
+Find your `organizationId` via `rox organization list` in the CLI, or in the URL of any org dashboard.
 
 ## Configuration
 
 ```ts
-const client = new Superset({
+const client = new Rox({
   apiKey: 'sk_live_…',
   organizationId: '…',
-  baseURL: 'https://api.superset.sh',     // override for staging / self-hosted
-  relayURL: 'https://relay.superset.sh',  // host-routed ops (workspace create, automation run)
+  baseURL: 'https://api.rox.one',     // override for staging / self-hosted
+  relayURL: 'https://relay.rox.one',  // host-routed ops (workspace create, automation run)
   timeout: 60_000,
   maxRetries: 2,
   logLevel: 'warn',                       // 'off' | 'error' | 'warn' | 'info' | 'debug'
@@ -61,7 +61,7 @@ Keys starting with `sk_live_` or `sk_test_` are sent as `x-api-key`; anything el
 ## Errors
 
 ```ts
-import { APIError, NotFoundError, RateLimitError } from '@superset_sh/sdk';
+import { APIError, NotFoundError, RateLimitError } from '@rox_sh/sdk';
 
 try {
   await client.tasks.create({ title: '' });
@@ -73,7 +73,7 @@ try {
 
 ## Two transport paths
 
-Most methods hit `api.superset.sh` directly. Several methods physically execute on a developer machine and route through the relay tunnel: `workspaces.create`, `workspaces.delete`, `agents.list`, `agents.create`, and `terminals.create`. The SDK transparently exchanges your API key for a short-lived JWT to talk to the relay — no token plumbing required.
+Most methods hit `api.rox.one` directly. Several methods physically execute on a developer machine and route through the relay tunnel: `workspaces.create`, `workspaces.delete`, `agents.list`, `agents.create`, and `terminals.create`. The SDK transparently exchanges your API key for a short-lived JWT to talk to the relay — no token plumbing required.
 
 For relay-bound calls, the target host has to be online and tunneling, otherwise you'll get a `503 Host not connected`.
 

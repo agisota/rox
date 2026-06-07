@@ -4,8 +4,8 @@ import {
 	getEventBus,
 	type PortChangedPayload,
 	type TerminalLifecyclePayload,
-} from "@superset/workspace-client";
-import type { FsWatchEvent } from "@superset/workspace-fs/client";
+} from "@rox/workspace-client";
+import type { FsWatchEvent } from "@rox/workspace-fs/client";
 import { useEffect, useEffectEvent } from "react";
 import { getHostServiceWsToken } from "renderer/lib/host-service-auth";
 import { useWorkspaceHostUrl } from "../useWorkspaceHostUrl";

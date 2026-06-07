@@ -1,6 +1,6 @@
 # Teams as a product feature
 
-Reference for how teams work in Superset — data model, invariants, membership semantics, permissions, lifecycle, and PR sequencing.
+Reference for how teams work in Rox — data model, invariants, membership semantics, permissions, lifecycle, and PR sequencing.
 
 ## Goal
 
@@ -109,7 +109,7 @@ Common shape: team membership is opt-in, additive, and orthogonal to org-level v
 - Add `team_id`, `number` to `tasks`. Backfill per-team `number` via `ROW_NUMBER() OVER (PARTITION BY team_id ORDER BY created_at, id)`. Skip Linear-synced tasks (`team_id` and `number` nullable; canonical identifier for those rows stays `external_key`).
 - Rewrite `createTask` with atomic `lastTaskNumber + 1` counter, defaulting to the user's most-recently-used team in the org.
 - Replace `byIdOrSlug` with `byIdOrKey` resolver: UUID OR `{teamKey}-{number}` OR `external_key` fallback.
-- Outbound Linear sync uses `task.team.externalId` instead of `linearConfig.newTasksTeamId`. Inbound webhook routes to the Superset team whose `externalId` matches.
+- Outbound Linear sync uses `task.team.externalId` instead of `linearConfig.newTasksTeamId`. Inbound webhook routes to the Rox team whose `externalId` matches.
 - Integrations UI revamp: replace `newTasksTeamId` picker with per-team Linear linkage (managed in team settings).
 - Soft-delete `tasks` + `task_statuses` on Linear disconnect. Webhook UPSERT resets `deletedAt = null` on reconnect.
 - Drop slug column in PR β+1 after SDK/CLI consumers roll.

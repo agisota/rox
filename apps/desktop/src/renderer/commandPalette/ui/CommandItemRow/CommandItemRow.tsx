@@ -1,4 +1,4 @@
-import { CommandItem, CommandShortcut } from "@superset/ui/command";
+import { CommandItem, CommandShortcut } from "@rox/ui/command";
 import { useHotkeyDisplay } from "renderer/hotkeys/hooks/useHotkeyDisplay";
 import type { Command } from "../../core/types";
 

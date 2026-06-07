@@ -1,10 +1,10 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogTitle,
-} from "@superset/ui/dialog";
+} from "@rox/ui/dialog";
 import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
@@ -54,7 +54,7 @@ export function V1ImportModal() {
 			>
 				<DialogTitle className="sr-only">
 					{page === "welcome"
-						? "Welcome to Superset v2"
+						? "Welcome to Rox v2"
 						: page === "intro"
 							? "Let's get you started"
 							: "Import from v1"}

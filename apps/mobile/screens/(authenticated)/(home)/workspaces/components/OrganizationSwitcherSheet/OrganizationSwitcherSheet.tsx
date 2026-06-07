@@ -83,7 +83,7 @@ export function OrganizationSwitcherSheet({
 														color: theme.mutedForeground,
 													}}
 												>
-													superset.sh/{organization.slug}
+													rox.one/{organization.slug}
 												</Text>
 											) : null}
 										</View>

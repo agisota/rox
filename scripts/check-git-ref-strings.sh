@@ -52,7 +52,7 @@ report_violation() {
 V1_EXCLUDE='!apps/desktop/src/lib/trpc/routers/**'
 
 report_violation \
-	"[git-refs] '.startsWith(\"origin/\")' is forbidden — a local branch can be named 'origin/foo' and would be misclassified. Use ResolvedRef from @superset/host-service/git." \
+	"[git-refs] '.startsWith(\"origin/\")' is forbidden — a local branch can be named 'origin/foo' and would be misclassified. Use ResolvedRef from @rox/host-service/git." \
 	"\\.startsWith\\(\\s*['\"]origin/" \
 	--type ts \
 	--glob '!**/*.test.ts' \

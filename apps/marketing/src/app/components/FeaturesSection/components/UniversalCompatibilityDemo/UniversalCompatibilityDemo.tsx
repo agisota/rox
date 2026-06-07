@@ -35,7 +35,7 @@ export function UniversalCompatibilityDemo() {
 						<div className="w-3 h-3 rounded-full bg-[#28c840]" />
 					</div>
 					<span className="text-xs font-medium text-white/80 ml-2 px-2 py-0.5 bg-white/10 rounded">
-						superset
+						rox
 					</span>
 				</div>
 				<div className="flex items-center gap-1.5 text-white/50">

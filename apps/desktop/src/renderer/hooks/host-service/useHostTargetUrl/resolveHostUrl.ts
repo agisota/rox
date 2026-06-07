@@ -1,4 +1,4 @@
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
 
 /**
  * Pure resolver: hostId + machineId + activeHostUrl + organizationId → URL.

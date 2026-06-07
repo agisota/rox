@@ -1,4 +1,4 @@
-import type { CheckItem } from "@superset/local-db";
+import type { CheckItem } from "@rox/local-db";
 import { and, eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";

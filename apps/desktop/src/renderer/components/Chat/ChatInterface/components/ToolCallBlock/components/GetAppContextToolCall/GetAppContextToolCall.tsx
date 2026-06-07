@@ -1,6 +1,6 @@
 import { AppWindowIcon } from "lucide-react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
-import { SupersetToolCall } from "../SupersetToolCall";
+import { RoxToolCall } from "../RoxToolCall";
 
 interface GetAppContextToolCallProps {
 	part: ToolPart;
@@ -8,10 +8,6 @@ interface GetAppContextToolCallProps {
 
 export function GetAppContextToolCall({ part }: GetAppContextToolCallProps) {
 	return (
-		<SupersetToolCall
-			part={part}
-			toolName="Get app context"
-			icon={AppWindowIcon}
-		/>
+		<RoxToolCall part={part} toolName="Get app context" icon={AppWindowIcon} />
 	);
 }

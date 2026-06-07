@@ -1,5 +1,5 @@
 import { expoClient } from "@better-auth/expo/client";
-import type { auth } from "@superset/auth/server";
+import type { auth } from "@rox/auth/server";
 import {
 	customSessionClient,
 	organizationClient,
@@ -12,8 +12,8 @@ export const authClient = createAuthClient({
 	baseURL: env.EXPO_PUBLIC_API_URL,
 	plugins: [
 		expoClient({
-			scheme: "superset",
-			storagePrefix: "superset",
+			scheme: "rox",
+			storagePrefix: "rox",
 			storage: SecureStore,
 		}),
 		organizationClient({

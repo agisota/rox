@@ -6,10 +6,10 @@ import {
 	ModelSelectorList,
 	ModelSelectorLogo,
 	ModelSelectorTrigger,
-} from "@superset/ui/ai-elements/model-selector";
-import { PromptInputButton } from "@superset/ui/ai-elements/prompt-input";
-import { claudeIcon } from "@superset/ui/icons/preset-icons";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/ui/ai-elements/model-selector";
+import { PromptInputButton } from "@rox/ui/ai-elements/prompt-input";
+import { claudeIcon } from "@rox/ui/icons/preset-icons";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";

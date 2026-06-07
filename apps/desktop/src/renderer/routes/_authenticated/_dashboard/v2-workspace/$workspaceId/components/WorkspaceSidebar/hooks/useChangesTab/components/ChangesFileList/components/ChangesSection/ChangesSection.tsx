@@ -2,11 +2,11 @@ import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
-import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { cn } from "@superset/ui/utils";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/ui/collapsible";
+import { toast } from "@rox/ui/sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { ChevronRight, Minus, Plus } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { LuUndo2 } from "react-icons/lu";

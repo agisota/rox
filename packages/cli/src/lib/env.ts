@@ -5,8 +5,8 @@
  */
 
 export const env = {
-	RELAY_URL: process.env.RELAY_URL || "https://relay.superset.sh",
-	SUPERSET_API_URL: process.env.SUPERSET_API_URL || "https://api.superset.sh",
-	SUPERSET_WEB_URL: process.env.SUPERSET_WEB_URL || "https://app.superset.sh",
-	VERSION: process.env.SUPERSET_VERSION || "0.0.0-dev",
+	RELAY_URL: process.env.RELAY_URL || "https://relay.rox.one",
+	ROX_API_URL: process.env.ROX_API_URL || "https://api.rox.one",
+	ROX_WEB_URL: process.env.ROX_WEB_URL || "https://app.rox.one",
+	VERSION: process.env.ROX_VERSION || "0.0.0-dev",
 };

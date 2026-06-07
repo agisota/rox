@@ -1,6 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { auth } from "@superset/auth/server";
-import { createMcpServer } from "@superset/mcp";
+import { auth } from "@rox/auth/server";
+import { createMcpServer } from "@rox/mcp";
 import { verifyAccessToken } from "better-auth/oauth2";
 import { env } from "@/env";
 import { handleMcpRequest, type McpRequestDeps } from "./auth-flow";

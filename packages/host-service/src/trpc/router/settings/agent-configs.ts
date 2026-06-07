@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { PromptTransport } from "@superset/shared/agent-prompt-launch";
+import type { PromptTransport } from "@rox/shared/agent-prompt-launch";
 import {
 	getDefaultSeedPresets,
 	type HostAgentPreset,
-} from "@superset/shared/host-agent-presets";
+} from "@rox/shared/host-agent-presets";
 import { TRPCError } from "@trpc/server";
 import { asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";

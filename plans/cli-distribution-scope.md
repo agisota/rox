@@ -1,6 +1,6 @@
 # CLI Distribution Scope
 
-This document defines the scope for shipping the first distributable Superset
+This document defines the scope for shipping the first distributable Rox
 CLI. The current-state reference in `packages/cli/CLI_SPEC_CURRENT.md` is the
 source-derived inventory of current behavior. The target v1 contract should live
 in `packages/cli/CLI_SPEC_TARGET.md`. This plan defines what we will change
@@ -26,33 +26,33 @@ The v1 CLI should be boring to operate:
 These commands should be implemented, tested, and documented for v1:
 
 ```text
-superset auth login
-superset auth logout
-superset auth status
+rox auth login
+rox auth logout
+rox auth status
 
-superset organization list
-superset organization switch <idOrSlug>
+rox organization list
+rox organization switch <idOrSlug>
 
-superset tasks list
-superset tasks get <idOrSlug>
-superset tasks create
-superset tasks update <idOrSlug>
-superset tasks delete <idOrSlug...>
+rox tasks list
+rox tasks get <idOrSlug>
+rox tasks create
+rox tasks update <idOrSlug>
+rox tasks delete <idOrSlug...>
 
 // Can we validate that it's ergonomic for an agent to read and update the markdown content for an automation? it'll be a common action probably
-superset automations list
-superset automations get <id>
-superset automations create
-superset automations update <id>
-superset automations delete <id>
-superset automations pause <id>
-superset automations resume <id>
-superset automations run <id>
-superset automations logs <id>
+rox automations list
+rox automations get <id>
+rox automations create
+rox automations update <id>
+rox automations delete <id>
+rox automations pause <id>
+rox automations resume <id>
+rox automations run <id>
+rox automations logs <id>
 
-superset host start
-superset host status
-superset host stop
+rox host start
+rox host status
+rox host stop
 ```
 
 ### Explicitly Out Of Scope For V1
@@ -62,14 +62,14 @@ public docs for v1:
 
 // Devices / workspaces / projects probably should be brought into scope, esp workspaces
 ```text
-superset devices ...
-superset workspaces ...
-superset projects ...
-superset agent ...
-superset ui ...
-superset chat ...
-superset notifications ...
-superset ports ...
+rox devices ...
+rox workspaces ...
+rox projects ...
+rox agent ...
+rox ui ...
+rox chat ...
+rox notifications ...
+rox ports ...
 ```
 
 `devices` and `workspaces` currently exist as stubs. For v1, either hide them
@@ -104,7 +104,7 @@ be hiding them until device command routing exists.
 
 ### Automations
 
-- Implement `superset automations logs <id>` using `automation.listRuns`, or
+- Implement `rox automations logs <id>` using `automation.listRuns`, or
   remove every reference to logs from docs and comments. Recommended: implement
   it, because the API already exists.
 - Fix `automations update` so omitting `--device` does not clear
@@ -119,7 +119,7 @@ be hiding them until device command routing exists.
 
 ### Host Service
 
-- Ensure distribution artifacts include a working `superset-host` sibling
+- Ensure distribution artifacts include a working `rox-host` sibling
   binary and host migrations folder.
 - Decide whether `host install` ships in v1. If not, hide or remove the stub.
 - Verify `host start --daemon`, `host status`, and `host stop` work from an
@@ -151,21 +151,21 @@ be hiding them until device command routing exists.
 V1 should produce at least:
 
 ```text
-superset-darwin-arm64
-superset-linux-x64
+rox-darwin-arm64
+rox-linux-x64
 ```
 
 Before calling the CLI distributable, verify whether we also need:
 
 ```text
-superset-darwin-x64
-superset-linux-arm64
+rox-darwin-x64
+rox-linux-arm64
 ```
 
 The distribution archive must include:
 
-- `superset` CLI binary
-- `superset-host` host-service binary
+- `rox` CLI binary
+- `rox-host` host-service binary
 - host-service migrations under the path expected by the CLI
 - install script or documented manual install steps
 - version metadata matching the release
@@ -185,13 +185,13 @@ The install flow should support:
 Document exactly where the CLI writes local state:
 
 ```text
-~/superset/config.json
-~/superset/device.json
-~/superset/host/<organizationId>/manifest.json
-~/superset/host/<organizationId>/host.db
+~/rox/config.json
+~/rox/device.json
+~/rox/host/<organizationId>/manifest.json
+~/rox/host/<organizationId>/host.db
 ```
 
-If we want `~/.superset` instead, change code before shipping. Do not document
+If we want `~/.rox` instead, change code before shipping. Do not document
 both as valid unless both are intentionally supported.
 
 ## Acceptance Checks
@@ -199,43 +199,43 @@ both as valid unless both are intentionally supported.
 Run these from a clean machine or clean local CLI home directory before release:
 
 ```bash
-superset --help
-superset auth login
-superset auth check
-superset organization list
-superset tasks list --limit 5
-superset tasks create --title "CLI smoke test" --priority low
-superset tasks get <created-slug-or-id>
-superset tasks update <created-slug-or-id> --priority medium
-superset tasks delete <created-slug-or-id>
-superset automations list
-superset automations create --name "CLI smoke automation" --rrule "FREQ=DAILY;BYHOUR=9;BYMINUTE=0" --project <projectId> --prompt "Say hello"
-superset automations get <automation-id>
-superset automations pause <automation-id>
-superset automations resume <automation-id>
-superset automations logs <automation-id>
-superset automations delete <automation-id>
-superset host start --daemon
-superset host status
-superset host stop
+rox --help
+rox auth login
+rox auth check
+rox organization list
+rox tasks list --limit 5
+rox tasks create --title "CLI smoke test" --priority low
+rox tasks get <created-slug-or-id>
+rox tasks update <created-slug-or-id> --priority medium
+rox tasks delete <created-slug-or-id>
+rox automations list
+rox automations create --name "CLI smoke automation" --rrule "FREQ=DAILY;BYHOUR=9;BYMINUTE=0" --project <projectId> --prompt "Say hello"
+rox automations get <automation-id>
+rox automations pause <automation-id>
+rox automations resume <automation-id>
+rox automations logs <automation-id>
+rox automations delete <automation-id>
+rox host start --daemon
+rox host status
+rox host stop
 ```
 
 Run JSON checks for scriptability:
 
 ```bash
-superset auth check --json
-superset organization list --json
-superset tasks list --json
-superset automations list --json
-superset host status --json
+rox auth check --json
+rox organization list --json
+rox tasks list --json
+rox automations list --json
+rox host status --json
 ```
 
 Run quiet checks where IDs are expected:
 
 ```bash
-superset organization list --quiet
-superset tasks list --quiet
-superset automations list --quiet
+rox organization list --quiet
+rox tasks list --quiet
+rox automations list --quiet
 ```
 
 ## Release Gate

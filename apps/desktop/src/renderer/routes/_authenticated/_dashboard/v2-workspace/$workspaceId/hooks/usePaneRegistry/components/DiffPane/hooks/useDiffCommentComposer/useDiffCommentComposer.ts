@@ -4,7 +4,7 @@ import type {
 	SelectedLineRange,
 } from "@pierre/diffs";
 import type { CodeViewHandle } from "@pierre/diffs/react";
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
 import {
 	type AgentPromptFileSide,

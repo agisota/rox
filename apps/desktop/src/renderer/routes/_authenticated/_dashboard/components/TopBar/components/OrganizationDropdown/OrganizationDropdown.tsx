@@ -1,5 +1,5 @@
-import { Avatar } from "@superset/ui/atoms/Avatar";
-import { Badge } from "@superset/ui/badge";
+import { Avatar } from "@rox/ui/atoms/Avatar";
+import { Badge } from "@rox/ui/badge";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
 import { FiUsers } from "react-icons/fi";

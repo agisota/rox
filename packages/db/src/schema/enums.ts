@@ -100,7 +100,7 @@ export type AutomationPromptSource = z.infer<typeof automationPromptSourceEnum>;
 // ---------------------------------------------------------------------------
 
 export const workflowEngineValues = [
-	"superset",
+	"rox",
 	"sim_sidecar",
 	"legacy_automation",
 	"external_tool",

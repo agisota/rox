@@ -1,4 +1,4 @@
-import { OverflowFadeText } from "@superset/ui/overflow-fade-text";
+import { OverflowFadeText } from "@rox/ui/overflow-fade-text";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { ChevronRight, GitBranch } from "lucide-react";

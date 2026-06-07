@@ -1,13 +1,13 @@
 ---
 title: Getting Started
-description: Install the Superset CLI, sign in, and run your first commands.
+description: Install the Rox CLI, sign in, and run your first commands.
 ---
 
 <Callout type="warn">
 The CLI is currently in Beta — commands and flags are still evolving. Make sure you're on the latest version of the CLI if you run into issues.
 </Callout>
 
-The Superset CLI (`superset`) is a single static binary that drives the same
+The Rox CLI (`rox`) is a single static binary that drives the same
 backend as the desktop app. Use it to manage workspaces, tasks, automations,
 and the local host server from your terminal or from CI.
 
@@ -15,48 +15,48 @@ and the local host server from your terminal or from CI.
 
 ### Desktop app
 
-The desktop app includes the Superset CLI. When the app launches, it writes
-an app-managed shim at `~/.superset/bin/superset`, and Superset terminals
-prepend `~/.superset/bin` to `PATH` automatically.
+The desktop app includes the Rox CLI. When the app launches, it writes
+an app-managed shim at `~/.rox/bin/rox`, and Rox terminals
+prepend `~/.rox/bin` to `PATH` automatically.
 
 To use the bundled CLI from a normal shell, add the directory to your shell
 profile:
 
 ```bash
-export PATH="$HOME/.superset/bin:$PATH"
+export PATH="$HOME/.rox/bin:$PATH"
 ```
 
 ### Standalone install
 
 ```bash
-curl -fsSL https://superset.sh/cli/install.sh | sh
+curl -fsSL https://rox.one/cli/install.sh | sh
 ```
 
 The script auto-detects your platform (macOS Apple Silicon or Linux x86_64),
-installs Superset under `~/superset` by default, and adds `~/superset/bin`
+installs Rox under `~/rox` by default, and adds `~/rox/bin`
 to your shell `PATH`.
 
 ### Homebrew
 
 ```bash
-brew install superset-sh/tap/superset
+brew install agisota/tap/rox
 ```
 
 ## Sign in
 
 ```bash
-superset auth login
+rox auth login
 ```
 
 The CLI starts a loopback callback server on `127.0.0.1:51789` (or `51790`
 through `51793` if earlier ports are busy), opens your browser to the
-consent page, and stores a session token at `~/.superset/config.json`.
+consent page, and stores a session token at `~/.rox/config.json`.
 
 If you belong to multiple organizations, you'll be prompted to pick one. To
 skip the prompt and pick directly:
 
 ```bash
-superset auth login --organization acme
+rox auth login --organization acme
 ```
 
 For CI or other non-interactive environments — where there's no browser to
@@ -64,15 +64,15 @@ complete the OAuth flow — use an API key instead. You can either store it
 once with `auth login --api-key`:
 
 ```bash
-superset auth login --api-key sk_live_…
-superset auth whoami
+rox auth login --api-key sk_live_…
+rox auth whoami
 ```
 
-…or set `SUPERSET_API_KEY` per-invocation without writing anything to disk:
+…or set `ROX_API_KEY` per-invocation without writing anything to disk:
 
 ```bash
-export SUPERSET_API_KEY=sk_live_…
-superset auth whoami
+export ROX_API_KEY=sk_live_…
+rox auth whoami
 ```
 
 API keys are issued from the **Settings → API Keys** page in the desktop app.
@@ -80,7 +80,7 @@ API keys are issued from the **Settings → API Keys** page in the desktop app.
 ## Verify your session
 
 ```bash
-superset auth whoami
+rox auth whoami
 ```
 
 ```text
@@ -94,7 +94,7 @@ Auth: Session (expires in 32 min)
 List the projects in your organization:
 
 ```bash
-superset projects list
+rox projects list
 ```
 
 If your repo isn't there yet, register it on this machine — clone from a
@@ -102,25 +102,25 @@ Git URL or import an existing checkout:
 
 ```bash
 # Clone from a URL
-superset projects create --name "my-app" --local \
+rox projects create --name "my-app" --local \
   --clone https://github.com/org/my-app.git \
   --parent-dir ~/code
 
 # Or register an existing local checkout
-superset projects create --name "my-app" --local --import ~/code/my-app
+rox projects create --name "my-app" --local --import ~/code/my-app
 ```
 
 If the project already exists in your org but isn't on this machine,
 attach to it instead of creating a duplicate:
 
 ```bash
-superset projects setup <id-from-projects-list> --local --parent-dir ~/code
+rox projects setup <id-from-projects-list> --local --parent-dir ~/code
 ```
 
 Then create a workspace against it:
 
 ```bash
-superset workspaces create \
+rox workspaces create \
   --project prj_… \
   --name "fix-login-bug" \
   --branch fix/login-bug \
@@ -130,9 +130,9 @@ superset workspaces create \
 Trigger an automation immediately:
 
 ```bash
-superset automations list
-superset automations run aut_…
-superset automations logs aut_…
+rox automations list
+rox automations run aut_…
+rox automations logs aut_…
 ```
 
 ## Output modes
@@ -146,13 +146,13 @@ shape of the output for scripting:
 | `--quiet` | One ID per line for arrays of objects with `id`; the ID for single objects; JSON otherwise. |
 
 ```bash
-superset tasks list --status in_progress --json | jq '.[].title'
-superset workspaces list --quiet | xargs -L1 superset workspaces delete
+rox tasks list --status in_progress --json | jq '.[].title'
+rox workspaces list --quiet | xargs -L1 rox workspaces delete
 ```
 
 When the CLI detects an agent or CI environment (`CLAUDE_CODE`,
 `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_CLI`, `GEMINI_CLI`,
-`SUPERSET_AGENT`, or `CI` set to a non-empty value), it defaults to JSON
+`ROX_AGENT`, or `CI` set to a non-empty value), it defaults to JSON
 output unless you pass `--quiet`.
 
 ## Local vs. remote hosts
@@ -163,10 +163,10 @@ straight to the host server over loopback (offline-friendly); remote
 calls route through the cloud API and the relay.
 
 ```bash
-superset hosts list
-superset workspaces list
-superset workspaces list --host h_…
-superset workspaces list --local
+rox hosts list
+rox workspaces list
+rox workspaces list --host h_…
+rox workspaces list --local
 ```
 
 Mutating host commands (`projects create`, `projects setup`,
@@ -177,12 +177,12 @@ nor `--local` is provided; pass `--local` to restrict it to this machine.
 ## Where state lives
 
 ```text
-~/.superset/config.json                            # auth, active organization
-~/.superset/host/<organizationId>/manifest.json    # host server endpoint + token
-~/.superset/host/<organizationId>/host.db          # local host server DB
+~/.rox/config.json                            # auth, active organization
+~/.rox/host/<organizationId>/manifest.json    # host server endpoint + token
+~/.rox/host/<organizationId>/host.db          # local host server DB
 ```
 
-`SUPERSET_HOME_DIR` relocates the whole tree, matching the desktop app.
+`ROX_HOME_DIR` relocates the whole tree, matching the desktop app.
 
 ## Next steps
 

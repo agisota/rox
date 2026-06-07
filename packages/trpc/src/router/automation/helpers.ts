@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
-import { db, type dbWs } from "@superset/db/client";
+import { db, type dbWs } from "@rox/db/client";
 import {
 	type AutomationPromptSource,
 	automationPromptVersions,
 	automations,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, eq, sql } from "drizzle-orm";
 

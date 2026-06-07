@@ -1,4 +1,4 @@
-import type { WorkspaceInteractionState } from "@superset/panes";
+import type { WorkspaceInteractionState } from "@rox/panes";
 import { useCallback, useEffect, useRef } from "react";
 import { browserRuntimeRegistry } from "../usePaneRegistry/components/BrowserPane";
 
