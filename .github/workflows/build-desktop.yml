@@ -330,8 +330,17 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen --ignore-scripts
 
+      # electron-builder install-app-deps rebuilds native modules (e.g. @parcel/watcher)
+      # via node-gyp, which fails on the runner with "Could not find any Visual Studio
+      # installation to use". Activate the MSVC build environment so node-gyp finds it.
+      - name: Set up MSVC build environment
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install desktop native dependencies
         working-directory: apps/desktop
+        env:
+          npm_config_msvs_version: "2022"
+          GYP_MSVS_VERSION: "2022"
         run: bun run install:deps
 
       - name: Set version suffix
