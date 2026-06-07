@@ -175,6 +175,8 @@ async function resolveTargetHost(
 			machineId: v2Hosts.machineId,
 			name: v2Hosts.name,
 			isOnline: v2Hosts.isOnline,
+			port: v2Hosts.port,
+			protocol: v2Hosts.protocol,
 			createdByUserId: v2Hosts.createdByUserId,
 			createdAt: v2Hosts.createdAt,
 			updatedAt: v2Hosts.updatedAt,
