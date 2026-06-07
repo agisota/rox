@@ -1,0 +1,181 @@
+/**
+ * MONAD design tokens — §1 of the MONAD design system.
+ *
+ * Everything here is *scoped* under `[data-monad-root]` so it can never leak
+ * into the product shell. The app's own theme store keeps full control of
+ * `:root`; MONAD only paints inside containers rendered by `MonadThemeProvider`.
+ *
+ * Semantic colour law:
+ *   graphite  → base / resting state          (--monad-bg, --monad-surface, text)
+ *   orange    → active transition / in-flight  (--monad-transition)
+ *   green     → verified / target / done       (--monad-verified)
+ *
+ * Font themes are driven by `data-font` on the document root (set by
+ * `FontProvider`). The stacks degrade gracefully to bundled/system fonts, so
+ * the system is fully functional before the @fontsource packages are wired in:
+ *   @fontsource/victor-mono  → Blueprint
+ *   @fontsource/bebas-neue   → Brutalist
+ *   @fontsource/lekton       → Terminal
+ */
+
+:root {
+	/* Font-theme stacks. Defining these on :root is inert — nothing reads them
+	   until a `[data-monad-root]` resolves `--monad-font`. */
+	--monad-font-blueprint:
+		"Victor Mono", "JetBrains Mono", ui-monospace, "SF Mono", "SFMono-Regular",
+		Menlo, monospace;
+	--monad-font-brutalist:
+		"Bebas Neue", "Oswald", "Arial Narrow Bold", "Helvetica Neue", system-ui,
+		sans-serif;
+	--monad-font-terminal:
+		"Lekton", "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+}
+
+/* `FontProvider` sets `data-font` on the document root; only MONAD reads it. */
+:root[data-font="blueprint"] {
+	--monad-font: var(--monad-font-blueprint);
+}
+:root[data-font="brutalist"] {
+	--monad-font: var(--monad-font-brutalist);
+}
+:root[data-font="terminal"] {
+	--monad-font: var(--monad-font-terminal);
+}
+
+[data-monad-root] {
+	/* ── Graphite ramp (cool blue-green near-black) ───────────────────── */
+	--monad-graphite-950: #06080a;
+	--monad-graphite-900: #0a0d0e;
+	--monad-graphite-850: #0e1214;
+	--monad-graphite-800: #12171a;
+	--monad-graphite-700: #1a2226;
+	--monad-graphite-600: #243036;
+	--monad-graphite-500: #33454d;
+	--monad-graphite-400: #4a626c;
+	--monad-graphite-300: #6b8893;
+	--monad-graphite-200: #9fb4bc;
+	--monad-graphite-100: #c9d6db;
+	--monad-graphite-050: #e9eef0;
+
+	/* ── Signal colours ───────────────────────────────────────────────── */
+	--monad-orange: #ff7a2b;
+	--monad-orange-dim: #c75c1d;
+	--monad-orange-glow: rgba(255, 122, 43, 0.32);
+	--monad-green: #7dff9e;
+	--monad-green-dim: #4fbf72;
+	--monad-green-glow: rgba(125, 255, 158, 0.3);
+	--monad-amber: #ffb648;
+	--monad-red: #ff5c5c;
+
+	/* ── Semantic surfaces (graphite base) ────────────────────────────── */
+	--monad-bg: var(--monad-graphite-900);
+	--monad-surface: var(--monad-graphite-850);
+	--monad-surface-raised: var(--monad-graphite-800);
+	--monad-border: rgba(159, 180, 188, 0.12);
+	--monad-border-strong: rgba(159, 180, 188, 0.24);
+
+	/* ── Semantic text ────────────────────────────────────────────────── */
+	--monad-text: var(--monad-graphite-050);
+	--monad-text-muted: var(--monad-graphite-200);
+	--monad-text-faint: var(--monad-graphite-400);
+
+	/* ── Semantic state law ───────────────────────────────────────────── */
+	--monad-resting: var(--monad-graphite-300);
+	--monad-transition: var(--monad-orange);
+	--monad-verified: var(--monad-green);
+	--monad-warn: var(--monad-amber);
+	--monad-error: var(--monad-red);
+
+	/* ── Blueprint canvas ─────────────────────────────────────────────── */
+	--monad-grid-minor: 28px;
+	--monad-grid-major: 140px;
+	--monad-grid-minor-line: rgba(159, 180, 188, 0.045);
+	--monad-grid-major-line: rgba(125, 255, 158, 0.06);
+	--monad-vignette: rgba(3, 5, 6, 0.72);
+
+	/* ── CSS easings (mirror motion/tokens.ts for CSS-only transitions) ── */
+	--monad-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+	--monad-ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+	--monad-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+	/* ── Radii ────────────────────────────────────────────────────────── */
+	--monad-radius-sm: 4px;
+	--monad-radius-md: 8px;
+	--monad-radius-lg: 14px;
+
+	background-color: var(--monad-bg);
+	color: var(--monad-text);
+	font-family: var(--monad-font, var(--monad-font-blueprint));
+	font-feature-settings: "ss01", "cv01", "calt";
+}
+
+/* Light appearance — for the light visual-regression snapshots (PR-14). */
+[data-monad-root][data-monad-appearance="light"] {
+	--monad-bg: #f3f5f4;
+	--monad-surface: #eaeeec;
+	--monad-surface-raised: #ffffff;
+	--monad-border: rgba(20, 30, 28, 0.12);
+	--monad-border-strong: rgba(20, 30, 28, 0.22);
+	--monad-text: #10171a;
+	--monad-text-muted: #3a4a50;
+	--monad-text-faint: #6b8893;
+	--monad-resting: #4a626c;
+	--monad-orange-dim: #d4621f;
+	--monad-green-dim: #2f9a55;
+	--monad-grid-minor-line: rgba(20, 40, 36, 0.05);
+	--monad-grid-major-line: rgba(20, 120, 70, 0.08);
+	--monad-vignette: rgba(180, 195, 190, 0.55);
+}
+
+/**
+ * Blueprint grid canvas. Grid + vignette live in `background-image` so they
+ * always paint *behind* content (no stacking-context surgery needed). Grain
+ * is an isolated `::after` overlay so an unsupported data-URI can only cost
+ * the grain, never the grid.
+ */
+.monad-blueprint {
+	position: relative;
+	background-color: var(--monad-bg);
+	background-image:
+		radial-gradient(
+			128% 128% at 50% 0%,
+			transparent 52%,
+			var(--monad-vignette) 100%
+		),
+		linear-gradient(to right, var(--monad-grid-major-line) 1px, transparent 1px),
+		linear-gradient(
+			to bottom,
+			var(--monad-grid-major-line) 1px,
+			transparent 1px
+		),
+		linear-gradient(to right, var(--monad-grid-minor-line) 1px, transparent 1px),
+		linear-gradient(
+			to bottom,
+			var(--monad-grid-minor-line) 1px,
+			transparent 1px
+		);
+	background-size:
+		100% 100%,
+		var(--monad-grid-major) var(--monad-grid-major),
+		var(--monad-grid-major) var(--monad-grid-major),
+		var(--monad-grid-minor) var(--monad-grid-minor),
+		var(--monad-grid-minor) var(--monad-grid-minor);
+	background-position: center top;
+}
+
+.monad-blueprint::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	pointer-events: none;
+	opacity: 0.025;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+}
+
+/*
+ * Reduced motion is JS-driven: every MONAD component consults
+ * `useMotionPreference` (which folds in the OS `prefers-reduced-motion`) and
+ * renders its resting state with no animation. CSS-only motion is avoided, so
+ * there is no global CSS reset here — matching the app's per-component pattern.
+ */
