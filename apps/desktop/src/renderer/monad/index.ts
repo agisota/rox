@@ -5,10 +5,10 @@
  * Fonts: Blueprint / Brutalist / Terminal via FontProvider. Every component
  * respects `useMotionPreference` and keeps its resting state fully visible.
  *
- * This barrel re-exports the PR-00 foundation (motion primitives + providers).
- * Primitives (PR-01) and composites (PR-02) land under ./primitives and
- * ./composites.
+ * This barrel re-exports the PR-00 foundation (motion primitives + providers)
+ * and the PR-01 primitives. Composites (PR-02) land under ./composites.
  */
 
 export * from "./motion";
+export * from "./primitives";
 export * from "./providers";
