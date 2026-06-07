@@ -49,6 +49,7 @@ function serializeFontFamilyList(families: string[]): string {
 }
 
 export const DEFAULT_TERMINAL_FONT_FAMILIES = [
+	"Victor Mono",
 	"JetBrains Mono",
 	"JetBrainsMono Nerd Font",
 	"MesloLGM Nerd Font",
