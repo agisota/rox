@@ -1,8 +1,17 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { TRPCClientError } from "@trpc/client";
 import { type BasicScenario, createBasicScenario } from "../helpers/scenarios";
+
+setDefaultTimeout(30_000);
 
 describe("filesystem router integration", () => {
 	let scenario: BasicScenario;

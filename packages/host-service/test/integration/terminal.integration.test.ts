@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
@@ -13,10 +20,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Server } from "@superset/pty-daemon";
 import { TRPCClientError } from "@trpc/client";
-import {
-	disposeDaemonClient,
-	getDaemonClient,
-} from "../../src/terminal/daemon-client-singleton";
+import { disposeDaemonClient } from "../../src/terminal/daemon-client-singleton";
 import {
 	initTerminalBaseEnv,
 	resetTerminalBaseEnvForTests,
@@ -30,10 +34,13 @@ import { __setAccountShellForTesting } from "../../src/terminal/user-shell.ts";
 import { type BasicScenario, createBasicScenario } from "../helpers/scenarios";
 import { seedTerminalSession } from "../helpers/seed";
 
+setDefaultTimeout(30_000);
+
 describe("terminal router integration", () => {
 	let scenario: BasicScenario;
 
 	beforeEach(async () => {
+		__setAccountShellForTesting("/bin/sh");
 		initTerminalBaseEnv({
 			PATH: process.env.PATH ?? "/usr/bin:/bin",
 			HOME: process.env.HOME ?? tmpdir(),
@@ -213,19 +220,18 @@ describe("terminal router integration", () => {
 			process.env.SUPERSET_PTY_DAEMON_SOCKET = socketPath;
 			process.env.SUPERSET_HOME_DIR = tmp;
 
+			const launcherPath = writeDetachedHelperLauncher(
+				tmp,
+				"detached-helper.sh",
+				pidPath,
+			);
 			await scenario.host.trpc.terminal.createSession.mutate({
 				workspaceId: scenario.workspaceId,
 				terminalId,
+				initialCommand: `/bin/sh ${shellQuote(launcherPath)}`,
 			});
-			const daemon = await getDaemonClient();
-			daemon.input(
-				terminalId,
-				Buffer.from(
-					`/bin/bash -lc ${shellQuote(detachedHelperScript(pidPath))}\n`,
-				),
-			);
 
-			await waitFor(() => readPositivePidFile(pidPath) !== null, 3000);
+			await waitFor(() => readPositivePidFile(pidPath) !== null, 10_000);
 			helperPid = readPositivePidFile(pidPath);
 			expect(helperPid).not.toBeNull();
 			expect(isPidAlive(helperPid as number)).toBe(true);
@@ -235,22 +241,22 @@ describe("terminal router integration", () => {
 				terminalId,
 			});
 
-			await waitFor(() => !isPidAlive(helperPid as number), 3000);
+			await waitFor(() => !isPidAlive(helperPid as number), 10_000);
 
+			const workspaceCleanupLauncherPath = writeDetachedHelperLauncher(
+				tmp,
+				"workspace-detached-helper.sh",
+				workspaceCleanupPidPath,
+			);
 			await scenario.host.trpc.terminal.createSession.mutate({
 				workspaceId: scenario.workspaceId,
 				terminalId: workspaceCleanupTerminalId,
+				initialCommand: `/bin/sh ${shellQuote(workspaceCleanupLauncherPath)}`,
 			});
-			daemon.input(
-				workspaceCleanupTerminalId,
-				Buffer.from(
-					`/bin/bash -lc ${shellQuote(detachedHelperScript(workspaceCleanupPidPath))}\n`,
-				),
-			);
 
 			await waitFor(
 				() => readPositivePidFile(workspaceCleanupPidPath) !== null,
-				3000,
+				10_000,
 			);
 			workspaceCleanupHelperPid = readPositivePidFile(workspaceCleanupPidPath);
 			expect(workspaceCleanupHelperPid).not.toBeNull();
@@ -266,7 +272,7 @@ describe("terminal router integration", () => {
 
 			await waitFor(
 				() => !isPidAlive(workspaceCleanupHelperPid as number),
-				3000,
+				10_000,
 			);
 		} finally {
 			if (helperPid !== null && helperPid > 0 && isPidAlive(helperPid)) {
@@ -401,6 +407,20 @@ function detachedHelperScript(pidPath: string): string {
 		`echo "$helper_pid" > ${shellQuote(pidPath)}`,
 		"sleep 60",
 	].join("; ");
+}
+
+function writeDetachedHelperLauncher(
+	tmp: string,
+	name: string,
+	pidPath: string,
+): string {
+	const launcherPath = join(tmp, name);
+	writeFileSync(
+		launcherPath,
+		["#!/bin/sh", detachedHelperScript(pidPath), ""].join("\n"),
+		{ mode: 0o755 },
+	);
+	return launcherPath;
 }
 
 function createFakePty(

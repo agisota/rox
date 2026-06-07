@@ -28,6 +28,10 @@
 			"types": "./src/auth/index.ts",
 			"default": "./src/auth/index.ts"
 		},
+		"./execution-circuit": {
+			"types": "./src/execution-circuit/index.ts",
+			"default": "./src/execution-circuit/index.ts"
+		},
 		"./agent-command": {
 			"types": "./src/agent-command.ts",
 			"default": "./src/agent-command.ts"

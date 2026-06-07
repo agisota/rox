@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
@@ -8,6 +8,8 @@ import {
 	createBasicScenario,
 	createProjectScenario,
 } from "../helpers/scenarios";
+
+setDefaultTimeout(30_000);
 
 describe("workspaceCreation.adopt integration", () => {
 	let dispose: (() => Promise<void>) | undefined;

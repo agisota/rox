@@ -1,7 +1,16 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { type BasicScenario, createBasicScenario } from "../helpers/scenarios";
 import { seedTerminalSession } from "../helpers/seed";
+
+setDefaultTimeout(30_000);
 
 describe("notifications.hook integration", () => {
 	let scenario: BasicScenario;

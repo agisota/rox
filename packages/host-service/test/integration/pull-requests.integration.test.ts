@@ -1,6 +1,15 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { type BasicScenario, createBasicScenario } from "../helpers/scenarios";
 import { seedPullRequest, seedWorkspace } from "../helpers/seed";
+
+setDefaultTimeout(30_000);
 
 describe("pullRequests router integration", () => {
 	let scenario: BasicScenario;

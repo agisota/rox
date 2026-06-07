@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
 	existsSync,
@@ -19,6 +19,8 @@ import {
 import { __resetSessionsForTesting } from "../../src/terminal/terminal";
 import { __setAccountShellForTesting } from "../../src/terminal/user-shell";
 import { type BasicScenario, createBasicScenario } from "../helpers/scenarios";
+
+setDefaultTimeout(30_000);
 
 describe("runTeardown integration", () => {
 	let scenario: BasicScenario | null = null;

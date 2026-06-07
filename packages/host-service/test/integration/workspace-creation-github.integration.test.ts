@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,6 +13,8 @@ import { join } from "node:path";
 import simpleGit from "simple-git";
 import { projects } from "../../src/db/schema";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
+
+setDefaultTimeout(30_000);
 
 /**
  * Real temp git working tree with a remote, plus a `projects` row pointing

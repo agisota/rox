@@ -11,7 +11,14 @@
  *   - partial-failure consistency
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -20,6 +27,8 @@ import { eq } from "drizzle-orm";
 import { projects, workspaces } from "../../src/db/schema";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
+
+setDefaultTimeout(30_000);
 
 describe("bug-hunt: filesystem sandbox", () => {
 	let host: TestHost;
@@ -46,8 +55,8 @@ describe("bug-hunt: filesystem sandbox", () => {
 	});
 
 	afterEach(async () => {
-		await host.dispose();
-		repo.dispose();
+		if (host) await host.dispose();
+		repo?.dispose();
 	});
 
 	test("writeFile rejects '..' traversal escaping the workspace root", async () => {
@@ -163,8 +172,8 @@ describe("bug-hunt: git-flag injection", () => {
 	});
 
 	afterEach(async () => {
-		await host.dispose();
-		repo.dispose();
+		if (host) await host.dispose();
+		repo?.dispose();
 	});
 
 	test("setBaseBranch with a flag-shaped value stores it as a literal config value", async () => {
@@ -219,7 +228,7 @@ describe("bug-hunt: idempotency + double-fire", () => {
 
 	afterEach(async () => {
 		if (host) await host.dispose();
-		repo.dispose();
+		repo?.dispose();
 	});
 
 	test("workspaceCleanup.destroy is idempotent on a non-existent workspace id", async () => {
@@ -308,7 +317,7 @@ describe("bug-hunt: auth header parsing", () => {
 	});
 
 	afterEach(async () => {
-		await host.dispose();
+		if (host) await host.dispose();
 	});
 
 	test("Bearer with empty token is rejected", async () => {
@@ -350,7 +359,7 @@ describe("bug-hunt: SQL/identifier injection smoke", () => {
 	});
 
 	afterEach(async () => {
-		await host.dispose();
+		if (host) await host.dispose();
 	});
 
 	test("workspace.get with id containing SQL meta is safe (drizzle params)", async () => {

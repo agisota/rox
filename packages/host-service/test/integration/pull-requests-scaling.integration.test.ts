@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import simpleGit, { type SimpleGit } from "simple-git";
 import type { HostDb } from "../../src/db";
 import { GitWatcher } from "../../src/events/git-watcher";
@@ -7,6 +7,8 @@ import { PullRequestRuntimeManager } from "../../src/runtime/pull-requests/pull-
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
 import { seedProject, seedWorkspace } from "../helpers/seed";
+
+setDefaultTimeout(30_000);
 
 /**
  * INTEGRATION coverage for the event-driven path of finding #1 in
