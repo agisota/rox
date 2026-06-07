@@ -111,7 +111,7 @@
     },
     "apps/desktop": {
       "name": "@rox/desktop",
-      "version": "1.12.3",
+      "version": "1.0.0",
       "dependencies": {
         "@ai-sdk/anthropic": "3.0.64",
         "@ai-sdk/openai": "3.0.36",
