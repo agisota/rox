@@ -440,6 +440,11 @@ export const v2Hosts = pgTable(
 		machineId: text("machine_id").notNull(),
 		name: text().notNull(),
 		isOnline: boolean("is_online").notNull().default(false),
+		// Network reachability for remote hosts / sandboxes (#32). Null for the
+		// local "this device" host (ephemeral local port); populated for remote
+		// servers so the UI can surface and connect to host:port.
+		port: integer("port"),
+		protocol: text("protocol"),
 		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
 			onDelete: "set null",
 		}),

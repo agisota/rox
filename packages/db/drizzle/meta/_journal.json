@@ -414,6 +414,13 @@
       "when": 1780755333537,
       "tag": "0058_automation_fabric_workflow_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1780830510000,
+      "tag": "0059_integrations_providers_and_host_port",
+      "breakpoints": true
     }
   ]
 }

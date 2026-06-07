@@ -23,7 +23,17 @@ export const taskPriorityValues = [
 export const taskPriorityEnum = z.enum(taskPriorityValues);
 export type TaskPriority = z.infer<typeof taskPriorityEnum>;
 
-export const integrationProviderValues = ["linear", "github", "slack"] as const;
+export const integrationProviderValues = [
+	"linear",
+	"github",
+	"slack",
+	"telegram",
+	"discord",
+	"notion",
+	"obsidian",
+	"fibery",
+	"lark",
+] as const;
 export const integrationProviderEnum = z.enum(integrationProviderValues);
 export type IntegrationProvider = z.infer<typeof integrationProviderEnum>;
 
