@@ -7,9 +7,11 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Play, Settings, Square, X } from "lucide-react";
 import { useCallback } from "react";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { springs, useMotionPreference } from "renderer/monad/motion";
 import { useSetSettingsSearchQuery } from "renderer/stores/settings-state";
 import type { WorkspaceRunDefinition } from "shared/workspace-run-definition";
 
@@ -36,6 +38,7 @@ export function V2WorkspaceRunButton({
 	const setSettingsSearchQuery = useSetSettingsSearchQuery();
 	const hotkeyText = useHotkeyDisplay("RUN_WORKSPACE_COMMAND").text;
 	const hasRunCommand = (definition?.commands ?? []).length > 0;
+	const { disabled: motionOff } = useMotionPreference();
 
 	const handleConfigureClick = useCallback(() => {
 		if (definition?.source === "terminal-preset") {
@@ -55,10 +58,13 @@ export function V2WorkspaceRunButton({
 
 	const label = isRunning ? "Stop" : hasRunCommand ? "Run" : "Set Run";
 	const Icon = isRunning ? Square : hasRunCommand ? Play : Settings;
+	// MONAD run-state choreography: pending = transition (orange / S→T),
+	// running = verified (green / S*), otherwise resting.
+	const iconKey = isPending ? "pending" : isRunning ? "stop" : label;
 
 	return (
 		<div className="flex shrink-0 items-center no-drag">
-			<button
+			<motion.button
 				type="button"
 				onClick={() => {
 					if (!hasRunCommand && !isRunning) {
@@ -68,15 +74,19 @@ export function V2WorkspaceRunButton({
 					void onToggle();
 				}}
 				disabled={isPending}
+				whileTap={motionOff || isPending ? undefined : { scale: 0.96 }}
+				transition={springs.snap}
 				className={cn(
 					"group flex h-6 items-center gap-1.5 rounded-l-md border border-r-0 border-border/50 bg-transparent px-2 text-xs font-medium text-foreground transition-colors",
 					"hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-					isPending && "pointer-events-none opacity-50",
-					isRunning
-						? "border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 hover:bg-emerald-500/[0.12]"
-						: hasRunCommand
-							? "text-foreground"
-							: "text-muted-foreground/80 hover:text-foreground",
+					isPending && "pointer-events-none opacity-60",
+					isPending
+						? "border-orange-500/30 bg-orange-500/[0.08] text-orange-400"
+						: isRunning
+							? "border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 hover:bg-emerald-500/[0.12]"
+							: hasRunCommand
+								? "text-foreground"
+								: "text-muted-foreground/80 hover:text-foreground",
 				)}
 				aria-label={
 					isRunning
@@ -86,14 +96,33 @@ export function V2WorkspaceRunButton({
 							: "Configure workspace run command"
 				}
 			>
-				<Icon className="size-3 shrink-0" />
+				<span className="relative inline-flex size-3 shrink-0 items-center justify-center">
+					<AnimatePresence mode="popLayout" initial={false}>
+						<motion.span
+							key={iconKey}
+							initial={
+								motionOff ? false : { opacity: 0, scale: 0.5, rotate: -30 }
+							}
+							animate={{ opacity: 1, scale: 1, rotate: 0 }}
+							exit={
+								motionOff
+									? { opacity: 0 }
+									: { opacity: 0, scale: 0.5, rotate: 30 }
+							}
+							transition={springs.snap}
+							className="absolute inset-0 flex items-center justify-center"
+						>
+							<Icon className="size-3" />
+						</motion.span>
+					</AnimatePresence>
+				</span>
 				<span>{label}</span>
 				{hotkeyText && hotkeyText !== "Unassigned" && (
 					<span className="hidden text-[10px] tracking-wide text-muted-foreground/60 sm:inline">
 						{hotkeyText}
 					</span>
 				)}
-			</button>
+			</motion.button>
 
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
@@ -103,7 +132,7 @@ export function V2WorkspaceRunButton({
 						className={cn(
 							"flex size-6 items-center justify-center rounded-r-md border border-border/50 bg-transparent text-muted-foreground transition-colors",
 							"hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-							isPending && "pointer-events-none opacity-50",
+							isPending && "pointer-events-none opacity-60",
 							isRunning &&
 								"border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 hover:bg-emerald-500/[0.12]",
 						)}
