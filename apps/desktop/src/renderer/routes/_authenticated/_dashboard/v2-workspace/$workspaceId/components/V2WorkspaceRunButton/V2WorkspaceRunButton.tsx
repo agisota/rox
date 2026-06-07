@@ -97,24 +97,25 @@ export function V2WorkspaceRunButton({
 				}
 			>
 				<span className="relative inline-flex size-3 shrink-0 items-center justify-center">
-					<AnimatePresence mode="popLayout" initial={false}>
-						<motion.span
-							key={iconKey}
-							initial={
-								motionOff ? false : { opacity: 0, scale: 0.5, rotate: -30 }
-							}
-							animate={{ opacity: 1, scale: 1, rotate: 0 }}
-							exit={
-								motionOff
-									? { opacity: 0 }
-									: { opacity: 0, scale: 0.5, rotate: 30 }
-							}
-							transition={springs.snap}
-							className="absolute inset-0 flex items-center justify-center"
-						>
+					{motionOff ? (
+						// Motion off / reduced: swap instantly, no AnimatePresence exit.
+						<span className="absolute inset-0 flex items-center justify-center">
 							<Icon className="size-3" />
-						</motion.span>
-					</AnimatePresence>
+						</span>
+					) : (
+						<AnimatePresence mode="popLayout" initial={false}>
+							<motion.span
+								key={iconKey}
+								initial={{ opacity: 0, scale: 0.5, rotate: -30 }}
+								animate={{ opacity: 1, scale: 1, rotate: 0 }}
+								exit={{ opacity: 0, scale: 0.5, rotate: 30 }}
+								transition={springs.snap}
+								className="absolute inset-0 flex items-center justify-center"
+							>
+								<Icon className="size-3" />
+							</motion.span>
+						</AnimatePresence>
+					)}
 				</span>
 				<span>{label}</span>
 				{hotkeyText && hotkeyText !== "Unassigned" && (
