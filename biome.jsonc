@@ -12,6 +12,7 @@
 			"!**/*.template.js",
 			"!**/*.template.sh",
 			"!**/*.template.ts",
+			"!**/.worktrees",
 			"!**/plans",
 			"!apps/mobile/uniwind-types.d.ts",
 			"!packages/sdk/src"
