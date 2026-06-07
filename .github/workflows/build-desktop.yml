@@ -345,6 +345,11 @@ jobs:
         env:
           npm_config_msvs_version: "2022"
           GYP_MSVS_VERSION: "2022"
+          # Electron 40's V8 headers deprecate APIs (e.g. GetAlignedPointerFromInternalField)
+          # that native-keymap/etc. still use; MSVC escalates these to error C4996. clang/gcc
+          # (mac/linux) only warn, so they pass. Suppress C4996 + disable warnings-as-errors
+          # for the Windows native rebuild.
+          CL: "/wd4996 /WX-"
         run: bun run install:deps
 
       - name: Set version suffix
