@@ -347,9 +347,11 @@ jobs:
           GYP_MSVS_VERSION: "2022"
           # Electron 40's V8 headers deprecate APIs (e.g. GetAlignedPointerFromInternalField)
           # that native-keymap/etc. still use; MSVC escalates these to error C4996. clang/gcc
-          # (mac/linux) only warn, so they pass. Suppress C4996 + disable warnings-as-errors
-          # for the Windows native rebuild.
-          CL: "/wd4996 /WX-"
+          # (mac/linux) only warn, so they pass. node-gyp's generated project passes /WX, which
+          # overrides the prepended `CL` flags — so use `_CL_`, which cl.exe APPENDS after the
+          # command line, making the final /wd4996 win and disabling C4996 entirely.
+          CL: "/wd4996"
+          _CL_: "/wd4996"
         run: bun run install:deps
 
       - name: Set version suffix
