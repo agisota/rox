@@ -62,7 +62,7 @@ import {
 The font stacks degrade gracefully to bundled/system fonts. To light up the
 exact typefaces, add and import the @fontsource packages:
 
-```
+```bash
 bun add @fontsource/victor-mono @fontsource/bebas-neue @fontsource/lekton --cwd apps/desktop
 ```
 

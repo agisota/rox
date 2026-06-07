@@ -14,7 +14,11 @@ const itemVariants: Variants = {
 };
 
 export interface MotionListProps {
-	/** Each child should carry a stable `key` for correct enter/exit/reflow. */
+	/**
+	 * Each child MUST be a keyed React element (e.g. `<Row key={id} />`).
+	 * Identity — and therefore enter/exit/reflow — follows those keys. Raw
+	 * string/number children are not list items and are intentionally skipped.
+	 */
 	children: ReactNode;
 	className?: string;
 	itemClassName?: string;

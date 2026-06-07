@@ -39,6 +39,11 @@ export interface MonadThemeProviderProps {
  * All MONAD tokens live under this attribute (see tokens.css), so the provider
  * never touches the product's `:root` or its theme store. Nest a `FontProvider`
  * inside to drive the font theme.
+ *
+ * `appearance` (dark/light) is intentionally ephemeral local state — light mode
+ * exists mainly for visual-regression snapshots and is driven per-render via
+ * `defaultAppearance` or the context setter. Unlike the font and motion
+ * preferences, it is deliberately not persisted.
  */
 export function MonadThemeProvider({
 	children,

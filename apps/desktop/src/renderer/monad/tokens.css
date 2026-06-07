@@ -23,7 +23,7 @@
 	   until a `[data-monad-root]` resolves `--monad-font`. */
 	--monad-font-blueprint:
 		"Victor Mono", "JetBrains Mono", ui-monospace, "SF Mono", "SFMono-Regular",
-		Menlo, monospace;
+		"Menlo", monospace;
 	--monad-font-brutalist:
 		"Bebas Neue", "Oswald", "Arial Narrow Bold", "Helvetica Neue", system-ui,
 		sans-serif;
