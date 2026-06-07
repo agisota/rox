@@ -8,11 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	applyShellEnvToProcess,
-	getProcessEnvWithShellEnv,
-	getProcessEnvWithShellPath,
-} from "./shell-env";
+import { applyShellEnvToProcess, getProcessEnvWithShellEnv } from "./shell-env";
 
 describe("shell env merging", () => {
 	test("getProcessEnvWithShellEnv fills in missing shell variables", async () => {
@@ -60,15 +56,18 @@ describe("shell env merging", () => {
 	});
 });
 
-describe("getProcessEnvWithShellPath preserves user git env vars", () => {
+describe("shell env merge preserves user git env vars", () => {
 	test("keeps pager and editor variables in the returned env", async () => {
-		const env = await getProcessEnvWithShellPath({
-			PATH: "/usr/bin:/bin",
-			EDITOR: "vim",
-			GIT_EDITOR: "vim",
-			PAGER: "less",
-			GIT_PAGER: "less",
-		});
+		const env = await getProcessEnvWithShellEnv(
+			{
+				PATH: "/usr/bin:/bin",
+				EDITOR: "vim",
+				GIT_EDITOR: "vim",
+				PAGER: "less",
+				GIT_PAGER: "less",
+			},
+			{ PATH: "/opt/homebrew/bin:/usr/bin:/bin" },
+		);
 
 		expect(env.EDITOR).toBe("vim");
 		expect(env.GIT_EDITOR).toBe("vim");

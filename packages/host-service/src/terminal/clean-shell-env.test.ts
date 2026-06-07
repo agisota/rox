@@ -51,7 +51,7 @@ describe("augmentPathForMacOS", () => {
 		const env: Record<string, string> = { PATH: "/opt/homebrew/bin:/usr/bin" };
 		augmentPathForMacOS(env, "darwin");
 		expect(env.PATH).toBe(
-			"/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/opt/homebrew/bin:/usr/bin",
+			"/bin:/usr/sbin:/sbin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/opt/homebrew/bin:/usr/bin",
 		);
 	});
 

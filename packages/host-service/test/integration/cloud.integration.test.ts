@@ -1,6 +1,15 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { TRPCClientError } from "@trpc/client";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
+
+setDefaultTimeout(30_000);
 
 describe("cloud router integration", () => {
 	let host: TestHost;

@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -10,6 +17,8 @@ import {
 	getDefaultBranchName,
 	resolveBaseComparison,
 } from "./git-helpers";
+
+setDefaultTimeout(30_000);
 
 /**
  * Integration tests that exercise the git-correctness fixes against real

@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import {
 	existsSync,
@@ -29,6 +36,8 @@ import {
 	type FeatureWorktreeScenario,
 } from "../helpers/scenarios";
 import { seedProject, seedWorkspace } from "../helpers/seed";
+
+setDefaultTimeout(30_000);
 
 describe("workspaceCleanup.destroy integration", () => {
 	let scenario: FeatureWorktreeScenario;

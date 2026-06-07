@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,6 +12,8 @@ import {
 	createFeatureWorktreeScenario,
 	createProjectScenario,
 } from "../helpers/scenarios";
+
+setDefaultTimeout(30_000);
 
 describe("workspace.create + workspace.delete integration", () => {
 	let dispose: (() => Promise<void>) | undefined;

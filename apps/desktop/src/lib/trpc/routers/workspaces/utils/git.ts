@@ -13,8 +13,12 @@ import {
 import friendlyWords from "friendly-words";
 import type { StatusResult } from "simple-git";
 import { runWithPostCheckoutHookTolerance } from "../../utils/git-hook-tolerance";
-import { execGitWithShellPath, getSimpleGitWithShellPath } from "./git-client";
-import { execWithShellEnv, getProcessEnvWithShellPath } from "./shell-env";
+import {
+	execGitWithShellPath,
+	getGitProcessEnv,
+	getSimpleGitWithShellPath,
+} from "./git-client";
+import { execWithShellEnv } from "./shell-env";
 import { resolveTrackingRemoteName } from "./upstream-ref";
 
 const execFileAsync = promisify(execFile);
@@ -186,7 +190,7 @@ async function checkoutBranchWithHookTolerance({
 }
 
 async function getGitEnv(): Promise<Record<string, string>> {
-	return getProcessEnvWithShellPath();
+	return getGitProcessEnv();
 }
 
 /**

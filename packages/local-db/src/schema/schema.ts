@@ -1,9 +1,21 @@
+import type {
+	CircuitValidationResult,
+	ExecutionCircuitSpec,
+	ExecutionCircuitStatus,
+	ExecutionMonadSpec,
+	RuntimeBindingSpec,
+	TraceEventPayload,
+	TransitionRunOutput,
+	TransitionRunStatus,
+	TransitionValidationResult,
+} from "@superset/shared/execution-circuit";
 import {
 	index,
 	integer,
 	primaryKey,
 	sqliteTable,
 	text,
+	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { v4 as uuidv4 } from "uuid";
 
@@ -400,6 +412,124 @@ export const tasks = sqliteTable(
 
 export type InsertTask = typeof tasks.$inferInsert;
 export type SelectTask = typeof tasks.$inferSelect;
+
+/**
+ * Execution Circuit tables - local state-transition contracts attached to tasks
+ */
+export const executionCircuits = sqliteTable(
+	"execution_circuits",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => uuidv4()),
+		taskId: text("task_id")
+			.notNull()
+			.references(() => tasks.id, { onDelete: "cascade" }),
+		title: text("title").notNull(),
+		status: text("status").notNull().$type<ExecutionCircuitStatus>(),
+		specJson: text("spec_json", { mode: "json" })
+			.$type<ExecutionCircuitSpec>()
+			.notNull(),
+		validationJson: text("validation_json", { mode: "json" })
+			.$type<CircuitValidationResult>()
+			.notNull(),
+		createdAt: integer("created_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		updatedAt: integer("updated_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+	},
+	(table) => [
+		uniqueIndex("execution_circuits_task_id_unique_idx").on(table.taskId),
+		index("execution_circuits_status_idx").on(table.status),
+	],
+);
+
+export type InsertExecutionCircuit = typeof executionCircuits.$inferInsert;
+export type SelectExecutionCircuit = typeof executionCircuits.$inferSelect;
+
+export const transitionRuns = sqliteTable(
+	"transition_runs",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => uuidv4()),
+		circuitId: text("circuit_id")
+			.notNull()
+			.references(() => executionCircuits.id, { onDelete: "cascade" }),
+		transitionId: text("transition_id").notNull(),
+		status: text("status").notNull().$type<TransitionRunStatus>(),
+		workspaceId: text("workspace_id").references(() => workspaces.id, {
+			onDelete: "set null",
+		}),
+		agentRunId: text("agent_run_id"),
+		runtimeSnapshotJson: text("runtime_snapshot_json", { mode: "json" })
+			.$type<RuntimeBindingSpec>()
+			.notNull(),
+		monadSnapshotJson: text("monad_snapshot_json", { mode: "json" })
+			.$type<ExecutionMonadSpec>()
+			.notNull(),
+		outputJson: text("output_json", {
+			mode: "json",
+		}).$type<TransitionRunOutput>(),
+		validationResultJson: text("validation_result_json", {
+			mode: "json",
+		}).$type<TransitionValidationResult>(),
+		startedAt: integer("started_at"),
+		completedAt: integer("completed_at"),
+		createdAt: integer("created_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		updatedAt: integer("updated_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+	},
+	(table) => [
+		index("transition_runs_circuit_id_idx").on(table.circuitId),
+		index("transition_runs_transition_id_idx").on(table.transitionId),
+		index("transition_runs_status_idx").on(table.status),
+	],
+);
+
+export type InsertTransitionRun = typeof transitionRuns.$inferInsert;
+export type SelectTransitionRun = typeof transitionRuns.$inferSelect;
+
+export const experienceTraceEvents = sqliteTable(
+	"experience_trace_events",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => uuidv4()),
+		transitionRunId: text("transition_run_id")
+			.notNull()
+			.references(() => transitionRuns.id, { onDelete: "cascade" }),
+		sequence: integer("sequence").notNull(),
+		type: text("type").notNull(),
+		message: text("message").notNull(),
+		payloadJson: text("payload_json", {
+			mode: "json",
+		}).$type<TraceEventPayload>(),
+		createdAt: integer("created_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+	},
+	(table) => [
+		index("experience_trace_events_transition_run_id_idx").on(
+			table.transitionRunId,
+		),
+		uniqueIndex("experience_trace_events_run_sequence_unique_idx").on(
+			table.transitionRunId,
+			table.sequence,
+		),
+		index("experience_trace_events_sequence_idx").on(table.sequence),
+	],
+);
+
+export type InsertExperienceTraceEvent =
+	typeof experienceTraceEvents.$inferInsert;
+export type SelectExperienceTraceEvent =
+	typeof experienceTraceEvents.$inferSelect;
 
 /**
  * Browser history table - persists browsing history for URL autocomplete

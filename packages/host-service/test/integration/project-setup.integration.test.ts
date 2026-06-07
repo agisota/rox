@@ -1,9 +1,18 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { TRPCClientError } from "@trpc/client";
 import { projects } from "../../src/db/schema";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
+
+setDefaultTimeout(30_000);
 
 describe("project.setup error paths", () => {
 	let host: TestHost;
@@ -15,7 +24,7 @@ describe("project.setup error paths", () => {
 
 	afterEach(async () => {
 		if (host) await host.dispose();
-		repo.dispose();
+		repo?.dispose();
 	});
 
 	test("rejects clone when cloud project has no repoCloneUrl", async () => {

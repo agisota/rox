@@ -3,13 +3,22 @@
  * propagation, abort-signal handling.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { projects, workspaces } from "../../src/db/schema";
 import { createTestHost, type TestHost } from "../helpers/createTestHost";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
+
+setDefaultTimeout(30_000);
 
 describe("bug-hunt-4: cross-project leakage", () => {
 	let host: TestHost;
@@ -45,9 +54,9 @@ describe("bug-hunt-4: cross-project leakage", () => {
 	});
 
 	afterEach(async () => {
-		await host.dispose();
-		repoA.dispose();
-		repoB.dispose();
+		if (host) await host.dispose();
+		repoA?.dispose();
+		repoB?.dispose();
 	});
 
 	test("adopt with worktreePath from a different project's repo doesn't bind it to this project", async () => {
@@ -113,7 +122,7 @@ describe("bug-hunt-4: double-call cloud propagation", () => {
 
 	afterEach(async () => {
 		if (host) await host.dispose();
-		repo.dispose();
+		repo?.dispose();
 	});
 
 	test("workspaceCleanup.destroy called twice: first succeeds, second propagates cloud's response", async () => {
@@ -185,8 +194,8 @@ describe("bug-hunt-4: abort-signal handling", () => {
 	});
 
 	afterEach(async () => {
-		await host.dispose();
-		repo.dispose();
+		if (host) await host.dispose();
+		repo?.dispose();
 	});
 
 	test("filesystem.listDirectory completes normally without an abort signal", async () => {

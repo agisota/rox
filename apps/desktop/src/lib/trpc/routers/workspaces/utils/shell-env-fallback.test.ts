@@ -57,7 +57,7 @@ describe("augmentPathForMacOS", () => {
 
 	test("preserves existing PATH separators when nothing needs to be added", () => {
 		const originalPath =
-			"/opt/homebrew/bin::/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:";
+			"/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin::/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:";
 		const env: Record<string, string> = {
 			PATH: originalPath,
 		};

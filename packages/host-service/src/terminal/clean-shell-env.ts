@@ -49,6 +49,10 @@ const SHELL_BOOTSTRAP_KEYS = [
 ];
 
 const COMMON_MACOS_PATHS = [
+	"/usr/bin",
+	"/bin",
+	"/usr/sbin",
+	"/sbin",
 	"/opt/homebrew/bin",
 	"/opt/homebrew/sbin",
 	"/usr/local/bin",

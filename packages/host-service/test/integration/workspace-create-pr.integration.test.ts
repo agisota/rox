@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import {
 	chmodSync,
@@ -12,11 +12,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TRPCClientError } from "@trpc/client";
 import { eq } from "drizzle-orm";
-import simpleGit, { type SimpleGit } from "simple-git";
+import type { SimpleGit } from "simple-git";
 import { workspaces } from "../../src/db/schema";
+import { createUserSimpleGit } from "../../src/runtime/git/simple-git";
 import { safeResolveWorktreePath } from "../../src/trpc/router/workspace-creation/shared/worktree-paths";
 import { cloudFlows } from "../helpers/cloud-fakes";
 import { createProjectScenario } from "../helpers/scenarios";
+
+setDefaultTimeout(30_000);
 
 interface BareRemoteFixture {
 	bareRepoPath: string;
@@ -27,7 +30,11 @@ async function createBareRemote(): Promise<BareRemoteFixture> {
 	const bareRepoPath = realpathSync(
 		mkdtempSync(join(tmpdir(), "host-service-workspace-pr-bare-")),
 	);
-	await simpleGit().init(["--bare", "--initial-branch=main", bareRepoPath]);
+	await createUserSimpleGit().init([
+		"--bare",
+		"--initial-branch=main",
+		bareRepoPath,
+	]);
 	return {
 		bareRepoPath,
 		dispose: () => rmSync(bareRepoPath, { recursive: true, force: true }),
@@ -175,7 +182,7 @@ describe("workspaces.create PR checkout integration", () => {
 		}
 		expect(existsSync(worktreePath)).toBe(true);
 
-		const worktreeGit = simpleGit(worktreePath);
+		const worktreeGit = createUserSimpleGit(worktreePath);
 		const head = (await worktreeGit.raw(["rev-parse", "HEAD"])).trim();
 		expect(head).toBe(prHeadOid);
 		expect(
@@ -305,9 +312,9 @@ describe("workspaces.create PR checkout integration", () => {
 				])
 			).trim(),
 		).toBe("HEAD:refs/heads/feature/adopt-local");
-		expect(await simpleGit(worktreePath).raw(["push", "--dry-run"])).toEqual(
-			expect.any(String),
-		);
+		expect(
+			await createUserSimpleGit(worktreePath).raw(["push", "--dry-run"]),
+		).toEqual(expect.any(String));
 	});
 
 	test("removes a materialized PR branch when registration fails after worktree add", async () => {
@@ -547,7 +554,9 @@ describe("workspaces.create PR checkout integration", () => {
 			).trim(),
 		).toBe("refs/heads/feature/same-repo");
 		expect(
-			(await simpleGit(worktreePath).raw(["rev-parse", "HEAD"])).trim(),
+			(
+				await createUserSimpleGit(worktreePath).raw(["rev-parse", "HEAD"])
+			).trim(),
 		).toBe(prHeadOid);
 	});
 
@@ -624,7 +633,9 @@ describe("workspaces.create PR checkout integration", () => {
 			).trim(),
 		).toBe(`refs/pull/${prNumber}/head`);
 		expect(
-			(await simpleGit(worktreePath).raw(["rev-parse", "HEAD"])).trim(),
+			(
+				await createUserSimpleGit(worktreePath).raw(["rev-parse", "HEAD"])
+			).trim(),
 		).toBe(prHeadOid);
 	});
 
@@ -806,7 +817,9 @@ describe("workspaces.create PR checkout integration", () => {
 		worktreePaths.add(row.worktreePath);
 		expect(existsSync(row.worktreePath)).toBe(true);
 		expect(
-			(await simpleGit(row.worktreePath).raw(["rev-parse", "HEAD"])).trim(),
+			(
+				await createUserSimpleGit(row.worktreePath).raw(["rev-parse", "HEAD"])
+			).trim(),
 		).toBe(prHeadOid);
 		expect(
 			scenario.host.apiCalls.filter(

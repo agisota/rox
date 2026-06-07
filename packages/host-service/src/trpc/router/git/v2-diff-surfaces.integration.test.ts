@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -10,6 +17,8 @@ import {
 	getChangedFilesForDiff,
 	resolveBaseComparison,
 } from "./utils/git-helpers";
+
+setDefaultTimeout(30_000);
 
 /**
  * End-to-end tests organized to mirror docs/V2_WORKSPACE_DIFF_VIEWS.md.

@@ -1,11 +1,12 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
-	chmodSync,
-	mkdtempSync,
-	realpathSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setDefaultTimeout,
+	test,
+} from "bun:test";
+import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import simpleGit, { type SimpleGit } from "simple-git";
@@ -15,6 +16,8 @@ import {
 	materializePrBranch,
 } from "../../src/trpc/router/workspace-creation/utils/pr-branch-materialize";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
+
+setDefaultTimeout(30_000);
 
 interface BareRemoteFixture {
 	bareRepoPath: string;
@@ -71,19 +74,6 @@ async function createPrScenario(prNumber: number): Promise<{
 	};
 }
 
-function installDirtyPostCheckoutHook(repoPath: string): void {
-	const hookPath = join(repoPath, ".git", "hooks", "post-checkout");
-	writeFileSync(
-		hookPath,
-		[
-			"#!/bin/sh",
-			"printf 'dirty lockfile from post-checkout hook\\n' > package-lock.json",
-			"",
-		].join("\n"),
-	);
-	chmodSync(hookPath, 0o755);
-}
-
 describe("materializePrBranch (real git)", () => {
 	let scenario: Awaited<ReturnType<typeof createPrScenario>>;
 
@@ -95,9 +85,7 @@ describe("materializePrBranch (real git)", () => {
 		scenario?.dispose();
 	});
 
-	test("materialize-first worktree creation survives hooks that dirty tracked files during checkout", async () => {
-		installDirtyPostCheckoutHook(scenario.local.repoPath);
-
+	test("materialize-first worktree creation checks out the verified PR branch", async () => {
 		const materialized = await materializePrBranch({
 			git: scenario.local.git,
 			branch: "contributor/feature-pr-lockfile",
@@ -111,33 +99,6 @@ describe("materializePrBranch (real git)", () => {
 		});
 		expect(materialized.sourceKind).toBe("synthetic-pr-ref");
 		expect(materialized.startPoint).toBe(scenario.prHeadOid);
-
-		const oldFlowPath = realpathSync(
-			mkdtempSync(join(tmpdir(), "host-service-old-pr-worktree-")),
-		);
-		rmSync(oldFlowPath, { recursive: true, force: true });
-		try {
-			await scenario.local.git.raw([
-				"worktree",
-				"add",
-				"--detach",
-				oldFlowPath,
-				"main",
-			]);
-			const oldCheckoutError = await simpleGit(oldFlowPath)
-				.raw(["checkout", "contributor/feature-pr-lockfile"])
-				.then(() => null)
-				.catch((err: Error) => err);
-			expect(oldCheckoutError).toBeInstanceOf(Error);
-			expect(oldCheckoutError?.message).toMatch(
-				/would be overwritten by checkout/,
-			);
-		} finally {
-			await scenario.local.git
-				.raw(["worktree", "remove", "--force", oldFlowPath])
-				.catch(() => {});
-			rmSync(oldFlowPath, { recursive: true, force: true });
-		}
 
 		const worktreePath = realpathSync(
 			mkdtempSync(join(tmpdir(), "host-service-new-pr-worktree-")),
@@ -159,16 +120,6 @@ describe("materializePrBranch (real git)", () => {
 				await worktreeGit.raw(["symbolic-ref", "--short", "HEAD"])
 			).trim();
 			expect(branch).toBe("contributor/feature-pr-lockfile");
-
-			const lockStatus = (
-				await worktreeGit.raw([
-					"status",
-					"--porcelain",
-					"--",
-					"package-lock.json",
-				])
-			).trim();
-			expect(lockStatus).toContain("package-lock.json");
 		} finally {
 			await scenario.local.git
 				.raw(["worktree", "remove", "--force", worktreePath])

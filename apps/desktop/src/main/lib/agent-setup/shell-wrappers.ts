@@ -126,6 +126,32 @@ function buildPathPrependFunction(binDir: string): string {
 _rox_prepend_bin`;
 }
 
+/** Build a shell snippet that restores the caller-provided PATH entries. */
+function buildInitialPathRestoreFunction(): string {
+	return `_rox_restore_initial_path() {
+  local _rox_path_entry
+  local _rox_restored_path=""
+  IFS=: read -ra _rox_initial_path_entries <<< "$_rox_initial_path"
+  IFS=: read -ra _rox_current_path_entries <<< "$PATH"
+  for _rox_path_entry in "\${_rox_initial_path_entries[@]}"; do
+    [[ -z "$_rox_path_entry" ]] && continue
+    case ":$_rox_restored_path:" in
+      *:"$_rox_path_entry":*) ;;
+      *) _rox_restored_path="\${_rox_restored_path:+$_rox_restored_path:}$_rox_path_entry" ;;
+    esac
+  done
+  for _rox_path_entry in "\${_rox_current_path_entries[@]}"; do
+    [[ -z "$_rox_path_entry" ]] && continue
+    case ":$_rox_restored_path:" in
+      *:"$_rox_path_entry":*) ;;
+      *) _rox_restored_path="\${_rox_restored_path:+$_rox_restored_path:}$_rox_path_entry" ;;
+    esac
+  done
+  export PATH="$_rox_restored_path"
+}
+_rox_restore_initial_path`;
+}
+
 /**
  * Build a zsh precmd hook that re-asserts BIN_DIR in PATH.
  * Tools like mise/asdf register precmd hooks that reconstruct PATH,
@@ -249,6 +275,7 @@ export function createBashWrapper(
 
 # Save Rox env vars before sourcing user config
 ${ROX_ENV_SAVE}
+_rox_initial_path="$PATH"
 
 # Source system profile
 [[ -f /etc/profile ]] && source /etc/profile
@@ -268,7 +295,10 @@ fi
 # Restore Rox env vars that user config may have overridden
 ${ROX_ENV_RESTORE}
 
-# Keep rox bin first without duplicating entries
+# Restore caller-provided PATH entries that profile files may have removed.
+${buildInitialPathRestoreFunction()}
+
+# Keep Rox bin first without duplicating entries
 ${buildPathPrependFunction(paths.BIN_DIR)}
 hash -r 2>/dev/null || true
 # Minimal prompt (path/env shown in toolbar) - emerald to match app theme
