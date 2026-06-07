@@ -8,6 +8,10 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./rox-pricing": {
+			"types": "./src/rox-pricing.ts",
+			"default": "./src/rox-pricing.ts"
+		},
 		"./dev-credentials": {
 			"types": "./src/dev-credentials.ts",
 			"default": "./src/dev-credentials.ts"
