@@ -14,6 +14,7 @@ import {
 	LuFolderInput,
 	LuFolderPlus,
 	LuLayers,
+	LuNotebookText,
 	LuPlus,
 } from "react-icons/lu";
 import { GATED_FEATURES, usePaywall } from "renderer/components/Paywall";
@@ -73,6 +74,7 @@ export function DashboardSidebarHeader({
 	const isWorkspacesListOpen = !!matchRoute({ to: "/v2-workspaces" });
 	const isTasksOpen = !!matchRoute({ to: "/tasks", fuzzy: true });
 	const isAutomationsOpen = !!matchRoute({ to: "/automations", fuzzy: true });
+	const isNotebookOpen = !!matchRoute({ to: "/notebook", fuzzy: true });
 
 	const {
 		tab: lastTab,
@@ -88,6 +90,10 @@ export function DashboardSidebarHeader({
 
 	const handleAutomationsClick = () => {
 		navigate({ to: "/automations" });
+	};
+
+	const handleNotebookClick = () => {
+		navigate({ to: "/notebook" });
 	};
 
 	const handleTasksClick = () => {
@@ -144,6 +150,24 @@ export function DashboardSidebarHeader({
 						</button>
 					</TooltipTrigger>
 					<TooltipContent side="right">Automations</TooltipContent>
+				</Tooltip>
+
+				<Tooltip delayDuration={300}>
+					<TooltipTrigger asChild>
+						<button
+							type="button"
+							onClick={handleNotebookClick}
+							className={cn(
+								"flex size-8 items-center justify-center rounded-md transition-colors",
+								isNotebookOpen
+									? "bg-accent text-foreground"
+									: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+							)}
+						>
+							<LuNotebookText className="size-4" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="right">Notebook</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
@@ -253,6 +277,20 @@ export function DashboardSidebarHeader({
 			>
 				<LuClock className="size-4 shrink-0" />
 				<span className="flex-1 text-left">Automations</span>
+			</button>
+
+			<button
+				type="button"
+				onClick={handleNotebookClick}
+				className={cn(
+					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+					isNotebookOpen
+						? "bg-accent text-foreground"
+						: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+				)}
+			>
+				<LuNotebookText className="size-4 shrink-0" />
+				<span className="flex-1 text-left">Notebook</span>
 			</button>
 
 			<button
