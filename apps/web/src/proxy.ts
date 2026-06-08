@@ -15,7 +15,22 @@ function isPublicRoute(pathname: string): boolean {
 	return publicRoutes.some((route) => pathname.startsWith(route));
 }
 
+function gateBlocked(req: NextRequest): NextResponse | null {
+	const gate = process.env.SITE_GATE;
+	if (!gate) return null;
+	const authz = req.headers.get("authorization");
+	const ok = authz?.startsWith("Basic ") && atob(authz.slice(6)) === gate;
+	if (ok) return null;
+	return new NextResponse("Rox is in private preview.", {
+		status: 401,
+		headers: { "WWW-Authenticate": 'Basic realm="Rox private preview"' },
+	});
+}
+
 export default async function proxy(req: NextRequest) {
+	const blocked = gateBlocked(req);
+	if (blocked) return blocked;
+
 	const session = await auth.api.getSession({
 		headers: await headers(),
 	});

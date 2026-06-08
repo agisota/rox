@@ -1,8 +1,9 @@
 "use client";
 
 import { authClient } from "@rox/auth/client";
-import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
 import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -17,19 +18,34 @@ export default function SignInPage() {
 		? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
 		: env.NEXT_PUBLIC_WEB_URL;
 
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [isLoadingEmail, setIsLoadingEmail] = useState(false);
 	const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	const isLoading = isLoadingGoogle || isLoadingGithub || isLoadingEmail;
+
+	const signInWithEmail = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setIsLoadingEmail(true);
+		setError(null);
+		try {
+			const res = await authClient.signIn.email({ email, password });
+			if (res.error) throw new Error(res.error.message ?? "Sign in failed");
+			window.location.href = callbackURL;
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to sign in.");
+			setIsLoadingEmail(false);
+		}
+	};
+
 	const signInWithGoogle = async () => {
 		setIsLoadingGoogle(true);
 		setError(null);
-
 		try {
-			await authClient.signIn.social({
-				provider: "google",
-				callbackURL,
-			});
+			await authClient.signIn.social({ provider: "google", callbackURL });
 		} catch (err) {
 			console.error("Sign in failed:", err);
 			setError("Failed to sign in. Please try again.");
@@ -40,52 +56,14 @@ export default function SignInPage() {
 	const signInWithGithub = async () => {
 		setIsLoadingGithub(true);
 		setError(null);
-
 		try {
-			await authClient.signIn.social({
-				provider: "github",
-				callbackURL,
-			});
+			await authClient.signIn.social({ provider: "github", callbackURL });
 		} catch (err) {
 			console.error("Sign in failed:", err);
 			setError("Failed to sign in. Please try again.");
 			setIsLoadingGithub(false);
 		}
 	};
-
-	const [isLoadingDev, setIsLoadingDev] = useState(false);
-
-	const signInAsDev = async () => {
-		setIsLoadingDev(true);
-		setError(null);
-
-		try {
-			let res = await authClient.signIn.email({
-				email: DEV_EMAIL,
-				password: DEV_PASSWORD,
-			});
-			if (res.error) {
-				const signUpRes = await authClient.signUp.email({
-					email: DEV_EMAIL,
-					password: DEV_PASSWORD,
-					name: DEV_NAME,
-				});
-				if (signUpRes.error) throw new Error(signUpRes.error.message);
-				res = await authClient.signIn.email({
-					email: DEV_EMAIL,
-					password: DEV_PASSWORD,
-				});
-			}
-			if (res.error) throw new Error(res.error.message);
-			window.location.href = callbackURL;
-		} catch (err) {
-			console.error("Dev sign in failed:", err);
-			setError(err instanceof Error ? err.message : "Dev sign-in failed");
-			setIsLoadingDev(false);
-		}
-	};
-
-	const isLoading = isLoadingGoogle || isLoadingGithub || isLoadingDev;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -99,16 +77,50 @@ export default function SignInPage() {
 				{error && (
 					<p className="text-destructive text-center text-sm">{error}</p>
 				)}
-				{process.env.NODE_ENV === "development" && (
-					<Button
-						variant="outline"
-						disabled={isLoading}
-						onClick={signInAsDev}
-						className="w-full"
-					>
-						{isLoadingDev ? "Signing in..." : "Sign in as Local Admin (dev)"}
+
+				<form onSubmit={signInWithEmail} className="grid gap-3">
+					<div className="grid gap-1.5">
+						<Label htmlFor="email">Email</Label>
+						<Input
+							id="email"
+							type="email"
+							autoComplete="email"
+							placeholder="you@example.com"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							required
+							disabled={isLoading}
+						/>
+					</div>
+					<div className="grid gap-1.5">
+						<Label htmlFor="password">Password</Label>
+						<Input
+							id="password"
+							type="password"
+							autoComplete="current-password"
+							placeholder="••••••••"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+							required
+							disabled={isLoading}
+						/>
+					</div>
+					<Button type="submit" disabled={isLoading} className="w-full">
+						{isLoadingEmail ? "Signing in..." : "Sign in"}
 					</Button>
-				)}
+				</form>
+
+				<div className="relative">
+					<div className="absolute inset-0 flex items-center">
+						<span className="w-full border-t" />
+					</div>
+					<div className="relative flex justify-center text-xs uppercase">
+						<span className="bg-background text-muted-foreground px-2">
+							Or continue with
+						</span>
+					</div>
+				</div>
+
 				<Button
 					variant="outline"
 					disabled={isLoading}
@@ -127,27 +139,6 @@ export default function SignInPage() {
 					<FcGoogle className="mr-2 size-4" />
 					{isLoadingGoogle ? "Loading..." : "Sign in with Google"}
 				</Button>
-				<p className="text-muted-foreground px-8 text-center text-sm">
-					By clicking continue, you agree to our{" "}
-					<a
-						href={`${env.NEXT_PUBLIC_MARKETING_URL}/terms`}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="hover:text-primary underline underline-offset-4"
-					>
-						Terms of Service
-					</a>{" "}
-					and{" "}
-					<a
-						href={`${env.NEXT_PUBLIC_MARKETING_URL}/privacy`}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="hover:text-primary underline underline-offset-4"
-					>
-						Privacy Policy
-					</a>
-					.
-				</p>
 				<p className="text-center text-sm">
 					Don&apos;t have an account?{" "}
 					<Link

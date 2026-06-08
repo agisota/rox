@@ -1,89 +1,31 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getPageImage, source } from "@/lib/source";
-import { getMDXComponents } from "@/mdx-components";
-import {
-	DocsBody,
-	DocsDescription,
-	DocsPage,
-	DocsTitle,
-} from "./components/DocsPageLayout";
-import { LLMCopyButton, ViewOptions } from "./components/PageActions";
 
-export default async function Page(props: PageProps<"/[[...slug]]">) {
-	const params = await props.params;
-	const page = source.getPage(params.slug);
-	if (!page) notFound();
+// Docs are being rebuilt with a new FumaDocs approach and new content.
+// Until then, every docs route renders this placeholder.
+export const metadata: Metadata = {
+	title: "Docs \u2014 coming soon",
+	robots: { index: false, follow: false },
+};
 
-	const MDX = page.data.body;
-
+export default function Page() {
 	return (
-		<DocsPage
-			toc={page.data.toc}
-			full={page.data.full}
-			tableOfContent={{
-				header: <div className="w-10 h-4"></div>,
-			}}
-			editOnGithub={{
-				owner: "agisota",
-				repo: "rox",
-				path: `apps/docs/content/docs/${page.path}`,
-			}}
-		>
-			<DocsTitle>
-				<span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-					<span>{page.data.title}</span>
-					{page.data.pro ? (
-						<span className="rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-primary align-middle">
-							Pro
-						</span>
-					) : null}
-				</span>
-			</DocsTitle>
-			<DocsDescription>{page.data.description}</DocsDescription>
-			<div className="flex flex-row gap-2 items-center border-b pb-3">
-				<LLMCopyButton markdownUrl={`${page.url}.mdx`} />
-				<ViewOptions
-					markdownUrl={`${page.url}.mdx`}
-					githubUrl={`https://github.com/agisota/set/blob/main/apps/docs/content/docs/${page.path}`}
-				/>
-			</div>
-			<DocsBody>
-				<MDX components={getMDXComponents()} />
-			</DocsBody>
-		</DocsPage>
+		<div className="mx-auto flex min-h-[70vh] w-full max-w-xl flex-col items-center justify-center px-6 text-center">
+			<span className="text-muted-foreground mb-4 text-sm font-medium tracking-widest uppercase">
+				Rox Docs
+			</span>
+			<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+				Documentation is on the way
+			</h1>
+			<p className="text-muted-foreground mt-4 text-base">
+				We&apos;re rebuilding the Rox documentation from the ground up. Check
+				back soon.
+			</p>
+			<a
+				href="https://rox.one"
+				className="mt-8 inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+			>
+				\u2190 Back to rox.one
+			</a>
+		</div>
 	);
-}
-
-export async function generateStaticParams() {
-	return source.generateParams();
-}
-
-export async function generateMetadata(
-	props: PageProps<"/[[...slug]]">,
-): Promise<Metadata> {
-	const params = await props.params;
-	const page = source.getPage(params.slug);
-	if (!page) notFound();
-
-	const pageImage = getPageImage(page).url;
-
-	return {
-		title: page.data.title,
-		description: page.data.description,
-		alternates: {
-			canonical: page.url,
-		},
-		openGraph: {
-			title: page.data.title,
-			description: page.data.description,
-			images: [pageImage],
-		},
-		twitter: {
-			card: "summary_large_image",
-			title: page.data.title,
-			description: page.data.description,
-			images: [pageImage],
-		},
-	};
 }
