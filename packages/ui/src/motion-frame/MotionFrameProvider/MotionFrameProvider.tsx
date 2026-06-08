@@ -7,6 +7,7 @@ import {
 	useCallback,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 
@@ -34,9 +35,7 @@ export interface MotionFrameContextValue {
 	capabilities: MotionCapabilities;
 }
 
-const TIER_ORDER: MotionTier[] = ["off", "essential", "full"];
-
-const CAPABILITIES: Record<MotionTier, MotionCapabilities> = {
+export const CAPABILITIES: Record<MotionTier, MotionCapabilities> = {
 	off: { entrance: false, loop: false, transition: false },
 	essential: { entrance: true, loop: false, transition: true },
 	full: { entrance: true, loop: true, transition: true },
@@ -46,14 +45,16 @@ export const MotionFrameContext = createContext<MotionFrameContextValue | null>(
 	null,
 );
 
-/** Reduced-motion never loops: clamp the chosen tier to at most `essential`. */
-function clampTier(tier: MotionTier, prefersReduced: boolean): MotionTier {
-	if (!prefersReduced) {
-		return tier;
-	}
-	return TIER_ORDER.indexOf(tier) <= TIER_ORDER.indexOf("essential")
-		? tier
-		: "essential";
+/**
+ * Honor `prefers-reduced-motion`: suppress all non-essential motion by clamping
+ * the chosen tier to `off`. Content still renders (clock-safe), it just stops
+ * animating.
+ */
+export function clampTier(
+	tier: MotionTier,
+	prefersReduced: boolean,
+): MotionTier {
+	return prefersReduced ? "off" : tier;
 }
 
 function isMotionTier(value: unknown): value is MotionTier {
@@ -84,14 +85,23 @@ export function MotionFrameProvider({
 }: MotionFrameProviderProps) {
 	const [tier, setTierState] = useState<MotionTier>(defaultTier);
 	const prefersReducedMotion = useReducedMotion() ?? false;
+	const hasHydrated = useRef(false);
 
+	// Hydrate the persisted tier once on mount. `localStorage` can throw in
+	// private-browsing / restricted contexts, so guard it — a storage failure
+	// must never break rendering.
 	useEffect(() => {
-		if (!persist || typeof window === "undefined") {
+		if (!persist || typeof window === "undefined" || hasHydrated.current) {
 			return;
 		}
-		const stored = window.localStorage.getItem(storageKey);
-		if (isMotionTier(stored)) {
-			setTierState(stored);
+		hasHydrated.current = true;
+		try {
+			const stored = window.localStorage.getItem(storageKey);
+			if (isMotionTier(stored)) {
+				setTierState(stored);
+			}
+		} catch {
+			// Storage unavailable — keep the default tier.
 		}
 	}, [persist, storageKey]);
 
@@ -99,7 +109,11 @@ export function MotionFrameProvider({
 		(next: MotionTier) => {
 			setTierState(next);
 			if (persist && typeof window !== "undefined") {
-				window.localStorage.setItem(storageKey, next);
+				try {
+					window.localStorage.setItem(storageKey, next);
+				} catch {
+					// Storage unavailable — selection still applies this session.
+				}
 			}
 		},
 		[persist, storageKey],

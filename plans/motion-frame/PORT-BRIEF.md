@@ -47,7 +47,7 @@ language is the deliverable — not another page.
   `globals.css`).
 - All motion routes through `MotionFrameProvider` / `useMotionTier`; nothing
   loops in `essential`; nothing animates in `off`; `prefers-reduced-motion`
-  clamps to at most `essential`.
+  renders fully static (clamps to `off`).
 - Co-location per `AGENTS.md`: `ComponentName/ComponentName.tsx` + `index.ts`,
   one component per file, tests co-located (`*.test.tsx`, `bun:test` +
   `renderToStaticMarkup`).
@@ -121,7 +121,8 @@ language is the deliverable — not another page.
       `useMotionTier`.
 - [x] PR2 (partial): `FadeLift`, `PulseDot`, `TraceLine` + tests.
 - [x] PR4 (seed): `StateTransition` composite + test.
-- [ ] PR1 remainder: tier switcher UI, persistence QA.
+- [ ] PR1 remainder: tier switcher UI component (persistence + reduced-motion
+      logic already implemented in MotionFrameProvider/useMotionTier).
 - [ ] PR2 remainder: `Reveal`, `LoopMarquee`.
 - [ ] PR3: typeface themes + switcher.
 - [ ] PR4 remainder: `SufficiencyPanel`, `EventTrace`, `RuntimeCard`,

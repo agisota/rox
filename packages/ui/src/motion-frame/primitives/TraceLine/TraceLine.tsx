@@ -47,7 +47,7 @@ export function TraceLine({
 				stroke={STATE_TOKEN.transition}
 				strokeWidth={strokeWidth}
 				strokeLinecap="round"
-				initial={animated ? { pathLength: 0 } : false}
+				initial={animated ? { pathLength: 0 } : { pathLength: 1 }}
 				whileInView={animated ? { pathLength: 1 } : undefined}
 				viewport={{ once: true }}
 				transition={{ duration, ease: "easeInOut" }}

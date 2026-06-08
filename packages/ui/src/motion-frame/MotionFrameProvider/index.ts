@@ -5,6 +5,8 @@ export type {
 	MotionTier,
 } from "./MotionFrameProvider";
 export {
+	CAPABILITIES,
+	clampTier,
 	MotionFrameContext,
 	MotionFrameProvider,
 } from "./MotionFrameProvider";

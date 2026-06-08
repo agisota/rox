@@ -29,7 +29,7 @@ export function FadeLift({
 	duration = 0.4,
 	delay = 0,
 }: FadeLiftProps) {
-	const { capabilities, prefersReducedMotion } = useMotionTier();
+	const { capabilities } = useMotionTier();
 
 	if (!capabilities.entrance) {
 		return <div className={className}>{children}</div>;
@@ -38,7 +38,7 @@ export function FadeLift({
 	return (
 		<motion.div
 			className={className}
-			initial={{ opacity: 0, y: prefersReducedMotion ? 0 : distance }}
+			initial={{ opacity: 0, y: distance }}
 			whileInView={{ opacity: 1, y: 0 }}
 			viewport={{ once: true, margin: "-10%" }}
 			transition={{ duration, delay, ease: "easeOut" }}

@@ -32,12 +32,12 @@ function renderMarker(
 				alignEnd ? "items-end text-right" : "items-start",
 			)}
 		>
-			<span className="flex items-center gap-2 text-foreground text-sm">
+			<div className="flex items-center gap-2 text-foreground text-sm">
 				<PulseDot state={state} />
 				{node.label}
-			</span>
+			</div>
 			{node.detail ? (
-				<span className="text-muted-foreground text-xs">{node.detail}</span>
+				<div className="text-muted-foreground text-xs">{node.detail}</div>
 			) : null}
 		</div>
 	);

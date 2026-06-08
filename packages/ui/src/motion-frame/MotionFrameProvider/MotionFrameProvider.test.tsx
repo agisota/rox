@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useMotionTier } from "../useMotionTier";
-import { MotionFrameProvider } from "./MotionFrameProvider";
+import { clampTier, MotionFrameProvider } from "./MotionFrameProvider";
 
 function Probe() {
 	const { effectiveTier, capabilities } = useMotionTier();
@@ -27,5 +27,18 @@ describe("MotionFrameProvider", () => {
 		);
 		expect(html).toContain('data-tier="off"');
 		expect(html).toContain('data-loop="false"');
+	});
+});
+
+describe("clampTier", () => {
+	it("passes the tier through when reduced motion is off", () => {
+		expect(clampTier("full", false)).toBe("full");
+		expect(clampTier("essential", false)).toBe("essential");
+	});
+
+	it("clamps every tier to off when reduced motion is on", () => {
+		expect(clampTier("full", true)).toBe("off");
+		expect(clampTier("essential", true)).toBe("off");
+		expect(clampTier("off", true)).toBe("off");
 	});
 });
