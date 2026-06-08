@@ -68,6 +68,10 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
+	users: {
+		id: "users.id",
+		email: "users.email",
+	},
 	members: {
 		organizationId: "members.organizationId",
 		userId: "members.userId",
@@ -212,5 +216,76 @@ describe("executionCircuit router", () => {
 			taskId: TASK_ID,
 		});
 		expect(result).toBeNull();
+	});
+
+	it("returns a plan and security decision for a task circuit", async () => {
+		// getCircuitForTask resolves the circuit holding the spec.
+		selectResults.push([
+			{ id: CIRCUIT_ID, organizationId: ORGANIZATION_ID, spec: sampleSpec },
+		]);
+
+		const caller = createCaller(createContext());
+
+		const result = await caller.executionCircuit.getExecutionPlan({
+			taskId: TASK_ID,
+		});
+
+		expect(result.plan.reachable).toBe(true);
+		expect(result.plan.steps.map((s) => s.transitionId)).toEqual([
+			"start",
+			"complete",
+		]);
+		expect(result.security.allowed).toBe(true);
+	});
+
+	it("refuses to start a run for an insecure transition", async () => {
+		const insecureSpec = {
+			...sampleSpec,
+			// agent binding with no checkable output contract → security denies it.
+			transitions: [
+				{
+					id: "danger",
+					from: "todo",
+					to: "done",
+					monad: { runtimeBinding: { kind: "agent" } },
+				},
+			],
+		};
+		// getCircuitForOrg resolves the circuit holding the insecure spec.
+		selectResults.push([
+			{ id: CIRCUIT_ID, organizationId: ORGANIZATION_ID, spec: insecureSpec },
+		]);
+
+		const caller = createCaller(createContext());
+
+		await expect(
+			caller.executionCircuit.createTransitionRun({
+				circuitId: CIRCUIT_ID,
+				transitionId: "danger",
+			}),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+		expect(dbState.mocks.insertMock).not.toHaveBeenCalled();
+	});
+
+	it("starts a run for a secure transition", async () => {
+		// getCircuitForOrg resolves the circuit; the default "complete" transition
+		// is an agent binding WITH an output contract → security allows it.
+		selectResults.push([
+			{ id: CIRCUIT_ID, organizationId: ORGANIZATION_ID, spec: sampleSpec },
+		]);
+		insertResults.push([
+			{ id: "run-1", executionCircuitId: CIRCUIT_ID, transitionId: "complete" },
+		]);
+
+		const caller = createCaller(createContext());
+
+		const run = await caller.executionCircuit.createTransitionRun({
+			circuitId: CIRCUIT_ID,
+			transitionId: "complete",
+		});
+
+		expect(run).toMatchObject({ transitionId: "complete" });
+		expect(dbState.mocks.insertMock).toHaveBeenCalled();
 	});
 });

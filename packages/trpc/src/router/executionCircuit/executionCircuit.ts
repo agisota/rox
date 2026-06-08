@@ -10,6 +10,9 @@ import {
 	computeMonadCompleteness,
 	defaultCircuitForTask,
 	type ExecutionCircuitSpec,
+	evaluateCircuitSecurity,
+	evaluateTransitionSecurity,
+	planExecutionPath,
 	validateExecutionCircuitSpec,
 } from "@rox/workflow-core";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
@@ -176,6 +179,26 @@ export const executionCircuitRouter = {
 			return compileTransitionPromptFn(spec, input.transitionId);
 		}),
 
+	getExecutionPlan: protectedProcedure
+		.input(taskIdSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const circuit = await getCircuitForTask(organizationId, input.taskId);
+			if (!circuit) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Execution circuit not found",
+				});
+			}
+			// The planner returns the ordered transition path to the TargetState;
+			// the security decision tells the run service which of those steps are
+			// permitted to execute. Both are pure functions of the persisted spec.
+			return {
+				plan: planExecutionPath(circuit.spec),
+				security: evaluateCircuitSecurity(circuit.spec),
+			};
+		}),
+
 	createTransitionRun: protectedProcedure
 		.input(createTransitionRunSchema)
 		.mutation(async ({ ctx, input }) => {
@@ -183,11 +206,25 @@ export const executionCircuitRouter = {
 			const circuit = await getCircuitForOrg(organizationId, input.circuitId);
 
 			const spec = circuit.spec;
-			const exists = spec.transitions.some((t) => t.id === input.transitionId);
-			if (!exists) {
+			const transition = spec.transitions.find(
+				(t) => t.id === input.transitionId,
+			);
+			if (!transition) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
 					message: `Unknown transition "${input.transitionId}"`,
+				});
+			}
+
+			// Security predicate: never start a run for a transition that is not
+			// permitted to execute (e.g. an agent/tool binding with no checkable
+			// output contract, or a runtime kind outside the allowlist).
+			const security = evaluateTransitionSecurity(transition);
+			if (!security.allowed) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: `Transition "${input.transitionId}" is not permitted to execute`,
+					cause: security.violations,
 				});
 			}
 
