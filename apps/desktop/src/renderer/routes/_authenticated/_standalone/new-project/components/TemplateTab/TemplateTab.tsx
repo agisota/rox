@@ -8,12 +8,21 @@ import {
 	LuMessageSquare,
 	LuServer,
 	LuSmartphone,
+	LuStore,
 	LuTerminal,
 } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useProjectCreationHandler } from "../../hooks/useProjectCreationHandler";
 
 const TEMPLATES = [
+	{
+		name: "Rox Starters",
+		description:
+			"Multi-tenant CRM/ERP/commerce foundation — modules, RBAC, orgs, custom entities, events & workflows",
+		icon: LuStore,
+		color: "text-white bg-amber-500",
+		repo: "https://github.com/agisota/open-mercato",
+	},
 	{
 		name: "Next.js Chatbot",
 		description: "AI chatbot built with Next.js and the AI SDK",
