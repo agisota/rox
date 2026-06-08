@@ -155,6 +155,10 @@
 		"./integrations": {
 			"types": "./src/integrations/index.ts",
 			"default": "./src/integrations/index.ts"
+		},
+		"./workspace-setup-presets": {
+			"types": "./src/workspace-setup-presets.ts",
+			"default": "./src/workspace-setup-presets.ts"
 		}
 	},
 	"scripts": {

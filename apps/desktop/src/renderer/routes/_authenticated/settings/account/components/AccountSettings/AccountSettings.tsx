@@ -45,7 +45,23 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 		[collections],
 	);
 
-	const user = usersData?.find((u) => u.id === currentUserId);
+	// Prefer the synced, org-scoped collection row when present (it carries the
+	// freshest profile data). Fall back to the authenticated session user so the
+	// Account tab still renders when the active org has no matching member row
+	// (cache-first: never blank an existing row just because the collection is
+	// not yet ready — see AGENTS.md #9).
+	const syncedUser = usersData?.find((u) => u.id === currentUserId);
+	const sessionUser = session?.user;
+	const user =
+		syncedUser ??
+		(sessionUser
+			? {
+					id: sessionUser.id,
+					name: sessionUser.name ?? "",
+					email: sessionUser.email,
+					image: sessionUser.image ?? null,
+				}
+			: undefined);
 
 	const signOutMutation = electronTrpc.auth.signOut.useMutation({
 		onSuccess: () => toast.success("Signed out"),
@@ -110,7 +126,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 
 			<div className="space-y-3">
 				{showProfile &&
-					(!isReady && !user ? (
+					(!isReady && !user && !session ? (
 						<ProfileSkeleton />
 					) : user ? (
 						<>

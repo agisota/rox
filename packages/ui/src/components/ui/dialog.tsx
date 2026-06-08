@@ -51,13 +51,21 @@ function DialogContent({
 	className,
 	children,
 	showCloseButton = true,
+	blur = false,
+	overlayClassName,
 	...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
 	showCloseButton?: boolean;
+	/** Opt-in: dim + blur the backdrop behind this dialog. */
+	blur?: boolean;
+	/** Escape hatch for fully custom overlay styling. */
+	overlayClassName?: string;
 }) {
 	return (
 		<DialogPortal data-slot="dialog-portal">
-			<DialogOverlay />
+			<DialogOverlay
+				className={cn(blur && "bg-black/60 backdrop-blur-sm", overlayClassName)}
+			/>
 			<DialogPrimitive.Content
 				data-slot="dialog-content"
 				className={cn(

@@ -27,6 +27,7 @@ import { ProjectPicker } from "../ProjectPicker";
 import { SchedulePicker } from "../SchedulePicker";
 import { WorkspacePicker } from "../WorkspacePicker";
 import { TemplateGalleryPanel } from "./components/TemplateGalleryPanel";
+import { TemplateScrollRow } from "./components/TemplateScrollRow";
 
 export type AutomationCreatedPayload = { id: string; name: string };
 
@@ -86,6 +87,15 @@ export function CreateAutomationDialog({
 		const first = recentProjects[0];
 		if (first) setSelectedProjectId(first.id);
 	}, [open, selectedProjectId, recentProjects]);
+
+	// Default the device to the local host once it's known, and persist that
+	// choice in `hostId` so it survives across renders (rather than relying only
+	// on the `hostId ?? localHostId` fallback used for the request target).
+	useEffect(() => {
+		if (!open) return;
+		if (hostId) return;
+		if (localHostId) setHostId(localHostId);
+	}, [open, hostId, localHostId]);
 
 	// Track which (open session, template) we've already pre-filled so the
 	// effects don't re-run and stomp on user edits when `hostAgents` lands
@@ -192,6 +202,7 @@ export function CreateAutomationDialog({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
+				blur
 				className="sm:max-w-[960px] p-0 gap-0 overflow-hidden"
 				aria-describedby={undefined}
 				showCloseButton={false}
@@ -240,6 +251,9 @@ export function CreateAutomationDialog({
 							</DialogHeader>
 
 							<div className="flex-1 min-h-0 px-4 pt-2 flex flex-col overflow-y-auto">
+								<div className="pb-2">
+									<TemplateScrollRow onSelectTemplate={applyTemplate} />
+								</div>
 								<MarkdownEditor
 									content={prompt}
 									onChange={setPrompt}
