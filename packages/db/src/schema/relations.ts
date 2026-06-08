@@ -18,6 +18,7 @@ import {
 	githubPullRequests,
 	githubRepositories,
 } from "./github";
+import { knowledgeDocuments, knowledgeLinks } from "./knowledge";
 import {
 	accessGrants,
 	agentCommands,
@@ -108,6 +109,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	agentCommands: many(agentCommands),
 	chatSessions: many(chatSessions),
 	accessGrants: many(accessGrants),
+	knowledgeDocuments: many(knowledgeDocuments),
 }));
 
 export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
@@ -311,6 +313,7 @@ export const v2ProjectsRelations = relations(v2Projects, ({ one, many }) => ({
 		references: [githubRepositories.id],
 	}),
 	workspaces: many(v2Workspaces),
+	knowledgeDocuments: many(knowledgeDocuments),
 }));
 
 export const v2HostsRelations = relations(v2Hosts, ({ one, many }) => ({
@@ -679,3 +682,42 @@ export const experienceTraceEventsRelations = relations(
 		}),
 	}),
 );
+
+// Knowledge / notebook layer (fumadocs epic) ----------------------------------
+
+export const knowledgeDocumentsRelations = relations(
+	knowledgeDocuments,
+	({ one, many }) => ({
+		organization: one(organizations, {
+			fields: [knowledgeDocuments.organizationId],
+			references: [organizations.id],
+		}),
+		v2Project: one(v2Projects, {
+			fields: [knowledgeDocuments.v2ProjectId],
+			references: [v2Projects.id],
+		}),
+		createdByUser: one(users, {
+			fields: [knowledgeDocuments.createdByUserId],
+			references: [users.id],
+		}),
+		outgoingLinks: many(knowledgeLinks, { relationName: "linkSource" }),
+		incomingLinks: many(knowledgeLinks, { relationName: "linkTarget" }),
+	}),
+);
+
+export const knowledgeLinksRelations = relations(knowledgeLinks, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [knowledgeLinks.organizationId],
+		references: [organizations.id],
+	}),
+	sourceDocument: one(knowledgeDocuments, {
+		fields: [knowledgeLinks.sourceDocumentId],
+		references: [knowledgeDocuments.id],
+		relationName: "linkSource",
+	}),
+	targetDocument: one(knowledgeDocuments, {
+		fields: [knowledgeLinks.targetDocumentId],
+		references: [knowledgeDocuments.id],
+		relationName: "linkTarget",
+	}),
+}));

@@ -1,0 +1,1 @@
+export { knowledgeRouter } from "./knowledge";

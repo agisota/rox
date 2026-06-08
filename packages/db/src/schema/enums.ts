@@ -324,3 +324,29 @@ export type AccessGranteeType = z.infer<typeof accessGranteeTypeEnum>;
 export const accessRoleValues = ["viewer", "editor", "admin"] as const;
 export const accessRoleEnum = z.enum(accessRoleValues);
 export type AccessRole = z.infer<typeof accessRoleEnum>;
+
+// Knowledge / notebook layer (fumadocs epic) ----------------------------------
+// Document "type" is the editorial kind shown in the notebook; "source kind" is
+// how the document was produced (manual authoring, distilled from a chat, an
+// agent run, an Obsidian import, or a flat file fallback).
+
+export const knowledgeDocumentTypeValues = [
+	"note",
+	"prd",
+	"spec",
+	"doc",
+	"meeting_summary",
+	"reference",
+] as const;
+export const knowledgeDocumentTypeEnum = z.enum(knowledgeDocumentTypeValues);
+export type KnowledgeDocumentType = z.infer<typeof knowledgeDocumentTypeEnum>;
+
+export const knowledgeSourceKindValues = [
+	"manual",
+	"conversation",
+	"agent_run",
+	"obsidian_import",
+	"file",
+] as const;
+export const knowledgeSourceKindEnum = z.enum(knowledgeSourceKindValues);
+export type KnowledgeSourceKind = z.infer<typeof knowledgeSourceKindEnum>;

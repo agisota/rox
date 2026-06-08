@@ -435,6 +435,13 @@
       "when": 1780881540526,
       "tag": "0061_add_access_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1780885108548,
+      "tag": "0062_add_knowledge_documents",
+      "breakpoints": true
     }
   ]
 }

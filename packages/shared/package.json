@@ -139,6 +139,10 @@
 		"./rrule": {
 			"types": "./src/rrule.ts",
 			"default": "./src/rrule.ts"
+		},
+		"./knowledge": {
+			"types": "./src/knowledge/index.ts",
+			"default": "./src/knowledge/index.ts"
 		}
 	},
 	"scripts": {
