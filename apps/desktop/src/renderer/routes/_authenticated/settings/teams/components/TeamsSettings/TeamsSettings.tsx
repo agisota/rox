@@ -9,9 +9,56 @@ import {
 } from "@rox/ui/table";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { CreateTeamButton } from "./components/CreateTeamButton";
+
+function TeamsSettingsLayout({
+	action,
+	children,
+}: {
+	action?: ReactNode;
+	children: ReactNode;
+}) {
+	return (
+		<div className="flex-1 flex flex-col min-h-0">
+			<div className="p-8">
+				<div className="max-w-5xl flex items-end justify-between gap-4">
+					<div>
+						<h2 className="text-2xl font-semibold">Teams</h2>
+						<p className="text-sm text-muted-foreground mt-1">
+							Organize your work into teams. Tasks and integrations can sync
+							per-team.
+						</p>
+					</div>
+					{action}
+				</div>
+			</div>
+
+			<div className="flex-1 overflow-auto">
+				<div className="p-8">
+					<div className="max-w-5xl">{children}</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function TeamsSkeleton() {
+	return (
+		<div className="space-y-2 border rounded-lg p-2">
+			{[1, 2, 3].map((i) => (
+				<div key={i} className="flex items-center gap-4 p-4">
+					<div className="flex-1 space-y-2">
+						<Skeleton className="h-4 w-48" />
+					</div>
+					<Skeleton className="h-4 w-16" />
+				</div>
+			))}
+		</div>
+	);
+}
 
 export function TeamsSettings() {
 	const { data: session } = authClient.useSession();
@@ -35,79 +82,70 @@ export function TeamsSettings() {
 		return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 	};
 
+	// `session` is undefined while authClient.useSession() hydrates — render the
+	// skeleton then, and only show the no-org state once the session resolves
+	// with no activeOrganizationId. Never blank the tab.
+	const sessionLoading = session === undefined;
+
+	if (sessionLoading) {
+		return (
+			<TeamsSettingsLayout>
+				<TeamsSkeleton />
+			</TeamsSettingsLayout>
+		);
+	}
+
 	if (!activeOrganizationId) {
-		return null;
+		return (
+			<TeamsSettingsLayout>
+				<div className="text-center py-12 text-muted-foreground border rounded-lg">
+					No organization selected
+				</div>
+			</TeamsSettingsLayout>
+		);
 	}
 
 	return (
-		<div className="flex-1 flex flex-col min-h-0">
-			<div className="p-8">
-				<div className="max-w-5xl flex items-end justify-between gap-4">
-					<div>
-						<h2 className="text-2xl font-semibold">Teams</h2>
-						<p className="text-sm text-muted-foreground mt-1">
-							Organize your work into teams. Tasks and integrations can sync
-							per-team.
-						</p>
-					</div>
-					<CreateTeamButton organizationId={activeOrganizationId} />
+		<TeamsSettingsLayout
+			action={<CreateTeamButton organizationId={activeOrganizationId} />}
+		>
+			{!isReady && teams.length === 0 ? (
+				<TeamsSkeleton />
+			) : teams.length === 0 ? (
+				<div className="text-center py-12 text-muted-foreground border rounded-lg">
+					No teams yet
 				</div>
-			</div>
-
-			<div className="flex-1 overflow-auto">
-				<div className="p-8">
-					<div className="max-w-5xl">
-						{!isReady && teams.length === 0 ? (
-							<div className="space-y-2 border rounded-lg p-2">
-								{[1, 2, 3].map((i) => (
-									<div key={i} className="flex items-center gap-4 p-4">
-										<div className="flex-1 space-y-2">
-											<Skeleton className="h-4 w-48" />
-										</div>
-										<Skeleton className="h-4 w-16" />
-									</div>
-								))}
-							</div>
-						) : teams.length === 0 ? (
-							<div className="text-center py-12 text-muted-foreground border rounded-lg">
-								No teams yet
-							</div>
-						) : (
-							<div className="border rounded-lg">
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead>Name</TableHead>
-											<TableHead>Created</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{teams.map((team) => (
-											<TableRow
-												key={team.id}
-												className="cursor-pointer hover:bg-accent/50"
-												onClick={() =>
-													navigate({
-														to: "/settings/teams/$teamId",
-														params: { teamId: team.id },
-													})
-												}
-											>
-												<TableCell className="font-medium">
-													{team.name}
-												</TableCell>
-												<TableCell className="text-muted-foreground">
-													{formatDate(team.createdAt)}
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</div>
-						)}
-					</div>
+			) : (
+				<div className="border rounded-lg">
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Name</TableHead>
+								<TableHead>Created</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{teams.map((team) => (
+								<TableRow
+									key={team.id}
+									className="cursor-pointer hover:bg-accent/50"
+									onClick={() =>
+										navigate({
+											to: "/settings/teams/$teamId",
+											params: { teamId: team.id },
+										})
+									}
+								>
+									<TableCell className="font-medium">{team.name}</TableCell>
+									<TableCell className="text-muted-foreground">
+										{formatDate(team.createdAt)}
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
 				</div>
-			</div>
-		</div>
+			)}
+		</TeamsSettingsLayout>
 	);
 }

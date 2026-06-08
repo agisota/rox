@@ -67,9 +67,14 @@ export default function WorkspaceTerminalPage({
 	useEffect(() => {
 		(async () => {
 			try {
-				const organization = await trpcClient.organization.getActive.query();
+				// Mirror the dashboard/agents layouts: when activeOrganizationId is
+				// unset, `getActive` returns null, so fall back to the user's
+				// most-recent membership instead of dead-ending the terminal.
+				const active = await trpcClient.organization.getActive.query();
+				const organization =
+					active ?? (await trpcClient.user.myOrganization.query());
 				if (!organization) {
-					setLoadError("No active organization.");
+					setLoadError("You're not part of any organization yet.");
 					setTerminals([]);
 					setPresets([]);
 					return;

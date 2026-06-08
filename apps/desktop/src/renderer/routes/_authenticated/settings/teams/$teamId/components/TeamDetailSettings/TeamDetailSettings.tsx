@@ -46,6 +46,47 @@ interface TeamMemberRow {
 
 type OpenDialog = "delete" | "leaveTeam" | null;
 
+function TeamDetailLayout({ children }: { children: React.ReactNode }) {
+	return (
+		<div className="flex-1 flex flex-col min-h-0">
+			<div className="px-8 pt-8 pb-4">
+				<div className="max-w-5xl">
+					<Link
+						to="/settings/teams"
+						className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4"
+					>
+						<HiArrowLeft className="h-4 w-4" />
+						All teams
+					</Link>
+					<h2 className="text-2xl font-semibold">Team settings</h2>
+				</div>
+			</div>
+			<div className="flex-1 overflow-auto">
+				<div className="px-8 pb-16">
+					<div className="max-w-5xl">{children}</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function TeamMembersSkeleton() {
+	return (
+		<div className="space-y-2 border rounded-lg">
+			{[1, 2, 3].map((i) => (
+				<div key={i} className="flex items-center gap-4 p-4">
+					<Skeleton className="h-8 w-8 rounded-full" />
+					<div className="flex-1 space-y-2">
+						<Skeleton className="h-4 w-48" />
+						<Skeleton className="h-3 w-32" />
+					</div>
+					<Skeleton className="h-4 w-16" />
+				</div>
+			))}
+		</div>
+	);
+}
+
 export function TeamDetailSettings({ teamId }: TeamDetailSettingsProps) {
 	const { data: session } = authClient.useSession();
 	const navigate = useNavigate();
@@ -199,9 +240,51 @@ export function TeamDetailSettings({ teamId }: TeamDetailSettingsProps) {
 		}
 	}
 
-	if (!activeOrganizationId) return null;
-
 	const isReady = teamsReady && membersReady;
+
+	// `session` is undefined while authClient.useSession() hydrates — render the
+	// skeleton then, and only show the no-org state once the session resolves.
+	const sessionLoading = session === undefined;
+
+	if (sessionLoading) {
+		return (
+			<TeamDetailLayout>
+				<TeamMembersSkeleton />
+			</TeamDetailLayout>
+		);
+	}
+
+	if (!activeOrganizationId) {
+		return (
+			<TeamDetailLayout>
+				<div className="text-center py-12 text-muted-foreground border rounded-lg">
+					No organization selected
+				</div>
+			</TeamDetailLayout>
+		);
+	}
+
+	// Collections are ready but no row matches this teamId (deleted/invalid id):
+	// render an explicit not-found state instead of a half-empty shell.
+	if (isReady && !team) {
+		return (
+			<TeamDetailLayout>
+				<div className="text-center py-12 border rounded-lg">
+					<p className="text-sm font-medium">Team not found</p>
+					<p className="text-sm text-muted-foreground mt-1">
+						This team may have been deleted.
+					</p>
+					<Link
+						to="/settings/teams"
+						className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 mt-4"
+					>
+						<HiArrowLeft className="h-4 w-4" />
+						Back to all teams
+					</Link>
+				</div>
+			</TeamDetailLayout>
+		);
+	}
 
 	return (
 		<div className="flex-1 flex flex-col min-h-0">

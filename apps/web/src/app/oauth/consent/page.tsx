@@ -2,6 +2,7 @@ import { auth } from "@rox/auth/server";
 import { db } from "@rox/db/client";
 import { headers } from "next/headers";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 
 import { env } from "@/env";
 import { api } from "@/trpc/server";
@@ -16,12 +17,16 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 		headers: await headers(),
 	});
 
+	const params = await searchParams;
+
 	if (!session) {
-		// Defensive — middleware should have caught this.
-		return null;
+		// There is no auth middleware in apps/web, so enforce it here: send
+		// unauthenticated users to sign-in and return to consent afterwards.
+		const query = new URLSearchParams(params).toString();
+		const target = query ? `/oauth/consent?${query}` : "/oauth/consent";
+		redirect(`/sign-in?redirect=${encodeURIComponent(target)}`);
 	}
 
-	const params = await searchParams;
 	const client_id = params.client_id;
 	const scope = params.scope;
 

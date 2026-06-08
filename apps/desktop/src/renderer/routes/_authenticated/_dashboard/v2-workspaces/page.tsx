@@ -27,12 +27,19 @@ function V2WorkspacesPage() {
 		setSearchQuery("");
 	}, [setSearchQuery]);
 
-	const { all, counts, hostOptions, projectOptions, hostsById, projectsById } =
-		useAccessibleV2Workspaces({
-			searchQuery,
-			deviceFilter,
-			projectFilter,
-		});
+	const {
+		all,
+		isSessionLoading,
+		counts,
+		hostOptions,
+		projectOptions,
+		hostsById,
+		projectsById,
+	} = useAccessibleV2Workspaces({
+		searchQuery,
+		deviceFilter,
+		projectFilter,
+	});
 
 	return (
 		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
@@ -43,7 +50,7 @@ function V2WorkspacesPage() {
 				hostsById={hostsById}
 				projectsById={projectsById}
 			/>
-			<V2WorkspacesList workspaces={all} />
+			<V2WorkspacesList workspaces={all} isSessionLoading={isSessionLoading} />
 		</div>
 	);
 }

@@ -8,6 +8,7 @@ import {
 	EmptyTitle,
 } from "@rox/ui/empty";
 import { ScrollArea } from "@rox/ui/scroll-area";
+import { Skeleton } from "@rox/ui/skeleton";
 import { cn } from "@rox/ui/utils";
 import { useMatchRoute } from "@tanstack/react-router";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
@@ -37,6 +38,7 @@ import type { SortDirection, SortField } from "./types";
 
 interface V2WorkspacesListProps {
 	workspaces: AccessibleV2Workspace[];
+	isSessionLoading?: boolean;
 }
 
 interface ProjectGroup {
@@ -140,7 +142,10 @@ const emptyItem = {
 	},
 };
 
-export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
+export function V2WorkspacesList({
+	workspaces,
+	isSessionLoading = false,
+}: V2WorkspacesListProps) {
 	const matchRoute = useMatchRoute();
 	const currentWorkspaceMatch = matchRoute({
 		to: "/v2-workspace/$workspaceId",
@@ -234,6 +239,17 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 	);
 
 	if (totalCount === 0) {
+		// The session-derived org/user filters return zero rows until the auth
+		// session resolves. Hold a loading skeleton during that window so cached
+		// workspaces don't briefly flash the empty state.
+		if (isSessionLoading) {
+			return (
+				<div className="flex min-h-0 flex-1 flex-col">
+					{columnHeader}
+					<V2WorkspacesLoadingState />
+				</div>
+			);
+		}
 		return (
 			<div className="flex min-h-0 flex-1 flex-col">
 				{columnHeader}
@@ -259,6 +275,28 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 				))}
 			</div>
 		</ScrollArea>
+	);
+}
+
+function V2WorkspacesLoadingState() {
+	return (
+		<div className="flex min-h-0 flex-1 flex-col">
+			{[0, 1, 2, 3, 4].map((row) => (
+				<div
+					key={row}
+					className={cn(
+						V2_WORKSPACES_ROW_GRID,
+						"h-12 items-center border-b border-border/40 px-6",
+					)}
+				>
+					<Skeleton className="size-4 rounded" />
+					<Skeleton className="h-4 w-40" />
+					<Skeleton className="hidden h-4 w-24 md:block" />
+					<Skeleton className="hidden h-4 w-28 lg:block" />
+					<Skeleton className="hidden h-4 w-20 xl:block" />
+				</div>
+			))}
+		</div>
 	);
 }
 

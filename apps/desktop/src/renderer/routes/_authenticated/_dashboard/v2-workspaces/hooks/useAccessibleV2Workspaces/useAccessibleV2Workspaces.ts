@@ -96,6 +96,13 @@ export interface UseAccessibleV2WorkspacesResult {
 	all: AccessibleV2Workspace[];
 	pinned: AccessibleV2Workspace[];
 	others: AccessibleV2Workspace[];
+	/**
+	 * True while the auth session is still resolving. The live query filters on
+	 * session-derived ids (org + user), so until the session loads it returns
+	 * zero rows even when workspaces exist in the cache — callers should render
+	 * a loading state rather than the empty state during this window.
+	 */
+	isSessionLoading: boolean;
 	counts: V2WorkspaceDeviceCounts;
 	hostOptions: V2WorkspaceHostOption[];
 	projectOptions: V2WorkspaceProjectOption[];
@@ -225,6 +232,9 @@ export function useAccessibleV2Workspaces(
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
 	const currentUserId = session?.user?.id ?? null;
+	// In dev/mock mode the org id is hard-coded, so the session never gates the
+	// query; otherwise treat an unresolved session as loading.
+	const isSessionLoading = !env.SKIP_ENV_VALIDATION && session === undefined;
 
 	const { data: rows = [] } = useLiveQuery(
 		(q) =>
@@ -529,6 +539,7 @@ export function useAccessibleV2Workspaces(
 		all: fullyFiltered,
 		pinned,
 		others,
+		isSessionLoading,
 		counts,
 		hostOptions,
 		projectOptions,

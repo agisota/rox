@@ -61,6 +61,9 @@ export default function WorkspacesPage() {
 	const [projects, setProjects] = useState<ProjectRow[]>([]);
 	const [hosts, setHosts] = useState<HostRow[]>([]);
 	const [error, setError] = useState<string | null>(null);
+	// Distinguish "still resolving the org" (null) from "resolved, user has no
+	// organization membership" (true) so we never dead-end on a blank/error page.
+	const [noOrganization, setNoOrganization] = useState(false);
 
 	const [name, setName] = useState("");
 	const [branch, setBranch] = useState("");
@@ -95,12 +98,20 @@ export default function WorkspacesPage() {
 	useEffect(() => {
 		(async () => {
 			try {
-				const organization = await trpcClient.organization.getActive.query();
+				// `getActive` only resolves when activeOrganizationId is set on the
+				// session. Mirror the dashboard/agents layouts and fall back to the
+				// user's most-recent membership so a missing activeOrganizationId
+				// doesn't dead-end a user who genuinely belongs to an org.
+				const active = await trpcClient.organization.getActive.query();
+				const organization =
+					active ?? (await trpcClient.user.myOrganization.query());
 				if (!organization) {
-					setError("No active organization.");
+					// Resolved: the user has no organization membership at all.
+					setNoOrganization(true);
 					setWorkspaces([]);
 					return;
 				}
+				setNoOrganization(false);
 				setOrganizationId(organization.id);
 				setOrganizationName(organization.name);
 				const [, projectRows, hostRows] = await Promise.all([
@@ -206,151 +217,164 @@ export default function WorkspacesPage() {
 				</p>
 			)}
 
-			<section className="mt-6 rounded-lg border p-4">
-				<h2 className="text-sm font-medium">New workspace</h2>
-				<div className="mt-3 grid gap-2 sm:grid-cols-2">
-					<input
-						value={name}
-						onChange={(event) => setName(event.target.value)}
-						placeholder="Name"
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					/>
-					<input
-						value={branch}
-						onChange={(event) => setBranch(event.target.value)}
-						placeholder="Branch"
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					/>
-					<select
-						value={projectId}
-						onChange={(event) => setProjectId(event.target.value)}
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					>
-						<option value="">Select project…</option>
-						{projects.map((project) => (
-							<option key={project.id} value={project.id}>
-								{project.name}
-							</option>
-						))}
-					</select>
-					<select
-						value={hostId}
-						onChange={(event) => setHostId(event.target.value)}
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					>
-						<option value="">Select device…</option>
-						{hosts.map((host) => (
-							<option key={host.machineId} value={host.machineId}>
-								{hostLabel(host)}
-							</option>
-						))}
-					</select>
-				</div>
-				{hosts.length === 0 && (
-					<p className="text-muted-foreground mt-2 text-xs">
-						No devices available — register a machine in the desktop app first.
+			{noOrganization ? (
+				<section className="mt-6 rounded-lg border p-6 text-center">
+					<p className="text-sm font-medium">No organization yet</p>
+					<p className="text-muted-foreground mt-1 text-sm">
+						You're not part of any organization. Create or join one to start
+						using workspaces.
 					</p>
-				)}
-				<button
-					type="button"
-					onClick={() => void createWorkspace()}
-					disabled={!canCreate}
-					className="bg-primary text-primary-foreground mt-3 rounded-md px-3 py-2 text-sm disabled:opacity-50"
-				>
-					{creating ? "Creating…" : "Create workspace"}
-				</button>
-			</section>
+				</section>
+			) : (
+				<>
+					<section className="mt-6 rounded-lg border p-4">
+						<h2 className="text-sm font-medium">New workspace</h2>
+						<div className="mt-3 grid gap-2 sm:grid-cols-2">
+							<input
+								value={name}
+								onChange={(event) => setName(event.target.value)}
+								placeholder="Name"
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							/>
+							<input
+								value={branch}
+								onChange={(event) => setBranch(event.target.value)}
+								placeholder="Branch"
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							/>
+							<select
+								value={projectId}
+								onChange={(event) => setProjectId(event.target.value)}
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							>
+								<option value="">Select project…</option>
+								{projects.map((project) => (
+									<option key={project.id} value={project.id}>
+										{project.name}
+									</option>
+								))}
+							</select>
+							<select
+								value={hostId}
+								onChange={(event) => setHostId(event.target.value)}
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							>
+								<option value="">Select device…</option>
+								{hosts.map((host) => (
+									<option key={host.machineId} value={host.machineId}>
+										{hostLabel(host)}
+									</option>
+								))}
+							</select>
+						</div>
+						{hosts.length === 0 && (
+							<p className="text-muted-foreground mt-2 text-xs">
+								No devices available — register a machine in the desktop app
+								first.
+							</p>
+						)}
+						<button
+							type="button"
+							onClick={() => void createWorkspace()}
+							disabled={!canCreate}
+							className="bg-primary text-primary-foreground mt-3 rounded-md px-3 py-2 text-sm disabled:opacity-50"
+						>
+							{creating ? "Creating…" : "Create workspace"}
+						</button>
+					</section>
 
-			<section className="mt-6">
-				<h2 className="text-sm font-medium">Your workspaces</h2>
-				<div className="mt-3 flex flex-wrap items-center gap-2">
-					<input
-						value={search}
-						onChange={(event) => setSearch(event.target.value)}
-						placeholder="Search workspaces…"
-						className="min-w-48 flex-1 rounded-md border bg-transparent px-3 py-2 text-sm"
-					/>
-					<select
-						value={projectFilter}
-						onChange={(event) => setProjectFilter(event.target.value)}
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					>
-						<option value="">All projects</option>
-						{projects.map((project) => (
-							<option key={project.id} value={project.id}>
-								{project.name}
-							</option>
-						))}
-					</select>
-					<select
-						value={hostFilter}
-						onChange={(event) => setHostFilter(event.target.value)}
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					>
-						<option value="">All devices</option>
-						{hosts.map((host) => (
-							<option key={host.machineId} value={host.machineId}>
-								{hostLabel(host)}
-							</option>
-						))}
-					</select>
-					<select
-						value={createdWithin}
-						onChange={(event) =>
-							setCreatedWithin(event.target.value as CreatedWithin)
-						}
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					>
-						<option value="all">Any time</option>
-						<option value="7d">Last 7 days</option>
-						<option value="30d">Last 30 days</option>
-						<option value="90d">Last 90 days</option>
-					</select>
-					<select
-						value={sortBy}
-						onChange={(event) => setSortBy(event.target.value as SortBy)}
-						className="rounded-md border bg-transparent px-3 py-2 text-sm"
-					>
-						<option value="recent">Recently created</option>
-						<option value="oldest">Oldest first</option>
-						<option value="name">Name (A–Z)</option>
-					</select>
-				</div>
-				{workspaces === null ? (
-					<p className="text-muted-foreground mt-3 text-sm">Loading…</p>
-				) : visibleWorkspaces.length === 0 ? (
-					<p className="text-muted-foreground mt-3 text-sm">
-						{workspaces.length === 0
-							? "No workspaces yet."
-							: "No workspaces match your filters."}
-					</p>
-				) : (
-					<ul className="mt-3 grid gap-2">
-						{visibleWorkspaces.map((workspace) => (
-							<li key={workspace.id}>
-								<Link
-									href={`/workspaces/${workspace.id}`}
-									className="hover:bg-muted/50 block rounded-lg border px-4 py-3"
-								>
-									<div className="flex items-center gap-1.5 text-sm font-medium">
-										{workspace.type === "main" && (
-											<Laptop
-												aria-label="Main workspace"
-												className="text-muted-foreground size-3.5 shrink-0"
-											/>
-										)}
-										<span>{workspace.name}</span>
-									</div>
-									<div className="text-muted-foreground mt-0.5 text-xs">
-										{workspace.projectName} · {workspace.branch} · created{" "}
-										{formatRelative(workspace.createdAt)}
-									</div>
-								</Link>
-							</li>
-						))}
-					</ul>
-				)}
-			</section>
+					<section className="mt-6">
+						<h2 className="text-sm font-medium">Your workspaces</h2>
+						<div className="mt-3 flex flex-wrap items-center gap-2">
+							<input
+								value={search}
+								onChange={(event) => setSearch(event.target.value)}
+								placeholder="Search workspaces…"
+								className="min-w-48 flex-1 rounded-md border bg-transparent px-3 py-2 text-sm"
+							/>
+							<select
+								value={projectFilter}
+								onChange={(event) => setProjectFilter(event.target.value)}
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							>
+								<option value="">All projects</option>
+								{projects.map((project) => (
+									<option key={project.id} value={project.id}>
+										{project.name}
+									</option>
+								))}
+							</select>
+							<select
+								value={hostFilter}
+								onChange={(event) => setHostFilter(event.target.value)}
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							>
+								<option value="">All devices</option>
+								{hosts.map((host) => (
+									<option key={host.machineId} value={host.machineId}>
+										{hostLabel(host)}
+									</option>
+								))}
+							</select>
+							<select
+								value={createdWithin}
+								onChange={(event) =>
+									setCreatedWithin(event.target.value as CreatedWithin)
+								}
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							>
+								<option value="all">Any time</option>
+								<option value="7d">Last 7 days</option>
+								<option value="30d">Last 30 days</option>
+								<option value="90d">Last 90 days</option>
+							</select>
+							<select
+								value={sortBy}
+								onChange={(event) => setSortBy(event.target.value as SortBy)}
+								className="rounded-md border bg-transparent px-3 py-2 text-sm"
+							>
+								<option value="recent">Recently created</option>
+								<option value="oldest">Oldest first</option>
+								<option value="name">Name (A–Z)</option>
+							</select>
+						</div>
+						{workspaces === null ? (
+							<p className="text-muted-foreground mt-3 text-sm">Loading…</p>
+						) : visibleWorkspaces.length === 0 ? (
+							<p className="text-muted-foreground mt-3 text-sm">
+								{workspaces.length === 0
+									? "No workspaces yet."
+									: "No workspaces match your filters."}
+							</p>
+						) : (
+							<ul className="mt-3 grid gap-2">
+								{visibleWorkspaces.map((workspace) => (
+									<li key={workspace.id}>
+										<Link
+											href={`/workspaces/${workspace.id}`}
+											className="hover:bg-muted/50 block rounded-lg border px-4 py-3"
+										>
+											<div className="flex items-center gap-1.5 text-sm font-medium">
+												{workspace.type === "main" && (
+													<Laptop
+														aria-label="Main workspace"
+														className="text-muted-foreground size-3.5 shrink-0"
+													/>
+												)}
+												<span>{workspace.name}</span>
+											</div>
+											<div className="text-muted-foreground mt-0.5 text-xs">
+												{workspace.projectName} · {workspace.branch} · created{" "}
+												{formatRelative(workspace.createdAt)}
+											</div>
+										</Link>
+									</li>
+								))}
+							</ul>
+						)}
+					</section>
+				</>
+			)}
 		</div>
 	);
 }

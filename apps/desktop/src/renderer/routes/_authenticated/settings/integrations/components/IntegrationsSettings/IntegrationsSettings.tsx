@@ -96,6 +96,41 @@ export function IntegrationsSettings({
 		window.open(`${env.NEXT_PUBLIC_WEB_URL}${path}`, "_blank");
 	};
 
+	// `session` is undefined while authClient.useSession() hydrates. Show a
+	// skeleton then instead of flashing the org-required message, and only show
+	// that message once the session has resolved with no activeOrganizationId.
+	const sessionLoading = session === undefined;
+
+	if (sessionLoading) {
+		return (
+			<div className="p-6 max-w-4xl w-full">
+				<div className="mb-8">
+					<h2 className="text-xl font-semibold">Integrations</h2>
+					<p className="text-sm text-muted-foreground mt-1">
+						Connect external services to sync data.
+					</p>
+				</div>
+				<div className="space-y-1">
+					{[1, 2, 3].map((i) => (
+						<div
+							key={i}
+							className="flex items-center justify-between gap-8 py-3"
+						>
+							<div className="flex items-center gap-3 min-w-0">
+								<Skeleton className="size-8 shrink-0 rounded" />
+								<div className="space-y-2">
+									<Skeleton className="h-4 w-24" />
+									<Skeleton className="h-3 w-48" />
+								</div>
+							</div>
+							<Skeleton className="h-8 w-24 shrink-0" />
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	}
+
 	if (!activeOrganizationId) {
 		return (
 			<div className="p-6 max-w-4xl w-full">

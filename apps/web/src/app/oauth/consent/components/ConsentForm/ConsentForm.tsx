@@ -69,6 +69,7 @@ export function ConsentForm({
 		defaultOrganizationId ?? organizations[0]?.id ?? "",
 	);
 
+	const hasNoOrganization = organizations.length === 0;
 	const showOrgPicker = organizations.length > 1;
 	const selectedOrg = organizations.find((o) => o.id === selectedOrgId);
 
@@ -133,7 +134,15 @@ export function ConsentForm({
 					<span className="font-medium text-foreground">{userName}</span>
 				</p>
 
-				{showOrgPicker ? (
+				{hasNoOrganization ? (
+					<div className="bg-amber-500/10 border-amber-500/30 mb-4 rounded-md border p-3">
+						<p className="text-sm font-medium">No organization found</p>
+						<p className="text-muted-foreground mt-1 text-xs">
+							This authorization needs an organization to grant access to.
+							Create or join one in Rox, then return to authorize {displayName}.
+						</p>
+					</div>
+				) : showOrgPicker ? (
 					<div className="mb-4">
 						<label
 							htmlFor="org-select"
