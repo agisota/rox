@@ -350,3 +350,25 @@ export const knowledgeSourceKindValues = [
 ] as const;
 export const knowledgeSourceKindEnum = z.enum(knowledgeSourceKindValues);
 export type KnowledgeSourceKind = z.infer<typeof knowledgeSourceKindEnum>;
+
+// Billing & Economy (billing-economy epic) ------------------------------------
+// Append-only Rox ledger entries and dv.net top-up lifecycle. Backing Postgres
+// pgEnums; never reorder/remove values.
+
+export const roxLedgerKindValues = [
+	"topup",
+	"request_charge",
+	"adjustment",
+	"seed",
+] as const;
+export const roxLedgerKindEnum = z.enum(roxLedgerKindValues);
+export type RoxLedgerKind = z.infer<typeof roxLedgerKindEnum>;
+
+export const roxTopupStatusValues = [
+	"pending",
+	"confirmed",
+	"failed",
+	"expired",
+] as const;
+export const roxTopupStatusEnum = z.enum(roxTopupStatusValues);
+export type RoxTopupStatus = z.infer<typeof roxTopupStatusEnum>;

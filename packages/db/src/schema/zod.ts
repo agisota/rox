@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { sandboxStatusEnum } from "./enums";
+import {
+	roxLedgerKindEnum,
+	roxTopupStatusEnum,
+	sandboxStatusEnum,
+} from "./enums";
 
 export const localWorkspaceConfigSchema = z.object({
 	path: z.string(),
@@ -32,3 +36,33 @@ export const sandboxImageSchema = z.object({
 	systemPackages: z.array(z.string()).default([]),
 });
 export type SandboxImageInput = z.infer<typeof sandboxImageSchema>;
+
+// Billing & Economy (billing-economy epic) ------------------------------------
+
+/** Input for the economy `topUp` mutation: how much USDT to convert to Rox. */
+export const roxTopUpInputSchema = z.object({
+	usdtAmount: z.number().positive(),
+});
+export type RoxTopUpInput = z.infer<typeof roxTopUpInputSchema>;
+
+/** A single rox ledger entry as surfaced by the `history` query. */
+export const roxLedgerEntrySchema = z.object({
+	id: z.string().uuid(),
+	deltaRox: z.string(),
+	kind: roxLedgerKindEnum,
+	usageRequestId: z.string().uuid().nullable(),
+	topupId: z.string().uuid().nullable(),
+	createdAt: z.date(),
+});
+export type RoxLedgerEntry = z.infer<typeof roxLedgerEntrySchema>;
+
+export const roxTopupViewSchema = z.object({
+	id: z.string().uuid(),
+	usdtAmount: z.string(),
+	roxAmount: z.string(),
+	dvnetInvoiceId: z.string(),
+	status: roxTopupStatusEnum,
+	confirmedAt: z.date().nullable(),
+	createdAt: z.date(),
+});
+export type RoxTopupView = z.infer<typeof roxTopupViewSchema>;

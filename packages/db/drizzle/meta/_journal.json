@@ -442,6 +442,13 @@
       "when": 1780885108548,
       "tag": "0062_add_knowledge_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1780885927912,
+      "tag": "0063_rox_economy_tables",
+      "breakpoints": true
     }
   ]
 }

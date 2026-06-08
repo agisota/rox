@@ -12,6 +12,14 @@
 			"types": "./src/rox-pricing.ts",
 			"default": "./src/rox-pricing.ts"
 		},
+		"./rox-models": {
+			"types": "./src/rox-models.ts",
+			"default": "./src/rox-models.ts"
+		},
+		"./rox-perks": {
+			"types": "./src/rox-perks.ts",
+			"default": "./src/rox-perks.ts"
+		},
 		"./dev-credentials": {
 			"types": "./src/dev-credentials.ts",
 			"default": "./src/dev-credentials.ts"

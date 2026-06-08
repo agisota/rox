@@ -13,6 +13,7 @@ import {
 	experienceTraceEvents,
 	transitionRuns,
 } from "./circuit";
+import { roxBalances, roxLedger, roxTopups, usageRequests } from "./economy";
 import {
 	githubInstallations,
 	githubPullRequests,
@@ -70,6 +71,10 @@ export const usersRelations = relations(users, ({ many }) => ({
 	v2Workspaces: many(v2Workspaces),
 	agentCommands: many(agentCommands),
 	chatSessions: many(chatSessions),
+	roxBalance: many(roxBalances),
+	roxLedger: many(roxLedger),
+	roxTopups: many(roxTopups),
+	usageRequests: many(usageRequests),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -721,3 +726,54 @@ export const knowledgeLinksRelations = relations(knowledgeLinks, ({ one }) => ({
 		relationName: "linkTarget",
 	}),
 }));
+
+// Billing & Economy (billing-economy epic) ------------------------------------
+
+export const roxBalancesRelations = relations(roxBalances, ({ one }) => ({
+	user: one(users, {
+		fields: [roxBalances.userId],
+		references: [users.id],
+	}),
+}));
+
+export const roxLedgerRelations = relations(roxLedger, ({ one }) => ({
+	user: one(users, {
+		fields: [roxLedger.userId],
+		references: [users.id],
+	}),
+	usageRequest: one(usageRequests, {
+		fields: [roxLedger.usageRequestId],
+		references: [usageRequests.id],
+	}),
+	topup: one(roxTopups, {
+		fields: [roxLedger.topupId],
+		references: [roxTopups.id],
+	}),
+}));
+
+export const roxTopupsRelations = relations(roxTopups, ({ one, many }) => ({
+	user: one(users, {
+		fields: [roxTopups.userId],
+		references: [users.id],
+	}),
+	ledgerEntries: many(roxLedger),
+}));
+
+export const usageRequestsRelations = relations(
+	usageRequests,
+	({ one, many }) => ({
+		user: one(users, {
+			fields: [usageRequests.userId],
+			references: [users.id],
+		}),
+		organization: one(organizations, {
+			fields: [usageRequests.organizationId],
+			references: [organizations.id],
+		}),
+		chatSession: one(chatSessions, {
+			fields: [usageRequests.chatSessionId],
+			references: [chatSessions.id],
+		}),
+		ledgerEntries: many(roxLedger),
+	}),
+);
