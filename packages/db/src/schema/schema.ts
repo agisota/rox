@@ -29,6 +29,8 @@ import {
 	taskPriorityValues,
 	taskStatusEnumValues,
 	v2ClientTypeValues,
+	v2HostKindValues,
+	v2HostProviderValues,
 	v2UsersHostRoleValues,
 	v2WorkspaceTypeValues,
 	workspaceTypeValues,
@@ -54,6 +56,8 @@ export const v2WorkspaceType = pgEnum(
 	"v2_workspace_type",
 	v2WorkspaceTypeValues,
 );
+export const v2HostKind = pgEnum("v2_host_kind", v2HostKindValues);
+export const v2HostProvider = pgEnum("v2_host_provider", v2HostProviderValues);
 export const accessResourceType = pgEnum(
 	"access_resource_type",
 	accessResourceTypeValues,
@@ -545,6 +549,12 @@ export const v2Hosts = pgTable(
 		// servers so the UI can surface and connect to host:port.
 		port: integer("port"),
 		protocol: text("protocol"),
+		// Remote Hosts & Sandboxes (remote-hosts epic). `kind` defaults to the
+		// local "this device" host; `provider` + `expiresAt` are populated for
+		// managed remote workspaces (no TTL) and ephemeral sandboxes (TTL ~1h).
+		kind: v2HostKind("kind").notNull().default("local"),
+		provider: v2HostProvider("provider"),
+		expiresAt: timestamp("expires_at", { withTimezone: true }),
 		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
 			onDelete: "set null",
 		}),

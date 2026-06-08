@@ -12,6 +12,7 @@ import { useCollections } from "renderer/routes/_authenticated/providers/Collect
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import type { CandidateRow } from "./components/AddMemberDropdown";
 import { AddMemberDropdown } from "./components/AddMemberDropdown";
+import { HostConnectionSection } from "./components/HostConnectionSection";
 import { HostHeader } from "./components/HostHeader";
 import type { MemberRowData } from "./components/MembersTable";
 import { MembersTable } from "./components/MembersTable";
@@ -167,9 +168,19 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				isOnline={host.isOnline}
 				machineId={host.machineId}
 				canRename={isOwner}
+				port={host.port}
+				protocol={host.protocol}
 			/>
 
 			<div className="space-y-10">
+				<HostConnectionSection
+					kind={host.kind}
+					provider={host.provider}
+					port={host.port}
+					protocol={host.protocol}
+					expiresAt={host.expiresAt}
+				/>
+
 				<WorktreeLocationSection
 					hostUrl={hostUrl}
 					hostName={host.name}

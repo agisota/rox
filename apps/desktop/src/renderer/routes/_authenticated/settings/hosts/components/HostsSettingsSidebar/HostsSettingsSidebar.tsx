@@ -2,7 +2,8 @@ import { cn } from "@rox/ui/utils";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { LuPlus } from "react-icons/lu";
 import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
@@ -12,6 +13,7 @@ import {
 	SettingsListSidebar,
 	settingsListItemClass,
 } from "../../../components/SettingsListSidebar";
+import { AddHostModal } from "../AddHostModal";
 
 interface HostRow {
 	id: string;
@@ -29,6 +31,7 @@ export function HostsSettingsSidebar({
 }: HostsSettingsSidebarProps) {
 	const collections = useCollections();
 	const { data: session } = authClient.useSession();
+	const [addOpen, setAddOpen] = useState(false);
 
 	const activeOrganizationId = env.SKIP_ENV_VALIDATION
 		? MOCK_ORG_ID
@@ -67,29 +70,45 @@ export function HostsSettingsSidebar({
 	}, [hosts]);
 
 	return (
-		<SettingsListSidebar
-			searchPlaceholder="Filter hosts..."
-			searchAriaLabel="Filter hosts"
-			groups={listGroups}
-			filterRow={(row, q) => row.name.toLowerCase().includes(q.toLowerCase())}
-			getRowKey={(row) => row.id}
-			emptyLabel="No hosts yet."
-			noMatchLabel={(q) => `No hosts match "${q}".`}
-			renderRow={(row) => (
-				<Link
-					to="/settings/hosts/$hostId"
-					params={{ hostId: row.id }}
-					className={settingsListItemClass(row.id === selectedHostId, "gap-2")}
-				>
-					<span
-						className={cn(
-							"h-1.5 w-1.5 rounded-full shrink-0",
-							row.isOnline ? "bg-emerald-500" : "bg-muted-foreground/40",
+		<>
+			<AddHostModal open={addOpen} onOpenChange={setAddOpen} />
+			<SettingsListSidebar
+				searchPlaceholder="Filter hosts..."
+				searchAriaLabel="Filter hosts"
+				groups={listGroups}
+				listHeader={
+					<button
+						type="button"
+						onClick={() => setAddOpen(true)}
+						className={settingsListItemClass(false, "gap-2 w-full")}
+					>
+						<LuPlus className="size-4 shrink-0" />
+						<span className="truncate flex-1 text-left">Add host</span>
+					</button>
+				}
+				filterRow={(row, q) => row.name.toLowerCase().includes(q.toLowerCase())}
+				getRowKey={(row) => row.id}
+				emptyLabel="No hosts yet."
+				noMatchLabel={(q) => `No hosts match "${q}".`}
+				renderRow={(row) => (
+					<Link
+						to="/settings/hosts/$hostId"
+						params={{ hostId: row.id }}
+						className={settingsListItemClass(
+							row.id === selectedHostId,
+							"gap-2",
 						)}
-					/>
-					<span className="truncate flex-1">{row.name}</span>
-				</Link>
-			)}
-		/>
+					>
+						<span
+							className={cn(
+								"h-1.5 w-1.5 rounded-full shrink-0",
+								row.isOnline ? "bg-emerald-500" : "bg-muted-foreground/40",
+							)}
+						/>
+						<span className="truncate flex-1">{row.name}</span>
+					</Link>
+				)}
+			/>
+		</>
 	);
 }

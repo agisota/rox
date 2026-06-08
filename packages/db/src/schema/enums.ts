@@ -49,6 +49,29 @@ export const v2UsersHostRoleValues = ["owner", "member"] as const;
 export const v2UsersHostRoleEnum = z.enum(v2UsersHostRoleValues);
 export type V2UsersHostRole = z.infer<typeof v2UsersHostRoleEnum>;
 
+// Remote Hosts & Sandboxes (remote-hosts epic) --------------------------------
+// `kind` distinguishes the local "this device" host from managed remote
+// workspaces and ephemeral sandboxes. `provider` records which backend
+// provisioned a managed host (or `self` for a user-run `rox deploy`).
+// Append-only string unions backing Postgres pgEnums; never reorder/remove.
+export const v2HostKindValues = ["local", "remote", "sandbox"] as const;
+export const v2HostKindEnum = z.enum(v2HostKindValues);
+export type V2HostKind = z.infer<typeof v2HostKindEnum>;
+
+export const v2HostProviderValues = [
+	"daytona",
+	"modal",
+	"e2b",
+	"self",
+] as const;
+export const v2HostProviderEnum = z.enum(v2HostProviderValues);
+export type V2HostProvider = z.infer<typeof v2HostProviderEnum>;
+
+// Managed (provider-backed) host kinds — gated behind the paid-plan check.
+export const v2ManagedHostKindValues = ["remote", "sandbox"] as const;
+export const v2ManagedHostKindEnum = z.enum(v2ManagedHostKindValues);
+export type V2ManagedHostKind = z.infer<typeof v2ManagedHostKindEnum>;
+
 export const commandStatusValues = [
 	"pending",
 	"completed",

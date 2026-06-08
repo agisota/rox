@@ -38,6 +38,15 @@ interface DrainOptions {
 	clearDirectory: () => Promise<number>;
 }
 
+/**
+ * Reachable endpoint reported by a remote host tunnel (remote-hosts epic).
+ * Forwarded to `host.setOnline` so the API can persist host:port / protocol.
+ */
+export interface HostTunnelEndpoint {
+	port?: number;
+	protocol?: string;
+}
+
 export class TunnelManager {
 	private readonly tunnels = new Map<string, TunnelState>();
 	private readonly requestTimeoutMs: number;
@@ -53,7 +62,12 @@ export class TunnelManager {
 		this.requestTimeoutMs = requestTimeoutMs;
 	}
 
-	async register(hostId: string, token: string, ws: WsSocket): Promise<void> {
+	async register(
+		hostId: string,
+		token: string,
+		ws: WsSocket,
+		endpoint?: HostTunnelEndpoint,
+	): Promise<void> {
 		if (this.draining) {
 			ws.close(TunnelManager.WS_CLOSE_DRAIN, "Server draining for deploy");
 			return;
@@ -129,7 +143,7 @@ export class TunnelManager {
 			this.send(ws, { type: "ping" });
 		}, PING_INTERVAL_MS);
 
-		this.scheduleOnlineWrite(hostId, token, true);
+		this.scheduleOnlineWrite(hostId, token, true, endpoint);
 		console.log(`[relay] tunnel registered: ${hostId}`);
 	}
 
@@ -266,6 +280,7 @@ export class TunnelManager {
 		hostId: string,
 		token: string,
 		isOnline: boolean,
+		endpoint?: HostTunnelEndpoint,
 	): void {
 		// Debounce + drop redundant writes so flapping reconnects don't spam the API.
 		if (this.onlineState.get(hostId) === isOnline) {
@@ -286,7 +301,7 @@ export class TunnelManager {
 		this.onlineWriteVersions.set(hostId, version);
 		const timer = setTimeout(() => {
 			this.onlineDebounce.delete(hostId);
-			void this.attemptOnlineWrite(hostId, token, isOnline, version);
+			void this.attemptOnlineWrite(hostId, token, isOnline, version, endpoint);
 		}, ONLINE_DEBOUNCE_MS);
 		this.onlineDebounce.set(hostId, timer);
 	}
@@ -296,6 +311,7 @@ export class TunnelManager {
 		token: string,
 		isOnline: boolean,
 		version: number,
+		endpoint?: HostTunnelEndpoint,
 	): Promise<void> {
 		for (let attempt = 0; attempt < SET_ONLINE_MAX_ATTEMPTS; attempt++) {
 			if (this.onlineWriteVersions.get(hostId) !== version) return;
@@ -303,6 +319,14 @@ export class TunnelManager {
 				await createApiClient(token).host.setOnline.mutate({
 					hostId,
 					isOnline,
+					// Surface the reachable endpoint for remote tunnels so the API can
+					// persist host:port. Only sent on the online write.
+					...(isOnline && endpoint?.port !== undefined
+						? { port: endpoint.port }
+						: {}),
+					...(isOnline && endpoint?.protocol !== undefined
+						? { protocol: endpoint.protocol }
+						: {}),
 				});
 				if (this.onlineWriteVersions.get(hostId) !== version) return;
 				if (isOnline) {

@@ -1,12 +1,39 @@
 import { db, dbWs } from "@rox/db/client";
-import { v2UsersHostRoleValues } from "@rox/db/enums";
+import { v2ManagedHostKindValues, v2UsersHostRoleValues } from "@rox/db/enums";
 import { members, v2Hosts, v2UsersHosts } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
+import {
+	DEFAULT_SANDBOX_TTL_MS,
+	getHostProvisioner,
+	listAvailableProviders,
+	MissingProvisionerCredentialsError,
+	ProvisionerError,
+	type ProvisionProvider,
+} from "@rox/host-provisioner";
+import { isActiveSubscriptionStatus, isPaidPlan } from "@rox/shared/billing";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
-import { requireActiveOrgId } from "../utils/active-org";
+import {
+	requireActiveOrgId,
+	requireActiveOrgMembershipWithSubscription,
+} from "../utils/active-org";
+
+// Managed (provider-backed) hosts the provision procedure can create. `self`
+// (user-run `rox deploy`) is intentionally excluded — it is not provisioned
+// server-side.
+const MANAGED_PROVIDERS = [
+	"daytona",
+	"modal",
+	"e2b",
+] as const satisfies ReadonlyArray<ProvisionProvider>;
+
+const PROVIDER_LABELS: Record<ProvisionProvider, string> = {
+	daytona: "Daytona",
+	modal: "Modal",
+	e2b: "E2B",
+};
 
 async function requireHostOwner(
 	userId: string,
@@ -68,7 +95,15 @@ export const v2HostRouter = {
 	list: protectedProcedure.query(async ({ ctx }) => {
 		const organizationId = requireActiveOrgId(ctx);
 		return db
-			.select({ machineId: v2Hosts.machineId, name: v2Hosts.name })
+			.select({
+				machineId: v2Hosts.machineId,
+				name: v2Hosts.name,
+				port: v2Hosts.port,
+				protocol: v2Hosts.protocol,
+				kind: v2Hosts.kind,
+				provider: v2Hosts.provider,
+				expiresAt: v2Hosts.expiresAt,
+			})
 			.from(v2Hosts)
 			.innerJoin(
 				v2UsersHosts,
@@ -323,6 +358,191 @@ export const v2HostRouter = {
 						message: "User is not a member of this host",
 					});
 				}
+				return await getCurrentTxid(tx);
+			});
+
+			return { success: true, txid };
+		}),
+
+	// Remote Hosts & Sandboxes (remote-hosts epic) ----------------------------
+
+	/** Managed providers and whether each has credentials configured. */
+	listProviders: protectedProcedure.query(async () => {
+		const available = new Set(listAvailableProviders());
+		return MANAGED_PROVIDERS.map((provider) => ({
+			id: provider,
+			label: PROVIDER_LABELS[provider],
+			available: available.has(provider),
+		}));
+	}),
+
+	/**
+	 * Provision a managed remote workspace (persistent) or ephemeral sandbox
+	 * (~1h TTL) via the host-provisioner, then atomically insert the `v2_hosts`
+	 * row plus an owner `v2_users_hosts` membership. Gated behind the paid plan.
+	 */
+	provision: protectedProcedure
+		.input(
+			z.object({
+				name: z
+					.string()
+					.max(120)
+					.transform((value) => value.trim())
+					.pipe(z.string().min(1, "Host name cannot be empty")),
+				kind: z.enum(v2ManagedHostKindValues),
+				provider: z.enum(MANAGED_PROVIDERS),
+				region: z.string().min(1).max(64).optional(),
+				ttlMs: z.number().int().positive().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { organizationId, subscription } =
+				await requireActiveOrgMembershipWithSubscription(ctx);
+
+			const paidPlan =
+				isPaidPlan(subscription?.plan) &&
+				isActiveSubscriptionStatus(subscription?.status);
+			if (!paidPlan) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Managed remote hosts and sandboxes require a paid plan.",
+				});
+			}
+
+			let provisioner: ReturnType<typeof getHostProvisioner>;
+			try {
+				provisioner = getHostProvisioner(input.provider);
+			} catch (err) {
+				if (err instanceof MissingProvisionerCredentialsError) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: `Provider "${input.provider}" is not configured on this server.`,
+					});
+				}
+				throw err;
+			}
+
+			let provisioned: Awaited<ReturnType<typeof provisioner.provision>>;
+			try {
+				provisioned = await provisioner.provision({
+					kind: input.kind,
+					ttlMs:
+						input.kind === "sandbox"
+							? (input.ttlMs ?? DEFAULT_SANDBOX_TTL_MS)
+							: undefined,
+					region: input.region,
+					label: input.name,
+				});
+			} catch (err) {
+				throw new TRPCError({
+					code: "BAD_GATEWAY",
+					message:
+						err instanceof ProvisionerError
+							? `Failed to provision host: ${err.message}`
+							: "Failed to provision host.",
+				});
+			}
+
+			try {
+				const result = await dbWs.transaction(async (tx) => {
+					const [host] = await tx
+						.insert(v2Hosts)
+						.values({
+							organizationId,
+							machineId: provisioned.id,
+							name: input.name,
+							kind: provisioned.kind,
+							provider: provisioned.provider,
+							port: provisioned.port,
+							protocol: provisioned.protocol,
+							expiresAt: provisioned.expiresAt
+								? new Date(provisioned.expiresAt)
+								: null,
+							createdByUserId: ctx.session.user.id,
+						})
+						.onConflictDoNothing({
+							target: [v2Hosts.organizationId, v2Hosts.machineId],
+						})
+						.returning();
+
+					if (!host) {
+						throw new TRPCError({
+							code: "CONFLICT",
+							message: "A host with this id already exists",
+						});
+					}
+
+					await tx
+						.insert(v2UsersHosts)
+						.values({
+							organizationId,
+							userId: ctx.session.user.id,
+							hostId: host.machineId,
+							role: "owner",
+						})
+						.onConflictDoNothing({
+							target: [
+								v2UsersHosts.organizationId,
+								v2UsersHosts.userId,
+								v2UsersHosts.hostId,
+							],
+						});
+
+					const txid = await getCurrentTxid(tx);
+					return { host, txid };
+				});
+
+				return { ...result.host, txid: result.txid };
+			} catch (err) {
+				// Roll back the external resource so we don't leak paid spend on a
+				// host row we failed to persist.
+				await provisioner.destroy(provisioned.id).catch(() => {});
+				throw err;
+			}
+		}),
+
+	/**
+	 * Destroy a managed host: tear down the provider resource (best effort) and
+	 * delete the `v2_hosts` row (memberships cascade via FK). Owners only.
+	 */
+	destroy: protectedProcedure
+		.input(z.object({ hostId: z.string().min(1) }))
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = requireActiveOrgId(ctx);
+			await requireHostOwner(ctx.session.user.id, input.hostId, organizationId);
+
+			const row = await db.query.v2Hosts.findFirst({
+				where: and(
+					eq(v2Hosts.organizationId, organizationId),
+					eq(v2Hosts.machineId, input.hostId),
+				),
+				columns: { provider: true },
+			});
+
+			if (row?.provider && row.provider !== "self") {
+				try {
+					await getHostProvisioner(row.provider).destroy(input.hostId);
+				} catch (err) {
+					// Don't block removal of the row on provider/credential errors —
+					// the resource may already be gone (e.g. expired sandbox).
+					if (!(err instanceof MissingProvisionerCredentialsError)) {
+						console.error(
+							`[v2Host.destroy] provider teardown failed for ${input.hostId}`,
+							err,
+						);
+					}
+				}
+			}
+
+			const txid = await dbWs.transaction(async (tx) => {
+				await tx
+					.delete(v2Hosts)
+					.where(
+						and(
+							eq(v2Hosts.organizationId, organizationId),
+							eq(v2Hosts.machineId, input.hostId),
+						),
+					);
 				return await getCurrentTxid(tx);
 			});
 

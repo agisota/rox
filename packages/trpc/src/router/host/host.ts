@@ -34,6 +34,11 @@ export const hostRouter = {
 					name: v2Hosts.name,
 					isOnline: v2Hosts.isOnline,
 					organizationId: v2Hosts.organizationId,
+					port: v2Hosts.port,
+					protocol: v2Hosts.protocol,
+					kind: v2Hosts.kind,
+					provider: v2Hosts.provider,
+					expiresAt: v2Hosts.expiresAt,
 				})
 				.from(v2Hosts)
 				.innerJoin(
@@ -55,6 +60,11 @@ export const hostRouter = {
 				name: row.name,
 				online: row.isOnline,
 				organizationId: row.organizationId,
+				port: row.port,
+				protocol: row.protocol,
+				kind: row.kind,
+				provider: row.provider,
+				expiresAt: row.expiresAt,
 			}));
 		}),
 
@@ -213,7 +223,16 @@ export const hostRouter = {
 		}),
 
 	setOnline: jwtProcedure
-		.input(z.object({ hostId: z.string().min(1), isOnline: z.boolean() }))
+		.input(
+			z.object({
+				hostId: z.string().min(1),
+				isOnline: z.boolean(),
+				// Reachable endpoint reported by the relay for remote tunnels.
+				// Omitted for local "this device" hosts.
+				port: z.number().int().positive().max(65535).optional(),
+				protocol: z.string().min(1).max(32).optional(),
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const parsed = parseHostRoutingKey(input.hostId);
 			if (!parsed) {
@@ -243,7 +262,11 @@ export const hostRouter = {
 
 			await db
 				.update(v2Hosts)
-				.set({ isOnline: input.isOnline })
+				.set({
+					isOnline: input.isOnline,
+					...(input.port !== undefined ? { port: input.port } : {}),
+					...(input.protocol !== undefined ? { protocol: input.protocol } : {}),
+				})
 				.where(
 					and(
 						eq(v2Hosts.organizationId, parsed.organizationId),

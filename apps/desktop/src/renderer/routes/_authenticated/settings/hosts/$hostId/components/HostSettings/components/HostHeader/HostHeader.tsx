@@ -8,6 +8,8 @@ interface HostHeaderProps {
 	isOnline: boolean;
 	machineId: string;
 	canRename: boolean;
+	port?: number | null;
+	protocol?: string | null;
 }
 
 export function HostHeader({
@@ -15,7 +17,10 @@ export function HostHeader({
 	isOnline,
 	machineId,
 	canRename,
+	port,
+	protocol,
 }: HostHeaderProps) {
+	const address = port != null ? `${protocol ?? "tcp"}:${port}` : null;
 	const { v2Hosts: hostActions } = useOptimisticCollectionActions();
 	const [isEditing, setIsEditing] = useState(false);
 	const [draft, setDraft] = useState(name);
@@ -108,6 +113,12 @@ export function HostHeader({
 			<p className="text-sm text-muted-foreground mt-1">
 				{isOnline ? "Online" : "Offline"} ·{" "}
 				<span className="font-mono">{machineId}</span>
+				{address && (
+					<>
+						{" · "}
+						<span className="font-mono">{address}</span>
+					</>
+				)}
 			</p>
 		</div>
 	);

@@ -26,6 +26,7 @@
 		"@linear/sdk": "68.1.1",
 		"@rox/auth": "workspace:*",
 		"@rox/db": "workspace:*",
+		"@rox/host-provisioner": "workspace:*",
 		"@rox/shared": "workspace:*",
 		"@rox/workflow-core": "workspace:*",
 		"@rox/workflow-runtime": "workspace:*",
