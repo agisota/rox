@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { useTRPC } from "@/trpc/react";
 
+import { AdminStatsCards } from "./components/AdminStatsCards";
 import { DemoCountdown } from "./components/DemoCountdown";
 import { FunnelChart } from "./components/FunnelChart";
 import { LeaderboardTable } from "./components/LeaderboardTable";
@@ -82,6 +83,8 @@ export default function DashboardPage() {
 				</div>
 				<DemoCountdown />
 			</div>
+
+			<AdminStatsCards />
 
 			<WAUTrendChart
 				data={wau.data}

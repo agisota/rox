@@ -23,6 +23,15 @@ export const users = authSchema.table(
 		image: text("image"),
 		organizationIds: uuid("organization_ids").array().default([]).notNull(),
 		onboardedAt: timestamp("onboarded_at"),
+		// Platform-level role. "admin" grants access to the Rox One admin panel
+		// (in addition to the @rox.one email-domain / ADMIN_EMAILS allowlist
+		// gates enforced in packages/trpc). Defaults to "user".
+		role: text("role").default("user").notNull(),
+		// Account status flags managed from the admin panel. `banned` covers both
+		// hard bans and temporary suspensions (set `banExpiresAt` for the latter).
+		banned: boolean("banned").default(false).notNull(),
+		banReason: text("ban_reason"),
+		banExpiresAt: timestamp("ban_expires_at"),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 		updatedAt: timestamp("updated_at")
 			.defaultNow()
@@ -54,6 +63,9 @@ export const sessions = authSchema.table(
 			.references(() => users.id, { onDelete: "cascade" }),
 		activeOrganizationId: uuid("active_organization_id"),
 		activeTeamId: uuid("active_team_id"),
+		// Set when an admin impersonates this user: the admin's user id. Lets the
+		// UI/audit distinguish an impersonated session from a real login.
+		impersonatedBy: uuid("impersonated_by"),
 	},
 	(table) => [index("sessions_user_id_idx").on(table.userId)],
 );

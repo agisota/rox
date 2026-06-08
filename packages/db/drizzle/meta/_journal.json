@@ -477,6 +477,13 @@
       "when": 1780910550949,
       "tag": "0067_remove_stripe",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1780926553769,
+      "tag": "0068_admin_panel_user_role_status",
+      "breakpoints": true
     }
   ]
 }

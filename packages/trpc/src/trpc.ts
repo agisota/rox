@@ -1,11 +1,14 @@
 import type { auth, Session } from "@rox/auth/server";
 import { db } from "@rox/db/client";
-import { members } from "@rox/db/schema";
+import { members, users } from "@rox/db/schema";
 import { COMPANY, ORGANIZATION_HEADER } from "@rox/shared/constants";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import superjson from "superjson";
 import { ZodError } from "zod";
+
+import { env } from "./env";
+import { resolveIsAdmin } from "./router/admin/access";
 
 export type TRPCContext = {
 	session: Session | null;
@@ -126,10 +129,33 @@ export const jwtProcedure = t.procedure.use(async ({ ctx, next }) => {
 });
 
 export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-	if (!ctx.session.user.email.endsWith(COMPANY.EMAIL_DOMAIN)) {
+	const email = ctx.session.user.email;
+
+	// Fast path: company domain / allowlist need no DB read.
+	let isAdmin = resolveIsAdmin({
+		email,
+		companyEmailDomain: COMPANY.EMAIL_DOMAIN,
+		adminEmailsEnv: env.ADMIN_EMAILS,
+	});
+
+	// Slow path: fall back to the per-user platform role flag.
+	if (!isAdmin) {
+		const row = await db.query.users.findFirst({
+			where: eq(users.id, ctx.session.user.id),
+			columns: { role: true },
+		});
+		isAdmin = resolveIsAdmin({
+			email,
+			role: row?.role,
+			companyEmailDomain: COMPANY.EMAIL_DOMAIN,
+			adminEmailsEnv: env.ADMIN_EMAILS,
+		});
+	}
+
+	if (!isAdmin) {
 		throw new TRPCError({
 			code: "FORBIDDEN",
-			message: `Admin access requires ${COMPANY.EMAIL_DOMAIN} email.`,
+			message: "Admin access required.",
 		});
 	}
 

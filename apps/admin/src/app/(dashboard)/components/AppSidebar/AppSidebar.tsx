@@ -20,7 +20,7 @@ import {
 	SidebarRail,
 } from "@rox/ui/sidebar";
 import { usePathname } from "next/navigation";
-import { LuChevronRight, LuHouse, LuUsers } from "react-icons/lu";
+import { LuBuilding2, LuChevronRight, LuHouse, LuUsers } from "react-icons/lu";
 
 import { AppSidebarHeader } from "./components/AppSidebarHeader";
 import { NavUser } from "./components/NavUser";
@@ -42,6 +42,16 @@ const sections = [
 				title: "All Users",
 				url: "/users",
 				icon: LuUsers,
+			},
+		],
+	},
+	{
+		title: "Organizations",
+		items: [
+			{
+				title: "All Organizations",
+				url: "/organizations",
+				icon: LuBuilding2,
 			},
 		],
 	},

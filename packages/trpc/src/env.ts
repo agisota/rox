@@ -38,6 +38,11 @@ export const env = createEnv({
 		RELAY_URL: z.string().url(),
 		LINEAR_CLIENT_ID: z.string().min(1),
 		LINEAR_CLIENT_SECRET: z.string().min(1),
+		// Optional comma-separated allowlist of emails granted admin-panel
+		// access on top of the @rox.one email-domain gate and the per-user
+		// `users.role = 'admin'` flag. Lets non-staff operators be granted
+		// admin without provisioning a @rox.one address.
+		ADMIN_EMAILS: z.string().optional(),
 	},
 	clientPrefix: "PUBLIC_",
 	client: {},

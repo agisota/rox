@@ -1,23 +1,11 @@
-import { db } from "@rox/db/client";
-import { users } from "@rox/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
-import { desc, eq } from "drizzle-orm";
-import { z } from "zod";
 
-import { adminProcedure } from "../../trpc";
+import { adminOrganizationsRouter } from "./organizations";
+import { adminStatsRouter } from "./stats";
+import { adminUsersRouter } from "./users";
 
 export const adminRouter = {
-	listUsers: adminProcedure.query(() => {
-		return db.query.users.findMany({
-			orderBy: desc(users.createdAt),
-		});
-	}),
-
-	deleteUser: adminProcedure
-		.input(z.object({ userId: z.string() }))
-		.mutation(async ({ input }) => {
-			// Delete user - Better Auth handles cascading session cleanup
-			await db.delete(users).where(eq(users.id, input.userId));
-			return { success: true };
-		}),
+	...adminStatsRouter,
+	...adminUsersRouter,
+	...adminOrganizationsRouter,
 } satisfies TRPCRouterRecord;
