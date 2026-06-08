@@ -24,8 +24,14 @@ export function TransitionRail({
 	const stroke = active ? "var(--sf-transition)" : "var(--border)";
 	// The cubic rail ends horizontally (its last control point shares the
 	// endpoint's y), so the end tangent runs midX → x2. Rotate the arrowhead
-	// along it so backward (right→left) rails point the correct way.
-	const arrowAngle = (Math.atan2(0, x2 - midX) * 180) / Math.PI;
+	// along it so backward (right→left) rails point the correct way. For a
+	// vertical rail (x1 === x2 → midX === x2) that tangent degenerates, so fall
+	// back to the overall vertical direction.
+	const endDx = x2 - midX;
+	const arrowAngle =
+		Math.abs(endDx) < 1e-6
+			? (Math.atan2(y2 - y1, 0) * 180) / Math.PI
+			: (Math.atan2(0, endDx) * 180) / Math.PI;
 	return (
 		<g>
 			<path
