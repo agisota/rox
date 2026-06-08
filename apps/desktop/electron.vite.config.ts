@@ -53,6 +53,7 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			"process.env.LOCAL_ONLY_AUTH": defineEnv(process.env.LOCAL_ONLY_AUTH, ""),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,
 				"https://api.rox.one",
@@ -149,6 +150,7 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			"process.env.LOCAL_ONLY_AUTH": defineEnv(process.env.LOCAL_ONLY_AUTH, ""),
 			__APP_VERSION__: defineEnv(version),
 		},
 
@@ -169,6 +171,7 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			"process.env.LOCAL_ONLY_AUTH": defineEnv(process.env.LOCAL_ONLY_AUTH, ""),
 			"process.platform": defineEnv(process.platform),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,

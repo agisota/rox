@@ -54,9 +54,20 @@ const rawEnv = {
 const SKIP_ENV_VALIDATION =
 	process.env.NODE_ENV === "development" && !!process.env.SKIP_ENV_VALIDATION;
 
+// Local-only auth mode (#39): bypasses cloud OAuth (mock org / always-signed-in)
+// so a packaged build can run fully offline. Unlike SKIP_ENV_VALIDATION — which
+// is a dev-only shorthand gated on NODE_ENV=development — LOCAL_ONLY_AUTH can be
+// baked into a PRODUCTION build at compile time via LOCAL_ONLY_AUTH=1. Dev's
+// SKIP_ENV_VALIDATION implies it so existing dev flows are unchanged.
+const LOCAL_ONLY_AUTH =
+	SKIP_ENV_VALIDATION ||
+	process.env.LOCAL_ONLY_AUTH === "1" ||
+	process.env.LOCAL_ONLY_AUTH === "true";
+
 export const env = {
 	...(SKIP_ENV_VALIDATION
 		? (rawEnv as z.infer<typeof envSchema>)
 		: envSchema.parse(rawEnv)),
 	SKIP_ENV_VALIDATION,
+	LOCAL_ONLY_AUTH,
 };
