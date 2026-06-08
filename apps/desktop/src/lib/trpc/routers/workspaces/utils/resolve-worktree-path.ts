@@ -2,9 +2,12 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { type SelectProject, settings } from "@rox/local-db";
 import { localDb } from "main/lib/local-db";
-import { ROX_DIR_NAME, WORKTREES_DIR_NAME } from "shared/constants";
+import {
+	DEFAULT_WORKTREE_ROOT_DIR_NAME,
+	WORKTREES_DIR_NAME,
+} from "shared/constants";
 
-/** Resolves base dir: project override > global setting > default (~/.rox/worktrees) */
+/** Resolves base dir: project override > global setting > default (~/rox/worktrees) */
 export function resolveWorktreePath(
 	project: Pick<SelectProject, "name" | "worktreeBaseDir">,
 	branch: string,
@@ -15,7 +18,8 @@ export function resolveWorktreePath(
 
 	const row = localDb.select().from(settings).get();
 	const baseDir =
-		row?.worktreeBaseDir ?? join(homedir(), ROX_DIR_NAME, WORKTREES_DIR_NAME);
+		row?.worktreeBaseDir ??
+		join(homedir(), DEFAULT_WORKTREE_ROOT_DIR_NAME, WORKTREES_DIR_NAME);
 
 	return join(baseDir, project.name, branch);
 }

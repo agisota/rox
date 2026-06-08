@@ -42,6 +42,8 @@ import { getHostServiceCoordinator } from "main/lib/host-service-coordinator";
 import { localDb } from "main/lib/local-db";
 import {
 	DEFAULT_AUTO_APPLY_DEFAULT_PRESET,
+	DEFAULT_BRANCH_PREFIX,
+	DEFAULT_BRANCH_PREFIX_MODE,
 	DEFAULT_CONFIRM_ON_QUIT,
 	DEFAULT_EXPOSE_HOST_SERVICE_VIA_RELAY,
 	DEFAULT_FILE_OPEN_MODE,
@@ -787,8 +789,8 @@ export const createSettingsRouter = () => {
 		getBranchPrefix: publicProcedure.query(() => {
 			const row = getSettings();
 			return {
-				mode: row.branchPrefixMode ?? "none",
-				customPrefix: row.branchPrefixCustom ?? null,
+				mode: row.branchPrefixMode ?? DEFAULT_BRANCH_PREFIX_MODE,
+				customPrefix: row.branchPrefixCustom ?? DEFAULT_BRANCH_PREFIX,
 			};
 		}),
 

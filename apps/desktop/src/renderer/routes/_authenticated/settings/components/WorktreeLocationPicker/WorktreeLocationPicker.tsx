@@ -1,6 +1,12 @@
 import { Button } from "@rox/ui/button";
 import { Label } from "@rox/ui/label";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import {
+	DEFAULT_WORKTREE_ROOT_DIR_NAME,
+	WORKTREES_DIR_NAME,
+} from "shared/constants";
+
+const DEFAULT_WORKTREE_REL_PATH = `${DEFAULT_WORKTREE_ROOT_DIR_NAME}/${WORKTREES_DIR_NAME}`;
 
 interface WorktreeLocationPickerProps {
 	currentPath: string | null | undefined;
@@ -14,7 +20,9 @@ interface WorktreeLocationPickerProps {
 
 export function useDefaultWorktreePath() {
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
-	return homeDir ? `${homeDir}/.rox/worktrees` : "~/.rox/worktrees";
+	return homeDir
+		? `${homeDir}/${DEFAULT_WORKTREE_REL_PATH}`
+		: `~/${DEFAULT_WORKTREE_REL_PATH}`;
 }
 
 export function WorktreeLocationPicker({

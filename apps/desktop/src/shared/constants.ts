@@ -1,3 +1,4 @@
+import type { BranchPrefixMode } from "@rox/local-db";
 import { PROTOCOL_SCHEMES } from "@rox/shared/constants";
 import { getWorkspaceName } from "./env.shared";
 
@@ -16,6 +17,15 @@ export const PROTOCOL_SCHEME = workspace
 export const PROJECT_ROX_DIR_NAME = ".rox";
 export const WORKTREES_DIR_NAME = "worktrees";
 export const PROJECTS_DIR_NAME = "projects";
+
+// Defaults for git worktree/branch creation. Used when neither the project nor
+// the global settings provide an explicit override.
+/** Root directory under the user's home for the default worktree base dir (~/rox/worktrees). */
+export const DEFAULT_WORKTREE_ROOT_DIR_NAME = "rox";
+/** Default branch-prefix mode: branches are grouped under a custom prefix folder. */
+export const DEFAULT_BRANCH_PREFIX_MODE: BranchPrefixMode = "custom";
+/** Default custom branch prefix (e.g. branches become `rox/<name>`). */
+export const DEFAULT_BRANCH_PREFIX = "rox";
 export const CONFIG_FILE_NAME = "config.json";
 export const LOCAL_CONFIG_FILE_NAME = "config.local.json";
 export const PORTS_FILE_NAME = "ports.json";
