@@ -22,6 +22,7 @@ import { hideAll as hideAllTippy } from "tippy.js";
 import { useProjectFileSearch } from "../../hooks/useProjectFileSearch";
 import { useRecentProjects } from "../../hooks/useRecentProjects";
 import type { AutomationTemplate } from "../../templates";
+import { AUTOMATION_TEMPLATE_CATEGORIES } from "../../templates";
 import { AgentPicker } from "../AgentPicker";
 import { ProjectPicker } from "../ProjectPicker";
 import { SchedulePicker } from "../SchedulePicker";
@@ -86,6 +87,19 @@ export function CreateAutomationDialog({
 		const first = recentProjects[0];
 		if (first) setSelectedProjectId(first.id);
 	}, [open, selectedProjectId, recentProjects]);
+
+	// Default the device to the local host once available, so the DevicePicker
+	// visibly reflects the target instead of showing an empty selection.
+	useEffect(() => {
+		if (!open) return;
+		if (hostId) return;
+		if (localHostId) setHostId(localHostId);
+	}, [open, hostId, localHostId]);
+
+	// Flat list of templates for the quick-pick strip at the top of compose.
+	const quickTemplates = AUTOMATION_TEMPLATE_CATEGORIES.flatMap(
+		(category) => category.templates,
+	).slice(0, 8);
 
 	// Track which (open session, template) we've already pre-filled so the
 	// effects don't re-run and stomp on user edits when `hostAgents` lands
@@ -193,6 +207,7 @@ export function CreateAutomationDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				className="sm:max-w-[960px] p-0 gap-0 overflow-hidden"
+				overlayClassName="backdrop-blur-sm"
 				aria-describedby={undefined}
 				showCloseButton={false}
 				onPointerDownOutside={(event) => event.preventDefault()}
@@ -238,6 +253,23 @@ export function CreateAutomationDialog({
 									</Button>
 								</DialogClose>
 							</DialogHeader>
+
+							<div className="flex items-center gap-1.5 overflow-x-auto px-4 pt-2 pb-1">
+								{quickTemplates.map((template) => (
+									<button
+										key={template.id}
+										type="button"
+										title={template.description}
+										onClick={() => applyTemplate(template)}
+										className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-accent/40 hover:text-foreground"
+									>
+										<span aria-hidden>{template.emoji}</span>
+										<span className="max-w-[120px] truncate">
+											{template.name}
+										</span>
+									</button>
+								))}
+							</div>
 
 							<div className="flex-1 min-h-0 px-4 pt-2 flex flex-col overflow-y-auto">
 								<MarkdownEditor
