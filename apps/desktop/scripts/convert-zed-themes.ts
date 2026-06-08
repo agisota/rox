@@ -7,17 +7,27 @@
  * `src/shared/themes/zed/generated/zed-themes.json`.
  *
  * Usage:
- *   bun run apps/desktop/scripts/convert-zed-themes.ts [zedThemesDir]
+ *   bun run apps/desktop/scripts/convert-zed-themes.ts [zedThemesDir] \
+ *     [--schemes <tintedThemingSchemesDir>]
  *
- * When `zedThemesDir` is provided it should point at a checkout of
- * `zed-industries/zed/assets/themes` (each `*.json` is one family). When it is
- * omitted, a small embedded sample of canonical Zed families is used so the
- * dataset is reproducible without a network/clone step. Replace the embedded
- * sample (or pass the upstream dir) to regenerate the full ~500-theme library.
+ * Sources (all optional, merged in priority order — first writer of an id wins):
+ *   1. A small embedded sample of canonical Zed families (always included so the
+ *      dataset is reproducible without any clone/network step).
+ *   2. `zedThemesDir` — a checkout of `zed-industries/zed/assets/themes`
+ *      (each `*.json` is one family).
+ *   3. `--schemes <dir>` — a checkout of `tinted-theming/schemes` (base16 +
+ *      base24 YAML palettes, ~500 entries). This is what grows the bundle to the
+ *      full library; each scheme is adapted onto the Zed `style` shape via
+ *      {@link base16ToZedFamily} so it converts through the same pipeline.
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import {
+	type Base16Scheme,
+	type Base16System,
+	base16ToZedFamily,
+} from "../src/shared/themes/zed/base16";
 import {
 	convertZedFamily,
 	type ZedThemeFamily,
@@ -878,13 +888,34 @@ const EMBEDDED_FAMILIES: ZedThemeFamily[] = [
 	},
 ];
 
-function loadFamiliesFromDir(dir: string): ZedThemeFamily[] {
-	const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
-	const families: ZedThemeFamily[] = [];
-	for (const file of files) {
+/** Recursively collect files under `dir` whose name matches `predicate`. */
+function walkFiles(
+	dir: string,
+	predicate: (name: string) => boolean,
+): string[] {
+	const out: string[] = [];
+	for (const entry of readdirSync(dir)) {
+		const full = join(dir, entry);
+		let isDir = false;
 		try {
-			const raw = readFileSync(join(dir, file), "utf8");
-			const parsed = JSON.parse(raw) as ZedThemeFamily;
+			isDir = statSync(full).isDirectory();
+		} catch {
+			continue;
+		}
+		if (isDir) {
+			out.push(...walkFiles(full, predicate));
+		} else if (predicate(entry)) {
+			out.push(full);
+		}
+	}
+	return out;
+}
+
+function loadZedFamiliesFromDir(dir: string): ZedThemeFamily[] {
+	const families: ZedThemeFamily[] = [];
+	for (const file of walkFiles(dir, (name) => name.endsWith(".json"))) {
+		try {
+			const parsed = JSON.parse(readFileSync(file, "utf8")) as ZedThemeFamily;
 			if (Array.isArray(parsed.themes)) {
 				families.push(parsed);
 			}
@@ -895,22 +926,137 @@ function loadFamiliesFromDir(dir: string): ZedThemeFamily[] {
 	return families;
 }
 
-async function main(): Promise<void> {
-	const inputDir = process.argv[2];
-	const families =
-		inputDir && existsSync(inputDir)
-			? loadFamiliesFromDir(inputDir)
-			: EMBEDDED_FAMILIES;
+/**
+ * Minimal parser for the flat tinted-theming scheme YAML files. They only use
+ * `key: value` scalars and a single nested `palette:` block (two-space indent),
+ * so a full YAML dependency is unnecessary. Palette keys are lowercased to match
+ * {@link base16ToZedFamily}'s expectations.
+ */
+function parseSchemeYaml(raw: string): Base16Scheme | null {
+	const top: Record<string, string> = {};
+	const palette: Record<string, string> = {};
+	let inPalette = false;
 
-	if (!inputDir) {
+	for (const line of raw.split(/\r?\n/)) {
+		if (!line.trim() || line.trim().startsWith("#")) {
+			continue;
+		}
+		const indented = /^\s+/.test(line);
+		const match = line.match(/^\s*([A-Za-z0-9_]+)\s*:\s*(.*?)\s*$/);
+		if (!match) {
+			continue;
+		}
+		const key = match[1];
+		// Strip inline comments and surrounding quotes from the value.
+		const value = match[2]
+			.replace(/\s+#.*$/, "")
+			.trim()
+			.replace(/^["']|["']$/g, "");
+
+		if (key === "palette" && !indented) {
+			inPalette = true;
+			continue;
+		}
+		if (inPalette && indented) {
+			if (value) {
+				palette[key.toLowerCase()] = value;
+			}
+			continue;
+		}
+		inPalette = false;
+		top[key] = value;
+	}
+
+	if (!top.name || Object.keys(palette).length === 0) {
+		return null;
+	}
+	const system: Base16System = top.system === "base24" ? "base24" : "base16";
+	return {
+		system,
+		name: top.name,
+		author: top.author || undefined,
+		variant: top.variant === "light" ? "light" : "dark",
+		palette,
+	};
+}
+
+function loadSchemeFamiliesFromDir(dir: string): ZedThemeFamily[] {
+	const families: ZedThemeFamily[] = [];
+	const files = walkFiles(
+		dir,
+		(name) => name.endsWith(".yaml") || name.endsWith(".yml"),
+	);
+	for (const file of files) {
+		try {
+			const scheme = parseSchemeYaml(readFileSync(file, "utf8"));
+			if (scheme) {
+				families.push(base16ToZedFamily(scheme));
+			}
+		} catch (error) {
+			console.warn(`[convert-zed-themes] Skipping ${file}: ${String(error)}`);
+		}
+	}
+	return families;
+}
+
+function parseSchemesArg(argv: string[]): string | undefined {
+	const flagIndex = argv.indexOf("--schemes");
+	if (flagIndex !== -1 && argv[flagIndex + 1]) {
+		return argv[flagIndex + 1];
+	}
+	const inline = argv.find((arg) => arg.startsWith("--schemes="));
+	if (inline) {
+		return inline.slice("--schemes=".length);
+	}
+	return process.env.ZED_BASE16_SCHEMES_DIR;
+}
+
+async function main(): Promise<void> {
+	const argv = process.argv.slice(2);
+	const schemesDir = parseSchemesArg(argv);
+	// The lone positional (if any) is the optional upstream Zed themes dir; skip
+	// flags and the value consumed by `--schemes`.
+	const schemesFlagIndex = argv.indexOf("--schemes");
+	const schemesValueIndex = schemesFlagIndex === -1 ? -1 : schemesFlagIndex + 1;
+	const zedDir = argv.find(
+		(arg, index) => !arg.startsWith("--") && index !== schemesValueIndex,
+	);
+
+	// Priority order: embedded curated families first (hand-tuned), then any
+	// upstream Zed dir, then the large base16/base24 scheme collection. The first
+	// family to claim an id wins, so curated themes take precedence over their
+	// base16 namesakes.
+	const families: ZedThemeFamily[] = [...EMBEDDED_FAMILIES];
+
+	if (zedDir && existsSync(zedDir)) {
+		families.push(...loadZedFamiliesFromDir(zedDir));
+	}
+	if (schemesDir && existsSync(schemesDir)) {
+		families.push(...loadSchemeFamiliesFromDir(schemesDir));
+	} else if (schemesDir) {
+		console.warn(`[convert-zed-themes] Schemes dir not found: ${schemesDir}`);
+	}
+
+	if (!zedDir && !schemesDir) {
 		console.log(
-			"[convert-zed-themes] No input dir given — using embedded sample. " +
-				"Pass a path to zed-industries/zed/assets/themes to regenerate the full library.",
+			"[convert-zed-themes] No input dir given — using embedded sample only. " +
+				"Pass --schemes <tinted-theming/schemes checkout> to build the full library.",
 		);
 	}
 
-	const themes = families.flatMap((family) => convertZedFamily(family));
-	themes.sort((a, b) => a.name.localeCompare(b.name));
+	// Convert and globally de-dupe by id (first family wins).
+	const byId = new Map<string, ReturnType<typeof convertZedFamily>[number]>();
+	for (const family of families) {
+		for (const theme of convertZedFamily(family)) {
+			if (!byId.has(theme.id)) {
+				byId.set(theme.id, theme);
+			}
+		}
+	}
+
+	const themes = Array.from(byId.values()).sort((a, b) =>
+		a.name.localeCompare(b.name),
+	);
 
 	await mkdir(dirname(OUT_PATH), { recursive: true });
 	await writeFile(OUT_PATH, `${JSON.stringify(themes, null, "\t")}\n`, "utf8");

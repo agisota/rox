@@ -9,6 +9,8 @@
 import type { Theme, ThemeMetadata } from "../types";
 import generatedThemes from "./generated/zed-themes.json";
 
+export type { Base16Scheme, Base16System } from "./base16";
+export { base16ToZedFamily, base16ToZedStyle } from "./base16";
 export type { ZedTheme, ZedThemeFamily } from "./convert";
 export { convertZedFamily, convertZedTheme } from "./convert";
 
