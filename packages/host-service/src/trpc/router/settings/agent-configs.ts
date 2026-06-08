@@ -124,6 +124,39 @@ function seedDefaultsIfEmpty(db: HostDb): HostAgentConfigRow[] {
 	return listOrdered(db);
 }
 
+/**
+ * Additively append any bundled preset that isn't already present, so hosts
+ * seeded before a new agent/harness shipped pick it up on the next `list`.
+ * Existing rows (user edits, ordering) are never touched.
+ *
+ * Reconcile keys off `presetId`, so a builtin the user deliberately deleted
+ * will reappear — an accepted tradeoff for keeping the bundled catalog
+ * complete without a separate "seeded versions" ledger.
+ */
+function reconcileSeedPresets(db: HostDb): HostAgentConfigRow[] {
+	const existing = listOrdered(db);
+	if (existing.length === 0) return existing;
+	const existingPresetIds = new Set(existing.map((row) => row.presetId));
+	const missing = getDefaultSeedPresets().filter(
+		(preset) => !existingPresetIds.has(preset.presetId),
+	);
+	if (missing.length === 0) return existing;
+	let nextOrder = Math.max(...existing.map((row) => row.displayOrder)) + 1;
+	const rows = missing.map((preset) => rowFromPreset(preset, nextOrder++));
+	db.insert(hostAgentConfigs).values(rows).run();
+	return listOrdered(db);
+}
+
+/**
+ * Seed on first run, then reconcile so an upgraded host gains newly bundled
+ * presets without losing its existing configuration.
+ */
+function ensureSeededAndReconciled(db: HostDb): HostAgentConfigRow[] {
+	const seeded = seedDefaultsIfEmpty(db);
+	if (seeded.length === 0) return seeded;
+	return reconcileSeedPresets(db);
+}
+
 const updatePatchSchema = z
 	.object({
 		label: z.string().trim().min(1).optional(),
@@ -160,7 +193,7 @@ export const agentConfigsRouter = router({
 	 * on first call when no configs exist.
 	 */
 	list: protectedProcedure.query(({ ctx }) => {
-		const rows = seedDefaultsIfEmpty(ctx.db);
+		const rows = ensureSeededAndReconciled(ctx.db);
 		return rows.map(toOutput);
 	}),
 

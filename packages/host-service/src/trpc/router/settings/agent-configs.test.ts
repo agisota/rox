@@ -348,4 +348,33 @@ describe("agentConfigsRouter", () => {
 			expect(result.filter((row) => row.presetId === "pi")).toHaveLength(1);
 		});
 	});
+
+	describe("reconcile on list()", () => {
+		it("re-adds a bundled preset missing from an already-seeded host", async () => {
+			const caller = createCaller();
+			const seeded = await caller.list();
+			const qwen = seeded.find((row) => row.presetId === "qwen");
+			if (!qwen) throw new Error("expected qwen to be seeded");
+
+			await caller.remove({ id: qwen.id });
+			const afterRemove = await caller.list();
+
+			// Reconcile keys off presetId, so the bundled preset returns,
+			// appended after the surviving rows.
+			const readded = afterRemove.find((row) => row.presetId === "qwen");
+			expect(readded).toBeDefined();
+			expect(readded?.order).toBe(
+				Math.max(...afterRemove.map((row) => row.order)),
+			);
+		});
+
+		it("does not duplicate or reorder presets when nothing is missing", async () => {
+			const caller = createCaller();
+			const first = await caller.list();
+			const again = await caller.list();
+			expect(again.map((row) => row.presetId)).toEqual(
+				first.map((row) => row.presetId),
+			);
+		});
+	});
 });

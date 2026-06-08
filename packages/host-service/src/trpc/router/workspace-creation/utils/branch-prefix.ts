@@ -3,8 +3,8 @@ import {
 	resolveBranchPrefix,
 } from "@rox/shared/workspace-launch";
 import type { SimpleGit } from "simple-git";
-import { hostSettings } from "../../../../db/schema";
 import type { HostServiceContext } from "../../../../types";
+import { ensureHostSettingsRow } from "../../settings/host-settings";
 import type { LocalProject } from "../shared/local-project";
 import type { ExecGh } from "./exec-gh";
 
@@ -70,7 +70,8 @@ export async function resolveProjectBranchPrefix({
 	git: SimpleGit;
 	existingBranches: string[];
 }): Promise<string | undefined> {
-	const global = ctx.db.select().from(hostSettings).get();
+	// Seeds the `rox` host-wide default on a fresh install if no row exists.
+	const global = ensureHostSettingsRow(ctx.db);
 	// Project override wins; otherwise fall back to the host-wide default.
 	const source = project.branchPrefixMode != null ? project : global;
 	const mode: BranchPrefixMode = source?.branchPrefixMode ?? "none";

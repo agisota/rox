@@ -56,6 +56,10 @@
 			"types": "./src/host-agent-presets.ts",
 			"default": "./src/host-agent-presets.ts"
 		},
+		"./agent-harness-presets": {
+			"types": "./src/agent-harness-presets.ts",
+			"default": "./src/agent-harness-presets.ts"
+		},
 		"./agent-launch": {
 			"types": "./src/agent-launch.ts",
 			"default": "./src/agent-launch.ts"

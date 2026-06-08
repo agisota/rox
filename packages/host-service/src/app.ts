@@ -1,3 +1,4 @@
+import { mkdir } from "node:fs/promises";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { trpcServer } from "@hono/trpc-server";
 import { Octokit } from "@octokit/rest";
@@ -11,6 +12,7 @@ import { EventBus, GitWatcher, registerEventBusRoute } from "./events";
 import type { ApiAuthProvider } from "./providers/auth";
 import type { HostAuthProvider } from "./providers/host-auth";
 import type { ModelProviderRuntimeResolver } from "./providers/model-providers";
+import { AgentPreinstaller } from "./runtime/agent-preinstall";
 import { ChatRuntimeManager } from "./runtime/chat";
 import { WorkspaceFilesystemManager } from "./runtime/filesystem";
 import type { GitCredentialProvider } from "./runtime/git";
@@ -20,6 +22,7 @@ import { PullRequestRuntimeManager } from "./runtime/pull-requests";
 import { registerWorkspaceTerminalRoute } from "./terminal/terminal";
 import { TerminalAgentStore } from "./terminal-agents";
 import { appRouter } from "./trpc/router";
+import { defaultWorktreesRoot } from "./trpc/router/workspace-creation/shared/worktree-paths";
 import {
 	execGh as defaultExecGh,
 	type ExecGh,
@@ -109,11 +112,14 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	// auth storage; the `host.auth.*` router proxies to it.
 	const chatService = options.chatService ?? new ChatService();
 
+	const preinstall = new AgentPreinstaller({ db });
+
 	const runtime = {
 		auth: chatService,
 		chat: chatRuntime,
 		filesystem,
 		pullRequests: pullRequestRuntime,
+		preinstall,
 	};
 	const app = new Hono();
 	const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -141,6 +147,16 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		organizationId: config.organizationId,
 	}).catch((err) => {
 		console.warn("[host-service] main-workspace sweep failed:", err);
+	});
+
+	// Preinstall bundled agents/harnesses and ensure the default worktrees
+	// root exists. Idempotent and fire-and-forget so it never blocks startup;
+	// the renderer polls `settings.agentPreinstall.status` for progress.
+	void (async () => {
+		await mkdir(defaultWorktreesRoot(), { recursive: true });
+		await preinstall.runAuto();
+	})().catch((err) => {
+		console.warn("[host-service] agent preinstall bootstrap failed:", err);
 	});
 
 	const wsAuth: MiddlewareHandler = async (c, next) => {

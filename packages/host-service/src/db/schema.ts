@@ -135,6 +135,43 @@ export const hostAgentConfigs = sqliteTable(
 	],
 );
 
+/**
+ * Status of preinstalling a bundled terminal agent or harness on this host.
+ * One row per catalog `preset_id` (a builtin agent id or harness id). Lets
+ * the preinstall runtime stay idempotent across restarts and lets the
+ * renderer surface per-agent progress and retry failed installs.
+ */
+export type AgentInstallStatus =
+	| "pending"
+	| "installing"
+	| "installed"
+	| "failed"
+	| "skipped";
+
+export const agentInstallState = sqliteTable(
+	"agent_install_state",
+	{
+		// `preset_id` is the natural key (builtin agent id or harness id), so a
+		// reconcile that re-seeds the catalog can upsert without duplicating.
+		presetId: text("preset_id").primaryKey(),
+		// "agent" | "harness" — kept as free text to avoid a migration when a
+		// future catalog kind shows up.
+		kind: text().notNull().default("agent"),
+		status: text().$type<AgentInstallStatus>().notNull().default("pending"),
+		// Resolved binary/harness version once installed, when known.
+		version: text(),
+		lastError: text("last_error"),
+		installedAt: integer("installed_at"),
+		createdAt: integer("created_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		updatedAt: integer("updated_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+	},
+	(table) => [index("agent_install_state_status_idx").on(table.status)],
+);
+
 export const workspaces = sqliteTable(
 	"workspaces",
 	{

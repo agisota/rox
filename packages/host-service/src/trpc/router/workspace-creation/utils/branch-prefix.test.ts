@@ -54,10 +54,22 @@ function setGlobal(
 }
 
 describe("resolveProjectBranchPrefix", () => {
-	it("returns undefined when nothing is configured", async () => {
+	it("defaults a fresh host to the seeded `rox` prefix", async () => {
+		// A fresh host has no host_settings row; resolving seeds the first-run
+		// `rox` default (see `ensureHostSettingsRow`).
 		const result = await resolveProjectBranchPrefix({
 			ctx: makeCtx(createTestDb()),
 			project: makeProject({}),
+			git: gitWithAuthor(null),
+			existingBranches: [],
+		});
+		expect(result).toBe("rox");
+	});
+
+	it("a project `none` override suppresses the seeded host default", async () => {
+		const result = await resolveProjectBranchPrefix({
+			ctx: makeCtx(createTestDb()),
+			project: makeProject({ branchPrefixMode: "none" }),
 			git: gitWithAuthor(null),
 			existingBranches: [],
 		});

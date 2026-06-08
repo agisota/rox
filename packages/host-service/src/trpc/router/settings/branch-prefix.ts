@@ -7,18 +7,23 @@ import { hostSettings } from "../../../db/schema";
 import { createUserSimpleGit } from "../../../runtime/git/simple-git";
 import { protectedProcedure, router } from "../../index";
 import { resolveGitInfo } from "../workspace-creation/utils/branch-prefix";
+import { ensureHostSettingsRow } from "./host-settings";
 
 /**
  * Host-wide branch-prefix default. Projects without their own override fall
  * back to this. Stored in the single-row `host_settings` table (`id = 1`).
  */
 export const branchPrefixRouter = router({
-	/** The host-wide default. `none` when never configured. */
+	/**
+	 * The host-wide default. Fresh installs are seeded to the `rox` custom
+	 * prefix on first read (see `ensureHostSettingsRow`); a row with an
+	 * explicit `null` mode (e.g. set by an upgrader) still reads as `none`.
+	 */
 	get: protectedProcedure.query(({ ctx }) => {
-		const row = ctx.db.select().from(hostSettings).get();
+		const row = ensureHostSettingsRow(ctx.db);
 		return {
-			mode: (row?.branchPrefixMode ?? "none") satisfies BranchPrefixMode,
-			customPrefix: row?.branchPrefixCustom ?? null,
+			mode: (row.branchPrefixMode ?? "none") satisfies BranchPrefixMode,
+			customPrefix: row.branchPrefixCustom ?? null,
 		};
 	}),
 

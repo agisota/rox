@@ -4,6 +4,7 @@ import type { AppRouter } from "@rox/trpc";
 import type { TRPCClient } from "@trpc/client";
 import type { HostDb } from "./db";
 import type { EventBus } from "./events";
+import type { AgentPreinstaller } from "./runtime/agent-preinstall";
 import type { ChatRuntimeManager } from "./runtime/chat";
 import type { WorkspaceFilesystemManager } from "./runtime/filesystem";
 import type { GitFactory } from "./runtime/git";
@@ -18,6 +19,7 @@ export interface HostServiceRuntime {
 	chat: ChatRuntimeManager;
 	filesystem: WorkspaceFilesystemManager;
 	pullRequests: PullRequestRuntimeManager;
+	preinstall: AgentPreinstaller;
 }
 
 export interface HostServiceContext {

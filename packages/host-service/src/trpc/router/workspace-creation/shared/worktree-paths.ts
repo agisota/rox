@@ -4,8 +4,14 @@ import { TRPCError } from "@trpc/server";
 
 // Kept outside the primary checkout so editors, file watchers, and
 // ignore rules treat worktrees as separate trees, not nested ones.
+//
+// New installs default to `~/rox/worktrees` (a visible, top-level folder).
+// Upgraders are unaffected: an existing `host_settings.worktreeBaseDir` is
+// preserved verbatim, and a `null` value only resolves to this default at
+// read time (see `getHostWorktreeBaseDir`). Anyone who explicitly set the
+// previous default (`~/.rox/worktrees`) keeps it.
 export function defaultWorktreesRoot(): string {
-	return join(homedir(), ".rox", "worktrees");
+	return join(homedir(), "rox", "worktrees");
 }
 
 export function normalizeWorktreeBaseDir(

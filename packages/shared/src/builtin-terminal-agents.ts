@@ -137,6 +137,52 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		description: "Factory's autonomous coding agent for terminal workflows.",
 		command: "droid",
 	}),
+	createBuiltinTerminalAgent({
+		id: "kimi",
+		label: "Kimi",
+		description:
+			"Moonshot's Kimi coding agent for terminal-first coding and task work.",
+		command: "kimi",
+		install: {
+			checkCommand: "command -v kimi",
+			installCommand: "npm install -g @moonshot-ai/kimi-cli",
+			optional: true,
+		},
+	}),
+	createBuiltinTerminalAgent({
+		id: "qwen",
+		label: "Qwen Code",
+		description:
+			"Alibaba's Qwen Code agent for reading, editing, and running code.",
+		command: "qwen",
+		promptCommand: "qwen --prompt",
+		install: {
+			checkCommand: "command -v qwen",
+			installCommand: "npm install -g @qwen-code/qwen-code",
+		},
+	}),
+	createBuiltinTerminalAgent({
+		id: "grok",
+		label: "Grok",
+		description: "xAI's Grok coding agent for terminal coding workflows.",
+		command: "grok",
+		install: {
+			checkCommand: "command -v grok",
+			installCommand: "npm install -g @vibe-kit/grok-cli",
+			optional: true,
+		},
+	}),
+	createBuiltinTerminalAgent({
+		id: "trae",
+		label: "Trae",
+		description: "ByteDance's Trae coding agent for autonomous terminal tasks.",
+		command: "trae",
+		install: {
+			checkCommand: "command -v trae",
+			installCommand: "npm install -g @trae-ai/trae-cli",
+			optional: true,
+		},
+	}),
 ] as const;
 
 export type BuiltinTerminalAgentType =

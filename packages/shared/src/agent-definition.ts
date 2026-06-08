@@ -7,6 +7,19 @@ import {
 export type AgentDefinitionSource = "builtin" | "user";
 export type AgentKind = "terminal" | "chat";
 
+/**
+ * Describes how the preinstall runtime detects and installs a terminal
+ * agent's binary. `checkCommand` exits 0 when the binary is already present
+ * (so the installer stays idempotent); `installCommand` installs it.
+ * `optional` marks agents whose install path is unverified — they are
+ * install-on-request only and never run automatically on first launch.
+ */
+export interface AgentInstallDescriptor {
+	checkCommand: string;
+	installCommand: string;
+	optional?: boolean;
+}
+
 interface BaseAgentDefinition {
 	id: string;
 	source: AgentDefinitionSource;
@@ -35,6 +48,8 @@ export interface TerminalAgentDefinition extends BaseAgentDefinition {
 	promptCommand: string;
 	promptCommandSuffix?: string;
 	promptTransport: PromptTransport;
+	/** Optional preinstall descriptor; absent means "assume already on PATH". */
+	install?: AgentInstallDescriptor;
 }
 
 export interface TerminalAgentDefinitionInput
