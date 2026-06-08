@@ -22,8 +22,15 @@ import {
 	SelectValue,
 } from "@rox/ui/select";
 import { toast } from "@rox/ui/sonner";
+import { useLiveQuery } from "@tanstack/react-db";
 import { useState } from "react";
 import { authClient } from "renderer/lib/auth-client";
+import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+
+// Sentinel for the team Select meaning "let the server pick the default team".
+// `beforeCreateInvitation` defaults a null teamId to the org's oldest team, so
+// leaving this selected keeps invites additive.
+const AUTO_TEAM = "auto";
 
 interface InviteMemberDialogProps {
 	open: boolean;
@@ -42,9 +49,21 @@ export function InviteMemberDialog({
 	invitableRoles,
 	currentUserRole,
 }: InviteMemberDialogProps) {
+	const collections = useCollections();
 	const [email, setEmail] = useState("");
 	const [role, setRole] = useState<OrganizationRole>("member");
+	const [teamId, setTeamId] = useState<string>(AUTO_TEAM);
 	const [isInviting, setIsInviting] = useState(false);
+
+	const { data: teamsData } = useLiveQuery(
+		(q) =>
+			q
+				.from({ teams: collections.teams })
+				.select(({ teams }) => ({ ...teams }))
+				.orderBy(({ teams }) => teams.createdAt, "asc"),
+		[collections],
+	);
+	const teams = teamsData ?? [];
 
 	const handleInvite = async () => {
 		if (!canInvite(currentUserRole, role)) {
@@ -58,11 +77,13 @@ export function InviteMemberDialog({
 				organizationId,
 				email,
 				role,
+				...(teamId !== AUTO_TEAM ? { teamId } : {}),
 			});
 
 			toast.success(`Invitation sent to ${email}`);
 			setEmail("");
 			setRole("member");
+			setTeamId(AUTO_TEAM);
 			onOpenChange(false);
 		} catch (error) {
 			toast.error(
@@ -119,6 +140,29 @@ export function InviteMemberDialog({
 							</SelectContent>
 						</Select>
 					</div>
+
+					{teams.length > 0 && (
+						<div className="space-y-2">
+							<Label htmlFor="team">Team</Label>
+							<Select value={teamId} onValueChange={setTeamId}>
+								<SelectTrigger id="team" disabled={isInviting}>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value={AUTO_TEAM}>Default team</SelectItem>
+									{teams.map((team) => (
+										<SelectItem key={team.id} value={team.id}>
+											{team.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<p className="text-xs text-muted-foreground">
+								The member is added to this team on accept. Defaults to your
+								organization's first team.
+							</p>
+						</div>
+					)}
 				</div>
 
 				<DialogFooter>
