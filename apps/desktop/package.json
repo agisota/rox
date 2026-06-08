@@ -33,7 +33,7 @@
 		"clean:dev": "rimraf ./node_modules/.dev",
 		"generate:routes": "tsr generate",
 		"pretypecheck": "bun run generate:icons && bun run generate:routes",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "cross-env NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
 		"test": "bun test"
 	},
 	"dependencies": {
@@ -82,8 +82,6 @@
 		"@radix-ui/react-dialog": "1.1.15",
 		"@radix-ui/react-label": "2.1.8",
 		"@replit/codemirror-css-color-picker": "6.3.0",
-		"@sentry/electron": "7.10.0",
-		"@streamdown/mermaid": "1.0.2",
 		"@rox/auth": "workspace:*",
 		"@rox/chat": "workspace:*",
 		"@rox/db": "workspace:*",
@@ -98,6 +96,8 @@
 		"@rox/ui": "workspace:*",
 		"@rox/workspace-client": "workspace:*",
 		"@rox/workspace-fs": "workspace:*",
+		"@sentry/electron": "7.10.0",
+		"@streamdown/mermaid": "1.0.2",
 		"@t3-oss/env-core": "0.13.11",
 		"@tanstack/db": "0.6.5",
 		"@tanstack/electric-db-collection": "0.3.3",
@@ -243,8 +243,8 @@
 		"zustand": "5.0.12"
 	},
 	"devDependencies": {
-		"@sentry/vite-plugin": "4.9.1",
 		"@rox/typescript": "workspace:*",
+		"@sentry/vite-plugin": "4.9.1",
 		"@tailwindcss/vite": "4.2.2",
 		"@tanstack/router-cli": "1.166.23",
 		"@tanstack/router-plugin": "1.167.9",
