@@ -12,6 +12,11 @@ import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { env } from "@/env";
 
+// Web sign-in is OAuth-only (GitHub/Google + dev Local Admin). The email/password
+// flow is intentionally hidden behind this flag rather than deleted so it can be
+// re-enabled if self-serve email auth is reintroduced.
+const showEmailPassword = false;
+
 export default function SignInPage() {
 	const searchParams = useSearchParams();
 	const redirect = searchParams.get("redirect");
@@ -142,47 +147,51 @@ export default function SignInPage() {
 						{isLoadingDev ? "Signing in..." : "Sign in as Local Admin (dev)"}
 					</Button>
 				)}
-				<form onSubmit={signInWithEmail} className="grid gap-3">
-					<div className="grid gap-2">
-						<Label htmlFor="email">Email</Label>
-						<Input
-							id="email"
-							type="email"
-							autoComplete="email"
-							placeholder="you@example.com"
-							value={email}
-							onChange={(event) => setEmail(event.target.value)}
-							required
-							disabled={isLoading}
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="password">Password</Label>
-						<Input
-							id="password"
-							type="password"
-							autoComplete="current-password"
-							placeholder="Your password"
-							value={password}
-							onChange={(event) => setPassword(event.target.value)}
-							required
-							disabled={isLoading}
-						/>
-					</div>
-					<Button type="submit" disabled={isLoading} className="w-full">
-						{isLoadingEmail ? "Signing in..." : "Sign in with email"}
-					</Button>
-				</form>
-				<div className="relative">
-					<div className="absolute inset-0 flex items-center">
-						<span className="w-full border-t" />
-					</div>
-					<div className="relative flex justify-center text-xs uppercase">
-						<span className="bg-background text-muted-foreground px-2">
-							Or continue with
-						</span>
-					</div>
-				</div>
+				{showEmailPassword && (
+					<>
+						<form onSubmit={signInWithEmail} className="grid gap-3">
+							<div className="grid gap-2">
+								<Label htmlFor="email">Email</Label>
+								<Input
+									id="email"
+									type="email"
+									autoComplete="email"
+									placeholder="you@example.com"
+									value={email}
+									onChange={(event) => setEmail(event.target.value)}
+									required
+									disabled={isLoading}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="password">Password</Label>
+								<Input
+									id="password"
+									type="password"
+									autoComplete="current-password"
+									placeholder="Your password"
+									value={password}
+									onChange={(event) => setPassword(event.target.value)}
+									required
+									disabled={isLoading}
+								/>
+							</div>
+							<Button type="submit" disabled={isLoading} className="w-full">
+								{isLoadingEmail ? "Signing in..." : "Sign in with email"}
+							</Button>
+						</form>
+						<div className="relative">
+							<div className="absolute inset-0 flex items-center">
+								<span className="w-full border-t" />
+							</div>
+							<div className="relative flex justify-center text-xs uppercase">
+								<span className="bg-background text-muted-foreground px-2">
+									Or continue with
+								</span>
+							</div>
+						</div>
+					</>
+				)}
 				<Button
 					variant="outline"
 					disabled={isLoading}

@@ -10,6 +10,11 @@ import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { env } from "@/env";
 
+// Web sign-up is OAuth-only (GitHub/Google). The email/password flow is
+// intentionally hidden behind this flag rather than deleted so it can be
+// re-enabled if self-serve email auth is reintroduced.
+const showEmailPassword = false;
+
 export default function SignUpPage() {
 	const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
@@ -118,61 +123,65 @@ export default function SignUpPage() {
 				{error && (
 					<p className="text-destructive text-center text-sm">{error}</p>
 				)}
-				<form onSubmit={signUpWithEmail} className="grid gap-3">
-					<div className="grid gap-2">
-						<Label htmlFor="name">Name</Label>
-						<Input
-							id="name"
-							type="text"
-							autoComplete="name"
-							placeholder="Ada Lovelace"
-							value={name}
-							onChange={(event) => setName(event.target.value)}
-							required
-							disabled={isLoading}
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="email">Email</Label>
-						<Input
-							id="email"
-							type="email"
-							autoComplete="email"
-							placeholder="you@example.com"
-							value={email}
-							onChange={(event) => setEmail(event.target.value)}
-							required
-							disabled={isLoading}
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="password">Password</Label>
-						<Input
-							id="password"
-							type="password"
-							autoComplete="new-password"
-							placeholder="At least 8 characters"
-							value={password}
-							onChange={(event) => setPassword(event.target.value)}
-							required
-							minLength={8}
-							disabled={isLoading}
-						/>
-					</div>
-					<Button type="submit" disabled={isLoading} className="w-full">
-						{isLoadingEmail ? "Creating account..." : "Sign up with email"}
-					</Button>
-				</form>
-				<div className="relative">
-					<div className="absolute inset-0 flex items-center">
-						<span className="w-full border-t" />
-					</div>
-					<div className="relative flex justify-center text-xs uppercase">
-						<span className="bg-background text-muted-foreground px-2">
-							Or continue with
-						</span>
-					</div>
-				</div>
+				{showEmailPassword && (
+					<>
+						<form onSubmit={signUpWithEmail} className="grid gap-3">
+							<div className="grid gap-2">
+								<Label htmlFor="name">Name</Label>
+								<Input
+									id="name"
+									type="text"
+									autoComplete="name"
+									placeholder="Ada Lovelace"
+									value={name}
+									onChange={(event) => setName(event.target.value)}
+									required
+									disabled={isLoading}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="email">Email</Label>
+								<Input
+									id="email"
+									type="email"
+									autoComplete="email"
+									placeholder="you@example.com"
+									value={email}
+									onChange={(event) => setEmail(event.target.value)}
+									required
+									disabled={isLoading}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="password">Password</Label>
+								<Input
+									id="password"
+									type="password"
+									autoComplete="new-password"
+									placeholder="At least 8 characters"
+									value={password}
+									onChange={(event) => setPassword(event.target.value)}
+									required
+									minLength={8}
+									disabled={isLoading}
+								/>
+							</div>
+							<Button type="submit" disabled={isLoading} className="w-full">
+								{isLoadingEmail ? "Creating account..." : "Sign up with email"}
+							</Button>
+						</form>
+						<div className="relative">
+							<div className="absolute inset-0 flex items-center">
+								<span className="w-full border-t" />
+							</div>
+							<div className="relative flex justify-center text-xs uppercase">
+								<span className="bg-background text-muted-foreground px-2">
+									Or continue with
+								</span>
+							</div>
+						</div>
+					</>
+				)}
 				<Button
 					variant="outline"
 					disabled={isLoading}
