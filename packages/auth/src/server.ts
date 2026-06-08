@@ -16,6 +16,7 @@ import { PaymentFailedEmail } from "@rox/email/emails/payment-failed";
 import { SubscriptionCancelledEmail } from "@rox/email/emails/subscription-cancelled";
 import { SubscriptionStartedEmail } from "@rox/email/emails/subscription-started";
 import { canInvite, type OrganizationRole } from "@rox/shared/auth";
+import { withRetry } from "@rox/shared/retry";
 import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { Client } from "@upstash/qstash";
 import { betterAuth } from "better-auth";
@@ -666,17 +667,22 @@ export const auth = betterAuth({
 					);
 
 					try {
-						await qstash.publishJSON({
-							url: NOTIFY_SLACK_URL,
-							body: {
-								eventType: "seat_added",
-								stripeSubscriptionId: subscription.stripeSubscriptionId,
-								memberName: user.name ?? "New member",
-								previousSeats: quantity - 1,
-								newSeats: quantity,
-							},
-							retries: 3,
-						});
+						// withRetry retries the publish handshake (transient failures
+						// reaching QStash); QStash's own `retries` covers downstream
+						// delivery and is kept separate.
+						await withRetry(() =>
+							qstash.publishJSON({
+								url: NOTIFY_SLACK_URL,
+								body: {
+									eventType: "seat_added",
+									stripeSubscriptionId: subscription.stripeSubscriptionId,
+									memberName: user.name ?? "New member",
+									previousSeats: quantity - 1,
+									newSeats: quantity,
+								},
+								retries: 3,
+							}),
+						);
 					} catch (error) {
 						console.error(
 							"[org/after-add-member] Failed to queue Slack notification:",
@@ -755,17 +761,22 @@ export const auth = betterAuth({
 					);
 
 					try {
-						await qstash.publishJSON({
-							url: NOTIFY_SLACK_URL,
-							body: {
-								eventType: "seat_removed",
-								stripeSubscriptionId: subscription.stripeSubscriptionId,
-								memberName: user.name ?? "Former member",
-								previousSeats: quantity + 1,
-								newSeats: quantity,
-							},
-							retries: 3,
-						});
+						// withRetry retries the publish handshake (transient failures
+						// reaching QStash); QStash's own `retries` covers downstream
+						// delivery and is kept separate.
+						await withRetry(() =>
+							qstash.publishJSON({
+								url: NOTIFY_SLACK_URL,
+								body: {
+									eventType: "seat_removed",
+									stripeSubscriptionId: subscription.stripeSubscriptionId,
+									memberName: user.name ?? "Former member",
+									previousSeats: quantity + 1,
+									newSeats: quantity,
+								},
+								retries: 3,
+							}),
+						);
 					} catch (error) {
 						console.error(
 							"[org/after-remove-member] Failed to queue Slack notification:",
@@ -953,14 +964,19 @@ export const auth = betterAuth({
 					);
 
 					try {
-						await qstash.publishJSON({
-							url: NOTIFY_SLACK_URL,
-							body: {
-								eventType: "subscription_started",
-								stripeSubscriptionId: stripeSubscription.id,
-							},
-							retries: 3,
-						});
+						// withRetry retries the publish handshake (transient failures
+						// reaching QStash); QStash's own `retries` covers downstream
+						// delivery and is kept separate.
+						await withRetry(() =>
+							qstash.publishJSON({
+								url: NOTIFY_SLACK_URL,
+								body: {
+									eventType: "subscription_started",
+									stripeSubscriptionId: stripeSubscription.id,
+								},
+								retries: 3,
+							}),
+						);
 					} catch (error) {
 						console.error(
 							"[stripe/subscription-complete] Failed to queue Slack notification:",
