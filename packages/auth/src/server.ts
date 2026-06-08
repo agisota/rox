@@ -6,6 +6,7 @@ import { members, subscriptions } from "@rox/db/schema";
 import type { sessions } from "@rox/db/schema/auth";
 import * as authSchema from "@rox/db/schema/auth";
 import { seedDefaultStatuses } from "@rox/db/seed-default-statuses";
+import { seedDemoProject } from "@rox/db/seed-demo-project";
 import { MemberAddedEmail } from "@rox/email/emails/member-added";
 import { MemberRemovedEmail } from "@rox/email/emails/member-removed";
 import { OrganizationInvitationEmail } from "@rox/email/emails/organization-invitation";
@@ -20,6 +21,7 @@ import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { env } from "./env";
 import { acceptInvitationEndpoint } from "./lib/accept-invitation-endpoint";
 import { generateMagicTokenForInvite } from "./lib/generate-magic-token";
+import { isLocalOnlyAuth } from "./lib/local-only-auth";
 import { invitationRateLimit } from "./lib/rate-limit";
 import { resend } from "./lib/resend";
 import {
@@ -37,6 +39,12 @@ const userOptions = {
 		},
 	},
 } as const;
+
+// Self-hosted/offline builds set LOCAL_ONLY_AUTH to authenticate purely
+// against the local email/password path. Computed once at module load: it
+// removes the external OAuth providers and the email-verification round-trip
+// without otherwise touching the cloud config (unchanged when the flag is off).
+const localOnlyAuth = isLocalOnlyAuth();
 
 const desktopDevPort = process.env.DESKTOP_VITE_PORT || "5173";
 const desktopDevOrigins =
@@ -96,7 +104,10 @@ export const auth = betterAuth({
 		enabled: true,
 		autoSignIn: true,
 		minPasswordLength: 8,
-		requireEmailVerification: process.env.NODE_ENV !== "development",
+		// Local-only builds skip verification (no cloud email round-trip), the
+		// same way local dev does; deployed cloud builds still enforce it.
+		requireEmailVerification:
+			!localOnlyAuth && process.env.NODE_ENV !== "development",
 	},
 	emailVerification: {
 		sendOnSignUp: true,
@@ -111,16 +122,20 @@ export const auth = betterAuth({
 			});
 		},
 	},
-	socialProviders: {
-		github: {
-			clientId: env.GH_CLIENT_ID,
-			clientSecret: env.GH_CLIENT_SECRET,
-		},
-		google: {
-			clientId: env.GOOGLE_CLIENT_ID,
-			clientSecret: env.GOOGLE_CLIENT_SECRET,
-		},
-	},
+	// Local-only auth has no external OAuth round-trip, so the cloud providers
+	// are omitted entirely. Off (the default) leaves the cloud config untouched.
+	socialProviders: localOnlyAuth
+		? {}
+		: {
+				github: {
+					clientId: env.GH_CLIENT_ID,
+					clientSecret: env.GH_CLIENT_SECRET,
+				},
+				google: {
+					clientId: env.GOOGLE_CLIENT_ID,
+					clientSecret: env.GOOGLE_CLIENT_SECRET,
+				},
+			},
 	databaseHooks: {
 		user: {
 			create: {
@@ -377,6 +392,9 @@ export const auth = betterAuth({
 
 				afterCreateOrganization: async ({ organization }) => {
 					await seedDefaultStatuses(organization.id);
+					// Seed a demo project so a freshly-onboarded user lands in a usable
+					// workspace instead of an empty / "no organization selected" state.
+					await seedDemoProject(organization.id);
 				},
 
 				beforeRemoveMember: async ({ member, organization }) => {

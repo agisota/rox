@@ -16,6 +16,9 @@ export const env = createEnv({
 		KV_REST_API_URL: z.string(),
 		KV_REST_API_TOKEN: z.string(),
 		QSTASH_TOKEN: z.string().min(1),
+		// Self-hosted/offline builds: authenticate against the local-only path
+		// (no external OAuth / cloud round-trip). Read via isLocalOnlyAuth().
+		LOCAL_ONLY_AUTH: z.string().optional(),
 	},
 	clientPrefix: "NEXT_PUBLIC_",
 	client: {
@@ -25,6 +28,9 @@ export const env = createEnv({
 		NEXT_PUBLIC_ADMIN_URL: z.string().url(),
 		NEXT_PUBLIC_MARKETING_URL: z.string().url(),
 		NEXT_PUBLIC_DESKTOP_URL: z.string().url().optional(),
+		// Client mirror of LOCAL_ONLY_AUTH — Next.js only inlines NEXT_PUBLIC_*
+		// into the browser bundle, so the sign-in UI reads this name.
+		NEXT_PUBLIC_LOCAL_ONLY_AUTH: z.string().optional(),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

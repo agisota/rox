@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@rox/auth/client";
+import { isLocalOnlyAuth } from "@rox/auth/local-only";
 import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
@@ -17,6 +18,11 @@ import { useTranslation } from "@/i18n";
 // flow is intentionally hidden behind this flag rather than deleted so it can be
 // re-enabled if self-serve email auth is reintroduced.
 const showEmailPassword = false;
+
+// Self-hosted/offline builds (LOCAL_ONLY_AUTH) authenticate against the local
+// email/password path only: surface the email form + Local Admin shortcut and
+// drop the external OAuth buttons. Cloud builds (flag off) are unchanged.
+const localOnlyAuth = isLocalOnlyAuth();
 
 export default function SignInPage() {
 	const { t } = useTranslation();
@@ -141,7 +147,7 @@ export default function SignInPage() {
 				{error && (
 					<p className="text-destructive text-center text-sm">{error}</p>
 				)}
-				{process.env.NODE_ENV === "development" && (
+				{(process.env.NODE_ENV === "development" || localOnlyAuth) && (
 					<Button
 						variant="outline"
 						disabled={isLoading}
@@ -151,7 +157,7 @@ export default function SignInPage() {
 						{isLoadingDev ? t.auth.signingIn : t.auth.signInAsDev}
 					</Button>
 				)}
-				{showEmailPassword && (
+				{(showEmailPassword || localOnlyAuth) && (
 					<>
 						<form onSubmit={signInWithEmail} className="grid gap-3">
 							<div className="grid gap-2">
@@ -196,24 +202,28 @@ export default function SignInPage() {
 						</div>
 					</>
 				)}
-				<Button
-					variant="outline"
-					disabled={isLoading}
-					onClick={signInWithGithub}
-					className="w-full"
-				>
-					<FaGithub className="mr-2 size-4" />
-					{isLoadingGithub ? t.auth.loading : t.auth.signInWithGithub}
-				</Button>
-				<Button
-					variant="outline"
-					disabled={isLoading}
-					onClick={signInWithGoogle}
-					className="w-full"
-				>
-					<FcGoogle className="mr-2 size-4" />
-					{isLoadingGoogle ? t.auth.loading : t.auth.signInWithGoogle}
-				</Button>
+				{!localOnlyAuth && (
+					<>
+						<Button
+							variant="outline"
+							disabled={isLoading}
+							onClick={signInWithGithub}
+							className="w-full"
+						>
+							<FaGithub className="mr-2 size-4" />
+							{isLoadingGithub ? t.auth.loading : t.auth.signInWithGithub}
+						</Button>
+						<Button
+							variant="outline"
+							disabled={isLoading}
+							onClick={signInWithGoogle}
+							className="w-full"
+						>
+							<FcGoogle className="mr-2 size-4" />
+							{isLoadingGoogle ? t.auth.loading : t.auth.signInWithGoogle}
+						</Button>
+					</>
+				)}
 				<p className="text-muted-foreground px-8 text-center text-sm">
 					{t.auth.agreeToTerms}{" "}
 					<a
