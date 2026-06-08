@@ -8,6 +8,10 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./execution-circuit": {
+			"types": "./src/execution-circuit/index.ts",
+			"default": "./src/execution-circuit/index.ts"
+		},
 		"./rox-pricing": {
 			"types": "./src/rox-pricing.ts",
 			"default": "./src/rox-pricing.ts"
