@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@sentry/nextjs": "10.46.0",
+		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/shared": "workspace:*",

@@ -19,6 +19,8 @@ export const env = createEnv({
 		KV_REST_API_TOKEN: z.string(),
 		SENTRY_AUTH_TOKEN: z.string().optional(),
 		ANTHROPIC_API_KEY: z.string(),
+		// OpenPanel (openpanel epic) — server secret for export/ingest API.
+		OPENPANEL_CLIENT_SECRET: z.string().optional(),
 	},
 
 	client: {
@@ -33,6 +35,9 @@ export const env = createEnv({
 		NEXT_PUBLIC_SENTRY_ENVIRONMENT: z
 			.enum(["development", "preview", "production"])
 			.optional(),
+		// OpenPanel (openpanel epic) — public client id + ingest URL for the browser.
+		NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string().optional(),
+		NEXT_PUBLIC_OPENPANEL_API_URL: z.string().url().optional(),
 	},
 
 	experimental__runtimeEnv: {
@@ -46,6 +51,9 @@ export const env = createEnv({
 		NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
 		NEXT_PUBLIC_SENTRY_DSN_WEB: process.env.NEXT_PUBLIC_SENTRY_DSN_WEB,
 		NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
+		NEXT_PUBLIC_OPENPANEL_CLIENT_ID:
+			process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID,
+		NEXT_PUBLIC_OPENPANEL_API_URL: process.env.NEXT_PUBLIC_OPENPANEL_API_URL,
 	},
 
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,

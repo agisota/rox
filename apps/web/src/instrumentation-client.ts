@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 
 import { env } from "@/env";
+import { isOpenPanelEnabled } from "@/lib/analytics";
 
 posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
 	api_host: "/ingest",
@@ -19,6 +20,10 @@ posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
 		posthog.register({
 			app_name: "web",
 			domain: window.location.hostname,
+			// OpenPanel (openpanel epic) dual-emit status — the browser client is
+			// initialised lazily by `@/lib/analytics`; page views are emitted by
+			// `AnalyticsPageView` and identify by `AnalyticsIdentifier`.
+			openpanel_enabled: isOpenPanelEnabled,
 		});
 	},
 });
@@ -29,6 +34,9 @@ Sentry.init({
 	enabled: env.NEXT_PUBLIC_SENTRY_ENVIRONMENT === "production",
 	tracesSampleRate:
 		env.NEXT_PUBLIC_SENTRY_ENVIRONMENT === "production" ? 0.1 : 1.0,
+	// Session replay stays off here. OpenPanel replay (openpanel epic) ships with
+	// the OpenPanel SDK and must mask PII (inputs, prompt text, emails) to match
+	// this `sendDefaultPii` posture before it is enabled in the browser bundle.
 	replaysSessionSampleRate: 0,
 	replaysOnErrorSampleRate: 0,
 	sendDefaultPii: true,

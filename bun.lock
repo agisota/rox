@@ -577,6 +577,7 @@
       "name": "@rox/web",
       "version": "0.1.0",
       "dependencies": {
+        "@rox/analytics": "workspace:*",
         "@rox/auth": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/shared": "workspace:*",
