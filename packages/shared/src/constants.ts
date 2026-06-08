@@ -10,6 +10,10 @@ export const PROTOCOL_SCHEMES = {
 	PROD: "rox",
 } as const;
 
+// Product display name (user-visible). The wordmark/short brand remains "Rox"
+// (see COMPANY.NAME); the full product is "Rox One".
+export const PRODUCT_NAME = "Rox One";
+
 // Company
 export const COMPANY = {
 	NAME: "Rox",

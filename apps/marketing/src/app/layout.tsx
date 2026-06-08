@@ -1,4 +1,4 @@
-import { COMPANY } from "@rox/shared/constants";
+import { COMPANY, PRODUCT_NAME } from "@rox/shared/constants";
 import { GeistPixelGrid, GeistPixelSquare } from "geist/font/pixel";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter, Micro_5, Pixelify_Sans } from "next/font/google";
@@ -52,8 +52,8 @@ const siteDescription =
 export const metadata: Metadata = {
 	metadataBase: new URL(COMPANY.MARKETING_URL),
 	title: {
-		default: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
-		template: `%s | ${COMPANY.NAME}`,
+		default: `${PRODUCT_NAME} - Run 10+ parallel coding agents on your machine`,
+		template: `%s | ${PRODUCT_NAME}`,
 	},
 	description: siteDescription,
 	keywords: [
@@ -73,8 +73,8 @@ export const metadata: Metadata = {
 		type: "website",
 		locale: "en_US",
 		url: COMPANY.MARKETING_URL,
-		siteName: COMPANY.NAME,
-		title: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
+		siteName: PRODUCT_NAME,
+		title: `${PRODUCT_NAME} - Run 10+ parallel coding agents on your machine`,
 		description:
 			"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish.",
 		images: [
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
+		title: `${PRODUCT_NAME} - Run 10+ parallel coding agents on your machine`,
 		description:
 			"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish.",
 		images: ["/og-image.png"],

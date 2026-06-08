@@ -210,7 +210,7 @@ app.on("before-quit", async (event) => {
 				buttons: ["Quit", "Cancel"],
 				defaultId: 0,
 				cancelId: 1,
-				title: "Quit Rox",
+				title: "Quit Rox One",
 				message: "Are you sure you want to quit?",
 			});
 

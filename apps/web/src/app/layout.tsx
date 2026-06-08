@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "@rox/shared/constants";
 import { Toaster } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import type { Metadata, Viewport } from "next";
@@ -20,7 +21,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-	title: "Rox",
+	title: PRODUCT_NAME,
 	description: "Run 10+ parallel coding agents on your machine",
 	icons: {
 		icon: [

@@ -1,6 +1,6 @@
 {
 	"name": "@rox/desktop",
-	"productName": "Rox",
+	"productName": "Rox One",
 	"description": "The last developer tool you'll ever need",
 	"version": "1.0.0",
 	"main": "./dist/main/index.js",
