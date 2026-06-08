@@ -16,6 +16,7 @@
 		"./icons/preset-icons": "./src/assets/icons/preset-icons/index.ts",
 		"./icons/preset-icons/*": "./src/assets/icons/preset-icons/*.svg",
 		"./atoms/*": "./src/atoms/*/index.ts",
+		"./motion-frame": "./src/motion-frame/index.ts",
 		"./*": "./src/components/ui/*.tsx"
 	},
 	"scripts": {
