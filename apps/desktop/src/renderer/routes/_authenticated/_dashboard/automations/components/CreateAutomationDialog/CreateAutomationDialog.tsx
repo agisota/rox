@@ -31,11 +31,23 @@ import { TemplateScrollRow } from "./components/TemplateScrollRow";
 
 export type AutomationCreatedPayload = { id: string; name: string };
 
+/**
+ * Context to preselect when the modal is launched from a specific place
+ * (e.g. a project view or workspace). Any field left undefined falls back to
+ * the dialog's own defaults (first recent project, local device, no workspace).
+ */
+export interface CreateAutomationContext {
+	hostId?: string | null;
+	projectId?: string | null;
+	workspaceId?: string | null;
+}
+
 interface CreateAutomationDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onCreated: (automation: AutomationCreatedPayload) => void;
 	initialTemplate?: AutomationTemplate | null;
+	initialContext?: CreateAutomationContext | null;
 }
 
 const DEFAULT_TIMEZONE =
@@ -48,6 +60,7 @@ export function CreateAutomationDialog({
 	onOpenChange,
 	onCreated,
 	initialTemplate,
+	initialContext,
 }: CreateAutomationDialogProps) {
 	const [view, setView] = useState<"compose" | "gallery">("compose");
 	const [name, setName] = useState("");
@@ -80,22 +93,37 @@ export function CreateAutomationDialog({
 		if (fallback !== agent) setAgent(fallback);
 	}, [agent, hostAgents]);
 
-	// Default to first project once the Electric-synced list lands.
+	// Preselect the project from launch context when provided, otherwise default
+	// to the first project once the Electric-synced list lands.
 	useEffect(() => {
 		if (!open) return;
 		if (selectedProjectId) return;
-		const first = recentProjects[0];
-		if (first) setSelectedProjectId(first.id);
-	}, [open, selectedProjectId, recentProjects]);
+		const preset = initialContext?.projectId ?? recentProjects[0]?.id ?? null;
+		if (preset) setSelectedProjectId(preset);
+	}, [open, selectedProjectId, recentProjects, initialContext]);
 
-	// Default the device to the local host once it's known, and persist that
-	// choice in `hostId` so it survives across renders (rather than relying only
-	// on the `hostId ?? localHostId` fallback used for the request target).
+	// Preselect the device from launch context when provided, otherwise default
+	// to the local host once it's known. Persist the choice in `hostId` so it
+	// survives across renders (rather than relying only on the
+	// `hostId ?? localHostId` fallback used for the request target).
 	useEffect(() => {
 		if (!open) return;
 		if (hostId) return;
-		if (localHostId) setHostId(localHostId);
-	}, [open, hostId, localHostId]);
+		const preset = initialContext?.hostId ?? localHostId;
+		if (preset) setHostId(preset);
+	}, [open, hostId, localHostId, initialContext]);
+
+	// Preselect the workspace from launch context once per open session. Unlike
+	// project/device there is no auto-default, so this only fires when a caller
+	// launched the modal from a specific workspace.
+	const appliedContextWorkspaceRef = useRef(false);
+	useEffect(() => {
+		if (!open) return;
+		if (appliedContextWorkspaceRef.current) return;
+		appliedContextWorkspaceRef.current = true;
+		if (initialContext?.workspaceId)
+			setV2WorkspaceId(initialContext.workspaceId);
+	}, [open, initialContext]);
 
 	// Track which (open session, template) we've already pre-filled so the
 	// effects don't re-run and stomp on user edits when `hostAgents` lands
@@ -147,6 +175,7 @@ export function CreateAutomationDialog({
 			setV2WorkspaceId(null);
 			appliedTemplateRef.current = null;
 			appliedAgentForTemplateRef.current = null;
+			appliedContextWorkspaceRef.current = false;
 		}
 	}, [open]);
 
