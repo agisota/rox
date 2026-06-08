@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MONAD — State-First OS</title>
+<link rel="stylesheet" href="styles/ds.css" />
+<style>
+/* ===== page chrome ===== */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(12px);
+  background: linear-gradient(180deg, rgba(10,13,14,0.9), rgba(10,13,14,0.55));
+  border-bottom: 1px solid var(--hair-2);
+}
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.brand { display: flex; align-items: center; gap: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.brand .glyph { width: 26px; height: 26px; }
+.brand small { color: var(--ink-faint); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; font-size: 10px; }
+.nav-links { display: flex; gap: 4px; align-items: center; }
+.nav-links a { color: var(--ink-dim); text-decoration: none; font-size: 12px; letter-spacing: 0.04em; padding: 7px 11px; border-radius: 6px; transition: color .2s, background .2s; }
+.nav-links a:hover { color: var(--ink); background: rgba(255,255,255,0.03); }
+@media (max-width: 860px) { .nav-links { display: none; } }
+
+section { position: relative; z-index: 1; }
+.section-pad { padding: clamp(72px, 11vw, 150px) 0; }
+.section-head { max-width: 760px; }
+.section-head .h-kicker { margin-bottom: 18px; }
+
+/* ===== hero ===== */
+.hero { padding-top: clamp(56px, 8vw, 96px); padding-bottom: clamp(40px, 6vw, 80px); overflow: hidden; }
+.hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+@media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
+.hero h1 .l2 { color: var(--ink-faint); }
+.hero h1 .what { color: var(--green); }
+.formula {
+  margin-top: 26px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  font-size: clamp(13px, 1.4vw, 15px); color: var(--ink-dim);
+}
+.formula b { color: var(--ink); font-weight: 600; }
+.formula .op { color: var(--orange); }
+.hero-cta { margin-top: 34px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+.diagram-card { aspect-ratio: 5/4; padding: 18px; }
+.diagram-card svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.sig-dot { transition: opacity .2s; }
+
+text.svg-id { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; }
+text.svg-t  { font-family: var(--mono); font-weight: 600; }
+
+/* ===== atoms grid ===== */
+.atoms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 44px; }
+@media (max-width: 1040px) { .atoms { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .atoms { grid-template-columns: 1fr; } }
+.atom {
+  position: relative; border: 1px solid var(--hair); border-radius: var(--radius);
+  background: rgba(16,22,23,0.6); overflow: hidden; cursor: default;
+  transition: border-color .3s var(--ease), transform .3s var(--ease), box-shadow .3s;
+}
+.atom:hover { border-color: var(--green-line); transform: translateY(-3px); box-shadow: 0 24px 50px -30px var(--green-glow); }
+.atom-stage { position: relative; aspect-ratio: 1.5/1; display: grid; place-items: center; overflow: hidden; border-bottom: 1px solid var(--hair-2); }
+.atom-stage svg { width: 100%; height: 100%; }
+.atom-meta { padding: 12px 14px 14px; }
+.atom-no { font-size: 10px; letter-spacing: 0.2em; color: var(--ink-faint); }
+.atom-name { font-size: 14px; font-weight: 600; margin-top: 3px; letter-spacing: -0.01em; }
+.atom-def {
+  font-size: 12px; line-height: 1.45; color: var(--ink-dim);
+  max-height: 0; opacity: 0; overflow: hidden; transition: max-height .4s var(--ease), opacity .35s var(--ease), margin .4s var(--ease);
+}
+.atom:hover .atom-def { max-height: 80px; opacity: 1; margin-top: 8px; }
+
+/* atom stage primitives (CSS-driven loops) */
+.mini-node { fill: rgba(16,22,23,0.9); stroke: var(--hair); stroke-width: 1.2; }
+.mini-node.target { stroke: var(--green-line); }
+.mini-line { fill: none; stroke: var(--hair); stroke-width: 1.4; }
+.mini-line.dash { stroke-dasharray: 4 4; stroke: var(--grey); }
+
+@keyframes breathe { 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
+@keyframes lockpulse { 0%,100%{ filter: drop-shadow(0 0 0 transparent) } 50%{ filter: drop-shadow(0 0 7px var(--green-glow)) } }
+@keyframes flowdash { to { stroke-dashoffset: -16; } }
+@keyframes travelx { 0%{ offset-distance:0%; opacity:0 } 8%{opacity:1} 92%{opacity:1} 100%{ offset-distance:100%; opacity:0 } }
+@keyframes snapin { 0%{ transform: translateY(-14px); opacity:0 } 60%{opacity:1} 100%{ transform: translateY(0); opacity:1 } }
+@keyframes risefall { 0%{ transform: translateY(10px); opacity:0 } 30%,70%{ transform: translateY(0); opacity:1 } 100%{ transform: translateY(-12px); opacity:0 } }
+@keyframes gateopen { 0%,40%{ transform: scaleY(1) } 60%,100%{ transform: scaleY(0.06) } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes trailfade { to { opacity: 0; } }
+
+.an-breathe { animation: breathe 2.6s var(--ease) infinite; }
+.an-lock { animation: lockpulse 2.4s var(--ease) infinite; }
+.an-flow { stroke-dasharray: 6 6; animation: flowdash 1s linear infinite; }
+.travel-dot { offset-rotate: 0deg; animation: travelx 2.4s var(--ease) infinite; }
+
+/* ===== composition: delta + circuit ===== */
+.compose-grid { display: grid; grid-template-columns: 1fr; gap: 18px; margin-top: 40px; }
+.delta-stage { padding: 22px; }
+.delta-stage svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* ===== shift comparison ===== */
+.shift-toggle { display: flex; justify-content: center; margin: 34px 0 28px; }
+.shift { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 820px) { .shift { grid-template-columns: 1fr; } }
+.shift-col { padding: 22px; transition: opacity .5s var(--ease), filter .5s var(--ease); }
+.shift-col h3 { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
+.shift-col .sub { font-size: 12px; color: var(--ink-faint); margin-bottom: 18px; letter-spacing: 0.04em; }
+.shift-list { display: grid; gap: 9px; }
+.shift-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; padding: 9px 0; border-bottom: 1px dashed var(--hair-2); }
+.shift-row:last-child { border-bottom: 0; }
+.shift-row .k { color: var(--ink-dim); }
+.metric { font-variant-numeric: tabular-nums; font-weight: 600; }
+.metric.bad { color: var(--grey); }
+.metric.good { color: var(--green); }
+.body.foc-what .shift-col.how { opacity: .4; filter: saturate(0.3); }
+.body.foc-how .shift-col.what { opacity: .4; filter: saturate(0.3); }
+.tool-cloud-mini { position: relative; height: 120px; margin-top: 6px; }
+.tool-chip {
+  position: absolute; font-size: 10px; padding: 4px 8px; border-radius: 99px;
+  border: 1px solid var(--hair); color: var(--ink-faint); background: rgba(0,0,0,0.3);
+  white-space: nowrap; animation: float-drift 7s var(--ease) infinite;
+}
+
+/* ===== the five ===== */
+.five { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-top: 44px; }
+.five a {
+  text-decoration: none; color: inherit; position: relative; overflow: hidden;
+  border: 1px solid var(--hair); border-radius: var(--radius); padding: 22px;
+  background: rgba(16,22,23,0.6); display: flex; flex-direction: column; min-height: 230px;
+  transition: border-color .3s var(--ease), transform .3s var(--ease), box-shadow .3s, background .3s;
+}
+.five a:hover { border-color: var(--green-line); transform: translateY(-4px); box-shadow: 0 30px 60px -34px var(--green-glow); background: rgba(18,26,24,0.7); }
+.five a.feat { grid-column: span 3; }
+.five a.half { grid-column: span 3; }
+.five a.third { grid-column: span 2; }
+@media (max-width: 980px){ .five a.feat,.five a.half,.five a.third{ grid-column: span 6; } }
+.five .num { font-size: 11px; letter-spacing: 0.2em; color: var(--ink-faint); }
+.five .ttl { font-size: clamp(20px,2.2vw,26px); font-weight: 600; letter-spacing: -0.015em; margin-top: auto; }
+.five .desc { font-size: 12.5px; color: var(--ink-dim); line-height: 1.5; margin-top: 10px; }
+.five .go { margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--green); letter-spacing: 0.06em; }
+.five .go .arr { transition: transform .25s var(--ease); }
+.five a:hover .go .arr { transform: translateX(4px); }
+.five .thumb-svg { position: absolute; right: -10px; top: -10px; width: 150px; height: 150px; opacity: 0.5; pointer-events: none; }
+
+/* ===== checklist ===== */
+.checklist { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 40px; counter-reset: step; }
+@media (max-width: 820px){ .checklist { grid-template-columns: 1fr; } }
+.check {
+  display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px;
+  border: 1px solid var(--hair-2); border-radius: var(--radius); background: rgba(16,22,23,0.5);
+  transition: border-color .3s, background .3s;
+}
+.check:hover { border-color: var(--green-line); background: var(--green-soft); }
+.check .n { counter-increment: step; font-variant-numeric: tabular-nums; color: var(--orange); font-weight: 600; font-size: 13px; min-width: 26px; }
+.check .n::before { content: counter(step, decimal-leading-zero); }
+.check .t { font-size: 13.5px; line-height: 1.4; }
+.check .t small { display: block; color: var(--ink-faint); font-size: 11px; margin-top: 3px; letter-spacing: 0.04em; }
+
+/* ===== footer ===== */
+.foot { border-top: 1px solid var(--hair-2); padding: 70px 0 90px; }
+.foot .big { font-size: clamp(22px, 3.4vw, 40px); font-weight: 600; letter-spacing: -0.02em; max-width: 900px; line-height: 1.12; }
+.foot .big .em { color: var(--green); }
+.foot-meta { margin-top: 40px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; color: var(--ink-faint); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.divider-label { display: flex; align-items: center; gap: 16px; color: var(--ink-faint); font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; }
+.divider-label::before, .divider-label::after { content: ""; height: 1px; background: var(--hair-2); flex: 1; }
+</style>
+</head>
+<body class="blueprint body foc-what">
+
+<!-- ===================== NAV ===================== -->
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit">
+      <svg class="glyph" viewBox="0 0 26 26" fill="none">
+        <rect x="1" y="1" width="24" height="24" rx="6" stroke="var(--green-line)"/>
+        <circle cx="13" cy="13" r="6.5" stroke="var(--green)" stroke-width="1.3"/>
+        <circle cx="13" cy="13" r="2" fill="var(--orange)"/>
+      </svg>
+      <span>MONAD <small>State-First OS</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="#atoms">Atoms</a>
+      <a href="#compose">Method</a>
+      <a href="#shift">The Shift</a>
+      <a href="#five">Prototypes</a>
+      <a href="State-First Series.html">Series</a>
+      <a class="btn ghost" style="height:34px;padding:0 13px" href="prototypes/24-manifesto.html">Manifesto →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero wrap">
+  <div class="hero-grid">
+    <div class="reveal in">
+      <div class="h-kicker"><span class="dot">●</span> The unit of work is a transition</div>
+      <h1 class="h-display mt-4">WHAT<br/><span class="what">BEFORE</span><br/><span class="l2">HOW.</span></h1>
+      <p class="lede mt-6" style="max-width:520px">
+        Stop designing agents, tools, and harnesses first. Design the <b class="green-t">state change</b> first —
+        then derive everything else from it. The harness answers <span class="orange-t">how</span>.
+        The transition answers <span class="green-t">what</span>.
+      </p>
+      <div class="formula">
+        <b>S₀</b><span class="op">→</span><b>T</b><span class="op">→</span><b>S*</b>
+        <span style="color:var(--ink-faint)">·</span>
+        <span>inside a <b class="green-t">sufficient monad</b></span>
+        <span style="color:var(--ink-faint)">·</span>
+        <span>proven by an <b class="orange-t">observable trace</b></span>
+      </div>
+      <div class="hero-cta">
+        <a class="btn primary" href="prototypes/01-what-before-how.html">Enter the manifesto <span class="arr">→</span></a>
+        <a class="btn" href="#atoms">Start with the atoms</a>
+      </div>
+    </div>
+
+    <!-- living transition diagram -->
+    <div class="panel diagram-card ticks reveal in" data-d="2">
+      <svg id="heroDiagram" viewBox="0 0 480 380" aria-label="A signal moves from current state to target state through a transition gate.">
+        <!-- blueprint guide grid -->
+        <g opacity="0.4">
+          <line x1="0" y1="190" x2="480" y2="190" stroke="var(--hair-2)"/>
+        </g>
+        <!-- S0 -->
+        <g>
+          <rect x="14" y="150" width="120" height="80" rx="9" class="mini-node"/>
+          <text x="28" y="178" class="svg-id" fill="var(--ink-faint)">STATE · S₀</text>
+          <text x="28" y="200" class="svg-t" font-size="14" fill="var(--ink)">scattered</text>
+          <text x="28" y="217" class="svg-t" font-size="14" fill="var(--ink-dim)">notes</text>
+        </g>
+        <!-- gate / transition -->
+        <path id="heroPath" d="M134,190 C 200,190 220,190 240,190 C 270,190 280,190 346,190"
+              class="rail-path" stroke="var(--orange-line)" stroke-width="1.6"/>
+        <g id="heroGate">
+          <rect x="222" y="158" width="36" height="64" rx="7" fill="rgba(255,122,43,0.08)" stroke="var(--orange-line)"/>
+          <text x="240" y="146" text-anchor="middle" class="svg-id" fill="var(--orange-bright)">T</text>
+        </g>
+        <!-- S* target -->
+        <g id="heroTarget">
+          <rect x="346" y="150" width="120" height="80" rx="9" class="mini-node target"/>
+          <text x="360" y="178" class="svg-id" fill="var(--green)">TARGET · S*</text>
+          <text x="360" y="200" class="svg-t" font-size="14" fill="var(--ink)">decision</text>
+          <text x="360" y="217" class="svg-t" font-size="14" fill="var(--green-bright)">memo ✓</text>
+        </g>
+        <!-- monad feeding the gate -->
+        <g>
+          <line x1="240" y1="300" x2="240" y2="226" stroke="var(--hair)" stroke-dasharray="3 3"/>
+          <rect x="150" y="300" width="180" height="56" rx="28" fill="rgba(16,24,22,0.8)" stroke="var(--green-line)"/>
+          <text x="240" y="324" text-anchor="middle" class="svg-id" fill="var(--green)">SUFFICIENT MONAD</text>
+          <text x="240" y="342" text-anchor="middle" class="svg-t" font-size="11" fill="var(--ink-dim)">context · runtime · criteria · trace</text>
+        </g>
+        <!-- runtime frame label -->
+        <text x="240" y="70" text-anchor="middle" class="svg-id" fill="var(--ink-faint)">RUNTIME · document editor</text>
+        <rect x="150" y="84" width="180" height="44" rx="8" fill="none" stroke="var(--hair-2)" stroke-dasharray="2 4"/>
+        <!-- travelling signal -->
+        <circle id="heroSig" class="sig-dot signal" r="5" cx="0" cy="0" style="opacity:0"/>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== ATOMS ===================== -->
+<section id="atoms" class="section-pad">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="h-kicker"><span class="dot">●</span> 01 — The primitives</div>
+      <h2 class="h-1 mt-4">Before the system, the <span class="green-t">atoms</span>.</h2>
+      <p class="lede mt-4">A new way of working needs a new vocabulary. Eight primitives replace
+        “agent, tool, prompt.” Hover any atom to read its law. Everything downstream is built from these.</p>
+    </div>
+
+    <div class="atoms">
+      <!-- 1 STATE -->
+      <article class="atom reveal" data-d="1">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <rect x="34" y="28" width="82" height="44" rx="8" class="mini-node an-breathe"/>
+            <line x1="46" y1="44" x2="58" y2="44" stroke="var(--green-line)" stroke-width="2"/>
+            <line x1="46" y1="52" x2="104" y2="52" stroke="var(--hair)"/>
+            <line x1="46" y1="60" x2="92" y2="60" stroke="var(--hair)"/>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 01</div><div class="atom-name">State</div>
+          <div class="atom-def">A set of truth conditions about the world at a moment. Either they hold, or they don’t.</div></div>
+      </article>
+
+      <!-- 2 TARGET STATE -->
+      <article class="atom reveal" data-d="2">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <rect x="34" y="26" width="82" height="48" rx="8" class="mini-node target an-lock"/>
+            <path d="M62 50 l8 8 l16 -18" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="75" y="22" text-anchor="middle" class="svg-id" fill="var(--green)">S*</text>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 02</div><div class="atom-name">Target State</div>
+          <div class="atom-def">The verified condition you want true. The system’s gravity — everything aligns toward it.</div></div>
+      </article>
+
+      <!-- 3 TRANSITION -->
+      <article class="atom reveal" data-d="3">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <circle cx="32" cy="50" r="9" class="mini-node"/>
+            <circle cx="118" cy="50" r="9" class="mini-node target"/>
+            <path d="M41 50 H109" class="mini-line an-flow" stroke="var(--orange-line)"/>
+            <path d="M101 44 l8 6 l-8 6" fill="none" stroke="var(--orange)" stroke-width="1.6"/>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 03</div><div class="atom-name">Transition</div>
+          <div class="atom-def">A directional change from one state to the next. The real unit of work — not the agent.</div></div>
+      </article>
+
+      <!-- 4 EVENT -->
+      <article class="atom reveal" data-d="4">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <rect x="58" y="36" width="34" height="34" rx="6" class="mini-node"/>
+            <g fill="var(--orange)">
+              <rect x="16" y="50" width="5" height="5" rx="1"><animate attributeName="x" values="16;52;52" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/></rect>
+              <rect x="14" y="30" width="5" height="5" rx="1"><animate attributeName="x" values="14;54;54" dur="2.3s" begin="0.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.3s" begin="0.4s" repeatCount="indefinite"/></rect>
+            </g>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 04</div><div class="atom-name">Event</div>
+          <div class="atom-def">A minimal occurrence that causes a transition. Enough of the right events open the gate.</div></div>
+      </article>
+
+      <!-- 5 RUNTIME -->
+      <article class="atom reveal" data-d="1">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <rect x="30" y="26" width="90" height="50" rx="7" fill="none" stroke="var(--hair)" stroke-dasharray="3 4"/>
+            <line x1="30" y1="38" x2="120" y2="38" stroke="var(--hair-2)"/>
+            <circle cx="38" cy="32" r="2" fill="var(--orange)"/>
+            <rect x="40" y="48" width="22" height="18" rx="3" fill="var(--cyan-soft)" stroke="rgba(111,184,201,0.4)"/>
+            <rect x="68" y="48" width="42" height="6" rx="3" fill="var(--hair)"><animate attributeName="width" values="10;42;10" dur="2.4s" repeatCount="indefinite"/></rect>
+            <rect x="68" y="58" width="30" height="6" rx="3" fill="var(--hair)"/>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 05</div><div class="atom-name">Runtime</div>
+          <div class="atom-def">The place a transition executes — editor, browser, repo, shell, database. Context isn’t enough; work needs a where.</div></div>
+      </article>
+
+      <!-- 6 MONAD -->
+      <article class="atom reveal" data-d="2">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <rect x="40" y="40" width="70" height="26" rx="13" fill="rgba(16,24,22,0.8)" stroke="var(--green-line)"/>
+            <g fill="var(--green)">
+              <rect x="52" y="49" width="8" height="8" rx="2" style="animation:snapin 2.6s var(--ease) infinite"/>
+              <rect x="66" y="49" width="8" height="8" rx="2" style="animation:snapin 2.6s var(--ease) .3s infinite"/>
+              <rect x="80" y="49" width="8" height="8" rx="2" style="animation:snapin 2.6s var(--ease) .6s infinite"/>
+              <rect x="94" y="49" width="8" height="8" rx="2" style="animation:snapin 2.6s var(--ease) .9s infinite"/>
+            </g>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 06</div><div class="atom-name">Monad</div>
+          <div class="atom-def">The sufficient set of preconditions a transition needs: context, tools, permissions, criteria, trace. The real bottleneck.</div></div>
+      </article>
+
+      <!-- 7 TRACE -->
+      <article class="atom reveal" data-d="3">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <path d="M20 70 Q 50 20 75 50 T 130 34" fill="none" stroke="var(--hair)" stroke-dasharray="2 5"/>
+            <circle r="4" fill="var(--orange)" style="offset-path:path('M20 70 Q 50 20 75 50 T 130 34');" class="travel-dot"/>
+            <circle cx="20" cy="70" r="2" fill="var(--green)"/><circle cx="75" cy="50" r="2" fill="var(--green)"/><circle cx="130" cy="34" r="2" fill="var(--green)"/>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 07</div><div class="atom-name">Trace</div>
+          <div class="atom-def">The observable path the work left behind. If a transition can’t be observed, it can’t be trusted.</div></div>
+      </article>
+
+      <!-- 8 VALIDATOR -->
+      <article class="atom reveal" data-d="4">
+        <div class="atom-stage">
+          <svg viewBox="0 0 150 100">
+            <rect x="44" y="24" width="62" height="52" rx="7" fill="none" stroke="var(--green-line)"/>
+            <g stroke="var(--orange)" stroke-width="3">
+              <line x1="58" y1="30" x2="58" y2="70" style="transform-origin:58px 30px; animation:gateopen 3s var(--ease) infinite"/>
+              <line x1="75" y1="30" x2="75" y2="70" style="transform-origin:75px 30px; animation:gateopen 3s var(--ease) .15s infinite"/>
+              <line x1="92" y1="30" x2="92" y2="70" style="transform-origin:92px 30px; animation:gateopen 3s var(--ease) .3s infinite"/>
+            </g>
+            <path d="M64 50 l7 7 l14 -16" fill="none" stroke="var(--green)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" dur="3s" repeatCount="indefinite"/></path>
+          </svg>
+        </div>
+        <div class="atom-meta"><div class="atom-no">ATOM 08</div><div class="atom-name">Validator</div>
+          <div class="atom-def">A gate that opens only when acceptance criteria pass. Output is not completion — a verified state is.</div></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COMPOSITION ===================== -->
+<section id="compose" class="section-pad" style="background:linear-gradient(180deg, rgba(125,255,158,0.02), transparent 30%)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="h-kicker"><span class="dot">●</span> 02 — Composition</div>
+      <h2 class="h-1 mt-4">The task is the <span class="orange-t">difference</span> between two states.</h2>
+      <p class="lede mt-4">You don’t invent steps. You compute them. The work is exactly
+        <b class="green-t">Δ = S* − S₀</b> — the truth conditions that are missing — and each one becomes a transition.</p>
+    </div>
+
+    <div class="compose-grid">
+      <div class="panel delta-stage ticks reveal" data-d="1">
+        <svg id="deltaDiagram" viewBox="0 0 1000 300" aria-label="Delta between current and target state decomposed into transitions.">
+          <!-- S0 -->
+          <rect x="20" y="70" width="170" height="160" rx="12" class="mini-node is-unstable" stroke="var(--grey)" stroke-dasharray="4 4"/>
+          <text x="40" y="104" class="svg-id" fill="var(--ink-faint)">CURRENT · S₀</text>
+          <text x="40" y="132" class="svg-t" font-size="15" fill="var(--ink-dim)">messy</text>
+          <text x="40" y="154" class="svg-t" font-size="15" fill="var(--ink-dim)">incomplete</text>
+          <text x="40" y="176" class="svg-t" font-size="15" fill="var(--ink-dim)">unresolved</text>
+          <!-- delta field -->
+          <text x="500" y="46" text-anchor="middle" class="svg-id" fill="var(--orange-bright)">Δ — WHAT MUST BECOME TRUE</text>
+          <g id="deltaCards"></g>
+          <!-- S* -->
+          <rect x="810" y="70" width="170" height="160" rx="12" class="mini-node target" stroke="var(--green-line)"/>
+          <text x="830" y="104" class="svg-id" fill="var(--green)">TARGET · S*</text>
+          <text x="830" y="132" class="svg-t" font-size="15" fill="var(--ink)">crisp</text>
+          <text x="830" y="154" class="svg-t" font-size="15" fill="var(--ink)">verified</text>
+          <text x="830" y="176" class="svg-t" font-size="15" fill="var(--green-bright)">decision-ready</text>
+          <!-- the verified pulse -->
+          <rect id="deltaLock" x="810" y="70" width="170" height="160" rx="12" fill="none" stroke="var(--green)" opacity="0"/>
+        </svg>
+        <div class="row between center mt-4" style="flex-wrap:wrap;gap:12px">
+          <p class="voice" style="color:var(--ink-dim);font-size:14px;margin:0">“Do not decompose by agents. Decompose by what must become true.”</p>
+          <button id="deltaReplay" class="btn ghost" style="height:34px">↻ Replay derivation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE SHIFT ===================== -->
+<section id="shift" class="section-pad">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="h-kicker"><span class="dot">●</span> 03 — The shift</div>
+      <h2 class="h-1 mt-4">Two ways to hold the same problem.</h2>
+      <p class="lede mt-4">The old pose asks <span class="orange-t">how</span>: which tool, which agent, which prompt.
+        It feels fast and ends in rework. The new pose asks <span class="green-t">what</span>: which state must change — and arrives.</p>
+    </div>
+
+    <div class="shift-toggle reveal">
+      <div class="segmented" id="focusToggle">
+        <span class="thumb"></span>
+        <button data-value="how"><span>Focus: HOW</span></button>
+        <button data-value="what" data-active="true"><span>Focus: WHAT</span></button>
+      </div>
+    </div>
+
+    <div class="shift reveal" data-d="1">
+      <!-- HOW -->
+      <div class="shift-col how panel">
+        <h3 class="h-2"><span class="chip grey" style="height:20px">OLD</span> How-first / Agentic Harness</h3>
+        <div class="sub">More motion, less progress.</div>
+        <div class="tool-cloud-mini" id="toolCloud"></div>
+        <div class="shift-list mt-4">
+          <div class="shift-row"><span class="k">Target clarity</span><span class="metric bad" data-m="how-clarity">unstable</span></div>
+          <div class="shift-row"><span class="k">Rework</span><span class="metric bad">high ↑</span></div>
+          <div class="shift-row"><span class="k">Tool sprawl</span><span class="metric bad">high ↑</span></div>
+          <div class="shift-row"><span class="k">Hidden assumptions</span><span class="metric bad">many</span></div>
+          <div class="shift-row"><span class="k">Trace quality</span><span class="metric bad">fragmented</span></div>
+        </div>
+      </div>
+      <!-- WHAT -->
+      <div class="shift-col what panel">
+        <h3 class="h-2"><span class="chip solid-green" style="height:20px">NEW</span> State-first / Transition</h3>
+        <div class="sub">Directional, legible, verified.</div>
+        <!-- mini circuit -->
+        <svg viewBox="0 0 360 120" style="width:100%;height:120px;margin-top:6px">
+          <g id="miniCircuit"></g>
+        </svg>
+        <div class="shift-list mt-4">
+          <div class="shift-row"><span class="k">Target clarity</span><span class="metric good">locked ●</span></div>
+          <div class="shift-row"><span class="k">Transition explicitness</span><span class="metric good">high</span></div>
+          <div class="shift-row"><span class="k">Monad sufficiency</span><span class="metric good">visible</span></div>
+          <div class="shift-row"><span class="k">Runtime fit</span><span class="metric good">verified</span></div>
+          <div class="shift-row"><span class="k">Trace quality</span><span class="metric good">strong</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== THE FIVE ===================== -->
+<section id="five" class="section-pad" style="background:linear-gradient(180deg, rgba(255,122,43,0.02), transparent 26%)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="h-kicker"><span class="dot">●</span> 04 — Walk inside it</div>
+      <h2 class="h-1 mt-4">Five working surfaces.</h2>
+      <p class="lede mt-4">Each prototype is a hands-on instrument — auto-playing, but yours to drive. Drag the monad together, derive the delta, run the OS.</p>
+    </div>
+
+    <div class="five">
+      <a class="feat" href="prototypes/01-what-before-how.html">
+        <svg class="thumb-svg" viewBox="0 0 100 100" fill="none"><circle cx="30" cy="50" r="20" stroke="var(--grey)" stroke-dasharray="3 3"/><rect x="58" y="34" width="34" height="32" rx="6" stroke="var(--green-line)"/></svg>
+        <div class="num">PROTOTYPE 01</div>
+        <div class="ttl">What Before How</div>
+        <div class="desc">A split manifesto. Left: the harness cloud, noisy and circular. Right: the state rail, sharp and directional. Toggle the focus and watch which world resolves.</div>
+        <span class="go">Open <span class="arr">→</span></span>
+      </a>
+      <a class="half" href="prototypes/03-monad-builder.html">
+        <svg class="thumb-svg" viewBox="0 0 100 100" fill="none"><rect x="24" y="42" width="52" height="18" rx="9" stroke="var(--green-line)"/><rect x="30" y="47" width="7" height="7" fill="var(--green)"/><rect x="40" y="47" width="7" height="7" fill="var(--green)"/></svg>
+        <div class="num">PROTOTYPE 03</div>
+        <div class="ttl">Monad Builder</div>
+        <div class="desc">Drag prerequisites into a blocked transition and watch it stabilize. The bottleneck, made physical.</div>
+        <span class="go">Open <span class="arr">→</span></span>
+      </a>
+      <a class="third" href="prototypes/05-delta-decomposition.html">
+        <svg class="thumb-svg" viewBox="0 0 100 100" fill="none"><rect x="18" y="40" width="22" height="22" rx="4" stroke="var(--grey)" stroke-dasharray="3 3"/><rect x="60" y="40" width="22" height="22" rx="4" stroke="var(--green-line)"/></svg>
+        <div class="num">PROTOTYPE 05</div>
+        <div class="ttl">Delta Decomposition</div>
+        <div class="desc">Δ = S* − S₀, decomposed live into transitions, events, and trace.</div>
+        <span class="go">Open <span class="arr">→</span></span>
+      </a>
+      <a class="third" href="prototypes/02-state-os.html">
+        <svg class="thumb-svg" viewBox="0 0 100 100" fill="none"><rect x="20" y="28" width="60" height="44" rx="6" stroke="var(--cyan)"/><line x1="20" y1="38" x2="80" y2="38" stroke="var(--hair)"/></svg>
+        <div class="num">PROTOTYPE 02</div>
+        <div class="ttl">State OS</div>
+        <div class="desc">A desktop operating system where the object is the transition, not the agent.</div>
+        <span class="go">Open <span class="arr">→</span></span>
+      </a>
+      <a class="third" href="prototypes/24-manifesto.html">
+        <svg class="thumb-svg" viewBox="0 0 100 100" fill="none"><line x1="24" y1="34" x2="76" y2="34" stroke="var(--green-line)"/><line x1="24" y1="50" x2="64" y2="50" stroke="var(--orange-line)"/><line x1="24" y1="66" x2="70" y2="66" stroke="var(--hair)"/></svg>
+        <div class="num">PROTOTYPE 24</div>
+        <div class="ttl">One-Page Manifesto</div>
+        <div class="desc">The whole argument as a single scroll. The artifact for socializing the idea.</div>
+        <span class="go">Open <span class="arr">→</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CHECKLIST ===================== -->
+<section class="section-pad">
+  <div class="wrap">
+    <div class="divider-label reveal">The loop</div>
+    <div class="section-head reveal mt-6">
+      <h2 class="h-1">Nine moves, every time.</h2>
+    </div>
+    <div class="checklist">
+      <div class="check reveal" data-d="1"><span class="n"></span><span class="t">Define the current state<small>S₀ — what is true now</small></span></div>
+      <div class="check reveal" data-d="1"><span class="n"></span><span class="t">Define the target state<small>S* — what must become true</small></span></div>
+      <div class="check reveal" data-d="2"><span class="n"></span><span class="t">Derive the delta<small>Δ = S* − S₀</small></span></div>
+      <div class="check reveal" data-d="2"><span class="n"></span><span class="t">Decompose into transitions<small>one per missing condition</small></span></div>
+      <div class="check reveal" data-d="3"><span class="n"></span><span class="t">Identify minimal events<small>what must occur to cause each</small></span></div>
+      <div class="check reveal" data-d="3"><span class="n"></span><span class="t">Build the monad<small>sufficient preconditions</small></span></div>
+      <div class="check reveal" data-d="4"><span class="n"></span><span class="t">Execute in a runtime<small>a concrete place to act</small></span></div>
+      <div class="check reveal" data-d="4"><span class="n"></span><span class="t">Capture the trace<small>make the change observable</small></span></div>
+      <div class="check reveal" data-d="5"><span class="n"></span><span class="t">Validate the state change<small>criteria pass, or route back</small></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="foot">
+  <div class="wrap">
+    <p class="big reveal">Work is a <span class="em">controlled transition</span> from what is true now to what must become true next.</p>
+    <div class="foot-meta">
+      <span>MONAD · State-First OS</span>
+      <span>The harness answers HOW. The transition answers WHAT.</span>
+    </div>
+  </div>
+</footer>
+
+<template id="__bundler_thumbnail" data-bg-color="#0a0d0e">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#0a0d0e"/>
+    <rect x="430" y="230" width="340" height="340" rx="70" fill="none" stroke="#7dff9e" stroke-width="6" opacity="0.8"/>
+    <circle cx="600" cy="400" r="120" fill="none" stroke="#7dff9e" stroke-width="5"/>
+    <circle cx="600" cy="400" r="34" fill="#ff7a2b"/>
+    <text x="600" y="660" text-anchor="middle" font-family="monospace" font-size="46" letter-spacing="14" fill="#54625f">MONAD</text>
+  </svg>
+</template>
+
+<script src="lib/motion.js"></script>
+<script>
+(function(){
+  const M = window.MONAD;
+
+  /* ---- hero living diagram loop ---- */
+  const heroPath = document.getElementById('heroPath');
+  const heroSig = document.getElementById('heroSig');
+  const heroTarget = document.getElementById('heroTarget');
+  const heroGate = document.getElementById('heroGate');
+  function heroLoop(){
+    heroTarget.querySelector('.mini-node').style.filter = '';
+    M.travel(heroPath, heroSig, { duration: 2000, onDone(){
+      // verified pulse on target
+      heroTarget.style.transition = 'filter .4s';
+      heroTarget.querySelector('.mini-node').style.filter = 'drop-shadow(0 0 10px var(--green-glow))';
+      heroGate.querySelector('rect').animate(
+        [{filter:'drop-shadow(0 0 0 transparent)'},{filter:'drop-shadow(0 0 8px var(--orange-glow))'},{filter:'none'}],
+        {duration:600, easing:'ease-out'});
+      setTimeout(heroLoop, 1700);
+    }});
+  }
+  if (heroPath) heroLoop();
+
+  /* ---- delta derivation ---- */
+  const deltaCards = document.getElementById('deltaCards');
+  const deltaLock = document.getElementById('deltaLock');
+  const conds = ['clarify scope','gather evidence','structure argument','produce artifact','validate state'];
+  function renderDelta(){
+    if (!deltaCards) return;
+    deltaCards.innerHTML = '';
+    deltaLock.style.opacity = 0;
+    conds.forEach((c,i)=>{
+      const y = 70 + i*32;
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('opacity','0');
+      g.innerHTML = `<rect x="250" y="${y}" width="300" height="24" rx="6" fill="rgba(255,122,43,0.06)" stroke="var(--orange-line)"/>
+        <circle cx="266" cy="${y+12}" r="3" fill="var(--orange)"/>
+        <text x="282" y="${y+16}" class="svg-t" font-size="12" fill="var(--ink)">T${i+1} · ${c}</text>
+        <text x="540" y="${y+16}" text-anchor="end" class="svg-id" fill="var(--ink-faint)">→</text>`;
+      // arrow to S*
+      const ln = document.createElementNS('http://www.w3.org/2000/svg','path');
+      ln.setAttribute('d', `M550 ${y+12} H 805`);
+      ln.setAttribute('stroke','var(--hair)'); ln.setAttribute('stroke-dasharray','3 3'); ln.setAttribute('fill','none');
+      g.appendChild(ln);
+      deltaCards.appendChild(g);
+      setTimeout(()=>{ g.animate([{opacity:0, transform:'translateX(-12px)'},{opacity:1, transform:'translateX(0)'}],{duration:500, easing:'cubic-bezier(.22,.61,.36,1)', fill:'forwards'}); g.setAttribute('opacity','1'); }, 350*(i+1));
+    });
+    setTimeout(()=>{ deltaLock.animate([{opacity:0},{opacity:1},{opacity:0.001}],{duration:1100, easing:'ease-out'}); }, 350*(conds.length+1));
+  }
+  const deltaDiagram = document.getElementById('deltaDiagram');
+  if (deltaDiagram){
+    let played = false;
+    M.onInView(deltaDiagram, (vis)=>{ if (vis && !played){ played = true; renderDelta(); } });
+    document.getElementById('deltaReplay').addEventListener('click', renderDelta);
+  }
+
+  /* ---- focus toggle ---- */
+  const body = document.querySelector('.body');
+  const ft = document.getElementById('focusToggle');
+  if (ft) M.segmented(ft, (v)=>{ body.classList.remove('foc-how','foc-what'); body.classList.add('foc-'+v); });
+
+  /* ---- tool cloud (old, noisy) ---- */
+  const cloud = document.getElementById('toolCloud');
+  const tools = ['Agent','Tool','Prompt','Plugin','Memory','Harness','Workflow','Browser','Vector DB','Runner'];
+  if (cloud){
+    tools.forEach((t,i)=>{
+      const c = document.createElement('span'); c.className='tool-chip'; c.textContent=t;
+      c.style.left = (8 + (i*37)%80) + '%';
+      c.style.top = (10 + (i*53)%75) + '%';
+      c.style.animationDelay = (i*0.4)+'s';
+      c.style.animationDuration = (5 + (i%4))+'s';
+      cloud.appendChild(c);
+    });
+  }
+
+  /* ---- mini circuit (new) ---- */
+  const mc = document.getElementById('miniCircuit');
+  if (mc){
+    const xs = [30, 130, 230, 330];
+    const labels = ['S₀','S₁','S₂','S*'];
+    let html = '<path id="mcPath" d="M30 60 H330" stroke="var(--green-line)" stroke-width="1.4" fill="none"/>';
+    xs.forEach((x,i)=>{
+      const tgt = i===3;
+      html += `<circle cx="${x}" cy="60" r="11" fill="rgba(16,22,23,0.9)" stroke="${tgt?'var(--green-line)':'var(--hair)'}"/>
+               <text x="${x}" y="64" text-anchor="middle" class="svg-id" fill="${tgt?'var(--green)':'var(--ink-dim)'}" font-size="10">${labels[i]}</text>`;
+    });
+    html += '<circle id="mcSig" class="signal" r="4" cx="0" cy="0" style="opacity:0"/>';
+    mc.innerHTML = html;
+    const p = document.getElementById('mcPath'); const s = document.getElementById('mcSig');
+    function loop(){ M.travel(p, s, { duration: 2600, onDone(){ setTimeout(loop, 900); } }); }
+    M.onInView(mc, (vis)=>{ if (vis) loop(); });
+  }
+})();
+</script>
+</body>
+</html>

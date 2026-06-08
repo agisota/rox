@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>State-First Series — Library Contract</title>
+<link rel="stylesheet" href="styles/contract.css" />
+<style>
+/* ===== nav ===== */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 90; backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, rgba(10,10,11,0.85), rgba(10,10,11,0.4)); border-bottom: 1px solid var(--hair-2); }
+.nav .wrap-wide { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; font-weight: 700; letter-spacing: -0.01em; }
+.brand small { font-family: var(--mono); font-weight: 500; font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); }
+.navlinks { display: flex; gap: 4px; align-items: center; }
+.navlinks a { color: var(--ink-dim); text-decoration: none; font-size: 13px; padding: 8px 12px; border-radius: 8px; transition: color .2s, background .2s; }
+.navlinks a:hover { color: var(--ink); background: var(--surface-2); }
+@media (max-width: 820px){ .navlinks a:not(.btn){ display:none; } }
+
+/* ===== hero ===== */
+.hero { padding: 138px 0 40px; overflow: hidden; }
+.hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 50px; align-items: center; }
+@media (max-width: 960px){ .hero-grid { grid-template-columns: 1fr; gap: 36px; } }
+.hero .display .dim { color: var(--ink-faint); }
+.hero .display .b { color: var(--accent); }
+.thesis-strip { display: flex; align-items: center; gap: 14px; margin-top: 30px; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; color: var(--ink-dim); }
+.swatch-rail { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--hair); }
+.swatch-rail i { width: 26px; height: 22px; display: block; }
+.hero-cta { margin-top: 34px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* hero preview card */
+.preview { aspect-ratio: 4/3.4; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.pv-lane { flex: 1; border-radius: var(--radius-s); border: 1px solid var(--hair-2); padding: 10px 12px; position: relative; overflow: hidden; }
+.pv-lane .pv-h { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+.pv-lane.how { } .pv-lane.what { border-color: var(--accent-line); background: linear-gradient(180deg, var(--accent-soft), transparent 60%); }
+
+/* ===== contract ===== */
+.cgrid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 40px; }
+@media (max-width: 860px){ .cgrid3 { grid-template-columns: 1fr; } }
+.semantic { padding: 22px; }
+.semantic .sw { height: 64px; border-radius: var(--radius-s); margin-bottom: 16px; position: relative; overflow: hidden; }
+.semantic .sw.blue { background: linear-gradient(120deg, var(--accent-deep), var(--accent)); box-shadow: inset 0 0 40px -10px var(--accent-glow); }
+.semantic .sw.fric { background: var(--bg-soft); border: 1px solid var(--hair); }
+.semantic .sw.amb { background: linear-gradient(120deg, hsl(40 80% 40%), var(--amber)); }
+.semantic h3 { font-size: 16px; }
+.semantic .role { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin: 6px 0 10px; letter-spacing: 0.04em; }
+.semantic p { font-size: 13px; color: var(--ink-dim); margin: 0; line-height: 1.5; }
+.semantic .uses { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+
+.spec-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+@media (max-width: 860px){ .spec-row { grid-template-columns: 1fr; } }
+.type-card, .motion-card { padding: 22px; }
+.type-sample { font-size: clamp(26px,3vw,38px); font-weight: 700; letter-spacing: -0.03em; margin: 10px 0 2px; }
+.type-mono { font-family: var(--mono); font-size: 15px; color: var(--accent-bright); margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--hair-2); }
+.conv-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* glossary */
+.glossary { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 18px; }
+@media (max-width: 900px){ .glossary { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 560px){ .glossary { grid-template-columns: 1fr; } }
+.term { padding: 16px; display: flex; gap: 14px; align-items: center; }
+.term .gstage { width: 56px; height: 56px; flex: none; border-radius: 10px; border: 1px solid var(--hair-2); background: rgba(0,0,0,0.25); display: grid; place-items: center; overflow: hidden; }
+.term .gstage svg { width: 100%; height: 100%; }
+.term .gsym { font-family: var(--mono); font-size: 12px; color: var(--accent-bright); letter-spacing: 0.08em; }
+.term .gname { font-size: 14px; font-weight: 600; margin-top: 2px; }
+.term .gdef { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; line-height: 1.4; }
+
+/* ===== generic screen frame ===== */
+.screen { margin-top: 36px; }
+.screen-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.screen-bar .meta { display: flex; align-items: center; gap: 12px; }
+.screen-no { font-family: var(--mono); font-size: 11px; color: var(--accent-bright); letter-spacing: 0.1em; }
+.screen-name { font-weight: 600; font-size: 15px; }
+.stage { border-radius: var(--radius-2); border: 1px solid var(--hair); background: var(--surface); position: relative; overflow: hidden; }
+
+/* lanes (#1) */
+.lanes { display: grid; grid-template-columns: 1fr 1fr; min-height: 440px; }
+@media (max-width: 800px){ .lanes { grid-template-columns: 1fr; } }
+.lane { position: relative; padding: 22px; transition: opacity .5s var(--ease), filter .5s var(--ease); }
+.lane.how { border-right: 1px solid var(--hair-2); }
+.lane .lane-h { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); display: flex; align-items: center; gap: 8px; }
+.lane h4 { font-size: 19px; font-weight: 600; margin: 10px 0 0; letter-spacing: -0.01em; }
+.body-refocus .lane.how { opacity: .9; }
+.body-refocus.on .lane.how { opacity: .32; filter: saturate(0.2); }
+/* swarm */
+.swarm { position: relative; height: 320px; margin-top: 16px; }
+.task-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 116px; height: 116px; border-radius: 50%;
+  display: grid; place-items: center; border: 1px dashed var(--friction); color: var(--ink-faint); font-family: var(--mono); font-size: 12px;
+  background: radial-gradient(circle, var(--friction-soft), transparent 70%); filter: blur(0.5px); transition: all .6s var(--spring); z-index: 2; }
+.body-refocus.on .task-core { border-style: solid; border-color: var(--accent-line); color: var(--accent-bright); filter: none;
+  background: linear-gradient(180deg, var(--accent-soft), transparent); box-shadow: 0 0 40px -10px var(--accent-glow); }
+.tool-chip { position: absolute; transform: translate(-50%,-50%); font-family: var(--mono); font-size: 10px; padding: 5px 9px; border-radius: 99px;
+  border: 1px solid var(--hair); color: var(--ink-dim); background: rgba(20,20,22,0.85); white-space: nowrap; transition: opacity .5s; }
+.tool-chip.warn { color: var(--friction); border-style: dashed; }
+.body-refocus.on .tool-chip { opacity: .25; }
+.swarm svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.swarm .lk { stroke: var(--hair); stroke-width: 1; stroke-dasharray: 3 4; }
+/* rail (right lane) */
+.rail { margin-top: 22px; max-width: 340px; }
+.rstate { border: 1px solid var(--hair); border-radius: var(--radius-s); padding: 11px 13px; background: var(--surface); }
+.rstate.target { border-color: var(--accent-line); background: linear-gradient(180deg,var(--accent-soft),transparent), var(--surface); }
+.rstate .ri { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em; color: var(--ink-faint); }
+.rstate.target .ri { color: var(--accent-bright); }
+.rstate .rn { font-size: 13px; font-weight: 600; margin-top: 3px; }
+.rtr { position: relative; height: 46px; margin-left: 24px; display: flex; align-items: center; }
+.rtr .rl { position: absolute; left: 0; top: -2px; bottom: -2px; width: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+.rtr .rlab { margin-left: 14px; font-family: var(--mono); font-size: 9.5px; color: var(--accent-bright); letter-spacing: 0.06em; }
+.rtr .mpop { position: absolute; left: 64px; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 9px; color: var(--ink-faint); white-space: nowrap; }
+
+/* refocus control row */
+.refocus-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.bottom-mono { text-align: center; font-family: var(--mono); font-size: 13px; color: var(--ink-dim); padding: 18px; border-top: 1px solid var(--hair-2); }
+.bottom-mono .b { color: var(--accent-bright); }
+
+/* ===== monad kit (#12) ===== */
+.kit { display: grid; grid-template-columns: 230px 1fr 200px; gap: 0; min-height: 460px; }
+@media (max-width: 920px){ .kit { grid-template-columns: 1fr; } }
+.kit-tray { border-right: 1px solid var(--hair-2); padding: 16px; }
+@media (max-width: 920px){ .kit-tray { border-right: 0; border-bottom: 1px solid var(--hair-2); } }
+.tray-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 10px; }
+.module { display: flex; align-items: center; gap: 9px; padding: 9px 11px; margin-bottom: 7px; border: 1px solid var(--hair); border-radius: var(--radius-s);
+  background: var(--surface-2); cursor: grab; font-size: 12px; user-select: none; transition: border-color .2s, transform .15s, opacity .3s; touch-action: none; }
+.module:hover { border-color: var(--accent-line); transform: translateX(2px); }
+.module.dragging { cursor: grabbing; box-shadow: var(--shadow-lg); }
+.module.placed { opacity: .3; border-style: dashed; pointer-events: none; }
+.module .mreq { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-faint); margin-left: auto; }
+.module.req .mreq { background: var(--accent); }
+.kit-center { position: relative; display: grid; place-items: center; padding: 24px; }
+.capsule { position: relative; width: 250px; border-radius: var(--radius-2); border: 1.5px dashed var(--friction); background: var(--surface);
+  padding: 18px; text-align: center; transition: border-color .5s var(--spring), box-shadow .5s, background .5s, transform .4s; }
+.capsule.wobble { animation: wobble 1.6s var(--ease) infinite; }
+@keyframes wobble { 0%,100%{ transform: rotate(-0.6deg) translateY(0) } 50%{ transform: rotate(0.6deg) translateY(-2px) } }
+.capsule.ready { border-style: solid; border-color: var(--accent-line); background: linear-gradient(180deg,var(--accent-soft),transparent), var(--surface);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 60px -16px var(--accent-glow); }
+.capsule.branch { border-color: hsl(40 92% 60% / 0.5); }
+.capsule .ctitle { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+.capsule .cflow { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); margin-top: 3px; }
+.ring { position: absolute; inset: -10px; pointer-events: none; }
+.ring circle { fill: none; stroke-width: 2.5; }
+.capsule .slots { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 12px; min-height: 24px; }
+.slot-chip { font-family: var(--mono); font-size: 9.5px; padding: 3px 7px; border-radius: 5px; border: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--accent-bright); }
+.slot-chip.amber { border-color: hsl(40 92% 60% / 0.5); background: var(--amber-soft); color: var(--amber); }
+.kit-side { border-left: 1px solid var(--hair-2); padding: 16px; }
+@media (max-width: 920px){ .kit-side { border-left: 0; border-top: 1px solid var(--hair-2); } }
+.completeness { font-family: var(--mono); font-size: 44px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.completeness .pct { font-size: 18px; color: var(--ink-faint); }
+.kit-meter { height: 5px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin: 12px 0; }
+.kit-meter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .5s var(--spring); }
+.gap-list { margin-top: 14px; display: grid; gap: 6px; }
+.gap-item { font-family: var(--mono); font-size: 10.5px; color: var(--amber); display: flex; gap: 7px; }
+.verified-stamp { margin-top: 14px; opacity: 0; transform: scale(.8); transition: opacity .4s var(--spring), transform .4s var(--spring); }
+.verified-stamp.show { opacity: 1; transform: scale(1); }
+
+/* ===== refocusing lens (#11) ===== */
+.lens-stage { height: 460px; position: relative; cursor: none; overflow: hidden; }
+.lens-layer { position: absolute; inset: 0; }
+.lens-blur { filter: blur(3px) saturate(0.3); opacity: 0.55; }
+.lens-sharp { clip-path: circle(0px at 50% 50%); }
+.lens-ring { position: absolute; width: 200px; height: 200px; border-radius: 50%; border: 1px solid var(--accent-line); pointer-events: none;
+  transform: translate(-50%,-50%); box-shadow: 0 0 40px -8px var(--accent-glow), inset 0 0 30px -10px var(--accent-glow); opacity: 0; transition: opacity .3s; }
+.lens-cap { position: absolute; left: 22px; bottom: 18px; font-family: var(--mono); font-size: 12px; color: var(--ink-dim); z-index: 5; }
+.lens-cap .q1 { color: var(--friction); } .lens-cap .q2 { color: var(--accent-bright); }
+.lens-tag { position: absolute; font-family: var(--mono); font-size: 10px; padding: 4px 8px; border-radius: 6px; transform: translate(-50%,-50%); white-space: nowrap; }
+.lens-tag.tool { color: var(--friction); border: 1px dashed rgba(120,124,130,0.4); }
+.lens-tag.state { color: var(--accent-bright); border: 1px solid var(--accent-line); background: var(--accent-soft); }
+
+/* ===== gravity (#6) ===== */
+.gravity-stage { height: 460px; position: relative; overflow: hidden; }
+.gravity-stage canvas { display: block; width: 100%; height: 100%; }
+.gravity-cap { position: absolute; left: 22px; top: 18px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); z-index: 3; max-width: 220px; line-height: 1.5; }
+.gravity-controls { position: absolute; right: 18px; bottom: 18px; z-index: 3; }
+
+/* ===== team→graph (#23) ===== */
+.tg-stage { height: 440px; position: relative; }
+.tg-node { position: absolute; transform: translate(-50%,-50%); transition: left .8s var(--spring), top .8s var(--spring), width .6s, height .6s; }
+.node-agent { padding: 7px 12px; border-radius: 99px; border: 1px solid var(--hair); background: var(--surface-2); font-family: var(--mono); font-size: 11px; color: var(--ink-dim); white-space: nowrap; }
+.tg-state { padding: 9px 13px; border-radius: var(--radius-s); border: 1px solid var(--hair); background: var(--surface); font-family: var(--mono); font-size: 11px; color: var(--ink); transition: all .8s var(--spring); }
+.tg-state.target { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-bright); }
+.tg-stage svg.tg-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* ===== motiongrid (#29) ===== */
+.mg-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.motiongrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 24px; }
+@media (max-width: 1000px){ .motiongrid { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 640px){ .motiongrid { grid-template-columns: repeat(2,1fr); } }
+.mgcell { border: 1px solid var(--hair-2); border-radius: var(--radius-s); background: var(--surface); overflow: hidden; transition: border-color .3s, transform .3s, box-shadow .3s; cursor: default; }
+.mgcell:hover { border-color: var(--accent-line); transform: translateY(-3px); box-shadow: 0 20px 40px -28px var(--accent-glow); }
+.mgcell .mgstage { aspect-ratio: 1.4/1; position: relative; overflow: hidden; border-bottom: 1px solid var(--hair-2); display: grid; place-items: center; }
+.mgcell .mgstage svg { width: 100%; height: 100%; }
+.mgcell .mgmeta { padding: 9px 11px 11px; }
+.mgcell .mgno { font-family: var(--mono); font-size: 9px; color: var(--ink-faint); letter-spacing: 0.08em; }
+.mgcell .mgname { font-size: 12px; font-weight: 600; margin-top: 2px; line-height: 1.2; }
+.mgcell .mgone { font-size: 10px; color: var(--ink-faint); margin-top: 3px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height .35s var(--ease), opacity .3s, margin .35s; }
+.mgcell:hover .mgone { max-height: 40px; opacity: 1; margin-top: 5px; }
+
+/* ===== closing ===== */
+.closing { padding: 110px 0 130px; }
+.closing .big { font-size: clamp(26px,4.2vw,52px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; max-width: 960px; }
+.closing .big .b { color: var(--accent); }
+.closing .foot { margin-top: 50px; display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--hair-2); padding-top: 24px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+</style>
+</head>
+<body class="grain">
+<div class="scrollprog"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap-wide">
+    <a class="brand" href="State-First Series.html">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="1" y="1" width="24" height="24" rx="7" stroke="var(--accent-line)"/><circle cx="13" cy="13" r="6" stroke="var(--accent)" stroke-width="1.4"/><circle cx="13" cy="13" r="2" fill="var(--accent-bright)"/></svg>
+      <span>State-First Series <small>Library Contract</small></span>
+    </a>
+    <div class="navlinks">
+      <a href="#contract">Contract</a>
+      <a href="#screens">Screens</a>
+      <a href="#grid">All 30</a>
+      <a class="btn ghost" style="height:36px" href="index.html">MONAD ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero wrap-wide">
+  <div class="hero-grid">
+    <div class="reveal in">
+      <div class="kicker"><span class="b">●</span> Design System &amp; Library Contract</div>
+      <h1 class="display mt4">We stopped<br/>designing <span class="dim">agents.</span><br/>We design the <span class="b">state.</span></h1>
+      <p class="lede mt6" style="max-width:560px">Thirty screens, one contract. <b style="color:var(--ink)">Motion</b> is the engine,
+        <b style="color:var(--ink)">Animate&nbsp;UI</b> the components, <b style="color:var(--ink)">HeroUI</b> the shell.
+        Near-monochrome, dark-first — and exactly one electric blue, spent only where the new approach becomes clear.</p>
+      <div class="thesis-strip">
+        <span>color = meaning</span>
+        <div class="swatch-rail"><i style="background:var(--bg-soft)"></i><i style="background:#16161a"></i><i style="background:#222228"></i><i style="background:var(--accent)"></i></div>
+        <span>near-mono · <span class="accent-t">one blue</span></span>
+      </div>
+      <div class="hero-cta">
+        <a class="btn primary" href="#screens">See the golden screens <span class="arr">→</span></a>
+        <a class="btn" href="#contract">Read the contract</a>
+      </div>
+    </div>
+
+    <!-- preview -->
+    <div class="card card-blur preview lift reveal in" data-d="2">
+      <div class="pv-lane how hatch">
+        <div class="pv-h">Harness-first · how</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">
+          <span class="chip friction" style="height:20px;font-size:9px">Agents</span>
+          <span class="chip friction" style="height:20px;font-size:9px">Tools</span>
+          <span class="chip friction" style="height:20px;font-size:9px">Prompts</span>
+          <span class="chip friction" style="height:20px;font-size:9px">Harness</span>
+          <span class="chip friction" style="height:20px;font-size:9px">Memory</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:12px;text-align:center;filter:blur(0.4px)">↻ Task? ↻</div>
+      </div>
+      <div class="pv-lane what">
+        <div class="pv-h" style="color:var(--accent-bright)">State-first · what</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:12px;font-family:var(--mono);font-size:11px">
+          <span class="chip" style="height:22px">S₀</span>
+          <span style="color:var(--accent)">→</span>
+          <span class="chip" style="height:22px">T</span>
+          <span style="color:var(--accent)">→</span>
+          <span class="chip accent" style="height:22px">S*</span>
+          <span class="chip solid" style="height:20px;font-size:9px;margin-left:auto">Verified</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- CONTRACT -->
+<section id="contract" class="section">
+  <div class="wrap-wide">
+    <div class="section-head reveal">
+      <div class="kicker"><span class="b">●</span> Section 0 — the contract every screen inherits</div>
+      <h2 class="h1 mt4">One language, enforced.</h2>
+      <p class="lede mt4">Thirty disconnected “monochrome” drafts don’t make a system. This is the shared skeleton:
+        color carries the thesis, type splits UI from tech, and every motion has a job.</p>
+    </div>
+
+    <!-- color = meaning -->
+    <h3 class="tlabel mt8" style="margin-bottom:0">01 · Color = meaning</h3>
+    <div class="cgrid3">
+      <div class="card semantic reveal" data-d="1">
+        <div class="sw blue"></div>
+        <h3>Electric blue</h3><div class="role">hsl(212 100% 47%) · the only accent</div>
+        <p>Spent only where the new approach becomes clear: the State-first rail, a successful transition pulse, the <b style="color:var(--accent-bright)">Verified</b> artifact, the WHAT layer.</p>
+        <div class="uses"><span class="chip accent" style="height:20px;font-size:9px">State-first</span><span class="chip accent" style="height:20px;font-size:9px">Verified</span><span class="chip accent" style="height:20px;font-size:9px">WHAT</span></div>
+      </div>
+      <div class="card semantic reveal hatch" data-d="2">
+        <div class="sw fric hatch"></div>
+        <h3>Grey hatch</h3><div class="role">friction · never bright</div>
+        <p>Harness-first noise, rework loops, an incomplete monad. Desaturated grey with a thin diagonal hatch. It is never allowed to glow.</p>
+        <div class="uses"><span class="chip friction" style="height:20px;font-size:9px">Harness-first</span><span class="chip friction" style="height:20px;font-size:9px">Rework</span><span class="chip friction" style="height:20px;font-size:9px">HOW</span></div>
+      </div>
+      <div class="card semantic reveal" data-d="3">
+        <div class="sw amb"></div>
+        <h3>Muted amber</h3><div class="role">a failing validator — only</div>
+        <p>The single exception to the two-color rule. A quiet amber marks a gate that did not pass, or a gap in the monad. Nothing else.</p>
+        <div class="uses"><span class="chip amber" style="height:20px;font-size:9px">Validator ✕</span><span class="chip amber" style="height:20px;font-size:9px">Gap</span></div>
+      </div>
+    </div>
+
+    <!-- type + motion -->
+    <h3 class="tlabel mt8" style="margin-bottom:0">02 · Type &amp; motion conventions</h3>
+    <div class="spec-row">
+      <div class="card type-card reveal" data-d="1">
+        <div class="tlabel">Typography</div>
+        <div class="type-sample">Inter for the interface.</div>
+        <div class="dim" style="font-size:13px">Humanist sans for everything a person reads — headings, labels, prose.</div>
+        <div class="type-mono">JetBrains&nbsp;Mono · S0 → S* · Δ · monad{...}</div>
+        <div class="faint mono" style="font-size:11px;margin-top:8px">Mono is reserved for tech labels: state ids, transition specs, monad fields.</div>
+      </div>
+      <div class="card motion-card reveal glow-surface" data-d="2">
+        <div class="tlabel">Motion · one job per animation</div>
+        <div class="conv-list">
+          <span class="chip" style="height:26px">spring stiffness 280 / damping 30</span>
+          <span class="chip" style="height:26px">stagger reveal · whileInView</span>
+          <span class="chip" style="height:26px">layoutId morph old→new</span>
+          <span class="chip" style="height:26px">useScroll → useTransform</span>
+          <span class="chip" style="height:26px">pointer radial-glow</span>
+          <span class="chip" style="height:26px">AnimatePresence swaps</span>
+          <span class="chip accent" style="height:26px">respects prefers-reduced-motion</span>
+        </div>
+        <p class="dim" style="font-size:12.5px;margin-top:16px;margin-bottom:0">Hover this card — the radial glow tracks your pointer. Every screen below picks <b style="color:var(--ink)">one</b> primary mechanic so motion stays legible.</p>
+      </div>
+    </div>
+
+    <!-- glossary -->
+    <h3 class="tlabel mt8" style="margin-bottom:0">03 · Shared glossary (the payload of every scene)</h3>
+    <div class="glossary" id="glossary"></div>
+  </div>
+</section>
+
+<!-- SCREENS -->
+<section id="screens" class="section" style="padding-top:0">
+  <div class="wrap-wide">
+    <div class="section-head reveal">
+      <div class="kicker"><span class="b">●</span> The golden screens</div>
+      <h2 class="h1 mt4">Each screen, one mechanic.</h2>
+      <p class="lede mt4">Inheriting the contract — Motion springs, Animate UI components, HeroUI shell. Drive them: flip the refocus, build the monad, move the lens.</p>
+    </div>
+
+    <!-- #1 What Before How -->
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="meta"><span class="screen-no">SCREEN 01</span><span class="screen-name">What Before How</span><span class="chip" style="height:22px">shared-element morph</span></div>
+        <div class="refocus-row">
+          <span class="tlabel">refocus</span>
+          <div class="switch" id="refocusSwitch" data-on="false"><span class="track"><span class="knob"></span></span><span>Task? → S*</span></div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="lanes body-refocus" id="lanes">
+          <div class="lane how hatch">
+            <div class="lane-h"><span class="chip friction" style="height:18px;font-size:9px">HOW</span> Harness-first</div>
+            <h4>We configure the harness.</h4>
+            <div class="swarm" id="swarm"><svg class="links" id="swarmLinks"></svg><div class="task-core" id="taskCore">Task?</div></div>
+          </div>
+          <div class="lane what">
+            <div class="lane-h" style="color:var(--accent-bright)"><span class="chip solid" style="height:18px;font-size:9px">WHAT</span> State-first</div>
+            <h4>We design the state change.</h4>
+            <div class="rail" id="rail"></div>
+          </div>
+        </div>
+        <div class="bottom-mono">The harness answers <span style="color:var(--friction)">HOW</span>. The target state answers <span class="b">WHAT</span>.</div>
+      </div>
+    </div>
+
+    <!-- #12 Monad Construction Kit -->
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="meta"><span class="screen-no">SCREEN 12</span><span class="screen-name">Monad Construction Kit</span><span class="chip" style="height:22px">drag · spring-snap</span></div>
+        <div class="tabs" id="kitTabs"><span class="glider"></span>
+          <button data-value="build" data-active="true">Build it</button>
+          <button data-value="incomplete">Incomplete</button>
+          <button data-value="sufficient">Sufficient</button>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="kit">
+          <div class="kit-tray">
+            <div class="tray-title">Modules — drag into the capsule</div>
+            <div id="moduleTray"></div>
+          </div>
+          <div class="kit-center" id="kitDrop">
+            <div class="capsule wobble" id="capsule">
+              <svg class="ring" viewBox="0 0 270 200" id="capRing"></svg>
+              <div class="ctitle">Transition T</div>
+              <div class="cflow">S₀ → S₁</div>
+              <div class="slots" id="capSlots"></div>
+            </div>
+          </div>
+          <div class="kit-side">
+            <div class="tlabel">Context completeness</div>
+            <div class="completeness mt2"><span id="compNum">0</span><span class="pct">%</span></div>
+            <div class="kit-meter"><i id="compMeter"></i></div>
+            <div class="gap-list" id="gapList"></div>
+            <div class="verified-stamp" id="verStamp"><span class="chip solid" style="height:26px">✓ Verified · S₁ reached</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-mono">A transition fails when its monad is incomplete. <span class="b">The agent acts inside the monad.</span></div>
+    </div>
+
+    <!-- #11 Refocusing Lens -->
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="meta"><span class="screen-no">SCREEN 11</span><span class="screen-name">Refocusing Lens</span><span class="chip" style="height:22px">pointer radial reveal</span></div>
+        <span class="tlabel">move your pointer over the field →</span>
+      </div>
+      <div class="stage">
+        <div class="lens-stage glow-surface" id="lensStage">
+          <div class="lens-layer lens-blur hatch" id="lensBlur"></div>
+          <div class="lens-layer lens-sharp" id="lensSharp"></div>
+          <div class="lens-ring" id="lensRing"></div>
+          <div class="lens-cap"><div class="q1">wrong first question: “what tool should act?”</div><div class="q2">right first question: “what must change?”</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- #6 Target State Gravity -->
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="meta"><span class="screen-no">SCREEN 06</span><span class="screen-name">Target State Gravity</span><span class="chip" style="height:22px">orbital motion values</span></div>
+        <div class="tabs" id="gravTabs" style="font-size:12px"><span class="glider"></span>
+          <button data-value="harness" data-active="true">Harness center</button>
+          <button data-value="state">Target gravity</button>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="gravity-stage" id="gravityStage">
+          <canvas id="gravityCanvas"></canvas>
+          <div class="gravity-cap" id="gravCap">Objects orbit a vague “Harness” center and never converge.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- #23 Team → Graph -->
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="meta"><span class="screen-no">SCREEN 23</span><span class="screen-name">From Agent Teams to Transition Graphs</span><span class="chip" style="height:22px">layoutId morph</span></div>
+        <div class="switch" id="tgSwitch" data-on="false"><span class="track"><span class="knob"></span></span><span>team → graph</span></div>
+      </div>
+      <div class="stage">
+        <div class="tg-stage" id="tgStage"><svg class="tg-links" id="tgLinks"></svg></div>
+      </div>
+      <div class="bottom-mono">Agents are not the architecture. <span class="b">State transitions are the architecture.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ALL 30 — MOTIONGRID -->
+<section id="grid" class="section" style="padding-top:0">
+  <div class="wrap-wide">
+    <div class="mg-head reveal">
+      <div class="section-head">
+        <div class="kicker"><span class="b">●</span> Screen 29 — the visual language</div>
+        <h2 class="h1 mt4">All thirty, one grid.</h2>
+        <p class="lede mt4">A MotionGrid of the whole series — each cell a looping micro-animation of one concept. The reusable icon set for docs, the landing, and the real Execution Circuit UI.</p>
+      </div>
+    </div>
+    <div class="motiongrid" id="motionGrid"></div>
+  </div>
+</section>
+
+<!-- CLOSING -->
+<section class="closing">
+  <div class="wrap-wide">
+    <p class="big reveal">We stopped designing agents. First, the <span class="b">state change</span> — then the transitions, the monad, the trace. The harness answers <em>how</em>. We show <em>what</em>.</p>
+    <div class="foot reveal" data-d="1">
+      <span>State-First Series · Motion · Animate UI · HeroUI</span>
+      <a class="btn ghost" style="height:36px" href="index.html">Back to MONAD →</a>
+    </div>
+  </div>
+</section>
+
+<script src="lib/motion.js"></script>
+<script src="lib/series.js"></script>
+<script src="lib/series-page.js"></script>
+</body>
+</html>

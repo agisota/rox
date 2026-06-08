@@ -148,3 +148,45 @@
 		);
 	}
 }
+
+/*
+ * State-First "Motion Frame" semantic tokens — color = meaning.
+ * Added ON TOP of the neutral shadcn tokens above; this block never modifies
+ * them. Each hue carries exactly one job. Multi-hue but disciplined.
+ * See plans/20260608-motion-frame-design-system.md (Layer A).
+ */
+:root {
+	--sf-state: oklch(0.55 0 0);
+	--sf-target: oklch(0.6 0.14 152);
+	--sf-verified: oklch(0.6 0.14 152);
+	--sf-transition: oklch(0.64 0.16 52);
+	--sf-event: oklch(0.64 0.16 52);
+	--sf-accent: oklch(0.55 0.19 250);
+	--sf-fail: oklch(0.7 0.13 75);
+	--sf-gap: oklch(0.7 0.13 75);
+	--sf-friction: oklch(0.62 0 0);
+}
+
+.dark {
+	--sf-state: oklch(0.72 0 0);
+	--sf-target: oklch(0.82 0.17 152);
+	--sf-verified: oklch(0.82 0.17 152);
+	--sf-transition: oklch(0.76 0.16 56);
+	--sf-event: oklch(0.76 0.16 56);
+	--sf-accent: oklch(0.7 0.16 250);
+	--sf-fail: oklch(0.8 0.12 78);
+	--sf-gap: oklch(0.8 0.12 78);
+	--sf-friction: oklch(0.55 0 0);
+}
+
+@theme inline {
+	--color-sf-state: var(--sf-state);
+	--color-sf-target: var(--sf-target);
+	--color-sf-verified: var(--sf-verified);
+	--color-sf-transition: var(--sf-transition);
+	--color-sf-event: var(--sf-event);
+	--color-sf-accent: var(--sf-accent);
+	--color-sf-fail: var(--sf-fail);
+	--color-sf-gap: var(--sf-gap);
+	--color-sf-friction: var(--sf-friction);
+}
