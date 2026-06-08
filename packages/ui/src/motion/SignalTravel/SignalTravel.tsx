@@ -4,7 +4,11 @@ import { motion } from "motion/react";
 import { useShouldAnimate } from "../useShouldAnimate";
 
 export interface SignalTravelProps {
-	/** SVG path `d` the signal travels along. */
+	/**
+	 * SVG path `d` the signal travels along. Must be valid SVG path data
+	 * (numbers, command letters, separators) — it is interpolated into a CSS
+	 * `offset-path: path("…")`, so it must not contain `"` or `\` characters.
+	 */
 	path: string;
 	/** Radius of the signal dot (default 5). */
 	radius?: number;

@@ -61,6 +61,7 @@ export function Segmented({
 					<button
 						key={option.value}
 						type="button"
+						aria-pressed={isActive}
 						onClick={() => select(option.value)}
 						className={cn(
 							"relative z-10 rounded-full px-3 py-1 text-xs font-medium transition-colors",

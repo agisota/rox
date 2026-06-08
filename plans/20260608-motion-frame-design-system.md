@@ -172,7 +172,8 @@ marked manual.
 > contract I can hand to an engineer.
 >
 > **Inputs:** `plans/motion-frame-prototypes/index_5.html` (MONAD landing) and
-> `StateFirst_Series.html` (library contract) — the source of truth.
+> `plans/motion-frame-prototypes/StateFirst_Series.html` (library contract) —
+> the source of truth.
 >
 > **Produce, as separate artifacts:**
 > 1. **Tokens** — final semantic palette as CSS custom properties **and** JSON,

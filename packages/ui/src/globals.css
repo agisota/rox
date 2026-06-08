@@ -153,6 +153,10 @@
  * State-First "Motion Frame" semantic tokens — color = meaning.
  * Added ON TOP of the neutral shadcn tokens above; this block never modifies
  * them. Each hue carries exactly one job. Multi-hue but disciplined.
+ *
+ * OKLCH values are PROVISIONAL pending the design pass (Decision #1). Paired
+ * tokens (target/verified, transition/event, fail/gap) intentionally share a
+ * value for now — do not "dedupe" them.
  * See plans/20260608-motion-frame-design-system.md (Layer A).
  */
 :root {
