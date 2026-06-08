@@ -1,6 +1,5 @@
 import { Button } from "@rox/ui/button";
 import { useEffect, useState } from "react";
-import stripeLinkIcon from "renderer/assets/stripe-link.png";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 
@@ -32,8 +31,7 @@ function PaymentMethodLabel({
 	if (paymentMethod.type === "link") {
 		return (
 			<span className="inline-flex items-center gap-1.5">
-				<img src={stripeLinkIcon} alt="Link" className="h-4 w-4 rounded-sm" />
-				<span>Link by Stripe</span>
+				<span>Link</span>
 			</span>
 		);
 	}

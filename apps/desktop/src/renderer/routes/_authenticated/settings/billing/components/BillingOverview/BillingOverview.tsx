@@ -1,10 +1,8 @@
 import { Button } from "@rox/ui/button";
-import { toast } from "@rox/ui/sonner";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { HiArrowRight } from "react-icons/hi2";
-import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
@@ -65,29 +63,19 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 		visibleItems,
 	);
 
-	const handleUpgrade = async (annual = false) => {
+	// Self-serve checkout has been removed in favour of the Rox economy model:
+	// every feature is unlocked by default for all users (free). Plan changes are
+	// handled manually — route to contact.
+	const contactBilling = () => {
+		window.open("mailto:founders@rox.one", "_blank");
+	};
+
+	const handleUpgrade = async (_annual = false) => {
 		if (!activeOrgId || memberCount === undefined) return;
 
 		setIsUpgrading(true);
 		try {
-			await authClient.subscription.upgrade(
-				{
-					plan: "pro",
-					referenceId: activeOrgId,
-					annual,
-					seats: memberCount,
-					successUrl: `${env.NEXT_PUBLIC_WEB_URL}/settings/billing?success=true`,
-					cancelUrl: env.NEXT_PUBLIC_WEB_URL,
-					disableRedirect: true,
-				},
-				{
-					onSuccess: (ctx) => {
-						if (ctx.data?.url) {
-							window.open(ctx.data.url, "_blank");
-						}
-					},
-				},
-			);
+			contactBilling();
 		} finally {
 			setIsUpgrading(false);
 		}
@@ -98,19 +86,7 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 
 		setIsCanceling(true);
 		try {
-			await authClient.subscription.cancel(
-				{
-					referenceId: activeOrgId,
-					returnUrl: env.NEXT_PUBLIC_WEB_URL,
-				},
-				{
-					onSuccess: (ctx) => {
-						if (ctx.data?.url) {
-							window.open(ctx.data.url, "_blank");
-						}
-					},
-				},
-			);
+			contactBilling();
 		} finally {
 			setIsCanceling(false);
 		}
@@ -121,10 +97,7 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 
 		setIsRestoring(true);
 		try {
-			await authClient.subscription.restore({
-				referenceId: activeOrgId,
-			});
-			toast.success("Plan restored");
+			contactBilling();
 		} finally {
 			setIsRestoring(false);
 		}

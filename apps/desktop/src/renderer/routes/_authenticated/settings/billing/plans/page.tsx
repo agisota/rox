@@ -1,6 +1,5 @@
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
-import { toast } from "@rox/ui/sonner";
 import { Switch } from "@rox/ui/switch";
 import { cn } from "@rox/ui/utils";
 import { useLiveQuery } from "@tanstack/react-db";
@@ -8,7 +7,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { differenceInDays, format } from "date-fns";
 import { Fragment, useState } from "react";
 import { HiArrowLeft, HiArrowUpRight, HiCheck } from "react-icons/hi2";
-import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -238,15 +236,6 @@ function PlansPage() {
 			new Date(subscriptionData.periodStart),
 		) > 60;
 
-	const { data: membersData } = useLiveQuery(
-		(q) =>
-			q
-				.from({ members: collections.members })
-				.select(({ members }) => ({ id: members.id })),
-		[collections],
-	);
-	const memberCount = membersData?.length ?? 1;
-
 	const currentPlanLabelByTier: Record<PlanTier, string> = {
 		free: "Free",
 		pro: "Pro",
@@ -274,64 +263,21 @@ function PlansPage() {
 
 		if (!activeOrgId) return;
 
-		if (action === "downgrade") {
-			setIsCanceling(true);
-			try {
-				await authClient.subscription.cancel(
-					{
-						referenceId: activeOrgId,
-						returnUrl: env.NEXT_PUBLIC_WEB_URL,
-					},
-					{
-						onSuccess: (ctx) => {
-							if (ctx.data?.url) {
-								window.open(ctx.data.url, "_blank");
-							}
-						},
-					},
-				);
-			} finally {
-				setIsCanceling(false);
-			}
-			return;
-		}
-
-		if (action === "restore") {
-			setIsRestoring(true);
-			try {
-				await authClient.subscription.restore({
-					referenceId: activeOrgId,
-				});
-				toast.success("Plan restored");
-			} finally {
-				setIsRestoring(false);
-			}
-			return;
-		}
-
-		setIsUpgrading(true);
+		// Self-serve checkout has been removed in favour of the Rox economy model:
+		// every feature is unlocked by default for all users (free). Plan changes
+		// (upgrade / downgrade / restore) are handled manually — route to contact.
+		const setLoading =
+			action === "downgrade"
+				? setIsCanceling
+				: action === "restore"
+					? setIsRestoring
+					: setIsUpgrading;
+		setLoading(true);
 		try {
-			await authClient.subscription.upgrade(
-				{
-					plan: "pro",
-					referenceId: activeOrgId,
-					annual: isYearly,
-					seats: memberCount,
-					successUrl: `${env.NEXT_PUBLIC_WEB_URL}/settings/billing?success=true`,
-					cancelUrl: env.NEXT_PUBLIC_WEB_URL,
-					returnUrl: env.NEXT_PUBLIC_WEB_URL,
-					disableRedirect: true,
-				},
-				{
-					onSuccess: (ctx) => {
-						if (ctx.data?.url) {
-							window.open(ctx.data.url, "_blank");
-						}
-					},
-				},
-			);
+			track("billing_plan_action", { action, source: "billing_plans" });
+			openUrl.mutate("mailto:founders@rox.one");
 		} finally {
-			setIsUpgrading(false);
+			setLoading(false);
 		}
 	};
 

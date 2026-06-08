@@ -5,7 +5,7 @@
  * OpenPanel) can attribute downstream revenue back to the campaign/source that
  * acquired the user:
  *   user_attribution     → one first-touch row per user (utm_*, landing, referrer)
- *   payment_attributions  → links a Stripe/revenue event back to first-touch utm
+ *   payment_attributions  → links a revenue event back to first-touch utm
  *
  * First-touch values are written once on account creation (see
  * `packages/auth/src/server.ts` databaseHooks) and never overwritten; the
@@ -86,8 +86,8 @@ export const paymentAttributions = pgTable(
 			onDelete: "set null",
 		}),
 
-		// External payment reference (Stripe customer/subscription/invoice id).
-		provider: text().notNull().default("stripe"),
+		// External payment reference (dv.net invoice / Rox top-up id).
+		provider: text().notNull().default("dvnet"),
 		externalId: text("external_id").notNull(),
 
 		amountUsd: numeric("amount_usd", { precision: 20, scale: 6 })

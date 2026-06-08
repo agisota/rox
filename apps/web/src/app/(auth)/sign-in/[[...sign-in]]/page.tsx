@@ -3,9 +3,11 @@
 import { authClient } from "@rox/auth/client";
 import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
 import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { env } from "@/env";
@@ -19,7 +21,37 @@ export default function SignInPage() {
 
 	const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+	const [isLoadingEmail, setIsLoadingEmail] = useState(false);
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
+
+	const signInWithEmail = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		setIsLoadingEmail(true);
+		setError(null);
+
+		try {
+			const res = await authClient.signIn.email({
+				email,
+				password,
+				callbackURL,
+			});
+			if (res.error) {
+				if (res.error.status === 403) {
+					throw new Error(
+						"Please verify your email before signing in. Check your inbox for the verification link.",
+					);
+				}
+				throw new Error(res.error.message ?? "Invalid email or password.");
+			}
+			window.location.href = callbackURL;
+		} catch (err) {
+			console.error("Sign in failed:", err);
+			setError(err instanceof Error ? err.message : "Failed to sign in.");
+			setIsLoadingEmail(false);
+		}
+	};
 
 	const signInWithGoogle = async () => {
 		setIsLoadingGoogle(true);
@@ -85,7 +117,8 @@ export default function SignInPage() {
 		}
 	};
 
-	const isLoading = isLoadingGoogle || isLoadingGithub || isLoadingDev;
+	const isLoading =
+		isLoadingGoogle || isLoadingGithub || isLoadingDev || isLoadingEmail;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -109,6 +142,47 @@ export default function SignInPage() {
 						{isLoadingDev ? "Signing in..." : "Sign in as Local Admin (dev)"}
 					</Button>
 				)}
+				<form onSubmit={signInWithEmail} className="grid gap-3">
+					<div className="grid gap-2">
+						<Label htmlFor="email">Email</Label>
+						<Input
+							id="email"
+							type="email"
+							autoComplete="email"
+							placeholder="you@example.com"
+							value={email}
+							onChange={(event) => setEmail(event.target.value)}
+							required
+							disabled={isLoading}
+						/>
+					</div>
+					<div className="grid gap-2">
+						<Label htmlFor="password">Password</Label>
+						<Input
+							id="password"
+							type="password"
+							autoComplete="current-password"
+							placeholder="Your password"
+							value={password}
+							onChange={(event) => setPassword(event.target.value)}
+							required
+							disabled={isLoading}
+						/>
+					</div>
+					<Button type="submit" disabled={isLoading} className="w-full">
+						{isLoadingEmail ? "Signing in..." : "Sign in with email"}
+					</Button>
+				</form>
+				<div className="relative">
+					<div className="absolute inset-0 flex items-center">
+						<span className="w-full border-t" />
+					</div>
+					<div className="relative flex justify-center text-xs uppercase">
+						<span className="bg-background text-muted-foreground px-2">
+							Or continue with
+						</span>
+					</div>
+				</div>
 				<Button
 					variant="outline"
 					disabled={isLoading}

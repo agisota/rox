@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import fs from "node:fs/promises";
 import { join } from "node:path";
+import { getDurableSessionStore } from "@rox/host-service/auth";
 import { ROX_HOME_DIR } from "main/lib/app-environment";
 import { PROTOCOL_SCHEME } from "shared/constants";
 import { decrypt, encrypt } from "./crypto-storage";
@@ -12,6 +13,15 @@ interface StoredAuth {
 
 export const TOKEN_FILE = join(ROX_HOME_DIR, "auth-token.enc");
 export const stateStore = new Map<string, number>();
+
+/**
+ * Shared, cross-surface session store. Mirroring the desktop token here makes
+ * the session inheritable by any other surface on this host (the host-service,
+ * and by extension the WebUI handoff), and reading from it lets the desktop
+ * adopt a session that was established elsewhere on the host. See
+ * `@rox/host-service/auth` for the full propagation model.
+ */
+const durableSession = getDurableSessionStore();
 
 /**
  * Event emitter for auth-related events.
@@ -35,6 +45,16 @@ export async function loadToken(): Promise<{
 		const parsed: StoredAuth = JSON.parse(data);
 		return { token: parsed.token, expiresAt: parsed.expiresAt };
 	} catch {
+		// No desktop-local token: inherit a session established on another
+		// surface of this host (e.g. the WebUI handoff or host-service).
+		try {
+			const shared = durableSession.read();
+			if (shared?.token && shared?.expiresAt) {
+				return { token: shared.token, expiresAt: shared.expiresAt };
+			}
+		} catch {
+			// Best-effort inheritance; fall through to "signed out".
+		}
 		return { token: null, expiresAt: null };
 	}
 }
@@ -51,7 +71,28 @@ export async function saveToken({
 }): Promise<void> {
 	const storedAuth: StoredAuth = { token, expiresAt };
 	await fs.writeFile(TOKEN_FILE, encrypt(JSON.stringify(storedAuth)));
+	// Write-through to the shared store so the session is inherited by the
+	// host-service and any other surface on this host.
+	try {
+		durableSession.write({ token, expiresAt });
+	} catch (err) {
+		console.warn("[auth] failed to mirror token to durable session", err);
+	}
 	authEvents.emit("token-saved", { token, expiresAt });
+}
+
+/**
+ * Clear the persisted desktop token AND the shared durable session, signing the
+ * user out across every surface on this host. Notifies subscribers.
+ */
+export async function clearToken(): Promise<void> {
+	await fs.unlink(TOKEN_FILE).catch(() => {});
+	try {
+		durableSession.clear();
+	} catch (err) {
+		console.warn("[auth] failed to clear durable session", err);
+	}
+	authEvents.emit("token-cleared");
 }
 
 /**

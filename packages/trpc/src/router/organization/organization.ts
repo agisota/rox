@@ -1,5 +1,4 @@
 import { auth } from "@rox/auth/server";
-import { stripeClient } from "@rox/auth/stripe";
 import { db } from "@rox/db/client";
 import { members, organizations } from "@rox/db/schema";
 import {
@@ -295,19 +294,6 @@ export const organizationRouter = {
 				.set(data)
 				.where(eq(organizations.id, id))
 				.returning();
-
-			if (organization?.stripeCustomerId && data.name) {
-				stripeClient.customers
-					.update(organization.stripeCustomerId, {
-						name: data.name,
-					})
-					.catch((error) => {
-						console.error(
-							"[org/update] Failed to sync Stripe customer info:",
-							error,
-						);
-					});
-			}
 
 			return organization;
 		}),

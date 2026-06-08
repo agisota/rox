@@ -15,10 +15,6 @@
 		"./env": {
 			"types": "./src/env.ts",
 			"default": "./src/env.ts"
-		},
-		"./stripe": {
-			"types": "./src/stripe.ts",
-			"default": "./src/stripe.ts"
 		}
 	},
 	"scripts": {
@@ -30,7 +26,6 @@
 		"@better-auth/api-key": "1.6.13",
 		"@better-auth/expo": "1.6.13",
 		"@better-auth/oauth-provider": "1.6.13",
-		"@better-auth/stripe": "1.6.13",
 		"@rox/db": "workspace:*",
 		"@rox/email": "workspace:*",
 		"@rox/shared": "workspace:*",
@@ -43,7 +38,6 @@
 		"dotenv": "17.3.1",
 		"drizzle-orm": "0.45.2",
 		"resend": "4.8.0",
-		"stripe": "20.4.1",
 		"zod": "4.3.6"
 	},
 	"devDependencies": {

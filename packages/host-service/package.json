@@ -40,6 +40,10 @@
 			"types": "./src/trpc/router/attachments/index.ts",
 			"default": "./src/trpc/router/attachments/index.ts"
 		},
+		"./auth": {
+			"types": "./src/auth/durable-session.ts",
+			"default": "./src/auth/durable-session.ts"
+		},
 		"./package.json": "./package.json"
 	},
 	"scripts": {

@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import fs from "node:fs/promises";
 import { AUTH_PROVIDERS } from "@rox/shared/constants";
 import { getHostId, getHostName } from "@rox/shared/host-info";
 import { observable } from "@trpc/server/observable";
@@ -12,10 +11,10 @@ import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import {
 	authEvents,
+	clearToken,
 	loadToken,
 	saveToken,
 	stateStore,
-	TOKEN_FILE,
 } from "./utils/auth-functions";
 
 export const createAuthRouter = () => {
@@ -110,8 +109,9 @@ export const createAuthRouter = () => {
 
 		signOut: publicProcedure.mutation(async () => {
 			getHostServiceCoordinator().stopAll();
-			await fs.unlink(TOKEN_FILE).catch(() => {});
-			authEvents.emit("token-cleared");
+			// Clears the desktop token AND the shared durable session, so the
+			// sign-out propagates to every surface on this host.
+			await clearToken();
 			return { success: true };
 		}),
 	});

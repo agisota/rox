@@ -118,7 +118,6 @@ export interface BillingInfo {
 		workspaces: number;
 	};
 	billing?: {
-		stripeCustomerId: string;
 		nextBillingDate: string;
 		amount: number;
 	};

@@ -281,7 +281,10 @@ export type InsertIntegrationInboundEvent =
 export type SelectIntegrationInboundEvent =
 	typeof integrationInboundEvents.$inferSelect;
 
-// Stripe subscriptions (org-based billing)
+// Subscriber/free status flag (org-based). Under the Rox economy model every
+// feature is unlocked by default for all users; this row only records whether an
+// org is on the free tier or holds a paid/subscriber plan so perks can differ
+// later. Actual spend/metering lives in the economy tables (see economy.ts).
 export const subscriptions = pgTable(
 	"subscriptions",
 	{
@@ -290,8 +293,6 @@ export const subscriptions = pgTable(
 		referenceId: uuid("reference_id")
 			.notNull()
 			.references(() => organizations.id, { onDelete: "cascade" }),
-		stripeCustomerId: text("stripe_customer_id"),
-		stripeSubscriptionId: text("stripe_subscription_id"),
 		status: text().default("incomplete").notNull(),
 		periodStart: timestamp("period_start"),
 		periodEnd: timestamp("period_end"),
@@ -303,7 +304,6 @@ export const subscriptions = pgTable(
 		endedAt: timestamp("ended_at"),
 		seats: integer(),
 		billingInterval: text("billing_interval"),
-		stripeScheduleId: text("stripe_schedule_id"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
 			.notNull()
@@ -312,7 +312,6 @@ export const subscriptions = pgTable(
 	},
 	(table) => [
 		index("subscriptions_reference_id_idx").on(table.referenceId),
-		index("subscriptions_stripe_customer_id_idx").on(table.stripeCustomerId),
 		index("subscriptions_status_idx").on(table.status),
 	],
 );

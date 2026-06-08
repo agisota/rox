@@ -84,7 +84,7 @@ export const mockWorkspaces: MockWorkspace[] = [
 	},
 	{
 		id: "workspace-3",
-		name: "API Stripe",
+		name: "API Gateway",
 		repoId: "4",
 		repoFullName: "roxai/api-server",
 		branch: "dev",
@@ -133,7 +133,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-3",
 		workspaceId: "workspace-3",
-		title: "Implement webhook handlers for Stripe",
+		title: "Implement webhook handlers for integrations",
 		status: "completed",
 		repoName: "roxai/api-server",
 		modelName: "GPT-4o",

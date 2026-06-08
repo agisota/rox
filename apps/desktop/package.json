@@ -42,7 +42,6 @@
 		"@ai-sdk/react": "3.0.143",
 		"@ast-grep/napi": "0.41.1",
 		"@better-auth/api-key": "1.6.13",
-		"@better-auth/stripe": "1.6.13",
 		"@codemirror/commands": "6.10.3",
 		"@codemirror/lang-cpp": "6.0.3",
 		"@codemirror/lang-css": "6.3.1",
