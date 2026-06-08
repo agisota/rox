@@ -193,6 +193,11 @@ export const integrationConnections = pgTable(
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
 
+		// Optional per-workspace scoping. NULL = org-level connection.
+		workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+			onDelete: "cascade",
+		}),
+
 		provider: integrationProvider().notNull(),
 
 		// OAuth tokens
@@ -215,16 +220,25 @@ export const integrationConnections = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [
-		unique("integration_connections_unique").on(
-			table.organizationId,
-			table.provider,
-		),
+		// Per-workspace scoping makes workspaceId part of the identity. Because a
+		// single composite unique over a nullable column treats NULLs as distinct
+		// (so org-level rows would not collide), we split it into two partial
+		// uniques: one for org-level rows (workspaceId IS NULL) and one for
+		// workspace-scoped rows. Together these enforce
+		// (organizationId, provider, workspaceId) uniqueness.
+		uniqueIndex("integration_connections_org_provider_unique")
+			.on(table.organizationId, table.provider)
+			.where(sql`${table.workspaceId} IS NULL`),
+		uniqueIndex("integration_connections_org_provider_workspace_unique")
+			.on(table.organizationId, table.provider, table.workspaceId)
+			.where(sql`${table.workspaceId} IS NOT NULL`),
 		uniqueIndex("integration_connections_slack_external_org_active_unique")
 			.on(table.externalOrgId)
 			.where(
 				sql`${table.provider} = 'slack' AND ${table.disconnectedAt} IS NULL`,
 			),
 		index("integration_connections_org_idx").on(table.organizationId),
+		index("integration_connections_workspace_idx").on(table.workspaceId),
 	],
 );
 
@@ -232,6 +246,36 @@ export type InsertIntegrationConnection =
 	typeof integrationConnections.$inferInsert;
 export type SelectIntegrationConnection =
 	typeof integrationConnections.$inferSelect;
+
+// Idempotency ledger for inbound provider webhooks/events. Providers redeliver
+// (Slack `Retry-Num`, Telegram repeated updates, Discord interaction retries),
+// so we dedup on (provider, externalEventId) before enqueuing agent work.
+export const integrationInboundEvents = pgTable(
+	"integration_inbound_events",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		connectionId: uuid("connection_id").references(
+			() => integrationConnections.id,
+			{ onDelete: "cascade" },
+		),
+		provider: integrationProvider().notNull(),
+		// Provider-supplied unique id for the delivery (event id, update id, etc.).
+		externalEventId: text("external_event_id").notNull(),
+		receivedAt: timestamp("received_at").notNull().defaultNow(),
+	},
+	(table) => [
+		uniqueIndex("integration_inbound_events_provider_event_unique").on(
+			table.provider,
+			table.externalEventId,
+		),
+		index("integration_inbound_events_connection_idx").on(table.connectionId),
+	],
+);
+
+export type InsertIntegrationInboundEvent =
+	typeof integrationInboundEvents.$inferInsert;
+export type SelectIntegrationInboundEvent =
+	typeof integrationInboundEvents.$inferSelect;
 
 // Stripe subscriptions (org-based billing)
 export const subscriptions = pgTable(

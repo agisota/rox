@@ -1,0 +1,1 @@
+export { obsidianRouter } from "./obsidian";

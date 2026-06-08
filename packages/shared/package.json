@@ -151,6 +151,10 @@
 		"./knowledge": {
 			"types": "./src/knowledge/index.ts",
 			"default": "./src/knowledge/index.ts"
+		},
+		"./integrations": {
+			"types": "./src/integrations/index.ts",
+			"default": "./src/integrations/index.ts"
 		}
 	},
 	"scripts": {

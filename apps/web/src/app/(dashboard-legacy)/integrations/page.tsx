@@ -1,38 +1,47 @@
 "use client";
 
-import { FaGithub, FaSlack } from "react-icons/fa";
-import { SiLinear } from "react-icons/si";
+import {
+	type IntegrationRegistryId,
+	integrationCatalog,
+} from "@rox/shared/integrations";
+import type { ReactNode } from "react";
+import { FaBookOpen, FaComments } from "react-icons/fa";
+import {
+	SiDiscord,
+	SiGithub,
+	SiLinear,
+	SiNotion,
+	SiObsidian,
+	SiSlack,
+	SiTelegram,
+} from "react-icons/si";
 import {
 	IntegrationCard,
 	type IntegrationCardProps,
 } from "./components/IntegrationCard";
 
-const integrations: IntegrationCardProps[] = [
-	{
-		id: "linear",
-		name: "Linear",
-		description: "Sync issues bidirectionally with Linear.",
-		category: "Task Management",
-		accentColor: "#5E6AD2",
-		icon: <SiLinear className="size-8" />,
-	},
-	{
-		id: "github",
-		name: "GitHub",
-		description: "Connect repos and sync pull requests.",
-		category: "Version Control",
-		accentColor: "#238636",
-		icon: <FaGithub className="size-8" />,
-	},
-	{
-		id: "slack",
-		name: "Slack",
-		description: "Connect Slack to manage tasks from conversations.",
-		category: "Communication",
-		accentColor: "#4A154B",
-		icon: <FaSlack className="size-8" />,
-	},
-];
+// Brand icons live in the web bundle (the shared registry stays JSX-free).
+const PROVIDER_ICONS: Record<IntegrationRegistryId, ReactNode> = {
+	linear: <SiLinear className="size-8" />,
+	github: <SiGithub className="size-8" />,
+	slack: <SiSlack className="size-8" />,
+	telegram: <SiTelegram className="size-8" />,
+	discord: <SiDiscord className="size-8" />,
+	notion: <SiNotion className="size-8" />,
+	obsidian: <SiObsidian className="size-8" />,
+	fibery: <FaBookOpen className="size-8" />,
+	lark: <FaComments className="size-8" />,
+};
+
+const integrations: IntegrationCardProps[] = integrationCatalog.map((meta) => ({
+	id: meta.id,
+	name: meta.name,
+	description: meta.description,
+	category: meta.category,
+	accentColor: meta.accentColor,
+	icon: PROVIDER_ICONS[meta.id as IntegrationRegistryId],
+	disabled: !meta.enabled,
+}));
 
 export default function IntegrationsPage() {
 	return (

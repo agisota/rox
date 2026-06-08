@@ -449,6 +449,13 @@
       "when": 1780885927912,
       "tag": "0063_rox_economy_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1780886286947,
+      "tag": "0064_integration_connections_workspace_scope",
+      "breakpoints": true
     }
   ]
 }

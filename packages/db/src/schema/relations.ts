@@ -26,6 +26,7 @@ import {
 	chatSessions,
 	devicePresence,
 	integrationConnections,
+	integrationInboundEvents,
 	projects,
 	sandboxImages,
 	secrets,
@@ -193,7 +194,7 @@ export const taskStatusesRelations = relations(
 
 export const integrationConnectionsRelations = relations(
 	integrationConnections,
-	({ one }) => ({
+	({ one, many }) => ({
 		organization: one(organizations, {
 			fields: [integrationConnections.organizationId],
 			references: [organizations.id],
@@ -201,6 +202,21 @@ export const integrationConnectionsRelations = relations(
 		connectedBy: one(users, {
 			fields: [integrationConnections.connectedByUserId],
 			references: [users.id],
+		}),
+		workspace: one(workspaces, {
+			fields: [integrationConnections.workspaceId],
+			references: [workspaces.id],
+		}),
+		inboundEvents: many(integrationInboundEvents),
+	}),
+);
+
+export const integrationInboundEventsRelations = relations(
+	integrationInboundEvents,
+	({ one }) => ({
+		connection: one(integrationConnections, {
+			fields: [integrationInboundEvents.connectionId],
+			references: [integrationConnections.id],
 		}),
 	}),
 );
@@ -427,6 +443,7 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
 		references: [users.id],
 	}),
 	chatSessions: many(chatSessions),
+	integrationConnections: many(integrationConnections),
 }));
 
 export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
