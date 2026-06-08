@@ -25,5 +25,11 @@ export function ActiveIndicator({ layoutId, className }: ActiveIndicatorProps) {
 		return <span className={baseClassName} />;
 	}
 
-	return <motion.span layoutId={layoutId} className={baseClassName} transition={motionSpring.snappy} />;
+	return (
+		<motion.span
+			layoutId={layoutId}
+			className={baseClassName}
+			transition={motionSpring.snappy}
+		/>
+	);
 }

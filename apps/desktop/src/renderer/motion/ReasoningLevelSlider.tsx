@@ -1,9 +1,9 @@
+import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
+import { cn } from "@rox/ui/utils";
 import { LayoutGroup, motion } from "framer-motion";
 import { useId } from "react";
-import { type ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
-import { cn } from "@rox/ui/utils";
-import { useShouldAnimate } from "./useMotionPreference";
 import { motionSpring } from "./tokens";
+import { useShouldAnimate } from "./useMotionPreference";
 
 const SEGMENTS: { value: ThinkingLevel; label: string }[] = [
 	{ value: "off", label: "Off" },
@@ -38,6 +38,7 @@ export function ReasoningLevelSlider({
 				{SEGMENTS.map((seg) => {
 					const selected = seg.value === level;
 					return (
+						// biome-ignore lint/a11y/useSemanticElements: segmented control uses button+role=radio inside a radiogroup; a native input/radio cannot carry the layout animation marker
 						<button
 							key={seg.value}
 							type="button"

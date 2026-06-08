@@ -274,3 +274,29 @@ export const evaluationStatusValues = [
 ] as const;
 export const evaluationStatusEnum = z.enum(evaluationStatusValues);
 export type EvaluationStatus = z.infer<typeof evaluationStatusEnum>;
+
+// Execution Circuit (execution-circuit epic) ------------------------------------
+
+export const transitionRunStatusValues = [
+	"pending",
+	"running",
+	"completed",
+	"failed",
+	"canceled",
+] as const;
+export const transitionRunStatusEnum = z.enum(transitionRunStatusValues);
+export type TransitionRunStatus = z.infer<typeof transitionRunStatusEnum>;
+
+export const traceEventKindValues = [
+	"state_entered",
+	"transition_started",
+	"runtime_invoked",
+	"output_received",
+	"validator_passed",
+	"validator_failed",
+	"transition_completed",
+	"transition_failed",
+	"note",
+] as const;
+export const traceEventKindEnum = z.enum(traceEventKindValues);
+export type TraceEventKind = z.infer<typeof traceEventKindEnum>;

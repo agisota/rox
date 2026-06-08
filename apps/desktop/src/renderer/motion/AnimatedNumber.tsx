@@ -18,7 +18,11 @@ function defaultFormat(value: number): string {
  * Springs a number toward `value` and renders the interpolated result as text.
  * Renders the final value as plain text instantly when motion is disabled.
  */
-export function AnimatedNumber({ value, className, format }: AnimatedNumberProps) {
+export function AnimatedNumber({
+	value,
+	className,
+	format,
+}: AnimatedNumberProps) {
 	const shouldAnimate = useShouldAnimate("essential");
 	const motionValue = useMotionValue(value);
 	const spring = useSpring(motionValue, motionSpring.soft);
@@ -31,7 +35,11 @@ export function AnimatedNumber({ value, className, format }: AnimatedNumberProps
 	}, [motionValue, value]);
 
 	if (!shouldAnimate) {
-		return <span className={className}>{format ? format(value) : defaultFormat(value)}</span>;
+		return (
+			<span className={className}>
+				{format ? format(value) : defaultFormat(value)}
+			</span>
+		);
 	}
 
 	return <motion.span className={className}>{display}</motion.span>;

@@ -3,5 +3,9 @@
  * animation from the motion kit alongside the other primitives. Also aliased as
  * `AnimatedPresence` for call sites that prefer the kit's naming.
  */
-export { AnimatePresence, AnimatePresence as AnimatedPresence } from "framer-motion";
+
 export type { AnimatePresenceProps } from "framer-motion";
+export {
+	AnimatePresence,
+	AnimatePresence as AnimatedPresence,
+} from "framer-motion";

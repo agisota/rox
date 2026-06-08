@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
 import type { TargetAndTransition, Transition } from "framer-motion";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { ease, motionDuration } from "./tokens";
 import { useShouldAnimate } from "./useMotionPreference";

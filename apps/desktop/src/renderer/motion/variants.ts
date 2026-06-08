@@ -38,7 +38,11 @@ export const staggerItem: Variants = {
 export const portBadgeEnter: Variants = {
 	initial: { opacity: 0, x: -8, scale: 0.96 },
 	animate: { opacity: 1, x: 0, scale: 1 },
-	exit: { opacity: 0, scale: 0.9, transition: { duration: motionDuration.fast } },
+	exit: {
+		opacity: 0,
+		scale: 0.9,
+		transition: { duration: motionDuration.fast },
+	},
 };
 
 /** Spring for the port-number one-shot scale pop on badge mount (case 101). */

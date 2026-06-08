@@ -421,6 +421,13 @@
       "when": 1780830510000,
       "tag": "0059_integrations_providers_and_host_port",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1780880292184,
+      "tag": "0060_execution_circuit_mvp",
+      "breakpoints": true
     }
   ]
 }

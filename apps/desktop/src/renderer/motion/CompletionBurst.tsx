@@ -15,7 +15,11 @@ export interface CompletionBurstProps {
  * Renders a scale+opacity pop of a green dot plus a brief expanding ring.
  * Decorative tier — renders a static green dot when reduced motion is on.
  */
-export function CompletionBurst({ size = 8, className, onAnimationComplete }: CompletionBurstProps) {
+export function CompletionBurst({
+	size = 8,
+	className,
+	onAnimationComplete,
+}: CompletionBurstProps) {
 	const shouldAnimate = useShouldAnimate("decorative");
 
 	if (!shouldAnimate) {
@@ -36,7 +40,12 @@ export function CompletionBurst({ size = 8, className, onAnimationComplete }: Co
 	return (
 		<span
 			className={className}
-			style={{ position: "relative", display: "inline-flex", width: size, height: size }}
+			style={{
+				position: "relative",
+				display: "inline-flex",
+				width: size,
+				height: size,
+			}}
 		>
 			{/* Expanding ring */}
 			<motion.span

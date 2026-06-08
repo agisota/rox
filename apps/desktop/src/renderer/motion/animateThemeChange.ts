@@ -57,9 +57,7 @@ export function animateThemeChange(
 
 	const target: Record<string, string> = {};
 
-	for (const key of Object.keys(UI_COLOR_TO_CSS_VAR) as Array<
-		keyof UIColors
-	>) {
+	for (const key of Object.keys(UI_COLOR_TO_CSS_VAR) as Array<keyof UIColors>) {
 		const cssVar = UI_COLOR_TO_CSS_VAR[key];
 		const from = prevColors[key];
 		const to = nextColors[key];

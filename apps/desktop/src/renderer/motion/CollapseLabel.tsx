@@ -25,7 +25,11 @@ interface CollapseLabelProps {
  * snaps to its final state with no transform, matching the prior instant render.
  * Layout is unchanged: it still emits a single `span` carrying `className`.
  */
-export function CollapseLabel({ show, children, className }: CollapseLabelProps) {
+export function CollapseLabel({
+	show,
+	children,
+	className,
+}: CollapseLabelProps) {
 	const animate = useShouldAnimate("decorative");
 
 	return (

@@ -4,8 +4,8 @@ import {
 	animatedAlertDialogContentClassName,
 } from "@rox/ui/alert-dialog";
 import { cn } from "@rox/ui/utils";
-import { AnimatePresence, motion } from "framer-motion";
 import type { MotionStyle } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { XIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 

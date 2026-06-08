@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { FileIcon } from "lucide-react";
-import { memo, type ComponentProps } from "react";
+import { type ComponentProps, memo } from "react";
 import { ease, motionDuration } from "./tokens";
 import { useShouldAnimate } from "./useMotionPreference";
 

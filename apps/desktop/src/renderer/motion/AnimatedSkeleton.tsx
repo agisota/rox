@@ -11,7 +11,10 @@ import { useShouldAnimate } from "./useMotionPreference";
  * exact static `@rox/ui` Skeleton look when motion is suppressed (reduced-motion
  * or `'off'`/`'essential'` preference).
  */
-export function AnimatedSkeleton({ className, ...props }: React.ComponentProps<"div">) {
+export function AnimatedSkeleton({
+	className,
+	...props
+}: React.ComponentProps<"div">) {
 	const shouldAnimate = useShouldAnimate("decorative");
 
 	if (!shouldAnimate) {

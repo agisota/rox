@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { motionDuration, ease } from "./tokens";
+import { ease, motionDuration } from "./tokens";
 import { useShouldAnimate } from "./useMotionPreference";
 
 type WsToolState =

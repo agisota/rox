@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { DrawnCheck, useShouldAnimate } from "renderer/motion";
-import { motionDuration, ease } from "renderer/motion/tokens";
+import { ease, motionDuration } from "renderer/motion/tokens";
 
 /**
  * Animated empty state shown when the changeset has no files (working tree is

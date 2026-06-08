@@ -9,6 +9,11 @@ import {
 	users,
 } from "./auth";
 import {
+	executionCircuits,
+	experienceTraceEvents,
+	transitionRuns,
+} from "./circuit";
+import {
 	githubInstallations,
 	githubPullRequests,
 	githubRepositories,
@@ -152,6 +157,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 		relationName: "creator",
 	}),
 	workspaces: many(v2Workspaces),
+	executionCircuits: many(executionCircuits),
 }));
 
 export const taskStatusesRelations = relations(
@@ -611,6 +617,52 @@ export const approvalRequestsRelations = relations(
 		step: one(workflowRunSteps, {
 			fields: [approvalRequests.stepId],
 			references: [workflowRunSteps.id],
+		}),
+	}),
+);
+
+// Execution Circuit (execution-circuit epic) ----------------------------------
+
+export const executionCircuitsRelations = relations(
+	executionCircuits,
+	({ one, many }) => ({
+		organization: one(organizations, {
+			fields: [executionCircuits.organizationId],
+			references: [organizations.id],
+		}),
+		task: one(tasks, {
+			fields: [executionCircuits.taskId],
+			references: [tasks.id],
+		}),
+		transitionRuns: many(transitionRuns),
+	}),
+);
+
+export const transitionRunsRelations = relations(
+	transitionRuns,
+	({ one, many }) => ({
+		organization: one(organizations, {
+			fields: [transitionRuns.organizationId],
+			references: [organizations.id],
+		}),
+		circuit: one(executionCircuits, {
+			fields: [transitionRuns.executionCircuitId],
+			references: [executionCircuits.id],
+		}),
+		traceEvents: many(experienceTraceEvents),
+	}),
+);
+
+export const experienceTraceEventsRelations = relations(
+	experienceTraceEvents,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [experienceTraceEvents.organizationId],
+			references: [organizations.id],
+		}),
+		transitionRun: one(transitionRuns, {
+			fields: [experienceTraceEvents.transitionRunId],
+			references: [transitionRuns.id],
 		}),
 	}),
 );

@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { MotionList } from "renderer/motion";
-import { AuditFindingRow, type Finding } from "./components/AuditFindingRow/AuditFindingRow";
+import {
+	AuditFindingRow,
+	type Finding,
+} from "./components/AuditFindingRow/AuditFindingRow";
 import { AuditGradeRing } from "./components/AuditGradeRing/AuditGradeRing";
 
 const SYNTHETIC_FINDINGS: Finding[] = [

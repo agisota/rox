@@ -1,5 +1,9 @@
 import { motion } from "framer-motion";
-import { AnimatedNumber, motionSpring, useShouldAnimate } from "renderer/motion";
+import {
+	AnimatedNumber,
+	motionSpring,
+	useShouldAnimate,
+} from "renderer/motion";
 
 export interface AuditGradeRingProps {
 	score: number;
@@ -41,6 +45,7 @@ export function AuditGradeRing({ score }: AuditGradeRingProps) {
 				style={{ transform: "rotate(-90deg)" }}
 				aria-hidden
 			>
+				<title>{`Audit score ${Math.round(score)} of 100, grade ${grade}`}</title>
 				{/* Track ring */}
 				<circle
 					cx={SIZE / 2}

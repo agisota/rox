@@ -15,7 +15,11 @@ interface DrawCheckProps {
  * to draw itself when a file is marked viewed. Renders the final state instantly
  * when motion is disabled.
  */
-export function DrawCheck({ checked, className, strokeWidth = 2.5 }: DrawCheckProps) {
+export function DrawCheck({
+	checked,
+	className,
+	strokeWidth = 2.5,
+}: DrawCheckProps) {
 	const shouldAnimate = useShouldAnimate("essential");
 	return (
 		<motion.svg

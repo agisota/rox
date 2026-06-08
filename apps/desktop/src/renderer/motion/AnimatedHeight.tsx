@@ -18,7 +18,11 @@ export interface AnimatedHeightProps {
  * Animates its content's height between `auto` and `0` (with an opacity
  * collapse). Snaps to the final state instantly when motion is disabled.
  */
-export function AnimatedHeight({ children, className, open = true }: AnimatedHeightProps) {
+export function AnimatedHeight({
+	children,
+	className,
+	open = true,
+}: AnimatedHeightProps) {
 	const shouldAnimate = useShouldAnimate("essential");
 
 	if (!shouldAnimate) {
@@ -32,7 +36,9 @@ export function AnimatedHeight({ children, className, open = true }: AnimatedHei
 		<motion.div
 			className={cn("overflow-hidden", className)}
 			initial={false}
-			animate={open ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
+			animate={
+				open ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }
+			}
 			transition={{ duration: motionDuration.base }}
 		>
 			{children}

@@ -99,3 +99,4 @@ plans/local/
 .omc/
 .claude/hook-log.txt
 .env.local.backup
+.vercel

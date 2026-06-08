@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useShouldAnimate } from "./useMotionPreference";
 import { motionDuration } from "./tokens";
+import { useShouldAnimate } from "./useMotionPreference";
 
 interface ShellReadyPulseProps {
 	active: boolean;

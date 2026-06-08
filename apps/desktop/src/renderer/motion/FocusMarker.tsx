@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { useShouldAnimate } from "./useMotionPreference";
 import { ease, motionDuration } from "./tokens";
+import { useShouldAnimate } from "./useMotionPreference";
 
 interface FocusMarkerProps {
 	/** Changes once per focus-jump; component re-mounts via `key` to re-fire the halo. */

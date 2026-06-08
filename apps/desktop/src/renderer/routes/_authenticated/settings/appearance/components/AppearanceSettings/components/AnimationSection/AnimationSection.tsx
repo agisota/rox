@@ -5,7 +5,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@rox/ui/select";
-import { type AnimationPreference, useSettings } from "renderer/stores/settings";
+import {
+	type AnimationPreference,
+	useSettings,
+} from "renderer/stores/settings";
 
 export function AnimationSection() {
 	const animationPreference = useSettings((s) => s.animationPreference);

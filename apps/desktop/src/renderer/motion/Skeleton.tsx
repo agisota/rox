@@ -9,10 +9,19 @@ import { useShouldAnimate } from "./useMotionPreference";
  * Thin convenience wrapper over AnimatedSkeleton with an explicit export name.
  */
 export function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
-	return <AnimatedSkeleton className={cn("rounded-sm", className)} {...props} />;
+	return (
+		<AnimatedSkeleton className={cn("rounded-sm", className)} {...props} />
+	);
 }
 
-const DIFF_ROW_WIDTHS = ["w-3/4", "w-2/3", "w-4/5", "w-1/2", "w-3/5", "w-7/12"] as const;
+const DIFF_ROW_WIDTHS = [
+	"w-3/4",
+	"w-2/3",
+	"w-4/5",
+	"w-1/2",
+	"w-3/5",
+	"w-7/12",
+] as const;
 
 /**
  * DiffSkeleton — composite placeholder mimicking the diff file-list layout:
@@ -32,7 +41,7 @@ export function DiffSkeleton({ className }: { className?: string }) {
 			{DIFF_ROW_WIDTHS.map((w, i) =>
 				shouldAnimate ? (
 					<motion.div
-						key={i}
+						key={w}
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						transition={{
@@ -44,7 +53,7 @@ export function DiffSkeleton({ className }: { className?: string }) {
 						<AnimatedSkeleton className={cn("h-4", w)} />
 					</motion.div>
 				) : (
-					<AnimatedSkeleton key={i} className={cn("h-4", w)} />
+					<AnimatedSkeleton key={w} className={cn("h-4", w)} />
 				),
 			)}
 		</div>

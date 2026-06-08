@@ -37,7 +37,10 @@ function resolveMotionPreference(
 }
 
 /** Given a preference + tier, decide whether the tier may animate. */
-function shouldAnimateForPreference(preference: MotionPreference, tier: MotionTier): boolean {
+function shouldAnimateForPreference(
+	preference: MotionPreference,
+	tier: MotionTier,
+): boolean {
 	if (preference === "off") {
 		return false;
 	}
@@ -67,7 +70,10 @@ export function motionPreference(): MotionPreference {
 		typeof window !== "undefined" &&
 		typeof window.matchMedia === "function" &&
 		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-	return resolveMotionPreference(prefersReducedMotion, getStoredMotionPreference());
+	return resolveMotionPreference(
+		prefersReducedMotion,
+		getStoredMotionPreference(),
+	);
 }
 
 /**
