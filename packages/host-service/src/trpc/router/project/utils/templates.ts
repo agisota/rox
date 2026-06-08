@@ -6,6 +6,9 @@
  */
 export const TEMPLATES: Record<string, { url: string }> = {
 	"nextjs-chatbot": { url: "https://github.com/vercel/chatbot" },
+	// "Rox Starters" — branded entry for the Open Mercato multi-tenant business
+	// foundation (CRM/ERP/commerce). Internally referred to as rox-starters.
+	"rox-starters": { url: "https://github.com/agisota/open-mercato" },
 };
 
 export function templateUrlFor(templateId: string): string | null {
