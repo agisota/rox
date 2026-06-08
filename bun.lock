@@ -624,6 +624,19 @@
         "typescript": "5.9.3",
       },
     },
+    "packages/analytics": {
+      "name": "@rox/analytics",
+      "version": "0.1.0",
+      "dependencies": {
+        "@rox/shared": "workspace:*",
+        "zod": "4.3.6",
+      },
+      "devDependencies": {
+        "@rox/typescript": "workspace:*",
+        "bun-types": "1.3.11",
+        "typescript": "5.9.3",
+      },
+    },
     "packages/auth": {
       "name": "@rox/auth",
       "version": "0.1.0",
@@ -964,6 +977,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@linear/sdk": "68.1.1",
+        "@rox/analytics": "workspace:*",
         "@rox/auth": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/host-provisioner": "workspace:*",
@@ -2538,6 +2552,8 @@
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-PrsWNQ8BuE00O3Xsx3ALh2Df8fAj9+cvvX9AIA6o4KpATR98c9mud4XtDWVvsEuyia5U4tVSTKygawyJkjm60w=="],
 
     "@rox/admin": ["@rox/admin@workspace:apps/admin"],
+
+    "@rox/analytics": ["@rox/analytics@workspace:packages/analytics"],
 
     "@rox/api": ["@rox/api@workspace:apps/api"],
 

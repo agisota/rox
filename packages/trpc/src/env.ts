@@ -15,6 +15,12 @@ export const env = createEnv({
 			.string()
 			.url()
 			.default("https://us.i.posthog.com"),
+		// OpenPanel (openpanel epic) — second analytics provider. Optional so
+		// environments without OpenPanel configured keep working (dual-emit
+		// degrades to PostHog-only).
+		NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string().optional(),
+		OPENPANEL_CLIENT_SECRET: z.string().optional(),
+		OPENPANEL_API_URL: z.string().url().default("https://api.openpanel.dev"),
 		QSTASH_TOKEN: z.string().min(1),
 		QSTASH_CURRENT_SIGNING_KEY: z.string().min(1),
 		QSTASH_NEXT_SIGNING_KEY: z.string().min(1),

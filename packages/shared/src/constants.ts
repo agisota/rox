@@ -55,6 +55,35 @@ export const TEARDOWN_TIMEOUT_MS = 60_000;
 // PostHog
 export const POSTHOG_COOKIE_NAME = "rox";
 
+// OpenPanel (openpanel epic) — second analytics provider alongside PostHog.
+export const OPENPANEL_COOKIE_NAME = "rox_op";
+
+/**
+ * Canonical analytics event names. Both the PostHog and OpenPanel emitters
+ * key off these so dashboards/funnels stay aligned across providers. Keep in
+ * sync with the typed catalog in `@rox/analytics` (`events.ts`).
+ */
+export const ANALYTICS_EVENTS = {
+	PROJECT_CREATED: "project_created",
+	WORKSPACE_CREATED: "workspace_created",
+	REPO_CONNECTED: "repo_connected",
+	PROMPT_SUBMITTED: "prompt_submitted",
+	AGENT_RUN_STARTED: "agent_run_started",
+	AGENT_RUN_COMPLETED: "agent_run_completed",
+	AGENT_RUN_FAILED: "agent_run_failed",
+	WORKFLOW_STARTED: "workflow_started",
+	WORKFLOW_COMPLETED: "workflow_completed",
+	WORKFLOW_FAILED: "workflow_failed",
+	ARTIFACT_GENERATED: "artifact_generated",
+	PRD_GENERATED: "prd_generated",
+	PAYMENT_STARTED: "payment_started",
+	PAYMENT_SUCCEEDED: "payment_succeeded",
+	PAYMENT_FAILED: "payment_failed",
+} as const;
+
+export type AnalyticsEventName =
+	(typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];
+
 // Users whose account was created at or after this instant are v2-only:
 // the v1↔v2 surface switch is hidden and v2 cloud is forced on. Pre-cutoff
 // users keep the existing opt-in toggle. Stored as an ISO string so the

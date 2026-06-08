@@ -4,7 +4,7 @@ import type { TRPCRouterRecord } from "@trpc/server";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { posthog } from "../../lib/analytics";
+import { analytics, posthog } from "../../lib/analytics";
 import {
 	executeFunnelQuery,
 	executeHogQLQuery,
@@ -67,18 +67,26 @@ export const analyticsRouter = {
 			const augmented = ctx.session.session as typeof ctx.session.session & {
 				plan?: string | null;
 			};
+			const properties = {
+				...(input.properties ?? {}),
+				source: input.source,
+				plan: augmented.plan ?? null,
+				active_organization_id: ctx.activeOrganizationId,
+			};
+			const groups = ctx.activeOrganizationId
+				? { organization: ctx.activeOrganizationId }
+				: undefined;
+			// Dual-emit: PostHog (typed groups/plan) + OpenPanel (best-effort).
 			posthog.capture({
 				distinctId: ctx.session.user.id,
 				event: input.event,
-				properties: {
-					...(input.properties ?? {}),
-					source: input.source,
-					plan: augmented.plan ?? null,
-					active_organization_id: ctx.activeOrganizationId,
-				},
-				groups: ctx.activeOrganizationId
-					? { organization: ctx.activeOrganizationId }
-					: undefined,
+				properties,
+				groups,
+			});
+			void analytics.openpanel.track({
+				distinctId: ctx.session.user.id,
+				event: input.event,
+				properties: { ...properties, ...(groups ? { groups } : {}) },
 			});
 			return { ok: true };
 		}),

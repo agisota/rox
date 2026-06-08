@@ -24,6 +24,7 @@
 	},
 	"dependencies": {
 		"@linear/sdk": "68.1.1",
+		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/host-provisioner": "workspace:*",

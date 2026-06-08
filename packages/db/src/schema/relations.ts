@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 
+import { paymentAttributions, userAttribution } from "./attribution";
 import {
 	accounts,
 	invitations,
@@ -76,6 +77,8 @@ export const usersRelations = relations(users, ({ many }) => ({
 	roxLedger: many(roxLedger),
 	roxTopups: many(roxTopups),
 	usageRequests: many(usageRequests),
+	attribution: many(userAttribution),
+	paymentAttributions: many(paymentAttributions),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -743,6 +746,33 @@ export const knowledgeLinksRelations = relations(knowledgeLinks, ({ one }) => ({
 		relationName: "linkTarget",
 	}),
 }));
+
+// Marketing attribution (openpanel epic) --------------------------------------
+
+export const userAttributionRelations = relations(
+	userAttribution,
+	({ one, many }) => ({
+		user: one(users, {
+			fields: [userAttribution.userId],
+			references: [users.id],
+		}),
+		paymentAttributions: many(paymentAttributions),
+	}),
+);
+
+export const paymentAttributionsRelations = relations(
+	paymentAttributions,
+	({ one }) => ({
+		user: one(users, {
+			fields: [paymentAttributions.userId],
+			references: [users.id],
+		}),
+		attribution: one(userAttribution, {
+			fields: [paymentAttributions.attributionId],
+			references: [userAttribution.id],
+		}),
+	}),
+);
 
 // Billing & Economy (billing-economy epic) ------------------------------------
 
