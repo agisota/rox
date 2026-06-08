@@ -1,5 +1,5 @@
-import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
+import { CircuitCanvas } from "@rox/ui/circuit";
 import { Separator } from "@rox/ui/separator";
 import { useExecutionCircuit } from "../../hooks/useExecutionCircuit";
 
@@ -8,9 +8,10 @@ interface ExecutionCircuitPanelProps {
 }
 
 /**
- * Minimal task-detail section for the execution circuit (foundation slice):
- * shows the TargetState + typed transitions read-only, offers a "Generate
- * draft" action when none exists, and a per-transition "Copy prompt" button.
+ * Task-detail section for the execution circuit: renders the circuit as a
+ * State-First diagram ({@link CircuitCanvas}) above the typed transitions,
+ * offers a "Generate draft" action when none exists, and a per-transition
+ * "Copy prompt" button.
  */
 export function ExecutionCircuitPanel({ taskId }: ExecutionCircuitPanelProps) {
 	const {
@@ -46,13 +47,7 @@ export function ExecutionCircuitPanel({ taskId }: ExecutionCircuitPanelProps) {
 
 			{circuit ? (
 				<div className="space-y-4">
-					<div className="flex items-center gap-2 text-sm">
-						<span className="text-muted-foreground">Target state:</span>
-						<Badge variant="secondary">{circuit.spec.targetState}</Badge>
-						<span className="text-muted-foreground">·</span>
-						<span className="text-muted-foreground">Initial:</span>
-						<Badge variant="outline">{circuit.spec.initialState}</Badge>
-					</div>
+					<CircuitCanvas spec={circuit.spec} className="w-full" />
 
 					<Separator />
 
