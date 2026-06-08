@@ -36,6 +36,7 @@ import {
 	parseThemeConfigFile,
 	type Theme,
 } from "shared/themes";
+import { ThemeLibraryCombobox } from "./components/ThemeLibraryCombobox";
 
 const MAX_THEME_FILE_SIZE = 256 * 1024; // 256 KB
 
@@ -334,6 +335,18 @@ export function ThemeSection() {
 					options={darkOptions}
 				/>
 			</AnimatedHeight>
+			<div className="flex items-center justify-between gap-6 p-4">
+				<div className="min-w-0 flex-1">
+					<div className="text-sm font-medium">Theme library</div>
+					<div className="text-xs text-muted-foreground">
+						Search hundreds of community themes with a live preview.
+					</div>
+				</div>
+				<ThemeLibraryCombobox
+					activeThemeId={activeThemeId}
+					onSelect={setTheme}
+				/>
+			</div>
 			<div className="flex items-center justify-between gap-6 p-4">
 				<div className="min-w-0 flex-1">
 					<div className="text-sm font-medium">Custom themes</div>

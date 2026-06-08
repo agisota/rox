@@ -3,6 +3,8 @@ import {
 	builtInThemes,
 	DEFAULT_THEME_ID,
 	darkTheme,
+	getLibraryTheme,
+	getLibraryThemeMetadata,
 	getTerminalColors,
 	type Theme,
 	type ThemeMetadata,
@@ -103,12 +105,16 @@ function resolveThemeId(
 }
 
 /**
- * Find a theme by ID from built-in and custom themes
+ * Find a theme by ID from built-in, custom, and the lazy Zed library.
+ *
+ * Library themes are resolved on demand from the bundled dataset and are NOT
+ * persisted — only the active library theme is held in `activeTheme` in memory.
  */
 function findTheme(themeId: string, customThemes: Theme[]): Theme | undefined {
 	return (
 		builtInThemes.find((t) => t.id === themeId) ||
-		customThemes.find((t) => t.id === themeId)
+		customThemes.find((t) => t.id === themeId) ||
+		getLibraryTheme(themeId)
 	);
 }
 
@@ -350,14 +356,17 @@ export const useThemeStore = create<ThemeState>()(
 				getAllThemes: () => {
 					const state = get();
 					const allThemes = [...builtInThemes, ...state.customThemes];
-					return allThemes.map((t) => ({
+					const builtInAndCustom: ThemeMetadata[] = allThemes.map((t) => ({
 						id: t.id,
 						name: t.name,
 						author: t.author,
 						type: t.type,
 						isBuiltIn: t.isBuiltIn ?? false,
 						isCustom: t.isCustom ?? false,
+						isLibrary: t.isLibrary ?? false,
 					}));
+					// Library themes are appended from the lazy dataset (metadata only).
+					return [...builtInAndCustom, ...getLibraryThemeMetadata()];
 				},
 
 				initializeTheme: () => {

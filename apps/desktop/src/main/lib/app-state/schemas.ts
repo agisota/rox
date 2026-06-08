@@ -14,6 +14,18 @@ export interface ThemeState {
 	systemDarkThemeId?: string;
 }
 
+/**
+ * Glass / window-vibrancy appearance settings (themes-fonts epic).
+ * Persisted in lowdb appState (NOT Postgres). macOS-only effects; the toggle
+ * defaults off so existing installs are unaffected.
+ */
+export interface AppearanceState {
+	/** Whether translucent glass surfaces + window vibrancy are enabled. */
+	glassEnabled: boolean;
+	/** Surface/window opacity, 0.2–1 (1 = fully opaque). */
+	windowOpacity: number;
+}
+
 /** Legacy hotkeys state shape (kept for reading old app-state.json during migration) */
 interface LegacyHotkeysState {
 	version: number;
@@ -23,6 +35,7 @@ interface LegacyHotkeysState {
 export interface AppState {
 	tabsState: BaseTabsState;
 	themeState: ThemeState;
+	appearanceState: AppearanceState;
 	hotkeysState: LegacyHotkeysState;
 }
 
@@ -39,6 +52,10 @@ export const defaultAppState: AppState = {
 		customThemes: [],
 		systemLightThemeId: "light",
 		systemDarkThemeId: "dark",
+	},
+	appearanceState: {
+		glassEnabled: false,
+		windowOpacity: 0.72,
 	},
 	hotkeysState: {
 		version: 1,

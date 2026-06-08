@@ -10,7 +10,12 @@ export {
 	monokaiTheme,
 } from "./built-in";
 export { getEditorTheme } from "./editor-theme";
-export { parseThemeConfigFile, type ThemeConfigParseResult } from "./import";
+export {
+	normalizeThemeId,
+	parseThemeConfigFile,
+	RESERVED_THEME_IDS,
+	type ThemeConfigParseResult,
+} from "./import";
 export type {
 	EditorColors,
 	EditorSyntaxColors,
@@ -27,3 +32,13 @@ export {
 	getTerminalColors,
 } from "./types";
 export { withAlpha } from "./utils";
+// Lazy Zed-derived theme library (never eagerly spread into the store)
+export {
+	convertZedFamily,
+	convertZedTheme,
+	getLibraryTheme,
+	getLibraryThemeMetadata,
+	getLibraryThemes,
+	type ZedTheme,
+	type ZedThemeFamily,
+} from "./zed";

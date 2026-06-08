@@ -287,6 +287,12 @@ export interface Theme {
 	isBuiltIn?: boolean;
 	/** Whether this is a user-imported custom theme */
 	isCustom?: boolean;
+	/**
+	 * Whether this theme comes from the bundled Zed-derived library dataset.
+	 * Library themes are lazily loaded and are NOT eagerly spread into the
+	 * persisted store — only the active library theme is cached.
+	 */
+	isLibrary?: boolean;
 }
 
 /**
@@ -299,4 +305,5 @@ export interface ThemeMetadata {
 	type: "dark" | "light";
 	isBuiltIn: boolean;
 	isCustom: boolean;
+	isLibrary?: boolean;
 }

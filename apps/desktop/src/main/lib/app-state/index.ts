@@ -22,6 +22,10 @@ function ensureValidShape(data: Partial<AppState>): AppState {
 			...defaultAppState.themeState,
 			...(data.themeState ?? {}),
 		},
+		appearanceState: {
+			...defaultAppState.appearanceState,
+			...(data.appearanceState ?? {}),
+		},
 		hotkeysState: {
 			...defaultAppState.hotkeysState,
 			...(data.hotkeysState ?? {}),

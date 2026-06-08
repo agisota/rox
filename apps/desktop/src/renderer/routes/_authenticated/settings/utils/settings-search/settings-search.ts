@@ -21,6 +21,7 @@ export const SETTING_ITEM_ID = {
 	APPEARANCE_EDITOR_FONT: "appearance-editor-font",
 	APPEARANCE_TERMINAL_FONT: "appearance-terminal-font",
 	APPEARANCE_ANIMATIONS: "appearance-animations",
+	APPEARANCE_GLASS: "appearance-glass",
 
 	RINGTONES_NOTIFICATION: "ringtones-notification",
 
@@ -130,6 +131,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.APPEARANCE_EDITOR_FONT]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_TERMINAL_FONT]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_ANIMATIONS]: "shared",
+	[SETTING_ITEM_ID.APPEARANCE_GLASS]: "shared",
 
 	[SETTING_ITEM_ID.RINGTONES_NOTIFICATION]: "shared",
 
@@ -476,6 +478,23 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"essential",
 			"off",
 			"performance",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.APPEARANCE_GLASS,
+		section: "appearance",
+		title: "Glass surfaces",
+		description: "Translucent panels and window vibrancy",
+		keywords: [
+			"appearance",
+			"glass",
+			"vibrancy",
+			"blur",
+			"transparency",
+			"translucent",
+			"opacity",
+			"acrylic",
+			"frosted",
 		],
 	},
 	{

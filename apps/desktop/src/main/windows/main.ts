@@ -17,6 +17,7 @@ import { createIPCHandler } from "trpc-electron/main";
 import { productName } from "~/package.json";
 import { appState } from "../lib/app-state";
 import { browserManager } from "../lib/browser/browser-manager";
+import { getGlassWindowOptions } from "../lib/glass-window";
 import { createApplicationMenu } from "../lib/menu";
 import { playNotificationSound } from "../lib/notification-sound";
 import { NotificationManager } from "../lib/notifications/notification-manager";
@@ -99,6 +100,17 @@ export async function MainWindow() {
 		? `${productName} — ${workspaceName}`
 		: productName;
 
+	// Glass / vibrancy (themes-fonts epic). macOS-only, gated on the persisted
+	// toggle (default off). When disabled or off-mac, an opaque backgroundColor
+	// is used as before.
+	const fallbackBackgroundColor = nativeTheme.shouldUseDarkColors
+		? "#252525"
+		: "#ffffff";
+	const glassOptions = getGlassWindowOptions(
+		appState.data.appearanceState,
+		fallbackBackgroundColor,
+	);
+
 	const window = createWindow({
 		id: "main",
 		title: windowTitle,
@@ -109,7 +121,7 @@ export async function MainWindow() {
 		minWidth: 400,
 		minHeight: 400,
 		show: false,
-		backgroundColor: nativeTheme.shouldUseDarkColors ? "#252525" : "#ffffff",
+		...glassOptions,
 		center: initialBounds.center,
 		movable: true,
 		resizable: true,

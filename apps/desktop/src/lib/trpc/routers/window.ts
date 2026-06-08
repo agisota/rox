@@ -1,13 +1,53 @@
 import fs from "node:fs/promises";
 import { homedir } from "node:os";
 import type { BrowserWindow } from "electron";
-import { dialog } from "electron";
+import { dialog, nativeTheme } from "electron";
+import { appState } from "main/lib/app-state";
+import { applyGlassToWindow } from "main/lib/glass-window";
 import { getImageMimeType } from "shared/file-types";
 import { z } from "zod";
 import { publicProcedure, router } from "..";
 
 export const createWindowRouter = (getWindow: () => BrowserWindow | null) => {
 	return router({
+		/** Read the persisted glass / window-vibrancy appearance settings. */
+		getAppearance: publicProcedure.query(() => {
+			return appState.data.appearanceState;
+		}),
+
+		/**
+		 * Persist glass settings and apply them live to the window (macOS only).
+		 * The renderer separately toggles the `.glass` document-root class.
+		 */
+		setGlass: publicProcedure
+			.input(
+				z.object({
+					glassEnabled: z.boolean(),
+					windowOpacity: z.number().min(0.2).max(1),
+				}),
+			)
+			.mutation(async ({ input }) => {
+				appState.data.appearanceState = {
+					glassEnabled: input.glassEnabled,
+					windowOpacity: input.windowOpacity,
+				};
+				await appState.write();
+
+				const window = getWindow();
+				if (window) {
+					const fallbackBackgroundColor = nativeTheme.shouldUseDarkColors
+						? "#252525"
+						: "#ffffff";
+					applyGlassToWindow(
+						window,
+						appState.data.appearanceState,
+						fallbackBackgroundColor,
+					);
+				}
+
+				return { success: true };
+			}),
+
 		minimize: publicProcedure.mutation(() => {
 			const window = getWindow();
 			if (!window) return { success: false };

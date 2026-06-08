@@ -6,6 +6,7 @@ import {
 } from "../../../utils/settings-search";
 import { AnimationSection } from "./components/AnimationSection";
 import { FontSettingSection } from "./components/FontSettingSection";
+import { GlassSection } from "./components/GlassSection";
 import { MarkdownStyleSection } from "./components/MarkdownStyleSection";
 import { ThemeSection } from "./components/ThemeSection";
 
@@ -54,6 +55,10 @@ export function AppearanceSettings({ visibleItems }: AppearanceSettingsProps) {
 		SETTING_ITEM_ID.APPEARANCE_CUSTOM_THEMES,
 		visibleItems,
 	);
+	const showGlass = isItemVisible(
+		SETTING_ITEM_ID.APPEARANCE_GLASS,
+		visibleItems,
+	);
 	const showThemeSection = showTheme || showCustomThemes;
 
 	return (
@@ -67,6 +72,7 @@ export function AppearanceSettings({ visibleItems }: AppearanceSettingsProps) {
 
 			<SectionList>
 				{showThemeSection && <ThemeSection key="theme" />}
+				{showGlass && <GlassSection key="glass" />}
 				{showMarkdown && <MarkdownStyleSection key="markdown" />}
 				{showAnimations && <AnimationSection key="animations" />}
 				{showEditorFont && (

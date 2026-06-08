@@ -117,4 +117,34 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+
+	/*
+	 * Glass utilities (themes-fonts epic) — mirrored from the desktop app so
+	 * shared @rox/ui components can opt into translucency. Defaults are opaque /
+	 * no blur; the desktop renderer drives `--surface-opacity` / `--backdrop-blur`
+	 * and toggles `.glass` on the document root.
+	 */
+	:root {
+		--surface-opacity: 1;
+		--backdrop-blur: 0px;
+	}
+
+	.glass,
+	.glass-panel {
+		background-color: color-mix(
+			in srgb,
+			var(--background) calc(var(--surface-opacity) * 100%),
+			transparent
+		);
+		backdrop-filter: blur(var(--backdrop-blur));
+		-webkit-backdrop-filter: blur(var(--backdrop-blur));
+	}
+
+	.glass-panel {
+		background-color: color-mix(
+			in srgb,
+			var(--card) calc(var(--surface-opacity) * 100%),
+			transparent
+		);
+	}
 }

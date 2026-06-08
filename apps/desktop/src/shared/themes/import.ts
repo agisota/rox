@@ -143,12 +143,20 @@ const themeConfigSchema = z
 	})
 	.passthrough();
 
-const RESERVED_THEME_IDS = new Set([
+/**
+ * Theme IDs reserved by Rox (the special "system" id plus all built-in ids).
+ * Exported so the Zed library converter can avoid colliding with them.
+ */
+export const RESERVED_THEME_IDS = new Set([
 	"system",
 	...builtInThemes.map((theme) => theme.id),
 ]);
 
-function normalizeThemeId(value: string): string {
+/**
+ * Normalize an arbitrary string into a URL-safe theme id slug.
+ * Exported for reuse by the Zed library converter.
+ */
+export function normalizeThemeId(value: string): string {
 	return value
 		.trim()
 		.toLowerCase()
