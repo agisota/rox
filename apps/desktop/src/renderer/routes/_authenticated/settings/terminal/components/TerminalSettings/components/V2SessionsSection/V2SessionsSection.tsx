@@ -181,13 +181,16 @@ function V2SessionsSectionInner() {
 							) : null}
 						</h3>
 						<p className="text-sm text-muted-foreground mt-0.5">
-							Owns every PTY session and survives app restarts.
+							A background process that owns all your terminal sessions, so they
+							keep running across app restarts and reconnects. You rarely need
+							to touch this — use the buttons only if terminals misbehave.
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2 shrink-0">
 						<Button
 							variant="default"
 							size="sm"
+							title="Upgrade the terminal daemon to the version bundled with the app, keeping all open terminal sessions alive."
 							disabled={
 								sessions === null ||
 								updateDaemon.isPending ||
@@ -200,6 +203,7 @@ function V2SessionsSectionInner() {
 						<Button
 							variant="outline"
 							size="sm"
+							title="Kill the terminal daemon and start a fresh one. This closes every terminal session."
 							disabled={updateDaemon.isPending || restartDaemon.isPending}
 							onClick={() => setConfirmRestartOpen(true)}
 						>
