@@ -300,3 +300,27 @@ export const traceEventKindValues = [
 ] as const;
 export const traceEventKindEnum = z.enum(traceEventKindValues);
 export type TraceEventKind = z.infer<typeof traceEventKindEnum>;
+
+// Access grants (members-teams-org epic) ---------------------------------------
+// Resource sharing: grant a role on a resource to a user, a team, or the whole
+// org. Append-only string unions backing Postgres pgEnums.
+
+export const accessResourceTypeValues = [
+	"project",
+	"workspace",
+	"host",
+] as const;
+export const accessResourceTypeEnum = z.enum(accessResourceTypeValues);
+export type AccessResourceType = z.infer<typeof accessResourceTypeEnum>;
+
+export const accessGranteeTypeValues = [
+	"user",
+	"team",
+	"organization",
+] as const;
+export const accessGranteeTypeEnum = z.enum(accessGranteeTypeValues);
+export type AccessGranteeType = z.infer<typeof accessGranteeTypeEnum>;
+
+export const accessRoleValues = ["viewer", "editor", "admin"] as const;
+export const accessRoleEnum = z.enum(accessRoleValues);
+export type AccessRole = z.infer<typeof accessRoleEnum>;

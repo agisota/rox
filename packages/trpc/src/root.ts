@@ -13,6 +13,7 @@ import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
 import { organizationRouter } from "./router/organization";
 import { projectRouter } from "./router/project";
+import { shareRouter } from "./router/share";
 import { skillRouter } from "./router/skill";
 import { supportRouter } from "./router/support/support";
 import { taskRouter } from "./router/task";
@@ -39,6 +40,7 @@ export const appRouter = createTRPCRouter({
 	integration: integrationRouter,
 	organization: organizationRouter,
 	project: projectRouter,
+	share: shareRouter,
 	skill: skillRouter,
 	support: supportRouter,
 	task: taskRouter,

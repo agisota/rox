@@ -129,3 +129,32 @@ export function canInvite(
 ): boolean {
 	return getInvitableRoles(actorRole).includes(inviteRole);
 }
+
+// Resource sharing / access grants (members-teams-org epic) --------------------
+
+/**
+ * Roles that can be granted on a shared resource, lowest → highest permission.
+ * Mirrors the `access_role` DB enum.
+ */
+export const ACCESS_ROLE_HIERARCHY = ["viewer", "editor", "admin"] as const;
+
+export type AccessRole = (typeof ACCESS_ROLE_HIERARCHY)[number];
+
+/**
+ * Whether an org member may share a resource (create access grants) at all.
+ *
+ * Only org admins and owners can share. Plain members may be granted access to
+ * a resource but cannot themselves hand out grants.
+ */
+export function canShare(actorOrgRole: OrganizationRole): boolean {
+	return actorOrgRole === "admin" || actorOrgRole === "owner";
+}
+
+/**
+ * Whether an org member may modify or revoke an existing access grant.
+ *
+ * Same gate as {@link canShare}: managing grants is an admin/owner capability.
+ */
+export function canManageGrant(actorOrgRole: OrganizationRole): boolean {
+	return canShare(actorOrgRole);
+}

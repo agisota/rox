@@ -428,6 +428,13 @@
       "when": 1780880292184,
       "tag": "0060_execution_circuit_mvp",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1780881540526,
+      "tag": "0061_add_access_grants",
+      "breakpoints": true
     }
   ]
 }

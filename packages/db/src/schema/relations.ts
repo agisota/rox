@@ -19,6 +19,7 @@ import {
 	githubRepositories,
 } from "./github";
 import {
+	accessGrants,
 	agentCommands,
 	chatSessions,
 	devicePresence,
@@ -106,6 +107,18 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	devicePresence: many(devicePresence),
 	agentCommands: many(agentCommands),
 	chatSessions: many(chatSessions),
+	accessGrants: many(accessGrants),
+}));
+
+export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [accessGrants.organizationId],
+		references: [organizations.id],
+	}),
+	createdByUser: one(users, {
+		fields: [accessGrants.createdByUserId],
+		references: [users.id],
+	}),
 }));
 
 export const membersRelations = relations(members, ({ one }) => ({

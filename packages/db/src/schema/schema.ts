@@ -17,6 +17,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { organizations, users } from "./auth";
 import {
+	accessGranteeTypeValues,
+	accessResourceTypeValues,
+	accessRoleValues,
 	automationPromptSourceValues,
 	automationRunStatusValues,
 	automationSessionKindValues,
@@ -51,6 +54,15 @@ export const v2WorkspaceType = pgEnum(
 	"v2_workspace_type",
 	v2WorkspaceTypeValues,
 );
+export const accessResourceType = pgEnum(
+	"access_resource_type",
+	accessResourceTypeValues,
+);
+export const accessGranteeType = pgEnum(
+	"access_grantee_type",
+	accessGranteeTypeValues,
+);
+export const accessRole = pgEnum("access_role", accessRoleValues);
 
 export const taskStatuses = pgTable(
 	"task_statuses",
@@ -398,6 +410,50 @@ export const projects = pgTable(
 
 export type InsertProject = typeof projects.$inferInsert;
 export type SelectProject = typeof projects.$inferSelect;
+
+// Access grants (members-teams-org epic) ---------------------------------------
+// A single grant of a `role` on a resource (`resourceType` + `resourceId`) to a
+// grantee that is a user, a team, or the whole organization. Org-scoped so
+// Electric can shape-filter by `organizationId`.
+export const accessGrants = pgTable(
+	"access_grants",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		resourceType: accessResourceType("resource_type").notNull(),
+		resourceId: uuid("resource_id").notNull(),
+		granteeType: accessGranteeType("grantee_type").notNull(),
+		granteeId: uuid("grantee_id").notNull(),
+		role: accessRole("role").notNull(),
+		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at")
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		unique("access_grants_unique").on(
+			table.organizationId,
+			table.resourceType,
+			table.resourceId,
+			table.granteeType,
+			table.granteeId,
+		),
+		index("access_grants_organization_id_idx").on(table.organizationId),
+		index("access_grants_resource_idx").on(
+			table.resourceType,
+			table.resourceId,
+		),
+	],
+);
+
+export type InsertAccessGrant = typeof accessGrants.$inferInsert;
+export type SelectAccessGrant = typeof accessGrants.$inferSelect;
 
 export const v2Projects = pgTable(
 	"v2_projects",

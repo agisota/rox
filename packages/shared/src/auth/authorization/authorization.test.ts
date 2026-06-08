@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
 	canInvite,
+	canManageGrant,
+	canShare,
 	getAvailableRoleChanges,
 	getInvitableRoles,
 } from "./authorization";
@@ -86,5 +88,27 @@ describe("canInvite", () => {
 	test("member cannot invite anyone", () => {
 		expect(canInvite("member", "member")).toBe(false);
 		expect(canInvite("member", "admin")).toBe(false);
+	});
+});
+
+describe("canShare", () => {
+	test("owners and admins can share", () => {
+		expect(canShare("owner")).toBe(true);
+		expect(canShare("admin")).toBe(true);
+	});
+
+	test("plain members cannot share", () => {
+		expect(canShare("member")).toBe(false);
+	});
+});
+
+describe("canManageGrant", () => {
+	test("owners and admins can manage grants", () => {
+		expect(canManageGrant("owner")).toBe(true);
+		expect(canManageGrant("admin")).toBe(true);
+	});
+
+	test("plain members cannot manage grants", () => {
+		expect(canManageGrant("member")).toBe(false);
 	});
 });

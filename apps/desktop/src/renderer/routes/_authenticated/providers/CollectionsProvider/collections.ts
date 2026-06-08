@@ -4,6 +4,7 @@ import {
 	snakeCamelMapper,
 } from "@electric-sql/client";
 import type {
+	SelectAccessGrant,
 	SelectAgentCommand,
 	SelectAutomation,
 	SelectAutomationRun,
@@ -165,6 +166,7 @@ export interface OrgCollections {
 	githubPullRequests: Collection<SelectGithubPullRequest>;
 	automations: Collection<SelectAutomation>;
 	automationRuns: Collection<SelectAutomationRun>;
+	accessGrants: Collection<SelectAccessGrant>;
 	v2SidebarProjects: Collection<
 		DashboardSidebarProjectRow,
 		string,
@@ -785,6 +787,41 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	const accessGrants = createPersistedElectricCollection(
+		electricCollectionOptions<SelectAccessGrant>({
+			id: `access_grants-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "access_grants",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onInsert: async ({ transaction }) => {
+				const item = transaction.mutations[0].modified;
+				const result = await apiClient.share.grant.mutate({
+					resourceType: item.resourceType,
+					resourceId: item.resourceId,
+					granteeType: item.granteeType,
+					granteeId: item.granteeId,
+					role: item.role,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onDelete: async ({ transaction }) => {
+				const item = transaction.mutations[0].original;
+				const result = await apiClient.share.revoke.mutate({ id: item.id });
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+	accessGrants.createIndex((grant) => grant.resourceId, basicIndexConfig);
+	accessGrants.createIndex((grant) => grant.granteeId, basicIndexConfig);
+
 	const v2SidebarProjects = createIndexedCollection(
 		localStorageCollectionOptions({
 			id: `v2_sidebar_projects-${organizationId}`,
@@ -903,6 +940,7 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		githubPullRequests,
 		automations,
 		automationRuns,
+		accessGrants,
 		v2SidebarProjects,
 		v2WorkspaceLocalState,
 		v2SidebarSections,
