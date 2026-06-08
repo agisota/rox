@@ -17,6 +17,7 @@ import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { getHostServiceUnavailableMessage } from "renderer/lib/host-service-unavailable";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { AgentDetail } from "./components/AgentDetail";
+import { AgentPreinstallSection } from "./components/AgentPreinstallSection";
 import { AgentsSettingsSidebar } from "./components/AgentsSettingsSidebar";
 
 const KNOWN_PRESETS: HostAgentPreset[] = HOST_AGENT_PRESETS.map((preset) => ({
@@ -212,43 +213,48 @@ export function V2AgentsSettings({
 	}
 
 	return (
-		<div className="flex h-full w-full">
-			{configsQuery.isLoading ? (
-				<SidebarSkeleton />
-			) : (
-				<AgentsSettingsSidebar
-					configs={configs}
-					presets={addablePresets}
-					selectedAgentId={selectedAgentId}
-					onSelectAgent={setSelectedAgentId}
-					onAddAgent={(preset) => addMutation.mutate(preset)}
-					onReorder={(ids) => reorderMutation.mutate(ids)}
-					onResetToDefaults={() => resetMutation.mutate()}
-					isAdding={addMutation.isPending}
-					isResetting={resetMutation.isPending}
-				/>
-			)}
-			<div className="flex-1 overflow-y-auto">
-				{selectedAgent ? (
-					<AgentDetail
-						key={selectedAgent.id}
-						config={selectedAgent}
-						description={
-							DESCRIPTION_BY_PRESET_ID.get(selectedAgent.presetId) ??
-							"Terminal agent launch configuration"
-						}
-						onChanged={(updated) => {
-							updateCachedConfig(updated);
-							invalidate();
-						}}
-						onDeleted={() => {
-							setSelectedAgentId(null);
-							invalidate();
-						}}
-					/>
+		<div className="flex h-full w-full flex-col">
+			<div className="shrink-0 border-b p-4">
+				<AgentPreinstallSection />
+			</div>
+			<div className="flex min-h-0 flex-1">
+				{configsQuery.isLoading ? (
+					<SidebarSkeleton />
 				) : (
-					<EmptyState />
+					<AgentsSettingsSidebar
+						configs={configs}
+						presets={addablePresets}
+						selectedAgentId={selectedAgentId}
+						onSelectAgent={setSelectedAgentId}
+						onAddAgent={(preset) => addMutation.mutate(preset)}
+						onReorder={(ids) => reorderMutation.mutate(ids)}
+						onResetToDefaults={() => resetMutation.mutate()}
+						isAdding={addMutation.isPending}
+						isResetting={resetMutation.isPending}
+					/>
 				)}
+				<div className="flex-1 overflow-y-auto">
+					{selectedAgent ? (
+						<AgentDetail
+							key={selectedAgent.id}
+							config={selectedAgent}
+							description={
+								DESCRIPTION_BY_PRESET_ID.get(selectedAgent.presetId) ??
+								"Terminal agent launch configuration"
+							}
+							onChanged={(updated) => {
+								updateCachedConfig(updated);
+								invalidate();
+							}}
+							onDeleted={() => {
+								setSelectedAgentId(null);
+								invalidate();
+							}}
+						/>
+					) : (
+						<EmptyState />
+					)}
+				</div>
 			</div>
 		</div>
 	);
