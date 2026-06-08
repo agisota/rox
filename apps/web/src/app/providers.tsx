@@ -7,6 +7,7 @@ import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 
 import { PostHogUserIdentifier } from "@/components/PostHogUserIdentifier";
+import { I18nProvider } from "@/i18n";
 
 import { TRPCReactProvider } from "../trpc/react";
 
@@ -21,9 +22,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 					storageKey={THEME_STORAGE_KEY}
 					disableTransitionOnChange
 				>
-					<PostHogUserIdentifier />
-					{children}
-					<ReactQueryDevtools initialIsOpen={false} />
+					<I18nProvider>
+						<PostHogUserIdentifier />
+						{children}
+						<ReactQueryDevtools initialIsOpen={false} />
+					</I18nProvider>
 				</ThemeProvider>
 			</TRPCReactProvider>
 		</PostHogProvider>

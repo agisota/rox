@@ -9,6 +9,7 @@ import { type FormEvent, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { env } from "@/env";
+import { useTranslation } from "@/i18n";
 
 // Web sign-up is OAuth-only (GitHub/Google). The email/password flow is
 // intentionally hidden behind this flag rather than deleted so it can be
@@ -16,6 +17,7 @@ import { env } from "@/env";
 const showEmailPassword = false;
 
 export default function SignUpPage() {
+	const { t } = useTranslation();
 	const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 	const [isLoadingEmail, setIsLoadingEmail] = useState(false);
@@ -94,16 +96,16 @@ export default function SignUpPage() {
 			<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
 				<div className="flex flex-col space-y-2 text-center">
 					<h1 className="text-2xl font-semibold tracking-tight">
-						Check your email
+						{t.auth.checkYourEmail}
 					</h1>
 					<p className="text-muted-foreground text-sm">
-						We sent a verification link to{" "}
-						<span className="font-medium">{email}</span>. Click it to activate
-						your account, then sign in.
+						{t.auth.verificationSent}{" "}
+						<span className="font-medium">{email}</span>.{" "}
+						{t.auth.verificationInstructions}
 					</p>
 				</div>
 				<Button asChild variant="outline" className="w-full">
-					<Link href="/sign-in">Go to sign in</Link>
+					<Link href="/sign-in">{t.auth.goToSignIn}</Link>
 				</Button>
 			</div>
 		);
@@ -113,10 +115,10 @@ export default function SignUpPage() {
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
 			<div className="flex flex-col space-y-2 text-center">
 				<h1 className="text-2xl font-semibold tracking-tight">
-					Create an account
+					{t.auth.createAnAccount}
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign up to get started with Rox
+					{t.auth.signUpToGetStarted}
 				</p>
 			</div>
 			<div className="grid gap-4">
@@ -189,7 +191,7 @@ export default function SignUpPage() {
 					className="w-full"
 				>
 					<FaGithub className="mr-2 size-4" />
-					{isLoadingGithub ? "Loading..." : "Sign up with GitHub"}
+					{isLoadingGithub ? t.auth.loading : t.auth.signUpWithGithub}
 				</Button>
 				<Button
 					variant="outline"
@@ -198,36 +200,36 @@ export default function SignUpPage() {
 					className="w-full"
 				>
 					<FcGoogle className="mr-2 size-4" />
-					{isLoadingGoogle ? "Loading..." : "Sign up with Google"}
+					{isLoadingGoogle ? t.auth.loading : t.auth.signUpWithGoogle}
 				</Button>
 				<p className="text-muted-foreground px-8 text-center text-sm">
-					By clicking continue, you agree to our{" "}
+					{t.auth.agreeToTerms}{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/terms`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Terms of Service
+						{t.auth.termsOfService}
 					</a>{" "}
-					and{" "}
+					{t.auth.and}{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/privacy`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Privacy Policy
+						{t.auth.privacyPolicy}
 					</a>
 					.
 				</p>
 				<p className="text-center text-sm">
-					Already have an account?{" "}
+					{t.auth.alreadyHaveAccount}{" "}
 					<Link
 						href="/sign-in"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Sign in
+						{t.auth.signIn}
 					</Link>
 				</p>
 			</div>

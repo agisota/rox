@@ -11,6 +11,7 @@ import { type FormEvent, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { env } from "@/env";
+import { useTranslation } from "@/i18n";
 
 // Web sign-in is OAuth-only (GitHub/Google + dev Local Admin). The email/password
 // flow is intentionally hidden behind this flag rather than deleted so it can be
@@ -18,6 +19,7 @@ import { env } from "@/env";
 const showEmailPassword = false;
 
 export default function SignInPage() {
+	const { t } = useTranslation();
 	const searchParams = useSearchParams();
 	const redirect = searchParams.get("redirect");
 	const callbackURL = redirect
@@ -128,9 +130,11 @@ export default function SignInPage() {
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
 			<div className="flex flex-col space-y-2 text-center">
-				<h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+				<h1 className="text-2xl font-semibold tracking-tight">
+					{t.auth.welcomeBack}
+				</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign in to continue to Rox
+					{t.auth.signInToContinue}
 				</p>
 			</div>
 			<div className="grid gap-4">
@@ -144,7 +148,7 @@ export default function SignInPage() {
 						onClick={signInAsDev}
 						className="w-full"
 					>
-						{isLoadingDev ? "Signing in..." : "Sign in as Local Admin (dev)"}
+						{isLoadingDev ? t.auth.signingIn : t.auth.signInAsDev}
 					</Button>
 				)}
 				{showEmailPassword && (
@@ -199,7 +203,7 @@ export default function SignInPage() {
 					className="w-full"
 				>
 					<FaGithub className="mr-2 size-4" />
-					{isLoadingGithub ? "Loading..." : "Sign in with GitHub"}
+					{isLoadingGithub ? t.auth.loading : t.auth.signInWithGithub}
 				</Button>
 				<Button
 					variant="outline"
@@ -208,36 +212,36 @@ export default function SignInPage() {
 					className="w-full"
 				>
 					<FcGoogle className="mr-2 size-4" />
-					{isLoadingGoogle ? "Loading..." : "Sign in with Google"}
+					{isLoadingGoogle ? t.auth.loading : t.auth.signInWithGoogle}
 				</Button>
 				<p className="text-muted-foreground px-8 text-center text-sm">
-					By clicking continue, you agree to our{" "}
+					{t.auth.agreeToTerms}{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/terms`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Terms of Service
+						{t.auth.termsOfService}
 					</a>{" "}
-					and{" "}
+					{t.auth.and}{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/privacy`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Privacy Policy
+						{t.auth.privacyPolicy}
 					</a>
 					.
 				</p>
 				<p className="text-center text-sm">
-					Don&apos;t have an account?{" "}
+					{t.auth.dontHaveAccount}{" "}
 					<Link
 						href="/sign-up"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Sign up
+						{t.auth.signUp}
 					</Link>
 				</p>
 			</div>

@@ -4,13 +4,15 @@ import { cn } from "@rox/ui/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
-	{ href: "/", label: "Home" },
-	{ href: "/integrations", label: "Integrations" },
-];
+import { useTranslation } from "@/i18n";
 
 export function SidebarNav() {
+	const { t } = useTranslation();
 	const pathname = usePathname();
+	const navItems = [
+		{ href: "/", label: t.nav.home },
+		{ href: "/integrations", label: t.nav.integrations },
+	];
 
 	return (
 		<nav className="mt-4 flex flex-col items-start gap-3 md:mt-8">

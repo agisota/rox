@@ -1,0 +1,62 @@
+import type { Dictionary } from "./en";
+
+/** Russian dictionary (default locale). Typed against {@link Dictionary}. */
+export const ru: Dictionary = {
+	common: {
+		save: "Сохранить",
+		cancel: "Отмена",
+		create: "Создать",
+		delete: "Удалить",
+		loading: "Загрузка...",
+		logOut: "Выйти",
+		accountMenu: "Меню аккаунта",
+	},
+	nav: {
+		home: "Главная",
+		agents: "Агенты",
+		integrations: "Интеграции",
+		organization: "Организация",
+		switchOrganization: "Сменить организацию",
+	},
+	auth: {
+		welcomeBack: "С возвращением",
+		signInToContinue: "Войдите, чтобы продолжить в Rox",
+		createAnAccount: "Создать аккаунт",
+		signUpToGetStarted: "Зарегистрируйтесь, чтобы начать работу с Rox",
+		signInWithGithub: "Войти через GitHub",
+		signInWithGoogle: "Войти через Google",
+		signUpWithGithub: "Регистрация через GitHub",
+		signUpWithGoogle: "Регистрация через Google",
+		signInAsDev: "Войти как локальный администратор (dev)",
+		signingIn: "Вход...",
+		loading: "Загрузка...",
+		signIn: "Войти",
+		signUp: "Зарегистрироваться",
+		dontHaveAccount: "Нет аккаунта?",
+		alreadyHaveAccount: "Уже есть аккаунт?",
+		agreeToTerms: "Нажимая «Продолжить», вы соглашаетесь с нашими",
+		termsOfService: "Условиями использования",
+		privacyPolicy: "Политикой конфиденциальности",
+		and: "и",
+		checkYourEmail: "Проверьте почту",
+		verificationSent: "Мы отправили ссылку для подтверждения на",
+		verificationInstructions:
+			"Перейдите по ней, чтобы активировать аккаунт, затем войдите.",
+		goToSignIn: "Перейти ко входу",
+		signInFailed: "Не удалось войти. Попробуйте ещё раз.",
+		signUpFailed: "Не удалось зарегистрироваться. Попробуйте ещё раз.",
+	},
+	settings: {
+		title: "Настройки",
+		general: "Общие",
+		billing: "Оплата",
+		language: "Язык",
+		theme: "Тема",
+		profile: "Профиль",
+	},
+	empty: {
+		noResults: "Ничего не найдено",
+		noAgents: "Пока нет агентов",
+		nothingHere: "Здесь пока пусто",
+	},
+};

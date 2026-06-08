@@ -24,14 +24,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { LocaleSwitcher, useTranslation } from "@/i18n";
 import { useTRPC } from "@/trpc/react";
 
-const navItems = [
-	{ label: "Agents", href: "/agents" },
-	{ label: "Integrations", href: "/integrations" },
-];
-
 export function AgentsHeader() {
+	const { t } = useTranslation();
+	const navItems = [
+		{ label: t.nav.agents, href: "/agents" },
+		{ label: t.nav.integrations, href: "/integrations" },
+	];
 	const { data: session } = authClient.useSession();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -60,7 +61,7 @@ export function AgentsHeader() {
 		(org) => org.id === activeOrganizationId,
 	);
 
-	const displayName = activeOrganization?.name ?? "Organization";
+	const displayName = activeOrganization?.name ?? t.nav.organization;
 
 	const handleActionError = (message: string, error: unknown) => {
 		console.error(`[AgentsHeader] ${message}`, error);
@@ -198,7 +199,7 @@ export function AgentsHeader() {
 			{triggerButton}
 			<Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
 				<DrawerContent>
-					<DrawerTitle className="sr-only">Account menu</DrawerTitle>
+					<DrawerTitle className="sr-only">{t.common.accountMenu}</DrawerTitle>
 					<div className="flex flex-col gap-1 p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
 						<div className="flex flex-col space-y-1 px-2 py-1.5">
 							<div className="flex items-center gap-2">
@@ -215,7 +216,7 @@ export function AgentsHeader() {
 						{organizations && organizations.length > 1 && (
 							<>
 								<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-									Switch organization
+									{t.nav.switchOrganization}
 								</p>
 								{organizations.map((org) => (
 									<button
@@ -256,7 +257,7 @@ export function AgentsHeader() {
 							}}
 						>
 							<LogOut className="size-4" />
-							<span>Log out</span>
+							<span>{t.common.logOut}</span>
 						</button>
 					</div>
 				</DrawerContent>
@@ -284,7 +285,7 @@ export function AgentsHeader() {
 					<>
 						<DropdownMenuSub>
 							<DropdownMenuSubTrigger className="cursor-pointer">
-								<span>Switch organization</span>
+								<span>{t.nav.switchOrganization}</span>
 							</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent>
 								<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
@@ -329,7 +330,7 @@ export function AgentsHeader() {
 					}}
 				>
 					<LogOut className="size-4" />
-					<span>Log out</span>
+					<span>{t.common.logOut}</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
@@ -386,7 +387,10 @@ export function AgentsHeader() {
 					})}
 				</nav>
 
-				{orgMenu}
+				<div className="flex items-center gap-2">
+					<LocaleSwitcher />
+					{orgMenu}
+				</div>
 			</div>
 		</header>
 	);
