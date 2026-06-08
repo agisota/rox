@@ -8,10 +8,12 @@ import { automationRouter } from "./router/automation";
 import { billingRouter } from "./router/billing";
 import { chatRouter } from "./router/chat";
 import { deviceRouter } from "./router/device";
+import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
 import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
 import { knowledgeRouter } from "./router/knowledge";
+import { modelsRouter } from "./router/models";
 import { organizationRouter } from "./router/organization";
 import { projectRouter } from "./router/project";
 import { shareRouter } from "./router/share";
@@ -36,10 +38,12 @@ export const appRouter = createTRPCRouter({
 	billing: billingRouter,
 	chat: chatRouter,
 	device: deviceRouter,
+	economy: economyRouter,
 	executionCircuit: executionCircuitRouter,
 	host: hostRouter,
 	integration: integrationRouter,
 	knowledge: knowledgeRouter,
+	models: modelsRouter,
 	organization: organizationRouter,
 	project: projectRouter,
 	share: shareRouter,
