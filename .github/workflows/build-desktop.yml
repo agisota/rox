@@ -302,6 +302,11 @@ jobs:
     # native-module rebuild in install:deps.
     runs-on: windows-2022
     environment: production
+    # Windows is allowed to fail without blocking the macOS/Linux release.
+    # The build still runs and stays visible (a failed leg shows red), but its
+    # failure no longer fails the reusable workflow, so the `release` job still
+    # publishes the mac .dmg + linux AppImage. Re-evaluate if Windows must gate.
+    continue-on-error: true
 
     steps:
       # Deeply nested route paths in apps/desktop exceed Windows' 260-char MAX_PATH.
