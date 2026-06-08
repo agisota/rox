@@ -881,6 +881,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rox/ui": "workspace:*",
+        "framer-motion": "12.38.0",
         "lucide-react": "0.563.0",
         "react-dnd": "16.0.1",
         "zustand": "5.0.12",

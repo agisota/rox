@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_3GN2iLKN3XQRAOIWzEA9epgscMJr",
+  "orgId": "team_kXoYvINswEd0HPeAkrSx7LkM",
+  "projectName": "rox-docs",
+  "settings": {
+    "createdAt": 1780834398998,
+    "framework": "nextjs",
+    "devCommand": null,
+    "installCommand": "cd ../.. && bun install --ignore-scripts",
+    "buildCommand": "cd ../.. && bun run --filter=@rox/docs build",
+    "outputDirectory": ".next",
+    "rootDirectory": "apps/docs",
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

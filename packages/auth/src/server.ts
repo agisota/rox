@@ -139,6 +139,7 @@ export const auth = betterAuth({
 		user: {
 			create: {
 				after: async (user) => {
+				try {
 					const domain = user.email.split("@")[1]?.toLowerCase();
 					let enrolledOrgId: string | null = null;
 
@@ -195,6 +196,12 @@ export const auth = betterAuth({
 							.set({ activeOrganizationId: enrolledOrgId })
 							.where(eq(authSchema.sessions.userId, user.id));
 					}
+				} catch (err) {
+					console.error(
+						"[user.create.after] post-signup enrollment failed (non-fatal):",
+						err,
+					);
+				}
 				},
 			},
 		},

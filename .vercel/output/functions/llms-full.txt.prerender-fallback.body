@@ -1,0 +1,3777 @@
+# AI Agents
+
+
+
+
+
+## Overview
+
+Run AI coding agents in isolated workspaces. Each agent works independently without interfering with others.
+
+<img alt="AI Agents" src={__img0} placeholder="blur" />
+
+## Supported Agents
+
+* **Amp** - Amp Code CLI
+* **Claude Code** - Anthropic's CLI
+* **Codex** - OpenAI's assistant
+* **OpenCode** - Open-source alternative
+* **Pi** - Minimal terminal coding harness
+* **Gemini CLI** - Google's CLI agent
+* **Cursor Agent** - Cursor AI agent
+
+## Chat
+
+Rox includes a built-in chat panel for AI interactions without leaving the app.
+
+* Use the model picker to choose supported models and connect providers
+* Chat session titles are generated automatically from the conversation
+* Use the thinking level control to set reasoning effort: **Off**, **Low**, **Medium**, **High**, or **Max**
+
+## Agent Settings
+
+Go to **Settings → Agents** to customize launch behavior for each built-in agent.
+
+* **Enabled** - Show or hide the agent in launchers
+* **Command (No Prompt)** - Base command for terminal agents
+* **Command (With Prompt)** - Prompt-aware command for terminal agents
+* **Prompt Command Suffix** - Optional flags appended after the prompt payload
+* **Task Prompt Template** - Template used when launching an agent from a task
+* **Model Override** - Optional model override for Rox Chat
+* **Reset to Defaults** - Restore the shipped configuration for that agent
+
+## Usage
+
+Run agents directly in the terminal:
+
+```bash
+claude "Add error handling to fetchUser"
+```
+
+## Auto-Run Command
+
+When launching an agent from a task, the **Auto-run command** toggle controls whether it executes immediately.
+
+* **On** - Terminal agents run their command right away, and Rox Chat sends the task prompt immediately
+* **Off** - Terminal agents stage the command without pressing Enter, and Rox Chat opens as a draft instead
+
+The setting is remembered between sessions.
+
+## Parallel Agents
+
+Create multiple workspaces and run an agent in each. Compare results and merge the best solution.
+
+## Inline Prompts
+
+Agents can pause and ask questions, request tool approval, and ask for plan review directly in the chat pane.
+
+## Sandbox Access
+
+When an agent needs access to files outside its workspace, it will prompt for permission in chat so you can approve or deny the request inline.
+
+## Notifications
+
+Get notified when agents finish. Configure sounds in Settings.
+
+
+# Automations
+
+
+
+## Overview
+
+Automations run an agent session against a project on a schedule — like a cron job, but the output is a live workspace you (or a teammate) can open, review, and continue interactively.
+
+Typical uses:
+
+* **Standups** — a nightly summary of PRs, issues, and activity
+* **Release notes** — generate a draft from merged commits
+* **Audits** — scan for security issues or deprecated APIs each morning
+* **Dependency sweeps** — check for outdated packages weekly
+
+## Requirements
+
+* **A v2 project** — Automations run against a project that's already linked to a GitHub repo.
+* **A target device** — The run fires on the device you pick when creating the automation.
+
+## Create an Automation
+
+Click **Automations → New automation** and fill in:
+
+* **Title** — how the automation appears in the list
+* **Prompt** — the instructions the agent will receive at dispatch time. Supports markdown, `@file/path` mentions (scoped to the selected project), `:emoji:` shortcodes, and `/` slash commands.
+* **Device** — which host runs the session. Defaults to this device.
+* **Project** — the v2 project the session runs against.
+* **Schedule** — pick a preset or enter a custom RRule. All times are in your local timezone.
+* **Agent** — Claude, Codex, Amp, etc. — anything you've set up under **Settings → Agents**.
+
+## Schedules
+
+Schedules are stored as [RFC 5545 RRules](https://datatracker.ietf.org/doc/html/rfc5545#section-3.8.5). The schedule picker has presets for common cadences; use **Custom RRule…** for anything else.
+
+Examples:
+
+* `FREQ=DAILY;BYHOUR=9;BYMINUTE=0` — every day at 9:00 AM
+* `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0` — weekdays at 9:00 AM
+* `FREQ=WEEKLY;BYDAY=FR;BYHOUR=17;BYMINUTE=0` — every Friday at 5:00 PM
+
+## Runs
+
+Each time an automation fires, a **run** is recorded. Runs show up on the automation's detail page with status:
+
+* **dispatched** — the session was successfully handed off to the target device
+* **skipped (offline)** — the target device wasn't online at fire time; the run was skipped and the schedule advanced
+* **dispatch failed** — something broke during handoff; check the error message
+
+When a run dispatches in "new workspace" mode, a fresh workspace is created from the project's repo for that run. Open it from the run row to see the agent's work.
+
+## Pause, Run Now, Delete
+
+From the automation's detail page:
+
+* **Pause** — stops scheduling until you resume. Existing runs are kept.
+* **Run now** — dispatches immediately. The run appears in **Previous runs** within seconds.
+* **Delete** — removes the automation and its run history.
+
+## Limits
+
+* **At-least-once delivery** — Automations may dispatch more than once in rare cases (e.g. dispatcher retries). Design prompts that are safe to re-run.
+* **No completion tracking (v1)** — Runs land at `dispatched`; the detail page doesn't show success/failure of the agent itself. Open the workspace to see what happened.
+* **Offline hosts skip silently** — If your device is offline at fire time, the run is marked `skipped_offline` and the next occurrence is scheduled normally.
+* **One prompt per automation** — Each automation has one prompt. To run multiple prompts on a schedule, create multiple automations.
+
+## CLI
+
+```bash
+rox automations list
+rox automations create --name "Nightly audit" --rrule "FREQ=DAILY;BYHOUR=3;BYMINUTE=0" --project <projectId> --prompt-file prompt.md --agent claude
+rox automations get <id>
+rox automations run <id>
+rox automations pause <id>
+rox automations resume <id>
+rox automations delete <id>
+```
+
+
+# In-App Browser
+
+
+
+## Overview
+
+Rox includes a built-in browser pane so you can preview your running services without leaving the app.
+
+## Open a Browser Tab
+
+* Press **⌘⇧B** to open a new browser tab
+* Click the external link icon on any detected port in the sidebar to open it in the browser
+
+## Navigation
+
+The browser pane includes a full address bar with:
+
+* Back, forward, and reload buttons
+* URL autocomplete based on your browsing history
+* Favicon display for visited sites
+
+## Browsing History
+
+URLs you visit are saved locally and appear as autocomplete suggestions. To clear your history:
+
+1. Click the overflow menu (⋯) in the browser toolbar
+2. Select **Clear Browsing History**
+
+## DevTools
+
+Open the DevTools pane alongside any browser tab to inspect and debug the page running in the browser.
+
+## Ports Integration
+
+When Rox detects a port in use (e.g. `localhost:3000`), clicking its external link icon opens it in an in-app browser tab instead of the system browser.
+
+
+# Custom Themes
+
+
+
+import { COMPANY } from "@rox/shared/constants";
+
+You can import a theme file from the Marketplace or create your own from a base file in desktop settings.
+
+## Quick Workflow
+
+1. Open `Settings → Appearance → Theme`.
+2. Either click `Marketplace` to download a shared theme, or click `Download Base File` to start from your current theme.
+3. If you downloaded a base file, edit the JSON manually or ask an agent to customize it.
+4. Click `Import Theme` and select the file.
+5. Pick the imported theme from the theme grid.
+
+Marketplace themes are available from the <a href={`${COMPANY.MARKETING_URL}/marketplace/themes`}>Marketplace</a> page or the `Marketplace` link in `Settings → Appearance → Theme`.
+
+## Ask An Agent To Customize It
+
+After downloading the base file, you can prompt an agent with something like:
+
+```text
+Customize this Rox theme JSON to feel like a neon cyberpunk arcade.
+Keep the schema valid. Preserve all required ui and terminal keys.
+Return the full JSON file contents only.
+```
+
+Then save the returned JSON and import it in Rox.
+
+## Theme File Format
+
+Rox accepts:
+
+* A single theme object
+* An array of theme objects
+* An object with `themes: [...]`
+
+The importer supports:
+
+* `id`, `name`, `type` (`dark` or `light`)
+* `ui` color overrides
+* `terminal` color overrides
+* `colors` as an alias for `terminal`
+
+Missing values fall back to Rox defaults for the selected theme type.
+
+## Example: Single Theme
+
+```json
+{
+  "id": "my-neon-theme",
+  "name": "My Neon Theme",
+  "type": "dark",
+  "author": "You",
+  "description": "Neon terminal and UI accents",
+  "ui": {
+    "background": "#12061f",
+    "foreground": "#f7f5ff",
+    "primary": "#39ff14",
+    "accent": "#00e5ff",
+    "border": "#7b2dff"
+  },
+  "terminal": {
+    "background": "#0b0314",
+    "foreground": "#f8f2ff",
+    "cursor": "#39ff14",
+    "red": "#ff2b70",
+    "green": "#39ff14",
+    "yellow": "#ffef00",
+    "blue": "#00b7ff",
+    "magenta": "#ff5ecf",
+    "cyan": "#00ffd1",
+    "white": "#e9dcff",
+    "black": "#18082a",
+    "brightBlack": "#6e3ea5",
+    "brightRed": "#ff6fa2",
+    "brightGreen": "#7dff5a",
+    "brightYellow": "#fff86a",
+    "brightBlue": "#59dbff",
+    "brightMagenta": "#ff9be8",
+    "brightCyan": "#8dffe8",
+    "brightWhite": "#ffffff"
+  }
+}
+```
+
+## Notes
+
+* Theme IDs must be unique and not reserved (`system`, built-in theme IDs like `dark`/`light`).
+* Very large files are rejected in the desktop importer.
+
+
+# Customization
+
+
+
+## Notification Sounds
+
+Get audio notifications when agents finish or terminals exit.
+
+Settings → Notifications → Choose a sound
+
+Import custom ringtone audio files (MP3, WAV, OGG, up to 20MB) from **Settings → Notifications**. Preview any imported sound and set it as your active notification.
+
+## Project Colors
+
+Color-code your projects in the sidebar for quick identification.
+
+Click project settings → Choose a color
+
+## Default Editor
+
+Set which editor opens when you press ⌘O.
+
+Settings → Editor → Select Cursor, VS Code, or other
+
+## File Open Mode
+
+Control how files open when clicked in the file tree or changes view.
+
+Settings → Behavior → File open mode
+
+* **Split pane** (default) - Opens files by splitting the current tab
+* **New tab** - Opens files in a new tab
+
+Preview pane reuse works in both modes—this setting only affects the fallback when no reusable pane exists.
+
+## Terminal Presets
+
+Save terminal configurations (commands, environment) as presets for quick access.
+
+Settings → Terminal → Manage Presets
+
+## Custom Themes
+
+Download a theme from the Marketplace, or start from a base theme JSON and customize it before importing.
+
+Settings → Appearance → Theme → Marketplace / Download Base File / Import Theme
+
+See full guide: [Custom Themes](/custom-themes)
+
+## Settings Sync
+
+Your settings sync across devices when signed in.
+
+
+# Diff Viewer
+
+
+
+
+
+## Overview
+
+Review changes, stage files, commit, and push—all from one interface.
+
+<img alt="Diff Viewer" src={__img0} placeholder="blur" />
+
+## Features
+
+* **View changes** - See modified, staged, and untracked files
+* **Stage/unstage** - Select files for commit
+* **Commit** - Write message and commit
+* **Push/Pull** - Sync with remote
+* **Create PR** - Open pull request on GitHub
+
+## Diff Layouts
+
+* **Split view** - Side by side comparison
+* **Unified view** - Inline changes
+
+## Text Selection
+
+Select text directly in the diff and copy it from the context menu.
+
+Double-click a diff line, or right-click and choose **Edit Here**, to open the raw editor at the matching location.
+
+## Focus Mode
+
+Review one file at a time with navigation controls.
+
+Toggle focus mode in the diff toolbar (target icon) to:
+
+* View a single file with minimal distraction
+* Navigate between files with Prev/Next buttons
+* Jump between sections (Against base, Commits, Staged, Unstaged) via the section dropdown
+* See per-section file counts and position (e.g., "2/5 in Staged")
+
+Click files in the sidebar to jump directly to them in focus mode.
+
+
+# FAQ
+
+
+
+## General
+
+**What platforms?**
+macOS only. Windows/Linux coming soon.
+
+**How does it work?**
+Uses git worktrees to give each branch its own directory.
+
+**Do I need an account?**
+Yes, for team features and settings sync.
+
+## Workspaces
+
+**Same branch in multiple workspaces?**
+No. One branch = one workspace. Create a new branch if needed.
+
+**Where are workspaces stored?**
+In your Rox data directory as git worktrees.
+
+## Terminal
+
+**Which shell?**
+Your system default (bash/zsh) with your config files.
+
+**Do sessions persist?**
+Yes, terminals survive app restarts.
+
+## Git
+
+**Does it modify git config?**
+No. Uses standard git commands.
+
+**Private repos?**
+Yes. Configure GitHub auth: `gh auth status`
+
+## Getting Help
+
+* Report issues: [github.com/agisota/set/issues](https://github.com/agisota/set/issues)
+
+
+# Your First Workspace
+
+
+
+
+
+
+
+## Add a Repository
+
+Add your repo from a local folder or Git URL. Requires GitHub auth (`gh auth status`).
+
+<img alt="Add Repository" src={__img0} placeholder="blur" />
+
+## Create a Workspace
+
+Each workspace is an isolated git worktree on its own branch. Rox only copies git-tracked files—use [setup scripts](/setup-teardown-scripts) for `.env` files or `bun install`.
+
+Create workspaces from:
+
+* New branch from main
+* Existing branch
+* Pull request
+
+In the prompt-first flow, you can link a pull request by searching for it or pasting the full PR URL.
+
+<img alt="New Workspace" src={__img1} placeholder="blur" />
+
+## Start Working
+
+* **⌘O** - Open in Cursor/VS Code
+* **Terminal** - Built-in terminal ready to use
+* **Changes** - View diffs and commit
+
+## Next Steps
+
+* [Setup Scripts](/setup-teardown-scripts) - Automate `bun install`, env files
+* [Workspaces](/workspaces) - Run multiple branches at once
+* [IDE Integration](/use-with-ide) - Configure your editor
+
+
+# Keyboard Shortcuts
+
+
+
+<YouTubeVideo id="MpTj5QwEb4k" title="Keyboard Shortcuts" thumbnail="/images/keyboard.png" />
+
+## Workspace
+
+| Action                  | Shortcut |
+| ----------------------- | -------- |
+| New Workspace           | ⌘N       |
+| Quick Create Workspace  | ⌘⇧N      |
+| Open Project            | ⌘⇧O      |
+| Switch to Workspace 1-9 | ⌘1-9     |
+| Previous Workspace      | ⌘⌥↑      |
+| Next Workspace          | ⌘⌥↓      |
+
+## Layout
+
+| Action                    | Shortcut |
+| ------------------------- | -------- |
+| Toggle Changes Tab        | ⌘L       |
+| Toggle Expand Sidebar     | ⌘⇧L      |
+| Toggle Workspaces Sidebar | ⌘B       |
+| Split Right               | ⌘D       |
+| Split Down                | ⌘⇧D      |
+| Split Pane Auto           | ⌘E       |
+| Close Pane                | ⌘W       |
+| Quick Open File           | ⌘P       |
+| Keyword Search            | ⌘⇧F      |
+| New Browser Tab           | ⌘⇧B      |
+
+## Chat
+
+| Action           | Shortcut |
+| ---------------- | -------- |
+| Find in Chat     | ⌘F       |
+| Focus Chat Input | ⌘J       |
+
+## Terminal
+
+| Action           | Shortcut |
+| ---------------- | -------- |
+| New Tab          | ⌘T       |
+| Close Tab        | ⌘⇧W      |
+| Close Terminal   | ⌘W       |
+| Clear Terminal   | ⌘K       |
+| Find in Terminal | ⌘F       |
+| Scroll to Bottom | ⌘⇧↓      |
+| Previous Tab     | ⌘⌥←      |
+| Next Tab         | ⌘⌥→      |
+| Previous Pane    | ⌘⇧←      |
+| Next Pane        | ⌘⇧→      |
+| Open Preset 1-9  | ⌘⇧1-9    |
+
+## Window
+
+| Action                  | Shortcut |
+| ----------------------- | -------- |
+| Open in App             | ⌘O       |
+| Copy Path               | ⌘⇧C      |
+| Close Window            | ⌘⇧Q      |
+| Show Keyboard Shortcuts | ⌘/       |
+
+## Customize
+
+Open Settings → Keyboard Shortcuts to customize any hotkey.
+
+## Import/Export
+
+Share your hotkey configuration:
+
+* **Export** - Save your shortcuts to a file
+* **Import** - Load shortcuts from a file
+
+
+# MCP Server
+
+
+
+<Callout type="info">
+  This document covers **MCP v2**. The v1 server is deprecated but still available at `https://api.rox.one/api/agent/mcp` for existing integrations.
+</Callout>
+
+## Overview
+
+Rox provides an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI agents interact with your tasks, workspaces, and devices programmatically.
+
+## Capabilities
+
+| Category        | Operations                                                                                                        |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Tasks**       | list, get (by id or slug), create, update, delete                                                                 |
+| **Workspaces**  | list (filterable by host), create on a host, delete                                                               |
+| **Automations** | list, get metadata, get/set prompt body, create, update metadata, pause, resume, run on demand, list runs, delete |
+| **Projects**    | list projects, create from a Git URL or local repo path                                                           |
+| **Hosts**       | list hosts (registered machines) you have access to                                                               |
+
+## Setup
+
+### CLI Options
+
+<Tabs items={["Claude Code", "Codex", "Gemini CLI", "Open Code", "Amp CLI"]}>
+  <Tab value="Claude Code">
+    ```bash title="terminal"
+    claude mcp add rox --transport http https://api.rox.one/api/v2/agent/mcp
+    ```
+  </Tab>
+
+  <Tab value="Codex">
+    ```bash title="terminal"
+    codex mcp add rox --url https://api.rox.one/api/v2/agent/mcp
+    ```
+  </Tab>
+
+  <Tab value="Gemini CLI">
+    ```bash title="terminal"
+    gemini mcp add --transport http rox https://api.rox.one/api/v2/agent/mcp
+    ```
+  </Tab>
+
+  <Tab value="Open Code">
+    Run `opencode mcp add` and follow the interactive prompts:
+
+    ```ansi title="terminal"
+    opencode mcp add
+
+    [2m┌[0m  Add MCP server
+    [2m│[0m
+    [2m◇[0m  Location
+    [2m│[0m  [36mCurrent project[0m
+    [2m│[0m
+    [2m◇[0m  Enter MCP server name
+    [2m│[0m  [36mrox[0m
+    [2m│[0m
+    [2m◇[0m  Select MCP server type
+    [2m│[0m  [36mRemote[0m
+    [2m│[0m
+    [2m◇[0m  Enter MCP server URL
+    [2m│[0m  [36mhttps://api.rox.one/api/v2/agent/mcp[0m
+    [2m│[0m
+    [2m◇[0m  Does this server require OAuth authentication?
+    [2m│[0m  [36mYes[0m
+    [2m│[0m
+    [2m◇[0m  Do you have a pre-registered client ID?
+    [2m│[0m  [36mNo[0m
+    [2m│[0m
+    [2m└[0m  [32mMCP server added successfully[0m
+    ```
+  </Tab>
+
+  <Tab value="Amp CLI">
+    ```bash title="terminal"
+    amp mcp add --workspace rox https://api.rox.one/api/v2/agent/mcp
+    ```
+  </Tab>
+</Tabs>
+
+### Manual Configuration
+
+Alternatively, you can manually configure the MCP server for each client:
+
+<Tabs items={["Claude Code", "Claude Desktop", "Cursor", "Codex", "Gemini CLI", "Open Code", "Amp CLI"]}>
+  <Tab value="Claude Code">
+    Add a `.mcp.json` to your project root. Claude Code auto-discovers this file and handles OAuth authentication.
+
+    ```json title=".mcp.json"
+    {
+      "mcpServers": {
+        "rox": {
+          "type": "http",
+          "url": "https://api.rox.one/api/v2/agent/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab value="Claude Desktop">
+    Add to your `claude_desktop_config.json`:
+
+    ```json title="claude_desktop_config.json"
+    {
+      "mcpServers": {
+        "rox": {
+          "type": "http",
+          "url": "https://api.rox.one/api/v2/agent/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab value="Cursor">
+    Add to `.cursor/mcp.json` in your project root:
+
+    ```json title=".cursor/mcp.json"
+    {
+      "mcpServers": {
+        "rox": {
+          "url": "https://api.rox.one/api/v2/agent/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab value="Codex">
+    Add to your `~/.codex/config.toml`:
+
+    ```toml title="config.toml"
+    [mcp_servers.rox]
+    url = "https://api.rox.one/api/v2/agent/mcp"
+    ```
+  </Tab>
+
+  <Tab value="Gemini CLI">
+    Add to your `.gemini/settings.json`:
+
+    ```json title="settings.json"
+    {
+      "mcpServers": {
+        "rox": {
+          "httpUrl": "https://api.rox.one/api/v2/agent/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab value="Open Code">
+    Add to your `opencode.json`:
+
+    ```json title="opencode.json"
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "mcp": {
+        "rox": {
+          "type": "remote",
+          "url": "https://api.rox.one/api/v2/agent/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab value="Amp CLI">
+    Add to `.amp/settings.json` in your project root:
+
+    ```json title=".amp/settings.json"
+    {
+      "amp.mcpServers": {
+        "rox": {
+          "url": "https://api.rox.one/api/v2/agent/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Authentication
+
+The MCP server uses OAuth 2.1. When you first connect, you'll be prompted to authorize the connection in your browser. The token is scoped to your active organization.
+
+### API Key Authentication
+
+For headless environments, CI/CD pipelines, or scripts where browser-based OAuth isn't practical, you can authenticate with an API key instead.
+
+**Generating an API key:**
+
+1. Open the Rox desktop app
+2. Go to **Settings > API Keys**
+3. Click **Create API Key**
+4. Copy the key (it starts with `sk_live_`)—you won't be able to see it again
+
+**Using the API key:**
+
+Pass the API key as a Bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer sk_live_your_api_key_here
+```
+
+MCP clients that support custom headers can use this directly. For Claude Code, set the header in your `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "rox": {
+      "type": "http",
+      "url": "https://api.rox.one/api/v2/agent/mcp",
+      "headers": {
+        "Authorization": "Bearer sk_live_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+<Callout type="warn">
+  API keys grant full access to your organization. Keep them secret and never commit them to version control. Use environment variables or secrets managers for CI/CD.
+</Callout>
+
+**When to use which method:**
+
+| Method    | Best for                                              |
+| --------- | ----------------------------------------------------- |
+| OAuth 2.1 | Interactive use — Claude Desktop, Claude Code, Cursor |
+| API Key   | Headless/CI — scripts, automation, pipelines          |
+
+## Available Tools
+
+### Tasks
+
+| Tool           | Description                                                                     |
+| -------------- | ------------------------------------------------------------------------------- |
+| `tasks_list`   | List tasks with optional filters (status, priority, assignee, free-text search) |
+| `tasks_get`    | Get one task by UUID or slug                                                    |
+| `tasks_create` | Create a task in the active organization                                        |
+| `tasks_update` | Update fields on an existing task                                               |
+| `tasks_delete` | Hard-delete a task by UUID                                                      |
+
+### Workspaces
+
+| Tool                | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| `workspaces_list`   | List workspaces, optionally filtered by host              |
+| `workspaces_create` | Create a workspace on a host (branch-scoped git worktree) |
+| `workspaces_delete` | Delete a workspace by UUID; idempotent                    |
+
+### Agents
+
+| Tool            | Description                                               |
+| --------------- | --------------------------------------------------------- |
+| `agents_list`   | List agents configured on a host                          |
+| `agents_create` | Create (launch) an agent session in an existing workspace |
+
+### Terminals
+
+| Tool               | Description                                                            |
+| ------------------ | ---------------------------------------------------------------------- |
+| `terminals_create` | Create a terminal session in a workspace, optionally running a command |
+
+### Automations
+
+| Tool                     | Description                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `automations_list`       | List automations the calling user owns                                                           |
+| `automations_get`        | Get one automation's metadata (prompt body omitted)                                              |
+| `automations_get_prompt` | Fetch the full markdown prompt for one automation                                                |
+| `automations_create`     | Schedule a recurring agent run with an RFC 5545 RRULE                                            |
+| `automations_update`     | Update metadata (name, schedule, agent, host); use `automations_set_prompt` to change the prompt |
+| `automations_set_prompt` | Replace the full markdown prompt body                                                            |
+| `automations_pause`      | Pause an automation (schedule stops firing)                                                      |
+| `automations_resume`     | Resume a paused automation                                                                       |
+| `automations_run`        | Dispatch an automation immediately, outside its schedule                                         |
+| `automations_logs`       | List recent runs for an automation                                                               |
+| `automations_delete`     | Delete an automation                                                                             |
+
+### Projects
+
+| Tool            | Description                                                  |
+| --------------- | ------------------------------------------------------------ |
+| `projects_list` | List projects (checked-out repos) in the active organization |
+
+### Hosts
+
+| Tool         | Description                                             |
+| ------------ | ------------------------------------------------------- |
+| `hosts_list` | List the hosts (registered machines) you have access to |
+
+## Chat Integration
+
+In the built-in chat panel, use the `/mcp` slash command to see your workspace's configured MCP servers — their names, transport type (local/remote), and current state (enabled/disabled/invalid). This reads from your workspace MCP config (`.mastracode/mcp.json`, `.amp/settings.json`, or `.mcp.json`).
+
+## Example Usage
+
+Once connected, you can ask your AI agent to:
+
+* "Create a task for fixing the login bug"
+* "List all my assigned tasks"
+* "Create a workspace for the auth feature on my MacBook"
+* "Schedule a daily automation that triages new Linear issues at 9am"
+* "Pause the nightly cleanup automation"
+* "Show me the last 10 runs of my Linear triage automation"
+
+
+# Overview
+
+
+
+Rox is an open source AI coding platform. It's available as a desktop IDE, a command-line interface, or an MCP server.
+
+<YouTubeVideo id="7jhPfMDwTUc" title="Rox Demo" thumbnail="/images/video-thumbnail.png" />
+
+Each git branch gets its own isolated workspace via git worktrees — no stashing, no `git checkout` whiplash. Run Claude Code, Cursor, and other agents in parallel across workspaces, open any of them in your IDE, and review/commit changes from a built-in diff viewer. Local-first; works offline and syncs when connected.
+
+## Requirements
+
+* macOS (Apple Silicon or Intel) — Windows and Linux coming soon
+* Git installed
+* GitHub CLI authenticated (`gh auth status`)
+
+## Install desktop app
+
+<DownloadButton />
+
+## What's next
+
+* **[Your First Workspace](/first-workspace)** — Setup walkthrough including IDE integration and AI agents
+* **[Workspaces](/workspaces)** — How worktrees power parallel branch work
+* **[Terminal](/terminal-integration)** — Persistent terminal sessions per workspace
+* **[Diff Viewer](/diff-viewer)** — Review, stage, and commit changes
+* **[AI Agents](/agent-integration)** — Run Claude Code, Cursor, and other agents in isolated workspaces
+* **[CLI](/cli/getting-started)** — Drive Rox from the command line
+
+
+# Port Management
+
+
+
+
+
+## Overview
+
+Rox does not assign per-workspace port ranges. It discovers listening ports from processes running in each workspace and lets you manage them from the UI.
+
+<img alt="Port Panel" src={__img0} placeholder="blur" />
+
+## Features
+
+* **View active ports** - See which processes are using which ports
+* **Kill processes** - Stop a process by clicking its port
+* **Workspace grouping** - Ports are grouped by the workspace that owns the process
+* **Terminal focus** - Select a port to jump back to the terminal that owns it
+* **Browser actions** - Open local web servers in the in-app browser or externally from the port action
+
+## Port Labels
+
+Add friendly names to automatically detected ports with a workspace
+configuration file. Useful for:
+
+* Providing meaningful labels for your team
+* Making common dev-server ports easier to scan in the UI
+
+Create `.rox/ports.json` in your repository:
+
+```json
+{
+  "ports": [
+    { "port": 3000, "label": "Frontend Dev Server" },
+    { "port": 8080, "label": "API Server" },
+    { "port": 5432, "label": "PostgreSQL" }
+  ]
+}
+```
+
+**Fields:**
+
+* `port` - Port number (1-65535)
+* `label` - Display text shown in tooltip
+
+**Behavior:**
+
+* Dynamic port discovery is still authoritative
+* `ports.json` only labels ports that Rox already detects as listening
+* Ports without a matching label still appear
+* Label entries for ports that are not currently listening are ignored
+* Each workspace reads labels from its own worktree's file
+* Changes are detected automatically
+* Ports can be opened at `localhost:PORT` from the browser action
+
+**Error Handling:**
+
+If `ports.json` is malformed:
+
+* Labels from that file are ignored until fixed
+* Detected ports still appear without those labels
+
+**Tips:**
+
+* Commit `.rox/ports.json` to share port labels with your team
+* **Pro tip:** If you want deterministic per-workspace port ranges, implement it in setup/teardown scripts by reserving a range in a shared file (for example `~/.rox/port-allocations.json`) during setup and releasing it during teardown. See this repo's examples: [`.rox/setup.sh`](https://github.com/agisota/set/blob/main/.rox/setup.sh) and [`.rox/teardown.sh`](https://github.com/agisota/set/blob/main/.rox/teardown.sh).
+
+## Discovery and Updates
+
+Port discovery runs in each host server, not in the desktop renderer. The host server watches terminal process trees, scans for listening ports, resolves any matching port label, and publishes `port:changed` events when ports appear or disappear.
+
+The desktop sidebar keeps one ports query per online host. It patches that cached host snapshot from port events, batching bursts so updates stay responsive without refetching every time a port changes. A slower fallback refetch still runs so the UI recovers if an event is missed during reconnect.
+
+
+# Use with OpenRouter, Bedrock, Vertex, or Vercel
+
+
+
+
+
+
+
+
+
+If you're using Rox in the terminal - any CLI agent (Claude Code, Codex, Curser Agents, etc.)
+automatically just work. That's the beauty of us being terminal first.
+
+For the Chat UI, we have a flow for users to get started.
+
+## Chat UI
+
+1. Open the model picker at the bottom of the chat
+
+<img alt="Model picker" src={__img0} placeholder="blur" />
+
+2. Click the **key icon** next to **Anthropic**
+
+3. Select **Use API key**
+
+<img alt="Connect Anthropic" src={__img1} placeholder="blur" />
+
+4. Enter the environment variables for your provider (one per line, `VAR_NAME=value` format)
+
+<img alt="Environment variables" src={__img2} placeholder="blur" />
+
+5. Click **Save settings**
+
+See the provider sections below for the specific variables to use.
+
+## Terminal
+
+Set environment variables in your shell profile or per workspace via **Settings > Env**.
+
+<Callout type="info">
+  For Anthropic-compatible providers (OpenRouter, Vercel AI Gateway), set `ANTHROPIC_API_KEY` to an empty string to prevent direct Anthropic authentication.
+</Callout>
+
+***
+
+## Vercel AI Gateway
+
+Route requests through the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway).
+
+```bash
+ANTHROPIC_BASE_URL=https://ai-gateway.vercel.sh
+ANTHROPIC_AUTH_TOKEN=your-vercel-ai-gateway-api-key
+ANTHROPIC_API_KEY=
+```
+
+## OpenRouter
+
+[OpenRouter](https://openrouter.ai) provides access to many models through a single API.
+
+```bash
+ANTHROPIC_BASE_URL=https://openrouter.ai/api
+ANTHROPIC_AUTH_TOKEN=your-openrouter-api-key
+ANTHROPIC_API_KEY=
+```
+
+## AWS Bedrock
+
+Use Claude models through your AWS account with [Amazon Bedrock](https://aws.amazon.com/bedrock/).
+
+Ensure your AWS credentials are configured via `aws configure`, environment variables, or SSO profile.
+
+```bash
+CLAUDE_CODE_USE_BEDROCK=1
+AWS_REGION=us-east-1
+```
+
+Optionally override the region for the small/fast model (Haiku):
+
+```bash
+ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION=us-west-2
+```
+
+<Callout type="warn">
+  Pin specific model versions to prevent breakage when new models are released:
+
+  ```bash
+  ANTHROPIC_DEFAULT_OPUS_MODEL=us.anthropic.claude-opus-4-6-v1
+  ANTHROPIC_DEFAULT_SONNET_MODEL=us.anthropic.claude-sonnet-4-6
+  ANTHROPIC_DEFAULT_HAIKU_MODEL=us.anthropic.claude-haiku-4-5-20251001-v1:0
+  ```
+</Callout>
+
+For full setup details including IAM configuration, see the [Claude Code on Amazon Bedrock docs](https://code.claude.com/docs/en/amazon-bedrock).
+
+## Google Vertex AI
+
+Run Claude models on [Google Cloud Vertex AI](https://cloud.google.com/vertex-ai).
+
+Authenticate with `gcloud auth application-default login`, then set:
+
+```bash
+CLAUDE_CODE_USE_VERTEX=1
+CLOUD_ML_REGION=global
+ANTHROPIC_VERTEX_PROJECT_ID=your-project-id
+```
+
+<Callout type="warn">
+  Pin specific model versions to prevent breakage when new models are released:
+
+  ```bash
+  ANTHROPIC_DEFAULT_OPUS_MODEL=claude-opus-4-6
+  ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-4-6
+  ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-haiku-4-5@20251001
+  ```
+</Callout>
+
+For full setup details including IAM configuration, see the [Claude Code on Google Vertex AI docs](https://code.claude.com/docs/en/google-vertex-ai).
+
+## Microsoft Foundry (Azure)
+
+Use Claude models via [Microsoft Foundry](https://ai.azure.com).
+
+Authenticate with an API key or Microsoft Entra ID (`az login`), then set:
+
+```bash
+CLAUDE_CODE_USE_FOUNDRY=1
+ANTHROPIC_FOUNDRY_RESOURCE=your-resource-name
+
+# If using API key authentication:
+ANTHROPIC_FOUNDRY_API_KEY=your-azure-api-key
+```
+
+<Callout type="warn">
+  Pin specific model versions to prevent breakage when new models are released:
+
+  ```bash
+  ANTHROPIC_DEFAULT_OPUS_MODEL=claude-opus-4-6
+  ANTHROPIC_DEFAULT_SONNET_MODEL=claude-sonnet-4-6
+  ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-haiku-4-5
+  ```
+</Callout>
+
+For full setup details including RBAC configuration, see the [Claude Code on Microsoft Foundry docs](https://code.claude.com/docs/en/microsoft-foundry).
+
+## Other Anthropic-Compatible Providers
+
+Any provider that exposes an Anthropic-compatible API (such as LiteLLM) can be used:
+
+```bash
+ANTHROPIC_BASE_URL=https://your-provider.example.com
+ANTHROPIC_AUTH_TOKEN=your-api-key
+ANTHROPIC_API_KEY=
+```
+
+For LLM gateway configuration details, see the [Claude Code LLM gateway docs](https://code.claude.com/docs/en/llm-gateway).
+
+
+# Remote Workspaces
+
+
+
+
+
+
+
+
+
+## Overview
+
+A workspace lives on the machine that hosts its files, terminal, and ports. **Remote workspaces** let you reach a workspace that's hosted on a different machine, like a Mac mini under your desk, a sandbox your team shares, or a spare laptop in the office.
+
+**Rox Relay** is a service that provides a secure way to route traffic between your different devices. There are two ways to grant a device remote access through the relay:
+
+## Option 1 — Desktop
+
+<Callout type="warn">
+  Exposing your primary workstation through the relay means anything reachable by your local host service — files, terminals, agent runs — becomes reachable by clients you grant access to. The recommended setup is a **separate machine** provisioned with only the repos and credentials you intend to share. That way a misclick or compromised client can't wipe an unrelated project or leak unrelated secrets.
+
+  Use the desktop toggle when you genuinely need it on this machine. Otherwise prefer the CLI path on a dedicated host.
+</Callout>
+
+Open the desktop app and go to **Settings → Security**. Flip on **Allow remote workspaces to access this device via relay**.
+
+<img alt="Settings → Security relay toggle" src={__img0} placeholder="blur" />
+
+Enabling the toggle restarts the host service, so any running terminals on this device will be interrupted. You'll be asked to type a confirmation phrase before the change applies.
+
+## Option 2 — CLI
+
+<Callout type="info">
+  See the CLI's [Getting Started](/cli/getting-started) and [Host Server](/cli/host-server) docs to get set up.
+</Callout>
+
+On the machine you want to add to your shared relay network, sign in and start the host server.
+
+```bash
+rox auth login
+rox start --daemon
+```
+
+`rox start --daemon` runs a small HTTP server in the background and registers the machine with the relay so other clients in your organization can find it.
+
+Verify it's online:
+
+```bash
+rox status
+```
+
+## Grant teammates access
+
+When a host first comes online, the user who started it is the only one with access. Other members of your organization won't see it in their workspaces list until you add them.
+
+Open **Settings → Hosts** in the desktop app, pick the host, and use **Add member** to grant teammates access. Owners can promote members to owner or remove them from the host.
+
+<img alt="Settings → Hosts members table" src={__img1} placeholder="blur" />
+
+## Access remote workspaces from another device
+
+On any other device signed into the same organization, open the desktop app's **Workspaces** list. Use the **Device** filter in the top right to pick a remote host:
+
+* **This device** — workspaces on the machine you're using now
+* **All devices** — everything you can reach
+* **Other devices** — each remote host that has opted in, with an online indicator
+
+<img alt="Device filter in the workspaces list" src={__img2} placeholder="blur" />
+
+Pick a remote host to see the workspaces hosted there. Open one and you get the full Rox experience — terminals, ports, agent runs, the diff viewer — proxied through the relay to the host machine.
+
+## Turning access off
+
+* **Desktop**: flip the toggle in **Settings → Security** back off. The host service restarts and stops accepting relay traffic.
+* **CLI**: run `rox stop` on the host machine.
+
+In both cases, in-flight terminals and host-backed work on that machine are interrupted.
+
+
+# Setup, Teardown & Run Scripts
+
+
+
+## Overview
+
+Run commands automatically when creating or deleting workspaces, and define dev server commands that launch via the Run button.
+
+Create `.rox/config.json` in your project:
+
+```json
+{
+  "setup": ["bun install", "cp \"$ROX_ROOT_PATH/.env\" .env"],
+  "teardown": ["docker-compose down"],
+  "run": ["./.rox/run.sh"]
+}
+```
+
+## How It Works
+
+1. Create workspace → **setup** commands run in a terminal
+2. Delete workspace → **teardown** commands run
+3. Click the **Run** button → **run** commands execute in a dedicated pane
+
+Setup and teardown commands run sequentially in the workspace directory.
+
+## Run Script
+
+The `run` field defines commands that start your dev server or other long-running processes. Unlike setup/teardown, run commands are:
+
+* **On-demand** — triggered by the Run button, not automatically on workspace creation
+* **Restartable** — stop and restart from the UI without recreating the workspace
+* **Dedicated pane** — runs in its own terminal pane separate from your shell
+
+```json
+{
+  "setup": ["npm install"],
+  "run": ["./.rox/run.sh"]
+}
+```
+
+## Environment Variables
+
+| Variable             | Description                    |
+| -------------------- | ------------------------------ |
+| `ROX_ROOT_PATH`      | Path to root repository        |
+| `ROX_WORKSPACE_NAME` | Current workspace name         |
+| `ROX_WORKSPACE_PATH` | Path to the workspace worktree |
+
+## Examples
+
+**Node.js:**
+
+```json
+{ "setup": ["bun install", "cp \"$ROX_ROOT_PATH/.env\" .env"] }
+```
+
+**Docker:**
+
+```json
+{
+  "setup": ["docker-compose up -d", "bun run db:migrate"],
+  "teardown": ["docker-compose down -v"]
+}
+```
+
+**Full config:**
+
+```json
+{
+  "setup": ["./.rox/setup.sh"],
+  "teardown": ["./.rox/teardown.sh"],
+  "run": ["./.rox/run.sh"]
+}
+```
+
+## User Overrides
+
+Override project scripts without modifying the repo by placing a `config.json` in your home directory:
+
+```
+~/.rox/projects/<project-id>/config.json
+```
+
+Where `<project-id>` is your project's unique ID in Rox (visible in the app's project settings).
+
+### Priority Order
+
+Config is resolved in this order (first found wins, for setup, teardown, and run):
+
+1. `~/.rox/projects/<project-id>/config.json` — user override
+2. `<worktree>/.rox/config.json` — worktree-specific
+3. `<repo>/.rox/config.json` — project default
+
+No merging occurs between levels—the first config found is used entirely.
+
+### Examples
+
+**Custom setup script:**
+
+```json
+{
+  "setup": ["~/.rox/projects/<project-id>/setup.sh"],
+  "teardown": ["~/.rox/projects/<project-id>/teardown.sh"]
+}
+```
+
+**Skip setup entirely:**
+
+```json
+{ "setup": [], "teardown": [] }
+```
+
+## Local Config
+
+Extend or override your team's committed scripts without modifying the repo. Create `.rox/config.local.json` alongside `config.json` — it's gitignored automatically.
+
+### Prepend and/or append
+
+Add steps before or after the team's scripts:
+
+```json
+{
+  "setup": {
+    "before": ["echo 'running pre-setup'"],
+    "after": ["./.rox/my-post-setup.sh"]
+  },
+  "teardown": {
+    "after": ["./.rox/my-cleanup.sh"]
+  }
+}
+```
+
+Result: `before` → committed setup scripts → `after`. Keys you don't specify pass through unchanged.
+
+### Override entirely
+
+Use a plain array to replace the team's scripts completely:
+
+```json
+{
+  "setup": ["./.rox/my-custom-setup.sh"]
+}
+```
+
+### Mix and match
+
+Override one key while extending the other:
+
+```json
+{
+  "setup": { "after": ["bun run my-extra-step"] },
+  "teardown": ["my-custom-teardown.sh"]
+}
+```
+
+### Resolution order
+
+The local config merges on top of whichever base config wins the [priority order](#priority-order). If a `config.local.json` exists in both the worktree and main repo, the worktree's local config takes priority.
+
+## Force Delete
+
+If teardown scripts fail during workspace deletion, you can force-delete to skip the failed teardown and continue cleanup.
+
+When teardown fails:
+
+1. Error toast appears with "Delete Anyway" and "View Logs" buttons
+2. Click "Delete Anyway" to force-delete immediately
+3. Or click "View Logs" to review the failure, then force-delete from the dialog
+
+## Tips
+
+* Keep setup fast—runs every workspace creation
+* Commit `.rox/` to share with team
+* Use shell scripts for complex logic: `"setup": ["./.rox/setup.sh"]`
+* Use `config.local.json` to add personal steps without touching the team's config
+* Use user overrides (`~/.rox/projects/`) to replace scripts entirely per-project
+* Use `run` for dev servers instead of putting them in `setup`—run scripts are restartable and don't block workspace creation
+
+
+# Terminal
+
+
+
+
+
+## Overview
+
+Built-in terminal per workspace with multiple tabs and session persistence.
+
+<img alt="Terminal" src={__img0} placeholder="blur" />
+
+## Multiple Tabs
+
+Open several terminal tabs per workspace. Each runs independently.
+
+* **⌘T** - New tab
+* **⌘W** - Close tab
+* **⌘1-9** - Switch tabs
+
+## Session Persistence
+
+Sessions survive app restarts:
+
+* Running processes continue
+* Output history preserved
+* Scrollback maintained
+
+## Pane Rename
+
+Double-click a pane title to rename it.
+
+## Merge Tabs
+
+Drag a tab onto another tab's split drop zone to merge the source tab's panes into that layout. The source tab closes after the merge.
+
+## Right-Click Menu
+
+Right-click in the terminal for quick actions:
+
+* **Copy** - Copy selected text (enabled when text is selected)
+* **Paste** - Paste from clipboard (enabled when clipboard has content)
+* **Mark as Unread** - Show the unread indicator again
+* Split, Clear, Move to Tab, Close
+
+## Cmd/Ctrl-Click Links
+
+Hold `Cmd` (macOS) or `Ctrl` and click links in terminal output:
+
+* URLs open in browser
+* File paths open in the built-in file viewer by default
+* Change file-path behavior in **Settings → Terminal**
+
+## Environment Variables
+
+| Variable             | Description             |
+| -------------------- | ----------------------- |
+| `ROX_ROOT_PATH`      | Path to root repository |
+| `ROX_WORKSPACE_NAME` | Current workspace name  |
+
+
+# Presets
+
+
+
+<YouTubeVideo id="jT8AoqYTwRU" title="Rox Presets" thumbnail="/images/preset.png" />
+
+## Overview
+
+Presets let you quickly launch terminals with pre-configured commands. Save common workflows and apply them with a single click.
+
+## What Presets Do
+
+* **Custom commands for new tabs** - Define commands that run when opening a terminal
+* **Working directory** - Specify where commands run in your project (e.g., `apps/web`)
+* **Split pane or new tab launch mode** - Run commands in parallel in one tab, or one tab per command
+* **Default preset** - Auto-apply a preset to new workspaces
+* **Quick-add templates** - One-click setup for Claude, Codex, Gemini, and other agents
+
+## Creating a Preset
+
+Go to **Settings → Terminal** and click **Add Preset**.
+
+Each preset has:
+
+| Field                 | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| **Name**              | Display name for the preset                            |
+| **Description**       | Optional description                                   |
+| **Working Directory** | Relative path in your project (leave empty for root)   |
+| **Commands**          | One or more commands to run                            |
+| **Mode**              | Split Pane (parallel panes) or New Tab (parallel tabs) |
+
+## Launch Modes
+
+**Split Pane** - Commands run in parallel in a single tab, with one split pane per command.
+
+**New Tab** - Commands run in parallel in separate tabs, with one tab per command.
+
+Presets are parallel by default.
+
+## Quick-Add Templates
+
+Pre-configured presets for popular AI agents. Defaults mirror the bundled Rox launch settings for each agent. Claude and Codex use their most permissive bypass flags; edit any preset to change its permission mode.
+
+* **amp** - `amp` (built-in permission rules auto-deny destructive ops)
+* **claude** - `claude --dangerously-skip-permissions`
+* **codex** - `codex --dangerously-bypass-approvals-and-sandbox` (most permissive)
+* **gemini** - `gemini --approval-mode=auto_edit`
+* **copilot** - `copilot --allow-tool=write`
+* **cursor-agent** - `cursor-agent` (prompts for every action)
+* **mastracode** - Mastra's coding agent (opt-in: auto-approves all actions by default at the CLI; no startup flag to restrict)
+* **opencode** - Open-source AI coding agent (opt-in: full file and shell access by default at the CLI; no startup flag to restrict)
+* **pi** - Minimal terminal coding harness (opt-in: auto-approves all actions by default at the CLI; no startup flag to restrict)
+
+## Preset Bar
+
+The preset bar appears above terminal tabs and shows your pinned presets for one-click access.
+
+* **Pin a preset** - Use the pin control in **Settings → Terminal** or the preset bar menu
+* **Launch** - Click a pinned preset to open it in the current workspace
+* **Right-click** - Open in the current terminal, current tab, or a new tab, or edit the preset
+* **Reorder** - Drag pinned items to rearrange their order in the bar
+* **Manage** - Use the gear menu to browse presets, add quick-add templates, and show or hide the bar
+
+## Default Preset
+
+Mark a preset as default to auto-apply it when creating workspaces or opening new tabs.
+
+**Auto-apply settings** in Settings → Terminal:
+
+* **Apply preset on workspace creation** - Runs default preset when creating new workspaces
+* **Apply preset on new tab** - Runs default preset when opening new terminal tabs/panes/splits
+
+Both settings are enabled by default. Disable either to prevent automatic preset application in that context.
+
+Explicit preset launches (via hotkey or menu) always work regardless of these settings.
+
+
+# IDE Integration
+
+
+
+
+
+## Open in Editor
+
+Press **⌘O** to open workspace in your editor. Supported editors:
+
+* Cursor
+* VS Code
+* VS Code Insiders
+* Zed
+* Windsurf
+* Antigravity
+* Sublime Text
+* JetBrains IDEs (IntelliJ IDEA, WebStorm, PyCharm, and more)
+
+<img alt="Open In Editor" src={__img0} placeholder="blur" />
+
+## Configure Default Editor
+
+Settings → Editor → Select your preferred editor
+
+## Window Title Tip
+
+Show branch name in editor title bar:
+
+1. Open VS Code/Cursor settings
+2. Search `window.title`
+3. Set to: `${activeRepositoryBranchName}${separator}${rootName}`
+
+This helps identify which window is which when you have multiple workspaces open.
+
+
+# Monorepos
+
+
+
+## Overview
+
+Rox works with monorepos. Workspaces are created at the repo root with access to all packages.
+
+## Setup Script
+
+```json
+{
+  "setup": [
+    "bun install",
+    "cp \"$ROX_ROOT_PATH/.env\" .env"
+  ]
+}
+```
+
+## Running Services
+
+Run multiple services from terminal:
+
+```bash
+bun run dev                          # All services
+bun run --filter @myapp/web dev &    # Specific package
+bun run --filter @myapp/api dev
+```
+
+## Git Submodules
+
+Add to setup script:
+
+```json
+{
+  "setup": ["git submodule update --init --recursive", "bun install"]
+}
+```
+
+
+# Workspaces
+
+
+
+## Core Concept
+
+Each workspace = one git branch. Workspaces are isolated git worktrees with their own directory, terminal, and ports.
+
+<YouTubeVideo id="8PuptrsyNvM" title="Rox Workspaces" thumbnail="/images/branches.png" />
+
+## Create Workspaces
+
+Press **⌘N** or click "New Workspace". Create from:
+
+* **New branch** - Fresh branch from main
+* **Existing branch** - Continue work on a branch
+* **Pull request** - Review or continue a PR
+
+In the prompt-first workspace flow, **Link pull request** lets you search by title or PR number, or paste the full PR URL to match it directly.
+
+Each workspace gets:
+
+* Own git branch
+* Own working directory
+* Own terminal sessions
+* Workspace-scoped port detection and controls
+
+## Import Worktrees
+
+If you have existing git worktrees on disk, use the **Import** tab in the New Workspace modal to bring them into Rox. Click **Import all** to bulk-import all discovered worktrees at once.
+
+## Ahead/Behind Status
+
+For **local (branch-based) workspaces**, the sidebar shows how far the active branch is ahead or behind its remote branch:
+
+* **↑N** - N commits ahead of remote (unpushed)
+* **↓N** - N commits behind remote (needs pull/rebase)
+
+## PR Status
+
+PR-based workspaces show pull request state in the sidebar.
+
+Hover a workspace to see review status, CI checks, and GitHub links. If the branch has a deployment preview, you'll also see an **Open Preview** button.
+
+## Use Cases
+
+* **Parallel features** - Work on multiple features simultaneously
+* **AI agents** - Run Claude Code in separate workspaces
+* **Code review** - Review PRs while continuing your work
+
+## Best Practices
+
+* Use descriptive branch names: `feature/auth`, `fix/login-bug`
+* Don't work directly on `main`
+* Delete workspaces after merging
+
+
+# CLI Reference
+
+
+
+<Callout type="warn">
+  The CLI is currently in Beta — commands and flags are still evolving. Make sure you're on the latest version of the CLI if you run into issues.
+</Callout>
+
+## Synopsis
+
+```text
+rox <command> [subcommand] [options]
+```
+
+Run `rox --help` for the top-level command list, or
+`rox <command> --help` for any group.
+
+## Global options
+
+These flags are accepted by every command:
+
+| Flag              | Env           | Description                                                                     |
+| ----------------- | ------------- | ------------------------------------------------------------------------------- |
+| `--json`          |               | Print the data payload as formatted JSON.                                       |
+| `--quiet`         |               | One ID per line for arrays; the ID for single objects; JSON fallback otherwise. |
+| `--api-key <key>` | `ROX_API_KEY` | Use an API key instead of stored OAuth login.                                   |
+| `--help`, `-h`    |               | Show help for the current command.                                              |
+| `--version`, `-v` |               | Print `rox v<version>` and exit.                                                |
+
+***
+
+## Commands
+
+### auth
+
+Authentication and session inspection.
+
+<Command
+  name="rox auth login"
+  options={[
+  	{
+  		flag: "--organization <idOrSlug>",
+  		description: "Selects the active organization without prompting. Required for non-TTY logins when you belong to multiple orgs.",
+  	},
+  	{
+  		flag: "--api-key <key>",
+  		description: "Store a Rox API key (`sk_live_…`) at `~/.rox/config.json` instead of running the OAuth flow.",
+  	},
+  ]}
+>
+  Authenticate via browser OAuth and store a session token at
+  `~/.rox/config.json`.
+
+  Single-org accounts are selected automatically. With multiple orgs and a
+  TTY, the CLI prompts; with multiple orgs and no TTY, you must pass
+  `--organization` or the command exits 1 listing the available slugs.
+
+  ```bash
+  rox auth login
+  rox auth login --organization acme
+  ```
+
+  To sign in with an API key — useful for CI or any environment where the
+  OAuth browser flow isn't an option — pass `--api-key`. The CLI validates
+  the key, stores it at `~/.rox/config.json`, and clears any prior
+  OAuth session.
+
+  ```bash
+  rox auth login --api-key sk_live_…
+  rox auth login --api-key sk_live_… --organization acme
+  ```
+
+  <CommandReturns>
+    The newly authenticated user and active organization.
+
+    <HumanOutput>
+      ```text
+      ◇  Authorized!
+      │  Satya Patel (you@example.com)
+      │  Organization: Acme
+      └  Logged in successfully.
+      ```
+    </HumanOutput>
+
+    <JsonOutput>
+      ```ts
+      {
+        userId: string;
+        organizationId: string;
+        organizationName: string;
+      }
+      ```
+    </JsonOutput>
+  </CommandReturns>
+</Command>
+
+<Command name="rox auth logout">
+  Clear stored credentials — both an OAuth session and a stored API key.
+  Does not call the API and does not clear the active organization (your
+  preferred org persists across re-logins).
+
+  ```bash
+  rox auth logout
+  ```
+
+  <CommandReturns>
+    A confirmation message.
+
+    <HumanOutput>
+      ```text
+      Logged out.
+      ```
+    </HumanOutput>
+
+    <JsonOutput>
+      ```ts
+      { message: "Logged out." }
+      ```
+    </JsonOutput>
+  </CommandReturns>
+</Command>
+
+<Command name="rox auth whoami">
+  Show the current user, active organization, and auth source.
+
+  ```bash
+  rox auth whoami
+  ```
+
+  <CommandReturns>
+    The current user and organization context.
+
+    <HumanOutput>
+      ```text
+      Signed in as Satya Patel (you@example.com)
+      Organization: Acme
+      Auth: Session (expires in 32 min)
+      ```
+    </HumanOutput>
+
+    <JsonOutput>
+      ```ts
+      {
+        userId: string;
+        email: string;
+        name: string;
+        organizationId: string;
+        organizationName: string;
+        authSource: "override" | "config" | "oauth";
+      }
+      ```
+    </JsonOutput>
+  </CommandReturns>
+</Command>
+
+***
+
+### start
+
+Start the local host server — the daemon the CLI and desktop app both
+talk to when targeting this machine.
+
+<Command
+  name="rox start"
+  options={[
+  	{ flag: "--daemon", description: "Run detached." },
+  	{ flag: "--port <n>", description: "Specific port. Default: a free loopback port." },
+  ]}
+>
+  If a manifest exists and the PID is alive, returns the existing
+  instance's details. Otherwise spawns the host server binary, polls
+  `/trpc/health.check` for up to 10 seconds, and writes the manifest.
+  Binds to `127.0.0.1` only.
+
+  ```bash
+  rox start --daemon
+  ```
+
+  <CommandReturns>
+    The running host server.
+
+    <JsonOutput>
+      ```ts
+      {
+        pid: number;
+        port: number;
+        organizationId: string;
+      }
+      ```
+    </JsonOutput>
+  </CommandReturns>
+</Command>
+
+### stop
+
+Stop the local host server.
+
+<Command name="rox stop">
+  Sends SIGTERM, waits up to 10 seconds, sends SIGKILL if still alive. The
+  manifest is removed in all cases — including when SIGTERM itself throws.
+
+  ```bash
+  rox stop
+  ```
+
+  <CommandReturns>
+    The stopped host server, if one was running.
+
+    <JsonOutput>
+      ```ts
+      // No manifest
+      { running: false }
+
+      // Manifest existed
+      { pid: number; organizationId: string }
+      ```
+    </JsonOutput>
+  </CommandReturns>
+</Command>
+
+### status
+
+Inspect the local host server.
+
+<Command name="rox status">
+  `healthy` reflects a live `health.check` request (2-second timeout).
+
+  ```bash
+  rox status
+  ```
+
+  <CommandReturns>
+    The host server state. Three shapes depending on what's running.
+
+    <JsonOutput>
+      ```ts
+      // No manifest
+      { running: false; organizationId: string }
+
+      // Manifest exists but PID is dead
+      {
+        running: false;
+        stale: true;
+        pid: number;
+        organizationId: string;
+      }
+
+      // Running
+      {
+        running: true;
+        healthy: boolean;
+        pid: number;
+        port: number;
+        endpoint: string;
+        organizationId: string;
+        uptimeSec: number;
+      }
+      ```
+    </JsonOutput>
+  </CommandReturns>
+</Command>
+
+### update
+
+Update the Rox CLI and host server binary.
+
+<Command
+  name="rox update"
+  options={[
+  	{ flag: "--check", description: "Only check for updates; don't install." },
+  	{ flag: "--force", description: "Re-install even if already on that version." },
+  	{ flag: "--version <version>", description: "Install a specific version (e.g. `0.1.2`) instead of the rolling latest. Accepts upgrade or downgrade." },
+  ]}
+>
+  Downloads the matching `rox-<platform>.tar.gz` from GitHub Releases
+  and atomically replaces the install root. Only available in built
+  binaries; running from `bun run dev` errors out.
+
+  ```bash
+  rox update                     # upgrade to the latest release
+  rox update --check             # show current → target without installing
+  rox update --version 0.1.2     # install a specific version (up or down)
+  ```
+
+  <CommandReturns>
+    The current and target version, plus whether anything changed.
+
+    <HumanOutput>
+      ```text
+      Updated 0.1.4 → 0.1.5 (/Users/you/.local/share/rox)
+      ```
+    </HumanOutput>
+
+    <JsonOutput>
+      ```ts
+      // --check
+      {
+        current: string;
+        target: string;
+        upToDate: boolean;
+        pinned: boolean;
+      }
+
+      // install
+      {
+        current: string;
+        target: string;
+        updated: boolean;
+        installRoot?: string;
+      }
+      ```
+    </JsonOutput>
+  </CommandReturns>
+</Command>
+
+***
+
+### organization (alias: `org`)
+
+Manage which organization the CLI targets.
+
+<Command
+  name="rox organization list"
+  output={`Array<{
+id: string;
+name: string;
+slug: string;
+active: boolean;
+}>`}
+  humanColumns={["NAME", "SLUG", "ACTIVE"]}
+  quiet="organization IDs"
+>
+  List organizations available to the current auth context. Marks the
+  active one.
+</Command>
+
+<Command
+  name="rox organization switch <idOrSlug>"
+  args={[
+  	{ name: "idOrSlug", required: true, description: "Organization ID or slug." },
+  ]}
+  output={`{ id: string; name: string; slug: string }`}
+>
+  Set the active organization in `~/.rox/config.json`.
+
+  ```bash
+  rox organization switch acme
+  rox org switch org_…
+  ```
+</Command>
+
+<Command
+  name="rox organization members list"
+  options={[
+  	{ flag: "--search <query>, -s", description: "Search by name or email." },
+  	{ flag: "--limit <n>", description: "Default 50." },
+  ]}
+  output={`Array<{
+id: string;
+name: string;
+email: string;
+role: string;
+}>`}
+  humanColumns={["NAME", "EMAIL", "ROLE", "ID"]}
+  quiet="member IDs"
+>
+  List members in the active organization.
+
+  ```bash
+  rox organization members list
+  rox org members list -s satya
+  ```
+</Command>
+
+***
+
+### projects
+
+A project is a repository registered with your organization. It carries
+a cloud record (one per repo, shared across the org) and one or more
+host-side checkouts. Workspaces branch off a host's checkout.
+
+<Command
+  name="rox projects list"
+  output={`Array<{
+id: string;
+name: string;
+slug: string;
+repoCloneUrl: string | null;
+githubRepositoryId: string | null;
+}>`}
+  humanColumns={["NAME", "SLUG", "REPO", "ID"]}
+  quiet="project IDs"
+>
+  List projects in the active organization. Org-wide; not host-scoped.
+</Command>
+
+<Command
+  name="rox projects create"
+  options={[
+  	{ flag: "--name <name>", required: true, description: "Display name for the project." },
+  	{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
+  	{ flag: "--local", description: "Target this machine. Mutually exclusive with `--host`; one is required." },
+  	{ flag: "--clone <url>", description: "Clone from a Git URL. Mutually exclusive with `--import`." },
+  	{ flag: "--parent-dir <path>", description: "Parent directory the cloned repo lands in. Required with `--clone`." },
+  	{ flag: "--import <path>", description: "Existing repo path on the target host. Mutually exclusive with `--clone`." },
+  ]}
+  output={`{
+projectId: string;
+repoPath: string;
+mainWorkspaceId: string;
+}`}
+>
+  Create a fresh project on a host. Two modes:
+
+  * **Clone** — pass `--clone <url>` and `--parent-dir`. The host clones the
+    repo into `<parent-dir>/<derived-name>/`.
+  * **Import** — pass `--import <path>` to register a repo that already exists
+    on disk.
+
+  Either way, a new cloud project record is created and the host's main
+  workspace is ensured.
+
+  `create` always creates a new cloud project, even if your org already has
+  one for the same Git URL. Use [`projects setup`](#rox-projects-setup-id)
+  when adopting an existing project on a fresh machine.
+
+  ```bash
+  rox projects create --name "my-app" --local --clone https://github.com/org/my-app.git --parent-dir ~/code
+  rox projects create --name "my-app" --local --import ~/code/my-app
+  ```
+</Command>
+
+<Command
+  name="rox projects setup <id>"
+  args={[
+  	{ name: "id", required: true, description: "Project UUID to adopt." },
+  ]}
+  options={[
+  	{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
+  	{ flag: "--local", description: "Target this machine. Mutually exclusive with `--host`; one is required." },
+  	{ flag: "--parent-dir <path>", description: "Parent directory to clone the project's repo into (clone mode). The URL comes from the cloud project, so no `--clone <url>` is needed." },
+  	{ flag: "--import <path>", description: "Existing repo path on the target host (import mode)." },
+  	{ flag: "--allow-relocate", description: "Permit re-importing at a different path if the project is already set up here. `--import` only." },
+  ]}
+  output={`{
+repoPath: string;
+mainWorkspaceId: string | null;
+}`}
+>
+  Adopt an existing project onto a host without creating a duplicate cloud
+  record. Counterpart to [`create`](#rox-projects-create) for the
+  "new machine, repo already in the org" case.
+
+  Find the project ID via [`projects list`](#rox-projects-list).
+
+  Idempotent: re-running against a project that's already set up at the same
+  path is a no-op that returns the existing `mainWorkspaceId`.
+
+  ```bash
+  # Pick an ID from `rox projects list`, then clone it onto this machine
+  rox projects setup 47c31b04-… --local --parent-dir ~/code
+
+  # Or register an existing local checkout
+  rox projects setup 47c31b04-… --local --import ~/code/my-app
+  ```
+</Command>
+
+***
+
+### hosts
+
+Discover hosts registered to the active organization. To control the
+host server running on this machine, use [`start`](#start),
+[`stop`](#stop), and [`status`](#status).
+
+<Command
+  name="rox hosts list"
+  output={`Array<{
+id: string;
+name: string;
+online: boolean;
+}>`}
+  humanColumns={["ID", "NAME", "ONLINE"]}
+  quiet="host IDs"
+>
+  List hosts registered to the active organization. Host registration
+  happens via `rox start` on each machine — there is no
+  separate registration command.
+
+  ```bash
+  rox hosts list
+  ```
+</Command>
+
+***
+
+### workspaces (alias: `ws`)
+
+Workspaces are branch-scoped working copies on a host.
+
+**Routing:** when `--host` resolves to the local machine, the CLI calls
+the host server directly over loopback HTTP — no cloud roundtrip, works
+offline. Otherwise it routes through the cloud API and the relay.
+
+If the resolved host is the local machine but the host server isn't
+responding, the CLI errors out and points you at `rox start` rather
+than silently falling through to the cloud.
+
+<Command
+  name="rox workspaces list"
+  options={[
+  	{ flag: "--host <id>", description: "Filter to a specific host machineId." },
+  	{ flag: "--local", description: "Filter to this machine." },
+  ]}
+  output={`Array<{
+id: string;
+name: string;
+branch: string;
+projectId: string;
+projectName: string;
+hostId: string;
+hostName: string;
+}>`}
+  humanColumns={["NAME", "BRANCH", "PROJECT", "HOST"]}
+  quiet="workspace IDs"
+>
+  List workspaces accessible to the active organization. With neither
+  `--host` nor `--local`, the list is organization-wide.
+</Command>
+
+<Command
+  name="rox workspaces create"
+  options={[
+  	{ flag: "--project <projectId>", required: true, description: "Project ID." },
+  	{ flag: "--name <name>", required: true, description: "Workspace name." },
+  	{ flag: "--branch <branch>", description: "Workspace branch. Required unless `--pr` is set." },
+  	{ flag: "--pr <number>", description: "Pull request number. Checks out the verified PR head." },
+  	{ flag: "--base-branch <branch>", description: "Branch to fork from when `--branch` does not exist. Defaults to the project default branch." },
+  	{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
+  	{ flag: "--local", description: "Target this machine. Mutually exclusive with `--host`; one is required." },
+  	{ flag: "--agent <preset|uuid|rox>", description: "Agent to spawn after creation." },
+  	{ flag: "--prompt <text>", description: "Initial prompt. Required when `--agent` is set." },
+  	{ flag: "--command <cmd>", description: "Shell command to run in the new workspace after creation." },
+  	{ flag: "--attachment <path>", description: "Local file to upload for the spawned agent. Repeatable." },
+  ]}
+  output="Workspace"
+>
+  Create a workspace on the target host. Specify exactly one of `--branch`
+  or `--pr`. If you pass `--agent`, you must also pass `--prompt`. `--command`
+  runs a one-off shell command in the worktree and is independent of
+  `--agent`/`--prompt` — pass either or both.
+
+  ```bash
+  rox workspaces create \
+    --project prj_… \
+    --name "fix-login-bug" \
+    --branch fix/login-bug \
+    --local
+
+  rox workspaces create \
+    --project prj_… \
+    --name "review-pr-123" \
+    --pr 123 \
+    --local
+  ```
+</Command>
+
+<Command
+  name="rox workspaces delete <id...>"
+  args={[
+  	{ name: "id", required: true, variadic: true, description: "Workspace IDs to delete." },
+  ]}
+  options={[
+  	{ flag: "--host <id>", description: "Skip cloud lookup and target this host directly." },
+  	{ flag: "--local", description: "Skip cloud lookup and target this machine." },
+  ]}
+  output={`{ deleted: string[] }`}
+>
+  Delete one or more workspaces on the target host.
+
+  ```bash
+  rox workspaces delete ws_a ws_b ws_c
+  ```
+</Command>
+
+<Command
+  name="rox workspaces update <id>"
+  args={[
+  	{ name: "id", required: true, description: "Workspace UUID." },
+  ]}
+  options={[
+  	{ flag: "--name <name>", description: "New workspace name." },
+  	{ flag: "--task-id <id>", description: "Link the workspace to a task by id." },
+  	{ flag: "--clear-task", description: "Unlink the workspace from its current task. Mutually exclusive with --task-id." },
+  ]}
+  output="Workspace"
+>
+  Update a workspace.
+
+  ```bash
+  rox workspaces update ws_… --name "better-name"
+  rox workspaces update ws_… --task-id tsk_…
+  rox workspaces update ws_… --clear-task
+  ```
+</Command>
+
+<Command
+  name="rox workspaces open <id>"
+  args={[
+  	{ name: "id", required: true, description: "Workspace ID." },
+  ]}
+  options={[
+  	{ flag: "--print", description: "Print the deep link instead of opening the desktop app." },
+  ]}
+  output={`{
+id: string;
+name: string;
+url: string;
+}`}
+>
+  Open a workspace in the Rox desktop app.
+
+  ```bash
+  rox workspaces open ws_…
+  rox workspaces open ws_… --print
+  ```
+</Command>
+
+***
+
+### agents
+
+Agents are terminal-agent rows configured on a host (the same rows shown in
+Settings → Agents on that machine). Each row stores a `command`, `args`,
+prompt-transport mode, and environment used to launch the agent in a fresh
+terminal session inside a workspace.
+
+<Command
+  name="rox agents list"
+  options={[
+  	{ flag: "--host <id>", description: "Target host machineId." },
+  	{ flag: "--local", description: "Target this machine. Mutually exclusive with --host; exactly one is required." },
+  ]}
+  output={`Array<{
+id: string;
+presetId: string;
+label: string;
+command: string;
+args: string[];
+promptTransport: "argv" | "stdin";
+promptArgs: string[];
+env: Record<string, string>;
+order: number;
+}>`}
+  humanColumns={["LABEL", "PRESET", "COMMAND", "ID"]}
+  quiet="agent instance IDs"
+>
+  List agents configured on a host. First call on a fresh host seeds the
+  bundled defaults.
+
+  ```bash
+  rox agents list --local
+  rox agents list --host host_…
+  ```
+</Command>
+
+<Command
+  name="rox agents create"
+  options={[
+  	{ flag: "--workspace <id>", required: true, description: "Workspace UUID to create the agent session in." },
+  	{ flag: "--agent <preset|uuid|rox>", required: true, description: "Agent preset id (e.g. `claude`, `codex`), HostAgentConfig instance UUID, or `rox`." },
+  	{ flag: "--prompt <text>", required: true, description: "Prompt sent to the agent." },
+  	{ flag: "--attachment-id <uuid>", description: "Pre-uploaded attachment UUID; pass repeatedly for multiple attachments." },
+  	{ flag: "--attachment <path>", description: "Local file path to upload as an attachment. Repeatable." },
+  ]}
+  output={`{
+kind: "terminal" | "chat";
+sessionId: string;
+label: string;
+}`}
+>
+  Create an agent session in an existing workspace. Resolves the host that owns
+  the workspace and starts the named preset (or HostAgentConfig instance) in a
+  fresh terminal session on that host.
+
+  ```bash
+  rox agents create --workspace ws_… --agent claude --prompt "Audit the login flow"
+  rox agents create --workspace ws_… --agent codex --prompt "Review this diff" --attachment ./trace.log
+  ```
+</Command>
+
+***
+
+### terminals (alias: `term`)
+
+Terminals are PTY sessions on a host, scoped to a workspace. Create one to run
+a one-off command in a worktree or to open an interactive shell.
+
+<Command
+  name="rox terminals create"
+  options={[
+  	{ flag: "--workspace <id>", required: true, description: "Workspace UUID to create the terminal in." },
+  	{ flag: "--command <cmd>", description: "Shell command to run in the terminal. Omit to open an interactive shell." },
+  	{ flag: "--cwd <path>", description: "Working directory for the terminal. Defaults to the worktree." },
+  ]}
+  output={`{
+terminalId: string;
+status: string;
+}`}
+>
+  Create a terminal session in an existing workspace. Resolves the host that
+  owns the workspace and opens a fresh PTY in the worktree, optionally running
+  a command.
+
+  ```bash
+  rox terminals create --workspace ws_… --command "bun install && bun test"
+  rox terminals create --workspace ws_…
+  ```
+</Command>
+
+***
+
+### tasks (alias: `t`)
+
+Tasks are units of work in your organization's task tracker.
+
+<Command
+  name="rox tasks list"
+  options={[
+  	{ flag: "--status <id>", description: "Filter by status ID." },
+  	{ flag: "--priority <urgent|high|medium|low|none>", description: "Filter by priority." },
+  	{ flag: "--assignee <userId>", description: "Filter by assignee user ID." },
+  	{ flag: "--assignee-me, -m", description: "Tasks assigned to the current user." },
+  	{ flag: "--creator-me", description: "Tasks created by the current user." },
+  	{ flag: "--search <query>, -s", description: "Substring search on title." },
+  	{ flag: "--limit <n>", description: "Default 50." },
+  	{ flag: "--offset <n>", description: "Default 0." },
+  ]}
+  output="Array<Task>"
+  humanColumns={["SLUG", "TITLE", "PRIORITY", "ASSIGNEE"]}
+  quiet="task IDs"
+>
+  List tasks in the active organization.
+
+  ```bash
+  rox tasks list --assignee-me
+  rox t list -s "auth" --json
+  ```
+</Command>
+
+<Command
+  name="rox tasks get <idOrSlug>"
+  args={[
+  	{ name: "idOrSlug", required: true, description: "Task ID or slug." },
+  ]}
+  output="Task"
+>
+  Get a task by ID or slug.
+
+  ```bash
+  rox tasks get tsk_…
+  rox tasks get fix-login-bug
+  ```
+</Command>
+
+<Command
+  name="rox tasks create"
+  options={[
+  	{ flag: "--title <title>", required: true, description: "Task title." },
+  	{ flag: "--description <text>", description: "Task description." },
+  	{ flag: "--priority <urgent|high|medium|low|none>", description: "Priority." },
+  	{ flag: "--assignee <userId>", description: "Assignee user ID." },
+  	{ flag: "--status-id <id>", description: "Initial status ID." },
+  	{ flag: "--estimate <n>", description: "Story-point estimate." },
+  	{ flag: "--due-date <iso8601>", description: "Due date." },
+  	{ flag: "--labels <a,b,c>", description: "Comma-separated labels." },
+  ]}
+  output="Task"
+>
+  Create a task.
+
+  ```bash
+  rox tasks create --title "Audit auth flow" --priority high
+  ```
+</Command>
+
+<Command
+  name="rox tasks update <idOrSlug>"
+  args={[
+  	{ name: "idOrSlug", required: true, description: "Task ID or slug." },
+  ]}
+  options={[
+  	{ flag: "--title <title>", description: "New title." },
+  	{ flag: "--description <text>", description: "New description." },
+  	{ flag: "--priority <urgent|high|medium|low|none>", description: "New priority." },
+  	{ flag: "--assignee <userId>", description: "New assignee." },
+  	{ flag: "--status-id <id>", description: "New status ID." },
+  	{ flag: "--pr-url <url>", description: "Linked pull request URL." },
+  	{ flag: "--estimate <n>", description: "Story-point estimate." },
+  	{ flag: "--due-date <iso8601>", description: "Due date." },
+  	{ flag: "--labels <a,b,c>", description: "Replace labels with a comma-separated list." },
+  ]}
+  output="Task"
+>
+  Update a task. Same fields as `create`, all optional.
+
+  ```bash
+  rox tasks update fix-login-bug --priority urgent
+  ```
+</Command>
+
+<Command
+  name="rox tasks delete <idOrSlug...>"
+  args={[
+  	{ name: "idOrSlug", required: true, variadic: true, description: "Task IDs or slugs to delete." },
+  ]}
+  output={`{ deleted: string[]; failed: string[] }`}
+>
+  Delete one or more tasks.
+
+  ```bash
+  rox tasks delete tsk_a tsk_b
+  ```
+</Command>
+
+<Command
+  name="rox tasks statuses list"
+  output={`Array<{
+id: string;
+name: string;
+type: string;
+position: number;
+}>`}
+  humanColumns={["NAME", "TYPE", "POS", "ID"]}
+  quiet="status IDs"
+>
+  List task statuses in the active organization. Use the returned IDs with
+  `tasks list --status`, `tasks create --status-id`, or
+  `tasks update --status-id`.
+
+  ```bash
+  rox tasks statuses list
+  ```
+</Command>
+
+***
+
+### automations (alias: `auto`)
+
+Scheduled agent runs. Schedules use RFC 5545 RRULE bodies, e.g.
+`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0`.
+
+<Command name="rox automations list" output="Array<Automation>" humanColumns={["ID", "NAME", "AGENT", "SCHEDULE", "ENABLED", "NEXT RUN"]} quiet="automation IDs">
+  List automations in the active organization.
+</Command>
+
+<Command
+  name="rox automations get <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  output="Automation"
+>
+  Get an automation's metadata. The prompt body is omitted — use
+  [`automations prompt get`](#rox-automations-prompt-get-id) to read it.
+  Use [`automations logs`](#rox-automations-logs-id) for run history.
+</Command>
+
+<Command
+  name="rox automations create"
+  options={[
+  	{ flag: "--name <name>", required: true, description: "Automation name." },
+  	{ flag: "--prompt <text>", description: "Inline prompt." },
+  	{ flag: "--prompt-file <path>", description: "Read prompt from file, verbatim." },
+  	{ flag: "--rrule <rrule>", required: true, description: "RFC 5545 RRULE schedule." },
+  	{ flag: "--timezone <iana>", description: "Default: host TZ, then UTC." },
+  	{ flag: "--dtstart <iso8601>", description: "Default: now." },
+  	{ flag: "--workspace <workspaceId>", description: "Reuse an existing workspace." },
+  	{ flag: "--project <projectId>", description: "Project ID for new-workspace-per-run mode." },
+  	{ flag: "--host <hostId>", description: "Default: owner's online host." },
+  	{ flag: "--agent <agent>", description: "Host agent presetId, instance UUID, or 'rox' for built-in chat. Default: claude." },
+  ]}
+  output="Automation"
+>
+  Create an automation. Provide `--prompt` or `--prompt-file`; if both are
+  present, the inline `--prompt` value is used. At least one of `--project`
+  or `--workspace` must be provided.
+
+  ```bash
+  rox automations create \
+    --name "Weekday triage" \
+    --project prj_… \
+    --workspace ws_… \
+    --rrule "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0" \
+    --prompt-file ./prompts/triage.md
+  ```
+</Command>
+
+<Command
+  name="rox automations update <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  options={[
+  	{ flag: "--name <name>", description: "New name." },
+  	{ flag: "--rrule <rrule>", description: "New schedule." },
+  	{ flag: "--timezone <iana>", description: "New timezone." },
+  	{ flag: "--dtstart <iso8601>", description: "New start time." },
+  	{ flag: "--host <hostId>", description: "New target host." },
+  	{ flag: "--project <projectId>", description: "New v2 project ID." },
+  	{ flag: "--workspace <workspaceId>", description: "New v2 workspace ID." },
+  	{ flag: "--agent <agent>", description: "New host agent presetId, instance UUID, or 'rox'." },
+  	{ flag: "--mcp-scope <a,b,c>", description: "Comma-separated MCP scope strings." },
+  	{ flag: "--enabled / --no-enabled", description: "Calls automation.setEnabled first." },
+  ]}
+  output="Automation"
+>
+  Update an automation's metadata (name, schedule, agent, host). All flags
+  optional. Omitting a flag preserves the existing value — `undefined` means
+  "no change", not "clear". Use [`automations prompt get`](#rox-automations-prompt-get-id)
+  or [`automations prompt set`](#rox-automations-prompt-set-id) to read or
+  replace the prompt body.
+</Command>
+
+<Command
+  name="rox automations prompt get <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  output="Markdown"
+>
+  Print an automation's prompt body to stdout. The output is the raw prompt
+  with no trailing newline added, so `prompt get` and `prompt set` round-trip
+  byte-exactly.
+
+  ```bash
+  # Read to a file
+  rox automations prompt get aut_… > prompt.md
+
+  # Verify a push landed
+  rox automations prompt get aut_… | diff - ./prompt.md
+  ```
+</Command>
+
+<Command
+  name="rox automations prompt set <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  options={[
+  	{ flag: "--from-file <path>", required: true, description: "Read the new prompt from a file. Use `-` for stdin." },
+  ]}
+  output="Automation"
+>
+  Replace an automation's prompt body. The new prompt fully overwrites the
+  old one.
+
+  ```bash
+  # Write from file
+  rox automations prompt set aut_… --from-file ./prompt.md
+
+  # Write from stdin
+  cat ./prompt.md | rox automations prompt set aut_… --from-file -
+  ```
+</Command>
+
+<Command
+  name="rox automations delete <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  output={`{ deleted: string }`}
+>
+  Delete an automation.
+
+  ```bash
+  rox automations delete aut_…
+  ```
+</Command>
+
+<Command
+  name="rox automations pause <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  output="Automation"
+>
+  Pause an automation (sets `enabled: false`).
+
+  ```bash
+  rox automations pause aut_…
+  ```
+</Command>
+
+<Command
+  name="rox automations resume <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  output="Automation"
+>
+  Resume an automation (sets `enabled: true`). The API recomputes
+  `nextRunAt` on resume.
+
+  ```bash
+  rox automations resume aut_…
+  ```
+</Command>
+
+<Command
+  name="rox automations run <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  output={`{
+automationId: string;
+runId: string;
+}`}
+>
+  Dispatch an automation immediately. Does not wait for completion.
+
+  ```bash
+  rox automations run aut_…
+  ```
+</Command>
+
+<Command
+  name="rox automations logs <id>"
+  args={[
+  	{ name: "id", required: true, description: "Automation ID." },
+  ]}
+  options={[
+  	{ flag: "--limit <n>", description: "Default 20, max 100." },
+  ]}
+  output="Array<AutomationRun>"
+  humanColumns={["RUN ID", "STATUS", "SCHEDULED", "DISPATCHED", "HOST"]}
+  quiet="run IDs"
+>
+  List recent runs for an automation.
+
+  ```bash
+  rox automations logs aut_…
+  ```
+</Command>
+
+***
+
+## Output modes
+
+**JSON mode** (`--json`): raw payloads. Lists print arrays, get/create/update
+print objects, delete prints summary objects. No `{ "data": ... }` wrapper.
+Empty results print `null`.
+
+**Quiet mode** (`--quiet`): IDs only. Arrays of objects with an `id` field
+print one ID per line; single objects print their `id`; everything else
+falls back to JSON.
+
+When `CLAUDE_CODE`, `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_CLI`,
+`GEMINI_CLI`, `ROX_AGENT`, or `CI` is set to a non-empty value, output
+defaults to JSON unless `--quiet` is provided.
+
+
+# Environment variables
+
+
+
+The Rox CLI supports the following environment variables to control
+its behavior. Set them in your shell before running `rox`, or
+export them from your shell profile (`~/.zshrc`, `~/.bashrc`) or your
+CI environment to apply them across every session.
+
+| Variable                    | Description                                                                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ROX_API_KEY`               | API key (`sk_live_…` / `sk_test_…`) used in place of stored OAuth login. Equivalent to `--api-key`.                                                             |
+| `ROX_HOME_DIR`              | Directory the CLI uses for `config.json` and the host server tree. Default: `~/.rox`. Shared with the desktop app.                                              |
+| `GH_TOKEN` / `GITHUB_TOKEN` | Read by the `gh` CLI the host server shells out to for PR checkout and metadata. Set this for sandboxes or CI instead of running `gh auth login` interactively. |
+
+The standalone install script also reads:
+
+| Variable      | Description                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `ROX_HOME`    | Install root for the standalone CLI and host binary. Default: `~/rox`.                              |
+| `ROX_VERSION` | Release tag to install. Default: `latest`, which resolves through the rolling `cli-latest` release. |
+
+
+# Getting Started
+
+
+
+<Callout type="warn">
+  The CLI is currently in Beta — commands and flags are still evolving. Make sure you're on the latest version of the CLI if you run into issues.
+</Callout>
+
+The Rox CLI (`rox`) is a single static binary that drives the same
+backend as the desktop app. Use it to manage workspaces, tasks, automations,
+and the local host server from your terminal or from CI.
+
+## Install
+
+### Desktop app
+
+The desktop app includes the Rox CLI. When the app launches, it writes
+an app-managed shim at `~/.rox/bin/rox`, and Rox terminals
+prepend `~/.rox/bin` to `PATH` automatically.
+
+To use the bundled CLI from a normal shell, add the directory to your shell
+profile:
+
+```bash
+export PATH="$HOME/.rox/bin:$PATH"
+```
+
+### Standalone install
+
+```bash
+curl -fsSL https://rox.one/cli/install.sh | sh
+```
+
+The script auto-detects your platform (macOS Apple Silicon or Linux x86\_64),
+installs Rox under `~/rox` by default, and adds `~/rox/bin`
+to your shell `PATH`.
+
+### Homebrew
+
+```bash
+brew install agisota/tap/rox
+```
+
+## Sign in
+
+```bash
+rox auth login
+```
+
+The CLI starts a loopback callback server on `127.0.0.1:51789` (or `51790`
+through `51793` if earlier ports are busy), opens your browser to the
+consent page, and stores a session token at `~/.rox/config.json`.
+
+If you belong to multiple organizations, you'll be prompted to pick one. To
+skip the prompt and pick directly:
+
+```bash
+rox auth login --organization acme
+```
+
+For CI or other non-interactive environments — where there's no browser to
+complete the OAuth flow — use an API key instead. You can either store it
+once with `auth login --api-key`:
+
+```bash
+rox auth login --api-key sk_live_…
+rox auth whoami
+```
+
+…or set `ROX_API_KEY` per-invocation without writing anything to disk:
+
+```bash
+export ROX_API_KEY=sk_live_…
+rox auth whoami
+```
+
+API keys are issued from the **Settings → API Keys** page in the desktop app.
+
+## Verify your session
+
+```bash
+rox auth whoami
+```
+
+```text
+Signed in as Satya Patel (you@example.com)
+Organization: Acme
+Auth: Session (expires in 32 min)
+```
+
+## Run your first commands
+
+List the projects in your organization:
+
+```bash
+rox projects list
+```
+
+If your repo isn't there yet, register it on this machine — clone from a
+Git URL or import an existing checkout:
+
+```bash
+# Clone from a URL
+rox projects create --name "my-app" --local \
+  --clone https://github.com/org/my-app.git \
+  --parent-dir ~/code
+
+# Or register an existing local checkout
+rox projects create --name "my-app" --local --import ~/code/my-app
+```
+
+If the project already exists in your org but isn't on this machine,
+attach to it instead of creating a duplicate:
+
+```bash
+rox projects setup <id-from-projects-list> --local --parent-dir ~/code
+```
+
+Then create a workspace against it:
+
+```bash
+rox workspaces create \
+  --project prj_… \
+  --name "fix-login-bug" \
+  --branch fix/login-bug \
+  --local
+```
+
+Trigger an automation immediately:
+
+```bash
+rox automations list
+rox automations run aut_…
+rox automations logs aut_…
+```
+
+## Output modes
+
+Every command prints a TTY-friendly view by default. Two flags switch the
+shape of the output for scripting:
+
+| Flag      | Output                                                                                      |
+| --------- | ------------------------------------------------------------------------------------------- |
+| `--json`  | The data payload as formatted JSON. No envelope.                                            |
+| `--quiet` | One ID per line for arrays of objects with `id`; the ID for single objects; JSON otherwise. |
+
+```bash
+rox tasks list --status in_progress --json | jq '.[].title'
+rox workspaces list --quiet | xargs -L1 rox workspaces delete
+```
+
+When the CLI detects an agent or CI environment (`CLAUDE_CODE`,
+`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_CLI`, `GEMINI_CLI`,
+`ROX_AGENT`, or `CI` set to a non-empty value), it defaults to JSON
+output unless you pass `--quiet`.
+
+## Local vs. remote hosts
+
+Commands that touch a host accept `--host <id>` to pick which host handles
+the request, or `--local` for this machine. Local-targeted calls go
+straight to the host server over loopback (offline-friendly); remote
+calls route through the cloud API and the relay.
+
+```bash
+rox hosts list
+rox workspaces list
+rox workspaces list --host h_…
+rox workspaces list --local
+```
+
+Mutating host commands (`projects create`, `projects setup`,
+`workspaces create`) require an explicit `--host` or `--local` — there's
+no default. `workspaces list` is organization-wide when neither `--host`
+nor `--local` is provided; pass `--local` to restrict it to this machine.
+
+## Where state lives
+
+```text
+~/.rox/config.json                            # auth, active organization
+~/.rox/host/<organizationId>/manifest.json    # host server endpoint + token
+~/.rox/host/<organizationId>/host.db          # local host server DB
+```
+
+`ROX_HOME_DIR` relocates the whole tree, matching the desktop app.
+
+## Next steps
+
+Continue to the [CLI reference](/cli/cli-reference) for every command,
+flag, and output shape.
+
+
+# Host Server
+
+
+
+The `rox start` command runs a headless HTTP server that any Rox desktop app or CLI can communicate with.
+
+It manages workspaces, ports, and agent runs on the machine it's running on. The desktop app starts it automatically; on a CLI-only or headless machine you start it yourself.
+
+If you installed the desktop app, it already includes the CLI and installs a
+`~/.rox/bin/rox` shim on app launch. Rox terminals prepend
+that directory to `PATH` automatically. On a headless machine, use the
+standalone installer from [Getting Started](/cli/getting-started).
+
+## Prerequisites
+
+`git` and `gh` need to be on your `PATH`. `git` handles clone, worktree, and branch ops; `gh` handles PR checkout and metadata.
+
+```bash
+gh auth login
+```
+
+The host server reuses your existing `gh` auth. For sandboxes or CI, set `GH_TOKEN` (or `GITHUB_TOKEN`) instead of running `gh auth login` — `gh` picks it up automatically.
+
+### Agent CLIs (optional)
+
+If you plan to run AI agents inside workspaces, install whichever agent CLIs you want available. The host server launches them based on which are on your `PATH`:
+
+| Agent        | Install                                          |
+| ------------ | ------------------------------------------------ |
+| Claude Code  | `npm install -g @anthropic-ai/claude-code`       |
+| Codex        | `npm install -g @openai/codex`                   |
+| Cursor Agent | install via Cursor's website                     |
+| Amp          | `npm install -g @sourcegraph/amp`                |
+| Gemini CLI   | `npm install -g @google/gemini-cli`              |
+| OpenCode     | see [opencode.ai/docs](https://opencode.ai/docs) |
+
+None are required to start the host server or create workspaces — install only what you plan to run.
+
+## Authenticate the Rox CLI
+
+The host server starts under your Rox session. If you haven't already:
+
+```bash
+rox auth login
+```
+
+See [Getting Started](/cli/getting-started) for the full sign-in flow,
+including API-key auth for CI.
+
+## Start the host server
+
+```bash
+rox start --daemon
+```
+
+Spawns the daemon in the background and writes a manifest at
+`~/.rox/host/<organizationId>/manifest.json` so other clients can find
+it. Binds to `127.0.0.1` only.
+
+Verify it's healthy:
+
+```bash
+rox status
+```
+
+## Getting started
+
+### Create or adopt a project
+
+A workspace branches off a project — a repo registered with Rox.
+
+Each repo gets one cloud project record, shared across the organization.
+The first machine to register the repo runs `projects create`; every
+machine after that uses `projects setup` to attach to the existing
+project instead of creating a duplicate.
+
+Start by checking what's already in your org:
+
+```bash
+rox projects list
+```
+
+#### First machine — `projects create`
+
+If the project doesn't exist yet, clone a remote repo or import an
+existing local one:
+
+```bash
+# Clone from a Git URL
+rox projects create \
+  --name "My Project" \
+  --local \
+  --clone https://github.com/org/repo.git \
+  --parent-dir ~/code
+
+# Or import a repo that's already on disk
+rox projects create \
+  --name "My Project" \
+  --local \
+  --import ~/code/existing-repo
+```
+
+The host server clones (or registers) the repo, creates the cloud project
+record, and ensures the main workspace.
+
+#### Subsequent machines — `projects setup <id>`
+
+If a teammate (or a previous machine of yours) already created the project,
+adopt it instead of running `create` again — `create` would make a duplicate
+cloud project pointing at the same repo. Pick the ID from `projects list`,
+then:
+
+```bash
+# Clone the project's repo onto this machine
+rox projects setup 47c31b04-… --local --parent-dir ~/code
+
+# Or attach to an existing local checkout
+rox projects setup 47c31b04-… --local --import ~/code/repo
+```
+
+The URL for clone mode comes from the cloud project record, so `setup`
+doesn't need `--clone <url>`. `setup` is idempotent: re-running against a
+project that's already set up here is a no-op.
+
+### Create your first workspace
+
+```bash
+rox projects list
+rox workspaces create \
+  --project prj_… \
+  --name "fix-login-bug" \
+  --branch fix/login-bug
+```
+
+The host server clones the project (if it isn't already on disk), creates
+a git worktree at the chosen branch, and registers the workspace.
+
+You can also create a workspace from a pull request number:
+
+```bash
+rox workspaces create \
+  --project prj_… \
+  --name "review-pr-123" \
+  --pr 123 \
+  --local
+```
+
+## Stop the host server
+
+```bash
+rox stop
+```
+
+## Shared state
+
+State lives under `~/.rox/host/<organizationId>/`:
+
+```text
+~/.rox/host/<organizationId>/manifest.json    # endpoint + auth token
+~/.rox/host/<organizationId>/host.db          # local host server DB
+```
+
+A host server started by the desktop app is visible to the CLI and
+vice-versa. `ROX_HOME_DIR` relocates the whole tree.
+
+## Command details
+
+For full flags, exit codes, and output shapes:
+
+* [`rox start`](/cli/cli-reference#rox-start)
+* [`rox status`](/cli/cli-reference#rox-status)
+* [`rox stop`](/cli/cli-reference#rox-stop)
+
+
+# Advanced Usage
+
+
+
+<Callout type="warn">
+  The SDK is in early alpha — it is not meant for production use and may be removed in the future. Stay on the latest version (`@rox_sh/sdk@latest`) while we iterate.
+</Callout>
+
+The SDK's individual methods are simple. The interesting part is what you compose them into. These are end-to-end recipes you can copy as starting points.
+
+## Sentry webhook → agent on the bug
+
+When Sentry fires an alert, file a task and spawn an agent to investigate — all in two SDK calls. (In production, verify the Sentry signature header before trusting any payload — that part is omitted here for clarity.)
+
+```ts title="sentry-webhook.ts"
+import { Hono } from 'hono';
+import Rox from '@rox_sh/sdk';
+
+const app = new Hono();
+const client = new Rox();
+// reads ROX_API_KEY + ROX_ORGANIZATION_ID from env
+
+const TARGET_HOST_ID = process.env.ROX_TARGET_HOST_ID!;  // see hosts.list()
+const PROJECT_ID = process.env.ROX_PROJECT_ID!;          // see projects.list()
+
+app.post('/webhooks/sentry', async (c) => {
+  const event = await c.req.json();
+  const { title, web_url: sentryUrl, culprit, short_id } = event.data.issue;
+  const slug = `sentry-${short_id.toLowerCase()}`;
+
+  // 1. File a task so the bug shows up in the dashboard
+  const task = await client.tasks.create({
+    title: `[Sentry] ${title}`,
+    description: `Triggered by ${culprit}\n\nSentry: ${sentryUrl}`,
+    priority: 'high',
+    labels: ['sentry', 'bug'],
+  });
+
+  // 2. Spin up a worktree on a developer's machine and dispatch an agent
+  //    inside it. The SDK creates the worktree, then runs the agent with
+  //    your prompt — you don't manage the dispatch loop.
+  const workspace = await client.workspaces.create({
+    hostId: TARGET_HOST_ID,
+    projectId: PROJECT_ID,
+    name: slug,
+    branch: slug,
+    agents: [
+      {
+        agent: 'claude',
+        prompt: [
+          `A Sentry alert just fired:`,
+          `  Title: ${title}`,
+          `  Culprit: ${culprit}`,
+          `  URL: ${sentryUrl}`,
+          ``,
+          `Reproduce the failure, fix it, push a branch, and update task`,
+          `${task.id} with what you found.`,
+        ].join('\n'),
+      },
+    ],
+  });
+
+  return c.json({
+    ok: true,
+    taskId: task.id,
+    workspaceId: workspace.id,
+    runId: workspace.agentRuns[0]?.runId,
+  });
+});
+
+export default app;
+```
+
+What just happened, end-to-end:
+
+* The task lives in the cloud and shows up in the dashboard for everyone.
+* The workspace is a real `git worktree` on the target machine, ready for a human to take over if the agent gets stuck.
+* The agent runs inside the new workspace, with the prompt above and access to the codebase + whatever MCP servers the host has configured.
+
+You can spawn multiple agents in parallel by adding more entries to `agents`:
+
+```ts
+agents: [
+  { agent: 'claude', prompt: 'Reproduce the bug and write a failing test.' },
+  { agent: 'claude', prompt: 'Investigate related Sentry issues from the last 7 days.' },
+],
+```
+
+## Burn down the P0 backlog overnight
+
+Pick up every urgent task in the queue and spawn an agent on each one in parallel. Comes back the next morning with a branch and a comment per task.
+
+```ts title="burn-p0s.ts"
+import Rox from '@rox_sh/sdk';
+
+const client = new Rox();
+const HOST_ID = process.env.ROX_HOST_ID!;
+const PROJECT_ID = process.env.ROX_PROJECT_ID!; // see projects.list()
+
+const p0s = await client.tasks.list({ priority: 'urgent', limit: 50 });
+
+const dispatched = await Promise.all(
+  p0s.map((task) =>
+    client.workspaces.create({
+      hostId: HOST_ID,
+      projectId: PROJECT_ID,
+      name: task.slug,
+      branch: task.slug,
+      agents: [
+        {
+          agent: 'claude',
+          prompt: [
+            `Pick up task ${task.slug}: "${task.title}".`,
+            ``,
+            task.description ?? '(no description — read recent changes for context)',
+            ``,
+            `Investigate, make the fix, run the relevant tests, push the branch, and`,
+            `update task ${task.id} with a one-paragraph summary of what changed and why.`,
+            `If you can't make confident progress in ~30 minutes, leave a comment with`,
+            `where you got stuck and stop.`,
+          ].join('\n'),
+        },
+      ],
+    }),
+  ),
+);
+
+console.log(`dispatched ${dispatched.length} agents across the P0 backlog`);
+```
+
+Run it from a daily cron on a beefy host and you wake up to a branch per bug. Ones the agent could fix have a PR-ready branch; ones it couldn't have a comment explaining why so a human picks up where the agent stopped.
+
+## Sweep a refactor across every repo
+
+Internal API rename, dependency bump, lint rule rollout — anything that has to land identically in dozens of repos is a one-loop, fan-out problem:
+
+```ts title="sweep-rename-getUser.ts"
+import Rox from '@rox_sh/sdk';
+
+const client = new Rox();
+const HOST_ID = process.env.ROX_HOST_ID!;
+
+const projects = await client.projects.list();
+
+const wave = await Promise.all(
+  projects.map((p) =>
+    client.workspaces.create({
+      hostId: HOST_ID,
+      projectId: p.id,
+      name: `rename-getUser-${p.slug}`,
+      branch: 'refactor/rename-getUser',
+      agents: [
+        {
+          agent: 'claude',
+          prompt: [
+            `Rename every caller of \`getUser()\` to \`fetchUser()\` across this repo.`,
+            ``,
+            `1. Find call sites with grep.`,
+            `2. Update each one and re-run the test suite.`,
+            `3. If green, push the branch and open a draft PR titled`,
+            `   "refactor: rename getUser → fetchUser".`,
+            `4. If a repo doesn't actually use getUser, exit cleanly with a note.`,
+          ].join('\n'),
+        },
+      ],
+    }),
+  ),
+);
+
+const totalAgents = wave.reduce((n, ws) => n + ws.agentRuns.length, 0);
+console.log(`fanned out ${totalAgents} agents across ${projects.length} repos`);
+```
+
+Same loop works for "bump TypeScript to 5.7", "swap Sentry SDK for the new one", "add a `lint:strict` script to every package.json". Anything you'd otherwise farm out to a long Slack thread.
+
+## On-demand agent dispatch from your tools
+
+If you've already created a recurring automation in the dashboard, the SDK can fire it off-schedule from anywhere — a Slack slash command, a CI job, an internal admin panel:
+
+```ts
+const run = await client.automations.run('<automation-id>');
+console.log(`dispatched run ${run.id} to host ${run.hostId}`);
+```
+
+The automation's pinned host has to be online and tunneling. The SDK will surface a `503 Host not connected` error if it isn't, so you can retry later or page someone.
+
+
+# Getting Started
+
+
+
+<Callout type="warn">
+  The SDK is in early alpha — it is not meant for production use and may be removed in the future. Stay on the latest version (`@rox_sh/sdk@latest`) while we iterate.
+</Callout>
+
+The Rox TypeScript SDK lets you create and manage your workspaces, tasks, projects, and automations from code — anything you can do in the dashboard, your scripts and services can do too.
+
+A few things you might use it for:
+
+* **Bulk task management** — script the creation, triage, or cleanup of tasks across one or many projects.
+* **Integrations** — sync tasks to/from your CRM, issue tracker, or internal tools.
+* **Provisioning** — spin up workspaces on a developer's machine when an issue is opened, a PR is reviewed, or a customer ticket lands.
+* **On-demand agents** — kick off a recurring automation off-schedule when a webhook fires.
+
+Everything is fully typed and works in Node, Bun, and Deno. The bundle also runs in browsers, but **don't ship `sk_live_…` keys to a frontend** — they're long-lived and grant full org access. From the browser, talk to a thin server proxy that holds the key.
+
+## Install
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">
+    ```bash
+    npm install @rox_sh/sdk
+    ```
+  </Tab>
+
+  <Tab value="pnpm">
+    ```bash
+    pnpm add @rox_sh/sdk
+    ```
+  </Tab>
+
+  <Tab value="yarn">
+    ```bash
+    yarn add @rox_sh/sdk
+    ```
+  </Tab>
+
+  <Tab value="bun">
+    ```bash
+    bun add @rox_sh/sdk
+    ```
+  </Tab>
+</Tabs>
+
+We're under active development — the SDK follows the API as it grows, so **stay on the latest version** rather than pinning. New methods get added; existing ones don't change shape without a version bump and a note in the changelog.
+
+## Get an API key
+
+1. Open the [Rox desktop app](https://rox.one/download) → **Settings → API Keys** → **Create**. The key starts with `sk_live_…` — copy it now (you won't be able to see it again).
+2. Note your **organization ID** — find it in the org switcher inside the desktop app.
+
+```bash
+export ROX_API_KEY=sk_live_…
+export ROX_ORGANIZATION_ID=…
+```
+
+## Create the client
+
+```ts
+import Rox from '@rox_sh/sdk';
+
+const client = new Rox();
+// reads ROX_API_KEY and ROX_ORGANIZATION_ID from env
+```
+
+That's all the setup. From here, every resource works the same way:
+
+```ts
+// Create a task
+const task = await client.tasks.create({
+  title: 'Wire up auth',
+  priority: 'high',
+});
+
+// Update it
+await client.tasks.update({ id: task.id, statusId: '<uuid>' });
+
+// Look one up by id or slug
+const got = await client.tasks.retrieve('SUPER-172'); // returns null if missing
+
+// Find tasks with rich filters
+const urgent = await client.tasks.list({
+  priority: 'urgent',
+  search: 'auth',
+  creatorMe: true,
+});
+
+// Inspect what else you have
+const projects = await client.projects.list();
+const hosts = await client.hosts.list();
+const automations = await client.automations.list();
+
+// Trigger an automation off-schedule
+await client.automations.run('<automation-id>');
+
+// Create a workspace on a developer's machine
+await client.workspaces.create({
+  hostId: '<machine-id>',
+  projectId: '<project-id>',
+  name: 'fix-auth-bug',
+  branch: 'fix/auth',
+});
+```
+
+See the [reference](/docs/sdk/reference) for every method, parameter, and return type.
+
+## Configuration
+
+You can configure the client explicitly instead of (or alongside) the env vars:
+
+```ts
+const client = new Rox({
+  apiKey: 'sk_live_…',
+  organizationId: '…',
+  timeout: 60_000,            // default: 60s per request
+  maxRetries: 2,              // default: 2 retries with exponential backoff
+  logLevel: 'warn',           // 'off' | 'error' | 'warn' | 'info' | 'debug'
+});
+```
+
+The client retries automatically on network errors and 429/5xx responses, so transient failures usually fix themselves.
+
+## Handling errors
+
+The SDK throws typed errors for any non-success response, so you can catch what you actually care about:
+
+```ts
+import Rox, { APIError, NotFoundError, RateLimitError } from '@rox_sh/sdk';
+
+const client = new Rox();
+
+try {
+  await client.tasks.create({ title: '' });
+} catch (err) {
+  if (err instanceof RateLimitError) {
+    // 429 — already retried up to maxRetries; back off further if you keep hitting it
+  } else if (err instanceof NotFoundError) {
+    // 404
+  } else if (err instanceof APIError) {
+    // anything else — err.status, err.headers, err.error (the parsed body)
+    console.error(`Rox returned ${err.status}:`, err.error);
+  }
+}
+```
+
+## Next
+
+Head to the [reference](/docs/sdk/reference) for the complete surface.
+
+
+# SDK Reference
+
+
+
+<Callout type="warn">
+  The SDK is in early alpha — it is not meant for production use and may be removed in the future. Stay on the latest version (`@rox_sh/sdk@latest`) while we iterate.
+</Callout>
+
+## Client
+
+```ts
+import Rox from '@rox_sh/sdk';
+
+const client = new Rox({
+  apiKey: 'sk_live_…',
+  organizationId: '…',
+  // optional:
+  baseURL: 'https://api.rox.one',
+  relayURL: 'https://relay.rox.one',
+  timeout: 60_000,
+  maxRetries: 2,
+  logLevel: 'warn', // 'off' | 'error' | 'warn' | 'info' | 'debug'
+});
+```
+
+***
+
+## tasks
+
+### `tasks.create(body)`
+
+Create a task.
+
+```ts
+const task = await client.tasks.create({
+  title: 'Wire up auth',
+  description: 'See SUPER-100',
+  priority: 'high',          // 'urgent' | 'high' | 'medium' | 'low' | 'none'
+  assigneeId: '<uuid>',      // optional
+  statusId: '<uuid>',        // optional, defaults to first backlog status
+  estimate: 4,               // optional, story points
+  dueDate: '2026-12-31',     // optional, ISO date
+  labels: ['bug'],           // optional
+});
+```
+
+Returns a `Task`.
+
+### `tasks.list(params?)`
+
+List tasks with rich filters. All filters AND-combine.
+
+```ts
+const tasks = await client.tasks.list({
+  assigneeMe: true,          // tasks assigned to you
+  creatorMe: true,           // tasks you created
+  priority: 'high',
+  statusId: '<uuid>',
+  assigneeId: '<uuid>',      // someone else's tasks
+  search: 'auth',            // substring of title
+  limit: 50,                 // max 500
+  offset: 0,
+});
+```
+
+Returns `Array<TaskListItem>` — each row is a `Task` denormalized with `assigneeName`, `assigneeImage`, `creatorName`, `creatorImage`, and `statusName` so you don't need follow-up calls for display.
+
+### `tasks.retrieve(idOrSlug)`
+
+Look up a single task by id or slug.
+
+```ts
+const task = await client.tasks.retrieve('SUPER-172');
+if (!task) throw new Error('not found'); // returns null when missing
+```
+
+Returns `Task | null`.
+
+### `tasks.update(body)`
+
+Patch a task.
+
+```ts
+const task = await client.tasks.update({
+  id,
+  priority: 'urgent',
+  statusId: '<uuid>',
+  prUrl: 'https://github.com/…',
+});
+```
+
+Returns the updated `Task`.
+
+### `tasks.delete(id)`
+
+Soft-delete a task.
+
+```ts
+await client.tasks.delete(id);
+```
+
+### `tasks.statuses.list()`
+
+List the task statuses (workflow states) configured for the active organization, in display order. Useful for resolving status ids before [`tasks.create`](#taskscreatebody) or [`tasks.update`](#tasksupdatebody).
+
+```ts
+const statuses = await client.tasks.statuses.list();
+const todo = statuses.find((s) => s.type === 'unstarted');
+```
+
+Returns `Array<TaskStatus>` — each entry is `{ id, name, color, type, position }`.
+
+***
+
+## workspaces
+
+### `workspaces.list(params?)`
+
+List workspaces in the organization.
+
+```ts
+const all = await client.workspaces.list();
+const onOneHost = await client.workspaces.list({ hostId: '<machineId>' });
+```
+
+Returns `Array<Workspace>`.
+
+### `workspaces.create({ hostId, projectId, name, branch, agents?, command? })`
+
+Create a worktree on a specific host. Optionally spawn one or more agents inside it as soon as the worktree is ready, and/or run a one-off shell `command` in the worktree. Goes through the relay tunnel — the host must be online.
+
+Each entry in `agents` takes a preset id (e.g. `"claude"`) or a `HostAgentConfig` instance UUID — the host service resolves it against its configured rows and copies their stored `command`, `args`, and `env`. Use [`agents.list({ hostId })`](#agentslist-hostid-) to enumerate what's installed. `command` is independent of `agents` — pass either or both.
+
+```ts
+const result = await client.workspaces.create({
+  hostId: '<machineId>',     // see hosts.list()
+  projectId: '<uuid>',       // see projects.list()
+  name: 'wire-up-auth',
+  branch: 'feat/auth',
+  agents: [                  // optional — spawn agents on creation
+    { agent: 'claude', prompt: 'Implement the auth flow described in SUPER-100.' },
+    { agent: 'claude', prompt: 'Write integration tests for the new auth flow.' },
+  ],
+});
+
+console.log(result.workspace.id);
+for (const agent of result.agents) {
+  if (agent.ok) console.log(agent.kind, agent.sessionId, agent.label);
+  else console.error(agent.error);
+}
+```
+
+Returns a `WorkspaceCreateResult`:
+
+* `workspace` — the created workspace row (`id`, `name`, `branch`, `hostId`, `projectId`, `type`, `taskId`, …).
+* `terminals` — terminals opened on the host (`{ terminalId, label? }`).
+* `agents` — one entry per agent in the request (empty if `agents` was omitted). Each entry is either `{ ok: true, kind: 'terminal' | 'chat', sessionId, label }` or `{ ok: false, error }`.
+
+### `workspaces.update(id, params)`
+
+Update fields on an existing workspace. Moving a workspace to a different branch or host requires host-side orchestration and is not safe to drive from the cloud API directly.
+
+```ts
+await client.workspaces.update('<workspaceId>', { name: 'wire-up-auth-v2' });
+```
+
+Returns the updated workspace row (`id`, `name`, `branch`, `hostId`, `projectId`, `type`, `taskId`, …).
+
+### `workspaces.delete(id, opts?)`
+
+Delete a workspace. Looks up its host automatically and routes through the relay.
+
+```ts
+await client.workspaces.delete(id);
+// or skip the lookup:
+await client.workspaces.delete(id, { hostId: '<machineId>' });
+```
+
+***
+
+## projects
+
+### `projects.list()`
+
+Returns `Array<Project>`.
+
+```ts
+const projects = await client.projects.list();
+```
+
+***
+
+## hosts
+
+### `hosts.list()`
+
+List developer machines registered in the org. Returns `Array<Host>` with `id` (machineId), `name`, `online`, and `organizationId`.
+
+```ts
+const hosts = await client.hosts.list();
+const online = hosts.filter((h) => h.online);
+```
+
+***
+
+## agents
+
+Terminal-agent rows configured on a specific host (the same rows shown in
+Settings → Agents on that machine). Reads route through the relay tunnel —
+the target host must be online.
+
+### `agents.list({ hostId })`
+
+List configured agents on a host in persisted display order. First call on a
+fresh host seeds the bundled defaults. Returns `Array<HostAgentConfig>` —
+each row carries `id`, `presetId`, `label`, `command`, `args`, `env`, and
+prompt-transport fields used to launch the agent.
+
+```ts
+const agents = await client.agents.list({ hostId: '<machineId>' });
+```
+
+### `agents.create({ workspaceId, agent, prompt, attachmentIds? }, { hostId? })`
+
+Create (launch) an agent session in an existing workspace. By default looks up
+the host that owns the workspace via the cloud index; pass an explicit `hostId`
+to skip the lookup.
+
+`agent` accepts either a preset id (e.g. `"claude"`) or a `HostAgentConfig`
+instance UUID. Returns `{ kind, sessionId, label }`.
+
+```ts
+const { sessionId } = await client.agents.create({
+  workspaceId: '<uuid>',
+  agent: 'claude',
+  prompt: 'Audit the login flow for race conditions.',
+});
+```
+
+***
+
+## terminals
+
+Terminal (PTY) sessions on a host, scoped to a workspace.
+
+### `terminals.create({ workspaceId, command?, cwd? }, { hostId? })`
+
+Create a terminal session in an existing workspace. By default looks up the
+host that owns the workspace via the cloud index; pass an explicit `hostId` to
+skip the lookup. Pass `command` to run a one-off shell command, or omit it to
+open an interactive shell. Returns `{ terminalId, status }`.
+
+```ts
+const { terminalId } = await client.terminals.create({
+  workspaceId: '<uuid>',
+  command: 'bun install && bun test',
+});
+```
+
+***
+
+## automations
+
+Recurring agent runs scheduled by RRULE. Requires a Pro subscription on the org for `create` / `update` / `delete`.
+
+### `automations.list(params?)`
+
+```ts
+const automations = await client.automations.list();
+// or filter by case-insensitive substring on name:
+const triage = await client.automations.list({ name: 'triage' });
+```
+
+Each row is an `AutomationSummary` — the `prompt` body is omitted (it can be
+large markdown). Fetch one with `automations.getPrompt(id)`. Each row includes
+`scheduleText`, a human-readable rendering of the rrule.
+
+### `automations.retrieve(id)`
+
+```ts
+const a = await client.automations.retrieve(id);
+```
+
+Returns an `AutomationSummary` (no `prompt` body — call `getPrompt(id)`).
+
+### `automations.create(body)`
+
+Create a recurring automation.
+
+```ts
+const a = await client.automations.create({
+  name: 'Daily leads',
+  prompt: 'Find new leads from Linear and update the CRM…',
+  agent: 'claude', // host agent presetId, instance UUID, or 'rox' for built-in chat
+  rrule: 'FREQ=DAILY;BYHOUR=6;BYMINUTE=0',
+  timezone: 'America/Los_Angeles',
+  v2ProjectId: '<uuid>',     // one of v2ProjectId or v2WorkspaceId required
+  // optional:
+  v2WorkspaceId: '<uuid>',   // pin to a specific workspace
+  targetHostId: '<machineId>', // pin to a specific host
+  dtstart: new Date().toISOString(),
+  mcpScope: ['linear', 'notion'],
+});
+```
+
+### `automations.update(body)`
+
+```ts
+await client.automations.update({ id, rrule: 'FREQ=WEEKLY;BYDAY=MO' });
+```
+
+### `automations.delete(id)`
+
+### `automations.run(id)`
+
+Dispatch immediately, off-schedule. Goes through the relay to the pinned host.
+
+```ts
+const run = await client.automations.run(id);
+console.log(run.status, run.hostId);
+```
+
+### `automations.pause(id)` / `automations.resume(id)`
+
+Toggle the `enabled` flag. A paused automation stops running on its schedule until you resume it.
+
+### `automations.logs(id, params?)`
+
+Run history. Owner-only — returns 404 if the automation isn't owned by the calling user.
+
+```ts
+const runs = await client.automations.logs(id, { limit: 20 });
+```
+
+### `automations.getPrompt(id)` / `automations.setPrompt(id, prompt)`
+
+Read or replace the automation's prompt without going through the full update.

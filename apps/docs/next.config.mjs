@@ -26,18 +26,7 @@ const config = {
 		],
 	},
 	async redirects() {
-		return [
-			{
-				source: "/",
-				destination: "/overview",
-				permanent: false,
-			},
-			{
-				source: "/docs",
-				destination: "/overview",
-				permanent: false,
-			},
-		];
+		return [];
 	},
 	async rewrites() {
 		return [

@@ -1,0 +1,416 @@
+{
+  "version": 3,
+  "routes": [
+    {
+      "src": "/_next/__private/trace",
+      "dest": "/404",
+      "status": 404,
+      "continue": true
+    },
+    {
+      "src": "/404/?",
+      "status": 404,
+      "continue": true,
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-prerender-revalidate"
+        }
+      ]
+    },
+    {
+      "src": "/500",
+      "status": 500,
+      "continue": true
+    },
+    {
+      "src": "^(?!/_next)/(?:/)?$",
+      "headers": {
+        "Location": "/overview"
+      },
+      "status": 307
+    },
+    {
+      "src": "^(?!/_next)/docs(?:/)?$",
+      "headers": {
+        "Location": "/overview"
+      },
+      "status": 307
+    },
+    {
+      "continue": true,
+      "src": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next|ingest|favicon.ico|[^?]*\\.(?:css|js|png|jpe?g|webp|svg|gif|ico|ttf|woff2?|webmanifest|xml|txt)).*))(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-prerender-revalidate",
+          "value": "68efb20092ff41725d406baadf0fd1ed"
+        }
+      ],
+      "middlewarePath": "/_middleware",
+      "middlewareRawSrc": [
+        "/((?!_next|ingest|favicon.ico|[^?]*\\.(?:css|js|png|jpe?g|webp|svg|gif|ico|ttf|woff2?|webmanifest|xml|txt)).*)"
+      ],
+      "override": true
+    },
+    {
+      "src": "/(?<path>.+?)(?:/)?$",
+      "dest": "/$path.segments/$segmentPath.segment.rsc",
+      "has": [
+        {
+          "type": "header",
+          "key": "rsc",
+          "value": "1"
+        },
+        {
+          "type": "header",
+          "key": "next-router-prefetch",
+          "value": "1"
+        },
+        {
+          "type": "header",
+          "key": "next-router-segment-prefetch",
+          "value": "/(?<segmentPath>.+)"
+        }
+      ],
+      "continue": true,
+      "override": true
+    },
+    {
+      "src": "^/?$",
+      "dest": "/index.segments/$segmentPath.segment.rsc",
+      "has": [
+        {
+          "type": "header",
+          "key": "rsc",
+          "value": "1"
+        },
+        {
+          "type": "header",
+          "key": "next-router-prefetch",
+          "value": "1"
+        },
+        {
+          "type": "header",
+          "key": "next-router-segment-prefetch",
+          "value": "/(?<segmentPath>.+)"
+        }
+      ],
+      "continue": true,
+      "override": true
+    },
+    {
+      "src": "^/?",
+      "has": [
+        {
+          "type": "header",
+          "key": "rsc",
+          "value": "1"
+        }
+      ],
+      "dest": "/index.rsc",
+      "headers": {
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      },
+      "continue": true,
+      "override": true
+    },
+    {
+      "src": "^/((?!.+\\.rsc).+?)(?:/)?$",
+      "has": [
+        {
+          "type": "header",
+          "key": "rsc",
+          "value": "1"
+        }
+      ],
+      "dest": "/$1.rsc",
+      "headers": {
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      },
+      "continue": true,
+      "override": true
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/index(\\.action|\\.rsc)",
+      "dest": "/",
+      "continue": true
+    },
+    {
+      "src": "^/monitoring(/?)(?:/)?(?<rscsuff>\\.rsc|\\.segments/.+\\.segment\\.rsc)?$",
+      "dest": "https://o$orgid.ingest.$region.sentry.io/api/$projectid/envelope/$rscsuff?hsts=0",
+      "check": true,
+      "has": [
+        {
+          "type": "query",
+          "key": "o",
+          "value": "(?<orgid>\\d*)"
+        },
+        {
+          "type": "query",
+          "key": "p",
+          "value": "(?<projectid>\\d*)"
+        },
+        {
+          "type": "query",
+          "key": "r",
+          "value": "(?<region>[a-z]{2})"
+        }
+      ]
+    },
+    {
+      "src": "^/monitoring(/?)(?:/)?(?<rscsuff>\\.rsc|\\.segments/.+\\.segment\\.rsc)?$",
+      "dest": "https://o$orgid.ingest.sentry.io/api/$projectid/envelope/$rscsuff?hsts=0",
+      "check": true,
+      "has": [
+        {
+          "type": "query",
+          "key": "o",
+          "value": "(?<orgid>\\d*)"
+        },
+        {
+          "type": "query",
+          "key": "p",
+          "value": "(?<projectid>\\d*)"
+        }
+      ]
+    },
+    {
+      "src": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?\\.mdx(?:/)?(?<rscsuff>\\.rsc|\\.segments/.+\\.segment\\.rsc)?$",
+      "dest": "/llms.mdx/$1$rscsuff",
+      "check": true,
+      "headers": {
+        "x-nextjs-rewritten-path": "/llms.mdx/$1"
+      }
+    },
+    {
+      "src": "^/ingest/static(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?(?<rscsuff>\\.rsc|\\.segments/.+\\.segment\\.rsc)?$",
+      "dest": "https://us-assets.i.posthog.com/static/$1$rscsuff",
+      "check": true
+    },
+    {
+      "src": "^/ingest(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?(?<rscsuff>\\.rsc|\\.segments/.+\\.segment\\.rsc)?$",
+      "dest": "https://us.i.posthog.com/$1$rscsuff",
+      "check": true
+    },
+    {
+      "src": "^/ingest/decide(?:/)?(?<rscsuff>\\.rsc|\\.segments/.+\\.segment\\.rsc)?$",
+      "dest": "https://us.i.posthog.com/decide$rscsuff",
+      "check": true
+    },
+    {
+      "src": "/\\.prefetch\\.rsc$",
+      "dest": "/__index.prefetch.rsc",
+      "check": true
+    },
+    {
+      "src": "/(.+)/\\.prefetch\\.rsc$",
+      "dest": "/$1.prefetch.rsc",
+      "check": true
+    },
+    {
+      "src": "/\\.rsc$",
+      "dest": "/index.rsc",
+      "check": true
+    },
+    {
+      "src": "/(.+)/\\.rsc$",
+      "dest": "/$1.rsc",
+      "check": true
+    },
+    {
+      "handle": "resource"
+    },
+    {
+      "src": "/.*",
+      "status": 404
+    },
+    {
+      "handle": "miss"
+    },
+    {
+      "src": "/_next/static/.+",
+      "status": 404,
+      "check": true,
+      "dest": "/_next/static/not-found.txt",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8"
+      }
+    },
+    {
+      "src": "^/(?<path>.+)(?<rscSuffix>\\.segments/.+\\.segment\\.rsc)(?:/)?$",
+      "dest": "/$path.rsc",
+      "check": true
+    },
+    {
+      "handle": "rewrite"
+    },
+    {
+      "src": "^/(?<path>.+)(?<rscSuffix>\\.segments/.+\\.segment\\.rsc)(?:/)?$",
+      "dest": "/$path.rsc",
+      "check": true,
+      "override": true
+    },
+    {
+      "src": "^/llms\\.mdx(?:/(?<nxtPslug>.+?))?(?<rscSuffix>\\.rsc|\\.prefetch\\.rsc|\\.segments/.+\\.segment\\.rsc)(?:/)?$",
+      "dest": "/llms.mdx/[[...slug]]$rscSuffix?nxtPslug=$nxtPslug",
+      "check": true,
+      "override": true
+    },
+    {
+      "src": "^/llms\\.mdx(?:/(?<nxtPslug>.+?))?(?:/)?$",
+      "dest": "/llms.mdx/[[...slug]]?nxtPslug=$nxtPslug",
+      "check": true,
+      "override": true
+    },
+    {
+      "src": "^/og/docs/(?<nxtPslug>.+?)(?<rscSuffix>\\.rsc|\\.prefetch\\.rsc|\\.segments/.+\\.segment\\.rsc)(?:/)?$",
+      "dest": "/og/docs/[...slug]$rscSuffix?nxtPslug=$nxtPslug",
+      "check": true,
+      "override": true
+    },
+    {
+      "src": "^/og/docs/(?<nxtPslug>.+?)(?:/)?$",
+      "dest": "/og/docs/[...slug]?nxtPslug=$nxtPslug",
+      "check": true,
+      "override": true
+    },
+    {
+      "src": "^(?:/(?<nxtPslug>.+?))?(?<rscSuffix>\\.rsc|\\.prefetch\\.rsc|\\.segments/.+\\.segment\\.rsc)(?:/)?$",
+      "dest": "/[[...slug]]$rscSuffix?nxtPslug=$nxtPslug",
+      "check": true,
+      "override": true
+    },
+    {
+      "src": "^(?:/(?<nxtPslug>.+?))?(?:/)?$",
+      "dest": "/[[...slug]]?nxtPslug=$nxtPslug",
+      "check": true,
+      "override": true
+    },
+    {
+      "handle": "hit"
+    },
+    {
+      "src": "/_next/static/(?:[^/]+/pages|pages|chunks|runtime|css|image|media|EiEoi25Pn3AJ6Yts\\-j6d1)/.+",
+      "headers": {
+        "cache-control": "public,max-age=31536000,immutable"
+      },
+      "continue": true,
+      "important": true
+    },
+    {
+      "src": "/index(?:/)?",
+      "headers": {
+        "x-matched-path": "/"
+      },
+      "continue": true,
+      "important": true
+    },
+    {
+      "src": "/((?!index$).*?)(?:/)?",
+      "headers": {
+        "x-matched-path": "/$1"
+      },
+      "continue": true,
+      "important": true
+    },
+    {
+      "handle": "error"
+    },
+    {
+      "src": "/.*",
+      "dest": "/404",
+      "status": 404,
+      "headers": {
+        "x-next-error-status": "404"
+      }
+    },
+    {
+      "src": "/.*",
+      "dest": "/500",
+      "status": 500,
+      "headers": {
+        "x-next-error-status": "500"
+      }
+    }
+  ],
+  "images": {
+    "domains": [],
+    "sizes": [
+      640,
+      750,
+      828,
+      1080,
+      1200,
+      1920,
+      2048,
+      3840,
+      32,
+      48,
+      64,
+      96,
+      128,
+      256,
+      384
+    ],
+    "qualities": [
+      75
+    ],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "^(?:(?!\\.)(?=.)[^/]*?\\.public\\.blob\\.vercel-storage\\.com)$",
+        "pathname": "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$"
+      }
+    ],
+    "localPatterns": [
+      {
+        "pathname": "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$",
+        "search": ""
+      }
+    ],
+    "minimumCacheTTL": 14400,
+    "formats": [
+      "image/webp"
+    ],
+    "dangerouslyAllowSVG": false,
+    "contentSecurityPolicy": "script-src 'none'; frame-src 'none'; sandbox;",
+    "contentDispositionType": "attachment"
+  },
+  "overrides": {
+    "404.html": {
+      "path": "404",
+      "contentType": "text/html; charset=utf-8"
+    },
+    "500.html": {
+      "path": "500",
+      "contentType": "text/html; charset=utf-8"
+    },
+    "404.rsc.json": {
+      "path": "404.rsc",
+      "contentType": "application/json"
+    },
+    "404.segments/_tree.segment.rsc.json": {
+      "path": "404.segments/_tree.segment.rsc",
+      "contentType": "application/json"
+    },
+    "500.rsc.json": {
+      "path": "500.rsc",
+      "contentType": "application/json"
+    },
+    "500.segments/_tree.segment.rsc.json": {
+      "path": "500.segments/_tree.segment.rsc",
+      "contentType": "application/json"
+    },
+    "_next/static/not-found.txt": {
+      "contentType": "text/plain"
+    }
+  },
+  "framework": {
+    "version": "16.2.6"
+  },
+  "crons": []
+}

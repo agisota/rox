@@ -1,0 +1,8 @@
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /llms.mdx/
+Disallow: /llms-full.txt
+
+Sitemap: https://rox.one/sitemap.xml

@@ -1,0 +1,39 @@
+{
+  "type": "Prerender",
+  "expiration": false,
+  "sourcePath": "/og/docs/[...slug]",
+  "group": 35,
+  "bypassToken": "68efb20092ff41725d406baadf0fd1ed",
+  "experimentalBypassFor": [
+    {
+      "type": "header",
+      "key": "next-action"
+    },
+    {
+      "type": "header",
+      "key": "content-type",
+      "value": "multipart/form-data;.*"
+    }
+  ],
+  "fallback": {
+    "type": "FileFsRef",
+    "mode": 33188,
+    "contentType": "image/png",
+    "fsPath": "image.png.prerender-fallback.body"
+  },
+  "initialHeaders": {
+    "cache-control": "public, max-age=0, must-revalidate",
+    "content-type": "image/png",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/og/layout,_N_T_/og/docs/layout,_N_T_/og/docs/[...slug]/layout,_N_T_/og/docs/[...slug]/route,_N_T_/og/docs/cli/cli-reference/image.png",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+  },
+  "allowQuery": [],
+  "allowHeader": [
+    "host",
+    "x-matched-path",
+    "x-prerender-revalidate",
+    "x-prerender-revalidate-if-generated",
+    "x-next-revalidated-tags",
+    "x-next-revalidate-tag-token"
+  ]
+}

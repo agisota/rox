@@ -1,0 +1,39 @@
+{
+  "type": "Prerender",
+  "expiration": false,
+  "sourcePath": "/llms.mdx/[[...slug]]",
+  "group": 17,
+  "bypassToken": "68efb20092ff41725d406baadf0fd1ed",
+  "experimentalBypassFor": [
+    {
+      "type": "header",
+      "key": "next-action"
+    },
+    {
+      "type": "header",
+      "key": "content-type",
+      "value": "multipart/form-data;.*"
+    }
+  ],
+  "fallback": {
+    "type": "FileFsRef",
+    "mode": 33188,
+    "contentType": "text/markdown",
+    "fsPath": "keyboard-shortcuts.prerender-fallback.body"
+  },
+  "initialHeaders": {
+    "content-type": "text/markdown",
+    "x-robots-tag": "noindex, nofollow",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/llms.mdx/layout,_N_T_/llms.mdx/[[...slug]]/layout,_N_T_/llms.mdx/[[...slug]]/route,_N_T_/llms.mdx/keyboard-shortcuts",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+  },
+  "allowQuery": [],
+  "allowHeader": [
+    "host",
+    "x-matched-path",
+    "x-prerender-revalidate",
+    "x-prerender-revalidate-if-generated",
+    "x-next-revalidated-tags",
+    "x-next-revalidate-tag-token"
+  ]
+}

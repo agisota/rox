@@ -1,0 +1,4 @@
+;!function(){try { var e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof global?global:"undefined"!=typeof window?window:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&((e._debugIds|| (e._debugIds={}))[n]="790a8486-38e0-25a7-3dfb-16314d9c1bff")}catch(e){}}();
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,207060,t=>{"use strict";let e=new Map;async function a(t,{api:r="/api/search",locale:s,tag:o}){let i=new URL(r,window.location.origin);i.searchParams.set("query",t),s&&i.searchParams.set("locale",s),o&&i.searchParams.set("tag",Array.isArray(o)?o.join(","):o);let c=i.toString(),n=e.get(c);if(n)return n;let l=await fetch(i);if(!l.ok)throw Error(await l.text());let h=await l.json();return e.set(c,h),h}t.s(["fetchDocs",0,a])}]);
+
+//# debugId=790a8486-38e0-25a7-3dfb-16314d9c1bff
