@@ -35,6 +35,12 @@ export function SignalTravel({
 	className,
 }: SignalTravelProps) {
 	const shouldAnimate = useShouldAnimate();
+	// `path` is interpolated into a CSS `offset-path: path("…")`. Reject values
+	// that could break out of the string (or inject styles) and render nothing
+	// rather than emit malformed CSS.
+	if (path.includes('"') || path.includes("\\")) {
+		return null;
+	}
 	return (
 		<motion.circle
 			r={radius}
