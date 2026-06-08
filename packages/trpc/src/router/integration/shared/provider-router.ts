@@ -16,9 +16,7 @@ import { verifyOrgAdmin, verifyOrgMembership } from "../utils";
  * Mirrors the hand-written Slack/Linear routers so each provider vertical only
  * adds provider-specific procedures on top of this baseline.
  */
-export function createProviderConnectionRouter(
-	provider: IntegrationProvider,
-): TRPCRouterRecord {
+export function createProviderConnectionRouter(provider: IntegrationProvider) {
 	const scope = z.object({
 		organizationId: z.uuid(),
 		workspaceId: z.uuid().nullish(),
