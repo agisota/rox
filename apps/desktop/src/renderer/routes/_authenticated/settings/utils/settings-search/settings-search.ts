@@ -20,6 +20,7 @@ export const SETTING_ITEM_ID = {
 	APPEARANCE_CUSTOM_THEMES: "appearance-custom-themes",
 	APPEARANCE_EDITOR_FONT: "appearance-editor-font",
 	APPEARANCE_TERMINAL_FONT: "appearance-terminal-font",
+	APPEARANCE_MOTION: "appearance-motion",
 
 	RINGTONES_NOTIFICATION: "ringtones-notification",
 
@@ -128,6 +129,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.APPEARANCE_CUSTOM_THEMES]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_EDITOR_FONT]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_TERMINAL_FONT]: "shared",
+	[SETTING_ITEM_ID.APPEARANCE_MOTION]: "shared",
 
 	[SETTING_ITEM_ID.RINGTONES_NOTIFICATION]: "shared",
 
@@ -455,6 +457,26 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"typography",
 			"custom",
 			"nerd",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.APPEARANCE_MOTION,
+		section: "appearance",
+		title: "Motion",
+		description: "Animation level for the MONAD interface",
+		keywords: [
+			"appearance",
+			"motion",
+			"animation",
+			"animations",
+			"reduce motion",
+			"reduced motion",
+			"accessibility",
+			"a11y",
+			"movement",
+			"transitions",
+			"monad",
+			"prefers-reduced-motion",
 		],
 	},
 	{
