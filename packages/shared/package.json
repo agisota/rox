@@ -16,6 +16,10 @@
 			"types": "./src/rox-models.ts",
 			"default": "./src/rox-models.ts"
 		},
+		"./rox-ledger": {
+			"types": "./src/rox-ledger.ts",
+			"default": "./src/rox-ledger.ts"
+		},
 		"./rox-perks": {
 			"types": "./src/rox-perks.ts",
 			"default": "./src/rox-perks.ts"
