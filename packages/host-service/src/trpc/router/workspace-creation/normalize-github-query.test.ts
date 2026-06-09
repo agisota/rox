@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { normalizeGitHubQuery } from "./normalize-github-query";
 
-const repo = { owner: "agisota", name: "rox" };
+const repo = { owner: "agisota", name: "set" };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared behaviors (same for both kinds)
@@ -280,7 +280,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("case-insensitive owner/repo", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/Rox-SH/Rox/pull/100",
+				"https://github.com/Agisota/Set/pull/100",
 				repo,
 				"pull",
 			);
@@ -415,7 +415,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 
 		test("case-insensitive owner/repo", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/Rox-SH/ROX/issues/55",
+				"https://github.com/Agisota/SET/issues/55",
 				repo,
 				"issue",
 			);
