@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
+import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
 
 const getCurrentTxidMock = mock(async () => "txid-123");
 const seedDefaultStatusesMock = mock(async () => "status-seeded");
@@ -174,21 +175,7 @@ mock.module("@rox/shared/task-slug", () => ({
 	generateUniqueTaskSlug: mock(() => "task"),
 }));
 
-mock.module("drizzle-orm", () => ({
-	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
-	desc: (value: unknown) => ({ type: "desc", value }),
-	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
-	ilike: (left: unknown, right: unknown) => ({ type: "ilike", left, right }),
-	isNull: (value: unknown) => ({ type: "isNull", value }),
-	sql: Object.assign(
-		(strings: TemplateStringsArray, ...values: unknown[]) => ({
-			type: "sql",
-			strings,
-			values,
-		}),
-		{ raw: (s: string) => ({ type: "raw", s }) },
-	),
-}));
+mock.module("drizzle-orm", () => ({ ...drizzleOrmMockBase }));
 
 mock.module("drizzle-orm/pg-core", () => ({
 	alias: (table: unknown) => table,

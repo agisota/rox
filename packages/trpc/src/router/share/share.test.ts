@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
+import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
 
 const getCurrentTxidMock = mock(async () => 123);
 
@@ -77,11 +78,7 @@ mock.module("../integration/utils", () => ({
 	verifyOrgMembershipWithSubscription: verifyOrgMembershipWithSubscriptionMock,
 }));
 
-mock.module("drizzle-orm", () => ({
-	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
-	desc: (value: unknown) => ({ type: "desc", value }),
-	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
-}));
+mock.module("drizzle-orm", () => ({ ...drizzleOrmMockBase }));
 
 const { createCallerFactory, createTRPCRouter } = await import("../../trpc");
 const { shareRouter } = await import("./share");

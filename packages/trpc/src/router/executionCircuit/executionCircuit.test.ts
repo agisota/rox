@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { defaultCircuitForTask } from "@rox/workflow-core";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
+import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
 
 const verifyOrgMembershipMock = mock(async () => ({
 	membership: { role: "member" },
@@ -98,11 +99,7 @@ mock.module("@rox/db/schema", () => ({
 	},
 }));
 
-mock.module("drizzle-orm", () => ({
-	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
-	desc: (value: unknown) => ({ type: "desc", value }),
-	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
-}));
+mock.module("drizzle-orm", () => ({ ...drizzleOrmMockBase }));
 
 mock.module("../integration/utils", () => ({
 	verifyOrgMembership: verifyOrgMembershipMock,
