@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import SuperJSON from "superjson";
@@ -14,6 +15,7 @@ import {
 import type { HostDb } from "../../src/db";
 import * as schema from "../../src/db/schema";
 import type { AppRouter as HostAppRouter } from "../../src/trpc/router";
+import { ensureHostSettingsRow } from "../../src/trpc/router/settings/host-settings";
 import {
 	createFakeApiClient,
 	FakeApiAuthProvider,
@@ -151,6 +153,18 @@ export async function createTestHost(
 
 	const trpc = buildClient(true);
 	const unauthenticatedTrpc = buildClient(false);
+
+	// Integration tests assert branch names and worktree paths without the
+	// first-run `rox` prefix; branch-prefix behavior is covered in unit tests.
+	// Seed via ensureHostSettingsRow so legacy worktree env is preserved, then
+	// clear only the prefix fields (branchPrefix.set would clobber worktreeBaseDir).
+	const hostDb = db as unknown as HostDb;
+	ensureHostSettingsRow(hostDb);
+	hostDb
+		.update(schema.hostSettings)
+		.set({ branchPrefixMode: "none", branchPrefixCustom: null })
+		.where(eq(schema.hostSettings.id, 1))
+		.run();
 
 	const dispose = async (): Promise<void> => {
 		// Run sqlite + temp-dir cleanup in a finally so a thrown
