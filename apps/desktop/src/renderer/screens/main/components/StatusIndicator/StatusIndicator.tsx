@@ -1,4 +1,5 @@
 import { cn } from "@rox/ui/utils";
+import { useMotionPreference } from "renderer/monad/motion";
 import type { ActivePaneStatus } from "shared/tabs-types";
 
 // Re-export for consumers
@@ -39,13 +40,17 @@ interface StatusIndicatorProps {
  * - Red pulsing: needs user input (permission)
  * - Amber pulsing: agent working
  * - Green static: ready for review
+ *
+ * The looping ping honours the MONAD motion preference: under reduced/off
+ * motion the halo is dropped, while the solid dot (resting state) always shows.
  */
 export function StatusIndicator({ status, className }: StatusIndicatorProps) {
 	const config = STATUS_CONFIG[status];
+	const { reduced } = useMotionPreference();
 
 	return (
 		<span className={cn("relative flex size-2 shrink-0", className)}>
-			{config.pulse && (
+			{config.pulse && !reduced && (
 				<span
 					className={cn(
 						"absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
