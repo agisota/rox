@@ -232,7 +232,7 @@ bare grey list. After **C1**:
 
 - **Now (serial):** Gate G1–G5 → then C1, C2 decisions.
 - **Wave A (parallel, post-gate):** #34.1+#34.2 (+#50), #30.1–.4, #27.1.
-- **Wave B:** #32 transport+sandbox, #35 layers, #28 bundle, #29 presets, Core.4.1.
+- **Wave B:** #32 transport+sandbox, #35 layers, #28 bundle, #29 presets, Core.1.
 - **Wave C:** #34.3–.6 (crypto+cabinet), #32 billing/security, #35 replay/revenue.
 
 > ⚠️ **Shared-middleware rebase dependency:** #34.1 + #50 rewrite the global auth
