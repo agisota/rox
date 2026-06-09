@@ -73,7 +73,7 @@ sherif / lint / test / typecheck / build green.
 The wave produced **two** parallel implementations of two core systems. Decide a
 single home for each *now*; every later UI/circuit slice depends on the choice.
 
-### C1 — One Execution Circuit module
+### ~~C1~~ — One Execution Circuit module · **converged (realized on `main` / #56)**
 
 - On `main`: `packages/workflow-core/src/circuit/*` (used by the merged
   `executionCircuit` tRPC router + `@rox/db` tables).
@@ -81,10 +81,12 @@ single home for each *now*; every later UI/circuit slice depends on the choice.
   types/validate/prompt-compiler whose `./execution-circuit` export isn't even
   in `packages/shared/package.json`. "Parked" here means *open as draft, awaiting
   this convergence decision* (do not merge as-is).
-- **Decision (recommended):** keep `@rox/workflow-core` as the home (it already
-  has consumers + DB + router). Close #51, or rebase it to add only what
-  workflow-core lacks. **Verify:** one `compileTransitionPrompt`/
-  `validateExecutionCircuitSpec` in the repo; `bun run typecheck` green.
+- **Decision (realized):** `@rox/workflow-core` is the single home. Verified on
+  `main`/#56: exactly one `compileTransitionPrompt` + `validateExecutionCircuitSpec`
+  in the repo (`packages/workflow-core/src/circuit/`), the `executionCircuit`
+  router consumes it, and no `@rox/shared/execution-circuit` export exists. **Next
+  GitHub action:** close PR #51 (or rebase it to add only what workflow-core
+  lacks) — no code change required on `main`.
 
 ### C2 — One design system
 
