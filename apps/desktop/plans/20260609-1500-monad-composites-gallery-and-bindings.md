@@ -53,7 +53,8 @@ These are working assumptions that unblock planning. Each must be confirmed (mov
 - [x] (2026-06-09) M2 — Primitives showcase: all nine primitives in `PrimitivesSection`, each with a resting card and an idle→active toggle.
 - [x] (2026-06-09) M3 — Composites: `CompositesSection` with a four-step tool-call lifecycle (context → execute → validate → done) and an S0→S\* state-transition row with `DeltaField`.
 - [x] (2026-06-09) M4 — Gallery controls (font / appearance / motion-preference, in `GalleryControls`) + bonus `FoundationSection` (the PR-00 motion helpers). No render-smoke tests added — repo has no React/jsdom test harness (see Decision Log "Render-smoke test depth"); automated gate is typecheck + lint, visual pass is human/local.
-- [ ] M5+ — Product-surface bindings PR-03..14 (one milestone per surface; see roadmap). (completed: PR-12 run button; remaining: the rest)
+- [~] M5+ — Product-surface bindings PR-03..14 (one milestone per surface; see roadmap). (completed: PR-12 run button, PR-13 Settings motion preference; remaining: PR-03..11, PR-14)
+  - [x] (2026-06-09) PR-13 — Settings → Appearance "Motion" section (Full/Reduced/Off) backed by `useMotionPreference().setPreference`; new `APPEARANCE_MOTION` settings-search item. Font switcher deferred (MONAD font has near-zero product effect until more surfaces bind). typecheck 0, lint 0, settings-search tests 7/7. Commit `56f85e0`.
 
 Phase A (the `/monad` gallery, PR-02) is complete and green: `bun run --cwd apps/desktop typecheck` exit 0, `bun run lint` exit 0 (4736 files), `bunx sherif` clean, existing `bun test` 4/4. Awaiting the human visual pass (Layer 2) on a local build.
 
@@ -110,7 +111,7 @@ Phase A (the `/monad` gallery, PR-02) is complete and green: `bun run --cwd apps
 
 Measured against the Purpose: a developer on a local build can now open one route and visually verify every MONAD element and every motion state in one place — the instrument that makes the Phase B bindings checkable. What this environment could verify is verified (typecheck 0, lint 0 over 4736 files, sherif clean, existing tests 4/4); what it cannot (the actual pixels/motion, because Electron won't launch here) is deferred to the human visual pass — the one remaining gap for Phase A.
 
-Phase B (PR-03..14 bindings) is not yet started; the roadmap stands.
+Phase B (PR-03..14 bindings) is in progress: PR-13 (Settings motion preference) shipped 2026-06-09 (`56f85e0`) as the safest, most isolated binding — additive, no hot/virtualized surface touched, and it gives the global motion preference a real home. The remaining bindings (PR-03..11) modify real interactive surfaces (tabs, sidebar, diff header, review gate, chat tool-calls, terminal frame, notifications, status badges) and (a) cannot be visually verified in this cloud environment and (b) depend on the still-unconfirmed primitive→surface mapping (Open Question 2 — reconcile against the original PORT BRIEF). They should be done one at a time with a human visual pass, or on explicit "best-guess" instruction.
 
 
 ## Context and Orientation
@@ -254,7 +255,7 @@ Each binding is its own milestone and, ideally, its own follow-up ExecPlan, beca
 - PR-10 — **Event flow / notifications** (`V2NotificationController`): `EventParticle`.
 - PR-11 — **Status pulses** across workspace status badges: `StatusPulse`.
 - PR-12 — **Run button** — DONE (`2323475`, `7a39e82`).
-- PR-13 — **Settings: motion + font** (`routes/_authenticated/settings/appearance`): expose `FontSwitcher` and a motion-preference selector backed by `useMotionPreference().setPreference`, replacing the gallery's ad-hoc controls as the real user-facing home.
+- PR-13 — **Settings: motion + font** (`routes/_authenticated/settings/appearance`) — DONE (`56f85e0`, motion-preference selector). Font switcher deferred: the MONAD font only affects MONAD-scoped surfaces, so it adds little in product settings until more bindings land; revisit alongside PR-03..11.
 - PR-14 — **Rollout + cleanup**: finalize, reconcile/guard the dev gallery entry point per the resolved Open Question 1, update `monad/README.md` roadmap.
 
 The governing rule for Phase B: **animate opacity/transform/layout only; never animate xterm rows, CodeMirror rows, or large virtualized lists; gate every animation on `useMotionPreference`; render the resting state first** (per `monad/README.md` and the root `AGENTS.md` TanStack-DB cache-first rule). Reuse the MONAD JS helpers and product Tailwind colors at the binding site, exactly as PR-12 did, so MONAD's scoped CSS never enters a product surface.
