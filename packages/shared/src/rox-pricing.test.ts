@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
+	type ModelProviderFamily,
 	ROX_PER_USDT,
+	ROX_PRICE_DIVISOR_CONFIG,
 	ROX_PRICE_DIVISORS,
 	resolveProviderFamily,
 	roxCostForTokens,
@@ -39,6 +41,29 @@ describe("rox-pricing", () => {
 		expect(ROX_PRICE_DIVISORS.anthropic).toBe(5.25);
 		expect(ROX_PRICE_DIVISORS.google).toBe(12.25);
 		expect(ROX_PRICE_DIVISORS.other).toBe(25);
+	});
+
+	it("derives the flat divisor map from the provenance config", () => {
+		const families = Object.keys(ROX_PRICE_DIVISORS) as ModelProviderFamily[];
+		// Every family in the config appears in the derived map and vice versa.
+		expect(Object.keys(ROX_PRICE_DIVISOR_CONFIG).sort()).toEqual(
+			families.sort(),
+		);
+		for (const family of families) {
+			const config = ROX_PRICE_DIVISOR_CONFIG[family];
+			// Derived map matches the configured divisor exactly.
+			expect(ROX_PRICE_DIVISORS[family]).toBe(config.divisor);
+			// Divisor must be a positive, finite margin lever (never 0 → ÷0).
+			expect(config.divisor).toBeGreaterThan(0);
+			expect(Number.isFinite(config.divisor)).toBe(true);
+			// Provenance is recorded and auditable.
+			expect(config.source.length).toBeGreaterThan(0);
+			expect(["weekly", "monthly", "quarterly"]).toContain(
+				config.reviewCadence,
+			);
+			expect(config.lastReviewed).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+			expect(Number.isNaN(Date.parse(config.lastReviewed))).toBe(false);
+		}
 	});
 
 	it("computes Rox price per million from public USD price", () => {

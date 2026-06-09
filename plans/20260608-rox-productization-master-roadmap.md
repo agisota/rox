@@ -138,6 +138,10 @@ core landed (PR #45). Remaining, as the issue's own sub-ticket split:
     rate. Before #34.4 codes billing against them, record their source (target
     margin vs. `models.dev`/OpenRouter list price + USDT→Rox peg) and a
     recalibration cadence; treat them as config, never as hardcoded constants.
+    *Done (#56): `ROX_PRICE_DIVISOR_CONFIG` in `packages/shared/src/rox-pricing.ts`
+    carries each divisor with `source` / `reviewCadence` / `lastReviewed`; the
+    flat `ROX_PRICE_DIVISORS` hot-path map is derived from it, and a unit test
+    enforces the config↔map consistency + provenance shape.*
 
 > ⚠️ Legal/compliance: data-sharing & latency claims are factual assertions;
 > dv.net is crypto compliance. Gate copy on review.
