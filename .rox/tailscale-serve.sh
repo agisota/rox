@@ -136,6 +136,23 @@ ts_configure_serve() {
   success "Tailscale serve configured"
 }
 
+
+ts_update_env_var() {
+  local key="$1"
+  local value="$2"
+  local file="$3"
+  if grep -q "^${key}=" "$file" 2>/dev/null || grep -q "^${key}="" "$file" 2>/dev/null; then
+    awk -v k="$key" -v v="$value" '
+      BEGIN { replaced=0 }
+      $0 ~ "^" k "=" { print k "="" v """; replaced=1; next }
+      { print }
+      END { if (!replaced) print k "="" v """ }
+    ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+  else
+    write_env_var "$key" "$value" >> "$file"
+  fi
+}
+
 ts_remove_env_section() {
   if [ ! -f .env ]; then
     return 0
@@ -167,20 +184,20 @@ ts_write_env_urls() {
   {
     echo ""
     echo "$TAILSCALE_ENV_MARKER"
-    write_env_var "NEXT_PUBLIC_WEB_URL" "$web_url"
-    write_env_var "NEXT_PUBLIC_API_URL" "$api_url"
-    write_env_var "ROX_WEB_URL" "$web_url"
-    write_env_var "NEXT_PUBLIC_COOKIE_DOMAIN" "$dns"
-    if [ -n "$electric_url" ]; then
-      write_env_var "NEXT_PUBLIC_ELECTRIC_URL" "$electric_url"
-      write_env_var "NEXT_PUBLIC_ELECTRIC_PROXY_URL" "$electric_url"
-    fi
-    write_env_var "TS_SERVE_WEB_URL" "$web_url"
-    write_env_var "TS_SERVE_API_URL" "$api_url"
-    if [ -n "$electric_url" ]; then
-      write_env_var "TS_SERVE_ELECTRIC_URL" "$electric_url"
-    fi
   } >> .env
+  ts_update_env_var "NEXT_PUBLIC_WEB_URL" "$web_url" .env
+  ts_update_env_var "NEXT_PUBLIC_API_URL" "$api_url" .env
+  ts_update_env_var "ROX_WEB_URL" "$web_url" .env
+  ts_update_env_var "NEXT_PUBLIC_COOKIE_DOMAIN" "$dns" .env
+  if [ -n "$electric_url" ]; then
+    ts_update_env_var "NEXT_PUBLIC_ELECTRIC_URL" "$electric_url" .env
+    ts_update_env_var "NEXT_PUBLIC_ELECTRIC_PROXY_URL" "$electric_url" .env
+  fi
+  ts_update_env_var "TS_SERVE_WEB_URL" "$web_url" .env
+  ts_update_env_var "TS_SERVE_API_URL" "$api_url" .env
+  if [ -n "$electric_url" ]; then
+    ts_update_env_var "TS_SERVE_ELECTRIC_URL" "$electric_url" .env
+  fi
 
   cat > "$ROX_SCRIPT_DIR/tailscale-urls.json" <<JSON
 {
@@ -204,7 +221,7 @@ JSON
     echo "  Electric:  $electric_url"
   fi
   echo ""
-  warn "Restart dev servers so Next.js picks up new URLs: bun run dev"
+  warn "Restart dev servers: ./.rox/restart-dev.sh  (or kill old processes, then bun run dev)"
 }
 
 main() {

@@ -86,7 +86,7 @@ With `bun run dev` running locally:
 ```bash
 export TS_AUTHKEY=tskey-auth-...   # optional; or `tailscale up` in a browser
 ./.rox/tailscale-serve.sh
-bun run dev                        # restart to load Tailscale URLs from .env
+./.rox/restart-dev.sh              # stop old servers + restart with new .env URLs
 ```
 
 Open the **Web** URL printed by the script (typically `https://<machine>.<tailnet>.ts.net`). API is on port `8443`, Electric on `8444`. URLs are also saved in `.rox/tailscale-urls.json`.

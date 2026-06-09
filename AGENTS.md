@@ -208,7 +208,7 @@ Use `tmux` for long-running `bun run dev` sessions.
 ```bash
 export TS_AUTHKEY=tskey-auth-...   # or interactive `tailscale up`
 ./.rox/tailscale-serve.sh
-bun run dev                        # restart to load Tailscale URLs from .env
+./.rox/restart-dev.sh              # stop old servers + restart with new .env URLs
 ```
 
 | Tailscale HTTPS | Local target |
