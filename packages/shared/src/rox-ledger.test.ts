@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import type { RoxRequestCost } from "./rox-models";
 import {
 	applyGrant,
 	applyRequestCharge,
 	applyTopUp,
 	canAfford,
 } from "./rox-ledger";
+import type { RoxRequestCost } from "./rox-models";
 
 const paidCost = (totalRox: number): RoxRequestCost => ({
 	inputRox: totalRox,
