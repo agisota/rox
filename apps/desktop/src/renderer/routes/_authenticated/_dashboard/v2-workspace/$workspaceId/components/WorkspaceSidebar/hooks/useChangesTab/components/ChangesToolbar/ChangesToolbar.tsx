@@ -1,6 +1,7 @@
 import { Button } from "@rox/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { FoldVertical, UnfoldVertical } from "lucide-react";
+import { AnimatedNumber } from "renderer/monad/motion";
 import type {
 	ChangesFilter,
 	ChangesViewMode,
@@ -61,11 +62,15 @@ export function ChangesToolbar({
 				{(totalAdditions > 0 || totalDeletions > 0) && (
 					<span className="whitespace-nowrap">
 						{totalAdditions > 0 && (
-							<span className="text-green-400">+{totalAdditions}</span>
+							<span className="text-green-400">
+								+<AnimatedNumber value={totalAdditions} />
+							</span>
 						)}
 						{totalAdditions > 0 && totalDeletions > 0 && " "}
 						{totalDeletions > 0 && (
-							<span className="text-red-400">-{totalDeletions}</span>
+							<span className="text-red-400">
+								-<AnimatedNumber value={totalDeletions} />
+							</span>
 						)}
 					</span>
 				)}
