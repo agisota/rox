@@ -3,6 +3,7 @@ import { defaultCircuitForTask } from "@rox/workflow-core";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
 import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
+import { integrationUtilsMockBase } from "../../test-support/integrationUtilsMock";
 
 const verifyOrgMembershipMock = mock(async () => ({
 	membership: { role: "member" },
@@ -102,6 +103,7 @@ mock.module("@rox/db/schema", () => ({
 mock.module("drizzle-orm", () => ({ ...drizzleOrmMockBase }));
 
 mock.module("../integration/utils", () => ({
+	...integrationUtilsMockBase,
 	verifyOrgMembership: verifyOrgMembershipMock,
 	verifyOrgMembershipWithSubscription: verifyOrgMembershipWithSubscriptionMock,
 }));

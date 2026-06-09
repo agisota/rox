@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
 import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
+import { integrationUtilsMockBase } from "../../test-support/integrationUtilsMock";
 
 const getCurrentTxidMock = mock(async () => "txid-123");
 const seedDefaultStatusesMock = mock(async () => "status-seeded");
@@ -186,6 +187,7 @@ mock.module("../../lib/integrations/sync", () => ({
 }));
 
 mock.module("../integration/utils", () => ({
+	...integrationUtilsMockBase,
 	verifyOrgAdmin: verifyOrgAdminMock,
 	verifyOrgOwner: verifyOrgOwnerMock,
 	verifyOrgMembership: verifyOrgMembershipMock,

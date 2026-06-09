@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
 import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
+import { integrationUtilsMockBase } from "../../test-support/integrationUtilsMock";
 
 const getCurrentTxidMock = mock(async () => 123);
 
@@ -73,6 +74,7 @@ const verifyOrgMembershipWithSubscriptionMock = mock(async () => ({
 }));
 
 mock.module("../integration/utils", () => ({
+	...integrationUtilsMockBase,
 	verifyOrgAdmin: verifyOrgAdminMock,
 	verifyOrgMembership: verifyOrgMembershipMock,
 	verifyOrgMembershipWithSubscription: verifyOrgMembershipWithSubscriptionMock,
