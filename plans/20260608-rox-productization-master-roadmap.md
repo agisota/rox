@@ -49,19 +49,19 @@ slice can be proven done while CI is red. Land these first, in order.
 
 | # | Slice | Failure it fixes | Verify | Tracking |
 |---|---|---|---|---|
-| G1 | Sherif: order `dependencies`/`devDependencies` in `apps/*` + `packages/ui` | `unordered-dependencies` | `bunx sherif` → 0 issues | PR #55 |
-| G2 | Repoint symlink `plugins/rox/skills/rox` → `../../../skills/rox` (target was renamed off `skills/superset`) | Biome warning on broken symlink (lint treats warnings as errors) | `bun run lint` → exit 0 | PR #55 |
-| G3 | `@rox/desktop` typecheck heap: `cross-env NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit` | exit 137 OOM (~2 GB) | Typecheck job green | PR #55 |
-| G4 | **Triage `@rox/trpc#test`** (the real one #55 leaves open) | unit-test failure | `bun --cwd packages/trpc test` → all pass | — |
-| G5 | Make Neon/Vercel preview deploys non-gating OR wire repo deploy secrets (`project_id`, etc.) | preview deploys fail for missing secrets | preview job green or non-required | — |
+| ~~G1~~ | ~~Sherif: order `dependencies`/`devDependencies` in `apps/*` + `packages/ui`~~ | `unordered-dependencies` | ✅ `bunx sherif` → No issues found | #56 (d0b49a2) |
+| ~~G2~~ | ~~Repoint symlink `plugins/rox/skills/rox` → `../../../skills/rox`~~ | Biome broken-symlink warning | ✅ `bun run lint` → exit 0 | #56 (d0b49a2) |
+| ~~G3~~ | ~~`@rox/desktop` typecheck heap: `cross-env NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit`~~ | exit 137 OOM (~2 GB) | CI Typecheck job (heap matches dev/compile) | #56 (d0b49a2) |
+| ~~G4~~ | ~~Fix `@rox/trpc#test`~~ | unit-test failure | ✅ `bun --cwd packages/trpc test` → 76 pass / 0 fail | #56 (b57c522) |
+| G5 | Make Neon/Vercel preview deploys non-gating OR wire repo deploy secrets (`project_id`, etc.) | preview deploys fail for missing secrets | preview job green or non-required | repo config (not code) |
 
-**G4 triage notes (from static review):** the three *new* suites
-(`executionCircuit`, `knowledge`, `share`) appear internally consistent — mocks
-match imports, and `defaultCircuitForTask` emits `complete (working -> done)`
-exactly as `executionCircuit.test.ts` asserts. So the failure is most likely a
-**pre-existing suite broken by a wave schema change** (`task.test.ts` or
-`v2-project.test.ts`) or an integration-router test. Run the suite, read the
-first failing assertion, fix at the source (don't weaken the test).
+**G4 root cause (resolved):** not a product bug — `@rox/trpc` typecheck is clean
+and each new suite passes in isolation. Bun's `mock.module("@rox/db/schema", …)`
+is process-global and last-wins, so the `task`/`v2-project` mocks (which omit the
+circuit/access tables) clobbered the mock `share.ts` / `executionCircuit.ts` link
+their named imports against → "Export named accessGrants/executionCircuits not
+found". Fixed with a shared `dbSchemaMockBase` (full union of table names) spread
+into every router test's schema mock.
 
 **Exit criterion for the gate:** a push to `main` shows all of
 sherif / lint / test / typecheck / build green.
