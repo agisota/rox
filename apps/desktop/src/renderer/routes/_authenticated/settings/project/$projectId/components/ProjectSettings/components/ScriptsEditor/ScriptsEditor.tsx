@@ -9,6 +9,7 @@ import {
 } from "react-icons/hi2";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { invalidateProjectScriptQueries } from "renderer/lib/project-scripts";
+import { useMotionPreference } from "renderer/monad/motion";
 import { EXTERNAL_LINKS } from "shared/constants";
 
 interface ScriptsEditorProps {
@@ -178,6 +179,7 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 	const [teardownContent, setTeardownContent] = useState("");
 	const [runContent, setRunContent] = useState("");
 	const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+	const { reduced } = useMotionPreference();
 	const latestContentRef = useRef({
 		setup: "",
 		teardown: "",
@@ -351,7 +353,12 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 					<h3 className="text-base font-semibold text-foreground">Scripts</h3>
 					{saveStatus === "saving" && (
 						<span className="text-xs text-muted-foreground flex items-center gap-1">
-							<span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+							<span
+								className={cn(
+									"inline-block h-1.5 w-1.5 rounded-full bg-amber-500",
+									!reduced && "animate-pulse",
+								)}
+							/>
 							Saving…
 						</span>
 					)}
