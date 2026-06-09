@@ -122,6 +122,11 @@ core landed (PR #45). Remaining, as the issue's own sub-ticket split:
    debit-per-request hook. Verify: ledger unit tests; `bun --cwd packages/db typecheck`.
 3. **dv.net top-up** — crypto on-ramp, `$5 USDT = 500 Rox`. Verify: provider
    adapter unit-tested with mocked dv.net; secret handling documented.
+   *Core done (#56): `@rox/shared/rox-topup` — confirmed-only + USDT-only +
+   idempotent settlement on top of `applyTopUp`, behind an injected `DvNetClient`
+   seam (secret stays in the host-side client, documented + never logged),
+   unit-tested with a mocked client (8 cases). Remaining: the concrete host-service
+   dv.net HTTP client + tRPC route + balance persistence.*
 4. **Per-request pricing + models table** — ingest `models.dev`; provider
    divisors (grok/openai ÷7.5, claude ÷5.25, gemini ÷12.25, others ÷25) [^div];
    comparison columns (data-sharing/training/latency/TTFT/stability bar-charts à
