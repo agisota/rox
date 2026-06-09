@@ -492,6 +492,7 @@
         "@rn-primitives/tooltip": "1.4.0",
         "@rox/auth": "workspace:*",
         "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
         "@rox/trpc": "workspace:*",
         "@tanstack/db": "0.6.5",
         "@tanstack/electric-db-collection": "0.3.3",

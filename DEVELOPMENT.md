@@ -45,7 +45,7 @@ Re-run the script any time to refresh the workspace. To tear the local DB stack 
 After `bun run dev`, open the web app and click the **"Sign in as dev"** button on the sign-in page (also available in the desktop sign-in screen). Or use the credentials directly:
 
 - Email: `admin@local.test`
-- Password: `roxdev`
+- Password: `roxdev12`
 
 The dev sign-in button and email/password auth are gated on `NODE_ENV=development` — they don't ship in production.
 
