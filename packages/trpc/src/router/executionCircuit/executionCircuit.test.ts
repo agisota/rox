@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { defaultCircuitForTask } from "@rox/workflow-core";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
 
 const verifyOrgMembershipMock = mock(async () => ({
 	membership: { role: "member" },
@@ -68,6 +69,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
+	...dbSchemaMockBase,
 	members: {
 		organizationId: "members.organizationId",
 		userId: "members.userId",

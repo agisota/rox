@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
 
 const getCurrentTxidMock = mock(async () => "txid-123");
 const seedDefaultStatusesMock = mock(async () => "status-seeded");
@@ -112,6 +113,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
+	...dbSchemaMockBase,
 	members: {
 		organizationId: "members.organizationId",
 		userId: "members.userId",

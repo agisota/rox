@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
 
 const getCurrentTxidMock = mock(async () => 123);
 
@@ -106,6 +107,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
+	...dbSchemaMockBase,
 	v2Projects: {
 		id: "v2_projects.id",
 		organizationId: "v2_projects.organization_id",
