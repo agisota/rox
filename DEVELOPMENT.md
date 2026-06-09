@@ -45,7 +45,7 @@ Re-run the script any time to refresh the workspace. To tear the local DB stack 
 After `bun run dev`, open the web app and click the **"Sign in as dev"** button on the sign-in page (also available in the desktop sign-in screen). Or use the credentials directly:
 
 - Email: `admin@local.test`
-- Password: `roxdev12`
+- Password: `roxdev`
 
 The dev sign-in button and email/password auth are gated on `NODE_ENV=development` — they don't ship in production.
 
@@ -78,6 +78,18 @@ bun run build          # Build all packages
 ```
 
 See [`AGENTS.md`](./AGENTS.md) for repo structure, monorepo conventions, and database/migration workflow.
+
+## Tailscale serve (access dev stack from your tailnet)
+
+With `bun run dev` running locally:
+
+```bash
+export TS_AUTHKEY=tskey-auth-...   # optional; or `tailscale up` in a browser
+./.rox/tailscale-serve.sh
+bun run dev                        # restart to load Tailscale URLs from .env
+```
+
+Open the **Web** URL printed by the script (typically `https://<machine>.<tailnet>.ts.net`). API is on port `8443`, Electric on `8444`. URLs are also saved in `.rox/tailscale-urls.json`.
 
 ## Troubleshooting
 

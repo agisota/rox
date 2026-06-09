@@ -203,9 +203,27 @@ See `DEVELOPMENT.md` for full details. Dev sign-in: **Sign in as Local Admin (de
 
 Use `tmux` for long-running `bun run dev` sessions.
 
+### Tailscale serve (remote access on tailnet)
+
+```bash
+export TS_AUTHKEY=tskey-auth-...   # or interactive `tailscale up`
+./.rox/tailscale-serve.sh
+bun run dev                        # restart to load Tailscale URLs from .env
+```
+
+| Tailscale HTTPS | Local target |
+|:----------------|:-------------|
+| `:443` | Web (`WEB_PORT`) |
+| `:8443` | API (`API_PORT`) |
+| `:8444` | Caddy Electric (`CADDY_ELECTRIC_PORT`) |
+
+Writes `NEXT_PUBLIC_*` URLs + `.rox/tailscale-urls.json`. Cloud VMs: userspace `tailscaled` (see script header). Undo: `sudo tailscale serve reset`.
+
+
 ### Troubleshooting
 
 - **neon-proxy timeouts after idle** — restart the stack: `docker compose -p rox-workspace -f docker-compose.yml down && docker compose -p rox-workspace -f docker-compose.yml up -d` (export `LOCAL_PG_PORT` / `LOCAL_NEON_PROXY_PORT` / `LOCAL_ELECTRIC_PORT` from `.env` first). If `DOCKER-ISOLATION-STAGE-2` iptables errors appear, restart `dockerd`.
 - **Stale dev user / wrong password** — delete `admin@local.test` from `auth.users` and re-run `NODE_ENV=development bun run db:seed-dev`, or re-run `./.rox/setup.local.sh`.
+- **Tailscale serve** — requires logged-in tailnet (`TS_AUTHKEY` or browser login via `tailscale up`). Restart `bun run dev` after URL changes.
 - **Lint** — `plugins/rox/skills/rox` must symlink to `skills/rox` (not `skills/superset`).
 - **Tests** — full `bun test` includes git/worktree integration suites (`packages/host-service`, etc.) that may fail in minimal VMs. Smoke: `bun test packages/shared packages/auth`.
