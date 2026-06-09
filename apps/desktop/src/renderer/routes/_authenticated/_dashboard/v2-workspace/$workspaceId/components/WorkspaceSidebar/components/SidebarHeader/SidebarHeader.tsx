@@ -1,5 +1,6 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
+import { AnimatedNumber } from "renderer/monad/motion";
 import { getSidebarHeaderTabButtonClassName } from "renderer/screens/main/components/WorkspaceView/RightSidebar/headerTabStyles";
 import type { SidebarTabDefinition } from "../../types";
 
@@ -23,10 +24,10 @@ export function SidebarHeader({
 			<div className="flex min-w-0 items-center h-full overflow-hidden">
 				{tabs.map((tab) => {
 					const isActive = activeTab === tab.id;
+					const badgeValue =
+						typeof tab.badge === "number" && tab.badge > 0 ? tab.badge : null;
 					const badge =
-						typeof tab.badge === "number" && tab.badge > 0
-							? formatBadgeCount(tab.badge)
-							: null;
+						badgeValue !== null ? formatBadgeCount(badgeValue) : null;
 					const label = badge ? `${tab.label} (${badge})` : tab.label;
 					const btn = (
 						<button
@@ -44,7 +45,7 @@ export function SidebarHeader({
 						>
 							{tab.icon && <tab.icon className="size-3" />}
 							{!compact && tab.label}
-							{badge && (
+							{badgeValue !== null && (
 								<span
 									aria-hidden="true"
 									className={cn(
@@ -54,7 +55,10 @@ export function SidebarHeader({
 											"absolute right-1 top-1 min-w-3 px-1 text-[9px] leading-3",
 									)}
 								>
-									{badge}
+									<AnimatedNumber
+										value={badgeValue}
+										format={(value) => formatBadgeCount(Math.round(value))}
+									/>
 								</span>
 							)}
 						</button>
