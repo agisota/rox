@@ -1,8 +1,14 @@
+import { AnimatedNumber } from "renderer/monad/motion";
+
 interface DashboardSidebarWorkspaceDiffStatsProps {
 	additions: number;
 	deletions: number;
 	isActive?: boolean;
 }
+
+// Preserve the original plain-integer formatting (no locale separators) so the
+// only visible change is the spring on value updates.
+const formatCount = (value: number) => Math.round(value).toString();
 
 export function DashboardSidebarWorkspaceDiffStats({
 	additions,
@@ -15,12 +21,12 @@ export function DashboardSidebarWorkspaceDiffStats({
 				<span
 					className={isActive ? "text-emerald-500/90" : "text-muted-foreground"}
 				>
-					+{additions}
+					+<AnimatedNumber value={additions} format={formatCount} />
 				</span>
 				<span
 					className={isActive ? "text-red-400/90" : "text-muted-foreground"}
 				>
-					−{deletions}
+					−<AnimatedNumber value={deletions} format={formatCount} />
 				</span>
 			</div>
 		</div>
