@@ -82,8 +82,11 @@ function getFilePathsSize(manager: FsWatcherManager, rootPath: string): number {
 }
 
 async function waitForCondition(
+	// Real FS watchers (inotify) deliver create/delete batches noticeably
+	// slower under CI IO than locally, so give the watcher generous headroom —
+	// the events do arrive, just not within a few seconds on a loaded runner.
 	check: () => boolean,
-	timeoutMs = 4000,
+	timeoutMs = 15000,
 	pollMs = 50,
 ): Promise<void> {
 	const deadline = Date.now() + timeoutMs;
