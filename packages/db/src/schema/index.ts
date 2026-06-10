@@ -6,6 +6,7 @@ export * from "./enums";
 export * from "./github";
 export * from "./ingest";
 export * from "./knowledge";
+export * from "./profiles";
 export * from "./relations";
 export * from "./schema";
 export * from "./types";

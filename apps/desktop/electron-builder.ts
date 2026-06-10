@@ -24,7 +24,7 @@ const dmgBackgroundPath = join(
 );
 
 const config: Configuration = {
-	appId: "com.rox.desktop",
+	appId: "com.rox.one",
 	productName,
 	copyright: `Copyright © ${currentYear} — ${author}`,
 	electronVersion: pkg.devDependencies.electron.replace(/^\^/, ""),
