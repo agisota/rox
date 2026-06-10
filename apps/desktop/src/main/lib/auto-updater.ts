@@ -80,6 +80,19 @@ function isNetworkError(error: Error | string): boolean {
 	return SILENT_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
 }
 
+// Squirrel.Mac refuses to update ad-hoc/unsigned builds. While we ship
+// without a Developer ID certificate, background checks would surface an
+// "Update failed" toast every cycle — detect the signature error once,
+// go quiet, and stop checking until the next launch.
+let updatesUnsupported = false;
+
+function isCodeSignatureError(error: Error | string): boolean {
+	const message = typeof error === "string" ? error : error.message;
+	return /code signature|codesign|signature validation|not signed/i.test(
+		message,
+	);
+}
+
 let currentStatus: AutoUpdateStatus = AUTO_UPDATE_STATUS.IDLE;
 let currentVersion: string | undefined;
 let isDismissed = false;
@@ -145,7 +158,11 @@ export function dismissUpdate(): void {
 }
 
 export function checkForUpdates(): void {
-	if (env.NODE_ENV === "development" || !IS_AUTO_UPDATE_PLATFORM) {
+	if (
+		env.NODE_ENV === "development" ||
+		!IS_AUTO_UPDATE_PLATFORM ||
+		updatesUnsupported
+	) {
 		return;
 	}
 	isDismissed = false;
@@ -207,6 +224,17 @@ export function checkForUpdatesInteractive(): void {
 					title: "No Internet Connection",
 					message:
 						"Unable to check for updates. Please check your internet connection.",
+				});
+				return;
+			}
+			if (isCodeSignatureError(error)) {
+				updatesUnsupported = true;
+				emitStatus(AUTO_UPDATE_STATUS.IDLE);
+				dialog.showMessageBox({
+					type: "info",
+					title: "Updates",
+					message:
+						"Auto-update is unavailable for this build. Download the latest DMG from GitHub Releases to update.",
 				});
 				return;
 			}
@@ -278,6 +306,14 @@ export function setupAutoUpdater(): void {
 		isInstalling = false;
 		if (isNetworkError(error)) {
 			log.info("[auto-updater] Network unavailable, will retry later");
+			emitStatus(AUTO_UPDATE_STATUS.IDLE);
+			return;
+		}
+		if (isCodeSignatureError(error)) {
+			updatesUnsupported = true;
+			log.warn(
+				"[auto-updater] Build is not code-signed; auto-update is unavailable. Update manually via DMG.",
+			);
 			emitStatus(AUTO_UPDATE_STATUS.IDLE);
 			return;
 		}

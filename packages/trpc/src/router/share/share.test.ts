@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+import * as realDrizzleOrm from "drizzle-orm";
 import * as realDbSchema from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
@@ -77,11 +78,13 @@ const verifyOrgMembershipWithSubscriptionMock = mock(async () => ({
 
 mock.module("../integration/utils", () => ({
 	verifyOrgAdmin: verifyOrgAdminMock,
+	verifyOrgOwner: mock(async () => ({ membership: { role: "owner" } })),
 	verifyOrgMembership: verifyOrgMembershipMock,
 	verifyOrgMembershipWithSubscription: verifyOrgMembershipWithSubscriptionMock,
 }));
 
 mock.module("drizzle-orm", () => ({
+	...realDrizzleOrm,
 	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
 	desc: (value: unknown) => ({ type: "desc", value }),
 	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
