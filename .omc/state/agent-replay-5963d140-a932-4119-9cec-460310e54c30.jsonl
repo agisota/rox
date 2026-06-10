@@ -31,3 +31,4 @@
 {"t":0,"agent":"a1684d4","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
 {"t":0,"agent":"a935bf5","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
 {"t":0,"agent":"a7a59b1","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"a6f9623","agent_type":"unknown","event":"agent_stop","success":true}

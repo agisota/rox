@@ -111,7 +111,8 @@ const config: Configuration = {
 		target: "default",
 		hardenedRuntime: true,
 		gatekeeperAssess: false,
-		notarize: true,
+		// Notarize only when Apple credentials are present; local/unsigned builds skip it.
+		notarize: Boolean(process.env.APPLE_ID || process.env.APPLE_API_KEY),
 		entitlements: join(pkg.resources, "build/entitlements.mac.plist"),
 		entitlementsInherit: join(
 			pkg.resources,
