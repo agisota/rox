@@ -96,8 +96,8 @@ export const auth = betterAuth({
 		...(env.NEXT_PUBLIC_DESKTOP_URL ? [env.NEXT_PUBLIC_DESKTOP_URL] : []),
 		...getTrustedVercelPreviewOrigins(request?.url ?? env.NEXT_PUBLIC_API_URL),
 		...desktopDevOrigins,
-		"superset://app",
-		"superset://",
+		"rox://app",
+		"rox://",
 		...(process.env.NODE_ENV === "development"
 			? ["exp://", "exp://**", "exp://192.168.*.*:*/**"]
 			: []),

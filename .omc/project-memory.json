@@ -276,6 +276,12 @@
       "type": "file"
     },
     {
+      "path": "packages/auth/src/server.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781082875016,
+      "type": "file"
+    },
+    {
       "path": "apps/desktop/electron.vite.config.ts",
       "accessCount": 1,
       "lastAccessed": 1781069046195,
