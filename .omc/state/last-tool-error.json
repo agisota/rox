@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"export PATH=\\\"/opt/homebrew/bin:$PATH\\\"\\nsleep 3\\npeekaboo app switch --to \\\"Rox\\\" 2>&1 | tail -1; sleep 2\\npeekaboo image --mode frontmost --path /tmp/rox-oauth/v13b.png 2>&1 | tail -2\\nl...",
-  "error": "Exit code 1\n✓ Switched to Rox\nError: The user declined TCCs for application, window, display capture",
-  "timestamp": "2026-06-10T09:52:08.705Z",
-  "retry_count": 4
+  "tool_input_preview": "{\"command\":\"export PATH=\\\"/opt/homebrew/bin:$PATH\\\"\\nLSR=\\\"/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister\\\"\\necho \\\"=== stray Rox.app bundles ...",
+  "error": "Exit code 1\n=== stray Rox.app bundles in /tmp ===\n(eval):3: no matches found: /tmp/Rox.*/Rox.app\n=== unregister each stray ===\n(eval):5: no matches found: /tmp/Rox.*.app",
+  "timestamp": "2026-06-10T10:01:04.817Z",
+  "retry_count": 2
 }

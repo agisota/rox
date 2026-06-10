@@ -60,7 +60,7 @@ export async function submitContactInquiry(data: unknown) {
 
 		const { error } = await resend.emails.send({
 			from: "Rox <noreply@superset.sh>",
-			to: "founders@superset.sh",
+			to: "legal@rox.one",
 			replyTo: sanitizedEmail,
 			subject: `Contact message from ${sanitizedName}: ${sanitizedTopic}`,
 			react: ContactInquiryEmail({

@@ -300,6 +300,18 @@
       "type": "file"
     },
     {
+      "path": "apps/marketing/src/app/components/SocialLinks/SocialLinks.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1781086399894,
+      "type": "file"
+    },
+    {
+      "path": "apps/marketing/src/app/components/Header/components/RoxLogo/RoxLogo.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1781086431570,
+      "type": "file"
+    },
+    {
       "path": "apps/desktop/electron.vite.config.ts",
       "accessCount": 1,
       "lastAccessed": 1781069046195,

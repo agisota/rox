@@ -26,7 +26,7 @@ export const COMPANY = {
 	X_URL: "https://x.com/rox_one",
 	LINKEDIN_URL: "https://www.linkedin.com/company/rox-one",
 	YOUTUBE_URL: "https://www.youtube.com/@rox-one",
-	MAIL_TO: "mailto:founders@rox.one",
+	MAIL_TO: "mailto:legal@rox.one",
 	REPORT_ISSUE_URL: "https://github.com/agisota/set/issues/new",
 	DISCORD_URL: "https://discord.gg/cZeD9WYcV7",
 	STATUS_URL: "https://status.rox.one",

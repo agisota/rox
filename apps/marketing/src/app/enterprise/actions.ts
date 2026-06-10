@@ -71,7 +71,7 @@ export async function submitEnterpriseInquiry(data: unknown) {
 
 		const { error } = await resend.emails.send({
 			from: "Rox <noreply@superset.sh>",
-			to: "founders@superset.sh",
+			to: "legal@rox.one",
 			replyTo: sanitizedEmail,
 			subject: `Enterprise inquiry from ${sanitizedName} (${sanitizedCompany})`,
 			react: EnterpriseInquiryEmail({
