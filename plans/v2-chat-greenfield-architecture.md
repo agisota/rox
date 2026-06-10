@@ -577,7 +577,7 @@ These are the three questions that will bite us if we skip them:
 - [ ] Delete `packages/chat/src/client/hooks/use-chat-display/`.
 - [ ] Delete `withoutActiveTurnAssistantHistory` and related helpers.
 - [ ] Delete the legacy surface in `packages/chat/src/server/trpc/service.ts` (the desktop-only tRPC service). Host-service is the only owner — this finishes Phase 3 of `host-service-chat-architecture.md`.
-- [ ] Remove `@superset/chat/client/provider` re-exports that nothing else imports.
+- [ ] Remove `@rox/chat/client/provider` re-exports that nothing else imports.
 - [ ] Update `AGENTS.md` / relevant docs to point at the new surface.
 
 **Acceptance:** zero references to the deleted surface in `apps/` or `packages/` (excluding `temp/`). CI green.

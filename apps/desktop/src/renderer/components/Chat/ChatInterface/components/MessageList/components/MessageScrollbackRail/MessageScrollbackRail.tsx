@@ -1,10 +1,10 @@
-import { useConversationContext } from "@superset/ui/ai-elements/conversation";
+import { useConversationContext } from "@rox/ui/ai-elements/conversation";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from "@superset/ui/hover-card";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/hover-card";
+import { cn } from "@rox/ui/utils";
 import type { UIMessage } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

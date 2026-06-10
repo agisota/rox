@@ -2,7 +2,7 @@ import type {
 	DraggableAttributes,
 	DraggableSyntheticListeners,
 } from "@dnd-kit/core";
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo } from "react";
 import type { DashboardSidebarProject } from "../../types";

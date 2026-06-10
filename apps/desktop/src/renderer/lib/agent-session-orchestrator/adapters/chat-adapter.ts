@@ -1,4 +1,4 @@
-import type { AgentLaunchRequest } from "@superset/shared/agent-launch";
+import type { AgentLaunchRequest } from "@rox/shared/agent-launch";
 import type { ChatLaunchConfig } from "shared/tabs-types";
 import type { AgentSessionLaunchContext, LaunchResultPayload } from "../types";
 

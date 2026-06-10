@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"echo \\\"=== GET connect?provider=google (follow redirects, show chain) ===\\\"\\ncurl -s -o /dev/null -w \\\"%{http_code} -> %{redirect_url}\\\\n\\\" \\\"https://api.rox.one/api/auth/desktop/connect?p...",
+  "error": "Exit code 60\n=== GET connect?provider=google (follow redirects, show chain) ===\n404 -> \n--- follow full chain (google) ---\nHTTP/2 404 \r\n\n=== GET connect?provider=github ===\nHTTP/2 404 \r\n\n=== does success page exist on app.rox.one? ===\napp.rox.one/auth/desktop/success => 000",
+  "timestamp": "2026-06-10T06:20:16.571Z",
+  "retry_count": 2
+}

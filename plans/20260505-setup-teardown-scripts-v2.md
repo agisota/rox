@@ -143,7 +143,7 @@ Visual:
   heading, not the large `text-base font-semibold` used by v1).
 - Inline save status next to the heading ("Saving…" amber dot, "Saved" emerald
   check, fades after 2 s).
-- Shared `@superset/ui/textarea` component for the editor.
+- Shared `@rox/ui/textarea` component for the editor.
 - Drag-drop overlay for `.sh` files (subtle ring rather than heavy border).
 - "Import file" button in the corner (`h-7`, ghost variant).
 - "Docs" link (`h-7`, ghost variant) opening

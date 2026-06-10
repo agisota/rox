@@ -34,7 +34,7 @@ const selectMock = mock(() => ({
 	}),
 }));
 
-mock.module("@superset/db/client", () => ({
+mock.module("@rox/db/client", () => ({
 	db: {
 		select: selectMock,
 	},

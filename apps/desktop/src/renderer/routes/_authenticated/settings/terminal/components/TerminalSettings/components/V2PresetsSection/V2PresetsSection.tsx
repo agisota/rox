@@ -2,9 +2,9 @@ import {
 	type ExecutionMode,
 	normalizeExecutionMode,
 	type TerminalPreset,
-} from "@superset/local-db";
-import { HOST_AGENT_PRESETS } from "@superset/shared/host-agent-presets";
-import { Button } from "@superset/ui/button";
+} from "@rox/local-db";
+import { HOST_AGENT_PRESETS } from "@rox/shared/host-agent-presets";
+import { Button } from "@rox/ui/button";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HiOutlinePlus } from "react-icons/hi2";

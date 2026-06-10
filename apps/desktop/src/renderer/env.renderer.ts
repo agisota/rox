@@ -50,13 +50,21 @@ const rawEnv = {
 	RELAY_URL: process.env.RELAY_URL,
 };
 
+function isTruthyEnv(value: string | undefined): boolean {
+	return value === "1" || value === "true";
+}
+
 // Only allow skipping validation in development (never in production)
 const SKIP_ENV_VALIDATION =
-	process.env.NODE_ENV === "development" && !!process.env.SKIP_ENV_VALIDATION;
+	process.env.NODE_ENV === "development" &&
+	isTruthyEnv(process.env.SKIP_ENV_VALIDATION);
+const LOCAL_ONLY_AUTH =
+	SKIP_ENV_VALIDATION || isTruthyEnv(process.env.LOCAL_ONLY_AUTH);
 
 export const env = {
 	...(SKIP_ENV_VALIDATION
 		? (rawEnv as z.infer<typeof envSchema>)
 		: envSchema.parse(rawEnv)),
 	SKIP_ENV_VALIDATION,
+	LOCAL_ONLY_AUTH,
 };

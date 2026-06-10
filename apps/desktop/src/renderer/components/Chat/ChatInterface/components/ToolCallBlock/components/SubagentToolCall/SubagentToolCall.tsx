@@ -1,8 +1,8 @@
 import {
 	MessageResponse,
 	TOOL_CALL_MD_CLASSNAME,
-} from "@superset/ui/ai-elements/message";
-import { ToolCallRow } from "@superset/ui/ai-elements/tool-call-row";
+} from "@rox/ui/ai-elements/message";
+import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
 import { BotIcon } from "lucide-react";
 import { useMemo } from "react";
 import { SubagentInnerToolCall } from "renderer/components/Chat/components/SubagentInnerToolCall";

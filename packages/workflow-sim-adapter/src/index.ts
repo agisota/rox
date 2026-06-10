@@ -1,5 +1,5 @@
 /**
- * @superset/workflow-sim-adapter
+ * @rox/workflow-sim-adapter
  *
  * Compatibility layer between Sim workflows and the Superset Automation Fabric.
  *

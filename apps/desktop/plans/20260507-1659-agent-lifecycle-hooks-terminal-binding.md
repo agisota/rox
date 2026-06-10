@@ -47,7 +47,7 @@ The hook currently carries `eventType` but not which agent fired it.
 One thing every layer agrees on. Define once, share across host-service / main / renderer:
 
 ```ts
-import type { BuiltinAgentId, AgentDefinitionId } from "@superset/shared";
+import type { BuiltinAgentId, AgentDefinitionId } from "@rox/shared";
 
 // Reported by hook, broadcast over WS, stored in renderer state.
 // Everything besides `agentId` is optional — a hook that knows only the
@@ -145,7 +145,7 @@ ctx.eventBus.broadcastAgentLifecycle({
 });
 ```
 
-Add `agent?: AgentIdentity` to `AgentLifecycleMessage` (`packages/host-service/src/events/types.ts:25`) and `AgentLifecyclePayload` in `@superset/workspace-client`. Define `AgentIdentity` once — best home is `packages/shared/src/agent-identity.ts` since `BuiltinAgentId` lives in `@superset/shared` already — and re-export from `@superset/workspace-client` so host-service / main / renderer share one source of truth.
+Add `agent?: AgentIdentity` to `AgentLifecycleMessage` (`packages/host-service/src/events/types.ts:25`) and `AgentLifecyclePayload` in `@rox/workspace-client`. Define `AgentIdentity` once — best home is `packages/shared/src/agent-identity.ts` since `BuiltinAgentId` lives in `@rox/shared` already — and re-export from `@rox/workspace-client` so host-service / main / renderer share one source of truth.
 
 ### 4. Renderer: live binding store
 
@@ -153,7 +153,7 @@ New small zustand slice — no persistence, generic over the identity shape:
 
 ```ts
 // renderer/stores/v2-agent-bindings/store.ts
-import type { AgentIdentity } from "@superset/workspace-client";
+import type { AgentIdentity } from "@rox/workspace-client";
 
 type Binding = { identity: AgentIdentity; lastEventAt: number };
 
@@ -197,7 +197,7 @@ return (
 );
 ```
 
-`usePresetIcon` already handles dark/light variants and returns `undefined` for unknown ids → nothing renders. `BUILTIN_AGENT_LABELS` (from `@superset/shared/agent-catalog`) gives the human-readable name for tooltip / a11y. Safe default for any future agent id that ships before its icon does.
+`usePresetIcon` already handles dark/light variants and returns `undefined` for unknown ids → nothing renders. `BUILTIN_AGENT_LABELS` (from `@rox/shared/agent-catalog`) gives the human-readable name for tooltip / a11y. Safe default for any future agent id that ships before its icon does.
 
 ## What this does not do
 

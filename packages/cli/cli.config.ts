@@ -1,4 +1,4 @@
-import { boolean, defineConfig, string } from "@superset/cli-framework";
+import { boolean, defineConfig, string } from "@rox/cli-framework";
 
 const VERSION = "0.2.19";
 

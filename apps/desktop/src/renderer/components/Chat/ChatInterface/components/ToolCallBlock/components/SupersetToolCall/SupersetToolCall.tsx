@@ -1,8 +1,8 @@
 import {
 	MessageResponse,
 	TOOL_CALL_MD_CLASSNAME,
-} from "@superset/ui/ai-elements/message";
-import { ToolCallRow } from "@superset/ui/ai-elements/tool-call-row";
+} from "@rox/ui/ai-elements/message";
+import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
 import { WrenchIcon } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { useMemo } from "react";

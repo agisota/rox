@@ -1,6 +1,6 @@
-import type { DetectedPort } from "@superset/port-scanner";
-import type { AgentIdentity } from "@superset/shared/agent-identity";
-import type { FsWatchEvent } from "@superset/workspace-fs/host";
+import type { DetectedPort } from "@rox/port-scanner";
+import type { AgentIdentity } from "@rox/shared/agent-identity";
+import type { FsWatchEvent } from "@rox/workspace-fs/host";
 import type { AgentLifecycleEventType } from "./map-event-type.ts";
 
 // ── Server → Client ────────────────────────────────────────────────

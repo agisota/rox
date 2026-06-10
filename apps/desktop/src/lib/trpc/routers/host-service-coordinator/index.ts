@@ -10,16 +10,21 @@ import { loadToken } from "../auth/utils/auth-functions";
 
 const orgInput = z.object({ organizationId: z.string() });
 
+async function getHostServiceAuthToken(): Promise<string | null> {
+	const { token } = await loadToken();
+	return token ?? (env.LOCAL_ONLY_AUTH ? "local-only-auth-token" : null);
+}
+
 export const createHostServiceCoordinatorRouter = () => {
 	return router({
 		start: publicProcedure.input(orgInput).mutation(async ({ input }) => {
 			const coordinator = getHostServiceCoordinator();
-			const { token } = await loadToken();
-			if (!token) {
+			const authToken = await getHostServiceAuthToken();
+			if (!authToken) {
 				throw new Error("No auth token available — user must be logged in");
 			}
 			return coordinator.start(input.organizationId, {
-				authToken: token,
+				authToken,
 				cloudApiUrl: env.NEXT_PUBLIC_API_URL,
 			});
 		}),
@@ -36,24 +41,24 @@ export const createHostServiceCoordinatorRouter = () => {
 
 		restart: publicProcedure.input(orgInput).mutation(async ({ input }) => {
 			const coordinator = getHostServiceCoordinator();
-			const { token } = await loadToken();
-			if (!token) {
+			const authToken = await getHostServiceAuthToken();
+			if (!authToken) {
 				throw new Error("No auth token available — user must be logged in");
 			}
 			return coordinator.restart(input.organizationId, {
-				authToken: token,
+				authToken,
 				cloudApiUrl: env.NEXT_PUBLIC_API_URL,
 			});
 		}),
 
 		reset: publicProcedure.input(orgInput).mutation(async ({ input }) => {
 			const coordinator = getHostServiceCoordinator();
-			const { token } = await loadToken();
-			if (!token) {
+			const authToken = await getHostServiceAuthToken();
+			if (!authToken) {
 				throw new Error("No auth token available — user must be logged in");
 			}
 			return coordinator.reset(input.organizationId, {
-				authToken: token,
+				authToken,
 				cloudApiUrl: env.NEXT_PUBLIC_API_URL,
 			});
 		}),

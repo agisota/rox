@@ -1,7 +1,7 @@
-import type { auth, Session } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import { members } from "@superset/db/schema";
-import { COMPANY, ORGANIZATION_HEADER } from "@superset/shared/constants";
+import type { auth, Session } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import { members } from "@rox/db/schema";
+import { COMPANY, ORGANIZATION_HEADER } from "@rox/shared/constants";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import superjson from "superjson";

@@ -1,4 +1,4 @@
-import { CLIError, string } from "@superset/cli-framework";
+import { CLIError, string } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { resolveHostTarget } from "../../../lib/host-target";
 

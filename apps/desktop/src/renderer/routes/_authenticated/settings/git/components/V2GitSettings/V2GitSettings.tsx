@@ -1,8 +1,8 @@
 import {
 	type BranchPrefixMode,
 	resolveBranchPrefix,
-} from "@superset/shared/workspace-launch";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/shared/workspace-launch";
+import { toast } from "@rox/ui/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";

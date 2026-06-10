@@ -1,4 +1,4 @@
-import { middleware } from "@superset/cli-framework";
+import { middleware } from "@rox/cli-framework";
 import { trackCommandInvoked } from "../lib/analytics";
 import { resolveAuth } from "../lib/resolve-auth";
 

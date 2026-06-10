@@ -1,6 +1,6 @@
-import { auth } from "@superset/auth/server";
-import { db } from "@superset/db/client";
-import { sessions } from "@superset/db/schema/auth";
+import { auth } from "@rox/auth/server";
+import { db } from "@rox/db/client";
+import { sessions } from "@rox/db/schema/auth";
 import { headers } from "next/headers";
 
 import { DesktopRedirect } from "./components/DesktopRedirect";

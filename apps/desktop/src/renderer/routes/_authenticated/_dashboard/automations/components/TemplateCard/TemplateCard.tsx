@@ -3,7 +3,7 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@superset/ui/card";
+} from "@rox/ui/card";
 import type { AutomationTemplate } from "../../templates";
 
 interface TemplateCardProps {

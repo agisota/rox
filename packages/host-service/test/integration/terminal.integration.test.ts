@@ -18,7 +18,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Server } from "@superset/pty-daemon";
+import { Server } from "@rox/pty-daemon";
 import { TRPCClientError } from "@trpc/client";
 import { disposeDaemonClient } from "../../src/terminal/daemon-client-singleton";
 import {

@@ -1,4 +1,4 @@
-import { automationSessionKindValues } from "@superset/db/schema";
+import { automationSessionKindValues } from "@rox/db/schema";
 import { z } from "zod";
 
 const agentSchema = z.string().min(1).max(200);

@@ -1,6 +1,6 @@
 "use client";
 
-import { THEME_STORAGE_KEY } from "@superset/shared/constants";
+import { THEME_STORAGE_KEY } from "@rox/shared/constants";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import posthog from "posthog-js";

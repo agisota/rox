@@ -170,7 +170,7 @@ Scope:
 
 Acceptance:
 
-    bun run typecheck --filter=@superset/desktop
+    bun run typecheck --filter=@rox/desktop
 
 Expected: no TypeScript errors in main-process files referencing `TabsState`.
 
@@ -207,8 +207,8 @@ Implementation guidance:
 
 Acceptance:
 
-    bun run typecheck --filter=@superset/desktop
-    bun run lint:check-node-imports --filter=@superset/desktop
+    bun run typecheck --filter=@rox/desktop
+    bun run lint:check-node-imports --filter=@rox/desktop
 
 
 ### Milestone 5: Update renderer UI components to use workspace slices and remove legacy guards
@@ -254,7 +254,7 @@ Implementation guidance:
 
 Acceptance:
 
-    bun run typecheck --filter=@superset/desktop
+    bun run typecheck --filter=@rox/desktop
 
 
 ### Milestone 7: Validation and cleanup
@@ -263,9 +263,9 @@ Run automated checks and clean up any leftover legacy fields, types, or tests.
 
 Validation commands (run from repo root):
 
-    bun run typecheck --filter=@superset/desktop
+    bun run typecheck --filter=@rox/desktop
     bun run lint
-    bun test --filter=@superset/desktop
+    bun test --filter=@rox/desktop
 
 If repo-wide `bun test` has unrelated failures, explicitly note them in the PR description and ensure desktop tests are green.
 

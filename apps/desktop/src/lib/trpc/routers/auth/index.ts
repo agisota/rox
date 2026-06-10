@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
-import { AUTH_PROVIDERS } from "@superset/shared/constants";
-import { getHostId, getHostName } from "@superset/shared/host-info";
+import { AUTH_PROVIDERS } from "@rox/shared/constants";
+import { getHostId, getHostName } from "@rox/shared/host-info";
 import { observable } from "@trpc/server/observable";
 import { shell } from "electron";
 import { env } from "main/env.main";

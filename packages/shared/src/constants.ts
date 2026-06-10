@@ -6,42 +6,40 @@ export const ORGANIZATION_HEADER = "x-superset-organization-id";
 
 // Deep link protocol schemes (used for desktop OAuth callbacks)
 export const PROTOCOL_SCHEMES = {
-	DEV: "superset-dev",
-	PROD: "superset",
+	DEV: "rox-dev",
+	PROD: "rox",
 } as const;
 
 // Company
 export const COMPANY = {
-	NAME: "Superset",
-	DOMAIN: "superset.sh",
-	EMAIL_DOMAIN: "@superset.sh",
-	GITHUB_URL: "https://github.com/superset-sh/superset",
-	DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.superset.sh",
-	MARKETING_URL: process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh",
-	TERMS_URL: `${process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh"}/terms`,
+	NAME: "Rox",
+	DOMAIN: "rox.one",
+	EMAIL_DOMAIN: "@rox.one",
+	GITHUB_URL: "https://github.com/agisota/set",
+	DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.rox.one",
+	MARKETING_URL: process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one",
+	TERMS_URL: `${process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one"}/terms`,
 	PRIVACY_URL:
-		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh") +
-		"/privacy",
+		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one") + "/privacy",
 	CHANGELOG_URL:
-		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://superset.sh") +
-		"/changelog",
-	X_URL: "https://x.com/superset_sh",
-	LINKEDIN_URL: "https://www.linkedin.com/company/superset-sh",
-	YOUTUBE_URL: "https://www.youtube.com/@superset-sh",
-	MAIL_TO: "mailto:founders@superset.sh",
-	REPORT_ISSUE_URL: "https://github.com/superset-sh/superset/issues/new",
+		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one") + "/changelog",
+	X_URL: "https://x.com/rox_one",
+	LINKEDIN_URL: "https://www.linkedin.com/company/rox-one",
+	YOUTUBE_URL: "https://www.youtube.com/@rox-one",
+	MAIL_TO: "mailto:founders@rox.one",
+	REPORT_ISSUE_URL: "https://github.com/agisota/set/issues/new",
 	DISCORD_URL: "https://discord.gg/cZeD9WYcV7",
-	STATUS_URL: "https://status.superset.sh",
-	TRUST_URL: "https://trust.superset.sh",
-	CAREERS_URL: "https://www.ycombinator.com/companies/superset/jobs",
+	STATUS_URL: "https://status.rox.one",
+	TRUST_URL: "https://trust.rox.one",
+	CAREERS_URL: "https://rox.one/careers",
 } as const;
 
 // Theme
-export const THEME_STORAGE_KEY = "superset-theme";
+export const THEME_STORAGE_KEY = "rox-theme";
 
 // Download URLs
-export const DOWNLOAD_URL_MAC_ARM64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Superset-arm64.dmg`;
-export const DOWNLOAD_URL_MAC_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Superset-x64.dmg`;
+export const DOWNLOAD_URL_MAC_ARM64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-arm64.dmg`;
+export const DOWNLOAD_URL_MAC_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-x64.dmg`;
 
 // Auth token configuration
 export const TOKEN_CONFIG = {
@@ -78,8 +76,8 @@ export const FEATURE_FLAGS = {
 	/** When enabled, blocks remote agent execution on the desktop (e.g., for enterprise orgs). */
 	DISABLE_REMOTE_AGENT: "disable-remote-agent",
 	/**
-	 * Routes the Slack agent to the v2 MCP server (`@superset/mcp-v2`)
-	 * instead of v1 (`@superset/mcp`). Evaluated against the linking
+	 * Routes the Slack agent to the v2 MCP server (`@rox/mcp-v2`)
+	 * instead of v1 (`@rox/mcp`). Evaluated against the linking
 	 * user's id (the Superset user behind the Slack mention) so it
 	 * piggybacks on the existing All Access cohort. Off → v1.
 	 */

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { WORKFLOW_CORE_VERSION } from "@superset/workflow-core";
+import { WORKFLOW_CORE_VERSION } from "@rox/workflow-core";
 import { WORKFLOW_RUNTIME_VERSION } from "./index";
 
 describe("workflow-runtime smoke", () => {

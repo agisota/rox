@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { TEARDOWN_TIMEOUT_MS } from "@superset/shared/constants";
+import { TEARDOWN_TIMEOUT_MS } from "@rox/shared/constants";
 import type { HostDb } from "../../db";
 import {
 	createTerminalSessionInternal,

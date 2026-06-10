@@ -1,6 +1,6 @@
-import type { UseChatDisplayReturn } from "@superset/chat/client";
-import { Message, MessageContent } from "@superset/ui/ai-elements/message";
-import { Button } from "@superset/ui/button";
+import type { UseChatDisplayReturn } from "@rox/chat/client";
+import { Message, MessageContent } from "@rox/ui/ai-elements/message";
+import { Button } from "@rox/ui/button";
 import { useEffect, useRef, useState } from "react";
 
 type ApprovalDecision = "approve" | "decline" | "always_allow_category";

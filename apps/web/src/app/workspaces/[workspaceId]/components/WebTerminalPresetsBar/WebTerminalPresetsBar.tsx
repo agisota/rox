@@ -1,7 +1,7 @@
 "use client";
 
-import { getPresetById } from "@superset/shared/host-agent-presets";
-import { getPresetIcon } from "@superset/ui/icons/preset-icons";
+import { getPresetById } from "@rox/shared/host-agent-presets";
+import { getPresetIcon } from "@rox/ui/icons/preset-icons";
 import { Loader2, Settings, Terminal } from "lucide-react";
 import Image from "next/image";
 import type { HostAgentConfig } from "../../../../../trpc/host-client";

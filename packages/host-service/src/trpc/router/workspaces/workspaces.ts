@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { generateFriendlyBranchName } from "@superset/shared/workspace-launch";
+import { generateFriendlyBranchName } from "@rox/shared/workspace-launch";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -418,7 +418,7 @@ async function recordBaseBranchConfig(args: {
 async function startHostEnsure(
 	ctx: HostServiceContext,
 ): Promise<{ machineId: string }> {
-	const { getHostId, getHostName } = await import("@superset/shared/host-info");
+	const { getHostId, getHostName } = await import("@rox/shared/host-info");
 	return ctx.api.host.ensure.mutate({
 		organizationId: ctx.organizationId,
 		machineId: getHostId(),

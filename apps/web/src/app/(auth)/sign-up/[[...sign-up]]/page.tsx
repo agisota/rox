@@ -1,7 +1,7 @@
 "use client";
 
-import { authClient } from "@superset/auth/client";
-import { Button } from "@superset/ui/button";
+import { authClient } from "@rox/auth/client";
+import { Button } from "@rox/ui/button";
 import Link from "next/link";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";

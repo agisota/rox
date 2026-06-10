@@ -68,7 +68,7 @@ Outcomes:
 
 Validation:
 
-    bun run typecheck --filter=@superset/desktop
+    bun run typecheck --filter=@rox/desktop
     bun run lint
     bun test apps/desktop/src/renderer/stores/tabs/utils.test.ts
 

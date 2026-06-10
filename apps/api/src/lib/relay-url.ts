@@ -1,4 +1,4 @@
-import { FEATURE_FLAGS } from "@superset/shared/constants";
+import { FEATURE_FLAGS } from "@rox/shared/constants";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
 

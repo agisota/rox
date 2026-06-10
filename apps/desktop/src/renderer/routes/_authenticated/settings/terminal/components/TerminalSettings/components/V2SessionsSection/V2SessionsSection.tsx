@@ -21,14 +21,14 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Button } from "@superset/ui/button";
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import {
 	WorkspaceClientProvider,
 	workspaceTrpc,
-} from "@superset/workspace-client";
+} from "@rox/workspace-client";
 import { useState } from "react";
 import { HiChevronRight } from "react-icons/hi2";
 import {

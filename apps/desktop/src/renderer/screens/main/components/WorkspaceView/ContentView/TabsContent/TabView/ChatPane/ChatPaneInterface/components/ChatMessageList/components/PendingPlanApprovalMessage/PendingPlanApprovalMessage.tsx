@@ -1,12 +1,12 @@
-import type { UseChatDisplayReturn } from "@superset/chat/client";
+import type { UseChatDisplayReturn } from "@rox/chat/client";
 import {
 	Message,
 	MessageContent,
 	MessageResponse,
-} from "@superset/ui/ai-elements/message";
-import { Button } from "@superset/ui/button";
-import { Switch } from "@superset/ui/switch";
-import { Textarea } from "@superset/ui/textarea";
+} from "@rox/ui/ai-elements/message";
+import { Button } from "@rox/ui/button";
+import { Switch } from "@rox/ui/switch";
+import { Textarea } from "@rox/ui/textarea";
 import { useEffect, useId, useRef, useState } from "react";
 
 type PendingPlanApproval = UseChatDisplayReturn["pendingPlanApproval"];

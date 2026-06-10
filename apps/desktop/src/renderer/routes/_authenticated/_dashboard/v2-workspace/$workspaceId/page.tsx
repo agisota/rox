@@ -1,5 +1,5 @@
-import { Workspace } from "@superset/panes";
-import { workspaceTrpc } from "@superset/workspace-client";
+import { Workspace } from "@rox/panes";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";

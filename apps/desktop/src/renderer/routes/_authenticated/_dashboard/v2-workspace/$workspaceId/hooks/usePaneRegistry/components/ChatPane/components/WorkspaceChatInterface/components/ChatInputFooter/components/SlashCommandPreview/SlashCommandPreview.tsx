@@ -1,5 +1,5 @@
-import { usePromptInputController } from "@superset/ui/ai-elements/prompt-input";
-import { workspaceTrpc } from "@superset/workspace-client";
+import { usePromptInputController } from "@rox/ui/ai-elements/prompt-input";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SlashCommandParamField } from "./components/SlashCommandParamField";
 import {

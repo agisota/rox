@@ -1,6 +1,6 @@
 "use client";
 
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 

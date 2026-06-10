@@ -238,7 +238,7 @@ This plan can be executed across multiple PRs. To make handoff safe and reduce r
 
 ### PR1 Acceptance Gates (Must Pass)
 
-1. `bun run lint`, `bun run typecheck --filter=@superset/desktop`, and `bun test --filter=@superset/desktop` all pass.
+1. `bun run lint`, `bun run typecheck --filter=@rox/desktop`, and `bun test --filter=@rox/desktop` all pass.
 2. Manual smoke (minimum):
    - persistence disabled: open terminal, type, exit; Settings “Manage sessions” shows unavailable
    - persistence enabled: warm attach + cold restore still works; Settings “Manage sessions” works
@@ -853,8 +853,8 @@ Acceptance:
 Run these commands from the repo root:
 
     bun run lint
-    bun run typecheck --filter=@superset/desktop
-    bun run test --filter=@superset/desktop
+    bun run typecheck --filter=@rox/desktop
+    bun run test --filter=@rox/desktop
 
 Expected results:
 
@@ -926,14 +926,14 @@ Mitigation: Keep the “stream does not complete on exit” regression test as P
 - [x] Implement session management as `terminal.management: TerminalManagement | null` (no no-op admin methods)
 - [ ] (Follow-up) Add event cursor + bounded replay ring buffer at provider boundary
 - [ ] (Follow-up) Normalize error codes (`TerminalErrorCode`) and enforce resize sequencing (`seq`)
-- [x] Run `bun run typecheck --filter=@superset/desktop`
+- [x] Run `bun run typecheck --filter=@rox/desktop`
 
 ### Milestone 3
 
 - [x] Migrate `apps/desktop/src/lib/trpc/routers/terminal/terminal.ts` to `getWorkspaceRuntimeRegistry()`
 - [x] Remove `instanceof DaemonTerminalManager` checks
 - [ ] (Follow-up / Milestone 4) Add `terminal.streamV2` (identity + since cursor) and migrate router internals to `subscribeSession`
-- [x] Run `bun test --filter=@superset/desktop`
+- [x] Run `bun test --filter=@rox/desktop`
 
 ### Milestone 4
 

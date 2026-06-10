@@ -1,18 +1,18 @@
-import type { BranchPrefixMode } from "@superset/local-db";
+import type { BranchPrefixMode } from "@rox/local-db";
 import {
 	resolveBranchPrefix,
 	sanitizeSegment,
-} from "@superset/shared/workspace-launch";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
+} from "@rox/shared/workspace-launch";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
-import { Switch } from "@superset/ui/switch";
+} from "@rox/ui/select";
+import { Switch } from "@rox/ui/switch";
 import { useEffect, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { BRANCH_PREFIX_MODE_LABELS } from "../../../utils/branch-prefix";

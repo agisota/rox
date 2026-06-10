@@ -1,8 +1,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import type { McpContext } from "@superset/mcp/auth";
-import { createInMemoryMcpClient as createV1Client } from "@superset/mcp/in-memory";
-import { createInMemoryMcpClient as createV2Client } from "@superset/mcp-v2/in-memory";
+import type { McpContext } from "@rox/mcp/auth";
+import { createInMemoryMcpClient as createV1Client } from "@rox/mcp/in-memory";
+import { createInMemoryMcpClient as createV2Client } from "@rox/mcp-v2/in-memory";
 import { posthog } from "@/lib/analytics";
 import { getRelayUrl } from "@/lib/relay-url";
 

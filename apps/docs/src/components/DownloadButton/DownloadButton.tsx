@@ -1,6 +1,6 @@
 "use client";
 
-import { DOWNLOAD_URL_MAC_ARM64 } from "@superset/shared/constants";
+import { DOWNLOAD_URL_MAC_ARM64 } from "@rox/shared/constants";
 
 export function DownloadButton() {
 	return (

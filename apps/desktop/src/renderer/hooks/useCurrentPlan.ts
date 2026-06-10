@@ -1,8 +1,9 @@
 import {
 	isActiveSubscriptionStatus,
 	type PlanTier,
-} from "@superset/shared/billing";
+} from "@rox/shared/billing";
 import { useLiveQuery } from "@tanstack/react-db";
+import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 
@@ -46,6 +47,10 @@ export function useCurrentPlan(): { plan: PlanTier; isReady: boolean } {
 		(q) => q.from({ subscriptions: collections.subscriptions }),
 		[collections],
 	);
+
+	if (env.LOCAL_ONLY_AUTH) {
+		return { plan: "enterprise", isReady: true };
+	}
 
 	const activeSubscription = subscriptionsData.find((subscription) =>
 		isActiveSubscriptionStatus(subscription.status),

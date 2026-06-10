@@ -1,4 +1,4 @@
-import { getHostId, getHostName } from "@superset/shared/host-info";
+import { getHostId, getHostName } from "@rox/shared/host-info";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure } from "../../../index";
 import { ensureMainWorkspace } from "../../project/utils/ensure-main-workspace";

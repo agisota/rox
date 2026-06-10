@@ -1,4 +1,4 @@
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
 	DestroyWorkspacePreview,

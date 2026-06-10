@@ -1,4 +1,4 @@
-import { Input } from "@superset/ui/input";
+import { Input } from "@rox/ui/input";
 import { useEffect, useState } from "react";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 

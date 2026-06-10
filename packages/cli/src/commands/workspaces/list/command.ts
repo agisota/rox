@@ -1,4 +1,4 @@
-import { boolean, CLIError, string, table } from "@superset/cli-framework";
+import { boolean, CLIError, string, table } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 import { resolveHostFilter } from "../../../lib/host-target";
 

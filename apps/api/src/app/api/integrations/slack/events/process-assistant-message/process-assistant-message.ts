@@ -1,9 +1,9 @@
-import { db } from "@superset/db/client";
+import { db } from "@rox/db/client";
 import {
 	integrationConnections,
 	subscriptions,
 	usersSlackUsers,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
 import { generateConnectUrl } from "../utils/generate-connect-url";

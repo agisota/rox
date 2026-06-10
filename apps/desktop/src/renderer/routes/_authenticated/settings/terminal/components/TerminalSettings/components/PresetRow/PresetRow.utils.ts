@@ -1,4 +1,4 @@
-import type { ExecutionMode } from "@superset/local-db/schema/zod";
+import type { ExecutionMode } from "@rox/local-db/schema/zod";
 
 export function getPresetModeLabel(
 	modeValue: ExecutionMode,

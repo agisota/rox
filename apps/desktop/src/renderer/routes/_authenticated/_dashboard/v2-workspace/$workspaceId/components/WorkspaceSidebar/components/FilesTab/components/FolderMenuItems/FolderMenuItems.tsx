@@ -1,7 +1,7 @@
 import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import { FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { PathActions } from "../PathActions";
 

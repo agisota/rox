@@ -9,6 +9,8 @@ import {
 
 const ANTHROPIC_SMALL_MODEL_ID = "claude-haiku-4-5-20251001";
 const OPENAI_SMALL_MODEL_ID = "gpt-4o-mini";
+const ROX_DEFAULT_BASE_URL = "https://api.rox.one/v1";
+const ROX_DEFAULT_MODEL_ID = "r1";
 
 const MIN_API_KEY_LENGTH = 30;
 
@@ -139,6 +141,21 @@ async function resolveOpenAIApiKey(): Promise<string | null> {
 	return null;
 }
 
+function resolveRoxSmallModelConfig(): {
+	apiKey: string;
+	baseURL: string;
+	modelId: string;
+} | null {
+	const apiKey = process.env.ROX_API_KEY?.trim();
+	if (!apiKey || !isOpenAIApiKey(apiKey)) return null;
+
+	return {
+		apiKey,
+		baseURL: process.env.ROX_BASE_URL?.trim() || ROX_DEFAULT_BASE_URL,
+		modelId: process.env.ROX_MODEL?.trim() || ROX_DEFAULT_MODEL_ID,
+	};
+}
+
 /**
  * Returns an AI-SDK `LanguageModel` for small-model tasks (branch naming,
  * title generation). Returns `null` if no usable credentials are available.
@@ -147,8 +164,9 @@ async function resolveOpenAIApiKey(): Promise<string | null> {
  *   1. ANTHROPIC_API_KEY env var (validated)
  *   2. mastracode auth storage — Anthropic api key
  *   3. mastracode auth storage — Anthropic OAuth (refreshed on the fly)
- *   4. OPENAI_API_KEY env var (validated)
- *   5. mastracode auth storage — OpenAI api key (`openai-codex` / `openai`)
+ *   4. ROX_API_KEY env var for the Superset-provided OpenAI-compatible default
+ *   5. OPENAI_API_KEY env var (validated)
+ *   6. mastracode auth storage — OpenAI api key (`openai-codex` / `openai`)
  *
  * API keys are validated by prefix + minimum length so dev placeholders
  * (e.g. `ANTHROPIC_API_KEY=dummy` from a sample .env) fall through to the
@@ -164,6 +182,14 @@ export async function getSmallModel(): Promise<MastraModelConfig | null> {
 			authToken: anthropic.accessToken,
 			headers: ANTHROPIC_OAUTH_HEADERS,
 		})(ANTHROPIC_SMALL_MODEL_ID);
+	}
+
+	const rox = resolveRoxSmallModelConfig();
+	if (rox) {
+		return createOpenAI({
+			apiKey: rox.apiKey,
+			baseURL: rox.baseURL,
+		}).chat(rox.modelId);
 	}
 
 	const openaiKey = await resolveOpenAIApiKey();

@@ -19,16 +19,16 @@ if (process.env.NEXT_PUBLIC_MARKETING_URL !== "https://superset.sh") {
 	process.exit(1);
 }
 
-import { db } from "@superset/db/client";
+import { db } from "@rox/db/client";
 import {
 	users as authUsers,
 	integrationConnections,
 	organizations,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import {
 	type DisconnectedConnection,
 	IntegrationDisconnectedEmail,
-} from "@superset/email/emails/integration-disconnected";
+} from "@rox/email/emails/integration-disconnected";
 import { aliasedTable, and, eq, isNull } from "drizzle-orm";
 import { Resend } from "resend";
 

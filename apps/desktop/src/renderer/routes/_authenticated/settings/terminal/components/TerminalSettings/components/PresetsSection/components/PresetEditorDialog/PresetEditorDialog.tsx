@@ -1,25 +1,25 @@
-import type { HostAgentConfig } from "@superset/host-service/settings";
-import type { ExecutionMode, TerminalPreset } from "@superset/local-db";
-import { Alert, AlertDescription } from "@superset/ui/alert";
-import { Button } from "@superset/ui/button";
+import type { HostAgentConfig } from "@rox/host-service/settings";
+import type { ExecutionMode, TerminalPreset } from "@rox/local-db";
+import { Alert, AlertDescription } from "@rox/ui/alert";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
-import { toast } from "@superset/ui/sonner";
-import { Switch } from "@superset/ui/switch";
+} from "@rox/ui/select";
+import { toast } from "@rox/ui/sonner";
+import { Switch } from "@rox/ui/switch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, Trash2 } from "lucide-react";

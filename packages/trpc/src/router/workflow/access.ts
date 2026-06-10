@@ -1,5 +1,5 @@
-import { db } from "@superset/db/client";
-import { workflowDefinitions } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { workflowDefinitions } from "@rox/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 

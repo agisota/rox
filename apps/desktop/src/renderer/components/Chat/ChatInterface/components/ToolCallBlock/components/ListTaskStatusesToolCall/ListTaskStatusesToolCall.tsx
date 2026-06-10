@@ -1,4 +1,4 @@
-import { TaskItem, TaskItemFile } from "@superset/ui/ai-elements/task";
+import { TaskItem, TaskItemFile } from "@rox/ui/ai-elements/task";
 import { ListChecksIcon } from "lucide-react";
 import {
 	StatusIcon,

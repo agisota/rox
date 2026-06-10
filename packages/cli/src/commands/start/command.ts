@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import { boolean, CLIError, number } from "@superset/cli-framework";
+import { boolean, CLIError, number } from "@rox/cli-framework";
 import { command } from "../../lib/command";
 import { SUPERSET_CONFIG_PATH } from "../../lib/config";
 import { isProcessAlive, readManifest } from "../../lib/host/manifest";

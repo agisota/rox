@@ -1,9 +1,9 @@
-import { db } from "@superset/db/client";
+import { db } from "@rox/db/client";
 import {
 	githubInstallations,
 	githubPullRequests,
 	githubRepositories,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import { Receiver } from "@upstash/qstash";
 import { subDays } from "date-fns";
 import { eq } from "drizzle-orm";

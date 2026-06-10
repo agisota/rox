@@ -1,5 +1,5 @@
-import type { WorkspaceProps } from "@superset/panes";
-import { alert } from "@superset/ui/atoms/Alert";
+import type { WorkspaceProps } from "@rox/panes";
+import { alert } from "@rox/ui/atoms/Alert";
 import { useCallback } from "react";
 import { getBaseName } from "renderer/lib/pathBasename";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";

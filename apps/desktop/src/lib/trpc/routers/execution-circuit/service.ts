@@ -5,7 +5,7 @@ import type {
 	SelectTask,
 	SelectTransitionRun,
 	SelectWorkspace,
-} from "@superset/local-db";
+} from "@rox/local-db";
 import {
 	compileTransitionPrompt,
 	createDraftExecutionCircuitForTask,
@@ -24,7 +24,7 @@ import {
 	type ValidatorExecutionSummary,
 	type ValidatorSpec,
 	validateExecutionCircuitSpec,
-} from "@superset/shared/execution-circuit";
+} from "@rox/shared/execution-circuit";
 import { parse } from "shell-quote";
 
 export type ExecutionCircuitWithRuns = SelectExecutionCircuit & {

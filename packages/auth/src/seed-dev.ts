@@ -1,10 +1,10 @@
-import { db } from "@superset/db/client";
-import { members, subscriptions, users } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { members, subscriptions, users } from "@rox/db/schema";
 import {
 	DEV_EMAIL,
 	DEV_NAME,
 	DEV_PASSWORD,
-} from "@superset/shared/dev-credentials";
+} from "@rox/shared/dev-credentials";
 import { and, eq } from "drizzle-orm";
 import { auth } from "./server";
 

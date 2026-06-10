@@ -1,5 +1,5 @@
 /**
- * @superset/workflow-core
+ * @rox/workflow-core
  *
  * Pure-TypeScript domain layer for the Superset Automation Fabric.
  *
@@ -9,8 +9,8 @@
  * definitions, and policy types. Everything here is deterministic and
  * unit-testable in isolation.
  *
- * Execution (DB writes, host calls, secrets) lives in `@superset/workflow-runtime`.
- * Sim import/export lives in `@superset/workflow-sim-adapter`.
+ * Execution (DB writes, host calls, secrets) lives in `@rox/workflow-runtime`.
+ * Sim import/export lives in `@rox/workflow-sim-adapter`.
  */
 
 export const WORKFLOW_CORE_VERSION = "0.1.0";

@@ -1,8 +1,8 @@
 "use client";
 
-import { authClient } from "@superset/auth/client";
-import type { RouterOutputs } from "@superset/trpc";
-import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
+import { authClient } from "@rox/auth/client";
+import type { RouterOutputs } from "@rox/trpc";
+import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -11,13 +11,13 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	useSidebar,
-} from "@superset/ui/sidebar";
+} from "@rox/ui/sidebar";
 import {
 	LuBadgeCheck,
 	LuBell,

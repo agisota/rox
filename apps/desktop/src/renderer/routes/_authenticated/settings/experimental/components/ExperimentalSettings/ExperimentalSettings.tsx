@@ -1,6 +1,6 @@
-import { Button } from "@superset/ui/button";
-import { Label } from "@superset/ui/label";
-import { Switch } from "@superset/ui/switch";
+import { Button } from "@rox/ui/button";
+import { Label } from "@rox/ui/label";
+import { Switch } from "@rox/ui/switch";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	useIsV2CloudEnabled,

@@ -237,7 +237,7 @@ runTeardown({ db, workspaceId, worktreePath })
 - **Timeout**: 60s → `pty.kill()` → `status: "failed"` with `timedOut: true` (cross-platform; no process-group SIGKILL).
 - **Missing script**: fast-return `{ status: "skipped" }`.
 - **`force` in destroy**: skips this step entirely.
-- **`TEARDOWN_TIMEOUT_MS` lives in `@superset/shared/constants`** so the renderer can format the timeout reason without value-importing host-service (which would drag node-pty into the renderer bundle).
+- **`TEARDOWN_TIMEOUT_MS` lives in `@rox/shared/constants`** so the renderer can format the timeout reason without value-importing host-service (which would drag node-pty into the renderer bundle).
 
 ## Why no tombstone / reconciler?
 

@@ -1,7 +1,7 @@
-import { CLIError } from "@superset/cli-framework";
-import type { AppRouter as HostServiceRouter } from "@superset/host-service/trpc";
-import { getHostId } from "@superset/shared/host-info";
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
+import { CLIError } from "@rox/cli-framework";
+import type { AppRouter as HostServiceRouter } from "@rox/host-service/trpc";
+import { getHostId } from "@rox/shared/host-info";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import SuperJSON from "superjson";
 import { env } from "../env";

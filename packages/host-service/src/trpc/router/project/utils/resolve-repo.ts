@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
-import { parseGitHubRemote } from "@superset/shared/github-remote";
+import { parseGitHubRemote } from "@rox/shared/github-remote";
 import { TRPCError } from "@trpc/server";
 import { createUserSimpleGit } from "../../../../runtime/git/simple-git";
 import {

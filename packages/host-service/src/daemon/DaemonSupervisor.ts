@@ -17,14 +17,14 @@ import * as path from "node:path";
 import {
 	isPositiveInteger,
 	signalProcessTreeAndGroups,
-} from "@superset/pty-daemon/process-tree";
+} from "@rox/pty-daemon/process-tree";
 import {
 	CURRENT_PROTOCOL_VERSION,
 	encodeFrame,
 	FrameDecoder,
 	type ServerMessage,
 	type SessionInfo,
-} from "@superset/pty-daemon/protocol";
+} from "@rox/pty-daemon/protocol";
 import semver from "semver";
 import { DaemonClient } from "../terminal/DaemonClient/index.ts";
 import { EXPECTED_DAEMON_VERSION } from "./expected-version.ts";

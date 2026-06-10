@@ -1,6 +1,6 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { settings } from "@superset/local-db";
+import { settings } from "@rox/local-db";
 import {
 	app,
 	BrowserWindow,

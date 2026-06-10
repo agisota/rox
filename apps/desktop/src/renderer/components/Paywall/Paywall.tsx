@@ -1,7 +1,8 @@
-import { Button } from "@superset/ui/button";
-import { Dialog, DialogContent } from "@superset/ui/dialog";
+import { Button } from "@rox/ui/button";
+import { Dialog, DialogContent } from "@rox/ui/dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { FeaturePreview } from "./components/FeaturePreview";
 import { FeatureSidebar } from "./components/FeatureSidebar";
@@ -25,6 +26,7 @@ export const Paywall = () => {
 	const featuresViewedRef = useRef<Set<string>>(new Set());
 
 	showPaywallFn = (options: PaywallOptions) => {
+		if (env.LOCAL_ONLY_AUTH) return;
 		setPaywallOptions(options);
 		setIsOpen(true);
 	};
@@ -101,6 +103,10 @@ export const Paywall = () => {
 	const selectedFeature =
 		PRO_FEATURES.find((f) => f.id === selectedFeatureId) || PRO_FEATURES[0];
 
+	if (env.LOCAL_ONLY_AUTH) {
+		return null;
+	}
+
 	if (!selectedFeature) {
 		return null;
 	}
@@ -150,6 +156,8 @@ export const paywall = (
 	feature: GatedFeature,
 	context?: Record<string, unknown>,
 ) => {
+	if (env.LOCAL_ONLY_AUTH) return;
+
 	if (!showPaywallFn) {
 		console.error(
 			"[paywall] Paywall not mounted. Make sure to render <Paywall /> in your app",

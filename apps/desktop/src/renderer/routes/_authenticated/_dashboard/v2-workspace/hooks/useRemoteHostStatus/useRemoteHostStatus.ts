@@ -1,6 +1,6 @@
-import type { SelectV2Workspace } from "@superset/db/schema";
-import { buildHostRoutingKey } from "@superset/shared/host-routing";
-import { MIN_HOST_SERVICE_VERSION } from "@superset/shared/host-version";
+import type { SelectV2Workspace } from "@rox/db/schema";
+import { buildHostRoutingKey } from "@rox/shared/host-routing";
+import { MIN_HOST_SERVICE_VERSION } from "@rox/shared/host-version";
 import { and, eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQuery } from "@tanstack/react-query";

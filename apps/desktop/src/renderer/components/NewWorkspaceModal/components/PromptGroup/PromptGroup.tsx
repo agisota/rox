@@ -1,11 +1,11 @@
-import type { AgentLaunchRequest } from "@superset/shared/agent-launch";
-import { buildPromptAgentLaunchRequest } from "@superset/shared/agent-launch-request";
+import type { AgentLaunchRequest } from "@rox/shared/agent-launch";
+import { buildPromptAgentLaunchRequest } from "@rox/shared/agent-launch-request";
 import {
 	type AgentDefinitionId,
 	getEnabledAgentConfigs,
 	indexResolvedAgentConfigs,
-} from "@superset/shared/agent-settings";
-import { sanitizeBranchNameWithMaxLength } from "@superset/shared/workspace-launch";
+} from "@rox/shared/agent-settings";
+import { sanitizeBranchNameWithMaxLength } from "@rox/shared/workspace-launch";
 import {
 	PromptInput,
 	PromptInputAttachment,
@@ -17,8 +17,8 @@ import {
 	PromptInputTools,
 	usePromptInputAttachments,
 	useProviderAttachments,
-} from "@superset/ui/ai-elements/prompt-input";
-import { Button } from "@superset/ui/button";
+} from "@rox/ui/ai-elements/prompt-input";
+import { Button } from "@rox/ui/button";
 import {
 	Command,
 	CommandEmpty,
@@ -27,13 +27,13 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from "@superset/ui/command";
-import { Input } from "@superset/ui/input";
-import { isEnterSubmit } from "@superset/ui/lib/keyboard";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
-import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/command";
+import { Input } from "@rox/ui/input";
+import { isEnterSubmit } from "@rox/ui/lib/keyboard";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { toast } from "@rox/ui/sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {

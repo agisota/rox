@@ -1,0 +1,17 @@
+node_modules
+.next
+.turbo
+.cache
+dist
+dist-electron
+release
+out
+.worktrees
+superset-dev-data
+.omc
+.claude
+.git
+*.dmg
+*.app
+*.zip
+*.tsbuildinfo

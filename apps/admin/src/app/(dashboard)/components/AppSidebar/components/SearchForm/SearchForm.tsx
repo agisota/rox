@@ -1,11 +1,11 @@
 "use client";
 
-import { Label } from "@superset/ui/label";
+import { Label } from "@rox/ui/label";
 import {
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarInput,
-} from "@superset/ui/sidebar";
+} from "@rox/ui/sidebar";
 import { LuSearch } from "react-icons/lu";
 
 export function SearchForm({ ...props }: React.ComponentProps<"form">) {

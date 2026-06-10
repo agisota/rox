@@ -1,5 +1,5 @@
-import { auth } from "@superset/auth/server";
-import { COMPANY } from "@superset/shared/constants";
+import { auth } from "@rox/auth/server";
+import { COMPANY } from "@rox/shared/constants";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -7,13 +7,13 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 	BreadcrumbSeparator,
-} from "@superset/ui/breadcrumb";
-import { Separator } from "@superset/ui/separator";
+} from "@rox/ui/breadcrumb";
+import { Separator } from "@rox/ui/separator";
 import {
 	SidebarInset,
 	SidebarProvider,
 	SidebarTrigger,
-} from "@superset/ui/sidebar";
+} from "@rox/ui/sidebar";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

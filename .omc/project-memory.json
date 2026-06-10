@@ -1,0 +1,328 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1781068589952,
+  "projectRoot": "/Users/marklindgreen/Projects/set-for-projects/set",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "turbo run dev dev:caddy --filter=@superset/api --filter=@superset/web --filter=@superset/desktop --filter=electric-proxy --filter=//",
+      "dev:all": "turbo dev",
+      "dev:desktop": "turbo run dev dev:caddy --filter=@superset/api --filter=@superset/desktop --filter=electric-proxy --filter=//",
+      "dev:caddy": "dotenv -- caddy run --config Caddyfile",
+      "dev:docs": "turbo dev --filter=@superset/docs",
+      "dev:marketing": "turbo dev --filter=@superset/marketing --filter=@superset/docs",
+      "build": "turbo build --filter=@superset/desktop",
+      "test": "turbo test --concurrency=2",
+      "lint": "./scripts/lint.sh",
+      "check:desktop-git-env": "./scripts/check-desktop-git-env.sh",
+      "lint:fix": "bunx @biomejs/biome@2.4.2 migrate --write && bunx @biomejs/biome@2.4.2 check --write --unsafe .",
+      "format": "bunx @biomejs/biome@2.4.2 format --write .",
+      "format:check": "bunx @biomejs/biome@2.4.2 format .",
+      "typecheck": "turbo typecheck",
+      "ui-add": "turbo run ui-add",
+      "postinstall": "./scripts/postinstall.sh",
+      "clean": "git clean -xdf node_modules",
+      "clean:workspaces": "turbo clean",
+      "release:desktop": "./apps/desktop/create-release.sh",
+      "release:canary": "./scripts/release-canary.sh",
+      "db:push": "bun run --cwd packages/db push",
+      "db:migrate": "bun run --cwd packages/db migrate",
+      "db:seed-dev": "NODE_ENV=development bun run packages/auth/src/seed-dev.ts",
+      "db:generate:desktop": "bun run --cwd packages/local-db generate"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": true,
+    "workspaces": [
+      "packages/*",
+      "apps/*",
+      "tooling/*"
+    ],
+    "mainDirectories": [
+      "assets",
+      "docs",
+      "scripts"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "apps": {
+      "path": "apps",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1781068589521,
+      "keyFiles": []
+    },
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 2,
+      "lastAccessed": 1781068589527,
+      "keyFiles": [
+        "example.png",
+        "notifs.png"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 3,
+      "lastAccessed": 1781068589541,
+      "keyFiles": [
+        "V2_WORKSPACE_DIFF_VIEWS.md",
+        "V2_WORKSPACE_SETUP_SCRIPTS.md",
+        "skill-preload-feature.md"
+      ]
+    },
+    "packages": {
+      "path": "packages",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1781068589919,
+      "keyFiles": []
+    },
+    "plans": {
+      "path": "plans",
+      "purpose": null,
+      "fileCount": 46,
+      "lastAccessed": 1781068589924,
+      "keyFiles": [
+        "20260308-1400-mcp-create-workspace-from-existing.md",
+        "20260321-project-preset-scoping.md",
+        "20260331-web-mobile-v2-integration-plan.md",
+        "20260417-automations.md",
+        "20260421-pr-detection-matcher-fix.md"
+      ]
+    },
+    "plugins": {
+      "path": "plugins",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1781068589925,
+      "keyFiles": []
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 9,
+      "lastAccessed": 1781068589926,
+      "keyFiles": [
+        "check-desktop-git-env.sh",
+        "check-git-ref-strings.sh",
+        "check-simple-git-usage.sh",
+        "lint.sh",
+        "postinstall.sh"
+      ]
+    },
+    "skills": {
+      "path": "skills",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1781068589927,
+      "keyFiles": []
+    },
+    "superset-dev-data": {
+      "path": "superset-dev-data",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1781068589928,
+      "keyFiles": [
+        "app-state.json",
+        "local.db",
+        "tanstack-db.sqlite",
+        "window-state.json"
+      ]
+    },
+    "tooling": {
+      "path": "tooling",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1781068589929,
+      "keyFiles": []
+    },
+    "apps/api": {
+      "path": "apps/api",
+      "purpose": "API routes",
+      "fileCount": 6,
+      "lastAccessed": 1781068589930,
+      "keyFiles": [
+        "MCP_TOOLS.md",
+        "next.config.ts",
+        "package.json"
+      ]
+    },
+    "apps/docs": {
+      "path": "apps/docs",
+      "purpose": "Documentation",
+      "fileCount": 10,
+      "lastAccessed": 1781068589932,
+      "keyFiles": [
+        "README.md",
+        "cli.json",
+        "next.config.mjs"
+      ]
+    },
+    "superset-dev-data/bin": {
+      "path": "superset-dev-data/bin",
+      "purpose": "Executable scripts",
+      "fileCount": 10,
+      "lastAccessed": 1781068589937,
+      "keyFiles": [
+        "amp",
+        "claude",
+        "codex"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "packages/shared/src/constants.ts",
+      "accessCount": 7,
+      "lastAccessed": 1781072121606,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/package.json",
+      "accessCount": 6,
+      "lastAccessed": 1781072229540,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/main/env.main.ts",
+      "accessCount": 6,
+      "lastAccessed": 1781072785325,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/src/app/api/auth/desktop/connect/route.ts",
+      "accessCount": 3,
+      "lastAccessed": 1781069949087,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/shared/constants.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781069946429,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/main/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781069946583,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/lib/trpc/routers/auth/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781069948083,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/lib/trpc/routers/auth/utils/auth-functions.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781069948437,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/renderer/env.renderer.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781070899463,
+      "type": "file"
+    },
+    {
+      "path": ".vercelignore",
+      "accessCount": 2,
+      "lastAccessed": 1781073060645,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/electron.vite.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1781069046195,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/renderer/routes/sign-in/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1781069066994,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/app/auth/desktop/success/components/DesktopRedirect/DesktopRedirect.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1781069080830,
+      "type": "file"
+    },
+    {
+      "path": "apps/web/src/app/auth/desktop/success/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1781069085335,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/src/app/api/auth/[...all]/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1781069947113,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/src/lib/oauth-metadata.ts",
+      "accessCount": 1,
+      "lastAccessed": 1781069947913,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/src/lib/oauth-state.ts",
+      "accessCount": 1,
+      "lastAccessed": 1781069948305,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/renderer/routes/sign-in/components/SupersetLogo/SupersetLogo.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1781069960162,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/assets/superset-empty-state-wordmark.svg",
+      "accessCount": 1,
+      "lastAccessed": 1781069961304,
+      "type": "file"
+    },
+    {
+      "path": "apps/desktop/src/renderer/components/BootErrorBoundary/BootErrorBoundary.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1781070905339,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

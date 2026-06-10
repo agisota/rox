@@ -8,7 +8,7 @@ This is the source-of-truth plan for rebuilding chat as a separate `chat` stack.
 - Last updated: 2026-02-24
 
 ## Goals
-- Build a new chat architecture with no runtime code sharing with `@superset/chat`.
+- Build a new chat architecture with no runtime code sharing with `@rox/chat`.
 - Keep write/control APIs over tRPC.
 - Keep read/replay APIs over durable streams (SSE) for all clients.
 - Preserve session resumability using Mastra storage.

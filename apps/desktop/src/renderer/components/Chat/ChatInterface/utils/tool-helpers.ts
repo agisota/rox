@@ -1,4 +1,4 @@
-import type { ToolDisplayState } from "@superset/ui/ai-elements/tool";
+import type { ToolDisplayState } from "@rox/ui/ai-elements/tool";
 import type { UIMessage } from "ai";
 
 // Extract tool part type from UIMessage

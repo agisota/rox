@@ -64,7 +64,7 @@ New package. Zero dependencies beyond `pidtree` and node built-ins so it runs in
 - Move `apps/desktop/src/main/lib/terminal/port-scanner.ts` → `packages/port-scanner/src/scanner.ts`.
 - Move the `PortManager` class → `packages/port-scanner/src/port-manager.ts`, but **remove the singleton export**. Callers instantiate their own. The singleton pattern bleeds state in tests and blocks running two managers in one host-service process.
 - Keep `DetectedPort` in `apps/desktop/src/shared/types/ports.ts` for now (UI owns the wire shape); import it from the shared package via a peer type, or duplicate it — v1/v2 duplication is acceptable (per project convention).
-- Update desktop imports: `main/lib/terminal/port-manager` → `@superset/port-scanner`.
+- Update desktop imports: `main/lib/terminal/port-manager` → `@rox/port-scanner`.
 
 No behavior change in this step. Land it alone to de-risk.
 

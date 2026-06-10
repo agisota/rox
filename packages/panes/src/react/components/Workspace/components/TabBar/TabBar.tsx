@@ -1,10 +1,10 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { OverflowFadeContainer } from "@superset/ui/overflow-fade-container";
+} from "@rox/ui/dropdown-menu";
+import { OverflowFadeContainer } from "@rox/ui/overflow-fade-container";
 import { PlusIcon } from "lucide-react";
 import {
 	type ComponentProps,

@@ -65,7 +65,7 @@ The plan above describes a host-service version pin (steps 2–3). That approach
 - `semver` import dropped from the coordinator — no longer needed there.
 
 **Tried and removed:**
-- A `BUNDLED_HOST_SERVICE_VERSION` pin in `tryAdopt` (compile-time read of `@superset/host-service/package.json#version`, strict-equality check against `host.info.version`). Implemented, but redundant once the app-version pin landed: in our build flow host-service ships with the desktop, so the app-version pin catches every case the host-service version pin caught — plus the case where someone forgets to bump the host-service version on a host-service code change. Removed to avoid carrying a second concept and a per-adoption HTTP probe that no longer mattered.
+- A `BUNDLED_HOST_SERVICE_VERSION` pin in `tryAdopt` (compile-time read of `@rox/host-service/package.json#version`, strict-equality check against `host.info.version`). Implemented, but redundant once the app-version pin landed: in our build flow host-service ships with the desktop, so the app-version pin catches every case the host-service version pin caught — plus the case where someone forgets to bump the host-service version on a host-service code change. Removed to avoid carrying a second concept and a per-adoption HTTP probe that no longer mattered.
 
 **Deferred:**
 - Drain-before-SIGTERM. The hard kill is unchanged; revisit if respawn cadence becomes user-visible.

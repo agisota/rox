@@ -1,5 +1,5 @@
 {
-	"name": "@superset/cli-framework",
+	"name": "@rox/cli-framework",
 	"version": "0.1.0",
 	"type": "module",
 	"bin": {
@@ -15,7 +15,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
-		"@superset/typescript": "workspace:*",
+		"@rox/typescript": "workspace:*",
 		"bun-types": "1.3.11",
 		"typescript": "5.9.3"
 	}

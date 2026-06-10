@@ -1,11 +1,11 @@
 import type { EmitterWebhookEvent } from "@octokit/webhooks";
 import { Webhooks } from "@octokit/webhooks";
-import { db } from "@superset/db/client";
+import { db } from "@rox/db/client";
 import {
 	githubInstallations,
 	githubPullRequests,
 	githubRepositories,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 
 import { env } from "@/env";

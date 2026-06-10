@@ -1,10 +1,10 @@
-import type { TaskPriority } from "@superset/db/enums";
+import type { TaskPriority } from "@rox/db/enums";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import { useState } from "react";
 import { HiChevronDown } from "react-icons/hi2";
 import { PriorityIcon } from "renderer/routes/_authenticated/_dashboard/tasks/components/TasksView/components/shared/PriorityIcon";

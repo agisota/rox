@@ -1,11 +1,11 @@
 import {
 	BUILTIN_AGENT_LABELS,
 	type BuiltinAgentId,
-} from "@superset/shared/agent-catalog";
+} from "@rox/shared/agent-catalog";
 import type {
 	AgentIdentity,
 	AgentLifecyclePayload,
-} from "@superset/workspace-client";
+} from "@rox/workspace-client";
 
 interface V2NativeNotificationContentOptions {
 	workspaceName: string;

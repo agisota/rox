@@ -1,4 +1,4 @@
-import type { RendererContext } from "@superset/panes";
+import type { RendererContext } from "@rox/panes";
 import { useCallback } from "react";
 import { getV2NotificationSourcesForPane } from "renderer/stores/v2-notifications";
 import { V2NotificationStatusIndicator } from "../../../../../../components/V2NotificationStatusIndicator";

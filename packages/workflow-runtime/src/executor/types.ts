@@ -4,7 +4,7 @@ import type {
 	SupersetBlockState,
 	SupersetWorkflowState,
 	WorkflowRunError,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 
 export type RunStatus =
 	| "queued"

@@ -1,5 +1,5 @@
-import type { ExternalApp } from "@superset/local-db";
-import { toast } from "@superset/ui/sonner";
+import type { ExternalApp } from "@rox/local-db";
+import { toast } from "@rox/ui/sonner";
 import { useCallback } from "react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { electronTrpc } from "renderer/lib/electron-trpc";

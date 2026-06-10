@@ -1,11 +1,11 @@
-import type { UseChatDisplayReturn } from "@superset/chat/client";
-import { useConversationContext } from "@superset/ui/ai-elements/conversation";
+import type { UseChatDisplayReturn } from "@rox/chat/client";
+import { useConversationContext } from "@rox/ui/ai-elements/conversation";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from "@superset/ui/hover-card";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/hover-card";
+import { cn } from "@rox/ui/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];

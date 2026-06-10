@@ -1,5 +1,5 @@
-import type { TabItem } from "@superset/tab-bar";
-import { TabBarView } from "@superset/tab-bar";
+import type { TabItem } from "@rox/tab-bar";
+import { TabBarView } from "@rox/tab-bar";
 import { useRouter } from "expo-router";
 import { useTabTrigger } from "expo-router/ui";
 import { useCallback, useRef, useState } from "react";

@@ -1,5 +1,5 @@
-import { CLIError, table } from "@superset/cli-framework";
-import { getHostId } from "@superset/shared/host-info";
+import { CLIError, table } from "@rox/cli-framework";
+import { getHostId } from "@rox/shared/host-info";
 import { command } from "../../../lib/command";
 
 export default command({

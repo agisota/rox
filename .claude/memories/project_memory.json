@@ -1,0 +1,26 @@
+{
+  "memories": [],
+  "manual_memories": [],
+  "realtime_memories": [
+    {
+      "type": "message",
+      "content": ". Let's understand the current status of the project. How many layers are there, how many things are now synchronized. What are the tasks now, and then let's decide on the release. Is there a new desk",
+      "added_at": "2026-06-10T07:46:20.213887",
+      "source": "realtime_capture"
+    },
+    {
+      "type": "message",
+      "content": "Пиши по-русскому, пожалуйста, пиши на русском, блядь, ты заебал. Еще раз. Репозитарий. Когда был последний раз обновлен? Приложение. Когда было последний раз скачено? И когда оно было последний раз вы",
+      "added_at": "2026-06-10T07:56:30.824029",
+      "source": "realtime_capture"
+    },
+    {
+      "type": "message",
+      "content": "(agisota/set С вот этим приложением мы разбираемся. Это приложение должно называться ROX. Почему оно у нас называется до сих пор Superset?",
+      "added_at": "2026-06-10T07:59:39.874660",
+      "source": "realtime_capture"
+    }
+  ],
+  "created_at": "2026-06-10T07:46:20.213108",
+  "updated_at": "2026-06-10T07:59:39.874674"
+}

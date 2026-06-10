@@ -4,9 +4,9 @@ import {
 	CommandGroup,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
-import { Popover, PopoverAnchor, PopoverContent } from "@superset/ui/popover";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/command";
+import { Popover, PopoverAnchor, PopoverContent } from "@rox/ui/popover";
+import { cn } from "@rox/ui/utils";
 import { mergeAttributes, Node } from "@tiptap/core";
 import {
 	type NodeViewProps,

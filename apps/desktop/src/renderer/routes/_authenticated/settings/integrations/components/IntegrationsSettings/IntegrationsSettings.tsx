@@ -1,5 +1,5 @@
-import { Button } from "@superset/ui/button";
-import { Skeleton } from "@superset/ui/skeleton";
+import { Button } from "@rox/ui/button";
+import { Skeleton } from "@rox/ui/skeleton";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useEffect, useState } from "react";
 import { FaGithub, FaSlack } from "react-icons/fa";

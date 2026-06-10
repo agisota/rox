@@ -1,5 +1,5 @@
-import { ToolInput, ToolOutput } from "@superset/ui/ai-elements/tool";
-import { ToolCallRow } from "@superset/ui/ai-elements/tool-call-row";
+import { ToolInput, ToolOutput } from "@rox/ui/ai-elements/tool";
+import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
 import { SearchCheckIcon } from "lucide-react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getArgs } from "../../../../utils/tool-helpers";

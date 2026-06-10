@@ -1,5 +1,5 @@
-import type { WorkspaceState } from "@superset/panes";
-import type { AgentLifecyclePayload } from "@superset/workspace-client";
+import type { WorkspaceState } from "@rox/panes";
+import type { AgentLifecyclePayload } from "@rox/workspace-client";
 import type {
 	PaneViewerData,
 	TerminalPaneData,

@@ -1,4 +1,4 @@
-import { chatServiceTrpc } from "@superset/chat/client";
+import { chatServiceTrpc } from "@rox/chat/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 function getErrorMessage(error: unknown, fallback: string): string {

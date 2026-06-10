@@ -3,7 +3,7 @@
 import {
 	DOWNLOAD_URL_MAC_ARM64,
 	DOWNLOAD_URL_MAC_X64,
-} from "@superset/shared/constants";
+} from "@rox/shared/constants";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { SupersetLogo } from "@/app/components/Header/components/SupersetLogo";

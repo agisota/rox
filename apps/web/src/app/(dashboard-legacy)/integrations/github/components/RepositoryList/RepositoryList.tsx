@@ -1,8 +1,8 @@
 "use client";
 
-import { Badge } from "@superset/ui/badge";
-import { Button } from "@superset/ui/button";
-import { toast } from "@superset/ui/sonner";
+import { Badge } from "@rox/ui/badge";
+import { Button } from "@rox/ui/button";
+import { toast } from "@rox/ui/sonner";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { GitBranch, Lock, RefreshCw, Unlock } from "lucide-react";
 import { useTRPC } from "@/trpc/react";

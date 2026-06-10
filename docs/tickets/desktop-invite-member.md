@@ -104,8 +104,8 @@ export const invitationRateLimit = new Ratelimit({
 ### 4. `apps/desktop/src/renderer/routes/_authenticated/settings/team/types.ts`
 
 ```typescript
-import type { SelectInvitation, SelectMember, SelectUser } from "@superset/db/schema/auth";
-import type { OrganizationRole } from "@superset/shared/auth";
+import type { SelectInvitation, SelectMember, SelectUser } from "@rox/db/schema/auth";
+import type { OrganizationRole } from "@rox/shared/auth";
 
 export type TeamMember = SelectUser &
   SelectMember & {
@@ -123,14 +123,14 @@ export type InvitationRow = SelectInvitation & {
 Replace entire file:
 
 ```typescript
-import { canInvite, getInvitableRoles, ORGANIZATION_ROLES, type OrganizationRole } from "@superset/shared/auth";
-import { Button } from "@superset/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@superset/ui/dialog";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@superset/ui/select";
-import { toast } from "@superset/ui/sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { canInvite, getInvitableRoles, ORGANIZATION_ROLES, type OrganizationRole } from "@rox/shared/auth";
+import { Button } from "@rox/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@rox/ui/select";
+import { toast } from "@rox/ui/sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useState } from "react";
 import { HiOutlinePlus } from "react-icons/hi2";
 import { authClient } from "renderer/lib/auth-client";
@@ -263,11 +263,11 @@ export * from "./InviteMemberButton";
 ### 7. `apps/desktop/src/renderer/routes/_authenticated/settings/team/components/InvitationActions/InvitationActions.tsx`
 
 ```typescript
-import type { SelectInvitation } from "@superset/db/schema";
-import type { OrganizationRole } from "@superset/shared/auth";
-import { Button } from "@superset/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
+import type { SelectInvitation } from "@rox/db/schema";
+import type { OrganizationRole } from "@rox/shared/auth";
+import { Button } from "@rox/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
 import { HiEllipsisVertical, HiOutlineEnvelope, HiOutlineXMark } from "react-icons/hi2";
 import { authClient } from "renderer/lib/auth-client";
@@ -351,10 +351,10 @@ import {
 	canRemoveMember,
 	getRoleSortPriority,
 	type OrganizationRole,
-} from "@superset/shared/auth";
-import { Avatar } from "@superset/ui/atoms/Avatar";
-import { Badge } from "@superset/ui/badge";
-import { Skeleton } from "@superset/ui/skeleton";
+} from "@rox/shared/auth";
+import { Avatar } from "@rox/ui/atoms/Avatar";
+import { Badge } from "@rox/ui/badge";
+import { Skeleton } from "@rox/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -362,7 +362,7 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@superset/ui/table";
+} from "@rox/ui/table";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute } from "@tanstack/react-router";
@@ -715,9 +715,9 @@ describe("canInvite", () => {
 
 Add imports at top:
 ```typescript
-import { OrganizationInvitationEmail } from "@superset/email/emails/organization-invitation";
-import { resend } from "@superset/email/lib/resend";
-import { canInvite, type OrganizationRole } from "@superset/shared/auth";
+import { OrganizationInvitationEmail } from "@rox/email/emails/organization-invitation";
+import { resend } from "@rox/email/lib/resend";
+import { canInvite, type OrganizationRole } from "@rox/shared/auth";
 import { and } from "drizzle-orm";
 import { invitationRateLimit } from "./lib/rate-limit";
 ```
@@ -784,7 +784,7 @@ import type {
   SelectTaskStatus,
   SelectUser,
   SelectInvitation,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 ```
 
 Update `OrgCollections` interface (around line 22):
@@ -843,7 +843,7 @@ Add to dependencies:
 Add to dependencies:
 ```json
 "dependencies": {
-  "@superset/email": "workspace:*",
+  "@rox/email": "workspace:*",
   "@upstash/ratelimit": "^2.0.4",
   "@upstash/redis": "^1.34.3"
 }

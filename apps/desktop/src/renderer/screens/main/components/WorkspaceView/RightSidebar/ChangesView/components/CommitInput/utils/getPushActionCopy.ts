@@ -1,4 +1,4 @@
-import type { GitHubStatus } from "@superset/local-db";
+import type { GitHubStatus } from "@rox/local-db";
 
 type PushActionPullRequest = Pick<
 	NonNullable<GitHubStatus["pr"]>,

@@ -1,5 +1,5 @@
 {
-	"name": "@superset/tab-bar",
+	"name": "@rox/tab-bar",
 	"version": "0.0.1",
 	"main": "src/index.tsx",
 	"private": true,

@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { workspaces, worktrees } from "@superset/local-db";
+import { workspaces, worktrees } from "@rox/local-db";
 import { eq } from "drizzle-orm";
 import type { BrowserWindow } from "electron";
 import { app, Notification, nativeTheme } from "electron";

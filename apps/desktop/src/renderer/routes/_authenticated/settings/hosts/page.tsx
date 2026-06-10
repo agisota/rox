@@ -5,6 +5,7 @@ import { useEffect, useMemo } from "react";
 import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { MOCK_ORG_ID } from "shared/constants";
 
 export const Route = createFileRoute("/_authenticated/settings/hosts/")({
@@ -15,8 +16,9 @@ function HostsIndexPage() {
 	const collections = useCollections();
 	const { data: session } = authClient.useSession();
 	const navigate = useNavigate();
+	const { machineId } = useLocalHostService();
 
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const activeOrganizationId = env.LOCAL_ONLY_AUTH
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
 
@@ -38,8 +40,11 @@ function HostsIndexPage() {
 	const firstHostId = useMemo(() => {
 		const sorted = [...hosts].sort((a, b) => a.name.localeCompare(b.name));
 		const online = sorted.find((h) => h.isOnline);
+		if (!online && sorted.length === 0 && env.LOCAL_ONLY_AUTH) {
+			return machineId;
+		}
 		return (online ?? sorted[0])?.id ?? null;
-	}, [hosts]);
+	}, [hosts, machineId]);
 
 	useEffect(() => {
 		if (firstHostId) {

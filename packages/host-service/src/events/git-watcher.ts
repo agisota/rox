@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { type FSWatcher, watch } from "node:fs";
 import { promisify } from "node:util";
-import type { FsWatchEvent } from "@superset/workspace-fs/host";
+import type { FsWatchEvent } from "@rox/workspace-fs/host";
 import type { HostDb } from "../db/index.ts";
 import { workspaces } from "../db/schema.ts";
 import type { WorkspaceFilesystemManager } from "../runtime/filesystem/index.ts";
@@ -49,7 +49,7 @@ interface WatchedWorkspace {
  * 1. `.git/` directory (via `node:fs.watch`) — catches commits, staging,
  *    branch switches, fetches — anything that writes git metadata, including
  *    operations from an external terminal.
- * 2. Worktree root (via `@superset/workspace-fs` watcher manager) — catches
+ * 2. Worktree root (via `@rox/workspace-fs` watcher manager) — catches
  *    working-tree file edits that change `git status` output. The underlying
  *    watcher honors `DEFAULT_IGNORE_PATTERNS`, which excludes `.git/`,
  *    `node_modules/`, `dist/`, etc. — exactly the paths that don't affect

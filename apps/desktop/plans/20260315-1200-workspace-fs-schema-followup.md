@@ -109,13 +109,13 @@ Primary files:
 
 Staging router:
 
-- remove `@superset/workspace-fs/host` import
+- remove `@rox/workspace-fs/host` import
 - stop deleting files through direct host calls
 - use filesystem adapter path or move cleanup to renderer
 
 Terminal router:
 
-- remove `@superset/workspace-fs/host` imports
+- remove `@rox/workspace-fs/host` imports
 - stop writing task prompt files inside `terminal.ts`
 - require caller to create `.superset/<file>` via `trpc.filesystem.*` before attach
 - remove `taskPromptContent` and `taskPromptFileName` from terminal input
@@ -149,7 +149,7 @@ bun test
 Search:
 
 ```bash
-rg -n "@superset/workspace-fs/host" apps/desktop/src
+rg -n "@rox/workspace-fs/host" apps/desktop/src
 rg -n "searchFilesMulti|searchKeyword|readDirectory|createFile|createDirectoryNew|subscribe|\\.rename\\b|\\.delete\\b|\\.move\\b|\\.copy\\b" apps/desktop/src
 rg -n "workspaceId" packages/workspace-fs/src/core
 ```
@@ -159,5 +159,5 @@ rg -n "workspaceId" packages/workspace-fs/src/core
 
 - `trpc.filesystem` exposes only schema primitives
 - renderer composes higher-level behavior client-side
-- no desktop router outside the filesystem adapter imports `@superset/workspace-fs/host` for workspace file ops
+- no desktop router outside the filesystem adapter imports `@rox/workspace-fs/host` for workspace file ops
 - `packages/workspace-fs/src/core` has no `workspaceId`

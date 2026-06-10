@@ -1,10 +1,10 @@
-import { Button } from "@superset/ui/button";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogTitle,
-} from "@superset/ui/dialog";
+} from "@rox/ui/dialog";
 import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
@@ -28,7 +28,7 @@ export function V1ImportModal() {
 	const close = useCloseV1ImportModal();
 	const { data: session } = authClient.useSession();
 	const { activeHostUrl } = useLocalHostService();
-	const organizationId = env.SKIP_ENV_VALIDATION
+	const organizationId = env.LOCAL_ONLY_AUTH
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
 

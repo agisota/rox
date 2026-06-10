@@ -1,5 +1,5 @@
-import { ToolInput, ToolOutput } from "@superset/ui/ai-elements/tool";
-import { ToolCallRow } from "@superset/ui/ai-elements/tool-call-row";
+import { ToolInput, ToolOutput } from "@rox/ui/ai-elements/tool";
+import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
 import { WrenchIcon } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ToolPart } from "../../../../utils/tool-helpers";

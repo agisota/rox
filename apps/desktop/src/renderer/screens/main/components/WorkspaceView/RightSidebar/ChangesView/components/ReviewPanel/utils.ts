@@ -1,4 +1,4 @@
-import type { GitHubStatus, PullRequestComment } from "@superset/local-db";
+import type { GitHubStatus, PullRequestComment } from "@rox/local-db";
 import { LuCheck, LuLoaderCircle, LuMinus, LuX } from "react-icons/lu";
 
 export type PullRequestCheck = NonNullable<

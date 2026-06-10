@@ -3,7 +3,7 @@
  *
  * This shape is intentionally compatible-in-spirit with Sim's `WorkflowState`
  * (blocks / edges / loops / parallels / variables / metadata) so that Sim
- * workflows can be imported via `@superset/workflow-sim-adapter`, but Superset
+ * workflows can be imported via `@rox/workflow-sim-adapter`, but Superset
  * owns the canonical definition here.
  */
 
@@ -78,7 +78,7 @@ export interface SupersetWorkflowState {
 // ---------------------------------------------------------------------------
 // Supporting payload types
 //
-// These are the canonical shapes for jsonb columns persisted by `@superset/db`
+// These are the canonical shapes for jsonb columns persisted by `@rox/db`
 // and for values passed across the tRPC boundary. Keeping them here (the pure
 // domain layer) lets every consumer share one definition.
 // ---------------------------------------------------------------------------

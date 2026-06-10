@@ -3,7 +3,7 @@ import {
 	planExecutionCircuitGraph,
 	type TransitionGraphPlan,
 	type TransitionRunStatus,
-} from "@superset/shared/execution-circuit";
+} from "@rox/shared/execution-circuit";
 
 export type ExecutionCircuitPanelRun = {
 	id: string;

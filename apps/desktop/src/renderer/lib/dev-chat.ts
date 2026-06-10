@@ -4,6 +4,11 @@ import { MOCK_ORG_ID } from "shared/constants";
 
 export const DEV_CHAT_MODELS: ModelOption[] = [
 	{
+		id: "openai/r1",
+		name: "R1",
+		provider: "Superset",
+	},
+	{
 		id: "anthropic/claude-opus-4-7",
 		name: "Opus 4.7",
 		provider: "Anthropic",
@@ -41,14 +46,14 @@ export const DEV_CHAT_MODELS: ModelOption[] = [
 ];
 
 export function isDesktopChatDevMode(
-	skipEnvValidation = env.SKIP_ENV_VALIDATION,
+	skipEnvValidation = env.LOCAL_ONLY_AUTH,
 ): boolean {
 	return skipEnvValidation;
 }
 
 export function resolveDesktopChatOrganizationId(
 	activeOrganizationId: string | null | undefined,
-	skipEnvValidation = env.SKIP_ENV_VALIDATION,
+	skipEnvValidation = env.LOCAL_ONLY_AUTH,
 ): string | null {
 	if (skipEnvValidation) return MOCK_ORG_ID;
 	return activeOrganizationId ?? null;
@@ -57,7 +62,7 @@ export function resolveDesktopChatOrganizationId(
 export function isDesktopChatSessionReady({
 	sessionId,
 	hasPersistedSession,
-	skipEnvValidation = env.SKIP_ENV_VALIDATION,
+	skipEnvValidation = env.LOCAL_ONLY_AUTH,
 }: {
 	sessionId: string | null;
 	hasPersistedSession: boolean;
@@ -68,7 +73,7 @@ export function isDesktopChatSessionReady({
 }
 
 export function getDesktopChatModelOptions(
-	skipEnvValidation = env.SKIP_ENV_VALIDATION,
+	skipEnvValidation = env.LOCAL_ONLY_AUTH,
 ): ModelOption[] {
 	return skipEnvValidation ? DEV_CHAT_MODELS : [];
 }

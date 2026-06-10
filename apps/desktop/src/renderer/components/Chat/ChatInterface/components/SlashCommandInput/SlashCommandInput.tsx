@@ -1,5 +1,5 @@
-import { usePromptInputController } from "@superset/ui/ai-elements/prompt-input";
-import { Popover, PopoverAnchor } from "@superset/ui/popover";
+import { usePromptInputController } from "@rox/ui/ai-elements/prompt-input";
+import { Popover, PopoverAnchor } from "@rox/ui/popover";
 import { useCallback } from "react";
 import {
 	resolveCommandAction,

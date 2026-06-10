@@ -1,5 +1,5 @@
-import type { WorkspaceStore } from "@superset/panes";
-import { Button } from "@superset/ui/button";
+import type { WorkspaceStore } from "@rox/panes";
+import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -7,9 +7,9 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
-import { workspaceTrpc } from "@superset/workspace-client";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { Archive, ChevronDown, Trash2 } from "lucide-react";
 import {
 	memo,

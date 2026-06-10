@@ -48,7 +48,7 @@ interface Pane<TData> {
 }
 ```
 
-- **`@superset/panes` stays generic** — `TData` parameterized by consumers
+- **`@rox/panes` stays generic** — `TData` parameterized by consumers
 - **Titles are derived** by the registry's `getTitle(context)`, with optional `titleOverride` for user renames
 - **`pinned`** — controls preview/replace behavior. Unpinned panes (e.g. file preview on single-click) can be replaced in-place without splitting. Double-click or edit pins the pane so it persists.
 
@@ -429,9 +429,9 @@ These v1 files are the styling targets — the new components should match their
 
 ### Phase 1: Rename + gut the package
 
-1. Rename `packages/pane-layout/` → `packages/panes/` and `@superset/panes` → `@superset/panes` in `package.json`
+1. Rename `packages/pane-layout/` → `packages/panes/` and `@rox/panes` → `@rox/panes` in `package.json`
 2. Delete all existing source files in `src/` (types, store, react components, tests)
-3. Update the import in `apps/desktop/package.json` from `@superset/panes` to `@superset/panes`
+3. Update the import in `apps/desktop/package.json` from `@rox/panes` to `@rox/panes`
 4. Stub `src/index.ts` so the build doesn't break
 
 ### Phase 2: Types + Store (no React)
@@ -598,7 +598,7 @@ The devtools pane component reactively watches `store.getPane(targetPaneId)`. Wh
 ## README.md (for `packages/panes/`)
 
 ````md
-# @superset/panes
+# @rox/panes
 
 A generic, headless workspace layout engine. Tabs hold panes arranged in split layouts. The package provides the data model, store, and React components — you provide the pane content.
 
@@ -636,7 +636,7 @@ type MyPaneData =
 The registry tells the layout engine how to render each pane kind:
 
 ```tsx
-import type { PaneRegistry } from "@superset/panes";
+import type { PaneRegistry } from "@rox/panes";
 
 const registry: PaneRegistry<MyPaneData> = {
   // Simple pane — just title + icon, default header
@@ -669,7 +669,7 @@ const registry: PaneRegistry<MyPaneData> = {
 ### 3. Create the store
 
 ```tsx
-import { createWorkspaceStore, createTab, createPane } from "@superset/panes";
+import { createWorkspaceStore, createTab, createPane } from "@rox/panes";
 
 const store = createWorkspaceStore<MyPaneData>({
   initialState: {
@@ -690,7 +690,7 @@ const store = createWorkspaceStore<MyPaneData>({
 ### 4. Render the workspace
 
 ```tsx
-import { Workspace } from "@superset/panes";
+import { Workspace } from "@rox/panes";
 
 function App() {
   return (

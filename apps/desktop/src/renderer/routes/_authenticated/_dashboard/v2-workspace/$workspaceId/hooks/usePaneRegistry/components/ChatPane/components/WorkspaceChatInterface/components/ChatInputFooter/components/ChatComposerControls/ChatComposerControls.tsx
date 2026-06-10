@@ -2,11 +2,11 @@ import {
 	PromptInputFooter,
 	PromptInputSubmit,
 	PromptInputTools,
-} from "@superset/ui/ai-elements/prompt-input";
+} from "@rox/ui/ai-elements/prompt-input";
 import {
 	type ThinkingLevel,
 	ThinkingToggle,
-} from "@superset/ui/ai-elements/thinking-toggle";
+} from "@rox/ui/ai-elements/thinking-toggle";
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";

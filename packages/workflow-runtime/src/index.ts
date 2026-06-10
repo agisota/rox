@@ -1,8 +1,8 @@
 /**
- * @superset/workflow-runtime
+ * @rox/workflow-runtime
  *
  * Executes Superset workflow graphs: it walks the validated execution plan from
- * `@superset/workflow-core`, runs each block via Superset adapters (DB, host
+ * `@rox/workflow-core`, runs each block via Superset adapters (DB, host
  * service, secrets, policy), records `workflow_runs` / `workflow_run_steps`,
  * builds context packs, and produces artifacts + object relations.
  *

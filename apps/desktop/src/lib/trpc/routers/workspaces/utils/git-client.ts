@@ -4,7 +4,7 @@ import {
 } from "node:child_process";
 import { existsSync } from "node:fs";
 import { promisify } from "node:util";
-import { USER_GIT_ENV_SIMPLE_GIT_OPTIONS } from "@superset/shared/simple-git-options";
+import { USER_GIT_ENV_SIMPLE_GIT_OPTIONS } from "@rox/shared/simple-git-options";
 import simpleGit, { type SimpleGit, type SimpleGitOptions } from "simple-git";
 import { augmentPathForMacOS, getProcessEnvWithShellPath } from "./shell-env";
 

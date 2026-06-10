@@ -1,6 +1,6 @@
-import { db } from "@superset/db/client";
-import { submittedPrompts } from "@superset/db/schema";
-import { COMPANY } from "@superset/shared/constants";
+import { db } from "@rox/db/client";
+import { submittedPrompts } from "@rox/db/schema";
+import { COMPANY } from "@rox/shared/constants";
 import { TRPCError } from "@trpc/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";

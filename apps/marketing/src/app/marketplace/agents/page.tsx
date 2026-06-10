@@ -1,5 +1,5 @@
-import { COMPANY } from "@superset/shared/constants";
-import { Button } from "@superset/ui/button";
+import { COMPANY } from "@rox/shared/constants";
+import { Button } from "@rox/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import { marketplaceSubmissionLinks } from "@/lib/marketplace";

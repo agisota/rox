@@ -1,4 +1,4 @@
-import { PLAN_TIERS, type PlanTier } from "@superset/shared/billing";
+import { PLAN_TIERS, type PlanTier } from "@rox/shared/billing";
 
 export { PLAN_TIERS, type PlanTier };
 

@@ -8,7 +8,7 @@ import type {
 	TransitionRunOutput,
 	TransitionRunStatus,
 	TransitionValidationResult,
-} from "@superset/shared/execution-circuit";
+} from "@rox/shared/execution-circuit";
 import {
 	index,
 	integer,

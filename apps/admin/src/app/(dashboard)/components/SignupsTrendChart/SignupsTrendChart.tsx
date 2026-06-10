@@ -6,14 +6,14 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@superset/ui/card";
+} from "@rox/ui/card";
 import {
 	type ChartConfig,
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
-} from "@superset/ui/chart";
-import { Skeleton } from "@superset/ui/skeleton";
+} from "@rox/ui/chart";
+import { Skeleton } from "@rox/ui/skeleton";
 import type { ReactNode } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 

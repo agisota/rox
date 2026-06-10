@@ -1,5 +1,5 @@
-import { db } from "@superset/db/client";
-import { devicePresence, deviceTypeValues } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { devicePresence, deviceTypeValues } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";

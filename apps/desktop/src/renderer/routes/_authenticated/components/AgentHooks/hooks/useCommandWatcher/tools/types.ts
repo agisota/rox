@@ -1,4 +1,4 @@
-import type { SelectProject, SelectWorkspace } from "@superset/local-db";
+import type { SelectProject, SelectWorkspace } from "@rox/local-db";
 import type { electronTrpc } from "renderer/lib/electron-trpc";
 import type { z } from "zod";
 

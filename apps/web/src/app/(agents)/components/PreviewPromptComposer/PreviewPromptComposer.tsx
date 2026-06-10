@@ -8,8 +8,8 @@ import {
 	PromptInputSubmit,
 	PromptInputTextarea,
 	PromptInputTools,
-} from "@superset/ui/ai-elements/prompt-input";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/ai-elements/prompt-input";
+import { cn } from "@rox/ui/utils";
 import { ArrowUpIcon } from "lucide-react";
 import { type ReactNode, useCallback } from "react";
 import {

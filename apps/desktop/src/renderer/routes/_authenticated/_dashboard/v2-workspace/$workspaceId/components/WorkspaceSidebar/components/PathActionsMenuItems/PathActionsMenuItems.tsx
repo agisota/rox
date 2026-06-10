@@ -1,12 +1,12 @@
 import {
 	ContextMenuItem,
 	ContextMenuSeparator,
-} from "@superset/ui/context-menu";
+} from "@rox/ui/context-menu";
 import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
 import { Clipboard, Copy, FolderOpen } from "lucide-react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { electronTrpcClient } from "renderer/lib/trpc-client";

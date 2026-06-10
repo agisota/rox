@@ -1,5 +1,5 @@
-import { ChatServiceProvider } from "@superset/chat/client";
-import { toast } from "@superset/ui/sonner";
+import { ChatServiceProvider } from "@rox/chat/client";
+import { toast } from "@rox/ui/sonner";
 import {
 	createFileRoute,
 	Navigate,
@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";
+import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
@@ -83,6 +84,10 @@ function OnboardingFlowLayout() {
 	const handleSkip = async () => {
 		setSkipping(true);
 		track("onboarding_finished", { outcome: "skipped" });
+		if (env.LOCAL_ONLY_AUTH) {
+			await navigate({ to: "/v2-workspaces", replace: true });
+			return;
+		}
 		try {
 			await apiTrpcClient.user.completeOnboarding.mutate();
 			// Reactive refetch so the layout guards' useSession() sees onboardedAt

@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { MOCK_ORG_ID } from "shared/constants";
 import {
 	type SettingsListGroup,
@@ -29,8 +30,9 @@ export function HostsSettingsSidebar({
 }: HostsSettingsSidebarProps) {
 	const collections = useCollections();
 	const { data: session } = authClient.useSession();
+	const { machineId, activeHostUrl } = useLocalHostService();
 
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const activeOrganizationId = env.LOCAL_ONLY_AUTH
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
 
@@ -51,7 +53,25 @@ export function HostsSettingsSidebar({
 	);
 
 	const listGroups = useMemo<Array<SettingsListGroup<HostRow>>>(() => {
-		const sorted = [...hosts].sort((a, b) => a.name.localeCompare(b.name));
+		const rows: HostRow[] = hosts.map((host) => ({
+			id: host.id,
+			name: host.name,
+			machineId: host.machineId,
+			isOnline: host.isOnline,
+		}));
+		if (
+			env.LOCAL_ONLY_AUTH &&
+			machineId &&
+			!rows.some((host) => host.machineId === machineId)
+		) {
+			rows.push({
+				id: machineId,
+				name: "This device",
+				machineId,
+				isOnline: Boolean(activeHostUrl),
+			});
+		}
+		const sorted = rows.sort((a, b) => a.name.localeCompare(b.name));
 		return [
 			{
 				id: "online",
@@ -64,7 +84,7 @@ export function HostsSettingsSidebar({
 				rows: sorted.filter((h) => !h.isOnline),
 			},
 		];
-	}, [hosts]);
+	}, [activeHostUrl, hosts, machineId]);
 
 	return (
 		<SettingsListSidebar

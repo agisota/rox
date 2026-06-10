@@ -1,4 +1,4 @@
-import { getTrustedVercelPreviewOrigins } from "@superset/shared/vercel-preview-origins";
+import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { env } from "./env";

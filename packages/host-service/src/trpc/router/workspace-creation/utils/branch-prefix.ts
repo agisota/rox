@@ -1,7 +1,7 @@
 import {
 	type BranchPrefixMode,
 	resolveBranchPrefix,
-} from "@superset/shared/workspace-launch";
+} from "@rox/shared/workspace-launch";
 import type { SimpleGit } from "simple-git";
 import { hostSettings } from "../../../../db/schema";
 import type { HostServiceContext } from "../../../../types";

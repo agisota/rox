@@ -1,10 +1,10 @@
-import type { HostAgentConfig } from "@superset/host-service/settings";
+import type { HostAgentConfig } from "@rox/host-service/settings";
 import {
 	HOST_AGENT_PRESETS,
 	type HostAgentPreset,
-} from "@superset/shared/host-agent-presets";
-import { Skeleton } from "@superset/ui/skeleton";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/shared/host-agent-presets";
+import { Skeleton } from "@rox/ui/skeleton";
+import { toast } from "@rox/ui/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bot } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

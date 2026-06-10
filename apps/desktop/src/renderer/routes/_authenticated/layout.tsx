@@ -1,6 +1,6 @@
 import { WorkerPoolContextProvider } from "@pierre/diffs/react";
-import { Button } from "@superset/ui/button";
-import { Spinner } from "@superset/ui/spinner";
+import { Button } from "@rox/ui/button";
+import { Spinner } from "@rox/ui/spinner";
 import {
 	createFileRoute,
 	Navigate,
@@ -62,8 +62,8 @@ function AuthenticatedLayout() {
 	const shownWorkspaceInitWarningsRef = useRef(new Set<string>());
 	const isV2CloudEnabled = useIsV2CloudEnabled();
 
-	const isSignedIn = env.SKIP_ENV_VALIDATION || !!session?.user;
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const isSignedIn = env.LOCAL_ONLY_AUTH || !!session?.user;
+	const activeOrganizationId = env.LOCAL_ONLY_AUTH
 		? MOCK_ORG_ID
 		: session?.session?.activeOrganizationId;
 
@@ -159,12 +159,12 @@ function AuthenticatedLayout() {
 		},
 	});
 
-	if (isPending && !hasLocalToken && !env.SKIP_ENV_VALIDATION) {
+	if (isPending && !hasLocalToken && !env.LOCAL_ONLY_AUTH) {
 		return <Navigate to="/sign-in" replace />;
 	}
 	if (
 		(isPending || (isRefetching && !session?.user && hasLocalToken)) &&
-		!env.SKIP_ENV_VALIDATION
+		!env.LOCAL_ONLY_AUTH
 	) {
 		return (
 			<div className="flex h-screen w-screen items-center justify-center bg-background">

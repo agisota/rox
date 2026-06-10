@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@superset/ui/button";
-import { Card, CardContent, CardHeader } from "@superset/ui/card";
+import { Button } from "@rox/ui/button";
+import { Card, CardContent, CardHeader } from "@rox/ui/card";
 import {
 	Form,
 	FormControl,
@@ -9,9 +9,9 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from "@superset/ui/form";
-import { Input } from "@superset/ui/input";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/form";
+import { Input } from "@rox/ui/input";
+import { toast } from "@rox/ui/sonner";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";

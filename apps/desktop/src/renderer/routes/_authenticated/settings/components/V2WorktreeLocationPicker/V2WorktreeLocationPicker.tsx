@@ -1,5 +1,5 @@
-import { Button } from "@superset/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { Button } from "@rox/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useState } from "react";
 import { LuFolderOpen, LuRotateCcw } from "react-icons/lu";
 import { RemotePathPicker } from "renderer/components/RemotePathPicker";

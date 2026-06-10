@@ -1,7 +1,8 @@
-import { toast } from "@superset/ui/sonner";
+import { toast } from "@rox/ui/sonner";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
+import { env } from "renderer/env.renderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { authClient } from "renderer/lib/auth-client";
 import {
@@ -10,6 +11,7 @@ import {
 } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
+import { MOCK_ORG_ID } from "shared/constants";
 import type { CandidateRow } from "./components/AddMemberDropdown";
 import { AddMemberDropdown } from "./components/AddMemberDropdown";
 import { HostHeader } from "./components/HostHeader";
@@ -36,7 +38,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id ?? null;
 	const actions = useOptimisticCollectionActions();
-	const { machineId } = useLocalHostService();
+	const { machineId, activeHostUrl } = useLocalHostService();
 	const hostUrl = useHostUrl(hostId);
 
 	const { data: hostRows = [], isReady: hostReady } = useLiveQuery(
@@ -47,7 +49,18 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				.select(({ hosts }) => ({ ...hosts })),
 		[collections, hostId],
 	);
-	const host = hostRows[0];
+	const localOnlyHost =
+		env.LOCAL_ONLY_AUTH && machineId === hostId && hostRows.length === 0;
+	const host =
+		hostRows[0] ??
+		(localOnlyHost
+			? {
+					machineId: hostId,
+					name: "This device",
+					isOnline: Boolean(activeHostUrl),
+					organizationId: MOCK_ORG_ID,
+				}
+			: undefined);
 
 	const { data: hostUserRows = [] } = useLiveQuery(
 		(q) =>
@@ -119,11 +132,12 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 	}, [orgMembers, hostUserRows, userMap]);
 
 	const isOwner = useMemo(() => {
+		if (localOnlyHost) return true;
 		if (!currentUserId) return false;
 		return (
 			hostUserRows.find((r) => r.userId === currentUserId)?.role === "owner"
 		);
-	}, [hostUserRows, currentUserId]);
+	}, [hostUserRows, currentUserId, localOnlyHost]);
 	const isRemoteTarget = Boolean(machineId && hostId !== machineId);
 
 	if (!host) {
@@ -166,7 +180,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				name={host.name}
 				isOnline={host.isOnline}
 				machineId={host.machineId}
-				canRename={isOwner}
+				canRename={isOwner && !localOnlyHost}
 			/>
 
 			<div className="space-y-10">

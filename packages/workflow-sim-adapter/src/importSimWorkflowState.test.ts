@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { validateGraph } from "@superset/workflow-core";
+import { validateGraph } from "@rox/workflow-core";
 import {
 	importSimWorkflowState,
 	UNSUPPORTED_BLOCK_TYPE,

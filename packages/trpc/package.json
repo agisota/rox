@@ -1,5 +1,5 @@
 {
-	"name": "@superset/trpc",
+	"name": "@rox/trpc",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -24,11 +24,11 @@
 	},
 	"dependencies": {
 		"@linear/sdk": "68.1.1",
-		"@superset/auth": "workspace:*",
-		"@superset/db": "workspace:*",
-		"@superset/shared": "workspace:*",
-		"@superset/workflow-core": "workspace:*",
-		"@superset/workflow-runtime": "workspace:*",
+		"@rox/auth": "workspace:*",
+		"@rox/db": "workspace:*",
+		"@rox/shared": "workspace:*",
+		"@rox/workflow-core": "workspace:*",
+		"@rox/workflow-runtime": "workspace:*",
 		"@t3-oss/env-core": "0.13.11",
 		"@trpc/server": "11.16.0",
 		"@upstash/qstash": "2.10.1",
@@ -43,7 +43,7 @@
 		"zod": "4.3.6"
 	},
 	"devDependencies": {
-		"@superset/typescript": "workspace:*",
+		"@rox/typescript": "workspace:*",
 		"typescript": "5.9.3"
 	}
 }

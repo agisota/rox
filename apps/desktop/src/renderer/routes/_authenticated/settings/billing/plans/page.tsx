@@ -1,8 +1,8 @@
-import { Badge } from "@superset/ui/badge";
-import { Button } from "@superset/ui/button";
-import { toast } from "@superset/ui/sonner";
-import { Switch } from "@superset/ui/switch";
-import { cn } from "@superset/ui/utils";
+import { Badge } from "@rox/ui/badge";
+import { Button } from "@rox/ui/button";
+import { toast } from "@rox/ui/sonner";
+import { Switch } from "@rox/ui/switch";
+import { cn } from "@rox/ui/utils";
 import { useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { differenceInDays, format } from "date-fns";

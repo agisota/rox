@@ -25,7 +25,7 @@ The current spike package is **not** the contract. It was useful to surface the 
 - One active pane per group
 - Dragging a pane over another root tab activates that root and lets the drag continue there
 - Advanced docking previews
-- Renderer layer must be design-system-native, using Tailwind + `@superset/ui`
+- Renderer layer must be design-system-native, using Tailwind + `@rox/ui`
 
 ### Nice Later
 
@@ -44,7 +44,7 @@ The current spike package is **not** the contract. It was useful to surface the 
 
 Use one workspace package:
 
-- `@superset/pane-layout`
+- `@rox/pane-layout`
 
 It should expose two layers:
 
@@ -56,7 +56,7 @@ It should expose two layers:
 - `react`
   - top-level root tab strip component
   - per-root layout component
-  - group/tab chrome built from `@superset/ui`
+  - group/tab chrome built from `@rox/ui`
   - drop target visuals and drag affordances
 
 The package must remain platform-agnostic:
@@ -902,10 +902,10 @@ These should be treated as behavioral inspiration only.
 
 ## Implementation Order
 
-1. Lock the core API in `@superset/pane-layout`
+1. Lock the core API in `@rox/pane-layout`
 2. Write reducer and tree utility tests first
 3. Implement root-aware reducer
-4. Implement minimal React renderer with `@superset/ui` primitives
+4. Implement minimal React renderer with `@rox/ui` primitives
 5. Add same-root drag/drop
 6. Add cross-root drag activation
 7. Replace the v2 pane viewer with the new package

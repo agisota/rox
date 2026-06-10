@@ -1,5 +1,5 @@
-import { db } from "@superset/db/client";
-import { users } from "@superset/db/schema";
+import { db } from "@rox/db/client";
+import { users } from "@rox/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { inArray } from "drizzle-orm";
 import { z } from "zod";

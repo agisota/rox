@@ -499,7 +499,7 @@ runtime boundary is correct.
 
 Current renderer wiring:
 
-- `ChatPane` mounts providers from `@superset/chat/client`
+- `ChatPane` mounts providers from `@rox/chat/client`
 - runtime calls go to Electron IPC client for `chatRuntimeService`
 - support calls go to Electron IPC client for `chatService`
 

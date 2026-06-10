@@ -1,12 +1,12 @@
 "use client";
 
-import { authClient } from "@superset/auth/client";
+import { authClient } from "@rox/auth/client";
 import {
 	DEV_EMAIL,
 	DEV_NAME,
 	DEV_PASSWORD,
-} from "@superset/shared/dev-credentials";
-import { Button } from "@superset/ui/button";
+} from "@rox/shared/dev-credentials";
+import { Button } from "@rox/ui/button";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";

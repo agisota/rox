@@ -1,6 +1,6 @@
 "use client";
 
-import { ToggleGroup, ToggleGroupItem } from "@superset/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@rox/ui/toggle-group";
 
 export type TimeRange = "-7d" | "-30d" | "-90d" | "-180d";
 

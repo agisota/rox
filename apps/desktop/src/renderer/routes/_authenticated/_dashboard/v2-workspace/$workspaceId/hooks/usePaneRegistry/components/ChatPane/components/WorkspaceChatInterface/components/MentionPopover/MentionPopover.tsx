@@ -1,7 +1,7 @@
 import {
 	PromptInputButton,
 	usePromptInputController,
-} from "@superset/ui/ai-elements/prompt-input";
+} from "@rox/ui/ai-elements/prompt-input";
 import {
 	Command,
 	CommandEmpty,
@@ -9,13 +9,13 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@superset/ui/command";
+} from "@rox/ui/command";
 import {
 	Popover,
 	PopoverAnchor,
 	PopoverContent,
 	PopoverTrigger,
-} from "@superset/ui/popover";
+} from "@rox/ui/popover";
 import {
 	createContext,
 	type ReactNode,

@@ -1,5 +1,5 @@
-import { Button } from "@superset/ui/button";
-import { Kbd, KbdGroup } from "@superset/ui/kbd";
+import { Button } from "@rox/ui/button";
+import { Kbd, KbdGroup } from "@rox/ui/kbd";
 import { formatDistanceToNow } from "date-fns";
 import { FaGithub } from "react-icons/fa";
 import {

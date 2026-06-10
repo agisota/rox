@@ -2,7 +2,7 @@ import type {
 	SelectTask,
 	SelectTaskStatus,
 	SelectUser,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import { eq, isNull } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";

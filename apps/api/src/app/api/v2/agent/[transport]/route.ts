@@ -4,7 +4,7 @@ import {
 	isMcpUnauthorized,
 	type McpContext,
 	resolveMcpContext,
-} from "@superset/mcp-v2";
+} from "@rox/mcp-v2";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
 import { getOAuthProtectedResourceMetadataUrl } from "@/lib/oauth-metadata";

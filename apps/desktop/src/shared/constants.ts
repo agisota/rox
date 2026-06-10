@@ -1,4 +1,4 @@
-import { PROTOCOL_SCHEMES } from "@superset/shared/constants";
+import { PROTOCOL_SCHEMES } from "@rox/shared/constants";
 import { getWorkspaceName } from "./env.shared";
 
 export const PLATFORM = {

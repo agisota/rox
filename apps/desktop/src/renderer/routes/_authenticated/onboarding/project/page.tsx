@@ -1,10 +1,11 @@
-import { Button } from "@superset/ui/button";
-import { Card } from "@superset/ui/card";
-import { Input } from "@superset/ui/input";
-import { toast } from "@superset/ui/sonner";
+import { Button } from "@rox/ui/button";
+import { Card } from "@rox/ui/card";
+import { Input } from "@rox/ui/input";
+import { toast } from "@rox/ui/sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { LuFolderOpen, LuGitBranch } from "react-icons/lu";
+import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
@@ -39,6 +40,11 @@ function OnboardingProjectPage() {
 	// dashboard's new-workspace modal pre-selected to the project just added.
 	const finish = async (projectId: string) => {
 		track("onboarding_finished", { outcome: "completed" });
+		if (env.LOCAL_ONLY_AUTH) {
+			await navigate({ to: "/v2-workspaces", replace: true });
+			openNewWorkspaceModal(projectId);
+			return;
+		}
 		try {
 			await apiTrpcClient.user.completeOnboarding.mutate();
 			// Reactive refetch (not imperative getSession) so the layout guards'

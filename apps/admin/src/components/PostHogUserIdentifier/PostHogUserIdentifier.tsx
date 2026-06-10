@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@superset/auth/client";
+import { authClient } from "@rox/auth/client";
 import { useQuery } from "@tanstack/react-query";
 import posthog from "posthog-js";
 import { useEffect } from "react";

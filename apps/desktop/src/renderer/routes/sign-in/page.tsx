@@ -1,11 +1,11 @@
-import { type AuthProvider, COMPANY } from "@superset/shared/constants";
+import { type AuthProvider, COMPANY } from "@rox/shared/constants";
 import {
 	DEV_EMAIL,
 	DEV_NAME,
 	DEV_PASSWORD,
-} from "@superset/shared/dev-credentials";
-import { Button } from "@superset/ui/button";
-import { Spinner } from "@superset/ui/spinner";
+} from "@rox/shared/dev-credentials";
+import { Button } from "@rox/ui/button";
+import { Spinner } from "@rox/ui/spinner";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
@@ -30,7 +30,7 @@ function SignInPage() {
 	const { hasLocalToken, isPending, session } = useSessionRecovery();
 
 	// Dev bypass: skip sign-in entirely
-	if (env.SKIP_ENV_VALIDATION) {
+	if (env.LOCAL_ONLY_AUTH) {
 		return <Navigate to="/workspace" replace />;
 	}
 

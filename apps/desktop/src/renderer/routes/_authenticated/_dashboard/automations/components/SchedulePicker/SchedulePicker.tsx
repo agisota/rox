@@ -4,16 +4,16 @@ import {
 	matchPreset,
 	type PresetMatch,
 	type Weekday,
-} from "@superset/shared/rrule";
-import { Input } from "@superset/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
+} from "@rox/shared/rrule";
+import { Input } from "@rox/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@superset/ui/select";
+} from "@rox/ui/select";
 import { useMemo, useState } from "react";
 import { LuClock } from "react-icons/lu";
 import { PickerTrigger } from "renderer/components/PickerTrigger";

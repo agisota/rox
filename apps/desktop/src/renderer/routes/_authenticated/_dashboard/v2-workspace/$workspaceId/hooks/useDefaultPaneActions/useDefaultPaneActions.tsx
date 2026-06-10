@@ -1,4 +1,4 @@
-import type { PaneActionConfig } from "@superset/panes";
+import type { PaneActionConfig } from "@rox/panes";
 import { useMemo } from "react";
 import { HiMiniXMark } from "react-icons/hi2";
 import { TbLayoutColumns, TbLayoutRows } from "react-icons/tb";

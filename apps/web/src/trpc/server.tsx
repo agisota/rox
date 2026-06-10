@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { AppRouter } from "@superset/trpc";
+import type { AppRouter } from "@rox/trpc";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { headers } from "next/headers";
 import { cache } from "react";

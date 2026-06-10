@@ -1,9 +1,9 @@
-import type { TerminalPreset } from "@superset/local-db";
+import type { TerminalPreset } from "@rox/local-db";
 import {
 	AGENT_LABELS,
 	AGENT_TYPES,
 	type AgentType,
-} from "@superset/shared/agent-command";
+} from "@rox/shared/agent-command";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo, useState } from "react";
 import { LuTerminal } from "react-icons/lu";

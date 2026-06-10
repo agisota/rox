@@ -5,7 +5,7 @@ import {
 	skillSlugFromType,
 	validateGraph,
 	validateOutput,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { Redactor } from "../context/Redactor";
 import type {
 	BlockHandler,

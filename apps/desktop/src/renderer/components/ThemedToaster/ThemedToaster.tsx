@@ -1,4 +1,4 @@
-import { Toaster } from "@superset/ui/sonner";
+import { Toaster } from "@rox/ui/sonner";
 import { useTheme } from "renderer/stores/theme/store";
 
 export function ThemedToaster() {

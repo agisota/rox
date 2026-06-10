@@ -1,6 +1,6 @@
-import type { AppRouter } from "@superset/host-service";
-import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
-import { ScrollArea } from "@superset/ui/scroll-area";
+import type { AppRouter } from "@rox/host-service";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
+import { ScrollArea } from "@rox/ui/scroll-area";
 import type { inferRouterOutputs } from "@trpc/server";
 import { Check, ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";

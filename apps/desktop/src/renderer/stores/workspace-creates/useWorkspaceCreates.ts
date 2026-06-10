@@ -1,4 +1,4 @@
-import type { SelectV2Workspace } from "@superset/db/schema";
+import type { SelectV2Workspace } from "@rox/db/schema";
 import { useCallback } from "react";
 import { resolveHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";

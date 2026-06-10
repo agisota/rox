@@ -1,8 +1,8 @@
 import os from "node:os";
-import hostServicePackageJson from "@superset/host-service/package.json" with {
+import hostServicePackageJson from "@rox/host-service/package.json" with {
 	type: "json",
 };
-import { getHostId, getHostName } from "@superset/shared/host-info";
+import { getHostId, getHostName } from "@rox/shared/host-info";
 import { TRPCError } from "@trpc/server";
 import type { ApiClient } from "../../../types";
 import { protectedProcedure, router } from "../../index";

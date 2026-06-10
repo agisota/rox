@@ -1,17 +1,17 @@
-import type { ExternalApp } from "@superset/local-db";
+import type { ExternalApp } from "@rox/local-db";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
+} from "@rox/ui/collapsible";
 import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@superset/ui/context-menu";
-import { cn } from "@superset/ui/utils";
+} from "@rox/ui/context-menu";
+import { cn } from "@rox/ui/utils";
 import { type ReactNode, useState } from "react";
 import {
 	VscAdd,

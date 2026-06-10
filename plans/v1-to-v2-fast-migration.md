@@ -104,7 +104,7 @@ The router exposes these procedures and the v2 ChatPane renders the surfaces, so
 
 ### Missing from the router entirely
 
-- **`searchFiles`** — v1 had `workspace.searchFiles` (delegated to `@superset/workspace-fs/host`). Without it, `@file` mention autocomplete is dead.
+- **`searchFiles`** — v1 had `workspace.searchFiles` (delegated to `@rox/workspace-fs/host`). Without it, `@file` mention autocomplete is dead.
 - **`authenticateMcpServer`** — v1 had OAuth callback for new MCP servers. With MCP currently stubbed anyway, this is downstream of `getMcpOverview`.
 
 ### Behaviors v1 runs that host-service runtime doesn't
@@ -296,7 +296,7 @@ References Verified Bug #2 in §Implementation Audit.
 #### File mention search (missing from router entirely)
 
 - [ ] Add `chat.searchFiles({ workspaceId, query, ... })` procedure to host-service.
-- [ ] Wire to `@superset/workspace-fs/host` (already used elsewhere). Match v1's `workspace.searchFiles` shape so the renderer adapter is trivial.
+- [ ] Wire to `@rox/workspace-fs/host` (already used elsewhere). Match v1's `workspace.searchFiles` shape so the renderer adapter is trivial.
 - [ ] Verify `@file` mention autocomplete works in the host-service-backed chat pane.
 
 #### Session lifecycle + user-prompt hooks (currently uncalled)

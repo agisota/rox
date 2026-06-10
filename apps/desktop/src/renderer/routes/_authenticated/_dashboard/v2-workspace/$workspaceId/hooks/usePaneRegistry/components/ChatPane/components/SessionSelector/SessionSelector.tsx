@@ -5,7 +5,7 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
+} from "@rox/ui/dropdown-menu";
 import { useEffect, useMemo, useState } from "react";
 import { HiMiniChevronDown, HiMiniPlus } from "react-icons/hi2";
 import { getRelativeTime } from "renderer/screens/main/components/WorkspacesListView/utils";

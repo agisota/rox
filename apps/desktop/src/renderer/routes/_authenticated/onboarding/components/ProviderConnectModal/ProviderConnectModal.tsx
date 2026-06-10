@@ -1,14 +1,14 @@
-import { chatServiceTrpc } from "@superset/chat/client";
-import { Button } from "@superset/ui/button";
+import { chatServiceTrpc } from "@rox/chat/client";
+import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { Input } from "@superset/ui/input";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { toast } from "@rox/ui/sonner";
 import { type FormEvent, useState } from "react";
 import { LuKeyRound } from "react-icons/lu";
 import { AnthropicOAuthDialog } from "renderer/components/Chat/ChatInterface/components/ModelPicker/components/AnthropicOAuthDialog";

@@ -1,4 +1,4 @@
-import { workspaceTrpc } from "@superset/workspace-client";
+import { workspaceTrpc } from "@rox/workspace-client";
 import { useMemo } from "react";
 import {
 	type PullRequest as FlowPullRequest,

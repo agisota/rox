@@ -12,15 +12,15 @@
       },
     },
     "apps/admin": {
-      "name": "@superset/admin",
+      "name": "@rox/admin",
       "version": "0.1.0",
       "dependencies": {
+        "@rox/auth": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
+        "@rox/ui": "workspace:*",
         "@sentry/nextjs": "10.46.0",
-        "@superset/auth": "workspace:*",
-        "@superset/db": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
-        "@superset/ui": "workspace:*",
         "@t3-oss/env-nextjs": "0.13.11",
         "@tanstack/react-query": "5.100.9",
         "@tanstack/react-query-devtools": "5.95.2",
@@ -44,7 +44,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@tailwindcss/postcss": "4.2.2",
         "@types/node": "24.12.0",
         "@types/react": "19.2.14",
@@ -56,7 +56,7 @@
       },
     },
     "apps/api": {
-      "name": "@superset/api",
+      "name": "@rox/api",
       "version": "0.1.0",
       "dependencies": {
         "@anthropic-ai/sdk": "0.78.0",
@@ -67,15 +67,15 @@
         "@octokit/app": "16.1.2",
         "@octokit/rest": "22.0.1",
         "@octokit/webhooks": "14.2.0",
+        "@rox/auth": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/mcp": "workspace:*",
+        "@rox/mcp-v2": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
         "@sentry/nextjs": "10.46.0",
         "@slack/types": "2.20.1",
         "@slack/web-api": "7.15.0",
-        "@superset/auth": "workspace:*",
-        "@superset/db": "workspace:*",
-        "@superset/mcp": "workspace:*",
-        "@superset/mcp-v2": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
         "@t3-oss/env-nextjs": "0.13.11",
         "@tavily/core": "0.7.2",
         "@trpc/server": "11.16.0",
@@ -99,7 +99,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/lodash.chunk": "4.2.9",
         "@types/node": "24.12.0",
         "@types/react": "19.2.14",
@@ -110,7 +110,7 @@
       },
     },
     "apps/desktop": {
-      "name": "@superset/desktop",
+      "name": "@rox/desktop",
       "version": "1.12.3",
       "dependencies": {
         "@ai-sdk/anthropic": "3.0.64",
@@ -158,22 +158,22 @@
         "@radix-ui/react-dialog": "1.1.15",
         "@radix-ui/react-label": "2.1.8",
         "@replit/codemirror-css-color-picker": "6.3.0",
+        "@rox/auth": "workspace:*",
+        "@rox/chat": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/host-service": "workspace:*",
+        "@rox/local-db": "workspace:*",
+        "@rox/macos-process-metrics": "workspace:*",
+        "@rox/panes": "workspace:*",
+        "@rox/port-scanner": "workspace:*",
+        "@rox/pty-daemon": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
+        "@rox/ui": "workspace:*",
+        "@rox/workspace-client": "workspace:*",
+        "@rox/workspace-fs": "workspace:*",
         "@sentry/electron": "7.10.0",
         "@streamdown/mermaid": "1.0.2",
-        "@superset/auth": "workspace:*",
-        "@superset/chat": "workspace:*",
-        "@superset/db": "workspace:*",
-        "@superset/host-service": "workspace:*",
-        "@superset/local-db": "workspace:*",
-        "@superset/macos-process-metrics": "workspace:*",
-        "@superset/panes": "workspace:*",
-        "@superset/port-scanner": "workspace:*",
-        "@superset/pty-daemon": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
-        "@superset/ui": "workspace:*",
-        "@superset/workspace-client": "workspace:*",
-        "@superset/workspace-fs": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "@tanstack/db": "0.6.5",
         "@tanstack/electric-db-collection": "0.3.3",
@@ -319,8 +319,8 @@
         "zustand": "5.0.12",
       },
       "devDependencies": {
+        "@rox/typescript": "workspace:*",
         "@sentry/vite-plugin": "4.9.1",
-        "@superset/typescript": "workspace:*",
         "@tailwindcss/vite": "4.2.2",
         "@tanstack/router-cli": "1.166.23",
         "@tanstack/router-plugin": "1.167.9",
@@ -352,13 +352,13 @@
       },
     },
     "apps/docs": {
-      "name": "@superset/docs",
+      "name": "@rox/docs",
       "version": "0.0.0",
       "dependencies": {
         "@radix-ui/react-collapsible": "1.1.12",
         "@radix-ui/react-scroll-area": "1.2.10",
+        "@rox/shared": "workspace:*",
         "@sentry/nextjs": "10.46.0",
-        "@superset/shared": "workspace:*",
         "@t3-oss/env-nextjs": "0.13.11",
         "class-variance-authority": "0.7.1",
         "dotenv": "17.3.1",
@@ -375,7 +375,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@tailwindcss/postcss": "4.2.2",
         "@types/mdx": "2.0.13",
         "@types/node": "24.12.0",
@@ -392,29 +392,29 @@
       "version": "0.0.0",
       "dependencies": {
         "@electric-sql/client": "1.5.15",
-        "@superset/db": "workspace:*",
+        "@rox/db": "workspace:*",
         "drizzle-orm": "0.45.2",
         "jose": "6.2.2",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "4.20260329.1",
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "typescript": "5.9.3",
         "wrangler": "4.78.0",
       },
     },
     "apps/marketing": {
-      "name": "@superset/marketing",
+      "name": "@rox/marketing",
       "version": "0.1.0",
       "dependencies": {
         "@paper-design/shaders-react": "0.0.76",
         "@react-three/drei": "10.7.7",
         "@react-three/fiber": "9.5.0",
+        "@rox/auth": "workspace:*",
+        "@rox/email": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/ui": "workspace:*",
         "@sentry/nextjs": "10.46.0",
-        "@superset/auth": "workspace:*",
-        "@superset/email": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/ui": "workspace:*",
         "@t3-oss/env-nextjs": "0.13.11",
         "@upstash/ratelimit": "2.0.8",
         "@upstash/redis": "1.37.0",
@@ -442,7 +442,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@tailwindcss/postcss": "4.2.2",
         "@tailwindcss/typography": "0.5.19",
         "@types/mdx": "2.0.13",
@@ -458,7 +458,7 @@
       },
     },
     "apps/mobile": {
-      "name": "@superset/mobile",
+      "name": "@rox/mobile",
       "version": "1.0.0",
       "dependencies": {
         "@better-auth/expo": "1.6.13",
@@ -490,9 +490,9 @@
         "@rn-primitives/toggle": "1.4.0",
         "@rn-primitives/toggle-group": "1.4.0",
         "@rn-primitives/tooltip": "1.4.0",
-        "@superset/auth": "workspace:*",
-        "@superset/db": "workspace:*",
-        "@superset/trpc": "workspace:*",
+        "@rox/auth": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/trpc": "workspace:*",
         "@tanstack/db": "0.6.5",
         "@tanstack/electric-db-collection": "0.3.3",
         "@tanstack/react-db": "0.1.83",
@@ -547,14 +547,14 @@
       },
     },
     "apps/relay": {
-      "name": "@superset/relay",
+      "name": "@rox/relay",
       "version": "0.1.0",
       "dependencies": {
         "@hono/node-server": "1.19.13",
         "@hono/node-ws": "1.3.0",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
         "@sentry/node": "9.47.1",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "@trpc/client": "11.16.0",
         "@upstash/redis": "1.37.0",
@@ -565,7 +565,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
@@ -576,15 +576,15 @@
       "version": "0.0.0",
     },
     "apps/web": {
-      "name": "@superset/web",
+      "name": "@rox/web",
       "version": "0.1.0",
       "dependencies": {
+        "@rox/auth": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
+        "@rox/ui": "workspace:*",
         "@sentry/nextjs": "10.46.0",
-        "@superset/auth": "workspace:*",
-        "@superset/db": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
-        "@superset/ui": "workspace:*",
         "@t3-oss/env-nextjs": "0.13.11",
         "@tanstack/react-query": "5.100.9",
         "@tanstack/react-query-devtools": "5.95.2",
@@ -613,7 +613,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@tailwindcss/postcss": "4.2.2",
         "@types/node": "24.12.0",
         "@types/react": "19.2.14",
@@ -625,16 +625,16 @@
       },
     },
     "packages/auth": {
-      "name": "@superset/auth",
+      "name": "@rox/auth",
       "version": "0.1.0",
       "dependencies": {
         "@better-auth/api-key": "1.6.13",
         "@better-auth/expo": "1.6.13",
         "@better-auth/oauth-provider": "1.6.13",
         "@better-auth/stripe": "1.6.13",
-        "@superset/db": "workspace:*",
-        "@superset/email": "workspace:*",
-        "@superset/shared": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/email": "workspace:*",
+        "@rox/shared": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "@t3-oss/env-nextjs": "0.13.11",
         "@upstash/qstash": "2.10.1",
@@ -648,13 +648,13 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "typescript": "5.9.3",
       },
     },
     "packages/chat": {
-      "name": "@superset/chat",
+      "name": "@rox/chat",
       "version": "0.0.1",
       "dependencies": {
         "@ai-sdk/anthropic": "3.0.64",
@@ -662,8 +662,8 @@
         "@mastra/core": "1.33.1",
         "@mastra/mcp": "1.7.0",
         "@mastra/memory": "1.18.0",
-        "@superset/trpc": "workspace:*",
-        "@superset/workspace-fs": "workspace:*",
+        "@rox/trpc": "workspace:*",
+        "@rox/workspace-fs": "workspace:*",
         "@trpc/client": "11.16.0",
         "@trpc/server": "11.16.0",
         "ai": "6.0.141",
@@ -673,7 +673,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/bun": "1.3.11",
         "@types/node": "24.12.0",
         "@types/react": "19.2.14",
@@ -687,14 +687,14 @@
       },
     },
     "packages/cli": {
-      "name": "@superset/cli",
+      "name": "@rox/cli",
       "version": "0.2.22",
       "dependencies": {
         "@clack/prompts": "0.10.1",
-        "@superset/cli-framework": "workspace:*",
-        "@superset/host-service": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
+        "@rox/cli-framework": "workspace:*",
+        "@rox/host-service": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
         "@trpc/client": "11.16.0",
         "date-fns": "4.1.0",
         "ink": "7.0.1",
@@ -703,7 +703,7 @@
         "superjson": "2.2.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/mime-types": "3.0.1",
         "@types/react": "19.2.14",
         "bun-types": "1.3.11",
@@ -711,31 +711,31 @@
       },
     },
     "packages/cli-framework": {
-      "name": "@superset/cli-framework",
+      "name": "@rox/cli-framework",
       "version": "0.1.0",
       "bin": {
         "cli-framework": "./src/bin.ts",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/db": {
-      "name": "@superset/db",
+      "name": "@rox/db",
       "version": "0.1.0",
       "dependencies": {
         "@neondatabase/serverless": "1.0.2",
-        "@superset/shared": "workspace:*",
-        "@superset/workflow-core": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/workflow-core": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "dotenv": "17.3.1",
         "drizzle-orm": "0.45.2",
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "bun-types": "1.3.11",
         "drizzle-kit": "0.31.8",
@@ -743,12 +743,12 @@
       },
     },
     "packages/email": {
-      "name": "@superset/email",
+      "name": "@rox/email",
       "version": "0.1.0",
       "dependencies": {
         "@react-email/components": "1.0.1",
         "@react-email/tailwind": "2.0.3",
-        "@superset/db": "workspace:*",
+        "@rox/db": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "date-fns": "4.1.0",
         "drizzle-orm": "0.45.2",
@@ -760,7 +760,7 @@
       },
       "devDependencies": {
         "@react-email/preview-server": "5.0.7",
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "@types/react": "19.2.14",
         "@types/tailwindcss": "3.1.0",
@@ -769,7 +769,7 @@
       },
     },
     "packages/host-service": {
-      "name": "@superset/host-service",
+      "name": "@rox/host-service",
       "version": "0.8.19",
       "dependencies": {
         "@hono/node-server": "1.19.13",
@@ -778,12 +778,12 @@
         "@mastra/core": "1.33.1",
         "@mastra/memory": "1.18.0",
         "@octokit/rest": "22.0.1",
-        "@superset/chat": "workspace:*",
-        "@superset/port-scanner": "workspace:*",
-        "@superset/pty-daemon": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
-        "@superset/workspace-fs": "workspace:*",
+        "@rox/chat": "workspace:*",
+        "@rox/port-scanner": "workspace:*",
+        "@rox/pty-daemon": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
+        "@rox/workspace-fs": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "@trpc/client": "11.16.0",
         "@trpc/server": "11.16.0",
@@ -801,7 +801,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/better-sqlite3": "7.6.13",
         "@types/mime-types": "3.0.1",
         "@types/node": "24.12.0",
@@ -815,16 +815,16 @@
       },
     },
     "packages/local-db": {
-      "name": "@superset/local-db",
+      "name": "@rox/local-db",
       "version": "0.1.0",
       "dependencies": {
-        "@superset/shared": "workspace:*",
+        "@rox/shared": "workspace:*",
         "drizzle-orm": "0.45.2",
         "uuid": "14.0.0",
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/uuid": "11.0.0",
         "bun-types": "1.3.11",
         "drizzle-kit": "0.31.8",
@@ -832,61 +832,61 @@
       },
     },
     "packages/macos-process-metrics": {
-      "name": "@superset/macos-process-metrics",
+      "name": "@rox/macos-process-metrics",
       "version": "0.0.1",
       "dependencies": {
         "node-addon-api": "7.1.1",
       },
     },
     "packages/mcp": {
-      "name": "@superset/mcp",
+      "name": "@rox/mcp",
       "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.28.0",
-        "@superset/db": "workspace:*",
-        "@superset/shared": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
         "drizzle-orm": "0.45.2",
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/mcp-v2": {
-      "name": "@superset/mcp-v2",
+      "name": "@rox/mcp-v2",
       "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.28.0",
-        "@superset/auth": "workspace:*",
-        "@superset/db": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/trpc": "workspace:*",
+        "@rox/auth": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/trpc": "workspace:*",
         "better-auth": "1.6.13",
         "drizzle-orm": "0.45.2",
         "superjson": "2.2.6",
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/panes": {
-      "name": "@superset/panes",
+      "name": "@rox/panes",
       "version": "0.1.0",
       "dependencies": {
-        "@superset/ui": "workspace:*",
+        "@rox/ui": "workspace:*",
         "lucide-react": "0.563.0",
         "react-dnd": "16.0.1",
         "zustand": "5.0.12",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/bun": "1.3.11",
         "@types/react": "19.2.14",
         "react": "19.2.3",
@@ -897,19 +897,19 @@
       },
     },
     "packages/port-scanner": {
-      "name": "@superset/port-scanner",
+      "name": "@rox/port-scanner",
       "version": "0.1.0",
       "dependencies": {
         "pidtree": "0.6.0",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/pty-daemon": {
-      "name": "@superset/pty-daemon",
+      "name": "@rox/pty-daemon",
       "version": "0.2.4",
       "bin": {
         "pty-daemon": "./src/main.ts",
@@ -918,23 +918,23 @@
         "node-pty": "1.1.0",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/sdk": {
-      "name": "@superset/sdk",
+      "name": "@rox/sdk",
       "version": "0.0.1-alpha.12",
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/shared": {
-      "name": "@superset/shared",
+      "name": "@rox/shared",
       "version": "0.1.0",
       "dependencies": {
         "@date-fns/tz": "1.4.1",
@@ -943,22 +943,22 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/friendly-words": "1.2.2",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/trpc": {
-      "name": "@superset/trpc",
+      "name": "@rox/trpc",
       "version": "0.1.0",
       "dependencies": {
         "@linear/sdk": "68.1.1",
-        "@superset/auth": "workspace:*",
-        "@superset/db": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/workflow-core": "workspace:*",
-        "@superset/workflow-runtime": "workspace:*",
+        "@rox/auth": "workspace:*",
+        "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/workflow-core": "workspace:*",
+        "@rox/workflow-runtime": "workspace:*",
         "@t3-oss/env-core": "0.13.11",
         "@trpc/server": "11.16.0",
         "@upstash/qstash": "2.10.1",
@@ -973,12 +973,12 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "typescript": "5.9.3",
       },
     },
     "packages/ui": {
-      "name": "@superset/ui",
+      "name": "@rox/ui",
       "version": "0.1.0",
       "dependencies": {
         "@hookform/resolvers": "5.2.2",
@@ -1009,8 +1009,8 @@
         "@radix-ui/react-toggle-group": "1.1.11",
         "@radix-ui/react-tooltip": "1.2.8",
         "@radix-ui/react-use-controllable-state": "1.2.2",
+        "@rox/shared": "workspace:*",
         "@streamdown/mermaid": "1.0.2",
-        "@superset/shared": "workspace:*",
         "@xyflow/react": "12.10.2",
         "ai": "6.0.141",
         "class-variance-authority": "0.7.1",
@@ -1042,7 +1042,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@tailwindcss/postcss": "4.2.2",
         "@types/bun": "1.3.11",
         "@types/react": "19.2.14",
@@ -1057,57 +1057,57 @@
       },
     },
     "packages/workflow-core": {
-      "name": "@superset/workflow-core",
+      "name": "@rox/workflow-core",
       "version": "0.1.0",
       "dependencies": {
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/workflow-runtime": {
-      "name": "@superset/workflow-runtime",
+      "name": "@rox/workflow-runtime",
       "version": "0.1.0",
       "dependencies": {
-        "@superset/workflow-core": "workspace:*",
+        "@rox/workflow-core": "workspace:*",
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/workflow-sim-adapter": {
-      "name": "@superset/workflow-sim-adapter",
+      "name": "@rox/workflow-sim-adapter",
       "version": "0.1.0",
       "dependencies": {
-        "@superset/workflow-core": "workspace:*",
+        "@rox/workflow-core": "workspace:*",
         "zod": "4.3.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "packages/workspace-client": {
-      "name": "@superset/workspace-client",
+      "name": "@rox/workspace-client",
       "version": "0.1.0",
       "dependencies": {
-        "@superset/host-service": "workspace:*",
-        "@superset/shared": "workspace:*",
-        "@superset/workspace-fs": "workspace:*",
+        "@rox/host-service": "workspace:*",
+        "@rox/shared": "workspace:*",
+        "@rox/workspace-fs": "workspace:*",
         "@tanstack/react-query": "5.100.9",
         "@trpc/client": "11.16.0",
         "@trpc/react-query": "11.16.0",
         "superjson": "2.2.6",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/react": "19.2.14",
         "react": "19.2.3",
         "typescript": "5.9.3",
@@ -1117,21 +1117,21 @@
       },
     },
     "packages/workspace-fs": {
-      "name": "@superset/workspace-fs",
+      "name": "@rox/workspace-fs",
       "version": "0.1.0",
       "dependencies": {
         "@parcel/watcher": "2.5.6",
         "fast-glob": "3.3.3",
       },
       "devDependencies": {
-        "@superset/typescript": "workspace:*",
+        "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
     "tooling/typescript": {
-      "name": "@superset/typescript",
+      "name": "@rox/typescript",
       "version": "0.1.0",
     },
   },
@@ -2526,6 +2526,70 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-PrsWNQ8BuE00O3Xsx3ALh2Df8fAj9+cvvX9AIA6o4KpATR98c9mud4XtDWVvsEuyia5U4tVSTKygawyJkjm60w=="],
 
+    "@rox/admin": ["@rox/admin@workspace:apps/admin"],
+
+    "@rox/api": ["@rox/api@workspace:apps/api"],
+
+    "@rox/auth": ["@rox/auth@workspace:packages/auth"],
+
+    "@rox/chat": ["@rox/chat@workspace:packages/chat"],
+
+    "@rox/cli": ["@rox/cli@workspace:packages/cli"],
+
+    "@rox/cli-framework": ["@rox/cli-framework@workspace:packages/cli-framework"],
+
+    "@rox/db": ["@rox/db@workspace:packages/db"],
+
+    "@rox/desktop": ["@rox/desktop@workspace:apps/desktop"],
+
+    "@rox/docs": ["@rox/docs@workspace:apps/docs"],
+
+    "@rox/email": ["@rox/email@workspace:packages/email"],
+
+    "@rox/host-service": ["@rox/host-service@workspace:packages/host-service"],
+
+    "@rox/local-db": ["@rox/local-db@workspace:packages/local-db"],
+
+    "@rox/macos-process-metrics": ["@rox/macos-process-metrics@workspace:packages/macos-process-metrics"],
+
+    "@rox/marketing": ["@rox/marketing@workspace:apps/marketing"],
+
+    "@rox/mcp": ["@rox/mcp@workspace:packages/mcp"],
+
+    "@rox/mcp-v2": ["@rox/mcp-v2@workspace:packages/mcp-v2"],
+
+    "@rox/mobile": ["@rox/mobile@workspace:apps/mobile"],
+
+    "@rox/panes": ["@rox/panes@workspace:packages/panes"],
+
+    "@rox/port-scanner": ["@rox/port-scanner@workspace:packages/port-scanner"],
+
+    "@rox/pty-daemon": ["@rox/pty-daemon@workspace:packages/pty-daemon"],
+
+    "@rox/relay": ["@rox/relay@workspace:apps/relay"],
+
+    "@rox/sdk": ["@rox/sdk@workspace:packages/sdk"],
+
+    "@rox/shared": ["@rox/shared@workspace:packages/shared"],
+
+    "@rox/trpc": ["@rox/trpc@workspace:packages/trpc"],
+
+    "@rox/typescript": ["@rox/typescript@workspace:tooling/typescript"],
+
+    "@rox/ui": ["@rox/ui@workspace:packages/ui"],
+
+    "@rox/web": ["@rox/web@workspace:apps/web"],
+
+    "@rox/workflow-core": ["@rox/workflow-core@workspace:packages/workflow-core"],
+
+    "@rox/workflow-runtime": ["@rox/workflow-runtime@workspace:packages/workflow-runtime"],
+
+    "@rox/workflow-sim-adapter": ["@rox/workflow-sim-adapter@workspace:packages/workflow-sim-adapter"],
+
+    "@rox/workspace-client": ["@rox/workspace-client@workspace:packages/workspace-client"],
+
+    "@rox/workspace-fs": ["@rox/workspace-fs@workspace:packages/workspace-fs"],
+
     "@sec-ant/readable-stream": ["@sec-ant/readable-stream@0.4.1", "", {}, "sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg=="],
 
     "@selderee/plugin-htmlparser2": ["@selderee/plugin-htmlparser2@0.11.0", "", { "dependencies": { "domhandler": "^5.0.3", "selderee": "^0.11.0" } }, "sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ=="],
@@ -2645,70 +2709,6 @@
     "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
 
     "@streamdown/mermaid": ["@streamdown/mermaid@1.0.2", "", { "dependencies": { "mermaid": "^11.12.2" }, "peerDependencies": { "react": "^18.0.0 || ^19.0.0" } }, "sha512-Fr/4sBWnAeSnxM3PcrV/+DiZe5oPMq9gOkUIAH7ZauJeuwrZ/DVzD4g0zlav6AH0axh2m/sOfrfLtY5aLT7niw=="],
-
-    "@superset/admin": ["@superset/admin@workspace:apps/admin"],
-
-    "@superset/api": ["@superset/api@workspace:apps/api"],
-
-    "@superset/auth": ["@superset/auth@workspace:packages/auth"],
-
-    "@superset/chat": ["@superset/chat@workspace:packages/chat"],
-
-    "@superset/cli": ["@superset/cli@workspace:packages/cli"],
-
-    "@superset/cli-framework": ["@superset/cli-framework@workspace:packages/cli-framework"],
-
-    "@superset/db": ["@superset/db@workspace:packages/db"],
-
-    "@superset/desktop": ["@superset/desktop@workspace:apps/desktop"],
-
-    "@superset/docs": ["@superset/docs@workspace:apps/docs"],
-
-    "@superset/email": ["@superset/email@workspace:packages/email"],
-
-    "@superset/host-service": ["@superset/host-service@workspace:packages/host-service"],
-
-    "@superset/local-db": ["@superset/local-db@workspace:packages/local-db"],
-
-    "@superset/macos-process-metrics": ["@superset/macos-process-metrics@workspace:packages/macos-process-metrics"],
-
-    "@superset/marketing": ["@superset/marketing@workspace:apps/marketing"],
-
-    "@superset/mcp": ["@superset/mcp@workspace:packages/mcp"],
-
-    "@superset/mcp-v2": ["@superset/mcp-v2@workspace:packages/mcp-v2"],
-
-    "@superset/mobile": ["@superset/mobile@workspace:apps/mobile"],
-
-    "@superset/panes": ["@superset/panes@workspace:packages/panes"],
-
-    "@superset/port-scanner": ["@superset/port-scanner@workspace:packages/port-scanner"],
-
-    "@superset/pty-daemon": ["@superset/pty-daemon@workspace:packages/pty-daemon"],
-
-    "@superset/relay": ["@superset/relay@workspace:apps/relay"],
-
-    "@superset/sdk": ["@superset/sdk@workspace:packages/sdk"],
-
-    "@superset/shared": ["@superset/shared@workspace:packages/shared"],
-
-    "@superset/trpc": ["@superset/trpc@workspace:packages/trpc"],
-
-    "@superset/typescript": ["@superset/typescript@workspace:tooling/typescript"],
-
-    "@superset/ui": ["@superset/ui@workspace:packages/ui"],
-
-    "@superset/web": ["@superset/web@workspace:apps/web"],
-
-    "@superset/workflow-core": ["@superset/workflow-core@workspace:packages/workflow-core"],
-
-    "@superset/workflow-runtime": ["@superset/workflow-runtime@workspace:packages/workflow-runtime"],
-
-    "@superset/workflow-sim-adapter": ["@superset/workflow-sim-adapter@workspace:packages/workflow-sim-adapter"],
-
-    "@superset/workspace-client": ["@superset/workspace-client@workspace:packages/workspace-client"],
-
-    "@superset/workspace-fs": ["@superset/workspace-fs@workspace:packages/workspace-fs"],
 
     "@swc/helpers": ["@swc/helpers@0.5.15", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="],
 

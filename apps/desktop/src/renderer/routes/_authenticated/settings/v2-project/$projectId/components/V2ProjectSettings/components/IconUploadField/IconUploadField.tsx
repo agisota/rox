@@ -4,8 +4,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
 import { useCallback, useRef, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { LuImagePlus, LuTrash2, LuUpload } from "react-icons/lu";

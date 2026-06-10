@@ -1,22 +1,23 @@
-import { chatServiceTrpc } from "@superset/chat/client";
-import { Badge } from "@superset/ui/badge";
-import { Button } from "@superset/ui/button";
+import { chatServiceTrpc } from "@rox/chat/client";
+import { Badge } from "@rox/ui/badge";
+import { Button } from "@rox/ui/button";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@superset/ui/collapsible";
-import { claudeIcon } from "@superset/ui/icons/preset-icons";
-import { Input } from "@superset/ui/input";
-import { Label } from "@superset/ui/label";
-import { toast } from "@superset/ui/sonner";
-import { Textarea } from "@superset/ui/textarea";
+} from "@rox/ui/collapsible";
+import { claudeIcon } from "@rox/ui/icons/preset-icons";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { toast } from "@rox/ui/sonner";
+import { Textarea } from "@rox/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
 import { HiChevronDown } from "react-icons/hi2";
 import { AnthropicOAuthDialog } from "renderer/components/Chat/ChatInterface/components/ModelPicker/components/AnthropicOAuthDialog";
 import { OpenAIOAuthDialog } from "renderer/components/Chat/ChatInterface/components/ModelPicker/components/OpenAIOAuthDialog";
 import { useAnthropicOAuth } from "renderer/components/Chat/ChatInterface/components/ModelPicker/hooks/useAnthropicOAuth";
 import { useOpenAIOAuth } from "renderer/components/Chat/ChatInterface/components/ModelPicker/hooks/useOpenAIOAuth";
+import { env } from "renderer/env.renderer";
 import {
 	isItemVisible,
 	SETTING_ITEM_ID,
@@ -240,6 +241,29 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 				</div>
 
 				<div className="space-y-8">
+					{env.LOCAL_ONLY_AUTH ? (
+						<SettingsSection
+							title="Superset"
+							description="Default local-only model for this development build."
+							action={<Badge variant="default">Active</Badge>}
+						>
+							<div className="grid gap-3 sm:grid-cols-3">
+								<div>
+									<p className="text-xs text-muted-foreground">Endpoint</p>
+									<p className="font-mono text-sm">https://api.rox.one/v1</p>
+								</div>
+								<div>
+									<p className="text-xs text-muted-foreground">Model</p>
+									<p className="font-mono text-sm">r1</p>
+								</div>
+								<div>
+									<p className="text-xs text-muted-foreground">Credential</p>
+									<p className="font-mono text-sm">ROX_API_KEY</p>
+								</div>
+							</div>
+						</SettingsSection>
+					) : null}
+
 					{showAnthropic ? (
 						<SettingsSection
 							title="Anthropic"

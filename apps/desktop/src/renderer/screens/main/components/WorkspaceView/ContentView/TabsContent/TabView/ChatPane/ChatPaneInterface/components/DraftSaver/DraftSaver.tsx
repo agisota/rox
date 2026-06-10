@@ -1,4 +1,4 @@
-import { usePromptInputController } from "@superset/ui/ai-elements/prompt-input";
+import { usePromptInputController } from "@rox/ui/ai-elements/prompt-input";
 import type React from "react";
 import { useEffect, useRef } from "react";
 import { useTabsStore } from "renderer/stores/tabs/store";

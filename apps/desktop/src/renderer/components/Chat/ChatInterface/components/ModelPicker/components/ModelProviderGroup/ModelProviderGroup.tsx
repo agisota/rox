@@ -3,8 +3,8 @@ import {
 	ModelSelectorItem,
 	ModelSelectorLogo,
 	ModelSelectorName,
-} from "@superset/ui/ai-elements/model-selector";
-import { claudeIcon } from "@superset/ui/icons/preset-icons";
+} from "@rox/ui/ai-elements/model-selector";
+import { claudeIcon } from "@rox/ui/icons/preset-icons";
 import type { ModelOption } from "../../../../types";
 import {
 	ANTHROPIC_LOGO_PROVIDER,

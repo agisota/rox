@@ -1,6 +1,6 @@
-import { Button } from "@superset/ui/button";
-import { Input } from "@superset/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@superset/ui/tooltip";
+import { Button } from "@rox/ui/button";
+import { Input } from "@rox/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	LuChevronsDownUp,

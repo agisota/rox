@@ -1,6 +1,6 @@
 import "highlight.js/styles/github-dark.css";
 
-import { cn } from "@superset/ui/utils";
+import { cn } from "@rox/ui/utils";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { type MutableRefObject, useEffect, useRef } from "react";

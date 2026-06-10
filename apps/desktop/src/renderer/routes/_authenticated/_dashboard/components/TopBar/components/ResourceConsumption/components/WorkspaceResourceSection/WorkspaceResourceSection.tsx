@@ -1,4 +1,4 @@
-import { cn } from "@superset/ui/lib/utils";
+import { cn } from "@rox/ui/lib/utils";
 import { HiOutlineChevronDown, HiOutlineChevronRight } from "react-icons/hi2";
 import type { SortOption, WorkspaceMetrics } from "../../types";
 import { formatCpu, formatMemory } from "../../utils/formatters";

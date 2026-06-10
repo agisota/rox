@@ -3,7 +3,7 @@ import {
 	type SupersetWorkflowState,
 	validateGraph,
 	type WorkflowIssue,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { TRPCError } from "@trpc/server";
 
 /** The four mutually-exclusive ways a skill version can be implemented. */

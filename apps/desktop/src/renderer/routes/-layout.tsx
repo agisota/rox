@@ -1,4 +1,4 @@
-import { Alerter } from "@superset/ui/atoms/Alert";
+import { Alerter } from "@rox/ui/atoms/Alert";
 import type { ReactNode } from "react";
 import { PostHogSurfaceTagger } from "renderer/components/PostHogSurfaceTagger";
 import { PostHogUserIdentifier } from "renderer/components/PostHogUserIdentifier";

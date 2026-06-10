@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { ExecutionCircuitSpec } from "@superset/shared/execution-circuit";
+import type { ExecutionCircuitSpec } from "@rox/shared/execution-circuit";
 import {
 	getExecutionCircuitPanelSmokeState,
 	getLatestRunsByTransition,

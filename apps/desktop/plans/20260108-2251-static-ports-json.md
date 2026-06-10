@@ -44,7 +44,7 @@ None remaining - all questions resolved in Decision Log below.
 
 ## Surprises & Discoveries
 
-- Observation: Toast import path is `@superset/ui/sonner`, not `sonner` directly
+- Observation: Toast import path is `@rox/ui/sonner`, not `sonner` directly
   Evidence: Other components in the codebase use this import path
 
 - Observation: File watching needed additional logic to handle both file and directory watching
@@ -128,7 +128,7 @@ Workspaces store their worktree path. The workspaces tRPC router (`apps/desktop/
 
 ### Toast Notifications
 
-The app uses `sonner` for toast notifications. Import `toast` from `@superset/ui/sonner` and call `toast.error("message")` to show an error toast.
+The app uses `sonner` for toast notifications. Import `toast` from `@rox/ui/sonner` and call `toast.error("message")` to show an error toast.
 
 ## Plan of Work
 
@@ -393,4 +393,4 @@ No new npm dependencies required. Uses existing:
 - `node:fs` for file operations (main process only)
 - `node:path` for path construction
 - `zod` for input validation in tRPC
-- `@superset/ui/sonner` for toast notifications (already used in app)
+- `@rox/ui/sonner` for toast notifications (already used in app)

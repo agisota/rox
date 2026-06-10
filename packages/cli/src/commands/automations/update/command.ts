@@ -1,4 +1,4 @@
-import { boolean, positional, string } from "@superset/cli-framework";
+import { boolean, positional, string } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 
 export default command({

@@ -4,7 +4,7 @@ import {
 	type SupersetVariable,
 	type SupersetWorkflowState,
 	skillCallBlockType,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import type { SimBlockState, SimWorkflowState } from "./simTypes";
 
 /** Block type used for Sim blocks Superset can't yet execute (SIM-02). */

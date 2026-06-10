@@ -1,5 +1,5 @@
 import { Memory } from "@mastra/memory";
-import type { AppRouter } from "@superset/trpc";
+import type { AppRouter } from "@rox/trpc";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { initTRPC } from "@trpc/server";
 import { createMastraCode } from "mastracode";

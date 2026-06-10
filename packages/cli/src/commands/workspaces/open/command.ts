@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { boolean, CLIError, positional } from "@superset/cli-framework";
+import { boolean, CLIError, positional } from "@rox/cli-framework";
 import { command } from "../../../lib/command";
 
 function openUrl(url: string): Promise<void> {

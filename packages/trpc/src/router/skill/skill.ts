@@ -1,4 +1,4 @@
-import { db, dbWs } from "@superset/db/client";
+import { db, dbWs } from "@rox/db/client";
 import {
 	approvalRequests,
 	skillBindings,
@@ -7,13 +7,13 @@ import {
 	workflowDeployments,
 	workflowRuns,
 	workflowVersions,
-} from "@superset/db/schema";
+} from "@rox/db/schema";
 import {
 	buildSkillNodeDefinition,
 	type JsonSchema,
 	validateGraph,
 	validateInput,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";

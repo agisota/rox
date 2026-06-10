@@ -35,7 +35,7 @@ export function LocalHostServiceProvider({
 	const { mutate: startHostService } =
 		electronTrpc.hostServiceCoordinator.start.useMutation();
 
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const activeOrganizationId = env.LOCAL_ONLY_AUTH
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
 
@@ -45,7 +45,10 @@ export function LocalHostServiceProvider({
 	);
 
 	const organizationIds = useMemo(
-		() => organizations?.map((organization) => organization.id) ?? [],
+		() =>
+			env.LOCAL_ONLY_AUTH
+				? [MOCK_ORG_ID]
+				: (organizations?.map((organization) => organization.id) ?? []),
 		[organizations],
 	);
 

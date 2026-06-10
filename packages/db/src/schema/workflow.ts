@@ -25,7 +25,7 @@ import type {
 	SupersetWorkflowState,
 	WorkflowRunError,
 	WorkflowValidationResult,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { sql } from "drizzle-orm";
 import {
 	boolean,

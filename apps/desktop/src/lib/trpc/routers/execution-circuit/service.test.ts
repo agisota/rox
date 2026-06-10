@@ -3,8 +3,8 @@ import type {
 	SelectExecutionCircuit,
 	SelectExperienceTraceEvent,
 	SelectTransitionRun,
-} from "@superset/local-db";
-import type { ExecutionCircuitSpec } from "@superset/shared/execution-circuit";
+} from "@rox/local-db";
+import type { ExecutionCircuitSpec } from "@rox/shared/execution-circuit";
 import {
 	createExecutionCircuitService,
 	ExecutionCircuitServiceError,

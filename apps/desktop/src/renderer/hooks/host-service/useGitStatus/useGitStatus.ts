@@ -1,7 +1,7 @@
 import {
 	type GitChangedPayload,
 	workspaceTrpc,
-} from "@superset/workspace-client";
+} from "@rox/workspace-client";
 import { useCallback } from "react";
 import { useWorkspaceEvent } from "../useWorkspaceEvent";
 

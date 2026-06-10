@@ -13,12 +13,12 @@ import {
 	LocalGitCredentialProvider,
 	LocalModelProvider,
 	PskHostAuthProvider,
-} from "@superset/host-service";
+} from "@rox/host-service";
 import {
 	initTerminalBaseEnv,
 	resolveTerminalBaseEnv,
-} from "@superset/host-service/terminal-env";
-import { connectRelay } from "@superset/host-service/tunnel";
+} from "@rox/host-service/terminal-env";
+import { connectRelay } from "@rox/host-service/tunnel";
 import { loadToken } from "lib/trpc/routers/auth/utils/auth-functions";
 import { writeManifest } from "main/lib/host-service-manifest";
 import { env } from "./env";

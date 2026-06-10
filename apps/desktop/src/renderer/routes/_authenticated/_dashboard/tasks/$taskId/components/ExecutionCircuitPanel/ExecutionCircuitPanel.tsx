@@ -1,10 +1,10 @@
 import {
 	computeMonadCompleteness,
 	type ExecutionCircuitSpec,
-} from "@superset/shared/execution-circuit";
-import { Badge } from "@superset/ui/badge";
-import { Button } from "@superset/ui/button";
-import { Separator } from "@superset/ui/separator";
+} from "@rox/shared/execution-circuit";
+import { Badge } from "@rox/ui/badge";
+import { Button } from "@rox/ui/button";
+import { Separator } from "@rox/ui/separator";
 import { useEffect, useMemo, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import {

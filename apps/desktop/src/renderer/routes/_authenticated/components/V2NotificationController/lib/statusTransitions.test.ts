@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { AgentLifecyclePayload } from "@superset/workspace-client";
+import type { AgentLifecyclePayload } from "@rox/workspace-client";
 import { resolveV2AgentStatusTransition } from "./statusTransitions";
 
 const WORKSPACE_ID = "workspace-1";

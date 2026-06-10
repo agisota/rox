@@ -9,23 +9,37 @@
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod/v4";
 
+function isTruthyEnv(value: string | undefined): boolean {
+	return value === "1" || value === "true";
+}
+
+const skipEnvValidation =
+	process.env.NODE_ENV === "development" &&
+	isTruthyEnv(process.env.SKIP_ENV_VALIDATION);
+const localOnlyAuth =
+	skipEnvValidation || isTruthyEnv(process.env.LOCAL_ONLY_AUTH);
+
 export const env = createEnv({
 	server: {
 		NODE_ENV: z
 			.enum(["development", "production", "test"])
 			.default("development"),
-		NEXT_PUBLIC_API_URL: z.url().default("https://api.superset.sh"),
-		NEXT_PUBLIC_STREAMS_URL: z.url().default("https://streams.superset.sh"),
+		LOCAL_ONLY_AUTH: z.boolean().default(false),
+		// Confirmed rox domains
+		NEXT_PUBLIC_API_URL: z.url().default("https://api.rox.one"),
+		NEXT_PUBLIC_WEB_URL: z.url().default("https://app.rox.one"),
+		// TODO(rox): confirm these subdomains exist / are deployed
+		NEXT_PUBLIC_STREAMS_URL: z.url().default("https://streams.rox.one"),
 		NEXT_PUBLIC_ELECTRIC_URL: z
 			.url()
 			.default("https://electric-proxy.avi-6ac.workers.dev"),
-		NEXT_PUBLIC_WEB_URL: z.url().default("https://app.superset.sh"),
-		NEXT_PUBLIC_MARKETING_URL: z.url().default("https://superset.sh"),
+		NEXT_PUBLIC_MARKETING_URL: z.url().default("https://rox.one"),
 		NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
 		NEXT_PUBLIC_POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
 		SENTRY_DSN_DESKTOP: z.string().optional(),
-		STREAMS_URL: z.url().default("https://superset-stream.fly.dev"),
-		RELAY_URL: z.url().default("https://relay.superset.sh"),
+		// TODO(rox): confirm streams/relay backends are deployed under rox.one
+		STREAMS_URL: z.url().default("https://streams.rox.one"),
+		RELAY_URL: z.url().default("https://relay.rox.one"),
 	},
 
 	runtimeEnv: {
@@ -33,6 +47,7 @@ export const env = createEnv({
 		// Explicitly list env vars so Vite can replace them at build time
 		// (spreading process.env only works at runtime, not for bundled apps)
 		NODE_ENV: process.env.NODE_ENV,
+		LOCAL_ONLY_AUTH: localOnlyAuth,
 		NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
 		NEXT_PUBLIC_STREAMS_URL: process.env.NEXT_PUBLIC_STREAMS_URL,
 		NEXT_PUBLIC_ELECTRIC_URL: process.env.NEXT_PUBLIC_ELECTRIC_URL,
@@ -46,8 +61,7 @@ export const env = createEnv({
 	},
 	emptyStringAsUndefined: true,
 	// Only allow skipping validation in development (never in production)
-	skipValidation:
-		process.env.NODE_ENV === "development" && !!process.env.SKIP_ENV_VALIDATION,
+	skipValidation: skipEnvValidation,
 
 	// Main process runs in trusted Node.js environment
 	isServer: true,

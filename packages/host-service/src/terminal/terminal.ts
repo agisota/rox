@@ -7,12 +7,12 @@ import {
 	SHELLS_WITH_READY_MARKER,
 	type ShellReadyScanState,
 	scanForShellReady,
-} from "@superset/shared/shell-ready-scanner";
+} from "@rox/shared/shell-ready-scanner";
 import {
 	createTerminalTitleScanState,
 	scanForTerminalTitle,
 	type TerminalTitleScanState,
-} from "@superset/shared/terminal-title-scanner";
+} from "@rox/shared/terminal-title-scanner";
 import { and, eq, ne } from "drizzle-orm";
 import type { Hono } from "hono";
 import { isProcessAlive, readPtyDaemonManifest } from "../daemon/manifest.ts";
@@ -188,7 +188,7 @@ type TerminalSocket = {
 
 // ---------------------------------------------------------------------------
 // OSC 133 shell readiness detection (FinalTerm semantic prompt standard).
-// Scanner logic lives in @superset/shared/shell-ready-scanner.
+// Scanner logic lives in @rox/shared/shell-ready-scanner.
 // ---------------------------------------------------------------------------
 
 /** Flush partial OSC 133;A prefix bytes the scanner is holding if a full marker never arrives. */

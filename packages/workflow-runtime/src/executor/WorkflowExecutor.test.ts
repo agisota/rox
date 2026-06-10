@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type {
 	JsonSchema,
 	SupersetWorkflowState,
-} from "@superset/workflow-core";
+} from "@rox/workflow-core";
 import { InMemoryRunRecorder } from "./InMemoryRunRecorder";
 import type { BlockHandler, ExecuteOptions } from "./types";
 import { WorkflowExecutor } from "./WorkflowExecutor";

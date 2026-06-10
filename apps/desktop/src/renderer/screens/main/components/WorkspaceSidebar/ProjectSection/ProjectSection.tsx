@@ -1,5 +1,5 @@
-import { toast } from "@superset/ui/sonner";
-import { cn } from "@superset/ui/utils";
+import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";

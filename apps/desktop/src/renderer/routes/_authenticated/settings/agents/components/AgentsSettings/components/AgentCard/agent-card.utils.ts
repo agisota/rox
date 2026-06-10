@@ -4,7 +4,7 @@ import {
 	type ResolvedAgentConfig,
 	renderTaskPromptTemplate,
 	validateTaskPromptTemplate,
-} from "@superset/shared/agent-settings";
+} from "@rox/shared/agent-settings";
 import type { AgentEditableField } from "./agent-card.types";
 
 const SAMPLE_TASK = {

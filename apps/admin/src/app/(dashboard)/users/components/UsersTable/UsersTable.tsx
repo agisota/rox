@@ -1,6 +1,6 @@
 "use client";
 
-import { getInitials } from "@superset/shared/names";
+import { getInitials } from "@rox/shared/names";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -10,23 +10,23 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@superset/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@superset/ui/avatar";
-import { Button } from "@superset/ui/button";
+} from "@rox/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
+import { Button } from "@rox/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@superset/ui/card";
+} from "@rox/ui/card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@superset/ui/dropdown-menu";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dropdown-menu";
+import { toast } from "@rox/ui/sonner";
 import {
 	Table,
 	TableBody,
@@ -34,7 +34,7 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@superset/ui/table";
+} from "@rox/ui/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
