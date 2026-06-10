@@ -27,7 +27,7 @@ export function LinksSettings({ visibleItems }: LinksSettingsProps) {
 	const handleFileChange = useCallback(
 		(next: LinkTierMap) => {
 			setFileLinks(next);
-			toast.success("Changes saved");
+			toast.success("Изменения сохранены");
 		},
 		[setFileLinks],
 	);
@@ -35,7 +35,7 @@ export function LinksSettings({ visibleItems }: LinksSettingsProps) {
 	const handleUrlChange = useCallback(
 		(next: LinkTierMap) => {
 			setUrlLinks(next);
-			toast.success("Changes saved");
+			toast.success("Изменения сохранены");
 		},
 		[setUrlLinks],
 	);
@@ -43,7 +43,7 @@ export function LinksSettings({ visibleItems }: LinksSettingsProps) {
 	const handleSidebarChange = useCallback(
 		(next: LinkTierMap) => {
 			setSidebarFileLinks(next);
-			toast.success("Changes saved");
+			toast.success("Изменения сохранены");
 		},
 		[setSidebarFileLinks],
 	);
@@ -51,18 +51,19 @@ export function LinksSettings({ visibleItems }: LinksSettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Links</h2>
+				<h2 className="text-xl font-semibold">Ссылки</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Control what each click — plain or with a modifier — does to a file or
-					URL. Each row binds one modifier combination to an action.
+					Настройте, что делает каждый клик по файлу или URL — обычный или с
+					модификатором. Каждая строка связывает сочетание модификаторов с
+					действием.
 				</p>
 			</div>
 
 			<div className="space-y-6">
 				{showSidebar && (
 					<LinkTierMapper
-						title="Sidebar file rows"
-						description="Applies to the file tree, changes list, diff header, and port badges."
+						title="Строки файлов в боковой панели"
+						description="Применяется к дереву файлов, списку изменений, заголовку diff и бейджам портов."
 						value={preferences.sidebarFileLinks}
 						onChange={handleSidebarChange}
 						idPrefix="links-sidebar-file"
@@ -72,8 +73,8 @@ export function LinksSettings({ visibleItems }: LinksSettingsProps) {
 
 				{showFile && (
 					<LinkTierMapper
-						title="File links"
-						description="Applies to file paths in terminals, chat tool calls, and task markdown."
+						title="Ссылки на файлы"
+						description="Применяется к путям файлов в терминалах, вызовах инструментов чата и Markdown задач."
 						value={preferences.fileLinks}
 						onChange={handleFileChange}
 						idPrefix="links-file"
@@ -83,8 +84,8 @@ export function LinksSettings({ visibleItems }: LinksSettingsProps) {
 
 				{showUrl && (
 					<LinkTierMapper
-						title="URL links"
-						description="Applies to URLs in terminals, chat messages, and task browsers."
+						title="URL-ссылки"
+						description="Применяется к URL в терминалах, сообщениях чата и браузерах задач."
 						value={preferences.urlLinks}
 						onChange={handleUrlChange}
 						idPrefix="links-url"

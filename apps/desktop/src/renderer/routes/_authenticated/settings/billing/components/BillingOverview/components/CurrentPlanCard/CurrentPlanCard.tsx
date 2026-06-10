@@ -1,5 +1,6 @@
 import { Button } from "@rox/ui/button";
 import { format } from "date-fns";
+import { ru } from "date-fns/locale/ru";
 import { PLANS, type PlanTier } from "../../../../constants";
 
 interface CurrentPlanCardProps {
@@ -12,6 +13,21 @@ interface CurrentPlanCardProps {
 	periodEnd?: Date | null;
 }
 
+const PLAN_DISPLAY: Record<PlanTier, { name: string; description: string }> = {
+	free: {
+		name: "Бесплатный",
+		description: "Для тех, кто начинает работать самостоятельно",
+	},
+	pro: {
+		name: "Pro",
+		description: "Для команд, которым нужно больше возможностей",
+	},
+	enterprise: {
+		name: "Enterprise",
+		description: "Для организаций с расширенными потребностями",
+	},
+};
+
 export function CurrentPlanCard({
 	currentPlan,
 	onCancel,
@@ -22,24 +38,27 @@ export function CurrentPlanCard({
 	periodEnd,
 }: CurrentPlanCardProps) {
 	const plan = PLANS[currentPlan];
+	const planDisplay = PLAN_DISPLAY[currentPlan];
 	const isPaidPlan = currentPlan !== "free";
 	const isEnterprise = currentPlan === "enterprise";
 	const isCancelingAtPeriodEnd = isPaidPlan && !isEnterprise && !!cancelAt;
 
 	const hint =
 		isCancelingAtPeriodEnd && cancelAt
-			? `Cancels ${format(new Date(cancelAt), "MMMM d, yyyy")} — downgrades to Free at the end of the billing period.`
+			? `Отменяется ${format(new Date(cancelAt), "d MMMM yyyy", { locale: ru })} — в конце расчетного периода тариф сменится на «Бесплатный».`
 			: isEnterprise
-				? "Managed by your organization admin."
+				? "Управляется администратором вашей организации."
 				: isPaidPlan && periodEnd
-					? `Renews ${format(new Date(periodEnd), "MMMM d, yyyy")}.`
-					: `${plan.description}.`;
+					? `Продлевается ${format(new Date(periodEnd), "d MMMM yyyy", { locale: ru })}.`
+					: `${planDisplay.description}.`;
 
 	return (
 		<div className="flex items-center justify-between gap-8 py-3">
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium">{plan.name} plan</span>
+					<span className="text-sm font-medium">
+						Тариф «{planDisplay.name}»
+					</span>
 					{isPaidPlan && (
 						<span className="inline-flex items-center rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background">
 							{plan.name}
@@ -58,7 +77,7 @@ export function CurrentPlanCard({
 							disabled={isRestoring}
 							className="text-primary"
 						>
-							{isRestoring ? "Restoring..." : "Restore plan"}
+							{isRestoring ? "Восстановление..." : "Восстановить тариф"}
 						</Button>
 					) : (
 						<Button
@@ -68,7 +87,7 @@ export function CurrentPlanCard({
 							disabled={isCanceling}
 							className="text-muted-foreground hover:text-destructive"
 						>
-							{isCanceling ? "Canceling..." : "Cancel plan"}
+							{isCanceling ? "Отмена..." : "Отменить тариф"}
 						</Button>
 					)}
 				</div>

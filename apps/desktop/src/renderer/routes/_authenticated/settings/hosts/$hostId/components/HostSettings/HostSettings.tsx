@@ -94,7 +94,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 					usersHostsId: `${row.userId}:${row.hostId}`,
 					userId: row.userId,
 					role: row.role as "owner" | "member",
-					name: u?.name ?? "Unknown user",
+					name: u?.name ?? "Неизвестный пользователь",
 					email: u?.email ?? "",
 				};
 			})
@@ -112,7 +112,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				const u = userMap.get(m.userId);
 				return {
 					userId: m.userId,
-					name: u?.name ?? "Unknown user",
+					name: u?.name ?? "Неизвестный пользователь",
 					email: u?.email ?? "",
 				};
 			})
@@ -131,7 +131,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 		if (!hostReady) return null;
 		return (
 			<div className="p-6 text-sm text-muted-foreground select-text cursor-text">
-				Host not found in this organization.
+				Хост не найден в этой организации.
 			</div>
 		);
 	}
@@ -143,21 +143,21 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				userId: candidate.userId,
 				organizationId: host.organizationId,
 			}),
-			"Member added",
+			"Участник добавлен",
 		);
 	};
 
 	const handleRemove = (member: MemberRowData) => {
 		notifyOnPersist(
 			actions.v2UsersHosts.removeMember(member.usersHostsId),
-			"Member removed",
+			"Участник удален",
 		);
 	};
 
 	const handleSetRole = (member: MemberRowData, role: "owner" | "member") => {
 		notifyOnPersist(
 			actions.v2UsersHosts.setMemberRole(member.usersHostsId, role),
-			"Role updated",
+			"Роль обновлена",
 		);
 	};
 
@@ -192,10 +192,10 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				<section className="space-y-3">
 					<div className="flex items-end justify-between gap-4">
 						<div>
-							<h3 className="text-sm font-medium">Members</h3>
+							<h3 className="text-sm font-medium">Участники</h3>
 							{!isOwner && (
 								<p className="text-sm text-muted-foreground mt-0.5">
-									Only owners can change membership.
+									Только владельцы могут менять состав участников.
 								</p>
 							)}
 						</div>

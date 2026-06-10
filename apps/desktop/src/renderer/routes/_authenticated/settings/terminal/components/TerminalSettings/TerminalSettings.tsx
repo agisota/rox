@@ -68,9 +68,9 @@ export function TerminalSettings({
 	return (
 		<div className="p-6 max-w-6xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Terminal</h2>
+				<h2 className="text-xl font-semibold">Терминал</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Configure terminal behavior and presets
+					Настройте поведение терминала и пресеты
 				</p>
 			</div>
 

@@ -45,7 +45,7 @@ export function AuditGradeRing({ score }: AuditGradeRingProps) {
 				style={{ transform: "rotate(-90deg)" }}
 				aria-hidden
 			>
-				<title>{`Audit score ${Math.round(score)} of 100, grade ${grade}`}</title>
+				<title>{`Оценка аудита ${Math.round(score)} из 100, уровень ${grade}`}</title>
 				{/* Track ring */}
 				<circle
 					cx={SIZE / 2}

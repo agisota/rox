@@ -80,7 +80,7 @@ export function AgentDetail({
 			if (!activeHostUrl) {
 				throw new Error(
 					getHostServiceUnavailableMessage(hostService, {
-						action: "save the agent",
+						action: "сохранить агента",
 					}),
 				);
 			}
@@ -90,7 +90,7 @@ export function AgentDetail({
 		},
 		onSuccess: (updated) => onChanged(updated),
 		onError: (err) =>
-			toast.error(err instanceof Error ? err.message : "Failed to save"),
+			toast.error(err instanceof Error ? err.message : "Не удалось сохранить"),
 	});
 
 	const removeMutation = useMutation({
@@ -98,7 +98,7 @@ export function AgentDetail({
 			if (!activeHostUrl) {
 				throw new Error(
 					getHostServiceUnavailableMessage(hostService, {
-						action: "remove the agent",
+						action: "удалить агента",
 					}),
 				);
 			}
@@ -108,7 +108,7 @@ export function AgentDetail({
 		},
 		onSuccess: () => onDeleted(),
 		onError: (err) =>
-			toast.error(err instanceof Error ? err.message : "Failed to remove"),
+			toast.error(err instanceof Error ? err.message : "Не удалось удалить"),
 	});
 
 	const handleLabelBlur = () => {
@@ -121,7 +121,7 @@ export function AgentDetail({
 		const patch = parseAgentCommandText(commandText);
 		const { command } = patch;
 		if (command.length === 0) {
-			toast.error("Command cannot be empty");
+			toast.error("Команда не может быть пустой");
 			setCommandText(getAgentCommandText(config));
 			return;
 		}
@@ -163,7 +163,7 @@ export function AgentDetail({
 			</div>
 
 			<div className="space-y-6">
-				<Section title="Label">
+				<Section title="Название">
 					<Input
 						id={`label-${config.id}`}
 						value={label}
@@ -172,10 +172,10 @@ export function AgentDetail({
 					/>
 				</Section>
 
-				<Section title="Launch">
+				<Section title="Запуск">
 					<StackedField
-						label="Command"
-						hint="Argv used to launch the agent."
+						label="Команда"
+						hint="Argv, используемый для запуска агента."
 						htmlFor={`command-${config.id}`}
 					>
 						<Input
@@ -189,11 +189,11 @@ export function AgentDetail({
 					</StackedField>
 
 					<StackedField
-						label="Prompt-only args"
+						label="Аргументы только для промпта"
 						hint={
 							<>
-								Added only when launching with a prompt — e.g. <code>--</code>,{" "}
-								<code>--prompt</code>, <code>-i</code>.
+								Добавляются только при запуске с промптом — например{" "}
+								<code>--</code>, <code>--prompt</code>, <code>-i</code>.
 							</>
 						}
 						htmlFor={`prompt-args-${config.id}`}
@@ -209,8 +209,8 @@ export function AgentDetail({
 					</StackedField>
 
 					<StackedField
-						label="Prompt transport"
-						hint="How the prompt is delivered to the process."
+						label="Доставка промпта"
+						hint="Как промпт передается процессу."
 					>
 						<div className="inline-flex rounded-md border border-border overflow-hidden">
 							<button
@@ -244,9 +244,9 @@ export function AgentDetail({
 				<div className="pt-2 border-t border-border">
 					<div className="flex items-center justify-between gap-8">
 						<div className="min-w-0 flex-1">
-							<div className="text-sm font-medium">Delete agent</div>
+							<div className="text-sm font-medium">Удалить агента</div>
 							<p className="text-sm text-muted-foreground mt-0.5">
-								Removes this agent from this device only.
+								Удаляет этого агента только с этого устройства.
 							</p>
 						</div>
 						<Button
@@ -257,7 +257,7 @@ export function AgentDetail({
 							className="shrink-0 gap-1.5"
 						>
 							<Trash2 className="size-3.5" />
-							Delete
+							Удалить
 						</Button>
 					</div>
 				</div>

@@ -24,10 +24,12 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
 			await authClient.organization.cancelInvitation({
 				invitationId: invitation.id,
 			});
-			toast.success("Invitation canceled");
+			toast.success("Приглашение отменено");
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to cancel invitation",
+				error instanceof Error
+					? error.message
+					: "Не удалось отменить приглашение",
 			);
 		} finally {
 			setIsCanceling(false);
@@ -48,7 +50,7 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
 					className="text-destructive gap-2"
 				>
 					<HiOutlineXMark className="h-4 w-4" />
-					Cancel
+					Отмена
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

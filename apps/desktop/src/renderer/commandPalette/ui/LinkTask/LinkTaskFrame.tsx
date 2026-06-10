@@ -36,6 +36,14 @@ const PRIORITY_ORDER: Record<string, number> = {
 	none: 4,
 };
 
+const STATUS_LABELS: Record<StatusType, string> = {
+	started: "В работе",
+	unstarted: "К выполнению",
+	backlog: "В бэклоге",
+	completed: "Готово",
+	canceled: "Отменено",
+};
+
 interface LinkTaskFrameProps {
 	workspaceId: string;
 }
@@ -127,15 +135,15 @@ export function LinkTaskFrame({ workspaceId }: LinkTaskFrameProps) {
 
 	const handleSelect = (taskId: string, slug: string) => {
 		v2Workspaces.updateWorkspace(workspaceId, { taskId });
-		toast.success(`Linked ${slug} to workspace`);
+		toast.success(`Задача ${slug} связана с рабочей областью`);
 		setOpen(false);
 	};
 
 	return (
 		<CommandList className="max-h-[400px]">
-			<CommandEmpty>No tasks found.</CommandEmpty>
+			<CommandEmpty>Задачи не найдены.</CommandEmpty>
 			{filtered.length > 0 && (
-				<CommandGroup heading={deferredQuery ? "Results" : "Tasks"}>
+				<CommandGroup heading={deferredQuery ? "Результаты" : "Задачи"}>
 					{filtered.map((task) => {
 						const status = task.statusId
 							? statusMap.get(task.statusId)
@@ -167,7 +175,7 @@ export function LinkTaskFrame({ workspaceId }: LinkTaskFrameProps) {
 										{status ? (
 											<>
 												<span aria-hidden>·</span>
-												<span className="capitalize">{status.type}</span>
+												<span>{STATUS_LABELS[status.type]}</span>
 											</>
 										) : null}
 									</span>

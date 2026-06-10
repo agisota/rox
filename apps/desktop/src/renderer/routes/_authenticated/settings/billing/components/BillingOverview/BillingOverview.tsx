@@ -124,7 +124,7 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 			await authClient.subscription.restore({
 				referenceId: activeOrgId,
 			});
-			toast.success("Plan restored");
+			toast.success("Тариф восстановлен");
 		} finally {
 			setIsRestoring(false);
 		}
@@ -134,21 +134,21 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8 flex items-start justify-between gap-4">
 				<div>
-					<h2 className="text-xl font-semibold">Billing</h2>
+					<h2 className="text-xl font-semibold">Оплата</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						For questions about billing,{" "}
+						По вопросам оплаты{" "}
 						<a
 							href="mailto:founders@rox.one"
 							className="text-primary hover:underline"
 						>
-							contact us
+							напишите нам
 						</a>
 						.
 					</p>
 				</div>
 				<Button variant="ghost" size="sm" asChild>
 					<Link to="/settings/billing/plans">
-						All plans
+						Все тарифы
 						<HiArrowRight className="h-3 w-3" />
 					</Link>
 				</Button>
@@ -157,7 +157,7 @@ export function BillingOverview({ visibleItems }: BillingOverviewProps) {
 			<div className="space-y-6">
 				{showOverview && (
 					<div>
-						<h3 className="text-sm font-medium mb-2">Plan</h3>
+						<h3 className="text-sm font-medium mb-2">Тариф</h3>
 						<div className="divide-y divide-border">
 							<CurrentPlanCard
 								currentPlan={plan}

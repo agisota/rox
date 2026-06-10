@@ -59,7 +59,7 @@ function OnboardingProjectPage() {
 			await refetchSession({ query: { disableCookieCache: true } });
 		} catch (error) {
 			console.error("[onboarding] completeOnboarding failed", error);
-			toast.error("Could not finish onboarding. Please try again.");
+			toast.error("Не удалось завершить запуск. Попробуйте ещё раз.");
 			return;
 		}
 		// Land on the dashboard first, then open the modal. Opening it in the same
@@ -93,7 +93,9 @@ function OnboardingProjectPage() {
 			await finish(created.projectId);
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to clone repository",
+				err instanceof Error
+					? err.message
+					: "Не удалось клонировать репозиторий",
 			);
 		} finally {
 			setBusy(false);
@@ -110,9 +112,9 @@ function OnboardingProjectPage() {
 				<Card className="flex-row items-center gap-4 p-5">
 					<ProjectIcon icon={<LuFolderOpen className="size-4.5" />} />
 					<div className="min-w-0 flex-1">
-						<p className="text-sm font-medium text-foreground">Open a folder</p>
+						<p className="text-sm font-medium text-foreground">Открыть папку</p>
 						<p className="text-xs text-muted-foreground">
-							Choose any local directory, git repo or not.
+							Выберите любую локальную папку, с git-репозиторием или без.
 						</p>
 					</div>
 					<motion.div whileTap={shouldAnimate ? { scale: 0.97 } : undefined}>
@@ -122,7 +124,7 @@ function OnboardingProjectPage() {
 							onClick={handleOpenFolder}
 							disabled={!hostReady || busy}
 						>
-							{hostReady ? "Browse…" : "Connecting…"}
+							{hostReady ? "Выбрать…" : "Подключение…"}
 						</Button>
 					</motion.div>
 				</Card>
@@ -134,10 +136,10 @@ function OnboardingProjectPage() {
 						<ProjectIcon icon={<LuGitBranch className="size-4.5" />} />
 						<div className="min-w-0 flex-1">
 							<p className="text-sm font-medium text-foreground">
-								Clone a repo
+								Клонировать репозиторий
 							</p>
 							<p className="text-xs text-muted-foreground">
-								Paste an HTTPS or SSH URL.
+								Вставьте HTTPS или SSH URL.
 							</p>
 						</div>
 					</div>
@@ -155,7 +157,7 @@ function OnboardingProjectPage() {
 								type="submit"
 								disabled={!url.trim() || busy || !hostReady || !cloneTargetDir}
 							>
-								{busy ? "Cloning…" : "Clone"}
+								{busy ? "Клонирование…" : "Клонировать"}
 							</Button>
 						</motion.div>
 					</form>

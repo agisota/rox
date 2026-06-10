@@ -26,9 +26,9 @@ export function MembersTable({
 			<Table>
 				<TableHeader>
 					<TableRow>
-						<TableHead>Name</TableHead>
-						<TableHead>Email</TableHead>
-						<TableHead className="w-32">Role</TableHead>
+						<TableHead>Имя</TableHead>
+						<TableHead>Эл. почта</TableHead>
+						<TableHead className="w-32">Роль</TableHead>
 						{isOwner && <TableHead className="w-12" />}
 					</TableRow>
 				</TableHeader>
@@ -48,7 +48,7 @@ export function MembersTable({
 								colSpan={isOwner ? 4 : 3}
 								className="text-center text-sm text-muted-foreground py-6"
 							>
-								No members yet.
+								Участников пока нет.
 							</TableCell>
 						</TableRow>
 					)}

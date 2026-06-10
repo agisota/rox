@@ -24,13 +24,13 @@ export function AgentCardPreview({
 		<>
 			<div className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3">
 				<div>
-					<p className="text-sm font-medium">Preview</p>
+					<p className="text-sm font-medium">Предпросмотр</p>
 					<p className="text-xs text-muted-foreground">
-						Check the rendered prompt and launch output before saving
+						Проверьте отрисованный промпт и результат запуска перед сохранением
 					</p>
 				</div>
 				<Button type="button" variant="outline" size="sm" onClick={onToggle}>
-					{showPreview ? "Hide Preview" : "Show Preview"}
+					{showPreview ? "Скрыть предпросмотр" : "Показать предпросмотр"}
 				</Button>
 			</div>
 
@@ -38,7 +38,7 @@ export function AgentCardPreview({
 				<div className="space-y-3 rounded-lg border bg-muted/30 p-4">
 					<div className="space-y-1">
 						<p className="text-xs font-medium text-muted-foreground">
-							Rendered Task Prompt
+							Отрисованный промпт задачи
 						</p>
 						<MarkdownRenderer
 							content={previewPrompt}
@@ -48,7 +48,7 @@ export function AgentCardPreview({
 					{preset.kind === "terminal" && (
 						<div className="space-y-1">
 							<p className="text-xs font-medium text-muted-foreground">
-								No-Prompt Launch
+								Запуск без промпта
 							</p>
 							<pre className="whitespace-pre-wrap rounded-md bg-background p-3 text-xs">
 								{previewNoPromptCommand}
@@ -57,7 +57,7 @@ export function AgentCardPreview({
 					)}
 					<div className="space-y-1">
 						<p className="text-xs font-medium text-muted-foreground">
-							{preset.kind === "terminal" ? "Task Launch" : "Chat Launch"}
+							{preset.kind === "terminal" ? "Запуск задачи" : "Запуск чата"}
 						</p>
 						<pre className="whitespace-pre-wrap rounded-md bg-background p-3 text-xs">
 							{previewTaskCommand}

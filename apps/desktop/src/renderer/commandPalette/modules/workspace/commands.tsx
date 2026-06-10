@@ -22,7 +22,7 @@ export const workspaceProvider: CommandProvider = {
 		const commands: Command[] = [
 			{
 				id: "workspace.new",
-				title: "New workspace",
+				title: "Новая рабочая область",
 				section: "workspace",
 				icon: PlusIcon,
 				hotkeyId: "NEW_WORKSPACE",
@@ -31,10 +31,10 @@ export const workspaceProvider: CommandProvider = {
 			},
 			{
 				id: "files.quickOpen",
-				title: "Search files",
+				title: "Поиск файлов",
 				section: "workspace",
 				icon: FileIcon,
-				keywords: ["file picker", "quick open"],
+				keywords: ["выбор файла", "быстро открыть"],
 				hotkeyId: "QUICK_OPEN",
 				run: () =>
 					useQuickOpenStore.getState().openFor({
@@ -43,10 +43,10 @@ export const workspaceProvider: CommandProvider = {
 			},
 			{
 				id: "workspace.linkTask",
-				title: "Link task",
+				title: "Связать задачу",
 				section: "workspace",
 				icon: LinkIcon,
-				keywords: ["issue", "linear"],
+				keywords: ["issue", "Linear"],
 				renderFrame: () => <LinkTaskFrame workspaceId={workspace.id} />,
 			},
 		];
@@ -54,10 +54,10 @@ export const workspaceProvider: CommandProvider = {
 		if (workspace.projectId) {
 			commands.push({
 				id: `workspace.removeFromSidebar:${workspace.id}`,
-				title: "Remove from sidebar",
+				title: "Убрать из боковой панели",
 				section: "workspace",
 				icon: ArchiveIcon,
-				keywords: ["hide"],
+				keywords: ["скрыть"],
 				run: () =>
 					useRemoveFromSidebarIntent.getState().request({
 						workspaceId: workspace.id,
@@ -71,10 +71,10 @@ export const workspaceProvider: CommandProvider = {
 		if (!isMain) {
 			commands.push({
 				id: `workspace.delete:${workspace.id}`,
-				title: `Delete ${workspace.name}`,
+				title: `Удалить ${workspace.name}`,
 				section: "workspace",
 				icon: Trash2Icon,
-				keywords: ["archive", "remove", "close"],
+				keywords: ["архив", "убрать", "закрыть"],
 				hotkeyId: "CLOSE_WORKSPACE",
 				run: () =>
 					useDeleteWorkspaceIntent.getState().request({

@@ -7,19 +7,55 @@ import {
 	SelectValue,
 } from "@rox/ui/select";
 import { useCallback } from "react";
-import {
-	actionLabel,
-	type LinkAction,
-	type LinkTier,
-	type LinkTierMap,
-	modifierLabel,
-	type Surface,
+import type {
+	LinkAction,
+	LinkTier,
+	LinkTierMap,
+	Surface,
 } from "renderer/lib/clickPolicy";
 
 type SlotValue = LinkAction | "none";
 
 const TIERS: LinkTier[] = ["plain", "shift", "meta", "metaShift"];
 const ACTIONS: LinkAction[] = ["pane", "newTab", "external"];
+
+const FILE_ACTION_LABELS: Record<LinkAction, string> = {
+	pane: "Открыть во вкладке",
+	newTab: "Открыть в новой вкладке",
+	external: "Открыть в редакторе",
+};
+
+const URL_ACTION_LABELS: Record<LinkAction, string> = {
+	pane: "Открыть во встроенном браузере",
+	newTab: "Открыть в новой вкладке браузера",
+	external: "Открыть в браузере по умолчанию",
+};
+
+const isMac =
+	typeof navigator !== "undefined" &&
+	navigator.platform.toLowerCase().includes("mac");
+
+const MAC_MODIFIER_LABELS: Record<LinkTier, string> = {
+	plain: "Клик",
+	shift: "⇧ клик",
+	meta: "⌘ клик",
+	metaShift: "⌘⇧ клик",
+};
+
+const NON_MAC_MODIFIER_LABELS: Record<LinkTier, string> = {
+	plain: "Клик",
+	shift: "Shift+клик",
+	meta: "Ctrl+клик",
+	metaShift: "Ctrl+Shift+клик",
+};
+
+const MODIFIER_LABELS = isMac ? MAC_MODIFIER_LABELS : NON_MAC_MODIFIER_LABELS;
+
+function localizedActionLabel(action: LinkAction, surface: Surface) {
+	return surface === "file"
+		? FILE_ACTION_LABELS[action]
+		: URL_ACTION_LABELS[action];
+}
 
 function toSlot(action: LinkAction | null): SlotValue {
 	return action ?? "none";
@@ -65,7 +101,7 @@ export function LinkTierMapper({
 					return (
 						<div key={tier} className="flex items-center justify-between gap-4">
 							<Label htmlFor={id} className="text-sm font-medium capitalize">
-								{modifierLabel(tier)}
+								{MODIFIER_LABELS[tier]}
 							</Label>
 							<Select
 								value={toSlot(value[tier])}
@@ -75,10 +111,10 @@ export function LinkTierMapper({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="none">Do nothing</SelectItem>
+									<SelectItem value="none">Ничего не делать</SelectItem>
 									{ACTIONS.map((action) => (
 										<SelectItem key={action} value={action}>
-											{actionLabel(action, surface)}
+											{localizedActionLabel(action, surface)}
 										</SelectItem>
 									))}
 								</SelectContent>
