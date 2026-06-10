@@ -20,6 +20,10 @@ export {
 	MotionFrameContext,
 	MotionFrameProvider,
 } from "./MotionFrameProvider";
+export {
+	MotionTierSwitcher,
+	type MotionTierSwitcherProps,
+} from "./MotionTierSwitcher";
 export { FadeLift, type FadeLiftProps } from "./primitives/FadeLift";
 export { PulseDot, type PulseDotProps } from "./primitives/PulseDot";
 export { TraceLine, type TraceLineProps } from "./primitives/TraceLine";

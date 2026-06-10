@@ -28,20 +28,17 @@ Everything started in the motion-frame workflow is carried to completion:
 
 ## Streams
 
-### A — Land what's started *(in progress)*
-- [ ] Merge PR #54 after its refreshed CI run confirms Sherif/Lint/Typecheck/
-      Build green (Test/Deploy reds are pre-existing on `main`, tracked in B).
-- [ ] Delete merged session branches (`claude/ci-hygiene-x4n4rv`, then
-      `claude/gracious-ptolemy-x4n4rv`).
+### A — Land what's started *(done)*
+- [x] Merge PR #54 — merged as `fbe0ba0` (PR run: 7/8 green; the Test red was
+      the pre-existing suite, resolved upstream — see B1).
+- [x] Session branches: both merged. Remote deletion is blocked by the git
+      proxy (rejects deletes); cosmetic — remove via GitHub UI if desired.
 
 ### B — Main-branch health
-- [ ] **B1** Stabilize `@rox/host-service` integration tests on CI: mass
-      timeouts ("hook timed out", "Cannot use a closed database", dangling
-      PTY processes) ending in SIGKILL — classic runner resource starvation.
-      Candidate fixes, in order of preference: serialize the suite on CI
-      (turbo concurrency / bun test concurrency), raise hook timeouts for CI,
-      split integration tests into a dedicated non-blocking job, fix the
-      tests' process/db lifecycle. Investigate before choosing.
+- [x] **B1** Resolved upstream by the green-the-gate integration (#60: #56
+      host-service test hardening + #59 electron dialog mock stubs + #17).
+      First green `main` CI run in history: `1ab1d089`
+      (run 27332886843). Watch for recurring flake; reopen if it returns.
 - [ ] **B2** Owner action (not code): set repo secrets for previews.
       Preview-critical subset (from `deploy-preview.yml`): `NEON_API_KEY`,
       `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
@@ -64,11 +61,10 @@ building without it, corrections via review).
 - [ ] **C6** Living showcase route in `apps/docs` (all tiers × both themes).
 
 ### D — Foreign branches: inventory only (no blind merges)
-- [ ] Audit the ~18 non-session branches (`claude/agents-catalog-bundle`,
-      `claude/billing-remove-paywall`, `epics/wave`, `feat/automation-fabric`,
-      `cursor/*`, …): contents, staleness vs `main`, open PR linkage; deliver a
-      table with a recommendation per branch (merge / refresh / close).
-      Merging any of them is a separate owner decision.
+- [x] Audited all 29 non-session branches — see
+      [`2026-06-11-foreign-branch-inventory.md`](./2026-06-11-foreign-branch-inventory.md):
+      11 merge-candidates, 6 closable, 7 need a rebase, 5 large epics for the
+      owner. Acting on any of them is a separate owner decision.
 
 ## Decision log
 
