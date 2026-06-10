@@ -264,6 +264,18 @@
       "type": "file"
     },
     {
+      "path": "apps/api/src/app/api/agent/[transport]/route.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781074197746,
+      "type": "file"
+    },
+    {
+      "path": "apps/api/src/app/api/v2/agent/[transport]/route.ts",
+      "accessCount": 2,
+      "lastAccessed": 1781074199643,
+      "type": "file"
+    },
+    {
       "path": "apps/desktop/electron.vite.config.ts",
       "accessCount": 1,
       "lastAccessed": 1781069046195,

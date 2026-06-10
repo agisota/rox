@@ -72,6 +72,7 @@ async function handle(req: Request): Promise<Response> {
 	});
 }
 
-export const maxDuration = 800;
+// Hobby plan caps serverless maxDuration at 300s (raise to 800 on Pro/Enterprise).
+export const maxDuration = 300;
 
 export { handle as GET, handle as POST, handle as DELETE };

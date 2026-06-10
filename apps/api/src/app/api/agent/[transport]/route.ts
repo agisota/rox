@@ -17,6 +17,7 @@ async function handleRequest(req: Request): Promise<Response> {
 	return handleMcpRequest(req, deps);
 }
 
-export const maxDuration = 800;
+// Hobby plan caps serverless maxDuration at 300s (raise to 800 on Pro/Enterprise).
+export const maxDuration = 300;
 
 export { handleRequest as GET, handleRequest as POST, handleRequest as DELETE };
