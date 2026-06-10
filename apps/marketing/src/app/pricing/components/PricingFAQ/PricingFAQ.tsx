@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { HiPlus } from "react-icons/hi2";
 import type { FAQItem } from "@/app/components/FAQSection";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import { PRICING_FAQ_ITEMS } from "../../constants";
 
 function slugify(text: string): string {
@@ -61,7 +62,7 @@ function FAQAccordionItem({
 						className="overflow-hidden"
 					>
 						<p className="pb-5 text-sm text-muted-foreground leading-relaxed pr-8">
-							{item.answer}
+							<GlossaryText text={item.answer} />
 						</p>
 					</motion.div>
 				)}
@@ -80,10 +81,10 @@ export function PricingFAQ() {
 	return (
 		<div>
 			<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-				FAQ
+				Вопросы
 			</span>
 			<h2 className="text-2xl md:text-3xl font-medium tracking-tight text-foreground mt-4 mb-8">
-				Common questions
+				Частые вопросы
 			</h2>
 			<div>
 				{PRICING_FAQ_ITEMS.map((item, index) => (

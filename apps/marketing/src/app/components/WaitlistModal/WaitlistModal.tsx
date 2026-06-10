@@ -29,7 +29,7 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
 				type="button"
 				className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-default"
 				onClick={onClose}
-				aria-label="Close modal backdrop"
+				aria-label="Закрыть модальное окно по фону"
 			/>
 
 			<div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
@@ -38,7 +38,7 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
 						type="button"
 						onClick={onClose}
 						className="absolute top-4 right-4 z-10 text-muted-foreground hover:text-foreground transition-colors"
-						aria-label="Close modal"
+						aria-label="Закрыть модальное окно"
 					>
 						<svg
 							width="24"
@@ -57,8 +57,8 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
 					</button>
 
 					<WaitlistForm
-						heading="Join the waitlist"
-						description="Get notified when Rox is available on Windows & Linux."
+						heading="Лист ожидания"
+						description="Сообщим, когда Rox будет доступен на Windows и Linux."
 					/>
 				</div>
 			</div>

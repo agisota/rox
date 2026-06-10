@@ -3,12 +3,13 @@ import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import { FaGithub } from "react-icons/fa";
 import { GridCross } from "@/app/blog/components/GridCross";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import { getChangelogEntries } from "@/lib/changelog";
 import { ChangelogEntry } from "./components/ChangelogEntry";
 
 export const metadata: Metadata = {
-	title: "Changelog",
-	description: "The latest updates, improvements, and new features in Rox.",
+	title: "Журнал изменений",
+	description: "Последние обновления, улучшения и новые возможности Rox.",
 	alternates: {
 		canonical: "/changelog",
 		types: {
@@ -16,15 +17,15 @@ export const metadata: Metadata = {
 		},
 	},
 	openGraph: {
-		title: "Changelog | Rox",
-		description: "The latest updates, improvements, and new features in Rox.",
+		title: "Журнал изменений | Rox",
+		description: "Последние обновления, улучшения и новые возможности Rox.",
 		url: "/changelog",
 		images: ["/opengraph-image"],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Changelog | Rox",
-		description: "The latest updates, improvements, and new features in Rox.",
+		title: "Журнал изменений | Rox",
+		description: "Последние обновления, улучшения и новые возможности Rox.",
 		images: ["/opengraph-image"],
 	},
 };
@@ -51,14 +52,13 @@ export default async function ChangelogPage() {
 					<GridCross className="top-0 right-0" />
 
 					<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-						Changelog
+						Журнал изменений
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						What's New
+						Что нового
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						The latest updates, improvements, and new features in Rox. Updated
-						weekly. For detailed release notes, see{" "}
+						<GlossaryText text="Последние обновления, улучшения и новые возможности Rox. Обновляем каждую неделю. Подробные заметки к релизам смотрите в " />
 						<a
 							href="https://github.com/agisota/set/releases"
 							target="_blank"
@@ -76,7 +76,7 @@ export default async function ChangelogPage() {
 						className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mt-4"
 					>
 						<FaGithub className="size-4" />
-						View releases on GitHub
+						Смотреть релизы на GitHub
 						<span aria-hidden="true">&rarr;</span>
 					</a>
 
@@ -88,7 +88,7 @@ export default async function ChangelogPage() {
 			{/* Entries section */}
 			<div className="relative max-w-3xl mx-auto px-6 py-16">
 				{entries.length === 0 ? (
-					<p className="text-muted-foreground">No updates yet.</p>
+					<p className="text-muted-foreground">Пока нет обновлений.</p>
 				) : (
 					<div className="flex flex-col gap-16">
 						{entries.map((entry) => (

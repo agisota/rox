@@ -1,12 +1,13 @@
 import { COMPANY } from "@rox/shared/constants";
 import type { Metadata } from "next";
 import { GridCross } from "@/app/blog/components/GridCross";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import { EnterpriseContactForm } from "./components/EnterpriseContactForm";
 import { EnterpriseFAQ } from "./components/EnterpriseFAQ";
 
 export const metadata: Metadata = {
-	title: "Enterprise",
-	description: `Bring ${COMPANY.NAME} to your team. Get in touch to learn more about enterprise plans and deployment options.`,
+	title: "Для компаний",
+	description: `Запустите ${COMPANY.NAME} для своей команды. Свяжитесь с нами, чтобы узнать больше о корпоративных тарифах и вариантах развёртывания.`,
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/enterprise`,
 	},
@@ -32,14 +33,13 @@ export default function EnterprisePage() {
 					<GridCross className="top-0 right-0" />
 
 					<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-						Enterprise
+						Для компаний
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Rox for your team
+						Rox для вашей команды
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						Interested in bringing Rox to your organization? Reach out and
-						we&apos;ll work with you to find the right setup for your team.
+						<GlossaryText text="Хотите запустить Rox в своей организации? Напишите нам, и мы вместе подберём подходящий запуск для вашей команды." />
 					</p>
 
 					<GridCross className="bottom-0 left-0" />

@@ -10,7 +10,11 @@ interface RightSidebarProps {
 	activeDemo: ActiveDemo;
 }
 
-const TABS = ["Files", "Changes", "Review"] as const;
+const TABS = [
+	{ key: "Files", label: "Файлы" },
+	{ key: "Changes", label: "Изменения" },
+	{ key: "Review", label: "Проверка" },
+] as const;
 
 const BRANCH_BY_DEMO: Record<ActiveDemo, string> = {
 	"Use Any Agents": "use-any-agents",
@@ -44,17 +48,17 @@ export function RightSidebar({ activeDemo }: RightSidebarProps) {
 
 			<div className="flex h-8 items-center gap-3 border-b border-border px-3">
 				{TABS.map((tab) => {
-					const active = isDiff ? tab === "Changes" : tab === "Files";
+					const active = isDiff ? tab.key === "Changes" : tab.key === "Files";
 					return (
 						<div
-							key={tab}
+							key={tab.key}
 							className={`relative flex h-8 cursor-pointer items-center text-[11px] font-medium ${
 								active
 									? "text-foreground/95"
 									: "text-muted-foreground/55 hover:text-foreground/85"
 							}`}
 						>
-							{tab}
+							{tab.label}
 							{active && (
 								<span className="absolute inset-x-0 -bottom-px h-[2px] bg-brand" />
 							)}
@@ -74,7 +78,7 @@ export function RightSidebar({ activeDemo }: RightSidebarProps) {
 					<span className="tabular-nums text-emerald-400/85">+1,128</span>
 					<span className="tabular-nums text-rose-400/75">−98</span>
 					<span className="text-muted-foreground/45">·</span>
-					<span>10 files</span>
+					<span>10 файлов</span>
 					<span className="text-muted-foreground/45">·</span>
 					<span className="flex items-center gap-1">
 						<LuArrowRight className="size-2.5" />
@@ -155,13 +159,13 @@ export function RightSidebar({ activeDemo }: RightSidebarProps) {
 							type="button"
 							className="h-7 rounded-sm bg-emerald-500/15 px-2.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/25"
 						>
-							Approve
+							Одобрить
 						</button>
 						<button
 							type="button"
 							className="h-7 rounded-sm border border-border bg-background px-2.5 text-[11px] font-medium text-foreground/80 hover:bg-foreground/[0.04]"
 						>
-							Comment
+							Комментировать
 						</button>
 					</div>
 				</motion.div>
