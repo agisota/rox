@@ -979,7 +979,7 @@ describe("parsePrUrl", () => {
 	test("parses canonical GitHub PR URL", () => {
 		expect(parsePrUrl("https://github.com/agisota/set/pull/1781")).toEqual({
 			owner: "agisota",
-			repo: "rox",
+			repo: "set",
 			number: 1781,
 		});
 	});
@@ -987,7 +987,7 @@ describe("parsePrUrl", () => {
 	test("parses GitHub URL without protocol", () => {
 		expect(parsePrUrl("github.com/agisota/set/pull/1781")).toEqual({
 			owner: "agisota",
-			repo: "rox",
+			repo: "set",
 			number: 1781,
 		});
 	});
