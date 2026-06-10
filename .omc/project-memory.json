@@ -228,6 +228,12 @@
       "type": "file"
     },
     {
+      "path": "apps/desktop/src/renderer/routes/sign-in/components/SupersetLogo/SupersetLogo.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1781083110270,
+      "type": "file"
+    },
+    {
       "path": "apps/desktop/src/shared/constants.ts",
       "accessCount": 2,
       "lastAccessed": 1781069946429,
@@ -321,12 +327,6 @@
       "path": "apps/api/src/lib/oauth-state.ts",
       "accessCount": 1,
       "lastAccessed": 1781069948305,
-      "type": "file"
-    },
-    {
-      "path": "apps/desktop/src/renderer/routes/sign-in/components/SupersetLogo/SupersetLogo.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1781069960162,
       "type": "file"
     },
     {
