@@ -1,7 +1,7 @@
-import { WebClient } from "@slack/web-api";
 import { db } from "@rox/db/client";
 import type { SlackConfig } from "@rox/db/schema";
 import { integrationConnections, members, users } from "@rox/db/schema";
+import { WebClient } from "@slack/web-api";
 import { and, eq, isNull, ne } from "drizzle-orm";
 
 import { env } from "@/env";

@@ -37,10 +37,10 @@ import { ListTasksToolCall } from "./components/ListTasksToolCall";
 import { ListWorkspacesToolCall } from "./components/ListWorkspacesToolCall";
 import { LspInspectToolCall } from "./components/LspInspectToolCall";
 import { RequestSandboxAccessToolCall } from "./components/RequestSandboxAccessToolCall";
+import { RoxToolCall } from "./components/RoxToolCall";
 import { SkillToolCall } from "./components/SkillToolCall";
 import { StartAgentSessionToolCall } from "./components/StartAgentSessionToolCall";
 import { SubagentToolCall } from "./components/SubagentToolCall";
-import { RoxToolCall } from "./components/RoxToolCall";
 import { SwitchWorkspaceToolCall } from "./components/SwitchWorkspaceToolCall";
 import { TaskWriteToolCall } from "./components/TaskWriteToolCall";
 import { UpdateTaskToolCall } from "./components/UpdateTaskToolCall";
@@ -601,18 +601,12 @@ export function ToolCallBlock({
 	// --- Destructive workspace tools ---
 	if (toolName === "mastra_workspace_mkdir") {
 		return (
-			<RoxToolCall
-				part={part}
-				toolName="Create directory"
-				icon={FolderIcon}
-			/>
+			<RoxToolCall part={part} toolName="Create directory" icon={FolderIcon} />
 		);
 	}
 
 	if (toolName === "mastra_workspace_delete") {
-		return (
-			<RoxToolCall part={part} toolName="Delete path" icon={FileIcon} />
-		);
+		return <RoxToolCall part={part} toolName="Delete path" icon={FileIcon} />;
 	}
 
 	if (toolName === "request_access") {

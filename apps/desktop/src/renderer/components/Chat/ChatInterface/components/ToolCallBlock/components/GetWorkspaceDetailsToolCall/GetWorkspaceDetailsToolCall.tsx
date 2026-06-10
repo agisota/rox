@@ -10,10 +10,6 @@ export function GetWorkspaceDetailsToolCall({
 	part,
 }: GetWorkspaceDetailsToolCallProps) {
 	return (
-		<RoxToolCall
-			part={part}
-			toolName="Get workspace details"
-			icon={InfoIcon}
-		/>
+		<RoxToolCall part={part} toolName="Get workspace details" icon={InfoIcon} />
 	);
 }

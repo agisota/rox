@@ -70,8 +70,8 @@ export function SubmitPromptDialog({
 				<DialogHeader>
 					<DialogTitle>Submit a prompt</DialogTitle>
 					<DialogDescription>
-						Prompt a coding agent to build what you want to see in Rox. If
-						we like your prompt, we'll run it and merge the result.
+						Prompt a coding agent to build what you want to see in Rox. If we
+						like your prompt, we'll run it and merge the result.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-4 py-2">

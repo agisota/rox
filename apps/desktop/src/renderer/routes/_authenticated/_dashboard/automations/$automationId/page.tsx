@@ -1,7 +1,4 @@
-import type {
-	SelectAutomation,
-	SelectAutomationRun,
-} from "@rox/db/schema";
+import type { SelectAutomation, SelectAutomationRun } from "@rox/db/schema";
 import { alert } from "@rox/ui/atoms/Alert";
 import { toast } from "@rox/ui/sonner";
 import { eq } from "@tanstack/db";

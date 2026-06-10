@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type {
-	JsonSchema,
-	SupersetWorkflowState,
-} from "@rox/workflow-core";
+import type { JsonSchema, SupersetWorkflowState } from "@rox/workflow-core";
 import {
 	assertExactlyOneImplementationRef,
 	assertExposedVia,

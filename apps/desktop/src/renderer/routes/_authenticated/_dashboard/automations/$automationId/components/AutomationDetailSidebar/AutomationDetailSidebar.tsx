@@ -1,7 +1,4 @@
-import type {
-	SelectAutomation,
-	SelectAutomationRun,
-} from "@rox/db/schema";
+import type { SelectAutomation, SelectAutomationRun } from "@rox/db/schema";
 import { formatDateTimeInTimezone } from "@rox/shared/rrule";
 import { cn } from "@rox/ui/utils";
 import { useMutation } from "@tanstack/react-query";

@@ -4,6 +4,9 @@ export const SETTING_ITEM_ID = {
 	ACCOUNT_PROFILE: "account-profile",
 	ACCOUNT_SIGNOUT: "account-signout",
 
+	PROFILE_USAGE: "profile-usage",
+	PROFILE_FORM: "profile-form",
+
 	ORGANIZATION_LOGO: "organization-logo",
 	ORGANIZATION_NAME: "organization-name",
 	ORGANIZATION_SLUG: "organization-slug",
@@ -112,6 +115,9 @@ export type SettingVariant = "v1" | "v2" | "shared";
 export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.ACCOUNT_PROFILE]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_SIGNOUT]: "shared",
+
+	[SETTING_ITEM_ID.PROFILE_USAGE]: "shared",
+	[SETTING_ITEM_ID.PROFILE_FORM]: "shared",
 
 	[SETTING_ITEM_ID.ORGANIZATION_LOGO]: "shared",
 	[SETTING_ITEM_ID.ORGANIZATION_NAME]: "shared",
@@ -235,6 +241,46 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"log out",
 			"disconnect",
 			"leave",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.PROFILE_USAGE,
+		section: "profile",
+		title: "Usage и лига",
+		description: "Расход токенов, дневная динамика и лига профиля Rox",
+		keywords: [
+			"profile",
+			"usage",
+			"tokens",
+			"token",
+			"league",
+			"tier",
+			"rox",
+			"vibecafe",
+			"статистика",
+			"токены",
+			"лига",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.PROFILE_FORM,
+		section: "profile",
+		title: "Публичный профиль",
+		description: "Handle, отображаемое имя, bio и контакты профиля Rox",
+		keywords: [
+			"profile",
+			"public",
+			"handle",
+			"bio",
+			"contact",
+			"telegram",
+			"max",
+			"wechat",
+			"twitter",
+			"share",
+			"профиль",
+			"контакты",
+			"поделиться",
 		],
 	},
 	{

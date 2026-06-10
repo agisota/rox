@@ -25,10 +25,7 @@ import {
 import { Button } from "@rox/ui/button";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
-import {
-	WorkspaceClientProvider,
-	workspaceTrpc,
-} from "@rox/workspace-client";
+import { WorkspaceClientProvider, workspaceTrpc } from "@rox/workspace-client";
 import { useState } from "react";
 import { HiChevronRight } from "react-icons/hi2";
 import {

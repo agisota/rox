@@ -3,6 +3,7 @@ import { devtools } from "zustand/middleware";
 
 export type SettingsSection =
 	| "account"
+	| "profile"
 	| "organization"
 	| "teams"
 	| "appearance"

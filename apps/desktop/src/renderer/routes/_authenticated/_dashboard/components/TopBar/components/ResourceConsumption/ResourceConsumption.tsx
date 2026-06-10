@@ -476,8 +476,8 @@ function ResourceConsumptionContent({
 								</div>
 							</TooltipTrigger>
 							<TooltipContent side="bottom" sideOffset={6} showArrow={false}>
-								Rox uses {formatPercent(trackedMemorySharePercent)} of
-								system RAM
+								Rox uses {formatPercent(trackedMemorySharePercent)} of system
+								RAM
 							</TooltipContent>
 						</Tooltip>
 					</>

@@ -1,9 +1,5 @@
 import { type AuthProvider, COMPANY } from "@rox/shared/constants";
-import {
-	DEV_EMAIL,
-	DEV_NAME,
-	DEV_PASSWORD,
-} from "@rox/shared/dev-credentials";
+import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
 import { Button } from "@rox/ui/button";
 import { Spinner } from "@rox/ui/spinner";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
@@ -144,9 +140,7 @@ function SignInPage() {
 								className="w-full gap-3"
 								disabled={isLoadingDev}
 							>
-								{isLoadingDev
-									? "Вход…"
-									: "Войти как локальный админ (dev)"}
+								{isLoadingDev ? "Вход…" : "Войти как локальный админ (dev)"}
 							</Button>
 						)}
 						{devError && (

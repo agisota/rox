@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { WebClient } from "@slack/web-api";
 import { FEATURE_FLAGS } from "@rox/shared/constants";
+import { WebClient } from "@slack/web-api";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
 import { DEFAULT_SLACK_MODEL } from "../../../constants";

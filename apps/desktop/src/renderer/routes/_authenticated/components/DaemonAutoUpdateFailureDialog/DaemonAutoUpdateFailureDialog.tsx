@@ -8,10 +8,7 @@ import {
 } from "@rox/ui/alert-dialog";
 import { Button } from "@rox/ui/button";
 import { toast } from "@rox/ui/sonner";
-import {
-	WorkspaceClientProvider,
-	workspaceTrpc,
-} from "@rox/workspace-client";
+import { WorkspaceClientProvider, workspaceTrpc } from "@rox/workspace-client";
 import { useEffect, useState } from "react";
 import {
 	getHostServiceHeaders,

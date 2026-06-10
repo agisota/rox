@@ -1,9 +1,5 @@
 import { dbWs } from "@rox/db/client";
-import {
-	githubRepositories,
-	organizations,
-	v2Projects,
-} from "@rox/db/schema";
+import { githubRepositories, organizations, v2Projects } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
 import { parseGitHubRemote } from "@rox/shared/github-remote";
 import type { TRPCRouterRecord } from "@trpc/server";

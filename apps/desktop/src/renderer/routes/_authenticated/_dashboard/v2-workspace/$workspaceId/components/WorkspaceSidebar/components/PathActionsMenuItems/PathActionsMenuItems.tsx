@@ -1,11 +1,5 @@
-import {
-	ContextMenuItem,
-	ContextMenuSeparator,
-} from "@rox/ui/context-menu";
-import {
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-} from "@rox/ui/dropdown-menu";
+import { ContextMenuItem, ContextMenuSeparator } from "@rox/ui/context-menu";
+import { DropdownMenuItem, DropdownMenuSeparator } from "@rox/ui/dropdown-menu";
 import { toast } from "@rox/ui/sonner";
 import { Clipboard, Copy, FolderOpen } from "lucide-react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";

@@ -13,6 +13,7 @@
 			"!**/*.template.sh",
 			"!**/*.template.ts",
 			"!**/.worktrees",
+			"!**/.omc",
 			"!**/plans",
 			"!apps/mobile/uniwind-types.d.ts",
 			"!packages/sdk/src"

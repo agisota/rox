@@ -1,8 +1,4 @@
-import type {
-	SelectTask,
-	SelectTaskStatus,
-	SelectUser,
-} from "@rox/db/schema";
+import type { SelectTask, SelectTaskStatus, SelectUser } from "@rox/db/schema";
 import { ScrollArea } from "@rox/ui/scroll-area";
 import { Separator } from "@rox/ui/separator";
 import { eq, or } from "@tanstack/db";

@@ -1,8 +1,4 @@
-import type {
-	SelectTask,
-	SelectTaskStatus,
-	SelectUser,
-} from "@rox/db/schema";
+import type { SelectTask, SelectTaskStatus, SelectUser } from "@rox/db/schema";
 import { Badge } from "@rox/ui/badge";
 import { Checkbox } from "@rox/ui/checkbox";
 import { eq, isNull } from "@tanstack/db";

@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { HiPlus } from "react-icons/hi2";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import type { FAQItem } from "./constants";
 import { FAQ_ITEMS } from "./constants";
 
@@ -41,7 +42,7 @@ function FAQAccordionItem({
 						className="overflow-hidden"
 					>
 						<p className="pb-6 text-base text-muted-foreground leading-relaxed pr-12">
-							{item.answer}
+							<GlossaryText text={item.answer} />
 						</p>
 					</motion.div>
 				)}

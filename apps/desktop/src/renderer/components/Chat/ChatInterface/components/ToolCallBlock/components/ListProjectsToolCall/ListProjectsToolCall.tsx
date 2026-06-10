@@ -8,10 +8,6 @@ interface ListProjectsToolCallProps {
 
 export function ListProjectsToolCall({ part }: ListProjectsToolCallProps) {
 	return (
-		<RoxToolCall
-			part={part}
-			toolName="List projects"
-			icon={FolderKanbanIcon}
-		/>
+		<RoxToolCall part={part} toolName="List projects" icon={FolderKanbanIcon} />
 	);
 }

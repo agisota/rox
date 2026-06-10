@@ -4,6 +4,7 @@ import { COMPANY } from "@rox/shared/constants";
 import { useScroll } from "framer-motion";
 import { useRef, useState } from "react";
 import { FaGithub } from "react-icons/fa";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import { DownloadButton } from "../DownloadButton";
 import { WaitlistModal } from "../WaitlistModal";
 import { ProductDemo } from "./components/ProductDemo";
@@ -50,8 +51,7 @@ export function HeroSection() {
 								</span>
 							</h1>
 							<p className="text-base sm:text-xl font-light text-muted-foreground max-w-4xl mx-auto">
-								Оркестрируйте 100+ кодинг-агентов параллельно. Работает с
-								любыми агентами. Создан для эпохи ИИ.
+								<GlossaryText text="Оркестрируйте 100+ кодинг-агентов параллельно. Работает с любыми агентами. Создан для эпохи ИИ." />
 							</p>
 						</div>
 

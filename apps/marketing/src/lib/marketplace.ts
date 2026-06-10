@@ -117,8 +117,7 @@ export const themeListings: ThemeListing[] = [
 		type: "dark",
 		author: "Catppuccin",
 		submittedBy: "tamarazuk",
-		description:
-			"The Macchiato variant from the Catppuccin theme PR for Rox.",
+		description: "The Macchiato variant from the Catppuccin theme PR for Rox.",
 		addedOn: "March 21, 2026",
 		source: {
 			label: "Download",
@@ -154,8 +153,7 @@ export const themeListings: ThemeListing[] = [
 		type: "dark",
 		author: "Catppuccin",
 		submittedBy: "tamarazuk",
-		description:
-			"The Frappé variant from the Catppuccin theme PR for Rox.",
+		description: "The Frappé variant from the Catppuccin theme PR for Rox.",
 		addedOn: "March 21, 2026",
 		source: {
 			label: "Download",

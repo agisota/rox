@@ -27,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 const SECTION_ORDER: SettingsSection[] = [
 	"account",
+	"profile",
 	"appearance",
 	"ringtones",
 	"keyboard",
@@ -47,6 +48,7 @@ const SECTION_ORDER: SettingsSection[] = [
 
 function getSectionFromPath(pathname: string): SettingsSection | null {
 	if (pathname.includes("/settings/account")) return "account";
+	if (pathname.includes("/settings/profile")) return "profile";
 	if (pathname.includes("/settings/organization")) return "organization";
 	if (pathname.includes("/settings/teams")) return "teams";
 	if (pathname.includes("/settings/appearance")) return "appearance";
@@ -69,6 +71,8 @@ function getPathFromSection(section: SettingsSection): string {
 	switch (section) {
 		case "account":
 			return "/settings/account";
+		case "profile":
+			return "/settings/profile";
 		case "organization":
 			return "/settings/organization";
 		case "teams":

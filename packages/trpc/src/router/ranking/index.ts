@@ -1,0 +1,1 @@
+export { rankingRouter } from "./ranking";

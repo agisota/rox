@@ -10,10 +10,6 @@ export function DeleteWorkspaceToolCall({
 	part,
 }: DeleteWorkspaceToolCallProps) {
 	return (
-		<RoxToolCall
-			part={part}
-			toolName="Delete workspace"
-			icon={Trash2Icon}
-		/>
+		<RoxToolCall part={part} toolName="Delete workspace" icon={Trash2Icon} />
 	);
 }

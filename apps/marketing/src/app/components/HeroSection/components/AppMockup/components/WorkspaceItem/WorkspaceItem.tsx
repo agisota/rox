@@ -16,6 +16,14 @@ interface WorkspaceItemProps {
 	status?: WorkspaceStatus;
 }
 
+const WORKSPACE_LABELS: Record<string, string> = {
+	"use any agents": "любые агенты",
+	"create parallel branches": "параллельные ветки",
+	"see changes": "изменения",
+	"open in any IDE": "открыть в любой IDE",
+	"forward ports": "проброс портов",
+};
+
 export function WorkspaceItem({
 	name,
 	add,
@@ -57,7 +65,7 @@ export function WorkspaceItem({
 			<span
 				className={`min-w-0 flex-1 truncate ${isActive ? "font-medium" : ""}`}
 			>
-				{name}
+				{WORKSPACE_LABELS[name] ?? name}
 			</span>
 
 			{add !== undefined && (

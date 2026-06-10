@@ -73,7 +73,9 @@ export function UniversalCompatibilityDemo() {
 								className="object-contain"
 							/>
 						</div>
-						<span className="text-sm text-white/80">{agent.name}</span>
+						<span className="text-sm font-semibold text-white">
+							{agent.name}
+						</span>
 					</motion.div>
 				))}
 			</div>

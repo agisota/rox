@@ -1,6 +1,6 @@
-import type { SlackEvent } from "@slack/types";
 import { db } from "@rox/db/client";
 import { integrationConnections, tasks } from "@rox/db/schema";
+import type { SlackEvent } from "@slack/types";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { createSlackClient } from "../utils/slack-client";
 import {

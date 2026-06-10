@@ -8,10 +8,6 @@ interface ListWorkspacesToolCallProps {
 
 export function ListWorkspacesToolCall({ part }: ListWorkspacesToolCallProps) {
 	return (
-		<RoxToolCall
-			part={part}
-			toolName="List workspaces"
-			icon={FolderTreeIcon}
-		/>
+		<RoxToolCall part={part} toolName="List workspaces" icon={FolderTreeIcon} />
 	);
 }

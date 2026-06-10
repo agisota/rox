@@ -101,18 +101,12 @@ export function getGeminiSettingsJsonContent(hookScriptPath: string): string {
 			current,
 			desired: desiredEntries,
 			isManaged: (definition: GeminiHookDefinition) =>
-				isRoxManagedHookCommand(
-					definition.command,
-					GEMINI_HOOK_SCRIPT_NAME,
-				) ||
+				isRoxManagedHookCommand(definition.command, GEMINI_HOOK_SCRIPT_NAME) ||
 				Boolean(
 					definition.hooks?.some(
 						(hook) =>
 							hook.command?.includes(hookScriptPath) ||
-							isRoxManagedHookCommand(
-								hook.command,
-								GEMINI_HOOK_SCRIPT_NAME,
-							),
+							isRoxManagedHookCommand(hook.command, GEMINI_HOOK_SCRIPT_NAME),
 					),
 				),
 			isEquivalent: (

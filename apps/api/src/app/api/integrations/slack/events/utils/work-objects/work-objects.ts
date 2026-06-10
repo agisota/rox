@@ -1,11 +1,11 @@
 /** @see https://docs.slack.dev/messaging/work-objects/ */
 
+import type { tasks } from "@rox/db/schema";
 import type {
 	EntityMetadata,
 	EntityType,
 	TaskEntityFields,
 } from "@slack/types";
-import type { tasks } from "@rox/db/schema";
 
 import { env } from "@/env";
 

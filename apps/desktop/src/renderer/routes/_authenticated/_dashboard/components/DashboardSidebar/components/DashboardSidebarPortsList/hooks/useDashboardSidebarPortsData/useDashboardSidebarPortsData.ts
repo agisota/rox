@@ -1,7 +1,4 @@
-import {
-	getEventBus,
-	type PortChangedPayload,
-} from "@rox/workspace-client";
+import { getEventBus, type PortChangedPayload } from "@rox/workspace-client";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";

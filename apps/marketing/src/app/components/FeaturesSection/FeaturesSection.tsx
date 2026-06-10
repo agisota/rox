@@ -1,5 +1,6 @@
 "use client";
 
+import { GlossaryText } from "@/components/GlossaryTerm";
 import { FeatureDemo } from "./components/FeatureDemo";
 import { IsolationDemo } from "./components/IsolationDemo";
 import { OpenInDemo } from "./components/OpenInDemo";
@@ -39,11 +40,11 @@ export function FeaturesSection() {
 											{feature.tag}
 										</span>
 										<h3 className="text-2xl sm:text-3xl lg:text-4xl font-medium tracking-tight text-foreground">
-											{feature.title}
+											<GlossaryText text={feature.title} />
 										</h3>
 									</div>
 									<p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-[500px]">
-										{feature.description}
+										<GlossaryText text={feature.description} />
 									</p>
 								</div>
 

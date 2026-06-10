@@ -32,6 +32,7 @@ interface GeneralSettingsProps {
 
 type SettingsRoute =
 	| "/settings/account"
+	| "/settings/profile"
 	| "/settings/organization"
 	| "/settings/teams"
 	| "/settings/appearance"
@@ -74,6 +75,12 @@ const SECTION_GROUPS: SectionGroup[] = [
 				section: "account",
 				label: "Account",
 				icon: <HiOutlineUser className="h-4 w-4" />,
+			},
+			{
+				id: "/settings/profile",
+				section: "profile",
+				label: "Профиль",
+				icon: <HiOutlineSparkles className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/appearance",

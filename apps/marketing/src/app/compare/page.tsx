@@ -59,8 +59,8 @@ export default async function ComparePage() {
 						Rox vs the Alternatives
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						See how Rox compares to other AI coding tools — from AI editors
-						to coding agents to cloud-based AI engineers.
+						See how Rox compares to other AI coding tools — from AI editors to
+						coding agents to cloud-based AI engineers.
 					</p>
 
 					<GridCross className="bottom-0 left-0" />

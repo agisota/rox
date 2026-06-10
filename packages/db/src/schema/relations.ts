@@ -14,6 +14,13 @@ import {
 	githubRepositories,
 } from "./github";
 import {
+	achievements,
+	profileNotes,
+	usageDaily,
+	userAchievements,
+	userProfiles,
+} from "./profiles";
+import {
 	agentCommands,
 	chatSessions,
 	devicePresence,
@@ -611,6 +618,45 @@ export const approvalRequestsRelations = relations(
 		step: one(workflowRunSteps, {
 			fields: [approvalRequests.stepId],
 			references: [workflowRunSteps.id],
+		}),
+	}),
+);
+
+export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+	user: one(users, {
+		fields: [userProfiles.userId],
+		references: [users.id],
+	}),
+}));
+
+export const usageDailyRelations = relations(usageDaily, ({ one }) => ({
+	user: one(users, {
+		fields: [usageDaily.userId],
+		references: [users.id],
+	}),
+}));
+
+export const profileNotesRelations = relations(profileNotes, ({ one }) => ({
+	user: one(users, {
+		fields: [profileNotes.userId],
+		references: [users.id],
+	}),
+}));
+
+export const achievementsRelations = relations(achievements, ({ many }) => ({
+	userAchievements: many(userAchievements),
+}));
+
+export const userAchievementsRelations = relations(
+	userAchievements,
+	({ one }) => ({
+		user: one(users, {
+			fields: [userAchievements.userId],
+			references: [users.id],
+		}),
+		achievement: one(achievements, {
+			fields: [userAchievements.achievementId],
+			references: [achievements.id],
 		}),
 	}),
 );

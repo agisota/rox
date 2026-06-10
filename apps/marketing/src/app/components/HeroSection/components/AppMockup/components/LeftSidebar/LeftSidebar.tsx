@@ -17,6 +17,11 @@ interface LeftSidebarProps {
 	activeDemo: ActiveDemo;
 }
 
+const PORT_WORKSPACE_LABELS: Record<string, string> = {
+	"use any agents": "любые агенты",
+	"see changes": "изменения",
+};
+
 export function LeftSidebar({ activeDemo }: LeftSidebarProps) {
 	return (
 		<div className="flex w-[208px] shrink-0 flex-col border-r border-border bg-card text-[11px]">
@@ -27,13 +32,13 @@ export function LeftSidebar({ activeDemo }: LeftSidebarProps) {
 			</div>
 
 			<div className="space-y-px px-1.5 pt-1">
-				<NavRow icon={LuLayers} label="Workspaces" active />
-				<NavRow icon={LuZap} label="Automations" />
-				<NavRow icon={LuPlus} label="New Workspace" muted />
+				<NavRow icon={LuLayers} label="Воркспейсы" active />
+				<NavRow icon={LuZap} label="Автоматизации" />
+				<NavRow icon={LuPlus} label="Новый воркспейс" muted />
 			</div>
 
 			<div className="mt-3 flex-1 overflow-hidden">
-				<GroupHeader label="desktop" count={5} expanded />
+				<GroupHeader label="десктоп" count={5} expanded />
 
 				<motion.div
 					className="overflow-hidden"
@@ -50,9 +55,9 @@ export function LeftSidebar({ activeDemo }: LeftSidebarProps) {
 							className="text-[10px]"
 							toneClassName="text-brand-light"
 						/>
-						<span className="truncate text-foreground/95">new workspace</span>
+						<span className="truncate text-foreground/95">новый воркспейс</span>
 						<span className="ml-auto font-mono text-[10px] text-muted-foreground/55">
-							creating
+							создание
 						</span>
 					</div>
 				</motion.div>
@@ -79,13 +84,13 @@ export function LeftSidebar({ activeDemo }: LeftSidebarProps) {
 				</div>
 
 				<div className="mt-3">
-					<GroupHeader label="cloud" count={3} />
+					<GroupHeader label="облако" count={3} />
 				</div>
 				<div className="mt-1">
-					<GroupHeader label="mobile" count={1} />
+					<GroupHeader label="мобайл" count={1} />
 				</div>
 				<div className="mt-1">
-					<GroupHeader label="cli" count={2} />
+					<GroupHeader label="CLI" count={2} />
 				</div>
 			</div>
 
@@ -94,7 +99,7 @@ export function LeftSidebar({ activeDemo }: LeftSidebarProps) {
 					<span className="font-mono normal-case text-muted-foreground/55">
 						⌥
 					</span>
-					<span>Ports</span>
+					<span>ПОРТЫ</span>
 					<span className="ml-auto font-mono tabular-nums text-muted-foreground/40">
 						4
 					</span>
@@ -102,7 +107,7 @@ export function LeftSidebar({ activeDemo }: LeftSidebarProps) {
 				{PORTS.map((port) => (
 					<div key={port.workspace} className="px-3 py-1">
 						<div className="truncate text-[10px] text-muted-foreground/65">
-							{port.workspace}
+							{PORT_WORKSPACE_LABELS[port.workspace] ?? port.workspace}
 						</div>
 						<div className="mt-1 flex flex-wrap gap-1">
 							{port.ports.map((value) => (

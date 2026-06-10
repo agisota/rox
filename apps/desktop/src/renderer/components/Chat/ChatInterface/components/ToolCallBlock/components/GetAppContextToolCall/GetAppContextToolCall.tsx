@@ -8,10 +8,6 @@ interface GetAppContextToolCallProps {
 
 export function GetAppContextToolCall({ part }: GetAppContextToolCallProps) {
 	return (
-		<RoxToolCall
-			part={part}
-			toolName="Get app context"
-			icon={AppWindowIcon}
-		/>
+		<RoxToolCall part={part} toolName="Get app context" icon={AppWindowIcon} />
 	);
 }

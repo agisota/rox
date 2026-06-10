@@ -1,7 +1,4 @@
-import {
-	CodeBlock,
-	CodeBlockCopyButton,
-} from "@rox/ui/ai-elements/code-block";
+import { CodeBlock, CodeBlockCopyButton } from "@rox/ui/ai-elements/code-block";
 import { Button } from "@rox/ui/button";
 import {
 	Dialog,

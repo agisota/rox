@@ -22,13 +22,7 @@ export default async function AuthLayout({
 		<div className="relative flex min-h-screen flex-col">
 			<header className="container mx-auto px-6 py-6">
 				<a href={env.NEXT_PUBLIC_MARKETING_URL}>
-					<Image
-						src="/title.svg"
-						alt="Rox"
-						width={140}
-						height={24}
-						priority
-					/>
+					<Image src="/title.svg" alt="Rox" width={140} height={24} priority />
 				</a>
 			</header>
 			<main className="flex flex-1 items-center justify-center">

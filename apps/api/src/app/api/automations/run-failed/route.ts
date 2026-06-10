@@ -1,6 +1,6 @@
-import * as Sentry from "@sentry/nextjs";
 import { dbWs } from "@rox/db/client";
 import { automationRuns, automations } from "@rox/db/schema";
+import * as Sentry from "@sentry/nextjs";
 import { Receiver } from "@upstash/qstash";
 import { eq } from "drizzle-orm";
 import { z } from "zod";

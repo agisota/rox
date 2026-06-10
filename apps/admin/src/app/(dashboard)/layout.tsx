@@ -9,11 +9,7 @@ import {
 	BreadcrumbSeparator,
 } from "@rox/ui/breadcrumb";
 import { Separator } from "@rox/ui/separator";
-import {
-	SidebarInset,
-	SidebarProvider,
-	SidebarTrigger,
-} from "@rox/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@rox/ui/sidebar";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

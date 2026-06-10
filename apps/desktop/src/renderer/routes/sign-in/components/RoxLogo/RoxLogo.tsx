@@ -11,10 +11,7 @@ interface RoxLogoProps {
  * `currentColor`. Keeps the original SVG interface (width/height/className,
  * optional shimmer gradient) used across the sign-in / loading surfaces.
  */
-export function RoxLogo({
-	className,
-	gradient = false,
-}: RoxLogoProps) {
+export function RoxLogo({ className, gradient = false }: RoxLogoProps) {
 	const reactId = useId();
 	const gradientId = `rox-logo-gradient-${reactId}`;
 

@@ -12,6 +12,12 @@ interface RightSidebarProps {
 
 const TABS = ["Files", "Changes", "Review"] as const;
 
+const TAB_LABELS: Record<(typeof TABS)[number], string> = {
+	Files: "Файлы",
+	Changes: "Изменения",
+	Review: "Ревью",
+};
+
 const BRANCH_BY_DEMO: Record<ActiveDemo, string> = {
 	"Use Any Agents": "use-any-agents",
 	"Create Parallel Branches": "create-parallel-branches",
@@ -54,7 +60,7 @@ export function RightSidebar({ activeDemo }: RightSidebarProps) {
 									: "text-muted-foreground/55 hover:text-foreground/85"
 							}`}
 						>
-							{tab}
+							{TAB_LABELS[tab]}
 							{active && (
 								<span className="absolute inset-x-0 -bottom-px h-[2px] bg-brand" />
 							)}
@@ -74,7 +80,7 @@ export function RightSidebar({ activeDemo }: RightSidebarProps) {
 					<span className="tabular-nums text-emerald-400/85">+1,128</span>
 					<span className="tabular-nums text-rose-400/75">−98</span>
 					<span className="text-muted-foreground/45">·</span>
-					<span>10 files</span>
+					<span>10 файлов</span>
 					<span className="text-muted-foreground/45">·</span>
 					<span className="flex items-center gap-1">
 						<LuArrowRight className="size-2.5" />
@@ -155,13 +161,13 @@ export function RightSidebar({ activeDemo }: RightSidebarProps) {
 							type="button"
 							className="h-7 rounded-sm bg-emerald-500/15 px-2.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/25"
 						>
-							Approve
+							Принять
 						</button>
 						<button
 							type="button"
 							className="h-7 rounded-sm border border-border bg-background px-2.5 text-[11px] font-medium text-foreground/80 hover:bg-foreground/[0.04]"
 						>
-							Comment
+							Комментировать
 						</button>
 					</div>
 				</motion.div>

@@ -19,10 +19,8 @@ export const COMPANY = {
 	DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.rox.one",
 	MARKETING_URL: process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one",
 	TERMS_URL: `${process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one"}/terms`,
-	PRIVACY_URL:
-		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one") + "/privacy",
-	CHANGELOG_URL:
-		(process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one") + "/changelog",
+	PRIVACY_URL: `${process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one"}/privacy`,
+	CHANGELOG_URL: `${process.env.NEXT_PUBLIC_MARKETING_URL || "https://rox.one"}/changelog`,
 	X_URL: "https://x.com/rox_one",
 	LINKEDIN_URL: "https://www.linkedin.com/company/rox-one",
 	YOUTUBE_URL: "https://www.youtube.com/@rox-one",

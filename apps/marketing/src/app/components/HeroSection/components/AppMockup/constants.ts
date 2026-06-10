@@ -95,7 +95,7 @@ export const AGENT_TABS: AgentTab[] = [
 ];
 
 export const SETUP_STEPS = [
-	"→ create worktree",
-	"→ install deps",
-	"→ ready shell",
+	"→ создать worktree",
+	"→ установить зависимости",
+	"→ shell готов",
 ];
