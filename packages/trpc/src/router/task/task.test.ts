@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import * as realDrizzleOrm from "drizzle-orm";
 import * as realDbSchema from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import * as realDrizzleOrm from "drizzle-orm";
 
 const getCurrentTxidMock = mock(async () => "txid-123");
 const seedDefaultStatusesMock = mock(async () => "status-seeded");
