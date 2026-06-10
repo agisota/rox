@@ -18,7 +18,7 @@ type AmpApi = {
 		handler: (event?: unknown) => unknown | Promise<unknown>,
 	) => void;
 };
-type SupersetGlobal = typeof globalThis & {
+type RoxGlobal = typeof globalThis & {
 	__supersetAmpLifecyclePluginV1?: boolean;
 };
 
@@ -70,13 +70,13 @@ function debugLog(message: string): void {
 }
 
 export default function supersetAmpLifecyclePlugin(amp: AmpApi) {
-	const supersetGlobal = globalThis as SupersetGlobal;
+	const supersetGlobal = globalThis as RoxGlobal;
 	if (supersetGlobal.__supersetAmpLifecyclePluginV1) return;
 	supersetGlobal.__supersetAmpLifecyclePluginV1 = true;
 
 	const env = typeof process === "undefined" ? {} : process.env ?? {};
 	if (!env.SUPERSET_TERMINAL_ID && !env.SUPERSET_TAB_ID) {
-		debugLog("disabled: missing Superset terminal env");
+		debugLog("disabled: missing Rox terminal env");
 		return;
 	}
 
@@ -127,7 +127,7 @@ export default function supersetAmpLifecyclePlugin(amp: AmpApi) {
 					(env.SUPERSET_TERMINAL_ID || ""),
 			);
 		} catch (error) {
-			// Best effort only. Superset notifications must never interrupt Amp.
+			// Best effort only. Rox notifications must never interrupt Amp.
 			debugLog(
 				"spawn threw event=" +
 					hookEventName +

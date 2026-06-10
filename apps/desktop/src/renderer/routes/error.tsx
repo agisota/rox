@@ -46,7 +46,7 @@ export function ErrorPage({ error, info }: ErrorComponentProps) {
 					<div className="flex flex-col items-center gap-2 text-center">
 						<h1 className="text-xl font-semibold">Something went wrong</h1>
 						<p className="text-sm text-muted-foreground">
-							Superset hit an unexpected error. Reload to try again.
+							Rox hit an unexpected error. Reload to try again.
 						</p>
 					</div>
 

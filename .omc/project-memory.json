@@ -204,6 +204,12 @@
   },
   "hotPaths": [
     {
+      "path": "apps/desktop/src/renderer/routes/sign-in/page.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1781084044161,
+      "type": "file"
+    },
+    {
       "path": "packages/shared/src/constants.ts",
       "accessCount": 7,
       "lastAccessed": 1781072121606,
@@ -291,12 +297,6 @@
       "path": "apps/desktop/electron.vite.config.ts",
       "accessCount": 1,
       "lastAccessed": 1781069046195,
-      "type": "file"
-    },
-    {
-      "path": "apps/desktop/src/renderer/routes/sign-in/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1781069066994,
       "type": "file"
     },
     {

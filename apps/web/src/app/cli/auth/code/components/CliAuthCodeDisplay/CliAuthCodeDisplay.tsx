@@ -72,7 +72,7 @@ export function CliAuthCodeDisplay({ code, state }: CliAuthCodeDisplayProps) {
 			<h1 className="text-3xl font-semibold tracking-tight">
 				Authentication Code
 			</h1>
-			<p className="text-muted-foreground">Paste this into Superset CLI:</p>
+			<p className="text-muted-foreground">Paste this into Rox CLI:</p>
 
 			{/* biome-ignore lint/a11y/useSemanticElements: keep as div so the inner <code> stays selectable as a ctrl+c fallback if clipboard write fails — wrapping in a button disrupts selection focus */}
 			<div

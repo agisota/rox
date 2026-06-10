@@ -40,7 +40,7 @@ export const RESOURCE_LINKS: NavLink[] = [
 	{
 		href: "/team",
 		label: "About",
-		description: "The people behind Superset.",
+		description: "The people behind Rox.",
 	},
 ];
 

@@ -243,7 +243,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 				<div className="space-y-8">
 					{env.LOCAL_ONLY_AUTH ? (
 						<SettingsSection
-							title="Superset"
+							title="Rox"
 							description="Default local-only model for this development build."
 							action={<Badge variant="default">Active</Badge>}
 						>

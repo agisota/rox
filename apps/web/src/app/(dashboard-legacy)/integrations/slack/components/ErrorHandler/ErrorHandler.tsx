@@ -24,7 +24,7 @@ export function ErrorHandler() {
 			error === "workspace_already_linked"
 				? searchParams.get("owner")
 					? `This Slack workspace is already connected by ${searchParams.get("owner")}. Ask them to disconnect first.`
-					: "This Slack workspace is already connected by another Superset organization."
+					: "This Slack workspace is already connected by another Rox organization."
 				: (ERROR_MESSAGES[error] ?? "Something went wrong.");
 
 		window.history.replaceState({}, "", "/integrations/slack");

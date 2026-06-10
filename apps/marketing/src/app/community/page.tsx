@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Community",
 	description:
-		"Join the Superset community to get help, share ideas, and stay up to date with the latest news and updates.",
+		"Join the Rox community to get help, share ideas, and stay up to date with the latest news and updates.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/community`,
 	},
@@ -104,7 +104,7 @@ export default async function CommunityPage() {
 						Community
 					</h1>
 					<p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-						Join the <span className="font-semibold italic">Superset</span>{" "}
+						Join the <span className="font-semibold italic">Rox</span>{" "}
 						community to get help, share ideas, and stay up to date with the
 						latest news and updates.
 					</p>

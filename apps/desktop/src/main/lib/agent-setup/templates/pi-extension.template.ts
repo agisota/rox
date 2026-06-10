@@ -1,21 +1,21 @@
 {{MARKER}}
 /**
- * Superset Notification Extension for pi
+ * Rox Notification Extension for pi
  *
- * Emits Claude-Code-compatible lifecycle hooks to Superset's notify.sh so
+ * Emits Claude-Code-compatible lifecycle hooks to Rox's notify.sh so
  * the host UI gets a "working" indicator (and completion chime) for pi
  * sessions, the same way it does for Claude Code, Codex, etc.
  *
  * Mapping:
- *   pi `before_agent_start`  → Claude `UserPromptSubmit`  → Superset `Start`
+ *   pi `before_agent_start`  → Claude `UserPromptSubmit`  → Rox `Start`
  *   pi `tool_execution_end`  → Claude `PostToolUse`       → progress signal
  *   pi `agent_end`           → Claude `Stop`              → completion / chime
  *   pi `session_end`         → Claude `SessionEnd`        → pane icon detach
  *   pi `session_shutdown`    → Claude `Stop`              → cleanup on quit/reload
  *
- * Activates only when running inside a v2 Superset terminal (detected via
- * SUPERSET_TERMINAL_ID). Outside Superset it's a complete no-op. If notify.sh
- * is missing it's also a no-op (Superset uninstalled / never installed).
+ * Activates only when running inside a v2 Rox terminal (detected via
+ * SUPERSET_TERMINAL_ID). Outside Rox it's a complete no-op. If notify.sh
+ * is missing it's also a no-op (Rox uninstalled / never installed).
  *
  * Hook dispatch is fire-and-forget: failures to spawn or curl never
  * affect the agent loop. notify.sh has its own connect/max timeouts.
@@ -28,7 +28,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 export default function (pi: ExtensionAPI) {
-	// Only activate inside a v2 Superset terminal.
+	// Only activate inside a v2 Rox terminal.
 	if (!process.env.SUPERSET_TERMINAL_ID) return;
 
 	const supersetHome =
@@ -58,7 +58,7 @@ export default function (pi: ExtensionAPI) {
 
 	// Gate every hook on ctx.hasUI: when this is explicitly false (print
 	// mode `-p`, JSON mode), pi is running as a subagent or non-interactive
-	// helper and should NOT drive Superset's working indicator. Interactive
+	// helper and should NOT drive Rox's working indicator. Interactive
 	// and RPC sessions (the user-facing ones) have hasUI=true.
 	//
 	// We deliberately check `=== false` rather than `!ctx.hasUI` so that pi
@@ -96,7 +96,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Ensure we mark the agent as "stopped" if pi is killed mid-run, so the
-	// Superset working indicator doesn't get stuck on. Fires on Ctrl+C,
+	// Rox working indicator doesn't get stuck on. Fires on Ctrl+C,
 	// SIGTERM, SIGHUP, /quit, /reload, /new, /resume, /fork.
 	pi.on("session_shutdown", (_event, ctx) => {
 		if (skip(ctx)) return;

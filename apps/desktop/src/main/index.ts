@@ -63,7 +63,7 @@ void applyShellEnvToProcess().catch((error) => {
 if (IS_DEV) {
 	const workspaceName = resolveDevWorkspaceName();
 	if (workspaceName) {
-		app.setName(`Superset (${workspaceName})`);
+		app.setName(`Rox (${workspaceName})`);
 	}
 }
 
@@ -210,7 +210,7 @@ app.on("before-quit", async (event) => {
 				buttons: ["Quit", "Cancel"],
 				defaultId: 0,
 				cancelId: 1,
-				title: "Quit Superset",
+				title: "Quit Rox",
 				message: "Are you sure you want to quit?",
 			});
 

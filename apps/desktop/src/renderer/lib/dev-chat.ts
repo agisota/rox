@@ -6,7 +6,7 @@ export const DEV_CHAT_MODELS: ModelOption[] = [
 	{
 		id: "openai/r1",
 		name: "R1",
-		provider: "Superset",
+		provider: "Rox",
 	},
 	{
 		id: "anthropic/claude-opus-4-7",

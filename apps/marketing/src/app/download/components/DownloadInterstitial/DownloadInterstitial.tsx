@@ -6,7 +6,7 @@ import {
 } from "@rox/shared/constants";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { SupersetLogo } from "@/app/components/Header/components/SupersetLogo";
+import { RoxLogo } from "@/app/components/Header/components/RoxLogo";
 import { AppMockup } from "@/app/components/HeroSection/components/AppMockup";
 import { WaitlistForm } from "@/app/components/WaitlistForm";
 import { isMacPlatform, Platform, usePlatform } from "@/app/hooks/useOS";
@@ -47,9 +47,9 @@ export function DownloadInterstitial() {
 			<Link
 				href="/"
 				className="inline-flex items-center text-foreground transition-colors hover:text-foreground/80"
-				aria-label="Superset"
+				aria-label="Rox"
 			>
-				<SupersetLogo />
+				<RoxLogo />
 			</Link>
 
 			<div className="mt-20 grid grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-16">
@@ -60,10 +60,10 @@ export function DownloadInterstitial() {
 								className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl"
 								style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}
 							>
-								Superset is Mac-only for now
+								Rox is Mac-only for now
 							</h1>
 							<p className="text-sm text-muted-foreground sm:text-base">
-								We're bringing Superset to Windows &amp; Linux. Drop your email
+								We're bringing Rox to Windows &amp; Linux. Drop your email
 								and we'll let you know the moment it's ready.
 							</p>
 							<div className="max-w-sm">
@@ -76,7 +76,7 @@ export function DownloadInterstitial() {
 								className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl"
 								style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}
 							>
-								You're about to get Superset
+								You're about to get Rox
 							</h1>
 							<p className="text-sm text-muted-foreground sm:text-base">
 								Your download will start automatically. If it didn't start, you

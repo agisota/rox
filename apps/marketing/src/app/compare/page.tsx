@@ -5,24 +5,24 @@ import { getComparisonPages } from "@/lib/compare";
 import { formatCompareDate } from "@/lib/compare-utils";
 
 export const metadata: Metadata = {
-	title: "Compare Superset | AI Coding Comparisons and Guides",
+	title: "Compare Rox | AI Coding Comparisons and Guides",
 	description:
-		"Compare Superset with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+		"Compare Rox with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
 	alternates: {
 		canonical: "/compare",
 	},
 	openGraph: {
-		title: "Compare Superset | AI Coding Comparisons and Guides",
+		title: "Compare Rox | AI Coding Comparisons and Guides",
 		description:
-			"Compare Superset with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+			"Compare Rox with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
 		url: "/compare",
 		images: ["/opengraph-image"],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Compare Superset | AI Coding Comparisons and Guides",
+		title: "Compare Rox | AI Coding Comparisons and Guides",
 		description:
-			"Compare Superset with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+			"Compare Rox with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
 		images: ["/opengraph-image"],
 	},
 };
@@ -56,10 +56,10 @@ export default async function ComparePage() {
 						Compare
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Superset vs the Alternatives
+						Rox vs the Alternatives
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						See how Superset compares to other AI coding tools — from AI editors
+						See how Rox compares to other AI coding tools — from AI editors
 						to coding agents to cloud-based AI engineers.
 					</p>
 

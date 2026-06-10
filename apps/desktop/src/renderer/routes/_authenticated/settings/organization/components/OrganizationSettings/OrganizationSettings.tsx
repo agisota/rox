@@ -337,7 +337,7 @@ export function OrganizationSettings({
 								{showId && (
 									<SettingsRow
 										label="ID"
-										hint="Use this when calling the Superset API."
+										hint="Use this when calling the Rox API."
 										htmlFor="org-id"
 									>
 										<button

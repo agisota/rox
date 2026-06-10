@@ -94,7 +94,7 @@ export function SecuritySettings({ visibleItems }: SecuritySettingsProps) {
 						</Label>
 						<p className="text-xs text-muted-foreground">
 							When off, your local tools and files cannot be reached from any
-							remote workspace through the Superset relay. This does not affect
+							remote workspace through the Rox relay. This does not affect
 							your ability to connect out to remote sandboxes from this device.
 						</p>
 					</div>

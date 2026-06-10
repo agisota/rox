@@ -1,7 +1,7 @@
 import { cn } from "@rox/ui/utils";
 import { useId } from "react";
 
-interface SupersetLogoProps {
+interface RoxLogoProps {
 	className?: string;
 	gradient?: boolean;
 }
@@ -11,10 +11,10 @@ interface SupersetLogoProps {
  * `currentColor`. Keeps the original SVG interface (width/height/className,
  * optional shimmer gradient) used across the sign-in / loading surfaces.
  */
-export function SupersetLogo({
+export function RoxLogo({
 	className,
 	gradient = false,
-}: SupersetLogoProps) {
+}: RoxLogoProps) {
 	const reactId = useId();
 	const gradientId = `rox-logo-gradient-${reactId}`;
 

@@ -3,7 +3,7 @@ import path from "node:path";
 import { SUPERSET_MANAGED_BINARIES } from "./desktop-agent-capabilities";
 import { BIN_DIR } from "./paths";
 
-export const WRAPPER_MARKER = "# Superset agent-wrapper v3";
+export const WRAPPER_MARKER = "# Rox agent-wrapper v3";
 export { SUPERSET_MANAGED_BINARIES };
 
 // Dev setup (.superset/lib/setup/steps.sh) points SUPERSET_HOME_DIR at
@@ -33,7 +33,7 @@ export function writeFileIfChanged(
 	return true;
 }
 
-export function isSupersetManagedHookCommand(
+export function isRoxManagedHookCommand(
 	command: string | undefined,
 	scriptName: string,
 ): boolean {
@@ -102,7 +102,7 @@ function buildRealBinaryResolver(): string {
 }
 
 function getMissingBinaryMessage(name: string): string {
-	return `Superset: ${name} not found in PATH. Install it and ensure it is on PATH, then retry.`;
+	return `Rox: ${name} not found in PATH. Install it and ensure it is on PATH, then retry.`;
 }
 
 export function getWrapperPath(binaryName: string): string {
@@ -129,7 +129,7 @@ export function buildWrapperScript(
 		: "";
 	return `#!/bin/bash
 ${WRAPPER_MARKER}
-# Superset wrapper for ${binaryName}
+# Rox wrapper for ${binaryName}
 
 ${buildRealBinaryResolver()}
 REAL_BIN="$(find_real_binary "${binaryName}")"

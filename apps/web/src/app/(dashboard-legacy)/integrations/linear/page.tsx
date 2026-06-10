@@ -68,7 +68,7 @@ export default async function LinearIntegrationPage() {
 						)}
 					</div>
 					<p className="mt-1 text-muted-foreground">
-						Sync issues bidirectionally with Linear. Create tasks in Superset
+						Sync issues bidirectionally with Linear. Create tasks in Rox
 						and have them appear in Linear, or import existing Linear issues.
 					</p>
 				</div>
@@ -95,7 +95,7 @@ export default async function LinearIntegrationPage() {
 					<CardHeader>
 						<CardTitle>Settings</CardTitle>
 						<CardDescription>
-							Configure how tasks sync between Superset and Linear.
+							Configure how tasks sync between Rox and Linear.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -103,7 +103,7 @@ export default async function LinearIntegrationPage() {
 							<p className="text-sm font-medium">Default team for new tasks</p>
 							<TeamSelector organizationId={organization.id} />
 							<p className="text-sm text-muted-foreground">
-								Tasks created in Superset will be synced to this Linear team.
+								Tasks created in Rox will be synced to this Linear team.
 							</p>
 						</div>
 					</CardContent>

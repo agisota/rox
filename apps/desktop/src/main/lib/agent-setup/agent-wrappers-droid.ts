@@ -4,7 +4,7 @@ import path from "node:path";
 import {
 	buildWrapperScript,
 	createWrapper,
-	isSupersetManagedHookCommand,
+	isRoxManagedHookCommand,
 	writeFileIfChanged,
 } from "./agent-wrappers-common";
 import { getNotifyScriptPath, NOTIFY_SCRIPT_NAME } from "./notify-hook";
@@ -37,7 +37,7 @@ function isManagedHookCommand(
 ): boolean {
 	return (
 		command?.includes(notifyScriptPath) ||
-		isSupersetManagedHookCommand(command, NOTIFY_SCRIPT_NAME)
+		isRoxManagedHookCommand(command, NOTIFY_SCRIPT_NAME)
 	);
 }
 

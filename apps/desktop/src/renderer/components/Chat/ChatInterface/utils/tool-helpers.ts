@@ -37,7 +37,7 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
 	lsp_inspect: "lsp_inspect",
 	mastra_workspace_lsp_inspect: "lsp_inspect",
 
-	// Legacy Superset MCP names
+	// Legacy Rox MCP names
 	create_worktree: "create_workspace",
 	start_claude_session: "start_agent_session",
 };

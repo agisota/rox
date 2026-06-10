@@ -70,7 +70,7 @@ export async function submitEnterpriseInquiry(data: unknown) {
 		}
 
 		const { error } = await resend.emails.send({
-			from: "Superset <noreply@superset.sh>",
+			from: "Rox <noreply@superset.sh>",
 			to: "founders@superset.sh",
 			replyTo: sanitizedEmail,
 			subject: `Enterprise inquiry from ${sanitizedName} (${sanitizedCompany})`,

@@ -10,7 +10,7 @@ import { HOOKS_DIR } from "./paths";
 
 export const COPILOT_HOOK_SCRIPT_NAME = "copilot-hook.sh";
 
-const COPILOT_HOOK_SIGNATURE = "# Superset copilot hook";
+const COPILOT_HOOK_SIGNATURE = "# Rox copilot hook";
 const COPILOT_HOOK_VERSION = "v2";
 export const COPILOT_HOOK_MARKER = `${COPILOT_HOOK_SIGNATURE} ${COPILOT_HOOK_VERSION}`;
 
@@ -83,7 +83,7 @@ export function buildCopilotWrapperExecLine(): string {
 	const escapedJson = hooksJson.replace(/'/g, "'\\''");
 
 	return `# Copilot CLI only supports project-level hooks (.github/hooks/*.json in CWD).
-# Auto-inject Superset notification hooks when running inside a v2 Superset terminal.
+# Auto-inject Rox notification hooks when running inside a v2 Rox terminal.
 if [ -n "$SUPERSET_TERMINAL_ID" ] && [ -f "${hookScriptPath}" ]; then
   COPILOT_HOOKS_DIR=".github/hooks"
   COPILOT_HOOK_FILE="$COPILOT_HOOKS_DIR/superset-notify.json"

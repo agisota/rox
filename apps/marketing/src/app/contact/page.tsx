@@ -32,7 +32,7 @@ export default function ContactPage() {
 						Contact
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Talk to Superset
+						Talk to Rox
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
 						Questions, feedback, support, or anything else. Send a note and

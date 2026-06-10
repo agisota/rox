@@ -1,6 +1,6 @@
 export {
 	StepHeader,
 	StepShell,
-	SupersetPill,
+	RoxPill,
 	useSetupChromeStore,
 } from "./StepShell";

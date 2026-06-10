@@ -8,7 +8,7 @@ import { themeListings } from "@/lib/marketplace";
 export const metadata: Metadata = {
 	title: "Themes",
 	description:
-		"Browse Superset theme files shared by the community, including GitHub Dark Colorblind, Catppuccin, Ember, and One Dark Pro.",
+		"Browse Rox theme files shared by the community, including GitHub Dark Colorblind, Catppuccin, Ember, and One Dark Pro.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace/themes`,
 	},

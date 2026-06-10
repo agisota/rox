@@ -6,22 +6,22 @@ import { RoadmapBoard } from "./components/RoadmapBoard";
 export const metadata: Metadata = {
 	title: "Roadmap",
 	description:
-		"See what we're building now, what's coming next, and where Superset is headed.",
+		"See what we're building now, what's coming next, and where Rox is headed.",
 	alternates: {
 		canonical: "/roadmap",
 	},
 	openGraph: {
-		title: "Roadmap | Superset",
+		title: "Roadmap | Rox",
 		description:
-			"See what we're building now, what's coming next, and where Superset is headed.",
+			"See what we're building now, what's coming next, and where Rox is headed.",
 		url: "/roadmap",
 		images: ["/opengraph-image"],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Roadmap | Superset",
+		title: "Roadmap | Rox",
 		description:
-			"See what we're building now, what's coming next, and where Superset is headed.",
+			"See what we're building now, what's coming next, and where Rox is headed.",
 		images: ["/opengraph-image"],
 	},
 };

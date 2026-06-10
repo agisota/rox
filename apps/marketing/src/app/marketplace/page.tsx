@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
 	title: "Marketplace",
-	description: "Browse shared themes and future agent configs for Superset.",
+	description: "Browse shared themes and future agent configs for Rox.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace`,
 	},
@@ -14,7 +14,7 @@ const marketplaceLinks = [
 	{
 		href: "/marketplace/themes",
 		label: "Themes",
-		description: "Shared theme JSON files you can import into Superset.",
+		description: "Shared theme JSON files you can import into Rox.",
 	},
 	{
 		href: "/marketplace/agents",

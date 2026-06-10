@@ -7,7 +7,7 @@ import { useEffect } from "react";
 
 /**
  * Deep link passthrough page for tasks.
- * Attempts to open the Superset desktop app, falls back to dashboard.
+ * Attempts to open the Rox desktop app, falls back to dashboard.
  */
 export default function TaskDeepLinkPage() {
 	const params = useParams<{ slug: string }>();
@@ -23,7 +23,7 @@ export default function TaskDeepLinkPage() {
 			<div className="flex flex-col items-center gap-6">
 				<Image
 					src="/title.svg"
-					alt="Superset"
+					alt="Rox"
 					width={280}
 					height={86}
 					priority

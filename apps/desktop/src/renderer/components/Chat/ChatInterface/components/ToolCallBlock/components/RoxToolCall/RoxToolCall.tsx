@@ -8,7 +8,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useMemo } from "react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 
-type SupersetToolCallProps = {
+type RoxToolCallProps = {
 	part: ToolPart;
 	toolName: string;
 	icon?: ComponentType<{ className?: string }>;
@@ -25,13 +25,13 @@ function stringifyValue(value: unknown): string {
 	}
 }
 
-export function SupersetToolCall({
+export function RoxToolCall({
 	part,
 	toolName,
 	icon: Icon = WrenchIcon,
 	details,
 	subtitle,
-}: SupersetToolCallProps) {
+}: RoxToolCallProps) {
 	const output =
 		"output" in part ? (part as { output?: unknown }).output : undefined;
 	const outputObject =

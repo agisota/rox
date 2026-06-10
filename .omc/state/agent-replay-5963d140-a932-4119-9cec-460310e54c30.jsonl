@@ -33,3 +33,8 @@
 {"t":0,"agent":"a7a59b1","agent_type":"unknown","event":"agent_stop","success":true}
 {"t":0,"agent":"a6f9623","agent_type":"unknown","event":"agent_stop","success":true}
 {"t":0,"agent":"a98bae0","agent_type":"unknown","event":"agent_stop","success":true}
+{"t":0,"agent":"afd5795","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"adb4553","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"ada4dce","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a2b8df8","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"af16509","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}

@@ -72,7 +72,7 @@ export default async function GitHubIntegrationPage() {
 				<CardHeader>
 					<CardTitle>Connection</CardTitle>
 					<CardDescription>
-						Install the Superset GitHub App to connect your repositories.
+						Install the Rox GitHub App to connect your repositories.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>

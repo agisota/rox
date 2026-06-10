@@ -25,7 +25,7 @@ interface GetGitProcessEnvOptions {
 let cachedDefaultGitEnv: Record<string, string> | null = null;
 let cachedDefaultGitEnvTime = 0;
 
-// Superset is a local Git client, so inherited user Git config/env is expected
+// Rox is a local Git client, so inherited user Git config/env is expected
 // behavior. simple-git 3.36 blocks these hooks by default; allow them centrally
 // instead of deleting individual env vars and changing Git semantics.
 const SIMPLE_GIT_OPTIONS = {

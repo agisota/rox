@@ -250,7 +250,7 @@ export function setupAutoUpdater(): void {
 	// Squirrel.Mac install failures happen in ShipIt out-of-process and never
 	// reach the lib's `error` event, so route both the lib's internal logger
 	// and our own handler narration through electron-log. Both halves of the
-	// state machine end up interleaved in ~/Library/Logs/Superset/main.log —
+	// state machine end up interleaved in ~/Library/Logs/Rox/main.log —
 	// always use `log.{info,warn,error}` here, not `console.*`.
 	log.transports.file.level = "info";
 	autoUpdater.logger = log;

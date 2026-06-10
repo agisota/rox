@@ -1,7 +1,7 @@
 import { UsersIcon } from "lucide-react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getResult } from "../../../../utils/tool-helpers";
-import { SupersetToolCall } from "../SupersetToolCall";
+import { RoxToolCall } from "../RoxToolCall";
 
 interface ListMembersToolCallProps {
 	part: ToolPart;
@@ -21,7 +21,7 @@ export function ListMembersToolCall({ part }: ListMembersToolCallProps) {
 		: [];
 
 	return (
-		<SupersetToolCall
+		<RoxToolCall
 			part={part}
 			toolName="List members"
 			icon={UsersIcon}

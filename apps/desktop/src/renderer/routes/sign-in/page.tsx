@@ -14,7 +14,7 @@ import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { setAuthToken } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { SupersetLogo } from "./components/SupersetLogo";
+import { RoxLogo } from "./components/RoxLogo";
 import { useSessionRecovery } from "./hooks/useSessionRecovery";
 
 export const Route = createFileRoute("/sign-in/")({
@@ -121,17 +121,17 @@ function SignInPage() {
 			<div className="flex flex-1 items-center justify-center">
 				<div className="flex flex-col items-center w-full max-w-md px-8">
 					<div className="mb-8">
-						<SupersetLogo className="h-12 w-auto" />
+						<RoxLogo className="h-12 w-auto" />
 					</div>
 
 					<div className="text-center mb-8">
 						<h1 className="text-xl font-semibold text-foreground mb-2">
-							Welcome to Superset
+							Добро пожаловать в Rox
 						</h1>
 						<p className="text-sm text-muted-foreground">
 							{hasLocalToken
-								? "Restoring your session"
-								: "Sign in to get started"}
+								? "Восстанавливаем сессию"
+								: "Войдите, чтобы начать"}
 						</p>
 					</div>
 
@@ -145,8 +145,8 @@ function SignInPage() {
 								disabled={isLoadingDev}
 							>
 								{isLoadingDev
-									? "Signing in..."
-									: "Sign in as Local Admin (dev)"}
+									? "Вход…"
+									: "Войти как локальный админ (dev)"}
 							</Button>
 						)}
 						{devError && (
@@ -162,7 +162,7 @@ function SignInPage() {
 							disabled={signInMutation.isPending}
 						>
 							<FaGithub className="size-5" />
-							Continue with GitHub
+							Продолжить через GitHub
 						</Button>
 
 						<Button
@@ -173,28 +173,28 @@ function SignInPage() {
 							disabled={signInMutation.isPending}
 						>
 							<FcGoogle className="size-5" />
-							Continue with Google
+							Продолжить через Google
 						</Button>
 					</div>
 
 					<p className="mt-8 text-xs text-muted-foreground/70 text-center max-w-xs">
-						By signing in, you agree to our{" "}
+						Входя, вы принимаете наши{" "}
 						<a
 							href={COMPANY.TERMS_URL}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="underline hover:text-muted-foreground transition-colors"
 						>
-							Terms of Service
+							Условия использования
 						</a>{" "}
-						and{" "}
+						и{" "}
 						<a
 							href={COMPANY.PRIVACY_URL}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="underline hover:text-muted-foreground transition-colors"
 						>
-							Privacy Policy
+							Политику конфиденциальности
 						</a>
 					</p>
 				</div>

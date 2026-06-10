@@ -40,7 +40,7 @@ import {
 } from "../utils/git";
 import { resolveWorktreePath } from "../utils/resolve-worktree-path";
 import { selectExternalWorktreesForImport } from "../utils/select-external-worktrees-for-import";
-import { copySupersetConfigToWorktree, loadSetupConfig } from "../utils/setup";
+import { copyRoxConfigToWorktree, loadSetupConfig } from "../utils/setup";
 import {
 	createWorkspaceFromExternalWorktree,
 	createWorkspaceFromWorktree,
@@ -87,7 +87,7 @@ function upsertImportedExternalWorktree({
 				createdAt,
 				gitStatus,
 				githubStatus: null,
-				createdBySuperset: false,
+				createdByRox: false,
 			})
 			.where(eq(worktrees.id, existingWorktree.id))
 			.run();
@@ -99,7 +99,7 @@ function upsertImportedExternalWorktree({
 			createdAt,
 			gitStatus,
 			githubStatus: null,
-			createdBySuperset: false,
+			createdByRox: false,
 		};
 	}
 
@@ -112,7 +112,7 @@ function upsertImportedExternalWorktree({
 			baseBranch,
 			createdAt,
 			gitStatus,
-			createdBySuperset: false,
+			createdByRox: false,
 		})
 		.returning()
 		.get();
@@ -215,7 +215,7 @@ async function importLiveExternalWorktrees({
 			isExplicit: false,
 		});
 
-		copySupersetConfigToWorktree(project.mainRepoPath, ext.path);
+		copyRoxConfigToWorktree(project.mainRepoPath, ext.path);
 		activeWorktreeIds.add(worktree.id);
 		imported++;
 	}
@@ -370,7 +370,7 @@ async function handleNewWorktree({
 			branch: localBranchName,
 			baseBranch: compareBaseBranch,
 			gitStatus: null,
-			createdBySuperset: true,
+			createdByRox: true,
 		})
 		.returning()
 		.get();
@@ -646,7 +646,7 @@ export const createCreateProcedures = () => {
 						branch,
 						baseBranch: compareBaseBranch,
 						gitStatus: null,
-						createdBySuperset: true,
+						createdByRox: true,
 					})
 					.returning()
 					.get();

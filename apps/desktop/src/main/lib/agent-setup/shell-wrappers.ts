@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import {
 	SUPERSET_MANAGED_BINARIES,
-	type SupersetManagedBinary,
+	type RoxManagedBinary,
 } from "./desktop-agent-capabilities";
 import { BASH_DIR, BIN_DIR, ZSH_DIR } from "./paths";
 
@@ -28,7 +28,7 @@ function getShellName(shell: string): string {
 /**
  * Shell snippet to save all SUPERSET_* env vars before sourcing user RC files.
  * Used in tandem with {@link SUPERSET_ENV_RESTORE} to prevent user shell
- * configs from overriding Superset-managed environment variables (e.g.
+ * configs from overriding Rox-managed environment variables (e.g.
  * SUPERSET_WORKSPACE_NAME).
  *
  * @see https://github.com/AidenIO/superset/issues/2386
@@ -88,7 +88,7 @@ function buildManagedCommandPrelude(shellName: string, binDir: string): string {
 	if (shellName === "fish") {
 		const escapedBinDir = escapeFishDoubleQuoted(binDir);
 		return SUPERSET_MANAGED_BINARIES.map(
-			(name: SupersetManagedBinary) =>
+			(name: RoxManagedBinary) =>
 				`functions -q ${name}; and functions -e ${name}
 function ${name}
   set -l _superset_wrapper "${escapedBinDir}/${name}"
@@ -102,7 +102,7 @@ end`,
 	}
 
 	return SUPERSET_MANAGED_BINARIES.map(
-		(name: SupersetManagedBinary) =>
+		(name: RoxManagedBinary) =>
 			`unalias ${name} 2>/dev/null || true
 ${name}() {
   _superset_wrapper=${quoteShellLiteral(`${binDir}/${name}`)}
@@ -189,7 +189,7 @@ export function createZshWrapper(
 	// Temporarily restore the user's ZDOTDIR while sourcing user config, then
 	// switch back so zsh continues through our wrapper chain.
 	const zshenvPath = path.join(paths.ZSH_DIR, ".zshenv");
-	const zshenvScript = `# Superset zsh env wrapper
+	const zshenvScript = `# Rox zsh env wrapper
 ${SUPERSET_ENV_SAVE}
 _superset_home="\${SUPERSET_ORIG_ZDOTDIR:-$HOME}"
 export ZDOTDIR="$_superset_home"
@@ -202,7 +202,7 @@ export ZDOTDIR=${quotedZshDir}
 	// Source user .zprofile with their ZDOTDIR, then restore wrapper ZDOTDIR
 	// so startup continues into our .zshrc wrapper.
 	const zprofilePath = path.join(paths.ZSH_DIR, ".zprofile");
-	const zprofileScript = `# Superset zsh profile wrapper
+	const zprofileScript = `# Rox zsh profile wrapper
 ${SUPERSET_ENV_SAVE}
 _superset_home="\${SUPERSET_ORIG_ZDOTDIR:-$HOME}"
 export ZDOTDIR="$_superset_home"
@@ -214,7 +214,7 @@ export ZDOTDIR=${quotedZshDir}
 
 	// Reset ZDOTDIR before sourcing so Oh My Zsh works correctly
 	const zshrcPath = path.join(paths.ZSH_DIR, ".zshrc");
-	const zshrcScript = `# Superset zsh rc wrapper
+	const zshrcScript = `# Rox zsh rc wrapper
 ${SUPERSET_ENV_SAVE}
 _superset_home="\${SUPERSET_ORIG_ZDOTDIR:-$HOME}"
 export ZDOTDIR="$_superset_home"
@@ -230,10 +230,10 @@ export ZDOTDIR=${quotedZshDir}
 
 	// .zlogin runs AFTER .zshrc in login shells. By restoring ZDOTDIR above,
 	// zsh sources our .zlogin instead of the user's directly. We source the
-	// user's .zlogin only for interactive shells, then re-assert Superset's
+	// user's .zlogin only for interactive shells, then re-assert Rox's
 	// PATH prepend after user startup hooks run.
 	const zloginPath = path.join(paths.ZSH_DIR, ".zlogin");
-	const zloginScript = `# Superset zsh login wrapper
+	const zloginScript = `# Rox zsh login wrapper
 ${SUPERSET_ENV_SAVE}
 _superset_home="\${SUPERSET_ORIG_ZDOTDIR:-$HOME}"
 export ZDOTDIR="$_superset_home"
@@ -271,9 +271,9 @@ export function createBashWrapper(
 	logModeDiagnostics("bash");
 
 	const rcfilePath = path.join(paths.BASH_DIR, "rcfile");
-	const script = `# Superset bash rcfile wrapper
+	const script = `# Rox bash rcfile wrapper
 
-# Save Superset env vars before sourcing user config
+# Save Rox env vars before sourcing user config
 ${SUPERSET_ENV_SAVE}
 _superset_initial_path="$PATH"
 
@@ -292,7 +292,7 @@ fi
 # Source bashrc if separate
 [[ -f "$HOME/.bashrc" ]] && source "$HOME/.bashrc"
 
-# Restore Superset env vars that user config may have overridden
+# Restore Rox env vars that user config may have overridden
 ${SUPERSET_ENV_RESTORE}
 
 # Restore caller-provided PATH entries that profile files may have removed.

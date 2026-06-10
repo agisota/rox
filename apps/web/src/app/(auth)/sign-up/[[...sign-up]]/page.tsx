@@ -54,7 +54,7 @@ export default function SignUpPage() {
 					Create an account
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign up to get started with Superset
+					Sign up to get started with Rox
 				</p>
 			</div>
 			<div className="grid gap-4">

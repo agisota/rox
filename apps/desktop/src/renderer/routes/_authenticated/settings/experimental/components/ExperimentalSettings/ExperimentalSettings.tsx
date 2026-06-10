@@ -22,7 +22,7 @@ interface ExperimentalSettingsProps {
 export function ExperimentalSettings({
 	visibleItems,
 }: ExperimentalSettingsProps) {
-	const showSupersetV2 = isItemVisible(
+	const showRoxV2 = isItemVisible(
 		SETTING_ITEM_ID.EXPERIMENTAL_SUPERSET_V2,
 		visibleItems,
 	);
@@ -55,11 +55,11 @@ export function ExperimentalSettings({
 			</div>
 
 			<div className="space-y-6">
-				{showSupersetV2 && !isV2OnlyUser && (
+				{showRoxV2 && !isV2OnlyUser && (
 					<div className="flex items-center justify-between gap-6">
 						<div className="min-w-0 flex-1 space-y-0.5">
 							<Label htmlFor="superset-v2" className="text-sm font-medium">
-								Try Superset v2
+								Try Rox v2
 							</Label>
 							<p className="text-xs text-muted-foreground">
 								Use the new workspace experience.

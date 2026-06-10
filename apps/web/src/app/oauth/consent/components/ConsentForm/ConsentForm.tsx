@@ -123,7 +123,7 @@ export function ConsentForm({
 				</h1>
 				<p className="text-muted-foreground text-sm">
 					<span className="font-medium text-foreground">{displayName}</span> is
-					requesting access to your Superset account
+					requesting access to your Rox account
 				</p>
 			</div>
 
@@ -225,7 +225,7 @@ export function ConsentForm({
 function getClientDisplayName(clientId: string): string {
 	const knownClients: Record<string, string> = {
 		"claude-code": "Claude Code",
-		"superset-desktop": "Superset Desktop",
+		"superset-desktop": "Rox Desktop",
 	};
 	if (knownClients[clientId]) {
 		return knownClients[clientId];

@@ -864,8 +864,8 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.EXPERIMENTAL_SUPERSET_V2,
 		section: "experimental",
-		title: "Try Superset Version 2 (Early Access)",
-		description: "Switch between Superset V1 and the new V2 experience",
+		title: "Try Rox Version 2 (Early Access)",
+		description: "Switch between Rox V1 and the new V2 experience",
 		keywords: [
 			"experimental",
 			"experiments",
@@ -1106,7 +1106,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		id: SETTING_ITEM_ID.PROJECT_IMPORT_WORKTREES,
 		section: "project",
 		title: "Import Worktrees",
-		description: "Import existing worktrees from disk into Superset",
+		description: "Import existing worktrees from disk into Rox",
 		keywords: [
 			"project",
 			"import",
@@ -1261,7 +1261,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		section: "security",
 		title: "Allow remote workspaces to access this device via relay",
 		description:
-			"Controls whether remote workspaces can reach your local host service through the Superset relay",
+			"Controls whether remote workspaces can reach your local host service through the Rox relay",
 		keywords: [
 			"security",
 			"relay",

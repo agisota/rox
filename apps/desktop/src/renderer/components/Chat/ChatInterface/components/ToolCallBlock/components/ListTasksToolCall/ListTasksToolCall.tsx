@@ -3,7 +3,7 @@ import { ClipboardListIcon } from "lucide-react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getResult } from "../../../../utils/tool-helpers";
 import { formatTaskDate, toStringArray } from "../../utils/taskToolCallHelpers";
-import { SupersetToolCall } from "../SupersetToolCall";
+import { RoxToolCall } from "../RoxToolCall";
 import { TaskItemDisplay } from "../TaskItemDisplay";
 
 interface ListTasksToolCallProps {
@@ -32,7 +32,7 @@ export function ListTasksToolCall({ part }: ListTasksToolCallProps) {
 	const hasMore = resultData.hasMore === true;
 
 	return (
-		<SupersetToolCall
+		<RoxToolCall
 			part={part}
 			toolName="List tasks"
 			icon={ClipboardListIcon}

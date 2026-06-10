@@ -96,7 +96,7 @@ export default function SignInPage() {
 			<div className="flex flex-col space-y-2 text-center">
 				<h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign in to continue to Superset
+					Sign in to continue to Rox
 				</p>
 			</div>
 			<div className="grid gap-4">

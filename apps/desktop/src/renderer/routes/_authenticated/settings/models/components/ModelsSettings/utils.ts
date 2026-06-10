@@ -90,7 +90,7 @@ export function getProviderSubtitle(
 		return EXTERNAL_OAUTH_LABELS[providerId];
 	}
 	if (status.authMethod === "oauth") {
-		return "Connected in Superset";
+		return "Connected in Rox";
 	}
 	if (status.authMethod === "api_key" || status.authMethod === "env") {
 		return "Connected with API key";

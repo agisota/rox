@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { FileXIcon } from "lucide-react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getResult } from "../../../../utils/tool-helpers";
-import { SupersetToolCall } from "../SupersetToolCall";
+import { RoxToolCall } from "../RoxToolCall";
 import { TaskItemDisplay } from "../TaskItemDisplay";
 
 interface DeleteTaskToolCallProps {
@@ -21,7 +21,7 @@ export function DeleteTaskToolCall({ part }: DeleteTaskToolCallProps) {
 		: [];
 
 	return (
-		<SupersetToolCall
+		<RoxToolCall
 			part={part}
 			toolName="Delete task"
 			icon={FileXIcon}

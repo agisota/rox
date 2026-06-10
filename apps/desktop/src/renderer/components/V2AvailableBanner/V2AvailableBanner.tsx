@@ -35,9 +35,9 @@ export function V2AvailableBanner() {
 				>
 					<SidebarCard
 						badge="New"
-						title="Superset v2 is here"
+						title="Rox v2 is here"
 						description="Try the new cloud workspace experience."
-						actionLabel="Try new version of Superset"
+						actionLabel="Try new version of Rox"
 						onAction={handleManage}
 						onDismiss={handleDismiss}
 					/>

@@ -49,7 +49,7 @@ export default async function AgentsPage() {
 		<div className="flex flex-col gap-8">
 			<div className="flex flex-col items-center gap-6 text-center">
 				<div>
-					<h1 className="mb-3 text-3xl font-medium">Download Superset</h1>
+					<h1 className="mb-3 text-3xl font-medium">Download Rox</h1>
 					<p className="text-muted-foreground">
 						Use the desktop app to start running parallel coding agents.
 					</p>
