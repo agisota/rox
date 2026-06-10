@@ -1,7 +1,7 @@
 {
-  "tool_name": "mcp__peekaboo__app",
-  "tool_input_preview": "{\"action\":\"focus\",\"name\":\"Google Chrome\"}",
-  "error": "Failed to focus application: The operation couldn’t be completed. Connection refused",
-  "timestamp": "2026-06-10T07:23:42.859Z",
-  "retry_count": 2
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"export PATH=\\\"/opt/homebrew/bin:$PATH\\\"\\nsleep 3\\npeekaboo app switch --to \\\"Rox\\\" 2>&1 | tail -1; sleep 2\\npeekaboo image --mode frontmost --path /tmp/rox-oauth/v13b.png 2>&1 | tail -2\\nl...",
+  "error": "Exit code 1\n✓ Switched to Rox\nError: The user declined TCCs for application, window, display capture",
+  "timestamp": "2026-06-10T09:52:08.705Z",
+  "retry_count": 4
 }

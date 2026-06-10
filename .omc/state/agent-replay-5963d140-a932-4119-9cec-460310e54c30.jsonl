@@ -38,3 +38,4 @@
 {"t":0,"agent":"ada4dce","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
 {"t":0,"agent":"a2b8df8","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
 {"t":0,"agent":"af16509","agent_type":"workflow-subagent","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"afbe338","agent_type":"unknown","event":"agent_stop","success":true}

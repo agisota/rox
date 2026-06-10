@@ -228,6 +228,12 @@
       "type": "file"
     },
     {
+      "path": "apps/web/src/app/auth/desktop/success/components/DesktopRedirect/DesktopRedirect.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1781085416857,
+      "type": "file"
+    },
+    {
       "path": "apps/api/src/app/api/auth/desktop/connect/route.ts",
       "accessCount": 3,
       "lastAccessed": 1781069949087,
@@ -297,12 +303,6 @@
       "path": "apps/desktop/electron.vite.config.ts",
       "accessCount": 1,
       "lastAccessed": 1781069046195,
-      "type": "file"
-    },
-    {
-      "path": "apps/web/src/app/auth/desktop/success/components/DesktopRedirect/DesktopRedirect.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1781069080830,
       "type": "file"
     },
     {

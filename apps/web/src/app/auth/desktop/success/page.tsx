@@ -16,7 +16,7 @@ export default async function DesktopSuccessPage({
 }) {
 	const {
 		desktop_state: state,
-		desktop_protocol = "superset",
+		desktop_protocol = "rox",
 		desktop_local_callback: localCallbackBase,
 	} = await searchParams;
 
