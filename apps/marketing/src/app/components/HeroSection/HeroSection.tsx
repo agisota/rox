@@ -31,14 +31,14 @@ export function HeroSection() {
 								}}
 							>
 								<span className="invisible" aria-hidden="true">
-									The Code Editor for AI Agents.
+									Редактор кода для ИИ-агентов.
 								</span>
 								<span className="absolute inset-0">
 									<TypewriterText
 										segments={[
-											{ text: "The Code Editor for " },
+											{ text: "Редактор кода для " },
 											{
-												text: "AI Agents.",
+												text: "ИИ-агентов.",
 												style: {
 													fontFamily: "var(--font-geist-pixel-grid)",
 												},
@@ -50,8 +50,8 @@ export function HeroSection() {
 								</span>
 							</h1>
 							<p className="text-base sm:text-xl font-light text-muted-foreground max-w-4xl mx-auto">
-								Orchestrate 100+ coding agents in parallel. Works for any
-								agents. Built for the AI era.
+								Оркестрируйте 100+ кодинг-агентов параллельно. Работает с
+								любыми агентами. Создан для эпохи ИИ.
 							</p>
 						</div>
 
@@ -61,9 +61,9 @@ export function HeroSection() {
 								type="button"
 								className="px-4 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base font-normal bg-background border border-border text-foreground hover:bg-muted transition-colors flex items-center gap-2"
 								onClick={() => window.open(COMPANY.GITHUB_URL, "_blank")}
-								aria-label="View on GitHub"
+								aria-label="Открыть на GitHub"
 							>
-								View on GitHub
+								Открыть на GitHub
 								<FaGithub className="size-4" />
 							</button>
 						</div>

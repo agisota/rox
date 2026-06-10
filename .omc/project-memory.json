@@ -234,6 +234,12 @@
       "type": "file"
     },
     {
+      "path": "apps/marketing/src/app/components/HeroSection/HeroSection.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1781086857691,
+      "type": "file"
+    },
+    {
       "path": "apps/api/src/app/api/auth/desktop/connect/route.ts",
       "accessCount": 3,
       "lastAccessed": 1781069949087,
@@ -243,6 +249,24 @@
       "path": "apps/desktop/src/renderer/routes/sign-in/components/SupersetLogo/SupersetLogo.tsx",
       "accessCount": 3,
       "lastAccessed": 1781083110270,
+      "type": "file"
+    },
+    {
+      "path": "apps/marketing/content/legal/terms.mdx",
+      "accessCount": 3,
+      "lastAccessed": 1781086671820,
+      "type": "file"
+    },
+    {
+      "path": "apps/marketing/content/legal/privacy.mdx",
+      "accessCount": 3,
+      "lastAccessed": 1781086724330,
+      "type": "file"
+    },
+    {
+      "path": "apps/marketing/src/app/components/Footer/Footer.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1781086777448,
       "type": "file"
     },
     {
