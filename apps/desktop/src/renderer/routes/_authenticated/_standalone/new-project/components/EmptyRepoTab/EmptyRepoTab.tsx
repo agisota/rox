@@ -18,11 +18,11 @@ export function EmptyRepoTab({ onError, parentDir }: EmptyRepoTabProps) {
 	const handleCreate = () => {
 		const trimmed = name.trim();
 		if (!trimmed) {
-			onError("Please enter a repository name");
+			onError("Введите имя репозитория");
 			return;
 		}
 		if (!parentDir.trim()) {
-			onError("Please select a project location");
+			onError("Выберите расположение проекта");
 			return;
 		}
 
@@ -60,7 +60,7 @@ export function EmptyRepoTab({ onError, parentDir }: EmptyRepoTabProps) {
 			</div>
 			<div className="flex justify-end pt-2 border-t border-border/40">
 				<Button onClick={handleCreate} disabled={isLoading} size="sm">
-					{isLoading ? "Creating..." : "Create"}
+					{isLoading ? "Создаем..." : "Создать"}
 				</Button>
 			</div>
 		</div>

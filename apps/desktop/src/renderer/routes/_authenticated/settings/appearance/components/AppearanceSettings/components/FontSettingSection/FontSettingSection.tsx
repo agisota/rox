@@ -16,16 +16,16 @@ import { useSystemFonts } from "./hooks/useSystemFonts";
 
 const VARIANT_CONFIG = {
 	editor: {
-		title: "Editor font",
-		description: "Font used in diff views and file editors",
+		title: "Шрифт редактора",
+		description: "Шрифт в diff-представлениях и файловых редакторах",
 		defaultFamily: DEFAULT_CODE_EDITOR_FONT_FAMILY,
 		defaultSize: DEFAULT_CODE_EDITOR_FONT_SIZE,
 		familyKey: "editorFontFamily",
 		sizeKey: "editorFontSize",
 	},
 	terminal: {
-		title: "Terminal font",
-		description: "Font used in terminal panels.",
+		title: "Шрифт терминала",
+		description: "Шрифт в панелях терминала.",
 		defaultFamily: DEFAULT_TERMINAL_FONT_FAMILY,
 		defaultSize: DEFAULT_TERMINAL_FONT_SIZE,
 		familyKey: "terminalFontFamily",

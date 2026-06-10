@@ -157,8 +157,8 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 				{showSignOut && (
 					<div className={showProfile ? "pt-5" : undefined}>
 						<SettingRow
-							label="Sign out of this device"
-							hint="You'll need to sign in again to use Rox on this device."
+							label="Выйти на этом устройстве"
+							hint="Чтобы использовать Rox на этом устройстве, нужно будет войти снова."
 						>
 							<Button
 								variant="outline"

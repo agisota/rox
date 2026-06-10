@@ -95,10 +95,12 @@ function AutomationsPage() {
 	const runNowMutation = useMutation({
 		mutationFn: ({ id }: { id: string; name: string }) =>
 			apiTrpcClient.automation.runNow.mutate({ id }),
-		onSuccess: (_, { name }) => toast.success(`Running "${name}" now`),
+		onSuccess: (_, { name }) => toast.success(`"${name}" запущена`),
 		onError: (error) =>
 			toast.error(
-				error instanceof Error ? error.message : "Failed to trigger run",
+				error instanceof Error
+					? error.message
+					: "Не удалось запустить автоматизацию",
 			),
 	});
 
@@ -107,11 +109,13 @@ function AutomationsPage() {
 			apiTrpcClient.automation.delete.mutate({ id }),
 		onSuccess: (_, { name }) => {
 			setPendingDelete(null);
-			toast.success(`"${name}" deleted`);
+			toast.success(`"${name}" удалена`);
 		},
 		onError: (error) =>
 			toast.error(
-				error instanceof Error ? error.message : "Failed to delete automation",
+				error instanceof Error
+					? error.message
+					: "Не удалось удалить автоматизацию",
 			),
 	});
 
@@ -225,7 +229,9 @@ function AutomationsPage() {
 		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
 			<header className="flex h-11 shrink-0 items-center justify-between border-b border-border px-4">
 				<div className="flex items-center gap-3">
-					<h1 className="text-sm font-semibold tracking-tight">Automations</h1>
+					<h1 className="text-sm font-semibold tracking-tight">
+						Автоматизации
+					</h1>
 					<div className="h-4 w-px bg-border" />
 					<Tabs
 						value={scope}
@@ -238,7 +244,7 @@ function AutomationsPage() {
 								value="mine"
 								className="h-8 rounded-md px-3 data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground"
 							>
-								<span className="text-sm">Mine</span>
+								<span className="text-sm">Мои</span>
 								<span className="ml-1 tabular-nums text-xs text-muted-foreground">
 									{mineCount}
 								</span>
@@ -247,7 +253,7 @@ function AutomationsPage() {
 								value="team"
 								className="h-8 rounded-md px-3 data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground"
 							>
-								<span className="text-sm">Team</span>
+								<span className="text-sm">Команда</span>
 								<span className="ml-1 tabular-nums text-xs text-muted-foreground">
 									{teamCount}
 								</span>
@@ -268,7 +274,7 @@ function AutomationsPage() {
 							target="_blank"
 							rel="noreferrer"
 						>
-							Learn more
+							Подробнее
 						</a>
 					</Button>
 					<Button
@@ -279,7 +285,7 @@ function AutomationsPage() {
 						onClick={() => setCreateOpen(true)}
 					>
 						<LuPlus className="size-4" />
-						<span>New automation</span>
+						<span>Новая автоматизация</span>
 					</Button>
 				</div>
 			</header>
@@ -292,23 +298,23 @@ function AutomationsPage() {
 						</div>
 						<div className="min-w-0 space-y-1">
 							<p className="text-sm font-medium text-foreground">
-								Supercharge automations with the{" "}
+								Усильте автоматизации через{" "}
 								<code className="select-text cursor-text rounded bg-background/80 px-1 py-0.5 font-mono text-[13px]">
 									superset
 								</code>{" "}
 								CLI
 							</p>
 							<p className="text-sm leading-relaxed text-muted-foreground">
-								It&apos;s available in every Rox terminal. Tell the agent
-								to use it to spin up workspaces, run tasks, or manage other
-								automations.{" "}
+								Он доступен в каждом терминале Rox. Попросите агента
+								использовать его, чтобы поднимать воркспейсы, запускать задачи
+								или управлять другими автоматизациями.{" "}
 								<a
 									href={`${COMPANY.DOCS_URL}/cli/getting-started`}
 									target="_blank"
 									rel="noreferrer"
 									className="font-medium text-foreground underline underline-offset-2 hover:text-foreground/80"
 								>
-									Getting started
+									Начало работы
 								</a>{" "}
 								·{" "}
 								<a
@@ -317,7 +323,7 @@ function AutomationsPage() {
 									rel="noreferrer"
 									className="font-medium text-foreground underline underline-offset-2 hover:text-foreground/80"
 								>
-									CLI reference
+									Справочник CLI
 								</a>
 							</p>
 						</div>
@@ -326,7 +332,7 @@ function AutomationsPage() {
 							variant="ghost"
 							size="icon-sm"
 							onClick={() => setCliHintDismissed(true)}
-							aria-label="Dismiss"
+							aria-label="Закрыть"
 							className="absolute right-2 top-2 size-6 text-muted-foreground hover:text-foreground"
 						>
 							<LuX className="size-3.5" />
@@ -349,9 +355,9 @@ function AutomationsPage() {
 							>
 								<LuSearchX />
 							</EmptyMedia>
-							<EmptyTitle>No team automations</EmptyTitle>
+							<EmptyTitle>Нет командных автоматизаций</EmptyTitle>
 							<EmptyDescription>
-								Nobody on your team has shared automations yet.
+								В вашей команде пока никто не поделился автоматизациями.
 							</EmptyDescription>
 						</EmptyHeader>
 					</Empty>
@@ -363,13 +369,13 @@ function AutomationsPage() {
 								"sticky top-0 z-10 h-8 border-b border-border bg-background px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80",
 							)}
 						>
-							<span>Name</span>
-							{scope === "team" && <span>Owner</span>}
-							<span>Project</span>
-							<span>Workspace</span>
-							<span>Device</span>
-							<span>Agent</span>
-							<span>Schedule</span>
+							<span>Название</span>
+							{scope === "team" && <span>Владелец</span>}
+							<span>Проект</span>
+							<span>Воркспейс</span>
+							<span>Устройство</span>
+							<span>Агент</span>
+							<span>Расписание</span>
 							<span />
 						</div>
 
@@ -381,8 +387,8 @@ function AutomationsPage() {
 									? workspacesById.get(automation.v2WorkspaceId)
 									: null;
 								const workspaceLabel = !automation.v2WorkspaceId
-									? "New workspace"
-									: (workspace?.name ?? "Deleted");
+									? "Новый воркспейс"
+									: (workspace?.name ?? "Удален");
 								const host = automation.targetHostId
 									? hostsById.get(automation.targetHostId)
 									: null;
@@ -438,7 +444,7 @@ function AutomationsPage() {
 													variant="secondary"
 													className="shrink-0 text-[10px]"
 												>
-													paused
+													на паузе
 												</Badge>
 											)}
 										</span>
@@ -483,7 +489,7 @@ function AutomationsPage() {
 												icon={
 													<HiOutlineComputerDesktop className="size-3 shrink-0" />
 												}
-												label={host?.name ?? "Auto"}
+												label={host?.name ?? "Авто"}
 											/>
 										</span>
 
@@ -509,7 +515,7 @@ function AutomationsPage() {
 															variant="ghost"
 															size="icon-sm"
 															onClick={(e) => e.stopPropagation()}
-															aria-label="Row actions"
+															aria-label="Действия со строкой"
 															className="opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100 focus-visible:opacity-100"
 														>
 															<LuEllipsis className="size-4" />
@@ -530,7 +536,7 @@ function AutomationsPage() {
 															}
 														>
 															<LuPencil className="size-4" />
-															Edit
+															Изменить
 														</DropdownMenuItem>
 														<DropdownMenuItem
 															onSelect={() =>
@@ -541,7 +547,7 @@ function AutomationsPage() {
 															}
 														>
 															<LuPlay className="size-4" />
-															Run now
+															Запустить сейчас
 														</DropdownMenuItem>
 														<DropdownMenuItem
 															onSelect={() =>
@@ -553,14 +559,14 @@ function AutomationsPage() {
 															}
 														>
 															<LuClock className="size-4" />
-															Version history
+															История версий
 														</DropdownMenuItem>
 														<DropdownMenuItem
 															variant="destructive"
 															onSelect={() => setPendingDelete(automation)}
 														>
 															<LuTrash2 className="size-4" />
-															Delete
+															Удалить
 														</DropdownMenuItem>
 													</DropdownMenuContent>
 												</DropdownMenu>
@@ -589,18 +595,18 @@ function AutomationsPage() {
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete automation?</AlertDialogTitle>
+						<AlertDialogTitle>Удалить автоматизацию?</AlertDialogTitle>
 						<AlertDialogDescription>
 							{pendingDelete ? (
 								<>
-									"{pendingDelete.name}" will stop firing and its run history
-									will be removed. This can't be undone.
+									"{pendingDelete.name}" больше не будет запускаться, а история
+									запусков будет удалена. Это нельзя отменить.
 								</>
 							) : null}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>Отмена</AlertDialogCancel>
 						<AlertDialogAction
 							disabled={deleteMutation.isPending}
 							onClick={() => {
@@ -612,7 +618,7 @@ function AutomationsPage() {
 								}
 							}}
 						>
-							Delete
+							Удалить
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

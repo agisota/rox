@@ -17,11 +17,11 @@ interface PriorityMenuItemsProps {
 }
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = {
-	none: "No priority",
-	urgent: "Urgent",
-	high: "High",
-	medium: "Medium",
-	low: "Low",
+	none: "Без приоритета",
+	urgent: "Срочный",
+	high: "Высокий",
+	medium: "Средний",
+	low: "Низкий",
 };
 
 export function PriorityMenuItems({

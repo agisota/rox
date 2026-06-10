@@ -63,7 +63,7 @@ export function useDashboardSidebarProjectSectionActions({
 		alert({
 			title: "Remove project from sidebar?",
 			description:
-				"This will remove workspaces from the sidebar and delete all project sections. The workspaces or projects won't be deleted.",
+				"Воркспейсы будут убраны из сайдбара, а все секции проекта будут удалены. Сами воркспейсы и проекты не будут удалены.",
 			actions: [
 				{ label: "Cancel", variant: "outline", onClick: () => {} },
 				{

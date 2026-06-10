@@ -70,35 +70,35 @@ export const mockBranches = [
 export const mockWorkspaces: MockWorkspace[] = [
 	{
 		id: "workspace-1",
-		name: "Rox Main",
+		name: "Основной Rox",
 		repoId: "1",
 		repoFullName: "supersetai/superset",
 		branch: "main",
 	},
 	{
 		id: "workspace-2",
-		name: "Marketing Refresh",
+		name: "Обновление маркетинга",
 		repoId: "3",
 		repoFullName: "supersetai/marketing",
 		branch: "feature/auth",
 	},
 	{
 		id: "workspace-3",
-		name: "API Stripe",
+		name: "Stripe API",
 		repoId: "4",
 		repoFullName: "supersetai/api-server",
 		branch: "dev",
 	},
 	{
 		id: "workspace-4",
-		name: "Docs Polish",
+		name: "Доработка документации",
 		repoId: "2",
 		repoFullName: "supersetai/docs",
 		branch: "staging",
 	},
 	{
 		id: "workspace-5",
-		name: "Mobile CI",
+		name: "Мобильный CI",
 		repoId: "5",
 		repoFullName: "supersetai/mobile-app",
 		branch: "main",
@@ -109,7 +109,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-1",
 		workspaceId: "workspace-1",
-		title: "Add user authentication flow",
+		title: "Добавить сценарий аутентификации пользователя",
 		status: "completed",
 		repoName: "supersetai/superset",
 		modelName: "Claude Sonnet 4.5",
@@ -121,7 +121,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-2",
 		workspaceId: "workspace-2",
-		title: "Fix navbar responsive layout",
+		title: "Исправить адаптивную верстку навигации",
 		status: "running",
 		repoName: "supersetai/marketing",
 		modelName: "Claude Sonnet 4.5",
@@ -133,7 +133,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-3",
 		workspaceId: "workspace-3",
-		title: "Implement webhook handlers for Stripe",
+		title: "Реализовать webhook-обработчики для Stripe",
 		status: "completed",
 		repoName: "supersetai/api-server",
 		modelName: "GPT-4o",
@@ -145,7 +145,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-4",
 		workspaceId: "workspace-4",
-		title: "Update README with new API docs",
+		title: "Обновить README новой API-документацией",
 		status: "failed",
 		repoName: "supersetai/docs",
 		modelName: "Claude Sonnet 4.5",
@@ -157,7 +157,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-5",
 		workspaceId: "workspace-3",
-		title: "Refactor database connection pooling",
+		title: "Отрефакторить пул соединений с базой данных",
 		status: "completed",
 		repoName: "supersetai/api-server",
 		modelName: "Gemini 2.5 Pro",
@@ -169,7 +169,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-6",
 		workspaceId: "workspace-1",
-		title: "Add dark mode toggle component",
+		title: "Добавить компонент переключения темной темы",
 		status: "completed",
 		repoName: "supersetai/superset",
 		modelName: "Claude Opus 4",
@@ -181,7 +181,7 @@ export const mockSessions: MockSession[] = [
 	{
 		id: "session-7",
 		workspaceId: "workspace-5",
-		title: "Setup CI/CD pipeline with GitHub Actions",
+		title: "Настроить CI/CD-пайплайн с GitHub Actions",
 		status: "completed",
 		repoName: "supersetai/mobile-app",
 		modelName: "GPT-4o",
@@ -231,28 +231,28 @@ export const mockMessages: MockMessage[] = [
 		id: "msg-1",
 		role: "user",
 		content:
-			"Add a user authentication flow using better-auth. Include sign-in, sign-up, and password reset pages.",
+			"Добавь сценарий аутентификации пользователя на better-auth. Включи страницы входа, регистрации и сброса пароля.",
 		createdAt: new Date(Date.now() - 1000 * 60 * 35),
 	},
 	{
 		id: "msg-2",
 		role: "assistant",
 		content:
-			"I'll implement a complete authentication flow using better-auth. Let me start by setting up the auth configuration and creating the necessary pages.\n\n**Plan:**\n1. Configure better-auth in the API\n2. Create sign-in page with email/password\n3. Create sign-up page with validation\n4. Add password reset flow\n5. Set up protected route middleware\n\nLet me begin with the auth configuration...",
+			"Я реализую полный сценарий аутентификации на better-auth. Начну с настройки auth-конфигурации и создания нужных страниц.\n\n**План:**\n1. Настроить better-auth в API\n2. Создать страницу входа по email/password\n3. Создать страницу регистрации с валидацией\n4. Добавить сценарий сброса пароля\n5. Настроить middleware для защищенных маршрутов\n\nНачну с auth-конфигурации...",
 		createdAt: new Date(Date.now() - 1000 * 60 * 34),
 	},
 	{
 		id: "msg-3",
 		role: "user",
 		content:
-			"Looks good! Can you also add OAuth support for GitHub and Google?",
+			"Выглядит хорошо! Можешь еще добавить поддержку OAuth для GitHub и Google?",
 		createdAt: new Date(Date.now() - 1000 * 60 * 31),
 	},
 	{
 		id: "msg-4",
 		role: "assistant",
 		content:
-			"I'll add OAuth providers for both GitHub and Google. I'll update the auth configuration and add the OAuth buttons to the sign-in and sign-up pages.\n\nHere's what I'm changing:\n- Adding GitHub and Google provider configs\n- Creating OAuth callback routes\n- Adding social login buttons with proper icons",
+			"Добавлю OAuth-провайдеры для GitHub и Google. Обновлю auth-конфигурацию и добавлю OAuth-кнопки на страницы входа и регистрации.\n\nЧто меняю:\n- Добавляю конфиги провайдеров GitHub и Google\n- Создаю OAuth callback-маршруты\n- Добавляю кнопки социального входа с нужными иконками",
 		createdAt: new Date(Date.now() - 1000 * 60 * 30),
 	},
 ];

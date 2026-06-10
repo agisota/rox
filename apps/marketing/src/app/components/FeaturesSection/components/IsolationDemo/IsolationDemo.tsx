@@ -70,8 +70,7 @@ const DIFF_LINES = [
 	{
 		id: "line-12",
 		type: "added",
-		content:
-			"\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0Rox",
+		content: "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0Rox",
 	},
 	{
 		id: "line-13",
@@ -122,13 +121,13 @@ export function IsolationDemo() {
 						type="button"
 						className="px-2 py-1 text-xs text-white/60 hover:text-white/80 bg-white/5 rounded transition-colors whitespace-nowrap"
 					>
-						Side by Side
+						Рядом
 					</button>
 					<button
 						type="button"
 						className="px-2 py-1 text-xs text-white/40 hover:text-white/60 rounded transition-colors"
 					>
-						Inline
+						В строку
 					</button>
 				</div>
 			</div>
@@ -140,18 +139,18 @@ export function IsolationDemo() {
 					<div className="p-2 border-b border-white/5">
 						<div className="flex items-center gap-2 px-2 py-1.5 text-white/50 text-xs">
 							<HiOutlineChatBubbleLeftRight className="w-3.5 h-3.5" />
-							<span>Messages</span>
+							<span>Сообщения</span>
 						</div>
 						<div className="flex items-center gap-2 px-2 py-1.5 text-white/50 text-xs">
 							<VscGitCommit className="w-3.5 h-3.5" />
-							<span>Commits</span>
+							<span>Коммиты</span>
 							<span className="ml-auto bg-white/10 px-1.5 rounded text-[10px]">
 								3
 							</span>
 						</div>
 						<div className="flex items-center gap-2 px-2 py-1.5 text-white/80 text-xs bg-white/5 rounded">
 							<VscGitPullRequest className="w-3.5 h-3.5" />
-							<span>Against Main</span>
+							<span>Сравнение с main</span>
 							<HiOutlineCheck className="ml-auto w-3.5 h-3.5 text-green-400" />
 						</div>
 					</div>
@@ -159,7 +158,7 @@ export function IsolationDemo() {
 					{/* Files */}
 					<div className="p-2">
 						<div className="text-[10px] uppercase text-white/30 px-2 py-1">
-							Unstaged
+							Не в индексе
 						</div>
 						{SIDEBAR_FILES.map((file, index) => (
 							<motion.div

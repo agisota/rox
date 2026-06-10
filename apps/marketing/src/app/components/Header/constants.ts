@@ -10,41 +10,41 @@ export interface NavLink {
 export const PRODUCT_LINKS: NavLink[] = [
 	{
 		href: "/",
-		label: "Overview",
-		description: "The terminal for coding agents.",
+		label: "Обзор",
+		description: "Терминал для агентов разработки.",
 	},
 	{
 		href: "/changelog",
-		label: "Changelog",
-		description: "New releases and product updates.",
+		label: "История изменений",
+		description: "Новые релизы и обновления продукта.",
 	},
 ];
 
 export const RESOURCE_LINKS: NavLink[] = [
 	{
 		href: COMPANY.DOCS_URL,
-		label: "Documentation",
-		description: "Guides, references, and integrations.",
+		label: "Документация",
+		description: "Гайды, справочники и интеграции.",
 		external: true,
 	},
 	{
 		href: "/blog",
-		label: "Blog",
-		description: "Engineering deep-dives and launches.",
+		label: "Блог",
+		description: "Инженерные разборы и запуски.",
 	},
 	{
 		href: "/community",
-		label: "Community",
-		description: "Discord, GitHub, and office hours.",
+		label: "Сообщество",
+		description: "Discord, GitHub и открытые встречи.",
 	},
 	{
 		href: "/team",
-		label: "About",
-		description: "The people behind Rox.",
+		label: "О нас",
+		description: "Команда, которая делает Rox.",
 	},
 ];
 
 export const TOP_LEVEL_LINKS: NavLink[] = [
-	{ href: "/pricing", label: "Pricing" },
-	{ href: "/enterprise", label: "Enterprise" },
+	{ href: "/pricing", label: "Цены" },
+	{ href: "/enterprise", label: "Для бизнеса" },
 ];

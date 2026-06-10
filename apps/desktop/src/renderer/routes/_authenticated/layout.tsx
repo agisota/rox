@@ -178,13 +178,13 @@ function AuthenticatedLayout() {
 			<div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-background">
 				<HiOutlineWifi className="size-12 text-muted-foreground" />
 				<div className="text-center">
-					<h2 className="text-lg font-medium">You're offline</h2>
+					<h2 className="text-lg font-medium">Вы офлайн</h2>
 					<p className="text-sm text-muted-foreground">
-						Connect to the internet to continue
+						Подключитесь к интернету, чтобы продолжить
 					</p>
 				</div>
 				<Button variant="outline" size="sm" onClick={() => refetch()}>
-					Retry
+					Повторить
 				</Button>
 			</div>
 		);

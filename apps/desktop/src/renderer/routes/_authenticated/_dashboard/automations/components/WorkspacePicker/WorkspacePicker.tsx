@@ -48,7 +48,7 @@ export function WorkspacePicker({
 	}, [allWorkspaces, hostId, projectId]);
 
 	const selected = value ? workspaces.find((w) => w.id === value) : null;
-	const label = selected ? selected.name : "New workspace";
+	const label = selected ? selected.name : "Новый воркспейс";
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -72,7 +72,7 @@ export function WorkspacePicker({
 				className="w-60 p-0"
 			>
 				<Command>
-					<CommandInput placeholder="Search workspaces..." />
+					<CommandInput placeholder="Искать воркспейсы..." />
 					<CommandList>
 						<CommandGroup>
 							<CommandItem
@@ -83,7 +83,7 @@ export function WorkspacePicker({
 								}}
 							>
 								<LuSparkles className="size-4" />
-								<span>New workspace</span>
+								<span>Новый воркспейс</span>
 								{!selected && <HiCheck className="ml-auto size-4" />}
 							</CommandItem>
 							{workspaces.map((workspace) => (

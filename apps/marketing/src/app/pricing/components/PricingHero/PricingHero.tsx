@@ -8,14 +8,15 @@ export function PricingHero() {
 				<GridCross className="top-0 right-0" />
 
 				<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-					Pricing
+					Цены
 				</span>
 				<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-					Simple pricing for every team
+					Простые цены для любой команды
 				</h1>
 				<p className="text-muted-foreground mt-3 max-w-lg">
-					Start free. Upgrade when your team outgrows it. Enterprise plans for
-					organizations with advanced security and compliance needs.
+					Начните бесплатно. Перейдите на платный план, когда команда вырастет.
+					Enterprise-планы доступны организациям с повышенными требованиями к
+					безопасности и compliance.
 				</p>
 
 				<GridCross className="bottom-0 left-0" />

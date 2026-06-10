@@ -19,20 +19,14 @@ export default async function CliAuthCodePage({
 		<div className="relative flex min-h-screen flex-col">
 			<header className="container mx-auto px-6 py-6">
 				<a href={env.NEXT_PUBLIC_MARKETING_URL}>
-					<Image
-						src="/title.svg"
-						alt="Rox"
-						width={140}
-						height={24}
-						priority
-					/>
+					<Image src="/title.svg" alt="Rox" width={140} height={24} priority />
 				</a>
 			</header>
 			<main className="flex flex-1 items-center justify-center">
 				{oauthError ? (
 					<div className="mx-auto flex w-full max-w-md flex-col items-center space-y-3 text-center">
 						<h1 className="text-2xl font-semibold tracking-tight text-destructive">
-							Authorization failed
+							Авторизация не удалась
 						</h1>
 						<p className="text-muted-foreground text-sm">
 							{params.error_description ?? oauthError}
@@ -42,7 +36,8 @@ export default async function CliAuthCodePage({
 					<CliAuthCodeDisplay code={code} state={state} />
 				) : (
 					<p className="text-muted-foreground">
-						Missing authorization code. Re-run <code>superset auth login</code>.
+						Отсутствует код авторизации. Запустите{" "}
+						<code>superset auth login</code> еще раз.
 					</p>
 				)}
 			</main>

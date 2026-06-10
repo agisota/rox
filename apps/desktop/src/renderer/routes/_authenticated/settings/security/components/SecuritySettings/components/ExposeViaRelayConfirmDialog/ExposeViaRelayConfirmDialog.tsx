@@ -41,23 +41,26 @@ export function ExposeViaRelayConfirmDialog({
 			<AlertDialogContent className="max-w-[480px]">
 				<AlertDialogHeader>
 					<AlertDialogTitle>
-						{targetEnabled ? "Enable Relay access?" : "Disable Relay access?"}
+						{targetEnabled
+							? "Включить доступ через Relay?"
+							: "Отключить доступ через Relay?"}
 					</AlertDialogTitle>
 					<AlertDialogDescription asChild>
 						<div className="space-y-3 text-sm text-muted-foreground">
 							<p>
-								This restarts the host service and stops running terminals. File
-								watches and other host-backed work will be interrupted.
+								Это перезапустит host service и остановит запущенные терминалы.
+								File watches и другая работа, завязанная на host, будут
+								прерваны.
 							</p>
 							{targetEnabled ? (
 								<p>
-									Remote workspaces you grant access to will be able to reach
-									this device through Rox Relay.
+									Удаленные воркспейсы, которым вы дадите доступ, смогут
+									подключаться к этому устройству через Rox Relay.
 								</p>
 							) : (
 								<p>
-									Remote workspaces will no longer be able to reach this device
-									through Rox Relay.
+									Удаленные воркспейсы больше не смогут подключаться к этому
+									устройству через Rox Relay.
 								</p>
 							)}
 						</div>
@@ -95,7 +98,9 @@ export function ExposeViaRelayConfirmDialog({
 						disabled={!canConfirm}
 						onClick={onConfirm}
 					>
-						{targetEnabled ? "Enable and restart" : "Disable and restart"}
+						{targetEnabled
+							? "Включить и перезапустить"
+							: "Отключить и перезапустить"}
 					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>

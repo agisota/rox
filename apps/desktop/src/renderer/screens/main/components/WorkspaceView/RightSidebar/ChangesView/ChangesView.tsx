@@ -829,7 +829,7 @@ export function ChangesView({
 				open={showDiscardUnstagedDialog}
 				onOpenChange={setShowDiscardUnstagedDialog}
 				title="Discard all unstaged changes?"
-				description="This will revert all unstaged modifications and delete untracked files. This action cannot be undone."
+				description="Все неиндексированные изменения будут отменены, а неотслеживаемые файлы удалены. Это действие нельзя отменить."
 				onConfirm={() =>
 					discardAllUnstagedMutation.mutate({
 						worktreePath: worktreePath || "",
@@ -842,7 +842,7 @@ export function ChangesView({
 				open={showDiscardStagedDialog}
 				onOpenChange={setShowDiscardStagedDialog}
 				title="Discard all staged changes?"
-				description="This will unstage and revert all staged changes. Staged new files will be deleted. This action cannot be undone."
+				description="Все staged-изменения будут сняты с индекса и отменены. Новые staged-файлы будут удалены. Это действие нельзя отменить."
 				onConfirm={() =>
 					discardAllStagedMutation.mutate({
 						worktreePath: worktreePath || "",

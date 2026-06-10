@@ -42,7 +42,7 @@ export function TeamSelector({ organizationId }: TeamSelectorProps) {
 				setShowSuccess(true);
 			},
 			onError: () => {
-				toast.error("Failed to update team. Please try again.");
+				toast.error("Не удалось обновить команду. Попробуйте еще раз.");
 			},
 		}),
 	);
@@ -68,7 +68,7 @@ export function TeamSelector({ organizationId }: TeamSelectorProps) {
 	if (teams.length === 0) {
 		return (
 			<p className="text-sm text-muted-foreground">
-				No teams found in your Linear workspace.
+				В вашем воркспейсе Linear команды не найдены.
 			</p>
 		);
 	}
@@ -81,7 +81,7 @@ export function TeamSelector({ organizationId }: TeamSelectorProps) {
 				disabled={updateMutation.isPending}
 			>
 				<SelectTrigger className="w-48">
-					<SelectValue placeholder="Select a team" />
+					<SelectValue placeholder="Выберите команду" />
 				</SelectTrigger>
 				<SelectContent>
 					{teams.map((team) => (

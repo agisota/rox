@@ -6,9 +6,7 @@ export function Footer() {
 	return (
 		<footer className="mt-auto w-full border-t border-border/50 py-5">
 			<div className="mx-auto flex w-[95vw] max-w-screen-2xl items-center justify-between">
-				<p className="text-sm text-muted-foreground">
-					© {currentYear} Rox
-				</p>
+				<p className="text-sm text-muted-foreground">© {currentYear} Rox</p>
 				<div className="flex items-center gap-4">
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/terms`}
@@ -16,7 +14,7 @@ export function Footer() {
 						rel="noopener noreferrer"
 						className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
 					>
-						Terms of Service
+						Условия использования
 					</a>
 					<span className="text-xs text-muted-foreground/70" aria-hidden="true">
 						|
@@ -27,7 +25,7 @@ export function Footer() {
 						rel="noopener noreferrer"
 						className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
 					>
-						Privacy Policy
+						Политика конфиденциальности
 					</a>
 				</div>
 			</div>

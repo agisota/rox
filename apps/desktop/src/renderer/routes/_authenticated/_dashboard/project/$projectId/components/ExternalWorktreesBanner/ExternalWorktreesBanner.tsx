@@ -34,12 +34,12 @@ export function ExternalWorktreesBanner({ projectId }: { projectId: string }) {
 	const handleImportAll = async () => {
 		try {
 			const result = await importAllWorktrees.mutateAsync({ projectId });
-			toast.success(
-				`Imported ${result.imported} workspace${result.imported === 1 ? "" : "s"}`,
-			);
+			toast.success(`Импортировано воркспейсов: ${result.imported}`);
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to import worktrees",
+				err instanceof Error
+					? err.message
+					: "Не удалось импортировать worktree",
 			);
 		}
 	};
@@ -58,8 +58,7 @@ export function ExternalWorktreesBanner({ projectId }: { projectId: string }) {
 			<div className="flex items-start justify-between gap-4">
 				<div className="space-y-2 min-w-0">
 					<p className="text-sm font-medium text-foreground">
-						{importableWorktrees.length} existing worktree
-						{importableWorktrees.length === 1 ? "" : "s"} found
+						Найдены существующие worktree: {importableWorktrees.length}
 					</p>
 					<div className="flex flex-wrap gap-1.5">
 						{visibleBranches.map((wt) => (
@@ -73,7 +72,7 @@ export function ExternalWorktreesBanner({ projectId }: { projectId: string }) {
 						))}
 						{remainingCount > 0 && (
 							<span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-								+{remainingCount} more
+								+{remainingCount} еще
 							</span>
 						)}
 					</div>
@@ -87,23 +86,23 @@ export function ExternalWorktreesBanner({ projectId }: { projectId: string }) {
 							className="shrink-0"
 							disabled={importAllWorktrees.isPending}
 						>
-							{importAllWorktrees.isPending ? "Importing..." : "Import all"}
+							{importAllWorktrees.isPending ? "Импорт..." : "Импортировать все"}
 						</Button>
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>
-							<AlertDialogTitle>Import all worktrees</AlertDialogTitle>
+							<AlertDialogTitle>Импортировать все worktree</AlertDialogTitle>
 							<AlertDialogDescription>
-								This will import {importableWorktrees.length} existing worktree
-								{importableWorktrees.length === 1 ? "" : "s"} into Rox as
-								workspaces. Each worktree on disk will be tracked and appear in
-								your sidebar. No files will be modified.
+								Rox импортирует существующие worktree как воркспейсы:
+								{importableWorktrees.length}. Каждый worktree на диске будет
+								отслеживаться и появится в боковой панели. Файлы не будут
+								изменены.
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogCancel>Отмена</AlertDialogCancel>
 							<AlertDialogAction onClick={handleImportAll}>
-								Import all
+								Импортировать все
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>

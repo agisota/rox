@@ -90,12 +90,13 @@ export function SecuritySettings({ visibleItems }: SecuritySettingsProps) {
 							htmlFor="expose-host-service-via-relay"
 							className="text-sm font-medium"
 						>
-							Allow remote workspaces to access this device via relay
+							Разрешить удаленным воркспейсам доступ к этому устройству через
+							Relay
 						</Label>
 						<p className="text-xs text-muted-foreground">
 							When off, your local tools and files cannot be reached from any
 							remote workspace through the Rox relay. This does not affect
-							your ability to connect out to remote sandboxes from this device.
+							возможность подключаться к удаленным sandbox с этого устройства.
 						</p>
 					</div>
 					<Switch

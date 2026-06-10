@@ -31,11 +31,11 @@ export function EnterpriseContactForm() {
 				setStatus("success");
 			} else {
 				setStatus("error");
-				setErrorMessage(result.error ?? "Something went wrong.");
+				setErrorMessage(result.error ?? "Что-то пошло не так.");
 			}
 		} catch (_error) {
 			setStatus("error");
-			setErrorMessage("Something went wrong. Please try again.");
+			setErrorMessage("Что-то пошло не так. Попробуйте еще раз.");
 		}
 	};
 
@@ -44,10 +44,10 @@ export function EnterpriseContactForm() {
 			<div className="flex flex-col items-center justify-center py-16 text-center">
 				<CheckCircle2 className="size-6 text-muted-foreground mb-4" />
 				<p className="text-lg font-medium text-foreground">
-					Thanks for reaching out
+					Спасибо за сообщение
 				</p>
 				<p className="mt-2 text-sm text-muted-foreground">
-					We&apos;ll be in touch shortly.
+					Мы скоро свяжемся с вами.
 				</p>
 			</div>
 		);
@@ -61,7 +61,7 @@ export function EnterpriseContactForm() {
 						htmlFor="ent-name"
 						className="block text-sm text-muted-foreground mb-1.5"
 					>
-						Full name
+						Полное имя
 					</label>
 					<input
 						id="ent-name"
@@ -80,7 +80,7 @@ export function EnterpriseContactForm() {
 						htmlFor="ent-role"
 						className="block text-sm text-muted-foreground mb-1.5"
 					>
-						Role
+						Роль
 					</label>
 					<input
 						id="ent-role"
@@ -100,7 +100,7 @@ export function EnterpriseContactForm() {
 					htmlFor="ent-company"
 					className="block text-sm text-muted-foreground mb-1.5"
 				>
-					Company
+					Компания
 				</label>
 				<input
 					id="ent-company"
@@ -120,7 +120,7 @@ export function EnterpriseContactForm() {
 						htmlFor="ent-email"
 						className="block text-sm text-muted-foreground mb-1.5"
 					>
-						Company email
+						Рабочий email
 					</label>
 					<input
 						id="ent-email"
@@ -139,7 +139,7 @@ export function EnterpriseContactForm() {
 						htmlFor="ent-phone"
 						className="block text-sm text-muted-foreground mb-1.5"
 					>
-						Phone number
+						Телефон
 					</label>
 					<input
 						id="ent-phone"
@@ -158,7 +158,7 @@ export function EnterpriseContactForm() {
 					htmlFor="ent-message"
 					className="block text-sm text-muted-foreground mb-1.5"
 				>
-					What problem are you trying to solve?
+					Какую задачу вы хотите решить?
 				</label>
 				<textarea
 					id="ent-message"
@@ -196,12 +196,12 @@ export function EnterpriseContactForm() {
 			>
 				{status === "submitting" ? (
 					<>
-						Sending
+						Отправляем
 						<Loader2 className="size-3.5 animate-spin" />
 					</>
 				) : (
 					<>
-						Send
+						Отправить
 						<ArrowRight className="size-3.5" />
 					</>
 				)}

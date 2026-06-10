@@ -84,7 +84,7 @@ export function EnterpriseFAQ() {
 				FAQ
 			</span>
 			<h2 className="text-2xl md:text-3xl font-medium tracking-tight text-foreground mt-4 mb-8">
-				Common questions
+				Частые вопросы
 			</h2>
 			<div>
 				{ENTERPRISE_FAQ_ITEMS.map((item, index) => (

@@ -4,9 +4,9 @@ import { BlogCard } from "./components/BlogCard";
 import { GridCross } from "./components/GridCross";
 
 export const metadata: Metadata = {
-	title: "Blog",
+	title: "Блог",
 	description:
-		"News, updates, and insights from the Rox team about parallel coding agents and developer productivity.",
+		"Новости, обновления и материалы команды Rox о параллельных coding agents и продуктивности разработчиков.",
 	alternates: {
 		canonical: "/blog",
 		types: {
@@ -14,17 +14,17 @@ export const metadata: Metadata = {
 		},
 	},
 	openGraph: {
-		title: "Blog | Rox",
+		title: "Блог | Rox",
 		description:
-			"News, updates, and insights from the Rox team about parallel coding agents and developer productivity.",
+			"Новости, обновления и материалы команды Rox о параллельных coding agents и продуктивности разработчиков.",
 		url: "/blog",
 		images: ["/opengraph-image"],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Blog | Rox",
+		title: "Блог | Rox",
 		description:
-			"News, updates, and insights from the Rox team about parallel coding agents and developer productivity.",
+			"Новости, обновления и материалы команды Rox о параллельных coding agents и продуктивности разработчиков.",
 		images: ["/opengraph-image"],
 	},
 };
@@ -51,14 +51,14 @@ export default async function BlogPage() {
 					<GridCross className="top-0 right-0" />
 
 					<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-						Blog
+						Блог
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						News & Updates
+						Новости и обновления
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						Insights from the Rox team about parallel coding agents and
-						developer productivity.
+						Материалы команды Rox о параллельных coding agents и продуктивности
+						разработчиков.
 					</p>
 
 					<GridCross className="bottom-0 left-0" />
@@ -69,7 +69,7 @@ export default async function BlogPage() {
 			{/* Posts section */}
 			<div className="relative max-w-3xl mx-auto px-6 py-12">
 				{posts.length === 0 ? (
-					<p className="text-muted-foreground">No posts yet.</p>
+					<p className="text-muted-foreground">Постов пока нет.</p>
 				) : (
 					<div className="flex flex-col gap-4">
 						{posts.map((post) => (

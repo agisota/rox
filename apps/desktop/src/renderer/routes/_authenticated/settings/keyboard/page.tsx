@@ -79,7 +79,7 @@ function HotkeyRow({
 					)}
 				>
 					{isRecording ? (
-						<span>Press a key…</span>
+						<span>Нажмите клавишу…</span>
 					) : (
 						<KbdGroup>
 							{keys.map((key) => (
@@ -89,7 +89,7 @@ function HotkeyRow({
 					)}
 				</button>
 				<Button variant="ghost" size="sm" onClick={onReset}>
-					Reset
+					Сбросить
 				</Button>
 			</div>
 		</div>
@@ -202,15 +202,15 @@ function KeyboardShortcutsPage() {
 			{/* Header */}
 			<div className="mb-6 flex items-start justify-between gap-4">
 				<div>
-					<h2 className="text-xl font-semibold">Keyboard shortcuts</h2>
+					<h2 className="text-xl font-semibold">Горячие клавиши</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Customize keyboard shortcuts for your workflow. Press{" "}
+						Настройте горячие клавиши под свой процесс. Нажмите{" "}
 						<KbdGroup>
 							{showHotkeysKeys.map((key) => (
 								<Kbd key={key}>{key}</Kbd>
 							))}
 						</KbdGroup>{" "}
-						to open this page anytime.
+						чтобы открыть эту страницу в любое время.
 					</p>
 				</div>
 				<Button
@@ -221,7 +221,7 @@ function KeyboardShortcutsPage() {
 						resetAll();
 					}}
 				>
-					Reset all
+					Сбросить все
 				</Button>
 			</div>
 
@@ -229,13 +229,13 @@ function KeyboardShortcutsPage() {
 			<div className="mb-8 flex items-center justify-between gap-4">
 				<div className="space-y-0.5">
 					<Label htmlFor="adaptive-layout" className="text-sm font-medium">
-						Adaptive layout mapping
+						Адаптация к раскладке
 					</Label>
 					<p className="text-xs text-muted-foreground">
-						Match shortcuts to the labels on your keyboard (e.g. ⌘Z always fires
-						on the key labeled "Z" — physical KeyY on QWERTZ). When off,
-						shortcuts are anchored to physical key positions and ignore the
-						current input source.
+						Привязывать сочетания к символам на клавиатуре: например, ⌘Z всегда
+						срабатывает на клавише с меткой "Z", даже если физически это KeyY в
+						QWERTZ. Если выключено, сочетания привязаны к физическим позициям
+						клавиш и игнорируют текущий источник ввода.
 					</p>
 				</div>
 				<Switch
@@ -250,7 +250,7 @@ function KeyboardShortcutsPage() {
 				<HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search"
+					placeholder="Поиск"
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					className="pl-9 bg-accent/30 border-transparent focus:border-accent"
@@ -294,7 +294,7 @@ function KeyboardShortcutsPage() {
 					(cat) => (filteredHotkeysByCategory[cat] ?? []).length === 0,
 				) && (
 					<div className="py-8 text-center text-sm text-muted-foreground">
-						No shortcuts found matching "{searchQuery}"
+						Горячие клавиши не найдены по запросу "{searchQuery}"
 					</div>
 				)}
 			</div>
@@ -307,7 +307,7 @@ function KeyboardShortcutsPage() {
 				<AlertDialogContent className="max-w-[380px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Shortcut already in use
+							Сочетание уже используется
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
@@ -318,7 +318,7 @@ function KeyboardShortcutsPage() {
 											}".`
 										: ""}
 								</span>
-								<span className="block">Would you like to reassign it?</span>
+								<span className="block">Переназначить его?</span>
 							</div>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
@@ -328,14 +328,14 @@ function KeyboardShortcutsPage() {
 							size="sm"
 							onClick={() => setPendingConflict(null)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="secondary"
 							size="sm"
 							onClick={handleConflictReassign}
 						>
-							Reassign
+							Переназначить
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -26,7 +26,7 @@ export function useCreateOrOpenPR({
 			try {
 				const result = await mutateAsync({ worktreePath });
 				window.open(result.url, "_blank", "noopener,noreferrer");
-				toast.success("Opening GitHub...");
+				toast.success("Открываем GitHub...");
 				onSuccess?.();
 				return;
 			} catch (error) {
@@ -51,7 +51,7 @@ export function useCreateOrOpenPR({
 					allowOutOfDate: true,
 				});
 				window.open(result.url, "_blank", "noopener,noreferrer");
-				toast.success("Opening GitHub...");
+				toast.success("Открываем GitHub...");
 				onSuccess?.();
 			} catch (retryError) {
 				const retryMessage =

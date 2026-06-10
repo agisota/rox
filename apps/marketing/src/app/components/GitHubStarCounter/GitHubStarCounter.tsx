@@ -63,7 +63,7 @@ export async function GitHubStarCounter() {
 			target="_blank"
 			rel="noopener noreferrer"
 			className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors p-1 sm:p-2"
-			aria-label={`${stars} GitHub stars`}
+			aria-label={`${stars} звезд на GitHub`}
 		>
 			<svg
 				width="20"

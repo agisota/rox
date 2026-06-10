@@ -11,11 +11,11 @@ import { PriorityIcon } from "renderer/routes/_authenticated/_dashboard/tasks/co
 import { PriorityMenuItems } from "renderer/routes/_authenticated/_dashboard/tasks/components/TasksView/components/shared/PriorityMenuItems";
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = {
-	none: "No priority",
-	urgent: "Urgent",
-	high: "High",
-	medium: "Medium",
-	low: "Low",
+	none: "Без приоритета",
+	urgent: "Срочный",
+	high: "Высокий",
+	medium: "Средний",
+	low: "Низкий",
 };
 
 interface CreateTaskPriorityPickerProps {

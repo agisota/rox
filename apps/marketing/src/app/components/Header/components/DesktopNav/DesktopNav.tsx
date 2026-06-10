@@ -29,7 +29,7 @@ export function DesktopNav() {
 			<NavigationMenuList>
 				<NavigationMenuItem>
 					<NavigationMenuTrigger className={triggerClass}>
-						Product
+						Продукт
 					</NavigationMenuTrigger>
 					<NavigationMenuContent>
 						<ul className="flex w-[320px] flex-col gap-1 p-2">
@@ -42,7 +42,7 @@ export function DesktopNav() {
 
 				<NavigationMenuItem>
 					<NavigationMenuTrigger className={triggerClass}>
-						Resources
+						Ресурсы
 					</NavigationMenuTrigger>
 					<NavigationMenuContent>
 						<ul className="grid w-[400px] grid-cols-1 gap-1 p-2 sm:w-[460px] sm:grid-cols-2">

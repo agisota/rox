@@ -29,3 +29,10 @@
 2026-06-10T09:35:55Z [cc-design] stop: fired, running cleanup
 2026-06-10T09:53:05Z [cc-design] stop: fired, running cleanup
 2026-06-10T10:03:34Z [cc-design] stop: fired, running cleanup
+2026-06-10T10:32:38Z [cc-design] stop: fired, running cleanup
+2026-06-10T10:34:13Z [cc-design] pre-compact: fired, preserving context
+2026-06-10T10:35:11Z [cc-design] stop: fired, running cleanup
+2026-06-10T10:35:44Z [cc-design] stop: fired, running cleanup
+2026-06-10T10:36:04Z [cc-design] stop: fired, running cleanup
+2026-06-10T10:38:01Z [cc-design] pre-compact: fired, preserving context
+2026-06-10T10:45:47Z [cc-design] stop: fired, running cleanup

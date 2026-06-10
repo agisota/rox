@@ -246,7 +246,7 @@ export function AgentDetail({
 						<div className="min-w-0 flex-1">
 							<div className="text-sm font-medium">Delete agent</div>
 							<p className="text-sm text-muted-foreground mt-0.5">
-								Removes this agent from this device only.
+								Удаляет этого агента только с этого устройства.
 							</p>
 						</div>
 						<Button

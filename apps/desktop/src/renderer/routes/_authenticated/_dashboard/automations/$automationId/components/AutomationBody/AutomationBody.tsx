@@ -57,7 +57,7 @@ export function AutomationBody({
 						updateMutation.mutate({ name: trimmed });
 					}
 				}}
-				placeholder="Automation title"
+				placeholder="Название автоматизации"
 				className="mb-6 text-2xl font-semibold"
 			/>
 			<MarkdownEditor
@@ -68,7 +68,7 @@ export function AutomationBody({
 						setPromptMutation.mutate(next);
 					}
 				}}
-				placeholder="Add prompt e.g. look for crashes in $sentry"
+				placeholder="Добавьте prompt, например: найти падения в $sentry"
 				searchFiles={searchFiles}
 			/>
 		</div>

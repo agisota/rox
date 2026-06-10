@@ -111,7 +111,7 @@ export function TrustedBySection() {
 			<div className="max-w-7xl mx-auto">
 				<div>
 					<h2 className="text-base sm:text-xl font-semibold text-center mb-4 sm:mb-8 text-foreground px-4">
-						Trusted by builders from
+						Rox выбирают разработчики из
 					</h2>
 				</div>
 

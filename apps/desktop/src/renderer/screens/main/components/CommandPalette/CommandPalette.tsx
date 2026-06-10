@@ -145,7 +145,7 @@ export function CommandPalette({
 							<SearchIcon className="size-5 shrink-0 opacity-50" />
 							<CommandPrimitive.Input
 								ref={inputRef}
-								placeholder="Search files..."
+								placeholder="Искать файлы..."
 								value={query}
 								onValueChange={setQuery}
 								className="flex h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -155,7 +155,9 @@ export function CommandPalette({
 									type="button"
 									className="shrink-0 rounded p-1 text-muted-foreground hover:text-foreground"
 									onClick={() => setFiltersOpen((v) => !v)}
-									aria-label={filtersOpen ? "Hide Filters" : "Show Filters"}
+									aria-label={
+										filtersOpen ? "Скрыть фильтры" : "Показать фильтры"
+									}
 								>
 									{filtersOpen ? (
 										<LuChevronDown className="size-4" />
@@ -171,13 +173,13 @@ export function CommandPalette({
 								<input
 									value={includePattern}
 									onChange={(e) => setIncludePattern(e.target.value)}
-									placeholder="files to include (glob)"
+									placeholder="файлы для включения (glob)"
 									className="h-8 rounded border bg-transparent px-2 text-xs outline-none placeholder:text-muted-foreground"
 								/>
 								<input
 									value={excludePattern}
 									onChange={(e) => setExcludePattern(e.target.value)}
-									placeholder="files to exclude (glob)"
+									placeholder="файлы для исключения (glob)"
 									className="h-8 rounded border bg-transparent px-2 text-xs outline-none placeholder:text-muted-foreground"
 								/>
 							</div>

@@ -1,7 +1,4 @@
-import {
-	getInvitableRoles,
-	type OrganizationRole,
-} from "@rox/shared/auth";
+import { getInvitableRoles, type OrganizationRole } from "@rox/shared/auth";
 import { alert } from "@rox/ui/atoms/Alert";
 import { Button } from "@rox/ui/button";
 import { useState } from "react";
@@ -33,7 +30,7 @@ export function InviteMemberButton({
 	const handleClick = () => {
 		gateFeature(GATED_FEATURES.INVITE_MEMBERS, () => {
 			alert({
-				title: "This will affect your billing",
+				title: "Это повлияет на оплату",
 				description:
 					"Adding members will increase your subscription cost, prorated to your billing cycle.",
 				actions: [

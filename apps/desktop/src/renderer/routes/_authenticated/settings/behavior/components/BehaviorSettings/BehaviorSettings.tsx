@@ -128,7 +128,7 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">General</h2>
+				<h2 className="text-xl font-semibold">Общие</h2>
 				<p className="text-sm text-muted-foreground mt-1">
 					Configure general app preferences
 				</p>
@@ -157,9 +157,11 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 				{showFileOpenMode && (
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
-							<Label className="text-sm font-medium">File open mode</Label>
+							<Label className="text-sm font-medium">
+								Режим открытия файлов
+							</Label>
 							<p className="text-xs text-muted-foreground">
-								Choose how files open when no preview pane exists
+								Выберите, как открывать файлы, когда панели предпросмотра нет
 							</p>
 						</div>
 						<Select
@@ -173,8 +175,8 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="split-pane">Split pane</SelectItem>
-								<SelectItem value="new-tab">New tab</SelectItem>
+								<SelectItem value="split-pane">Разделенная панель</SelectItem>
+								<SelectItem value="new-tab">Новая вкладка</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>

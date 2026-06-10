@@ -40,7 +40,7 @@ export function ProjectPickerPill({
 		},
 		onMultipleProjects: ({ candidates }) => {
 			toast.error("Import failed", {
-				description: `Multiple projects use this repository (${candidates.length}). Choose the project in settings to set it up on this device.`,
+				description: `Этот репозиторий используют несколько проектов (${candidates.length}). Выберите проект в настройках, чтобы настроить его на этом устройстве.`,
 				action: {
 					label: "Open Projects",
 					onClick: () => navigate({ to: "/settings/projects" }),

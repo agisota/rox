@@ -64,9 +64,9 @@ export function FAQSection() {
 					{/* Left Column - Title */}
 					<div className="xl:sticky xl:top-24 xl:self-start">
 						<h2 className="text-3xl sm:text-4xl xl:text-5xl font-medium tracking-tight text-foreground leading-[1.1]">
-							Frequently
+							Частые
 							<br />
-							asked questions
+							вопросы
 						</h2>
 					</div>
 

@@ -32,7 +32,7 @@ export function ActionCard({
 					disabled ? "text-muted-foreground/50" : "text-foreground"
 				}`}
 			>
-				{isLoading ? "Opening..." : label}
+				{isLoading ? "Открываем..." : label}
 			</span>
 		</button>
 	);

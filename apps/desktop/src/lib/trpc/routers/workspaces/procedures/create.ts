@@ -87,7 +87,7 @@ function upsertImportedExternalWorktree({
 				createdAt,
 				gitStatus,
 				githubStatus: null,
-				createdByRox: false,
+				createdBySuperset: false,
 			})
 			.where(eq(worktrees.id, existingWorktree.id))
 			.run();
@@ -99,7 +99,7 @@ function upsertImportedExternalWorktree({
 			createdAt,
 			gitStatus,
 			githubStatus: null,
-			createdByRox: false,
+			createdBySuperset: false,
 		};
 	}
 
@@ -112,7 +112,7 @@ function upsertImportedExternalWorktree({
 			baseBranch,
 			createdAt,
 			gitStatus,
-			createdByRox: false,
+			createdBySuperset: false,
 		})
 		.returning()
 		.get();
@@ -370,7 +370,7 @@ async function handleNewWorktree({
 			branch: localBranchName,
 			baseBranch: compareBaseBranch,
 			gitStatus: null,
-			createdByRox: true,
+			createdBySuperset: true,
 		})
 		.returning()
 		.get();
@@ -646,7 +646,7 @@ export const createCreateProcedures = () => {
 						branch,
 						baseBranch: compareBaseBranch,
 						gitStatus: null,
-						createdByRox: true,
+						createdBySuperset: true,
 					})
 					.returning()
 					.get();

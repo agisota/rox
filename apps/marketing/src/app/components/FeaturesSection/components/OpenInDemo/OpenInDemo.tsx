@@ -22,7 +22,7 @@ const IDE_OPTIONS = [
 	{ id: "vscode", label: "VS Code", icon: "/app-icons/vscode.svg" },
 	{ id: "xcode", label: "Xcode", icon: "/app-icons/xcode.svg" },
 	{ id: "sublime", label: "Sublime Text", icon: "/app-icons/sublime.svg" },
-	{ id: "terminal", label: "Terminal", icon: "/app-icons/terminal.png" },
+	{ id: "terminal", label: "Терминал", icon: "/app-icons/terminal.png" },
 	{ id: "jetbrains", label: "JetBrains", icon: "/app-icons/jetbrains.svg" },
 ];
 
@@ -58,7 +58,7 @@ export function OpenInDemo() {
 							<div className="w-3 h-3 rounded-full bg-[#28c840]" />
 						</div>
 						<span className="text-xs font-medium text-white/80 ml-2 px-2 py-0.5 bg-white/10 rounded">
-							superset
+							Rox
 						</span>
 					</div>
 					<div className="flex items-center gap-1.5 text-white/50">
@@ -72,7 +72,7 @@ export function OpenInDemo() {
 					{/* Search input */}
 					<div className="flex items-center gap-2 px-2.5 py-1.5 border border-white/5 rounded-md flex-1">
 						<HiMagnifyingGlass className="w-3.5 h-3.5 text-white/30" />
-						<span className="text-xs text-white/30">Search files...</span>
+						<span className="text-xs text-white/30">Поиск файлов...</span>
 					</div>
 
 					{/* Open in button */}
@@ -95,12 +95,12 @@ export function OpenInDemo() {
 								height={14}
 								className="object-contain"
 							/>
-							<span className="font-medium text-xs">Open in</span>
+							<span className="font-medium text-xs">Открыть в</span>
 						</button>
 						<button
 							type="button"
 							className="flex items-center px-2 text-white/90 bg-[#2a2a2a] border border-white/10 rounded-r-md hover:bg-[#3a3a3a] transition-colors"
-							aria-label="Select IDE"
+							aria-label="Выбрать IDE"
 						>
 							<HiChevronDown className="w-3.5 h-3.5" />
 						</button>

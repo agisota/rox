@@ -22,7 +22,7 @@ export default async function LinearIntegrationPage() {
 		return (
 			<div className="flex flex-col items-center justify-center py-16">
 				<p className="text-muted-foreground">
-					You need to be part of an organization to use integrations.
+					Чтобы использовать интеграции, нужно состоять в организации.
 				</p>
 			</div>
 		);
@@ -43,7 +43,7 @@ export default async function LinearIntegrationPage() {
 				className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<ArrowLeft className="size-4" />
-				Back to Integrations
+				Назад к интеграциям
 			</Link>
 
 			<div className="flex items-start gap-6">
@@ -56,29 +56,31 @@ export default async function LinearIntegrationPage() {
 						{needsReconnect ? (
 							<Badge variant="destructive" className="gap-1">
 								<AlertTriangle className="size-3" />
-								Reconnect required
+								Требуется переподключение
 							</Badge>
 						) : isConnected ? (
 							<Badge variant="default" className="gap-1">
 								<CheckCircle2 className="size-3" />
-								Connected
+								Подключено
 							</Badge>
 						) : (
-							<Badge variant="secondary">Not Connected</Badge>
+							<Badge variant="secondary">Не подключено</Badge>
 						)}
 					</div>
 					<p className="mt-1 text-muted-foreground">
-						Sync issues bidirectionally with Linear. Create tasks in Rox
-						and have them appear in Linear, or import existing Linear issues.
+						Синхронизируйте задачи с Linear в обе стороны. Создавайте задачи в
+						Rox, чтобы они появлялись в Linear, или импортируйте существующие
+						задачи Linear.
 					</p>
 				</div>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Connection</CardTitle>
+					<CardTitle>Подключение</CardTitle>
 					<CardDescription>
-						Connect your Linear workspace to sync issues bidirectionally.
+						Подключите воркспейс Linear, чтобы синхронизировать задачи в обе
+						стороны.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -93,17 +95,20 @@ export default async function LinearIntegrationPage() {
 			{connection && (
 				<Card>
 					<CardHeader>
-						<CardTitle>Settings</CardTitle>
+						<CardTitle>Настройки</CardTitle>
 						<CardDescription>
-							Configure how tasks sync between Rox and Linear.
+							Настройте синхронизацию задач между Rox и Linear.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<p className="text-sm font-medium">Default team for new tasks</p>
+							<p className="text-sm font-medium">
+								Команда по умолчанию для новых задач
+							</p>
 							<TeamSelector organizationId={organization.id} />
 							<p className="text-sm text-muted-foreground">
-								Tasks created in Rox will be synced to this Linear team.
+								Задачи, созданные в Rox, будут синхронизироваться с этой
+								командой Linear.
 							</p>
 						</div>
 					</CardContent>

@@ -129,7 +129,7 @@ export function WebTerminal({
 							return;
 						case "exit":
 							terminal.write(
-								`\r\n\x1b[33m[process exited code=${message.exitCode}]\x1b[0m\r\n`,
+								`\r\n\x1b[33m[процесс завершен, код=${message.exitCode}]\x1b[0m\r\n`,
 							);
 							setState("exited");
 							return;
@@ -177,12 +177,12 @@ export function WebTerminal({
 						style={{ color: "#ecd08f" }}
 					>
 						{state === "connecting"
-							? "Connecting…"
+							? "Подключаемся…"
 							: state === "reconnecting"
-								? "Reconnecting…"
+								? "Переподключаемся…"
 								: state === "exited"
-									? "Process exited."
-									: (errorMessage ?? "Disconnected.")}
+									? "Процесс завершен."
+									: (errorMessage ?? "Отключено.")}
 					</div>
 				)}
 			</div>

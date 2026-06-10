@@ -31,7 +31,7 @@ export default async function AgentsPage() {
 				<div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6">
 					<div className="flex flex-col gap-1 px-1">
 						<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-							Workspace
+							Воркспейс
 						</p>
 						<h1 className="text-lg font-medium">{workspace.name}</h1>
 						<p className="text-sm text-muted-foreground">
@@ -49,16 +49,17 @@ export default async function AgentsPage() {
 		<div className="flex flex-col gap-8">
 			<div className="flex flex-col items-center gap-6 text-center">
 				<div>
-					<h1 className="mb-3 text-3xl font-medium">Download Rox</h1>
+					<h1 className="mb-3 text-3xl font-medium">Скачать Rox</h1>
 					<p className="text-muted-foreground">
-						Use the desktop app to start running parallel coding agents.
+						Используйте десктопное приложение, чтобы запускать параллельных
+						кодинг-агентов.
 					</p>
 				</div>
 
 				<div className="flex flex-wrap justify-center gap-3">
 					<Button size="lg" className="gap-2" asChild>
 						<a href={DOWNLOAD_URL_MAC_ARM64}>
-							Download for Mac
+							Скачать для Mac
 							<Download className="size-5" />
 						</a>
 					</Button>
@@ -68,7 +69,7 @@ export default async function AgentsPage() {
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							View on GitHub
+							Открыть на GitHub
 							<FaGithub className="size-5" />
 						</a>
 					</Button>

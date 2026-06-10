@@ -57,18 +57,17 @@ export function DeleteWorktreeDialog({
 			<AlertDialogContent className="max-w-[340px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Delete worktree "{worktreeName}"?
+						Удалить worktree "{worktreeName}"?
 					</AlertDialogTitle>
 					<AlertDialogDescription asChild>
 						<div className="text-muted-foreground space-y-1.5">
 							{isLoading ? (
-								"Checking status..."
+								"Проверяем статус..."
 							) : !canDelete ? (
 								<span className="text-destructive">{reason}</span>
 							) : (
 								<span className="block">
-									This will permanently delete the worktree and its files from
-									disk.
+									Это навсегда удалит worktree и его файлы с диска.
 								</span>
 							)}
 						</div>

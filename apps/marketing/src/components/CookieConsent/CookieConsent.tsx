@@ -41,18 +41,18 @@ export function CookieConsent() {
 					className="fixed bottom-4 left-4 z-50 max-w-xs rounded-lg border border-border bg-card p-4 shadow-lg"
 				>
 					<p className="text-sm text-muted-foreground">
-						We only collect analytics cookies so we can improve your experience.
+						Мы используем только аналитические cookies, чтобы улучшать ваш опыт.
 					</p>
 					<div className="mt-3 flex items-center justify-between">
 						<Button variant="link" asChild className="px-0">
-							<Link href="/privacy">Privacy policy</Link>
+							<Link href="/privacy">Политика приватности</Link>
 						</Button>
 						<div className="flex items-center gap-2">
 							<Button variant="outline" onClick={handleOptOut}>
-								Opt-out
+								Отклонить
 							</Button>
 							<Button variant="outline" onClick={handleAccept}>
-								Accept
+								Принять
 							</Button>
 						</div>
 					</div>

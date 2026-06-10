@@ -18,7 +18,7 @@ export function BranchSelector({
 }: BranchSelectorProps) {
 	return (
 		<ResponsiveDropdown
-			title="Select branch"
+			title="Выберите ветку"
 			items={branches.map((branch) => ({
 				label: branch,
 				icon: <GitBranch className="size-3" />,

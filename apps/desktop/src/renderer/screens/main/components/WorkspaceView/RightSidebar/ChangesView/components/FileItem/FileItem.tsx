@@ -169,8 +169,8 @@ export function FileItem({
 		? `Delete "${fileName}"?`
 		: `Discard changes to "${fileName}"?`;
 	const discardDialogDescription = isDeleteAction
-		? "This will permanently delete this file. This action cannot be undone."
-		: "This will revert all changes to this file. This action cannot be undone.";
+		? "Этот файл будет удален навсегда. Это действие нельзя отменить."
+		: "Все изменения в этом файле будут отменены. Это действие нельзя отменить.";
 	const hoverActions: RowHoverAction[] = [
 		...(onDiscard
 			? [

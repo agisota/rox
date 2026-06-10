@@ -7,20 +7,20 @@ import { HiCheck } from "react-icons/hi2";
 const IN_PROGRESS_TASKS = [
 	{
 		id: "task-1",
-		name: "Analyze Tab vs Agent Usag...",
-		status: "Generating",
+		name: "Анализ вкладок и агентов...",
+		status: "Генерирует",
 		rotation: 45,
 	},
 	{
 		id: "task-2",
-		name: "PyTorch MNIST Experiments",
-		status: "Generating",
+		name: "Эксперименты PyTorch MNIST",
+		status: "Генерирует",
 		rotation: 180,
 	},
 	{
 		id: "task-3",
-		name: "Fix PR Comments Fetching I...",
-		status: "Generating",
+		name: "Починить загрузку PR-комм...",
+		status: "Генерирует",
 		rotation: 270,
 	},
 ];
@@ -28,27 +28,27 @@ const IN_PROGRESS_TASKS = [
 const READY_FOR_REVIEW = [
 	{
 		id: "review-1",
-		name: "Enterprise Order Mana...",
-		time: "now",
+		name: "Заказы для бизнеса...",
+		time: "сейчас",
 		added: 93,
 		removed: 18,
-		summary: "Perfect! I've implem...",
+		summary: "Готово, реализовано...",
 	},
 	{
 		id: "review-2",
-		name: "Set up Cursor Rules fo...",
+		name: "Настроить Cursor Rules...",
 		time: "30m",
 		added: 37,
 		removed: 0,
-		summary: "Set up Cursor Rules f...",
+		summary: "Cursor Rules настроены...",
 	},
 	{
 		id: "review-3",
-		name: "Bioinformatics Tools",
+		name: "Инструменты биоинформатики",
 		time: "45m",
 		added: 135,
 		removed: 21,
-		summary: "Bioinformatics Tools",
+		summary: "Инструменты биоинформатики",
 	},
 ];
 
@@ -59,16 +59,16 @@ const TERMINAL_LINES = [
 	"│\u00A0\u00A0Claude Code\u00A0\u00A0\u00A0\u00A0v1.0.42\u00A0\u00A0│",
 	"╰──────────────────────────╯",
 	"\u00A0",
-	"> Implement order validation",
+	"> Реализуй проверку заказа",
 	"\u00A0",
-	"I'll implement order validation.",
-	"Let me examine the existing schema...",
+	"Реализую проверку заказа.",
+	"Сначала посмотрю текущую схему...",
 	"\u00A0",
 	"Read: src/schemas/order.ts",
 	"Read: src/api/orders/validate.ts",
 	"\u00A0",
-	"✓ Added validation for required fields,",
-	"\u00A0\u00A0quantity checks, and price formats.",
+	"✓ Добавлена проверка обязательных полей,",
+	"\u00A0\u00A0количества и форматов цены.",
 ];
 
 function SpinnerIcon({
@@ -186,7 +186,7 @@ export function ParallelExecutionDemo() {
 					{/* In Progress Section */}
 					<div className="p-3">
 						<div className="text-[10px] uppercase text-white/40 font-medium tracking-wider mb-2">
-							In Progress{" "}
+							В работе{" "}
 							<span className="text-white/30">{IN_PROGRESS_TASKS.length}</span>
 						</div>
 						{IN_PROGRESS_TASKS.map((task, index) => (
@@ -216,7 +216,7 @@ export function ParallelExecutionDemo() {
 					{/* Ready for Review Section */}
 					<div className="p-3 pt-0">
 						<div className="text-[10px] uppercase text-white/40 font-medium tracking-wider mb-2">
-							Ready for Review{" "}
+							Готово к ревью{" "}
 							<span className="text-white/30">{READY_FOR_REVIEW.length}</span>
 						</div>
 						{READY_FOR_REVIEW.map((task, index) => (
@@ -277,12 +277,12 @@ export function ParallelExecutionDemo() {
 									{line || "\u00A0"}
 								</div>
 								<div className="mt-1">
-									Try us out,{" "}
+									Попробуйте Rox:{" "}
 									<a
 										href="/download"
 										className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
 									>
-										download Rox
+										скачать
 									</a>
 								</div>
 								<div>{"\u00A0"}</div>
@@ -306,7 +306,7 @@ export function ParallelExecutionDemo() {
 								value={inputValue}
 								onChange={(e) => setInputValue(e.target.value)}
 								onKeyDown={handleKeyDown}
-								placeholder="Type a message..."
+								placeholder="Введите сообщение..."
 								className="text-white/80 text-xs flex-1 bg-transparent outline-none placeholder:text-white/50"
 							/>
 							<div className="flex items-center gap-1">

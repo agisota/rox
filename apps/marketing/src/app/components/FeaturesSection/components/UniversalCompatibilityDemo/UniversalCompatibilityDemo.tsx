@@ -11,7 +11,7 @@ const AGENTS = [
 	{ name: "OpenCode", icon: "/app-icons/opencode.svg", size: 14 },
 	{ name: "Codex", icon: "/app-icons/codex.svg", size: 18 },
 	{ name: "Gemini", icon: "/app-icons/gemini.svg", size: 18 },
-	{ name: "Cursor Agent", icon: "/app-icons/cursor-agent.svg", size: 18 },
+	{ name: "Cursor Агент", icon: "/app-icons/cursor-agent.svg", size: 18 },
 ];
 
 export function UniversalCompatibilityDemo() {
@@ -35,7 +35,7 @@ export function UniversalCompatibilityDemo() {
 						<div className="w-3 h-3 rounded-full bg-[#28c840]" />
 					</div>
 					<span className="text-xs font-medium text-white/80 ml-2 px-2 py-0.5 bg-white/10 rounded">
-						superset
+						Rox
 					</span>
 				</div>
 				<div className="flex items-center gap-1.5 text-white/50">
@@ -48,7 +48,7 @@ export function UniversalCompatibilityDemo() {
 			<div className="px-3 py-2 border-b border-white/5">
 				<div className="flex items-center gap-2 px-2 py-1.5 text-white/60 hover:text-white/80 hover:bg-white/5 rounded cursor-pointer transition-colors">
 					<HiPlus className="w-4 h-4" />
-					<span className="text-sm">New Terminal</span>
+					<span className="text-sm">Новый Терминал</span>
 					<span className="ml-auto text-xs text-white/30">...</span>
 					<HiOutlineTerminal className="w-4 h-4 text-white/30" />
 				</div>
@@ -82,7 +82,7 @@ export function UniversalCompatibilityDemo() {
 			<div className="p-4 border-t border-white/5">
 				<div className="flex items-center gap-2 text-white/40">
 					<HiOutlineTerminal className="w-4 h-4" />
-					<span className="text-xs">Terminals (3)</span>
+					<span className="text-xs">Терминалы (3)</span>
 				</div>
 			</div>
 		</motion.div>

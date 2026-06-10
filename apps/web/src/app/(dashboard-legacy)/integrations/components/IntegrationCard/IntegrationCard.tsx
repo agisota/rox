@@ -71,7 +71,7 @@ export function IntegrationCard({
 			{/* Top: Category badge + Coming Soon */}
 			<div className="relative z-10 flex w-full flex-row items-center justify-between">
 				<Badge variant="secondary">{category}</Badge>
-				{disabled && <Badge variant="outline">Coming Soon</Badge>}
+				{disabled && <Badge variant="outline">Скоро</Badge>}
 			</div>
 
 			{/* Middle: Icon + Name */}

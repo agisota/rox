@@ -259,17 +259,17 @@ export function SessionsSection() {
 				<AlertDialogContent className="max-w-[520px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Kill all terminal sessions?
+							Завершить все сессии терминала?
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will terminate all persistent terminal processes (builds,
-									tests, agents, etc.).
+									Это завершит все постоянные процессы терминала: builds, tests,
+									agents и другие.
 								</span>
 								<span className="block">
-									You can't undo this action. Terminal panes will show "Process
-									exited" and can be restarted.
+									Это действие нельзя отменить. Панели терминала покажут
+									"Process exited", после чего их можно будет перезапустить.
 								</span>
 							</div>
 						</AlertDialogDescription>
@@ -356,7 +356,7 @@ export function SessionsSection() {
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will terminate the session and its underlying process.
+									Это завершит сессию и связанный с ней процесс.
 								</span>
 								{pendingKillSession && (
 									<span className="block font-mono text-xs">
@@ -404,7 +404,7 @@ export function SessionsSection() {
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will kill all running sessions and restart the terminal
+									Это завершит все запущенные сессии и перезапустит терминал
 									daemon. The app will restart terminals with a fresh daemon.
 								</span>
 								<span className="block">

@@ -134,7 +134,7 @@ export function DashboardSidebarPortBadge({
 					)}
 					{!canOpenInBrowser && (
 						<div className="text-[10px] text-muted-foreground/70">
-							Browser open unavailable from this device
+							Открытие браузера с этого устройства недоступно
 						</div>
 					)}
 					<div className="text-[10px] text-muted-foreground/70">

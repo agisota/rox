@@ -68,14 +68,16 @@ export function MobileTerminalInput({
 		>
 			<textarea
 				ref={textareaRef}
-				aria-label="Terminal input"
+				aria-label="Ввод в терминал"
 				autoCapitalize="none"
 				autoComplete="off"
 				autoCorrect="off"
 				className="w-full resize-none overflow-hidden rounded border px-3 py-2 text-sm outline-none"
 				enterKeyHint="enter"
 				inputMode="text"
-				placeholder={focused ? undefined : "Type here to send to the terminal"}
+				placeholder={
+					focused ? undefined : "Введите текст для отправки в терминал"
+				}
 				rows={1}
 				spellCheck={false}
 				style={{

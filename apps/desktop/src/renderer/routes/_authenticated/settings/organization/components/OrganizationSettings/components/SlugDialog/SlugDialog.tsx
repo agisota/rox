@@ -140,8 +140,8 @@ export function SlugDialog({
 				<DialogHeader>
 					<DialogTitle>Change organization slug</DialogTitle>
 					<DialogDescription>
-						This will change your organization's public URL. Make sure to update
-						any bookmarks or shared links.
+						Это изменит публичный URL вашей организации. Обновите закладки и
+						общие ссылки.
 					</DialogDescription>
 				</DialogHeader>
 				<Form {...slugForm}>

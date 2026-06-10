@@ -304,8 +304,8 @@ export const FileRow = memo(function FileRow({
 				}
 				description={
 					isDeleteAction
-						? "This will permanently delete this file. This action cannot be undone."
-						: "This will revert all changes to this file. This action cannot be undone."
+						? "Этот файл будет удален навсегда. Это действие нельзя отменить."
+						: "Все изменения в этом файле будут отменены. Это действие нельзя отменить."
 				}
 				confirmLabel={isDeleteAction ? "Delete" : "Discard"}
 				onConfirm={confirmDiscard}

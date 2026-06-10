@@ -60,11 +60,11 @@ export function DownloadInterstitial() {
 								className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl"
 								style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}
 							>
-								Rox is Mac-only for now
+								Пока Rox доступен только для Mac
 							</h1>
 							<p className="text-sm text-muted-foreground sm:text-base">
-								We're bringing Rox to Windows &amp; Linux. Drop your email
-								and we'll let you know the moment it's ready.
+								Мы готовим Rox для Windows и Linux. Оставьте email, и мы
+								сообщим, как только он будет готов.
 							</p>
 							<div className="max-w-sm">
 								<WaitlistForm />
@@ -76,17 +76,16 @@ export function DownloadInterstitial() {
 								className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl"
 								style={{ fontFamily: "var(--font-ibm-plex-mono), monospace" }}
 							>
-								You're about to get Rox
+								Сейчас вы получите Rox
 							</h1>
 							<p className="text-sm text-muted-foreground sm:text-base">
-								Your download will start automatically. If it didn't start, you
-								can{" "}
+								Загрузка начнется автоматически. Если она не началась, можно{" "}
 								<a
 									href={macUrlFor(platform)}
 									onClick={() => track("download_manual_clicked", { platform })}
 									className="text-foreground underline underline-offset-4"
 								>
-									download now
+									скачать вручную
 								</a>
 								.
 							</p>

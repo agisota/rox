@@ -51,7 +51,7 @@ export function NewWorkspaceButton({
 					</button>
 				</TooltipTrigger>
 				<TooltipContent side="right">
-					New Workspace ({shortcutText})
+					Новый воркспейс ({shortcutText})
 				</TooltipContent>
 			</Tooltip>
 		);
@@ -66,7 +66,7 @@ export function NewWorkspaceButton({
 			<div className="flex items-center justify-center size-5 rounded bg-accent">
 				<LuPlus className="size-3" strokeWidth={STROKE_WIDTH_THICK} />
 			</div>
-			<span className="flex-1 text-left">New Workspace</span>
+			<span className="flex-1 text-left">Новый воркспейс</span>
 			<span className="text-[10px] text-muted-foreground/40 group-hover:text-muted-foreground/80 transition-colors font-mono tabular-nums shrink-0">
 				{shortcutText}
 			</span>

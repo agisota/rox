@@ -144,7 +144,7 @@ export const createQueryProcedures = () => {
 								branch: worktree.branch,
 								// Normalize to null to ensure consistent "incomplete init" detection in UI
 								gitStatus: worktree.gitStatus ?? null,
-								createdByRox: worktree.createdByRox,
+								createdBySuperset: worktree.createdBySuperset,
 							}
 						: null,
 				};
@@ -175,7 +175,7 @@ export const createQueryProcedures = () => {
 				lastOpenedAt: number;
 				isUnread: boolean;
 				isUnnamed: boolean;
-				createdByRox: boolean | null;
+				createdBySuperset: boolean | null;
 			};
 
 			type SectionItem = {
@@ -205,7 +205,7 @@ export const createQueryProcedures = () => {
 				allWorktrees.map((wt) => [wt.id, wt.path]),
 			);
 			const worktreeCreatedByRoxMap = new Map(
-				allWorktrees.map((wt) => [wt.id, wt.createdByRox]),
+				allWorktrees.map((wt) => [wt.id, wt.createdBySuperset]),
 			);
 
 			const allSections = localDb.select().from(workspaceSections).all();
@@ -287,7 +287,7 @@ export const createQueryProcedures = () => {
 						worktreePath,
 						isUnread: workspace.isUnread ?? false,
 						isUnnamed: workspace.isUnnamed ?? false,
-						createdByRox: workspace.worktreeId
+						createdBySuperset: workspace.worktreeId
 							? (worktreeCreatedByRoxMap.get(workspace.worktreeId) ?? null)
 							: null,
 					};

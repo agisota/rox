@@ -88,8 +88,8 @@ export function AddMemberButton({
 				error instanceof Error
 					? error.message
 					: isCurrentlyMember
-						? "Failed to remove member"
-						: "Failed to add member",
+						? "Не удалось удалить участника"
+						: "Не удалось добавить участника",
 			);
 		} finally {
 			setPendingUserId(null);
@@ -109,7 +109,7 @@ export function AddMemberButton({
 					<Input
 						value={query}
 						onChange={(event) => setQuery(event.target.value)}
-						placeholder="Add team member..."
+						placeholder="Добавить участника команды..."
 						className="h-8"
 						autoFocus
 					/>

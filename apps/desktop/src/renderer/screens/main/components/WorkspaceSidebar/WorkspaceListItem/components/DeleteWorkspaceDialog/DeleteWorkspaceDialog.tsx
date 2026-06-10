@@ -196,7 +196,7 @@ export function DeleteWorkspaceDialog({
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will close the workspace and kill any active terminals.
+									Воркспейс будет закрыт, а все активные терминалы завершены.
 									Your branch and commits will remain in the repository.
 								</span>
 							</div>

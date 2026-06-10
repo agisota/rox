@@ -87,7 +87,7 @@ export function useFolderFirstImport(options?: {
 				onMultipleProjects({ candidates });
 			} else {
 				onError?.(
-					`Multiple projects use this repository (${candidates.length}). Open the project you want from settings to set it up on this device.`,
+					`Этот репозиторий используют несколько проектов (${candidates.length}). Откройте нужный проект в настройках, чтобы настроить его на этом устройстве.`,
 				);
 			}
 			return null;

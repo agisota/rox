@@ -22,7 +22,7 @@ const enterpriseFormDataSchema = z.object({
 export async function submitEnterpriseInquiry(data: unknown) {
 	const parsedData = enterpriseFormDataSchema.safeParse(data);
 	if (!parsedData.success) {
-		return { success: false, error: "Invalid input detected." };
+		return { success: false, error: "Обнаружены некорректные данные." };
 	}
 
 	const { name, role, company, email, phone, message, honeypot } =
@@ -30,12 +30,15 @@ export async function submitEnterpriseInquiry(data: unknown) {
 
 	// Honeypot check - if filled, silently reject (don't leak that we detected a bot)
 	if (honeypot && honeypot.length > 0) {
-		return { success: false, error: "Something went wrong. Please try again." };
+		return {
+			success: false,
+			error: "Что-то пошло не так. Попробуйте еще раз.",
+		};
 	}
 
 	// Validate required fields exist
 	if (!name || !role || !company || !email) {
-		return { success: false, error: "Missing required fields." };
+		return { success: false, error: "Заполните обязательные поля." };
 	}
 
 	// Sanitize inputs FIRST to prevent header injection
@@ -53,19 +56,19 @@ export async function submitEnterpriseInquiry(data: unknown) {
 		!sanitizedCompany ||
 		!sanitizedEmail
 	) {
-		return { success: false, error: "Invalid input detected." };
+		return { success: false, error: "Обнаружены некорректные данные." };
 	}
 
 	// Validate email format AFTER sanitization
 	if (!validateEmail(sanitizedEmail)) {
-		return { success: false, error: "Invalid email address." };
+		return { success: false, error: "Некорректный email." };
 	}
 
 	try {
 		if (!(await checkEmailFormRateLimit(sanitizedEmail))) {
 			return {
 				success: false,
-				error: "Too many messages. Please try again later.",
+				error: "Слишком много сообщений. Попробуйте позже.",
 			};
 		}
 
@@ -88,13 +91,16 @@ export async function submitEnterpriseInquiry(data: unknown) {
 			console.error("Failed to send enterprise inquiry email:", error);
 			return {
 				success: false,
-				error: "Something went wrong. Please try again.",
+				error: "Что-то пошло не так. Попробуйте еще раз.",
 			};
 		}
 
 		return { success: true };
 	} catch (error) {
 		console.error("Failed to send enterprise inquiry email:", error);
-		return { success: false, error: "Something went wrong. Please try again." };
+		return {
+			success: false,
+			error: "Что-то пошло не так. Попробуйте еще раз.",
+		};
 	}
 }

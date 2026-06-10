@@ -16,7 +16,9 @@ export function SidebarControl() {
 					variant="ghost"
 					size="sm"
 					onClick={toggleSidebar}
-					aria-label={isSidebarOpen ? "Hide Code Sidebar" : "Show Code Sidebar"}
+					aria-label={
+						isSidebarOpen ? "Скрыть сайдбар кода" : "Показать сайдбар кода"
+					}
 					aria-pressed={isSidebarOpen}
 					className={cn(
 						"no-drag gap-1.5 h-6 px-1.5 rounded",
@@ -30,7 +32,7 @@ export function SidebarControl() {
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent side="bottom" showArrow={false}>
-				<HotkeyLabel label="Open Code Sidebar" id="TOGGLE_SIDEBAR" />
+				<HotkeyLabel label="Открыть сайдбар кода" id="TOGGLE_SIDEBAR" />
 			</TooltipContent>
 		</Tooltip>
 	);

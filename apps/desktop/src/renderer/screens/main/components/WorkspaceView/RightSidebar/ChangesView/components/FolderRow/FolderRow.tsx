@@ -130,7 +130,6 @@ export function FolderRow({
 		: toAbsoluteWorkspacePath(worktreePath, folderPath);
 	const hasAction = !!(onStageAll || onUnstageAll || onDiscardAll);
 	const discardFileCount = fileCount ?? "all";
-	const discardFileSuffix = fileCount === 1 ? "" : "s";
 
 	const { copyPath, copyRelativePath, revealInFinder, openInEditor } =
 		usePathActions({
@@ -282,7 +281,7 @@ export function FolderRow({
 				open={showDiscardDialog}
 				onOpenChange={setShowDiscardDialog}
 				title={`Discard all changes in "${name}"?`}
-				description={`This will revert all changes to ${discardFileCount} file${discardFileSuffix} in this folder. This action cannot be undone.`}
+				description={`Все изменения в файлах этой папки будут отменены: ${discardFileCount}. Это действие нельзя отменить.`}
 				onConfirm={() => onDiscardAll?.()}
 				confirmDisabled={!onDiscardAll || isActioning}
 			/>

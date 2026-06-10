@@ -30,20 +30,20 @@ const OPTIONS: {
 }[] = [
 	{
 		mode: "empty",
-		label: "Empty",
-		description: "New git repository from scratch",
+		label: "Пустой",
+		description: "Новый Git-репозиторий с нуля",
 		icon: LuFolderPlus,
 	},
 	{
 		mode: "clone",
-		label: "Clone",
-		description: "Clone from a remote URL",
+		label: "Клонировать",
+		description: "Клонировать по удаленному URL",
 		icon: LuGitBranch,
 	},
 	{
 		mode: "template",
-		label: "Template",
-		description: "Start from a project template",
+		label: "Шаблон",
+		description: "Начать с шаблона проекта",
 		icon: LuLayoutTemplate,
 	},
 ];
@@ -66,7 +66,7 @@ function NewProjectPage() {
 				<Button variant="ghost" size="sm" asChild>
 					<Link to="/">
 						<HiArrowLeft className="size-4" />
-						Back
+						Назад
 					</Link>
 				</Button>
 			</div>
@@ -74,7 +74,9 @@ function NewProjectPage() {
 			<div className="relative flex flex-1 items-center justify-center">
 				<div className="flex flex-col items-center w-full max-w-xl px-6">
 					<div className="w-full flex flex-col gap-5">
-						<h1 className="text-lg font-medium text-foreground">New Project</h1>
+						<h1 className="text-lg font-medium text-foreground">
+							Новый проект
+						</h1>
 
 						<PathSelector value={parentDir} onChange={setParentDir} />
 
@@ -132,7 +134,7 @@ function NewProjectPage() {
 									type="button"
 									onClick={() => setError(null)}
 									className="shrink-0 rounded p-0.5 text-destructive/70 hover:text-destructive transition-colors"
-									aria-label="Dismiss error"
+									aria-label="Скрыть ошибку"
 								>
 									<LuX className="h-3.5 w-3.5" />
 								</button>

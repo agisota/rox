@@ -384,10 +384,10 @@ export function TeamDetailSettings({ teamId }: TeamDetailSettingsProps) {
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Delete team</DialogTitle>
+						<DialogTitle>Удалить команду</DialogTitle>
 						<DialogDescription>
-							This will delete <strong>{team?.name}</strong> and remove all of
-							its members. This can't be undone.
+							Будет удалена команда <strong>{team?.name}</strong> и все ее
+							участники. Это действие нельзя отменить.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className="mt-4">

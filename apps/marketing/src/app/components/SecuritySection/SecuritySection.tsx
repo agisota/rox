@@ -15,21 +15,21 @@ const SECURITY_FEATURES: {
 }[] = [
 	{
 		icon: <HiOutlineCodeBracket className="w-5 h-5 text-foreground/70" />,
-		title: "Source Available",
+		title: "Исходный код доступен",
 		description:
-			"Full source available on GitHub under Elastic License 2.0 (ELv2). Inspect, audit, and contribute to the code. No black boxes, no hidden functionality.",
+			"Полный исходный код доступен на GitHub под Elastic License 2.0 (ELv2). Изучайте, аудитируйте и вносите вклад. Никаких черных ящиков и скрытой функциональности.",
 	},
 	{
 		icon: <HiOutlineServerStack className="w-5 h-5 text-foreground/70" />,
-		title: "Offline First",
+		title: "Сначала offline",
 		description:
-			"Your code stays on your machine. Work without an internet connection. All processing happens locally.",
+			"Ваш код остается на вашей машине. Работайте без подключения к интернету: вся обработка происходит локально.",
 	},
 	{
 		icon: <HiOutlineSignal className="w-5 h-5 text-foreground/70" />,
-		title: "Local Control",
+		title: "Локальный контроль",
 		description:
-			"Rox runs on your machine and lets you choose which agents and external services to connect.",
+			"Rox запускается на вашей машине и позволяет выбирать, каких агентов и какие внешние сервисы подключать.",
 	},
 ];
 
@@ -47,11 +47,11 @@ export function SecuritySection() {
 				>
 					<div className="space-y-1">
 						<h2 className="text-2xl sm:text-3xl font-mono tracking-[-0.01em] text-foreground">
-							Private by default
+							Приватность по умолчанию
 						</h2>
 						<h2 className="text-lg sm:text-xl font-light tracking-[-0.03em] text-muted-foreground max-w-[700px]">
-							Your code stays local by default, with explicit control over
-							connected services.
+							Ваш код по умолчанию остается локально, а подключенные сервисы
+							остаются под вашим явным контролем.
 						</h2>
 					</div>
 				</motion.div>

@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 import { getBlogPost } from "@/lib/blog";
 import { formatBlogDate } from "@/lib/blog-utils";
 
-export const alt = "Rox Blog";
+export const alt = "Блог Rox";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -67,7 +67,7 @@ export default async function Image({
 					fontFamily: "Inter",
 				}}
 			>
-				Rox Blog
+				Блог Rox
 			</div>,
 			{
 				...size,

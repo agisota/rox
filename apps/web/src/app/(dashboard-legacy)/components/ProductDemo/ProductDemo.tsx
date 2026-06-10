@@ -6,22 +6,22 @@ import { useEffect, useRef, useState } from "react";
 
 const DEMO_OPTIONS = [
 	{
-		label: "Use Any Agents",
+		label: "Используйте любых агентов",
 		videoPath: "/hero/agents.mp4",
 		colors: ["#7f1d1d", "#991b1b", "#450a0a", "#1a1a2e"] as const,
 	},
 	{
-		label: "Create Parallel Branches",
+		label: "Создавайте параллельные ветки",
 		videoPath: "/hero/worktrees.mp4",
 		colors: ["#1e40af", "#1e3a8a", "#172554", "#1a1a2e"] as const,
 	},
 	{
-		label: "See Changes",
+		label: "Смотрите изменения",
 		videoPath: "/hero/changes.mp4",
 		colors: ["#b45309", "#92400e", "#78350f", "#1a1a2e"] as const,
 	},
 	{
-		label: "Open in Any IDE",
+		label: "Открывайте в любой IDE",
 		videoPath: "/hero/open-in.mp4",
 		colors: ["#047857", "#065f46", "#064e3b", "#1a1a2e"] as const,
 	},

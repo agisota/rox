@@ -86,8 +86,8 @@ export default async function TeamMemberPage({ params }: PageProps) {
 			<PersonJsonLd person={person} url={url} />
 			<BreadcrumbJsonLd
 				items={[
-					{ name: "Home", url: COMPANY.MARKETING_URL },
-					{ name: "About", url: `${COMPANY.MARKETING_URL}/team` },
+					{ name: "Главная", url: COMPANY.MARKETING_URL },
+					{ name: "О команде", url: `${COMPANY.MARKETING_URL}/team` },
 					{ name: person.name, url },
 				]}
 			/>
@@ -199,7 +199,7 @@ export default async function TeamMemberPage({ params }: PageProps) {
 							className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
 						>
 							<ArrowLeft className="h-4 w-4" />
-							Back to About
+							Назад к команде
 						</Link>
 					</div>
 				</div>
@@ -218,7 +218,7 @@ export default async function TeamMemberPage({ params }: PageProps) {
 					<section className="relative border-t border-border">
 						<div className="max-w-3xl mx-auto px-6 py-12">
 							<h2 className="text-xl font-medium text-foreground mb-6">
-								Other Team Members
+								Другие участники команды
 							</h2>
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								{otherMembers.map((member) => (
@@ -274,7 +274,7 @@ export default async function TeamMemberPage({ params }: PageProps) {
 							className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
 						>
 							<ArrowLeft className="h-4 w-4" />
-							All team members
+							Все участники команды
 						</Link>
 					</div>
 				</footer>
@@ -300,7 +300,7 @@ export async function generateMetadata({
 	const url = `${COMPANY.MARKETING_URL}/team/${id}`;
 	const description = person.bio
 		? getTeamBioText(person.bio)
-		: `${person.name}, ${person.role} at Rox`;
+		: `${person.name}, ${person.role} в Rox`;
 
 	return {
 		title: `${person.name} — ${person.role}`,
@@ -309,7 +309,7 @@ export async function generateMetadata({
 			canonical: url,
 		},
 		openGraph: {
-			title: `${person.name} — ${person.role} at Rox`,
+			title: `${person.name} — ${person.role} в Rox`,
 			description,
 			type: "profile",
 			url,

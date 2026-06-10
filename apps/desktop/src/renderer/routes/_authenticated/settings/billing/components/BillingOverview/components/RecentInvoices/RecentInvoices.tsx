@@ -42,7 +42,7 @@ export function RecentInvoices() {
 
 	return (
 		<div>
-			<h3 className="text-sm font-medium mb-2">Recent invoices</h3>
+			<h3 className="text-sm font-medium mb-2">Последние счета</h3>
 			<div className="divide-y divide-border">
 				{invoices.map((invoice) => (
 					<div

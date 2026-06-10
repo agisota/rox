@@ -15,45 +15,45 @@ import { useProjectCreationHandler } from "../../hooks/useProjectCreationHandler
 
 const TEMPLATES = [
 	{
-		name: "Next.js Chatbot",
-		description: "AI chatbot built with Next.js and the AI SDK",
+		name: "Чатбот на Next.js",
+		description: "AI-чатбот на Next.js и AI SDK",
 		icon: LuMessageSquare,
 		color: "text-white bg-black",
 		repo: "https://github.com/vercel/chatbot",
 	},
 	{
 		name: "Next.js",
-		description: "Full-stack React framework with SSR and API routes",
+		description: "Full-stack React-фреймворк с SSR и API-роутами",
 		icon: LuGlobe,
 		color: "text-white bg-black",
 	},
 	{
 		name: "Vite + React",
-		description: "Fast build tool with React and TypeScript",
+		description: "Быстрый инструмент сборки с React и TypeScript",
 		icon: LuBraces,
 		color: "text-white bg-violet-500",
 	},
 	{
 		name: "Express API",
-		description: "Minimal Node.js REST API server",
+		description: "Минимальный REST API-сервер на Node.js",
 		icon: LuServer,
 		color: "text-white bg-green-600",
 	},
 	{
 		name: "Astro",
-		description: "Content-focused static site generator",
+		description: "Генератор статических сайтов для контентных проектов",
 		icon: LuLayoutDashboard,
 		color: "text-white bg-orange-500",
 	},
 	{
 		name: "React Native",
-		description: "Cross-platform mobile app with Expo",
+		description: "Кроссплатформенное мобильное приложение на Expo",
 		icon: LuSmartphone,
 		color: "text-white bg-blue-500",
 	},
 	{
-		name: "CLI Tool",
-		description: "Command-line application with TypeScript",
+		name: "CLI-инструмент",
+		description: "Консольное приложение на TypeScript",
 		icon: LuTerminal,
 		color: "text-white bg-zinc-700",
 	},
@@ -72,7 +72,7 @@ export function TemplateTab({ onError, parentDir }: TemplateTabProps) {
 	const handleTemplateClick = (template: (typeof TEMPLATES)[number]) => {
 		if (!template.repo) return;
 		if (!parentDir.trim()) {
-			onError("Please select a project location");
+			onError("Выберите расположение проекта");
 			return;
 		}
 
@@ -127,7 +127,7 @@ export function TemplateTab({ onError, parentDir }: TemplateTabProps) {
 								{template.name}
 							</div>
 							<div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-								{isCloning ? "Cloning..." : template.description}
+								{isCloning ? "Клонируем..." : template.description}
 							</div>
 						</div>
 					</button>
@@ -135,7 +135,7 @@ export function TemplateTab({ onError, parentDir }: TemplateTabProps) {
 			})}
 			<div className="col-span-2 text-center py-2">
 				<p className="text-xs text-muted-foreground">
-					More templates coming soon
+					Скоро появятся новые шаблоны
 				</p>
 			</div>
 		</div>

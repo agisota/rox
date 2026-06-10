@@ -29,132 +29,131 @@ const WEEKLY_FRIDAY_5PM = "FREQ=WEEKLY;BYDAY=FR;BYHOUR=17;BYMINUTE=0";
 export const AUTOMATION_TEMPLATE_CATEGORIES: AutomationTemplateCategory[] = [
 	{
 		id: "status-reports",
-		label: "Status reports",
+		label: "Статусы",
 		templates: [
 			{
 				id: "standup",
 				emoji: "🟣",
-				description: "Summarize yesterday's git activity for standup.",
-				name: "Daily standup digest",
+				description: "Сводка вчерашней активности Git для стендапа.",
+				name: "Ежедневная сводка для стендапа",
 				prompt:
-					"Summarize yesterday's git activity in this repo for a standup. Group by author. Call out blockers and anything that didn't land.",
+					"Суммируй вчерашнюю активность Git в этом репозитории для стендапа. Сгруппируй по авторам. Отметь блокеры и все, что не было доведено до конца.",
 				rrule: WEEKDAYS_9AM,
 			},
 			{
 				id: "weekly-pr-digest",
 				emoji: "📝",
 				description:
-					"Synthesize this week's PRs, rollouts, incidents, and reviews into a weekly update.",
-				name: "Weekly team update",
+					"Соберите PR, релизы, инциденты и ревью за неделю в еженедельный апдейт.",
+				name: "Еженедельный апдейт команды",
 				prompt:
-					"Synthesize this week's merged PRs, rollouts, incidents, and reviews into a concise weekly update. Group by theme. Link each item.",
+					"Собери смерженные PR, релизы, инциденты и ревью за эту неделю в краткий еженедельный апдейт. Сгруппируй по темам. Добавь ссылки на каждый пункт.",
 				rrule: WEEKLY_FRIDAY_5PM,
 			},
 			{
 				id: "team-pr-recap",
 				emoji: "🗞️",
 				description:
-					"Summarize last week's PRs by teammate and theme; highlight risks.",
-				name: "Weekly PR recap",
+					"Сводка PR за прошлую неделю по участникам и темам с выделением рисков.",
+				name: "Еженедельная сводка PR",
 				prompt:
-					"Summarize last week's PRs grouped by teammate and theme. Highlight risks, regressions, and anything needing follow-up.",
+					"Суммируй PR за прошлую неделю, сгруппировав по участникам и темам. Отметь риски, регрессии и все, что требует продолжения.",
 				rrule: WEEKLY_MONDAY_9AM,
 			},
 		],
 	},
 	{
 		id: "release-prep",
-		label: "Release prep",
+		label: "Подготовка релиза",
 		templates: [
 			{
 				id: "release-notes",
 				emoji: "📖",
 				description:
-					"Draft weekly release notes from merged PRs (include links when available).",
-				name: "Weekly release notes draft",
+					"Черновик еженедельных release notes по смерженным PR со ссылками, где возможно.",
+				name: "Черновик еженедельных release notes",
 				prompt:
-					"Draft release notes for the last 7 days of merged PRs. Group by feature / fix / chore. Include PR links when available.",
+					"Подготовь черновик release notes за последние 7 дней по смерженным PR. Сгруппируй по feature / fix / chore. Добавь ссылки на PR, где они доступны.",
 				rrule: WEEKLY_FRIDAY_5PM,
 			},
 			{
 				id: "pre-release-check",
 				emoji: "✅",
 				description:
-					"Before tagging, verify changelog, migrations, feature flags, and tests.",
-				name: "Pre-release audit",
+					"Перед тегированием проверь changelog, миграции, feature flags и тесты.",
+				name: "Предрелизный аудит",
 				prompt:
-					"Pre-release audit: verify the changelog is up to date, pending migrations have been run, feature flags default correctly, and tests are green. Flag anything that should block the release.",
+					"Предрелизный аудит: проверь, что changelog актуален, ожидающие миграции выполнены, feature flags имеют корректные значения по умолчанию, а тесты зеленые. Отметь все, что должно заблокировать релиз.",
 				rrule: WEEKLY_FRIDAY_5PM,
 			},
 			{
 				id: "changelog-update",
 				emoji: "✏️",
 				description:
-					"Update the changelog with this week's highlights and key PR links.",
-				name: "Changelog refresh",
+					"Обнови changelog главными изменениями недели и ссылками на ключевые PR.",
+				name: "Обновление changelog",
 				prompt:
-					"Update CHANGELOG.md with this week's highlights. Include key PR links and keep the tone consistent with previous entries.",
+					"Обнови CHANGELOG.md главными изменениями недели. Добавь ссылки на ключевые PR и сохрани тон предыдущих записей.",
 				rrule: WEEKLY_FRIDAY_5PM,
 			},
 		],
 	},
 	{
 		id: "quality",
-		label: "Quality & health",
+		label: "Качество и стабильность",
 		templates: [
 			{
 				id: "bug-scan",
 				emoji: "🐞",
 				description:
-					"Scan recent commits (since the last run, or last 24h) for likely bugs and propose minimal fixes.",
-				name: "Daily bug scan",
+					"Просканируй недавние коммиты на вероятные баги и предложи минимальные исправления.",
+				name: "Ежедневный поиск багов",
 				prompt:
-					"Scan commits from the last 24 hours for likely bugs, regressions, or unsafe patterns. Propose minimal fixes with diffs where possible.",
+					"Просканируй коммиты за последние 24 часа на вероятные баги, регрессии или небезопасные паттерны. Предложи минимальные исправления с diff, где возможно.",
 				rrule: DAILY_9AM,
 			},
 			{
 				id: "ci-failures",
 				emoji: "🧪",
 				description:
-					"Summarize CI failures and flaky tests from the last CI window; suggest top fixes.",
-				name: "CI health digest",
+					"Суммируй сбои CI и flaky-тесты за последний CI-интервал; предложи главные исправления.",
+				name: "Сводка состояния CI",
 				prompt:
-					"Summarize CI failures and flaky tests from the last 24 hours. Group by root cause. Suggest the top three fixes to make.",
+					"Суммируй сбои CI и flaky-тесты за последние 24 часа. Сгруппируй по root cause. Предложи три главных исправления.",
 				rrule: DAILY_9AM,
 			},
 			{
 				id: "benchmark-regressions",
 				emoji: "👍",
 				description:
-					"Compare recent changes to benchmarks or traces and flag regressions early.",
-				name: "Benchmark regression watch",
+					"Сравни недавние изменения с benchmark или trace и заранее отметь регрессии.",
+				name: "Отслеживание регрессий benchmark",
 				prompt:
-					"Compare recent changes against benchmarks and traces. Flag regressions early and suggest which commits to investigate first.",
+					"Сравни недавние изменения с benchmark и trace. Заранее отметь регрессии и предложи, какие коммиты проверить первыми.",
 				rrule: DAILY_9AM,
 			},
 		],
 	},
 	{
 		id: "growth",
-		label: "Growth",
+		label: "Рост",
 		templates: [
 			{
 				id: "skill-deepening",
 				emoji: "🌳",
-				description:
-					"From recent PRs and reviews, suggest next skills to deepen.",
-				name: "Skill growth suggestions",
+				description: "По недавним PR и ревью предложи навыки для развития.",
+				name: "Рекомендации по развитию навыков",
 				prompt:
-					"Based on my recent PRs and code review comments, suggest 3–5 skills I should deepen next quarter. Be concrete and link evidence.",
+					"На основе моих недавних PR и комментариев code review предложи 3-5 навыков, которые стоит углубить в следующем квартале. Будь конкретным и дай ссылки на evidence.",
 				rrule: WEEKLY_MONDAY_9AM,
 			},
 			{
 				id: "small-side-project",
 				emoji: "🎮",
-				description: "Create a small classic game with minimal scope.",
-				name: "Weekend side project",
+				description: "Создай небольшую классическую игру с минимальным scope.",
+				name: "Пет-проект на выходные",
 				prompt:
-					"Scaffold a small classic game (snake, pong, minesweeper, etc.) with minimal scope. Use whatever language fits this repo. Keep it to one file if possible.",
+					"Собери каркас небольшой классической игры (snake, pong, minesweeper и т. п.) с минимальным scope. Используй язык, который подходит этому репозиторию. По возможности уложись в один файл.",
 			},
 		],
 	},

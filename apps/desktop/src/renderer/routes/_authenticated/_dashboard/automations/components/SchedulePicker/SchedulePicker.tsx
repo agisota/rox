@@ -35,21 +35,21 @@ interface SchedulePickerProps {
 }
 
 const PRESET_OPTIONS: { value: PresetKind; label: string }[] = [
-	{ value: "hourly", label: "Hourly" },
-	{ value: "daily", label: "Daily" },
-	{ value: "weekdays", label: "Weekdays" },
-	{ value: "weekly", label: "Weekly" },
-	{ value: "custom", label: "Custom" },
+	{ value: "hourly", label: "Каждый час" },
+	{ value: "daily", label: "Ежедневно" },
+	{ value: "weekdays", label: "По будням" },
+	{ value: "weekly", label: "Еженедельно" },
+	{ value: "custom", label: "Свое" },
 ];
 
 const DAY_OPTIONS: { value: Weekday; label: string }[] = [
-	{ value: "MO", label: "Monday" },
-	{ value: "TU", label: "Tuesday" },
-	{ value: "WE", label: "Wednesday" },
-	{ value: "TH", label: "Thursday" },
-	{ value: "FR", label: "Friday" },
-	{ value: "SA", label: "Saturday" },
-	{ value: "SU", label: "Sunday" },
+	{ value: "MO", label: "Понедельник" },
+	{ value: "TU", label: "Вторник" },
+	{ value: "WE", label: "Среда" },
+	{ value: "TH", label: "Четверг" },
+	{ value: "FR", label: "Пятница" },
+	{ value: "SA", label: "Суббота" },
+	{ value: "SU", label: "Воскресенье" },
 ];
 
 /** Derive the picker's structured state from an RRULE string. */

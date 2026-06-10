@@ -66,16 +66,16 @@ export default async function AcceptInvitationPage({
 					</div>
 					<div className="space-y-4">
 						<h1 className="text-2xl font-semibold">
-							Invitation link does not exist
+							Ссылка-приглашение не существует
 						</h1>
 						<p className="text-muted-foreground">
-							The team invitation has either expired or doesn't exist. Request a
-							new link from the team owner or check the URL to make sure it is
-							entered correctly.
+							Приглашение в команду истекло или не существует. Запросите новую
+							ссылку у владельца команды или проверьте, что URL введен
+							правильно.
 						</p>
 					</div>
 					<Button asChild variant="outline">
-						<Link href="/">Return to dashboard</Link>
+						<Link href="/">Вернуться в панель</Link>
 					</Button>
 				</div>
 			</div>
@@ -98,11 +98,11 @@ export default async function AcceptInvitationPage({
 
 				<div className="space-y-4">
 					<h1 className="text-2xl font-semibold">
-						You've been invited to join {invitation.organization.name}
+						Вас пригласили в {invitation.organization.name}
 					</h1>
 					<p className="text-muted-foreground">
-						{invitation.inviter.name} invited you to join as a {invitation.role}
-						.
+						{invitation.inviter.name} приглашает вас присоединиться с ролью{" "}
+						{invitation.role}.
 					</p>
 				</div>
 

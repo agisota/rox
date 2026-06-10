@@ -139,7 +139,7 @@ export function WorkspaceInitializingView({
 								onClick={() => setShowDeleteConfirm(true)}
 								disabled={deleteWorkspace.isPending}
 							>
-								{deleteWorkspace.isPending ? "Deleting..." : "Delete Workspace"}
+								{deleteWorkspace.isPending ? "Удаляем..." : "Удалить воркспейс"}
 							</Button>
 							<Button
 								size="sm"
@@ -149,10 +149,10 @@ export function WorkspaceInitializingView({
 								{retryMutation.isPending ? (
 									<>
 										<LuLoader className="mr-2 size-4 animate-spin" />
-										Retrying...
+										Повторяем...
 									</>
 								) : (
-									"Retry Setup"
+									"Повторить настройку"
 								)}
 							</Button>
 						</div>
@@ -237,7 +237,7 @@ export function WorkspaceInitializingView({
 								onClick={() => setShowDeleteConfirm(true)}
 								disabled={deleteWorkspace.isPending}
 							>
-								{deleteWorkspace.isPending ? "Deleting..." : "Delete Workspace"}
+								{deleteWorkspace.isPending ? "Удаляем..." : "Удалить воркспейс"}
 							</Button>
 							<Button
 								size="sm"
@@ -247,7 +247,7 @@ export function WorkspaceInitializingView({
 								{retryMutation.isPending ? (
 									<>
 										<LuLoader className="mr-2 size-4 animate-spin" />
-										Retrying...
+										Повторяем...
 									</>
 								) : (
 									"Retry"
@@ -260,8 +260,8 @@ export function WorkspaceInitializingView({
 									disabled={retryMutation.isPending}
 								>
 									{retryMutation.isPending
-										? "Retrying..."
-										: "Retry With Deduplicated Branch"}
+										? "Повторяем..."
+										: "Повторить с уникальным именем ветки"}
 								</Button>
 							)}
 						</div>

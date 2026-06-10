@@ -99,12 +99,12 @@ export function ChangesSection({
 			? {
 					title: "Discard all unstaged changes?",
 					description:
-						"This will revert all unstaged modifications and delete untracked files. This cannot be undone.",
+						"Все неиндексированные изменения будут отменены, а неотслеживаемые файлы удалены. Это действие нельзя отменить.",
 				}
 			: {
 					title: "Discard all staged changes?",
 					description:
-						"This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone.",
+						"Все staged-изменения будут сняты с индекса и отменены. Новые staged-файлы будут удалены. Это действие нельзя отменить.",
 				};
 
 	const isUnstaged = stagingActions?.kind === "unstaged";

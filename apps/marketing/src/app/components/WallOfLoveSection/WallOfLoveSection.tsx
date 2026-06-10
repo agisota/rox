@@ -71,10 +71,10 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 					className="group mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<span className="group-hover:hidden">
-						{showOriginal ? "Translated" : "Translated"}
+						{showOriginal ? "Перевод" : "Перевод"}
 					</span>
 					<span className="hidden group-hover:inline">
-						{showOriginal ? "Show translation" : "Show original"}
+						{showOriginal ? "Показать перевод" : "Показать оригинал"}
 					</span>
 				</button>
 			)}
@@ -92,7 +92,7 @@ export function WallOfLoveSection() {
 			<div className="max-w-6xl mx-auto">
 				<div className="text-center mb-12">
 					<h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground">
-						What builders say about Rox
+						Что разработчики говорят о Rox
 					</h2>
 				</div>
 

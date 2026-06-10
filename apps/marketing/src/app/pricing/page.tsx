@@ -6,8 +6,8 @@ import { PricingHero } from "./components/PricingHero";
 import { PricingTiers } from "./components/PricingTiers";
 
 export const metadata: Metadata = {
-	title: "Pricing",
-	description: `Simple pricing for every team. Free for individuals, $15/user/month for teams, custom for enterprise. Run 10+ parallel coding agents with ${COMPANY.NAME}.`,
+	title: "Цены",
+	description: `Простые цены для любой команды. Бесплатно для индивидуального использования, $15 за пользователя в месяц для команд, индивидуальные условия для Enterprise. Запускайте 10+ параллельных coding agents с ${COMPANY.NAME}.`,
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/pricing`,
 	},

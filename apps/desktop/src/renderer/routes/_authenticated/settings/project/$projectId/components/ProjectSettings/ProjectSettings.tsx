@@ -483,24 +483,20 @@ export function ProjectSettings({
 											<AlertDialogContent>
 												<AlertDialogHeader>
 													<AlertDialogTitle>
-														Import all worktrees
+														Импортировать все worktree
 													</AlertDialogTitle>
 													<AlertDialogDescription>
-														This will import{" "}
-														{importableExternalWorktrees.length} external
-														worktree
-														{importableExternalWorktrees.length === 1
-															? ""
-															: "s"}{" "}
-														into Rox as workspaces. Each worktree on disk
-														will be tracked and appear in your sidebar. No files
-														will be modified.
+														Будет импортировано{" "}
+														{importableExternalWorktrees.length} внешних
+														worktree в Rox как воркспейсы. Каждый worktree на
+														диске будет отслеживаться и появится в сайдбаре.
+														Файлы не будут изменены.
 													</AlertDialogDescription>
 												</AlertDialogHeader>
 												<AlertDialogFooter>
-													<AlertDialogCancel>Cancel</AlertDialogCancel>
+													<AlertDialogCancel>Отмена</AlertDialogCancel>
 													<AlertDialogAction onClick={handleImportAll}>
-														Import all
+														Импортировать все
 													</AlertDialogAction>
 												</AlertDialogFooter>
 											</AlertDialogContent>

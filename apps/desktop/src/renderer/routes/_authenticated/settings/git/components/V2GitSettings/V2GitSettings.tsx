@@ -48,7 +48,7 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 		if (localHostId) {
 			options.push({
 				id: localHostId,
-				name: currentDeviceName ?? "This device",
+				name: currentDeviceName ?? "Это устройство",
 				isLocal: true,
 				isOnline: true,
 			});
@@ -64,7 +64,7 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 		if (targetHostId && !options.some((o) => o.id === targetHostId)) {
 			options.push({
 				id: targetHostId,
-				name: targetHostId === machineId ? "This device" : targetHostId,
+				name: targetHostId === machineId ? "Это устройство" : targetHostId,
 				isLocal: targetHostId === machineId,
 				isOnline: targetHostId === machineId,
 			});
@@ -80,8 +80,8 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 	const isRemoteTarget = Boolean(selectedHost && !selectedHost.isLocal);
 	const isHostOnline = selectedHost?.isOnline ?? true;
 	const selectedHostName = selectedHost?.isLocal
-		? "this device"
-		: (selectedHost?.name ?? "this device");
+		? "этом устройстве"
+		: (selectedHost?.name ?? "этом устройстве");
 
 	const worktreeQuery = useV2WorktreeLocationSettings(targetHostUrl, {
 		enabled: isHostOnline,
@@ -93,7 +93,7 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 		queryKey: ["host-branch-prefix", targetHostUrl] as const,
 		enabled: !!targetHostUrl && isHostOnline,
 		queryFn: () => {
-			if (!targetHostUrl) throw new Error("Host service unavailable");
+			if (!targetHostUrl) throw new Error("Сервис хоста недоступен");
 			return getHostServiceClientByUrl(
 				targetHostUrl,
 			).settings.branchPrefix.get.query();
@@ -105,7 +105,7 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 		enabled: !!targetHostUrl && isHostOnline,
 		staleTime: 5 * 60 * 1000,
 		queryFn: () => {
-			if (!targetHostUrl) throw new Error("Host service unavailable");
+			if (!targetHostUrl) throw new Error("Сервис хоста недоступен");
 			return getHostServiceClientByUrl(
 				targetHostUrl,
 			).settings.branchPrefix.gitInfo.query();
@@ -138,7 +138,9 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 		},
 		onError: (err) =>
 			toast.error(
-				err instanceof Error ? err.message : "Failed to update branch prefix",
+				err instanceof Error
+					? err.message
+					: "Не удалось обновить префикс ветки",
 			),
 	});
 
@@ -161,10 +163,10 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 		<div className="p-6 max-w-4xl w-full mx-auto select-text">
 			<header className="mb-8 flex items-center justify-between gap-4">
 				<div className="min-w-0">
-					<h2 className="text-xl font-semibold">Git &amp; worktrees</h2>
+					<h2 className="text-xl font-semibold">Git и worktree</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Branch behavior for new workspaces on this device. Projects can
-						override the prefix individually.
+						Поведение веток для новых воркспейсов на этом устройстве. В проектах
+						можно переопределить префикс отдельно.
 					</p>
 				</div>
 				{hasMultipleHosts && targetHostId ? (
@@ -184,10 +186,10 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 
 			<section>
 				<SettingsRow
-					label="Branch prefix"
+					label="Префикс ветки"
 					hint={
 						<>
-							Group new branches under a folder.{" "}
+							Группировать новые ветки в папке.{" "}
 							<code className="rounded bg-muted px-1.5 py-0.5 text-foreground">
 								{previewPrefix ? `${previewPrefix}/branch-name` : "branch-name"}
 							</code>
@@ -207,8 +209,8 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 					/>
 				</SettingsRow>
 				<SettingsRow
-					label="Worktree location"
-					hint={`Base directory for new worktrees on ${selectedHostName}.`}
+					label="Расположение worktree"
+					hint={`Базовая папка для новых worktree на ${selectedHostName}.`}
 				>
 					<V2WorktreeLocationPicker
 						currentPath={worktreeQuery.data?.worktreeBaseDir ?? null}
@@ -224,7 +226,7 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 							worktreeQuery.isLoading ||
 							setWorktreeBaseDir.isPending
 						}
-						browseTitle="Select default worktree location"
+						browseTitle="Выберите стандартное расположение worktree"
 						onSelect={(path) => setWorktreeBaseDir.mutate(path)}
 						onReset={() => setWorktreeBaseDir.mutate(null)}
 					/>

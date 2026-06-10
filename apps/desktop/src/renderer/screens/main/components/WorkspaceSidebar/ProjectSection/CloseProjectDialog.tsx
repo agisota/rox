@@ -29,17 +29,16 @@ export function CloseProjectDialog({
 			<EnterEnabledAlertDialogContent className="max-w-[340px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Close project "{projectName}"?
+						Закрыть проект "{projectName}"?
 					</AlertDialogTitle>
 					<AlertDialogDescription asChild>
 						<div className="text-muted-foreground space-y-1.5">
 							<span className="block">
-								This will close {workspaceCount} workspace
-								{workspaceCount !== 1 ? "s" : ""} and kill all active terminals
-								in this project.
+								Будет закрыто воркспейсов: {workspaceCount}. Все активные
+								терминалы в этом проекте будут завершены.
 							</span>
 							<span className="block">
-								Your files and git history will remain on disk.
+								Файлы и история Git останутся на диске.
 							</span>
 						</div>
 					</AlertDialogDescription>
@@ -52,7 +51,7 @@ export function CloseProjectDialog({
 						className="h-7 px-3 text-xs"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						Отмена
 					</Button>
 					<AlertDialogAction
 						variant="destructive"
@@ -60,7 +59,7 @@ export function CloseProjectDialog({
 						className="h-7 px-3 text-xs"
 						onClick={onConfirm}
 					>
-						Close Project
+						Закрыть проект
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</EnterEnabledAlertDialogContent>

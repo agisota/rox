@@ -58,10 +58,10 @@ function OnboardingDashboardPage() {
 					icon={<SiGithub className="size-4.5" />}
 					chipClassName="bg-foreground text-background"
 					name="GitHub CLI"
-					description="Clone, push, and create PRs."
+					description="Клонируйте, пушьте и создавайте Pull Request."
 					status={rowStatus(isFetchingGh, ghReady)}
 					required
-					actionLabel={ghInstalled ? "Sign in" : "Install"}
+					actionLabel={ghInstalled ? "Войти" : "Установить"}
 					actionIcon={
 						ghInstalled ? undefined : <HiArrowUpRight className="size-3.5" />
 					}
@@ -72,9 +72,9 @@ function OnboardingDashboardPage() {
 					icon={<ClaudeLogo className="size-4.5 text-white" />}
 					chipClassName="bg-[#D97757]"
 					name="Claude Code"
-					description="Anthropic's coding agent."
+					description="Агент для кода от Anthropic."
 					status={rowStatus(isFetchingAnthropic, claudeConnected)}
-					actionLabel="Sign in"
+					actionLabel="Войти"
 					onAction={() => setConnectProvider("anthropic")}
 					onRecheck={() => void refetchAnthropic()}
 				/>
@@ -82,19 +82,19 @@ function OnboardingDashboardPage() {
 					icon={<SiOpenai className="size-4.5" />}
 					chipClassName="bg-foreground text-background"
 					name="Codex"
-					description="OpenAI's coding agent."
+					description="Агент для кода от OpenAI."
 					status={rowStatus(isFetchingOpenAI, codexConnected)}
-					actionLabel="Sign in"
+					actionLabel="Войти"
 					onAction={() => setConnectProvider("openai")}
 					onRecheck={() => void refetchOpenAI()}
 				/>
 				<OnboardingRow
 					icon={<FaAws className="size-4.5" />}
 					chipClassName="bg-foreground text-background"
-					name="More providers"
-					description="Bedrock, Vertex, and more."
+					name="Другие провайдеры"
+					description="Bedrock, Vertex и другие."
 					status="disconnected"
-					actionLabel="Provider docs"
+					actionLabel="Документация провайдеров"
 					actionIcon={<HiArrowUpRight className="size-3.5" />}
 					onAction={() =>
 						window.open(
@@ -172,7 +172,7 @@ function OnboardingRow({
 				{status === "loading" ? (
 					<span className="flex items-center gap-1.5 px-3 text-sm text-muted-foreground">
 						<Spinner className="size-3.5" />
-						Checking…
+						Проверяем…
 					</span>
 				) : status === "connected" ? (
 					<Button
@@ -184,11 +184,11 @@ function OnboardingRow({
 						className="text-emerald-500 hover:text-emerald-500"
 					>
 						<LuCheck className="size-3.5" strokeWidth={2.5} />
-						Connected
+						Подключено
 					</Button>
 				) : (
 					<>
-						{required && <Badge variant="outline">Required</Badge>}
+						{required && <Badge variant="outline">Обязательно</Badge>}
 						<Button type="button" size="sm" onClick={onAction}>
 							{actionLabel}
 							{actionIcon}

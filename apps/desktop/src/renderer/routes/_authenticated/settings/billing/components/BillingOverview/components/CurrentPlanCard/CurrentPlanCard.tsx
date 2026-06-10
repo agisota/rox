@@ -30,7 +30,7 @@ export function CurrentPlanCard({
 		isCancelingAtPeriodEnd && cancelAt
 			? `Cancels ${format(new Date(cancelAt), "MMMM d, yyyy")} — downgrades to Free at the end of the billing period.`
 			: isEnterprise
-				? "Managed by your organization admin."
+				? "Управляется администратором организации."
 				: isPaidPlan && periodEnd
 					? `Renews ${format(new Date(periodEnd), "MMMM d, yyyy")}.`
 					: `${plan.description}.`;
@@ -58,7 +58,7 @@ export function CurrentPlanCard({
 							disabled={isRestoring}
 							className="text-primary"
 						>
-							{isRestoring ? "Restoring..." : "Restore plan"}
+							{isRestoring ? "Восстанавливаем..." : "Восстановить план"}
 						</Button>
 					) : (
 						<Button
@@ -68,7 +68,7 @@ export function CurrentPlanCard({
 							disabled={isCanceling}
 							className="text-muted-foreground hover:text-destructive"
 						>
-							{isCanceling ? "Canceling..." : "Cancel plan"}
+							{isCanceling ? "Отменяем..." : "Отменить план"}
 						</Button>
 					)}
 				</div>

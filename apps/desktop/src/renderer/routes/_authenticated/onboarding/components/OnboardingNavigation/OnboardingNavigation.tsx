@@ -45,13 +45,13 @@ export function OnboardingNavigation({
 								size="icon-sm"
 								variant="ghost"
 								className="text-muted-foreground"
-								aria-label="Get support"
+								aria-label="Получить поддержку"
 								onClick={() => openUrl.mutate(COMPANY.REPORT_ISSUE_URL)}
 							>
 								<LuCircleHelp />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent>Get support</TooltipContent>
+						<TooltipContent>Получить поддержку</TooltipContent>
 					</Tooltip>
 				</div>
 

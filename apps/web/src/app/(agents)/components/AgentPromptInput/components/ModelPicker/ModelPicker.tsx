@@ -20,7 +20,7 @@ export function ModelPicker({
 }: ModelPickerProps) {
 	return (
 		<ResponsiveDropdown
-			title="Select model"
+			title="Выберите модель"
 			items={models.map((model) => ({
 				label: model.name,
 				icon: (

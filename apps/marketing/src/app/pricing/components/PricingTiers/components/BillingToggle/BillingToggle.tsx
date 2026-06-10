@@ -11,10 +11,10 @@ export function BillingToggle({ isYearly, onChange }: BillingToggleProps) {
 	return (
 		<div className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1">
 			<ToggleButton active={!isYearly} onClick={() => onChange(false)}>
-				Monthly
+				Ежемесячно
 			</ToggleButton>
 			<ToggleButton active={isYearly} onClick={() => onChange(true)}>
-				Yearly
+				Ежегодно
 				<span
 					className={cn(
 						"ml-2 rounded-sm px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase",
@@ -23,7 +23,7 @@ export function BillingToggle({ isYearly, onChange }: BillingToggleProps) {
 							: "bg-accent/40 text-muted-foreground",
 					)}
 				>
-					Save 25%
+					Скидка 25%
 				</span>
 			</ToggleButton>
 		</div>

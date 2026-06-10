@@ -4,8 +4,8 @@ import { GridCross } from "@/app/blog/components/GridCross";
 import { ContactForm } from "./components/ContactForm";
 
 export const metadata: Metadata = {
-	title: "Contact",
-	description: `Get in touch with the ${COMPANY.NAME} team.`,
+	title: "Контакты",
+	description: `Свяжитесь с командой ${COMPANY.NAME}.`,
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/contact`,
 	},
@@ -29,14 +29,14 @@ export default function ContactPage() {
 					<GridCross className="top-0 right-0" />
 
 					<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-						Contact
+						Контакты
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Talk to Rox
+						Связаться с Rox
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						Questions, feedback, support, or anything else. Send a note and
-						we&apos;ll route it to the right person.
+						Вопросы, обратная связь, поддержка или что-то еще. Напишите нам, и
+						мы передадим сообщение нужному человеку.
 					</p>
 
 					<GridCross className="bottom-0 left-0" />

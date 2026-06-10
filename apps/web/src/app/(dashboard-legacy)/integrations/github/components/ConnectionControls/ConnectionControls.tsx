@@ -58,22 +58,22 @@ export function ConnectionControls({
 				<AlertDialogTrigger asChild>
 					<Button variant="outline" disabled={disconnectMutation.isPending}>
 						<Unplug className="mr-2 size-4" />
-						{disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+						{disconnectMutation.isPending ? "Отключаем..." : "Отключить"}
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect GitHub?</AlertDialogTitle>
+						<AlertDialogTitle>Отключить GitHub?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will disconnect GitHub from your organization. The GitHub App
-							will remain installed but will no longer sync data. You can
-							reconnect at any time.
+							Это отключит GitHub от вашей организации. GitHub App останется
+							установленным, но больше не будет синхронизировать данные.
+							Подключение можно восстановить в любой момент.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>Отмена</AlertDialogCancel>
 						<AlertDialogAction onClick={handleDisconnect}>
-							Disconnect
+							Отключить
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -81,5 +81,5 @@ export function ConnectionControls({
 		);
 	}
 
-	return <Button onClick={handleConnect}>Install GitHub App</Button>;
+	return <Button onClick={handleConnect}>Установить GitHub App</Button>;
 }

@@ -33,8 +33,11 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
 			/>
 			<BreadcrumbJsonLd
 				items={[
-					{ name: "Home", url: COMPANY.MARKETING_URL },
-					{ name: "Changelog", url: `${COMPANY.MARKETING_URL}/changelog` },
+					{ name: "Главная", url: COMPANY.MARKETING_URL },
+					{
+						name: "История изменений",
+						url: `${COMPANY.MARKETING_URL}/changelog`,
+					},
 					{ name: entry.title, url },
 				]}
 			/>

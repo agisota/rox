@@ -23,7 +23,7 @@ export function GhAuthDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-[752px] gap-4">
 				<DialogHeader>
-					<DialogTitle>Sign in to GitHub CLI</DialogTitle>
+					<DialogTitle>Войти в GitHub CLI</DialogTitle>
 					<DialogDescription>
 						Follow the prompts below. Press Enter to open your browser,
 						authorize the device code, and this window will update once you're

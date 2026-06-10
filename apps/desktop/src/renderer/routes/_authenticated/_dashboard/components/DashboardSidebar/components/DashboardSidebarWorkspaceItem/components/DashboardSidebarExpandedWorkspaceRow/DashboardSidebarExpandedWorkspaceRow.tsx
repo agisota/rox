@@ -216,7 +216,7 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 									{isMainWorkspace
 										? workspaceKindDescription
 										: hostType === "local-device"
-											? "Running on this device"
+											? "Запущено на этом устройстве"
 											: hostType === "remote-device"
 												? hostIsOnline === false
 													? "The associated device isn't reachable right now"

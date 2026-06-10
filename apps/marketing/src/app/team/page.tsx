@@ -11,24 +11,24 @@ import { getAllPeople } from "@/lib/people";
 import { TeamBio } from "./components/TeamBio";
 
 export const metadata: Metadata = {
-	title: "About",
+	title: "О команде",
 	description:
-		"Meet the team behind Rox — building parallel coding agents for developers.",
+		"Познакомьтесь с командой Rox, которая создает параллельных coding agents для разработчиков.",
 	alternates: {
 		canonical: "/team",
 	},
 	openGraph: {
-		title: "About | Rox",
+		title: "О команде | Rox",
 		description:
-			"Meet the team behind Rox — building parallel coding agents for developers.",
+			"Познакомьтесь с командой Rox, которая создает параллельных coding agents для разработчиков.",
 		url: "/team",
 		images: ["/opengraph-image"],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "About | Rox",
+		title: "О команде | Rox",
 		description:
-			"Meet the team behind Rox — building parallel coding agents for developers.",
+			"Познакомьтесь с командой Rox, которая создает параллельных coding agents для разработчиков.",
 		images: ["/opengraph-image"],
 	},
 };
@@ -42,27 +42,27 @@ export default function TeamPage() {
 				{/* Header Section */}
 				<section className="mb-20 md:mb-28">
 					<h1 className="text-4xl sm:text-5xl md:text-6xl font-normal text-foreground mb-8">
-						Meet the{" "}
+						Познакомьтесь с{" "}
 						<span
 							className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl ml-2 font-light tracking-wide"
 							style={{ fontFamily: "var(--font-micro5)" }}
 						>
-							FOUNDERS
+							ОСНОВАТЕЛЯМИ
 						</span>
 					</h1>
 
 					<p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl mb-8">
-						Rox is built by a team of 3 ex YC CTOs. We want to create the
-						best team that has fun working together.
+						Rox создает команда из трех бывших CTO YC-компаний. Мы хотим собрать
+						лучшую команду, которой интересно работать вместе.
 						<br />
-						Success will be a lagging indicator.
+						Успех станет запаздывающим индикатором.
 					</p>
 
 					<Link
 						href="/blog"
 						className="inline-flex items-center gap-2 text-foreground hover:text-foreground/80 transition-colors group"
 					>
-						Read more on our blog
+						Подробнее в нашем блоге
 						<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
 					</Link>
 				</section>
@@ -70,7 +70,9 @@ export default function TeamPage() {
 				{/* Founders Grid */}
 				<section>
 					{people.length === 0 ? (
-						<p className="text-muted-foreground">No team members yet.</p>
+						<p className="text-muted-foreground">
+							Участников команды пока нет.
+						</p>
 					) : (
 						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12 md:gap-10">
 							{people.map((person) => {

@@ -239,12 +239,12 @@ function ProjectPage() {
 				compareBaseBranch: compareBaseBranch || undefined,
 			});
 
-			toast.success("Workspace created", {
-				description: "Setting up in the background...",
+			toast.success("Воркспейс создан", {
+				description: "Настройка идет в фоне...",
 			});
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to create workspace",
+				error instanceof Error ? error.message : "Не удалось создать воркспейс",
 			);
 		}
 	};
@@ -275,7 +275,9 @@ function ProjectPage() {
 			await handleCreateWorkspace();
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to save setup config",
+				error instanceof Error
+					? error.message
+					: "Не удалось сохранить конфиг настройки",
 			);
 		}
 	};
@@ -314,26 +316,26 @@ function ProjectPage() {
 					<div className="w-full max-w-3xl space-y-6">
 						<div className="space-y-1.5">
 							<p className="text-xs uppercase tracking-wide text-muted-foreground">
-								Step {step === "workspace" ? 1 : 2} of 2
+								Шаг {step === "workspace" ? 1 : 2} из 2
 							</p>
 							<h1 className="text-2xl font-semibold text-foreground">
-								{step === "workspace" && "Create your first workspace"}
-								{step === "setup" && "Setup script"}
+								{step === "workspace" && "Создайте первый воркспейс"}
+								{step === "setup" && "Скрипт настройки"}
 							</h1>
 							<p className="text-sm text-muted-foreground">
 								{step === "workspace" &&
-									"Workspaces are isolated task environments backed by git worktrees."}
+									"Воркспейсы - изолированные среды задач на основе git worktree."}
 								{step === "setup" && (
 									<>
-										These commands run automatically when a workspace is
-										created.{" "}
+										Эти команды запускаются автоматически при создании
+										воркспейса.{" "}
 										<a
 											href="https://docs.superset.sh/setup-teardown-scripts"
 											target="_blank"
 											rel="noopener noreferrer"
 											className="group inline-flex items-center gap-0.5 underline underline-offset-2 hover:text-foreground transition-colors"
 										>
-											Read our docs
+											Открыть документацию
 											<HiChevronRight className="size-3 transition-transform duration-150 group-hover:translate-x-0.5" />
 										</a>
 									</>
@@ -352,12 +354,12 @@ function ProjectPage() {
 									className="space-y-4"
 								>
 									<div className="space-y-2">
-										<Label htmlFor="task-title">Task</Label>
+										<Label htmlFor="task-title">Задача</Label>
 										<Input
 											id="task-title"
 											ref={titleInputRef}
 											className="h-11"
-											placeholder="e.g. Add dark mode, Fix checkout bug"
+											placeholder="Например: добавить темную тему, исправить баг checkout"
 											value={title}
 											onChange={(e) => setTitle(e.target.value)}
 											onKeyDown={(e) => {
@@ -375,7 +377,7 @@ function ProjectPage() {
 											<span className="font-mono">
 												{generatedBranchName || "branch-name"}
 											</span>
-											<span className="text-muted-foreground/50">from</span>
+											<span className="text-muted-foreground/50">от</span>
 											<span className="font-mono">
 												{effectiveCompareBaseBranch}
 											</span>
@@ -390,7 +392,7 @@ function ProjectPage() {
 											<HiChevronDown
 												className={`size-3 transition-transform duration-200 ${showAdvanced ? "" : "-rotate-90"}`}
 											/>
-											Advanced options
+											Расширенные параметры
 										</CollapsibleTrigger>
 										<AnimatePresence initial={false}>
 											{showAdvanced && (
@@ -403,11 +405,11 @@ function ProjectPage() {
 												>
 													<div className="pt-3 space-y-2">
 														<span className="text-xs font-medium text-muted-foreground">
-															Base branch
+															Базовая ветка
 														</span>
 														{isBranchesError ? (
 															<div className="flex items-center gap-2 h-10 px-3 rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-sm">
-																Failed to load branches
+																Не удалось загрузить ветки
 															</div>
 														) : (
 															<Popover
@@ -425,12 +427,12 @@ function ProjectPage() {
 																			<GoGitBranch className="size-3.5 shrink-0 text-muted-foreground" />
 																			<span className="truncate font-mono text-sm">
 																				{effectiveCompareBaseBranch ||
-																					"Select branch..."}
+																					"Выберите ветку..."}
 																			</span>
 																			{effectiveCompareBaseBranch ===
 																				branchData?.defaultBranch && (
 																				<span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-																					default
+																					по умолчанию
 																				</span>
 																			)}
 																		</span>
@@ -444,13 +446,13 @@ function ProjectPage() {
 																>
 																	<Command shouldFilter={false}>
 																		<CommandInput
-																			placeholder="Search branches..."
+																			placeholder="Искать ветки..."
 																			value={branchSearch}
 																			onValueChange={setBranchSearch}
 																		/>
 																		<CommandList className="max-h-[200px]">
 																			<CommandEmpty>
-																				No branches found
+																				Ветки не найдены
 																			</CommandEmpty>
 																			{filteredBranches.map((branch) => (
 																				<CommandItem
@@ -471,7 +473,7 @@ function ProjectPage() {
 																						{branch.name ===
 																							branchData?.defaultBranch && (
 																							<span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-																								default
+																								по умолчанию
 																							</span>
 																						)}
 																					</span>
@@ -506,7 +508,7 @@ function ProjectPage() {
 											onClick={handleContinueToSetup}
 											disabled={!canContinueFromWorkspace}
 										>
-											Continue
+											Продолжить
 											<HiChevronRight className="size-4" />
 										</Button>
 									</div>
@@ -557,7 +559,7 @@ function ProjectPage() {
 												onClick={switchToCustom}
 												className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
 											>
-												Customize commands
+												Настроить команды
 											</button>
 										</div>
 									)}
@@ -565,8 +567,8 @@ function ProjectPage() {
 									{setupMode === "checklist" && actions.length === 0 && (
 										<div className="overflow-hidden rounded-lg border bg-card/40 p-6 text-center space-y-3">
 											<p className="text-sm text-muted-foreground">
-												We couldn't detect a package manager or environment
-												config.
+												Не удалось определить пакетный менеджер или конфиг
+												окружения.
 											</p>
 											<div className="flex items-center justify-center gap-2">
 												<Button
@@ -574,7 +576,7 @@ function ProjectPage() {
 													size="sm"
 													onClick={() => setSetupMode("custom")}
 												>
-													Add commands
+													Добавить команды
 												</Button>
 												<Button
 													variant="ghost"
@@ -585,7 +587,7 @@ function ProjectPage() {
 														createWorkspace.isPending
 													}
 												>
-													Skip
+													Пропустить
 												</Button>
 											</div>
 										</div>
@@ -599,7 +601,7 @@ function ProjectPage() {
 													onClick={() => setSetupMode("checklist")}
 													className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
 												>
-													Back to checklist
+													Назад к чеклисту
 												</button>
 											)}
 											<div className="overflow-hidden rounded-lg border bg-card/40">
@@ -608,12 +610,12 @@ function ProjectPage() {
 														id="setup-script"
 														wrap="off"
 														className="h-full min-h-[220px] resize-none overflow-x-auto whitespace-pre font-mono text-xs"
-														placeholder="Add setup commands, one per line..."
+														placeholder="Добавьте команды настройки, по одной в строке..."
 														value={setupContent}
 														onChange={(e) => setSetupContent(e.target.value)}
 													/>
 													<div className="flex flex-wrap items-center gap-1.5 border-t px-1 pt-2 text-[11px] text-muted-foreground">
-														<span className="mr-1">Variables</span>
+														<span className="mr-1">Переменные</span>
 														<span className="rounded bg-muted px-1.5 py-0.5 font-mono">
 															$SUPERSET_ROOT_PATH
 														</span>
@@ -637,7 +639,7 @@ function ProjectPage() {
 											<HiChevronDown
 												className={`size-3 transition-transform duration-200 ${teardownOpen ? "" : "-rotate-90"}`}
 											/>
-											Teardown commands (optional)
+											Команды очистки (необязательно)
 										</CollapsibleTrigger>
 										<CollapsibleContent className="pt-2">
 											<Textarea
@@ -656,7 +658,7 @@ function ProjectPage() {
 											onClick={() => setStep("workspace")}
 										>
 											<HiChevronLeft className="size-4" />
-											Back
+											Назад
 										</Button>
 										<div className="flex items-center gap-2">
 											<Button
@@ -667,7 +669,7 @@ function ProjectPage() {
 													createWorkspace.isPending
 												}
 											>
-												Skip for now
+												Пока пропустить
 											</Button>
 											<Button
 												onClick={handleSaveAndCreateWorkspace}
@@ -678,10 +680,10 @@ function ProjectPage() {
 											>
 												{updateConfigMutation.isPending ||
 												createWorkspace.isPending
-													? "Creating..."
+													? "Создание..."
 													: setupMode === "checklist"
-														? "Create workspace"
-														: "Save & create workspace"}
+														? "Создать воркспейс"
+														: "Сохранить и создать воркспейс"}
 												<HiChevronRight className="size-4" />
 											</Button>
 										</div>

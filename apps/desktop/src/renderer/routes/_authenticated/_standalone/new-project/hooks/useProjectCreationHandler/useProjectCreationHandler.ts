@@ -29,7 +29,7 @@ export function useProjectCreationHandler(onError: (error: string) => void) {
 	};
 
 	const handleError = (err: { message?: string }) => {
-		onError(err.message || "Operation failed");
+		onError(err.message || "Операция не удалась");
 	};
 
 	return {

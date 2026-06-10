@@ -24,17 +24,20 @@ const contactFormDataSchema = z.object({
 export async function submitContactInquiry(data: unknown) {
 	const parsedData = contactFormDataSchema.safeParse(data);
 	if (!parsedData.success) {
-		return { success: false, error: "Invalid input detected." };
+		return { success: false, error: "Обнаружены некорректные данные." };
 	}
 
 	const { name, email, topic, message, honeypot } = parsedData.data;
 
 	if (honeypot && honeypot.length > 0) {
-		return { success: false, error: "Something went wrong. Please try again." };
+		return {
+			success: false,
+			error: "Что-то пошло не так. Попробуйте еще раз.",
+		};
 	}
 
 	if (!name || !email || !message) {
-		return { success: false, error: "Missing required fields." };
+		return { success: false, error: "Заполните обязательные поля." };
 	}
 
 	const sanitizedName = sanitizeSingleLine(name);
@@ -43,18 +46,18 @@ export async function submitContactInquiry(data: unknown) {
 	const sanitizedMessage = sanitizeMessage(message);
 
 	if (!sanitizedName || !sanitizedEmail || !sanitizedMessage) {
-		return { success: false, error: "Invalid input detected." };
+		return { success: false, error: "Обнаружены некорректные данные." };
 	}
 
 	if (!validateEmail(sanitizedEmail)) {
-		return { success: false, error: "Invalid email address." };
+		return { success: false, error: "Некорректный email." };
 	}
 
 	try {
 		if (!(await checkEmailFormRateLimit(sanitizedEmail))) {
 			return {
 				success: false,
-				error: "Too many messages. Please try again later.",
+				error: "Слишком много сообщений. Попробуйте позже.",
 			};
 		}
 
@@ -75,13 +78,16 @@ export async function submitContactInquiry(data: unknown) {
 			console.error("Failed to send contact inquiry email:", error);
 			return {
 				success: false,
-				error: "Something went wrong. Please try again.",
+				error: "Что-то пошло не так. Попробуйте еще раз.",
 			};
 		}
 
 		return { success: true };
 	} catch (error) {
 		console.error("Failed to send contact inquiry email:", error);
-		return { success: false, error: "Something went wrong. Please try again." };
+		return {
+			success: false,
+			error: "Что-то пошло не так. Попробуйте еще раз.",
+		};
 	}
 }

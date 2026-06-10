@@ -64,8 +64,8 @@ export default async function BlogPostPage({ params }: PageProps) {
 			/>
 			<BreadcrumbJsonLd
 				items={[
-					{ name: "Home", url: COMPANY.MARKETING_URL },
-					{ name: "Blog", url: `${COMPANY.MARKETING_URL}/blog` },
+					{ name: "Главная", url: COMPANY.MARKETING_URL },
+					{ name: "Блог", url: `${COMPANY.MARKETING_URL}/blog` },
 					{ name: post.title, url },
 				]}
 			/>

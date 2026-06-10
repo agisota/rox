@@ -556,7 +556,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		section: "behavior",
 		title: "File open mode",
 		description:
-			"Choose how files open when clicked in the file tree or changes view",
+			"Выберите, как открывать файлы при клике в дереве файлов или в изменениях",
 		keywords: [
 			"file",
 			"open",
@@ -1259,9 +1259,10 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.SECURITY_EXPOSE_HOST_SERVICE_VIA_RELAY,
 		section: "security",
-		title: "Allow remote workspaces to access this device via relay",
+		title:
+			"Разрешить удаленным воркспейсам доступ к этому устройству через Relay",
 		description:
-			"Controls whether remote workspaces can reach your local host service through the Rox relay",
+			"Определяет, могут ли удаленные воркспейсы подключаться к локальному host service через Rox Relay",
 		keywords: [
 			"security",
 			"relay",

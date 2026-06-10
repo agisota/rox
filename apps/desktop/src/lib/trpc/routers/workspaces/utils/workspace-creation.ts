@@ -88,7 +88,7 @@ export interface CreateWorkspaceFromExternalWorktreeResult {
  * 1. Searches for external worktrees matching the branch
  * 2. Filters out invalid candidates (main repo, bare, detached)
  * 3. Selects the best match (exact path match or single candidate)
- * 4. Imports the worktree into the database with createdByRox=false
+ * 4. Imports the worktree into the database with createdBySuperset=false
  * 5. Creates a workspace and configures it
  * 6. Implements transaction rollback on failure
  */
@@ -192,7 +192,7 @@ export async function createWorkspaceFromExternalWorktree({
 					createdAt: worktreeCreatedAt,
 					gitStatus: null,
 					githubStatus: null,
-					createdByRox: false,
+					createdBySuperset: false,
 				}
 			: localDb
 					.insert(worktrees)
@@ -203,7 +203,7 @@ export async function createWorkspaceFromExternalWorktree({
 						baseBranch: compareBaseBranch,
 						createdAt: worktreeCreatedAt,
 						gitStatus: null, // Will be populated by refresh pipeline
-						createdByRox: false, // Mark as external
+						createdBySuperset: false, // Mark as external
 					})
 					.returning()
 					.get();
@@ -217,7 +217,7 @@ export async function createWorkspaceFromExternalWorktree({
 					createdAt: worktreeCreatedAt,
 					gitStatus: null,
 					githubStatus: null,
-					createdByRox: false,
+					createdBySuperset: false,
 				})
 				.where(eq(worktrees.id, existingWorktreeByPath.id))
 				.run();
@@ -390,7 +390,7 @@ export async function openExternalWorktree({
 						lastRefreshed: Date.now(),
 					},
 					githubStatus: null,
-					createdByRox: false,
+					createdBySuperset: false,
 				})
 				.where(eq(worktrees.id, existingWorktree.id))
 				.run();
@@ -407,7 +407,7 @@ export async function openExternalWorktree({
 					lastRefreshed: Date.now(),
 				},
 				githubStatus: null,
-				createdByRox: false,
+				createdBySuperset: false,
 			};
 		}
 
@@ -523,7 +523,7 @@ export async function openExternalWorktree({
 				behind: 0,
 				lastRefreshed: Date.now(),
 			},
-			createdByRox: false, // External worktree
+			createdBySuperset: false, // External worktree
 		})
 		.returning()
 		.get();

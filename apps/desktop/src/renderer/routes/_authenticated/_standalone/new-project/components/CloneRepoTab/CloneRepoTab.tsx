@@ -17,11 +17,11 @@ export function CloneRepoTab({ onError, parentDir }: CloneRepoTabProps) {
 
 	const handleClone = () => {
 		if (!url.trim()) {
-			onError("Please enter a repository URL");
+			onError("Введите URL репозитория");
 			return;
 		}
 		if (!parentDir.trim()) {
-			onError("Please select a project location");
+			onError("Выберите расположение проекта");
 			return;
 		}
 
@@ -59,7 +59,7 @@ export function CloneRepoTab({ onError, parentDir }: CloneRepoTabProps) {
 			</div>
 			<div className="flex justify-end pt-2 border-t border-border/40">
 				<Button onClick={handleClone} disabled={isLoading} size="sm">
-					{isLoading ? "Cloning..." : "Clone"}
+					{isLoading ? "Клонируем..." : "Клонировать"}
 				</Button>
 			</div>
 		</div>

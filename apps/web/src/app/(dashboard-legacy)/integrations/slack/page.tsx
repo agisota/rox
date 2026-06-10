@@ -21,7 +21,7 @@ export default async function SlackIntegrationPage() {
 		return (
 			<div className="flex flex-col items-center justify-center py-16">
 				<p className="text-muted-foreground">
-					You need to be part of an organization to use integrations.
+					Чтобы использовать интеграции, нужно состоять в организации.
 				</p>
 			</div>
 		);
@@ -41,7 +41,7 @@ export default async function SlackIntegrationPage() {
 				className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<ArrowLeft className="size-4" />
-				Back to Integrations
+				Назад к интеграциям
 			</Link>
 
 			<div className="flex items-start gap-6">
@@ -54,24 +54,25 @@ export default async function SlackIntegrationPage() {
 						{isConnected ? (
 							<Badge variant="default" className="gap-1">
 								<CheckCircle2 className="size-3" />
-								Connected
+								Подключено
 							</Badge>
 						) : (
-							<Badge variant="secondary">Not Connected</Badge>
+							<Badge variant="secondary">Не подключено</Badge>
 						)}
 					</div>
 					<p className="mt-1 text-muted-foreground">
-						Connect Slack to manage tasks from conversations. Mention the bot in
-						any channel or send it a direct message to create and update tasks.
+						Подключите Slack, чтобы управлять задачами из переписок. Упомяните
+						бота в любом канале или напишите ему в личные сообщения, чтобы
+						создавать и обновлять задачи.
 					</p>
 				</div>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Connection</CardTitle>
+					<CardTitle>Подключение</CardTitle>
 					<CardDescription>
-						Connect your Slack workspace to manage tasks from conversations.
+						Подключите воркспейс Slack, чтобы управлять задачами из переписок.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -81,7 +82,7 @@ export default async function SlackIntegrationPage() {
 					/>
 					{connection && (
 						<div className="mt-4 text-sm text-muted-foreground">
-							Connected to{" "}
+							Подключено к{" "}
 							<span className="font-medium">{connection.externalOrgName}</span>
 						</div>
 					)}

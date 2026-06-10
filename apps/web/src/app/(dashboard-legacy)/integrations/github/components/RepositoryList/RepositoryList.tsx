@@ -28,14 +28,14 @@ export function RepositoryList({ organizationId }: RepositoryListProps) {
 	const syncMutation = useMutation(
 		trpc.integration.github.triggerSync.mutationOptions({
 			onSuccess: () => {
-				toast.success("Sync started", {
-					description: "Repositories will be updated shortly.",
+				toast.success("Синхронизация запущена", {
+					description: "Репозитории скоро обновятся.",
 				});
 				// Refetch after a short delay to allow sync to complete
 				setTimeout(() => refetch(), 3000);
 			},
 			onError: (error) => {
-				toast.error("Sync failed", {
+				toast.error("Синхронизация не удалась", {
 					description: error.message,
 				});
 			},
@@ -51,7 +51,7 @@ export function RepositoryList({ organizationId }: RepositoryListProps) {
 	if (isLoading) {
 		return (
 			<div className="py-8 text-center text-muted-foreground">
-				Loading repositories...
+				Загружаем репозитории...
 			</div>
 		);
 	}
@@ -60,11 +60,11 @@ export function RepositoryList({ organizationId }: RepositoryListProps) {
 		return (
 			<div className="flex flex-col items-center gap-4 py-8">
 				<p className="text-center text-muted-foreground">
-					Failed to load repositories. Please try again.
+					Не удалось загрузить репозитории. Попробуйте еще раз.
 				</p>
 				<Button onClick={() => refetch()} variant="outline">
 					<RefreshCw className="mr-2 size-4" />
-					Retry
+					Повторить
 				</Button>
 			</div>
 		);
@@ -74,14 +74,14 @@ export function RepositoryList({ organizationId }: RepositoryListProps) {
 		return (
 			<div className="flex flex-col items-center gap-4 py-8">
 				<p className="text-center text-muted-foreground">
-					No repositories found. Make sure your GitHub App has access to
-					repositories.
+					Репозитории не найдены. Убедитесь, что GitHub App имеет доступ к
+					репозиториям.
 				</p>
 				<Button onClick={handleSync} disabled={isSyncing} variant="outline">
 					<RefreshCw
 						className={`mr-2 size-4 ${isSyncing ? "animate-spin" : ""}`}
 					/>
-					{isSyncing ? "Syncing..." : "Sync Repositories"}
+					{isSyncing ? "Синхронизируем..." : "Синхронизировать репозитории"}
 				</Button>
 			</div>
 		);
@@ -92,7 +92,7 @@ export function RepositoryList({ organizationId }: RepositoryListProps) {
 			<div className="flex items-center justify-between">
 				<p className="text-sm text-muted-foreground">
 					{repositories.length}{" "}
-					{repositories.length === 1 ? "repository" : "repositories"}
+					{repositories.length === 1 ? "репозиторий" : "репозиториев"}
 				</p>
 				<Button
 					onClick={handleSync}
@@ -103,7 +103,7 @@ export function RepositoryList({ organizationId }: RepositoryListProps) {
 					<RefreshCw
 						className={`mr-2 size-3 ${isSyncing ? "animate-spin" : ""}`}
 					/>
-					{isSyncing ? "Syncing..." : "Sync"}
+					{isSyncing ? "Синхронизируем..." : "Синхронизировать"}
 				</Button>
 			</div>
 			<div className="space-y-2">
@@ -127,7 +127,7 @@ export function RepositoryList({ organizationId }: RepositoryListProps) {
 							</div>
 						</div>
 						<Badge variant={repo.isPrivate ? "secondary" : "outline"}>
-							{repo.isPrivate ? "Private" : "Public"}
+							{repo.isPrivate ? "Приватный" : "Публичный"}
 						</Badge>
 					</div>
 				))}

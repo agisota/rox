@@ -35,10 +35,10 @@ export function WaitlistForm({ heading, description }: WaitlistFormProps) {
 		return (
 			<div>
 				<h2 className="mb-2 text-xl font-medium text-foreground">
-					You're on the list!
+					Вы в списке!
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					We'll notify you when Windows &amp; Linux support is ready.
+					Мы сообщим, когда будет готова поддержка Windows и Linux.
 				</p>
 			</div>
 		);
@@ -65,7 +65,7 @@ export function WaitlistForm({ heading, description }: WaitlistFormProps) {
 					type="submit"
 					className="w-full rounded-lg bg-foreground py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
 				>
-					Join waitlist
+					Встать в список ожидания
 				</button>
 			</form>
 		</>

@@ -83,13 +83,13 @@ export function ProjectsSettingsSidebar({
 
 	return (
 		<SettingsListSidebar
-			searchPlaceholder="Filter projects..."
-			searchAriaLabel="Filter projects"
+			searchPlaceholder="Фильтр проектов..."
+			searchAriaLabel="Фильтр проектов"
 			hideFilterWhenEmpty
 			groups={listGroups}
 			filterRow={(row, q) => row.name.toLowerCase().includes(q.toLowerCase())}
 			getRowKey={(row) => `${row.kind}:${row.id}`}
-			emptyLabel="No projects yet."
+			emptyLabel="Проектов пока нет."
 			noMatchLabel={(q) => `No projects match "${q}".`}
 			renderRow={(row) => (
 				<Link

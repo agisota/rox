@@ -53,13 +53,13 @@ function V1Body() {
 
 	return (
 		<div className="space-y-0.5">
-			<Label className="text-sm font-medium">Worktree location</Label>
+			<Label className="text-sm font-medium">Расположение worktree</Label>
 			<p className="text-xs text-muted-foreground">
-				Base directory for new worktrees
+				Базовая папка для новых worktree
 			</p>
 			<WorktreeLocationPicker
 				currentPath={worktreeBaseDir}
-				defaultPathLabel={`Default (${defaultWorktreePath})`}
+				defaultPathLabel={`По умолчанию (${defaultWorktreePath})`}
 				defaultBrowsePath={worktreeBaseDir}
 				disabled={isLoading || setWorktreeBaseDir.isPending}
 				onSelect={(path) => setWorktreeBaseDir.mutate({ path })}
@@ -80,7 +80,7 @@ function V2Body() {
 		if (localHostId) {
 			opts.push({
 				id: localHostId,
-				name: currentDeviceName ?? "This device",
+				name: currentDeviceName ?? "Это устройство",
 				isLocal: true,
 				isOnline: true,
 			});
@@ -126,15 +126,15 @@ function V2Body() {
 		<div className="space-y-2">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-0.5">
-					<Label className="text-sm font-medium">Worktree location</Label>
+					<Label className="text-sm font-medium">Расположение worktree</Label>
 					<p className="text-xs text-muted-foreground">
 						{hasMultipleHosts
-							? `Base directory for new worktrees on ${
+							? `Базовая папка для новых worktree на ${
 									selectedHost?.isLocal
-										? "this device"
-										: (selectedHost?.name ?? "this device")
+										? "этом устройстве"
+										: (selectedHost?.name ?? "этом устройстве")
 								}`
-							: "Base directory for new worktrees"}
+							: "Базовая папка для новых worktree"}
 					</p>
 				</div>
 				{hasMultipleHosts && effectiveHostId ? (
@@ -153,18 +153,18 @@ function V2Body() {
 				hostUrl={targetHostUrl}
 				hostName={
 					selectedHost?.isLocal
-						? "this device"
-						: (selectedHost?.name ?? "this device")
+						? "это устройство"
+						: (selectedHost?.name ?? "это устройство")
 				}
 				isRemoteTarget={!isLocal}
 				disabled={disabled}
-				browseTitle="Select default worktree location"
+				browseTitle="Выберите стандартное расположение worktree"
 				onSelect={(path) => setLocation.mutate(path)}
 				onReset={() => setLocation.mutate(null)}
 			/>
 			{hasMultipleHosts && !isOnline ? (
 				<p className="text-xs text-muted-foreground">
-					{selectedHost?.name ?? "This device"} is offline.
+					{selectedHost?.name ?? "Это устройство"} офлайн.
 				</p>
 			) : null}
 		</div>

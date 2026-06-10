@@ -138,7 +138,7 @@ export function ImportProjectsPage({
 			description="Import each v1 project into v2. Already-imported projects show as Imported."
 			isLoading={isLoading}
 			itemCount={projects.length}
-			emptyMessage="No v1 projects found on this device."
+			emptyMessage="На этом устройстве не найдено проектов v1."
 			onRefresh={refresh}
 			isRefreshing={isRefreshing}
 			headerAction={headerAction}

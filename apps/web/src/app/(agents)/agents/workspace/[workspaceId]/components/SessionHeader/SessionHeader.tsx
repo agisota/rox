@@ -15,14 +15,14 @@ export function SessionHeader({ backHref, session }: SessionHeaderProps) {
 	return (
 		<div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
 			<Button variant="ghost" size="icon-sm" asChild>
-				<Link href={backHref} aria-label="Back">
+				<Link href={backHref} aria-label="Назад">
 					<ArrowLeft className="size-4" />
 				</Link>
 			</Button>
 			<h1 className="min-w-0 flex-1 truncate text-sm font-medium">
 				{session.title}
 			</h1>
-			<Badge variant="secondary">Preview</Badge>
+			<Badge variant="secondary">Превью</Badge>
 		</div>
 	);
 }

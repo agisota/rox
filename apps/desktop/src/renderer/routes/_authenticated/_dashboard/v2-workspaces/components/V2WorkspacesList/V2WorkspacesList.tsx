@@ -176,7 +176,7 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 		>
 			<SortableHeader
 				field="sidebar"
-				label="In sidebar"
+				label="В сайдбаре"
 				align="center"
 				srOnlyLabel
 				sortField={sortField}
@@ -185,14 +185,14 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 			/>
 			<SortableHeader
 				field="name"
-				label="Name"
+				label="Имя"
 				sortField={sortField}
 				sortDirection={sortDirection}
 				onSort={handleSort}
 			/>
 			<SortableHeader
 				field="host"
-				label="Host"
+				label="Хост"
 				className="hidden md:flex"
 				sortField={sortField}
 				sortDirection={sortDirection}
@@ -200,7 +200,7 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 			/>
 			<SortableHeader
 				field="branch"
-				label="Branch"
+				label="Ветка"
 				className="hidden lg:flex"
 				sortField={sortField}
 				sortDirection={sortDirection}
@@ -208,7 +208,7 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 			/>
 			<SortableHeader
 				field="created"
-				label="Created"
+				label="Создано"
 				className="hidden xl:flex"
 				sortField={sortField}
 				sortDirection={sortDirection}
@@ -231,13 +231,13 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 						</EmptyMedia>
 						<EmptyTitle>
 							{hasActiveFilters
-								? "No workspaces match your filters"
-								: "No workspaces yet"}
+								? "Нет воркспейсов по этим фильтрам"
+								: "Воркспейсов пока нет"}
 						</EmptyTitle>
 						<EmptyDescription>
 							{hasActiveFilters
-								? "Try a different search term or clear the device filter."
-								: "Workspaces you have access to across all your devices will show up here."}
+								? "Попробуйте другой поисковый запрос или очистите фильтр устройств."
+								: "Здесь появятся воркспейсы, к которым у вас есть доступ на всех устройствах."}
 						</EmptyDescription>
 					</EmptyHeader>
 					{hasActiveFilters ? (
@@ -247,7 +247,7 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 								size="sm"
 								onClick={() => resetFilters()}
 							>
-								Clear filters
+								Очистить фильтры
 							</Button>
 						</EmptyContent>
 					) : null}

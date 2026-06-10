@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 import { getChangelogEntry } from "@/lib/changelog";
 import { formatChangelogDate } from "@/lib/changelog-utils";
 
-export const alt = "Rox Changelog";
+export const alt = "История изменений Rox";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -56,7 +56,7 @@ export default async function Image({
 					fontFamily: "Inter",
 				}}
 			>
-				Rox Changelog
+				История изменений Rox
 			</div>,
 			{
 				...size,

@@ -9,18 +9,18 @@ export function ReviewStatus({
 }: ReviewStatusProps) {
 	const config = {
 		approved: {
-			label: "Approved",
+			label: "Одобрено",
 			className: "bg-emerald-500/15 text-emerald-500",
 		},
 		changes_requested: {
-			label: "Changes requested",
+			label: "Запрошены изменения",
 			className: "bg-destructive/15 text-destructive-foreground",
 		},
 		pending: {
 			label:
 				requestedReviewers && requestedReviewers.length > 0
 					? `Awaiting ${requestedReviewers.join(", ")}`
-					: "Review pending",
+					: "Ревью ожидает",
 			className: "bg-amber-500/15 text-amber-500",
 		},
 	};
