@@ -37,7 +37,7 @@ export function Header() {
 		(org) => org.id === activeOrganizationId,
 	);
 
-	const displayName = activeOrganization?.name ?? "Organization";
+	const displayName = activeOrganization?.name ?? "Организация";
 
 	const handleSignOut = async () => {
 		await authClient.signOut();
@@ -53,7 +53,7 @@ export function Header() {
 	return (
 		<header className="sticky left-0 top-0 z-40 w-full border-b border-border/50 bg-background py-4">
 			<div className="mx-auto flex min-h-8 w-[95vw] max-w-screen-2xl items-center justify-between">
-				<Link href="/" aria-label="Go to home">
+				<Link href="/" aria-label="Перейти на главную">
 					<Image src="/title.svg" alt="Rox" width={150} height={25} priority />
 				</Link>
 				<DropdownMenu>
@@ -61,7 +61,7 @@ export function Header() {
 						<button
 							type="button"
 							className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-secondary/50 px-3 py-1.5 transition-all duration-150 hover:border-border hover:bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							aria-label="Organization menu"
+							aria-label="Меню организации"
 						>
 							<Avatar className="size-5">
 								<AvatarImage
@@ -90,7 +90,7 @@ export function Header() {
 							<>
 								<DropdownMenuSub>
 									<DropdownMenuSubTrigger className="cursor-pointer">
-										<span>Switch organization</span>
+										<span>Сменить организацию</span>
 									</DropdownMenuSubTrigger>
 									<DropdownMenuSubContent>
 										<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
@@ -105,7 +105,7 @@ export function Header() {
 												<Avatar className="size-4">
 													<AvatarImage
 														src={org.logo ?? undefined}
-														alt={org.name ?? "Organization"}
+														alt={org.name ?? "Организация"}
 													/>
 													<AvatarFallback className="text-[8px]">
 														{org.name?.charAt(0) ?? "O"}
@@ -127,7 +127,7 @@ export function Header() {
 							onClick={handleSignOut}
 						>
 							<LogOut className="size-4" />
-							<span>Log out</span>
+							<span>Выйти</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

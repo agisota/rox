@@ -5,12 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 const ERROR_MESSAGES: Record<string, string> = {
-	oauth_denied: "Authorization was denied. Please try again.",
-	missing_params: "Invalid OAuth response. Please try again.",
-	invalid_state: "Invalid state parameter. Please try again.",
-	token_exchange_failed: "Failed to connect to Slack. Please try again.",
-	slack_api_error: "Slack API error occurred. Please try again.",
-	unauthorized: "You are not authorized to perform this action.",
+	oauth_denied: "Авторизация отклонена. Попробуйте еще раз.",
+	missing_params: "Некорректный ответ OAuth. Попробуйте еще раз.",
+	invalid_state: "Некорректный параметр state. Попробуйте еще раз.",
+	token_exchange_failed: "Не удалось подключиться к Slack. Попробуйте еще раз.",
+	slack_api_error: "Произошла ошибка Slack API. Попробуйте еще раз.",
+	unauthorized: "У вас нет прав на выполнение этого действия.",
 };
 
 export function ErrorHandler() {
@@ -23,9 +23,9 @@ export function ErrorHandler() {
 		const message =
 			error === "workspace_already_linked"
 				? searchParams.get("owner")
-					? `This Slack workspace is already connected by ${searchParams.get("owner")}. Ask them to disconnect first.`
-					: "This Slack workspace is already connected by another Rox organization."
-				: (ERROR_MESSAGES[error] ?? "Something went wrong.");
+					? `Это рабочее пространство Slack уже подключено пользователем ${searchParams.get("owner")}. Попросите его сначала отключить интеграцию.`
+					: "Это рабочее пространство Slack уже подключено другой организацией Rox."
+				: (ERROR_MESSAGES[error] ?? "Что-то пошло не так.");
 
 		window.history.replaceState({}, "", "/integrations/slack");
 		const id = setTimeout(() => toast.error(message), 0);

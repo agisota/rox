@@ -26,7 +26,7 @@ export function WebTerminalPresetsBar({
 				style={{ borderColor: "#2a2827", backgroundColor: "#171413" }}
 			>
 				<Loader2 className="size-3.5 animate-spin" />
-				<span>Loading presets...</span>
+				<span>Загрузка пресетов...</span>
 			</div>
 		);
 	}
@@ -44,8 +44,8 @@ export function WebTerminalPresetsBar({
 		>
 			<button
 				type="button"
-				title="Manage presets"
-				aria-label="Manage presets"
+				title="Управлять пресетами"
+				aria-label="Управлять пресетами"
 				className="flex size-6 shrink-0 items-center justify-center rounded-md text-[#8f8983] transition-colors hover:bg-[#211d1b] hover:text-[#f3f0ed]"
 			>
 				<Settings className="size-4" />
@@ -58,14 +58,14 @@ export function WebTerminalPresetsBar({
 				const label = preset.label || details?.label || preset.command;
 				const title = details?.description
 					? `${label}: ${details.description}`
-					: `Run ${label}`;
+					: `Запустить ${label}`;
 
 				return (
 					<button
 						key={preset.id}
 						type="button"
 						title={title}
-						aria-label={`Run ${label}`}
+						aria-label={`Запустить ${label}`}
 						onClick={() => onRunPreset(preset)}
 						disabled={disabled || isRunning}
 						className="flex h-6 max-w-36 shrink-0 items-center gap-2 rounded-md border border-transparent px-1.5 text-sm text-[#8f8172] transition-colors hover:border-[#3a3633] hover:bg-[#211d1b] hover:text-[#d9d2cb] disabled:cursor-not-allowed disabled:opacity-55"

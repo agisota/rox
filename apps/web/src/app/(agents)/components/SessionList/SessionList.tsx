@@ -12,9 +12,9 @@ function groupSessionsByRecency(sessions: MockSession[]) {
 	const yesterday = new Date(today.getTime() - MS_PER_DAY);
 
 	const groups: { label: string; sessions: MockSession[] }[] = [
-		{ label: "Today", sessions: [] },
-		{ label: "Yesterday", sessions: [] },
-		{ label: "Older", sessions: [] },
+		{ label: "Сегодня", sessions: [] },
+		{ label: "Вчера", sessions: [] },
+		{ label: "Раньше", sessions: [] },
 	];
 
 	for (const session of sessions) {
@@ -55,8 +55,8 @@ export function SessionList({ sessions, workspaceId }: SessionListProps) {
 				<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 				<input
 					type="text"
-					placeholder="Search sessions..."
-					aria-label="Search sessions"
+					placeholder="Поиск сессий..."
+					aria-label="Поиск сессий"
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 					className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -66,7 +66,7 @@ export function SessionList({ sessions, workspaceId }: SessionListProps) {
 			{/* Grouped sessions */}
 			{groups.length === 0 ? (
 				<p className="py-8 text-center text-sm text-muted-foreground">
-					No sessions found
+					Сессии не найдены
 				</p>
 			) : (
 				groups.map((group) => (

@@ -45,7 +45,7 @@ export function AgentPromptInput({
 		<PreviewPromptComposer
 			containerClassName="flex flex-col overflow-hidden rounded-[13px] border-[0.5px] border-border bg-foreground/[0.02]"
 			promptInputClassName="[&>[data-slot=input-group]]:rounded-none [&>[data-slot=input-group]]:border-none [&>[data-slot=input-group]]:shadow-none"
-			placeholder="Session creation on web is coming soon"
+			placeholder="Создание сессий в веб-версии скоро появится"
 			footerToolsClassName="gap-1.5"
 			footerTools={
 				<ModelPicker

@@ -18,10 +18,9 @@ export default async function BillingPage({
 		return (
 			<div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
 				<HiCheckCircle className="h-12 w-12 text-green-500" />
-				<h1 className="text-2xl font-semibold">Payment Successful</h1>
+				<h1 className="text-2xl font-semibold">Оплата прошла успешно</h1>
 				<p className="text-muted-foreground">
-					Your subscription has been activated. You can now access all Pro
-					features.
+					Ваша подписка активирована. Теперь вам доступны все возможности Pro.
 				</p>
 			</div>
 		);
@@ -30,21 +29,21 @@ export default async function BillingPage({
 	return (
 		<div className="flex flex-col items-center justify-center gap-6 py-16 text-center">
 			<div>
-				<h1 className="mb-2 text-2xl font-semibold">Billing</h1>
+				<h1 className="mb-2 text-2xl font-semibold">Оплата</h1>
 				<p className="text-muted-foreground">
-					Manage your subscription and billing in the desktop app.
+					Управляйте подпиской и оплатой в приложении для компьютера.
 				</p>
 			</div>
 			<div className="flex flex-wrap justify-center gap-3">
 				<Button size="lg" className="gap-2" asChild>
 					<a href={`${PROTOCOL_SCHEMES.PROD}://settings/billing`}>
-						Open in Desktop App
+						Открыть в приложении
 						<ExternalLink className="size-4" />
 					</a>
 				</Button>
 				<Button variant="outline" size="lg" className="gap-2" asChild>
 					<a href={DOWNLOAD_URL_MAC_ARM64}>
-						Download for Mac
+						Скачать для Mac
 						<Download className="size-4" />
 					</a>
 				</Button>

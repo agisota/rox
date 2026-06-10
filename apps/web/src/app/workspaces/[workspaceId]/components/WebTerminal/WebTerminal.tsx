@@ -177,12 +177,12 @@ export function WebTerminal({
 						style={{ color: "#ecd08f" }}
 					>
 						{state === "connecting"
-							? "Connecting…"
+							? "Подключение…"
 							: state === "reconnecting"
-								? "Reconnecting…"
+								? "Повторное подключение…"
 								: state === "exited"
-									? "Process exited."
-									: (errorMessage ?? "Disconnected.")}
+									? "Процесс завершён."
+									: (errorMessage ?? "Отключено.")}
 					</div>
 				)}
 			</div>

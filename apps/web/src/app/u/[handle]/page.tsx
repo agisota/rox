@@ -242,7 +242,7 @@ function buildContacts(profile: PublicProfile): ContactLink[] {
 
 	if (profile.contactEmail) {
 		contacts.push({
-			label: "Email",
+			label: "Эл. почта",
 			href: `mailto:${profile.contactEmail}`,
 			icon: "email",
 		});
@@ -318,8 +318,7 @@ export async function generateMetadata({
 	return {
 		title: `${profile.displayName} (@${profile.handle}) · Rox`,
 		description:
-			profile.bio ??
-			"Публичный профиль Rox с использованием токенов, заметками и достижениями.",
+			profile.bio ?? "Публичный профиль Rox: токены, заметки и достижения.",
 	};
 }
 
@@ -402,15 +401,15 @@ export default async function PublicProfilePage({
 					</Card>
 					<Card>
 						<CardContent className="pt-6">
-							<p className="text-sm text-muted-foreground">Ранг</p>
+							<p className="text-sm text-muted-foreground">Место</p>
 							<p className="mt-2 text-2xl font-medium">
-								{rank ? `#${numberFormatter.format(rank)}` : "нет данных"}
+								{rank ? `#${numberFormatter.format(rank)}` : "Нет данных"}
 							</p>
 						</CardContent>
 					</Card>
 					<Card>
 						<CardContent className="pt-6">
-							<p className="text-sm text-muted-foreground">Серия дней</p>
+							<p className="text-sm text-muted-foreground">Дней подряд</p>
 							<p className="mt-2 text-2xl font-medium">
 								{numberFormatter.format(streakDays)}
 							</p>

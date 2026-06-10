@@ -27,8 +27,8 @@ import { useState } from "react";
 import { useTRPC } from "@/trpc/react";
 
 const navItems = [
-	{ label: "Agents", href: "/agents" },
-	{ label: "Integrations", href: "/integrations" },
+	{ label: "Агенты", href: "/agents" },
+	{ label: "Интеграции", href: "/integrations" },
 ];
 
 export function AgentsHeader() {
@@ -60,11 +60,15 @@ export function AgentsHeader() {
 		(org) => org.id === activeOrganizationId,
 	);
 
-	const displayName = activeOrganization?.name ?? "Organization";
+	const displayName = activeOrganization?.name ?? "Организация";
 
-	const handleActionError = (message: string, error: unknown) => {
-		console.error(`[AgentsHeader] ${message}`, error);
-		toast.error(message);
+	const handleActionError = (
+		userMessage: string,
+		error: unknown,
+		logMessage = userMessage,
+	) => {
+		console.error(`[AgentsHeader] ${logMessage}`, error);
+		toast.error(userMessage);
 	};
 
 	const handleSignOut = async () => {
@@ -72,7 +76,11 @@ export function AgentsHeader() {
 			await authClient.signOut();
 			return true;
 		} catch (error) {
-			handleActionError("Failed to log out. Please try again.", error);
+			handleActionError(
+				"Не удалось выйти. Попробуйте ещё раз.",
+				error,
+				"Failed to log out. Please try again.",
+			);
 			return false;
 		}
 	};
@@ -89,8 +97,9 @@ export function AgentsHeader() {
 			return true;
 		} catch (error) {
 			handleActionError(
-				"Failed to switch organization. Please try again.",
+				"Не удалось сменить организацию. Попробуйте ещё раз.",
 				error,
+				"Failed to switch organization. Please try again.",
 			);
 			return false;
 		}
@@ -174,7 +183,7 @@ export function AgentsHeader() {
 		<button
 			type="button"
 			className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-secondary/50 px-3 py-1.5 transition-all duration-150 hover:border-border hover:bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			aria-label={`Organization menu for ${displayName}`}
+			aria-label={`Меню организации: ${displayName}`}
 			onClick={isMobile ? () => setDrawerOpen(true) : undefined}
 		>
 			<Avatar className="size-5">
@@ -198,7 +207,7 @@ export function AgentsHeader() {
 			{triggerButton}
 			<Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
 				<DrawerContent>
-					<DrawerTitle className="sr-only">Account menu</DrawerTitle>
+					<DrawerTitle className="sr-only">Меню аккаунта</DrawerTitle>
 					<div className="flex flex-col gap-1 p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
 						<div className="flex flex-col space-y-1 px-2 py-1.5">
 							<div className="flex items-center gap-2">
@@ -215,7 +224,7 @@ export function AgentsHeader() {
 						{organizations && organizations.length > 1 && (
 							<>
 								<p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-									Switch organization
+									Сменить организацию
 								</p>
 								{organizations.map((org) => (
 									<button
@@ -230,10 +239,10 @@ export function AgentsHeader() {
 										<Avatar className="size-4">
 											<AvatarImage
 												src={org.logo ?? undefined}
-												alt={org.name ?? "Organization"}
+												alt={org.name ?? "Организация"}
 											/>
 											<AvatarFallback className="text-[8px]">
-												{org.name?.charAt(0) ?? "O"}
+												{org.name?.charAt(0) ?? "О"}
 											</AvatarFallback>
 										</Avatar>
 										<span className="flex-1 truncate text-left">
@@ -256,7 +265,7 @@ export function AgentsHeader() {
 							}}
 						>
 							<LogOut className="size-4" />
-							<span>Log out</span>
+							<span>Выйти</span>
 						</button>
 					</div>
 				</DrawerContent>
@@ -284,7 +293,7 @@ export function AgentsHeader() {
 					<>
 						<DropdownMenuSub>
 							<DropdownMenuSubTrigger className="cursor-pointer">
-								<span>Switch organization</span>
+								<span>Сменить организацию</span>
 							</DropdownMenuSubTrigger>
 							<DropdownMenuSubContent>
 								<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
@@ -303,10 +312,10 @@ export function AgentsHeader() {
 										<Avatar className="size-4">
 											<AvatarImage
 												src={org.logo ?? undefined}
-												alt={org.name ?? "Organization"}
+												alt={org.name ?? "Организация"}
 											/>
 											<AvatarFallback className="text-[8px]">
-												{org.name?.charAt(0) ?? "O"}
+												{org.name?.charAt(0) ?? "О"}
 											</AvatarFallback>
 										</Avatar>
 										<span className="flex-1 truncate">{org.name}</span>
@@ -329,7 +338,7 @@ export function AgentsHeader() {
 					}}
 				>
 					<LogOut className="size-4" />
-					<span>Log out</span>
+					<span>Выйти</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
@@ -338,7 +347,7 @@ export function AgentsHeader() {
 	return (
 		<header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 			<div className="mx-auto flex h-12 w-full items-center justify-between px-4">
-				<Link href="/agents" aria-label="Go to home">
+				<Link href="/agents" aria-label="Перейти на главную">
 					<svg
 						width="282"
 						height="46"

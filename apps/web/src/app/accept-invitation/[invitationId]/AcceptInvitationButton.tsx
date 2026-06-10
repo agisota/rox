@@ -16,6 +16,22 @@ export function AcceptInvitationButton({
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	const translateInvitationError = (message: string) => {
+		switch (message) {
+			case "This invitation has already been accepted.":
+				return "Это приглашение уже принято.";
+			case "This invitation link is invalid or has expired.":
+				return "Ссылка приглашения недействительна или срок ее действия истек.";
+			case "This invitation is no longer available.":
+				return "Это приглашение больше недоступно.";
+			case "Failed to accept invitation":
+			case "Failed to accept invitation.":
+				return "Не удалось принять приглашение.";
+			default:
+				return message;
+		}
+	};
+
 	const getErrorMessage = async (response: Response) => {
 		const text = await response.text();
 
@@ -26,22 +42,22 @@ export function AcceptInvitationButton({
 					message?: string;
 				};
 
-				if (data.error) return data.error;
-				if (data.message) return data.message;
+				if (data.error) return translateInvitationError(data.error);
+				if (data.message) return translateInvitationError(data.message);
 			} catch {
-				return text;
+				return translateInvitationError(text);
 			}
 		}
 
 		if (response.status === 409) {
-			return "This invitation has already been accepted.";
+			return "Это приглашение уже принято.";
 		}
 
 		if (response.status === 400 || response.status === 404) {
-			return "This invitation link is invalid or has expired.";
+			return "Ссылка приглашения недействительна или срок ее действия истек.";
 		}
 
-		return "Failed to accept invitation";
+		return "Не удалось принять приглашение.";
 	};
 
 	const handleContinue = async () => {
@@ -73,7 +89,7 @@ export function AcceptInvitationButton({
 			window.location.href = "/";
 		} catch (err) {
 			setError(
-				err instanceof Error ? err.message : "Failed to accept invitation",
+				err instanceof Error ? err.message : "Не удалось принять приглашение.",
 			);
 			setIsProcessing(false);
 		}
@@ -82,7 +98,7 @@ export function AcceptInvitationButton({
 	return (
 		<>
 			<Button onClick={handleContinue} size="lg" disabled={isProcessing}>
-				{isProcessing ? "Processing..." : "Accept invitation"}
+				{isProcessing ? "Обработка..." : "Принять приглашение"}
 			</Button>
 
 			{error && <p className="text-sm text-destructive">{error}</p>}
