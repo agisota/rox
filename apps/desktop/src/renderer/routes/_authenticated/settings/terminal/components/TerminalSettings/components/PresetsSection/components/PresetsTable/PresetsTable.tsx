@@ -42,7 +42,7 @@ export function PresetsTable({
 		>
 			{isLoading ? (
 				<div className="py-8 text-center text-sm text-muted-foreground">
-					Loading presets...
+					Загрузка пресетов...
 				</div>
 			) : presets.length > 0 ? (
 				presets.map((preset, index) => (
@@ -60,7 +60,7 @@ export function PresetsTable({
 				))
 			) : (
 				<div className="py-10 text-center text-sm text-muted-foreground">
-					No presets yet. Click "Add preset" to create your first one.
+					Пока нет пресетов. Нажмите «Добавить пресет», чтобы создать первый.
 				</div>
 			)}
 		</div>

@@ -42,7 +42,7 @@ export function NameSection({ projectId, currentName }: NameSectionProps) {
 					(e.target as HTMLInputElement).blur();
 				}
 			}}
-			placeholder="Project name"
+			placeholder="Название проекта"
 			className="w-96"
 		/>
 	);

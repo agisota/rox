@@ -53,7 +53,7 @@ export function V2ProjectSettings({
 		if (localHostId) {
 			options.push({
 				id: localHostId,
-				name: currentDeviceName ?? "This device",
+				name: currentDeviceName ?? "Это устройство",
 				isLocal: true,
 				isOnline: true,
 			});
@@ -69,7 +69,7 @@ export function V2ProjectSettings({
 		if (targetHostId && !options.some((option) => option.id === targetHostId)) {
 			options.push({
 				id: targetHostId,
-				name: targetHostId === machineId ? "This device" : targetHostId,
+				name: targetHostId === machineId ? "Это устройство" : targetHostId,
 				isLocal: targetHostId === machineId,
 				isOnline: targetHostId === machineId,
 			});
@@ -83,7 +83,7 @@ export function V2ProjectSettings({
 	);
 	const targetHostName = useMemo(() => {
 		if (selectedHost?.name) return selectedHost.name;
-		if (!targetHostId || targetHostId === machineId) return "this device";
+		if (!targetHostId || targetHostId === machineId) return "это устройство";
 		return targetHostId;
 	}, [machineId, selectedHost, targetHostId]);
 	const hasMultipleHosts = hostOptions.length > 1;
@@ -106,7 +106,7 @@ export function V2ProjectSettings({
 		if (!isReady) return null;
 		return (
 			<div className="p-6 text-sm text-muted-foreground select-text cursor-text">
-				Project not found.
+				Проект не найден.
 			</div>
 		);
 	}
@@ -140,10 +140,10 @@ export function V2ProjectSettings({
 
 			<div className="space-y-10">
 				<section>
-					<SettingsRow label="Name" htmlFor="project-name">
+					<SettingsRow label="Название" htmlFor="project-name">
 						<NameSection projectId={projectId} currentName={project.name} />
 					</SettingsRow>
-					<SettingsRow label="Repository" htmlFor="project-repo">
+					<SettingsRow label="Репозиторий" htmlFor="project-repo">
 						<RepositorySection
 							projectId={projectId}
 							currentRepoCloneUrl={project.repoCloneUrl}
@@ -151,8 +151,8 @@ export function V2ProjectSettings({
 					</SettingsRow>
 					{targetHostUrl && hostProject && (
 						<SettingsRow
-							label="Branch prefix"
-							hint="Namespace new branches for this project. Defaults to the host-wide Git setting."
+							label="Префикс веток"
+							hint="Добавляет пространство имен для новых веток этого проекта. По умолчанию используется общая настройка Git на хосте."
 						>
 							<BranchPrefixSection
 								projectId={projectId}
@@ -166,7 +166,7 @@ export function V2ProjectSettings({
 				</section>
 
 				<section>
-					<SettingsRow label="Location">
+					<SettingsRow label="Расположение">
 						<ProjectLocationSection
 							projectId={projectId}
 							currentPath={hostProject?.repoPath ?? null}
@@ -179,8 +179,8 @@ export function V2ProjectSettings({
 						/>
 					</SettingsRow>
 					<SettingsRow
-						label="Worktrees"
-						hint="Base directory for new worktree workspaces on this host."
+						label="Worktree"
+						hint="Базовая папка для новых worktree-рабочих пространств на этом хосте."
 					>
 						<WorktreeLocationSection
 							projectId={projectId}
@@ -196,10 +196,10 @@ export function V2ProjectSettings({
 					{targetHostUrl && (
 						<div className="pt-4">
 							<div className="mb-3">
-								<h3 className="text-sm font-medium">Scripts</h3>
+								<h3 className="text-sm font-medium">Скрипты</h3>
 								<p className="mt-0.5 text-xs text-muted-foreground">
-									Runs in a terminal for setup, teardown, and the workspace Run
-									button.
+									Запускаются в терминале для запуска, завершения и кнопки Run в
+									рабочем пространстве.
 								</p>
 							</div>
 							<V2ScriptsEditor hostUrl={targetHostUrl} projectId={projectId} />

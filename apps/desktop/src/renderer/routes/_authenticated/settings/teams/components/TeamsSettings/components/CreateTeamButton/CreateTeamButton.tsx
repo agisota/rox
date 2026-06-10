@@ -91,7 +91,7 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 						<DialogHeader>
 							<DialogTitle>Создать команду</DialogTitle>
 							<DialogDescription>
-								Укажите название и URL-friendly slug. Их можно изменить позже.
+								Укажите название и slug для URL. Их можно изменить позже.
 							</DialogDescription>
 						</DialogHeader>
 						<div className="my-4 space-y-4">

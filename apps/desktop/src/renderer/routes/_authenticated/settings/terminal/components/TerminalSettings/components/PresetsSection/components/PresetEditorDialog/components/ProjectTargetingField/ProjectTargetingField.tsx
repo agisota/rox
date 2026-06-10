@@ -13,7 +13,6 @@ import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { normalizePresetProjectIds } from "shared/preset-project-targeting";
 import {
-	getPresetProjectTargetLabel,
 	type PresetProjectOption,
 	resolveSelectedPresetProjects,
 } from "../../../../preset-project-options";
@@ -45,10 +44,12 @@ export function ProjectTargetingField({
 		[normalizedProjectIds, projectOptionsById],
 	);
 	const scope: Scope = normalizedProjectIds === null ? "all" : "specific";
-	const buttonLabel = getPresetProjectTargetLabel(
-		normalizedProjectIds,
-		projectOptionsById,
-	);
+	const buttonLabel =
+		normalizedProjectIds === null
+			? "Все проекты"
+			: normalizedProjectIds.length === 1
+				? (selectedProjects[0]?.name ?? "Неизвестный проект")
+				: `Проектов: ${normalizedProjectIds.length}`;
 
 	const handleScopeChange = (next: Scope) => {
 		if (next === "all") {
@@ -79,8 +80,8 @@ export function ProjectTargetingField({
 	};
 
 	const segmentedOptions: { value: Scope; label: string }[] = [
-		{ value: "all", label: "All projects" },
-		{ value: "specific", label: "Specific" },
+		{ value: "all", label: "Все проекты" },
+		{ value: "specific", label: "Выбранные" },
 	];
 
 	return (
@@ -122,9 +123,9 @@ export function ProjectTargetingField({
 						</PopoverTrigger>
 						<PopoverContent align="start" className="w-[280px] p-0">
 							<Command>
-								<CommandInput placeholder="Search projects..." />
+								<CommandInput placeholder="Поиск проектов..." />
 								<CommandList className="max-h-72">
-									<CommandEmpty>No projects found.</CommandEmpty>
+									<CommandEmpty>Проекты не найдены.</CommandEmpty>
 									<CommandGroup>
 										{projects.map((project) => {
 											const isSelected =
@@ -161,8 +162,7 @@ export function ProjectTargetingField({
 					</Popover>
 					{selectedProjects.length > 0 ? (
 						<p className="text-xs text-muted-foreground">
-							{selectedProjects.length} project
-							{selectedProjects.length === 1 ? "" : "s"} selected.
+							Выбрано проектов: {selectedProjects.length}.
 						</p>
 					) : null}
 				</>
@@ -170,7 +170,7 @@ export function ProjectTargetingField({
 
 			{projects.length === 0 ? (
 				<p className="text-xs text-muted-foreground">
-					Import a project to scope presets.
+					Импортируйте проект, чтобы ограничивать область действия пресетов.
 				</p>
 			) : null}
 		</div>
