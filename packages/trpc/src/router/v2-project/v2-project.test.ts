@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import * as realDbSchema from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 
 const getCurrentTxidMock = mock(async () => 123);
@@ -106,6 +107,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
+	...realDbSchema,
 	v2Projects: {
 		id: "v2_projects.id",
 		organizationId: "v2_projects.organization_id",

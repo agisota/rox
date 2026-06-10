@@ -11,12 +11,12 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@sentry/nextjs": "10.46.0",
 		"@rox/auth": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/shared": "workspace:*",
 		"@rox/trpc": "workspace:*",
 		"@rox/ui": "workspace:*",
+		"@sentry/nextjs": "10.46.0",
 		"@t3-oss/env-nextjs": "0.13.11",
 		"@tanstack/react-query": "5.100.9",
 		"@tanstack/react-query-devtools": "5.95.2",
