@@ -55,8 +55,8 @@
 							"level": "error",
 							"options": {
 								"paths": {
-									"@superset/workspace-fs/host": "Renderer code must stay browser-compatible. Import Node filesystem helpers from the desktop server/host layer instead.",
-									"@superset/workspace-fs/server": "Renderer code must stay browser-compatible. Import Node filesystem helpers from the desktop server/host layer instead."
+									"@rox/workspace-fs/host": "Renderer code must stay browser-compatible. Import Node filesystem helpers from the desktop server/host layer instead.",
+									"@rox/workspace-fs/server": "Renderer code must stay browser-compatible. Import Node filesystem helpers from the desktop server/host layer instead."
 								},
 								"patterns": [
 									{
