@@ -10,26 +10,26 @@ interface HostConnectionSectionProps {
 }
 
 const KIND_LABELS: Record<V2HostKind, string> = {
-	local: "This device",
-	remote: "Persistent remote",
-	sandbox: "Ephemeral sandbox",
+	local: "Это устройство",
+	remote: "Постоянный удаленный хост",
+	sandbox: "Временная песочница",
 };
 
 const PROVIDER_LABELS: Record<V2HostProvider, string> = {
 	daytona: "Daytona",
 	modal: "Modal",
 	e2b: "E2B",
-	self: "Self-managed",
+	self: "Самостоятельное управление",
 };
 
 function formatCountdown(msRemaining: number): string {
-	if (msRemaining <= 0) return "Expired";
+	if (msRemaining <= 0) return "Срок истек";
 	const totalMinutes = Math.floor(msRemaining / 60_000);
 	const hours = Math.floor(totalMinutes / 60);
 	const minutes = totalMinutes % 60;
-	if (hours > 0) return `${hours}h ${minutes}m remaining`;
+	if (hours > 0) return `Осталось ${hours} ч ${minutes} мин`;
 	const seconds = Math.floor((msRemaining % 60_000) / 1000);
-	return `${minutes}m ${seconds}s remaining`;
+	return `Осталось ${minutes} мин ${seconds} с`;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -63,14 +63,16 @@ export function HostConnectionSection({
 
 	return (
 		<section className="space-y-3">
-			<h3 className="text-sm font-medium">Connection</h3>
+			<h3 className="text-sm font-medium">Подключение</h3>
 			<div className="space-y-2 rounded-md border p-3">
-				<Row label="Type" value={KIND_LABELS[kind]} />
-				{provider && <Row label="Provider" value={PROVIDER_LABELS[provider]} />}
-				<Row label="Address" value={address} />
+				<Row label="Тип" value={KIND_LABELS[kind]} />
+				{provider && (
+					<Row label="Провайдер" value={PROVIDER_LABELS[provider]} />
+				)}
+				<Row label="Адрес" value={address} />
 				{expiresAt && (
 					<Row
-						label="Expires"
+						label="Истекает"
 						value={formatCountdown(expiresAt.getTime() - now)}
 					/>
 				)}

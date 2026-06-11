@@ -16,12 +16,12 @@ interface PermissionsSettingsProps {
 
 function StatusBadge({ granted }: { granted: boolean | undefined }) {
 	if (granted === true) {
-		return <Badge variant="secondary">Granted</Badge>;
+		return <Badge variant="secondary">Разрешено</Badge>;
 	}
 	if (granted === false) {
-		return <Badge variant="outline">Not granted</Badge>;
+		return <Badge variant="outline">Нет доступа</Badge>;
 	}
-	return <Badge variant="outline">Unknown</Badge>;
+	return <Badge variant="outline">Неизвестно</Badge>;
 }
 
 function PermissionRow({
@@ -45,7 +45,7 @@ function PermissionRow({
 				<StatusBadge granted={granted} />
 				<Button variant="outline" size="sm" onClick={onRequest}>
 					<LuExternalLink className="h-3.5 w-3.5 mr-1.5" />
-					Open settings
+					Открыть настройки
 				</Button>
 			</div>
 		</div>
@@ -89,9 +89,9 @@ export function PermissionsSettings({
 	return (
 		<div className="p-6 max-w-4xl w-full mx-auto">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Permissions</h2>
+				<h2 className="text-xl font-semibold">Разрешения</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Grant the OS permissions Rox needs.
+					Выдайте системные разрешения, которые нужны Rox.
 				</p>
 			</div>
 
@@ -109,8 +109,8 @@ export function PermissionsSettings({
 							visibleItems,
 						) && (
 							<PermissionRow
-								label="Full Disk Access"
-								description="Persistent access to Documents, Downloads, Desktop, and iCloud."
+								label="Полный доступ к диску"
+								description="Постоянный доступ к Documents, Downloads, Desktop и iCloud."
 								granted={status?.fullDiskAccess}
 								onRequest={() => requestFDA.mutate()}
 							/>
@@ -121,8 +121,8 @@ export function PermissionsSettings({
 							visibleItems,
 						) && (
 							<PermissionRow
-								label="Accessibility"
-								description="Send keystrokes, manage windows, and control other applications."
+								label="Универсальный доступ"
+								description="Отправка нажатий клавиш, управление окнами и другими приложениями."
 								granted={status?.accessibility}
 								onRequest={() => requestA11y.mutate()}
 							/>
@@ -133,8 +133,8 @@ export function PermissionsSettings({
 							visibleItems,
 						) && (
 							<PermissionRow
-								label="Microphone"
-								description="Use voice transcription and push-to-talk features."
+								label="Микрофон"
+								description="Голосовая транскрибация и функции push-to-talk."
 								granted={status?.microphone}
 								onRequest={() => requestMicrophone.mutate()}
 							/>
@@ -145,8 +145,8 @@ export function PermissionsSettings({
 							visibleItems,
 						) && (
 							<PermissionRow
-								label="Automation"
-								description="Run terminal commands and interact with other applications."
+								label="Автоматизация"
+								description="Запуск команд в терминале и взаимодействие с другими приложениями."
 								granted={undefined}
 								onRequest={() => requestAppleEvents.mutate()}
 							/>
@@ -157,8 +157,8 @@ export function PermissionsSettings({
 							visibleItems,
 						) && (
 							<PermissionRow
-								label="Local Network"
-								description="Discover and connect to development servers on your network."
+								label="Локальная сеть"
+								description="Поиск серверов разработки в вашей сети и подключение к ним."
 								granted={undefined}
 								onRequest={() => requestLocalNetwork.mutate()}
 							/>

@@ -30,11 +30,11 @@ export function PlusMenu({ disabled = false }: PlusMenuProps) {
 			side="top"
 			align="end"
 			contentClassName="w-52"
-			title="Add to prompt"
+			title="Добавить в промпт"
 			onCloseAutoFocus={(e) => e.preventDefault()}
 			items={[
 				{
-					label: "Add attachment",
+					label: "Добавить вложение",
 					icon: <PaperclipIcon className="size-4" />,
 					onSelect: () => attachments.openFileDialog(),
 				},

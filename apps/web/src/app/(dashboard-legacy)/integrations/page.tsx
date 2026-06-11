@@ -33,11 +33,53 @@ const PROVIDER_ICONS: Record<IntegrationRegistryId, ReactNode> = {
 	lark: <FaComments className="size-8" />,
 };
 
+const INTEGRATION_COPY: Record<
+	IntegrationRegistryId,
+	{ description: string; category: string }
+> = {
+	linear: {
+		description: "Двусторонняя синхронизация задач с Linear.",
+		category: "Управление задачами",
+	},
+	github: {
+		description: "Подключайте репозитории и синхронизируйте pull requests.",
+		category: "Контроль версий",
+	},
+	slack: {
+		description: "Подключите Slack, чтобы управлять задачами из переписок.",
+		category: "Коммуникации",
+	},
+	telegram: {
+		description: "Запускайте агентов через Telegram-бота в любом чате.",
+		category: "Коммуникации",
+	},
+	discord: {
+		description: "Установите бота и запускайте агентов со своего сервера.",
+		category: "Коммуникации",
+	},
+	notion: {
+		description: "Синхронизируйте документы и базы данных с Notion.",
+		category: "База знаний",
+	},
+	obsidian: {
+		description: "Синхронизируйте заметки с локальным хранилищем Obsidian.",
+		category: "База знаний",
+	},
+	fibery: {
+		description: "Подключите рабочее пространство Fibery через токен аккаунта.",
+		category: "Управление задачами",
+	},
+	lark: {
+		description: "Подключите Lark (Feishu) для сообщений и документов.",
+		category: "Коммуникации",
+	},
+};
+
 const integrations: IntegrationCardProps[] = integrationCatalog.map((meta) => ({
 	id: meta.id,
 	name: meta.name,
-	description: meta.description,
-	category: meta.category,
+	description: INTEGRATION_COPY[meta.id as IntegrationRegistryId].description,
+	category: INTEGRATION_COPY[meta.id as IntegrationRegistryId].category,
 	accentColor: meta.accentColor,
 	icon: PROVIDER_ICONS[meta.id as IntegrationRegistryId],
 	disabled: !meta.enabled,
@@ -47,9 +89,9 @@ export default function IntegrationsPage() {
 	return (
 		<div className="space-y-8">
 			<section>
-				<h2 className="text-xl font-semibold">Featured</h2>
+				<h2 className="text-xl font-semibold">Рекомендуемые</h2>
 				<p className="text-muted-foreground">
-					A selection of integrations curated by our team.
+					Подборка интеграций, отобранных нашей командой.
 				</p>
 
 				<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

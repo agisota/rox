@@ -22,7 +22,7 @@ export default async function GitHubIntegrationPage() {
 		return (
 			<div className="flex flex-col items-center justify-center py-16">
 				<p className="text-muted-foreground">
-					You need to be part of an organization to use integrations.
+					Чтобы использовать интеграции, нужно состоять в организации.
 				</p>
 			</div>
 		);
@@ -42,7 +42,7 @@ export default async function GitHubIntegrationPage() {
 				className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 			>
 				<ArrowLeft className="size-4" />
-				Back to Integrations
+				Назад к интеграциям
 			</Link>
 
 			<div className="flex items-start gap-6">
@@ -55,24 +55,24 @@ export default async function GitHubIntegrationPage() {
 						{isConnected ? (
 							<Badge variant="default" className="gap-1">
 								<CheckCircle2 className="size-3" />
-								Connected
+								Подключено
 							</Badge>
 						) : (
-							<Badge variant="secondary">Not Connected</Badge>
+							<Badge variant="secondary">Не подключено</Badge>
 						)}
 					</div>
 					<p className="mt-1 text-muted-foreground">
-						Connect your GitHub repositories and sync pull requests. Track CI
-						status and reviews across your team.
+						Подключите репозитории GitHub и синхронизируйте pull request.
+						Отслеживайте статус CI и ревью в команде.
 					</p>
 				</div>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Connection</CardTitle>
+					<CardTitle>Подключение</CardTitle>
 					<CardDescription>
-						Install the Rox GitHub App to connect your repositories.
+						Установите Rox GitHub App, чтобы подключить репозитории.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -82,11 +82,11 @@ export default async function GitHubIntegrationPage() {
 					/>
 					{installation && (
 						<div className="mt-4 text-sm text-muted-foreground">
-							Connected to <strong>{installation.accountLogin}</strong> (
+							Подключено к <strong>{installation.accountLogin}</strong> (
 							{installation.accountType})
 							{installation.suspended && (
 								<Badge variant="destructive" className="ml-2">
-									Suspended
+									Приостановлено
 								</Badge>
 							)}
 						</div>
@@ -97,9 +97,9 @@ export default async function GitHubIntegrationPage() {
 			{installation && (
 				<Card>
 					<CardHeader>
-						<CardTitle>Repositories</CardTitle>
+						<CardTitle>Репозитории</CardTitle>
 						<CardDescription>
-							Repositories accessible through the GitHub App installation.
+							Репозитории, доступные через установленное приложение GitHub App.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>

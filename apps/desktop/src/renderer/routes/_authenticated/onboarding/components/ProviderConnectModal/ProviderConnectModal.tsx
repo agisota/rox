@@ -86,14 +86,14 @@ function AnthropicConnectDialog({
 
 	return (
 		<ConnectDialogShell
-			title="Connect Claude Code"
-			description="Use your Anthropic subscription or an API key."
-			oauthLabel="Continue with Claude Pro/Max"
+			title="Подключить Claude Code"
+			description="Используйте подписку Anthropic или API-ключ."
+			oauthLabel="Продолжить с Claude Pro/Max"
 			oauthPreparing={isStartingOAuth || oauthDialog.isPreparing}
 			onOAuth={startAnthropicOAuth}
 			apiKeyPlaceholder="sk-ant-..."
 			apiKeyHelpUrl="https://console.anthropic.com/settings/keys"
-			apiKeyHelpLabel="Get an API key from console.anthropic.com →"
+			apiKeyHelpLabel="Получить API-ключ на console.anthropic.com →"
 			onApiKeySubmit={handleApiKeySubmit}
 			onOpenChange={onOpenChange}
 		/>
@@ -146,14 +146,14 @@ function OpenAIConnectDialog({
 
 	return (
 		<ConnectDialogShell
-			title="Connect Codex"
-			description="Use your ChatGPT subscription or an API key."
-			oauthLabel="Sign in with ChatGPT"
+			title="Подключить Codex"
+			description="Используйте подписку ChatGPT или API-ключ."
+			oauthLabel="Войти через ChatGPT"
 			oauthPreparing={isStartingOAuth}
 			onOAuth={startOpenAIOAuth}
 			apiKeyPlaceholder="sk-..."
 			apiKeyHelpUrl="https://platform.openai.com/api-keys"
-			apiKeyHelpLabel="Get an API key from platform.openai.com →"
+			apiKeyHelpLabel="Получить API-ключ на platform.openai.com →"
 			onApiKeySubmit={handleApiKeySubmit}
 			onOpenChange={onOpenChange}
 		/>
@@ -200,7 +200,7 @@ function ConnectDialogShell({
 			await onApiKeySubmit(trimmed);
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to save the API key.",
+				err instanceof Error ? err.message : "Не удалось сохранить API-ключ.",
 			);
 			setShake((n) => n + 1);
 		} finally {
@@ -223,7 +223,7 @@ function ConnectDialogShell({
 							onClick={() => void onOAuth()}
 							disabled={oauthPreparing}
 						>
-							{oauthPreparing ? "Preparing…" : oauthLabel}
+							{oauthPreparing ? "Подготовка…" : oauthLabel}
 						</Button>
 						<Button
 							size="sm"
@@ -231,7 +231,7 @@ function ConnectDialogShell({
 							onClick={() => setMode("api-key")}
 						>
 							<LuKeyRound />
-							Use API key instead
+							Использовать API-ключ
 						</Button>
 					</div>
 				) : (
@@ -273,10 +273,10 @@ function ConnectDialogShell({
 								onClick={() => setMode("choose")}
 								disabled={submitting}
 							>
-								Back
+								Назад
 							</Button>
 							<Button type="submit" size="sm" disabled={submitting}>
-								{submitting ? "Saving…" : "Save & connect"}
+								{submitting ? "Сохранение…" : "Сохранить и подключить"}
 							</Button>
 						</div>
 					</motion.form>

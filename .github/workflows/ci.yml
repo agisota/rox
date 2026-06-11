@@ -115,6 +115,9 @@ jobs:
 
       - name: Typecheck
         run: bun run typecheck
+        env:
+          # @rox/desktop tsc needs >4GB; default heap gets OOM-killed (exit 137)
+          NODE_OPTIONS: --max-old-space-size=8192
 
   build:
     name: Build

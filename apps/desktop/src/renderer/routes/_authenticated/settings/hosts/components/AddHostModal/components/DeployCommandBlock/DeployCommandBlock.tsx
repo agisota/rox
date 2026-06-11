@@ -35,7 +35,7 @@ export function DeployCommandBlock({
 			<button
 				type="button"
 				onClick={handleCopy}
-				aria-label="Copy command"
+				aria-label="Скопировать команду"
 				className="shrink-0 text-muted-foreground hover:text-foreground"
 			>
 				{copied ? (

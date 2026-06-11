@@ -20,7 +20,7 @@ const canaryWinIconPath = join(pkg.resources, "build/icons/icon-canary.ico");
 
 const config: Configuration = {
 	...baseConfig,
-	appId: "com.rox.desktop.canary",
+	appId: "com.rox.one.canary",
 	productName,
 
 	publish: {

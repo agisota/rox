@@ -25,7 +25,7 @@ export function AgentCardFields({
 		<>
 			<div className="grid gap-4 md:grid-cols-2">
 				<div className="space-y-2">
-					<Label htmlFor={`${preset.id}-label`}>Label</Label>
+					<Label htmlFor={`${preset.id}-label`}>Название</Label>
 					<Input
 						key={`${preset.id}-${inputVersion}-label-${preset.label}`}
 						id={`${preset.id}-label`}
@@ -34,7 +34,7 @@ export function AgentCardFields({
 					/>
 				</div>
 				<div className="space-y-2">
-					<Label htmlFor={`${preset.id}-description`}>Description</Label>
+					<Label htmlFor={`${preset.id}-description`}>Описание</Label>
 					<Input
 						key={`${preset.id}-${inputVersion}-description-${preset.description ?? ""}`}
 						id={`${preset.id}-description`}
@@ -47,7 +47,7 @@ export function AgentCardFields({
 			{showCommands && preset.kind === "terminal" && (
 				<div className="grid gap-4 md:grid-cols-2">
 					<div className="space-y-2">
-						<Label htmlFor={`${preset.id}-command`}>Command (No Prompt)</Label>
+						<Label htmlFor={`${preset.id}-command`}>Команда без промпта</Label>
 						<Input
 							key={`${preset.id}-${inputVersion}-command-${preset.command}`}
 							id={`${preset.id}-command`}
@@ -57,7 +57,7 @@ export function AgentCardFields({
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor={`${preset.id}-prompt-command`}>
-							Command (With Prompt)
+							Команда с промптом
 						</Label>
 						<Input
 							key={`${preset.id}-${inputVersion}-prompt-command-${preset.promptCommand}`}
@@ -70,7 +70,7 @@ export function AgentCardFields({
 					</div>
 					<div className="space-y-2 md:col-span-2">
 						<Label htmlFor={`${preset.id}-prompt-command-suffix`}>
-							Prompt Command Suffix
+							Суффикс команды с промптом
 						</Label>
 						<Input
 							key={`${preset.id}-${inputVersion}-prompt-command-suffix-${preset.promptCommandSuffix ?? ""}`}
@@ -79,7 +79,7 @@ export function AgentCardFields({
 							onBlur={(event) =>
 								onFieldBlur("promptCommandSuffix", event.target.value)
 							}
-							placeholder="Optional flags appended after the prompt payload"
+							placeholder="Необязательные флаги после содержимого промпта"
 						/>
 					</div>
 				</div>
@@ -88,7 +88,7 @@ export function AgentCardFields({
 			{showTaskPrompts && (
 				<div className="space-y-2">
 					<Label htmlFor={`${preset.id}-task-template`}>
-						Task Prompt Template
+						Шаблон промпта задачи
 					</Label>
 					<Textarea
 						key={`${preset.id}-${inputVersion}-task-template-${preset.taskPromptTemplate}`}
@@ -104,13 +104,13 @@ export function AgentCardFields({
 
 			{preset.kind === "chat" && (
 				<div className="space-y-2">
-					<Label htmlFor={`${preset.id}-model`}>Model Override</Label>
+					<Label htmlFor={`${preset.id}-model`}>Переопределение модели</Label>
 					<Input
 						key={`${preset.id}-${inputVersion}-model-${preset.model ?? ""}`}
 						id={`${preset.id}-model`}
 						defaultValue={preset.model ?? ""}
 						onBlur={(event) => onFieldBlur("model", event.target.value)}
-						placeholder="Optional model id"
+						placeholder="Необязательный ID модели"
 					/>
 				</div>
 			)}

@@ -162,7 +162,7 @@ export function AgentCard({
 			toast.error(
 				error instanceof Error
 					? error.message
-					: "Failed to update agent settings",
+					: "Не удалось обновить настройки агента",
 			);
 		}
 	};
@@ -201,12 +201,12 @@ export function AgentCard({
 			resetFieldInputs();
 			setShowPreview(false);
 			setValidationMessage(null);
-			toast.success(`${preset.label} reset to defaults`);
+			toast.success(`${preset.label}: настройки по умолчанию восстановлены`);
 		} catch (error) {
 			toast.error(
 				error instanceof Error
 					? error.message
-					: "Failed to reset agent settings",
+					: "Не удалось сбросить настройки агента",
 			);
 		}
 	};

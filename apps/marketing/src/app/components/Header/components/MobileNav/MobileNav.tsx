@@ -26,7 +26,7 @@ export function MobileNav({ ctaButtons, starCounter }: MobileNavProps) {
 				type="button"
 				className="p-2 text-muted-foreground hover:text-foreground transition-colors"
 				onClick={() => setIsOpen((prev) => !prev)}
-				aria-label={isOpen ? "Close menu" : "Open menu"}
+				aria-label={isOpen ? "Закрыть меню" : "Открыть меню"}
 				aria-expanded={isOpen}
 			>
 				{isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -43,12 +43,12 @@ export function MobileNav({ ctaButtons, starCounter }: MobileNavProps) {
 					>
 						<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-6">
 							<MobileSection
-								title="Product"
+								title="Продукт"
 								links={PRODUCT_LINKS}
 								onNavigate={close}
 							/>
 							<MobileSection
-								title="Resources"
+								title="Ресурсы"
 								links={RESOURCE_LINKS}
 								onNavigate={close}
 							/>

@@ -26,7 +26,7 @@ export function SubPaletteView({ parent, onSelect }: SubPaletteViewProps) {
 
 	return (
 		<CommandList>
-			<CommandEmpty>Nothing here.</CommandEmpty>
+			<CommandEmpty>Здесь ничего нет.</CommandEmpty>
 			<CommandGroup heading={parent.title}>
 				{visible.map((command) => (
 					<CommandItemRow

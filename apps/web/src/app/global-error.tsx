@@ -14,9 +14,9 @@ export default function GlobalError({
 	}, [error]);
 
 	return (
-		<html lang="en">
+		<html lang="ru">
 			<body>
-				<NextError statusCode={0} />
+				<NextError statusCode={0} title="Произошла непредвиденная ошибка" />
 			</body>
 		</html>
 	);

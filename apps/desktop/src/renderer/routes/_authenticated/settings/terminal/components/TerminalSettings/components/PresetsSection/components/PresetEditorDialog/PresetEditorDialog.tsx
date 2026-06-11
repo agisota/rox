@@ -242,7 +242,7 @@ export function PresetEditorDialog({
 			if (!activeHostUrl) {
 				throw new Error(
 					getHostServiceUnavailableMessage(hostService, {
-						action: "save the agent command",
+						action: "сохранить команду агента",
 					}),
 				);
 			}
@@ -259,14 +259,14 @@ export function PresetEditorDialog({
 			void queryClient.invalidateQueries(queryFamily);
 		},
 		onError: (err) =>
-			toast.error(err instanceof Error ? err.message : "Failed to save"),
+			toast.error(err instanceof Error ? err.message : "Не удалось сохранить"),
 	});
 
 	const handleLinkedCommandBlur = () => {
 		if (!linkedAgent) return;
 		const patch = parseAgentCommandText(linkedCommandText);
 		if (patch.command.length === 0) {
-			toast.error("Command cannot be empty");
+			toast.error("Команда не может быть пустой");
 			setLinkedCommandText(getAgentCommandText(linkedAgent));
 			return;
 		}
@@ -302,7 +302,7 @@ export function PresetEditorDialog({
 
 	const handleBrowseDirectory = async () => {
 		const result = await selectDirectory.mutateAsync({
-			title: "Select preset directory",
+			title: "Выберите папку пресета",
 			defaultPath: browseDefaultPath,
 		});
 		if (!result.canceled && result.path) {
@@ -318,17 +318,20 @@ export function PresetEditorDialog({
 
 	const launchModeOptions = hasMultipleCommands
 		? [
-				{ value: "sequential", label: "All in current tab" },
-				{ value: "split-pane", label: "All in current tab (split panes)" },
-				{ value: "new-tab", label: "Each in its own new tab" },
+				{ value: "sequential", label: "Все в текущей вкладке" },
+				{
+					value: "split-pane",
+					label: "Все в текущей вкладке (разделенные панели)",
+				},
+				{ value: "new-tab", label: "Каждая в отдельной новой вкладке" },
 				{
 					value: "new-tab-split-pane",
-					label: "All in a new tab (split panes)",
+					label: "Все в новой вкладке (разделенные панели)",
 				},
 			]
 		: [
-				{ value: "split-pane", label: "Open in current tab" },
-				{ value: "new-tab", label: "Open in new tab" },
+				{ value: "split-pane", label: "Открыть в текущей вкладке" },
+				{ value: "new-tab", label: "Открыть в новой вкладке" },
 			];
 	const launchModeValue = hasMultipleCommands
 		? modeValue
@@ -341,8 +344,8 @@ export function PresetEditorDialog({
 			<Alert variant="destructive">
 				<HiExclamationTriangle />
 				<AlertDescription>
-					This directory does not exist. The preset will fall back to the
-					workspace root.
+					Эта папка не существует. Пресет будет запускаться из корня рабочей
+					области.
 				</AlertDescription>
 			</Alert>
 		) : trimmedCwd &&
@@ -352,7 +355,7 @@ export function PresetEditorDialog({
 			<Alert variant="destructive">
 				<HiExclamationTriangle />
 				<AlertDescription>
-					This path exists, but it is not a directory.
+					Этот путь существует, но не является папкой.
 				</AlertDescription>
 			</Alert>
 		) : null;
@@ -364,7 +367,8 @@ export function PresetEditorDialog({
 					<>
 						<DialogHeader>
 							<DialogTitle>
-								{(linkedAgent?.label ?? preset.name).trim() || "Edit preset"}
+								{(linkedAgent?.label ?? preset.name).trim() ||
+									"Редактировать пресет"}
 							</DialogTitle>
 						</DialogHeader>
 
@@ -380,7 +384,7 @@ export function PresetEditorDialog({
 											}
 											className="text-sm font-medium"
 										>
-											Command
+											Команда
 										</Label>
 										<Link
 											to="/settings/agents"
@@ -388,7 +392,7 @@ export function PresetEditorDialog({
 											onClick={() => onOpenChange(false)}
 											className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
 										>
-											Open {linkedAgent?.label ?? "agent settings"}
+											Открыть {linkedAgent?.label ?? "настройки агента"}
 											<ExternalLink className="size-3" />
 										</Link>
 									</div>
@@ -421,27 +425,27 @@ export function PresetEditorDialog({
 									)}
 									{!linkedAgent && (
 										<p className="text-xs text-muted-foreground">
-											The linked agent is missing or disabled. Showing the
-											snapshot.
+											Связанный агент отсутствует или отключен. Показан
+											сохраненный снимок.
 										</p>
 									)}
 								</div>
 							) : (
 								<>
-									<DialogRow label="Name" htmlFor="preset-name">
+									<DialogRow label="Название" htmlFor="preset-name">
 										<Input
 											id="preset-name"
 											value={preset.name}
 											onChange={(e) => onFieldChange("name", e.target.value)}
 											onBlur={() => onFieldBlur("name")}
-											placeholder="e.g. Dev server"
+											placeholder="Например, сервер разработки"
 										/>
 									</DialogRow>
 
 									<DialogRow
-										label="Description"
+										label="Описание"
 										htmlFor="preset-description"
-										hint="Optional context shown in the presets list."
+										hint="Дополнительный контекст, который отображается в списке пресетов."
 									>
 										<Input
 											id="preset-description"
@@ -450,13 +454,13 @@ export function PresetEditorDialog({
 												onFieldChange("description", e.target.value)
 											}
 											onBlur={() => onFieldBlur("description")}
-											placeholder="Optional"
+											placeholder="Необязательно"
 										/>
 									</DialogRow>
 
 									<DialogRow
-										label="Commands"
-										hint="One command per row. Add multiple to launch a grouped preset."
+										label="Команды"
+										hint="Одна команда на строку. Добавьте несколько команд, чтобы запускать сгруппированный пресет."
 										stacked
 									>
 										<CommandsEditor
@@ -470,8 +474,8 @@ export function PresetEditorDialog({
 							)}
 
 							<DialogRow
-								label="Applies to"
-								hint="Where this preset is available."
+								label="Применяется к"
+								hint="Где будет доступен этот пресет."
 							>
 								<ProjectTargetingField
 									projectIds={preset.projectIds}
@@ -482,9 +486,9 @@ export function PresetEditorDialog({
 							</DialogRow>
 
 							<DialogRow
-								label="Directory"
+								label="Папка"
 								htmlFor="preset-directory"
-								hint="Use a workspace-relative path or an absolute folder."
+								hint="Укажите путь относительно рабочей области или абсолютный путь к папке."
 							>
 								<div className="flex items-center gap-2">
 									<Input
@@ -501,7 +505,7 @@ export function PresetEditorDialog({
 										size="sm"
 										onClick={handleBrowseDirectory}
 										disabled={selectDirectory.isPending}
-										aria-label="Browse for directory"
+										aria-label="Выбрать папку"
 									>
 										<HiOutlineFolderOpen className="size-4" />
 									</Button>
@@ -513,11 +517,11 @@ export function PresetEditorDialog({
 							)}
 
 							<DialogRow
-								label="Launch mode"
+								label="Режим запуска"
 								hint={
 									hasMultipleCommands
-										? "How grouped commands open."
-										: "How the command opens."
+										? "Как открываются сгруппированные команды."
+										: "Как открывается команда."
 								}
 							>
 								{hasMultipleCommands ? (
@@ -543,17 +547,17 @@ export function PresetEditorDialog({
 										value={launchModeValue}
 										onChange={(value) => onModeChange(value as ExecutionMode)}
 										options={[
-											{ value: "split-pane", label: "Current tab" },
-											{ value: "new-tab", label: "New tab" },
+											{ value: "split-pane", label: "Текущая вкладка" },
+											{ value: "new-tab", label: "Новая вкладка" },
 										]}
 									/>
 								)}
 							</DialogRow>
 
 							<DialogRow
-								label="Use as workspace run"
+								label="Использовать для запуска рабочей области"
 								htmlFor="preset-workspace-run"
-								hint="Makes the Run button launch this preset for matching projects."
+								hint="Кнопка запуска будет открывать этот пресет для подходящих проектов."
 							>
 								<div className="flex justify-end">
 									<Switch
@@ -565,9 +569,9 @@ export function PresetEditorDialog({
 							</DialogRow>
 
 							<DialogRow
-								label="Auto-run on workspace creation"
+								label="Автозапуск при создании рабочей области"
 								htmlFor="preset-workspace-autostart"
-								hint="Launch this preset when a new workspace is created."
+								hint="Запускать этот пресет при создании новой рабочей области."
 							>
 								<div className="flex justify-end">
 									<Switch
@@ -581,9 +585,9 @@ export function PresetEditorDialog({
 							</DialogRow>
 
 							<DialogRow
-								label="Auto-run on new tab"
+								label="Автозапуск в новой вкладке"
 								htmlFor="preset-tab-autostart"
-								hint="Launch this preset whenever a new terminal tab opens."
+								hint="Запускать этот пресет при открытии новой вкладки терминала."
 							>
 								<div className="flex justify-end">
 									<Switch
@@ -606,14 +610,14 @@ export function PresetEditorDialog({
 								className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 							>
 								<Trash2 className="size-4" />
-								Delete preset
+								Удалить пресет
 							</Button>
 							<Button
 								type="button"
 								size="sm"
 								onClick={() => onOpenChange(false)}
 							>
-								Done
+								Готово
 							</Button>
 						</DialogFooter>
 					</>

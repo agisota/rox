@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { DownloadInterstitial } from "./components/DownloadInterstitial";
 
 export const metadata: Metadata = {
-	title: "Download Rox",
-	description: "Your Rox download is starting.",
+	title: "Скачать Rox",
+	description: "Загрузка Rox начинается.",
 	robots: { index: false, follow: true },
 };
 

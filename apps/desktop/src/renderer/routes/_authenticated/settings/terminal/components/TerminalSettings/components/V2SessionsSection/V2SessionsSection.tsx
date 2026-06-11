@@ -41,9 +41,9 @@ export function V2SessionsSection() {
 	if (!activeHostUrl) {
 		return (
 			<div className="space-y-1">
-				<h3 className="text-sm font-medium">Manage daemon</h3>
+				<h3 className="text-sm font-medium">Управление daemon</h3>
 				<p className="text-sm text-muted-foreground">
-					Host service is starting…
+					Host service запускается…
 				</p>
 			</div>
 		);
@@ -102,17 +102,19 @@ function V2SessionsSectionInner() {
 	const restartDaemon = workspaceTrpc.terminal.daemon.restart.useMutation({
 		onSuccess: () => {
 			const versions = updateStatusQuery.data;
-			toast.success("Daemon restarted", {
+			toast.success("Daemon перезапущен", {
 				description:
 					versions && versions.running !== versions.expected
-						? `Now running ${versions.expected} (was ${versions.running}). All sessions were closed.`
-						: "All sessions were closed and a fresh daemon is running.",
+						? `Теперь запущена версия ${versions.expected} (была ${versions.running}). Все сессии закрыты.`
+						: "Все сессии закрыты, запущен новый daemon.",
 			});
 			void updateStatusQuery.refetch();
 			void sessionsQuery.refetch();
 		},
 		onError: (error) => {
-			toast.error("Failed to restart daemon", { description: error.message });
+			toast.error("Не удалось перезапустить daemon", {
+				description: error.message,
+			});
 		},
 	});
 
@@ -120,11 +122,11 @@ function V2SessionsSectionInner() {
 		onSuccess: (result) => {
 			if (result.ok) {
 				const versions = updateStatusQuery.data;
-				toast.success("Daemon updated", {
+				toast.success("Daemon обновлен", {
 					description:
 						versions && versions.running !== versions.expected
-							? `Now running ${versions.expected} (was ${versions.running}). All sessions preserved.`
-							: "All sessions preserved across the upgrade.",
+							? `Теперь запущена версия ${versions.expected} (была ${versions.running}). Все сессии сохранены.`
+							: "Все сессии сохранены во время обновления.",
 				});
 				void updateStatusQuery.refetch();
 				void sessionsQuery.refetch();
@@ -148,18 +150,18 @@ function V2SessionsSectionInner() {
 	const versions = updateStatusQuery.data;
 
 	const sessionCountLabel = (() => {
-		if (sessions === null) return "Daemon unavailable";
-		if (aliveCount === 0) return "No sessions running";
-		return `${aliveCount} session${aliveCount === 1 ? "" : "s"} running`;
+		if (sessions === null) return "Daemon недоступен";
+		if (aliveCount === 0) return "Нет запущенных сессий";
+		return `Запущено сессий: ${aliveCount}`;
 	})();
 
 	const versionLabel = (() => {
 		if (!versions) return null;
 		if (versions.running === "unknown") {
-			return `bundled ${versions.expected}`;
+			return `в комплекте ${versions.expected}`;
 		}
 		if (updatePending) {
-			return `${versions.running} → ${versions.expected} pending`;
+			return `${versions.running} → ${versions.expected} ожидает`;
 		}
 		return versions.running;
 	})();
@@ -173,7 +175,7 @@ function V2SessionsSectionInner() {
 				<div className="flex items-start justify-between gap-4">
 					<div>
 						<h3 className="text-sm font-medium flex items-baseline gap-2">
-							Manage daemon
+							Управление daemon
 							{versionLabel ? (
 								<span className="text-xs font-mono font-normal text-muted-foreground/80">
 									{versionLabel}
@@ -181,16 +183,17 @@ function V2SessionsSectionInner() {
 							) : null}
 						</h3>
 						<p className="text-sm text-muted-foreground mt-0.5">
-							A background process that owns all your terminal sessions, so they
-							keep running across app restarts and reconnects. You rarely need
-							to touch this — use the buttons only if terminals misbehave.
+							Фоновый процесс управляет всеми сессиями терминала, чтобы они
+							продолжали работать после перезапуска приложения и
+							переподключений. Обычно здесь ничего менять не нужно — используйте
+							кнопки только при сбоях терминалов.
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2 shrink-0">
 						<Button
 							variant="default"
 							size="sm"
-							title="Upgrade the terminal daemon to the version bundled with the app, keeping all open terminal sessions alive."
+							title="Обновить terminal daemon до версии из приложения, сохранив все открытые сессии терминала."
 							disabled={
 								sessions === null ||
 								updateDaemon.isPending ||
@@ -198,16 +201,16 @@ function V2SessionsSectionInner() {
 							}
 							onClick={() => updateDaemon.mutate()}
 						>
-							{updateDaemon.isPending ? "Updating…" : "Update daemon"}
+							{updateDaemon.isPending ? "Обновление…" : "Обновить daemon"}
 						</Button>
 						<Button
 							variant="outline"
 							size="sm"
-							title="Kill the terminal daemon and start a fresh one. This closes every terminal session."
+							title="Остановить terminal daemon и запустить новый. Это закроет все сессии терминала."
 							disabled={updateDaemon.isPending || restartDaemon.isPending}
 							onClick={() => setConfirmRestartOpen(true)}
 						>
-							Force restart
+							Принудительный перезапуск
 						</Button>
 					</div>
 				</div>
@@ -250,7 +253,7 @@ function V2SessionsSectionInner() {
 					)}
 					{updatePending ? (
 						<span className="rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-foreground/80">
-							Update available
+							Доступно обновление
 						</span>
 					) : null}
 				</div>
@@ -260,10 +263,10 @@ function V2SessionsSectionInner() {
 						<table className="w-full text-xs">
 							<thead className="sticky top-0 bg-background">
 								<tr className="text-muted-foreground">
-									<th className="px-2 py-2 text-left font-medium">Session</th>
+									<th className="px-2 py-2 text-left font-medium">Сессия</th>
 									<th className="px-2 py-2 text-right font-medium">PID</th>
-									<th className="px-2 py-2 text-right font-medium">Size</th>
-									<th className="px-2 py-2 text-left font-medium">Status</th>
+									<th className="px-2 py-2 text-right font-medium">Размер</th>
+									<th className="px-2 py-2 text-left font-medium">Статус</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-border/40">
@@ -282,7 +285,7 @@ function V2SessionsSectionInner() {
 													s.alive ? "text-foreground" : "text-muted-foreground"
 												}
 											>
-												{s.alive ? "Alive" : "Exited"}
+												{s.alive ? "Активна" : "Завершена"}
 											</span>
 										</td>
 									</tr>
@@ -302,23 +305,23 @@ function V2SessionsSectionInner() {
 				<AlertDialogContent className="max-w-[520px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Update couldn't preserve sessions
+							Обновление не смогло сохранить сессии
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="space-y-1.5 text-muted-foreground">
 								<span className="block">
-									The daemon couldn't hand off your live sessions to the new
-									binary. Reason:
+									Daemon не смог передать активные сессии новому бинарному
+									файлу. Причина:
 								</span>
 								<span className="block rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] text-foreground">
 									{updateFailureReason ?? ""}
 								</span>
 								<span className="block">
-									Force update will close every terminal session
+									Принудительное обновление закроет все сессии терминала
 									{aliveCount && aliveCount > 0
-										? ` (${aliveCount} running)`
+										? ` (запущено: ${aliveCount})`
 										: ""}{" "}
-									and start a fresh daemon.
+									и запустит новый daemon.
 								</span>
 							</div>
 						</AlertDialogDescription>
@@ -329,7 +332,7 @@ function V2SessionsSectionInner() {
 							size="sm"
 							onClick={() => setUpdateFailureReason(null)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="default"
@@ -340,7 +343,7 @@ function V2SessionsSectionInner() {
 								restartDaemon.mutate();
 							}}
 						>
-							Force update
+							Принудительно обновить
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -354,26 +357,26 @@ function V2SessionsSectionInner() {
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
 							{updatePending
-								? "Force restart and apply update?"
-								: "Restart terminal daemon?"}
+								? "Принудительно перезапустить и применить обновление?"
+								: "Перезапустить terminal daemon?"}
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="space-y-1.5 text-muted-foreground">
 								<span className="block">
-									This closes every terminal session for your organization
+									Это закроет все сессии терминала в вашей организации
 									{aliveCount && aliveCount > 0
-										? ` (${aliveCount} running)`
+										? ` (запущено: ${aliveCount})`
 										: ""}{" "}
-									and starts a fresh daemon.
+									и запустит новый daemon.
 								</span>
 								{updatePending && versions ? (
 									<span className="block">
-										Force restart will load{" "}
+										Принудительный перезапуск загрузит{" "}
 										<span className="font-mono">{versions.expected}</span>{" "}
-										(currently running{" "}
-										<span className="font-mono">{versions.running}</span>). To
-										upgrade <em>without</em> closing sessions, click{" "}
-										<span className="font-medium">Update daemon</span> instead.
+										(сейчас запущена{" "}
+										<span className="font-mono">{versions.running}</span>).
+										Чтобы обновиться <em>без</em> закрытия сессий, нажмите{" "}
+										<span className="font-medium">Обновить daemon</span>.
 									</span>
 								) : null}
 							</div>
@@ -385,7 +388,7 @@ function V2SessionsSectionInner() {
 							size="sm"
 							onClick={() => setConfirmRestartOpen(false)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="default"
@@ -396,7 +399,7 @@ function V2SessionsSectionInner() {
 								restartDaemon.mutate();
 							}}
 						>
-							Restart and close sessions
+							Перезапустить и закрыть сессии
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -44,7 +44,7 @@ export function QuickAddPresets({
 					disabled={isAddDisabled || pills.length === 0}
 				>
 					<LuPlus className="size-4" />
-					Import agent
+					Импортировать агента
 					<LuChevronDown className="size-4 opacity-60" />
 				</Button>
 			</DropdownMenuTrigger>

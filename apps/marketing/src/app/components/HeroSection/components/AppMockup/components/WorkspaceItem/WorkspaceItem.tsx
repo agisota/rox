@@ -8,6 +8,7 @@ import { StatusIndicator } from "../StatusIndicator";
 
 interface WorkspaceItemProps {
 	name: string;
+	displayName?: string;
 	branch: string;
 	add?: number;
 	del?: number;
@@ -18,6 +19,7 @@ interface WorkspaceItemProps {
 
 export function WorkspaceItem({
 	name,
+	displayName,
 	add,
 	del,
 	isActive,
@@ -57,7 +59,7 @@ export function WorkspaceItem({
 			<span
 				className={`min-w-0 flex-1 truncate ${isActive ? "font-medium" : ""}`}
 			>
-				{name}
+				{displayName ?? name}
 			</span>
 
 			{add !== undefined && (

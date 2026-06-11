@@ -99,7 +99,7 @@ export function BranchPrefixControl({
 			</Select>
 			{selectValue === "custom" && (
 				<Input
-					placeholder="Prefix"
+					placeholder="Префикс"
 					value={customPrefixInput}
 					onChange={(e) => setCustomPrefixInput(e.target.value)}
 					onBlur={handleCustomPrefixBlur}

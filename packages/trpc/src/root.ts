@@ -1,5 +1,5 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
-
+import { achievementsRouter } from "./router/achievements";
 import { adminRouter } from "./router/admin";
 import { agentRouter } from "./router/agent";
 import { analyticsRouter } from "./router/analytics";
@@ -12,13 +12,17 @@ import { executionCircuitRouter } from "./router/executionCircuit";
 import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
 import { knowledgeRouter } from "./router/knowledge";
+import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
+import { profileRouter } from "./router/profile";
 import { projectRouter } from "./router/project";
+import { rankingRouter } from "./router/ranking";
 import { shareRouter } from "./router/share";
 import { skillRouter } from "./router/skill";
 import { supportRouter } from "./router/support/support";
 import { taskRouter } from "./router/task";
 import { teamRouter } from "./router/team";
+import { usageRouter } from "./router/usage";
 import { userRouter } from "./router/user";
 import { v2HostRouter } from "./router/v2-host";
 import { v2ProjectRouter } from "./router/v2-project";
@@ -28,6 +32,7 @@ import { workspaceRouter } from "./router/workspace";
 import { createCallerFactory, createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
+	achievements: achievementsRouter,
 	admin: adminRouter,
 	agent: agentRouter,
 	apiKey: apiKeyRouter,
@@ -40,13 +45,17 @@ export const appRouter = createTRPCRouter({
 	host: hostRouter,
 	integration: integrationRouter,
 	knowledge: knowledgeRouter,
+	notes: notesRouter,
 	organization: organizationRouter,
+	profile: profileRouter,
 	project: projectRouter,
+	ranking: rankingRouter,
 	share: shareRouter,
 	skill: skillRouter,
 	support: supportRouter,
 	task: taskRouter,
 	team: teamRouter,
+	usage: usageRouter,
 	user: userRouter,
 	v2Host: v2HostRouter,
 	v2Project: v2ProjectRouter,

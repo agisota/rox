@@ -59,33 +59,34 @@ export function ConnectionControls({
 			<div className="space-y-3">
 				<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
 					<AlertTriangle className="mt-0.5 size-4 shrink-0" />
-					<div>Linear authorization expired. Reconnect to resume syncing.</div>
+					<div>
+						Авторизация Linear истекла. Переподключите интеграцию, чтобы
+						возобновить синхронизацию.
+					</div>
 				</div>
 				<div className="flex gap-2">
 					<Button variant="destructive" onClick={handleConnect}>
-						Reconnect Linear
+						Переподключить Linear
 					</Button>
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
 							<Button variant="outline" disabled={disconnectMutation.isPending}>
 								<Unplug className="mr-2 size-4" />
-								{disconnectMutation.isPending
-									? "Disconnecting..."
-									: "Disconnect"}
+								{disconnectMutation.isPending ? "Отключаем..." : "Отключить"}
 							</Button>
 						</AlertDialogTrigger>
 						<AlertDialogContent>
 							<AlertDialogHeader>
-								<AlertDialogTitle>Disconnect Linear?</AlertDialogTitle>
+								<AlertDialogTitle>Отключить Linear?</AlertDialogTitle>
 								<AlertDialogDescription>
-									This will remove the connection between your organization and
-									Linear. You can reconnect at any time.
+									Это удалит подключение между вашей организацией и Linear. Вы
+									сможете подключить интеграцию снова в любое время.
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter>
-								<AlertDialogCancel>Cancel</AlertDialogCancel>
+								<AlertDialogCancel>Отмена</AlertDialogCancel>
 								<AlertDialogAction onClick={handleDisconnect}>
-									Disconnect
+									Отключить
 								</AlertDialogAction>
 							</AlertDialogFooter>
 						</AlertDialogContent>
@@ -101,21 +102,21 @@ export function ConnectionControls({
 				<AlertDialogTrigger asChild>
 					<Button variant="outline" disabled={disconnectMutation.isPending}>
 						<Unplug className="mr-2 size-4" />
-						{disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+						{disconnectMutation.isPending ? "Отключаем..." : "Отключить"}
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect Linear?</AlertDialogTitle>
+						<AlertDialogTitle>Отключить Linear?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will remove the connection between your organization and
-							Linear. You can reconnect at any time.
+							Это удалит подключение между вашей организацией и Linear. Вы
+							сможете подключить интеграцию снова в любое время.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>Отмена</AlertDialogCancel>
 						<AlertDialogAction onClick={handleDisconnect}>
-							Disconnect
+							Отключить
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -123,5 +124,5 @@ export function ConnectionControls({
 		);
 	}
 
-	return <Button onClick={handleConnect}>Connect Linear</Button>;
+	return <Button onClick={handleConnect}>Подключить Linear</Button>;
 }

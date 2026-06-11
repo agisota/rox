@@ -102,7 +102,8 @@ export function PresetRow({
 	const modeValue = normalizeExecutionMode(preset.executionMode);
 	const modeLabel = getPresetModeLabel(modeValue, commands.length);
 	const firstCommand =
-		commands.find((cmd) => cmd.trim().length > 0)?.trim() ?? "Empty command";
+		commands.find((cmd) => cmd.trim().length > 0)?.trim() ??
+		"Команда не задана";
 	const commandSummary =
 		commands.length > 1
 			? `${firstCommand}  +${commands.length - 1}`
@@ -142,14 +143,14 @@ export function PresetRow({
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-2 min-w-0">
 					<span className="text-sm font-medium truncate">
-						{preset.name.trim() || "Untitled preset"}
+						{preset.name.trim() || "Пресет без названия"}
 					</span>
 					{isWorkspaceCreation && (
 						<Badge
 							variant="secondary"
 							className="text-[10px] h-4 px-1.5 shrink-0"
 						>
-							Workspace
+							Рабочая область
 						</Badge>
 					)}
 					{isWorkspaceRun && (
@@ -157,7 +158,7 @@ export function PresetRow({
 							variant="secondary"
 							className="text-[10px] h-4 px-1.5 shrink-0"
 						>
-							Run
+							Запуск
 						</Badge>
 					)}
 					{isNewTab && (
@@ -165,7 +166,7 @@ export function PresetRow({
 							variant="secondary"
 							className="text-[10px] h-4 px-1.5 shrink-0"
 						>
-							Tab
+							Вкладка
 						</Badge>
 					)}
 				</div>
@@ -190,8 +191,8 @@ export function PresetRow({
 					e.stopPropagation();
 					onToggleVisibility(preset.id, !isVisibleInBar);
 				}}
-				title={isVisibleInBar ? "Hide from bar" : "Show in bar"}
-				aria-label={isVisibleInBar ? "Hide from bar" : "Show in bar"}
+				title={isVisibleInBar ? "Скрыть с панели" : "Показать на панели"}
+				aria-label={isVisibleInBar ? "Скрыть с панели" : "Показать на панели"}
 				aria-pressed={isVisibleInBar}
 			>
 				{isVisibleInBar ? (
@@ -210,7 +211,7 @@ export function PresetRow({
 					"opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
 					isDragging && "opacity-100",
 				)}
-				aria-label="Drag to reorder"
+				aria-label="Перетащить для сортировки"
 			>
 				<LuGripVertical className="size-4" />
 			</button>

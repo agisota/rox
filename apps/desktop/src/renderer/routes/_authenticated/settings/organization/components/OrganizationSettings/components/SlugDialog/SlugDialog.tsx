@@ -26,14 +26,14 @@ import { z } from "zod";
 const slugSchema = z.object({
 	slug: z
 		.string()
-		.min(3, "Slug must be at least 3 characters")
-		.max(50)
+		.min(3, "Slug должен быть не короче 3 символов")
+		.max(50, "Slug должен быть не длиннее 50 символов")
 		.regex(
 			/^[a-z0-9-]+$/,
-			"Slug can only contain lowercase letters, numbers, and hyphens",
+			"Slug может содержать только строчные латинские буквы, цифры и дефисы",
 		)
-		.regex(/^[a-z0-9]/, "Slug must start with a letter or number")
-		.regex(/[a-z0-9]$/, "Slug must end with a letter or number"),
+		.regex(/^[a-z0-9]/, "Slug должен начинаться с буквы или цифры")
+		.regex(/[a-z0-9]$/, "Slug должен заканчиваться буквой или цифрой"),
 });
 
 type SlugFormValues = z.infer<typeof slugSchema>;
@@ -111,23 +111,23 @@ export function SlugDialog({
 			onSuccess?.();
 			onOpenChange(false);
 			setSlugAvailable(null);
-			toast.success("Organization URL updated!");
+			toast.success("URL организации обновлен!");
 		} catch (error) {
 			const message =
-				error instanceof Error ? error.message : "Failed to update URL";
+				error instanceof Error ? error.message : "Не удалось обновить URL";
 			toast.error(message);
 		}
 	}
 
 	function getSlugStatusDisplay(): { text: string; className: string } | null {
 		if (isCheckingSlug) {
-			return { text: "Checking...", className: "text-muted-foreground" };
+			return { text: "Проверка...", className: "text-muted-foreground" };
 		}
 		if (slugAvailable === true) {
-			return { text: "Available", className: "text-green-600" };
+			return { text: "Свободен", className: "text-green-600" };
 		}
 		if (slugAvailable === false) {
-			return { text: "Taken", className: "text-destructive" };
+			return { text: "Занят", className: "text-destructive" };
 		}
 		return null;
 	}
@@ -138,10 +138,10 @@ export function SlugDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Change organization slug</DialogTitle>
+					<DialogTitle>Изменить slug организации</DialogTitle>
 					<DialogDescription>
-						This will change your organization's public URL. Make sure to update
-						any bookmarks or shared links.
+						Это изменит публичный URL вашей организации. Не забудьте обновить
+						закладки и ссылки, которыми вы уже поделились.
 					</DialogDescription>
 				</DialogHeader>
 				<Form {...slugForm}>
@@ -154,7 +154,7 @@ export function SlugDialog({
 							name="slug"
 							render={({ field }) => (
 								<>
-									<FormLabel>Organization slug</FormLabel>
+									<FormLabel>Slug организации</FormLabel>
 									<FormControl>
 										<div className="relative">
 											<Input {...field} placeholder="acme-inc" />
@@ -181,7 +181,7 @@ export function SlugDialog({
 									setSlugAvailable(null);
 								}}
 							>
-								Cancel
+								Отмена
 							</Button>
 							<Button
 								type="submit"
@@ -191,7 +191,7 @@ export function SlugDialog({
 									slugValue === currentSlug
 								}
 							>
-								Save
+								Сохранить
 							</Button>
 						</DialogFooter>
 					</form>

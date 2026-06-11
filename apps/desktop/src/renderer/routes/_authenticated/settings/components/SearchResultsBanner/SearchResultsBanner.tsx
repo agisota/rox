@@ -21,17 +21,17 @@ export function SearchResultsBanner({
 						<span className="tabular-nums font-medium text-foreground">
 							{matchCount}
 						</span>
-						{matchCount === 1 ? " result" : " results"} for &ldquo;
+						{matchCount === 1 ? " результат" : " результатов"} для &ldquo;
 						{query}&rdquo;
 					</>
 				) : (
-					<>No results for &ldquo;{query}&rdquo;</>
+					<>Нет результатов для &ldquo;{query}&rdquo;</>
 				)}
 			</p>
 			<button
 				type="button"
 				onClick={onClear}
-				aria-label="Clear search"
+				aria-label="Очистить поиск"
 				className="shrink-0 rounded-sm p-0.5 text-muted-foreground hover:text-foreground transition-colors"
 			>
 				<HiXMark className="h-3.5 w-3.5" />

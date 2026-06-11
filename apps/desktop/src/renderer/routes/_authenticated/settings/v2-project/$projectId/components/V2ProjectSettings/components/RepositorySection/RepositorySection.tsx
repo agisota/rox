@@ -74,12 +74,12 @@ export function RepositorySection({
 							size="icon"
 							className="absolute right-1 top-1 size-7 text-muted-foreground hover:text-foreground"
 							onClick={() => openUrl.mutate(parsed.url)}
-							aria-label="Open in GitHub"
+							aria-label="Открыть в GitHub"
 						>
 							<FaGithub className="size-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Open in GitHub</TooltipContent>
+					<TooltipContent>Открыть в GitHub</TooltipContent>
 				</Tooltip>
 			)}
 		</div>

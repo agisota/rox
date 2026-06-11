@@ -34,9 +34,10 @@ export function WorktreeLocationSection({
 	return (
 		<section className="space-y-3">
 			<div>
-				<h3 className="text-sm font-medium">Worktrees</h3>
+				<h3 className="text-sm font-medium">Worktree</h3>
 				<p className="mt-0.5 text-sm text-muted-foreground">
-					Default location for new worktree workspaces on this host.
+					Расположение по умолчанию для новых worktree-рабочих областей на этом
+					хосте.
 				</p>
 			</div>
 			<V2WorktreeLocationPicker
@@ -46,13 +47,13 @@ export function WorktreeLocationSection({
 				hostName={hostName}
 				isRemoteTarget={isRemoteTarget}
 				disabled={disabled}
-				browseTitle="Select default worktree location"
+				browseTitle="Выберите расположение worktree по умолчанию"
 				onSelect={(path) => setLocation.mutate(path)}
 				onReset={() => setLocation.mutate(null)}
 			/>
 			{!canEdit ? (
 				<p className="text-xs text-muted-foreground">
-					Only host owners can change this location.
+					Изменить это расположение могут только владельцы хоста.
 				</p>
 			) : null}
 		</section>

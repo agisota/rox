@@ -44,7 +44,7 @@ export function DeleteProjectSection({
 	const handleDelete = async () => {
 		if (!activeHostUrl) {
 			showHostServiceUnavailableToast(hostService, {
-				action: "delete the project",
+				action: "удалить проект",
 			});
 			return;
 		}
@@ -52,11 +52,11 @@ export function DeleteProjectSection({
 		try {
 			const client = getHostServiceClientByUrl(activeHostUrl);
 			await client.project.remove.mutate({ projectId });
-			toast.success(`Deleted "${projectName}"`);
+			toast.success(`Проект "${projectName}" удалён`);
 			setIsOpen(false);
 			navigate({ to: "/settings/projects" });
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Failed to delete");
+			toast.error(err instanceof Error ? err.message : "Не удалось удалить");
 		} finally {
 			setIsDeleting(false);
 		}
@@ -65,7 +65,7 @@ export function DeleteProjectSection({
 	return (
 		<div className="flex items-center justify-between gap-8 py-2.5">
 			<div className="min-w-0 flex-1">
-				<div className="text-sm font-medium">Delete project</div>
+				<div className="text-sm font-medium">Удаление проекта</div>
 			</div>
 			{!isOwner ? (
 				<Tooltip>
@@ -78,12 +78,12 @@ export function DeleteProjectSection({
 								className="pointer-events-none shrink-0"
 								disabled
 							>
-								Delete project
+								Удалить проект
 							</Button>
 						</span>
 					</TooltipTrigger>
 					<TooltipContent side="left">
-						Only organization owners can delete this project.
+						Удалять этот проект могут только владельцы организации.
 					</TooltipContent>
 				</Tooltip>
 			) : (
@@ -95,22 +95,22 @@ export function DeleteProjectSection({
 							size="sm"
 							className="shrink-0"
 						>
-							Delete project
+							Удалить проект
 						</Button>
 					</AlertDialogTrigger>
 					<AnimatedAlertDialogContent open={isOpen}>
 						<AlertDialogHeader>
-							<AlertDialogTitle>Delete "{projectName}"?</AlertDialogTitle>
+							<AlertDialogTitle>Удалить «{projectName}»?</AlertDialogTitle>
 							<AlertDialogDescription>
-								This deletes the project for{" "}
-								<span className="font-medium text-foreground">everyone</span> in
-								the organization and removes all of its workspaces from every
-								member's device. This cannot be undone.
+								Проект будет удалён для{" "}
+								<span className="font-medium text-foreground">всех</span> в
+								организации, а все его рабочие пространства будут удалены с
+								устройств участников. Это действие нельзя отменить.
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
 							<AlertDialogCancel disabled={isDeleting}>
-								Cancel
+								Отмена
 							</AlertDialogCancel>
 							<AlertDialogAction
 								onClick={(e) => {
@@ -120,7 +120,7 @@ export function DeleteProjectSection({
 								disabled={isDeleting || !activeHostUrl}
 								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 							>
-								{isDeleting ? "Deleting…" : "Delete"}
+								{isDeleting ? "Удаление…" : "Удалить"}
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AnimatedAlertDialogContent>

@@ -19,7 +19,7 @@ export function RepoSelector({
 }: RepoSelectorProps) {
 	return (
 		<ResponsiveDropdown
-			title="Select repository"
+			title="Выбрать репозиторий"
 			items={repos.map((repo) => ({
 				label: repo.fullName,
 				icon: <GitFork className="size-3" />,

@@ -87,7 +87,7 @@ function ThemeRow({
 									<ThemeSwatch theme={includeSystem.lightTheme} />
 									<ThemeSwatch theme={includeSystem.darkTheme} />
 								</div>
-								<span className="truncate text-xs">System</span>
+								<span className="truncate text-xs">Системная</span>
 							</div>
 						) : (
 							<div className="flex items-center gap-2 min-w-0">
@@ -106,7 +106,7 @@ function ThemeRow({
 										<ThemeSwatch theme={includeSystem.lightTheme} />
 										<ThemeSwatch theme={includeSystem.darkTheme} />
 									</div>
-									<span className="truncate">System</span>
+									<span className="truncate">Системная</span>
 								</div>
 							</SelectItem>
 							<SelectSeparator />
@@ -152,12 +152,12 @@ export function ThemeSection() {
 	const customDarkThemes = darkThemes.filter((t) => t.isCustom);
 
 	const allOptions: ReadonlyArray<{ group: string; themes: Theme[] }> = [
-		{ group: "Light", themes: builtInLightThemes },
-		{ group: "Dark", themes: builtInDarkThemes },
+		{ group: "Светлые", themes: builtInLightThemes },
+		{ group: "Темные", themes: builtInDarkThemes },
 		...(customThemes.length > 0
 			? [
 					{
-						group: "Custom",
+						group: "Пользовательские",
 						themes: [...customLightThemes, ...customDarkThemes],
 					},
 				]
@@ -166,17 +166,17 @@ export function ThemeSection() {
 	const lightOptions: ReadonlyArray<{ group: string; themes: Theme[] }> =
 		customLightThemes.length > 0
 			? [
-					{ group: "Light", themes: builtInLightThemes },
-					{ group: "Custom", themes: customLightThemes },
+					{ group: "Светлые", themes: builtInLightThemes },
+					{ group: "Пользовательские", themes: customLightThemes },
 				]
-			: [{ group: "Light", themes: builtInLightThemes }];
+			: [{ group: "Светлые", themes: builtInLightThemes }];
 	const darkOptions: ReadonlyArray<{ group: string; themes: Theme[] }> =
 		customDarkThemes.length > 0
 			? [
-					{ group: "Dark", themes: builtInDarkThemes },
-					{ group: "Custom", themes: customDarkThemes },
+					{ group: "Темные", themes: builtInDarkThemes },
+					{ group: "Пользовательские", themes: customDarkThemes },
 				]
-			: [{ group: "Dark", themes: builtInDarkThemes }];
+			: [{ group: "Темные", themes: builtInDarkThemes }];
 
 	const systemLightTheme =
 		allThemes.find((t) => t.id === systemLightThemeId) ??
@@ -196,8 +196,8 @@ export function ThemeSection() {
 		event.target.value = "";
 		if (!file) return;
 		if (file.size > MAX_THEME_FILE_SIZE) {
-			toast.error("Theme file too large", {
-				description: "Maximum size is 256 KB.",
+			toast.error("Файл темы слишком большой", {
+				description: "Максимальный размер — 256 KB.",
 			});
 			return;
 		}
@@ -208,7 +208,7 @@ export function ThemeSection() {
 			const parsed = parseThemeConfigFile(content);
 
 			if (!parsed.ok) {
-				toast.error("Failed to import theme file", {
+				toast.error("Не удалось импортировать файл темы", {
 					description: parsed.error,
 				});
 				return;
@@ -218,36 +218,36 @@ export function ThemeSection() {
 			const totalImported = summary.added + summary.updated;
 
 			if (totalImported === 0) {
-				toast.error("No themes were imported", {
+				toast.error("Темы не импортированы", {
 					description:
 						summary.skipped > 0
-							? "All themes used reserved IDs (built-in or system)."
-							: "The file did not contain any importable themes.",
+							? "Все темы используют зарезервированные ID (встроенные или системные)."
+							: "В файле нет тем, доступных для импорта.",
 				});
 				return;
 			}
 
 			toast.success(
 				totalImported === 1
-					? "Imported 1 custom theme"
-					: `Imported ${totalImported} custom themes`,
+					? "Импортирована 1 пользовательская тема"
+					: `Импортировано пользовательских тем: ${totalImported}`,
 				{
 					description:
 						summary.updated > 0
-							? `${summary.updated} existing theme${summary.updated === 1 ? "" : "s"} updated`
+							? `Обновлено существующих тем: ${summary.updated}`
 							: undefined,
 				},
 			);
 
 			if (parsed.issues.length > 0) {
-				toast.warning("Some themes were skipped", {
+				toast.warning("Некоторые темы пропущены", {
 					description: parsed.issues[0],
 				});
 			}
 		} catch (error) {
-			toast.error("Failed to import theme file", {
+			toast.error("Не удалось импортировать файл темы", {
 				description:
-					error instanceof Error ? error.message : "Unable to read file",
+					error instanceof Error ? error.message : "Не удалось прочитать файл",
 			});
 		} finally {
 			setIsImporting(false);
@@ -260,10 +260,10 @@ export function ThemeSection() {
 
 		const baseConfig = {
 			id: "my-custom-theme",
-			name: "My Custom Theme",
+			name: "Моя пользовательская тема",
 			type: baseTheme.type,
-			author: "You",
-			description: "Custom Rox theme",
+			author: "Вы",
+			description: "Пользовательская тема Rox",
 			ui: baseTheme.ui,
 			terminal: getTerminalColors(baseTheme),
 		};
@@ -282,27 +282,27 @@ export function ThemeSection() {
 	return (
 		<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
 			<ThemeRow
-				label="Theme"
+				label="Тема"
 				hint={
 					<>
-						Pick a theme or follow your system appearance. Browse the{" "}
+						Выберите тему или следуйте системному оформлению. Откройте{" "}
 						<a
 							href={`${COMPANY.MARKETING_URL}/marketplace/themes`}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-0.5 text-primary hover:underline"
 						>
-							marketplace
+							маркетплейс
 							<HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
 						</a>{" "}
-						or{" "}
+						или{" "}
 						<a
 							href={`${COMPANY.DOCS_URL}/custom-themes`}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-0.5 text-primary hover:underline"
 						>
-							docs
+							документацию
 							<HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
 						</a>
 						.
@@ -319,16 +319,16 @@ export function ThemeSection() {
 			/>
 			<AnimatedHeight open={isSystemMode}>
 				<ThemeRow
-					label="Light theme"
-					hint="Used when your system is in light mode."
+					label="Светлая тема"
+					hint="Используется, когда система в светлом режиме."
 					value={systemLightThemeId}
 					onValueChange={(id) => setSystemThemePreference("light", id)}
 					currentTheme={systemLightTheme}
 					options={lightOptions}
 				/>
 				<ThemeRow
-					label="Dark theme"
-					hint="Used when your system is in dark mode."
+					label="Темная тема"
+					hint="Используется, когда система в темном режиме."
 					value={systemDarkThemeId}
 					onValueChange={(id) => setSystemThemePreference("dark", id)}
 					currentTheme={systemDarkTheme}
@@ -337,9 +337,9 @@ export function ThemeSection() {
 			</AnimatedHeight>
 			<div className="flex items-center justify-between gap-6 p-4">
 				<div className="min-w-0 flex-1">
-					<div className="text-sm font-medium">Theme library</div>
+					<div className="text-sm font-medium">Библиотека тем</div>
 					<div className="text-xs text-muted-foreground">
-						Search hundreds of community themes with a live preview.
+						Ищите среди сотен тем сообщества с живым предпросмотром.
 					</div>
 				</div>
 				<ThemeLibraryCombobox
@@ -349,9 +349,9 @@ export function ThemeSection() {
 			</div>
 			<div className="flex items-center justify-between gap-6 p-4">
 				<div className="min-w-0 flex-1">
-					<div className="text-sm font-medium">Custom themes</div>
+					<div className="text-sm font-medium">Пользовательские темы</div>
 					<div className="text-xs text-muted-foreground">
-						Import a theme file or grab a starter to edit.
+						Импортируйте файл темы или скачайте шаблон для редактирования.
 					</div>
 				</div>
 				<div className="flex items-center gap-2 shrink-0">
@@ -369,7 +369,7 @@ export function ThemeSection() {
 						onClick={handleDownloadBaseTheme}
 					>
 						<HiOutlineArrowDownTray className="mr-1.5 h-4 w-4" />
-						Download starter
+						Скачать шаблон
 					</Button>
 					<Button
 						type="button"
@@ -379,7 +379,7 @@ export function ThemeSection() {
 						disabled={isImporting}
 					>
 						<HiOutlineArrowUpTray className="mr-1.5 h-4 w-4" />
-						{isImporting ? "Importing..." : "Import"}
+						{isImporting ? "Импорт..." : "Импорт"}
 					</Button>
 				</div>
 			</div>

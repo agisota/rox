@@ -601,10 +601,10 @@ export function V2PresetsSection({
 			<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
 				<div className="flex items-start justify-between gap-3 p-4">
 					<div className="min-w-0">
-						<h3 className="text-sm font-medium">Terminal presets</h3>
+						<h3 className="text-sm font-medium">Пресеты терминала</h3>
 						<p className="text-xs text-muted-foreground mt-0.5">
-							Pre-configured terminal launches. Click a preset to edit, drag to
-							reorder.
+							Готовые запуски терминала. Нажмите пресет, чтобы изменить его, или
+							перетащите, чтобы изменить порядок.
 						</p>
 					</div>
 					<div className="flex shrink-0 items-center gap-2">
@@ -620,7 +620,7 @@ export function V2PresetsSection({
 						{showPresets && (
 							<Button size="sm" onClick={() => handleAddRow()}>
 								<HiOutlinePlus className="size-4" />
-								Add preset
+								Добавить пресет
 							</Button>
 						)}
 					</div>

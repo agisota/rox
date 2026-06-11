@@ -5,24 +5,24 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 const ERROR_MESSAGES: Record<string, string> = {
-	installation_cancelled: "GitHub App installation was cancelled.",
-	missing_params: "Invalid installation response. Please try again.",
-	invalid_state: "Invalid state parameter. Please try again.",
+	installation_cancelled: "Установка GitHub App отменена.",
+	missing_params: "Некорректный ответ установки. Попробуйте еще раз.",
+	invalid_state: "Некорректный параметр state. Попробуйте еще раз.",
 	installation_fetch_failed:
-		"Failed to fetch installation details. Please try again.",
-	save_failed: "Failed to save installation. Please try again.",
+		"Не удалось получить сведения об установке. Попробуйте еще раз.",
+	save_failed: "Не удалось сохранить установку. Попробуйте еще раз.",
 	already_connected:
-		"This GitHub installation is already connected to another Rox organization. Disconnect it there, or uninstall the Rox GitHub App, then try again.",
-	unexpected: "Something went wrong. Please try again.",
+		"Эта установка GitHub уже подключена к другой организации Rox. Отключите ее там или удалите Rox GitHub App, а затем попробуйте снова.",
+	unexpected: "Что-то пошло не так. Попробуйте еще раз.",
 };
 
 const WARNING_MESSAGES: Record<string, string> = {
 	sync_queue_failed:
-		"GitHub connected, but initial sync failed to start. Please try reconnecting.",
+		"GitHub подключен, но начальную синхронизацию не удалось запустить. Попробуйте подключить его снова.",
 };
 
 const SUCCESS_MESSAGES: Record<string, string> = {
-	github_installed: "GitHub App installed successfully!",
+	github_installed: "GitHub App успешно установлен!",
 };
 
 export function ErrorHandler() {
@@ -34,13 +34,13 @@ export function ErrorHandler() {
 		const success = searchParams.get("success");
 
 		if (error) {
-			toast.error(ERROR_MESSAGES[error] ?? "Something went wrong.");
+			toast.error(ERROR_MESSAGES[error] ?? "Что-то пошло не так.");
 			window.history.replaceState({}, "", "/integrations/github");
 		} else if (warning) {
-			toast.warning(WARNING_MESSAGES[warning] ?? "Warning occurred.");
+			toast.warning(WARNING_MESSAGES[warning] ?? "Возникло предупреждение.");
 			window.history.replaceState({}, "", "/integrations/github");
 		} else if (success) {
-			toast.success(SUCCESS_MESSAGES[success] ?? "Success!");
+			toast.success(SUCCESS_MESSAGES[success] ?? "Готово!");
 			window.history.replaceState({}, "", "/integrations/github");
 		}
 	}, [searchParams]);

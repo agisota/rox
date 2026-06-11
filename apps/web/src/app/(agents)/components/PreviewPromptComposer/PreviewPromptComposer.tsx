@@ -12,11 +12,7 @@ import {
 import { cn } from "@rox/ui/utils";
 import { ArrowUpIcon } from "lucide-react";
 import { type ReactNode, useCallback } from "react";
-import {
-	AGENTS_WEB_PREVIEW_MESSAGE,
-	MAX_FILE_SIZE,
-	MAX_FILES,
-} from "../../constants";
+import { MAX_FILE_SIZE, MAX_FILES } from "../../constants";
 import { PlusMenu } from "../PlusMenu";
 
 type PreviewPromptComposerProps = {
@@ -37,7 +33,7 @@ export function PreviewPromptComposer({
 	containerClassName,
 	footerToolsClassName,
 	afterComposer,
-	message = AGENTS_WEB_PREVIEW_MESSAGE,
+	message = "Веб-интерфейс агентов пока доступен только для просмотра.",
 	messageClassName,
 }: PreviewPromptComposerProps) {
 	const handleSubmit = useCallback(() => {}, []);

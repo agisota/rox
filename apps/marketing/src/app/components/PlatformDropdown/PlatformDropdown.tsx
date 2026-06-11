@@ -7,6 +7,7 @@ import {
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
 import type { ReactNode } from "react";
+import { GlossaryText } from "@/components/GlossaryTerm";
 
 export interface DropdownItem {
 	id: string;
@@ -72,7 +73,7 @@ export function PlatformDropdown({
 											</div>
 											{item.description && (
 												<span className="text-xs text-muted-foreground">
-													{item.description}
+													<GlossaryText text={item.description} />
 												</span>
 											)}
 										</button>

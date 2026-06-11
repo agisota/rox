@@ -35,12 +35,13 @@ export function ClickablePath({
 		onSuccess: () => {
 			utils.settings.getDefaultEditor.invalidate();
 		},
-		onError: (error) => toast.error(`Failed to open: ${error.message}`),
+		onError: (error) => toast.error(`Не удалось открыть: ${error.message}`),
 	});
 
 	const copyPath = electronTrpc.external.copyPath.useMutation({
-		onSuccess: () => toast.success("Path copied to clipboard"),
-		onError: (error) => toast.error(`Failed to copy path: ${error.message}`),
+		onSuccess: () => toast.success("Путь скопирован в буфер обмена"),
+		onError: (error) =>
+			toast.error(`Не удалось скопировать путь: ${error.message}`),
 	});
 
 	const isDark = activeTheme?.type === "dark";
@@ -84,7 +85,7 @@ export function ClickablePath({
 					renderAppTrailing={(appId) =>
 						appId === defaultApp ? (
 							<span className="ml-auto text-xs text-muted-foreground">
-								Default
+								По умолчанию
 							</span>
 						) : null
 					}

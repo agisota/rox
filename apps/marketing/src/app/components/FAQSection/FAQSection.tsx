@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { HiPlus } from "react-icons/hi2";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import type { FAQItem } from "./constants";
 import { FAQ_ITEMS } from "./constants";
 
@@ -23,7 +24,7 @@ function FAQAccordionItem({
 				className="group flex w-full items-center justify-between py-6 text-left transition-all outline-none"
 			>
 				<span className="text-base sm:text-lg font-medium text-foreground pr-4">
-					{item.question}
+					<GlossaryText text={item.question} />
 				</span>
 				<HiPlus
 					className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200 ${
@@ -41,7 +42,7 @@ function FAQAccordionItem({
 						className="overflow-hidden"
 					>
 						<p className="pb-6 text-base text-muted-foreground leading-relaxed pr-12">
-							{item.answer}
+							<GlossaryText text={item.answer} />
 						</p>
 					</motion.div>
 				)}
@@ -64,9 +65,9 @@ export function FAQSection() {
 					{/* Left Column - Title */}
 					<div className="xl:sticky xl:top-24 xl:self-start">
 						<h2 className="text-3xl sm:text-4xl xl:text-5xl font-medium tracking-tight text-foreground leading-[1.1]">
-							Frequently
+							Частые
 							<br />
-							asked questions
+							вопросы
 						</h2>
 					</div>
 

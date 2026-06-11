@@ -470,6 +470,13 @@
       "when": 1780890060089,
       "tag": "0066_add_user_attribution",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1781097910621,
+      "tag": "0067_vibe_usage_profiles",
+      "breakpoints": true
     }
   ]
 }

@@ -70,7 +70,7 @@ function ProjectsIndexPage() {
 		if (!isReady || groupsLoading) return null;
 		return (
 			<div className="flex items-center justify-center h-full p-6 text-sm text-muted-foreground">
-				No projects yet.
+				Проектов пока нет.
 			</div>
 		);
 	}

@@ -16,7 +16,7 @@ export function OrganizationLogo({
 		return (
 			<img
 				src={logo}
-				alt="Organization logo"
+				alt="Логотип организации"
 				className={`${sizeClasses} rounded object-cover`}
 			/>
 		);

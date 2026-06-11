@@ -13,11 +13,11 @@ function formatTimeAgo(date: Date): string {
 	const days = Math.floor(diff / MS_PER_DAY);
 	const months = Math.floor(days / 30);
 
-	if (minutes < 1) return "now";
-	if (minutes < 60) return `${minutes}m`;
-	if (hours < 24) return `${hours}h`;
-	if (days < 30) return `${days}d`;
-	return `${months}mo`;
+	if (minutes < 1) return "сейчас";
+	if (minutes < 60) return `${minutes} мин`;
+	if (hours < 24) return `${hours} ч`;
+	if (days < 30) return `${days} дн`;
+	return `${months} мес`;
 }
 
 const statusIcons = {

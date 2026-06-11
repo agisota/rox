@@ -23,9 +23,11 @@ export default async function DesktopSuccessPage({
 	if (!state) {
 		return (
 			<div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-				<p className="text-xl text-muted-foreground">Missing auth state</p>
+				<p className="text-xl text-muted-foreground">
+					Не найдено состояние входа
+				</p>
 				<p className="text-muted-foreground/70">
-					Please try signing in again from the desktop app.
+					Попробуйте снова войти из настольного приложения.
 				</p>
 			</div>
 		);
@@ -38,9 +40,9 @@ export default async function DesktopSuccessPage({
 		console.error("Failed to get session for desktop auth:", error);
 		return (
 			<div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-				<p className="text-xl text-muted-foreground">Authentication failed</p>
+				<p className="text-xl text-muted-foreground">Не удалось войти</p>
 				<p className="text-muted-foreground/70">
-					Please try signing in again from the desktop app.
+					Попробуйте снова войти из настольного приложения.
 				</p>
 			</div>
 		);
@@ -49,9 +51,9 @@ export default async function DesktopSuccessPage({
 	if (!session) {
 		return (
 			<div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-				<p className="text-xl text-muted-foreground">Authentication failed</p>
+				<p className="text-xl text-muted-foreground">Не удалось войти</p>
 				<p className="text-muted-foreground/70">
-					Please try signing in again from the desktop app.
+					Попробуйте снова войти из настольного приложения.
 				</p>
 			</div>
 		);

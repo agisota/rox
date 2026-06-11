@@ -81,16 +81,16 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 
 	const handleRevokeKey = (id: string, name: string | null) => {
 		alert({
-			title: "Revoke API key",
-			description: `Are you sure you want to revoke "${name ?? "Unnamed key"}"? This action cannot be undone.`,
+			title: "Отозвать API-ключ",
+			description: `Вы уверены, что хотите отозвать "${name ?? "Безымянный ключ"}"? Это действие нельзя отменить.`,
 			actions: [
-				{ label: "Cancel", variant: "outline", onClick: () => {} },
+				{ label: "Отмена", variant: "outline", onClick: () => {} },
 				{
-					label: "Revoke",
+					label: "Отозвать",
 					variant: "destructive",
 					onClick: async () => {
 						await authClient.apiKey.delete({ keyId: id });
-						toast.success("API key revoked");
+						toast.success("API-ключ отозван");
 					},
 				},
 			],
@@ -103,9 +103,9 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 	};
 
 	const formatDate = (date: Date | string | null) => {
-		if (!date) return "Never";
+		if (!date) return "Никогда";
 		const d = date instanceof Date ? date : new Date(date);
-		return d.toLocaleDateString("en-US", {
+		return d.toLocaleDateString("ru-RU", {
 			month: "short",
 			day: "numeric",
 			year: "numeric",
@@ -116,17 +116,17 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8 flex items-start justify-between gap-4">
 				<div>
-					<h2 className="text-xl font-semibold">API keys</h2>
+					<h2 className="text-xl font-semibold">API-ключи</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Manage keys for MCP server access and external integrations like
-						Claude Desktop or Claude Code.{" "}
+						Управляйте ключами для доступа к MCP-серверу и подключения внешних
+						интеграций, таких как Claude Desktop или Claude Code.{" "}
 						<a
 							href={`${COMPANY.DOCS_URL}/mcp`}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-1 text-primary hover:underline"
 						>
-							Learn more
+							Подробнее
 							<HiArrowTopRightOnSquare className="h-3 w-3" />
 						</a>
 					</p>
@@ -138,7 +138,7 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 						className="gap-2 shrink-0"
 					>
 						<HiOutlinePlus className="h-4 w-4" />
-						Generate key
+						Сгенерировать ключ
 					</Button>
 				)}
 			</div>
@@ -159,9 +159,9 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 				) : apiKeys.length === 0 ? (
 					<div className="text-center py-12 text-sm text-muted-foreground">
 						<HiOutlineKey className="h-8 w-8 mx-auto mb-3 opacity-50" />
-						<p>No API keys yet.</p>
+						<p>API-ключей пока нет.</p>
 						<p className="text-xs mt-1">
-							Generate a key to use with MCP servers.
+							Сгенерируйте ключ для использования с MCP-серверами.
 						</p>
 					</div>
 				) : (
@@ -175,7 +175,7 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 									<HiOutlineKey className="h-4 w-4 shrink-0 text-muted-foreground" />
 									<div className="min-w-0">
 										<div className="text-sm font-medium truncate">
-											{key.name ?? "Unnamed key"}
+											{key.name ?? "Безымянный ключ"}
 										</div>
 										<div className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
 											{key.start ?? "sk_..."}
@@ -184,7 +184,7 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 								</div>
 								<div className="flex items-center gap-4 shrink-0">
 									<div className="text-xs text-muted-foreground tabular-nums hidden sm:block">
-										Created {formatDate(key.createdAt)} · Last used{" "}
+										Создан {formatDate(key.createdAt)} · Последнее использование{" "}
 										{formatDate(key.lastRequest)}
 									</div>
 									<Button
@@ -192,7 +192,7 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 										size="icon"
 										className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
 										onClick={() => handleRevokeKey(key.id, key.name)}
-										aria-label="Revoke key"
+										aria-label="Отозвать ключ"
 									>
 										<HiOutlineTrash className="h-4 w-4" />
 									</Button>
@@ -205,17 +205,17 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 			<Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Generate API key</DialogTitle>
+						<DialogTitle>Сгенерировать API-ключ</DialogTitle>
 						<DialogDescription>
-							Create a new API key for external integrations like Claude Desktop
-							or Claude Code.
+							Создайте новый API-ключ для внешних интеграций, таких как Claude
+							Desktop или Claude Code.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-2 py-2">
-						<Label htmlFor="key-name">Key name</Label>
+						<Label htmlFor="key-name">Название ключа</Label>
 						<Input
 							id="key-name"
-							placeholder="e.g. Claude Desktop"
+							placeholder="например, Claude Desktop"
 							value={newKeyName}
 							onChange={(e) => setNewKeyName(e.target.value)}
 							onKeyDown={(e) => {
@@ -223,7 +223,7 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 							}}
 						/>
 						<p className="text-xs text-muted-foreground">
-							Give your key a descriptive name to remember where it's used.
+							Дайте ключу понятное название, чтобы помнить, где он используется.
 						</p>
 					</div>
 					<DialogFooter>
@@ -231,13 +231,13 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 							variant="outline"
 							onClick={() => setShowGenerateDialog(false)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							onClick={handleGenerateKey}
 							disabled={!newKeyName.trim() || isGenerating}
 						>
-							{isGenerating ? "Generating..." : "Generate key"}
+							{isGenerating ? "Генерируется..." : "Сгенерировать ключ"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -246,9 +246,9 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 			<Dialog open={showNewKeyDialog} onOpenChange={setShowNewKeyDialog}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>API key generated</DialogTitle>
+						<DialogTitle>API-ключ сгенерирован</DialogTitle>
 						<DialogDescription>
-							Copy your key now — you won't be able to see it again.
+							Скопируйте ключ сейчас — вы больше не сможете увидеть его снова.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-2 py-2">
@@ -259,19 +259,19 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 								size="icon"
 								className="absolute right-1 top-1 h-7 w-7"
 								onClick={handleCopyKey}
-								aria-label="Copy key"
+								aria-label="Скопировать ключ"
 							>
 								<HiOutlineClipboardDocument className="h-4 w-4" />
 							</Button>
 						</div>
 						{copied && (
 							<p className="text-xs text-muted-foreground">
-								Copied to clipboard.
+								Скопировано в буфер обмена.
 							</p>
 						)}
 					</div>
 					<DialogFooter>
-						<Button onClick={() => setShowNewKeyDialog(false)}>Done</Button>
+						<Button onClick={() => setShowNewKeyDialog(false)}>Готово</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

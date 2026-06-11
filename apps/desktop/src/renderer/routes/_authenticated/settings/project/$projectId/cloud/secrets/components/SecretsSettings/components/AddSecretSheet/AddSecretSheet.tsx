@@ -74,13 +74,13 @@ export function AddSecretSheet({
 	const handleOpenChange = (nextOpen: boolean) => {
 		if (!nextOpen && hasContent) {
 			alert({
-				title: "Discard unsaved changes?",
+				title: "Закрыть без сохранения?",
 				description:
-					"You have unsaved environment variables. Are you sure you want to close?",
+					"У вас есть несохранённые переменные окружения. Точно закрыть окно?",
 				actions: [
-					{ label: "Cancel", variant: "outline", onClick: () => {} },
+					{ label: "Отмена", variant: "outline", onClick: () => {} },
 					{
-						label: "Discard",
+						label: "Закрыть без сохранения",
 						variant: "destructive",
 						onClick: () => onOpenChange(false),
 					},
@@ -142,7 +142,7 @@ export function AddSecretSheet({
 	const handleFileImport = useCallback((content: string) => {
 		const parsed = toSecretEntries(parseEnvContent(content));
 		if (parsed.length === 0) {
-			toast.error("No valid environment variables found in file");
+			toast.error("В файле не найдены корректные переменные окружения");
 			return;
 		}
 		setEntries((prev) => {
@@ -156,7 +156,7 @@ export function AddSecretSheet({
 	const validateAndReadFile = useCallback(
 		(file: File) => {
 			if (file.size > MAX_FILE_SIZE) {
-				toast.error("File too large. Maximum size is 256 KB.");
+				toast.error("Файл слишком большой. Максимальный размер — 256 КБ.");
 				return;
 			}
 
@@ -174,7 +174,7 @@ export function AddSecretSheet({
 				handleFileImport(text);
 			};
 			reader.onerror = () => {
-				toast.error("Failed to read file.");
+				toast.error("Не удалось прочитать файл.");
 			};
 			reader.readAsText(file);
 		},
@@ -218,14 +218,14 @@ export function AddSecretSheet({
 			}
 			toast.success(
 				validEntries.length === 1
-					? `Added ${validEntries[0].key.trim()}`
-					: `Added ${validEntries.length} environment variables`,
+					? `Добавлена ${validEntries[0].key.trim()}`
+					: `Добавлено переменных окружения: ${validEntries.length}`,
 			);
 			onSaved();
 			onOpenChange(false);
 		} catch (err) {
 			console.error("[secrets/upsert] Failed to save:", err);
-			toast.error("Failed to save environment variables");
+			toast.error("Не удалось сохранить переменные окружения");
 		} finally {
 			setIsSaving(false);
 		}
@@ -245,10 +245,10 @@ export function AddSecretSheet({
 				onDrop={handleDrop}
 			>
 				<SheetHeader className="p-6 pb-4">
-					<SheetTitle>Add Environment Variable</SheetTitle>
+					<SheetTitle>Добавить переменную окружения</SheetTitle>
 					<SheetDescription>
-						Add one or more environment variables. You can also drag and drop a
-						.env file.
+						Добавьте одну или несколько переменных окружения. Также можно
+						перетащить файл .env.
 					</SheetDescription>
 				</SheetHeader>
 
@@ -262,10 +262,10 @@ export function AddSecretSheet({
 						{/* Column headers */}
 						<div className="flex items-center gap-2">
 							<span className="flex-1 text-xs font-medium text-muted-foreground">
-								Key
+								Ключ
 							</span>
 							<span className="flex-1 text-xs font-medium text-muted-foreground">
-								Value
+								Значение
 							</span>
 							{/* spacer for trash button */}
 							<div className="w-8 shrink-0" />
@@ -309,20 +309,22 @@ export function AddSecretSheet({
 							onClick={addEntry}
 						>
 							<HiPlus className="h-3.5 w-3.5" />
-							Add Another
+							Добавить ещё
 						</Button>
 
 						<div className="flex items-center gap-2 pt-2">
 							<Switch checked={sensitive} onCheckedChange={setSensitive} />
-							<span className="text-sm text-muted-foreground">Sensitive</span>
+							<span className="text-sm text-muted-foreground">
+								Конфиденциальная
+							</span>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<HiOutlineQuestionMarkCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
 								</TooltipTrigger>
 								<TooltipContent side="right">
 									<p className="max-w-[200px] text-xs">
-										Sensitive values are encrypted and cannot be revealed in the
-										UI after saving.
+										Конфиденциальные значения шифруются, и после сохранения их
+										нельзя раскрыть в интерфейсе.
 									</p>
 								</TooltipContent>
 							</Tooltip>
@@ -340,10 +342,10 @@ export function AddSecretSheet({
 							onClick={() => fileInputRef.current?.click()}
 						>
 							<HiOutlineArrowDownTray className="h-3.5 w-3.5" />
-							Import .env
+							Импорт .env
 						</Button>
 						<span className="text-xs text-muted-foreground">
-							or paste .env contents in Key input
+							или вставьте содержимое .env в поле «Ключ»
 						</span>
 						<input
 							ref={fileInputRef}
@@ -354,7 +356,7 @@ export function AddSecretSheet({
 						/>
 					</div>
 					<Button onClick={handleSave} disabled={isSaving || !hasValidEntries}>
-						{isSaving ? "Saving..." : "Save"}
+						{isSaving ? "Сохранение..." : "Сохранить"}
 					</Button>
 				</div>
 			</SheetContent>

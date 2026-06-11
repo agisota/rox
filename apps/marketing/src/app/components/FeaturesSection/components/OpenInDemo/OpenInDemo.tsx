@@ -72,7 +72,7 @@ export function OpenInDemo() {
 					{/* Search input */}
 					<div className="flex items-center gap-2 px-2.5 py-1.5 border border-white/5 rounded-md flex-1">
 						<HiMagnifyingGlass className="w-3.5 h-3.5 text-white/30" />
-						<span className="text-xs text-white/30">Search files...</span>
+						<span className="text-xs text-white/30">Поиск файлов...</span>
 					</div>
 
 					{/* Open in button */}
@@ -95,12 +95,12 @@ export function OpenInDemo() {
 								height={14}
 								className="object-contain"
 							/>
-							<span className="font-medium text-xs">Open in</span>
+							<span className="font-medium text-xs">Открыть в</span>
 						</button>
 						<button
 							type="button"
 							className="flex items-center px-2 text-white/90 bg-[#2a2a2a] border border-white/10 rounded-r-md hover:bg-[#3a3a3a] transition-colors"
-							aria-label="Select IDE"
+							aria-label="Выбрать IDE"
 						>
 							<HiChevronDown className="w-3.5 h-3.5" />
 						</button>

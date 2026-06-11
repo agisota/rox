@@ -9,17 +9,17 @@ export default function SlackLinkedPage() {
 					<CheckCircle2 className="size-8 text-emerald-500" />
 				</div>
 				<div className="flex flex-col items-center gap-2 text-center">
-					<h1 className="text-2xl font-semibold">Slack Account Linked</h1>
+					<h1 className="text-2xl font-semibold">Аккаунт Slack подключен</h1>
 					<p className="max-w-sm text-muted-foreground">
-						Your Slack account has been linked to Rox. You can close this tab
-						and return to Slack.
+						Ваш аккаунт Slack подключен к Rox. Можете закрыть эту вкладку и
+						вернуться в Slack.
 					</p>
 				</div>
 				<Link
 					href="/integrations/slack"
 					className="text-sm text-muted-foreground/70 underline decoration-muted-foreground/40 underline-offset-4 transition-colors hover:text-muted-foreground"
 				>
-					Go to Slack integration settings
+					Перейти к настройкам интеграции Slack
 				</Link>
 			</div>
 		</div>

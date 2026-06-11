@@ -32,7 +32,7 @@ export function TeamsSettings() {
 
 	const formatDate = (date: Date | string) => {
 		const d = date instanceof Date ? date : new Date(date);
-		return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+		return d.toLocaleDateString("ru-RU", { month: "short", day: "numeric" });
 	};
 
 	if (!activeOrganizationId) {
@@ -44,10 +44,10 @@ export function TeamsSettings() {
 			<div className="p-8">
 				<div className="max-w-5xl flex items-end justify-between gap-4">
 					<div>
-						<h2 className="text-2xl font-semibold">Teams</h2>
+						<h2 className="text-2xl font-semibold">Команды</h2>
 						<p className="text-sm text-muted-foreground mt-1">
-							Organize your work into teams. Tasks and integrations can sync
-							per-team.
+							Организуйте работу по командам. Задачи и интеграции могут
+							синхронизироваться отдельно для каждой команды.
 						</p>
 					</div>
 					<CreateTeamButton organizationId={activeOrganizationId} />
@@ -70,15 +70,15 @@ export function TeamsSettings() {
 							</div>
 						) : teams.length === 0 ? (
 							<div className="text-center py-12 text-muted-foreground border rounded-lg">
-								No teams yet
+								Команд пока нет
 							</div>
 						) : (
 							<div className="border rounded-lg">
 								<Table>
 									<TableHeader>
 										<TableRow>
-											<TableHead>Name</TableHead>
-											<TableHead>Created</TableHead>
+											<TableHead>Название</TableHead>
+											<TableHead>Создана</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>

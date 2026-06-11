@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { useEffect, useState } from "react";
 import { HiArrowTopRightOnSquare } from "react-icons/hi2";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
@@ -13,14 +14,14 @@ interface Invoice {
 }
 
 function formatAmount(amount: number, currency: string) {
-	return new Intl.NumberFormat("en-US", {
+	return new Intl.NumberFormat("ru-RU", {
 		style: "currency",
 		currency: currency.toUpperCase(),
 	}).format(amount / 100);
 }
 
 function formatDate(timestamp: number) {
-	return format(new Date(timestamp * 1000), "MMM d, yyyy");
+	return format(new Date(timestamp * 1000), "d MMM yyyy", { locale: ru });
 }
 
 export function RecentInvoices() {
@@ -42,7 +43,7 @@ export function RecentInvoices() {
 
 	return (
 		<div>
-			<h3 className="text-sm font-medium mb-2">Recent invoices</h3>
+			<h3 className="text-sm font-medium mb-2">Последние счета</h3>
 			<div className="divide-y divide-border">
 				{invoices.map((invoice) => (
 					<div
@@ -65,7 +66,7 @@ export function RecentInvoices() {
 								}
 								className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
 							>
-								View
+								Открыть
 								<HiArrowTopRightOnSquare className="h-3 w-3" />
 							</button>
 						) : null}

@@ -58,21 +58,21 @@ export function ConnectionControls({
 				<AlertDialogTrigger asChild>
 					<Button variant="outline" disabled={disconnectMutation.isPending}>
 						<Unplug className="mr-2 size-4" />
-						{disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
+						{disconnectMutation.isPending ? "Отключение..." : "Отключить"}
 					</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect Slack?</AlertDialogTitle>
+						<AlertDialogTitle>Отключить Slack?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will remove the connection between your organization and
-							Slack. You can reconnect at any time.
+							Это удалит подключение между вашей организацией и Slack. Вы
+							сможете подключить его снова в любое время.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>Отмена</AlertDialogCancel>
 						<AlertDialogAction onClick={handleDisconnect}>
-							Disconnect
+							Отключить
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -80,5 +80,5 @@ export function ConnectionControls({
 		);
 	}
 
-	return <Button onClick={handleConnect}>Connect Slack</Button>;
+	return <Button onClick={handleConnect}>Подключить Slack</Button>;
 }

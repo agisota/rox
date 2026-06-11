@@ -114,7 +114,7 @@ function ScriptTextarea({
 			{/* biome-ignore lint/a11y/useSemanticElements: Drop zone wrapper for drag-and-drop functionality */}
 			<div
 				role="region"
-				aria-label="Script editor with file drop support"
+				aria-label="Редактор скриптов с поддержкой перетаскивания файлов"
 				className={cn(
 					"relative rounded-lg border transition-colors",
 					isDragOver
@@ -137,7 +137,7 @@ function ScriptTextarea({
 					<div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none">
 						<div className="flex items-center gap-2 text-primary text-sm font-medium">
 							<HiDocumentArrowUp className="h-5 w-5" />
-							Drop to import
+							Отпустите, чтобы импортировать
 						</div>
 					</div>
 				)}
@@ -150,7 +150,7 @@ function ScriptTextarea({
 				className="gap-1.5 text-muted-foreground"
 			>
 				<HiDocumentArrowUp className="h-3.5 w-3.5" />
-				Import file
+				Импортировать файл
 			</Button>
 			<input
 				ref={fileInputRef}
@@ -348,17 +348,17 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 		<div className={cn("space-y-3", className)}>
 			<div className="flex items-center justify-between gap-2">
 				<div className="flex items-center gap-2">
-					<h3 className="text-base font-semibold text-foreground">Scripts</h3>
+					<h3 className="text-base font-semibold text-foreground">Скрипты</h3>
 					{saveStatus === "saving" && (
 						<span className="text-xs text-muted-foreground flex items-center gap-1">
 							<span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-							Saving…
+							Сохранение…
 						</span>
 					)}
 					{saveStatus === "saved" && (
 						<span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
 							<HiCheckCircle className="h-3.5 w-3.5" />
-							Saved
+							Сохранено
 						</span>
 					)}
 				</div>
@@ -368,7 +368,7 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						Docs
+						Документация
 						<HiArrowTopRightOnSquare className="h-3.5 w-3.5" />
 					</a>
 				</Button>
@@ -376,14 +376,14 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 
 			<Tabs defaultValue="setup">
 				<TabsList>
-					<TabsTrigger value="setup">Setup</TabsTrigger>
-					<TabsTrigger value="teardown">Teardown</TabsTrigger>
-					<TabsTrigger value="run">Run</TabsTrigger>
+					<TabsTrigger value="setup">Запуск</TabsTrigger>
+					<TabsTrigger value="teardown">Остановка</TabsTrigger>
+					<TabsTrigger value="run">Команда</TabsTrigger>
 				</TabsList>
 				<TabsContent value="setup">
 					<ScriptTextarea
-						description="Runs when a new workspace is created."
-						placeholder="e.g. bun install && bun run dev"
+						description="Выполняется при создании новой рабочей области."
+						placeholder="например: bun install && bun run dev"
 						value={setupContent}
 						onChange={handleSetupChange}
 						onBlur={handleBlurSave}
@@ -391,8 +391,8 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 				</TabsContent>
 				<TabsContent value="teardown">
 					<ScriptTextarea
-						description="Runs when a workspace is deleted."
-						placeholder="e.g. docker compose down"
+						description="Выполняется при удалении рабочей области."
+						placeholder="например: docker compose down"
 						value={teardownContent}
 						onChange={handleTeardownChange}
 						onBlur={handleBlurSave}
@@ -400,8 +400,8 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 				</TabsContent>
 				<TabsContent value="run">
 					<ScriptTextarea
-						description="Command to start your dev server, triggered via keyboard shortcut."
-						placeholder="e.g. bun run dev"
+						description="Команда для запуска dev server, вызывается через сочетание клавиш."
+						placeholder="например: bun run dev"
 						value={runContent}
 						onChange={handleRunChange}
 						onBlur={handleBlurSave}

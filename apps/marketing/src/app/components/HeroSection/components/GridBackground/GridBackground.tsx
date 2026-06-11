@@ -15,7 +15,7 @@ export function GridBackground() {
 				className="absolute inset-0 w-full h-full"
 				xmlns="http://www.w3.org/2000/svg"
 			>
-				<title>grid</title>
+				<title>Сетка</title>
 				<defs>
 					<pattern
 						id="hero-grid"

@@ -69,7 +69,7 @@ export default function WorkspaceTerminalPage({
 			try {
 				const organization = await trpcClient.organization.getActive.query();
 				if (!organization) {
-					setLoadError("No active organization.");
+					setLoadError("Нет активной организации.");
 					setTerminals([]);
 					setPresets([]);
 					return;
@@ -79,7 +79,7 @@ export default function WorkspaceTerminalPage({
 					id: workspaceId,
 				});
 				if (!workspace) {
-					setLoadError("Workspace not found.");
+					setLoadError("Рабочая область не найдена.");
 					setTerminals([]);
 					setPresets([]);
 					return;
@@ -182,7 +182,7 @@ export default function WorkspaceTerminalPage({
 					href="/workspaces"
 					className="text-[#a8a5a3] hover:text-[#eae8e6]"
 				>
-					← Workspaces
+					← Рабочие области
 				</Link>
 				<select
 					value={activeTerminalId ?? ""}
@@ -196,11 +196,11 @@ export default function WorkspaceTerminalPage({
 						terminals.map((terminal) => (
 							<option key={terminal.terminalId} value={terminal.terminalId}>
 								{(terminal.title?.trim() || terminal.terminalId.slice(0, 8)) +
-									(terminal.exited ? " (exited)" : "")}
+									(terminal.exited ? " (завершён)" : "")}
 							</option>
 						))
 					) : (
-						<option value="">No terminals</option>
+						<option value="">Нет терминалов</option>
 					)}
 				</select>
 				<button
@@ -210,7 +210,7 @@ export default function WorkspaceTerminalPage({
 					className="rounded border px-2 py-1 text-xs disabled:opacity-50"
 					style={{ borderColor: "#2a2827" }}
 				>
-					{creating ? "Starting…" : "+ New terminal"}
+					{creating ? "Запуск…" : "+ Новый терминал"}
 				</button>
 			</header>
 			{loadError && (
@@ -242,8 +242,8 @@ export default function WorkspaceTerminalPage({
 				) : (
 					<div className="flex h-full items-center justify-center text-sm text-[#a8a5a3]">
 						{terminals === null
-							? "Loading terminals…"
-							: "No terminal sessions. Create one to get started."}
+							? "Загрузка терминалов…"
+							: "Сеансов терминала нет. Создайте сеанс, чтобы начать."}
 					</div>
 				)}
 			</div>

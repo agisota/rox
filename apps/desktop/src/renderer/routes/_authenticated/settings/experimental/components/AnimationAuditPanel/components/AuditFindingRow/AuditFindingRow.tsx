@@ -12,9 +12,9 @@ const STATUS_CONFIG: Record<
 	Finding["status"],
 	{ label: string; className: string }
 > = {
-	pass: { label: "Pass", className: "text-emerald-500" },
-	warn: { label: "Warn", className: "text-amber-500" },
-	fail: { label: "Fail", className: "text-destructive" },
+	pass: { label: "Пройдено", className: "text-emerald-500" },
+	warn: { label: "Предупреждение", className: "text-amber-500" },
+	fail: { label: "Ошибка", className: "text-destructive" },
 };
 
 export interface AuditFindingRowProps {

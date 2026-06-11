@@ -1,28 +1,112 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GridCross } from "@/app/blog/components/GridCross";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import { getComparisonPages } from "@/lib/compare";
 import { formatCompareDate } from "@/lib/compare-utils";
 
+const COMPARE_CARD_COPY: Record<
+	string,
+	{
+		title: string;
+		description: string;
+	}
+> = {
+	"best-ai-coding-agents-2026": {
+		title:
+			"Лучшие AI-инструменты и агенты для разработки в 2026 году: полное сравнение",
+		description:
+			"Сравните главные AI-инструменты для разработки в 2026 году: Rox, Cursor, Claude Code, Codex, Windsurf, Devin, Capy, Conductor и другие. Найдите подходящий стек для своего рабочего процесса.",
+	},
+	"best-terminal-for-ai-coding": {
+		title: "Лучший терминал для AI-агентов разработки в 2026 году",
+		description:
+			"Сравните лучшие терминалы для AI-разработки, включая Rox, Warp, iTerm2, Ghostty, kitty, Alacritty и WezTerm.",
+	},
+	"multiple-claude-code-agents-parallel": {
+		title: "Как запускать несколько агентов Claude Code параллельно",
+		description:
+			"Разберите самый безопасный способ запускать несколько сессий Claude Code одновременно. Сравните вкладки терминала, tmux, ручные git worktree и оркестрацию Rox.",
+	},
+	"rox-vs-claude-code": {
+		title:
+			"Rox против Claude Code (2026): оркестратор агентов и AI-агент разработки",
+		description:
+			"Сравните Rox и Claude Code для AI-разработки. Rox параллельно оркестрирует множество экземпляров Claude Code в изолированных worktree.",
+	},
+	"rox-vs-codex": {
+		title:
+			"Rox против Codex CLI (2026): оркестратор агентов и кодовый агент OpenAI",
+		description:
+			"Сравните Rox и OpenAI Codex CLI для AI-разработки. Посмотрите, чем параллельная оркестрация агентов отличается от одного облачного агента разработки.",
+	},
+	"rox-vs-conductor": {
+		title:
+			"Rox против Conductor (2026): сравнение платформ оркестрации AI-агентов",
+		description:
+			"Сравните Rox и Conductor для управления AI-агентами разработки. Посмотрите, как эти инструменты оркестрации отличаются по поддержке агентов, рабочему процессу и опыту разработчика.",
+	},
+	"rox-vs-cursor": {
+		title: "Rox против Cursor (2026): параллельные агенты и AI-редактор",
+		description:
+			"Сравните Rox и Cursor для разработки с AI-помощью. Посмотрите, чем параллельная оркестрация агентов отличается от AI-редактора.",
+	},
+	"rox-vs-devin": {
+		title:
+			"Rox против Devin (2026): локальная оркестрация агентов и облачный AI-инженер",
+		description:
+			"Сравните Rox и Devin для AI-разработки. Посмотрите, чем локальная параллельная оркестрация агентов отличается от полностью удалённого AI software engineer.",
+	},
+	"rox-vs-github-copilot": {
+		title:
+			"Rox против GitHub Copilot (2026): оркестрация агентов и AI-напарник",
+		description:
+			"Сравните Rox и GitHub Copilot для разработки с AI-помощью. Посмотрите, чем параллельная оркестрация агентов отличается от inline AI code completion и чата.",
+	},
+	"rox-vs-opencode": {
+		title:
+			"Rox против OpenCode (2026): оркестрация агентов и open-source AI-терминал",
+		description:
+			"Сравните Rox и OpenCode для разработки с AI-помощью. Посмотрите, чем параллельная оркестрация агентов отличается от одного open-source AI-терминала для разработки.",
+	},
+	"rox-vs-t3-chat": {
+		title:
+			"Rox против T3 Chat (2026): оркестрация агентов и multi-model AI-чат",
+		description:
+			"Сравните Rox и T3 Chat для разработки с AI-помощью. Посмотрите, чем локальная оркестрация кодинг-агентов отличается от hosted multi-model chat app.",
+	},
+	"rox-vs-warp": {
+		title: "Rox против Warp (2026): оркестрация агентов и AI-терминал",
+		description:
+			"Сравните Rox и Warp для рабочих процессов разработки с AI-помощью. Посмотрите, чем multi-agent orchestration отличается от AI-терминала.",
+	},
+	"rox-vs-windsurf": {
+		title:
+			"Rox против Windsurf (2026): параллельная оркестрация агентов и AI IDE",
+		description:
+			"Сравните Rox и Windsurf для разработки с AI-помощью. Посмотрите, чем параллельная оркестрация агентов отличается от AI IDE.",
+	},
+};
+
 export const metadata: Metadata = {
-	title: "Compare Rox | AI Coding Comparisons and Guides",
+	title: "Сравнение Rox | Сравнения и гайды по AI-разработке",
 	description:
-		"Compare Rox with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+		"Сравните Rox с Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot и другими инструментами. Изучайте сравнения, подборки и гайды по рабочим процессам.",
 	alternates: {
 		canonical: "/compare",
 	},
 	openGraph: {
-		title: "Compare Rox | AI Coding Comparisons and Guides",
+		title: "Сравнение Rox | Сравнения и гайды по AI-разработке",
 		description:
-			"Compare Rox with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+			"Сравните Rox с Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot и другими инструментами. Изучайте сравнения, подборки и гайды по рабочим процессам.",
 		url: "/compare",
 		images: ["/opengraph-image"],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Compare Rox | AI Coding Comparisons and Guides",
+		title: "Сравнение Rox | Сравнения и гайды по AI-разработке",
 		description:
-			"Compare Rox with Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot, and more. Browse side-by-side comparisons, roundups, and workflow guides.",
+			"Сравните Rox с Cursor, Claude Code, Codex, Windsurf, Devin, GitHub Copilot и другими инструментами. Изучайте сравнения, подборки и гайды по рабочим процессам.",
 		images: ["/opengraph-image"],
 	},
 };
@@ -53,14 +137,13 @@ export default async function ComparePage() {
 					<GridCross className="top-0 right-0" />
 
 					<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-						Compare
+						Сравнение
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Rox vs the Alternatives
+						Rox и альтернативы
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						See how Rox compares to other AI coding tools — from AI editors to
-						coding agents to cloud-based AI engineers.
+						<GlossaryText text="Посмотрите, чем Rox отличается от других AI-инструментов для разработки: от AI-редакторов до кодинг-агентов и облачных AI-инженеров." />
 					</p>
 
 					<GridCross className="bottom-0 left-0" />
@@ -71,19 +154,22 @@ export default async function ComparePage() {
 			{/* Content */}
 			<div className="relative max-w-3xl mx-auto px-6 py-12">
 				{roundups.length > 0 && (
-					<CompareSection title="Roundups" pages={roundups} />
+					<CompareSection title="Подборки" pages={roundups} />
 				)}
 
 				{tutorials.length > 0 && (
-					<CompareSection title="Workflow Tutorials" pages={tutorials} />
+					<CompareSection
+						title="Гайды по рабочим процессам"
+						pages={tutorials}
+					/>
 				)}
 
 				{oneVsOne.length > 0 && (
-					<CompareSection title="Head-to-Head Comparisons" pages={oneVsOne} />
+					<CompareSection title="Прямые сравнения" pages={oneVsOne} />
 				)}
 
 				{pages.length === 0 && (
-					<p className="text-muted-foreground">No comparisons yet.</p>
+					<p className="text-muted-foreground">Сравнений пока нет.</p>
 				)}
 			</div>
 		</main>
@@ -114,22 +200,41 @@ function CompareCard({
 }: {
 	page: ReturnType<typeof getComparisonPages>[number];
 }) {
+	const localizedCopy = COMPARE_CARD_COPY[page.slug] ?? {
+		title: page.title,
+		description: page.description,
+	};
+
 	return (
 		<Link
 			href={page.url}
 			className="group block border border-border rounded-lg p-5 hover:border-foreground/20 transition-colors"
 		>
 			<h3 className="text-base font-medium text-foreground group-hover:text-foreground/80 transition-colors">
-				{page.title}
+				{localizedCopy.title}
 			</h3>
-			{page.description && (
+			{localizedCopy.description && (
 				<p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
-					{page.description}
+					<GlossaryText text={localizedCopy.description} />
 				</p>
 			)}
 			<span className="text-xs text-muted-foreground mt-3 block">
-				Updated {formatCompareDate(page.lastUpdated || page.date)}
+				Обновлено {formatLocalizedCompareDate(page.lastUpdated || page.date)}
 			</span>
 		</Link>
 	);
+}
+
+function formatLocalizedCompareDate(date: string) {
+	const parsedDate = new Date(date);
+
+	if (Number.isNaN(parsedDate.getTime())) {
+		return formatCompareDate(date);
+	}
+
+	return parsedDate.toLocaleDateString("ru-RU", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
 }
