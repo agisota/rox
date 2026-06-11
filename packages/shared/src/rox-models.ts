@@ -13,6 +13,7 @@
 
 import {
 	type ModelProviderFamily,
+	quantizeRox,
 	roxSellPriceUsdPerMillion,
 	usdToRox,
 } from "./rox-pricing";
@@ -140,8 +141,10 @@ type PricingFields = Pick<
  * Rox charge for one request, honoring the model's separate input/output
  * public prices, its provider divisor, and the free-model flag. This is the
  * primitive the per-request debit hook (#34) and the usage/cost cabinet
- * consume; the ledger decides any rounding. Negative token counts are clamped
- * to 0 (usage is never negative).
+ * consume. Each leg is quantized to {@link ROX_SCALE} (the persisted ledger
+ * precision) so the charge agrees with what the DB stores. Negative token
+ * counts are clamped to 0 (usage is never negative); a non-finite token count
+ * or catalog price collapses to a 0 charge rather than an unbounded debit.
  */
 export function roxCostForRequest(
 	usage: RequestUsage,
@@ -152,13 +155,22 @@ export function roxCostForRequest(
 	}
 	const inTokens = Math.max(0, usage.inputTokens);
 	const outTokens = Math.max(0, usage.outputTokens);
-	const inputRox = usdToRox(
-		(inTokens / 1_000_000) *
-			roxSellPriceUsdPerMillion(entry.publicUsdPerMIn, entry.pricingFamily),
+	const inputRox = quantizeRox(
+		usdToRox(
+			(inTokens / 1_000_000) *
+				roxSellPriceUsdPerMillion(entry.publicUsdPerMIn, entry.pricingFamily),
+		),
 	);
-	const outputRox = usdToRox(
-		(outTokens / 1_000_000) *
-			roxSellPriceUsdPerMillion(entry.publicUsdPerMOut, entry.pricingFamily),
+	const outputRox = quantizeRox(
+		usdToRox(
+			(outTokens / 1_000_000) *
+				roxSellPriceUsdPerMillion(entry.publicUsdPerMOut, entry.pricingFamily),
+		),
 	);
-	return { inputRox, outputRox, totalRox: inputRox + outputRox, isFree: false };
+	return {
+		inputRox,
+		outputRox,
+		totalRox: quantizeRox(inputRox + outputRox),
+		isFree: false,
+	};
 }

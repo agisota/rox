@@ -138,6 +138,27 @@ export function roxToUsd(rox: number): number {
 	return rox / ROX_PER_USDT;
 }
 
+/**
+ * Decimal places the ledger persists Rox amounts at — matches the
+ * `numeric(20, 6)` columns in `packages/db` (`balance_rox` / `delta_rox` /
+ * `rox_cost`). Every value that becomes a ledger amount MUST be quantized to
+ * this scale so the in-JS math agrees bit-for-bit with what Postgres stores;
+ * otherwise `sum(deltas) !== balanceAfter` and the ledger stops reconciling.
+ */
+export const ROX_SCALE = 6;
+const ROX_QUANTUM = 10 ** ROX_SCALE;
+
+/**
+ * Round a Rox amount to {@link ROX_SCALE} decimals. Non-finite inputs
+ * (NaN / ±Infinity, e.g. from a malformed price or token count) collapse to 0
+ * — the safe direction for money: never debit or credit an unbounded amount.
+ */
+export function quantizeRox(rox: number): number {
+	if (!Number.isFinite(rox)) return 0;
+	// `+ 0` normalises the `-0` that `Math.round` can yield for tiny negatives.
+	return Math.round(rox * ROX_QUANTUM) / ROX_QUANTUM + 0;
+}
+
 /** Our USD sell price per million tokens, from the public models.dev price. */
 export function roxSellPriceUsdPerMillion(
 	publicUsdPerMillion: number,

@@ -93,4 +93,37 @@ describe("rox-ledger", () => {
 		expect(r.balanceAfter).toBe(0);
 		expect(r.insufficient).toBe(false);
 	});
+
+	it("clamps non-finite top-up / grant amounts to zero (no balance corruption)", () => {
+		for (const amount of [Number.NaN, Number.POSITIVE_INFINITY]) {
+			const top = applyTopUp(500, amount);
+			expect(top.balanceAfter).toBe(500);
+			expect(top.entry.delta).toBe(0);
+			const grant = applyGrant(500, amount);
+			expect(grant.balanceAfter).toBe(500);
+			expect(grant.entry.delta).toBe(0);
+		}
+	});
+
+	it("treats a non-finite request cost as free rather than an unbounded debit", () => {
+		const r = applyRequestCharge(100, paidCost(Number.POSITIVE_INFINITY));
+		expect(r.charged).toBe(false);
+		expect(r.cost).toBe(0);
+		expect(r.balanceAfter).toBe(100);
+		expect(r.entry).toBeNull();
+	});
+
+	it("quantizes debits and balances to the persisted ledger precision (6dp)", () => {
+		// 0.1 + 0.2 drifts to 0.30000000000000004 in raw float; the ledger must
+		// store exactly what numeric(20,6) would, so deltas reconcile.
+		const r = applyRequestCharge(1, paidCost(0.1 + 0.2));
+		expect(r.charged).toBe(true);
+		expect(r.cost).toBe(0.3);
+		expect(r.balanceAfter).toBe(0.7);
+		expect(r.entry?.delta).toBe(-0.3);
+		// A sub-quantum charge rounds to 0 and is treated as free.
+		const dust = applyRequestCharge(1, paidCost(1e-9));
+		expect(dust.charged).toBe(false);
+		expect(dust.balanceAfter).toBe(1);
+	});
 });

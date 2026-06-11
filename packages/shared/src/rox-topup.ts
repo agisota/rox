@@ -93,10 +93,14 @@ export function isConfirmed(payment: CryptoPayment): boolean {
 /**
  * Credit a *confirmed* payment to a balance, exactly once.
  *
- * Pure: pass the set of already-processed charge ids (the caller loads it from
- * persistence). On a successful credit the id is added to `processedIds` so a
- * subsequent replay in the same batch is also deduped. Rejections never mutate
- * the balance and report a {@link TopUpSkipReason} instead of throwing.
+ * Pure — it READS `processedIds` (the set of already-settled charge ids the
+ * caller loaded from persistence) for the duplicate check but NEVER mutates it.
+ * On `credited: true` the caller must persist the returned `entry` AND record
+ * `payment.id` atomically, then reload the set before the next call. We do not
+ * add the id here on purpose: mutating the in-memory set before the DB write
+ * lands would, if that write fails, leave the set ahead of the ledger and make
+ * a retry report `duplicate` — silently swallowing a top-up the user paid for.
+ * Rejections never move the balance and report a {@link TopUpSkipReason}.
  */
 export function creditConfirmedPayment(
 	balance: number,
@@ -116,7 +120,9 @@ export function creditConfirmedPayment(
 			balanceAfter: balance,
 		};
 	}
-	if (!(payment.amount > 0)) {
+	// Reject NaN/±Infinity as well as 0/negative: a non-finite amount must never
+	// reach applyTopUp, where it would corrupt the balance to NaN/Infinity.
+	if (!Number.isFinite(payment.amount) || !(payment.amount > 0)) {
 		return { credited: false, reason: "non-positive", balanceAfter: balance };
 	}
 
@@ -125,7 +131,6 @@ export function creditConfirmedPayment(
 		payment.amount,
 		`dv.net ${payment.id}`,
 	);
-	processedIds.add(payment.id);
 	return {
 		credited: true,
 		rox: entry.delta,

@@ -12,7 +12,7 @@
  */
 
 import type { RoxRequestCost } from "./rox-models";
-import { usdToRox } from "./rox-pricing";
+import { quantizeRox, usdToRox } from "./rox-pricing";
 
 export type RoxLedgerReason = "topup" | "request" | "grant" | "adjustment";
 
@@ -48,14 +48,23 @@ export function canAfford(balance: number, cost: number): boolean {
 	return balance >= cost;
 }
 
+/**
+ * Clamp an incoming amount to a non-negative, finite, ledger-precision value.
+ * A non-finite amount (NaN/±Infinity from a malformed provider payload or
+ * catalog) collapses to 0 — never credit or debit an unbounded amount.
+ */
+function safeAmount(amount: number): number {
+	return quantizeRox(Math.max(0, amount));
+}
+
 /** Credit a balance from a USDT top-up (1 USDT = ROX_PER_USDT Rox). */
 export function applyTopUp(
 	balance: number,
 	usdtAmount: number,
 	note?: string,
 ): { balanceAfter: number; entry: RoxLedgerEntry } {
-	const delta = usdToRox(Math.max(0, usdtAmount));
-	const balanceAfter = balance + delta;
+	const delta = safeAmount(usdToRox(Math.max(0, usdtAmount)));
+	const balanceAfter = quantizeRox(balance + delta);
 	return {
 		balanceAfter,
 		entry: { delta, balanceAfter, reason: "topup", note },
@@ -68,8 +77,8 @@ export function applyGrant(
 	rox: number,
 	note?: string,
 ): { balanceAfter: number; entry: RoxLedgerEntry } {
-	const delta = Math.max(0, rox);
-	const balanceAfter = balance + delta;
+	const delta = safeAmount(rox);
+	const balanceAfter = quantizeRox(balance + delta);
 	return {
 		balanceAfter,
 		entry: { delta, balanceAfter, reason: "grant", note },
@@ -86,10 +95,13 @@ export function applyGrant(
  */
 export function applyRequestCharge(
 	balance: number,
-	cost: RoxRequestCost,
+	rawCost: RoxRequestCost,
 	ctx?: { modelId?: string; requestId?: string },
 ): RoxChargeResult {
-	if (cost.isFree || cost.totalRox <= 0) {
+	// A non-finite or non-positive cost is treated as free (never debit an
+	// unbounded amount); quantize so the debit matches the persisted precision.
+	const cost = quantizeRox(rawCost.totalRox);
+	if (rawCost.isFree || !(cost > 0)) {
 		return {
 			charged: false,
 			cost: 0,
@@ -98,22 +110,22 @@ export function applyRequestCharge(
 			insufficient: false,
 		};
 	}
-	if (!canAfford(balance, cost.totalRox)) {
+	if (!canAfford(balance, cost)) {
 		return {
 			charged: false,
-			cost: cost.totalRox,
+			cost,
 			balanceAfter: balance,
 			entry: null,
 			insufficient: true,
 		};
 	}
-	const balanceAfter = balance - cost.totalRox;
+	const balanceAfter = quantizeRox(balance - cost);
 	return {
 		charged: true,
-		cost: cost.totalRox,
+		cost,
 		balanceAfter,
 		entry: {
-			delta: -cost.totalRox,
+			delta: -cost,
 			balanceAfter,
 			reason: "request",
 			modelId: ctx?.modelId,

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
 	type ModelProviderFamily,
+	quantizeRox,
 	ROX_PER_USDT,
 	ROX_PRICE_DIVISOR_CONFIG,
 	ROX_PRICE_DIVISORS,
+	ROX_SCALE,
 	resolveProviderFamily,
 	roxCostForTokens,
 	roxPricePerMillion,
@@ -22,6 +24,20 @@ describe("rox-pricing", () => {
 		expect(usdToRox(5)).toBe(500);
 		expect(roxToUsd(500)).toBe(5);
 		expect(roxToUsd(usdToRox(3.21))).toBeCloseTo(3.21, 10);
+	});
+
+	it("quantizeRox rounds to the persisted ledger scale and tames non-finite", () => {
+		expect(ROX_SCALE).toBe(6);
+		// Float drift collapses to the 6dp value Postgres numeric(20,6) stores.
+		expect(quantizeRox(0.1 + 0.2)).toBe(0.3);
+		expect(quantizeRox(285.7142857142857)).toBe(285.714286);
+		expect(quantizeRox(1e-9)).toBe(0); // sub-quantum dust
+		// Non-finite money collapses to 0 (never credit/debit an unbounded amount).
+		expect(quantizeRox(Number.NaN)).toBe(0);
+		expect(quantizeRox(Number.POSITIVE_INFINITY)).toBe(0);
+		expect(quantizeRox(Number.NEGATIVE_INFINITY)).toBe(0);
+		// No negative-zero leaks out.
+		expect(Object.is(quantizeRox(-1e-9), 0)).toBe(true);
 	});
 
 	it("resolves provider families", () => {

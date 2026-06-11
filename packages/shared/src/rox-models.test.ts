@@ -104,5 +104,36 @@ describe("rox-models", () => {
 			// 15 USD/M ÷ 5.25 = 2.857… USD/M -> ×100 Rox = 285.714… Rox
 			expect(cost.inputRox).toBeCloseTo((15 / 5.25) * 100, 6);
 		});
+
+		it("quantizes each leg to 6 decimals (matches the persisted ledger scale)", () => {
+			const cost = roxCostForRequest(
+				{ inputTokens: 1_000_000, outputTokens: 0 },
+				{
+					publicUsdPerMIn: 15,
+					publicUsdPerMOut: 0,
+					pricingFamily: "anthropic",
+					isFree: false,
+				},
+			);
+			// Raw is 285.71428571…; persisted precision rounds to 285.714286.
+			expect(cost.inputRox).toBe(285.714286);
+			expect(cost.totalRox).toBe(285.714286);
+		});
+
+		it("a non-finite catalog price collapses to a zero charge (no unbounded debit)", () => {
+			const cost = roxCostForRequest(
+				{ inputTokens: 1_000_000, outputTokens: 1_000_000 },
+				{
+					publicUsdPerMIn: Number.POSITIVE_INFINITY,
+					publicUsdPerMOut: Number.NaN,
+					pricingFamily: "other",
+					isFree: false,
+				},
+			);
+			expect(cost.inputRox).toBe(0);
+			expect(cost.outputRox).toBe(0);
+			expect(cost.totalRox).toBe(0);
+			expect(cost.isFree).toBe(false);
+		});
 	});
 });

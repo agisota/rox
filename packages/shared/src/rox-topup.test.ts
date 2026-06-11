@@ -26,7 +26,7 @@ describe("rox-topup", () => {
 		expect(quoteTopUp(-10)).toEqual({ usdt: 0, rox: 0 });
 	});
 
-	it("credits a confirmed USDT payment exactly once", () => {
+	it("credits a confirmed USDT payment without mutating the processed set", () => {
 		const processed = new Set<string>();
 		const result = creditConfirmedPayment(
 			100,
@@ -40,13 +40,17 @@ describe("rox-topup", () => {
 			expect(result.entry.reason).toBe("topup");
 			expect(result.entry.note).toBe("dv.net chg_1");
 		}
-		expect(processed.has("chg_1")).toBe(true);
+		// Pure: the id is recorded by the CALLER after it persists, not here —
+		// so a failed persistence can't leave the set ahead of the ledger.
+		expect(processed.has("chg_1")).toBe(false);
 	});
 
-	it("is idempotent — a replayed charge id never double-credits", () => {
+	it("is idempotent once the caller records the persisted id", () => {
 		const processed = new Set<string>();
 		const first = creditConfirmedPayment(100, confirmed(), processed);
 		expect(first.credited).toBe(true);
+		// Caller persists the entry, then records the id (atomic in real code).
+		processed.add("chg_1");
 		const replay = creditConfirmedPayment(
 			first.credited ? first.balanceAfter : 100,
 			confirmed(),
@@ -89,15 +93,14 @@ describe("rox-topup", () => {
 		expect(r.credited).toBe(true);
 	});
 
-	it("rejects non-positive amounts", () => {
+	it("rejects non-positive and non-finite amounts (no balance corruption)", () => {
 		const processed = new Set<string>();
-		expect(
-			creditConfirmedPayment(100, confirmed({ amount: 0 }), processed).credited,
-		).toBe(false);
-		expect(
-			creditConfirmedPayment(100, confirmed({ amount: -5 }), processed)
-				.credited,
-		).toBe(false);
+		for (const amount of [0, -5, Number.NaN, Number.POSITIVE_INFINITY]) {
+			const r = creditConfirmedPayment(100, confirmed({ amount }), processed);
+			expect(r.credited).toBe(false);
+			if (!r.credited) expect(r.reason).toBe("non-positive");
+			expect(r.balanceAfter).toBe(100);
+		}
 	});
 
 	it("settles through an injected dv.net client", async () => {
