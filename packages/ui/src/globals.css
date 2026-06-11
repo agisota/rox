@@ -189,6 +189,8 @@
 }
 
 [data-typeface="docs"] {
+	/* Must mirror the :root --frame-font-* defaults. Needed so a nested docs
+	   provider correctly resets stacks set by a parent theme. */
 	--frame-font-display:
 		ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 	--frame-font-body: georgia, "Times New Roman", serif;
