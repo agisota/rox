@@ -20,6 +20,10 @@ export const env = createEnv({
 			.optional(),
 		PORT: z.coerce.number().int().positive().default(4879),
 		RELAY_URL: z.string().url().optional(),
+		// Set by managed provisioners on ephemeral sandboxes (remote-hosts epic,
+		// #32). ISO-8601 instant at which this sandbox's TTL elapses; host-service
+		// gracefully shuts down at that time so the host transitions offline.
+		SANDBOX_EXPIRES_AT: z.string().datetime().optional(),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,
