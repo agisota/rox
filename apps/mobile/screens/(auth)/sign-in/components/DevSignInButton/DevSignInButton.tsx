@@ -1,12 +1,9 @@
+import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
 import { useState } from "react";
 import { View } from "react-native";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { signIn, signUp } from "@/lib/auth/client";
-
-const DEV_EMAIL = "admin@local.test";
-const DEV_PASSWORD = "roxdev";
-const DEV_NAME = "Local Admin";
 
 export function DevSignInButton() {
 	const [isLoading, setIsLoading] = useState(false);

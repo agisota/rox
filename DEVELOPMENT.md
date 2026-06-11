@@ -79,6 +79,18 @@ bun run build          # Build all packages
 
 See [`AGENTS.md`](./AGENTS.md) for repo structure, monorepo conventions, and database/migration workflow.
 
+## Tailscale serve (access dev stack from your tailnet)
+
+With `bun run dev` running locally:
+
+```bash
+export TS_AUTHKEY=tskey-auth-...   # optional; or `tailscale up` in a browser
+./.rox/tailscale-serve.sh
+./.rox/restart-dev.sh              # stop old servers + restart with new .env URLs
+```
+
+Open the **Web** URL printed by the script (typically `https://<machine>.<tailnet>.ts.net`). API is on port `8443`, Electric on `8444`. URLs are also saved in `.rox/tailscale-urls.json`.
+
 ## Troubleshooting
 
 - **`caddy trust` prompts for sudo** — expected, once per machine. Without it Chromium rejects `https://localhost:*` with `ERR_CERT_AUTHORITY_INVALID`.
