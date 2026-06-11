@@ -81,7 +81,9 @@ export type TopUpResult =
 
 /** Preview the Rox a USDT amount buys, clamped to non-negative. */
 export function quoteTopUp(usdt: number): TopUpQuote {
-	const safeUsdt = Math.max(0, usdt);
+	// Non-finite input (NaN/±Infinity from corrupted form state) must collapse to
+	// 0 — `Math.max(0, NaN)` is `NaN`, which would otherwise leak into the UI.
+	const safeUsdt = Number.isFinite(usdt) ? Math.max(0, usdt) : 0;
 	return { usdt: safeUsdt, rox: usdToRox(safeUsdt) };
 }
 
@@ -107,11 +109,16 @@ export function creditConfirmedPayment(
 	payment: CryptoPayment,
 	processedIds: Set<string>,
 ): TopUpResult {
-	if (processedIds.has(payment.id)) {
-		return { credited: false, reason: "duplicate", balanceAfter: balance };
-	}
+	// Check confirmation before the idempotency key: this way "duplicate" can
+	// only ever describe a payment that was already confirmed *and* credited. If
+	// a caller bug ever seeded `processedIds` with a still-`pending` id, the
+	// payment stays recoverable ("not-confirmed") instead of being permanently
+	// stuck as "duplicate" — the user paid and must still be creditable.
 	if (!isConfirmed(payment)) {
 		return { credited: false, reason: "not-confirmed", balanceAfter: balance };
+	}
+	if (processedIds.has(payment.id)) {
+		return { credited: false, reason: "duplicate", balanceAfter: balance };
 	}
 	if (payment.asset.toUpperCase() !== TOPUP_ASSET) {
 		return {
