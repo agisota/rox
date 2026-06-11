@@ -10,7 +10,6 @@ import {
 	ProvisionerError,
 	type ProvisionProvider,
 } from "@rox/host-provisioner";
-import { isActiveSubscriptionStatus, isPaidPlan } from "@rox/shared/billing";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -379,7 +378,8 @@ export const v2HostRouter = {
 	/**
 	 * Provision a managed remote workspace (persistent) or ephemeral sandbox
 	 * (~1h TTL) via the host-provisioner, then atomically insert the `v2_hosts`
-	 * row plus an owner `v2_users_hosts` membership. Gated behind the paid plan.
+	 * row plus an owner `v2_users_hosts` membership. Free by default (no
+	 * paid-plan gate); active org membership is still required.
 	 */
 	provision: protectedProcedure
 		.input(
@@ -396,18 +396,10 @@ export const v2HostRouter = {
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const { organizationId, subscription } =
+			// #34.1: managed remote hosts/sandboxes are free by default — no
+			// paid-plan gate. Active org membership is still required.
+			const { organizationId } =
 				await requireActiveOrgMembershipWithSubscription(ctx);
-
-			const paidPlan =
-				isPaidPlan(subscription?.plan) &&
-				isActiveSubscriptionStatus(subscription?.status);
-			if (!paidPlan) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Managed remote hosts and sandboxes require a paid plan.",
-				});
-			}
 
 			let provisioner: ReturnType<typeof getHostProvisioner>;
 			try {

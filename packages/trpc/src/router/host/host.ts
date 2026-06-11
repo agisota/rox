@@ -1,19 +1,13 @@
 import { db, dbWs } from "@rox/db/client";
 import {
-	subscriptions,
 	v2Clients,
 	v2ClientTypeValues,
 	v2Hosts,
 	v2UsersHosts,
 } from "@rox/db/schema";
-import {
-	ACTIVE_SUBSCRIPTION_STATUSES,
-	isActiveSubscriptionStatus,
-	isPaidPlan,
-} from "@rox/shared/billing";
 import { parseHostRoutingKey } from "@rox/shared/host-routing";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { jwtProcedure, protectedProcedure } from "../../trpc";
 
@@ -191,19 +185,8 @@ export const hostRouter = {
 				return { allowed: false, paidPlan: false };
 			}
 			const [row] = await db
-				.select({
-					hostId: v2UsersHosts.hostId,
-					subscriptionPlan: subscriptions.plan,
-					subscriptionStatus: subscriptions.status,
-				})
+				.select({ hostId: v2UsersHosts.hostId })
 				.from(v2UsersHosts)
-				.leftJoin(
-					subscriptions,
-					and(
-						eq(subscriptions.referenceId, v2UsersHosts.organizationId),
-						inArray(subscriptions.status, ACTIVE_SUBSCRIPTION_STATUSES),
-					),
-				)
 				.where(
 					and(
 						eq(v2UsersHosts.userId, ctx.userId),
@@ -211,15 +194,13 @@ export const hostRouter = {
 						eq(v2UsersHosts.hostId, parsed.machineId),
 					),
 				)
-				.orderBy(desc(subscriptions.createdAt))
 				.limit(1);
 
+			// #34.1: hosts are free by default. Membership alone grants full
+			// access; `paidPlan` stays in the response shape (the relay still
+			// reads it) but no longer gates anything.
 			const allowed = !!row;
-			const paidPlan =
-				!!row &&
-				isPaidPlan(row.subscriptionPlan) &&
-				isActiveSubscriptionStatus(row.subscriptionStatus);
-			return { allowed, paidPlan };
+			return { allowed, paidPlan: allowed };
 		}),
 
 	setOnline: jwtProcedure
