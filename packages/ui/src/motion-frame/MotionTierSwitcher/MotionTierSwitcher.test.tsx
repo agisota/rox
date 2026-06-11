@@ -16,8 +16,7 @@ describe("MotionTierSwitcher", () => {
 		expect(html).toContain(">Full<");
 		expect(html.match(/type="radio"/g) ?? []).toHaveLength(3);
 		expect(html.match(/checked=""/g) ?? []).toHaveLength(1);
-		const checkedInput =
-			html.match(/<input[^>]*checked=""[^>]*>/)?.[0] ?? "";
+		const checkedInput = html.match(/<input[^>]*checked=""[^>]*>/)?.[0] ?? "";
 		expect(checkedInput).toContain('value="full"');
 	});
 
