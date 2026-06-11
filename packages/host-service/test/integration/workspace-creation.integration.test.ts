@@ -93,7 +93,9 @@ describe("workspaceCreation.searchBranches integration", () => {
 			...page2.items.map((b) => b.name),
 		]);
 		expect(seen.size).toBe(4);
-	});
+		// Creates 5 branches with real git (15+ subprocess spawns) then paginates;
+		// inherently slow and slower still on CI IO — give it generous headroom.
+	}, 120_000);
 
 	test("marks branches as having a workspace when a workspace row exists", async () => {
 		await scenario.repo.git.checkoutLocalBranch("with-workspace");

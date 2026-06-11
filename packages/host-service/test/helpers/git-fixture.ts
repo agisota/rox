@@ -1,7 +1,9 @@
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import simpleGit, { type SimpleGit } from "simple-git";
+import type { SimpleGit } from "simple-git";
+import { createUserSimpleGit } from "../../src/runtime/git/simple-git";
+import { hermeticGitEnv } from "./git-env";
 
 export interface GitFixture {
 	repoPath: string;
@@ -22,7 +24,13 @@ export async function createGitFixture(): Promise<GitFixture> {
 	const repoPath = realpathSync(
 		mkdtempSync(join(tmpdir(), "host-service-test-repo-")),
 	);
-	const git = simpleGit(repoPath);
+	// Use the production simple-git factory (it enables the unsafe option set
+	// that permits the GIT_CONFIG_* env overrides below) with a hermetic git
+	// config surface: no host/CI /etc/gitconfig or ~/.gitconfig, no credential
+	// prompt, no fsmonitor daemon. Keeps fixture setup off the machine's git
+	// config so worktree ops can't hang on an inherited credential helper or
+	// fsmonitor daemon.
+	const git = createUserSimpleGit(repoPath).env(hermeticGitEnv());
 
 	await git.init(["--initial-branch=main"]);
 	await git.addConfig("user.email", "test@rox.local");
