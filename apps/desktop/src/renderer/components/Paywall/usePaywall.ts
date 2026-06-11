@@ -8,8 +8,11 @@ export function usePaywall() {
 	const { plan: userPlan, isReady } = useCurrentPlan();
 
 	function hasAccess(feature: GatedFeature): boolean {
+		// #34.1: everything is free by default — no feature is gated, so the
+		// paywall never triggers and `gateFeature` just runs the callback.
 		void feature;
-		return userPlan === "pro" || userPlan === "enterprise";
+		void userPlan;
+		return true;
 	}
 
 	function gateFeature(

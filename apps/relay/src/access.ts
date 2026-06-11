@@ -37,7 +37,8 @@ export async function checkHostAccess(
 	try {
 		const client = createApiClient(token);
 		const result = await client.host.checkAccess.query({ hostId });
-		const ok = result.allowed && result.paidPlan;
+		// #34.1: access is granted by org membership alone — no paid-plan gate.
+		const ok = result.allowed;
 		if (ok) {
 			allowedCache.set(key, true);
 		} else {

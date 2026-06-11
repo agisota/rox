@@ -1,19 +1,13 @@
 import { db, dbWs } from "@rox/db/client";
 import {
-	subscriptions,
 	v2Clients,
 	v2ClientTypeValues,
 	v2Hosts,
 	v2UsersHosts,
 } from "@rox/db/schema";
-import {
-	ACTIVE_SUBSCRIPTION_STATUSES,
-	isActiveSubscriptionStatus,
-	isPaidPlan,
-} from "@rox/shared/billing";
 import { parseHostRoutingKey } from "@rox/shared/host-routing";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { jwtProcedure, protectedProcedure } from "../../trpc";
 
@@ -186,24 +180,13 @@ export const hostRouter = {
 		.input(z.object({ hostId: z.string().min(1) }))
 		.query(async ({ ctx, input }) => {
 			const parsed = parseHostRoutingKey(input.hostId);
-			if (!parsed) return { allowed: false, paidPlan: false };
+			if (!parsed) return { allowed: false };
 			if (!ctx.organizationIds.includes(parsed.organizationId)) {
-				return { allowed: false, paidPlan: false };
+				return { allowed: false };
 			}
 			const [row] = await db
-				.select({
-					hostId: v2UsersHosts.hostId,
-					subscriptionPlan: subscriptions.plan,
-					subscriptionStatus: subscriptions.status,
-				})
+				.select({ hostId: v2UsersHosts.hostId })
 				.from(v2UsersHosts)
-				.leftJoin(
-					subscriptions,
-					and(
-						eq(subscriptions.referenceId, v2UsersHosts.organizationId),
-						inArray(subscriptions.status, ACTIVE_SUBSCRIPTION_STATUSES),
-					),
-				)
 				.where(
 					and(
 						eq(v2UsersHosts.userId, ctx.userId),
@@ -211,15 +194,13 @@ export const hostRouter = {
 						eq(v2UsersHosts.hostId, parsed.machineId),
 					),
 				)
-				.orderBy(desc(subscriptions.createdAt))
 				.limit(1);
 
-			const allowed = !!row;
-			const paidPlan =
-				!!row &&
-				isPaidPlan(row.subscriptionPlan) &&
-				isActiveSubscriptionStatus(row.subscriptionStatus);
-			return { allowed, paidPlan };
+			// #34.1: no paid-plan gate. `allowed` is true iff the user holds a
+			// host-level `v2_users_hosts` link for this exact host (not merely org
+			// membership). `paidPlan` is no longer returned; the relay reads only
+			// `allowed`. Keep these notes in sync with any later auth/relay refactor.
+			return { allowed: !!row };
 		}),
 
 	setOnline: jwtProcedure

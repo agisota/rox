@@ -1,9 +1,7 @@
 "use client";
 
 import { authClient } from "@rox/auth/client";
-import { isPaidPlan } from "@rox/shared/billing";
 import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
-import { Badge } from "@rox/ui/badge";
 import { Drawer, DrawerContent, DrawerTitle } from "@rox/ui/drawer";
 import {
 	DropdownMenu,
@@ -45,14 +43,6 @@ export function AgentsHeader() {
 	const { data: organizations } = useQuery(
 		trpc.user.myOrganizations.queryOptions(),
 	);
-
-	const { data: activePlan } = useQuery(trpc.billing.activePlan.queryOptions());
-
-	const isPro = isPaidPlan(activePlan?.plan);
-	const planLabel =
-		isPro && activePlan?.plan
-			? activePlan.plan.charAt(0).toUpperCase() + activePlan.plan.slice(1)
-			: null;
 
 	const user = session?.user;
 	const activeOrganizationId = session?.session?.activeOrganizationId;
@@ -212,11 +202,6 @@ export function AgentsHeader() {
 						<div className="flex flex-col space-y-1 px-2 py-1.5">
 							<div className="flex items-center gap-2">
 								<p className="text-sm font-medium">{user?.name}</p>
-								{isPro && (
-									<Badge variant="default" className="px-1.5 py-0 text-[10px]">
-										{planLabel}
-									</Badge>
-								)}
 							</div>
 							<p className="text-xs text-muted-foreground">{user?.email}</p>
 						</div>
@@ -279,11 +264,6 @@ export function AgentsHeader() {
 					<div className="flex flex-col space-y-1">
 						<div className="flex items-center gap-2">
 							<p className="text-sm font-medium">{user?.name}</p>
-							{isPro && (
-								<Badge variant="default" className="px-1.5 py-0 text-[10px]">
-									{planLabel}
-								</Badge>
-							)}
 						</div>
 						<p className="text-xs text-muted-foreground">{user?.email}</p>
 					</div>
