@@ -119,6 +119,12 @@ export class AgentPreinstaller {
 	private readonly onProgress?: (event: PreinstallProgressEvent) => void;
 	private readonly catalog: PreinstallCatalogItem[];
 	private runningAuto: Promise<PreinstallItemResult[]> | null = null;
+	/**
+	 * Set for the duration of an aborted `runAuto`. Once aborted (host
+	 * disposing), `recordState` skips its db write — a trailing write from an
+	 * item that was already mid-install would otherwise hit a closed handle.
+	 */
+	private autoSignal: AbortSignal | undefined;
 
 	constructor(options: AgentPreinstallerOptions) {
 		this.db = options.db;
@@ -173,6 +179,10 @@ export class AgentPreinstaller {
 			installedAt?: number | null;
 		},
 	): void {
+		// Host is disposing: the db handle is about to (or did) close. Skip the
+		// write rather than throw `Cannot use a closed database` from a trailing
+		// state update on an item that was already mid-install when aborted.
+		if (this.autoSignal?.aborted) return;
 		const now = Date.now();
 		this.db
 			.insert(agentInstallState)
@@ -294,19 +304,28 @@ export class AgentPreinstaller {
 	 * intentionally serial so install commands don't fight over the network or
 	 * a shared package manager lock. Re-entrant calls share the in-flight run.
 	 */
-	runAuto(): Promise<PreinstallItemResult[]> {
+	runAuto(
+		options: { signal?: AbortSignal } = {},
+	): Promise<PreinstallItemResult[]> {
 		if (this.runningAuto) return this.runningAuto;
-		const run = this.runAutoInner().finally(() => {
+		this.autoSignal = options.signal;
+		const run = this.runAutoInner(options.signal).finally(() => {
 			this.runningAuto = null;
+			this.autoSignal = undefined;
 		});
 		this.runningAuto = run;
 		return run;
 	}
 
-	private async runAutoInner(): Promise<PreinstallItemResult[]> {
+	private async runAutoInner(
+		signal?: AbortSignal,
+	): Promise<PreinstallItemResult[]> {
 		const plan = resolveAutoInstallPlan(this.catalog, this.statusByPresetId());
 		const results: PreinstallItemResult[] = [];
 		for (const item of plan) {
+			// Stop between items when aborted (e.g. host disposing): the next
+			// `installItem` would write to a db that's about to close.
+			if (signal?.aborted) break;
 			results.push(await this.installItem(item));
 		}
 		return results;
