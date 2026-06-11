@@ -29,7 +29,8 @@ describe("TypefaceThemeSwitcher", () => {
 				</TypefaceThemeProvider>
 			</MotionFrameProvider>,
 		);
-		expect(html).toContain("data-theme-pill");
+		expect(html).toContain('data-theme-pill="static"');
+		expect(html).not.toContain('data-theme-pill="animated"');
 	});
 
 	it("isolates instances: two switchers never share a radio-group name", () => {

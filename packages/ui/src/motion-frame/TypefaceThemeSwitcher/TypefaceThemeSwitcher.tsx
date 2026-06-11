@@ -67,14 +67,14 @@ export function TypefaceThemeSwitcher({
 							capabilities.transition ? (
 								<motion.span
 									className="absolute inset-0 rounded-full bg-background shadow-sm"
-									data-theme-pill
+									data-theme-pill="animated"
 									layoutId={`typeface-theme-pill-${instanceId}`}
 									transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
 								/>
 							) : (
 								<span
 									className="absolute inset-0 rounded-full bg-background shadow-sm"
-									data-theme-pill
+									data-theme-pill="static"
 								/>
 							)
 						) : null}
