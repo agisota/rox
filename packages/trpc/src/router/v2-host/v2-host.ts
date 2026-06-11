@@ -16,7 +16,7 @@ import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
 import {
 	requireActiveOrgId,
-	requireActiveOrgMembershipWithSubscription,
+	requireActiveOrgMembership,
 } from "../utils/active-org";
 
 // Managed (provider-backed) hosts the provision procedure can create. `self`
@@ -397,9 +397,10 @@ export const v2HostRouter = {
 		)
 		.mutation(async ({ ctx, input }) => {
 			// #34.1: managed remote hosts/sandboxes are free by default — no
-			// paid-plan gate. Active org membership is still required.
-			const { organizationId } =
-				await requireActiveOrgMembershipWithSubscription(ctx);
+			// paid-plan gate. Active org membership is still required. (No
+			// subscription join needed; swap back to the *WithSubscription helper
+			// only if a future free|subscriber perk gates on plan here.)
+			const organizationId = await requireActiveOrgMembership(ctx);
 
 			let provisioner: ReturnType<typeof getHostProvisioner>;
 			try {
