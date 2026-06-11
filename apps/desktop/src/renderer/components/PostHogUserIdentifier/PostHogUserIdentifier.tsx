@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { track } from "renderer/lib/analytics";
+import { identify, track } from "renderer/lib/analytics";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { posthog } from "../../lib/posthog";
@@ -16,6 +16,12 @@ export function PostHogUserIdentifier() {
 	useEffect(() => {
 		if (user) {
 			posthog.identify(user.id, {
+				email: user.email,
+				name: user.name,
+				desktop_version: window.App.appVersion,
+			});
+			// Mirror identity into OpenPanel (PII redacted inside the shared client).
+			identify(user.id, {
 				email: user.email,
 				name: user.name,
 				desktop_version: window.App.appVersion,

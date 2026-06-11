@@ -9,6 +9,7 @@
 
 import { type OpenPanelEnv, resolveOpenPanelEnv } from "./env";
 import type { AnalyticsEventName, EventProperties } from "./events";
+import { redactPii } from "./sanitize";
 
 export type PostHogCapture = (
 	event: string,
@@ -63,7 +64,7 @@ export function createClientAnalytics(
 
 	return {
 		track(event, properties) {
-			const props = (properties ?? {}) as Record<string, unknown>;
+			const props = redactPii(properties as Record<string, unknown>);
 			posthogCapture?.(event, props);
 			postToOpenPanel(env, {
 				type: "track",
@@ -73,7 +74,7 @@ export function createClientAnalytics(
 		identify(distinctId, traits) {
 			postToOpenPanel(env, {
 				type: "identify",
-				payload: { profileId: distinctId, properties: traits ?? {} },
+				payload: { profileId: distinctId, properties: redactPii(traits) },
 			});
 		},
 	};
