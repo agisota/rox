@@ -103,6 +103,7 @@ plans/local/
 .worktrees/
 .claude/memories/
 .claude/state/
+.claude/worktrees/
 packages/cli/*.bun-build
 .omx/
 superset-dev-data/
