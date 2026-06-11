@@ -28,6 +28,10 @@
 			"types": "./src/rox-topup.ts",
 			"default": "./src/rox-topup.ts"
 		},
+		"./dvnet-client": {
+			"types": "./src/dvnet-client.ts",
+			"default": "./src/dvnet-client.ts"
+		},
 		"./dev-credentials": {
 			"types": "./src/dev-credentials.ts",
 			"default": "./src/dev-credentials.ts"
