@@ -64,6 +64,12 @@ export const BUILTIN_TERMINAL_AGENTS = [
 			"Anthropic's coding agent for reading code, editing files, and running terminal workflows.",
 		command: "claude --dangerously-skip-permissions",
 		includeInDefaultTerminalPresets: true,
+		install: {
+			checkCommand: "claude --version",
+			installCommand: "npm install -g @anthropic-ai/claude-code@latest",
+			updateStrategy: "latest",
+			optional: true,
+		},
 	}),
 	createBuiltinTerminalAgent({
 		id: "amp",
@@ -82,6 +88,12 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		command: "codex --dangerously-bypass-approvals-and-sandbox",
 		promptCommand: "codex --dangerously-bypass-approvals-and-sandbox --",
 		includeInDefaultTerminalPresets: true,
+		install: {
+			checkCommand: "codex --version",
+			installCommand: "npm install -g @openai/codex@latest",
+			updateStrategy: "latest",
+			optional: true,
+		},
 	}),
 	createBuiltinTerminalAgent({
 		id: "gemini",
@@ -91,6 +103,12 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		command: "gemini --approval-mode=auto_edit",
 		promptCommand: "gemini --approval-mode=auto_edit",
 		includeInDefaultTerminalPresets: true,
+		install: {
+			checkCommand: "gemini --version",
+			installCommand: "npm install -g @google/gemini-cli@latest",
+			updateStrategy: "latest",
+			optional: true,
+		},
 	}),
 	createBuiltinTerminalAgent({
 		id: "mastracode",
@@ -136,6 +154,12 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		label: "Droid",
 		description: "Factory's autonomous coding agent for terminal workflows.",
 		command: "droid",
+		install: {
+			checkCommand: "droid --version",
+			installCommand: "curl -fsSL https://app.factory.ai/cli | sh",
+			updateStrategy: "latest",
+			optional: true,
+		},
 	}),
 	createBuiltinTerminalAgent({
 		id: "kimi",
@@ -144,8 +168,10 @@ export const BUILTIN_TERMINAL_AGENTS = [
 			"Moonshot's Kimi coding agent for terminal-first coding and task work.",
 		command: "kimi",
 		install: {
-			checkCommand: "command -v kimi",
-			installCommand: "npm install -g @moonshot-ai/kimi-cli",
+			checkCommand: "kimi --version",
+			installCommand: "npm install -g @moonshot-ai/kimi-cli@1.0.0",
+			updateStrategy: "pinned",
+			pinnedVersion: "1.0.0",
 			optional: true,
 		},
 	}),
@@ -157,8 +183,9 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		command: "qwen",
 		promptCommand: "qwen --prompt",
 		install: {
-			checkCommand: "command -v qwen",
-			installCommand: "npm install -g @qwen-code/qwen-code",
+			checkCommand: "qwen --version",
+			installCommand: "npm install -g @qwen-code/qwen-code@latest",
+			updateStrategy: "latest",
 		},
 	}),
 	createBuiltinTerminalAgent({
@@ -169,6 +196,7 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		install: {
 			checkCommand: "command -v grok",
 			installCommand: "npm install -g @vibe-kit/grok-cli",
+			updateStrategy: "latest",
 			optional: true,
 		},
 	}),
@@ -180,6 +208,7 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		install: {
 			checkCommand: "command -v trae",
 			installCommand: "npm install -g @trae-ai/trae-cli",
+			updateStrategy: "latest",
 			optional: true,
 		},
 	}),

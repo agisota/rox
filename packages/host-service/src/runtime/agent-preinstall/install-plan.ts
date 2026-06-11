@@ -2,6 +2,10 @@ import {
 	BUILTIN_AGENT_DEFINITIONS,
 	isTerminalAgentDefinition,
 } from "@rox/shared/agent-catalog";
+import {
+	type AgentUpdateStrategy,
+	resolveInstallCommands,
+} from "@rox/shared/agent-definition";
 import { AGENT_HARNESS_PRESETS } from "@rox/shared/agent-harness-presets";
 import type { AgentInstallStatus } from "../../db/schema";
 
@@ -30,6 +34,14 @@ export interface PreinstallCatalogItem {
 	configFiles: PreinstallConfigFile[];
 	/** True when no verified install path exists — never auto-installed. */
 	optional: boolean;
+	/**
+	 * Version/update policy for the bundled binary. `"latest"` refreshes to the
+	 * newest published version; `"pinned"` installs exactly `pinnedVersion`.
+	 * Harnesses always track `"latest"`.
+	 */
+	updateStrategy: AgentUpdateStrategy;
+	/** Exact version installed when `updateStrategy` is `"pinned"`. */
+	pinnedVersion?: string;
 }
 
 /**
@@ -49,9 +61,11 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 				kind: "agent" as const,
 				label: agent.label,
 				checkCommand: install.checkCommand,
-				installCommands: [install.installCommand],
+				installCommands: resolveInstallCommands(install),
 				configFiles: [],
 				optional: install.optional ?? false,
+				updateStrategy: install.updateStrategy ?? "latest",
+				pinnedVersion: install.pinnedVersion,
 			};
 		});
 
@@ -66,6 +80,7 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 				templateRef: file.templateRef,
 			})),
 			optional: harness.optional ?? harness.install.length === 0,
+			updateStrategy: "latest" as const,
 		}),
 	);
 

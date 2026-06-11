@@ -24,6 +24,9 @@ describe("rox-topup", () => {
 		expect(quoteTopUp(DEFAULT_TOPUP_USDT)).toEqual({ usdt: 5, rox: 500 });
 		expect(quoteTopUp(0)).toEqual({ usdt: 0, rox: 0 });
 		expect(quoteTopUp(-10)).toEqual({ usdt: 0, rox: 0 });
+		// Non-finite input must not leak NaN/Infinity into the on-ramp UI.
+		expect(quoteTopUp(Number.NaN)).toEqual({ usdt: 0, rox: 0 });
+		expect(quoteTopUp(Number.POSITIVE_INFINITY)).toEqual({ usdt: 0, rox: 0 });
 	});
 
 	it("credits a confirmed USDT payment without mutating the processed set", () => {
@@ -72,6 +75,22 @@ describe("rox-topup", () => {
 		}
 		// Nothing was marked processed, so a later confirmation still credits.
 		expect(processed.size).toBe(0);
+	});
+
+	it("reports a still-pending charge as recoverable even if its id was pre-seeded", () => {
+		// Defensive ordering: confirmation is checked before the idempotency key,
+		// so a pending payment whose id somehow already sits in `processedIds`
+		// stays "not-confirmed" (creditable once it settles) rather than getting
+		// permanently stuck as "duplicate".
+		const processed = new Set<string>(["chg_1"]);
+		const r = creditConfirmedPayment(
+			100,
+			confirmed({ status: "pending" }),
+			processed,
+		);
+		expect(r.credited).toBe(false);
+		if (!r.credited) expect(r.reason).toBe("not-confirmed");
+		expect(r.balanceAfter).toBe(100);
 	});
 
 	it("rejects non-USDT settlement assets rather than mispricing them", () => {
