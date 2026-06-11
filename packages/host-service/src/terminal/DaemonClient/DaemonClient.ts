@@ -83,7 +83,10 @@ export class DaemonClient {
 	async connect(): Promise<void> {
 		const socket = await openSocket(this.opts);
 		this.socket = socket;
-		socket.on("data", (chunk) => this.onData(chunk));
+		// `data` arrives as a Buffer (no setEncoding); narrow without copying.
+		socket.on("data", (chunk) =>
+			this.onData(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+		);
 		socket.on("close", () => this.onClose());
 		socket.on("error", (err) => this.onClose(err));
 		try {

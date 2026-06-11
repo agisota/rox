@@ -9,6 +9,19 @@ mock.module("electron", () => ({
 		getMediaAccessStatus: mock(() => "not-determined"),
 		isTrustedAccessibilityClient: mock(() => false),
 	},
+	// bun runs all tests in one process and mock.module("electron") leaks across
+	// files; include app/dialog so a later file linking against this mock (e.g.
+	// auto-updater.ts imports { app, dialog }) doesn't throw "Export named ... not found".
+	app: {
+		getPath: mock(() => ""),
+		getName: mock(() => "test-app"),
+		getVersion: mock(() => "1.0.0"),
+		getAppPath: mock(() => ""),
+		isPackaged: false,
+	},
+	dialog: {
+		showMessageBox: mock(() => Promise.resolve({ response: 0 })),
+	},
 }));
 
 const {
