@@ -82,21 +82,21 @@ function base16AnsiStyle(p: Record<string, string>): Record<string, string> {
 
 /**
  * base24 terminal ANSI mapping (per the base24 styling spec): dedicated bright
- * slots `base12`–`base17` plus `base02`/`base07` for bright-black/white.
+ * slots `base12`–`base17` plus `base03`/`base07` for bright-black/white.
  */
 function base24AnsiStyle(p: Record<string, string>): Record<string, string> {
 	const get = (key: string, fallback: string) =>
 		slot(p, key) ?? slot(p, fallback) ?? "";
 	return {
-		"terminal.ansi.black": get("base01", "base00"),
+		"terminal.ansi.black": get("base00", "base00"),
 		"terminal.ansi.red": get("base08", "base08"),
 		"terminal.ansi.green": get("base0b", "base0b"),
 		"terminal.ansi.yellow": get("base0a", "base0a"),
 		"terminal.ansi.blue": get("base0d", "base0d"),
 		"terminal.ansi.magenta": get("base0e", "base0e"),
 		"terminal.ansi.cyan": get("base0c", "base0c"),
-		"terminal.ansi.white": get("base06", "base05"),
-		"terminal.ansi.bright_black": get("base02", "base03"),
+		"terminal.ansi.white": get("base05", "base05"),
+		"terminal.ansi.bright_black": get("base03", "base03"),
 		"terminal.ansi.bright_red": get("base12", "base08"),
 		"terminal.ansi.bright_green": get("base14", "base0b"),
 		"terminal.ansi.bright_yellow": get("base13", "base0a"),
