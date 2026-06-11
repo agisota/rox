@@ -6,8 +6,8 @@
  * git needs PATH/HOME to run — but force a hermetic *config* surface so tests
  * never inherit the host/CI machine's git configuration:
  *
- *   - `GIT_CONFIG_SYSTEM=/dev/null` ignores `/etc/gitconfig`
- *   - `GIT_CONFIG_GLOBAL=/dev/null` ignores `~/.gitconfig`
+ *   - `GIT_CONFIG_SYSTEM=<null device>` ignores `/etc/gitconfig`
+ *   - `GIT_CONFIG_GLOBAL=<null device>` ignores `~/.gitconfig`
  *   - `GIT_TERMINAL_PROMPT=0` makes auth fail fast instead of blocking on a prompt
  *   - `GIT_OPTIONAL_LOCKS=0` matches the production git factory
  *
@@ -21,6 +21,7 @@
  * in CI. Neutralizing the external config removes the daemon entirely.
  */
 
+import { devNull } from "node:os";
 import type { SimpleGit } from "simple-git";
 import { createUserSimpleGit } from "../../src/runtime/git/simple-git";
 
@@ -40,8 +41,9 @@ export function hermeticGitEnv(
 	}
 	return {
 		...base,
-		GIT_CONFIG_SYSTEM: "/dev/null",
-		GIT_CONFIG_GLOBAL: "/dev/null",
+		// `os.devNull` so the override is correct off-POSIX too (`\\.\nul` on Windows).
+		GIT_CONFIG_SYSTEM: devNull,
+		GIT_CONFIG_GLOBAL: devNull,
 		GIT_TERMINAL_PROMPT: "0",
 		GIT_OPTIONAL_LOCKS: "0",
 		...extra,

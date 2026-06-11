@@ -126,4 +126,16 @@ describe("rox-ledger", () => {
 		expect(dust.charged).toBe(false);
 		expect(dust.balanceAfter).toBe(1);
 	});
+
+	it("fails loud on a non-finite balance instead of silently zeroing it", () => {
+		// A corrupted persisted balance is an invariant violation, not untrusted
+		// input — surface it rather than letting quantizeRox collapse it to 0.
+		for (const balance of [Number.NaN, Number.POSITIVE_INFINITY]) {
+			expect(() => applyTopUp(balance, 5)).toThrow(RangeError);
+			expect(() => applyGrant(balance, 5)).toThrow(RangeError);
+			expect(() => applyRequestCharge(balance, paidCost(10))).toThrow(
+				RangeError,
+			);
+		}
+	});
 });

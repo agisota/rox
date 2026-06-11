@@ -74,6 +74,22 @@ describe("rox-topup", () => {
 		expect(processed.size).toBe(0);
 	});
 
+	it("reports a still-pending charge as recoverable even if its id was pre-seeded", () => {
+		// Defensive ordering: confirmation is checked before the idempotency key,
+		// so a pending payment whose id somehow already sits in `processedIds`
+		// stays "not-confirmed" (creditable once it settles) rather than getting
+		// permanently stuck as "duplicate".
+		const processed = new Set<string>(["chg_1"]);
+		const r = creditConfirmedPayment(
+			100,
+			confirmed({ status: "pending" }),
+			processed,
+		);
+		expect(r.credited).toBe(false);
+		if (!r.credited) expect(r.reason).toBe("not-confirmed");
+		expect(r.balanceAfter).toBe(100);
+	});
+
 	it("rejects non-USDT settlement assets rather than mispricing them", () => {
 		const r = creditConfirmedPayment(
 			100,
