@@ -69,6 +69,12 @@ mock.module("electron", () => ({
 		isPackaged: false,
 		getAppPath: () => "/tmp/app",
 	},
+	// bun runs all tests in one process and mock.module("electron") leaks across
+	// files; include `dialog` so a later file linking auto-updater.ts (imports
+	// { app, dialog }) against this mock doesn't throw "Export named 'dialog' not found".
+	dialog: {
+		showMessageBox: () => Promise.resolve({ response: 0 }),
+	},
 }));
 
 mock.module("electron-log/main", () => ({

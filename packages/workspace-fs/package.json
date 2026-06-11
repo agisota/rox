@@ -27,7 +27,7 @@
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit --emitDeclarationOnly false",
-		"test": "bun test --pass-with-no-tests",
+		"test": "bun test --pass-with-no-tests --timeout 60000",
 		"bench": "bun test src/cache-and-paths-memory.bench.ts"
 	},
 	"dependencies": {

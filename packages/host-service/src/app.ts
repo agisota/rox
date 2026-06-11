@@ -57,6 +57,15 @@ export interface CreateAppOptions {
 	execGh?: ExecGh;
 	chatRuntime?: ChatRuntimeManager;
 	chatService?: ChatService;
+	/**
+	 * Injectable agent preinstaller. Production omits it so `createApp` builds
+	 * one with the real shell `CommandRunner`. Tests MUST inject a stub: the
+	 * default runner shells out (5-min timeout per item) from the fire-and-forget
+	 * `runAuto()` bootstrap below, and on a runner without the agent binaries
+	 * preinstalled that real install starves the suite's git subprocesses and
+	 * leaks child processes — which is what hung the integration tests in CI.
+	 */
+	agentPreinstaller?: AgentPreinstaller;
 }
 
 export interface CreateAppResult {
@@ -112,7 +121,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	// auth storage; the `host.auth.*` router proxies to it.
 	const chatService = options.chatService ?? new ChatService();
 
-	const preinstall = new AgentPreinstaller({ db });
+	const preinstall = options.agentPreinstaller ?? new AgentPreinstaller({ db });
 
 	const runtime = {
 		auth: chatService,

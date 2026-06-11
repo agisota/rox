@@ -37,7 +37,7 @@ describe("GitHub pull request REST queries", () => {
 						ref: "fix/sidebar",
 						sha: "abc123",
 						repo: {
-							name: "rox",
+							name: "set",
 							owner: { login: "agisota" },
 						},
 					},
@@ -52,8 +52,8 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestByHeadFromGh(
 			execGh,
-			{ owner: "agisota", name: "rox" },
-			{ owner: "agisota", repo: "rox", branch: "fix/sidebar" },
+			{ owner: "agisota", name: "set" },
+			{ owner: "agisota", repo: "set", branch: "fix/sidebar" },
 		);
 
 		expect(result).toEqual({
@@ -66,7 +66,7 @@ describe("GitHub pull request REST queries", () => {
 			headRefOid: "abc123",
 			isCrossRepository: false,
 			headRepositoryOwner: { login: "agisota" },
-			headRepository: { name: "rox" },
+			headRepository: { name: "set" },
 			updatedAt: "2026-05-08T12:00:00Z",
 		});
 		expect(calls).toEqual([
@@ -143,7 +143,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestByHeadFromGh(
 			execGh,
-			{ owner: "agisota", name: "rox" },
+			{ owner: "agisota", name: "set" },
 			{ owner: "fork-owner", repo: "fork-repo", branch: "fix/sidebar" },
 		);
 
@@ -170,7 +170,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestReviewDecisionFromGh(
 			execGh,
-			{ owner: "agisota", name: "rox" },
+			{ owner: "agisota", name: "set" },
 			42,
 			"OPEN",
 		);
@@ -195,7 +195,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestReviewDecisionFromGh(
 			execGh,
-			{ owner: "agisota", name: "rox" },
+			{ owner: "agisota", name: "set" },
 			42,
 			"OPEN",
 		);
@@ -229,7 +229,7 @@ describe("GitHub pull request REST queries", () => {
 
 		const result = await fetchPullRequestChecksFromGh(
 			execGh,
-			{ owner: "agisota", name: "rox" },
+			{ owner: "agisota", name: "set" },
 			"abc123",
 		);
 

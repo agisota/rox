@@ -35,14 +35,17 @@ describe("workspace.create + workspace.delete integration", () => {
 			branch: "feature/new",
 		});
 
-		expect(result?.workspace?.branch).toBe("feature/new");
+		// New branches get the host-wide "rox" brand prefix by default
+		// (DEFAULT_BRANCH_PREFIX_CUSTOM); the input "feature/new" resolves to
+		// "rox/feature/new".
+		expect(result?.workspace?.branch).toBe("rox/feature/new");
 
 		const persisted = scenario.host.db
 			.select()
 			.from(workspaces)
 			.where(eq(workspaces.id, result?.workspace?.id ?? ""))
 			.get();
-		expect(persisted?.branch).toBe("feature/new");
+		expect(persisted?.branch).toBe("rox/feature/new");
 		expect(persisted?.worktreePath).toBeTruthy();
 		// Path scheme is `~/.rox/worktrees/<projectId>/<branch>` —
 		// pin the suffix rather than the absolute path so the test isn't
@@ -115,8 +118,10 @@ describe("workspace.create + workspace.delete integration", () => {
 				await scenario.host.trpc.settings.worktreeLocation.get.query();
 
 			expect(settings.worktreeBaseDir).toBe(legacyRoot);
+			// Branch carries the default "rox" brand prefix, so the worktree
+			// path gains a leading "rox" segment.
 			expect(persisted?.worktreePath).toBe(
-				join(legacyRoot, scenario.projectId, "feature", "legacy-root"),
+				join(legacyRoot, scenario.projectId, "rox", "feature", "legacy-root"),
 			);
 		} finally {
 			if (previousLegacyValue === undefined) {

@@ -16,6 +16,7 @@ import simpleGit, { type SimpleGit } from "simple-git";
 import { workspaces } from "../../src/db/schema";
 import { safeResolveWorktreePath } from "../../src/trpc/router/workspace-creation/shared/worktree-paths";
 import { cloudFlows } from "../helpers/cloud-fakes";
+import { hermeticSimpleGit } from "../helpers/git-env";
 import { createProjectScenario } from "../helpers/scenarios";
 
 interface BareRemoteFixture {
@@ -27,7 +28,11 @@ async function createBareRemote(): Promise<BareRemoteFixture> {
 	const bareRepoPath = realpathSync(
 		mkdtempSync(join(tmpdir(), "host-service-workspace-pr-bare-")),
 	);
-	await simpleGit().init(["--bare", "--initial-branch=main", bareRepoPath]);
+	await hermeticSimpleGit().init([
+		"--bare",
+		"--initial-branch=main",
+		bareRepoPath,
+	]);
 	return {
 		bareRepoPath,
 		dispose: () => rmSync(bareRepoPath, { recursive: true, force: true }),
