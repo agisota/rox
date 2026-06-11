@@ -180,9 +180,9 @@ export const hostRouter = {
 		.input(z.object({ hostId: z.string().min(1) }))
 		.query(async ({ ctx, input }) => {
 			const parsed = parseHostRoutingKey(input.hostId);
-			if (!parsed) return { allowed: false, paidPlan: false };
+			if (!parsed) return { allowed: false };
 			if (!ctx.organizationIds.includes(parsed.organizationId)) {
-				return { allowed: false, paidPlan: false };
+				return { allowed: false };
 			}
 			const [row] = await db
 				.select({ hostId: v2UsersHosts.hostId })
@@ -196,11 +196,9 @@ export const hostRouter = {
 				)
 				.limit(1);
 
-			// #34.1: hosts are free by default. Membership alone grants full
-			// access; `paidPlan` stays in the response shape (the relay still
-			// reads it) but no longer gates anything.
-			const allowed = !!row;
-			return { allowed, paidPlan: allowed };
+			// #34.1: hosts are free by default — membership alone grants access.
+			// (`paidPlan` dropped from the response; the relay reads only `allowed`.)
+			return { allowed: !!row };
 		}),
 
 	setOnline: jwtProcedure
