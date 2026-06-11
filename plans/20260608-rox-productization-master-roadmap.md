@@ -66,6 +66,10 @@ into every router test's schema mock.
 **Exit criterion for the gate:** a push to `main` shows all of
 sherif / lint / test / typecheck / build green.
 
+> Integration note: the G1–G4 work (#56) landed together with two ready CI fixes
+> — #59 (`dialog` stub for partial electron mocks) and #17 (DaemonClient socket
+> chunk normalization for full typecheck) — via integration PR #60.
+
 ---
 
 ## 2. CONVERGENCE — kill the duplication before it compounds

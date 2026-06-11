@@ -81,7 +81,9 @@ export type TopUpResult =
 
 /** Preview the Rox a USDT amount buys, clamped to non-negative. */
 export function quoteTopUp(usdt: number): TopUpQuote {
-	const safeUsdt = Math.max(0, usdt);
+	// Non-finite input (NaN/±Infinity from corrupted form state) must collapse to
+	// 0 — `Math.max(0, NaN)` is `NaN`, which would otherwise leak into the UI.
+	const safeUsdt = Number.isFinite(usdt) ? Math.max(0, usdt) : 0;
 	return { usdt: safeUsdt, rox: usdToRox(safeUsdt) };
 }
 

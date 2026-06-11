@@ -24,6 +24,9 @@ describe("rox-topup", () => {
 		expect(quoteTopUp(DEFAULT_TOPUP_USDT)).toEqual({ usdt: 5, rox: 500 });
 		expect(quoteTopUp(0)).toEqual({ usdt: 0, rox: 0 });
 		expect(quoteTopUp(-10)).toEqual({ usdt: 0, rox: 0 });
+		// Non-finite input must not leak NaN/Infinity into the on-ramp UI.
+		expect(quoteTopUp(Number.NaN)).toEqual({ usdt: 0, rox: 0 });
+		expect(quoteTopUp(Number.POSITIVE_INFINITY)).toEqual({ usdt: 0, rox: 0 });
 	});
 
 	it("credits a confirmed USDT payment without mutating the processed set", () => {
