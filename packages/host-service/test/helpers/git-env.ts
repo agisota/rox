@@ -20,6 +20,10 @@
  * runner eventually SIGKILLed — turning the adopt integration tests red only
  * in CI. Neutralizing the external config removes the daemon entirely.
  */
+
+import type { SimpleGit } from "simple-git";
+import { createUserSimpleGit } from "../../src/runtime/git/simple-git";
+
 export function hermeticGitEnv(
 	extra: Record<string, string> = {},
 ): Record<string, string> {
@@ -42,4 +46,16 @@ export function hermeticGitEnv(
 		GIT_OPTIONAL_LOCKS: "0",
 		...extra,
 	};
+}
+
+/**
+ * A `SimpleGit` client with the hermetic env applied — the same config surface
+ * `createGitFixture` uses. Prefer this over a bare `simpleGit(path)` anywhere a
+ * test drives git directly (e.g. creating a bare "remote" repo), so those ops
+ * can't inherit the CI runner's `/etc/gitconfig` (credential.helper / fsmonitor)
+ * and hang. Uses the production factory so simple-git's "unsafe" plugin permits
+ * the `GIT_CONFIG_*` overrides.
+ */
+export function hermeticSimpleGit(baseDir?: string): SimpleGit {
+	return createUserSimpleGit(baseDir).env(hermeticGitEnv());
 }
