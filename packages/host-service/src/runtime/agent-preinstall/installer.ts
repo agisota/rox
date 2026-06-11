@@ -1,105 +1,34 @@
-import { exec } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join } from "node:path";
-import { promisify } from "node:util";
+import { isAbsolute, join } from "node:path";
 import type { HostDb } from "../../db";
 import { type AgentInstallStatus, agentInstallState } from "../../db/schema";
-import { getStrictShellEnvironment } from "../../terminal/clean-shell-env";
 import { getConfigTemplate } from "./config-templates";
+import { defaultCommandRunner, defaultWriteConfigFile } from "./default-runners";
 import {
 	buildPreinstallCatalog,
 	type PreinstallCatalogItem,
 	resolveAutoInstallPlan,
 } from "./install-plan";
+import type {
+	AgentPreinstallerOptions,
+	CommandResult,
+	CommandRunner,
+	ConfigFileWriter,
+	PreinstallItemResult,
+	PreinstallProgressEvent,
+	PreinstallStatusEntry,
+} from "./installer-types";
 
-const execAsync = promisify(exec);
-
-export interface CommandResult {
-	exitCode: number;
-	stdout: string;
-	stderr: string;
-}
-
-/** Runs a single shell command string. Injectable so tests never shell out. */
-export type CommandRunner = (command: string) => Promise<CommandResult>;
-
-/** Writes a config file (absolute path). Injectable for tests. */
-export type ConfigFileWriter = (
-	absolutePath: string,
-	contents: string,
-) => Promise<void>;
-
-export interface PreinstallProgressEvent {
-	presetId: string;
-	kind: PreinstallCatalogItem["kind"];
-	status: AgentInstallStatus;
-	label: string;
-	error?: string;
-}
-
-export interface PreinstallItemResult {
-	presetId: string;
-	status: AgentInstallStatus;
-	alreadyPresent: boolean;
-	error?: string;
-}
-
-export interface AgentPreinstallerOptions {
-	db: HostDb;
-	/** Defaults to a real shell runner using a clean strict shell env. */
-	runCommand?: CommandRunner;
-	/** Defaults to writing files under the home directory via fs. */
-	writeConfigFile?: ConfigFileWriter;
-	/** Defaults to `os.homedir()`. */
-	homeDir?: string;
-	/** Optional progress sink (e.g. logging or an event bus bridge). */
-	onProgress?: (event: PreinstallProgressEvent) => void;
-}
-
-export interface PreinstallStatusEntry {
-	presetId: string;
-	kind: PreinstallCatalogItem["kind"];
-	label: string;
-	optional: boolean;
-	status: AgentInstallStatus;
-	version: string | null;
-	lastError: string | null;
-	installedAt: number | null;
-}
-
-const defaultWriteConfigFile: ConfigFileWriter = async (
-	absolutePath,
-	contents,
-) => {
-	await mkdir(dirname(absolutePath), { recursive: true });
-	await writeFile(absolutePath, contents, "utf8");
-};
-
-const defaultCommandRunner: CommandRunner = async (command) => {
-	const env = await getStrictShellEnvironment().catch(
-		() => process.env as Record<string, string>,
-	);
-	try {
-		const { stdout, stderr } = await execAsync(command, {
-			encoding: "utf8",
-			env,
-			timeout: 5 * 60_000,
-		});
-		return { exitCode: 0, stdout, stderr };
-	} catch (error) {
-		const err = error as {
-			code?: number;
-			stdout?: string;
-			stderr?: string;
-			message?: string;
-		};
-		return {
-			exitCode: typeof err.code === "number" ? err.code : 1,
-			stdout: err.stdout ?? "",
-			stderr: err.stderr ?? err.message ?? "",
-		};
-	}
+// Re-export the public type surface so existing consumers that import these
+// from "./installer" (and the package barrel) keep working unchanged.
+export type {
+	AgentPreinstallerOptions,
+	CommandResult,
+	CommandRunner,
+	ConfigFileWriter,
+	PreinstallItemResult,
+	PreinstallProgressEvent,
+	PreinstallStatusEntry,
 };
 
 /**
