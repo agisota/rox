@@ -72,7 +72,7 @@ describe("AgentPreinstaller", () => {
 
 	it("treats a passing checkCommand as already-present and skips install", async () => {
 		const db = createTestDb();
-		const { run, calls } = makeRunner({ "command -v qwen": ok });
+		const { run, calls } = makeRunner({ "qwen --version": ok });
 		const installer = new AgentPreinstaller({
 			db,
 			runCommand: run,
@@ -83,7 +83,7 @@ describe("AgentPreinstaller", () => {
 
 		expect(result?.status).toBe("installed");
 		expect(result?.alreadyPresent).toBe(true);
-		expect(calls).not.toContain("npm install -g @qwen-code/qwen-code");
+		expect(calls).not.toContain("npm install -g @qwen-code/qwen-code@latest");
 	});
 
 	it("records a failed install with its error and supports retry", async () => {
@@ -109,7 +109,7 @@ describe("AgentPreinstaller", () => {
 		const recovering = new AgentPreinstaller({
 			db,
 			runCommand: makeRunner({
-				"npm install -g @qwen-code/qwen-code": ok,
+				"npm install -g @qwen-code/qwen-code@latest": ok,
 			}).run,
 			writeConfigFile: async () => {},
 		});

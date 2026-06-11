@@ -172,6 +172,10 @@
 			"types": "./src/workspace-setup-presets.ts",
 			"default": "./src/workspace-setup-presets.ts"
 		},
+		"./workspace-starter-presets": {
+			"types": "./src/workspace-starter-presets.ts",
+			"default": "./src/workspace-starter-presets.ts"
+		},
 		"./retry": {
 			"types": "./src/retry/index.ts",
 			"default": "./src/retry/index.ts"

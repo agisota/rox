@@ -57,13 +57,28 @@ function safeAmount(amount: number): number {
 	return quantizeRox(Math.max(0, amount));
 }
 
+/**
+ * Guard a persisted balance before arithmetic. Unlike an incoming *amount*
+ * (untrusted provider/catalog input we clamp to 0), the balance is our own
+ * ledger state — a non-finite value means a corrupted read, so we fail loud
+ * instead of letting `quantizeRox(NaN + delta)` silently zero the account.
+ */
+function assertFiniteBalance(balance: number, fn: string): void {
+	if (!Number.isFinite(balance)) {
+		throw new RangeError(`${fn}: non-finite balance ${balance}`);
+	}
+}
+
 /** Credit a balance from a USDT top-up (1 USDT = ROX_PER_USDT Rox). */
 export function applyTopUp(
 	balance: number,
 	usdtAmount: number,
 	note?: string,
 ): { balanceAfter: number; entry: RoxLedgerEntry } {
-	const delta = safeAmount(usdToRox(Math.max(0, usdtAmount)));
+	assertFiniteBalance(balance, "applyTopUp");
+	// `safeAmount` (→ quantizeRox(Math.max(0, …))) already clamps negative/NaN,
+	// so no outer Math.max on usdtAmount is needed.
+	const delta = safeAmount(usdToRox(usdtAmount));
 	const balanceAfter = quantizeRox(balance + delta);
 	return {
 		balanceAfter,
@@ -77,6 +92,7 @@ export function applyGrant(
 	rox: number,
 	note?: string,
 ): { balanceAfter: number; entry: RoxLedgerEntry } {
+	assertFiniteBalance(balance, "applyGrant");
 	const delta = safeAmount(rox);
 	const balanceAfter = quantizeRox(balance + delta);
 	return {
@@ -98,6 +114,7 @@ export function applyRequestCharge(
 	rawCost: RoxRequestCost,
 	ctx?: { modelId?: string; requestId?: string },
 ): RoxChargeResult {
+	assertFiniteBalance(balance, "applyRequestCharge");
 	// A non-finite or non-positive cost is treated as free (never debit an
 	// unbounded amount); quantize so the debit matches the persisted precision.
 	const cost = quantizeRox(rawCost.totalRox);
