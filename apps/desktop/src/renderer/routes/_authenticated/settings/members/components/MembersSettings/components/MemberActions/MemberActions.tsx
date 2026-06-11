@@ -1,7 +1,6 @@
 import {
 	getAvailableRoleChanges,
 	getRoleLevel,
-	ORGANIZATION_ROLES,
 	type OrganizationRole,
 } from "@rox/shared/auth";
 import { alert } from "@rox/ui/atoms/Alert";
@@ -23,6 +22,16 @@ import { useCurrentPlan } from "renderer/hooks/useCurrentPlan";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import type { TeamMember } from "../../../../types";
+
+const ROLE_LABELS: Record<OrganizationRole, string> = {
+	owner: "Владелец",
+	admin: "Администратор",
+	member: "Участник",
+};
+
+function getRoleLabel(role: OrganizationRole): string {
+	return ROLE_LABELS[role];
+}
 
 export function MemberActions({
 	member,
@@ -71,15 +80,15 @@ export function MemberActions({
 	function handleRemove(): void {
 		if (isCurrentUser) {
 			toast.promise(leaveOrganization(), {
-				loading: "Leaving organization...",
-				success: "Left organization",
-				error: (err) => err.message || "Failed to leave organization",
+				loading: "Выходим из организации...",
+				success: "Вы вышли из организации",
+				error: (err) => err.message || "Не удалось выйти из организации",
 			});
 		} else {
 			toast.promise(removeMember(), {
-				loading: "Removing member...",
-				success: "Member removed",
-				error: (err) => err.message || "Failed to remove member",
+				loading: "Удаляем участника...",
+				success: "Участник удалён",
+				error: (err) => err.message || "Не удалось удалить участника",
 			});
 		}
 	}
@@ -87,18 +96,18 @@ export function MemberActions({
 	const handleRemoveClick = () => {
 		const billingNote =
 			plan === "pro" || plan === "enterprise"
-				? " Your subscription will be adjusted accordingly."
+				? " Подписка будет изменена соответствующим образом."
 				: "";
 
 		alert({
-			title: isCurrentUser ? "Leave organization?" : "Remove team member?",
+			title: isCurrentUser ? "Выйти из организации?" : "Удалить участника?",
 			description: isCurrentUser
-				? `Are you sure you want to leave this organization? You will lose access immediately.${billingNote}`
-				: `Are you sure you want to remove ${member.name} (${member.email}) from the organization? They will lose access immediately.${billingNote}`,
+				? `Вы точно хотите выйти из этой организации? Доступ будет потерян сразу.${billingNote}`
+				: `Вы точно хотите удалить ${member.name} (${member.email}) из организации? Пользователь сразу потеряет доступ.${billingNote}`,
 			actions: [
-				{ label: "Cancel", variant: "outline", onClick: () => {} },
+				{ label: "Отмена", variant: "outline", onClick: () => {} },
 				{
-					label: isCurrentUser ? "Leave Organization" : "Remove Member",
+					label: isCurrentUser ? "Выйти из организации" : "Удалить участника",
 					variant: "destructive",
 					onClick: () => handleRemove(),
 				},
@@ -114,10 +123,10 @@ export function MemberActions({
 				memberId: member.memberId,
 				role: newRole,
 			});
-			toast.success(`Role changed to ${ORGANIZATION_ROLES[newRole].name}`);
+			toast.success(`Роль изменена на «${getRoleLabel(newRole)}»`);
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to change role",
+				error instanceof Error ? error.message : "Не удалось изменить роль",
 			);
 		} finally {
 			setIsChangingRole(false);
@@ -130,12 +139,12 @@ export function MemberActions({
 
 		if (isSelfDemotion) {
 			alert({
-				title: "Demote yourself?",
-				description: `You're about to change your role from ${ORGANIZATION_ROLES[member.role].name} to ${ORGANIZATION_ROLES[newRole].name}. Another owner will need to restore your permissions. Are you sure?`,
+				title: "Понизить свою роль?",
+				description: `Вы собираетесь изменить свою роль с «${getRoleLabel(member.role)}» на «${getRoleLabel(newRole)}». Восстановить ваши права сможет только другой владелец. Продолжить?`,
 				actions: [
-					{ label: "Cancel", variant: "outline", onClick: () => {} },
+					{ label: "Отмена", variant: "outline", onClick: () => {} },
 					{
-						label: "Yes, demote me",
+						label: "Да, понизить роль",
 						variant: "destructive",
 						onClick: () => handleChangeRole(newRole),
 					},
@@ -157,7 +166,7 @@ export function MemberActions({
 				{availableRoles.length > 0 && (
 					<DropdownMenuSub>
 						<DropdownMenuSubTrigger disabled={isChangingRole}>
-							Change role
+							Изменить роль
 						</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent>
 							{availableRoles.map((role) => (
@@ -166,7 +175,7 @@ export function MemberActions({
 									onSelect={() => handleRoleSelection(role)}
 									disabled={isChangingRole}
 								>
-									Change to {ORGANIZATION_ROLES[role].name}
+									Изменить на «{getRoleLabel(role)}»
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuSubContent>
@@ -179,7 +188,7 @@ export function MemberActions({
 						onSelect={handleRemoveClick}
 					>
 						<HiOutlineTrash className="h-4 w-4 text-destructive" />
-						<span>Leave organization...</span>
+						<span>Выйти из организации...</span>
 					</DropdownMenuItem>
 				) : canRemove ? (
 					<DropdownMenuItem
@@ -187,7 +196,7 @@ export function MemberActions({
 						onSelect={handleRemoveClick}
 					>
 						<HiOutlineTrash className="h-4 w-4 text-destructive" />
-						<span>Remove member</span>
+						<span>Удалить участника</span>
 					</DropdownMenuItem>
 				) : null}
 			</DropdownMenuContent>

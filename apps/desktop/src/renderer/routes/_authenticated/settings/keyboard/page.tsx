@@ -45,6 +45,209 @@ const CATEGORY_ORDER: HotkeyCategory[] = [
 	"Help",
 ];
 
+const CATEGORY_LABELS: Record<HotkeyCategory, string> = {
+	Navigation: "Навигация",
+	Workspace: "Рабочие пространства",
+	Terminal: "Терминал",
+	Layout: "Раскладка окон",
+	Window: "Окно",
+	Help: "Справка",
+};
+
+const HOTKEY_TEXT: Partial<
+	Record<HotkeyId, { label: string; description?: string }>
+> = {
+	NAVIGATE_BACK: {
+		label: "Назад",
+		description: "Вернуться на предыдущую страницу в истории",
+	},
+	NAVIGATE_FORWARD: {
+		label: "Вперед",
+		description: "Перейти на следующую страницу в истории",
+	},
+	QUICK_OPEN: {
+		label: "Быстро открыть файл",
+		description: "Найти и открыть файлы в текущем рабочем пространстве",
+	},
+	JUMP_TO_WORKSPACE_1: { label: "Переключиться на рабочее пространство 1" },
+	JUMP_TO_WORKSPACE_2: { label: "Переключиться на рабочее пространство 2" },
+	JUMP_TO_WORKSPACE_3: { label: "Переключиться на рабочее пространство 3" },
+	JUMP_TO_WORKSPACE_4: { label: "Переключиться на рабочее пространство 4" },
+	JUMP_TO_WORKSPACE_5: { label: "Переключиться на рабочее пространство 5" },
+	JUMP_TO_WORKSPACE_6: { label: "Переключиться на рабочее пространство 6" },
+	JUMP_TO_WORKSPACE_7: { label: "Переключиться на рабочее пространство 7" },
+	JUMP_TO_WORKSPACE_8: { label: "Переключиться на рабочее пространство 8" },
+	JUMP_TO_WORKSPACE_9: { label: "Переключиться на рабочее пространство 9" },
+	PREV_WORKSPACE: {
+		label: "Предыдущее рабочее пространство",
+		description: "Перейти к предыдущему рабочему пространству в боковой панели",
+	},
+	NEXT_WORKSPACE: {
+		label: "Следующее рабочее пространство",
+		description: "Перейти к следующему рабочему пространству в боковой панели",
+	},
+	CLOSE_WORKSPACE: {
+		label: "Закрыть рабочее пространство",
+		description: "Закрыть или удалить текущее рабочее пространство",
+	},
+	NEW_WORKSPACE: {
+		label: "Новое рабочее пространство",
+		description: "Открыть окно создания рабочего пространства",
+	},
+	QUICK_CREATE_WORKSPACE: {
+		label: "Быстро создать рабочее пространство",
+		description: "Быстро создать рабочее пространство в текущем проекте",
+	},
+	RUN_WORKSPACE_COMMAND: {
+		label: "Запустить команду рабочего пространства",
+		description: "Запустить или остановить команду рабочего пространства",
+	},
+	FOCUS_TASK_SEARCH: {
+		label: "Перейти к поиску задач",
+		description: "Перевести фокус в поле поиска на экране задач",
+	},
+	OPEN_PROJECT: {
+		label: "Открыть проект",
+		description: "Открыть существующую папку проекта",
+	},
+	OPEN_PR: {
+		label: "Открыть pull request",
+		description: "Открыть существующий PR или создать новый на GitHub",
+	},
+	TOGGLE_SIDEBAR: { label: "Показать или скрыть вкладку изменений" },
+	OPEN_DIFF_VIEWER: {
+		label: "Открыть просмотр diff",
+		description:
+			"Открыть просмотр diff в новой вкладке или перейти к уже открытому просмотру",
+	},
+	TOGGLE_WORKSPACE_SIDEBAR: {
+		label: "Показать или скрыть боковую панель рабочих пространств",
+	},
+	SPLIT_RIGHT: {
+		label: "Разделить вправо",
+		description: "Разделить текущую панель вправо",
+	},
+	SPLIT_DOWN: {
+		label: "Разделить вниз",
+		description: "Разделить текущую панель вниз",
+	},
+	SPLIT_AUTO: {
+		label: "Разделить панель автоматически",
+		description: "Разделить текущую панель по более длинной стороне",
+	},
+	SPLIT_WITH_CHAT: {
+		label: "Разделить с новым чатом",
+		description: "Разделить текущую панель и открыть новую панель чата",
+	},
+	SPLIT_WITH_BROWSER: {
+		label: "Разделить с новым браузером",
+		description: "Разделить текущую панель и открыть новую панель браузера",
+	},
+	EQUALIZE_PANE_SPLITS: {
+		label: "Выровнять размеры панелей",
+		description: "Сделать все панели одинакового размера",
+	},
+	CLOSE_PANE: {
+		label: "Закрыть панель",
+		description: "Закрыть текущую панель",
+	},
+	FIND_IN_TERMINAL: {
+		label: "Найти в терминале",
+		description: "Искать текст в активном терминале",
+	},
+	FIND_IN_FILE_VIEWER: {
+		label: "Найти в просмотре файла",
+		description: "Искать текст в отрендеренном просмотре файла",
+	},
+	FIND_IN_CHAT: {
+		label: "Найти в чате",
+		description: "Искать текст в активном чате",
+	},
+	NEW_GROUP: { label: "Новый терминал" },
+	NEW_CHAT: { label: "Новый чат" },
+	REOPEN_TAB: { label: "Открыть закрытую вкладку заново" },
+	NEW_BROWSER: { label: "Новый браузер" },
+	CLOSE_TERMINAL: { label: "Закрыть терминал" },
+	CLOSE_TAB: {
+		label: "Закрыть вкладку",
+		description: "Закрыть текущую вкладку",
+	},
+	CLEAR_TERMINAL: { label: "Очистить терминал" },
+	SCROLL_TO_BOTTOM: {
+		label: "Прокрутить вниз",
+		description: "Прокрутить активный терминал вниз",
+	},
+	PREV_TAB_ALT: { label: "Предыдущая вкладка (Alt)" },
+	NEXT_TAB_ALT: { label: "Следующая вкладка (Alt)" },
+	PREV_TAB: {
+		label: "Предыдущая вкладка",
+		description: "Перейти к предыдущей вкладке в активном рабочем пространстве",
+	},
+	NEXT_TAB: {
+		label: "Следующая вкладка",
+		description: "Перейти к следующей вкладке в активном рабочем пространстве",
+	},
+	FOCUS_PANE_LEFT: {
+		label: "Фокус на панель слева",
+		description: "Перевести фокус на панель слева от активной",
+	},
+	FOCUS_PANE_RIGHT: {
+		label: "Фокус на панель справа",
+		description: "Перевести фокус на панель справа от активной",
+	},
+	FOCUS_PANE_UP: {
+		label: "Фокус на панель выше",
+		description: "Перевести фокус на панель над активной",
+	},
+	FOCUS_PANE_DOWN: {
+		label: "Фокус на панель ниже",
+		description: "Перевести фокус на панель под активной",
+	},
+	JUMP_TO_TAB_1: { label: "Переключиться на вкладку 1" },
+	JUMP_TO_TAB_2: { label: "Переключиться на вкладку 2" },
+	JUMP_TO_TAB_3: { label: "Переключиться на вкладку 3" },
+	JUMP_TO_TAB_4: { label: "Переключиться на вкладку 4" },
+	JUMP_TO_TAB_5: { label: "Переключиться на вкладку 5" },
+	JUMP_TO_TAB_6: { label: "Переключиться на вкладку 6" },
+	JUMP_TO_TAB_7: { label: "Переключиться на вкладку 7" },
+	JUMP_TO_TAB_8: { label: "Переключиться на вкладку 8" },
+	JUMP_TO_TAB_9: { label: "Переключиться на вкладку 9" },
+	OPEN_PRESET_1: { label: "Открыть пресет 1" },
+	OPEN_PRESET_2: { label: "Открыть пресет 2" },
+	OPEN_PRESET_3: { label: "Открыть пресет 3" },
+	OPEN_PRESET_4: { label: "Открыть пресет 4" },
+	OPEN_PRESET_5: { label: "Открыть пресет 5" },
+	OPEN_PRESET_6: { label: "Открыть пресет 6" },
+	OPEN_PRESET_7: { label: "Открыть пресет 7" },
+	OPEN_PRESET_8: { label: "Открыть пресет 8" },
+	OPEN_PRESET_9: { label: "Открыть пресет 9" },
+	FOCUS_CHAT_INPUT: { label: "Перейти к вводу в чате" },
+	CHAT_ADD_ATTACHMENT: { label: "Добавить вложение" },
+	OPEN_IN_APP: {
+		label: "Открыть в приложении",
+		description:
+			"Открыть рабочее пространство во внешнем приложении (Cursor, VS Code и т. д.)",
+	},
+	COPY_PATH: {
+		label: "Скопировать путь",
+		description: "Скопировать путь рабочего пространства в буфер обмена",
+	},
+	OPEN_SETTINGS: { label: "Открыть настройки" },
+	SHOW_HOTKEYS: { label: "Показать горячие клавиши" },
+	OPEN_COMMAND_PALETTE: {
+		label: "Открыть палитру команд",
+		description: "Открыть глобальную палитру команд",
+	},
+};
+
+function getHotkeyText(id: HotkeyId) {
+	const text = HOTKEY_TEXT[id];
+	return {
+		label: text?.label ?? HOTKEYS[id].label,
+		description: text?.description ?? HOTKEYS[id].description,
+	};
+}
+
 function HotkeyRow({
 	id,
 	label,
@@ -106,7 +309,7 @@ function HotkeyRow({
 								exit={{ opacity: 0 }}
 								transition={{ duration: motionDuration.fast }}
 							>
-								Press a key…
+								Нажмите клавишу...
 							</motion.span>
 						) : (
 							<motion.span
@@ -122,7 +325,7 @@ function HotkeyRow({
 					</AnimatePresence>
 				</motion.button>
 				<Button variant="ghost" size="sm" onClick={onReset}>
-					Reset
+					Сбросить
 				</Button>
 			</div>
 		</div>
@@ -149,10 +352,11 @@ function getHotkeysByCategory(): Record<
 		Help: [],
 	};
 	for (const [id, hotkey] of Object.entries(HOTKEYS)) {
+		const text = getHotkeyText(id as HotkeyId);
 		grouped[hotkey.category as HotkeyCategory].push({
 			id: id as HotkeyId,
-			label: hotkey.label,
-			description: hotkey.description,
+			label: text.label,
+			description: text.description,
 		});
 	}
 	return grouped;
@@ -211,7 +415,9 @@ function KeyboardShortcutsPage() {
 			CATEGORY_ORDER.map((category) => [
 				category,
 				(hotkeysByCategory[category] ?? []).filter((hotkey) =>
-					hotkey.label.toLowerCase().includes(lower),
+					[hotkey.label, hotkey.description]
+						.filter(Boolean)
+						.some((text) => text?.toLowerCase().includes(lower)),
 				),
 			]),
 		) as typeof hotkeysByCategory;
@@ -241,15 +447,15 @@ function KeyboardShortcutsPage() {
 			{/* Header */}
 			<div className="mb-6 flex items-start justify-between gap-4">
 				<div>
-					<h2 className="text-xl font-semibold">Keyboard shortcuts</h2>
+					<h2 className="text-xl font-semibold">Горячие клавиши</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Customize keyboard shortcuts for your workflow. Press{" "}
+						Настройте горячие клавиши под свой рабочий процесс. Нажмите{" "}
 						<KbdGroup>
 							{showHotkeysKeys.map((key) => (
 								<Kbd key={key}>{key}</Kbd>
 							))}
 						</KbdGroup>{" "}
-						to open this page anytime.
+						чтобы открыть эту страницу в любой момент.
 					</p>
 				</div>
 				<Button
@@ -260,7 +466,7 @@ function KeyboardShortcutsPage() {
 						resetAll();
 					}}
 				>
-					Reset all
+					Сбросить все
 				</Button>
 			</div>
 
@@ -268,13 +474,13 @@ function KeyboardShortcutsPage() {
 			<div className="mb-8 flex items-center justify-between gap-4">
 				<div className="space-y-0.5">
 					<Label htmlFor="adaptive-layout" className="text-sm font-medium">
-						Adaptive layout mapping
+						Адаптация к раскладке клавиатуры
 					</Label>
 					<p className="text-xs text-muted-foreground">
-						Match shortcuts to the labels on your keyboard (e.g. ⌘Z always fires
-						on the key labeled "Z" — physical KeyY on QWERTZ). When off,
-						shortcuts are anchored to physical key positions and ignore the
-						current input source.
+						Привязывает горячие клавиши к символам на клавиатуре (например, ⌘Z
+						всегда срабатывает на клавише с надписью "Z" — физическая KeyY на
+						QWERTZ). Если выключено, горячие клавиши привязаны к физическому
+						положению клавиш и игнорируют текущий источник ввода.
 					</p>
 				</div>
 				<Switch
@@ -289,7 +495,7 @@ function KeyboardShortcutsPage() {
 				<HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 				<Input
 					type="text"
-					placeholder="Search"
+					placeholder="Поиск"
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					className="pl-9 bg-accent/30 border-transparent focus:border-accent"
@@ -310,7 +516,7 @@ function KeyboardShortcutsPage() {
 					return (
 						<motion.div key={category} variants={staggerItem}>
 							<h3 className="text-sm font-medium text-muted-foreground mb-2">
-								{category}
+								{CATEGORY_LABELS[category]}
 							</h3>
 							<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
 								{hotkeys.map((hotkey) => (
@@ -338,7 +544,7 @@ function KeyboardShortcutsPage() {
 					(cat) => (filteredHotkeysByCategory[cat] ?? []).length === 0,
 				) && (
 					<div className="py-8 text-center text-sm text-muted-foreground">
-						No shortcuts found matching "{searchQuery}"
+						Не найдено горячих клавиш по запросу "{searchQuery}"
 					</div>
 				)}
 			</motion.div>
@@ -351,18 +557,18 @@ function KeyboardShortcutsPage() {
 				<AlertDialogContent className="max-w-[380px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Shortcut already in use
+							Горячая клавиша уже используется
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
 									{pendingConflict
-										? `${conflictDisplay.text} is already assigned to "${
-												HOTKEYS[pendingConflict.conflictId].label
+										? `${conflictDisplay.text} уже назначен на "${
+												getHotkeyText(pendingConflict.conflictId).label
 											}".`
 										: ""}
 								</span>
-								<span className="block">Would you like to reassign it?</span>
+								<span className="block">Переназначить его?</span>
 							</div>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
@@ -372,14 +578,14 @@ function KeyboardShortcutsPage() {
 							size="sm"
 							onClick={() => setPendingConflict(null)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="secondary"
 							size="sm"
 							onClick={handleConflictReassign}
 						>
-							Reassign
+							Переназначить
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>

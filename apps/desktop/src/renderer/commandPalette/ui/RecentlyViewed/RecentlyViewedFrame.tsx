@@ -110,8 +110,8 @@ export function RecentlyViewedFrame() {
 
 	return (
 		<CommandList>
-			<CommandEmpty>Nothing here yet.</CommandEmpty>
-			<CommandGroup heading="Recently Viewed">
+			<CommandEmpty>Здесь пока ничего нет.</CommandEmpty>
+			<CommandGroup heading="Недавно просмотренные">
 				{filteredEntries.map((entry) => {
 					const isCurrent = entry.path === currentPath;
 					if (entry.type === "task") {
@@ -189,7 +189,7 @@ function WorkspaceRow({
 			className={cn("gap-2.5", isCurrent && "bg-accent/50")}
 		>
 			<span className="text-muted-foreground text-xs shrink-0 w-24 text-left line-clamp-1">
-				{ws?.projectName ?? "Workspace"}
+				{ws?.projectName ?? "Рабочая область"}
 			</span>
 			<span className="flex items-center justify-center w-4 shrink-0">
 				{ws ? (
@@ -205,7 +205,7 @@ function WorkspaceRow({
 					!ws && "text-muted-foreground",
 				)}
 			>
-				{ws?.branch ?? "Unknown"}
+				{ws?.branch ?? "Неизвестно"}
 			</span>
 		</CommandItem>
 	);
@@ -227,7 +227,7 @@ function V2WorkspaceRow({
 			className={cn("gap-2.5", isCurrent && "bg-accent/50")}
 		>
 			<span className="text-muted-foreground text-xs shrink-0 w-24 text-left line-clamp-1">
-				{ws?.projectName ?? "Workspace"}
+				{ws?.projectName ?? "Рабочая область"}
 			</span>
 			<span className="flex items-center justify-center w-4 shrink-0">
 				<LuGitBranch
@@ -241,7 +241,7 @@ function V2WorkspaceRow({
 					!ws && "text-muted-foreground",
 				)}
 			>
-				{ws?.branch ?? "Unknown"}
+				{ws?.branch ?? "Неизвестно"}
 			</span>
 		</CommandItem>
 	);
@@ -263,7 +263,7 @@ function AutomationRow({
 			className={cn("gap-2.5", isCurrent && "bg-accent/50")}
 		>
 			<span className="text-muted-foreground text-xs shrink-0 w-24 text-left line-clamp-1">
-				Automation
+				Автоматизация
 			</span>
 			<span className="flex items-center justify-center w-4 shrink-0">
 				<LuCpu className="size-3 text-muted-foreground" strokeWidth={1.5} />
@@ -274,7 +274,7 @@ function AutomationRow({
 					!automation && "text-muted-foreground",
 				)}
 			>
-				{automation?.name ?? "Unknown"}
+				{automation?.name ?? "Неизвестно"}
 			</span>
 		</CommandItem>
 	);
@@ -305,7 +305,7 @@ function TaskRow({
 			className={cn("gap-2.5", isCurrent && "bg-accent/50")}
 		>
 			<span className="text-muted-foreground text-xs shrink-0 w-24 text-left line-clamp-1">
-				{task?.slug ?? "Task"}
+				{task?.slug ?? "Задача"}
 			</span>
 			<span className="flex items-center justify-center w-4 shrink-0">
 				{task ? (
@@ -323,7 +323,7 @@ function TaskRow({
 					!task && "text-muted-foreground",
 				)}
 			>
-				{task?.title ?? "Unknown"}
+				{task?.title ?? "Неизвестно"}
 			</span>
 		</CommandItem>
 	);

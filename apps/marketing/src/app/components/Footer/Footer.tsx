@@ -33,25 +33,25 @@ interface FooterLink {
 }
 
 const COMPANY_LINKS: FooterLink[] = [
-	{ href: "/team", label: "About" },
-	{ href: "/contact", label: "Contact" },
-	{ href: COMPANY.CAREERS_URL, label: "Careers", external: true },
-	{ href: COMPANY.STATUS_URL, label: "Status", external: true },
+	{ href: "/team", label: "О нас" },
+	{ href: "/contact", label: "Контакты" },
+	{ href: COMPANY.CAREERS_URL, label: "Вакансии", external: true },
+	{ href: COMPANY.STATUS_URL, label: "Статус", external: true },
 ];
 
 const RESOURCE_LINKS: FooterLink[] = [
-	{ href: COMPANY.DOCS_URL, label: "Documentation", external: true },
-	{ href: "/pricing", label: "Pricing" },
-	{ href: "/blog", label: "Blog" },
-	{ href: "/community", label: "Community" },
+	{ href: COMPANY.DOCS_URL, label: "Документация", external: true },
+	{ href: "/pricing", label: "Цены" },
+	{ href: "/blog", label: "Блог" },
+	{ href: "/community", label: "Сообщество" },
 	{ href: "/enterprise", label: "Enterprise" },
-	{ href: "/changelog", label: "Changelog" },
+	{ href: "/changelog", label: "Журнал изменений" },
 ];
 
 const LEGAL_LINKS: FooterLink[] = [
-	{ href: COMPANY.TRUST_URL, label: "Security", external: true },
-	{ href: "/terms", label: "Terms" },
-	{ href: "/privacy", label: "Privacy" },
+	{ href: COMPANY.TRUST_URL, label: "Безопасность", external: true },
+	{ href: "/terms", label: "Условия" },
+	{ href: "/privacy", label: "Конфиденциальность" },
 ];
 
 export function Footer() {
@@ -81,9 +81,9 @@ export function Footer() {
 						</p>
 					</div>
 
-					<FooterColumn title="Company" links={COMPANY_LINKS} />
-					<FooterColumn title="Resources" links={RESOURCE_LINKS} />
-					<FooterColumn title="Legal" links={LEGAL_LINKS} />
+					<FooterColumn title="Компания" links={COMPANY_LINKS} />
+					<FooterColumn title="Ресурсы" links={RESOURCE_LINKS} />
+					<FooterColumn title="Правовая информация" links={LEGAL_LINKS} />
 				</div>
 			</motion.div>
 		</footer>

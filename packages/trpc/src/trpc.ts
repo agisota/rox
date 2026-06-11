@@ -48,7 +48,12 @@ export const protectedProcedure = t.procedure
 	})
 	.use(async ({ ctx, next }) => {
 		const sessionOrgId = ctx.session.session.activeOrganizationId ?? null;
-		const headerOrgId = ctx.headers.get(ORGANIZATION_HEADER)?.trim() || null;
+		// Legacy fallback: installed pre-rebrand clients still send the
+		// x-superset-organization-id header.
+		const headerOrgId =
+			ctx.headers.get(ORGANIZATION_HEADER)?.trim() ||
+			ctx.headers.get("x-superset-organization-id")?.trim() ||
+			null;
 
 		let activeOrganizationId = sessionOrgId;
 		if (headerOrgId && headerOrgId !== sessionOrgId) {

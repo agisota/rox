@@ -5,7 +5,7 @@ export function NotFoundGrid() {
 				className="absolute inset-0 w-full h-full"
 				xmlns="http://www.w3.org/2000/svg"
 			>
-				<title>grid</title>
+				<title>сетка</title>
 				<defs>
 					<pattern
 						id="notfound-grid"

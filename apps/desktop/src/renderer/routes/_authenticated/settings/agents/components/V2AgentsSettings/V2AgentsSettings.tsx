@@ -69,7 +69,7 @@ export function V2AgentsSettings({
 			if (!activeHostUrl) {
 				throw new Error(
 					getHostServiceUnavailableMessage(hostService, {
-						action: "add an agent",
+						action: "добавить агента",
 					}),
 				);
 			}
@@ -97,7 +97,9 @@ export function V2AgentsSettings({
 			if (added?.id) setSelectedAgentId(added.id);
 		},
 		onError: (err) =>
-			toast.error(err instanceof Error ? err.message : "Failed to add agent"),
+			toast.error(
+				err instanceof Error ? err.message : "Не удалось добавить агента",
+			),
 	});
 
 	const reorderMutation = useMutation({
@@ -105,7 +107,7 @@ export function V2AgentsSettings({
 			if (!activeHostUrl) {
 				throw new Error(
 					getHostServiceUnavailableMessage(hostService, {
-						action: "reorder agents",
+						action: "изменить порядок агентов",
 					}),
 				);
 			}
@@ -134,7 +136,9 @@ export function V2AgentsSettings({
 			if (ctx?.previous) {
 				queryClient.setQueryData(queryKey, ctx.previous);
 			}
-			toast.error(err instanceof Error ? err.message : "Failed to reorder");
+			toast.error(
+				err instanceof Error ? err.message : "Не удалось изменить порядок",
+			);
 		},
 		onSettled: () => invalidate(),
 	});
@@ -144,7 +148,7 @@ export function V2AgentsSettings({
 			if (!activeHostUrl) {
 				throw new Error(
 					getHostServiceUnavailableMessage(hostService, {
-						action: "reset agents",
+						action: "сбросить агентов",
 					}),
 				);
 			}
@@ -157,7 +161,9 @@ export function V2AgentsSettings({
 			invalidate();
 		},
 		onError: (err) =>
-			toast.error(err instanceof Error ? err.message : "Failed to reset"),
+			toast.error(
+				err instanceof Error ? err.message : "Не удалось выполнить сброс",
+			),
 	});
 
 	const configs = configsQuery.data ?? [];
@@ -167,7 +173,7 @@ export function V2AgentsSettings({
 	);
 	const hostServiceUnavailableMessage = getHostServiceUnavailableMessage(
 		hostService,
-		{ action: "load agent settings" },
+		{ action: "загрузить настройки агентов" },
 	);
 
 	const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -203,7 +209,7 @@ export function V2AgentsSettings({
 	if (configsQuery.isError) {
 		return (
 			<div className="p-6 text-sm text-destructive">
-				Couldn't load agent settings:{" "}
+				Не удалось загрузить настройки агентов:{" "}
 				{configsQuery.error instanceof Error
 					? configsQuery.error.message
 					: hostServiceUnavailableMessage}
@@ -235,7 +241,7 @@ export function V2AgentsSettings({
 						config={selectedAgent}
 						description={
 							DESCRIPTION_BY_PRESET_ID.get(selectedAgent.presetId) ??
-							"Terminal agent launch configuration"
+							"Конфигурация запуска терминального агента"
 						}
 						onChanged={(updated) => {
 							updateCachedConfig(updated);
@@ -273,9 +279,9 @@ function EmptyState() {
 					aria-hidden="true"
 					className="mx-auto size-10 text-muted-foreground/60"
 				/>
-				<h3 className="mt-3 text-sm font-medium">No agents yet</h3>
+				<h3 className="mt-3 text-sm font-medium">Агентов пока нет</h3>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Add one from the menu in the sidebar to get started.
+					Добавьте агента через меню на боковой панели, чтобы начать.
 				</p>
 			</div>
 		</div>

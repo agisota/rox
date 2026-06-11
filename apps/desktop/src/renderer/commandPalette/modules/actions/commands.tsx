@@ -44,16 +44,16 @@ export const actionsProvider: CommandProvider = {
 		const commands: Command[] = [
 			{
 				id: "actions.toggleTheme",
-				title: "Toggle theme",
+				title: "Переключить тему",
 				section: "actions",
 				icon: PaletteIcon,
-				keywords: ["dark", "light", "appearance", "color"],
+				keywords: ["темная", "светлая", "оформление", "цвет"],
 				run: () => cycleTheme(),
 				renderFrame: () => <ThemeFrame />,
 			},
 			{
 				id: "actions.toggleLeftSidebar",
-				title: "Toggle left sidebar",
+				title: "Переключить левую боковую панель",
 				section: "actions",
 				icon: PanelLeftIcon,
 				hotkeyId: "TOGGLE_WORKSPACE_SIDEBAR",
@@ -64,7 +64,7 @@ export const actionsProvider: CommandProvider = {
 		if (context.workspace) {
 			commands.push({
 				id: "actions.toggleRightSidebar",
-				title: "Toggle right sidebar",
+				title: "Переключить правую боковую панель",
 				section: "actions",
 				icon: PanelRightIcon,
 				hotkeyId: "TOGGLE_SIDEBAR",
@@ -76,36 +76,36 @@ export const actionsProvider: CommandProvider = {
 			{
 				id: "actions.toggleNotificationSounds",
 				title: context.notificationSoundsMuted
-					? "Unmute notifications"
-					: "Mute notifications",
+					? "Включить звуки уведомлений"
+					: "Отключить звуки уведомлений",
 				section: "actions",
 				icon: context.notificationSoundsMuted ? BellIcon : BellOffIcon,
-				keywords: ["dnd", "silence", "notifications", "ringtone"],
+				keywords: ["не беспокоить", "тишина", "уведомления", "звук"],
 				run: () =>
 					toggleNotificationSoundsMuted(context.notificationSoundsMuted),
 			},
 			{
 				id: "actions.showShortcuts",
-				title: "Show keyboard shortcuts",
+				title: "Показать сочетания клавиш",
 				section: "actions",
 				icon: KeyboardIcon,
 				hotkeyId: "SHOW_HOTKEYS",
-				keywords: ["hotkeys"],
+				keywords: ["горячие клавиши"],
 				run: (ctx) => ctx.navigate("/settings/keyboard"),
 			},
 			{
 				id: "actions.checkUpdates",
-				title: "Check for updates",
+				title: "Проверить обновления",
 				section: "actions",
 				icon: RefreshCwIcon,
-				keywords: ["update", "upgrade"],
+				keywords: ["обновление", "версия"],
 				run: async () => {
 					try {
 						await electronTrpcClient.autoUpdate.checkInteractive.mutate();
 					} catch (error) {
 						const message =
 							error instanceof Error ? error.message : String(error);
-						toast.error(`Failed to check for updates: ${message}`);
+						toast.error(`Не удалось проверить обновления: ${message}`);
 					}
 				},
 			},

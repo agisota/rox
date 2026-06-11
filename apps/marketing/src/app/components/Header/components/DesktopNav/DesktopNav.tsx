@@ -11,6 +11,7 @@ import {
 } from "@rox/ui/navigation-menu";
 import { cn } from "@rox/ui/utils";
 import Link from "next/link";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import {
 	type NavLink,
 	PRODUCT_LINKS,
@@ -29,7 +30,7 @@ export function DesktopNav() {
 			<NavigationMenuList>
 				<NavigationMenuItem>
 					<NavigationMenuTrigger className={triggerClass}>
-						Product
+						Продукт
 					</NavigationMenuTrigger>
 					<NavigationMenuContent>
 						<ul className="flex w-[320px] flex-col gap-1 p-2">
@@ -42,7 +43,7 @@ export function DesktopNav() {
 
 				<NavigationMenuItem>
 					<NavigationMenuTrigger className={triggerClass}>
-						Resources
+						Ресурсы
 					</NavigationMenuTrigger>
 					<NavigationMenuContent>
 						<ul className="grid w-[400px] grid-cols-1 gap-1 p-2 sm:w-[460px] sm:grid-cols-2">
@@ -73,7 +74,7 @@ function NavListItem({ link }: { link: NavLink }) {
 			</div>
 			{link.description && (
 				<p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-					{link.description}
+					<GlossaryText text={link.description} />
 				</p>
 			)}
 		</>

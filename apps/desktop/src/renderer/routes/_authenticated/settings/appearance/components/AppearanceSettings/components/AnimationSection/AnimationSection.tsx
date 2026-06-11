@@ -16,10 +16,10 @@ export function AnimationSection() {
 
 	return (
 		<div>
-			<h3 className="text-sm font-medium mb-1">Animations</h3>
+			<h3 className="text-sm font-medium mb-1">Анимации</h3>
 			<p className="text-xs text-muted-foreground mb-3">
-				Control how much motion the app uses. Your operating system's "Reduce
-				motion" setting always overrides this.
+				Управляет количеством движения в приложении. Настройка операционной
+				системы «Уменьшение движения» всегда имеет приоритет.
 			</p>
 			<Select
 				value={animationPreference}
@@ -27,15 +27,15 @@ export function AnimationSection() {
 					update("animationPreference", value as AnimationPreference)
 				}
 			>
-				<SelectTrigger className="w-[260px]" aria-label="Animation preference">
+				<SelectTrigger className="w-[260px]" aria-label="Настройка анимации">
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>
-					<SelectItem value="full">Full — all motion</SelectItem>
+					<SelectItem value="full">Полная — вся анимация</SelectItem>
 					<SelectItem value="essential">
-						Essential — only functional motion
+						Необходимая — только функциональная анимация
 					</SelectItem>
-					<SelectItem value="off">Off — no animations</SelectItem>
+					<SelectItem value="off">Отключена — без анимации</SelectItem>
 				</SelectContent>
 			</Select>
 		</div>

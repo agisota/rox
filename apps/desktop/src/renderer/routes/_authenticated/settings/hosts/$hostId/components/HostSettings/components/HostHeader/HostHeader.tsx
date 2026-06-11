@@ -78,7 +78,7 @@ export function HostHeader({
 						</span>
 						<input
 							ref={inputRef}
-							aria-label="Host name"
+							aria-label="Название хоста"
 							size={1}
 							className="col-start-1 row-start-1 bg-transparent border-b border-border outline-none focus:border-foreground w-full p-0"
 							value={draft}
@@ -101,7 +101,7 @@ export function HostHeader({
 						type="button"
 						onClick={() => setIsEditing(true)}
 						className="flex items-center gap-2 text-left hover:text-foreground"
-						title="Rename host"
+						title="Переименовать хост"
 					>
 						<h2 className="text-xl font-semibold">{name}</h2>
 						<LuPencil className="size-4 text-muted-foreground" />
@@ -111,7 +111,7 @@ export function HostHeader({
 				)}
 			</div>
 			<p className="text-sm text-muted-foreground mt-1">
-				{isOnline ? "Online" : "Offline"} ·{" "}
+				{isOnline ? "В сети" : "Не в сети"} ·{" "}
 				<span className="font-mono">{machineId}</span>
 				{address && (
 					<>

@@ -2,23 +2,23 @@ import type { FAQItem } from "@/app/components/FAQSection";
 
 export const ENTERPRISE_FAQ_ITEMS: FAQItem[] = [
 	{
-		question: "What is Rox Enterprise?",
+		question: "Что такое корпоративная версия Rox?",
 		answer:
-			"Rox Enterprise is Rox for teams. Reach out to learn more about what's included and how it can work for your organization.",
+			"Корпоративная версия Rox — это Rox для команд. Напишите нам, чтобы узнать, что входит в корпоративный запуск и как Rox может работать в вашей организации.",
 	},
 	{
-		question: "How do I get started?",
+		question: "Как начать?",
 		answer:
-			"Fill out the contact form on this page and our team will reach out to learn about your needs and walk you through next steps.",
+			"Заполните форму на этой странице, и наша команда свяжется с вами, чтобы понять ваши задачи и провести через следующие шаги.",
 	},
 	{
-		question: "How does pricing work?",
+		question: "Как устроены цены?",
 		answer:
-			"Pricing depends on your team and use case. Get in touch and we'll put together a plan that works for you.",
+			"Цены зависят от вашей команды и сценария использования. Свяжитесь с нами, и мы подготовим план, который подойдёт именно вам.",
 	},
 	{
-		question: "Is my data secure?",
+		question: "Мои данные в безопасности?",
 		answer:
-			"Rox runs locally on your developers' machines. We don't store your code or AI conversations. Contact us to learn more about our security practices.",
+			"Rox работает локально на машинах ваших разработчиков. Мы не храним ваш код или AI-диалоги. Напишите нам, чтобы подробнее узнать о наших практиках безопасности.",
 	},
 ];

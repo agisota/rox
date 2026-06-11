@@ -6,6 +6,7 @@ import { cn } from "@rox/ui/utils";
 import { useLiveQuery } from "@tanstack/react-db";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { differenceInDays, format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { Fragment, useState } from "react";
 import { HiArrowLeft, HiArrowUpRight, HiCheck } from "react-icons/hi2";
 import { env } from "renderer/env.renderer";
@@ -61,13 +62,13 @@ type ComparisonSection = {
 const PLAN_CARDS: PlanCardData[] = [
 	{
 		id: "free",
-		name: "Free",
+		name: "Бесплатный",
 		price: "$0",
-		priceNote: "per user/month",
-		billingText: "Free for everyone",
+		priceNote: "за пользователя в месяц",
+		billingText: "Бесплатно для всех",
 		actions: [
 			{
-				label: "Current plan",
+				label: "Текущий тариф",
 				action: "current",
 				variant: "secondary",
 			},
@@ -77,15 +78,18 @@ const PLAN_CARDS: PlanCardData[] = [
 		id: "pro",
 		name: "Pro",
 		price: { monthly: "$20", yearly: "$15" },
-		priceNote: { monthly: "per user/month", yearly: "per user/month" },
+		priceNote: {
+			monthly: "за пользователя в месяц",
+			yearly: "за пользователя в месяц",
+		},
 		billingText: {
-			monthly: "Billed monthly",
-			yearly: "Billed yearly",
+			monthly: "Оплата ежемесячно",
+			yearly: "Оплата ежегодно",
 		},
 		showBillingToggle: true,
 		actions: [
 			{
-				label: "Upgrade",
+				label: "Перейти",
 				action: "upgrade",
 				variant: "default",
 			},
@@ -94,11 +98,11 @@ const PLAN_CARDS: PlanCardData[] = [
 	{
 		id: "enterprise",
 		name: "Enterprise",
-		price: "Custom pricing",
-		billingText: "Billed yearly",
+		price: "Индивидуальная цена",
+		billingText: "Оплата ежегодно",
 		actions: [
 			{
-				label: "Request a trial",
+				label: "Запросить пробный доступ",
 				action: "contact",
 				variant: "outline",
 			},
@@ -108,99 +112,99 @@ const PLAN_CARDS: PlanCardData[] = [
 
 const COMPARISON_SECTIONS: ComparisonSection[] = [
 	{
-		title: "Usage",
+		title: "Использование",
 		rows: [
 			{
-				label: "Team members",
-				values: ["1", "Unlimited", "Unlimited"],
+				label: "Участники команды",
+				values: ["1", "Без ограничений", "Без ограничений"],
 			},
 			{
-				label: "Workspaces",
-				values: ["Unlimited", "Unlimited", "Unlimited"],
+				label: "Рабочие пространства",
+				values: ["Без ограничений", "Без ограничений", "Без ограничений"],
 			},
 			{
-				label: "Projects",
-				values: ["Unlimited", "Unlimited", "Unlimited"],
+				label: "Проекты",
+				values: ["Без ограничений", "Без ограничений", "Без ограничений"],
 			},
 		],
 	},
 	{
-		title: "Features",
+		title: "Возможности",
 		rows: [
 			{
-				label: "Desktop app",
+				label: "Приложение для компьютера",
 				values: [true, true, true],
 			},
 			{
-				label: "Local workspaces",
+				label: "Локальные рабочие пространства",
 				values: [true, true, true],
 			},
 			{
-				label: "Remote workspaces",
+				label: "Удаленные рабочие пространства",
 				values: [null, true, true],
-				badge: { label: "Beta", variant: "default" },
+				badge: { label: "Бета", variant: "default" },
 			},
 			{
-				label: "Automations",
+				label: "Автоматизации",
 				values: [true, true, true],
 			},
 			{
-				label: "Mobile app",
+				label: "Мобильное приложение",
 				values: [null, true, true],
-				badge: { label: "Coming soon", variant: "secondary" },
+				badge: { label: "Скоро", variant: "secondary" },
 			},
 			{
-				label: "GitHub integration",
+				label: "Интеграция с GitHub",
 				values: [true, true, true],
 			},
 			{
-				label: "Linear integration",
+				label: "Интеграция с Linear",
 				values: [null, true, true],
 			},
 			{
-				label: "Slack integration",
+				label: "Интеграция со Slack",
 				values: [null, true, true],
 			},
 			{
-				label: "Team collaboration",
+				label: "Командная работа",
 				values: [null, true, true],
 			},
 		],
 	},
 	{
-		title: "Support",
+		title: "Поддержка",
 		rows: [
 			{
-				label: "Priority support",
+				label: "Приоритетная поддержка",
 				values: [null, true, true],
 			},
 			{
-				label: "Uptime SLA",
+				label: "SLA по доступности",
 				values: [null, null, true],
 			},
 			{
-				label: "Custom contracts",
+				label: "Индивидуальные договоры",
 				values: [null, null, true],
 			},
 		],
 	},
 	{
-		title: "Security",
+		title: "Безопасность",
 		rows: [
 			{
 				label: "SSO/SAML",
 				values: [null, null, true],
 			},
 			{
-				label: "IP restrictions",
+				label: "Ограничения по IP",
 				values: [null, null, true],
 			},
 			{
-				label: "SCIM provisioning",
+				label: "Автоматическое создание пользователей SCIM",
 				values: [null, null, true],
 			},
 			{
-				label: "Audit log",
+				label: "Журнал аудита",
 				values: [null, null, true],
 			},
 		],
@@ -248,7 +252,7 @@ function PlansPage() {
 	const memberCount = membersData?.length ?? 1;
 
 	const currentPlanLabelByTier: Record<PlanTier, string> = {
-		free: "Free",
+		free: "Бесплатный",
 		pro: "Pro",
 		enterprise: "Enterprise",
 	};
@@ -302,7 +306,7 @@ function PlansPage() {
 				await authClient.subscription.restore({
 					referenceId: activeOrgId,
 				});
-				toast.success("Plan restored");
+				toast.success("Тариф восстановлен");
 			} finally {
 				setIsRestoring(false);
 			}
@@ -337,7 +341,7 @@ function PlansPage() {
 
 	const renderComparisonValue = (value: ComparisonValue) => {
 		if (value === null || value === false) {
-			return <span className="sr-only">Not included</span>;
+			return <span className="sr-only">Не включено</span>;
 		}
 
 		if (value === true) {
@@ -362,18 +366,18 @@ function PlansPage() {
 				<Button variant="ghost" size="sm" asChild>
 					<Link to="/settings/billing">
 						<HiArrowLeft className="h-4 w-4" />
-						Billing
+						Оплата
 					</Link>
 				</Button>
 				<div>
-					<h2 className="text-xl font-semibold">Plans</h2>
+					<h2 className="text-xl font-semibold">Тарифы</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						You are on the{" "}
+						Сейчас у вас тариф{" "}
 						<span className="text-foreground font-medium">
-							{currentPlanLabel} plan
+							{currentPlanLabel}
 						</span>
-						. If you have any questions or would like further support with your
-						plan,{" "}
+						. Если у вас есть вопросы или нужна дополнительная помощь с
+						тарифом,{" "}
 						<button
 							type="button"
 							onClick={() => {
@@ -384,7 +388,7 @@ function PlansPage() {
 							}}
 							className="inline-flex items-center gap-1 text-primary hover:underline"
 						>
-							contact us
+							свяжитесь с нами
 							<HiArrowUpRight className="h-3 w-3" />
 						</button>
 						.
@@ -425,8 +429,8 @@ function PlansPage() {
 										planActions = [
 											{
 												label: isCurrent
-													? "Current plan"
-													: "Included in Enterprise",
+													? "Текущий тариф"
+													: "Включено в Enterprise",
 												action: "current" as const,
 												variant: "secondary" as const,
 											},
@@ -434,7 +438,9 @@ function PlansPage() {
 									} else if (isCurrent && cancelAt) {
 										planActions = [
 											{
-												label: isRestoring ? "Restoring..." : "Restore plan",
+												label: isRestoring
+													? "Восстанавливаем..."
+													: "Восстановить тариф",
 												action: "restore" as const,
 												variant: "default" as const,
 											},
@@ -444,7 +450,7 @@ function PlansPage() {
 										if (intervalMatches) {
 											planActions = [
 												{
-													label: "Current plan",
+													label: "Текущий тариф",
 													action: "current" as const,
 													variant: "secondary" as const,
 												},
@@ -453,10 +459,10 @@ function PlansPage() {
 											planActions = [
 												{
 													label: isUpgrading
-														? "Changing..."
+														? "Меняем..."
 														: isYearly
-															? "Change to Annual"
-															: "Change to Monthly",
+															? "Перейти на годовую оплату"
+															: "Перейти на месячную оплату",
 													action: "upgrade" as const,
 													variant: "default" as const,
 												},
@@ -465,7 +471,7 @@ function PlansPage() {
 									} else if (isCurrent) {
 										planActions = [
 											{
-												label: "Current plan",
+												label: "Текущий тариф",
 												action: "current" as const,
 												variant: "secondary" as const,
 											},
@@ -473,7 +479,7 @@ function PlansPage() {
 									} else if (isDowngrade && cancelAt) {
 										planActions = [
 											{
-												label: `Starts ${cancelAt ? format(new Date(cancelAt), "MMMM d, yyyy") : ""}`,
+												label: `Начнется ${cancelAt ? format(new Date(cancelAt), "d MMMM yyyy", { locale: ru }) : ""}`,
 												action: "current" as const,
 												variant: "outline" as const,
 											},
@@ -482,8 +488,8 @@ function PlansPage() {
 										planActions = [
 											{
 												label: isCanceling
-													? "Downgrading..."
-													: "Downgrade to Free",
+													? "Понижаем тариф..."
+													: "Перейти на Бесплатный",
 												action: "downgrade" as const,
 												variant: "outline" as const,
 											},
@@ -528,7 +534,7 @@ function PlansPage() {
 													<Switch
 														checked={isYearly}
 														onCheckedChange={setIsYearly}
-														aria-label="Billed yearly"
+														aria-label="Оплата ежегодно"
 													/>
 												)}
 												<span>{getValue(plan.billingText)}</span>

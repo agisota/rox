@@ -45,9 +45,13 @@ async function getGitHubStars(): Promise<number | null> {
 
 function formatStarCount(count: number): string {
 	if (count >= 1000) {
-		return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+		return `${(count / 1000).toFixed(1).replace(/\.0$/, "").replace(".", ",")} тыс.`;
 	}
 	return count.toString();
+}
+
+function formatStarLabel(count: number): string {
+	return `${new Intl.NumberFormat("ru-RU").format(count)} звёзд на GitHub`;
 }
 
 export async function GitHubStarCounter() {
@@ -63,7 +67,7 @@ export async function GitHubStarCounter() {
 			target="_blank"
 			rel="noopener noreferrer"
 			className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors p-1 sm:p-2"
-			aria-label={`${stars} GitHub stars`}
+			aria-label={formatStarLabel(stars)}
 		>
 			<svg
 				width="20"

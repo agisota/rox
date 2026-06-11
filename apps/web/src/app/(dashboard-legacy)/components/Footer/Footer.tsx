@@ -14,7 +14,7 @@ export function Footer() {
 						rel="noopener noreferrer"
 						className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
 					>
-						Terms of Service
+						Условия использования
 					</a>
 					<span className="text-xs text-muted-foreground/70" aria-hidden="true">
 						|
@@ -25,7 +25,7 @@ export function Footer() {
 						rel="noopener noreferrer"
 						className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline"
 					>
-						Privacy Policy
+						Политика конфиденциальности
 					</a>
 				</div>
 			</div>

@@ -70,6 +70,19 @@ function SettingsRow({ label, hint, htmlFor, children }: SettingsRowProps) {
 	);
 }
 
+function formatOrganizationRole(role: OrganizationRole): string {
+	switch (role) {
+		case "owner":
+			return "Владелец";
+		case "admin":
+			return "Администратор";
+		case "member":
+			return "Участник";
+		default:
+			return role;
+	}
+}
+
 export function OrganizationSettings({
 	visibleItems,
 }: OrganizationSettingsProps) {
@@ -152,7 +165,7 @@ export function OrganizationSettings({
 
 	const formatDate = (date: Date | string) => {
 		const d = date instanceof Date ? date : new Date(date);
-		return d.toLocaleDateString("en-US", {
+		return d.toLocaleDateString("ru-RU", {
 			month: "short",
 			day: "numeric",
 		});
@@ -182,10 +195,10 @@ export function OrganizationSettings({
 			});
 
 			setLogoPreview(uploadResult.url);
-			toast.success("Logo updated");
+			toast.success("Логотип обновлён");
 		} catch (error) {
 			console.error("[organization-settings] Logo upload failed:", error);
-			toast.error("Failed to update logo");
+			toast.error("Не удалось обновить логотип");
 		}
 	}
 
@@ -202,10 +215,10 @@ export function OrganizationSettings({
 				id: organization.id,
 				name: nameValue,
 			});
-			toast.success("Organization name updated");
+			toast.success("Название организации обновлено");
 		} catch (error) {
 			console.error("[organization-settings] Name update failed:", error);
-			toast.error("Failed to update name");
+			toast.error("Не удалось обновить название");
 			setNameValue(organization.name);
 		}
 	}
@@ -213,9 +226,7 @@ export function OrganizationSettings({
 	if (!activeOrganizationId) {
 		return (
 			<div className="p-6 max-w-4xl w-full">
-				<p className="text-sm text-muted-foreground">
-					No organization selected
-				</p>
+				<p className="text-sm text-muted-foreground">Организация не выбрана</p>
 			</div>
 		);
 	}
@@ -243,7 +254,7 @@ export function OrganizationSettings({
 		return (
 			<div className="p-6 max-w-4xl w-full">
 				<p className="text-sm text-muted-foreground select-text cursor-text">
-					Organization not found.
+					Организация не найдена.
 				</p>
 			</div>
 		);
@@ -262,9 +273,9 @@ export function OrganizationSettings({
 		<>
 			<div className="p-6 max-w-4xl w-full">
 				<div className="mb-8">
-					<h2 className="text-xl font-semibold">Organization</h2>
+					<h2 className="text-xl font-semibold">Организация</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Manage your organization's branding and members.
+						Управляйте оформлением организации и участниками.
 					</p>
 				</div>
 
@@ -273,13 +284,16 @@ export function OrganizationSettings({
 						<section>
 							<div>
 								{showLogo && (
-									<SettingsRow label="Logo" hint="Recommended size 256×256.">
+									<SettingsRow
+										label="Логотип"
+										hint="Рекомендуемый размер 256×256."
+									>
 										<button
 											type="button"
 											onClick={handleLogoUpload}
 											disabled={!isOwner}
 											className="rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-100"
-											aria-label="Change organization logo"
+											aria-label="Изменить логотип организации"
 										>
 											<OrganizationLogo
 												logo={logoPreview}
@@ -290,7 +304,7 @@ export function OrganizationSettings({
 								)}
 
 								{showName && (
-									<SettingsRow label="Name" htmlFor="org-name">
+									<SettingsRow label="Название" htmlFor="org-name">
 										<Input
 											id="org-name"
 											value={nameValue}
@@ -306,7 +320,7 @@ export function OrganizationSettings({
 								{showSlug && (
 									<SettingsRow
 										label="Slug"
-										hint="Used in URLs and APIs."
+										hint="Используется в URL и API."
 										htmlFor="org-slug"
 									>
 										<Input
@@ -337,14 +351,14 @@ export function OrganizationSettings({
 								{showId && (
 									<SettingsRow
 										label="ID"
-										hint="Use this when calling the Rox API."
+										hint="Используйте при вызове Rox API."
 										htmlFor="org-id"
 									>
 										<button
 											type="button"
 											id="org-id"
 											onClick={() => copyToClipboard(organization.id)}
-											aria-label="Copy organization ID"
+											aria-label="Скопировать ID организации"
 											className="group relative block w-72 cursor-pointer rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 										>
 											<Input
@@ -364,7 +378,7 @@ export function OrganizationSettings({
 													</span>
 												</TooltipTrigger>
 												<TooltipContent>
-													{copied ? "Copied!" : "Copy"}
+													{copied ? "Скопировано!" : "Копировать"}
 												</TooltipContent>
 											</Tooltip>
 										</button>
@@ -374,7 +388,7 @@ export function OrganizationSettings({
 
 							{!isOwner && (
 								<p className="text-xs text-muted-foreground mt-3">
-									Only organization owners can modify these settings.
+									Изменять эти настройки могут только владельцы организации.
 								</p>
 							)}
 						</section>
@@ -396,9 +410,9 @@ export function OrganizationSettings({
 							{showMembersList && (
 								<div>
 									<div className="mb-3">
-										<h3 className="text-sm font-medium">Members</h3>
+										<h3 className="text-sm font-medium">Участники</h3>
 										<p className="text-xs text-muted-foreground mt-0.5">
-											Everyone with access to this organization.
+											Все, у кого есть доступ к этой организации.
 										</p>
 									</div>
 
@@ -418,17 +432,17 @@ export function OrganizationSettings({
 										</div>
 									) : members.length === 0 ? (
 										<div className="text-center py-12 text-sm text-muted-foreground border rounded-lg">
-											No members yet.
+											Участников пока нет.
 										</div>
 									) : (
 										<div className="border rounded-lg overflow-hidden">
 											<Table>
 												<TableHeader>
 													<TableRow>
-														<TableHead>Name</TableHead>
-														<TableHead>Email</TableHead>
-														<TableHead>Role</TableHead>
-														<TableHead>Joined</TableHead>
+														<TableHead>Имя</TableHead>
+														<TableHead>Эл. почта</TableHead>
+														<TableHead>Роль</TableHead>
+														<TableHead>Добавлен</TableHead>
 														<TableHead className="w-[50px]" />
 													</TableRow>
 												</TableHeader>
@@ -448,14 +462,14 @@ export function OrganizationSettings({
 																		/>
 																		<div className="flex items-center gap-2">
 																			<span className="font-medium">
-																				{member.name || "Unknown"}
+																				{member.name || "Неизвестно"}
 																			</span>
 																			{isCurrentUserRow && (
 																				<Badge
 																					variant="secondary"
 																					className="text-[10px] h-4 px-1.5"
 																				>
-																					You
+																					Вы
 																				</Badge>
 																			)}
 																		</div>
@@ -471,9 +485,9 @@ export function OrganizationSettings({
 																				? "default"
 																				: "outline"
 																		}
-																		className="text-xs capitalize"
+																		className="text-xs"
 																	>
-																		{member.role}
+																		{formatOrganizationRole(member.role)}
 																	</Badge>
 																</TableCell>
 																<TableCell className="text-muted-foreground">

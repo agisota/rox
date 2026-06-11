@@ -27,6 +27,17 @@ interface PendingInvitationsProps {
 	organizationName: string;
 }
 
+const ROLE_LABELS: Record<OrganizationRole, string> = {
+	owner: "Владелец",
+	admin: "Администратор",
+	member: "Участник",
+};
+
+function getRoleLabel(role: OrganizationRole | string | null): string {
+	if (!role) return "Не указана";
+	return role in ROLE_LABELS ? ROLE_LABELS[role as OrganizationRole] : role;
+}
+
 export function PendingInvitations({
 	visibleItems,
 	currentUserRole,
@@ -69,7 +80,7 @@ export function PendingInvitations({
 
 	const formatDate = (date: Date | string) => {
 		const d = date instanceof Date ? date : new Date(date);
-		return d.toLocaleDateString("en-US", {
+		return d.toLocaleDateString("ru-RU", {
 			month: "short",
 			day: "numeric",
 			year: "numeric",
@@ -85,7 +96,7 @@ export function PendingInvitations({
 		return (
 			<div className="space-y-4">
 				<div className="flex items-center justify-between">
-					<h3 className="text-lg font-semibold">Pending Invitations</h3>
+					<h3 className="text-lg font-semibold">Ожидающие приглашения</h3>
 					{showInvite && (
 						<InviteMemberButton
 							currentUserRole={currentUserRole}
@@ -113,7 +124,7 @@ export function PendingInvitations({
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h3 className="text-lg font-semibold">Pending Invitations</h3>
+				<h3 className="text-lg font-semibold">Ожидающие приглашения</h3>
 				{showInvite && (
 					<InviteMemberButton
 						currentUserRole={currentUserRole}
@@ -124,17 +135,17 @@ export function PendingInvitations({
 			</div>
 			{invitations.length === 0 ? (
 				<div className="text-center py-12 text-muted-foreground border rounded-lg">
-					No pending invitations
+					Нет ожидающих приглашений
 				</div>
 			) : (
 				<div className="border rounded-lg">
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Email</TableHead>
-								<TableHead>Invited By</TableHead>
-								<TableHead>Role</TableHead>
-								<TableHead>Sent</TableHead>
+								<TableHead>Эл. почта</TableHead>
+								<TableHead>Пригласил</TableHead>
+								<TableHead>Роль</TableHead>
+								<TableHead>Отправлено</TableHead>
 								<TableHead className="w-[50px]" />
 							</TableRow>
 						</TableHeader>
@@ -145,11 +156,11 @@ export function PendingInvitations({
 										{invitation.email}
 									</TableCell>
 									<TableCell className="text-muted-foreground">
-										{inviter?.name || "Unknown"}
+										{inviter?.name || "Неизвестно"}
 									</TableCell>
 									<TableCell>
 										<Badge variant="outline" className="text-xs capitalize">
-											{invitation.role}
+											{getRoleLabel(invitation.role)}
 										</Badge>
 									</TableCell>
 									<TableCell className="text-muted-foreground">

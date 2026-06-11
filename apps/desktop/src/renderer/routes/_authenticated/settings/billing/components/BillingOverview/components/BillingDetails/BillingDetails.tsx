@@ -41,7 +41,7 @@ function PaymentMethodLabel({
 	if (paymentMethod.last4) {
 		return (
 			<span>
-				{capitalizeFirst(paymentMethod.brand)} ending in {paymentMethod.last4}
+				{capitalizeFirst(paymentMethod.brand)} •••• {paymentMethod.last4}
 			</span>
 		);
 	}
@@ -83,10 +83,10 @@ export function BillingDetails() {
 
 	return (
 		<div>
-			<h3 className="text-sm font-medium mb-2">Billing details</h3>
+			<h3 className="text-sm font-medium mb-2">Платежные данные</h3>
 			<div>
 				<DetailRow
-					label={details.name ?? "No name on file"}
+					label={details.name ?? "Имя не указано"}
 					hint={
 						<>
 							{addressStr && <div>{addressStr}</div>}
@@ -100,17 +100,17 @@ export function BillingDetails() {
 							onClick={() => handleEdit("general")}
 							disabled={openingPortal !== null}
 						>
-							Edit
+							Изменить
 						</Button>
 					}
 				/>
 				<DetailRow
-					label="Payment method"
+					label="Способ оплаты"
 					hint={
 						details.paymentMethod ? (
 							<PaymentMethodLabel paymentMethod={details.paymentMethod} />
 						) : (
-							"No payment method on file"
+							"Способ оплаты не указан"
 						)
 					}
 					action={
@@ -120,16 +120,16 @@ export function BillingDetails() {
 							onClick={() => handleEdit("payment_method_update")}
 							disabled={openingPortal !== null}
 						>
-							Edit
+							Изменить
 						</Button>
 					}
 				/>
 				<DetailRow
-					label="Tax ID"
+					label="Налоговый ID"
 					hint={
 						details.taxId
 							? `${details.taxId.type.toUpperCase().replace("_", " ")} · ${details.taxId.value}`
-							: "No tax identifier on file"
+							: "Налоговый идентификатор не указан"
 					}
 					action={
 						<Button
@@ -138,7 +138,7 @@ export function BillingDetails() {
 							onClick={() => handleEdit("general")}
 							disabled={openingPortal !== null}
 						>
-							{details.taxId ? "Edit" : "Add tax ID"}
+							{details.taxId ? "Изменить" : "Добавить налоговый ID"}
 						</Button>
 					}
 				/>

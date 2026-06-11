@@ -26,17 +26,17 @@ export const Route = createFileRoute("/create-organization/")({
 });
 
 const formSchema = z.object({
-	name: z.string().min(1, "Organization name is required").max(100),
+	name: z.string().min(1, "Укажите название организации").max(100),
 	slug: z
 		.string()
-		.min(3, "Slug must be at least 3 characters")
+		.min(3, "Slug должен содержать не менее 3 символов")
 		.max(50)
 		.regex(
 			/^[a-z0-9-]+$/,
-			"Slug can only contain lowercase letters, numbers, and hyphens",
+			"Slug может содержать только строчные латинские буквы, цифры и дефисы",
 		)
-		.regex(/^[a-z0-9]/, "Slug must start with a letter or number")
-		.regex(/[a-z0-9]$/, "Slug must end with a letter or number"),
+		.regex(/^[a-z0-9]/, "Slug должен начинаться с буквы или цифры")
+		.regex(/[a-z0-9]$/, "Slug должен заканчиваться буквой или цифрой"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -107,21 +107,21 @@ export function CreateOrganization() {
 		if (isCheckingSlug) {
 			return (
 				<span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-					Checking...
+					Проверка...
 				</span>
 			);
 		}
 		if (slugAvailable === true) {
 			return (
 				<span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-600">
-					Available
+					Доступен
 				</span>
 			);
 		}
 		if (slugAvailable === false) {
 			return (
 				<span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-destructive">
-					Taken
+					Занят
 				</span>
 			);
 		}
@@ -147,13 +147,13 @@ export function CreateOrganization() {
 			// layout's `if (!activeOrganizationId)` redirect).
 			await refetchSession();
 
-			toast.success("Organization created successfully!");
+			toast.success("Организация создана");
 			navigate({ to: "/" });
 		} catch (error) {
 			toast.error(
 				error instanceof Error
 					? error.message
-					: "Failed to create organization",
+					: "Не удалось создать организацию",
 			);
 		} finally {
 			setIsSubmitting(false);
@@ -175,20 +175,20 @@ export function CreateOrganization() {
 						onClick={() => navigate({ to: "/" })}
 						type="button"
 					>
-						Cancel
+						Отмена
 					</Button>
 				) : (
 					<Button variant="ghost" onClick={handleSignOut} type="button">
-						Sign Out
+						Выйти
 					</Button>
 				)}
 			</div>
 
 			<Card className="w-full max-w-md">
 				<CardHeader>
-					<h1 className="text-2xl font-bold">Create Organization</h1>
+					<h1 className="text-2xl font-bold">Создать организацию</h1>
 					<p className="text-sm text-muted-foreground">
-						Set up your organization to get started
+						Запустите организацию, чтобы начать работу
 					</p>
 				</CardHeader>
 				<CardContent>
@@ -200,7 +200,7 @@ export function CreateOrganization() {
 								name="name"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Organization Name</FormLabel>
+										<FormLabel>Название организации</FormLabel>
 										<FormControl>
 											<Input
 												{...field}
@@ -209,7 +209,7 @@ export function CreateOrganization() {
 											/>
 										</FormControl>
 										<FormDescription>
-											The name of your organization or team
+											Название вашей организации или команды
 										</FormDescription>
 										<FormMessage />
 									</FormItem>
@@ -233,8 +233,8 @@ export function CreateOrganization() {
 											</div>
 										</FormControl>
 										<FormDescription>
-											A unique identifier for your organization (auto-generated
-											from name)
+											Уникальный идентификатор организации (создается
+											автоматически из названия)
 										</FormDescription>
 										<FormMessage />
 									</FormItem>
@@ -248,7 +248,7 @@ export function CreateOrganization() {
 									isSubmitting || isCheckingSlug || slugAvailable === false
 								}
 							>
-								{isSubmitting ? "Creating..." : "Create Organization"}
+								{isSubmitting ? "Создание..." : "Создать организацию"}
 							</Button>
 						</form>
 					</Form>

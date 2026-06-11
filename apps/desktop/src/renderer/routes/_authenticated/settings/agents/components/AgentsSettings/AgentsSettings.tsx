@@ -45,16 +45,16 @@ function V1AgentsSettings({ visibleItems }: AgentsSettingsProps) {
 	return (
 		<div className="p-6 max-w-5xl w-full mx-auto">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Agents</h2>
+				<h2 className="text-xl font-semibold">Агенты</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Configure which agents appear in launchers and how their launches are
-					built.
+					Настройте, какие агенты появляются в лаунчерах и как формируются их
+					запуски.
 				</p>
 			</div>
 
 			{isLoading ? (
 				<p className="text-sm text-muted-foreground">
-					Loading agent settings...
+					Загружаем настройки агентов...
 				</p>
 			) : (
 				<div className="space-y-4">

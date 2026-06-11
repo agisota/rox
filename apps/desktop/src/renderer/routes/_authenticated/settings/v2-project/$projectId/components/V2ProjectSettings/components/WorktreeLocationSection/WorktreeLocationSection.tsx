@@ -33,7 +33,7 @@ export function WorktreeLocationSection({
 
 	const setLocation = useMutation({
 		mutationFn: async (path: string | null) => {
-			if (!hostUrl) throw new Error("Host unavailable");
+			if (!hostUrl) throw new Error("Хост недоступен");
 			return getHostServiceClientByUrl(
 				hostUrl,
 			).project.setWorktreeBaseDir.mutate({ projectId, path });
@@ -41,8 +41,8 @@ export function WorktreeLocationSection({
 		onSuccess: (_data, path) => {
 			toast.success(
 				path
-					? "Project worktree location updated"
-					: "Project worktree location reset",
+					? "Расположение worktree проекта обновлено"
+					: "Расположение worktree проекта сброшено",
 			);
 			onChanged?.();
 		},
@@ -69,8 +69,8 @@ export function WorktreeLocationSection({
 				hostSettingsQuery.isLoading ||
 				setLocation.isPending
 			}
-			browseTitle="Select project worktree location"
-			browseDescription={`Pick the project worktree folder on ${hostName}.`}
+			browseTitle="Выберите расположение worktree проекта"
+			browseDescription={`Выберите папку worktree проекта на ${hostName}.`}
 			onSelect={(path) => setLocation.mutate(path)}
 			onReset={() => setLocation.mutate(null)}
 		/>

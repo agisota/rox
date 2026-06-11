@@ -9,6 +9,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { useCallback, useState } from "react";
 import {
 	HiEllipsisHorizontal,
@@ -47,7 +48,7 @@ export function SecretRow({
 	const [valueHovered, setValueHovered] = useState(false);
 
 	const handleDelete = useCallback(async () => {
-		if (!confirm(`Delete environment variable "${secret.key}"?`)) return;
+		if (!confirm(`Удалить переменную окружения "${secret.key}"?`)) return;
 		setIsDeleting(true);
 		try {
 			await apiTrpcClient.project.secrets.delete.mutate({
@@ -90,7 +91,7 @@ export function SecretRow({
 				</span>
 				{secret.sensitive && (
 					<span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-						Sensitive
+						Конфиденциальная
 					</span>
 				)}
 			</div>
@@ -98,7 +99,7 @@ export function SecretRow({
 			<div className="flex items-center gap-1.5 shrink-0">
 				{!secret.sensitive &&
 					(isEmpty ? (
-						<span className="text-sm text-muted-foreground italic">Empty</span>
+						<span className="text-sm text-muted-foreground italic">Пусто</span>
 					) : (
 						<>
 							<button
@@ -126,7 +127,7 @@ export function SecretRow({
 										</button>
 									</TooltipTrigger>
 									<TooltipContent>
-										{copied ? "Copied!" : "Click to copy"}
+										{copied ? "Скопировано!" : "Нажмите, чтобы скопировать"}
 									</TooltipContent>
 								</Tooltip>
 							) : (
@@ -141,7 +142,10 @@ export function SecretRow({
 			</div>
 
 			<div className="flex items-center justify-end gap-2 flex-1 basis-0 text-xs text-muted-foreground">
-				<span>Added {format(new Date(secret.createdAt), "MMM d")}</span>
+				<span>
+					Добавлено{" "}
+					{format(new Date(secret.createdAt), "d MMM", { locale: ru })}
+				</span>
 				{secret.createdBy && (
 					<Avatar
 						size="xs"
@@ -159,13 +163,13 @@ export function SecretRow({
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
 					{!secret.sensitive && (
-						<DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
+						<DropdownMenuItem onClick={onEdit}>Изменить</DropdownMenuItem>
 					)}
 					<DropdownMenuItem
 						onClick={handleDelete}
 						className="text-destructive focus:text-destructive"
 					>
-						Delete
+						Удалить
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

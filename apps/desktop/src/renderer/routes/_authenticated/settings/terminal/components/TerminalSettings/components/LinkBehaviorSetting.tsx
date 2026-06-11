@@ -40,10 +40,10 @@ export function LinkBehaviorSetting() {
 		<div className="flex items-center justify-between">
 			<div className="space-y-0.5">
 				<Label htmlFor="terminal-link-behavior" className="text-sm font-medium">
-					Terminal file links
+					Ссылки на файлы в терминале
 				</Label>
 				<p className="text-xs text-muted-foreground">
-					Choose how to open file paths when Cmd+clicking in the terminal
+					Выберите, как открывать пути к файлам при Cmd+click в терминале
 				</p>
 			</div>
 			<Select
@@ -59,8 +59,8 @@ export function LinkBehaviorSetting() {
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>
-					<SelectItem value="external-editor">External editor</SelectItem>
-					<SelectItem value="file-viewer">File viewer</SelectItem>
+					<SelectItem value="external-editor">Внешний редактор</SelectItem>
+					<SelectItem value="file-viewer">Просмотр файлов</SelectItem>
 				</SelectContent>
 			</Select>
 		</div>

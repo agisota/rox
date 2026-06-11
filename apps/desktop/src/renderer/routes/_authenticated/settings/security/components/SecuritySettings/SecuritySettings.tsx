@@ -52,12 +52,12 @@ export function SecuritySettings({ visibleItems }: SecuritySettingsProps) {
 
 	const runToggle = (enabled: boolean) => {
 		toast.promise(setExpose.mutateAsync({ enabled }), {
-			loading: "Restarting host services…",
+			loading: "Перезапускаем службы хоста…",
 			success: ({ restartedOrgCount }) =>
 				restartedOrgCount > 0
-					? `Restarted ${restartedOrgCount} host service${restartedOrgCount === 1 ? "" : "s"}`
-					: "Setting saved",
-			error: (err: Error) => err.message ?? "Failed to update setting",
+					? `Службы хоста перезапущены: ${restartedOrgCount}`
+					: "Настройка сохранена",
+			error: (err: Error) => err.message ?? "Не удалось обновить настройку",
 		});
 	};
 
@@ -77,9 +77,10 @@ export function SecuritySettings({ visibleItems }: SecuritySettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Security</h2>
+				<h2 className="text-xl font-semibold">Безопасность</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Control how your local machine is reachable from remote workspaces
+					Управляйте доступностью этого устройства для удаленных рабочих
+					пространств
 				</p>
 			</div>
 
@@ -90,12 +91,13 @@ export function SecuritySettings({ visibleItems }: SecuritySettingsProps) {
 							htmlFor="expose-host-service-via-relay"
 							className="text-sm font-medium"
 						>
-							Allow remote workspaces to access this device via relay
+							Разрешить удаленным рабочим пространствам доступ к этому
+							устройству через Rox Relay
 						</Label>
 						<p className="text-xs text-muted-foreground">
-							When off, your local tools and files cannot be reached from any
-							remote workspace through the Rox relay. This does not affect your
-							ability to connect out to remote sandboxes from this device.
+							Когда настройка выключена, ваши локальные инструменты и файлы
+							недоступны из удаленных рабочих пространств через Rox Relay. Это
+							не мешает подключаться с этого устройства к удаленным песочницам.
 						</p>
 					</div>
 					<Switch

@@ -5,10 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 const ERROR_MESSAGES: Record<string, string> = {
-	oauth_denied: "Authorization was denied. Please try again.",
-	missing_params: "Invalid OAuth response. Please try again.",
-	invalid_state: "Invalid state parameter. Please try again.",
-	token_exchange_failed: "Failed to connect to Linear. Please try again.",
+	oauth_denied: "Авторизация отклонена. Попробуйте еще раз.",
+	missing_params: "Некорректный ответ OAuth. Попробуйте еще раз.",
+	invalid_state: "Некорректный параметр state. Попробуйте еще раз.",
+	token_exchange_failed:
+		"Не удалось подключиться к Linear. Попробуйте еще раз.",
 };
 
 export function ErrorHandler() {
@@ -18,7 +19,7 @@ export function ErrorHandler() {
 		const error = searchParams.get("error");
 		if (!error) return;
 
-		const message = ERROR_MESSAGES[error] ?? "Something went wrong.";
+		const message = ERROR_MESSAGES[error] ?? "Что-то пошло не так.";
 
 		window.history.replaceState({}, "", "/integrations/linear");
 		const id = setTimeout(() => toast.error(message), 0);

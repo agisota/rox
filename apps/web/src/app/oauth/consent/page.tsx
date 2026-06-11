@@ -43,10 +43,10 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 					<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
 						<div className="flex flex-col space-y-2 text-center">
 							<h1 className="text-2xl font-semibold tracking-tight text-red-600">
-								Invalid Request
+								Недействительный запрос
 							</h1>
 							<p className="text-muted-foreground text-sm">
-								Missing required authorization parameters.
+								Отсутствуют обязательные параметры авторизации.
 							</p>
 						</div>
 					</div>

@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import {
+	afterAll,
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	mock,
+} from "bun:test";
 
 // Mock localStorage
 const storage = new Map<string, string>();
@@ -18,7 +26,16 @@ const mockReplaceState = mock(
 	(_state: unknown, _unused: string, _url?: string | URL | null) => {},
 );
 
-// Set up globals BEFORE importing the module (the singleton runs at import time)
+// Set up globals BEFORE importing the module (the singleton runs at import time).
+// bun test runs files in one process, so capture the previous globals and
+// restore them in afterAll — otherwise this stripped-down window leaks into
+// later test files (e.g. terminal-ws-transport relies on addEventListener).
+const previousLocalStorage = Object.getOwnPropertyDescriptor(
+	globalThis,
+	"localStorage",
+);
+const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+
 Object.defineProperty(globalThis, "localStorage", {
 	value: mockLocalStorage,
 	writable: true,
@@ -35,9 +52,24 @@ Object.defineProperty(globalThis, "window", {
 			pathname: "/",
 			search: "",
 		},
+		addEventListener: mock(() => {}),
+		removeEventListener: mock(() => {}),
 	},
 	writable: true,
 	configurable: true,
+});
+
+afterAll(() => {
+	if (previousWindow) {
+		Object.defineProperty(globalThis, "window", previousWindow);
+	} else {
+		delete (globalThis as Record<string, unknown>).window;
+	}
+	if (previousLocalStorage) {
+		Object.defineProperty(globalThis, "localStorage", previousLocalStorage);
+	} else {
+		delete (globalThis as Record<string, unknown>).localStorage;
+	}
 });
 
 // Now safe to import — the module-level singleton will find window/localStorage

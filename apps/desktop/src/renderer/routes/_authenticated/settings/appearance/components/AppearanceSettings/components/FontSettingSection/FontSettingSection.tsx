@@ -16,16 +16,17 @@ import { useSystemFonts } from "./hooks/useSystemFonts";
 
 const VARIANT_CONFIG = {
 	editor: {
-		title: "Editor font",
-		description: "Font used in diff views and file editors",
+		title: "Шрифт редактора",
+		description:
+			"Шрифт, который используется в diff-представлениях и редакторах файлов",
 		defaultFamily: DEFAULT_CODE_EDITOR_FONT_FAMILY,
 		defaultSize: DEFAULT_CODE_EDITOR_FONT_SIZE,
 		familyKey: "editorFontFamily",
 		sizeKey: "editorFontSize",
 	},
 	terminal: {
-		title: "Terminal font",
-		description: "Font used in terminal panels.",
+		title: "Шрифт терминала",
+		description: "Шрифт, который используется в панелях терминала.",
 		defaultFamily: DEFAULT_TERMINAL_FONT_FAMILY,
 		defaultSize: DEFAULT_TERMINAL_FONT_SIZE,
 		familyKey: "terminalFontFamily",
@@ -121,7 +122,7 @@ export function FontSettingSection({ variant }: FontSettingSectionProps) {
 						>
 							Nerd Fonts
 						</a>{" "}
-						recommended for shell theme icons.
+						рекомендуются для иконок в темах shell.
 					</>
 				)}
 			</p>
@@ -147,7 +148,7 @@ export function FontSettingSection({ variant }: FontSettingSectionProps) {
 					}}
 					disabled={isLoading}
 					className="w-20"
-					aria-label={`${config.title} size`}
+					aria-label={`Размер: ${config.title}`}
 				/>
 				{(currentFamily || currentSize) && (
 					<Button
@@ -162,7 +163,7 @@ export function FontSettingSection({ variant }: FontSettingSectionProps) {
 							setFontSizeDraft(null);
 						}}
 					>
-						Reset
+						Сбросить
 					</Button>
 				)}
 			</div>

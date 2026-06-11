@@ -24,7 +24,7 @@ export default function SignUpPage() {
 			});
 		} catch (err) {
 			console.error("Sign up failed:", err);
-			setError("Failed to sign up. Please try again.");
+			setError("Не удалось зарегистрироваться. Попробуйте еще раз.");
 			setIsLoadingGoogle(false);
 		}
 	};
@@ -40,7 +40,7 @@ export default function SignUpPage() {
 			});
 		} catch (err) {
 			console.error("Sign up failed:", err);
-			setError("Failed to sign up. Please try again.");
+			setError("Не удалось зарегистрироваться. Попробуйте еще раз.");
 			setIsLoadingGithub(false);
 		}
 	};
@@ -51,10 +51,10 @@ export default function SignUpPage() {
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
 			<div className="flex flex-col space-y-2 text-center">
 				<h1 className="text-2xl font-semibold tracking-tight">
-					Create an account
+					Создайте аккаунт
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Sign up to get started with Rox
+					Зарегистрируйтесь, чтобы начать работу с Rox
 				</p>
 			</div>
 			<div className="grid gap-4">
@@ -68,7 +68,7 @@ export default function SignUpPage() {
 					className="w-full"
 				>
 					<FaGithub className="mr-2 size-4" />
-					{isLoadingGithub ? "Loading..." : "Sign up with GitHub"}
+					{isLoadingGithub ? "Загрузка..." : "Зарегистрироваться через GitHub"}
 				</Button>
 				<Button
 					variant="outline"
@@ -77,36 +77,36 @@ export default function SignUpPage() {
 					className="w-full"
 				>
 					<FcGoogle className="mr-2 size-4" />
-					{isLoadingGoogle ? "Loading..." : "Sign up with Google"}
+					{isLoadingGoogle ? "Загрузка..." : "Зарегистрироваться через Google"}
 				</Button>
 				<p className="text-muted-foreground px-8 text-center text-sm">
-					By clicking continue, you agree to our{" "}
+					Нажимая «Продолжить», вы соглашаетесь с нашими{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/terms`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Terms of Service
+						Условиями обслуживания
 					</a>{" "}
-					and{" "}
+					и{" "}
 					<a
 						href={`${env.NEXT_PUBLIC_MARKETING_URL}/privacy`}
 						target="_blank"
 						rel="noopener noreferrer"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Privacy Policy
+						Политикой конфиденциальности
 					</a>
 					.
 				</p>
 				<p className="text-center text-sm">
-					Already have an account?{" "}
+					Уже есть аккаунт?{" "}
 					<Link
 						href="/sign-in"
 						className="hover:text-primary underline underline-offset-4"
 					>
-						Sign in
+						Войти
 					</Link>
 				</p>
 			</div>

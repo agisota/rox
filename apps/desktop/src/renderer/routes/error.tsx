@@ -14,7 +14,9 @@ const ERROR_DETAILS_ID = "error-details";
 
 export function ErrorPage({ error, info }: ErrorComponentProps) {
 	const message =
-		error instanceof Error ? error.message : String(error ?? "Unknown error");
+		error instanceof Error
+			? error.message
+			: String(error ?? "Неизвестная ошибка");
 	const stack = error instanceof Error ? error.stack : undefined;
 	const details = stack ?? message;
 	const componentStack = info?.componentStack;
@@ -44,16 +46,19 @@ export function ErrorPage({ error, info }: ErrorComponentProps) {
 					</div>
 
 					<div className="flex flex-col items-center gap-2 text-center">
-						<h1 className="text-xl font-semibold">Something went wrong</h1>
+						<h1 className="text-xl font-semibold">Что-то пошло не так</h1>
 						<p className="text-sm text-muted-foreground">
-							Rox hit an unexpected error. Reload to try again.
+							В Rox произошла непредвиденная ошибка. Перезагрузите страницу,
+							чтобы попробовать снова.
 						</p>
 					</div>
 
 					<div className="flex items-center gap-3">
-						<Button onClick={() => window.location.reload()}>Reload</Button>
+						<Button onClick={() => window.location.reload()}>
+							Перезагрузить
+						</Button>
 						<Button variant="outline" asChild>
-							<Link to="/">Go home</Link>
+							<Link to="/">На главную</Link>
 						</Button>
 					</div>
 
@@ -64,7 +69,7 @@ export function ErrorPage({ error, info }: ErrorComponentProps) {
 						aria-controls={ERROR_DETAILS_ID}
 						className="text-xs text-muted-foreground hover:text-foreground transition-colors"
 					>
-						{showDetails ? "Hide details" : "Show details"}
+						{showDetails ? "Скрыть подробности" : "Показать подробности"}
 					</button>
 
 					{showDetails && (
@@ -75,7 +80,7 @@ export function ErrorPage({ error, info }: ErrorComponentProps) {
 									void copyToClipboard(details).catch(() => {});
 								}}
 								className="absolute top-2 right-2 flex items-center justify-center h-6 w-6 bg-background/80 backdrop-blur border border-border rounded hover:bg-accent transition-colors"
-								aria-label="Copy error details"
+								aria-label="Скопировать подробности ошибки"
 							>
 								{copied ? (
 									<HiCheck className="w-3.5 h-3.5 text-green-500" />

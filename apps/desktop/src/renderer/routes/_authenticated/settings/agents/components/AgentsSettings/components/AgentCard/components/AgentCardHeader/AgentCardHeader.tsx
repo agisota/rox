@@ -58,7 +58,7 @@ export function AgentCardHeader({
 					<div className="min-w-0">
 						<CardTitle className="truncate">{preset.label}</CardTitle>
 						<CardDescription className="mt-1">
-							{preset.description ?? "Agent launch configuration"}
+							{preset.description ?? "Конфигурация запуска агента"}
 						</CardDescription>
 					</div>
 				</div>
@@ -76,7 +76,7 @@ export function AgentCardHeader({
 							>
 								<Switch
 									id={`${preset.id}-enabled`}
-									aria-label={`Enable ${preset.label}`}
+									aria-label={`Включить ${preset.label}`}
 									checked={enabled}
 									disabled={isUpdatingEnabled}
 									onCheckedChange={onEnabledChange}

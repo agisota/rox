@@ -47,9 +47,9 @@ export function Pixel404() {
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
 			className="w-full max-w-[480px]"
-			aria-label="404"
+			aria-label="Ошибка 404"
 		>
-			<title>404</title>
+			<title>Ошибка 404</title>
 			{pixels.map(([col, row]) => (
 				<rect
 					key={`${col}-${row}`}

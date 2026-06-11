@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+import * as realDbSchema from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
-import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
-import { integrationUtilsMockBase } from "../../test-support/integrationUtilsMock";
+import * as realDrizzleOrm from "drizzle-orm";
 
 const getCurrentTxidMock = mock(async () => "txid-123");
 const seedDefaultStatusesMock = mock(async () => "status-seeded");
@@ -115,7 +114,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
-	...dbSchemaMockBase,
+	...realDbSchema,
 	members: {
 		organizationId: "members.organizationId",
 		userId: "members.userId",
@@ -176,7 +175,22 @@ mock.module("@rox/shared/task-slug", () => ({
 	generateUniqueTaskSlug: mock(() => "task"),
 }));
 
-mock.module("drizzle-orm", () => ({ ...drizzleOrmMockBase }));
+mock.module("drizzle-orm", () => ({
+	...realDrizzleOrm,
+	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
+	desc: (value: unknown) => ({ type: "desc", value }),
+	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
+	ilike: (left: unknown, right: unknown) => ({ type: "ilike", left, right }),
+	isNull: (value: unknown) => ({ type: "isNull", value }),
+	sql: Object.assign(
+		(strings: TemplateStringsArray, ...values: unknown[]) => ({
+			type: "sql",
+			strings,
+			values,
+		}),
+		{ raw: (s: string) => ({ type: "raw", s }) },
+	),
+}));
 
 mock.module("drizzle-orm/pg-core", () => ({
 	alias: (table: unknown) => table,
@@ -187,7 +201,6 @@ mock.module("../../lib/integrations/sync", () => ({
 }));
 
 mock.module("../integration/utils", () => ({
-	...integrationUtilsMockBase,
 	verifyOrgAdmin: verifyOrgAdminMock,
 	verifyOrgOwner: verifyOrgOwnerMock,
 	verifyOrgMembership: verifyOrgMembershipMock,

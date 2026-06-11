@@ -14,9 +14,11 @@ import {
 } from "./lib/boot-errors";
 import { persistentHistory } from "./lib/persistent-hash-history";
 import { posthog } from "./lib/posthog";
+import { electronTrpcClient } from "./lib/trpc-client";
 import { electronQueryClient } from "./providers/ElectronTRPCProvider";
 import { NotFound } from "./routes/not-found";
 import { routeTree } from "./routeTree.gen";
+import { applyGlass } from "./stores/theme/utils/glass";
 
 import "./globals.css";
 import "./styles/bundled-fonts.css";
@@ -39,6 +41,24 @@ const unsubscribe = router.subscribe("onResolved", (event) => {
 		$current_url: event.toLocation.pathname,
 	});
 });
+
+// Glass surfaces: the persisted toggle lives in main-process appState and the
+// native vibrancy is applied there, but the `.glass` root class + CSS vars are
+// renderer-side. Without this boot sync they were only applied while the
+// appearance settings screen was mounted.
+void electronTrpcClient.window.getAppearance
+	.query()
+	.then((appearance) => {
+		if (appearance) {
+			applyGlass({
+				enabled: appearance.glassEnabled,
+				surfaceOpacity: appearance.windowOpacity,
+			});
+		}
+	})
+	.catch((error) => {
+		console.warn("[glass] Failed to apply persisted glass settings:", error);
+	});
 
 const handleDeepLink = (path: string) => {
 	console.log("[deep-link] Navigating to:", path);

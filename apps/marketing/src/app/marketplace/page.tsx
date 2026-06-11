@@ -1,10 +1,12 @@
 import { COMPANY } from "@rox/shared/constants";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GlossaryText } from "@/components/GlossaryTerm";
 
 export const metadata: Metadata = {
-	title: "Marketplace",
-	description: "Browse shared themes and future agent configs for Rox.",
+	title: "Маркетплейс",
+	description:
+		"Просматривайте общие темы и будущие конфигурации агентов для Rox.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace`,
 	},
@@ -13,13 +15,14 @@ export const metadata: Metadata = {
 const marketplaceLinks = [
 	{
 		href: "/marketplace/themes",
-		label: "Themes",
-		description: "Shared theme JSON files you can import into Rox.",
+		label: "Темы",
+		description:
+			"Общие файлы тем в формате JSON, которые можно импортировать в Rox.",
 	},
 	{
 		href: "/marketplace/agents",
-		label: "Agent Configs",
-		description: "Future home for reusable agent configs.",
+		label: "Конфигурации агентов",
+		description: "Будущий раздел для переиспользуемых конфигураций агентов.",
 	},
 ] as const;
 
@@ -29,11 +32,9 @@ export default function MarketplacePage() {
 			<div className="mx-auto max-w-4xl px-6 py-10">
 				<div className="mb-8">
 					<h1 className="text-xl font-semibold text-foreground md:text-2xl">
-						Marketplace
+						Маркетплейс
 					</h1>
-					<p className="mt-1 text-sm text-muted-foreground">
-						Choose a section.
-					</p>
+					<p className="mt-1 text-sm text-muted-foreground">Выберите раздел.</p>
 				</div>
 
 				<div className="border border-border">
@@ -49,7 +50,7 @@ export default function MarketplacePage() {
 								{link.label}
 							</div>
 							<div className="mt-1 text-sm text-muted-foreground">
-								{link.description}
+								<GlossaryText text={link.description} />
 							</div>
 						</Link>
 					))}

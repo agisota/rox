@@ -64,7 +64,7 @@ export function ThemeLibraryCombobox({
 
 	const triggerLabel = activeLibraryTheme
 		? activeLibraryTheme.name
-		: "Browse library…";
+		: "Открыть библиотеку…";
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -86,7 +86,7 @@ export function ThemeLibraryCombobox({
 			<PopoverContent className="w-[360px] p-0" align="end" side="bottom">
 				<Command shouldFilter={true}>
 					<CommandInput
-						placeholder={`Search ${libraryThemes.length} library themes…`}
+						placeholder={`Поиск по темам библиотеки: ${libraryThemes.length}…`}
 						value={search}
 						onValueChange={setSearch}
 					/>
@@ -96,8 +96,8 @@ export function ThemeLibraryCombobox({
 						</div>
 					) : null}
 					<CommandList>
-						<CommandEmpty>No themes found.</CommandEmpty>
-						<CommandGroup heading="Library">
+						<CommandEmpty>Темы не найдены.</CommandEmpty>
+						<CommandGroup heading="Библиотека">
 							{visible.map((theme) => (
 								<CommandItem
 									key={theme.id}

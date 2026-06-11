@@ -25,7 +25,7 @@ export function V2WorktreeLocationPicker({
 	hostName,
 	isRemoteTarget,
 	disabled,
-	browseTitle = "Select worktree location",
+	browseTitle = "Выберите папку worktree",
 	browseDescription,
 	onSelect,
 	onReset,
@@ -33,7 +33,7 @@ export function V2WorktreeLocationPicker({
 	const selectDirectory = electronTrpc.window.selectDirectory.useMutation();
 	const [remoteBrowseOpen, setRemoteBrowseOpen] = useState(false);
 
-	const displayPath = currentPath ?? fallbackPath ?? "Host unavailable";
+	const displayPath = currentPath ?? fallbackPath ?? "Хост недоступен";
 	const isBusy = disabled || selectDirectory.isPending;
 
 	const handleBrowse = async () => {
@@ -71,12 +71,12 @@ export function V2WorktreeLocationPicker({
 							className="size-9 shrink-0"
 							onClick={handleBrowse}
 							disabled={isBusy || !hostUrl}
-							aria-label="Change worktree location"
+							aria-label="Изменить папку worktree"
 						>
 							<LuFolderOpen className="size-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Change location</TooltipContent>
+					<TooltipContent>Изменить папку</TooltipContent>
 				</Tooltip>
 				{currentPath ? (
 					<Tooltip>
@@ -88,12 +88,12 @@ export function V2WorktreeLocationPicker({
 								className="size-9 shrink-0"
 								onClick={onReset}
 								disabled={disabled}
-								aria-label="Reset worktree location"
+								aria-label="Сбросить папку worktree"
 							>
 								<LuRotateCcw className="size-4" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent>Reset location</TooltipContent>
+						<TooltipContent>Сбросить папку</TooltipContent>
 					</Tooltip>
 				) : null}
 			</div>
@@ -106,9 +106,9 @@ export function V2WorktreeLocationPicker({
 				initialPath={currentPath ?? fallbackPath}
 				title={browseTitle}
 				description={
-					browseDescription ?? `Pick the worktree folder on ${hostName}.`
+					browseDescription ?? `Выберите папку worktree на ${hostName}.`
 				}
-				confirmLabel="Use this folder"
+				confirmLabel="Использовать эту папку"
 				onPick={(path) => {
 					void onSelect(path);
 				}}

@@ -30,12 +30,12 @@ export function InviteMemberButton({
 	const handleClick = () => {
 		gateFeature(GATED_FEATURES.INVITE_MEMBERS, () => {
 			alert({
-				title: "This will affect your billing",
+				title: "Это повлияет на оплату",
 				description:
-					"Adding members will increase your subscription cost, prorated to your billing cycle.",
+					"Добавление участников увеличит стоимость подписки пропорционально вашему расчетному периоду.",
 				actions: [
-					{ label: "Cancel", variant: "outline", onClick: () => {} },
-					{ label: "Continue", onClick: () => setOpen(true) },
+					{ label: "Отмена", variant: "outline", onClick: () => {} },
+					{ label: "Продолжить", onClick: () => setOpen(true) },
 				],
 			});
 		});
@@ -45,7 +45,7 @@ export function InviteMemberButton({
 		<>
 			<Button size="sm" onClick={handleClick} className="gap-1.5">
 				<HiOutlinePlus className="h-3.5 w-3.5" />
-				Invite member
+				Пригласить участника
 			</Button>
 
 			<InviteMemberDialog

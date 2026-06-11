@@ -14,10 +14,10 @@ export function ComparisonTable() {
 		<div className="flex flex-col gap-8">
 			<div className="flex flex-col gap-3 text-center">
 				<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-					Compare plans
+					Сравнение тарифов
 				</span>
 				<h2 className="text-2xl md:text-3xl font-medium tracking-tight text-foreground">
-					All features, side by side
+					Все возможности рядом
 				</h2>
 			</div>
 
@@ -34,7 +34,7 @@ function DesktopTable() {
 				<thead>
 					<tr className="border-b border-border">
 						<th className="w-2/5 py-4 pr-4 text-left text-sm font-medium text-muted-foreground">
-							Features
+							Возможности
 						</th>
 						{PRICING_TIERS.map((tier) => (
 							<th
@@ -160,13 +160,13 @@ function MobileTable() {
 
 function Cell({ value }: { value: ComparisonRow["values"][number] }) {
 	if (value === true) {
-		return <Check className="size-4 text-foreground" aria-label="Included" />;
+		return <Check className="size-4 text-foreground" aria-label="Включено" />;
 	}
 	if (value === null || value === false) {
 		return (
 			<Minus
 				className="size-4 text-muted-foreground"
-				aria-label="Not included"
+				aria-label="Не включено"
 			/>
 		);
 	}

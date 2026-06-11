@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+import * as realDbSchema from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { dbSchemaMockBase } from "../../test-support/dbSchemaMock";
-import { drizzleOrmMockBase } from "../../test-support/drizzleOrmMock";
-import { integrationUtilsMockBase } from "../../test-support/integrationUtilsMock";
+import * as realDrizzleOrm from "drizzle-orm";
+import { z } from "zod";
 
 const getCurrentTxidMock = mock(async () => 123);
 
@@ -50,7 +50,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
-	...dbSchemaMockBase,
+	...realDbSchema,
 	accessGrants: {
 		id: "access_grants.id",
 		organizationId: "access_grants.organization_id",
@@ -61,6 +61,9 @@ mock.module("@rox/db/schema", () => ({
 		role: "access_grants.role",
 		createdAt: "access_grants.created_at",
 	},
+	accessResourceTypeEnum: z.enum(["project", "workspace", "host"]),
+	accessGranteeTypeEnum: z.enum(["user", "team", "organization"]),
+	accessRoleEnum: z.enum(["viewer", "editor", "admin"]),
 	members: { userId: "members.user_id", organizationId: "members.org_id" },
 }));
 
@@ -74,13 +77,18 @@ const verifyOrgMembershipWithSubscriptionMock = mock(async () => ({
 }));
 
 mock.module("../integration/utils", () => ({
-	...integrationUtilsMockBase,
 	verifyOrgAdmin: verifyOrgAdminMock,
+	verifyOrgOwner: mock(async () => ({ membership: { role: "owner" } })),
 	verifyOrgMembership: verifyOrgMembershipMock,
 	verifyOrgMembershipWithSubscription: verifyOrgMembershipWithSubscriptionMock,
 }));
 
-mock.module("drizzle-orm", () => ({ ...drizzleOrmMockBase }));
+mock.module("drizzle-orm", () => ({
+	...realDrizzleOrm,
+	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
+	desc: (value: unknown) => ({ type: "desc", value }),
+	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
+}));
 
 const { createCallerFactory, createTRPCRouter } = await import("../../trpc");
 const { shareRouter } = await import("./share");

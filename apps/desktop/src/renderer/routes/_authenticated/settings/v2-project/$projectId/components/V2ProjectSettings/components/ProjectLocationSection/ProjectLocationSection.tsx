@@ -60,7 +60,7 @@ export function ProjectLocationSection({
 
 	const pickPath = async (title: string) => {
 		if (!hostUrl) {
-			toast.error(`Host unavailable: ${hostName}`);
+			toast.error(`Хост недоступен: ${hostName}`);
 			return null;
 		}
 		try {
@@ -78,11 +78,11 @@ export function ProjectLocationSection({
 
 	const proposeRelocate = async (path: string) => {
 		if (path === currentPath) {
-			toast.info("Project is already at that location");
+			toast.info("Проект уже находится в этом расположении");
 			return;
 		}
 		if (!hostUrl) {
-			toast.error(`Host unavailable: ${hostName}`);
+			toast.error(`Хост недоступен: ${hostName}`);
 			return;
 		}
 		try {
@@ -107,7 +107,7 @@ export function ProjectLocationSection({
 			setChangeBrowseOpen(true);
 			return;
 		}
-		const path = await pickPath("Select new project location");
+		const path = await pickPath("Выберите новое расположение проекта");
 		if (!path) return;
 		await proposeRelocate(path);
 	};
@@ -115,7 +115,7 @@ export function ProjectLocationSection({
 	const handleConfirmRelocate = async () => {
 		if (!pendingPath) return;
 		if (!hostUrl) {
-			toast.error(`Host unavailable: ${hostName}`);
+			toast.error(`Хост недоступен: ${hostName}`);
 			return;
 		}
 		setIsSubmitting(true);
@@ -125,7 +125,7 @@ export function ProjectLocationSection({
 				projectId,
 				mode: { kind: "import", repoPath: pendingPath, allowRelocate: true },
 			});
-			toast.success(`Project relocated to ${result.repoPath}`);
+			toast.success(`Проект перемещён в ${result.repoPath}`);
 			if (result.mainWorkspaceId) {
 				ensureWorkspaceInSidebar(result.mainWorkspaceId, projectId);
 			} else {
@@ -156,18 +156,18 @@ export function ProjectLocationSection({
 								className="absolute right-1 top-1 size-7 text-muted-foreground hover:text-foreground"
 								onClick={handleChange}
 								disabled={selectDirectory.isPending || isSubmitting}
-								aria-label="Change location"
+								aria-label="Изменить расположение"
 							>
 								<LuFolderOpen className="size-4" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent>Change location</TooltipContent>
+						<TooltipContent>Изменить расположение</TooltipContent>
 					</Tooltip>
 				</div>
 			) : (
 				<div className="flex items-center gap-3">
 					<span className="text-sm text-muted-foreground">
-						Not set up on {hostName}
+						Не запущено на {hostName}
 					</span>
 					<Button
 						type="button"
@@ -176,7 +176,7 @@ export function ProjectLocationSection({
 						onClick={() => setSetupOpen(true)}
 						disabled={!hostUrl}
 					>
-						Set up project…
+						Запуск проекта…
 					</Button>
 				</div>
 			)}
@@ -199,9 +199,9 @@ export function ProjectLocationSection({
 				hostUrl={hostUrl}
 				hostName={hostName}
 				initialPath={currentPath ?? undefined}
-				title="Change project location"
-				description={`Pick the new project folder on ${hostName}.`}
-				confirmLabel="Use this folder"
+				title="Изменить расположение проекта"
+				description={`Выберите новую папку проекта на ${hostName}.`}
+				confirmLabel="Использовать эту папку"
 				onPick={(path) => {
 					void proposeRelocate(path);
 				}}
@@ -218,15 +218,15 @@ export function ProjectLocationSection({
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Repository already linked</AlertDialogTitle>
+						<AlertDialogTitle>Репозиторий уже привязан</AlertDialogTitle>
 						<AlertDialogDescription className="select-text cursor-text">
-							This repository is already linked to project "
-							{conflict?.name ?? ""}" in this organization. Open that project to
-							set it up on {hostName}.
+							Этот репозиторий уже привязан к проекту «{conflict?.name ?? ""}» в
+							этой организации. Откройте этот проект, чтобы запустить его на{" "}
+							{hostName}.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>Отмена</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={(e) => {
 								e.preventDefault();
@@ -241,7 +241,7 @@ export function ProjectLocationSection({
 								});
 							}}
 						>
-							Open project
+							Открыть проект
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -255,27 +255,28 @@ export function ProjectLocationSection({
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Relocate project?</AlertDialogTitle>
+						<AlertDialogTitle>Переместить проект?</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="space-y-3 text-sm select-text cursor-text">
 								<div>
-									<div className="text-muted-foreground text-xs">From</div>
+									<div className="text-muted-foreground text-xs">Откуда</div>
 									<div className="font-mono break-all">{currentPath}</div>
 								</div>
 								<div>
-									<div className="text-muted-foreground text-xs">To</div>
+									<div className="text-muted-foreground text-xs">Куда</div>
 									<div className="font-mono break-all">{pendingPath}</div>
 								</div>
 								<p className="text-muted-foreground">
-									Existing worktrees under the old path will be orphaned. You
-									can re-import them from the worktrees flow.
+									Существующие worktree в старом расположении останутся без
+									связи с проектом. Их можно повторно импортировать через поток
+									worktrees.
 								</p>
 							</div>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel disabled={isSubmitting}>
-							Cancel
+							Отмена
 						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={(e) => {
@@ -284,7 +285,7 @@ export function ProjectLocationSection({
 							}}
 							disabled={isSubmitting}
 						>
-							{isSubmitting ? "Relocating…" : "Relocate"}
+							{isSubmitting ? "Перемещение…" : "Переместить"}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -68,12 +68,12 @@ export function GlassSection() {
 			<div className="flex items-center justify-between gap-6 p-4">
 				<div className="min-w-0 flex-1">
 					<Label htmlFor="glass-enabled" className="text-sm font-medium">
-						Glass surfaces
+						Стеклянные поверхности
 					</Label>
 					<div className="text-xs text-muted-foreground">
-						Make panels translucent with a blurred backdrop.
+						Сделать панели полупрозрачными с размытым фоном.
 						{!isMac
-							? " Native window vibrancy is available on macOS only."
+							? " Нативная прозрачность окна доступна только на macOS."
 							: null}
 					</div>
 				</div>
@@ -87,15 +87,15 @@ export function GlassSection() {
 			{glassEnabled ? (
 				<div className="flex items-center justify-between gap-6 p-4">
 					<div className="min-w-0 flex-1">
-						<div className="text-sm font-medium">Window opacity</div>
+						<div className="text-sm font-medium">Непрозрачность окна</div>
 						<div className="text-xs text-muted-foreground">
-							How opaque glass surfaces appear (
+							Насколько плотными выглядят стеклянные поверхности (
 							{formatOpacityPercent(windowOpacity)}
 							).
 						</div>
 					</div>
 					<Slider
-						aria-label="Window opacity"
+						aria-label="Непрозрачность окна"
 						className="w-44"
 						min={MIN_WINDOW_OPACITY}
 						max={MAX_WINDOW_OPACITY}

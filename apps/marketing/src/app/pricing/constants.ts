@@ -28,18 +28,18 @@ export interface PricingTier {
 export const PRICING_TIERS: PricingTier[] = [
 	{
 		id: "free",
-		name: "Free",
-		description: "For individuals getting started",
-		price: { kind: "fixed", display: "$0", note: "Free for everyone" },
+		name: "Бесплатно",
+		description: "Для индивидуальной работы и первого запуска",
+		price: { kind: "fixed", display: "$0", note: "Бесплатно для всех" },
 		features: [
-			"1 user",
-			"Local workspaces",
-			"Desktop app",
-			"GitHub integration",
-			"CLI (coming soon)",
+			"1 пользователь",
+			"Локальные рабочие пространства",
+			"Настольное приложение",
+			"Интеграция с GitHub",
+			"CLI (скоро)",
 		],
 		cta: {
-			label: "Download app",
+			label: "Скачать приложение",
 			href: "/download",
 			variant: "outline",
 		},
@@ -47,29 +47,29 @@ export const PRICING_TIERS: PricingTier[] = [
 	{
 		id: "pro",
 		name: "Pro",
-		description: "For teams that need more power",
+		description: "Для команд, которым нужна большая мощность",
 		price: {
 			kind: "variable",
 			monthly: {
 				display: "$20",
-				note: "per user/month",
-				cadence: "Billed monthly",
+				note: "за пользователя в месяц",
+				cadence: "Оплата каждый месяц",
 			},
 			yearly: {
 				display: "$15",
-				note: "per user/month",
-				cadence: "Billed yearly",
+				note: "за пользователя в месяц",
+				cadence: "Оплата раз в год",
 			},
 		},
 		features: [
-			"Everything in Free",
-			"Unlimited users",
-			"Remote workspaces",
-			"Linear integration",
-			"Mobile (coming soon)",
+			"Все возможности бесплатного тарифа",
+			"Пользователи без ограничений",
+			"Удаленные рабочие пространства",
+			"Интеграция с Linear",
+			"Мобильное приложение (скоро)",
 		],
 		cta: {
-			label: "Download app",
+			label: "Скачать приложение",
 			href: "/download",
 			variant: "default",
 		},
@@ -77,22 +77,22 @@ export const PRICING_TIERS: PricingTier[] = [
 	},
 	{
 		id: "enterprise",
-		name: "Enterprise",
-		description: "For organizations with advanced needs",
+		name: "Корпоративный",
+		description: "Для организаций с расширенными требованиями",
 		price: {
 			kind: "custom",
-			display: "Custom pricing",
-			note: "Billed yearly",
+			display: "Индивидуально",
+			note: "Оплата раз в год",
 		},
 		features: [
-			"Everything in Pro",
-			"SSO & advanced security",
-			"Audit logs",
-			"SLA & dedicated support",
-			"Custom integrations",
+			"Все возможности Pro",
+			"SSO и расширенная безопасность",
+			"Журналы аудита",
+			"SLA и выделенная поддержка",
+			"Индивидуальные интеграции",
 		],
 		cta: {
-			label: "Contact sales",
+			label: "Связаться с отделом продаж",
 			href: "/enterprise",
 			variant: "outline",
 		},
@@ -116,76 +116,82 @@ export interface ComparisonSection {
 
 export const COMPARISON_SECTIONS: ComparisonSection[] = [
 	{
-		title: "Usage",
+		title: "Использование",
 		rows: [
-			{ label: "Team members", values: ["1", "Unlimited", "Unlimited"] },
 			{
-				label: "Workspaces",
-				values: ["Unlimited", "Unlimited", "Unlimited"],
+				label: "Участники команды",
+				values: ["1", "Без ограничений", "Без ограничений"],
 			},
-			{ label: "Projects", values: ["Unlimited", "Unlimited", "Unlimited"] },
+			{
+				label: "Рабочие пространства",
+				values: ["Без ограничений", "Без ограничений", "Без ограничений"],
+			},
+			{
+				label: "Проекты",
+				values: ["Без ограничений", "Без ограничений", "Без ограничений"],
+			},
 		],
 	},
 	{
-		title: "Features",
+		title: "Возможности",
 		rows: [
-			{ label: "Desktop app", values: [true, true, true] },
-			{ label: "Local workspaces", values: [true, true, true] },
+			{ label: "Настольное приложение", values: [true, true, true] },
+			{ label: "Локальные рабочие пространства", values: [true, true, true] },
 			{
-				label: "Remote workspaces",
+				label: "Удаленные рабочие пространства",
 				values: [null, true, true],
-				badge: { label: "Beta", variant: "default" },
+				badge: { label: "Бета", variant: "default" },
 			},
-			{ label: "Automations", values: [true, true, true] },
+			{ label: "Автоматизации", values: [true, true, true] },
 			{
-				label: "Mobile app",
+				label: "Мобильное приложение",
 				values: [null, true, true],
-				badge: { label: "Coming soon", variant: "secondary" },
+				badge: { label: "Скоро", variant: "secondary" },
 			},
-			{ label: "GitHub integration", values: [true, true, true] },
-			{ label: "Linear integration", values: [null, true, true] },
-			{ label: "Slack integration", values: [null, true, true] },
-			{ label: "Team collaboration", values: [null, true, true] },
+			{ label: "Интеграция с GitHub", values: [true, true, true] },
+			{ label: "Интеграция с Linear", values: [null, true, true] },
+			{ label: "Интеграция с Slack", values: [null, true, true] },
+			{ label: "Командная совместная работа", values: [null, true, true] },
 		],
 	},
 	{
-		title: "Support",
+		title: "Поддержка",
 		rows: [
-			{ label: "Priority support", values: [null, null, true] },
-			{ label: "Uptime SLA", values: [null, null, true] },
-			{ label: "Custom contracts", values: [null, null, true] },
+			{ label: "Приоритетная поддержка", values: [null, null, true] },
+			{ label: "SLA по доступности", values: [null, null, true] },
+			{ label: "Индивидуальные договоры", values: [null, null, true] },
 		],
 	},
 	{
-		title: "Security",
+		title: "Безопасность",
 		rows: [
 			{ label: "SSO/SAML", values: [null, null, true] },
-			{ label: "IP restrictions", values: [null, null, true] },
-			{ label: "SCIM provisioning", values: [null, null, true] },
-			{ label: "Audit log", values: [null, null, true] },
+			{ label: "Ограничения по IP", values: [null, null, true] },
+			{ label: "Провижининг SCIM", values: [null, null, true] },
+			{ label: "Журнал аудита", values: [null, null, true] },
 		],
 	},
 ];
 
 export const PRICING_FAQ_ITEMS: FAQItem[] = [
 	{
-		question: "Is there a free plan?",
+		question: "Есть ли бесплатный тариф?",
 		answer:
-			"Yes. Free covers individuals with 1 user, local workspaces, the desktop app, and GitHub integration. No credit card required.",
+			"Да. Бесплатный тариф подходит для индивидуальной работы: 1 пользователь, локальные рабочие пространства, настольное приложение и интеграция с GitHub. Банковская карта не нужна.",
 	},
 	{
-		question: "How does Pro pricing work?",
+		question: "Как устроены цены Pro?",
 		answer:
-			"Pro is $20 per user/month billed monthly, or $15 per user/month billed yearly (a 25% discount). You're billed per active seat on your team.",
+			"Pro стоит 20 $ за пользователя в месяц при ежемесячной оплате или 15 $ за пользователя в месяц при оплате за год (скидка 25%). Оплата считается по активным местам в вашей команде.",
 	},
 	{
-		question: "Can I switch plans or cancel anytime?",
+		question: "Можно ли сменить тариф или отменить подписку в любой момент?",
 		answer:
-			"Yes. You can upgrade, downgrade, or cancel at any time from the billing settings inside the app. Changes take effect at the end of your current billing period.",
+			"Да. Вы можете повысить тариф, перейти на более простой тариф или отменить подписку в любой момент в настройках оплаты внутри приложения. Изменения вступают в силу в конце текущего расчетного периода.",
 	},
 	{
-		question: "What's included in Enterprise?",
+		question: "Что входит в корпоративный тариф?",
 		answer:
-			"Everything in Pro plus SSO & SAML, SCIM provisioning, IP restrictions, audit logs, a custom SLA, dedicated support, and custom contracts. Pricing is tailored to your organization — get in touch and we'll scope something that fits.",
+			"Все возможности Pro, а также SSO и SAML, провижининг SCIM, ограничения по IP, журналы аудита, индивидуальный SLA, выделенная поддержка и индивидуальные договоры. Цена подбирается под вашу организацию: свяжитесь с нами, и мы вместе определим подходящий объем.",
 	},
 ];

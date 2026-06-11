@@ -7,31 +7,31 @@ export interface Feature {
 
 export const FEATURES: Feature[] = [
 	{
-		tag: "Parallel Execution",
-		title: "Run dozens of agents at once",
+		tag: "Параллельный запуск",
+		title: "Запускайте десятки агентов одновременно",
 		description:
-			"Launch multiple AI coding agents across different tasks. Work on features, fix bugs, and refactor code — all in parallel.",
+			"Запускайте несколько кодинг-агентов для разных задач. Разрабатывайте функции, исправляйте ошибки и рефакторьте код параллельно.",
 		colors: ["#7f1d1d", "#991b1b", "#450a0a", "#1a1a2e"],
 	},
 	{
-		tag: "Universal Compatibility",
-		title: "Works with any CLI agent",
+		tag: "Совместимость",
+		title: "Работает с любым CLI-агентом",
 		description:
-			"Rox is agent-agnostic. Use Claude Code, OpenCode, Cursor, or any CLI-based coding tool. Switch between agents seamlessly.",
+			"Rox не привязан к одному агенту. Используйте Claude Code, OpenCode, Cursor или любой CLI-инструмент для разработки и быстро переключайтесь между агентами.",
 		colors: ["#047857", "#065f46", "#064e3b", "#1a1a2e"],
 	},
 	{
-		tag: "Isolation",
-		title: "Changes are isolated",
+		tag: "Изоляция",
+		title: "Изменения не мешают друг другу",
 		description:
-			"Each agent runs in its own isolated Git worktree. No merge conflicts, no stepping on each other's changes. Review and merge work when you're ready.",
+			"Каждая задача получает параллельную асинхронную изоляцию в собственном git worktree. Агенты не затирают изменения друг друга, а вы проверяете и сливаете результат, когда он готов.",
 		colors: ["#1e40af", "#1e3a8a", "#172554", "#1a1a2e"],
 	},
 	{
-		tag: "Open Anywhere",
-		title: "Open in any IDE",
+		tag: "Открыть где угодно",
+		title: "Открывайте в любой IDE",
 		description:
-			"Jump into your favorite editor with one click. VS Code, Cursor, Xcode, JetBrains IDEs, or any terminal — open worktrees exactly where you need them.",
+			"Переходите в любимый редактор одним кликом. VS Code, Cursor, Xcode, JetBrains IDEs или любой терминал — открывайте worktree именно там, где удобно работать.",
 		colors: ["#7c3aed", "#6d28d9", "#4c1d95", "#1a1a2e"],
 	},
 ];

@@ -21,7 +21,7 @@ import {
 import { VolumeDropdown } from "./components/VolumeDropdown";
 
 function formatDuration(seconds: number): string {
-	return `${seconds}s`;
+	return `${seconds} с`;
 }
 
 interface RingtoneRowProps {
@@ -83,7 +83,9 @@ function RingtoneRow({
 					onTogglePlay();
 				}}
 				aria-label={
-					isPlaying ? `Stop ${ringtone.name}` : `Play ${ringtone.name}`
+					isPlaying
+						? `Остановить ${ringtone.name}`
+						: `Воспроизвести ${ringtone.name}`
 				}
 				className={cn(
 					"h-7 w-7 rounded-full flex items-center justify-center transition-colors border shrink-0",
@@ -248,9 +250,9 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Notifications</h2>
+				<h2 className="text-xl font-semibold">Уведомления</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Sounds and ringtone for completed tasks
+					Звуки и мелодии для завершенных задач
 				</p>
 			</div>
 
@@ -263,10 +265,10 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 								htmlFor="notification-sounds"
 								className="text-sm font-medium"
 							>
-								Notification sounds
+								Звуки уведомлений
 							</Label>
 							<p className="text-xs text-muted-foreground">
-								Play a sound when tasks complete
+								Воспроизводить звук при завершении задач
 							</p>
 						</div>
 						<Switch
@@ -286,10 +288,10 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 					<div>
 						<div className="mb-3 flex items-start justify-between gap-2">
 							<div>
-								<h3 className="text-sm font-medium mb-1">Notification sound</h3>
+								<h3 className="text-sm font-medium mb-1">Звук уведомления</h3>
 								<p className="text-xs text-muted-foreground">
-									Pick a sound or add your own. Custom audio supports .mp3,
-									.wav, and .ogg.
+									Выберите звук или добавьте свой. Пользовательское аудио
+									поддерживает .mp3, .wav и .ogg.
 								</p>
 							</div>
 							<Button
@@ -304,7 +306,7 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 								) : (
 									<HiPlus className="mr-1.5 h-3.5 w-3.5" />
 								)}
-								{customRingtone ? "Replace custom audio" : "Add custom audio"}
+								{customRingtone ? "Заменить свой звук" : "Добавить свой звук"}
 							</Button>
 						</div>
 						<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">

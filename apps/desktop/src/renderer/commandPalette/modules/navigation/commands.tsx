@@ -11,7 +11,7 @@ export const navigationProvider: CommandProvider = {
 		const commands: Command[] = [
 			{
 				id: "nav.settings",
-				title: "Settings",
+				title: "Настройки",
 				section: "navigation",
 				icon: SettingsIcon,
 				hotkeyId: "OPEN_SETTINGS",
@@ -20,23 +20,29 @@ export const navigationProvider: CommandProvider = {
 			},
 			{
 				id: "nav.recentlyViewed",
-				title: "Recently Viewed",
+				title: "Недавно просмотренные",
 				section: "navigation",
 				icon: HistoryIcon,
-				keywords: ["history", "recent", "back"],
+				keywords: ["история", "недавние", "назад"],
 				renderFrame: () => <RecentlyViewedFrame />,
 			},
 			{
 				id: "nav.workspaces",
-				title: "Workspaces",
+				title: "Рабочие области",
 				section: "navigation",
 				icon: LuLayers,
-				keywords: ["workspace", "project", "repo", "repository", "switch"],
+				keywords: [
+					"рабочая область",
+					"проект",
+					"repo",
+					"repository",
+					"перейти",
+				],
 				renderFrame: () => <WorkspaceListFrame />,
 			},
 			{
 				id: "nav.docs",
-				title: "Open documentation",
+				title: "Открыть документацию",
 				section: "navigation",
 				icon: BookOpenIcon,
 				run: () => {

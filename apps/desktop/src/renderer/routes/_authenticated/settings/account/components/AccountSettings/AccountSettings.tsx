@@ -64,7 +64,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 			: undefined);
 
 	const signOutMutation = electronTrpc.auth.signOut.useMutation({
-		onSuccess: () => toast.success("Signed out"),
+		onSuccess: () => toast.success("Вы вышли из аккаунта"),
 	});
 
 	const selectImageMutation = electronTrpc.window.selectImageFile.useMutation();
@@ -92,9 +92,9 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 			});
 
 			setAvatarPreview(uploadResult.url);
-			toast.success("Avatar updated!");
+			toast.success("Аватар обновлён");
 		} catch {
-			toast.error("Failed to update avatar");
+			toast.error("Не удалось обновить аватар");
 		}
 	}
 
@@ -108,9 +108,9 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 
 		try {
 			await apiTrpcClient.user.updateProfile.mutate({ name: nameValue });
-			toast.success("Name updated!");
+			toast.success("Имя обновлено");
 		} catch {
-			toast.error("Failed to update name");
+			toast.error("Не удалось обновить имя");
 			setNameValue(user.name ?? "");
 		}
 	}
@@ -118,9 +118,9 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Account</h2>
+				<h2 className="text-xl font-semibold">Аккаунт</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Manage your account settings
+					Управляйте настройками аккаунта
 				</p>
 			</div>
 
@@ -130,13 +130,13 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 						<ProfileSkeleton />
 					) : user ? (
 						<>
-							<SettingRow label="Avatar" hint="Recommended size 256×256.">
+							<SettingRow label="Аватар" hint="Рекомендуемый размер 256×256.">
 								<button
 									type="button"
 									onClick={handleAvatarUpload}
 									disabled={selectImageMutation.isPending}
 									className="rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-100"
-									aria-label="Change avatar"
+									aria-label="Изменить аватар"
 								>
 									<Avatar
 										size="xl"
@@ -146,17 +146,17 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 								</button>
 							</SettingRow>
 
-							<SettingRow label="Name">
+							<SettingRow label="Имя">
 								<Input
 									value={nameValue}
 									onChange={(e) => setNameValue(e.target.value)}
 									onBlur={handleNameBlur}
-									placeholder="Your name"
+									placeholder="Ваше имя"
 									className="w-80"
 								/>
 							</SettingRow>
 
-							<SettingRow label="Email">
+							<SettingRow label="Электронная почта">
 								<Input
 									value={user.email}
 									readOnly
@@ -166,21 +166,21 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 						</>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							Unable to load user info
+							Не удалось загрузить данные пользователя
 						</p>
 					))}
 
 				{showSignOut && (
 					<div className={showProfile ? "pt-5" : undefined}>
 						<SettingRow
-							label="Sign out of this device"
-							hint="You'll need to sign in again to use Rox on this device."
+							label="Выйти из аккаунта на этом устройстве"
+							hint="Чтобы пользоваться Rox на этом устройстве, нужно будет войти снова."
 						>
 							<Button
 								variant="outline"
 								onClick={() => signOutMutation.mutate()}
 							>
-								Sign out
+								Выйти
 							</Button>
 						</SettingRow>
 					</div>

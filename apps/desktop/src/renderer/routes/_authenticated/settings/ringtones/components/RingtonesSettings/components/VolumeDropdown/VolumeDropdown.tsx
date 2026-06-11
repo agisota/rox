@@ -10,16 +10,16 @@ import { useCallback } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 
 const VOLUME_LEVELS = [
-	{ value: 20, label: "Quiet" },
-	{ value: 40, label: "Low" },
-	{ value: 60, label: "Medium" },
-	{ value: 80, label: "High" },
-	{ value: 100, label: "Maximum" },
+	{ value: 20, label: "Тихо" },
+	{ value: 40, label: "Низкая" },
+	{ value: 60, label: "Средняя" },
+	{ value: 80, label: "Высокая" },
+	{ value: 100, label: "Максимум" },
 ] as const;
 
 function getVolumeLabel(volume: number): string {
 	const level = VOLUME_LEVELS.find((l) => l.value === volume);
-	return level ? level.label : "Custom";
+	return level ? level.label : "Другая";
 }
 
 export function VolumeDropdown() {
@@ -60,7 +60,7 @@ export function VolumeDropdown() {
 		<div>
 			<div className="flex items-center justify-between gap-4">
 				<Label htmlFor="notification-volume" className="text-sm font-medium">
-					Volume
+					Громкость
 				</Label>
 				<Select
 					value={volume.toString()}

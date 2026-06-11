@@ -14,7 +14,7 @@ export function SocialLinks({ className = "" }: SocialLinksProps) {
 				target="_blank"
 				rel="noopener noreferrer"
 				className="text-muted-foreground hover:text-foreground transition-colors p-1 sm:p-2"
-				aria-label="Join our Discord"
+				aria-label="Присоединиться к нашему Discord"
 			>
 				<svg
 					width="20"
@@ -32,7 +32,7 @@ export function SocialLinks({ className = "" }: SocialLinksProps) {
 				target="_blank"
 				rel="noopener noreferrer"
 				className="text-muted-foreground hover:text-foreground transition-colors p-1 sm:p-2"
-				aria-label="Follow us on X/Twitter"
+				aria-label="Подписаться на нас в X/Twitter"
 			>
 				<svg
 					width="20"
@@ -50,7 +50,7 @@ export function SocialLinks({ className = "" }: SocialLinksProps) {
 				target="_blank"
 				rel="noopener noreferrer"
 				className="text-muted-foreground hover:text-foreground transition-colors p-1 sm:p-2"
-				aria-label="Follow us on LinkedIn"
+				aria-label="Подписаться на нас в LinkedIn"
 			>
 				<svg
 					width="20"
@@ -68,7 +68,7 @@ export function SocialLinks({ className = "" }: SocialLinksProps) {
 				target="_blank"
 				rel="noopener noreferrer"
 				className="text-muted-foreground hover:text-foreground transition-colors p-1 sm:p-2"
-				aria-label="Subscribe on YouTube"
+				aria-label="Подписаться на YouTube"
 			>
 				<svg
 					width="20"

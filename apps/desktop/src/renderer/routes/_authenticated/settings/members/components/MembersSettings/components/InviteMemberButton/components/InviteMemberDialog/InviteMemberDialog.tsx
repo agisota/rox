@@ -1,8 +1,4 @@
-import {
-	canInvite,
-	ORGANIZATION_ROLES,
-	type OrganizationRole,
-} from "@rox/shared/auth";
+import { canInvite, type OrganizationRole } from "@rox/shared/auth";
 import { Button } from "@rox/ui/button";
 import {
 	Dialog,
@@ -34,6 +30,16 @@ interface InviteMemberDialogProps {
 	currentUserRole: OrganizationRole;
 }
 
+const ROLE_LABELS: Record<OrganizationRole, string> = {
+	owner: "Владелец",
+	admin: "Администратор",
+	member: "Участник",
+};
+
+function getRoleLabel(role: OrganizationRole): string {
+	return ROLE_LABELS[role];
+}
+
 export function InviteMemberDialog({
 	open,
 	onOpenChange,
@@ -48,7 +54,9 @@ export function InviteMemberDialog({
 
 	const handleInvite = async () => {
 		if (!canInvite(currentUserRole, role)) {
-			toast.error(`Cannot invite users as ${ORGANIZATION_ROLES[role].name}`);
+			toast.error(
+				`Нельзя приглашать пользователей с ролью «${getRoleLabel(role)}»`,
+			);
 			return;
 		}
 
@@ -60,13 +68,15 @@ export function InviteMemberDialog({
 				role,
 			});
 
-			toast.success(`Invitation sent to ${email}`);
+			toast.success(`Приглашение отправлено на ${email}`);
 			setEmail("");
 			setRole("member");
 			onOpenChange(false);
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to send invitation",
+				error instanceof Error
+					? error.message
+					: "Не удалось отправить приглашение",
 			);
 		} finally {
 			setIsInviting(false);
@@ -77,15 +87,15 @@ export function InviteMemberDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Invite Member</DialogTitle>
+					<DialogTitle>Пригласить участника</DialogTitle>
 					<DialogDescription>
-						Send an invitation to join {organizationName}. Expires in 48 hours.
+						Отправьте приглашение в {organizationName}. Оно действует 48 часов.
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4 py-4">
 					<div className="space-y-2">
-						<Label htmlFor="email">Email</Label>
+						<Label htmlFor="email">Эл. почта</Label>
 						<Input
 							id="email"
 							type="email"
@@ -102,7 +112,7 @@ export function InviteMemberDialog({
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="role">Role</Label>
+						<Label htmlFor="role">Роль</Label>
 						<Select
 							value={role}
 							onValueChange={(val) => setRole(val as OrganizationRole)}
@@ -113,7 +123,7 @@ export function InviteMemberDialog({
 							<SelectContent>
 								{invitableRoles.map((r) => (
 									<SelectItem key={r} value={r}>
-										{ORGANIZATION_ROLES[r].name}
+										{getRoleLabel(r)}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -127,10 +137,10 @@ export function InviteMemberDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={isInviting}
 					>
-						Cancel
+						Отмена
 					</Button>
 					<Button onClick={handleInvite} disabled={isInviting || !email}>
-						{isInviting ? "Sending..." : "Send Invitation"}
+						{isInviting ? "Отправляем..." : "Отправить приглашение"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

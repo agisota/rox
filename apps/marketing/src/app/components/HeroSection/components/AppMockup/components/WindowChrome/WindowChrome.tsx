@@ -9,19 +9,19 @@ interface WindowChromeProps {
 
 const TITLE_BY_DEMO: Record<ActiveDemo, { title: string; branch: string }> = {
 	"Use Any Agents": {
-		title: "use any agents in parallel",
+		title: "любые агенты параллельно",
 		branch: "use-any-agents",
 	},
 	"Create Parallel Branches": {
-		title: "set up parallel branches",
+		title: "запуск параллельных веток",
 		branch: "create-parallel-branches",
 	},
 	"See Changes": {
-		title: "review cloud-workspace diff",
+		title: "проверка diff cloud-workspace",
 		branch: "see-changes",
 	},
 	"Open in Any IDE": {
-		title: "edit in any IDE",
+		title: "редактирование в любой IDE",
 		branch: "open-in-any-ide",
 	},
 };
@@ -49,7 +49,7 @@ export function WindowChrome({
 					className="flex h-6 items-center gap-1 border border-border bg-background px-2 text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/85 hover:bg-foreground/[0.04]"
 				>
 					<LuExternalLink className="size-2.5 text-muted-foreground/65" />
-					<span>Open</span>
+					<span>Открыть</span>
 					<LuChevronDown className="size-2.5 text-muted-foreground/55" />
 				</button>
 			</div>

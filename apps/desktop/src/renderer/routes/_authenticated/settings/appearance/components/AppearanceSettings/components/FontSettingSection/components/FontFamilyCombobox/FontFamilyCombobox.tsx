@@ -111,7 +111,7 @@ export function FontFamilyCombobox({
 						className="truncate"
 						style={{ fontFamily: `"${displayLabel}"` }}
 					>
-						{fontsLoading ? "Loading fonts..." : displayLabel}
+						{fontsLoading ? "Загрузка шрифтов..." : displayLabel}
 					</span>
 					<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
 				</Button>
@@ -119,7 +119,7 @@ export function FontFamilyCombobox({
 			<PopoverContent className="w-[320px] p-0" align="start" side="top">
 				<Command shouldFilter={true}>
 					<CommandInput
-						placeholder="Search fonts..."
+						placeholder="Поиск шрифтов..."
 						value={search}
 						onValueChange={setSearch}
 					/>
@@ -131,27 +131,27 @@ export function FontFamilyCombobox({
 									className="w-full text-center cursor-pointer hover:underline"
 									onClick={() => selectFont(search.trim())}
 								>
-									Use &ldquo;{search.trim()}&rdquo;
+									Использовать &ldquo;{search.trim()}&rdquo;
 								</button>
 							) : (
-								"No fonts found."
+								"Шрифты не найдены."
 							)}
 						</CommandEmpty>
 						{allowCustomEntry && !hasExactMatch && search.trim() && (
-							<CommandGroup heading="Custom">
+							<CommandGroup heading="Пользовательский">
 								<CommandItem
 									value={`__custom__${search.trim()}`}
 									onSelect={() => selectFont(search.trim())}
 								>
 									<span className="truncate flex-1">
-										Use &ldquo;{search.trim()}&rdquo;
+										Использовать &ldquo;{search.trim()}&rdquo;
 									</span>
 								</CommandItem>
 							</CommandGroup>
 						)}
 						{renderGroup("Nerd Fonts", nerdFonts)}
-						{renderGroup("Monospace", monoFonts)}
-						{variant !== "terminal" && renderGroup("Other", otherFonts)}
+						{renderGroup("Моноширинные", monoFonts)}
+						{variant !== "terminal" && renderGroup("Другие", otherFonts)}
 					</CommandList>
 				</Command>
 			</PopoverContent>

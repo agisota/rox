@@ -48,7 +48,7 @@ export function UniversalCompatibilityDemo() {
 			<div className="px-3 py-2 border-b border-white/5">
 				<div className="flex items-center gap-2 px-2 py-1.5 text-white/60 hover:text-white/80 hover:bg-white/5 rounded cursor-pointer transition-colors">
 					<HiPlus className="w-4 h-4" />
-					<span className="text-sm">New Terminal</span>
+					<span className="text-sm">Новый терминал</span>
 					<span className="ml-auto text-xs text-white/30">...</span>
 					<HiOutlineTerminal className="w-4 h-4 text-white/30" />
 				</div>
@@ -82,7 +82,7 @@ export function UniversalCompatibilityDemo() {
 			<div className="p-4 border-t border-white/5">
 				<div className="flex items-center gap-2 text-white/40">
 					<HiOutlineTerminal className="w-4 h-4" />
-					<span className="text-xs">Terminals (3)</span>
+					<span className="text-xs">Терминалы (3)</span>
 				</div>
 			</div>
 		</motion.div>

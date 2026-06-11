@@ -40,11 +40,11 @@ export function HostSelect({
 				<SelectValue>
 					<span className="flex items-center gap-1.5">
 						<span className="truncate">
-							{selected?.isLocal ? "This device" : (selected?.name ?? value)}
+							{selected?.isLocal ? "Это устройство" : (selected?.name ?? value)}
 						</span>
 						{selected && !selected.isLocal && (
 							<span
-								title={selected.isOnline ? "Online" : "Offline"}
+								title={selected.isOnline ? "В сети" : "Не в сети"}
 								className={
 									selected.isOnline
 										? "size-1.5 shrink-0 rounded-full bg-emerald-500"
@@ -65,10 +65,10 @@ export function HostSelect({
 								<HiOutlineServer className="size-4 text-muted-foreground" />
 							)}
 							<span className="truncate">
-								{option.isLocal ? "This device" : option.name}
+								{option.isLocal ? "Это устройство" : option.name}
 							</span>
 							{!option.isLocal && !option.isOnline && (
-								<span className="text-xs text-muted-foreground">offline</span>
+								<span className="text-xs text-muted-foreground">не в сети</span>
 							)}
 						</span>
 					</SelectItem>

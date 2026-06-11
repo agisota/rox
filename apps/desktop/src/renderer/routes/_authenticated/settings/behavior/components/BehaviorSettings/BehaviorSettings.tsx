@@ -128,9 +128,9 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">General</h2>
+				<h2 className="text-xl font-semibold">Основные</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Configure general app preferences
+					Настройте основные параметры приложения
 				</p>
 			</div>
 
@@ -139,10 +139,10 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
 							<Label htmlFor="confirm-on-quit" className="text-sm font-medium">
-								Confirm before quitting
+								Подтверждать выход
 							</Label>
 							<p className="text-xs text-muted-foreground">
-								Show a confirmation dialog when quitting the app
+								Показывать диалог подтверждения при выходе из приложения
 							</p>
 						</div>
 						<Switch
@@ -157,9 +157,11 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 				{showFileOpenMode && (
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
-							<Label className="text-sm font-medium">File open mode</Label>
+							<Label className="text-sm font-medium">
+								Режим открытия файлов
+							</Label>
 							<p className="text-xs text-muted-foreground">
-								Choose how files open when no preview pane exists
+								Выберите, как открывать файлы, когда нет панели предпросмотра
 							</p>
 						</div>
 						<Select
@@ -173,8 +175,8 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="split-pane">Split pane</SelectItem>
-								<SelectItem value="new-tab">New tab</SelectItem>
+								<SelectItem value="split-pane">Разделенная панель</SelectItem>
+								<SelectItem value="new-tab">Новая вкладка</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -184,10 +186,10 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
 							<Label htmlFor="resource-monitor" className="text-sm font-medium">
-								Resource monitor
+								Монитор ресурсов
 							</Label>
 							<p className="text-xs text-muted-foreground">
-								Show CPU and memory usage in the top bar
+								Показывать использование CPU и памяти в верхней панели
 							</p>
 						</div>
 						<Switch
@@ -210,11 +212,11 @@ export function BehaviorSettings({ visibleItems }: BehaviorSettingsProps) {
 								htmlFor="open-links-in-app"
 								className="text-sm font-medium"
 							>
-								Open links in the in-app browser
+								Открывать ссылки во встроенном браузере
 							</Label>
 							<p className="text-xs text-muted-foreground">
-								Open links from chat and terminal in the in-app browser instead
-								of your default browser
+								Открывать ссылки из чата и терминала во встроенном браузере, а
+								не в браузере по умолчанию
 							</p>
 						</div>
 						<Switch

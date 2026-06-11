@@ -480,10 +480,10 @@ export function PresetsSection({
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<div className="space-y-0.5">
-					<Label className="text-sm font-medium">Terminal Presets</Label>
+					<Label className="text-sm font-medium">Пресеты терминала</Label>
 					<p className="text-xs text-muted-foreground">
-						Presets let you quickly launch terminals with pre-configured
-						commands.
+						Пресеты позволяют быстро запускать терминалы с заранее настроенными
+						командами.
 					</p>
 				</div>
 				{showPresets && (
@@ -494,7 +494,7 @@ export function PresetsSection({
 						onClick={() => handleAddRow()}
 					>
 						<HiOutlinePlus className="h-4 w-4" />
-						Add Preset
+						Добавить пресет
 					</Button>
 				)}
 			</div>
@@ -522,7 +522,7 @@ export function PresetsSection({
 						onToggleVisibility={handleToggleVisibility}
 					/>
 					<p className="text-xs text-muted-foreground">
-						Click a preset row to edit details.
+						Нажмите на строку пресета, чтобы изменить детали.
 					</p>
 				</>
 			)}

@@ -24,6 +24,11 @@ interface MemberRowProps {
 	onRemove: (member: MemberRowData) => void;
 }
 
+const ROLE_LABELS: Record<MemberRowData["role"], string> = {
+	owner: "Владелец",
+	member: "Участник",
+};
+
 export function MemberRow({
 	member,
 	isOwner,
@@ -46,12 +51,12 @@ export function MemberRow({
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="owner">Owner</SelectItem>
-							<SelectItem value="member">Member</SelectItem>
+							<SelectItem value="owner">Владелец</SelectItem>
+							<SelectItem value="member">Участник</SelectItem>
 						</SelectContent>
 					</Select>
 				) : (
-					<span className="text-sm capitalize">{member.role}</span>
+					<span className="text-sm">{ROLE_LABELS[member.role]}</span>
 				)}
 			</TableCell>
 			{isOwner && (
@@ -60,7 +65,7 @@ export function MemberRow({
 						variant="ghost"
 						size="sm"
 						onClick={() => onRemove(member)}
-						aria-label={`Remove ${member.name}`}
+						aria-label={`Удалить ${member.name}`}
 					>
 						<HiOutlineTrash className="h-4 w-4" />
 					</Button>

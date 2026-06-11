@@ -31,6 +31,19 @@ interface MembersSettingsProps {
 	visibleItems?: SettingItemId[] | null;
 }
 
+function roleLabel(role: OrganizationRole) {
+	switch (role) {
+		case "owner":
+			return "Владелец";
+		case "admin":
+			return "Администратор";
+		case "member":
+			return "Участник";
+		default:
+			return role;
+	}
+}
+
 export function MembersSettings({ visibleItems }: MembersSettingsProps) {
 	const { data: session } = authClient.useSession();
 	const collections = useCollections();
@@ -87,7 +100,7 @@ export function MembersSettings({ visibleItems }: MembersSettingsProps) {
 
 	const formatDate = (date: Date | string) => {
 		const d = date instanceof Date ? date : new Date(date);
-		return d.toLocaleDateString("en-US", {
+		return d.toLocaleDateString("ru-RU", {
 			month: "short",
 			day: "numeric",
 		});
@@ -97,9 +110,9 @@ export function MembersSettings({ visibleItems }: MembersSettingsProps) {
 		<div className="flex-1 flex flex-col min-h-0">
 			<div className="p-8">
 				<div className="max-w-5xl">
-					<h2 className="text-2xl font-semibold">Members</h2>
+					<h2 className="text-2xl font-semibold">Участники</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Invite and manage members, assign roles, and control permissions
+						Приглашайте участников, управляйте ролями и правами доступа
 					</p>
 				</div>
 			</div>
@@ -118,7 +131,7 @@ export function MembersSettings({ visibleItems }: MembersSettingsProps) {
 					)}
 
 					<div className="max-w-5xl space-y-4">
-						<h3 className="text-lg font-semibold">Team Members</h3>
+						<h3 className="text-lg font-semibold">Участники команды</h3>
 
 						{showMembersList &&
 							(!isReady && members.length === 0 ? (
@@ -137,17 +150,17 @@ export function MembersSettings({ visibleItems }: MembersSettingsProps) {
 								</div>
 							) : members.length === 0 ? (
 								<div className="text-center py-12 text-muted-foreground border rounded-lg">
-									No members yet
+									Участников пока нет
 								</div>
 							) : (
 								<div className="border rounded-lg">
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead>Name</TableHead>
-												<TableHead>Email</TableHead>
-												<TableHead>Role</TableHead>
-												<TableHead>Joined</TableHead>
+												<TableHead>Имя</TableHead>
+												<TableHead>Эл. почта</TableHead>
+												<TableHead>Роль</TableHead>
+												<TableHead>Добавлен</TableHead>
 												<TableHead className="w-[50px]" />
 											</TableRow>
 										</TableHeader>
@@ -167,14 +180,14 @@ export function MembersSettings({ visibleItems }: MembersSettingsProps) {
 																/>
 																<div className="flex items-center gap-2">
 																	<span className="font-medium">
-																		{member.name || "Unknown"}
+																		{member.name || "Неизвестно"}
 																	</span>
 																	{isCurrentUserRow && (
 																		<Badge
 																			variant="secondary"
 																			className="text-xs"
 																		>
-																			You
+																			Вы
 																		</Badge>
 																	)}
 																</div>
@@ -190,9 +203,9 @@ export function MembersSettings({ visibleItems }: MembersSettingsProps) {
 																		? "default"
 																		: "outline"
 																}
-																className="text-xs capitalize"
+																className="text-xs"
 															>
-																{member.role}
+																{roleLabel(member.role)}
 															</Badge>
 														</TableCell>
 														<TableCell className="text-muted-foreground">

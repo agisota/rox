@@ -23,13 +23,13 @@ export default function TaskDeepLinkPage() {
 			<div className="flex flex-col items-center gap-6">
 				<Image src="/title.svg" alt="Rox" width={280} height={86} priority />
 				<p className="text-xl text-muted-foreground">
-					Redirecting to desktop app...
+					Открываем настольное приложение...
 				</p>
 				<Link
 					href={deepLink}
 					className="text-sm text-muted-foreground/70 underline decoration-muted-foreground/40 underline-offset-4 transition-colors hover:text-muted-foreground"
 				>
-					Click here if not redirected
+					Открыть вручную, если переход не сработал
 				</Link>
 			</div>
 		</div>

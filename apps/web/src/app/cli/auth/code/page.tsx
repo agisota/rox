@@ -26,7 +26,7 @@ export default async function CliAuthCodePage({
 				{oauthError ? (
 					<div className="mx-auto flex w-full max-w-md flex-col items-center space-y-3 text-center">
 						<h1 className="text-2xl font-semibold tracking-tight text-destructive">
-							Authorization failed
+							Авторизация не удалась
 						</h1>
 						<p className="text-muted-foreground text-sm">
 							{params.error_description ?? oauthError}
@@ -36,7 +36,8 @@ export default async function CliAuthCodePage({
 					<CliAuthCodeDisplay code={code} state={state} />
 				) : (
 					<p className="text-muted-foreground">
-						Missing authorization code. Re-run <code>rox auth login</code>.
+						Код авторизации отсутствует. Повторно выполните{" "}
+						<code>rox auth login</code>.
 					</p>
 				)}
 			</main>
