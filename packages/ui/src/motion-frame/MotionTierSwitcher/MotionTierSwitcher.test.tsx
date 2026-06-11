@@ -16,8 +16,8 @@ describe("MotionTierSwitcher", () => {
 		expect(html).toContain(">Full<");
 		expect(html.match(/type="radio"/g) ?? []).toHaveLength(3);
 		expect(html.match(/checked=""/g) ?? []).toHaveLength(1);
-		const checkedInput = html.match(/<input[^>]*checked=""[^>]*>/)?.[0] ?? "";
-		expect(checkedInput).toContain('value="full"');
+		const fullRadio = html.match(/<input[^>]*value="full"[^>]*>/)?.[0] ?? "";
+		expect(fullRadio).toContain('checked=""');
 	});
 
 	it("keeps the selection highlight static when the tier is off", () => {
@@ -26,8 +26,9 @@ describe("MotionTierSwitcher", () => {
 				<MotionTierSwitcher />
 			</MotionFrameProvider>,
 		);
-		// Highlight renders, content stays visible — but as a plain span, not
-		// a motion element (off allows no transitions).
+		// SSR can only assert the highlight renders (motion.span and span emit
+		// identical markup); the motion-vs-static branch lives in the source's
+		// capabilities.transition check.
 		expect(html).toContain("data-motion-pill");
 	});
 
