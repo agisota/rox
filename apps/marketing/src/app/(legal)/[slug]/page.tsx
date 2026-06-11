@@ -9,7 +9,7 @@ interface PageProps {
 }
 
 function formatDate(date: string | Date): string {
-	return new Date(date).toLocaleDateString("en-US", {
+	return new Date(date).toLocaleDateString("ru-RU", {
 		year: "numeric",
 		month: "long",
 		day: "numeric",
@@ -32,7 +32,7 @@ export default async function LegalPage({ params }: PageProps) {
 						{page.title}
 					</h1>
 					<p className="mt-4 text-sm text-muted-foreground">
-						Last updated: {formatDate(page.lastUpdated)}
+						Обновлено: {formatDate(page.lastUpdated)}
 					</p>
 				</header>
 
