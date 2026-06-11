@@ -66,8 +66,14 @@ const BEARER_RE = /\bbearer\s+[a-z0-9._-]{8,}\b/i;
 /** Common secret prefixes (Stripe, GitHub, OpenAI, Slack, generic sk-/pk-). */
 const SECRET_PREFIX_RE =
 	/\b(?:sk|pk|rk|ghp|gho|ghs|ghr|github_pat|xox[baprs]|AKIA)[-_][a-z0-9_-]{8,}\b/i;
-/** 13-19 digit card-number-shaped runs (allowing space/dash separators). */
-const CARD_RE = /\b(?:\d[ -]?){13,19}\b/;
+/**
+ * 13-19 digit card-number-shaped runs (allowing space/dash separators).
+ * Anchored so the separator sits *between* digits (one digit consumed per
+ * repetition) — this is linear-time and avoids the catastrophic backtracking
+ * an optional trailing separator like `(?:\d[ -]?){13,19}` would introduce on
+ * long digit-heavy strings (e.g. session ids).
+ */
+const CARD_RE = /\b\d(?:[ -]?\d){12,18}\b/;
 
 function keyIsSensitive(key: string): boolean {
 	const lower = key.toLowerCase();
@@ -103,7 +109,14 @@ export interface RedactOptions {
 }
 
 function redactInner(value: unknown, depth: number, maxDepth: number): unknown {
-	if (depth > maxDepth) return REDACTED;
+	if (depth > maxDepth) {
+		// The depth cap exists to bound recursion (deep/cyclic structures), not to
+		// destroy data. Collapse only objects/arrays we won't descend into; let
+		// primitives still be scanned for sensitive shapes so a deep number/string
+		// isn't falsely marked as PII.
+		if (value !== null && typeof value === "object") return REDACTED;
+		return redactValue(value);
+	}
 
 	if (Array.isArray(value)) {
 		return value.map((item) => redactInner(item, depth + 1, maxDepth));

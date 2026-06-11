@@ -73,6 +73,19 @@ describe("redactPii — sensitive value shapes", () => {
 		expect(redactPii({ x: "4111-1111-1111-1111" }).x).toBe(REDACTED);
 	});
 
+	it("scans long digit-heavy strings in linear time (no ReDoS)", () => {
+		// A 30-digit run embedded between word characters (no surrounding word
+		// boundary) is the pathological input for a backtracking card regex. The
+		// linear matcher must complete near-instantly and, since there is no
+		// boundary-delimited card run, leave the value untouched.
+		const payload = { id: `run_${"1".repeat(30)}xyz` };
+		const start = performance.now();
+		const out = redactPii(payload);
+		const elapsed = performance.now() - start;
+		expect(elapsed).toBeLessThan(10);
+		expect(out.id).toBe(payload.id);
+	});
+
 	it("leaves ordinary strings, numbers, booleans, and null untouched", () => {
 		const out = redactPii({
 			run_id: "run_123",
@@ -122,6 +135,15 @@ describe("redactPii — structure", () => {
 		const b = a.b as Record<string, unknown>;
 		// At maxDepth 2 the third level of nesting is collapsed to the marker.
 		expect(b.c).toBe(REDACTED);
+	});
+
+	it("preserves safe primitives that sit beyond the depth cap", () => {
+		// The cap bounds recursion into nested *structures* — it must not corrupt a
+		// plain number/string that happens to live deep in the tree.
+		const out = redactPii({ a: { b: { c: 42 } } }, { maxDepth: 2 });
+		const a = out.a as Record<string, unknown>;
+		const b = a.b as Record<string, unknown>;
+		expect(b.c).toBe(42);
 	});
 });
 

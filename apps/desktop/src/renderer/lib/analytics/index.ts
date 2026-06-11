@@ -1,3 +1,4 @@
+import { redactPii } from "@rox/analytics";
 import type {
 	AnalyticsEventName,
 	EventProperties,
@@ -11,12 +12,15 @@ export { initOpenPanel, setOpenPanelTelemetryEnabled } from "./openpanel";
  * Legacy, loosely-typed capture. Emits to PostHog only and accepts any event
  * name — kept for the many existing string call sites in the renderer.
  * Prefer `trackEvent` for new product events.
+ *
+ * Properties are run through `redactPii` so this loosely-typed path can't
+ * bypass the redaction choke point that `trackEvent` gets via the shared client.
  */
 export function track(
 	event: string,
 	properties?: Record<string, unknown>,
 ): void {
-	posthog.capture(event, properties);
+	posthog.capture(event, properties ? redactPii(properties) : undefined);
 }
 
 /**

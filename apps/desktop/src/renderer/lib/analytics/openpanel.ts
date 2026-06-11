@@ -60,7 +60,8 @@ export function getOpenPanelClient(): ClientAnalytics | undefined {
  */
 export function initOpenPanel(): void {
 	if (!env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID) {
-		console.log("[openpanel] No client id configured, skipping");
+		// Unconfigured is a normal state (any build without the client id); stay
+		// silent rather than logging to every user's DevTools.
 		return;
 	}
 	// Warm the singleton so the first product event has zero setup cost.
