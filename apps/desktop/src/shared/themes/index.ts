@@ -34,6 +34,10 @@ export {
 export { withAlpha } from "./utils";
 // Lazy Zed-derived theme library (never eagerly spread into the store)
 export {
+	type Base16Scheme,
+	type Base16System,
+	base16ToZedFamily,
+	base16ToZedStyle,
 	convertZedFamily,
 	convertZedTheme,
 	getLibraryTheme,
