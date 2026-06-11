@@ -44,8 +44,12 @@ export function LoopMarquee({
 			<motion.div
 				className="flex w-max items-center gap-12"
 				initial={{ x: from }}
-				transition={{ duration, ease: "linear", repeat: Infinity }}
-				whileInView={{ x: to }}
+				whileInView={{
+					x: to,
+					// Scoped here so only the loop repeats — the revert-to-initial
+					// when scrolled offscreen uses the default one-shot transition.
+					transition: { duration, ease: "linear", repeat: Infinity },
+				}}
 			>
 				<div className="flex shrink-0 items-center gap-12">{children}</div>
 				<div aria-hidden className="flex shrink-0 items-center gap-12">
