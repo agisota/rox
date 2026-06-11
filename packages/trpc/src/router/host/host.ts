@@ -196,8 +196,10 @@ export const hostRouter = {
 				)
 				.limit(1);
 
-			// #34.1: hosts are free by default — membership alone grants access.
-			// (`paidPlan` dropped from the response; the relay reads only `allowed`.)
+			// #34.1: no paid-plan gate. `allowed` is true iff the user holds a
+			// host-level `v2_users_hosts` link for this exact host (not merely org
+			// membership). `paidPlan` is no longer returned; the relay reads only
+			// `allowed`. Keep these notes in sync with any later auth/relay refactor.
 			return { allowed: !!row };
 		}),
 
