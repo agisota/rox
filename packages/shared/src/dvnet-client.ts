@@ -160,12 +160,12 @@ export function normalizeDvNetWebhook(raw: unknown): CryptoPayment {
 	}
 	const body = raw as Record<string, unknown>;
 
-	const id = body["id"];
+	const id = body.id;
 	if (typeof id !== "string" || id.trim() === "") {
 		throw new DvNetWebhookError("webhook missing required string field: id");
 	}
 
-	const rawStatus = body["status"];
+	const rawStatus = body.status;
 	const knownStatuses: DvNetRawStatus[] = [
 		"pending",
 		"confirmed",
@@ -182,7 +182,7 @@ export function normalizeDvNetWebhook(raw: unknown): CryptoPayment {
 		);
 	}
 
-	const rawAmount = body["amount"];
+	const rawAmount = body.amount;
 	const amount = Number(rawAmount);
 	if (!Number.isFinite(amount) || !(amount > 0)) {
 		throw new DvNetWebhookError(
@@ -190,7 +190,7 @@ export function normalizeDvNetWebhook(raw: unknown): CryptoPayment {
 		);
 	}
 
-	const rawCurrency = body["currency"];
+	const rawCurrency = body.currency;
 	if (typeof rawCurrency !== "string" || rawCurrency.toUpperCase() !== "USDT") {
 		throw new DvNetWebhookError(
 			`webhook currency must be USDT, got ${String(rawCurrency)}`,
@@ -237,13 +237,13 @@ export class DvNetHttpClient implements DvNetClient {
 			string | undefined
 		>,
 	) {
-		const apiKey = env["DVNET_API_KEY"];
+		const apiKey = env.DVNET_API_KEY;
 		if (!apiKey || apiKey.trim() === "") {
 			throw new DvNetConfigError(
 				"DVNET_API_KEY is not set — configure it to enable crypto top-ups",
 			);
 		}
-		this.baseUrl = (env["DVNET_API_URL"] ?? DVNET_DEFAULT_BASE_URL).replace(
+		this.baseUrl = (env.DVNET_API_URL ?? DVNET_DEFAULT_BASE_URL).replace(
 			/\/$/,
 			"",
 		);
