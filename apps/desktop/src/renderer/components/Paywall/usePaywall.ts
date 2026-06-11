@@ -1,46 +1,27 @@
-import { useCurrentPlan } from "renderer/hooks/useCurrentPlan";
-import { authClient } from "renderer/lib/auth-client";
 import type { GatedFeature } from "./constants";
-import { paywall } from "./Paywall";
 
+/**
+ * #34.1: the Rox edition is free for everyone, so nothing is gated. This hook
+ * is kept as a thin pass-through purely so the existing `gateFeature(...)` call
+ * sites keep compiling — every feature is allowed and the callback runs
+ * immediately.
+ */
 export function usePaywall() {
-	const { data: session } = authClient.useSession();
-	const { plan: userPlan, isReady } = useCurrentPlan();
-
-	function hasAccess(feature: GatedFeature): boolean {
-		// #34.1: everything is free by default — no feature is gated, so the
-		// paywall never triggers and `gateFeature` just runs the callback.
-		void feature;
-		void userPlan;
-		return true;
-	}
-
 	function gateFeature(
 		feature: GatedFeature,
 		callback: () => void | Promise<void>,
-		context?: Record<string, unknown>,
 	): void {
-		if (hasAccess(feature)) {
+		try {
 			const result = callback();
 			if (result instanceof Promise) {
 				result.catch((error) => {
 					console.error(`[paywall] Callback error for ${feature}:`, error);
 				});
 			}
-		} else {
-			const trackingContext = {
-				organizationId: session?.session?.activeOrganizationId,
-				userPlan,
-				...context,
-			};
-			paywall(feature, trackingContext);
+		} catch (error) {
+			console.error(`[paywall] Callback error for ${feature}:`, error);
 		}
 	}
 
-	return {
-		hasAccess,
-		gateFeature,
-		userPlan,
-		isReady,
-	};
+	return { gateFeature };
 }

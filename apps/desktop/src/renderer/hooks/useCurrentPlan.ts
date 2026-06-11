@@ -1,59 +1,10 @@
-import { isActiveSubscriptionStatus, type PlanTier } from "@rox/shared/billing";
-import { useLiveQuery } from "@tanstack/react-db";
-import { authClient } from "renderer/lib/auth-client";
-import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import type { PlanTier } from "@rox/shared/billing";
 
-interface ResolveCurrentPlanArgs {
-	subscriptionPlan?: string | null;
-	sessionPlan?: string | null;
-	subscriptionsLoaded: boolean;
-}
-
-function isPaidPlanTier(
-	plan: string | null | undefined,
-): plan is "pro" | "enterprise" {
-	return plan === "pro" || plan === "enterprise";
-}
-
-export function resolveCurrentPlan({
-	subscriptionPlan,
-	sessionPlan,
-	subscriptionsLoaded,
-}: ResolveCurrentPlanArgs): PlanTier {
-	if (isPaidPlanTier(subscriptionPlan)) {
-		return subscriptionPlan;
-	}
-
-	if (subscriptionsLoaded) {
-		return "free";
-	}
-
-	if (isPaidPlanTier(sessionPlan)) {
-		return sessionPlan;
-	}
-
-	return "free";
-}
-
+/**
+ * #34.1: plan tiers are gone — the Rox edition is free for everyone. This hook
+ * is kept (with its prior `{ plan, isReady }` shape) only so the handful of
+ * call sites that read it keep compiling; it always reports the free tier.
+ */
 export function useCurrentPlan(): { plan: PlanTier; isReady: boolean } {
-	const { data: session } = authClient.useSession();
-	const collections = useCollections();
-
-	const { data: subscriptionsData = [], isReady } = useLiveQuery(
-		(q) => q.from({ subscriptions: collections.subscriptions }),
-		[collections],
-	);
-
-	const activeSubscription = subscriptionsData.find((subscription) =>
-		isActiveSubscriptionStatus(subscription.status),
-	);
-	const subscriptionsLoaded = isReady || subscriptionsData.length > 0;
-
-	const plan = resolveCurrentPlan({
-		subscriptionPlan: activeSubscription?.plan,
-		sessionPlan: session?.session?.plan,
-		subscriptionsLoaded,
-	});
-
-	return { plan, isReady: subscriptionsLoaded };
+	return { plan: "free", isReady: true };
 }

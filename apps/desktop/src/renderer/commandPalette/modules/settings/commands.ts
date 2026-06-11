@@ -4,7 +4,6 @@ import {
 	BookmarkIcon,
 	BuildingIcon,
 	CpuIcon,
-	CreditCardIcon,
 	FileTextIcon,
 	FolderIcon,
 	GitBranchIcon,
@@ -110,12 +109,6 @@ const TABS: SettingsTab[] = [
 		title: "Ringtones",
 		path: "/settings/ringtones",
 		icon: BellIcon,
-	},
-	{
-		id: "billing",
-		title: "Billing",
-		path: "/settings/billing",
-		icon: CreditCardIcon,
 	},
 	{
 		id: "security",

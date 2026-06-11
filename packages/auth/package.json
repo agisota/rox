@@ -15,10 +15,6 @@
 		"./env": {
 			"types": "./src/env.ts",
 			"default": "./src/env.ts"
-		},
-		"./stripe": {
-			"types": "./src/stripe.ts",
-			"default": "./src/stripe.ts"
 		}
 	},
 	"scripts": {

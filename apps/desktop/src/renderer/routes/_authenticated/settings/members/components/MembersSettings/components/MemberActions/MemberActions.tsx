@@ -18,7 +18,6 @@ import { toast } from "@rox/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { HiEllipsisVertical, HiOutlineTrash } from "react-icons/hi2";
-import { useCurrentPlan } from "renderer/hooks/useCurrentPlan";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import type { TeamMember } from "../../../../types";
@@ -48,7 +47,6 @@ export function MemberActions({
 }) {
 	const [isChangingRole, setIsChangingRole] = useState(false);
 	const { refetch: refetchSession } = authClient.useSession();
-	const { plan } = useCurrentPlan();
 	const navigate = useNavigate();
 
 	const availableRoles = getAvailableRoleChanges(
@@ -94,16 +92,11 @@ export function MemberActions({
 	}
 
 	const handleRemoveClick = () => {
-		const billingNote =
-			plan === "pro" || plan === "enterprise"
-				? " Подписка будет изменена соответствующим образом."
-				: "";
-
 		alert({
 			title: isCurrentUser ? "Выйти из организации?" : "Удалить участника?",
 			description: isCurrentUser
-				? `Вы точно хотите выйти из этой организации? Доступ будет потерян сразу.${billingNote}`
-				: `Вы точно хотите удалить ${member.name} (${member.email}) из организации? Пользователь сразу потеряет доступ.${billingNote}`,
+				? "Вы точно хотите выйти из этой организации? Доступ будет потерян сразу."
+				: `Вы точно хотите удалить ${member.name} (${member.email}) из организации? Пользователь сразу потеряет доступ.`,
 			actions: [
 				{ label: "Отмена", variant: "outline", onClick: () => {} },
 				{

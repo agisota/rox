@@ -16,7 +16,6 @@ export type SettingsSection =
 	| "models"
 	| "experimental"
 	| "integrations"
-	| "billing"
 	| "apikeys"
 	| "permissions"
 	| "security"
