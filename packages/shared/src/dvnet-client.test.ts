@@ -1,10 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
 	buildInvoiceRequest,
-	deriveDvNetPaymentId,
 	DvNetConfigError,
 	DvNetHttpClient,
+	DvNetInvoiceError,
 	DvNetWebhookError,
+	deriveDvNetPaymentId,
 	mapDvNetStatus,
 	normalizeDvNetWebhook,
 } from "./dvnet-client";
@@ -33,7 +34,11 @@ describe("mapDvNetStatus", () => {
 
 describe("buildInvoiceRequest", () => {
 	it("builds a valid USDT invoice request", () => {
-		const req = buildInvoiceRequest(5, "order-abc-123", "https://example.com/cb");
+		const req = buildInvoiceRequest(
+			5,
+			"order-abc-123",
+			"https://example.com/cb",
+		);
 		expect(req).toEqual({
 			amount: "5.000000",
 			currency: "USDT",
@@ -50,19 +55,19 @@ describe("buildInvoiceRequest", () => {
 	it("rejects zero amount", () => {
 		expect(() =>
 			buildInvoiceRequest(0, "ord-1", "https://example.com/cb"),
-		).toThrow(DvNetWebhookError);
+		).toThrow(DvNetInvoiceError);
 	});
 
 	it("rejects negative amount", () => {
 		expect(() =>
 			buildInvoiceRequest(-5, "ord-1", "https://example.com/cb"),
-		).toThrow(DvNetWebhookError);
+		).toThrow(DvNetInvoiceError);
 	});
 
 	it("rejects NaN amount", () => {
 		expect(() =>
 			buildInvoiceRequest(Number.NaN, "ord-1", "https://example.com/cb"),
-		).toThrow(DvNetWebhookError);
+		).toThrow(DvNetInvoiceError);
 	});
 
 	it("rejects Infinity amount", () => {
@@ -72,17 +77,19 @@ describe("buildInvoiceRequest", () => {
 				"ord-1",
 				"https://example.com/cb",
 			),
-		).toThrow(DvNetWebhookError);
+		).toThrow(DvNetInvoiceError);
 	});
 
 	it("rejects empty orderId", () => {
-		expect(() =>
-			buildInvoiceRequest(5, "", "https://example.com/cb"),
-		).toThrow(DvNetWebhookError);
+		expect(() => buildInvoiceRequest(5, "", "https://example.com/cb")).toThrow(
+			DvNetInvoiceError,
+		);
 	});
 
 	it("rejects empty callbackUrl", () => {
-		expect(() => buildInvoiceRequest(5, "ord-1", "")).toThrow(DvNetWebhookError);
+		expect(() => buildInvoiceRequest(5, "ord-1", "")).toThrow(
+			DvNetInvoiceError,
+		);
 	});
 });
 
@@ -90,7 +97,9 @@ describe("buildInvoiceRequest", () => {
 // normalizeDvNetWebhook
 // ---------------------------------------------------------------------------
 
-function validWebhook(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function validWebhook(
+	overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
 	return {
 		id: "chg_abc123",
 		status: "confirmed",
@@ -128,7 +137,9 @@ describe("normalizeDvNetWebhook — happy path", () => {
 	});
 
 	it("trims whitespace from id", () => {
-		const payment = normalizeDvNetWebhook(validWebhook({ id: "  chg_abc123  " }));
+		const payment = normalizeDvNetWebhook(
+			validWebhook({ id: "  chg_abc123  " }),
+		);
 		expect(payment.id).toBe("chg_abc123");
 	});
 
@@ -196,9 +207,7 @@ describe("normalizeDvNetWebhook — rejects invalid payloads", () => {
 
 	it("rejects Infinity amount", () => {
 		expect(() =>
-			normalizeDvNetWebhook(
-				validWebhook({ amount: Number.POSITIVE_INFINITY }),
-			),
+			normalizeDvNetWebhook(validWebhook({ amount: Number.POSITIVE_INFINITY })),
 		).toThrow(DvNetWebhookError);
 	});
 

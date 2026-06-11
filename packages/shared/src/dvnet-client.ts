@@ -18,7 +18,11 @@
  *   DVNET_API_URL  — optional; defaults to {@link DVNET_DEFAULT_BASE_URL}.
  */
 
-import type { CryptoPayment, CryptoPaymentStatus, DvNetClient } from "./rox-topup";
+import type {
+	CryptoPayment,
+	CryptoPaymentStatus,
+	DvNetClient,
+} from "./rox-topup";
 
 export const DVNET_DEFAULT_BASE_URL = "https://api.dv.net/v1";
 
@@ -71,6 +75,20 @@ export class DvNetWebhookError extends Error {
 }
 
 /**
+ * Thrown when {@link buildInvoiceRequest} is called with invalid arguments.
+ *
+ * Distinct from {@link DvNetWebhookError} so a handler that swallows webhook
+ * validation failures (bad inbound payloads) does not also silently swallow a
+ * programming error in outbound invoice construction.
+ */
+export class DvNetInvoiceError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "DvNetInvoiceError";
+	}
+}
+
+/**
  * Map a dv.net raw status to the normalized {@link CryptoPaymentStatus}.
  * dv.net uses "paid" as a synonym for "confirmed" — we normalise here so
  * upstream code only ever sees the canonical four-value enum.
@@ -79,14 +97,20 @@ export function mapDvNetStatus(raw: DvNetRawStatus): CryptoPaymentStatus {
 	if (raw === "paid" || raw === "confirmed") return "confirmed";
 	if (raw === "failed") return "failed";
 	if (raw === "expired") return "expired";
-	return "pending";
+	if (raw === "pending") return "pending";
+	// Exhaustiveness guard: a new DvNetRawStatus must be handled explicitly above
+	// rather than silently collapsing to "pending".
+	const _exhaustive: never = raw;
+	throw new DvNetWebhookError(
+		`unhandled DvNetRawStatus: ${String(_exhaustive)}`,
+	);
 }
 
 /**
  * Build a create-invoice request payload (pure — no network).
  *
  * @param usdtAmount  Amount in USDT. Must be finite and positive; throws
- *                    {@link DvNetWebhookError} otherwise.
+ *                    {@link DvNetInvoiceError} otherwise.
  * @param orderId     Caller-supplied idempotency key (e.g. a UUID for the
  *                    pending top-up row). Never empty.
  * @param callbackUrl URL dv.net will POST the confirmed payment to.
@@ -97,15 +121,15 @@ export function buildInvoiceRequest(
 	callbackUrl: string,
 ): DvNetInvoiceRequest {
 	if (!Number.isFinite(usdtAmount) || !(usdtAmount > 0)) {
-		throw new DvNetWebhookError(
+		throw new DvNetInvoiceError(
 			`usdtAmount must be a finite positive number, got ${usdtAmount}`,
 		);
 	}
 	if (!orderId) {
-		throw new DvNetWebhookError("orderId must not be empty");
+		throw new DvNetInvoiceError("orderId must not be empty");
 	}
 	if (!callbackUrl) {
-		throw new DvNetWebhookError("callbackUrl must not be empty");
+		throw new DvNetInvoiceError("callbackUrl must not be empty");
 	}
 	return {
 		amount: usdtAmount.toFixed(6),
@@ -167,10 +191,7 @@ export function normalizeDvNetWebhook(raw: unknown): CryptoPayment {
 	}
 
 	const rawCurrency = body["currency"];
-	if (
-		typeof rawCurrency !== "string" ||
-		rawCurrency.toUpperCase() !== "USDT"
-	) {
+	if (typeof rawCurrency !== "string" || rawCurrency.toUpperCase() !== "USDT") {
 		throw new DvNetWebhookError(
 			`webhook currency must be USDT, got ${String(rawCurrency)}`,
 		);
@@ -199,10 +220,9 @@ export function deriveDvNetPaymentId(chargeId: string): string {
 /**
  * Concrete HTTP implementation of {@link DvNetClient} (from rox-topup).
  *
- * This is the ONLY place {@code DVNET_API_KEY} is read. The key is never
- * stored in a property, logged, or included in error messages — it is read
- * from `env` on each call so a credential-rotation in process.env is
- * picked up without restart.
+ * This is the ONLY place {@code DVNET_API_KEY} is read. The key is validated
+ * and captured at construction time, then closed over so it is never a
+ * readable instance property, logged, or included in error messages.
  *
  * Throws {@link DvNetConfigError} on construction when the key is absent so
  * callers fail loudly at startup rather than silently at first use.
@@ -211,17 +231,26 @@ export class DvNetHttpClient implements DvNetClient {
 	private readonly baseUrl: string;
 	private readonly getApiKey: () => string;
 
-	constructor(env: Record<string, string | undefined> = process.env as Record<string, string | undefined>) {
+	constructor(
+		env: Record<string, string | undefined> = process.env as Record<
+			string,
+			string | undefined
+		>,
+	) {
 		const apiKey = env["DVNET_API_KEY"];
 		if (!apiKey || apiKey.trim() === "") {
 			throw new DvNetConfigError(
 				"DVNET_API_KEY is not set — configure it to enable crypto top-ups",
 			);
 		}
-		this.baseUrl =
-			(env["DVNET_API_URL"] ?? DVNET_DEFAULT_BASE_URL).replace(/\/$/, "");
-		// Capture via closure so the key is not a readable instance property.
-		this.getApiKey = () => env["DVNET_API_KEY"] ?? "";
+		this.baseUrl = (env["DVNET_API_URL"] ?? DVNET_DEFAULT_BASE_URL).replace(
+			/\/$/,
+			"",
+		);
+		// Capture the already-validated key string (not the mutable `env` ref) so
+		// a later deletion of env["DVNET_API_KEY"] can't make us silently send a
+		// blank Bearer token. The closure keeps it off the instance as a property.
+		this.getApiKey = () => apiKey;
 	}
 
 	async getPayment(id: string): Promise<CryptoPayment | null> {
@@ -237,11 +266,11 @@ export class DvNetHttpClient implements DvNetClient {
 
 		if (!response.ok) {
 			throw new Error(
-				`dv.net GET /charges/${id} failed with status ${response.status}`,
+				`dv.net GET /charges/${encodeURIComponent(id)} failed with status ${response.status}`,
 			);
 		}
 
-		const data = await response.json() as unknown;
+		const data = (await response.json()) as unknown;
 		return normalizeDvNetWebhook(data);
 	}
 }
