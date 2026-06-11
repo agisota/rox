@@ -34,6 +34,9 @@
 	--color-state-transition: var(--state-transition);
 	--color-state-verified: var(--state-verified);
 	--color-state-noise: var(--state-noise);
+	--font-frame-display: var(--frame-font-display);
+	--font-frame-body: var(--frame-font-body);
+	--font-frame-mono: var(--frame-font-mono);
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
 	--color-sidebar-primary: var(--sidebar-primary);
@@ -72,6 +75,12 @@
 	--state-transition: oklch(0.7 0.18 47);
 	--state-verified: oklch(0.72 0.17 152);
 	--state-noise: oklch(0.62 0 0);
+	/* Motion Frame typeface themes — defaults match [data-typeface="docs"]. */
+	--frame-font-display:
+		ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+	--frame-font-body: georgia, "Times New Roman", serif;
+	--frame-font-mono:
+		ui-monospace, sfmono-regular, "Cascadia Mono", menlo, monospace;
 	--sidebar: oklch(0.985 0 0);
 	--sidebar-foreground: oklch(0.145 0 0);
 	--sidebar-primary: oklch(0.205 0 0);
@@ -156,4 +165,33 @@
 			transparent
 		);
 	}
+}
+
+/*
+ * Motion Frame typeface themes (PORT-BRIEF PR3). Font stacks only — no
+ * colors, so no .dark variants. Scope a subtree via the TypefaceThemeProvider
+ * wrapper (data-typeface) and consume through font-frame-* utilities.
+ */
+[data-typeface="blueprint"] {
+	--frame-font-display:
+		ui-monospace, sfmono-regular, "Cascadia Mono", menlo, monospace;
+	--frame-font-body:
+		ui-monospace, sfmono-regular, "Cascadia Mono", menlo, monospace;
+	--frame-font-mono:
+		ui-monospace, sfmono-regular, "Cascadia Mono", menlo, monospace;
+}
+
+[data-typeface="brutalist"] {
+	--frame-font-display: "Arial Black", "Arial Bold", arial, sans-serif;
+	--frame-font-body: arial, "Helvetica Neue", helvetica, sans-serif;
+	--frame-font-mono:
+		ui-monospace, sfmono-regular, "Cascadia Mono", menlo, monospace;
+}
+
+[data-typeface="docs"] {
+	--frame-font-display:
+		ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+	--frame-font-body: georgia, "Times New Roman", serif;
+	--frame-font-mono:
+		ui-monospace, sfmono-regular, "Cascadia Mono", menlo, monospace;
 }

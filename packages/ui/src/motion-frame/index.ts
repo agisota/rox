@@ -37,5 +37,21 @@ export {
 	StateTransition,
 	type StateTransitionProps,
 } from "./StateTransition";
-export { STATE_TOKEN, type StateTokenName } from "./tokens";
+export {
+	TypefaceThemeContext,
+	type TypefaceThemeContextValue,
+	TypefaceThemeProvider,
+	type TypefaceThemeProviderProps,
+	useTypefaceTheme,
+} from "./TypefaceThemeProvider";
+export {
+	TypefaceThemeSwitcher,
+	type TypefaceThemeSwitcherProps,
+} from "./TypefaceThemeSwitcher";
+export {
+	STATE_TOKEN,
+	type StateTokenName,
+	TYPEFACE_THEMES,
+	type TypefaceTheme,
+} from "./tokens";
 export { useMotionTier } from "./useMotionTier";
