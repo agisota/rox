@@ -13,6 +13,7 @@ import {
 } from "../../src/app";
 import type { HostDb } from "../../src/db";
 import * as schema from "../../src/db/schema";
+import { AgentPreinstaller } from "../../src/runtime/agent-preinstall";
 import type { AppRouter as HostAppRouter } from "../../src/trpc/router";
 import {
 	createFakeApiClient,
@@ -118,6 +119,16 @@ export async function createTestHost(
 				},
 		chatRuntime: options.chatRuntime as CreateAppOptions["chatRuntime"],
 		chatService: options.chatService as CreateAppOptions["chatService"],
+		// Stub the agent preinstaller so the fire-and-forget `runAuto()` bootstrap
+		// in `createApp` never shells out. The real `defaultCommandRunner` runs
+		// install commands with a 5-minute timeout; on CI runners (no agent
+		// binaries preinstalled) those real installs starve the suite's git
+		// subprocesses and leak child processes, hanging the integration tests.
+		agentPreinstaller: new AgentPreinstaller({
+			db: db as unknown as HostDb,
+			runCommand: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+			writeConfigFile: async () => {},
+		}),
 	};
 
 	const result = createApp(createOptions);

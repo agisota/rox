@@ -14,6 +14,7 @@ import {
 	getSyntheticPrFetchRef,
 	materializePrBranch,
 } from "../../src/trpc/router/workspace-creation/utils/pr-branch-materialize";
+import { hermeticSimpleGit } from "../helpers/git-env";
 import { createGitFixture, type GitFixture } from "../helpers/git-fixture";
 
 interface BareRemoteFixture {
@@ -25,7 +26,11 @@ async function createBareRemote(): Promise<BareRemoteFixture> {
 	const bareRepoPath = realpathSync(
 		mkdtempSync(join(tmpdir(), "host-service-pr-branch-bare-")),
 	);
-	await simpleGit().init(["--bare", "--initial-branch=main", bareRepoPath]);
+	await hermeticSimpleGit().init([
+		"--bare",
+		"--initial-branch=main",
+		bareRepoPath,
+	]);
 	return {
 		bareRepoPath,
 		dispose: () => rmSync(bareRepoPath, { recursive: true, force: true }),

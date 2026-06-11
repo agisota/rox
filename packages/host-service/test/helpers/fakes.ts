@@ -3,6 +3,7 @@ import type { HostAuthProvider } from "../../src/providers/host-auth";
 import type { ModelProviderRuntimeResolver } from "../../src/providers/model-providers";
 import type { GitCredentialProvider } from "../../src/runtime/git/types";
 import type { ApiClient } from "../../src/types";
+import { hermeticGitEnv } from "./git-env";
 
 export class FakeApiAuthProvider implements ApiAuthProvider {
 	constructor(private readonly headers: Record<string, string> = {}) {}
@@ -26,7 +27,12 @@ export class FakeHostAuthProvider implements HostAuthProvider {
 export class MemoryGitCredentialProvider implements GitCredentialProvider {
 	constructor(private readonly token: string | null = null) {}
 	async getCredentials(): Promise<{ env: Record<string, string> }> {
-		return { env: {} };
+		// Mirror production (which inherits process.env) but with a hermetic
+		// git-config surface — see `hermeticGitEnv`. The old `{ env: {} }`
+		// stripped HOME/PATH yet still exposed the CI runner's /etc/gitconfig,
+		// whose credential.helper / fsmonitor spawned background git daemons
+		// that hung the adopt worktree ops for 60s+ until the runner SIGKILLed.
+		return { env: hermeticGitEnv() };
 	}
 	async getToken(): Promise<string | null> {
 		return this.token;

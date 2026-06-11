@@ -24,17 +24,85 @@ export type ModelProviderFamily =
 	| "other";
 
 /**
- * Divisor applied to the public models.dev price to get our USD sell price.
- * xAI (grok) and OpenAI (incl. pro): ÷7.5; Claude (opus/sonnet): ÷5.25;
+ * Auditable provenance for a per-provider pricing divisor.
+ *
+ * The divisor itself is a **margin lever**, not a derived rate: we take a
+ * model's public per-million list price (source: models.dev / OpenRouter) and
+ * divide by `divisor` to get our USD sell price, then peg USD→Rox via
+ * {@link ROX_PER_USDT}. Because these came verbatim from the product owner's
+ * spec (issue #34, 2026-06-07) and are not anchored to a measured cost basis,
+ * they MUST be treated as tunable config and revisited on `reviewCadence` —
+ * never hardcoded inline at a call site.
+ */
+export interface RoxDivisorConfig {
+	/** Public-list-price ÷ this = our USD sell price. */
+	divisor: number;
+	/** Where the value came from + what it's calibrated against. */
+	source: string;
+	/** How often to re-check it against current list prices. */
+	reviewCadence: "weekly" | "monthly" | "quarterly";
+	/** ISO date (YYYY-MM-DD) the value was last set or reviewed. */
+	lastReviewed: string;
+}
+
+const DIVISOR_SOURCE =
+	"issue #34 spec (2026-06-07) — target-margin lever over models.dev/OpenRouter list price + 1 USDT=100 Rox peg; placeholder pending cost-basis calibration";
+
+/**
+ * Single source of truth for the provider divisors, with provenance so a future
+ * recalibration can audit *why* each number is what it is. {@link ROX_PRICE_DIVISORS}
+ * is derived from this — consumers keep reading the flat map.
+ *
+ * xAI (grok) / OpenAI (incl. pro): ÷7.5; Claude (opus/sonnet): ÷5.25;
  * Gemini: ÷12.25; everything else (deepseek/cohere/kimi/mistral/minimax/…): ÷25.
  */
-export const ROX_PRICE_DIVISORS: Record<ModelProviderFamily, number> = {
-	xai: 7.5,
-	openai: 7.5,
-	anthropic: 5.25,
-	google: 12.25,
-	other: 25,
+export const ROX_PRICE_DIVISOR_CONFIG: Record<
+	ModelProviderFamily,
+	RoxDivisorConfig
+> = {
+	xai: {
+		divisor: 7.5,
+		source: DIVISOR_SOURCE,
+		reviewCadence: "monthly",
+		lastReviewed: "2026-06-07",
+	},
+	openai: {
+		divisor: 7.5,
+		source: DIVISOR_SOURCE,
+		reviewCadence: "monthly",
+		lastReviewed: "2026-06-07",
+	},
+	anthropic: {
+		divisor: 5.25,
+		source: DIVISOR_SOURCE,
+		reviewCadence: "monthly",
+		lastReviewed: "2026-06-07",
+	},
+	google: {
+		divisor: 12.25,
+		source: DIVISOR_SOURCE,
+		reviewCadence: "monthly",
+		lastReviewed: "2026-06-07",
+	},
+	other: {
+		divisor: 25,
+		source: DIVISOR_SOURCE,
+		reviewCadence: "monthly",
+		lastReviewed: "2026-06-07",
+	},
 };
+
+/**
+ * Flat family→divisor map derived from {@link ROX_PRICE_DIVISOR_CONFIG}. This is
+ * the hot-path lookup used by the pricing functions below.
+ */
+export const ROX_PRICE_DIVISORS: Record<ModelProviderFamily, number> =
+	Object.fromEntries(
+		Object.entries(ROX_PRICE_DIVISOR_CONFIG).map(([family, config]) => [
+			family,
+			config.divisor,
+		]),
+	) as Record<ModelProviderFamily, number>;
 
 /** Map a models.dev provider id or model id to a pricing family. */
 export function resolveProviderFamily(
@@ -68,6 +136,27 @@ export function usdToRox(usd: number): number {
 
 export function roxToUsd(rox: number): number {
 	return rox / ROX_PER_USDT;
+}
+
+/**
+ * Decimal places the ledger persists Rox amounts at — matches the
+ * `numeric(20, 6)` columns in `packages/db` (`balance_rox` / `delta_rox` /
+ * `rox_cost`). Every value that becomes a ledger amount MUST be quantized to
+ * this scale so the in-JS math agrees bit-for-bit with what Postgres stores;
+ * otherwise `sum(deltas) !== balanceAfter` and the ledger stops reconciling.
+ */
+export const ROX_SCALE = 6;
+const ROX_QUANTUM = 10 ** ROX_SCALE;
+
+/**
+ * Round a Rox amount to {@link ROX_SCALE} decimals. Non-finite inputs
+ * (NaN / ±Infinity, e.g. from a malformed price or token count) collapse to 0
+ * — the safe direction for money: never debit or credit an unbounded amount.
+ */
+export function quantizeRox(rox: number): number {
+	if (!Number.isFinite(rox)) return 0;
+	// `+ 0` normalises the `-0` that `Math.round` can yield for tiny negatives.
+	return Math.round(rox * ROX_QUANTUM) / ROX_QUANTUM + 0;
 }
 
 /** Our USD sell price per million tokens, from the public models.dev price. */
