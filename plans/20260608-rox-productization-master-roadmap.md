@@ -207,8 +207,8 @@ Preinstall + presets slice landed. Remaining:
 ### #35 T-OPENPANEL — Analytics end-to-end · (L–XL)
 
 `packages/analytics` + a slice landed. Layers landed (#64): ~~frontend SDK in
-renderer root layout~~ · ~~identify-after-login~~ · ~~product events~~ · **PII
-masking** (unit-tested `redactPii`/`sanitizeEvent`, 19 tests). Remaining: server
+renderer root layout~~ · ~~identify-after-login~~ · ~~product events~~ · ~~**PII
+masking**~~ (unit-tested `redactPii`/`sanitizeEvent`, 19 tests). Remaining: server
 events · workflow/agent telemetry · revenue (ties #34) · session replay (mask
 sensitive) · error tracking · UTM · user-path coverage map.
 
