@@ -197,6 +197,12 @@ export default defineConfig({
 			"import.meta.env.NEXT_PUBLIC_POSTHOG_HOST": defineEnv(
 				process.env.NEXT_PUBLIC_POSTHOG_HOST,
 			),
+			"import.meta.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID": defineEnv(
+				process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID,
+			),
+			"import.meta.env.OPENPANEL_API_URL": defineEnv(
+				process.env.OPENPANEL_API_URL,
+			),
 			"import.meta.env.SENTRY_DSN_DESKTOP": defineEnv(
 				process.env.SENTRY_DSN_DESKTOP,
 			),
