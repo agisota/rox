@@ -16,9 +16,17 @@
 			"types": "./src/rox-models.ts",
 			"default": "./src/rox-models.ts"
 		},
+		"./rox-ledger": {
+			"types": "./src/rox-ledger.ts",
+			"default": "./src/rox-ledger.ts"
+		},
 		"./rox-perks": {
 			"types": "./src/rox-perks.ts",
 			"default": "./src/rox-perks.ts"
+		},
+		"./rox-topup": {
+			"types": "./src/rox-topup.ts",
+			"default": "./src/rox-topup.ts"
 		},
 		"./dev-credentials": {
 			"types": "./src/dev-credentials.ts",

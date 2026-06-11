@@ -231,11 +231,11 @@ function setupLiveness(transport: TerminalTransport) {
 	if (!transport._resumeListener) {
 		const listener = () => handleResume(transport);
 		transport._resumeListener = listener;
-		if (typeof window !== "undefined") {
+		if (typeof window?.addEventListener === "function") {
 			window.addEventListener("online", listener);
 			window.addEventListener("focus", listener);
 		}
-		if (typeof document !== "undefined") {
+		if (typeof document?.addEventListener === "function") {
 			document.addEventListener("visibilitychange", listener);
 		}
 	}
@@ -248,11 +248,11 @@ function teardownLiveness(transport: TerminalTransport) {
 	}
 	const listener = transport._resumeListener;
 	if (listener) {
-		if (typeof window !== "undefined") {
+		if (typeof window?.removeEventListener === "function") {
 			window.removeEventListener("online", listener);
 			window.removeEventListener("focus", listener);
 		}
-		if (typeof document !== "undefined") {
+		if (typeof document?.removeEventListener === "function") {
 			document.removeEventListener("visibilitychange", listener);
 		}
 		transport._resumeListener = null;
