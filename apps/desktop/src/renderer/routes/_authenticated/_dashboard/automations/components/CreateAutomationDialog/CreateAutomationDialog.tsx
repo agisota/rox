@@ -98,7 +98,11 @@ export function CreateAutomationDialog({
 	useEffect(() => {
 		if (!open) return;
 		if (selectedProjectId) return;
-		const preset = initialContext?.projectId ?? recentProjects[0]?.id ?? null;
+		// When a workspace is preselected but no project, don't auto-pick the most
+		// recent project — that could pair a workspace with a mismatched project.
+		const preset =
+			initialContext?.projectId ??
+			(initialContext?.workspaceId ? null : (recentProjects[0]?.id ?? null));
 		if (preset) setSelectedProjectId(preset);
 	}, [open, selectedProjectId, recentProjects, initialContext]);
 
@@ -120,9 +124,9 @@ export function CreateAutomationDialog({
 	useEffect(() => {
 		if (!open) return;
 		if (appliedContextWorkspaceRef.current) return;
+		if (!initialContext?.workspaceId) return;
 		appliedContextWorkspaceRef.current = true;
-		if (initialContext?.workspaceId)
-			setV2WorkspaceId(initialContext.workspaceId);
+		setV2WorkspaceId(initialContext.workspaceId);
 	}, [open, initialContext]);
 
 	// Track which (open session, template) we've already pre-filled so the
@@ -293,7 +297,7 @@ export function CreateAutomationDialog({
 								/>
 
 								{humanReadableCreateError && (
-									<p className="text-destructive text-sm mt-2 line-clamp-2">
+									<p className="text-destructive text-sm mt-2 line-clamp-2 select-text cursor-text">
 										{humanReadableCreateError}
 									</p>
 								)}
