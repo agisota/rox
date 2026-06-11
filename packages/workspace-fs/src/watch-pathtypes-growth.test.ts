@@ -82,8 +82,11 @@ function getFilePathsSize(manager: FsWatcherManager, rootPath: string): number {
 }
 
 async function waitForCondition(
+	// Real FS watchers (inotify) deliver create/delete batches noticeably
+	// slower under CI IO than locally, so give the watcher generous headroom —
+	// the events do arrive, just not within a few seconds on a loaded runner.
 	check: () => boolean,
-	timeoutMs = 4000,
+	timeoutMs = 30000,
 	pollMs = 50,
 ): Promise<void> {
 	const deadline = Date.now() + timeoutMs;
@@ -249,7 +252,7 @@ describe("FsWatcherManager.pathTypes — monotonic growth", () => {
 		const lastPath = path.join(rootPath, `cap-${total - 1}.tmp`);
 		await waitForCondition(
 			() => getPathTypes(manager, rootPath).has(lastPath),
-			30_000,
+			45_000,
 		);
 
 		// File entries are the LRU-capped axis; directories are tracked
@@ -263,7 +266,7 @@ describe("FsWatcherManager.pathTypes — monotonic growth", () => {
 		// Most-recent paths should still be in the map (already verified by
 		// waitForCondition above, but assert for clarity).
 		expect(getPathTypes(manager, rootPath).has(lastPath)).toBe(true);
-	}, 60_000);
+	}, 90_000);
 
 	it("repeated create/delete with unique names grows pathTypes monotonically until delete catches up", async () => {
 		// The most realistic leak scenario: a process keeps creating files
