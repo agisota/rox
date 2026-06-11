@@ -65,6 +65,7 @@ export function scheduleSandboxExpiry(
 
 	return {
 		cancel: () => {
+			fired = true;
 			if (handle !== null) {
 				clearTimer(handle);
 				handle = null;
