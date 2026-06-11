@@ -25,7 +25,12 @@ export {
 	type MotionTierSwitcherProps,
 } from "./MotionTierSwitcher";
 export { FadeLift, type FadeLiftProps } from "./primitives/FadeLift";
+export {
+	LoopMarquee,
+	type LoopMarqueeProps,
+} from "./primitives/LoopMarquee";
 export { PulseDot, type PulseDotProps } from "./primitives/PulseDot";
+export { Reveal, type RevealProps } from "./primitives/Reveal";
 export { TraceLine, type TraceLineProps } from "./primitives/TraceLine";
 export {
 	type StateNode,

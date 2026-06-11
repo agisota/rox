@@ -54,7 +54,8 @@ Per [`PORT-BRIEF.md`](./motion-frame/PORT-BRIEF.md); design decisions made from
 the brief + repo style (no separate PORT SPEC exists — orchestrator approved
 building without it, corrections via review).
 
-- [ ] **C1** Tier switcher UI component (PR1 remainder).
+- [x] **C1** Tier switcher UI component (PR1 remainder) — `MotionTierSwitcher`,
+      merged via #68 (`7e37ff14`), fully green CI run.
 - [ ] **C2** `Reveal`, `LoopMarquee` primitives (PR2 remainder).
 - [ ] **C3** Typeface themes (Blueprint / Brutalist / Docs) + persisted switcher.
 - [ ] **C4** Composites: `SufficiencyPanel`, `EventTrace`, `RuntimeCard`,
@@ -67,8 +68,8 @@ building without it, corrections via review).
 
 - [x] Audited all 29 non-session branches — see
       [`2026-06-11-foreign-branch-inventory.md`](./2026-06-11-foreign-branch-inventory.md):
-      11 merge-candidates, 6 closable, 7 need a rebase, 5 large epics for the
-      owner. Acting on any of them is a separate owner decision.
+      11 MERGE-CANDIDATE, 6 CLOSE, 7 REFRESH-FIRST, 5 NEEDS-OWNER-REVIEW.
+      Acting on any of them is a separate owner decision.
 
 ## Decision log
 
