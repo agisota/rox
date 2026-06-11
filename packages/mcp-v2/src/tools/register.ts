@@ -20,6 +20,8 @@ import * as automationsUpdate from "./automations/update";
 import * as hostsList from "./hosts/list";
 import * as organizationMembersList from "./organization/members/list";
 import * as projectsList from "./projects/list";
+import * as screenGetContext from "./screen/get_context";
+import * as screenUiCommand from "./screen/ui_command";
 import * as tasksCreate from "./tasks/create";
 import * as tasksDelete from "./tasks/delete";
 import * as tasksGet from "./tasks/get";
@@ -60,6 +62,8 @@ const REGISTRARS = [
 	terminalsCreate,
 	projectsList,
 	hostsList,
+	screenGetContext,
+	screenUiCommand,
 ];
 
 export interface RegisterToolsOptions {

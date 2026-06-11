@@ -1,3 +1,4 @@
+import type { AgentNativeEmbedEnvelope } from "@rox/agent-bridge/protocol";
 import type {
 	AgentLifecycleEventType,
 	ClientMessage,
@@ -14,7 +15,8 @@ type EventType =
 	| "git:changed"
 	| "agent:lifecycle"
 	| "terminal:lifecycle"
-	| "port:changed";
+	| "port:changed"
+	| "agent-bridge:ui-command";
 
 interface FsEventsPayload {
 	events: FsWatchEvent[];
@@ -44,6 +46,14 @@ export interface TerminalLifecyclePayload {
 	occurredAt: number;
 }
 
+export interface AgentBridgeUiCommandPayload {
+	/**
+	 * `agent-native.embed` v1 request envelope carrying a `UiCommand`.
+	 * Consumers re-validate with `parseUiCommandEnvelope` before executing.
+	 */
+	envelope: AgentNativeEmbedEnvelope;
+}
+
 type PortChangedMessage = Extract<ServerMessage, { type: "port:changed" }>;
 
 export interface PortChangedPayload {
@@ -63,7 +73,12 @@ type EventListener<T extends EventType> = T extends "fs:events"
 				? (workspaceId: string, payload: TerminalLifecyclePayload) => void
 				: T extends "port:changed"
 					? (workspaceId: string, payload: PortChangedPayload) => void
-					: never;
+					: T extends "agent-bridge:ui-command"
+						? (
+								workspaceId: string,
+								payload: AgentBridgeUiCommandPayload,
+							) => void
+						: never;
 
 interface ListenerEntry {
 	type: EventType;
@@ -122,7 +137,8 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 			message.type === "git:changed" ||
 			message.type === "agent:lifecycle" ||
 			message.type === "terminal:lifecycle" ||
-			message.type === "port:changed"
+			message.type === "port:changed" ||
+			message.type === "agent-bridge:ui-command"
 				? message.workspaceId
 				: null;
 
@@ -170,6 +186,11 @@ function handleMessage(state: ConnectionState, data: unknown): void {
 				label: message.label,
 				occurredAt: message.occurredAt,
 			});
+		} else if (message.type === "agent-bridge:ui-command") {
+			(entry.callback as EventListener<"agent-bridge:ui-command">)(
+				message.workspaceId,
+				{ envelope: message.envelope },
+			);
 		}
 	}
 }

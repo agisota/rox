@@ -1,3 +1,4 @@
+import type { AgentNativeEmbedEnvelope } from "@rox/agent-bridge/protocol";
 import type { DetectedPort } from "@rox/port-scanner";
 import type { AgentIdentity } from "@rox/shared/agent-identity";
 import type { FsWatchEvent } from "@rox/workspace-fs/host";
@@ -53,6 +54,17 @@ export interface PortChangedMessage {
 	occurredAt: number;
 }
 
+export interface AgentBridgeUiCommandMessage {
+	type: "agent-bridge:ui-command";
+	workspaceId: string;
+	/**
+	 * `agent-native.embed` v1 request envelope carrying a whitelisted
+	 * `UiCommand` (`name: "rox.ui-command"`). The renderer validates it again
+	 * with `parseUiCommandEnvelope` before executing.
+	 */
+	envelope: AgentNativeEmbedEnvelope;
+}
+
 export interface EventBusErrorMessage {
 	type: "error";
 	message: string;
@@ -64,6 +76,7 @@ export type ServerMessage =
 	| AgentLifecycleMessage
 	| TerminalLifecycleMessage
 	| PortChangedMessage
+	| AgentBridgeUiCommandMessage
 	| EventBusErrorMessage;
 
 // ── Client → Server ────────────────────────────────────────────────
