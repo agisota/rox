@@ -100,13 +100,13 @@ export function IntegrationsSettings({
 		return (
 			<div className="p-6 max-w-4xl w-full">
 				<div className="mb-8">
-					<h2 className="text-xl font-semibold">Integrations</h2>
+					<h2 className="text-xl font-semibold">Интеграции</h2>
 					<p className="text-sm text-muted-foreground mt-1">
-						Connect external services to sync data.
+						Подключите внешние сервисы для синхронизации данных.
 					</p>
 				</div>
 				<p className="text-sm text-muted-foreground">
-					You need to be part of an organization to use integrations.
+					Чтобы использовать интеграции, нужно состоять в организации.
 				</p>
 			</div>
 		);
@@ -115,9 +115,10 @@ export function IntegrationsSettings({
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Integrations</h2>
+				<h2 className="text-xl font-semibold">Интеграции</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Connect external services to sync data with your organization.
+					Подключите внешние сервисы для синхронизации данных с вашей
+					организацией.
 				</p>
 			</div>
 
@@ -125,7 +126,7 @@ export function IntegrationsSettings({
 				{showLinear && (
 					<IntegrationRow
 						name="Linear"
-						description="Sync issues bidirectionally with Linear."
+						description="Синхронизируйте задачи с Linear в обе стороны."
 						icon={<SiLinear className="size-5" />}
 						isConnected={isLinearConnected}
 						connectedOrgName={linearConnection?.externalOrgName}
@@ -136,7 +137,7 @@ export function IntegrationsSettings({
 				{showGithub && (
 					<IntegrationRow
 						name="GitHub"
-						description="Connect repos and sync pull requests."
+						description="Подключайте репозитории и синхронизируйте pull requests."
 						icon={<FaGithub className="size-5" />}
 						isConnected={isGithubConnected}
 						connectedOrgName={githubInstallation?.accountLogin}
@@ -148,7 +149,7 @@ export function IntegrationsSettings({
 				{showSlack && (
 					<IntegrationRow
 						name="Slack"
-						description="Manage tasks from Slack conversations."
+						description="Управляйте задачами из разговоров в Slack."
 						icon={<FaSlack className="size-5" />}
 						isConnected={isSlackConnected}
 						connectedOrgName={slackConnection?.externalOrgName}
@@ -158,7 +159,7 @@ export function IntegrationsSettings({
 			</div>
 
 			<p className="mt-6 text-xs text-muted-foreground">
-				Manage integrations in the web app to connect and configure services.
+				Подключайте и настраивайте сервисы в веб-приложении.
 			</p>
 		</div>
 	);
@@ -197,9 +198,9 @@ function IntegrationRow({
 			<span className="text-xs text-muted-foreground">
 				{isConnected
 					? connectedOrgName
-						? `Connected to ${connectedOrgName}`
-						: "Connected"
-					: "Not connected"}
+						? `Подключено к ${connectedOrgName}`
+						: "Подключено"
+					: "Не подключено"}
 			</span>
 		</div>
 	);
@@ -226,7 +227,7 @@ function IntegrationRow({
 					className="gap-2"
 				>
 					<HiOutlineArrowTopRightOnSquare className="size-4" />
-					{isConnected ? "Manage" : "Connect"}
+					{isConnected ? "Управлять" : "Подключить"}
 				</Button>
 			</div>
 		</div>

@@ -21,7 +21,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
 	title: "Rox",
-	description: "Run 10+ parallel coding agents on your machine",
+	description:
+		"Запускайте 10+ параллельных агентов для разработки на своём компьютере",
 	icons: {
 		icon: [
 			{ url: "/favicon.ico", sizes: "32x32" },
@@ -44,7 +45,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang="ru" suppressHydrationWarning>
 			<body
 				className={cn(
 					"bg-background text-foreground min-h-screen font-sans antialiased",

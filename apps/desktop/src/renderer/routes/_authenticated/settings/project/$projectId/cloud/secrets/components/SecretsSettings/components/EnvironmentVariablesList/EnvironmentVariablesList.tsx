@@ -29,9 +29,9 @@ interface Secret {
 type SortOrder = "last-updated" | "name" | "type";
 
 const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
-	{ value: "last-updated", label: "Last Updated" },
-	{ value: "name", label: "Name" },
-	{ value: "type", label: "Type" },
+	{ value: "last-updated", label: "Последнее обновление" },
+	{ value: "name", label: "Название" },
+	{ value: "type", label: "Тип" },
 ];
 
 function sortSecrets(secrets: Secret[], order: SortOrder): Secret[] {
@@ -101,7 +101,7 @@ export function EnvironmentVariablesList({
 			<div className="flex items-center justify-end">
 				<Button size="sm" onClick={onAdd}>
 					<HiOutlinePlus className="h-4 w-4 mr-1.5" />
-					Add Environment Variable
+					Добавить переменную окружения
 				</Button>
 			</div>
 
@@ -110,7 +110,7 @@ export function EnvironmentVariablesList({
 					<div className="relative flex-1">
 						<HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
-							placeholder="Search by key name..."
+							placeholder="Поиск по имени ключа..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							className="pl-9"
@@ -137,13 +137,13 @@ export function EnvironmentVariablesList({
 
 			{isLoading ? (
 				<div className="text-sm text-muted-foreground py-8 text-center">
-					Loading...
+					Загрузка...
 				</div>
 			) : filteredAndSorted.length === 0 ? (
 				<div className="text-sm text-muted-foreground py-8 text-center border rounded-md">
 					{secrets.length === 0
-						? "No environment variables yet"
-						: "No matching variables"}
+						? "Переменных окружения пока нет"
+						: "Подходящих переменных нет"}
 				</div>
 			) : (
 				<div className="border rounded-md">

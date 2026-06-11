@@ -15,7 +15,6 @@ import {
 import { Switch } from "@rox/ui/switch";
 import { useEffect, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { BRANCH_PREFIX_MODE_LABELS } from "../../../utils/branch-prefix";
 import {
 	isItemVisible,
 	SETTING_ITEM_ID,
@@ -26,6 +25,13 @@ import { UserWorktreeLocationSection } from "./components/UserWorktreeLocationSe
 interface GitSettingsProps {
 	visibleItems?: SettingItemId[] | null;
 }
+
+const BRANCH_PREFIX_MODE_LABELS_RU = {
+	none: "Без префикса",
+	github: "Имя пользователя GitHub",
+	author: "Имя автора Git",
+	custom: "Свой префикс",
+} satisfies Record<BranchPrefixMode, string>;
 
 export function GitSettings({ visibleItems }: GitSettingsProps) {
 	const showDeleteLocalBranch = isItemVisible(
@@ -123,9 +129,9 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Git & worktrees</h2>
+				<h2 className="text-xl font-semibold">Git и worktree</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Configure git branch and worktree behavior
+					Настройте поведение веток Git и worktree
 				</p>
 			</div>
 
@@ -137,11 +143,11 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 								htmlFor="delete-local-branch"
 								className="text-sm font-medium"
 							>
-								Delete local branch on workspace removal
+								Удалять локальную ветку при удалении рабочего пространства
 							</Label>
 							<p className="text-xs text-muted-foreground">
-								Also delete the local git branch when deleting a worktree
-								workspace
+								Также удалять локальную ветку Git при удалении рабочего
+								пространства worktree
 							</p>
 						</div>
 						<Switch
@@ -156,9 +162,9 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 				{showBranchPrefix && (
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
-							<Label className="text-sm font-medium">Branch prefix</Label>
+							<Label className="text-sm font-medium">Префикс ветки</Label>
 							<p className="text-xs text-muted-foreground">
-								Group new branches under a folder.{" "}
+								Группируйте новые ветки в папке.{" "}
 								<code className="bg-muted px-1.5 py-0.5 rounded text-foreground">
 									{previewPrefix
 										? `${previewPrefix}/branch-name`
@@ -179,7 +185,7 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 								</SelectTrigger>
 								<SelectContent>
 									{(
-										Object.entries(BRANCH_PREFIX_MODE_LABELS) as [
+										Object.entries(BRANCH_PREFIX_MODE_LABELS_RU) as [
 											BranchPrefixMode,
 											string,
 										][]
@@ -192,7 +198,7 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 							</Select>
 							{branchPrefix?.mode === "custom" && (
 								<Input
-									placeholder="Prefix"
+									placeholder="Префикс"
 									value={customPrefixInput}
 									onChange={(e) => setCustomPrefixInput(e.target.value)}
 									onBlur={handleCustomPrefixBlur}

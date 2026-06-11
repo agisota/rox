@@ -5,28 +5,28 @@ export interface FAQItem {
 
 export const FAQ_ITEMS: FAQItem[] = [
 	{
-		question: "I already use an IDE like Cursor, is this for me?",
+		question: "Я уже использую IDE вроде Cursor. Rox мне подойдет?",
 		answer:
-			"Rox is designed to work with your existing tool, we natively support deep-linking to IDEs like Cursor so you can open your workspaces and files in your IDE.",
+			"Rox создан для работы вместе с вашими текущими инструментами: мы нативно поддерживаем глубокие ссылки в IDE вроде Cursor, чтобы вы могли открывать рабочие области и файлы прямо в своей IDE.",
 	},
 	{
-		question: "Which AI coding agents are supported?",
+		question: "Какие AI-агенты для кода поддерживаются?",
 		answer:
-			"Rox works with any CLI-based coding agent including Claude Code, OpenCode, OpenAI Codex, and more. If it runs in a terminal, it runs in Rox.",
+			"Rox работает с любым CLI-агентом для кода, включая Claude Code, OpenCode, OpenAI Codex и другие инструменты. Если он запускается в терминале, он запускается и в Rox.",
 	},
 	{
-		question: "How does the parallel agent system work?",
+		question: "Как работает система параллельных агентов?",
 		answer:
-			"Each agent runs in its own isolated Git worktree, which means they can work on different branches or features simultaneously without conflicts. You can monitor all agents in real-time and switch between them instantly.",
+			"Каждый агент запускается в собственном изолированном git worktree: так разные ветки и функции могут разрабатываться параллельно без конфликтов. Вы видите всех агентов в реальном времени и мгновенно переключаетесь между ними.",
 	},
 	{
-		question: "Is Rox free to use?",
+		question: "Можно ли пользоваться Rox бесплатно?",
 		answer:
-			"Rox has a free tier. The source code is available on GitHub under Elastic License 2.0 (ELv2), so you can inspect and self-host it subject to the license terms.",
+			"У Rox есть бесплатный тариф. Исходный код доступен на GitHub под лицензией Elastic License 2.0 (ELv2), поэтому вы можете изучать его и разворачивать у себя с учетом условий лицензии.",
 	},
 	{
-		question: "Can I use my own API keys?",
+		question: "Можно ли использовать собственные API-ключи?",
 		answer:
-			"Absolutely. Rox doesn't proxy any API calls. You use your own API keys directly with whatever AI providers you choose. This means you have full control over costs and usage.",
+			"Да. Rox не проксирует API-запросы: вы напрямую используете свои API-ключи с теми AI-провайдерами, которых выбираете сами. Поэтому контроль над расходами и использованием остается у вас.",
 	},
 ];

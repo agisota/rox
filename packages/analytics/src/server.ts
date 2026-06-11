@@ -9,6 +9,7 @@
 
 import type { AnalyticsEventName, EventProperties } from "./events";
 import { createOpenPanelServerClient, type OpenPanelClient } from "./openpanel";
+import { redactPii } from "./sanitize";
 
 /** The slice of `posthog-node`'s client we depend on (kept structural). */
 export interface PostHogLike {
@@ -63,7 +64,7 @@ export function createDualAnalytics(
 	return {
 		openpanel,
 		capture({ distinctId, event, properties, groups }) {
-			const props = (properties ?? {}) as Record<string, unknown>;
+			const props = redactPii(properties as Record<string, unknown>);
 			posthog.capture({ distinctId, event, properties: props, groups });
 			void openpanel.track({
 				event,
@@ -72,8 +73,9 @@ export function createDualAnalytics(
 			});
 		},
 		identify({ distinctId, traits }) {
-			posthog.identify?.({ distinctId, properties: traits });
-			void openpanel.identify({ distinctId, traits });
+			const safeTraits = redactPii(traits);
+			posthog.identify?.({ distinctId, properties: safeTraits });
+			void openpanel.identify({ distinctId, traits: safeTraits });
 		},
 	};
 }

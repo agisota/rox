@@ -89,7 +89,7 @@ export function AgentsSettingsSidebar({
 					className={settingsListItemClass(false, "gap-2 w-full text-left")}
 				>
 					<Plus className="size-3.5 shrink-0" />
-					<span className="truncate flex-1">Add agent</span>
+					<span className="truncate flex-1">Добавить агента</span>
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-56">
@@ -117,7 +117,7 @@ export function AgentsSettingsSidebar({
 					onSelect={() => onResetToDefaults()}
 					disabled={isResetting}
 				>
-					Reset to defaults
+					Сбросить настройки
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
@@ -134,16 +134,16 @@ export function AgentsSettingsSidebar({
 				strategy={verticalListSortingStrategy}
 			>
 				<SettingsListSidebar
-					searchPlaceholder="Filter agents..."
-					searchAriaLabel="Filter agents"
+					searchPlaceholder="Фильтр агентов..."
+					searchAriaLabel="Фильтр агентов"
 					listHeader={listHeader}
-					groups={[{ id: "all", title: "Agents", rows: configs }]}
+					groups={[{ id: "all", title: "Агенты", rows: configs }]}
 					filterRow={(row, q) =>
 						row.label.toLowerCase().includes(q.toLowerCase())
 					}
 					getRowKey={(row) => row.id}
-					emptyLabel="No agents yet."
-					noMatchLabel={(q) => `No agents match "${q}".`}
+					emptyLabel="Агентов пока нет."
+					noMatchLabel={(q) => `Нет агентов по запросу "${q}".`}
 					renderRow={(row) => (
 						<AgentSidebarRow
 							row={row}
@@ -212,7 +212,7 @@ function AgentSidebarRow({
 					"opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 transition-opacity",
 					isDragging && "opacity-100",
 				)}
-				aria-label="Drag to reorder"
+				aria-label="Перетащите, чтобы изменить порядок"
 			>
 				<LuGripVertical className="size-3.5" />
 			</button>

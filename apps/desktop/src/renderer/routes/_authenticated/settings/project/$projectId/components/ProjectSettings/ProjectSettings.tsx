@@ -51,6 +51,16 @@ import { ProjectSettingsHeader } from "../ProjectSettingsHeader";
 import { ScriptsEditor } from "./components/ScriptsEditor";
 
 const REPO_DEFAULT_BASE_BRANCH = "__repo_default__";
+const BRANCH_PREFIX_MODE_LABELS_RU: Record<
+	BranchPrefixMode | "default",
+	string
+> = {
+	default: "Использовать глобальное значение",
+	none: "Без префикса",
+	github: "Имя пользователя GitHub",
+	author: "Имя автора Git",
+	custom: "Свой префикс",
+};
 
 export function SettingsSection({
 	icon,
@@ -128,7 +138,7 @@ export function ProjectSettings({
 	const setProjectIcon = electronTrpc.projects.setProjectIcon.useMutation({
 		onError: (err) => {
 			console.error("[project-settings/setProjectIcon] Failed:", err);
-			toast.error(err.message || "Failed to update project icon");
+			toast.error(err.message || "Не удалось обновить иконку проекта");
 		},
 		onSettled: () => {
 			utils.projects.get.invalidate({ id: projectId });
@@ -226,12 +236,12 @@ export function ProjectSettings({
 	const handleImportAll = async () => {
 		try {
 			const result = await importAllWorktrees.mutateAsync({ projectId });
-			toast.success(
-				`Imported ${result.imported} workspace${result.imported === 1 ? "" : "s"}`,
-			);
+			toast.success(`Импортировано рабочих областей: ${result.imported}`);
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to import worktrees",
+				err instanceof Error
+					? err.message
+					: "Не удалось импортировать worktree",
 			);
 		}
 	};
@@ -243,10 +253,12 @@ export function ProjectSettings({
 				worktreePath: path,
 			}),
 			{
-				loading: "Importing worktree...",
-				success: `Imported ${branch}`,
+				loading: "Импорт worktree...",
+				success: `Импортирован ${branch}`,
 				error: (err) =>
-					err instanceof Error ? err.message : "Failed to import worktree",
+					err instanceof Error
+						? err.message
+						: "Не удалось импортировать worktree",
 			},
 		);
 	};
@@ -301,11 +313,11 @@ export function ProjectSettings({
 
 			<div className="space-y-8">
 				<SettingsSection
-					title="Branch Prefix"
+					title="Префикс ветки"
 					description={
 						previewPrefix
-							? `Preview: ${previewPrefix}/branch-name`
-							: "Preview: branch-name"
+							? `Предпросмотр: ${previewPrefix}/branch-name`
+							: "Предпросмотр: branch-name"
 					}
 				>
 					<div className="flex items-center justify-end">
@@ -326,14 +338,14 @@ export function ProjectSettings({
 										][]
 									).map(([value, label]) => (
 										<SelectItem key={value} value={value}>
-											{label}
+											{BRANCH_PREFIX_MODE_LABELS_RU[value] ?? label}
 										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>
 							{currentMode === "custom" && (
 								<Input
-									placeholder="Prefix"
+									placeholder="Префикс"
 									value={customPrefixInput}
 									onChange={(e) => setCustomPrefixInput(e.target.value)}
 									onBlur={handleCustomPrefixBlur}
@@ -346,8 +358,8 @@ export function ProjectSettings({
 				</SettingsSection>
 
 				<SettingsSection
-					title="Base Branch"
-					description="Default base for new workspaces. Override per-workspace at creation."
+					title="Базовая ветка"
+					description="База по умолчанию для новых рабочих областей. Можно переопределить при создании отдельной рабочей области."
 				>
 					<div className="flex items-center justify-end gap-4">
 						<Select
@@ -357,18 +369,19 @@ export function ProjectSettings({
 						>
 							<SelectTrigger className="w-[260px]">
 								{isBranchDataLoading ? (
-									<span className="text-muted-foreground">Loading...</span>
+									<span className="text-muted-foreground">Загрузка...</span>
 								) : (
 									<SelectValue />
 								)}
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value={REPO_DEFAULT_BASE_BRANCH}>
-									Use repository default ({repoDefaultBranch})
+									Использовать значение репозитория по умолчанию (
+									{repoDefaultBranch})
 								</SelectItem>
 								{workspaceBaseBranchMissing && project.workspaceBaseBranch && (
 									<SelectItem value={project.workspaceBaseBranch}>
-										{project.workspaceBaseBranch} (missing)
+										{project.workspaceBaseBranch} (отсутствует)
 									</SelectItem>
 								)}
 								{(branchData?.branches ?? []).map((branch) => (
@@ -381,17 +394,17 @@ export function ProjectSettings({
 					</div>
 					{workspaceBaseBranchMissing && (
 						<p className="text-xs text-destructive">
-							Branch "{project.workspaceBaseBranch}" no longer exists. New
-							workspaces will fall back to "{repoDefaultBranch}".
+							Ветка "{project.workspaceBaseBranch}" больше не существует. Новые
+							рабочие области будут использовать "{repoDefaultBranch}".
 						</p>
 					)}
 				</SettingsSection>
 
-				<SettingsSection title="Worktrees">
+				<SettingsSection title="Worktree">
 					<WorktreeLocationPicker
 						currentPath={project.worktreeBaseDir}
-						defaultPathLabel={`Using global default: ${globalPath}`}
-						dialogTitle="Select worktree location for this project"
+						defaultPathLabel={`Используется глобальное значение: ${globalPath}`}
+						dialogTitle="Выберите расположение worktree для этого проекта"
 						defaultBrowsePath={project.worktreeBaseDir ?? globalWorktreeBaseDir}
 						disabled={updateProject.isPending}
 						onSelect={(path) =>
@@ -416,13 +429,10 @@ export function ProjectSettings({
 						) && (
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
-									<Label className="text-sm font-medium">
-										Import Worktrees
-									</Label>
+									<Label className="text-sm font-medium">Импорт worktree</Label>
 									<p className="text-xs text-muted-foreground">
-										{importableExternalWorktrees.length} external worktree
-										{importableExternalWorktrees.length === 1 ? "" : "s"} found
-										on disk.
+										Внешних worktree на диске:{" "}
+										{importableExternalWorktrees.length}.
 									</p>
 								</div>
 								<div className="flex items-center gap-2">
@@ -439,7 +449,7 @@ export function ProjectSettings({
 										</SelectTrigger>
 										<SelectContent>
 											<SelectItem value="__all__">
-												All worktrees ({importableExternalWorktrees.length})
+												Все worktree ({importableExternalWorktrees.length})
 											</SelectItem>
 											{importableExternalWorktrees.map((wt) => (
 												<SelectItem key={wt.path} value={wt.path}>
@@ -464,8 +474,8 @@ export function ProjectSettings({
 											}}
 										>
 											{openExternalWorktree.isPending
-												? "Importing..."
-												: "Import"}
+												? "Импорт..."
+												: "Импортировать"}
 										</Button>
 									) : (
 										<AlertDialog>
@@ -476,31 +486,26 @@ export function ProjectSettings({
 													disabled={importAllWorktrees.isPending}
 												>
 													{importAllWorktrees.isPending
-														? "Importing..."
-														: "Import all"}
+														? "Импорт..."
+														: "Импортировать все"}
 												</Button>
 											</AlertDialogTrigger>
 											<AlertDialogContent>
 												<AlertDialogHeader>
 													<AlertDialogTitle>
-														Import all worktrees
+														Импортировать все worktree
 													</AlertDialogTitle>
 													<AlertDialogDescription>
-														This will import{" "}
-														{importableExternalWorktrees.length} external
-														worktree
-														{importableExternalWorktrees.length === 1
-															? ""
-															: "s"}{" "}
-														into Rox as workspaces. Each worktree on disk will
-														be tracked and appear in your sidebar. No files will
-														be modified.
+														Rox импортирует внешние worktree как рабочие
+														области: {importableExternalWorktrees.length}.
+														Каждый worktree на диске будет отслеживаться и
+														появится в боковой панели. Файлы не будут изменены.
 													</AlertDialogDescription>
 												</AlertDialogHeader>
 												<AlertDialogFooter>
-													<AlertDialogCancel>Cancel</AlertDialogCancel>
+													<AlertDialogCancel>Отмена</AlertDialogCancel>
 													<AlertDialogAction onClick={handleImportAll}>
-														Import all
+														Импортировать все
 													</AlertDialogAction>
 												</AlertDialogFooter>
 											</AlertDialogContent>
@@ -513,7 +518,7 @@ export function ProjectSettings({
 
 				<ScriptsEditor projectId={project.id} />
 
-				<SettingsSection title="Appearance">
+				<SettingsSection title="Внешний вид">
 					<div className="flex items-center justify-between gap-4">
 						<ColorSelector
 							selectedColor={project.color}
@@ -529,7 +534,7 @@ export function ProjectSettings({
 								{project.iconUrl && (
 									<img
 										src={project.iconUrl}
-										alt="Project icon"
+										alt="Иконка проекта"
 										className="size-8 rounded object-cover border"
 									/>
 								)}
@@ -550,7 +555,7 @@ export function ProjectSettings({
 									)}
 								>
 									<LuImagePlus className="size-4" />
-									{project.iconUrl ? "Replace icon" : "Upload icon"}
+									{project.iconUrl ? "Заменить иконку" : "Загрузить иконку"}
 								</button>
 								{project.iconUrl && (
 									<button
@@ -563,13 +568,13 @@ export function ProjectSettings({
 										)}
 									>
 										<LuTrash2 className="size-4" />
-										Remove
+										Удалить
 									</button>
 								)}
 							</div>
 							<div className="flex items-center gap-2">
 								<Label className="text-sm text-muted-foreground">
-									Hide image
+									Скрыть изображение
 								</Label>
 								<Switch
 									checked={project.hideImage ?? false}

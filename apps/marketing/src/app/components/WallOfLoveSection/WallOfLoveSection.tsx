@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import { TESTIMONIALS, type Testimonial } from "./constants";
 
 function getInitials(name: string) {
@@ -58,7 +59,11 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 				</div>
 			</div>
 			<p className="mt-3 text-foreground/90 text-[15px] leading-relaxed whitespace-pre-line">
-				{showOriginal ? testimonial.originalContent : testimonial.content}
+				{showOriginal ? (
+					testimonial.originalContent
+				) : (
+					<GlossaryText text={testimonial.content} />
+				)}
 			</p>
 			{hasTranslation && (
 				<button
@@ -71,10 +76,10 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 					className="group mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
 				>
 					<span className="group-hover:hidden">
-						{showOriginal ? "Translated" : "Translated"}
+						{showOriginal ? "Перевод" : "Перевод"}
 					</span>
 					<span className="hidden group-hover:inline">
-						{showOriginal ? "Show translation" : "Show original"}
+						{showOriginal ? "Показать перевод" : "Показать оригинал"}
 					</span>
 				</button>
 			)}
@@ -92,7 +97,7 @@ export function WallOfLoveSection() {
 			<div className="max-w-6xl mx-auto">
 				<div className="text-center mb-12">
 					<h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-foreground">
-						What builders say about Rox
+						Что разработчики говорят о Rox
 					</h2>
 				</div>
 

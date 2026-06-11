@@ -26,7 +26,7 @@ export function AddMemberDropdown({
 		return (
 			<Button size="sm" variant="outline" disabled>
 				<HiOutlinePlus className="h-4 w-4 mr-1" />
-				Add member
+				Добавить участника
 			</Button>
 		);
 	}
@@ -36,7 +36,7 @@ export function AddMemberDropdown({
 			<DropdownMenuTrigger asChild>
 				<Button size="sm" variant="outline">
 					<HiOutlinePlus className="h-4 w-4 mr-1" />
-					Add member
+					Добавить участника
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-64">

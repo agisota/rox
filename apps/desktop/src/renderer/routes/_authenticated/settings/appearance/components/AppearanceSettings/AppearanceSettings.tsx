@@ -64,9 +64,9 @@ export function AppearanceSettings({ visibleItems }: AppearanceSettingsProps) {
 	return (
 		<div className="p-6 max-w-4xl w-full">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Appearance</h2>
+				<h2 className="text-xl font-semibold">Внешний вид</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Customize how Rox looks on your device
+					Настройте, как Rox выглядит на вашем устройстве
 				</p>
 			</div>
 

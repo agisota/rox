@@ -50,21 +50,21 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 
 						<div className="space-y-2.5 border-t border-border pt-4">
 							<div className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/65">
-								MCP Servers
+								MCP-серверы
 							</div>
 							<div className="text-[11px] text-muted-foreground">
-								1 connected
+								1 подключен
 							</div>
 
 							<div>
 								<span className="text-muted-foreground/55">❯</span>
 								<span className="ml-1 text-foreground">1.</span>
 								<span className="ml-1 text-brand-light">rox-mcp</span>
-								<span className="ml-2 text-emerald-400/85">✓ connected</span>
+								<span className="ml-2 text-emerald-400/85">✓ подключен</span>
 							</div>
 
 							<div className="text-muted-foreground/65">
-								config:{" "}
+								конфиг:{" "}
 								<span className="text-muted-foreground/50">.mcp.json</span>
 							</div>
 						</div>
@@ -74,7 +74,7 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 						<div className="flex items-center gap-3 border border-border bg-card/60 px-3 py-2.5">
 							<span className="text-muted-foreground/55">❯</span>
 							<span className="flex-1 text-[11px] text-muted-foreground/55">
-								Type a task for Claude…
+								Введите задачу для Claude…
 							</span>
 							<div className="flex size-5 items-center justify-center rounded-sm bg-brand/15 text-[11px] text-brand-light">
 								<LuArrowUp className="size-3" />
@@ -100,7 +100,7 @@ export function MainPanel({ activeDemo }: MainPanelProps) {
 								className="text-[11px]"
 								toneClassName="text-brand-light"
 							/>
-							<span>Setting up new parallel environment...</span>
+							<span>Запуск новой параллельной среды...</span>
 						</div>
 						{SETUP_STEPS.map((step) => (
 							<div key={step} className="ml-5 text-muted-foreground/55">

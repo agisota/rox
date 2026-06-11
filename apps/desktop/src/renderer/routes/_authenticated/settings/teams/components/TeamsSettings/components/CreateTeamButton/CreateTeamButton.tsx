@@ -61,15 +61,15 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 				organizationId,
 			});
 			if (result.error) {
-				toast.error(result.error.message ?? "Failed to create team");
+				toast.error(result.error.message ?? "Не удалось создать команду");
 				return;
 			}
-			toast.success(`Created team "${trimmedName}"`);
+			toast.success(`Команда "${trimmedName}" создана`);
 			reset();
 			setIsOpen(false);
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to create team",
+				error instanceof Error ? error.message : "Не удалось создать команду",
 			);
 		} finally {
 			setIsSubmitting(false);
@@ -78,7 +78,7 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 
 	return (
 		<>
-			<Button onClick={() => setIsOpen(true)}>Create team</Button>
+			<Button onClick={() => setIsOpen(true)}>Создать команду</Button>
 			<Dialog
 				open={isOpen}
 				onOpenChange={(open) => {
@@ -89,19 +89,19 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 				<DialogContent>
 					<form onSubmit={handleSubmit}>
 						<DialogHeader>
-							<DialogTitle>Create a team</DialogTitle>
+							<DialogTitle>Создать команду</DialogTitle>
 							<DialogDescription>
-								Name and a URL-friendly slug. Both can be changed later.
+								Укажите название и slug для URL. Их можно изменить позже.
 							</DialogDescription>
 						</DialogHeader>
 						<div className="my-4 space-y-4">
 							<div className="space-y-1.5">
-								<Label htmlFor="team-name">Name</Label>
+								<Label htmlFor="team-name">Название</Label>
 								<Input
 									id="team-name"
 									value={name}
 									onChange={(event) => handleNameChange(event.target.value)}
-									placeholder="e.g. Engineering"
+									placeholder="например, Разработка"
 									autoFocus
 									required
 								/>
@@ -112,7 +112,7 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 									id="team-slug"
 									value={slug}
 									onChange={(event) => handleSlugChange(event.target.value)}
-									placeholder="e.g. engineering"
+									placeholder="например, razrabotka"
 									required
 								/>
 							</div>
@@ -124,13 +124,13 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 								onClick={() => setIsOpen(false)}
 								disabled={isSubmitting}
 							>
-								Cancel
+								Отмена
 							</Button>
 							<Button
 								type="submit"
 								disabled={!name.trim() || !slug.trim() || isSubmitting}
 							>
-								{isSubmitting ? "Creating..." : "Create"}
+								{isSubmitting ? "Создание..." : "Создать"}
 							</Button>
 						</DialogFooter>
 					</form>

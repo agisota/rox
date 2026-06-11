@@ -32,9 +32,7 @@ export function SessionDiff({ diffFiles }: SessionDiffProps) {
 	return (
 		<div className="flex h-full flex-col overflow-y-auto px-4 py-4">
 			<div className="mb-4 flex items-center gap-2 text-sm">
-				<span className="font-medium">
-					{diffFiles.length} file{diffFiles.length !== 1 ? "s" : ""} changed
-				</span>
+				<span className="font-medium">Изменено файлов: {diffFiles.length}</span>
 				<span className="text-green-500">+{totalAdditions}</span>
 				<span className="text-red-500">-{totalDeletions}</span>
 			</div>

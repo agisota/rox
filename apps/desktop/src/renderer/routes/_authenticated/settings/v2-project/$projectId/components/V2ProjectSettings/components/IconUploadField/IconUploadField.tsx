@@ -44,7 +44,7 @@ export function IconUploadField({
 			if (file.size > MAX_SIZE_BYTES) {
 				const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
 				toast.error(
-					`File too large (${sizeInMB}MB). Maximum size is ${MAX_SIZE_MB}MB`,
+					`Файл слишком большой (${sizeInMB}MB). Максимальный размер: ${MAX_SIZE_MB}MB`,
 				);
 				return;
 			}
@@ -52,7 +52,7 @@ export function IconUploadField({
 			setIsPending(true);
 			const reader = new FileReader();
 			reader.onerror = () => {
-				toast.error("Could not read selected file");
+				toast.error("Не удалось прочитать выбранный файл");
 				setIsPending(false);
 			};
 			reader.onabort = () => {
@@ -61,7 +61,7 @@ export function IconUploadField({
 			reader.onload = async () => {
 				const fileData = reader.result;
 				if (typeof fileData !== "string") {
-					toast.error("Could not read selected file");
+					toast.error("Не удалось прочитать выбранный файл");
 					setIsPending(false);
 					return;
 				}
@@ -74,7 +74,7 @@ export function IconUploadField({
 					});
 				} catch (err) {
 					const message =
-						err instanceof Error ? err.message : "Failed to upload icon";
+						err instanceof Error ? err.message : "Не удалось загрузить иконку";
 					toast.error(message);
 				} finally {
 					setIsPending(false);
@@ -91,7 +91,9 @@ export function IconUploadField({
 			await apiTrpcClient.v2Project.resetIconToGitHub.mutate({ id: projectId });
 		} catch (err) {
 			const message =
-				err instanceof Error ? err.message : "Failed to fetch GitHub icon";
+				err instanceof Error
+					? err.message
+					: "Не удалось получить иконку из GitHub";
 			toast.error(message);
 		} finally {
 			setIsPending(false);
@@ -104,7 +106,7 @@ export function IconUploadField({
 			await apiTrpcClient.v2Project.removeIcon.mutate({ id: projectId });
 		} catch (err) {
 			const message =
-				err instanceof Error ? err.message : "Failed to remove icon";
+				err instanceof Error ? err.message : "Не удалось удалить иконку";
 			toast.error(message);
 		} finally {
 			setIsPending(false);
@@ -120,17 +122,17 @@ export function IconUploadField({
 			disabled={isPending}
 			aria-label={
 				hasSecondaryActions
-					? "Project icon options"
+					? "Параметры иконки проекта"
 					: iconUrl
-						? "Replace icon"
-						: "Upload icon"
+						? "Заменить иконку"
+						: "Загрузить иконку"
 			}
 			className="size-9 rounded-md border overflow-hidden flex items-center justify-center text-muted-foreground transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed"
 		>
 			{iconUrl ? (
 				<img
 					src={iconUrl}
-					alt="Project icon"
+					alt="Иконка проекта"
 					className="size-full object-cover"
 				/>
 			) : (
@@ -147,12 +149,12 @@ export function IconUploadField({
 					<DropdownMenuContent align="start" className="w-48">
 						<DropdownMenuItem onSelect={handleClickUpload}>
 							<LuUpload className="size-4" />
-							Upload image…
+							Загрузить изображение…
 						</DropdownMenuItem>
 						{hasGitHubRepo && (
 							<DropdownMenuItem onSelect={handleUseGitHub}>
 								<FaGithub className="size-4" />
-								Use GitHub icon
+								Использовать иконку GitHub
 							</DropdownMenuItem>
 						)}
 						{iconUrl && (
@@ -160,7 +162,7 @@ export function IconUploadField({
 								<DropdownMenuSeparator />
 								<DropdownMenuItem variant="destructive" onSelect={handleRemove}>
 									<LuTrash2 className="size-4" />
-									Remove icon
+									Удалить иконку
 								</DropdownMenuItem>
 							</>
 						)}

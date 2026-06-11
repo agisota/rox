@@ -64,7 +64,7 @@ export function ResponsiveDropdown({
 				{mobileTrigger}
 				<Drawer open={open} onOpenChange={setOpen}>
 					<DrawerContent>
-						<DrawerTitle className="sr-only">{title ?? "Menu"}</DrawerTitle>
+						<DrawerTitle className="sr-only">{title ?? "Меню"}</DrawerTitle>
 						<div className="flex flex-col gap-1 p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
 							{items.map((item) => (
 								<button

@@ -53,13 +53,13 @@ function V1Body() {
 
 	return (
 		<div className="space-y-0.5">
-			<Label className="text-sm font-medium">Worktree location</Label>
+			<Label className="text-sm font-medium">Расположение worktree</Label>
 			<p className="text-xs text-muted-foreground">
-				Base directory for new worktrees
+				Базовая папка для новых worktree
 			</p>
 			<WorktreeLocationPicker
 				currentPath={worktreeBaseDir}
-				defaultPathLabel={`Default (${defaultWorktreePath})`}
+				defaultPathLabel={`По умолчанию (${defaultWorktreePath})`}
 				defaultBrowsePath={worktreeBaseDir}
 				disabled={isLoading || setWorktreeBaseDir.isPending}
 				onSelect={(path) => setWorktreeBaseDir.mutate({ path })}
@@ -80,7 +80,7 @@ function V2Body() {
 		if (localHostId) {
 			opts.push({
 				id: localHostId,
-				name: currentDeviceName ?? "This device",
+				name: currentDeviceName ?? "Это устройство",
 				isLocal: true,
 				isOnline: true,
 			});
@@ -110,6 +110,12 @@ function V2Body() {
 	const isLocal = selectedHost?.isLocal ?? true;
 	const isOnline = selectedHost?.isOnline ?? false;
 	const hasMultipleHosts = hostOptions.length > 1;
+	const selectedHostName = selectedHost?.isLocal
+		? "это устройство"
+		: (selectedHost?.name ?? "это устройство");
+	const selectedHostHintName = selectedHost?.isLocal
+		? "этом устройстве"
+		: (selectedHost?.name ?? "этом устройстве");
 
 	const settingsQuery = useV2WorktreeLocationSettings(targetHostUrl, {
 		enabled: isOnline,
@@ -126,15 +132,11 @@ function V2Body() {
 		<div className="space-y-2">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-0.5">
-					<Label className="text-sm font-medium">Worktree location</Label>
+					<Label className="text-sm font-medium">Расположение worktree</Label>
 					<p className="text-xs text-muted-foreground">
 						{hasMultipleHosts
-							? `Base directory for new worktrees on ${
-									selectedHost?.isLocal
-										? "this device"
-										: (selectedHost?.name ?? "this device")
-								}`
-							: "Base directory for new worktrees"}
+							? `Базовая папка для новых worktree на ${selectedHostHintName}`
+							: "Базовая папка для новых worktree"}
 					</p>
 				</div>
 				{hasMultipleHosts && effectiveHostId ? (
@@ -151,20 +153,17 @@ function V2Body() {
 					settingsQuery.data?.defaultWorktreeBaseDir ?? defaultWorktreePath
 				}
 				hostUrl={targetHostUrl}
-				hostName={
-					selectedHost?.isLocal
-						? "this device"
-						: (selectedHost?.name ?? "this device")
-				}
+				hostName={selectedHostName}
 				isRemoteTarget={!isLocal}
 				disabled={disabled}
-				browseTitle="Select default worktree location"
+				browseTitle="Выберите расположение worktree по умолчанию"
+				browseDescription={`Выберите папку worktree на ${selectedHostHintName}.`}
 				onSelect={(path) => setLocation.mutate(path)}
 				onReset={() => setLocation.mutate(null)}
 			/>
 			{hasMultipleHosts && !isOnline ? (
 				<p className="text-xs text-muted-foreground">
-					{selectedHost?.name ?? "This device"} is offline.
+					{selectedHost?.name ?? "Это устройство"} не в сети.
 				</p>
 			) : null}
 		</div>

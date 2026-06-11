@@ -10,16 +10,16 @@ export function NotFound() {
 					<div className="text-center">
 						<h1 className="text-6xl font-bold text-foreground mb-4">404</h1>
 						<h2 className="text-xl font-semibold text-foreground mb-2">
-							Page Not Found
+							Страница не найдена
 						</h2>
 						<p className="text-sm text-muted-foreground mb-8">
-							The page you're looking for doesn't exist.
+							Страницы, которую вы ищете, не существует.
 						</p>
 						<Link
 							to="/"
 							className="text-sm text-primary hover:text-primary/80 underline transition-colors"
 						>
-							Go back home
+							Вернуться на главную
 						</Link>
 					</div>
 				</div>

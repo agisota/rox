@@ -55,12 +55,12 @@ export function SessionsSection() {
 			},
 			onSuccess: (result) => {
 				if (result.remainingCount > 0) {
-					toast.warning("Some sessions could not be killed", {
-						description: `${result.killedCount} terminated, ${result.remainingCount} remaining`,
+					toast.warning("Некоторые сеансы не удалось завершить", {
+						description: `Завершено: ${result.killedCount}, осталось: ${result.remainingCount}`,
 					});
 				} else {
-					toast.success("Killed all terminal sessions", {
-						description: `${result.killedCount} sessions terminated`,
+					toast.success("Все сеансы терминала завершены", {
+						description: `Завершено сеансов: ${result.killedCount}`,
 					});
 				}
 			},
@@ -71,7 +71,7 @@ export function SessionsSection() {
 						context.previous,
 					);
 				}
-				toast.error("Failed to kill sessions", {
+				toast.error("Не удалось завершить сеансы", {
 					description: error.message,
 				});
 			},
@@ -85,11 +85,11 @@ export function SessionsSection() {
 	const clearTerminalHistory =
 		electronTrpc.terminal.clearTerminalHistory.useMutation({
 			onSuccess: () => {
-				toast.success("Cleared terminal history");
+				toast.success("История терминала очищена");
 				utils.terminal.listDaemonSessions.invalidate();
 			},
 			onError: (error) => {
-				toast.error("Failed to clear terminal history", {
+				toast.error("Не удалось очистить историю терминала", {
 					description: error.message,
 				});
 			},
@@ -97,11 +97,11 @@ export function SessionsSection() {
 
 	const killDaemonSession = electronTrpc.terminal.kill.useMutation({
 		onSuccess: () => {
-			toast.success("Killed terminal session");
+			toast.success("Сеанс терминала завершен");
 			utils.terminal.listDaemonSessions.invalidate();
 		},
 		onError: (error) => {
-			toast.error("Failed to kill session", {
+			toast.error("Не удалось завершить сеанс", {
 				description: error.message,
 			});
 		},
@@ -109,14 +109,14 @@ export function SessionsSection() {
 
 	const restartDaemon = electronTrpc.terminal.restartDaemon.useMutation({
 		onSuccess: () => {
-			toast.success("Daemon restarted", {
+			toast.success("Служба терминала перезапущена", {
 				description:
-					"All sessions killed and daemon restarted. The app will use a fresh daemon.",
+					"Все сеансы завершены, служба терминала перезапущена. Приложение будет использовать новую службу.",
 			});
 			utils.terminal.listDaemonSessions.invalidate();
 		},
 		onError: (error) => {
-			toast.error("Failed to restart daemon", {
+			toast.error("Не удалось перезапустить службу терминала", {
 				description: error.message,
 			});
 		},
@@ -132,22 +132,23 @@ export function SessionsSection() {
 			<div className="rounded-md border border-border/60 p-4 space-y-3">
 				<div className="space-y-0.5">
 					<div className="flex items-center justify-between">
-						<Label className="text-sm font-medium">Manage sessions</Label>
+						<Label className="text-sm font-medium">Управление сеансами</Label>
 						<Button
 							variant="ghost"
 							size="sm"
 							onClick={() => utils.terminal.listDaemonSessions.invalidate()}
 						>
-							Refresh
+							Обновить
 						</Button>
 					</div>
 					<p className="text-xs text-muted-foreground">
-						Daemon sessions running: {aliveSessions.length}
+						Активных сеансов службы терминала: {aliveSessions.length}
 					</p>
 					{aliveSessions.length >= 20 && (
 						<p className="text-xs text-muted-foreground/70">
-							Large numbers of persistent terminals can increase CPU/memory
-							usage. Consider killing old sessions if you notice slowdowns.
+							Большое количество постоянных терминалов может повышать нагрузку
+							на CPU и память. Если заметите замедления, завершите старые
+							сеансы.
 						</p>
 					)}
 				</div>
@@ -161,7 +162,7 @@ export function SessionsSection() {
 						}
 						onClick={() => setConfirmKillAllOpen(true)}
 					>
-						Kill all sessions
+						Завершить все сеансы
 					</Button>
 					<Button
 						variant="secondary"
@@ -171,7 +172,7 @@ export function SessionsSection() {
 						}
 						onClick={() => setConfirmClearHistoryOpen(true)}
 					>
-						Clear terminal history
+						Очистить историю терминала
 					</Button>
 					<Button
 						variant="outline"
@@ -179,7 +180,7 @@ export function SessionsSection() {
 						disabled={restartDaemon.isPending}
 						onClick={() => setConfirmRestartDaemonOpen(true)}
 					>
-						Restart daemon
+						Перезапустить службу
 					</Button>
 					<Button
 						variant="ghost"
@@ -187,7 +188,7 @@ export function SessionsSection() {
 						disabled={aliveSessions.length === 0}
 						onClick={() => setShowSessionList((v) => !v)}
 					>
-						{showSessionList ? "Hide sessions" : "Show sessions"}
+						{showSessionList ? "Скрыть сеансы" : "Показать сеансы"}
 					</Button>
 				</div>
 
@@ -198,17 +199,19 @@ export function SessionsSection() {
 								<thead className="sticky top-0 bg-background">
 									<tr className="text-muted-foreground">
 										<th className="px-2 py-2 text-left font-medium">
-											Workspace
+											Рабочая область
 										</th>
-										<th className="px-2 py-2 text-left font-medium">Session</th>
+										<th className="px-2 py-2 text-left font-medium">Сеанс</th>
 										<th className="px-2 py-2 text-right font-medium">
-											Clients
+											Клиенты
 										</th>
 										<th className="px-2 py-2 text-right font-medium">PID</th>
 										<th className="px-2 py-2 text-left font-medium">
-											Last attached
+											Последнее подключение
 										</th>
-										<th className="px-2 py-2 text-right font-medium">Action</th>
+										<th className="px-2 py-2 text-right font-medium">
+											Действие
+										</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-border/60">
@@ -240,7 +243,7 @@ export function SessionsSection() {
 														})
 													}
 												>
-													Kill
+													Завершить
 												</Button>
 											</td>
 										</tr>
@@ -259,17 +262,17 @@ export function SessionsSection() {
 				<AlertDialogContent className="max-w-[520px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Kill all terminal sessions?
+							Завершить все сеансы терминала?
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will terminate all persistent terminal processes (builds,
-									tests, agents, etc.).
+									Это завершит все постоянные процессы терминала: сборки, тесты,
+									агентов и другие процессы.
 								</span>
 								<span className="block">
-									You can't undo this action. Terminal panes will show "Process
-									exited" and can be restarted.
+									Это действие нельзя отменить. Панели терминала покажут
+									«Process exited», после чего их можно будет запустить заново.
 								</span>
 							</div>
 						</AlertDialogDescription>
@@ -280,7 +283,7 @@ export function SessionsSection() {
 							size="sm"
 							onClick={() => setConfirmKillAllOpen(false)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="destructive"
@@ -291,7 +294,7 @@ export function SessionsSection() {
 								killAllDaemonSessions.mutate();
 							}}
 						>
-							Kill all
+							Завершить все
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -304,17 +307,17 @@ export function SessionsSection() {
 				<AlertDialogContent className="max-w-[520px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Clear terminal history?
+							Очистить историю терминала?
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This deletes the saved scrollback used for reboot/crash
-									recovery.
+									Это удалит сохраненный буфер прокрутки, который используется
+									для восстановления после перезагрузки или сбоя.
 								</span>
 								<span className="block">
-									Running terminal processes continue, but older output may no
-									longer be available after restarting the app.
+									Запущенные процессы терминала продолжат работать, но старый
+									вывод может стать недоступен после перезапуска приложения.
 								</span>
 							</div>
 						</AlertDialogDescription>
@@ -325,7 +328,7 @@ export function SessionsSection() {
 							size="sm"
 							onClick={() => setConfirmClearHistoryOpen(false)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="secondary"
@@ -336,7 +339,7 @@ export function SessionsSection() {
 								clearTerminalHistory.mutate();
 							}}
 						>
-							Clear history
+							Очистить историю
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -351,12 +354,12 @@ export function SessionsSection() {
 				<AlertDialogContent className="max-w-[520px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Kill terminal session?
+							Завершить сеанс терминала?
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will terminate the session and its underlying process.
+									Это завершит сеанс и связанный с ним процесс.
 								</span>
 								{pendingKillSession && (
 									<span className="block font-mono text-xs">
@@ -373,7 +376,7 @@ export function SessionsSection() {
 							size="sm"
 							onClick={() => setPendingKillSession(null)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="destructive"
@@ -386,7 +389,7 @@ export function SessionsSection() {
 								killDaemonSession.mutate({ paneId: sessionId });
 							}}
 						>
-							Kill
+							Завершить
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -399,16 +402,16 @@ export function SessionsSection() {
 				<AlertDialogContent className="max-w-[520px] gap-0 p-0">
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Restart terminal daemon?
+							Перезапустить службу терминала?
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will kill all running sessions and restart the terminal
-									daemon. The app will restart terminals with a fresh daemon.
+									Это завершит все запущенные сеансы и перезапустит службу
+									терминала. Приложение откроет терминалы через новую службу.
 								</span>
 								<span className="block">
-									Use this to fix terminals that are stuck or unresponsive.
+									Используйте это, если терминалы зависли или не отвечают.
 								</span>
 							</div>
 						</AlertDialogDescription>
@@ -419,7 +422,7 @@ export function SessionsSection() {
 							size="sm"
 							onClick={() => setConfirmRestartDaemonOpen(false)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							variant="default"
@@ -430,7 +433,7 @@ export function SessionsSection() {
 								restartDaemon.mutate(undefined, {});
 							}}
 						>
-							Restart daemon
+							Перезапустить службу
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>

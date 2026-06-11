@@ -23,6 +23,8 @@ const envSchema = z.object({
 		.default("https://electric-proxy.avi-6ac.workers.dev"),
 	NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
 	NEXT_PUBLIC_POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
+	NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string().optional(),
+	OPENPANEL_API_URL: z.string().default("https://api.openpanel.dev"),
 	SENTRY_DSN_DESKTOP: z.string().optional(),
 	RELAY_URL: z.url().default("https://relay.rox.one"),
 });
@@ -46,6 +48,9 @@ const rawEnv = {
 	NEXT_PUBLIC_POSTHOG_HOST: import.meta.env.NEXT_PUBLIC_POSTHOG_HOST as
 		| string
 		| undefined,
+	NEXT_PUBLIC_OPENPANEL_CLIENT_ID: import.meta.env
+		.NEXT_PUBLIC_OPENPANEL_CLIENT_ID as string | undefined,
+	OPENPANEL_API_URL: import.meta.env.OPENPANEL_API_URL as string | undefined,
 	SENTRY_DSN_DESKTOP: import.meta.env.SENTRY_DSN_DESKTOP as string | undefined,
 	RELAY_URL: process.env.RELAY_URL,
 };

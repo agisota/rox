@@ -111,7 +111,7 @@ export function TrustedBySection() {
 			<div className="max-w-7xl mx-auto">
 				<div>
 					<h2 className="text-base sm:text-xl font-semibold text-center mb-4 sm:mb-8 text-foreground px-4">
-						Trusted by builders from
+						Нам доверяют разработчики из
 					</h2>
 				</div>
 
@@ -120,7 +120,7 @@ export function TrustedBySection() {
 					{CLIENT_LOGOS.map((client) => (
 						<div
 							key={client.name}
-							className="flex items-center justify-center min-w-0 whitespace-nowrap h-16 sm:h-18 rounded-[2px] border border-foreground/[0.1] bg-foreground/[0.03] opacity-90 transition-all duration-200 hover:opacity-100 hover:border-foreground/[0.2] hover:bg-foreground/[0.06]"
+							className="flex min-w-0 flex-col items-center justify-center gap-2 whitespace-nowrap h-24 rounded-[2px] border border-foreground/[0.1] bg-foreground/[0.03] opacity-90 transition-all duration-200 hover:opacity-100 hover:border-foreground/[0.2] hover:bg-foreground/[0.06]"
 						>
 							<Image
 								src={client.logo}
@@ -136,6 +136,9 @@ export function TrustedBySection() {
 								}}
 								unoptimized
 							/>
+							<span className="text-xs font-semibold text-foreground/90">
+								{client.label}
+							</span>
 						</div>
 					))}
 				</div>
@@ -150,7 +153,7 @@ export function TrustedBySection() {
 							{row.map((client) => (
 								<div
 									key={client.name}
-									className="flex items-center justify-center whitespace-nowrap h-24 w-[168px] rounded-[2px] border border-foreground/[0.1] bg-foreground/[0.03] opacity-90 transition-all duration-200 hover:opacity-100 hover:border-foreground/[0.2] hover:bg-foreground/[0.06]"
+									className="flex flex-col items-center justify-center gap-2 whitespace-nowrap h-28 w-[168px] rounded-[2px] border border-foreground/[0.1] bg-foreground/[0.03] opacity-90 transition-all duration-200 hover:opacity-100 hover:border-foreground/[0.2] hover:bg-foreground/[0.06]"
 								>
 									<Image
 										src={client.logo}
@@ -166,6 +169,9 @@ export function TrustedBySection() {
 										}}
 										unoptimized
 									/>
+									<span className="text-sm font-semibold text-foreground/90">
+										{client.label}
+									</span>
 								</div>
 							))}
 						</div>

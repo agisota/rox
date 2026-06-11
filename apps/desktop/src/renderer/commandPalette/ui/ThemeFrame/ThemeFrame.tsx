@@ -57,21 +57,21 @@ export function ThemeFrame() {
 		setOpen(false);
 	};
 
-	const showSystem = matchesQuery(`System ${SYSTEM_THEME_ID}`, query);
+	const showSystem = matchesQuery(`Системная ${SYSTEM_THEME_ID}`, query);
 
 	const visibleLight = filterThemes(
 		lightThemes.filter((t) => !t.isCustom),
-		"Light",
+		"Светлые",
 		query,
 	);
 	const visibleDark = filterThemes(
 		darkThemes.filter((t) => !t.isCustom),
-		"Dark",
+		"Темные",
 		query,
 	);
 	const visibleCustom = filterThemes(
 		[...customLight, ...customDark],
-		"Custom",
+		"Пользовательские",
 		query,
 	);
 	const hasThemeGroup =
@@ -81,7 +81,7 @@ export function ThemeFrame() {
 
 	return (
 		<CommandList>
-			<CommandEmpty>No themes found.</CommandEmpty>
+			<CommandEmpty>Темы не найдены.</CommandEmpty>
 
 			{showSystem && (
 				<CommandGroup>
@@ -93,7 +93,7 @@ export function ThemeFrame() {
 							<ThemeSwatch theme={systemLightTheme} />
 							<ThemeSwatch theme={systemDarkTheme} />
 						</div>
-						<span>System</span>
+						<span>Системная</span>
 						{activeThemeId === SYSTEM_THEME_ID ? (
 							<span className="ml-auto text-xs text-muted-foreground">✓</span>
 						) : null}
@@ -104,21 +104,21 @@ export function ThemeFrame() {
 			{showSystem && hasThemeGroup && <CommandSeparator />}
 
 			<ThemeGroup
-				heading="Light"
+				heading="Светлые"
 				themes={visibleLight}
 				activeId={activeThemeId}
 				onSelect={pickTheme}
 			/>
 
 			<ThemeGroup
-				heading="Dark"
+				heading="Темные"
 				themes={visibleDark}
 				activeId={activeThemeId}
 				onSelect={pickTheme}
 			/>
 
 			<ThemeGroup
-				heading="Custom"
+				heading="Пользовательские"
 				themes={visibleCustom}
 				activeId={activeThemeId}
 				onSelect={pickTheme}

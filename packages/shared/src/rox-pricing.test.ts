@@ -1,7 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
+	type ModelProviderFamily,
+	quantizeRox,
 	ROX_PER_USDT,
+	ROX_PRICE_DIVISOR_CONFIG,
 	ROX_PRICE_DIVISORS,
+	ROX_SCALE,
 	resolveProviderFamily,
 	roxCostForTokens,
 	roxPricePerMillion,
@@ -22,6 +26,20 @@ describe("rox-pricing", () => {
 		expect(roxToUsd(usdToRox(3.21))).toBeCloseTo(3.21, 10);
 	});
 
+	it("quantizeRox rounds to the persisted ledger scale and tames non-finite", () => {
+		expect(ROX_SCALE).toBe(6);
+		// Float drift collapses to the 6dp value Postgres numeric(20,6) stores.
+		expect(quantizeRox(0.1 + 0.2)).toBe(0.3);
+		expect(quantizeRox(285.7142857142857)).toBe(285.714286);
+		expect(quantizeRox(1e-9)).toBe(0); // sub-quantum dust
+		// Non-finite money collapses to 0 (never credit/debit an unbounded amount).
+		expect(quantizeRox(Number.NaN)).toBe(0);
+		expect(quantizeRox(Number.POSITIVE_INFINITY)).toBe(0);
+		expect(quantizeRox(Number.NEGATIVE_INFINITY)).toBe(0);
+		// No negative-zero leaks out.
+		expect(Object.is(quantizeRox(-1e-9), 0)).toBe(true);
+	});
+
 	it("resolves provider families", () => {
 		expect(resolveProviderFamily("x-ai/grok-2")).toBe("xai");
 		expect(resolveProviderFamily("grok-beta")).toBe("xai");
@@ -39,6 +57,29 @@ describe("rox-pricing", () => {
 		expect(ROX_PRICE_DIVISORS.anthropic).toBe(5.25);
 		expect(ROX_PRICE_DIVISORS.google).toBe(12.25);
 		expect(ROX_PRICE_DIVISORS.other).toBe(25);
+	});
+
+	it("derives the flat divisor map from the provenance config", () => {
+		const families = Object.keys(ROX_PRICE_DIVISORS) as ModelProviderFamily[];
+		// Every family in the config appears in the derived map and vice versa.
+		expect(Object.keys(ROX_PRICE_DIVISOR_CONFIG).sort()).toEqual(
+			families.sort(),
+		);
+		for (const family of families) {
+			const config = ROX_PRICE_DIVISOR_CONFIG[family];
+			// Derived map matches the configured divisor exactly.
+			expect(ROX_PRICE_DIVISORS[family]).toBe(config.divisor);
+			// Divisor must be a positive, finite margin lever (never 0 → ÷0).
+			expect(config.divisor).toBeGreaterThan(0);
+			expect(Number.isFinite(config.divisor)).toBe(true);
+			// Provenance is recorded and auditable.
+			expect(config.source.length).toBeGreaterThan(0);
+			expect(["weekly", "monthly", "quarterly"]).toContain(
+				config.reviewCadence,
+			);
+			expect(config.lastReviewed).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+			expect(Number.isNaN(Date.parse(config.lastReviewed))).toBe(false);
+		}
 	});
 
 	it("computes Rox price per million from public USD price", () => {

@@ -100,3 +100,10 @@ plans/local/
 .claude/hook-log.txt
 .env.local.backup
 .vercel
+.worktrees/
+.claude/memories/
+.claude/state/
+.claude/worktrees/
+packages/cli/*.bun-build
+.omx/
+superset-dev-data/

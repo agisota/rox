@@ -16,9 +16,21 @@
 			"types": "./src/rox-models.ts",
 			"default": "./src/rox-models.ts"
 		},
+		"./rox-ledger": {
+			"types": "./src/rox-ledger.ts",
+			"default": "./src/rox-ledger.ts"
+		},
 		"./rox-perks": {
 			"types": "./src/rox-perks.ts",
 			"default": "./src/rox-perks.ts"
+		},
+		"./rox-topup": {
+			"types": "./src/rox-topup.ts",
+			"default": "./src/rox-topup.ts"
+		},
+		"./dvnet-client": {
+			"types": "./src/dvnet-client.ts",
+			"default": "./src/dvnet-client.ts"
 		},
 		"./dev-credentials": {
 			"types": "./src/dev-credentials.ts",
@@ -159,6 +171,10 @@
 		"./workspace-setup-presets": {
 			"types": "./src/workspace-setup-presets.ts",
 			"default": "./src/workspace-setup-presets.ts"
+		},
+		"./workspace-starter-presets": {
+			"types": "./src/workspace-starter-presets.ts",
+			"default": "./src/workspace-starter-presets.ts"
 		},
 		"./retry": {
 			"types": "./src/retry/index.ts",

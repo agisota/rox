@@ -19,6 +19,21 @@ function isInvitationNotFoundError(error: unknown) {
 	);
 }
 
+function getRoleLabel(role: string | null) {
+	if (!role) return "участника";
+
+	switch (role) {
+		case "owner":
+			return "владельца";
+		case "admin":
+			return "администратора";
+		case "member":
+			return "участника";
+		default:
+			return role;
+	}
+}
+
 export default async function AcceptInvitationPage({
 	params,
 	searchParams,
@@ -66,16 +81,16 @@ export default async function AcceptInvitationPage({
 					</div>
 					<div className="space-y-4">
 						<h1 className="text-2xl font-semibold">
-							Invitation link does not exist
+							Ссылка приглашения не существует
 						</h1>
 						<p className="text-muted-foreground">
-							The team invitation has either expired or doesn't exist. Request a
-							new link from the team owner or check the URL to make sure it is
-							entered correctly.
+							Срок действия приглашения в команду истек или оно не существует.
+							Запросите новую ссылку у владельца команды или проверьте URL,
+							чтобы убедиться, что он введен правильно.
 						</p>
 					</div>
 					<Button asChild variant="outline">
-						<Link href="/">Return to dashboard</Link>
+						<Link href="/">Вернуться на панель управления</Link>
 					</Button>
 				</div>
 			</div>
@@ -98,11 +113,11 @@ export default async function AcceptInvitationPage({
 
 				<div className="space-y-4">
 					<h1 className="text-2xl font-semibold">
-						You've been invited to join {invitation.organization.name}
+						Вас пригласили присоединиться к {invitation.organization.name}
 					</h1>
 					<p className="text-muted-foreground">
-						{invitation.inviter.name} invited you to join as a {invitation.role}
-						.
+						{invitation.inviter.name} приглашает вас присоединиться с ролью{" "}
+						{getRoleLabel(invitation.role)}.
 					</p>
 				</div>
 

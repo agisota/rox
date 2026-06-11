@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+import * as realDbSchema from "@rox/db/schema";
 import { defaultCircuitForTask } from "@rox/workflow-core";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import * as realDrizzleOrm from "drizzle-orm";
 
 const verifyOrgMembershipMock = mock(async () => ({
 	membership: { role: "member" },
@@ -68,6 +70,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
+	...realDbSchema,
 	members: {
 		organizationId: "members.organizationId",
 		userId: "members.userId",
@@ -97,12 +100,15 @@ mock.module("@rox/db/schema", () => ({
 }));
 
 mock.module("drizzle-orm", () => ({
+	...realDrizzleOrm,
 	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
 	desc: (value: unknown) => ({ type: "desc", value }),
 	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
 }));
 
 mock.module("../integration/utils", () => ({
+	verifyOrgAdmin: mock(async () => ({ membership: { role: "admin" } })),
+	verifyOrgOwner: mock(async () => ({ membership: { role: "owner" } })),
 	verifyOrgMembership: verifyOrgMembershipMock,
 	verifyOrgMembershipWithSubscription: verifyOrgMembershipWithSubscriptionMock,
 }));

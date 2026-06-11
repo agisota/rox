@@ -2,6 +2,7 @@ import { Button } from "@rox/ui/button";
 import { cn } from "@rox/ui/utils";
 import { Check } from "lucide-react";
 import Link from "next/link";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import type { PricingTier } from "../../../../constants";
 
 interface PricingCardProps {
@@ -29,11 +30,13 @@ export function PricingCard({ tier, isYearly }: PricingCardProps) {
 					<h3 className="text-lg font-medium text-foreground">{tier.name}</h3>
 					{tier.highlight && (
 						<span className="rounded-sm bg-foreground px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-background">
-							Popular
+							Популярно
 						</span>
 					)}
 				</div>
-				<p className="text-sm text-muted-foreground">{tier.description}</p>
+				<p className="text-sm text-muted-foreground">
+					<GlossaryText text={tier.description} />
+				</p>
 			</div>
 
 			<div className="flex flex-col gap-1">
@@ -72,7 +75,9 @@ export function PricingCard({ tier, isYearly }: PricingCardProps) {
 						className="flex items-start gap-2.5 text-sm text-foreground"
 					>
 						<Check className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-						<span>{feature}</span>
+						<span>
+							<GlossaryText text={feature} />
+						</span>
 					</li>
 				))}
 			</ul>

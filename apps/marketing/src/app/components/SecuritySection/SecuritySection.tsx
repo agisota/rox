@@ -7,6 +7,7 @@ import {
 	HiOutlineServerStack,
 	HiOutlineSignal,
 } from "react-icons/hi2";
+import { GlossaryText } from "@/components/GlossaryTerm";
 
 const SECURITY_FEATURES: {
 	icon: ReactNode;
@@ -15,21 +16,21 @@ const SECURITY_FEATURES: {
 }[] = [
 	{
 		icon: <HiOutlineCodeBracket className="w-5 h-5 text-foreground/70" />,
-		title: "Source Available",
+		title: "Исходный код доступен",
 		description:
-			"Full source available on GitHub under Elastic License 2.0 (ELv2). Inspect, audit, and contribute to the code. No black boxes, no hidden functionality.",
+			"Полный исходный код доступен на GitHub под Elastic License 2.0 (ELv2). Изучайте, проверяйте и улучшайте код: никаких черных ящиков и скрытой функциональности.",
 	},
 	{
 		icon: <HiOutlineServerStack className="w-5 h-5 text-foreground/70" />,
-		title: "Offline First",
+		title: "Сначала локальная работа",
 		description:
-			"Your code stays on your machine. Work without an internet connection. All processing happens locally.",
+			"Ваш код остается на вашей машине. Работайте без подключения к интернету: вся обработка происходит локально.",
 	},
 	{
 		icon: <HiOutlineSignal className="w-5 h-5 text-foreground/70" />,
-		title: "Local Control",
+		title: "Локальный контроль",
 		description:
-			"Rox runs on your machine and lets you choose which agents and external services to connect.",
+			"Rox запускается на вашей машине и позволяет самостоятельно выбирать, каких агентов и какие внешние сервисы подключать.",
 	},
 ];
 
@@ -47,11 +48,10 @@ export function SecuritySection() {
 				>
 					<div className="space-y-1">
 						<h2 className="text-2xl sm:text-3xl font-mono tracking-[-0.01em] text-foreground">
-							Private by default
+							Приватность по умолчанию
 						</h2>
 						<h2 className="text-lg sm:text-xl font-light tracking-[-0.03em] text-muted-foreground max-w-[700px]">
-							Your code stays local by default, with explicit control over
-							connected services.
+							<GlossaryText text="Ваш код по умолчанию остается локальным, а подключенные сервисы всегда находятся под вашим явным контролем." />
 						</h2>
 					</div>
 				</motion.div>
@@ -80,7 +80,7 @@ export function SecuritySection() {
 								{feature.title}
 							</h3>
 							<p className="text-sm leading-relaxed text-muted-foreground">
-								{feature.description}
+								<GlossaryText text={feature.description} />
 							</p>
 						</motion.div>
 					))}

@@ -22,7 +22,7 @@ export function CommandListView({ onSelect }: CommandListViewProps) {
 
 	return (
 		<CommandList>
-			<CommandEmpty>No commands found.</CommandEmpty>
+			<CommandEmpty>Команды не найдены.</CommandEmpty>
 			<motion.div
 				initial={animate ? { opacity: 0, y: 6 } : false}
 				animate={{ opacity: 1, y: 0 }}

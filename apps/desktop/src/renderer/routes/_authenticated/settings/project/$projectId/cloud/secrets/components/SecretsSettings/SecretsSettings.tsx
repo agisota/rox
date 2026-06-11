@@ -118,7 +118,7 @@ export function SecretsSettings({ projectId }: SecretsSettingsProps) {
 
 	return (
 		<div className="p-6 max-w-4xl w-full mx-auto select-text">
-			<ProjectSettingsHeader title="Environment Variables" />
+			<ProjectSettingsHeader title="Переменные окружения" />
 
 			<div className="space-y-6">
 				{isConnected && organizationId && project.neonProjectId ? (
@@ -132,14 +132,14 @@ export function SecretsSettings({ projectId }: SecretsSettingsProps) {
 				) : (
 					<SettingsSection
 						icon={<HiOutlineCloud className="h-4 w-4" />}
-						title="Cloud Project"
-						description="Link this project to a cloud project for sandboxes and environment variables."
+						title="Облачный проект"
+						description="Свяжите этот проект с облачным проектом для песочниц и переменных окружения."
 					>
 						<div className="flex items-center justify-between">
 							<p className="text-sm text-muted-foreground">
 								{linkToNeon.isPending
-									? "Connecting..."
-									: "Not connected to a cloud project."}
+									? "Подключение..."
+									: "Облачный проект не подключён."}
 							</p>
 							{!linkToNeon.isPending && (
 								<Button
@@ -148,7 +148,9 @@ export function SecretsSettings({ projectId }: SecretsSettingsProps) {
 									disabled={isCreatingCloud || !project.githubOwner}
 									onClick={handleCreateCloudProject}
 								>
-									{isCreatingCloud ? "Connecting..." : "Connect to Cloud"}
+									{isCreatingCloud
+										? "Подключение..."
+										: "Подключить облачный проект"}
 								</Button>
 							)}
 						</div>

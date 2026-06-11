@@ -8,16 +8,46 @@ export type AgentDefinitionSource = "builtin" | "user";
 export type AgentKind = "terminal" | "chat";
 
 /**
+ * How a bundled agent is kept up to date.
+ * - `"latest"`: install/refresh to the newest published version.
+ * - `"pinned"`: install the exact `pinnedVersion` and never auto-bump it.
+ */
+export type AgentUpdateStrategy = "latest" | "pinned";
+
+/**
  * Describes how the preinstall runtime detects and installs a terminal
  * agent's binary. `checkCommand` exits 0 when the binary is already present
- * (so the installer stays idempotent); `installCommand` installs it.
- * `optional` marks agents whose install path is unverified — they are
- * install-on-request only and never run automatically on first launch.
+ * (so the installer stays idempotent); `installCommand`/`installCommands`
+ * install it. `optional` marks agents whose install path is unverified — they
+ * are install-on-request only and never run automatically on first launch.
  */
 export interface AgentInstallDescriptor {
 	checkCommand: string;
-	installCommand: string;
+	/** Single install command. Prefer `installCommands` for multi-step paths. */
+	installCommand?: string;
+	/**
+	 * Ordered install commands, run in sequence. Takes precedence over
+	 * `installCommand` when both are present.
+	 */
+	installCommands?: string[];
 	optional?: boolean;
+	/** Version/update policy for the bundled binary. Defaults to `"latest"`. */
+	updateStrategy?: AgentUpdateStrategy;
+	/** Exact version to install when `updateStrategy` is `"pinned"`. */
+	pinnedVersion?: string;
+}
+
+/**
+ * Resolve the ordered install commands from a descriptor, normalizing the
+ * `installCommand` / `installCommands` pair into a single array.
+ */
+export function resolveInstallCommands(
+	descriptor: AgentInstallDescriptor,
+): string[] {
+	if (descriptor.installCommands && descriptor.installCommands.length > 0) {
+		return descriptor.installCommands;
+	}
+	return descriptor.installCommand ? [descriptor.installCommand] : [];
 }
 
 interface BaseAgentDefinition {

@@ -58,12 +58,12 @@ export function HostsSettingsSidebar({
 		return [
 			{
 				id: "online",
-				title: "Online",
+				title: "В сети",
 				rows: sorted.filter((h) => h.isOnline),
 			},
 			{
 				id: "offline",
-				title: "Offline",
+				title: "Не в сети",
 				rows: sorted.filter((h) => !h.isOnline),
 			},
 		];
@@ -73,8 +73,8 @@ export function HostsSettingsSidebar({
 		<>
 			<AddHostModal open={addOpen} onOpenChange={setAddOpen} />
 			<SettingsListSidebar
-				searchPlaceholder="Filter hosts..."
-				searchAriaLabel="Filter hosts"
+				searchPlaceholder="Фильтр хостов..."
+				searchAriaLabel="Фильтр хостов"
 				groups={listGroups}
 				listHeader={
 					<button
@@ -83,13 +83,13 @@ export function HostsSettingsSidebar({
 						className={settingsListItemClass(false, "gap-2 w-full")}
 					>
 						<LuPlus className="size-4 shrink-0" />
-						<span className="truncate flex-1 text-left">Add host</span>
+						<span className="truncate flex-1 text-left">Добавить хост</span>
 					</button>
 				}
 				filterRow={(row, q) => row.name.toLowerCase().includes(q.toLowerCase())}
 				getRowKey={(row) => row.id}
-				emptyLabel="No hosts yet."
-				noMatchLabel={(q) => `No hosts match "${q}".`}
+				emptyLabel="Пока нет хостов."
+				noMatchLabel={(q) => `Нет хостов по запросу «${q}».`}
 				renderRow={(row) => (
 					<Link
 						to="/settings/hosts/$hostId"

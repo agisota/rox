@@ -72,6 +72,7 @@ async function handle(req: Request): Promise<Response> {
 	});
 }
 
-export const maxDuration = 800;
+// Vercel hobby plan caps serverless maxDuration at 300s.
+export const maxDuration = 300;
 
 export { handle as GET, handle as POST, handle as DELETE };

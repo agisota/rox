@@ -88,8 +88,8 @@ export function AddMemberButton({
 				error instanceof Error
 					? error.message
 					: isCurrentlyMember
-						? "Failed to remove member"
-						: "Failed to add member",
+						? "Не удалось удалить участника"
+						: "Не удалось добавить участника",
 			);
 		} finally {
 			setPendingUserId(null);
@@ -101,7 +101,7 @@ export function AddMemberButton({
 			<PopoverTrigger asChild>
 				<Button size="sm">
 					<HiOutlinePlus className="h-4 w-4 mr-1" />
-					Add member
+					Добавить участника
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent align="end" className="w-72 p-0">
@@ -109,7 +109,7 @@ export function AddMemberButton({
 					<Input
 						value={query}
 						onChange={(event) => setQuery(event.target.value)}
-						placeholder="Add team member..."
+						placeholder="Добавить участника команды..."
 						className="h-8"
 						autoFocus
 					/>
@@ -117,7 +117,7 @@ export function AddMemberButton({
 				<div className="max-h-64 overflow-auto p-1">
 					{sortedUsers.length === 0 ? (
 						<div className="text-center py-6 text-xs text-muted-foreground">
-							No matching org members.
+							Подходящих участников организации нет.
 						</div>
 					) : (
 						sortedUsers.map((user) => {
@@ -152,7 +152,7 @@ export function AddMemberButton({
 						className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
 					>
 						<HiOutlinePaperAirplane className="h-4 w-4" />
-						Invite people...
+						Пригласить людей...
 					</Link>
 				</div>
 			</PopoverContent>

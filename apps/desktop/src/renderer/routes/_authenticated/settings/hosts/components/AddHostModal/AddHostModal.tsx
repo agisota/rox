@@ -44,18 +44,19 @@ const KIND_OPTIONS: Array<{
 }> = [
 	{
 		id: "local",
-		title: "This device",
-		description: "Run the host service on this machine.",
+		title: "Это устройство",
+		description: "Запустить службу хоста на этом компьютере.",
 	},
 	{
 		id: "remote",
-		title: "Persistent remote",
-		description: "A managed remote workspace that stays online.",
+		title: "Постоянный удалённый хост",
+		description: "Управляемое удалённое окружение, которое остаётся в сети.",
 	},
 	{
 		id: "sandbox",
-		title: "Ephemeral sandbox (~1h)",
-		description: "A short-lived sandbox that auto-stops.",
+		title: "Временная песочница (~1 ч)",
+		description:
+			"Краткоживущая песочница, которая останавливается автоматически.",
 	},
 ];
 
@@ -102,13 +103,13 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 				kind,
 				provider,
 			});
-			toast.success(`Provisioning ${host.name}…`);
+			toast.success(`Подготавливаем ${host.name}…`);
 			onOpenChange(false);
 			setName("");
 			setKind("local");
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to provision host",
+				err instanceof Error ? err.message : "Не удалось подготовить хост",
 			);
 		} finally {
 			setSubmitting(false);
@@ -119,9 +120,10 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-lg">
 				<DialogHeader>
-					<DialogTitle>Add host</DialogTitle>
+					<DialogTitle>Добавить хост</DialogTitle>
 					<DialogDescription>
-						Connect this device, or provision a managed remote host or sandbox.
+						Подключите это устройство или подготовьте управляемый удалённый хост
+						либо песочницу.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -160,7 +162,7 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 					{isManaged && (
 						<div className="space-y-4">
 							<div className="space-y-1.5">
-								<Label htmlFor={nameId}>Host name</Label>
+								<Label htmlFor={nameId}>Название хоста</Label>
 								<Input
 									id={nameId}
 									value={name}
@@ -170,13 +172,13 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 							</div>
 
 							<div className="space-y-1.5">
-								<Label>Provider</Label>
+								<Label>Провайдер</Label>
 								<Select
 									value={provider}
 									onValueChange={(value) => setProvider(value as ProviderId)}
 								>
 									<SelectTrigger>
-										<SelectValue placeholder="Select a provider" />
+										<SelectValue placeholder="Выберите провайдера" />
 									</SelectTrigger>
 									<SelectContent>
 										{providers.map((p) => (
@@ -186,7 +188,7 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 												disabled={!p.available}
 											>
 												{p.label}
-												{p.available ? "" : " (not configured)"}
+												{p.available ? "" : " (не настроен)"}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -198,8 +200,8 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 					<div className="space-y-1.5">
 						<p className="text-xs text-muted-foreground">
 							{kind === "local"
-								? "Or run the host service yourself:"
-								: "Or self-deploy from a machine you control:"}
+								? "Или запустите службу хоста самостоятельно:"
+								: "Или разверните хост самостоятельно с компьютера под вашим управлением:"}
 						</p>
 						<DeployCommandBlock command={deployCommand(kind, provider)} />
 					</div>
@@ -207,14 +209,14 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 
 				<DialogFooter>
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Cancel
+						Отмена
 					</Button>
 					{isManaged && (
 						<Button
 							onClick={() => void handleProvision()}
 							disabled={!canProvision || submitting}
 						>
-							{submitting ? "Provisioning…" : "Provision"}
+							{submitting ? "Подготовка…" : "Подготовить"}
 						</Button>
 					)}
 				</DialogFooter>

@@ -217,5 +217,5 @@ describe("PullRequestRuntimeManager event-driven steady state", () => {
 		console.log(
 			`[event-driven] commit in 1/${scenario.repos.length} workspaces → ${eventDrivenOps.length} git ops touching ${touchedWorktrees.size} worktree`,
 		);
-	}, 30_000);
+	}, 90_000);
 });

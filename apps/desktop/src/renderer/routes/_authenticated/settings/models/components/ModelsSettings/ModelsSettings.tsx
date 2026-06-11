@@ -42,6 +42,13 @@ const DIALOG_CONTEXT = {
 	onModelSelectorOpenChange: () => {},
 } as const;
 
+const STATUS_BADGE_LABELS: Record<string, string> = {
+	"Not connected": "Не подключено",
+	Expired: "Истекло",
+	"Needs attention": "Требует внимания",
+	Active: "Активно",
+};
+
 export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 	const showAnthropic = isItemVisible(
 		SETTING_ITEM_ID.MODELS_ANTHROPIC,
@@ -141,10 +148,12 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 				refetchAnthropicEnvConfig(),
 				refetchAnthropicAuthStatus(),
 			]);
-			toast.success("Anthropic settings updated");
+			toast.success("Настройки Anthropic обновлены");
 			return true;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to save");
+			toast.error(
+				error instanceof Error ? error.message : "Не удалось сохранить",
+			);
 			return false;
 		}
 	};
@@ -179,9 +188,11 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 			await setAnthropicApiKeyMutation.mutateAsync({ apiKey });
 			setAnthropicApiKeyInput("");
 			await refetchAnthropicAuthStatus();
-			toast.success("Anthropic API key updated");
+			toast.success("Ключ API Anthropic обновлён");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to save");
+			toast.error(
+				error instanceof Error ? error.message : "Не удалось сохранить",
+			);
 		}
 	};
 
@@ -192,9 +203,11 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 			await setOpenAIApiKeyMutation.mutateAsync({ apiKey });
 			setOpenAIApiKeyInput("");
 			await refetchOpenAIAuthStatus();
-			toast.success("OpenAI API key updated");
+			toast.success("Ключ API OpenAI обновлён");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to save");
+			toast.error(
+				error instanceof Error ? error.message : "Не удалось сохранить",
+			);
 		}
 	};
 
@@ -214,7 +227,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 		if (action.kind === "logout") {
 			return (
 				<Button variant="outline" size="sm" onClick={onDisconnect}>
-					Sign out
+					Выйти
 				</Button>
 			);
 		}
@@ -224,18 +237,21 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 				onClick={() => void startOAuth()}
 				disabled={isStartingOAuth}
 			>
-				{action.kind === "reconnect" ? "Reconnect" : "Sign in"}
+				{action.kind === "reconnect" ? "Подключить заново" : "Войти"}
 			</Button>
 		);
 	};
+
+	const getStatusBadgeLabel = (label: string) =>
+		STATUS_BADGE_LABELS[label] ?? label;
 
 	return (
 		<>
 			<div className="w-full max-w-4xl p-6">
 				<div className="mb-8">
-					<h2 className="text-xl font-semibold">Models</h2>
+					<h2 className="text-xl font-semibold">Модели</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Manage provider accounts, API keys, and overrides.
+						Управляйте аккаунтами провайдеров, ключами API и переопределениями.
 					</p>
 				</div>
 
@@ -244,12 +260,12 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 						<SettingsSection
 							title="Anthropic"
 							icon={<img alt="" className="size-4" src={claudeIcon} />}
-							description="Sign in with Claude or use an API key."
+							description="Войдите через Claude или используйте ключ API."
 							action={
 								<div className="flex items-center gap-2">
 									{anthropicBadge ? (
 										<Badge variant={anthropicBadge.variant}>
-											{anthropicBadge.label}
+											{getStatusBadgeLabel(anthropicBadge.label)}
 										</Badge>
 									) : null}
 									{renderProviderAction({
@@ -270,7 +286,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 							}
 						>
 							<ConfigRow
-								title="API key"
+								title="Ключ API"
 								htmlFor="anthropic-api-key"
 								field={
 									<Input
@@ -282,7 +298,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 										}}
 										placeholder={
 											anthropicStatus?.authMethod === "api_key"
-												? "Saved Anthropic API key"
+												? "Сохранённый ключ API Anthropic"
 												: "sk-ant-..."
 										}
 										className="font-mono"
@@ -300,12 +316,12 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											setAnthropicApiKeyInput("");
 											setAnthropicForm(nextForm);
 											await refetchAnthropicAuthStatus();
-											toast.success("Anthropic API key cleared");
+											toast.success("Ключ API Anthropic удалён");
 										} catch (error) {
 											toast.error(
 												error instanceof Error
 													? error.message
-													: "Failed to clear",
+													: "Не удалось удалить",
 											);
 										}
 									})();
@@ -326,7 +342,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											<HiChevronDown
 												className={`size-3.5 transition-transform ${advancedOpen ? "" : "-rotate-90"}`}
 											/>
-											Advanced
+											Дополнительно
 										</button>
 									</CollapsibleTrigger>
 									{advancedOpen && hasAdvancedContent ? (
@@ -336,7 +352,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											disabled={isSavingAnthropicConfig}
 											className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
 										>
-											Reset
+											Сбросить
 										</button>
 									) : null}
 								</div>
@@ -391,7 +407,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											htmlFor="anthropic-extra-env"
 											className="text-sm font-medium"
 										>
-											Additional env vars
+											Дополнительные переменные окружения
 										</Label>
 										<Textarea
 											id="anthropic-extra-env"
@@ -411,7 +427,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 										/>
 									</div>
 									<p className="text-xs text-muted-foreground">
-										Saved on blur.
+										Сохраняется при потере фокуса.
 									</p>
 								</CollapsibleContent>
 							</Collapsible>
@@ -428,12 +444,12 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 									src="https://models.dev/logos/openai.svg"
 								/>
 							}
-							description="Sign in with ChatGPT or use an API key."
+							description="Войдите через ChatGPT или используйте ключ API."
 							action={
 								<div className="flex items-center gap-2">
 									{openAIBadge ? (
 										<Badge variant={openAIBadge.variant}>
-											{openAIBadge.label}
+											{getStatusBadgeLabel(openAIBadge.label)}
 										</Badge>
 									) : null}
 									{renderProviderAction({
@@ -454,7 +470,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 							}
 						>
 							<ConfigRow
-								title="API key"
+								title="Ключ API"
 								htmlFor="openai-api-key"
 								field={
 									<Input
@@ -466,7 +482,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 										}}
 										placeholder={
 											openAIStatus?.authMethod === "api_key"
-												? "Saved OpenAI API key"
+												? "Сохранённый ключ API OpenAI"
 												: "sk-..."
 										}
 										className="font-mono"
@@ -482,12 +498,12 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											await clearOpenAIApiKeyMutation.mutateAsync();
 											setOpenAIApiKeyInput("");
 											await refetchOpenAIAuthStatus();
-											toast.success("OpenAI API key cleared");
+											toast.success("Ключ API OpenAI удалён");
 										} catch (error) {
 											toast.error(
 												error instanceof Error
 													? error.message
-													: "Failed to clear",
+													: "Не удалось удалить",
 											);
 										}
 									})();

@@ -33,7 +33,7 @@ export function TabBar({ activeDemo }: TabBarProps) {
 						height={12}
 					/>
 				)}
-				<span>{isSetup ? "setup" : "claude"}</span>
+				<span>{isSetup ? "запуск" : "claude"}</span>
 				<LuX className="size-3 text-muted-foreground/35" />
 				<span className="absolute inset-x-2 -bottom-px h-[2px] bg-brand" />
 			</div>
@@ -69,7 +69,7 @@ export function TabBar({ activeDemo }: TabBarProps) {
 			<button
 				type="button"
 				className="ml-1 flex h-6 items-center rounded-sm px-1.5 text-muted-foreground/45 hover:bg-foreground/[0.04] hover:text-foreground/85"
-				aria-label="New tab"
+				aria-label="Новая вкладка"
 			>
 				<LuPlus className="size-3.5" />
 				<LuChevronDown className="ml-0.5 size-3" />
@@ -81,7 +81,7 @@ export function TabBar({ activeDemo }: TabBarProps) {
 					className="flex h-6 items-center gap-1 border border-border bg-background px-2 text-[10px] font-medium uppercase tracking-[0.06em] text-foreground/85 hover:bg-foreground/[0.04]"
 				>
 					<LuExternalLink className="size-2.5 text-muted-foreground/65" />
-					<span>Open</span>
+					<span>Открыть</span>
 					<LuChevronDown className="size-2.5 text-muted-foreground/55" />
 				</button>
 				<button
@@ -89,7 +89,7 @@ export function TabBar({ activeDemo }: TabBarProps) {
 					className="flex h-6 items-center gap-1 border border-emerald-500/40 bg-emerald-500/15 px-2 text-[10px] font-medium uppercase tracking-[0.06em] text-emerald-300 hover:bg-emerald-500/25"
 				>
 					<LuPlay className="size-2.5 fill-current" />
-					<span>Run</span>
+					<span>Запустить</span>
 				</button>
 			</div>
 		</div>

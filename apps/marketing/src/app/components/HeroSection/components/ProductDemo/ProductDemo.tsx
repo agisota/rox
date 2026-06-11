@@ -81,7 +81,7 @@ export function ProductDemo({ scrollYProgress }: ProductDemoProps) {
 				{DEMO_OPTIONS.map((option) => (
 					<SelectorPill
 						key={option.label}
-						label={option.label}
+						label={option.displayLabel}
 						active={activeOption === option.label}
 						onSelect={() => setActiveOption(option.label as ActiveDemo)}
 					/>

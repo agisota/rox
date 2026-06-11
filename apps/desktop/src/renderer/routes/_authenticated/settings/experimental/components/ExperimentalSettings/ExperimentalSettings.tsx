@@ -49,9 +49,9 @@ export function ExperimentalSettings({
 	return (
 		<div className="p-6 max-w-4xl w-full mx-auto">
 			<div className="mb-8">
-				<h2 className="text-xl font-semibold">Experimental</h2>
+				<h2 className="text-xl font-semibold">Экспериментальные функции</h2>
 				<p className="text-sm text-muted-foreground mt-1">
-					Try early access features and previews.
+					Попробуйте функции раннего доступа и предварительные версии.
 				</p>
 			</div>
 
@@ -60,10 +60,10 @@ export function ExperimentalSettings({
 					<div className="flex items-center justify-between gap-6">
 						<div className="min-w-0 flex-1 space-y-0.5">
 							<Label htmlFor="rox-v2" className="text-sm font-medium">
-								Try Rox v2
+								Попробовать Rox v2
 							</Label>
 							<p className="text-xs text-muted-foreground">
-								Use the new workspace experience.
+								Использовать новый интерфейс рабочих пространств.
 							</p>
 						</div>
 						<Switch
@@ -82,14 +82,15 @@ export function ExperimentalSettings({
 				{showV1Migration && !isV2OnlyUser && (
 					<div className="flex items-center justify-between gap-6">
 						<div className="min-w-0 flex-1 space-y-0.5">
-							<Label className="text-sm font-medium">Import from v1</Label>
+							<Label className="text-sm font-medium">Импорт из v1</Label>
 							<p className="text-xs text-muted-foreground">
-								Bring v1 projects, workspaces, and terminal presets over to v2.
-								Each item is imported individually and can be retried.
+								Перенесите проекты, рабочие пространства и пресеты терминала из
+								v1 в v2. Каждый элемент импортируется отдельно, импорт можно
+								повторить.
 							</p>
 							{!isV2CloudEnabled && (
 								<p className="text-xs text-muted-foreground">
-									Available when v2 is enabled.
+									Доступно после включения v2.
 								</p>
 							)}
 						</div>
@@ -101,17 +102,17 @@ export function ExperimentalSettings({
 							disabled={!isV2CloudEnabled}
 							className="shrink-0"
 						>
-							Open importer
+							Открыть импорт
 						</Button>
 					</div>
 				)}
 				{showRerunOnboarding && (
 					<div className="flex items-center justify-between gap-6">
 						<div className="min-w-0 flex-1 space-y-0.5">
-							<Label className="text-sm font-medium">Run setup again</Label>
+							<Label className="text-sm font-medium">Повторить запуск</Label>
 							<p className="text-xs text-muted-foreground">
-								Reopen the setup guide to connect agents, the GitHub CLI, and
-								add a project. You can skip any step.
+								Снова откройте мастер запуска, чтобы подключить агентов, GitHub
+								CLI и добавить проект. Любой шаг можно пропустить.
 							</p>
 						</div>
 						<Button
@@ -121,7 +122,7 @@ export function ExperimentalSettings({
 							onClick={handleRerunOnboarding}
 							className="shrink-0"
 						>
-							Open setup
+							Открыть запуск
 						</Button>
 					</div>
 				)}

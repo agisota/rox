@@ -32,7 +32,9 @@ export function BranchPrefixSection({
 		onSuccess: () => onChanged(),
 		onError: (err) =>
 			toast.error(
-				err instanceof Error ? err.message : "Failed to update branch prefix",
+				err instanceof Error
+					? err.message
+					: "Не удалось обновить префикс веток",
 			),
 	});
 

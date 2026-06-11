@@ -113,7 +113,7 @@ describe("shouldRefreshCachedRepoContext", () => {
 	test("treats SSH and HTTPS forms of the same repo as equal", () => {
 		expect(
 			shouldRefreshCachedRepoContext({
-				originUrl: "git@github.com:Rox-Sh/rox.git",
+				originUrl: "git@github.com:agisota/set.git",
 				cachedRepoContext: {
 					repoUrl: "https://github.com/agisota/set",
 					upstreamUrl: "https://github.com/agisota/set",

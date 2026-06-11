@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import * as realDbSchema from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import * as realDrizzleOrm from "drizzle-orm";
 
 const getCurrentTxidMock = mock(async () => 123);
 
@@ -106,6 +108,7 @@ mock.module("@rox/db/client", () => ({
 }));
 
 mock.module("@rox/db/schema", () => ({
+	...realDbSchema,
 	v2Projects: {
 		id: "v2_projects.id",
 		organizationId: "v2_projects.organization_id",
@@ -187,6 +190,7 @@ mock.module("../integration/utils", () => ({
 }));
 
 mock.module("drizzle-orm", () => ({
+	...realDrizzleOrm,
 	and: (...conditions: unknown[]) => ({ type: "and", conditions }),
 	desc: (value: unknown) => ({ type: "desc", value }),
 	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
