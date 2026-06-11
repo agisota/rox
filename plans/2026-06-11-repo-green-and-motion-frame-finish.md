@@ -29,12 +29,14 @@ Everything started in the motion-frame workflow is carried to completion:
 ## Streams
 
 ### A — Land what's started *(done)*
+
 - [x] Merge PR #54 — merged as `fbe0ba0` (PR run: 7/8 green; the Test red was
       the pre-existing suite, resolved upstream — see B1).
 - [x] Session branches: both merged. Remote deletion is blocked by the git
       proxy (rejects deletes); cosmetic — remove via GitHub UI if desired.
 
 ### B — Main-branch health
+
 - [x] **B1** Resolved upstream by the green-the-gate integration (#60: #56
       host-service test hardening + #59 electron dialog mock stubs + #17).
       First green `main` CI run in history: `1ab1d089`
@@ -51,6 +53,7 @@ Everything started in the motion-frame workflow is carried to completion:
 Per [`PORT-BRIEF.md`](./motion-frame/PORT-BRIEF.md); design decisions made from
 the brief + repo style (no separate PORT SPEC exists — orchestrator approved
 building without it, corrections via review).
+
 - [ ] **C1** Tier switcher UI component (PR1 remainder).
 - [ ] **C2** `Reveal`, `LoopMarquee` primitives (PR2 remainder).
 - [ ] **C3** Typeface themes (Blueprint / Brutalist / Docs) + persisted switcher.
@@ -61,6 +64,7 @@ building without it, corrections via review).
 - [ ] **C6** Living showcase route in `apps/docs` (all tiers × both themes).
 
 ### D — Foreign branches: inventory only (no blind merges)
+
 - [x] Audited all 29 non-session branches — see
       [`2026-06-11-foreign-branch-inventory.md`](./2026-06-11-foreign-branch-inventory.md):
       11 merge-candidates, 6 closable, 7 need a rebase, 5 large epics for the
