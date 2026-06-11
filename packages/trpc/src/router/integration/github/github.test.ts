@@ -80,7 +80,6 @@ mock.module("@rox/db/schema", () => ({
 
 mock.module("../utils", () => ({
 	verifyOrgAdmin: verifyOrgAdminMock,
-	verifyOrgOwner: mock(async () => ({ membership: { role: "owner" } })),
 	verifyOrgMembership: verifyOrgMembershipMock,
 	verifyOrgMembershipWithSubscription: mock(async () => ({
 		membership: { role: "member" },
@@ -402,10 +401,10 @@ describe("github.getStats", () => {
 		installationFindFirstResults.push({ id: INSTALLATION_ID });
 		repositoriesFindManyResults.push([{ id: REPO_ID }, { id: "repo-2" }]);
 		pullRequestsFindManyResults.push([
-			{ id: "pr-1", checksStatus: "success" },
-			{ id: "pr-2", checksStatus: "pending" },
-			{ id: "pr-3", checksStatus: "failure" },
-			{ id: "pr-4", checksStatus: "failure" },
+			{ id: "pr-1", state: "open", checksStatus: "success" },
+			{ id: "pr-2", state: "open", checksStatus: "pending" },
+			{ id: "pr-3", state: "open", checksStatus: "failure" },
+			{ id: "pr-4", state: "open", checksStatus: "failure" },
 		]);
 		const caller = createCaller(authedContext());
 
