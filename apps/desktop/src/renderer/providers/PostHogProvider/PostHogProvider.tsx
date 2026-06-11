@@ -1,7 +1,6 @@
 import { PostHogProvider as PHProvider } from "posthog-js/react";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { track } from "renderer/lib/analytics";
 import { initPostHog, posthog } from "renderer/lib/posthog";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 
@@ -28,7 +27,6 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
 
 			try {
 				initPostHog(deviceId);
-				track("desktop_opened");
 			} catch (error) {
 				console.error("[posthog] Failed to initialize:", error);
 			} finally {

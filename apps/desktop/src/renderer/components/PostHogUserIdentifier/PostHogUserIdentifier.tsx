@@ -1,8 +1,14 @@
+import { createSignInCompletedEvent } from "@rox/analytics";
 import { useEffect } from "react";
-import { track } from "renderer/lib/analytics";
+import {
+	identifyAnalyticsUser,
+	reloadAnalyticsFeatureFlags,
+	resetAnalytics,
+	track,
+	trackEvent,
+} from "renderer/lib/analytics";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { posthog } from "../../lib/posthog";
 
 const AUTH_COMPLETED_KEY = "rox_auth_completed";
 const ACTIVE_ORG_ID_KEY = "active_organization_id";
@@ -15,27 +21,31 @@ export function PostHogUserIdentifier() {
 
 	useEffect(() => {
 		if (user) {
-			posthog.identify(user.id, {
-				email: user.email,
-				name: user.name,
+			identifyAnalyticsUser(user.id, {
 				desktop_version: window.App.appVersion,
 			});
-			posthog.reloadFeatureFlags();
+			reloadAnalyticsFeatureFlags();
 			setUserId({ userId: user.id });
 
 			const trackedUserId = localStorage.getItem(AUTH_COMPLETED_KEY);
 			if (trackedUserId !== user.id) {
 				track("auth_completed");
+				trackEvent(
+					createSignInCompletedEvent({
+						userId: user.id,
+						organizationId: activeOrganizationId,
+					}),
+				);
 				localStorage.setItem(AUTH_COMPLETED_KEY, user.id);
 			}
 		} else if (session !== undefined && !user) {
 			// Session loaded but no user - user is signed out
-			posthog.reset();
+			resetAnalytics();
 			setUserId({ userId: null });
 			localStorage.removeItem(AUTH_COMPLETED_KEY);
 			localStorage.removeItem(ACTIVE_ORG_ID_KEY);
 		}
-	}, [user, session, setUserId]);
+	}, [user, session, activeOrganizationId, setUserId]);
 
 	useEffect(() => {
 		if (session === undefined) return;

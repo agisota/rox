@@ -1,6 +1,8 @@
+import { createWorkspaceCreatedEvent } from "@rox/analytics";
 import type { AgentLaunchRequest } from "@rox/shared/agent-launch";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useRef } from "react";
+import { trackEvent } from "renderer/lib/analytics";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { useWorkspaceInitStore } from "renderer/stores/workspace-init";
@@ -38,6 +40,17 @@ export function useCreateFromPr(options?: MutationOptions) {
 			const normalizedLaunchRequest = agentLaunchRequest
 				? { ...agentLaunchRequest, workspaceId: data.workspace.id }
 				: undefined;
+
+			if (!data.wasExisting) {
+				trackEvent(
+					createWorkspaceCreatedEvent({
+						workspaceId: data.workspace.id,
+						projectId: data.projectId,
+						source: "desktop_renderer_pr",
+						wasExisting: data.wasExisting,
+					}),
+				);
+			}
 
 			if (data.initialCommands || normalizedLaunchRequest) {
 				addPendingTerminalSetup({

@@ -190,6 +190,10 @@ export default defineConfig({
 				process.env.NEXT_PUBLIC_DOCS_URL,
 				"https://docs.rox.one",
 			),
+			"process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID": defineEnv(
+				process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID,
+			),
+			"process.env.OPENPANEL_API_URL": defineEnv(process.env.OPENPANEL_API_URL),
 			"import.meta.env.DEV_SERVER_PORT": defineEnv(String(DEV_SERVER_PORT)),
 			"import.meta.env.NEXT_PUBLIC_POSTHOG_KEY": defineEnv(
 				process.env.NEXT_PUBLIC_POSTHOG_KEY,

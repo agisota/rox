@@ -1,5 +1,6 @@
 import { Alerter } from "@rox/ui/atoms/Alert";
 import type { ReactNode } from "react";
+import { AnalyticsInitializer } from "renderer/components/AnalyticsInitializer";
 import { PostHogSurfaceTagger } from "renderer/components/PostHogSurfaceTagger";
 import { PostHogUserIdentifier } from "renderer/components/PostHogUserIdentifier";
 import { TelemetrySync } from "renderer/components/TelemetrySync";
@@ -12,6 +13,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<PostHogProvider>
 			<ElectronTRPCProvider>
+				<AnalyticsInitializer />
 				<PostHogUserIdentifier />
 				<PostHogSurfaceTagger />
 				<TelemetrySync />

@@ -64,6 +64,8 @@ export const OPENPANEL_COOKIE_NAME = "rox_op";
  * sync with the typed catalog in `@rox/analytics` (`events.ts`).
  */
 export const ANALYTICS_EVENTS = {
+	APP_OPENED: "app_opened",
+	SIGN_IN_COMPLETED: "sign_in_completed",
 	PROJECT_CREATED: "project_created",
 	WORKSPACE_CREATED: "workspace_created",
 	REPO_CONNECTED: "repo_connected",

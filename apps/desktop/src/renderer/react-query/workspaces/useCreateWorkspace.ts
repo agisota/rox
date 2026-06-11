@@ -1,5 +1,7 @@
+import { createWorkspaceCreatedEvent } from "@rox/analytics";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useRef } from "react";
+import { trackEvent } from "renderer/lib/analytics";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { showWorkspaceAutoNameWarningToast } from "renderer/lib/workspaces/showWorkspaceAutoNameWarningToast";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
@@ -77,6 +79,15 @@ export function useCreateWorkspace(options?: UseCreateWorkspaceOptions) {
 			}
 
 			if (!data.wasExisting) {
+				trackEvent(
+					createWorkspaceCreatedEvent({
+						workspaceId: data.workspace.id,
+						projectId: data.projectId,
+						source: "desktop_renderer",
+						wasExisting: data.wasExisting,
+					}),
+				);
+
 				const normalizedLaunchRequest =
 					pendingSetupOverrides?.agentLaunchRequest
 						? {

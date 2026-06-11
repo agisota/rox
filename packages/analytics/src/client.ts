@@ -18,6 +18,13 @@ export type PostHogCapture = (
 export interface ClientAnalyticsOptions {
 	/** Existing `posthog.capture` from the host app. */
 	posthogCapture?: PostHogCapture;
+	/** Existing `posthog.identify` from the host app. */
+	posthogIdentify?: (
+		distinctId: string,
+		traits?: Record<string, unknown>,
+	) => void;
+	/** Existing `posthog.reset` from the host app. */
+	posthogReset?: () => void;
 	/** Resolved OpenPanel env (defaults to reading `process.env`). */
 	env?: OpenPanelEnv;
 }
@@ -28,6 +35,7 @@ export interface ClientAnalytics {
 		properties?: EventProperties<E>,
 	): void;
 	identify(distinctId: string, traits?: Record<string, unknown>): void;
+	reset(): void;
 }
 
 function postToOpenPanel(
@@ -60,6 +68,8 @@ export function createClientAnalytics(
 ): ClientAnalytics {
 	const env = options.env ?? resolveOpenPanelEnv();
 	const posthogCapture = options.posthogCapture;
+	const posthogIdentify = options.posthogIdentify;
+	const posthogReset = options.posthogReset;
 
 	return {
 		track(event, properties) {
@@ -71,10 +81,14 @@ export function createClientAnalytics(
 			});
 		},
 		identify(distinctId, traits) {
+			posthogIdentify?.(distinctId, traits);
 			postToOpenPanel(env, {
 				type: "identify",
 				payload: { profileId: distinctId, properties: traits ?? {} },
 			});
+		},
+		reset() {
+			posthogReset?.();
 		},
 	};
 }

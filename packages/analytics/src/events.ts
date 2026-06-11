@@ -50,12 +50,45 @@ interface PaymentProps extends AnalyticsProperties {
 	external_id?: string;
 }
 
+type UnsafePiiFields = {
+	email?: unknown;
+	name?: unknown;
+	token?: unknown;
+};
+
+export interface AppOpenedInput extends UnsafePiiFields {
+	appVersion?: string;
+	platform?: string;
+}
+
+export interface SignInCompletedInput extends UnsafePiiFields {
+	userId: string;
+	organizationId?: string | null;
+}
+
+export interface WorkspaceCreatedInput {
+	workspaceId: string;
+	projectId?: string | null;
+	source?: string;
+	wasExisting?: boolean;
+	workspaceName?: unknown;
+	prompt?: unknown;
+}
+
 /**
  * Maps each canonical event name to its required/optional property shape.
  * Adding an event here is the single edit needed to make it type-safe at every
  * `track`/`capture` call site.
  */
 export interface AnalyticsEventMap {
+	[ANALYTICS_EVENTS.APP_OPENED]: {
+		app_version?: string;
+		platform?: string;
+	};
+	[ANALYTICS_EVENTS.SIGN_IN_COMPLETED]: {
+		user_id: string;
+		organization_id?: string;
+	};
 	[ANALYTICS_EVENTS.PROJECT_CREATED]: {
 		project_id: string;
 		organization_id?: string;
@@ -63,6 +96,8 @@ export interface AnalyticsEventMap {
 	[ANALYTICS_EVENTS.WORKSPACE_CREATED]: {
 		workspace_id: string;
 		project_id?: string;
+		source?: string;
+		was_existing?: boolean;
 	};
 	[ANALYTICS_EVENTS.REPO_CONNECTED]: {
 		repository_id: string;
@@ -110,4 +145,42 @@ export function isAnalyticsEventName(
 	value: string,
 ): value is AnalyticsEventName {
 	return (Object.values(ANALYTICS_EVENTS) as string[]).includes(value);
+}
+
+export function createAppOpenedEvent(
+	input: AppOpenedInput = {},
+): AnalyticsEvent<typeof ANALYTICS_EVENTS.APP_OPENED> {
+	return {
+		name: ANALYTICS_EVENTS.APP_OPENED,
+		properties: {
+			app_version: input.appVersion,
+			platform: input.platform,
+		},
+	};
+}
+
+export function createSignInCompletedEvent(
+	input: SignInCompletedInput,
+): AnalyticsEvent<typeof ANALYTICS_EVENTS.SIGN_IN_COMPLETED> {
+	return {
+		name: ANALYTICS_EVENTS.SIGN_IN_COMPLETED,
+		properties: {
+			user_id: input.userId,
+			organization_id: input.organizationId ?? undefined,
+		},
+	};
+}
+
+export function createWorkspaceCreatedEvent(
+	input: WorkspaceCreatedInput,
+): AnalyticsEvent<typeof ANALYTICS_EVENTS.WORKSPACE_CREATED> {
+	return {
+		name: ANALYTICS_EVENTS.WORKSPACE_CREATED,
+		properties: {
+			workspace_id: input.workspaceId,
+			project_id: input.projectId ?? undefined,
+			source: input.source,
+			was_existing: input.wasExisting,
+		},
+	};
 }
