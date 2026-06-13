@@ -18,8 +18,8 @@ describe("getPrimaryAction", () => {
 		});
 
 		expect(state.action).toBe("commit");
-		expect(state.label).toBe("Commit");
-		expect(state.tooltip).toBe("Commit staged changes");
+		expect(state.label).toBe("Коммит");
+		expect(state.tooltip).toBe("Закоммитить проиндексированные изменения");
 		expect(state.disabled).toBe(false);
 	});
 
@@ -38,8 +38,8 @@ describe("getPrimaryAction", () => {
 		});
 
 		expect(state.action).toBe("sync");
-		expect(state.label).toBe("Sync");
-		expect(state.tooltip).toBe("Pull 1, push 2");
+		expect(state.label).toBe("Синхронизировать");
+		expect(state.tooltip).toBe("Получить: 1, отправить: 2");
 	});
 
 	test("shows push when only push is pending", () => {
@@ -57,8 +57,8 @@ describe("getPrimaryAction", () => {
 		});
 
 		expect(state.action).toBe("push");
-		expect(state.label).toBe("Push");
-		expect(state.tooltip).toBe("Push 2 commits");
+		expect(state.label).toBe("Отправить");
+		expect(state.tooltip).toBe("Отправить коммитов: 2");
 	});
 
 	test("shows pull when only pull is pending", () => {
@@ -76,8 +76,8 @@ describe("getPrimaryAction", () => {
 		});
 
 		expect(state.action).toBe("pull");
-		expect(state.label).toBe("Pull");
-		expect(state.tooltip).toBe("Pull 2 commits");
+		expect(state.label).toBe("Получить");
+		expect(state.tooltip).toBe("Получить коммитов: 2");
 	});
 
 	test("shows publish branch for unpublished branch without PR", () => {
@@ -95,8 +95,8 @@ describe("getPrimaryAction", () => {
 		});
 
 		expect(state.action).toBe("push");
-		expect(state.label).toBe("Publish Branch");
-		expect(state.tooltip).toBe("Publish branch to remote");
+		expect(state.label).toBe("Опубликовать ветку");
+		expect(state.tooltip).toBe("Опубликовать ветку в удалённом репозитории");
 	});
 
 	test("shows push label for unpublished branch with existing PR", () => {
@@ -118,8 +118,10 @@ describe("getPrimaryAction", () => {
 		});
 
 		expect(state.action).toBe("push");
-		expect(state.label).toBe("Push to PR");
-		expect(state.tooltip).toBe("Push changes to Kitenite:feature/pr-branch");
+		expect(state.label).toBe("Отправить в PR");
+		expect(state.tooltip).toBe(
+			"Отправить изменения в Kitenite:feature/pr-branch",
+		);
 	});
 
 	test("falls back to disabled commit state", () => {
@@ -137,8 +139,8 @@ describe("getPrimaryAction", () => {
 		});
 
 		expect(state.action).toBe("commit");
-		expect(state.label).toBe("Commit");
+		expect(state.label).toBe("Коммит");
 		expect(state.disabled).toBe(true);
-		expect(state.tooltip).toBe("No staged changes");
+		expect(state.tooltip).toBe("Нет проиндексированных изменений");
 	});
 });

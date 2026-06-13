@@ -9,9 +9,9 @@ describe("getPushActionCopy", () => {
 				pushCount: 0,
 			}),
 		).toEqual({
-			label: "Publish Branch",
-			menuLabel: "Publish Branch",
-			tooltip: "Publish branch to remote",
+			label: "Опубликовать ветку",
+			menuLabel: "Опубликовать ветку",
+			tooltip: "Опубликовать ветку в удалённом репозитории",
 		});
 	});
 
@@ -22,9 +22,9 @@ describe("getPushActionCopy", () => {
 				pushCount: 2,
 			}),
 		).toEqual({
-			label: "Push",
-			menuLabel: "Push",
-			tooltip: "Push 2 commits",
+			label: "Отправить",
+			menuLabel: "Отправить",
+			tooltip: "Отправить коммитов: 2",
 		});
 	});
 
@@ -39,9 +39,9 @@ describe("getPushActionCopy", () => {
 				},
 			}),
 		).toEqual({
-			label: "Push to PR",
-			menuLabel: "Push to PR",
-			tooltip: "Push 1 commit to Kitenite:feature/pr-branch",
+			label: "Отправить в PR",
+			menuLabel: "Отправить в PR",
+			tooltip: "Отправить коммитов в Kitenite:feature/pr-branch: 1",
 		});
 	});
 });
