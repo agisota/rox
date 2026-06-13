@@ -3,7 +3,10 @@ import { isAbsolute, join } from "node:path";
 import type { HostDb } from "../../db";
 import { type AgentInstallStatus, agentInstallState } from "../../db/schema";
 import { getConfigTemplate } from "./config-templates";
-import { defaultCommandRunner, defaultWriteConfigFile } from "./default-runners";
+import {
+	defaultCommandRunner,
+	defaultWriteConfigFile,
+} from "./default-runners";
 import {
 	buildPreinstallCatalog,
 	type PreinstallCatalogItem,
