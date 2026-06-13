@@ -26,10 +26,8 @@ describe("MotionTierSwitcher", () => {
 				<MotionTierSwitcher />
 			</MotionFrameProvider>,
 		);
-		// SSR can only assert the highlight renders (motion.span and span emit
-		// identical markup); the motion-vs-static branch lives in the source's
-		// capabilities.transition check.
-		expect(html).toContain("data-motion-pill");
+		expect(html).toContain('data-motion-pill="static"');
+		expect(html).not.toContain('data-motion-pill="animated"');
 	});
 
 	it("isolates instances: two switchers never share a radio-group name", () => {

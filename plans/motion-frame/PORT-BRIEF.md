@@ -121,9 +121,9 @@ language is the deliverable — not another page.
       `useMotionTier`.
 - [x] PR2 (partial): `FadeLift`, `PulseDot`, `TraceLine` + tests.
 - [x] PR4 (seed): `StateTransition` composite + test.
-- [ ] PR1 remainder: tier switcher UI component (persistence + reduced-motion
-      logic already implemented in MotionFrameProvider/useMotionTier).
-- [ ] PR2 remainder: `Reveal`, `LoopMarquee`.
+- [x] PR1 remainder: tier switcher UI component — `MotionTierSwitcher`,
+      merged via #68.
+- [x] PR2 remainder: `Reveal`, `LoopMarquee` — merged via #71.
 - [ ] PR3: typeface themes + switcher.
 - [ ] PR4 remainder: `SufficiencyPanel`, `EventTrace`, `RuntimeCard`,
       `ManifestoBlock`.

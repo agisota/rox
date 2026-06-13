@@ -74,14 +74,14 @@ export function MotionTierSwitcher({
 							capabilities.transition ? (
 								<motion.span
 									className="absolute inset-0 rounded-full bg-background shadow-sm"
-									data-motion-pill
+									data-motion-pill="animated"
 									layoutId={`motion-tier-pill-${instanceId}`}
 									transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
 								/>
 							) : (
 								<span
 									className="absolute inset-0 rounded-full bg-background shadow-sm"
-									data-motion-pill
+									data-motion-pill="static"
 								/>
 							)
 						) : null}

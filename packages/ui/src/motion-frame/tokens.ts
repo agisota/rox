@@ -16,3 +16,13 @@ export const STATE_TOKEN = {
 } as const;
 
 export type StateTokenName = keyof typeof STATE_TOKEN;
+
+/**
+ * Typeface themes (PORT-BRIEF PR3). Each value matches a
+ * `[data-typeface="…"]` block in `globals.css` that swaps the
+ * `--frame-font-display|body|mono` stacks; consume them through the
+ * `font-frame-*` Tailwind utilities.
+ */
+export const TYPEFACE_THEMES = ["blueprint", "brutalist", "docs"] as const;
+
+export type TypefaceTheme = (typeof TYPEFACE_THEMES)[number];
