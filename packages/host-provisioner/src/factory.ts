@@ -1,6 +1,7 @@
 import { DaytonaProvisioner } from "./daytona";
 import { E2BProvisioner } from "./e2b";
 import { ModalProvisioner } from "./modal";
+import { RoxSelfProvisioner } from "./rox-self";
 import type { FetchLike, HostProvisioner, ProvisionProvider } from "./types";
 
 export interface ProvisionerFactoryOptions {
@@ -11,11 +12,16 @@ export interface ProvisionerFactoryOptions {
 	fetch?: FetchLike;
 }
 
-/** Env var holding the API key for each provider. */
+/**
+ * Env var that gates each provider. For managed APIs this holds the API key;
+ * for `self` it is the Docker Engine TCP endpoint (`ROX_SELF_DOCKER_HOST`),
+ * which both gates availability and supplies the base URL.
+ */
 const PROVIDER_ENV_KEY: Record<ProvisionProvider, string> = {
 	daytona: "DAYTONA_API_KEY",
 	modal: "MODAL_API_KEY",
 	e2b: "E2B_API_KEY",
+	self: "ROX_SELF_DOCKER_HOST",
 };
 
 export class MissingProvisionerCredentialsError extends Error {
@@ -56,6 +62,8 @@ export function getHostProvisioner(
 			return new ModalProvisioner(config);
 		case "e2b":
 			return new E2BProvisioner(config);
+		case "self":
+			return new RoxSelfProvisioner(config);
 		default: {
 			const exhaustive: never = provider;
 			throw new Error(`Unknown provisioner provider: ${String(exhaustive)}`);

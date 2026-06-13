@@ -26,13 +26,44 @@ import { useLocalHostService } from "renderer/routes/_authenticated/providers/Lo
 import { DeployCommandBlock } from "./components/DeployCommandBlock";
 
 type HostKindOption = "local" | "remote" | "sandbox";
-type ProviderId = "daytona" | "modal" | "e2b";
+type ProviderId = "daytona" | "modal" | "e2b" | "self";
+// Providers the server `provision` mutation actually accepts. `self` is
+// surfaced in the picker but provisioned out-of-band, so it is excluded here.
+type ManagedProviderId = Exclude<ProviderId, "self">;
+
+function isManagedProvider(id: ProviderId): id is ManagedProviderId {
+	return id !== "self";
+}
 
 interface ProviderOption {
 	id: ProviderId;
 	label: string;
 	available: boolean;
 }
+
+// RU display copy for providers. The server's `listProviders` returns English
+// brand names; we override them here so the picker stays Russian. `self`
+// (one-click host on our own Docker box, RoxSelfProvisioner) is surfaced
+// locally because it is not yet returned by the server provider list — it
+// stays unavailable until the backend (published host-service image) enables it.
+const PROVIDER_COPY: Record<
+	ProviderId,
+	{ label: string; description: string }
+> = {
+	daytona: {
+		label: "Daytona",
+		description: "Управляемые удалённые рабочие пространства.",
+	},
+	modal: { label: "Modal", description: "Управляемые песочницы Modal." },
+	e2b: { label: "E2B", description: "Управляемые песочницы E2B." },
+	self: {
+		label: "Сервер Rox (удалённый)",
+		description: "Развернуть хост у нас, в один клик.",
+	},
+};
+
+// Locally-surfaced providers not (yet) returned by the server provider list.
+const LOCAL_ONLY_PROVIDERS: readonly ProviderId[] = ["self"];
 
 interface AddHostModalProps {
 	open: boolean;
@@ -124,13 +155,34 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		};
 	}, [open]);
 
+	// Render server providers with RU copy, then append any local-only providers
+	// (e.g. rox-self) the server doesn't yet return so they stay visible in the
+	// picker — marked unavailable until the backend enables them.
+	const displayProviders: ProviderOption[] = [
+		...providers.map((p) => ({
+			...p,
+			label: PROVIDER_COPY[p.id]?.label ?? p.label,
+		})),
+		...LOCAL_ONLY_PROVIDERS.filter(
+			(id) => !providers.some((p) => p.id === id),
+		).map((id) => ({
+			id,
+			label: PROVIDER_COPY[id].label,
+			available: false,
+		})),
+	];
+
 	const isManaged = kind === "remote" || kind === "sandbox";
-	const selectedProvider = providers.find((p) => p.id === provider);
+	const selectedProvider = displayProviders.find((p) => p.id === provider);
 	const canProvision =
 		isManaged && name.trim().length > 0 && selectedProvider?.available === true;
 
 	const handleProvision = async () => {
 		if (kind === "local" || !canProvision) return;
+		// `self` is never provisioned server-side (always unavailable in the
+		// picker), so `canProvision` rules it out; this guard also narrows the
+		// type to the providers the mutation accepts.
+		if (!isManagedProvider(provider)) return;
 		setSubmitting(true);
 		try {
 			const host = await apiTrpcClient.v2Host.provision.mutate({
@@ -254,7 +306,7 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 										<SelectValue placeholder="Выберите провайдера" />
 									</SelectTrigger>
 									<SelectContent>
-										{providers.map((p) => (
+										{displayProviders.map((p) => (
 											<SelectItem
 												key={p.id}
 												value={p.id}

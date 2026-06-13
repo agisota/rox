@@ -11,6 +11,7 @@ export {
 	ProvisionerError,
 } from "./http";
 export { ModalProvisioner } from "./modal";
+export { RoxSelfProvisioner } from "./rox-self";
 export type {
 	FetchLike,
 	HostProvisioner,
