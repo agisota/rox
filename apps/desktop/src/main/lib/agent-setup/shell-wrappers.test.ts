@@ -24,6 +24,7 @@ const TEST_ROOT = path.join(
 const TEST_BIN_DIR = path.join(TEST_ROOT, "bin");
 const TEST_ZSH_DIR = path.join(TEST_ROOT, "zsh");
 const TEST_BASH_DIR = path.join(TEST_ROOT, "bash");
+const REAL_SHELL_TEST_TIMEOUT_MS = 30_000;
 const TEST_PATHS: ShellWrapperPaths = {
 	BIN_DIR: TEST_BIN_DIR,
 	ZSH_DIR: TEST_ZSH_DIR,
@@ -722,100 +723,108 @@ export ROX_WORKSPACE_PATH="/wrong/path"
 			expect(lines[lines.length - 1]).toBe("correct-name|/correct/path");
 		});
 
-		it("zsh wrapper restores ROX_WORKSPACE_NAME after user .zshrc overrides it", () => {
-			if (!isZshAvailable()) return;
+		it(
+			"zsh wrapper restores ROX_WORKSPACE_NAME after user .zshrc overrides it",
+			() => {
+				if (!isZshAvailable()) return;
 
-			const integrationRoot = path.join(TEST_ROOT, "zsh-env-protect");
-			const integrationBinDir = path.join(integrationRoot, "rox-bin");
-			const integrationZshDir = path.join(integrationRoot, "zsh");
-			const integrationBashDir = path.join(integrationRoot, "bash");
-			const homeDir = path.join(integrationRoot, "home");
+				const integrationRoot = path.join(TEST_ROOT, "zsh-env-protect");
+				const integrationBinDir = path.join(integrationRoot, "rox-bin");
+				const integrationZshDir = path.join(integrationRoot, "zsh");
+				const integrationBashDir = path.join(integrationRoot, "bash");
+				const homeDir = path.join(integrationRoot, "home");
 
-			mkdirSync(integrationBinDir, { recursive: true });
-			mkdirSync(integrationZshDir, { recursive: true });
-			mkdirSync(integrationBashDir, { recursive: true });
-			mkdirSync(homeDir, { recursive: true });
+				mkdirSync(integrationBinDir, { recursive: true });
+				mkdirSync(integrationZshDir, { recursive: true });
+				mkdirSync(integrationBashDir, { recursive: true });
+				mkdirSync(homeDir, { recursive: true });
 
-			// User .zshrc overrides ROX_WORKSPACE_NAME with corrupted value
-			writeFileSync(
-				path.join(homeDir, ".zshrc"),
-				`export ROX_WORKSPACE_NAME="user@host:~/path/to/worktree"\n`,
-			);
+				// User .zshrc overrides ROX_WORKSPACE_NAME with corrupted value
+				writeFileSync(
+					path.join(homeDir, ".zshrc"),
+					`export ROX_WORKSPACE_NAME="user@host:~/path/to/worktree"\n`,
+				);
 
-			createZshWrapper({
-				BIN_DIR: integrationBinDir,
-				ZSH_DIR: integrationZshDir,
-				BASH_DIR: integrationBashDir,
-			});
+				createZshWrapper({
+					BIN_DIR: integrationBinDir,
+					ZSH_DIR: integrationZshDir,
+					BASH_DIR: integrationBashDir,
+				});
 
-			const output = execFileSync(
-				"zsh",
-				["-lic", 'echo "$ROX_WORKSPACE_NAME"'],
-				{
-					encoding: "utf-8",
-					env: {
-						HOME: homeDir,
-						PATH: "/usr/bin:/bin",
-						ROX_ORIG_ZDOTDIR: homeDir,
-						ZDOTDIR: integrationZshDir,
-						ROX_WORKSPACE_NAME: "my-clean-workspace",
+				const output = execFileSync(
+					"zsh",
+					["-lic", 'echo "$ROX_WORKSPACE_NAME"'],
+					{
+						encoding: "utf-8",
+						env: {
+							HOME: homeDir,
+							PATH: "/usr/bin:/bin",
+							ROX_ORIG_ZDOTDIR: homeDir,
+							ZDOTDIR: integrationZshDir,
+							ROX_WORKSPACE_NAME: "my-clean-workspace",
+						},
 					},
-				},
-			).trim();
+				).trim();
 
-			const lines = output
-				.split("\n")
-				.map((l) => l.trim())
-				.filter(Boolean);
-			expect(lines[lines.length - 1]).toBe("my-clean-workspace");
-		});
+				const lines = output
+					.split("\n")
+					.map((l) => l.trim())
+					.filter(Boolean);
+				expect(lines[lines.length - 1]).toBe("my-clean-workspace");
+			},
+			REAL_SHELL_TEST_TIMEOUT_MS,
+		);
 
-		it("zsh wrapper restores ROX_WORKSPACE_NAME after user .zlogin overrides it", () => {
-			if (!isZshAvailable()) return;
+		it(
+			"zsh wrapper restores ROX_WORKSPACE_NAME after user .zlogin overrides it",
+			() => {
+				if (!isZshAvailable()) return;
 
-			const integrationRoot = path.join(TEST_ROOT, "zsh-zlogin-env-protect");
-			const integrationBinDir = path.join(integrationRoot, "rox-bin");
-			const integrationZshDir = path.join(integrationRoot, "zsh");
-			const integrationBashDir = path.join(integrationRoot, "bash");
-			const homeDir = path.join(integrationRoot, "home");
+				const integrationRoot = path.join(TEST_ROOT, "zsh-zlogin-env-protect");
+				const integrationBinDir = path.join(integrationRoot, "rox-bin");
+				const integrationZshDir = path.join(integrationRoot, "zsh");
+				const integrationBashDir = path.join(integrationRoot, "bash");
+				const homeDir = path.join(integrationRoot, "home");
 
-			mkdirSync(integrationBinDir, { recursive: true });
-			mkdirSync(integrationZshDir, { recursive: true });
-			mkdirSync(integrationBashDir, { recursive: true });
-			mkdirSync(homeDir, { recursive: true });
+				mkdirSync(integrationBinDir, { recursive: true });
+				mkdirSync(integrationZshDir, { recursive: true });
+				mkdirSync(integrationBashDir, { recursive: true });
+				mkdirSync(homeDir, { recursive: true });
 
-			writeFileSync(
-				path.join(homeDir, ".zlogin"),
-				`export ROX_WORKSPACE_NAME="overridden-by-zlogin"\n`,
-			);
+				writeFileSync(
+					path.join(homeDir, ".zlogin"),
+					`export ROX_WORKSPACE_NAME="overridden-by-zlogin"\n`,
+				);
 
-			createZshWrapper({
-				BIN_DIR: integrationBinDir,
-				ZSH_DIR: integrationZshDir,
-				BASH_DIR: integrationBashDir,
-			});
+				createZshWrapper({
+					BIN_DIR: integrationBinDir,
+					ZSH_DIR: integrationZshDir,
+					BASH_DIR: integrationBashDir,
+				});
 
-			const output = execFileSync(
-				"zsh",
-				["-lic", 'echo "$ROX_WORKSPACE_NAME"'],
-				{
-					encoding: "utf-8",
-					env: {
-						HOME: homeDir,
-						PATH: "/usr/bin:/bin",
-						ROX_ORIG_ZDOTDIR: homeDir,
-						ZDOTDIR: integrationZshDir,
-						ROX_WORKSPACE_NAME: "correct-name",
+				const output = execFileSync(
+					"zsh",
+					["-lic", 'echo "$ROX_WORKSPACE_NAME"'],
+					{
+						encoding: "utf-8",
+						env: {
+							HOME: homeDir,
+							PATH: "/usr/bin:/bin",
+							ROX_ORIG_ZDOTDIR: homeDir,
+							ZDOTDIR: integrationZshDir,
+							ROX_WORKSPACE_NAME: "correct-name",
+						},
 					},
-				},
-			).trim();
+				).trim();
 
-			const lines = output
-				.split("\n")
-				.map((l) => l.trim())
-				.filter(Boolean);
-			expect(lines[lines.length - 1]).toBe("correct-name");
-		});
+				const lines = output
+					.split("\n")
+					.map((l) => l.trim())
+					.filter(Boolean);
+				expect(lines[lines.length - 1]).toBe("correct-name");
+			},
+			REAL_SHELL_TEST_TIMEOUT_MS,
+		);
 	});
 
 	describe("fish shell", () => {

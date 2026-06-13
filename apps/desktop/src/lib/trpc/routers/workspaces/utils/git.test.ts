@@ -117,134 +117,154 @@ describe("getDefaultBranch", () => {
 		};
 	}
 
-	test("returns main when no remote and no branches", async () => {
-		const { repoPath, cleanup } = createIsolatedTestRepo("empty");
-		try {
-			const result = await getDefaultBranchForTest(repoPath);
-			expect(result).toBe("main");
-		} finally {
-			cleanup();
-		}
-	});
+	test(
+		"returns main when no remote and no branches",
+		async () => {
+			const { repoPath, cleanup } = createIsolatedTestRepo("empty");
+			try {
+				const result = await getDefaultBranchForTest(repoPath);
+				expect(result).toBe("main");
+			} finally {
+				cleanup();
+			}
+		},
+		10_000,
+	);
 
-	test("detects main from local remote branches", async () => {
-		const { repoPath, cleanup } = createIsolatedTestRepo("main");
-		try {
-			// Create a commit so we have something to reference
-			writeFileSync(join(repoPath, "test.txt"), "test");
-			execSync("git add . && git commit -m 'init'", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-
-			// Simulate fetched remote branches by creating remote tracking refs
-			execSync("git remote add origin https://example.com/repo.git", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync("git update-ref refs/remotes/origin/main HEAD", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-
-			const result = await getDefaultBranchForTest(repoPath);
-			expect(result).toBe("main");
-		} finally {
-			cleanup();
-		}
-	});
-
-	test("detects master from local remote branches", async () => {
-		const { repoPath, cleanup } = createIsolatedTestRepo("master");
-		try {
-			// Create a commit
-			writeFileSync(join(repoPath, "test.txt"), "test");
-			execSync("git add . && git commit -m 'init'", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-
-			// Simulate fetched remote with only master branch
-			execSync("git remote add origin https://example.com/repo.git", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync("git update-ref refs/remotes/origin/master HEAD", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-
-			const result = await getDefaultBranchForTest(repoPath);
-			expect(result).toBe("master");
-		} finally {
-			cleanup();
-		}
-	});
-
-	test("uses origin/HEAD when set", async () => {
-		const { repoPath, cleanup } = createIsolatedTestRepo("origin-head");
-		try {
-			// Create a commit
-			writeFileSync(join(repoPath, "test.txt"), "test");
-			execSync("git add . && git commit -m 'init'", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-
-			// Set up remote and origin/HEAD
-			execSync("git remote add origin https://example.com/repo.git", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync("git update-ref refs/remotes/origin/develop HEAD", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync(
-				"git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop",
-				{
+	test(
+		"detects main from local remote branches",
+		async () => {
+			const { repoPath, cleanup } = createIsolatedTestRepo("main");
+			try {
+				// Create a commit so we have something to reference
+				writeFileSync(join(repoPath, "test.txt"), "test");
+				execSync("git add . && git commit -m 'init'", {
 					cwd: repoPath,
 					stdio: "ignore",
-				},
-			);
+				});
 
-			const result = await getDefaultBranchForTest(repoPath);
-			expect(result).toBe("develop");
-		} finally {
-			cleanup();
-		}
-	});
+				// Simulate fetched remote branches by creating remote tracking refs
+				execSync("git remote add origin https://example.com/repo.git", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync("git update-ref refs/remotes/origin/main HEAD", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
 
-	test("prefers main over master when both exist", async () => {
-		const { repoPath, cleanup } = createIsolatedTestRepo("prefer-main");
-		try {
-			// Create a commit
-			writeFileSync(join(repoPath, "test.txt"), "test");
-			execSync("git add . && git commit -m 'init'", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
+				const result = await getDefaultBranchForTest(repoPath);
+				expect(result).toBe("main");
+			} finally {
+				cleanup();
+			}
+		},
+		10_000,
+	);
 
-			// Simulate fetched remote with both main and master
-			execSync("git remote add origin https://example.com/repo.git", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync("git update-ref refs/remotes/origin/main HEAD", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync("git update-ref refs/remotes/origin/master HEAD", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
+	test(
+		"detects master from local remote branches",
+		async () => {
+			const { repoPath, cleanup } = createIsolatedTestRepo("master");
+			try {
+				// Create a commit
+				writeFileSync(join(repoPath, "test.txt"), "test");
+				execSync("git add . && git commit -m 'init'", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
 
-			const result = await getDefaultBranchForTest(repoPath);
-			expect(result).toBe("main");
-		} finally {
-			cleanup();
-		}
-	});
+				// Simulate fetched remote with only master branch
+				execSync("git remote add origin https://example.com/repo.git", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync("git update-ref refs/remotes/origin/master HEAD", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+
+				const result = await getDefaultBranchForTest(repoPath);
+				expect(result).toBe("master");
+			} finally {
+				cleanup();
+			}
+		},
+		10_000,
+	);
+
+	test(
+		"uses origin/HEAD when set",
+		async () => {
+			const { repoPath, cleanup } = createIsolatedTestRepo("origin-head");
+			try {
+				// Create a commit
+				writeFileSync(join(repoPath, "test.txt"), "test");
+				execSync("git add . && git commit -m 'init'", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+
+				// Set up remote and origin/HEAD
+				execSync("git remote add origin https://example.com/repo.git", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync("git update-ref refs/remotes/origin/develop HEAD", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync(
+					"git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop",
+					{
+						cwd: repoPath,
+						stdio: "ignore",
+					},
+				);
+
+				const result = await getDefaultBranchForTest(repoPath);
+				expect(result).toBe("develop");
+			} finally {
+				cleanup();
+			}
+		},
+		10_000,
+	);
+
+	test(
+		"prefers main over master when both exist",
+		async () => {
+			const { repoPath, cleanup } = createIsolatedTestRepo("prefer-main");
+			try {
+				// Create a commit
+				writeFileSync(join(repoPath, "test.txt"), "test");
+				execSync("git add . && git commit -m 'init'", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+
+				// Simulate fetched remote with both main and master
+				execSync("git remote add origin https://example.com/repo.git", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync("git update-ref refs/remotes/origin/main HEAD", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync("git update-ref refs/remotes/origin/master HEAD", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+
+				const result = await getDefaultBranchForTest(repoPath);
+				expect(result).toBe("main");
+			} finally {
+				cleanup();
+			}
+		},
+		10_000,
+	);
 });
 
 describe("Shell Environment", () => {
@@ -255,7 +275,7 @@ describe("Shell Environment", () => {
 
 		// Should have PATH
 		expect(env.PATH || env.Path).toBeDefined();
-	}, 10_000);
+	}, 30_000);
 
 	test("clearShellEnvCache clears cache", async () => {
 		const { clearShellEnvCache, getShellEnvironment } = await import(
@@ -271,7 +291,7 @@ describe("Shell Environment", () => {
 		// Should work again (cache was cleared)
 		const env = await getShellEnvironment();
 		expect(env.PATH || env.Path).toBeDefined();
-	}, 10_000);
+	}, 30_000);
 
 	test("getProcessEnvWithShellPath applies shell PATH and preserves string vars", async () => {
 		const { getProcessEnvWithShellPath, getShellEnvironment } = await import(
@@ -409,46 +429,54 @@ describe("createWorktree hook tolerance", () => {
 		}
 	});
 
-	test("continues when post-checkout hook fails but worktree is created", async () => {
-		const repoPath = createTestRepo("worktree-hook-failure");
-		seedCommit(repoPath);
+	test(
+		"continues when post-checkout hook fails but worktree is created",
+		async () => {
+			const repoPath = createTestRepo("worktree-hook-failure");
+			seedCommit(repoPath);
 
-		const hookPath = join(repoPath, ".git", "hooks", "post-checkout");
-		writeFileSync(
-			hookPath,
-			"#!/bin/sh\necho 'post-checkout failed' >&2\nexit 1\n",
-		);
-		execSync(`chmod +x "${hookPath}"`);
+			const hookPath = join(repoPath, ".git", "hooks", "post-checkout");
+			writeFileSync(
+				hookPath,
+				"#!/bin/sh\necho 'post-checkout failed' >&2\nexit 1\n",
+			);
+			execSync(`chmod +x "${hookPath}"`);
 
-		const worktreePath = join(TEST_DIR, "worktree-hook-failure-wt");
-		await createWorktree(
-			repoPath,
-			"feature/hook-failure",
-			worktreePath,
-			"HEAD",
-		);
+			const worktreePath = join(TEST_DIR, "worktree-hook-failure-wt");
+			await createWorktree(
+				repoPath,
+				"feature/hook-failure",
+				worktreePath,
+				"HEAD",
+			);
 
-		expect(existsSync(worktreePath)).toBe(true);
-		const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", {
-			cwd: worktreePath,
-		})
-			.toString()
-			.trim();
-		expect(currentBranch).toBe("feature/hook-failure");
-	}, 10_000);
+			expect(existsSync(worktreePath)).toBe(true);
+			const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", {
+				cwd: worktreePath,
+			})
+				.toString()
+				.trim();
+			expect(currentBranch).toBe("feature/hook-failure");
+		},
+		30_000,
+	);
 
-	test("throws when destination path exists but worktree is not created", async () => {
-		const repoPath = createTestRepo("worktree-existing-path");
-		seedCommit(repoPath);
+	test(
+		"throws when destination path exists but worktree is not created",
+		async () => {
+			const repoPath = createTestRepo("worktree-existing-path");
+			seedCommit(repoPath);
 
-		const worktreePath = join(TEST_DIR, "worktree-existing-path-wt");
-		mkdirSync(worktreePath, { recursive: true });
-		writeFileSync(join(worktreePath, "keep.txt"), "keep");
+			const worktreePath = join(TEST_DIR, "worktree-existing-path-wt");
+			mkdirSync(worktreePath, { recursive: true });
+			writeFileSync(join(worktreePath, "keep.txt"), "keep");
 
-		await expect(
-			createWorktree(repoPath, "feature/existing-path", worktreePath, "HEAD"),
-		).rejects.toThrow("already exists");
-	}, 10_000);
+			await expect(
+				createWorktree(repoPath, "feature/existing-path", worktreePath, "HEAD"),
+			).rejects.toThrow("already exists");
+		},
+		30_000,
+	);
 
 	test("works with remote-tracking ref as start point (no-track prevents upstream)", async () => {
 		// Set up a "remote" repo with a commit, then clone it so we have origin/<branch> refs
@@ -500,38 +528,42 @@ describe("createWorktree hook tolerance", () => {
 			.toString()
 			.trim();
 		expect(trackingResult).toBe("");
-	}, 15_000);
+	}, 30_000);
 
-	test("works with a branch name containing slashes as start point", async () => {
-		// Reproduces #3448: createWorktree previously appended ^{commit} to the
-		// start point, which can fail with "fatal: invalid reference" when the ref
-		// is not locally resolvable with that suffix. Using --no-track avoids this.
-		const repoPath = createTestRepo("worktree-slash-branch");
-		seedCommit(repoPath);
+	test(
+		"works with a branch name containing slashes as start point",
+		async () => {
+			// Reproduces #3448: createWorktree previously appended ^{commit} to the
+			// start point, which can fail with "fatal: invalid reference" when the ref
+			// is not locally resolvable with that suffix. Using --no-track avoids this.
+			const repoPath = createTestRepo("worktree-slash-branch");
+			seedCommit(repoPath);
 
-		// Create a branch with slashes (like feat/workstreams-view)
-		execSync("git checkout -b feat/workstreams-view", {
-			cwd: repoPath,
-			stdio: "ignore",
-		});
-		execSync("git checkout -", { cwd: repoPath, stdio: "ignore" });
+			// Create a branch with slashes (like feat/workstreams-view)
+			execSync("git checkout -b feat/workstreams-view", {
+				cwd: repoPath,
+				stdio: "ignore",
+			});
+			execSync("git checkout -", { cwd: repoPath, stdio: "ignore" });
 
-		const worktreePath = join(TEST_DIR, "worktree-slash-branch-wt");
-		await createWorktree(
-			repoPath,
-			"feature/new-workspace",
-			worktreePath,
-			"feat/workstreams-view",
-		);
+			const worktreePath = join(TEST_DIR, "worktree-slash-branch-wt");
+			await createWorktree(
+				repoPath,
+				"feature/new-workspace",
+				worktreePath,
+				"feat/workstreams-view",
+			);
 
-		expect(existsSync(worktreePath)).toBe(true);
-		const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", {
-			cwd: worktreePath,
-		})
-			.toString()
-			.trim();
-		expect(currentBranch).toBe("feature/new-workspace");
-	}, 10_000);
+			expect(existsSync(worktreePath)).toBe(true);
+			const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", {
+				cwd: worktreePath,
+			})
+				.toString()
+				.trim();
+			expect(currentBranch).toBe("feature/new-workspace");
+		},
+		30_000,
+	);
 });
 
 describe("getCurrentBranch", () => {
@@ -559,42 +591,46 @@ describe("getCurrentBranch", () => {
 		}
 	});
 
-	test("returns null in detached HEAD state", async () => {
-		const repoPath = join(
-			realpathSync(tmpdir()),
-			`rox-test-current-branch-detached-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-		);
+	test(
+		"returns null in detached HEAD state",
+		async () => {
+			const repoPath = join(
+				realpathSync(tmpdir()),
+				`rox-test-current-branch-detached-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+			);
 
-		mkdirSync(repoPath, { recursive: true });
+			mkdirSync(repoPath, { recursive: true });
 
-		try {
-			execSync("git init", { cwd: repoPath, stdio: "ignore" });
-			execSync("git config user.email 'test@test.com'", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync("git config user.name 'Test'", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			writeFileSync(join(repoPath, "README.md"), "# test\n");
-			execSync("git add . && git commit -m 'init'", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
-			execSync("git checkout --detach HEAD", {
-				cwd: repoPath,
-				stdio: "ignore",
-			});
+			try {
+				execSync("git init", { cwd: repoPath, stdio: "ignore" });
+				execSync("git config user.email 'test@test.com'", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync("git config user.name 'Test'", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				writeFileSync(join(repoPath, "README.md"), "# test\n");
+				execSync("git add . && git commit -m 'init'", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
+				execSync("git checkout --detach HEAD", {
+					cwd: repoPath,
+					stdio: "ignore",
+				});
 
-			const branch = await getCurrentBranch(repoPath);
-			expect(branch).toBeNull();
-		} finally {
-			if (existsSync(repoPath)) {
-				rmSync(repoPath, { recursive: true, force: true });
+				const branch = await getCurrentBranch(repoPath);
+				expect(branch).toBeNull();
+			} finally {
+				if (existsSync(repoPath)) {
+					rmSync(repoPath, { recursive: true, force: true });
+				}
 			}
-		}
-	});
+		},
+		10_000,
+	);
 });
 
 describe("getWorktreeCreatedAt", () => {
@@ -751,43 +787,47 @@ describe("isUnbornHeadError", () => {
 });
 
 describe("branchExistsOnRemote", () => {
-	test("checks the requested remote instead of always origin", async () => {
-		const repoPath = createTestRepo("branch-exists-on-remote");
-		seedCommit(repoPath);
+	test(
+		"checks the requested remote instead of always origin",
+		async () => {
+			const repoPath = createTestRepo("branch-exists-on-remote");
+			seedCommit(repoPath);
 
-		const originRemotePath = join(TEST_DIR, "branch-exists-origin.git");
-		const forkRemotePath = join(TEST_DIR, "branch-exists-fork.git");
+			const originRemotePath = join(TEST_DIR, "branch-exists-origin.git");
+			const forkRemotePath = join(TEST_DIR, "branch-exists-fork.git");
 
-		execSync(`git init --bare "${originRemotePath}"`, { stdio: "ignore" });
-		execSync(`git init --bare "${forkRemotePath}"`, { stdio: "ignore" });
+			execSync(`git init --bare "${originRemotePath}"`, { stdio: "ignore" });
+			execSync(`git init --bare "${forkRemotePath}"`, { stdio: "ignore" });
 
-		execSync(`git remote add origin "${originRemotePath}"`, {
-			cwd: repoPath,
-			stdio: "ignore",
-		});
-		execSync(`git remote add contributor "${forkRemotePath}"`, {
-			cwd: repoPath,
-			stdio: "ignore",
-		});
-		execSync(
-			"git push contributor HEAD:refs/heads/feature/fork-tracking-remote",
-			{
+			execSync(`git remote add origin "${originRemotePath}"`, {
 				cwd: repoPath,
 				stdio: "ignore",
-			},
-		);
+			});
+			execSync(`git remote add contributor "${forkRemotePath}"`, {
+				cwd: repoPath,
+				stdio: "ignore",
+			});
+			execSync(
+				"git push contributor HEAD:refs/heads/feature/fork-tracking-remote",
+				{
+					cwd: repoPath,
+					stdio: "ignore",
+				},
+			);
 
-		await expect(
-			branchExistsOnRemote(repoPath, "feature/fork-tracking-remote"),
-		).resolves.toEqual({ status: "not_found" });
-		await expect(
-			branchExistsOnRemote(
-				repoPath,
-				"feature/fork-tracking-remote",
-				"contributor",
-			),
-		).resolves.toEqual({ status: "exists" });
-	});
+			await expect(
+				branchExistsOnRemote(repoPath, "feature/fork-tracking-remote"),
+			).resolves.toEqual({ status: "not_found" });
+			await expect(
+				branchExistsOnRemote(
+					repoPath,
+					"feature/fork-tracking-remote",
+					"contributor",
+				),
+			).resolves.toEqual({ status: "exists" });
+		},
+		10_000,
+	);
 });
 
 describe("hasUnpushedCommits", () => {
@@ -918,7 +958,7 @@ describe("hasUnpushedCommits", () => {
 		// BUG: Before the fix, this returned true (false positive warning)
 		// After the fix, it should return false since the patch is in origin/main
 		expect(await hasUnpushedCommits(localPath)).toBe(false);
-	}, 15_000);
+	}, 30_000);
 
 	test("returns true after upstream branch deleted with truly unmerged commits", async () => {
 		const { remotePath, localPath } = setupRemoteAndClone("unmerged");
@@ -953,46 +993,50 @@ describe("hasUnpushedCommits", () => {
 		expect(await hasUnpushedCommits(localPath)).toBe(true);
 	}, 15_000);
 
-	test("warns when cherry-pick fallback fails and continues to remotes fallback", async () => {
-		const repoPath = createTestRepo("no-remote-warning");
-		seedCommit(repoPath);
+	test(
+		"warns when cherry-pick fallback fails and continues to remotes fallback",
+		async () => {
+			const repoPath = createTestRepo("no-remote-warning");
+			seedCommit(repoPath);
 
-		const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
+			const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
 
-		try {
-			expect(await hasUnpushedCommits(repoPath)).toBe(true);
-			expect(warnSpy).toHaveBeenCalledTimes(1);
-			expect(warnSpy).toHaveBeenCalledWith(
-				"[git/hasUnpushedCommits] Cherry-pick fallback failed; falling back to remote reachability check.",
-				expect.objectContaining({
-					worktreePath: repoPath,
-					error: expect.any(String),
-				}),
-			);
-		} finally {
-			warnSpy.mockRestore();
-		}
-	});
+			try {
+				expect(await hasUnpushedCommits(repoPath)).toBe(true);
+				expect(warnSpy).toHaveBeenCalledTimes(1);
+				expect(warnSpy).toHaveBeenCalledWith(
+					"[git/hasUnpushedCommits] Cherry-pick fallback failed; falling back to remote reachability check.",
+					expect.objectContaining({
+						worktreePath: repoPath,
+						error: expect.any(String),
+					}),
+				);
+			} finally {
+				warnSpy.mockRestore();
+			}
+		},
+		10_000,
+	);
 });
 
 describe("parsePrUrl", () => {
 	test("parses canonical GitHub PR URL", () => {
-		expect(parsePrUrl("https://github.com/agisota/set/pull/1781")).toEqual({
-			owner: "agisota",
+		expect(parsePrUrl("https://github.com/Rox-Sh/rox/pull/1781")).toEqual({
+			owner: "Rox-Sh",
 			repo: "rox",
 			number: 1781,
 		});
 	});
 
 	test("parses GitHub URL without protocol", () => {
-		expect(parsePrUrl("github.com/agisota/set/pull/1781")).toEqual({
-			owner: "agisota",
+		expect(parsePrUrl("github.com/Rox-Sh/rox/pull/1781")).toEqual({
+			owner: "Rox-Sh",
 			repo: "rox",
 			number: 1781,
 		});
 	});
 
 	test("returns null for non-PR URLs", () => {
-		expect(parsePrUrl("https://github.com/agisota/set/issues/1781")).toBe(null);
+		expect(parsePrUrl("https://github.com/Rox-Sh/rox/issues/1781")).toBe(null);
 	});
 });

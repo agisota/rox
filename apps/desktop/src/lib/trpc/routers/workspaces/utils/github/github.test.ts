@@ -115,8 +115,8 @@ describe("shouldRefreshCachedRepoContext", () => {
 			shouldRefreshCachedRepoContext({
 				originUrl: "git@github.com:Rox-Sh/rox.git",
 				cachedRepoContext: {
-					repoUrl: "https://github.com/agisota/set",
-					upstreamUrl: "https://github.com/agisota/set",
+					repoUrl: "https://github.com/Rox-Sh/rox",
+					upstreamUrl: "https://github.com/Rox-Sh/rox",
 					isFork: false,
 				},
 			}),

@@ -4,7 +4,7 @@ import {
 	tasks,
 	transitionRuns,
 	workspaces,
-} from "@superset/local-db";
+} from "@rox/local-db";
 import { desc, eq } from "drizzle-orm";
 import type { localDb } from "main/lib/local-db";
 import type { ExecutionCircuitStore } from "./service";

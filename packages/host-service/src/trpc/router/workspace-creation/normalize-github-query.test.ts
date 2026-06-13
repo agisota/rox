@@ -103,7 +103,7 @@ describe("normalizeGitHubQuery — shared behaviors", () => {
 	describe("non-GitHub URLs (plain text fallback)", () => {
 		test("GitHub repo URL (no entity path)", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set",
+				"https://github.com/agisota/rox",
 				repo,
 				"pull",
 			);
@@ -113,7 +113,7 @@ describe("normalizeGitHubQuery — shared behaviors", () => {
 
 		test("GitHub compare URL", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/compare/main...feature",
+				"https://github.com/agisota/rox/compare/main...feature",
 				repo,
 				"pull",
 			);
@@ -132,7 +132,7 @@ describe("normalizeGitHubQuery — shared behaviors", () => {
 
 		test("SSH-style URL", () => {
 			const result = normalizeGitHubQuery(
-				"git@github.com:agisota/set.git",
+				"git@github.com:agisota/rox.git",
 				repo,
 				"pull",
 			);
@@ -159,7 +159,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 	describe("same repo", () => {
 		test("basic URL", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3130",
+				"https://github.com/agisota/rox/pull/3130",
 				repo,
 				"pull",
 			);
@@ -170,7 +170,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("/files tab", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354/files",
+				"https://github.com/agisota/rox/pull/3354/files",
 				repo,
 				"pull",
 			);
@@ -180,7 +180,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("/changes tab", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354/changes",
+				"https://github.com/agisota/rox/pull/3354/changes",
 				repo,
 				"pull",
 			);
@@ -190,7 +190,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("/commits tab", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354/commits",
+				"https://github.com/agisota/rox/pull/3354/commits",
 				repo,
 				"pull",
 			);
@@ -200,7 +200,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("/checks tab", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354/checks",
+				"https://github.com/agisota/rox/pull/3354/checks",
 				repo,
 				"pull",
 			);
@@ -210,7 +210,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("trailing slash", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354/",
+				"https://github.com/agisota/rox/pull/3354/",
 				repo,
 				"pull",
 			);
@@ -220,7 +220,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("query params", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354?diff=unified",
+				"https://github.com/agisota/rox/pull/3354?diff=unified",
 				repo,
 				"pull",
 			);
@@ -230,7 +230,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("query params on tab", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354/files?diff=split&w=1",
+				"https://github.com/agisota/rox/pull/3354/files?diff=split&w=1",
 				repo,
 				"pull",
 			);
@@ -240,7 +240,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("hash fragment", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354#discussion_r123",
+				"https://github.com/agisota/rox/pull/3354#discussion_r123",
 				repo,
 				"pull",
 			);
@@ -250,7 +250,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("hash fragment on files tab", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/pull/3354/files#diff-abc123",
+				"https://github.com/agisota/rox/pull/3354/files#diff-abc123",
 				repo,
 				"pull",
 			);
@@ -260,7 +260,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("www prefix", () => {
 			const result = normalizeGitHubQuery(
-				"https://www.github.com/agisota/set/pull/3354",
+				"https://www.github.com/agisota/rox/pull/3354",
 				repo,
 				"pull",
 			);
@@ -270,7 +270,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("http (not https)", () => {
 			const result = normalizeGitHubQuery(
-				"http://github.com/agisota/set/pull/3354",
+				"http://github.com/agisota/rox/pull/3354",
 				repo,
 				"pull",
 			);
@@ -280,7 +280,7 @@ describe("normalizeGitHubQuery — PR URLs", () => {
 
 		test("case-insensitive owner/repo", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/Rox-SH/Rox/pull/100",
+				"https://github.com/AgIsOtA/Rox/pull/100",
 				repo,
 				"pull",
 			);
@@ -354,7 +354,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 	describe("same repo", () => {
 		test("basic URL", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/issues/100",
+				"https://github.com/agisota/rox/issues/100",
 				repo,
 				"issue",
 			);
@@ -365,7 +365,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 
 		test("trailing slash", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/issues/100/",
+				"https://github.com/agisota/rox/issues/100/",
 				repo,
 				"issue",
 			);
@@ -375,7 +375,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 
 		test("query params", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/issues/100?q=1",
+				"https://github.com/agisota/rox/issues/100?q=1",
 				repo,
 				"issue",
 			);
@@ -385,7 +385,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 
 		test("hash fragment (comment anchor)", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/agisota/set/issues/100#issuecomment-12345",
+				"https://github.com/agisota/rox/issues/100#issuecomment-12345",
 				repo,
 				"issue",
 			);
@@ -395,7 +395,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 
 		test("www prefix", () => {
 			const result = normalizeGitHubQuery(
-				"https://www.github.com/agisota/set/issues/200",
+				"https://www.github.com/agisota/rox/issues/200",
 				repo,
 				"issue",
 			);
@@ -405,7 +405,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 
 		test("http (not https)", () => {
 			const result = normalizeGitHubQuery(
-				"http://github.com/agisota/set/issues/200",
+				"http://github.com/agisota/rox/issues/200",
 				repo,
 				"issue",
 			);
@@ -415,7 +415,7 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 
 		test("case-insensitive owner/repo", () => {
 			const result = normalizeGitHubQuery(
-				"https://github.com/Rox-SH/ROX/issues/55",
+				"https://github.com/AgIsOtA/ROX/issues/55",
 				repo,
 				"issue",
 			);
@@ -465,22 +465,22 @@ describe("normalizeGitHubQuery — issue URLs", () => {
 describe("normalizeGitHubQuery — cross-entity fallback", () => {
 	test("issue URL pasted into PR search → plain text", () => {
 		const result = normalizeGitHubQuery(
-			"https://github.com/agisota/set/issues/100",
+			"https://github.com/agisota/rox/issues/100",
 			repo,
 			"pull",
 		);
-		expect(result.query).toBe("https://github.com/agisota/set/issues/100");
+		expect(result.query).toBe("https://github.com/agisota/rox/issues/100");
 		expect(result.isDirectLookup).toBe(false);
 		expect(result.repoMismatch).toBe(false);
 	});
 
 	test("PR URL pasted into issue search → plain text", () => {
 		const result = normalizeGitHubQuery(
-			"https://github.com/agisota/set/pull/3354",
+			"https://github.com/agisota/rox/pull/3354",
 			repo,
 			"issue",
 		);
-		expect(result.query).toBe("https://github.com/agisota/set/pull/3354");
+		expect(result.query).toBe("https://github.com/agisota/rox/pull/3354");
 		expect(result.isDirectLookup).toBe(false);
 		expect(result.repoMismatch).toBe(false);
 	});

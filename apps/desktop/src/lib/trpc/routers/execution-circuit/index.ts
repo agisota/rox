@@ -2,7 +2,7 @@ import {
 	traceEventPayloadSchema,
 	transitionRunOutputSchema,
 	transitionValidationResultSchema,
-} from "@superset/shared/execution-circuit";
+} from "@rox/shared/execution-circuit";
 import { TRPCError } from "@trpc/server";
 import { localDb } from "main/lib/local-db";
 import { z } from "zod";

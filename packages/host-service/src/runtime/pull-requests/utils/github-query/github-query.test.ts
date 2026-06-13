@@ -28,7 +28,7 @@ describe("GitHub pull request REST queries", () => {
 				{
 					number: 42,
 					title: "Fix sidebar",
-					html_url: "https://github.com/agisota/set/pull/42",
+					html_url: "https://github.com/agisota/rox/pull/42",
 					state: "open",
 					draft: false,
 					merged_at: null,
@@ -43,7 +43,7 @@ describe("GitHub pull request REST queries", () => {
 					},
 					base: {
 						repo: {
-							full_name: "agisota/set",
+							full_name: "agisota/rox",
 						},
 					},
 				},
@@ -59,7 +59,7 @@ describe("GitHub pull request REST queries", () => {
 		expect(result).toEqual({
 			number: 42,
 			title: "Fix sidebar",
-			url: "https://github.com/agisota/set/pull/42",
+			url: "https://github.com/agisota/rox/pull/42",
 			state: "OPEN",
 			isDraft: false,
 			headRefName: "fix/sidebar",
@@ -75,7 +75,7 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/agisota/set/pulls",
+					"repos/agisota/rox/pulls",
 					"-f",
 					"state=all",
 					"-f",
@@ -97,7 +97,7 @@ describe("GitHub pull request REST queries", () => {
 				{
 					number: 41,
 					title: "Wrong fork",
-					html_url: "https://github.com/agisota/set/pull/41",
+					html_url: "https://github.com/agisota/rox/pull/41",
 					state: "open",
 					draft: false,
 					merged_at: null,
@@ -112,14 +112,14 @@ describe("GitHub pull request REST queries", () => {
 					},
 					base: {
 						repo: {
-							full_name: "agisota/set",
+							full_name: "agisota/rox",
 						},
 					},
 				},
 				{
 					number: 42,
 					title: "Right fork",
-					html_url: "https://github.com/agisota/set/pull/42",
+					html_url: "https://github.com/agisota/rox/pull/42",
 					state: "open",
 					draft: false,
 					merged_at: null,
@@ -134,7 +134,7 @@ describe("GitHub pull request REST queries", () => {
 					},
 					base: {
 						repo: {
-							full_name: "agisota/set",
+							full_name: "agisota/rox",
 						},
 					},
 				},
@@ -182,7 +182,7 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/agisota/set/pulls/42/reviews",
+					"repos/agisota/rox/pulls/42/reviews",
 					"-f",
 					"per_page=100",
 				],
@@ -210,7 +210,7 @@ describe("GitHub pull request REST queries", () => {
 					{
 						name: "Typecheck",
 						conclusion: "success",
-						details_url: "https://github.com/agisota/set/actions/1",
+						details_url: "https://github.com/agisota/rox/actions/1",
 						status: "completed",
 						started_at: "2026-05-08T12:00:00Z",
 						completed_at: "2026-05-08T12:03:00Z",
@@ -238,7 +238,7 @@ describe("GitHub pull request REST queries", () => {
 				__typename: "CheckRun",
 				name: "Typecheck",
 				conclusion: "SUCCESS",
-				detailsUrl: "https://github.com/agisota/set/actions/1",
+				detailsUrl: "https://github.com/agisota/rox/actions/1",
 				status: "COMPLETED",
 				startedAt: "2026-05-08T12:00:00Z",
 				completedAt: "2026-05-08T12:03:00Z",
@@ -258,7 +258,7 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/agisota/set/commits/abc123/check-runs",
+					"repos/agisota/rox/commits/abc123/check-runs",
 					"-f",
 					"per_page=100",
 				],
@@ -268,7 +268,7 @@ describe("GitHub pull request REST queries", () => {
 					"api",
 					"--method",
 					"GET",
-					"repos/agisota/set/commits/abc123/statuses",
+					"repos/agisota/rox/commits/abc123/statuses",
 					"-f",
 					"per_page=100",
 				],
