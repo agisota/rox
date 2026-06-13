@@ -6,9 +6,9 @@ import type { Metadata } from "next";
 import { themeListings } from "@/lib/marketplace";
 
 export const metadata: Metadata = {
-	title: "Themes",
+	title: "Темы",
 	description:
-		"Browse Rox theme files shared by the community, including GitHub Dark Colorblind, Catppuccin, Ember, and One Dark Pro.",
+		"Просматривайте файлы тем Rox, которыми делится сообщество: GitHub Dark Colorblind, Catppuccin, Ember, One Dark Pro и другие.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace/themes`,
 	},
@@ -19,7 +19,7 @@ export default function MarketplaceThemesPage() {
 		<main className="min-h-screen">
 			<div className="mx-auto max-w-4xl px-6 py-10">
 				<h1 className="mb-6 text-xl font-semibold text-foreground md:text-2xl">
-					Themes
+					Темы
 				</h1>
 
 				<div className="grid gap-4 md:grid-cols-2">
@@ -32,6 +32,9 @@ export default function MarketplaceThemesPage() {
 							promptColor={theme.terminal.green}
 							infoColor={theme.terminal.cyan}
 							readyColor={theme.terminal.yellow}
+							commandText="portless rox bun dev"
+							infoText="Запускаем dev-сервер..."
+							readyText="Готово на https://rox.t"
 							palette={[
 								theme.terminal.red,
 								theme.terminal.green,
@@ -52,8 +55,8 @@ export default function MarketplaceThemesPage() {
 									<a
 										href={theme.source.href}
 										download
-										aria-label={`Download ${theme.name}`}
-										title={`Download ${theme.name}`}
+										aria-label={`Скачать ${theme.name}`}
+										title={`Скачать ${theme.name}`}
 									>
 										<Download className="size-4" aria-hidden="true" />
 									</a>

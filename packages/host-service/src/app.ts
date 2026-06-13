@@ -150,8 +150,13 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 
 	// Backfill `kind='main'` v2 workspaces for projects already set up before
 	// this column shipped. Idempotent; runs in the background so it doesn't
-	// block server startup.
-	void runMainWorkspaceSweep({
+	// block server startup. Tracked so `dispose()` can await it before closing
+	// the db — otherwise a still-pending task hits a closed handle and throws
+	// `Cannot use a closed database` (esp. under shared test processes).
+	// Aborted by `dispose()` so the loops below stop touching `db` promptly
+	// instead of blocking teardown on slow, real install commands.
+	const bootstrapAbort = new AbortController();
+	const mainWorkspaceSweepTask = runMainWorkspaceSweep({
 		api,
 		db,
 		git,
@@ -163,9 +168,10 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	// Preinstall bundled agents/harnesses and ensure the default worktrees
 	// root exists. Idempotent and fire-and-forget so it never blocks startup;
 	// the renderer polls `settings.agentPreinstall.status` for progress.
-	void (async () => {
+	// Tracked so `dispose()` awaits it before the db is closed (see above).
+	const _preinstallBootstrapTask = (async () => {
 		await mkdir(defaultWorktreesRoot(), { recursive: true });
-		await preinstall.runAuto();
+		await preinstall.runAuto({ signal: bootstrapAbort.signal });
 	})().catch((err) => {
 		console.warn("[host-service] agent preinstall bootstrap failed:", err);
 	});
@@ -214,6 +220,17 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 
 	const ownsDb = options.db === undefined;
 	const dispose = async (): Promise<void> => {
+		// Signal background bootstrap tasks to stop touching `db`. Both run
+		// fire-and-forget and write to the db; closing the SQLite handle out
+		// from under an in-flight task throws `RangeError: Cannot use a closed
+		// database` (esp. under shared test processes). Once aborted, the
+		// preinstall loop stops between items and any trailing state write is a
+		// no-op (see AgentPreinstaller.recordState), so it is safe to close the
+		// db without blocking dispose on a slow, real install command.
+		bootstrapAbort.abort();
+		// The sweep is short and also touches `db`; await just that one so the
+		// close below can't race its final write. (Already self-catching.)
+		await mainWorkspaceSweepTask;
 		// Each step is best-effort and isolated: a throw in one cleanup must
 		// not skip the others, otherwise a flaky `.stop()` could leak the
 		// open SQLite handle for the rest of the process lifetime.

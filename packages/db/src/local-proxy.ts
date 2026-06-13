@@ -11,7 +11,11 @@ export function isLocalProxy(databaseUrl: string): boolean {
 }
 
 export function configureLocalProxy(): void {
-	neonConfig.fetchEndpoint = (host, port) => `http://${host}:${port}/sql`;
-	neonConfig.wsProxy = (host, port) => `${host}:${port}/v2`;
+	// `db.localtest.me` is supposed to resolve to 127.0.0.1, but some local
+	// resolvers (custom DNS / Pi-hole / VPN) hijack it to a public IP, which
+	// makes the Neon HTTP driver fetch the wrong host and fail. Pin the local
+	// proxy to loopback so it always reaches the docker proxy regardless of DNS.
+	neonConfig.fetchEndpoint = (_host, port) => `http://127.0.0.1:${port}/sql`;
+	neonConfig.wsProxy = (_host, port) => `127.0.0.1:${port}/v2`;
 	neonConfig.useSecureWebSocket = false;
 }

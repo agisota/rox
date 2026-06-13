@@ -9,6 +9,7 @@ import {
 import { LocalGitCredentialProvider } from "./providers/git";
 import { PskHostAuthProvider } from "./providers/host-auth";
 import { LocalModelProvider } from "./providers/model-providers";
+import { scheduleSandboxExpiry } from "./runtime/sandbox-expiry";
 import { installProcessSafetyNet } from "./safety";
 import { initTerminalBaseEnv, resolveTerminalBaseEnv } from "./terminal/env";
 import { connectRelay } from "./tunnel";
@@ -107,6 +108,37 @@ async function main(): Promise<void> {
 		}
 	});
 	injectWebSocket(server);
+
+	// Ephemeral sandbox lifecycle (remote-hosts epic, #32): when host-service
+	// runs inside a managed sandbox with a fixed TTL, shut down at expiry so the
+	// relay drops the tunnel and the host transitions offline — a defensive
+	// backstop independent of the provider's own TTL enforcement.
+	if (env.SANDBOX_EXPIRES_AT) {
+		const expiresAt = new Date(env.SANDBOX_EXPIRES_AT);
+		console.log(
+			`[host-service] ephemeral sandbox — expires at ${expiresAt.toISOString()}`,
+		);
+		let expiring = false;
+		const shutdownForExpiry = async () => {
+			if (expiring) return;
+			expiring = true;
+			console.log("[host-service] sandbox TTL reached — shutting down");
+			try {
+				await getSupervisor().stop(env.ORGANIZATION_ID);
+			} catch (err) {
+				console.error(
+					"[host-service] sandbox expiry: supervisor.stop failed:",
+					err,
+				);
+			} finally {
+				process.exit(0);
+			}
+		};
+		scheduleSandboxExpiry({
+			expiresAt,
+			onExpire: () => void shutdownForExpiry(),
+		});
+	}
 }
 
 void main().catch((error) => {

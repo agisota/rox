@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { GlossaryText } from "@/components/GlossaryTerm";
 import {
 	CATEGORIES,
+	CATEGORY_LABELS,
 	ROADMAP_ITEMS,
 	type RoadmapCategory,
 	type RoadmapItem,
@@ -16,13 +18,13 @@ function RoadmapCard({ item }: { item: RoadmapItem }) {
 	return (
 		<div className="group border border-border p-4 hover:border-foreground/20 transition-colors">
 			<h3 className="text-sm font-medium text-foreground group-hover:text-foreground/80 transition-colors">
-				{item.title}
+				<GlossaryText text={item.title} />
 			</h3>
 			<p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">
-				{item.description}
+				<GlossaryText text={item.description} />
 			</p>
 			<span className="text-[11px] font-mono text-muted-foreground mt-2 block uppercase tracking-wider">
-				{item.category}
+				{CATEGORY_LABELS[item.category]}
 			</span>
 		</div>
 	);
@@ -33,10 +35,10 @@ function ShippedCard({ item }: { item: RoadmapItem & { status: "shipped" } }) {
 		<div className="group flex items-start gap-3 border border-border p-4 hover:border-foreground/20 transition-colors">
 			<div className="flex-1 min-w-0">
 				<h3 className="text-sm font-medium text-foreground group-hover:text-foreground/80 transition-colors">
-					{item.title}
+					<GlossaryText text={item.title} />
 				</h3>
 				<p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">
-					{item.description}
+					<GlossaryText text={item.description} />
 				</p>
 			</div>
 			<span className="text-[11px] font-mono text-muted-foreground whitespace-nowrap mt-0.5">
@@ -73,7 +75,7 @@ export function RoadmapBoard() {
 							: "text-muted-foreground hover:text-foreground"
 					}`}
 				>
-					All
+					Все
 				</button>
 				<div className="h-4 w-px bg-border" />
 				{CATEGORIES.map((cat) => (
@@ -87,7 +89,7 @@ export function RoadmapBoard() {
 								: "text-muted-foreground hover:text-foreground"
 						}`}
 					>
-						{cat}
+						{CATEGORY_LABELS[cat]}
 					</button>
 				))}
 			</div>
@@ -118,7 +120,7 @@ export function RoadmapBoard() {
 								))}
 								{items.length === 0 && (
 									<p className="text-xs text-muted-foreground/40 px-4 py-8 text-center">
-										No items
+										Нет элементов
 									</p>
 								)}
 							</div>

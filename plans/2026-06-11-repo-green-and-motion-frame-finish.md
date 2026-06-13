@@ -56,9 +56,11 @@ building without it, corrections via review).
 
 - [x] **C1** Tier switcher UI component (PR1 remainder) — `MotionTierSwitcher`,
       merged via #68 (`7e37ff14`), fully green CI run.
-- [ ] **C2** `Reveal`, `LoopMarquee` primitives (PR2 remainder).
-- [ ] **C3** Typeface themes (Blueprint / Brutalist / Docs) + persisted switcher.
-- [ ] **C4** Composites: `SufficiencyPanel`, `EventTrace`, `RuntimeCard`,
+- [x] **C2** `Reveal`, `LoopMarquee` primitives (PR2 remainder) — merged via
+      #71 (`0490b810`), CI green.
+- [x] **C3** Typeface themes (Blueprint / Brutalist / Docs) + persisted switcher
+      — merged via #72 (`87806c2d`), CI green.
+- [x] **C4** Composites: `SufficiencyPanel`, `EventTrace`, `RuntimeCard`,
       `ManifestoBlock` (PR4 remainder).
 - [ ] **C5** Diagram adapters over `@xyflow/react`, `recharts`, `mermaid`,
       `shiki` inheriting tokens + governor.

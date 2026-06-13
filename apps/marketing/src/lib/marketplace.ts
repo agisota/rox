@@ -48,7 +48,7 @@ export const themeListings: ThemeListing[] = [
 			"A GitHub-inspired dark theme adapted for Rox with strong blue, amber, and green contrast.",
 		addedOn: "March 26, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/github-dark-colorblind.json",
 		},
 		tags: ["GitHub", "Dark", "High contrast"],
@@ -84,7 +84,7 @@ export const themeListings: ThemeListing[] = [
 		description: "The Mocha variant from the Catppuccin theme PR for Rox.",
 		addedOn: "March 21, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/catppuccin-mocha.json",
 		},
 		tags: ["Catppuccin", "Dark"],
@@ -120,7 +120,7 @@ export const themeListings: ThemeListing[] = [
 		description: "The Macchiato variant from the Catppuccin theme PR for Rox.",
 		addedOn: "March 21, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/catppuccin-macchiato.json",
 		},
 		tags: ["Catppuccin", "Dark"],
@@ -156,7 +156,7 @@ export const themeListings: ThemeListing[] = [
 		description: "The Frappé variant from the Catppuccin theme PR for Rox.",
 		addedOn: "March 21, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/catppuccin-frappe.json",
 		},
 		tags: ["Catppuccin", "Dark"],
@@ -192,7 +192,7 @@ export const themeListings: ThemeListing[] = [
 		description: "The Latte variant from the Catppuccin theme PR for Rox.",
 		addedOn: "March 21, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/catppuccin-latte.json",
 		},
 		tags: ["Catppuccin", "Light"],
@@ -229,7 +229,7 @@ export const themeListings: ThemeListing[] = [
 			"The standalone Ember theme introduced before its palette became the default Dark theme.",
 		addedOn: "December 1, 2025",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/ember.json",
 		},
 		tags: ["Rox", "Dark", "Warm"],
@@ -266,7 +266,7 @@ export const themeListings: ThemeListing[] = [
 			"The Monokai palette from the original desktop themes PR, exported with an import-safe marketplace ID.",
 		addedOn: "November 27, 2025",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/monokai-classic.json",
 		},
 		tags: ["Monokai", "Dark"],
@@ -303,7 +303,7 @@ export const themeListings: ThemeListing[] = [
 			"The original One Dark Pro theme from the first desktop themes PR, preserved as an importable file.",
 		addedOn: "November 27, 2025",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/one-dark-pro.json",
 		},
 		tags: ["Atom", "Dark"],
@@ -340,7 +340,7 @@ export const themeListings: ThemeListing[] = [
 			"An old map atlas opened on a library table. Faded teal water, dust-rose place names, mountain-shadow brown on parchment.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/atlas.json",
 		},
 		tags: ["Light", "Cartographic"],
@@ -377,7 +377,7 @@ export const themeListings: ThemeListing[] = [
 			"Concrete-and-glass discipline. Black, white, three greys — and one color, used once. The architectural equivalent of a Bauhaus chair.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/brutalist.json",
 		},
 		tags: ["Dark", "Minimal", "High contrast"],
@@ -414,7 +414,7 @@ export const themeListings: ThemeListing[] = [
 			"Phosphor green on a void that leans green, not blue. A 1980s P1-phosphor CRT, after midnight.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/console.json",
 		},
 		tags: ["Dark", "Retro", "CRT"],
@@ -451,7 +451,7 @@ export const themeListings: ThemeListing[] = [
 			"A blacksmith's forge at first light. Cold dark steel meets hot orange embers — the metal hasn't lost its memory of fire.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/ferro.json",
 		},
 		tags: ["Dark", "Warm"],
@@ -488,7 +488,7 @@ export const themeListings: ThemeListing[] = [
 			"Working warehouse at end of shift — concrete grey, safety orange, diesel yellow, exit-sign red. Functional, not decorative.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/hangar.json",
 		},
 		tags: ["Dark", "Industrial"],
@@ -525,7 +525,7 @@ export const themeListings: ThemeListing[] = [
 			"Fountain-pen blue ink on bone-white paper. A long-form essayist's draft surface — patient, literary, cool.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/inkwell.json",
 		},
 		tags: ["Light", "Paper"],
@@ -562,7 +562,7 @@ export const themeListings: ThemeListing[] = [
 			"Black lacquer mended with gold dust. Cracks showing where the break was — the repair is the point, not what to hide.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/kintsugi.json",
 		},
 		tags: ["Dark", "Warm"],
@@ -599,7 +599,7 @@ export const themeListings: ThemeListing[] = [
 			"A cooling pool inside a research reactor — Cherenkov-blue glow on graphite walls, uranium-yellow caution.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/reactor.json",
 		},
 		tags: ["Dark", "Cool"],
@@ -636,7 +636,7 @@ export const themeListings: ThemeListing[] = [
 			"Risograph print on cream paper. Fluorescent pink, soybean yellow, federal blue — slightly off-register, slightly handmade.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/riso.json",
 		},
 		tags: ["Light", "Print"],
@@ -673,7 +673,7 @@ export const themeListings: ThemeListing[] = [
 			"Hubble narrowband: deep-space black with nebula magentas, OIII teal, sulfur orange, ionized-hydrogen pink. Astronomical, not Photoshop space.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/supernova.json",
 		},
 		tags: ["Dark", "Space"],
@@ -710,7 +710,7 @@ export const themeListings: ThemeListing[] = [
 			"After the streetlights, before full night. Pre-dawn navy meets sodium-vapor orange — a single moment captured.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/twilight-run.json",
 		},
 		tags: ["Dark", "Warm"],
@@ -747,7 +747,7 @@ export const themeListings: ThemeListing[] = [
 			"Cream paper, deep ink, sepia accent. A typography-first light theme that prints as well as it screens.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/vellum.json",
 		},
 		tags: ["Light", "Paper"],
@@ -784,7 +784,7 @@ export const themeListings: ThemeListing[] = [
 			"A faithful port of Dracula — the dark theme with cyan, green, orange, pink, purple, red, yellow on deep slate.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/dracula.json",
 		},
 		tags: ["Dracula", "Dark"],
@@ -821,7 +821,7 @@ export const themeListings: ThemeListing[] = [
 			"Retro groove from Pavel Pertsev — warm dark base, ochre/olive/clay accents. Honest, woodgrain feel.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/gruvbox-dark.json",
 		},
 		tags: ["Gruvbox", "Dark"],
@@ -858,7 +858,7 @@ export const themeListings: ThemeListing[] = [
 			"An arctic, north-bluish color palette. Polar Night base, Snow Storm foreground, Frost primaries, Aurora accents.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/nord.json",
 		},
 		tags: ["Nord", "Dark"],
@@ -895,7 +895,7 @@ export const themeListings: ThemeListing[] = [
 			"All natural pine, faux fur and a bit of soho vibes for the classy minimalist. The original 'Main' variant.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/rose-pine.json",
 		},
 		tags: ["Rosé Pine", "Dark"],
@@ -932,7 +932,7 @@ export const themeListings: ThemeListing[] = [
 			"Precision colors engineered for legibility — dark variant. Same accents as Solarized Light; only base tones flip.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/solarized-dark.json",
 		},
 		tags: ["Solarized", "Dark"],
@@ -969,7 +969,7 @@ export const themeListings: ThemeListing[] = [
 			"Precision colors engineered for legibility — light variant. Cream paper base, ink foreground, same accent hues as Solarized Dark.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/solarized-light.json",
 		},
 		tags: ["Solarized", "Light"],
@@ -1006,7 +1006,7 @@ export const themeListings: ThemeListing[] = [
 			"A dark theme inspired by Tokyo at night — neon over deep navy, with cyan, magenta, and lavender highlights.",
 		addedOn: "May 7, 2026",
 		source: {
-			label: "Download",
+			label: "Скачать",
 			href: "/marketplace/themes/tokyo-night.json",
 		},
 		tags: ["Tokyo Night", "Dark"],
