@@ -22,6 +22,7 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "1.28.0",
+		"@rox/agent-bridge": "workspace:*",
 		"@rox/auth": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/shared": "workspace:*",

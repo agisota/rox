@@ -6,6 +6,7 @@ import { ChatService } from "@rox/chat/server/desktop";
 import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { AgentBridgeRegistry } from "./agent-bridge";
 import { createApiClient } from "./api";
 import { createDb, type HostDb } from "./db";
 import { EventBus, GitWatcher, registerEventBusRoute } from "./events";
@@ -144,6 +145,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	const eventBus = new EventBus({ db, filesystem, gitWatcher });
 	eventBus.start();
 
+	const agentBridge = new AgentBridgeRegistry();
 	const terminalAgentStore = new TerminalAgentStore();
 
 	// Backfill `kind='main'` v2 workspaces for projects already set up before
@@ -207,6 +209,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 					db,
 					runtime,
 					eventBus,
+					agentBridge,
 					terminalAgentStore,
 					organizationId: config.organizationId,
 					isAuthenticated,
@@ -240,6 +243,11 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 			eventBus.close();
 		} catch (err) {
 			console.warn("[host-service] eventBus.close failed:", err);
+		}
+		try {
+			agentBridge.close();
+		} catch (err) {
+			console.warn("[host-service] agentBridge.close failed:", err);
 		}
 		try {
 			gitWatcher.close();

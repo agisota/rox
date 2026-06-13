@@ -2,6 +2,7 @@ import type { Octokit } from "@octokit/rest";
 import type { ChatService } from "@rox/chat/server/desktop";
 import type { AppRouter } from "@rox/trpc";
 import type { TRPCClient } from "@trpc/client";
+import type { AgentBridgeRegistry } from "./agent-bridge";
 import type { HostDb } from "./db";
 import type { EventBus } from "./events";
 import type { AgentPreinstaller } from "./runtime/agent-preinstall";
@@ -30,6 +31,7 @@ export interface HostServiceContext {
 	db: HostDb;
 	runtime: HostServiceRuntime;
 	eventBus: EventBus;
+	agentBridge: AgentBridgeRegistry;
 	terminalAgentStore: TerminalAgentStore;
 	organizationId: string;
 	isAuthenticated: boolean;
