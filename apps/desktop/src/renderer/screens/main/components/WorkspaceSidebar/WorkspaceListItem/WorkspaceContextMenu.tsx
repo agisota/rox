@@ -138,12 +138,12 @@ export function WorkspaceContextMenu({
 			{isUnread ? (
 				<>
 					<LuEye className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-					Mark as Read
+					Отметить как прочитанное
 				</>
 			) : (
 				<>
 					<LuEyeOff className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-					Mark as Unread
+					Отметить как непрочитанное
 				</>
 			)}
 		</ContextMenuItem>
@@ -153,19 +153,19 @@ export function WorkspaceContextMenu({
 		<>
 			<ContextMenuItem onSelect={onOpenInFinder}>
 				<LuFolderOpen className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-				Open in Finder
+				Открыть в Finder
 			</ContextMenuItem>
 			<ContextMenuItem onSelect={onOpenInEditor}>
 				<LuExternalLink className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-				Open in Editor
+				Открыть в редакторе
 			</ContextMenuItem>
 			<ContextMenuItem onSelect={onCopyPath}>
 				<LuCopy className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-				Copy Path
+				Копировать путь
 			</ContextMenuItem>
 			<ContextMenuItem onSelect={onCopyBranchName}>
 				<LuGitBranch className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-				Copy Branch Name
+				Копировать имя ветки
 			</ContextMenuItem>
 			<ContextMenuSeparator />
 			<ContextMenuSub>
@@ -174,17 +174,17 @@ export function WorkspaceContextMenu({
 						className="size-4 mr-2"
 						strokeWidth={STROKE_WIDTH}
 					/>
-					Move to Section
+					Переместить в группу
 				</ContextMenuSubTrigger>
 				<ContextMenuSubContent>
 					<ContextMenuItem onSelect={handleCreateSectionFromSelection}>
 						<LuFolderPlus className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-						New Section
+						Новая группа
 					</ContextMenuItem>
 					<ContextMenuSeparator />
 					<ContextMenuItem onSelect={() => handleMoveToSection(null)}>
 						<LuMinus className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-						Ungrouped
+						Без группы
 					</ContextMenuItem>
 					{sections.length > 0 && <ContextMenuSeparator />}
 					{sections.map((section) => (
@@ -202,7 +202,7 @@ export function WorkspaceContextMenu({
 			{workspaceStatus && (
 				<ContextMenuItem onSelect={onResetStatus}>
 					<LuBellOff className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-					Clear Status
+					Сбросить статус
 				</ContextMenuItem>
 			)}
 			<ContextMenuSeparator />
@@ -212,7 +212,9 @@ export function WorkspaceContextMenu({
 				}}
 			>
 				<LuX className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-				{isBranchWorkspace ? "Close Workspace" : "Close Worktree"}
+				{isBranchWorkspace
+					? "Закрыть рабочее пространство"
+					: "Закрыть worktree"}
 				{showDeleteShortcut && (
 					<ContextMenuShortcut>{deleteHotkeyText}</ContextMenuShortcut>
 				)}
@@ -252,7 +254,7 @@ export function WorkspaceContextMenu({
 				>
 					<ContextMenuItem onSelect={onRename}>
 						<LuPencil className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
-						Rename
+						Переименовать
 					</ContextMenuItem>
 					<ContextMenuSeparator />
 					{commonContextMenuItems}

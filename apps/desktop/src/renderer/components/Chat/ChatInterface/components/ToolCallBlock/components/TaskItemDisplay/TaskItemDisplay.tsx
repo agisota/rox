@@ -43,11 +43,12 @@ function getBaseDetails({
 	"status" | "priority" | "assignee" | "dueDate" | "estimate"
 >): TaskItemDisplayDetail[] {
 	const details: TaskItemDisplayDetail[] = [];
-	if (hasText(status)) details.push({ label: "Status", value: status });
-	if (hasText(priority)) details.push({ label: "Priority", value: priority });
-	if (hasText(assignee)) details.push({ label: "Assignee", value: assignee });
-	if (hasText(dueDate)) details.push({ label: "Due", value: dueDate });
-	if (hasText(estimate)) details.push({ label: "Estimate", value: estimate });
+	if (hasText(status)) details.push({ label: "Статус", value: status });
+	if (hasText(priority)) details.push({ label: "Приоритет", value: priority });
+	if (hasText(assignee))
+		details.push({ label: "Исполнитель", value: assignee });
+	if (hasText(dueDate)) details.push({ label: "Срок", value: dueDate });
+	if (hasText(estimate)) details.push({ label: "Оценка", value: estimate });
 	return details;
 }
 

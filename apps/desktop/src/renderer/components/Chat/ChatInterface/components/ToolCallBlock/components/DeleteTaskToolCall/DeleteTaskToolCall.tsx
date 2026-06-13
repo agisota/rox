@@ -38,7 +38,7 @@ export function DeleteTaskToolCall({ part }: DeleteTaskToolCallProps) {
 										key={taskId}
 										status="Deleted"
 										taskId={taskId}
-										title="Deleted task"
+										title="Удалённая задача"
 										onClick={() =>
 											navigate({
 												to: "/tasks/$taskId",

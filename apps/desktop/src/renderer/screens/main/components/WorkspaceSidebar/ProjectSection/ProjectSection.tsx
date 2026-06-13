@@ -167,7 +167,7 @@ export function ProjectSection({
 						{ fromIndex: item.originalIndex, toIndex: item.index },
 						{
 							onError: (error) =>
-								toast.error(`Failed to reorder: ${error.message}`),
+								toast.error(`Не удалось изменить порядок: ${error.message}`),
 							onSettled: () => utils.workspaces.getAllGrouped.invalidate(),
 						},
 					);
@@ -208,7 +208,7 @@ export function ProjectSection({
 					{ fromIndex: item.originalIndex, toIndex: item.index },
 					{
 						onError: (error) =>
-							toast.error(`Failed to reorder: ${error.message}`),
+							toast.error(`Не удалось изменить порядок: ${error.message}`),
 						onSettled: () => utils.workspaces.getAllGrouped.invalidate(),
 					},
 				);

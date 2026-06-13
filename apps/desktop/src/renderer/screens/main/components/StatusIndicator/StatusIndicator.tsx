@@ -12,19 +12,19 @@ export const STATUS_CONFIG = {
 		pingColor: "bg-red-400",
 		dotColor: "bg-red-500",
 		pulse: true,
-		tooltip: "Needs input",
+		tooltip: "Требуется ввод",
 	},
 	working: {
 		pingColor: "bg-amber-400",
 		dotColor: "bg-amber-500",
 		pulse: true,
-		tooltip: "Agent working",
+		tooltip: "Агент работает",
 	},
 	review: {
 		pingColor: "",
 		dotColor: "bg-green-500",
 		pulse: false,
-		tooltip: "Ready for review",
+		tooltip: "Готово к ревью",
 	},
 } as const satisfies Record<
 	ActivePaneStatus,

@@ -58,7 +58,9 @@ export function ListMembersToolCall({ part }: ListMembersToolCallProps) {
 							})}
 						</div>
 					) : (
-						<div className="text-muted-foreground">No members in result.</div>
+						<div className="text-muted-foreground">
+							В результате нет участников.
+						</div>
 					)}
 				</div>
 			}

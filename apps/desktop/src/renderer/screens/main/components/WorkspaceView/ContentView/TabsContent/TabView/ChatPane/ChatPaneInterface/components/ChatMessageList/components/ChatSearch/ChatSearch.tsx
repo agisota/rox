@@ -70,11 +70,11 @@ export function ChatSearch({
 					<input
 						ref={inputRef}
 						type="text"
-						aria-label="Find in chat"
+						aria-label="Поиск в чате"
 						value={query}
 						onChange={(event) => onQueryChange(event.target.value)}
 						onKeyDown={handleKeyDown}
-						placeholder="Find in chat"
+						placeholder="Поиск в чате"
 						className="h-6 min-w-0 w-32 flex-shrink bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
 					/>
 					{query && (
@@ -88,8 +88,8 @@ export function ChatSearch({
 							className="whitespace-nowrap px-1 text-xs text-muted-foreground"
 						>
 							{matchCount === 0
-								? "No results"
-								: `${activeMatchIndex + 1} of ${matchCount}`}
+								? "Нет результатов"
+								: `${activeMatchIndex + 1} из ${matchCount}`}
 						</motion.span>
 					)}
 					<div className="flex shrink-0 items-center">
@@ -97,7 +97,7 @@ export function ChatSearch({
 							<TooltipTrigger asChild>
 								<button
 									type="button"
-									aria-label="Match case"
+									aria-label="Учитывать регистр"
 									aria-pressed={caseSensitive}
 									onClick={() => onCaseSensitiveChange(!caseSensitive)}
 									className={`rounded p-1 transition-colors ${
@@ -109,48 +109,46 @@ export function ChatSearch({
 									<PiTextAa className="size-3.5" />
 								</button>
 							</TooltipTrigger>
-							<TooltipContent side="bottom">Match case</TooltipContent>
+							<TooltipContent side="bottom">Учитывать регистр</TooltipContent>
 						</Tooltip>
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<button
 									type="button"
-									aria-label="Find previous match"
+									aria-label="Предыдущее совпадение"
 									onClick={onFindPrevious}
 									className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted-foreground/20 hover:text-foreground"
 								>
 									<HiChevronUp className="size-3.5" />
 								</button>
 							</TooltipTrigger>
-							<TooltipContent side="bottom">
-								Previous (Shift+Enter)
-							</TooltipContent>
+							<TooltipContent side="bottom">Назад (Shift+Enter)</TooltipContent>
 						</Tooltip>
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<button
 									type="button"
-									aria-label="Find next match"
+									aria-label="Следующее совпадение"
 									onClick={onFindNext}
 									className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted-foreground/20 hover:text-foreground"
 								>
 									<HiChevronDown className="size-3.5" />
 								</button>
 							</TooltipTrigger>
-							<TooltipContent side="bottom">Next (Enter)</TooltipContent>
+							<TooltipContent side="bottom">Вперёд (Enter)</TooltipContent>
 						</Tooltip>
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<button
 									type="button"
-									aria-label="Close find in chat"
+									aria-label="Закрыть поиск в чате"
 									onClick={onClose}
 									className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted-foreground/20 hover:text-foreground"
 								>
 									<HiMiniXMark className="size-3.5" />
 								</button>
 							</TooltipTrigger>
-							<TooltipContent side="bottom">Close (Esc)</TooltipContent>
+							<TooltipContent side="bottom">Закрыть (Esc)</TooltipContent>
 						</Tooltip>
 					</div>
 				</motion.div>

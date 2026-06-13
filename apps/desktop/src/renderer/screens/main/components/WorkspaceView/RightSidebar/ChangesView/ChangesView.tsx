@@ -123,7 +123,7 @@ export function ChangesView({
 		onSuccess: () => refetch(),
 		onError: (error) => {
 			console.error("Failed to stage all files:", error);
-			toast.error(`Failed to stage all: ${error.message}`);
+			toast.error(`Не удалось проиндексировать все: ${error.message}`);
 		},
 	});
 
@@ -131,7 +131,7 @@ export function ChangesView({
 		onSuccess: () => refetch(),
 		onError: (error) => {
 			console.error("Failed to unstage all files:", error);
-			toast.error(`Failed to unstage all: ${error.message}`);
+			toast.error(`Не удалось снять из индекса все: ${error.message}`);
 		},
 	});
 
@@ -139,7 +139,9 @@ export function ChangesView({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
 			console.error(`Failed to stage file ${variables.filePath}:`, error);
-			toast.error(`Failed to stage ${variables.filePath}: ${error.message}`);
+			toast.error(
+				`Не удалось проиндексировать ${variables.filePath}: ${error.message}`,
+			);
 		},
 	});
 
@@ -147,7 +149,9 @@ export function ChangesView({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
 			console.error(`Failed to unstage file ${variables.filePath}:`, error);
-			toast.error(`Failed to unstage ${variables.filePath}: ${error.message}`);
+			toast.error(
+				`Не удалось снять из индекса ${variables.filePath}: ${error.message}`,
+			);
 		},
 	});
 
@@ -158,7 +162,7 @@ export function ChangesView({
 				`Failed to stage files ${variables.filePaths.join(", ")}:`,
 				error,
 			);
-			toast.error(`Failed to stage files: ${error.message}`);
+			toast.error(`Не удалось проиндексировать файлы: ${error.message}`);
 		},
 	});
 
@@ -169,7 +173,7 @@ export function ChangesView({
 				`Failed to unstage files ${variables.filePaths.join(", ")}:`,
 				error,
 			);
-			toast.error(`Failed to unstage files: ${error.message}`);
+			toast.error(`Не удалось снять из индекса файлы: ${error.message}`);
 		},
 	});
 
@@ -181,7 +185,7 @@ export function ChangesView({
 					`Failed to discard changes for ${variables.filePath}:`,
 					error,
 				);
-				toast.error(`Failed to discard changes: ${error.message}`);
+				toast.error(`Не удалось отменить изменения: ${error.message}`);
 			},
 		});
 
@@ -190,65 +194,67 @@ export function ChangesView({
 			onSuccess: () => refetch(),
 			onError: (error, variables) => {
 				console.error(`Failed to delete ${variables.filePath}:`, error);
-				toast.error(`Failed to delete file: ${error.message}`);
+				toast.error(`Не удалось удалить файл: ${error.message}`);
 			},
 		});
 
 	const discardAllUnstagedMutation =
 		electronTrpc.changes.discardAllUnstaged.useMutation({
 			onSuccess: () => {
-				toast.success("Discarded all unstaged changes");
+				toast.success("Отменены все непроиндексированные изменения");
 				refetch();
 			},
 			onError: (error) => {
 				console.error("Failed to discard all unstaged:", error);
-				toast.error(`Failed to discard: ${error.message}`);
+				toast.error(`Не удалось отменить: ${error.message}`);
 			},
 		});
 
 	const discardAllStagedMutation =
 		electronTrpc.changes.discardAllStaged.useMutation({
 			onSuccess: () => {
-				toast.success("Discarded all staged changes");
+				toast.success("Отменены все проиндексированные изменения");
 				refetch();
 			},
 			onError: (error) => {
 				console.error("Failed to discard all staged:", error);
-				toast.error(`Failed to discard: ${error.message}`);
+				toast.error(`Не удалось отменить: ${error.message}`);
 			},
 		});
 
 	const stashMutation = electronTrpc.changes.stash.useMutation({
 		onSuccess: () => {
-			toast.success("Changes stashed");
+			toast.success("Изменения спрятаны в stash");
 			refetch();
 		},
 		onError: (error) => {
 			console.error("Failed to stash:", error);
-			toast.error(`Failed to stash: ${error.message}`);
+			toast.error(`Не удалось спрятать в stash: ${error.message}`);
 		},
 	});
 
 	const stashIncludeUntrackedMutation =
 		electronTrpc.changes.stashIncludeUntracked.useMutation({
 			onSuccess: () => {
-				toast.success("All changes stashed (including untracked)");
+				toast.success(
+					"Все изменения спрятаны в stash (включая неотслеживаемые)",
+				);
 				refetch();
 			},
 			onError: (error) => {
 				console.error("Failed to stash:", error);
-				toast.error(`Failed to stash: ${error.message}`);
+				toast.error(`Не удалось спрятать в stash: ${error.message}`);
 			},
 		});
 
 	const stashPopMutation = electronTrpc.changes.stashPop.useMutation({
 		onSuccess: () => {
-			toast.success("Stash applied and removed");
+			toast.success("Stash применён и удалён");
 			refetch();
 		},
 		onError: (error) => {
 			console.error("Failed to pop stash:", error);
-			toast.error(`Failed to pop stash: ${error.message}`);
+			toast.error(`Не удалось применить stash: ${error.message}`);
 		},
 	});
 
@@ -651,7 +657,7 @@ export function ChangesView({
 	if (!worktreePath) {
 		return (
 			<div className="flex-1 flex items-center justify-center text-muted-foreground text-sm p-4">
-				No workspace selected
+				Рабочее пространство не выбрано
 			</div>
 		);
 	}
@@ -659,7 +665,7 @@ export function ChangesView({
 	if (isLoading) {
 		return (
 			<div className="flex-1 flex items-center justify-center text-muted-foreground text-sm p-4">
-				Loading changes...
+				Загрузка изменений...
 			</div>
 		);
 	}
@@ -674,7 +680,7 @@ export function ChangesView({
 	) {
 		return (
 			<div className="flex-1 flex items-center justify-center text-muted-foreground text-sm p-4">
-				Unable to load changes
+				Не удалось загрузить изменения
 			</div>
 		);
 	}
@@ -711,7 +717,7 @@ export function ChangesView({
 								"min-w-0 w-full justify-center",
 							)}
 						>
-							<span>Diffs</span>
+							<span>Различия</span>
 							<span className="text-[11px] text-muted-foreground/60 tabular-nums">
 								{againstMainCount}
 							</span>
@@ -723,7 +729,7 @@ export function ChangesView({
 								"min-w-0 w-full justify-center",
 							)}
 						>
-							<span>Review</span>
+							<span>Ревью</span>
 							<span className="text-[11px] text-muted-foreground/60 tabular-nums">
 								{reviewCommentCount}
 							</span>
@@ -783,7 +789,7 @@ export function ChangesView({
 
 					{!hasChanges ? (
 						<div className="flex flex-1 items-center justify-center px-4 text-center text-sm text-muted-foreground">
-							No changes detected
+							Изменений не обнаружено
 						</div>
 					) : (
 						<div
@@ -828,27 +834,27 @@ export function ChangesView({
 			<DiscardConfirmDialog
 				open={showDiscardUnstagedDialog}
 				onOpenChange={setShowDiscardUnstagedDialog}
-				title="Discard all unstaged changes?"
-				description="This will revert all unstaged modifications and delete untracked files. This action cannot be undone."
+				title="Отменить все непроиндексированные изменения?"
+				description="Все непроиндексированные правки будут отменены, а неотслеживаемые файлы удалены. Это действие необратимо."
 				onConfirm={() =>
 					discardAllUnstagedMutation.mutate({
 						worktreePath: worktreePath || "",
 					})
 				}
-				confirmLabel="Discard All"
+				confirmLabel="Отменить все"
 			/>
 
 			<DiscardConfirmDialog
 				open={showDiscardStagedDialog}
 				onOpenChange={setShowDiscardStagedDialog}
-				title="Discard all staged changes?"
-				description="This will unstage and revert all staged changes. Staged new files will be deleted. This action cannot be undone."
+				title="Отменить все проиндексированные изменения?"
+				description="Все проиндексированные изменения будут сняты из индекса и отменены. Проиндексированные новые файлы будут удалены. Это действие необратимо."
 				onConfirm={() =>
 					discardAllStagedMutation.mutate({
 						worktreePath: worktreePath || "",
 					})
 				}
-				confirmLabel="Discard All"
+				confirmLabel="Отменить все"
 			/>
 		</div>
 	);

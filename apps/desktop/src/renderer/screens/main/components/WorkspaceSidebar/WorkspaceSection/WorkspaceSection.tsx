@@ -86,7 +86,9 @@ export function WorkspaceSection({
 			{
 				onError: (error) => {
 					void utils.workspaces.getAllGrouped.invalidate();
-					toast.error(`Failed to reorder project items: ${error.message}`);
+					toast.error(
+						`Не удалось изменить порядок элементов проекта: ${error.message}`,
+					);
 				},
 			},
 		);

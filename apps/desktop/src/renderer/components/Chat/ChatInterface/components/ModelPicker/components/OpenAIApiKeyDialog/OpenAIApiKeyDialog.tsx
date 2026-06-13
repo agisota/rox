@@ -38,7 +38,7 @@ export function OpenAIApiKeyDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-[calc(100vw-2rem)] overflow-hidden sm:max-w-lg">
 				<DialogHeader>
-					<DialogTitle>Connect OpenAI</DialogTitle>
+					<DialogTitle>Подключить OpenAI</DialogTitle>
 					<DialogDescription>
 						Paste your OpenAI API key to enable GPT, o3, and Codex models in
 						chat.
@@ -52,7 +52,7 @@ export function OpenAIApiKeyDialog({
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="openai-api-key">API key</Label>
+						<Label htmlFor="openai-api-key">Ключ API</Label>
 						<InputGroup className="h-11 border-border/70 bg-muted/10">
 							<InputGroupInput
 								id="openai-api-key"
@@ -89,7 +89,7 @@ export function OpenAIApiKeyDialog({
 							onClick={onSubmit}
 							disabled={isPending || apiKey.trim().length === 0}
 						>
-							{isPending ? "Saving..." : "Save key"}
+							{isPending ? "Сохранение..." : "Сохранить ключ"}
 						</Button>
 						<div className="flex items-center justify-between gap-2">
 							<Button

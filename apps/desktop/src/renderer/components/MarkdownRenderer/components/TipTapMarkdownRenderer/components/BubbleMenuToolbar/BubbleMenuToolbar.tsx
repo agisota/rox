@@ -94,7 +94,7 @@ function HeadingDropdown({ editor }: { editor: Editor }) {
 		<div ref={containerRef} className="relative">
 			<button
 				type="button"
-				title="Text style"
+				title="Стиль текста"
 				className={`flex items-center gap-0.5 h-7 px-1.5 rounded text-xs font-medium hover:bg-accent/80 ${
 					currentLevel > 0
 						? "bg-accent text-accent-foreground"
@@ -125,10 +125,10 @@ function HeadingDropdown({ editor }: { editor: Editor }) {
 			{open && (
 				<div className="absolute top-full left-0 mt-1 bg-popover text-popover-foreground border rounded-md shadow-md p-1 w-36 z-50">
 					{[
-						{ level: 0, label: "Paragraph" },
-						{ level: 1, label: "Heading 1" },
-						{ level: 2, label: "Heading 2" },
-						{ level: 3, label: "Heading 3" },
+						{ level: 0, label: "Абзац" },
+						{ level: 1, label: "Заголовок 1" },
+						{ level: 2, label: "Заголовок 2" },
+						{ level: 3, label: "Заголовок 3" },
 					].map((item) => (
 						<button
 							type="button"
@@ -199,7 +199,7 @@ function ListDropdown({ editor }: { editor: Editor }) {
 		<div ref={containerRef} className="relative">
 			<button
 				type="button"
-				title="List"
+				title="Список"
 				className={`flex items-center gap-0.5 h-7 px-1.5 rounded hover:bg-accent/80 ${
 					isAnyListActive
 						? "bg-accent text-accent-foreground"
@@ -311,7 +311,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 						}
 					}}
 					onBlur={cancelLink}
-					placeholder="Enter URL..."
+					placeholder="Введите URL..."
 					className="bg-transparent text-sm outline-none w-48 text-foreground placeholder:text-muted-foreground"
 				/>
 			</div>
@@ -325,7 +325,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			<div className="w-px h-4 bg-border mx-0.5" />
 
 			<ToolbarButton
-				title="Bold"
+				title="Жирный"
 				isActive={editor.isActive("bold")}
 				onMouseDown={(e) => {
 					prevent(e);
@@ -336,7 +336,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			</ToolbarButton>
 
 			<ToolbarButton
-				title="Italic"
+				title="Курсив"
 				isActive={editor.isActive("italic")}
 				onMouseDown={(e) => {
 					prevent(e);
@@ -347,7 +347,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			</ToolbarButton>
 
 			<ToolbarButton
-				title="Underline"
+				title="Подчёркнутый"
 				isActive={editor.isActive("underline")}
 				onMouseDown={(e) => {
 					prevent(e);
@@ -358,7 +358,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			</ToolbarButton>
 
 			<ToolbarButton
-				title="Strikethrough"
+				title="Зачёркнутый"
 				isActive={editor.isActive("strike")}
 				onMouseDown={(e) => {
 					prevent(e);
@@ -369,7 +369,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			</ToolbarButton>
 
 			<ToolbarButton
-				title="Inline code"
+				title="Встроенный код"
 				isActive={editor.isActive("code")}
 				onMouseDown={(e) => {
 					prevent(e);
@@ -382,7 +382,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			<div className="w-px h-4 bg-border mx-0.5" />
 
 			<ToolbarButton
-				title="Link"
+				title="Ссылка"
 				isActive={editor.isActive("link")}
 				onMouseDown={(e) => {
 					prevent(e);
@@ -398,7 +398,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			</ToolbarButton>
 
 			<ToolbarButton
-				title="Blockquote"
+				title="Цитата"
 				isActive={editor.isActive("blockquote")}
 				onMouseDown={(e) => {
 					prevent(e);
@@ -409,7 +409,7 @@ export function BubbleMenuToolbar({ editor }: BubbleMenuToolbarProps) {
 			</ToolbarButton>
 
 			<ToolbarButton
-				title="Code block"
+				title="Блок кода"
 				isActive={editor.isActive("codeBlock")}
 				onMouseDown={(e) => {
 					prevent(e);

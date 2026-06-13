@@ -206,8 +206,8 @@ export function ChatMessageList({
 						<ConversationLoadingState />
 					) : shouldShowEmptyState ? (
 						<ConversationEmptyState
-							title="Start a conversation"
-							description="Ask anything to get started"
+							title="Начните разговор"
+							description="Задайте любой вопрос, чтобы начать"
 							icon={<HiMiniChatBubbleLeftRight className="size-8" />}
 						/>
 					) : (

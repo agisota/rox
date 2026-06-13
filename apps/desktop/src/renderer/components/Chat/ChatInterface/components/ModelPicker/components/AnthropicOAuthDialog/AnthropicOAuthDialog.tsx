@@ -1,7 +1,7 @@
 import { OAuthDialog, type OAuthDialogProps } from "../OAuthDialog";
 
 const ANTHROPIC_PROVIDER: OAuthDialogProps["provider"] = {
-	title: "Connect Anthropic",
+	title: "Подключить Anthropic",
 	description:
 		"Approve access in your browser, then paste the callback URL or `code#state` here.",
 	codeLabel: "Authorization code",

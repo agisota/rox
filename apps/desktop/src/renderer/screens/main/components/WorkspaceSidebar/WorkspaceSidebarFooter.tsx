@@ -34,16 +34,20 @@ export function WorkspaceSidebarFooter({
 						projectId: project.id,
 					});
 				} catch (err) {
-					toast.error(`Failed to open ${project.name}`, {
+					toast.error(`Не удалось открыть ${project.name}`, {
 						description:
-							err instanceof Error ? err.message : "Failed to create workspace",
+							err instanceof Error
+								? err.message
+								: "Не удалось создать рабочее пространство",
 					});
 				}
 			}
 		} catch (error) {
-			toast.error("Failed to open project", {
+			toast.error("Не удалось открыть проект", {
 				description:
-					error instanceof Error ? error.message : "An unknown error occurred",
+					error instanceof Error
+						? error.message
+						: "Произошла неизвестная ошибка",
 			});
 		}
 	};
@@ -67,7 +71,7 @@ export function WorkspaceSidebarFooter({
 								</Button>
 							</DropdownMenuTrigger>
 						</TooltipTrigger>
-						<TooltipContent side="right">Add repository</TooltipContent>
+						<TooltipContent side="right">Добавить репозиторий</TooltipContent>
 					</Tooltip>
 					<DropdownMenuContent side="top" align="start">
 						<DropdownMenuItem onClick={handleOpenProject} disabled={isLoading}>
@@ -95,7 +99,7 @@ export function WorkspaceSidebarFooter({
 						disabled={isLoading}
 					>
 						<LuFolderPlus className="w-4 h-4" strokeWidth={STROKE_WIDTH} />
-						<span>Add repository</span>
+						<span>Добавить репозиторий</span>
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent side="top" align="start">

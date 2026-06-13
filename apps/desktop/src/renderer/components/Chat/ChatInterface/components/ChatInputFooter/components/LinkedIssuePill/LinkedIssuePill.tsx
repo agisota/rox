@@ -26,7 +26,7 @@ export function LinkedIssuePill({
 		if (taskId?.trim()) {
 			navigate({ to: "/tasks/$taskId", params: { taskId } }).catch((error) => {
 				console.error("Failed to navigate to task:", error);
-				toast.error("Failed to open task");
+				toast.error("Не удалось открыть задачу");
 				// Fallback to external URL if available
 				if (url) {
 					window.open(url, "_blank");
@@ -64,7 +64,7 @@ export function LinkedIssuePill({
 			<div className="relative flex size-7 shrink-0 items-center justify-center rounded-md bg-foreground/10 p-0.5">
 				<LinearIcon className="size-5 rounded-sm transition-opacity group-hover:opacity-0" />
 				<Button
-					aria-label="Remove linked issue"
+					aria-label="Убрать связанную задачу"
 					className="pointer-events-none absolute inset-0 size-7 cursor-pointer rounded-md p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-3"
 					onClick={(e) => {
 						e.stopPropagation();
@@ -74,7 +74,7 @@ export function LinkedIssuePill({
 					variant="ghost"
 				>
 					<XIcon />
-					<span className="sr-only">Remove</span>
+					<span className="sr-only">Убрать</span>
 				</Button>
 			</div>
 			<div className="flex flex-col items-start leading-tight">

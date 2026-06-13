@@ -16,7 +16,11 @@ export function SidebarControl() {
 					variant="ghost"
 					size="sm"
 					onClick={toggleSidebar}
-					aria-label={isSidebarOpen ? "Hide Code Sidebar" : "Show Code Sidebar"}
+					aria-label={
+						isSidebarOpen
+							? "Скрыть боковую панель кода"
+							: "Показать боковую панель кода"
+					}
 					aria-pressed={isSidebarOpen}
 					className={cn(
 						"no-drag gap-1.5 h-6 px-1.5 rounded",
@@ -26,11 +30,11 @@ export function SidebarControl() {
 					)}
 				>
 					<LuDiff className="size-3" />
-					<span className="text-xs">Code</span>
+					<span className="text-xs">Код</span>
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent side="bottom" showArrow={false}>
-				<HotkeyLabel label="Open Code Sidebar" id="TOGGLE_SIDEBAR" />
+				<HotkeyLabel label="Открыть боковую панель кода" id="TOGGLE_SIDEBAR" />
 			</TooltipContent>
 		</Tooltip>
 	);

@@ -38,35 +38,35 @@ const KEYS: readonly KeyDef[] = [
 		// first progress event arrives from the backend.
 		activeSteps: ["pending", "syncing", "verifying"],
 		Icon: LuRefreshCw,
-		label: "Syncing",
+		label: "Синхронизация",
 	},
 	{
 		id: "two",
 		pressedAfter: "fetching",
 		activeSteps: ["fetching"],
 		Icon: LuDownload,
-		label: "Fetching",
+		label: "Загрузка данных",
 	},
 	{
 		id: "three",
 		pressedAfter: "creating_worktree",
 		activeSteps: ["creating_worktree"],
 		Icon: LuGitBranch,
-		label: "Creating worktree",
+		label: "Создание worktree",
 	},
 	{
 		id: "four",
 		pressedAfter: "copying_config",
 		activeSteps: ["copying_config"],
 		Icon: LuFileCog,
-		label: "Copying config",
+		label: "Копирование конфигурации",
 	},
 	{
 		id: "five",
 		pressedAfter: "finalizing",
 		activeSteps: ["finalizing"],
 		Icon: LuDatabase,
-		label: "Finalizing",
+		label: "Завершение",
 	},
 ];
 

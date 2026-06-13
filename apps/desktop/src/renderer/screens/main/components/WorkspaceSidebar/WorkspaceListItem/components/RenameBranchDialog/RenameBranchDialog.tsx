@@ -65,7 +65,7 @@ export function RenameBranchDialog({
 			loading: `Renaming branch to ${trimmed}...`,
 			success: `Branch renamed to ${trimmed}`,
 			error: (err) =>
-				err instanceof Error ? err.message : "Failed to rename branch",
+				err instanceof Error ? err.message : "Не удалось переименовать ветку",
 		});
 
 		setIsSubmitting(true);
@@ -89,7 +89,7 @@ export function RenameBranchDialog({
 		<Dialog open={open} onOpenChange={onOpenChange} modal>
 			<DialogContent className="max-w-[420px]">
 				<DialogHeader>
-					<DialogTitle>Rename branch</DialogTitle>
+					<DialogTitle>Переименовать ветку</DialogTitle>
 					<DialogDescription>
 						Rename the local branch. Branches that have been pushed to remote
 						cannot be renamed.

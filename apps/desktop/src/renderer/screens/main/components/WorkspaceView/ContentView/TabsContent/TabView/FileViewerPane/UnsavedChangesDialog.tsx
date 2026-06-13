@@ -29,10 +29,10 @@ export function UnsavedChangesDialog({
 	onSave,
 	onDiscard,
 	isSaving = false,
-	title = "Unsaved Changes",
-	description = "You have unsaved changes. What would you like to do?",
-	discardLabel = "Discard & Continue",
-	saveLabel = "Save & Continue",
+	title = "Несохранённые изменения",
+	description = "У вас есть несохранённые изменения. Что вы хотите сделать?",
+	discardLabel = "Отменить и продолжить",
+	saveLabel = "Сохранить и продолжить",
 }: UnsavedChangesDialogProps) {
 	const handleSaveAndSwitch = () => {
 		onSave();
@@ -50,7 +50,7 @@ export function UnsavedChangesDialog({
 					<AlertDialogDescription>{description}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+					<AlertDialogCancel disabled={isSaving}>Отмена</AlertDialogCancel>
 					<AlertDialogAction
 						variant="outline"
 						onClick={handleDiscardAndSwitch}
@@ -63,7 +63,7 @@ export function UnsavedChangesDialog({
 						{isSaving ? (
 							<>
 								<LuLoader className="mr-2 h-4 w-4 animate-spin" />
-								Saving...
+								Сохранение...
 							</>
 						) : (
 							saveLabel

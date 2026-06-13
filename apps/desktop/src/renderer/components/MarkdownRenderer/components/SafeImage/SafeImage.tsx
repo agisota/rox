@@ -52,7 +52,9 @@ export function SafeImage({ src, alt, className }: SafeImageProps) {
 				title={`Image blocked: ${src ?? "(empty)"}`}
 			>
 				<LuImageOff className="w-4 h-4 flex-shrink-0" />
-				<span className="truncate max-w-[300px]">Image blocked</span>
+				<span className="truncate max-w-[300px]">
+					Изображение заблокировано
+				</span>
 			</div>
 		);
 	}

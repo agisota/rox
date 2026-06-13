@@ -12,9 +12,9 @@ import type { FilterMode, ProjectGroup, WorkspaceItem } from "./types";
 import { WorkspaceRow } from "./WorkspaceRow";
 
 const FILTER_OPTIONS: { value: FilterMode; label: string }[] = [
-	{ value: "all", label: "All" },
-	{ value: "active", label: "Active" },
-	{ value: "closed", label: "Closed" },
+	{ value: "all", label: "Все" },
+	{ value: "active", label: "Активные" },
+	{ value: "closed", label: "Закрытые" },
 ];
 
 export function WorkspacesListView() {
@@ -45,7 +45,7 @@ export function WorkspacesListView() {
 			}
 		},
 		onError: (error) => {
-			toast.error(`Failed to open workspace: ${error.message}`);
+			toast.error(`Не удалось открыть рабочее пространство: ${error.message}`);
 		},
 	});
 
@@ -217,7 +217,7 @@ export function WorkspacesListView() {
 					<LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
 					<Input
 						type="text"
-						placeholder="Search..."
+						placeholder="Поиск..."
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						className="pl-9 h-8 bg-background/50"
@@ -274,12 +274,12 @@ export function WorkspacesListView() {
 				{filteredItems.length === 0 && (
 					<div className="flex items-center justify-center h-32 text-foreground/50 text-sm">
 						{searchQuery
-							? "No workspaces match your search"
+							? "Нет рабочих пространств по вашему запросу"
 							: filterMode === "active"
-								? "No active workspaces"
+								? "Нет активных рабочих пространств"
 								: filterMode === "closed"
-									? "No closed workspaces"
-									: "No workspaces yet"}
+									? "Нет закрытых рабочих пространств"
+									: "Пока нет рабочих пространств"}
 					</div>
 				)}
 			</div>

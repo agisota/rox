@@ -448,7 +448,7 @@ export function PresetsBar() {
 						onClick={() => navigate({ to: "/settings/terminal" })}
 					>
 						<HiMiniCog6Tooth className="size-4" />
-						<span>Manage Presets</span>
+						<span>Управление пресетами</span>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

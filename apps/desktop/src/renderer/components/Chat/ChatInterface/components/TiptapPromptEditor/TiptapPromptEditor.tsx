@@ -85,7 +85,7 @@ export function TiptapPromptEditor({
 	previewSlashCommand,
 	slashCommands,
 	availableModels,
-	placeholder = "Ask to make changes, @mention files, run /commands",
+	placeholder = "Попросите внести изменения, @упомяните файлы, запустите /команды",
 	className,
 	focusShortcutText,
 }: TiptapPromptEditorProps) {
@@ -743,7 +743,7 @@ export function TiptapPromptEditor({
 					>
 						<Command shouldFilter={false}>
 							<CommandInput
-								placeholder="Search files..."
+								placeholder="Поиск файлов..."
 								value={mentionState?.query ?? ""}
 								onValueChange={(q) =>
 									setMentionState((prev) =>
@@ -760,7 +760,7 @@ export function TiptapPromptEditor({
 									</CommandEmpty>
 								)}
 								{mentionFiles.length > 0 && (
-									<CommandGroup heading="Files">
+									<CommandGroup heading="Файлы">
 										{mentionFiles.map((file, idx) => {
 											const dirPath = getDirectoryPath(file.relativePath);
 											return (

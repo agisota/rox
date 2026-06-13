@@ -121,7 +121,7 @@ export function GitHubIssueLinkCommand({
 			>
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search issues..."
+						placeholder="Поиск задач..."
 						value={searchQuery}
 						onValueChange={setSearchQuery}
 					/>

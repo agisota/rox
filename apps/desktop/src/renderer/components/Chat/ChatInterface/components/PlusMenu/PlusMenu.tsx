@@ -13,14 +13,14 @@ export function PlusMenu() {
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<PromptInputButton
-					aria-label="Add attachment"
+					aria-label="Добавить вложение"
 					className={`${PILL_BUTTON_CLASS} w-[23px]`}
 					onClick={() => attachments.openFileDialog()}
 				>
 					<HiMiniPaperClip className="size-3.5" />
 				</PromptInputButton>
 			</TooltipTrigger>
-			<TooltipContent side="top">Add attachment</TooltipContent>
+			<TooltipContent side="top">Добавить вложение</TooltipContent>
 		</Tooltip>
 	);
 }

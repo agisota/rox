@@ -113,12 +113,12 @@ export function ProjectHeader({
 			}
 		},
 		onError: (error) => {
-			toast.error(`Failed to close project: ${error.message}`);
+			toast.error(`Не удалось закрыть проект: ${error.message}`);
 		},
 	});
 
 	const openInFinder = electronTrpc.external.openInFinder.useMutation({
-		onError: (error) => toast.error(`Failed to open: ${error.message}`),
+		onError: (error) => toast.error(`Не удалось открыть: ${error.message}`),
 	});
 
 	const handleCloseProject = () => {
@@ -138,7 +138,8 @@ export function ProjectHeader({
 	};
 
 	const updateProject = useUpdateProject({
-		onError: (error) => toast.error(`Failed to update color: ${error.message}`),
+		onError: (error) =>
+			toast.error(`Не удалось обновить цвет: ${error.message}`),
 	});
 
 	const handleColorChange = (color: string) => {
@@ -152,7 +153,7 @@ export function ProjectHeader({
 	const createSection = electronTrpc.workspaces.createSection.useMutation({
 		onSuccess: () => utils.workspaces.getAllGrouped.invalidate(),
 		onError: (error) =>
-			toast.error(`Failed to create section: ${error.message}`),
+			toast.error(`Не удалось создать группу: ${error.message}`),
 	});
 
 	const handleNewSection = () => {

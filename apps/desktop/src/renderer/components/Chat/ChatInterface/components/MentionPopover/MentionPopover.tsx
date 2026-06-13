@@ -142,7 +142,7 @@ export function MentionProvider({
 				>
 					<Command shouldFilter={false}>
 						<CommandInput
-							placeholder="Search files..."
+							placeholder="Поиск файлов..."
 							value={searchQuery}
 							onValueChange={setSearchQuery}
 						/>
@@ -150,14 +150,14 @@ export function MentionProvider({
 							{files.length === 0 && (
 								<CommandEmpty className="px-2 py-3 text-left text-xs text-muted-foreground">
 									{searchQuery.length === 0
-										? "Type to search files..."
+										? "Введите запрос для поиска файлов..."
 										: isSearchPending
-											? "Searching files..."
-											: "No results found."}
+											? "Поиск файлов..."
+											: "Ничего не найдено."}
 								</CommandEmpty>
 							)}
 							{files.length > 0 && (
-								<CommandGroup heading="Files">
+								<CommandGroup heading="Файлы">
 									{files.map((file) => {
 										const dirPath = getDirectoryPath(file.relativePath);
 										return (

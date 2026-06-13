@@ -124,12 +124,12 @@ export function TerminalSearch({
 				value={query}
 				onChange={handleInputChange}
 				onKeyDown={handleKeyDown}
-				placeholder="Find"
+				placeholder="Найти"
 				className="h-6 min-w-0 w-28 flex-shrink bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
 			/>
 			{matchCount === 0 && query && (
 				<span className="text-xs text-muted-foreground whitespace-nowrap px-1">
-					No results
+					Нет результатов
 				</span>
 			)}
 			<div className="flex items-center shrink-0">
@@ -147,7 +147,7 @@ export function TerminalSearch({
 							<PiTextAa className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Match case</TooltipContent>
+					<TooltipContent side="bottom">Учитывать регистр</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -159,7 +159,7 @@ export function TerminalSearch({
 							<HiChevronUp className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Previous (Shift+Enter)</TooltipContent>
+					<TooltipContent side="bottom">Назад (Shift+Enter)</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -171,7 +171,7 @@ export function TerminalSearch({
 							<HiChevronDown className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Next (Enter)</TooltipContent>
+					<TooltipContent side="bottom">Вперёд (Enter)</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -183,7 +183,7 @@ export function TerminalSearch({
 							<HiMiniXMark className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Close (Esc)</TooltipContent>
+					<TooltipContent side="bottom">Закрыть (Esc)</TooltipContent>
 				</Tooltip>
 			</div>
 		</div>

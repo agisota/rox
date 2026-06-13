@@ -44,7 +44,7 @@ export function FileSaveConflictDialog({
 			<DialogContent className="max-w-[min(1100px,calc(100vw-2rem))] p-0">
 				<div className="flex max-h-[85vh] flex-col">
 					<DialogHeader className="border-b px-6 pt-6">
-						<DialogTitle>File Changed On Disk</DialogTitle>
+						<DialogTitle>Файл изменён на диске</DialogTitle>
 						<DialogDescription>
 							{diskContent === null
 								? `${filePath} was removed or is no longer readable. Review the difference before choosing whether to overwrite it.`

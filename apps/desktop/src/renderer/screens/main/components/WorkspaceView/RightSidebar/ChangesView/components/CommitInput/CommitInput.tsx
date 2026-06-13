@@ -56,35 +56,36 @@ export function CommitInput({
 
 	const commitMutation = electronTrpc.changes.commit.useMutation({
 		onSuccess: () => {
-			toast.success("Committed");
+			toast.success("Закоммичено");
 			setCommitMessage("");
 			onRefresh();
 		},
-		onError: (error) => toast.error(`Commit failed: ${error.message}`),
+		onError: (error) => toast.error(`Не удалось закоммитить: ${error.message}`),
 	});
 
 	const pushMutation = electronTrpc.changes.push.useMutation({
 		onSuccess: () => {
-			toast.success("Pushed");
+			toast.success("Отправлено");
 			onRefresh();
 		},
-		onError: (error) => toast.error(`Push failed: ${error.message}`),
+		onError: (error) => toast.error(`Не удалось отправить: ${error.message}`),
 	});
 
 	const pullMutation = electronTrpc.changes.pull.useMutation({
 		onSuccess: () => {
-			toast.success("Pulled");
+			toast.success("Получено");
 			onRefresh();
 		},
-		onError: (error) => toast.error(`Pull failed: ${error.message}`),
+		onError: (error) => toast.error(`Не удалось получить: ${error.message}`),
 	});
 
 	const syncMutation = electronTrpc.changes.sync.useMutation({
 		onSuccess: () => {
-			toast.success("Synced");
+			toast.success("Синхронизировано");
 			onRefresh();
 		},
-		onError: (error) => toast.error(`Sync failed: ${error.message}`),
+		onError: (error) =>
+			toast.error(`Не удалось синхронизировать: ${error.message}`),
 	});
 
 	const { createOrOpenPR, isPending: isCreateOrOpenPRPending } =
@@ -95,10 +96,11 @@ export function CommitInput({
 
 	const fetchMutation = electronTrpc.changes.fetch.useMutation({
 		onSuccess: () => {
-			toast.success("Fetched");
+			toast.success("Получены данные");
 			onRefresh();
 		},
-		onError: (error) => toast.error(`Fetch failed: ${error.message}`),
+		onError: (error) =>
+			toast.error(`Не удалось получить данные: ${error.message}`),
 	});
 
 	const isPending =
@@ -218,7 +220,7 @@ export function CommitInput({
 	return (
 		<div className="flex flex-col gap-1.5 px-2 py-2">
 			<Textarea
-				placeholder="Commit message"
+				placeholder="Сообщение коммита"
 				value={commitMessage}
 				onChange={(e) => setCommitMessage(e.target.value)}
 				className="min-h-[52px] resize-none text-[10px] bg-background"
@@ -270,7 +272,7 @@ export function CommitInput({
 							className="text-xs"
 						>
 							<VscCheck className="size-3.5" />
-							Commit
+							Коммит
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={handleCommitAndPush}
@@ -278,7 +280,7 @@ export function CommitInput({
 							className="text-xs"
 						>
 							<VscArrowUp className="size-3.5" />
-							Commit & Push
+							Коммит и отправка
 						</DropdownMenuItem>
 						{!hasExistingPR && canCreatePR && (
 							<DropdownMenuItem
@@ -287,7 +289,7 @@ export function CommitInput({
 								className="text-xs"
 							>
 								<VscLinkExternal className="size-3.5" />
-								Commit, Push & Create PR
+								Коммит, отправка и создание PR
 							</DropdownMenuItem>
 						)}
 
@@ -312,7 +314,7 @@ export function CommitInput({
 							className="text-xs"
 						>
 							<VscArrowDown className="size-3.5" />
-							<span className="flex-1">Pull</span>
+							<span className="flex-1">Получить</span>
 							{pullCount > 0 && (
 								<span className="text-[10px] text-muted-foreground">
 									{pullCount}
@@ -325,15 +327,15 @@ export function CommitInput({
 							className="text-xs"
 						>
 							<VscSync className="size-3.5" />
-							Sync
+							Синхронизировать
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={handleFetch} className="text-xs">
 							<VscRefresh className="size-3.5" />
-							Fetch
+							Загрузить (fetch)
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={handleFetchAndPull} className="text-xs">
 							<VscRefresh className="size-3.5" />
-							Fetch & Pull
+							Загрузить и получить
 						</DropdownMenuItem>
 
 						<DropdownMenuSeparator />
@@ -341,12 +343,12 @@ export function CommitInput({
 						{hasExistingPR ? (
 							<DropdownMenuItem onClick={handleOpenPR} className="text-xs">
 								<VscLinkExternal className="size-3.5" />
-								Open Pull Request
+								Открыть Pull Request
 							</DropdownMenuItem>
 						) : canCreatePR ? (
 							<DropdownMenuItem onClick={handleCreatePR} className="text-xs">
 								<VscLinkExternal className="size-3.5" />
-								Create Pull Request
+								Создать Pull Request
 							</DropdownMenuItem>
 						) : null}
 					</DropdownMenuContent>

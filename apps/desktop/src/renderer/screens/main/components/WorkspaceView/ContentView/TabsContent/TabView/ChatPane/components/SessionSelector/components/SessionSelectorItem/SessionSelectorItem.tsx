@@ -37,12 +37,12 @@ export function SessionSelectorItem({
 					onClick={(event) => {
 						event.stopPropagation();
 						alert({
-							title: "Delete Chat Session",
-							description: "Are you sure you want to delete this session?",
+							title: "Удалить сессию чата",
+							description: "Вы уверены, что хотите удалить эту сессию?",
 							actions: [
-								{ label: "Cancel", variant: "outline", onClick: () => {} },
+								{ label: "Отмена", variant: "outline", onClick: () => {} },
 								{
-									label: "Delete",
+									label: "Удалить",
 									variant: "destructive",
 									onClick: () => {
 										toast.promise(onDeleteSession(sessionId), {

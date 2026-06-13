@@ -48,7 +48,7 @@ export function SubagentToolCall({
 	// Title: "Agent" (foreground) — agentType goes in description (muted)
 	const titleNode = (
 		<span className="shrink-0 font-medium text-xs">
-			<span className="text-foreground">Agent</span>{" "}
+			<span className="text-foreground">Агент</span>{" "}
 			<span className="text-muted-foreground">{agentType}</span>
 		</span>
 	);

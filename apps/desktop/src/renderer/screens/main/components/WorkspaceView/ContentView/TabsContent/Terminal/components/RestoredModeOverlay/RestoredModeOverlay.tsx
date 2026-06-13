@@ -15,7 +15,7 @@ export function RestoredModeOverlay({
 				<div className="flex flex-col items-center text-center gap-1.5 px-4">
 					<LuTerminal className="size-5 text-primary" />
 					<div className="space-y-0.5">
-						<p className="text-sm font-medium">Session restored</p>
+						<p className="text-sm font-medium">Сессия восстановлена</p>
 						<p className="text-xs text-muted-foreground">
 							Previous scrollback preserved after restart
 						</p>

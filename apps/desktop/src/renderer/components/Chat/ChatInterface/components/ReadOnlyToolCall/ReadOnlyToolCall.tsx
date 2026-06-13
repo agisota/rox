@@ -96,7 +96,7 @@ export function ReadOnlyToolCall({
 			})()
 		: null;
 
-	let title = "Read file";
+	let title = "Чтение файла";
 	let subtitle = String(args.path ?? args.filePath ?? args.query ?? "");
 	let Icon = FileIcon;
 
@@ -122,12 +122,12 @@ export function ReadOnlyToolCall({
 			Icon = FolderTreeIcon;
 			break;
 		case "mastra_workspace_file_stat":
-			title = "Check file";
+			title = "Проверка файла";
 			subtitle = String(args.path ?? args.file_path ?? args.file ?? "");
 			Icon = FileSearchIcon;
 			break;
 		case "mastra_workspace_search":
-			title = "Search";
+			title = "Поиск";
 			subtitle = String(
 				args.query ??
 					args.pattern ??
@@ -139,7 +139,7 @@ export function ReadOnlyToolCall({
 			Icon = SearchIcon;
 			break;
 		case "mastra_workspace_index":
-			title = "Index";
+			title = "Индексация";
 			Icon = SearchIcon;
 			break;
 	}
@@ -164,7 +164,7 @@ export function ReadOnlyToolCall({
 			<ToolCallRow
 				icon={Icon}
 				isPending
-				title="Reading"
+				title="Чтение"
 				description={subtitle}
 			/>
 		);

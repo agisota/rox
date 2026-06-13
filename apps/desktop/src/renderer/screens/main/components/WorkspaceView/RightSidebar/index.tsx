@@ -166,7 +166,7 @@ export function RightSidebar() {
 							isActive={rightSidebarTab === RightSidebarTab.Changes}
 							onClick={() => setRightSidebarTab(RightSidebarTab.Changes)}
 							icon={<LuGitCompareArrows className="size-3.5" />}
-							label="Changes"
+							label="Изменения"
 							compact={compactTabs}
 						/>
 					)}
@@ -174,7 +174,7 @@ export function RightSidebar() {
 						isActive={rightSidebarTab === RightSidebarTab.Files}
 						onClick={() => setRightSidebarTab(RightSidebarTab.Files)}
 						icon={<LuFile className="size-3.5" />}
-						label="Files"
+						label="Файлы"
 						compact={compactTabs}
 					/>
 				</div>
@@ -214,7 +214,7 @@ export function RightSidebar() {
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="bottom" showArrow={false}>
-							<HotkeyLabel label="Close sidebar" id="TOGGLE_SIDEBAR" />
+							<HotkeyLabel label="Закрыть боковую панель" id="TOGGLE_SIDEBAR" />
 						</TooltipContent>
 					</Tooltip>
 				</div>

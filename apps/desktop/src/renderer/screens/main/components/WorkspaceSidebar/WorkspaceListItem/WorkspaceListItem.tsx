@@ -159,16 +159,18 @@ export function WorkspaceListItem({
 	}, [isActive, isCollapsed]);
 
 	const openInFinder = electronTrpc.external.openInFinder.useMutation({
-		onError: (error) => toast.error(`Failed to open: ${error.message}`),
+		onError: (error) => toast.error(`Не удалось открыть: ${error.message}`),
 	});
 	const openFileInEditor = electronTrpc.external.openFileInEditor.useMutation({
 		onError: (error) =>
-			toast.error(`Failed to open in editor: ${error.message}`),
+			toast.error(`Не удалось открыть в редакторе: ${error.message}`),
 	});
 	const setUnread = electronTrpc.workspaces.setUnread.useMutation({
 		onSuccess: () => utils.workspaces.getAllGrouped.invalidate(),
 		onError: (error) =>
-			toast.error(`Failed to update unread status: ${error.message}`),
+			toast.error(
+				`Не удалось обновить статус непрочитанного: ${error.message}`,
+			),
 	});
 
 	const { showDeleteDialog, setShowDeleteDialog, handleDeleteClick } =
@@ -259,12 +261,12 @@ export function WorkspaceListItem({
 	const handleCopyPath = async () => {
 		if (!worktreePath) return;
 		await copyToClipboard(worktreePath);
-		toast.success("Path copied to clipboard");
+		toast.success("Путь скопирован в буфер обмена");
 	};
 	const handleCopyBranchName = async () => {
 		if (!branch) return;
 		await copyToClipboard(branch);
-		toast.success("Branch name copied to clipboard");
+		toast.success("Имя ветки скопировано в буфер обмена");
 	};
 
 	const pr = githubStatus?.pr;
@@ -373,14 +375,18 @@ export function WorkspaceListItem({
 					<TooltipContent side="right" sideOffset={8}>
 						{isBranchWorkspace ? (
 							<>
-								<p className="text-xs font-medium">Local workspace</p>
+								<p className="text-xs font-medium">
+									Локальное рабочее пространство
+								</p>
 								<p className="text-xs text-muted-foreground">
 									Changes are made directly in the main repository
 								</p>
 							</>
 						) : (
 							<>
-								<p className="text-xs font-medium">Worktree workspace</p>
+								<p className="text-xs font-medium">
+									Рабочее пространство worktree
+								</p>
 								<p className="text-xs text-muted-foreground">
 									Isolated copy for parallel development
 								</p>
@@ -462,14 +468,14 @@ export function WorkspaceListItem({
 														handleDeleteClick();
 													}}
 													className="flex items-center justify-center text-muted-foreground hover:text-foreground"
-													aria-label="Close workspace"
+													aria-label="Закрыть рабочее пространство"
 												>
 													<HiMiniXMark className="size-3.5" />
 												</button>
 											</TooltipTrigger>
 											<TooltipContent side="top" sideOffset={4}>
 												<HotkeyLabel
-													label="Close workspace"
+													label="Закрыть рабочее пространство"
 													id={isActive ? "CLOSE_WORKSPACE" : undefined}
 												/>
 											</TooltipContent>

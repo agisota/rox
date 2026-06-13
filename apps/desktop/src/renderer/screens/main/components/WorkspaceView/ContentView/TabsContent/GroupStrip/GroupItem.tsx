@@ -265,7 +265,7 @@ export function GroupItem({
 												onClose();
 											}}
 											className="cursor-pointer size-6 hover:bg-muted"
-											aria-label="Close pane"
+											aria-label="Закрыть панель"
 										>
 											<HiMiniXMark className="size-4" />
 										</Button>

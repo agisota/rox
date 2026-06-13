@@ -73,11 +73,11 @@ export function GetTaskToolCall({ part }: GetTaskToolCallProps) {
 				? task.assigneeAvatarUrl
 				: null;
 	const extraDetails = [
-		creator ? { label: "Creator", value: creator } : null,
-		assigneeEmail ? { label: "Assignee Email", value: assigneeEmail } : null,
-		branch ? { label: "Branch", value: branch } : null,
+		creator ? { label: "Автор", value: creator } : null,
+		assigneeEmail ? { label: "Email исполнителя", value: assigneeEmail } : null,
+		branch ? { label: "Ветка", value: branch } : null,
 		prUrl ? { label: "PR", value: prUrl } : null,
-		externalUrl ? { label: "External", value: externalUrl } : null,
+		externalUrl ? { label: "Внешний", value: externalUrl } : null,
 	].filter((detail): detail is { label: string; value: string } =>
 		Boolean(detail),
 	);
@@ -105,7 +105,7 @@ export function GetTaskToolCall({ part }: GetTaskToolCallProps) {
 							statusType={statusType}
 							taskId={typeof task.id === "string" ? task.id : taskId}
 							title={
-								typeof task.title === "string" ? task.title : "Task details"
+								typeof task.title === "string" ? task.title : "Детали задачи"
 							}
 							assigneeImage={assigneeImage}
 							onClick={

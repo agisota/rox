@@ -76,7 +76,7 @@ export function WorkspaceSidebarHeader({
 							<LuLayers className="size-4" strokeWidth={STROKE_WIDTH} />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="right">Workspaces</TooltipContent>
+					<TooltipContent side="right">Рабочие пространства</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
@@ -97,7 +97,7 @@ export function WorkspaceSidebarHeader({
 							/>
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="right">Tasks & PRs</TooltipContent>
+					<TooltipContent side="right">Задачи и PR</TooltipContent>
 				</Tooltip>
 
 				<NewWorkspaceButton isCollapsed />

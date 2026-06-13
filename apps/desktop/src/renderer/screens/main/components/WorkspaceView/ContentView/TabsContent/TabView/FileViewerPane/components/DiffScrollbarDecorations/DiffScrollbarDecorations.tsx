@@ -333,7 +333,7 @@ export function DiffScrollbarDecorations({
 	return (
 		<button
 			type="button"
-			aria-label="Diff change overview"
+			aria-label="Обзор изменений в diff"
 			className="absolute top-0 right-0 bottom-0 w-2 cursor-pointer border-0 bg-transparent p-0"
 			onClick={handleClick}
 			onKeyDown={handleKeyDown}

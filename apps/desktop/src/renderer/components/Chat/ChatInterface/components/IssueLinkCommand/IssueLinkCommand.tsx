@@ -162,7 +162,7 @@ export function IssueLinkCommand({
 			>
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search issues..."
+						placeholder="Поиск задач..."
 						value={searchQuery}
 						onValueChange={setSearchQuery}
 					/>
@@ -182,17 +182,19 @@ export function IssueLinkCommand({
 					<CommandList className="max-h-[420px]">
 						{filteredTasks.length === 0 && (
 							<CommandEmpty>
-								{showClosed ? "No issues found." : "No open issues found."}
+								{showClosed
+									? "Задачи не найдены."
+									: "Открытые задачи не найдены."}
 							</CommandEmpty>
 						)}
 						{filteredTasks.length > 0 && (
 							<CommandGroup
 								heading={
 									searchQuery
-										? "Results"
+										? "Результаты"
 										: showClosed
-											? "Recent issues"
-											: "Open issues"
+											? "Недавние задачи"
+											: "Открытые задачи"
 								}
 							>
 								{filteredTasks.map((task) => {

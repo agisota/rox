@@ -37,15 +37,15 @@ export function PRButton({
 }: PRButtonProps) {
 	const mergePRMutation = electronTrpc.changes.mergePR.useMutation({
 		onMutate: () => {
-			const toastId = toast.loading("Merging PR...");
+			const toastId = toast.loading("Слияние PR...");
 			return { toastId };
 		},
 		onSuccess: (_data, _variables, context) => {
-			toast.success("PR merged successfully", { id: context?.toastId });
+			toast.success("PR успешно влит", { id: context?.toastId });
 			onRefresh();
 		},
 		onError: (error, _variables, context) =>
-			toast.error(`Merge failed: ${error.message}`, {
+			toast.error(`Не удалось выполнить слияние: ${error.message}`, {
 				id: context?.toastId,
 			}),
 	});
@@ -79,7 +79,7 @@ export function PRButton({
 						</span>
 					</TooltipTrigger>
 					<TooltipContent side="top">
-						{createPRBlockedReason ?? "Create Pull Request unavailable"}
+						{createPRBlockedReason ?? "Создание Pull Request недоступно"}
 					</TooltipContent>
 				</Tooltip>
 			);
@@ -101,7 +101,7 @@ export function PRButton({
 						)}
 					</button>
 				</TooltipTrigger>
-				<TooltipContent side="top">Create Pull Request</TooltipContent>
+				<TooltipContent side="top">Создать Pull Request</TooltipContent>
 			</Tooltip>
 		);
 	}
@@ -149,8 +149,8 @@ export function PRButton({
 						disabled={mergePRMutation.isPending}
 						aria-label={
 							mergePRMutation.isPending
-								? "Merging pull request"
-								: "Open merge options"
+								? "Слияние pull request"
+								: "Открыть параметры слияния"
 						}
 					>
 						{mergePRMutation.isPending ? (
@@ -162,7 +162,7 @@ export function PRButton({
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-44">
 					<DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-						Merge
+						Слияние
 					</DropdownMenuLabel>
 					<DropdownMenuItem
 						onClick={() => handleMergePR("squash")}
@@ -170,7 +170,7 @@ export function PRButton({
 						disabled={mergePRMutation.isPending}
 					>
 						<VscGitMerge className="size-3.5" />
-						Squash and merge
+						Squash и слияние
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						onClick={() => handleMergePR("merge")}
@@ -178,7 +178,7 @@ export function PRButton({
 						disabled={mergePRMutation.isPending}
 					>
 						<VscGitMerge className="size-3.5" />
-						Create merge commit
+						Создать merge-коммит
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						onClick={() => handleMergePR("rebase")}
@@ -186,7 +186,7 @@ export function PRButton({
 						disabled={mergePRMutation.isPending}
 					>
 						<VscGitMerge className="size-3.5" />
-						Rebase and merge
+						Rebase и слияние
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

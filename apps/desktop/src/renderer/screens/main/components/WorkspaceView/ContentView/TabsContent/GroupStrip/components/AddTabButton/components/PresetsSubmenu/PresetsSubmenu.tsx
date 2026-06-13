@@ -31,7 +31,7 @@ export function PresetsSubmenu({
 		<DropdownMenuSub>
 			<DropdownMenuSubTrigger className="gap-2">
 				<HiMiniCommandLine className="size-4" />
-				<span>Presets</span>
+				<span>Пресеты</span>
 			</DropdownMenuSubTrigger>
 			<DropdownMenuSubContent className="w-56">
 				{presets.length > 0 ? (
@@ -59,12 +59,12 @@ export function PresetsSubmenu({
 						);
 					})
 				) : (
-					<DropdownMenuItem disabled>No presets</DropdownMenuItem>
+					<DropdownMenuItem disabled>Нет пресетов</DropdownMenuItem>
 				)}
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={onConfigurePresets} className="gap-2">
 					<HiMiniCog6Tooth className="size-4" />
-					<span>Configure Presets</span>
+					<span>Настроить пресеты</span>
 				</DropdownMenuItem>
 			</DropdownMenuSubContent>
 		</DropdownMenuSub>

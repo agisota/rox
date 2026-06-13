@@ -283,7 +283,7 @@ function SlashCommandChip({
 							shouldFilter={false}
 						>
 							<CommandList>
-								<CommandEmpty>No match</CommandEmpty>
+								<CommandEmpty>Нет совпадений</CommandEmpty>
 								<CommandGroup>
 									{filteredOptions.map((opt) => (
 										<CommandItem

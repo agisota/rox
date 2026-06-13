@@ -94,8 +94,8 @@ export function MessageList({
 			<ConversationContent className="mx-auto w-full max-w-3xl gap-6 py-6 pl-4 pr-16">
 				{messages.length === 0 && !interruptedMessage ? (
 					<ConversationEmptyState
-						title="Start a conversation"
-						description="Ask anything to get started"
+						title="Начните разговор"
+						description="Задайте любой вопрос, чтобы начать"
 						icon={<HiMiniChatBubbleLeftRight className="size-8" />}
 					/>
 				) : (
@@ -277,7 +277,7 @@ export function MessageList({
 								<span className="rounded border border-border bg-muted px-1.5 py-0.5 font-medium uppercase tracking-wide">
 									Interrupted
 								</span>
-								<span>Response stopped</span>
+								<span>Ответ остановлен</span>
 							</div>
 						</MessageContent>
 					</Message>

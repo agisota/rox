@@ -25,7 +25,7 @@ export function DiscardConfirmDialog({
 	title,
 	description,
 	onConfirm,
-	confirmLabel = "Discard",
+	confirmLabel = "Отменить",
 	confirmDisabled = false,
 }: DiscardConfirmDialogProps) {
 	return (

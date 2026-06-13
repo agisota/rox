@@ -112,18 +112,18 @@ function BaseBranchSelector({ worktreePath }: { worktreePath: string }) {
 					</PopoverTrigger>
 				</TooltipTrigger>
 				<TooltipContent side="top" showArrow={false}>
-					Change base branch
+					Изменить базовую ветку
 				</TooltipContent>
 			</Tooltip>
 			<PopoverContent align="start" className="w-56 p-0">
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search branches..."
+						placeholder="Поиск веток..."
 						value={search}
 						onValueChange={setSearch}
 					/>
 					<CommandList className="max-h-[200px]">
-						<CommandEmpty>No branches found</CommandEmpty>
+						<CommandEmpty>Ветки не найдены</CommandEmpty>
 						{filteredBranches.map((branch) => (
 							<CommandItem
 								key={branch}
@@ -135,7 +135,7 @@ function BaseBranchSelector({ worktreePath }: { worktreePath: string }) {
 									{branch}
 									{branch === branchData?.defaultBranch && (
 										<span className="ml-1 text-muted-foreground">
-											(default)
+											(по умолчанию)
 										</span>
 									)}
 								</span>
@@ -178,22 +178,22 @@ function StashDropdown({
 					</DropdownMenuTrigger>
 				</TooltipTrigger>
 				<TooltipContent side="top" showArrow={false}>
-					Stash operations
+					Операции со stash
 				</TooltipContent>
 			</Tooltip>
 			<DropdownMenuContent align="start" className="w-52">
 				<DropdownMenuItem onClick={onStash} className="text-xs">
 					<VscGitStash className="size-4" />
-					Stash Changes
+					Спрятать изменения в stash
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={onStashIncludeUntracked} className="text-xs">
 					<VscGitStash className="size-4" />
-					Stash (Include Untracked)
+					Спрятать в stash (включая неотслеживаемые)
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={onStashPop} className="text-xs">
 					<VscGitStashApply className="size-4" />
-					Pop Stash
+					Применить stash
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
@@ -233,7 +233,7 @@ function RefreshButton({ onRefresh }: { onRefresh: () => void }) {
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent side="top" showArrow={false}>
-				Refresh changes
+				Обновить изменения
 			</TooltipContent>
 		</Tooltip>
 	);

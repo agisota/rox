@@ -57,7 +57,7 @@ export function DevToolsPane({
 			)}
 		>
 			<div className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground text-xs">
-				<div>DevTools open in a separate window.</div>
+				<div>DevTools открыты в отдельном окне.</div>
 				<button
 					type="button"
 					onClick={() => openDevTools({ paneId: targetPaneId })}

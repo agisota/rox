@@ -42,7 +42,7 @@ export function PaneToolbarActions({
 					</button>
 				</TooltipTrigger>
 				<TooltipContent side="bottom" showArrow={false}>
-					<HotkeyLabel label="Split pane" id="SPLIT_AUTO" />
+					<HotkeyLabel label="Разделить панель" id="SPLIT_AUTO" />
 				</TooltipContent>
 			</Tooltip>
 			<Tooltip>
@@ -56,7 +56,7 @@ export function PaneToolbarActions({
 					</button>
 				</TooltipTrigger>
 				<TooltipContent side="bottom" showArrow={false}>
-					<HotkeyLabel label="Close pane" id={closeHotkeyId} />
+					<HotkeyLabel label="Закрыть панель" id={closeHotkeyId} />
 				</TooltipContent>
 			</Tooltip>
 		</div>

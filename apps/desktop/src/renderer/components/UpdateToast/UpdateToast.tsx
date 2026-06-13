@@ -55,7 +55,7 @@ export function UpdateToast({
 					type="button"
 					onClick={handleLater}
 					className="absolute top-2 right-2 size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-					aria-label="Dismiss"
+					aria-label="Закрыть"
 				>
 					<HiMiniXMark className="size-4" />
 				</button>
@@ -66,24 +66,26 @@ export function UpdateToast({
 								Update failed
 							</span>
 							<span className="text-sm text-muted-foreground">
-								{error || "Please try again later"}
+								{error || "Повторите попытку позже"}
 							</span>
 						</>
 					) : isDownloading ? (
 						<>
-							<span className="font-medium text-sm">Downloading update...</span>
+							<span className="font-medium text-sm">
+								Загрузка обновления...
+							</span>
 							<span className="text-sm text-muted-foreground">
-								{version ? `Version ${version}` : "Please wait"}
+								{version ? `Версия ${version}` : "Подождите"}
 							</span>
 							<ProgressBar className="mt-1" />
 						</>
 					) : (
 						<>
-							<span className="font-medium text-sm">Update available</span>
+							<span className="font-medium text-sm">Доступно обновление</span>
 							<span className="text-sm text-muted-foreground">
 								{version
 									? `Version ${version} is ready to install`
-									: "Ready to install"}
+									: "Готово к установке"}
 							</span>
 							<span className="text-xs text-muted-foreground/70">
 								Your terminal sessions won't be interrupted.
@@ -120,7 +122,7 @@ export function UpdateToast({
 									{installMutation.isPending && (
 										<HiArrowPath className="size-3.5 animate-spin" />
 									)}
-									{installMutation.isPending ? "Installing..." : "Install"}
+									{installMutation.isPending ? "Установка..." : "Установить"}
 								</Button>
 							</div>
 						</motion.div>

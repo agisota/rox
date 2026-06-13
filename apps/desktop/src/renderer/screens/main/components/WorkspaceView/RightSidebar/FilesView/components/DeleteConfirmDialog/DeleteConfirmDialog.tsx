@@ -26,11 +26,11 @@ export function DeleteConfirmDialog({
 }: DeleteConfirmDialogProps) {
 	if (!entry) return null;
 
-	const itemType = entry.isDirectory ? "folder" : "file";
-	const title = `Delete ${itemType} "${entry.name}"?`;
+	const itemType = entry.isDirectory ? "папку" : "файл";
+	const title = `Удалить ${itemType} «${entry.name}»?`;
 	const description = entry.isDirectory
-		? "This folder and all its contents will be moved to the trash. This action can be undone from the system trash."
-		: "This file will be moved to the trash. This action can be undone from the system trash.";
+		? "Эта папка и всё её содержимое будут перемещены в корзину. Это действие можно отменить из системной корзины."
+		: "Этот файл будет перемещён в корзину. Это действие можно отменить из системной корзины.";
 
 	return (
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -47,7 +47,7 @@ export function DeleteConfirmDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={isDeleting}
 					>
-						Cancel
+						Отмена
 					</Button>
 					<Button
 						variant="destructive"
@@ -56,7 +56,7 @@ export function DeleteConfirmDialog({
 						onClick={onConfirm}
 						disabled={isDeleting}
 					>
-						{isDeleting ? "Deleting..." : "Delete"}
+						{isDeleting ? "Удаление..." : "Удалить"}
 					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>

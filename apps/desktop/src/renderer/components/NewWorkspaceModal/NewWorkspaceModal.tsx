@@ -57,9 +57,11 @@ export function NewWorkspaceModal() {
 		try {
 			await openNew();
 		} catch (error) {
-			toast.error("Failed to open project", {
+			toast.error("Не удалось открыть проект", {
 				description:
-					error instanceof Error ? error.message : "An unknown error occurred",
+					error instanceof Error
+						? error.message
+						: "Произошла неизвестная ошибка",
 			});
 		}
 	};
@@ -79,8 +81,10 @@ export function NewWorkspaceModal() {
 					onOpenChange={(open) => !open && closeModal()}
 				>
 					<DialogHeader className="sr-only">
-						<DialogTitle>New Workspace</DialogTitle>
-						<DialogDescription>Create a new workspace</DialogDescription>
+						<DialogTitle>Новое рабочее пространство</DialogTitle>
+						<DialogDescription>
+							Создать новое рабочее пространство
+						</DialogDescription>
 					</DialogHeader>
 					<DialogContent
 						showCloseButton={false}

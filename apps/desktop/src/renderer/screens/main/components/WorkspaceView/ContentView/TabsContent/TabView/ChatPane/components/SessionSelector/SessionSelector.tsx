@@ -137,7 +137,7 @@ export function SessionSelector({
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-80">
-				<DropdownMenuLabel className="text-xs">Sessions</DropdownMenuLabel>
+				<DropdownMenuLabel className="text-xs">Сессии</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<div className="max-h-80 overflow-y-auto">
 					{sessions.length > 0 ? (
@@ -194,7 +194,7 @@ export function SessionSelector({
 					}}
 				>
 					<HiMiniPlus className="mr-1.5 size-3.5" />
-					<span className="text-xs">New Chat</span>
+					<span className="text-xs">Новый чат</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

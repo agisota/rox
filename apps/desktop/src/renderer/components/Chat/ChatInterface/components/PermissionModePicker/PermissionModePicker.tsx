@@ -26,20 +26,21 @@ interface PermissionModeOption {
 const PERMISSION_MODES: PermissionModeOption[] = [
 	{
 		value: "bypassPermissions",
-		label: "Auto",
-		description: "Tools run without approval",
+		label: "Авто",
+		description: "Инструменты выполняются без подтверждения",
 		icon: ShieldOffIcon,
 	},
 	{
 		value: "acceptEdits",
-		label: "Semi-auto",
-		description: "Edits auto-approved, others need approval",
+		label: "Полуавто",
+		description:
+			"Правки подтверждаются автоматически, остальное требует подтверждения",
 		icon: ShieldCheckIcon,
 	},
 	{
 		value: "default",
-		label: "Manual",
-		description: "All tools require approval",
+		label: "Вручную",
+		description: "Все инструменты требуют подтверждения",
 		icon: ShieldIcon,
 	},
 ];

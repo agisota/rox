@@ -132,7 +132,7 @@ function AttachmentButtons({
 						<PaperclipIcon className="size-3.5" />
 					</PromptInputButton>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Add attachment</TooltipContent>
+				<TooltipContent side="bottom">Добавить вложение</TooltipContent>
 			</Tooltip>
 			<Tooltip>
 				<TooltipTrigger asChild>
@@ -143,7 +143,7 @@ function AttachmentButtons({
 						<GoIssueOpened className="size-3.5" />
 					</PromptInputButton>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Link GitHub issue</TooltipContent>
+				<TooltipContent side="bottom">Связать задачу GitHub</TooltipContent>
 			</Tooltip>
 			<Tooltip>
 				<TooltipTrigger asChild>
@@ -154,7 +154,7 @@ function AttachmentButtons({
 						<LuGitPullRequest className="size-3.5" />
 					</PromptInputButton>
 				</TooltipTrigger>
-				<TooltipContent side="bottom">Link pull request</TooltipContent>
+				<TooltipContent side="bottom">Связать pull request</TooltipContent>
 			</Tooltip>
 		</div>
 	);
@@ -204,9 +204,9 @@ function ProjectPickerPill({
 				onWheel={(event) => event.stopPropagation()}
 			>
 				<Command>
-					<CommandInput placeholder="Search projects..." />
+					<CommandInput placeholder="Поиск проектов..." />
 					<CommandList>
-						<CommandEmpty>No projects found.</CommandEmpty>
+						<CommandEmpty>Проекты не найдены.</CommandEmpty>
 						<CommandGroup>
 							{recentProjects.map((project) => (
 								<CommandItem
@@ -311,7 +311,9 @@ function CompareBaseBranchPickerInline({
 
 	if (isBranchesError) {
 		return (
-			<span className="text-xs text-destructive">Failed to load branches</span>
+			<span className="text-xs text-destructive">
+				Не удалось загрузить ветки
+			</span>
 		);
 	}
 
@@ -374,12 +376,12 @@ function CompareBaseBranchPickerInline({
 						})}
 					</div>
 					<CommandInput
-						placeholder="Search branches..."
+						placeholder="Поиск веток..."
 						value={branchSearch}
 						onValueChange={setBranchSearch}
 					/>
 					<CommandList className="max-h-[400px]">
-						<CommandEmpty>No branches found</CommandEmpty>
+						<CommandEmpty>Ветки не найдены</CommandEmpty>
 						{displayBranches.map((branch) => {
 							const openAction = openableWorktrees.get(branch.name);
 							const activeWorkspaceId = activeWorkspacesByBranch.get(
@@ -718,7 +720,7 @@ function PromptGroupInner({
 	const handleCreate = useCallback(
 		async (preConvertedFiles?: ConvertedFile[]) => {
 			if (!projectId) {
-				toast.error("Select a project first");
+				toast.error("Сначала выберите проект");
 				return;
 			}
 
@@ -774,7 +776,9 @@ function PromptGroupInner({
 							error instanceof Error ? error.message : String(error);
 						if (errorMessage.includes("timeout")) {
 							console.warn("[PromptGroup] AI generation timeout");
-							toast.info("Using random branch name (AI generation timed out)");
+							toast.info(
+								"Используется случайное имя ветки (истекло время генерации ИИ)",
+							);
 						} else if (
 							errorMessage.toLowerCase().includes("auth") ||
 							errorMessage.includes("401") ||
@@ -782,14 +786,14 @@ function PromptGroupInner({
 						) {
 							console.error("[PromptGroup] AI auth error:", error);
 							toast.error(
-								"AI authentication failed. Please check your AI settings.",
+								"Не удалось пройти аутентификацию ИИ. Проверьте настройки ИИ.",
 							);
 							clearPendingWorkspace(pendingWorkspaceId);
 							return;
 						} else {
 							console.warn("[PromptGroup] AI generation failed:", error);
 							toast.info(
-								"Using random branch name (AI generation unavailable)",
+								"Используется случайное имя ветки (генерация ИИ недоступна)",
 							);
 						}
 					} finally {
@@ -812,7 +816,7 @@ function PromptGroupInner({
 						toast.error(
 							err instanceof Error
 								? err.message
-								: "Failed to process attachments",
+								: "Не удалось обработать вложения",
 						);
 						return;
 					}
@@ -942,7 +946,7 @@ ${sanitizeText(truncatedBody)}`;
 					toast.error(
 						error instanceof Error
 							? error.message
-							: "Failed to prepare agent launch",
+							: "Не удалось подготовить запуск агента",
 					);
 					return;
 				}
@@ -1002,7 +1006,9 @@ ${sanitizeText(truncatedBody)}`;
 						loading: "Creating workspace...",
 						success: "Workspace created",
 						error: (err) =>
-							err instanceof Error ? err.message : "Failed to create workspace",
+							err instanceof Error
+								? err.message
+								: "Не удалось создать рабочее пространство",
 					},
 					{ closeAndReset: false },
 				).finally(() => {
@@ -1086,7 +1092,9 @@ ${sanitizeText(truncatedBody)}`;
 						loading: "Opening worktree...",
 						success: "Worktree opened",
 						error: (err) =>
-							err instanceof Error ? err.message : "Failed to open worktree",
+							err instanceof Error
+								? err.message
+								: "Не удалось открыть worktree",
 					},
 				);
 			} else {
@@ -1099,7 +1107,9 @@ ${sanitizeText(truncatedBody)}`;
 						loading: "Opening worktree...",
 						success: "Worktree opened",
 						error: (err) =>
-							err instanceof Error ? err.message : "Failed to open worktree",
+							err instanceof Error
+								? err.message
+								: "Не удалось открыть worktree",
 					},
 				);
 			}
@@ -1162,7 +1172,7 @@ ${sanitizeText(truncatedBody)}`;
 			<div className="flex items-center">
 				<Input
 					className="border-none bg-transparent dark:bg-transparent shadow-none text-base font-medium px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40 min-w-0 flex-1"
-					placeholder="Workspace name (optional)"
+					placeholder="Имя рабочего пространства (необязательно)"
 					value={workspaceName}
 					onChange={(e) =>
 						updateDraft({
@@ -1181,7 +1191,7 @@ ${sanitizeText(truncatedBody)}`;
 						className={cn(
 							"border-none bg-transparent dark:bg-transparent shadow-none text-xs font-mono text-muted-foreground/60 px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/30 focus:text-muted-foreground text-right placeholder:text-right overflow-hidden text-ellipsis",
 						)}
-						placeholder="branch name"
+						placeholder="имя ветки"
 						value={branchName}
 						onChange={(e) =>
 							updateDraft({
@@ -1267,7 +1277,7 @@ ${sanitizeText(truncatedBody)}`;
 				)}
 				<PromptInputTextarea
 					autoFocus
-					placeholder="What do you want to do?"
+					placeholder="Что вы хотите сделать?"
 					className="min-h-10"
 					value={prompt}
 					onChange={(e) => updateDraft({ prompt: e.target.value })}
@@ -1277,7 +1287,7 @@ ${sanitizeText(truncatedBody)}`;
 						<AgentSelect<WorkspaceCreateAgent>
 							agents={enabledAgentPresets}
 							value={selectedAgent}
-							placeholder="No agent"
+							placeholder="Без агента"
 							onValueChange={setSelectedAgent}
 							onBeforeConfigureAgents={closeModal}
 							triggerClassName={`${PILL_BUTTON_CLASS} px-1.5 gap-1 text-foreground w-auto max-w-[160px]`}

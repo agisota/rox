@@ -59,10 +59,10 @@ const MAX_VISIBLE_SEGMENTS = 4;
 function pathToSegments(path: string, homePath: string | null): Segment[] {
 	const segments: Segment[] = [];
 	if (homePath && (path === homePath || path === `${homePath}/`)) {
-		return [{ label: "Home", path: homePath }];
+		return [{ label: "Домашняя папка", path: homePath }];
 	}
 	if (homePath && path.startsWith(`${homePath}/`)) {
-		segments.push({ label: "Home", path: homePath });
+		segments.push({ label: "Домашняя папка", path: homePath });
 		const rest = path.slice(homePath.length + 1);
 		let cumulative = homePath;
 		for (const part of rest.split("/").filter(Boolean)) {
@@ -91,9 +91,9 @@ export function RemotePathPicker({
 	hostName,
 	initialPath,
 	onPick,
-	title = "Choose a folder",
+	title = "Выберите папку",
 	description,
-	confirmLabel = "Use this folder",
+	confirmLabel = "Использовать эту папку",
 }: RemotePathPickerProps) {
 	const [currentPath, setCurrentPath] = useState<string | null>(
 		initialPath ?? null,
@@ -126,7 +126,7 @@ export function RemotePathPicker({
 			toast.error(
 				query.error instanceof Error
 					? query.error.message
-					: "Could not list directory",
+					: "Не удалось получить содержимое папки",
 			);
 		}
 	}, [query.error]);
@@ -212,7 +212,7 @@ export function RemotePathPicker({
 						type="button"
 						onClick={() => query.refetch()}
 						disabled={query.isFetching}
-						aria-label="Refresh"
+						aria-label="Обновить"
 						className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
 					>
 						<LuRefreshCw
@@ -236,8 +236,8 @@ export function RemotePathPicker({
 							<LuFolder className="size-6 opacity-40" />
 							<span>
 								{query.data?.entries.length === 0
-									? "Empty folder"
-									: "No subfolders"}
+									? "Пустая папка"
+									: "Нет вложенных папок"}
 							</span>
 						</div>
 					) : (

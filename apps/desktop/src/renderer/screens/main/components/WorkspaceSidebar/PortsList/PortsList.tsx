@@ -51,7 +51,7 @@ export function PortsList() {
 						</button>
 					</TooltipTrigger>
 					<TooltipContent side="top" sideOffset={4}>
-						<p className="text-xs">Learn about port labels</p>
+						<p className="text-xs">Подробнее о метках портов</p>
 					</TooltipContent>
 				</Tooltip>
 				<span className="text-[10px] font-normal">{totalPortCount}</span>

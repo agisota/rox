@@ -80,7 +80,7 @@ export function FileTreeToolbar({
 			<div className="relative">
 				<Input
 					type="text"
-					placeholder="Search files..."
+					placeholder="Поиск файлов..."
 					value={localSearchTerm}
 					onChange={handleSearchChange}
 					className="h-7 text-xs pr-7"
@@ -108,7 +108,7 @@ export function FileTreeToolbar({
 							<LuFilePlus className="size-3.5" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">New File</TooltipContent>
+					<TooltipContent side="bottom">Новый файл</TooltipContent>
 				</Tooltip>
 
 				<Tooltip>
@@ -122,7 +122,7 @@ export function FileTreeToolbar({
 							<LuFolderPlus className="size-3.5" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">New Folder</TooltipContent>
+					<TooltipContent side="bottom">Новая папка</TooltipContent>
 				</Tooltip>
 
 				<div className="flex-1" />
@@ -138,7 +138,7 @@ export function FileTreeToolbar({
 							<LuChevronsDownUp className="size-3.5" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Collapse All</TooltipContent>
+					<TooltipContent side="bottom">Свернуть все</TooltipContent>
 				</Tooltip>
 
 				<Tooltip>
@@ -155,7 +155,7 @@ export function FileTreeToolbar({
 							/>
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Refresh</TooltipContent>
+					<TooltipContent side="bottom">Обновить</TooltipContent>
 				</Tooltip>
 			</div>
 		</div>

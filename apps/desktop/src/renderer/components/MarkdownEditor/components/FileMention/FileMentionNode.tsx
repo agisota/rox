@@ -51,7 +51,7 @@ function FileMentionChip({ node, selected, deleteNode }: NodeViewProps) {
 							<LuX className="size-3" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="top">Remove mention</TooltipContent>
+					<TooltipContent side="top">Убрать упоминание</TooltipContent>
 				</Tooltip>
 			</span>
 		</NodeViewWrapper>

@@ -38,7 +38,7 @@ export function AnthropicApiKeyDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-[calc(100vw-2rem)] overflow-hidden sm:max-w-lg">
 				<DialogHeader>
-					<DialogTitle>Connect Anthropic</DialogTitle>
+					<DialogTitle>Подключить Anthropic</DialogTitle>
 					<DialogDescription>
 						Paste your Anthropic API key to enable Claude models in chat.
 					</DialogDescription>
@@ -51,7 +51,7 @@ export function AnthropicApiKeyDialog({
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="anthropic-api-key">API key</Label>
+						<Label htmlFor="anthropic-api-key">Ключ API</Label>
 						<InputGroup className="h-11 border-border/70 bg-muted/10">
 							<InputGroupInput
 								id="anthropic-api-key"
@@ -88,7 +88,7 @@ export function AnthropicApiKeyDialog({
 							onClick={onSubmit}
 							disabled={isPending || apiKey.trim().length === 0}
 						>
-							{isPending ? "Saving..." : "Save key"}
+							{isPending ? "Сохранение..." : "Сохранить ключ"}
 						</Button>
 						<div className="flex items-center justify-between gap-2">
 							<Button
