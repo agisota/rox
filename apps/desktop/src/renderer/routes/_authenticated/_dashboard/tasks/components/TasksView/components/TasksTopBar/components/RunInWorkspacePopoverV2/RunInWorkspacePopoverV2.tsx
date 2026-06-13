@@ -178,26 +178,26 @@ export function RunInWorkspacePopoverV2({
 	const [projectPickerOpen, setProjectPickerOpen] = useState(false);
 
 	const submitBlocker = useMemo<string | null>(() => {
-		if (!selectedProjectId) return "Select a project";
-		if (!hostId) return "No active host";
+		if (!selectedProjectId) return "Выберите проект";
+		if (!hostId) return "Нет активного хоста";
 		if (hostId !== machineId) {
 			const remote = otherHosts.find((host) => host.id === hostId);
-			if (!remote?.isOnline) return "Host is offline";
+			if (!remote?.isOnline) return "Хост офлайн";
 		} else if (!activeHostUrl) {
-			return "Host service is not running";
+			return "Сервис хоста не запущен";
 		}
 		// Block while the host's project list is still loading — otherwise users
 		// can submit before we know whether the project is set up there.
-		if (setUpProjectIds === null) return "Checking host…";
+		if (setUpProjectIds === null) return "Проверка хоста…";
 		if (selectedProject?.needsSetup === true) {
-			return "Project not set up on this host";
+			return "Проект не настроен на этом хосте";
 		}
 		// Agent UUIDs are host-scoped; block until the host-specific config
 		// query resolves and the selection is verified to exist there.
 		if (selectedAgent !== NONE) {
-			if (!v2AgentsFetched) return "Checking agents…";
+			if (!v2AgentsFetched) return "Проверка агентов…";
 			if (!validAgentIds.has(selectedAgent)) {
-				return "Selected agent is not available on this host";
+				return "Выбранный агент недоступен на этом хосте";
 			}
 		}
 		return null;
@@ -257,7 +257,7 @@ export function RunInWorkspacePopoverV2({
 					const details =
 						firstFailure && !firstFailure.ok ? `: ${firstFailure.error}` : "";
 					throw new Error(
-						`${outcomes.length - failed} of ${outcomes.length} succeeded${details}`,
+						`Успешно: ${outcomes.length - failed} из ${outcomes.length}${details}`,
 					);
 				}
 				return outcomes.length;
@@ -265,8 +265,8 @@ export function RunInWorkspacePopoverV2({
 		);
 
 		toast.promise(promise, {
-			loading: `Creating ${tasks.length} workspace${tasks.length === 1 ? "" : "s"}...`,
-			success: (count) => `Created ${count} workspace${count === 1 ? "" : "s"}`,
+			loading: `Создание рабочих пространств: ${tasks.length}...`,
+			success: (count) => `Создано рабочих пространств: ${count}`,
 			error: (err) => (err instanceof Error ? err.message : String(err)),
 		});
 
@@ -283,7 +283,7 @@ export function RunInWorkspacePopoverV2({
 					className="h-7 text-xs gap-1.5 bg-muted/50"
 				>
 					<HiMiniPlay className="size-3" />
-					Run in Workspace
+					Запустить в рабочем пространстве
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent align="start" className="w-72 p-0">
@@ -316,7 +316,7 @@ export function RunInWorkspacePopoverV2({
 										</>
 									) : (
 										<span className="text-muted-foreground">
-											Select project
+											Выберите проект
 										</span>
 									)}
 								</span>
@@ -325,9 +325,9 @@ export function RunInWorkspacePopoverV2({
 						</PopoverTrigger>
 						<PopoverContent align="start" className="w-60 p-0">
 							<Command>
-								<CommandInput placeholder="Search projects..." />
+								<CommandInput placeholder="Поиск проектов..." />
 								<CommandList>
-									<CommandEmpty>No projects found.</CommandEmpty>
+									<CommandEmpty>Проекты не найдены.</CommandEmpty>
 									<CommandGroup>
 										{recentProjects.map((project) => (
 											<CommandItem
@@ -347,7 +347,7 @@ export function RunInWorkspacePopoverV2({
 												<span className="flex-1 truncate">{project.name}</span>
 												{project.needsSetup === true && (
 													<span className="text-[10px] text-amber-500">
-														not set up
+														не настроен
 													</span>
 												)}
 												{project.id === selectedProjectId && (
@@ -364,12 +364,12 @@ export function RunInWorkspacePopoverV2({
 					<AgentSelect<SelectedAgent>
 						agents={v2Agents}
 						value={selectedAgent}
-						placeholder="Select agent"
+						placeholder="Выберите агента"
 						onValueChange={setSelectedAgent}
 						onBeforeConfigureAgents={() => setOpen(false)}
 						triggerClassName="h-8 text-xs w-full border-0 shadow-none bg-muted/50 rounded-md"
 						allowNone
-						noneLabel="No agent"
+						noneLabel="Без агента"
 						noneValue={NONE}
 					/>
 				</div>
@@ -381,7 +381,7 @@ export function RunInWorkspacePopoverV2({
 						disabled={!!submitBlocker}
 						onClick={handleRun}
 					>
-						Run {tasks.length} Workspace{tasks.length === 1 ? "" : "s"}
+						Запустить пространств: {tasks.length}
 					</Button>
 				</div>
 			</PopoverContent>

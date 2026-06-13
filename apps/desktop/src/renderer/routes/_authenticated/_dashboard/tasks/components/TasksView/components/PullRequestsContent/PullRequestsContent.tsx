@@ -143,9 +143,7 @@ export function PullRequestsContent({
 			<div className="flex h-full items-center justify-center p-8">
 				<div className="flex flex-col items-center gap-2 text-muted-foreground text-center">
 					<GoGitPullRequest className="h-8 w-8" />
-					<span className="text-sm">
-						Select a project to see pull requests.
-					</span>
+					<span className="text-sm">Выберите проект, чтобы увидеть PR.</span>
 				</div>
 			</div>
 		);
@@ -153,10 +151,10 @@ export function PullRequestsContent({
 
 	const isInitialLoad = isFetching && pullRequests.length === 0;
 	const countLabel = isInitialLoad
-		? "Loading…"
+		? "Загрузка…"
 		: totalCount === 0
 			? "0"
-			: `${pullRequests.length} of ${totalCount}`;
+			: `${pullRequests.length} из ${totalCount}`;
 
 	return (
 		<div className="@container flex flex-col h-full overflow-hidden">
@@ -171,7 +169,7 @@ export function PullRequestsContent({
 				<Button
 					variant="ghost"
 					size="icon-xs"
-					title="Refresh"
+					title="Обновить"
 					disabled={isFetching}
 					onClick={() => refetch()}
 				>
@@ -183,7 +181,7 @@ export function PullRequestsContent({
 					<Button
 						variant="ghost"
 						size="icon-xs"
-						title="Minimize"
+						title="Свернуть"
 						onClick={onCollapse}
 					>
 						<LuMinus className="size-3.5" />
@@ -201,10 +199,10 @@ export function PullRequestsContent({
 					htmlFor={showClosedId}
 					className="cursor-pointer select-none text-muted-foreground"
 				>
-					Show closed / merged
+					Показать закрытые / влитые
 				</label>
 				{isFetching && !isInitialLoad && (
-					<span className="ml-auto text-muted-foreground">Loading…</span>
+					<span className="ml-auto text-muted-foreground">Загрузка…</span>
 				)}
 			</div>
 
@@ -217,21 +215,19 @@ export function PullRequestsContent({
 
 				{repoMismatch && (
 					<div className="px-4 py-3 text-sm text-muted-foreground select-text cursor-text">
-						PR URL must match {repoMismatch}.
+						URL PR должен совпадать с {repoMismatch}.
 					</div>
 				)}
 
 				{isInitialLoad ? (
 					<div className="flex h-full items-center justify-center gap-2 p-8 text-muted-foreground">
 						<LuRefreshCw className="size-4 animate-spin" />
-						<span className="text-sm">Loading pull requests…</span>
+						<span className="text-sm">Загрузка PR…</span>
 					</div>
 				) : totalCount === 0 && !isFetching && !error ? (
 					<div className="flex h-full items-center justify-center p-8">
 						<span className="text-sm text-muted-foreground">
-							{showClosed
-								? "No pull requests found."
-								: "No open pull requests."}
+							{showClosed ? "PR не найдены." : "Нет открытых PR."}
 						</span>
 					</div>
 				) : (
@@ -270,7 +266,7 @@ export function PullRequestsContent({
 										<Button
 											variant="ghost"
 											size="icon-xs"
-											title="Open in browser"
+											title="Открыть в браузере"
 											onClick={(e) => {
 												e.stopPropagation();
 												handleOpenUrl(pr.url);
@@ -281,7 +277,7 @@ export function PullRequestsContent({
 										<Button
 											variant="outline"
 											size="sm"
-											title="Add to workspace"
+											title="Добавить в рабочее пространство"
 											className="h-7 gap-1.5 px-2 text-xs"
 											onClick={(e) => {
 												e.stopPropagation();
@@ -290,7 +286,7 @@ export function PullRequestsContent({
 										>
 											<LuPlus className="size-3.5" />
 											<span className="hidden @lg:inline">
-												Add to workspace
+												В рабочее пространство
 											</span>
 										</Button>
 									</div>
@@ -302,7 +298,7 @@ export function PullRequestsContent({
 								ref={sentinelRef}
 								className="flex items-center justify-center py-3 text-xs text-muted-foreground"
 							>
-								{isFetchingNextPage ? "Loading more…" : ""}
+								{isFetchingNextPage ? "Загрузка ещё…" : ""}
 							</div>
 						)}
 					</div>

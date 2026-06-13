@@ -24,9 +24,9 @@ const OPTIONS: ReadonlyArray<{
 	label: string;
 	Icon: typeof AllIssuesIcon;
 }> = [
-	{ value: "all", label: "All issues", Icon: AllIssuesIcon },
-	{ value: "active", label: "Active", Icon: ActiveIcon },
-	{ value: "backlog", label: "Backlog", Icon: BacklogIcon },
+	{ value: "all", label: "Все", Icon: AllIssuesIcon },
+	{ value: "active", label: "Активные", Icon: ActiveIcon },
+	{ value: "backlog", label: "Бэклог", Icon: BacklogIcon },
 ];
 
 export function StatusFilter({ value, onChange }: StatusFilterProps) {

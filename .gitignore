@@ -107,3 +107,5 @@ plans/local/
 packages/cli/*.bun-build
 .omx/
 superset-dev-data/
+.understand-anything/
+.memsearch/

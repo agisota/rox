@@ -34,7 +34,7 @@ export function WorktreeLocationSection({
 	return (
 		<section className="space-y-3">
 			<div>
-				<h3 className="text-sm font-medium">Worktree</h3>
+				<h3 className="text-sm font-medium">Расположение worktree</h3>
 				<p className="mt-0.5 text-sm text-muted-foreground">
 					Расположение по умолчанию для новых worktree-рабочих областей на этом
 					хосте.

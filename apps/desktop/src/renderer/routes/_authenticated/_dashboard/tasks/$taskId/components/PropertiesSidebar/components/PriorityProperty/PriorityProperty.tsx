@@ -12,11 +12,11 @@ import type { TaskWithStatus } from "../../../../../components/TasksView/hooks/u
 import { ALL_PRIORITIES } from "../../../../../components/TasksView/utils/sorting";
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = {
-	none: "No priority",
-	urgent: "Urgent",
-	high: "High",
-	medium: "Medium",
-	low: "Low",
+	none: "Без приоритета",
+	urgent: "Срочно",
+	high: "Высокий",
+	medium: "Средний",
+	low: "Низкий",
 };
 
 interface PriorityPropertyProps {

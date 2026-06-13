@@ -25,32 +25,33 @@ export function ExecutionCircuitPanel({ taskId }: ExecutionCircuitPanelProps) {
 	return (
 		<section>
 			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-lg font-semibold">Execution circuit</h2>
+				<h2 className="text-lg font-semibold">Схема исполнения</h2>
 				{!circuit && !isLoading ? (
 					<Button size="sm" onClick={generateDraft} disabled={isGenerating}>
-						{isGenerating ? "Generating…" : "Generate draft"}
+						{isGenerating ? "Генерация…" : "Создать черновик"}
 					</Button>
 				) : null}
 			</div>
 
 			{isLoading && !circuit ? (
-				<p className="text-sm text-muted-foreground">Loading circuit…</p>
+				<p className="text-sm text-muted-foreground">Загрузка схемы…</p>
 			) : null}
 
 			{!isLoading && !circuit ? (
 				<p className="text-sm text-muted-foreground">
-					No execution circuit yet. Generate a default draft to map this task to
-					a TargetState and typed transitions.
+					Схемы исполнения пока нет. Создайте черновик по умолчанию, чтобы
+					сопоставить эту задачу с целевым состоянием (TargetState) и
+					типизированными переходами.
 				</p>
 			) : null}
 
 			{circuit ? (
 				<div className="space-y-4">
 					<div className="flex items-center gap-2 text-sm">
-						<span className="text-muted-foreground">Target state:</span>
+						<span className="text-muted-foreground">Целевое состояние:</span>
 						<Badge variant="secondary">{circuit.spec.targetState}</Badge>
 						<span className="text-muted-foreground">·</span>
-						<span className="text-muted-foreground">Initial:</span>
+						<span className="text-muted-foreground">Начальное:</span>
 						<Badge variant="outline">{circuit.spec.initialState}</Badge>
 					</div>
 
@@ -81,8 +82,8 @@ export function ExecutionCircuitPanel({ taskId }: ExecutionCircuitPanelProps) {
 									onClick={() => copyPrompt(transition.id)}
 								>
 									{copiedTransitionId === transition.id
-										? "Copied"
-										: "Copy prompt"}
+										? "Скопировано"
+										: "Копировать промпт"}
 								</Button>
 							</li>
 						))}

@@ -17,7 +17,7 @@ export function ActivitySection({
 				avatarUrl={creatorAvatarUrl}
 				avatarFallback={creatorName.charAt(0).toUpperCase()}
 				actorName={creatorName}
-				action="created the issue"
+				action="создал(а) задачу"
 				timestamp={createdAt}
 			/>
 		</div>

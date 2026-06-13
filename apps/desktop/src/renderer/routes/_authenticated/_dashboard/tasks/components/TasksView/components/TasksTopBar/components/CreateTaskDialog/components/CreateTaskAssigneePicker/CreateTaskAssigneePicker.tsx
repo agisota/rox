@@ -75,7 +75,7 @@ export function CreateTaskAssigneePicker({
 					) : (
 						<>
 							<HiOutlineUserCircle className="size-4 text-muted-foreground" />
-							<span className="text-muted-foreground">Assignee</span>
+							<span className="text-muted-foreground">Исполнитель</span>
 						</>
 					)}
 					<HiChevronDown className="size-3.5 text-muted-foreground" />
@@ -84,7 +84,7 @@ export function CreateTaskAssigneePicker({
 			<PopoverContent align="start" className="w-64 p-0">
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search people..."
+						placeholder="Поиск людей..."
 						value={search}
 						onValueChange={setSearch}
 					/>
@@ -92,13 +92,13 @@ export function CreateTaskAssigneePicker({
 						<CommandGroup>
 							<CommandItem onSelect={() => handleSelect(null)}>
 								<HiOutlineUserCircle className="size-4" />
-								<span className="flex-1 text-sm">No assignee</span>
+								<span className="flex-1 text-sm">Без исполнителя</span>
 								{value === null && <HiCheck className="size-3.5" />}
 							</CommandItem>
 						</CommandGroup>
 
 						{filteredUsers.length === 0 ? (
-							<CommandEmpty>No people found.</CommandEmpty>
+							<CommandEmpty>Люди не найдены.</CommandEmpty>
 						) : (
 							<CommandGroup>
 								{filteredUsers.map((user) => (

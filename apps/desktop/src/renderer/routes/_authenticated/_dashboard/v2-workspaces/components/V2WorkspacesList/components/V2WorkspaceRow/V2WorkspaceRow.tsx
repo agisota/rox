@@ -130,8 +130,8 @@ export function V2WorkspaceRow({
 	}, [removeWorkspaceFromSidebar, workspace.id]);
 
 	const creatorLabel = workspace.isCreatedByCurrentUser
-		? "you"
-		: (workspace.createdByName ?? "unknown");
+		? "вы"
+		: (workspace.createdByName ?? "неизвестно");
 
 	const timeLabel = getRelativeTime(workspace.createdAt.getTime(), {
 		format: "compact",
@@ -200,7 +200,7 @@ export function V2WorkspaceRow({
 									onClick={handleRemoveFromSidebar}
 									aria-disabled={isCurrentRoute}
 									aria-pressed
-									aria-label="Unpin from sidebar"
+									aria-label="Открепить с боковой панели"
 									className={cn(
 										"size-7 text-foreground hover:bg-transparent hover:text-muted-foreground dark:hover:bg-transparent",
 										isCurrentRoute && "cursor-not-allowed opacity-50",
@@ -211,8 +211,8 @@ export function V2WorkspaceRow({
 							</TooltipTrigger>
 							<TooltipContent side="right">
 								{isCurrentRoute
-									? "Can't unpin the current workspace"
-									: "Unpin from sidebar"}
+									? "Нельзя открепить текущее рабочее пространство"
+									: "Открепить с боковой панели"}
 							</TooltipContent>
 						</Tooltip>
 					) : (
@@ -223,13 +223,15 @@ export function V2WorkspaceRow({
 									variant="ghost"
 									onClick={handleAddToSidebar}
 									aria-pressed={false}
-									aria-label="Pin to sidebar"
+									aria-label="Закрепить на боковой панели"
 									className="size-7 text-muted-foreground hover:bg-transparent hover:text-foreground dark:hover:bg-transparent"
 								>
 									<RiPushpinLine className="size-4" />
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent side="right">Pin to sidebar</TooltipContent>
+							<TooltipContent side="right">
+								Закрепить на боковой панели
+							</TooltipContent>
 						</Tooltip>
 					)}
 				</div>
@@ -240,10 +242,12 @@ export function V2WorkspaceRow({
 							<TooltipTrigger asChild>
 								<CgLaptop
 									className="size-3.5 shrink-0 text-muted-foreground"
-									aria-label="Main workspace"
+									aria-label="Основное рабочее пространство"
 								/>
 							</TooltipTrigger>
-							<TooltipContent side="top">Main workspace</TooltipContent>
+							<TooltipContent side="top">
+								Основное рабочее пространство
+							</TooltipContent>
 						</Tooltip>
 					) : null}
 					<span
@@ -260,7 +264,7 @@ export function V2WorkspaceRow({
 				{treatAsOffline ? (
 					<Tooltip delayDuration={300}>
 						<TooltipTrigger asChild>{hostCell}</TooltipTrigger>
-						<TooltipContent side="top">Host is offline</TooltipContent>
+						<TooltipContent side="top">Хост офлайн</TooltipContent>
 					</Tooltip>
 				) : (
 					hostCell
@@ -278,7 +282,7 @@ export function V2WorkspaceRow({
 
 				<span
 					className="hidden truncate text-xs tabular-nums text-muted-foreground xl:block"
-					title={`Created ${workspace.createdAt.toLocaleString()} by ${creatorLabel}`}
+					title={`Создано ${workspace.createdAt.toLocaleString()}, автор: ${creatorLabel}`}
 				>
 					{timeLabel} · {creatorLabel}
 				</span>
@@ -291,7 +295,7 @@ export function V2WorkspaceRow({
 							size="icon"
 							variant="ghost"
 							onClick={handleDeleteClick}
-							aria-label="Delete workspace"
+							aria-label="Удалить рабочее пространство"
 							className="size-7 text-muted-foreground opacity-0 transition-opacity hover:bg-transparent hover:text-destructive focus-visible:opacity-100 group-hover/row:opacity-100 dark:hover:bg-transparent"
 						>
 							<LuTrash2 className="size-3.5" />
@@ -379,7 +383,7 @@ function AsciiSpinner() {
 
 	return (
 		<output
-			aria-label="Deleting workspace"
+			aria-label="Удаление рабочего пространства"
 			className="select-none font-mono text-base leading-none tabular-nums text-muted-foreground"
 		>
 			{ASCII_SPINNER_FRAMES[frame]}

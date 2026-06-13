@@ -52,9 +52,9 @@ export function AutomationDetailSidebar({
 	return (
 		<aside className="flex w-[360px] shrink-0 flex-col overflow-hidden border-l border-border">
 			<div className="flex shrink-0 flex-col gap-6 px-5 pt-5 pb-2">
-				<Section title="Status">
+				<Section title="Статус">
 					<Row
-						label="Status"
+						label="Статус"
 						value={
 							<span className="inline-flex items-center gap-2">
 								{automation.enabled ? (
@@ -70,12 +70,12 @@ export function AutomationDetailSidebar({
 										)}
 									/>
 								)}
-								{automation.enabled ? "Active" : "Paused"}
+								{automation.enabled ? "Активна" : "На паузе"}
 							</span>
 						}
 					/>
 					<Row
-						label="Next run"
+						label="Следующий запуск"
 						value={
 							automation.enabled && automation.nextRunAt
 								? formatDateTimeInTimezone(
@@ -86,7 +86,7 @@ export function AutomationDetailSidebar({
 						}
 					/>
 					<Row
-						label="Last ran"
+						label="Последний запуск"
 						value={
 							lastRunAt
 								? formatDateTimeInTimezone(lastRunAt, automation.timezone)
@@ -95,9 +95,9 @@ export function AutomationDetailSidebar({
 					/>
 				</Section>
 
-				<Section title="Details" collapsible defaultOpen={true}>
+				<Section title="Детали" collapsible defaultOpen={true}>
 					<Row
-						label="Device"
+						label="Устройство"
 						value={
 							<DevicePicker
 								className="-mr-4"
@@ -109,7 +109,7 @@ export function AutomationDetailSidebar({
 						}
 					/>
 					<Row
-						label="Project"
+						label="Проект"
 						value={
 							<ProjectPicker
 								className="-mr-4"
@@ -122,7 +122,7 @@ export function AutomationDetailSidebar({
 						}
 					/>
 					<Row
-						label="Workspace"
+						label="Рабочее пространство"
 						value={
 							<WorkspacePicker
 								className="-mr-4"
@@ -136,7 +136,7 @@ export function AutomationDetailSidebar({
 						}
 					/>
 					<Row
-						label="Repeats"
+						label="Повтор"
 						value={
 							<SchedulePicker
 								className="-mr-4"
@@ -146,7 +146,7 @@ export function AutomationDetailSidebar({
 						}
 					/>
 					<Row
-						label="Agent"
+						label="Агент"
 						value={
 							<AgentPicker
 								className="-mr-4"
@@ -169,7 +169,7 @@ export function AutomationDetailSidebar({
 						}
 					/>
 					<Row
-						label="Timezone"
+						label="Часовой пояс"
 						value={
 							<TimezonePicker
 								className="-mr-4"
@@ -182,7 +182,7 @@ export function AutomationDetailSidebar({
 			</div>
 
 			<div className="mt-6 flex min-h-0 flex-1 flex-col gap-2 pl-5 pr-3 pb-5">
-				<SectionTitle>Previous runs</SectionTitle>
+				<SectionTitle>Предыдущие запуски</SectionTitle>
 				<div className="min-h-0 flex-1 overflow-y-auto">
 					<PreviousRunsList runs={recentRuns} />
 				</div>

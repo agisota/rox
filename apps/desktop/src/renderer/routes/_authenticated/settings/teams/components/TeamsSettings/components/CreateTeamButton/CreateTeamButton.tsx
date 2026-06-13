@@ -107,7 +107,7 @@ export function CreateTeamButton({ organizationId }: CreateTeamButtonProps) {
 								/>
 							</div>
 							<div className="space-y-1.5">
-								<Label htmlFor="team-slug">Slug</Label>
+								<Label htmlFor="team-slug">Слаг</Label>
 								<Input
 									id="team-slug"
 									value={slug}

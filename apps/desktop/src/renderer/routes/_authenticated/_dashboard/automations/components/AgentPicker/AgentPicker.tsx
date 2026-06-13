@@ -57,7 +57,7 @@ export function AgentPicker({
 							<LuCpu className="size-4 shrink-0" />
 						)
 					}
-					label={selectedLabel ?? "Select agent"}
+					label={selectedLabel ?? "Выберите агента"}
 				/>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-56">
@@ -85,7 +85,7 @@ export function AgentPicker({
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onSelect={() => navigate({ to: "/settings/agents" })}>
 					<LuSettings className="size-4 shrink-0" />
-					<span className="flex-1">Configure agents…</span>
+					<span className="flex-1">Настроить агентов…</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

@@ -16,13 +16,13 @@ export function LinearCTA() {
 					<SiLinear className="size-8" />
 				</div>
 				<div className="space-y-2">
-					<h3 className="text-lg font-semibold">Connect Linear</h3>
+					<h3 className="text-lg font-semibold">Подключить Linear</h3>
 					<p className="text-sm text-muted-foreground">
-						Connect your Linear workspace to sync issues and manage tasks
-						directly from Rox.
+						Подключите рабочее пространство Linear, чтобы синхронизировать
+						Issues и управлять задачами прямо из Rox.
 					</p>
 				</div>
-				<Button onClick={handleConnectLinear}>Connect Linear</Button>
+				<Button onClick={handleConnectLinear}>Подключить Linear</Button>
 			</div>
 		</div>
 	);

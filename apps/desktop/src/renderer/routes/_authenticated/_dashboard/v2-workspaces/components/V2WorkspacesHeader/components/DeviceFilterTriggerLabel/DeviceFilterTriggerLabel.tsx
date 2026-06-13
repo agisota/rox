@@ -18,7 +18,7 @@ export function DeviceFilterTriggerLabel({
 		return (
 			<span className="flex items-center gap-2">
 				<LuLayers className="size-3.5" />
-				<span>All devices</span>
+				<span>Все устройства</span>
 			</span>
 		);
 	}
@@ -26,7 +26,7 @@ export function DeviceFilterTriggerLabel({
 		return (
 			<span className="flex items-center gap-2">
 				<LuLaptop className="size-3.5" />
-				<span>This device</span>
+				<span>Это устройство</span>
 			</span>
 		);
 	}
@@ -34,7 +34,7 @@ export function DeviceFilterTriggerLabel({
 		<span className="flex min-w-0 items-center gap-2">
 			<LuMonitor className="size-3.5" />
 			<span className="min-w-0 truncate">
-				{selectedRemoteHost?.hostName ?? "Unknown device"}
+				{selectedRemoteHost?.hostName ?? "Неизвестное устройство"}
 			</span>
 			{selectedRemoteHost ? (
 				<span

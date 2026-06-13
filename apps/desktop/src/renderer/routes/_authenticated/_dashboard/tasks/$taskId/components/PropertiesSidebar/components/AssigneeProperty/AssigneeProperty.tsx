@@ -76,14 +76,16 @@ export function AssigneeProperty({ task }: AssigneePropertyProps) {
 								</div>
 							)}
 							<span className="text-sm">
-								{task.assigneeDisplayName || "External"}{" "}
-								<span className="text-muted-foreground">(external)</span>
+								{task.assigneeDisplayName || "Внешний"}{" "}
+								<span className="text-muted-foreground">(внешний)</span>
 							</span>
 						</>
 					) : (
 						<>
 							<HiOutlineUserCircle className="w-5 h-5 text-muted-foreground" />
-							<span className="text-sm text-muted-foreground">Unassigned</span>
+							<span className="text-sm text-muted-foreground">
+								Без исполнителя
+							</span>
 						</>
 					)}
 				</button>
@@ -95,7 +97,7 @@ export function AssigneeProperty({ task }: AssigneePropertyProps) {
 						className="flex items-center gap-2"
 					>
 						<HiOutlineUserCircle className="w-5 h-5 text-muted-foreground shrink-0" />
-						<span className="text-sm">No assignee</span>
+						<span className="text-sm">Без исполнителя</span>
 						{!task.assigneeId && !task.assigneeExternalId && (
 							<span className="ml-auto text-xs text-muted-foreground">✓</span>
 						)}

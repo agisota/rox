@@ -94,7 +94,7 @@ export function TaskContextMenu({
 				<ContextMenuSub>
 					<ContextMenuSubTrigger>
 						<ActiveIcon className="mr-2" />
-						<span>Status</span>
+						<span>Статус</span>
 					</ContextMenuSubTrigger>
 					<ContextMenuSubContent className="w-48">
 						<div className="max-h-64 overflow-y-auto">
@@ -112,7 +112,7 @@ export function TaskContextMenu({
 				<ContextMenuSub>
 					<ContextMenuSubTrigger>
 						<HiOutlineUserCircle className="mr-2 size-4" />
-						<span>Assignee</span>
+						<span>Исполнитель</span>
 					</ContextMenuSubTrigger>
 					<ContextMenuSubContent className="w-56">
 						<div className="max-h-64 overflow-y-auto">
@@ -131,7 +131,7 @@ export function TaskContextMenu({
 				<ContextMenuSub>
 					<ContextMenuSubTrigger>
 						<PriorityMenuIcon className="mr-1" />
-						<span>Priority</span>
+						<span>Приоритет</span>
 					</ContextMenuSubTrigger>
 					<ContextMenuSubContent className="w-52">
 						<PriorityMenuItems
@@ -149,14 +149,14 @@ export function TaskContextMenu({
 				<ContextMenuSub>
 					<ContextMenuSubTrigger>
 						<HiOutlineDocumentDuplicate className="mr-2 size-4" />
-						<span>Copy</span>
+						<span>Копировать</span>
 					</ContextMenuSubTrigger>
 					<ContextMenuSubContent className="w-48">
 						<ContextMenuItem onClick={handleCopyId}>
-							<span>Copy ID</span>
+							<span>Копировать ID</span>
 						</ContextMenuItem>
 						<ContextMenuItem onClick={handleCopyTitle}>
-							<span>Copy Title</span>
+							<span>Копировать название</span>
 						</ContextMenuItem>
 					</ContextMenuSubContent>
 				</ContextMenuSub>
@@ -168,7 +168,7 @@ export function TaskContextMenu({
 					className="text-destructive focus:text-destructive"
 				>
 					<HiOutlineTrash className="text-destructive size-4" />
-					<span>Delete</span>
+					<span>Удалить</span>
 				</ContextMenuItem>
 			</ContextMenuContent>
 		</ContextMenu>

@@ -8,9 +8,9 @@ const REVIEW_BADGE_STYLES: Record<V2WorkspacePrReviewDecision, string> = {
 };
 
 const REVIEW_BADGE_LABELS: Record<V2WorkspacePrReviewDecision, string> = {
-	approved: "Approved",
-	changes_requested: "Changes requested",
-	pending: "Review pending",
+	approved: "Одобрено",
+	changes_requested: "Запрошены правки",
+	pending: "Ожидает ревью",
 };
 
 interface ReviewStatusBadgeProps {

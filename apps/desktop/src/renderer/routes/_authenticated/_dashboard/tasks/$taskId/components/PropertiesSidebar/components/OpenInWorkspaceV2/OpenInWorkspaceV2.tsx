@@ -174,29 +174,29 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 	};
 
 	const submitBlocker = useMemo<string | null>(() => {
-		if (!selectedProjectId) return "Select a project";
-		if (!hostId) return "No active host";
+		if (!selectedProjectId) return "Выберите проект";
+		if (!hostId) return "Нет активного хоста";
 		if (hostId !== machineId) {
 			const remote = otherHosts.find((host) => host.id === hostId);
-			if (!remote?.isOnline) return "Host is offline";
+			if (!remote?.isOnline) return "Хост офлайн";
 		} else if (!activeHostUrl) {
-			return "Host service is not running";
+			return "Сервис хоста не запущен";
 		}
 		// While the host's project list is still loading, needsSetup is null —
 		// block until we know whether the project is actually set up on the
 		// chosen host, otherwise the server-side guard becomes the only check.
-		if (setUpProjectIds === null) return "Checking host…";
+		if (setUpProjectIds === null) return "Проверка хоста…";
 		if (selectedProject?.needsSetup === true) {
-			return "Project not set up on this host";
+			return "Проект не настроен на этом хосте";
 		}
 		// Agent UUIDs are host-scoped. Right after a host switch the stored id
 		// from the previous host is still in selectedAgent until the agent
 		// query resolves and the corrective effect runs — block submission so
 		// we don't send an id this host doesn't recognize.
 		if (selectedAgent !== NONE) {
-			if (!v2AgentsFetched) return "Checking agents…";
+			if (!v2AgentsFetched) return "Проверка агентов…";
 			if (!validAgentIds.has(selectedAgent)) {
-				return "Selected agent is not available on this host";
+				return "Выбранный агент недоступен на этом хосте";
 			}
 		}
 		return null;
@@ -273,7 +273,9 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<span className="text-xs text-muted-foreground">Open in workspace</span>
+			<span className="text-xs text-muted-foreground">
+				В рабочем пространстве
+			</span>
 			<DevicePicker
 				hostId={hostId}
 				onSelectHostId={(next) => {
@@ -301,7 +303,7 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 										<span className="truncate">{selectedProject.name}</span>
 									</>
 								) : (
-									<span className="text-muted-foreground">Select project</span>
+									<span className="text-muted-foreground">Выберите проект</span>
 								)}
 							</span>
 							<HiChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -312,7 +314,7 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 						className="w-[--radix-dropdown-menu-trigger-width]"
 					>
 						{recentProjects.length === 0 ? (
-							<DropdownMenuItem disabled>No projects found</DropdownMenuItem>
+							<DropdownMenuItem disabled>Проекты не найдены</DropdownMenuItem>
 						) : (
 							recentProjects.map((project) => (
 								<DropdownMenuItem
@@ -328,7 +330,7 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 									<span className="flex-1 truncate">{project.name}</span>
 									{project.needsSetup === true && (
 										<span className="text-[10px] text-amber-500 shrink-0">
-											not set up
+											не настроен
 										</span>
 									)}
 								</DropdownMenuItem>
@@ -338,7 +340,7 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 				</DropdownMenu>
 				<Button
 					size="icon"
-					aria-label="Open in workspace"
+					aria-label="Открыть в рабочем пространстве"
 					className="h-8 w-8 shrink-0"
 					disabled={!!submitBlocker}
 					onClick={handleOpen}
@@ -349,11 +351,11 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 			<AgentSelect<SelectedAgent>
 				agents={v2Agents}
 				value={selectedAgent}
-				placeholder="Select agent"
+				placeholder="Выберите агента"
 				onValueChange={setSelectedAgent}
 				triggerClassName="h-8 text-xs"
 				allowNone
-				noneLabel="No agent"
+				noneLabel="Без агента"
 				noneValue={NONE}
 			/>
 		</div>

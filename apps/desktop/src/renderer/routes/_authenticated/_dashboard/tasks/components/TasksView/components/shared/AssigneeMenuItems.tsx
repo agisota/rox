@@ -31,7 +31,7 @@ export function AssigneeMenuItems({
 				className="flex items-center gap-2"
 			>
 				<HiOutlineUserCircle className="size-5 text-muted-foreground shrink-0" />
-				<span className="text-sm">No assignee</span>
+				<span className="text-sm">Без исполнителя</span>
 				{!currentAssigneeId && !hasExternalAssignee && (
 					<span className="ml-auto text-xs text-muted-foreground">✓</span>
 				)}

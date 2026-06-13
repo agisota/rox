@@ -83,7 +83,7 @@ function PullRequestDetailPage() {
 	if (!projectId) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<span className="text-muted-foreground">No project specified.</span>
+				<span className="text-muted-foreground">Проект не указан.</span>
 			</div>
 		);
 	}
@@ -91,7 +91,7 @@ function PullRequestDetailPage() {
 	if (isLoading) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<span className="text-muted-foreground">Loading pull request…</span>
+				<span className="text-muted-foreground">Загрузка PR…</span>
 			</div>
 		);
 	}
@@ -107,14 +107,14 @@ function PullRequestDetailPage() {
 					onAddToWorkspace={null}
 				/>
 				<div className="px-6 py-6 text-sm text-destructive select-text cursor-text">
-					{error instanceof Error ? error.message : "Pull request not found."}
+					{error instanceof Error ? error.message : "PR не найден."}
 				</div>
 			</div>
 		);
 	}
 
 	const state = normalizePRState(data.state, data.isDraft);
-	const stateLabel = data.isDraft ? "Draft" : data.state;
+	const stateLabel = data.isDraft ? "Черновик" : data.state;
 	const branchSummary = data.branch
 		? `${data.headRepositoryOwner && data.isCrossRepository ? `${data.headRepositoryOwner}:${data.branch}` : data.branch} → ${data.baseBranch}`
 		: null;
@@ -143,7 +143,7 @@ function PullRequestDetailPage() {
 						{data.author && (
 							<>
 								<span>·</span>
-								<span>by {data.author}</span>
+								<span>автор: {data.author}</span>
 							</>
 						)}
 						{branchSummary && (
@@ -158,7 +158,7 @@ function PullRequestDetailPage() {
 						<MarkdownRenderer content={data.body} />
 					) : (
 						<p className="text-sm text-muted-foreground italic">
-							No description provided.
+							Описание не предоставлено.
 						</p>
 					)}
 				</div>
@@ -189,7 +189,7 @@ function Header({
 				size="icon"
 				className="h-8 w-8"
 				onClick={onBack}
-				aria-label="Back to tasks"
+				aria-label="Назад к задачам"
 			>
 				<HiArrowLeft className="w-4 h-4" />
 			</Button>
@@ -204,7 +204,7 @@ function Header({
 						target="_blank"
 						rel="noopener noreferrer"
 						className="text-muted-foreground hover:text-foreground transition-colors p-2"
-						title="Open in GitHub"
+						title="Открыть в GitHub"
 					>
 						<LuExternalLink className="w-4 h-4" />
 					</a>
@@ -216,8 +216,7 @@ function Header({
 						className="h-8 gap-1.5"
 						onClick={onAddToWorkspace}
 					>
-						<LuPlus className="size-4" />
-						Add to workspace
+						<LuPlus className="size-4" />В рабочее пространство
 					</Button>
 				)}
 			</div>

@@ -16,10 +16,10 @@ export function AutomationsEmptyState({
 		<div className="mx-auto flex max-w-5xl flex-col gap-8">
 			<div className="flex flex-col gap-1">
 				<h2 className="text-base font-semibold tracking-tight">
-					Start from a template
+					Начните с шаблона
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					Run an agent on a schedule to automate work.
+					Запускайте агента по расписанию, чтобы автоматизировать работу.
 				</p>
 			</div>
 			{AUTOMATION_TEMPLATE_CATEGORIES.map((category) => (

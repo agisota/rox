@@ -43,7 +43,7 @@ export function EditableTitle({ value, onSave }: EditableTitleProps) {
 			onBlur={handleBlur}
 			onKeyDown={handleKeyDown}
 			className="w-full text-2xl font-semibold mb-6 p-0 bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
-			placeholder="Task title..."
+			placeholder="Название задачи..."
 		/>
 	);
 }

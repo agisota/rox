@@ -179,22 +179,22 @@ export function RunIssuesInWorkspacePopover({
 	const [projectPickerOpen, setProjectPickerOpen] = useState(false);
 
 	const submitBlocker = useMemo<string | null>(() => {
-		if (!selectedProjectId) return "Select a project";
-		if (!hostId) return "No active host";
+		if (!selectedProjectId) return "Выберите проект";
+		if (!hostId) return "Нет активного хоста";
 		if (hostId !== machineId) {
 			const remote = otherHosts.find((host) => host.id === hostId);
-			if (!remote?.isOnline) return "Host is offline";
+			if (!remote?.isOnline) return "Хост офлайн";
 		} else if (!activeHostUrl) {
-			return "Host service is not running";
+			return "Сервис хоста не запущен";
 		}
-		if (setUpProjectIds === null) return "Checking host…";
+		if (setUpProjectIds === null) return "Проверка хоста…";
 		if (selectedProject?.needsSetup === true) {
-			return "Project not set up on this host";
+			return "Проект не настроен на этом хосте";
 		}
 		if (selectedAgent !== NONE) {
-			if (!v2AgentsFetched) return "Checking agents…";
+			if (!v2AgentsFetched) return "Проверка агентов…";
 			if (!validAgentIds.has(selectedAgent)) {
-				return "Selected agent is not available on this host";
+				return "Выбранный агент недоступен на этом хосте";
 			}
 		}
 		return null;
@@ -258,7 +258,7 @@ export function RunIssuesInWorkspacePopover({
 					const details =
 						firstFailure && !firstFailure.ok ? `: ${firstFailure.error}` : "";
 					throw new Error(
-						`${outcomes.length - failed} of ${outcomes.length} succeeded${details}`,
+						`Успешно: ${outcomes.length - failed} из ${outcomes.length}${details}`,
 					);
 				}
 				return outcomes.length;
@@ -266,8 +266,8 @@ export function RunIssuesInWorkspacePopover({
 		);
 
 		toast.promise(promise, {
-			loading: `Creating ${issues.length} workspace${issues.length === 1 ? "" : "s"}...`,
-			success: (count) => `Created ${count} workspace${count === 1 ? "" : "s"}`,
+			loading: `Создание рабочих пространств: ${issues.length}...`,
+			success: (count) => `Создано рабочих пространств: ${count}`,
 			error: (err) => (err instanceof Error ? err.message : String(err)),
 		});
 
@@ -284,7 +284,7 @@ export function RunIssuesInWorkspacePopover({
 					className="h-7 text-xs gap-1.5 bg-muted/50"
 				>
 					<HiMiniPlay className="size-3" />
-					Run in Workspace
+					Запустить в рабочем пространстве
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent align="start" className="w-72 p-0">
@@ -317,7 +317,7 @@ export function RunIssuesInWorkspacePopover({
 										</>
 									) : (
 										<span className="text-muted-foreground">
-											Select project
+											Выберите проект
 										</span>
 									)}
 								</span>
@@ -326,9 +326,9 @@ export function RunIssuesInWorkspacePopover({
 						</PopoverTrigger>
 						<PopoverContent align="start" className="w-60 p-0">
 							<Command>
-								<CommandInput placeholder="Search projects..." />
+								<CommandInput placeholder="Поиск проектов..." />
 								<CommandList>
-									<CommandEmpty>No projects found.</CommandEmpty>
+									<CommandEmpty>Проекты не найдены.</CommandEmpty>
 									<CommandGroup>
 										{recentProjects.map((project) => (
 											<CommandItem
@@ -348,7 +348,7 @@ export function RunIssuesInWorkspacePopover({
 												<span className="flex-1 truncate">{project.name}</span>
 												{project.needsSetup === true && (
 													<span className="text-[10px] text-amber-500">
-														not set up
+														не настроен
 													</span>
 												)}
 												{project.id === selectedProjectId && (
@@ -365,12 +365,12 @@ export function RunIssuesInWorkspacePopover({
 					<AgentSelect<SelectedAgent>
 						agents={v2Agents}
 						value={selectedAgent}
-						placeholder="Select agent"
+						placeholder="Выберите агента"
 						onValueChange={setSelectedAgent}
 						onBeforeConfigureAgents={() => setOpen(false)}
 						triggerClassName="h-8 text-xs w-full border-0 shadow-none bg-muted/50 rounded-md"
 						allowNone
-						noneLabel="No agent"
+						noneLabel="Без агента"
 						noneValue={NONE}
 					/>
 				</div>
@@ -382,7 +382,7 @@ export function RunIssuesInWorkspacePopover({
 						disabled={!!submitBlocker}
 						onClick={handleRun}
 					>
-						Run {issues.length} Workspace{issues.length === 1 ? "" : "s"}
+						Запустить пространств: {issues.length}
 					</Button>
 				</div>
 			</PopoverContent>

@@ -195,7 +195,9 @@ export function GitHubIssuesContent({
 			<div className="flex h-full items-center justify-center p-8">
 				<div className="flex flex-col items-center gap-2 text-muted-foreground text-center">
 					<GoIssueOpened className="h-8 w-8" />
-					<span className="text-sm">Select a project to see issues.</span>
+					<span className="text-sm">
+						Выберите проект, чтобы увидеть Issues.
+					</span>
 				</div>
 			</div>
 		);
@@ -203,10 +205,10 @@ export function GitHubIssuesContent({
 
 	const isInitialLoad = isFetching && issues.length === 0;
 	const countLabel = isInitialLoad
-		? "Loading…"
+		? "Загрузка…"
 		: totalCount === 0
 			? "0"
-			: `${issues.length} of ${totalCount}`;
+			: `${issues.length} из ${totalCount}`;
 
 	return (
 		<div className="@container flex flex-col h-full overflow-hidden">
@@ -221,7 +223,7 @@ export function GitHubIssuesContent({
 				<Button
 					variant="ghost"
 					size="icon-xs"
-					title="Refresh"
+					title="Обновить"
 					disabled={isFetching}
 					onClick={() => refetch()}
 				>
@@ -233,7 +235,7 @@ export function GitHubIssuesContent({
 					<Button
 						variant="ghost"
 						size="icon-xs"
-						title="Minimize"
+						title="Свернуть"
 						onClick={onCollapse}
 					>
 						<LuMinus className="size-3.5" />
@@ -251,10 +253,10 @@ export function GitHubIssuesContent({
 					htmlFor={showClosedId}
 					className="cursor-pointer select-none text-muted-foreground"
 				>
-					Show closed
+					Показать закрытые
 				</label>
 				{isFetching && !isInitialLoad && (
-					<span className="ml-auto text-muted-foreground">Loading…</span>
+					<span className="ml-auto text-muted-foreground">Загрузка…</span>
 				)}
 			</div>
 
@@ -267,19 +269,19 @@ export function GitHubIssuesContent({
 
 				{repoMismatch && (
 					<div className="px-4 py-3 text-sm text-muted-foreground select-text cursor-text">
-						Issue URL must match {repoMismatch}.
+						URL Issue должен совпадать с {repoMismatch}.
 					</div>
 				)}
 
 				{isInitialLoad ? (
 					<div className="flex h-full items-center justify-center gap-2 p-8 text-muted-foreground">
 						<LuRefreshCw className="size-4 animate-spin" />
-						<span className="text-sm">Loading issues…</span>
+						<span className="text-sm">Загрузка Issues…</span>
 					</div>
 				) : totalCount === 0 && !isFetching && !error ? (
 					<div className="flex h-full items-center justify-center p-8">
 						<span className="text-sm text-muted-foreground">
-							{showClosed ? "No issues found." : "No open issues."}
+							{showClosed ? "Issues не найдены." : "Нет открытых Issues."}
 						</span>
 					</div>
 				) : (
@@ -318,7 +320,7 @@ export function GitHubIssuesContent({
 											)
 										}
 										onClick={(e) => e.stopPropagation()}
-										aria-label="Select issue"
+										aria-label="Выбрать Issue"
 										className="cursor-pointer shrink-0"
 									/>
 									<StateIcon
@@ -343,7 +345,7 @@ export function GitHubIssuesContent({
 										<Button
 											variant="ghost"
 											size="icon-xs"
-											title="Open in browser"
+											title="Открыть в браузере"
 											onClick={(e) => {
 												e.stopPropagation();
 												handleOpenUrl(issue.url);
@@ -354,7 +356,7 @@ export function GitHubIssuesContent({
 										<Button
 											variant="outline"
 											size="sm"
-											title="Add to workspace"
+											title="Добавить в рабочее пространство"
 											className="h-7 gap-1.5 px-2 text-xs"
 											onClick={(e) => {
 												e.stopPropagation();
@@ -363,7 +365,7 @@ export function GitHubIssuesContent({
 										>
 											<LuPlus className="size-3.5" />
 											<span className="hidden @lg:inline">
-												Add to workspace
+												В рабочее пространство
 											</span>
 										</Button>
 									</div>
@@ -375,7 +377,7 @@ export function GitHubIssuesContent({
 								ref={sentinelRef}
 								className="flex items-center justify-center py-3 text-xs text-muted-foreground"
 							>
-								{isFetchingNextPage ? "Loading more…" : ""}
+								{isFetchingNextPage ? "Загрузка ещё…" : ""}
 							</div>
 						)}
 					</div>

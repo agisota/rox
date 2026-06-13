@@ -400,7 +400,7 @@ export function ProjectSettings({
 					)}
 				</SettingsSection>
 
-				<SettingsSection title="Worktree">
+				<SettingsSection title="Расположение worktree">
 					<WorktreeLocationPicker
 						currentPath={project.worktreeBaseDir}
 						defaultPathLabel={`Используется глобальное значение: ${globalPath}`}

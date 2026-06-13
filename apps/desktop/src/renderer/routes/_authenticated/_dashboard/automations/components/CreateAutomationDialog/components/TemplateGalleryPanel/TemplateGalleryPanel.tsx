@@ -23,13 +23,13 @@ export function TemplateGalleryPanel({
 					variant="ghost"
 					size="icon-sm"
 					onClick={onBack}
-					aria-label="Back"
+					aria-label="Назад"
 				>
 					<LuArrowLeft className="size-4" />
 				</Button>
-				<h2 className="flex-1 text-base font-medium">Automation templates</h2>
+				<h2 className="flex-1 text-base font-medium">Шаблоны автоматизаций</h2>
 				<DialogClose asChild>
-					<Button variant="ghost" size="icon-sm" aria-label="Close">
+					<Button variant="ghost" size="icon-sm" aria-label="Закрыть">
 						<LuX className="size-4" />
 					</Button>
 				</DialogClose>

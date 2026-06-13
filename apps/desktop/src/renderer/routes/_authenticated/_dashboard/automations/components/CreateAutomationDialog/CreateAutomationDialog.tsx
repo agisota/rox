@@ -185,8 +185,8 @@ export function CreateAutomationDialog({
 
 	const createMutation = useMutation({
 		mutationFn: () => {
-			if (!selectedAgent) throw new Error("No agent selected");
-			if (!selectedProjectId) throw new Error("No project selected");
+			if (!selectedAgent) throw new Error("Агент не выбран");
+			if (!selectedProjectId) throw new Error("Проект не выбран");
 			return apiTrpcClient.automation.create.mutate({
 				name,
 				prompt,
@@ -200,7 +200,7 @@ export function CreateAutomationDialog({
 			});
 		},
 		onSuccess: (result) => {
-			toast.success(`Automation "${result.name}" created`);
+			toast.success(`Автоматизация «${result.name}» создана`);
 			onCreated({ id: result.id, name: result.name });
 		},
 		onError: (error) => {
@@ -211,10 +211,10 @@ export function CreateAutomationDialog({
 	const humanReadableCreateError = (() => {
 		if (!createMutation.isError) return null;
 		const error = createMutation.error;
-		if (!(error instanceof Error)) return "Failed to create automation";
+		if (!(error instanceof Error)) return "Не удалось создать автоматизацию";
 		// Raw Postgres errors are multi-line SQL dumps — keep the first line only.
 		const firstLine = error.message.split("\n")[0]?.trim();
-		if (!firstLine) return "Failed to create automation";
+		if (!firstLine) return "Не удалось создать автоматизацию";
 		return firstLine.length > 160 ? `${firstLine.slice(0, 160)}…` : firstLine;
 	})();
 
@@ -261,11 +261,13 @@ export function CreateAutomationDialog({
 						<>
 							<DialogHeader className="flex-row items-center gap-2 p-4 pb-0 space-y-0">
 								<div className="flex-1">
-									<DialogTitle className="sr-only">New automation</DialogTitle>
+									<DialogTitle className="sr-only">
+										Новая автоматизация
+									</DialogTitle>
 									<EmojiTextInput
 										value={name}
 										onChange={setName}
-										placeholder="Automation title"
+										placeholder="Название автоматизации"
 										className="text-base font-medium"
 									/>
 								</div>
@@ -274,10 +276,10 @@ export function CreateAutomationDialog({
 									size="sm"
 									onClick={() => setView("gallery")}
 								>
-									Use template
+									Использовать шаблон
 								</Button>
 								<DialogClose asChild>
-									<Button variant="ghost" size="icon-sm" aria-label="Close">
+									<Button variant="ghost" size="icon-sm" aria-label="Закрыть">
 										<LuX className="size-4" />
 									</Button>
 								</DialogClose>
@@ -290,7 +292,7 @@ export function CreateAutomationDialog({
 								<MarkdownEditor
 									content={prompt}
 									onChange={setPrompt}
-									placeholder="Add prompt e.g. look for crashes in $sentry"
+									placeholder="Добавьте промпт, например: ищи сбои в $sentry"
 									className="flex-1 flex flex-col min-h-0"
 									editorClassName="flex-1 min-h-[200px]"
 									searchFiles={searchFiles}
@@ -344,13 +346,13 @@ export function CreateAutomationDialog({
 
 								<div className="flex items-center gap-2">
 									<DialogClose asChild>
-										<Button variant="ghost">Cancel</Button>
+										<Button variant="ghost">Отмена</Button>
 									</DialogClose>
 									<Button
 										disabled={!canSubmit}
 										onClick={() => createMutation.mutate()}
 									>
-										{createMutation.isPending ? "Creating…" : "Create"}
+										{createMutation.isPending ? "Создание…" : "Создать"}
 									</Button>
 								</div>
 							</DialogFooter>
@@ -358,7 +360,7 @@ export function CreateAutomationDialog({
 					) : (
 						<>
 							<DialogTitle className="sr-only">
-								Automation templates
+								Шаблоны автоматизаций
 							</DialogTitle>
 							<TemplateGalleryPanel
 								onBack={() => setView("compose")}
