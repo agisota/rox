@@ -192,7 +192,7 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 		>
 			<SortableHeader
 				field="sidebar"
-				label="In sidebar"
+				label="На боковой панели"
 				align="center"
 				srOnlyLabel
 				sortField={sortField}
@@ -201,14 +201,14 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 			/>
 			<SortableHeader
 				field="name"
-				label="Name"
+				label="Название"
 				sortField={sortField}
 				sortDirection={sortDirection}
 				onSort={handleSort}
 			/>
 			<SortableHeader
 				field="host"
-				label="Host"
+				label="Хост"
 				className="hidden md:flex"
 				sortField={sortField}
 				sortDirection={sortDirection}
@@ -216,7 +216,7 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 			/>
 			<SortableHeader
 				field="branch"
-				label="Branch"
+				label="Ветка"
 				className="hidden lg:flex"
 				sortField={sortField}
 				sortDirection={sortDirection}
@@ -224,7 +224,7 @@ export function V2WorkspacesList({ workspaces }: V2WorkspacesListProps) {
 			/>
 			<SortableHeader
 				field="created"
-				label="Created"
+				label="Создано"
 				className="hidden xl:flex"
 				sortField={sortField}
 				sortDirection={sortDirection}
@@ -331,15 +331,15 @@ function V2WorkspacesEmptyState({
 					<motion.div variants={animate ? emptyItem : undefined}>
 						<EmptyTitle>
 							{hasActiveFilters
-								? "No workspaces match your filters"
-								: "No workspaces yet"}
+								? "Нет рабочих пространств по заданным фильтрам"
+								: "Пока нет рабочих пространств"}
 						</EmptyTitle>
 					</motion.div>
 					<motion.div variants={animate ? emptyItem : undefined}>
 						<EmptyDescription>
 							{hasActiveFilters
-								? "Try a different search term or clear the device filter."
-								: "Workspaces you have access to across all your devices will show up here."}
+								? "Попробуйте другой поисковый запрос или сбросьте фильтр устройств."
+								: "Здесь появятся рабочие пространства, к которым у вас есть доступ на всех ваших устройствах."}
 						</EmptyDescription>
 					</motion.div>
 				</EmptyHeader>
@@ -347,7 +347,7 @@ function V2WorkspacesEmptyState({
 					<motion.div variants={animate ? emptyItem : undefined}>
 						<EmptyContent>
 							<Button variant="outline" size="sm" onClick={onClearFilters}>
-								Clear filters
+								Сбросить фильтры
 							</Button>
 						</EmptyContent>
 					</motion.div>

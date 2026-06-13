@@ -47,8 +47,8 @@ interface PreviousRunsListProps {
 
 function formatAgo(date: Date, now: Date): string {
 	const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-	if (seconds < 60) return "less than a minute ago";
-	return `${formatDistanceStrict(date, now)} ago`;
+	if (seconds < 60) return "менее минуты назад";
+	return `${formatDistanceStrict(date, now)} назад`;
 }
 
 export function PreviousRunsList({ runs }: PreviousRunsListProps) {
@@ -57,7 +57,9 @@ export function PreviousRunsList({ runs }: PreviousRunsListProps) {
 	const animate = useShouldAnimate("essential");
 
 	if (runs.length === 0) {
-		return <p className="text-sm italic text-muted-foreground">No runs yet</p>;
+		return (
+			<p className="text-sm italic text-muted-foreground">Запусков ещё нет</p>
+		);
 	}
 
 	const handleOpenRun = (run: SelectAutomationRun) => {
@@ -112,7 +114,7 @@ export function PreviousRunsList({ runs }: PreviousRunsListProps) {
 							)}
 						>
 							{statusIndicator}
-							<span className="truncate">{run.title || "Automation"}</span>
+							<span className="truncate">{run.title || "Автоматизация"}</span>
 							<span className="ml-auto shrink-0 truncate text-muted-foreground">
 								{run.scheduledFor
 									? formatAgo(new Date(run.scheduledFor), now)

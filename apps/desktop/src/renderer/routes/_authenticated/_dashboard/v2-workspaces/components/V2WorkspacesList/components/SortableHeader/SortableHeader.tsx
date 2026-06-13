@@ -31,15 +31,15 @@ export function SortableHeader({
 			: LuChevronDown;
 	const sortLabel = isActive
 		? sortDirection === "asc"
-			? "ascending"
-			: "descending"
-		: "not sorted";
+			? "по возрастанию"
+			: "по убыванию"
+		: "без сортировки";
 
 	return (
 		<button
 			type="button"
 			onClick={() => onSort(field)}
-			aria-label={`Sort by ${label}, currently ${sortLabel}`}
+			aria-label={`Сортировать по «${label}», сейчас ${sortLabel}`}
 			className={cn(
 				"group flex min-w-0 items-center gap-1 rounded outline-none transition-colors",
 				"hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40",

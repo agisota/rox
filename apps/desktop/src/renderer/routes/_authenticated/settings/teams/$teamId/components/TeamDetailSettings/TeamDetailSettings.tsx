@@ -232,7 +232,7 @@ export function TeamDetailSettings({ teamId }: TeamDetailSettingsProps) {
 									/>
 								</div>
 								<div className="space-y-1.5">
-									<Label htmlFor="team-slug-edit">Slug</Label>
+									<Label htmlFor="team-slug-edit">Слаг</Label>
 									<Input
 										id="team-slug-edit"
 										value={slugValue}
@@ -290,7 +290,7 @@ export function TeamDetailSettings({ teamId }: TeamDetailSettingsProps) {
 									<TableHeader>
 										<TableRow>
 											<TableHead>Имя</TableHead>
-											<TableHead>Email</TableHead>
+											<TableHead>Эл. почта</TableHead>
 											<TableHead>Дата вступления</TableHead>
 										</TableRow>
 									</TableHeader>

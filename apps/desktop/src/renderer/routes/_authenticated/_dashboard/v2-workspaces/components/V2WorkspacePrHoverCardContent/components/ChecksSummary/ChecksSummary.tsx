@@ -25,7 +25,7 @@ export function ChecksSummary({ checks, status }: ChecksSummaryProps) {
 	} as const;
 
 	const { Icon, className } = config[status];
-	const label = total > 0 ? `${passing}/${total} checks` : "Checks";
+	const label = total > 0 ? `${passing}/${total} проверок` : "Проверки";
 
 	return (
 		<span className={cn("flex items-center gap-1", className)}>

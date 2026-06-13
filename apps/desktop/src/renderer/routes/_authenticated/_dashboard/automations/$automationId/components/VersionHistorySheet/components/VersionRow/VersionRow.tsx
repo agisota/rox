@@ -41,17 +41,17 @@ export function VersionRow({
 				</span>
 				{source === "agent" && (
 					<Badge variant="secondary" className="px-1 py-0 text-[10px]">
-						Agent
+						Агент
 					</Badge>
 				)}
 				{source === "restore" && (
 					<Badge variant="outline" className="px-1 py-0 text-[10px]">
-						Restored
+						Восстановлено
 					</Badge>
 				)}
 			</div>
 			<span className="truncate text-xs leading-tight text-muted-foreground">
-				{authorName ?? "Unknown"}
+				{authorName ?? "Неизвестно"}
 			</span>
 		</button>
 	);

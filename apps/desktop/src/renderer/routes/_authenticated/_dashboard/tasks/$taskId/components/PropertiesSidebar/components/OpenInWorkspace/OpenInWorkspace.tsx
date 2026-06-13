@@ -86,7 +86,7 @@ export function OpenInWorkspace({ task }: OpenInWorkspaceProps) {
 			selectedAgent !== "none" &&
 			!agentConfigsById.get(selectedAgent)?.enabled
 		) {
-			toast.error("Enable an agent in Settings > Agents first");
+			toast.error("Сначала включите агента в «Настройки → Агенты»");
 			return;
 		}
 		await handleSelectProject(effectiveProjectId);
@@ -138,26 +138,33 @@ export function OpenInWorkspace({ task }: OpenInWorkspaceProps) {
 					write: (input) => terminalWrite.mutateAsync(input),
 				});
 				if (launchResult.status === "failed") {
-					toast.error("Failed to start agent", {
-						description: launchResult.error ?? "Failed to start agent session.",
+					toast.error("Не удалось запустить агента", {
+						description:
+							launchResult.error ?? "Не удалось запустить сессию агента.",
 					});
 					return;
 				}
 			}
 
 			toast.success(
-				result.wasExisting ? "Opened existing workspace" : "Workspace created",
+				result.wasExisting
+					? "Открыто существующее рабочее пространство"
+					: "Рабочее пространство создано",
 			);
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to create workspace",
+				err instanceof Error
+					? err.message
+					: "Не удалось создать рабочее пространство",
 			);
 		}
 	};
 
 	return (
 		<div className="flex flex-col gap-2">
-			<span className="text-xs text-muted-foreground">Open in workspace</span>
+			<span className="text-xs text-muted-foreground">
+				В рабочем пространстве
+			</span>
 			<div className="flex gap-1.5">
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
@@ -181,7 +188,7 @@ export function OpenInWorkspace({ task }: OpenInWorkspaceProps) {
 										<span className="truncate">{selectedProject.name}</span>
 									</>
 								) : (
-									<span className="text-muted-foreground">Select project</span>
+									<span className="text-muted-foreground">Выберите проект</span>
 								)}
 							</span>
 							<HiChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -192,7 +199,7 @@ export function OpenInWorkspace({ task }: OpenInWorkspaceProps) {
 						className="w-[--radix-dropdown-menu-trigger-width]"
 					>
 						{recentProjects.length === 0 ? (
-							<DropdownMenuItem disabled>No projects found</DropdownMenuItem>
+							<DropdownMenuItem disabled>Проекты не найдены</DropdownMenuItem>
 						) : (
 							recentProjects
 								.filter((p) => p.id)
@@ -231,16 +238,16 @@ export function OpenInWorkspace({ task }: OpenInWorkspaceProps) {
 			<AgentSelect<TaskLaunchAgent>
 				agents={enabledAgentPresets}
 				value={selectedAgent}
-				placeholder="Select agent"
+				placeholder="Выберите агента"
 				onValueChange={setSelectedAgent}
 				triggerClassName="h-8 text-xs"
 				allowNone
-				noneLabel="No agent"
+				noneLabel="Без агента"
 				noneValue="none"
 			/>
 			<div className="flex items-center justify-between">
 				<Label htmlFor="auto-run-toggle" className="text-xs font-normal">
-					Auto-run command
+					Автозапуск команды
 				</Label>
 				<Switch
 					id="auto-run-toggle"

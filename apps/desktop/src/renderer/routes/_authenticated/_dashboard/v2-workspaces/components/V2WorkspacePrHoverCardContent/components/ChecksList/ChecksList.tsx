@@ -27,7 +27,7 @@ export function ChecksList({ checks }: ChecksListProps) {
 				) : (
 					<LuChevronRight className="size-3" />
 				)}
-				<span>{expanded ? "Hide checks" : "Show checks"}</span>
+				<span>{expanded ? "Скрыть проверки" : "Показать проверки"}</span>
 			</button>
 
 			{expanded ? (

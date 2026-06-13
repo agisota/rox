@@ -60,8 +60,8 @@ export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
 				<Button
 					variant="ghost"
 					size="sm"
-					title={selected ? selected.name : "Project"}
-					aria-label={selected ? selected.name : "Project"}
+					title={selected ? selected.name : "Проект"}
+					aria-label={selected ? selected.name : "Проект"}
 					className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
 				>
 					{selected ? (
@@ -74,7 +74,7 @@ export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
 						<HiOutlineFolder className="size-4" />
 					)}
 					<span className="text-sm hidden @4xl:inline">
-						{selected ? selected.name : "Project"}
+						{selected ? selected.name : "Проект"}
 					</span>
 					<HiChevronDown className="size-3" />
 				</Button>
@@ -82,13 +82,13 @@ export function ProjectFilter({ value, onChange }: ProjectFilterProps) {
 			<PopoverContent align="start" className="w-60 p-0">
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search projects..."
+						placeholder="Поиск проектов..."
 						value={search}
 						onValueChange={setSearch}
 					/>
 					<CommandList className="max-h-80">
 						{filtered.length === 0 && search && (
-							<CommandEmpty>No projects found.</CommandEmpty>
+							<CommandEmpty>Проекты не найдены.</CommandEmpty>
 						)}
 						{filtered.length > 0 && (
 							<CommandGroup>

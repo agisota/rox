@@ -20,7 +20,7 @@ export function TemplateScrollRow({
 		<div
 			className="flex gap-2 overflow-x-auto pb-1"
 			role="listbox"
-			aria-label="Quick templates"
+			aria-label="Быстрые шаблоны"
 		>
 			{AUTOMATION_TEMPLATES_FLAT.map((template) => (
 				<button

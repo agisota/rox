@@ -24,7 +24,7 @@ export function V2WorkspacePrHoverCardContent({
 		<div className="space-y-3">
 			<div className="space-y-0.5">
 				<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-					Branch
+					Ветка
 				</span>
 				<div className="flex items-center gap-1.5 text-sm">
 					<LuGitBranch className="size-3 shrink-0 text-muted-foreground" />
@@ -54,7 +54,7 @@ export function V2WorkspacePrHoverCardContent({
 				<p className="line-clamp-2 text-xs leading-relaxed">{pr.title}</p>
 
 				<span className="block text-[10px] text-muted-foreground">
-					Updated {formatDistanceToNow(pr.updatedAt, { addSuffix: true })}
+					Обновлено {formatDistanceToNow(pr.updatedAt, { addSuffix: true })}
 				</span>
 
 				{showChecks ? (
@@ -79,7 +79,7 @@ export function V2WorkspacePrHoverCardContent({
 						onClick={(event) => event.stopPropagation()}
 					>
 						<FaGithub className="size-3" />
-						View on GitHub
+						Открыть в GitHub
 					</a>
 				</Button>
 			</div>

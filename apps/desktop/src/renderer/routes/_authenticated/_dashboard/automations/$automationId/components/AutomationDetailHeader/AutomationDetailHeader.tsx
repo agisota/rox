@@ -41,7 +41,7 @@ export function AutomationDetailHeader({
 				<BreadcrumbList className="text-sm">
 					<BreadcrumbItem>
 						<BreadcrumbLink onClick={onBack} className="cursor-pointer">
-							Automations
+							Автоматизации
 						</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
@@ -58,12 +58,12 @@ export function AutomationDetailHeader({
 							variant="ghost"
 							size="icon-sm"
 							onClick={onOpenHistory}
-							aria-label="Version history"
+							aria-label="История версий"
 						>
 							<LuClock className="size-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Version history</TooltipContent>
+					<TooltipContent>История версий</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -72,7 +72,7 @@ export function AutomationDetailHeader({
 							size="icon-sm"
 							onClick={onToggleEnabled}
 							disabled={toggleDisabled}
-							aria-label={enabled ? "Pause" : "Resume"}
+							aria-label={enabled ? "Приостановить" : "Возобновить"}
 						>
 							{enabled ? (
 								<LuPause className="size-4" />
@@ -81,7 +81,9 @@ export function AutomationDetailHeader({
 							)}
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>{enabled ? "Pause" : "Resume"}</TooltipContent>
+					<TooltipContent>
+						{enabled ? "Приостановить" : "Возобновить"}
+					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -90,12 +92,12 @@ export function AutomationDetailHeader({
 							size="icon-sm"
 							onClick={onDelete}
 							disabled={deleteDisabled}
-							aria-label="Delete"
+							aria-label="Удалить"
 						>
 							<LuTrash2 className="size-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Delete</TooltipContent>
+					<TooltipContent>Удалить</TooltipContent>
 				</Tooltip>
 				<div className="mx-1 h-4 w-px bg-border" />
 				<Button
@@ -106,7 +108,7 @@ export function AutomationDetailHeader({
 					disabled={runNowDisabled}
 				>
 					<LuPlay className="size-4" />
-					<span>Run now</span>
+					<span>Запустить сейчас</span>
 				</Button>
 			</div>
 		</header>

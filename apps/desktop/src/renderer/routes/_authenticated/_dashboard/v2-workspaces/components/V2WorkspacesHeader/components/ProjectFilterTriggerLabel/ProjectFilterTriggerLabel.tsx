@@ -17,7 +17,7 @@ export function ProjectFilterTriggerLabel({
 		return (
 			<span className="flex items-center gap-2">
 				<LuFolders className="size-3.5" />
-				<span>All projects</span>
+				<span>Все проекты</span>
 			</span>
 		);
 	}
@@ -25,7 +25,7 @@ export function ProjectFilterTriggerLabel({
 		return (
 			<span className="flex items-center gap-2">
 				<LuFolders className="size-3.5" />
-				<span className="text-muted-foreground">Unknown project</span>
+				<span className="text-muted-foreground">Неизвестный проект</span>
 			</span>
 		);
 	}

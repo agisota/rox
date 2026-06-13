@@ -45,14 +45,14 @@ export function ProjectPicker({
 							<LuFolder className="size-5 shrink-0" />
 						)
 					}
-					label={selectedProject?.name ?? "Select project"}
+					label={selectedProject?.name ?? "Выберите проект"}
 				/>
 			</PopoverTrigger>
 			<PopoverContent align="start" className="w-60 p-0">
 				<Command>
-					<CommandInput placeholder="Search projects..." />
+					<CommandInput placeholder="Поиск проектов..." />
 					<CommandList>
-						<CommandEmpty>No projects found.</CommandEmpty>
+						<CommandEmpty>Проекты не найдены.</CommandEmpty>
 						<CommandGroup>
 							{recentProjects.map((project) => (
 								<CommandItem

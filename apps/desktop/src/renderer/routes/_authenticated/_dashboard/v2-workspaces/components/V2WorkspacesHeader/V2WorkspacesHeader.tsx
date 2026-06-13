@@ -120,7 +120,9 @@ export function V2WorkspacesHeader({
 	return (
 		<div className="border-b border-border">
 			<div className="flex w-full flex-wrap items-center justify-between gap-3 px-6 py-4">
-				<h1 className="text-sm font-semibold tracking-tight">Workspaces</h1>
+				<h1 className="text-sm font-semibold tracking-tight">
+					Рабочие пространства
+				</h1>
 
 				<div className="flex flex-wrap items-center gap-2">
 					<InputGroup className="w-72">
@@ -129,7 +131,7 @@ export function V2WorkspacesHeader({
 						</InputGroupAddon>
 						<InputGroupInput
 							type="text"
-							placeholder="Search workspaces…"
+							placeholder="Поиск рабочих пространств…"
 							value={searchQuery}
 							onChange={(event) => setSearchQuery(event.target.value)}
 						/>
@@ -137,7 +139,7 @@ export function V2WorkspacesHeader({
 							<InputGroupAddon align="inline-end">
 								<InputGroupButton
 									size="icon-xs"
-									aria-label="Clear search"
+									aria-label="Очистить поиск"
 									onClick={() => setSearchQuery("")}
 								>
 									<LuX />
@@ -148,7 +150,7 @@ export function V2WorkspacesHeader({
 
 					<Select value={projectFilter} onValueChange={setProjectFilter}>
 						<SelectTrigger size="sm" className="min-w-[12rem]">
-							<SelectValue placeholder="Filter projects">
+							<SelectValue placeholder="Фильтр по проектам">
 								<ProjectFilterTriggerLabel
 									projectFilter={projectFilter}
 									selectedProject={selectedProjectLabel}
@@ -160,9 +162,7 @@ export function V2WorkspacesHeader({
 								<SelectItem value={PROJECT_FILTER_ALL}>
 									<span className="flex w-full min-w-0 items-center gap-2">
 										<LuFolders className="size-3.5" />
-										<span className="min-w-0 flex-1 truncate">
-											All projects
-										</span>
+										<span className="min-w-0 flex-1 truncate">Все проекты</span>
 									</span>
 								</SelectItem>
 							</SelectGroup>
@@ -172,7 +172,7 @@ export function V2WorkspacesHeader({
 									<SelectSeparator />
 									<SelectGroup>
 										<SelectLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-											Projects
+											Проекты
 										</SelectLabel>
 										{projectOptions.map((project) => (
 											<SelectItem
@@ -202,7 +202,7 @@ export function V2WorkspacesHeader({
 
 					<Select value={deviceFilter} onValueChange={setDeviceFilter}>
 						<SelectTrigger size="sm" className="min-w-[12rem]">
-							<SelectValue placeholder="Filter devices">
+							<SelectValue placeholder="Фильтр по устройствам">
 								<DeviceFilterTriggerLabel
 									deviceFilter={deviceFilter}
 									selectedRemoteHost={selectedHostLabel}
@@ -214,14 +214,14 @@ export function V2WorkspacesHeader({
 								<SelectItem value={DEVICE_FILTER_THIS_DEVICE}>
 									<DeviceOptionLabel
 										icon={<LuLaptop className="size-3.5" />}
-										label="This device"
+										label="Это устройство"
 										count={counts.thisDevice}
 									/>
 								</SelectItem>
 								<SelectItem value={DEVICE_FILTER_ALL}>
 									<DeviceOptionLabel
 										icon={<LuLayers className="size-3.5" />}
-										label="All devices"
+										label="Все устройства"
 										count={counts.all}
 									/>
 								</SelectItem>
@@ -232,7 +232,7 @@ export function V2WorkspacesHeader({
 									<SelectSeparator />
 									<SelectGroup>
 										<SelectLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-											Other devices
+											Другие устройства
 										</SelectLabel>
 										{remoteHosts.map((host) => (
 											<SelectItem key={host.hostId} value={host.hostId}>

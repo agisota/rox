@@ -36,7 +36,7 @@ export function OnboardingNavigation({
 					{onBack && (
 						<Button size="sm" variant="ghost" onClick={onBack}>
 							<HiArrowLeft />
-							Back
+							Назад
 						</Button>
 					)}
 					<Tooltip>
@@ -45,13 +45,13 @@ export function OnboardingNavigation({
 								size="icon-sm"
 								variant="ghost"
 								className="text-muted-foreground"
-								aria-label="Get support"
+								aria-label="Поддержка"
 								onClick={() => openUrl.mutate(COMPANY.REPORT_ISSUE_URL)}
 							>
 								<LuCircleHelp />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent>Get support</TooltipContent>
+						<TooltipContent>Поддержка</TooltipContent>
 					</Tooltip>
 				</div>
 
@@ -66,7 +66,7 @@ export function OnboardingNavigation({
 							onClick={onSkip}
 							disabled={skipDisabled}
 						>
-							Skip for now
+							Пропустить пока
 						</Button>
 					)}
 					{onContinue && (

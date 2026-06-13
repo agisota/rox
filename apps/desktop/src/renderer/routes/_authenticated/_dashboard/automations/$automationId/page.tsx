@@ -79,7 +79,7 @@ function AutomationDetailPage() {
 		if (!automationReady) return null;
 		return (
 			<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground select-text cursor-text">
-				Automation not found.
+				Автоматизация не найдена.
 			</div>
 		);
 	}
@@ -94,21 +94,21 @@ function AutomationDetailPage() {
 					onToggleEnabled={() => setEnabledMutation.mutate(!automation.enabled)}
 					onDelete={() => {
 						alert({
-							title: "Delete automation?",
-							description: `"${automation.name}" will stop firing and its run history will be removed. This can't be undone.`,
+							title: "Удалить автоматизацию?",
+							description: `«${automation.name}» перестанет срабатывать, а история её запусков будет удалена. Это действие нельзя отменить.`,
 							actions: [
-								{ label: "Cancel", variant: "outline", onClick: () => {} },
+								{ label: "Отмена", variant: "outline", onClick: () => {} },
 								{
-									label: "Delete",
+									label: "Удалить",
 									variant: "destructive",
 									onClick: () => {
 										toast.promise(deleteMutation.mutateAsync(), {
-											loading: "Deleting automation...",
-											success: `"${automation.name}" deleted`,
+											loading: "Удаление автоматизации...",
+											success: `«${automation.name}» удалена`,
 											error: (err) =>
 												err instanceof Error
 													? err.message
-													: "Failed to delete automation",
+													: "Не удалось удалить автоматизацию",
 										});
 									},
 								},

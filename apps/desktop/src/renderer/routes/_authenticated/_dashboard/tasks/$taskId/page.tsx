@@ -134,7 +134,7 @@ function TaskDetailPage() {
 			return (
 				<div className="flex-1 flex items-center justify-center">
 					<span className="text-muted-foreground">
-						{isTaskSyncing ? "Syncing task..." : "Loading task..."}
+						{isTaskSyncing ? "Синхронизация задачи..." : "Загрузка задачи..."}
 					</span>
 				</div>
 			);
@@ -142,7 +142,7 @@ function TaskDetailPage() {
 
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<span className="text-muted-foreground">Task not found</span>
+				<span className="text-muted-foreground">Задача не найдена</span>
 			</div>
 		);
 	}
@@ -173,7 +173,7 @@ function TaskDetailPage() {
 							<>
 								<Separator className="my-8" />
 
-								<h2 className="text-lg font-semibold mb-4">Activity</h2>
+								<h2 className="text-lg font-semibold mb-4">Активность</h2>
 
 								<ActivitySection
 									createdAt={new Date(task.createdAt)}

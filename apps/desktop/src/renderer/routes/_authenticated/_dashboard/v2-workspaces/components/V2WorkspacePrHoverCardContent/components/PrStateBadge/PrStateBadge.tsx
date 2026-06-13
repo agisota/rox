@@ -9,10 +9,10 @@ const STATE_BADGE_STYLES: Record<V2WorkspacePrState, string> = {
 };
 
 const STATE_BADGE_LABELS: Record<V2WorkspacePrState, string> = {
-	open: "Open",
-	draft: "Draft",
-	merged: "Merged",
-	closed: "Closed",
+	open: "Открыт",
+	draft: "Черновик",
+	merged: "Влит",
+	closed: "Закрыт",
 };
 
 interface PrStateBadgeProps {

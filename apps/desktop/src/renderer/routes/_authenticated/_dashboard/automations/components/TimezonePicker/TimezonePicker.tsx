@@ -50,9 +50,9 @@ export function TimezonePicker({
 				className="w-64 p-0"
 			>
 				<Command>
-					<CommandInput placeholder="Search timezones..." />
+					<CommandInput placeholder="Поиск часовых поясов..." />
 					<CommandList>
-						<CommandEmpty>No matching timezone.</CommandEmpty>
+						<CommandEmpty>Подходящий часовой пояс не найден.</CommandEmpty>
 						<CommandGroup>
 							{timezones.map((tz) => (
 								<CommandItem

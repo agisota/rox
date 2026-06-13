@@ -156,7 +156,7 @@ export function useTasksTable({
 		() => [
 			columnHelper.accessor((row) => row.status, {
 				id: "status",
-				header: "Status",
+				header: "Статус",
 				filterFn: (row, _columnId, filterValue: TabValue) => {
 					const statusType = row.original.status.type;
 					if (filterValue === "active") {
@@ -224,7 +224,7 @@ export function useTasksTable({
 								row.toggleSelected(Boolean(checked))
 							}
 							onClick={(e) => e.stopPropagation()}
-							aria-label="Select task"
+							aria-label="Выбрать задачу"
 							className="cursor-pointer"
 						/>
 					);
@@ -232,7 +232,7 @@ export function useTasksTable({
 			}),
 
 			columnHelper.accessor("priority", {
-				header: "Priority",
+				header: "Приоритет",
 				cell: (info) => {
 					if (info.cell.getIsPlaceholder()) return null;
 					return <PriorityCell info={info} />;
@@ -252,7 +252,7 @@ export function useTasksTable({
 			}),
 
 			columnHelper.accessor("title", {
-				header: "Title",
+				header: "Название",
 				cell: (info) => {
 					if (info.cell.getIsPlaceholder()) return null;
 					const taskWithStatus = info.row.original;
@@ -285,7 +285,7 @@ export function useTasksTable({
 			}),
 
 			columnHelper.accessor("assigneeId", {
-				header: "Assignee",
+				header: "Исполнитель",
 				filterFn: (row, _columnId, filterValue: string) => {
 					if (filterValue === "unassigned") {
 						return (
@@ -305,7 +305,7 @@ export function useTasksTable({
 			}),
 
 			columnHelper.accessor("createdAt", {
-				header: "Created",
+				header: "Создано",
 				cell: (info) => {
 					if (info.cell.getIsPlaceholder()) return null;
 					const date = info.getValue();

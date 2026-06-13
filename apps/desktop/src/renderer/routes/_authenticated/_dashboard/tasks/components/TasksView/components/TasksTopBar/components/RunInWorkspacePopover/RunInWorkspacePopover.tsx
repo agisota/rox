@@ -136,7 +136,7 @@ export function RunInWorkspacePopover({
 			selectedAgent !== "none" &&
 			!agentConfigsById.get(selectedAgent)?.enabled
 		) {
-			toast.error("Enable an agent in Settings > Agents first");
+			toast.error("Сначала включите агента в «Настройки → Агенты»");
 			return;
 		}
 
@@ -193,7 +193,7 @@ export function RunInWorkspacePopover({
 					});
 					if (launchResult.status === "failed") {
 						throw new Error(
-							launchResult.error ?? "Failed to start agent session",
+							launchResult.error ?? "Не удалось запустить сессию агента",
 						);
 					}
 				}
@@ -221,12 +221,10 @@ export function RunInWorkspacePopover({
 		setIsRunning(false);
 
 		if (failCount === 0) {
-			toast.success(
-				`Created ${successCount} workspace${successCount === 1 ? "" : "s"}`,
-			);
+			toast.success(`Создано рабочих пространств: ${successCount}`);
 		} else {
 			toast.warning(
-				`Created ${successCount} workspace${successCount === 1 ? "" : "s"}, ${failCount} failed`,
+				`Создано рабочих пространств: ${successCount}, с ошибкой: ${failCount}`,
 			);
 		}
 
@@ -250,7 +248,7 @@ export function RunInWorkspacePopover({
 					className="h-7 text-xs gap-1.5 bg-muted/50"
 				>
 					<HiMiniPlay className="size-3" />
-					Run in Workspace
+					Запустить в рабочем пространстве
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent
@@ -288,7 +286,7 @@ export function RunInWorkspacePopover({
 										</>
 									) : (
 										<span className="text-muted-foreground">
-											Select project
+											Выберите проект
 										</span>
 									)}
 								</span>
@@ -300,7 +298,7 @@ export function RunInWorkspacePopover({
 							className="w-[--radix-dropdown-menu-trigger-width]"
 						>
 							{recentProjects.length === 0 ? (
-								<DropdownMenuItem disabled>No projects found</DropdownMenuItem>
+								<DropdownMenuItem disabled>Проекты не найдены</DropdownMenuItem>
 							) : (
 								recentProjects
 									.filter((p) => p.id)
@@ -331,13 +329,13 @@ export function RunInWorkspacePopover({
 					<AgentSelect<TaskLaunchAgent>
 						agents={enabledAgentPresets}
 						value={selectedAgent}
-						placeholder="Select agent"
+						placeholder="Выберите агента"
 						onValueChange={setSelectedAgent}
 						onBeforeConfigureAgents={() => setOpen(false)}
 						disabled={isRunning}
 						triggerClassName="h-8 text-xs w-full border-0 shadow-none bg-muted/50 rounded-md"
 						allowNone
-						noneLabel="No agent"
+						noneLabel="Без агента"
 						noneValue="none"
 					/>
 
@@ -346,7 +344,7 @@ export function RunInWorkspacePopover({
 							htmlFor="batch-auto-run-toggle"
 							className="text-xs font-normal"
 						>
-							Auto-run command
+							Автозапуск команды
 						</Label>
 						<Switch
 							id="batch-auto-run-toggle"
@@ -383,12 +381,10 @@ export function RunInWorkspacePopover({
 						{isRunning ? (
 							<>
 								<Spinner className="size-3" />
-								Creating...
+								Создание...
 							</>
 						) : (
-							<>
-								Run {tasks.length} Workspace{tasks.length === 1 ? "" : "s"}
-							</>
+							<>Запустить пространств: {tasks.length}</>
 						)}
 					</Button>
 				</div>

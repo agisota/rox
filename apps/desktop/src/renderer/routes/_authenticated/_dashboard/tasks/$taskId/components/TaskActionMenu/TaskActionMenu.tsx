@@ -52,7 +52,7 @@ export function TaskActionMenu({ task, onDelete }: TaskActionMenuProps) {
 					variant="ghost"
 					size="icon"
 					className="h-8 w-8"
-					aria-label="Open task actions"
+					aria-label="Открыть действия с задачей"
 				>
 					<HiEllipsisHorizontal className="h-4 w-4" />
 				</Button>
@@ -60,11 +60,11 @@ export function TaskActionMenu({ task, onDelete }: TaskActionMenuProps) {
 			<DropdownMenuContent align="end" className="w-64">
 				<DropdownMenuItem onSelect={handleCopyId}>
 					<HiOutlineDocumentDuplicate className="size-4" />
-					<span>Copy ID</span>
+					<span>Копировать ID</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem onSelect={handleCopyTitle}>
 					<HiOutlineDocumentDuplicate className="size-4" />
-					<span>Copy Title</span>
+					<span>Копировать название</span>
 				</DropdownMenuItem>
 
 				<DropdownMenuSeparator />
@@ -74,7 +74,7 @@ export function TaskActionMenu({ task, onDelete }: TaskActionMenuProps) {
 					className="text-destructive focus:text-destructive"
 				>
 					<HiOutlineTrash className="text-destructive size-4" />
-					<span>Delete</span>
+					<span>Удалить</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

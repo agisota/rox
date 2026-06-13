@@ -22,7 +22,7 @@ export function TaskDetailHeader({
 				size="icon"
 				className="h-8 w-8"
 				onClick={onBack}
-				aria-label="Back to tasks"
+				aria-label="Назад к задачам"
 			>
 				<HiArrowLeft className="w-4 h-4" />
 			</Button>
@@ -34,7 +34,7 @@ export function TaskDetailHeader({
 						target="_blank"
 						rel="noopener noreferrer"
 						className="text-muted-foreground hover:text-foreground transition-colors p-2"
-						title="Open in Linear"
+						title="Открыть в Linear"
 					>
 						<LuExternalLink className="w-4 h-4" />
 					</a>

@@ -55,7 +55,7 @@ export function CreateTaskStatusPicker({
 							<span>{currentStatus.name}</span>
 						</>
 					) : (
-						<span className="text-muted-foreground">Status</span>
+						<span className="text-muted-foreground">Статус</span>
 					)}
 					<HiChevronDown className="size-3.5 text-muted-foreground" />
 				</button>

@@ -47,8 +47,8 @@ interface TasksTopBarProps {
 }
 
 const TYPE_TABS = [
-	{ value: "tasks" as const, label: "Tasks", Icon: ActiveIcon },
-	{ value: "prs" as const, label: "PRs", Icon: GoGitPullRequest },
+	{ value: "tasks" as const, label: "Задачи", Icon: ActiveIcon },
+	{ value: "prs" as const, label: "PR", Icon: GoGitPullRequest },
 	{ value: "issues" as const, label: "Issues", Icon: GoIssueOpened },
 ] as const;
 
@@ -101,12 +101,12 @@ export function TasksTopBar({
 								variant="ghost"
 								size="icon-xs"
 								onClick={showIssues ? onClearIssueSelection : onClearSelection}
-								aria-label="Clear selection"
+								aria-label="Снять выделение"
 							>
 								<HiXMark />
 							</Button>
 							<span className="text-sm font-medium">
-								{selectedCount} selected
+								Выбрано: {selectedCount}
 							</span>
 							<div className="h-4 w-px bg-border" />
 							{showIssues ? (
@@ -189,13 +189,13 @@ export function TasksTopBar({
 								onClick={() => setIsCreateTaskOpen(true)}
 							>
 								<HiOutlinePencilSquare className="size-4" />
-								<span className="hidden @4xl:inline">New task</span>
+								<span className="hidden @4xl:inline">Новая задача</span>
 							</Button>
 
 							<div className="flex items-center rounded-md border bg-muted/30 p-0.5">
 								<button
 									type="button"
-									title="Table view"
+									title="Табличный вид"
 									className={cn(
 										"flex items-center justify-center size-6 rounded-sm transition-colors",
 										viewMode === "table"
@@ -208,7 +208,7 @@ export function TasksTopBar({
 								</button>
 								<button
 									type="button"
-									title="Board view"
+									title="Доска"
 									className={cn(
 										"flex items-center justify-center size-6 rounded-sm transition-colors",
 										viewMode === "board"
@@ -230,10 +230,10 @@ export function TasksTopBar({
 							type="text"
 							placeholder={
 								typeTab === "prs"
-									? "Search pull requests..."
+									? "Поиск PR..."
 									: typeTab === "issues"
-										? "Search issues..."
-										: "Search tasks..."
+										? "Поиск Issues..."
+										: "Поиск задач..."
 							}
 							value={searchQuery}
 							onChange={(e) => onSearchChange(e.target.value)}

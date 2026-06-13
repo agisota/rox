@@ -84,7 +84,7 @@ function IssueDetailPage() {
 	if (!projectId) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<span className="text-muted-foreground">No project specified.</span>
+				<span className="text-muted-foreground">Проект не указан.</span>
 			</div>
 		);
 	}
@@ -92,7 +92,7 @@ function IssueDetailPage() {
 	if (isLoading) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<span className="text-muted-foreground">Loading issue…</span>
+				<span className="text-muted-foreground">Загрузка Issue…</span>
 			</div>
 		);
 	}
@@ -108,7 +108,7 @@ function IssueDetailPage() {
 					onAddToWorkspace={null}
 				/>
 				<div className="px-6 py-6 text-sm text-destructive select-text cursor-text">
-					{error instanceof Error ? error.message : "Issue not found."}
+					{error instanceof Error ? error.message : "Issue не найден."}
 				</div>
 			</div>
 		);
@@ -147,7 +147,7 @@ function IssueDetailPage() {
 						{data.author && (
 							<>
 								<span>·</span>
-								<span>by {data.author}</span>
+								<span>автор: {data.author}</span>
 							</>
 						)}
 					</div>
@@ -156,7 +156,7 @@ function IssueDetailPage() {
 						<MarkdownRenderer content={data.body} />
 					) : (
 						<p className="text-sm text-muted-foreground italic">
-							No description provided.
+							Описание не предоставлено.
 						</p>
 					)}
 				</div>
@@ -188,7 +188,7 @@ function Header({
 				size="icon"
 				className="h-8 w-8"
 				onClick={onBack}
-				aria-label="Back to tasks"
+				aria-label="Назад к задачам"
 			>
 				<HiArrowLeft className="w-4 h-4" />
 			</Button>
@@ -207,7 +207,7 @@ function Header({
 						target="_blank"
 						rel="noopener noreferrer"
 						className="text-muted-foreground hover:text-foreground transition-colors p-2"
-						title="Open in GitHub"
+						title="Открыть в GitHub"
 					>
 						<LuExternalLink className="w-4 h-4" />
 					</a>
@@ -219,8 +219,7 @@ function Header({
 						className="h-8 gap-1.5"
 						onClick={onAddToWorkspace}
 					>
-						<LuPlus className="size-4" />
-						Add to workspace
+						<LuPlus className="size-4" />В рабочее пространство
 					</Button>
 				)}
 			</div>
