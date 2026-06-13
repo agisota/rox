@@ -23,30 +23,43 @@ function shortId(id: string): string {
 
 function formatOrganization(context: HostServiceUnavailableContext): string {
 	if (context.activeOrganizationName) {
-		return `"${context.activeOrganizationName}"`;
+		return `«${context.activeOrganizationName}»`;
 	}
 	if (context.activeOrganizationId) {
-		return `organization ${shortId(context.activeOrganizationId)}`;
+		return `организации ${shortId(context.activeOrganizationId)}`;
 	}
-	return "the active organization";
+	return "активной организации";
 }
 
 function formatDevice(context: HostServiceUnavailableContext): string {
 	return context.machineId
-		? `this device (${shortId(context.machineId)})`
-		: "this device";
+		? `этом устройстве (${shortId(context.machineId)})`
+		: "этом устройстве";
+}
+
+function getStatusLabel(status: HostServiceAvailabilityStatus): string {
+	switch (status) {
+		case "starting":
+			return "запускается";
+		case "running":
+			return "работает";
+		case "stopped":
+			return "остановлен";
+		case "unknown":
+			return "неизвестно";
+	}
 }
 
 function getRecoveryText(status: HostServiceAvailabilityStatus): string {
 	switch (status) {
 		case "starting":
-			return "Retry in a few seconds.";
+			return "Повторите через несколько секунд.";
 		case "stopped":
-			return "Use the Rox tray menu > Host Service > Restart, then retry.";
+			return "Перезапустите хост-сервис через меню Rox в трее, затем повторите.";
 		case "running":
-			return "Retry after the connection refreshes.";
+			return "Повторите после обновления соединения.";
 		case "unknown":
-			return "Retry in a few seconds; if it persists, restart Rox.";
+			return "Повторите через несколько секунд; если не помогает — перезапустите Rox.";
 	}
 }
 
@@ -54,24 +67,24 @@ export function getHostServiceUnavailableMessage(
 	context: HostServiceUnavailableContext,
 	options: HostServiceUnavailableMessageOptions = {},
 ): string {
-	const prefix = options.action ? `Cannot ${options.action}: ` : "";
+	const prefix = options.action ? `Не удалось ${options.action}: ` : "";
 
 	if (!context.activeOrganizationId) {
-		return `${prefix}no active organization is selected. Select an organization or sign in again.`;
+		return `${prefix}не выбрана активная организация. Выберите организацию или войдите снова.`;
 	}
 
 	const status = context.hostServiceStatus ?? "unknown";
 	const organization = formatOrganization(context);
 	const device = formatDevice(context);
 
-	return `${prefix}the local host service is unavailable for ${organization} on ${device}. Status: ${status}. ${getRecoveryText(status)}`;
+	return `${prefix}локальный хост-сервис недоступен для ${organization} на ${device}. Статус: ${getStatusLabel(status)}. ${getRecoveryText(status)}`;
 }
 
 export function showHostServiceUnavailableToast(
 	context: HostServiceUnavailableContext,
 	options: HostServiceUnavailableMessageOptions = {},
 ): void {
-	toast.error("Host service unavailable", {
+	toast.error("Хост-сервис недоступен", {
 		description: getHostServiceUnavailableMessage(context, options),
 	});
 }

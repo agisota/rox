@@ -281,7 +281,7 @@ export function PromptGroup({
 		if (submitBlocker) {
 			if ((draft.hostId ?? machineId) === machineId && !activeHostUrl) {
 				showHostServiceUnavailableToast(hostService, {
-					action: "create the workspace",
+					action: "создать рабочее пространство",
 				});
 			} else {
 				toast.error(submitBlocker);

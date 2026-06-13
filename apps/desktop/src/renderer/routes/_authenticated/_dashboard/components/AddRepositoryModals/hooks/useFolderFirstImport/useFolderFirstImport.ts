@@ -34,7 +34,7 @@ export function useFolderFirstImport(options?: {
 		if (!activeHostUrl) {
 			onError?.(
 				getHostServiceUnavailableMessage(hostService, {
-					action: "import a folder",
+					action: "импортировать папку",
 				}),
 			);
 			return null;

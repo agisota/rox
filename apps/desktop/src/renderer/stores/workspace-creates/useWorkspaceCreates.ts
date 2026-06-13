@@ -83,7 +83,7 @@ export function useWorkspaceCreates(): UseWorkspaceCreatesApi {
 				const error = !organizationId
 					? "No active organization"
 					: getHostServiceUnavailableMessage(hostService, {
-							action: "create the workspace",
+							action: "создать рабочее пространство",
 						});
 				recordFailure(error);
 				return {
