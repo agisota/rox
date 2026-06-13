@@ -47,12 +47,12 @@ const pixelifySans = Pixelify_Sans({
 });
 
 const siteDescription =
-	"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish. Quickly switch between tasks as they need your attention.";
+	"Запускайте 10+ кодинг-агентов параллельно на своей машине. Создавайте новые задачи, пока текущий агент работает, и быстро переключайтесь между задачами, когда им нужно ваше внимание.";
 
 export const metadata: Metadata = {
 	metadataBase: new URL(COMPANY.MARKETING_URL),
 	title: {
-		default: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
+		default: `${COMPANY.NAME} - параллельные кодинг-агенты на вашей машине`,
 		template: `%s | ${COMPANY.NAME}`,
 	},
 	description: siteDescription,
@@ -71,26 +71,24 @@ export const metadata: Metadata = {
 	creator: COMPANY.NAME,
 	openGraph: {
 		type: "website",
-		locale: "en_US",
+		locale: "ru_RU",
 		url: COMPANY.MARKETING_URL,
 		siteName: COMPANY.NAME,
-		title: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
-		description:
-			"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish.",
+		title: `${COMPANY.NAME} - параллельные кодинг-агенты на вашей машине`,
+		description: siteDescription,
 		images: [
 			{
 				url: "/og-image.png",
 				width: 1200,
 				height: 630,
-				alt: `${COMPANY.NAME} - The Terminal for Coding Agents`,
+				alt: `${COMPANY.NAME} - терминал для кодинг-агентов`,
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: `${COMPANY.NAME} - Run 10+ parallel coding agents on your machine`,
-		description:
-			"Run 10+ parallel coding agents on your machine. Spin up new coding tasks while waiting for your current agent to finish.",
+		title: `${COMPANY.NAME} - параллельные кодинг-агенты на вашей машине`,
+		description: siteDescription,
 		images: ["/og-image.png"],
 		creator: "@rox_sh",
 	},
@@ -122,7 +120,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html
-			lang="en"
+			lang="ru"
 			className={`dark overscroll-none ${ibmPlexMono.variable} ${inter.variable} ${micro5.variable} ${pixelifySans.variable} ${GeistPixelSquare.variable} ${GeistPixelGrid.variable}`}
 			suppressHydrationWarning
 		>

@@ -43,7 +43,8 @@ const DIFF_LINES = [
 	{
 		id: "line-7",
 		type: "removed",
-		content: "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0<h1>Welcome</h1>",
+		content:
+			"\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0<h1>Добро пожаловать</h1>",
 	},
 	{
 		id: "line-8",

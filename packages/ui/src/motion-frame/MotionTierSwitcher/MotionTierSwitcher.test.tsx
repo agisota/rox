@@ -16,8 +16,8 @@ describe("MotionTierSwitcher", () => {
 		expect(html).toContain(">Full<");
 		expect(html.match(/type="radio"/g) ?? []).toHaveLength(3);
 		expect(html.match(/checked=""/g) ?? []).toHaveLength(1);
-		const checkedInput = html.match(/<input[^>]*checked=""[^>]*>/)?.[0] ?? "";
-		expect(checkedInput).toContain('value="full"');
+		const fullRadio = html.match(/<input[^>]*value="full"[^>]*>/)?.[0] ?? "";
+		expect(fullRadio).toContain('checked=""');
 	});
 
 	it("keeps the selection highlight static when the tier is off", () => {
@@ -26,9 +26,8 @@ describe("MotionTierSwitcher", () => {
 				<MotionTierSwitcher />
 			</MotionFrameProvider>,
 		);
-		// Highlight renders, content stays visible — but as a plain span, not
-		// a motion element (off allows no transitions).
-		expect(html).toContain("data-motion-pill");
+		expect(html).toContain('data-motion-pill="static"');
+		expect(html).not.toContain('data-motion-pill="animated"');
 	});
 
 	it("isolates instances: two switchers never share a radio-group name", () => {

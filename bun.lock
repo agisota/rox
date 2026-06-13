@@ -158,6 +158,7 @@
         "@radix-ui/react-dialog": "1.1.15",
         "@radix-ui/react-label": "2.1.8",
         "@replit/codemirror-css-color-picker": "6.3.0",
+        "@rox/agent-bridge": "workspace:*",
         "@rox/analytics": "workspace:*",
         "@rox/auth": "workspace:*",
         "@rox/chat": "workspace:*",
@@ -493,6 +494,7 @@
         "@rn-primitives/tooltip": "1.4.0",
         "@rox/auth": "workspace:*",
         "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
         "@rox/trpc": "workspace:*",
         "@tanstack/db": "0.6.5",
         "@tanstack/electric-db-collection": "0.3.3",
@@ -622,6 +624,18 @@
         "babel-plugin-react-compiler": "1.0.0",
         "dotenv": "17.3.1",
         "tailwindcss": "4.2.2",
+        "typescript": "5.9.3",
+      },
+    },
+    "packages/agent-bridge": {
+      "name": "@rox/agent-bridge",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "4.3.6",
+      },
+      "devDependencies": {
+        "@rox/typescript": "workspace:*",
+        "bun-types": "1.3.11",
         "typescript": "5.9.3",
       },
     },
@@ -801,6 +815,7 @@
         "@mastra/core": "1.33.1",
         "@mastra/memory": "1.18.0",
         "@octokit/rest": "22.0.1",
+        "@rox/agent-bridge": "workspace:*",
         "@rox/chat": "workspace:*",
         "@rox/port-scanner": "workspace:*",
         "@rox/pty-daemon": "workspace:*",
@@ -883,6 +898,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.28.0",
+        "@rox/agent-bridge": "workspace:*",
         "@rox/auth": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/shared": "workspace:*",
@@ -1125,6 +1141,7 @@
       "name": "@rox/workspace-client",
       "version": "0.1.0",
       "dependencies": {
+        "@rox/agent-bridge": "workspace:*",
         "@rox/host-service": "workspace:*",
         "@rox/shared": "workspace:*",
         "@rox/workspace-fs": "workspace:*",
@@ -2554,6 +2571,8 @@
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-PrsWNQ8BuE00O3Xsx3ALh2Df8fAj9+cvvX9AIA6o4KpATR98c9mud4XtDWVvsEuyia5U4tVSTKygawyJkjm60w=="],
 
     "@rox/admin": ["@rox/admin@workspace:apps/admin"],
+
+    "@rox/agent-bridge": ["@rox/agent-bridge@workspace:packages/agent-bridge"],
 
     "@rox/analytics": ["@rox/analytics@workspace:packages/analytics"],
 

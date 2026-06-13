@@ -5,7 +5,7 @@ export function formatContentDate(
 	date: string,
 	monthStyle: "short" | "long" = MONTH_SHORT,
 ): string {
-	return new Date(date).toLocaleDateString("en-US", {
+	return new Date(date).toLocaleDateString("ru-RU", {
 		year: "numeric",
 		month: monthStyle,
 		day: "numeric",

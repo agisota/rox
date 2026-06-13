@@ -62,6 +62,7 @@
 		"@mastra/core": "1.33.1",
 		"@mastra/memory": "1.18.0",
 		"@octokit/rest": "22.0.1",
+		"@rox/agent-bridge": "workspace:*",
 		"@rox/chat": "workspace:*",
 		"@rox/port-scanner": "workspace:*",
 		"@rox/pty-daemon": "workspace:*",

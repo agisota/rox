@@ -183,6 +183,21 @@ export class EventBus {
 	}
 
 	/**
+	 * Fan out an agent-bridge UI command request to connected renderer
+	 * clients. Like the other event types, this broadcasts to every client
+	 * and the workspace-client filters by `workspaceId` on the receiving
+	 * side; the ack flows back through `agentBridge.ackUiCommand`.
+	 */
+	broadcastAgentBridgeUiCommand(
+		message: Omit<
+			Extract<ServerMessage, { type: "agent-bridge:ui-command" }>,
+			"type"
+		>,
+	): void {
+		this.broadcast({ type: "agent-bridge:ui-command", ...message });
+	}
+
+	/**
 	 * Fan out port add/remove events discovered by the host-service scanner.
 	 * Renderer clients use this to patch their host snapshot immediately while
 	 * keeping a slow refetch as a reconnect fallback.

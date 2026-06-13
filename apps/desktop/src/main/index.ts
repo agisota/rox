@@ -92,9 +92,22 @@ async function processDeepLink(url: string): Promise<void> {
 		return;
 	}
 
-	// Non-auth deep links: extract path and navigate in renderer
+	// Non-auth deep links: derive a safe internal path and navigate in renderer.
 	// e.g. rox://tasks/my-slug -> /tasks/my-slug
-	const path = `/${url.split("://")[1]}`;
+	// `rox://` URLs can be triggered by any web page, so parse defensively:
+	// drop any query/fragment and collapse to a single internal path so a
+	// crafted link can't smuggle in a protocol-relative "//host" redirect.
+	let path: string;
+	try {
+		const parsed = new URL(url);
+		path = `/${parsed.host}${parsed.pathname}`.replace(/\/{2,}/g, "/");
+		if (path.length > 1) {
+			path = path.replace(/\/+$/, "");
+		}
+	} catch {
+		console.error("[main] Ignoring malformed deep link:", url);
+		return;
+	}
 	focusMainWindow();
 
 	const windows = BrowserWindow.getAllWindows();
