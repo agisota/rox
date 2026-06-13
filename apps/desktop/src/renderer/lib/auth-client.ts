@@ -1,5 +1,4 @@
 import { apiKeyClient } from "@better-auth/api-key/client";
-import { stripeClient } from "@better-auth/stripe/client";
 import type { auth } from "@rox/auth/server";
 import {
 	customSessionClient,
@@ -49,7 +48,6 @@ export const authClient = createAuthClient({
 			},
 		}),
 		customSessionClient<typeof auth>(),
-		stripeClient({ subscription: true }),
 		apiKeyClient(),
 		jwtClient(),
 	],

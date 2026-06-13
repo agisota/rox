@@ -1,7 +1,7 @@
 import { db } from "@rox/db/client";
-import { members, subscriptions, users } from "@rox/db/schema";
+import { members, users } from "@rox/db/schema";
 import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { auth } from "./server";
 
 async function seedDevAccount(): Promise<void> {
@@ -37,23 +37,7 @@ async function seedDevAccount(): Promise<void> {
 	});
 	if (!membership) throw new Error("dev user has no organization");
 
-	const activeSubscription = await db.query.subscriptions.findFirst({
-		where: and(
-			eq(subscriptions.referenceId, membership.organizationId),
-			eq(subscriptions.status, "active"),
-		),
-	});
-	if (!activeSubscription) {
-		await db.insert(subscriptions).values({
-			plan: "pro",
-			referenceId: membership.organizationId,
-			status: "active",
-			billingInterval: "monthly",
-			seats: 1,
-		});
-	}
-
-	console.log(`Dev account ready: ${DEV_EMAIL} (onboarded, pro)`);
+	console.log(`Dev account ready: ${DEV_EMAIL} (onboarded)`);
 }
 
 seedDevAccount()
