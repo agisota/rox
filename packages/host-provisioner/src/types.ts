@@ -11,8 +11,14 @@
 /** Persistent remote workspace vs. ephemeral sandbox (TTL-bound). */
 export type ProvisionKind = "remote" | "sandbox";
 
-/** Managed backends. `self` (user-run `rox deploy`) is not provisioned here. */
-export type ProvisionProvider = "daytona" | "modal" | "e2b";
+/**
+ * Managed backends plus `self`. Historically `self` meant a user-run
+ * `rox deploy`; the {@link RoxSelfProvisioner} now also provisions a
+ * host-service container on a Docker box we control via the Docker Engine HTTP
+ * API (path B: remote one-click host on infra we control). The discriminant is
+ * `"self"` to match the existing `v2_host_provider` DB enum (no migration).
+ */
+export type ProvisionProvider = "daytona" | "modal" | "e2b" | "self";
 
 export interface ProvisionInput {
 	kind: ProvisionKind;

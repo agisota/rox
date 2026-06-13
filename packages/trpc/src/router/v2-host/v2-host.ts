@@ -20,8 +20,10 @@ import {
 } from "../utils/active-org";
 
 // Managed (provider-backed) hosts the provision procedure can create. `self`
-// (user-run `rox deploy`) is intentionally excluded — it is not provisioned
-// server-side.
+// is intentionally excluded: it now has a provisioner adapter
+// (RoxSelfProvisioner — one-click host on our own Docker box, gated by
+// ROX_SELF_DOCKER_HOST), but enabling it server-side here also requires a
+// published host-service image, so it stays dormant until both are provided.
 const MANAGED_PROVIDERS = [
 	"daytona",
 	"modal",
@@ -32,6 +34,7 @@ const PROVIDER_LABELS: Record<ProvisionProvider, string> = {
 	daytona: "Daytona",
 	modal: "Modal",
 	e2b: "E2B",
+	self: "Сервер Rox (удалённый)",
 };
 
 async function requireHostOwner(
