@@ -28,6 +28,10 @@
 			"types": "./src/seed-default-statuses.ts",
 			"default": "./src/seed-default-statuses.ts"
 		},
+		"./seed-demo-project": {
+			"types": "./src/seed-demo-project.ts",
+			"default": "./src/seed-demo-project.ts"
+		},
 		"./utils": {
 			"types": "./src/utils/index.ts",
 			"default": "./src/utils/index.ts"
