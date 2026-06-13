@@ -11,8 +11,12 @@ const publicRoutes = [
 	"/cli/auth/code",
 ];
 
+function matchesRoute(pathname: string, route: string): boolean {
+	return pathname === route || pathname.startsWith(`${route}/`);
+}
+
 function isPublicRoute(pathname: string): boolean {
-	return publicRoutes.some((route) => pathname.startsWith(route));
+	return publicRoutes.some((route) => matchesRoute(pathname, route));
 }
 
 export default async function proxy(req: NextRequest) {
@@ -24,7 +28,7 @@ export default async function proxy(req: NextRequest) {
 
 	if (
 		session &&
-		(pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up"))
+		(matchesRoute(pathname, "/sign-in") || matchesRoute(pathname, "/sign-up"))
 	) {
 		return NextResponse.redirect(new URL("/", req.url));
 	}
