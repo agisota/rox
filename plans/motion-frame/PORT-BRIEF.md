@@ -124,8 +124,8 @@ language is the deliverable — not another page.
 - [x] PR1 remainder: tier switcher UI component — `MotionTierSwitcher`,
       merged via #68.
 - [x] PR2 remainder: `Reveal`, `LoopMarquee` — merged via #71.
-- [ ] PR3: typeface themes + switcher.
-- [ ] PR4 remainder: `SufficiencyPanel`, `EventTrace`, `RuntimeCard`,
-      `ManifestoBlock`.
+- [x] PR3: typeface themes + switcher — merged via #72.
+- [x] PR4 remainder: `SufficiencyPanel`, `EventTrace`, `RuntimeCard`,
+      `ManifestoBlock` — C4.
 - [ ] PR5: diagram adapters.
 - [ ] PR6: `apps/docs` showcase.
