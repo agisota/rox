@@ -117,7 +117,7 @@ export function CommentPane({
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex shrink-0 items-center gap-0.5 text-muted-foreground hover:text-foreground"
-								aria-label="View on GitHub"
+								aria-label="Открыть на GitHub"
 							>
 								<FaGithub className="size-3.5" />
 								<LuArrowUpRight className="size-3" />

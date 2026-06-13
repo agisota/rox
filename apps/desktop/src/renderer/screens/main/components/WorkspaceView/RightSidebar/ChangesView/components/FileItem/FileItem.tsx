@@ -196,7 +196,7 @@ export function FileItem({
 			? [
 					{
 						key: "stage",
-						label: "Stage",
+						label: "Проиндексировать",
 						icon: <VscAdd className="size-3" />,
 						onClick: onStage,
 						disabled: isActioning,
@@ -207,7 +207,7 @@ export function FileItem({
 			? [
 					{
 						key: "unstage",
-						label: "Unstage",
+						label: "Снять из индекса",
 						icon: <VscRemove className="size-3" />,
 						onClick: onUnstage,
 						disabled: isActioning,

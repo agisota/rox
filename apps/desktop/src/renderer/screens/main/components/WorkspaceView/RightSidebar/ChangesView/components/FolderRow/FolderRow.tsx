@@ -146,7 +146,7 @@ export function FolderRow({
 			? [
 					{
 						key: "discard-all",
-						label: "Discard All",
+						label: "Отменить все",
 						icon: <VscDiscard className="size-3" />,
 						onClick: openDiscardDialog,
 						isDestructive: true,
@@ -158,7 +158,7 @@ export function FolderRow({
 			? [
 					{
 						key: "stage-all",
-						label: "Stage All",
+						label: "Проиндексировать все",
 						icon: <VscAdd className="size-3" />,
 						onClick: onStageAll,
 						disabled: isActioning,
@@ -169,7 +169,7 @@ export function FolderRow({
 			? [
 					{
 						key: "unstage-all",
-						label: "Unstage All",
+						label: "Снять из индекса все",
 						icon: <VscRemove className="size-3" />,
 						onClick: onUnstageAll,
 						disabled: isActioning,

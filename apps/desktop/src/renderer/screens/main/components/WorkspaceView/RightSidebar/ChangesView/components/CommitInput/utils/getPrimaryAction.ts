@@ -31,18 +31,18 @@ export function getPrimaryAction({
 	if (canCommit) {
 		return {
 			action: "commit",
-			label: "Commit",
+			label: "Коммит",
 			disabled: isPending,
-			tooltip: "Commit staged changes",
+			tooltip: "Закоммитить проиндексированные изменения",
 		};
 	}
 
 	if (pushCount > 0 && pullCount > 0) {
 		return {
 			action: "sync",
-			label: "Sync",
+			label: "Синхронизировать",
 			disabled: isPending,
-			tooltip: `Pull ${pullCount}, push ${pushCount}`,
+			tooltip: `Получить: ${pullCount}, отправить: ${pushCount}`,
 		};
 	}
 
@@ -58,9 +58,9 @@ export function getPrimaryAction({
 	if (pullCount > 0) {
 		return {
 			action: "pull",
-			label: "Pull",
+			label: "Получить",
 			disabled: isPending,
-			tooltip: `Pull ${pullCount} commit${pullCount !== 1 ? "s" : ""}`,
+			tooltip: `Получить коммитов: ${pullCount}`,
 		};
 	}
 
@@ -75,8 +75,10 @@ export function getPrimaryAction({
 
 	return {
 		action: "commit",
-		label: "Commit",
+		label: "Коммит",
 		disabled: true,
-		tooltip: hasStagedChanges ? "Enter a message" : "No staged changes",
+		tooltip: hasStagedChanges
+			? "Введите сообщение"
+			: "Нет проиндексированных изменений",
 	};
 }

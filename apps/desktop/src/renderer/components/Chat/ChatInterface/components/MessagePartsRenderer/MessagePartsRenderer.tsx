@@ -213,7 +213,7 @@ export function MessagePartsRenderer({
 							toolName: name,
 							args,
 						});
-						let title = "Read";
+						let title = "Чтение";
 						let subtitle = "";
 						let icon = FileIcon;
 						switch (name) {

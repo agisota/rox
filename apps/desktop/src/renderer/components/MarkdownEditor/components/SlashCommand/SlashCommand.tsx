@@ -34,21 +34,21 @@ interface CommandItem {
 const COMMANDS: CommandItem[] = [
 	// Headings group
 	{
-		title: "Heading 1",
+		title: "Заголовок 1",
 		icon: <span className="text-xs font-semibold">H₁</span>,
 		command: (editor) =>
 			editor.chain().focus().toggleHeading({ level: 1 }).run(),
 		group: "headings",
 	},
 	{
-		title: "Heading 2",
+		title: "Заголовок 2",
 		icon: <span className="text-xs font-semibold">H₂</span>,
 		command: (editor) =>
 			editor.chain().focus().toggleHeading({ level: 2 }).run(),
 		group: "headings",
 	},
 	{
-		title: "Heading 3",
+		title: "Заголовок 3",
 		icon: <span className="text-xs font-semibold">H₃</span>,
 		command: (editor) =>
 			editor.chain().focus().toggleHeading({ level: 3 }).run(),
@@ -56,32 +56,32 @@ const COMMANDS: CommandItem[] = [
 	},
 	// Lists group
 	{
-		title: "Bulleted list",
+		title: "Маркированный список",
 		icon: <HiOutlineListBullet className="size-4" />,
 		command: (editor) => editor.chain().focus().toggleBulletList().run(),
 		group: "lists",
 	},
 	{
-		title: "Numbered list",
+		title: "Нумерованный список",
 		icon: <HiOutlineNumberedList className="size-4" />,
 		command: (editor) => editor.chain().focus().toggleOrderedList().run(),
 		group: "lists",
 	},
 	{
-		title: "Checklist",
+		title: "Чек-лист",
 		icon: <HiOutlineCheckCircle className="size-4" />,
 		command: (editor) => editor.chain().focus().toggleTaskList().run(),
 		group: "lists",
 	},
 	// Blocks group
 	{
-		title: "Code block",
+		title: "Блок кода",
 		icon: <HiOutlineCodeBracket className="size-4" />,
 		command: (editor) => editor.chain().focus().toggleCodeBlock().run(),
 		group: "blocks",
 	},
 	{
-		title: "Blockquote",
+		title: "Цитата",
 		icon: <RiDoubleQuotesL className="size-4" />,
 		command: (editor) => editor.chain().focus().toggleBlockquote().run(),
 		group: "blocks",

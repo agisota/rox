@@ -115,7 +115,7 @@ export function OpenInButton({
 						className="gap-1"
 						disabled={!path}
 					>
-						<span>Open</span>
+						<span>Открыть</span>
 						<HiChevronDown className="size-3" />
 					</Button>
 				</DropdownMenuTrigger>

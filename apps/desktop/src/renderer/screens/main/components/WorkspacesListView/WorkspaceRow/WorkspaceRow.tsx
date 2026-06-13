@@ -51,7 +51,7 @@ export function WorkspaceRow({
 		useWorkspaceDeleteHandler();
 	const openFileInEditor = electronTrpc.external.openFileInEditor.useMutation({
 		onError: (error) =>
-			toast.error(`Failed to open in editor: ${error.message}`),
+			toast.error(`Не удалось открыть в редакторе: ${error.message}`),
 	});
 
 	const handleOpenInEditor = () => {
@@ -115,14 +115,18 @@ export function WorkspaceRow({
 				<TooltipContent side="top" sideOffset={4}>
 					{isBranch ? (
 						<>
-							<p className="text-xs font-medium">Local workspace</p>
+							<p className="text-xs font-medium">
+								Локальное рабочее пространство
+							</p>
 							<p className="text-xs text-muted-foreground">
 								Changes are made directly in the main repository
 							</p>
 						</>
 					) : (
 						<>
-							<p className="text-xs font-medium">Worktree workspace</p>
+							<p className="text-xs font-medium">
+								Рабочее пространство worktree
+							</p>
 							<p className="text-xs text-muted-foreground">
 								Isolated copy for parallel development
 							</p>
@@ -174,12 +178,14 @@ export function WorkspaceRow({
 					</>
 				) : workspace.isOpen ? (
 					<>
-						<span className="font-medium text-foreground/80">Switch to</span>
+						<span className="font-medium text-foreground/80">Перейти</span>
 						<LuArrowRight className="size-3 text-foreground/80" />
 					</>
 				) : (
 					<>
-						<span className="font-medium text-foreground/80">Reopen</span>
+						<span className="font-medium text-foreground/80">
+							Открыть снова
+						</span>
 						<LuArrowRight className="size-3 text-foreground/80" />
 					</>
 				)}

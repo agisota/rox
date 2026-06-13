@@ -103,7 +103,9 @@ export function SidebarDropZone({ children, className }: SidebarDropZoneProps) {
 					});
 				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to open project");
+				setError(
+					err instanceof Error ? err.message : "Не удалось открыть проект",
+				);
 			}
 		},
 		[openFromPath, isPending, navigate],
@@ -180,7 +182,7 @@ export function SidebarDropZone({ children, className }: SidebarDropZoneProps) {
 							type="button"
 							onClick={() => setError(null)}
 							className="shrink-0 rounded p-0.5 hover:bg-destructive/20 transition-colors"
-							aria-label="Dismiss error"
+							aria-label="Закрыть ошибку"
 						>
 							<LuX className="h-3.5 w-3.5" />
 						</button>

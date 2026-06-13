@@ -29,7 +29,7 @@ export function LinkedPRPill({
 					className="size-5 transition-opacity group-hover:opacity-0"
 				/>
 				<Button
-					aria-label="Remove linked PR"
+					aria-label="Убрать связанный PR"
 					className="pointer-events-none absolute inset-0 size-7 cursor-pointer rounded-md p-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&>svg]:size-3"
 					onClick={(e) => {
 						e.stopPropagation();
@@ -39,7 +39,7 @@ export function LinkedPRPill({
 					variant="ghost"
 				>
 					<XIcon />
-					<span className="sr-only">Remove</span>
+					<span className="sr-only">Убрать</span>
 				</Button>
 			</div>
 			<div className="flex flex-col items-start leading-tight">

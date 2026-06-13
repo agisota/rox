@@ -48,10 +48,10 @@ export function SetupScriptCard({
 				className="px-3 pb-2"
 			>
 				<SidebarCard
-					badge="Setup"
-					title="Setup scripts"
-					description={`Automate workspace setup for ${projectName}`}
-					actionLabel="Configure"
+					badge="Настройка"
+					title="Скрипты настройки"
+					description={`Автоматизация настройки рабочего пространства для ${projectName}`}
+					actionLabel="Настроить"
 					onAction={() =>
 						navigate({
 							to: "/settings/projects/$projectId",

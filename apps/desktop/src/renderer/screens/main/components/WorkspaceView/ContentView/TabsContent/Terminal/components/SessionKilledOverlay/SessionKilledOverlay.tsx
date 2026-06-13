@@ -13,7 +13,7 @@ export function SessionKilledOverlay({ onRestart }: SessionKilledOverlayProps) {
 				<div className="flex flex-col items-center text-center gap-1.5 px-4">
 					<LuPower className="size-5 text-muted-foreground" />
 					<div className="space-y-0.5">
-						<p className="text-sm font-medium">Session killed</p>
+						<p className="text-sm font-medium">Сессия завершена</p>
 						<p className="text-xs text-muted-foreground">
 							You terminated this shell session
 						</p>

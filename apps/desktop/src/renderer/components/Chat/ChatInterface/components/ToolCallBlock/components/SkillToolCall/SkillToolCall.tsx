@@ -22,7 +22,9 @@ export function SkillToolCall({ part, skillName }: SkillToolCallProps) {
 			{!isPending ? (
 				<div className="py-1 pl-3">
 					{isError ? (
-						<p className="text-xs text-destructive">Failed to load skill</p>
+						<p className="text-xs text-destructive">
+							Не удалось загрузить навык
+						</p>
 					) : (
 						<p className="text-xs text-muted-foreground">
 							Successfully loaded skill

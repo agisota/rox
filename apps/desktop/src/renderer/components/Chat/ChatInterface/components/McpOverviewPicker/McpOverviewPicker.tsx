@@ -33,11 +33,11 @@ function getStateClassName(state: McpServerOverviewItem["state"]): string {
 function formatStateLabel(state: McpServerOverviewItem["state"]): string {
 	switch (state) {
 		case "enabled":
-			return "Enabled";
+			return "Включён";
 		case "disabled":
-			return "Disabled";
+			return "Отключён";
 		default:
-			return "Invalid";
+			return "Недействителен";
 	}
 }
 
@@ -46,11 +46,11 @@ function formatTransportLabel(
 ): string {
 	switch (transport) {
 		case "remote":
-			return "Remote";
+			return "Удалённый";
 		case "local":
-			return "Local";
+			return "Локальный";
 		default:
-			return "Unknown";
+			return "Неизвестно";
 	}
 }
 
@@ -74,13 +74,13 @@ export function McpOverviewPicker({
 					<div className="mt-1 truncate text-xs text-muted-foreground">
 						{overview?.sourcePath
 							? `Loaded from ${overview.sourcePath}`
-							: "No MCP config found in this workspace"}
+							: "В этом рабочем пространстве не найдена конфигурация MCP"}
 					</div>
 				</div>
-				<ModelSelectorInput placeholder="Search MCP servers..." />
+				<ModelSelectorInput placeholder="Поиск серверов MCP..." />
 				<ModelSelectorList className="max-h-[420px]">
-					<ModelSelectorEmpty>No MCP servers configured.</ModelSelectorEmpty>
-					<ModelSelectorGroup heading="Servers">
+					<ModelSelectorEmpty>Серверы MCP не настроены.</ModelSelectorEmpty>
+					<ModelSelectorGroup heading="Серверы">
 						{servers.map((server) => (
 							<ModelSelectorItem
 								key={server.name}
@@ -148,10 +148,10 @@ export function McpOverviewPicker({
 												/>
 											) : null}
 											{authenticatingServerName === server.name
-												? "Connecting..."
+												? "Подключение..."
 												: server.connected
-													? "Re-auth"
-													: "Auth"}
+													? "Переавторизация"
+													: "Авторизация"}
 										</span>
 									) : null}
 								</div>

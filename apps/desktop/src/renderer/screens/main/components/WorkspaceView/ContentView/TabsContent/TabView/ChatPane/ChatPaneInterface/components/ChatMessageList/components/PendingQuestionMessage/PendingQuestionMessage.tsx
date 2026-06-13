@@ -217,7 +217,7 @@ export function PendingQuestionMessage({
 								ref={inputRef}
 								value={freeText}
 								onChange={(event) => setFreeText(event.target.value)}
-								placeholder="Type your answer..."
+								placeholder="Введите ваш ответ..."
 								disabled={controlsDisabled}
 							/>
 							<Button

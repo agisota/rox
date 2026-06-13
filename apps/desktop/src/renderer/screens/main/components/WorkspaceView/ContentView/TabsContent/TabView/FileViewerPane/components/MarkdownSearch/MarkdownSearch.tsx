@@ -61,14 +61,14 @@ export function MarkdownSearch({
 				value={query}
 				onChange={(e) => onQueryChange(e.target.value)}
 				onKeyDown={handleKeyDown}
-				placeholder="Find"
+				placeholder="Найти"
 				className="h-6 min-w-0 w-28 flex-shrink bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
 			/>
 			{query && (
 				<span className="text-xs text-muted-foreground whitespace-nowrap px-1">
 					{matchCount === 0
-						? "No results"
-						: `${activeMatchIndex + 1} of ${matchCount}`}
+						? "Нет результатов"
+						: `${activeMatchIndex + 1} из ${matchCount}`}
 				</span>
 			)}
 			<div className="flex items-center shrink-0">
@@ -86,7 +86,7 @@ export function MarkdownSearch({
 							<PiTextAa className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Match case</TooltipContent>
+					<TooltipContent side="bottom">Учитывать регистр</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -98,7 +98,7 @@ export function MarkdownSearch({
 							<HiChevronUp className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Previous (Shift+Enter)</TooltipContent>
+					<TooltipContent side="bottom">Назад (Shift+Enter)</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -110,7 +110,7 @@ export function MarkdownSearch({
 							<HiChevronDown className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Next (Enter)</TooltipContent>
+					<TooltipContent side="bottom">Вперёд (Enter)</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -122,7 +122,7 @@ export function MarkdownSearch({
 							<HiMiniXMark className="size-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="bottom">Close (Esc)</TooltipContent>
+					<TooltipContent side="bottom">Закрыть (Esc)</TooltipContent>
 				</Tooltip>
 			</div>
 		</div>

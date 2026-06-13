@@ -197,7 +197,7 @@ export function OpenInExternalDropdownItems({
 							alt=""
 							className={cn("size-4 object-contain", subTriggerIconClassName)}
 						/>
-						<span>Terminal</span>
+						<span>Терминал</span>
 					</div>
 				</DropdownMenuSubTrigger>
 				<DropdownMenuSubContent sideOffset={8} className={subContentClassName}>
@@ -210,7 +210,7 @@ export function OpenInExternalDropdownItems({
 					className={cn("flex items-center gap-2", copyPathContentClassName)}
 				>
 					<LuCopy className={cn("size-4", copyPathIconClassName)} />
-					<span className={copyPathLabelClassName}>Copy path</span>
+					<span className={copyPathLabelClassName}>Копировать путь</span>
 				</div>
 				{copyPathTrailing}
 			</DropdownMenuItem>

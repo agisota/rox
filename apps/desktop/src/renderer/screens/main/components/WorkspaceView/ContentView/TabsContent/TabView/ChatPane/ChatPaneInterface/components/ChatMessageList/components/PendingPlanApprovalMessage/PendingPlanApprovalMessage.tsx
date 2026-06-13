@@ -137,7 +137,7 @@ export function PendingPlanApprovalMessage({
 					ref={feedbackTextareaRef}
 					value={feedback}
 					onChange={(event) => setFeedback(event.target.value)}
-					placeholder="Add feedback for revisions..."
+					placeholder="Добавьте замечания для доработки..."
 					disabled={isSubmitting || !canRespond}
 					rows={4}
 				/>

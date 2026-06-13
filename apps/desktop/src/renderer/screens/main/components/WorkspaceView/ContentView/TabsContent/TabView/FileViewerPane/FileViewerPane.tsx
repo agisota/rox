@@ -86,29 +86,29 @@ function getUnsavedDialogCopy(intent: EditorPendingIntent | null) {
 			return {
 				description:
 					"You have unsaved changes in this file. What would you like to do before closing the pane?",
-				discardLabel: "Discard & Close Pane",
-				saveLabel: "Save & Close Pane",
+				discardLabel: "Отменить и закрыть панель",
+				saveLabel: "Сохранить и закрыть панель",
 			};
 		case "close-tab":
 			return {
 				description:
 					"You have unsaved changes in this file. What would you like to do before closing the tab?",
-				discardLabel: "Discard & Close Tab",
-				saveLabel: "Save & Close Tab",
+				discardLabel: "Отменить и закрыть вкладку",
+				saveLabel: "Сохранить и закрыть вкладку",
 			};
 		case "replace-preview":
 			return {
 				description:
 					"You have unsaved changes in this preview pane. What would you like to do before opening a different file here?",
-				discardLabel: "Discard & Open File",
-				saveLabel: "Save & Open File",
+				discardLabel: "Отменить и открыть файл",
+				saveLabel: "Сохранить и открыть файл",
 			};
 		default:
 			return {
 				description:
 					"You have unsaved changes. What would you like to do before switching views?",
-				discardLabel: "Discard & Switch",
-				saveLabel: "Save & Switch",
+				discardLabel: "Отменить и переключить",
+				saveLabel: "Сохранить и переключить",
 			};
 	}
 }
@@ -645,7 +645,7 @@ export function FileViewerPane({
 					{hasExternalDiskChange && (
 						<div className="border-b px-3 py-2">
 							<Alert variant="destructive">
-								<AlertTitle>File changed on disk</AlertTitle>
+								<AlertTitle>Файл изменён на диске</AlertTitle>
 								<AlertDescription>
 									This editor has unsaved changes. Saving now will require
 									confirming the diff before overwriting the file.

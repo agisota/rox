@@ -57,18 +57,17 @@ export function DeleteWorktreeDialog({
 			<AlertDialogContent className="max-w-[340px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Delete worktree "{worktreeName}"?
+						Удалить worktree «{worktreeName}»?
 					</AlertDialogTitle>
 					<AlertDialogDescription asChild>
 						<div className="text-muted-foreground space-y-1.5">
 							{isLoading ? (
-								"Checking status..."
+								"Проверка состояния..."
 							) : !canDelete ? (
 								<span className="text-destructive">{reason}</span>
 							) : (
 								<span className="block">
-									This will permanently delete the worktree and its files from
-									disk.
+									Worktree и его файлы будут безвозвратно удалены с диска.
 								</span>
 							)}
 						</div>
@@ -79,10 +78,10 @@ export function DeleteWorktreeDialog({
 					<div className="px-4 pb-2">
 						<div className="text-sm text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded px-2 py-1.5">
 							{hasChanges && hasUnpushedCommits
-								? "Has uncommitted changes and unpushed commits"
+								? "Есть незакоммиченные изменения и неотправленные коммиты"
 								: hasChanges
-									? "Has uncommitted changes"
-									: "Has unpushed commits"}
+									? "Есть незакоммиченные изменения"
+									: "Есть неотправленные коммиты"}
 						</div>
 					</div>
 				)}
@@ -94,7 +93,7 @@ export function DeleteWorktreeDialog({
 						className="h-7 px-3 text-xs"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						Отмена
 					</Button>
 					<Tooltip delayDuration={400}>
 						<TooltipTrigger asChild>
@@ -105,11 +104,11 @@ export function DeleteWorktreeDialog({
 								onClick={handleDelete}
 								disabled={!canDelete || isLoading}
 							>
-								Delete
+								Удалить
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="top" className="text-xs max-w-[200px]">
-							Permanently delete worktree from disk.
+							Безвозвратно удалить worktree с диска.
 						</TooltipContent>
 					</Tooltip>
 				</AlertDialogFooter>

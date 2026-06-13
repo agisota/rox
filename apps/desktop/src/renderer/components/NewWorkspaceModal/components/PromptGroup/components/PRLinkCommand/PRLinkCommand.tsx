@@ -167,7 +167,7 @@ export function PRLinkCommand({
 			>
 				<Command shouldFilter={false}>
 					<CommandInput
-						placeholder="Search pull requests..."
+						placeholder="Поиск pull request..."
 						value={searchQuery}
 						onValueChange={setSearchQuery}
 					/>

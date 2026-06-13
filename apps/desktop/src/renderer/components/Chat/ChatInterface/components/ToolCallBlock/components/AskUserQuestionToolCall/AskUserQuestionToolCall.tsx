@@ -244,14 +244,14 @@ export function AskUserQuestionToolCall({
 			icon={MessageCircleQuestionIcon}
 			isPending={false}
 			isError={false}
-			title="Question"
+			title="Вопрос"
 			description={
 				isPending ? (
-					<ToolStatusBadge icon={ClockIcon} label="Awaiting Response" />
+					<ToolStatusBadge icon={ClockIcon} label="Ожидание ответа" />
 				) : isAnswered ? (
-					<ToolStatusBadge icon={CheckIcon} label="Answered" />
+					<ToolStatusBadge icon={CheckIcon} label="Отвечено" />
 				) : isCancelled || isCancelledByError || isCancelledByStop ? (
-					<ToolStatusBadge icon={XIcon} label="Cancelled" />
+					<ToolStatusBadge icon={XIcon} label="Отменено" />
 				) : undefined
 			}
 		>

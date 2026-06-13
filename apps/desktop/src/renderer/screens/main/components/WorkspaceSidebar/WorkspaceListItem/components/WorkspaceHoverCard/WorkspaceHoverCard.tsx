@@ -89,7 +89,7 @@ export function WorkspaceHoverCardContent({
 									type="button"
 									onClick={() => onEditBranchClick(branchName)}
 									className={`group/branch flex min-w-0 flex-1 items-center gap-1 font-mono break-all text-left hover:text-foreground hover:underline ${hasCustomAlias ? "text-xs" : "text-sm"}`}
-									title="Rename branch"
+									title="Переименовать ветку"
 								>
 									<span className="break-all">{branchName}</span>
 									<LuPencil
@@ -110,7 +110,7 @@ export function WorkspaceHoverCardContent({
 									target="_blank"
 									rel="noopener noreferrer"
 									className="shrink-0 text-muted-foreground hover:text-foreground"
-									title="Open branch on GitHub"
+									title="Открыть ветку на GitHub"
 									onClick={(e) => e.stopPropagation()}
 								>
 									<LuExternalLink
@@ -148,7 +148,7 @@ export function WorkspaceHoverCardContent({
 						className="size-3 animate-spin"
 						strokeWidth={STROKE_WIDTH}
 					/>
-					<span className="text-xs">Loading PR...</span>
+					<span className="text-xs">Загрузка PR...</span>
 				</div>
 			) : pr ? (
 				<div className="pt-2 border-t border-border space-y-2">

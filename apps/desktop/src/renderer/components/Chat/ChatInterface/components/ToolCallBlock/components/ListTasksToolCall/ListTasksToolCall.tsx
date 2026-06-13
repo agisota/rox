@@ -40,7 +40,7 @@ export function ListTasksToolCall({ part }: ListTasksToolCallProps) {
 			const slug = typeof task.slug === "string" ? task.slug : null;
 			const openTaskId = taskId ?? slug;
 			const title =
-				typeof task.title === "string" ? task.title : "Untitled task";
+				typeof task.title === "string" ? task.title : "Задача без названия";
 			const status =
 				typeof task.statusName === "string" ? task.statusName : null;
 			const statusType =
@@ -69,8 +69,8 @@ export function ListTasksToolCall({ part }: ListTasksToolCallProps) {
 			const branch = typeof task.branch === "string" ? task.branch : null;
 			const prUrl = typeof task.prUrl === "string" ? task.prUrl : null;
 			const extraDetails = [
-				creator ? { label: "Creator", value: creator } : null,
-				branch ? { label: "Branch", value: branch } : null,
+				creator ? { label: "Автор", value: creator } : null,
+				branch ? { label: "Ветка", value: branch } : null,
 				prUrl ? { label: "PR", value: prUrl } : null,
 			].filter((detail): detail is { label: string; value: string } =>
 				Boolean(detail),
@@ -138,7 +138,7 @@ export function ListTasksToolCall({ part }: ListTasksToolCallProps) {
 							)}
 						</AnimatePresence>
 					) : (
-						<div className="text-muted-foreground">No tasks in result.</div>
+						<div className="text-muted-foreground">В результате нет задач.</div>
 					)}
 				</div>
 			}

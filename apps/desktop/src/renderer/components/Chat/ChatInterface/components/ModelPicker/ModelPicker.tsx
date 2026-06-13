@@ -68,14 +68,14 @@ export function ModelPicker({
 					) : selectedLogo ? (
 						<ModelSelectorLogo provider={selectedLogo} />
 					) : null}
-					<span>{selectedModel?.name ?? "Model"}</span>
+					<span>{selectedModel?.name ?? "Модель"}</span>
 					<ChevronDownIcon className="size-2.5 opacity-50" />
 				</PromptInputButton>
 			</ModelSelectorTrigger>
-			<ModelSelectorContent title="Select Model">
-				<ModelSelectorInput placeholder="Search models..." />
+			<ModelSelectorContent title="Выберите модель">
+				<ModelSelectorInput placeholder="Поиск моделей..." />
 				<ModelSelectorList>
-					<ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+					<ModelSelectorEmpty>Модели не найдены.</ModelSelectorEmpty>
 					{groupedModels.map(([provider, providerModels]) => (
 						<ModelProviderGroup
 							key={provider}

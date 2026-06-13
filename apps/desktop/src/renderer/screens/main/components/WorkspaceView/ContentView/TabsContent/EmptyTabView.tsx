@@ -78,14 +78,14 @@ export function EmptyTabView({
 		const baseActions: EmptyTabAction[] = [
 			{
 				id: "terminal",
-				label: "Open Terminal",
+				label: "Открыть терминал",
 				display: newGroupDisplay,
 				icon: BsTerminalPlus,
 				onClick: handleShowTerminal,
 			},
 			{
 				id: "new-agent",
-				label: "Open Chat",
+				label: "Открыть чат",
 				display: newChatDisplay,
 				icon: TbMessageCirclePlus,
 				onClick: handleNewAgent,
@@ -94,7 +94,7 @@ export function EmptyTabView({
 
 		baseActions.push({
 			id: "open-browser",
-			label: "Open Browser",
+			label: "Открыть браузер",
 			display: newBrowserDisplay,
 			icon: TbWorld,
 			onClick: handleOpenBrowser,
@@ -112,7 +112,7 @@ export function EmptyTabView({
 
 		baseActions.push({
 			id: "search-files",
-			label: "Search Files",
+			label: "Поиск файлов",
 			display: quickOpenDisplay,
 			icon: LuSearch,
 			onClick: onOpenQuickOpen,

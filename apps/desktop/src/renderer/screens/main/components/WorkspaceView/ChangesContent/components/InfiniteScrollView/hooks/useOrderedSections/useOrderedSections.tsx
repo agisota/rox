@@ -62,7 +62,7 @@ export function useOrderedSections({
 	const sectionDefinitions = {
 		"against-base": {
 			id: "against-base",
-			title: `Against ${baseBranch}`,
+			title: `Относительно ${baseBranch}`,
 			count: againstBaseFiles.length,
 			isExpanded: expandedSections["against-base"],
 			onToggle: () => toggleSection("against-base"),
@@ -80,7 +80,7 @@ export function useOrderedSections({
 		},
 		committed: {
 			id: "committed",
-			title: "Commits",
+			title: "Коммиты",
 			count: committedFileCount,
 			isExpanded: expandedSections.committed,
 			onToggle: () => toggleSection("committed"),
@@ -101,7 +101,7 @@ export function useOrderedSections({
 		},
 		staged: {
 			id: "staged",
-			title: "Staged",
+			title: "Проиндексировано",
 			count: stagedFiles.length,
 			isExpanded: expandedSections.staged,
 			onToggle: () => toggleSection("staged"),
@@ -121,7 +121,7 @@ export function useOrderedSections({
 		},
 		unstaged: {
 			id: "unstaged",
-			title: "Unstaged",
+			title: "Не проиндексировано",
 			count: unstagedFiles.length,
 			isExpanded: expandedSections.unstaged,
 			onToggle: () => toggleSection("unstaged"),

@@ -98,7 +98,7 @@ export function PromptGroupAdvancedOptions({
 							className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 						>
 							<HiOutlinePencil className="size-3" />
-							<span>Edit prefix</span>
+							<span>Изменить префикс</span>
 						</button>
 					</div>
 					<Input
@@ -113,7 +113,7 @@ export function PromptGroupAdvancedOptions({
 
 				{showCompareBaseBranch && (
 					<div className="space-y-1.5">
-						<span className="text-xs text-muted-foreground">Base branch</span>
+						<span className="text-xs text-muted-foreground">Базовая ветка</span>
 						{isBranchesError ? (
 							<div className="flex items-center gap-2 h-8 px-3 rounded-md border border-destructive/50 bg-destructive/10 text-destructive text-xs">
 								Failed to load branches
@@ -152,12 +152,12 @@ export function PromptGroupAdvancedOptions({
 								>
 									<Command shouldFilter={false}>
 										<CommandInput
-											placeholder="Search branches..."
+											placeholder="Поиск веток..."
 											value={branchSearch}
 											onValueChange={onBranchSearchChange}
 										/>
 										<CommandList className="max-h-[200px]">
-											<CommandEmpty>No branches found</CommandEmpty>
+											<CommandEmpty>Ветки не найдены</CommandEmpty>
 											{filteredBranches?.map((branch) => (
 												<CommandItem
 													key={branch.name}

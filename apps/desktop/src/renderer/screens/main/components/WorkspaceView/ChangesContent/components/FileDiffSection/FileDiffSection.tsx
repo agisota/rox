@@ -456,7 +456,7 @@ export function FileDiffSection({
 							style={{ minHeight: FILE_DIFF_SECTION_PLACEHOLDER_HEIGHT }}
 						>
 							<LuLoader className="w-4 h-4 animate-spin mr-2" />
-							<span>Loading diff...</span>
+							<span>Загрузка diff...</span>
 						</div>
 					) : hasRenderedDiff ? (
 						isEditing ? (
@@ -464,7 +464,7 @@ export function FileDiffSection({
 								{hasExternalDiskChange && (
 									<div className="border-b px-3 py-2">
 										<Alert variant="destructive">
-											<AlertTitle>File changed on disk</AlertTitle>
+											<AlertTitle>Файл изменён на диске</AlertTitle>
 											<AlertDescription>
 												This diff editor has local edits. Review the conflict
 												before saving or reload the current disk version.
@@ -524,7 +524,7 @@ export function FileDiffSection({
 							{diffData ? (
 								<>
 									<LuLoader className="w-4 h-4 animate-spin mr-2" />
-									<span>Loading editor...</span>
+									<span>Загрузка редактора...</span>
 								</>
 							) : (
 								"Unable to load diff"

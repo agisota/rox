@@ -1,7 +1,7 @@
 import { OAuthDialog, type OAuthDialogProps } from "../OAuthDialog";
 
 const OPENAI_PROVIDER: OAuthDialogProps["provider"] = {
-	title: "Connect OpenAI",
+	title: "Подключить OpenAI",
 	description:
 		"Approve access in your browser. If the callback does not finish, paste the redirected callback URL below.",
 	codeLabel: "Callback URL (optional)",

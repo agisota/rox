@@ -9,17 +9,17 @@ export const ALL_COMMENTS_COPY_ACTION_KEY = "comments:all";
 
 export const reviewDecisionConfig = {
 	approved: {
-		label: "Approved",
+		label: "Одобрено",
 		className:
 			"border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
 	},
 	changes_requested: {
-		label: "Changes requested",
+		label: "Запрошены правки",
 		className:
 			"border border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300",
 	},
 	pending: {
-		label: "Review pending",
+		label: "Ожидает ревью",
 		className:
 			"border border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
 	},
@@ -29,27 +29,27 @@ export const checkIconConfig = {
 	success: {
 		icon: LuCheck,
 		className: "text-emerald-600 dark:text-emerald-400",
-		label: "Passed",
+		label: "Пройдено",
 	},
 	failure: {
 		icon: LuX,
 		className: "text-red-600 dark:text-red-400",
-		label: "Failed",
+		label: "Не пройдено",
 	},
 	pending: {
 		icon: LuLoaderCircle,
 		className: "text-amber-600 dark:text-amber-400",
-		label: "Pending",
+		label: "Ожидание",
 	},
 	skipped: {
 		icon: LuMinus,
 		className: "text-muted-foreground",
-		label: "Skipped",
+		label: "Пропущено",
 	},
 	cancelled: {
 		icon: LuMinus,
 		className: "text-muted-foreground",
-		label: "Cancelled",
+		label: "Отменено",
 	},
 } as const;
 
@@ -60,15 +60,15 @@ export const checkSummaryIconConfig = {
 	none: {
 		icon: LuMinus,
 		className: "text-muted-foreground",
-		label: "No checks",
+		label: "Нет проверок",
 	},
 } as const;
 
 export const prStateLabel = {
-	open: "Open",
-	draft: "Draft",
-	merged: "Merged",
-	closed: "Closed",
+	open: "Открыт",
+	draft: "Черновик",
+	merged: "Влит",
+	closed: "Закрыт",
 } as const;
 
 export function resolveCheckDestinationUrl(
@@ -98,7 +98,7 @@ export function getCommentPreviewText(body: string): string {
 			.map((line) => line.trim())
 			.find(Boolean)
 			?.replace(/^[-*+>]\s*/, "")
-			?.replace(/\s+/g, " ") ?? "No preview available"
+			?.replace(/\s+/g, " ") ?? "Предпросмотр недоступен"
 	);
 }
 
@@ -115,20 +115,20 @@ export function formatShortAge(timestamp?: number): string | null {
 	const deltaSeconds = Math.round(deltaMs / 1000);
 
 	if (deltaSeconds < 60) {
-		return `${Math.max(1, deltaSeconds)}s`;
+		return `${Math.max(1, deltaSeconds)}с`;
 	}
 
 	const deltaMinutes = Math.round(deltaSeconds / 60);
 	if (deltaMinutes < 60) {
-		return `${deltaMinutes}m`;
+		return `${deltaMinutes}м`;
 	}
 
 	const deltaHours = Math.round(deltaMinutes / 60);
 	if (deltaHours < 24) {
-		return `${deltaHours}h`;
+		return `${deltaHours}ч`;
 	}
 
-	return `${Math.round(deltaHours / 24)}d`;
+	return `${Math.round(deltaHours / 24)}д`;
 }
 
 function getCommentClipboardLocation(
@@ -138,18 +138,18 @@ function getCommentClipboardLocation(
 		return comment.line ? `${comment.path}:${comment.line}` : comment.path;
 	}
 
-	return comment.kind === "conversation" ? "Conversation" : null;
+	return comment.kind === "conversation" ? "Обсуждение" : null;
 }
 
 export function getCommentKindText(comment: PullRequestComment): string {
-	return comment.kind === "review" ? "Review" : "Comment";
+	return comment.kind === "review" ? "Ревью" : "Комментарий";
 }
 
 export function buildCommentClipboardText(
 	comment: PullRequestComment,
 	includeMetadata = false,
 ): string {
-	const body = comment.body.trim() || "No comment body";
+	const body = comment.body.trim() || "Нет текста комментария";
 
 	if (!includeMetadata) {
 		return body;

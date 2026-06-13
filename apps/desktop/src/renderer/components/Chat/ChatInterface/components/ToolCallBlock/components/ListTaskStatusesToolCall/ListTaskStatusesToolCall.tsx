@@ -107,7 +107,9 @@ export function ListTaskStatusesToolCall({
 							})}
 						</div>
 					) : (
-						<div className="text-muted-foreground">No statuses in result.</div>
+						<div className="text-muted-foreground">
+							В результате нет статусов.
+						</div>
 					)}
 				</div>
 			}

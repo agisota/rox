@@ -34,10 +34,10 @@ export function V2AvailableBanner() {
 					className="px-3 pb-2"
 				>
 					<SidebarCard
-						badge="New"
-						title="Rox v2 is here"
-						description="Try the new cloud workspace experience."
-						actionLabel="Try new version of Rox"
+						badge="Новое"
+						title="Rox v2 уже здесь"
+						description="Попробуйте новый облачный опыт работы с пространствами."
+						actionLabel="Попробовать новую версию Rox"
 						onAction={handleManage}
 						onDismiss={handleDismiss}
 					/>

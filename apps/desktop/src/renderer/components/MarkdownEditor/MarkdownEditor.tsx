@@ -177,7 +177,7 @@ export function MarkdownEditor({
 	content,
 	onSave,
 	onChange,
-	placeholder = "Add description...",
+	placeholder = "Добавьте описание...",
 	autoFocus = false,
 	className,
 	editorClassName,

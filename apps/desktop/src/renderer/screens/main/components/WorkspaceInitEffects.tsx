@@ -95,7 +95,7 @@ export function WorkspaceInitEffects() {
 					"[WorkspaceInitEffects] Invalid launch request in pending setup:",
 					error,
 				);
-				toast.error("Failed to start agent", {
+				toast.error("Не удалось запустить агента", {
 					description:
 						error instanceof Error
 							? error.message
@@ -110,7 +110,7 @@ export function WorkspaceInitEffects() {
 				write: (input) => terminalWrite.mutateAsync(input),
 			}).then((result) => {
 				if (result.status === "failed") {
-					toast.error("Failed to start agent", {
+					toast.error("Не удалось запустить агента", {
 						description:
 							result.error ??
 							"Failed to start agent session in workspace setup.",
@@ -174,7 +174,7 @@ export function WorkspaceInitEffects() {
 										"[WorkspaceInitEffects] Failed to run setup commands:",
 										error,
 									);
-									toast.error("Failed to run setup commands", {
+									toast.error("Не удалось выполнить команды настройки", {
 										description:
 											error instanceof Error
 												? error.message
@@ -192,7 +192,7 @@ export function WorkspaceInitEffects() {
 								"[WorkspaceInitEffects] Failed to create terminal:",
 								error,
 							);
-							toast.error("Failed to create terminal", {
+							toast.error("Не удалось создать терминал", {
 								description:
 									error.message || "Terminal setup failed. Please try again.",
 							});
@@ -226,7 +226,7 @@ export function WorkspaceInitEffects() {
 										"[WorkspaceInitEffects] Failed to run setup commands:",
 										error,
 									);
-									toast.error("Failed to run setup commands", {
+									toast.error("Не удалось выполнить команды настройки", {
 										description:
 											error instanceof Error
 												? error.message
@@ -244,11 +244,11 @@ export function WorkspaceInitEffects() {
 								"[WorkspaceInitEffects] Failed to create terminal:",
 								error,
 							);
-							toast.error("Failed to create terminal", {
+							toast.error("Не удалось создать терминал", {
 								description:
 									error.message || "Terminal setup failed. Please try again.",
 								action: {
-									label: "Open Terminal",
+									label: "Открыть терминал",
 									onClick: () => {
 										const { tabId: newTabId, paneId: newPaneId } = addTab(
 											setup.workspaceId,
@@ -270,12 +270,15 @@ export function WorkspaceInitEffects() {
 															"[WorkspaceInitEffects] Failed to run setup commands:",
 															runError,
 														);
-														toast.error("Failed to run setup commands", {
-															description:
-																runError instanceof Error
-																	? runError.message
-																	: "Failed to execute setup commands.",
-														});
+														toast.error(
+															"Не удалось выполнить команды настройки",
+															{
+																description:
+																	runError instanceof Error
+																		? runError.message
+																		: "Failed to execute setup commands.",
+															},
+														);
 													});
 												},
 											},

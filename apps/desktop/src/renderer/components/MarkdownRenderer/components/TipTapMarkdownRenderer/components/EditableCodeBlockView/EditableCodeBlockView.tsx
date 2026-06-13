@@ -128,7 +128,7 @@ export function EditableCodeBlockView({
 				<button
 					type="button"
 					onClick={handleCopy}
-					aria-label={copied ? "Copied code block" : "Copy code block"}
+					aria-label={copied ? "Блок кода скопирован" : "Скопировать блок кода"}
 					title={copied ? "Copied code block" : "Copy code block"}
 					className="flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 				>

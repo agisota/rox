@@ -4,7 +4,7 @@ export function InterruptedFooter() {
 			<span className="rounded border border-border bg-muted px-1.5 py-0.5 font-medium uppercase tracking-wide">
 				Interrupted
 			</span>
-			<span>Response stopped</span>
+			<span>Ответ остановлен</span>
 		</div>
 	);
 }

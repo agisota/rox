@@ -32,11 +32,11 @@ const ACCESS_STATUS_CONFIG: Record<
 		variant?: ToolStatusBadgeVariant;
 	}
 > = {
-	pending: { icon: ClockIcon, label: "Awaiting Response" },
-	granted: { icon: CheckIcon, label: "Access Granted" },
-	denied: { icon: XIcon, label: "Access Denied" },
-	cancelled: { icon: XIcon, label: "Cancelled" },
-	error: { icon: CircleXIcon, label: "Error", variant: "danger" },
+	pending: { icon: ClockIcon, label: "Ожидание ответа" },
+	granted: { icon: CheckIcon, label: "Доступ предоставлен" },
+	denied: { icon: XIcon, label: "Доступ запрещён" },
+	cancelled: { icon: XIcon, label: "Отменено" },
+	error: { icon: CircleXIcon, label: "Ошибка", variant: "danger" },
 };
 
 /**
@@ -160,7 +160,7 @@ export function RequestSandboxAccessToolCall({
 			icon={StatusIcon}
 			isPending={false}
 			isError={false}
-			title="Request Access"
+			title="Запрос доступа"
 			description={statusBadge}
 		>
 			{!isPending && hasContext ? (

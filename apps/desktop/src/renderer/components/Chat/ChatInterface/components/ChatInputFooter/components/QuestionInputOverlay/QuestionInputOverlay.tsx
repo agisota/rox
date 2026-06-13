@@ -80,12 +80,12 @@ export function QuestionInputOverlay({
 							type="button"
 							className="-mr-0.5 shrink-0 rounded-md p-1 text-muted-foreground/50 transition-colors hover:bg-muted/40 hover:text-muted-foreground"
 							onClick={onCancel}
-							aria-label="Cancel"
+							aria-label="Отмена"
 						>
 							<XIcon className="h-3.5 w-3.5" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent>Cancel</TooltipContent>
+					<TooltipContent>Отмена</TooltipContent>
 				</Tooltip>
 			</div>
 
@@ -156,9 +156,7 @@ export function QuestionInputOverlay({
 					ref={inputRef}
 					value={customText}
 					onChange={(e) => setCustomText(e.target.value)}
-					placeholder={
-						options.length > 0 ? "Something else" : "Type your answer..."
-					}
+					placeholder={options.length > 0 ? "Другое" : "Введите ваш ответ..."}
 					disabled={isDisabled}
 					className="flex-1 cursor-text bg-transparent py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/40 disabled:cursor-not-allowed"
 				/>
@@ -183,7 +181,7 @@ export function QuestionInputOverlay({
 								"absolute right-0 top-1/2 -translate-y-1/2 size-[23px] rounded-full bg-foreground p-[5px] transition-all duration-150 hover:bg-foreground/80",
 								hasCustomText ? "opacity-100" : "pointer-events-none opacity-0",
 							)}
-							aria-label="Submit"
+							aria-label="Отправить"
 							onClick={(e) => e.stopPropagation()}
 						>
 							<ArrowUpIcon className="size-3.5 text-background" />

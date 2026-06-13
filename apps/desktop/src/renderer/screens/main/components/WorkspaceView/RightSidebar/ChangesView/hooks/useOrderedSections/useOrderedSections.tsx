@@ -102,7 +102,7 @@ export function useOrderedSections({
 	const sectionDefinitions: Record<ChangeCategory, OrderedSection> = {
 		"against-base": {
 			id: "against-base",
-			title: `Against ${effectiveBaseBranch}`,
+			title: `Относительно ${effectiveBaseBranch}`,
 			count: againstBaseFiles.length,
 			isExpanded: expandedSections["against-base"],
 			onToggle: () => toggleSection("against-base"),
@@ -122,7 +122,7 @@ export function useOrderedSections({
 		},
 		committed: {
 			id: "committed",
-			title: "Commits",
+			title: "Коммиты",
 			count: commitCount,
 			isExpanded: expandedSections.committed,
 			onToggle: () => toggleSection("committed"),
@@ -143,7 +143,7 @@ export function useOrderedSections({
 		},
 		staged: {
 			id: "staged",
-			title: "Staged",
+			title: "Проиндексировано",
 			count: stagedFiles.length,
 			isExpanded: expandedSections.staged,
 			onToggle: () => toggleSection("staged"),
@@ -161,7 +161,9 @@ export function useOrderedSections({
 								<VscDiscard className="w-3.5 h-3.5" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="bottom">Discard all staged</TooltipContent>
+						<TooltipContent side="bottom">
+							Отменить все проиндексированные
+						</TooltipContent>
 					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -175,7 +177,7 @@ export function useOrderedSections({
 								<VscRemove className="w-4 h-4" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="bottom">Unstage all</TooltipContent>
+						<TooltipContent side="bottom">Снять из индекса все</TooltipContent>
 					</Tooltip>
 				</div>
 			),
@@ -198,7 +200,7 @@ export function useOrderedSections({
 		},
 		unstaged: {
 			id: "unstaged",
-			title: "Unstaged",
+			title: "Не проиндексировано",
 			count: unstagedFiles.length,
 			isExpanded: expandedSections.unstaged,
 			onToggle: () => toggleSection("unstaged"),
@@ -216,7 +218,9 @@ export function useOrderedSections({
 								<VscDiscard className="w-3.5 h-3.5" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="bottom">Discard all unstaged</TooltipContent>
+						<TooltipContent side="bottom">
+							Отменить все непроиндексированные
+						</TooltipContent>
 					</Tooltip>
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -230,7 +234,7 @@ export function useOrderedSections({
 								<VscAdd className="w-4 h-4" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="bottom">Stage all</TooltipContent>
+						<TooltipContent side="bottom">Проиндексировать все</TooltipContent>
 					</Tooltip>
 				</div>
 			),

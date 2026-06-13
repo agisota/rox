@@ -90,19 +90,19 @@ export function DeleteWorkspaceDialog({
 		onOpenChange(false);
 
 		toast.promise(closeWorkspace.mutateAsync({ id: workspaceId }), {
-			loading: "Hiding...",
+			loading: "Скрываем...",
 			success: (result) => {
 				if (result.terminalWarning) {
 					setTimeout(() => {
-						toast.warning("Terminal warning", {
+						toast.warning("Предупреждение терминала", {
 							description: result.terminalWarning,
 						});
 					}, 100);
 				}
-				return "Workspace hidden";
+				return "Рабочее пространство скрыто";
 			},
 			error: (error) =>
-				error instanceof Error ? error.message : "Failed to hide",
+				error instanceof Error ? error.message : "Не удалось скрыть",
 		});
 	}, [onOpenChange, closeWorkspace, workspaceId]);
 
@@ -192,13 +192,13 @@ export function DeleteWorkspaceDialog({
 				>
 					<AlertDialogHeader className="px-4 pt-4 pb-2">
 						<AlertDialogTitle className="font-medium">
-							Close workspace "{workspaceName}"?
+							Закрыть рабочее пространство «{workspaceName}»?
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="text-muted-foreground space-y-1.5">
 								<span className="block">
-									This will close the workspace and kill any active terminals.
-									Your branch and commits will remain in the repository.
+									Рабочее пространство будет закрыто, а активные терминалы
+									завершены. Ваша ветка и коммиты останутся в репозитории.
 								</span>
 							</div>
 						</AlertDialogDescription>
@@ -211,7 +211,7 @@ export function DeleteWorkspaceDialog({
 							className="h-7 px-3 text-xs"
 							onClick={() => onOpenChange(false)}
 						>
-							Cancel
+							Отмена
 						</Button>
 						<Button
 							ref={closeActionButtonRef}
@@ -220,7 +220,7 @@ export function DeleteWorkspaceDialog({
 							className="h-7 px-3 text-xs"
 							onClick={handleClose}
 						>
-							Close
+							Закрыть
 						</Button>
 					</AlertDialogFooter>
 				</AnimatedAlertDialogContent>
@@ -239,18 +239,18 @@ export function DeleteWorkspaceDialog({
 			>
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Remove workspace "{workspaceName}"?
+						Удалить рабочее пространство «{workspaceName}»?
 					</AlertDialogTitle>
 					<AlertDialogDescription asChild>
 						<div className="text-muted-foreground space-y-1.5">
 							{isLoading ? (
-								"Checking status..."
+								"Проверка состояния..."
 							) : !canDelete ? (
 								<span className="text-destructive">{reason}</span>
 							) : (
 								<span className="block">
-									Deleting will permanently remove the worktree. You can hide
-									instead to keep files on disk.
+									Удаление безвозвратно уберёт worktree. Вместо этого можно
+									скрыть, чтобы сохранить файлы на диске.
 								</span>
 							)}
 						</div>
@@ -261,10 +261,10 @@ export function DeleteWorkspaceDialog({
 					<div className="px-4 pb-2">
 						<div className="text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-md px-2.5 py-1.5">
 							{hasChanges && hasUnpushedCommits
-								? "Has uncommitted changes and unpushed commits"
+								? "Есть незакоммиченные изменения и неотправленные коммиты"
 								: hasChanges
-									? "Has uncommitted changes"
-									: "Has unpushed commits"}
+									? "Есть незакоммиченные изменения"
+									: "Есть неотправленные коммиты"}
 						</div>
 					</div>
 				)}
@@ -283,7 +283,7 @@ export function DeleteWorkspaceDialog({
 								htmlFor="delete-local-branch"
 								className="text-xs text-muted-foreground cursor-pointer select-none"
 							>
-								Also delete local branch
+								Также удалить локальную ветку
 							</Label>
 						</div>
 					</div>
@@ -296,7 +296,7 @@ export function DeleteWorkspaceDialog({
 						className="h-7 px-3 text-xs"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						Отмена
 					</Button>
 					<Button
 						ref={closeActionButtonRef}
@@ -305,7 +305,7 @@ export function DeleteWorkspaceDialog({
 						className="h-7 px-3 text-xs"
 						onClick={handleClose}
 					>
-						Hide
+						Скрыть
 					</Button>
 					<Tooltip delayDuration={400}>
 						<TooltipTrigger asChild>
@@ -316,11 +316,11 @@ export function DeleteWorkspaceDialog({
 								onClick={handleDelete}
 								disabled={!canDelete || isLoading}
 							>
-								Delete
+								Удалить
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="top" className="text-xs max-w-[200px]">
-							Permanently delete workspace and git worktree from disk.
+							Безвозвратно удалить рабочее пространство и git worktree с диска.
 						</TooltipContent>
 					</Tooltip>
 				</AlertDialogFooter>

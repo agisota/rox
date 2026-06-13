@@ -380,7 +380,7 @@ export function FileViewerContent({
 			return (
 				<div className="flex h-full items-center justify-center text-muted-foreground">
 					<LuLoader className="mr-2 h-4 w-4 animate-spin" />
-					<span>Loading image...</span>
+					<span>Загрузка изображения...</span>
 				</div>
 			);
 		}

@@ -14,14 +14,14 @@ export function SettingsButton() {
 					variant="ghost"
 					size="icon"
 					onClick={() => navigate({ to: "/settings/account" })}
-					aria-label="Open settings"
+					aria-label="Открыть настройки"
 					className="no-drag"
 				>
 					<CiSettings className="size-5" />
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent side="bottom" sideOffset={8}>
-				<HotkeyLabel label="Open settings" id="OPEN_SETTINGS" />
+				<HotkeyLabel label="Открыть настройки" id="OPEN_SETTINGS" />
 			</TooltipContent>
 		</Tooltip>
 	);

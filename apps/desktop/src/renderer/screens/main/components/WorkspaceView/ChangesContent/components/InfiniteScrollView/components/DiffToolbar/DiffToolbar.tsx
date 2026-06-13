@@ -114,7 +114,7 @@ export function DiffToolbar({
 						onClick={onNavigatePrev}
 						disabled={isFirstFile}
 						className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground hover:bg-accent disabled:opacity-30 disabled:pointer-events-none"
-						aria-label="Previous file"
+						aria-label="Предыдущий файл"
 					>
 						<LuChevronUp className="size-3.5" />
 						Prev
@@ -159,7 +159,7 @@ export function DiffToolbar({
 						onClick={onNavigateNext}
 						disabled={isLastFile}
 						className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground hover:bg-accent disabled:opacity-30 disabled:pointer-events-none"
-						aria-label="Next file"
+						aria-label="Следующий файл"
 					>
 						Next
 						<LuChevronDown className="size-3.5" />

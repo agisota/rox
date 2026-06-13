@@ -210,7 +210,7 @@ export function ChatInputFooter({
 									previewSlashCommand={previewSlashCommand}
 									slashCommands={slashCommands}
 									availableModels={availableModels}
-									placeholder="Ask to make changes, @mention files, run /commands"
+									placeholder="Попросите внести изменения, @упомяните файлы, запустите /команды"
 									focusShortcutText={
 										showFocusHint ? focusShortcutText : undefined
 									}

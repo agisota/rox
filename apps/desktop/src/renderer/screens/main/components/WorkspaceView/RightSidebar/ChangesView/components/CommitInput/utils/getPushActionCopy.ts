@@ -35,29 +35,29 @@ export function getPushActionCopy({
 	const pullRequestTarget = formatPullRequestPushTarget(pullRequest);
 	if (pullRequestTarget) {
 		return {
-			label: "Push to PR",
-			menuLabel: "Push to PR",
+			label: "Отправить в PR",
+			menuLabel: "Отправить в PR",
 			tooltip:
 				pushCount > 0
-					? `Push ${pushCount} commit${pushCount !== 1 ? "s" : ""} to ${pullRequestTarget}`
-					: `Push changes to ${pullRequestTarget}`,
+					? `Отправить коммитов в ${pullRequestTarget}: ${pushCount}`
+					: `Отправить изменения в ${pullRequestTarget}`,
 		};
 	}
 
 	if (!hasUpstream) {
 		return {
-			label: "Publish Branch",
-			menuLabel: "Publish Branch",
-			tooltip: "Publish branch to remote",
+			label: "Опубликовать ветку",
+			menuLabel: "Опубликовать ветку",
+			tooltip: "Опубликовать ветку в удалённом репозитории",
 		};
 	}
 
 	return {
-		label: "Push",
-		menuLabel: "Push",
+		label: "Отправить",
+		menuLabel: "Отправить",
 		tooltip:
 			pushCount > 0
-				? `Push ${pushCount} commit${pushCount !== 1 ? "s" : ""}`
-				: "Push branch changes",
+				? `Отправить коммитов: ${pushCount}`
+				: "Отправить изменения ветки",
 	};
 }

@@ -143,17 +143,17 @@ export function AddTabButton({
 							<>
 								<DropdownMenuItem onClick={onAddTerminal} className="gap-2">
 									<BsTerminalPlus className="size-4" />
-									<span>Terminal</span>
+									<span>Терминал</span>
 									<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={onAddChat} className="gap-2">
 									<TbMessageCirclePlus className="size-4" />
-									<span>Chat</span>
+									<span>Чат</span>
 									<HotkeyMenuShortcut hotkeyId="NEW_CHAT" />
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={onAddBrowser} className="gap-2">
 									<TbWorld className="size-4" />
-									<span>Browser</span>
+									<span>Браузер</span>
 									<HotkeyMenuShortcut hotkeyId="NEW_BROWSER" />
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
