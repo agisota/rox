@@ -21,6 +21,8 @@ import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { useEffect, useId, useState } from "react";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { electronTrpc } from "renderer/lib/electron-trpc";
+import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider/LocalHostServiceProvider";
 import { DeployCommandBlock } from "./components/DeployCommandBlock";
 
 type HostKindOption = "local" | "remote" | "sandbox";
@@ -72,6 +74,39 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 	const [name, setName] = useState("");
 	const [providers, setProviders] = useState<ProviderOption[]>([]);
 	const [submitting, setSubmitting] = useState(false);
+	const [showAdvanced, setShowAdvanced] = useState(false);
+
+	// Local host ("this device") is managed by the host-service coordinator and
+	// auto-started by LocalHostServiceProvider — so the device is a host by
+	// click, no terminal required. We surface its live status + a one-click
+	// connect/retry here, and keep the manual `rox deploy` command secondary.
+	const localHost = useLocalHostService();
+	const startLocal = electronTrpc.hostServiceCoordinator.start.useMutation();
+	const localConnected =
+		localHost.hostServiceStatus === "running" || !!localHost.activeHostUrl;
+	const localStarting =
+		localHost.hostServiceStatus === "starting" || startLocal.isPending;
+
+	const handleConnectLocal = () => {
+		if (!localHost.activeOrganizationId) {
+			toast.error(
+				"Нет активной организации. Войдите снова или выберите организацию.",
+			);
+			return;
+		}
+		startLocal.mutate(
+			{ organizationId: localHost.activeOrganizationId },
+			{
+				onSuccess: () => toast.success("Подключаем это устройство…"),
+				onError: (err) =>
+					toast.error(
+						err instanceof Error
+							? err.message
+							: "Не удалось подключить это устройство",
+					),
+			},
+		);
+	};
 
 	useEffect(() => {
 		if (!open) return;
@@ -159,6 +194,44 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 						))}
 					</RadioGroup>
 
+					{kind === "local" && (
+						<div className="flex items-center gap-3 rounded-md border p-3">
+							<span
+								className={cn(
+									"size-2 shrink-0 rounded-full",
+									localConnected
+										? "bg-green-500"
+										: localStarting
+											? "bg-yellow-500"
+											: "bg-muted-foreground",
+								)}
+							/>
+							<div className="flex-1 space-y-0.5">
+								<p className="text-sm font-medium">
+									{localConnected
+										? "Это устройство подключено и готово"
+										: localStarting
+											? "Подключаем это устройство…"
+											: "Это устройство не подключено"}
+								</p>
+								<p className="text-xs text-muted-foreground">
+									{localConnected
+										? "Можно создавать рабочие пространства прямо здесь."
+										: "Запустите службу хоста на этом компьютере одним кликом."}
+								</p>
+							</div>
+							{!localConnected && (
+								<Button
+									size="sm"
+									onClick={handleConnectLocal}
+									disabled={localStarting}
+								>
+									{localStarting ? "Подключение…" : "Подключить"}
+								</Button>
+							)}
+						</div>
+					)}
+
 					{isManaged && (
 						<div className="space-y-4">
 							<div className="space-y-1.5">
@@ -197,13 +270,24 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 						</div>
 					)}
 
-					<div className="space-y-1.5">
-						<p className="text-xs text-muted-foreground">
-							{kind === "local"
-								? "Или запустите службу хоста самостоятельно:"
-								: "Или разверните хост самостоятельно с компьютера под вашим управлением:"}
-						</p>
-						<DeployCommandBlock command={deployCommand(kind, provider)} />
+					<div>
+						<button
+							type="button"
+							onClick={() => setShowAdvanced((v) => !v)}
+							className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+						>
+							{showAdvanced ? "▾" : "▸"} Запустить вручную (headless)
+						</button>
+						{showAdvanced && (
+							<div className="mt-2 space-y-1.5">
+								<p className="text-xs text-muted-foreground">
+									{kind === "local"
+										? "Или запустите службу хоста как фоновый процесс:"
+										: "Или разверните хост самостоятельно с компьютера под вашим управлением:"}
+								</p>
+								<DeployCommandBlock command={deployCommand(kind, provider)} />
+							</div>
+						)}
 					</div>
 				</div>
 
@@ -211,6 +295,14 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 					<Button variant="ghost" onClick={() => onOpenChange(false)}>
 						Отмена
 					</Button>
+					{kind === "local" &&
+						(localConnected ? (
+							<Button onClick={() => onOpenChange(false)}>Готово</Button>
+						) : (
+							<Button onClick={handleConnectLocal} disabled={localStarting}>
+								{localStarting ? "Подключение…" : "Подключить это устройство"}
+							</Button>
+						))}
 					{isManaged && (
 						<Button
 							onClick={() => void handleProvision()}
