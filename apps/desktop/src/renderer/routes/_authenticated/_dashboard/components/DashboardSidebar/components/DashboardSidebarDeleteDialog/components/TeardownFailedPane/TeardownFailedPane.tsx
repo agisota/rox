@@ -51,7 +51,7 @@ export function TeardownFailedPane({
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">{reason}</AlertDialogTitle>
 					<AlertDialogDescription>
-						Delete anyway will skip the teardown script entirely.
+						«Всё равно удалить» полностью пропустит скрипт очистки.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				{cleanTail && (
@@ -66,7 +66,7 @@ export function TeardownFailedPane({
 						className="h-7 px-3 text-xs"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						Отмена
 					</Button>
 					<Button
 						variant="destructive"
@@ -74,7 +74,7 @@ export function TeardownFailedPane({
 						className="h-7 px-3 text-xs"
 						onClick={onForceDelete}
 					>
-						Delete anyway
+						Всё равно удалить
 					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>

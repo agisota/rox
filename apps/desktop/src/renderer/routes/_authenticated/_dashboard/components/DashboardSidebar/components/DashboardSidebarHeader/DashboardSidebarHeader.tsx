@@ -44,13 +44,13 @@ export function DashboardSidebarHeader({
 	const navigate = useNavigate();
 	const folderImport = useFolderFirstImport({
 		onError: (message) => {
-			toast.error(`Import failed: ${message}`);
+			toast.error(`Не удалось импортировать: ${message}`);
 		},
 		onMultipleProjects: ({ candidates }) => {
-			toast.error("Import failed", {
-				description: `Multiple projects use this repository (${candidates.length}). Choose the project in settings to set it up on this device.`,
+			toast.error("Не удалось импортировать", {
+				description: `Этот репозиторий используют несколько проектов (${candidates.length}). Выберите проект в настройках, чтобы настроить его на этом устройстве.`,
 				action: {
-					label: "Open Projects",
+					label: "Открыть проекты",
 					onClick: () => navigate({ to: "/settings/projects" }),
 				},
 			});
@@ -60,7 +60,7 @@ export function DashboardSidebarHeader({
 	const handleImportFolder = async () => {
 		const result = await folderImport.start();
 		if (result) {
-			toast.success("Project ready — open it from the sidebar.");
+			toast.success("Проект готов — откройте его на боковой панели.");
 		}
 	};
 
@@ -125,7 +125,7 @@ export function DashboardSidebarHeader({
 							<LuLayers className="size-4" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="right">Workspaces</TooltipContent>
+					<TooltipContent side="right">Рабочие пространства</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
@@ -143,7 +143,7 @@ export function DashboardSidebarHeader({
 							<LuClock className="size-4" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="right">Automations</TooltipContent>
+					<TooltipContent side="right">Автоматизации</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
@@ -161,7 +161,7 @@ export function DashboardSidebarHeader({
 							<HiOutlineClipboardDocumentList className="size-4" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="right">Tasks & PRs</TooltipContent>
+					<TooltipContent side="right">Задачи и PR</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
@@ -175,7 +175,7 @@ export function DashboardSidebarHeader({
 						</button>
 					</TooltipTrigger>
 					<TooltipContent side="right">
-						New Workspace ({shortcutText})
+						Новое рабочее пространство ({shortcutText})
 					</TooltipContent>
 				</Tooltip>
 
@@ -185,14 +185,14 @@ export function DashboardSidebarHeader({
 							<DropdownMenuTrigger asChild>
 								<button
 									type="button"
-									aria-label="Add repository"
+									aria-label="Добавить репозиторий"
 									className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
 								>
 									<LuFolderPlus className="size-4" />
 								</button>
 							</DropdownMenuTrigger>
 						</TooltipTrigger>
-						<TooltipContent side="right">Add repository</TooltipContent>
+						<TooltipContent side="right">Добавить репозиторий</TooltipContent>
 					</Tooltip>
 					<DropdownMenuContent
 						align="start"
@@ -200,11 +200,11 @@ export function DashboardSidebarHeader({
 					>
 						<DropdownMenuItem onSelect={() => openNewProject()}>
 							<HiMiniPlus className="size-4" />
-							Clone from URL
+							Клонировать из URL
 						</DropdownMenuItem>
 						<DropdownMenuItem onSelect={handleImportFolder}>
 							<LuFolderInput className="size-4" />
-							Open from folder
+							Открыть из папки
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -238,7 +238,7 @@ export function DashboardSidebarHeader({
 				)}
 			>
 				<LuLayers className="size-4 shrink-0" />
-				<span className="flex-1 text-left">Workspaces</span>
+				<span className="flex-1 text-left">Рабочие пространства</span>
 			</button>
 
 			<button
@@ -252,7 +252,7 @@ export function DashboardSidebarHeader({
 				)}
 			>
 				<LuClock className="size-4 shrink-0" />
-				<span className="flex-1 text-left">Automations</span>
+				<span className="flex-1 text-left">Автоматизации</span>
 			</button>
 
 			<button
@@ -266,7 +266,7 @@ export function DashboardSidebarHeader({
 				)}
 			>
 				<HiOutlineClipboardDocumentList className="size-4 shrink-0" />
-				<span className="flex-1 text-left">Tasks & PRs</span>
+				<span className="flex-1 text-left">Задачи и PR</span>
 			</button>
 
 			<div className="flex items-center gap-0">
@@ -280,7 +280,7 @@ export function DashboardSidebarHeader({
 						strokeWidth={STROKE_WIDTH_THICK}
 					/>
 					<span className="flex-1 truncate text-left whitespace-nowrap">
-						New Workspace
+						Новое рабочее пространство
 					</span>
 					<span
 						className={cn(
@@ -297,14 +297,14 @@ export function DashboardSidebarHeader({
 							<DropdownMenuTrigger asChild>
 								<button
 									type="button"
-									aria-label="Add repository"
+									aria-label="Добавить репозиторий"
 									className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
 								>
 									<LuFolderPlus className="size-4" />
 								</button>
 							</DropdownMenuTrigger>
 						</TooltipTrigger>
-						<TooltipContent side="right">Add repository</TooltipContent>
+						<TooltipContent side="right">Добавить репозиторий</TooltipContent>
 					</Tooltip>
 					<DropdownMenuContent
 						align="end"
@@ -312,11 +312,11 @@ export function DashboardSidebarHeader({
 					>
 						<DropdownMenuItem onSelect={() => openNewProject()}>
 							<HiMiniPlus className="size-4" />
-							Clone from URL
+							Клонировать из URL
 						</DropdownMenuItem>
 						<DropdownMenuItem onSelect={handleImportFolder}>
 							<LuFolderInput className="size-4" />
-							Open from folder
+							Открыть из папки
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

@@ -253,7 +253,7 @@ export function DashboardSidebar({
 									<TooltipTrigger asChild>
 										<button
 											type="button"
-											aria-label="Settings"
+											aria-label="Настройки"
 											onClick={() => navigate({ to: "/settings/account" })}
 											className={cn(
 												"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -265,7 +265,7 @@ export function DashboardSidebar({
 											<HiOutlineCog6Tooth className="size-4" />
 										</button>
 									</TooltipTrigger>
-									<TooltipContent side="right">Settings</TooltipContent>
+									<TooltipContent side="right">Настройки</TooltipContent>
 								</Tooltip>
 							) : (
 								<button
@@ -283,7 +283,7 @@ export function DashboardSidebar({
 										show={!isCollapsed}
 										className="flex-1 text-left"
 									>
-										Settings
+										Настройки
 									</CollapseLabel>
 									{settingsHotkey !== "Unassigned" && (
 										<span

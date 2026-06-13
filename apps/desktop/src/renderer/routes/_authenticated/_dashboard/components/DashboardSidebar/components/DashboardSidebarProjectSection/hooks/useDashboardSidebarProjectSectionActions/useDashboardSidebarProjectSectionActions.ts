@@ -49,7 +49,7 @@ export function useDashboardSidebarProjectSectionActions({
 	};
 
 	const handleOpenInFinder = () => {
-		toast.info("Open in Finder is coming soon");
+		toast.info("«Открыть в Finder» скоро появится");
 	};
 
 	const handleOpenSettings = () => {
@@ -61,13 +61,13 @@ export function useDashboardSidebarProjectSectionActions({
 
 	const confirmRemoveFromSidebar = () => {
 		alert({
-			title: "Remove project from sidebar?",
+			title: "Убрать проект с боковой панели?",
 			description:
-				"This will remove workspaces from the sidebar and delete all project sections. The workspaces or projects won't be deleted.",
+				"Это уберёт рабочие пространства с боковой панели и удалит все секции проекта. Сами рабочие пространства и проекты удалены не будут.",
 			actions: [
-				{ label: "Cancel", variant: "outline", onClick: () => {} },
+				{ label: "Отмена", variant: "outline", onClick: () => {} },
 				{
-					label: "Remove",
+					label: "Убрать",
 					variant: "destructive",
 					onClick: () => removeProjectFromSidebar(project.id),
 				},

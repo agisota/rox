@@ -181,7 +181,7 @@ export function useDashboardSidebarPortsData(): {
 				message:
 					query.error instanceof Error
 						? query.error.message
-						: "Unable to load ports",
+						: "Не удалось загрузить порты",
 			},
 		];
 	});

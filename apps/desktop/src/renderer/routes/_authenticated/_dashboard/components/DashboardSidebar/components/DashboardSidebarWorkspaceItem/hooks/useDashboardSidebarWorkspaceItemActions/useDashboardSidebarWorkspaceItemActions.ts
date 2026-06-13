@@ -111,7 +111,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 			activeHostUrl,
 		).workspace.get.query({ id: workspaceId });
 		if (!workspace?.worktreePath) {
-			toast.error("Workspace path is not available");
+			toast.error("Путь рабочего пространства недоступен");
 			return null;
 		}
 		return workspace.worktreePath;
@@ -124,7 +124,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 			await electronTrpcClient.external.openInFinder.mutate(path);
 		} catch (error) {
 			toast.error(
-				`Failed to open in Finder: ${error instanceof Error ? error.message : "Unknown error"}`,
+				`Не удалось открыть в Finder: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`,
 			);
 		}
 	};
@@ -134,10 +134,10 @@ export function useDashboardSidebarWorkspaceItemActions({
 			const path = await resolveWorktreePath();
 			if (!path) return;
 			await copyToClipboard(path);
-			toast.success("Path copied");
+			toast.success("Путь скопирован");
 		} catch (error) {
 			toast.error(
-				`Failed to copy path: ${error instanceof Error ? error.message : "Unknown error"}`,
+				`Не удалось скопировать путь: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`,
 			);
 		}
 	};
@@ -152,15 +152,15 @@ export function useDashboardSidebarWorkspaceItemActions({
 
 	const handleCopyBranchName = async () => {
 		if (!branch) {
-			toast.error("Branch name is not available");
+			toast.error("Имя ветки недоступно");
 			return;
 		}
 		try {
 			await copyToClipboard(branch);
-			toast.success("Branch name copied");
+			toast.success("Имя ветки скопировано");
 		} catch (error) {
 			toast.error(
-				`Failed to copy branch name: ${error instanceof Error ? error.message : "Unknown error"}`,
+				`Не удалось скопировать имя ветки: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`,
 			);
 		}
 	};

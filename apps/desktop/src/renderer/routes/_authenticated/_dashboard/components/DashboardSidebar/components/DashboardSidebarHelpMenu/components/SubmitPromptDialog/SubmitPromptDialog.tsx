@@ -48,11 +48,11 @@ export function SubmitPromptDialog({
 				promptText: promptText.trim(),
 				submitterName: submitterName.trim() || undefined,
 			});
-			toast.success("Prompt submitted — thanks!");
+			toast.success("Промпт отправлен — спасибо!");
 			handleOpenChange(false);
 		} catch (error) {
 			console.error("[submit-prompt] failed", error);
-			toast.error("Could not submit prompt. Try again.");
+			toast.error("Не удалось отправить промпт. Попробуйте ещё раз.");
 			setIsSubmitting(false);
 		}
 	};
@@ -68,21 +68,21 @@ export function SubmitPromptDialog({
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent className="sm:max-w-lg">
 				<DialogHeader>
-					<DialogTitle>Submit a prompt</DialogTitle>
+					<DialogTitle>Предложить промпт</DialogTitle>
 					<DialogDescription>
-						Prompt a coding agent to build what you want to see in Rox. If we
-						like your prompt, we'll run it and merge the result.
+						Поручите кодинг-агенту собрать то, что вы хотите увидеть в Rox. Если
+						нам понравится ваш промпт, мы запустим его и вольём результат.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-4 py-2">
 					<div className="flex flex-col gap-2">
-						<Label htmlFor="submit-prompt-text">Prompt</Label>
+						<Label htmlFor="submit-prompt-text">Промпт</Label>
 						<Textarea
 							id="submit-prompt-text"
 							value={promptText}
 							onChange={(e) => setPromptText(e.target.value)}
 							onKeyDown={handleKeyDown}
-							placeholder="Describe what you'd like to see built…"
+							placeholder="Опишите, что вы хотите, чтобы мы создали…"
 							rows={6}
 							autoFocus
 							disabled={isSubmitting}
@@ -90,23 +90,24 @@ export function SubmitPromptDialog({
 					</div>
 					<div className="flex flex-col gap-2">
 						<Label htmlFor="submit-prompt-name">
-							Your name{" "}
+							Ваше имя{" "}
 							<span className="font-normal text-muted-foreground">
-								(if we use your prompt, we'll credit you in the changelog)
+								(если мы используем ваш промпт, мы укажем вас в списке
+								изменений)
 							</span>
 						</Label>
 						<Input
 							id="submit-prompt-name"
 							value={submitterName}
 							onChange={(e) => setSubmitterName(e.target.value)}
-							placeholder="Jane Doe"
+							placeholder="Иван Иванов"
 							disabled={isSubmitting}
 						/>
 					</div>
 				</div>
 				<DialogFooter>
 					<Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
-						{isSubmitting ? "Submitting…" : "Submit prompt"}
+						{isSubmitting ? "Отправка…" : "Отправить промпт"}
 						<span className="ml-2 inline-flex items-center gap-1 text-base font-mono tabular-nums opacity-80">
 							<span>⌘</span>
 							<span>↵</span>

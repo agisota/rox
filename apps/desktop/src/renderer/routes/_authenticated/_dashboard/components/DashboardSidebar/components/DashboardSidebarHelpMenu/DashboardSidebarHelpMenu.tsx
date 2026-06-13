@@ -44,7 +44,7 @@ export function DashboardSidebarHelpMenu({
 	const triggerButton = (
 		<button
 			type="button"
-			aria-label="Help"
+			aria-label="Помощь"
 			className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
 		>
 			<HiOutlineQuestionMarkCircle className="size-4" />
@@ -59,7 +59,7 @@ export function DashboardSidebarHelpMenu({
 						<TooltipTrigger asChild>
 							<DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
 						</TooltipTrigger>
-						<TooltipContent side="right">Help</TooltipContent>
+						<TooltipContent side="right">Помощь</TooltipContent>
 					</Tooltip>
 				) : (
 					<DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
@@ -71,17 +71,17 @@ export function DashboardSidebarHelpMenu({
 				>
 					<DropdownMenuItem onSelect={() => setSubmitPromptOpen(true)}>
 						<LuMegaphone className="h-4 w-4" />
-						Submit a prompt
+						Предложить промпт
 					</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openExternal(COMPANY.DOCS_URL)}>
 						<HiOutlineBookOpen className="h-4 w-4" />
-						Documentation
+						Документация
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						onClick={() => navigate({ to: "/settings/keyboard" })}
 					>
 						<LuKeyboard className="h-4 w-4" />
-						Keyboard Shortcuts
+						Горячие клавиши
 						{shortcutsHotkey !== "Unassigned" && (
 							<DropdownMenuShortcut>{shortcutsHotkey}</DropdownMenuShortcut>
 						)}
@@ -90,12 +90,12 @@ export function DashboardSidebarHelpMenu({
 						onClick={() => openExternal(COMPANY.REPORT_ISSUE_URL)}
 					>
 						<IoBugOutline className="h-4 w-4" />
-						Report Issue
+						Сообщить о проблеме
 					</DropdownMenuItem>
 					<DropdownMenuSub>
 						<DropdownMenuSubTrigger>
 							<HiOutlineChatBubbleLeftRight className="h-4 w-4" />
-							Contact Us
+							Связаться с нами
 						</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent sideOffset={8} className="w-56">
 							<DropdownMenuItem
@@ -115,7 +115,7 @@ export function DashboardSidebarHelpMenu({
 							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => openExternal(COMPANY.MAIL_TO)}>
 								<HiOutlineEnvelope className="h-4 w-4" />
-								Email Founders
+								Написать основателям
 							</DropdownMenuItem>
 						</DropdownMenuSubContent>
 					</DropdownMenuSub>

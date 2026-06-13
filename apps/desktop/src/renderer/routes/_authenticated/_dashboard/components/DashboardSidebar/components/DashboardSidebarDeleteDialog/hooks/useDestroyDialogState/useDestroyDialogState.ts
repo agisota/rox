@@ -137,7 +137,7 @@ export function useDestroyDialogState({
 						err: syncErr,
 					});
 					toast.warning(
-						`Deleted ${workspaceName}, but sync is taking longer than expected.`,
+						`Рабочее пространство ${workspaceName} удалено, но синхронизация занимает больше времени, чем обычно.`,
 					);
 					return;
 				}
@@ -149,10 +149,10 @@ export function useDestroyDialogState({
 					setError(e);
 					onOpenChange(true);
 				} else if (e.kind === "in-progress") {
-					toast.error(`A delete is already in progress for ${workspaceName}.`);
+					toast.error(`Удаление ${workspaceName} уже выполняется.`);
 				} else {
 					toast.error(
-						`Failed to delete ${workspaceName}: ${"message" in e ? e.message : String(e.kind)}`,
+						`Не удалось удалить ${workspaceName}: ${"message" in e ? e.message : String(e.kind)}`,
 					);
 				}
 			} finally {

@@ -55,7 +55,7 @@ export function DashboardSidebarWorkspaceHoverCardContent({
 		>
 			<a href={previewUrl} target="_blank" rel="noopener noreferrer">
 				<LuGlobe className="size-3" />
-				Open Preview
+				Открыть превью
 			</a>
 		</Button>
 	) : null;
@@ -66,7 +66,7 @@ export function DashboardSidebarWorkspaceHoverCardContent({
 				{hasCustomAlias && <div className="text-sm font-medium">{name}</div>}
 				<div className="space-y-0.5">
 					<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-						Branch
+						Ветка
 					</span>
 					<div className="flex items-center gap-1.5">
 						{onEditBranchClick ? (
@@ -74,7 +74,7 @@ export function DashboardSidebarWorkspaceHoverCardContent({
 								type="button"
 								onClick={() => onEditBranchClick(branch)}
 								className={`group/branch flex min-w-0 flex-1 items-center gap-1 font-mono break-all text-left hover:text-foreground hover:underline ${hasCustomAlias ? "text-xs" : "text-sm"}`}
-								title="Rename branch"
+								title="Переименовать ветку"
 							>
 								<span className="break-all">{branch}</span>
 								<LuPencil className="size-3 shrink-0 opacity-0 group-hover/branch:opacity-100 transition-opacity" />
@@ -92,7 +92,7 @@ export function DashboardSidebarWorkspaceHoverCardContent({
 								target="_blank"
 								rel="noopener noreferrer"
 								className="shrink-0 text-muted-foreground hover:text-foreground"
-								title="Open branch on GitHub"
+								title="Открыть ветку в GitHub"
 								onClick={(e) => e.stopPropagation()}
 							>
 								<LuExternalLink className="size-3" />
@@ -111,8 +111,13 @@ export function DashboardSidebarWorkspaceHoverCardContent({
 				<div className="flex items-center gap-2 text-amber-500 text-xs bg-amber-500/10 px-2 py-1.5 rounded-md">
 					<LuTriangleAlert className="size-3.5 shrink-0" />
 					<span>
-						Behind main by {behindCount ?? "?"} commit
-						{behindCount !== 1 && "s"}, needs rebase
+						Отстаёт от main на {behindCount ?? "?"} коммит
+						{behindCount === 1
+							? ""
+							: behindCount && behindCount < 5
+								? "а"
+								: "ов"}
+						, нужен rebase
 					</span>
 				</div>
 			)}
@@ -168,7 +173,7 @@ export function DashboardSidebarWorkspaceHoverCardContent({
 					>
 						<a href={pullRequest.url} target="_blank" rel="noopener noreferrer">
 							<FaGithub className="size-3" />
-							View on GitHub
+							Открыть в GitHub
 							{hasOpenPRShortcut && (
 								<KbdGroup className="ml-auto">
 									{openPRDisplay.map((key) => (
@@ -185,7 +190,7 @@ export function DashboardSidebarWorkspaceHoverCardContent({
 			) : repoUrl ? (
 				<div className="pt-2 border-t border-border space-y-2">
 					<div className="text-xs text-muted-foreground">
-						No PR for this branch
+						Для этой ветки нет PR
 					</div>
 					{previewButton}
 				</div>
