@@ -49,7 +49,7 @@ export function RenameBranchDialog({
 		if (isInvalid || isSubmitting) return;
 		if (!activeHostUrl) {
 			showHostServiceUnavailableToast(hostService, {
-				action: "rename the branch",
+				action: "переименовать ветку",
 			});
 			return;
 		}

@@ -103,7 +103,7 @@ export function useDashboardSidebarWorkspaceItemActions({
 	const resolveWorktreePath = async (): Promise<string | null> => {
 		if (!activeHostUrl) {
 			showHostServiceUnavailableToast(hostService, {
-				action: "resolve the workspace path",
+				action: "определить путь рабочего пространства",
 			});
 			return null;
 		}

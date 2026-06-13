@@ -143,7 +143,9 @@ function SignInPage() {
 								className="w-full gap-3"
 								disabled={isLoadingDev}
 							>
-								{isLoadingDev ? "Входим..." : "Войти как Local Admin (dev)"}
+								{isLoadingDev
+									? "Входим..."
+									: "Войти как локальный администратор (dev)"}
 							</Button>
 						)}
 						{devError && (

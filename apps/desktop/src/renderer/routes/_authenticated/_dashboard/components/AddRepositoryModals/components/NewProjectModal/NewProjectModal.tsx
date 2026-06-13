@@ -117,7 +117,7 @@ export function NewProjectModal({
 	const createFromClone = async () => {
 		if (!activeHostUrl) {
 			showHostServiceUnavailableToast(hostService, {
-				action: "clone the repository",
+				action: "клонировать репозиторий",
 			});
 			return;
 		}
