@@ -211,23 +211,22 @@ function writeCodexMcpConfig(worktreePath: string): void {
 /**
  * Names of MCP servers already declared in a Codex `config.toml`.
  *
- * Uses `Bun.TOML.parse` (read-only; Bun ships no TOML serializer) to read the
- * `[mcp_servers.<name>]` tables. If parsing fails we conservatively return an
- * empty set so seeding proceeds — the marker guard below still prevents a
- * second append on re-runs.
+ * Scans `[mcp_servers.<name>]` table headers with a regex rather than a TOML
+ * parser: this source is typechecked from packages without Bun globals (so no
+ * `Bun.TOML`), and we only need the set of existing names. The marker guard
+ * below still prevents a second append on re-runs.
  */
 function existingCodexServerNames(toml: string): Set<string> {
-	try {
-		const parsed = Bun.TOML.parse(toml) as {
-			mcp_servers?: Record<string, unknown>;
-		};
-		if (parsed.mcp_servers && typeof parsed.mcp_servers === "object") {
-			return new Set(Object.keys(parsed.mcp_servers));
+	const names = new Set<string>();
+	// `[mcp_servers.<name>]` — name may be bare or quoted.
+	const headerPattern = /^[ \t]*\[mcp_servers\.("?)([^"\]]+)\1\]/gm;
+	for (const match of toml.matchAll(headerPattern)) {
+		const name = match[2]?.trim();
+		if (name) {
+			names.add(name);
 		}
-	} catch {
-		// Unparseable → treat as no known servers; marker guard handles re-runs.
 	}
-	return new Set();
+	return names;
 }
 
 /** Marker wrapping the block we append, so re-runs can detect prior seeding. */
