@@ -1,105 +1,34 @@
-import { exec } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join } from "node:path";
-import { promisify } from "node:util";
+import { isAbsolute, join } from "node:path";
 import type { HostDb } from "../../db";
 import { type AgentInstallStatus, agentInstallState } from "../../db/schema";
-import { getStrictShellEnvironment } from "../../terminal/clean-shell-env";
 import { getConfigTemplate } from "./config-templates";
+import { defaultCommandRunner, defaultWriteConfigFile } from "./default-runners";
 import {
 	buildPreinstallCatalog,
 	type PreinstallCatalogItem,
 	resolveAutoInstallPlan,
 } from "./install-plan";
+import type {
+	AgentPreinstallerOptions,
+	CommandResult,
+	CommandRunner,
+	ConfigFileWriter,
+	PreinstallItemResult,
+	PreinstallProgressEvent,
+	PreinstallStatusEntry,
+} from "./installer-types";
 
-const execAsync = promisify(exec);
-
-export interface CommandResult {
-	exitCode: number;
-	stdout: string;
-	stderr: string;
-}
-
-/** Runs a single shell command string. Injectable so tests never shell out. */
-export type CommandRunner = (command: string) => Promise<CommandResult>;
-
-/** Writes a config file (absolute path). Injectable for tests. */
-export type ConfigFileWriter = (
-	absolutePath: string,
-	contents: string,
-) => Promise<void>;
-
-export interface PreinstallProgressEvent {
-	presetId: string;
-	kind: PreinstallCatalogItem["kind"];
-	status: AgentInstallStatus;
-	label: string;
-	error?: string;
-}
-
-export interface PreinstallItemResult {
-	presetId: string;
-	status: AgentInstallStatus;
-	alreadyPresent: boolean;
-	error?: string;
-}
-
-export interface AgentPreinstallerOptions {
-	db: HostDb;
-	/** Defaults to a real shell runner using a clean strict shell env. */
-	runCommand?: CommandRunner;
-	/** Defaults to writing files under the home directory via fs. */
-	writeConfigFile?: ConfigFileWriter;
-	/** Defaults to `os.homedir()`. */
-	homeDir?: string;
-	/** Optional progress sink (e.g. logging or an event bus bridge). */
-	onProgress?: (event: PreinstallProgressEvent) => void;
-}
-
-export interface PreinstallStatusEntry {
-	presetId: string;
-	kind: PreinstallCatalogItem["kind"];
-	label: string;
-	optional: boolean;
-	status: AgentInstallStatus;
-	version: string | null;
-	lastError: string | null;
-	installedAt: number | null;
-}
-
-const defaultWriteConfigFile: ConfigFileWriter = async (
-	absolutePath,
-	contents,
-) => {
-	await mkdir(dirname(absolutePath), { recursive: true });
-	await writeFile(absolutePath, contents, "utf8");
-};
-
-const defaultCommandRunner: CommandRunner = async (command) => {
-	const env = await getStrictShellEnvironment().catch(
-		() => process.env as Record<string, string>,
-	);
-	try {
-		const { stdout, stderr } = await execAsync(command, {
-			encoding: "utf8",
-			env,
-			timeout: 5 * 60_000,
-		});
-		return { exitCode: 0, stdout, stderr };
-	} catch (error) {
-		const err = error as {
-			code?: number;
-			stdout?: string;
-			stderr?: string;
-			message?: string;
-		};
-		return {
-			exitCode: typeof err.code === "number" ? err.code : 1,
-			stdout: err.stdout ?? "",
-			stderr: err.stderr ?? err.message ?? "",
-		};
-	}
+// Re-export the public type surface so existing consumers that import these
+// from "./installer" (and the package barrel) keep working unchanged.
+export type {
+	AgentPreinstallerOptions,
+	CommandResult,
+	CommandRunner,
+	ConfigFileWriter,
+	PreinstallItemResult,
+	PreinstallProgressEvent,
+	PreinstallStatusEntry,
 };
 
 /**
@@ -119,6 +48,12 @@ export class AgentPreinstaller {
 	private readonly onProgress?: (event: PreinstallProgressEvent) => void;
 	private readonly catalog: PreinstallCatalogItem[];
 	private runningAuto: Promise<PreinstallItemResult[]> | null = null;
+	/**
+	 * Set for the duration of an aborted `runAuto`. Once aborted (host
+	 * disposing), `recordState` skips its db write — a trailing write from an
+	 * item that was already mid-install would otherwise hit a closed handle.
+	 */
+	private autoSignal: AbortSignal | undefined;
 
 	constructor(options: AgentPreinstallerOptions) {
 		this.db = options.db;
@@ -173,6 +108,10 @@ export class AgentPreinstaller {
 			installedAt?: number | null;
 		},
 	): void {
+		// Host is disposing: the db handle is about to (or did) close. Skip the
+		// write rather than throw `Cannot use a closed database` from a trailing
+		// state update on an item that was already mid-install when aborted.
+		if (this.autoSignal?.aborted) return;
 		const now = Date.now();
 		this.db
 			.insert(agentInstallState)
@@ -294,19 +233,28 @@ export class AgentPreinstaller {
 	 * intentionally serial so install commands don't fight over the network or
 	 * a shared package manager lock. Re-entrant calls share the in-flight run.
 	 */
-	runAuto(): Promise<PreinstallItemResult[]> {
+	runAuto(
+		options: { signal?: AbortSignal } = {},
+	): Promise<PreinstallItemResult[]> {
 		if (this.runningAuto) return this.runningAuto;
-		const run = this.runAutoInner().finally(() => {
+		this.autoSignal = options.signal;
+		const run = this.runAutoInner(options.signal).finally(() => {
 			this.runningAuto = null;
+			this.autoSignal = undefined;
 		});
 		this.runningAuto = run;
 		return run;
 	}
 
-	private async runAutoInner(): Promise<PreinstallItemResult[]> {
+	private async runAutoInner(
+		signal?: AbortSignal,
+	): Promise<PreinstallItemResult[]> {
 		const plan = resolveAutoInstallPlan(this.catalog, this.statusByPresetId());
 		const results: PreinstallItemResult[] = [];
 		for (const item of plan) {
+			// Stop between items when aborted (e.g. host disposing): the next
+			// `installItem` would write to a db that's about to close.
+			if (signal?.aborted) break;
 			results.push(await this.installItem(item));
 		}
 		return results;
