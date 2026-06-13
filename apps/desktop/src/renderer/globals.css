@@ -227,6 +227,9 @@
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-highlight: var(--highlight);
 	--color-highlight-foreground: var(--highlight-foreground);
+	/* Victor Mono everywhere — default UI sans + mono tokens (#25). */
+	--font-sans: "Victor Mono", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Victor Mono", ui-monospace, monospace;
 }
 
 @layer base {
@@ -260,10 +263,10 @@
 		 * below and is intentionally NOT affected by this change.
 		 */
 		font-family:
-			"PingFang TC", "TT Norms Pro Condensed", ui-sans-serif, system-ui,
-			sans-serif;
+			"Victor Mono", "PingFang TC", "TT Norms Pro Condensed", ui-sans-serif,
+			system-ui, sans-serif;
 		font-size: 14px;
-		font-weight: 200;
+		font-weight: 400;
 	}
 
 	/* Ensure the React root fills the viewport and provides a positioning context */
