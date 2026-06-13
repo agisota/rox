@@ -144,8 +144,8 @@ function SignInPage() {
 								disabled={isLoadingDev}
 							>
 								{isLoadingDev
-								? "Входим..."
-								: "Войти как локальный администратор (dev)"}
+									? "Входим..."
+									: "Войти как локальный администратор (dev)"}
 							</Button>
 						)}
 						{devError && (
