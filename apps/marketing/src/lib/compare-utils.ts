@@ -33,11 +33,11 @@ export function formatCompareDate(date: string): string {
 export function getComparisonPageTypeLabel(type: ComparisonPageType): string {
 	switch (type) {
 		case "roundup":
-			return "Roundup";
+			return "Обзор";
 		case "tutorial":
-			return "Tutorial";
+			return "Инструкция";
 		default:
-			return "Comparison";
+			return "Сравнение";
 	}
 }
 

@@ -29,11 +29,11 @@ export function ContactForm() {
 				setStatus("success");
 			} else {
 				setStatus("error");
-				setErrorMessage(result.error ?? "Something went wrong.");
+				setErrorMessage(result.error ?? "Что-то пошло не так.");
 			}
 		} catch (_error) {
 			setStatus("error");
-			setErrorMessage("Something went wrong. Please try again.");
+			setErrorMessage("Что-то пошло не так. Попробуйте ещё раз.");
 		}
 	};
 
@@ -42,10 +42,10 @@ export function ContactForm() {
 			<div className="flex flex-col items-center justify-center py-16 text-center">
 				<CheckCircle2 className="size-6 text-muted-foreground mb-4" />
 				<p className="text-lg font-medium text-foreground">
-					Thanks for reaching out
+					Спасибо за сообщение
 				</p>
 				<p className="mt-2 text-sm text-muted-foreground">
-					We&apos;ll get back to you shortly.
+					Мы скоро вернёмся с ответом.
 				</p>
 			</div>
 		);
@@ -59,7 +59,7 @@ export function ContactForm() {
 						htmlFor="contact-name"
 						className="block text-sm text-muted-foreground mb-1.5"
 					>
-						Full name
+						Имя и фамилия
 					</label>
 					<input
 						id="contact-name"
@@ -78,7 +78,7 @@ export function ContactForm() {
 						htmlFor="contact-email"
 						className="block text-sm text-muted-foreground mb-1.5"
 					>
-						Email
+						Электронная почта
 					</label>
 					<input
 						id="contact-email"
@@ -98,7 +98,7 @@ export function ContactForm() {
 					htmlFor="contact-topic"
 					className="block text-sm text-muted-foreground mb-1.5"
 				>
-					Topic
+					Тема
 				</label>
 				<input
 					id="contact-topic"
@@ -116,7 +116,7 @@ export function ContactForm() {
 					htmlFor="contact-message"
 					className="block text-sm text-muted-foreground mb-1.5"
 				>
-					How can we help?
+					Чем мы можем помочь?
 				</label>
 				<textarea
 					id="contact-message"
@@ -154,12 +154,12 @@ export function ContactForm() {
 			>
 				{status === "submitting" ? (
 					<>
-						Sending
+						Отправляем
 						<Loader2 className="size-3.5 animate-spin" />
 					</>
 				) : (
 					<>
-						Send message
+						Отправить сообщение
 						<ArrowRight className="size-3.5" />
 					</>
 				)}
