@@ -42,7 +42,7 @@ export function DashboardSidebarPortsList() {
 							strokeWidth={STROKE_WIDTH}
 						/>
 					</span>
-					Ports
+					Порты
 				</button>
 
 				<Tooltip delayDuration={300}>
@@ -56,7 +56,7 @@ export function DashboardSidebarPortsList() {
 						</button>
 					</TooltipTrigger>
 					<TooltipContent side="top" sideOffset={4}>
-						<p className="text-xs">Learn about port labels</p>
+						<p className="text-xs">Узнать о метках портов</p>
 					</TooltipContent>
 				</Tooltip>
 				<span className="text-[10px] font-normal">{totalPortCount}</span>

@@ -4,13 +4,13 @@ import { TEARDOWN_TIMEOUT_MS } from "@rox/shared/constants";
 /** Human-readable one-liner for the dialog title when teardown fails. */
 export function formatTeardownReason(cause: TeardownFailureCause): string {
 	if (cause.timedOut) {
-		return `Teardown timed out after ${Math.round(TEARDOWN_TIMEOUT_MS / 1000)}s`;
+		return `Скрипт очистки превысил время ожидания (${Math.round(TEARDOWN_TIMEOUT_MS / 1000)} с)`;
 	}
 	if (cause.exitCode != null) {
-		return `Teardown exited with code ${cause.exitCode}`;
+		return `Скрипт очистки завершился с кодом ${cause.exitCode}`;
 	}
 	if (cause.signal != null) {
-		return `Teardown terminated by signal ${cause.signal}`;
+		return `Скрипт очистки прерван сигналом ${cause.signal}`;
 	}
-	return "Teardown failed to start";
+	return "Не удалось запустить скрипт очистки";
 }

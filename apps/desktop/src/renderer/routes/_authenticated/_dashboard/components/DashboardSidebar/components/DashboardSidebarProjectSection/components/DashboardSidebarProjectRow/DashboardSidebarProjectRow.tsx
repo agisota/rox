@@ -108,14 +108,14 @@ export const DashboardSidebarProjectRow = forwardRef<
 									}}
 									onKeyDown={(event) => event.stopPropagation()}
 									onContextMenu={(event) => event.stopPropagation()}
-									aria-label="New workspace"
+									aria-label="Новое рабочее пространство"
 									className="hidden size-full items-center justify-center rounded transition-colors hover:bg-muted group-hover:flex group-has-[:focus]:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
 									<HiMiniPlus className="size-4 text-muted-foreground" />
 								</button>
 							</TooltipTrigger>
 							<TooltipContent side="bottom" sideOffset={4}>
-								New workspace
+								Новое рабочее пространство
 							</TooltipContent>
 						</Tooltip>
 						<span className="text-[10px] font-normal tabular-nums text-muted-foreground group-hover:hidden group-has-[:focus]:hidden">

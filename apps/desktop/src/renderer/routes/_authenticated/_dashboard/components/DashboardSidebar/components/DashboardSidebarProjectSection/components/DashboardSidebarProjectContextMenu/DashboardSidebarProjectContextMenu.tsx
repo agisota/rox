@@ -36,20 +36,20 @@ export function DashboardSidebarProjectContextMenu({
 			<ContextMenuContent onCloseAutoFocus={(event) => event.preventDefault()}>
 				<ContextMenuItem onSelect={onRename}>
 					<LuPencil className="size-4 mr-2" />
-					Rename
+					Переименовать
 				</ContextMenuItem>
 				<ContextMenuSeparator />
 				<ContextMenuItem onSelect={onOpenInFinder}>
 					<LuFolderOpen className="size-4 mr-2" />
-					Open in Finder
+					Открыть в Finder
 				</ContextMenuItem>
 				<ContextMenuItem onSelect={onOpenSettings}>
 					<LuSettings className="size-4 mr-2" />
-					Project Settings
+					Настройки проекта
 				</ContextMenuItem>
 				<ContextMenuItem onSelect={onCreateSection}>
 					<LuFolderPlus className="size-4 mr-2" />
-					New group
+					Новая группа
 				</ContextMenuItem>
 				<ContextMenuSeparator />
 				<ContextMenuItem
@@ -57,7 +57,7 @@ export function DashboardSidebarProjectContextMenu({
 					className="text-destructive focus:text-destructive"
 				>
 					<LuX className="size-4 mr-2 text-destructive" />
-					Remove from Sidebar
+					Убрать с боковой панели
 				</ContextMenuItem>
 			</ContextMenuContent>
 		</ContextMenu>

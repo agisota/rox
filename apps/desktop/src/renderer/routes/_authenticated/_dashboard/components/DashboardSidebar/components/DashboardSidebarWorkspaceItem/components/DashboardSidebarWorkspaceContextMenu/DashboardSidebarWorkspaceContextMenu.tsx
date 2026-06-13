@@ -92,37 +92,37 @@ export function DashboardSidebarWorkspaceContextMenu({
 			<ContextMenuContent onCloseAutoFocus={(event) => event.preventDefault()}>
 				<ContextMenuItem onSelect={onRename}>
 					<LuPencil className="size-4 mr-2" />
-					Rename
+					Переименовать
 				</ContextMenuItem>
 				{isLocalWorkspace && (
 					<>
 						<ContextMenuSeparator />
 						<ContextMenuItem onSelect={onOpenInFinder}>
 							<LuFolderOpen className="size-4 mr-2" />
-							Open in Finder
+							Открыть в Finder
 						</ContextMenuItem>
 						<ContextMenuItem onSelect={onCopyPath}>
 							<LuCopy className="size-4 mr-2" />
-							Copy Path
+							Скопировать путь
 						</ContextMenuItem>
 					</>
 				)}
 				{!isLocalWorkspace && <ContextMenuSeparator />}
 				<ContextMenuItem onSelect={onCopyBranchName}>
 					<LuGitBranch className="size-4 mr-2" />
-					Copy Branch Name
+					Скопировать имя ветки
 				</ContextMenuItem>
 				<ContextMenuSeparator />
 				<ContextMenuItem onSelect={onToggleUnread}>
 					{isUnread ? (
 						<>
 							<LuEye className="size-4 mr-2" />
-							Mark as Read
+							Отметить как прочитанное
 						</>
 					) : (
 						<>
 							<LuEyeOff className="size-4 mr-2" />
-							Mark as Unread
+							Отметить как непрочитанное
 						</>
 					)}
 				</ContextMenuItem>
@@ -131,14 +131,14 @@ export function DashboardSidebarWorkspaceContextMenu({
 						<ContextMenuSeparator />
 						<ContextMenuItem onSelect={onCreateSection}>
 							<LuFolderPlus className="size-4 mr-2" />
-							New group from workspace
+							Новая группа из рабочего пространства
 						</ContextMenuItem>
 						{(sections.length > 0 || isInSection) && <ContextMenuSeparator />}
 						{sections.length > 0 && (
 							<ContextMenuSub>
 								<ContextMenuSubTrigger>
 									<LuArrowRightLeft className="size-4 mr-2" />
-									Move to group
+									Переместить в группу
 								</ContextMenuSubTrigger>
 								<ContextMenuSubContent>
 									{sections.map((section) => (
@@ -161,7 +161,7 @@ export function DashboardSidebarWorkspaceContextMenu({
 						{isInSection && (
 							<ContextMenuItem onSelect={() => onMoveToSection(null)}>
 								<LuArrowUp className="size-4 mr-2" />
-								Ungroup
+								Разгруппировать
 							</ContextMenuItem>
 						)}
 					</>
@@ -172,7 +172,7 @@ export function DashboardSidebarWorkspaceContextMenu({
 					className="text-destructive focus:text-destructive"
 				>
 					<LuX className="size-4 mr-2 text-destructive" />
-					Remove from Sidebar
+					Убрать с боковой панели
 				</ContextMenuItem>
 				{onDelete ? (
 					<ContextMenuItem
@@ -180,7 +180,7 @@ export function DashboardSidebarWorkspaceContextMenu({
 						className="text-destructive focus:text-destructive"
 					>
 						<LuTrash2 className="size-4 mr-2 text-destructive" />
-						Delete
+						Удалить
 						{showDeleteShortcut && (
 							<ContextMenuShortcut>{deleteHotkeyText}</ContextMenuShortcut>
 						)}

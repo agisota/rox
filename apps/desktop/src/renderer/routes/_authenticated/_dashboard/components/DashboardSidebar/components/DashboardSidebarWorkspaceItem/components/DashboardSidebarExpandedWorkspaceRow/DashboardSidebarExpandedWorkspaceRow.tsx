@@ -33,10 +33,10 @@ const PR_STATE_LABEL: Record<
 	DashboardSidebarWorkspacePullRequest["state"],
 	string
 > = {
-	open: "Open",
-	merged: "Merged",
-	closed: "Closed",
-	draft: "Draft",
+	open: "Открыт",
+	merged: "Влит",
+	closed: "Закрыт",
+	draft: "Черновик",
 };
 
 interface DashboardSidebarExpandedWorkspaceRowProps
@@ -127,14 +127,14 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 			}
 		}, [isActive]);
 
-		const creationStatusText = isPending ? "Creating…" : null;
+		const creationStatusText = isPending ? "Создание…" : null;
 		const isMainWorkspace = workspace.type === "main";
 		const workspaceKindTitle = isMainWorkspace
-			? "Main workspace"
-			: "Worktree workspace";
+			? "Главное рабочее пространство"
+			: "Рабочее пространство worktree";
 		const workspaceKindDescription = isMainWorkspace
-			? "Uses the repository checkout on this host"
-			: "Isolated copy for parallel development";
+			? "Использует копию репозитория на этом хосте"
+			: "Изолированная копия для параллельной разработки";
 
 		const quickActions = (
 			<>
@@ -162,7 +162,11 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 									}
 								}}
 								className="flex items-center justify-center text-muted-foreground hover:text-foreground"
-								aria-label={isPinned ? "Unpin workspace" : "Pin workspace"}
+								aria-label={
+									isPinned
+										? "Открепить рабочее пространство"
+										: "Закрепить рабочее пространство"
+								}
 								aria-pressed={isPinned}
 							>
 								<PopIn active={isPinned}>
@@ -176,7 +180,9 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 							</button>
 						</TooltipTrigger>
 						<TooltipContent side="top" sideOffset={4}>
-							{isPinned ? "Unpin workspace" : "Pin workspace"}
+							{isPinned
+								? "Открепить рабочее пространство"
+								: "Закрепить рабочее пространство"}
 						</TooltipContent>
 					</Tooltip>
 				)}
@@ -199,13 +205,13 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 									}
 								}}
 								className="flex items-center justify-center text-muted-foreground hover:text-foreground"
-								aria-label="Remove from sidebar"
+								aria-label="Убрать с боковой панели"
 							>
 								<HiMiniMinus className="size-3.5" />
 							</button>
 						</TooltipTrigger>
 						<TooltipContent side="top" sideOffset={4}>
-							<HotkeyLabel label="Remove from sidebar" />
+							<HotkeyLabel label="Убрать с боковой панели" />
 						</TooltipContent>
 					</Tooltip>
 				) : (
@@ -227,14 +233,14 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 									}
 								}}
 								className="flex items-center justify-center text-muted-foreground hover:text-foreground"
-								aria-label="Close workspace"
+								aria-label="Закрыть рабочее пространство"
 							>
 								<HiMiniXMark className="size-3.5" />
 							</button>
 						</TooltipTrigger>
 						<TooltipContent side="top" sideOffset={4}>
 							<HotkeyLabel
-								label="Close workspace"
+								label="Закрыть рабочее пространство"
 								id={isActive ? "CLOSE_WORKSPACE" : undefined}
 							/>
 						</TooltipContent>
@@ -324,7 +330,7 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 										event.stopPropagation();
 									}
 								}}
-								aria-label={`Open pull request #${pullRequest.number}`}
+								aria-label={`Открыть pull request #${pullRequest.number}`}
 								className="relative mr-2.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-foreground/10"
 							>
 								<DashboardSidebarWorkspaceIcon
@@ -360,7 +366,7 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 									PR #{pullRequest.number} — {PR_STATE_LABEL[pullRequest.state]}
 								</p>
 								<p className="text-xs text-muted-foreground">
-									Click to open on GitHub
+									Нажмите, чтобы открыть в GitHub
 								</p>
 							</>
 						) : (
@@ -369,23 +375,23 @@ export const DashboardSidebarExpandedWorkspaceRow = forwardRef<
 									{isMainWorkspace
 										? workspaceKindTitle
 										: hostType === "local-device"
-											? "Local workspace"
+											? "Локальное рабочее пространство"
 											: hostType === "remote-device"
 												? hostIsOnline === false
-													? "Remote workspace — device offline"
-													: "Remote workspace"
-												: "Cloud workspace"}
+													? "Удалённое рабочее пространство — устройство офлайн"
+													: "Удалённое рабочее пространство"
+												: "Облачное рабочее пространство"}
 								</p>
 								<p className="text-xs text-muted-foreground">
 									{isMainWorkspace
 										? workspaceKindDescription
 										: hostType === "local-device"
-											? "Running on this device"
+											? "Работает на этом устройстве"
 											: hostType === "remote-device"
 												? hostIsOnline === false
-													? "The associated device isn't reachable right now"
-													: "Running on a paired device"
-												: "Hosted in the cloud"}
+													? "Связанное устройство сейчас недоступно"
+													: "Работает на сопряжённом устройстве"
+												: "Размещено в облаке"}
 								</p>
 							</>
 						)}

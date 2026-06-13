@@ -60,11 +60,11 @@ export function DestroyConfirmPane({
 			<AlertDialogContent className="max-w-[340px] gap-0 p-0">
 				<AlertDialogHeader className="px-4 pt-4 pb-2">
 					<AlertDialogTitle className="font-medium">
-						Delete workspace "{workspaceName}"?
+						Удалить рабочее пространство «{workspaceName}»?
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						This removes the worktree from disk. The cloud workspace record will
-						also be removed.
+						Это удалит worktree с диска. Облачная запись рабочего пространства
+						также будет удалена.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<div className="px-4 pb-2">
@@ -78,10 +78,10 @@ export function DestroyConfirmPane({
 					>
 						{hasWarnings
 							? hasChanges && hasUnpushedCommits
-								? "Has uncommitted changes and unpushed commits"
+								? "Есть незакоммиченные изменения и неотправленные коммиты"
 								: hasChanges
-									? "Has uncommitted changes"
-									: "Has unpushed commits"
+									? "Есть незакоммиченные изменения"
+									: "Есть неотправленные коммиты"
 							: " "}
 					</div>
 				</div>
@@ -105,7 +105,7 @@ export function DestroyConfirmPane({
 							htmlFor={checkboxId}
 							className="text-xs text-muted-foreground cursor-pointer select-none"
 						>
-							Also delete local branch
+							Также удалить локальную ветку
 						</Label>
 					</div>
 				</div>
@@ -116,7 +116,7 @@ export function DestroyConfirmPane({
 						className="h-7 px-3 text-xs"
 						onClick={() => onOpenChange(false)}
 					>
-						Cancel
+						Отмена
 					</Button>
 					<Button
 						variant="destructive"

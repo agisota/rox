@@ -58,10 +58,10 @@ export function V2SetupScriptCard({
 				className="px-3 pb-2"
 			>
 				<SidebarCard
-					badge="Setup"
-					title="Setup scripts"
-					description={`Automate workspace setup for ${projectName}`}
-					actionLabel="Configure"
+					badge="Настройка"
+					title="Скрипты настройки"
+					description={`Автоматизируйте настройку рабочего пространства для ${projectName}`}
+					actionLabel="Настроить"
 					onAction={handleConfigure}
 					onDismiss={() => dismiss(projectId)}
 				/>

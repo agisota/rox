@@ -41,7 +41,7 @@ export function LinkedTaskSection({ taskId }: LinkedTaskSectionProps) {
 	return (
 		<div className="pt-2 border-t border-border space-y-0.5">
 			<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-				Task
+				Задача
 			</span>
 			<div className="flex items-center gap-1.5">
 				<Link
@@ -72,7 +72,7 @@ export function LinkedTaskSection({ taskId }: LinkedTaskSectionProps) {
 						target="_blank"
 						rel="noopener noreferrer"
 						className="shrink-0 text-muted-foreground hover:text-foreground"
-						title="Open task externally"
+						title="Открыть задачу во внешнем сервисе"
 						onClick={(e) => e.stopPropagation()}
 					>
 						<LuExternalLink className="size-3" />
