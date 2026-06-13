@@ -1,10 +1,10 @@
 export const BLOG_CATEGORIES = [
-	"All Posts",
-	"Product",
-	"Engineering",
-	"Research",
-	"Company",
-	"News",
+	"Все посты",
+	"Продукт",
+	"Инженерия",
+	"Исследования",
+	"Компания",
+	"Новости",
 ] as const;
 
 export type BlogCategory = (typeof BLOG_CATEGORIES)[number];

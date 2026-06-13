@@ -14,7 +14,8 @@
 			"!**/*.template.ts",
 			"!**/plans",
 			"!apps/mobile/uniwind-types.d.ts",
-			"!packages/sdk/src"
+			"!packages/sdk/src",
+			"!apps/desktop/src/shared/themes/zed/generated"
 		]
 	},
 	"formatter": {

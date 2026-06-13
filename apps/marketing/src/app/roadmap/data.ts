@@ -27,44 +27,51 @@ export const CATEGORIES: RoadmapCategory[] = [
 	"Integrations",
 ];
 
+export const CATEGORY_LABELS: Record<RoadmapCategory, string> = {
+	Desktop: "Десктоп",
+	Web: "Веб",
+	Mobile: "Мобильное",
+	Integrations: "Интеграции",
+};
+
 export const STATUS_LABELS: Record<RoadmapStatus, string> = {
-	now: "In Progress",
-	next: "Up Next",
-	later: "Exploring",
-	shipped: "Recently Shipped",
+	now: "В работе",
+	next: "Дальше",
+	later: "Исследуем",
+	shipped: "Недавно выпущено",
 };
 
 export const ROADMAP_ITEMS: RoadmapItem[] = [
 	// ── Now ──────────────────────────────────────────
 	{
 		id: "now-1",
-		title: "Mobile companion app",
+		title: "Мобильное companion-приложение",
 		description:
-			"Monitor and manage running agents from your phone. Approve prompts on the go.",
+			"Следите за работающими агентами и управляйте ими с телефона. Подтверждайте промпты на ходу.",
 		category: "Mobile",
 		status: "now",
 	},
 	{
 		id: "now-2",
-		title: "Cloud workspaces",
+		title: "Облачные workspaces",
 		description:
-			"Run agents in the cloud with persistent workspaces — no local machine required.",
+			"Запускайте агентов в облаке с постоянными workspaces — без привязки к локальной машине.",
 		category: "Web",
 		status: "now",
 	},
 	{
 		id: "now-3",
-		title: "Team workspaces",
+		title: "Командные workspaces",
 		description:
-			"Shared workspaces with role-based access so teams can collaborate on agent tasks.",
+			"Общие workspaces с ролевым доступом, чтобы команды могли вместе вести агентские задачи.",
 		category: "Web",
 		status: "now",
 	},
 	{
 		id: "now-4",
-		title: "Session restore & persistence",
+		title: "Восстановление и сохранение сессий",
 		description:
-			"Automatically resume agent sessions after app restart or crash recovery.",
+			"Автоматически продолжайте сессии агентов после перезапуска приложения или восстановления после сбоя.",
 		category: "Desktop",
 		status: "now",
 	},
@@ -72,33 +79,33 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 	// ── Next ─────────────────────────────────────────
 	{
 		id: "next-1",
-		title: "VS Code extension",
+		title: "Расширение для VS Code",
 		description:
-			"Launch and manage Rox agents directly from the VS Code sidebar.",
+			"Запускайте и управляйте агентами Rox прямо из боковой панели VS Code.",
 		category: "Integrations",
 		status: "next",
 	},
 	{
 		id: "next-2",
-		title: "Agent-to-agent communication",
+		title: "Коммуникация агент-агент",
 		description:
-			"Allow agents to delegate subtasks to other agents and share context.",
+			"Позволяйте агентам делегировать подзадачи другим агентам и обмениваться контекстом.",
 		category: "Desktop",
 		status: "next",
 	},
 	{
 		id: "next-3",
-		title: "Usage analytics dashboard",
+		title: "Dashboard аналитики использования",
 		description:
-			"Track token usage, agent runtime, and cost breakdowns per workspace.",
+			"Отслеживайте расход токенов, время работы агентов и детализацию стоимости по workspace.",
 		category: "Web",
 		status: "next",
 	},
 	{
 		id: "next-4",
-		title: "Webhook integrations",
+		title: "Webhook-интеграции",
 		description:
-			"Trigger agents from external events via webhooks — CI pipelines, GitHub, Slack.",
+			"Запускайте агентов по внешним событиям через webhooks: CI pipelines, GitHub, Slack.",
 		category: "Integrations",
 		status: "next",
 	},
@@ -106,33 +113,33 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 	// ── Later ────────────────────────────────────────
 	{
 		id: "later-1",
-		title: "Self-hosted deployment",
+		title: "Self-hosted развёртывание",
 		description:
-			"Run Rox on your own infrastructure with a single Docker Compose file.",
+			"Запускайте Rox на своей инфраструктуре через один Docker Compose файл.",
 		category: "Web",
 		status: "later",
 	},
 	{
 		id: "later-2",
-		title: "Agent marketplace",
+		title: "Маркетплейс агентов",
 		description:
-			"Browse, install, and publish community-built agent templates and tools.",
+			"Просматривайте, устанавливайте и публикуйте шаблоны агентов и инструменты сообщества.",
 		category: "Web",
 		status: "later",
 	},
 	{
 		id: "later-3",
-		title: "Multi-repo orchestration",
+		title: "Оркестрация нескольких репозиториев",
 		description:
-			"Run coordinated agent tasks across multiple repositories simultaneously.",
+			"Запускайте согласованные агентские задачи сразу в нескольких репозиториях.",
 		category: "Desktop",
 		status: "later",
 	},
 	{
 		id: "later-4",
-		title: "JetBrains plugin",
+		title: "Плагин JetBrains",
 		description:
-			"Full Rox integration for IntelliJ, WebStorm, and other JetBrains IDEs.",
+			"Полная интеграция Rox для IntelliJ, WebStorm и других JetBrains IDE.",
 		category: "Integrations",
 		status: "later",
 	},
@@ -140,91 +147,91 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 	// ── Shipped ──────────────────────────────────────
 	{
 		id: "shipped-1",
-		title: "Review tab & PR comments",
+		title: "Вкладка review и PR-комментарии",
 		description:
-			"Review tab in changes sidebar for PR review comments with inline actions.",
+			"Вкладка review в боковой панели изменений для PR-комментариев и inline-действий.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Mar 2026",
+		shippedDate: "март 2026",
 	},
 	{
 		id: "shipped-2",
-		title: "Configurable agent settings",
+		title: "Настраиваемые параметры агентов",
 		description:
-			"Override presets and preview agent configuration templates directly from the UI.",
+			"Переопределяйте presets и просматривайте шаблоны конфигурации агентов прямо в UI.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Mar 2026",
+		shippedDate: "март 2026",
 	},
 	{
 		id: "shipped-3",
-		title: "CodeMirror editor",
+		title: "Редактор CodeMirror",
 		description:
-			"Replaced Monaco with CodeMirror — 150KB vs 5MB, significantly faster loading.",
+			"Заменили Monaco на CodeMirror: 150 KB вместо 5 MB и заметно более быстрая загрузка.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Mar 2026",
+		shippedDate: "март 2026",
 	},
 	{
 		id: "shipped-4",
-		title: "Cross-workspace search",
+		title: "Поиск между workspaces",
 		description:
-			"Search across all open workspaces simultaneously with unified results.",
+			"Ищите сразу по всем открытым workspaces с единым списком результатов.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Mar 2026",
+		shippedDate: "март 2026",
 	},
 	{
 		id: "shipped-5",
-		title: "Chat view GA",
+		title: "Chat view в общем доступе",
 		description:
-			"Chat view generally available with refreshed tool call visuals and rich UI cards.",
+			"Chat view стал общедоступным: обновили визуализацию tool calls и расширенные UI cards.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Mar 2026",
+		shippedDate: "март 2026",
 	},
 	{
 		id: "shipped-6",
-		title: "Multi-provider model picker",
+		title: "Выбор моделей разных providers",
 		description:
-			"Copilot, Cursor Agent, and Gemini support alongside Claude and GPT models.",
+			"Добавили Copilot, Cursor Agent и Gemini рядом с моделями Claude и GPT.",
 		category: "Integrations",
 		status: "shipped",
-		shippedDate: "Feb 2026",
+		shippedDate: "февраль 2026",
 	},
 	{
 		id: "shipped-7",
-		title: "In-app browser",
+		title: "Встроенный браузер",
 		description:
-			"Chrome-like browser with URL autocomplete, DevTools support, and desktop automation tools.",
+			"Браузер в стиле Chrome с автодополнением URL, поддержкой DevTools и инструментами desktop-автоматизации.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Feb 2026",
+		shippedDate: "февраль 2026",
 	},
 	{
 		id: "shipped-8",
-		title: "File explorer",
+		title: "Проводник файлов",
 		description:
-			"Hierarchical tree view with file operations, material icon theme, and drag-and-drop.",
+			"Иерархическое дерево с файловыми операциями, material icon theme и drag-and-drop.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Feb 2026",
+		shippedDate: "февраль 2026",
 	},
 	{
 		id: "shipped-9",
-		title: "Linux desktop support",
-		description: "Native Linux desktop application distributed as AppImage.",
+		title: "Поддержка Linux desktop",
+		description: "Нативное Linux desktop-приложение в формате AppImage.",
 		category: "Desktop",
 		status: "shipped",
-		shippedDate: "Feb 2026",
+		shippedDate: "февраль 2026",
 	},
 	{
 		id: "shipped-10",
-		title: "Electric SQL sync",
+		title: "Синхронизация Electric SQL",
 		description:
-			"Local-first task synchronization with Electric SQL and Linear integration via webhooks.",
+			"Local-first синхронизация задач через Electric SQL и интеграция с Linear через webhooks.",
 		category: "Integrations",
 		status: "shipped",
-		shippedDate: "Dec 2025",
+		shippedDate: "декабрь 2025",
 	},
 ];
