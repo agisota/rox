@@ -23,6 +23,7 @@ export {
 export {
 	ManifestoBlock,
 	type ManifestoBlockProps,
+	type ManifestoLine,
 } from "./ManifestoBlock";
 export type {
 	MotionCapabilities,

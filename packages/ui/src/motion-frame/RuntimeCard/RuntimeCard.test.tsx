@@ -9,8 +9,8 @@ describe("RuntimeCard", () => {
 			<MotionFrameProvider persist={false}>
 				<RuntimeCard
 					metrics={[
-						{ label: "uptime", value: "12m" },
-						{ label: "tasks", value: "3" },
+						{ id: "uptime", label: "uptime", value: "12m" },
+						{ id: "tasks", label: "tasks", value: "3" },
 					]}
 					name="agent-runtime"
 					status="running"

@@ -22,8 +22,10 @@ const STATUS_LABEL: Record<RuntimeStatus, string> = {
 };
 
 export interface RuntimeMetric {
-	/** Short metric name — also the React key, so keep it unique per card. */
-	label: string;
+	/** Stable identity for the metric (also the React key). */
+	id: string;
+	/** Short metric name. */
+	label: ReactNode;
 	value: ReactNode;
 }
 
@@ -42,8 +44,8 @@ export interface RuntimeCardProps {
  * A card describing a single runtime / agent and its live status. The status
  * dot reads its token from the status — `running` → transition, `ready` →
  * verified, `idle` → noise — and pulses only in the `full` tier. Metrics render
- * as a definition list. The card fades in once via `FadeLift`, so it is fully
- * static under `off` / reduced-motion.
+ * as a definition list keyed by a stable `id`. The card fades in once via
+ * `FadeLift`, so it is fully static under `off` / reduced-motion.
  */
 export function RuntimeCard({
 	name,
@@ -72,7 +74,7 @@ export function RuntimeCard({
 			{metrics && metrics.length > 0 ? (
 				<dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
 					{metrics.map((metric) => (
-						<div className="flex flex-col" key={metric.label}>
+						<div className="flex flex-col" key={metric.id}>
 							<dt className="text-muted-foreground text-xs">{metric.label}</dt>
 							<dd className="font-mono">{metric.value}</dd>
 						</div>

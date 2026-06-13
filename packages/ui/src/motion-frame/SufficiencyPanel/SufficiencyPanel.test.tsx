@@ -34,6 +34,26 @@ describe("SufficiencyPanel", () => {
 		expect(html).toContain("missing");
 	});
 
+	it("colors the header dot by aggregate state (noise → transition → verified)", () => {
+		// 0/4 — nothing in flight yet, so no transition token appears anywhere.
+		const empty = renderToStaticMarkup(
+			<MotionFrameProvider defaultTier="essential" persist={false}>
+				<SufficiencyPanel />
+			</MotionFrameProvider>,
+		);
+		expect(empty).toContain("0/4");
+		expect(empty).not.toContain("var(--state-transition)");
+
+		// 2/4 — in flight; facet dots are only verified/noise, so the lone
+		// transition token is the header summary dot.
+		const partial = renderToStaticMarkup(
+			<MotionFrameProvider defaultTier="essential" persist={false}>
+				<SufficiencyPanel context="brief" tools="motion" />
+			</MotionFrameProvider>,
+		);
+		expect(partial).toContain("var(--state-transition)");
+	});
+
 	it("renders content statically when motion is off (clock-safe)", () => {
 		const html = renderToStaticMarkup(
 			<MotionFrameProvider defaultTier="off" persist={false}>

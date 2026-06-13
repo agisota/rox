@@ -1,1 +1,5 @@
-export { ManifestoBlock, type ManifestoBlockProps } from "./ManifestoBlock";
+export {
+	ManifestoBlock,
+	type ManifestoBlockProps,
+	type ManifestoLine,
+} from "./ManifestoBlock";

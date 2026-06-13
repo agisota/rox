@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { FadeLift } from "../primitives/FadeLift";
 import { PulseDot } from "../primitives/PulseDot";
+import type { StateTokenName } from "../tokens";
 
 /** The four facets that must all be filled before a task is "set" (S✷). */
 const FACETS = ["context", "tools", "rights", "criteria"] as const;
@@ -16,6 +17,21 @@ const FACET_LABEL: Record<Facet, string> = {
 	rights: "Rights",
 	criteria: "Criteria",
 };
+
+/**
+ * Aggregate "color as law" for the header summary dot: nothing filled is harness
+ * `noise` (nothing is in flight yet), a partially-filled panel is an in-flight
+ * `transition` toward S✷, and a fully-filled panel is `verified`.
+ */
+function headerToken(filledCount: number): StateTokenName {
+	if (filledCount === FACETS.length) {
+		return "verified";
+	}
+	if (filledCount === 0) {
+		return "noise";
+	}
+	return "transition";
+}
 
 export interface SufficiencyPanelProps {
 	/** What the task knows. */
@@ -33,10 +49,12 @@ export interface SufficiencyPanelProps {
 
 /**
  * The sufficiency model as a 2×2 panel: a task is only "set" (S✷) once all four
- * facets — context, tools, rights, criteria — are filled. Filled facets read in
- * the `verified` token, missing ones in `noise`, and the header summary flips to
- * "set" only when every facet is present. The whole panel fades in once via
- * `FadeLift`, so under `off` / reduced-motion it renders fully static.
+ * facets — context, tools, rights, criteria — are filled. Each facet dot reads
+ * `verified` when present and `noise` when missing; the header summary dot is
+ * three-way — `noise` while empty, `transition` while partially filled (an
+ * in-flight S₀ → S✷), and `verified` once every facet is present. The whole
+ * panel fades in once via `FadeLift`, so under `off` / reduced-motion it renders
+ * fully static.
  */
 export function SufficiencyPanel({
 	context,
@@ -52,8 +70,8 @@ export function SufficiencyPanel({
 		rights,
 		criteria,
 	};
-	const filled = FACETS.filter((facet) => facets[facet] != null);
-	const allSet = filled.length === FACETS.length;
+	const filledCount = FACETS.filter((facet) => facets[facet] != null).length;
+	const allSet = filledCount === FACETS.length;
 
 	return (
 		<FadeLift
@@ -68,8 +86,8 @@ export function SufficiencyPanel({
 			>
 				<span className="font-medium text-sm">{title}</span>
 				<span className="flex items-center gap-2 text-muted-foreground text-xs">
-					<PulseDot state={allSet ? "verified" : "transition"} />
-					{allSet ? "set" : `${filled.length}/${FACETS.length}`}
+					<PulseDot state={headerToken(filledCount)} />
+					{allSet ? "set" : `${filledCount}/${FACETS.length}`}
 				</span>
 			</header>
 			<dl className="grid grid-cols-2 gap-3">

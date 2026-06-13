@@ -10,9 +10,9 @@ describe("ManifestoBlock", () => {
 				<ManifestoBlock
 					kicker="State-first"
 					lines={[
-						"Color is law.",
-						"Motion has a governor.",
-						"Content is clock-safe.",
+						{ id: "law", text: "Color is law." },
+						{ id: "gov", text: "Motion has a governor." },
+						{ id: "safe", text: "Content is clock-safe." },
 					]}
 				/>
 			</MotionFrameProvider>,
@@ -24,10 +24,24 @@ describe("ManifestoBlock", () => {
 		expect(html).toContain("font-frame-display");
 	});
 
+	it("renders duplicate statements without collapsing them", () => {
+		const html = renderToStaticMarkup(
+			<MotionFrameProvider persist={false}>
+				<ManifestoBlock
+					lines={[
+						{ id: "a", text: "Ship it." },
+						{ id: "b", text: "Ship it." },
+					]}
+				/>
+			</MotionFrameProvider>,
+		);
+		expect(html.match(/Ship it\./g) ?? []).toHaveLength(2);
+	});
+
 	it("renders lines statically (fully visible) when motion is off", () => {
 		const html = renderToStaticMarkup(
 			<MotionFrameProvider defaultTier="off" persist={false}>
-				<ManifestoBlock lines={["Ship it."]} />
+				<ManifestoBlock lines={[{ id: "x", text: "Ship it." }]} />
 			</MotionFrameProvider>,
 		);
 		expect(html).toContain("Ship it.");
