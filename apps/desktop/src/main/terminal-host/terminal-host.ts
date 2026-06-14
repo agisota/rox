@@ -478,18 +478,23 @@ class Semaphore {
 	private release(): void {
 		this.inUse = Math.max(0, this.inUse - 1);
 
-		const next = this.queue.shift();
-		if (next) {
+		// Hand the freed slot to the first non-aborted waiter. Aborted waiters
+		// never received a permit, so reject and skip them WITHOUT releasing again
+		// — the previous recursive `release()` double-decremented `inUse`, letting
+		// it drift below the real holder count and silently exceed `max` spawns.
+		let next = this.queue.shift();
+		while (next) {
 			if (next.onAbort && next.signal) {
 				next.signal.removeEventListener("abort", next.onAbort);
 			}
 			if (next.signal?.aborted) {
 				next.reject(new TerminalAttachCanceledError());
-				this.release();
-				return;
+				next = this.queue.shift();
+				continue;
 			}
 			this.inUse++;
 			next.resolve(() => this.release());
+			return;
 		}
 	}
 }

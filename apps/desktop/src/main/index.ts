@@ -1,3 +1,4 @@
+import { once } from "node:events";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { settings } from "@rox/local-db";
@@ -109,12 +110,8 @@ async function processDeepLink(url: string): Promise<void> {
 		console.error("[main] Ignoring malformed deep link:", url);
 		return;
 	}
-	focusMainWindow();
-
-	const windows = BrowserWindow.getAllWindows();
-	if (windows.length > 0) {
-		windows[0].webContents.send("deep-link-navigate", path);
-	}
+	const window = await resolveLoadedMainWindow();
+	window?.webContents.send("deep-link-navigate", path);
 }
 
 function findDeepLinkInArgv(argv: string[]): string | undefined {
@@ -134,6 +131,51 @@ export function focusMainWindow(): void {
 		// Triggers window creation via makeAppSetup's activate handler
 		app.emit("activate");
 	}
+}
+
+/**
+ * Bring up the main window (creating it if every window was closed) and resolve
+ * only once its renderer has loaded — so a deep-link `webContents.send` isn't
+ * dropped because the window is still being created or hasn't mounted its IPC
+ * listeners yet. Bounded by timeouts so a failed creation can never hang.
+ */
+async function resolveLoadedMainWindow(): Promise<BrowserWindow | null> {
+	focusMainWindow();
+	let window = BrowserWindow.getAllWindows()[0] ?? null;
+	if (!window) {
+		// focusMainWindow() emitted "activate", which (re)creates the window
+		// asynchronously — wait for it instead of racing getAllWindows().
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), 10_000);
+		try {
+			const [, created] = (await once(app, "browser-window-created", {
+				signal: controller.signal,
+			})) as [unknown, BrowserWindow];
+			window = created;
+		} catch {
+			window = BrowserWindow.getAllWindows()[0] ?? null;
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+	if (!window) {
+		return null;
+	}
+	if (window.webContents.isLoading()) {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), 10_000);
+		try {
+			await once(window.webContents, "did-finish-load", {
+				signal: controller.signal,
+			});
+		} catch {
+			// Renderer didn't finish loading in time — send anyway; no worse than
+			// the previous unconditional send and it may already be interactive.
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+	return window;
 }
 
 function registerWithMacOSNotificationCenter() {
