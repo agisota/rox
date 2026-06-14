@@ -1,0 +1,15 @@
+{
+	"version": "catalog-v1",
+	"skills": {
+		"count": 985,
+		"archive": "skills.tar.gz",
+		"sha256": "cbe250bcddaaf4c20496522838bd7958faac83838d0d362662079e96aa85442d",
+		"bytes": 72956754
+	},
+	"agents": {
+		"count": 111,
+		"archive": "agents.tar.gz",
+		"sha256": "a17bd2c9b5597519e28400ba1867a8f81f6a849de00aa9320652bb79a4a8ea40",
+		"bytes": 275390
+	}
+}
