@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+	createReadStream,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -13,6 +14,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { pipeline } from "node:stream/promises";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -85,8 +87,15 @@ export function readCatalogManifest(
 	}
 }
 
-function sha256File(path: string): string {
-	return createHash("sha256").update(readFileSync(path)).digest("hex");
+/**
+ * Stream a file through SHA-256. Streaming (not `readFileSync`) keeps memory
+ * flat and—crucially—yields the event loop, so verifying the bundled ~67 MB
+ * archives never blocks the Electron main process on first launch.
+ */
+async function sha256File(path: string): Promise<string> {
+	const hash = createHash("sha256");
+	await pipeline(createReadStream(path), hash);
+	return hash.digest("hex");
 }
 
 /**
@@ -108,13 +117,27 @@ async function tarExtract(
 		throw new Error(`catalog archive missing: ${archivePath}`);
 	}
 	mkdirSync(claudeDir, { recursive: true });
+	// Sweep staging dirs orphaned by a previously-killed run so they can't
+	// accumulate inside ~/.claude.
+	for (const entry of readdirSync(claudeDir)) {
+		if (entry.startsWith(".rox-catalog-stage-")) {
+			rmSync(join(claudeDir, entry), { recursive: true, force: true });
+		}
+	}
 	// Stage inside ~/.claude so the final rename stays on the same volume.
 	const stage = mkdtempSync(join(claudeDir, ".rox-catalog-stage-"));
 	try {
 		await execFileAsync("tar", ["-xzf", archivePath, "-C", stage]);
+		// Path-traversal safety: only entries enumerated *under* the staging dir
+		// are promoted into ~/.claude. A malicious archive escaping via `../` or
+		// an absolute path (already neutralised by the sha256 pin on the bundled
+		// archive) could never land an installed file outside ~/.claude.
 		for (const top of readdirSync(stage)) {
 			const srcTop = join(stage, top);
 			if (!statSync(srcTop).isDirectory()) {
+				console.warn(
+					`[preinstall-catalog] skipping unexpected top-level entry: ${top}`,
+				);
 				continue;
 			}
 			const destTop = join(claudeDir, top);
@@ -176,7 +199,7 @@ export async function ensureCatalogInstalled(
 				if (!existsSync(archivePath)) {
 					return { status: "skipped" };
 				}
-				if (sha256File(archivePath) !== part.sha256) {
+				if ((await sha256File(archivePath)) !== part.sha256) {
 					return {
 						status: "error",
 						error: `sha256 mismatch for ${part.archive}`,
