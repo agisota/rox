@@ -17,8 +17,10 @@ export function useViewedFiles(workspaceId: string): ViewedFilesApi {
 				.where(({ state }) => eq(state.workspaceId, workspaceId)),
 		[collections, workspaceId],
 	);
-	const viewedFiles = rows[0]?.viewedFiles ?? [];
-	const viewedSet = useMemo(() => new Set(viewedFiles), [viewedFiles]);
+	// Depend on the raw (live-query-stable) value, not a fresh `?? []` literal —
+	// otherwise `viewedSet` rebuilds every render whenever no files are viewed.
+	const viewedFiles = rows[0]?.viewedFiles;
+	const viewedSet = useMemo(() => new Set(viewedFiles ?? []), [viewedFiles]);
 
 	const setViewed = useCallback(
 		(path: string, next: boolean) => {
