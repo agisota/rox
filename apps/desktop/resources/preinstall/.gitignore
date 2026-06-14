@@ -1,0 +1,4 @@
+# Large catalog archives are fetched at build time from the GitHub release
+# pinned in manifest.json (see apps/desktop/scripts/fetch-preinstall-catalog.ts).
+# Only manifest.json is committed to keep the repo lean.
+*.tar.gz

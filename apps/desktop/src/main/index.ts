@@ -38,6 +38,7 @@ import {
 	initTanstackDbPersistence,
 	shutdownTanstackDbPersistence,
 } from "./lib/persistence/persistence";
+import { ensureCatalogInstalled } from "./lib/preinstall-catalog";
 import { ensureProjectIconsDir, getProjectIconPath } from "./lib/project-icons";
 import { initSentry } from "./lib/sentry";
 import {
@@ -441,6 +442,27 @@ if (!gotTheLock) {
 		await makeAppSetup(() => MainWindow());
 		setupAutoUpdater();
 		initTray();
+
+		// Preinstall the bundled skill + subagent catalog into ~/.claude so every
+		// workspace's agents have the full set out-of-the-box. Fire-and-forget,
+		// versioned + idempotent — must never block startup.
+		void ensureCatalogInstalled({
+			resourcesDir: app.isPackaged
+				? path.join(process.resourcesPath, "resources/preinstall")
+				: path.join(app.getAppPath(), "resources/preinstall"),
+		})
+			.then((result) => {
+				if (result.status === "installed") {
+					console.info(
+						`[main] preinstalled catalog ${result.version}: ${result.skills} skills, ${result.agents} subagents`,
+					);
+				} else if (result.status === "error") {
+					console.error("[main] catalog preinstall failed:", result.error);
+				}
+			})
+			.catch((error) => {
+				console.error("[main] catalog preinstall error:", error);
+			});
 
 		const coldStartUrl = findDeepLinkInArgv(process.argv);
 		if (coldStartUrl) {
