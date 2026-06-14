@@ -1,4 +1,5 @@
 import { cn } from "@rox/ui/utils";
+import { useReducedMotion } from "framer-motion";
 import { useId } from "react";
 
 interface RoxLogoProps {
@@ -12,11 +13,16 @@ interface RoxLogoProps {
  * (Victor Mono) with a soft vertical sheen and a terminal caret that gently
  * pulses — the developer-native signature. When `gradient` is set, the
  * wordmark plays a left-to-right shimmer (used while a session is restoring).
+ *
+ * Honors `prefers-reduced-motion`: when reduced, the caret holds steady and the
+ * shimmer falls back to the static depth sheen.
  */
 export function RoxLogo({ className, gradient = false }: RoxLogoProps) {
 	const reactId = useId();
 	const shimmerId = `rox-shimmer-${reactId}`;
 	const depthId = `rox-depth-${reactId}`;
+	const reduceMotion = useReducedMotion();
+	const showShimmer = gradient && !reduceMotion;
 
 	return (
 		<svg
@@ -35,7 +41,7 @@ export function RoxLogo({ className, gradient = false }: RoxLogoProps) {
 					<stop offset="0%" stopColor="currentColor" stopOpacity="1" />
 					<stop offset="100%" stopColor="currentColor" stopOpacity="0.7" />
 				</linearGradient>
-				{gradient && (
+				{showShimmer && (
 					<linearGradient id={shimmerId} x1="0%" y1="0%" x2="100%" y2="0%">
 						<stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
 						<stop offset="45%" stopColor="currentColor" stopOpacity="0.45" />
@@ -67,22 +73,25 @@ export function RoxLogo({ className, gradient = false }: RoxLogoProps) {
 				fontSize="42"
 				fontWeight="700"
 				letterSpacing="-1"
-				fill={gradient ? `url(#${shimmerId})` : `url(#${depthId})`}
+				fill={showShimmer ? `url(#${shimmerId})` : `url(#${depthId})`}
 			>
 				rox
 			</text>
 
-			{/* Terminal caret — gently pulses like a live prompt. */}
+			{/* Terminal caret — gently pulses like a live prompt (steady when the
+			    user prefers reduced motion). */}
 			<rect x="95" y="11" width="18" height="27" rx="3" fill="currentColor">
-				<animate
-					attributeName="opacity"
-					values="1;0.2;1"
-					keyTimes="0;0.5;1"
-					dur="1.4s"
-					calcMode="spline"
-					keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
-					repeatCount="indefinite"
-				/>
+				{!reduceMotion && (
+					<animate
+						attributeName="opacity"
+						values="1;0.2;1"
+						keyTimes="0;0.5;1"
+						dur="1.4s"
+						calcMode="spline"
+						keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+						repeatCount="indefinite"
+					/>
+				)}
 			</rect>
 		</svg>
 	);
