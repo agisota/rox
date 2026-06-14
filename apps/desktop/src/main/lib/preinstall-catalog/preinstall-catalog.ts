@@ -1,6 +1,16 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	renameSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -79,12 +89,45 @@ function sha256File(path: string): string {
 	return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
-async function tarExtract(archivePath: string, destDir: string): Promise<void> {
+/**
+ * Extract a catalog archive into `~/.claude`, replacing each top-level entry
+ * (an individual skill or subagent) so the bundled catalog wins over any
+ * pre-existing copy — including when the destination is a **symlink** (a plain
+ * `tar -xzf` into `~/.claude` refuses to "extract through symlink"). The user's
+ * non-catalog entries are left untouched.
+ *
+ * Strategy: extract to a same-volume staging dir (no conflicts there), then
+ * move each entry into place, removing any existing file/dir/symlink first.
+ * `tar -xzf` (gzip) is universally available on macOS/Linux — no native dep.
+ */
+async function tarExtract(
+	archivePath: string,
+	claudeDir: string,
+): Promise<void> {
 	if (!existsSync(archivePath)) {
 		throw new Error(`catalog archive missing: ${archivePath}`);
 	}
-	// `tar -xzf` (gzip) is universally available on macOS/Linux — no native dep.
-	await execFileAsync("tar", ["-xzf", archivePath, "-C", destDir]);
+	mkdirSync(claudeDir, { recursive: true });
+	// Stage inside ~/.claude so the final rename stays on the same volume.
+	const stage = mkdtempSync(join(claudeDir, ".rox-catalog-stage-"));
+	try {
+		await execFileAsync("tar", ["-xzf", archivePath, "-C", stage]);
+		for (const top of readdirSync(stage)) {
+			const srcTop = join(stage, top);
+			if (!statSync(srcTop).isDirectory()) {
+				continue;
+			}
+			const destTop = join(claudeDir, top);
+			mkdirSync(destTop, { recursive: true });
+			for (const entry of readdirSync(srcTop)) {
+				const dest = join(destTop, entry);
+				rmSync(dest, { recursive: true, force: true });
+				renameSync(join(srcTop, entry), dest);
+			}
+		}
+	} finally {
+		rmSync(stage, { recursive: true, force: true });
+	}
 }
 
 /**
