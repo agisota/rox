@@ -43,7 +43,23 @@ for (const part of [manifest.skills, manifest.agents]) {
 	console.log(
 		`[fetch:catalog] downloading ${part.archive} from ${REPO}@${tag}…`,
 	);
-	await Bun.$`gh release download ${tag} --repo ${REPO} --pattern ${part.archive} --dir ${dir} --clobber`;
+	try {
+		await Bun.$`gh release download ${tag} --repo ${REPO} --pattern ${part.archive} --dir ${dir} --clobber`;
+	} catch (error) {
+		// Fail-soft: a build environment without an authenticated `gh`
+		// (e.g. the generic CI build job, which doesn't ship the .app) just
+		// builds without the bundled catalog. The shipping build-desktop
+		// workflow sets GH_TOKEN, and local builds use the staged archives.
+		console.warn(
+			`[fetch:catalog] ⚠ could not download ${part.archive}: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+		console.warn(
+			"[fetch:catalog] continuing without bundled catalog (set GH_TOKEN for an authenticated download).",
+		);
+		continue;
+	}
 	const got = sha256(dest);
 	if (got !== part.sha256) {
 		console.error(

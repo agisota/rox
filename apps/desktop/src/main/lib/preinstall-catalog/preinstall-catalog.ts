@@ -122,18 +122,18 @@ export async function ensureCatalogInstalled(
 			};
 		}
 
-		mkdirSync(claudeDir, { recursive: true });
 		const extract = options.extract ?? tarExtract;
 
-		// Integrity check when the real archives sit next to the manifest
-		// (skipped for injected extractors in tests).
+		// When using the real extractor, verify the bundled archives. A build
+		// that shipped without them (e.g. a generic CI build where the catalog
+		// download was skipped) has nothing to install — skip rather than error.
 		if (!options.extract) {
 			for (const part of [manifest.skills, manifest.agents]) {
 				const archivePath = join(options.resourcesDir, part.archive);
-				if (
-					existsSync(archivePath) &&
-					sha256File(archivePath) !== part.sha256
-				) {
+				if (!existsSync(archivePath)) {
+					return { status: "skipped" };
+				}
+				if (sha256File(archivePath) !== part.sha256) {
 					return {
 						status: "error",
 						error: `sha256 mismatch for ${part.archive}`,
@@ -141,6 +141,8 @@ export async function ensureCatalogInstalled(
 				}
 			}
 		}
+
+		mkdirSync(claudeDir, { recursive: true });
 
 		await extract(
 			join(options.resourcesDir, manifest.skills.archive),
