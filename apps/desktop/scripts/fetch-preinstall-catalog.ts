@@ -60,6 +60,14 @@ for (const part of [manifest.skills, manifest.agents]) {
 		);
 		continue;
 	}
+	if (!existsSync(dest)) {
+		// `gh` exited 0 but produced no file (e.g. pattern matched nothing) —
+		// treat as a hard failure rather than crashing on the sha256 read.
+		console.error(
+			`[fetch:catalog] ${part.archive} missing after a successful download`,
+		);
+		process.exit(1);
+	}
 	const got = sha256(dest);
 	if (got !== part.sha256) {
 		console.error(
