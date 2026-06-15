@@ -20,6 +20,7 @@
 
 import {
 	resolveWorkspaceSetupPresets,
+	WORKSPACE_SETUP_PRESETS,
 	type WorkspaceScaffoldFile,
 	type WorkspaceSetupPreset,
 } from "./workspace-setup-presets";
@@ -169,4 +170,60 @@ export function starterAsSetupPreset(
 		...(setupCommands.length > 0 ? { setupCommands } : {}),
 		...(scaffoldFiles.length > 0 ? { scaffoldFiles } : {}),
 	};
+}
+
+/**
+ * Normalize selected single-effect preset ids into `WORKSPACE_SETUP_PRESETS`
+ * catalog order, dropping any id not in the catalog. Mirrors how the picker
+ * emits selections so starter math stays consistent with manual toggles.
+ */
+function normalizeSelection(selectedIds: Iterable<string>): string[] {
+	const selected = new Set(selectedIds);
+	return WORKSPACE_SETUP_PRESETS.filter((preset) =>
+		selected.has(preset.id),
+	).map((preset) => preset.id);
+}
+
+/**
+ * Add a starter's bundled preset ids to a selection: the union of the current
+ * selection and the starter's `presetIds`, de-duplicated and in single-effect
+ * catalog order. An unknown starter id leaves the (normalized) selection
+ * unchanged.
+ */
+export function applyStarterToSelection(
+	selectedIds: readonly string[],
+	starterId: string,
+): string[] {
+	const starter = getWorkspaceStarterPresetById(starterId);
+	return normalizeSelection([...selectedIds, ...(starter?.presetIds ?? [])]);
+}
+
+/**
+ * Remove a starter's bundled preset ids from a selection, keeping every other
+ * selected id. The result is normalized to single-effect catalog order. An
+ * unknown starter id leaves the (normalized) selection unchanged.
+ */
+export function removeStarterFromSelection(
+	selectedIds: readonly string[],
+	starterId: string,
+): string[] {
+	const starter = getWorkspaceStarterPresetById(starterId);
+	const normalized = normalizeSelection(selectedIds);
+	if (!starter) return normalized;
+	const toRemove = new Set(starter.presetIds);
+	return normalized.filter((id) => !toRemove.has(id));
+}
+
+/**
+ * Whether every preset id a starter bundles is present in the selection. Returns
+ * `false` for an unknown starter or one that bundles no preset ids.
+ */
+export function isStarterSelected(
+	selectedIds: readonly string[],
+	starterId: string,
+): boolean {
+	const starter = getWorkspaceStarterPresetById(starterId);
+	if (!starter || starter.presetIds.length === 0) return false;
+	const selected = new Set(selectedIds);
+	return starter.presetIds.every((id) => selected.has(id));
 }

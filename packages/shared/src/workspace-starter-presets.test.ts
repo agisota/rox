@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { getWorkspaceSetupPresetById } from "./workspace-setup-presets";
 import {
+	applyStarterToSelection,
 	getWorkspaceStarterPresetById,
+	isStarterSelected,
+	removeStarterFromSelection,
 	resolveWorkspaceStarterPreset,
 	starterAsSetupPreset,
 	WORKSPACE_STARTER_PRESETS,
@@ -133,6 +136,61 @@ describe("workspace-starter-presets", () => {
 					"LICENSE",
 				],
 			},
+		]);
+	});
+});
+
+describe("starter selection helpers", () => {
+	it("applies a starter's preset ids to an empty selection, in catalog order", () => {
+		expect(applyStarterToSelection([], "planning-docs")).toEqual([
+			"todo-md",
+			"spec-md",
+			"planner-md",
+		]);
+	});
+
+	it("unions a starter into an existing selection, deduped and in catalog order", () => {
+		// agents-md-generator bundles ["agents-md", "readme"]; "readme" already selected.
+		expect(applyStarterToSelection(["readme"], "agents-md-generator")).toEqual([
+			"agents-md",
+			"readme",
+		]);
+	});
+
+	it("drops ids absent from the single-effect catalog when applying a starter", () => {
+		expect(
+			applyStarterToSelection(["bogus-id", "git-init"], "planning-docs"),
+		).toEqual(["git-init", "todo-md", "spec-md", "planner-md"]);
+	});
+
+	it("returns the normalized selection unchanged for an unknown starter id", () => {
+		expect(applyStarterToSelection(["git-init", "bogus-id"], "nope")).toEqual([
+			"git-init",
+		]);
+	});
+
+	it("reports a starter selected only when every bundled preset id is present", () => {
+		expect(
+			isStarterSelected(["todo-md", "spec-md", "planner-md"], "planning-docs"),
+		).toBe(true);
+		expect(isStarterSelected(["todo-md", "spec-md"], "planning-docs")).toBe(
+			false,
+		);
+		expect(isStarterSelected([], "nope")).toBe(false);
+	});
+
+	it("removes a starter's preset ids from the selection, keeping the rest", () => {
+		expect(
+			removeStarterFromSelection(
+				["git-init", "todo-md", "spec-md", "planner-md"],
+				"planning-docs",
+			),
+		).toEqual(["git-init"]);
+	});
+
+	it("removing an unselected starter leaves the normalized selection unchanged", () => {
+		expect(removeStarterFromSelection(["git-init"], "planning-docs")).toEqual([
+			"git-init",
 		]);
 	});
 });
