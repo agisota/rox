@@ -762,11 +762,15 @@ export async function copyPath({
 		absolutePath: destinationAbsolutePath,
 	});
 
-	// Lexical containment isn't enough: a symlinked ancestor on either side would
-	// let cp read from / write to outside the workspace. Validate the real
-	// ancestry the same way the other mutating ops do.
+	// Lexical containment isn't enough. fs.cp (under Bun) DEREFERENCES a symlink at
+	// the destination, so a destination that is itself a symlink entry — not only
+	// one under a symlinked ancestor — escapes the workspace. Validate the
+	// destination *entry's* real path (mirrors writeFile/deletePath), which also
+	// covers the symlinked-ancestor and dangling cases. The source only needs the
+	// ancestry check: fs.cp keeps a symlinked source *entry* as a link (no deref),
+	// so relocating it is harmless (later reads are independently guarded).
 	await assertParentWithinRoot(rootPath, sourcePath);
-	await assertParentWithinRoot(rootPath, destinationPath);
+	await assertRealpathWithinRoot(rootPath, destinationPath);
 
 	await fs.cp(sourcePath, destinationPath, { recursive: true });
 	return { fromAbsolutePath: sourcePath, toAbsolutePath: destinationPath };
