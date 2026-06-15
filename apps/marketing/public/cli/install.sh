@@ -9,7 +9,7 @@
 
 set -eu
 
-REPO="agisota/set"
+REPO="agisota/rox"
 INSTALL_DIR="${ROX_HOME:-$HOME/rox}"
 TAG="${ROX_VERSION:-latest}"
 

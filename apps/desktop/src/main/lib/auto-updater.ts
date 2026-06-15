@@ -49,8 +49,8 @@ const IS_AUTO_UPDATE_PLATFORM = PLATFORM.IS_MAC || PLATFORM.IS_LINUX;
 // - Stable: fetches from /releases/latest/download/ (latest non-prerelease)
 // - Canary: fetches from /releases/download/desktop-canary/ (rolling canary tag)
 const UPDATE_FEED_URL = IS_PRERELEASE
-	? "https://github.com/agisota/set/releases/download/desktop-canary"
-	: "https://github.com/agisota/set/releases/latest/download";
+	? "https://github.com/agisota/rox/releases/download/desktop-canary"
+	: "https://github.com/agisota/rox/releases/latest/download";
 
 export interface AutoUpdateStatusEvent {
 	status: AutoUpdateStatus;

@@ -53,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           for target in darwin-arm64 linux-x64 linux-arm64; do
-            url="https://github.com/agisota/set/releases/download/${TAG}/rox-${target}.tar.gz"
+            url="https://github.com/agisota/rox/releases/download/${TAG}/rox-${target}.tar.gz"
             echo "Fetching SHA for $url"
             tmp=$(mktemp)
             if ! curl -fsSL -o "$tmp" "$url"; then
@@ -91,18 +91,18 @@ jobs:
 
             on_macos do
               on_arm do
-                url "https://github.com/agisota/set/releases/download/cli-v#{{version}}/rox-darwin-arm64.tar.gz"
+                url "https://github.com/agisota/rox/releases/download/cli-v#{{version}}/rox-darwin-arm64.tar.gz"
                 sha256 "{darwin_arm64}"
               end
             end
 
             on_linux do
               on_intel do
-                url "https://github.com/agisota/set/releases/download/cli-v#{{version}}/rox-linux-x64.tar.gz"
+                url "https://github.com/agisota/rox/releases/download/cli-v#{{version}}/rox-linux-x64.tar.gz"
                 sha256 "{linux_x64}"
               end
               on_arm do
-                url "https://github.com/agisota/set/releases/download/cli-v#{{version}}/rox-linux-arm64.tar.gz"
+                url "https://github.com/agisota/rox/releases/download/cli-v#{{version}}/rox-linux-arm64.tar.gz"
                 sha256 "{linux_arm64}"
               end
             end
