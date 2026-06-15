@@ -261,6 +261,7 @@ export const objectTypeValues = [
 	"artifact",
 	"approval",
 	"policy",
+	"agent_source",
 ] as const;
 export const objectTypeEnum = z.enum(objectTypeValues);
 export type ObjectType = z.infer<typeof objectTypeEnum>;
@@ -395,3 +396,31 @@ export const roxTopupStatusValues = [
 ] as const;
 export const roxTopupStatusEnum = z.enum(roxTopupStatusValues);
 export type RoxTopupStatus = z.infer<typeof roxTopupStatusEnum>;
+
+// Agent-native: external agent "sources" (Claude Code, Codex, Cursor, MCP, …)
+// + chat-session status. Append-only string unions backing Postgres pgEnums;
+// never reorder/remove values.
+
+export const agentSourceKindValues = [
+	"claude_code",
+	"codex",
+	"cursor",
+	"opencode",
+	"mcp",
+	"external_http",
+] as const;
+export const agentSourceKindEnum = z.enum(agentSourceKindValues);
+export type AgentSourceKind = z.infer<typeof agentSourceKindEnum>;
+
+export const agentSourceStatusValues = [
+	"draft",
+	"active",
+	"deprecated",
+	"archived",
+] as const;
+export const agentSourceStatusEnum = z.enum(agentSourceStatusValues);
+export type AgentSourceStatus = z.infer<typeof agentSourceStatusEnum>;
+
+export const chatSessionStatusValues = ["active", "archived"] as const;
+export const chatSessionStatusEnum = z.enum(chatSessionStatusValues);
+export type ChatSessionStatus = z.infer<typeof chatSessionStatusEnum>;

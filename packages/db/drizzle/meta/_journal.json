@@ -477,6 +477,13 @@
       "when": 1781097910621,
       "tag": "0067_vibe_usage_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1781538661581,
+      "tag": "0068_add_agent_sources_and_chat_status",
+      "breakpoints": true
     }
   ]
 }

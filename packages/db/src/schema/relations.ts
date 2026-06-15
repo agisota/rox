@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 
+import { agentSources } from "./agent";
 import { paymentAttributions, userAttribution } from "./attribution";
 import {
 	accounts,
@@ -119,6 +120,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	chatSessions: many(chatSessions),
 	accessGrants: many(accessGrants),
 	knowledgeDocuments: many(knowledgeDocuments),
+	agentSources: many(agentSources),
 }));
 
 export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
@@ -129,6 +131,21 @@ export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
 	createdByUser: one(users, {
 		fields: [accessGrants.createdByUserId],
 		references: [users.id],
+	}),
+}));
+
+export const agentSourcesRelations = relations(agentSources, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [agentSources.organizationId],
+		references: [organizations.id],
+	}),
+	owner: one(users, {
+		fields: [agentSources.ownerUserId],
+		references: [users.id],
+	}),
+	integrationConnection: one(integrationConnections, {
+		fields: [agentSources.integrationConnectionId],
+		references: [integrationConnections.id],
 	}),
 }));
 
