@@ -5,6 +5,7 @@ import {
 	PromptInputAttachment,
 	PromptInputAttachments,
 	PromptInputFooter,
+	PromptInputHeader,
 	PromptInputSubmit,
 	PromptInputTextarea,
 	PromptInputTools,
@@ -22,6 +23,7 @@ type PreviewPromptComposerProps = {
 	containerClassName?: string;
 	footerToolsClassName?: string;
 	afterComposer?: ReactNode;
+	header?: ReactNode;
 	message?: string;
 	messageClassName?: string;
 };
@@ -33,6 +35,7 @@ export function PreviewPromptComposer({
 	containerClassName,
 	footerToolsClassName,
 	afterComposer,
+	header,
 	message = "Веб-интерфейс агентов пока доступен только для просмотра.",
 	messageClassName,
 }: PreviewPromptComposerProps) {
@@ -50,6 +53,7 @@ export function PreviewPromptComposer({
 				<PromptInputAttachments>
 					{(file) => <PromptInputAttachment key={file.id} data={file} />}
 				</PromptInputAttachments>
+				{header ? <PromptInputHeader>{header}</PromptInputHeader> : null}
 				<PromptInputTextarea
 					disabled
 					placeholder={placeholder}

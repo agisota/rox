@@ -1,3 +1,4 @@
+export * from "./agent";
 export * from "./attribution";
 export * from "./auth";
 export * from "./circuit";

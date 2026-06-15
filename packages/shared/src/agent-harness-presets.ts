@@ -77,9 +77,10 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		configFiles: [],
 	},
 	{
-		id: "oh-my-pi",
+		id: "rox",
 		label: "Rox",
-		description: "Rox harness layer for the default omp terminal coding agent.",
+		description:
+			"Default Rox harness layer for the built-in terminal coding agent.",
 		baseAgentId: "omp",
 		install: [],
 		configFiles: [],

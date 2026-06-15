@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { ZodRawShape, z } from "zod";
+import type { ZodRawShape, ZodType, z } from "zod";
 import { isMcpUnauthorized, type McpContext } from "./auth";
 import { getMcpContextFromExtra, type McpRequestExtra } from "./context-utils";
 
@@ -11,6 +11,14 @@ export interface ToolDef<
 	name: string;
 	description: string;
 	inputSchema?: Input;
+	/**
+	 * Full Zod input schema, used verbatim instead of a `ZodRawShape`. Lets a
+	 * caller register a tool whose argument shape is not known at compile time —
+	 * e.g. the MCP proxy, which forwards arbitrary downstream arguments and so
+	 * needs a passthrough (`z.looseObject({})`) schema. When set, takes
+	 * precedence over `inputSchema`. Mutually exclusive with it in practice.
+	 */
+	rawInputSchema?: ZodType;
 	outputSchema?: Output;
 	handler: (
 		input: z.infer<z.ZodObject<Input>>,
@@ -101,7 +109,7 @@ export function defineTool<
 		def.name,
 		{
 			description: def.description,
-			inputSchema: (def.inputSchema ?? {}) as Input,
+			inputSchema: (def.rawInputSchema ?? def.inputSchema ?? {}) as Input,
 			...(def.outputSchema ? { outputSchema: def.outputSchema } : {}),
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the SDK callback type depends on whether inputSchema is provided; we always invoke with two args.
