@@ -118,10 +118,9 @@ const config: Configuration = {
 		target: "default",
 		hardenedRuntime: true,
 		gatekeeperAssess: false,
-		// Sign + notarize only when Apple credentials are present in the build env.
-		// Without them (unsigned release builds) electron-builder must skip signing
-		// (identity: null) and notarization, otherwise the build fails.
-		identity: process.env.CSC_LINK ? undefined : null,
+		// Use the configured Apple certificate when present; otherwise apply an
+		// ad-hoc signature so arm64 macOS builds are still structurally signed.
+		identity: process.env.CSC_LINK ? undefined : "-",
 		notarize: Boolean(process.env.APPLE_TEAM_ID),
 		entitlements: join(pkg.resources, "build/entitlements.mac.plist"),
 		entitlementsInherit: join(
