@@ -4,8 +4,8 @@ import { join } from "node:path";
 import {
 	LEGACY_ROX_HOME_DIR_NAME,
 	ROX_HOME_DIR_NAME,
-	resolveProjectRoxDir,
 } from "@rox/shared/rox-dirs";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 
 const CONFIG_FILE_NAME = "config.json";
 const LOCAL_CONFIG_FILE_NAME = "config.local.json";

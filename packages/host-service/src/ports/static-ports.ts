@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parseStaticPortsConfig } from "@rox/port-scanner";
-import { resolveProjectRoxDir } from "@rox/shared/rox-dirs";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 
 const PORTS_FILE_NAME = "ports.json";
 

@@ -1,6 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { migrateProjectRoxDir } from "@rox/shared/rox-dirs";
+import { migrateProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import { generateFriendlyBranchName } from "@rox/shared/workspace-launch";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";

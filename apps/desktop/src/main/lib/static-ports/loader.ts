@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseStaticPortsConfig } from "@rox/port-scanner";
-import { resolveProjectRoxDir } from "@rox/shared/rox-dirs";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import { PORTS_FILE_NAME } from "shared/constants";
 import type { StaticPortsResult } from "shared/types";
 

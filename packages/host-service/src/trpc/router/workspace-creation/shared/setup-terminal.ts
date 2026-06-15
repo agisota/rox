@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { resolveProjectRoxDir } from "@rox/shared/rox-dirs";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import { eq } from "drizzle-orm";
 import { projects, workspaces } from "../../../../db/schema";
 import {

@@ -206,13 +206,13 @@ describe("attachmentsRouter.delete", () => {
 });
 
 describe("getAttachmentsRoot", () => {
-	it("falls back to ~/.rox/host/standalone when HOST_MANIFEST_DIR is blank", () => {
+	it("falls back to ~/rox/host/standalone when HOST_MANIFEST_DIR is blank", () => {
 		const original = process.env.HOST_MANIFEST_DIR;
 		process.env.HOST_MANIFEST_DIR = "";
 		try {
 			const root = getAttachmentsRoot();
 			expect(root).toBe(
-				join(homedir(), ".rox", "host", "standalone", "attachments"),
+				join(homedir(), "rox", "host", "standalone", "attachments"),
 			);
 		} finally {
 			if (original === undefined) delete process.env.HOST_MANIFEST_DIR;
@@ -226,7 +226,7 @@ describe("getAttachmentsRoot", () => {
 		try {
 			const root = getAttachmentsRoot();
 			expect(root).toBe(
-				join(homedir(), ".rox", "host", "standalone", "attachments"),
+				join(homedir(), "rox", "host", "standalone", "attachments"),
 			);
 		} finally {
 			if (original === undefined) delete process.env.HOST_MANIFEST_DIR;

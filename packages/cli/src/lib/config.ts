@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { migrateRoxDir } from "@rox/shared/rox-dirs";
+import { migrateRoxDir } from "@rox/shared/rox-dirs-node";
 import { env } from "./env";
 
 export type RoxConfig = {

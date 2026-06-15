@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { projects, type SelectProject } from "@rox/local-db";
-import { resolveProjectRoxDir } from "@rox/shared/rox-dirs";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import { eq } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
 import type { SetupAction, SetupDetectionResult } from "shared/types/config";

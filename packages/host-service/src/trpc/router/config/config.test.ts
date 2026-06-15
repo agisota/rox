@@ -88,7 +88,7 @@ describe("configRouter", () => {
 	});
 
 	describe("updateConfig", () => {
-		it("creates .rox/config.json on first save", async () => {
+		it("creates rox/config.json on first save", async () => {
 			const caller = createCaller(sandbox.repoPath);
 			await caller.updateConfig({
 				projectId: PROJECT_ID,
@@ -96,7 +96,7 @@ describe("configRouter", () => {
 				teardown: [],
 			});
 
-			const configPath = join(sandbox.repoPath, ".rox", "config.json");
+			const configPath = join(sandbox.repoPath, "rox", "config.json");
 			expect(existsSync(configPath)).toBe(true);
 			const parsed = JSON.parse(readFileSync(configPath, "utf-8"));
 			expect(parsed).toEqual({ setup: ["bun install"], teardown: [] });

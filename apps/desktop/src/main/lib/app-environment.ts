@@ -1,7 +1,8 @@
 import { chmodSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { migrateRoxDir, ROX_HOME_DIR_NAME } from "@rox/shared/rox-dirs";
+import { ROX_HOME_DIR_NAME } from "@rox/shared/rox-dirs";
+import { migrateRoxDir } from "@rox/shared/rox-dirs-node";
 import { ROX_DIR_NAME } from "shared/constants";
 
 const ROX_HOME_DIR_ENV = "ROX_HOME_DIR";
