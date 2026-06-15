@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
+import { requireActiveOrgId } from "../utils/active-org";
 import { uploadChatAttachment } from "./utils/upload-chat-attachment";
 
 export const chatRouter = {
@@ -242,14 +243,7 @@ export const chatRouter = {
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const organizationId = ctx.activeOrganizationId;
-
-			if (!organizationId) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "No active organization selected",
-				});
-			}
+			const organizationId = requireActiveOrgId(ctx);
 			if (input.organizationId !== organizationId) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -281,14 +275,7 @@ export const chatRouter = {
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const organizationId = ctx.activeOrganizationId;
-
-			if (!organizationId) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "No active organization selected",
-				});
-			}
+			const organizationId = requireActiveOrgId(ctx);
 			if (input.organizationId !== organizationId) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -397,12 +384,15 @@ export const chatRouter = {
 	updateTitle: protectedProcedure
 		.input(z.object({ sessionId: z.uuid(), title: z.string() }))
 		.mutation(async ({ ctx, input }) => {
-			const [updated] = await db
+			const organizationId = requireActiveOrgId(ctx);
+
+			const [updated] = await dbWs
 				.update(chatSessions)
 				.set({ title: input.title })
 				.where(
 					and(
 						eq(chatSessions.id, input.sessionId),
+						eq(chatSessions.organizationId, organizationId),
 						eq(chatSessions.createdBy, ctx.session.user.id),
 					),
 				)

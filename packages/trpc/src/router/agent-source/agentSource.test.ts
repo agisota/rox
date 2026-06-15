@@ -161,6 +161,15 @@ describe("updateAgentSourceSchema", () => {
 		});
 		expect(parsed.success).toBe(true);
 	});
+
+	it("rejects non-HTTPS endpoint URLs", () => {
+		const parsed = updateAgentSourceSchema.safeParse({
+			id: "44444444-4444-4444-8444-444444444444",
+			organizationId: "22222222-2222-4222-8222-222222222222",
+			endpointUrl: "http://agent.example.com/run",
+		});
+		expect(parsed.success).toBe(false);
+	});
 });
 
 // ---------------------------------------------------------------------------

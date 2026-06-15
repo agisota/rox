@@ -64,6 +64,7 @@ export interface PooledAgentSource {
 export type AgentSourceConnector = (
 	source: ResolvedAgentSource,
 	ctx: McpContext,
+	signal?: AbortSignal,
 ) => Promise<McpDownstreamClient>;
 
 /**
@@ -96,6 +97,8 @@ export async function resolveActiveAgentSources(
 /** Local/rox-native source kinds served by the in-memory `rox-v2` server. */
 const IN_MEMORY_KINDS = new Set<string>(["rox", "rox_v2"]);
 const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
+const DEFAULT_CONNECT_MAX_ATTEMPTS = 2;
+const DEFAULT_CONNECT_RETRY_BASE_DELAY_MS = 150;
 const RESTRICTED_HOSTNAMES = new Set(["localhost", "localhost.localdomain"]);
 
 function normalizeHostname(hostname: string): string {
@@ -209,17 +212,59 @@ export async function validateExternalEndpointUrl(
 	return url;
 }
 
-async function withTimeout<T>(
-	promise: Promise<T>,
+function toError(error: unknown): Error {
+	return error instanceof Error ? error : new Error(String(error));
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+	if (signal?.aborted) {
+		throw new Error("Agent source connection aborted");
+	}
+}
+
+function isRetriableConnectionError(error: Error): boolean {
+	return !(
+		error.message.includes("must use HTTPS") ||
+		error.message.includes("host is restricted") ||
+		error.message.includes("resolved to restricted address") ||
+		error.message.includes("has no endpointUrl") ||
+		error.message.includes("was not found in this organization")
+	);
+}
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withTimeout<T extends { close?: () => Promise<void> }>(
+	executor: (signal: AbortSignal) => Promise<T>,
 	timeoutMs: number,
 	message: string,
 ): Promise<T> {
+	const controller = new AbortController();
+	let didTimeout = false;
 	let timeout: ReturnType<typeof setTimeout> | undefined;
+	const operation = executor(controller.signal).then(async (value) => {
+		if (didTimeout) {
+			try {
+				await value.close?.();
+			} catch {
+				// Best effort: the caller has already recorded the timeout failure.
+			}
+		}
+		return value;
+	});
+	operation.catch(() => undefined);
+
 	try {
 		return await Promise.race([
-			promise,
+			operation,
 			new Promise<never>((_, reject) => {
-				timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+				timeout = setTimeout(() => {
+					didTimeout = true;
+					controller.abort();
+					reject(new Error(message));
+				}, timeoutMs);
 			}),
 		]);
 	} finally {
@@ -269,7 +314,9 @@ function adaptSdkClient(
 export async function createInMemoryDownstreamClient(
 	ctx: McpContext,
 	onToolCall?: McpToolCallEmitter,
+	signal?: AbortSignal,
 ): Promise<McpDownstreamClient> {
+	throwIfAborted(signal);
 	// Lazy import avoids a static cycle with `server.ts` (which imports this
 	// module for `createProxyMcpServer`) and keeps this module side-effect-free
 	// to import.
@@ -291,6 +338,7 @@ export async function createInMemoryDownstreamClient(
 		});
 
 	await server.connect(serverTransport);
+	throwIfAborted(signal);
 	const client = new Client({ name: "rox-v2-proxy", version: "1.0.0" });
 	await client.connect(clientTransport);
 
@@ -313,6 +361,7 @@ export async function createInMemoryDownstreamClient(
 export async function createExternalDownstreamClient(
 	source: ResolvedAgentSource,
 	ctx: McpContext,
+	signal?: AbortSignal,
 ): Promise<McpDownstreamClient> {
 	if (!source.endpointUrl) {
 		throw new Error(
@@ -321,15 +370,19 @@ export async function createExternalDownstreamClient(
 	}
 
 	const endpointUrl = await validateExternalEndpointUrl(source.endpointUrl);
+	throwIfAborted(signal);
 	const credentials = await loadRuntimeAgentSourceCredentials(source, ctx);
+	throwIfAborted(signal);
 
 	const transport = new StreamableHTTPClientTransport(endpointUrl, {
 		requestInit: {
 			...(credentials ? { headers: credentials } : {}),
 			redirect: "error",
+			signal,
 		},
 	});
 	const client = new Client({ name: "rox-v2-proxy", version: "1.0.0" });
+	throwIfAborted(signal);
 	await client.connect(transport);
 
 	return adaptSdkClient(client, async () => {
@@ -376,11 +429,11 @@ export async function loadRuntimeAgentSourceCredentials(
 export function defaultAgentSourceConnector(
 	onToolCall?: McpToolCallEmitter,
 ): AgentSourceConnector {
-	return async (source, ctx) => {
+	return async (source, ctx, signal) => {
 		if (IN_MEMORY_KINDS.has(source.kind)) {
-			return createInMemoryDownstreamClient(ctx, onToolCall);
+			return createInMemoryDownstreamClient(ctx, onToolCall, signal);
 		}
-		return createExternalDownstreamClient(source, ctx);
+		return createExternalDownstreamClient(source, ctx, signal);
 	};
 }
 
@@ -391,6 +444,10 @@ export interface AgentSourcePoolOptions {
 	connector?: AgentSourceConnector;
 	/** Maximum time spent connecting one source before moving to the next one. */
 	connectTimeoutMs?: number;
+	/** Bounded attempts for transient downstream connection failures. */
+	connectMaxAttempts?: number;
+	/** Base retry delay; exponential backoff doubles this per retry. */
+	connectRetryBaseDelayMs?: number;
 }
 
 /**
@@ -407,12 +464,22 @@ export class AgentSourcePool {
 	) => Promise<ResolvedAgentSource[]>;
 	private readonly connector: AgentSourceConnector;
 	private readonly connectTimeoutMs: number;
+	private readonly connectMaxAttempts: number;
+	private readonly connectRetryBaseDelayMs: number;
 
 	constructor(options: AgentSourcePoolOptions = {}) {
 		this.resolveSources = options.resolveSources ?? resolveActiveAgentSources;
 		this.connector = options.connector ?? defaultAgentSourceConnector();
 		this.connectTimeoutMs =
 			options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS;
+		this.connectMaxAttempts = Math.max(
+			1,
+			options.connectMaxAttempts ?? DEFAULT_CONNECT_MAX_ATTEMPTS,
+		);
+		this.connectRetryBaseDelayMs = Math.max(
+			0,
+			options.connectRetryBaseDelayMs ?? DEFAULT_CONNECT_RETRY_BASE_DELAY_MS,
+		);
 	}
 
 	/**
@@ -426,18 +493,36 @@ export class AgentSourcePool {
 		for (const source of sources) {
 			if (this.clients.has(source.slug)) continue;
 			try {
-				const client = await withTimeout(
-					this.connector(source, ctx),
-					this.connectTimeoutMs,
-					`Agent source "${source.slug}" connection timed out after ${this.connectTimeoutMs}ms`,
-				);
+				let client: McpDownstreamClient | undefined;
+				let lastError: Error | undefined;
+				for (let attempt = 1; attempt <= this.connectMaxAttempts; attempt++) {
+					try {
+						client = await withTimeout(
+							(signal) => this.connector(source, ctx, signal),
+							this.connectTimeoutMs,
+							`Agent source "${source.slug}" connection timed out after ${this.connectTimeoutMs}ms`,
+						);
+						break;
+					} catch (error) {
+						lastError = toError(error);
+						if (
+							attempt < this.connectMaxAttempts &&
+							isRetriableConnectionError(lastError)
+						) {
+							await delay(
+								this.connectRetryBaseDelayMs * 2 ** Math.max(0, attempt - 1),
+							);
+							continue;
+						}
+						break;
+					}
+				}
+				if (!client)
+					throw lastError ?? new Error("Agent source connect failed");
 				this.clients.set(source.slug, { source, client });
 				this.failures.delete(source.slug);
 			} catch (error) {
-				this.failures.set(
-					source.slug,
-					error instanceof Error ? error : new Error(String(error)),
-				);
+				this.failures.set(source.slug, toError(error));
 			}
 		}
 		return this.getConnected();
