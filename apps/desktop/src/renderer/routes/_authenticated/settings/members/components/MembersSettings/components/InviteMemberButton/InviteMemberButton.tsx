@@ -1,9 +1,7 @@
 import { getInvitableRoles, type OrganizationRole } from "@rox/shared/auth";
-import { alert } from "@rox/ui/atoms/Alert";
 import { Button } from "@rox/ui/button";
 import { useState } from "react";
 import { HiOutlinePlus } from "react-icons/hi2";
-import { GATED_FEATURES, usePaywall } from "renderer/components/Paywall";
 import { InviteMemberDialog } from "./components/InviteMemberDialog";
 
 interface InviteMemberButtonProps {
@@ -18,7 +16,6 @@ export function InviteMemberButton({
 	organizationName,
 }: InviteMemberButtonProps) {
 	const [open, setOpen] = useState(false);
-	const { gateFeature } = usePaywall();
 
 	const invitableRoles = getInvitableRoles(currentUserRole);
 
@@ -27,23 +24,11 @@ export function InviteMemberButton({
 		return null;
 	}
 
-	const handleClick = () => {
-		gateFeature(GATED_FEATURES.INVITE_MEMBERS, () => {
-			alert({
-				title: "Это повлияет на оплату",
-				description:
-					"Добавление участников увеличит стоимость подписки пропорционально вашему расчетному периоду.",
-				actions: [
-					{ label: "Отмена", variant: "outline", onClick: () => {} },
-					{ label: "Продолжить", onClick: () => setOpen(true) },
-				],
-			});
-		});
-	};
-
+	// The Rox edition is free for everyone, so inviting a member has no billing
+	// impact — open the invite dialog directly without a paywall/cost warning.
 	return (
 		<>
-			<Button size="sm" onClick={handleClick} className="gap-1.5">
+			<Button size="sm" onClick={() => setOpen(true)} className="gap-1.5">
 				<HiOutlinePlus className="h-3.5 w-3.5" />
 				Пригласить участника
 			</Button>
