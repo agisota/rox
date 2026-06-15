@@ -64,15 +64,24 @@ export function findRealBinary(name: string): string | null {
 		// visible names and the legacy dot-hidden ones:
 		// - ~/rox/bin, ~/rox-*/bin (workspace-specific instances)
 		// - ~/.rox/bin, ~/.rox-*/bin (legacy)
-		const roxBinDir = path.join(homedir, ROX_DIR_NAME, "bin");
-		const roxPrefix = path.join(homedir, "rox-");
-		const legacyRoxBinDir = path.join(homedir, ".rox", "bin");
-		const legacyRoxPrefix = path.join(homedir, ".rox-");
-		const isRoxWrapperPath = (p: string): boolean =>
-			p.startsWith(roxBinDir) ||
-			p.startsWith(legacyRoxBinDir) ||
-			((p.startsWith(roxPrefix) || p.startsWith(legacyRoxPrefix)) &&
-				p.includes("/bin/"));
+		const isRoxHomeDirName = (dirName: string): boolean =>
+			dirName === ROX_DIR_NAME ||
+			dirName === "rox" ||
+			dirName === ".rox" ||
+			dirName.startsWith("rox-") ||
+			dirName.startsWith(".rox-");
+		const isRoxWrapperPath = (p: string): boolean => {
+			const relative = path.relative(homedir, path.normalize(p));
+			if (
+				relative === "" ||
+				relative.startsWith("..") ||
+				path.isAbsolute(relative)
+			) {
+				return false;
+			}
+			const [roxDirName, binDirName] = relative.split(/[\\/]+/);
+			return binDirName === "bin" && isRoxHomeDirName(roxDirName ?? "");
+		};
 		const paths = allPaths.filter(
 			(p) =>
 				p && !isRoxWrapperPath(p) && (isWindows || isExecutableUnixPath(p)),

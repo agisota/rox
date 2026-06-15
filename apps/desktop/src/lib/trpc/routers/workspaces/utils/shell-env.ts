@@ -16,11 +16,11 @@ const FALLBACK_CACHE_TTL_MS = 10_000; // 10 second cache for fallback (retry soo
 const TIMEOUT_FALLBACK_CACHE_TTL_MS = 60_000; // 1 minute fallback when shell startup hangs
 // Heavy login profiles (e.g. infisical/portless/nvm bootstrapping) can take
 // well over 8s to produce an interactive shell. The previous 8s cap caused
-// those users to hit the fallback on every cold call. Detection is already
-// fully non-blocking (it's awaited off the creation critical path and degrades
-// to `process.env` on timeout), so a larger cap is safe and lets real shell
-// vars resolve instead of silently falling back.
-const SHELL_ENV_TIMEOUT_MS = 30_000;
+// background startup prewarm to hit the fallback on every cold call. Keep
+// command-path calls short, and use the larger cap only for the fire-and-forget
+// prewarm that enriches process.env after launch.
+const SHELL_ENV_CRITICAL_TIMEOUT_MS = 8_000;
+const SHELL_ENV_BACKGROUND_TIMEOUT_MS = 30_000;
 let fallbackCacheTtlMs = FALLBACK_CACHE_TTL_MS;
 
 // Track PATH fix state for macOS GUI app PATH fix
@@ -33,15 +33,17 @@ class ShellEnvTimeoutError extends Error {
 	}
 }
 
-async function getShellEnvWithTimeout(): Promise<Record<string, string>> {
+async function getShellEnvWithTimeout(
+	timeoutMs: number,
+): Promise<Record<string, string>> {
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
 	try {
 		return (await Promise.race([
 			shellEnv() as Promise<Record<string, string>>,
 			new Promise<never>((_resolve, reject) => {
 				timeoutId = setTimeout(() => {
-					reject(new ShellEnvTimeoutError(SHELL_ENV_TIMEOUT_MS));
-				}, SHELL_ENV_TIMEOUT_MS);
+					reject(new ShellEnvTimeoutError(timeoutMs));
+				}, timeoutMs);
 			}),
 		])) as Record<string, string>;
 	} finally {
@@ -53,6 +55,7 @@ async function getShellEnvWithTimeout(): Promise<Record<string, string>> {
 
 interface GetShellEnvironmentOptions {
 	forceRefresh?: boolean;
+	timeoutMs?: number;
 }
 
 /**
@@ -72,8 +75,9 @@ export async function getShellEnvironment(
 		return { ...cachedEnv };
 	}
 
+	const timeoutMs = options?.timeoutMs ?? SHELL_ENV_CRITICAL_TIMEOUT_MS;
 	try {
-		const env = await getShellEnvWithTimeout();
+		const env = await getShellEnvWithTimeout(timeoutMs);
 		cachedEnv = env as Record<string, string>;
 		cacheTime = now;
 		isFallbackCache = false;
@@ -283,7 +287,15 @@ export async function applyShellEnvToProcess(
 	targetEnv: NodeJS.ProcessEnv = process.env,
 	shellEnvResult?: Record<string, string>,
 ): Promise<void> {
-	const mergedEnv = await getProcessEnvWithShellEnv(targetEnv, shellEnvResult);
+	const resolvedShellEnv =
+		shellEnvResult ??
+		(await getShellEnvironment({
+			timeoutMs: SHELL_ENV_BACKGROUND_TIMEOUT_MS,
+		}));
+	const mergedEnv = await getProcessEnvWithShellEnv(
+		targetEnv,
+		resolvedShellEnv,
+	);
 
 	for (const [key, value] of Object.entries(mergedEnv)) {
 		if (typeof targetEnv[key] !== "string") {

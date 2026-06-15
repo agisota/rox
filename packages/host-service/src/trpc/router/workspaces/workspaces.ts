@@ -34,6 +34,7 @@ import { safeResolveWorktreePath } from "../workspace-creation/shared/worktree-p
 import { generateBranchNameFromPrompt } from "../workspace-creation/utils/ai-branch-name";
 import {
 	applyAiWorkspaceRename,
+	applyGeneratedWorkspaceNames,
 	type GeneratedWorkspaceNames,
 	generateWorkspaceNamesFromPrompt,
 } from "../workspace-creation/utils/ai-workspace-names";
@@ -71,10 +72,16 @@ function withInlineCap<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 		timer = setTimeout(() => resolve(null), ms);
 	});
 	return Promise.race([
-		promise.then((value) => {
-			if (timer) clearTimeout(timer);
-			return value;
-		}),
+		promise.then(
+			(value) => {
+				if (timer) clearTimeout(timer);
+				return value;
+			},
+			(error) => {
+				if (timer) clearTimeout(timer);
+				throw error;
+			},
+		),
 		capped,
 	]);
 }
@@ -592,6 +599,16 @@ export const workspacesRouter = router({
 						})
 					: null;
 			aiNamesPromise?.catch(() => {});
+			let inlineAiNames: GeneratedWorkspaceNames | null = null;
+			const resolveInlineAiNames = async () => {
+				if (!aiNamesPromise) return null;
+				const names = await withInlineCap(
+					aiNamesPromise,
+					AI_NAMES_INLINE_CAP_MS,
+				);
+				inlineAiNames = names;
+				return names;
+			};
 
 			await ensureMainWorkspace(ctx, input.projectId, localProject.repoPath);
 
@@ -874,9 +891,7 @@ export const workspacesRouter = router({
 					resolvedBranch = typedBranch;
 					const [planResult, aiNames, existing] = await Promise.all([
 						planBranchSource(git, resolvedBranch, input.baseBranch),
-						aiNamesPromise
-							? withInlineCap(aiNamesPromise, AI_NAMES_INLINE_CAP_MS)
-							: Promise.resolve(null),
+						resolveInlineAiNames(),
 						listBranchNames(ctx, localProject.repoPath),
 					]);
 					plan = planResult;
@@ -906,9 +921,7 @@ export const workspacesRouter = router({
 					// add. AI's branch name wins when available; friendly random
 					// is a fallback for no-prompt or LLM failure.
 					const [aiNames, startPoint, existing] = await Promise.all([
-						aiNamesPromise
-							? withInlineCap(aiNamesPromise, AI_NAMES_INLINE_CAP_MS)
-							: Promise.resolve(null),
+						resolveInlineAiNames(),
 						resolveNewBranchStartPoint(git, input.baseBranch),
 						listBranchNames(ctx, localProject.repoPath),
 					]);
@@ -1077,6 +1090,33 @@ export const workspacesRouter = router({
 						}
 					}
 				}
+			}
+
+			if (
+				!alreadyExists &&
+				aiNamesPromise &&
+				inlineAiNames === null &&
+				(input.name === undefined || input.branch === undefined)
+			) {
+				void aiNamesPromise
+					.then((aiNames) => {
+						if (!aiNames) return;
+						return applyGeneratedWorkspaceNames({
+							ctx,
+							workspaceId: workspaceRow.id,
+							repoPath: localProject.repoPath,
+							worktreePath,
+							oldBranchName: resolvedBranch,
+							oldWorkspaceName: workspaceRow.name,
+							prompt: composerPrompt,
+							renameTitle: input.name === undefined,
+							renameBranch: input.branch === undefined,
+							aiNames,
+						});
+					})
+					.catch((err) => {
+						console.warn("[workspaces.create] late AI rename failed", err);
+					});
 			}
 
 			const terminalsResult: Array<{ terminalId: string; label?: string }> = [];

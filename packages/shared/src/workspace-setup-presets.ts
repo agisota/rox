@@ -181,7 +181,7 @@ jobs:
 		scaffoldFiles: [
 			{
 				path: ".gitignore",
-				contents: "node_modules/\ndist/\n.env\nrox/\n",
+				contents: "node_modules/\ndist/\n.env\n.rox/\nrox/config.local.json\n",
 			},
 		],
 	},

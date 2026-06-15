@@ -1,11 +1,11 @@
 import { cpSync, existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { PROJECT_ROX_DIR_NAME } from "@rox/shared/rox-dirs";
 import {
-	LEGACY_ROX_HOME_DIR_NAME,
-	PROJECT_ROX_DIR_NAME,
-} from "@rox/shared/rox-dirs";
-import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
+	resolveProjectRoxDir,
+	resolveRoxHomePath,
+} from "@rox/shared/rox-dirs-node";
 import {
 	CONFIG_FILE_NAME,
 	LOCAL_CONFIG_FILE_NAME,
@@ -203,23 +203,13 @@ export function loadSetupConfig({
 	}
 
 	if (projectId && !projectId.includes("/") && !projectId.includes("\\")) {
-		const userConfigPath = join(
-			homedir(),
-			ROX_DIR_NAME,
+		const userConfigPath = resolveRoxHomePath(
+			join(homedir(), ROX_DIR_NAME),
 			PROJECTS_DIR_NAME,
 			projectId,
 			CONFIG_FILE_NAME,
 		);
-		// Backward compat: fall back to legacy ~/.rox/projects/<id>/ when only it exists.
-		const legacyUserConfigPath = join(
-			homedir(),
-			LEGACY_ROX_HOME_DIR_NAME,
-			PROJECTS_DIR_NAME,
-			projectId,
-			CONFIG_FILE_NAME,
-		);
-		const config =
-			readConfigFile(userConfigPath) ?? readConfigFile(legacyUserConfigPath);
+		const config = readConfigFile(userConfigPath);
 		if (config) {
 			base = mergeBaseConfigs(base, config);
 		}

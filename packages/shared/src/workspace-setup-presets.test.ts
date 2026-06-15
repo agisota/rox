@@ -53,4 +53,13 @@ describe("workspace-setup-presets", () => {
 		expect(setupCommands).toEqual([]);
 		expect(scaffoldFiles).toEqual([]);
 	});
+
+	it("keeps visible rox config shareable while ignoring local overlays", () => {
+		const gitignore =
+			getWorkspaceSetupPresetById("gitignore")?.scaffoldFiles?.[0];
+		const lines = gitignore?.contents.split("\n") ?? [];
+		expect(lines).toContain(".rox/");
+		expect(lines).toContain("rox/config.local.json");
+		expect(lines).not.toContain("rox/");
+	});
 });

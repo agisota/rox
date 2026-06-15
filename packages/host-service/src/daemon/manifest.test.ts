@@ -3,15 +3,17 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
+	listPtyDaemonManifests,
 	type PtyDaemonManifest,
 	readPtyDaemonManifest,
 	removePtyDaemonManifest,
 	writePtyDaemonManifest,
 } from "./manifest.ts";
 
-const TEST_HOME = path.join(
+const TEST_HOME = path.join(os.tmpdir(), `rox-manifest-test-${process.pid}`);
+const LEGACY_TEST_HOME = path.join(
 	os.tmpdir(),
-	`pty-daemon-manifest-test-${process.pid}`,
+	`.rox-manifest-test-${process.pid}`,
 );
 const TEST_ORG = "org-manifest-test";
 
@@ -23,6 +25,7 @@ beforeEach(() => {
 afterEach(() => {
 	removePtyDaemonManifest(TEST_ORG);
 	fs.rmSync(TEST_HOME, { recursive: true, force: true });
+	fs.rmSync(LEGACY_TEST_HOME, { recursive: true, force: true });
 	process.env.ROX_HOME_DIR = undefined;
 });
 
@@ -89,6 +92,21 @@ describe("PtyDaemonManifest", () => {
 			path.join(dir, "pty-daemon-manifest.json"),
 			JSON.stringify({ pid: 1 }),
 		);
+		expect(readPtyDaemonManifest(TEST_ORG)).toBeNull();
+	});
+
+	test("reads, lists, and removes a matching legacy home manifest", () => {
+		const dir = path.join(LEGACY_TEST_HOME, "host", TEST_ORG);
+		fs.mkdirSync(dir, { recursive: true });
+		fs.writeFileSync(
+			path.join(dir, "pty-daemon-manifest.json"),
+			JSON.stringify(baseManifest()),
+		);
+
+		expect(readPtyDaemonManifest(TEST_ORG)).toEqual(baseManifest());
+		expect(listPtyDaemonManifests()).toEqual([baseManifest()]);
+
+		removePtyDaemonManifest(TEST_ORG);
 		expect(readPtyDaemonManifest(TEST_ORG)).toBeNull();
 	});
 });

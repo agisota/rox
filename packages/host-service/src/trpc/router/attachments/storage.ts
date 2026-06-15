@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { resolveRoxHomePath } from "@rox/shared/rox-dirs-node";
 import mimeTypes from "mime-types";
 
 export interface AttachmentMetadata {
@@ -21,19 +22,24 @@ export interface AttachmentMetadata {
  * Resolves the per-org attachment storage root. Honors
  * `HOST_MANIFEST_DIR` (set by host-service-coordinator with the active
  * org id baked in) so attachments live alongside that org's `host.db`.
- * Falls back to `~/.rox/host/standalone` when the host service is
- * run outside the desktop coordinator.
+ * Falls back to `~/rox/host/standalone`, with a read/write bridge to legacy
+ * `~/.rox/host/standalone` when existing standalone attachments only live
+ * there and the host service is run outside the desktop coordinator.
  *
  * Override with `baseDirOverride` in tests.
  */
 export function getAttachmentsRoot(baseDirOverride?: string): string {
 	if (baseDirOverride) return join(baseDirOverride, "attachments");
 	const envBase = process.env.HOST_MANIFEST_DIR?.trim();
-	const base =
-		envBase && envBase.length > 0
-			? envBase
-			: join(homedir(), "rox", "host", "standalone");
-	return join(base, "attachments");
+	if (envBase && envBase.length > 0) {
+		return join(envBase, "attachments");
+	}
+	return resolveRoxHomePath(
+		join(homedir(), "rox"),
+		"host",
+		"standalone",
+		"attachments",
+	);
 }
 
 export function getAttachmentDir(

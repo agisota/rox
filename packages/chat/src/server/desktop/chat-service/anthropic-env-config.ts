@@ -7,7 +7,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 const ENV_LINE = /^(?:export\s+)?[a-zA-Z_]\w*\s*=/;
 const CONFIG_FILE_NAME = "chat-anthropic-env.json";
@@ -36,6 +36,17 @@ function trimToUndefined(value: string | undefined): string | undefined {
 	const trimmed = value?.trim();
 	if (!trimmed) return undefined;
 	return trimmed;
+}
+
+function legacyRoxHomeDirFor(roxHomeDir: string): string | null {
+	const dirName = basename(roxHomeDir);
+	if (dirName === "rox") {
+		return join(dirname(roxHomeDir), ".rox");
+	}
+	if (dirName.startsWith("rox-")) {
+		return join(dirname(roxHomeDir), `.${dirName}`);
+	}
+	return null;
 }
 
 function normalizeAnthropicBaseUrl(
@@ -88,6 +99,20 @@ export function getAnthropicEnvConfigPath(
 	return join(roxHome, CONFIG_FILE_NAME);
 }
 
+function getAnthropicEnvConfigReadPath(
+	options?: AnthropicEnvConfigDiskOptions,
+): string {
+	const primaryPath = getAnthropicEnvConfigPath(options);
+	if (options?.configPath || existsSync(primaryPath)) return primaryPath;
+
+	const roxHome = process.env.ROX_HOME_DIR?.trim() || join(homedir(), "rox");
+	const legacyHome = legacyRoxHomeDirFor(roxHome);
+	if (!legacyHome) return primaryPath;
+
+	const legacyPath = join(legacyHome, CONFIG_FILE_NAME);
+	return existsSync(legacyPath) ? legacyPath : primaryPath;
+}
+
 export function parseAnthropicEnvText(envText: string): AnthropicEnvVariables {
 	if (envText.includes("\0")) {
 		throw new Error(INVALID_ENV_MESSAGE);
@@ -125,7 +150,7 @@ export function parseAnthropicEnvText(envText: string): AnthropicEnvVariables {
 function readPersistedAnthropicEnvConfig(
 	options?: AnthropicEnvConfigDiskOptions,
 ): PersistedAnthropicEnvConfig | null {
-	const configPath = getAnthropicEnvConfigPath(options);
+	const configPath = getAnthropicEnvConfigReadPath(options);
 	if (!existsSync(configPath)) return null;
 
 	try {

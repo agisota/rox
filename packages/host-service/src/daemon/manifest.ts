@@ -13,6 +13,7 @@ import {
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { ROX_HOME_DIR_NAME } from "@rox/shared/rox-dirs";
+import { legacyRoxHomeDirFor } from "@rox/shared/rox-dirs-node";
 
 export interface PtyDaemonManifest {
 	pid: number;
@@ -35,12 +36,24 @@ function roxHomeDir(): string {
 	return process.env.ROX_HOME_DIR || join(homedir(), ROX_HOME_DIR_NAME);
 }
 
+function roxHomeDirsForRead(): string[] {
+	const primary = roxHomeDir();
+	const legacy = legacyRoxHomeDirFor(primary);
+	return legacy && legacy !== primary ? [primary, legacy] : [primary];
+}
+
 export function ptyDaemonManifestDir(organizationId: string): string {
 	return join(roxHomeDir(), "host", organizationId);
 }
 
 function ptyDaemonManifestPath(organizationId: string): string {
 	return join(ptyDaemonManifestDir(organizationId), "pty-daemon-manifest.json");
+}
+
+function ptyDaemonManifestPathsForRead(organizationId: string): string[] {
+	return roxHomeDirsForRead().map((homeDir) =>
+		join(homeDir, "host", organizationId, "pty-daemon-manifest.json"),
+	);
 }
 
 export function writePtyDaemonManifest(manifest: PtyDaemonManifest): void {
@@ -58,8 +71,10 @@ export function writePtyDaemonManifest(manifest: PtyDaemonManifest): void {
 export function readPtyDaemonManifest(
 	organizationId: string,
 ): PtyDaemonManifest | null {
-	const filePath = ptyDaemonManifestPath(organizationId);
-	if (!existsSync(filePath)) return null;
+	const filePath = ptyDaemonManifestPathsForRead(organizationId).find((path) =>
+		existsSync(path),
+	);
+	if (!filePath) return null;
 
 	try {
 		const raw = readFileSync(filePath, "utf-8");
@@ -100,27 +115,31 @@ export function readPtyDaemonManifest(
 }
 
 export function listPtyDaemonManifests(): PtyDaemonManifest[] {
-	const hostDir = join(roxHomeDir(), "host");
-	if (!existsSync(hostDir)) return [];
-	const manifests: PtyDaemonManifest[] = [];
+	const manifestsByOrg = new Map<string, PtyDaemonManifest>();
 	try {
-		for (const entry of readdirSync(hostDir, { withFileTypes: true })) {
-			if (!entry.isDirectory()) continue;
-			const manifest = readPtyDaemonManifest(entry.name);
-			if (manifest) manifests.push(manifest);
+		for (const homeDir of roxHomeDirsForRead()) {
+			const hostDir = join(homeDir, "host");
+			if (!existsSync(hostDir)) continue;
+			for (const entry of readdirSync(hostDir, { withFileTypes: true })) {
+				if (!entry.isDirectory()) continue;
+				if (manifestsByOrg.has(entry.name)) continue;
+				const manifest = readPtyDaemonManifest(entry.name);
+				if (manifest) manifestsByOrg.set(entry.name, manifest);
+			}
 		}
 	} catch {
 		// best-effort
 	}
-	return manifests;
+	return Array.from(manifestsByOrg.values());
 }
 
 export function removePtyDaemonManifest(organizationId: string): void {
-	const filePath = ptyDaemonManifestPath(organizationId);
-	try {
-		if (existsSync(filePath)) unlinkSync(filePath);
-	} catch {
-		// best-effort
+	for (const filePath of ptyDaemonManifestPathsForRead(organizationId)) {
+		try {
+			if (existsSync(filePath)) unlinkSync(filePath);
+		} catch {
+			// best-effort
+		}
 	}
 }
 

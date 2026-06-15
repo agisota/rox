@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { legacyRoxHomeDirFor } from "@rox/shared/rox-dirs-node";
 import { PROJECTS_DIR_NAME, ROX_DIR_NAME } from "shared/constants";
 import { loadSetupConfig, mergeConfigs } from "./setup";
 
@@ -12,6 +13,11 @@ const PROJECT_ID = "test-project-id";
 const USER_CONFIG_DIR = join(
 	homedir(),
 	ROX_DIR_NAME,
+	PROJECTS_DIR_NAME,
+	PROJECT_ID,
+);
+const LEGACY_USER_CONFIG_DIR = join(
+	legacyRoxHomeDirFor(join(homedir(), ROX_DIR_NAME)) ?? join(homedir(), ".rox"),
 	PROJECTS_DIR_NAME,
 	PROJECT_ID,
 );
@@ -29,6 +35,9 @@ describe("loadSetupConfig", () => {
 		// Clean up user override dir
 		if (existsSync(USER_CONFIG_DIR)) {
 			rmSync(USER_CONFIG_DIR, { recursive: true, force: true });
+		}
+		if (existsSync(LEGACY_USER_CONFIG_DIR)) {
+			rmSync(LEGACY_USER_CONFIG_DIR, { recursive: true, force: true });
 		}
 	});
 
@@ -154,6 +163,53 @@ describe("loadSetupConfig", () => {
 			projectId: PROJECT_ID,
 		});
 		expect(config).toEqual(userConfig);
+	});
+
+	test("falls back to matching legacy user override path", () => {
+		const mainConfig = { setup: ["npm install"] };
+		const userConfig = { setup: ["legacy-custom-setup.sh"] };
+
+		writeFileSync(
+			join(MAIN_REPO, ".rox", "config.json"),
+			JSON.stringify(mainConfig),
+		);
+
+		mkdirSync(LEGACY_USER_CONFIG_DIR, { recursive: true });
+		writeFileSync(
+			join(LEGACY_USER_CONFIG_DIR, "config.json"),
+			JSON.stringify(userConfig),
+		);
+
+		const config = loadSetupConfig({
+			mainRepoPath: MAIN_REPO,
+			projectId: PROJECT_ID,
+		});
+		expect(config).toEqual(userConfig);
+	});
+
+	test("does not fall back to legacy user override when current config exists but is invalid", () => {
+		const mainConfig = { setup: ["npm install"] };
+		const legacyUserConfig = { setup: ["legacy-custom-setup.sh"] };
+
+		writeFileSync(
+			join(MAIN_REPO, ".rox", "config.json"),
+			JSON.stringify(mainConfig),
+		);
+
+		mkdirSync(USER_CONFIG_DIR, { recursive: true });
+		writeFileSync(join(USER_CONFIG_DIR, "config.json"), "{ invalid json");
+
+		mkdirSync(LEGACY_USER_CONFIG_DIR, { recursive: true });
+		writeFileSync(
+			join(LEGACY_USER_CONFIG_DIR, "config.json"),
+			JSON.stringify(legacyUserConfig),
+		);
+
+		const config = loadSetupConfig({
+			mainRepoPath: MAIN_REPO,
+			projectId: PROJECT_ID,
+		});
+		expect(config).toEqual(mainConfig);
 	});
 
 	test("user override inherits missing keys from lower-priority config", () => {
