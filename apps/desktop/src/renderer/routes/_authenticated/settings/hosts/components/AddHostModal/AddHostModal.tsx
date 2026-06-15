@@ -41,6 +41,15 @@ interface ProviderOption {
 	available: boolean;
 }
 
+type ProviderCredentials = Partial<Record<ManagedProviderId, string>>;
+
+const PROVIDER_CREDENTIALS_STORAGE_KEY = "rox.hostProviderCredentials.v1";
+const MANAGED_PROVIDER_IDS = [
+	"daytona",
+	"modal",
+	"e2b",
+] as const satisfies readonly ManagedProviderId[];
+
 // RU display copy for providers. The server's `listProviders` returns English
 // brand names; we override them here so the picker stays Russian. `self`
 // (one-click host on our own Docker box, RoxSelfProvisioner) is surfaced
@@ -64,6 +73,15 @@ const PROVIDER_COPY: Record<
 
 // Locally-surfaced providers not (yet) returned by the server provider list.
 const LOCAL_ONLY_PROVIDERS: readonly ProviderId[] = ["self"];
+
+const PROVIDER_CREDENTIAL_COPY: Record<
+	ManagedProviderId,
+	{ label: string; placeholder: string }
+> = {
+	daytona: { label: "Daytona", placeholder: "dtn_..." },
+	modal: { label: "Modal", placeholder: "token..." },
+	e2b: { label: "E2B", placeholder: "e2b_..." },
+};
 
 interface AddHostModalProps {
 	open: boolean;
@@ -98,12 +116,59 @@ function deployCommand(kind: HostKindOption, provider: ProviderId): string {
 	return `rox deploy --kind ${kind} --provider ${provider}`;
 }
 
+function isProviderCredentials(value: unknown): value is ProviderCredentials {
+	if (typeof value !== "object" || value === null) return false;
+	const record = value as Record<string, unknown>;
+	return MANAGED_PROVIDER_IDS.every((id) => {
+		const credential = record[id];
+		return credential === undefined || typeof credential === "string";
+	});
+}
+
+function readProviderCredentials(): ProviderCredentials {
+	if (typeof window === "undefined") return {};
+	const raw = window.localStorage.getItem(PROVIDER_CREDENTIALS_STORAGE_KEY);
+	if (!raw) return {};
+
+	try {
+		const parsed: unknown = JSON.parse(raw);
+		return isProviderCredentials(parsed) ? parsed : {};
+	} catch {
+		return {};
+	}
+}
+
+function writeProviderCredentials(credentials: ProviderCredentials): void {
+	if (typeof window === "undefined") return;
+	window.localStorage.setItem(
+		PROVIDER_CREDENTIALS_STORAGE_KEY,
+		JSON.stringify(credentials),
+	);
+}
+
+function hasProviderCredential(
+	credentials: ProviderCredentials,
+	providerId: ProviderId,
+): boolean {
+	if (!isManagedProvider(providerId)) return false;
+	return Boolean(credentials[providerId]?.trim());
+}
+
 export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 	const nameId = useId();
 	const [kind, setKind] = useState<HostKindOption>("local");
 	const [provider, setProvider] = useState<ProviderId>("daytona");
 	const [name, setName] = useState("");
 	const [providers, setProviders] = useState<ProviderOption[]>([]);
+	const [providerCredentials, setProviderCredentials] =
+		useState<ProviderCredentials>({});
+	const [providerCredentialInputs, setProviderCredentialInputs] = useState<
+		Record<ManagedProviderId, string>
+	>({
+		daytona: "",
+		modal: "",
+		e2b: "",
+	});
 	const [submitting, setSubmitting] = useState(false);
 	const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -141,6 +206,8 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 
 	useEffect(() => {
 		if (!open) return;
+		setProviderCredentials(readProviderCredentials());
+		setProviderCredentialInputs({ daytona: "", modal: "", e2b: "" });
 		let cancelled = false;
 		apiTrpcClient.v2Host.listProviders
 			.query()
@@ -162,6 +229,8 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		...providers.map((p) => ({
 			...p,
 			label: PROVIDER_COPY[p.id]?.label ?? p.label,
+			available:
+				p.available || hasProviderCredential(providerCredentials, p.id),
 		})),
 		...LOCAL_ONLY_PROVIDERS.filter(
 			(id) => !providers.some((p) => p.id === id),
@@ -176,6 +245,41 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 	const selectedProvider = displayProviders.find((p) => p.id === provider);
 	const canProvision =
 		isManaged && name.trim().length > 0 && selectedProvider?.available === true;
+
+	const handleProviderCredentialChange = (
+		providerId: ManagedProviderId,
+		value: string,
+	) => {
+		setProviderCredentialInputs((current) => ({
+			...current,
+			[providerId]: value,
+		}));
+	};
+
+	const handleSaveProviderCredential = (providerId: ManagedProviderId) => {
+		const credential = providerCredentialInputs[providerId].trim();
+		if (!credential) return;
+
+		const nextCredentials = {
+			...providerCredentials,
+			[providerId]: credential,
+		};
+		writeProviderCredentials(nextCredentials);
+		setProviderCredentials(nextCredentials);
+		setProviderCredentialInputs((current) => ({
+			...current,
+			[providerId]: "",
+		}));
+		toast.success(`Ключ ${PROVIDER_COPY[providerId].label} сохранён`);
+	};
+
+	const handleClearProviderCredential = (providerId: ManagedProviderId) => {
+		const nextCredentials = { ...providerCredentials };
+		delete nextCredentials[providerId];
+		writeProviderCredentials(nextCredentials);
+		setProviderCredentials(nextCredentials);
+		toast.success(`Ключ ${PROVIDER_COPY[providerId].label} удалён`);
+	};
 
 	const handleProvision = async () => {
 		if (kind === "local" || !canProvision) return;
@@ -318,6 +422,79 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 										))}
 									</SelectContent>
 								</Select>
+							</div>
+
+							<div className="space-y-3 rounded-md border p-3">
+								<div>
+									<p className="text-sm font-medium">Ключи провайдеров</p>
+									<p className="text-xs text-muted-foreground">
+										Сохраните API-ключ или токен, чтобы провайдер стал доступен
+										в списке выше.
+									</p>
+								</div>
+								<div className="space-y-2">
+									{MANAGED_PROVIDER_IDS.map((providerId) => {
+										const copy = PROVIDER_CREDENTIAL_COPY[providerId];
+										const hasCredential = hasProviderCredential(
+											providerCredentials,
+											providerId,
+										);
+										const inputValue = providerCredentialInputs[providerId];
+										return (
+											<div
+												key={providerId}
+												className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_auto]"
+											>
+												<Label
+													htmlFor={`${nameId}-${providerId}-key`}
+													className="self-center text-xs"
+												>
+													{copy.label}
+												</Label>
+												<Input
+													id={`${nameId}-${providerId}-key`}
+													type="password"
+													value={inputValue}
+													onChange={(event) =>
+														handleProviderCredentialChange(
+															providerId,
+															event.target.value,
+														)
+													}
+													placeholder={
+														hasCredential ? "Ключ сохранён" : copy.placeholder
+													}
+													className="h-8 font-mono"
+												/>
+												<div className="flex gap-1">
+													<Button
+														type="button"
+														size="sm"
+														variant="outline"
+														onClick={() =>
+															handleSaveProviderCredential(providerId)
+														}
+														disabled={!inputValue.trim()}
+													>
+														Сохранить
+													</Button>
+													{hasCredential && (
+														<Button
+															type="button"
+															size="sm"
+															variant="ghost"
+															onClick={() =>
+																handleClearProviderCredential(providerId)
+															}
+														>
+															Удалить
+														</Button>
+													)}
+												</div>
+											</div>
+										);
+									})}
+								</div>
 							</div>
 						</div>
 					)}

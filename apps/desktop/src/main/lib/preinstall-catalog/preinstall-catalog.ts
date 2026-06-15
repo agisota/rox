@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+	chmodSync,
 	createReadStream,
 	existsSync,
 	mkdirSync,
@@ -16,11 +17,47 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { promisify } from "node:util";
+import { ROX_DIR_NAME } from "shared/constants";
 
 const execFileAsync = promisify(execFile);
 
 /** Marker file (under ~/.claude) recording the installed catalog version. */
 const VERSION_MARKER = ".rox-catalog-version";
+const TOOL_VERSION_MARKER = ".rox-tool-version";
+const ROX_HOME_DIR_ENV = "ROX_HOME_DIR";
+
+type CatalogToolPackageManager = "npm" | "pip";
+
+export interface CatalogToolManifest {
+	id: string;
+	packageManager: CatalogToolPackageManager;
+	packageName: string;
+	version: string;
+	targetBinary: string;
+	binaries: readonly string[];
+	installCommand: string;
+}
+
+const PREINSTALL_TOOLS = [
+	{
+		id: "mgrep",
+		packageManager: "npm",
+		packageName: "@mixedbread/mgrep",
+		version: "0.1.13",
+		targetBinary: "mgrep",
+		binaries: ["mgrep"],
+		installCommand: "npm install -g @mixedbread/mgrep@0.1.13",
+	},
+	{
+		id: "cli-anything",
+		packageManager: "pip",
+		packageName: "cli-anything-hub",
+		version: "0.3.0",
+		targetBinary: "cli-hub",
+		binaries: ["cli-hub", "cli-anything"],
+		installCommand: "python3 -m pip install cli-anything-hub==0.3.0",
+	},
+] as const satisfies readonly CatalogToolManifest[];
 
 export interface CatalogPartManifest {
 	count: number;
@@ -46,14 +83,32 @@ export interface EnsureCatalogResult {
 	version?: string;
 	skills?: number;
 	agents?: number;
+	tools?: number;
 	error?: string;
 }
+
+interface RunCommandOptions {
+	cwd?: string;
+	env?: NodeJS.ProcessEnv;
+}
+
+type CommandRunner = (
+	command: string,
+	args: readonly string[],
+	options?: RunCommandOptions,
+) => Promise<void>;
 
 export interface EnsureCatalogOptions {
 	/** Directory holding manifest.json + the *.tar.gz archives (app resources). */
 	resourcesDir: string;
 	/** Home directory to install into; defaults to the OS home. */
 	homeDir?: string;
+	/** Rox home directory for tool shims + local package installs. */
+	roxHomeDir?: string;
+	/** Tool install catalog; defaults to Rox-managed agent CLI tools. */
+	tools?: readonly CatalogToolManifest[];
+	/** Injectable command runner for tests. */
+	runCommand?: CommandRunner;
 	/** Injectable extractor (archivePath, destDir); defaults to `tar -xzf`. */
 	extract?: (archivePath: string, destDir: string) => Promise<void>;
 	/** Injectable manifest reader for tests. */
@@ -153,6 +208,189 @@ async function tarExtract(
 	}
 }
 
+async function runCommand(
+	command: string,
+	args: readonly string[],
+	options: RunCommandOptions = {},
+): Promise<void> {
+	await execFileAsync(command, [...args], {
+		cwd: options.cwd,
+		env: options.env,
+		maxBuffer: 20 * 1024 * 1024,
+	});
+}
+
+function resolveRoxHomeDir(options: EnsureCatalogOptions): string {
+	return (
+		options.roxHomeDir ??
+		process.env[ROX_HOME_DIR_ENV] ??
+		join(options.homeDir ?? homedir(), ROX_DIR_NAME)
+	);
+}
+
+function quoteShellLiteral(value: string): string {
+	return `'${value.replaceAll("'", `'"'"'`)}'`;
+}
+
+function writeExecutableIfChanged(filePath: string, content: string): boolean {
+	const existing = existsSync(filePath)
+		? readFileSync(filePath, "utf-8")
+		: null;
+	if (existing === content) {
+		try {
+			chmodSync(filePath, 0o755);
+		} catch {
+			// Best effort.
+		}
+		return false;
+	}
+
+	writeFileSync(filePath, content, { mode: 0o755 });
+	try {
+		chmodSync(filePath, 0o755);
+	} catch {
+		// Best effort.
+	}
+	return true;
+}
+
+function isFile(path: string): boolean {
+	try {
+		return statSync(path).isFile();
+	} catch {
+		return false;
+	}
+}
+
+function getToolDir(roxHomeDir: string, tool: CatalogToolManifest): string {
+	return join(roxHomeDir, "tools", tool.id);
+}
+
+function getToolTargetPath(toolDir: string, tool: CatalogToolManifest): string {
+	if (tool.packageManager === "npm") {
+		return join(toolDir, "node_modules", ".bin", tool.targetBinary);
+	}
+
+	return join(toolDir, "venv", "bin", tool.targetBinary);
+}
+
+function buildToolShim(targetPath: string): string {
+	return `#!/bin/sh
+# Rox preinstalled tool shim
+exec ${quoteShellLiteral(targetPath)} "$@"
+`;
+}
+
+async function installToolPackage(
+	tool: CatalogToolManifest,
+	toolDir: string,
+	roxHomeDir: string,
+	run: CommandRunner,
+): Promise<void> {
+	mkdirSync(toolDir, { recursive: true });
+	if (tool.packageManager === "npm") {
+		await run(
+			"npm",
+			[
+				"install",
+				"--prefix",
+				toolDir,
+				"--omit=dev",
+				"--no-audit",
+				"--no-fund",
+				`${tool.packageName}@${tool.version}`,
+			],
+			{
+				env: {
+					...process.env,
+					npm_config_cache: join(roxHomeDir, "cache", "npm"),
+					npm_config_update_notifier: "false",
+				},
+			},
+		);
+		return;
+	}
+
+	const venvDir = join(toolDir, "venv");
+	const venvPython = join(venvDir, "bin", "python");
+	await run("python3", ["-m", "venv", venvDir]);
+	await run(
+		venvPython,
+		[
+			"-m",
+			"pip",
+			"install",
+			"--disable-pip-version-check",
+			"--upgrade",
+			`${tool.packageName}==${tool.version}`,
+		],
+		{
+			env: {
+				...process.env,
+				PIP_CACHE_DIR: join(roxHomeDir, "cache", "pip"),
+				PIP_DISABLE_PIP_VERSION_CHECK: "1",
+			},
+		},
+	);
+}
+
+async function ensureToolInstalled(
+	tool: CatalogToolManifest,
+	roxHomeDir: string,
+	run: CommandRunner,
+): Promise<"installed" | "up-to-date"> {
+	const binDir = join(roxHomeDir, "bin");
+	const toolDir = getToolDir(roxHomeDir, tool);
+	const markerPath = join(toolDir, TOOL_VERSION_MARKER);
+	const targetPath = getToolTargetPath(toolDir, tool);
+	const current = existsSync(markerPath)
+		? readFileSync(markerPath, "utf-8").trim()
+		: null;
+
+	const shimsArePresent = tool.binaries.every((binary) =>
+		isFile(join(binDir, binary)),
+	);
+	if (current === tool.version && isFile(targetPath) && shimsArePresent) {
+		return "up-to-date";
+	}
+
+	if (current !== tool.version || !isFile(targetPath)) {
+		await installToolPackage(tool, toolDir, roxHomeDir, run);
+		if (!isFile(targetPath)) {
+			throw new Error(
+				`tool install did not create ${tool.targetBinary}: ${tool.installCommand}`,
+			);
+		}
+	}
+
+	mkdirSync(binDir, { recursive: true });
+	for (const binary of tool.binaries) {
+		writeExecutableIfChanged(join(binDir, binary), buildToolShim(targetPath));
+	}
+	writeFileSync(markerPath, tool.version, "utf-8");
+	return "installed";
+}
+
+async function ensurePreinstallToolsInstalled(
+	options: EnsureCatalogOptions,
+): Promise<{ installed: number; total: number }> {
+	const tools = options.tools ?? PREINSTALL_TOOLS;
+	if (tools.length === 0) {
+		return { installed: 0, total: 0 };
+	}
+
+	const roxHomeDir = resolveRoxHomeDir(options);
+	const run = options.runCommand ?? runCommand;
+	let installed = 0;
+	for (const tool of tools) {
+		const result = await ensureToolInstalled(tool, roxHomeDir, run);
+		if (result === "installed") {
+			installed++;
+		}
+	}
+	return { installed, total: tools.length };
+}
+
 /**
  * Idempotently install the bundled skill + subagent catalog into the user's
  * global Claude directory (`~/.claude/skills`, `~/.claude/agents`) so every
@@ -166,10 +404,13 @@ export async function ensureCatalogInstalled(
 	options: EnsureCatalogOptions,
 ): Promise<EnsureCatalogResult> {
 	try {
+		const toolsResult = await ensurePreinstallToolsInstalled(options);
 		const readManifest = options.readManifestFn ?? readCatalogManifest;
 		const manifest = readManifest(options.resourcesDir);
 		if (!manifest) {
-			return { status: "skipped" };
+			return toolsResult.installed > 0
+				? { status: "installed", tools: toolsResult.total }
+				: { status: "skipped", tools: toolsResult.total };
 		}
 
 		const home = options.homeDir ?? homedir();
@@ -181,10 +422,11 @@ export async function ensureCatalogInstalled(
 			: null;
 		if (current === manifest.version) {
 			return {
-				status: "up-to-date",
+				status: toolsResult.installed > 0 ? "installed" : "up-to-date",
 				version: manifest.version,
 				skills: manifest.skills.count,
 				agents: manifest.agents.count,
+				tools: toolsResult.total,
 			};
 		}
 
@@ -225,6 +467,7 @@ export async function ensureCatalogInstalled(
 			version: manifest.version,
 			skills: manifest.skills.count,
 			agents: manifest.agents.count,
+			tools: toolsResult.total,
 		};
 	} catch (error) {
 		return {

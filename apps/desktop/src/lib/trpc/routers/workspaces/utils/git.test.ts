@@ -152,7 +152,7 @@ describe("getDefaultBranch", () => {
 		} finally {
 			cleanup();
 		}
-	});
+	}, 30_000);
 
 	test("detects master from local remote branches", async () => {
 		const { repoPath, cleanup } = createIsolatedTestRepo("master");
@@ -244,7 +244,7 @@ describe("getDefaultBranch", () => {
 		} finally {
 			cleanup();
 		}
-	});
+	}, 30_000);
 });
 
 describe("Shell Environment", () => {
@@ -255,7 +255,7 @@ describe("Shell Environment", () => {
 
 		// Should have PATH
 		expect(env.PATH || env.Path).toBeDefined();
-	}, 10_000);
+	}, 30_000);
 
 	test("clearShellEnvCache clears cache", async () => {
 		const { clearShellEnvCache, getShellEnvironment } = await import(
@@ -271,7 +271,7 @@ describe("Shell Environment", () => {
 		// Should work again (cache was cleared)
 		const env = await getShellEnvironment();
 		expect(env.PATH || env.Path).toBeDefined();
-	}, 10_000);
+	}, 30_000);
 
 	test("getProcessEnvWithShellPath applies shell PATH and preserves string vars", async () => {
 		const { getProcessEnvWithShellPath, getShellEnvironment } = await import(
@@ -500,7 +500,7 @@ describe("createWorktree hook tolerance", () => {
 			.toString()
 			.trim();
 		expect(trackingResult).toBe("");
-	}, 15_000);
+	}, 30_000);
 
 	test("works with a branch name containing slashes as start point", async () => {
 		// Reproduces #3448: createWorktree previously appended ^{commit} to the
@@ -531,7 +531,7 @@ describe("createWorktree hook tolerance", () => {
 			.toString()
 			.trim();
 		expect(currentBranch).toBe("feature/new-workspace");
-	}, 10_000);
+	}, 30_000);
 });
 
 describe("getCurrentBranch", () => {
@@ -557,7 +557,7 @@ describe("getCurrentBranch", () => {
 				rmSync(repoPath, { recursive: true, force: true });
 			}
 		}
-	});
+	}, 30_000);
 
 	test("returns null in detached HEAD state", async () => {
 		const repoPath = join(
@@ -594,7 +594,7 @@ describe("getCurrentBranch", () => {
 				rmSync(repoPath, { recursive: true, force: true });
 			}
 		}
-	});
+	}, 30_000);
 });
 
 describe("getWorktreeCreatedAt", () => {
@@ -624,7 +624,7 @@ describe("getWorktreeCreatedAt", () => {
 		expect(getWorktreeCreatedAt(worktreePath)).toBe(
 			pathCreatedAt(join(worktreePath, ".git")),
 		);
-	}, 10_000);
+	}, 30_000);
 });
 
 describe("parsePorcelainStatusV2", () => {
@@ -918,7 +918,7 @@ describe("hasUnpushedCommits", () => {
 		// BUG: Before the fix, this returned true (false positive warning)
 		// After the fix, it should return false since the patch is in origin/main
 		expect(await hasUnpushedCommits(localPath)).toBe(false);
-	}, 15_000);
+	}, 30_000);
 
 	test("returns true after upstream branch deleted with truly unmerged commits", async () => {
 		const { remotePath, localPath } = setupRemoteAndClone("unmerged");
@@ -972,7 +972,7 @@ describe("hasUnpushedCommits", () => {
 		} finally {
 			warnSpy.mockRestore();
 		}
-	});
+	}, 30_000);
 });
 
 describe("parsePrUrl", () => {

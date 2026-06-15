@@ -1,8 +1,8 @@
+import type { BranchPrefixMode } from "@rox/local-db";
 import {
-	type BranchPrefixMode,
 	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
 	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
-} from "@rox/local-db";
+} from "@rox/local-db/schema";
 import {
 	resolveBranchPrefix,
 	sanitizeSegment,

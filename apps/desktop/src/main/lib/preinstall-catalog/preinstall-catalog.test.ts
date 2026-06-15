@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	type CatalogManifest,
+	type CatalogToolManifest,
 	ensureCatalogInstalled,
 } from "./preinstall-catalog";
 
@@ -31,6 +32,7 @@ describe("ensureCatalogInstalled", () => {
 		const res = await ensureCatalogInstalled({
 			resourcesDir: tmp(),
 			homeDir: tmp(),
+			tools: [],
 			readManifestFn: () => null,
 		});
 		expect(res.status).toBe("skipped");
@@ -42,6 +44,7 @@ describe("ensureCatalogInstalled", () => {
 		const res = await ensureCatalogInstalled({
 			resourcesDir: tmp(),
 			homeDir: home,
+			tools: [],
 			readManifestFn: () => MANIFEST,
 			extract: async (archive, dest) => {
 				extracted.push(`${archive}->${dest}`);
@@ -67,6 +70,7 @@ describe("ensureCatalogInstalled", () => {
 		const res = await ensureCatalogInstalled({
 			resourcesDir: tmp(),
 			homeDir: home,
+			tools: [],
 			readManifestFn: () => MANIFEST,
 			extract: async () => {
 				calls++;
@@ -84,6 +88,7 @@ describe("ensureCatalogInstalled", () => {
 		const res = await ensureCatalogInstalled({
 			resourcesDir: tmp(),
 			homeDir: home,
+			tools: [],
 			readManifestFn: () => MANIFEST,
 			extract: async () => {
 				calls++;
@@ -97,6 +102,7 @@ describe("ensureCatalogInstalled", () => {
 		const res = await ensureCatalogInstalled({
 			resourcesDir: tmp(),
 			homeDir: tmp(),
+			tools: [],
 			readManifestFn: () => MANIFEST,
 			extract: async () => {
 				throw new Error("boom");
@@ -104,6 +110,97 @@ describe("ensureCatalogInstalled", () => {
 		});
 		expect(res.status).toBe("error");
 		expect(res.error).toContain("boom");
+	});
+});
+
+describe("ensureCatalogInstalled (agent tool preinstall)", () => {
+	const npmTool: CatalogToolManifest = {
+		id: "demo-npm",
+		packageManager: "npm",
+		packageName: "demo-npm-tool",
+		version: "1.2.3",
+		targetBinary: "demo-npm",
+		binaries: ["demo-npm"],
+		installCommand: "npm install -g demo-npm-tool@1.2.3",
+	};
+
+	const pipTool: CatalogToolManifest = {
+		id: "demo-pip",
+		packageManager: "pip",
+		packageName: "demo-pip-tool",
+		version: "4.5.6",
+		targetBinary: "demo-pip",
+		binaries: ["demo-pip", "demo-pip-alias"],
+		installCommand: "python3 -m pip install demo-pip-tool==4.5.6",
+	};
+
+	it("installs registered tools into Rox-owned shims even without bundled archives", async () => {
+		const home = tmp();
+		const roxHome = join(home, ".rox");
+		const commands: string[] = [];
+		const res = await ensureCatalogInstalled({
+			resourcesDir: tmp(),
+			homeDir: home,
+			roxHomeDir: roxHome,
+			tools: [npmTool, pipTool],
+			readManifestFn: () => null,
+			runCommand: async (command, args) => {
+				commands.push([command, ...args].join(" "));
+				if (command === "npm") {
+					const target = join(
+						roxHome,
+						"tools",
+						"demo-npm",
+						"node_modules",
+						".bin",
+						"demo-npm",
+					);
+					mkdirSync(join(target, ".."), { recursive: true });
+					writeFileSync(target, "#!/bin/sh\n");
+					return;
+				}
+				if (command.endsWith("/python")) {
+					const target = join(
+						roxHome,
+						"tools",
+						"demo-pip",
+						"venv",
+						"bin",
+						"demo-pip",
+					);
+					mkdirSync(join(target, ".."), { recursive: true });
+					writeFileSync(target, "#!/bin/sh\n");
+				}
+			},
+		});
+
+		expect(res.status).toBe("installed");
+		expect(res.tools).toBe(2);
+		expect(commands).toContain(
+			`npm install --prefix ${join(
+				roxHome,
+				"tools",
+				"demo-npm",
+			)} --omit=dev --no-audit --no-fund demo-npm-tool@1.2.3`,
+		);
+		expect(commands).toContain(
+			`python3 -m venv ${join(roxHome, "tools", "demo-pip", "venv")}`,
+		);
+		expect(readFileSync(join(roxHome, "bin", "demo-npm"), "utf-8")).toContain(
+			"demo-npm",
+		);
+		expect(readFileSync(join(roxHome, "bin", "demo-pip"), "utf-8")).toContain(
+			"demo-pip",
+		);
+		expect(
+			readFileSync(join(roxHome, "bin", "demo-pip-alias"), "utf-8"),
+		).toContain("demo-pip");
+		expect(
+			readFileSync(
+				join(roxHome, "tools", "demo-npm", ".rox-tool-version"),
+				"utf-8",
+			),
+		).toBe("1.2.3");
 	});
 });
 
@@ -155,6 +252,7 @@ describe("ensureCatalogInstalled (real tar extractor)", () => {
 		const res = await ensureCatalogInstalled({
 			resourcesDir: resources,
 			homeDir: home,
+			tools: [],
 			readManifestFn: () => manifest,
 		});
 
@@ -200,6 +298,7 @@ describe("ensureCatalogInstalled (real tar extractor)", () => {
 		const res = await ensureCatalogInstalled({
 			resourcesDir: resources,
 			homeDir: home,
+			tools: [],
 			readManifestFn: () => manifest,
 		});
 		expect(res.status).toBe("error");

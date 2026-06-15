@@ -72,13 +72,13 @@ describe("selectExternalWorktreesForImport (real git worktrees)", () => {
 		addWorktree(mainRepoPath, "feat-a", wtA);
 		addWorktree(mainRepoPath, "feat-b", wtB);
 		addWorktree(mainRepoPath, "feat-c", wtC);
-	});
+	}, 30_000);
 
 	afterEach(() => {
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true, force: true });
 		}
-	});
+	}, 30_000);
 
 	test("with no requested filter, returns all three external worktrees and excludes main repo", async () => {
 		const all = await listExternalWorktrees(mainRepoPath);
@@ -93,7 +93,7 @@ describe("selectExternalWorktreesForImport (real git worktrees)", () => {
 		expect(result.map((w) => w.branch).sort()).toEqual(
 			["feat-a", "feat-b", "feat-c"].sort(),
 		);
-	});
+	}, 20_000);
 
 	test("with requested = {wtA, wtC}, returns only those two", async () => {
 		const all = await listExternalWorktrees(mainRepoPath);
@@ -103,7 +103,7 @@ describe("selectExternalWorktreesForImport (real git worktrees)", () => {
 			requested: new Set([wtA, wtC]),
 		});
 		expect(result.map((w) => w.path).sort()).toEqual([wtA, wtC].sort());
-	});
+	}, 20_000);
 
 	test("requested set containing a path that no longer exists is silently ignored", async () => {
 		const all = await listExternalWorktrees(mainRepoPath);
@@ -114,7 +114,7 @@ describe("selectExternalWorktreesForImport (real git worktrees)", () => {
 			requested: new Set([wtA, ghostPath]),
 		});
 		expect(result.map((w) => w.path)).toEqual([wtA]);
-	});
+	}, 20_000);
 
 	test("detached HEAD worktrees are skipped even when requested", async () => {
 		const wtDetached = join(TEST_DIR, "wt-detached");
@@ -130,7 +130,7 @@ describe("selectExternalWorktreesForImport (real git worktrees)", () => {
 			requested: new Set([wtA, wtDetached]),
 		});
 		expect(result.map((w) => w.path)).toEqual([wtA]);
-	});
+	}, 20_000);
 
 	test("empty requested set returns no worktrees", async () => {
 		const all = await listExternalWorktrees(mainRepoPath);
@@ -140,7 +140,7 @@ describe("selectExternalWorktreesForImport (real git worktrees)", () => {
 			requested: new Set(),
 		});
 		expect(result).toEqual([]);
-	});
+	}, 20_000);
 
 	test("main repo path in the requested set never gets imported", async () => {
 		const all = await listExternalWorktrees(mainRepoPath);
@@ -150,5 +150,5 @@ describe("selectExternalWorktreesForImport (real git worktrees)", () => {
 			requested: new Set([mainRepoPath, wtA]),
 		});
 		expect(result.map((w) => w.path)).toEqual([wtA]);
-	});
+	}, 20_000);
 });

@@ -26,6 +26,7 @@ import { startCommandTerminal } from "../workspace-creation/shared/command-termi
 import { enablePushAutoSetupRemote } from "../workspace-creation/shared/git-config";
 import { requireLocalProject } from "../workspace-creation/shared/local-project";
 import { seedWorkspaceMcpServers } from "../workspace-creation/shared/setup-mcp";
+import { seedWorkspaceSkills } from "../workspace-creation/shared/setup-skills";
 import { startSetupTerminalIfPresent } from "../workspace-creation/shared/setup-terminal";
 import type { GitClient } from "../workspace-creation/shared/types";
 import { safeResolveWorktreePath } from "../workspace-creation/shared/worktree-paths";
@@ -1043,18 +1044,25 @@ export const workspacesRouter = router({
 			const terminalsResult: Array<{ terminalId: string; label?: string }> = [];
 
 			if (!alreadyExists) {
-				const [{ terminal, warning }, mcpResult] = await Promise.all([
-					startSetupTerminalIfPresent({
-						ctx,
-						workspaceId: workspaceRow.id,
-					}),
-					seedWorkspaceMcpServers({ ctx, workspaceId: workspaceRow.id }),
-				]);
+				const [{ terminal, warning }, mcpResult, skillsResult] =
+					await Promise.all([
+						startSetupTerminalIfPresent({
+							ctx,
+							workspaceId: workspaceRow.id,
+						}),
+						seedWorkspaceMcpServers({ ctx, workspaceId: workspaceRow.id }),
+						seedWorkspaceSkills({ ctx, workspaceId: workspaceRow.id }),
+					]);
 				if (warning) {
 					console.warn(`[workspaces.create] setup warning: ${warning}`);
 				}
 				if (mcpResult.warning) {
 					console.warn(`[workspaces.create] mcp warning: ${mcpResult.warning}`);
+				}
+				if (skillsResult.warning) {
+					console.warn(
+						`[workspaces.create] skills warning: ${skillsResult.warning}`,
+					);
 				}
 				if (terminal) {
 					terminalsResult.push({

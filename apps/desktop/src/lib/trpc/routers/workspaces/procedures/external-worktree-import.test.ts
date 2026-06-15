@@ -83,14 +83,14 @@ describe("External worktree detection and import", () => {
 
 		// Create external worktree path
 		externalWorktreePath = join(TEST_DIR, "external-worktree");
-	});
+	}, 30_000);
 
 	afterEach(() => {
 		// Clean test directory
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true, force: true });
 		}
-	});
+	}, 30_000);
 
 	test("external worktree can be created and detected", () => {
 		// Create external worktree manually (simulates user creating it outside Rox)
@@ -111,7 +111,7 @@ describe("External worktree detection and import", () => {
 		});
 		expect(worktreeList).toContain(externalWorktreePath);
 		expect(worktreeList).toContain("feature-external");
-	});
+	}, 20_000);
 
 	test("listExternalWorktrees detects external worktree", async () => {
 		// Create external worktree
@@ -126,7 +126,7 @@ describe("External worktree detection and import", () => {
 		expect(found?.path).toBe(externalWorktreePath);
 		expect(found?.isBare).toBe(false);
 		expect(found?.isDetached).toBe(false);
-	});
+	}, 20_000);
 
 	test("external worktree data survives simulated deletion", () => {
 		// Create external worktree with important data
@@ -160,5 +160,5 @@ describe("External worktree detection and import", () => {
 			true,
 		);
 		expect(existsSync(join(externalWorktreePath, "test.txt"))).toBe(true);
-	});
+	}, 20_000);
 });

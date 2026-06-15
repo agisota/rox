@@ -1,7 +1,7 @@
 import {
 	DEFAULT_SETTINGS_EDITOR_FONT_FAMILY,
 	DEFAULT_SETTINGS_EDITOR_FONT_SIZE,
-} from "@rox/local-db";
+} from "@rox/local-db/schema";
 
 export const DEFAULT_CODE_EDITOR_FONT_FAMILY =
 	DEFAULT_SETTINGS_EDITOR_FONT_FAMILY;

@@ -205,6 +205,12 @@ const agentCustomDefinitionSchema = z.object({
 });
 
 const localDbMock = () => ({
+	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM: "rox",
+	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE: "custom",
+	DEFAULT_SETTINGS_EDITOR_FONT_FAMILY: "SF UI Display Pro",
+	DEFAULT_SETTINGS_EDITOR_FONT_SIZE: 12,
+	DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY: "Geist Mono",
+	DEFAULT_SETTINGS_TERMINAL_FONT_SIZE: 12,
 	projects: mockTable("projects"),
 	workspaces: mockTable("workspaces"),
 	worktrees: mockTable("worktrees"),
