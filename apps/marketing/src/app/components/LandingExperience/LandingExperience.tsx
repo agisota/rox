@@ -7,7 +7,7 @@ import { GitHubStarButton } from "./components/GitHubStarButton";
 import { IntroOverlay } from "./components/IntroOverlay";
 import { ScrambleLanding } from "./components/ScrambleLanding";
 import type { LandingPhase } from "./constants";
-import { THANKS_HEADING, THANKS_HINT } from "./constants";
+import { STAR_PROMPT, THANKS_HEADING, THANKS_HINT } from "./constants";
 import { useMagnetic } from "./hooks/useMagnetic";
 import "./landing-experience.css";
 
@@ -54,6 +54,7 @@ export function LandingExperience({ starCount }: LandingExperienceProps) {
 							Скачать ещё раз
 						</a>
 					</p>
+					<p className="rox-thanks__prompt">{STAR_PROMPT}</p>
 					<GitHubStarButton targetCount={starCount} />
 				</div>
 			) : (
