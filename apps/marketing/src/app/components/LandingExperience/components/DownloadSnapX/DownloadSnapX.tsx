@@ -31,19 +31,12 @@ const COMPLETE_THRESHOLD = 0.92;
 const downloadArrowSvg = (
 	<svg viewBox="0 0 22 22" aria-hidden="true" focusable="false">
 		<path
-			d="M11 3v9m0 0 4-4m-4 4-4-4"
+			d="M3 11h13m0 0-5-5m5 5-5 5"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth="2"
+			strokeWidth="2.2"
 			strokeLinecap="round"
 			strokeLinejoin="round"
-		/>
-		<path
-			d="M4 16.5h14"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
 		/>
 	</svg>
 );

@@ -131,6 +131,45 @@
 	border-color: rgba(255, 255, 255, 0.4);
 }
 
+/* Brand logo revealed over the centered word at the climax of slide 1. */
+.rox-intro__logo {
+	position: absolute;
+	top: clamp(20px, 9vh, 84px);
+	left: 50%;
+	transform: translate(-50%, -8px);
+	opacity: 0;
+	z-index: 3;
+	pointer-events: none;
+	filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.55));
+}
+
+.rox-intro__logo img {
+	height: clamp(44px, 9vh, 92px);
+	width: auto;
+	display: block;
+}
+
+/* Slide 1 becomes a full-bleed grid of the lead word; the stage clips the
+ * overflowing edge words so the screen reads as densely filled. */
+.rox-intro__slide--one {
+	justify-content: center;
+	gap: clamp(2px, 1.2vh, 12px);
+}
+
+.rox-intro__slide--one .rox-intro__row {
+	flex-wrap: nowrap;
+}
+
+.rox-intro__slide--one p {
+	font-size: clamp(0.95rem, 3.4vw, 1.85rem);
+	margin: 0 0.9ch;
+	opacity: 0.9;
+}
+
+.rox-intro__slide--one .rox-intro__center {
+	opacity: 1;
+}
+
 /* ────────────────────────────────────────────────────────────────────────
  * ② SCRAMBLE LANDING — document layout (gbLOvrw)
  * ──────────────────────────────────────────────────────────────────────── */
