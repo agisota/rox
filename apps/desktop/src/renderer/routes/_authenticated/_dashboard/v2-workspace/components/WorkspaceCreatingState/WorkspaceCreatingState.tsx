@@ -15,13 +15,13 @@ interface Step {
 // labels feel real — v2 workspaces.create runs the same git work server-side
 // without streaming progress events, so timings here are estimates.
 const STEPS: readonly Step[] = [
-	{ id: "preparing", label: "Preparing", doneAt: 1 },
-	{ id: "syncing", label: "Syncing with remote", doneAt: 4 },
-	{ id: "verifying", label: "Verifying base branch", doneAt: 5 },
-	{ id: "fetching", label: "Fetching latest changes", doneAt: 15 },
-	{ id: "creating_worktree", label: "Creating git worktree", doneAt: 18 },
-	{ id: "copying_config", label: "Copying configuration", doneAt: 20 },
-	{ id: "finalizing", label: "Finalizing setup", doneAt: 23 },
+	{ id: "preparing", label: "Подготовка", doneAt: 1 },
+	{ id: "syncing", label: "Синхронизация с удалённым", doneAt: 4 },
+	{ id: "verifying", label: "Проверка базовой ветки", doneAt: 5 },
+	{ id: "fetching", label: "Получение последних изменений", doneAt: 15 },
+	{ id: "creating_worktree", label: "Создание git worktree", doneAt: 18 },
+	{ id: "copying_config", label: "Копирование конфигурации", doneAt: 20 },
+	{ id: "finalizing", label: "Завершение настройки", doneAt: 23 },
 ] as const;
 
 const TOTAL_SECONDS = STEPS[STEPS.length - 1].doneAt;
@@ -59,10 +59,10 @@ export function WorkspaceCreatingState({
 
 				<div className="flex flex-col gap-1.5">
 					<h1 className="text-[15px] font-medium tracking-tight text-foreground">
-						Creating workspace
+						Создаём рабочее пространство
 					</h1>
 					<p className="truncate text-[13px] leading-relaxed text-muted-foreground">
-						{name || "Untitled workspace"}
+						{name || "Без названия"}
 					</p>
 				</div>
 
@@ -103,15 +103,15 @@ export function WorkspaceCreatingState({
 						<span className="font-mono tabular-nums">
 							{formatElapsed(elapsed)}
 						</span>
-						<span>~{TOTAL_SECONDS}s typical</span>
+						<span>обычно ~{TOTAL_SECONDS} с</span>
 					</div>
 				</div>
 
 				{stuck && (
 					<div className="flex w-full flex-col gap-2 border-t border-border/60 pt-4 animate-in fade-in slide-in-from-bottom-1 duration-500">
 						<p className="select-text cursor-text text-[12px] leading-relaxed text-muted-foreground">
-							This is taking longer than usual. The workspace may already be
-							ready — reloading can pick it up.
+							Это занимает больше времени, чем обычно. Рабочее пространство,
+							возможно, уже готово — перезагрузка может его подхватить.
 						</p>
 						<Button
 							size="sm"
@@ -124,7 +124,7 @@ export function WorkspaceCreatingState({
 								strokeWidth={2}
 								aria-hidden="true"
 							/>
-							Reload window
+							Перезагрузить окно
 						</Button>
 					</div>
 				)}

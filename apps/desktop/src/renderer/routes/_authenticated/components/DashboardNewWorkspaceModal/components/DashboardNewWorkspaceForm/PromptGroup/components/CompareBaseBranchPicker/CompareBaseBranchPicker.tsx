@@ -118,7 +118,7 @@ export function CompareBaseBranchPicker({
 						</span>
 					) : (
 						<span className="truncate text-muted-foreground/80">
-							Select base branch…
+							Выберите базовую ветку…
 						</span>
 					)}
 					<HiChevronUpDown className="size-3 shrink-0" />
