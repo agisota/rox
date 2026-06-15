@@ -17,7 +17,9 @@ const { InMemoryTransport } = await import(
 	"@modelcontextprotocol/sdk/inMemory.js"
 );
 const { McpServer } = await import("@modelcontextprotocol/sdk/server/mcp.js");
-const { AgentSourcePool } = await import("./agent-source-pool");
+const { AgentSourcePool, createExternalDownstreamClient } = await import(
+	"./agent-source-pool"
+);
 const { namespacedToolName, registerProxyTools, stripToolNamePrefix } =
 	await import("./proxy-tools");
 
@@ -29,6 +31,7 @@ import type {
 	PooledAgentSource,
 	ResolvedAgentSource,
 } from "./agent-source-pool";
+import type { McpContext } from "./auth";
 
 // ---------------------------------------------------------------------------
 // Network-free, DB-free proxy tests. A mock McpDownstreamClient stands in for
@@ -324,5 +327,18 @@ describe("AgentSourcePool — connection isolation", () => {
 
 		await pool.cleanup();
 		expect(pool.getConnected()).toHaveLength(0);
+	});
+});
+
+// External transport guard — the contract the pool relies on to isolate a
+// misconfigured source (the endpoint check runs before any network/DB access).
+describe("external downstream client", () => {
+	it("rejects a source with no endpointUrl", async () => {
+		await expect(
+			createExternalDownstreamClient(
+				resolvedSource("no-endpoint", "external_http"),
+				{} as McpContext,
+			),
+		).rejects.toThrow(/no endpointUrl/);
 	});
 });

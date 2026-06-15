@@ -1,4 +1,5 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { McpContext } from "./auth";
 import type { McpToolCallEmitter } from "./define-tool";
@@ -163,19 +164,42 @@ export async function createInMemoryDownstreamClient(
 }
 
 /**
- * Placeholder external-transport connector for `mcp` / `external_http` sources.
- * A real Streamable-HTTP transport (with credentials from
- * `agentSource.getDecryptedConfig`) is out of scope for this wave (plan R2): the
- * typed boundary is defined so the pool, registrar, and tests are complete, and
- * wiring the SDK HTTP transport here is the only remaining step. Throws a typed,
- * isolated error so the pool skips this source rather than failing the others.
+ * External-transport connector for `mcp` / `external_http` sources: connects an
+ * SDK client to the source's `endpointUrl` over Streamable HTTP, injecting the
+ * decrypted credential map (from `agentSource.getDecryptedConfig`) as HTTP
+ * headers — so a source stores e.g. `{ Authorization: "Bearer …" }` or
+ * `{ "X-API-Key": "…" }`. Credentials are read server-side only, through the
+ * membership-gated read-path, never via the `list` projection. Throws on a
+ * missing endpoint or a failed connect so the pool isolates this source rather
+ * than failing the others.
  */
 export async function createExternalDownstreamClient(
 	source: ResolvedAgentSource,
+	ctx: McpContext,
 ): Promise<McpDownstreamClient> {
-	throw new Error(
-		`External MCP transport for source "${source.slug}" (kind: ${source.kind}) is not implemented yet`,
+	if (!source.endpointUrl) {
+		throw new Error(
+			`External agent source "${source.slug}" (kind: ${source.kind}) has no endpointUrl`,
+		);
+	}
+
+	const { createMcpCaller } = await import("./caller");
+	const caller = createMcpCaller(ctx);
+	const { credentials } = await caller.agentSource.getDecryptedConfig({
+		id: source.id,
+		organizationId: ctx.organizationId,
+	});
+
+	const transport = new StreamableHTTPClientTransport(
+		new URL(source.endpointUrl),
+		credentials ? { requestInit: { headers: credentials } } : undefined,
 	);
+	const client = new Client({ name: "rox-v2-proxy", version: "1.0.0" });
+	await client.connect(transport);
+
+	return adaptSdkClient(client, async () => {
+		await client.close();
+	});
 }
 
 /**
@@ -190,7 +214,7 @@ export function defaultAgentSourceConnector(
 		if (IN_MEMORY_KINDS.has(source.kind)) {
 			return createInMemoryDownstreamClient(ctx, onToolCall);
 		}
-		return createExternalDownstreamClient(source);
+		return createExternalDownstreamClient(source, ctx);
 	};
 }
 
