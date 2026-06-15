@@ -18,7 +18,11 @@ import { protectedProcedure, publicProcedure } from "../../trpc";
 import { verifyOrgAdmin } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
 
-const DEFAULT_SHARE_ORIGIN = "https://share.rox.one";
+// The public `/s/<slug>` route is served by apps/web (app.rox.one). The branded
+// `share.rox.one` host has no DNS record, so links built against it 404 at the
+// resolver. Default to the domain that actually serves the route; override with
+// SHARE_ORIGIN / NEXT_PUBLIC_SHARE_ORIGIN once a branded host is wired up.
+const DEFAULT_SHARE_ORIGIN = "https://app.rox.one";
 const MAX_PUBLIC_SHARE_BYTES = 2_000_000;
 const MAX_CHAT_MESSAGES_PER_SHARE = 500;
 const SHARE_SLUG_RE = /^[A-Za-z0-9_-]+$/;

@@ -317,7 +317,7 @@ describe("share.publishChatSession", () => {
 		expect(result).toEqual({
 			id: SHARE_ID,
 			slug: SHARE_SLUG,
-			url: `https://share.rox.one/s/${SHARE_SLUG}`,
+			url: `https://app.rox.one/s/${SHARE_SLUG}`,
 		});
 		expect(chatSessionsFindFirst).toHaveBeenCalledTimes(1);
 		expect(txInsert).toHaveBeenCalledTimes(1);
@@ -360,7 +360,7 @@ describe("share.publishArtifact", () => {
 		expect(result).toEqual({
 			id: SHARE_ID,
 			slug: SHARE_SLUG,
-			url: `https://share.rox.one/s/${SHARE_SLUG}`,
+			url: `https://app.rox.one/s/${SHARE_SLUG}`,
 		});
 		expect(artifactsFindFirst).toHaveBeenCalledTimes(1);
 		expect(txInsert).toHaveBeenCalledTimes(1);
