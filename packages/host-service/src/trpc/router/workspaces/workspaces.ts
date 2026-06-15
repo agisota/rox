@@ -459,6 +459,7 @@ async function registerCloudAndLocal(args: {
 			hostId: host.machineId,
 			taskId: args.taskId,
 			id: args.id,
+			clientMachineId: ctx.clientMachineId,
 		})
 		.catch(async (err) => {
 			await args.rollbackWorktree();

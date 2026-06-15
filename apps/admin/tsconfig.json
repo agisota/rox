@@ -1,7 +1,6 @@
 {
 	"extends": "@rox/typescript/next.json",
 	"compilerOptions": {
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*"]
 		}

@@ -8,7 +8,7 @@ import type { EventBus } from "./events";
 import type { AgentPreinstaller } from "./runtime/agent-preinstall";
 import type { ChatRuntimeManager } from "./runtime/chat";
 import type { WorkspaceFilesystemManager } from "./runtime/filesystem";
-import type { GitFactory } from "./runtime/git";
+import type { GitCredentialProvider, GitFactory } from "./runtime/git";
 import type { PullRequestRuntimeManager } from "./runtime/pull-requests";
 import type { TerminalAgentStore } from "./terminal-agents";
 import type { ExecGh } from "./trpc/router/workspace-creation/utils/exec-gh";
@@ -25,6 +25,7 @@ export interface HostServiceRuntime {
 
 export interface HostServiceContext {
 	git: GitFactory;
+	credentials: GitCredentialProvider;
 	github: () => Promise<Octokit>;
 	execGh: ExecGh;
 	api: ApiClient;
@@ -35,4 +36,5 @@ export interface HostServiceContext {
 	terminalAgentStore: TerminalAgentStore;
 	organizationId: string;
 	isAuthenticated: boolean;
+	clientMachineId?: string;
 }
