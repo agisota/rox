@@ -1,10 +1,10 @@
 import { db, dbWs } from "@rox/db/client";
-import { chatSessions } from "@rox/db/schema";
+import { chatSessions, usageRequests } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
 import { AVAILABLE_CHAT_MODELS } from "@rox/shared/chat-models";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
 import { uploadChatAttachment } from "./utils/upload-chat-attachment";
@@ -13,6 +13,120 @@ export const chatRouter = {
 	getModels: protectedProcedure.query(() => {
 		return { models: [...AVAILABLE_CHAT_MODELS] };
 	}),
+
+	listSessions: protectedProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.activeOrganizationId;
+
+		if (!organizationId) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "No active organization selected",
+			});
+		}
+
+		const sessions = await db
+			.select({
+				id: chatSessions.id,
+				title: chatSessions.title,
+				workspaceId: chatSessions.workspaceId,
+				v2WorkspaceId: chatSessions.v2WorkspaceId,
+				createdAt: chatSessions.createdAt,
+				updatedAt: chatSessions.updatedAt,
+				lastActiveAt: chatSessions.lastActiveAt,
+			})
+			.from(chatSessions)
+			.where(
+				and(
+					eq(chatSessions.createdBy, ctx.session.user.id),
+					eq(chatSessions.organizationId, organizationId),
+				),
+			)
+			.orderBy(desc(chatSessions.lastActiveAt))
+			.limit(50);
+
+		if (sessions.length === 0) {
+			return { sessions, usageRequests: [] };
+		}
+
+		const sessionIds = sessions.map((session) => session.id);
+		const usageRows = await db
+			.select({
+				id: usageRequests.id,
+				chatSessionId: usageRequests.chatSessionId,
+				modelId: usageRequests.modelId,
+				tokensIn: usageRequests.tokensIn,
+				tokensOut: usageRequests.tokensOut,
+				trace: usageRequests.trace,
+				createdAt: usageRequests.createdAt,
+			})
+			.from(usageRequests)
+			.where(
+				and(
+					eq(usageRequests.userId, ctx.session.user.id),
+					inArray(usageRequests.chatSessionId, sessionIds),
+				),
+			)
+			.orderBy(usageRequests.createdAt);
+
+		return { sessions, usageRequests: usageRows };
+	}),
+
+	getSessionDetail: protectedProcedure
+		.input(z.object({ sessionId: z.uuid() }))
+		.query(async ({ ctx, input }) => {
+			const organizationId = ctx.activeOrganizationId;
+
+			if (!organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "No active organization selected",
+				});
+			}
+
+			const [session] = await db
+				.select({
+					id: chatSessions.id,
+					title: chatSessions.title,
+					workspaceId: chatSessions.workspaceId,
+					v2WorkspaceId: chatSessions.v2WorkspaceId,
+					createdAt: chatSessions.createdAt,
+					updatedAt: chatSessions.updatedAt,
+					lastActiveAt: chatSessions.lastActiveAt,
+				})
+				.from(chatSessions)
+				.where(
+					and(
+						eq(chatSessions.id, input.sessionId),
+						eq(chatSessions.createdBy, ctx.session.user.id),
+						eq(chatSessions.organizationId, organizationId),
+					),
+				)
+				.limit(1);
+
+			if (!session) {
+				return null;
+			}
+
+			const usageRows = await db
+				.select({
+					id: usageRequests.id,
+					modelId: usageRequests.modelId,
+					tokensIn: usageRequests.tokensIn,
+					tokensOut: usageRequests.tokensOut,
+					trace: usageRequests.trace,
+					createdAt: usageRequests.createdAt,
+				})
+				.from(usageRequests)
+				.where(
+					and(
+						eq(usageRequests.userId, ctx.session.user.id),
+						eq(usageRequests.chatSessionId, session.id),
+					),
+				)
+				.orderBy(usageRequests.createdAt);
+
+			return { session, usageRequests: usageRows };
+		}),
 
 	createSession: protectedProcedure
 		.input(
