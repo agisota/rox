@@ -14,9 +14,15 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { HiCheck, HiMiniPlay } from "react-icons/hi2";
+import { AgentHarnessStatusBadge } from "renderer/components/AgentHarnessStatusBadge";
 import { AgentSelect } from "renderer/components/AgentSelect";
 import { env } from "renderer/env.renderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
+import {
+	getOmpOdwHarnessEntry,
+	isOmpAgent,
+	useAgentPreinstallStatus,
+} from "renderer/hooks/useAgentPreinstallStatus";
 import {
 	getPreferredV2AgentId,
 	useV2AgentChoices,
@@ -89,6 +95,8 @@ export function RunInWorkspacePopoverV2({
 
 	const launchHostUrl = useHostUrl(hostId);
 	const setUpProjectIds = useSelectedHostProjectIds(hostId);
+	const preinstallStatusQuery = useAgentPreinstallStatus(launchHostUrl);
+	const odwHarnessEntry = getOmpOdwHarnessEntry(preinstallStatusQuery.data);
 
 	const { data: v2Projects } = useLiveQuery(
 		(q) =>
@@ -181,6 +189,11 @@ export function RunInWorkspacePopoverV2({
 			window.localStorage.setItem(AGENT_STORAGE_KEY, next);
 		}
 	};
+	const selectedAgentConfig = useMemo(
+		() => v2Agents.find((agent) => agent.id === selectedAgent) ?? null,
+		[v2Agents, selectedAgent],
+	);
+	const showOdwHarnessBadge = isOmpAgent(selectedAgentConfig);
 
 	const [open, setOpen] = useState(false);
 	const [projectPickerOpen, setProjectPickerOpen] = useState(false);
@@ -380,6 +393,9 @@ export function RunInWorkspacePopoverV2({
 						noneLabel="Без агента"
 						noneValue={NONE}
 					/>
+					{showOdwHarnessBadge && (
+						<AgentHarnessStatusBadge entry={odwHarnessEntry} />
+					)}
 				</div>
 
 				<div className="border-t border-border p-2">

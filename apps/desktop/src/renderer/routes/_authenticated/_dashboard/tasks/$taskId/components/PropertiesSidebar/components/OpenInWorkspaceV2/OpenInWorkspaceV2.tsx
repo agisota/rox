@@ -11,9 +11,15 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { HiArrowRight, HiChevronDown } from "react-icons/hi2";
+import { AgentHarnessStatusBadge } from "renderer/components/AgentHarnessStatusBadge";
 import { AgentSelect } from "renderer/components/AgentSelect";
 import { env } from "renderer/env.renderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
+import {
+	getOmpOdwHarnessEntry,
+	isOmpAgent,
+	useAgentPreinstallStatus,
+} from "renderer/hooks/useAgentPreinstallStatus";
 import {
 	getPreferredV2AgentId,
 	useV2AgentChoices,
@@ -125,6 +131,8 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 	const launchHostUrl = useHostUrl(hostId);
 	const { agents: v2Agents, isFetched: v2AgentsFetched } =
 		useV2AgentChoices(launchHostUrl);
+	const preinstallStatusQuery = useAgentPreinstallStatus(launchHostUrl);
+	const odwHarnessEntry = getOmpOdwHarnessEntry(preinstallStatusQuery.data);
 	const validAgentIds = useMemo(
 		() => new Set(v2Agents.map((agent) => agent.id)),
 		[v2Agents],
@@ -171,6 +179,11 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 			window.localStorage.setItem(AGENT_STORAGE_KEY, next);
 		}
 	};
+	const selectedAgentConfig = useMemo(
+		() => v2Agents.find((agent) => agent.id === selectedAgent) ?? null,
+		[v2Agents, selectedAgent],
+	);
+	const showOdwHarnessBadge = isOmpAgent(selectedAgentConfig);
 
 	const selectedProject = recentProjects.find(
 		(project) => project.id === selectedProjectId,
@@ -366,6 +379,9 @@ export function OpenInWorkspaceV2({ task }: OpenInWorkspaceV2Props) {
 				noneLabel="Без агента"
 				noneValue={NONE}
 			/>
+			{showOdwHarnessBadge && (
+				<AgentHarnessStatusBadge entry={odwHarnessEntry} className="mt-2" />
+			)}
 		</div>
 	);
 }

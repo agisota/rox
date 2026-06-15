@@ -19,12 +19,18 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { GoIssueOpened } from "react-icons/go";
 import { LuGitPullRequest } from "react-icons/lu";
 import { SiLinear } from "react-icons/si";
+import { AgentHarnessStatusBadge } from "renderer/components/AgentHarnessStatusBadge";
 import { AgentSelect } from "renderer/components/AgentSelect";
 import { LinkedIssuePill } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter/components/LinkedIssuePill";
 import { IssueLinkCommand } from "renderer/components/Chat/ChatInterface/components/IssueLinkCommand";
 import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { resolveHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useAgentLaunchPreferences } from "renderer/hooks/useAgentLaunchPreferences";
+import {
+	getOmpOdwHarnessEntry,
+	isOmpAgent,
+	useAgentPreinstallStatus,
+} from "renderer/hooks/useAgentPreinstallStatus";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";
 import {
 	getPreferredV2AgentId,
@@ -143,6 +149,8 @@ export function PromptGroup({
 	}, [draft.hostId, machineId, activeHostUrl, activeOrganizationId, relayUrl]);
 	const { agents: v2Agents, isFetched: v2AgentsFetched } =
 		useV2AgentChoices(launchHostUrl);
+	const preinstallStatusQuery = useAgentPreinstallStatus(launchHostUrl);
+	const odwHarnessEntry = getOmpOdwHarnessEntry(preinstallStatusQuery.data);
 	const selectableAgentIds = useMemo(
 		() => v2Agents.map((agent) => agent.id),
 		[v2Agents],
@@ -174,6 +182,11 @@ export function PromptGroup({
 		const preferred = getPreferredV2AgentId(v2Agents);
 		if (preferred) setSelectedAgent(preferred);
 	}, [v2AgentsFetched, v2Agents, selectedAgent, setSelectedAgent]);
+	const selectedAgentConfig = useMemo(
+		() => v2Agents.find((agent) => agent.id === selectedAgent) ?? null,
+		[v2Agents, selectedAgent],
+	);
+	const showOdwHarnessBadge = isOmpAgent(selectedAgentConfig);
 
 	const branchPreview = branchNameEdited
 		? sanitizeUserBranchName(branchName)
@@ -463,6 +476,12 @@ export function PromptGroup({
 							noneLabel="No agent"
 							noneValue="none"
 						/>
+						{showOdwHarnessBadge && (
+							<AgentHarnessStatusBadge
+								entry={odwHarnessEntry}
+								className="hidden sm:inline-flex"
+							/>
+						)}
 					</PromptInputTools>
 					<div className="flex items-center gap-2">
 						<AttachmentButtons

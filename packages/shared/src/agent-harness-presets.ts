@@ -56,6 +56,8 @@ const BASE_AGENT_IDS: ReadonlySet<string> = new Set(
 	BUILTIN_TERMINAL_AGENT_TYPES,
 );
 
+export const ODW_OMP_HARNESS_ID = "open-dynamic-workflows-omp" as const;
+
 export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 	{
 		id: "oh-my-claudecode",
@@ -84,7 +86,7 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		optional: true,
 	},
 	{
-		id: "open-dynamic-workflows-omp",
+		id: ODW_OMP_HARNESS_ID,
 		label: "Open Dynamic Workflows + Oh My Pi",
 		description:
 			"Optional workflow orchestration layer for running dynamic workflow scripts through Oh My Pi.",

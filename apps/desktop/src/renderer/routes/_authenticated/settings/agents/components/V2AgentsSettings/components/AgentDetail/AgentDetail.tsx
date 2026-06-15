@@ -1,17 +1,27 @@
 import type { HostAgentConfig } from "@rox/host-service/settings";
+import { ODW_OMP_HARNESS_ID } from "@rox/shared/agent-harness-presets";
 import type { PromptTransport } from "@rox/shared/agent-prompt-launch";
+import { DEFAULT_TERMINAL_AGENT_TYPE } from "@rox/shared/agent-settings";
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { toast } from "@rox/ui/sonner";
+import { Switch } from "@rox/ui/switch";
 import { cn } from "@rox/ui/utils";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
 	getPresetIcon,
 	useIsDarkTheme,
 } from "renderer/assets/app-icons/preset-icons";
+import { AgentHarnessStatusBadge } from "renderer/components/AgentHarnessStatusBadge";
+import {
+	AGENT_PREINSTALL_STATUS_QUERY_KEY,
+	getOmpOdwHarnessEntry,
+	getOmpOdwHarnessState,
+	useAgentPreinstallStatus,
+} from "renderer/hooks/useAgentPreinstallStatus";
 import {
 	getAgentCommandText,
 	isAgentCommandPatchChanged,
@@ -37,8 +47,13 @@ export function AgentDetail({
 }: AgentDetailProps) {
 	const hostService = useLocalHostService();
 	const { activeHostUrl } = hostService;
+	const queryClient = useQueryClient();
 	const isDark = useIsDarkTheme();
 	const icon = getPresetIcon(config.presetId, isDark);
+	const preinstallStatusQuery = useAgentPreinstallStatus(activeHostUrl);
+	const odwHarnessEntry = getOmpOdwHarnessEntry(preinstallStatusQuery.data);
+	const odwHarnessState = getOmpOdwHarnessState(odwHarnessEntry);
+	const showOdwHarness = config.presetId === DEFAULT_TERMINAL_AGENT_TYPE;
 
 	const [label, setLabel] = useState(config.label);
 	const [commandText, setCommandText] = useState(getAgentCommandText(config));
@@ -109,6 +124,47 @@ export function AgentDetail({
 		onSuccess: () => onDeleted(),
 		onError: (err) =>
 			toast.error(err instanceof Error ? err.message : "Не удалось удалить"),
+	});
+
+	const odwHarnessMutation = useMutation({
+		mutationFn: async (enabled: boolean) => {
+			if (!activeHostUrl) {
+				throw new Error(
+					getHostServiceUnavailableMessage(hostService, {
+						action: "изменить ODW harness",
+					}),
+				);
+			}
+			const client = getHostServiceClientByUrl(activeHostUrl);
+			if (enabled) {
+				return client.settings.agentPreinstall.retry.mutate({
+					presetId: ODW_OMP_HARNESS_ID,
+				});
+			}
+
+			const result = await client.settings.agentPreinstall.skip.mutate({
+				presetId: ODW_OMP_HARNESS_ID,
+			});
+			if (!result.skipped) {
+				throw new Error("ODW harness preset is not available on this host");
+			}
+			return result;
+		},
+		onSuccess: (_result, enabled) => {
+			toast.success(
+				enabled ? "ODW harness включается" : "ODW harness выключен",
+			);
+			void queryClient.invalidateQueries({
+				queryKey: AGENT_PREINSTALL_STATUS_QUERY_KEY,
+			});
+			void queryClient.refetchQueries({
+				queryKey: AGENT_PREINSTALL_STATUS_QUERY_KEY,
+			});
+		},
+		onError: (err) =>
+			toast.error(
+				err instanceof Error ? err.message : "Не удалось изменить ODW harness",
+			),
 	});
 
 	const handleLabelBlur = () => {
@@ -240,6 +296,44 @@ export function AgentDetail({
 						</div>
 					</StackedField>
 				</Section>
+
+				{showOdwHarness && (
+					<Section
+						title="Workflow harness"
+						action={<AgentHarnessStatusBadge entry={odwHarnessEntry} />}
+					>
+						<div className="flex items-center justify-between gap-6 rounded-md border border-border bg-muted/30 px-3 py-3">
+							<div className="min-w-0 flex-1">
+								<div className="text-sm font-medium">
+									Open Dynamic Workflows
+								</div>
+								<p className="mt-0.5 text-xs text-muted-foreground">
+									Additive OMP workflow layer
+								</p>
+								{odwHarnessEntry?.lastError ? (
+									<p className="mt-2 line-clamp-2 text-xs text-destructive">
+										{odwHarnessEntry.lastError}
+									</p>
+								) : null}
+							</div>
+							<Switch
+								aria-label="Toggle Open Dynamic Workflows harness"
+								checked={
+									odwHarnessState === "ready" ||
+									odwHarnessState === "installing"
+								}
+								disabled={
+									!activeHostUrl ||
+									odwHarnessMutation.isPending ||
+									odwHarnessState === "installing"
+								}
+								onCheckedChange={(checked) =>
+									odwHarnessMutation.mutate(checked)
+								}
+							/>
+						</div>
+					</Section>
+				)}
 
 				<div className="pt-2 border-t border-border">
 					<div className="flex items-center justify-between gap-8">
