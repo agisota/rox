@@ -1,7 +1,7 @@
 "use client";
 
 import { DOWNLOAD_URL_MAC_ARM64 } from "@rox/shared/constants";
-import { createDraggable, utils } from "animejs";
+import { animate, createDraggable, createSpring, utils } from "animejs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SNAP_LABEL_ARMED, SNAP_LABEL_IDLE } from "../../constants";
 
@@ -19,6 +19,15 @@ interface DraggableLike {
 	x: number;
 	revert: () => void;
 	refresh: () => void;
+}
+
+/**
+ * Minimal shape of the anime.js v4 `JSAnimation` we keep around for the
+ * spring-back: we only ever need to `revert()` it on cleanup / before
+ * restarting, so a structural type avoids leaning on `any`.
+ */
+interface AnimationLike {
+	revert: () => void;
 }
 
 /** Inset of the handle from the track edges — mirrors `top/left: 6px` in CSS. */
@@ -52,7 +61,9 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 	const fillRef = useRef<HTMLDivElement>(null);
 	const handleRef = useRef<HTMLDivElement>(null);
 	const completedRef = useRef(false);
+	const springBackRef = useRef<AnimationLike | null>(null);
 	const [label, setLabel] = useState(SNAP_LABEL_IDLE);
+	const [progressValue, setProgressValue] = useState(0);
 
 	const triggerDownload = useCallback(() => {
 		const anchor = document.createElement("a");
@@ -83,7 +94,9 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 			Math.max(0, track.clientWidth - handle.clientWidth - TRACK_PADDING * 2);
 
 		const setFill = (progress: number) => {
-			utils.set(fill, { scaleX: progress });
+			const clampedProgress = utils.clamp(progress, 0, 1);
+			utils.set(fill, { scaleX: clampedProgress });
+			setProgressValue(Math.round(clampedProgress * 100));
 		};
 
 		const draggable = createDraggable(handle, {
@@ -103,9 +116,27 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 					setFill(1);
 					complete();
 				} else {
-					self.x = 0;
-					setFill(0);
+					// Spring the handle back to the start instead of snapping. The
+					// spring drives the handle's `x`; we read its live transform each
+					// frame to keep the fill bar tracking the handle exactly.
 					setLabel(SNAP_LABEL_IDLE);
+					springBackRef.current?.revert();
+					springBackRef.current = null;
+					const distance = travel();
+					springBackRef.current = animate(handle, {
+						x: 0,
+						ease: createSpring({ stiffness: 140, damping: 15 }),
+						onUpdate: () => {
+							const current = utils.get(handle, "x", false) as number;
+							const progress =
+								distance > 0 ? utils.clamp(current / distance, 0, 1) : 0;
+							setFill(progress);
+						},
+						onComplete: () => {
+							setFill(0);
+							springBackRef.current = null;
+						},
+					}) as unknown as AnimationLike;
 				}
 			},
 		}) as unknown as DraggableLike;
@@ -117,6 +148,8 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 
 		return () => {
 			observer.disconnect();
+			springBackRef.current?.revert();
+			springBackRef.current = null;
 			draggable.revert();
 		};
 	}, [complete]);
@@ -147,7 +180,7 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 			aria-label="Перетащите, чтобы скачать"
 			aria-valuemin={0}
 			aria-valuemax={100}
-			aria-valuenow={0}
+			aria-valuenow={progressValue}
 			onKeyDown={handleKeyActivate}
 		>
 			<div className="rox-snap__fill" ref={fillRef} />

@@ -59,7 +59,7 @@ export function resolveHostTarget(
 						transformer: SuperJSON,
 						headers: {
 							Authorization: `Bearer ${manifest.authToken}`,
-							"x-superset-client-machine-id": localHostId,
+							"x-rox-client-machine-id": localHostId,
 						},
 					}),
 				],
@@ -78,7 +78,7 @@ export function resolveHostTarget(
 					transformer: SuperJSON,
 					headers: {
 						Authorization: `Bearer ${options.userJwt}`,
-						"x-superset-client-machine-id": localHostId,
+						"x-rox-client-machine-id": localHostId,
 					},
 				}),
 			],

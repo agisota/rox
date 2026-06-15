@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, createTimeline, scrambleText } from "animejs";
+import { animate, scrambleText, utils } from "animejs";
 import { useEffect, useRef } from "react";
 import {
 	LANDING_DOWNLOAD_HEADING,
@@ -11,6 +11,7 @@ import {
 	LANDING_HOW_PARAGRAPH,
 	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
+import { RoxDivider } from "./components/RoxDivider";
 
 interface ScrambleLandingProps {
 	children?: React.ReactNode;
@@ -18,16 +19,26 @@ interface ScrambleLandingProps {
 
 /**
  * Scramble-text landing document, ported from Julian Garnier's anime.js v4
- * "Scramble Text playground" (codepen gbLOvrw) into Rox branding.
+ * "Scramble Text playground" (codepen gbLOvrw) into Rox branding, then upgraded
+ * for a premium feel:
  *
- * The real copy is server-rendered in the JSX below (SEO / no-JS), and anime.js
- * only scrambles then restores it on mount. Each `.rox-scramble` element plays a
- * staggered intro scramble, then re-scrambles on `pointerenter` / `pointerdown`.
- * Everything is scoped to a container ref so it never touches the rest of the
- * page, and the effect is skipped entirely under `prefers-reduced-motion`.
+ *  - **Scroll-reveal scramble**: each line scrambles into place as it enters the
+ *    viewport (IntersectionObserver one-shot), so the document "types" itself as
+ *    you scroll instead of all at once on mount.
+ *  - **Living background**: the brand radial glow slowly breathes via animated
+ *    CSS custom properties.
+ *  - **SVG dividers**: hairline rules between sections draw themselves in on
+ *    scroll.
+ *
+ * Real copy is server-rendered (SEO / no-JS); anime.js only scrambles then
+ * restores it. Hovering any line re-scrambles it. Everything is scoped to the
+ * container ref and skipped entirely under `prefers-reduced-motion`.
  */
 export function ScrambleLanding({ children }: ScrambleLandingProps) {
 	const containerRef = useRef<HTMLElement>(null);
+	const animationsRef = useRef<
+		Array<{ cancel?: () => void; revert?: () => void }>
+	>([]);
 
 	useEffect(() => {
 		const container = containerRef.current;
@@ -41,24 +52,43 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 			return;
 		}
 
-		const elements = Array.from(
+		const cleanups: Array<() => void> = [];
+		const trackAnimation = <
+			T extends { cancel?: () => void; revert?: () => void },
+		>(
+			animation: T,
+		) => {
+			animationsRef.current.push(animation);
+			return animation;
+		};
+		const cleanupAnimations = () => {
+			for (const animation of animationsRef.current) {
+				animation.cancel?.();
+				animation.revert?.();
+			}
+			animationsRef.current = [];
+		};
+
+		// ── C. Living background: slow breathing of the brand glow ──────────
+		trackAnimation(
+			animate(container, {
+				"--rox-glow-a": [0.12, 0.2],
+				"--rox-glow-y": ["-8%", "-3%"],
+				loop: true,
+				alternate: true,
+				duration: 6000,
+				ease: "inOut(2)",
+			}),
+		);
+
+		// ── A. Scroll-reveal scramble (one-shot per line) + hover re-scramble
+		const scrambleEls = Array.from(
 			container.querySelectorAll<HTMLElement>(".rox-scramble"),
 		);
-		if (elements.length === 0) return;
 
-		const intro = createTimeline({ delay: 500 });
-		const cleanups: Array<() => void> = [];
-
-		for (const element of elements) {
-			const replay = () => {
+		const revealScramble = (element: HTMLElement) => {
+			trackAnimation(
 				animate(element, {
-					innerHTML: scrambleText({ duration: 500 }),
-				});
-			};
-
-			intro.add(
-				element,
-				{
 					innerHTML: scrambleText({
 						override: "",
 						duration: 750,
@@ -66,10 +96,29 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 						perturbation: 0.2,
 						cursor: "░▒▓█",
 					}),
-				},
-				"-=620",
+				}),
 			);
+		};
 
+		const revealObserver = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) {
+						revealScramble(entry.target as HTMLElement);
+						revealObserver.unobserve(entry.target);
+					}
+				}
+			},
+			{ rootMargin: "0px 0px -12% 0px", threshold: 0.15 },
+		);
+
+		for (const element of scrambleEls) {
+			revealObserver.observe(element);
+			const replay = () => {
+				trackAnimation(
+					animate(element, { innerHTML: scrambleText({ duration: 500 }) }),
+				);
+			};
 			element.addEventListener("pointerenter", replay);
 			element.addEventListener("pointerdown", replay);
 			cleanups.push(() => {
@@ -77,13 +126,39 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 				element.removeEventListener("pointerdown", replay);
 			});
 		}
+		cleanups.push(() => revealObserver.disconnect());
 
-		intro.init();
+		// ── E. SVG dividers draw themselves in on scroll ────────────────────
+		const dividers = Array.from(
+			container.querySelectorAll<SVGLineElement>(".rox-divider__line"),
+		);
+		const drawObserver = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) {
+						trackAnimation(
+							animate(entry.target, {
+								strokeDashoffset: [1, 0],
+								ease: "inOut(3)",
+								duration: 900,
+							}),
+						);
+						drawObserver.unobserve(entry.target);
+					}
+				}
+			},
+			{ rootMargin: "0px 0px -10% 0px", threshold: 0.5 },
+		);
+		for (const line of dividers) {
+			// Pathless hairline: dash the whole length, offset it, then draw to 0.
+			utils.set(line, { strokeDasharray: 1, strokeDashoffset: 1 });
+			drawObserver.observe(line);
+		}
+		cleanups.push(() => drawObserver.disconnect());
 
 		return () => {
 			for (const cleanup of cleanups) cleanup();
-			intro.pause();
-			intro.revert();
+			cleanupAnimations();
 		};
 	}, []);
 
@@ -99,6 +174,8 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 				<p className="rox-scramble">{LANDING_INTRO_PARAGRAPH}</p>
 
+				<RoxDivider />
+
 				<h2 className="rox-scramble">{LANDING_FEATURES_HEADING}</h2>
 
 				<ul>
@@ -109,9 +186,13 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 					))}
 				</ul>
 
+				<RoxDivider />
+
 				<h2 className="rox-scramble">{LANDING_HOW_HEADING}</h2>
 
 				<p className="rox-scramble">{LANDING_HOW_PARAGRAPH}</p>
+
+				<RoxDivider />
 
 				<h2 className="rox-scramble">{LANDING_DOWNLOAD_HEADING}</h2>
 

@@ -41,7 +41,7 @@ const sentryPlugin = process.env.SENTRY_AUTH_TOKEN
 			authToken: process.env.SENTRY_AUTH_TOKEN,
 			release: { name: version },
 			// Best-effort: don't fail the release build if the Sentry org/project
-			// isn't provisioned yet (e.g. right after the superset->rox rebrand).
+			// isn't provisioned yet (e.g. right after the Rox rebrand).
 			errorHandler: (err) => {
 				console.warn(`[sentry] sourcemap upload skipped: ${err.message}`);
 			},

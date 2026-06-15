@@ -93,7 +93,7 @@ export function GitHubStarButton({ targetCount }: GitHubStarButtonProps) {
 				button,
 				{
 					scale: [1, 0.97, 1.02, 1],
-					ease: "out(4)",
+					ease: "out(3)",
 					duration: 900,
 				},
 				0,

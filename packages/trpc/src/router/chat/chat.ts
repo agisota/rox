@@ -56,6 +56,8 @@ export const chatRouter = {
 				modelId: usageRequests.modelId,
 				tokensIn: usageRequests.tokensIn,
 				tokensOut: usageRequests.tokensOut,
+				usdCost: usageRequests.usdCost,
+				roxCost: usageRequests.roxCost,
 				trace: usageRequests.trace,
 				createdAt: usageRequests.createdAt,
 			})
@@ -113,6 +115,8 @@ export const chatRouter = {
 					modelId: usageRequests.modelId,
 					tokensIn: usageRequests.tokensIn,
 					tokensOut: usageRequests.tokensOut,
+					usdCost: usageRequests.usdCost,
+					roxCost: usageRequests.roxCost,
 					trace: usageRequests.trace,
 					createdAt: usageRequests.createdAt,
 				})

@@ -97,10 +97,6 @@ export const auth = betterAuth({
 			clientId: env.GH_CLIENT_ID,
 			clientSecret: env.GH_CLIENT_SECRET,
 		},
-		google: {
-			clientId: env.GOOGLE_CLIENT_ID,
-			clientSecret: env.GOOGLE_CLIENT_SECRET,
-		},
 	},
 	databaseHooks: {
 		user: {

@@ -1,7 +1,7 @@
 import type { Transition, Variants } from "framer-motion";
 
 /**
- * Motion design tokens for the Superset desktop app.
+ * Motion design tokens for the Rox desktop app.
  *
  * Append-only, cross-area serialization lane: later cases add presets here
  * (e.g. `motionSpring.panel`, `shellBootVariants`, `motionShake`). Never remove
