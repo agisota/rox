@@ -57,6 +57,8 @@ export async function GET(request: Request) {
 		);
 	}
 
+	const redirectUri = buildLinearRedirectUri(env.NEXT_PUBLIC_API_URL);
+
 	const tokenResponse = await fetch("https://api.linear.app/oauth/token", {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -64,56 +66,81 @@ export async function GET(request: Request) {
 			grant_type: "authorization_code",
 			client_id: env.LINEAR_CLIENT_ID,
 			client_secret: env.LINEAR_CLIENT_SECRET,
-			redirect_uri: buildLinearRedirectUri(env.NEXT_PUBLIC_API_URL),
+			redirect_uri: redirectUri,
 			code,
 		}),
 	});
 
 	if (!tokenResponse.ok) {
+		// Surface the real reason (e.g. redirect_uri mismatch, invalid client) so
+		// the failure is diagnosable instead of an opaque "token_exchange_failed".
+		const body = await tokenResponse.text().catch(() => "");
+		console.error("[linear/callback] Token exchange failed:", {
+			status: tokenResponse.status,
+			redirectUri,
+			body: body.slice(0, 500),
+		});
 		return Response.redirect(
 			`${env.NEXT_PUBLIC_WEB_URL}/integrations/linear?error=token_exchange_failed`,
 		);
 	}
 
-	const tokenData = linearTokenResponseSchema.parse(await tokenResponse.json());
+	// Parse the token response, fetch the Linear org, and persist the connection.
+	// Linear may omit refresh_token (long-lived default grant); the schema now
+	// treats it as optional, and any failure here is logged + surfaced gracefully
+	// rather than throwing an unhandled 500.
+	try {
+		const tokenData = linearTokenResponseSchema.parse(
+			await tokenResponse.json(),
+		);
 
-	const linearClient = new LinearClient({
-		accessToken: tokenData.access_token,
-	});
-	const viewer = await linearClient.viewer;
-	const linearOrg = await viewer.organization;
-
-	const tokenExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
-
-	await db
-		.insert(integrationConnections)
-		.values({
-			organizationId,
-			connectedByUserId: userId,
-			provider: "linear",
+		const linearClient = new LinearClient({
 			accessToken: tokenData.access_token,
-			refreshToken: tokenData.refresh_token,
-			tokenExpiresAt,
-			externalOrgId: linearOrg.id,
-			externalOrgName: linearOrg.name,
-		})
-		.onConflictDoUpdate({
-			target: [
-				integrationConnections.organizationId,
-				integrationConnections.provider,
-			],
-			set: {
+		});
+		const viewer = await linearClient.viewer;
+		const linearOrg = await viewer.organization;
+
+		const tokenExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+		const refreshToken = tokenData.refresh_token ?? null;
+
+		await db
+			.insert(integrationConnections)
+			.values({
+				organizationId,
+				connectedByUserId: userId,
+				provider: "linear",
 				accessToken: tokenData.access_token,
-				refreshToken: tokenData.refresh_token,
+				refreshToken,
 				tokenExpiresAt,
-				disconnectedAt: null,
-				disconnectReason: null,
 				externalOrgId: linearOrg.id,
 				externalOrgName: linearOrg.name,
-				connectedByUserId: userId,
-				updatedAt: new Date(),
-			},
-		});
+			})
+			.onConflictDoUpdate({
+				target: [
+					integrationConnections.organizationId,
+					integrationConnections.provider,
+				],
+				set: {
+					accessToken: tokenData.access_token,
+					refreshToken,
+					tokenExpiresAt,
+					disconnectedAt: null,
+					disconnectReason: null,
+					externalOrgId: linearOrg.id,
+					externalOrgName: linearOrg.name,
+					connectedByUserId: userId,
+					updatedAt: new Date(),
+				},
+			});
+	} catch (connectError) {
+		console.error(
+			"[linear/callback] Failed to finalize Linear connection:",
+			connectError,
+		);
+		return Response.redirect(
+			`${env.NEXT_PUBLIC_WEB_URL}/integrations/linear?error=token_exchange_failed`,
+		);
+	}
 
 	try {
 		await qstash.publishJSON({

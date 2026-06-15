@@ -10,7 +10,10 @@ import { getLinearClient, markConnectionDisconnected } from "./utils";
 
 export const linearTokenResponseSchema = z.object({
 	access_token: z.string(),
-	refresh_token: z.string(),
+	// Linear only returns a refresh_token when the app/grant opts into rotating
+	// tokens; the default OAuth grant issues a long-lived access_token with no
+	// refresh_token. Keep this optional so the callback doesn't 500 on parse.
+	refresh_token: z.string().optional(),
 	expires_in: z.number(),
 	token_type: z.string().optional(),
 	scope: z.string().optional(),
