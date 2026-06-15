@@ -213,7 +213,7 @@ export function DashboardSidebarHeader({
 						</DropdownMenuItem>
 						<DropdownMenuItem onSelect={() => openTemplateGallery()}>
 							<LuLayoutTemplate className="size-4" />
-							Start from a template
+							Начать с шаблона
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -329,7 +329,7 @@ export function DashboardSidebarHeader({
 						</DropdownMenuItem>
 						<DropdownMenuItem onSelect={() => openTemplateGallery()}>
 							<LuLayoutTemplate className="size-4" />
-							Start from a template
+							Начать с шаблона
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

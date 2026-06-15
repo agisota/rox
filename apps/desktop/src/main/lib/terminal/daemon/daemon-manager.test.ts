@@ -195,8 +195,10 @@ mock.module("main/lib/local-db", () => ({
 	},
 }));
 
+const realLocalDbPackage = await import("@rox/local-db");
 mock.module("@rox/local-db", () => ({
-	workspaces: { id: "id" },
+	...realLocalDbPackage,
+	workspaces: { ...realLocalDbPackage.workspaces, id: "id" },
 }));
 
 mock.module("../port-manager", () => ({

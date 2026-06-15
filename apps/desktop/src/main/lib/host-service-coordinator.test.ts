@@ -19,8 +19,8 @@ let killedPids: Array<{ pid: number; signal: NodeJS.Signals | number }> = [];
 let killProcessError: NodeJS.ErrnoException | null = null;
 const testRoxHomeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hsc-home-"));
 
-const childProcessSpawnMock = mock();
 const realChildProcess = await import("node:child_process");
+const childProcessSpawnMock = mock(realChildProcess.spawn);
 
 mock.module("node:child_process", () => ({
 	...realChildProcess,

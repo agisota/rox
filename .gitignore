@@ -109,3 +109,4 @@ packages/cli/*.bun-build
 superset-dev-data/
 .understand-anything/
 .memsearch/
+.env*.local

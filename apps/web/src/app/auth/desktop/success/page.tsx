@@ -21,12 +21,10 @@ export default async function DesktopSuccessPage({
 		desktop_local_callback: localCallbackBase,
 	} = await searchParams;
 
-	// Only allow rox-style custom schemes. Rejecting arbitrary schemes
+	// Only allow Rox custom schemes. Rejecting arbitrary schemes
 	// (e.g. https:, javascript:) prevents the minted session token below from
 	// being delivered to an attacker-controlled handler via a crafted URL.
-	const desktop_protocol = /^(rox|superset)(-[a-z0-9]+)?$/.test(
-		desktopProtocolParam ?? "",
-	)
+	const desktop_protocol = /^rox(-[a-z0-9]+)?$/.test(desktopProtocolParam ?? "")
 		? (desktopProtocolParam as string)
 		: "rox";
 

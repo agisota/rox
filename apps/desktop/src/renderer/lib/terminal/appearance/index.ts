@@ -1,7 +1,7 @@
 import {
 	DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
 	DEFAULT_SETTINGS_TERMINAL_FONT_SIZE,
-} from "@rox/local-db";
+} from "@rox/local-db/schema";
 import type { ITheme } from "@xterm/xterm";
 import { toXtermTheme } from "renderer/stores/theme/utils";
 import {

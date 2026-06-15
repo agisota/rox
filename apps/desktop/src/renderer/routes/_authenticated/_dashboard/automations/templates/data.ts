@@ -25,8 +25,66 @@ const DAILY_9AM = "FREQ=DAILY;BYHOUR=9;BYMINUTE=0";
 const WEEKDAYS_9AM = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0";
 const WEEKLY_MONDAY_9AM = "FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0";
 const WEEKLY_FRIDAY_5PM = "FREQ=WEEKLY;BYDAY=FR;BYHOUR=17;BYMINUTE=0";
+const HOURLY = "FREQ=HOURLY;BYMINUTE=0";
+const NIGHTLY_2AM = "FREQ=DAILY;BYHOUR=2;BYMINUTE=0";
+const EVERY_30_MIN = "FREQ=MINUTELY;INTERVAL=30";
 
 export const AUTOMATION_TEMPLATE_CATEGORIES: AutomationTemplateCategory[] = [
+	{
+		id: "ready-made",
+		label: "Готовые примеры",
+		templates: [
+			{
+				id: "tests-on-push",
+				emoji: "🧪",
+				description:
+					"Часто проверяй новые пуши и прогоняй тесты по затронутым изменениям.",
+				name: "Запустить тесты при пуше",
+				prompt:
+					"Проверь, появились ли новые коммиты/пуши с момента прошлого запуска. Если да — прогони тесты по затронутым изменениям и кратко отчитайся о результатах и упавших тестах.",
+				rrule: HOURLY,
+			},
+			{
+				id: "format-lint-before-pr",
+				emoji: "🧹",
+				description:
+					"Перед открытием PR прогони автоформат и линтер, исправь автоисправимое.",
+				name: "Автоформат + lint перед PR",
+				prompt:
+					"Прогони форматирование и линтер по текущим изменениям. Исправь всё автоисправимое, отметь оставшиеся предупреждения и убедись, что код готов к PR.",
+				rrule: WEEKDAYS_9AM,
+			},
+			{
+				id: "nightly-rebuild",
+				emoji: "🌙",
+				description: "Ночью пересобери проект и сообщи об ошибках сборки.",
+				name: "Ночная пересборка",
+				prompt:
+					"Выполни чистую пересборку проекта. Сообщи об ошибках сборки, предупреждениях и любых регрессиях по сравнению с прошлой ночью.",
+				rrule: NIGHTLY_2AM,
+			},
+			{
+				id: "linear-sync",
+				emoji: "🔗",
+				description:
+					"Синхронизируй задачи Linear: сверь статусы с активностью в репозитории.",
+				name: "Синхронизация задач Linear",
+				prompt:
+					"Сверь задачи Linear с активностью в репозитории (PR, коммиты, ветки). Отметь задачи, которые стоит закрыть или обновить, и предложи изменения статусов.",
+				rrule: WEEKDAYS_9AM,
+			},
+			{
+				id: "auto-pr-review",
+				emoji: "🔍",
+				description:
+					"Авто-ревью открытых PR агентом: качество, риски, предложения.",
+				name: "Авто-ревью PR агентом",
+				prompt:
+					"Проверь открытые PR, появившиеся с прошлого запуска. По каждому сделай ревью: корректность, риски, упрощения и тестовое покрытие. Оставь краткое резюме с приоритетами.",
+				rrule: EVERY_30_MIN,
+			},
+		],
+	},
 	{
 		id: "status-reports",
 		label: "Отчёты о статусе",

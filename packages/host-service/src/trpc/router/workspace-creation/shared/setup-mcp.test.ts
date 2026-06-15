@@ -6,20 +6,47 @@ const WORKTREE = "/tmp/rox/workspaces/feature-x";
 const DEFAULT_NAMES = DEFAULT_MCP_SERVERS.map((s) => s.name);
 
 describe("DEFAULT_MCP_SERVERS", () => {
-	it("only uses bunx-runnable npm packages (no python/uvx, no removed servers)", () => {
-		for (const server of DEFAULT_MCP_SERVERS) {
-			expect(server.pkg.startsWith("@modelcontextprotocol/")).toBe(true);
-		}
+	it("ships the curated default set (filesystem, thinking, exa, context7, rox, telegram)", () => {
+		expect([...DEFAULT_NAMES].sort()).toEqual(
+			[
+				"context7",
+				"exa",
+				"filesystem",
+				"rox",
+				"sequential-thinking",
+				"telegram",
+			].sort(),
+		);
 		// Guard against re-introducing servers that are not npm-runnable.
 		expect(DEFAULT_NAMES).not.toContain("git");
 		expect(DEFAULT_NAMES).not.toContain("github");
 		expect(DEFAULT_NAMES).not.toContain("fetch");
 	});
 
+	it("only uses bunx-runnable npm packages for stdio servers", () => {
+		for (const server of DEFAULT_MCP_SERVERS) {
+			if (server.transport === "stdio") {
+				expect(server.pkg.length).toBeGreaterThan(0);
+				// Python/uvx-only packages would not be bunx-runnable.
+				expect(server.pkg.startsWith("uvx")).toBe(false);
+			}
+		}
+	});
+
+	it("seeds rox as a remote http MCP endpoint", () => {
+		const rox = DEFAULT_MCP_SERVERS.find((s) => s.name === "rox");
+		expect(rox?.transport).toBe("http");
+		if (rox?.transport === "http") {
+			expect(rox.url).toContain("api.zed.md");
+		}
+	});
+
 	it("scopes the filesystem server to the worktree path", () => {
 		const fs = DEFAULT_MCP_SERVERS.find((s) => s.name === "filesystem");
-		expect(fs).toBeDefined();
-		expect(fs?.argsFor(WORKTREE)).toEqual([WORKTREE]);
+		expect(fs?.transport).toBe("stdio");
+		if (fs?.transport === "stdio") {
+			expect(fs.argsFor(WORKTREE)).toEqual([WORKTREE]);
+		}
 	});
 });
 
@@ -121,9 +148,9 @@ describe("mergeCodexMcp", () => {
 
 	it("merge preserves existing user server tables and only appends missing", () => {
 		const existing = [
-			"[mcp_servers.rox]",
+			"[mcp_servers.legacy-custom]",
 			'type = "sse"',
-			'url = "https://api.rox.one/api/v2/agent/mcp"',
+			'url = "https://api.example.com/api/v2/agent/mcp"',
 			"",
 		].join("\n");
 		const out = mergeCodexMcp(existing, WORKTREE);
@@ -135,7 +162,7 @@ describe("mergeCodexMcp", () => {
 			mcp_servers: Record<string, { type?: string; command?: string }>;
 		};
 		// User server preserved.
-		expect(parsed.mcp_servers.rox?.type).toBe("sse");
+		expect(parsed.mcp_servers["legacy-custom"]?.type).toBe("sse");
 		// Defaults appended.
 		expect(parsed.mcp_servers.filesystem?.command).toBe("bunx");
 		expect(parsed.mcp_servers["sequential-thinking"]?.command).toBe("bunx");
@@ -167,24 +194,17 @@ describe("mergeCodexMcp", () => {
 	});
 
 	it("is a no-op when all defaults already exist as user tables", () => {
-		const existing = [
-			"[mcp_servers.filesystem]",
-			'command = "x"',
-			"args = []",
-			"",
-			"[mcp_servers.sequential-thinking]",
-			'command = "y"',
-			"args = []",
-			"",
-		].join("\n");
+		const existing = `${DEFAULT_NAMES.map(
+			(name) => `[mcp_servers.${name}]\ncommand = "x"\nargs = []\n`,
+		).join("\n")}`;
 		expect(mergeCodexMcp(existing, WORKTREE)).toBeNull();
 	});
 
 	it("re-run after a real merge stays a no-op", () => {
 		const existing = [
-			"[mcp_servers.rox]",
+			"[mcp_servers.legacy-custom]",
 			'type = "sse"',
-			'url = "https://api.rox.one/api/v2/agent/mcp"',
+			'url = "https://api.example.com/api/v2/agent/mcp"',
 		].join("\n");
 		const seeded = mergeCodexMcp(existing, WORKTREE) as string;
 		expect(mergeCodexMcp(seeded, WORKTREE)).toBeNull();

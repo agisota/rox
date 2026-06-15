@@ -18,7 +18,7 @@ export function removeHostServiceSecret(hostUrl: string): void {
 
 export function getHostServiceHeaders(hostUrl: string): Record<string, string> {
 	const headers: Record<string, string> = clientMachineId
-		? { "x-superset-client-machine-id": clientMachineId }
+		? { "x-rox-client-machine-id": clientMachineId }
 		: {};
 	const secret = secrets.get(hostUrl);
 	if (secret) {

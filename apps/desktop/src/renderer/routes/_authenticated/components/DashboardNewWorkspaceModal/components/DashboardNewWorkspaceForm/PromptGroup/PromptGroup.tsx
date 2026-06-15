@@ -344,7 +344,7 @@ export function PromptGroup({
 			<div className="flex items-center">
 				<Input
 					className="border-none bg-transparent dark:bg-transparent shadow-none text-base font-medium px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/40 min-w-0 flex-1"
-					placeholder="Workspace name (optional)"
+					placeholder="Название рабочего пространства (необязательно)"
 					value={workspaceName}
 					onChange={(e) =>
 						updateDraft({
@@ -362,7 +362,7 @@ export function PromptGroup({
 						className={cn(
 							"border-none bg-transparent dark:bg-transparent shadow-none text-xs font-mono text-muted-foreground/60 px-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/30 focus:text-muted-foreground text-right placeholder:text-right overflow-hidden text-ellipsis",
 						)}
-						placeholder={branchPreview || "branch name"}
+						placeholder={branchPreview || "имя ветки"}
 						value={branchName}
 						onChange={(e) =>
 							updateDraft({
@@ -452,7 +452,7 @@ export function PromptGroup({
 					content={prompt}
 					onChange={(markdown) => updateDraft({ prompt: markdown })}
 					autoFocus="start"
-					placeholder="What do you want to do?"
+					placeholder="Что нужно сделать?"
 					className="flex flex-col min-h-[100px] max-h-[200px] px-3 pt-3"
 					editorClassName="overflow-y-auto text-sm"
 					features={{

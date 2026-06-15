@@ -169,16 +169,30 @@ export const ModelSelectorLogo = ({
 	provider,
 	className,
 	...props
-}: ModelSelectorLogoProps) => (
-	<img
-		{...props}
-		alt={`${provider} logo`}
-		className={cn("size-3 dark:invert", className)}
-		height={12}
-		src={`https://models.dev/logos/${provider}.svg`}
-		width={12}
-	/>
-);
+}: ModelSelectorLogoProps) => {
+	// The Rox house provider/model uses our own brand mark (the girl logo),
+	// not a models.dev logo. The mark is white line-art, so invert in light mode
+	// and keep it white in dark mode.
+	const isRox = String(provider).toLowerCase() === "rox";
+	return (
+		<img
+			{...props}
+			alt={`${provider} logo`}
+			className={cn(
+				"size-3",
+				isRox ? "invert dark:invert-0" : "dark:invert",
+				className,
+			)}
+			height={12}
+			src={
+				isRox
+					? "https://rox.one/rox-logo-light.png"
+					: `https://models.dev/logos/${provider}.svg`
+			}
+			width={12}
+		/>
+	);
+};
 
 export type ModelSelectorLogoGroupProps = ComponentProps<"div">;
 

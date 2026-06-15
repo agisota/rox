@@ -1,9 +1,9 @@
 import type { projects } from "@rox/local-db";
+import { settings } from "@rox/local-db";
 import {
 	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
 	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
-	settings,
-} from "@rox/local-db";
+} from "@rox/local-db/schema";
 import { localDb } from "main/lib/local-db";
 import { getBranchPrefix, sanitizeAuthorPrefix } from "./git";
 

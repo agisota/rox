@@ -289,6 +289,17 @@ export const artifactKindValues = [
 export const artifactKindEnum = z.enum(artifactKindValues);
 export type ArtifactKind = z.infer<typeof artifactKindEnum>;
 
+export const publicShareResourceTypeValues = [
+	"chat_session",
+	"artifact",
+] as const;
+export const publicShareResourceTypeEnum = z.enum(
+	publicShareResourceTypeValues,
+);
+export type PublicShareResourceType = z.infer<
+	typeof publicShareResourceTypeEnum
+>;
+
 export const evaluationStatusValues = [
 	"pending",
 	"running",

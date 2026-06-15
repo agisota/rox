@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 import { env } from "@/env";
 
 export default function SignInPage() {
@@ -17,25 +16,8 @@ export default function SignInPage() {
 		? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
 		: env.NEXT_PUBLIC_WEB_URL;
 
-	const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	const signInWithGoogle = async () => {
-		setIsLoadingGoogle(true);
-		setError(null);
-
-		try {
-			await authClient.signIn.social({
-				provider: "google",
-				callbackURL,
-			});
-		} catch (err) {
-			console.error("Sign in failed:", err);
-			setError("Не удалось войти. Попробуйте еще раз.");
-			setIsLoadingGoogle(false);
-		}
-	};
 
 	const signInWithGithub = async () => {
 		setIsLoadingGithub(true);
@@ -87,7 +69,7 @@ export default function SignInPage() {
 		}
 	};
 
-	const isLoading = isLoadingGoogle || isLoadingGithub || isLoadingDev;
+	const isLoading = isLoadingGithub || isLoadingDev;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -123,15 +105,6 @@ export default function SignInPage() {
 				>
 					<FaGithub className="mr-2 size-4" />
 					{isLoadingGithub ? "Загрузка..." : "Войти через GitHub"}
-				</Button>
-				<Button
-					variant="outline"
-					disabled={isLoading}
-					onClick={signInWithGoogle}
-					className="w-full"
-				>
-					<FcGoogle className="mr-2 size-4" />
-					{isLoadingGoogle ? "Загрузка..." : "Войти через Google"}
 				</Button>
 				<p className="text-muted-foreground px-8 text-center text-sm">
 					Нажимая «Продолжить», вы соглашаетесь с нашими{" "}

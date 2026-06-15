@@ -1,7 +1,6 @@
 import {
 	ROX_AI_API_KEY_ENV,
-	ROX_AI_BASE_URL,
-	ROX_CHAT_MODEL_ID,
+	ROX_CHAT_MODEL_NAME,
 } from "@rox/shared/chat-models";
 import {
 	type AuthStatusLike,
@@ -34,9 +33,13 @@ export const ROX_PROVIDER_STATUS = deriveModelProviderStatus({
 	},
 });
 
+// Public-facing display only. The real upstream model (`compound`) and endpoint
+// (api.zed.md) are intentionally masked behind the Rox brand — the user only
+// ever sees "ROX R1" and the branded api.rox.one endpoint. The actual chat
+// runtime reads the real values from @rox/shared/chat-models directly.
 export const ROX_PROVIDER_DETAILS = {
-	modelId: ROX_CHAT_MODEL_ID,
-	baseUrl: ROX_AI_BASE_URL,
+	modelId: ROX_CHAT_MODEL_NAME,
+	baseUrl: "https://api.rox.one/v1",
 	apiKeyEnv: ROX_AI_API_KEY_ENV,
 } as const;
 

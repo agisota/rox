@@ -1,8 +1,9 @@
 import { toast } from "@rox/ui/sonner";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
+import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import {
 	type PersistableTransaction,
@@ -38,6 +39,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id ?? null;
 	const actions = useOptimisticCollectionActions();
+	const [pendingAddUserId, setPendingAddUserId] = useState<string | null>(null);
 	const {
 		activeHostUrl,
 		activeOrganizationId,
@@ -169,15 +171,23 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 		);
 	}
 
-	const handleAdd = (candidate: CandidateRow) => {
-		notifyOnPersist(
-			actions.v2UsersHosts.addMember({
+	const handleAdd = async (candidate: CandidateRow) => {
+		setPendingAddUserId(candidate.userId);
+		try {
+			await apiTrpcClient.v2Host.addMember.mutate({
 				hostId,
 				userId: candidate.userId,
-				organizationId: host.organizationId,
-			}),
-			"Участник добавлен",
-		);
+			});
+			toast.success("Участник добавлен");
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Не удалось добавить участника",
+			);
+		} finally {
+			setPendingAddUserId(null);
+		}
 	};
 
 	const handleRemove = (member: MemberRowData) => {
@@ -235,7 +245,13 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 							)}
 						</div>
 						{canMutatePersistedHost && (
-							<AddMemberDropdown candidates={candidates} onPick={handleAdd} />
+							<AddMemberDropdown
+								candidates={candidates}
+								onPick={(candidate) => {
+									void handleAdd(candidate);
+								}}
+								pendingUserId={pendingAddUserId}
+							/>
 						)}
 					</div>
 

@@ -236,7 +236,7 @@ const HOTKEY_TEXT: Partial<
 	SHOW_HOTKEYS: { label: "Показать горячие клавиши" },
 	OPEN_COMMAND_PALETTE: {
 		label: "Открыть палитру команд",
-		description: "Открыть глобальную палитру команд",
+		description: "Открыть глобальную палитру команд (также CAPS LOCK)",
 	},
 };
 

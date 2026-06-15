@@ -2,7 +2,7 @@ import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { posthog } from "renderer/lib/posthog";
 
-export const AUTH_COMPLETED_KEY = "superset_auth_completed";
+export const AUTH_COMPLETED_KEY = "rox_auth_completed";
 export const ACTIVE_ORG_ID_KEY = "active_organization_id";
 
 export function useSignOut() {

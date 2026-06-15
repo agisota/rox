@@ -73,7 +73,7 @@ export function useWorkspaceHostOptions(): UseWorkspaceHostOptionsResult {
 	// Always surface the local device, even if its v2Hosts row hasn't synced
 	// via Electric — the picker is useless without "this device" present.
 	return {
-		currentDeviceName: localHost?.name ?? (machineId ? "This device" : null),
+		currentDeviceName: localHost?.name ?? (machineId ? "Это устройство" : null),
 		localHostId: localHost?.machineId ?? machineId,
 		activeHostUrl,
 		otherHosts,

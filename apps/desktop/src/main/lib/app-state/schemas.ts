@@ -48,10 +48,10 @@ export const defaultAppState: AppState = {
 		tabHistoryStacks: {},
 	},
 	themeState: {
-		activeThemeId: "black-metal-dark-funeral",
+		activeThemeId: "dark",
 		customThemes: [],
 		systemLightThemeId: "light",
-		systemDarkThemeId: "black-metal-dark-funeral",
+		systemDarkThemeId: "dark",
 	},
 	appearanceState: {
 		glassEnabled: true,

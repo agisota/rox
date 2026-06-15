@@ -34,35 +34,65 @@ export function CookieConsent() {
 		<AnimatePresence>
 			{showBanner && (
 				<motion.div
-					initial={{ y: 20, opacity: 0 }}
-					animate={{ y: 0, opacity: 1 }}
-					exit={{ y: 20, opacity: 0 }}
-					transition={{ type: "spring", damping: 25, stiffness: 300 }}
-					className="fixed bottom-4 left-4 z-50 max-w-sm rounded-lg border border-border bg-card p-4 shadow-lg"
+					initial={{ y: 24, opacity: 0, scale: 0.98 }}
+					animate={{ y: 0, opacity: 1, scale: 1 }}
+					exit={{ y: 16, opacity: 0, scale: 0.98 }}
+					transition={{ type: "spring", damping: 26, stiffness: 320 }}
+					role="dialog"
+					aria-label="Согласие на использование cookies"
+					className="fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:bottom-6 sm:left-6 sm:max-w-sm"
 				>
-					<p className="text-sm text-muted-foreground">
-						Мы используем только аналитические cookies, чтобы улучшать продукт.
-					</p>
-					<div className="mt-4 flex flex-col gap-3">
-						<div className="flex items-center gap-2">
+					<div className="rounded-2xl border border-white/10 bg-zinc-950/80 p-5 shadow-2xl shadow-black/50 backdrop-blur-xl">
+						<div className="flex items-start gap-3">
+							<span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand/15 text-[#ff9a4d]">
+								<svg
+									width="18"
+									height="18"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.8"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									aria-hidden="true"
+								>
+									<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5Z" />
+									<circle cx="9.5" cy="10" r="0.6" fill="currentColor" />
+									<circle cx="14" cy="13.5" r="0.6" fill="currentColor" />
+									<circle cx="10" cy="15.5" r="0.6" fill="currentColor" />
+								</svg>
+							</span>
+							<div className="space-y-1">
+								<p className="text-sm font-semibold text-white">
+									Только аналитика, без рекламы
+								</p>
+								<p className="text-[13px] leading-relaxed text-white/55">
+									Используем аналитические cookies, чтобы делать ROX лучше.
+									Никакого трекинга ради рекламы.
+								</p>
+							</div>
+						</div>
+						<div className="mt-4 flex items-center gap-2.5">
 							<Button
 								variant="outline"
 								onClick={handleOptOut}
-								className="flex-1"
+								className="h-10 flex-1 border-white/15 bg-transparent text-white/80 hover:bg-white/5 hover:text-white"
 							>
 								Отклонить
 							</Button>
-							<Button onClick={handleAccept} className="flex-1">
+							<Button
+								onClick={handleAccept}
+								className="h-10 flex-1 bg-brand text-white hover:bg-brand-dark"
+							>
 								Принять
 							</Button>
 						</div>
-						<Button
-							variant="link"
-							asChild
-							className="h-auto justify-start px-0 text-muted-foreground"
+						<Link
+							href="/privacy"
+							className="mt-3 block text-center text-xs text-white/40 underline-offset-4 transition-colors hover:text-white/70 hover:underline"
 						>
-							<Link href="/privacy">Политика приватности</Link>
-						</Button>
+							Политика приватности
+						</Link>
 					</div>
 				</motion.div>
 			)}

@@ -2,6 +2,7 @@ import type { SettingsSection } from "renderer/stores/settings-state";
 
 export const SETTING_ITEM_ID = {
 	ACCOUNT_PROFILE: "account-profile",
+	ACCOUNT_USAGE: "account-usage",
 	ACCOUNT_SIGNOUT: "account-signout",
 
 	ORGANIZATION_LOGO: "organization-logo",
@@ -111,6 +112,7 @@ export type SettingVariant = "v1" | "v2" | "shared";
 
 export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.ACCOUNT_PROFILE]: "shared",
+	[SETTING_ITEM_ID.ACCOUNT_USAGE]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_SIGNOUT]: "shared",
 
 	[SETTING_ITEM_ID.ORGANIZATION_LOGO]: "shared",
@@ -252,6 +254,33 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"отключиться",
 			"завершить сеанс",
 			"покинуть",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.ACCOUNT_USAGE,
+		section: "account",
+		title: "Баланс и сессии",
+		description: "Детализация баланса, расходов, моделей и чат-сессий",
+		keywords: [
+			"account",
+			"usage",
+			"balance",
+			"sessions",
+			"billing",
+			"tokens",
+			"models",
+			"cost",
+			"rox",
+			"ledger",
+			"аккаунт",
+			"баланс",
+			"сессии",
+			"расходы",
+			"токены",
+			"модели",
+			"стоимость",
+			"история",
+			"детализация",
 		],
 	},
 	{
@@ -1192,7 +1221,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.MODELS_ROX,
 		section: "models",
-		title: "Модель ROX-1",
+		title: "Модель ROX R1",
 		description: "Бесплатная модель Rox по умолчанию без настройки",
 		keywords: [
 			"models",

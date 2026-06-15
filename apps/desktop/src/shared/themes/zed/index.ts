@@ -6,6 +6,8 @@
  * (potentially large) array is never eagerly spread into the persisted theme
  * store — only the active library theme is cached there.
  */
+
+import { builtInThemes } from "../built-in";
 import type { Theme, ThemeMetadata } from "../types";
 import generatedThemes from "./generated/zed-themes.json";
 
@@ -16,6 +18,10 @@ export { convertZedFamily, convertZedTheme } from "./convert";
 
 let cachedThemes: Theme[] | null = null;
 let cachedById: Map<string, Theme> | null = null;
+const reservedLibraryThemeIds = new Set([
+	"system",
+	...builtInThemes.map((theme) => theme.id),
+]);
 
 function load(): Theme[] {
 	if (cachedThemes) {
@@ -23,10 +29,12 @@ function load(): Theme[] {
 	}
 	// The JSON is generated from the `Theme` shape; tag defensively so callers
 	// can always rely on `isLibrary` even if the dataset omitted it.
-	cachedThemes = (generatedThemes as Theme[]).map((theme) => ({
-		...theme,
-		isLibrary: true,
-	}));
+	cachedThemes = (generatedThemes as Theme[])
+		.filter((theme) => !reservedLibraryThemeIds.has(theme.id))
+		.map((theme) => ({
+			...theme,
+			isLibrary: true,
+		}));
 	cachedById = new Map(cachedThemes.map((theme) => [theme.id, theme]));
 	return cachedThemes;
 }

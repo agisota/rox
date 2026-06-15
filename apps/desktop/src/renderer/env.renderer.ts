@@ -20,7 +20,7 @@ const envSchema = z.object({
 	NEXT_PUBLIC_MARKETING_URL: z.url().default("https://rox.one"),
 	NEXT_PUBLIC_ELECTRIC_URL: z
 		.url()
-		.default("https://electric-proxy.avi-6ac.workers.dev"),
+		.default("https://electric-proxy.scharlesky-192.workers.dev"),
 	NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
 	NEXT_PUBLIC_POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
 	NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string().optional(),

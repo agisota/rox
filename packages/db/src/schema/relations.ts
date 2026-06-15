@@ -48,6 +48,7 @@ import {
 	artifacts,
 	contextPacks,
 	objectRelations,
+	publicShares,
 	skillBindings,
 	skills,
 	skillVersions,
@@ -74,6 +75,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 	v2Workspaces: many(v2Workspaces),
 	agentCommands: many(agentCommands),
 	chatSessions: many(chatSessions),
+	publicShares: many(publicShares),
 	roxBalance: many(roxBalances),
 	roxLedger: many(roxLedger),
 	roxTopups: many(roxTopups),
@@ -119,6 +121,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	agentCommands: many(agentCommands),
 	chatSessions: many(chatSessions),
 	accessGrants: many(accessGrants),
+	publicShares: many(publicShares),
 	knowledgeDocuments: many(knowledgeDocuments),
 	agentSources: many(agentSources),
 }));
@@ -648,6 +651,17 @@ export const artifactsRelations = relations(artifacts, ({ one }) => ({
 	run: one(workflowRuns, {
 		fields: [artifacts.runId],
 		references: [workflowRuns.id],
+	}),
+}));
+
+export const publicSharesRelations = relations(publicShares, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [publicShares.organizationId],
+		references: [organizations.id],
+	}),
+	createdByUser: one(users, {
+		fields: [publicShares.createdByUserId],
+		references: [users.id],
 	}),
 }));
 

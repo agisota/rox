@@ -22,6 +22,10 @@ export const env = createEnv({
 		GH_APP_ID: z.string().min(1),
 		GH_APP_PRIVATE_KEY: z.string().min(1),
 		GH_WEBHOOK_SECRET: z.string().min(1),
+		// Public slug of the GitHub App (the github.com/apps/<slug> page used for
+		// the installation redirect). Must match the App's real public slug or the
+		// install redirect 404s. Defaults to "rox-app".
+		GH_APP_SLUG: z.string().min(1).default("rox-app"),
 		SLACK_CLIENT_ID: z.string().min(1),
 		SLACK_CLIENT_SECRET: z.string().min(1),
 		SLACK_SIGNING_SECRET: z.string(),

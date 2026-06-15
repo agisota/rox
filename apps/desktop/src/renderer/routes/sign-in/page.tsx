@@ -5,7 +5,6 @@ import { Spinner } from "@rox/ui/spinner";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { setAuthToken } from "renderer/lib/auth-client";
@@ -162,17 +161,6 @@ function SignInPage() {
 						>
 							<FaGithub className="size-5" />
 							Продолжить с GitHub
-						</Button>
-
-						<Button
-							variant="outline"
-							size="lg"
-							onClick={() => signIn("google")}
-							className="w-full gap-3"
-							disabled={signInMutation.isPending}
-						>
-							<FcGoogle className="size-5" />
-							Продолжить с Google
 						</Button>
 					</div>
 

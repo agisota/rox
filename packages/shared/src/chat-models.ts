@@ -5,9 +5,16 @@ export interface ChatModelOption {
 }
 
 export const ROX_CHAT_PROVIDER = "Rox";
-export const ROX_CHAT_MODEL_ID = "r1";
-export const ROX_CHAT_MODEL_NAME = "ROX-1";
-export const ROX_AI_BASE_URL = "https://api.rox.one/v1";
+/**
+ * The wire model id sent to the OpenAI-compatible backend. The underlying model
+ * is `compound` (routed via {@link ROX_AI_BASE_URL}); the per-user key is
+ * injected server-side. This id is never shown in the UI — every surface
+ * renders {@link ROX_CHAT_MODEL_NAME} ("ROX R1") instead.
+ */
+export const ROX_CHAT_MODEL_ID = "compound";
+/** User-facing display name. The only Rox model label shown anywhere. */
+export const ROX_CHAT_MODEL_NAME = "ROX R1";
+export const ROX_AI_BASE_URL = "https://api.zed.md/v1";
 export const ROX_AI_API_KEY_ENV = "ROX_AI_API_KEY";
 
 export const ROX_CHAT_MODEL: ChatModelOption = {

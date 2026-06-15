@@ -109,11 +109,31 @@ jobs:
           TARGET_ARCH: ${{ matrix.arch }}
         run: bun run compile:app
 
+      # electron-builder checks `process.env.CSC_LINK != null`, and an unset GitHub
+      # secret expands to an empty string (""), which passes that check. It then
+      # resolves "" as a certificate path → the project dir → "⨯ apps/desktop not a
+      # file", failing the unsigned macOS build. Only export the signing vars when a
+      # certificate is actually configured; otherwise disable identity discovery so
+      # electron-builder ad-hoc signs (identity "-") instead.
+      - name: Configure macOS code signing
+        working-directory: apps/desktop
+        env:
+          MAC_CERTIFICATE: ${{ secrets.MAC_CERTIFICATE }}
+          MAC_CERTIFICATE_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -n "$MAC_CERTIFICATE" ]; then
+            echo "Apple certificate present — producing a signed build."
+            echo "::add-mask::$MAC_CERTIFICATE"
+            echo "CSC_LINK=$MAC_CERTIFICATE" >> "$GITHUB_ENV"
+            echo "CSC_KEY_PASSWORD=$MAC_CERTIFICATE_PASSWORD" >> "$GITHUB_ENV"
+          else
+            echo "No MAC_CERTIFICATE secret — producing an unsigned (ad-hoc) build."
+            echo "CSC_IDENTITY_AUTO_DISCOVERY=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Build Electron app
         working-directory: apps/desktop
         env:
-          CSC_LINK: ${{ secrets.MAC_CERTIFICATE }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

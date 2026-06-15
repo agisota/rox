@@ -61,6 +61,12 @@ mock.module("main/lib/local-db", () => ({
 }));
 
 mock.module("@rox/local-db", () => ({
+	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM: "rox",
+	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE: "custom",
+	DEFAULT_SETTINGS_EDITOR_FONT_FAMILY: "SF UI Display Pro",
+	DEFAULT_SETTINGS_EDITOR_FONT_SIZE: 12,
+	DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY: "Geist Mono",
+	DEFAULT_SETTINGS_TERMINAL_FONT_SIZE: 12,
 	workspaces: {
 		id: "id",
 		branch: "branch",

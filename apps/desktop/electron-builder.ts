@@ -116,12 +116,14 @@ const config: Configuration = {
 		...(existsSync(macIconPath) ? { icon: macIconPath } : {}),
 		category: "public.app-category.utilities",
 		target: "default",
-		hardenedRuntime: true,
+		// Hardened runtime is required for notarization but, combined with an ad-hoc
+		// signature, macOS AMFI kills the app on launch (library validation rejects
+		// the unsigned native modules). Enable it only when signing with a real cert.
+		hardenedRuntime: Boolean(process.env.CSC_LINK),
 		gatekeeperAssess: false,
-		// Sign + notarize only when Apple credentials are present in the build env.
-		// Without them (unsigned release builds) electron-builder must skip signing
-		// (identity: null) and notarization, otherwise the build fails.
-		identity: process.env.CSC_LINK ? undefined : null,
+		// Use the configured Apple certificate when present; otherwise apply an
+		// ad-hoc signature so arm64 macOS builds are still structurally signed.
+		identity: process.env.CSC_LINK ? undefined : "-",
 		notarize: Boolean(process.env.APPLE_TEAM_ID),
 		entitlements: join(pkg.resources, "build/entitlements.mac.plist"),
 		entitlementsInherit: join(

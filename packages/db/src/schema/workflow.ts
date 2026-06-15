@@ -47,6 +47,7 @@ import {
 	artifactKindValues,
 	evaluationStatusValues,
 	objectTypeValues,
+	publicShareResourceTypeValues,
 	skillBindingSurfaceValues,
 	skillKindValues,
 	skillStatusValues,
@@ -92,6 +93,10 @@ export const triggerKind = pgEnum("trigger_kind", triggerKindValues);
 export const objectType = pgEnum("object_type", objectTypeValues);
 export const approvalStatus = pgEnum("approval_status", approvalStatusValues);
 export const artifactKind = pgEnum("artifact_kind", artifactKindValues);
+export const publicShareResourceType = pgEnum(
+	"public_share_resource_type",
+	publicShareResourceTypeValues,
+);
 
 // Shapes for jsonb payloads that don't yet have a dedicated domain type. Kept
 // loose now; tightened as the runtime/skill layers land in later milestones.
@@ -590,6 +595,47 @@ export const artifacts = pgTable(
 
 export type InsertArtifact = typeof artifacts.$inferInsert;
 export type SelectArtifact = typeof artifacts.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// public_shares — immutable public snapshots for chats and artifacts
+// ---------------------------------------------------------------------------
+
+export type PublicSharePayload = Record<string, unknown>;
+
+export const publicShares = pgTable(
+	"public_shares",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		resourceType: publicShareResourceType("resource_type").notNull(),
+		resourceId: uuid("resource_id").notNull(),
+		slug: text().notNull(),
+		title: text(),
+		payload: jsonb().$type<PublicSharePayload>().notNull(),
+		createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		revokedAt: timestamp("revoked_at", { withTimezone: true }),
+	},
+	(t) => [
+		uniqueIndex("public_shares_slug_uniq").on(t.slug),
+		index("public_shares_org_idx").on(t.organizationId),
+		index("public_shares_resource_idx").on(t.resourceType, t.resourceId),
+		index("public_shares_created_by_idx").on(t.createdByUserId),
+	],
+);
+
+export type InsertPublicShare = typeof publicShares.$inferInsert;
+export type SelectPublicShare = typeof publicShares.$inferSelect;
 
 // ---------------------------------------------------------------------------
 // object_relations — the Rox object graph (typed edges between objects)
