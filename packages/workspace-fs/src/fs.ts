@@ -722,6 +722,13 @@ export async function movePath({
 		absolutePath: destinationAbsolutePath,
 	});
 
+	// Lexical containment isn't enough: a symlinked ancestor on either side
+	// (e.g. `node_modules/<link> -> /outside`) would let rename read from / write
+	// to outside the workspace. Validate the real ancestry the same way the other
+	// mutating ops do (writeAtomically / deletePath / createDirectory).
+	await assertParentWithinRoot(rootPath, sourcePath);
+	await assertParentWithinRoot(rootPath, destinationPath);
+
 	await fs.access(destinationPath).then(
 		() => {
 			throw new Error(`Destination already exists: ${destinationPath}`);
@@ -754,6 +761,12 @@ export async function copyPath({
 		rootPath,
 		absolutePath: destinationAbsolutePath,
 	});
+
+	// Lexical containment isn't enough: a symlinked ancestor on either side would
+	// let cp read from / write to outside the workspace. Validate the real
+	// ancestry the same way the other mutating ops do.
+	await assertParentWithinRoot(rootPath, sourcePath);
+	await assertParentWithinRoot(rootPath, destinationPath);
 
 	await fs.cp(sourcePath, destinationPath, { recursive: true });
 	return { fromAbsolutePath: sourcePath, toAbsolutePath: destinationPath };
