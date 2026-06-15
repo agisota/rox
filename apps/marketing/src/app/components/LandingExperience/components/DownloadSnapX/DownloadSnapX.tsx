@@ -1,7 +1,7 @@
 "use client";
 
 import { DOWNLOAD_URL_MAC_ARM64 } from "@rox/shared/constants";
-import { createDraggable, utils } from "animejs";
+import { animate, createDraggable, utils } from "animejs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SNAP_LABEL_ARMED, SNAP_LABEL_IDLE } from "../../constants";
 
@@ -115,8 +115,20 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 		});
 		observer.observe(track);
 
+		// Idle affordance: nudge the arrow rightward to hint the drag gesture.
+		const arrow = handle.querySelector("svg");
+		const hint = arrow
+			? animate(arrow, {
+					translateX: [0, 5, 0],
+					duration: 1400,
+					loop: true,
+					ease: "inOut(2)",
+				})
+			: null;
+
 		return () => {
 			observer.disconnect();
+			hint?.revert();
 			draggable.revert();
 		};
 	}, [complete]);

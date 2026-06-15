@@ -134,17 +134,17 @@
 /* Brand logo revealed over the centered word at the climax of slide 1. */
 .rox-intro__logo {
 	position: absolute;
-	top: clamp(20px, 9vh, 84px);
+	top: 33%;
 	left: 50%;
-	transform: translate(-50%, -8px);
+	transform: translate(-50%, -50%);
 	opacity: 0;
 	z-index: 3;
 	pointer-events: none;
-	filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.55));
+	filter: drop-shadow(0 10px 32px rgba(0, 0, 0, 0.6));
 }
 
 .rox-intro__logo img {
-	height: clamp(44px, 9vh, 92px);
+	height: clamp(56px, 14vh, 128px);
 	width: auto;
 	display: block;
 }
@@ -262,12 +262,12 @@
  * ──────────────────────────────────────────────────────────────────────── */
 
 .rox-snap {
-	--track-h: 64px;
+	--track-h: 40px;
 	position: relative;
 	width: 100%;
 	max-width: 360px;
 	height: var(--track-h);
-	border-radius: 16px;
+	border-radius: 12px;
 	background: var(--rox-bg-2);
 	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 	overflow: hidden;
@@ -293,11 +293,11 @@
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
-	font-size: 0.9rem;
+	font-size: 0.82rem;
 	letter-spacing: 0.02em;
 	color: var(--rox-fg-2);
 	pointer-events: none;
-	padding-left: 40px;
+	padding-left: 28px;
 }
 
 .rox-snap__handle {
@@ -306,7 +306,7 @@
 	left: 6px;
 	width: calc(var(--track-h) - 12px);
 	height: calc(var(--track-h) - 12px);
-	border-radius: 12px;
+	border-radius: 9px;
 	background: linear-gradient(135deg, var(--rox-orange-1), var(--rox-orange-3));
 	box-shadow: 0 6px 20px rgba(210, 86, 17, 0.45);
 	display: flex;
@@ -318,8 +318,8 @@
 }
 
 .rox-snap__handle svg {
-	width: 22px;
-	height: 22px;
+	width: 18px;
+	height: 18px;
 }
 
 /* ────────────────────────────────────────────────────────────────────────
