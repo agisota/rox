@@ -81,6 +81,7 @@ import type {
 	PooledAgentSource,
 	ResolvedAgentSource,
 } from "./agent-source-pool";
+import type { McpContext } from "./auth";
 
 // ---------------------------------------------------------------------------
 // Network-free, DB-free proxy tests. A mock McpDownstreamClient stands in for
@@ -482,6 +483,70 @@ describe("AgentSourcePool — connection isolation", () => {
 		expect(pool.getFailures().get("slow")?.message).toContain(
 			"connection timed out",
 		);
+	});
+
+	it("retries a transient connector failure before recording a failure", async () => {
+		const healthy = mockClient([{ name: "t" }]);
+		const connector = mock(async () => {
+			if (connector.mock.calls.length === 1) {
+				throw new Error("temporary network failure");
+			}
+			return healthy;
+		});
+		const pool = new AgentSourcePool({
+			resolveSources: async () => [resolvedSource("flaky")],
+			connector,
+			connectMaxAttempts: 2,
+			connectRetryBaseDelayMs: 1,
+		});
+
+		const connected = await pool.connectAll(ctx);
+
+		expect(connected.map((c) => c.source.slug)).toEqual(["flaky"]);
+		expect(pool.getFailures().has("flaky")).toBe(false);
+		expect(connector).toHaveBeenCalledTimes(2);
+	});
+
+	it("does not retry permanent endpoint configuration failures", async () => {
+		const connector = mock(async () => {
+			throw new Error("External agent source endpoint must use HTTPS");
+		});
+		const pool = new AgentSourcePool({
+			resolveSources: async () => [resolvedSource("bad-config")],
+			connector,
+			connectMaxAttempts: 2,
+			connectRetryBaseDelayMs: 1,
+		});
+
+		const connected = await pool.connectAll(ctx);
+
+		expect(connected).toEqual([]);
+		expect(pool.getFailures().get("bad-config")?.message).toContain("HTTPS");
+		expect(connector).toHaveBeenCalledTimes(1);
+	});
+
+	it("aborts a timed-out connector attempt", async () => {
+		let observedSignal: AbortSignal | undefined;
+		const connector = mock(
+			async (
+				_source: ResolvedAgentSource,
+				_ctx: McpContext,
+				signal?: AbortSignal,
+			) => {
+				observedSignal = signal;
+				return new Promise<McpDownstreamClient>(() => {});
+			},
+		);
+		const pool = new AgentSourcePool({
+			resolveSources: async () => [resolvedSource("slow")],
+			connector,
+			connectTimeoutMs: 5,
+			connectMaxAttempts: 1,
+		});
+
+		await pool.connectAll(ctx);
+
+		expect(observedSignal?.aborted).toBe(true);
 	});
 });
 
