@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "notebooklm-skill"
+version = "1.2.1"
+description = "NotebookLM research automation — CLI, MCP server, and Claude Code Skill"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+authors = [{name = "Claude World", email = "hello@claude-world.com"}]
+keywords = ["notebooklm", "mcp", "claude", "research", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "notebooklm-py>=0.3.4",
+    "playwright>=1.40.0",
+    "fastmcp>=0.1.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.25.0",
+    "feedparser>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=1.0",
+    "ruff>=0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/claude-world/notebooklm-skill"
+Repository = "https://github.com/claude-world/notebooklm-skill"
+Issues = "https://github.com/claude-world/notebooklm-skill/issues"
+
+[project.scripts]
+notebooklm-skill    = "scripts.notebooklm_client:main"
+notebooklm-pipeline = "scripts.pipeline:main"
+notebooklm-mcp      = "mcp_server.server:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/pipeline.py" = ["F401"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*", "mcp_server*"]

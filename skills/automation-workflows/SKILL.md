@@ -1,0 +1,10 @@
+---
+name: automation-workflows
+description: Design and implement automation workflows to save time and scale operations as a solopreneur. Use when identifying repetitive tasks to automate, building workflows across tools, setting up triggers and actions, or optimizing existing automations. Covers automation opportunity identification, workflow design, tool selection (Zapier, Make, n8n), testing, and maintenance. Trigger on "automate", "automation", "workflow automation", "save time", "reduce manual work", "automate my business", "no-code automation".
+triggers:
+  keywords: [automate, automation, workflow, zapier, make, n8n, no-code, save time, repetitive task]
+  intent: [devops, orchestration, planning]
+activation: context
+priority: 55
+packs: [orchestration]
+---
