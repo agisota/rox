@@ -48,14 +48,19 @@ function isPrereleaseBuild(): boolean {
 
 const IS_PRERELEASE = isPrereleaseBuild();
 const IS_AUTO_UPDATE_PLATFORM = PLATFORM.IS_MAC || PLATFORM.IS_LINUX;
+const STABLE_DOWNLOAD_URL = `${RELEASES_URL}/latest/download`;
+const CANARY_DOWNLOAD_URL = `${RELEASES_URL}/download/desktop-canary`;
+const UPDATE_RELEASE_NOTES_URL = IS_PRERELEASE
+	? `${RELEASES_URL}/tag/desktop-canary`
+	: RELEASES_URL;
 
 // Use explicit feed URLs to ensure we always fetch platform-specific manifests
 // (for example latest-mac.yml and latest-linux.yml) from the correct release.
 // - Stable: fetches from /releases/latest/download/ (latest non-prerelease)
 // - Canary: fetches from /releases/download/desktop-canary/ (rolling canary tag)
 const UPDATE_FEED_URL = IS_PRERELEASE
-	? "https://github.com/agisota/rox/releases/download/desktop-canary"
-	: "https://github.com/agisota/rox/releases/latest/download";
+	? CANARY_DOWNLOAD_URL
+	: STABLE_DOWNLOAD_URL;
 
 export interface AutoUpdateStatusEvent {
 	status: AutoUpdateStatus;
@@ -71,12 +76,13 @@ export interface AutoUpdateStatusEvent {
 	notesUrl?: string;
 }
 
-// Arch-correct stable .dmg download URLs (electron-builder publishes stable
-// names alongside the versioned assets). Squirrel can't install these on an
-// unsigned build, so we hand the right one to the OS browser instead.
+// Arch-correct .dmg download URLs. Stable builds use the latest stable release;
+// prerelease/canary builds use the rolling desktop-canary release so unsigned
+// canary users are not sent back to the stable installer.
 function getArchDownloadUrl(): string {
-	const asset = process.arch === "arm64" ? "Rox-arm64.dmg" : "Rox-x64.dmg";
-	return `https://github.com/agisota/rox/releases/latest/download/${asset}`;
+	const arch = process.arch === "arm64" ? "arm64" : "x64";
+	const asset = IS_PRERELEASE ? `Rox-Canary-${arch}.dmg` : `Rox-${arch}.dmg`;
+	return `${UPDATE_FEED_URL}/${asset}`;
 }
 
 // Notify-only mode: a macOS build with no Apple Developer ID can't be
@@ -221,7 +227,8 @@ export function installUpdate(): void {
 	// in — open the arch-correct .dmg (or the releases page) in the browser so
 	// the user can download and reinstall manually.
 	if (currentStatus === AUTO_UPDATE_STATUS.UPDATE_AVAILABLE) {
-		const url = currentDownloadUrl ?? notifyOnlyDownloadUrl ?? RELEASES_URL;
+		const url =
+			currentDownloadUrl ?? notifyOnlyDownloadUrl ?? UPDATE_RELEASE_NOTES_URL;
 		log.info(`[auto-updater] Notify-only install: opening ${url}`);
 		void shell.openExternal(url);
 		dismissUpdate();
@@ -281,7 +288,7 @@ async function runNotifyOnlyCheck(interactive: boolean): Promise<boolean> {
 	);
 	emitStatus(AUTO_UPDATE_STATUS.UPDATE_AVAILABLE, latestVersion, undefined, {
 		downloadUrl,
-		notesUrl: RELEASES_URL,
+		notesUrl: UPDATE_RELEASE_NOTES_URL,
 	});
 	if (interactive) {
 		// The toast already prompts; keep the menu interaction quiet on success.
@@ -381,10 +388,15 @@ export function checkForUpdatesInteractive(): void {
 				notifyOnlyMode = true;
 				const downloadUrl = getArchDownloadUrl();
 				notifyOnlyDownloadUrl = downloadUrl;
-				emitStatus(AUTO_UPDATE_STATUS.UPDATE_AVAILABLE, undefined, undefined, {
-					downloadUrl,
-					notesUrl: RELEASES_URL,
-				});
+				emitStatus(
+					AUTO_UPDATE_STATUS.UPDATE_AVAILABLE,
+					currentVersion,
+					undefined,
+					{
+						downloadUrl,
+						notesUrl: UPDATE_RELEASE_NOTES_URL,
+					},
+				);
 				return;
 			}
 			log.error("[auto-updater] Failed to check for updates:", error);
@@ -418,7 +430,7 @@ export function simulateUpdateAvailable(): void {
 	notifyOnlyDownloadUrl = downloadUrl;
 	emitStatus(AUTO_UPDATE_STATUS.UPDATE_AVAILABLE, "99.0.0-test", undefined, {
 		downloadUrl,
-		notesUrl: RELEASES_URL,
+		notesUrl: UPDATE_RELEASE_NOTES_URL,
 	});
 }
 
@@ -487,7 +499,7 @@ export function setupAutoUpdater(): void {
 				undefined,
 				{
 					downloadUrl,
-					notesUrl: RELEASES_URL,
+					notesUrl: UPDATE_RELEASE_NOTES_URL,
 				},
 			);
 			return;

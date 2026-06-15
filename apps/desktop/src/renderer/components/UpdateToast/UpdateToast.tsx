@@ -84,7 +84,7 @@ export function UpdateToast({
 					{isError ? (
 						<>
 							<span className="font-medium text-sm text-destructive">
-								Update failed
+								Обновление не удалось
 							</span>
 							<span className="text-sm text-muted-foreground">
 								{error || "Повторите попытку позже"}
@@ -117,11 +117,11 @@ export function UpdateToast({
 							<span className="font-medium text-sm">Доступно обновление</span>
 							<span className="text-sm text-muted-foreground">
 								{version
-									? `Version ${version} is ready to install`
+									? `Версия ${version} готова к установке`
 									: "Готово к установке"}
 							</span>
 							<span className="text-xs text-muted-foreground/70">
-								Your terminal sessions won't be interrupted.
+								Терминальные сессии не будут прерваны.
 							</span>
 						</>
 					)}
@@ -171,7 +171,7 @@ export function UpdateToast({
 						>
 							<div className="flex items-center gap-2">
 								<Button variant="ghost" size="sm" onClick={handleSeeChanges}>
-									See changes
+									Что изменилось
 								</Button>
 								<Button
 									size="sm"
