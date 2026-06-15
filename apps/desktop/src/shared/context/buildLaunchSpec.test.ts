@@ -205,8 +205,8 @@ describe("buildLaunchSpec", () => {
 			getConfig("codex"),
 		);
 		const userText = (spec?.user[0] as { type: "text"; text: string }).text;
-		expect(userText).toContain(".rox/attachments/logs.txt");
-		expect(userText).toContain(".rox/attachments/screen.png");
+		expect(userText).toContain("rox/attachments/logs.txt");
+		expect(userText).toContain("rox/attachments/screen.png");
 		expect(spec?.attachments).toHaveLength(2);
 		expect(spec?.attachments[0]?.type).toBe("file");
 		expect(spec?.attachments[1]?.type).toBe("image");
@@ -277,7 +277,7 @@ describe("buildLaunchSpec", () => {
 		)?.text;
 		// Attachments list renders after the inline parts so a CLI agent
 		// reading just the flattened text still has the file path reference.
-		expect(lastText).toContain(".rox/attachments/trace.log");
+		expect(lastText).toContain("rox/attachments/trace.log");
 	});
 
 	test("empty userPrompt still renders system = [] and drops empty user template cleanly", () => {
@@ -348,12 +348,12 @@ Replaces plaintext token storage with encrypted KV.
 # Attached files
 
 The user attached these files alongside the prompt. They've been
-written into the worktree at \`.rox/attachments/\`. Read them
+written into the worktree at \`rox/attachments/\`. Read them
 to understand the request — they're part of the task, not
 optional reference.
 
-- .rox/attachments/logs.txt
-- .rox/attachments/screenshot.png"
+- rox/attachments/logs.txt
+- rox/attachments/screenshot.png"
 ,
 }
 `);
@@ -398,12 +398,12 @@ Replaces plaintext token storage with encrypted KV.
 # Attached files
 
 The user attached these files alongside the prompt. They've been
-written into the worktree at \`.rox/attachments/\`. Read them
+written into the worktree at \`rox/attachments/\`. Read them
 to understand the request — they're part of the task, not
 optional reference.
 
-- .rox/attachments/logs.txt
-- .rox/attachments/screenshot.png"
+- rox/attachments/logs.txt
+- rox/attachments/screenshot.png"
 ,
 }
 `);

@@ -1,8 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parseStaticPortsConfig } from "@rox/port-scanner";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs";
 
-const PROJECT_ROX_DIR_NAME = ".rox";
 const PORTS_FILE_NAME = "ports.json";
 
 interface LabelCacheEntry {
@@ -12,7 +12,7 @@ interface LabelCacheEntry {
 }
 
 function getPortsPath(worktreePath: string): string {
-	return join(worktreePath, PROJECT_ROX_DIR_NAME, PORTS_FILE_NAME);
+	return join(resolveProjectRoxDir(worktreePath), PORTS_FILE_NAME);
 }
 
 function isMissingPathError(error: unknown): boolean {

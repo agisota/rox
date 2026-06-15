@@ -8,6 +8,10 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./rox-dirs": {
+			"types": "./src/rox-dirs.ts",
+			"default": "./src/rox-dirs.ts"
+		},
 		"./desktop-callback": {
 			"types": "./src/desktop-callback.ts",
 			"default": "./src/desktop-callback.ts"

@@ -80,7 +80,7 @@ export default function roxAmpLifecyclePlugin(amp: AmpApi) {
 		return;
 	}
 
-	const roxHome = env.ROX_HOME_DIR || join(homedir(), ".rox");
+	const roxHome = env.ROX_HOME_DIR || join(homedir(), "rox");
 	const notifyPath = join(roxHome, "hooks", "notify.sh");
 	if (!existsSync(notifyPath)) {
 		debugLog("disabled: notify hook missing at " + notifyPath);

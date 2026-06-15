@@ -12,6 +12,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { ROX_HOME_DIR_NAME } from "@rox/shared/rox-dirs";
 
 export interface PtyDaemonManifest {
 	pid: number;
@@ -31,7 +32,7 @@ export interface PtyDaemonManifest {
 }
 
 function roxHomeDir(): string {
-	return process.env.ROX_HOME_DIR || join(homedir(), ".rox");
+	return process.env.ROX_HOME_DIR || join(homedir(), ROX_HOME_DIR_NAME);
 }
 
 export function ptyDaemonManifestDir(organizationId: string): string {

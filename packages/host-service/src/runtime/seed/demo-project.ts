@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { ROX_HOME_DIR_NAME } from "@rox/shared/rox-dirs";
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../../db";
 import { projects } from "../../db/schema";
@@ -37,7 +38,7 @@ somewhere to explore. Feel free to delete it once you've added your own.
 
 /** Resolve the absolute path of the demo project for a given home dir. */
 export function getDemoProjectPath(home: string = homedir()): string {
-	return join(home, ".rox", "projects", DEMO_PROJECT_DIR_NAME);
+	return join(home, ROX_HOME_DIR_NAME, "projects", DEMO_PROJECT_DIR_NAME);
 }
 
 export interface SeedDemoProjectResult {

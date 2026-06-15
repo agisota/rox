@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { accessSync, constants, existsSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { ROX_DIR_NAME } from "shared/constants";
 import { getDefaultShell } from "../terminal/env";
 
 /**
@@ -59,17 +60,22 @@ export function findRealBinary(name: string): string | null {
 			: findBinaryPathsUnix(name);
 
 		const homedir = os.homedir();
-		// Filter out wrapper scripts from all rox directories:
-		// - ~/.rox/bin
-		// - ~/.rox-*/bin (workspace-specific instances)
-		const roxBinDir = path.join(homedir, ".rox", "bin");
-		const roxPrefix = path.join(homedir, ".rox-");
+		// Filter out wrapper scripts from all rox home directories, both the new
+		// visible names and the legacy dot-hidden ones:
+		// - ~/rox/bin, ~/rox-*/bin (workspace-specific instances)
+		// - ~/.rox/bin, ~/.rox-*/bin (legacy)
+		const roxBinDir = path.join(homedir, ROX_DIR_NAME, "bin");
+		const roxPrefix = path.join(homedir, "rox-");
+		const legacyRoxBinDir = path.join(homedir, ".rox", "bin");
+		const legacyRoxPrefix = path.join(homedir, ".rox-");
+		const isRoxWrapperPath = (p: string): boolean =>
+			p.startsWith(roxBinDir) ||
+			p.startsWith(legacyRoxBinDir) ||
+			((p.startsWith(roxPrefix) || p.startsWith(legacyRoxPrefix)) &&
+				p.includes("/bin/"));
 		const paths = allPaths.filter(
 			(p) =>
-				p &&
-				!p.startsWith(roxBinDir) &&
-				!(p.startsWith(roxPrefix) && p.includes("/bin/")) &&
-				(isWindows || isExecutableUnixPath(p)),
+				p && !isRoxWrapperPath(p) && (isWindows || isExecutableUnixPath(p)),
 		);
 		return paths[0] || null;
 	} catch {

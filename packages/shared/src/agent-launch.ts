@@ -241,7 +241,7 @@ export function buildTaskLaunchRequest({
 		source,
 		terminal: {
 			command: buildAgentFileCommand({
-				filePath: `.rox/${taskPromptFileName}`,
+				filePath: `rox/${taskPromptFileName}`,
 				agent: agentType,
 			}),
 			name: task.slug,

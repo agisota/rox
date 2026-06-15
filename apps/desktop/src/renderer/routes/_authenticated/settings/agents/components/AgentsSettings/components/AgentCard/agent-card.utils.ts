@@ -38,7 +38,7 @@ export function getPreviewTaskCommand(preset: ResolvedAgentConfig): string {
 
 	return (
 		buildFileCommandFromAgentConfig({
-			filePath: `.rox/task-${SAMPLE_TASK.slug}.md`,
+			filePath: `rox/task-${SAMPLE_TASK.slug}.md`,
 			config: preset,
 		}) ?? "No prompt-capable command configured."
 	);

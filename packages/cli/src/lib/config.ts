@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { migrateRoxDir } from "@rox/shared/rox-dirs";
 import { env } from "./env";
 
 export type RoxConfig = {
@@ -23,10 +24,22 @@ export type RoxConfig = {
 	organizationId?: string;
 };
 
-export const ROX_HOME_DIR = process.env.ROX_HOME_DIR ?? join(homedir(), ".rox");
+export const ROX_HOME_DIR = process.env.ROX_HOME_DIR ?? join(homedir(), "rox");
 export const ROX_CONFIG_PATH = join(ROX_HOME_DIR, "config.json");
 
+/**
+ * One-time migration of the legacy `~/.rox` home dir to the new visible `~/rox`.
+ * Only runs for the default home dir (not a `ROX_HOME_DIR` override) and only
+ * when `~/rox` does not already exist, so it never clobbers an existing config
+ * or the user's auth token. Idempotent and best-effort.
+ */
+function maybeMigrateLegacyHomeDir(): void {
+	if (process.env.ROX_HOME_DIR) return;
+	migrateRoxDir(join(homedir(), ".rox"), ROX_HOME_DIR);
+}
+
 function ensureDir() {
+	maybeMigrateLegacyHomeDir();
 	if (!existsSync(ROX_HOME_DIR)) {
 		mkdirSync(ROX_HOME_DIR, { recursive: true, mode: 0o700 });
 	}
@@ -37,6 +50,7 @@ function ensureDir() {
 }
 
 export function readConfig(): RoxConfig {
+	maybeMigrateLegacyHomeDir();
 	if (!existsSync(ROX_CONFIG_PATH)) return {};
 	try {
 		const stat = statSync(ROX_CONFIG_PATH);

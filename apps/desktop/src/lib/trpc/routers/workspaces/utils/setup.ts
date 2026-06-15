@@ -2,23 +2,29 @@ import { cpSync, existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
+	LEGACY_ROX_HOME_DIR_NAME,
+	PROJECT_ROX_DIR_NAME,
+	resolveProjectRoxDir,
+} from "@rox/shared/rox-dirs";
+import {
 	CONFIG_FILE_NAME,
 	LOCAL_CONFIG_FILE_NAME,
-	PROJECT_ROX_DIR_NAME,
 	PROJECTS_DIR_NAME,
 	ROX_DIR_NAME,
 } from "shared/constants";
 import type { LocalSetupConfig, SetupConfig } from "shared/types";
 
 /**
- * Worktrees don't include gitignored files, so copy .rox from main repo
- * if it's missing — ensures setup scripts like "./.rox/setup.sh" work.
+ * Worktrees don't include gitignored files, so copy the rox config dir from the
+ * main repo if it's missing — ensures setup scripts like "./rox/setup.sh" work.
+ * Reads from the resolved main dir (new `rox/`, legacy `.rox/`) and writes into
+ * the canonical `rox/` dir in the worktree.
  */
 export function copyRoxConfigToWorktree(
 	mainRepoPath: string,
 	worktreePath: string,
 ): void {
-	const mainRoxDir = join(mainRepoPath, PROJECT_ROX_DIR_NAME);
+	const mainRoxDir = resolveProjectRoxDir(mainRepoPath);
 	const worktreeRoxDir = join(worktreePath, PROJECT_ROX_DIR_NAME);
 
 	if (existsSync(mainRoxDir) && !existsSync(worktreeRoxDir)) {
@@ -70,7 +76,7 @@ function readConfigFile(configPath: string): SetupConfig | null {
 }
 
 function readConfigFromPath(basePath: string): SetupConfig | null {
-	return readConfigFile(join(basePath, PROJECT_ROX_DIR_NAME, CONFIG_FILE_NAME));
+	return readConfigFile(join(resolveProjectRoxDir(basePath), CONFIG_FILE_NAME));
 }
 
 function readLocalConfigFile(filePath: string): LocalSetupConfig | null {
@@ -114,7 +120,7 @@ function readLocalConfigFile(filePath: string): LocalSetupConfig | null {
 
 function readLocalConfigFromPath(basePath: string): LocalSetupConfig | null {
 	return readLocalConfigFile(
-		join(basePath, PROJECT_ROX_DIR_NAME, LOCAL_CONFIG_FILE_NAME),
+		join(resolveProjectRoxDir(basePath), LOCAL_CONFIG_FILE_NAME),
 	);
 }
 
@@ -165,9 +171,10 @@ export function mergeConfigs(
 
 /**
  * Resolves setup/teardown/run config with a three-tier priority:
- *   1. User override:  ~/.rox/projects/<projectId>/config.json
- *   2. Worktree:       <worktreePath>/.rox/config.json
- *   3. Main repo:      <mainRepoPath>/.rox/config.json
+ *   1. User override:  ~/rox/projects/<projectId>/config.json
+ *   2. Worktree:       <worktreePath>/rox/config.json
+ *   3. Main repo:      <mainRepoPath>/rox/config.json
+ * (legacy dot-hidden `.rox` dirs are still read when only they exist)
  *
  * Higher-priority configs override only the keys they explicitly define.
  * Missing keys inherit from lower-priority sources, so stale copied worktree
@@ -203,7 +210,16 @@ export function loadSetupConfig({
 			projectId,
 			CONFIG_FILE_NAME,
 		);
-		const config = readConfigFile(userConfigPath);
+		// Backward compat: fall back to legacy ~/.rox/projects/<id>/ when only it exists.
+		const legacyUserConfigPath = join(
+			homedir(),
+			LEGACY_ROX_HOME_DIR_NAME,
+			PROJECTS_DIR_NAME,
+			projectId,
+			CONFIG_FILE_NAME,
+		);
+		const config =
+			readConfigFile(userConfigPath) ?? readConfigFile(legacyUserConfigPath);
 		if (config) {
 			base = mergeBaseConfigs(base, config);
 		}

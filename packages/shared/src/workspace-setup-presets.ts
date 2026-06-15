@@ -1,7 +1,7 @@
 /**
  * Workspace setup presets — the opt-in scaffolding/setup options offered when
  * creating or importing a workspace. Each preset maps to either shell setup
- * commands (run by `setup-terminal.ts` from the `.rox/config.json` `setup`
+ * commands (run by `setup-terminal.ts` from the `rox/config.json` `setup`
  * array) and/or scaffold files written into the new workspace.
  *
  * This catalog is the single source of truth for both the picker UI
@@ -20,14 +20,14 @@ export interface WorkspaceScaffoldFile {
 
 /**
  * One selectable setup option. `setupCommands` are appended to the
- * `.rox/config.json` `setup` array (run once on workspace creation);
+ * `rox/config.json` `setup` array (run once on workspace creation);
  * `scaffoldFiles` are written verbatim into the workspace.
  */
 export interface WorkspaceSetupPreset {
 	id: string;
 	label: string;
 	description: string;
-	/** Shell commands appended to the `.rox/config.json` setup array. */
+	/** Shell commands appended to the `rox/config.json` setup array. */
 	setupCommands?: string[];
 	/** Files written into the workspace root on creation. */
 	scaffoldFiles?: WorkspaceScaffoldFile[];
@@ -118,9 +118,9 @@ export const WORKSPACE_SETUP_PRESETS: readonly WorkspaceSetupPreset[] = [
 	},
 	{
 		id: "rox-folder",
-		label: "Create .rox folder",
-		description: "Create the `.rox/` workspace config directory.",
-		setupCommands: ["mkdir -p .rox"],
+		label: "Create rox folder",
+		description: "Create the `rox/` workspace config directory.",
+		setupCommands: ["mkdir -p rox"],
 	},
 	{
 		id: "agent-folder",
@@ -181,7 +181,7 @@ jobs:
 		scaffoldFiles: [
 			{
 				path: ".gitignore",
-				contents: "node_modules/\ndist/\n.env\n.rox/\n",
+				contents: "node_modules/\ndist/\n.env\nrox/\n",
 			},
 		],
 	},

@@ -32,7 +32,7 @@ export function getAttachmentsRoot(baseDirOverride?: string): string {
 	const base =
 		envBase && envBase.length > 0
 			? envBase
-			: join(homedir(), ".rox", "host", "standalone");
+			: join(homedir(), "rox", "host", "standalone");
 	return join(base, "attachments");
 }
 

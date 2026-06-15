@@ -14,7 +14,13 @@ let isFallbackCache = false;
 const CACHE_TTL_MS = 60_000; // 1 minute cache
 const FALLBACK_CACHE_TTL_MS = 10_000; // 10 second cache for fallback (retry sooner)
 const TIMEOUT_FALLBACK_CACHE_TTL_MS = 60_000; // 1 minute fallback when shell startup hangs
-const SHELL_ENV_TIMEOUT_MS = 8_000;
+// Heavy login profiles (e.g. infisical/portless/nvm bootstrapping) can take
+// well over 8s to produce an interactive shell. The previous 8s cap caused
+// those users to hit the fallback on every cold call. Detection is already
+// fully non-blocking (it's awaited off the creation critical path and degrades
+// to `process.env` on timeout), so a larger cap is safe and lets real shell
+// vars resolve instead of silently falling back.
+const SHELL_ENV_TIMEOUT_MS = 30_000;
 let fallbackCacheTtlMs = FALLBACK_CACHE_TTL_MS;
 
 // Track PATH fix state for macOS GUI app PATH fix

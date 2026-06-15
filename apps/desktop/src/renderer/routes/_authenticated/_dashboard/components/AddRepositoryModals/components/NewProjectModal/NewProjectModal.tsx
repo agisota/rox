@@ -70,7 +70,7 @@ export function NewProjectModal({
 
 	useEffect(() => {
 		if (parentDir || !homeDir) return;
-		setParentDir(`${homeDir}/.rox/projects`);
+		setParentDir(`${homeDir}/rox/projects`);
 	}, [homeDir, parentDir]);
 
 	useEffect(() => {

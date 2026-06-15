@@ -37,7 +37,7 @@ function OnboardingProjectPage() {
 	const hostReady = activeHostUrl !== null;
 	const openNewWorkspaceModal = useOpenNewWorkspaceModal();
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
-	const cloneTargetDir = homeDir ? `${homeDir}/.rox/projects` : null;
+	const cloneTargetDir = homeDir ? `${homeDir}/rox/projects` : null;
 	const [url, setUrl] = useState("");
 	const [busy, setBusy] = useState(false);
 	const shouldAnimate = useShouldAnimate("decorative");

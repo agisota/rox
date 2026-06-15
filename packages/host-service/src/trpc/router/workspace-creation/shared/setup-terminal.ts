@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs";
 import { eq } from "drizzle-orm";
 import { projects, workspaces } from "../../../../db/schema";
 import {
@@ -24,12 +25,12 @@ interface StartSetupTerminalResult {
  * Resolve and start the workspace-creation setup terminal, if any.
  *
  * Source order:
- *   1. Configured `setup` array from `.rox/config.json` (+ user override
+ *   1. Configured `setup` array from `rox/config.json` (+ user override
  *      and `config.local.json` overlay) — joined with ` && ` so failures
  *      short-circuit.
- *   2. Fallback: `bash <repoPath>/.rox/setup.sh` against the main repo
+ *   2. Fallback: `bash <repoPath>/rox/setup.sh` against the main repo
  *      (NOT the worktree — worktrees skip gitignored files, the main repo is
- *      authoritative). Scripts that need the canonical `.rox/` dir read
+ *      authoritative). Scripts that need the canonical `rox/` dir read
  *      `$ROX_ROOT_PATH`, injected by the v2 terminal env builder.
  *
  * No-op when neither source resolves to anything runnable.
@@ -98,7 +99,8 @@ export function resolveInitialCommand(args: {
 		return commands.join(" && ");
 	}
 
-	const fallbackScript = join(args.repoPath, ".rox", "setup.sh");
+	// Prefer the new `rox/` dir; fall back to a legacy `.rox/` dir when only it exists.
+	const fallbackScript = join(resolveProjectRoxDir(args.repoPath), "setup.sh");
 	if (existsSync(fallbackScript)) {
 		return `bash ${singleQuote(fallbackScript)}`;
 	}

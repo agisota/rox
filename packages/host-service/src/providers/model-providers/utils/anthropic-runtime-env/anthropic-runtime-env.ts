@@ -90,7 +90,7 @@ export function getAnthropicEnvConfigPath(
 	options?: AnthropicEnvConfigDiskOptions,
 ): string {
 	if (options?.configPath) return options.configPath;
-	const roxHome = process.env.ROX_HOME_DIR?.trim() || join(homedir(), ".rox");
+	const roxHome = process.env.ROX_HOME_DIR?.trim() || join(homedir(), "rox");
 	return join(roxHome, CONFIG_FILE_NAME);
 }
 
