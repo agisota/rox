@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SocialLinks } from "../SocialLinks";
 
 function RoxLogo() {
 	return (
@@ -35,16 +34,12 @@ interface FooterLink {
 const COMPANY_LINKS: FooterLink[] = [
 	{ href: "/team", label: "О нас" },
 	{ href: "/contact", label: "Контакты" },
-	{ href: COMPANY.CAREERS_URL, label: "Вакансии", external: true },
 	{ href: COMPANY.STATUS_URL, label: "Статус", external: true },
 ];
 
 const RESOURCE_LINKS: FooterLink[] = [
 	{ href: COMPANY.DOCS_URL, label: "Документация", external: true },
-	{ href: "/pricing", label: "Цены" },
 	{ href: "/blog", label: "Блог" },
-	{ href: "/community", label: "Сообщество" },
-	{ href: "/enterprise", label: "Enterprise" },
 	{ href: "/changelog", label: "Журнал изменений" },
 ];
 
@@ -75,9 +70,8 @@ export function Footer() {
 						>
 							<RoxLogo />
 						</Link>
-						<SocialLinks className="-ml-2" />
 						<p className="text-sm text-muted-foreground">
-							© {new Date().getFullYear()} Rox Inc.
+							© {new Date().getFullYear()} ROX ONE PUBLIC BENEFIT COMPANY
 						</p>
 					</div>
 

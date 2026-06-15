@@ -33,18 +33,10 @@ export const RESOURCE_LINKS: NavLink[] = [
 		description: "Технические разборы и запуски.",
 	},
 	{
-		href: "/community",
-		label: "Сообщество",
-		description: "Discord, GitHub и открытые встречи.",
-	},
-	{
 		href: "/team",
 		label: "О нас",
 		description: "Команда, которая делает Rox.",
 	},
 ];
 
-export const TOP_LEVEL_LINKS: NavLink[] = [
-	{ href: "/pricing", label: "Цены" },
-	{ href: "/enterprise", label: "Для бизнеса" },
-];
+export const TOP_LEVEL_LINKS: NavLink[] = [];

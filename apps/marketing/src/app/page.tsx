@@ -12,9 +12,6 @@ const TrustedBySection = dynamic(() =>
 const FeaturesSection = dynamic(() =>
 	import("./components/FeaturesSection").then((mod) => mod.FeaturesSection),
 );
-const WallOfLoveSection = dynamic(() =>
-	import("./components/WallOfLoveSection").then((mod) => mod.WallOfLoveSection),
-);
 const FAQSection = dynamic(() =>
 	import("./components/FAQSection").then((mod) => mod.FAQSection),
 );
@@ -35,7 +32,6 @@ export default function Home() {
 			<HeroSection />
 			<TrustedBySection />
 			<FeaturesSection />
-			<WallOfLoveSection />
 			<FAQSection />
 			<CTASection />
 		</main>
