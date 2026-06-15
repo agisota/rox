@@ -1,6 +1,6 @@
 "use client";
 
-import { createTimeline, scrambleText, stagger } from "animejs";
+import { animate, createTimeline, scrambleText, stagger } from "animejs";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import {
@@ -206,15 +206,30 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Reveal the brand logo just above the wordmark as it settles.
+			// Reveal the brand logo just above the wordmark as it settles, with a
+			// brief blur-clear and a brand-glow halo that pulses up as it lands.
 			.add(logo, { opacity: { to: 1 }, ease: "out(2)", duration: 700 }, "<<")
 			.add(
 				logoImg,
 				{
 					scale: [0.8, 1],
-					translateY: [18, 0],
 					ease: "out(3)",
 					duration: 900,
+				},
+				"<<",
+			)
+			// Blur-clear + glow-halo land pulse on the logo wrapper (the wrapper owns
+			// the `--rox-logo-*` custom props that `filter` and the `::before` halo
+			// read). The standalone breathing loop below is delayed so it never
+			// clobbers this one-shot pulse.
+			.add(
+				logo,
+				{
+					"--rox-logo-blur": ["8px", "0px"],
+					"--rox-logo-glow-a": [0, 0.9, 0.78],
+					"--rox-logo-glow-scale": [0.6, 1.08, 1],
+					ease: "out(2)",
+					duration: 1000,
 				},
 				"<<",
 			)
@@ -306,11 +321,23 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 
 		timeline.init();
 
+		// Subtle "alive" float once the logo has landed: the mark drifts ±4px and
+		// the halo breathes. Tracked separately so we can revert it on cleanup
+		// (the timeline's own revert() won't touch these standalone loops).
+		const logoFloat = animate(logoImg, {
+			translateY: [-4, 4],
+			loop: true,
+			alternate: true,
+			duration: 3500,
+			ease: "inOut(2)",
+		});
+
 		// Belt-and-braces: guarantee completion even if a tween never settles.
 		const safety = window.setTimeout(finishOnce, SAFETY_TIMEOUT_MS);
 
 		return () => {
 			window.clearTimeout(safety);
+			logoFloat.revert();
 			timeline.pause();
 			timeline.revert();
 		};

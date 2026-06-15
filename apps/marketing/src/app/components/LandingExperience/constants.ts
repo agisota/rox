@@ -73,10 +73,10 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 
 /* ── ② Scramble landing document (gbLOvrw) ─────────────────────────────── */
 
-export const LANDING_HEADLINE = "Кодьте в сто рук";
+export const LANDING_HEADLINE = "Кодируй и вайбуй в тыщу рук";
 
 export const LANDING_INTRO_PARAGRAPH =
-	"ROX запускает 100+ AI-агентов параллельно на вашем компьютере. Они пишут фичи, чинят баги и рефакторят одновременно — а вы проверяете и принимаете только лучшее. Наведите на строку, чтобы пересобрать её.";
+	"ROX оркестрирует 1000+ AI-агентов параллельно.";
 
 export const LANDING_FEATURES_HEADING = "Почему ROX";
 

@@ -3,7 +3,7 @@
 import { COMPANY } from "@rox/shared/constants";
 import { animate, createTimeline, utils } from "animejs";
 import { useEffect, useRef } from "react";
-import { STAR_LABEL_DONE, STAR_LABEL_IDLE, STAR_PROMPT } from "../../constants";
+import { STAR_LABEL_DONE, STAR_LABEL_IDLE } from "../../constants";
 
 interface GitHubStarButtonProps {
 	targetCount: number;
@@ -160,7 +160,6 @@ export function GitHubStarButton({ targetCount }: GitHubStarButtonProps) {
 				</svg>
 				<span className="rox-star__label">
 					<span className="rox-star__word">{STAR_LABEL_IDLE}</span>
-					<span className="rox-star__prompt">{STAR_PROMPT}</span>
 				</span>
 				<span className="rox-star__count">
 					{Math.max(1, Math.round(targetCount * 0.85))}

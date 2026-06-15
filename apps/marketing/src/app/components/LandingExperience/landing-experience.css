@@ -48,8 +48,15 @@
 	--rox-c-15: #8ad2ff;
 	--rox-c-16: #ffc46b;
 
+	/* SF Pro family: Display for headings, SF Mono for body/scramble (keeps the
+	 * scramble glyphs monospaced so they don't jitter while resolving). */
+	--rox-font-display:
+		"SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+		system-ui, sans-serif;
+	--rox-font-mono: "SF Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
+
 	color: var(--rox-fg-1);
-	font-family: var(--font-family-mono, ui-monospace, monospace);
+	font-family: var(--rox-font-mono);
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -113,7 +120,7 @@
 	right: 1.5rem;
 	z-index: 101;
 	padding: 0.5rem 1rem;
-	font-family: var(--font-family-mono, monospace);
+	font-family: var(--rox-font-mono);
 	font-size: 0.8rem;
 	letter-spacing: 0.04em;
 	color: var(--rox-fg-2);
@@ -131,8 +138,16 @@
 	border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Brand logo revealed over the centered word at the climax of slide 1. */
+/* Brand logo revealed over the centered word at the climax of slide 1.
+ * anime.js drives the custom props for a premium reveal:
+ *   --rox-logo-blur        clears 8px → 0 as the mark resolves
+ *   --rox-logo-glow-a      halo opacity, pulses up on land then breathes
+ *   --rox-logo-glow-scale  halo scale, swells slightly larger than the logo */
 .rox-intro__logo {
+	--rox-logo-blur: 0px;
+	--rox-logo-glow-a: 0;
+	--rox-logo-glow-scale: 0.6;
+
 	position: absolute;
 	top: 41%;
 	left: 50%;
@@ -141,7 +156,32 @@
 	opacity: 0;
 	z-index: 3;
 	pointer-events: none;
-	filter: drop-shadow(0 10px 32px rgba(0, 0, 0, 0.6));
+	filter: blur(var(--rox-logo-blur, 0px))
+		drop-shadow(0 10px 32px rgba(0, 0, 0, 0.6));
+}
+
+/* Soft brand-orange glow halo behind the logo. Sits below the mark (z-index),
+ * blurred and scaled larger; opacity + scale are animated for the land pulse
+ * and the subtle breathing loop. */
+.rox-intro__logo::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	top: 50%;
+	left: 50%;
+	width: 150%;
+	height: 150%;
+	transform: translate(-50%, -50%) scale(var(--rox-logo-glow-scale, 0.6));
+	border-radius: 50%;
+	opacity: var(--rox-logo-glow-a, 0);
+	background: radial-gradient(
+		circle at center,
+		rgba(240, 121, 42, 0.55),
+		rgba(255, 154, 77, 0.28) 42%,
+		transparent 70%
+	);
+	filter: blur(26px);
+	pointer-events: none;
 }
 
 .rox-intro__logo img {
@@ -246,20 +286,22 @@
 }
 
 .rox-landing h1 {
-	font-size: clamp(2.1rem, 6.5vw, 3.3rem);
+	font-family: var(--rox-font-display);
+	font-size: clamp(2.2rem, 6.8vw, 3.5rem);
 	font-weight: 700;
-	line-height: 1.08;
-	letter-spacing: -0.01em;
+	line-height: 1.06;
+	letter-spacing: -0.02em;
 	margin: 4px 0 8px;
 	cursor: default;
 	color: var(--rox-fg-1);
 }
 
 .rox-landing h2 {
-	font-size: 1.4rem;
+	font-family: var(--rox-font-display);
+	font-size: 1.45rem;
 	font-weight: 700;
 	line-height: 1.3;
-	letter-spacing: -0.005em;
+	letter-spacing: -0.01em;
 	margin-top: clamp(32px, 6vh, 64px);
 	cursor: default;
 	color: var(--rox-orange-1);
@@ -410,6 +452,12 @@
 	color: var(--rox-fg-3);
 }
 
+.rox-thanks__prompt {
+	margin-top: 4px;
+	font-size: 0.9rem;
+	color: var(--rox-orange-1);
+}
+
 .rox-star {
 	position: relative;
 	display: flex;
@@ -433,7 +481,7 @@
 	border: 2px solid var(--sbtn-2);
 	border-radius: 12px;
 	padding: 8px 24px 8px 18px;
-	font-family: var(--font-family-mono, ui-monospace, monospace);
+	font-family: var(--rox-font-mono);
 	font-size: 22px;
 	color: #ffffff;
 	text-decoration: none;
