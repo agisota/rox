@@ -1,4 +1,8 @@
 import { PROTOCOL_SCHEMES } from "@rox/shared/constants";
+import {
+	ROX_HOME_DIR_NAME,
+	PROJECT_ROX_DIR_NAME as SHARED_PROJECT_ROX_DIR_NAME,
+} from "@rox/shared/rox-dirs";
 import { getWorkspaceName } from "./env.shared";
 
 export const PLATFORM = {
@@ -8,12 +12,16 @@ export const PLATFORM = {
 };
 
 const workspace = getWorkspaceName();
-export const ROX_DIR_NAME = workspace ? `.rox-${workspace}` : ".rox";
+// Per-user home dir name. Now visible (`rox` / `rox-<workspace>`), formerly
+// dot-hidden (`.rox`). Existing `~/.rox` is auto-migrated at app startup.
+export const ROX_DIR_NAME = workspace
+	? `${ROX_HOME_DIR_NAME}-${workspace}`
+	: ROX_HOME_DIR_NAME;
 export const PROTOCOL_SCHEME = workspace
 	? `rox-${workspace}`
 	: PROTOCOL_SCHEMES.PROD;
-// Project-level directory name (always .rox, not conditional)
-export const PROJECT_ROX_DIR_NAME = ".rox";
+// Project-level directory name (always the same, not conditional).
+export const PROJECT_ROX_DIR_NAME = SHARED_PROJECT_ROX_DIR_NAME;
 export const WORKTREES_DIR_NAME = "worktrees";
 export const PROJECTS_DIR_NAME = "projects";
 export const CONFIG_FILE_NAME = "config.json";

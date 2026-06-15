@@ -27,7 +27,7 @@ async function writeTaskPromptFile(
 		throw new Error(`Workspace path not found: ${workspaceId}`);
 	}
 
-	const roxDirectory = joinAbsolutePath(workspace.worktreePath, ".rox");
+	const roxDirectory = joinAbsolutePath(workspace.worktreePath, "rox");
 	await electronTrpcClient.filesystem.createDirectory.mutate({
 		workspaceId,
 		absolutePath: roxDirectory,
@@ -106,7 +106,7 @@ async function writeAttachmentFiles(
 
 	const attachmentsDirectory = joinAbsolutePath(
 		workspace.worktreePath,
-		".rox/attachments",
+		"rox/attachments",
 	);
 	await electronTrpcClient.filesystem.createDirectory.mutate({
 		workspaceId,
@@ -170,7 +170,7 @@ async function writeAttachmentFiles(
 		});
 
 		// Return relative path from workspace root
-		writtenPaths.push(`.rox/attachments/${fileName}`);
+		writtenPaths.push(`rox/attachments/${fileName}`);
 	}
 
 	return writtenPaths;

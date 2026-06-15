@@ -120,6 +120,10 @@ interface ApplyAiRenameArgs {
 	renameBranch: boolean;
 }
 
+interface ApplyGeneratedWorkspaceNamesArgs extends ApplyAiRenameArgs {
+	aiNames: GeneratedWorkspaceNames;
+}
+
 /**
  * Generates an AI title+branch for a freshly-created workspace and
  * applies whichever side the caller asked for. Git rename runs first
@@ -133,6 +137,15 @@ interface ApplyAiRenameArgs {
 export async function applyAiWorkspaceRename(
 	args: ApplyAiRenameArgs,
 ): Promise<void> {
+	const aiNames = await generateWorkspaceNamesFromPrompt(args.prompt);
+	if (!aiNames) return;
+
+	return applyGeneratedWorkspaceNames({ ...args, aiNames });
+}
+
+export async function applyGeneratedWorkspaceNames(
+	args: ApplyGeneratedWorkspaceNamesArgs,
+): Promise<void> {
 	const {
 		ctx,
 		workspaceId,
@@ -140,15 +153,12 @@ export async function applyAiWorkspaceRename(
 		worktreePath,
 		oldBranchName,
 		oldWorkspaceName,
-		prompt,
 		renameTitle,
 		renameBranch,
+		aiNames,
 	} = args;
 
 	if (!renameTitle && !renameBranch) return;
-
-	const aiNames = await generateWorkspaceNamesFromPrompt(prompt);
-	if (!aiNames) return;
 
 	const titleChanged =
 		renameTitle && aiNames.title !== "" && aiNames.title !== oldWorkspaceName;

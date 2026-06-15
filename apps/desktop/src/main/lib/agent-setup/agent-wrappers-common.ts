@@ -6,11 +6,13 @@ import { BIN_DIR } from "./paths";
 export const WRAPPER_MARKER = "# Rox agent-wrapper v3";
 export { ROX_MANAGED_BINARIES };
 
-// Dev setup (.rox/lib/setup/steps.sh) points ROX_HOME_DIR at
-// $PWD/rox-dev-data — without a leading dot — so we must recognize that
-// variant to reap stale notify.sh paths from deleted worktrees.
+// Match Rox-managed hook paths under any Rox home dir, so we can reap stale
+// notify.sh paths from deleted worktrees. Covers the new visible home dirs
+// (`rox`, `rox-<workspace>`), the legacy dot-hidden ones (`.rox`,
+// `.rox-<workspace>`), and the dev `rox-dev-data` dir (set by
+// .rox/lib/setup/steps.sh without a leading dot).
 const ROX_MANAGED_HOOK_PATH_PATTERN =
-	/\/(?:\.rox(?:-[^/'"\s\\]+)?|rox-dev-data)\//;
+	/\/(?:\.?rox(?:-[^/'"\s\\]+)?|rox-dev-data)\//;
 
 export function writeFileIfChanged(
 	filePath: string,
@@ -89,7 +91,7 @@ function buildRealBinaryResolver(): string {
     [ -z "$dir" ] && continue
     dir="\${dir%/}"
     case "$dir" in
-      "${BIN_DIR}"|"$HOME"/.rox/bin|"$HOME"/.rox-*/bin) continue ;;
+      "${BIN_DIR}"|"$HOME"/rox/bin|"$HOME"/rox-*/bin|"$HOME"/.rox/bin|"$HOME"/.rox-*/bin) continue ;;
     esac
     if [ -x "$dir/$name" ] && [ ! -d "$dir/$name" ]; then
       printf "%s\\n" "$dir/$name"

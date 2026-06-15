@@ -336,7 +336,7 @@ describe("getResolvedSetupCommands", () => {
 });
 
 describe("getProjectConfigPath", () => {
-	it("appends .rox/config.json to the repoPath", () => {
-		expect(getProjectConfigPath("/tmp/x")).toBe("/tmp/x/.rox/config.json");
+	it("appends rox/config.json to the repoPath", () => {
+		expect(getProjectConfigPath("/tmp/x")).toBe("/tmp/x/rox/config.json");
 	});
 });

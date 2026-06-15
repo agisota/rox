@@ -1,11 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import {
+	LEGACY_ROX_HOME_DIR_NAME,
+	ROX_HOME_DIR_NAME,
+} from "@rox/shared/rox-dirs";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 
-const PROJECT_ROX_DIR_NAME = ".rox";
 const CONFIG_FILE_NAME = "config.json";
 const LOCAL_CONFIG_FILE_NAME = "config.local.json";
-const ROX_DIR_NAME = ".rox";
+const ROX_DIR_NAME = ROX_HOME_DIR_NAME;
 const PROJECTS_DIR_NAME = "projects";
 
 export interface SetupConfig {
@@ -162,7 +166,7 @@ function applyLocalOverlay(
 }
 
 export function getProjectConfigPath(repoPath: string): string {
-	return join(repoPath, PROJECT_ROX_DIR_NAME, CONFIG_FILE_NAME);
+	return join(resolveProjectRoxDir(repoPath), CONFIG_FILE_NAME);
 }
 
 function getUserOverridePath(
@@ -170,25 +174,36 @@ function getUserOverridePath(
 	homeDir: string,
 ): string | null {
 	if (projectId.includes("/") || projectId.includes("\\")) return null;
-	return join(
+	const next = join(
 		homeDir,
 		ROX_DIR_NAME,
 		PROJECTS_DIR_NAME,
 		projectId,
 		CONFIG_FILE_NAME,
 	);
+	if (existsSync(next)) return next;
+	// Backward compat: read from legacy ~/.rox/projects/<id>/ when only it exists.
+	const legacy = join(
+		homeDir,
+		LEGACY_ROX_HOME_DIR_NAME,
+		PROJECTS_DIR_NAME,
+		projectId,
+		CONFIG_FILE_NAME,
+	);
+	if (existsSync(legacy)) return legacy;
+	return next;
 }
 
 function getLocalOverlayPath(repoPath: string): string {
-	return join(repoPath, PROJECT_ROX_DIR_NAME, LOCAL_CONFIG_FILE_NAME);
+	return join(resolveProjectRoxDir(repoPath), LOCAL_CONFIG_FILE_NAME);
 }
 
 /**
  * Resolve setup/teardown/run config for a v2 project.
  *
- *   1. <repoPath>/.rox/config.json    — canonical
- *   2. ~/.rox/projects/<id>/config.json — per-machine override (later wins)
- *   3. <repoPath>/.rox/config.local.json — overlay with before/after/replace
+ *   1. <repoPath>/rox/config.json    — canonical (legacy <repoPath>/.rox fallback)
+ *   2. ~/rox/projects/<id>/config.json — per-machine override (later wins)
+ *   3. <repoPath>/rox/config.local.json — overlay with before/after/replace
  *
  * Returns null when no source defines anything. Worktrees are not consulted —
  * the main repo path is the single source of truth.

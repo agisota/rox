@@ -1,5 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { migrateProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import { generateFriendlyBranchName } from "@rox/shared/workspace-launch";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
@@ -33,6 +34,7 @@ import { safeResolveWorktreePath } from "../workspace-creation/shared/worktree-p
 import { generateBranchNameFromPrompt } from "../workspace-creation/utils/ai-branch-name";
 import {
 	applyAiWorkspaceRename,
+	applyGeneratedWorkspaceNames,
 	type GeneratedWorkspaceNames,
 	generateWorkspaceNamesFromPrompt,
 } from "../workspace-creation/utils/ai-workspace-names";
@@ -49,6 +51,40 @@ import {
 import { derivePrLocalBranchName } from "../workspace-creation/utils/pr-branch-name";
 import { resolveStartPoint } from "../workspace-creation/utils/resolve-start-point";
 import { deduplicateBranchName } from "../workspace-creation/utils/sanitize-branch";
+
+// Upper bound on how long workspace creation will block on inline AI naming
+// before proceeding with a friendly-random branch + the user's original name.
+// AI naming has its own internal timeout, but on slow networks / credential
+// resolution that can still stall the worktree-add critical path. When this cap
+// is hit, creation continues immediately and the AI name is applied afterwards
+// via `applyAiWorkspaceRename` (fire-and-forget), so a hung model can never make
+// creation hang or fail — it only delays the rename.
+const AI_NAMES_INLINE_CAP_MS = 2_500;
+
+/**
+ * Await `promise`, but give up after `ms` and resolve `null` instead. The
+ * underlying promise keeps running (callers already attach a `.catch`), so a
+ * capped-out AI-naming call can still feed a later post-create rename.
+ */
+function withInlineCap<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const capped = new Promise<null>((resolve) => {
+		timer = setTimeout(() => resolve(null), ms);
+	});
+	return Promise.race([
+		promise.then(
+			(value) => {
+				if (timer) clearTimeout(timer);
+				return value;
+			},
+			(error) => {
+				if (timer) clearTimeout(timer);
+				throw error;
+			},
+		),
+		capped,
+	]);
+}
 
 const agentLaunchSchema = z
 	.object({
@@ -553,6 +589,7 @@ export const workspacesRouter = router({
 				input.agents?.[0]?.prompt?.trim() || input.namingPrompt?.trim() || "";
 			const wantAi =
 				input.pr === undefined &&
+				input.worktreePath === undefined &&
 				(input.branch === undefined || input.name === undefined) &&
 				!!composerPrompt;
 			const aiNamesPromise: Promise<GeneratedWorkspaceNames | null> | null =
@@ -563,8 +600,23 @@ export const workspacesRouter = router({
 						})
 					: null;
 			aiNamesPromise?.catch(() => {});
+			let inlineAiNames: GeneratedWorkspaceNames | null = null;
+			const resolveInlineAiNames = async () => {
+				if (!aiNamesPromise) return null;
+				const names = await withInlineCap(
+					aiNamesPromise,
+					AI_NAMES_INLINE_CAP_MS,
+				);
+				inlineAiNames = names;
+				return names;
+			};
 
 			await ensureMainWorkspace(ctx, input.projectId, localProject.repoPath);
+
+			// One-time, idempotent rename of a legacy `<repo>/.rox` config dir to
+			// the visible `<repo>/rox`. Best-effort; reads fall back to `.rox` if
+			// this can't run. The main repo is the source of truth for the dir.
+			migrateProjectRoxDir(localProject.repoPath);
 
 			const git = await ctx.git(localProject.repoPath);
 			const worktreeBaseDir =
@@ -840,7 +892,7 @@ export const workspacesRouter = router({
 					resolvedBranch = typedBranch;
 					const [planResult, aiNames, existing] = await Promise.all([
 						planBranchSource(git, resolvedBranch, input.baseBranch),
-						aiNamesPromise ?? Promise.resolve(null),
+						resolveInlineAiNames(),
 						listBranchNames(ctx, localProject.repoPath),
 					]);
 					plan = planResult;
@@ -870,7 +922,7 @@ export const workspacesRouter = router({
 					// add. AI's branch name wins when available; friendly random
 					// is a fallback for no-prompt or LLM failure.
 					const [aiNames, startPoint, existing] = await Promise.all([
-						aiNamesPromise ?? Promise.resolve(null),
+						resolveInlineAiNames(),
 						resolveNewBranchStartPoint(git, input.baseBranch),
 						listBranchNames(ctx, localProject.repoPath),
 					]);
@@ -1039,6 +1091,34 @@ export const workspacesRouter = router({
 						}
 					}
 				}
+			}
+
+			if (
+				!alreadyExists &&
+				aiNamesPromise &&
+				inlineAiNames === null &&
+				(input.name === undefined || input.branch === undefined)
+			) {
+				void aiNamesPromise
+					.then((aiNames) => {
+						if (!aiNames) return;
+						return applyGeneratedWorkspaceNames({
+							ctx,
+							workspaceId: workspaceRow.id,
+							repoPath: localProject.repoPath,
+							worktreePath,
+							oldBranchName: resolvedBranch,
+							oldWorkspaceName: workspaceRow.name,
+							prompt: composerPrompt,
+							renameTitle: input.name === undefined,
+							renameBranch:
+								input.worktreePath === undefined && input.branch === undefined,
+							aiNames,
+						});
+					})
+					.catch((err) => {
+						console.warn("[workspaces.create] late AI rename failed", err);
+					});
 			}
 
 			const terminalsResult: Array<{ terminalId: string; label?: string }> = [];

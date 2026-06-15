@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { resolveRoxHomePath } from "@rox/shared/rox-dirs-node";
 
 const ENV_LINE = /^(?:export\s+)?[a-zA-Z_]\w*\s*=/;
 const CONFIG_FILE_NAME = "chat-anthropic-env.json";
@@ -66,7 +67,7 @@ function toNormalizedEnvEntries(
 function readPersistedAnthropicEnvConfig(
 	options?: AnthropicEnvConfigDiskOptions,
 ): PersistedAnthropicEnvConfig | null {
-	const configPath = getAnthropicEnvConfigPath(options);
+	const configPath = getAnthropicEnvConfigReadPath(options);
 	if (!existsSync(configPath)) return null;
 
 	try {
@@ -90,8 +91,17 @@ export function getAnthropicEnvConfigPath(
 	options?: AnthropicEnvConfigDiskOptions,
 ): string {
 	if (options?.configPath) return options.configPath;
-	const roxHome = process.env.ROX_HOME_DIR?.trim() || join(homedir(), ".rox");
+	const roxHome = process.env.ROX_HOME_DIR?.trim() || join(homedir(), "rox");
 	return join(roxHome, CONFIG_FILE_NAME);
+}
+
+function getAnthropicEnvConfigReadPath(
+	options?: AnthropicEnvConfigDiskOptions,
+): string {
+	const primaryPath = getAnthropicEnvConfigPath(options);
+	if (options?.configPath || existsSync(primaryPath)) return primaryPath;
+	const roxHome = process.env.ROX_HOME_DIR?.trim() || join(homedir(), "rox");
+	return resolveRoxHomePath(roxHome, CONFIG_FILE_NAME);
 }
 
 export function parseAnthropicEnvText(envText: string): AnthropicEnvVariables {

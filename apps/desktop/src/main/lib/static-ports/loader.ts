@@ -1,17 +1,18 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseStaticPortsConfig } from "@rox/port-scanner";
-import { PORTS_FILE_NAME, PROJECT_ROX_DIR_NAME } from "shared/constants";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
+import { PORTS_FILE_NAME } from "shared/constants";
 import type { StaticPortsResult } from "shared/types";
 
 /**
- * Load and validate static ports configuration from a worktree's .rox/ports.json file.
+ * Load and validate static ports configuration from a worktree config dir (rox/ or legacy .rox/) ports.json file.
  *
  * @param worktreePath - Path to the workspace's worktree directory
  * @returns StaticPortsResult with exists flag, ports array, and any error message
  */
 export function loadStaticPorts(worktreePath: string): StaticPortsResult {
-	const portsPath = join(worktreePath, PROJECT_ROX_DIR_NAME, PORTS_FILE_NAME);
+	const portsPath = join(resolveProjectRoxDir(worktreePath), PORTS_FILE_NAME);
 
 	if (!existsSync(portsPath)) {
 		return { exists: false, ports: null, error: null };
@@ -41,9 +42,9 @@ export function loadStaticPorts(worktreePath: string): StaticPortsResult {
  * Check if a static ports configuration file exists for a worktree.
  *
  * @param worktreePath - Path to the workspace's worktree directory
- * @returns true if .rox/ports.json exists
+ * @returns true if rox/ (or legacy .rox/) ports.json exists
  */
 export function hasStaticPortsConfig(worktreePath: string): boolean {
-	const portsPath = join(worktreePath, PROJECT_ROX_DIR_NAME, PORTS_FILE_NAME);
+	const portsPath = join(resolveProjectRoxDir(worktreePath), PORTS_FILE_NAME);
 	return existsSync(portsPath);
 }

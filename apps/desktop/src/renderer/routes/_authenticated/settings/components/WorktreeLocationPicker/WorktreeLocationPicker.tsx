@@ -14,7 +14,7 @@ interface WorktreeLocationPickerProps {
 
 export function useDefaultWorktreePath() {
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
-	return homeDir ? `${homeDir}/.rox/worktrees` : "~/.rox/worktrees";
+	return homeDir ? `${homeDir}/rox/worktrees` : "~/rox/worktrees";
 }
 
 export function WorktreeLocationPicker({

@@ -8,6 +8,14 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./rox-dirs": {
+			"types": "./src/rox-dirs.ts",
+			"default": "./src/rox-dirs.ts"
+		},
+		"./rox-dirs-node": {
+			"types": "./src/rox-dirs-node.ts",
+			"default": "./src/rox-dirs-node.ts"
+		},
 		"./desktop-callback": {
 			"types": "./src/desktop-callback.ts",
 			"default": "./src/desktop-callback.ts"

@@ -1,3 +1,6 @@
+// Import first: computing ROX_HOME_DIR runs the one-time ~/.rox -> ~/rox
+// migration as a module-load side effect, before any other module reads it.
+import "./lib/app-environment";
 import { once } from "node:events";
 import path from "node:path";
 import { pathToFileURL } from "node:url";

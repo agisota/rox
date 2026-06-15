@@ -60,7 +60,7 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 		id: "agent-context-scaffold",
 		label: "Agent context scaffold",
 		description:
-			"Create the .rox/, .agent/, and .memory/ directories that hold workspace config, agent artifacts, and persistent memory.",
+			"Create the rox/, .agent/, and .memory/ directories that hold workspace config, agent artifacts, and persistent memory.",
 		presetIds: ["rox-folder", "agent-folder", "memory-folder"],
 	},
 	{

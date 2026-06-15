@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { accessSync, constants, existsSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { ROX_DIR_NAME } from "shared/constants";
 import { getDefaultShell } from "../terminal/env";
 
 /**
@@ -59,17 +60,31 @@ export function findRealBinary(name: string): string | null {
 			: findBinaryPathsUnix(name);
 
 		const homedir = os.homedir();
-		// Filter out wrapper scripts from all rox directories:
-		// - ~/.rox/bin
-		// - ~/.rox-*/bin (workspace-specific instances)
-		const roxBinDir = path.join(homedir, ".rox", "bin");
-		const roxPrefix = path.join(homedir, ".rox-");
+		// Filter out wrapper scripts from all rox home directories, both the new
+		// visible names and the legacy dot-hidden ones:
+		// - ~/rox/bin, ~/rox-*/bin (workspace-specific instances)
+		// - ~/.rox/bin, ~/.rox-*/bin (legacy)
+		const isRoxHomeDirName = (dirName: string): boolean =>
+			dirName === ROX_DIR_NAME ||
+			dirName === "rox" ||
+			dirName === ".rox" ||
+			dirName.startsWith("rox-") ||
+			dirName.startsWith(".rox-");
+		const isRoxWrapperPath = (p: string): boolean => {
+			const relative = path.relative(homedir, path.normalize(p));
+			if (
+				relative === "" ||
+				relative.startsWith("..") ||
+				path.isAbsolute(relative)
+			) {
+				return false;
+			}
+			const [roxDirName, binDirName] = relative.split(/[\\/]+/);
+			return binDirName === "bin" && isRoxHomeDirName(roxDirName ?? "");
+		};
 		const paths = allPaths.filter(
 			(p) =>
-				p &&
-				!p.startsWith(roxBinDir) &&
-				!(p.startsWith(roxPrefix) && p.includes("/bin/")) &&
-				(isWindows || isExecutableUnixPath(p)),
+				p && !isRoxWrapperPath(p) && (isWindows || isExecutableUnixPath(p)),
 		);
 		return paths[0] || null;
 	} catch {
