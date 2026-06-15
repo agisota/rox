@@ -108,9 +108,10 @@ jobs:
           for file in *.dmg; do
             if [[ -f "$file" ]]; then
               arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.dmg$/\1/')
-              if [[ "$arch" =~ ^[0-9]+\.[0-9]+\.[0-9] ]]; then
-                arch="x64"
-              fi
+              case "$arch" in
+                arm64|x64) ;;
+                *) arch="x64" ;;
+              esac
               cp "$file" "Rox-Canary-${arch}.dmg"
               echo "Created canary copy: Rox-Canary-${arch}.dmg"
             fi
@@ -118,9 +119,10 @@ jobs:
           for file in *-mac.zip; do
             if [[ -f "$file" ]]; then
               arch=$(echo "$file" | sed -E 's/.*-([^-]+)-mac\.zip$/\1/')
-              if [[ "$arch" =~ ^[0-9]+\.[0-9]+\.[0-9] ]]; then
-                arch="x64"
-              fi
+              case "$arch" in
+                arm64|x64) ;;
+                *) arch="x64" ;;
+              esac
               cp "$file" "Rox-Canary-${arch}-mac.zip"
               echo "Created canary copy: Rox-Canary-${arch}-mac.zip"
             fi

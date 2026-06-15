@@ -86,7 +86,7 @@ export function UpdateToast({
 							<span className="font-medium text-sm text-destructive">
 								Обновление не удалось
 							</span>
-							<span className="text-sm text-muted-foreground">
+							<span className="text-sm text-muted-foreground select-text cursor-text">
 								{error || "Повторите попытку позже"}
 							</span>
 						</>
@@ -144,6 +144,9 @@ export function UpdateToast({
 							style={{ overflow: "hidden" }}
 						>
 							<div className="flex items-center gap-2">
+								<Button variant="ghost" size="sm" onClick={handleSeeChanges}>
+									Что изменилось
+								</Button>
 								<Button variant="ghost" size="sm" onClick={handleLater}>
 									Позже
 								</Button>
