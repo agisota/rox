@@ -134,9 +134,10 @@
 /* Brand logo revealed over the centered word at the climax of slide 1. */
 .rox-intro__logo {
 	position: absolute;
-	top: 33%;
+	top: 41%;
 	left: 50%;
-	transform: translate(-50%, -50%);
+	transform: translate(-50%, -100%);
+	margin-top: -8px;
 	opacity: 0;
 	z-index: 3;
 	pointer-events: none;
@@ -144,7 +145,7 @@
 }
 
 .rox-intro__logo img {
-	height: clamp(56px, 14vh, 128px);
+	height: clamp(52px, 12vh, 112px);
 	width: auto;
 	display: block;
 }

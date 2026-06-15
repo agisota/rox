@@ -76,9 +76,9 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 export const LANDING_HEADLINE = "Кодьте в сто рук";
 
 export const LANDING_INTRO_PARAGRAPH =
-	"Rox запускает 100+ AI-агентов параллельно на вашем компьютере. Они пишут фичи, чинят баги и рефакторят одновременно — а вы проверяете и принимаете только лучшее. Наведите на строку, чтобы пересобрать её.";
+	"ROX запускает 100+ AI-агентов параллельно на вашем компьютере. Они пишут фичи, чинят баги и рефакторят одновременно — а вы проверяете и принимаете только лучшее. Наведите на строку, чтобы пересобрать её.";
 
-export const LANDING_FEATURES_HEADING = "Почему Rox";
+export const LANDING_FEATURES_HEADING = "Почему ROX";
 
 /** Plain-language, benefit-first value props — ideal for per-line scramble. */
 export const LANDING_FEATURES: ReadonlyArray<string> = [
@@ -93,9 +93,9 @@ export const LANDING_FEATURES: ReadonlyArray<string> = [
 export const LANDING_HOW_HEADING = "Как это работает";
 
 export const LANDING_HOW_PARAGRAPH =
-	"Ставьте задачи одну за другой, не дожидаясь. Каждый агент работает сам в своей ветке, а Rox зовёт вас, только когда нужно ваше решение. Вы дирижируете — агенты пишут код.";
+	"Ставьте задачи одну за другой, не дожидаясь. Каждый агент работает сам в своей ветке, а ROX зовёт вас, только когда нужно ваше решение. Вы дирижируете — агенты пишут код.";
 
-export const LANDING_DOWNLOAD_HEADING = "Попробуйте Rox бесплатно";
+export const LANDING_DOWNLOAD_HEADING = "Попробуйте ROX бесплатно";
 
 /* ── ③ Download Snap X (qEBgEPz) ───────────────────────────────────────── */
 
