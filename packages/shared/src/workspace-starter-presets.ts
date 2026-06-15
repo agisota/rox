@@ -117,6 +117,54 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 			"editorconfig",
 		],
 	},
+	{
+		id: "minimal-git",
+		label: "Minimal git init",
+		description: "Just initialize a fresh git repository — nothing else.",
+		presetIds: ["git-init"],
+	},
+	{
+		id: "agent-ready",
+		label: "Agent-ready workspace",
+		description:
+			"Drop an AGENTS.md guide and the rox/, .agent/, and .memory/ directories so agents have context and scratch space from day one.",
+		presetIds: ["agents-md", "rox-folder", "agent-folder", "memory-folder"],
+	},
+	{
+		id: "prototyping",
+		label: "Prototyping scratchpad",
+		description:
+			"Spin up a quick prototype: a README plus todo.md and spec.md to capture the idea while you build.",
+		presetIds: ["readme", "todo-md", "spec-md"],
+	},
+	{
+		id: "community-health",
+		label: "Community health files",
+		description:
+			"Add the files a healthy open project expects: README, MIT LICENSE, and CONTRIBUTING.md.",
+		presetIds: ["readme", "license-mit", "contributing"],
+	},
+	{
+		id: "dockerized",
+		label: "Dockerized",
+		description:
+			"Containerize the workspace: a starter Dockerfile plus a .dockerignore to keep the build context lean.",
+		presetIds: ["dockerfile", "dockerignore"],
+	},
+	{
+		id: "devcontainer-ready",
+		label: "Dev container ready",
+		description:
+			"A reproducible dev environment: a .devcontainer config, a pinned Node version, and an .editorconfig.",
+		presetIds: ["devcontainer", "nvmrc", "editorconfig"],
+	},
+	{
+		id: "env-config",
+		label: "Env config baseline",
+		description:
+			"Document required env vars in .env.example and add a .gitignore so real secrets never get committed.",
+		presetIds: ["env-example", "gitignore"],
+	},
 ];
 
 /** Look up a starter by id. */

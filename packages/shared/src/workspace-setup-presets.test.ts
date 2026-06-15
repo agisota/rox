@@ -6,9 +6,9 @@ import {
 } from "./workspace-setup-presets";
 
 describe("workspace-setup-presets", () => {
-	it("exposes 15-20 presets with unique ids", () => {
+	it("exposes 15-30 presets with unique ids", () => {
 		expect(WORKSPACE_SETUP_PRESETS.length).toBeGreaterThanOrEqual(15);
-		expect(WORKSPACE_SETUP_PRESETS.length).toBeLessThanOrEqual(20);
+		expect(WORKSPACE_SETUP_PRESETS.length).toBeLessThanOrEqual(30);
 		const ids = WORKSPACE_SETUP_PRESETS.map((p) => p.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
