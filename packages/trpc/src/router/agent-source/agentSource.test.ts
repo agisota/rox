@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import * as realDbSchema from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
@@ -8,6 +9,12 @@ import {
 	setAgentSourceStatusSchema,
 	updateAgentSourceSchema,
 } from "./schema";
+
+// Crypto key for at-rest credential round-tripping. Honor a gate/CI-provided
+// SECRETS_ENCRYPTION_KEY when present; otherwise fall back to an ephemeral
+// 32-byte test key so these tests stay hermetic and pass without external env
+// (the CI Test job sets no SECRETS_ENCRYPTION_KEY secret).
+process.env.SECRETS_ENCRYPTION_KEY ||= randomBytes(32).toString("base64");
 
 // ---------------------------------------------------------------------------
 // DB-free unit tests: crypto round-trip + zod schemas + credential discipline.
@@ -140,8 +147,8 @@ describe("updateAgentSourceSchema", () => {
 // Mocked-DB caller tests, following the integration/github + integration/linear
 // harness: db.select/dbWs.insert chains and ../utils auth gates are mocked, so
 // no real database, network, or membership lookup is required. Real crypto runs
-// (the gate provides SECRETS_ENCRYPTION_KEY) so credential round-tripping is
-// exercised end-to-end through getDecryptedConfig.
+// (SECRETS_ENCRYPTION_KEY is ensured at the top of this file) so credential
+// round-tripping is exercised end-to-end through getDecryptedConfig.
 // ---------------------------------------------------------------------------
 
 const verifyOrgMembershipMock = mock(async () => ({
