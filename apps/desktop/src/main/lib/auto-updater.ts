@@ -1,11 +1,16 @@
+import { execFile } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { app, dialog } from "electron";
+import { app, dialog, shell } from "electron";
 import log from "electron-log/main";
 import { autoUpdater } from "electron-updater";
 import { env } from "main/env.main";
 import { setSkipQuitConfirmation } from "main/index";
 import { gte, prerelease } from "semver";
-import { AUTO_UPDATE_STATUS, type AutoUpdateStatus } from "shared/auto-update";
+import {
+	AUTO_UPDATE_STATUS,
+	type AutoUpdateStatus,
+	RELEASES_URL,
+} from "shared/auto-update";
 import { PLATFORM } from "shared/constants";
 
 // electron-updater's internal cache only self-invalidates when the remote
@@ -56,7 +61,67 @@ export interface AutoUpdateStatusEvent {
 	status: AutoUpdateStatus;
 	version?: string;
 	error?: string;
+	/**
+	 * Direct, arch-correct .dmg download URL. Present on the notify-only
+	 * `UPDATE_AVAILABLE` status for unsigned macOS builds so the renderer can
+	 * open it in the browser (Squirrel.Mac can't auto-install unsigned apps).
+	 */
+	downloadUrl?: string;
+	/** GitHub releases page for the new version, for "release notes". */
+	notesUrl?: string;
 }
+
+// Arch-correct stable .dmg download URLs (electron-builder publishes stable
+// names alongside the versioned assets). Squirrel can't install these on an
+// unsigned build, so we hand the right one to the OS browser instead.
+function getArchDownloadUrl(): string {
+	const asset = process.arch === "arm64" ? "Rox-arm64.dmg" : "Rox-x64.dmg";
+	return `https://github.com/agisota/rox/releases/latest/download/${asset}`;
+}
+
+// Notify-only mode: a macOS build with no Apple Developer ID can't be
+// auto-installed by Squirrel.Mac, but we can still detect a newer version and
+// prompt the user to download the .dmg manually. Probe the signing identity of
+// the running .app once via `codesign`; a Developer ID Application authority
+// means the (future) signed path stays on the real auto-update flow.
+let notifyOnlyMode: boolean | null = null;
+
+function detectNotifyOnlyMode(): Promise<boolean> {
+	if (notifyOnlyMode !== null) return Promise.resolve(notifyOnlyMode);
+	// Only packaged macOS builds are candidates; dev and other platforms keep
+	// the standard Squirrel/AppImage flow.
+	if (!PLATFORM.IS_MAC || !app.isPackaged) {
+		notifyOnlyMode = false;
+		return Promise.resolve(false);
+	}
+	return new Promise((resolve) => {
+		// `codesign -dv` writes the signing authority chain to stderr. A signed
+		// build lists "Authority=Developer ID Application: ..."; an ad-hoc or
+		// unsigned build either fails or only reports a generic/ad-hoc signature.
+		execFile(
+			"codesign",
+			["-dv", "--verbose=4", app.getPath("exe")],
+			(error, _stdout, stderr) => {
+				const output = `${stderr}`;
+				const isSigned =
+					!error && /Authority=Developer ID Application:/i.test(output);
+				notifyOnlyMode = !isSigned;
+				log.info(
+					`[auto-updater] Signing probe: ${
+						isSigned
+							? "Developer ID signed (auto-install)"
+							: "unsigned (notify-only)"
+					}`,
+				);
+				resolve(notifyOnlyMode);
+			},
+		);
+	});
+}
+
+// Cached details for the notify-only prompt so the install/openExternal path
+// and re-emits can reuse the arch-correct URL without re-deriving it.
+let notifyOnlyDownloadUrl: string | undefined;
 
 export const autoUpdateEmitter = new EventEmitter();
 
@@ -80,12 +145,9 @@ function isNetworkError(error: Error | string): boolean {
 	return SILENT_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
 }
 
-// Squirrel.Mac refuses to update ad-hoc/unsigned builds. While we ship
-// without a Developer ID certificate, background checks would surface an
-// "Update failed" toast every cycle — detect the signature error once,
-// go quiet, and stop checking until the next launch.
-let updatesUnsupported = false;
-
+// Squirrel.Mac refuses to update ad-hoc/unsigned builds. Rather than going
+// quiet, unsigned macOS builds switch to notify-only mode (see
+// `detectNotifyOnlyMode`) and prompt the user to download the .dmg manually.
 function isCodeSignatureError(error: Error | string): boolean {
 	const message = typeof error === "string" ? error : error.message;
 	return /code signature|codesign|signature validation|not signed/i.test(
@@ -95,29 +157,54 @@ function isCodeSignatureError(error: Error | string): boolean {
 
 let currentStatus: AutoUpdateStatus = AUTO_UPDATE_STATUS.IDLE;
 let currentVersion: string | undefined;
+let currentDownloadUrl: string | undefined;
+let currentNotesUrl: string | undefined;
 let isDismissed = false;
 let isInstalling = false;
+
+// Statuses that are dismissible (parked until the next check) when the user
+// clicks "later". READY is the Squirrel path; UPDATE_AVAILABLE is notify-only.
+function isDismissibleStatus(status: AutoUpdateStatus): boolean {
+	return (
+		status === AUTO_UPDATE_STATUS.READY ||
+		status === AUTO_UPDATE_STATUS.UPDATE_AVAILABLE
+	);
+}
 
 function emitStatus(
 	status: AutoUpdateStatus,
 	version?: string,
 	error?: string,
+	extra?: { downloadUrl?: string; notesUrl?: string },
 ): void {
 	currentStatus = status;
 	currentVersion = version;
+	currentDownloadUrl = extra?.downloadUrl;
+	currentNotesUrl = extra?.notesUrl;
 
-	if (isDismissed && status === AUTO_UPDATE_STATUS.READY) {
+	if (isDismissed && isDismissibleStatus(status)) {
 		return;
 	}
 
-	autoUpdateEmitter.emit("status-changed", { status, version, error });
+	autoUpdateEmitter.emit("status-changed", {
+		status,
+		version,
+		error,
+		downloadUrl: extra?.downloadUrl,
+		notesUrl: extra?.notesUrl,
+	});
 }
 
 export function getUpdateStatus(): AutoUpdateStatusEvent {
-	if (isDismissed && currentStatus === AUTO_UPDATE_STATUS.READY) {
+	if (isDismissed && isDismissibleStatus(currentStatus)) {
 		return { status: AUTO_UPDATE_STATUS.IDLE };
 	}
-	return { status: currentStatus, version: currentVersion };
+	return {
+		status: currentStatus,
+		version: currentVersion,
+		downloadUrl: currentDownloadUrl,
+		notesUrl: currentNotesUrl,
+	};
 }
 
 export function isUpdateReadyToInstall(): boolean {
@@ -128,6 +215,16 @@ export function installUpdate(): void {
 	if (env.NODE_ENV === "development") {
 		log.info("[auto-updater] Install skipped in dev mode");
 		emitStatus(AUTO_UPDATE_STATUS.IDLE);
+		return;
+	}
+	// Notify-only (unsigned macOS): there's no staged Squirrel download to swap
+	// in — open the arch-correct .dmg (or the releases page) in the browser so
+	// the user can download and reinstall manually.
+	if (currentStatus === AUTO_UPDATE_STATUS.UPDATE_AVAILABLE) {
+		const url = currentDownloadUrl ?? notifyOnlyDownloadUrl ?? RELEASES_URL;
+		log.info(`[auto-updater] Notify-only install: opening ${url}`);
+		void shell.openExternal(url);
+		dismissUpdate();
 		return;
 	}
 	// MacUpdater.quitAndInstall() registers a fresh native-updater
@@ -157,24 +254,63 @@ export function dismissUpdate(): void {
 	autoUpdateEmitter.emit("status-changed", { status: AUTO_UPDATE_STATUS.IDLE });
 }
 
+/**
+ * Notify-only check for unsigned macOS builds. Reads the remote manifest
+ * (latest-mac.yml) without downloading, compares versions, and emits an
+ * UPDATE_AVAILABLE status carrying the arch-correct .dmg download URL. When
+ * `interactive` is set, also surfaces an "up to date" dialog so the manual
+ * "Check for updates" menu has feedback. Returns true when a newer version was
+ * found, so the interactive path can suppress its own "up to date" dialog.
+ */
+async function runNotifyOnlyCheck(interactive: boolean): Promise<boolean> {
+	// Reading the manifest is enough; never let electron-updater stage a
+	// download it can't install on an unsigned build.
+	autoUpdater.autoDownload = false;
+	const result = await autoUpdater.checkForUpdates();
+	const latestVersion = result?.updateInfo?.version;
+
+	if (!latestVersion || gte(app.getVersion(), latestVersion)) {
+		emitStatus(AUTO_UPDATE_STATUS.IDLE);
+		return false;
+	}
+
+	const downloadUrl = getArchDownloadUrl();
+	notifyOnlyDownloadUrl = downloadUrl;
+	log.info(
+		`[auto-updater] Notify-only update available: ${app.getVersion()} → ${latestVersion} (${downloadUrl})`,
+	);
+	emitStatus(AUTO_UPDATE_STATUS.UPDATE_AVAILABLE, latestVersion, undefined, {
+		downloadUrl,
+		notesUrl: RELEASES_URL,
+	});
+	if (interactive) {
+		// The toast already prompts; keep the menu interaction quiet on success.
+		log.info("[auto-updater] Interactive notify-only check found an update");
+	}
+	return true;
+}
+
 export function checkForUpdates(): void {
-	if (
-		env.NODE_ENV === "development" ||
-		!IS_AUTO_UPDATE_PLATFORM ||
-		updatesUnsupported
-	) {
+	if (env.NODE_ENV === "development" || !IS_AUTO_UPDATE_PLATFORM) {
 		return;
 	}
 	isDismissed = false;
 	emitStatus(AUTO_UPDATE_STATUS.CHECKING);
-	autoUpdater.checkForUpdates().catch((error) => {
-		if (isNetworkError(error)) {
-			log.info("[auto-updater] Network unavailable, will retry later");
-			emitStatus(AUTO_UPDATE_STATUS.IDLE);
-			return;
-		}
-		log.error("[auto-updater] Failed to check for updates:", error);
-		emitStatus(AUTO_UPDATE_STATUS.ERROR, undefined, error.message);
+
+	void detectNotifyOnlyMode().then((notifyOnly) => {
+		const run = notifyOnly
+			? runNotifyOnlyCheck(false)
+			: autoUpdater.checkForUpdates().then(() => undefined);
+
+		run.catch((error: Error) => {
+			if (isNetworkError(error)) {
+				log.info("[auto-updater] Network unavailable, will retry later");
+				emitStatus(AUTO_UPDATE_STATUS.IDLE);
+				return;
+			}
+			log.error("[auto-updater] Failed to check for updates:", error);
+			emitStatus(AUTO_UPDATE_STATUS.ERROR, undefined, error.message);
+		});
 	});
 }
 
@@ -199,42 +335,55 @@ export function checkForUpdatesInteractive(): void {
 	isDismissed = false;
 	emitStatus(AUTO_UPDATE_STATUS.CHECKING);
 
-	autoUpdater
-		.checkForUpdates()
-		.then((result) => {
-			if (
-				!result?.updateInfo ||
-				gte(app.getVersion(), result.updateInfo.version)
-			) {
-				emitStatus(AUTO_UPDATE_STATUS.IDLE);
-				dialog.showMessageBox({
-					type: "info",
-					title: "No Updates",
-					message: "You're up to date!",
-					detail: `Version ${app.getVersion()} is the latest version.`,
+	void detectNotifyOnlyMode().then((notifyOnly) => {
+		const run = notifyOnly
+			? runNotifyOnlyCheck(true).then((updateFound) => {
+					if (!updateFound) {
+						dialog.showMessageBox({
+							type: "info",
+							title: "Обновлений нет",
+							message: "У вас актуальная версия.",
+							detail: `Версия ${app.getVersion()} — последняя доступная.`,
+						});
+					}
+				})
+			: autoUpdater.checkForUpdates().then((result) => {
+					if (
+						!result?.updateInfo ||
+						gte(app.getVersion(), result.updateInfo.version)
+					) {
+						emitStatus(AUTO_UPDATE_STATUS.IDLE);
+						dialog.showMessageBox({
+							type: "info",
+							title: "Обновлений нет",
+							message: "У вас актуальная версия.",
+							detail: `Версия ${app.getVersion()} — последняя доступная.`,
+						});
+					}
 				});
-			}
-		})
-		.catch((error) => {
+
+		run.catch((error: Error) => {
 			if (isNetworkError(error)) {
 				log.info("[auto-updater] Network unavailable");
 				emitStatus(AUTO_UPDATE_STATUS.IDLE);
 				dialog.showMessageBox({
 					type: "info",
-					title: "No Internet Connection",
+					title: "Нет подключения к интернету",
 					message:
-						"Unable to check for updates. Please check your internet connection.",
+						"Не удалось проверить обновления. Проверьте подключение к интернету.",
 				});
 				return;
 			}
 			if (isCodeSignatureError(error)) {
-				updatesUnsupported = true;
-				emitStatus(AUTO_UPDATE_STATUS.IDLE);
-				dialog.showMessageBox({
-					type: "info",
-					title: "Updates",
-					message:
-						"Auto-update is unavailable for this build. Download the latest DMG from GitHub Releases to update.",
+				// Fallback: if the signature probe missed an unsigned build and
+				// electron-updater surfaces the signature error, treat it as
+				// notify-only from here on and prompt a manual download.
+				notifyOnlyMode = true;
+				const downloadUrl = getArchDownloadUrl();
+				notifyOnlyDownloadUrl = downloadUrl;
+				emitStatus(AUTO_UPDATE_STATUS.UPDATE_AVAILABLE, undefined, undefined, {
+					downloadUrl,
+					notesUrl: RELEASES_URL,
 				});
 				return;
 			}
@@ -242,10 +391,11 @@ export function checkForUpdatesInteractive(): void {
 			emitStatus(AUTO_UPDATE_STATUS.ERROR, undefined, error.message);
 			dialog.showMessageBox({
 				type: "error",
-				title: "Update Error",
-				message: "Failed to check for updates. Please try again later.",
+				title: "Ошибка обновления",
+				message: "Не удалось проверить обновления. Попробуйте позже.",
 			});
 		});
+	});
 }
 
 export function simulateUpdateReady(): void {
@@ -258,6 +408,18 @@ export function simulateDownloading(): void {
 	if (env.NODE_ENV !== "development") return;
 	isDismissed = false;
 	emitStatus(AUTO_UPDATE_STATUS.DOWNLOADING, "99.0.0-test");
+}
+
+export function simulateUpdateAvailable(): void {
+	if (env.NODE_ENV !== "development") return;
+	isDismissed = false;
+	const downloadUrl = getArchDownloadUrl();
+	notifyOnlyMode = true;
+	notifyOnlyDownloadUrl = downloadUrl;
+	emitStatus(AUTO_UPDATE_STATUS.UPDATE_AVAILABLE, "99.0.0-test", undefined, {
+		downloadUrl,
+		notesUrl: RELEASES_URL,
+	});
 }
 
 export function simulateError(): void {
@@ -310,11 +472,24 @@ export function setupAutoUpdater(): void {
 			return;
 		}
 		if (isCodeSignatureError(error)) {
-			updatesUnsupported = true;
+			// Unsigned build: Squirrel can't install, but we can still notify.
+			// Flip to notify-only and surface a manual-download prompt instead of
+			// going silent. Use the last known available version if we have one.
+			notifyOnlyMode = true;
+			const downloadUrl = getArchDownloadUrl();
+			notifyOnlyDownloadUrl = downloadUrl;
 			log.warn(
-				"[auto-updater] Build is not code-signed; auto-update is unavailable. Update manually via DMG.",
+				"[auto-updater] Build is not code-signed; switching to notify-only manual download.",
 			);
-			emitStatus(AUTO_UPDATE_STATUS.IDLE);
+			emitStatus(
+				AUTO_UPDATE_STATUS.UPDATE_AVAILABLE,
+				currentVersion,
+				undefined,
+				{
+					downloadUrl,
+					notesUrl: RELEASES_URL,
+				},
+			);
 			return;
 		}
 		log.error(
@@ -333,6 +508,15 @@ export function setupAutoUpdater(): void {
 	});
 
 	autoUpdater.on("update-available", (info) => {
+		// In notify-only mode `runNotifyOnlyCheck` already emitted
+		// UPDATE_AVAILABLE with the manual-download URL; don't override it with a
+		// DOWNLOADING state for a Squirrel download that can't run on this build.
+		if (notifyOnlyMode) {
+			log.info(
+				`[auto-updater] Update available (notify-only): ${app.getVersion()} → ${info.version}`,
+			);
+			return;
+		}
 		log.info(
 			`[auto-updater] Update available: ${app.getVersion()} → ${info.version} (files: ${info.files?.map((f: { url: string }) => f.url).join(", ")})`,
 		);

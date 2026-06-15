@@ -11,9 +11,13 @@ import { AUTO_UPDATE_STATUS } from "shared/auto-update";
 
 interface UpdateToastProps {
 	toastId: string | number;
-	status: "downloading" | "ready" | "error";
+	status: "downloading" | "ready" | "error" | "update-available";
 	version?: string;
 	error?: string;
+	/** Arch-correct .dmg URL for notify-only (unsigned macOS) updates. */
+	downloadUrl?: string;
+	/** Release notes / releases page URL for notify-only updates. */
+	notesUrl?: string;
 }
 
 export function UpdateToast({
@@ -21,6 +25,8 @@ export function UpdateToast({
 	status,
 	version,
 	error,
+	downloadUrl,
+	notesUrl,
 }: UpdateToastProps) {
 	const openUrl = electronTrpc.external.openUrl.useMutation();
 	const installMutation = electronTrpc.autoUpdate.install.useMutation();
@@ -33,14 +39,29 @@ export function UpdateToast({
 	const isDownloading = status === AUTO_UPDATE_STATUS.DOWNLOADING;
 	const isReady = status === AUTO_UPDATE_STATUS.READY;
 	const isError = status === AUTO_UPDATE_STATUS.ERROR;
+	// Notify-only state for unsigned macOS builds: prompt a manual download
+	// instead of a Squirrel auto-install.
+	const isUpdateAvailable = status === AUTO_UPDATE_STATUS.UPDATE_AVAILABLE;
 
 	const shouldAnimate = useShouldAnimate("decorative");
 
 	const handleSeeChanges = () => {
-		openUrl.mutate(COMPANY.CHANGELOG_URL);
+		openUrl.mutate(notesUrl ?? COMPANY.CHANGELOG_URL);
 	};
 
 	const handleInstall = () => {
+		installMutation.mutate();
+	};
+
+	// «Обновить» for notify-only: open the .dmg in the browser. The main-process
+	// install handler already does this for the UPDATE_AVAILABLE state, but call
+	// openUrl directly when we have the arch URL so behavior is explicit.
+	const handleDownload = () => {
+		if (downloadUrl) {
+			openUrl.mutate(downloadUrl);
+			dismissMutation.mutate();
+			return;
+		}
 		installMutation.mutate();
 	};
 
@@ -69,6 +90,18 @@ export function UpdateToast({
 								{error || "Повторите попытку позже"}
 							</span>
 						</>
+					) : isUpdateAvailable ? (
+						<>
+							<span className="font-medium text-sm">Доступно обновление</span>
+							<span className="text-sm text-muted-foreground">
+								{version
+									? `Версия ${version} готова к загрузке`
+									: "Доступна новая версия"}
+							</span>
+							<span className="text-xs text-muted-foreground/70">
+								Скачайте установщик и обновите приложение вручную.
+							</span>
+						</>
 					) : isDownloading ? (
 						<>
 							<span className="font-medium text-sm">
@@ -94,6 +127,32 @@ export function UpdateToast({
 					)}
 				</div>
 				<AnimatePresence initial={false}>
+					{isUpdateAvailable && (
+						<motion.div
+							key="available-actions"
+							initial={{ opacity: 0, height: 0, y: -4 }}
+							animate={{ opacity: 1, height: "auto", y: 0 }}
+							exit={{ opacity: 0, height: 0, y: -4 }}
+							transition={
+								shouldAnimate
+									? {
+											duration: motionDuration.base,
+											ease: ease.standard as [number, number, number, number],
+										}
+									: { duration: 0 }
+							}
+							style={{ overflow: "hidden" }}
+						>
+							<div className="flex items-center gap-2">
+								<Button variant="ghost" size="sm" onClick={handleLater}>
+									Позже
+								</Button>
+								<Button size="sm" onClick={handleDownload}>
+									Обновить
+								</Button>
+							</div>
+						</motion.div>
+					)}
 					{isReady && (
 						<motion.div
 							key="ready-actions"
