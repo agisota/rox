@@ -4,8 +4,8 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@superset/ui/dialog";
-import { toast } from "@superset/ui/sonner";
+} from "@rox/ui/dialog";
+import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
