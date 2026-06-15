@@ -78,8 +78,8 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 	},
 	{
 		id: "oh-my-pi",
-		label: "Oh My Pi",
-		description: "Oh My Pi harness layer for the OMP terminal coding agent.",
+		label: "Rox",
+		description: "Rox harness layer for the default omp terminal coding agent.",
 		baseAgentId: "omp",
 		install: [],
 		configFiles: [],
@@ -87,9 +87,9 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 	},
 	{
 		id: ODW_OMP_HARNESS_ID,
-		label: "Open Dynamic Workflows + Oh My Pi",
+		label: "Open Dynamic Workflows + Rox",
 		description:
-			"Optional workflow orchestration layer for running dynamic workflow scripts through Oh My Pi.",
+			"Optional workflow orchestration layer for running dynamic workflow scripts through Rox without replacing the base omp launch path.",
 		baseAgentId: "omp",
 		install: [{ command: "npm install -g open-dynamic-workflows@latest" }],
 		configFiles: [

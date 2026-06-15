@@ -1,3 +1,5 @@
+import acpxIcon from "./acpx.svg";
+import acpxWhiteIcon from "./acpx-white.svg";
 import ampIcon from "./amp.svg";
 import claudeIcon from "./claude.svg";
 import codexIcon from "./codex.svg";
@@ -8,6 +10,8 @@ import cursorAgentIcon from "./cursor.svg";
 import droidIcon from "./droid.svg";
 import droidWhiteIcon from "./droid-white.svg";
 import geminiIcon from "./gemini.svg";
+import grokIcon from "./grok.svg";
+import grokWhiteIcon from "./grok-white.svg";
 import mastracodeIcon from "./mastracode.svg";
 import mastracodeWhiteIcon from "./mastracode-white.svg";
 import opencodeIcon from "./opencode.svg";
@@ -22,12 +26,14 @@ export interface PresetIconSet {
 }
 
 export const PRESET_ICONS: Record<string, PresetIconSet> = {
+	acpx: { light: acpxIcon, dark: acpxWhiteIcon },
 	amp: { light: ampIcon, dark: ampIcon },
 	claude: { light: claudeIcon, dark: claudeIcon },
 	codex: { light: codexIcon, dark: codexWhiteIcon },
 	copilot: { light: copilotIcon, dark: copilotWhiteIcon },
 	gemini: { light: geminiIcon, dark: geminiIcon },
-	omp: { light: piIcon, dark: piWhiteIcon },
+	grok: { light: grokIcon, dark: grokWhiteIcon },
+	omp: { light: roxIcon, dark: roxIcon },
 	pi: { light: piIcon, dark: piWhiteIcon },
 	rox: { light: roxIcon, dark: roxIcon },
 	"cursor-agent": { light: cursorAgentIcon, dark: cursorAgentIcon },
@@ -47,6 +53,8 @@ export function getPresetIcon(
 }
 
 export {
+	acpxIcon,
+	acpxWhiteIcon,
 	ampIcon,
 	claudeIcon,
 	codexIcon,
@@ -57,6 +65,8 @@ export {
 	droidIcon,
 	droidWhiteIcon,
 	geminiIcon,
+	grokIcon,
+	grokWhiteIcon,
 	mastracodeIcon,
 	mastracodeWhiteIcon,
 	opencodeIcon,

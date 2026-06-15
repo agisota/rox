@@ -63,7 +63,6 @@ export function createApplicationMenu() {
 					},
 				},
 				{ role: "forceReload" },
-				{ role: "toggleDevTools" },
 				{ type: "separator" },
 				{ role: "resetZoom" },
 				{ role: "zoomIn" },
@@ -90,23 +89,10 @@ export function createApplicationMenu() {
 						shell.openExternal(COMPANY.DOCS_URL);
 					},
 				},
-				{ type: "separator" },
-				{
-					label: "Contact Us",
-					click: () => {
-						shell.openExternal(COMPANY.MAIL_TO);
-					},
-				},
 				{
 					label: "Report Issue",
 					click: () => {
 						shell.openExternal(COMPANY.REPORT_ISSUE_URL);
-					},
-				},
-				{
-					label: "Join Discord",
-					click: () => {
-						shell.openExternal(COMPANY.DISCORD_URL);
 					},
 				},
 				{ type: "separator" },

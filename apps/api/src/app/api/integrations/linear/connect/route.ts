@@ -2,6 +2,7 @@ import { auth } from "@rox/auth/server";
 import { findOrgMembership } from "@rox/db/utils";
 
 import { env } from "@/env";
+import { buildLinearRedirectUri } from "@/lib/integrations/linear-oauth";
 import { createSignedState } from "@/lib/oauth-state";
 
 export async function GET(request: Request) {
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
 	linearAuthUrl.searchParams.set("client_id", env.LINEAR_CLIENT_ID);
 	linearAuthUrl.searchParams.set(
 		"redirect_uri",
-		`${env.NEXT_PUBLIC_API_URL}/api/integrations/linear/callback`,
+		buildLinearRedirectUri(env.NEXT_PUBLIC_API_URL),
 	);
 	linearAuthUrl.searchParams.set("response_type", "code");
 	linearAuthUrl.searchParams.set("scope", "read,write,issues:create");

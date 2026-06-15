@@ -13,7 +13,7 @@ function createEntry(
 	return {
 		presetId,
 		kind: "harness",
-		label: "Open Dynamic Workflows + Oh My Pi",
+		label: "Open Dynamic Workflows + Rox",
 		optional: true,
 		status,
 		version: null,
@@ -42,9 +42,9 @@ describe("OMP ODW harness UI helpers", () => {
 	});
 
 	it("recognizes OMP host configs even when their id is host-scoped", () => {
-		expect(
-			isOmpAgent({ id: "host-uuid", label: "Oh My Pi", iconId: "omp" }),
-		).toBe(true);
+		expect(isOmpAgent({ id: "host-uuid", label: "Rox", iconId: "omp" })).toBe(
+			true,
+		);
 		expect(isOmpAgent({ id: "claude", label: "Claude" })).toBe(false);
 	});
 });

@@ -10,6 +10,7 @@ import {
 } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
+import { buildLocalHostFallback } from "../../../lib/localHostFallback";
 import type { CandidateRow } from "./components/AddMemberDropdown";
 import { AddMemberDropdown } from "./components/AddMemberDropdown";
 import { HostConnectionSection } from "./components/HostConnectionSection";
@@ -37,7 +38,13 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id ?? null;
 	const actions = useOptimisticCollectionActions();
-	const { machineId } = useLocalHostService();
+	const {
+		activeHostUrl,
+		activeOrganizationId,
+		activeOrganizationName,
+		hostServiceStatus,
+		machineId,
+	} = useLocalHostService();
 	const hostUrl = useHostUrl(hostId);
 
 	const { data: hostRows = [], isReady: hostReady } = useLiveQuery(
@@ -48,7 +55,31 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				.select(({ hosts }) => ({ ...hosts })),
 		[collections, hostId],
 	);
-	const host = hostRows[0];
+	const persistedHost = hostRows[0];
+	const localFallbackHost = useMemo(
+		() =>
+			hostId === machineId
+				? buildLocalHostFallback({
+						activeHostUrl,
+						activeOrganizationId,
+						activeOrganizationName,
+						currentUserId,
+						hostServiceStatus,
+						machineId,
+					})
+				: null,
+		[
+			activeHostUrl,
+			activeOrganizationId,
+			activeOrganizationName,
+			currentUserId,
+			hostId,
+			hostServiceStatus,
+			machineId,
+		],
+	);
+	const host = persistedHost ?? localFallbackHost;
+	const isLocalFallbackOnly = !persistedHost && !!localFallbackHost;
 
 	const { data: hostUserRows = [] } = useLiveQuery(
 		(q) =>
@@ -120,12 +151,14 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 	}, [orgMembers, hostUserRows, userMap]);
 
 	const isOwner = useMemo(() => {
+		if (isLocalFallbackOnly) return !!currentUserId;
 		if (!currentUserId) return false;
 		return (
 			hostUserRows.find((r) => r.userId === currentUserId)?.role === "owner"
 		);
-	}, [hostUserRows, currentUserId]);
+	}, [hostUserRows, currentUserId, isLocalFallbackOnly]);
 	const isRemoteTarget = Boolean(machineId && hostId !== machineId);
+	const canMutatePersistedHost = isOwner && !isLocalFallbackOnly;
 
 	if (!host) {
 		if (!hostReady) return null;
@@ -167,7 +200,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 				name={host.name}
 				isOnline={host.isOnline}
 				machineId={host.machineId}
-				canRename={isOwner}
+				canRename={canMutatePersistedHost}
 				port={host.port}
 				protocol={host.protocol}
 			/>
@@ -193,20 +226,22 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 					<div className="flex items-end justify-between gap-4">
 						<div>
 							<h3 className="text-sm font-medium">Участники</h3>
-							{!isOwner && (
+							{!canMutatePersistedHost && (
 								<p className="text-sm text-muted-foreground mt-0.5">
-									Только владельцы могут менять состав участников.
+									{isLocalFallbackOnly
+										? "Состав участников появится после синхронизации хоста."
+										: "Только владельцы могут менять состав участников."}
 								</p>
 							)}
 						</div>
-						{isOwner && (
+						{canMutatePersistedHost && (
 							<AddMemberDropdown candidates={candidates} onPick={handleAdd} />
 						)}
 					</div>
 
 					<MembersTable
 						members={members}
-						isOwner={isOwner}
+						isOwner={canMutatePersistedHost}
 						onSetRole={handleSetRole}
 						onRemove={handleRemove}
 					/>

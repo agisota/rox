@@ -6,6 +6,7 @@ import { Client } from "@upstash/qstash";
 import { and, eq } from "drizzle-orm";
 
 import { env } from "@/env";
+import { buildLinearRedirectUri } from "@/lib/integrations/linear-oauth";
 import { verifySignedState } from "@/lib/oauth-state";
 
 const qstash = new Client({ token: env.QSTASH_TOKEN });
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
 			grant_type: "authorization_code",
 			client_id: env.LINEAR_CLIENT_ID,
 			client_secret: env.LINEAR_CLIENT_SECRET,
-			redirect_uri: `${env.NEXT_PUBLIC_API_URL}/api/integrations/linear/callback`,
+			redirect_uri: buildLinearRedirectUri(env.NEXT_PUBLIC_API_URL),
 			code,
 		}),
 	});

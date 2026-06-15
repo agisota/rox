@@ -69,15 +69,28 @@ describe("resolveAgentConfigs", () => {
 		});
 	});
 
-	test("includes OMP as the preferred Oh My Pi terminal config", () => {
+	test("includes OMP as the preferred Rox terminal config", () => {
 		const omp = resolveAgentConfigs({}).find((preset) => preset.id === "omp");
 
 		expect(omp).toMatchObject({
 			id: "omp",
 			kind: "terminal",
-			label: "Oh My Pi",
+			label: "Rox",
 			command: "omp --auto-approve",
 			promptCommand: "omp --auto-approve -p",
+			enabled: true,
+		});
+	});
+
+	test("includes ACPX as an enabled Agent Client Protocol runner", () => {
+		const acpx = resolveAgentConfigs({}).find((preset) => preset.id === "acpx");
+
+		expect(acpx).toMatchObject({
+			id: "acpx",
+			kind: "terminal",
+			label: "ACPX",
+			command: "acpx --approve-all pi",
+			promptCommand: "acpx --approve-all pi",
 			enabled: true,
 		});
 	});

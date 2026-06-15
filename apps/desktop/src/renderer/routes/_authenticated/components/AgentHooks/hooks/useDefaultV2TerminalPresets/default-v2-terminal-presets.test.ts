@@ -31,7 +31,7 @@ describe("createDefaultV2TerminalPresetRows", () => {
 				createAgent({
 					id: "omp-config",
 					presetId: "omp",
-					label: "Oh My Pi",
+					label: "Rox",
 					command: "omp",
 					args: ["--auto-approve"],
 					order: 0,
@@ -83,7 +83,7 @@ describe("createDefaultV2TerminalPresetRows", () => {
 			"copilot-config",
 		]);
 		expect(rows.map((row) => row.name)).toEqual([
-			"Oh My Pi",
+			"Rox",
 			"Claude",
 			"Codex",
 			"OpenCode",

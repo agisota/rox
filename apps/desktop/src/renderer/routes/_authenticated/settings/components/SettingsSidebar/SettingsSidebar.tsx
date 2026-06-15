@@ -66,6 +66,24 @@ export function SettingsSidebar() {
 
 			<div className="pt-3 mt-3 border-t border-border">
 				<a
+					href={`${COMPANY.DOCS_URL}/skills`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+				>
+					<HiArrowTopRightOnSquare className="h-4 w-4" />
+					<span>Навыки</span>
+				</a>
+				<a
+					href={`${COMPANY.DOCS_URL}/mcp`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+				>
+					<HiArrowTopRightOnSquare className="h-4 w-4" />
+					<span>MCP</span>
+				</a>
+				<a
 					href={COMPANY.DOCS_URL}
 					target="_blank"
 					rel="noopener noreferrer"

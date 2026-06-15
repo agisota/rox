@@ -1,26 +1,14 @@
 import { cn } from "@rox/ui/utils";
-import { eq } from "@tanstack/db";
-import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { LuPlus } from "react-icons/lu";
-import { env } from "renderer/env.renderer";
-import { authClient } from "renderer/lib/auth-client";
-import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
-import { MOCK_ORG_ID } from "shared/constants";
 import {
 	type SettingsListGroup,
 	SettingsListSidebar,
 	settingsListItemClass,
 } from "../../../components/SettingsListSidebar";
+import { useHostsSettingsRows } from "../../hooks/useHostsSettingsRows";
 import { AddHostModal } from "../AddHostModal";
-
-interface HostRow {
-	id: string;
-	name: string;
-	machineId: string;
-	isOnline: boolean;
-}
 
 interface HostsSettingsSidebarProps {
 	selectedHostId: string | null;
@@ -29,31 +17,12 @@ interface HostsSettingsSidebarProps {
 export function HostsSettingsSidebar({
 	selectedHostId,
 }: HostsSettingsSidebarProps) {
-	const collections = useCollections();
-	const { data: session } = authClient.useSession();
 	const [addOpen, setAddOpen] = useState(false);
+	const { hosts } = useHostsSettingsRows();
 
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
-		? MOCK_ORG_ID
-		: (session?.session?.activeOrganizationId ?? null);
-
-	const { data: hosts = [] } = useLiveQuery(
-		(q) =>
-			q
-				.from({ hosts: collections.v2Hosts })
-				.where(({ hosts }) =>
-					eq(hosts.organizationId, activeOrganizationId ?? ""),
-				)
-				.select(({ hosts }) => ({
-					id: hosts.machineId,
-					name: hosts.name,
-					machineId: hosts.machineId,
-					isOnline: hosts.isOnline,
-				})),
-		[collections, activeOrganizationId],
-	);
-
-	const listGroups = useMemo<Array<SettingsListGroup<HostRow>>>(() => {
+	const listGroups = useMemo<
+		Array<SettingsListGroup<(typeof hosts)[number]>>
+	>(() => {
 		const sorted = [...hosts].sort((a, b) => a.name.localeCompare(b.name));
 		return [
 			{
@@ -87,15 +56,15 @@ export function HostsSettingsSidebar({
 					</button>
 				}
 				filterRow={(row, q) => row.name.toLowerCase().includes(q.toLowerCase())}
-				getRowKey={(row) => row.id}
+				getRowKey={(row) => row.machineId}
 				emptyLabel="Пока нет хостов."
 				noMatchLabel={(q) => `Нет хостов по запросу «${q}».`}
 				renderRow={(row) => (
 					<Link
 						to="/settings/hosts/$hostId"
-						params={{ hostId: row.id }}
+						params={{ hostId: row.machineId }}
 						className={settingsListItemClass(
-							row.id === selectedHostId,
+							row.machineId === selectedHostId,
 							"gap-2",
 						)}
 					>

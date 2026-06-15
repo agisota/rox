@@ -54,6 +54,7 @@ export function AgentDetail({
 	const odwHarnessEntry = getOmpOdwHarnessEntry(preinstallStatusQuery.data);
 	const odwHarnessState = getOmpOdwHarnessState(odwHarnessEntry);
 	const showOdwHarness = config.presetId === DEFAULT_TERMINAL_AGENT_TYPE;
+	const isDefaultAgent = config.presetId === DEFAULT_TERMINAL_AGENT_TYPE;
 
 	const [label, setLabel] = useState(config.label);
 	const [commandText, setCommandText] = useState(getAgentCommandText(config));
@@ -211,7 +212,14 @@ export function AgentDetail({
 					<img src={icon} alt="" className="size-8 object-contain shrink-0" />
 				) : null}
 				<div className="min-w-0 flex-1">
-					<h2 className="text-xl font-semibold truncate">{config.label}</h2>
+					<div className="flex min-w-0 items-center gap-2">
+						<h2 className="truncate text-xl font-semibold">{config.label}</h2>
+						{isDefaultAgent ? (
+							<span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+								по умолчанию
+							</span>
+						) : null}
+					</div>
 					<p className="text-sm text-muted-foreground mt-0.5 truncate">
 						{description}
 					</p>
@@ -266,7 +274,7 @@ export function AgentDetail({
 
 					<StackedField
 						label="Доставка промпта"
-						hint="Как промпт передается процессу."
+						hint="Как Rox передает текст задачи агенту при запуске."
 					>
 						<div className="inline-flex rounded-md border border-border overflow-hidden">
 							<button
@@ -294,6 +302,18 @@ export function AgentDetail({
 								stdin
 							</button>
 						</div>
+						<div className="grid gap-2 pt-2 text-xs text-muted-foreground sm:grid-cols-2">
+							<p>
+								<span className="font-medium text-foreground">argv</span>{" "}
+								добавляет промпт к аргументам команды. Это удобно для CLI с
+								флагами вроде <code>-p</code> или <code>--prompt</code>.
+							</p>
+							<p>
+								<span className="font-medium text-foreground">stdin</span>{" "}
+								передает промпт во входной поток процесса. Это лучше для
+								длинного текста и агентов, которые читают интерактивный ввод.
+							</p>
+						</div>
 					</StackedField>
 				</Section>
 
@@ -308,7 +328,8 @@ export function AgentDetail({
 									Open Dynamic Workflows
 								</div>
 								<p className="mt-0.5 text-xs text-muted-foreground">
-									Additive OMP workflow layer
+									Additive Rox workflow layer: ODW готовит workflow-контекст, а
+									запуск агента остается через Rox/omp.
 								</p>
 								{odwHarnessEntry?.lastError ? (
 									<p className="mt-2 line-clamp-2 text-xs text-destructive">

@@ -4,19 +4,13 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuShortcut,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { FaDiscord, FaGithub, FaXTwitter } from "react-icons/fa6";
 import {
 	HiOutlineBookOpen,
-	HiOutlineChatBubbleLeftRight,
-	HiOutlineEnvelope,
 	HiOutlineQuestionMarkCircle,
 } from "react-icons/hi2";
 import { IoBugOutline } from "react-icons/io5";
@@ -92,33 +86,6 @@ export function DashboardSidebarHelpMenu({
 						<IoBugOutline className="h-4 w-4" />
 						Сообщить о проблеме
 					</DropdownMenuItem>
-					<DropdownMenuSub>
-						<DropdownMenuSubTrigger>
-							<HiOutlineChatBubbleLeftRight className="h-4 w-4" />
-							Связаться с нами
-						</DropdownMenuSubTrigger>
-						<DropdownMenuSubContent sideOffset={8} className="w-56">
-							<DropdownMenuItem
-								onClick={() => openExternal(COMPANY.GITHUB_URL)}
-							>
-								<FaGithub className="h-4 w-4" />
-								GitHub
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => openExternal(COMPANY.DISCORD_URL)}
-							>
-								<FaDiscord className="h-4 w-4" />
-								Discord
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => openExternal(COMPANY.X_URL)}>
-								<FaXTwitter className="h-4 w-4" />X
-							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => openExternal(COMPANY.MAIL_TO)}>
-								<HiOutlineEnvelope className="h-4 w-4" />
-								Написать основателям
-							</DropdownMenuItem>
-						</DropdownMenuSubContent>
-					</DropdownMenuSub>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			<SubmitPromptDialog

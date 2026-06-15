@@ -225,7 +225,8 @@
 	--color-highlight-foreground: var(--highlight-foreground);
 	/* Default UI sans + mono tokens. */
 	--font-sans: "SF UI Display Pro", ui-sans-serif, system-ui, sans-serif;
-	--font-mono: "Monospace Argon", "Victor Mono", ui-monospace, monospace;
+	--font-mono:
+		"Geist Mono", "Monospace Argon", "Victor Mono", ui-monospace, monospace;
 }
 
 @layer base {
@@ -280,7 +281,7 @@
 	 * OS-level vibrancy material (set on the BrowserWindow) is visible.
 	 */
 	:root.glass {
-		--surface-opacity: 0.8;
+		--surface-opacity: 0.3;
 		--backdrop-blur: 24px;
 	}
 

@@ -53,6 +53,7 @@ function serializeFontFamilyList(families: string[]): string {
 }
 
 export const DEFAULT_TERMINAL_FONT_FAMILIES = [
+	"Geist Mono",
 	DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
 	"Victor Mono",
 	"JetBrains Mono",

@@ -9,7 +9,7 @@
  */
 
 /** Default translucency applied when glass is enabled. */
-export const DEFAULT_SURFACE_OPACITY = 0.72;
+export const DEFAULT_SURFACE_OPACITY = 0.3;
 /** Default backdrop blur radius (px) applied when glass is enabled. */
 export const DEFAULT_BACKDROP_BLUR_PX = 24;
 

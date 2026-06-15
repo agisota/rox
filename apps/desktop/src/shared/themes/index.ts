@@ -2,6 +2,7 @@
 
 // Built-in themes
 export {
+	blackMetalDarkFuneralTheme,
 	builtInThemes,
 	DEFAULT_THEME_ID,
 	darkTheme,

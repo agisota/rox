@@ -6,7 +6,7 @@ describe("getPreferredV2AgentId", () => {
 		expect(
 			getPreferredV2AgentId([
 				{ id: "claude-config", label: "Claude", iconId: "claude" },
-				{ id: "omp-config", label: "Oh My Pi", iconId: "omp" },
+				{ id: "omp-config", label: "Rox", iconId: "omp" },
 				{ id: "rox", label: "Rox", iconId: "rox" },
 			]),
 		).toBe("omp-config");

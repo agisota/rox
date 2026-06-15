@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { HostAgentConfig } from "@rox/host-service/settings";
+import { DEFAULT_TERMINAL_AGENT_TYPE } from "@rox/shared/agent-settings";
 import type { HostAgentPreset } from "@rox/shared/host-agent-presets";
 import {
 	DropdownMenu,
@@ -148,6 +149,7 @@ export function AgentsSettingsSidebar({
 						<AgentSidebarRow
 							row={row}
 							isActive={row.id === selectedAgentId}
+							isDefault={row.presetId === DEFAULT_TERMINAL_AGENT_TYPE}
 							onSelect={() => onSelectAgent(row.id)}
 							isDark={isDark}
 						/>
@@ -161,6 +163,7 @@ export function AgentsSettingsSidebar({
 interface AgentSidebarRowProps {
 	row: HostAgentConfig;
 	isActive: boolean;
+	isDefault: boolean;
 	onSelect: () => void;
 	isDark: boolean;
 }
@@ -168,6 +171,7 @@ interface AgentSidebarRowProps {
 function AgentSidebarRow({
 	row,
 	isActive,
+	isDefault,
 	onSelect,
 	isDark,
 }: AgentSidebarRowProps) {
@@ -201,6 +205,11 @@ function AgentSidebarRow({
 					<img src={icon} alt="" className="size-4 object-contain shrink-0" />
 				) : null}
 				<span className="truncate flex-1">{row.label}</span>
+				{isDefault ? (
+					<span className="mr-4 shrink-0 rounded border border-border px-1 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">
+						основной
+					</span>
+				) : null}
 			</button>
 			<button
 				type="button"

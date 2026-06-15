@@ -13,7 +13,7 @@ const LABEL_BY_STATE = {
 	unavailable: "ODW unavailable",
 	off: "ODW off",
 	installing: "ODW installing",
-	ready: "OMP + ODW",
+	ready: "Rox + ODW",
 	failed: "ODW failed",
 } as const;
 

@@ -37,7 +37,7 @@ const config: Configuration = {
 	publish: {
 		provider: "github",
 		owner: "agisota",
-		repo: "set",
+		repo: "rox",
 	},
 
 	// Directories

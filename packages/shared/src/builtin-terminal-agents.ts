@@ -59,15 +59,30 @@ function createBuiltinTerminalAgent<
 export const BUILTIN_TERMINAL_AGENTS = [
 	createBuiltinTerminalAgent({
 		id: "omp",
-		label: "Oh My Pi",
+		label: "Rox",
 		description:
-			"Oh My Pi's coding agent with IDE-aware tools, subagents, LSP, DAP, and workflow-friendly prompt runs.",
+			"Rox's default coding agent, powered by oh-my-pi/omp with IDE-aware tools, subagents, LSP, DAP, and workflow-friendly prompt runs.",
 		command: "omp --auto-approve",
 		promptCommand: "omp --auto-approve -p",
 		includeInDefaultTerminalPresets: true,
 		install: {
 			checkCommand: "omp --version",
 			installCommand: "curl -fsSL https://omp.sh/install | sh",
+			updateStrategy: "latest",
+			optional: true,
+		},
+	}),
+	createBuiltinTerminalAgent({
+		id: "acpx",
+		label: "ACPX",
+		description:
+			"Agent Client Protocol runner for launching ACP-compatible coding agents from Rox.",
+		command: "acpx --approve-all pi",
+		promptCommand: "acpx --approve-all pi",
+		includeInDefaultTerminalPresets: true,
+		install: {
+			checkCommand: "acpx --version",
+			installCommand: "npm install -g acpx@latest",
 			updateStrategy: "latest",
 			optional: true,
 		},
