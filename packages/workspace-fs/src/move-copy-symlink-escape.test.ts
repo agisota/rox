@@ -125,4 +125,46 @@ describe("movePath / copyPath symlink containment", () => {
 			"external",
 		);
 	});
+
+	it("blocks copy whose destination IS a symlink entry escaping the root (dangling)", async () => {
+		const root = await mkTemp("wfs-copy-dest-entry-root-");
+		const outside = await mkTemp("wfs-copy-dest-entry-outside-");
+		await fs.writeFile(path.join(root, "secret.txt"), "secret");
+		// Destination is a symlink directly in root whose target is outside.
+		// fs.cp (under Bun) dereferences it, so the parent-only check is not enough.
+		await fs.symlink(path.join(outside, "exfil.txt"), path.join(root, "dlink"));
+
+		await expectSymlinkEscape(() =>
+			copyPath({
+				rootPath: root,
+				sourceAbsolutePath: path.join(root, "secret.txt"),
+				destinationAbsolutePath: path.join(root, "dlink"),
+			}),
+		);
+
+		expect(await exists(path.join(outside, "exfil.txt"))).toBe(false);
+	});
+
+	it("blocks copy whose destination symlink targets an existing outside file (no overwrite)", async () => {
+		const root = await mkTemp("wfs-copy-dest-overwrite-root-");
+		const outside = await mkTemp("wfs-copy-dest-overwrite-outside-");
+		await fs.writeFile(path.join(root, "secret.txt"), "secret");
+		await fs.writeFile(path.join(outside, "victim.txt"), "victim");
+		await fs.symlink(
+			path.join(outside, "victim.txt"),
+			path.join(root, "dlink"),
+		);
+
+		await expectSymlinkEscape(() =>
+			copyPath({
+				rootPath: root,
+				sourceAbsolutePath: path.join(root, "secret.txt"),
+				destinationAbsolutePath: path.join(root, "dlink"),
+			}),
+		);
+
+		expect(await fs.readFile(path.join(outside, "victim.txt"), "utf-8")).toBe(
+			"victim",
+		);
+	});
 });
