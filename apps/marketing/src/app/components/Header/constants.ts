@@ -32,11 +32,6 @@ export const RESOURCE_LINKS: NavLink[] = [
 		label: "Блог",
 		description: "Технические разборы и запуски.",
 	},
-	{
-		href: "/team",
-		label: "О нас",
-		description: "Команда, которая делает Rox.",
-	},
 ];
 
 export const TOP_LEVEL_LINKS: NavLink[] = [];
