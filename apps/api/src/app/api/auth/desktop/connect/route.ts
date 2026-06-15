@@ -1,4 +1,5 @@
 import { auth } from "@rox/auth/server";
+import { parseDesktopLoopbackCallback } from "@rox/shared/desktop-callback";
 import { NextResponse } from "next/server";
 
 import { env } from "@/env";
@@ -23,22 +24,12 @@ export async function GET(request: Request) {
 	if (protocol) {
 		successUrl.searchParams.set("desktop_protocol", protocol);
 	}
-	if (localCallback) {
-		try {
-			const callbackUrl = new URL(localCallback);
-			const isLoopback =
-				callbackUrl.protocol === "http:" &&
-				(callbackUrl.hostname === "127.0.0.1" ||
-					callbackUrl.hostname === "localhost");
-			if (isLoopback && callbackUrl.pathname === "/auth/callback") {
-				successUrl.searchParams.set(
-					"desktop_local_callback",
-					callbackUrl.toString(),
-				);
-			}
-		} catch {
-			// Ignore invalid callback URLs and continue with deep-link flow.
-		}
+	const validatedCallback = parseDesktopLoopbackCallback(localCallback);
+	if (validatedCallback) {
+		successUrl.searchParams.set(
+			"desktop_local_callback",
+			validatedCallback.toString(),
+		);
 	}
 
 	const result = await auth.api.signInSocial({
