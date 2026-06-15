@@ -38,23 +38,31 @@ export function CookieConsent() {
 					animate={{ y: 0, opacity: 1 }}
 					exit={{ y: 20, opacity: 0 }}
 					transition={{ type: "spring", damping: 25, stiffness: 300 }}
-					className="fixed bottom-4 left-4 z-50 max-w-xs rounded-lg border border-border bg-card p-4 shadow-lg"
+					className="fixed bottom-4 left-4 z-50 max-w-sm rounded-lg border border-border bg-card p-4 shadow-lg"
 				>
 					<p className="text-sm text-muted-foreground">
 						Мы используем только аналитические cookies, чтобы улучшать продукт.
 					</p>
-					<div className="mt-3 flex items-center justify-between">
-						<Button variant="link" asChild className="px-0">
-							<Link href="/privacy">Политика приватности</Link>
-						</Button>
+					<div className="mt-4 flex flex-col gap-3">
 						<div className="flex items-center gap-2">
-							<Button variant="outline" onClick={handleOptOut}>
+							<Button
+								variant="outline"
+								onClick={handleOptOut}
+								className="flex-1"
+							>
 								Отклонить
 							</Button>
-							<Button variant="outline" onClick={handleAccept}>
+							<Button onClick={handleAccept} className="flex-1">
 								Принять
 							</Button>
 						</div>
+						<Button
+							variant="link"
+							asChild
+							className="h-auto justify-start px-0 text-muted-foreground"
+						>
+							<Link href="/privacy">Политика приватности</Link>
+						</Button>
 					</div>
 				</motion.div>
 			)}

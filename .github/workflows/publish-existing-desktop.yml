@@ -1,0 +1,86 @@
+name: Publish Existing Desktop Artifacts
+
+# Fast path: publish a GitHub Release from desktop artifacts that were ALREADY
+# built by a previous run of build-desktop.yml / release-desktop.yml, without
+# rebuilding. The runner downloads the artifacts over GitHub's internal network
+# (seconds, not the multi-GB round-trip through a developer laptop) and uploads
+# them straight to the release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Run ID that produced the desktop-* artifacts"
+        required: true
+        type: string
+      tag:
+        description: "Release tag to create (e.g. desktop-v2.0.2)"
+        required: true
+        type: string
+      notes:
+        description: "Release notes (optional, plain text)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish release from existing artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Download artifacts from the source run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: release-artifacts
+          pattern: desktop-*
+          merge-multiple: true
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create stable-named copies for latest download URLs
+        run: |
+          cd release-artifacts
+          for file in *.dmg; do
+            [[ -f "$file" ]] || continue
+            arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.dmg$/\1/')
+            [[ "$arch" =~ ^[0-9]+\.[0-9]+\.[0-9] ]] && arch="x64"
+            cp "$file" "Rox-${arch}.dmg"
+          done
+          for file in *-mac.zip; do
+            [[ -f "$file" ]] || continue
+            arch=$(echo "$file" | sed -E 's/.*-([^-]+)-mac\.zip$/\1/')
+            [[ "$arch" =~ ^[0-9]+\.[0-9]+\.[0-9] ]] && arch="x64"
+            cp "$file" "Rox-${arch}-mac.zip"
+          done
+          for file in *.AppImage; do
+            [[ -f "$file" ]] || continue
+            arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.AppImage$/\1/')
+            cp "$file" "Rox-${arch}.AppImage"
+          done
+          for file in *.exe; do
+            [[ -f "$file" ]] || continue
+            arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.exe$/\1/')
+            [[ "$arch" =~ ^[0-9]+\.[0-9]+\.[0-9] ]] && arch="x64"
+            cp "$file" "Rox-${arch}.exe"
+          done
+          echo "Release artifacts:"
+          ls -la
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REL_NOTES: ${{ inputs.notes }}
+        run: |
+          NOTES="${REL_NOTES:-Rox Desktop ${{ inputs.tag }} — macOS (arm64/x64), Windows, Linux installers.}"
+          gh release create "${{ inputs.tag }}" \
+            release-artifacts/* \
+            --repo "${{ github.repository }}" \
+            --target main \
+            --title "Rox Desktop ${{ inputs.tag }}" \
+            --notes "$NOTES" \
+            --latest
