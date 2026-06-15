@@ -1192,7 +1192,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.MODELS_ROX,
 		section: "models",
-		title: "Модель ROX-1",
+		title: "Модель ROX R1",
 		description: "Бесплатная модель Rox по умолчанию без настройки",
 		keywords: [
 			"models",

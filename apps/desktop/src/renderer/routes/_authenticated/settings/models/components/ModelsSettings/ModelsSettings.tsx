@@ -280,7 +280,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 						<SettingsSection
 							title="Rox"
 							icon={<ModelSelectorLogo provider="rox" />}
-							description="ROX-1 доступна бесплатно и выбрана моделью по умолчанию без настройки."
+							description="ROX R1 доступна бесплатно и выбрана моделью по умолчанию без настройки."
 							action={
 								roxBadge ? (
 									<Badge variant={roxBadge.variant}>
