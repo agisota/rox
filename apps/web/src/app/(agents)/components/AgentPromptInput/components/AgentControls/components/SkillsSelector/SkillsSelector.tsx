@@ -10,13 +10,15 @@ import {
 	PromptInputCommandList,
 } from "@rox/ui/ai-elements/prompt-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
-import { Check, Wrench } from "lucide-react";
+import { Check, RefreshCw, Wrench } from "lucide-react";
 import { useState } from "react";
 import type { SkillBindingOption } from "../../../../hooks/useAgentControls";
 
 type SkillsSelectorProps = {
 	skillBindings: SkillBindingOption[];
 	pending: boolean;
+	hasError: boolean;
+	onRetry: () => void;
 	selectedSkillBindings: SkillBindingOption[];
 	onToggle: (bindingId: string) => void;
 };
@@ -33,6 +35,8 @@ const SURFACE_LABEL: Record<SkillBindingOption["surface"], string> = {
 export function SkillsSelector({
 	skillBindings,
 	pending,
+	hasError,
+	onRetry,
 	selectedSkillBindings,
 	onToggle,
 }: SkillsSelectorProps) {
@@ -55,9 +59,22 @@ export function SkillsSelector({
 					<PromptInputCommandInput placeholder="Поиск навыка…" />
 					<PromptInputCommandList>
 						<PromptInputCommandEmpty>
-							{pending ? "Загрузка…" : "Навыки не найдены"}
+							{hasError
+								? "Не удалось загрузить навыки"
+								: pending
+									? "Загрузка…"
+									: "Навыки не найдены"}
 						</PromptInputCommandEmpty>
 						<PromptInputCommandGroup>
+							{hasError && (
+								<PromptInputCommandItem
+									value="__retry_skills__"
+									onSelect={onRetry}
+								>
+									<RefreshCw className="size-3.5 text-muted-foreground" />
+									<span className="flex-1">Повторить загрузку</span>
+								</PromptInputCommandItem>
+							)}
 							{skillBindings.map((binding) => (
 								<PromptInputCommandItem
 									key={binding.id}

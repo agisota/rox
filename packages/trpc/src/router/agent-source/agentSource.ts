@@ -1,5 +1,9 @@
 import { db, dbWs } from "@rox/db/client";
-import { agentSources } from "@rox/db/schema";
+import {
+	agentSources,
+	integrationConnections,
+	v2Projects,
+} from "@rox/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
@@ -40,6 +44,72 @@ export const publicSelect = {
 	createdAt: agentSources.createdAt,
 	updatedAt: agentSources.updatedAt,
 } as const;
+
+async function verifyProjectInOrg(
+	organizationId: string,
+	projectId: string,
+): Promise<void> {
+	const [project] = await dbWs
+		.select({ id: v2Projects.id })
+		.from(v2Projects)
+		.where(
+			and(
+				eq(v2Projects.id, projectId),
+				eq(v2Projects.organizationId, organizationId),
+			),
+		)
+		.limit(1);
+
+	if (!project) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "Project not found in this organization",
+		});
+	}
+}
+
+async function verifyIntegrationConnectionInOrg(
+	organizationId: string,
+	connectionId: string,
+): Promise<void> {
+	const [connection] = await dbWs
+		.select({ id: integrationConnections.id })
+		.from(integrationConnections)
+		.where(
+			and(
+				eq(integrationConnections.id, connectionId),
+				eq(integrationConnections.organizationId, organizationId),
+			),
+		)
+		.limit(1);
+
+	if (!connection) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "Integration connection not found in this organization",
+		});
+	}
+}
+
+type AgentSourceReferenceInput = {
+	organizationId: string;
+	v2ProjectId?: string | null;
+	integrationConnectionId?: string | null;
+};
+
+async function verifyReferencedRowsInOrg(
+	input: AgentSourceReferenceInput,
+): Promise<void> {
+	if (input.v2ProjectId) {
+		await verifyProjectInOrg(input.organizationId, input.v2ProjectId);
+	}
+	if (input.integrationConnectionId) {
+		await verifyIntegrationConnectionInOrg(
+			input.organizationId,
+			input.integrationConnectionId,
+		);
+	}
+}
 
 export const agentSourceRouter = {
 	list: protectedProcedure
@@ -91,6 +161,7 @@ export const agentSourceRouter = {
 		.input(createAgentSourceSchema)
 		.mutation(async ({ ctx, input }) => {
 			await verifyOrgAdmin(ctx.session.user.id, input.organizationId);
+			await verifyReferencedRowsInOrg(input);
 
 			const encryptedConfig = input.credentials
 				? encryptSecret(JSON.stringify(input.credentials))
@@ -122,6 +193,7 @@ export const agentSourceRouter = {
 		.input(updateAgentSourceSchema)
 		.mutation(async ({ ctx, input }) => {
 			await verifyOrgAdmin(ctx.session.user.id, input.organizationId);
+			await verifyReferencedRowsInOrg(input);
 
 			const updates: Partial<typeof agentSources.$inferInsert> = {};
 			if (input.name !== undefined) updates.name = input.name;
@@ -218,13 +290,13 @@ export const agentSourceRouter = {
 	/**
 	 * Server-side read-path for the runtime: decrypts `encryptedConfig` and
 	 * returns the credential map. Credentials are NEVER exposed via `list`/`get`
-	 * — only this explicit, membership-gated procedure surfaces them, and it
+	 * — only this explicit, admin-gated procedure surfaces them, and it
 	 * must not be wired into general client list views.
 	 */
 	getDecryptedConfig: protectedProcedure
 		.input(agentSourceIdSchema)
 		.query(async ({ ctx, input }) => {
-			await verifyOrgMembership(ctx.session.user.id, input.organizationId);
+			await verifyOrgAdmin(ctx.session.user.id, input.organizationId);
 
 			const [row] = await db
 				.select({

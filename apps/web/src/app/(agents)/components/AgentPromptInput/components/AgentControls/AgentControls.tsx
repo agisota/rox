@@ -22,12 +22,24 @@ export function AgentControls({ controls }: AgentControlsProps) {
 			<SourceSelector
 				sources={controls.sources}
 				pending={controls.sourcesPending}
+				error={controls.sourcesError}
+				onRetry={controls.retrySources}
 				selectedSource={controls.selectedSource}
 				onSelect={controls.selectSource}
 			/>
 			<SkillsSelector
 				skillBindings={controls.skillBindings}
 				pending={controls.skillsPending}
+				hasError={Boolean(
+					controls.agentToolBindingsError ||
+						controls.mcpBindingsError ||
+						controls.skillsError,
+				)}
+				onRetry={() => {
+					controls.retryAgentToolBindings();
+					controls.retryMcpBindings();
+					controls.retrySkills();
+				}}
 				selectedSkillBindings={controls.selectedSkillBindings}
 				onToggle={controls.toggleSkillBinding}
 			/>

@@ -97,6 +97,18 @@ export function useAgentControls(): AgentControlsData {
 	const skillsPending =
 		skillBindings.length === 0 &&
 		(agentToolBindingsQuery.isLoading || mcpBindingsQuery.isLoading);
+	const retrySources = useCallback(() => {
+		void sourcesQuery.refetch();
+	}, [sourcesQuery.refetch]);
+	const retryAgentToolBindings = useCallback(() => {
+		void agentToolBindingsQuery.refetch();
+	}, [agentToolBindingsQuery.refetch]);
+	const retryMcpBindings = useCallback(() => {
+		void mcpBindingsQuery.refetch();
+	}, [mcpBindingsQuery.refetch]);
+	const retrySkills = useCallback(() => {
+		void skillsQuery.refetch();
+	}, [skillsQuery.refetch]);
 
 	const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
 	const [selectedSkillBindingIds, setSelectedSkillBindingIds] = useState<
@@ -144,8 +156,16 @@ export function useAgentControls(): AgentControlsData {
 		hasOrg,
 		sources,
 		sourcesPending,
+		sourcesError: sourcesQuery.error,
+		retrySources,
 		skillBindings,
 		skillsPending,
+		agentToolBindingsError: agentToolBindingsQuery.error,
+		mcpBindingsError: mcpBindingsQuery.error,
+		skillsError: skillsQuery.error,
+		retryAgentToolBindings,
+		retryMcpBindings,
+		retrySkills,
 		statusOptions: STATUS_OPTIONS,
 		selectedSource,
 		selectSource: setSelectedSourceId,

@@ -1,12 +1,57 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
 
+process.env.SECRETS_ENCRYPTION_KEY ||= Buffer.alloc(32, 9).toString("base64");
+
 // Stub the heavy leaf packages reached transitively at import time
 // (auth -> @rox/db/client `neon()`, @rox/auth/server -> @rox/email env
 // validation, etc.). These tests inject a mock downstream client + resolver and
 // never touch the DB, auth, or network — so inert module stubs are sufficient
 // and keep the suite fully isolated (mirrors the trpc agentSource test style).
-mock.module("@rox/db/client", () => ({ db: {}, dbWs: {} }));
-mock.module("@rox/db/schema", () => ({ members: {}, users: {} }));
+let agentSourceCredentialRows: Array<
+	Array<{ encryptedConfig: string | null }>
+> = [];
+const credentialLimit = mock(
+	async () => agentSourceCredentialRows.shift() ?? [],
+);
+const credentialWhere = mock(() => ({ limit: credentialLimit }));
+const credentialFrom = mock(() => ({ where: credentialWhere }));
+const dbSelect = mock(() => ({ from: credentialFrom }));
+
+mock.module("@rox/db/client", () => ({
+	db: { select: dbSelect },
+	dbWs: {},
+}));
+mock.module("@rox/db/schema", () => ({
+	members: {},
+	users: {},
+	v2Projects: {
+		id: "v2_projects.id",
+		organizationId: "v2_projects.organization_id",
+	},
+	integrationConnections: {
+		id: "integration_connections.id",
+		organizationId: "integration_connections.organization_id",
+	},
+	agentSources: {
+		id: "agent_sources.id",
+		organizationId: "agent_sources.organization_id",
+		v2ProjectId: "agent_sources.v2_project_id",
+		ownerUserId: "agent_sources.owner_user_id",
+		slug: "agent_sources.slug",
+		name: "agent_sources.name",
+		description: "agent_sources.description",
+		kind: "agent_sources.kind",
+		status: "agent_sources.status",
+		integrationConnectionId: "agent_sources.integration_connection_id",
+		config: "agent_sources.config",
+		capabilities: "agent_sources.capabilities",
+		endpointUrl: "agent_sources.endpoint_url",
+		version: "agent_sources.version",
+		encryptedConfig: "agent_sources.encrypted_config",
+		createdAt: "agent_sources.created_at",
+		updatedAt: "agent_sources.updated_at",
+	},
+}));
 mock.module("@rox/auth/server", () => ({
 	auth: {},
 	mintUserJwt: async () => "test-jwt",
@@ -16,10 +61,15 @@ const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
 const { InMemoryTransport } = await import(
 	"@modelcontextprotocol/sdk/inMemory.js"
 );
+const { encryptSecret } = await import("@rox/trpc/crypto");
 const { McpServer } = await import("@modelcontextprotocol/sdk/server/mcp.js");
-const { AgentSourcePool, createExternalDownstreamClient } = await import(
-	"./agent-source-pool"
-);
+const {
+	AgentSourcePool,
+	createExternalDownstreamClient,
+	isRestrictedEndpointAddress,
+	loadRuntimeAgentSourceCredentials,
+	validateExternalEndpointUrl,
+} = await import("./agent-source-pool");
 const { namespacedToolName, registerProxyTools, stripToolNamePrefix } =
 	await import("./proxy-tools");
 
@@ -31,7 +81,6 @@ import type {
 	PooledAgentSource,
 	ResolvedAgentSource,
 } from "./agent-source-pool";
-import type { McpContext } from "./auth";
 
 // ---------------------------------------------------------------------------
 // Network-free, DB-free proxy tests. A mock McpDownstreamClient stands in for
@@ -122,6 +171,12 @@ async function connectServerToClient(server: McpServerType): Promise<{
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
+	agentSourceCredentialRows = [];
+	dbSelect.mockClear();
+	credentialFrom.mockClear();
+	credentialWhere.mockClear();
+	credentialLimit.mockClear();
+
 	while (cleanups.length > 0) {
 		const fn = cleanups.pop();
 		if (fn) await fn();
@@ -242,6 +297,60 @@ describe("registerProxyTools — proxying", () => {
 		// The downstream result is surfaced back through the proxy tool.
 		expect(JSON.stringify(callResult)).toContain("issue #42 created");
 	});
+
+	it("preserves downstream CallToolResult errors", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const client = mockClient([{ name: "create_issue" }], {
+			callResult: {
+				isError: true,
+				content: [{ type: "text", text: "downstream failed" }],
+			},
+		});
+		await registerProxyTools(server, [
+			pooled(resolvedSource("github"), client),
+		]);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+
+		const callResult = await sdkClient.callTool({
+			name: "mcp__github__create_issue",
+			arguments: { title: "Bug" },
+		});
+
+		expect((callResult as { isError?: boolean }).isError).toBe(true);
+		expect(JSON.stringify(callResult)).toContain("downstream failed");
+	});
+
+	it("does not treat arbitrary objects with isError as MCP CallToolResult", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const client = mockClient([{ name: "create_issue" }], {
+			callResult: {
+				isError: true,
+				message: "domain payload flag, not an MCP tool failure",
+			},
+		});
+		await registerProxyTools(server, [
+			pooled(resolvedSource("github"), client),
+		]);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+
+		const callResult = await sdkClient.callTool({
+			name: "mcp__github__create_issue",
+			arguments: { title: "Bug" },
+		});
+
+		expect((callResult as { isError?: boolean }).isError).not.toBe(true);
+		expect(JSON.stringify(callResult)).toContain("domain payload flag");
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -271,6 +380,27 @@ describe("registerProxyTools — error isolation", () => {
 		expect(result.failures.get("broken")?.message).toContain(
 			"downstream unavailable",
 		);
+	});
+
+	it("rejects duplicate downstream tool names before registering any tool for that source", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const duplicate = mockClient([{ name: "same" }, { name: "same" }]);
+
+		const result = await registerProxyTools(server, [
+			pooled(resolvedSource("github"), duplicate),
+		]);
+
+		expect(result.registered).toEqual([]);
+		expect(result.failures.get("github")?.message).toContain(
+			"duplicate tool name",
+		);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+		await expect(sdkClient.listTools()).rejects.toThrow(/Method not found/);
 	});
 });
 
@@ -328,17 +458,99 @@ describe("AgentSourcePool — connection isolation", () => {
 		await pool.cleanup();
 		expect(pool.getConnected()).toHaveLength(0);
 	});
+
+	it("records a timeout failure and continues to later sources", async () => {
+		const healthy = mockClient([{ name: "t" }]);
+		const connector = mock(async (source: ResolvedAgentSource) => {
+			if (source.slug === "slow") {
+				return new Promise<McpDownstreamClient>(() => {});
+			}
+			return healthy;
+		});
+		const pool = new AgentSourcePool({
+			resolveSources: async () => [
+				resolvedSource("slow"),
+				resolvedSource("good"),
+			],
+			connector,
+			connectTimeoutMs: 5,
+		});
+
+		const connected = await pool.connectAll(ctx);
+
+		expect(connected.map((c) => c.source.slug)).toEqual(["good"]);
+		expect(pool.getFailures().get("slow")?.message).toContain(
+			"connection timed out",
+		);
+	});
 });
 
 // External transport guard — the contract the pool relies on to isolate a
 // misconfigured source (the endpoint check runs before any network/DB access).
 describe("external downstream client", () => {
+	const ctx = {
+		userId: "u1",
+		email: "u1@example.com",
+		organizationId: "org1",
+		organizationIds: ["org1"],
+		source: "api-key" as const,
+		clientLabel: null,
+		requestId: "req-1",
+		bearerToken: "tok",
+		relayUrl: "https://relay.test",
+	};
+
 	it("rejects a source with no endpointUrl", async () => {
 		await expect(
 			createExternalDownstreamClient(
 				resolvedSource("no-endpoint", "external_http"),
-				{} as McpContext,
+				ctx,
 			),
 		).rejects.toThrow(/no endpointUrl/);
+	});
+
+	it("rejects non-HTTPS and restricted endpoint URLs before transport creation", async () => {
+		await expect(
+			validateExternalEndpointUrl("http://agent.example.com/mcp"),
+		).rejects.toThrow(/HTTPS/);
+		await expect(
+			validateExternalEndpointUrl("https://127.0.0.1/mcp"),
+		).rejects.toThrow(/restricted address/);
+		await expect(
+			validateExternalEndpointUrl("https://localhost/mcp"),
+		).rejects.toThrow(/restricted/);
+
+		expect(isRestrictedEndpointAddress("10.0.0.1")).toBe(true);
+		expect(isRestrictedEndpointAddress("169.254.169.254")).toBe(true);
+		expect(isRestrictedEndpointAddress("8.8.8.8")).toBe(false);
+	});
+
+	it("loads runtime credentials by active source and org without a user-admin caller", async () => {
+		agentSourceCredentialRows.push([
+			{
+				encryptedConfig: encryptSecret(
+					JSON.stringify({ Authorization: "Bearer x" }),
+				),
+			},
+		]);
+
+		const credentials = await loadRuntimeAgentSourceCredentials(
+			resolvedSource("github", "external_http"),
+			ctx,
+		);
+
+		expect(credentials).toEqual({ Authorization: "Bearer x" });
+		expect(dbSelect).toHaveBeenCalledTimes(1);
+	});
+
+	it("rejects runtime credential reads when the active source row is missing", async () => {
+		agentSourceCredentialRows.push([]);
+
+		await expect(
+			loadRuntimeAgentSourceCredentials(
+				resolvedSource("missing", "external_http"),
+				ctx,
+			),
+		).rejects.toThrow(/not found/);
 	});
 });

@@ -31,6 +31,8 @@ export const chatRouter = {
 				title: chatSessions.title,
 				workspaceId: chatSessions.workspaceId,
 				v2WorkspaceId: chatSessions.v2WorkspaceId,
+				status: chatSessions.status,
+				labels: chatSessions.labels,
 				createdAt: chatSessions.createdAt,
 				updatedAt: chatSessions.updatedAt,
 				lastActiveAt: chatSessions.lastActiveAt,
@@ -92,6 +94,8 @@ export const chatRouter = {
 					title: chatSessions.title,
 					workspaceId: chatSessions.workspaceId,
 					v2WorkspaceId: chatSessions.v2WorkspaceId,
+					status: chatSessions.status,
+					labels: chatSessions.labels,
 					createdAt: chatSessions.createdAt,
 					updatedAt: chatSessions.updatedAt,
 					lastActiveAt: chatSessions.lastActiveAt,
@@ -214,7 +218,7 @@ export const chatRouter = {
 				return { updated: false };
 			}
 
-			const [updated] = await db
+			const [updated] = await dbWs
 				.update(chatSessions)
 				.set(updates)
 				.where(
@@ -238,13 +242,28 @@ export const chatRouter = {
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const [updated] = await db
+			const organizationId = ctx.activeOrganizationId;
+
+			if (!organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "No active organization selected",
+				});
+			}
+			if (input.organizationId !== organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Organization mismatch",
+				});
+			}
+
+			const [updated] = await dbWs
 				.update(chatSessions)
 				.set({ status: input.status })
 				.where(
 					and(
 						eq(chatSessions.id, input.sessionId),
-						eq(chatSessions.organizationId, input.organizationId),
+						eq(chatSessions.organizationId, organizationId),
 						eq(chatSessions.createdBy, ctx.session.user.id),
 					),
 				)
@@ -262,13 +281,28 @@ export const chatRouter = {
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const [updated] = await db
+			const organizationId = ctx.activeOrganizationId;
+
+			if (!organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "No active organization selected",
+				});
+			}
+			if (input.organizationId !== organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Organization mismatch",
+				});
+			}
+
+			const [updated] = await dbWs
 				.update(chatSessions)
 				.set({ labels: input.labels })
 				.where(
 					and(
 						eq(chatSessions.id, input.sessionId),
-						eq(chatSessions.organizationId, input.organizationId),
+						eq(chatSessions.organizationId, organizationId),
 						eq(chatSessions.createdBy, ctx.session.user.id),
 					),
 				)

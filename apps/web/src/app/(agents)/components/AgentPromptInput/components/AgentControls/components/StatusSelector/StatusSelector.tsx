@@ -21,6 +21,13 @@ const STATUS_LABEL: Record<ChatSessionStatusValue, string> = {
 	archived: "В архиве",
 };
 
+function isStatusOption(
+	value: string,
+	options: readonly ChatSessionStatusValue[],
+): value is ChatSessionStatusValue {
+	return options.some((option) => option === value);
+}
+
 /** Chat-session status (inbox/archive), backed by the `chatSessionStatus` enum. */
 export function StatusSelector({
 	status,
@@ -30,7 +37,11 @@ export function StatusSelector({
 	return (
 		<PromptInputSelect
 			value={status}
-			onValueChange={(value) => onChange(value as ChatSessionStatusValue)}
+			onValueChange={(value) => {
+				if (isStatusOption(value, options)) {
+					onChange(value);
+				}
+			}}
 		>
 			<PromptInputSelectTrigger
 				aria-label="Статус сессии"
