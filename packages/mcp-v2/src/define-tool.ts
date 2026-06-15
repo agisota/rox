@@ -75,6 +75,9 @@ function errorResult(message: string): CallToolResult {
 }
 
 function successResult(data: unknown): CallToolResult {
+	if (isCallToolResult(data)) {
+		return data;
+	}
 	return {
 		structuredContent:
 			data && typeof data === "object" && !Array.isArray(data)
@@ -87,6 +90,17 @@ function successResult(data: unknown): CallToolResult {
 			},
 		],
 	};
+}
+
+function isCallToolResult(data: unknown): data is CallToolResult {
+	if (!data || typeof data !== "object" || Array.isArray(data)) {
+		return false;
+	}
+	const candidate = data as Partial<CallToolResult>;
+	return (
+		Array.isArray(candidate.content) &&
+		(candidate.isError === undefined || typeof candidate.isError === "boolean")
+	);
 }
 
 function describeError(error: unknown): string {

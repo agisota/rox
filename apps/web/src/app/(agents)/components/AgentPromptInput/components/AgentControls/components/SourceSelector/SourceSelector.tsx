@@ -10,13 +10,15 @@ import {
 	PromptInputCommandList,
 } from "@rox/ui/ai-elements/prompt-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
-import { Boxes, Check } from "lucide-react";
+import { Boxes, Check, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import type { AgentSourceOption } from "../../../../hooks/useAgentControls";
 
 type SourceSelectorProps = {
 	sources: AgentSourceOption[];
 	pending: boolean;
+	error: unknown | null;
+	onRetry: () => void;
 	selectedSource: AgentSourceOption | null;
 	onSelect: (sourceId: string | null) => void;
 };
@@ -24,10 +26,13 @@ type SourceSelectorProps = {
 export function SourceSelector({
 	sources,
 	pending,
+	error,
+	onRetry,
 	selectedSource,
 	onSelect,
 }: SourceSelectorProps) {
 	const [open, setOpen] = useState(false);
+	const hasError = Boolean(error);
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -45,9 +50,22 @@ export function SourceSelector({
 					<PromptInputCommandInput placeholder="Поиск источника…" />
 					<PromptInputCommandList>
 						<PromptInputCommandEmpty>
-							{pending ? "Загрузка…" : "Источники не найдены"}
+							{hasError
+								? "Не удалось загрузить источники"
+								: pending
+									? "Загрузка…"
+									: "Источники не найдены"}
 						</PromptInputCommandEmpty>
 						<PromptInputCommandGroup>
+							{hasError && (
+								<PromptInputCommandItem
+									value="__retry_sources__"
+									onSelect={onRetry}
+								>
+									<RefreshCw className="size-3.5 text-muted-foreground" />
+									<span className="flex-1">Повторить загрузку</span>
+								</PromptInputCommandItem>
+							)}
 							{selectedSource && (
 								<PromptInputCommandItem
 									value="__none__"

@@ -41,6 +41,22 @@ export function stripToolNamePrefix(slug: string, name: string): string | null {
  */
 const passthroughInputSchema = z.looseObject({});
 
+function validateProxyToolNames(slug: string, tools: DownstreamTool[]): void {
+	const seen = new Set<string>();
+	for (const tool of tools) {
+		if (!tool.name.trim()) {
+			throw new Error(`Source "${slug}" exposed a tool with an empty name`);
+		}
+		const namespaced = namespacedToolName(slug, tool.name);
+		if (seen.has(namespaced)) {
+			throw new Error(
+				`Source "${slug}" exposed duplicate tool name "${tool.name}"`,
+			);
+		}
+		seen.add(namespaced);
+	}
+}
+
 /**
  * Register every tool of one pooled source onto `server` under the
  * `mcp__{slug}__{tool}` namespace. Each handler strips the prefix and forwards
@@ -57,6 +73,7 @@ export async function registerProxySourceTools(
 ): Promise<string[]> {
 	const { source, client } = pooled;
 	const { tools } = await client.listTools();
+	validateProxyToolNames(source.slug, tools);
 	const registered: string[] = [];
 	for (const tool of tools) {
 		registerProxyTool(server, source.slug, tool, client);

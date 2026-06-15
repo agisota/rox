@@ -21,12 +21,22 @@ export type SkillBindingOption = {
 	label: string;
 };
 
+export type AgentControlsQueryError = unknown;
+
 export type AgentControlsData = {
 	hasOrg: boolean;
 	sources: AgentSourceOption[];
 	sourcesPending: boolean;
+	sourcesError: AgentControlsQueryError | null;
+	retrySources: () => void;
 	skillBindings: SkillBindingOption[];
 	skillsPending: boolean;
+	agentToolBindingsError: AgentControlsQueryError | null;
+	mcpBindingsError: AgentControlsQueryError | null;
+	skillsError: AgentControlsQueryError | null;
+	retryAgentToolBindings: () => void;
+	retryMcpBindings: () => void;
+	retrySkills: () => void;
 	statusOptions: ChatSessionStatusValue[];
 	selectedSource: AgentSourceOption | null;
 	selectSource: (sourceId: string | null) => void;

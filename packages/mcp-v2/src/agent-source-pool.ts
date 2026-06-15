@@ -1,14 +1,20 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { db } from "@rox/db/client";
+import { agentSources } from "@rox/db/schema";
+import { decryptSecret } from "@rox/trpc/crypto";
+import { and, eq } from "drizzle-orm";
 import type { McpContext } from "./auth";
 import type { McpToolCallEmitter } from "./define-tool";
 
 /**
  * A resolved, active agent source for the calling organization. This is the
  * credential-free view (the `agentSource.list` projection); credentials are
- * fetched separately and server-side via `agentSource.getDecryptedConfig` only
- * when a real downstream transport is connected.
+ * fetched separately and server-side through the runtime credential loader
+ * only when a real downstream transport is connected.
  */
 export interface ResolvedAgentSource {
 	id: string;
@@ -89,6 +95,137 @@ export async function resolveActiveAgentSources(
 
 /** Local/rox-native source kinds served by the in-memory `rox-v2` server. */
 const IN_MEMORY_KINDS = new Set<string>(["rox", "rox_v2"]);
+const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
+const RESTRICTED_HOSTNAMES = new Set(["localhost", "localhost.localdomain"]);
+
+function normalizeHostname(hostname: string): string {
+	return hostname
+		.trim()
+		.toLowerCase()
+		.replace(/^\[/, "")
+		.replace(/\]$/, "")
+		.replace(/\.$/, "");
+}
+
+function parseIpv4(address: string): number[] | null {
+	const parts = address.split(".");
+	if (parts.length !== 4) return null;
+	const octets = parts.map((part) => Number(part));
+	if (
+		octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)
+	) {
+		return null;
+	}
+	return octets;
+}
+
+function isRestrictedIpv4(address: string): boolean {
+	const octets = parseIpv4(address);
+	if (!octets) return true;
+	const a = octets[0] ?? 0;
+	const b = octets[1] ?? 0;
+	return (
+		a === 0 ||
+		a === 10 ||
+		a === 127 ||
+		(a === 100 && b >= 64 && b <= 127) ||
+		(a === 169 && b === 254) ||
+		(a === 172 && b >= 16 && b <= 31) ||
+		(a === 192 && b === 0) ||
+		(a === 192 && b === 168) ||
+		(a === 198 && (b === 18 || b === 19)) ||
+		a >= 224
+	);
+}
+
+function firstIpv6Hextet(address: string): number {
+	const [first = "0"] = address.split(":");
+	return Number.parseInt(first || "0", 16);
+}
+
+function isRestrictedIpv6(address: string): boolean {
+	const normalized = address.toLowerCase();
+	const mappedIpv4 = normalized.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+	if (mappedIpv4?.[1]) {
+		return isRestrictedIpv4(mappedIpv4[1]);
+	}
+	if (normalized === "::" || normalized === "::1") return true;
+	const first = firstIpv6Hextet(normalized);
+	return (
+		(first & 0xfe00) === 0xfc00 ||
+		(first & 0xffc0) === 0xfe80 ||
+		(first & 0xff00) === 0xff00 ||
+		normalized.startsWith("100:") ||
+		normalized.startsWith("2001:db8:")
+	);
+}
+
+export function isRestrictedEndpointAddress(address: string): boolean {
+	const normalized = normalizeHostname(address);
+	const family = isIP(normalized);
+	if (family === 4) return isRestrictedIpv4(normalized);
+	if (family === 6) return isRestrictedIpv6(normalized);
+	return true;
+}
+
+async function resolveEndpointAddresses(hostname: string): Promise<string[]> {
+	const normalized = normalizeHostname(hostname);
+	if (isIP(normalized)) return [normalized];
+	const addresses = await lookup(normalized, { all: true, verbatim: true });
+	return addresses.map((entry) => entry.address);
+}
+
+export async function validateExternalEndpointUrl(
+	endpointUrl: string,
+): Promise<URL> {
+	const url = new URL(endpointUrl);
+	if (url.protocol !== "https:") {
+		throw new Error("External agent source endpoint must use HTTPS");
+	}
+
+	const hostname = normalizeHostname(url.hostname);
+	if (RESTRICTED_HOSTNAMES.has(hostname) || hostname.endsWith(".localhost")) {
+		throw new Error("External agent source endpoint host is restricted");
+	}
+
+	let addresses: string[];
+	try {
+		addresses = await resolveEndpointAddresses(hostname);
+	} catch (error) {
+		throw new Error(
+			`External agent source endpoint host could not be resolved: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+	}
+
+	const restrictedAddress = addresses.find(isRestrictedEndpointAddress);
+	if (restrictedAddress) {
+		throw new Error(
+			`External agent source endpoint resolved to restricted address ${restrictedAddress}`,
+		);
+	}
+
+	return url;
+}
+
+async function withTimeout<T>(
+	promise: Promise<T>,
+	timeoutMs: number,
+	message: string,
+): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | undefined;
+	try {
+		return await Promise.race([
+			promise,
+			new Promise<never>((_, reject) => {
+				timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+			}),
+		]);
+	} finally {
+		if (timeout) clearTimeout(timeout);
+	}
+}
 
 /**
  * Adapter over the SDK `Client` so a connected MCP client satisfies the slim
@@ -166,12 +303,12 @@ export async function createInMemoryDownstreamClient(
 /**
  * External-transport connector for `mcp` / `external_http` sources: connects an
  * SDK client to the source's `endpointUrl` over Streamable HTTP, injecting the
- * decrypted credential map (from `agentSource.getDecryptedConfig`) as HTTP
- * headers — so a source stores e.g. `{ Authorization: "Bearer …" }` or
- * `{ "X-API-Key": "…" }`. Credentials are read server-side only, through the
- * membership-gated read-path, never via the `list` projection. Throws on a
- * missing endpoint or a failed connect so the pool isolates this source rather
- * than failing the others.
+ * decrypted credential map as HTTP headers — so a source stores e.g.
+ * `{ Authorization: "Bearer …" }` or `{ "X-API-Key": "…" }`. Credentials are
+ * read server-side only through an org-scoped runtime path, never via the
+ * `list` projection or a user/admin UI procedure. Throws on a missing endpoint,
+ * rejected SSRF guard, or failed connect so the pool isolates this source
+ * rather than failing the others.
  */
 export async function createExternalDownstreamClient(
 	source: ResolvedAgentSource,
@@ -183,23 +320,52 @@ export async function createExternalDownstreamClient(
 		);
 	}
 
-	const { createMcpCaller } = await import("./caller");
-	const caller = createMcpCaller(ctx);
-	const { credentials } = await caller.agentSource.getDecryptedConfig({
-		id: source.id,
-		organizationId: ctx.organizationId,
-	});
+	const endpointUrl = await validateExternalEndpointUrl(source.endpointUrl);
+	const credentials = await loadRuntimeAgentSourceCredentials(source, ctx);
 
-	const transport = new StreamableHTTPClientTransport(
-		new URL(source.endpointUrl),
-		credentials ? { requestInit: { headers: credentials } } : undefined,
-	);
+	const transport = new StreamableHTTPClientTransport(endpointUrl, {
+		requestInit: {
+			...(credentials ? { headers: credentials } : {}),
+			redirect: "error",
+		},
+	});
 	const client = new Client({ name: "rox-v2-proxy", version: "1.0.0" });
 	await client.connect(transport);
 
 	return adaptSdkClient(client, async () => {
 		await client.close();
 	});
+}
+
+export async function loadRuntimeAgentSourceCredentials(
+	source: ResolvedAgentSource,
+	ctx: McpContext,
+): Promise<Record<string, string> | null> {
+	const [row] = await db
+		.select({ encryptedConfig: agentSources.encryptedConfig })
+		.from(agentSources)
+		.where(
+			and(
+				eq(agentSources.id, source.id),
+				eq(agentSources.organizationId, ctx.organizationId),
+				eq(agentSources.status, "active"),
+			),
+		)
+		.limit(1);
+
+	if (!row) {
+		throw new Error(
+			`Active agent source "${source.slug}" was not found in this organization`,
+		);
+	}
+	if (!row.encryptedConfig) {
+		return null;
+	}
+
+	return JSON.parse(decryptSecret(row.encryptedConfig)) as Record<
+		string,
+		string
+	>;
 }
 
 /**
@@ -223,6 +389,8 @@ export interface AgentSourcePoolOptions {
 	resolveSources?: (ctx: McpContext) => Promise<ResolvedAgentSource[]>;
 	/** Builds a downstream client per source. Override in tests with a mock. */
 	connector?: AgentSourceConnector;
+	/** Maximum time spent connecting one source before moving to the next one. */
+	connectTimeoutMs?: number;
 }
 
 /**
@@ -238,10 +406,13 @@ export class AgentSourcePool {
 		ctx: McpContext,
 	) => Promise<ResolvedAgentSource[]>;
 	private readonly connector: AgentSourceConnector;
+	private readonly connectTimeoutMs: number;
 
 	constructor(options: AgentSourcePoolOptions = {}) {
 		this.resolveSources = options.resolveSources ?? resolveActiveAgentSources;
 		this.connector = options.connector ?? defaultAgentSourceConnector();
+		this.connectTimeoutMs =
+			options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS;
 	}
 
 	/**
@@ -255,7 +426,11 @@ export class AgentSourcePool {
 		for (const source of sources) {
 			if (this.clients.has(source.slug)) continue;
 			try {
-				const client = await this.connector(source, ctx);
+				const client = await withTimeout(
+					this.connector(source, ctx),
+					this.connectTimeoutMs,
+					`Agent source "${source.slug}" connection timed out after ${this.connectTimeoutMs}ms`,
+				);
 				this.clients.set(source.slug, { source, client });
 				this.failures.delete(source.slug);
 			} catch (error) {
