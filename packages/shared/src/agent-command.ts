@@ -14,10 +14,12 @@ import {
 	BUILTIN_TERMINAL_AGENT_PROMPT_COMMANDS,
 	BUILTIN_TERMINAL_AGENT_TYPES,
 	type BuiltinTerminalAgentType,
+	DEFAULT_TERMINAL_AGENT_TYPE,
 } from "./builtin-terminal-agents";
 
 export {
 	BUILTIN_TERMINAL_AGENTS,
+	DEFAULT_TERMINAL_AGENT_TYPE,
 	DEFAULT_TERMINAL_PRESET_AGENT_TYPES,
 } from "./builtin-terminal-agents";
 
@@ -71,7 +73,7 @@ function getAgentPromptCommandDefaults(
 
 export function buildAgentFileCommand({
 	filePath,
-	agent = "claude",
+	agent = DEFAULT_TERMINAL_AGENT_TYPE,
 }: {
 	filePath: string;
 	agent?: AgentType;
@@ -88,7 +90,7 @@ export function buildAgentFileCommand({
 export function buildAgentPromptCommand({
 	prompt,
 	randomId,
-	agent = "claude",
+	agent = DEFAULT_TERMINAL_AGENT_TYPE,
 }: {
 	prompt: string;
 	randomId: string;
@@ -107,7 +109,7 @@ export function buildAgentPromptCommand({
 export function buildAgentCommand({
 	task,
 	randomId,
-	agent = "claude",
+	agent = DEFAULT_TERMINAL_AGENT_TYPE,
 }: {
 	task: TaskInput;
 	randomId: string;

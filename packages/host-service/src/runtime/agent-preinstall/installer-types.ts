@@ -15,6 +15,7 @@ export type CommandRunner = (command: string) => Promise<CommandResult>;
 export type ConfigFileWriter = (
 	absolutePath: string,
 	contents: string,
+	options?: { overwrite?: boolean },
 ) => Promise<void>;
 
 export interface PreinstallProgressEvent {

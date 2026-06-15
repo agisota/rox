@@ -10,6 +10,7 @@ const catalog = buildPreinstallCatalog();
 
 /** Agents the productization roadmap bundles into the preinstall catalog. */
 const BUNDLED_AGENT_PRESET_IDS = [
+	"omp",
 	"codex",
 	"claude",
 	"droid",
@@ -67,6 +68,24 @@ describe("buildPreinstallCatalog", () => {
 			expect(item?.checkCommand?.length ?? 0).toBeGreaterThan(0);
 			expect(item?.installCommands.length).toBeGreaterThan(0);
 		}
+	});
+
+	it("surfaces Open Dynamic Workflows as an optional OMP harness", () => {
+		const item = byId("open-dynamic-workflows-omp");
+
+		expect(item).toBeDefined();
+		expect(item?.kind).toBe("harness");
+		expect(item?.optional).toBe(true);
+		expect(item?.installCommands).toEqual([
+			"npm install -g open-dynamic-workflows@latest",
+		]);
+		expect(item?.configFiles).toEqual([
+			{
+				path: ".config/odw/config.json",
+				overwrite: false,
+				templateRef: "open-dynamic-workflows-omp",
+			},
+		]);
 	});
 
 	it("requires a pinnedVersion exactly when updateStrategy is pinned", () => {

@@ -1,3 +1,4 @@
+import { DEFAULT_TERMINAL_AGENT_TYPE } from "@rox/shared/agent-settings";
 import { useMemo } from "react";
 import type { AgentSelectAgent } from "renderer/components/AgentSelect";
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
@@ -12,6 +13,18 @@ const ROX_AGENT: AgentSelectAgent = {
 	label: "Rox",
 	iconId: "rox",
 };
+
+export function getPreferredV2AgentId(
+	agents: readonly AgentSelectAgent[],
+): string | null {
+	return (
+		agents.find(
+			(agent) => (agent.iconId ?? agent.id) === DEFAULT_TERMINAL_AGENT_TYPE,
+		)?.id ??
+		agents[0]?.id ??
+		null
+	);
+}
 
 // Rox chat isn't in the host's `host_agent_configs` table — it's
 // routed by id inside `runAgentInWorkspace`. Append after the host's

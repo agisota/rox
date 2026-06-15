@@ -26,7 +26,10 @@ import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { resolveHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useAgentLaunchPreferences } from "renderer/hooks/useAgentLaunchPreferences";
 import { useRelayUrl } from "renderer/hooks/useRelayUrl";
-import { useV2AgentChoices } from "renderer/hooks/useV2AgentChoices";
+import {
+	getPreferredV2AgentId,
+	useV2AgentChoices,
+} from "renderer/hooks/useV2AgentChoices";
 import { PLATFORM } from "renderer/hotkeys";
 import { authClient } from "renderer/lib/auth-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
@@ -153,7 +156,7 @@ export function PromptGroup({
 			agentsReady: v2AgentsFetched,
 		});
 
-	// Promote the placeholder "none" → first configured agent whenever the
+	// Promote the placeholder "none" → preferred configured agent whenever the
 	// current selection isn't a real agent and the user hasn't explicitly
 	// chosen "none". Fires on initial open (where useState init captured
 	// "none" before the query resolved) AND on host switch (where the
@@ -168,9 +171,9 @@ export function PromptGroup({
 				? window.localStorage.getItem(AGENT_STORAGE_KEY)
 				: null;
 		if (stored === "none") return;
-		const first = selectableAgentIds[0];
-		if (first) setSelectedAgent(first);
-	}, [v2AgentsFetched, selectableAgentIds, selectedAgent, setSelectedAgent]);
+		const preferred = getPreferredV2AgentId(v2Agents);
+		if (preferred) setSelectedAgent(preferred);
+	}, [v2AgentsFetched, v2Agents, selectedAgent, setSelectedAgent]);
 
 	const branchPreview = branchNameEdited
 		? sanitizeUserBranchName(branchName)

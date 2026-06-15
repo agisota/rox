@@ -16,6 +16,8 @@ export interface PreinstallConfigFile {
 	path: string;
 	/** Key into the config-templates map for the file body. */
 	templateRef: string;
+	/** False means create the file only when it does not already exist. */
+	overwrite?: boolean;
 }
 
 /**
@@ -78,6 +80,7 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 			configFiles: harness.configFiles.map((file) => ({
 				path: file.path,
 				templateRef: file.templateRef,
+				overwrite: file.overwrite,
 			})),
 			optional: harness.optional ?? harness.install.length === 0,
 			updateStrategy: "latest" as const,

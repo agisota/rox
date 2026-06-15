@@ -8,6 +8,7 @@ import {
 	applyCustomAgentDefinitionPatch,
 	createOverrideEnvelopeWithPatch,
 	deleteCustomAgentDefinition,
+	getFallbackAgentId,
 	resolveAgentConfigs,
 	upsertCustomAgentDefinition,
 } from "./agent-settings";
@@ -64,6 +65,19 @@ describe("resolveAgentConfigs", () => {
 			label: "Pi",
 			command: "pi",
 			promptCommand: "pi",
+			enabled: true,
+		});
+	});
+
+	test("includes OMP as the preferred Oh My Pi terminal config", () => {
+		const omp = resolveAgentConfigs({}).find((preset) => preset.id === "omp");
+
+		expect(omp).toMatchObject({
+			id: "omp",
+			kind: "terminal",
+			label: "Oh My Pi",
+			command: "omp --auto-approve",
+			promptCommand: "omp --auto-approve -p",
 			enabled: true,
 		});
 	});
@@ -143,6 +157,25 @@ describe("resolveAgentConfigs", () => {
 			enabled: true,
 			overriddenFields: [],
 		});
+	});
+});
+
+describe("getFallbackAgentId", () => {
+	test("prefers OMP over Claude when both are enabled", () => {
+		expect(getFallbackAgentId(resolveAgentConfigs({}))).toBe("omp");
+	});
+
+	test("falls back to Claude when OMP is disabled", () => {
+		expect(
+			getFallbackAgentId(
+				resolveAgentConfigs({
+					overrideEnvelope: {
+						version: 1,
+						presets: [{ id: "omp", enabled: false }],
+					},
+				}),
+			),
+		).toBe("claude");
 	});
 });
 

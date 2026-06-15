@@ -62,6 +62,17 @@ describe("agentConfigsRouter", () => {
 			expect(result.find((row) => row.presetId === "rox")).toBeUndefined();
 		});
 
+		it("seeds OMP as the first default terminal agent", async () => {
+			const caller = createCaller();
+			const result = await caller.list();
+			const omp = result.find((row) => row.presetId === "omp");
+
+			expect(result[0]?.presetId).toBe("omp");
+			expect(omp?.command).toBe("omp");
+			expect(omp?.args).toEqual(["--auto-approve"]);
+			expect(omp?.promptArgs).toEqual(["-p"]);
+		});
+
 		it("seeds Claude with its most permissive flag", async () => {
 			const caller = createCaller();
 			const result = await caller.list();

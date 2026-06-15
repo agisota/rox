@@ -28,6 +28,15 @@ import {
 	renderTaskPromptTemplate,
 	validateTaskPromptTemplate,
 } from "./agent-prompt-template";
+import {
+	DEFAULT_TERMINAL_AGENT_TYPE,
+	LEGACY_FALLBACK_TERMINAL_AGENT_TYPE,
+} from "./builtin-terminal-agents";
+
+export {
+	DEFAULT_TERMINAL_AGENT_TYPE,
+	LEGACY_FALLBACK_TERMINAL_AGENT_TYPE,
+} from "./builtin-terminal-agents";
 
 const TERMINAL_OVERRIDE_FIELDS = [
 	"enabled",
@@ -416,10 +425,15 @@ export function getFallbackAgentId(
 	const enabledConfigs = getEnabledAgentConfigs(configs);
 	if (enabledConfigs.length === 0) return null;
 
-	const preferredClaude = enabledConfigs.find(
-		(config) => config.id === "claude",
+	const preferredDefault = enabledConfigs.find(
+		(config) => config.id === DEFAULT_TERMINAL_AGENT_TYPE,
 	);
-	return preferredClaude?.id ?? enabledConfigs[0]?.id ?? null;
+	const preferredLegacy = enabledConfigs.find(
+		(config) => config.id === LEGACY_FALLBACK_TERMINAL_AGENT_TYPE,
+	);
+	return (
+		preferredDefault?.id ?? preferredLegacy?.id ?? enabledConfigs[0]?.id ?? null
+	);
 }
 
 export function getCommandFromAgentConfig(

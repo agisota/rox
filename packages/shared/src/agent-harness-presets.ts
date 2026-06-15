@@ -16,6 +16,11 @@ export type HarnessInstallPlatform = "darwin" | "linux" | "win32";
 export interface HarnessConfigFile {
 	path: string;
 	templateRef: string;
+	/**
+	 * `true` by default. Set to `false` for additive user-level configs that
+	 * must not clobber an existing hand-written file.
+	 */
+	overwrite?: boolean;
 }
 
 /**
@@ -72,10 +77,26 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 	{
 		id: "oh-my-pi",
 		label: "Oh My Pi",
-		description: "Minimal harness layer for the Pi terminal coding agent.",
-		baseAgentId: "pi",
+		description: "Oh My Pi harness layer for the OMP terminal coding agent.",
+		baseAgentId: "omp",
 		install: [],
 		configFiles: [],
+		optional: true,
+	},
+	{
+		id: "open-dynamic-workflows-omp",
+		label: "Open Dynamic Workflows + Oh My Pi",
+		description:
+			"Optional workflow orchestration layer for running dynamic workflow scripts through Oh My Pi.",
+		baseAgentId: "omp",
+		install: [{ command: "npm install -g open-dynamic-workflows@latest" }],
+		configFiles: [
+			{
+				path: ".config/odw/config.json",
+				templateRef: "open-dynamic-workflows-omp",
+				overwrite: false,
+			},
+		],
 		optional: true,
 	},
 	{

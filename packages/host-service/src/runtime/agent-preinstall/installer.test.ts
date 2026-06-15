@@ -160,4 +160,42 @@ describe("AgentPreinstaller", () => {
 		expect(results.length).toBe(0);
 		expect(second.calls.length).toBe(0);
 	});
+
+	it("writes the Open Dynamic Workflows OMP adapter config on manual install", async () => {
+		const db = createTestDb();
+		const { run, calls } = makeOkRunner();
+		const writes: Array<{
+			path: string;
+			contents: string;
+			options?: { overwrite?: boolean };
+		}> = [];
+		const installer = new AgentPreinstaller({
+			db,
+			runCommand: run,
+			homeDir: "/tmp/rox-home",
+			writeConfigFile: async (path, contents, options) => {
+				writes.push({ path, contents, options });
+			},
+		});
+
+		const result = await installer.runOne("open-dynamic-workflows-omp");
+
+		expect(result?.status).toBe("installed");
+		expect(calls).toContain("npm install -g open-dynamic-workflows@latest");
+		expect(writes).toHaveLength(1);
+		expect(writes[0]?.path).toBe("/tmp/rox-home/.config/odw/config.json");
+		expect(writes[0]?.options).toEqual({ overwrite: false });
+
+		const config = JSON.parse(writes[0]?.contents ?? "");
+		expect(config.defaultAdapter).toBe("omp");
+		expect(config.workspaceMode).toBe("copy");
+		expect(config.adapters.omp.command).toEqual([
+			"omp",
+			"--cwd",
+			"{workspace}",
+			"--auto-approve",
+			"-p",
+			"{prompt}",
+		]);
+	});
 });

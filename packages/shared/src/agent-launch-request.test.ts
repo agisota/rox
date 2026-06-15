@@ -50,6 +50,29 @@ describe("buildPromptAgentLaunchRequest", () => {
 		});
 	});
 
+	test("builds OMP prompt launches with the non-interactive prompt command", () => {
+		const configsById = indexResolvedAgentConfigs(resolveAgentConfigs({}));
+		const request = buildPromptAgentLaunchRequest({
+			workspaceId: "workspace-1",
+			source: "new-workspace",
+			selectedAgent: "omp",
+			prompt: "implement the change",
+			configsById,
+		});
+
+		expect(request).toMatchObject({
+			kind: "terminal",
+			agentType: "omp",
+		});
+		expect(request?.kind).toBe("terminal");
+		if (request?.kind !== "terminal") {
+			throw new Error("Expected terminal launch request");
+		}
+		expect(request.terminal.command).toStartWith(
+			"omp --auto-approve -p \"$(cat <<'ROX_PROMPT_",
+		);
+	});
+
 	test("passes files and task slug through for chat agents", () => {
 		const configsById = indexResolvedAgentConfigs(resolveAgentConfigs({}));
 		const request = buildPromptAgentLaunchRequest({

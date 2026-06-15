@@ -5,6 +5,17 @@ import {
 } from "./agent-command";
 
 describe("buildAgentPromptCommand", () => {
+	it("defaults prompt launches to OMP", () => {
+		const command = buildAgentPromptCommand({
+			prompt: "hello",
+			randomId: "omp-1234",
+		});
+
+		expect(command).toStartWith(
+			"omp --auto-approve -p \"$(cat <<'ROX_PROMPT_omp1234'",
+		);
+	});
+
 	it("adds `--` before codex prompt payload", () => {
 		const command = buildAgentPromptCommand({
 			prompt: "- Only modified file: runtime.ts",

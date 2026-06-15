@@ -11,9 +11,25 @@ const execAsync = promisify(exec);
 export const defaultWriteConfigFile: ConfigFileWriter = async (
 	absolutePath,
 	contents,
+	options,
 ) => {
 	await mkdir(dirname(absolutePath), { recursive: true });
-	await writeFile(absolutePath, contents, "utf8");
+	try {
+		await writeFile(absolutePath, contents, {
+			encoding: "utf8",
+			flag: options?.overwrite === false ? "wx" : "w",
+		});
+	} catch (error) {
+		if (
+			options?.overwrite === false &&
+			error instanceof Error &&
+			"code" in error &&
+			error.code === "EEXIST"
+		) {
+			return;
+		}
+		throw error;
+	}
 };
 
 /**

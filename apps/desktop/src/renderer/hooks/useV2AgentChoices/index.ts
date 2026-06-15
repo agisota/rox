@@ -1,1 +1,1 @@
-export { useV2AgentChoices } from "./useV2AgentChoices";
+export { getPreferredV2AgentId, useV2AgentChoices } from "./useV2AgentChoices";

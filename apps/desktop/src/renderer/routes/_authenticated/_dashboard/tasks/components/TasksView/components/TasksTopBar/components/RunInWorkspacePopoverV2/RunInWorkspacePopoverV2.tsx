@@ -17,7 +17,10 @@ import { HiCheck, HiMiniPlay } from "react-icons/hi2";
 import { AgentSelect } from "renderer/components/AgentSelect";
 import { env } from "renderer/env.renderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
-import { useV2AgentChoices } from "renderer/hooks/useV2AgentChoices";
+import {
+	getPreferredV2AgentId,
+	useV2AgentChoices,
+} from "renderer/hooks/useV2AgentChoices";
 import { authClient } from "renderer/lib/auth-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
 import { DevicePicker } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker";
@@ -47,10 +50,10 @@ function synthesizeTaskPrompt(task: TaskWithStatus): string {
 	return body ? `${header}\n\n${body}` : header;
 }
 
-function readStoredAgent(): SelectedAgent {
-	if (typeof window === "undefined") return NONE;
+function readStoredAgent(): SelectedAgent | null {
+	if (typeof window === "undefined") return null;
 	const stored = window.localStorage.getItem(AGENT_STORAGE_KEY);
-	return stored ? (stored as SelectedAgent) : NONE;
+	return stored ? (stored as SelectedAgent) : null;
 }
 
 export function RunInWorkspacePopoverV2({
@@ -155,18 +158,23 @@ export function RunInWorkspacePopoverV2({
 		[v2Agents],
 	);
 
-	const [selectedAgent, setSelectedAgentState] =
-		useState<SelectedAgent>(readStoredAgent);
+	const [selectedAgent, setSelectedAgentState] = useState<SelectedAgent>(
+		() => readStoredAgent() ?? NONE,
+	);
 	useEffect(() => {
 		if (!v2AgentsFetched) return;
 		if (selectedAgent !== NONE && validAgentIds.has(selectedAgent)) return;
 		const stored = readStoredAgent();
-		if (stored !== NONE && validAgentIds.has(stored)) {
+		if (stored === NONE) return;
+		const preferredAgent = getPreferredV2AgentId(v2Agents);
+		if (stored && validAgentIds.has(stored)) {
 			setSelectedAgentState(stored);
+		} else if (preferredAgent) {
+			setSelectedAgentState(preferredAgent);
 		} else if (selectedAgent !== NONE) {
 			setSelectedAgentState(NONE);
 		}
-	}, [v2AgentsFetched, validAgentIds, selectedAgent]);
+	}, [v2AgentsFetched, validAgentIds, v2Agents, selectedAgent]);
 	const setSelectedAgent = (next: SelectedAgent) => {
 		setSelectedAgentState(next);
 		if (typeof window !== "undefined") {

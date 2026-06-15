@@ -39,4 +39,19 @@ describe("agent-harness-presets", () => {
 		expect(preset?.baseAgentId).toBe("claude");
 		expect(getHarnessPresetById("does-not-exist")).toBeUndefined();
 	});
+
+	it("layers Oh My Pi and Open Dynamic Workflows on top of OMP", () => {
+		expect(getHarnessPresetById("oh-my-pi")?.baseAgentId).toBe("omp");
+		expect(getHarnessPresetById("open-dynamic-workflows-omp")).toMatchObject({
+			baseAgentId: "omp",
+			configFiles: [
+				{
+					path: ".config/odw/config.json",
+					overwrite: false,
+					templateRef: "open-dynamic-workflows-omp",
+				},
+			],
+			optional: true,
+		});
+	});
 });

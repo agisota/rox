@@ -58,6 +58,21 @@ function createBuiltinTerminalAgent<
 
 export const BUILTIN_TERMINAL_AGENTS = [
 	createBuiltinTerminalAgent({
+		id: "omp",
+		label: "Oh My Pi",
+		description:
+			"Oh My Pi's coding agent with IDE-aware tools, subagents, LSP, DAP, and workflow-friendly prompt runs.",
+		command: "omp --auto-approve",
+		promptCommand: "omp --auto-approve -p",
+		includeInDefaultTerminalPresets: true,
+		install: {
+			checkCommand: "omp --version",
+			installCommand: "curl -fsSL https://omp.sh/install | sh",
+			updateStrategy: "latest",
+			optional: true,
+		},
+	}),
+	createBuiltinTerminalAgent({
 		id: "claude",
 		label: "Claude",
 		description:
@@ -216,6 +231,12 @@ export const BUILTIN_TERMINAL_AGENTS = [
 
 export type BuiltinTerminalAgentType =
 	(typeof BUILTIN_TERMINAL_AGENTS)[number]["id"];
+
+export const DEFAULT_TERMINAL_AGENT_TYPE =
+	"omp" satisfies BuiltinTerminalAgentType;
+
+export const LEGACY_FALLBACK_TERMINAL_AGENT_TYPE =
+	"claude" satisfies BuiltinTerminalAgentType;
 
 export const BUILTIN_TERMINAL_AGENT_TYPES = mapAgentIds(
 	BUILTIN_TERMINAL_AGENTS,

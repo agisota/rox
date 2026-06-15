@@ -160,7 +160,9 @@ export class AgentPreinstaller {
 		for (const file of item.configFiles) {
 			const contents = getConfigTemplate(file.templateRef);
 			if (contents === undefined) continue;
-			await this.writeConfigFile(this.resolveConfigPath(file.path), contents);
+			await this.writeConfigFile(this.resolveConfigPath(file.path), contents, {
+				overwrite: file.overwrite,
+			});
 		}
 	}
 
