@@ -82,7 +82,7 @@ export function htmlEnvTransformPlugin(): Plugin {
 					/%NEXT_PUBLIC_ELECTRIC_URL%/g,
 					new URL(
 						process.env.NEXT_PUBLIC_ELECTRIC_URL ||
-							"https://electric-proxy.avi-6ac.workers.dev",
+							"https://electric-proxy.scharlesky-192.workers.dev",
 					).origin,
 				)
 				.replace(

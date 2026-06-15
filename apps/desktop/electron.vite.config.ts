@@ -189,7 +189,7 @@ export default defineConfig({
 			),
 			"process.env.NEXT_PUBLIC_ELECTRIC_URL": defineEnv(
 				process.env.NEXT_PUBLIC_ELECTRIC_URL,
-				"https://electric-proxy.avi-6ac.workers.dev",
+				"https://electric-proxy.scharlesky-192.workers.dev",
 			),
 			"process.env.NEXT_PUBLIC_DOCS_URL": defineEnv(
 				process.env.NEXT_PUBLIC_DOCS_URL,
