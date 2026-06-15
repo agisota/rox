@@ -8,6 +8,7 @@ import { IntroOverlay } from "./components/IntroOverlay";
 import { ScrambleLanding } from "./components/ScrambleLanding";
 import type { LandingPhase } from "./constants";
 import { THANKS_HEADING, THANKS_HINT } from "./constants";
+import { useMagnetic } from "./hooks/useMagnetic";
 import "./landing-experience.css";
 
 interface LandingExperienceProps {
@@ -25,6 +26,7 @@ interface LandingExperienceProps {
  */
 export function LandingExperience({ starCount }: LandingExperienceProps) {
 	const [phase, setPhase] = useState<LandingPhase>("intro");
+	const secondaryLinkRef = useMagnetic<HTMLAnchorElement>();
 
 	const handleIntroComplete = useCallback(() => {
 		setPhase((current) => (current === "intro" ? "main" : current));
@@ -58,6 +60,7 @@ export function LandingExperience({ starCount }: LandingExperienceProps) {
 				<>
 					<DownloadSnapX onDownloadStart={handleDownloadStart} />
 					<a
+						ref={secondaryLinkRef}
 						href={COMPANY.GITHUB_URL}
 						target="_blank"
 						rel="noopener noreferrer"

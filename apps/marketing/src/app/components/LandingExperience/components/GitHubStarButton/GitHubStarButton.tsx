@@ -1,7 +1,7 @@
 "use client";
 
 import { COMPANY } from "@rox/shared/constants";
-import { animate, createTimeline, utils } from "animejs";
+import { animate, createSpring, createTimeline, utils } from "animejs";
 import { useEffect, useRef } from "react";
 import { STAR_LABEL_DONE, STAR_LABEL_IDLE, STAR_PROMPT } from "../../constants";
 
@@ -93,7 +93,7 @@ export function GitHubStarButton({ targetCount }: GitHubStarButtonProps) {
 				button,
 				{
 					scale: [1, 0.97, 1.02, 1],
-					ease: "out(4)",
+					ease: createSpring({ stiffness: 130, damping: 12 }),
 					duration: 900,
 				},
 				0,
@@ -102,7 +102,7 @@ export function GitHubStarButton({ targetCount }: GitHubStarButtonProps) {
 				polygon ?? icon,
 				{
 					scale: [1, 1.35, 1],
-					ease: "out(3)",
+					ease: createSpring({ stiffness: 160, damping: 11 }),
 					duration: 700,
 				},
 				0,
