@@ -34,6 +34,18 @@ describe("crypto round-trip (AES-256-GCM)", () => {
 		expect(decrypted).toEqual(original);
 	});
 
+	it("round-trips multi-byte UTF-8 plaintext", () => {
+		const original = { token: "ключ", label: "東京" };
+		const encrypted = encryptSecret(JSON.stringify(original));
+
+		const decrypted = JSON.parse(decryptSecret(encrypted)) as Record<
+			string,
+			string
+		>;
+
+		expect(decrypted).toEqual(original);
+	});
+
 	it("does not leak plaintext into the ciphertext", () => {
 		const plaintext = JSON.stringify({ token: "plaintext-needle" });
 		const encrypted = encryptSecret(plaintext);
@@ -106,6 +118,14 @@ describe("createAgentSourceSchema", () => {
 		});
 		expect(parsed.success).toBe(false);
 	});
+
+	it("rejects non-HTTPS endpoint URLs", () => {
+		const parsed = createAgentSourceSchema.safeParse({
+			...base,
+			endpointUrl: "http://agent.example.com/run",
+		});
+		expect(parsed.success).toBe(false);
+	});
 });
 
 describe("setAgentSourceStatusSchema", () => {
@@ -146,7 +166,7 @@ describe("updateAgentSourceSchema", () => {
 // ---------------------------------------------------------------------------
 // Mocked-DB caller tests, following the integration/github + integration/linear
 // harness: db.select/dbWs.insert chains and ../utils auth gates are mocked, so
-// no real database, network, or membership lookup is required. Real crypto runs
+// no real database, network, or membership/admin lookup is required. Real crypto runs
 // (SECRETS_ENCRYPTION_KEY is ensured at the top of this file) so credential
 // round-tripping is exercised end-to-end through getDecryptedConfig.
 // ---------------------------------------------------------------------------
@@ -423,6 +443,40 @@ describe("agentSource.create", () => {
 		).toEqual({ token: "secret" });
 	});
 
+	it("validates referenced project and integration connection before insert", async () => {
+		selectResults.push([{ id: "project-1" }], [{ id: "connection-1" }]);
+		insertReturningResults.push([sampleSource]);
+		const caller = createCaller(authedContext());
+
+		await caller.agentSource.create({
+			organizationId: ORG_ID,
+			v2ProjectId: "33333333-3333-4333-8333-333333333333",
+			integrationConnectionId: "55555555-5555-4555-8555-555555555555",
+			name: "Claude Code",
+			slug: "claude-code",
+			kind: "claude_code",
+		});
+
+		expect(dbSelect).toHaveBeenCalledTimes(2);
+		expect(dbWsInsert).toHaveBeenCalledTimes(1);
+	});
+
+	it("rejects a referenced project outside the organization", async () => {
+		selectResults.push([]);
+		const caller = createCaller(authedContext());
+
+		await expect(
+			caller.agentSource.create({
+				organizationId: ORG_ID,
+				v2ProjectId: "33333333-3333-4333-8333-333333333333",
+				name: "Claude Code",
+				slug: "claude-code",
+				kind: "claude_code",
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(dbWsInsert).not.toHaveBeenCalled();
+	});
+
 	it("stores null encryptedConfig when no credentials are supplied", async () => {
 		insertReturningResults.push([sampleSource]);
 		const caller = createCaller(authedContext());
@@ -482,6 +536,20 @@ describe("agentSource.update", () => {
 		expect(
 			JSON.parse(decryptSecret(updates.encryptedConfig as string)),
 		).toEqual({ token: "rotated" });
+	});
+
+	it("rejects a referenced integration connection outside the organization", async () => {
+		selectResults.push([]);
+		const caller = createCaller(authedContext());
+
+		await expect(
+			caller.agentSource.update({
+				id: SOURCE_ID,
+				organizationId: ORG_ID,
+				integrationConnectionId: "55555555-5555-4555-8555-555555555555",
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(dbWsUpdate).not.toHaveBeenCalled();
 	});
 
 	it("throws BAD_REQUEST when no fields are supplied", async () => {
@@ -576,7 +644,7 @@ describe("agentSource.getDecryptedConfig", () => {
 		});
 
 		expect(result).toEqual({ id: SOURCE_ID, credentials: { token: "x" } });
-		expect(verifyOrgMembershipMock).toHaveBeenCalledTimes(1);
+		expect(verifyOrgAdminMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("returns null credentials when none are stored", async () => {

@@ -6,7 +6,37 @@ import { afterEach, describe, expect, it, mock } from "bun:test";
 // never touch the DB, auth, or network — so inert module stubs are sufficient
 // and keep the suite fully isolated (mirrors the trpc agentSource test style).
 mock.module("@rox/db/client", () => ({ db: {}, dbWs: {} }));
-mock.module("@rox/db/schema", () => ({ members: {}, users: {} }));
+mock.module("@rox/db/schema", () => ({
+	members: {},
+	users: {},
+	v2Projects: {
+		id: "v2_projects.id",
+		organizationId: "v2_projects.organization_id",
+	},
+	integrationConnections: {
+		id: "integration_connections.id",
+		organizationId: "integration_connections.organization_id",
+	},
+	agentSources: {
+		id: "agent_sources.id",
+		organizationId: "agent_sources.organization_id",
+		v2ProjectId: "agent_sources.v2_project_id",
+		ownerUserId: "agent_sources.owner_user_id",
+		slug: "agent_sources.slug",
+		name: "agent_sources.name",
+		description: "agent_sources.description",
+		kind: "agent_sources.kind",
+		status: "agent_sources.status",
+		integrationConnectionId: "agent_sources.integration_connection_id",
+		config: "agent_sources.config",
+		capabilities: "agent_sources.capabilities",
+		endpointUrl: "agent_sources.endpoint_url",
+		version: "agent_sources.version",
+		encryptedConfig: "agent_sources.encrypted_config",
+		createdAt: "agent_sources.created_at",
+		updatedAt: "agent_sources.updated_at",
+	},
+}));
 mock.module("@rox/auth/server", () => ({
 	auth: {},
 	mintUserJwt: async () => "test-jwt",
@@ -17,9 +47,12 @@ const { InMemoryTransport } = await import(
 	"@modelcontextprotocol/sdk/inMemory.js"
 );
 const { McpServer } = await import("@modelcontextprotocol/sdk/server/mcp.js");
-const { AgentSourcePool, createExternalDownstreamClient } = await import(
-	"./agent-source-pool"
-);
+const {
+	AgentSourcePool,
+	createExternalDownstreamClient,
+	isRestrictedEndpointAddress,
+	validateExternalEndpointUrl,
+} = await import("./agent-source-pool");
 const { namespacedToolName, registerProxyTools, stripToolNamePrefix } =
 	await import("./proxy-tools");
 
@@ -242,6 +275,33 @@ describe("registerProxyTools — proxying", () => {
 		// The downstream result is surfaced back through the proxy tool.
 		expect(JSON.stringify(callResult)).toContain("issue #42 created");
 	});
+
+	it("preserves downstream CallToolResult errors", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const client = mockClient([{ name: "create_issue" }], {
+			callResult: {
+				isError: true,
+				content: [{ type: "text", text: "downstream failed" }],
+			},
+		});
+		await registerProxyTools(server, [
+			pooled(resolvedSource("github"), client),
+		]);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+
+		const callResult = await sdkClient.callTool({
+			name: "mcp__github__create_issue",
+			arguments: { title: "Bug" },
+		});
+
+		expect((callResult as { isError?: boolean }).isError).toBe(true);
+		expect(JSON.stringify(callResult)).toContain("downstream failed");
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -271,6 +331,27 @@ describe("registerProxyTools — error isolation", () => {
 		expect(result.failures.get("broken")?.message).toContain(
 			"downstream unavailable",
 		);
+	});
+
+	it("rejects duplicate downstream tool names before registering any tool for that source", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const duplicate = mockClient([{ name: "same" }, { name: "same" }]);
+
+		const result = await registerProxyTools(server, [
+			pooled(resolvedSource("github"), duplicate),
+		]);
+
+		expect(result.registered).toEqual([]);
+		expect(result.failures.get("github")?.message).toContain(
+			"duplicate tool name",
+		);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+		await expect(sdkClient.listTools()).rejects.toThrow(/Method not found/);
 	});
 });
 
@@ -328,6 +409,31 @@ describe("AgentSourcePool — connection isolation", () => {
 		await pool.cleanup();
 		expect(pool.getConnected()).toHaveLength(0);
 	});
+
+	it("records a timeout failure and continues to later sources", async () => {
+		const healthy = mockClient([{ name: "t" }]);
+		const connector = mock(async (source: ResolvedAgentSource) => {
+			if (source.slug === "slow") {
+				return new Promise<McpDownstreamClient>(() => {});
+			}
+			return healthy;
+		});
+		const pool = new AgentSourcePool({
+			resolveSources: async () => [
+				resolvedSource("slow"),
+				resolvedSource("good"),
+			],
+			connector,
+			connectTimeoutMs: 5,
+		});
+
+		const connected = await pool.connectAll(ctx);
+
+		expect(connected.map((c) => c.source.slug)).toEqual(["good"]);
+		expect(pool.getFailures().get("slow")?.message).toContain(
+			"connection timed out",
+		);
+	});
 });
 
 // External transport guard — the contract the pool relies on to isolate a
@@ -340,5 +446,21 @@ describe("external downstream client", () => {
 				{} as McpContext,
 			),
 		).rejects.toThrow(/no endpointUrl/);
+	});
+
+	it("rejects non-HTTPS and restricted endpoint URLs before transport creation", async () => {
+		await expect(
+			validateExternalEndpointUrl("http://agent.example.com/mcp"),
+		).rejects.toThrow(/HTTPS/);
+		await expect(
+			validateExternalEndpointUrl("https://127.0.0.1/mcp"),
+		).rejects.toThrow(/restricted address/);
+		await expect(
+			validateExternalEndpointUrl("https://localhost/mcp"),
+		).rejects.toThrow(/restricted/);
+
+		expect(isRestrictedEndpointAddress("10.0.0.1")).toBe(true);
+		expect(isRestrictedEndpointAddress("169.254.169.254")).toBe(true);
+		expect(isRestrictedEndpointAddress("8.8.8.8")).toBe(false);
 	});
 });

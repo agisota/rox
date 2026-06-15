@@ -17,6 +17,7 @@
  * `bunx drizzle-kit generate --name="..."` (see AGENTS.md).
  */
 
+import { sql } from "drizzle-orm";
 import {
 	index,
 	jsonb,
@@ -91,11 +92,12 @@ export const agentSources = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(t) => [
-		uniqueIndex("agent_sources_org_project_slug_uniq").on(
-			t.organizationId,
-			t.v2ProjectId,
-			t.slug,
-		),
+		uniqueIndex("agent_sources_org_slug_uniq")
+			.on(t.organizationId, t.slug)
+			.where(sql`${t.v2ProjectId} IS NULL`),
+		uniqueIndex("agent_sources_org_project_slug_uniq")
+			.on(t.organizationId, t.v2ProjectId, t.slug)
+			.where(sql`${t.v2ProjectId} IS NOT NULL`),
 		index("agent_sources_org_idx").on(t.organizationId),
 		index("agent_sources_project_idx").on(t.v2ProjectId),
 		index("agent_sources_kind_idx").on(t.kind),

@@ -16,6 +16,22 @@ const credentialsSchema = z.record(z.string(), z.string());
 
 const configSchema = z.record(z.string(), z.unknown());
 const capabilitiesSchema = z.array(z.string());
+const httpsEndpointUrlSchema = z
+	.string()
+	.url()
+	.max(2048)
+	.refine(
+		(value) => {
+			try {
+				return new URL(value).protocol === "https:";
+			} catch {
+				return false;
+			}
+		},
+		{
+			message: "Endpoint URL must use HTTPS",
+		},
+	);
 
 export const listAgentSourcesSchema = z.object({
 	organizationId: z.string().uuid(),
@@ -34,7 +50,7 @@ export const createAgentSourceSchema = z.object({
 	slug: slugSchema,
 	kind: agentSourceKindEnum,
 	description: z.string().max(2000).optional(),
-	endpointUrl: z.string().url().max(2048).optional(),
+	endpointUrl: httpsEndpointUrlSchema.optional(),
 	integrationConnectionId: z.string().uuid().optional(),
 	config: configSchema.optional(),
 	capabilities: capabilitiesSchema.optional(),
@@ -49,7 +65,7 @@ export const updateAgentSourceSchema = z.object({
 	slug: slugSchema.optional(),
 	kind: agentSourceKindEnum.optional(),
 	description: z.string().max(2000).nullable().optional(),
-	endpointUrl: z.string().url().max(2048).nullable().optional(),
+	endpointUrl: httpsEndpointUrlSchema.nullable().optional(),
 	integrationConnectionId: z.string().uuid().nullable().optional(),
 	config: configSchema.optional(),
 	capabilities: capabilitiesSchema.optional(),

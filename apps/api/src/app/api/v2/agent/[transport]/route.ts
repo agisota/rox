@@ -75,7 +75,11 @@ async function handle(req: Request): Promise<Response> {
 		// Close pooled downstream connections (and the proxy server) after the
 		// single stateless JSON-RPC message has been handled and its response
 		// produced. For orgs with no active agent sources this is a near no-op.
-		await cleanup();
+		try {
+			await cleanup();
+		} catch (error) {
+			console.error("[mcp-v2] proxy cleanup failed:", error);
+		}
 	}
 }
 
