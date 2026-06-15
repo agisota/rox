@@ -1,4 +1,5 @@
 import { db, dbWs } from "@rox/db/client";
+import { chatSessionStatusEnum } from "@rox/db/enums";
 import { chatSessions, usageRequests } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
 import { AVAILABLE_CHAT_MODELS } from "@rox/shared/chat-models";
@@ -176,6 +177,8 @@ export const chatRouter = {
 			z.object({
 				sessionId: z.uuid(),
 				title: z.string().optional(),
+				status: chatSessionStatusEnum.optional(),
+				labels: z.array(z.string()).optional(),
 				lastActiveAt: z.date().optional(),
 			}),
 		)
@@ -193,6 +196,12 @@ export const chatRouter = {
 			if (input.title !== undefined) {
 				updates.title = input.title;
 			}
+			if (input.status !== undefined) {
+				updates.status = input.status;
+			}
+			if (input.labels !== undefined) {
+				updates.labels = input.labels;
+			}
 			if (input.lastActiveAt !== undefined) {
 				updates.lastActiveAt = input.lastActiveAt;
 			}
@@ -208,6 +217,54 @@ export const chatRouter = {
 					and(
 						eq(chatSessions.id, input.sessionId),
 						eq(chatSessions.organizationId, organizationId),
+						eq(chatSessions.createdBy, ctx.session.user.id),
+					),
+				)
+				.returning({ id: chatSessions.id });
+
+			return { updated: !!updated };
+		}),
+
+	setStatus: protectedProcedure
+		.input(
+			z.object({
+				sessionId: z.uuid(),
+				organizationId: z.uuid(),
+				status: chatSessionStatusEnum,
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const [updated] = await db
+				.update(chatSessions)
+				.set({ status: input.status })
+				.where(
+					and(
+						eq(chatSessions.id, input.sessionId),
+						eq(chatSessions.organizationId, input.organizationId),
+						eq(chatSessions.createdBy, ctx.session.user.id),
+					),
+				)
+				.returning({ id: chatSessions.id });
+
+			return { updated: !!updated };
+		}),
+
+	setLabels: protectedProcedure
+		.input(
+			z.object({
+				sessionId: z.uuid(),
+				organizationId: z.uuid(),
+				labels: z.array(z.string()),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const [updated] = await db
+				.update(chatSessions)
+				.set({ labels: input.labels })
+				.where(
+					and(
+						eq(chatSessions.id, input.sessionId),
+						eq(chatSessions.organizationId, input.organizationId),
 						eq(chatSessions.createdBy, ctx.session.user.id),
 					),
 				)
