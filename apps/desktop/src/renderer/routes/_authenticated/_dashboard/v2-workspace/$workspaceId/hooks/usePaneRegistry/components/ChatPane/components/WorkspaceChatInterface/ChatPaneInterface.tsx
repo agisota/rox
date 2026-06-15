@@ -5,6 +5,7 @@ import {
 	PromptInputProvider,
 	useProviderAttachments,
 } from "@rox/ui/ai-elements/prompt-input";
+import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useQuery } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -16,6 +17,7 @@ import type {
 	ModelOption,
 	PermissionMode,
 } from "renderer/components/Chat/ChatInterface/types";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import {
 	getDesktopChatModelOptions,
@@ -160,6 +162,13 @@ const AUTO_LAUNCH_RETRY_DELAY_MS = 1500;
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
 
+type ChatShareMessage = {
+	id: string;
+	role: string;
+	content: unknown[];
+	createdAt?: string;
+};
+
 type InterruptedMessage = {
 	id: string;
 	sourceMessageId: string;
@@ -179,6 +188,81 @@ function cloneMessageContent(
 	} catch {
 		return content.map((part) => ({ ...part }));
 	}
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toShareCreatedAt(message: ChatMessage): string | undefined {
+	if (!isRecord(message)) return undefined;
+
+	const createdAt = message.createdAt;
+	if (createdAt instanceof Date) return createdAt.toISOString();
+	if (typeof createdAt === "string") return createdAt;
+	return undefined;
+}
+
+function toShareContent(content: ChatMessage["content"]): unknown[] {
+	return cloneMessageContent(content).map((part) => part as unknown);
+}
+
+function toShareMessage(message: ChatMessage): ChatShareMessage {
+	const createdAt = toShareCreatedAt(message);
+	const shareMessage: ChatShareMessage = {
+		id: message.id,
+		role: message.role,
+		content: toShareContent(message.content),
+	};
+
+	if (createdAt) {
+		shareMessage.createdAt = createdAt;
+	}
+
+	return shareMessage;
+}
+
+function getShareMessages(messages: ChatMessage[]): ChatShareMessage[] {
+	const seenMessageIds = new Set<string>();
+	const shareMessages: ChatShareMessage[] = [];
+
+	for (const message of messages) {
+		if (seenMessageIds.has(message.id)) continue;
+		seenMessageIds.add(message.id);
+		if (message.content.length === 0) continue;
+		shareMessages.push(toShareMessage(message));
+	}
+
+	return shareMessages;
+}
+
+function getTextPreviewFromContent(content: ChatMessage["content"]): string {
+	const fragments: string[] = [];
+
+	for (const part of content) {
+		if (typeof part === "string") {
+			fragments.push(part);
+			continue;
+		}
+		if (!isRecord(part)) continue;
+
+		const partRecord = part as unknown as Record<string, unknown>;
+		const text = partRecord.text ?? partRecord.content;
+		if (typeof text === "string") {
+			fragments.push(text);
+		}
+	}
+
+	return fragments.join(" ").trim();
+}
+
+function getChatShareTitle(messages: ChatMessage[]): string | undefined {
+	const firstUserMessage = messages.find((message) => message.role === "user");
+	if (!firstUserMessage) return undefined;
+
+	const preview = getTextPreviewFromContent(firstUserMessage.content);
+	if (!preview) return undefined;
+	return preview.length > 80 ? `${preview.slice(0, 77)}...` : preview;
 }
 
 function getLaunchConfigKey(
@@ -250,6 +334,11 @@ export function ChatPaneInterface({
 		null,
 	);
 	const workspaceTrpcUtils = workspaceTrpc.useUtils();
+	const { copyToClipboard } = useCopyToClipboard();
+	const [isSharingConversation, setIsSharingConversation] = useState(false);
+	const [lastSharedConversationUrl, setLastSharedConversationUrl] = useState<
+		string | null
+	>(null);
 	const sendMessageMutation = workspaceTrpc.chat.sendMessage.useMutation();
 	const restartFromMessageMutation =
 		workspaceTrpc.chat.restartFromMessage.useMutation();
@@ -483,6 +572,58 @@ export function ChatPaneInterface({
 			isAwaitingAssistant,
 		});
 	}, [isAwaitingAssistant, messages, pendingUserTurn]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: sessionId resets the copied share state between sessions
+	useEffect(() => {
+		setLastSharedConversationUrl(null);
+		setIsSharingConversation(false);
+	}, [sessionId]);
+
+	const handleShareConversation = useCallback(async () => {
+		if (!sessionId) {
+			toast.error("Chat session is still starting.");
+			return;
+		}
+
+		const sourceMessages = currentMessage
+			? [...visibleMessages, currentMessage]
+			: visibleMessages;
+		const shareMessages = getShareMessages(sourceMessages);
+		if (shareMessages.length === 0) {
+			toast.error("There are no messages to share.");
+			return;
+		}
+
+		clearRuntimeError();
+		setIsSharingConversation(true);
+		try {
+			const result = await apiTrpcClient.share.publishChatSession.mutate({
+				sessionId,
+				title: getChatShareTitle(sourceMessages),
+				messages: shareMessages,
+			});
+			await copyToClipboard(result.url);
+			setLastSharedConversationUrl(result.url);
+			toast.success("Share link copied");
+			captureChatEvent("chat_session_shared", {
+				message_count: shareMessages.length,
+			});
+		} catch (error) {
+			const message = toErrorMessage(error) ?? "Failed to share chat";
+			setRuntimeErrorMessage(message);
+			toast.error(message);
+		} finally {
+			setIsSharingConversation(false);
+		}
+	}, [
+		captureChatEvent,
+		clearRuntimeError,
+		copyToClipboard,
+		currentMessage,
+		sessionId,
+		setRuntimeErrorMessage,
+		visibleMessages,
+	]);
 
 	useEffect(() => {
 		if (isRunning) {
@@ -961,6 +1102,9 @@ export function ChatPaneInterface({
 					onCancelEditUserMessage={() => setEditingUserMessageId(null)}
 					onSubmitEditedUserMessage={handleSubmitEditedUserMessage}
 					onRestartUserMessage={handleResendUserMessage}
+					onShareConversation={handleShareConversation}
+					isSharingConversation={isSharingConversation}
+					lastSharedConversationUrl={lastSharedConversationUrl}
 					footerScrollTrigger={footerScrollTrigger}
 				/>
 				<McpControls mcpUi={mcpUi} />

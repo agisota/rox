@@ -47,6 +47,7 @@ import {
 	artifacts,
 	contextPacks,
 	objectRelations,
+	publicShares,
 	skillBindings,
 	skills,
 	skillVersions,
@@ -79,6 +80,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 	usageRequests: many(usageRequests),
 	attribution: many(userAttribution),
 	paymentAttributions: many(paymentAttributions),
+	publicShares: many(publicShares),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -119,6 +121,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	chatSessions: many(chatSessions),
 	accessGrants: many(accessGrants),
 	knowledgeDocuments: many(knowledgeDocuments),
+	publicShares: many(publicShares),
 }));
 
 export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
@@ -631,6 +634,17 @@ export const artifactsRelations = relations(artifacts, ({ one }) => ({
 	run: one(workflowRuns, {
 		fields: [artifacts.runId],
 		references: [workflowRuns.id],
+	}),
+}));
+
+export const publicSharesRelations = relations(publicShares, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [publicShares.organizationId],
+		references: [organizations.id],
+	}),
+	createdByUser: one(users, {
+		fields: [publicShares.createdByUserId],
+		references: [users.id],
 	}),
 }));
 

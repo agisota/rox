@@ -86,5 +86,8 @@ export interface ChatMessageListProps {
 		request: UserMessageRestartRequest,
 	) => Promise<void>;
 	onRestartUserMessage: (request: UserMessageRestartRequest) => Promise<void>;
+	onShareConversation?: () => void | Promise<void>;
+	isSharingConversation?: boolean;
+	lastSharedConversationUrl?: string | null;
 	footerScrollTrigger?: number;
 }

@@ -477,6 +477,13 @@
       "when": 1781097910621,
       "tag": "0067_vibe_usage_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1781531840425,
+      "tag": "0068_add_public_shares",
+      "breakpoints": true
     }
   ]
 }

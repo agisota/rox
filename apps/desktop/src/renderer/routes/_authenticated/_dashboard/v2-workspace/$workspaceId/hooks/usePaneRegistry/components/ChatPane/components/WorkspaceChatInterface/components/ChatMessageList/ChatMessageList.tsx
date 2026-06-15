@@ -6,7 +6,9 @@ import {
 	ConversationScrollButton,
 	useConversationContext,
 } from "@rox/ui/ai-elements/conversation";
+import { Button } from "@rox/ui/button";
 import { AnimatePresence } from "framer-motion";
+import { CheckIcon, Loader2Icon, Share2Icon } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 import { MessageRow } from "renderer/motion";
@@ -48,6 +50,24 @@ function ScrollAnchor({ trigger }: { trigger: number }) {
 	return null;
 }
 
+function ShareConversationIcon({
+	isSharing,
+	hasSharedUrl,
+}: {
+	isSharing: boolean;
+	hasSharedUrl: boolean;
+}) {
+	if (isSharing) {
+		return <Loader2Icon className="size-3.5 animate-spin" />;
+	}
+
+	if (hasSharedUrl) {
+		return <CheckIcon className="size-3.5" />;
+	}
+
+	return <Share2Icon className="size-3.5" />;
+}
+
 export function ChatMessageList({
 	messages,
 	isFocused,
@@ -74,6 +94,9 @@ export function ChatMessageList({
 	onCancelEditUserMessage,
 	onSubmitEditedUserMessage,
 	onRestartUserMessage,
+	onShareConversation,
+	isSharingConversation = false,
+	lastSharedConversationUrl = null,
 	footerScrollTrigger = 0,
 }: ChatMessageListProps) {
 	const messageListRef = useRef<HTMLDivElement>(null);
@@ -165,6 +188,15 @@ export function ChatMessageList({
 		isConversationLoading && !isAwaitingAssistant && !hasConversationContent;
 	const shouldShowEmptyState =
 		!shouldShowConversationLoading && !hasConversationContent;
+	const shouldShowShareButton = Boolean(
+		onShareConversation && sessionId && hasConversationContent,
+	);
+	let shareButtonLabel = "Share";
+	if (isSharingConversation) {
+		shareButtonLabel = "Sharing";
+	} else if (lastSharedConversationUrl) {
+		shareButtonLabel = "Copied";
+	}
 
 	const inlineToolStateProps = {
 		pendingPlanApproval,
@@ -177,6 +209,27 @@ export function ChatMessageList({
 		<Conversation className="flex-1">
 			<ConversationContent className="mx-auto w-full max-w-[680px] py-6">
 				<div ref={messageListRef} className="flex flex-col gap-6">
+					{shouldShowShareButton ? (
+						<div className="-mb-2 flex justify-end">
+							<Button
+								type="button"
+								variant="secondary"
+								size="xs"
+								className="min-w-24"
+								disabled={isSharingConversation}
+								aria-label="Share conversation"
+								onClick={() => {
+									void onShareConversation?.();
+								}}
+							>
+								<ShareConversationIcon
+									isSharing={isSharingConversation}
+									hasSharedUrl={Boolean(lastSharedConversationUrl)}
+								/>
+								{shareButtonLabel}
+							</Button>
+						</div>
+					) : null}
 					{shouldShowConversationLoading ? (
 						<ConversationLoadingState />
 					) : shouldShowEmptyState ? (
