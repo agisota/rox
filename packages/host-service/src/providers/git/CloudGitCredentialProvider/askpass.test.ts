@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
-import { writeTempAskpass } from "./askpass";
+import { writeTempAskpass } from "../askpass";
 
 describe("writeTempAskpass", () => {
 	it("writes an askpass script that echoes a valid token", async () => {

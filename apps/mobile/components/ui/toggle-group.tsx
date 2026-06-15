@@ -17,8 +17,9 @@ function ToggleGroup({
 	size,
 	children,
 	...props
-}: React.ComponentProps<typeof ToggleGroupPrimitive.Root> &
-	VariantProps<typeof toggleVariants>) {
+}: ToggleGroupPrimitive.RootProps &
+	VariantProps<typeof toggleVariants> &
+	React.RefAttributes<ToggleGroupPrimitive.RootRef>) {
 	return (
 		<ToggleGroupPrimitive.Root
 			className={cn(
@@ -54,8 +55,9 @@ function ToggleGroupItem({
 	isFirst,
 	isLast,
 	...props
-}: React.ComponentProps<typeof ToggleGroupPrimitive.Item> &
-	VariantProps<typeof toggleVariants> & {
+}: ToggleGroupPrimitive.ItemProps &
+	VariantProps<typeof toggleVariants> &
+	React.RefAttributes<ToggleGroupPrimitive.ItemRef> & {
 		isFirst?: boolean;
 		isLast?: boolean;
 	}) {

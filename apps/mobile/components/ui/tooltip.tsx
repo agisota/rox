@@ -20,9 +20,10 @@ function TooltipContent({
 	portalHost,
 	side = "top",
 	...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content> & {
-	portalHost?: string;
-}) {
+}: TooltipPrimitive.ContentProps &
+	React.RefAttributes<TooltipPrimitive.ContentRef> & {
+		portalHost?: string;
+	}) {
 	return (
 		<TooltipPrimitive.Portal hostName={portalHost}>
 			<FullWindowOverlay>

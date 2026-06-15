@@ -19,7 +19,8 @@ function HoverCardContent({
 	align = "center",
 	sideOffset = 4,
 	...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Content>) {
+}: HoverCardPrimitive.ContentProps &
+	React.RefAttributes<HoverCardPrimitive.ContentRef>) {
 	return (
 		<HoverCardPrimitive.Portal>
 			<FullWindowOverlay>

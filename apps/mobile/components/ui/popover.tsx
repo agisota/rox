@@ -20,9 +20,10 @@ function PopoverContent({
 	sideOffset = 4,
 	portalHost,
 	...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content> & {
-	portalHost?: string;
-}) {
+}: PopoverPrimitive.ContentProps &
+	React.RefAttributes<PopoverPrimitive.ContentRef> & {
+		portalHost?: string;
+	}) {
 	return (
 		<PopoverPrimitive.Portal hostName={portalHost}>
 			<FullWindowOverlay>

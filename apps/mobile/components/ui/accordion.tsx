@@ -15,9 +15,9 @@ import { cn } from "@/lib/utils";
 
 function Accordion({
 	children,
-	ref,
 	...props
-}: Omit<React.ComponentProps<typeof AccordionPrimitive.Root>, "asChild">) {
+}: Omit<AccordionPrimitive.RootProps, "asChild"> &
+	React.RefAttributes<AccordionPrimitive.RootRef>) {
 	return (
 		<LayoutAnimationConfig skipEntering>
 			<AccordionPrimitive.Root
@@ -37,7 +37,8 @@ function AccordionItem({
 	className,
 	value,
 	...props
-}: React.ComponentProps<typeof AccordionPrimitive.Item>) {
+}: AccordionPrimitive.ItemProps &
+	React.RefAttributes<AccordionPrimitive.ItemRef>) {
 	return (
 		<AccordionPrimitive.Item
 			className={cn(
@@ -65,9 +66,9 @@ function AccordionTrigger({
 	className,
 	children,
 	...props
-}: React.ComponentProps<typeof AccordionPrimitive.Trigger> & {
+}: AccordionPrimitive.TriggerProps & {
 	children?: React.ReactNode;
-}) {
+} & React.RefAttributes<AccordionPrimitive.TriggerRef>) {
 	const { isExpanded } = AccordionPrimitive.useItemContext();
 
 	const progress = useDerivedValue(
@@ -126,7 +127,8 @@ function AccordionContent({
 	className,
 	children,
 	...props
-}: React.ComponentProps<typeof AccordionPrimitive.Content>) {
+}: AccordionPrimitive.ContentProps &
+	React.RefAttributes<AccordionPrimitive.ContentRef>) {
 	const { isExpanded } = AccordionPrimitive.useItemContext();
 	return (
 		<TextClassContext.Provider value="text-sm">

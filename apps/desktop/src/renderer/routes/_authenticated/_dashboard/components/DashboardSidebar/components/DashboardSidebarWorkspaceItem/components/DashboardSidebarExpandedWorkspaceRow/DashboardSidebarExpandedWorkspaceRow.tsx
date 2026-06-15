@@ -37,6 +37,7 @@ const PR_STATE_LABEL: Record<
 	merged: "Влит",
 	closed: "Закрыт",
 	draft: "Черновик",
+	queued: "В очереди",
 };
 
 interface DashboardSidebarExpandedWorkspaceRowProps

@@ -1,4 +1,4 @@
-import { Slot } from "@rn-primitives/slot";
+import * as Slot from "@rn-primitives/slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 import { Platform, Text as RNText, type Role } from "react-native";
@@ -76,12 +76,12 @@ function Text({
 	variant = "default",
 	...props
 }: React.ComponentProps<typeof RNText> &
-	React.RefAttributes<typeof RNText> &
-	TextVariantProps & {
+	TextVariantProps &
+	React.RefAttributes<RNText> & {
 		asChild?: boolean;
 	}) {
 	const textClass = React.useContext(TextClassContext);
-	const Component = asChild ? Slot : RNText;
+	const Component = asChild ? Slot.Text : RNText;
 	return (
 		<Component
 			className={cn(textVariants({ variant }), textClass, className)}
