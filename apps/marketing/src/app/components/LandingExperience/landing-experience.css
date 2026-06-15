@@ -175,19 +175,42 @@
  * ──────────────────────────────────────────────────────────────────────── */
 
 .rox-landing {
+	position: relative;
 	display: flex;
 	justify-content: center;
 	min-height: 100svh;
-	background: var(--rox-bg);
+	overflow: hidden;
+	background:
+		radial-gradient(
+			120% 70% at 50% -8%,
+			rgba(210, 86, 17, 0.14),
+			rgba(210, 86, 17, 0.04) 32%,
+			transparent 62%
+		),
+		var(--rox-bg);
+}
+
+/* Fine film grain for premium depth without flattening the minimalism. */
+.rox-landing::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	opacity: 0.05;
+	mix-blend-mode: overlay;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 .rox-landing__main {
+	position: relative;
+	z-index: 1;
 	width: 100%;
 	max-width: 680px;
-	padding: clamp(64px, 12vh, 140px) 20px 96px;
+	padding: clamp(80px, 16vh, 180px) 24px 128px;
 	display: flex;
 	flex-direction: column;
-	gap: 24px;
+	gap: 22px;
 }
 
 .rox-landing__brand {
@@ -202,24 +225,29 @@
 }
 
 .rox-landing h1 {
-	font-size: clamp(1.75rem, 6vw, 2.5rem);
+	font-size: clamp(2.1rem, 6.5vw, 3.3rem);
 	font-weight: 700;
-	line-height: 1.15;
+	line-height: 1.08;
+	letter-spacing: -0.01em;
+	margin: 4px 0 8px;
 	cursor: default;
 	color: var(--rox-fg-1);
 }
 
 .rox-landing h2 {
-	font-size: 1.25rem;
+	font-size: 1.4rem;
 	font-weight: 700;
 	line-height: 1.3;
+	letter-spacing: -0.005em;
+	margin-top: clamp(32px, 6vh, 64px);
 	cursor: default;
 	color: var(--rox-orange-1);
 }
 
 .rox-landing p {
-	font-size: 0.95rem;
-	line-height: 1.65;
+	font-size: 0.98rem;
+	line-height: 1.75;
+	max-width: 58ch;
 	color: var(--rox-fg-2);
 	cursor: default;
 }
@@ -250,11 +278,29 @@
 }
 
 .rox-landing__cta {
-	margin-top: 16px;
+	margin-top: 20px;
 	min-height: 96px;
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 18px;
+}
+
+.rox-landing__secondary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	width: fit-content;
+	font-size: 0.88rem;
+	color: var(--rox-fg-3);
+	text-decoration: none;
+	transition:
+		color 0.2s,
+		gap 0.2s;
+}
+
+.rox-landing__secondary:hover {
+	color: var(--rox-orange-1);
+	gap: 10px;
 }
 
 /* ────────────────────────────────────────────────────────────────────────

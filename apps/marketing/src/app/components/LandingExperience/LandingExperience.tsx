@@ -1,6 +1,6 @@
 "use client";
 
-import { DOWNLOAD_URL_MAC_ARM64 } from "@rox/shared/constants";
+import { COMPANY, DOWNLOAD_URL_MAC_ARM64 } from "@rox/shared/constants";
 import { useCallback, useState } from "react";
 import { DownloadSnapX } from "./components/DownloadSnapX";
 import { GitHubStarButton } from "./components/GitHubStarButton";
@@ -55,7 +55,17 @@ export function LandingExperience({ starCount }: LandingExperienceProps) {
 					<GitHubStarButton targetCount={starCount} />
 				</div>
 			) : (
-				<DownloadSnapX onDownloadStart={handleDownloadStart} />
+				<>
+					<DownloadSnapX onDownloadStart={handleDownloadStart} />
+					<a
+						href={COMPANY.GITHUB_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="rox-landing__secondary"
+					>
+						Открыть на GitHub →
+					</a>
+				</>
 			)}
 		</ScrambleLanding>
 	);
