@@ -388,4 +388,67 @@ describe("agentConfigsRouter", () => {
 			);
 		});
 	});
+
+	describe("heal legacy brand labels on list()", () => {
+		const bundledOmpLabel =
+			getDefaultSeedPresets().find((p) => p.presetId === "omp")?.label ?? "Rox";
+
+		it("rewrites a stale 'Oh My Pi' built-in label to the bundled label", async () => {
+			const caller = createCaller();
+			const seeded = await caller.list();
+			const omp = seeded.find((row) => row.presetId === "omp");
+			if (!omp) throw new Error("expected omp to be seeded");
+
+			// Simulate a host seeded before the Rox rebrand.
+			await caller.update({ id: omp.id, patch: { label: "Oh My Pi" } });
+
+			const healed = await caller.list();
+			expect(healed.find((row) => row.presetId === "omp")?.label).toBe(
+				bundledOmpLabel,
+			);
+		});
+
+		it("heals legacy labels case- and separator-insensitively", async () => {
+			const caller = createCaller();
+			const seeded = await caller.list();
+			const omp = seeded.find((row) => row.presetId === "omp");
+			if (!omp) throw new Error("expected omp to be seeded");
+
+			await caller.update({ id: omp.id, patch: { label: "oh-my-pi" } });
+
+			const healed = await caller.list();
+			expect(healed.find((row) => row.presetId === "omp")?.label).toBe(
+				bundledOmpLabel,
+			);
+		});
+
+		it("preserves a genuine user rename that is not a legacy brand", async () => {
+			const caller = createCaller();
+			const seeded = await caller.list();
+			const omp = seeded.find((row) => row.presetId === "omp");
+			if (!omp) throw new Error("expected omp to be seeded");
+
+			await caller.update({ id: omp.id, patch: { label: "My Rox" } });
+
+			const after = await caller.list();
+			expect(after.find((row) => row.presetId === "omp")?.label).toBe("My Rox");
+		});
+
+		it("does not touch custom (non-builtin) rows even if labelled legacy", async () => {
+			const caller = createCaller();
+			await caller.list();
+			const custom = await caller.add({
+				label: "Oh My Pi",
+				command: "whatever",
+				args: [],
+				promptTransport: "argv",
+				promptArgs: [],
+				env: {},
+				presetId: "custom",
+			});
+
+			const after = await caller.list();
+			expect(after.find((row) => row.id === custom.id)?.label).toBe("Oh My Pi");
+		});
+	});
 });

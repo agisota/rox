@@ -70,7 +70,7 @@ export function GlassSection() {
 			<div className="flex items-center justify-between gap-6 p-4">
 				<div className="min-w-0 flex-1">
 					<Label htmlFor="glass-enabled" className="text-sm font-medium">
-						Стеклянные поверхности
+						Остекление
 					</Label>
 					<div className="text-xs text-muted-foreground">
 						Сделать панели полупрозрачными с размытым фоном.

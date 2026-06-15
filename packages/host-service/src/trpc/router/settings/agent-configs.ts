@@ -105,6 +105,23 @@ function rowFromPreset(
 	};
 }
 
+/**
+ * Stale third-party brand labels the built-in `omp` agent shipped with before
+ * the Rox rebrand. Hosts seeded while these were live have the old name
+ * persisted in `host_agent_configs.label`, so it keeps showing in the agent
+ * bar even though the bundled catalog now reads "Rox". Match is
+ * case-insensitive and ignores `-`/spaces so `oh-my-pi`, `Oh My Pi`,
+ * `Oh My R1`, etc. all heal.
+ */
+const LEGACY_BUILTIN_BRAND_LABELS: ReadonlySet<string> = new Set([
+	"ohmypi",
+	"ohmyr1",
+]);
+
+function normalizeBrandLabel(label: string): string {
+	return label.toLowerCase().replace(/[\s-]+/g, "");
+}
+
 function listOrdered(db: HostDb): HostAgentConfigRow[] {
 	return db
 		.select()
@@ -148,13 +165,51 @@ function reconcileSeedPresets(db: HostDb): HostAgentConfigRow[] {
 }
 
 /**
+ * Heal stale third-party brand labels left on built-in agent rows by hosts
+ * seeded before the Rox rebrand (see {@link LEGACY_BUILTIN_BRAND_LABELS}). Only
+ * rows whose `presetId` is a bundled built-in AND whose persisted label still
+ * matches a known legacy brand are rewritten to the current bundled label, so
+ * genuine user renames are never clobbered.
+ */
+function healLegacyBrandLabels(db: HostDb): HostAgentConfigRow[] {
+	const existing = listOrdered(db);
+	if (existing.length === 0) return existing;
+	const bundledLabelByPresetId = new Map(
+		getDefaultSeedPresets().map((preset) => [preset.presetId, preset.label]),
+	);
+	const stale = existing.filter((row) => {
+		const bundledLabel = bundledLabelByPresetId.get(row.presetId);
+		return (
+			bundledLabel !== undefined &&
+			row.label !== bundledLabel &&
+			LEGACY_BUILTIN_BRAND_LABELS.has(normalizeBrandLabel(row.label))
+		);
+	});
+	if (stale.length === 0) return existing;
+	const now = Date.now();
+	db.transaction((tx) => {
+		for (const row of stale) {
+			const bundledLabel = bundledLabelByPresetId.get(row.presetId);
+			if (bundledLabel === undefined) continue;
+			tx.update(hostAgentConfigs)
+				.set({ label: bundledLabel, updatedAt: now })
+				.where(eq(hostAgentConfigs.id, row.id))
+				.run();
+		}
+	});
+	return listOrdered(db);
+}
+
+/**
  * Seed on first run, then reconcile so an upgraded host gains newly bundled
- * presets without losing its existing configuration.
+ * presets without losing its existing configuration, and heal stale built-in
+ * brand labels left over from the pre-rebrand catalog.
  */
 function ensureSeededAndReconciled(db: HostDb): HostAgentConfigRow[] {
 	const seeded = seedDefaultsIfEmpty(db);
 	if (seeded.length === 0) return seeded;
-	return reconcileSeedPresets(db);
+	reconcileSeedPresets(db);
+	return healLegacyBrandLabels(db);
 }
 
 const updatePatchSchema = z
