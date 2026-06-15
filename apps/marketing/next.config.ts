@@ -89,6 +89,9 @@ const config: NextConfig = {
 	},
 
 	skipTrailingSlashRedirect: true,
+
+	// Hide the Next.js dev overlay/indicator badge.
+	devIndicators: false,
 };
 
 export default withSentryConfig(config, {

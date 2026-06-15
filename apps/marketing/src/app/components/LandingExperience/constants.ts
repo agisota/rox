@@ -1,9 +1,9 @@
 /**
  * Content for the Rox One anime.js landing experience.
  *
- * Every string is real Rox product copy (RU). The scramble text reflects
- * shipped capabilities, written benefit-first to read as a selling page rather
- * than a feature dump.
+ * Copy is real Rox product messaging (RU), written benefit-first and in plain
+ * language so the scramble text reads as a selling page rather than a feature
+ * dump.
  */
 
 /** Phases of the landing experience state machine. */
@@ -11,11 +11,41 @@ export type LandingPhase = "intro" | "main" | "downloading";
 
 /* ── ① Intro overlay (vEyYdXN) ─────────────────────────────────────────── */
 
-/** Word repeated across the opening scramble grid (slide 1). */
+/** Centre word of the opening grid (the "native" language), collapses to brand. */
 export const INTRO_LEAD_WORD = "Представляем";
 
-/** Final brand reveal on slide 1. */
-export const INTRO_BRAND = "Rox";
+/**
+ * "Introducing" across many languages — the intro grid fills the screen with
+ * these so the reveal reads as a global launch rather than one repeated word.
+ */
+export const INTRO_LANGS: ReadonlyArray<string> = [
+	"Introducing",
+	"Представляем",
+	"Presentamos",
+	"Présentation",
+	"Vorstellung",
+	"紹介します",
+	"介绍",
+	"소개합니다",
+	"Apresentando",
+	"Presentiamo",
+	"نقدّم",
+	"प्रस्तुत है",
+	"Tanıtıyoruz",
+	"Wprowadzamy",
+	"Giới thiệu",
+	"Memperkenalkan",
+	"การแนะนำ",
+	"Представляємо",
+	"Voici",
+	"يقدّم",
+	"Introducing",
+	"Представляем",
+	"紹介",
+];
+
+/** Final brand reveal on slide 1 (uppercase wordmark). */
+export const INTRO_BRAND = "ROX";
 
 /** Closing line of the intro. */
 export const INTRO_TAGLINE = "Создано для эпохи AI-агентов";
@@ -43,29 +73,29 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 
 /* ── ② Scramble landing document (gbLOvrw) ─────────────────────────────── */
 
-export const LANDING_HEADLINE = "Кодьте сотней AI-агентов сразу";
+export const LANDING_HEADLINE = "Кодьте в сто рук";
 
 export const LANDING_INTRO_PARAGRAPH =
-	"Rox превращает вас в команду из 100+ кодинг-агентов прямо на вашей машине. Пока одни пишут фичи, другие чинят баги и рефакторят — а вы лишь проверяете и сливаете лучшее. Наведите на строку, чтобы пересобрать её.";
+	"ROX запускает 100+ AI-агентов параллельно на вашем компьютере. Они пишут фичи, чинят баги и рефакторят одновременно — а вы проверяете и принимаете только лучшее. Наведите на строку, чтобы пересобрать её.";
 
-export const LANDING_FEATURES_HEADING = "Почему Rox";
+export const LANDING_FEATURES_HEADING = "Почему ROX";
 
-/** Benefit-first bullets — verbatim Rox value props, ideal for per-line scramble. */
+/** Plain-language, benefit-first value props — ideal for per-line scramble. */
 export const LANDING_FEATURES: ReadonlyArray<string> = [
-	"Успевайте за день то, на что уходила неделя — десятки агентов работают разом",
-	"Любимый агент остаётся с вами: Claude Code, OpenCode, Cursor, Codex, Gemini",
-	"Ноль конфликтов: каждая задача изолирована в своём git worktree",
-	"Вы — финальный фильтр: проверяете и сливаете только то, что готово",
-	"Один клик — worktree открыт в VS Code, Cursor, Xcode или JetBrains",
-	"Переключайтесь между агентами мгновенно, не теряя контекст",
+	"Неделя работы — за день: десятки агентов кодят одновременно",
+	"Любой агент на выбор: Claude Code, Cursor, Codex, Gemini, OpenCode",
+	"Агенты не мешают друг другу — каждый в своей изолированной ветке",
+	"Вы решаете, что попадёт в проект — принимаете только готовое",
+	"Открывайте результат в своём редакторе одним кликом: VS Code, Cursor, Xcode",
+	"Переключайтесь между задачами мгновенно, ничего не теряя",
 ];
 
 export const LANDING_HOW_HEADING = "Как это работает";
 
 export const LANDING_HOW_PARAGRAPH =
-	"Ставьте задачу за задачей, не дожидаясь. Каждый агент работает в своей ветке асинхронно, а Rox зовёт вас, только когда нужно решение. Вы дирижируете — агенты исполняют.";
+	"Ставьте задачи одну за другой, не дожидаясь. Каждый агент работает сам в своей ветке, а ROX зовёт вас, только когда нужно ваше решение. Вы дирижируете — агенты пишут код.";
 
-export const LANDING_DOWNLOAD_HEADING = "Начните бесплатно прямо сейчас";
+export const LANDING_DOWNLOAD_HEADING = "Попробуйте ROX бесплатно";
 
 /* ── ③ Download Snap X (qEBgEPz) ───────────────────────────────────────── */
 

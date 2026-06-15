@@ -67,7 +67,7 @@ export function CookieConsent() {
 									Только аналитика, без рекламы
 								</p>
 								<p className="text-[13px] leading-relaxed text-white/55">
-									Используем аналитические cookies, чтобы делать Rox лучше.
+									Используем аналитические cookies, чтобы делать ROX лучше.
 									Никакого трекинга ради рекламы.
 								</p>
 							</div>

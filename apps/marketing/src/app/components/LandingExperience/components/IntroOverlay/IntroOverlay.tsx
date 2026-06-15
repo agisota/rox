@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import {
 	INTRO_BRAND,
 	INTRO_FEATURE_TAGS,
+	INTRO_LANGS,
 	INTRO_LEAD_WORD,
 	INTRO_TAGLINE,
 } from "../../constants";
@@ -16,19 +17,25 @@ interface IntroOverlayProps {
 
 /**
  * Lead-word grid for slide 1: a diamond distribution (2-3-4-5-4-3-2) that fills
- * the screen with the repeated word, with the centered word singled out for the
- * brand reveal. Precomputed with stable string ids so React keys never use the
- * array index (keeps Biome's noArrayIndexKey happy).
+ * the screen with "Introducing" across many languages, with the centered word
+ * singled out for the brand reveal. Precomputed with stable string ids so React
+ * keys never use the array index (keeps Biome's noArrayIndexKey happy).
  */
 const SLIDE_ONE_GRID = [2, 3, 4, 5, 4, 3, 2] as const;
 const CENTER_ROW_INDEX = 3;
 const CENTER_COL_INDEX = 2;
+
+let langCursor = 0;
 const SLIDE_ONE_ROWS = SLIDE_ONE_GRID.map((count, rowIndex) => ({
 	id: `intro-row-${rowIndex}`,
-	cells: Array.from({ length: count }, (_, colIndex) => ({
-		id: `intro-cell-${rowIndex}-${colIndex}`,
-		isCenter: rowIndex === CENTER_ROW_INDEX && colIndex === CENTER_COL_INDEX,
-	})),
+	cells: Array.from({ length: count }, (_, colIndex) => {
+		const isCenter =
+			rowIndex === CENTER_ROW_INDEX && colIndex === CENTER_COL_INDEX;
+		const word = isCenter
+			? INTRO_LEAD_WORD
+			: INTRO_LANGS[langCursor++ % INTRO_LANGS.length];
+		return { id: `intro-cell-${rowIndex}-${colIndex}`, isCenter, word };
+	}),
 }));
 
 /** anime.js grid hint for the radial scramble wave across the lead-word grid. */
@@ -43,7 +50,7 @@ const CURSOR_HEAVY = "░▒▓█";
 const CURSOR_LIGHT = "░▒▓";
 
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
-const SAFETY_TIMEOUT_MS = 14_000;
+const SAFETY_TIMEOUT_MS = 18_000;
 
 /** Split the flat feature list into the grid rows rendered on slide 2. */
 function chunkFeatures(): ReadonlyArray<
@@ -63,10 +70,11 @@ function chunkFeatures(): ReadonlyArray<
 }
 
 /**
- * Fullscreen one-shot intro that fills the screen with «Представляем», collapses
- * it into the Rox brand (with the logo revealed above), fans out the feature
- * tags, then resolves to the tagline before signalling completion. Ports Julian
- * Garnier's "Scramble Text timeline" CodePen onto the Rox palette.
+ * Fullscreen one-shot intro that fills the screen with «Introducing» in many
+ * languages, collapses it into the ROX wordmark (with the logo revealed beside
+ * it), fans out the feature tags, then resolves to the tagline before
+ * signalling completion. Ports Julian Garnier's "Scramble Text timeline"
+ * CodePen onto the Rox palette.
  */
 export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -114,7 +122,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			onComplete: finishOnce,
 		});
 
-		// ── Slide 1: lead-word grid collapses into the Rox brand ───────────
+		// ── Slide 1: multilingual word grid collapses into the ROX wordmark ──
 		timeline
 			.add(slide1, {
 				opacity: { to: 1, duration: 250, ease: "linear" },
@@ -151,7 +159,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 						perturbation: 0.25,
 					}),
 				},
-				stagger([200, 750], {
+				stagger([200, 800], {
 					grid: [GRID_COLS, GRID_ROWS],
 					from: "center",
 					ease: "out(3)",
@@ -177,13 +185,13 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					grid: [GRID_COLS, GRID_ROWS],
 					from: "center",
 					ease: "in(2)",
-					start: "<+=150",
+					start: "<+=200",
 				}),
 			)
 			.add(
 				slide1Center,
 				{
-					scale: 2,
+					scale: 2.4,
 					color: { to: "var(--rox-c-2)" },
 					ease: "inOutExpo",
 					duration: 1500,
@@ -198,22 +206,22 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Reveal the brand logo above the word as it settles into "Rox".
+			// Reveal the brand logo just above the wordmark as it settles.
 			.add(logo, { opacity: { to: 1 }, ease: "out(2)", duration: 700 }, "<<")
 			.add(
 				logoImg,
 				{
 					scale: [0.8, 1],
-					translateY: [16, 0],
+					translateY: [18, 0],
 					ease: "out(3)",
-					duration: 850,
+					duration: 900,
 				},
 				"<<",
 			)
 			.add(
 				slide1Center,
 				{
-					scale: 2.2,
+					scale: 2.6,
 					color: "var(--rox-fg-1)",
 					ease: "inOutExpo",
 					duration: 1150,
@@ -227,11 +235,13 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					}),
 				},
 				"<+=300",
-			);
+			)
+			// Hold the brand lock-up on screen for a beat.
+			.add(slide1Center, { scale: 2.6, duration: 900 }, "<+=200");
 
-		// ── Slide 2: feature tags scramble in across the grid ──────────────
+		// ── Slide 2: feature tags scramble in across the grid (held ~2× longer)
 		timeline
-			.add(root, { backgroundColor: "var(--rox-orange-5)" }, "<+=400")
+			.add(root, { backgroundColor: "var(--rox-orange-5)" }, "<+=300")
 			.add(logo, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
 			.set(slide1, { opacity: 0 }, "<<")
 			.set(slide2, { opacity: 1 }, "<<")
@@ -241,24 +251,39 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					innerHTML: scrambleText({
 						override: " ",
 						from: "center",
-						duration: 500,
+						duration: 600,
 						revealDelay: 250,
 						cursor: CURSOR_LIGHT,
 						perturbation: 0.5,
 					}),
 				},
-				stagger([0, 1000], {
+				stagger([0, 1400], {
 					grid: [Math.max(...FEATURE_ROW_SIZES), FEATURE_ROW_SIZES.length],
 					from: "center",
 					ease: "out(3)",
 					start: "<<+=250",
 					reversed: true,
 				}),
+			)
+			// Re-scramble the tags in place once, to keep the screen alive longer.
+			.add(
+				slide2Words,
+				{
+					innerHTML: scrambleText({
+						override: false,
+						from: "random",
+						duration: 700,
+						settleDuration: 400,
+						cursor: CURSOR_LIGHT,
+						perturbation: 0.4,
+					}),
+				},
+				stagger([0, 900], { from: "center", start: "<+=1600" }),
 			);
 
 		// ── Slide 3: closing tagline ───────────────────────────────────────
 		timeline
-			.add(root, { backgroundColor: "var(--rox-bg)" }, "<+=900")
+			.add(root, { backgroundColor: "var(--rox-bg)" }, "<+=1700")
 			.set(slide2, { opacity: 0 }, "<<")
 			.set(slide3, { opacity: 1 }, "<<")
 			.add(
@@ -312,11 +337,11 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 							{row.cells.map((cell) =>
 								cell.isCenter ? (
 									<p key={cell.id} className="rox-intro__center">
-										{INTRO_LEAD_WORD}
+										{cell.word}
 									</p>
 								) : (
 									<p key={cell.id} className="rox-intro__flank">
-										{INTRO_LEAD_WORD}
+										{cell.word}
 									</p>
 								),
 							)}
