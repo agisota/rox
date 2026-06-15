@@ -9,6 +9,10 @@ const publicRoutes = [
 	"/api/auth/desktop",
 	"/accept-invitation",
 	"/cli/auth/code",
+	// Public chat/artifact shares (/s/<slug>) — anonymous viewers must reach the
+	// share page without being bounced to /sign-in. The page itself is a public
+	// DB read (app/s/[slug]/page.tsx). Do NOT remove without breaking sharing.
+	"/s",
 ];
 
 function matchesRoute(pathname: string, route: string): boolean {
