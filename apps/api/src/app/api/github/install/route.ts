@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 	});
 
 	const installUrl = new URL(
-		"https://github.com/apps/rox-app/installations/new",
+		`https://github.com/apps/${env.GH_APP_SLUG}/installations/new`,
 	);
 	installUrl.searchParams.set("state", state);
 	installUrl.searchParams.set(
