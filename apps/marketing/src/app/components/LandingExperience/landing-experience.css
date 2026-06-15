@@ -51,9 +51,9 @@
 	/* SF Pro family: Display for headings, SF Mono for body/scramble (keeps the
 	 * scramble glyphs monospaced so they don't jitter while resolving). */
 	--rox-font-display:
-		"SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+		"SF Pro Display", "SF Pro Text", -apple-system, blinkmacsystemfont,
 		system-ui, sans-serif;
-	--rox-font-mono: "SF Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
+	--rox-font-mono: "SF Mono", "SFMono-Regular", ui-monospace, menlo, monospace;
 
 	color: var(--rox-fg-1);
 	font-family: var(--rox-font-mono);

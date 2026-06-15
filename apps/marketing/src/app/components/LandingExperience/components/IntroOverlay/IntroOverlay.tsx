@@ -52,6 +52,9 @@ const CURSOR_LIGHT = "░▒▓";
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
 const SAFETY_TIMEOUT_MS = 18_000;
 
+/** Delay the independent logo float until the one-shot reveal tween has landed. */
+const LOGO_FLOAT_DELAY_MS = 2_200;
+
 /** Split the flat feature list into the grid rows rendered on slide 2. */
 function chunkFeatures(): ReadonlyArray<
 	ReadonlyArray<{ text: string; color: number }>
@@ -324,20 +327,31 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		// Subtle "alive" float once the logo has landed: the mark drifts ±4px and
 		// the halo breathes. Tracked separately so we can revert it on cleanup
 		// (the timeline's own revert() won't touch these standalone loops).
-		const logoFloat = animate(logoImg, {
-			translateY: [-4, 4],
-			loop: true,
-			alternate: true,
-			duration: 3500,
-			ease: "inOut(2)",
-		});
+		const prefersReducedMotion = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		).matches;
+		let logoFloat: { revert: () => void } | null = null;
+		const logoFloatDelay = prefersReducedMotion
+			? undefined
+			: window.setTimeout(() => {
+					logoFloat = animate(logoImg, {
+						translateY: [-4, 4],
+						loop: true,
+						alternate: true,
+						duration: 3500,
+						ease: "inOut(2)",
+					});
+				}, LOGO_FLOAT_DELAY_MS);
 
 		// Belt-and-braces: guarantee completion even if a tween never settles.
 		const safety = window.setTimeout(finishOnce, SAFETY_TIMEOUT_MS);
 
 		return () => {
 			window.clearTimeout(safety);
-			logoFloat.revert();
+			if (logoFloatDelay !== undefined) {
+				window.clearTimeout(logoFloatDelay);
+			}
+			logoFloat?.revert();
 			timeline.pause();
 			timeline.revert();
 		};
