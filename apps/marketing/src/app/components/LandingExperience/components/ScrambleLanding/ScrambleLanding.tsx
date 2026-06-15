@@ -11,6 +11,7 @@ import {
 	LANDING_HOW_PARAGRAPH,
 	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
+import { RoxDivider } from "./components/RoxDivider";
 
 interface ScrambleLandingProps {
 	children?: React.ReactNode;
@@ -35,6 +36,9 @@ interface ScrambleLandingProps {
  */
 export function ScrambleLanding({ children }: ScrambleLandingProps) {
 	const containerRef = useRef<HTMLElement>(null);
+	const animationsRef = useRef<
+		Array<{ cancel?: () => void; revert?: () => void }>
+	>([]);
 
 	useEffect(() => {
 		const container = containerRef.current;
@@ -49,17 +53,33 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 		}
 
 		const cleanups: Array<() => void> = [];
+		const trackAnimation = <
+			T extends { cancel?: () => void; revert?: () => void },
+		>(
+			animation: T,
+		) => {
+			animationsRef.current.push(animation);
+			return animation;
+		};
+		const cleanupAnimations = () => {
+			for (const animation of animationsRef.current) {
+				animation.cancel?.();
+				animation.revert?.();
+			}
+			animationsRef.current = [];
+		};
 
 		// ── C. Living background: slow breathing of the brand glow ──────────
-		const glow = animate(container, {
-			"--rox-glow-a": [0.12, 0.2],
-			"--rox-glow-y": ["-8%", "-3%"],
-			loop: true,
-			alternate: true,
-			duration: 6000,
-			ease: "inOut(2)",
-		});
-		cleanups.push(() => glow.revert());
+		trackAnimation(
+			animate(container, {
+				"--rox-glow-a": [0.12, 0.2],
+				"--rox-glow-y": ["-8%", "-3%"],
+				loop: true,
+				alternate: true,
+				duration: 6000,
+				ease: "inOut(2)",
+			}),
+		);
 
 		// ── A. Scroll-reveal scramble (one-shot per line) + hover re-scramble
 		const scrambleEls = Array.from(
@@ -67,15 +87,17 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 		);
 
 		const revealScramble = (element: HTMLElement) => {
-			animate(element, {
-				innerHTML: scrambleText({
-					override: "",
-					duration: 750,
-					settleDuration: 250,
-					perturbation: 0.2,
-					cursor: "░▒▓█",
+			trackAnimation(
+				animate(element, {
+					innerHTML: scrambleText({
+						override: "",
+						duration: 750,
+						settleDuration: 250,
+						perturbation: 0.2,
+						cursor: "░▒▓█",
+					}),
 				}),
-			});
+			);
 		};
 
 		const revealObserver = new IntersectionObserver(
@@ -93,7 +115,9 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 		for (const element of scrambleEls) {
 			revealObserver.observe(element);
 			const replay = () => {
-				animate(element, { innerHTML: scrambleText({ duration: 500 }) });
+				trackAnimation(
+					animate(element, { innerHTML: scrambleText({ duration: 500 }) }),
+				);
 			};
 			element.addEventListener("pointerenter", replay);
 			element.addEventListener("pointerdown", replay);
@@ -112,11 +136,13 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 			(entries) => {
 				for (const entry of entries) {
 					if (entry.isIntersecting) {
-						animate(entry.target, {
-							strokeDashoffset: [1, 0],
-							ease: "inOut(3)",
-							duration: 900,
-						});
+						trackAnimation(
+							animate(entry.target, {
+								strokeDashoffset: [1, 0],
+								ease: "inOut(3)",
+								duration: 900,
+							}),
+						);
 						drawObserver.unobserve(entry.target);
 					}
 				}
@@ -132,6 +158,7 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 		return () => {
 			for (const cleanup of cleanups) cleanup();
+			cleanupAnimations();
 		};
 	}, []);
 
@@ -147,21 +174,7 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 				<p className="rox-scramble">{LANDING_INTRO_PARAGRAPH}</p>
 
-				<svg
-					className="rox-divider"
-					viewBox="0 0 1 1"
-					preserveAspectRatio="none"
-					aria-hidden="true"
-				>
-					<line
-						className="rox-divider__line"
-						x1="0"
-						y1="0.5"
-						x2="1"
-						y2="0.5"
-						pathLength="1"
-					/>
-				</svg>
+				<RoxDivider />
 
 				<h2 className="rox-scramble">{LANDING_FEATURES_HEADING}</h2>
 
@@ -173,41 +186,13 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 					))}
 				</ul>
 
-				<svg
-					className="rox-divider"
-					viewBox="0 0 1 1"
-					preserveAspectRatio="none"
-					aria-hidden="true"
-				>
-					<line
-						className="rox-divider__line"
-						x1="0"
-						y1="0.5"
-						x2="1"
-						y2="0.5"
-						pathLength="1"
-					/>
-				</svg>
+				<RoxDivider />
 
 				<h2 className="rox-scramble">{LANDING_HOW_HEADING}</h2>
 
 				<p className="rox-scramble">{LANDING_HOW_PARAGRAPH}</p>
 
-				<svg
-					className="rox-divider"
-					viewBox="0 0 1 1"
-					preserveAspectRatio="none"
-					aria-hidden="true"
-				>
-					<line
-						className="rox-divider__line"
-						x1="0"
-						y1="0.5"
-						x2="1"
-						y2="0.5"
-						pathLength="1"
-					/>
-				</svg>
+				<RoxDivider />
 
 				<h2 className="rox-scramble">{LANDING_DOWNLOAD_HEADING}</h2>
 

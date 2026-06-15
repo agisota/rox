@@ -48,8 +48,8 @@ export default async function Image({
 	const post = getBlogPost(slug);
 	const fontData = await interBold;
 	const logoDataUri = readFileAsDataUri({
-		filePath: "title.svg",
-		mime: "image/svg+xml",
+		filePath: "rox-logo-light.png",
+		mime: "image/png",
 	});
 
 	if (!post) {

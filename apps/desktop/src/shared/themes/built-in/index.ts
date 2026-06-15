@@ -4,17 +4,18 @@ import { darkTheme } from "./ember";
 import { lightTheme } from "./light";
 import { monokaiTheme } from "./monokai";
 
-const libraryDefaultTheme = (generatedThemes as Theme[]).find(
+const blackMetalDarkFuneralThemeSource = (generatedThemes as Theme[]).find(
 	(theme) => theme.id === "black-metal-dark-funeral",
 );
 
-export const blackMetalDarkFuneralTheme: Theme = libraryDefaultTheme
-	? {
-			...libraryDefaultTheme,
-			isBuiltIn: true,
-			isLibrary: true,
-		}
-	: darkTheme;
+export const blackMetalDarkFuneralTheme: Theme =
+	blackMetalDarkFuneralThemeSource
+		? {
+				...blackMetalDarkFuneralThemeSource,
+				isBuiltIn: true,
+				isLibrary: true,
+			}
+		: darkTheme;
 /**
  * All built-in themes
  */
@@ -28,7 +29,7 @@ export const builtInThemes: Theme[] = [
 /**
  * Default theme ID
  */
-export const DEFAULT_THEME_ID = "black-metal-dark-funeral";
+export const DEFAULT_THEME_ID = "dark";
 
 /**
  * Get a built-in theme by ID

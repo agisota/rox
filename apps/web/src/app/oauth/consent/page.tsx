@@ -31,10 +31,10 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 				<header className="container mx-auto px-6 py-6">
 					<a href={env.NEXT_PUBLIC_MARKETING_URL}>
 						<Image
-							src="/title.svg"
+							src="/rox-logo-light.png"
 							alt="Rox"
-							width={140}
-							height={24}
+							width={26}
+							height={40}
 							priority
 						/>
 					</a>
@@ -75,7 +75,13 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 		<div className="relative flex min-h-screen flex-col">
 			<header className="container mx-auto px-6 py-6">
 				<a href={env.NEXT_PUBLIC_MARKETING_URL}>
-					<Image src="/title.svg" alt="Rox" width={140} height={24} priority />
+					<Image
+						src="/rox-logo-light.png"
+						alt="Rox"
+						width={26}
+						height={40}
+						priority
+					/>
 				</a>
 			</header>
 			<main className="flex flex-1 items-center justify-center">

@@ -177,8 +177,9 @@
 
 .rox-landing {
 	/* Animated by anime.js for a slow breathing glow (see ScrambleLanding). */
-	--rox-glow-a: 0.14;
+	--rox-glow-a: 0.12;
 	--rox-glow-y: -8%;
+
 	position: relative;
 	display: flex;
 	justify-content: center;
@@ -205,7 +206,7 @@
 }
 
 .rox-divider__line {
-	stroke: currentColor;
+	stroke: currentcolor;
 	stroke-width: 1;
 	vector-effect: non-scaling-stroke;
 }

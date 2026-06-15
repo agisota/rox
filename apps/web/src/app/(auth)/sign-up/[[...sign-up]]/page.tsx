@@ -5,29 +5,11 @@ import { Button } from "@rox/ui/button";
 import Link from "next/link";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 import { env } from "@/env";
 
 export default function SignUpPage() {
-	const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	const signUpWithGoogle = async () => {
-		setIsLoadingGoogle(true);
-		setError(null);
-
-		try {
-			await authClient.signIn.social({
-				provider: "google",
-				callbackURL: env.NEXT_PUBLIC_WEB_URL,
-			});
-		} catch (err) {
-			console.error("Sign up failed:", err);
-			setError("Не удалось зарегистрироваться. Попробуйте еще раз.");
-			setIsLoadingGoogle(false);
-		}
-	};
 
 	const signUpWithGithub = async () => {
 		setIsLoadingGithub(true);
@@ -45,7 +27,7 @@ export default function SignUpPage() {
 		}
 	};
 
-	const isLoading = isLoadingGoogle || isLoadingGithub;
+	const isLoading = isLoadingGithub;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -69,15 +51,6 @@ export default function SignUpPage() {
 				>
 					<FaGithub className="mr-2 size-4" />
 					{isLoadingGithub ? "Загрузка..." : "Зарегистрироваться через GitHub"}
-				</Button>
-				<Button
-					variant="outline"
-					disabled={isLoading}
-					onClick={signUpWithGoogle}
-					className="w-full"
-				>
-					<FcGoogle className="mr-2 size-4" />
-					{isLoadingGoogle ? "Загрузка..." : "Зарегистрироваться через Google"}
 				</Button>
 				<p className="text-muted-foreground px-8 text-center text-sm">
 					Нажимая «Продолжить», вы соглашаетесь с нашими{" "}

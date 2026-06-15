@@ -1,5 +1,11 @@
 import { db } from "@rox/db/client";
-import { members, users } from "@rox/db/schema";
+import {
+	members,
+	roxBalances,
+	roxLedger,
+	usageRequests,
+	users,
+} from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -39,6 +45,79 @@ export const userRouter = {
 		});
 
 		return memberships.map((m) => m.organization);
+	}),
+
+	accountOverview: protectedProcedure.query(async ({ ctx }) => {
+		const userId = ctx.session.user.id;
+		const organizationId = ctx.activeOrganizationId;
+
+		const [createdBalance] = await db
+			.insert(roxBalances)
+			.values({ userId })
+			.onConflictDoNothing()
+			.returning({
+				balanceRox: roxBalances.balanceRox,
+				updatedAt: roxBalances.updatedAt,
+			});
+
+		const balance =
+			createdBalance ??
+			(await db.query.roxBalances.findFirst({
+				where: eq(roxBalances.userId, userId),
+				columns: {
+					balanceRox: true,
+					updatedAt: true,
+				},
+			}));
+
+		const ledgerRows = await db
+			.select({
+				id: roxLedger.id,
+				deltaRox: roxLedger.deltaRox,
+				kind: roxLedger.kind,
+				usageRequestId: roxLedger.usageRequestId,
+				topupId: roxLedger.topupId,
+				createdAt: roxLedger.createdAt,
+			})
+			.from(roxLedger)
+			.where(eq(roxLedger.userId, userId))
+			.orderBy(desc(roxLedger.createdAt))
+			.limit(100);
+
+		const usageWhere = organizationId
+			? and(
+					eq(usageRequests.userId, userId),
+					eq(usageRequests.organizationId, organizationId),
+				)
+			: eq(usageRequests.userId, userId);
+
+		const usageRows = await db
+			.select({
+				id: usageRequests.id,
+				organizationId: usageRequests.organizationId,
+				chatSessionId: usageRequests.chatSessionId,
+				modelId: usageRequests.modelId,
+				tokensIn: usageRequests.tokensIn,
+				tokensOut: usageRequests.tokensOut,
+				usdCost: usageRequests.usdCost,
+				roxCost: usageRequests.roxCost,
+				trace: usageRequests.trace,
+				createdAt: usageRequests.createdAt,
+			})
+			.from(usageRequests)
+			.where(usageWhere)
+			.orderBy(desc(usageRequests.createdAt))
+			.limit(500);
+
+		return {
+			organizationId,
+			balance: {
+				balanceRox: balance?.balanceRox ?? "500",
+				updatedAt: balance?.updatedAt ?? new Date(),
+			},
+			ledger: ledgerRows,
+			usageRequests: usageRows,
+		};
 	}),
 
 	updateProfile: protectedProcedure

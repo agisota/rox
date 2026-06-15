@@ -63,6 +63,7 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 	const completedRef = useRef(false);
 	const springBackRef = useRef<AnimationLike | null>(null);
 	const [label, setLabel] = useState(SNAP_LABEL_IDLE);
+	const [progressValue, setProgressValue] = useState(0);
 
 	const triggerDownload = useCallback(() => {
 		const anchor = document.createElement("a");
@@ -93,7 +94,9 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 			Math.max(0, track.clientWidth - handle.clientWidth - TRACK_PADDING * 2);
 
 		const setFill = (progress: number) => {
-			utils.set(fill, { scaleX: progress });
+			const clampedProgress = utils.clamp(progress, 0, 1);
+			utils.set(fill, { scaleX: clampedProgress });
+			setProgressValue(Math.round(clampedProgress * 100));
 		};
 
 		const draggable = createDraggable(handle, {
@@ -118,6 +121,7 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 					// frame to keep the fill bar tracking the handle exactly.
 					setLabel(SNAP_LABEL_IDLE);
 					springBackRef.current?.revert();
+					springBackRef.current = null;
 					const distance = travel();
 					springBackRef.current = animate(handle, {
 						x: 0,
@@ -130,6 +134,7 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 						},
 						onComplete: () => {
 							setFill(0);
+							springBackRef.current = null;
 						},
 					}) as unknown as AnimationLike;
 				}
@@ -175,7 +180,7 @@ export function DownloadSnapX({ onDownloadStart }: DownloadSnapXProps) {
 			aria-label="Перетащите, чтобы скачать"
 			aria-valuemin={0}
 			aria-valuemax={100}
-			aria-valuenow={0}
+			aria-valuenow={progressValue}
 			onKeyDown={handleKeyActivate}
 		>
 			<div className="rox-snap__fill" ref={fillRef} />

@@ -37,8 +37,8 @@ export default async function Image({
 	const entry = getChangelogEntry(slug);
 	const fontData = await interBold;
 	const logoDataUri = readFileAsDataUri({
-		filePath: "title.svg",
-		mime: "image/svg+xml",
+		filePath: "rox-logo-light.png",
+		mime: "image/png",
 	});
 
 	if (!entry) {

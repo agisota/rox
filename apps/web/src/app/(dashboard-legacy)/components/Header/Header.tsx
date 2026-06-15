@@ -54,7 +54,13 @@ export function Header() {
 		<header className="sticky left-0 top-0 z-40 w-full border-b border-border/50 bg-background py-4">
 			<div className="mx-auto flex min-h-8 w-[95vw] max-w-screen-2xl items-center justify-between">
 				<Link href="/" aria-label="Перейти на главную">
-					<Image src="/title.svg" alt="Rox" width={150} height={25} priority />
+					<Image
+						src="/rox-logo-light.png"
+						alt="Rox"
+						width={24}
+						height={36}
+						priority
+					/>
 				</Link>
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>

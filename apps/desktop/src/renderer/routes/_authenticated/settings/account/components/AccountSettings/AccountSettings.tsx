@@ -17,6 +17,7 @@ import {
 	SETTING_ITEM_ID,
 	type SettingItemId,
 } from "../../../utils/settings-search";
+import { AccountUsagePanel } from "./components/AccountUsagePanel";
 import { ProfileSkeleton } from "./components/ProfileSkeleton";
 
 interface AccountSettingsProps {
@@ -32,6 +33,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 		SETTING_ITEM_ID.ACCOUNT_SIGNOUT,
 		visibleItems,
 	);
+	const showUsage = isItemVisible(SETTING_ITEM_ID.ACCOUNT_USAGE, visibleItems);
 
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id;
@@ -169,6 +171,8 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 							Не удалось загрузить данные пользователя
 						</p>
 					))}
+
+				{showUsage && <AccountUsagePanel />}
 
 				{showSignOut && (
 					<div className={showProfile ? "pt-5" : undefined}>

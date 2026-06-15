@@ -116,7 +116,10 @@ const config: Configuration = {
 		...(existsSync(macIconPath) ? { icon: macIconPath } : {}),
 		category: "public.app-category.utilities",
 		target: "default",
-		hardenedRuntime: true,
+		// Hardened runtime is required for notarization but, combined with an ad-hoc
+		// signature, macOS AMFI kills the app on launch (library validation rejects
+		// the unsigned native modules). Enable it only when signing with a real cert.
+		hardenedRuntime: Boolean(process.env.CSC_LINK),
 		gatekeeperAssess: false,
 		// Use the configured Apple certificate when present; otherwise apply an
 		// ad-hoc signature so arm64 macOS builds are still structurally signed.

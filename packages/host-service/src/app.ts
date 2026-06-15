@@ -143,7 +143,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 				"Content-Type",
 				"Authorization",
 				"trpc-accept",
-				"x-superset-client-machine-id",
+				"x-rox-client-machine-id",
 			],
 		}),
 	);
@@ -220,8 +220,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 					terminalAgentStore,
 					organizationId: config.organizationId,
 					isAuthenticated,
-					clientMachineId:
-						c.req.header("x-superset-client-machine-id") ?? undefined,
+					clientMachineId: c.req.header("x-rox-client-machine-id") ?? undefined,
 				} as Record<string, unknown>;
 			},
 		}),
