@@ -1,6 +1,7 @@
 import { auth } from "@rox/auth/server";
 import { db } from "@rox/db/client";
 import { sessions } from "@rox/db/schema/auth";
+import { parseDesktopLoopbackCallback } from "@rox/shared/desktop-callback";
 import { headers } from "next/headers";
 
 import { DesktopRedirect } from "./components/DesktopRedirect";
@@ -91,8 +92,15 @@ export default async function DesktopSuccessPage({
 		updatedAt: now,
 	});
 	const desktopUrl = `${desktop_protocol}://auth/callback?token=${encodeURIComponent(token)}&expiresAt=${encodeURIComponent(expiresAt.toISOString())}&state=${encodeURIComponent(state)}`;
-	const localCallbackUrl = localCallbackBase
-		? `${localCallbackBase}?token=${encodeURIComponent(token)}&expiresAt=${encodeURIComponent(expiresAt.toISOString())}&state=${encodeURIComponent(state)}`
+	// Re-validate the local callback here too: the success page is directly
+	// reachable, so an unvalidated callback would let an attacker point
+	// desktop_local_callback at their own host and exfiltrate the freshly minted
+	// session token (account takeover). Mirrors the /api/auth/desktop/connect
+	// allow-list via the shared validator; falls back to the custom-scheme deep
+	// link when it isn't an allowed loopback callback.
+	const localCallback = parseDesktopLoopbackCallback(localCallbackBase);
+	const localCallbackUrl = localCallback
+		? `${localCallback.origin}${localCallback.pathname}?token=${encodeURIComponent(token)}&expiresAt=${encodeURIComponent(expiresAt.toISOString())}&state=${encodeURIComponent(state)}`
 		: undefined;
 
 	return (
