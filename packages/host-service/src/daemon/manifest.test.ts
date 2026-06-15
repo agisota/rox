@@ -109,4 +109,21 @@ describe("PtyDaemonManifest", () => {
 		removePtyDaemonManifest(TEST_ORG);
 		expect(readPtyDaemonManifest(TEST_ORG)).toBeNull();
 	});
+
+	test("falls back to a valid legacy manifest when current manifest is malformed", () => {
+		const currentDir = path.join(TEST_HOME, "host", TEST_ORG);
+		const legacyDir = path.join(LEGACY_TEST_HOME, "host", TEST_ORG);
+		fs.mkdirSync(currentDir, { recursive: true });
+		fs.mkdirSync(legacyDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(currentDir, "pty-daemon-manifest.json"),
+			JSON.stringify({ pid: 1 }),
+		);
+		fs.writeFileSync(
+			path.join(legacyDir, "pty-daemon-manifest.json"),
+			JSON.stringify(baseManifest()),
+		);
+
+		expect(readPtyDaemonManifest(TEST_ORG)).toEqual(baseManifest());
+	});
 });

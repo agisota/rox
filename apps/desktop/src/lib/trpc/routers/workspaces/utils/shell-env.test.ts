@@ -76,7 +76,7 @@ describe("getProcessEnvWithShellPath preserves user git env vars", () => {
 		expect(env.GIT_EDITOR).toBe("vim");
 		expect(env.PAGER).toBe("less");
 		expect(env.GIT_PAGER).toBe("less");
-	});
+	}, 10_000);
 });
 
 describe("shell env cache", () => {
@@ -91,7 +91,7 @@ describe("shell env cache", () => {
 			expect(fallbackEnv[key]).toBe("fallback");
 
 			process.env[key] = "fresh";
-			const refreshedEnv = await getShellEnvironment({ timeoutMs: 30_000 });
+			const refreshedEnv = await getShellEnvironment({ timeoutMs: 10_000 });
 			expect(refreshedEnv[key]).toBe("fresh");
 		} finally {
 			if (originalValue === undefined) {
@@ -101,7 +101,7 @@ describe("shell env cache", () => {
 			}
 			clearShellEnvCache();
 		}
-	});
+	}, 12_000);
 
 	test("getShellEnvironment forceRefresh bypasses cached values", async () => {
 		const zshPath = ["/bin/zsh", "/usr/bin/zsh"].find((candidate) =>

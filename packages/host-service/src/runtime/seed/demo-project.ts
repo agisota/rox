@@ -75,11 +75,13 @@ export function seedDemoProject(
 	const legacyRepoPath = getLegacyDemoProjectPath(home);
 	migrateRoxDir(legacyRepoPath, repoPath);
 
-	const existing = db
+	const existingRows = db
 		.select({ id: projects.id, repoPath: projects.repoPath })
 		.from(projects)
 		.where(inArray(projects.repoPath, [repoPath, legacyRepoPath]))
-		.get();
+		.all();
+	const existing =
+		existingRows.find((row) => row.repoPath === repoPath) ?? existingRows[0];
 
 	if (existing) {
 		if (existing.repoPath !== repoPath) {
@@ -87,6 +89,12 @@ export function seedDemoProject(
 				.set({ repoPath })
 				.where(eq(projects.id, existing.id))
 				.run();
+		}
+		const duplicateIds = existingRows
+			.filter((row) => row.id !== existing.id)
+			.map((row) => row.id);
+		if (duplicateIds.length > 0) {
+			db.delete(projects).where(inArray(projects.id, duplicateIds)).run();
 		}
 		return { seeded: false, projectId: existing.id, repoPath };
 	}

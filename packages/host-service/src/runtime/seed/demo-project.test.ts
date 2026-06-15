@@ -89,4 +89,40 @@ describe("seedDemoProject", () => {
 		expect(rows).toHaveLength(1);
 		expect(rows[0]?.repoPath).toBe(nextRepoPath);
 	});
+
+	it("deduplicates existing current and legacy demo project rows", () => {
+		const db = createDb();
+		const legacyRepoPath = join(
+			home,
+			".rox",
+			"projects",
+			DEMO_PROJECT_DIR_NAME,
+		);
+		const nextRepoPath = getDemoProjectPath(home);
+		mkdirSync(legacyRepoPath, { recursive: true });
+		mkdirSync(nextRepoPath, { recursive: true });
+		db.insert(schema.projects)
+			.values([
+				{
+					id: "11111111-1111-1111-1111-111111111111",
+					repoPath: legacyRepoPath,
+				},
+				{
+					id: "22222222-2222-2222-2222-222222222222",
+					repoPath: nextRepoPath,
+				},
+			])
+			.run();
+
+		const result = seedDemoProject(db, home);
+
+		expect(result.seeded).toBe(false);
+		expect(result.projectId).toBe("22222222-2222-2222-2222-222222222222");
+		expect(result.repoPath).toBe(nextRepoPath);
+
+		const rows = db.select().from(schema.projects).all();
+		expect(rows).toHaveLength(1);
+		expect(rows[0]?.id).toBe("22222222-2222-2222-2222-222222222222");
+		expect(rows[0]?.repoPath).toBe(nextRepoPath);
+	});
 });

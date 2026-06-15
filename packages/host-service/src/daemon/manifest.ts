@@ -71,11 +71,15 @@ export function writePtyDaemonManifest(manifest: PtyDaemonManifest): void {
 export function readPtyDaemonManifest(
 	organizationId: string,
 ): PtyDaemonManifest | null {
-	const filePath = ptyDaemonManifestPathsForRead(organizationId).find((path) =>
-		existsSync(path),
-	);
-	if (!filePath) return null;
+	for (const filePath of ptyDaemonManifestPathsForRead(organizationId)) {
+		if (!existsSync(filePath)) continue;
+		const manifest = readPtyDaemonManifestFile(filePath);
+		if (manifest) return manifest;
+	}
+	return null;
+}
 
+function readPtyDaemonManifestFile(filePath: string): PtyDaemonManifest | null {
 	try {
 		const raw = readFileSync(filePath, "utf-8");
 		const data = JSON.parse(raw);
