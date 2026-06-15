@@ -7,48 +7,100 @@ import type { HostServiceContext } from "../../../../types";
 /**
  * A default MCP server to seed into freshly-created workspaces.
  *
- * `argsFor(worktreePath)` returns the launch args. The command is always
- * `bunx` so no global install is required — `bunx -y <pkg> …` resolves the
- * package on first use. Only servers that are published to npm, actively
- * maintained, and need no API keys or external runtimes are included here; a
- * broken command is worse than fewer servers.
+ * Two transports are supported:
+ *   - `stdio`: launched via `bunx -y <pkg> …` so no global install is required
+ *     — the package resolves on first use.
+ *   - `http`: a remote MCP endpoint reached over HTTP/SSE (no local process).
+ *
+ * Servers that need API keys reference them through `${ENV_VAR}` placeholders
+ * in `env`; the agent runtime substitutes the value at launch, and the
+ * placeholder is harmless (empty) when the user hasn't set the key yet — the
+ * server simply stays unauthenticated until they do, rather than failing the
+ * whole workspace seed.
  */
-interface DefaultMcpServer {
+interface DefaultStdioMcpServer {
+	transport: "stdio";
 	name: string;
 	/** npm package executed via `bunx -y <pkg>`. */
 	pkg: string;
 	/** Extra args appended after the package (may reference the worktree). */
 	argsFor: (worktreePath: string) => string[];
+	/** Optional env passed to the launched process (key → `${ENV_VAR}`). */
+	env?: Record<string, string>;
 }
 
+interface DefaultHttpMcpServer {
+	transport: "http";
+	name: string;
+	/** Remote MCP endpoint URL. */
+	url: string;
+	/** Optional headers (e.g. auth) for the remote endpoint. */
+	headers?: Record<string, string>;
+}
+
+type DefaultMcpServer = DefaultStdioMcpServer | DefaultHttpMcpServer;
+
 /**
- * The default server set. Intentionally small and reliable:
- *   - `filesystem`: official `@modelcontextprotocol/server-filesystem`, scoped
- *     to the workspace root so the agent can read/write within the worktree.
- *   - `sequential-thinking`: official reasoning aid, zero-config, no secrets.
+ * The default server set seeded into every new workspace so agents have a
+ * useful baseline of MCP tools out-of-the-box:
+ *   - `filesystem` / `sequential-thinking`: official, zero-config, no secrets.
+ *   - `exa`: web/code search (needs `EXA_API_KEY`).
+ *   - `context7`: up-to-date library/framework docs (no key required).
+ *   - `rox`: the hosted Rox MCP at api.zed.md (remote HTTP).
+ *   - `telegram`: Telegram bridge (needs `TELEGRAM_BOT_TOKEN`).
  *
- * Deliberately omitted (see PR notes): `fetch` (not published to npm — only a
- * Python `uvx` package exists), `git` (Python-only `mcp-server-git`), and
- * `github` (the npm `server-github` package is deprecated/archived). Adding any
- * of those would seed a command that fails on launch.
+ * Stdio servers run via `bunx` (no global install). Key-gated servers use
+ * `${ENV_VAR}` placeholders so seeding never fails when a key is absent.
  */
 export const DEFAULT_MCP_SERVERS: readonly DefaultMcpServer[] = [
 	{
+		transport: "stdio",
 		name: "filesystem",
 		pkg: "@modelcontextprotocol/server-filesystem",
 		argsFor: (worktreePath) => [worktreePath],
 	},
 	{
+		transport: "stdio",
 		name: "sequential-thinking",
 		pkg: "@modelcontextprotocol/server-sequential-thinking",
 		argsFor: () => [],
+	},
+	{
+		transport: "stdio",
+		name: "exa",
+		pkg: "exa-mcp-server",
+		argsFor: () => [],
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: literal ${ENV} placeholder written verbatim into .mcp.json for client-side env substitution
+		env: { EXA_API_KEY: "${EXA_API_KEY}" },
+	},
+	{
+		transport: "stdio",
+		name: "context7",
+		pkg: "@upstash/context7-mcp",
+		argsFor: () => [],
+	},
+	{
+		transport: "http",
+		name: "rox",
+		url: "https://api.zed.md/mcp",
+	},
+	{
+		transport: "stdio",
+		name: "telegram",
+		pkg: "@chaindead/telegram-mcp",
+		argsFor: () => [],
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: literal ${ENV} placeholder written verbatim into .mcp.json for client-side env substitution
+		env: { TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}" },
 	},
 ];
 
 const BUNX = "bunx";
 
-/** Build the `args` array (`-y <pkg> …extra`) for a default server. */
-function bunxArgs(server: DefaultMcpServer, worktreePath: string): string[] {
+/** Build the `args` array (`-y <pkg> …extra`) for a stdio default server. */
+function bunxArgs(
+	server: DefaultStdioMcpServer,
+	worktreePath: string,
+): string[] {
 	return ["-y", server.pkg, ...server.argsFor(worktreePath)];
 }
 
@@ -112,10 +164,36 @@ export async function seedWorkspaceMcpServers(
 // Claude: <worktree>/.mcp.json
 // ---------------------------------------------------------------------------
 
-type ClaudeMcpServerEntry = {
-	command: string;
-	args: string[];
-};
+type ClaudeMcpServerEntry =
+	| {
+			command: string;
+			args: string[];
+			env?: Record<string, string>;
+	  }
+	| {
+			type: "http";
+			url: string;
+			headers?: Record<string, string>;
+	  };
+
+/** Build the `.mcp.json` entry (Claude format) for any default server. */
+function claudeEntryFor(
+	server: DefaultMcpServer,
+	worktreePath: string,
+): ClaudeMcpServerEntry {
+	if (server.transport === "http") {
+		return {
+			type: "http",
+			url: server.url,
+			...(server.headers ? { headers: server.headers } : {}),
+		};
+	}
+	return {
+		command: BUNX,
+		args: bunxArgs(server, worktreePath),
+		...(server.env ? { env: server.env } : {}),
+	};
+}
 
 type ClaudeMcpConfig = {
 	mcpServers?: Record<string, unknown>;
@@ -175,11 +253,7 @@ export function buildMcpJson(
 		if (Object.hasOwn(servers, server.name)) {
 			continue;
 		}
-		const entry: ClaudeMcpServerEntry = {
-			command: BUNX,
-			args: bunxArgs(server, worktreePath),
-		};
-		servers[server.name] = entry;
+		servers[server.name] = claudeEntryFor(server, worktreePath);
 		added = true;
 	}
 
@@ -233,18 +307,40 @@ function existingCodexServerNames(toml: string): Set<string> {
 const CODEX_MARKER_BEGIN = "# >>> rox default mcp servers >>>";
 const CODEX_MARKER_END = "# <<< rox default mcp servers <<<";
 
+/** Serialize an inline TOML table from a `{ key: value }` map of strings. */
+function inlineTomlTable(map: Record<string, string>): string {
+	const pairs = Object.entries(map)
+		.map(([k, v]) => `${JSON.stringify(k)} = ${JSON.stringify(v)}`)
+		.join(", ");
+	return `{ ${pairs} }`;
+}
+
 /** Serialize one `[mcp_servers.<name>]` table to TOML. */
 function codexServerTable(
 	server: DefaultMcpServer,
 	worktreePath: string,
 ): string {
+	if (server.transport === "http") {
+		const lines = [
+			`[mcp_servers.${server.name}]`,
+			`url = ${JSON.stringify(server.url)}`,
+		];
+		if (server.headers) {
+			lines.push(`headers = ${inlineTomlTable(server.headers)}`);
+		}
+		return lines.join("\n");
+	}
 	const args = bunxArgs(server, worktreePath);
 	const argsToml = args.map((a) => JSON.stringify(a)).join(", ");
-	return [
+	const lines = [
 		`[mcp_servers.${server.name}]`,
 		`command = ${JSON.stringify(BUNX)}`,
 		`args = [${argsToml}]`,
-	].join("\n");
+	];
+	if (server.env) {
+		lines.push(`env = ${inlineTomlTable(server.env)}`);
+	}
+	return lines.join("\n");
 }
 
 /**

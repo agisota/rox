@@ -8,7 +8,6 @@ import {
 	accessRoleEnum,
 	artifacts,
 	chatSessions,
-	type PublicShareResourceType,
 	publicShares,
 } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
@@ -65,7 +64,6 @@ export function getPublicShareUrl(slug: string): string {
 		process.env.NEXT_PUBLIC_SHARE_ORIGIN ??
 		DEFAULT_SHARE_ORIGIN
 	).replace(/\/+$/, "");
-
 	return `${origin}/s/${slug}`;
 }
 
@@ -78,13 +76,11 @@ function serializeDate(value: Date | string | null | undefined): string | null {
 function normalizePayload(
 	payload: Record<string, unknown>,
 ): Record<string, unknown> {
-	let serialized: string;
-	try {
-		serialized = JSON.stringify(payload);
-	} catch {
+	const serialized = JSON.stringify(payload);
+	if (!serialized) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: "Share payload must be JSON serializable",
+			message: "Share payload is not serializable",
 		});
 	}
 
@@ -107,14 +103,12 @@ async function createPublicShare({
 	createdByUserId,
 }: {
 	organizationId: string;
-	resourceType: PublicShareResourceType;
+	resourceType: "chat_session" | "artifact";
 	resourceId: string;
-	title?: string | null;
+	title: string | null;
 	payload: Record<string, unknown>;
 	createdByUserId: string;
 }): Promise<{ id: string; slug: string; url: string }> {
-	const normalizedPayload = normalizePayload(payload);
-
 	for (let attempt = 0; attempt < 6; attempt += 1) {
 		const slug = createShareSlug();
 		const existing = await db.query.publicShares.findFirst({
@@ -123,27 +117,35 @@ async function createPublicShare({
 		});
 		if (existing) continue;
 
-		const [row] = await dbWs
-			.insert(publicShares)
-			.values({
-				organizationId,
-				resourceType,
-				resourceId,
-				slug,
-				title: title?.trim() || null,
-				payload: normalizedPayload,
-				createdByUserId,
-			})
-			.returning({ id: publicShares.id, slug: publicShares.slug });
+		const row = await dbWs.transaction(async (tx) => {
+			const [created] = await tx
+				.insert(publicShares)
+				.values({
+					organizationId,
+					resourceType,
+					resourceId,
+					slug,
+					title,
+					payload,
+					createdByUserId,
+				})
+				.returning({ id: publicShares.id, slug: publicShares.slug });
+
+			return created ?? null;
+		});
 
 		if (row) {
-			return { id: row.id, slug: row.slug, url: getPublicShareUrl(row.slug) };
+			return {
+				id: row.id,
+				slug: row.slug,
+				url: getPublicShareUrl(row.slug),
+			};
 		}
 	}
 
 	throw new TRPCError({
 		code: "INTERNAL_SERVER_ERROR",
-		message: "Failed to create public share link",
+		message: "Failed to allocate a public share link",
 	});
 }
 
@@ -271,6 +273,7 @@ export const shareRouter = {
 		.input(publishChatSessionInput)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
+
 			const session = await db.query.chatSessions.findFirst({
 				where: and(
 					eq(chatSessions.id, input.sessionId),
@@ -280,10 +283,9 @@ export const shareRouter = {
 				columns: {
 					id: true,
 					title: true,
-					workspaceId: true,
-					v2WorkspaceId: true,
 					createdAt: true,
 					updatedAt: true,
+					lastActiveAt: true,
 				},
 			});
 
@@ -294,31 +296,27 @@ export const shareRouter = {
 				});
 			}
 
-			const messages = input.messages.map((message) => ({
-				...message,
-				createdAt: serializeDate(message.createdAt),
-			}));
-			const title = input.title ?? session.title ?? "Shared Rox chat";
+			const title = input.title ?? session.title ?? "Shared chat";
+			const payload = normalizePayload({
+				type: "chat_session",
+				session: {
+					id: session.id,
+					title,
+					createdAt: serializeDate(session.createdAt),
+					updatedAt: serializeDate(session.updatedAt),
+					lastActiveAt: serializeDate(session.lastActiveAt),
+				},
+				messages: input.messages,
+				publishedAt: new Date().toISOString(),
+			});
 
 			return createPublicShare({
 				organizationId,
 				resourceType: "chat_session",
 				resourceId: session.id,
 				title,
+				payload,
 				createdByUserId: ctx.session.user.id,
-				payload: {
-					type: "chat_session",
-					session: {
-						id: session.id,
-						title,
-						workspaceId: session.workspaceId,
-						v2WorkspaceId: session.v2WorkspaceId,
-						createdAt: serializeDate(session.createdAt),
-						updatedAt: serializeDate(session.updatedAt),
-					},
-					messages,
-					publishedAt: new Date().toISOString(),
-				},
 			});
 		}),
 
@@ -326,6 +324,7 @@ export const shareRouter = {
 		.input(publishArtifactInput)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
+
 			const artifact = await db.query.artifacts.findFirst({
 				where: and(
 					eq(artifacts.id, input.artifactId),
@@ -357,31 +356,33 @@ export const shareRouter = {
 			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
-					message: "You can only publish artifacts you created",
+					message: "Artifact belongs to another user",
 				});
 			}
 
-			const title = artifact.title ?? "Shared Rox artifact";
+			const title = artifact.title ?? "Shared artifact";
+			const payload = normalizePayload({
+				type: "artifact",
+				artifact: {
+					id: artifact.id,
+					kind: artifact.kind,
+					title,
+					body: artifact.body ?? null,
+					markdown: artifact.markdown ?? null,
+					blobPathname: artifact.blobPathname ?? null,
+					mediaType: artifact.mediaType ?? null,
+					createdAt: serializeDate(artifact.createdAt),
+				},
+				publishedAt: new Date().toISOString(),
+			});
+
 			return createPublicShare({
 				organizationId,
 				resourceType: "artifact",
 				resourceId: artifact.id,
 				title,
+				payload,
 				createdByUserId: ctx.session.user.id,
-				payload: {
-					type: "artifact",
-					artifact: {
-						id: artifact.id,
-						kind: artifact.kind,
-						title,
-						body: artifact.body,
-						markdown: artifact.markdown,
-						blobPathname: artifact.blobPathname,
-						mediaType: artifact.mediaType,
-						createdAt: serializeDate(artifact.createdAt),
-					},
-					publishedAt: new Date().toISOString(),
-				},
 			});
 		}),
 
@@ -394,46 +395,50 @@ export const shareRouter = {
 			columns: {
 				id: true,
 				resourceType: true,
-				resourceId: true,
-				slug: true,
 				title: true,
 				payload: true,
 				createdAt: true,
-				updatedAt: true,
 			},
 		});
 
 		if (!share) {
 			throw new TRPCError({
 				code: "NOT_FOUND",
-				message: "Share link not found",
+				message: "Public share not found",
 			});
 		}
 
-		return { ...share, url: getPublicShareUrl(share.slug) };
+		return {
+			...share,
+			url: getPublicShareUrl(input.slug),
+		};
 	}),
 
 	revokePublic: protectedProcedure
 		.input(z.object({ id: z.string().uuid() }))
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
-			const [row] = await dbWs
-				.update(publicShares)
-				.set({ revokedAt: new Date() })
-				.where(
-					and(
-						eq(publicShares.id, input.id),
-						eq(publicShares.organizationId, organizationId),
-						eq(publicShares.createdByUserId, ctx.session.user.id),
-						isNull(publicShares.revokedAt),
-					),
-				)
-				.returning({ id: publicShares.id });
 
-			if (!row) {
+			const result = await dbWs.transaction(async (tx) => {
+				const [row] = await tx
+					.update(publicShares)
+					.set({ revokedAt: new Date() })
+					.where(
+						and(
+							eq(publicShares.id, input.id),
+							eq(publicShares.organizationId, organizationId),
+							eq(publicShares.createdByUserId, ctx.session.user.id),
+						),
+					)
+					.returning({ id: publicShares.id });
+
+				return row ?? null;
+			});
+
+			if (!result) {
 				throw new TRPCError({
 					code: "NOT_FOUND",
-					message: "Public share link not found",
+					message: "Public share not found",
 				});
 			}
 

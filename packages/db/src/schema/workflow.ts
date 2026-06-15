@@ -596,6 +596,10 @@ export const artifacts = pgTable(
 export type InsertArtifact = typeof artifacts.$inferInsert;
 export type SelectArtifact = typeof artifacts.$inferSelect;
 
+// ---------------------------------------------------------------------------
+// public_shares — immutable public snapshots for chats and artifacts
+// ---------------------------------------------------------------------------
+
 export type PublicSharePayload = Record<string, unknown>;
 
 export const publicShares = pgTable(

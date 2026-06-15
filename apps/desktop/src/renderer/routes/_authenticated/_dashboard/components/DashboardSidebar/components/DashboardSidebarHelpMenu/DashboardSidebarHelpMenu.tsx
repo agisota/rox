@@ -14,7 +14,7 @@ import {
 	HiOutlineQuestionMarkCircle,
 } from "react-icons/hi2";
 import { IoBugOutline } from "react-icons/io5";
-import { LuKeyboard, LuMegaphone } from "react-icons/lu";
+import { LuKeyboard, LuMegaphone, LuTerminal } from "react-icons/lu";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { SubmitPromptDialog } from "./components/SubmitPromptDialog";
@@ -66,6 +66,10 @@ export function DashboardSidebarHelpMenu({
 					<DropdownMenuItem onSelect={() => setSubmitPromptOpen(true)}>
 						<LuMegaphone className="h-4 w-4" />
 						Предложить промпт
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => navigate({ to: "/cli" })}>
+						<LuTerminal className="h-4 w-4" />
+						Начало работы
 					</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openExternal(COMPANY.DOCS_URL)}>
 						<HiOutlineBookOpen className="h-4 w-4" />

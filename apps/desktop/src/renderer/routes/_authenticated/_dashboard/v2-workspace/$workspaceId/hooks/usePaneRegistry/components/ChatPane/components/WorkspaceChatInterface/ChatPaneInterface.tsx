@@ -626,6 +626,11 @@ export function ChatPaneInterface({
 	]);
 
 	useEffect(() => {
+		setLastSharedConversationUrl(null);
+		setIsSharingConversation(false);
+	}, []);
+
+	useEffect(() => {
 		if (isRunning) {
 			setSubmitStatus((previousStatus) =>
 				previousStatus === "submitted" || previousStatus === "streaming"

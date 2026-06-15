@@ -72,8 +72,6 @@ mock.module("@rox/db/client", () => ({
 	},
 	dbWs: {
 		transaction: transactionMock,
-		insert: txInsert,
-		update: txUpdate,
 	},
 }));
 
@@ -89,9 +87,6 @@ mock.module("@rox/db/schema", () => ({
 		role: "access_grants.role",
 		createdAt: "access_grants.created_at",
 	},
-	accessResourceTypeEnum: z.enum(["project", "workspace", "host"]),
-	accessGranteeTypeEnum: z.enum(["user", "team", "organization"]),
-	accessRoleEnum: z.enum(["viewer", "editor", "admin"]),
 	artifacts: {
 		id: "artifacts.id",
 		organizationId: "artifacts.organization_id",
@@ -109,12 +104,10 @@ mock.module("@rox/db/schema", () => ({
 		organizationId: "chat_sessions.organization_id",
 		createdBy: "chat_sessions.created_by",
 		title: "chat_sessions.title",
-		workspaceId: "chat_sessions.workspace_id",
-		v2WorkspaceId: "chat_sessions.v2_workspace_id",
 		createdAt: "chat_sessions.created_at",
 		updatedAt: "chat_sessions.updated_at",
+		lastActiveAt: "chat_sessions.last_active_at",
 	},
-	members: { userId: "members.user_id", organizationId: "members.org_id" },
 	publicShares: {
 		id: "public_shares.id",
 		organizationId: "public_shares.organization_id",
@@ -125,9 +118,12 @@ mock.module("@rox/db/schema", () => ({
 		payload: "public_shares.payload",
 		createdByUserId: "public_shares.created_by_user_id",
 		createdAt: "public_shares.created_at",
-		updatedAt: "public_shares.updated_at",
 		revokedAt: "public_shares.revoked_at",
 	},
+	accessResourceTypeEnum: z.enum(["project", "workspace", "host"]),
+	accessGranteeTypeEnum: z.enum(["user", "team", "organization"]),
+	accessRoleEnum: z.enum(["viewer", "editor", "admin"]),
+	members: { userId: "members.user_id", organizationId: "members.org_id" },
 }));
 
 mock.module("@rox/db/utils", () => ({
@@ -164,15 +160,12 @@ const createCaller = createCallerFactory(
 );
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
-const OTHER_USER_ID = "99999999-9999-4999-8999-999999999999";
 const ORG_ID = "22222222-2222-4222-8222-222222222222";
 const RESOURCE_ID = "44444444-4444-4444-8444-444444444444";
 const GRANTEE_ID = "55555555-5555-4555-8555-555555555555";
 const GRANT_ID = "66666666-6666-4666-8666-666666666666";
-const CHAT_SESSION_ID = "77777777-7777-4777-8777-777777777777";
-const ARTIFACT_ID = "88888888-8888-4888-8888-888888888888";
-const SHARE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const SHARE_SLUG = "shareSlug123";
+const SHARE_ID = "77777777-7777-4777-8777-777777777777";
+const SHARE_SLUG = "abc123xyz";
 
 function authedContext(
 	overrides: { activeOrganizationId?: string | null } = {},
@@ -300,26 +293,23 @@ describe("share.list", () => {
 describe("share.publishChatSession", () => {
 	it("publishes a chat snapshot and returns a public URL", async () => {
 		chatSessionsFindFirstResults.push({
-			id: CHAT_SESSION_ID,
-			title: "Demo chat",
-			workspaceId: null,
-			v2WorkspaceId: RESOURCE_ID,
-			createdAt: new Date("2026-06-15T09:00:00.000Z"),
-			updatedAt: new Date("2026-06-15T09:10:00.000Z"),
+			id: RESOURCE_ID,
+			title: "Build log",
+			createdAt: new Date("2026-06-15T10:00:00.000Z"),
+			updatedAt: new Date("2026-06-15T10:05:00.000Z"),
+			lastActiveAt: new Date("2026-06-15T10:05:00.000Z"),
 		});
 		publicSharesFindFirstResults.push(null);
 		txInsertReturningResults.push([{ id: SHARE_ID, slug: SHARE_SLUG }]);
 		const caller = createCaller(authedContext());
 
 		const result = await caller.share.publishChatSession({
-			sessionId: CHAT_SESSION_ID,
-			title: "Demo chat",
+			sessionId: RESOURCE_ID,
 			messages: [
 				{
-					id: "m1",
+					id: "message-1",
 					role: "user",
-					content: [{ type: "text", text: "Hello" }],
-					createdAt: "2026-06-15T09:05:00.000Z",
+					content: [{ type: "text", text: "Ship it" }],
 				},
 			],
 		});
@@ -330,16 +320,16 @@ describe("share.publishChatSession", () => {
 			url: `https://share.rox.one/s/${SHARE_SLUG}`,
 		});
 		expect(chatSessionsFindFirst).toHaveBeenCalledTimes(1);
-		expect(txInsertReturning).toHaveBeenCalledTimes(1);
+		expect(txInsert).toHaveBeenCalledTimes(1);
 	});
 
-	it("throws NOT_FOUND for a missing chat session", async () => {
+	it("rejects missing chat sessions", async () => {
 		chatSessionsFindFirstResults.push(null);
 		const caller = createCaller(authedContext());
 
 		await expect(
 			caller.share.publishChatSession({
-				sessionId: CHAT_SESSION_ID,
+				sessionId: RESOURCE_ID,
 				messages: [],
 			}),
 		).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -347,13 +337,13 @@ describe("share.publishChatSession", () => {
 });
 
 describe("share.publishArtifact", () => {
-	it("publishes an artifact snapshot and returns a public URL", async () => {
+	it("publishes an owned artifact snapshot and returns a public URL", async () => {
 		artifactsFindFirstResults.push({
-			id: ARTIFACT_ID,
-			kind: "markdown_doc",
-			title: "Plan",
-			body: null,
-			markdown: "# Plan",
+			id: RESOURCE_ID,
+			kind: "report",
+			title: "Release report",
+			body: { status: "ready" },
+			markdown: "# Release report",
 			blobPathname: null,
 			mediaType: "text/markdown",
 			createdByUserId: USER_ID,
@@ -364,30 +354,36 @@ describe("share.publishArtifact", () => {
 		const caller = createCaller(authedContext());
 
 		const result = await caller.share.publishArtifact({
-			artifactId: ARTIFACT_ID,
+			artifactId: RESOURCE_ID,
 		});
 
-		expect(result.url).toBe(`https://share.rox.one/s/${SHARE_SLUG}`);
+		expect(result).toEqual({
+			id: SHARE_ID,
+			slug: SHARE_SLUG,
+			url: `https://share.rox.one/s/${SHARE_SLUG}`,
+		});
 		expect(artifactsFindFirst).toHaveBeenCalledTimes(1);
-		expect(txInsertReturning).toHaveBeenCalledTimes(1);
+		expect(txInsert).toHaveBeenCalledTimes(1);
 	});
 
-	it("rejects publishing another user's artifact", async () => {
+	it("rejects artifacts owned by another user", async () => {
 		artifactsFindFirstResults.push({
-			id: ARTIFACT_ID,
-			kind: "markdown_doc",
-			title: "Plan",
+			id: RESOURCE_ID,
+			kind: "report",
+			title: "Other report",
 			body: null,
-			markdown: "# Plan",
+			markdown: null,
 			blobPathname: null,
-			mediaType: "text/markdown",
-			createdByUserId: OTHER_USER_ID,
+			mediaType: null,
+			createdByUserId: GRANTEE_ID,
 			createdAt: new Date("2026-06-15T10:00:00.000Z"),
 		});
 		const caller = createCaller(authedContext());
 
 		await expect(
-			caller.share.publishArtifact({ artifactId: ARTIFACT_ID }),
+			caller.share.publishArtifact({
+				artifactId: RESOURCE_ID,
+			}),
 		).rejects.toMatchObject({ code: "FORBIDDEN" });
 	});
 });

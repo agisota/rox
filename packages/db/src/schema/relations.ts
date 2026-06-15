@@ -74,13 +74,13 @@ export const usersRelations = relations(users, ({ many }) => ({
 	v2Workspaces: many(v2Workspaces),
 	agentCommands: many(agentCommands),
 	chatSessions: many(chatSessions),
+	publicShares: many(publicShares),
 	roxBalance: many(roxBalances),
 	roxLedger: many(roxLedger),
 	roxTopups: many(roxTopups),
 	usageRequests: many(usageRequests),
 	attribution: many(userAttribution),
 	paymentAttributions: many(paymentAttributions),
-	publicShares: many(publicShares),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -120,8 +120,8 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	agentCommands: many(agentCommands),
 	chatSessions: many(chatSessions),
 	accessGrants: many(accessGrants),
-	knowledgeDocuments: many(knowledgeDocuments),
 	publicShares: many(publicShares),
+	knowledgeDocuments: many(knowledgeDocuments),
 }));
 
 export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({

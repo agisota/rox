@@ -60,11 +60,9 @@ function ShareConversationIcon({
 	if (isSharing) {
 		return <Loader2Icon className="size-3.5 animate-spin" />;
 	}
-
 	if (hasSharedUrl) {
 		return <CheckIcon className="size-3.5" />;
 	}
-
 	return <Share2Icon className="size-3.5" />;
 }
 
@@ -189,13 +187,13 @@ export function ChatMessageList({
 	const shouldShowEmptyState =
 		!shouldShowConversationLoading && !hasConversationContent;
 	const shouldShowShareButton = Boolean(
-		onShareConversation && sessionId && hasConversationContent,
+		onShareConversation && hasConversationContent,
 	);
 	let shareButtonLabel = "Share";
 	if (isSharingConversation) {
-		shareButtonLabel = "Sharing";
+		shareButtonLabel = "Publishing";
 	} else if (lastSharedConversationUrl) {
-		shareButtonLabel = "Copied";
+		shareButtonLabel = "Link copied";
 	}
 
 	const inlineToolStateProps = {
@@ -215,9 +213,8 @@ export function ChatMessageList({
 								type="button"
 								variant="secondary"
 								size="xs"
-								className="min-w-24"
+								className="min-w-28"
 								disabled={isSharingConversation}
-								aria-label="Share conversation"
 								onClick={() => {
 									void onShareConversation?.();
 								}}

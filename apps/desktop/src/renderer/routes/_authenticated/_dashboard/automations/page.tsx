@@ -306,23 +306,21 @@ function AutomationsPage() {
 								Он доступен в каждом терминале Rox. Попросите агента
 								использовать его, чтобы создавать рабочие пространства,
 								запускать задачи или управлять другими автоматизациями.{" "}
-								<a
-									href={`${COMPANY.DOCS_URL}/cli/getting-started`}
-									target="_blank"
-									rel="noreferrer"
+								<button
+									type="button"
+									onClick={() => navigate({ to: "/cli" })}
 									className="font-medium text-foreground underline underline-offset-2 hover:text-foreground/80"
 								>
 									Начало работы
-								</a>{" "}
+								</button>{" "}
 								·{" "}
-								<a
-									href={`${COMPANY.DOCS_URL}/cli/cli-reference`}
-									target="_blank"
-									rel="noreferrer"
+								<button
+									type="button"
+									onClick={() => navigate({ to: "/cli" })}
 									className="font-medium text-foreground underline underline-offset-2 hover:text-foreground/80"
 								>
 									Справочник по CLI
-								</a>
+								</button>
 							</p>
 						</div>
 						<Button
