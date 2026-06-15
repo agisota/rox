@@ -2,7 +2,7 @@ import type { RendererContext, Tab } from "@rox/panes";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { GlobeIcon } from "lucide-react";
 import { useCallback, useSyncExternalStore } from "react";
-import { TbDeviceDesktop } from "react-icons/tb";
+import { TbDeviceDesktop, TbPointer } from "react-icons/tb";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { BrowserFullscreenPreview, BrowserLoadingBar } from "renderer/motion";
 import type { BrowserPaneData, PaneViewerData } from "../../../../types";
@@ -10,6 +10,9 @@ import { browserRuntimeRegistry } from "./browserRuntimeRegistry";
 import { BrowserErrorOverlay } from "./components/BrowserErrorOverlay";
 import { BrowserOverflowMenu } from "./components/BrowserOverflowMenu";
 import { BrowserToolbar } from "./components/BrowserToolbar";
+import { DesignModeCapturePreview } from "./components/DesignModeCapturePreview";
+import { DevicePresetSelect } from "./components/DevicePresetSelect";
+import { useDesignMode } from "./hooks/useDesignMode";
 import { usePersistentWebview } from "./hooks/usePersistentWebview";
 
 // Module-level per-pane fullscreen state so BrowserPane (content) and
@@ -124,12 +127,17 @@ export function BrowserPane({ ctx }: BrowserPaneProps) {
 
 interface BrowserPaneToolbarProps {
 	ctx: RendererContext<PaneViewerData>;
+	workspaceId: string;
 }
 
-export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
+export function BrowserPaneToolbar({
+	ctx,
+	workspaceId,
+}: BrowserPaneToolbarProps) {
 	const paneId = ctx.pane.id;
 	const state = useBrowserState(paneId);
 	const { isFullscreen, toggle } = useFullscreenState(paneId);
+	const designMode = useDesignMode({ paneId, workspaceId, ctx });
 
 	const handleOpenDevTools = useCallback(() => {
 		electronTrpcClient.browser.openDevTools.mutate({ paneId }).catch(() => {});
@@ -170,8 +178,30 @@ export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 				onReload={handleReload}
 				onNavigate={handleNavigate}
 			/>
-			<div className="flex shrink-0 items-center pr-1">
+			<div className="relative flex shrink-0 items-center pr-1">
 				<div className="mx-1.5 h-3.5 w-px bg-muted-foreground/60" />
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<button
+							type="button"
+							onClick={() => {
+								void designMode.setEnabled(!designMode.enabled);
+							}}
+							className={`rounded p-0.5 transition-colors ${designMode.enabled ? "bg-primary/15 text-primary" : "text-muted-foreground/60 hover:text-muted-foreground"}`}
+						>
+							<TbPointer className="size-3.5" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="bottom" showArrow={false}>
+						{designMode.enabled ? "Disable Design Mode" : "Design Mode"}
+					</TooltipContent>
+				</Tooltip>
+				<DevicePresetSelect
+					presetId={designMode.presetId}
+					onSelect={(id) => {
+						void designMode.setPreset(id);
+					}}
+				/>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<button
@@ -186,6 +216,15 @@ export function BrowserPaneToolbar({ ctx }: BrowserPaneToolbarProps) {
 						Open DevTools
 					</TooltipContent>
 				</Tooltip>
+				{designMode.capture && (
+					<DesignModeCapturePreview
+						capture={designMode.capture}
+						capturing={designMode.capturing}
+						workspaceId={designMode.workspaceId}
+						browserSessionId={designMode.browserSessionId}
+						onDismiss={designMode.dismissCapture}
+					/>
+				)}
 				<BrowserOverflowMenu
 					paneId={paneId}
 					currentUrl={state.currentUrl}

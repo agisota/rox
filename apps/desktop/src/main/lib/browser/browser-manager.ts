@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { clipboard, Menu, webContents } from "electron";
 import { safeOpenExternal } from "main/lib/safe-url";
+import type { DevicePreset } from "shared/browser/types";
 
 interface ConsoleEntry {
 	level: "log" | "warn" | "error" | "info" | "debug";
@@ -29,6 +30,7 @@ class BrowserManager extends EventEmitter {
 	private consoleListeners = new Map<string, () => void>();
 	private contextMenuListeners = new Map<string, () => void>();
 	private beforeInputListeners = new Map<string, () => void>();
+	private originalUserAgents = new Map<string, string>();
 
 	register(paneId: string, webContentsId: number): void {
 		// Clean even when prevId === webContentsId so BrowserManager owns
@@ -79,6 +81,7 @@ class BrowserManager extends EventEmitter {
 		}
 		this.paneWebContentsIds.delete(paneId);
 		this.consoleLogs.delete(paneId);
+		this.originalUserAgents.delete(paneId);
 	}
 
 	unregisterAll(): void {
@@ -113,6 +116,83 @@ class BrowserManager extends EventEmitter {
 		const wc = this.getWebContents(paneId);
 		if (!wc) throw new Error(`No webContents for pane ${paneId}`);
 		return wc.executeJavaScript(code);
+	}
+
+	/**
+	 * Captures a CSS-pixel region of the guest page as a PNG. Used for Design
+	 * Mode cropped screenshots. The returned image is at the page's device scale.
+	 */
+	async captureRegion(
+		paneId: string,
+		rect: { x: number; y: number; width: number; height: number },
+	): Promise<{ data: string; width: number; height: number }> {
+		const wc = this.getWebContents(paneId);
+		if (!wc) throw new Error(`No webContents for pane ${paneId}`);
+		const image = await wc.capturePage({
+			x: Math.round(rect.x),
+			y: Math.round(rect.y),
+			width: Math.max(1, Math.round(rect.width)),
+			height: Math.max(1, Math.round(rect.height)),
+		});
+		const size = image.getSize();
+		return {
+			data: image.toPNG().toString("base64"),
+			width: size.width,
+			height: size.height,
+		};
+	}
+
+	/**
+	 * Applies (or clears) device emulation for a pane. The `responsive` preset
+	 * disables emulation and restores the original user agent; mobile presets set
+	 * viewport size, device scale factor, user agent, and best-effort touch.
+	 */
+	setDevicePreset(paneId: string, preset: DevicePreset): void {
+		const wc = this.getWebContents(paneId);
+		if (!wc) throw new Error(`No webContents for pane ${paneId}`);
+
+		const emulated =
+			preset.id !== "responsive" && preset.width > 0 && preset.height > 0;
+
+		if (!emulated) {
+			wc.disableDeviceEmulation();
+			const original = this.originalUserAgents.get(paneId);
+			if (original != null) wc.setUserAgent(original);
+			this.setTouchEmulation(wc, false);
+			return;
+		}
+
+		if (!this.originalUserAgents.has(paneId)) {
+			this.originalUserAgents.set(paneId, wc.getUserAgent());
+		}
+		wc.enableDeviceEmulation({
+			screenPosition: preset.isMobile ? "mobile" : "desktop",
+			screenSize: { width: preset.width, height: preset.height },
+			viewSize: { width: preset.width, height: preset.height },
+			viewPosition: { x: 0, y: 0 },
+			deviceScaleFactor: preset.deviceScaleFactor,
+			scale: 1,
+		});
+		if (preset.userAgent) wc.setUserAgent(preset.userAgent);
+		this.setTouchEmulation(wc, preset.hasTouch);
+	}
+
+	// Touch emulation has no first-class WebContents API; drive it via CDP and
+	// swallow failures so an unsupported environment never crashes capture.
+	private setTouchEmulation(wc: Electron.WebContents, enabled: boolean): void {
+		try {
+			if (!wc.debugger.isAttached()) wc.debugger.attach("1.3");
+			void wc.debugger.sendCommand("Emulation.setTouchEmulationEnabled", {
+				enabled,
+				maxTouchPoints: enabled ? 5 : 0,
+			});
+			void wc.debugger.sendCommand("Emulation.setEmitTouchEventsForMouse", {
+				enabled,
+				configuration: "mobile",
+			});
+		} catch {
+			// CDP unavailable (e.g. devtools already attached) — non-fatal.
+		}
 	}
 
 	getConsoleLogs(paneId: string): ConsoleEntry[] {

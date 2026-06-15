@@ -33,6 +33,10 @@ export interface BrowserPaneData {
 	url: string;
 	pageTitle?: string;
 	faviconUrl?: string | null;
+	/** Active mobile/responsive device preset id (see shared/browser/devicePresets). */
+	devicePresetId?: string;
+	/** Whether Design Mode element-picking is enabled for this pane. */
+	designModeEnabled?: boolean;
 }
 
 export interface DevtoolsPaneData {
