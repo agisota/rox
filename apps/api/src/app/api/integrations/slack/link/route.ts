@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { auth } from "@rox/auth/server";
 import { db } from "@rox/db/client";
 import { integrationConnections, usersSlackUsers } from "@rox/db/schema";
@@ -23,7 +23,15 @@ export async function GET(request: Request) {
 			.update(decoded)
 			.digest("hex");
 
-		if (sig !== expectedSig) {
+		// Constant-time comparison (matches the rest of the codebase's signature
+		// checks); the length guard avoids timingSafeEqual throwing on a crafted
+		// signature of a different length.
+		const sigBuf = Buffer.from(sig);
+		const expectedBuf = Buffer.from(expectedSig);
+		if (
+			sigBuf.length !== expectedBuf.length ||
+			!timingSafeEqual(sigBuf, expectedBuf)
+		) {
 			return new Response("Invalid signature", { status: 401 });
 		}
 
