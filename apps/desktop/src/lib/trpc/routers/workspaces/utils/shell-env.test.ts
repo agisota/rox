@@ -10,8 +10,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	applyShellEnvToProcess,
+	clearShellEnvCache,
 	getProcessEnvWithShellEnv,
 	getProcessEnvWithShellPath,
+	getShellEnvironment,
 } from "./shell-env";
 
 describe("shell env merging", () => {
@@ -78,10 +80,30 @@ describe("getProcessEnvWithShellPath preserves user git env vars", () => {
 });
 
 describe("shell env cache", () => {
+	test("longer timeout bypasses timeout fallback cache", async () => {
+		const key = "__ROX_SHELL_ENV_BACKGROUND_REFRESH_TEST__";
+		const originalValue = process.env[key];
+		process.env[key] = "fallback";
+		clearShellEnvCache();
+
+		try {
+			const fallbackEnv = await getShellEnvironment({ timeoutMs: 0 });
+			expect(fallbackEnv[key]).toBe("fallback");
+
+			process.env[key] = "fresh";
+			const refreshedEnv = await getShellEnvironment({ timeoutMs: 30_000 });
+			expect(refreshedEnv[key]).toBe("fresh");
+		} finally {
+			if (originalValue === undefined) {
+				delete process.env[key];
+			} else {
+				process.env[key] = originalValue;
+			}
+			clearShellEnvCache();
+		}
+	});
+
 	test("getShellEnvironment forceRefresh bypasses cached values", async () => {
-		const { clearShellEnvCache, getShellEnvironment } = await import(
-			"./shell-env"
-		);
 		const zshPath = ["/bin/zsh", "/usr/bin/zsh"].find((candidate) =>
 			existsSync(candidate),
 		);

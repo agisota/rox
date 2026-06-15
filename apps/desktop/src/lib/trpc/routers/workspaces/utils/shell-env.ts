@@ -22,6 +22,7 @@ const TIMEOUT_FALLBACK_CACHE_TTL_MS = 60_000; // 1 minute fallback when shell st
 const SHELL_ENV_CRITICAL_TIMEOUT_MS = 8_000;
 const SHELL_ENV_BACKGROUND_TIMEOUT_MS = 30_000;
 let fallbackCacheTtlMs = FALLBACK_CACHE_TTL_MS;
+let fallbackCacheSourceTimeoutMs = 0;
 
 // Track PATH fix state for macOS GUI app PATH fix
 let pathFixAttempted = false;
@@ -71,17 +72,25 @@ export async function getShellEnvironment(
 ): Promise<Record<string, string>> {
 	const now = Date.now();
 	const ttl = isFallbackCache ? fallbackCacheTtlMs : CACHE_TTL_MS;
-	if (!options?.forceRefresh && cachedEnv && now - cacheTime < ttl) {
+	const timeoutMs = options?.timeoutMs ?? SHELL_ENV_CRITICAL_TIMEOUT_MS;
+	const shouldBypassFallbackCache =
+		isFallbackCache && timeoutMs > fallbackCacheSourceTimeoutMs;
+	if (
+		!options?.forceRefresh &&
+		!shouldBypassFallbackCache &&
+		cachedEnv &&
+		now - cacheTime < ttl
+	) {
 		return { ...cachedEnv };
 	}
 
-	const timeoutMs = options?.timeoutMs ?? SHELL_ENV_CRITICAL_TIMEOUT_MS;
 	try {
 		const env = await getShellEnvWithTimeout(timeoutMs);
 		cachedEnv = env as Record<string, string>;
 		cacheTime = now;
 		isFallbackCache = false;
 		fallbackCacheTtlMs = FALLBACK_CACHE_TTL_MS;
+		fallbackCacheSourceTimeoutMs = 0;
 		return { ...cachedEnv };
 	} catch (error) {
 		const isTimeout = error instanceof ShellEnvTimeoutError;
@@ -101,6 +110,7 @@ export async function getShellEnvironment(
 		fallbackCacheTtlMs = isTimeout
 			? TIMEOUT_FALLBACK_CACHE_TTL_MS
 			: FALLBACK_CACHE_TTL_MS;
+		fallbackCacheSourceTimeoutMs = timeoutMs;
 		return { ...fallback };
 	}
 }
@@ -140,6 +150,7 @@ export function clearShellEnvCache(): void {
 	cacheTime = 0;
 	isFallbackCache = false;
 	fallbackCacheTtlMs = FALLBACK_CACHE_TTL_MS;
+	fallbackCacheSourceTimeoutMs = 0;
 	pathFixAttempted = false;
 	pathFixSucceeded = false;
 }

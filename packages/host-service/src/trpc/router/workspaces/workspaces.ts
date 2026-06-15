@@ -589,6 +589,7 @@ export const workspacesRouter = router({
 				input.agents?.[0]?.prompt?.trim() || input.namingPrompt?.trim() || "";
 			const wantAi =
 				input.pr === undefined &&
+				input.worktreePath === undefined &&
 				(input.branch === undefined || input.name === undefined) &&
 				!!composerPrompt;
 			const aiNamesPromise: Promise<GeneratedWorkspaceNames | null> | null =
@@ -1110,7 +1111,8 @@ export const workspacesRouter = router({
 							oldWorkspaceName: workspaceRow.name,
 							prompt: composerPrompt,
 							renameTitle: input.name === undefined,
-							renameBranch: input.branch === undefined,
+							renameBranch:
+								input.worktreePath === undefined && input.branch === undefined,
 							aiNames,
 						});
 					})
