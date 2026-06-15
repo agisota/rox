@@ -41,7 +41,7 @@ describe("agent-harness-presets", () => {
 	});
 
 	it("layers Rox and Open Dynamic Workflows on top of OMP", () => {
-		expect(getHarnessPresetById("oh-my-pi")?.baseAgentId).toBe("omp");
+		expect(getHarnessPresetById("rox")?.baseAgentId).toBe("omp");
 		expect(getHarnessPresetById("open-dynamic-workflows-omp")).toMatchObject({
 			baseAgentId: "omp",
 			configFiles: [

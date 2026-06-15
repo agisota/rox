@@ -15,7 +15,7 @@ const OPEN_DYNAMIC_WORKFLOWS_OMP_CONFIG = `${JSON.stringify(
 		runsRoot: "~/.odw/runs",
 		adapters: {
 			omp: {
-				label: "Oh My Pi",
+				label: "Rox",
 				command: [
 					"omp",
 					"--cwd",
