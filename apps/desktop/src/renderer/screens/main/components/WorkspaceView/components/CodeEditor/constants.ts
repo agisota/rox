@@ -1,5 +1,8 @@
-// Editor typeface (themes-fonts epic): BentonSansCond is the default code face,
-// falling back to the bundled Victor Mono and the platform monospace stack.
+import {
+	DEFAULT_SETTINGS_EDITOR_FONT_FAMILY,
+	DEFAULT_SETTINGS_EDITOR_FONT_SIZE,
+} from "@rox/local-db";
+
 export const DEFAULT_CODE_EDITOR_FONT_FAMILY =
-	'"BentonSansCond", "Victor Mono", ui-monospace, Menlo, Consolas, Liberation Mono, monospace';
-export const DEFAULT_CODE_EDITOR_FONT_SIZE = 12;
+	DEFAULT_SETTINGS_EDITOR_FONT_FAMILY;
+export const DEFAULT_CODE_EDITOR_FONT_SIZE = DEFAULT_SETTINGS_EDITOR_FONT_SIZE;

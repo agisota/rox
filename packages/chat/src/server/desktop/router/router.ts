@@ -1,6 +1,7 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { z } from "zod";
+import { API_KEY_AUTH_PROVIDER_IDS } from "../auth/provider-ids";
 import type { ChatService } from "../chat-service";
 import { getSlashCommands, resolveSlashCommand } from "../slash-commands";
 import { searchFiles } from "./file-search";
@@ -46,6 +47,14 @@ export const anthropicEnvConfigInput = z.object({
 });
 
 export const openAIApiKeyInput = z.object({
+	apiKey: z.string().min(1),
+});
+
+export const apiKeyProviderInput = z.object({
+	providerId: z.enum(API_KEY_AUTH_PROVIDER_IDS),
+});
+
+export const apiKeyProviderApiKeyInput = apiKeyProviderInput.extend({
 	apiKey: z.string().min(1),
 });
 
@@ -159,6 +168,28 @@ export function createChatServiceRouter(service: ChatService) {
 			clearOpenAIApiKey: t.procedure.mutation(() => {
 				return service.clearOpenAIApiKey();
 			}),
+			getApiKeyProviderStatus: t.procedure
+				.input(apiKeyProviderInput)
+				.query(({ input }) => {
+					return service.getApiKeyProviderAuthStatus({
+						providerId: input.providerId,
+					});
+				}),
+			setApiKeyProviderApiKey: t.procedure
+				.input(apiKeyProviderApiKeyInput)
+				.mutation(({ input }) => {
+					return service.setApiKeyProviderApiKey({
+						providerId: input.providerId,
+						apiKey: input.apiKey,
+					});
+				}),
+			clearApiKeyProviderApiKey: t.procedure
+				.input(apiKeyProviderInput)
+				.mutation(({ input }) => {
+					return service.clearApiKeyProviderApiKey({
+						providerId: input.providerId,
+					});
+				}),
 		}),
 	});
 }

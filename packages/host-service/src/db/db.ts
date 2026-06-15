@@ -24,6 +24,10 @@ export function createDb(dbPath: string, migrationsFolder: string) {
 		migrate(db, { migrationsFolder });
 	} catch (error) {
 		console.error("[host-service:db] Migration failed:", error);
+		throw new Error(
+			`Failed to migrate host-service database at ${dbPath} using migrations from ${migrationsFolder}`,
+			{ cause: error },
+		);
 	}
 
 	return db;

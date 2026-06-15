@@ -109,10 +109,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		}),
 	);
 
-	return [
-		...staticPages,
-		...blogPages,
-		...changelogPages,
-		...comparisonPages,
-	];
+	return [...staticPages, ...blogPages, ...changelogPages, ...comparisonPages];
 }

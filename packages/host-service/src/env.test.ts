@@ -15,7 +15,7 @@ process.env.AUTH_TOKEN = "access-token";
 process.env.HOST_DB_PATH = "/tmp/rox-host.db";
 process.env.HOST_MIGRATIONS_FOLDER = "/tmp/rox-migrations";
 process.env.HOST_SERVICE_SECRET = "host-secret";
-process.env.ORGANIZATION_ID = "00000000-0000-4000-8000-000000000001";
+process.env.ORGANIZATION_ID = "org_local_admin";
 process.env.PORT = "4879";
 process.env.ROX_API_URL = "https://api.rox.test";
 delete process.env.ROX_AUTH_CONFIG_PATH;
@@ -36,5 +36,9 @@ describe("host-service env", () => {
 	test("ROX_AUTH_CONFIG_PATH is optional", () => {
 		expect(env.ROX_AUTH_CONFIG_PATH).toBeUndefined();
 		expect(env.AUTH_TOKEN).toBe("access-token");
+	});
+
+	test("ORGANIZATION_ID accepts non-UUID organization slugs", () => {
+		expect(env.ORGANIZATION_ID).toBe("org_local_admin");
 	});
 });

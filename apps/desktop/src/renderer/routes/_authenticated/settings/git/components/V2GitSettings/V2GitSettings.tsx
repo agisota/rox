@@ -1,7 +1,9 @@
 import {
 	type BranchPrefixMode,
-	resolveBranchPrefix,
-} from "@rox/shared/workspace-launch";
+	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
+	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
+} from "@rox/local-db";
+import { resolveBranchPrefix } from "@rox/shared/workspace-launch";
 import { toast } from "@rox/ui/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -114,8 +116,11 @@ export function V2GitSettings({ hostId }: V2GitSettingsProps) {
 		},
 	});
 
-	const mode: BranchPrefixMode = branchPrefixQuery.data?.mode ?? "none";
-	const customPrefix = branchPrefixQuery.data?.customPrefix ?? null;
+	const mode: BranchPrefixMode =
+		branchPrefixQuery.data?.mode ?? DEFAULT_SETTINGS_BRANCH_PREFIX_MODE;
+	const customPrefix =
+		branchPrefixQuery.data?.customPrefix ??
+		DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM;
 
 	const setMutation = useMutation({
 		mutationFn: (vars: {

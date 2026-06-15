@@ -1,0 +1,9 @@
+{
+	"defaultAdapter": "codex",
+	"concurrency": 1,
+	"maxAgents": 16,
+	"workspaceMode": "inplace",
+	"timeout": 2400,
+	"schemaRetries": 2,
+	"runsRoot": "~/.odw/runs"
+}

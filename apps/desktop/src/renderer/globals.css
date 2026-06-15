@@ -7,9 +7,9 @@
 @source "../../../../packages/ui/node_modules/streamdown/dist/*.js";
 
 /**
- * Victor Mono — bundled app font (#25). Source: github.com/agisota/victor-mono
+ * Victor Mono — bundled app fallback font (#25). Source: github.com/agisota/victor-mono
  * (fork of rubjo/victor-mono). Monospace, so it satisfies the terminal font
- * validator. Used for UI, terminal, and code editor.
+ * validator.
  */
 @font-face {
 	font-family: "Victor Mono";
@@ -41,31 +41,27 @@
 }
 
 /**
- * UI typography (themes-fonts epic).
- *
- * PingFang TC is a macOS system face; TT Norms Pro Condensed is the brand UI
- * face. Both are referenced via local() so the app uses an installed copy
- * without bundling a binary — the font-family stack on `body` falls back to
- * ui-sans-serif/system-ui when neither is present. Weight 200 (extra-light)
- * matches the intended thin UI treatment.
+ * UI typography (themes-fonts epic). SF UI Display Pro is referenced via
+ * local() so the app uses an installed copy without bundling a binary.
  */
 @font-face {
-	font-family: "PingFang TC";
+	font-family: "SF UI Display Pro";
 	font-style: normal;
-	font-weight: 200;
+	font-weight: 400;
 	font-display: swap;
 	src:
-		local("PingFang TC Ultralight"), local("PingFangTC-Ultralight"),
-		local("PingFang TC");
+		local("SF UI Display Pro"), local("SFUIDisplayPro-Regular"),
+		local("SF Pro Display"), local("SFProDisplay-Regular");
 }
+
 @font-face {
-	font-family: "TT Norms Pro Condensed";
+	font-family: "Monospace Argon";
 	font-style: normal;
-	font-weight: 200;
+	font-weight: 400;
 	font-display: swap;
 	src:
-		local("TT Norms Pro Condensed ExtraLight"),
-		local("TTNormsProCondensed-ExtraLight"), local("TT Norms Pro Condensed");
+		local("Monospace Argon"), local("Monaspace Argon"),
+		local("MonaspaceArgon-Regular"), local("Monaspace Argon Regular");
 }
 
 /**
@@ -227,9 +223,9 @@
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-highlight: var(--highlight);
 	--color-highlight-foreground: var(--highlight-foreground);
-	/* Victor Mono everywhere — default UI sans + mono tokens (#25). */
-	--font-sans: "Victor Mono", ui-sans-serif, system-ui, sans-serif;
-	--font-mono: "Victor Mono", ui-monospace, monospace;
+	/* Default UI sans + mono tokens. */
+	--font-sans: "SF UI Display Pro", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Monospace Argon", "Victor Mono", ui-monospace, monospace;
 }
 
 @layer base {
@@ -258,14 +254,11 @@
 		-webkit-app-region: no-drag;
 		-webkit-font-smoothing: antialiased;
 		/*
-		 * UI typeface (themes-fonts epic): PingFang TC / TT Norms Pro Condensed at
-		 * 14px / weight 200. The terminal (.xterm) keeps its own monospace stack
-		 * below and is intentionally NOT affected by this change.
+		 * UI typeface (themes-fonts epic). The terminal (.xterm) keeps its own
+		 * monospace stack below and is intentionally NOT affected by this change.
 		 */
-		font-family:
-			"Victor Mono", "PingFang TC", "TT Norms Pro Condensed", ui-sans-serif,
-			system-ui, sans-serif;
-		font-size: 14px;
+		font-family: "SF UI Display Pro", ui-sans-serif, system-ui, sans-serif;
+		font-size: 12px;
 		font-weight: 400;
 	}
 
@@ -287,7 +280,7 @@
 	 * OS-level vibrancy material (set on the BrowserWindow) is visible.
 	 */
 	:root.glass {
-		--surface-opacity: 0.72;
+		--surface-opacity: 0.8;
 		--backdrop-blur: 24px;
 	}
 

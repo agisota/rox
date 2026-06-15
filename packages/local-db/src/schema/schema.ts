@@ -20,6 +20,14 @@ import type {
 	WorkspaceType,
 } from "./zod";
 
+export const DEFAULT_SETTINGS_BRANCH_PREFIX_MODE =
+	"custom" satisfies BranchPrefixMode;
+export const DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM = "rox";
+export const DEFAULT_SETTINGS_EDITOR_FONT_FAMILY = "SF UI Display Pro";
+export const DEFAULT_SETTINGS_EDITOR_FONT_SIZE = 12;
+export const DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY = "Monospace Argon";
+export const DEFAULT_SETTINGS_TERMINAL_FONT_SIZE = 12;
+
 /**
  * Projects table - represents a git repository that the user has opened
  */
@@ -211,8 +219,12 @@ export const settings = sqliteTable("settings", {
 	autoApplyDefaultPreset: integer("auto_apply_default_preset", {
 		mode: "boolean",
 	}),
-	branchPrefixMode: text("branch_prefix_mode").$type<BranchPrefixMode>(),
-	branchPrefixCustom: text("branch_prefix_custom"),
+	branchPrefixMode: text("branch_prefix_mode")
+		.$type<BranchPrefixMode>()
+		.default(DEFAULT_SETTINGS_BRANCH_PREFIX_MODE),
+	branchPrefixCustom: text("branch_prefix_custom").default(
+		DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
+	),
 	notificationSoundsMuted: integer("notification_sounds_muted", {
 		mode: "boolean",
 	}),
@@ -223,11 +235,21 @@ export const settings = sqliteTable("settings", {
 	useCompactTerminalAddButton: integer("use_compact_terminal_add_button", {
 		mode: "boolean",
 	}),
-	terminalFontFamily: text("terminal_font_family"),
-	terminalFontSize: integer("terminal_font_size"),
-	editorFontFamily: text("editor_font_family"),
-	editorFontSize: integer("editor_font_size"),
-	showResourceMonitor: integer("show_resource_monitor", { mode: "boolean" }),
+	terminalFontFamily: text("terminal_font_family").default(
+		DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
+	),
+	terminalFontSize: integer("terminal_font_size").default(
+		DEFAULT_SETTINGS_TERMINAL_FONT_SIZE,
+	),
+	editorFontFamily: text("editor_font_family").default(
+		DEFAULT_SETTINGS_EDITOR_FONT_FAMILY,
+	),
+	editorFontSize: integer("editor_font_size").default(
+		DEFAULT_SETTINGS_EDITOR_FONT_SIZE,
+	),
+	showResourceMonitor: integer("show_resource_monitor", {
+		mode: "boolean",
+	}).default(true),
 	worktreeBaseDir: text("worktree_base_dir"),
 	openLinksInApp: integer("open_links_in_app", { mode: "boolean" }),
 	defaultEditor: text("default_editor").$type<ExternalApp>(),

@@ -1,4 +1,10 @@
-export type ProviderId = "anthropic" | "openai";
+export type ProviderId =
+	| "rox"
+	| "anthropic"
+	| "openai"
+	| "groq"
+	| "google"
+	| "deepseek";
 
 export type ProviderConnectionState =
 	| "connected"
@@ -40,7 +46,20 @@ export interface ModelProviderStatus {
 }
 
 export function getProviderName(providerId: ProviderId): string {
-	return providerId === "anthropic" ? "Anthropic" : "OpenAI";
+	switch (providerId) {
+		case "rox":
+			return "Rox";
+		case "anthropic":
+			return "Anthropic";
+		case "openai":
+			return "OpenAI";
+		case "groq":
+			return "Groq";
+		case "google":
+			return "Google Gemini";
+		case "deepseek":
+			return "DeepSeek";
+	}
 }
 
 function getIssueFromAuthStatus(

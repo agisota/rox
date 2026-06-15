@@ -18,6 +18,7 @@ export interface AppearanceGlassState {
 
 export const MIN_WINDOW_OPACITY = 0.2;
 export const MAX_WINDOW_OPACITY = 1;
+export const DEFAULT_GLASS_WINDOW_OPACITY = 0.8;
 
 /** Convert persisted appearance state into renderer glass settings. */
 export function toGlassSettings(state: AppearanceGlassState): GlassSettings {

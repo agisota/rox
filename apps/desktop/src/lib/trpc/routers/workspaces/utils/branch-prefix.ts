@@ -1,5 +1,9 @@
 import type { projects } from "@rox/local-db";
-import { settings } from "@rox/local-db";
+import {
+	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
+	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
+	settings,
+} from "@rox/local-db";
 import { localDb } from "main/lib/local-db";
 import { getBranchPrefix, sanitizeAuthorPrefix } from "./git";
 
@@ -23,10 +27,11 @@ export async function resolveBranchPrefix(
 	const projectOverrides = project.branchPrefixMode != null;
 	const prefixMode = projectOverrides
 		? project.branchPrefixMode
-		: (globalSettings?.branchPrefixMode ?? "none");
+		: (globalSettings?.branchPrefixMode ?? DEFAULT_SETTINGS_BRANCH_PREFIX_MODE);
 	const customPrefix = projectOverrides
 		? project.branchPrefixCustom
-		: globalSettings?.branchPrefixCustom;
+		: (globalSettings?.branchPrefixCustom ??
+			DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM);
 
 	const rawPrefix = await getBranchPrefix({
 		repoPath: project.mainRepoPath,

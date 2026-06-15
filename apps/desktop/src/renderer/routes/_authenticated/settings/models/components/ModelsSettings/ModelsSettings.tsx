@@ -1,4 +1,5 @@
 import { chatServiceTrpc } from "@rox/chat/client";
+import { ModelSelectorLogo } from "@rox/ui/ai-elements/model-selector";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
 import {
@@ -22,14 +23,18 @@ import {
 	SETTING_ITEM_ID,
 	type SettingItemId,
 } from "../../../utils/settings-search";
+import { ApiKeyProviderSection } from "./components/ApiKeyProviderSection";
 import { ConfigRow } from "./components/ConfigRow";
 import { SettingsSection } from "./components/SettingsSection";
 import {
+	API_KEY_PROVIDER_CONFIGS,
 	buildAnthropicEnvText,
 	EMPTY_ANTHROPIC_FORM,
 	getProviderAction,
 	getStatusBadge,
 	parseAnthropicForm,
+	ROX_PROVIDER_DETAILS,
+	ROX_PROVIDER_STATUS,
 	resolveProviderStatus,
 } from "./utils";
 
@@ -50,11 +55,25 @@ const STATUS_BADGE_LABELS: Record<string, string> = {
 };
 
 export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
+	const showRox = isItemVisible(SETTING_ITEM_ID.MODELS_ROX, visibleItems);
 	const showAnthropic = isItemVisible(
 		SETTING_ITEM_ID.MODELS_ANTHROPIC,
 		visibleItems,
 	);
 	const showOpenAI = isItemVisible(SETTING_ITEM_ID.MODELS_OPENAI, visibleItems);
+	const visibleApiKeyProviderConfigs = API_KEY_PROVIDER_CONFIGS.filter(
+		(config) => {
+			switch (config.id) {
+				case "groq":
+					return isItemVisible(SETTING_ITEM_ID.MODELS_GROQ, visibleItems);
+				case "google":
+					return isItemVisible(SETTING_ITEM_ID.MODELS_GOOGLE, visibleItems);
+				case "deepseek":
+					return isItemVisible(SETTING_ITEM_ID.MODELS_DEEPSEEK, visibleItems);
+			}
+			return false;
+		},
+	);
 	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const [openAIApiKeyInput, setOpenAIApiKeyInput] = useState("");
 	const [anthropicApiKeyInput, setAnthropicApiKeyInput] = useState("");
@@ -135,6 +154,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 		() => getStatusBadge(openAIStatus),
 		[openAIStatus],
 	);
+	const roxBadge = useMemo(() => getStatusBadge(ROX_PROVIDER_STATUS), []);
 
 	const saveAnthropicForm = async (nextForm = anthropicForm) => {
 		const envText = buildAnthropicEnvText(nextForm);
@@ -256,6 +276,42 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 				</div>
 
 				<div className="space-y-8">
+					{showRox ? (
+						<SettingsSection
+							title="Rox"
+							icon={<ModelSelectorLogo provider="rox" />}
+							description="ROX-1 доступна бесплатно и выбрана моделью по умолчанию без настройки."
+							action={
+								roxBadge ? (
+									<Badge variant={roxBadge.variant}>
+										{getStatusBadgeLabel(roxBadge.label)}
+									</Badge>
+								) : null
+							}
+						>
+							<div className="grid gap-3 rounded-md border border-border/60 p-3 text-xs sm:grid-cols-3">
+								<div>
+									<div className="text-muted-foreground">Модель</div>
+									<div className="mt-1 font-mono">
+										{ROX_PROVIDER_DETAILS.modelId}
+									</div>
+								</div>
+								<div>
+									<div className="text-muted-foreground">Base URL</div>
+									<div className="mt-1 break-all font-mono">
+										{ROX_PROVIDER_DETAILS.baseUrl}
+									</div>
+								</div>
+								<div>
+									<div className="text-muted-foreground">Ключ</div>
+									<div className="mt-1 font-mono">
+										{ROX_PROVIDER_DETAILS.apiKeyEnv}
+									</div>
+								</div>
+							</div>
+						</SettingsSection>
+					) : null}
+
 					{showAnthropic ? (
 						<SettingsSection
 							title="Anthropic"
@@ -515,6 +571,10 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 							/>
 						</SettingsSection>
 					) : null}
+
+					{visibleApiKeyProviderConfigs.map((config) => (
+						<ApiKeyProviderSection key={config.id} config={config} />
+					))}
 				</div>
 			</div>
 

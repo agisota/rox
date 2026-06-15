@@ -1,3 +1,7 @@
+import {
+	DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
+	DEFAULT_SETTINGS_TERMINAL_FONT_SIZE,
+} from "@rox/local-db";
 import type { ITheme } from "@xterm/xterm";
 import { toXtermTheme } from "renderer/stores/theme/utils";
 import {
@@ -49,6 +53,7 @@ function serializeFontFamilyList(families: string[]): string {
 }
 
 export const DEFAULT_TERMINAL_FONT_FAMILIES = [
+	DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
 	"Victor Mono",
 	"JetBrains Mono",
 	"JetBrainsMono Nerd Font",
@@ -69,7 +74,7 @@ export const DEFAULT_TERMINAL_FONT_FAMILY = serializeFontFamilyList([
 	...DEFAULT_TERMINAL_FONT_FAMILIES,
 ]);
 
-export const DEFAULT_TERMINAL_FONT_SIZE = 14;
+export const DEFAULT_TERMINAL_FONT_SIZE = DEFAULT_SETTINGS_TERMINAL_FONT_SIZE;
 
 const MONOSPACE_GENERIC_FAMILIES = new Set(["monospace", "ui-monospace"]);
 

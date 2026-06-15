@@ -54,10 +54,19 @@ interface HostServiceProcess {
 	status: HostServiceStatus;
 }
 
+type HostServiceSettingsRow = typeof settings.$inferSelect | undefined;
+
 // High, uncommon user-space range: above usual web/dev server ports and below
 // macOS's default ephemeral range, while still falling back if occupied.
 const STABLE_PORT_BASE = 48_000;
 const STABLE_PORT_COUNT = 1_000;
+const STARTUP_OUTPUT_TAIL_BYTES = 8 * 1024;
+
+type StartupResult =
+	| { kind: "healthy" }
+	| { kind: "timeout" }
+	| { kind: "exit"; code: number | null; signal: NodeJS.Signals | null }
+	| { kind: "error"; error: Error };
 
 function getStablePortForOrganization(organizationId: string): number {
 	let hash = 2_166_136_261;
@@ -357,76 +366,81 @@ export class HostServiceCoordinator extends EventEmitter {
 		this.emitStatus(organizationId, "starting", null);
 
 		const childEnv = await this.buildEnv(organizationId, port, secret, config);
-		const logFd = openRotatingLogFd(
-			path.join(manifestDir(organizationId), "host-service.log"),
-			MAX_HOST_LOG_BYTES,
-		);
-		// Dev: pipe child stdout/stderr through this process so log lines
-		// land in the developer's `bun dev` terminal. Production: hard-back
-		// stdio with the rotating log file.
+		const logPath = path.join(ROX_HOME_DIR, "host-service.log");
+		// Pipe stdout/stderr in all modes so startup crashes are visible in a
+		// stable user-facing log, not only in a dev terminal or per-org folder.
 		const isDev = !app.isPackaged;
-		const stdio: childProcess.StdioOptions = isDev
-			? ["ignore", "pipe", "pipe"]
-			: logFd >= 0
-				? ["ignore", logFd, logFd]
-				: ["ignore", "ignore", "ignore"];
+		const stdio: childProcess.StdioOptions = ["ignore", "pipe", "pipe"];
 
 		let child: ReturnType<typeof childProcess.spawn>;
-		try {
-			child = childProcess.spawn(process.execPath, [this.scriptPath], {
-				detached: false,
-				stdio,
-				env: childEnv,
-				// Avoid a flashing CMD window on Windows.
-				windowsHide: true,
-			});
-		} finally {
-			if (logFd >= 0) {
-				try {
-					fs.closeSync(logFd);
-				} catch {
-					// Best-effort — child has its own dup of the fd.
-				}
-			}
-		}
+		child = childProcess.spawn(process.execPath, [this.scriptPath], {
+			detached: false,
+			stdio,
+			env: childEnv,
+			// Avoid a flashing CMD window on Windows.
+			windowsHide: true,
+		});
 
-		// In dev, fan child output through to parent stdout/stderr with a
-		// prefix so it's identifiable in `bun dev`.
-		if (isDev && child.stdout && child.stderr) {
-			const tag = `[hs:${organizationId.slice(0, 8)}]`;
-			pipeWithPrefix(child.stdout, process.stdout, tag);
-			pipeWithPrefix(child.stderr, process.stderr, tag);
-		}
+		const outputCapture = attachHostServiceOutput({
+			organizationId,
+			stdout: child.stdout,
+			stderr: child.stderr,
+			logPath,
+			orgLogPath: path.join(manifestDir(organizationId), "host-service.log"),
+			forwardToConsole: isDev,
+		});
 
 		const childPid = child.pid;
 		if (!childPid) {
+			outputCapture.close();
 			this.instances.delete(organizationId);
 			throw new Error("Failed to spawn host service process");
 		}
 
 		instance.pid = childPid;
+		const exitPromise = new Promise<StartupResult>((resolve) => {
+			child.once("exit", (code, signal) => {
+				resolve({ kind: "exit", code, signal });
+			});
+			child.once("error", (error) => {
+				resolve({
+					kind: "error",
+					error: error instanceof Error ? error : new Error(String(error)),
+				});
+			});
+		});
 		child.on("exit", (code) => {
+			outputCapture.close();
 			log.info(`[host-service:${organizationId}] exited with code ${code}`);
 			const current = this.instances.get(organizationId);
 			if (!current || current.pid !== childPid || current.status === "stopped")
 				return;
 
+			const previousStatus = current.status;
 			this.rememberPort(organizationId, current.port);
 			this.instances.delete(organizationId);
 			removeManifest(organizationId);
-			this.emitStatus(organizationId, "stopped", "running");
+			this.emitStatus(organizationId, "stopped", previousStatus);
 		});
 		// Don't let the child block Electron's exit — stopAll() handles teardown.
 		child.unref();
 
 		const endpoint = `http://127.0.0.1:${port}`;
-		const healthy = await pollHealthCheck(endpoint, secret);
-		if (!healthy) {
+		const startupResult = await Promise.race([
+			pollHealthCheck(endpoint, secret).then<StartupResult>((healthy) =>
+				healthy ? { kind: "healthy" } : { kind: "timeout" },
+			),
+			exitPromise,
+		]);
+		if (startupResult.kind !== "healthy") {
 			child.kill("SIGTERM");
 			this.instances.delete(organizationId);
-			throw new Error(
-				`Host service failed to start within ${HEALTH_POLL_TIMEOUT_MS}ms`,
+			const message = formatStartupFailure(
+				startupResult,
+				logPath,
+				outputCapture.getTail(),
 			);
+			throw new Error(message);
 		}
 
 		instance.status = "running";
@@ -443,7 +457,7 @@ export class HostServiceCoordinator extends EventEmitter {
 		config: SpawnConfig,
 	): Promise<Record<string, string>> {
 		const organizationDir = manifestDir(organizationId);
-		const row = localDb.select().from(settings).get();
+		const row = this.readSettingsForHostService();
 		const exposeViaRelay = row?.exposeHostServiceViaRelay ?? false;
 
 		const childEnv = await getProcessEnvWithShellPath({
@@ -491,6 +505,17 @@ export class HostServiceCoordinator extends EventEmitter {
 		return childEnv;
 	}
 
+	private readSettingsForHostService(): HostServiceSettingsRow {
+		try {
+			return localDb.select().from(settings).get();
+		} catch (error) {
+			throw new Error(
+				`Host service startup blocked: desktop settings database is not readable. ${formatErrorMessage(error)}`,
+				{ cause: error },
+			);
+		}
+	}
+
 	// ── Events ────────────────────────────────────────────────────────
 
 	private emitStatus(
@@ -506,31 +531,138 @@ export class HostServiceCoordinator extends EventEmitter {
 	}
 }
 
-/**
- * Forward child stdout/stderr to a parent stream with a per-line prefix.
- * Plain `chunk => parent.write(`${tag} ${chunk}`)` only prefixes the first
- * line in a chunk and breaks visual scanning when child output bursts.
- */
-function pipeWithPrefix(
-	source: NodeJS.ReadableStream,
-	target: NodeJS.WritableStream,
-	tag: string,
-): void {
+interface OutputCaptureOptions {
+	organizationId: string;
+	stdout: NodeJS.ReadableStream | null;
+	stderr: NodeJS.ReadableStream | null;
+	logPath: string;
+	orgLogPath: string;
+	forwardToConsole: boolean;
+}
+
+interface OutputCapture {
+	getTail(): string;
+	close(): void;
+}
+
+function attachHostServiceOutput(options: OutputCaptureOptions): OutputCapture {
+	const streams = [
+		openRotatingLogStream(options.logPath),
+		openRotatingLogStream(options.orgLogPath),
+	].filter((stream): stream is fs.WriteStream => stream !== null);
+	let tail = "";
+
+	const append = (text: string): void => {
+		for (const stream of streams) {
+			stream.write(text);
+		}
+		tail += text;
+		if (Buffer.byteLength(tail, "utf8") > STARTUP_OUTPUT_TAIL_BYTES) {
+			tail = tail.slice(-STARTUP_OUTPUT_TAIL_BYTES);
+		}
+	};
+
+	const tag = `[hs:${options.organizationId.slice(0, 8)}]`;
+	if (options.stdout) {
+		pipeHostServiceOutput({
+			source: options.stdout,
+			parent: options.forwardToConsole ? process.stdout : null,
+			tag,
+			streamName: "stdout",
+			append,
+		});
+	}
+	if (options.stderr) {
+		pipeHostServiceOutput({
+			source: options.stderr,
+			parent: options.forwardToConsole ? process.stderr : null,
+			tag,
+			streamName: "stderr",
+			append,
+		});
+	}
+
+	return {
+		getTail: () => tail.trim(),
+		close: () => {
+			for (const stream of streams) {
+				stream.end();
+			}
+		},
+	};
+}
+
+function openRotatingLogStream(logPath: string): fs.WriteStream | null {
+	const fd = openRotatingLogFd(logPath, MAX_HOST_LOG_BYTES);
+	if (fd < 0) return null;
+	return fs.createWriteStream(logPath, {
+		fd,
+		flags: "a",
+		autoClose: true,
+	});
+}
+
+interface PipeHostServiceOutputOptions {
+	source: NodeJS.ReadableStream;
+	parent: NodeJS.WritableStream | null;
+	tag: string;
+	streamName: "stdout" | "stderr";
+	append: (text: string) => void;
+}
+
+function pipeHostServiceOutput({
+	source,
+	parent,
+	tag,
+	streamName,
+	append,
+}: PipeHostServiceOutputOptions): void {
 	let pending = "";
-	source.on("data", (chunk: Buffer) => {
-		const text = pending + chunk.toString("utf8");
+	source.on("data", (chunk: unknown) => {
+		const text = pending + chunkToText(chunk);
 		const lines = text.split("\n");
 		// Last element is a partial line if input doesn't end with \n;
 		// stash it for the next chunk.
 		pending = lines.pop() ?? "";
 		for (const line of lines) {
-			target.write(`${tag} ${line}\n`);
+			const formatted = `${new Date().toISOString()} ${tag} [${streamName}] ${line}\n`;
+			append(formatted);
+			parent?.write(`${tag} ${line}\n`);
 		}
 	});
 	source.on("end", () => {
-		if (pending) target.write(`${tag} ${pending}\n`);
+		if (pending) {
+			const formatted = `${new Date().toISOString()} ${tag} [${streamName}] ${pending}\n`;
+			append(formatted);
+			parent?.write(`${tag} ${pending}\n`);
+		}
 		pending = "";
 	});
+}
+
+function chunkToText(chunk: unknown): string {
+	if (Buffer.isBuffer(chunk)) return chunk.toString("utf8");
+	if (typeof chunk === "string") return chunk;
+	return String(chunk);
+}
+
+function formatStartupFailure(
+	result: Exclude<StartupResult, { kind: "healthy" }>,
+	logPath: string,
+	outputTail: string,
+): string {
+	const reason =
+		result.kind === "timeout"
+			? `Host service failed to start within ${HEALTH_POLL_TIMEOUT_MS}ms`
+			: result.kind === "exit"
+				? `Host service exited during startup (code=${result.code ?? "null"}, signal=${result.signal ?? "null"})`
+				: `Host service spawn failed: ${result.error.message}`;
+	const output = outputTail ? ` Last output: ${outputTail}` : "";
+	return `${reason}. Log: ${logPath}.${output}`;
+}
+
+function formatErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
 }
 
 let coordinator: HostServiceCoordinator | null = null;

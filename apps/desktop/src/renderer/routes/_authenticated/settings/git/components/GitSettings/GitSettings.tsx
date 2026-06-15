@@ -1,4 +1,8 @@
-import type { BranchPrefixMode } from "@rox/local-db";
+import {
+	type BranchPrefixMode,
+	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
+	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
+} from "@rox/local-db";
 import {
 	resolveBranchPrefix,
 	sanitizeSegment,
@@ -79,13 +83,18 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 	const { data: branchPrefix, isLoading: isBranchPrefixLoading } =
 		electronTrpc.settings.getBranchPrefix.useQuery();
 	const { data: gitInfo } = electronTrpc.settings.getGitInfo.useQuery();
+	const branchPrefixMode =
+		branchPrefix?.mode ?? DEFAULT_SETTINGS_BRANCH_PREFIX_MODE;
+	const branchPrefixCustom =
+		branchPrefix?.customPrefix ?? DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM;
 
-	const [customPrefixInput, setCustomPrefixInput] = useState(
-		branchPrefix?.customPrefix ?? "",
-	);
+	const [customPrefixInput, setCustomPrefixInput] =
+		useState(branchPrefixCustom);
 
 	useEffect(() => {
-		setCustomPrefixInput(branchPrefix?.customPrefix ?? "");
+		setCustomPrefixInput(
+			branchPrefix?.customPrefix ?? DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
+		);
 	}, [branchPrefix?.customPrefix]);
 
 	const setBranchPrefix = electronTrpc.settings.setBranchPrefix.useMutation({
@@ -115,14 +124,14 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 
 	const previewPrefix =
 		resolveBranchPrefix({
-			mode: branchPrefix?.mode ?? "none",
+			mode: branchPrefixMode,
 			customPrefix: customPrefixInput,
 			authorPrefix: gitInfo?.authorPrefix,
 			githubUsername: gitInfo?.githubUsername,
 		}) ||
-		(branchPrefix?.mode === "author"
+		(branchPrefixMode === "author"
 			? "author-name"
-			: branchPrefix?.mode === "github"
+			: branchPrefixMode === "github"
 				? "username"
 				: null);
 
@@ -174,7 +183,7 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 						</div>
 						<div className="flex items-center gap-2">
 							<Select
-								value={branchPrefix?.mode ?? "none"}
+								value={branchPrefixMode}
 								onValueChange={(value) =>
 									handleBranchPrefixModeChange(value as BranchPrefixMode)
 								}
@@ -196,7 +205,7 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 									))}
 								</SelectContent>
 							</Select>
-							{branchPrefix?.mode === "custom" && (
+							{branchPrefixMode === "custom" && (
 								<Input
 									placeholder="Префикс"
 									value={customPrefixInput}

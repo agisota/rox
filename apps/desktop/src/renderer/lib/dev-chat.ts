@@ -1,49 +1,9 @@
+import { AVAILABLE_CHAT_MODELS } from "@rox/shared/chat-models";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import { env } from "renderer/env.renderer";
 import { MOCK_ORG_ID } from "shared/constants";
 
-export const DEV_CHAT_MODELS: ModelOption[] = [
-	{
-		id: "anthropic/claude-opus-4-8",
-		name: "Opus 4.8",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-opus-4-7",
-		name: "Opus 4.7",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-fable-5",
-		name: "Fable 5",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-sonnet-4-6",
-		name: "Sonnet 4.6",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-haiku-4-5",
-		name: "Haiku 4.5",
-		provider: "Anthropic",
-	},
-	{
-		id: "openai/gpt-5.5",
-		name: "GPT-5.5",
-		provider: "OpenAI",
-	},
-	{
-		id: "openai/gpt-5.4",
-		name: "GPT-5.4",
-		provider: "OpenAI",
-	},
-	{
-		id: "openai/gpt-5.3-codex",
-		name: "GPT-5.3 Codex",
-		provider: "OpenAI",
-	},
-];
+export const DEV_CHAT_MODELS: ModelOption[] = [...AVAILABLE_CHAT_MODELS];
 
 export function isDesktopChatDevMode(
 	skipEnvValidation = env.SKIP_ENV_VALIDATION,

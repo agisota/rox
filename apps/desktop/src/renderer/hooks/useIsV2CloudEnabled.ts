@@ -1,10 +1,8 @@
 import { isV2OnlyUser } from "@rox/shared/v2-only-user";
 import { authClient } from "renderer/lib/auth-client";
-import { useV2LocalOverrideStore } from "renderer/stores/v2-local-override";
 
 /**
- * True for accounts created on/after V2_ONLY_USER_CUTOFF — these users
- * default to v2.
+ * True for accounts that should hide legacy v1 affordances entirely.
  */
 export function useIsV2OnlyUser(): boolean {
 	const { data: session } = authClient.useSession();
@@ -13,7 +11,5 @@ export function useIsV2OnlyUser(): boolean {
 
 /** Returns whether v2 is currently active for this user. */
 export function useIsV2CloudEnabled(): boolean {
-	const v2Only = useIsV2OnlyUser();
-	const optInV2 = useV2LocalOverrideStore((s) => s.optInV2);
-	return optInV2 ?? v2Only;
+	return true;
 }

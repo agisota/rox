@@ -57,4 +57,29 @@ describe("deriveModelProviderStatus", () => {
 		expect(status.issue).toBeNull();
 		expect(status.capabilities.canUseChat).toBe(false);
 	});
+
+	it("supports built-in and API-key-only providers", () => {
+		const rox = deriveModelProviderStatus({
+			providerId: "rox",
+			authStatus: {
+				authenticated: true,
+				method: "env",
+				source: "managed",
+				issue: null,
+			},
+		});
+		const groq = deriveModelProviderStatus({
+			providerId: "groq",
+			authStatus: {
+				authenticated: true,
+				method: "api_key",
+				source: "managed",
+				issue: null,
+			},
+		});
+
+		expect(rox.connectionState).toBe("connected");
+		expect(groq.connectionState).toBe("connected");
+		expect(groq.capabilities.canUseChat).toBe(true);
+	});
 });

@@ -20,6 +20,10 @@
 			"types": "./src/rox-models.ts",
 			"default": "./src/rox-models.ts"
 		},
+		"./chat-models": {
+			"types": "./src/chat-models.ts",
+			"default": "./src/chat-models.ts"
+		},
 		"./rox-ledger": {
 			"types": "./src/rox-ledger.ts",
 			"default": "./src/rox-ledger.ts"

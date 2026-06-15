@@ -2,7 +2,7 @@ import { Button } from "@rox/ui/button";
 import { Skeleton } from "@rox/ui/skeleton";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useEffect, useState } from "react";
-import { FaGithub, FaSlack } from "react-icons/fa";
+import { FaGithub } from "react-icons/fa";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
 import { SiLinear } from "react-icons/si";
 import { env } from "renderer/env.renderer";
@@ -82,15 +82,9 @@ export function IntegrationsSettings({
 	}, [fetchGithubInstallation]);
 
 	const linearConnection = integrations?.find((i) => i.provider === "linear");
-	const slackConnection = integrations?.find((i) => i.provider === "slack");
 	const isLinearConnected = !!linearConnection;
-	const isSlackConnected = !!slackConnection;
 	const isGithubConnected =
 		!!githubInstallation && !githubInstallation.suspended;
-	const showSlack = isItemVisible(
-		SETTING_ITEM_ID.INTEGRATIONS_SLACK,
-		visibleItems,
-	);
 
 	const handleOpenWeb = (path: string) => {
 		window.open(`${env.NEXT_PUBLIC_WEB_URL}${path}`, "_blank");
@@ -143,17 +137,6 @@ export function IntegrationsSettings({
 						connectedOrgName={githubInstallation?.accountLogin}
 						isLoading={isLoadingGithub}
 						onManage={() => handleOpenWeb("/integrations/github")}
-					/>
-				)}
-
-				{showSlack && (
-					<IntegrationRow
-						name="Slack"
-						description="Управляйте задачами из разговоров в Slack."
-						icon={<FaSlack className="size-5" />}
-						isConnected={isSlackConnected}
-						connectedOrgName={slackConnection?.externalOrgName}
-						onManage={() => handleOpenWeb("/integrations/slack")}
 					/>
 				)}
 			</div>

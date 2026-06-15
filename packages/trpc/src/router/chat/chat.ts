@@ -1,6 +1,7 @@
 import { db, dbWs } from "@rox/db/client";
 import { chatSessions } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
+import { AVAILABLE_CHAT_MODELS } from "@rox/shared/chat-models";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
@@ -8,52 +9,9 @@ import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
 import { uploadChatAttachment } from "./utils/upload-chat-attachment";
 
-const AVAILABLE_MODELS = [
-	{
-		id: "anthropic/claude-opus-4-8",
-		name: "Opus 4.8",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-opus-4-7",
-		name: "Opus 4.7",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-fable-5",
-		name: "Fable 5",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-sonnet-4-6",
-		name: "Sonnet 4.6",
-		provider: "Anthropic",
-	},
-	{
-		id: "anthropic/claude-haiku-4-5",
-		name: "Haiku 4.5",
-		provider: "Anthropic",
-	},
-	{
-		id: "openai/gpt-5.5",
-		name: "GPT-5.5",
-		provider: "OpenAI",
-	},
-	{
-		id: "openai/gpt-5.4",
-		name: "GPT-5.4",
-		provider: "OpenAI",
-	},
-	{
-		id: "openai/gpt-5.3-codex",
-		name: "GPT-5.3 Codex",
-		provider: "OpenAI",
-	},
-];
-
 export const chatRouter = {
 	getModels: protectedProcedure.query(() => {
-		return { models: AVAILABLE_MODELS };
+		return { models: [...AVAILABLE_CHAT_MODELS] };
 	}),
 
 	createSession: protectedProcedure

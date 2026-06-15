@@ -2,6 +2,12 @@ import {
 	type AgentCustomDefinition,
 	type AgentPresetOverrideEnvelope,
 	BRANCH_PREFIX_MODES,
+	DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
+	DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
+	DEFAULT_SETTINGS_EDITOR_FONT_FAMILY,
+	DEFAULT_SETTINGS_EDITOR_FONT_SIZE,
+	DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
+	DEFAULT_SETTINGS_TERMINAL_FONT_SIZE,
 	EXECUTION_MODES,
 	EXTERNAL_APPS,
 	FILE_OPEN_MODES,
@@ -92,10 +98,25 @@ function isValidRingtoneId(ringtoneId: string): boolean {
 	return false;
 }
 
+const DEFAULT_SETTINGS_VALUES = {
+	id: 1,
+	branchPrefixMode: DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
+	branchPrefixCustom: DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
+	terminalFontFamily: DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
+	terminalFontSize: DEFAULT_SETTINGS_TERMINAL_FONT_SIZE,
+	editorFontFamily: DEFAULT_SETTINGS_EDITOR_FONT_FAMILY,
+	editorFontSize: DEFAULT_SETTINGS_EDITOR_FONT_SIZE,
+	showResourceMonitor: DEFAULT_SHOW_RESOURCE_MONITOR,
+} satisfies typeof settings.$inferInsert;
+
 function getSettings() {
 	let row = localDb.select().from(settings).get();
 	if (!row) {
-		row = localDb.insert(settings).values({ id: 1 }).returning().get();
+		row = localDb
+			.insert(settings)
+			.values(DEFAULT_SETTINGS_VALUES)
+			.returning()
+			.get();
 	}
 	return row;
 }
@@ -787,8 +808,9 @@ export const createSettingsRouter = () => {
 		getBranchPrefix: publicProcedure.query(() => {
 			const row = getSettings();
 			return {
-				mode: row.branchPrefixMode ?? "none",
-				customPrefix: row.branchPrefixCustom ?? null,
+				mode: row.branchPrefixMode ?? DEFAULT_SETTINGS_BRANCH_PREFIX_MODE,
+				customPrefix:
+					row.branchPrefixCustom ?? DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM,
 			};
 		}),
 

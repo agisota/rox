@@ -10,6 +10,7 @@ import {
 } from "../auth/openai";
 import {
 	ANTHROPIC_AUTH_PROVIDER_ID,
+	type ApiKeyAuthProviderId,
 	OPENAI_AUTH_PROVIDER_ID,
 	OPENAI_AUTH_PROVIDER_IDS,
 } from "../auth/provider-ids";
@@ -42,6 +43,40 @@ import {
 } from "./openai-oauth-loopback";
 
 type OpenAIAuthStorage = ReturnType<typeof createAuthStorage>;
+
+type ApiKeyProviderConfig = {
+	readonly providerName: string;
+	readonly envKeys: readonly string[];
+	readonly requiredMessage: string;
+};
+
+type AuthLogProvider = "anthropic" | "openai" | ApiKeyAuthProviderId;
+
+const API_KEY_PROVIDER_CONFIGS = {
+	groq: {
+		providerName: "Groq",
+		envKeys: ["GROQ_API_KEY"],
+		requiredMessage: "Groq API key is required",
+	},
+	google: {
+		providerName: "Google Gemini",
+		envKeys: [
+			"GOOGLE_GENERATIVE_AI_API_KEY",
+			"GOOGLE_API_KEY",
+			"GEMINI_API_KEY",
+		],
+		requiredMessage: "Google Gemini API key is required",
+	},
+	deepseek: {
+		providerName: "DeepSeek",
+		envKeys: ["DEEPSEEK_API_KEY"],
+		requiredMessage: "DeepSeek API key is required",
+	},
+} satisfies Record<ApiKeyAuthProviderId, ApiKeyProviderConfig>;
+
+function hasConfiguredEnvKey(envKeys: readonly string[]): boolean {
+	return envKeys.some((key) => Boolean(process.env[key]?.trim()));
+}
 
 function hasAnthropicEnvCredential(variables: AnthropicEnvVariables): boolean {
 	return Boolean(
@@ -358,6 +393,71 @@ export class ChatService {
 		return status;
 	}
 
+	getApiKeyProviderAuthStatus(input: {
+		providerId: ApiKeyAuthProviderId;
+	}): AuthStatus {
+		const config = API_KEY_PROVIDER_CONFIGS[input.providerId];
+		const authStorage = this.getAuthStorage();
+		authStorage.reload();
+		const storageMethod = resolveAuthMethodForProvider(
+			authStorage,
+			input.providerId,
+		);
+		if (storageMethod !== null) {
+			const status: AuthStatus = {
+				authenticated: true,
+				method: storageMethod,
+				source: "managed",
+				issue: null,
+			};
+			this.logAuthResolution(input.providerId, {
+				resolvedMethod: status.method,
+				resolvedSource: status.source,
+				envKeysConfigured: config.envKeys.filter((key) =>
+					Boolean(process.env[key]?.trim()),
+				),
+			});
+			return status;
+		}
+
+		const hasEnvKey = hasConfiguredEnvKey(config.envKeys);
+		const status: AuthStatus = {
+			authenticated: hasEnvKey,
+			method: hasEnvKey ? "env" : null,
+			source: hasEnvKey ? "external" : null,
+			issue: null,
+		};
+		this.logAuthResolution(input.providerId, {
+			resolvedMethod: status.method,
+			resolvedSource: status.source,
+			envKeysConfigured: config.envKeys.filter((key) =>
+				Boolean(process.env[key]?.trim()),
+			),
+		});
+		return status;
+	}
+
+	async setApiKeyProviderApiKey(input: {
+		providerId: ApiKeyAuthProviderId;
+		apiKey: string;
+	}): Promise<{ success: true }> {
+		const config = API_KEY_PROVIDER_CONFIGS[input.providerId];
+		setApiKeyForProvider(
+			this.getAuthStorage(),
+			input.providerId,
+			input.apiKey,
+			config.requiredMessage,
+		);
+		return { success: true };
+	}
+
+	async clearApiKeyProviderApiKey(input: {
+		providerId: ApiKeyAuthProviderId;
+	}): Promise<{ success: true }> {
+		clearApiKeyForProvider(this.getAuthStorage(), input.providerId);
+		return { success: true };
+	}
+
 	async setOpenAIApiKey(input: { apiKey: string }): Promise<{ success: true }> {
 		setApiKeyForProvider(
 			this.getAuthStorage(),
@@ -652,7 +752,7 @@ export class ChatService {
 	}
 
 	private logAuthResolution(
-		provider: "anthropic" | "openai",
+		provider: AuthLogProvider,
 		details: Record<string, unknown>,
 	): void {
 		if (process.env.ROX_DEBUG_AUTH !== "1") {

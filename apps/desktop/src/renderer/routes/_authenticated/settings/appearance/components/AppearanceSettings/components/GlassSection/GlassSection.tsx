@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
 	applyAppearanceGlass,
+	DEFAULT_GLASS_WINDOW_OPACITY,
 	formatOpacityPercent,
 	MAX_WINDOW_OPACITY,
 	MIN_WINDOW_OPACITY,
@@ -42,8 +43,9 @@ export function GlassSection() {
 		},
 	});
 
-	const glassEnabled = appearance?.glassEnabled ?? false;
-	const windowOpacity = appearance?.windowOpacity ?? 0.72;
+	const glassEnabled = appearance?.glassEnabled ?? true;
+	const windowOpacity =
+		appearance?.windowOpacity ?? DEFAULT_GLASS_WINDOW_OPACITY;
 	const isMac = platform === "darwin";
 
 	// Keep the document in sync with the persisted state on mount / external change.

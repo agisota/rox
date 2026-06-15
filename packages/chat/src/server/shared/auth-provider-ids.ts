@@ -6,3 +6,10 @@ export const OPENAI_AUTH_PROVIDER_IDS = [
 	OPENAI_AUTH_PROVIDER_ID,
 	"openai",
 ] as const;
+
+export const API_KEY_AUTH_PROVIDER_IDS = [
+	"groq",
+	"google",
+	"deepseek",
+] as const;
+export type ApiKeyAuthProviderId = (typeof API_KEY_AUTH_PROVIDER_IDS)[number];

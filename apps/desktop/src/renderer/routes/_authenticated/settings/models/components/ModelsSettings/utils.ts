@@ -1,9 +1,72 @@
 import {
+	ROX_AI_API_KEY_ENV,
+	ROX_AI_BASE_URL,
+	ROX_CHAT_MODEL_ID,
+} from "@rox/shared/chat-models";
+import {
 	type AuthStatusLike,
 	deriveModelProviderStatus,
 	type ModelProviderStatus,
 	type ProviderId,
 } from "shared/ai/provider-status";
+
+export type ApiKeyProviderId = Extract<
+	ProviderId,
+	"groq" | "google" | "deepseek"
+>;
+
+export interface ApiKeyProviderConfig {
+	id: ApiKeyProviderId;
+	title: string;
+	description: string;
+	apiKeyPlaceholder: string;
+	helpText: string;
+	iconProvider: string;
+}
+
+export const ROX_PROVIDER_STATUS = deriveModelProviderStatus({
+	providerId: "rox",
+	authStatus: {
+		authenticated: true,
+		method: "env",
+		source: "managed",
+		issue: null,
+	},
+});
+
+export const ROX_PROVIDER_DETAILS = {
+	modelId: ROX_CHAT_MODEL_ID,
+	baseUrl: ROX_AI_BASE_URL,
+	apiKeyEnv: ROX_AI_API_KEY_ENV,
+} as const;
+
+export const API_KEY_PROVIDER_CONFIGS = [
+	{
+		id: "groq",
+		title: "Groq",
+		description: "Добавьте ключ Groq для запуска моделей Groq.",
+		apiKeyPlaceholder: "gsk_...",
+		helpText: "Сохраняется в локальном хранилище ключей Rox.",
+		iconProvider: "groq",
+	},
+	{
+		id: "google",
+		title: "Google Gemini",
+		description: "Добавьте ключ Google Gemini для моделей Gemini.",
+		apiKeyPlaceholder: "AIza...",
+		helpText:
+			"Поддерживаются переменные окружения GOOGLE_GENERATIVE_AI_API_KEY, GOOGLE_API_KEY или GEMINI_API_KEY.",
+		iconProvider: "google",
+	},
+	{
+		id: "deepseek",
+		title: "DeepSeek",
+		description: "Добавьте ключ DeepSeek для моделей DeepSeek.",
+		apiKeyPlaceholder: "sk-...",
+		helpText: "Сохраняется в локальном хранилище ключей Rox.",
+		iconProvider: "deepseek",
+	},
+] satisfies readonly ApiKeyProviderConfig[];
 
 export interface AnthropicFormValues {
 	apiKey: string;
@@ -71,7 +134,7 @@ export function buildAnthropicEnvText(values: AnthropicFormValues): string {
 	return lines.join("\n");
 }
 
-const EXTERNAL_OAUTH_LABELS: Record<ProviderId, string> = {
+const EXTERNAL_OAUTH_LABELS: Partial<Record<ProviderId, string>> = {
 	anthropic: "Connected via Claude",
 	openai: "Connected via ChatGPT",
 };
@@ -87,7 +150,7 @@ export function getProviderSubtitle(
 		return "";
 	}
 	if (status.source === "external" && status.authMethod === "oauth") {
-		return EXTERNAL_OAUTH_LABELS[providerId];
+		return EXTERNAL_OAUTH_LABELS[providerId] ?? "Connected outside Rox";
 	}
 	if (status.authMethod === "oauth") {
 		return "Connected in Rox";

@@ -7,13 +7,25 @@ import {
 	mock,
 	test,
 } from "bun:test";
+import type * as ChildProcess from "node:child_process";
+import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 
 const APP_VERSION = "1.2.3";
 let killedPids: Array<{ pid: number; signal: NodeJS.Signals | number }> = [];
 let killProcessError: NodeJS.ErrnoException | null = null;
+const testRoxHomeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hsc-home-"));
+
+const childProcessSpawnMock = mock();
+const realChildProcess = await import("node:child_process");
+
+mock.module("node:child_process", () => ({
+	...realChildProcess,
+	spawn: childProcessSpawnMock,
+}));
 
 const manifestStore: {
 	current: {
@@ -59,7 +71,7 @@ mock.module("./host-service-utils", () => ({
 	HEALTH_POLL_TIMEOUT_MS: 10_000,
 	MAX_HOST_LOG_BYTES: 1024,
 	findFreePort: mock(() => Promise.resolve(40000)),
-	openRotatingLogFd: mock(() => -1),
+	openRotatingLogFd: realHostServiceUtils.openRotatingLogFd,
 	pollHealthCheck: pollHealthCheckMock,
 }));
 
@@ -96,6 +108,9 @@ mock.module("./local-db", () => ({
 		select: () => ({ from: () => ({ get: () => null }) }),
 	},
 }));
+mock.module("./app-environment", () => ({
+	ROX_HOME_DIR: testRoxHomeRoot,
+}));
 
 const { HostServiceCoordinator } = await import("./host-service-coordinator");
 
@@ -112,6 +127,17 @@ const spawnConfig = { authToken: "token", cloudApiUrl: "https://api.example" };
 interface HostServiceCoordinatorInternals {
 	getPreferredPorts(organizationId: string): number[];
 	rememberPort(organizationId: string, port: number): void;
+	spawn(
+		organizationId: string,
+		config: typeof spawnConfig,
+		preferredPorts?: Iterable<number>,
+	): Promise<{ port: number; secret: string; machineId: string }>;
+}
+
+interface FakeHostChild extends ChildProcess.ChildProcessWithoutNullStreams {
+	stdin: PassThrough;
+	stdout: PassThrough;
+	stderr: PassThrough;
 }
 
 function resetMocks(): void {
@@ -121,8 +147,34 @@ function resetMocks(): void {
 	isProcessAliveMock.mockClear();
 	killProcessMock.mockClear();
 	pollHealthCheckMock.mockClear();
+	childProcessSpawnMock.mockClear();
 	killedPids = [];
 	killProcessError = null;
+	fs.rmSync(path.join(testRoxHomeRoot, "host-service.log"), { force: true });
+}
+
+function createFakeChild(pid: number): FakeHostChild {
+	const stdout = new PassThrough();
+	const stderr = new PassThrough();
+	const stdin = new PassThrough();
+	return Object.assign(new EventEmitter(), {
+		stdin,
+		stdout,
+		stderr,
+		stdio: [stdin, stdout, stderr],
+		killed: false,
+		connected: false,
+		exitCode: null,
+		signalCode: null,
+		spawnargs: [],
+		spawnfile: "",
+		pid,
+		kill: mock(() => true),
+		ref: mock(() => undefined),
+		unref: mock(() => undefined),
+		send: mock(() => true),
+		disconnect: mock(() => undefined),
+	}) as unknown as FakeHostChild;
 }
 
 describe("HostServiceCoordinator preferred ports", () => {
@@ -163,6 +215,59 @@ describe("HostServiceCoordinator preferred ports", () => {
 		expect(ports).toHaveLength(1);
 		expect(ports[0]).toBeGreaterThanOrEqual(48_000);
 		expect(ports[0]).toBeLessThan(49_000);
+	});
+});
+
+describe("HostServiceCoordinator child diagnostics", () => {
+	let coordinator: InstanceType<typeof HostServiceCoordinator>;
+
+	beforeEach(() => {
+		resetMocks();
+		testManifestRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hsc-test-"));
+		coordinator = new HostServiceCoordinator();
+	});
+
+	afterEach(() => {
+		coordinator.stopAll();
+		if (testManifestRoot) {
+			fs.rmSync(testManifestRoot, { recursive: true, force: true });
+			testManifestRoot = "";
+		}
+	});
+
+	test("appends spawned child stdout and stderr to rox home host-service.log", async () => {
+		const fakeChild = createFakeChild(4242);
+		childProcessSpawnMock.mockReturnValueOnce(fakeChild);
+		const internals = coordinator as unknown as HostServiceCoordinatorInternals;
+
+		await internals.spawn("org-1", spawnConfig, [40000]);
+		fakeChild.stdout.write("boot ok\n");
+		fakeChild.stderr.write("startup warning\n");
+		fakeChild.stdout.end();
+		fakeChild.stderr.end();
+
+		await new Promise((resolve) => setTimeout(resolve, 25));
+
+		const logText = fs.readFileSync(
+			path.join(testRoxHomeRoot, "host-service.log"),
+			"utf-8",
+		);
+		expect(logText).toContain("[hs:org-1] [stdout] boot ok");
+		expect(logText).toContain("[hs:org-1] [stderr] startup warning");
+	});
+
+	test("includes captured child output when startup times out", async () => {
+		const fakeChild = createFakeChild(4243);
+		childProcessSpawnMock.mockReturnValueOnce(fakeChild);
+		pollHealthCheckMock.mockImplementationOnce(async () => {
+			fakeChild.stderr.write("migration failed before listen\n");
+			return false;
+		});
+		const internals = coordinator as unknown as HostServiceCoordinatorInternals;
+
+		await expect(
+			internals.spawn("org-1", spawnConfig, [40000]),
+		).rejects.toThrow("migration failed before listen");
 	});
 });
 
@@ -243,5 +348,6 @@ describe("HostServiceCoordinator.reset", () => {
 });
 
 afterAll(() => {
+	fs.rmSync(testRoxHomeRoot, { recursive: true, force: true });
 	mock.restore();
 });
