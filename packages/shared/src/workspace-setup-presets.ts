@@ -1,7 +1,7 @@
 /**
  * Workspace setup presets — the opt-in scaffolding/setup options offered when
  * creating or importing a workspace. Each preset maps to either shell setup
- * commands (run by `setup-terminal.ts` from the `.rox/config.json` `setup`
+ * commands (run by `setup-terminal.ts` from the `rox/config.json` `setup`
  * array) and/or scaffold files written into the new workspace.
  *
  * This catalog is the single source of truth for both the picker UI
@@ -20,14 +20,14 @@ export interface WorkspaceScaffoldFile {
 
 /**
  * One selectable setup option. `setupCommands` are appended to the
- * `.rox/config.json` `setup` array (run once on workspace creation);
+ * `rox/config.json` `setup` array (run once on workspace creation);
  * `scaffoldFiles` are written verbatim into the workspace.
  */
 export interface WorkspaceSetupPreset {
 	id: string;
 	label: string;
 	description: string;
-	/** Shell commands appended to the `.rox/config.json` setup array. */
+	/** Shell commands appended to the `rox/config.json` setup array. */
 	setupCommands?: string[];
 	/** Files written into the workspace root on creation. */
 	scaffoldFiles?: WorkspaceScaffoldFile[];
@@ -118,9 +118,9 @@ export const WORKSPACE_SETUP_PRESETS: readonly WorkspaceSetupPreset[] = [
 	},
 	{
 		id: "rox-folder",
-		label: "Create .rox folder",
-		description: "Create the `.rox/` workspace config directory.",
-		setupCommands: ["mkdir -p .rox"],
+		label: "Create rox folder",
+		description: "Create the `rox/` workspace config directory.",
+		setupCommands: ["mkdir -p rox"],
 	},
 	{
 		id: "agent-folder",
@@ -181,7 +181,7 @@ jobs:
 		scaffoldFiles: [
 			{
 				path: ".gitignore",
-				contents: "node_modules/\ndist/\n.env\n.rox/\n",
+				contents: "node_modules/\ndist/\n.env\n.rox/\nrox/config.local.json\n",
 			},
 		],
 	},
@@ -218,6 +218,74 @@ jobs:
 				contents: "MIT License\n\n_Fill in the year and copyright holder._\n",
 			},
 		],
+	},
+	{
+		id: "dockerfile",
+		label: "Add Dockerfile",
+		description: "Scaffold a minimal Dockerfile to containerize the workspace.",
+		scaffoldFiles: [
+			{
+				path: "Dockerfile",
+				contents:
+					'# syntax=docker/dockerfile:1\nFROM alpine:3\nWORKDIR /app\nCOPY . .\nCMD ["sh"]\n',
+			},
+		],
+	},
+	{
+		id: "dockerignore",
+		label: "Add .dockerignore",
+		description: "Scaffold a .dockerignore so the build context stays small.",
+		scaffoldFiles: [
+			{
+				path: ".dockerignore",
+				contents: "node_modules/\n.git/\ndist/\n.env\n",
+			},
+		],
+	},
+	{
+		id: "devcontainer",
+		label: "Add dev container",
+		description:
+			"Scaffold a .devcontainer/devcontainer.json for reproducible Codespaces/VS Code environments.",
+		scaffoldFiles: [
+			{
+				path: ".devcontainer/devcontainer.json",
+				contents:
+					'{\n  "name": "workspace",\n  "image": "mcr.microsoft.com/devcontainers/base:debian"\n}\n',
+			},
+		],
+	},
+	{
+		id: "contributing",
+		label: "Add CONTRIBUTING.md",
+		description:
+			"Scaffold a CONTRIBUTING.md so collaborators know the workflow.",
+		scaffoldFiles: [
+			{
+				path: "CONTRIBUTING.md",
+				contents:
+					"# Contributing\n\nThanks for contributing! Open an issue before large changes and keep PRs focused.\n",
+			},
+		],
+	},
+	{
+		id: "env-example",
+		label: "Add .env.example",
+		description:
+			"Scaffold a .env.example documenting required env vars (never commit real secrets).",
+		scaffoldFiles: [
+			{
+				path: ".env.example",
+				contents: "# Copy to .env and fill in.\n# EXAMPLE_API_KEY=\n",
+			},
+		],
+	},
+	{
+		id: "nvmrc",
+		label: "Add .nvmrc",
+		description:
+			"Pin the Node.js version with an .nvmrc for consistent tooling.",
+		scaffoldFiles: [{ path: ".nvmrc", contents: "lts/*\n" }],
 	},
 ];
 

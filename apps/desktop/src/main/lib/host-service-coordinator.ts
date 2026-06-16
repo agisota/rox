@@ -466,6 +466,20 @@ export class HostServiceCoordinator extends EventEmitter {
 			NODE_ENV: app.isPackaged
 				? "production"
 				: (process.env.NODE_ENV ?? "development"),
+			// Disable mastra's gateway type-generation sync in the spawned
+			// host-service. That sync (gated on MASTRA_DEV=true) periodically
+			// calls fetchProviders() on registered gateways and writes
+			// TypeScript model-registry files into @mastra/core's dist/ — fine
+			// in a source checkout, but in a packaged .app that path lives inside
+			// the read-only app.asar, so every sync throws "ENOTDIR: not a
+			// directory, mkdir '/Applications/Rox.app/Contents/Resources/
+			// app.asar/node_modules/@mastra/core/dist'". The host-service is a
+			// headless runtime (dev and prod) that never needs IDE autocomplete
+			// types, so force the flag off regardless of any value inherited from
+			// the parent Electron process or the user's shell. The editor-side
+			// `mastra dev` flow that real type generation belongs to runs as a
+			// separate process and is unaffected.
+			MASTRA_DEV: "false",
 			ORGANIZATION_ID: organizationId,
 			HOST_CLIENT_ID: getHostId(),
 			HOST_NAME: getHostName(),
@@ -501,6 +515,8 @@ export class HostServiceCoordinator extends EventEmitter {
 		} else {
 			delete childEnv.RELAY_URL;
 		}
+
+		seedRoxModelEnv(childEnv);
 
 		return childEnv;
 	}
@@ -663,6 +679,40 @@ function formatStartupFailure(
 
 function formatErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Build-time defaults for the Rox house model ("ROX R1"). These literal
+ * `process.env.*` reads are replaced by electron.vite.config's `main.define`
+ * at bundle time, so a packaged .app carries the CI-provided key/endpoint even
+ * though a Finder-launched Electron main process inherits no shell env. In dev
+ * (unbundled) they read the real process env.
+ */
+const ROX_MODEL_BUILD_DEFAULTS: Readonly<Record<string, string | undefined>> = {
+	ROX_AI_API_KEY: process.env.ROX_AI_API_KEY,
+	ROX_AI_BASE_URL: process.env.ROX_AI_BASE_URL,
+	ROX_AI_MODEL: process.env.ROX_AI_MODEL,
+	// Optional per-user key provisioning (see chat-models ROX_KEY_PROVISION_*).
+	// When set (via repo secrets baked by electron.vite.config), the spawned
+	// host-service mints a distinct OmniRouter key per user/install instead of
+	// sharing ROX_AI_API_KEY. Absent by default → shared-key MVP path.
+	ROX_KEY_PROVISION_URL: process.env.ROX_KEY_PROVISION_URL,
+	ROX_KEY_PROVISION_TOKEN: process.env.ROX_KEY_PROVISION_TOKEN,
+};
+
+/**
+ * Seed the spawned host-service env with the Rox house-model credentials so
+ * "ROX R1" works out of the box. A value already present in `childEnv` (real
+ * runtime env / user shell — dev or self-host) always wins; the build-time
+ * default only fills a gap. Empty/whitespace values are treated as absent.
+ */
+function seedRoxModelEnv(childEnv: Record<string, string>): void {
+	for (const [key, buildDefault] of Object.entries(ROX_MODEL_BUILD_DEFAULTS)) {
+		const existing = childEnv[key]?.trim();
+		if (existing) continue;
+		const fallback = buildDefault?.trim();
+		if (fallback) childEnv[key] = fallback;
+	}
 }
 
 let coordinator: HostServiceCoordinator | null = null;

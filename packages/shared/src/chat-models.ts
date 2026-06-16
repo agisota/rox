@@ -5,17 +5,224 @@ export interface ChatModelOption {
 }
 
 export const ROX_CHAT_PROVIDER = "Rox";
+
+/** Env var holding the OpenAI-compatible base URL for the Rox house model. */
+export const ROX_AI_BASE_URL_ENV = "ROX_AI_BASE_URL";
+/** Env var holding the shared / per-user Rox API key. */
+export const ROX_AI_API_KEY_ENV = "ROX_AI_API_KEY";
+/** Env var holding the upstream model id the Rox gateway exposes. */
+export const ROX_AI_MODEL_ENV = "ROX_AI_MODEL";
+
 /**
- * The wire model id sent to the OpenAI-compatible backend. The underlying model
- * is `compound` (routed via {@link ROX_AI_BASE_URL}); the per-user key is
- * injected server-side. This id is never shown in the UI — every surface
- * renders {@link ROX_CHAT_MODEL_NAME} ("ROX R1") instead.
+ * Default OpenAI-compatible endpoint for the Rox house model. The live gateway
+ * at this URL exposes the {@link ROX_COMPOUND_MODEL_ID} combo over its
+ * OpenAI-compatible surface. Overridable at runtime via
+ * {@link ROX_AI_BASE_URL_ENV} so the same build can be pointed at a different
+ * gateway without a code change.
+ *
+ * The per-user key is sent DIRECTLY to this gateway, so "ROX R1" does not depend
+ * on the app.rox.one user session (which can return an invalidated-token error);
+ * the key is the only credential the gateway needs.
  */
-export const ROX_CHAT_MODEL_ID = "compound";
+export const ROX_AI_BASE_URL = "https://api.zed.md/v1";
+/**
+ * Primary upstream model id for the Rox house model — the founder's "Compound"
+ * model. The live gateway exposes this as a *combo* (`owned_by: combo`) that
+ * routes a request across a weighted chain of upstream providers and fails over
+ * internally. `top` is the gateway's "best compound" combo (it returns HTTP 200
+ * today and is verified to produce real completions). Overridable via
+ * {@link ROX_AI_MODEL_ENV} so the founder can repoint at a literal `compound`
+ * combo once one is added to the gateway, without a code change.
+ *
+ * Note: the gateway has no model literally named `compound` yet — sending
+ * `compound` returns HTTP 400 ("ensure the model is added as a combo entry").
+ * Defaulting to `top` keeps "ROX R1" working for every user today while
+ * preserving the env override as the upgrade path.
+ */
+export const ROX_COMPOUND_MODEL_ID = "top";
+/**
+ * Fallback upstream model id used when the primary {@link ROX_COMPOUND_MODEL_ID}
+ * errors. `deepseek-v4-flash` is a directly-routable model id on the gateway
+ * (verified HTTP 200 with a real per-user key) — distinct from the combos, so it
+ * provides a second failover layer beyond a combo's internal provider failover.
+ */
+export const ROX_FALLBACK_MODEL_ID = "deepseek-v4-flash";
+/**
+ * Default upstream model id the Rox gateway serves for the house model. Aliases
+ * {@link ROX_COMPOUND_MODEL_ID}. Overridable via {@link ROX_AI_MODEL_ENV}.
+ */
+export const ROX_DEFAULT_MODEL_ID = ROX_COMPOUND_MODEL_ID;
+
+/**
+ * Catalog / selection id for the Rox house model. This is the id carried in
+ * chat message metadata when the user picks "ROX R1". The underlying model is
+ * the {@link ROX_COMPOUND_MODEL_ID} combo (routed via {@link ROX_AI_BASE_URL});
+ * the API key is injected server-side. This id is never shown in the UI — every
+ * surface renders {@link ROX_CHAT_MODEL_NAME} ("ROX R1") instead.
+ *
+ * This is a STABLE selection alias (`rox-r1`), intentionally decoupled from the
+ * upstream wire model id. Changing the upstream model (e.g. `top` → a literal
+ * `compound` combo via {@link ROX_AI_MODEL_ENV}) must never change the id the
+ * picker carries, so recognition can't silently break.
+ *
+ * Different layers historically spelled this `compound`, `rox-r1`, or `r1`;
+ * {@link resolveRoxWireModelId} / {@link resolveChatWireModelId} reconcile every
+ * spelling to one canonical wire id that selects the OpenAI-compatible client
+ * and sends the real upstream id to the gateway.
+ */
+export const ROX_CHAT_MODEL_ID = "rox-r1";
+/** Provider prefix that routes a model through the OpenAI-compatible client. */
+const OPENAI_PROVIDER_PREFIX = "openai/";
+/**
+ * The default wire model id handed to the mastracode harness for the Rox house
+ * model when no {@link ROX_AI_MODEL_ENV} override is set.
+ *
+ * mastracode routes a bare id (e.g. `top`) through its Mastra gateway, which has
+ * no Rox credential. Prefixing with `openai/` makes mastracode resolve it
+ * through the OpenAI-compatible client, which reads `OPENAI_BASE_URL`
+ * ({@link ROX_AI_BASE_URL}) + `OPENAI_API_KEY` (the per-user Rox key) from the
+ * runtime env. mastracode strips the leading `openai/` before calling the
+ * gateway, so api.zed.md receives the bare model id (the Compound combo).
+ */
+export const ROX_CHAT_WIRE_MODEL_ID = `${OPENAI_PROVIDER_PREFIX}${ROX_DEFAULT_MODEL_ID}`;
 /** User-facing display name. The only Rox model label shown anywhere. */
 export const ROX_CHAT_MODEL_NAME = "ROX R1";
-export const ROX_AI_BASE_URL = "https://api.zed.md/v1";
-export const ROX_AI_API_KEY_ENV = "ROX_AI_API_KEY";
+
+/**
+ * Optional per-user key provisioning endpoint. When set, the host-service mints
+ * (or fetches) a per-user Rox key from this URL instead of relying on a
+ * statically-provided {@link ROX_AI_API_KEY_ENV}. Authenticated with
+ * {@link ROX_KEY_PROVISION_TOKEN_ENV}.
+ *
+ * This is strictly optional: a directly-set {@link ROX_AI_API_KEY_ENV} is the
+ * primary (shared-key MVP) path and short-circuits provisioning entirely.
+ */
+export const ROX_KEY_PROVISION_URL_ENV = "ROX_KEY_PROVISION_URL";
+/** Admin/bearer credential used to authenticate against the provisioning URL. */
+export const ROX_KEY_PROVISION_TOKEN_ENV = "ROX_KEY_PROVISION_TOKEN";
+
+/**
+ * Every accepted spelling of the Rox house model id, lowercased. Any of these,
+ * with or without an `openai/` prefix, is recognised as the Rox house model.
+ *
+ * Includes the stable selection id ({@link ROX_CHAT_MODEL_ID}), the display name,
+ * the current Compound/default upstream id ({@link ROX_COMPOUND_MODEL_ID}), and
+ * legacy spellings (`r1`, `compound`) so older clients/metadata still resolve.
+ * The upstream id is included so a message that happens to carry the wire id
+ * (e.g. `top`) is still mapped back to the house model and re-prefixed correctly.
+ */
+const ROX_CHAT_MODEL_ALIASES: ReadonlySet<string> = new Set(
+	[
+		ROX_CHAT_MODEL_ID,
+		ROX_COMPOUND_MODEL_ID,
+		ROX_DEFAULT_MODEL_ID,
+		"r1",
+		"rox-r1",
+		"compound",
+		ROX_CHAT_MODEL_NAME,
+	].map((id) => id.toLowerCase()),
+);
+
+function stripOpenAIPrefix(modelId: string): string {
+	return modelId.startsWith(OPENAI_PROVIDER_PREFIX)
+		? modelId.slice(OPENAI_PROVIDER_PREFIX.length)
+		: modelId;
+}
+
+function trimToNull(value: string | null | undefined): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * True when `modelId` (in any accepted spelling) refers to the Rox house model.
+ * Tolerant of surrounding whitespace, case, and an `openai/` prefix.
+ */
+export function isRoxHouseModel(modelId: string | null | undefined): boolean {
+	if (!modelId) return false;
+	const normalized = stripOpenAIPrefix(modelId.trim().toLowerCase());
+	return ROX_CHAT_MODEL_ALIASES.has(normalized);
+}
+
+/** Read-only env accessor used by the runtime resolvers below. */
+export type ChatModelEnvSource = Record<string, string | undefined>;
+
+function readEnv(env?: ChatModelEnvSource): ChatModelEnvSource {
+	if (env) return env;
+	if (typeof process !== "undefined" && process.env) return process.env;
+	return {};
+}
+
+/**
+ * Resolve the OpenAI-compatible base URL for the Rox house model. Reads
+ * {@link ROX_AI_BASE_URL_ENV} and falls back to {@link ROX_AI_BASE_URL}.
+ */
+export function resolveRoxBaseUrl(env?: ChatModelEnvSource): string {
+	return trimToNull(readEnv(env)[ROX_AI_BASE_URL_ENV]) ?? ROX_AI_BASE_URL;
+}
+
+/**
+ * Resolve the bare upstream model id the Rox gateway should receive. Reads
+ * {@link ROX_AI_MODEL_ENV} and falls back to {@link ROX_DEFAULT_MODEL_ID}. Any
+ * incoming `openai/` prefix is stripped so the gateway gets a bare id.
+ */
+export function resolveRoxModelId(env?: ChatModelEnvSource): string {
+	const configured = trimToNull(readEnv(env)[ROX_AI_MODEL_ENV]);
+	return configured ? stripOpenAIPrefix(configured) : ROX_DEFAULT_MODEL_ID;
+}
+
+/**
+ * Resolve the ordered Rox house-model failover chain: the primary
+ * {@link resolveRoxModelId} (Compound) first, then {@link ROX_FALLBACK_MODEL_ID}
+ * (`deepseek-v4-flash`). Bare ids (no `openai/` prefix) — callers prefix as
+ * needed via {@link resolveRoxWireModelId}.
+ *
+ * Both ids are guaranteed distinct: if the configured primary already *is* the
+ * fallback id, the chain collapses to a single entry so the runtime never
+ * "falls back" to the model that just failed.
+ */
+export function resolveRoxModelChain(env?: ChatModelEnvSource): string[] {
+	const primary = resolveRoxModelId(env);
+	return primary === ROX_FALLBACK_MODEL_ID
+		? [primary]
+		: [primary, ROX_FALLBACK_MODEL_ID];
+}
+
+/**
+ * The wire id (`openai/<fallback>`) handed to `harness.switchModel` when the
+ * primary Compound model errors. The `openai/` prefix routes through the
+ * OpenAI-compatible client; mastracode strips it so the gateway receives the
+ * bare {@link ROX_FALLBACK_MODEL_ID}.
+ */
+export function resolveRoxFallbackWireModelId(): string {
+	return `${OPENAI_PROVIDER_PREFIX}${ROX_FALLBACK_MODEL_ID}`;
+}
+
+/**
+ * Resolve the canonical wire id handed to `harness.switchModel` for the Rox
+ * house model: `openai/<ROX_AI_MODEL|r1>`. The `openai/` prefix selects the
+ * OpenAI-compatible client; mastracode strips it before calling the gateway, so
+ * the gateway receives the bare {@link resolveRoxModelId} value.
+ */
+export function resolveRoxWireModelId(env?: ChatModelEnvSource): string {
+	return `${OPENAI_PROVIDER_PREFIX}${resolveRoxModelId(env)}`;
+}
+
+/**
+ * Reconcile any chat model spelling to the wire id the harness needs.
+ *
+ * For the Rox house model this returns {@link resolveRoxWireModelId} (env-aware,
+ * `openai/<r1>`). Non-Rox ids pass through unchanged (already provider-prefixed,
+ * e.g. `anthropic/claude-opus-4-8`), trimmed of surrounding whitespace.
+ */
+export function resolveChatWireModelId(
+	modelId: string,
+	env?: ChatModelEnvSource,
+): string {
+	const trimmed = modelId.trim();
+	return isRoxHouseModel(trimmed) ? resolveRoxWireModelId(env) : trimmed;
+}
 
 export const ROX_CHAT_MODEL: ChatModelOption = {
 	id: ROX_CHAT_MODEL_ID,

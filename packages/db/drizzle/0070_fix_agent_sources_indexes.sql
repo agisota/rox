@@ -1,0 +1,3 @@
+DROP INDEX "agent_sources_org_project_slug_uniq";--> statement-breakpoint
+CREATE UNIQUE INDEX "agent_sources_org_slug_uniq" ON "agent_sources" USING btree ("organization_id","slug") WHERE "agent_sources"."v2_project_id" IS NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "agent_sources_org_project_slug_uniq" ON "agent_sources" USING btree ("organization_id","v2_project_id","slug") WHERE "agent_sources"."v2_project_id" IS NOT NULL;

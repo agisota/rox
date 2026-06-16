@@ -54,11 +54,11 @@ describe("buildAgentPromptCommand", () => {
 
 	it("uses Amp interactive stdin mode for file launches", () => {
 		const command = buildAgentFileCommand({
-			filePath: ".rox/task-demo.md",
+			filePath: "rox/task-demo.md",
 			agent: "amp",
 		});
 
-		expect(command).toBe("amp < '.rox/task-demo.md'");
+		expect(command).toBe("amp < 'rox/task-demo.md'");
 	});
 
 	it("uses pi interactive mode for prompt launches", () => {

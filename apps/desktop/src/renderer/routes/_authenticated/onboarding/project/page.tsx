@@ -1,3 +1,4 @@
+import { ANALYTICS_EVENTS } from "@rox/shared/constants";
 import { Button } from "@rox/ui/button";
 import { Card } from "@rox/ui/card";
 import { Input } from "@rox/ui/input";
@@ -6,7 +7,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { LuFolderOpen, LuGitBranch } from "react-icons/lu";
-import { track } from "renderer/lib/analytics";
+import { track, trackEvent } from "renderer/lib/analytics";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -37,7 +38,7 @@ function OnboardingProjectPage() {
 	const hostReady = activeHostUrl !== null;
 	const openNewWorkspaceModal = useOpenNewWorkspaceModal();
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
-	const cloneTargetDir = homeDir ? `${homeDir}/.rox/projects` : null;
+	const cloneTargetDir = homeDir ? `${homeDir}/rox/projects` : null;
 	const [url, setUrl] = useState("");
 	const [busy, setBusy] = useState(false);
 	const shouldAnimate = useShouldAnimate("decorative");
@@ -51,6 +52,9 @@ function OnboardingProjectPage() {
 	// dashboard's new-workspace modal pre-selected to the project just added.
 	const finish = async (projectId: string) => {
 		track("onboarding_finished", { outcome: "completed" });
+		trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+			project_id: projectId,
+		});
 		try {
 			await apiTrpcClient.user.completeOnboarding.mutate();
 			// Reactive refetch (not imperative getSession) so the layout guards'

@@ -2,6 +2,7 @@ import type { V2HostKind, V2HostProvider } from "@rox/db/enums";
 import { useEffect, useState } from "react";
 
 interface HostConnectionSectionProps {
+	machineId: string;
 	kind: V2HostKind;
 	provider: V2HostProvider | null;
 	port: number | null;
@@ -42,6 +43,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export function HostConnectionSection({
+	machineId,
 	kind,
 	provider,
 	port,
@@ -59,7 +61,8 @@ export function HostConnectionSection({
 	// Local "this device" hosts have no managed connection metadata to show.
 	if (kind === "local") return null;
 
-	const address = port != null ? `${protocol ?? "tcp"}:${port}` : "—";
+	const protocolValue = protocol ?? "—";
+	const portValue = port == null ? "—" : String(port);
 
 	return (
 		<section className="space-y-3">
@@ -69,7 +72,9 @@ export function HostConnectionSection({
 				{provider && (
 					<Row label="Провайдер" value={PROVIDER_LABELS[provider]} />
 				)}
-				<Row label="Адрес" value={address} />
+				<Row label="Host" value={machineId} />
+				<Row label="Protocol" value={protocolValue} />
+				<Row label="Port" value={portValue} />
 				{expiresAt && (
 					<Row
 						label="Истекает"

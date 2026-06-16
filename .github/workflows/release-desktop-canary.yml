@@ -105,6 +105,28 @@ jobs:
       - name: Create canary-named copies for updater URLs
         run: |
           cd release-artifacts
+          for file in *.dmg; do
+            if [[ -f "$file" ]]; then
+              arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.dmg$/\1/')
+              case "$arch" in
+                arm64|x64) ;;
+                *) arch="x64" ;;
+              esac
+              cp "$file" "Rox-Canary-${arch}.dmg"
+              echo "Created canary copy: Rox-Canary-${arch}.dmg"
+            fi
+          done
+          for file in *-mac.zip; do
+            if [[ -f "$file" ]]; then
+              arch=$(echo "$file" | sed -E 's/.*-([^-]+)-mac\.zip$/\1/')
+              case "$arch" in
+                arm64|x64) ;;
+                *) arch="x64" ;;
+              esac
+              cp "$file" "Rox-Canary-${arch}-mac.zip"
+              echo "Created canary copy: Rox-Canary-${arch}-mac.zip"
+            fi
+          done
           for file in *.AppImage; do
             if [[ -f "$file" ]]; then
               arch=$(echo "$file" | sed -E 's/.*-([^-]+)\.AppImage$/\1/')

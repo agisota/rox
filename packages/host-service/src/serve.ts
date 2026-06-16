@@ -1,3 +1,7 @@
+// Import first: disables mastra's gateway type-generation sync before the
+// harness import graph (`./app` → `mastracode` → `@mastra/*`) loads, so the
+// packaged runtime never tries to mkdir/write inside the read-only app.asar.
+import "./disable-gateway-sync";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app";
 import { getSupervisor, startDaemonBootstrap } from "./daemon";
@@ -59,7 +63,11 @@ async function main(): Promise<void> {
 			auth: authProvider,
 			hostAuth: new PskHostAuthProvider(env.HOST_SERVICE_SECRET),
 			credentials: new LocalGitCredentialProvider(),
-			modelResolver: new LocalModelProvider(),
+			modelResolver: new LocalModelProvider({
+				// Scope the per-user Rox key bucket to this org so two orgs on one
+				// machine get distinct provisioned keys (falls back to host id).
+				roxUserScope: env.ORGANIZATION_ID,
+			}),
 		},
 	});
 

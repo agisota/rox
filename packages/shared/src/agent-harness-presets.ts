@@ -32,6 +32,24 @@ export interface HarnessInstallStep {
 	platforms?: HarnessInstallPlatform[];
 }
 
+export type HarnessInstallSource = "npm" | "manual" | "unknown";
+export type HarnessInstallerSizeRisk = "low" | "medium" | "unknown";
+export type HarnessTerminalPresetStrategy = "base-agent" | "unsupported";
+
+/**
+ * Review receipt for release-train gating. This is deliberately small and
+ * static: it records what Rox can honestly claim about a harness without
+ * shelling out or depending on the user's local package-manager cache.
+ */
+export interface HarnessAuditReceipt {
+	source: HarnessInstallSource;
+	/** SPDX id when known from the upstream package; "unknown" otherwise. */
+	license: string;
+	sizeRisk: HarnessInstallerSizeRisk;
+	terminalPresetStrategy: HarnessTerminalPresetStrategy;
+	notes: string;
+}
+
 /**
  * A harness is a configuration layer (commands + dropped config files) that
  * sits on top of one base terminal agent — e.g. `oh-my-claudecode` configures
@@ -50,6 +68,7 @@ export interface AgentHarnessPreset {
 	configFiles: HarnessConfigFile[];
 	/** True when there is no verified install command (install on request). */
 	optional?: boolean;
+	audit: HarnessAuditReceipt;
 }
 
 const BASE_AGENT_IDS: ReadonlySet<string> = new Set(
@@ -67,6 +86,14 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		baseAgentId: "claude",
 		install: [{ command: "npx -y oh-my-claudecode@latest install --global" }],
 		configFiles: [],
+		audit: {
+			source: "npm",
+			license: "MIT",
+			sizeRisk: "medium",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"Local package manifest ships multiple runtime deps and native sqlite; terminal presets should link to the Claude base agent config.",
+		},
 	},
 	{
 		id: "oh-my-codex",
@@ -75,15 +102,32 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		baseAgentId: "codex",
 		install: [{ command: "npx -y oh-my-codex@latest install --global" }],
 		configFiles: [],
+		audit: {
+			source: "npm",
+			license: "MIT",
+			sizeRisk: "low",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"Local package manifest has a small dependency set; terminal presets should link to the Codex base agent config.",
+		},
 	},
 	{
-		id: "oh-my-pi",
+		id: "rox",
 		label: "Rox",
-		description: "Rox harness layer for the default omp terminal coding agent.",
+		description:
+			"Default Rox harness layer for the built-in terminal coding agent.",
 		baseAgentId: "omp",
 		install: [],
 		configFiles: [],
 		optional: true,
+		audit: {
+			source: "manual",
+			license: "MIT",
+			sizeRisk: "low",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"Bundled Rox harness is represented by the OMP base terminal agent and does not need a separate installer.",
+		},
 	},
 	{
 		id: ODW_OMP_HARNESS_ID,
@@ -100,6 +144,14 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 			},
 		],
 		optional: true,
+		audit: {
+			source: "npm",
+			license: "unknown",
+			sizeRisk: "unknown",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"Optional install-on-request workflow harness; terminal presets should link to the OMP base agent config.",
+		},
 	},
 	{
 		id: "oh-my-openagent",
@@ -109,6 +161,14 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		install: [],
 		configFiles: [],
 		optional: true,
+		audit: {
+			source: "unknown",
+			license: "unknown",
+			sizeRisk: "unknown",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"No verified installer in this branch; terminal presets can only target the OpenCode base agent config.",
+		},
 	},
 	{
 		id: "hermes",
@@ -118,6 +178,14 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		install: [],
 		configFiles: [],
 		optional: true,
+		audit: {
+			source: "unknown",
+			license: "unknown",
+			sizeRisk: "unknown",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"No verified installer in this branch; terminal presets can only target the Claude base agent config.",
+		},
 	},
 	{
 		id: "openclaw",
@@ -127,6 +195,14 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		install: [],
 		configFiles: [],
 		optional: true,
+		audit: {
+			source: "unknown",
+			license: "unknown",
+			sizeRisk: "unknown",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"No verified installer in this branch; terminal presets can only target the Claude base agent config.",
+		},
 	},
 	{
 		id: "ouroboros",
@@ -136,6 +212,14 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		install: [],
 		configFiles: [],
 		optional: true,
+		audit: {
+			source: "unknown",
+			license: "unknown",
+			sizeRisk: "unknown",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"No verified installer in this branch; terminal presets can only target the Codex base agent config.",
+		},
 	},
 	{
 		id: "kiro",
@@ -145,6 +229,14 @@ export const AGENT_HARNESS_PRESETS: readonly AgentHarnessPreset[] = [
 		install: [],
 		configFiles: [],
 		optional: true,
+		audit: {
+			source: "unknown",
+			license: "unknown",
+			sizeRisk: "unknown",
+			terminalPresetStrategy: "base-agent",
+			notes:
+				"No verified installer in this branch; terminal presets can only target the Claude base agent config.",
+		},
 	},
 ] as const;
 
@@ -165,5 +257,27 @@ export function getInstallableHarnessPresets(): AgentHarnessPreset[] {
 export function harnessBaseAgentsAreValid(): boolean {
 	return AGENT_HARNESS_PRESETS.every((preset) =>
 		BASE_AGENT_IDS.has(preset.baseAgentId),
+	);
+}
+
+export function getHarnessTerminalPresetBaseAgentIds(): Record<string, string> {
+	return Object.fromEntries(
+		AGENT_HARNESS_PRESETS.filter(
+			(preset) => preset.audit.terminalPresetStrategy === "base-agent",
+		).map((preset) => [preset.id, preset.baseAgentId]),
+	);
+}
+
+/**
+ * All harnesses whose `baseAgentId` matches the given terminal agent preset id,
+ * in catalog order. Powers a per-base-agent harness picker (e.g. the desktop
+ * agent settings list every layer that can be stacked on a chosen base agent).
+ * Returns an empty array for an unknown base agent.
+ */
+export function getHarnessPresetsForBaseAgent(
+	baseAgentId: string,
+): AgentHarnessPreset[] {
+	return AGENT_HARNESS_PRESETS.filter(
+		(preset) => preset.baseAgentId === baseAgentId,
 	);
 }

@@ -3,9 +3,11 @@
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
 @theme {
+	/* Prefer the thin SF Pro UI stack for body copy, falling back to Inter then
+	 * the platform sans. Mono stays IBM Plex Mono for genuine code blocks only. */
 	--font-family-sans:
-		-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-		system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+		"SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont,
+		var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 	--font-family-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
 }
 

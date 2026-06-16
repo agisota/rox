@@ -2,20 +2,27 @@ import { apiKey } from "@better-auth/api-key";
 import { expo } from "@better-auth/expo";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { db } from "@rox/db/client";
-import { members } from "@rox/db/schema";
+import { members, userAttribution } from "@rox/db/schema";
 import type { sessions } from "@rox/db/schema/auth";
 import * as authSchema from "@rox/db/schema/auth";
 import { seedDefaultStatuses } from "@rox/db/seed-default-statuses";
 import { MemberAddedEmail } from "@rox/email/emails/member-added";
 import { MemberRemovedEmail } from "@rox/email/emails/member-removed";
 import { OrganizationInvitationEmail } from "@rox/email/emails/organization-invitation";
+import {
+	ATTRIBUTION_COOKIE_NAME,
+	parseAttributionCookieValue,
+	parseCookieHeader,
+} from "@rox/shared/attribution";
 import { canInvite, type OrganizationRole } from "@rox/shared/auth";
+import { ANALYTICS_EVENTS } from "@rox/shared/constants";
 import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, customSession, organization } from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { captureAuthEvent } from "./analytics";
 import { env } from "./env";
 import { acceptInvitationEndpoint } from "./lib/accept-invitation-endpoint";
 import { generateMagicTokenForInvite } from "./lib/generate-magic-token";
@@ -101,7 +108,7 @@ export const auth = betterAuth({
 	databaseHooks: {
 		user: {
 			create: {
-				after: async (user) => {
+				after: async (user, context?: unknown) => {
 					const domain = user.email.split("@")[1]?.toLowerCase();
 					let enrolledOrgId: string | null = null;
 
@@ -159,6 +166,65 @@ export const auth = betterAuth({
 							.set({ activeOrganizationId: enrolledOrgId })
 							.where(eq(authSchema.sessions.userId, user.id));
 					}
+
+					// First-touch attribution: persist the landing UTM/referrer captured
+					// in the `rox_attribution` cookie. Best-effort — wrapped so a failure
+					// here can never block account creation. Idempotent via the unique
+					// user_id index (first-touch is never overwritten).
+					try {
+						const ctx = (context ?? {}) as {
+							headers?: Headers;
+							request?: { headers?: Headers };
+						};
+						const cookieHeader =
+							ctx.headers?.get("cookie") ??
+							ctx.request?.headers?.get("cookie") ??
+							null;
+						const attribution = parseAttributionCookieValue(
+							parseCookieHeader(cookieHeader, ATTRIBUTION_COOKIE_NAME),
+						);
+						captureAuthEvent(ANALYTICS_EVENTS.ACCOUNT_CREATED, user.id, {
+							...(attribution?.utm.utmSource
+								? { utm_source: attribution.utm.utmSource }
+								: {}),
+							...(attribution?.utm.utmMedium
+								? { utm_medium: attribution.utm.utmMedium }
+								: {}),
+							...(attribution?.utm.utmCampaign
+								? { utm_campaign: attribution.utm.utmCampaign }
+								: {}),
+						});
+						if (attribution) {
+							await db
+								.insert(userAttribution)
+								.values({
+									userId: user.id,
+									utmSource: attribution.utm.utmSource,
+									utmMedium: attribution.utm.utmMedium,
+									utmCampaign: attribution.utm.utmCampaign,
+									utmTerm: attribution.utm.utmTerm,
+									utmContent: attribution.utm.utmContent,
+									landingPage: attribution.landingPage,
+									referrer: attribution.referrer,
+								})
+								.onConflictDoNothing();
+						}
+					} catch (error) {
+						console.error(
+							`[attribution] Failed to persist first-touch for ${user.id}:`,
+							error,
+						);
+					}
+				},
+			},
+		},
+		session: {
+			create: {
+				after: async (session: { userId: string }) => {
+					// signed_in: a new session = an authentication (login or signup).
+					captureAuthEvent(ANALYTICS_EVENTS.SIGNED_IN, session.userId, {
+						method: "github",
+					});
 				},
 			},
 		},

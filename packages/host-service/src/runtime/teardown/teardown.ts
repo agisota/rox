@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { TEARDOWN_TIMEOUT_MS } from "@rox/shared/constants";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import type { HostDb } from "../../db";
 import {
 	createTerminalSessionInternal,
@@ -10,7 +11,9 @@ import {
 
 export { TEARDOWN_TIMEOUT_MS };
 
-export const TEARDOWN_SCRIPT_REL_PATH = ".rox/teardown.sh";
+const TEARDOWN_SCRIPT_NAME = "teardown.sh";
+/** Canonical relative path (new `rox/` dir). Legacy `.rox/` is still resolved at runtime. */
+export const TEARDOWN_SCRIPT_REL_PATH = `rox/${TEARDOWN_SCRIPT_NAME}`;
 const OUTPUT_TAIL_BYTES = 4096;
 const KILL_GRACE_MS = 2_000;
 
@@ -35,7 +38,7 @@ interface RunTeardownOptions {
 }
 
 /**
- * Runs `.rox/teardown.sh` inside the workspace, reusing the same
+ * Runs `rox/teardown.sh` (legacy `.rox/teardown.sh`) inside the workspace, reusing the same
  * terminal primitive v2 uses for interactive sessions. This gives the
  * script full environment parity with the user's terminals (login shell
  * rcfiles, PATH, nvm/rbenv, etc.), matching how setup.sh runs.
@@ -49,7 +52,11 @@ export async function runTeardown({
 	worktreePath,
 	timeoutMs = TEARDOWN_TIMEOUT_MS,
 }: RunTeardownOptions): Promise<TeardownResult> {
-	const scriptPath = join(worktreePath, TEARDOWN_SCRIPT_REL_PATH);
+	// Prefer the new `rox/` dir; fall back to a legacy `.rox/` dir when only it exists.
+	const scriptPath = join(
+		resolveProjectRoxDir(worktreePath),
+		TEARDOWN_SCRIPT_NAME,
+	);
 	if (!existsSync(scriptPath)) return { status: "skipped" };
 
 	const terminalId = randomUUID();

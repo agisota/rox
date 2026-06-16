@@ -1,6 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import {
-	createMcpServer,
+	createProxyMcpServer,
 	isMcpUnauthorized,
 	type McpContext,
 	resolveMcpContext,
@@ -39,7 +39,7 @@ async function handle(req: Request): Promise<Response> {
 
 	ctx.relayUrl = await getRelayUrl(ctx.userId);
 
-	const server = createMcpServer({
+	const { server, cleanup } = await createProxyMcpServer(ctx, {
 		onToolCall: (event) => {
 			posthog.capture({
 				distinctId: event.userId,
@@ -62,14 +62,25 @@ async function handle(req: Request): Promise<Response> {
 	const transport = new WebStandardStreamableHTTPServerTransport();
 	await server.connect(transport);
 
-	return transport.handleRequest(req, {
-		authInfo: {
-			token: ctx.bearerToken,
-			clientId: ctx.source === "api-key" ? "api-key" : "oauth",
-			scopes: ["mcp:full"],
-			extra: { mcpContext: ctx },
-		},
-	});
+	try {
+		return await transport.handleRequest(req, {
+			authInfo: {
+				token: ctx.bearerToken,
+				clientId: ctx.source === "api-key" ? "api-key" : "oauth",
+				scopes: ["mcp:full"],
+				extra: { mcpContext: ctx },
+			},
+		});
+	} finally {
+		// Close pooled downstream connections (and the proxy server) after the
+		// single stateless JSON-RPC message has been handled and its response
+		// produced. For orgs with no active agent sources this is a near no-op.
+		try {
+			await cleanup();
+		} catch (error) {
+			console.error("[mcp-v2] proxy cleanup failed:", error);
+		}
+	}
 }
 
 // Vercel hobby plan caps serverless maxDuration at 300s.

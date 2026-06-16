@@ -10,8 +10,8 @@ import type { AgentEditableField } from "./agent-card.types";
 const SAMPLE_TASK = {
 	id: "task_agent_settings",
 	slug: "desktop-agent-settings",
-	title: "Desktop agent settings",
-	description: "Implement the desktop agent settings architecture.",
+	title: "Настройки десктоп-агента",
+	description: "Реализовать архитектуру настроек десктоп-агента.",
 	priority: "high",
 	statusName: "Todo",
 	labels: ["desktop", "agents"],
@@ -23,24 +23,24 @@ export function getPreviewPrompt(preset: ResolvedAgentConfig): string {
 
 export function getPreviewNoPromptCommand(preset: ResolvedAgentConfig): string {
 	if (preset.kind !== "terminal") {
-		return "Rox opens a chat pane without a shell command.";
+		return "Rox откроет панель чата без команды оболочки.";
 	}
 
-	return preset.command.trim() || "No command configured.";
+	return preset.command.trim() || "Команда не настроена.";
 }
 
 export function getPreviewTaskCommand(preset: ResolvedAgentConfig): string {
 	if (preset.kind !== "terminal") {
 		return preset.model
-			? `Rox opens with model ${preset.model}.`
-			: "Rox opens with the rendered task prompt.";
+			? `Rox откроется с моделью ${preset.model}.`
+			: "Rox откроется с отрисованным промптом задачи.";
 	}
 
 	return (
 		buildFileCommandFromAgentConfig({
-			filePath: `.rox/task-${SAMPLE_TASK.slug}.md`,
+			filePath: `rox/task-${SAMPLE_TASK.slug}.md`,
 			config: preset,
-		}) ?? "No prompt-capable command configured."
+		}) ?? "Не настроена команда с поддержкой промпта."
 	);
 }
 
@@ -80,53 +80,58 @@ export function buildAgentFieldPatch({
 	switch (field) {
 		case "label":
 			if (!value.trim()) {
-				return { error: "Label is required." };
+				return { error: "Название обязательно." };
 			}
 			return { patch: { label: value } };
 		case "description":
 			return { patch: { description: value || null } };
 		case "command":
 			if (preset.kind !== "terminal") {
-				return { error: "Command is only available for terminal agents." };
+				return { error: "Команда доступна только для терминальных агентов." };
 			}
 			if (!value.trim()) {
-				return { error: "Command is required for terminal agents." };
+				return { error: "Команда обязательна для терминальных агентов." };
 			}
 			return { patch: { command: value } };
 		case "promptCommand":
 			if (preset.kind !== "terminal") {
 				return {
-					error: "Prompt command is only available for terminal agents.",
+					error: "Команда промпта доступна только для терминальных агентов.",
 				};
 			}
 			if (!value.trim()) {
 				return preset.source === "user"
 					? { patch: { promptCommand: "" } }
-					: { error: "Prompt command is required for terminal agents." };
+					: {
+							error: "Команда промпта обязательна для терминальных агентов.",
+						};
 			}
 			return { patch: { promptCommand: value } };
 		case "promptCommandSuffix":
 			if (preset.kind !== "terminal") {
 				return {
-					error: "Prompt command suffix is only available for terminal agents.",
+					error:
+						"Суффикс команды промпта доступен только для терминальных агентов.",
 				};
 			}
 			return { patch: { promptCommandSuffix: value || null } };
 		case "taskPromptTemplate": {
 			if (!value.trim()) {
-				return { error: "Task prompt template is required." };
+				return { error: "Шаблон промпта задачи обязателен." };
 			}
 			const templateValidation = validateTaskPromptTemplate(value);
 			if (!templateValidation.valid) {
 				return {
-					error: `Unknown variables: ${templateValidation.unknownVariables.join(", ")}`,
+					error: `Неизвестные переменные: ${templateValidation.unknownVariables.join(", ")}`,
 				};
 			}
 			return { patch: { taskPromptTemplate: value } };
 		}
 		case "model":
 			if (preset.kind !== "chat") {
-				return { error: "Model override is only available for chat agents." };
+				return {
+					error: "Переопределение модели доступно только для чат-агентов.",
+				};
 			}
 			return { patch: { model: value || null } };
 	}

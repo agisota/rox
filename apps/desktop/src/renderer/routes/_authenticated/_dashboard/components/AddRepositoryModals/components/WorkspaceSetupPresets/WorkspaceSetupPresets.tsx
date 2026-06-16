@@ -1,19 +1,18 @@
-import { WORKSPACE_SETUP_PRESETS } from "@rox/shared/workspace-setup-presets";
+import { WORKSPACE_STARTER_PRESETS } from "@rox/shared/workspace-starter-presets";
 import { Checkbox } from "@rox/ui/checkbox";
 
 interface WorkspaceSetupPresetsProps {
-	/** Currently selected preset ids. */
+	/** Currently selected starter preset ids. */
 	selectedIds: string[];
-	/** Called with the next selection when a preset is toggled. */
+	/** Called with the next selection when a starter preset is toggled. */
 	onChange: (selectedIds: string[]) => void;
 	className?: string;
 }
 
 /**
- * Multi-select list of workspace setup presets (git init, AGENTS.md, deep-wiki,
- * scaffold folders, CI/CD, todo/spec/planner templates, …). Controlled: the
- * caller owns the selected ids and threads them into the `.rox/config.json`
- * `setup` array via `resolveWorkspaceSetupPresets`.
+ * Multi-select list of workspace starter presets. Controlled: the caller owns
+ * starter ids and sends them to project creation, where the host service
+ * resolves each starter into scaffold files and setup commands.
  */
 export function WorkspaceSetupPresets({
 	selectedIds,
@@ -27,14 +26,16 @@ export function WorkspaceSetupPresets({
 		if (checked) next.add(id);
 		else next.delete(id);
 		onChange(
-			WORKSPACE_SETUP_PRESETS.map((p) => p.id).filter((p) => next.has(p)),
+			WORKSPACE_STARTER_PRESETS.map((preset) => preset.id).filter((id) =>
+				next.has(id),
+			),
 		);
 	}
 
 	return (
 		<div className={className}>
 			<ul className="flex flex-col gap-1">
-				{WORKSPACE_SETUP_PRESETS.map((preset) => {
+				{WORKSPACE_STARTER_PRESETS.map((preset) => {
 					const isChecked = selected.has(preset.id);
 					const labelId = `workspace-preset-${preset.id}`;
 					return (

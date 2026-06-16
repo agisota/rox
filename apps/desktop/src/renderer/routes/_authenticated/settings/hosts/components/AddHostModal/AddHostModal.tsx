@@ -51,10 +51,9 @@ const MANAGED_PROVIDER_IDS = [
 ] as const satisfies readonly ManagedProviderId[];
 
 // RU display copy for providers. The server's `listProviders` returns English
-// brand names; we override them here so the picker stays Russian. `self`
-// (one-click host on our own Docker box, RoxSelfProvisioner) is surfaced
-// locally because it is not yet returned by the server provider list — it
-// stays unavailable until the backend (published host-service image) enables it.
+// brand names; we override them here so the picker stays Russian. `self` is the
+// no-spend path for a server the user already controls; it registers connection
+// metadata and does not call a live provisioner.
 const PROVIDER_COPY: Record<
 	ProviderId,
 	{ label: string; description: string }
@@ -66,12 +65,12 @@ const PROVIDER_COPY: Record<
 	modal: { label: "Modal", description: "Управляемые песочницы Modal." },
 	e2b: { label: "E2B", description: "Управляемые песочницы E2B." },
 	self: {
-		label: "Сервер Rox (удалённый)",
-		description: "Развернуть хост у нас, в один клик.",
+		label: "Свой сервер",
+		description: "Подключить уже запущенную службу Rox host-service.",
 	},
 };
 
-// Locally-surfaced providers not (yet) returned by the server provider list.
+// Locally-surfaced providers not returned by the server provider list.
 const LOCAL_ONLY_PROVIDERS: readonly ProviderId[] = ["self"];
 
 const PROVIDER_CREDENTIAL_COPY: Record<
@@ -154,6 +153,10 @@ function hasProviderCredential(
 	return Boolean(credentials[providerId]?.trim());
 }
 
+function defaultPortForProtocol(protocol: "http" | "https"): number {
+	return protocol === "https" ? 443 : 80;
+}
+
 export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 	const nameId = useId();
 	const [kind, setKind] = useState<HostKindOption>("local");
@@ -169,6 +172,10 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		modal: "",
 		e2b: "",
 	});
+	const [selfHost, setSelfHost] = useState("");
+	const [selfProtocol, setSelfProtocol] = useState<"http" | "https">("https");
+	const [selfPort, setSelfPort] = useState("443");
+	const [sandboxTtlMinutes, setSandboxTtlMinutes] = useState("60");
 	const [submitting, setSubmitting] = useState(false);
 	const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -222,9 +229,8 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		};
 	}, [open]);
 
-	// Render server providers with RU copy, then append any local-only providers
-	// (e.g. rox-self) the server doesn't yet return so they stay visible in the
-	// picker — marked unavailable until the backend enables them.
+	// Render server providers with RU copy, then append local-only providers
+	// such as the no-spend self-managed server registration path.
 	const displayProviders: ProviderOption[] = [
 		...providers.map((p) => ({
 			...p,
@@ -237,14 +243,44 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		).map((id) => ({
 			id,
 			label: PROVIDER_COPY[id].label,
-			available: false,
+			available: true,
 		})),
 	];
 
 	const isManaged = kind === "remote" || kind === "sandbox";
+	const isSelfManaged = isManaged && provider === "self";
 	const selectedProvider = displayProviders.find((p) => p.id === provider);
+	const selfPortNumber = Number(selfPort);
+	const selfTtlMinutesNumber = Number(sandboxTtlMinutes);
+	const canAddSelfManaged =
+		isSelfManaged &&
+		name.trim().length > 0 &&
+		selfHost.trim().length > 0 &&
+		Number.isInteger(selfPortNumber) &&
+		selfPortNumber >= 1 &&
+		selfPortNumber <= 65_535 &&
+		(kind !== "sandbox" ||
+			(Number.isInteger(selfTtlMinutesNumber) && selfTtlMinutesNumber >= 1));
 	const canProvision =
-		isManaged && name.trim().length > 0 && selectedProvider?.available === true;
+		isManaged &&
+		name.trim().length > 0 &&
+		selectedProvider?.available === true &&
+		(!isSelfManaged || canAddSelfManaged);
+
+	// Keep the dropdown on a usable provider. When providers load or saved keys
+	// change (e.g. server returns all-unconfigured but the user has a local
+	// Daytona key, or they just cleared the selected provider's key), snap the
+	// selection to the first available provider so the picker reflects configured
+	// providers without an app restart and never sits on an unconfigured one when
+	// a configured option exists.
+	const firstAvailableProviderId = displayProviders.find(
+		(p) => p.available,
+	)?.id;
+	useEffect(() => {
+		if (!isManaged) return;
+		if (selectedProvider?.available) return;
+		if (firstAvailableProviderId) setProvider(firstAvailableProviderId);
+	}, [isManaged, selectedProvider?.available, firstAvailableProviderId]);
 
 	const handleProviderCredentialChange = (
 		providerId: ManagedProviderId,
@@ -270,6 +306,11 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 			...current,
 			[providerId]: "",
 		}));
+		// Auto-configure on save: the saved key flips this provider to available
+		// (see `displayProviders`), so select it immediately. Without this the
+		// dropdown can stay on a still-unconfigured provider and "Подготовить"
+		// stays disabled, making the freshly-saved key feel inert until restart.
+		setProvider(providerId);
 		toast.success(`Ключ ${PROVIDER_COPY[providerId].label} сохранён`);
 	};
 
@@ -281,18 +322,62 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		toast.success(`Ключ ${PROVIDER_COPY[providerId].label} удалён`);
 	};
 
+	const handleSelfProtocolChange = (value: "http" | "https") => {
+		setSelfProtocol(value);
+		setSelfPort((current) => {
+			if (current === "80" || current === "443") {
+				return String(defaultPortForProtocol(value));
+			}
+			return current;
+		});
+	};
+
 	const handleProvision = async () => {
 		if (kind === "local" || !canProvision) return;
-		// `self` is never provisioned server-side (always unavailable in the
-		// picker), so `canProvision` rules it out; this guard also narrows the
-		// type to the providers the mutation accepts.
+		if (isSelfManaged) {
+			setSubmitting(true);
+			try {
+				const host = await apiTrpcClient.v2Host.addServer.mutate({
+					name: name.trim(),
+					host: selfHost.trim(),
+					port: selfPortNumber,
+					protocol: selfProtocol,
+					kind,
+					ttlMs:
+						kind === "sandbox" ? selfTtlMinutesNumber * 60 * 1000 : undefined,
+				});
+				toast.success(`Хост ${host.name} добавлен`);
+				onOpenChange(false);
+				setName("");
+				setKind("local");
+				setSelfHost("");
+				setSelfProtocol("https");
+				setSelfPort("443");
+				setSandboxTtlMinutes("60");
+			} catch (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Не удалось добавить хост",
+				);
+			} finally {
+				setSubmitting(false);
+			}
+			return;
+		}
+
+		// The self-managed path is handled above through `addServer`; this guard
+		// narrows the remaining providers to the live provisioner mutation.
 		if (!isManagedProvider(provider)) return;
 		setSubmitting(true);
 		try {
+			// Forward the locally-saved provider key (if any) so the server can
+			// provision with the user's own credential instead of a server env key.
+			// Omitted when empty so the server still falls back to its env key.
+			const providerApiKey = providerCredentials[provider]?.trim() || undefined;
 			const host = await apiTrpcClient.v2Host.provision.mutate({
 				name: name.trim(),
 				kind,
 				provider,
+				providerApiKey,
 			});
 			toast.success(`Подготавливаем ${host.name}…`);
 			onOpenChange(false);
@@ -422,80 +507,157 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 										))}
 									</SelectContent>
 								</Select>
+								<p className="text-xs text-muted-foreground">
+									{selectedProvider
+										? PROVIDER_COPY[selectedProvider.id].description
+										: "Выберите способ подключения хоста."}
+								</p>
 							</div>
 
-							<div className="space-y-3 rounded-md border p-3">
-								<div>
-									<p className="text-sm font-medium">Ключи провайдеров</p>
-									<p className="text-xs text-muted-foreground">
-										Сохраните API-ключ или токен, чтобы провайдер стал доступен
-										в списке выше.
-									</p>
-								</div>
-								<div className="space-y-2">
-									{MANAGED_PROVIDER_IDS.map((providerId) => {
-										const copy = PROVIDER_CREDENTIAL_COPY[providerId];
-										const hasCredential = hasProviderCredential(
-											providerCredentials,
-											providerId,
-										);
-										const inputValue = providerCredentialInputs[providerId];
-										return (
-											<div
-												key={providerId}
-												className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_auto]"
+							{isSelfManaged && (
+								<div className="space-y-3 rounded-md border p-3">
+									<div>
+										<p className="text-sm font-medium">Адрес host-service</p>
+										<p className="text-xs text-muted-foreground">
+											Добавляет запись о сервере без live provisioning и без
+											расходов у провайдеров.
+										</p>
+									</div>
+									<div className="space-y-1.5">
+										<Label htmlFor={`${nameId}-self-host`}>Host</Label>
+										<Input
+											id={`${nameId}-self-host`}
+											value={selfHost}
+											onChange={(event) => setSelfHost(event.target.value)}
+											placeholder="remote.example.com"
+											className="font-mono"
+										/>
+									</div>
+									<div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
+										<div className="space-y-1.5">
+											<Label>Protocol</Label>
+											<Select
+												value={selfProtocol}
+												onValueChange={(value) =>
+													handleSelfProtocolChange(value as "http" | "https")
+												}
 											>
-												<Label
-													htmlFor={`${nameId}-${providerId}-key`}
-													className="self-center text-xs"
+												<SelectTrigger>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="https">https</SelectItem>
+													<SelectItem value="http">http</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-1.5">
+											<Label htmlFor={`${nameId}-self-port`}>Port</Label>
+											<Input
+												id={`${nameId}-self-port`}
+												type="number"
+												min={1}
+												max={65_535}
+												value={selfPort}
+												onChange={(event) => setSelfPort(event.target.value)}
+												className="font-mono"
+											/>
+										</div>
+									</div>
+									{kind === "sandbox" && (
+										<div className="space-y-1.5">
+											<Label htmlFor={`${nameId}-sandbox-ttl`}>
+												TTL, minutes
+											</Label>
+											<Input
+												id={`${nameId}-sandbox-ttl`}
+												type="number"
+												min={1}
+												value={sandboxTtlMinutes}
+												onChange={(event) =>
+													setSandboxTtlMinutes(event.target.value)
+												}
+												className="font-mono"
+											/>
+										</div>
+									)}
+								</div>
+							)}
+
+							{!isSelfManaged && (
+								<div className="space-y-3 rounded-md border p-3">
+									<div>
+										<p className="text-sm font-medium">Ключи провайдеров</p>
+										<p className="text-xs text-muted-foreground">
+											Сохраните API-ключ или токен, чтобы провайдер стал
+											доступен в списке выше.
+										</p>
+									</div>
+									<div className="space-y-2">
+										{MANAGED_PROVIDER_IDS.map((providerId) => {
+											const copy = PROVIDER_CREDENTIAL_COPY[providerId];
+											const hasCredential = hasProviderCredential(
+												providerCredentials,
+												providerId,
+											);
+											const inputValue = providerCredentialInputs[providerId];
+											return (
+												<div
+													key={providerId}
+													className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_auto]"
 												>
-													{copy.label}
-												</Label>
-												<Input
-													id={`${nameId}-${providerId}-key`}
-													type="password"
-													value={inputValue}
-													onChange={(event) =>
-														handleProviderCredentialChange(
-															providerId,
-															event.target.value,
-														)
-													}
-													placeholder={
-														hasCredential ? "Ключ сохранён" : copy.placeholder
-													}
-													className="h-8 font-mono"
-												/>
-												<div className="flex gap-1">
-													<Button
-														type="button"
-														size="sm"
-														variant="outline"
-														onClick={() =>
-															handleSaveProviderCredential(providerId)
-														}
-														disabled={!inputValue.trim()}
+													<Label
+														htmlFor={`${nameId}-${providerId}-key`}
+														className="self-center text-xs"
 													>
-														Сохранить
-													</Button>
-													{hasCredential && (
+														{copy.label}
+													</Label>
+													<Input
+														id={`${nameId}-${providerId}-key`}
+														type="password"
+														value={inputValue}
+														onChange={(event) =>
+															handleProviderCredentialChange(
+																providerId,
+																event.target.value,
+															)
+														}
+														placeholder={
+															hasCredential ? "Ключ сохранён" : copy.placeholder
+														}
+														className="h-8 font-mono"
+													/>
+													<div className="flex gap-1">
 														<Button
 															type="button"
 															size="sm"
-															variant="ghost"
+															variant="outline"
 															onClick={() =>
-																handleClearProviderCredential(providerId)
+																handleSaveProviderCredential(providerId)
 															}
+															disabled={!inputValue.trim()}
 														>
-															Удалить
+															Сохранить
 														</Button>
-													)}
+														{hasCredential && (
+															<Button
+																type="button"
+																size="sm"
+																variant="ghost"
+																onClick={() =>
+																	handleClearProviderCredential(providerId)
+																}
+															>
+																Удалить
+															</Button>
+														)}
+													</div>
 												</div>
-											</div>
-										);
-									})}
+											);
+										})}
+									</div>
 								</div>
-							</div>
+							)}
 						</div>
 					)}
 
@@ -537,7 +699,13 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 							onClick={() => void handleProvision()}
 							disabled={!canProvision || submitting}
 						>
-							{submitting ? "Подготовка…" : "Подготовить"}
+							{submitting
+								? isSelfManaged
+									? "Добавление…"
+									: "Подготовка…"
+								: isSelfManaged
+									? "Добавить сервер"
+									: "Подготовить"}
 						</Button>
 					)}
 				</DialogFooter>

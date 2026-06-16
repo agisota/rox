@@ -61,7 +61,7 @@ export const BUILTIN_TERMINAL_AGENTS = [
 		id: "omp",
 		label: "Rox",
 		description:
-			"Rox's default coding agent, powered by oh-my-pi/omp with IDE-aware tools, subagents, LSP, DAP, and workflow-friendly prompt runs.",
+			"Rox's default coding agent with IDE-aware tools, subagents, LSP, DAP, and workflow-friendly prompt runs.",
 		command: "omp --auto-approve",
 		promptCommand: "omp --auto-approve -p",
 		includeInDefaultTerminalPresets: true,

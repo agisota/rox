@@ -135,7 +135,7 @@ export function StartView() {
 				<div className="flex flex-col items-center w-full max-w-md px-6">
 					<RoxLogo
 						className={cn(
-							"h-8 w-auto mb-12 transition-opacity duration-200 opacity-80",
+							"h-16 w-auto mb-12 transition-opacity duration-200 opacity-80",
 							isDragOver && "opacity-0",
 						)}
 					/>

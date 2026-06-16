@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
 	SETTING_ITEM_ID,
+	SETTINGS_ITEMS,
 	type SettingsItem,
 	searchSettings,
 } from "./settings-search";
@@ -61,5 +62,42 @@ describe("settings search - font settings", () => {
 
 		expect(editorFont?.section).toBe("appearance");
 		expect(terminalFont?.section).toBe("appearance");
+	});
+});
+
+describe("settings search - share settings", () => {
+	it('searching "share" returns public share management', () => {
+		const results = searchSettings("share");
+		const ids = getIds(results);
+		expect(ids).toContain(SETTING_ITEM_ID.PUBLIC_SHARES);
+	});
+});
+
+describe("settings search - integration settings", () => {
+	const integrationItems = [
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_LINEAR, query: "Linear" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_GITHUB, query: "GitHub" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_SLACK, query: "Slack" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_TELEGRAM, query: "Telegram" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_DISCORD, query: "Discord" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_NOTION, query: "Notion" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_OBSIDIAN, query: "Obsidian" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_FIBERY, query: "Fibery" },
+		{ id: SETTING_ITEM_ID.INTEGRATIONS_LARK, query: "Lark" },
+	] as const;
+
+	it("registers every release-train integration provider in settings", () => {
+		const ids = getIds(SETTINGS_ITEMS);
+
+		for (const item of integrationItems) {
+			expect(ids).toContain(item.id);
+		}
+	});
+
+	it("finds every integration provider by name", () => {
+		for (const item of integrationItems) {
+			const ids = getIds(searchSettings(item.query));
+			expect(ids).toContain(item.id);
+		}
 	});
 });

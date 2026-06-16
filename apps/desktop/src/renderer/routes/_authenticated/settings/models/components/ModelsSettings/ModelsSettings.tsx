@@ -25,6 +25,7 @@ import {
 } from "../../../utils/settings-search";
 import { ApiKeyProviderSection } from "./components/ApiKeyProviderSection";
 import { ConfigRow } from "./components/ConfigRow";
+import { CustomProviderSection } from "./components/CustomProviderSection";
 import { SettingsSection } from "./components/SettingsSection";
 import {
 	API_KEY_PROVIDER_CONFIGS,
@@ -61,6 +62,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 		visibleItems,
 	);
 	const showOpenAI = isItemVisible(SETTING_ITEM_ID.MODELS_OPENAI, visibleItems);
+	const showCustom = isItemVisible(SETTING_ITEM_ID.MODELS_CUSTOM, visibleItems);
 	const visibleApiKeyProviderConfigs = API_KEY_PROVIDER_CONFIGS.filter(
 		(config) => {
 			switch (config.id) {
@@ -418,7 +420,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											htmlFor="anthropic-auth-token"
 											className="text-sm font-medium"
 										>
-											Auth token
+											Токен авторизации
 										</Label>
 										<Input
 											id="anthropic-auth-token"
@@ -575,6 +577,8 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 					{visibleApiKeyProviderConfigs.map((config) => (
 						<ApiKeyProviderSection key={config.id} config={config} />
 					))}
+
+					{showCustom ? <CustomProviderSection /> : null}
 				</div>
 			</div>
 

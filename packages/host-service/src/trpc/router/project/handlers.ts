@@ -15,6 +15,7 @@ import {
 	resolveLocalRepo,
 	tryRevParseGitRoot,
 } from "./utils/resolve-repo";
+import { applyWorkspaceStarterPresets } from "./utils/starter-presets";
 
 function slugifyProjectName(name: string): string {
 	const slug = name
@@ -115,6 +116,7 @@ async function persistFromResolved(
 		resolved: ResolvedRepo;
 		cleanupRepoPathOnFailure: boolean;
 		repoCloneUrlForCloud?: string;
+		starterPresetIds?: readonly string[];
 	},
 ): Promise<CreateResult> {
 	const projectId = randomUUID();
@@ -122,6 +124,11 @@ async function persistFromResolved(
 	let cloudProjectCreated = false;
 
 	try {
+		applyWorkspaceStarterPresets({
+			repoPath: args.resolved.repoPath,
+			starterPresetIds: args.starterPresetIds,
+		});
+
 		persistLocalProject(ctx, projectId, args.resolved);
 		localProjectInserted = true;
 
@@ -183,7 +190,12 @@ async function persistFromResolved(
 
 export async function createFromClone(
 	ctx: HostServiceContext,
-	args: { name: string; parentDir: string; url: string },
+	args: {
+		name: string;
+		parentDir: string;
+		url: string;
+		starterPresetIds?: readonly string[];
+	},
 ): Promise<CreateResult> {
 	const resolved = await cloneRepoInto(
 		args.url,
@@ -194,6 +206,7 @@ export async function createFromClone(
 		name: args.name,
 		resolved,
 		cleanupRepoPathOnFailure: true,
+		starterPresetIds: args.starterPresetIds,
 		// Only forward to cloud if the cloned repo actually has a parseable
 		// GitHub remote — non-GitHub URLs and local paths become local-only
 		// projects with no cloud repoCloneUrl.
@@ -217,7 +230,12 @@ async function resolveOrInitLocalRepo(
 
 export async function createFromImportLocal(
 	ctx: HostServiceContext,
-	args: { name: string; repoPath: string; initIfNeeded?: boolean },
+	args: {
+		name: string;
+		repoPath: string;
+		initIfNeeded?: boolean;
+		starterPresetIds?: readonly string[];
+	},
 ): Promise<CreateResult> {
 	const resolved = await resolveOrInitLocalRepo(
 		args.repoPath,
@@ -226,6 +244,7 @@ export async function createFromImportLocal(
 	return persistFromResolved(ctx, {
 		name: args.name,
 		resolved,
+		starterPresetIds: args.starterPresetIds,
 		// User pointed us at an existing folder; never rm it.
 		cleanupRepoPathOnFailure: false,
 		repoCloneUrlForCloud: resolved.parsed?.url,
@@ -238,7 +257,11 @@ export async function createFromImportLocal(
  */
 export async function createFromEmpty(
 	ctx: HostServiceContext,
-	args: { name: string; parentDir: string },
+	args: {
+		name: string;
+		parentDir: string;
+		starterPresetIds?: readonly string[];
+	},
 ): Promise<CreateResult> {
 	const resolved = await initEmptyRepo(
 		args.parentDir,
@@ -247,6 +270,7 @@ export async function createFromEmpty(
 	return persistFromResolved(ctx, {
 		name: args.name,
 		resolved,
+		starterPresetIds: args.starterPresetIds,
 		cleanupRepoPathOnFailure: true,
 	});
 }
@@ -258,7 +282,12 @@ export async function createFromEmpty(
  */
 export async function createFromTemplate(
 	ctx: HostServiceContext,
-	args: { name: string; parentDir: string; url: string },
+	args: {
+		name: string;
+		parentDir: string;
+		url: string;
+		starterPresetIds?: readonly string[];
+	},
 ): Promise<CreateResult> {
 	const resolved = await cloneTemplateInto(
 		args.url,
@@ -269,6 +298,7 @@ export async function createFromTemplate(
 	return persistFromResolved(ctx, {
 		name: args.name,
 		resolved,
+		starterPresetIds: args.starterPresetIds,
 		cleanupRepoPathOnFailure: true,
 	});
 }

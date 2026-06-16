@@ -23,7 +23,9 @@ import { createPortsRouter } from "./ports";
 import { createProjectsRouter } from "./projects";
 import { createResourceMetricsRouter } from "./resource-metrics";
 import { createRingtoneRouter } from "./ringtone";
+import { createSavedPromptsRouter } from "./saved-prompts";
 import { createSettingsRouter } from "./settings";
+import { createSkillsLibraryRouter } from "./skills-library";
 import { createSystemRouter } from "./system";
 import { createTerminalRouter } from "./terminal";
 import { createUiStateRouter } from "./ui-state";
@@ -61,6 +63,8 @@ export const createAppRouter = (getWindow: () => BrowserWindow | null) => {
 		hostServiceCoordinator: createHostServiceCoordinatorRouter(),
 		keyboardLayout: createKeyboardLayoutRouter(),
 		migration: createMigrationRouter(),
+		savedPrompts: createSavedPromptsRouter(),
+		skillsLibrary: createSkillsLibraryRouter(),
 	});
 };
 

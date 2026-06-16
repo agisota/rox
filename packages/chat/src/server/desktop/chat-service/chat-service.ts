@@ -34,6 +34,15 @@ import {
 	setApiKeyForProvider,
 } from "./auth-storage-utils";
 import {
+	clearCustomProviderConfig as clearCustomProviderConfigOnDisk,
+	type DiscoveredModel,
+	discoverCustomProviderModels as discoverCustomProviderModelsFromEndpoint,
+	getCustomProviderConfig as getCustomProviderConfigFromDisk,
+	getStoredCustomProviderApiKey,
+	type SetCustomProviderConfigInput,
+	setCustomProviderConfig as setCustomProviderConfigOnDisk,
+} from "./custom-provider-config";
+import {
 	OAuthFlowController,
 	type OAuthFlowOptions,
 } from "./oauth-flow-controller";
@@ -96,6 +105,7 @@ function stripAnthropicCredentialEnvVariables(
 
 interface ChatServiceOptions {
 	anthropicEnvConfigPath?: string;
+	customProviderConfigPath?: string;
 }
 
 export class ChatService {
@@ -106,6 +116,7 @@ export class ChatService {
 	private openAIOAuthLoopback: OpenAIOAuthLoopback | null = null;
 	private pendingOpenAIOAuthCallbackUrl: string | null = null;
 	private readonly anthropicEnvConfigPath: string | undefined;
+	private readonly customProviderConfigPath: string | undefined;
 	private currentAnthropicRuntimeEnv: AnthropicRuntimeEnv = {};
 	private static readonly ANTHROPIC_AUTH_SESSION_TTL_MS = 10 * 60 * 1000;
 	private static readonly OPENAI_AUTH_SESSION_TTL_MS = 10 * 60 * 1000;
@@ -113,6 +124,7 @@ export class ChatService {
 
 	constructor(options?: ChatServiceOptions) {
 		this.anthropicEnvConfigPath = options?.anthropicEnvConfigPath;
+		this.customProviderConfigPath = options?.customProviderConfigPath;
 		const persistedConfig = getAnthropicEnvConfigFromDisk({
 			configPath: this.anthropicEnvConfigPath,
 		});
@@ -474,6 +486,73 @@ export class ChatService {
 			clearApiKeyForProvider(authStorage, providerId);
 		}
 		return { success: true };
+	}
+
+	/**
+	 * Custom OpenAI-compatible provider. Returns the persisted config with the
+	 * API key masked (the renderer never needs the raw key back; it only renders
+	 * a "saved" placeholder), plus the connection status in the shared
+	 * {@link AuthStatus} shape so the settings UI can reuse `resolveProviderStatus`.
+	 */
+	getCustomProviderConfig(): {
+		baseUrl: string;
+		modelId: string;
+		hasApiKey: boolean;
+		status: AuthStatus;
+	} {
+		const config = getCustomProviderConfigFromDisk({
+			configPath: this.customProviderConfigPath,
+		});
+		const configured = config !== null;
+		const status: AuthStatus = {
+			authenticated: configured,
+			method: configured ? "api_key" : null,
+			source: configured ? "managed" : null,
+			issue: null,
+		};
+		return {
+			baseUrl: config?.baseUrl ?? "",
+			modelId: config?.modelId ?? "",
+			hasApiKey: configured,
+			status,
+		};
+	}
+
+	async setCustomProviderConfig(
+		input: SetCustomProviderConfigInput,
+	): Promise<{ success: true }> {
+		// `apiKey` may be omitted to keep the previously saved key; the disk layer
+		// reuses the stored secret so a model/base-URL-only edit persists cleanly.
+		setCustomProviderConfigOnDisk(input, {
+			configPath: this.customProviderConfigPath,
+		});
+		return { success: true };
+	}
+
+	async clearCustomProviderConfig(): Promise<{ success: true }> {
+		clearCustomProviderConfigOnDisk({
+			configPath: this.customProviderConfigPath,
+		});
+		return { success: true };
+	}
+
+	async discoverCustomProviderModels(input: {
+		baseUrl: string;
+		apiKey?: string;
+	}): Promise<{ models: DiscoveredModel[] }> {
+		// Fall back to the saved key when the renderer sends none, so discovery
+		// works after a reload without forcing the user to re-type the secret.
+		const apiKey =
+			input.apiKey?.trim() ||
+			getStoredCustomProviderApiKey({
+				configPath: this.customProviderConfigPath,
+			}) ||
+			"";
+		const models = await discoverCustomProviderModelsFromEndpoint({
+			baseUrl: input.baseUrl,
+			apiKey,
+		});
+		return { models };
 	}
 
 	async startOpenAIOAuth(): Promise<{ url: string; instructions: string }> {

@@ -10,6 +10,7 @@ import {
 	INTRO_LEAD_WORD,
 	INTRO_TAGLINE,
 } from "../../constants";
+import { CpuArchitecture } from "../CpuArchitecture";
 
 interface IntroOverlayProps {
 	onComplete: () => void;
@@ -51,6 +52,9 @@ const CURSOR_LIGHT = "░▒▓";
 
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
 const SAFETY_TIMEOUT_MS = 18_000;
+
+/** Delay the independent logo float until the one-shot reveal tween has landed. */
+const LOGO_FLOAT_DELAY_MS = 2_200;
 
 /** Split the flat feature list into the grid rows rendered on slide 2. */
 function chunkFeatures(): ReadonlyArray<
@@ -108,6 +112,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		);
 		const logo = select<HTMLElement>(".rox-intro__logo");
 		const logoImg = select<HTMLElement>(".rox-intro__logo img");
+		const cpuMark = select<HTMLElement>(".rox-intro__cpu");
 		const slide2 = select<HTMLElement>(".rox-intro__slide--two");
 		const slide2Words = select<HTMLElement>(
 			".rox-intro__slide--two .rox-intro__feature",
@@ -188,17 +193,21 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					start: "<+=200",
 				}),
 			)
+			// Collapse the multilingual lead word inward and dissolve it to nothing:
+			// the centered word is NOT resolved into a plain "ROX" wordmark. The
+			// animated CPU-architecture mark below becomes the sole ROX brand-lock,
+			// so only ONE ROX is ever on screen.
 			.add(
 				slide1Center,
 				{
 					scale: 2.4,
+					opacity: { to: 0 },
 					color: { to: "var(--rox-c-2)" },
 					ease: "inOutExpo",
 					duration: 1500,
 					innerHTML: scrambleText({
-						text: INTRO_BRAND,
+						override: " ",
 						ease: "inQuad",
-						override: false,
 						from: "center",
 						duration: 900,
 						perturbation: 0.25,
@@ -206,7 +215,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Reveal the brand logo just above the wordmark as it settles, with a
+			// Reveal the brand logo just above where the wordmark lands, with a
 			// brief blur-clear and a brand-glow halo that pulses up as it lands.
 			.add(logo, { opacity: { to: 1 }, ease: "out(2)", duration: 700 }, "<<")
 			.add(
@@ -233,31 +242,27 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
+			// Brand lock: the animated CPU-architecture mark IS the ROX wordmark.
+			// It resolves into the spot the lead-word collapsed into — circuit
+			// traces draw in and light beams travel around the "ROX" the SVG holds.
 			.add(
-				slide1Center,
+				cpuMark,
 				{
-					scale: 2.6,
-					color: "var(--rox-fg-1)",
-					ease: "inOutExpo",
-					duration: 1150,
-					innerHTML: scrambleText({
-						override: false,
-						text: INTRO_BRAND,
-						from: "right",
-						duration: 850,
-						settleDuration: 500,
-						ease: "inOut",
-					}),
+					opacity: { to: 1 },
+					scale: [0.92, 1],
+					ease: "out(2)",
+					duration: 900,
 				},
-				"<+=300",
+				"<+=200",
 			)
-			// Hold the brand lock-up on screen for a beat.
-			.add(slide1Center, { scale: 2.6, duration: 900 }, "<+=200");
+			// Hold the CPU brand lock-up on screen for a beat.
+			.add(cpuMark, { opacity: 1, duration: 900 }, "<+=200");
 
 		// ── Slide 2: feature tags scramble in across the grid (held ~2× longer)
 		timeline
 			.add(root, { backgroundColor: "#000" }, "<+=300")
 			.add(logo, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
+			.add(cpuMark, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
 			.set(slide1, { opacity: 0 }, "<<")
 			.set(slide2, { opacity: 1 }, "<<")
 			.add(
@@ -324,20 +329,31 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		// Subtle "alive" float once the logo has landed: the mark drifts ±4px and
 		// the halo breathes. Tracked separately so we can revert it on cleanup
 		// (the timeline's own revert() won't touch these standalone loops).
-		const logoFloat = animate(logoImg, {
-			translateY: [-4, 4],
-			loop: true,
-			alternate: true,
-			duration: 3500,
-			ease: "inOut(2)",
-		});
+		const prefersReducedMotion = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		).matches;
+		let logoFloat: { revert: () => void } | null = null;
+		const logoFloatDelay = prefersReducedMotion
+			? undefined
+			: window.setTimeout(() => {
+					logoFloat = animate(logoImg, {
+						translateY: [-4, 4],
+						loop: true,
+						alternate: true,
+						duration: 3500,
+						ease: "inOut(2)",
+					});
+				}, LOGO_FLOAT_DELAY_MS);
 
 		// Belt-and-braces: guarantee completion even if a tween never settles.
 		const safety = window.setTimeout(finishOnce, SAFETY_TIMEOUT_MS);
 
 		return () => {
 			window.clearTimeout(safety);
-			logoFloat.revert();
+			if (logoFloatDelay !== undefined) {
+				window.clearTimeout(logoFloatDelay);
+			}
+			logoFloat?.revert();
 			timeline.pause();
 			timeline.revert();
 		};
@@ -356,6 +372,12 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					priority
 				/>
 				<span className="rox-intro__tie" aria-hidden="true" />
+			</div>
+
+			{/* Animated CPU-architecture wordmark: the sole ROX brand-lock, revealed
+			    under the logo where the lead-word collapsed (replaces a text "ROX"). */}
+			<div className="rox-intro__cpu" aria-hidden="true">
+				<CpuArchitecture text={INTRO_BRAND} />
 			</div>
 
 			<div className="rox-intro__stage">

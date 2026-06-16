@@ -14,6 +14,13 @@ export {
 	getOpenAICredentialsFromAuthStorage,
 } from "./auth/openai";
 export { ChatService } from "./chat-service";
+export {
+	type CustomProviderConfig,
+	getCustomProviderConfig,
+	setCustomProviderConfig,
+	stripOpenAIProviderPrefix,
+	toCustomProviderWireModelId,
+} from "./chat-service/custom-provider-config";
 export type { ChatServiceRouter } from "./router";
 export { createChatServiceRouter } from "./router";
 export type { SlashCommand } from "./slash-commands";

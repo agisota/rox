@@ -1,0 +1,73 @@
+/*
+ * CpuArchitecture light-beam animation.
+ *
+ * Each `.cpu-line-N` circle is masked to its matching trace and travels the
+ * trace via `offset-path`. The path strings mirror the <path d="…"> trace
+ * geometry in CpuArchitecture.tsx so the glow rides exactly on the circuit.
+ *
+ * Scoped under `.cpu-architecture` so it never leaks into the rest of the site.
+ */
+
+:where(.cpu-architecture) {
+	offset-anchor: 10px 0;
+	animation: cpu-line-anim 2s linear infinite;
+}
+
+.cpu-line-1 {
+	offset-path: path("M 10 20 h 79.5 q 5 0 5 5 v 30");
+	animation-delay: 0s;
+}
+
+.cpu-line-2 {
+	offset-path: path("M 180 10 h -69.7 q -5 0 -5 5 v 30");
+	animation-delay: 0.6s;
+}
+
+.cpu-line-3 {
+	offset-path: path("M 130 20 v 21.8 q 0 5 -5 5 h -10");
+	animation-delay: 0.9s;
+}
+
+.cpu-line-4 {
+	offset-path: path("M 170 80 v -21.8 q 0 -5 -5 -5 h -50");
+	animation-delay: 0.3s;
+}
+
+.cpu-line-5 {
+	offset-path: path(
+		"M 135 65 h 15 q 5 0 5 5 v 10 q 0 5 -5 5 h -39.8 q -5 0 -5 -5 v -20"
+	);
+	animation-delay: 1.5s;
+}
+
+.cpu-line-6 {
+	offset-path: path("M 94.8 95 v -36");
+	animation-delay: 1.8s;
+}
+
+.cpu-line-7 {
+	offset-path: path(
+		"M 88 88 v -15 q 0 -5 -5 -5 h -10 q -5 0 -5 -5 v -5 q 0 -5 5 -5 h 14"
+	);
+	animation-delay: 1.2s;
+}
+
+.cpu-line-8 {
+	offset-path: path("M 30 30 h 25 q 5 0 5 5 v 6.5 q 0 5 5 5 h 20");
+	animation-delay: 2.1s;
+}
+
+@keyframes cpu-line-anim {
+	0% {
+		offset-distance: 0%;
+	}
+	100% {
+		offset-distance: 100%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:where(.cpu-architecture) {
+		animation: none;
+	}
+}

@@ -20,6 +20,7 @@
 
 import {
 	resolveWorkspaceSetupPresets,
+	WORKSPACE_SETUP_PRESETS,
 	type WorkspaceScaffoldFile,
 	type WorkspaceSetupPreset,
 } from "./workspace-setup-presets";
@@ -60,7 +61,7 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 		id: "agent-context-scaffold",
 		label: "Agent context scaffold",
 		description:
-			"Create the .rox/, .agent/, and .memory/ directories that hold workspace config, agent artifacts, and persistent memory.",
+			"Create the rox/, .agent/, and .memory/ directories that hold workspace config, agent artifacts, and persistent memory.",
 		presetIds: ["rox-folder", "agent-folder", "memory-folder"],
 	},
 	{
@@ -85,11 +86,95 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 		presetIds: ["deep-wiki", "cold-graph", "understand-anything"],
 	},
 	{
+		id: "code-intelligence-lite",
+		label: "Code intelligence lite",
+		description:
+			"Generate the deep wiki and symbol/doc index without precomputing the full cold graph.",
+		presetIds: ["deep-wiki", "understand-anything"],
+	},
+	{
+		id: "cold-graph-only",
+		label: "Cold graph only",
+		description:
+			"Precompute only the dependency graph for faster structural navigation.",
+		presetIds: ["cold-graph"],
+	},
+	{
 		id: "open-source-baseline",
 		label: "Open-source baseline",
 		description:
 			"Lay down the files an open-source repo expects: README, MIT LICENSE, .gitignore, and .editorconfig.",
 		presetIds: ["readme", "license-mit", "gitignore", "editorconfig"],
+	},
+	{
+		id: "minimal-readme-gitignore",
+		label: "Minimal README + gitignore",
+		description:
+			"Add only a starter README and .gitignore for a small local project.",
+		presetIds: ["readme", "gitignore"],
+	},
+	{
+		id: "formatting-baseline",
+		label: "Formatting baseline",
+		description:
+			"Add .editorconfig and .gitignore so common local artifacts stay out of git.",
+		presetIds: ["editorconfig", "gitignore"],
+	},
+	{
+		id: "agent-planning-kit",
+		label: "Agent planning kit",
+		description:
+			"Combine AGENTS.md with todo/spec/planner templates for agent-led implementation.",
+		presetIds: ["agents-md", "todo-md", "spec-md", "planner-md"],
+	},
+	{
+		id: "memory-backed-agent-kit",
+		label: "Memory-backed agent kit",
+		description:
+			"Scaffold AGENTS.md plus the .memory directory used for persistent project context.",
+		presetIds: ["agents-md", "memory-folder"],
+	},
+	{
+		id: "rox-config-baseline",
+		label: "Rox config baseline",
+		description:
+			"Create the rox/ config directory and a .gitignore that keeps local overlays private.",
+		presetIds: ["rox-folder", "gitignore"],
+	},
+	{
+		id: "ci-release-baseline",
+		label: "CI release baseline",
+		description:
+			"Add deploy-on-main workflow files with README, LICENSE, and .gitignore placeholders.",
+		presetIds: ["ci-cd-deploy-on-commit", "readme", "license-mit", "gitignore"],
+	},
+	{
+		id: "docs-first-bootstrap",
+		label: "Docs-first bootstrap",
+		description:
+			"Start with README, spec, and planner templates before adding code.",
+		presetIds: ["readme", "spec-md", "planner-md"],
+	},
+	{
+		id: "github-private-starter",
+		label: "GitHub private starter",
+		description:
+			"Initialize git, create a private GitHub repo, and add README/.gitignore scaffolds.",
+		presetIds: ["git-init", "github-repo-create", "readme", "gitignore"],
+	},
+	{
+		id: "task-tracker-lite",
+		label: "Task tracker lite",
+		description:
+			"Add todo.md and planner.md without the heavier spec template.",
+		presetIds: ["todo-md", "planner-md"],
+	},
+	{
+		id: "spec-review-kit",
+		label: "Spec review kit",
+		description:
+			"Add AGENTS.md, spec.md, and README.md so reviewers have context and requirements.",
+		presetIds: ["agents-md", "spec-md", "readme"],
 	},
 	{
 		id: "everything",
@@ -116,6 +201,54 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 			"license-mit",
 			"editorconfig",
 		],
+	},
+	{
+		id: "minimal-git",
+		label: "Minimal git init",
+		description: "Just initialize a fresh git repository — nothing else.",
+		presetIds: ["git-init"],
+	},
+	{
+		id: "agent-ready",
+		label: "Agent-ready workspace",
+		description:
+			"Drop an AGENTS.md guide and the rox/, .agent/, and .memory/ directories so agents have context and scratch space from day one.",
+		presetIds: ["agents-md", "rox-folder", "agent-folder", "memory-folder"],
+	},
+	{
+		id: "prototyping",
+		label: "Prototyping scratchpad",
+		description:
+			"Spin up a quick prototype: a README plus todo.md and spec.md to capture the idea while you build.",
+		presetIds: ["readme", "todo-md", "spec-md"],
+	},
+	{
+		id: "community-health",
+		label: "Community health files",
+		description:
+			"Add the files a healthy open project expects: README, MIT LICENSE, and CONTRIBUTING.md.",
+		presetIds: ["readme", "license-mit", "contributing"],
+	},
+	{
+		id: "dockerized",
+		label: "Dockerized",
+		description:
+			"Containerize the workspace: a starter Dockerfile plus a .dockerignore to keep the build context lean.",
+		presetIds: ["dockerfile", "dockerignore"],
+	},
+	{
+		id: "devcontainer-ready",
+		label: "Dev container ready",
+		description:
+			"A reproducible dev environment: a .devcontainer config, a pinned Node version, and an .editorconfig.",
+		presetIds: ["devcontainer", "nvmrc", "editorconfig"],
+	},
+	{
+		id: "env-config",
+		label: "Env config baseline",
+		description:
+			"Document required env vars in .env.example and add a .gitignore so real secrets never get committed.",
+		presetIds: ["env-example", "gitignore"],
 	},
 ];
 
@@ -169,4 +302,60 @@ export function starterAsSetupPreset(
 		...(setupCommands.length > 0 ? { setupCommands } : {}),
 		...(scaffoldFiles.length > 0 ? { scaffoldFiles } : {}),
 	};
+}
+
+/**
+ * Normalize selected single-effect preset ids into `WORKSPACE_SETUP_PRESETS`
+ * catalog order, dropping any id not in the catalog. Mirrors how the picker
+ * emits selections so starter math stays consistent with manual toggles.
+ */
+function normalizeSelection(selectedIds: Iterable<string>): string[] {
+	const selected = new Set(selectedIds);
+	return WORKSPACE_SETUP_PRESETS.filter((preset) =>
+		selected.has(preset.id),
+	).map((preset) => preset.id);
+}
+
+/**
+ * Add a starter's bundled preset ids to a selection: the union of the current
+ * selection and the starter's `presetIds`, de-duplicated and in single-effect
+ * catalog order. An unknown starter id leaves the (normalized) selection
+ * unchanged.
+ */
+export function applyStarterToSelection(
+	selectedIds: readonly string[],
+	starterId: string,
+): string[] {
+	const starter = getWorkspaceStarterPresetById(starterId);
+	return normalizeSelection([...selectedIds, ...(starter?.presetIds ?? [])]);
+}
+
+/**
+ * Remove a starter's bundled preset ids from a selection, keeping every other
+ * selected id. The result is normalized to single-effect catalog order. An
+ * unknown starter id leaves the (normalized) selection unchanged.
+ */
+export function removeStarterFromSelection(
+	selectedIds: readonly string[],
+	starterId: string,
+): string[] {
+	const starter = getWorkspaceStarterPresetById(starterId);
+	const normalized = normalizeSelection(selectedIds);
+	if (!starter) return normalized;
+	const toRemove = new Set(starter.presetIds);
+	return normalized.filter((id) => !toRemove.has(id));
+}
+
+/**
+ * Whether every preset id a starter bundles is present in the selection. Returns
+ * `false` for an unknown starter or one that bundles no preset ids.
+ */
+export function isStarterSelected(
+	selectedIds: readonly string[],
+	starterId: string,
+): boolean {
+	const starter = getWorkspaceStarterPresetById(starterId);
+	if (!starter || starter.presetIds.length === 0) return false;
+	const selected = new Set(selectedIds);
+	return starter.presetIds.every((id) => selected.has(id));
 }

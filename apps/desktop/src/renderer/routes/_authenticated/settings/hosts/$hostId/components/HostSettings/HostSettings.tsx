@@ -217,6 +217,7 @@ export function HostSettings({ hostId }: HostSettingsProps) {
 
 			<div className="space-y-10">
 				<HostConnectionSection
+					machineId={host.machineId}
 					kind={host.kind}
 					provider={host.provider}
 					port={host.port}

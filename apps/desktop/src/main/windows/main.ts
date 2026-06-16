@@ -101,7 +101,7 @@ export async function MainWindow() {
 		: productName;
 
 	// Glass / vibrancy (themes-fonts epic). macOS-only, gated on the persisted
-	// toggle (default off). When disabled or off-mac, an opaque backgroundColor
+	// toggle (default on). When disabled or off-mac, an opaque backgroundColor
 	// is used as before.
 	const fallbackBackgroundColor = nativeTheme.shouldUseDarkColors
 		? "#252525"

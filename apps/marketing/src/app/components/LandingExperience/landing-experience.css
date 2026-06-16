@@ -48,15 +48,24 @@
 	--rox-c-15: #8ad2ff;
 	--rox-c-16: #ffc46b;
 
-	/* SF Pro family: Display for headings, SF Mono for body/scramble (keeps the
-	 * scramble glyphs monospaced so they don't jitter while resolving). */
+	/* SF Pro UI family everywhere — thin, elegant sans. The founder wants SF Pro
+	 * across the entire experience, including the intro/loading screens and the
+	 * scramble glyphs (no monospace anywhere). --rox-font-scramble now resolves
+	 * to the same thin SF Pro sans stack so the intro text reads as SF Pro even
+	 * while the scramble characters resolve. */
 	--rox-font-display:
-		"SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
-		system-ui, sans-serif;
-	--rox-font-mono: "SF Mono", "SFMono-Regular", ui-monospace, Menlo, monospace;
+		"SF Pro Display", "SF Pro Text", -apple-system, blinkmacsystemfont,
+		"Helvetica Neue", system-ui, sans-serif;
+	--rox-font-mono:
+		"SF Pro Text", "SF Pro Display", -apple-system, blinkmacsystemfont,
+		"Helvetica Neue", system-ui, sans-serif;
+	--rox-font-scramble:
+		"SF Pro Display", "SF Pro Text", -apple-system, blinkmacsystemfont,
+		"Helvetica Neue", system-ui, sans-serif;
 
 	color: var(--rox-fg-1);
-	font-family: var(--rox-font-mono);
+	font-family: var(--rox-font-display);
+	font-weight: 300;
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -107,7 +116,15 @@
 	line-height: 1;
 	margin: 1ch;
 	white-space: nowrap;
-	font-weight: 600;
+	font-weight: 300;
+}
+
+/* Intro text renders in thin SF Pro everywhere (no monospace), per founder. */
+.rox-intro__center,
+.rox-intro__flank,
+.rox-intro__feature {
+	font-family: var(--rox-font-display);
+	font-weight: 300;
 }
 
 .rox-intro__features p {
@@ -217,6 +234,28 @@
 	}
 }
 
+/* Animated CPU-architecture wordmark, centered just under the girl logo. The
+ * traces inherit the brand orange via `color`; opacity/scale are driven by the
+ * intro timeline so it draws in at the brand lock and fades out for slide 2. */
+.rox-intro__cpu {
+	position: absolute;
+	top: 47%;
+	left: 50%;
+	transform: translate(-50%, -50%) scale(0.92);
+	width: clamp(240px, 42vw, 460px);
+	aspect-ratio: 2 / 1;
+	opacity: 0;
+	z-index: 2;
+	pointer-events: none;
+	color: var(--rox-orange-3);
+}
+
+.rox-intro__cpu svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
 /* Slide 1 becomes a full-bleed grid of the lead word; the stage clips the
  * overflowing edge words so the screen reads as densely filled. */
 .rox-intro__slide--one {
@@ -315,7 +354,7 @@
 .rox-landing h1 {
 	font-family: var(--rox-font-display);
 	font-size: clamp(2.2rem, 6.8vw, 3.5rem);
-	font-weight: 700;
+	font-weight: 300;
 	line-height: 1.06;
 	letter-spacing: -0.02em;
 	margin: 4px 0 8px;
@@ -326,7 +365,7 @@
 .rox-landing h2 {
 	font-family: var(--rox-font-display);
 	font-size: 1.45rem;
-	font-weight: 700;
+	font-weight: 400;
 	line-height: 1.3;
 	letter-spacing: -0.01em;
 	margin-top: clamp(32px, 6vh, 64px);

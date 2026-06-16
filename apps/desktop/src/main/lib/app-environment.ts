@@ -1,9 +1,32 @@
 import { chmodSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { ROX_HOME_DIR_NAME } from "@rox/shared/rox-dirs";
+import { migrateRoxDir } from "@rox/shared/rox-dirs-node";
 import { ROX_DIR_NAME } from "shared/constants";
 
 const ROX_HOME_DIR_ENV = "ROX_HOME_DIR";
+
+/**
+ * One-time migration of the legacy dot-hidden `~/.rox` home dir to the new
+ * visible `~/rox` (or `~/rox-<workspace>`). Runs at module load — before
+ * `ROX_HOME_DIR` is computed and before anything reads it — only when no
+ * `ROX_HOME_DIR` override is set and the target does not already exist, so the
+ * user's `config.json` (auth token) is preserved, never clobbered. Idempotent
+ * and best-effort. The legacy `.rox-<workspace>` dev dirs are not migrated;
+ * they are disposable per-worktree copies that get recreated.
+ */
+if (!process.env[ROX_HOME_DIR_ENV] && ROX_DIR_NAME === ROX_HOME_DIR_NAME) {
+	const migrated = migrateRoxDir(
+		join(homedir(), ".rox"),
+		join(homedir(), ROX_DIR_NAME),
+	);
+	if (migrated) {
+		console.info(
+			`[app-environment] Migrated legacy ~/.rox to ~/${ROX_DIR_NAME}`,
+		);
+	}
+}
 
 export const ROX_HOME_DIR =
 	process.env[ROX_HOME_DIR_ENV] || join(homedir(), ROX_DIR_NAME);

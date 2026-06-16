@@ -8,6 +8,7 @@ import {
 	accessRoleEnum,
 	artifacts,
 	chatSessions,
+	publicShareResourceTypeEnum,
 	publicShares,
 } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
@@ -18,7 +19,11 @@ import { protectedProcedure, publicProcedure } from "../../trpc";
 import { verifyOrgAdmin } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
 
-const DEFAULT_SHARE_ORIGIN = "https://share.rox.one";
+// The public `/s/<slug>` route is served by apps/web (app.rox.one). The branded
+// `share.rox.one` host has no DNS record, so links built against it 404 at the
+// resolver. Default to the domain that actually serves the route; override with
+// SHARE_ORIGIN / NEXT_PUBLIC_SHARE_ORIGIN once a branded host is wired up.
+const DEFAULT_SHARE_ORIGIN = "https://app.rox.one";
 const MAX_PUBLIC_SHARE_BYTES = 2_000_000;
 const MAX_CHAT_MESSAGES_PER_SHARE = 500;
 const SHARE_SLUG_RE = /^[A-Za-z0-9_-]+$/;
@@ -53,6 +58,14 @@ const publishChatSessionInput = z.object({
 const publishArtifactInput = z.object({
 	artifactId: z.string().uuid(),
 });
+
+const listPublicSharesInput = z
+	.object({
+		resourceType: publicShareResourceTypeEnum.optional(),
+		resourceId: z.string().uuid().optional(),
+		includeRevoked: z.boolean().optional(),
+	})
+	.optional();
 
 function createShareSlug(): string {
 	return randomBytes(9).toString("base64url");
@@ -92,6 +105,21 @@ function normalizePayload(
 	}
 
 	return JSON.parse(serialized) as Record<string, unknown>;
+}
+
+async function hasPublicShareAdminAccess(
+	userId: string,
+	organizationId: string,
+): Promise<boolean> {
+	try {
+		await verifyOrgAdmin(userId, organizationId);
+		return true;
+	} catch (error) {
+		if (error instanceof TRPCError && error.code === "FORBIDDEN") {
+			return false;
+		}
+		throw error;
+	}
 }
 
 async function createPublicShare({
@@ -269,6 +297,40 @@ export const shareRouter = {
 			});
 		}),
 
+	listPublic: protectedProcedure
+		.input(listPublicSharesInput)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const isOrgAdmin = await hasPublicShareAdminAccess(
+				ctx.session.user.id,
+				organizationId,
+			);
+
+			const filters = [eq(publicShares.organizationId, organizationId)];
+			if (input?.resourceType) {
+				filters.push(eq(publicShares.resourceType, input.resourceType));
+			}
+			if (input?.resourceId) {
+				filters.push(eq(publicShares.resourceId, input.resourceId));
+			}
+			if (!input?.includeRevoked) {
+				filters.push(isNull(publicShares.revokedAt));
+			}
+			if (!isOrgAdmin) {
+				filters.push(eq(publicShares.createdByUserId, ctx.session.user.id));
+			}
+
+			const shares = await db.query.publicShares.findMany({
+				where: and(...filters),
+				orderBy: desc(publicShares.createdAt),
+			});
+
+			return shares.map((share) => ({
+				...share,
+				url: getPublicShareUrl(share.slug),
+			}));
+		}),
+
 	publishChatSession: protectedProcedure
 		.input(publishChatSessionInput)
 		.mutation(async ({ ctx, input }) => {
@@ -418,30 +480,41 @@ export const shareRouter = {
 		.input(z.object({ id: z.string().uuid() }))
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
+			const isOrgAdmin = await hasPublicShareAdminAccess(
+				ctx.session.user.id,
+				organizationId,
+			);
 
 			const result = await dbWs.transaction(async (tx) => {
+				const filters = [
+					eq(publicShares.id, input.id),
+					eq(publicShares.organizationId, organizationId),
+				];
+				if (!isOrgAdmin) {
+					filters.push(eq(publicShares.createdByUserId, ctx.session.user.id));
+				}
+
 				const [row] = await tx
 					.update(publicShares)
 					.set({ revokedAt: new Date() })
-					.where(
-						and(
-							eq(publicShares.id, input.id),
-							eq(publicShares.organizationId, organizationId),
-							eq(publicShares.createdByUserId, ctx.session.user.id),
-						),
-					)
+					.where(and(...filters))
 					.returning({ id: publicShares.id });
 
-				return row ?? null;
+				if (!row) {
+					return { revoked: false, txid: null };
+				}
+
+				const txid = await getCurrentTxid(tx);
+				return { revoked: true, txid };
 			});
 
-			if (!result) {
+			if (!result.revoked) {
 				throw new TRPCError({
 					code: "NOT_FOUND",
 					message: "Public share not found",
 				});
 			}
 
-			return { success: true };
+			return { success: true, txid: result.txid };
 		}),
 } satisfies TRPCRouterRecord;

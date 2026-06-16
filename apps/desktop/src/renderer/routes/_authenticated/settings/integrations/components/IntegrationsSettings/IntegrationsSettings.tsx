@@ -1,19 +1,30 @@
 import { Button } from "@rox/ui/button";
 import { Skeleton } from "@rox/ui/skeleton";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useCallback, useEffect, useState } from "react";
-import { FaGithub } from "react-icons/fa";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { FaBookOpen, FaComments } from "react-icons/fa";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
-import { SiLinear } from "react-icons/si";
+import {
+	SiDiscord,
+	SiGithub,
+	SiLinear,
+	SiNotion,
+	SiObsidian,
+	SiSlack,
+	SiTelegram,
+} from "react-icons/si";
 import { env } from "renderer/env.renderer";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	isItemVisible,
-	SETTING_ITEM_ID,
 	type SettingItemId,
 } from "../../../utils/settings-search";
+import {
+	getIntegrationSettingsRows,
+	type IntegrationSettingsRow,
+} from "./integration-settings-model";
 
 interface IntegrationsSettingsProps {
 	visibleItems?: SettingItemId[] | null;
@@ -27,6 +38,18 @@ interface GithubInstallation {
 	lastSyncedAt: Date | null;
 	createdAt: Date;
 }
+
+const PROVIDER_ICONS: Record<IntegrationSettingsRow["provider"], ReactNode> = {
+	linear: <SiLinear className="size-5" />,
+	github: <SiGithub className="size-5" />,
+	slack: <SiSlack className="size-5" />,
+	telegram: <SiTelegram className="size-5" />,
+	discord: <SiDiscord className="size-5" />,
+	notion: <SiNotion className="size-5" />,
+	obsidian: <SiObsidian className="size-5" />,
+	fibery: <FaBookOpen className="size-5" />,
+	lark: <FaComments className="size-5" />,
+};
 
 export function IntegrationsSettings({
 	visibleItems,
@@ -48,15 +71,6 @@ export function IntegrationsSettings({
 	const [githubInstallation, setGithubInstallation] =
 		useState<GithubInstallation | null>(null);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(true);
-
-	const showLinear = isItemVisible(
-		SETTING_ITEM_ID.INTEGRATIONS_LINEAR,
-		visibleItems,
-	);
-	const showGithub = isItemVisible(
-		SETTING_ITEM_ID.INTEGRATIONS_GITHUB,
-		visibleItems,
-	);
 
 	const fetchGithubInstallation = useCallback(async () => {
 		if (!activeOrganizationId) {
@@ -81,10 +95,9 @@ export function IntegrationsSettings({
 		fetchGithubInstallation();
 	}, [fetchGithubInstallation]);
 
-	const linearConnection = integrations?.find((i) => i.provider === "linear");
-	const isLinearConnected = !!linearConnection;
 	const isGithubConnected =
 		!!githubInstallation && !githubInstallation.suspended;
+	const integrationRows = getIntegrationSettingsRows();
 
 	const handleOpenWeb = (path: string) => {
 		window.open(`${env.NEXT_PUBLIC_WEB_URL}${path}`, "_blank");
@@ -117,28 +130,30 @@ export function IntegrationsSettings({
 			</div>
 
 			<div className="space-y-1">
-				{showLinear && (
-					<IntegrationRow
-						name="Linear"
-						description="Синхронизируйте задачи с Linear в обе стороны."
-						icon={<SiLinear className="size-5" />}
-						isConnected={isLinearConnected}
-						connectedOrgName={linearConnection?.externalOrgName}
-						onManage={() => handleOpenWeb("/integrations/linear")}
-					/>
-				)}
-
-				{showGithub && (
-					<IntegrationRow
-						name="GitHub"
-						description="Подключайте репозитории и синхронизируйте pull requests."
-						icon={<FaGithub className="size-5" />}
-						isConnected={isGithubConnected}
-						connectedOrgName={githubInstallation?.accountLogin}
-						isLoading={isLoadingGithub}
-						onManage={() => handleOpenWeb("/integrations/github")}
-					/>
-				)}
+				{integrationRows
+					.filter((row) => isItemVisible(row.settingItemId, visibleItems))
+					.map((row) => {
+						const connection = integrations?.find(
+							(integration) => integration.provider === row.provider,
+						);
+						const isGithub = row.provider === "github";
+						return (
+							<IntegrationRow
+								key={row.provider}
+								name={row.name}
+								description={row.description}
+								icon={PROVIDER_ICONS[row.provider]}
+								isConnected={isGithub ? isGithubConnected : !!connection}
+								connectedOrgName={
+									isGithub
+										? githubInstallation?.accountLogin
+										: connection?.externalOrgName
+								}
+								isLoading={isGithub ? isLoadingGithub : false}
+								onManage={() => handleOpenWeb(row.managePath)}
+							/>
+						);
+					})}
 			</div>
 
 			<p className="mt-6 text-xs text-muted-foreground">
@@ -151,7 +166,7 @@ export function IntegrationsSettings({
 interface IntegrationRowProps {
 	name: string;
 	description: string;
-	icon: React.ReactNode;
+	icon: ReactNode;
 	isConnected: boolean;
 	connectedOrgName?: string | null;
 	isLoading?: boolean;

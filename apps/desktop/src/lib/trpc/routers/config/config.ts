@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { projects, type SelectProject } from "@rox/local-db";
+import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import { eq } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
 import type { SetupAction, SetupDetectionResult } from "shared/types/config";
@@ -339,15 +340,16 @@ async function detectSetupDefaults(
 }
 
 function getConfigPath(mainRepoPath: string): string {
-	return join(mainRepoPath, ".rox", "config.json");
+	// Prefer the new `rox/` dir; fall back to a legacy `.rox/` dir when only it exists.
+	return join(resolveProjectRoxDir(mainRepoPath), "config.json");
 }
 
 function ensureConfigExists(mainRepoPath: string): string {
 	const configPath = getConfigPath(mainRepoPath);
-	const roxDir = join(mainRepoPath, ".rox");
+	const roxDir = resolveProjectRoxDir(mainRepoPath);
 
 	if (!existsSync(configPath)) {
-		// Create .rox directory if it doesn't exist
+		// Create the rox config directory if it doesn't exist
 		if (!existsSync(roxDir)) {
 			mkdirSync(roxDir, { recursive: true });
 		}

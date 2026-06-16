@@ -32,7 +32,7 @@ export default function (pi: ExtensionAPI) {
 	if (!process.env.ROX_TERMINAL_ID) return;
 
 	const roxHome =
-		process.env.ROX_HOME_DIR || join(homedir(), ".rox");
+		process.env.ROX_HOME_DIR || join(homedir(), "rox");
 	const notifyScript = join(roxHome, "hooks", "notify.sh");
 	if (!existsSync(notifyScript)) return;
 

@@ -157,7 +157,9 @@ export default function RootLayout({
 						ctaButtons={<CTAButtons />}
 						starCounter={<GitHubStarCounter />}
 					/>
-					{children}
+					{/* Clear the fixed floating-pill navbar so page content isn't tucked
+					    under it (the landing's fixed intro overlay is unaffected). */}
+					<div className="pt-[4.5rem]">{children}</div>
 					<Footer />
 					<CookieConsent />
 				</Providers>

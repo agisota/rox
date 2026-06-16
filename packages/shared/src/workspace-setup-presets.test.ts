@@ -6,9 +6,9 @@ import {
 } from "./workspace-setup-presets";
 
 describe("workspace-setup-presets", () => {
-	it("exposes 15-20 presets with unique ids", () => {
+	it("exposes 15-30 presets with unique ids", () => {
 		expect(WORKSPACE_SETUP_PRESETS.length).toBeGreaterThanOrEqual(15);
-		expect(WORKSPACE_SETUP_PRESETS.length).toBeLessThanOrEqual(20);
+		expect(WORKSPACE_SETUP_PRESETS.length).toBeLessThanOrEqual(30);
 		const ids = WORKSPACE_SETUP_PRESETS.map((p) => p.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
@@ -52,5 +52,14 @@ describe("workspace-setup-presets", () => {
 		const { setupCommands, scaffoldFiles } = resolveWorkspaceSetupPresets([]);
 		expect(setupCommands).toEqual([]);
 		expect(scaffoldFiles).toEqual([]);
+	});
+
+	it("keeps visible rox config shareable while ignoring local overlays", () => {
+		const gitignore =
+			getWorkspaceSetupPresetById("gitignore")?.scaffoldFiles?.[0];
+		const lines = gitignore?.contents.split("\n") ?? [];
+		expect(lines).toContain(".rox/");
+		expect(lines).toContain("rox/config.local.json");
+		expect(lines).not.toContain("rox/");
 	});
 });

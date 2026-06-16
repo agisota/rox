@@ -58,6 +58,21 @@ export const apiKeyProviderApiKeyInput = apiKeyProviderInput.extend({
 	apiKey: z.string().min(1),
 });
 
+export const customProviderDiscoverInput = z.object({
+	baseUrl: z.string().min(1),
+	// Optional: when omitted the service reuses the saved key, so discovery works
+	// after a reload without re-entering the secret.
+	apiKey: z.string().optional(),
+});
+
+export const customProviderConfigInput = z.object({
+	baseUrl: z.string().min(1),
+	// Optional: when omitted the service keeps the previously saved key, so a
+	// model/base-URL-only edit persists without re-entering the secret.
+	apiKey: z.string().optional(),
+	modelId: z.string().min(1),
+});
+
 function resolveWorkspaceSlashCommand(input: { cwd: string; text: string }) {
 	return resolveSlashCommand(input.cwd, input.text);
 }
@@ -190,6 +205,29 @@ export function createChatServiceRouter(service: ChatService) {
 						providerId: input.providerId,
 					});
 				}),
+			getCustomProviderConfig: t.procedure.query(() => {
+				return service.getCustomProviderConfig();
+			}),
+			discoverCustomProviderModels: t.procedure
+				.input(customProviderDiscoverInput)
+				.mutation(({ input }) => {
+					return service.discoverCustomProviderModels({
+						baseUrl: input.baseUrl,
+						apiKey: input.apiKey,
+					});
+				}),
+			setCustomProviderConfig: t.procedure
+				.input(customProviderConfigInput)
+				.mutation(({ input }) => {
+					return service.setCustomProviderConfig({
+						baseUrl: input.baseUrl,
+						apiKey: input.apiKey,
+						modelId: input.modelId,
+					});
+				}),
+			clearCustomProviderConfig: t.procedure.mutation(() => {
+				return service.clearCustomProviderConfig();
+			}),
 		}),
 	});
 }

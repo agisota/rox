@@ -18,7 +18,7 @@ export const env = createEnv({
 		NEXT_PUBLIC_STREAMS_URL: z.url().default("https://streams.rox.one"),
 		NEXT_PUBLIC_ELECTRIC_URL: z
 			.url()
-			.default("https://electric-proxy.avi-6ac.workers.dev"),
+			.default("https://electric-proxy.scharlesky-192.workers.dev"),
 		NEXT_PUBLIC_WEB_URL: z.url().default("https://app.rox.one"),
 		NEXT_PUBLIC_MARKETING_URL: z.url().default("https://rox.one"),
 		NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),

@@ -1,4 +1,11 @@
+import {
+	ATTRIBUTION_COOKIE_NAME,
+	attributionCookieDomain,
+	buildAttributionCookieValue,
+	parseCookieHeader,
+} from "@rox/shared/attribution";
 import { POSTHOG_COOKIE_NAME } from "@rox/shared/constants";
+import { parseUtmParams } from "@rox/shared/utm";
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 
@@ -26,6 +33,20 @@ posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
 		const consent = localStorage.getItem(ANALYTICS_CONSENT_KEY);
 		if (consent === "declined") {
 			posthog.opt_out_capturing();
+		} else if (!parseCookieHeader(document.cookie, ATTRIBUTION_COOKIE_NAME)) {
+			// First-touch attribution: set the shared rox_attribution cookie once
+			// (scoped to .rox.one) so app.rox.one can attribute the signup.
+			const value = buildAttributionCookieValue({
+				utm: parseUtmParams(window.location.search),
+				landingPage: window.location.pathname,
+				referrer: document.referrer || undefined,
+			});
+			const domain = attributionCookieDomain(window.location.hostname);
+			const domainAttr = domain ? `; domain=${domain}` : "";
+			// biome-ignore lint/suspicious/noDocumentCookie: first-party attribution cookie; CookieStore API isn't universally available.
+			document.cookie = `${ATTRIBUTION_COOKIE_NAME}=${encodeURIComponent(
+				value,
+			)}; path=/${domainAttr}; max-age=${60 * 60 * 24 * 90}; SameSite=Lax`;
 		}
 	},
 });

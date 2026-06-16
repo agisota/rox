@@ -11,6 +11,11 @@ export {
 	ProvisionerError,
 } from "./http";
 export { ModalProvisioner } from "./modal";
+export {
+	type ReapableHost,
+	type ReapPartition,
+	selectExpiredHosts,
+} from "./reaper";
 export { RoxSelfProvisioner } from "./rox-self";
 export type {
 	FetchLike,

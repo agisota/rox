@@ -2,6 +2,8 @@ import { describe, expect, it } from "bun:test";
 import {
 	AGENT_HARNESS_PRESETS,
 	getHarnessPresetById,
+	getHarnessPresetsForBaseAgent,
+	getHarnessTerminalPresetBaseAgentIds,
 	getInstallableHarnessPresets,
 	harnessBaseAgentsAreValid,
 } from "./agent-harness-presets";
@@ -25,6 +27,29 @@ describe("agent-harness-presets", () => {
 		}
 	});
 
+	it("ships audit receipts for every harness", () => {
+		for (const preset of AGENT_HARNESS_PRESETS) {
+			expect(["npm", "manual", "unknown"]).toContain(preset.audit.source);
+			expect(preset.audit.license.length).toBeGreaterThan(0);
+			expect(["low", "medium", "unknown"]).toContain(preset.audit.sizeRisk);
+			expect(["base-agent", "unsupported"]).toContain(
+				preset.audit.terminalPresetStrategy,
+			);
+			expect(preset.audit.notes.length).toBeGreaterThan(0);
+		}
+	});
+
+	it("documents terminal preset support through base agents for target harnesses", () => {
+		expect(getHarnessTerminalPresetBaseAgentIds()).toMatchObject({
+			"oh-my-claudecode": "claude",
+			"oh-my-codex": "codex",
+			"oh-my-openagent": "opencode",
+			hermes: "claude",
+			openclaw: "claude",
+			ouroboros: "codex",
+		});
+	});
+
 	it("returns only non-optional, installable harnesses from the helper", () => {
 		const installable = getInstallableHarnessPresets();
 		expect(installable.length).toBeGreaterThan(0);
@@ -41,7 +66,7 @@ describe("agent-harness-presets", () => {
 	});
 
 	it("layers Rox and Open Dynamic Workflows on top of OMP", () => {
-		expect(getHarnessPresetById("oh-my-pi")?.baseAgentId).toBe("omp");
+		expect(getHarnessPresetById("rox")?.baseAgentId).toBe("omp");
 		expect(getHarnessPresetById("open-dynamic-workflows-omp")).toMatchObject({
 			baseAgentId: "omp",
 			configFiles: [
@@ -53,5 +78,24 @@ describe("agent-harness-presets", () => {
 			],
 			optional: true,
 		});
+	});
+
+	it("groups harnesses by their base terminal agent", () => {
+		const claudeIds = getHarnessPresetsForBaseAgent("claude").map((p) => p.id);
+		expect(claudeIds).toEqual(
+			expect.arrayContaining(["oh-my-claudecode", "hermes", "openclaw"]),
+		);
+		for (const preset of getHarnessPresetsForBaseAgent("claude")) {
+			expect(preset.baseAgentId).toBe("claude");
+		}
+
+		// OMP layer is exactly the bundled Rox harness plus the optional ODW layer,
+		// in catalog order.
+		expect(getHarnessPresetsForBaseAgent("omp").map((p) => p.id)).toEqual([
+			"rox",
+			"open-dynamic-workflows-omp",
+		]);
+
+		expect(getHarnessPresetsForBaseAgent("does-not-exist")).toEqual([]);
 	});
 });

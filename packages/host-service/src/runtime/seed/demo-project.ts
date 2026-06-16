@@ -2,7 +2,12 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { eq } from "drizzle-orm";
+import {
+	LEGACY_ROX_HOME_DIR_NAME,
+	ROX_HOME_DIR_NAME,
+} from "@rox/shared/rox-dirs";
+import { migrateRoxDir } from "@rox/shared/rox-dirs-node";
+import { eq, inArray } from "drizzle-orm";
 import type { HostDb } from "../../db";
 import { projects } from "../../db/schema";
 
@@ -10,7 +15,7 @@ import { projects } from "../../db/schema";
  * Demo project seeding.
  *
  * On first launch we drop a single, friendly demo project into the user's
- * `~/.rox/projects` directory so the dashboard is never empty. The seed is
+ * `~/rox/projects` directory so the dashboard is never empty. The seed is
  * idempotent: it is keyed on the on-disk path, so re-running it (e.g. on every
  * boot) never produces duplicates.
  *
@@ -20,7 +25,7 @@ import { projects } from "../../db/schema";
  * renderer can apply them when it first surfaces the demo project.
  */
 
-/** Folder name for the bundled demo project under `~/.rox/projects`. */
+/** Folder name for the bundled demo project under `~/rox/projects`. */
 export const DEMO_PROJECT_DIR_NAME = "001_demo_project";
 
 /** Display color for the demo project (yellow), applied by the renderer. */
@@ -37,7 +42,16 @@ somewhere to explore. Feel free to delete it once you've added your own.
 
 /** Resolve the absolute path of the demo project for a given home dir. */
 export function getDemoProjectPath(home: string = homedir()): string {
-	return join(home, ".rox", "projects", DEMO_PROJECT_DIR_NAME);
+	return join(home, ROX_HOME_DIR_NAME, "projects", DEMO_PROJECT_DIR_NAME);
+}
+
+function getLegacyDemoProjectPath(home: string = homedir()): string {
+	return join(
+		home,
+		LEGACY_ROX_HOME_DIR_NAME,
+		"projects",
+		DEMO_PROJECT_DIR_NAME,
+	);
 }
 
 export interface SeedDemoProjectResult {
@@ -58,14 +72,30 @@ export function seedDemoProject(
 	home: string = homedir(),
 ): SeedDemoProjectResult {
 	const repoPath = getDemoProjectPath(home);
+	const legacyRepoPath = getLegacyDemoProjectPath(home);
+	migrateRoxDir(legacyRepoPath, repoPath);
 
-	const existing = db
-		.select({ id: projects.id })
+	const existingRows = db
+		.select({ id: projects.id, repoPath: projects.repoPath })
 		.from(projects)
-		.where(eq(projects.repoPath, repoPath))
-		.get();
+		.where(inArray(projects.repoPath, [repoPath, legacyRepoPath]))
+		.all();
+	const existing =
+		existingRows.find((row) => row.repoPath === repoPath) ?? existingRows[0];
 
 	if (existing) {
+		if (existing.repoPath !== repoPath) {
+			db.update(projects)
+				.set({ repoPath })
+				.where(eq(projects.id, existing.id))
+				.run();
+		}
+		const duplicateIds = existingRows
+			.filter((row) => row.id !== existing.id)
+			.map((row) => row.id);
+		if (duplicateIds.length > 0) {
+			db.delete(projects).where(inArray(projects.id, duplicateIds)).run();
+		}
 		return { seeded: false, projectId: existing.id, repoPath };
 	}
 

@@ -191,13 +191,13 @@ function renderKindBlock(sections: ContextSection[]): string {
 function renderAttachmentsList(sections: ContextSection[]): string {
 	const refs: string[] = [];
 	for (const section of sectionsOfKind(sections, "attachment")) {
-		refs.push(`- .rox/attachments/${section.label}`);
+		refs.push(`- rox/attachments/${section.label}`);
 	}
 	for (const section of sectionsOfKind(sections, "user-prompt")) {
 		for (const part of section.content) {
 			if (part.type === "text") continue;
 			const label = part.type === "file" ? part.filename : undefined;
-			refs.push(`- .rox/attachments/${label ?? "inline-attachment"}`);
+			refs.push(`- rox/attachments/${label ?? "inline-attachment"}`);
 		}
 	}
 	if (refs.length === 0) return "";
@@ -205,7 +205,7 @@ function renderAttachmentsList(sections: ContextSection[]): string {
 		"# Attached files",
 		"",
 		"The user attached these files alongside the prompt. They've been",
-		"written into the worktree at `.rox/attachments/`. Read them",
+		"written into the worktree at `rox/attachments/`. Read them",
 		"to understand the request — they're part of the task, not",
 		"optional reference.",
 		"",

@@ -9,6 +9,15 @@ const publicRoutes = [
 	"/api/auth/desktop",
 	"/accept-invitation",
 	"/cli/auth/code",
+	// Public chat/artifact shares (/s/<slug>) — anonymous viewers must reach the
+	// share page without being bounced to /sign-in. The page itself is a public
+	// DB read (app/s/[slug]/page.tsx). Do NOT remove without breaking sharing.
+	"/s",
+	// Public user profiles (/u/<handle>) — anonymous viewers reach a public
+	// profile here (e.g. redirected from rox.one/@<handle>). The page gates on
+	// `isPublic` and calls notFound() for private/unknown handles
+	// (app/u/[handle]/page.tsx). Do NOT remove without breaking public profiles.
+	"/u",
 ];
 
 function matchesRoute(pathname: string, route: string): boolean {

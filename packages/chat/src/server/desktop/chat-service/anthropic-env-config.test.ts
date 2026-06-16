@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -19,6 +25,7 @@ const MANAGED_ENV_KEYS = [
 	"AWS_REGION",
 	"AWS_PROFILE",
 	"OPENAI_API_KEY",
+	"ROX_HOME_DIR",
 ] as const;
 const originalEnvValues = Object.fromEntries(
 	MANAGED_ENV_KEYS.map((key) => [key, process.env[key]]),
@@ -155,6 +162,33 @@ describe("Anthropic env config persistence", () => {
 			expect(getAnthropicEnvConfig({ configPath })).toEqual({
 				envText: "",
 				variables: {},
+			});
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("loads from matching legacy Rox home when the current config is missing", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "anthropic-env-config-"));
+		const roxHome = join(tempDir, "rox-feature");
+		const legacyHome = join(tempDir, ".rox-feature");
+		const legacyConfigPath = join(legacyHome, "chat-anthropic-env.json");
+
+		try {
+			process.env.ROX_HOME_DIR = roxHome;
+			mkdirSync(legacyHome, { recursive: true });
+			writeFileSync(
+				legacyConfigPath,
+				JSON.stringify({
+					version: 1,
+					envText: "ANTHROPIC_BASE_URL=https://ai-gateway.vercel.sh",
+				}),
+				"utf-8",
+			);
+
+			const loaded = getAnthropicEnvConfig();
+			expect(loaded.variables).toEqual({
+				ANTHROPIC_BASE_URL: "https://ai-gateway.vercel.sh",
 			});
 		} finally {
 			rmSync(tempDir, { recursive: true, force: true });
