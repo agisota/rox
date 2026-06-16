@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { MemoryGroup } from "./components/MemoryGroup";
+import { MemorySuggestions } from "./components/MemorySuggestions";
 import { MEMORY_GROUPS } from "./groups";
 
 export function MemoryView() {
@@ -33,6 +34,17 @@ export function MemoryView() {
 		return map;
 	}, [items]);
 
+	// Agent-suggested items pending review, newest first.
+	const suggested = useMemo(
+		() =>
+			items
+				.filter((item) => item.status === "suggested")
+				.sort((a, b) =>
+					a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
+				),
+		[items],
+	);
+
 	return (
 		<div className="h-full overflow-y-auto">
 			<div className="mx-auto max-w-3xl px-6 py-8">
@@ -43,6 +55,8 @@ export function MemoryView() {
 						агент учитывает их в работе.
 					</p>
 				</header>
+
+				<MemorySuggestions items={suggested} />
 
 				<div className="space-y-5">
 					{MEMORY_GROUPS.map((group) => (
