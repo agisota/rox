@@ -1,6 +1,6 @@
 ---
-title: "Rox vs GitHub Copilot (2026): Agent Orchestration vs AI Pair Programmer"
-description: "Compare Rox and GitHub Copilot for AI-assisted development. See how parallel agent orchestration differs from inline AI code completion and chat."
+title: "Rox против GitHub Copilot (2026): оркестрация агентов против AI-напарника по коду"
+description: "Сравнение Rox и GitHub Copilot для разработки с AI. Узнай, чем оркестрация параллельных агентов отличается от инлайн-дополнений кода и чата с AI."
 date: 2026-02-18
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -15,99 +15,99 @@ keywords:
   - ai pair programmer comparison
 ---
 
-GitHub Copilot is an AI pair programmer that lives inside your editor, offering inline completions and chat. Rox is a local-first workspace that runs many AI coding agents in parallel, each in its own Git worktree. They target different workflows: Copilot assists you line-by-line as you type, while Rox dispatches autonomous agents to work on entire tasks independently and gives you a workspace around them.
+GitHub Copilot — это AI-напарник по программированию, который живёт внутри твоего редактора, предлагая инлайн-дополнения и чат. Rox — это local-first рабочее пространство, которое запускает множество AI-агентов кода параллельно, каждого в своём Git worktree. Они нацелены на разные воркфлоу: Copilot помогает тебе строку за строкой, пока ты печатаешь, тогда как Rox раздаёт автономных агентов работать над целыми задачами самостоятельно и даёт тебе рабочее пространство вокруг них.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **GitHub Copilot** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | AI pair programmer (editor extension) |
-| **What it does** | Runs 10+ coding agents in parallel with Git worktrees, chat, diff/file review, and browser tooling | Inline code completions, chat, and Copilot Agent mode in your editor |
-| **AI approach** | Agent-agnostic — orchestrates any CLI agent | Multiple models (GPT-4o, Claude, Gemini) via GitHub |
-| **Parallelism** | Core feature — many agents on separate branches simultaneously | Single-threaded; Copilot Coding Agent runs one task at a time in cloud |
-| **Editor** | Works alongside any editor | VS Code, JetBrains, Neovim (extension) |
-| **Pricing** | Free tier + Pro $20/seat/mo | Free tier (limited), Pro $10/mo, Business $19/user/mo, Enterprise $39/user/mo |
-| **License** | Source-available (ELv2) | Closed source |
+| **Категория** | Рабочее пространство для оркестрации агентов | AI-напарник по коду (расширение для редактора) |
+| **Что делает** | Запускает 10+ агентов для кода параллельно с Git worktree, чатом, ревью diff/файлов и инструментами для браузера | Инлайн-дополнения кода, чат и режим Copilot Agent в твоём редакторе |
+| **Подход к AI** | Не зависит от агента — оркестрирует любого CLI-агента | Несколько моделей (GPT-4o, Claude, Gemini) через GitHub |
+| **Параллелизм** | Ключевая функция — множество агентов на отдельных ветках одновременно | Однопоточный; Copilot Coding Agent выполняет одну задачу за раз в облаке |
+| **Редактор** | Работает вместе с любым редактором | VS Code, JetBrains, Neovim (расширение) |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес | Бесплатный тариф (ограниченный), Pro $10/мес, Business $19/польз/мес, Enterprise $39/польз/мес |
+| **Лицензия** | Открытый исходный код (ELv2) | Закрытый исходный код |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is GitHub Copilot?
-
-GitHub Copilot is an AI coding assistant from GitHub (Microsoft). It integrates into your editor as an extension, providing inline code completions (ghost text as you type), a chat panel for questions and code generation, and Copilot Agent mode that can make multi-file changes autonomously. Copilot also offers a cloud-based Coding Agent that creates PRs from GitHub Issues. It uses multiple models including GPT-4o, Claude Sonnet, and Gemini, accessible through GitHub's infrastructure.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое GitHub Copilot?
 
-### Inline Assistant vs Parallel Orchestrator
-
-Copilot is built for the editing experience — it completes your code as you type, answers questions in a chat panel, and can make changes across files via Agent mode. Rox runs many autonomous agents simultaneously, each on a separate task in a separate worktree, then adds chat, file review, and browser preview around those tasks. Copilot makes you faster at writing code; Rox makes many agents work in parallel while you do something else.
-
-### Completions vs Autonomous Tasks
-
-Copilot's primary interaction is inline completion: you type, it suggests. Its Agent mode and Coding Agent can handle larger tasks, but the core experience is real-time assistance while you code. Rox dispatches fully autonomous tasks — "refactor the payment service," "add tests for the auth module" — and agents work independently until done, with the resulting diffs and local app previews collected inside the same workspace.
-
-### Editor Integration vs Editor Independence
-
-Copilot lives inside your editor (VS Code, JetBrains, Neovim). Rox is a separate terminal that works alongside any editor. This means Copilot can assist with editing-specific features (completions, inline diffs), while Rox focuses on orchestration and isolation without caring which editor you use.
-
-### Model and Agent Flexibility
-
-Copilot supports multiple models (GPT-4o, Claude, Gemini) through GitHub's infrastructure. Rox supports any CLI-based agent — and by extension, whatever models those agents support. The difference is direct vs proxied: with Rox, you bring your own API keys and pay providers directly. With Copilot, you use GitHub's model access through their pricing tiers.
-
-### Privacy
-
-Rox runs the workspace locally in Git worktrees, and its source-available codebase is fully auditable. Copilot sends code context to GitHub/Microsoft servers for processing. Copilot Business and Enterprise offer data retention controls, but code still transits external servers.
+GitHub Copilot — это AI-ассистент для кода от GitHub (Microsoft). Он интегрируется в твой редактор как расширение, предоставляя инлайн-дополнения кода (призрачный текст, пока ты печатаешь), панель чата для вопросов и генерации кода и режим Copilot Agent, который может вносить многофайловые изменения автономно. Copilot также предлагает облачный Coding Agent, который создаёт PR из GitHub Issues. Он использует несколько моделей, включая GPT-4o, Claude Sonnet и Gemini, доступных через инфраструктуру GitHub.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and Pro at $20/seat/month, plus your agents' API costs. GitHub Copilot offers Free (limited), Pro ($10/mo or $100/year), Business ($19/user/mo), and Enterprise ($39/user/mo). Copilot's pricing includes model access; Rox's doesn't (you pay agents' API costs separately).
+### Инлайн-ассистент против параллельного оркестратора
+
+Copilot создан для опыта редактирования — он дополняет твой код, пока ты печатаешь, отвечает на вопросы в панели чата и может вносить изменения по файлам через режим Agent. Rox запускает множество автономных агентов одновременно, каждого над отдельной задачей в отдельном worktree, а затем добавляет чат, ревью файлов и превью в браузере вокруг этих задач. Copilot делает тебя быстрее в написании кода; Rox заставляет множество агентов работать параллельно, пока ты занят чем-то ещё.
+
+### Дополнения против автономных задач
+
+Основное взаимодействие Copilot — это инлайн-дополнение: ты печатаешь, он предлагает. Его режим Agent и Coding Agent могут справляться с более крупными задачами, но ядро опыта — это помощь в реальном времени, пока ты пишешь код. Rox раздаёт полностью автономные задачи — «отрефактори платёжный сервис», «добавь тесты для модуля авторизации» — и агенты работают самостоятельно, пока не закончат, а получившиеся diff и превью локальных приложений собираются внутри того же рабочего пространства.
+
+### Интеграция в редактор против независимости от редактора
+
+Copilot живёт внутри твоего редактора (VS Code, JetBrains, Neovim). Rox — это отдельный терминал, который работает вместе с любым редактором. Это значит, что Copilot может помогать с функциями, специфичными для редактирования (дополнения, инлайн-diff), тогда как Rox фокусируется на оркестрации и изоляции, не заботясь о том, каким редактором ты пользуешься.
+
+### Гибкость в выборе модели и агента
+
+Copilot поддерживает несколько моделей (GPT-4o, Claude, Gemini) через инфраструктуру GitHub. Rox поддерживает любого агента на основе CLI — и, как следствие, любые модели, которые эти агенты поддерживают. Разница в том, напрямую или через прокси: с Rox ты приносишь свои API-ключи и платишь провайдерам напрямую. С Copilot ты используешь доступ к моделям GitHub через их тарифные уровни.
+
+### Приватность
+
+Rox запускает рабочее пространство локально в Git worktree, а его кодовая база с открытым исходным кодом полностью пригодна для аудита. Copilot отправляет контекст кода на серверы GitHub/Microsoft для обработки. Copilot Business и Enterprise предлагают контроль над хранением данных, но код всё равно проходит через внешние серверы.
 
 ---
 
-## Which Should You Choose?
+## Цена
 
-**Choose GitHub Copilot if you:**
-- Want real-time inline code completions as you type
-- Prefer AI assistance integrated directly into your editor
-- Work primarily in VS Code or JetBrains
-- Want a simple, low-cost AI assistant ($10/mo) that improves your editing speed
-
-**Choose Rox if you:**
-- Run CLI-based coding agents and want to parallelize across 10+ tasks
-- Need autonomous agents working on separate tasks while you do other work
-- Want agent and model flexibility with no vendor lock-in
-- Need local execution and direct control over providers
-- Work on large codebases where parallel execution saves hours
-
-**Use both** for the best of each: Copilot for inline completions while you code, Rox to dispatch parallel agents for larger tasks. They don't overlap — Copilot helps you write code faster, Rox helps you scale agent work wider.
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц плюс расходы на API твоих агентов. GitHub Copilot предлагает Free (ограниченный), Pro ($10/мес или $100/год), Business ($19/польз/мес) и Enterprise ($39/польз/мес). Цена Copilot включает доступ к моделям; цена Rox — нет (за расходы на API агентов ты платишь отдельно).
 
 ---
 
-## Frequently Asked Questions
+## Что выбрать тебе?
 
-### Is Rox a Copilot replacement?
+**Выбирай GitHub Copilot, если ты:**
+- Хочешь инлайн-дополнения кода в реальном времени, пока печатаешь
+- Предпочитаешь помощь AI, интегрированную прямо в твой редактор
+- Работаешь в основном в VS Code или JetBrains
+- Хочешь простого, недорогого AI-ассистента ($10/мес), который повышает скорость редактирования
 
-No. Rox is not an inline-completion assistant. It does provide in-app chat, diff/file editing, browser previews, and IDE handoff, but it does not try to replace Copilot's live suggestions while you type. Use Copilot for real-time editing assistance and Rox for parallel autonomous tasks.
+**Выбирай Rox, если ты:**
+- Запускаешь агентов кода на основе CLI и хочешь распараллелить работу по 10+ задачам
+- Нуждаешься в автономных агентах, работающих над отдельными задачами, пока ты занят другим
+- Хочешь гибкость в выборе агента и модели без привязки к вендору
+- Нуждаешься в локальном выполнении и прямом контроле над провайдерами
+- Работаешь над большими кодовыми базами, где параллельное выполнение экономит часы
 
-### How does Copilot's Coding Agent compare to Rox?
+**Используй оба** для лучшего от каждого: Copilot для инлайн-дополнений, пока пишешь код, и Rox — чтобы раздавать параллельных агентов для более крупных задач. Они не пересекаются — Copilot помогает писать код быстрее, Rox помогает шире масштабировать работу агентов.
 
-Copilot's Coding Agent runs in a cloud VM and creates PRs from GitHub Issues — one task at a time per repository. Rox runs many agents locally in parallel across Git worktrees. Copilot's agent is cloud-hosted and GitHub-integrated; Rox's approach is local, agent-agnostic, and parallel.
+---
 
-### Can I use Copilot inside a Rox worktree?
+## Часто задаваемые вопросы
 
-Yes. When you open a Rox worktree in VS Code, Copilot works normally — it sees the worktree as a regular git repository. You get Copilot's completions while reviewing or editing agent output.
+### Заменяет ли Rox собой Copilot?
 
-### Is Rox open source?
+Нет. Rox — не ассистент инлайн-дополнений. Он даёт встроенный чат, редактирование diff/файлов, превью в браузере и передачу в IDE, но не пытается заменить живые подсказки Copilot, пока ты печатаешь. Используй Copilot для помощи в редактировании в реальном времени, а Rox — для параллельных автономных задач.
 
-No. Rox is source-available on GitHub under Elastic License 2.0 (ELv2). GitHub Copilot is closed source.
+### Чем Coding Agent от Copilot отличается от Rox?
+
+Coding Agent от Copilot работает в облачной ВМ и создаёт PR из GitHub Issues — по одной задаче за раз на репозиторий. Rox запускает множество агентов локально параллельно по Git worktree. Агент Copilot хостится в облаке и интегрирован с GitHub; подход Rox — локальный, не зависящий от агента и параллельный.
+
+### Можно ли использовать Copilot внутри worktree Rox?
+
+Да. Когда ты открываешь worktree Rox в VS Code, Copilot работает как обычно — он видит worktree как обычный git-репозиторий. Ты получаешь дополнения Copilot, пока делаешь ревью или редактируешь вывод агента.
+
+### Open source ли Rox?
+
+Нет. Rox — с открытым исходным кодом на GitHub под Elastic License 2.0 (ELv2). GitHub Copilot — с закрытым исходным кодом.

@@ -36,7 +36,7 @@ export function OrganizationJsonLd() {
 		name: COMPANY.NAME,
 		url: COMPANY.MARKETING_URL,
 		logo: `${COMPANY.MARKETING_URL}/logo.png`,
-		description: "Запускайте 10+ кодинг-агентов параллельно на своей машине",
+		description: "Запускай 10+ кодинг-агентов параллельно на своей машине",
 		sameAs: [COMPANY.GITHUB_URL, COMPANY.X_URL],
 	};
 
@@ -55,7 +55,7 @@ export function SoftwareApplicationJsonLd() {
 			price: "0",
 			priceCurrency: "USD",
 		},
-		description: "Запускайте 10+ кодинг-агентов параллельно на своей машине",
+		description: "Запускай 10+ кодинг-агентов параллельно на своей машине",
 		url: COMPANY.MARKETING_URL,
 	};
 

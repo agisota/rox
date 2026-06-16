@@ -1,6 +1,6 @@
 ---
-title: "Rox vs Conductor (2026): Comparing AI Agent Orchestration Platforms"
-description: "Compare Rox and Conductor for managing AI coding agents. See how these orchestration tools differ in agent support, workflow, and developer experience."
+title: "Rox против Conductor (2026): сравнение платформ для оркестрации AI-агентов"
+description: "Сравнение Rox и Conductor для управления AI-агентами кода. Узнай, чем эти инструменты оркестрации различаются по поддержке агентов, воркфлоу и опыту разработчика."
 date: 2026-02-02
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -14,90 +14,90 @@ keywords:
   - conductor vs rox
 ---
 
-Rox and Conductor both run multiple coding agents in parallel with Git worktrees. The difference is scope: Conductor is tightly focused on Claude Code and Codex on macOS, while Rox has grown into a broader local-first workspace for many agents, with chat, browser, and review surfaces around the orchestration core.
+И Rox, и Conductor запускают несколько агентов кода параллельно с Git worktree. Разница в охвате: Conductor тесно сфокусирован на Claude Code и Codex на macOS, тогда как Rox вырос в более широкое local-first рабочее пространство для множества агентов, с чатом, браузером и интерфейсами ревью вокруг ядра оркестрации.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **Conductor** |
 |---|---|---|
-| **What it does** | Runs 10+ AI agents in parallel with Git worktree isolation | Runs Claude Code / Codex agents in parallel with Git worktree isolation |
-| **Agent support** | Any CLI agent (Claude Code, Codex, OpenCode, Aider, etc.) | Claude Code and Codex |
-| **Repo model** | Uses your existing local repo and creates isolated worktrees per task | Clones your repo and creates isolated workspaces on your Mac |
-| **Editor handoff** | VS Code, Cursor, JetBrains, Xcode | Cursor and VS Code handoff documented directly |
-| **Workflow style** | Agent-agnostic workspace orchestration | Mac app centered on Claude Code / Codex task flow |
-| **Platform** | Local-first desktop app | macOS app |
+| **Что делает** | Запускает 10+ AI-агентов параллельно с изоляцией через Git worktree | Запускает агентов Claude Code / Codex параллельно с изоляцией через Git worktree |
+| **Поддержка агентов** | Любой CLI-агент (Claude Code, Codex, OpenCode, Aider и т.д.) | Claude Code и Codex |
+| **Модель репозитория** | Использует твой существующий локальный репозиторий и создаёт изолированные worktree на задачу | Клонирует твой репозиторий и создаёт изолированные рабочие пространства на твоём Mac |
+| **Передача в редактор** | VS Code, Cursor, JetBrains, Xcode | Передача в Cursor и VS Code документирована напрямую |
+| **Стиль воркфлоу** | Оркестрация рабочего пространства без привязки к агенту | Mac-приложение, построенное вокруг потока задач Claude Code / Codex |
+| **Платформа** | Local-first десктопное приложение | Приложение для macOS |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is Conductor?
-
-Conductor is a macOS app from Melty Labs for running Claude Code and Codex in parallel. Its homepage positions it as a Mac app that clones your repo, creates isolated workspaces, and lets you review and merge changes from multiple agents. The docs emphasize workflow guides like issue-to-PR setup, provider configuration, Codex support, and opening workspaces in Cursor or VS Code.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое Conductor?
 
-### Agent Flexibility
-
-Rox is deliberately broad -- any process that runs in a shell can fit into its workflow, and the current product also layers chat, browser preview, and review tooling around those agents. Conductor currently supports Claude Code and Codex. If those are your two primary agents, that focus can be a feature. If you want to mix in OpenCode, Aider, custom scripts, or whatever launches next month, Rox gives you more room to adapt.
-
-### Mac App Workflow vs Agent-Agnostic Terminal
-
-Conductor is purpose-built around its Mac app workflow: clone the repo, deploy Claude Code or Codex agents, review the work, then merge. Rox is broader and less tied to one agent pair. It now has its own chat, diff/file review, and browser surfaces, but it still keeps the orchestration layer independent from the underlying agents. That makes Conductor easier to grasp if you want one polished app for a narrow agent set, while Rox is better if you want flexibility.
-
-### Local Workspaces vs Existing Repo Worktrees
-
-Conductor's current homepage says it clones your repo and works entirely on your Mac, then creates an isolated workspace for each agent. Rox typically starts from the repo you already have open and creates additional Git worktrees around that existing checkout. Both use worktrees; the difference is which local workflow they wrap around.
-
-### Workflow Integration
-
-Conductor's docs lean into workflow guides: issue-to-PR, provider setup, migrating from Cursor, and opening workspaces in Cursor or VS Code. Rox integrates with more editors and broader CLI agent combinations, and it now includes more first-party surface area inside the app itself, but it still leaves more of the surrounding process up to you than a narrowly scoped product does.
+Conductor — это приложение для macOS от Melty Labs для параллельного запуска Claude Code и Codex. Его главная страница позиционирует его как Mac-приложение, которое клонирует твой репозиторий, создаёт изолированные рабочие пространства и позволяет делать ревью и мержить изменения от нескольких агентов. Документация делает акцент на руководствах по воркфлоу — настройке issue-to-PR, конфигурации провайдеров, поддержке Codex и открытии рабочих пространств в Cursor или VS Code.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and Pro at $20/seat/month. Conductor's current website is download-first and does not emphasize a separate public pricing page. In both cases, you still pay the underlying providers for Claude Code, Codex, or any compatible API usage.
+### Гибкость в выборе агента
 
----
+Rox намеренно широк — любой процесс, который запускается в шелле, может вписаться в его воркфлоу, и текущий продукт также добавляет вокруг этих агентов чат, превью в браузере и инструменты ревью. Conductor сейчас поддерживает Claude Code и Codex. Если это два твоих основных агента, такая сфокусированность может быть преимуществом. Если ты хочешь подмешать OpenCode, Aider, кастомные скрипты или то, что выйдет в следующем месяце, Rox даёт больше пространства для адаптации.
 
-## Which Should You Choose?
+### Воркфлоу Mac-приложения против терминала без привязки к агенту
 
-**Choose Rox if you:**
+Conductor создан специально вокруг своего воркфлоу Mac-приложения: клонируй репозиторий, разверни агентов Claude Code или Codex, сделай ревью работы, затем смержи. Rox шире и меньше привязан к одной паре агентов. Теперь у него есть собственные чат, ревью diff/файлов и интерфейсы браузера, но он по-прежнему держит слой оркестрации независимым от лежащих в основе агентов. Это делает Conductor проще для понимания, если тебе нужно одно отполированное приложение под узкий набор агентов, тогда как Rox лучше, если тебе нужна гибкость.
 
-- Use multiple CLI agents or want the freedom to adopt new ones instantly
-- Want orchestration to stay separate from any one agent vendor or app
-- Prefer reviewing code in your own editor stack (JetBrains, Xcode, VS Code, Cursor)
-- Need a broader bring-your-own-agent model
+### Локальные рабочие пространства против worktree существующего репозитория
 
-**Choose Conductor if you:**
+На текущей главной странице Conductor сказано, что он клонирует твой репозиторий и работает целиком на твоём Mac, затем создаёт изолированное рабочее пространство для каждого агента. Rox обычно стартует из репозитория, который у тебя уже открыт, и создаёт дополнительные Git worktree вокруг этого существующего чекаута. Оба используют worktree; разница в том, вокруг какого локального воркфлоу они обёрнуты.
 
-- Primarily use Claude Code and Codex and want a focused Mac app for them
-- Want a polished issue-to-PR style workflow around those two agents
-- Prefer Conductor's workspace dashboard and documented Cursor/VS Code handoff
+### Интеграция воркфлоу
 
-**Verdict:** Conductor is strongest if your world already revolves around Claude Code and Codex on macOS. Rox is the better fit if you expect your agent mix to change, want the orchestration layer to stay editor-independent, or care more about breadth than a tightly scoped app workflow.
+Документация Conductor опирается на руководства по воркфлоу: issue-to-PR, настройка провайдеров, миграция с Cursor и открытие рабочих пространств в Cursor или VS Code. Rox интегрируется с большим числом редакторов и более широкими комбинациями CLI-агентов, и теперь он включает больше собственной функциональности внутри самого приложения, но при этом оставляет на тебя больше окружающего процесса, чем узко сфокусированный продукт.
 
 ---
 
-## Frequently Asked Questions
+## Цена
 
-### Is Conductor Mac-only?
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц. Текущий сайт Conductor ориентирован на загрузку и не акцентирует отдельную публичную страницу с ценами. В обоих случаях ты всё равно платишь лежащим в основе провайдерам за Claude Code, Codex или любое совместимое использование API.
 
-Conductor currently markets itself as a Mac app. Its homepage language and download flow are Mac-focused, while Rox's compare story is about orchestrating CLI agents more broadly.
+---
 
-### Can Conductor run agents other than Claude Code?
+## Что выбрать тебе?
 
-Conductor's current public positioning is Claude Code and Codex. If you want OpenCode, Aider, or custom CLI tools in the same orchestrator, Rox is the more flexible choice.
+**Выбирай Rox, если ты:**
 
-### Do both tools use Git worktrees?
+- Используешь несколько CLI-агентов или хочешь свободу мгновенно осваивать новые
+- Хочешь, чтобы оркестрация оставалась отдельной от любого вендора агентов или приложения
+- Предпочитаешь делать ревью кода в своём стеке редакторов (JetBrains, Xcode, VS Code, Cursor)
+- Нуждаешься в более широкой модели «принеси своего агента»
 
-Yes. Both create isolated Git worktrees for each agent, giving every task its own branch and working directory. The underlying isolation mechanism is the same.
+**Выбирай Conductor, если ты:**
+
+- В основном используешь Claude Code и Codex и хочешь сфокусированное Mac-приложение под них
+- Хочешь отполированный воркфлоу в стиле issue-to-PR вокруг этих двух агентов
+- Предпочитаешь дашборд рабочих пространств Conductor и документированную передачу в Cursor/VS Code
+
+**Вердикт:** Conductor сильнее всего, если твой мир уже вращается вокруг Claude Code и Codex на macOS. Rox подходит лучше, если ты ожидаешь, что твой набор агентов будет меняться, хочешь, чтобы слой оркестрации оставался независимым от редактора, или ценишь широту больше, чем узко очерченный воркфлоу приложения.
+
+---
+
+## Часто задаваемые вопросы
+
+### Только ли для Mac предназначен Conductor?
+
+Conductor сейчас продвигает себя как Mac-приложение. Язык его главной страницы и поток загрузки ориентированы на Mac, тогда как сравнительная история Rox — про оркестрацию CLI-агентов в более широком смысле.
+
+### Может ли Conductor запускать агентов помимо Claude Code?
+
+Текущее публичное позиционирование Conductor — это Claude Code и Codex. Если тебе нужны OpenCode, Aider или кастомные CLI-инструменты в одном оркестраторе, Rox — более гибкий выбор.
+
+### Оба ли инструмента используют Git worktree?
+
+Да. Оба создают изолированные Git worktree для каждого агента, давая каждой задаче свою ветку и рабочую директорию. Лежащий в основе механизм изоляции один и тот же.

@@ -38,7 +38,7 @@ export function WaitlistForm({ heading, description }: WaitlistFormProps) {
 		return (
 			<div>
 				<h2 className="mb-2 text-xl font-medium text-foreground">
-					Вы в списке!
+					Ты в списке!
 				</h2>
 				<p className="text-sm text-muted-foreground">
 					<GlossaryText text="Сообщим, когда поддержка Windows и Linux будет готова." />

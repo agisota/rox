@@ -6,7 +6,7 @@ import { GlossaryText } from "@/components/GlossaryTerm";
 export const metadata: Metadata = {
 	title: "Маркетплейс",
 	description:
-		"Просматривайте общие темы и будущие конфигурации агентов для Rox.",
+		"Просматривай общие темы и будущие конфигурации агентов для Rox.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace`,
 	},
@@ -34,7 +34,7 @@ export default function MarketplacePage() {
 					<h1 className="text-xl font-semibold text-foreground md:text-2xl">
 						Маркетплейс
 					</h1>
-					<p className="mt-1 text-sm text-muted-foreground">Выберите раздел.</p>
+					<p className="mt-1 text-sm text-muted-foreground">Выбери раздел.</p>
 				</div>
 
 				<div className="border border-border">

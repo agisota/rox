@@ -1,334 +1,334 @@
 ---
-title: "Git Worktrees: The Feature That Waited a Decade for Its Moment"
-description: "Git worktrees have been around since 2015. For most of that time, they were a curiosity. Now they're having a moment. This is the story of how they came to be and why they suddenly matter."
+title: "Git worktrees: фича, которая десять лет ждала своего часа"
+description: "Git worktrees существуют с 2015 года. Большую часть этого времени они были диковинкой. Теперь у них настал звёздный час. Это история о том, как они появились и почему вдруг стали важны."
 author: avi
 date: 2026-01-27
-category: Engineering
+category: Инженерия
 relatedSlugs:
   - terminal-daemon-deep-dive
   - how-to-get-hit
 ---
 
-Git worktrees have been around since 2015. For most of that time, they were a curiosity — something kernel developers used, something that showed up in obscure Stack Overflow answers, something most developers had never heard of.
+Git worktrees существуют с 2015 года. Большую часть этого времени они были диковинкой — тем, чем пользовались разработчики ядра, что всплывало в малоизвестных ответах на Stack Overflow, о чём большинство разработчиков никогда не слышали.
 
-Now they're having a moment. AI coding agents need isolated environments. Developers are working on multiple features simultaneously. Code review culture demands quick context switches. The workflows that make worktrees valuable finally caught up to the feature.
+Теперь у них настал звёздный час. ИИ-агентам для написания кода нужны изолированные окружения. Разработчики работают над несколькими фичами одновременно. Культура код-ревью требует быстрых переключений контекста. Рабочие процессы, которые делают worktrees ценными, наконец-то догнали саму фичу.
 
-This is the story of how worktrees came to be, how they actually work under the hood, and why they suddenly matter.
+Это история о том, как worktrees появились, как они на самом деле устроены под капотом и почему вдруг стали важны.
 
 ---
 
-## Part I: The Problem Before Worktrees
+## Часть I. Проблема до worktrees
 
-### The Pain of Context Switching
+### Боль переключения контекста
 
-Every developer knows this workflow:
+Каждый разработчик знает этот сценарий:
 
 ```bash
-# Working on feature-A
+# Работаем над feature-A
 git stash
 git checkout main
-# fix urgent bug
+# чиним срочный баг
 git commit -m "hotfix"
 git push
 git checkout feature-A
 git stash pop
-# wait, where was I?
+# стоп, на чём я там остановился?
 ```
 
-The friction isn't just the commands — it's the mental overhead. Your editor reloads files. Your language server re-indexes. Your node_modules might need reinstalling. Your brain has to context-switch twice.
+Трение тут не только в командах — оно в умственных издержках. Твой редактор перезагружает файлы. Языковой сервер переиндексирует. node_modules, возможно, придётся переустановить. Твоему мозгу приходится дважды переключать контекст.
 
-For years, developers worked around this with various hacks:
+Годами разработчики обходили это разными костылями:
 
-**Multiple clones:** Clone the repo twice. Work in one, switch in the other. But now you have two copies of the entire history, two sets of remotes to configure, and changes in one don't appear in the other without pushing and pulling.
+**Несколько клонов:** клонируешь репозиторий дважды. Работаешь в одном, переключаешься в другом. Но теперь у тебя две копии всей истории, два набора remote'ов для настройки, а изменения в одном не появляются в другом без push и pull.
 
-**`git stash` gymnastics:** Stash everything, switch, work, switch back, pop. Works until you have multiple stashes and forget which is which. Or until you realize you stashed something you actually wanted to commit.
+**Гимнастика с `git stash`:** спрятал всё, переключился, поработал, переключился обратно, достал из стэша. Работает, пока у тебя не накопится несколько стэшей и ты не забудешь, где какой. Или пока ты не осознаешь, что спрятал в стэш то, что на самом деле хотел закоммитить.
 
-**Just don't switch:** Finish what you're doing before touching anything else. Works until your coworker needs an urgent review or production is on fire.
+**Просто не переключайся:** доделай то, что делаешь, прежде чем браться за что-то ещё. Работает, пока коллеге не понадобится срочное ревью или пока прод не загорится.
 
-### The git-new-workdir Script
+### Скрипт git-new-workdir
 
-Before official worktrees, git shipped a contributed script called `git-new-workdir`. It lived in `contrib/workdir/git-new-workdir` and did something clever but hacky: it created a new working directory and symlinked the `.git` internals.
+До официальных worktrees в составе git поставлялся сторонний скрипт под названием `git-new-workdir`. Он лежал в `contrib/workdir/git-new-workdir` и делал нечто хитроумное, но костыльное: создавал новую рабочую директорию и через symlink ссылался на внутренности `.git`.
 
 ```bash
-# The old way (pre-2015)
+# Старый способ (до 2015)
 git-new-workdir /path/to/repo /path/to/new-workdir branch-name
 ```
 
-Under the hood, it would:
-1. Create a new directory
-2. Symlink `.git/objects`, `.git/refs`, `.git/config`, etc.
-3. Create a separate `HEAD` and `index` for the new directory
+Под капотом он:
+1. Создавал новую директорию
+2. Делал symlink на `.git/objects`, `.git/refs`, `.git/config` и т. д.
+3. Создавал отдельные `HEAD` и `index` для новой директории
 
-It worked, mostly. But symlinks are fragile. The script wasn't officially supported. It didn't handle all edge cases. It was a hack, and everyone knew it.
+Это работало, в основном. Но symlink'и хрупки. Скрипт официально не поддерживался. Он не обрабатывал все граничные случаи. Это был костыль, и все это понимали.
 
-The git community wanted something better.
+Сообществу git хотелось чего-то получше.
 
 ---
 
-## Part II: Worktrees Land in Git 2.5
+## Часть II. Worktrees появляются в Git 2.5
 
-### July 2015: The Feature Arrives
+### Июль 2015: фича прибывает
 
-Git 2.5, released on July 29, 2015, introduced `git worktree` as a first-class feature. The primary author was Nguyễn Thái Ngọc Duy, who had been working on the concept for years.
+Git 2.5, вышедший 29 июля 2015 года, представил `git worktree` как полноценную фичу. Главным автором был Nguyễn Thái Ngọc Duy, который работал над этой концепцией не один год.
 
-The [GitHub blog announcement](https://github.blog/open-source/git/git-2-5-including-multiple-worktrees-and-triangular-workflows/) described the new capability:
+[Анонс в блоге GitHub](https://github.blog/open-source/git/git-2-5-including-multiple-worktrees-and-triangular-workflows/) описывал новую возможность так:
 
-> "Each *linked working tree* is a pseudo-repository with its own checked-out working copy. Its `.git` is actually a file that refers to the history and references from the main repository."
+> «Каждое *связанное рабочее дерево* — это псевдорепозиторий со своей собственной выгруженной рабочей копией. Его `.git` на самом деле является файлом, который ссылается на историю и ссылки из основного репозитория».
 
-Notably, the feature shipped with a warning: it was labeled **experimental**, with caveats about potential bugs and a recommendation against using it with submodules. A decade later, these rough edges have been smoothed out.
+Примечательно, что фича вышла с предупреждением: она была помечена как **экспериментальная**, с оговорками о возможных багах и рекомендацией не использовать её с сабмодулями. Десять лет спустя эти шероховатости сгладились.
 
-The initial commit message laid out the vision:
+В сообщении первого коммита изложили видение:
 
-> "A git repository can support multiple working trees, allowing you to check out more than one branch at a time."
+> «Репозиторий git может поддерживать несколько рабочих деревьев, позволяя выгружать больше одной ветки за раз».
 
-The key insight was that a git repository is really two things:
-1. **The object store** — All your commits, trees, and blobs (the `.git/objects` directory)
-2. **The working state** — What's currently checked out, staged, etc.
+Ключевая идея в том, что репозиторий git на самом деле — это две вещи:
+1. **Хранилище объектов** — все твои коммиты, деревья и blob'ы (директория `.git/objects`)
+2. **Рабочее состояние** — то, что сейчас выгружено, проиндексировано и т. д.
 
-These don't have to live in the same place. Worktrees formalized this separation.
+Они не обязаны жить в одном месте. Worktrees формализовали это разделение.
 
-### The Implementation
+### Реализация
 
-When you create a worktree, git does the following:
+Когда ты создаёшь worktree, git делает следующее:
 
 ```bash
 git worktree add ../feature-branch feature-branch
 ```
 
-1. **Creates a new directory** at the path you specified
-2. **Creates a `.git` file** (not directory) in that location pointing back to the main repo
-3. **Creates an entry** in `.git/worktrees/<name>/` in the main repo
-4. **Checks out the branch** in the new working directory
+1. **Создаёт новую директорию** по указанному тобой пути
+2. **Создаёт файл `.git`** (не директорию) в этом месте, ссылающийся обратно на основной репозиторий
+3. **Создаёт запись** в `.git/worktrees/<name>/` в основном репозитории
+4. **Выгружает ветку** в новую рабочую директорию
 
-The new directory's `.git` is just a file containing:
+Файл `.git` новой директории — это просто файл, содержащий:
 
 ```
 gitdir: /path/to/main/repo/.git/worktrees/feature-branch
 ```
 
-And in the main repo, `.git/worktrees/feature-branch/` contains:
+А в основном репозитории `.git/worktrees/feature-branch/` содержит:
 
 ```
 .git/worktrees/feature-branch/
-├── HEAD          # Points to refs/heads/feature-branch
-├── commondir     # Points to the main .git directory
-├── gitdir        # Path to the worktree's .git file
-├── index         # Separate staging area
-└── logs/         # Separate reflog
+├── HEAD          # Указывает на refs/heads/feature-branch
+├── commondir     # Указывает на основную директорию .git
+├── gitdir        # Путь к файлу .git этого worktree
+├── index         # Отдельная область индекса
+└── logs/         # Отдельный reflog
 ```
 
-This architecture means:
-- **Shared objects** — Commits, trees, blobs exist once
-- **Shared refs** — Branches and tags are visible from all worktrees
-- **Separate working state** — Each worktree has its own HEAD, index, and working directory
+Эта архитектура означает:
+- **Общие объекты** — коммиты, деревья, blob'ы существуют один раз
+- **Общие ссылки** — ветки и теги видны из всех worktrees
+- **Отдельное рабочее состояние** — у каждого worktree свои HEAD, index и рабочая директория
 
-### The One Branch Rule
+### Правило одной ветки
 
-Git enforces a constraint: **a branch can only be checked out in one worktree at a time**. Try to check out the same branch twice and you'll get:
+Git накладывает ограничение: **ветка может быть выгружена только в одном worktree за раз**. Попробуй выгрузить ту же ветку дважды — и получишь:
 
 ```
 fatal: 'main' is already checked out at '/path/to/other/worktree'
 ```
 
-This prevents a class of confusing bugs. If two worktrees had the same branch and you committed in one, the other would have a dirty diff appear out of nowhere.
+Это предотвращает целый класс запутанных багов. Если бы в двух worktrees была одна ветка и ты сделал коммит в одном, у другого ни с того ни с сего появился бы грязный diff.
 
-You can work around this with detached HEAD or by creating a new branch, but the protection is intentional.
+Это можно обойти через detached HEAD или создав новую ветку, но защита здесь намеренная.
 
 ---
 
-## Part III: The Anatomy of a Worktree
+## Часть III. Анатомия worktree
 
-### What Lives Where
+### Что где живёт
 
-Understanding the file layout helps demystify worktrees:
+Понимание раскладки файлов помогает развеять туман вокруг worktrees:
 
 ```
 /home/user/projects/
-├── my-repo/                      # Main working tree
-│   ├── .git/                     # The actual git directory
-│   │   ├── objects/              # Shared: all commits, trees, blobs
-│   │   ├── refs/                 # Shared: all branches, tags
-│   │   ├── config                # Shared: repository configuration
-│   │   ├── HEAD                  # Main worktree's HEAD
-│   │   ├── index                 # Main worktree's staging area
-│   │   └── worktrees/            # Linked worktree metadata
+├── my-repo/                      # Основное рабочее дерево
+│   ├── .git/                     # Настоящая директория git
+│   │   ├── objects/              # Общее: все коммиты, деревья, blob'ы
+│   │   ├── refs/                 # Общее: все ветки, теги
+│   │   ├── config                # Общее: конфигурация репозитория
+│   │   ├── HEAD                  # HEAD основного worktree
+│   │   ├── index                 # Область индекса основного worktree
+│   │   └── worktrees/            # Метаданные связанных worktrees
 │   │       └── feature-x/
-│   │           ├── HEAD          # feature-x worktree's HEAD
-│   │           ├── index         # feature-x worktree's staging area
-│   │           ├── gitdir        # Points to linked worktree
-│   │           └── commondir     # Points back to main .git
-│   └── (working files)
+│   │           ├── HEAD          # HEAD worktree feature-x
+│   │           ├── index         # Область индекса worktree feature-x
+│   │           ├── gitdir        # Указывает на связанный worktree
+│   │           └── commondir     # Указывает обратно на основной .git
+│   └── (рабочие файлы)
 │
-└── my-repo-feature-x/            # Linked worktree
-    ├── .git                      # File (not directory!) pointing to main
-    └── (working files)           # Separate checkout
+└── my-repo-feature-x/            # Связанный worktree
+    ├── .git                      # Файл (не директория!), указывающий на основной
+    └── (рабочие файлы)           # Отдельная выгрузка
 ```
 
-### What's Shared, What's Not
+### Что общее, а что нет
 
-| Shared Across Worktrees | Separate Per Worktree |
+| Общее для всех worktrees | Отдельное для каждого worktree |
 |-------------------------|----------------------|
-| Object store (commits, blobs) | Working directory files |
-| Branch refs | HEAD (current branch) |
-| Tag refs | Index (staging area) |
-| Remote configuration | Untracked files |
-| Hooks | Local modifications |
-| Config (mostly) | MERGE_HEAD, REBASE_HEAD, etc. |
+| Хранилище объектов (коммиты, blob'ы) | Файлы рабочей директории |
+| Ссылки на ветки | HEAD (текущая ветка) |
+| Ссылки на теги | Индекс (область индекса) |
+| Конфигурация remote'ов | Неотслеживаемые файлы |
+| Хуки | Локальные изменения |
+| Конфиг (в основном) | MERGE_HEAD, REBASE_HEAD и т. д. |
 
-This means:
-- Commits made in one worktree are immediately visible in others
-- But the files on disk are completely independent
-- You can have different uncommitted changes in each worktree
+Это означает:
+- Коммиты, сделанные в одном worktree, сразу видны в других
+- Но файлы на диске полностью независимы
+- В каждом worktree могут быть разные незакоммиченные изменения
 
-### Garbage Collection and Pruning
+### Сборка мусора и очистка
 
-Git tracks which worktrees are valid. If you delete a worktree directory without using `git worktree remove`, git doesn't immediately know. The metadata in `.git/worktrees/` persists.
+Git отслеживает, какие worktrees валидны. Если ты удалишь директорию worktree без `git worktree remove`, git об этом сразу не узнает. Метаданные в `.git/worktrees/` сохраняются.
 
 ```bash
-# Clean up stale worktree entries
+# Подчистить устаревшие записи worktree
 git worktree prune
 ```
 
-This checks each entry in `.git/worktrees/` and removes any whose `gitdir` points to a non-existent directory.
+Это проверяет каждую запись в `.git/worktrees/` и удаляет все, чей `gitdir` указывает на несуществующую директорию.
 
-Git also runs this automatically during garbage collection, so orphaned metadata doesn't accumulate forever.
+Git также запускает это автоматически при сборке мусора, так что осиротевшие метаданные не накапливаются вечно.
 
 ---
 
-## Part IV: Why Worktrees Stayed Niche
+## Часть IV. Почему worktrees оставались нишевыми
 
-For almost a decade, worktrees remained a power-user feature. Most developers had never heard of them. Why?
+Почти десятилетие worktrees оставались фичей для продвинутых пользователей. Большинство разработчиков о них никогда не слышали. Почему?
 
-### 1. The Single-Branch Workflow Dominated
+### 1. Доминировал однобранчевый рабочий процесс
 
-Most teams followed a simple pattern:
-1. Create feature branch
-2. Work until done
-3. Open PR
-4. Merge
-5. Delete branch
+Большинство команд следовали простому шаблону:
+1. Создать ветку фичи
+2. Работать до завершения
+3. Открыть PR
+4. Смержить
+5. Удалить ветку
 
-This is linear. You finish one thing before starting another. Worktrees solve parallel work, but most people weren't working in parallel.
+Это линейно. Ты доделываешь одно, прежде чем начать другое. Worktrees решают проблему параллельной работы, но большинство людей в параллель не работали.
 
-### 2. Git GUIs Didn't Support Them
+### 2. Git-интерфейсы их не поддерживали
 
-Popular git interfaces — GitKraken, SourceTree, GitHub Desktop, VS Code's git panel — either didn't support worktrees or treated them as second-class. If your tool doesn't expose a feature, you don't use it.
+Популярные git-интерфейсы — GitKraken, SourceTree, GitHub Desktop, git-панель VS Code — либо не поддерживали worktrees, либо относились к ним как ко второсортным. Если твой инструмент не показывает фичу, ты ею не пользуешься.
 
-### 3. The Commands Were Obscure
+### 3. Команды были малопонятными
 
-Compare:
+Сравни:
 ```bash
-git checkout -b feature    # Everyone knows this
-git worktree add ../feature -b feature    # What?
+git checkout -b feature    # Это знают все
+git worktree add ../feature -b feature    # Что?
 ```
 
-The worktree command is longer, requires a path argument, and the mental model (multiple working directories) is unfamiliar. Without a forcing function, people stick with what they know.
+Команда worktree длиннее, требует аргумента-пути, а ментальная модель (несколько рабочих директорий) непривычна. Без принуждающего фактора люди держатся за то, что знают.
 
-### 4. Disk Space Concerns
+### 4. Опасения по поводу места на диске
 
-Each worktree is a full checkout of the repository. For large repos, this adds up. In the age of spinning disks and smaller SSDs, this mattered more than it does now.
+Каждый worktree — это полная выгрузка репозитория. Для больших репозиториев это накапливается. В эпоху жёстких дисков и небольших SSD это имело большее значение, чем сейчас.
 
 ---
 
-## Part V: Why Worktrees Are Having a Moment
+## Часть V. Почему у worktrees настал звёздный час
 
-Several shifts have made worktrees suddenly relevant:
+Несколько сдвигов сделали worktrees внезапно актуальными:
 
-### 1. Code Review Culture
+### 1. Культура код-ревью
 
-Modern development is interrupt-driven. You're working on feature A when:
-- Someone requests a review on feature B
-- You need to verify a bug exists on main
-- A hotfix needs immediate attention
+Современная разработка управляется прерываниями. Ты работаешь над фичей A, когда:
+- Кто-то просит ревью фичи B
+- Тебе нужно проверить, есть ли баг на main
+- Хотфикс требует немедленного внимания
 
-Each interruption previously meant stash/switch/pop. With worktrees, you open a different directory. Your feature A context is untouched.
+Раньше каждое прерывание означало stash/switch/pop. С worktrees ты просто открываешь другую директорию. Твой контекст по фиче A остаётся нетронутым.
 
-### 2. CI/CD and Local Testing
+### 2. CI/CD и локальное тестирование
 
-Complex projects often need you to test against different branches. Does this PR break when merged with that other PR? With worktrees, you can have both checked out and test interactions without rebasing.
+Сложным проектам часто нужно тестирование против разных веток. Ломается ли этот PR при слиянии с тем другим PR? С worktrees можно держать оба выгруженными и тестировать их взаимодействие без ребейза.
 
-### 3. Monorepo Workflows
+### 3. Монорепозитории
 
-Large monorepos make cloning expensive. If your repo is 10GB, cloning it twice for parallel work wastes 10GB. Worktrees share the object store — each additional worktree only costs the size of the working files.
+Большие монорепозитории делают клонирование дорогим. Если твой репозиторий весит 10 ГБ, клонировать его дважды ради параллельной работы — потратить 10 ГБ. Worktrees делят хранилище объектов — каждый дополнительный worktree стоит только размера рабочих файлов.
 
-### 4. AI Coding Agents
+### 4. ИИ-агенты для кода
 
-This is the big one.
+Вот это — самое главное.
 
-When an AI agent modifies code, it needs somewhere to work. If it works in your directory, you have a problem:
-- Your files change while you're editing
-- You can't easily diff agent changes vs your changes
-- Agent experiments pollute your working tree
+Когда ИИ-агент меняет код, ему нужно где-то работать. Если он работает в твоей директории, у тебя проблема:
+- Твои файлы меняются, пока ты их редактируешь
+- Ты не можешь легко сравнить изменения агента со своими
+- Эксперименты агента засоряют твоё рабочее дерево
 
-Worktrees solve this elegantly:
+Worktrees решают это элегантно:
 
 ```
-~/project/           # You work here
-~/project-agent/     # Agent works here (worktree)
+~/project/           # Ты работаешь здесь
+~/project-agent/     # Агент работает здесь (worktree)
 ```
 
-The agent can:
-- Make changes freely
-- Commit to its own branch
-- Run builds and tests
-- Iterate without affecting you
+Агент может:
+- Свободно вносить изменения
+- Коммитить в свою ветку
+- Запускать сборки и тесты
+- Итерировать, не задевая тебя
 
-When it's done, you review the diff and merge. It's the same workflow as reviewing a coworker's PR, but the coworker is an AI and works in a worktree instead of a fork.
+Когда он закончит, ты смотришь diff и мержишь. Это тот же рабочий процесс, что и ревью PR коллеги, только коллега — это ИИ, и работает он в worktree, а не в форке.
 
-This pattern — parallel human + AI work on the same codebase — is driving a resurgence in worktree usage that the git developers probably never anticipated.
+Этот паттерн — параллельная работа человека и ИИ над одной кодовой базой — провоцирует возрождение использования worktrees, которого разработчики git, вероятно, никогда не предвидели.
 
 ---
 
-## Part VI: Worktrees Under the Hood
+## Часть VI. Worktrees под капотом
 
-For those who want to understand the internals:
+Для тех, кто хочет разобраться во внутренностях:
 
-### How git Finds the Repository
+### Как git находит репозиторий
 
-When you run a git command, git needs to find the `.git` directory. The search algorithm is:
+Когда ты запускаешь команду git, git нужно найти директорию `.git`. Алгоритм поиска такой:
 
-1. Look for `.git` in current directory
-2. If `.git` is a **file**, read its contents for `gitdir:` path
-3. Follow that path
-4. If that path contains a `commondir` file, the common git dir is elsewhere
+1. Ищем `.git` в текущей директории
+2. Если `.git` — **файл**, читаем из него путь `gitdir:`
+3. Следуем по этому пути
+4. Если по этому пути есть файл `commondir`, общая директория git находится в другом месте
 
-This indirection is how worktrees work. The linked worktree has a `.git` file, not directory, and git follows the chain.
+Эта косвенность и есть то, как работают worktrees. У связанного worktree есть файл `.git`, а не директория, и git следует по цепочке.
 
-### The `commondir` Mechanism
+### Механизм `commondir`
 
-Each linked worktree's git directory (e.g., `.git/worktrees/feature/`) contains a `commondir` file pointing to the main `.git` directory.
+Директория git каждого связанного worktree (например, `.git/worktrees/feature/`) содержит файл `commondir`, указывающий на основную директорию `.git`.
 
-When git needs something shared (objects, refs), it uses `commondir`. When it needs something worktree-specific (HEAD, index), it uses the worktree's directory.
+Когда git'у нужно что-то общее (объекты, ссылки), он использует `commondir`. Когда нужно что-то специфичное для worktree (HEAD, index), он использует директорию worktree.
 
-The code that handles this is in `setup.c` and `path.c` in the git source. The function `get_common_dir()` resolves the path for shared resources.
+Код, который этим занимается, лежит в `setup.c` и `path.c` в исходниках git. Функция `get_common_dir()` разрешает путь для общих ресурсов.
 
-### Lock Files and Concurrent Access
+### Lock-файлы и одновременный доступ
 
-Multiple worktrees can run git commands simultaneously. Git uses lock files to prevent corruption:
+Несколько worktrees могут выполнять команды git одновременно. Git использует lock-файлы, чтобы не допустить повреждения:
 
-- `.git/index.lock` — Prevents concurrent index modifications
-- `.git/refs/heads/<branch>.lock` — Prevents concurrent ref updates
-- `.git/worktrees/<name>/locked` — Marks a worktree as locked (won't be pruned)
+- `.git/index.lock` — предотвращает одновременные изменения индекса
+- `.git/refs/heads/<branch>.lock` — предотвращает одновременные обновления ссылки
+- `.git/worktrees/<name>/locked` — помечает worktree как заблокированный (не будет удалён очисткой)
 
-The worktree-specific lock is useful when a worktree is on removable media or a network drive that might be temporarily unavailable.
+Специфичный для worktree lock полезен, когда worktree лежит на съёмном носителе или сетевом диске, который может временно стать недоступен.
 
 ```bash
-# Prevent a worktree from being pruned
+# Запретить очистку worktree
 git worktree lock ../my-worktree --reason "on external drive"
 
-# Later
+# Позже
 git worktree unlock ../my-worktree
 ```
 
 ---
 
-## Part VII: Leveraging Worktrees Effectively
+## Часть VII. Как эффективно использовать worktrees
 
-If you're convinced worktrees are worth adopting, here's how to use them well:
+Если ты убеждён, что worktrees стоит взять на вооружение, вот как использовать их правильно:
 
-### Organize Your Worktrees
+### Организуй свои worktrees
 
-Keep worktrees in a predictable location:
+Держи worktrees в предсказуемом месте:
 
 ```bash
 ~/.worktrees/
@@ -340,33 +340,33 @@ Keep worktrees in a predictable location:
     └── hotfix/
 ```
 
-Or keep them adjacent to the main repo:
+Или держи их рядом с основным репозиторием:
 
 ```bash
 ~/projects/
-├── my-app/           # Main repo
-├── my-app--feature/  # Worktree for feature branch
-└── my-app--hotfix/   # Worktree for hotfix
+├── my-app/           # Основной репозиторий
+├── my-app--feature/  # Worktree для ветки фичи
+└── my-app--hotfix/   # Worktree для хотфикса
 ```
 
-Pick a convention and stick with it.
+Выбери соглашение и держись его.
 
-### Name Worktrees After Branches
+### Называй worktrees по веткам
 
-Reduces confusion:
+Снижает путаницу:
 
 ```bash
 git worktree add ~/.worktrees/my-app/add-auth -b add-auth
 ```
 
-Now the directory name matches the branch name.
+Теперь имя директории совпадает с именем ветки.
 
-### Create a Helper Function
+### Создай вспомогательную функцию
 
-Add to your shell config:
+Добавь в конфиг своей оболочки:
 
 ```bash
-# Create a worktree for a new branch
+# Создать worktree для новой ветки
 wt() {
   local branch="$1"
   local repo_name=$(basename $(git rev-parse --show-toplevel))
@@ -375,44 +375,44 @@ wt() {
   cd "$worktree_path"
 }
 
-# List worktrees
+# Список worktrees
 alias wtl="git worktree list"
 
-# Remove a worktree
+# Удалить worktree
 wtr() {
   git worktree remove "$1"
 }
 ```
 
-### Clean Up When Done
+### Подчищай по завершении
 
-Worktrees are cheap to create and should be cheap to discard:
+Worktrees дёшево создавать, и они должны так же дёшево выбрасываться:
 
 ```bash
-# Merge and clean up
+# Смержить и подчистить
 git checkout main
 git merge feature-branch
 git worktree remove ~/.worktrees/my-app/feature-branch
 git branch -d feature-branch
 ```
 
-Don't let old worktrees accumulate.
+Не позволяй старым worktrees накапливаться.
 
-### Remember the Limitations
+### Помни об ограничениях
 
-- Can't checkout the same branch in multiple worktrees
-- Can't nest worktrees inside each other
-- Submodules need separate initialization per worktree
-- Some IDE features might not understand worktrees
+- Нельзя выгрузить одну и ту же ветку в несколько worktrees
+- Нельзя вкладывать worktrees друг в друга
+- Сабмодулям нужна отдельная инициализация в каждом worktree
+- Некоторые возможности IDE могут не понимать worktrees
 
 ---
 
-## Conclusion
+## Заключение
 
-Git worktrees are a decade-old feature whose time has finally come. They solve parallel work — something that didn't matter much when developers worked linearly, but matters immensely now that AI agents are writing code alongside us.
+Git worktrees — фича десятилетней давности, чьё время наконец-то пришло. Они решают проблему параллельной работы — то, что мало что значило, пока разработчики работали линейно, но что имеет огромное значение теперь, когда ИИ-агенты пишут код вместе с нами.
 
-The implementation is elegant: share the expensive stuff (object store), separate the cheap stuff (working directory). It's the same insight that makes containers efficient — share the base, isolate the differences.
+Реализация элегантна: дели дорогое (хранилище объектов), разделяй дешёвое (рабочую директорию). Это та же идея, которая делает контейнеры эффективными — дели базу, изолируй различия.
 
-Whether you're reviewing PRs, testing branches, or letting an AI agent work in parallel, worktrees provide isolation without duplication. They're not new technology. They're old technology that suddenly fits the moment.
+Ревьюишь ли ты PR'ы, тестируешь ветки или даёшь ИИ-агенту работать в параллель — worktrees обеспечивают изоляцию без дублирования. Это не новая технология. Это старая технология, которая внезапно подошла под момент.
 
-If you've been stashing to switch branches, maybe stop. There's a better way, and it's been there all along.
+Если ты прятал изменения в стэш ради переключения веток — может быть, перестань. Есть способ получше, и он был тут всё это время.

@@ -25,12 +25,7 @@ export function HeroSection() {
 				<div className="relative w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-[30px]">
 					<div className="flex flex-col items-center text-center">
 						<div className="space-y-4 sm:space-y-6">
-							<h1
-								className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1] text-foreground relative"
-								style={{
-									fontFamily: "var(--font-ibm-plex-mono), monospace",
-								}}
-							>
+							<h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1] text-foreground relative">
 								<span className="invisible" aria-hidden="true">
 									Редактор кода для AI-агентов.
 								</span>

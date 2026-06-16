@@ -1,0 +1,37 @@
+.logo {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+/* Living necktie on hover: an orange→red glow masked to the girl silhouette and
+ * clipped to the scarf/tie at the bottom of the mark, so only the tie lights up.
+ * The logo PNG is flat (no per-part vectors), so we paint a masked orange layer
+ * over it and reveal it on hover. */
+.tie {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background-color: #f0792a;
+	-webkit-mask: url("/rox-logo-light.png") center / contain no-repeat;
+	mask: url("/rox-logo-light.png") center / contain no-repeat;
+	clip-path: inset(72% 0 0 0);
+	opacity: 0;
+	filter: drop-shadow(0 0 6px rgba(240, 121, 42, 0.7));
+	transition: opacity 0.3s ease;
+}
+
+.logo:hover .tie {
+	opacity: 1;
+	animation: tieShimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes tieShimmer {
+	0%,
+	100% {
+		background-color: #f0792a;
+	}
+	50% {
+		background-color: #ff6b3d;
+	}
+}

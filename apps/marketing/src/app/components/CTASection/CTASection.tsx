@@ -12,7 +12,7 @@ export function CTASection() {
 			<section className="relative py-32 px-8 lg:px-[30px]">
 				<div className="max-w-7xl mx-auto flex flex-col items-center text-center">
 					<h2 className="text-3xl sm:text-4xl xl:text-5xl font-medium tracking-tight leading-[1.1] text-foreground mb-8">
-						Попробуйте Rox прямо сейчас.
+						Попробуй Rox прямо сейчас.
 					</h2>
 					<div>
 						<DownloadButton onJoinWaitlist={() => setIsWaitlistOpen(true)} />

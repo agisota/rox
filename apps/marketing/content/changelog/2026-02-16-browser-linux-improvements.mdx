@@ -1,58 +1,58 @@
 ---
-title: Chat improvements, desktop automation, and in-app browser
+title: Улучшения чата, автоматизация десктопа и встроенный браузер
 date: 2026-02-16
 image: /changelog/chat.png
 ---
 
-## Chat - Still in preview <PRBadge url="https://github.com/agisota/set/pull/1413" />
+## Чат — всё ещё в превью <PRBadge url="https://github.com/agisota/set/pull/1413" />
 
-Chat got a major upgrade this week. Streaming responses now support interactive tool-approval flows, so you can review and approve each tool call as it happens. A new multi-provider model picker lets you choose between providers and models. Agent and tool calls render as expandable UI blocks with tool-specific displays, and a new web search tool lets Claude fetch and reference live content.
+На этой неделе чат получил серьёзное обновление. Потоковые ответы теперь поддерживают интерактивные сценарии одобрения инструментов, так что ты можешь просматривать и одобрять каждый вызов инструмента по мере его появления. Новый мультипровайдерный селектор моделей позволяет выбирать между провайдерами и моделями. Вызовы агентов и инструментов отображаются как разворачиваемые блоки интерфейса со специфичными для инструментов отображениями, а новый инструмент веб-поиска позволяет Claude доставать и ссылаться на живой контент.
 
-We also shipped a series of fixes to MCP connectivity — replacing the stagnant `mcp-handler` library with a direct SDK transport <PRBadge url="https://github.com/agisota/set/pull/1518" />, fixing OAuth connections through the reverse proxy <PRBadge url="https://github.com/agisota/set/pull/1512" />, and resolving SDK version conflicts that caused session failures <PRBadge url="https://github.com/agisota/set/pull/1515" /> <PRBadge url="https://github.com/agisota/set/pull/1516" />.
+Также мы выпустили серию фиксов связности MCP — заменили застойную библиотеку `mcp-handler` прямым транспортом SDK <PRBadge url="https://github.com/agisota/set/pull/1518" />, починили OAuth-соединения через обратный прокси <PRBadge url="https://github.com/agisota/set/pull/1512" /> и устранили конфликты версий SDK, вызывавшие сбои сессий <PRBadge url="https://github.com/agisota/set/pull/1515" /> <PRBadge url="https://github.com/agisota/set/pull/1516" />.
 
-![Chat with tool approval](/changelog/chat.png)
+![Чат с одобрением инструментов](/changelog/chat.png)
 
-## In-App Browser <PRBadge url="https://github.com/agisota/set/pull/1519" />
+## Встроенный браузер <PRBadge url="https://github.com/agisota/set/pull/1519" />
 
-Browse documentation, preview dev servers, and test web apps without leaving Rox. The new embedded browser includes Chrome-like URL autocomplete with browsing history, favicon capture, and DevTools support.
+Просматривай документацию, делай предпросмотр dev-серверов и тестируй веб-приложения, не покидая Rox. Новый встроенный браузер включает автодополнение URL в стиле Chrome с историей просмотров, захват фавиконов и поддержку DevTools.
 
-- Navigate directly from detected ports — click the external link icon to open in a browser pane instead of your system browser
-- URL bar with persistent history and keyboard navigation
-- Clear browsing data from the overflow menu
-- Open browser tabs with Cmd+Shift+B hotkey
+- Переходи прямо из обнаруженных портов — нажми иконку внешней ссылки, чтобы открыть в панели браузера вместо системного браузера
+- Строка URL с постоянной историей и навигацией с клавиатуры
+- Очистка данных просмотра из меню переполнения
+- Открытие вкладок браузера горячей клавишей Cmd+Shift+B
 
-![In-app browser](/changelog/browser.png)
+![Встроенный браузер](/changelog/browser.png)
 
-## Desktop Automation Tools <PRBadge url="https://github.com/agisota/set/pull/1481" />
+## Инструменты автоматизации десктопа <PRBadge url="https://github.com/agisota/set/pull/1481" />
 
-Added MCP-based automation tools that let Claude Code interact with the Rox UI programmatically. Claude can now take screenshots, click UI elements, type into fields, and inspect the DOM — enabling fully automated testing and debugging workflows through natural language.
+Добавили инструменты автоматизации на базе MCP, которые позволяют Claude Code программно взаимодействовать с интерфейсом Rox. Claude теперь может делать скриншоты, кликать по элементам интерфейса, печатать в поля и инспектировать DOM — это даёт полностью автоматизированные сценарии тестирования и отладки через естественный язык.
 
-## Improvements
+## Улучшения
 
-- **Linux desktop support** - Rox Desktop is now available on Linux with full auto-update support via AppImage builds <PRBadge url="https://github.com/agisota/set/pull/1477" />
-- **Terminal context menu** - Right-click to copy selected text or paste from clipboard <PRBadge url="https://github.com/agisota/set/pull/1509" />
-- **Workspace visual identity** - Each workspace gets a unique colored dock icon border for quick visual identification in development <PRBadge url="https://github.com/agisota/set/pull/1478" />
-- **Open tasks in workspace** - New "Open in workspace" button in task detail creates a workspace and launches Claude with full task context <PRBadge url="https://github.com/agisota/set/pull/1473" />
-- **Ahead/behind indicators** - See commit sync status directly on workspace items in the sidebar <PRBadge url="https://github.com/agisota/set/pull/1496" />
-- **Preset hotkey tooltips** - Keyboard shortcuts now visible when hovering over preset bar items <PRBadge url="https://github.com/agisota/set/pull/1469" />
-- **Branch name sanitization** - Git branch names now preserve valid characters like underscores, dots, and at signs <PRBadge url="https://github.com/agisota/set/pull/1470" />
-- **Port allocation improvements** - Generated ports.json with human-readable labels, moved allocation to shared file for CLI workflows <PRBadge url="https://github.com/agisota/set/pull/1479" />
+- **Поддержка десктопа на Linux** — Rox Desktop теперь доступен на Linux с полной поддержкой авто-обновления через сборки AppImage <PRBadge url="https://github.com/agisota/set/pull/1477" />
+- **Контекстное меню терминала** — клик правой кнопкой, чтобы скопировать выделенный текст или вставить из буфера обмена <PRBadge url="https://github.com/agisota/set/pull/1509" />
+- **Визуальная идентичность рабочего пространства** — каждое рабочее пространство получает уникальную цветную рамку иконки в доке для быстрого визуального различения в разработке <PRBadge url="https://github.com/agisota/set/pull/1478" />
+- **Открытие задач в рабочем пространстве** — новая кнопка «Открыть в рабочем пространстве» в деталях задачи создаёт рабочее пространство и запускает Claude с полным контекстом задачи <PRBadge url="https://github.com/agisota/set/pull/1473" />
+- **Индикаторы ahead/behind** — смотри статус синхронизации коммитов прямо на элементах рабочих пространств в сайдбаре <PRBadge url="https://github.com/agisota/set/pull/1496" />
+- **Тултипы горячих клавиш пресетов** — горячие клавиши теперь видны при наведении на элементы панели пресетов <PRBadge url="https://github.com/agisota/set/pull/1469" />
+- **Очистка имён веток** — имена веток git теперь сохраняют допустимые символы вроде подчёркиваний, точек и собачек <PRBadge url="https://github.com/agisota/set/pull/1470" />
+- **Улучшения выделения портов** — генерируемый ports.json с понятными человеку метками, выделение перенесено в общий файл для CLI-воркфлоу <PRBadge url="https://github.com/agisota/set/pull/1479" />
 
 ---
 
-**Bug fixes:**
+**Исправления багов:**
 
-- Fixed device presence timezone display <PRBadge url="https://github.com/agisota/set/pull/1521" />
-- Improved error reporting for bulk operations <PRBadge url="https://github.com/agisota/set/pull/1522" />
-- Fixed stale port data race condition <PRBadge url="https://github.com/agisota/set/pull/1497" />
-- Showed diffs against base branch in sidebar <PRBadge url="https://github.com/agisota/set/pull/1495" />
-- Prevented row click navigation on dropdown cells <PRBadge url="https://github.com/agisota/set/pull/1468" />
-- Preserved permission status when tab focused <PRBadge url="https://github.com/agisota/set/pull/1465" />
-- Invalidated workspace nav queries after reorder <PRBadge url="https://github.com/agisota/set/pull/1474" />
-- Fixed macOS notification center registration <PRBadge url="https://github.com/agisota/set/pull/1492" />
-- Killed orphaned terminal daemon processes during teardown <PRBadge url="https://github.com/agisota/set/pull/1480" />
-- Only showed active ports in sidebar <PRBadge url="https://github.com/agisota/set/pull/1488" />
-- Fixed canary crash from PostgresStore <PRBadge url="https://github.com/agisota/set/pull/1510" />
-- Removed Electric proxy and reverted to API proxy <PRBadge url="https://github.com/agisota/set/pull/1501" />
-- Fixed docs search API crash <PRBadge url="https://github.com/agisota/set/pull/1467" />
-- Resolved conflicting drizzle migrations <PRBadge url="https://github.com/agisota/set/pull/1482" />
+- Исправили отображение часового пояса в присутствии устройств <PRBadge url="https://github.com/agisota/set/pull/1521" />
+- Улучшили отчётность об ошибках для массовых операций <PRBadge url="https://github.com/agisota/set/pull/1522" />
+- Исправили состояние гонки с устаревшими данными портов <PRBadge url="https://github.com/agisota/set/pull/1497" />
+- Показали diff'ы относительно базовой ветки в сайдбаре <PRBadge url="https://github.com/agisota/set/pull/1495" />
+- Предотвратили навигацию по клику на строку в ячейках с выпадающим списком <PRBadge url="https://github.com/agisota/set/pull/1468" />
+- Сохранили статус разрешений при фокусе вкладки <PRBadge url="https://github.com/agisota/set/pull/1465" />
+- Сбрасывали запросы навигации по рабочим пространствам после переупорядочивания <PRBadge url="https://github.com/agisota/set/pull/1474" />
+- Исправили регистрацию в центре уведомлений macOS <PRBadge url="https://github.com/agisota/set/pull/1492" />
+- Завершали осиротевшие процессы демона терминала во время teardown <PRBadge url="https://github.com/agisota/set/pull/1480" />
+- Показывали в сайдбаре только активные порты <PRBadge url="https://github.com/agisota/set/pull/1488" />
+- Исправили падение canary из-за PostgresStore <PRBadge url="https://github.com/agisota/set/pull/1510" />
+- Убрали Electric-прокси и вернулись к API-прокси <PRBadge url="https://github.com/agisota/set/pull/1501" />
+- Исправили падение API поиска по docs <PRBadge url="https://github.com/agisota/set/pull/1467" />
+- Устранили конфликтующие миграции drizzle <PRBadge url="https://github.com/agisota/set/pull/1482" />

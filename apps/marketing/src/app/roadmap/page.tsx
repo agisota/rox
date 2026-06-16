@@ -7,14 +7,14 @@ import { RoadmapBoard } from "./components/RoadmapBoard";
 export const metadata: Metadata = {
 	title: "Дорожная карта",
 	description:
-		"Посмотрите, что мы создаем сейчас, что появится дальше и куда движется Rox.",
+		"Посмотри, что мы создаем сейчас, что появится дальше и куда движется Rox.",
 	alternates: {
 		canonical: "/roadmap",
 	},
 	openGraph: {
 		title: "Дорожная карта | Rox",
 		description:
-			"Посмотрите, что мы создаем сейчас, что появится дальше и куда движется Rox.",
+			"Посмотри, что мы создаем сейчас, что появится дальше и куда движется Rox.",
 		url: "/roadmap",
 		images: ["/opengraph-image"],
 	},
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		title: "Дорожная карта | Rox",
 		description:
-			"Посмотрите, что мы создаем сейчас, что появится дальше и куда движется Rox.",
+			"Посмотри, что мы создаем сейчас, что появится дальше и куда движется Rox.",
 		images: ["/opengraph-image"],
 	},
 };

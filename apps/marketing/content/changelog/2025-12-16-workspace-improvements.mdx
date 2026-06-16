@@ -1,31 +1,31 @@
 ---
-title: Resizable sidebar, multiple terminal tabs, and port visibility
+title: Сайдбар с регулировкой размера, несколько вкладок терминала и видимость портов
 date: 2025-12-16
 image: /changelog/terminal.png
 ---
 
-## VS Code-Style Resizable Sidebar <PRBadge url="https://github.com/agisota/set/pull/457" />
+## Сайдбар с регулировкой размера в стиле VS Code <PRBadge url="https://github.com/agisota/set/pull/457" />
 
-- Replace percentage-based panels with a custom `ResizableSidebar` component
-- Use pixel-based widths (250px default, 200-500px range) for consistent sizing
-- Implement drag-to-resize with mouse events like VS Code
-- Add wider invisible drag handle (12px) for easier resize targeting while keeping thin visible indicator
+- Заменили панели на процентах кастомным компонентом `ResizableSidebar`
+- Используем ширину в пикселях (250px по умолчанию, диапазон 200-500px) для стабильных размеров
+- Реализовали изменение размера перетаскиванием через события мыши, как в VS Code
+- Добавили более широкий невидимый хват для перетаскивания (12px), чтобы легче было попасть по нему, сохранив при этом тонкий видимый индикатор
 
-## Multiple Terminal Tabs <PRBadge url="https://github.com/agisota/set/pull/452" />
+## Несколько вкладок терминала <PRBadge url="https://github.com/agisota/set/pull/452" />
 
-Fixed a regression that prevented creating new terminal tabs. The "New Terminal" button now creates new tabs again instead of just activating existing ones. Multiple tabs can be created per workspace for parallel workflows.
+Починили регрессию, которая мешала создавать новые вкладки терминала. Кнопка «Новый терминал» снова создаёт новые вкладки, а не просто активирует существующие. На каждое рабочее пространство можно создать несколько вкладок для параллельной работы.
 
-## Port Visibility <PRBadge url="https://github.com/agisota/set/pull/462" />
+## Видимость портов <PRBadge url="https://github.com/agisota/set/pull/462" />
 
-![Ports panel](/changelog/ports.png)
+![Панель портов](/changelog/ports.png)
 
-- Auto-detects listening ports from terminal output and verifies activity before showing
-- New Ports panel in the sidebar showing ports grouped by workspace with quick actions (open in browser, jump to pane)
-- Real-time updates via subscriptions so the list stays current as ports appear/disappear
-- Cleans up port entries when terminal panes close to avoid stale items
+- Автоматически определяет прослушиваемые порты из вывода терминала и проверяет активность перед показом
+- Новая панель портов в сайдбаре показывает порты, сгруппированные по рабочим пространствам, с быстрыми действиями (открыть в браузере, перейти к панели)
+- Обновления в реальном времени через подписки, так что список всегда актуален по мере появления и исчезновения портов
+- Очищает записи о портах при закрытии панелей терминала, чтобы не оставалось устаревших элементов
 
-## Multi-line URL Links <PRBadge url="https://github.com/agisota/set/pull/467" />
+## Ссылки в URL на несколько строк <PRBadge url="https://github.com/agisota/set/pull/467" />
 
-- Extract multi-line spanning logic into a shared `MultiLineLinkProvider` base class
-- Create `UrlLinkProvider` that supports URLs spanning wrapped terminal lines
-- Replace `WebLinksAddon` with the new custom provider for consistent multi-line handling
+- Вынесли логику переноса на несколько строк в общий базовый класс `MultiLineLinkProvider`
+- Создали `UrlLinkProvider` с поддержкой URL, которые занимают несколько перенесённых строк терминала
+- Заменили `WebLinksAddon` новым кастомным провайдером для единообразной обработки переносов

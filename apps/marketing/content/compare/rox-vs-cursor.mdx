@@ -1,6 +1,6 @@
 ---
-title: "Rox vs Cursor (2026): Parallel Agents vs AI Editor"
-description: "Compare Rox and Cursor for AI-assisted development. See how parallel agent orchestration differs from an AI-powered editor."
+title: "Rox против Cursor (2026): параллельные агенты против AI-редактора"
+description: "Сравнение Rox и Cursor для разработки с AI. Узнай, чем оркестрация параллельных агентов отличается от редактора с AI."
 date: 2026-02-02
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -13,91 +13,91 @@ keywords:
   - parallel coding agents
 ---
 
-Cursor started as an AI-native editor, but it now spans its own IDE, cloud agents, web/mobile agents, JetBrains support via ACP, and automation workflows. Rox solves a different problem: it is a local-first agent workspace that can run many coding agents in parallel while staying editor-independent.
+Cursor начинался как AI-нативный редактор, но теперь он охватывает собственную IDE, облачных агентов, web/mobile-агентов, поддержку JetBrains через ACP и воркфлоу автоматизации. Rox решает другую проблему: это local-first рабочее пространство для агентов, которое умеет запускать множество агентов кода параллельно, оставаясь независимым от редактора.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **Cursor** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | AI coding suite (editor + cloud agents) |
-| **AI approach** | Agent-agnostic — works with Claude Code, Codex, Aider, Rox Chat, or any CLI agent | Managed platform with Cursor-hosted agents and access to frontier models |
-| **Parallelism** | Core feature — 10+ agents across isolated worktrees | Cloud agents, automations, and web/mobile agents can run remotely in parallel |
-| **Editor surface** | Works alongside any editor (VS Code, Cursor, JetBrains, Xcode) | Cursor IDE first, plus JetBrains via ACP and web/mobile agent surfaces |
-| **Pricing** | Free tier + Pro $20/seat/mo | Hobby free, Pro $20/mo, Pro+ $60/mo, Ultra $200/mo, Teams $40/user/mo |
-| **Privacy** | Local Git worktrees; you control agent and provider choices | Requests route through Cursor's services for managed models and cloud agents |
+| **Категория** | Рабочее пространство для оркестрации агентов | AI-набор для кода (редактор + облачные агенты) |
+| **Подход к AI** | Не зависит от агента — работает с Claude Code, Codex, Aider, Rox Chat или любым CLI-агентом | Управляемая платформа с агентами на хостинге Cursor и доступом к передовым моделям |
+| **Параллелизм** | Ключевая функция — 10+ агентов в изолированных worktree | Облачные агенты, автоматизации и web/mobile-агенты могут работать удалённо параллельно |
+| **Интерфейс редактора** | Работает вместе с любым редактором (VS Code, Cursor, JetBrains, Xcode) | Cursor IDE прежде всего, плюс JetBrains через ACP и интерфейсы web/mobile-агентов |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес | Hobby бесплатно, Pro $20/мес, Pro+ $60/мес, Ultra $200/мес, Teams $40/польз/мес |
+| **Приватность** | Локальные Git worktree; ты управляешь выбором агента и провайдера | Запросы идут через сервисы Cursor для управляемых моделей и облачных агентов |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is Cursor?
-
-Cursor is no longer just a VS Code fork with autocomplete. It is a broader AI coding suite: the desktop IDE still anchors the experience, but Cursor now also offers cloud agents, automations, web/mobile agent access, and JetBrains support through ACP. The common thread is that Cursor manages the model access and agent runtime for you, rather than asking you to bring your own CLI tools.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое Cursor?
 
-### Managed Agent Platform vs Agent Orchestrator
-
-Cursor has expanded well beyond a single chat panel. You can now launch remote agents, work with them from the web, and automate recurring workflows. But all of that still lives inside the Cursor stack. Rox is different: it is the workspace around whichever agents you choose, keeping each one isolated in its own worktree while adding chat, browser preview, and review tooling around the repo itself.
-
-### Cursor-Centered Workflow vs Editor Freedom
-
-Cursor is less editor-locked than it used to be. It now reaches JetBrains through ACP and lets you monitor or launch agents from the web and mobile. But the product is still fundamentally Cursor-centered: you are buying into its hosted runtime, its plans, and its workflow model. Rox stays editor-independent. It now has its own chat, file review, and browser surfaces, but it still treats your editor as a choice rather than the center of the product.
-
-### Hosted Runtime vs Bring-Your-Own Agents
-
-Cursor gives you convenience: hosted agents, managed model access, and a unified account. Rox gives you freedom: Claude Code, Codex, OpenCode, Aider, Rox Chat, or anything else that runs in a shell. That matters if you want to switch models often, compare agents head-to-head, or avoid tying your entire workflow to one vendor's runtime.
-
-### Privacy
-
-Rox runs agents locally in Git worktrees and has a source-available codebase. Cursor's hosted features route through Cursor infrastructure and external model providers. That is the tradeoff: managed convenience versus direct local control.
+Cursor больше не просто форк VS Code с автодополнением. Это более широкий AI-набор для кода: десктопная IDE по-прежнему якорит опыт, но теперь Cursor также предлагает облачных агентов, автоматизации, доступ к web/mobile-агентам и поддержку JetBrains через ACP. Общая нить в том, что Cursor управляет доступом к моделям и средой исполнения агентов за тебя, а не просит тебя приносить собственные CLI-инструменты.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and a Pro plan at $20/seat/month. You also pay for your agents' API keys (for example Anthropic for Claude Code or OpenAI for Codex) — transparent provider costs, no platform credit system.
+### Управляемая платформа агентов против оркестратора агентов
 
-Cursor's current public pricing is Hobby (free), Pro ($20/month), Pro+ ($60/month), Ultra ($200/month), Teams ($40/user/month), and Enterprise (custom). That structure makes Cursor easier to adopt out of the box, but it also means your agent usage, hosted runtime, and model access stay bundled inside Cursor's platform economics.
+Cursor вышел далеко за пределы одной панели чата. Теперь ты можешь запускать удалённых агентов, работать с ними из веба и автоматизировать повторяющиеся воркфлоу. Но всё это по-прежнему живёт внутри стека Cursor. Rox другой: это рабочее пространство вокруг тех агентов, которых ты выбираешь, держащее каждого изолированным в своём worktree, при этом добавляя чат, превью в браузере и инструменты ревью вокруг самого репозитория.
 
----
+### Воркфлоу вокруг Cursor против свободы редактора
 
-## Which Should You Choose?
+Cursor теперь меньше привязан к редактору, чем раньше. Он дотягивается до JetBrains через ACP и позволяет мониторить или запускать агентов из веба и мобильных. Но продукт по-прежнему фундаментально завязан на Cursor: ты покупаешься на его хостинговую среду исполнения, его тарифы и его модель воркфлоу. Rox остаётся независимым от редактора. Теперь у него есть собственные чат, ревью файлов и интерфейсы браузера, но он по-прежнему относится к твоему редактору как к выбору, а не как к центру продукта.
 
-**Choose Cursor if you:**
-- Want one managed product for editor AI, cloud agents, and web/mobile agent access
-- Prefer convenience over control — no separate CLI agent setup or API key juggling
-- Like Cursor's hosted model access and plan-based workflow
-- Want AI tightly integrated into either Cursor IDE or its remote agent surfaces
+### Хостинговая среда исполнения против «принеси своих агентов»
 
-**Choose Rox if you:**
-- Run CLI-based coding agents and want to parallelize across 10+ tasks
-- Use JetBrains, Xcode, Neovim, Cursor, or any other editor and do not want orchestration tied to one product
-- Need local worktrees and direct control over providers
-- Want agent and model flexibility with no vendor lock-in
+Cursor даёт тебе удобство: хостинговых агентов, управляемый доступ к моделям и единый аккаунт. Rox даёт тебе свободу: Claude Code, Codex, OpenCode, Aider, Rox Chat или что угодно ещё, что запускается в шелле. Это важно, если ты хочешь часто переключать модели, сравнивать агентов лоб в лоб или не привязывать весь свой воркфлоу к среде исполнения одного вендора.
 
-Both tools work together. Use Cursor for inline AI editing, Rox alongside it to dispatch parallel agents for test generation, refactors, and migrations. Cursor is where you write code interactively; Rox is where you orchestrate autonomous work at scale.
+### Приватность
+
+Rox запускает агентов локально в Git worktree и имеет кодовую базу с открытым исходным кодом. Хостинговые функции Cursor идут через инфраструктуру Cursor и внешних провайдеров моделей. Вот компромисс: управляемое удобство против прямого локального контроля.
 
 ---
 
-## Frequently Asked Questions
+## Цена
 
-### Is Rox a Cursor replacement?
+Rox предлагает бесплатный тариф и план Pro за $20/место/месяц. Ты также платишь за API-ключи своих агентов (например, Anthropic для Claude Code или OpenAI для Codex) — прозрачные расходы у провайдера, без системы кредитов платформы.
 
-Not as an IDE. Rox does not provide Cursor-style inline completions or replace a full code editor, but it does provide in-app chat, diff/file editing, browser previews, and worktree orchestration. It works alongside Cursor rather than trying to become Cursor.
+Текущая публичная цена Cursor — Hobby (бесплатно), Pro ($20/мес), Pro+ ($60/мес), Ultra ($200/мес), Teams ($40/польз/мес) и Enterprise (по запросу). Такая структура делает Cursor проще в освоении из коробки, но она же означает, что использование агентов, хостинговая среда исполнения и доступ к моделям остаются завязанными на платформенную экономику Cursor.
 
-### Does Cursor support parallel agents?
+---
 
-Yes. Cursor now supports cloud agents, automations, and web/mobile agent workflows that can run in parallel. The difference is where and how they run: Cursor's parallelism is tied to Cursor's hosted platform, while Rox runs local CLI agents in Git worktrees on your machine.
+## Что выбрать тебе?
 
-### Is Rox really free?
+**Выбирай Cursor, если ты:**
+- Хочешь один управляемый продукт для AI в редакторе, облачных агентов и доступа к web/mobile-агентам
+- Предпочитаешь удобство контролю — без отдельной настройки CLI-агента или жонглирования API-ключами
+- Тебе нравится управляемый доступ к моделям Cursor и воркфлоу на основе тарифов
+- Хочешь AI, тесно интегрированный либо в Cursor IDE, либо в его интерфейсы удалённых агентов
 
-Rox has a free tier and a Pro plan at $20/seat/month. You also need API keys for your chosen agents (e.g., Anthropic for Claude Code). No credit system, no markup on API costs.
+**Выбирай Rox, если ты:**
+- Запускаешь агентов кода на основе CLI и хочешь распараллелить работу по 10+ задачам
+- Используешь JetBrains, Xcode, Neovim, Cursor или любой другой редактор и не хочешь привязывать оркестрацию к одному продукту
+- Нуждаешься в локальных worktree и прямом контроле над провайдерами
+- Хочешь гибкость в выборе агента и модели без привязки к вендору
+
+Оба инструмента работают вместе. Используй Cursor для инлайн-редактирования с AI, а Rox рядом с ним — чтобы раздавать параллельных агентов для генерации тестов, рефакторингов и миграций. Cursor — это где ты пишешь код интерактивно; Rox — это где ты оркестрируешь автономную работу в масштабе.
+
+---
+
+## Часто задаваемые вопросы
+
+### Заменяет ли Rox собой Cursor?
+
+Не как IDE. Rox не предоставляет инлайн-дополнения в стиле Cursor и не заменяет полноценный редактор кода, но он даёт встроенный чат, редактирование diff/файлов, превью в браузере и оркестрацию worktree. Он работает вместе с Cursor, а не пытается стать Cursor.
+
+### Поддерживает ли Cursor параллельных агентов?
+
+Да. Cursor теперь поддерживает облачных агентов, автоматизации и воркфлоу web/mobile-агентов, которые могут работать параллельно. Разница в том, где и как они работают: параллелизм Cursor завязан на хостинговую платформу Cursor, тогда как Rox запускает локальных CLI-агентов в Git worktree на твоей машине.
+
+### Rox правда бесплатный?
+
+У Rox есть бесплатный тариф и план Pro за $20/место/месяц. Тебе также нужны API-ключи для выбранных агентов (например, Anthropic для Claude Code). Никакой системы кредитов, никакой наценки на расходы API.

@@ -3,15 +3,26 @@
 import { animate, scrambleText, utils } from "animejs";
 import { useEffect, useRef } from "react";
 import {
+	LANDING_ACPX_TERM,
+	LANDING_AGENT_LEAD,
+	LANDING_AGENT_TAIL,
+	LANDING_AGENT_TERMS,
 	LANDING_DOWNLOAD_HEADING,
-	LANDING_FEATURES,
+	LANDING_EDITOR_LEAD,
+	LANDING_EDITOR_TERMS,
+	LANDING_FEAT_CONTROL,
+	LANDING_FEAT_ISOLATION,
+	LANDING_FEAT_SPEED,
+	LANDING_FEAT_SWITCH,
 	LANDING_FEATURES_HEADING,
 	LANDING_HEADLINE,
 	LANDING_HOW_HEADING,
 	LANDING_HOW_PARAGRAPH,
 	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
+import { LandingBackdrop } from "./components/LandingBackdrop";
 import { RoxDivider } from "./components/RoxDivider";
+import { Term } from "./components/Term";
 
 interface ScrambleLandingProps {
 	children?: React.ReactNode;
@@ -164,6 +175,7 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 	return (
 		<main ref={containerRef} className="rox-anime rox-landing">
+			<LandingBackdrop />
 			<div className="rox-landing__main">
 				<div className="rox-landing__brand">
 					<span aria-hidden="true">▸</span>
@@ -179,11 +191,30 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 				<h2 className="rox-scramble">{LANDING_FEATURES_HEADING}</h2>
 
 				<ul>
-					{LANDING_FEATURES.map((feature) => (
-						<li key={feature} className="rox-scramble">
-							{feature}
-						</li>
-					))}
+					<li className="rox-scramble">{LANDING_FEAT_SPEED}</li>
+					<li>
+						{LANDING_AGENT_LEAD}{" "}
+						{LANDING_AGENT_TERMS.map((term, index) => (
+							<span key={term.label}>
+								{index > 0 ? ", " : ""}
+								<Term label={term.label} tip={term.tip} />
+							</span>
+						))}
+						{LANDING_AGENT_TAIL}
+						<Term label={LANDING_ACPX_TERM.label} tip={LANDING_ACPX_TERM.tip} />
+					</li>
+					<li className="rox-scramble">{LANDING_FEAT_ISOLATION}</li>
+					<li className="rox-scramble">{LANDING_FEAT_CONTROL}</li>
+					<li>
+						{LANDING_EDITOR_LEAD}{" "}
+						{LANDING_EDITOR_TERMS.map((term, index) => (
+							<span key={term.label}>
+								{index > 0 ? ", " : ""}
+								<Term label={term.label} tip={term.tip} />
+							</span>
+						))}
+					</li>
+					<li className="rox-scramble">{LANDING_FEAT_SWITCH}</li>
 				</ul>
 
 				<RoxDivider />

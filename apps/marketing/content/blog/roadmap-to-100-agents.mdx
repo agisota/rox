@@ -1,150 +1,150 @@
 ---
-title: "Our plan for running 100 Parallel Coding Agents"
-description: "An attempt to crystallize our plans for 2026"
+title: "Наш план по запуску 100 параллельных агентов для кода"
+description: "Попытка выкристаллизовать наши планы на 2026 год"
 author: satya
 date: 2026-02-02
-category: Product
+category: Продукт
 ---
 
-![Rox — managing coding agents in parallel](/blog/roadmap-to-100-agents/cover.png)
+![Rox — управление агентами для кода в параллель](/blog/roadmap-to-100-agents/cover.png)
 
-Right now at Rox, we're able to reliably manage 5-7 coding agents in parallel - whether that's Claude Code, Codex,
-etc. - at a time. Our goal is to be able to manage 100 coding agents in parallel each by the end of 2026.
+Прямо сейчас в Rox мы способны надёжно управлять 5–7 агентами для кода в параллель — будь то Claude Code, Codex
+и т. д. — за раз. Наша цель — научиться управлять 100 агентами для кода в параллель каждый к концу 2026 года.
 
-Most people believe that the path from seven to 100 agents is better models, faster inference, and smarter agents. It's
-not. Agent compute is already cheap enough, you can run hundreds of agents a month all for less than the cost of one
-engineer.
+Большинство людей считают, что путь от семи к 100 агентам — это лучшие модели, более быстрый инференс и более умные агенты. Это
+не так. Вычисления для агентов уже достаточно дёшевы: можно гонять сотни агентов в месяц, и всё это дешевле стоимости одного
+инженера.
 
-What's stopping us is every agent needs a human to review its code, give feedback, and decide what to work on next.
-Scale the agents all you want - it's the humans that don't scale.
+Что нас останавливает — так это то, что каждому агенту нужен человек, чтобы проверить его код, дать обратную связь и решить, над чем работать дальше.
+Масштабируй агентов сколько угодно — не масштабируются именно люди.
 
-# Mapping out the problem
+# Размечаем проблему
 
-You can imagine the agent loop as a pipeline, and the goal is to improve throughput:
+Можно представить цикл работы агента как конвейер, и цель — повысить пропускную способность:
 
-![The agent pipeline — most steps require a human](/blog/roadmap-to-100-agents/pipeline-diagram.svg)
+![Конвейер агента — большинство шагов требуют человека](/blog/roadmap-to-100-agents/pipeline-diagram.svg)
 
-There's a clear bottleneck that emerges when you look at this. A human is involved in almost every step, and each of
-these steps has a steep context-switching cost - you have to open that agent's code, spin up dev servers, click through
-the UI to verify their work, give feedback and more. Right now, most of our agents spend more time waiting for us to 
-review their work than they spend doing it.
+Когда смотришь на это, проступает очевидное узкое место. Человек вовлечён почти в каждый шаг, и у каждого из
+этих шагов крутая цена переключения контекста — тебе нужно открыть код этого агента, поднять dev-серверы, прокликать
+интерфейс, чтобы проверить его работу, дать обратную связь и так далее. Прямо сейчас большинство наших агентов проводят больше времени в ожидании, пока мы
+проверим их работу, чем тратят на саму работу.
 
-At 100 agents, this model completely breaks. You can't review 100 diffs a day. You can't context-switch between 100
-streams of work.
+При 100 агентах эта модель ломается напрочь. Ты не можешь ревьюить 100 diff'ов в день. Ты не можешь переключать контекст между 100
+потоками работы.
 
-The fix is straightforward: pull the human out of steps where they're not needed, and make the remaining steps faster.
+Решение очевидно: убрать человека из шагов, где он не нужен, и сделать оставшиеся шаги быстрее.
 
-# How we'll improve it
+# Как мы будем это улучшать
 
-## Have agents work harder before reaching out to you
+## Пусть агенты работают усерднее, прежде чем обращаться к тебе
 
-If you've worked with a coding agent, you've had the experience: the agent comes back with something half-baked, you
-spend 15 minutes catching up to what it did, spin up a dev server, click around, then feed it the same feedback you've
-given a dozen agents before. Most of the time you spend reviewing isn't making decisions — it's catching problems that
-should have been caught before the work reached you.
+Если ты работал с агентом для кода, ты знаешь это на собственном опыте: агент возвращается с чем-то полусырым, ты
+тратишь 15 минут, чтобы вникнуть в то, что он сделал, поднимаешь dev-сервер, кликаешь по округе, а потом скармливаешь ему ту же обратную связь, что ты
+давал дюжине агентов до этого. Большую часть времени, что ты тратишь на ревью, ты не принимаешь решения — ты ловишь проблемы, которые
+должны были быть пойманы до того, как работа дошла до тебя.
 
-The fix is adding layers between the agent and you. The agent's work should be vetted thoroughly before it ever is
-presented to you.
+Решение — добавить слои между агентом и тобой. Работа агента должна быть тщательно проверена, прежде чем она вообще
+будет представлена тебе.
 
-![Agent work passes through review layers before reaching you](/blog/roadmap-to-100-agents/quality-gates.svg)
+![Работа агента проходит через слои ревью, прежде чем дойти до тебя](/blog/roadmap-to-100-agents/quality-gates.svg)
 
-### Adversarial agents
+### Состязательные агенты
 
-[Block published a paper recently](https://block.xyz/documents/adversarial-cooperation-in-code-synthesis.pdf) that
-highlights how useful having agents work together can be. The general idea is that they send two agents on tasks, one to
-implement the task at hand, and the other to enforce the implementer to write tests, review their work, and do due
-diligence before picking a solution.
+[Block недавно опубликовали статью](https://block.xyz/documents/adversarial-cooperation-in-code-synthesis.pdf), которая
+подчёркивает, насколько полезной может быть совместная работа агентов. Общая идея в том, что они отправляют двух агентов на задачи: одного —
+реализовать саму задачу, а другого — заставлять реализующего писать тесты, проверять его работу и проявлять
+должную осмотрительность, прежде чем выбрать решение.
 
-A similar pattern can be used to reduce interruptions for you: you could have a dedicated bouncer agent that sits
-between the coding agents and you, preventing agents from surfacing its work until it's sure the agent is either done
-with its work or is sufficiently stuck. Your review becomes a final sign-off, not a first pass.
+Похожий паттерн можно использовать, чтобы сократить число прерываний для тебя: можно завести выделенного агента-вышибалу, который сидит
+между агентами для кода и тобой, не давая агентам выкладывать свою работу, пока он не убедится, что агент либо закончил
+работу, либо застрял достаточно прочно. Твоё ревью становится финальным одобрением, а не первым проходом.
 
-### Stacking review agents and automated testing
+### Стэк из агентов ревью и автоматического тестирования
 
-Since you don't care how long an agent takes when you're running dozens of them, there's no downside to stacking checks.
-Run five different review agents, each looking for different classes of issues, with a final agent consolidating the
-feedback. Each layer increases the odds that problems are found and resolved before you ever see the code.
+Поскольку тебе всё равно, сколько времени занимает агент, когда ты гоняешь их десятками, у стэка проверок нет минусов.
+Запусти пять разных агентов ревью, каждый ищет свой класс проблем, и финального агента, который сводит
+обратную связь воедино. Каждый слой повышает шансы, что проблемы найдут и устранят до того, как ты вообще увидишь код.
 
-The same logic applies to testing. Giving agents access to the browser through tools like
-[BrowserUse](https://browser-use.com/) or [Maestro](https://maestro.mobile.dev/) tests lets them verify their own work
-visually — catching UI regressions, layout issues, and interaction bugs that are invisible in code review alone.
+Та же логика применима к тестированию. Дав агентам доступ к браузеру через инструменты вроде
+[BrowserUse](https://browser-use.com/) или тестов [Maestro](https://maestro.mobile.dev/), ты позволяешь им проверять собственную работу
+визуально — отлавливая регрессии UI, проблемы вёрстки и баги взаимодействия, которые невидимы в одном лишь код-ревью.
 
-### Long-running agents
+### Долго работающие агенты
 
-Most agent workflows today are one-shot: you give a task, the agent works, it comes back. But agents should be able to
-run longer loops — trying an approach, hitting an issue, adjusting, and iterating until they're confident or genuinely
-stuck. [Ralph loops](https://ghuntley.com/loop/) are a popular pattern for this: treat the agent's work as clay on a
-wheel, refining iteratively, rather than laying bricks in a line.
+Большинство процессов с агентами сегодня одноразовые: ты даёшь задачу, агент работает, он возвращается. Но агенты должны уметь
+гонять более длинные циклы — пробовать подход, упираться в проблему, корректироваться и итерировать, пока не будут уверены или по-настоящему
+не застрянут. [Ralph-циклы](https://ghuntley.com/loop/) — популярный для этого паттерн: относись к работе агента как к глине на
+круге, итеративно её обтачивая, а не как к кирпичам, выкладываемым в линию.
 
-The result is fewer interruptions and higher-quality output when the agent does surface. An agent that's been iterating
-for an hour and is confident in its solution is far easier to review than one that gave up after its first attempt.
+Результат — меньше прерываний и более качественный вывод, когда агент всё-таки выходит на связь. Агент, который итерировал
+час и уверен в своём решении, ревьюится куда легче, чем тот, что сдался после первой же попытки.
 
-## Make it fast to review agents' work
+## Сделай ревью работы агентов быстрым
 
-Most developer tools today are human-driven — you open a diff, you spin up a dev server, you navigate to the right page.
-Agents plug into these tools, but the human is still doing the legwork. We want to shift the paradigm towards
-agent-driven UIs - interfaces that agents orchestrate for the human's benefit, where each review takes seconds, not
-minutes.
+Большинство инструментов для разработчиков сегодня управляются человеком — ты открываешь diff, ты поднимаешь dev-сервер, ты переходишь на нужную страницу.
+Агенты подключаются к этим инструментам, но черновую работу всё ещё делает человек. Мы хотим сместить парадигму в сторону
+UI, управляемых агентами, — интерфейсов, которые агенты оркеструют на благо человека, где каждое ревью занимает секунды, а не
+минуты.
 
-### Investing in agent-driven UIs
+### Инвестиции в UI, управляемые агентами
 
-When you review an agent's work today, you're dropped into a diff with no context. You have to reconstruct what the
-agent was trying to do, spin up an environment to test it, and navigate to the right pages to verify. That's the agent
-dumping its work on your desk.
+Когда ты ревьюишь работу агента сегодня, тебя бросают в diff без всякого контекста. Тебе приходится реконструировать, что
+агент пытался сделать, поднимать окружение, чтобы это протестировать, и переходить на нужные страницы для проверки. Это агент,
+вываливающий свою работу тебе на стол.
 
-In an agent-driven UI, the agent prepares your review for you. It writes a summary of what changed and why, spins up a
-preview environment, navigates you to the specific pages or flows it wants you to look at, and surfaces the test results
-that matter. When you open a completed task, you should be looking at a prepared briefing, not raw output.
+В UI, управляемом агентами, агент готовит ревью за тебя. Он пишет сводку того, что изменилось и почему, поднимает
+preview-окружение, переводит тебя на конкретные страницы или флоу, которые хочет тебе показать, и выносит на поверхность те результаты тестов,
+что важны. Когда ты открываешь завершённую задачу, ты должен смотреть на подготовленный брифинг, а не на сырой вывод.
 
-### Make existing tools better
+### Сделай существующие инструменты лучше
 
-PR reviews, CI dashboards, IDEs — these are all built for a world where humans drive the interactions. In an agent-first
-world, the tools need to meet you differently. Agents should be annotating their own PRs before you open them, the way
-[Devin's review](https://app.devin.ai/review) adds context to diffs ahead of time. CI results should be summarized and
-triaged by an agent, not presented as a raw log for you to parse. The tools we use every day were designed for human
-authors — adapting them for human reviewers of agent work is a different design problem.
+Ревью PR, дашборды CI, IDE — всё это построено для мира, где взаимодействия ведёт человек. В мире, где на первом месте
+агенты, инструменты должны встречать тебя иначе. Агенты должны аннотировать собственные PR, прежде чем ты их откроешь, — так,
+как [ревью Devin](https://app.devin.ai/review) заранее добавляет контекст к diff'ам. Результаты CI должны быть сведены и
+рассортированы агентом, а не представлены сырым логом, который тебе разбирать. Инструменты, которыми мы пользуемся каждый день, проектировались для людей-авторов —
+адаптировать их под людей-ревьюеров работы агентов — это другая задача дизайна.
 
-### Reducing friction to zero
+### Сведение трения к нулю
 
-Every interaction between you and an agent should be as lightweight as possible. You should be able to click yes or no
-for straightforward changes. Agents should prep multiple-choice questions — "I found three approaches to this, which do
-you prefer?" — so you're choosing instead of typing. When an agent does need written feedback, supporting agents can
-prefill a draft response based on the context, so you're editing instead of writing from scratch. Quick actions like
-"create PR" or "deploy to staging" should also be easy to reach.
+Каждое взаимодействие между тобой и агентом должно быть максимально лёгким. Ты должен иметь возможность кликнуть «да» или «нет»
+для простых изменений. Агенты должны готовить вопросы с вариантами ответа — «Я нашёл три подхода к этому, какой ты
+предпочитаешь?» — чтобы ты выбирал, а не печатал. Когда агенту всё-таки нужна письменная обратная связь, вспомогательные агенты могут
+заранее заполнить черновик ответа на основе контекста, чтобы ты редактировал, а не писал с нуля. Быстрые действия вроде
+«создать PR» или «выкатить на staging» тоже должны быть под рукой.
 
-The goal isn't just faster review — it's making the interaction so lightweight that you can do it from your phone
-between meetings.
+Цель не просто в более быстром ревью — она в том, чтобы сделать взаимодействие настолько лёгким, что ты сможешь делать это с телефона
+между встречами.
 
-## Have agents be more proactive
+## Пусть агенты будут более проактивными
 
-![Events trigger agents automatically](/blog/roadmap-to-100-agents/proactive-agents.svg)
+![События запускают агентов автоматически](/blog/roadmap-to-100-agents/proactive-agents.svg)
 
-Everything above assumes you're the one deciding what agents work on. But at 100 agents, planning is itself a
-bottleneck. You can't spec out 100 tasks a day — that requires understanding the codebase, the product priorities, and
-the nuances of each task.
+Всё вышеперечисленное предполагает, что именно ты решаешь, над чем работают агенты. Но при 100 агентах планирование само по себе становится
+узким местом. Ты не можешь расписать 100 задач в день — это требует понимания кодовой базы, продуктовых приоритетов и
+нюансов каждой задачи.
 
-### Reusable workflows
+### Переиспользуемые рабочие процессы
 
-The building blocks for this are already emerging. [OpenAI's Codex skills](https://developers.openai.com/codex/skills/)
-let you package repeatable workflows — deploy procedures, migration steps, test patterns — as reusable bundles that
-agents can invoke on their own when the situation matches. Instead of writing the same instructions every time, you
-encode them once and the agent recognizes when to apply them.
+Строительные блоки для этого уже появляются. [Codex skills от OpenAI](https://developers.openai.com/codex/skills/)
+позволяют упаковывать повторяемые рабочие процессы — процедуры деплоя, шаги миграции, паттерны тестирования — как переиспользуемые бандлы, которые
+агенты могут сами вызывать, когда ситуация совпадает. Вместо того чтобы писать одни и те же инструкции каждый раз, ты
+кодируешь их однажды, а агент распознаёт, когда их применить.
 
-### Event-driven triggers
+### Триггеры, управляемые событиями
 
-[Devin's workflows](https://devin.ai/) take this further with event-driven triggers. A build fails, and a Devin instance
-spins up to investigate. A Linear ticket is created, and an agent starts working on it automatically. Teams create
-playbooks for recurring tasks — setting up changelogs, running code migrations, adding test coverage — that agents
-execute on a schedule or in response to events without anyone initiating them.
+[Рабочие процессы Devin](https://devin.ai/) идут дальше с триггерами, управляемыми событиями. Падает сборка — и инстанс Devin
+поднимается, чтобы разобраться. Создаётся тикет в Linear — и агент начинает над ним работать автоматически. Команды создают
+плейбуки для повторяющихся задач — настройка чейнджлогов, прогон миграций кода, добавление покрытия тестами — которые агенты
+выполняют по расписанию или в ответ на события, без чьей-либо инициативы.
 
-### Beyond code
+### За пределами кода
 
-Even outside of code, this pattern is taking hold. [Circleback](https://circleback.ai/) listens to your meetings and
-doesn't just take notes — it extracts action items, creates Linear tickets for feature requests mentioned in product
-demos, and updates your CRM after sales calls. The meeting ends and the downstream work is already in motion.
+Даже за пределами кода этот паттерн закрепляется. [Circleback](https://circleback.ai/) слушает твои встречи и
+не просто делает заметки — он извлекает пункты действий, создаёт тикеты в Linear для запросов на фичи, упомянутых на продуктовых
+демо, и обновляет твою CRM после звонков с продаж. Встреча заканчивается — а дальнейшая работа уже в движении.
 
-We don't have all of this figured out yet. Some of it is live, some is on our roadmap, and some is still taking shape.
-But the throughput framing gives us a clear test for every feature we build: does this reduce the time a human spends
-per agent interaction? 
+Мы ещё не во всём этом разобрались. Что-то уже работает, что-то в нашем роадмапе, а что-то всё ещё обретает форму.
+Но рамка пропускной способности даёт нам ясный тест для каждой фичи, которую мы строим: сокращает ли это время, которое человек тратит
+на одно взаимодействие с агентом?
 
-If you're running agents at scale and hitting these walls, we'd love to compare notes, reach out to us at founders@rox.one
+Если ты гоняешь агентов в масштабе и упираешься в эти стены, мы будем рады сравнить заметки — пиши нам на founders@rox.one

@@ -1,6 +1,6 @@
 ---
-title: "Rox vs Devin (2026): Local Agent Orchestration vs Cloud AI Engineer"
-description: "Compare Rox and Devin for AI-powered development. See how local parallel agent orchestration differs from a fully remote AI software engineer."
+title: "Rox против Devin (2026): локальная оркестрация агентов против облачного AI-инженера"
+description: "Сравнение Rox и Devin для разработки с AI. Узнай, чем локальная оркестрация параллельных агентов отличается от полностью удалённого AI-инженера ПО."
 date: 2026-02-18
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -14,91 +14,91 @@ keywords:
   - ai coding agent comparison
 ---
 
-Devin is a cloud-based AI software engineer that works autonomously in a remote VM. Rox is a local-first desktop workspace that orchestrates coding agents in parallel across Git worktrees. They represent opposite ends of the AI development spectrum: Devin offloads work to the cloud, while Rox keeps the repo, review flow, and agent runtime anchored on your machine.
+Devin — это облачный AI-инженер ПО, который работает автономно в удалённой виртуальной машине. Rox — это local-first десктопное рабочее пространство, которое оркестрирует агентов кода параллельно по Git worktree. Они представляют противоположные концы спектра разработки с AI: Devin выгружает работу в облако, тогда как Rox держит репозиторий, поток ревью и среду исполнения агентов привязанными к твоей машине.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **Devin** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | Autonomous AI software engineer |
-| **Architecture** | Local-first today — worktrees, review, browser, and chat run on your machine | Fully remote — runs in cloud VMs |
-| **AI approach** | Agent-agnostic — orchestrates external agents plus Rox Chat and MCP tools | Proprietary AI with browser, editor, and terminal in cloud |
-| **Parallelism** | 10+ agents across isolated local worktrees | Multiple Devin sessions run as separate cloud VMs |
-| **Code privacy** | Local-first; outbound model traffic depends on your chosen agents/providers | Code runs on Cognition's cloud infrastructure |
-| **Pricing** | Free tier + Pro $20/seat/mo | Teams $500/seat/mo |
-| **License** | Source-available (ELv2) | Closed source |
+| **Категория** | Рабочее пространство для оркестрации агентов | Автономный AI-инженер ПО |
+| **Архитектура** | Сегодня local-first — worktree, ревью, браузер и чат работают на твоей машине | Полностью удалённая — работает в облачных ВМ |
+| **Подход к AI** | Не зависит от агента — оркестрирует внешних агентов плюс Rox Chat и инструменты MCP | Проприетарный AI с браузером, редактором и терминалом в облаке |
+| **Параллелизм** | 10+ агентов в изолированных локальных worktree | Несколько сессий Devin работают как отдельные облачные ВМ |
+| **Приватность кода** | Local-first; исходящий трафик к моделям зависит от выбранных тобой агентов/провайдеров | Код работает в облачной инфраструктуре Cognition |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес | Teams $500/место/мес |
+| **Лицензия** | Открытый исходный код (ELv2) | Закрытый исходный код |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is Devin?
-
-Devin is Cognition's AI software engineer — a cloud-based autonomous agent that runs in its own virtual machine with a browser, code editor, terminal, and planner. You assign tasks via chat or Slack, and Devin works independently: reading docs, writing code, debugging, running tests, and creating pull requests. It has event-driven workflows (triggers from Linear, Slack, etc.) and a review system that annotates PRs before human review.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое Devin?
 
-### Local vs Cloud
-
-Rox's shipped workflow is local-first today. Your repo, worktrees, review flow, chat, and browser preview stay on your machine, and outbound traffic depends on the specific agents or providers you choose. Devin runs entirely in Cognition's cloud — your code is cloned into remote VMs where Devin operates. This is the fundamental architectural difference and drives most of the trade-offs below.
-
-### Control vs Autonomy
-
-Rox gives you direct access to each agent session. You can watch the terminal, inspect diffs, open a browser preview, chat in the same workspace, interrupt, or redirect mid-task. Devin aims for full autonomy — you assign a task and check back later for a PR. This makes Devin more hands-off but less controllable when it goes in the wrong direction.
-
-### Agent Flexibility
-
-Devin is a single proprietary agent — you use Cognition's AI or nothing. Rox is agent-agnostic: run Claude Code for complex refactors, Codex for well-scoped tasks, Aider for iterative work. When a better agent ships, use it in Rox immediately. With Devin, you wait for Cognition to improve their model.
-
-### Isolation Mechanism
-
-Rox isolates agents using Git worktrees — lightweight, fast, and built into git itself. Devin isolates each session in a full cloud VM with its own OS, browser, and toolchain. VMs provide stronger isolation and fuller environment parity, but at much higher cost and latency.
-
-### Pricing
-
-Rox offers a free tier and Pro at $20/seat/month plus your agents' API costs. Devin costs $500/seat/month for the Teams plan. The price difference is significant — Rox plus API usage for heavy agent use typically costs a fraction of Devin's monthly fee.
+Devin — это AI-инженер ПО от Cognition: облачный автономный агент, который работает в собственной виртуальной машине с браузером, редактором кода, терминалом и планировщиком. Ты назначаешь задачи через чат или Slack, и Devin работает самостоятельно: читает документацию, пишет код, отлаживает, запускает тесты и создаёт pull request'ы. У него есть событийно-управляемые воркфлоу (триггеры из Linear, Slack и т.д.) и система ревью, которая аннотирует PR перед ревью человеком.
 
 ---
 
-## Which Should You Choose?
+## Ключевые отличия
 
-**Choose Devin if you:**
-- Want a fully autonomous AI that works in the background with minimal oversight
-- Need event-driven workflows (auto-respond to Linear tickets, Slack messages)
-- Prefer cloud-based execution where you don't manage local compute
-- Have budget for $500/seat/month and the ROI justifies it
+### Локально против облака
 
-**Choose Rox if you:**
-- Want direct control over each agent — see what they're doing, redirect in real time
-- Need local execution and direct control over each agent
-- Want agent flexibility (Claude Code, Codex, Aider, OpenCode — your choice per task)
-- Prefer the cost efficiency of local execution with direct API pricing
-- Need a source-available tool you can inspect and modify
+Поставляемый воркфлоу Rox сегодня local-first. Твой репозиторий, worktree, поток ревью, чат и превью в браузере остаются на твоей машине, а исходящий трафик зависит от конкретных агентов или провайдеров, которых ты выбираешь. Devin работает целиком в облаке Cognition — твой код клонируется в удалённые ВМ, где оперирует Devin. Это фундаментальное архитектурное различие, и оно определяет большинство компромиссов ниже.
+
+### Контроль против автономии
+
+Rox даёт тебе прямой доступ к каждой сессии агента. Ты можешь следить за терминалом, инспектировать diff, открыть превью в браузере, общаться в чате в том же рабочем пространстве, прервать или перенаправить работу посреди задачи. Devin стремится к полной автономии — ты назначаешь задачу и возвращаешься позже за PR. Это делает Devin более «без рук», но менее контролируемым, когда он идёт в неправильном направлении.
+
+### Гибкость в выборе агента
+
+Devin — это единственный проприетарный агент: ты используешь AI от Cognition или ничего. Rox не зависит от агента: запускай Claude Code для сложных рефакторингов, Codex для чётко очерченных задач, Aider для итеративной работы. Когда выходит агент получше, используй его в Rox сразу же. С Devin ты ждёшь, пока Cognition улучшит свою модель.
+
+### Механизм изоляции
+
+Rox изолирует агентов с помощью Git worktree — лёгких, быстрых и встроенных в сам git. Devin изолирует каждую сессию в полноценной облачной ВМ со своей ОС, браузером и тулчейном. ВМ дают более сильную изоляцию и более полное соответствие окружения, но при гораздо более высокой стоимости и задержке.
+
+### Цена
+
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц плюс расходы на API твоих агентов. Devin стоит $500/место/месяц по плану Teams. Разница в цене существенная — Rox плюс оплата API при тяжёлом использовании агентов обычно стоит долю от месячной платы Devin.
 
 ---
 
-## Frequently Asked Questions
+## Что выбрать тебе?
 
-### Can Devin and Rox work together?
+**Выбирай Devin, если ты:**
+- Хочешь полностью автономный AI, который работает в фоне с минимальным надзором
+- Нуждаешься в событийно-управляемых воркфлоу (автоответ на тикеты Linear, сообщения Slack)
+- Предпочитаешь облачное выполнение, где ты не управляешь локальными вычислениями
+- Имеешь бюджет на $500/место/месяц и ROI это оправдывает
 
-They serve different workflows. Devin is a cloud-based autonomous engineer. Rox is a local agent orchestrator. You might use Devin for fully autonomous background tasks and Rox for interactive parallel work where you want more control.
+**Выбирай Rox, если ты:**
+- Хочешь прямой контроль над каждым агентом — видеть, что они делают, перенаправлять в реальном времени
+- Нуждаешься в локальном выполнении и прямом контроле над каждым агентом
+- Хочешь гибкость в выборе агента (Claude Code, Codex, Aider, OpenCode — твой выбор под каждую задачу)
+- Предпочитаешь экономичность локального выполнения с прямой оплатой API
+- Нуждаешься в инструменте с открытым исходным кодом, который можно инспектировать и изменять
 
-### Is Devin worth the price premium?
+---
 
-Devin's $500/seat/month buys full autonomy: assign tasks via Slack, get PRs back. If your workflow benefits from hands-off delegation and you have the budget, it can be valuable. If you prefer direct control and cost efficiency, Rox at $20/seat/month plus API costs delivers more throughput per dollar.
+## Часто задаваемые вопросы
 
-### Is Rox open source?
+### Могут ли Devin и Rox работать вместе?
 
-No. Rox is source-available on GitHub under Elastic License 2.0 (ELv2). Devin is closed source from Cognition.
+Они обслуживают разные воркфлоу. Devin — это облачный автономный инженер. Rox — это локальный оркестратор агентов. Ты можешь использовать Devin для полностью автономных фоновых задач, а Rox — для интерактивной параллельной работы, где тебе нужно больше контроля.
 
-### Which is better for security-sensitive codebases?
+### Стоит ли Devin своей ценовой премии?
 
-Rox is the safer default if local-first execution is a hard requirement. Devin runs code on Cognition's cloud infrastructure. For regulated industries, government work, or sensitive IP, keeping the repo and review loop on your own machine is often the deciding factor.
+$500/место/месяц у Devin покупают полную автономию: назначаешь задачи через Slack, получаешь PR обратно. Если твоему воркфлоу выгодно делегирование «без рук» и у тебя есть бюджет, это может быть ценно. Если ты предпочитаешь прямой контроль и экономичность, Rox за $20/место/месяц плюс расходы на API даёт больше пропускной способности на доллар.
+
+### Open source ли Rox?
+
+Нет. Rox — с открытым исходным кодом на GitHub под Elastic License 2.0 (ELv2). Devin — с закрытым исходным кодом от Cognition.
+
+### Что лучше для чувствительных к безопасности кодовых баз?
+
+Rox — более безопасный выбор по умолчанию, если local-first выполнение является жёстким требованием. Devin запускает код в облачной инфраструктуре Cognition. Для регулируемых отраслей, государственной работы или чувствительной интеллектуальной собственности сохранение репозитория и цикла ревью на собственной машине часто оказывается решающим фактором.

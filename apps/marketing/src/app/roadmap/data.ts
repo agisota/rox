@@ -47,7 +47,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "now-1",
 		title: "Мобильное companion-приложение",
 		description:
-			"Следите за работающими агентами и управляйте ими с телефона. Подтверждайте промпты на ходу.",
+			"Следи за работающими агентами и управляй ими с телефона. Подтверждай промпты на ходу.",
 		category: "Mobile",
 		status: "now",
 	},
@@ -55,7 +55,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "now-2",
 		title: "Облачные workspaces",
 		description:
-			"Запускайте агентов в облаке с постоянными workspaces — без привязки к локальной машине.",
+			"Запускай агентов в облаке с постоянными workspaces — без привязки к локальной машине.",
 		category: "Web",
 		status: "now",
 	},
@@ -71,7 +71,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "now-4",
 		title: "Восстановление и сохранение сессий",
 		description:
-			"Автоматически продолжайте сессии агентов после перезапуска приложения или восстановления после сбоя.",
+			"Автоматически продолжай сессии агентов после перезапуска приложения или восстановления после сбоя.",
 		category: "Desktop",
 		status: "now",
 	},
@@ -81,7 +81,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "next-1",
 		title: "Расширение для VS Code",
 		description:
-			"Запускайте и управляйте агентами Rox прямо из боковой панели VS Code.",
+			"Запускай агентов Rox и управляй ими прямо из боковой панели VS Code.",
 		category: "Integrations",
 		status: "next",
 	},
@@ -89,7 +89,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "next-2",
 		title: "Коммуникация агент-агент",
 		description:
-			"Позволяйте агентам делегировать подзадачи другим агентам и обмениваться контекстом.",
+			"Позволяй агентам делегировать подзадачи другим агентам и обмениваться контекстом.",
 		category: "Desktop",
 		status: "next",
 	},
@@ -97,7 +97,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "next-3",
 		title: "Dashboard аналитики использования",
 		description:
-			"Отслеживайте расход токенов, время работы агентов и детализацию стоимости по workspace.",
+			"Отслеживай расход токенов, время работы агентов и детализацию стоимости по workspace.",
 		category: "Web",
 		status: "next",
 	},
@@ -105,7 +105,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "next-4",
 		title: "Webhook-интеграции",
 		description:
-			"Запускайте агентов по внешним событиям через webhooks: CI pipelines, GitHub, Slack.",
+			"Запускай агентов по внешним событиям через webhooks: CI pipelines, GitHub, Slack.",
 		category: "Integrations",
 		status: "next",
 	},
@@ -115,7 +115,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "later-1",
 		title: "Self-hosted развёртывание",
 		description:
-			"Запускайте Rox на своей инфраструктуре через один Docker Compose файл.",
+			"Запускай Rox на своей инфраструктуре через один Docker Compose файл.",
 		category: "Web",
 		status: "later",
 	},
@@ -123,7 +123,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "later-2",
 		title: "Маркетплейс агентов",
 		description:
-			"Просматривайте, устанавливайте и публикуйте шаблоны агентов и инструменты сообщества.",
+			"Просматривай, устанавливай и публикуй шаблоны агентов и инструменты сообщества.",
 		category: "Web",
 		status: "later",
 	},
@@ -131,7 +131,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "later-3",
 		title: "Оркестрация нескольких репозиториев",
 		description:
-			"Запускайте согласованные агентские задачи сразу в нескольких репозиториях.",
+			"Запускай согласованные агентские задачи сразу в нескольких репозиториях.",
 		category: "Desktop",
 		status: "later",
 	},
@@ -158,7 +158,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "shipped-2",
 		title: "Настраиваемые параметры агентов",
 		description:
-			"Переопределяйте presets и просматривайте шаблоны конфигурации агентов прямо в UI.",
+			"Переопределяй presets и просматривай шаблоны конфигурации агентов прямо в UI.",
 		category: "Desktop",
 		status: "shipped",
 		shippedDate: "март 2026",
@@ -176,7 +176,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
 		id: "shipped-4",
 		title: "Поиск между workspaces",
 		description:
-			"Ищите сразу по всем открытым workspaces с единым списком результатов.",
+			"Ищи сразу по всем открытым workspaces с единым списком результатов.",
 		category: "Desktop",
 		status: "shipped",
 		shippedDate: "март 2026",

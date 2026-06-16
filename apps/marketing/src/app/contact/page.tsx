@@ -6,7 +6,7 @@ import { ContactForm } from "./components/ContactForm";
 
 export const metadata: Metadata = {
 	title: "Контакты",
-	description: `Свяжитесь с командой ${COMPANY.NAME}.`,
+	description: `Свяжись с командой ${COMPANY.NAME}.`,
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/contact`,
 	},
@@ -33,10 +33,10 @@ export default function ContactPage() {
 						Контакты
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Свяжитесь с Rox
+						Свяжись с Rox
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						<GlossaryText text="Вопросы, обратная связь, поддержка или что угодно еще. Отправьте сообщение, и мы передадим его нужному человеку." />
+						<GlossaryText text="Вопросы, обратная связь, поддержка или что угодно еще. Отправь сообщение, и мы передадим его нужному человеку." />
 					</p>
 
 					<GridCross className="bottom-0 left-0" />

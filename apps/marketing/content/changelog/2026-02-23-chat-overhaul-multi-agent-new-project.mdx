@@ -1,59 +1,59 @@
 ---
-title: Copilot, Cursor Agent, and Gemini support, plus chat overhaul
+title: Поддержка Copilot, Cursor Agent и Gemini, плюс переработка чата
 date: 2026-02-23
 image: /changelog/more-agents.png
 ---
 
-## Copilot, Cursor Agent, and Gemini Support <PRBadge url="https://github.com/agisota/set/pull/1630" /> <PRBadge url="https://github.com/agisota/set/pull/1625" /> <PRBadge url="https://github.com/agisota/set/pull/1620" />
+## Поддержка Copilot, Cursor Agent и Gemini <PRBadge url="https://github.com/agisota/set/pull/1630" /> <PRBadge url="https://github.com/agisota/set/pull/1625" /> <PRBadge url="https://github.com/agisota/set/pull/1620" />
 
-Rox now supports Copilot, Cursor Agent, and Gemini CLI alongside Claude, Codex, and OpenCode. This release adds built-in presets and hook support for Copilot and Gemini, and Cursor Agent is available as a first-class agent option in the multi-agent workflow.
+Rox теперь поддерживает Copilot, Cursor Agent и Gemini CLI наряду с Claude, Codex и OpenCode. Этот релиз добавляет встроенные пресеты и поддержку хуков для Copilot и Gemini, а Cursor Agent доступен как полноценная опция агента в мультиагентном воркфлоу.
 
-- Ready-to-use terminal presets for Copilot and Gemini CLI
-- Cursor Agent support available now in agent selection and commands
-- Correct defaults per agent (`--allow-all` for Copilot, `-y` for Gemini)
-- Rox notification hooks surface agent task completions in the UI
+- Готовые к использованию пресеты терминала для Copilot и Gemini CLI
+- Поддержка Cursor Agent уже доступна в выборе агентов и командах
+- Правильные значения по умолчанию для каждого агента (`--allow-all` для Copilot, `-y` для Gemini)
+- Хуки уведомлений Rox показывают завершение задач агентов в интерфейсе
 
-## Configurable Worktree Location <PRBadge url="https://github.com/agisota/set/pull/1626" />
+## Настраиваемое расположение worktree <PRBadge url="https://github.com/agisota/set/pull/1626" />
 
-Set a custom base directory for new worktrees in Settings > Behavior. You can also override this per-project in Project settings. The per-project setting takes precedence, with a reset option that falls back to the global default.
+Задай свою базовую директорию для новых worktree в «Настройки → Поведение». Это также можно переопределить для каждого проекта в настройках проекта. Настройка на уровне проекта имеет приоритет, а опция сброса возвращает к глобальному значению по умолчанию.
 
-![Custom worktree location settings](/changelog/worktree-location.png)
+![Настройки кастомного расположения worktree](/changelog/worktree-location.png)
 
-## New Project Page <PRBadge url="https://github.com/agisota/set/pull/1623" />
+## Страница нового проекта <PRBadge url="https://github.com/agisota/set/pull/1623" />
 
-Project creation now has a dedicated full-page experience instead of a dialog. Navigate to it from the welcome screen or sidebar footer and choose between two options available now: create an empty Git repo or clone from a URL. A template starter tab is visible and marked "coming soon." A directory picker defaults to `~/.rox/projects` with a native browse button.
+Создание проекта теперь происходит на отдельной полноценной странице вместо диалога. Перейди к ней с экрана приветствия или из подвала сайдбара и выбери один из двух доступных вариантов: создать пустой Git-репозиторий или склонировать по URL. Вкладка шаблона-стартера видна и помечена как «скоро». Выбор директории по умолчанию указывает на `~/.rox/projects` с нативной кнопкой обзора.
 
-## Chat UI Overhaul (Early access only) <PRBadge url="https://github.com/agisota/set/pull/1693" /> <PRBadge url="https://github.com/agisota/set/pull/1697" />
+## Переработка интерфейса чата (только ранний доступ) <PRBadge url="https://github.com/agisota/set/pull/1693" /> <PRBadge url="https://github.com/agisota/set/pull/1697" />
 
-The chat interface got a significant visual refresh. Streaming messages now animate with a progressive typing effect, tool output panels are collapsible to reduce noise, and loading/thinking states use a unified compact shimmer. The input composer has been redesigned with pill-shaped toolbar buttons, a circular submit button, and a cleaner layout with a hint row showing `@` mentions and `/commands` shortcuts.
+Интерфейс чата получил значительное визуальное обновление. Потоковые сообщения теперь анимируются с эффектом постепенного набора текста, панели вывода инструментов сворачиваются для уменьшения шума, а состояния загрузки/раздумий используют единый компактный шиммер. Поле ввода переработано с кнопками-таблетками на панели инструментов, круглой кнопкой отправки и более чистой компоновкой со строкой подсказок, показывающей сочетания `@`-упоминаний и `/команд`.
 
-- Progressive typing animation for streaming messages
-- Collapsible tool output panels with inline status icons
-- Pill-style controls for model picker, permission mode, and thinking toggle
-- Permission mode labels clarified: Auto, Semi-auto, and Manual
+- Анимация постепенного набора для потоковых сообщений
+- Сворачиваемые панели вывода инструментов со встроенными иконками статуса
+- Контролы в стиле таблеток для селектора моделей, режима разрешений и переключателя раздумий
+- Уточнены метки режимов разрешений: авто, полуавто и вручную
 
-## More Improvements
+## Больше улучшений
 
-- **Open links in app** - New toggle in Settings > Behavior routes chat links and terminal URLs to the built-in browser pane instead of your system browser <PRBadge url="https://github.com/agisota/set/pull/1690" />
-- **Drag file paths into chat** - Drag files from the file tree or changes panel directly into the chat input to insert the path as text <PRBadge url="https://github.com/agisota/set/pull/1656" />
-- **Cmd+F in markdown viewer** - Full-text search now works in rendered markdown documents <PRBadge url="https://github.com/agisota/set/pull/1661" />
-- **Task search persisted in URL** - Task search query survives navigation and page refreshes <PRBadge url="https://github.com/agisota/set/pull/1680" />
-- **Chat scrollback rail** - A scroll position indicator appears when browsing older messages in chat <PRBadge url="https://github.com/agisota/set/pull/1648" />
-- **Copy commit hash** - Right-click a commit header in the diff view to copy its hash <PRBadge url="https://github.com/agisota/set/pull/1686" />
-- **Tray quit confirmation** - Quitting with active daemon sessions now prompts whether to keep or kill them <PRBadge url="https://github.com/agisota/set/pull/1651" />
-- **Clear workspace status** - Added "Clear status" to the workspace context menu <PRBadge url="https://github.com/agisota/set/pull/1633" />
-- **Mouse side buttons** - Back/forward navigation now works with mouse side buttons <PRBadge url="https://github.com/agisota/set/pull/1624" />
-- **Slack image attachments** - The Slack agent can now send image attachments <PRBadge url="https://github.com/agisota/set/pull/1671" />
+- **Открытие ссылок в приложении** — новый переключатель в «Настройки → Поведение» направляет ссылки чата и URL терминала во встроенную панель браузера вместо системного браузера <PRBadge url="https://github.com/agisota/set/pull/1690" />
+- **Перетаскивание путей файлов в чат** — перетаскивай файлы из дерева файлов или панели изменений прямо в поле ввода чата, чтобы вставить путь как текст <PRBadge url="https://github.com/agisota/set/pull/1656" />
+- **Cmd+F в просмотрщике markdown** — полнотекстовый поиск теперь работает в отрисованных документах markdown <PRBadge url="https://github.com/agisota/set/pull/1661" />
+- **Поиск задач сохраняется в URL** — поисковый запрос задач переживает навигацию и обновления страницы <PRBadge url="https://github.com/agisota/set/pull/1680" />
+- **Полоса прокрутки чата** — индикатор позиции прокрутки появляется при просмотре старых сообщений в чате <PRBadge url="https://github.com/agisota/set/pull/1648" />
+- **Копирование хеша коммита** — кликни правой кнопкой по заголовку коммита в представлении diff, чтобы скопировать его хеш <PRBadge url="https://github.com/agisota/set/pull/1686" />
+- **Подтверждение выхода из трея** — выход при активных сессиях демона теперь спрашивает, сохранить их или завершить <PRBadge url="https://github.com/agisota/set/pull/1651" />
+- **Очистка статуса рабочего пространства** — добавили «Очистить статус» в контекстное меню рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/1633" />
+- **Боковые кнопки мыши** — навигация назад/вперёд теперь работает с боковыми кнопками мыши <PRBadge url="https://github.com/agisota/set/pull/1624" />
+- **Прикрепление изображений в Slack** — Slack-агент теперь может отправлять прикреплённые изображения <PRBadge url="https://github.com/agisota/set/pull/1671" />
 
 ---
 
-**Bug fixes:**
+**Исправления багов:**
 
-- Fixed 503 errors on new worktrees <PRBadge url="https://github.com/agisota/set/pull/1689" />
-- Fixed sidebar workspace close button not clickable <PRBadge url="https://github.com/agisota/set/pull/1679" />
-- Fixed workspace hover controls layout drift <PRBadge url="https://github.com/agisota/set/pull/1676" />
-- Fixed stale "has uncommitted changes" status in delete dialogs <PRBadge url="https://github.com/agisota/set/pull/1660" />
-- Replaced blocking terminal connection error popup with auto-retry <PRBadge url="https://github.com/agisota/set/pull/1646" />
-- Persisted task filters across navigation <PRBadge url="https://github.com/agisota/set/pull/1622" />
-- Fixed TLS verification in terminal on macOS via SSL_CERT_FILE fallback <PRBadge url="https://github.com/agisota/set/pull/1618" />
-- Added lightweight fallback for PR detection <PRBadge url="https://github.com/agisota/set/pull/1616" />
+- Исправили ошибки 503 на новых worktree <PRBadge url="https://github.com/agisota/set/pull/1689" />
+- Исправили некликабельную кнопку закрытия рабочего пространства в сайдбаре <PRBadge url="https://github.com/agisota/set/pull/1679" />
+- Исправили смещение раскладки контролов при наведении на рабочее пространство <PRBadge url="https://github.com/agisota/set/pull/1676" />
+- Исправили устаревший статус «есть незакоммиченные изменения» в диалогах удаления <PRBadge url="https://github.com/agisota/set/pull/1660" />
+- Заменили блокирующее всплывающее окно ошибки соединения терминала авто-повтором <PRBadge url="https://github.com/agisota/set/pull/1646" />
+- Сохранили фильтры задач при навигации <PRBadge url="https://github.com/agisota/set/pull/1622" />
+- Исправили проверку TLS в терминале на macOS через запасной вариант SSL_CERT_FILE <PRBadge url="https://github.com/agisota/set/pull/1618" />
+- Добавили лёгкий запасной вариант для обнаружения PR <PRBadge url="https://github.com/agisota/set/pull/1616" />

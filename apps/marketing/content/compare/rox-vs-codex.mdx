@@ -1,6 +1,6 @@
 ---
-title: "Rox vs Codex CLI (2026): Agent Orchestrator vs OpenAI's Coding Agent"
-description: "Compare Rox and OpenAI Codex CLI for AI-powered development. See how parallel agent orchestration differs from a single cloud-backed coding agent."
+title: "Rox против Codex CLI (2026): оркестратор агентов против агента для кода от OpenAI"
+description: "Сравнение Rox и OpenAI Codex CLI для разработки с AI. Узнай, чем оркестрация параллельных агентов отличается от одного агента для кода с облачной поддержкой."
 date: 2026-02-18
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -15,99 +15,99 @@ keywords:
   - ai coding agent comparison
 ---
 
-Codex CLI is OpenAI's terminal-based coding agent, but it now sits inside a broader Codex product that also spans IDE extensions, a desktop app, and cloud workflows. Rox is a local-first desktop workspace that can run multiple Codex instances, other agents, and Rox Chat in parallel across isolated Git worktrees. The products overlap more than they used to, but they still solve different jobs: Codex is the coding suite, while Rox is the orchestration and review layer around many agents.
+Codex CLI — это терминальный агент для кода от OpenAI, но теперь он находится внутри более широкого продукта Codex, который также охватывает расширения для IDE, десктопное приложение и облачные воркфлоу. Rox — это local-first десктопное рабочее пространство, которое умеет запускать несколько инстансов Codex, других агентов и Rox Chat параллельно в изолированных Git worktree. Продукты пересекаются сильнее, чем раньше, но они по-прежнему решают разные задачи: Codex — это кодинг-набор, а Rox — слой оркестрации и ревью вокруг множества агентов.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **Codex CLI** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | AI coding agent (terminal-native) |
-| **What it does** | Runs 10+ coding agents in parallel with Git worktrees, chat, diff/file review, and browser tooling | AI assistant that reads, writes, and executes code via OpenAI models |
-| **AI approach** | Agent-agnostic — works with Codex, Claude Code, Aider, OpenCode, Rox Chat, and more | OpenAI's Codex model family and related OpenAI coding workflows |
-| **Parallelism** | Core feature — many agents on separate branches simultaneously | Single session; cloud Codex runs tasks remotely |
-| **Isolation** | Automatic Git worktree per task | Sandbox modes (network-disabled, full-auto) per session |
-| **Pricing** | Free tier + Pro $20/seat/mo | ChatGPT-plan access and API usage vary by Codex surface |
-| **License** | Source-available (ELv2) | Open source (Apache 2.0) |
+| **Категория** | Рабочее пространство для оркестрации агентов | AI-агент для кода (нативный для терминала) |
+| **Что делает** | Запускает 10+ агентов для кода параллельно с Git worktree, чатом, ревью diff/файлов и инструментами для браузера | AI-ассистент, который читает, пишет и выполняет код через модели OpenAI |
+| **Подход к AI** | Не зависит от агента — работает с Codex, Claude Code, Aider, OpenCode, Rox Chat и другими | Семейство моделей Codex от OpenAI и связанные кодинг-воркфлоу OpenAI |
+| **Параллелизм** | Ключевая функция — множество агентов на отдельных ветках одновременно | Одна сессия; облачный Codex выполняет задачи удалённо |
+| **Изоляция** | Автоматический Git worktree на каждую задачу | Режимы песочницы (сеть отключена, full-auto) на сессию |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес | Доступ по тарифу ChatGPT и оплата API различаются по интерфейсу Codex |
+| **Лицензия** | Открытый исходный код (ELv2) | Open source (Apache 2.0) |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Codex, Claude Code, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is Codex CLI?
-
-Codex CLI is OpenAI's open-source local terminal client for Codex. It runs on your machine, understands your codebase through file reading and command execution, and can write code, fix bugs, and refactor across files. OpenAI now presents Codex as a broader coding suite that spans the CLI, IDE extensions, a desktop app, and cloud task delegation. The Codex app is especially relevant here because OpenAI now positions it as a way to run multiple Codex agents in parallel across projects with built-in worktree support, skills, automations, and Git functionality.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Codex, Claude Code, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое Codex CLI?
 
-### Orchestrator vs Agent Suite
-
-Codex is the agent suite — it reads code, talks to OpenAI models, and writes changes through local and cloud surfaces. Rox is the orchestration workspace around agents — it runs many Codex sessions in parallel, each in its own isolated environment, then gives you chat, review, browser preview, and MCP-connected workflow around them. Run Codex inside Rox to get automatic worktree isolation and parallel execution with zero manual setup.
-
-### Local, App, and Cloud vs Local Orchestration
-
-Codex now spans multiple surfaces: CLI, IDE extension, desktop app, and cloud delegation. Rox today is local-first: the worktrees, terminals, chat UI, browser tabs, and diff/file review all live on your machine, and provider traffic depends on whichever agents you run. That makes the relationship clearer: Codex provides the coding surfaces, while Rox provides the local orchestration layer around many tasks.
-
-### Single Product Stack vs Mixed-Agent Stack
-
-With Codex alone, whether from the CLI or app, you stay inside OpenAI's Codex product model. With Rox, you can assign tasks to multiple Codex instances simultaneously — or mix Codex with Claude Code, Aider, OpenCode, or Rox Chat — each on its own branch with its own worktree.
-
-### Agent Flexibility
-
-Codex CLI only works with OpenAI's models. Rox doesn't care which agent you use — run Codex for tasks where OpenAI models excel, Claude Code for complex architectural work, and Aider for iterative changes. Mix and match per task based on what works best.
-
-### Session Persistence
-
-Codex gives you the agent surfaces. Rox adds the operational layer around them: task-level worktrees, long-lived sessions, browser previews for local apps, in-app diff/file review, and MCP-aware coordination. That matters once you are managing many tasks on one codebase rather than one prompt in one surface.
+Codex CLI — это open-source локальный терминальный клиент Codex от OpenAI. Он работает на твоей машине, понимает твою кодовую базу через чтение файлов и выполнение команд и может писать код, чинить баги и рефакторить по файлам. Теперь OpenAI подаёт Codex как более широкий кодинг-набор, охватывающий CLI, расширения для IDE, десктопное приложение и делегирование задач в облако. Приложение Codex здесь особенно актуально, потому что OpenAI теперь позиционирует его как способ запускать несколько агентов Codex параллельно по проектам со встроенной поддержкой worktree, скиллами, автоматизациями и функциональностью Git.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and Pro at $20/seat/month. Codex pricing now depends on which surface you use: OpenAI exposes Codex through ChatGPT plans, local and cloud permissions, and API-based workflows. The important practical difference is still the same: Codex gives you OpenAI's agent surfaces, while Rox gives you the orchestration layer to run many local tasks in parallel.
+### Оркестратор против агентского набора
+
+Codex — это агентский набор: он читает код, общается с моделями OpenAI и вносит изменения через локальные и облачные интерфейсы. Rox — это рабочее пространство для оркестрации вокруг агентов: оно запускает множество сессий Codex параллельно, каждую в своём изолированном окружении, а затем даёт тебе чат, ревью, превью в браузере и воркфлоу с подключением через MCP вокруг них. Запусти Codex внутри Rox, чтобы получить автоматическую изоляцию через worktree и параллельное выполнение без ручной настройки.
+
+### Локально, в приложении и в облаке против локальной оркестрации
+
+Codex теперь охватывает несколько интерфейсов: CLI, расширение для IDE, десктопное приложение и делегирование в облако. Rox сегодня local-first: worktree, терминалы, интерфейс чата, вкладки браузера и ревью diff/файлов — всё живёт на твоей машине, а трафик к провайдеру зависит от того, каких агентов ты запускаешь. Это делает связь яснее: Codex предоставляет кодинг-интерфейсы, а Rox предоставляет локальный слой оркестрации вокруг множества задач.
+
+### Один продуктовый стек против стека из разных агентов
+
+С одним только Codex — будь то из CLI или приложения — ты остаёшься внутри продуктовой модели Codex от OpenAI. С Rox ты можешь назначать задачи нескольким инстансам Codex одновременно — или смешивать Codex с Claude Code, Aider, OpenCode или Rox Chat — каждый на своей ветке со своим worktree.
+
+### Гибкость в выборе агента
+
+Codex CLI работает только с моделями OpenAI. Rox всё равно, каким агентом ты пользуешься — запускай Codex для задач, где модели OpenAI блистают, Claude Code для сложной архитектурной работы и Aider для итеративных изменений. Комбинируй под каждую задачу в зависимости от того, что работает лучше.
+
+### Сохранность сессий
+
+Codex даёт тебе агентские интерфейсы. Rox добавляет операционный слой вокруг них: worktree на уровне задач, долгоживущие сессии, превью локальных приложений в браузере, встроенное ревью diff/файлов и координацию с учётом MCP. Это важно, когда ты управляешь множеством задач на одной кодовой базе, а не одним промптом в одном интерфейсе.
 
 ---
 
-## Which Should You Choose?
+## Цена
 
-**Choose Codex CLI alone if you:**
-- Work on one task at a time and prefer a simple terminal workflow
-- Want OpenAI's Codex model family and product stack for coding tasks
-- Prefer Full Auto mode for autonomous execution in a sandboxed environment
-- Need cloud-based Codex for heavy tasks that benefit from remote compute
-
-**Choose Rox + Codex CLI if you:**
-- Want to run 5-10+ Codex instances in parallel across separate tasks
-- Need automatic Git worktree isolation so agents never conflict
-- Want sessions that survive crashes and app restarts
-- Plan to mix Codex with other agents (Claude Code, Aider, OpenCode) per task
-- Work on large codebases where parallel execution saves hours
-
-Rox and Codex CLI work together naturally. Each Rox task launches Codex in its own worktree — you get Codex's coding ability with Rox's parallelism and isolation.
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц. Цена Codex теперь зависит от того, каким интерфейсом ты пользуешься: OpenAI открывает Codex через тарифы ChatGPT, локальные и облачные разрешения и воркфлоу на основе API. Важное практическое различие всё то же: Codex даёт тебе агентские интерфейсы OpenAI, а Rox даёт слой оркестрации для запуска множества локальных задач параллельно.
 
 ---
 
-## Frequently Asked Questions
+## Что выбрать тебе?
 
-### Is Rox a Codex replacement?
+**Выбирай один только Codex CLI, если ты:**
+- Работаешь над одной задачей за раз и предпочитаешь простой терминальный воркфлоу
+- Хочешь семейство моделей Codex от OpenAI и его продуктовый стек для задач кодинга
+- Предпочитаешь режим Full Auto для автономного выполнения в изолированном окружении
+- Нуждаешься в облачном Codex для тяжёлых задач, которым выгодны удалённые вычисления
 
-Not really. Rox now has built-in chat, MCP tooling, browser previews, and file review, but its core job is still coordinating agents and worktrees. Codex is the coding agent suite. Rox is the layer that lets you run many Codex sessions safely or mix Codex with other agents on the same repo.
+**Выбирай Rox + Codex CLI, если ты:**
+- Хочешь запускать 5-10+ инстансов Codex параллельно по разным задачам
+- Нуждаешься в автоматической изоляции через Git worktree, чтобы агенты никогда не конфликтовали
+- Хочешь сессии, которые переживают сбои и перезапуски приложения
+- Планируешь смешивать Codex с другими агентами (Claude Code, Aider, OpenCode) под каждую задачу
+- Работаешь над большими кодовыми базами, где параллельное выполнение экономит часы
 
-### Can I run Codex in Full Auto mode inside Rox?
+Rox и Codex CLI естественно работают вместе. Каждая задача Rox запускает Codex в своём worktree — ты получаешь способность Codex писать код с параллелизмом и изоляцией Rox.
 
-Yes. Each Rox task runs Codex in its own isolated worktree. You can use any Codex mode — Suggest, Auto Edit, or Full Auto — safely, because worktree isolation means an autonomous agent can't affect your main working directory.
+---
 
-### How does the Codex app compare to Rox?
+## Часто задаваемые вопросы
 
-The Codex app gives you an OpenAI-native GUI for Codex itself, with built-in worktrees, skills, automations, and Git support. Rox is broader in a different direction: it is not tied to Codex, and it can orchestrate many different agents while also giving you chat, browser preview, and in-app diff/file review. If you want a Codex-specific app, use the Codex app. If you want an agent-agnostic control plane, use Rox.
+### Заменяет ли Rox собой Codex?
 
-### Are both tools open source?
+Не совсем. У Rox теперь есть встроенный чат, инструменты MCP, превью в браузере и ревью файлов, но его главная задача по-прежнему — координировать агентов и worktree. Codex — это агентский набор для кода. Rox — это слой, который позволяет безопасно запускать множество сессий Codex или смешивать Codex с другими агентами на одном репозитории.
 
-No. Codex CLI is open source under Apache 2.0. Rox is source-available on GitHub under Elastic License 2.0 (ELv2).
+### Можно ли запускать Codex в режиме Full Auto внутри Rox?
+
+Да. Каждая задача Rox запускает Codex в своём изолированном worktree. Ты можешь безопасно использовать любой режим Codex — Suggest, Auto Edit или Full Auto, — потому что изоляция через worktree означает, что автономный агент не может затронуть твою основную рабочую директорию.
+
+### Чем приложение Codex отличается от Rox?
+
+Приложение Codex даёт тебе нативный для OpenAI GUI для самого Codex со встроенными worktree, скиллами, автоматизациями и поддержкой Git. Rox шире в другом направлении: он не привязан к Codex и может оркестрировать множество разных агентов, при этом давая тебе чат, превью в браузере и встроенное ревью diff/файлов. Если тебе нужно приложение конкретно под Codex, используй приложение Codex. Если тебе нужен control plane без привязки к агенту, используй Rox.
+
+### Оба ли инструмента open source?
+
+Нет. Codex CLI — open source под Apache 2.0. Rox — с открытым исходным кодом на GitHub под Elastic License 2.0 (ELv2).

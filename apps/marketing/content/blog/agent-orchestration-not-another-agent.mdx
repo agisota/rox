@@ -1,121 +1,121 @@
 ---
-title: "You Don't Need Another AI Coding Agent — You Need an Orchestrator"
-description: "The AI coding tools landscape is flooded with agents. The real bottleneck isn't agent quality — it's managing multiple agents at scale. Here's why orchestration is the missing layer."
+title: "Тебе не нужен ещё один ИИ-агент для кода — тебе нужен оркестратор"
+description: "Ландшафт ИИ-инструментов для кода затоплен агентами. Настоящее узкое место — не качество агентов, а управление множеством агентов в масштабе. Вот почему оркестрация — это недостающий слой."
 author: satya
 date: 2026-02-18
-category: Product
+category: Продукт
 relatedSlugs:
   - parallel-coding-agents-guide
   - roadmap-to-100-agents
   - working-with-worktrees-in-rox
 ---
 
-Every month, a new AI coding agent launches. Claude Code. Codex. Aider. OpenCode. Cursor's agent mode. Windsurf's Cascade. Devin. The list keeps growing. Each promises to be smarter, faster, more capable than the last.
+Каждый месяц запускается новый ИИ-агент для кода. Claude Code. Codex. Aider. OpenCode. Режим агента в Cursor. Cascade у Windsurf. Devin. Список всё растёт. Каждый обещает быть умнее, быстрее, способнее предыдущего.
 
-Here's the thing: the agents are already good enough. Claude Code can refactor a module. Codex can write a test suite. Aider can iterate on a bugfix. The quality difference between top-tier agents is shrinking. What's not getting better is the workflow around them.
+Вот в чём дело: агенты уже достаточно хороши. Claude Code умеет отрефакторить модуль. Codex умеет написать набор тестов. Aider умеет итерировать над багфиксом. Разница в качестве между топовыми агентами сокращается. Что не становится лучше — так это рабочий процесс вокруг них.
 
-The real bottleneck isn't agent quality. It's agent quantity.
-
----
-
-## The Single-Agent Ceiling
-
-Most developers use AI coding agents the same way:
-
-1. Open terminal
-2. Describe a task
-3. Watch the agent work
-4. Review the output
-5. Give feedback or merge
-6. Repeat
-
-This is sequential. One task at a time. The agent might take 5 minutes. Your review might take 10. That's one task per 15 minutes, four tasks per hour. For an individual developer, that's a solid productivity boost.
-
-But your codebase has 50 parallelizable tasks right now. Writing tests for untested modules. Refactoring deprecated patterns. Updating stale documentation. Migrating config formats. Fixing lint warnings. Each task is independent. None requires the output of another.
-
-Running them one at a time means 50 tasks at 15 minutes each: over 12 hours. Running 5 in parallel: under 3 hours. Running 10 in parallel: under 2 hours. The math is straightforward. The orchestration is the hard part.
+Настоящее узкое место — не качество агентов. Это количество агентов.
 
 ---
 
-## Why Orchestration Is Hard
+## Потолок одного агента
 
-### Isolation
+Большинство разработчиков используют ИИ-агентов для кода одинаково:
 
-Two agents in the same directory destroy each other's work. You need filesystem-level isolation — each agent in its own working directory with its own branch. Git worktrees solve this elegantly, but setting them up manually for every task is tedious.
+1. Открыть терминал
+2. Описать задачу
+3. Смотреть, как агент работает
+4. Проверить вывод
+5. Дать обратную связь или смержить
+6. Повторить
 
-### Session Management
+Это последовательно. По одной задаче за раз. Агенту может понадобиться 5 минут. Твоё ревью может занять 10. Это одна задача на 15 минут, четыре задачи в час. Для отдельного разработчика это солидный прирост продуктивности.
 
-Agents crash. Terminals close. Laptops go to sleep. If your agent's session dies, you lose the context and have to restart. For a single agent, this is annoying. For 10 agents, it's unmanageable.
+Но в твоей кодовой базе прямо сейчас есть 50 распараллеливаемых задач. Написать тесты для непокрытых модулей. Отрефакторить устаревшие паттерны. Обновить протухшую документацию. Мигрировать форматы конфигов. Починить предупреждения линтера. Каждая задача независима. Ни одна не требует вывода другой.
 
-### Review
-
-The review workflow matters more with parallel agents, not less. You need to see what each agent changed, verify it against the task description, and decide whether to merge or iterate. Without a unified view across all tasks, you're tab-switching between terminals.
-
-### Task Allocation
-
-Not every task suits every agent. Claude Code handles complex refactors better than Codex. Codex is faster for well-defined tasks. Aider excels at iterative changes. An orchestrator lets you match agents to tasks instead of using one agent for everything.
-
----
-
-## Orchestration vs More Agents
-
-The AI coding industry is betting heavily on better agents. Smarter models, larger context windows, better tool use. These improvements are real and valuable.
-
-But consider: a 20% improvement in agent quality (smarter code, fewer bugs) improves throughput by 20%. Running 5 agents in parallel instead of 1 improves throughput by 5x. The orchestration layer has more leverage than the agent layer.
-
-This isn't an argument against better agents. It's an argument that the orchestration layer deserves equal attention. The best coding agent in the world, run one at a time, is slower than a good agent run ten at a time.
+Запускать их по одной — это 50 задач по 15 минут каждая: больше 12 часов. Запустить 5 в параллель — меньше 3 часов. Запустить 10 в параллель — меньше 2 часов. Арифметика проста. Сложная часть — оркестрация.
 
 ---
 
-## What Good Orchestration Looks Like
+## Почему оркестрация — это сложно
 
-### Automatic Isolation
+### Изоляция
 
-Creating a task should automatically create a Git worktree and branch. No manual setup, no remembering to checkout a new branch, no worrying about file conflicts. The orchestrator handles this transparently.
+Два агента в одной директории уничтожают работу друг друга. Тебе нужна изоляция на уровне файловой системы — каждый агент в своей рабочей директории со своей веткой. Git worktrees решают это элегантно, но настраивать их вручную под каждую задачу утомительно.
 
-### Session Persistence
+### Управление сессиями
 
-Agent sessions should survive crashes, app restarts, and laptop sleep cycles. A background daemon that owns the sessions independently of the UI solves this — the same pattern that tmux uses for terminal multiplexing, applied to agent orchestration.
+Агенты падают. Терминалы закрываются. Ноутбуки уходят в сон. Если сессия твоего агента умрёт, ты теряешь контекст и вынужден перезапускаться. Для одного агента это раздражает. Для 10 агентов это неуправляемо.
 
-### Agent Agnosticism
+### Ревью
 
-Lock-in to a single agent is a strategic mistake. The AI landscape moves fast. Today's best agent might be tomorrow's second-best. An orchestrator should run any CLI-based agent — Claude Code, Codex, Aider, OpenCode, or whatever ships next week.
+Рабочий процесс ревью важнее с параллельными агентами, а не наоборот. Тебе нужно видеть, что изменил каждый агент, сверять это с описанием задачи и решать, мержить или итерировать. Без единого обзора всех задач ты переключаешься между вкладками терминалов.
 
-### Unified Review
+### Распределение задач
 
-All active tasks, their status, and their diffs should be visible in one place. When a task completes, the review workflow should be fast: see the diff, open in your editor if needed, merge or give feedback. Seconds per review, not minutes.
-
-### Editor Integration
-
-Developers have strong editor preferences. The orchestrator shouldn't force an editor choice. It should integrate with whatever you use — VS Code, Cursor, JetBrains, Xcode, Neovim — and let you open any worktree in your preferred environment.
+Не каждая задача подходит каждому агенту. Claude Code справляется со сложными рефакторами лучше, чем Codex. Codex быстрее на чётко определённых задачах. Aider блистает на итеративных изменениях. Оркестратор позволяет подбирать агентов под задачи вместо того, чтобы использовать одного агента на всё.
 
 ---
 
-## Building This at Rox
+## Оркестрация против большего числа агентов
 
-We built [Rox](https://rox.one) because we hit this ceiling ourselves. We were running Claude Code for everything — and it was great for individual tasks. But scaling to 5-7 agents manually was operational overhead that distracted from the actual work.
+ИИ-индустрия кода делает крупную ставку на более качественных агентов. Умнее модели, больше контекстные окна, лучше работа с инструментами. Эти улучшения реальны и ценны.
 
-The architecture is intentionally simple:
+Но прикинь: улучшение качества агента на 20% (умнее код, меньше багов) повышает пропускную способность на 20%. Запуск 5 агентов в параллель вместо 1 повышает пропускную способность в 5 раз. У слоя оркестрации больше рычага, чем у слоя агента.
 
-- **Git worktrees** for isolation (no containers, no VMs)
-- **Persistent daemon** for session management (Unix domain sockets, survives crashes)
-- **Any CLI agent** as a first-class citizen (no SDK integrations to maintain)
-- **Built-in diff viewer** for fast review
-- **Editor integration** for deep inspection (VS Code, Cursor, JetBrains, Xcode)
-
-The orchestrator doesn't make agents smarter. It makes using agents at scale practical. That's the missing layer in most developers' AI workflows — not a better agent, but a better way to run the agents they already have.
+Это не аргумент против более качественных агентов. Это аргумент о том, что слой оркестрации заслуживает равного внимания. Лучший агент для кода в мире, запущенный по одному за раз, медленнее, чем хороший агент, запущенный десятками.
 
 ---
 
-## The Compound Effect
+## Как выглядит хорошая оркестрация
 
-Running parallel agents has a compound effect on productivity:
+### Автоматическая изоляция
 
-1. **More tasks completed per day** — 5x agents means 5x throughput (minus review overhead)
-2. **Faster iteration** — while one agent iterates on feedback, others are working on new tasks
-3. **Better agent matching** — use the right agent for each task instead of one-size-fits-all
-4. **Reduced context switching** — tasks run to completion in isolation instead of being stashed and resumed
+Создание задачи должно автоматически создавать Git worktree и ветку. Никакой ручной настройки, не надо помнить про checkout новой ветки, не надо переживать о конфликтах файлов. Оркестратор делает это прозрачно.
 
-The developers we work with who've adopted parallel agent workflows don't go back to single-agent work. The throughput difference is too large. The question shifts from "which agent should I use?" to "how many agents can I effectively manage?"
+### Сохранение сессий
 
-That's the right question. And the answer is: as many as your orchestrator supports and your review speed allows.
+Сессии агентов должны переживать падения, перезапуски приложения и циклы сна ноутбука. Фоновый демон, который владеет сессиями независимо от UI, решает это — тот же паттерн, что tmux использует для мультиплексирования терминалов, применённый к оркестрации агентов.
+
+### Агентонезависимость
+
+Привязка к одному агенту — стратегическая ошибка. ИИ-ландшафт движется быстро. Сегодняшний лучший агент может оказаться завтрашним вторым по счёту. Оркестратор должен запускать любого CLI-агента — Claude Code, Codex, Aider, OpenCode или что там выйдет на следующей неделе.
+
+### Единое ревью
+
+Все активные задачи, их статус и их diff'ы должны быть видны в одном месте. Когда задача завершается, рабочий процесс ревью должен быть быстрым: посмотреть diff, открыть в редакторе при необходимости, смержить или дать обратную связь. Секунды на ревью, а не минуты.
+
+### Интеграция с редактором
+
+У разработчиков сильные предпочтения по редакторам. Оркестратор не должен навязывать выбор редактора. Он должен интегрироваться с тем, чем ты пользуешься — VS Code, Cursor, JetBrains, Xcode, Neovim — и позволять открывать любой worktree в твоём любимом окружении.
+
+---
+
+## Как мы строим это в Rox
+
+Мы построили [Rox](https://rox.one), потому что сами упёрлись в этот потолок. Мы запускали Claude Code на всё — и для отдельных задач это было прекрасно. Но масштабирование до 5–7 агентов вручную было операционными издержками, отвлекающими от собственно работы.
+
+Архитектура намеренно проста:
+
+- **Git worktrees** для изоляции (никаких контейнеров, никаких VM)
+- **Постоянный демон** для управления сессиями (Unix-domain-сокеты, переживает падения)
+- **Любой CLI-агент** как полноправный гражданин (нет SDK-интеграций, которые надо поддерживать)
+- **Встроенный просмотрщик diff'ов** для быстрого ревью
+- **Интеграция с редактором** для глубокого изучения (VS Code, Cursor, JetBrains, Xcode)
+
+Оркестратор не делает агентов умнее. Он делает использование агентов в масштабе практичным. Это и есть недостающий слой в ИИ-процессах большинства разработчиков — не более умный агент, а более удачный способ запускать тех агентов, что у тебя уже есть.
+
+---
+
+## Эффект сложного процента
+
+Запуск параллельных агентов даёт эффект сложного процента для продуктивности:
+
+1. **Больше задач выполнено за день** — 5x агентов означает 5x пропускной способности (за вычетом издержек на ревью)
+2. **Более быстрая итерация** — пока один агент итерирует над обратной связью, другие работают над новыми задачами
+3. **Лучший подбор агентов** — используй правильного агента под каждую задачу вместо «один размер для всех»
+4. **Меньше переключений контекста** — задачи доводятся до конца в изоляции, а не прячутся в стэш и возобновляются
+
+Разработчики, с которыми мы работаем и которые перешли на параллельные процессы с агентами, не возвращаются к работе с одним агентом. Разница в пропускной способности слишком велика. Вопрос смещается с «каким агентом мне пользоваться?» на «сколькими агентами я могу эффективно управлять?».
+
+Это правильный вопрос. И ответ такой: столькими, сколько поддерживает твой оркестратор и позволяет твоя скорость ревью.

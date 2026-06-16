@@ -7,7 +7,7 @@ import { EnterpriseFAQ } from "./components/EnterpriseFAQ";
 
 export const metadata: Metadata = {
 	title: "Для компаний",
-	description: `Запустите ${COMPANY.NAME} для своей команды. Свяжитесь с нами, чтобы узнать больше о корпоративных тарифах и вариантах развёртывания.`,
+	description: `Запусти ${COMPANY.NAME} для своей команды. Свяжись с нами, чтобы узнать больше о корпоративных тарифах и вариантах развёртывания.`,
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/enterprise`,
 	},
@@ -36,10 +36,10 @@ export default function EnterprisePage() {
 						Для компаний
 					</span>
 					<h1 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground mt-4">
-						Rox для вашей команды
+						Rox для твоей команды
 					</h1>
 					<p className="text-muted-foreground mt-3 max-w-lg">
-						<GlossaryText text="Хотите запустить Rox в своей организации? Напишите нам, и мы вместе подберём подходящий запуск для вашей команды." />
+						<GlossaryText text="Хочешь запустить Rox в своей организации? Напиши нам, и мы вместе подберём подходящий запуск для твоей команды." />
 					</p>
 
 					<GridCross className="bottom-0 left-0" />

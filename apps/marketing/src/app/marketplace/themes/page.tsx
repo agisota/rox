@@ -8,7 +8,7 @@ import { themeListings } from "@/lib/marketplace";
 export const metadata: Metadata = {
 	title: "Темы",
 	description:
-		"Просматривайте файлы тем Rox, которыми делится сообщество: GitHub Dark Colorblind, Catppuccin, Ember, One Dark Pro и другие.",
+		"Просматривай файлы тем Rox, которыми делится сообщество: GitHub Dark Colorblind, Catppuccin, Ember, One Dark Pro и другие.",
 	alternates: {
 		canonical: `${COMPANY.MARKETING_URL}/marketplace/themes`,
 	},

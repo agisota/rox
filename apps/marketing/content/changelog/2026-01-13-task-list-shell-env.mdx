@@ -1,26 +1,26 @@
 ---
-title: Task list view, diff scrollbar highlights, and shell environment fix
+title: Списочное представление задач, подсветка в полосе прокрутки и фикс окружения шелла
 date: 2026-01-13
 image: /changelog/task-list.png
 ---
 
-## Task List View <PRBadge url="https://github.com/agisota/set/pull/717" />
+## Списочное представление задач <PRBadge url="https://github.com/agisota/set/pull/717" />
 
-- Added semantic search capabilities for tasks using embeddings
-- Introduced dedicated task status management system with custom workflows
-- Redesigned tasks interface with table-based view and improved organization
-- Enhanced task filtering and sorting by status, priority, and assignee
+- Добавлен семантический поиск по задачам с использованием эмбеддингов
+- Введена отдельная система управления статусами задач с кастомными воркфлоу
+- Переработан интерфейс задач с табличным представлением и улучшенной организацией
+- Улучшены фильтрация и сортировка задач по статусу, приоритету и исполнителю
 
-## Diff Highlights in Scrollbar <PRBadge url="https://github.com/agisota/set/pull/725" />
+## Подсветка diff'ов в полосе прокрутки <PRBadge url="https://github.com/agisota/set/pull/725" />
 
-Enable Monaco's overview ruler in the diff viewer to show colored markers in the scrollbar. Additions (green) and deletions (red) are now visible in the scrollbar for quick navigation.
+Включили обзорную линейку Monaco в просмотрщике diff'ов, чтобы показывать цветные маркеры в полосе прокрутки. Добавления (зелёные) и удаления (красные) теперь видны в полосе прокрутки для быстрой навигации.
 
-## Shell Environment Fix <PRBadge url="https://github.com/agisota/set/pull/720" />
+## Фикс окружения шелла <PRBadge url="https://github.com/agisota/set/pull/720" />
 
-- App now captures and applies the user's shell environment on macOS/Linux during startup
-- Terminal-related settings (like PATH and ZDOTDIR) are now available when launching from Finder/Spotlight
-- Improved handling and merging of PATH entries to prevent terminal initialization issues
+- Приложение теперь захватывает и применяет окружение шелла пользователя на macOS/Linux при запуске
+- Связанные с терминалом настройки (вроде PATH и ZDOTDIR) теперь доступны при запуске из Finder/Spotlight
+- Улучшена обработка и слияние записей PATH, чтобы избежать проблем с инициализацией терминала
 
-## Scroll to Bottom Button <PRBadge url="https://github.com/agisota/set/pull/700" />
+## Кнопка прокрутки вниз <PRBadge url="https://github.com/agisota/set/pull/700" />
 
-Add a floating scroll-to-bottom button that appears when the terminal is scrolled up. Button uses a chevron icon and animates in/out smoothly. Shows keyboard shortcut in tooltip when available.
+Добавили плавающую кнопку прокрутки вниз, которая появляется, когда терминал прокручен вверх. Кнопка использует иконку-шеврон и плавно появляется и исчезает. Показывает горячую клавишу в подсказке, если она доступна.

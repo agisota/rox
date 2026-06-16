@@ -66,7 +66,7 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 	{ text: "Изоляция в git worktree", color: 16 },
 	{ text: "Ветки не конфликтуют", color: 4 },
 	{ text: "Открыть в любой IDE", color: 1 },
-	{ text: "VS Code · Xcode", color: 11 },
+	{ text: "VS Code · XCode", color: 11 },
 	{ text: "JetBrains · Terminal", color: 5 },
 	{ text: "Проверяй и сливай", color: 2 },
 ];
@@ -80,34 +80,97 @@ export const LANDING_INTRO_PARAGRAPH =
 
 export const LANDING_FEATURES_HEADING = "Почему ROX";
 
-/** Plain-language, benefit-first value props — ideal for per-line scramble. */
-export const LANDING_FEATURES: ReadonlyArray<string> = [
-	"Неделя работы — за день: десятки агентов кодят одновременно",
-	"Любой агент на выбор: Claude Code, Cursor, Codex, Gemini, OpenCode",
-	"Агенты не мешают друг другу — каждый в своей изолированной ветке",
-	"Вы решаете, что попадёт в проект — принимаете только готовое",
-	"Открывайте результат в своём редакторе одним кликом: VS Code, Cursor, Xcode",
-	"Переключайтесь между задачами мгновенно, ничего не теряя",
+/**
+ * Plain-language, benefit-first value props. Most lines scramble in per-line;
+ * the agent and editor lines carry inline glossary terms (underlined, with a
+ * hover tooltip), so they're rendered as JSX in ScrambleLanding instead of as a
+ * flat string — scrambleText rewrites innerHTML and would wipe the spans.
+ */
+export const LANDING_FEAT_SPEED =
+	"Неделя работы — за день: десятки агентов кодят одновременно";
+export const LANDING_FEAT_ISOLATION =
+	"Агенты не мешают друг другу — каждый в своей изолированной ветке";
+export const LANDING_FEAT_CONTROL =
+	"Ты решаешь, что попадёт в проект — принимаешь только готовое";
+export const LANDING_FEAT_SWITCH =
+	"Переключайся между задачами мгновенно, ничего не теряя";
+
+/** A glossary term: an underlined word with a hover/focus tooltip. */
+export interface LandingTerm {
+	label: string;
+	tip: string;
+}
+
+/** Lead-in for the "any agent" line; agent names render as {@link LandingTerm}s. */
+export const LANDING_AGENT_LEAD = "Любой агент на выбор:";
+export const LANDING_AGENT_TERMS: ReadonlyArray<LandingTerm> = [
+	{
+		label: "Claude Code",
+		tip: "Работаем с твоей подпиской Claude Code (Anthropic Agents SDK) — ключи и лимиты остаются твоими.",
+	},
+	{
+		label: "Cursor",
+		tip: "Поддерживаем подписку Cursor и Cursor CLI — гоняем агентов Cursor от твоего имени.",
+	},
+	{
+		label: "Codex",
+		tip: "Запускаем через Codex CLI (OpenAI) на твоём аккаунте.",
+	},
+	{
+		label: "Gemini",
+		tip: "Работаем через Gemini CLI (Google) с твоим ключом.",
+	},
+	{
+		label: "OpenCode",
+		tip: "Поддерживаем OpenCode CLI — открытый агент с твоим выбором моделей.",
+	},
+];
+
+/** Tail after the agent list: orchestration runs through acpx. */
+export const LANDING_AGENT_TAIL = " — оркеструем через ";
+export const LANDING_ACPX_TERM: LandingTerm = {
+	label: "acpx",
+	tip: "acpx — наш слой оркестрации: раскидывает задачи по агентам и git-worktree, запускает их параллельно и сводит результат воедино.",
+};
+
+/** Lead-in for the "open in editor" line; editor names render as terms. */
+export const LANDING_EDITOR_LEAD =
+	"Открывай результат в своём редакторе одним кликом:";
+export const LANDING_EDITOR_TERMS: ReadonlyArray<LandingTerm> = [
+	{
+		label: "VS Code",
+		tip: "Открываем прямо в VS Code через его CLI (code .).",
+	},
+	{ label: "Cursor", tip: "Открываем в Cursor через его CLI (cursor .)." },
+	{
+		label: "XCode",
+		tip: "Открываем в XCode через xed — для Swift / iOS-проектов.",
+	},
+	{ label: "Zed", tip: "Открываем в Zed (zed.dev) через его CLI (zed .)." },
+	{
+		label: "Windsurf",
+		tip: "Открываем в Windsurf через его CLI (windsurf .).",
+	},
 ];
 
 export const LANDING_HOW_HEADING = "Как это работает";
 
 export const LANDING_HOW_PARAGRAPH =
-	"Ставьте задачи одну за другой, не дожидаясь. Каждый агент работает сам в своей ветке, а ROX зовёт вас, только когда нужно ваше решение. Вы дирижируете — агенты пишут код.";
+	"Ставь задачи одну за другой, не дожидаясь. Каждый агент работает сам в своей ветке, а ROX зовёт тебя, только когда нужно твоё решение. Ты дирижируешь — агенты пишут код.";
 
-export const LANDING_DOWNLOAD_HEADING = "Попробуйте ROX бесплатно";
+export const LANDING_DOWNLOAD_HEADING = "Попробуй ROX бесплатно";
 
 /* ── ③ Download Snap X (qEBgEPz) ───────────────────────────────────────── */
 
-export const SNAP_LABEL_IDLE = "Перетащите, чтобы скачать";
-export const SNAP_LABEL_ARMED = "Отпустите для загрузки";
+export const SNAP_LABEL_IDLE = "Перетащи, чтобы скачать";
+export const SNAP_LABEL_ARMED = "Отпусти для загрузки";
 
 /* ── ④ Thank-you + GitHub star button (mydvebj) ────────────────────────── */
 
 export const THANKS_HEADING = "Спасибо за загрузку!";
 export const THANKS_HINT =
-	"Откройте Rox-arm64.dmg из загрузок, чтобы установить. Загрузка не началась?";
-export const STAR_PROMPT = "Поставьте звезду на GitHub";
+	"Открой Rox-arm64.dmg из загрузок, чтобы установить. Загрузка не началась?";
+export const STAR_PROMPT = "Поставь звезду на GitHub";
 export const STAR_LABEL_IDLE = "Star";
 export const STAR_LABEL_DONE = "Starred";
 
