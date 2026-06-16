@@ -32,3 +32,12 @@ export const MEMORY_GROUPS: ReadonlyArray<{
 		hint: "Принципы, которые применяешь везде",
 	},
 ];
+
+/** Short RU label per category, for compact badges. */
+export const CATEGORY_LABEL: Record<MemoryCategory, string> = {
+	projects: "Проекты",
+	identity: "Личное",
+	instructions: "Правила",
+	career: "Карьера",
+	general: "Общее",
+};
