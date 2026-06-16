@@ -1,16 +1,19 @@
 import { describe, expect, it } from "bun:test";
 import { getWorkspaceSetupPresetById } from "./workspace-setup-presets";
 import {
+	applyStarterToSelection,
 	getWorkspaceStarterPresetById,
+	isStarterSelected,
+	removeStarterFromSelection,
 	resolveWorkspaceStarterPreset,
 	starterAsSetupPreset,
 	WORKSPACE_STARTER_PRESETS,
 } from "./workspace-starter-presets";
 
 describe("workspace-starter-presets", () => {
-	it("exposes 15-20 starters with unique ids", () => {
+	it("exposes 15-30 starters with unique ids", () => {
 		expect(WORKSPACE_STARTER_PRESETS.length).toBeGreaterThanOrEqual(15);
-		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(20);
+		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(30);
 		const ids = WORKSPACE_STARTER_PRESETS.map((s) => s.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
@@ -198,6 +201,96 @@ describe("workspace-starter-presets", () => {
 					"LICENSE",
 				],
 			},
+			{
+				id: "minimal-git",
+				commandCount: 1,
+				files: [],
+			},
+			{
+				id: "agent-ready",
+				commandCount: 3,
+				files: ["AGENTS.md"],
+			},
+			{
+				id: "prototyping",
+				commandCount: 0,
+				files: ["todo.md", "spec.md", "README.md"],
+			},
+			{
+				id: "community-health",
+				commandCount: 0,
+				files: ["README.md", "LICENSE", "CONTRIBUTING.md"],
+			},
+			{
+				id: "dockerized",
+				commandCount: 0,
+				files: ["Dockerfile", ".dockerignore"],
+			},
+			{
+				id: "devcontainer-ready",
+				commandCount: 0,
+				files: [".editorconfig", ".devcontainer/devcontainer.json", ".nvmrc"],
+			},
+			{
+				id: "env-config",
+				commandCount: 0,
+				files: [".gitignore", ".env.example"],
+			},
+		]);
+	});
+});
+
+describe("starter selection helpers", () => {
+	it("applies a starter's preset ids to an empty selection, in catalog order", () => {
+		expect(applyStarterToSelection([], "planning-docs")).toEqual([
+			"todo-md",
+			"spec-md",
+			"planner-md",
+		]);
+	});
+
+	it("unions a starter into an existing selection, deduped and in catalog order", () => {
+		// agents-md-generator bundles ["agents-md", "readme"]; "readme" already selected.
+		expect(applyStarterToSelection(["readme"], "agents-md-generator")).toEqual([
+			"agents-md",
+			"readme",
+		]);
+	});
+
+	it("drops ids absent from the single-effect catalog when applying a starter", () => {
+		expect(
+			applyStarterToSelection(["bogus-id", "git-init"], "planning-docs"),
+		).toEqual(["git-init", "todo-md", "spec-md", "planner-md"]);
+	});
+
+	it("returns the normalized selection unchanged for an unknown starter id", () => {
+		expect(applyStarterToSelection(["git-init", "bogus-id"], "nope")).toEqual([
+			"git-init",
+		]);
+	});
+
+	it("reports a starter selected only when every bundled preset id is present", () => {
+		expect(
+			isStarterSelected(["todo-md", "spec-md", "planner-md"], "planning-docs"),
+		).toBe(true);
+		expect(isStarterSelected(["todo-md", "spec-md"], "planning-docs")).toBe(
+			false,
+		);
+		expect(isStarterSelected([], "nope")).toBe(false);
+	});
+
+	it("removes a starter's preset ids from the selection, keeping the rest", () => {
+		expect(
+			removeStarterFromSelection(
+				["git-init", "todo-md", "spec-md", "planner-md"],
+				"planning-docs",
+			),
+		).toEqual(["git-init"]);
+	});
+
+	it("removing an unselected starter leaves the normalized selection unchanged", () => {
+		expect(removeStarterFromSelection(["git-init"], "planning-docs")).toEqual([
+			"git-init",
 		]);
 	});
 });

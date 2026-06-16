@@ -2,16 +2,16 @@ import { WORKSPACE_STARTER_PRESETS } from "@rox/shared/workspace-starter-presets
 import { Checkbox } from "@rox/ui/checkbox";
 
 interface WorkspaceSetupPresetsProps {
-	/** Currently selected preset ids. */
+	/** Currently selected starter preset ids. */
 	selectedIds: string[];
-	/** Called with the next selection when a preset is toggled. */
+	/** Called with the next selection when a starter preset is toggled. */
 	onChange: (selectedIds: string[]) => void;
 	className?: string;
 }
 
 /**
  * Multi-select list of workspace starter presets. Controlled: the caller owns
- * selected ids and sends them to project creation, where the host service
+ * starter ids and sends them to project creation, where the host service
  * resolves each starter into scaffold files and setup commands.
  */
 export function WorkspaceSetupPresets({
@@ -26,7 +26,9 @@ export function WorkspaceSetupPresets({
 		if (checked) next.add(id);
 		else next.delete(id);
 		onChange(
-			WORKSPACE_STARTER_PRESETS.map((p) => p.id).filter((p) => next.has(p)),
+			WORKSPACE_STARTER_PRESETS.map((preset) => preset.id).filter((id) =>
+				next.has(id),
+			),
 		);
 	}
 

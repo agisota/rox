@@ -219,6 +219,74 @@ jobs:
 			},
 		],
 	},
+	{
+		id: "dockerfile",
+		label: "Add Dockerfile",
+		description: "Scaffold a minimal Dockerfile to containerize the workspace.",
+		scaffoldFiles: [
+			{
+				path: "Dockerfile",
+				contents:
+					'# syntax=docker/dockerfile:1\nFROM alpine:3\nWORKDIR /app\nCOPY . .\nCMD ["sh"]\n',
+			},
+		],
+	},
+	{
+		id: "dockerignore",
+		label: "Add .dockerignore",
+		description: "Scaffold a .dockerignore so the build context stays small.",
+		scaffoldFiles: [
+			{
+				path: ".dockerignore",
+				contents: "node_modules/\n.git/\ndist/\n.env\n",
+			},
+		],
+	},
+	{
+		id: "devcontainer",
+		label: "Add dev container",
+		description:
+			"Scaffold a .devcontainer/devcontainer.json for reproducible Codespaces/VS Code environments.",
+		scaffoldFiles: [
+			{
+				path: ".devcontainer/devcontainer.json",
+				contents:
+					'{\n  "name": "workspace",\n  "image": "mcr.microsoft.com/devcontainers/base:debian"\n}\n',
+			},
+		],
+	},
+	{
+		id: "contributing",
+		label: "Add CONTRIBUTING.md",
+		description:
+			"Scaffold a CONTRIBUTING.md so collaborators know the workflow.",
+		scaffoldFiles: [
+			{
+				path: "CONTRIBUTING.md",
+				contents:
+					"# Contributing\n\nThanks for contributing! Open an issue before large changes and keep PRs focused.\n",
+			},
+		],
+	},
+	{
+		id: "env-example",
+		label: "Add .env.example",
+		description:
+			"Scaffold a .env.example documenting required env vars (never commit real secrets).",
+		scaffoldFiles: [
+			{
+				path: ".env.example",
+				contents: "# Copy to .env and fill in.\n# EXAMPLE_API_KEY=\n",
+			},
+		],
+	},
+	{
+		id: "nvmrc",
+		label: "Add .nvmrc",
+		description:
+			"Pin the Node.js version with an .nvmrc for consistent tooling.",
+		scaffoldFiles: [{ path: ".nvmrc", contents: "lts/*\n" }],
+	},
 ];
 
 /** Look up a preset by id. */
