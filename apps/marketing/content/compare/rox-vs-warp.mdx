@@ -1,6 +1,6 @@
 ---
-title: "Rox vs Warp (2026): Agent Orchestration vs AI-Powered Terminal"
-description: "Compare Rox and Warp for AI-enhanced development workflows. See how multi-agent orchestration differs from an AI-powered terminal experience."
+title: "Rox против Warp (2026): оркестрация агентов против терминала с AI"
+description: "Сравнение Rox и Warp для воркфлоу разработки с AI. Узнай, чем многоагентная оркестрация отличается от терминала с AI."
 date: 2026-02-02
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -14,91 +14,91 @@ keywords:
   - ai powered terminal
 ---
 
-Rox and Warp both help developers work with AI around the command line, but they solve different problems. Warp is a modern terminal emulator with built-in AI agents. Rox is a local-first workspace for running many coding agents in parallel, each in its own isolated Git worktree.
+И Rox, и Warp помогают разработчикам работать с AI вокруг командной строки, но они решают разные проблемы. Warp — это современный эмулятор терминала со встроенными AI-агентами. Rox — это local-first рабочее пространство для запуска множества агентов кода параллельно, каждого в своём изолированном Git worktree.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **Warp** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | AI-powered terminal emulator |
-| **What it does** | Runs 10+ AI coding agents in parallel with Git worktrees, chat, diff/file review, and browser tooling | Modern terminal with built-in AI agents, code editing, and collaboration |
-| **AI approach** | Agent-agnostic — works with Claude Code, Codex, Aider, Rox Chat, or any CLI agent | Built-in agents (OpenAI, Anthropic, Google); supports BYOK and third-party CLI agents |
-| **Parallelism** | Core feature — every task gets its own worktree and branch | Agents run in terminal panes via Agent Management Panel |
-| **Pricing** | Free tier + Pro $20/seat/mo | Free tier (limited credits), Build $20/mo, Business $50/mo |
-| **License** | Source-available (ELv2) | Closed source |
+| **Категория** | Рабочее пространство для оркестрации агентов | Эмулятор терминала с AI |
+| **Что делает** | Запускает 10+ AI-агентов кода параллельно с Git worktree, чатом, ревью diff/файлов и инструментами для браузера | Современный терминал со встроенными AI-агентами, редактированием кода и совместной работой |
+| **Подход к AI** | Не зависит от агента — работает с Claude Code, Codex, Aider, Rox Chat или любым CLI-агентом | Встроенные агенты (OpenAI, Anthropic, Google); поддерживает BYOK и сторонних CLI-агентов |
+| **Параллелизм** | Ключевая функция — каждая задача получает свой worktree и ветку | Агенты работают в панелях терминала через Agent Management Panel |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес | Бесплатный тариф (ограниченные кредиты), Build $20/мес, Business $50/мес |
+| **Лицензия** | Открытый исходный код (ELv2) | Закрытый исходный код |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. You spin up 10+ agents on separate tasks simultaneously, each in its own Git worktree with a dedicated branch and working directory. Around that core, Rox adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. Rox ships no required model layer — you can bring Claude Code, Codex, Aider, OpenCode, or other agents, and you can review inside Rox or jump into your editor of choice. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is Warp?
-
-Warp is a Rust-based, GPU-accelerated terminal emulator that evolved into an Agentic Development Environment. Warp 2.0 added built-in AI agents, a code editor with diff review, and Warp Drive for team knowledge sharing. Agent Mode takes natural language prompts, runs multi-step workflows, and self-corrects on errors. Agents 3.0 lets agents interact with REPLs, debuggers, and interactive CLI tools. Available on macOS, Windows, and Linux.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Ты поднимаешь 10+ агентов на отдельных задачах одновременно, каждого в своём Git worktree с выделенной веткой и рабочей директорией. Вокруг этого ядра Rox добавляет встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Rox не поставляет обязательного слоя модели — ты можешь принести Claude Code, Codex, Aider, OpenCode или других агентов, и ты можешь делать ревью прямо в Rox или перейти в редактор по своему выбору. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое Warp?
 
-### Built-In Agents vs Bring-Your-Own
-
-Warp ships its own agents — type a prompt, get results, no external tools to install. Rox is more bring-your-own by default: you install Claude Code, Codex, Aider, or another agent, and Rox runs them in parallel. Warp is more convenient out of the box; Rox gives you complete freedom over which agent, model, and provider you use, while still adding its own chat and workspace tooling around them.
-
-### Parallelism and Isolation
-
-Both tools support multiple agents, but the isolation model differs. Rox gives each agent a dedicated Git worktree — separate branch, separate working directory — so agents cannot modify each other's files. Warp runs agents in terminal panes on your file system directly. For a few agents on unrelated tasks, that works. For ten agents on the same codebase, worktree isolation prevents conflicts.
-
-### Terminal Quality vs Orchestration Focus
-
-Warp is a polished terminal — GPU-accelerated, with block-based output and a command palette. Rox includes terminals because agents need them, but the product is increasingly closer to a code editor for AI agents than a classic daily-driver terminal. You would still use Warp, iTerm2, or Kitty for SSH and ad-hoc commands.
-
-### Team Collaboration
-
-Warp has team features via Warp Drive: shared commands, notebooks, environment variables, plus Slack/Linear/GitHub integrations. Rox has no team collaboration features.
+Warp — это эмулятор терминала на Rust с GPU-ускорением, который вырос в Agentic Development Environment. Warp 2.0 добавил встроенных AI-агентов, редактор кода с ревью diff и Warp Drive для обмена командными знаниями. Agent Mode принимает промпты на естественном языке, выполняет многошаговые воркфлоу и самокорректируется при ошибках. Agents 3.0 позволяет агентам взаимодействовать с REPL, отладчиками и интерактивными CLI-инструментами. Доступен на macOS, Windows и Linux.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and Pro at $20/seat/month. You also pay for the API keys your chosen agents consume.
+### Встроенные агенты против «принеси своих»
 
-Warp's terminal features are free. AI features require the Build plan ($20/month, 1,500 credits) or BYOK. Business runs $50/user/month with SSO and zero data retention.
+Warp поставляет собственных агентов — вводишь промпт, получаешь результат, никаких внешних инструментов ставить не нужно. Rox по умолчанию больше про «принеси своих»: ты устанавливаешь Claude Code, Codex, Aider или другого агента, и Rox запускает их параллельно. Warp удобнее из коробки; Rox даёт тебе полную свободу в выборе агента, модели и провайдера, при этом добавляя вокруг них собственный чат и инструменты рабочего пространства.
 
----
+### Параллелизм и изоляция
 
-## Which Should You Choose?
+Оба инструмента поддерживают несколько агентов, но модель изоляции различается. Rox даёт каждому агенту выделенный Git worktree — отдельная ветка, отдельная рабочая директория — так что агенты не могут изменять файлы друг друга. Warp запускает агентов в панелях терминала прямо в твоей файловой системе. Для нескольких агентов на несвязанных задачах это работает. Для десяти агентов на одной кодовой базе изоляция через worktree предотвращает конфликты.
 
-**Choose Warp if you:**
-- Want an all-in-one terminal with built-in AI agents, code editing, and team tools
-- Value terminal polish — GPU rendering, block output, command palette
-- Need cross-platform support (macOS, Windows, Linux)
-- Prefer built-in agents that work without configuring external tools
+### Качество терминала против фокуса на оркестрации
 
-**Choose Rox if you:**
-- Run many coding agents in parallel and need Git-level isolation between them
-- Want full control over which agent and model you use, with no lock-in
-- Require source-available tooling with local Git worktrees
-- Already have a terminal you like and need an orchestration layer on top
+Warp — отполированный терминал: GPU-ускорение, вывод на основе блоков и палитра команд. Rox включает терминалы, потому что агентам они нужны, но продукт всё больше ближе к редактору кода для AI-агентов, чем к классическому терминалу на каждый день. Для SSH и разовых команд ты всё равно будешь использовать Warp, iTerm2 или Kitty.
 
-These tools complement each other. Use Warp as your daily terminal and Rox for parallel agent orchestration across worktrees.
+### Командная совместная работа
+
+У Warp есть командные функции через Warp Drive: общие команды, ноутбуки, переменные окружения плюс интеграции со Slack/Linear/GitHub. У Rox нет функций командной совместной работы.
 
 ---
 
-## Frequently Asked Questions
+## Цена
 
-### Is Rox a replacement for Warp?
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц. Ты также платишь за API-ключи, которые потребляют выбранные тобой агенты.
 
-No. Rox is not your general daily-driver terminal. It now includes chat, browser, and diff/file review for agent workflows, but it is still specialized around orchestrating coding agents in parallel. You can use both: Warp for daily terminal work, Rox for parallel agent workflows.
+Терминальные функции Warp бесплатны. AI-функции требуют плана Build ($20/месяц, 1 500 кредитов) или BYOK. Business стоит $50/польз/месяц с SSO и нулевым хранением данных.
 
-### Does Warp isolate agents with Git worktrees?
+---
 
-No. Warp agents operate on your file system directly. If two agents modify the same file concurrently, conflicts can arise. Rox prevents this by giving each agent its own worktree, branch, and directory.
+## Что выбрать тебе?
 
-### Can I run Claude Code or Codex in both tools?
+**Выбирай Warp, если ты:**
+- Хочешь all-in-one терминал со встроенными AI-агентами, редактированием кода и командными инструментами
+- Ценишь полировку терминала — GPU-рендеринг, вывод на основе блоков, палитру команд
+- Нуждаешься в кросс-платформенной поддержке (macOS, Windows, Linux)
+- Предпочитаешь встроенных агентов, которые работают без настройки внешних инструментов
 
-Yes. Warp runs them in terminal panes alongside its built-in agents. Rox runs them in isolated Git worktrees with parallel execution as the core workflow. For one or two agents, either works. For ten agents on ten tasks with branch isolation, Rox is purpose-built for that.
+**Выбирай Rox, если ты:**
+- Запускаешь множество агентов кода параллельно и нуждаешься в изоляции на уровне Git между ними
+- Хочешь полный контроль над тем, какого агента и модель ты используешь, без привязки
+- Требуешь инструментов с открытым исходным кодом и локальными Git worktree
+- Уже имеешь терминал, который тебе нравится, и нуждаешься в слое оркестрации поверх
+
+Эти инструменты дополняют друг друга. Используй Warp как свой терминал на каждый день, а Rox — для оркестрации параллельных агентов по worktree.
+
+---
+
+## Часто задаваемые вопросы
+
+### Заменяет ли Rox собой Warp?
+
+Нет. Rox — не твой обычный терминал на каждый день. Теперь он включает чат, браузер и ревью diff/файлов для агентских воркфлоу, но он по-прежнему специализирован вокруг оркестрации агентов кода параллельно. Ты можешь использовать оба: Warp для повседневной работы в терминале, Rox для параллельных агентских воркфлоу.
+
+### Изолирует ли Warp агентов с помощью Git worktree?
+
+Нет. Агенты Warp оперируют прямо в твоей файловой системе. Если два агента одновременно изменяют один и тот же файл, могут возникнуть конфликты. Rox предотвращает это, давая каждому агенту свой worktree, ветку и директорию.
+
+### Можно ли запускать Claude Code или Codex в обоих инструментах?
+
+Да. Warp запускает их в панелях терминала вместе со своими встроенными агентами. Rox запускает их в изолированных Git worktree с параллельным выполнением как основным воркфлоу. Для одного-двух агентов подойдёт любой. Для десяти агентов на десяти задачах с изоляцией веток Rox создан специально под это.

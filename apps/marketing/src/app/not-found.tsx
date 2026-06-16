@@ -5,7 +5,7 @@ import { NotFoundGrid } from "./components/NotFoundGrid";
 import { Pixel404 } from "./components/Pixel404";
 
 export const metadata: Metadata = {
-	title: "Page Not Found",
+	title: "Страница не найдена",
 	robots: { index: false },
 };
 
@@ -21,17 +21,16 @@ export default function NotFound() {
 
 				<div className="flex-1 max-w-md space-y-6">
 					<h1 className="text-3xl sm:text-4xl font-medium text-foreground">
-						Page not found
+						Страница не найдена
 					</h1>
 					<p className="text-sm sm:text-base font-light text-muted-foreground leading-relaxed">
-						The page you&apos;re looking for doesn&apos;t exist or has been
-						moved.
+						Страница, которую ты ищешь, не существует или была перемещена.
 					</p>
 					<Link
 						href="/"
 						className="inline-flex items-center gap-2 mt-2 px-4 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base font-normal border border-border text-foreground hover:bg-muted transition-colors"
 					>
-						Take me home
+						На главную
 					</Link>
 				</div>
 			</div>

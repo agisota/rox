@@ -1,37 +1,37 @@
 ---
-title: "The Terminal That (Almost) Never Dies: Building a Persistent Terminal Daemon for Electron"
-description: "How we built a process-isolated terminal host that survives app restarts, handles backpressure gracefully, and enables cold restore from disk."
+title: "Терминал, который (почти) никогда не умирает: как мы построили постоянный терминальный демон для Electron"
+description: "Как мы построили изолированный по процессам хост терминала, который переживает перезапуски приложения, изящно справляется с backpressure и умеет холодное восстановление с диска."
 author: avi
 date: 2026-01-26
-category: Engineering
+category: Инженерия
 relatedSlugs:
   - git-worktrees-history-deep-dive
   - how-to-get-hit
 ---
 
-One of the slickest features of Rox is how our terminal survives app restarts. This is a deep dive on how we built it. Huge credits to [Andreas Asprou](https://x.com/andyasprou) who spearheaded this entire effort.
+Одна из самых изящных фич Rox — то, как наш терминал переживает перезапуски приложения. Это глубокое погружение в то, как мы это построили. Огромная благодарность [Andreas Asprou](https://x.com/andyasprou), который возглавил всё это начинание.
 
 ---
 
-When you're building an integrated terminal for Rox, we ran into an inconvenient issue: **terminals are ephemeral processes**. This is inconvenient for many reasons. We like to update a lot. Losing progress across 10 worktrees everytime you update is a big deterrent for updating. Or if the app crashes, you lose all your processes.
+Когда мы строили встроенный терминал для Rox, мы столкнулись с неудобной проблемой: **терминалы — эфемерные процессы**. Это неудобно по многим причинам. Мы любим часто обновляться. Терять прогресс по 10 worktrees при каждом обновлении — серьёзный сдерживающий фактор для обновлений. Или если приложение падает, ты теряешь все свои процессы.
 
-Using on Tmux as an existence proof, we knew ephemeral terminals were possible.  
+Используя tmux как доказательство существования, мы знали, что неэфемерные терминалы возможны.
 
-## The Problem: Electron Terminals Are Fragile
+## Проблема: терминалы в Electron хрупки
 
-In a usual Electron + node-pty setup, your terminal lifecycle looks like this:
+В обычной связке Electron + node-pty жизненный цикл твоего терминала выглядит так:
 
 ```
 App starts → spawn PTY → user runs commands → app closes → PTY dies
 ```
 
-In this workflow, the PTY is spawned in the main Node process of the app. This process is killed when the app closes, killing its child process as well. 
+В этом сценарии PTY порождается в главном процессе Node приложения. Этот процесс убивается при закрытии приложения, убивая заодно и свой дочерний процесс.
 
-## The Tempting Solution: Just Use tmux
+## Заманчивое решение: просто взять tmux
 
-In our first iteration of the solve, we used tmux. It's battle-tested, handles persistence natively, and has a relatively easy interface.
+В нашей первой итерации решения мы использовали tmux. Он проверен в бою, нативно справляется с сохранением состояния и имеет относительно простой интерфейс.
 
-Our workflow with tmux became:
+Наш рабочий процесс с tmux стал таким:
 
 ```bash
 # Spawn session
@@ -43,19 +43,19 @@ tmux attach-session -t "rox-pane-123"
 # Session survives app restart ✓
 ```
 
-We also used tmux with headless to make it feel native in xterm.
+Мы также использовали tmux в headless-режиме, чтобы это ощущалось нативно в xterm.
 
-** Why this sucks actually **
+** Почему это на самом деле плохо **
 
-1. An extra dependencies. Now on top of installing the app, users will have to install tmux. 
-2. Not cross platform. Tmux does not work for windows. We'd have to build another equivalent integration.
-3. xterm incompatibility. As a terminal simulator itself, tmux takes over the scroll bar, selection, hotkeys, and the likes. This hijack inside of xterm makes it feel extremely clunky.
+1. Лишняя зависимость. Теперь вдобавок к установке приложения пользователям придётся ставить tmux.
+2. Не кроссплатформенно. Tmux не работает на Windows. Нам пришлось бы строить ещё одну эквивалентную интеграцию.
+3. Несовместимость с xterm. Будучи сам по себе симулятором терминала, tmux забирает себе скроллбар, выделение, хоткеи и тому подобное. Этот перехват внутри xterm делает работу крайне топорной.
 
-We needed another way
+Нам был нужен другой путь.
 
-## Architecture: A detachable Daemon
+## Архитектура: отсоединяемый демон
 
-Our solution splits terminal management across three process layers:
+Наше решение разделяет управление терминалом на три процессных слоя:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -85,15 +85,15 @@ Our solution splits terminal management across three process layers:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-With this architecture, the Electron app becomes just a *client* of the terminal daemon. It can:
+При такой архитектуре приложение Electron становится просто *клиентом* терминального демона. Оно может:
 
-- Restart the app → Reconnect to running sessions
-- Open multiple windows → All attach to the same daemon
-- Crash and recover → Cold restore from disk history
+- Перезапустить приложение → переподключиться к работающим сессиям
+- Открыть несколько окон → все подключаются к одному и тому же демону
+- Упасть и восстановиться → холодное восстановление из истории на диске
 
-### Spawning the Daemon
+### Порождение демона
 
-The daemon is a Node.js process spawned with a clever Electron trick:
+Демон — это процесс Node.js, порождаемый хитрым трюком Electron:
 
 ```typescript
 const daemon = spawn(process.execPath, [daemonScript], {
@@ -107,11 +107,11 @@ const daemon = spawn(process.execPath, [daemonScript], {
 daemon.unref();  // Don't wait for daemon to exit
 ```
 
-Setting `ELECTRON_RUN_AS_NODE=1` tells Electron to act as a regular Node.js runtime, perfect for a background service that doesn't need Chromium.
+Установка `ELECTRON_RUN_AS_NODE=1` говорит Electron вести себя как обычный рантайм Node.js — идеально для фонового сервиса, которому не нужен Chromium.
 
-## The Protocol: NDJSON Over Unix Sockets
+## Протокол: NDJSON поверх Unix-сокетов
 
-Communication between the main process and daemon uses newline-delimited JSON over Unix domain sockets:
+Обмен между главным процессом и демоном использует JSON с разделителями-переводами строк поверх Unix-domain-сокетов:
 
 ```typescript
 // Request from main process
@@ -124,15 +124,15 @@ Communication between the main process and daemon uses newline-delimited JSON ov
 {"type":"data","sessionId":"pane-1","data":"$ npm install\r\n"}
 ```
 
-**Why Unix sockets?** They're fast (no TCP overhead), secure (file permissions), and support backpressure natively through kernel buffers.
+**Почему Unix-сокеты?** Они быстры (нет накладных расходов TCP), безопасны (права доступа к файлам) и нативно поддерживают backpressure через буферы ядра.
 
-### The Two-Socket Split
+### Разделение на два сокета
 
-Our first protocol version used a single socket for everything. This caused a nasty problem: **head-of-line blocking**.
+Наша первая версия протокола использовала один сокет на всё. Это вызвало мерзкую проблему: **блокировку начала очереди (head-of-line blocking)**.
 
-When a terminal produces output faster than the socket can drain, the kernel buffer fills up. Every `socket.write()` for data events would block, queuing behind them any RPC responses. The result? A user opens a new terminal, but `createOrAttach` times out because the response is stuck behind megabytes of `cat bigfile.log` output.
+Когда терминал выдаёт вывод быстрее, чем сокет успевает его сливать, буфер ядра заполняется. Каждый `socket.write()` для событий с данными блокировался бы, выстраивая за собой в очередь любые ответы RPC. Результат? Пользователь открывает новый терминал, но `createOrAttach` отваливается по таймауту, потому что ответ застрял за мегабайтами вывода `cat bigfile.log`.
 
-Protocol v2 splits communication:
+Протокол v2 разделяет обмен:
 
 ```
 Main Process                          Daemon
@@ -144,17 +144,17 @@ Main Process                          Daemon
      │        data, exit, errors         │
 ```
 
-Now the stream socket can back up independently while RPC stays responsive.
+Теперь stream-сокет может забиваться независимо, пока RPC остаётся отзывчивым.
 
-## Session Lifecycle: Create, Attach, Survive, Restore
+## Жизненный цикл сессии: создать, подключить, пережить, восстановить
 
-A session goes through well-defined states:
+Сессия проходит через чётко определённые состояния:
 
 ```
 CREATED ──► ALIVE ──► (clients attach/detach) ──► TERMINATING ──► EXIT
 ```
 
-The magic is in **attachment semantics**:
+Вся магия — в **семантике подключения**:
 
 ```typescript
 async createOrAttach(params: CreateSessionParams) {
@@ -179,9 +179,9 @@ async createOrAttach(params: CreateSessionParams) {
 }
 ```
 
-### Cold Restore: Recovering from Daemon crashes
+### Холодное восстановление: возвращение после падений демона
 
-When the daemon dies (machine reboot, crash, kill -9), sessions are lost. But we still have disk history:
+Когда демон умирает (перезагрузка машины, падение, kill -9), сессии теряются. Но у нас по-прежнему есть история на диске:
 
 ```
 ~/.rox/terminal-sessions/
@@ -191,7 +191,7 @@ When the daemon dies (machine reboot, crash, kill -9), sessions are lost. But we
         └── scrollback.txt   # Full terminal output
 ```
 
-On next app launch, we detect unclean shutdown (no `endedAt` in metadata) and offer cold restore:
+При следующем запуске приложения мы обнаруживаем нечистое завершение (нет `endedAt` в метаданных) и предлагаем холодное восстановление:
 
 ```typescript
 // Session restored - scrollback shown but read-only
@@ -199,17 +199,17 @@ On next app launch, we detect unclean shutdown (no `endedAt` in metadata) and of
 // Old scrollback preserved, new shell spawns in same directory
 ```
 
-This gives users the best of both worlds: they see what happened before the crash, and can kinda where they left off.
+Это даёт пользователям лучшее из обоих миров: они видят, что было до падения, и могут вроде как продолжить с того места, где остановились.
 
-## Backpressure: The Hidden Challenge
+## Backpressure: скрытый вызов
 
-Terminals can produce output *fast*. A simple `cat /dev/urandom | base64` will flood any buffer you throw at it. Without careful backpressure handling, you get:
+Терминалы могут выдавать вывод *быстро*. Простой `cat /dev/urandom | base64` затопит любой буфер, который ты ему подставишь. Без аккуратной обработки backpressure ты получаешь:
 
-- Memory exhaustion (unbounded queues)
-- UI freezes (blocked event loops)
-- Lost data (dropped writes)
+- Исчерпание памяти (неограниченные очереди)
+- Зависания UI (заблокированные циклы событий)
+- Потерю данных (отброшенные записи)
 
-We implement **multi-level backpressure** from PTY to UI:
+Мы реализуем **многоуровневый backpressure** от PTY до UI:
 
 ```
 PTY stdout
@@ -227,7 +227,7 @@ Main process stream socket
 Renderer xterm.js
 ```
 
-The PTY subprocess batches output aggressively:
+PTY-подпроцесс агрессивно батчит вывод:
 
 ```typescript
 // Collect output for up to 32ms or 128KB, whichever comes first
@@ -248,19 +248,19 @@ pty.onData((data) => {
 });
 ```
 
-This avoids the O(n²) string concatenation problem while maintaining ~30fps visual updates.
+Это позволяет избежать проблемы O(n²) при конкатенации строк, сохраняя при этом визуальные обновления на уровне ~30 кадров/с.
 
-## The Headless Emulator: State Without a Screen
+## Headless-эмулятор: состояние без экрана
 
-Each daemon session runs a headless xterm.js emulator. This might seem redundant—why emulate if there's no screen?
+Каждая сессия демона запускает headless-эмулятор xterm.js. Это может показаться избыточным — зачем эмулировать, если нет экрана?
 
-The emulator gives us:
+Эмулятор даёт нам:
 
-1. **Accurate snapshots**: When a new client attaches, we serialize the *current screen state*, not just raw scrollback. The user sees exactly what was on screen, cursor position included.
+1. **Точные снимки состояния**: когда подключается новый клиент, мы сериализуем *текущее состояние экрана*, а не просто сырой scrollback. Пользователь видит ровно то, что было на экране, включая положение курсора.
 
-2. **Terminal mode tracking**: Application mode, bracketed paste, mouse tracking—all parsed and tracked so reconnecting clients get correct state.
+2. **Отслеживание режимов терминала**: режим приложения, bracketed paste, отслеживание мыши — всё разобрано и отслежено, чтобы переподключающиеся клиенты получали корректное состояние.
 
-3. **CWD detection**: By parsing OSC escape sequences, we know the shell's current directory even when the session was created hours ago.
+3. **Определение CWD**: разбирая escape-последовательности OSC, мы знаем текущую директорию оболочки, даже если сессия была создана несколько часов назад.
 
 ```typescript
 // On attach, serialize current state
@@ -274,11 +274,11 @@ const snapshot = {
 };
 ```
 
-## Lessons Learned
+## Извлечённые уроки
 
-### 1. Protocol Versioning from Day One
+### 1. Версионирование протокола с первого дня
 
-When we introduced the two-socket split, existing daemons couldn't speak the new protocol. We handle this gracefully:
+Когда мы ввели разделение на два сокета, существующие демоны не умели говорить на новом протоколе. Мы обрабатываем это изящно:
 
 ```typescript
 // Client detects version mismatch
@@ -289,17 +289,17 @@ if (response.protocolVersion !== EXPECTED_VERSION) {
 }
 ```
 
-Always include version negotiation in your protocols.
+Всегда закладывай согласование версий в свои протоколы.
 
-### 2. React StrictMode Double-Mounts Are Real
+### 2. Двойное монтирование в React StrictMode — это реальность
 
-React 18's StrictMode double-mounts components in development. Our terminal component would:
+StrictMode в React 18 дважды монтирует компоненты в режиме разработки. Наш терминальный компонент:
 
-1. Mount → `createOrAttach()` → receive cold restore
-2. Unmount (StrictMode cleanup)
-3. Mount again → `createOrAttach()` → ???
+1. Монтировался → `createOrAttach()` → получал холодное восстановление
+2. Размонтировался (очистка StrictMode)
+3. Монтировался снова → `createOrAttach()` → ???
 
-If we re-read from disk, the cold restore flag might be gone (we wrote `endedAt`). Solution: **sticky cache**:
+Если мы перечитываем с диска, флаг холодного восстановления мог уже пропасть (мы записали `endedAt`). Решение: **липкий кеш**:
 
 ```typescript
 // Cache cold restore until explicitly acknowledged
@@ -317,9 +317,9 @@ ackColdRestore(paneId) {
 }
 ```
 
-### 3. Don't Kill on Disconnect
+### 3. Не убивай при отключении
 
-When the Electron app closes, we *don't* kill daemon sessions:
+Когда приложение Electron закрывается, мы *не* убиваем сессии демона:
 
 ```typescript
 async cleanup() {
@@ -335,11 +335,11 @@ async cleanup() {
 }
 ```
 
-This is the whole point of the daemon architecture. The default should be persistence, not cleanup.
+В этом весь смысл архитектуры с демоном. По умолчанию должно быть сохранение состояния, а не очистка.
 
-### 4. Concurrency Limits Prevent Spawn Storms
+### 4. Лимиты параллелизма предотвращают шторм порождений
 
-Opening a workspace with 10 terminal panes would previously spawn 10 sessions simultaneously, overwhelming the daemon. We added a semaphore with priority:
+Открытие рабочего пространства с 10 терминальными панелями раньше порождало 10 сессий одновременно, перегружая демон. Мы добавили семафор с приоритетом:
 
 ```typescript
 // Max 3 concurrent createOrAttach operations
@@ -350,11 +350,11 @@ const priority = isFocusedPane ? 0 : 1;
 await this.limiter.acquire(priority);
 ```
 
-Users see their active terminal first, background tabs hydrate gradually.
+Пользователи сначала видят свой активный терминал, фоновые вкладки подгружаются постепенно.
 
-## The Future: Cloud Backends
+## Будущее: облачные бэкенды
 
-The abstraction boundary we've built isn't just about local persistence. The `TerminalRuntime` interface is provider-neutral:
+Граница абстракции, которую мы построили, нужна не только для локального сохранения состояния. Интерфейс `TerminalRuntime` нейтрален к провайдеру:
 
 ```typescript
 interface TerminalRuntime {
@@ -368,8 +368,8 @@ interface TerminalRuntime {
 }
 ```
 
-Today, `LocalTerminalRuntime` wraps our daemon. Tomorrow, `CloudTerminalRuntime` could wrap SSH connections or remote tmux sessions—same interface, different backend. The renderer doesn't need to know where the terminal lives.
+Сегодня `LocalTerminalRuntime` оборачивает наш демон. Завтра `CloudTerminalRuntime` мог бы оборачивать SSH-соединения или удалённые tmux-сессии — тот же интерфейс, другой бэкенд. Рендереру не нужно знать, где живёт терминал.
 
 ---
 
-*Want to dive deeper? Check out the [Rox desktop source](https://github.com/agisota/set) for the full implementation.*
+*Хочешь копнуть глубже? Загляни в [исходники десктопа Rox](https://github.com/agisota/set) ради полной реализации.*

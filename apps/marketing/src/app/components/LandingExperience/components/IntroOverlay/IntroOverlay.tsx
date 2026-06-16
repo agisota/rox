@@ -144,7 +144,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			.add(root, { backgroundColor: "var(--rox-bg)" }, "<<+=50")
+			.add(root, { backgroundColor: "#000" }, "<<+=50")
 			.add(
 				slide1Flank,
 				{
@@ -256,7 +256,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 
 		// ── Slide 2: feature tags scramble in across the grid (held ~2× longer)
 		timeline
-			.add(root, { backgroundColor: "var(--rox-orange-5)" }, "<+=300")
+			.add(root, { backgroundColor: "#000" }, "<+=300")
 			.add(logo, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
 			.set(slide1, { opacity: 0 }, "<<")
 			.set(slide2, { opacity: 1 }, "<<")
@@ -298,7 +298,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 
 		// ── Slide 3: closing tagline ───────────────────────────────────────
 		timeline
-			.add(root, { backgroundColor: "var(--rox-bg)" }, "<+=1700")
+			.add(root, { backgroundColor: "#000" }, "<+=1700")
 			.set(slide2, { opacity: 0 }, "<<")
 			.set(slide3, { opacity: 1 }, "<<")
 			.add(
@@ -355,6 +355,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					height={213}
 					priority
 				/>
+				<span className="rox-intro__tie" aria-hidden="true" />
 			</div>
 
 			<div className="rox-intro__stage">

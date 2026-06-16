@@ -36,7 +36,7 @@ export function FeaturesSection() {
 									className={`space-y-6 ${isReversed ? "lg:order-2" : "lg:order-1"}`}
 								>
 									<div className="space-y-4">
-										<span className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
+										<span className="text-sm font-sans text-muted-foreground uppercase tracking-wider">
 											{feature.tag}
 										</span>
 										<h3 className="text-2xl sm:text-3xl lg:text-4xl font-medium tracking-tight text-foreground">

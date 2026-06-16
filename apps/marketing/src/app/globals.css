@@ -3,7 +3,9 @@
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
 @theme {
-	--font-family-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+	--font-family-sans:
+		-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+		system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	--font-family-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
 }
 

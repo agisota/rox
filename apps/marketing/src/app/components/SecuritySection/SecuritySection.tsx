@@ -47,7 +47,7 @@ export function SecuritySection() {
 					transition={{ duration: 0.5 }}
 				>
 					<div className="space-y-1">
-						<h2 className="text-2xl sm:text-3xl font-mono tracking-[-0.01em] text-foreground">
+						<h2 className="text-2xl sm:text-3xl font-sans tracking-[-0.01em] text-foreground">
 							Приватность по умолчанию
 						</h2>
 						<h2 className="text-lg sm:text-xl font-light tracking-[-0.03em] text-muted-foreground max-w-[700px]">

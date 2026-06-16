@@ -1,6 +1,6 @@
 ---
-title: "How to Run Multiple Claude Code Agents in Parallel"
-description: "Learn the safest way to run multiple Claude Code sessions at once. Compare terminal tabs, tmux, manual Git worktrees, and Rox's orchestration workflow."
+title: "Как запускать несколько агентов Claude Code параллельно"
+description: "Узнай самый безопасный способ запускать несколько сессий Claude Code сразу. Сравнение вкладок терминала, tmux, ручных Git worktree и воркфлоу оркестрации Rox."
 date: 2026-03-20
 lastUpdated: 2026-03-20
 type: "tutorial"
@@ -16,160 +16,160 @@ keywords:
   - claude code tmux
 ---
 
-Claude Code is excellent at deep, single-task work. The moment you want three agents writing tests, fixing lint, and refactoring a service at the same time, the bottleneck is no longer model quality. The bottleneck is workflow.
+Claude Code отлично справляется с глубокой работой над одной задачей. В тот момент, когда тебе нужны три агента, которые одновременно пишут тесты, чинят линт и рефакторят сервис, узким местом перестаёт быть качество модели. Узкое место — это воркфлоу.
 
-The safe way to parallelize Claude Code is simple: give every session its own Git worktree, its own branch, and a review step before anything lands on your main branch.
+Безопасный способ распараллелить Claude Code прост: дай каждой сессии свой Git worktree, свою ветку и шаг ревью перед тем, как что-либо попадёт в твою основную ветку.
 
 ---
 
-## The Real Problem
+## Настоящая проблема
 
-Running multiple Claude Code sessions is easy. Running them without stepping on each other is the hard part.
+Запустить несколько сессий Claude Code легко. Запустить их так, чтобы они не наступали друг другу на ноги, — вот сложная часть.
 
-If two sessions share one working directory, they can both edit the same files, overwrite each other's changes, and leave you with a review mess. Even when they touch different files, you still have to remember which branch belongs to which task, which terminal owns which session, and what changed where.
+Если две сессии делят одну рабочую директорию, обе могут редактировать одни и те же файлы, перезаписывать изменения друг друга и оставлять тебя с месивом на ревью. Даже когда они трогают разные файлы, тебе всё равно приходится помнить, какая ветка принадлежит какой задаче, какому терминалу принадлежит какая сессия и что где изменилось.
 
-That is why "multiple agents" is really an isolation problem first and an interface problem second.
+Вот почему «несколько агентов» — это в первую очередь проблема изоляции, а во вторую — проблема интерфейса.
 
-## The Three Common Approaches
+## Три распространённых подхода
 
-### 1. Multiple Terminal Tabs or tmux Panes
+### 1. Несколько вкладок терминала или панелей tmux
 
-This is where most people start. Open a few tabs, run `claude` in each, and keep a mental map of which session owns which task.
+С этого начинает большинство. Открываешь несколько вкладок, запускаешь `claude` в каждой и держишь в голове карту того, какая сессия владеет какой задачей.
 
-It works for quick experiments, but it has two problems:
+Это работает для быстрых экспериментов, но у этого две проблемы:
 
-- no automatic Git isolation
-- no single place to review diffs across sessions
+- нет автоматической изоляции через Git
+- нет единого места для ревью diff по всем сессиям
 
-If every tab points at the same checkout, parallelism becomes unsafe immediately.
+Если каждая вкладка указывает на один и тот же чекаут, параллелизм мгновенно становится небезопасным.
 
-### 2. Manual Git Worktrees
+### 2. Ручные Git worktree
 
-This is the Git-native way to do it. You create a separate worktree and branch for each Claude Code session:
+Это нативный для Git способ. Ты создаёшь отдельный worktree и ветку для каждой сессии Claude Code:
 
 ```bash
 git worktree add ../repo-tests -b ai/tests
 git worktree add ../repo-refactor -b ai/refactor
 ```
 
-Then you `cd` into each directory and launch Claude Code there.
+Затем заходишь `cd` в каждую директорию и запускаешь Claude Code там.
 
-This is safe and effective. It is also repetitive. You still have to create branches, name directories, track which session maps to which task, and review each diff manually in your editor or Git UI.
+Это безопасно и эффективно. Но это ещё и однообразно. Тебе всё равно приходится создавать ветки, называть директории, отслеживать, какая сессия соответствует какой задаче, и делать ревью каждого diff вручную в редакторе или Git UI.
 
 ### 3. Rox + Claude Code
 
-This is the same worktree-based approach, but automated.
+Это тот же подход на основе worktree, но автоматизированный.
 
-Rox creates an isolated worktree per task, launches Claude Code inside it, keeps the sessions organized, and gives you one place to review the resulting diffs. Claude Code still does the coding. Rox handles the orchestration.
+Rox создаёт изолированный worktree на каждую задачу, запускает внутри него Claude Code, держит сессии организованными и даёт тебе одно место для ревью получившихся diff. Claude Code по-прежнему пишет код. Rox занимается оркестрацией.
 
-That is the key distinction: Claude Code is the agent; Rox is the workflow layer that lets you run many Claude Code sessions safely.
+Вот ключевое различие: Claude Code — это агент; Rox — это слой воркфлоу, который позволяет безопасно запускать множество сессий Claude Code.
 
-## Quick Comparison
+## Быстрое сравнение
 
-| Approach | Parallel? | Isolated by default? | Review workflow | Ongoing overhead |
+| Подход | Параллельно? | Изолировано по умолчанию? | Воркфлоу ревью | Постоянные накладные расходы |
 |---|---|---|---|---|
-| Terminal tabs | Yes | No | Manual | Low setup, high risk |
-| tmux | Yes | No | Manual | Good for power users, still no isolation |
-| Manual Git worktrees + Claude Code | Yes | Yes | Git-native, but manual | Safe, but repetitive |
-| Rox + Claude Code | Yes | Yes | Built-in diff review per task | Lowest overhead once installed |
+| Вкладки терминала | Да | Нет | Вручную | Лёгкая настройка, высокий риск |
+| tmux | Да | Нет | Вручную | Хорош для опытных пользователей, но изоляции по-прежнему нет |
+| Ручные Git worktree + Claude Code | Да | Да | Нативно для Git, но вручную | Безопасно, но однообразно |
+| Rox + Claude Code | Да | Да | Встроенное ревью diff на задачу | Наименьшие накладные расходы после установки |
 
-## Recommended Workflow
+## Рекомендуемый воркфлоу
 
-### 1. Break work into independent tasks
+### 1. Разбей работу на независимые задачи
 
-Good parallel tasks:
+Хорошие параллельные задачи:
 
-- write tests for module A
-- refactor service B
-- update docs for feature C
-- fix lint or type errors in package D
+- написать тесты для модуля A
+- отрефакторить сервис B
+- обновить документацию для фичи C
+- починить ошибки линта или типов в пакете D
 
-Bad parallel tasks:
+Плохие параллельные задачи:
 
-- three agents touching the same core file
-- tasks that depend on one unfinished refactor
-- anything where you do not yet know the right architecture
+- три агента, трогающие один и тот же ключевой файл
+- задачи, зависящие от одного незавершённого рефакторинга
+- что угодно, где ты ещё не знаешь правильной архитектуры
 
-Parallelism works best when each agent can finish a reviewable unit of work on its own branch.
+Параллелизм работает лучше всего, когда каждый агент может завершить пригодную для ревью единицу работы на своей ветке.
 
-### 2. Give every session its own worktree
+### 2. Дай каждой сессии свой worktree
 
-This is the non-negotiable part.
+Это часть, которая не обсуждается.
 
-If you are doing it manually, use `git worktree add` for every task before launching Claude Code. If you are using Rox, create one task per job and let Rox provision the worktree and branch automatically.
+Если делаешь это вручную, используй `git worktree add` для каждой задачи перед запуском Claude Code. Если используешь Rox, создавай по одной задаче на работу и позволь Rox автоматически выделить worktree и ветку.
 
-### 3. Keep prompts narrow
+### 3. Держи промпты узкими
 
-Claude Code performs better in parallel when each session has a tight, outcome-based prompt:
+Claude Code работает лучше в параллели, когда у каждой сессии есть плотный промпт, ориентированный на результат:
 
-- "Add table-driven tests for `normalizeUserInput` and stop when they pass."
-- "Refactor the billing service to remove duplicate retry logic without changing external behavior."
-- "Document how background jobs are retried in the API README."
+- «Добавь табличные тесты для `normalizeUserInput` и остановись, когда они проходят».
+- «Отрефактори биллинг-сервис, убрав дублирующуюся логику ретраев, не меняя внешнее поведение».
+- «Опиши в API README, как ретраятся фоновые задачи».
 
-Avoid mega-prompts that ask one session to do design, implementation, and cleanup across the entire repo. Those are better done sequentially.
+Избегай мега-промптов, которые просят одну сессию сделать проектирование, реализацию и зачистку по всему репозиторию. Такое лучше делать последовательно.
 
-### 4. Review each diff before merging
+### 4. Делай ревью каждого diff перед мержем
 
-Parallel agents increase output, not certainty.
+Параллельные агенты увеличивают объём вывода, а не уверенность.
 
-The right loop is:
+Правильный цикл такой:
 
-1. dispatch several narrow tasks
-2. review the finished diffs one by one
-3. merge the good ones
-4. spawn follow-up tasks from the remaining gaps
+1. раздай несколько узких задач
+2. сделай ревью завершённых diff по одному
+3. смержи хорошие
+4. породи последующие задачи из оставшихся пробелов
 
-This is why worktrees matter so much: every agent output stays isolated until you decide what lands.
+Вот почему worktree так важны: вывод каждого агента остаётся изолированным, пока ты не решишь, что попадёт в основную ветку.
 
-## Why Rox Fits This Workflow
+## Почему Rox подходит этому воркфлоу
 
-Rox is useful here because it removes the boring parts of manual parallelism:
+Rox полезен здесь, потому что убирает скучные части ручного параллелизма:
 
-- separate worktree per task
-- separate branch per task
-- persistent terminal sessions
-- one interface for reviewing outputs
+- отдельный worktree на задачу
+- отдельная ветка на задачу
+- постоянные сессии терминала
+- один интерфейс для ревью результатов
 
-If you already like Claude Code, Rox is not a replacement. It is the layer that makes multiple Claude Code sessions manageable.
+Если тебе уже нравится Claude Code, Rox — не замена. Это слой, который делает несколько сессий Claude Code управляемыми.
 
-For a product comparison, see [Rox vs Claude Code](/compare/rox-vs-claude-code).
+Сравнение продуктов смотри в [Rox против Claude Code](/compare/rox-vs-claude-code).
 
-## When Manual Worktrees Are Enough
+## Когда ручных worktree достаточно
 
-You do not need another tool if:
+Тебе не нужен ещё один инструмент, если:
 
-- you only run one or two Claude Code sessions occasionally
-- you are comfortable living in Git and tmux all day
-- you prefer assembling your own workflow from terminal tools
+- ты запускаешь всего одну-две сессии Claude Code время от времени
+- тебе комфортно весь день жить в Git и tmux
+- ты предпочитаешь собирать собственный воркфлоу из терминальных инструментов
 
-Manual worktrees are still the correct primitive. Rox just packages that primitive into a faster operating model.
+Ручные worktree по-прежнему правильный примитив. Rox просто упаковывает этот примитив в более быструю операционную модель.
 
-## Verdict
+## Вердикт
 
-If you want to run multiple Claude Code agents in parallel, the decision is not really "Claude Code or Rox."
+Если ты хочешь запускать несколько агентов Claude Code параллельно, выбор на самом деле не «Claude Code или Rox».
 
-The real choice is:
+Настоящий выбор такой:
 
-- Claude Code alone, one task at a time
-- Claude Code plus manual worktrees, with more setup overhead
-- Claude Code plus Rox, with the same isolation model but less operational friction
+- один Claude Code, по одной задаче за раз
+- Claude Code плюс ручные worktree, с большими накладными расходами на настройку
+- Claude Code плюс Rox, с той же моделью изоляции, но с меньшим операционным трением
 
-For most teams and solo developers, worktree-based orchestration is the difference between "parallel in theory" and "parallel every day."
+Для большинства команд и соло-разработчиков оркестрация на основе worktree — это разница между «параллельно в теории» и «параллельно каждый день».
 
-## Frequently Asked Questions
+## Часто задаваемые вопросы
 
-### Can Claude Code itself run multiple agents?
+### Может ли сам Claude Code запускать несколько агентов?
 
-You can run multiple Claude Code sessions, but each session still needs its own safe workspace. Claude Code is the agent process. The missing piece is orchestration and isolation across sessions.
+Ты можешь запустить несколько сессий Claude Code, но каждой сессии всё равно нужно своё безопасное рабочее пространство. Claude Code — это процесс-агент. Недостающая часть — оркестрация и изоляция между сессиями.
 
-### Do I need Git worktrees to parallelize Claude Code?
+### Нужны ли мне Git worktree, чтобы распараллелить Claude Code?
 
-If you care about safety, yes. Separate worktrees keep each session on its own branch and working directory, which prevents overlapping changes from colliding in one checkout.
+Если тебе важна безопасность — да. Отдельные worktree держат каждую сессию на своей ветке и в своей рабочей директории, что не даёт пересекающимся изменениям сталкиваться в одном чекауте.
 
-### Is tmux enough?
+### Достаточно ли tmux?
 
-tmux is enough to manage panes and sessions. It is not enough to isolate file changes by itself. You still need a Git workflow, usually worktrees, underneath it.
+tmux достаточно, чтобы управлять панелями и сессиями. Но сам по себе он недостаточен, чтобы изолировать изменения файлов. Под ним всё равно нужен воркфлоу Git, обычно worktree.
 
-### Is Rox only for Claude Code?
+### Только ли для Claude Code предназначен Rox?
 
-No. Rox can orchestrate Claude Code, Codex, OpenCode, Aider, and other CLI agents. Claude Code is just one of the strongest fits for the workflow.
+Нет. Rox может оркестрировать Claude Code, Codex, OpenCode, Aider и других CLI-агентов. Claude Code — просто один из самых подходящих под этот воркфлоу.

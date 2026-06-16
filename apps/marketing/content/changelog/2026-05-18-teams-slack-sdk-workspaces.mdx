@@ -1,31 +1,31 @@
 ---
-title: Automations, CLI, and Slack bot
+title: Автоматизации, CLI и Slack-бот
 date: 2026-05-18
 image: /changelog/automations.png
 ---
 
-Rox is now usable from a lot more places than the desktop app: a fleshed-out CLI and TypeScript SDK, a Slack agent that spins up workspaces on its own, and a mobile app heading into internal review.
+Rox теперь можно использовать из куда большего числа мест, чем десктопное приложение: проработанный CLI и TypeScript SDK, Slack-агент, который сам поднимает рабочие пространства, и мобильное приложение, выходящее на внутреннее ревью.
 
-## Automations
+## Автоматизации
 
-**Automations are cron jobs for agent sessions.** Pick a project, write a prompt, set a schedule — and Rox dispatches an agent run against a fresh workspace every time it fires. The output is a live workspace you can open, review, and continue interactively.
+**Автоматизации — это cron-задачи для сессий агентов.** Выбери проект, напиши промпт, задай расписание — и Rox запускает прогон агента в свежем рабочем пространстве каждый раз, когда оно срабатывает. Результат — живое рабочее пространство, которое ты можешь открыть, просмотреть и продолжить интерактивно.
 
-Typical uses:
+Типичные применения:
 
-- **Nightly standups** — summarize PRs, issues, and activity from the last 24 hours
-- **Release notes** — draft from merged commits each week
-- **Security & dependency sweeps** — scan for vulnerable packages or deprecated APIs every morning
-- **Long-running refactors** — "bump TypeScript to 5.7 in the next un-migrated package" on a daily cadence
+- **Ночные стендапы** — суммируй PR'ы, issue и активность за последние 24 часа
+- **Release notes** — черновик из смерженных коммитов каждую неделю
+- **Проверки безопасности и зависимостей** — сканируй уязвимые пакеты или устаревшие API каждое утро
+- **Долгие рефакторинги** — «обнови TypeScript до 5.7 в следующем не мигрированном пакете» на ежедневной основе
 
-This batch brings automations into their own as a first-class workflow:
+Этот набор выводит автоматизации в полноценный воркфлоу:
 
-- **Prompt version history** <PRBadge url="https://github.com/agisota/set/pull/3996" /> — every edit to an automation's prompt is snapshotted. Browse previous versions and restore any of them, so an accidental change is no longer a one-way door.
-- **Redesigned automations tab** <PRBadge url="https://github.com/agisota/set/pull/4225" /> — new layout that makes a queue of runs easier to scan at a glance.
-- **Mine vs. Team filter** <PRBadge url="https://github.com/agisota/set/pull/4403" /> — automations now belong to a team. Filter the runs view between **Mine** and **Team** to see only what you ran vs. everything your team kicked off.
+- **История версий промптов** <PRBadge url="https://github.com/agisota/set/pull/3996" /> — каждая правка промпта автоматизации снимается в снапшот. Просматривай предыдущие версии и восстанавливай любую из них, так что случайное изменение больше не дверь в одну сторону.
+- **Переработанная вкладка автоматизаций** <PRBadge url="https://github.com/agisota/set/pull/4225" /> — новая компоновка, которая упрощает быстрый просмотр очереди прогонов.
+- **Фильтр «Мои» / «Команда»** <PRBadge url="https://github.com/agisota/set/pull/4403" /> — автоматизации теперь принадлежат команде. Фильтруй представление прогонов между **«Мои»** и **«Команда»**, чтобы видеть только то, что запустил ты, или всё, что запустила твоя команда.
 
-### Drive them from the CLI
+### Управляй ими из CLI
 
-Everything you can do in the UI is now scriptable. New in this batch: `prompt get` / `prompt set` <PRBadge url="https://github.com/agisota/set/pull/3966" /> and the `--name` filter on list <PRBadge url="https://github.com/agisota/set/pull/3959" />.
+Всё, что ты можешь сделать в интерфейсе, теперь скриптуется. Новое в этом наборе: `prompt get` / `prompt set` <PRBadge url="https://github.com/agisota/set/pull/3966" /> и фильтр `--name` при выводе списка <PRBadge url="https://github.com/agisota/set/pull/3959" />.
 
 ```bash
 # create a recurring run from a prompt file
@@ -50,20 +50,20 @@ rox automations prompt set <id> --file prompt.md
 rox automations run <id>
 ```
 
-`rox automations run` is also exposed via the **TypeScript SDK** and **MCP**, so you can dispatch runs from a CI job, an internal admin panel, or a Slack slash command. See the [Automations docs](https://docs.rox.one/docs/automations) for the full surface.
+`rox automations run` также доступен через **TypeScript SDK** и **MCP**, так что ты можешь запускать прогоны из CI-задачи, внутренней админ-панели или slash-команды Slack. Полный обзор смотри в [документации по автоматизациям](https://docs.rox.one/docs/automations).
 
 ## Rox CLI
 
-The `rox` CLI grew real project and workspace commands and a cross-device login flow.
+CLI `rox` обзавёлся настоящими командами для проектов и рабочих пространств и сценарием входа между устройствами.
 
-**New commands:**
+**Новые команды:**
 
-- `rox projects create` <PRBadge url="https://github.com/agisota/set/pull/4355" /> — scaffold a new Rox project from your shell.
-- `rox projects setup` <PRBadge url="https://github.com/agisota/set/pull/4356" /> — link an existing local repo to a Rox project.
-- `rox workspaces open` <PRBadge url="https://github.com/agisota/set/pull/4258" /> — open a workspace directly from the terminal.
-- `rox auth login` <PRBadge url="https://github.com/agisota/set/pull/3965" /> — now uses OAuth device code + PKCE, so it works on headless servers and across devices.
+- `rox projects create` <PRBadge url="https://github.com/agisota/set/pull/4355" /> — создай новый проект Rox из своего шелла.
+- `rox projects setup` <PRBadge url="https://github.com/agisota/set/pull/4356" /> — свяжи существующий локальный репозиторий с проектом Rox.
+- `rox workspaces open` <PRBadge url="https://github.com/agisota/set/pull/4258" /> — открой рабочее пространство прямо из терминала.
+- `rox auth login` <PRBadge url="https://github.com/agisota/set/pull/3965" /> — теперь использует OAuth device code + PKCE, так что работает на безголовых серверах и между устройствами.
 
-**Setting it up:**
+**Как это настроить:**
 
 ```bash
 # install
@@ -79,7 +79,7 @@ rox projects create
 rox workspaces open
 ```
 
-The accompanying **TypeScript SDK** <PRBadge url="https://github.com/agisota/set/pull/3937" /> (`@rox_sh/sdk`) mirrors the CLI 1:1 — same procedures, same shapes — so anything you can do from your shell, you can do from a script, a CI job, or an internal tool.
+Сопутствующий **TypeScript SDK** <PRBadge url="https://github.com/agisota/set/pull/3937" /> (`@rox_sh/sdk`) зеркалит CLI один в один — те же процедуры, те же формы — так что всё, что ты можешь сделать из шелла, можно сделать из скрипта, CI-задачи или внутреннего инструмента.
 
 ```bash
 npm install @rox_sh/sdk
@@ -91,38 +91,38 @@ const client = new Rox(); // reads ROX_API_KEY / ROX_ORGANIZATION_ID
 await client.automations.run('<automation-id>');
 ```
 
-Linux `rox start` and `rox update` are now fixed <PRBadge url="https://github.com/agisota/set/pull/4635" />.
+`rox start` и `rox update` на Linux теперь исправлены <PRBadge url="https://github.com/agisota/set/pull/4635" />.
 
-## Slack bot
+## Slack-бот
 
-![Rox Slack bot spinning up a workspace and reporting back in-thread](/changelog/slack.png)
+![Slack-бот Rox поднимает рабочее пространство и отчитывается прямо в треде](/changelog/slack.png)
 
-`@rox` in Slack is now an actual agent, not a task-filer. Mention it in a channel or DM it from anywhere, and it can:
+`@rox` в Slack теперь настоящий агент, а не заполнитель задач. Упомяни его в канале или напиши ему в личку откуда угодно, и он может:
 
-- **Create, update, search, and triage tasks** from the conversation it's standing in — pulling assignees, statuses, and priorities from your team's Linear/Rox setup.
-- **Spin up a cloud workspace and launch a coding agent** to actually do the work. For code-change requests (e.g. "@rox bump our Sentry SDK to v9 across all apps"), it now defaults to spawning a workspace and agent rather than just filing a ticket <PRBadge url="https://github.com/agisota/set/pull/4660" />.
-- **Read the thread or channel history** on its own to gather context — no need to copy-paste the prior messages.
-- **Search the web with citations** when a request needs up-to-date info.
-- **Unfurl Rox task and workspace links** with rich previews when they're shared in a channel.
+- **Создавать, обновлять, искать и сортировать задачи** прямо из разговора, в котором находится — подтягивая исполнителей, статусы и приоритеты из настроек Linear/Rox твоей команды.
+- **Поднять облачное рабочее пространство и запустить кодирующего агента**, чтобы реально сделать работу. Для запросов на изменение кода (например, «@rox обнови наш Sentry SDK до v9 во всех приложениях») он теперь по умолчанию создаёт рабочее пространство и агента, а не просто заводит тикет <PRBadge url="https://github.com/agisota/set/pull/4660" />.
+- **Читать историю треда или канала** самостоятельно, чтобы собрать контекст — не нужно копировать предыдущие сообщения.
+- **Искать в интернете со ссылками на источники**, когда запросу нужна актуальная информация.
+- **Разворачивать ссылки на задачи и рабочие пространства Rox** с богатыми превью, когда ими делятся в канале.
 
-**Setting it up:**
+**Как это настроить:**
 
-1. In the dashboard, go to **Integrations → Slack**.
-2. Click **Connect** to install the Rox Slack app into your workspace (OAuth).
-3. Mention `@rox` in any channel, or open a DM with the bot, and describe what you want done.
+1. В дашборде перейди в **«Интеграции → Slack»**.
+2. Нажми **«Подключить»**, чтобы установить приложение Rox Slack в своё рабочее пространство (OAuth).
+3. Упомяни `@rox` в любом канале или открой личку с ботом и опиши, что хочешь сделать.
 
-If Slack was already connected before this release, no action needed — proactive workspace creation is on by default.
+Если Slack уже был подключён до этого релиза, ничего делать не нужно — проактивное создание рабочих пространств включено по умолчанию.
 
-## Mobile: internal review
+## Мобильное приложение: внутреннее ревью
 
-The mobile app is in **internal review**. Core flows — workspaces list, task triage, agent chat, and the live terminal viewer — are wired up against the same APIs as web and desktop. We're dogfooding on-device now ahead of a wider beta.
+Мобильное приложение на **внутреннем ревью**. Основные сценарии — список рабочих пространств, сортировка задач, чат с агентом и живой просмотрщик терминала — подключены к тем же API, что web и десктоп. Мы сейчас тестируем на своих устройствах перед более широкой бетой.
 
-## Also in this batch
+## Также в этом наборе
 
-- **Teams as a first-class primitive** <PRBadge url="https://github.com/agisota/set/pull/4403" /> — assign members, workspaces, and automations to a team. Powers the Mine/Team automations split above.
-- **Terminal sessions survive app updates** <PRBadge url="https://github.com/agisota/set/pull/3971" /> — the PTY daemon hands off file descriptors on upgrade, so running shells stay alive when Rox auto-updates.
-- **Web terminal presets** <PRBadge url="https://github.com/agisota/set/pull/4653" /> — run your common commands with a single click in the web terminal, same as desktop.
+- **Команды как полноценная сущность** <PRBadge url="https://github.com/agisota/set/pull/4403" /> — назначай участников, рабочие пространства и автоматизации команде. Питает разделение автоматизаций «Мои»/«Команда» выше.
+- **Сессии терминала переживают обновления приложения** <PRBadge url="https://github.com/agisota/set/pull/3971" /> — демон PTY передаёт файловые дескрипторы при обновлении, так что запущенные шеллы остаются живыми, когда Rox авто-обновляется.
+- **Пресеты веб-терминала** <PRBadge url="https://github.com/agisota/set/pull/4653" /> — запускай свои частые команды одним кликом в веб-терминале, как на десктопе.
 
-## Minor updates
+## Мелкие обновления
 
-V2 changes tab gained inline stage/unstage/discard controls <PRBadge url="https://github.com/agisota/set/pull/4022" /> and diff comments gained a copy action <PRBadge url="https://github.com/agisota/set/pull/4389" />. Workspaces can be started with a preset for repeatable agent runs <PRBadge url="https://github.com/agisota/set/pull/4335" />. The relay server now drains tunnel connections cleanly on shutdown ahead of the multi-region rollout <PRBadge url="https://github.com/agisota/set/pull/4594" />. Theme search in the command palette <PRBadge url="https://github.com/agisota/set/pull/4573" />. macOS notifications now include workspace and project context <PRBadge url="https://github.com/agisota/set/pull/4614" />. MCP OAuth access token TTL bumped to 7 days <PRBadge url="https://github.com/agisota/set/pull/4365" />.
+Вкладка изменений V2 получила встроенные контролы stage/unstage/discard <PRBadge url="https://github.com/agisota/set/pull/4022" />, а комментарии к diff'ам — действие копирования <PRBadge url="https://github.com/agisota/set/pull/4389" />. Рабочие пространства можно запускать с пресетом для повторяемых прогонов агента <PRBadge url="https://github.com/agisota/set/pull/4335" />. Сервер relay теперь чисто сливает туннельные соединения при завершении работы перед мультирегиональным развёртыванием <PRBadge url="https://github.com/agisota/set/pull/4594" />. Поиск тем в командной палитре <PRBadge url="https://github.com/agisota/set/pull/4573" />. Уведомления macOS теперь включают контекст рабочего пространства и проекта <PRBadge url="https://github.com/agisota/set/pull/4614" />. TTL OAuth-токена доступа MCP увеличен до 7 дней <PRBadge url="https://github.com/agisota/set/pull/4365" />.

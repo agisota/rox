@@ -1,56 +1,56 @@
 ---
-title: Performance and memory leak fixes, file explorer, and terminal upgrades
+title: Фиксы производительности и утечек памяти, файловый проводник и улучшения терминала
 date: 2026-02-02
 image: /changelog/filetree.png
 ---
 
-## Performance & Memory Leak Fixes
+## Фиксы производительности и утечек памяти
 
-This release focuses on stability and speed improvements across the app.
+Этот релиз сфокусирован на улучшениях стабильности и скорости по всему приложению.
 
-**Workspace deletion 12x faster** - Deletion now completes in ~4-5 seconds instead of ~60 seconds. Terminal shutdowns and cleanup run in parallel, and git worktree removal uses a non-blocking background process. <PRBadge url="https://github.com/agisota/set/pull/1120" />
+**Удаление рабочих пространств в 12 раз быстрее** — удаление теперь завершается за ~4-5 секунд вместо ~60. Завершение работы терминалов и очистка идут параллельно, а удаление git worktree использует неблокирующий фоновый процесс. <PRBadge url="https://github.com/agisota/set/pull/1120" />
 
-**Port scanning performance** - Batched port scans per interval to reduce CPU usage and improve responsiveness <PRBadge url="https://github.com/agisota/set/pull/1134" />
+**Производительность сканирования портов** — сканирование портов сгруппировано в пакеты на каждый интервал, чтобы снизить нагрузку на CPU и повысить отзывчивость <PRBadge url="https://github.com/agisota/set/pull/1134" />
 
-**Memory leak fixes** - Fixed memory leaks in terminal session management and workspace cleanup routines, reducing memory usage during long sessions
+**Фиксы утечек памяти** — исправлены утечки памяти в управлении сессиями терминала и процедурах очистки рабочих пространств, что снижает потребление памяти в длинных сессиях
 
-**xterm viewport fixes** - Resolved terminal viewport height issues that caused rendering problems <PRBadge url="https://github.com/agisota/set/pull/1133" />
+**Фиксы вьюпорта xterm** — устранены проблемы с высотой вьюпорта терминала, вызывавшие сбои отрисовки <PRBadge url="https://github.com/agisota/set/pull/1133" />
 
-## File Explorer <PRBadge url="https://github.com/agisota/set/pull/1112" />
+## Файловый проводник <PRBadge url="https://github.com/agisota/set/pull/1112" />
 
-Browse and manage your project files directly from the right sidebar. The new file explorer includes a hierarchical tree view, search functionality, and full file operations.
+Просматривай и управляй файлами проекта прямо из правого сайдбара. Новый файловый проводник включает иерархическое дерево, поиск и полный набор операций с файлами.
 
-- Create, rename, delete, move, and copy files with context menus
-- Toggle hidden files and refresh directory listings
-- Search files with instant results and collapsible tree navigation
+- Создание, переименование, удаление, перемещение и копирование файлов через контекстные меню
+- Переключение скрытых файлов и обновление списков директорий
+- Поиск файлов с мгновенными результатами и сворачиваемой навигацией по дереву
 
-## Terminal Upgrades
+## Улучшения терминала
 
-**xterm.js 6.0** - Terminal now uses the latest xterm.js with improved rendering and WebGL support <PRBadge url="https://github.com/agisota/set/pull/1125" />
+**xterm.js 6.0** — терминал теперь использует свежий xterm.js с улучшенной отрисовкой и поддержкой WebGL <PRBadge url="https://github.com/agisota/set/pull/1125" />
 
-**Copy without trailing whitespace** - Terminal text selection now trims trailing spaces when copying, matching iTerm2 behavior <PRBadge url="https://github.com/agisota/set/pull/1104" />
+**Копирование без хвостовых пробелов** — выделение текста в терминале теперь обрезает хвостовые пробелы при копировании, как в iTerm2 <PRBadge url="https://github.com/agisota/set/pull/1104" />
 
-**International keyboard support** - Option+key combinations now work correctly on international keyboards (Option+2 = @) <PRBadge url="https://github.com/agisota/set/pull/1127" />
+**Поддержка международных клавиатур** — сочетания Option+клавиша теперь корректно работают на международных клавиатурах (Option+2 = @) <PRBadge url="https://github.com/agisota/set/pull/1127" />
 
-**Session persistence improvements** - Terminal sessions now consistently use daemon-backed persistence for better reliability <PRBadge url="https://github.com/agisota/set/pull/1105" />
+**Улучшения сохранения сессий** — сессии терминала теперь стабильно используют сохранение через демон для большей надёжности <PRBadge url="https://github.com/agisota/set/pull/1105" />
 
-## Improvements
+## Улучшения
 
-- **Changes sidebar redesign** - Consolidated header with base branch dropdown and synced expand/collapse state <PRBadge url="https://github.com/agisota/set/pull/1110" />
-- **Tab navigation hotkeys** - Jump directly to tabs 1-9 using ⌘⌥1-9 <PRBadge url="https://github.com/agisota/set/pull/1126" />
-- **Settings keyboard shortcut** - Open settings with ⌘, (or Ctrl+, on Windows/Linux) <PRBadge url="https://github.com/agisota/set/pull/1080" />
-- **Documentation links** - Added documentation links throughout the app (Help menu, API Keys, Integrations) <PRBadge url="https://github.com/agisota/set/pull/1096" />
-- **Tasks search shortcut** - Press Cmd+F to focus task search input <PRBadge url="https://github.com/agisota/set/pull/1098" />
-- **Bulk workspace operations** - MCP tools now support creating, updating, and deleting multiple workspaces in one call <PRBadge url="https://github.com/agisota/set/pull/1088" />
-- **Slack bot web search** - Slack bot can now search the web when answering questions <PRBadge url="https://github.com/agisota/set/pull/1100" />
-- **Slack response formatting** - Split Slack bot responses into summary + side effects messages <PRBadge url="https://github.com/agisota/set/pull/1101" />
-- **Copyable toasts** - Toast notifications now allow text selection and copying <PRBadge url="https://github.com/agisota/set/pull/1084" />
+- **Редизайн сайдбара изменений** — объединённый заголовок с выпадающим списком базовой ветки и синхронизированным состоянием разворачивания/сворачивания <PRBadge url="https://github.com/agisota/set/pull/1110" />
+- **Горячие клавиши навигации по вкладкам** — переход прямо к вкладкам 1-9 через ⌘⌥1-9 <PRBadge url="https://github.com/agisota/set/pull/1126" />
+- **Горячая клавиша настроек** — открытие настроек через ⌘, (или Ctrl+, на Windows/Linux) <PRBadge url="https://github.com/agisota/set/pull/1080" />
+- **Ссылки на документацию** — добавлены ссылки на документацию по всему приложению (меню «Справка», API-ключи, интеграции) <PRBadge url="https://github.com/agisota/set/pull/1096" />
+- **Горячая клавиша поиска задач** — нажми Cmd+F, чтобы перейти к полю поиска задач <PRBadge url="https://github.com/agisota/set/pull/1098" />
+- **Массовые операции с рабочими пространствами** — инструменты MCP теперь поддерживают создание, обновление и удаление нескольких рабочих пространств за один вызов <PRBadge url="https://github.com/agisota/set/pull/1088" />
+- **Веб-поиск в Slack-боте** — Slack-бот теперь может искать в интернете, отвечая на вопросы <PRBadge url="https://github.com/agisota/set/pull/1100" />
+- **Форматирование ответов в Slack** — ответы Slack-бота разбиты на сообщение-сводку и сообщение о побочных эффектах <PRBadge url="https://github.com/agisota/set/pull/1101" />
+- **Копируемые тосты** — уведомления-тосты теперь позволяют выделять и копировать текст <PRBadge url="https://github.com/agisota/set/pull/1084" />
 
 ---
 
-**Bug fixes:**
+**Исправления багов:**
 
-- Fixed git worktree push reliability <PRBadge url="https://github.com/agisota/set/pull/1135" />
-- Fixed case-insensitive filesystem errors during git fetch <PRBadge url="https://github.com/agisota/set/pull/1107" />
-- Fixed MCP date serialization <PRBadge url="https://github.com/agisota/set/pull/1071" />
-- Resolved Claude session heredoc delimiter conflicts <PRBadge url="https://github.com/agisota/set/pull/1128" />
+- Повысили надёжность push'а git worktree <PRBadge url="https://github.com/agisota/set/pull/1135" />
+- Исправили ошибки регистронезависимой файловой системы при git fetch <PRBadge url="https://github.com/agisota/set/pull/1107" />
+- Исправили сериализацию дат в MCP <PRBadge url="https://github.com/agisota/set/pull/1071" />
+- Устранили конфликты разделителей heredoc в сессиях Claude <PRBadge url="https://github.com/agisota/set/pull/1128" />

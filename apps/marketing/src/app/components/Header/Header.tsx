@@ -17,9 +17,9 @@ export function Header({ ctaButtons, starCounter }: HeaderProps) {
 	if (pathname === "/download") return null;
 
 	return (
-		<header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
+		<header className="sticky top-0 z-50 backdrop-blur-sm">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="flex items-center justify-between h-14">
+				<div className="flex items-center justify-between h-[54px]">
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}

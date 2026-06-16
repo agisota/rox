@@ -1,69 +1,69 @@
 ---
-title: New workspace modal, CodeMirror editor, file icons, and cross-workspace search
+title: Модальное окно нового рабочего пространства, редактор CodeMirror, иконки файлов и поиск по рабочим пространствам
 date: 2026-03-09
 image: /changelog/workspace-modal.png
 ---
 
-## New Workspace Modal Revamp <PRBadge url="https://github.com/agisota/set/pull/2153" />
+## Обновление модального окна нового рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/2153" />
 
-The workspace creation modal has been redesigned with improved clarity and new worktree import settings. Branches now load instantly, and the modal preserves your settings between opens.
+Модальное окно создания рабочего пространства переработано с упором на понятность и новые настройки импорта worktree. Ветки теперь загружаются мгновенно, а модальное окно сохраняет твои настройки между открытиями.
 
-![New workspace modal pull requests tab](/changelog/ws-2.png)
+![Вкладка pull request'ов в модальном окне нового рабочего пространства](/changelog/ws-2.png)
 
-- Worktree import settings for cloning directly into a workspace
-- Branches appear immediately without a loading delay
-- Modal state persists between opens
+- Настройки импорта worktree для клонирования прямо в рабочее пространство
+- Ветки появляются сразу, без задержки на загрузку
+- Состояние модального окна сохраняется между открытиями
 
-## CodeMirror Editor <PRBadge url="https://github.com/agisota/set/pull/2140" />
+## Редактор CodeMirror <PRBadge url="https://github.com/agisota/set/pull/2140" />
 
-We replaced Monaco with CodeMirror for the built-in diff and file editor. CodeMirror is ~97% smaller (150KB vs 5MB), loads significantly faster, and uses far less memory. You'll feel the difference.
+Мы заменили Monaco на CodeMirror для встроенного просмотрщика diff'ов и редактора файлов. CodeMirror примерно на 97% меньше (150KB против 5MB), грузится значительно быстрее и использует гораздо меньше памяти. Ты почувствуешь разницу.
 
-![CodeMirror editor](/changelog/codemirror.png)
+![Редактор CodeMirror](/changelog/codemirror.png)
 
-## Material Icon Theme <PRBadge url="https://github.com/agisota/set/pull/2148" />
+## Тема иконок Material Icon Theme <PRBadge url="https://github.com/agisota/set/pull/2148" />
 
-File icons in the sidebar and file tree now use the Material Icon Theme, bringing rich per-filetype icons familiar from VS Code. Hidden files are also always visible in the file sidebar.
+Иконки файлов в сайдбаре и дереве файлов теперь используют Material Icon Theme, что приносит богатые иконки для каждого типа файла, знакомые по VS Code. Скрытые файлы также всегда видны в файловом сайдбаре.
 
-![Material Icon Theme](/changelog/material-icons.png)
+![Тема иконок Material Icon Theme](/changelog/material-icons.png)
 
-## Cross-Workspace Search <PRBadge url="https://github.com/agisota/set/pull/2193" />
+## Поиск по рабочим пространствам <PRBadge url="https://github.com/agisota/set/pull/2193" />
 
-The search bar now supports searching across all open workspaces, not just the active one. Trigger it from the new search bar shortcut to find files and symbols across your entire project.
+Строка поиска теперь поддерживает поиск по всем открытым рабочим пространствам, а не только по активному. Запусти его через новую горячую клавишу строки поиска, чтобы находить файлы и символы по всему проекту.
 
-![Cross-workspace search](/changelog/search-bar.png)
+![Поиск по рабочим пространствам](/changelog/search-bar.png)
 
-## PR Check Status in Changes Sidebar <PRBadge url="https://github.com/agisota/set/pull/2207" />
+## Статус проверок PR в сайдбаре изменений <PRBadge url="https://github.com/agisota/set/pull/2207" />
 
-CI check results now appear inline in the Changes sidebar alongside your PR. See pass/fail status at a glance without switching to a browser tab.
+Результаты CI-проверок теперь появляются прямо в сайдбаре изменений рядом с твоим PR. Смотри статус успеха/провала с первого взгляда, не переключаясь на вкладку браузера.
 
-![PR check status in sidebar](/changelog/review-checks.png)
+![Статус проверок PR в сайдбаре](/changelog/review-checks.png)
 
-## Improvements
+## Улучшения
 
-- **Workspace sections drag & drop** - Organize workspaces into collapsible sections with full drag-and-drop reordering <PRBadge url="https://github.com/agisota/set/pull/2067" />
-- **Reorderable changes sidebar sections** - Drag the Commits, Files, and other sections in the changes sidebar to your preferred order <PRBadge url="https://github.com/agisota/set/pull/2105" />
-- **Diff pane selectable** - Text in the diff pane is now selectable, with a button to jump to the raw file edit <PRBadge url="https://github.com/agisota/set/pull/2227" />
-- **Auto-run toggle for agent tasks** - A new toggle lets you control whether agent task launches run automatically or wait for confirmation <PRBadge url="https://github.com/agisota/set/pull/2271" />
-- **Open Preview in workspace hover card** - The workspace hover card now includes an Open Preview button for quick access <PRBadge url="https://github.com/agisota/set/pull/2270" />
-- **Mark as Unread** - Terminal and tab context menus now include a "Mark as Unread" option <PRBadge url="https://github.com/agisota/set/pull/2276" />
-- **Terminal file links open in file viewer** - Clicking file paths printed in the terminal now opens them in the built-in file viewer by default <PRBadge url="https://github.com/agisota/set/pull/2266" />
-- **Requested reviewers in workspace hover card** - See who has been asked to review your PR directly from the workspace card <PRBadge url="https://github.com/agisota/set/pull/2136" />
-- **Hover actions for Mastra messages** - User messages in Mastra chat now show quick action buttons on hover <PRBadge url="https://github.com/agisota/set/pull/2117" />
-- **Browser webview right-click menu** - Right-clicking links in the browser pane now shows a context menu with open/copy options <PRBadge url="https://github.com/agisota/set/pull/2208" />
-- **Intel (x64) macOS support** - Desktop app builds are now available for Intel-based Macs <PRBadge url="https://github.com/agisota/set/pull/2256" />
-- **Recent invoices on billing page** - Your last few invoices are now listed directly on the billing settings page <PRBadge url="https://github.com/agisota/set/pull/2257" />
-- **MCP create workspace from existing branch** - The MCP server now supports creating a new workspace from an existing workspace's branch <PRBadge url="https://github.com/agisota/set/pull/2262" />
+- **Перетаскивание разделов рабочих пространств** — организуй рабочие пространства в сворачиваемые разделы с полным переупорядочиванием перетаскиванием <PRBadge url="https://github.com/agisota/set/pull/2067" />
+- **Переупорядочиваемые разделы сайдбара изменений** — перетаскивай разделы «Коммиты», «Файлы» и другие в сайдбаре изменений в удобный тебе порядок <PRBadge url="https://github.com/agisota/set/pull/2105" />
+- **Выделяемая панель diff** — текст в панели diff теперь можно выделять, с кнопкой для перехода к правке исходного файла <PRBadge url="https://github.com/agisota/set/pull/2227" />
+- **Переключатель авто-запуска для задач агента** — новый переключатель позволяет управлять тем, запускаются ли задачи агента автоматически или ждут подтверждения <PRBadge url="https://github.com/agisota/set/pull/2271" />
+- **Открытие предпросмотра в карточке рабочего пространства** — карточка рабочего пространства при наведении теперь включает кнопку «Открыть предпросмотр» для быстрого доступа <PRBadge url="https://github.com/agisota/set/pull/2270" />
+- **Пометить как непрочитанное** — контекстные меню терминала и вкладок теперь включают опцию «Пометить как непрочитанное» <PRBadge url="https://github.com/agisota/set/pull/2276" />
+- **Ссылки на файлы в терминале открываются в просмотрщике файлов** — клик по путям файлов, выведенным в терминале, теперь по умолчанию открывает их во встроенном просмотрщике файлов <PRBadge url="https://github.com/agisota/set/pull/2266" />
+- **Запрошенные ревьюеры в карточке рабочего пространства** — смотри, кого попросили проверить твой PR, прямо из карточки рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/2136" />
+- **Действия при наведении для сообщений Mastra** — сообщения пользователя в чате Mastra теперь показывают кнопки быстрых действий при наведении <PRBadge url="https://github.com/agisota/set/pull/2117" />
+- **Контекстное меню веб-вью браузера по правому клику** — клик правой кнопкой по ссылкам в панели браузера теперь показывает контекстное меню с опциями открытия/копирования <PRBadge url="https://github.com/agisota/set/pull/2208" />
+- **Поддержка Intel (x64) macOS** — сборки десктопного приложения теперь доступны для Mac на Intel <PRBadge url="https://github.com/agisota/set/pull/2256" />
+- **Недавние счета на странице биллинга** — твои последние несколько счетов теперь перечислены прямо на странице настроек биллинга <PRBadge url="https://github.com/agisota/set/pull/2257" />
+- **Создание рабочего пространства из существующей ветки через MCP** — сервер MCP теперь поддерживает создание нового рабочего пространства из ветки существующего рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/2262" />
 
 ---
 
-**Bug fixes:**
+**Исправления багов:**
 
-- Fixed `createBranchWorkspace` always failing with "main workspace already exists" <PRBadge url="https://github.com/agisota/set/pull/2253" />
-- Fixed PR tracking for forked repositories <PRBadge url="https://github.com/agisota/set/pull/2118" />
-- Fixed terminal pane spacing and removed xterm right gutter <PRBadge url="https://github.com/agisota/set/pull/2218" />
-- Fixed shell env not applied to GitHub status checks <PRBadge url="https://github.com/agisota/set/pull/2250" />
-- Fixed terminal tab titles masked by password input <PRBadge url="https://github.com/agisota/set/pull/2132" />
-- Fixed branch prefix case preservation to prevent worktree corruption <PRBadge url="https://github.com/agisota/set/pull/2098" />
-- Fixed auth session recovery on sign-in <PRBadge url="https://github.com/agisota/set/pull/2191" />
-- Fixed chat naming pipeline <PRBadge url="https://github.com/agisota/set/pull/2072" />
-- Fixed PR sync to cover last 30 days <PRBadge url="https://github.com/agisota/set/pull/2255" />
+- Исправили, что `createBranchWorkspace` всегда падал с «main workspace already exists» <PRBadge url="https://github.com/agisota/set/pull/2253" />
+- Исправили отслеживание PR для форкнутых репозиториев <PRBadge url="https://github.com/agisota/set/pull/2118" />
+- Исправили отступы панели терминала и убрали правый отступ xterm <PRBadge url="https://github.com/agisota/set/pull/2218" />
+- Исправили, что окружение шелла не применялось к проверкам статуса GitHub <PRBadge url="https://github.com/agisota/set/pull/2250" />
+- Исправили, что заголовки вкладок терминала маскировались вводом пароля <PRBadge url="https://github.com/agisota/set/pull/2132" />
+- Исправили сохранение регистра префикса ветки, чтобы предотвратить повреждение worktree <PRBadge url="https://github.com/agisota/set/pull/2098" />
+- Исправили восстановление сессии аутентификации при входе <PRBadge url="https://github.com/agisota/set/pull/2191" />
+- Исправили конвейер именования чатов <PRBadge url="https://github.com/agisota/set/pull/2072" />
+- Исправили синхронизацию PR, чтобы охватывать последние 30 дней <PRBadge url="https://github.com/agisota/set/pull/2255" />

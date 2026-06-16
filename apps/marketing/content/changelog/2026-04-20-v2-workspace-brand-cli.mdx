@@ -1,93 +1,93 @@
 ---
-title: Chat UX overhaul, v2 early access, brand refresh, and standalone CLI
+title: Переработка UX чата, ранний доступ к v2, обновление бренда и автономный CLI
 date: 2026-04-20
 image: /changelog/chat-ux.png
 ---
 
-A big update covering the last three weeks. The chat interface got a top-to-bottom UX overhaul with a new rich-text prompt editor, slash-command and file-mention chips, and a redesigned tool-call system. The v2 workspace is now in early access, with panes, a diff viewer, a file editor, a review tab, and a browser pane. The Rox CLI shipped and then grew a self-contained tarball that can run the host-service anywhere. The desktop app got a full brand refresh, and GitHub integration is now free on every plan.
+Большое обновление за последние три недели. Интерфейс чата получил UX-переработку сверху донизу с новым редактором промптов с форматированием, чипами slash-команд и упоминаний файлов и переработанной системой вызовов инструментов. Рабочее пространство v2 теперь в раннем доступе — с панелями, просмотрщиком diff'ов, редактором файлов, вкладкой ревью и панелью браузера. Вышел Rox CLI, а затем обзавёлся самодостаточным tarball, который может запускать host-service где угодно. Десктопное приложение получило полное обновление бренда, а интеграция с GitHub теперь бесплатна на любом плане.
 
-## Chat UX overhaul <PRBadge url="https://github.com/agisota/set/pull/3039" />
+## Переработка UX чата <PRBadge url="https://github.com/agisota/set/pull/3039" />
 
-### Tiptap prompt input
+### Ввод промптов на Tiptap
 
-The prompt is now a ProseMirror-based rich text editor with inline chips for commands and file references.
+Поле промпта теперь редактор с форматированием на базе ProseMirror со встроенными чипами для команд и ссылок на файлы.
 
-- **Slash command chips** — type `/` to open a command menu; the command becomes an inline chip anywhere in the message instead of submitting immediately. Chips with an `argumentHint` expose an inline editable input with auto-sizing and keyboard nav; `/model` shows a dropdown of available models.
-- **File mention chips** — type `@` to open a file-search popover anchored to the cursor. Picking a file inserts a chip that serializes to `@path` on send.
-- **Skill preload** — `/command` chips are extracted before the LLM turn so the harness loads the right skill first. A `SkillToolCall` row shows in the message while the skill loads.
-- **Preview on hover** — hovering a chip shows a popover with its description (hidden while an arg input is focused).
-- IME composition guard prevents submit while CJK input is pending; Tab no longer auto-selects commands (Enter or click only).
+- **Чипы slash-команд** — набери `/`, чтобы открыть меню команд; команда становится встроенным чипом в любом месте сообщения, а не отправляется сразу. Чипы с `argumentHint` показывают встроенное редактируемое поле с авторазмером и навигацией с клавиатуры; `/model` показывает выпадающий список доступных моделей.
+- **Чипы упоминаний файлов** — набери `@`, чтобы открыть всплывающее окно поиска файлов, привязанное к курсору. Выбор файла вставляет чип, который сериализуется в `@path` при отправке.
+- **Предзагрузка скилла** — чипы `/command` извлекаются перед ходом LLM, чтобы харнесс сначала загрузил нужный скилл. Строка `SkillToolCall` показывается в сообщении, пока скилл загружается.
+- **Предпросмотр при наведении** — наведение на чип показывает всплывающее окно с его описанием (скрыто, пока поле ввода аргумента в фокусе).
+- Защита от IME-композиции предотвращает отправку, пока ожидается CJK-ввод; Tab больше не выбирает команды автоматически (только Enter или клик).
 
-### Redesigned tool calls
+### Переработанные вызовы инструментов
 
-- Compact, monospaced `ToolInput` / `ToolOutput` / `ToolHeader` layout with a braille spinner and left-side icons
-- Subagent activity rendered inline as a collapsible tool wrapper, with full markdown for task prompt and response
-- Clickable file names on every file-related tool call row (read, write, LSP inspect) — clicking opens the file in the editor pane
-- Syntax-highlighted read-file output with filename header and line-range label; expand/collapse and copy on every code block
+- Компактная моноширинная раскладка `ToolInput` / `ToolOutput` / `ToolHeader` с брайлевским спиннером и иконками слева
+- Активность субагента отображается встроенно как сворачиваемая обёртка инструмента, с полным markdown для промпта и ответа задачи
+- Кликабельные имена файлов на каждой строке вызова инструмента, связанного с файлами (read, write, LSP inspect) — клик открывает файл в панели редактора
+- Вывод чтения файла с подсветкой синтаксиса, заголовком с именем файла и меткой диапазона строк; разворачивание/сворачивание и копирование на каждом блоке кода
 
-### ask_user flow
+### Сценарий ask_user
 
-- Footer overlay with pinned header/footer and scrollable option buttons — no more inline question UI
-- Status chips (Awaiting Response / Answered / Cancelled) with a collapsible answer bubble; cancelled shows immediately when aborted
-- Optimistic dismiss on submit; prompt textarea auto-focuses after answering
-- `ask_user` is now required for all Rox questions — no plain-text fallbacks
+- Оверлей в подвале с закреплённым заголовком/подвалом и прокручиваемыми кнопками вариантов — больше никакого встроенного интерфейса вопросов
+- Чипы статуса (ожидает ответа / отвечено / отменено) со сворачиваемым пузырём ответа; отмена показывается сразу при прерывании
+- Оптимистичное закрытие при отправке; поле промпта автоматически фокусируется после ответа
+- `ask_user` теперь обязателен для всех вопросов Rox — без запасных вариантов в виде простого текста
 
-### Workspace status and notifications
+### Статус рабочего пространства и уведомления
 
-- A pending question puts an orange dot on the workspace nav and fires a native OS toast, driven server-side through the lifecycle event pipeline so it works when the tab is unfocused
-- Orange dot clears immediately on answer submit
-- Auto-scroll to bottom on message send, new question arrival, and answer submit
+- Ожидающий вопрос ставит оранжевую точку на навигацию рабочего пространства и запускает нативный тост ОС, управляемый на стороне сервера через конвейер событий жизненного цикла, так что он работает, когда вкладка не в фокусе
+- Оранжевая точка сразу пропадает при отправке ответа
+- Авто-прокрутка вниз при отправке сообщения, появлении нового вопроса и отправке ответа
 
-## The v2 workspace is in early access
+## Рабочее пространство v2 в раннем доступе
 
-![v2 workspace early access](/changelog/v2-early-access.png)
+![Ранний доступ к рабочему пространству v2](/changelog/v2-early-access.png)
 
-v2 is a ground-up rebuild of the workspace aimed at cloud. We tore out v1's accumulated cruft, rewrote the terminal from scratch to fix the rendering glitches, and re-architected the app like a real IDE — Tab → Split → Pane, a proper file tree with git decorations, a full editor, and a diff viewer that handles large changesets. Opt-in for now; here's what's in the box:
+v2 — это перестройка рабочего пространства с нуля, нацеленная на облако. Мы вырвали накопившийся хлам v1, переписали терминал с нуля, чтобы исправить глюки отрисовки, и переархитектурировали приложение как настоящую IDE — Tab → Split → Pane, полноценное дерево файлов с git-декорациями, полный редактор и просмотрщик diff'ов, который справляется с большими наборами изменений. Пока по согласию; вот что в коробке:
 
-### Pane layout system <PRBadge url="https://github.com/agisota/set/pull/3088" />
+### Система раскладки панелей <PRBadge url="https://github.com/agisota/set/pull/3088" />
 
-A new flexible Tab → Split → Pane structure built on the `@rox/panes` package, with weighted resizable splits.
+Новая гибкая структура Tab → Split → Pane, построенная на пакете `@rox/panes`, со взвешенными сплитами, размер которых можно менять.
 
-- Drag and drop panes to rearrange them <PRBadge url="https://github.com/agisota/set/pull/3090" />
-- Drag to reorder tabs within a tab group <PRBadge url="https://github.com/agisota/set/pull/3094" />
-- Right-click pane headers for split / close / close others <PRBadge url="https://github.com/agisota/set/pull/3196" />
-- Double-click a split separator to equalize pane sizes <PRBadge url="https://github.com/agisota/set/pull/3101" />
-- Cmd+Alt+Arrow moves focus between panes <PRBadge url="https://github.com/agisota/set/pull/3403" /> <PRBadge url="https://github.com/agisota/set/pull/3460" />
-- Closing the active pane focuses the nearest sibling <PRBadge url="https://github.com/agisota/set/pull/3198" />
+- Перетаскивай панели, чтобы переставлять их <PRBadge url="https://github.com/agisota/set/pull/3090" />
+- Перетаскивай, чтобы переупорядочивать вкладки внутри группы вкладок <PRBadge url="https://github.com/agisota/set/pull/3094" />
+- Клик правой кнопкой по заголовкам панелей для split / close / close others <PRBadge url="https://github.com/agisota/set/pull/3196" />
+- Двойной клик по разделителю сплита уравнивает размеры панелей <PRBadge url="https://github.com/agisota/set/pull/3101" />
+- Cmd+Alt+Стрелка перемещает фокус между панелями <PRBadge url="https://github.com/agisota/set/pull/3403" /> <PRBadge url="https://github.com/agisota/set/pull/3460" />
+- Закрытие активной панели фокусирует ближайшего соседа <PRBadge url="https://github.com/agisota/set/pull/3198" />
 
-### Diff viewer <PRBadge url="https://github.com/agisota/set/pull/3384" />
+### Просмотрщик diff'ов <PRBadge url="https://github.com/agisota/set/pull/3384" />
 
-![v2 diff viewer](/changelog/v2-diff.png)
+![Просмотрщик diff'ов v2](/changelog/v2-diff.png)
 
-A GitHub-style multi-file diff pane with lazy loading, a persistent "Viewed" state synced to the sidebar Changes list, unified/split view toggles, and header actions for collapse, expand unchanged, copy, and revert. Open it in its own tab with ⌘⇧L <PRBadge url="https://github.com/agisota/set/pull/3420" /> <PRBadge url="https://github.com/agisota/set/pull/3556" />.
+Многофайловая панель diff в стиле GitHub с ленивой загрузкой, постоянным состоянием «Просмотрено», синхронизированным со списком изменений в сайдбаре, переключателями унифицированного/раздельного вида и действиями в заголовке для сворачивания, разворачивания неизменённого, копирования и отката. Открой её в отдельной вкладке через ⌘⇧L <PRBadge url="https://github.com/agisota/set/pull/3420" /> <PRBadge url="https://github.com/agisota/set/pull/3556" />.
 
-### File editor <PRBadge url="https://github.com/agisota/set/pull/3526" />
+### Редактор файлов <PRBadge url="https://github.com/agisota/set/pull/3526" />
 
-![v2 file tree and editor](/changelog/v2-file-tree.png)
+![Дерево файлов и редактор v2](/changelog/v2-file-tree.png)
 
-A full editor pane — foundation, views, and a large stability pass. The file tree shows git decorations inline <PRBadge url="https://github.com/agisota/set/pull/3320" />.
+Полноценная панель редактора — фундамент, представления и большой проход по стабильности. Дерево файлов показывает git-декорации встроенно <PRBadge url="https://github.com/agisota/set/pull/3320" />.
 
-### Review tab <PRBadge url="https://github.com/agisota/set/pull/3463" />
+### Вкладка ревью <PRBadge url="https://github.com/agisota/set/pull/3463" />
 
-PR info, checks, and comments rendered inline in the v2 workspace, matching the v1 review experience.
+Информация о PR, проверки и комментарии отображаются встроенно в рабочем пространстве v2, как в опыте ревью v1.
 
-### PR checkout and launch context <PRBadge url="https://github.com/agisota/set/pull/3525" /> <PRBadge url="https://github.com/agisota/set/pull/3467" />
+### Чекаут PR и контекст запуска <PRBadge url="https://github.com/agisota/set/pull/3525" /> <PRBadge url="https://github.com/agisota/set/pull/3467" />
 
-Check out a PR directly from v2 via a widened checkout procedure, and compose a full launch context (selected files, instructions, branch state) before starting work.
+Делай чекаут PR прямо из v2 через расширенную процедуру чекаута и составляй полный контекст запуска (выбранные файлы, инструкции, состояние ветки) перед началом работы.
 
-### Browser pane <PRBadge url="https://github.com/agisota/set/pull/3346" />
+### Панель браузера <PRBadge url="https://github.com/agisota/set/pull/3346" />
 
-Pages stay loaded across tab switches and workspace navigations — no reloads, no lost scroll or form state. URL bar, back/forward/reload, history autocomplete, DevTools, screenshots, and hard reload from the overflow menu.
+Страницы остаются загруженными при переключении вкладок и навигации по рабочим пространствам — никаких перезагрузок, потери прокрутки или состояния формы. Строка URL, назад/вперёд/перезагрузка, автодополнение истории, DevTools, скриншоты и жёсткая перезагрузка из меню переполнения.
 
-### Git Changes sidebar <PRBadge url="https://github.com/agisota/set/pull/3177" />
+### Сайдбар изменений Git <PRBadge url="https://github.com/agisota/set/pull/3177" />
 
-A Changes tab in the right sidebar showing ahead/behind status, commit count, and a filterable file list. Filter by all changes, uncommitted only, a single commit, or a commit range. Searchable base-branch picker and inline rename for unpushed branches.
+Вкладка «Изменения» в правом сайдбаре показывает статус ahead/behind, число коммитов и фильтруемый список файлов. Фильтруй по всем изменениям, только незакоммиченным, отдельному коммиту или диапазону коммитов. Селектор базовой ветки с поиском и встроенное переименование для непушенных веток.
 
 ## Rox CLI <PRBadge url="https://github.com/agisota/set/pull/3194" />
 
 {/* TODO: Screenshot of the CLI in action */}
 
-The `rox` CLI lets you manage Rox from your terminal, and ships as a self-contained tarball <PRBadge url="https://github.com/agisota/set/pull/3298" /> so you can run the host-service on a remote server, CI box, or cloud VM without the desktop app.
+CLI `rox` позволяет управлять Rox из терминала и поставляется как самодостаточный tarball <PRBadge url="https://github.com/agisota/set/pull/3298" />, так что ты можешь запускать host-service на удалённом сервере, CI-машине или облачной VM без десктопного приложения.
 
 ```bash
 tar -xzf rox-darwin-arm64.tar.gz -C ~/rox
@@ -99,79 +99,79 @@ rox tasks list              # full task CRUD
 rox org switch              # manage organizations
 ```
 
-Binaries for macOS (arm64, x64) and Linux x64. `--json` output mode for scripting and agent use.
+Бинарники для macOS (arm64, x64) и Linux x64. Режим вывода `--json` для скриптов и использования агентами.
 
-## Brand refresh <PRBadge url="https://github.com/agisota/set/pull/3367" />
+## Обновление бренда <PRBadge url="https://github.com/agisota/set/pull/3367" />
 
-![Brand refresh — new logo and icon treatment](/changelog/brand-refresh.png)
+![Обновление бренда — новый логотип и оформление иконки](/changelog/brand-refresh.png)
 
-New logo and icon treatment across the desktop app, DMG installer background, tray icon, and wordmark. In dev builds, each workspace gets a color-coded corner fold on the dock icon so open workspaces are distinguishable at a glance.
+Новый логотип и оформление иконки по всему десктопному приложению, фону установщика DMG, иконке в трее и текстовому логотипу. В dev-сборках каждое рабочее пространство получает цветовой загиб угла на иконке в доке, так что открытые рабочие пространства различимы с первого взгляда.
 
-## GitHub integration is free <PRBadge url="https://github.com/agisota/set/pull/3152" />
+## Интеграция с GitHub бесплатна <PRBadge url="https://github.com/agisota/set/pull/3152" />
 
-PR review, issue linking, and push-from-desktop are available on every plan — no Pro subscription required.
+Ревью PR, связывание issue и push с десктопа доступны на любом плане — Pro-подписка не требуется.
 
-## Improvements
+## Улучшения
 
-- **V2 file editor foundation** — editor views plus a large stability pass <PRBadge url="https://github.com/agisota/set/pull/3526" />
-- **V2 review tab** — PR info, checks, and comments inline <PRBadge url="https://github.com/agisota/set/pull/3463" />
-- **V2 PR checkout** — checkout a PR directly in a v2 workspace <PRBadge url="https://github.com/agisota/set/pull/3525" />
-- **V2 launch context composition** — prep files, instructions, and branch state before launching <PRBadge url="https://github.com/agisota/set/pull/3467" />
-- **Recently Viewed in Quick Open** — surfaces files you were just looking at <PRBadge url="https://github.com/agisota/set/pull/3488" />
-- **Paginated branch picker** — scales to thousands of branches with inline checkout + open actions <PRBadge url="https://github.com/agisota/set/pull/3397" />
-- **Modifier-keyed terminal file links** — ⌘/Ctrl+click opens in external editor or new tab <PRBadge url="https://github.com/agisota/set/pull/3512" /> <PRBadge url="https://github.com/agisota/set/pull/3398" />
-- **Drag-and-drop into v2 terminal panes** — drop files to insert their paths <PRBadge url="https://github.com/agisota/set/pull/3542" />
-- **Tasks link restored in v2 dashboard sidebar** <PRBadge url="https://github.com/agisota/set/pull/3553" />
-- **Escape closes settings** <PRBadge url="https://github.com/agisota/set/pull/3466" />
-- **Hotkey defaults** — unbound defaults plus restored prev/next tab and workspace shortcuts <PRBadge url="https://github.com/agisota/set/pull/3422" /> <PRBadge url="https://github.com/agisota/set/pull/3472" />
-- **Allow hotkeys in editable content** <PRBadge url="https://github.com/agisota/set/pull/3418" />
-- **Terminal search** — ⌘F / Ctrl+Shift+F in the v2 terminal <PRBadge url="https://github.com/agisota/set/pull/3289" />
-- **Kitty keyboard protocol** — better modifier support in neovim, fish 4+, and others <PRBadge url="https://github.com/agisota/set/pull/3289" />
-- **Terminal theme and font settings** in v2 (parity with v1) <PRBadge url="https://github.com/agisota/set/pull/3155" />
-- **Fast file search** — VS Code's path-aware fuzzy scorer with pre-warmed index <PRBadge url="https://github.com/agisota/set/pull/3136" />
-- **V2 top bar** — right sidebar toggle, org dropdown, unified "Open In" button <PRBadge url="https://github.com/agisota/set/pull/3197" />
-- **Git decorations in v2 file tree** <PRBadge url="https://github.com/agisota/set/pull/3320" />
-- **V2 preset parity + setup scripts** <PRBadge url="https://github.com/agisota/set/pull/3354" /> <PRBadge url="https://github.com/agisota/set/pull/3359" />
-- **V1/v2 toggle from the top bar**, preference persists <PRBadge url="https://github.com/agisota/set/pull/3347" />
-- **Host service durability** — survives app quits, re-adopted on next launch <PRBadge url="https://github.com/agisota/set/pull/3157" />
-- **Relay security setting** — Settings → Security controls whether this machine is exposed; defaults to off <PRBadge url="https://github.com/agisota/set/pull/3304" />
-- **Unified workspace delete** — v2 delete goes through the host-service <PRBadge url="https://github.com/agisota/set/pull/3443" />
-- **Focus neighbor on workspace delete** — drops you on an adjacent workspace, not `/` <PRBadge url="https://github.com/agisota/set/pull/3401" />
-- **Create Section Below** promoted to top-level on the workspace menu <PRBadge url="https://github.com/agisota/set/pull/3537" />
-- **Event-driven tray menu** showing the real org name <PRBadge url="https://github.com/agisota/set/pull/3458" />
-- **Notification sound volume** dropdown in settings <PRBadge url="https://github.com/agisota/set/pull/3073" />
-- **Resolve review comments** directly in the review tab <PRBadge url="https://github.com/agisota/set/pull/3078" />
-- **Public roadmap** at rox.one/roadmap <PRBadge url="https://github.com/agisota/set/pull/3074" />
+- **Фундамент редактора файлов V2** — представления редактора плюс большой проход по стабильности <PRBadge url="https://github.com/agisota/set/pull/3526" />
+- **Вкладка ревью V2** — информация о PR, проверки и комментарии встроенно <PRBadge url="https://github.com/agisota/set/pull/3463" />
+- **Чекаут PR в V2** — чекаут PR прямо в рабочем пространстве v2 <PRBadge url="https://github.com/agisota/set/pull/3525" />
+- **Составление контекста запуска V2** — подготовь файлы, инструкции и состояние ветки перед запуском <PRBadge url="https://github.com/agisota/set/pull/3467" />
+- **Недавно просмотренное в быстром открытии** — показывает файлы, которые ты только что смотрел <PRBadge url="https://github.com/agisota/set/pull/3488" />
+- **Селектор веток с пагинацией** — масштабируется до тысяч веток со встроенными действиями чекаута + открытия <PRBadge url="https://github.com/agisota/set/pull/3397" />
+- **Ссылки на файлы в терминале с модификаторами** — ⌘/Ctrl+клик открывает во внешнем редакторе или новой вкладке <PRBadge url="https://github.com/agisota/set/pull/3512" /> <PRBadge url="https://github.com/agisota/set/pull/3398" />
+- **Перетаскивание в панели терминала V2** — брось файлы, чтобы вставить их пути <PRBadge url="https://github.com/agisota/set/pull/3542" />
+- **Ссылка на задачи восстановлена в сайдбаре дашборда V2** <PRBadge url="https://github.com/agisota/set/pull/3553" />
+- **Escape закрывает настройки** <PRBadge url="https://github.com/agisota/set/pull/3466" />
+- **Значения горячих клавиш по умолчанию** — несвязанные значения по умолчанию плюс восстановленные горячие клавиши пред/след вкладки и рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/3422" /> <PRBadge url="https://github.com/agisota/set/pull/3472" />
+- **Разрешить горячие клавиши в редактируемом контенте** <PRBadge url="https://github.com/agisota/set/pull/3418" />
+- **Поиск в терминале** — ⌘F / Ctrl+Shift+F в терминале v2 <PRBadge url="https://github.com/agisota/set/pull/3289" />
+- **Протокол клавиатуры Kitty** — лучшая поддержка модификаторов в neovim, fish 4+ и других <PRBadge url="https://github.com/agisota/set/pull/3289" />
+- **Настройки темы и шрифта терминала** в v2 (паритет с v1) <PRBadge url="https://github.com/agisota/set/pull/3155" />
+- **Быстрый поиск файлов** — нечёткий скорер VS Code с учётом путей и предварительно прогретым индексом <PRBadge url="https://github.com/agisota/set/pull/3136" />
+- **Верхняя панель V2** — переключатель правого сайдбара, выпадающий список организаций, единая кнопка «Открыть в» <PRBadge url="https://github.com/agisota/set/pull/3197" />
+- **Git-декорации в дереве файлов V2** <PRBadge url="https://github.com/agisota/set/pull/3320" />
+- **Паритет пресетов V2 + скрипты настройки** <PRBadge url="https://github.com/agisota/set/pull/3354" /> <PRBadge url="https://github.com/agisota/set/pull/3359" />
+- **Переключатель V1/v2 с верхней панели**, предпочтение сохраняется <PRBadge url="https://github.com/agisota/set/pull/3347" />
+- **Долговечность host service** — переживает выходы из приложения, переусыновляется при следующем запуске <PRBadge url="https://github.com/agisota/set/pull/3157" />
+- **Настройка безопасности relay** — «Настройки → Безопасность» управляет тем, открыта ли эта машина; по умолчанию выключено <PRBadge url="https://github.com/agisota/set/pull/3304" />
+- **Единое удаление рабочего пространства** — удаление в v2 идёт через host-service <PRBadge url="https://github.com/agisota/set/pull/3443" />
+- **Фокус на соседа при удалении рабочего пространства** — переносит тебя на соседнее рабочее пространство, а не на `/` <PRBadge url="https://github.com/agisota/set/pull/3401" />
+- **«Создать раздел ниже»** выведено на верхний уровень в меню рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/3537" />
+- **Меню трея на событиях**, показывающее реальное имя организации <PRBadge url="https://github.com/agisota/set/pull/3458" />
+- **Громкость звука уведомлений** — выпадающий список в настройках <PRBadge url="https://github.com/agisota/set/pull/3073" />
+- **Решение комментариев ревью** прямо во вкладке ревью <PRBadge url="https://github.com/agisota/set/pull/3078" />
+- **Публичный роадмап** на rox.one/roadmap <PRBadge url="https://github.com/agisota/set/pull/3074" />
 
 ---
 
-**Bug fixes**
+**Исправления багов**
 
-- Security — bumped drizzle-orm and better-auth to patch CVEs <PRBadge url="https://github.com/agisota/set/pull/3560" />; pinned axios against a known supply-chain vector <PRBadge url="https://github.com/agisota/set/pull/3043" />
-- Chat — cut display polling to 4fps and restored query cache defaults <PRBadge url="https://github.com/agisota/set/pull/3562" />
-- Chat — prevent keyboard shortcuts from leaking characters into the chat input <PRBadge url="https://github.com/agisota/set/pull/3520" />
-- Terminal — recover from non-monospace font crash <PRBadge url="https://github.com/agisota/set/pull/3554" />
-- Terminal — unblock v1 input during shell init <PRBadge url="https://github.com/agisota/set/pull/3550" />
-- Terminal — sync v1 dimensions to backend on connect <PRBadge url="https://github.com/agisota/set/pull/3545" />
-- Terminal — match VS Code clipboard handling <PRBadge url="https://github.com/agisota/set/pull/3415" />
-- Terminal — restore ⌘+click for v1 file links; refresh v2 link tooltip editor <PRBadge url="https://github.com/agisota/set/pull/3457" /> <PRBadge url="https://github.com/agisota/set/pull/3552" />
-- Terminal — correct dimensions sent after attach (fixes TUI apps) <PRBadge url="https://github.com/agisota/set/pull/3154" />
-- Terminal — garbling fix via tRPC-first sessions <PRBadge url="https://github.com/agisota/set/pull/3252" />
-- Auto-updater — restored on macOS; recover from corrupt update cache; spinner while pending; guard repeat clicks <PRBadge url="https://github.com/agisota/set/pull/3291" /> <PRBadge url="https://github.com/agisota/set/pull/3278" /> <PRBadge url="https://github.com/agisota/set/pull/3495" /> <PRBadge url="https://github.com/agisota/set/pull/3561" /> <PRBadge url="https://github.com/agisota/set/pull/3549" />
-- macOS quit — ⌘Q and Dock Quit now fully exit instead of backgrounding to tray <PRBadge url="https://github.com/agisota/set/pull/3205" />
-- macOS — trigger Local Network permission on startup <PRBadge url="https://github.com/agisota/set/pull/3551" />
-- Port scanner — stop excessive `lsof` spawning <PRBadge url="https://github.com/agisota/set/pull/3547" />
-- V2 workspace — prevent "workspace not found" flash after create; gate children on collection readiness; derive base branch from git config <PRBadge url="https://github.com/agisota/set/pull/3494" /> <PRBadge url="https://github.com/agisota/set/pull/3464" /> <PRBadge url="https://github.com/agisota/set/pull/3492" />
-- V2 file tree — no longer blocks on `git.getStatus` in shared tRPC batch; file icons resolve on nested routes <PRBadge url="https://github.com/agisota/set/pull/3400" /> <PRBadge url="https://github.com/agisota/set/pull/3199" />
-- V2 sidebar — LOC badge hidden when no changes; section count matches visual grouping; native clipboard for copy path <PRBadge url="https://github.com/agisota/set/pull/3399" /> <PRBadge url="https://github.com/agisota/set/pull/3544" /> <PRBadge url="https://github.com/agisota/set/pull/3462" />
-- V2 diff sidebar — removed viewed checkboxes; right sidebar toggle is reactive <PRBadge url="https://github.com/agisota/set/pull/3480" /> <PRBadge url="https://github.com/agisota/set/pull/3421" />
-- V2 — Open In editor is project-scoped, not workspace-scoped; duplicate panes on new-tab file opens; modal focus trap on workspace dialogs <PRBadge url="https://github.com/agisota/set/pull/3393" /> <PRBadge url="https://github.com/agisota/set/pull/3093" /> <PRBadge url="https://github.com/agisota/set/pull/3392" />
-- V1 — fix Cmd+O firing open-in twice; fix split pane startup sizing; `--no-track` in createWorktree <PRBadge url="https://github.com/agisota/set/pull/3511" /> <PRBadge url="https://github.com/agisota/set/pull/3416" /> <PRBadge url="https://github.com/agisota/set/pull/3548" />
-- Keyboard — Ctrl bindings, `event.code` unification, terminal override respect <PRBadge url="https://github.com/agisota/set/pull/3391" />
-- IME composition in new-workspace Enter handlers <PRBadge url="https://github.com/agisota/set/pull/3486" />
-- File attachments pass through the prompt input <PRBadge url="https://github.com/agisota/set/pull/3334" />
-- Close-workspace shortcut no longer conflicts with tab close — now ⌘⇧⌫ <PRBadge url="https://github.com/agisota/set/pull/3037" />
-- Pending failure error messages are selectable <PRBadge url="https://github.com/agisota/set/pull/3432" />
-- Font-settings query no longer silently routed through host-service <PRBadge url="https://github.com/agisota/set/pull/3394" />
-- MCP — accept resource URL as valid OAuth audience; fix devices incorrectly classified as offline <PRBadge url="https://github.com/agisota/set/pull/3459" /> <PRBadge url="https://github.com/agisota/set/pull/3299" />
-- CLI auth switched to OAuth PKCE + loopback <PRBadge url="https://github.com/agisota/set/pull/3318" />
+- Безопасность — обновили drizzle-orm и better-auth, чтобы закрыть CVE <PRBadge url="https://github.com/agisota/set/pull/3560" />; запинили axios против известного supply-chain вектора <PRBadge url="https://github.com/agisota/set/pull/3043" />
+- Чат — снизили поллинг отображения до 4fps и восстановили значения кэша запросов по умолчанию <PRBadge url="https://github.com/agisota/set/pull/3562" />
+- Чат — предотвратили утечку символов от горячих клавиш в поле ввода чата <PRBadge url="https://github.com/agisota/set/pull/3520" />
+- Терминал — восстановление после падения из-за немоноширинного шрифта <PRBadge url="https://github.com/agisota/set/pull/3554" />
+- Терминал — разблокировали ввод v1 во время инициализации шелла <PRBadge url="https://github.com/agisota/set/pull/3550" />
+- Терминал — синхронизировали размеры v1 с бэкендом при подключении <PRBadge url="https://github.com/agisota/set/pull/3545" />
+- Терминал — соответствие обработке буфера обмена VS Code <PRBadge url="https://github.com/agisota/set/pull/3415" />
+- Терминал — восстановили ⌘+клик для ссылок на файлы v1; обновили редактор тултипа ссылок v2 <PRBadge url="https://github.com/agisota/set/pull/3457" /> <PRBadge url="https://github.com/agisota/set/pull/3552" />
+- Терминал — корректные размеры, отправляемые после attach (исправляет TUI-приложения) <PRBadge url="https://github.com/agisota/set/pull/3154" />
+- Терминал — фикс искажений через сессии с приоритетом tRPC <PRBadge url="https://github.com/agisota/set/pull/3252" />
+- Авто-обновлятор — восстановлен на macOS; восстановление после повреждённого кэша обновлений; спиннер во время ожидания; защита от повторных кликов <PRBadge url="https://github.com/agisota/set/pull/3291" /> <PRBadge url="https://github.com/agisota/set/pull/3278" /> <PRBadge url="https://github.com/agisota/set/pull/3495" /> <PRBadge url="https://github.com/agisota/set/pull/3561" /> <PRBadge url="https://github.com/agisota/set/pull/3549" />
+- Выход на macOS — ⌘Q и «Выйти» из дока теперь полностью завершают приложение вместо сворачивания в трей <PRBadge url="https://github.com/agisota/set/pull/3205" />
+- macOS — запуск запроса разрешения локальной сети при старте <PRBadge url="https://github.com/agisota/set/pull/3551" />
+- Сканер портов — прекратили избыточный запуск `lsof` <PRBadge url="https://github.com/agisota/set/pull/3547" />
+- Рабочее пространство V2 — предотвратили мелькание «workspace not found» после создания; завязали дочерние элементы на готовность коллекции; выводим базовую ветку из конфига git <PRBadge url="https://github.com/agisota/set/pull/3494" /> <PRBadge url="https://github.com/agisota/set/pull/3464" /> <PRBadge url="https://github.com/agisota/set/pull/3492" />
+- Дерево файлов V2 — больше не блокируется на `git.getStatus` в общем пакете tRPC; иконки файлов разрешаются на вложенных маршрутах <PRBadge url="https://github.com/agisota/set/pull/3400" /> <PRBadge url="https://github.com/agisota/set/pull/3199" />
+- Сайдбар V2 — бейдж LOC скрыт при отсутствии изменений; число в разделе соответствует визуальной группировке; нативный буфер обмена для копирования пути <PRBadge url="https://github.com/agisota/set/pull/3399" /> <PRBadge url="https://github.com/agisota/set/pull/3544" /> <PRBadge url="https://github.com/agisota/set/pull/3462" />
+- Сайдбар diff V2 — убрали чекбоксы «просмотрено»; переключатель правого сайдбара реактивен <PRBadge url="https://github.com/agisota/set/pull/3480" /> <PRBadge url="https://github.com/agisota/set/pull/3421" />
+- V2 — «Открыть в» редакторе теперь в пределах проекта, а не рабочего пространства; дублирование панелей при открытии файлов в новой вкладке; ловушка фокуса в модальных диалогах рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/3393" /> <PRBadge url="https://github.com/agisota/set/pull/3093" /> <PRBadge url="https://github.com/agisota/set/pull/3392" />
+- V1 — исправили двойной запуск Cmd+O для открытия; исправили начальные размеры разделённой панели; `--no-track` в createWorktree <PRBadge url="https://github.com/agisota/set/pull/3511" /> <PRBadge url="https://github.com/agisota/set/pull/3416" /> <PRBadge url="https://github.com/agisota/set/pull/3548" />
+- Клавиатура — Ctrl-привязки, унификация `event.code`, учёт переопределений терминала <PRBadge url="https://github.com/agisota/set/pull/3391" />
+- IME-композиция в обработчиках Enter нового рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/3486" />
+- Прикреплённые файлы проходят через поле ввода промпта <PRBadge url="https://github.com/agisota/set/pull/3334" />
+- Горячая клавиша закрытия рабочего пространства больше не конфликтует с закрытием вкладки — теперь ⌘⇧⌫ <PRBadge url="https://github.com/agisota/set/pull/3037" />
+- Сообщения об ошибках отложенных сбоев выделяемы <PRBadge url="https://github.com/agisota/set/pull/3432" />
+- Запрос настроек шрифта больше не направляется молча через host-service <PRBadge url="https://github.com/agisota/set/pull/3394" />
+- MCP — принимаем URL ресурса как валидную OAuth-аудиторию; исправили, что устройства некорректно классифицировались как офлайн <PRBadge url="https://github.com/agisota/set/pull/3459" /> <PRBadge url="https://github.com/agisota/set/pull/3299" />
+- Аутентификация CLI переведена на OAuth PKCE + loopback <PRBadge url="https://github.com/agisota/set/pull/3318" />

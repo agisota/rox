@@ -1,61 +1,61 @@
 ---
-title: Review tab, task creation, project-level presets, and run button
+title: Вкладка ревью, создание задач, пресеты уровня проекта и кнопка запуска
 date: 2026-03-23
 image: /changelog/review-tab.png
 ---
 
-## Review Tab in Changes Sidebar <PRBadge url="https://github.com/agisota/set/pull/2681" />
+## Вкладка ревью в сайдбаре изменений <PRBadge url="https://github.com/agisota/set/pull/2681" />
 
-The changes sidebar now has a dedicated Review tab. You can read, filter, and respond to PR review comments without leaving the desktop app.
+В сайдбаре изменений теперь есть отдельная вкладка «Ревью». Ты можешь читать, фильтровать и отвечать на комментарии ревью PR, не покидая десктопное приложение.
 
-- Resolved comments are separated from open ones so you can focus on what still needs attention
-- Stays in sync with GitHub — refreshes automatically after PR mutations
+- Решённые комментарии отделены от открытых, чтобы ты мог сосредоточиться на том, что ещё требует внимания
+- Остаётся синхронизированным с GitHub — автоматически обновляется после изменений PR
 
-## Task Create & Detail Actions <PRBadge url="https://github.com/agisota/set/pull/2656" /> <PRBadge url="https://github.com/agisota/set/pull/2660" />
+## Создание задач и действия с деталями <PRBadge url="https://github.com/agisota/set/pull/2656" /> <PRBadge url="https://github.com/agisota/set/pull/2660" />
 
-![Task create modal](/changelog/create-task.png)
+![Модальное окно создания задачи](/changelog/create-task.png)
 
-You can now create tasks and take actions on them directly from the desktop without switching to Linear or the web app.
+Ты теперь можешь создавать задачи и выполнять с ними действия прямо из десктопа, не переключаясь на Linear или веб-приложение.
 
-- New task create modal for quickly filing tasks from wherever you are
-- Task detail action menu for quick actions on individual tasks
+- Новое модальное окно создания задачи для быстрого заведения задач откуда угодно
+- Меню действий в деталях задачи для быстрых действий с отдельными задачами
 
-## Project-Level Presets Configurable <PRBadge url="https://github.com/agisota/set/pull/2719" />
+## Настраиваемые пресеты уровня проекта <PRBadge url="https://github.com/agisota/set/pull/2719" />
 
-![Project-level presets](/changelog/project-presets.png)
+![Пресеты уровня проекта](/changelog/project-presets.png)
 
-Terminal presets can now be scoped to a specific project. Project-level presets only appear when you're working in that project, keeping the preset list clean and context-relevant.
+Пресеты терминала теперь можно привязать к конкретному проекту. Пресеты уровня проекта появляются только когда ты работаешь в этом проекте, сохраняя список пресетов чистым и релевантным контексту.
 
-## Run Button & Stop Command <PRBadge url="https://github.com/agisota/set/pull/2680" /> <PRBadge url="https://github.com/agisota/set/pull/2740" />
+## Кнопка запуска и команда остановки <PRBadge url="https://github.com/agisota/set/pull/2680" /> <PRBadge url="https://github.com/agisota/set/pull/2740" />
 
-![Run button](/changelog/run-button.png)
+![Кнопка запуска](/changelog/run-button.png)
 
-The run button has moved to the presets bar (`Cmd+G`) and now includes a stop command so you can cancel a running preset mid-execution.
+Кнопка запуска переехала на панель пресетов (`Cmd+G`) и теперь включает команду остановки, чтобы ты мог отменить запущенный пресет прямо во время выполнения.
 
-- `Cmd+G` triggers the run preset from anywhere in the workspace
-- Stop button cancels in-progress runs immediately
+- `Cmd+G` запускает пресет из любого места рабочего пространства
+- Кнопка остановки сразу отменяет выполняющиеся запуски
 
-## Improvements
+## Улучшения
 
-- **AI-generated branch names** - Rox now suggests a branch name when creating a workspace, with automatic conflict resolution if the name is taken <PRBadge url="https://github.com/agisota/set/pull/2627" />
-- **Chat draft preserved** - Unsent chat text is now saved when you switch tabs or workspaces and restored when you come back <PRBadge url="https://github.com/agisota/set/pull/2631" />
-- **Warn before closing dirty editors** - Desktop now prompts before closing a file tab with unsaved changes <PRBadge url="https://github.com/agisota/set/pull/2717" />
-- **GitHub issue attachment in workspace modal** - You can attach a GitHub issue directly in the new workspace modal, giving the agent immediate context <PRBadge url="https://github.com/agisota/set/pull/2678" />
-- **Autosave for setup/teardown scripts** - Setup and teardown scripts now save automatically as you edit them <PRBadge url="https://github.com/agisota/set/pull/2644" />
-- **CMD+R reload now configurable** - The `Cmd+R` reload shortcut can be remapped or disabled from keyboard settings <PRBadge url="https://github.com/agisota/set/pull/2716" />
-- **Virtualized git history** - The commit list in the git history panel is now virtualized and capped at 500, preventing slowdowns in repos with long histories <PRBadge url="https://github.com/agisota/set/pull/2763" />
-- **PR merge loading feedback** - The merge button now shows a loading state while a PR merge is in progress <PRBadge url="https://github.com/agisota/set/pull/2703" />
+- **Имена веток, сгенерированные AI** — Rox теперь предлагает имя ветки при создании рабочего пространства с автоматическим разрешением конфликтов, если имя занято <PRBadge url="https://github.com/agisota/set/pull/2627" />
+- **Черновик чата сохраняется** — неотправленный текст чата теперь сохраняется при переключении вкладок или рабочих пространств и восстанавливается, когда ты возвращаешься <PRBadge url="https://github.com/agisota/set/pull/2631" />
+- **Предупреждение перед закрытием изменённых редакторов** — десктоп теперь спрашивает перед закрытием вкладки файла с несохранёнными изменениями <PRBadge url="https://github.com/agisota/set/pull/2717" />
+- **Прикрепление issue GitHub в модальном окне рабочего пространства** — ты можешь прикрепить issue GitHub прямо в модальном окне нового рабочего пространства, давая агенту сразу контекст <PRBadge url="https://github.com/agisota/set/pull/2678" />
+- **Автосохранение скриптов setup/teardown** — скрипты setup и teardown теперь сохраняются автоматически по мере того, как ты их редактируешь <PRBadge url="https://github.com/agisota/set/pull/2644" />
+- **Перезагрузка по CMD+R теперь настраивается** — горячую клавишу перезагрузки `Cmd+R` можно переназначить или отключить в настройках клавиатуры <PRBadge url="https://github.com/agisota/set/pull/2716" />
+- **Виртуализированная история git** — список коммитов в панели истории git теперь виртуализирован и ограничен 500, что предотвращает замедления в репозиториях с длинной историей <PRBadge url="https://github.com/agisota/set/pull/2763" />
+- **Индикация загрузки при мерже PR** — кнопка мержа теперь показывает состояние загрузки, пока идёт мерж PR <PRBadge url="https://github.com/agisota/set/pull/2703" />
 
 ---
 
-**Bug fixes:**
+**Исправления багов:**
 
-- Fixed TERMINAL_ATTACH_CANCELED errors when opening worktrees <PRBadge url="https://github.com/agisota/set/pull/2749" />
-- Fixed MCP OAuth 500 without an active organization <PRBadge url="https://github.com/agisota/set/pull/2683" />
-- Prevented external worktree data loss <PRBadge url="https://github.com/agisota/set/pull/2573" />
-- Fixed workspace sidebar drag start instability <PRBadge url="https://github.com/agisota/set/pull/2723" />
-- Synced plan gating with live subscriptions <PRBadge url="https://github.com/agisota/set/pull/2713" />
-- Fixed file viewer tabs being duplicated across workspaces <PRBadge url="https://github.com/agisota/set/pull/2712" />
-- Fixed PR branch reuse on publish <PRBadge url="https://github.com/agisota/set/pull/2673" />
-- Preserved cursor position when saving a file <PRBadge url="https://github.com/agisota/set/pull/2645" />
-- Fixed chat focus after `@mention` file selection <PRBadge url="https://github.com/agisota/set/pull/2653" />
+- Исправили ошибки TERMINAL_ATTACH_CANCELED при открытии worktree <PRBadge url="https://github.com/agisota/set/pull/2749" />
+- Исправили OAuth MCP 500 без активной организации <PRBadge url="https://github.com/agisota/set/pull/2683" />
+- Предотвратили потерю данных внешних worktree <PRBadge url="https://github.com/agisota/set/pull/2573" />
+- Исправили нестабильность начала перетаскивания в сайдбаре рабочих пространств <PRBadge url="https://github.com/agisota/set/pull/2723" />
+- Синхронизировали ограничения плана с актуальными подписками <PRBadge url="https://github.com/agisota/set/pull/2713" />
+- Исправили дублирование вкладок просмотрщика файлов между рабочими пространствами <PRBadge url="https://github.com/agisota/set/pull/2712" />
+- Исправили переиспользование ветки PR при публикации <PRBadge url="https://github.com/agisota/set/pull/2673" />
+- Сохранили позицию курсора при сохранении файла <PRBadge url="https://github.com/agisota/set/pull/2645" />
+- Исправили фокус чата после выбора файла через `@mention` <PRBadge url="https://github.com/agisota/set/pull/2653" />

@@ -1,0 +1,380 @@
+/*
+ * LandingBackdrop — premium 3D-depth scene that sits BEHIND the landing copy.
+ *
+ * A dark IDE-style desktop window and an overlapping phone mockup, composed in
+ * CSS 3D perspective space (rotateX/rotateY/translateZ) and lit by a single
+ * warm orange key light. No image assets — every surface is built in markup.
+ *
+ * Legibility is the hard constraint: the landing headline + paragraphs render
+ * ON TOP of this layer, so the whole scene is deliberately low-contrast — heavy
+ * blur on the far glow, capped opacity, and a dark vignette that keeps the
+ * center readable. Pointer events are disabled so it never captures clicks.
+ *
+ * Palette is hardcoded to match `landing-experience.css`:
+ *   bg #0a0705 · orange ramp #d25611 / #f0792a / #ff9a4d · white / muted white.
+ */
+
+.backdrop {
+	/* Parallax offsets, written by the component on pointer move (rAF-throttled).
+	 * Default 0 → a static, perfectly framed scene under reduced-motion. */
+	--px: 0;
+	--py: 0;
+
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+	/* Subtle, but visible enough to read as the Rox app on desktop + phone.
+	 * The device rig sits to the right of the centered copy column, so a higher
+	 * opacity stays legible; dial back toward 0.3 if the headline ever fights it. */
+	opacity: 0.4;
+	/* Establish the shared 3D camera for every floating surface. */
+	perspective: 1600px;
+	perspective-origin: 50% 42%;
+	contain: strict;
+}
+
+/* Far ambient key light — a soft warm orange bloom drifting with parallax.
+ * Heavily blurred so it reads as atmosphere, never as a hard shape. */
+.glow {
+	position: absolute;
+	top: 8%;
+	left: 50%;
+	width: 70%;
+	height: 60%;
+	transform: translate3d(
+		calc(-50% + var(--px) * 26px),
+		calc(var(--py) * 20px),
+		0
+	);
+	background: radial-gradient(
+		circle at 50% 40%,
+		rgba(240, 121, 42, 0.55),
+		rgba(210, 86, 17, 0.22) 38%,
+		transparent 70%
+	);
+	filter: blur(60px);
+	will-change: transform;
+}
+
+/* The 3D stage: a preserve-3d space the desktop + phone live inside, tilted
+ * toward the viewer and counter-rotated a few degrees by parallax. */
+.stage {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: min(880px, 78vw);
+	height: min(560px, 62vh);
+	transform: translate(-50%, -50%) rotateX(calc(13deg - var(--py) * 6deg))
+		rotateY(calc(-18deg + var(--px) * 7deg));
+	transform-style: preserve-3d;
+	will-change: transform;
+}
+
+/* ── Shared device chrome ─────────────────────────────────────────────────
+ * Each "device" is a rounded dark panel with a hairline edge, a thin top bar,
+ * and layered drop-shadows for depth. Surfaces are flat-built (no images). */
+.device {
+	position: absolute;
+	border-radius: 16px;
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 18%),
+		linear-gradient(160deg, #1a110b 0%, #120c07 60%, #0c0805 100%);
+	box-shadow:
+		0 2px 0 0 rgba(255, 255, 255, 0.04) inset,
+		0 0 0 1px rgba(255, 255, 255, 0.07),
+		0 40px 80px -20px rgba(0, 0, 0, 0.85),
+		0 18px 40px -12px rgba(210, 86, 17, 0.22);
+	overflow: hidden;
+	backface-visibility: hidden;
+}
+
+/* ── Desktop window ───────────────────────────────────────────────────────
+ * The hero surface: a wide IDE-like window pushed slightly back in depth. */
+.desktop {
+	top: 50%;
+	left: 0;
+	width: 660px;
+	height: 430px;
+	transform: translate(0, -50%) translateZ(-40px);
+}
+
+/* macOS-style title bar with traffic-light dots. */
+.titleBar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 34px;
+	padding: 0 14px;
+	background: linear-gradient(180deg, #20150d, #170f09);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dot {
+	width: 11px;
+	height: 11px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.dotR {
+	background: #ff5f57;
+}
+.dotY {
+	background: #febc2e;
+}
+.dotG {
+	background: #28c840;
+}
+
+/* Faux window title chip in the bar. */
+.titleChip {
+	margin-left: 10px;
+	width: 120px;
+	height: 8px;
+	border-radius: 4px;
+	background: rgba(255, 255, 255, 0.08);
+}
+
+/* The window body: a sidebar + content split. */
+.body {
+	display: flex;
+	height: calc(100% - 34px);
+}
+
+.sidebar {
+	width: 150px;
+	flex-shrink: 0;
+	padding: 16px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 11px;
+	background: linear-gradient(180deg, #150e08, #100b06);
+	border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Sidebar nav rows — abstract pills, one of them is the orange "active" item. */
+.navItem {
+	height: 9px;
+	border-radius: 5px;
+	background: rgba(255, 255, 255, 0.09);
+}
+
+.navItem:nth-child(1) {
+	width: 78%;
+}
+.navItem:nth-child(2) {
+	width: 92%;
+}
+.navItem:nth-child(4) {
+	width: 64%;
+}
+.navItem:nth-child(5) {
+	width: 84%;
+}
+.navItem:nth-child(6) {
+	width: 56%;
+}
+
+/* The single sharp orange accent element — the active sidebar entry, glowing. */
+.navActive {
+	width: 100%;
+	height: 11px;
+	border-radius: 5px;
+	background: linear-gradient(90deg, #d25611, #f0792a);
+	box-shadow: 0 0 14px rgba(240, 121, 42, 0.6);
+}
+
+.content {
+	flex: 1;
+	padding: 18px 18px 0;
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	overflow: hidden;
+}
+
+/* Abstract "code"/list lines — varied widths, a couple tinted with a faint
+ * syntax-orange so the surface reads as an editor without any real text. */
+.line {
+	height: 8px;
+	border-radius: 4px;
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.line:nth-child(1) {
+	width: 42%;
+}
+.line:nth-child(2) {
+	width: 78%;
+}
+.line:nth-child(3) {
+	width: 64%;
+}
+.line:nth-child(5) {
+	width: 88%;
+}
+.line:nth-child(6) {
+	width: 52%;
+}
+.line:nth-child(7) {
+	width: 71%;
+}
+.line:nth-child(9) {
+	width: 46%;
+}
+
+/* Indented lines, evoking nested code blocks. */
+.lineIndent {
+	margin-left: 22px;
+}
+
+/* Faintly orange-tinted lines — keywords/strings in the pseudo-syntax. */
+.lineAccent {
+	background: rgba(240, 121, 42, 0.4);
+	width: 34%;
+}
+
+/* ── Phone mockup ─────────────────────────────────────────────────────────
+ * A smaller rounded device that overlaps IN FRONT of the desktop (pulled
+ * forward in Z, offset down-right), so the scene reads with real depth. */
+.phone {
+	bottom: -4%;
+	right: -2%;
+	width: 168px;
+	height: 348px;
+	border-radius: 30px;
+	padding: 9px;
+	transform: translateZ(70px) rotateY(6deg) rotateX(-3deg);
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.08),
+		0 50px 70px -22px rgba(0, 0, 0, 0.9),
+		0 20px 44px -14px rgba(210, 86, 17, 0.3);
+}
+
+/* Phone screen: its own rounded surface inside the bezel. */
+.phoneScreen {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	border-radius: 22px;
+	background: linear-gradient(170deg, #160f09, #0c0805);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	padding: 26px 13px 16px;
+	gap: 9px;
+}
+
+/* Notch / pill at the top of the phone. */
+.notch {
+	position: absolute;
+	top: 9px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 52px;
+	height: 7px;
+	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.6);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Compact app UI inside the phone: a header block, an orange "primary" card,
+ * then a few list rows. */
+.phoneHeader {
+	height: 10px;
+	width: 58%;
+	border-radius: 5px;
+	background: rgba(255, 255, 255, 0.14);
+}
+
+.phoneCard {
+	height: 60px;
+	border-radius: 12px;
+	background: linear-gradient(135deg, #d25611, #f0792a);
+	box-shadow: 0 8px 20px -6px rgba(240, 121, 42, 0.55);
+	flex-shrink: 0;
+}
+
+.phoneRow {
+	height: 9px;
+	border-radius: 5px;
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.phoneRow:nth-child(4) {
+	width: 86%;
+}
+.phoneRow:nth-child(5) {
+	width: 70%;
+}
+.phoneRow:nth-child(6) {
+	width: 80%;
+}
+.phoneRow:nth-child(7) {
+	width: 58%;
+}
+
+/* Soft floor reflection / contact shadow beneath the whole rig, anchoring it
+ * so the devices feel like they're floating above a surface, not pasted on. */
+.floor {
+	position: absolute;
+	bottom: 6%;
+	left: 50%;
+	width: 64%;
+	height: 90px;
+	transform: translate3d(-50%, 0, -120px) rotateX(64deg);
+	background: radial-gradient(
+		ellipse at center,
+		rgba(0, 0, 0, 0.55),
+		transparent 70%
+	);
+	filter: blur(28px);
+}
+
+/* Dark vignette on top of the scene (still behind copy) to deepen the edges
+ * and protect text legibility in the center column. */
+.vignette {
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		120% 90% at 50% 44%,
+		transparent 38%,
+		rgba(10, 7, 5, 0.55) 100%
+	);
+}
+
+/* ── Responsive: simplify hard on small screens ──────────────────────────── */
+@media (max-width: 720px) {
+	.backdrop {
+		opacity: 0.22;
+		perspective: 1100px;
+	}
+
+	/* Drop the phone + floor on mobile: cheaper, and avoids a busy backdrop
+	 * behind narrow text columns. */
+	.phone,
+	.floor {
+		display: none;
+	}
+
+	.stage {
+		width: 94vw;
+		height: 52vh;
+		/* Flatten the tilt a touch so the lone desktop reads cleanly. */
+		transform: translate(-50%, -50%) rotateX(10deg) rotateY(-12deg);
+	}
+
+	.desktop {
+		width: 100%;
+		height: 300px;
+	}
+}
+
+/* ── Reduced motion: kill all parallax + drift, keep a static framed scene ── */
+@media (prefers-reduced-motion: reduce) {
+	.glow,
+	.stage {
+		transition: none;
+	}
+}

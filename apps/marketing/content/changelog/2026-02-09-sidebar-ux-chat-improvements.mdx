@@ -1,60 +1,60 @@
 ---
-title: New Diff view, early Chat GUI preview, and powerful preset settings
+title: Новое представление Diff, ранний превью Chat GUI и мощные настройки пресетов
 date: 2026-02-09
 image: /changelog/new-diff.png
 ---
 
-## New Diff View, Powered by diffs.com <PRBadge url="https://github.com/agisota/set/pull/1308" />
+## Новое представление Diff на движке diffs.com <PRBadge url="https://github.com/agisota/set/pull/1308" />
 
-The Changes view has been completely rebuilt with [Pierre Computer's diffs.com](https://diffs.com) engine — delivering a drastically improved diff experience in both UI and performance. Large changesets that previously lagged now render instantly, and the new interface makes reviewing diffs feel native and fluid.
+Представление изменений полностью переработано на движке [diffs.com от Pierre Computer](https://diffs.com) — это даёт кардинально улучшенный опыт работы с diff'ами как в интерфейсе, так и в производительности. Большие наборы изменений, которые раньше тормозили, теперь отрисовываются мгновенно, а новый интерфейс делает просмотр diff'ов нативным и плавным.
 
-The new viewer includes an edit mode toggle — switch between read-only review and live editing, and hit Ctrl+S to save changes directly from the diff.
+Новый просмотрщик включает переключатель режима редактирования — переключайся между режимом «только чтение» и живым редактированием и нажимай Ctrl+S, чтобы сохранить изменения прямо из diff'а.
 
-- **Workspace-scoped base branch** — base branch selection is now per-workspace instead of global, so diffs always compare against the right branch <PRBadge url="https://github.com/agisota/set/pull/1329" />
-- **Preserved file explorer state** — expanded folders, scroll position, and selection persist when switching between Changes and Files tabs <PRBadge url="https://github.com/agisota/set/pull/1297" />
-- **Compact tab buttons** — Changes and Files tabs collapse to icon-only mode with tooltips when the sidebar is narrow <PRBadge url="https://github.com/agisota/set/pull/1334" />
+- **Базовая ветка в пределах рабочего пространства** — выбор базовой ветки теперь делается для каждого рабочего пространства, а не глобально, так что diff'ы всегда сравниваются с нужной веткой <PRBadge url="https://github.com/agisota/set/pull/1329" />
+- **Сохранённое состояние файлового проводника** — развёрнутые папки, позиция прокрутки и выделение сохраняются при переключении между вкладками «Изменения» и «Файлы» <PRBadge url="https://github.com/agisota/set/pull/1297" />
+- **Компактные кнопки вкладок** — вкладки «Изменения» и «Файлы» сворачиваются в режим «только иконки» с тултипами, когда сайдбар узкий <PRBadge url="https://github.com/agisota/set/pull/1334" />
 
-## Early Preview of Chat GUI <PRBadge url="https://github.com/agisota/set/pull/1309" />
+## Ранний превью Chat GUI <PRBadge url="https://github.com/agisota/set/pull/1309" />
 
-A native AI chat interface built right into Rox — and it works with your existing Claude Code sessions. Pick up where you left off without switching windows.
+Нативный интерфейс AI-чата, встроенный прямо в Rox — и он работает с твоими существующими сессиями Claude Code. Продолжай с того места, где остановился, не переключая окна.
 
-- **Existing session support** — scan and restore previous Claude Code sessions so you never lose context
-- **Slash commands** — type `/` to browse available commands with fuzzy search and keyboard navigation
-- **File mentions** — tag files with `@` and fuzzy search to pull in exactly the context you need <PRBadge url="https://github.com/agisota/set/pull/1307" />
-- **Rich tool rendering** — tool calls display with specialized UI for bash output, web searches, file diffs, and user questions
-- **Session persistence** — chat sessions survive app restarts with local storage and automatic restore <PRBadge url="https://github.com/agisota/set/pull/1287" />
+- **Поддержка существующих сессий** — сканируй и восстанавливай прошлые сессии Claude Code, чтобы никогда не терять контекст
+- **Slash-команды** — набери `/`, чтобы просмотреть доступные команды с нечётким поиском и навигацией с клавиатуры
+- **Упоминания файлов** — отмечай файлы через `@` и нечёткий поиск, чтобы подтянуть именно тот контекст, который нужен <PRBadge url="https://github.com/agisota/set/pull/1307" />
+- **Богатая отрисовка инструментов** — вызовы инструментов отображаются со специализированным интерфейсом для вывода bash, веб-поиска, diff'ов файлов и вопросов к пользователю
+- **Сохранение сессий** — сессии чата переживают перезапуски приложения благодаря локальному хранилищу и автоматическому восстановлению <PRBadge url="https://github.com/agisota/set/pull/1287" />
 
-This is an early preview — general availability is coming next week. We'd love your feedback in the meantime.
+Это ранний превью — общий доступ появится на следующей неделе. А пока будем рады твоему фидбэку.
 
-![Chat GUI with slash commands and tool rendering](/changelog/chat-gui.png)
+![Chat GUI со slash-командами и отрисовкой инструментов](/changelog/chat-gui.png)
 
-## Powerful Preset Settings <PRBadge url="https://github.com/agisota/set/pull/1320" />
+## Мощные настройки пресетов <PRBadge url="https://github.com/agisota/set/pull/1320" />
 
-Terminal presets now have granular auto-apply controls. Configure when presets run independently for workspace creation and new tabs — so you can auto-run setup commands on new workspaces without them firing every time you open a tab.
+У пресетов терминала теперь есть гибкое управление авто-применением. Настрой, когда пресеты запускаются — отдельно для создания рабочего пространства и для новых вкладок — чтобы автоматически запускать команды настройки на новых рабочих пространствах, но не каждый раз при открытии вкладки.
 
-- **Apply preset on workspace creation** — controls initialization commands when spinning up workspaces
-- **Apply preset on new tab** — controls whether presets run when opening new tabs, panes, or splits
-- Explicit preset launches via hotkey or menu always work regardless of these settings
+- **Применять пресет при создании рабочего пространства** — управляет командами инициализации при создании рабочих пространств
+- **Применять пресет на новой вкладке** — управляет тем, запускаются ли пресеты при открытии новых вкладок, панелей или сплитов
+- Явный запуск пресетов через горячую клавишу или меню всегда работает независимо от этих настроек
 
 {/* TODO: Screenshot of terminal settings with both toggles */}
 
-## Improvements
+## Улучшения
 
-- **Improved new tab buttons** — grouped outline button bar for New Terminal and New Chat with keyboard shortcuts (Cmd+T, Cmd+Shift+T) <PRBadge url="https://github.com/agisota/set/pull/1321" />
-- **Setup script card** — persistent sidebar card replaces toast for missing setup scripts with direct link to configuration <PRBadge url="https://github.com/agisota/set/pull/1270" />
-- **Push auto-setup** — first `git push` from worktrees automatically creates remote branch and sets upstream tracking <PRBadge url="https://github.com/agisota/set/pull/1267" />
-- **Project image toggle** — hide/show project GitHub avatars in sidebar with colored initial letters as fallback <PRBadge url="https://github.com/agisota/set/pull/1276" />
-- **Teardown logs modal** — failed teardown scripts show logs in a modal instead of dumping output in error toast <PRBadge url="https://github.com/agisota/set/pull/1277" />
+- **Улучшенные кнопки новых вкладок** — сгруппированная панель кнопок с контуром для «Новый терминал» и «Новый чат» с горячими клавишами (Cmd+T, Cmd+Shift+T) <PRBadge url="https://github.com/agisota/set/pull/1321" />
+- **Карточка скрипта настройки** — постоянная карточка в сайдбаре заменяет тост при отсутствии скриптов настройки и даёт прямую ссылку на конфигурацию <PRBadge url="https://github.com/agisota/set/pull/1270" />
+- **Авто-настройка push'а** — первый `git push` из worktree автоматически создаёт удалённую ветку и настраивает отслеживание upstream <PRBadge url="https://github.com/agisota/set/pull/1267" />
+- **Переключатель изображения проекта** — скрывай/показывай аватары GitHub проектов в сайдбаре с цветной первой буквой в качестве запасного варианта <PRBadge url="https://github.com/agisota/set/pull/1276" />
+- **Модальное окно логов teardown** — упавшие скрипты teardown показывают логи в модальном окне, а не вываливают вывод в тост с ошибкой <PRBadge url="https://github.com/agisota/set/pull/1277" />
 
 ---
 
-**Bug fixes:**
+**Исправления багов:**
 
-- Fixed circular import in Paywall module <PRBadge url="https://github.com/agisota/set/pull/1323" />
-- Processed pending terminal setups for already-initialized workspaces <PRBadge url="https://github.com/agisota/set/pull/1322" />
-- Made teardown resilient to already-deleted Neon branches <PRBadge url="https://github.com/agisota/set/pull/1289" />
-- Improved auto-updater diagnostics <PRBadge url="https://github.com/agisota/set/pull/1291" />
-- Fixed chat infinite re-render <PRBadge url="https://github.com/agisota/set/pull/1283" />
-- Routed member creation through Better Auth hooks for billing <PRBadge url="https://github.com/agisota/set/pull/1319" />
-- Used bundle IDs for multi-edition JetBrains IDEs <PRBadge url="https://github.com/agisota/set/pull/1317" />
-- Fixed MCP OAuth with dynamic client registration <PRBadge url="https://github.com/agisota/set/pull/1313" />
+- Исправили циклический импорт в модуле Paywall <PRBadge url="https://github.com/agisota/set/pull/1323" />
+- Обработали отложенные настройки терминала для уже инициализированных рабочих пространств <PRBadge url="https://github.com/agisota/set/pull/1322" />
+- Сделали teardown устойчивым к уже удалённым веткам Neon <PRBadge url="https://github.com/agisota/set/pull/1289" />
+- Улучшили диагностику авто-обновлятора <PRBadge url="https://github.com/agisota/set/pull/1291" />
+- Исправили бесконечную перерисовку чата <PRBadge url="https://github.com/agisota/set/pull/1283" />
+- Направили создание участников через хуки Better Auth для биллинга <PRBadge url="https://github.com/agisota/set/pull/1319" />
+- Использовали bundle ID для многоредакционных IDE JetBrains <PRBadge url="https://github.com/agisota/set/pull/1317" />
+- Исправили OAuth MCP с динамической регистрацией клиента <PRBadge url="https://github.com/agisota/set/pull/1313" />

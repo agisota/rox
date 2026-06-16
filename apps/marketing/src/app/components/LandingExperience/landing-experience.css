@@ -71,7 +71,7 @@
 	justify-content: center;
 	align-items: center;
 	overflow: hidden;
-	background: var(--rox-orange-5);
+	background: #000;
 	color: var(--rox-orange-1);
 	will-change: background-color;
 	backface-visibility: hidden;
@@ -80,7 +80,7 @@
 .rox-intro__stage {
 	position: relative;
 	width: 100%;
-	max-width: 1000px;
+	max-width: min(1500px, 94vw);
 	aspect-ratio: 16 / 9;
 	backface-visibility: hidden;
 }
@@ -119,23 +119,22 @@
 	bottom: 1.5rem;
 	right: 1.5rem;
 	z-index: 101;
-	padding: 0.5rem 1rem;
-	font-family: var(--rox-font-mono);
-	font-size: 0.8rem;
+	padding: 0.35rem 0.5rem;
+	font-family: var(--rox-font-display);
+	font-size: 0.72rem;
 	letter-spacing: 0.04em;
-	color: var(--rox-fg-2);
-	background: rgba(0, 0, 0, 0.25);
-	border: 1px solid rgba(255, 255, 255, 0.15);
-	border-radius: 0.5rem;
+	color: var(--rox-fg-3);
+	background: none;
+	border: none;
+	border-radius: 0;
 	cursor: pointer;
 	transition:
 		color 0.2s,
-		border-color 0.2s;
+		opacity 0.2s;
 }
 
 .rox-intro__skip:hover {
 	color: var(--rox-fg-1);
-	border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* Brand logo revealed over the centered word at the climax of slide 1.
@@ -188,6 +187,34 @@
 	height: clamp(52px, 12vh, 112px);
 	width: auto;
 	display: block;
+}
+
+/* Living necktie: an orange→red glow masked to the girl silhouette and clipped
+ * to the scarf/tie at the bottom of the mark, so only the tie shimmers. The PNG
+ * is flat (no per-part vectors), so we paint a masked orange layer over it. */
+.rox-intro__tie {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background-color: var(--rox-orange-2);
+	-webkit-mask: url("/rox-logo-light.png") center / contain no-repeat;
+	mask: url("/rox-logo-light.png") center / contain no-repeat;
+	clip-path: inset(72% 0 0 0);
+	opacity: 0;
+	filter: drop-shadow(0 0 9px rgba(240, 121, 42, 0.75));
+	animation: rox-tie-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes rox-tie-glow {
+	0%,
+	100% {
+		opacity: 0.5;
+		background-color: var(--rox-orange-3);
+	}
+	50% {
+		opacity: 1;
+		background-color: var(--rox-c-5);
+	}
 }
 
 /* Slide 1 becomes a full-bleed grid of the lead word; the stage clips the
@@ -338,6 +365,70 @@
 	position: absolute;
 	left: 0;
 	color: var(--rox-orange-2);
+}
+
+/* Inline glossary terms in the feature list: underlined words that reveal a
+ * tooltip on hover/focus, explaining each agent/editor integration + acpx. */
+.rox-term {
+	appearance: none;
+	-webkit-appearance: none;
+	border: none;
+	background: none;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	line-height: inherit;
+	vertical-align: baseline;
+	position: relative;
+	color: var(--rox-fg-1);
+	text-decoration: underline;
+	text-decoration-color: var(--rox-orange-3);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	cursor: help;
+	transition:
+		color 0.2s,
+		text-decoration-color 0.2s;
+}
+
+.rox-term:hover,
+.rox-term:focus-visible {
+	color: var(--rox-orange-1);
+	text-decoration-color: var(--rox-orange-1);
+	outline: none;
+}
+
+.rox-term__tip {
+	position: absolute;
+	left: 50%;
+	bottom: calc(100% + 8px);
+	transform: translateX(-50%) translateY(4px);
+	width: max-content;
+	max-width: 260px;
+	padding: 8px 11px;
+	border-radius: 8px;
+	background: #15100c;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+	color: var(--rox-fg-2);
+	font-size: 0.8rem;
+	line-height: 1.45;
+	letter-spacing: 0;
+	text-transform: none;
+	text-decoration: none;
+	white-space: normal;
+	opacity: 0;
+	pointer-events: none;
+	transition:
+		opacity 0.2s,
+		transform 0.2s;
+	z-index: 5;
+}
+
+.rox-term:hover .rox-term__tip,
+.rox-term:focus-visible .rox-term__tip {
+	opacity: 1;
+	transform: translateX(-50%) translateY(0);
 }
 
 .rox-landing__cta {

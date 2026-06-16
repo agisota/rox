@@ -1,72 +1,72 @@
 ---
-title: "The Complete Guide to Running Parallel AI Coding Agents"
-description: "How to run multiple AI coding agents in parallel without conflicts. Covers isolation strategies, orchestration patterns, and practical workflows for scaling from 1 to 10+ agents."
+title: "Полное руководство по запуску ИИ-агентов для кода в параллель"
+description: "Как запускать несколько ИИ-агентов для кода в параллель без конфликтов. Разбираем стратегии изоляции, паттерны оркестрации и практические сценарии для масштабирования от 1 до 10+ агентов."
 author: avi
 date: 2026-02-18
-category: Engineering
+category: Инженерия
 relatedSlugs:
   - working-with-worktrees-in-rox
   - roadmap-to-100-agents
   - git-worktrees-history-deep-dive
 ---
 
-Running one AI coding agent is straightforward. Running ten at once introduces problems that most developers haven't encountered before: file conflicts, branch collisions, resource contention, and a review bottleneck that grows linearly with agent count. This guide covers the patterns that work and the mistakes to avoid.
+Запустить один ИИ-агент для кода — дело нехитрое. Запустить десять разом порождает проблемы, с которыми большинство разработчиков прежде не сталкивались: конфликты файлов, столкновения веток, борьба за ресурсы и узкое место в ревью, которое растёт линейно с числом агентов. Это руководство разбирает паттерны, которые работают, и ошибки, которых стоит избегать.
 
 ---
 
-## Why Parallel Agents?
+## Зачем параллельные агенты?
 
-A single coding agent handles one task at a time. You prompt, it works, you review, you iterate. At best, you're doing one unit of agent work per cycle.
+Один агент для кода обрабатывает одну задачу за раз. Ты даёшь промпт, он работает, ты ревьюишь, ты итерируешь. В лучшем случае ты выполняешь одну единицу работы агента за цикл.
 
-But most codebases have dozens of parallelizable tasks at any given time:
+Но в большинстве кодовых баз в любой момент есть десятки задач, которые можно распараллелить:
 
-- Writing tests for module A doesn't conflict with refactoring module B
-- Updating API docs doesn't conflict with fixing a database query
-- Adding input validation doesn't conflict with migrating a config format
+- Написание тестов для модуля A не конфликтует с рефакторингом модуля B
+- Обновление документации API не конфликтует с починкой запроса к базе данных
+- Добавление валидации ввода не конфликтует с миграцией формата конфига
 
-These tasks are independent. They can — and should — run simultaneously. The bottleneck isn't the agent or the model. It's the human orchestrating one task at a time.
-
----
-
-## The Isolation Problem
-
-Running two agents in the same directory creates immediate problems:
-
-```
-Agent 1: Opens src/auth/login.ts, starts refactoring
-Agent 2: Opens src/auth/login.ts, starts adding validation
-Agent 1: Writes its version of login.ts
-Agent 2: Writes its version of login.ts (overwrites Agent 1)
-Agent 1: Commits — but the file is Agent 2's version
-```
-
-This isn't a theoretical risk. It happens every time two agents touch overlapping files. Even if they're editing different files, a shared `git index` means their commits can include each other's uncommitted changes.
-
-### Solution: One Worktree Per Agent
-
-Git worktrees solve this at the filesystem level:
-
-```
-~/project/                  # Your main working tree
-~/project-agent-tests/      # Agent 1: writing tests (own branch, own files)
-~/project-agent-refactor/   # Agent 2: refactoring auth (own branch, own files)
-~/project-agent-docs/       # Agent 3: updating docs (own branch, own files)
-```
-
-Each worktree has:
-- Its own copy of the working directory
-- Its own branch
-- Its own staging area (git index)
-
-They share the git object store, so creating a worktree takes seconds and costs minimal disk space.
+Эти задачи независимы. Они могут — и должны — выполняться одновременно. Узкое место — не агент и не модель. Это человек, который оркеструет по одной задаче за раз.
 
 ---
 
-## Orchestration Patterns
+## Проблема изоляции
 
-### Pattern 1: Manual Worktrees
+Запуск двух агентов в одной директории сразу же создаёт проблемы:
 
-The simplest approach — create worktrees yourself and run agents manually:
+```
+Агент 1: открывает src/auth/login.ts, начинает рефакторинг
+Агент 2: открывает src/auth/login.ts, начинает добавлять валидацию
+Агент 1: записывает свою версию login.ts
+Агент 2: записывает свою версию login.ts (перезаписывает версию Агента 1)
+Агент 1: коммитит — но в файле версия Агента 2
+```
+
+Это не теоретический риск. Так происходит каждый раз, когда два агента трогают пересекающиеся файлы. Даже если они редактируют разные файлы, общий `git index` означает, что их коммиты могут включать незакоммиченные изменения друг друга.
+
+### Решение: по одному worktree на агента
+
+Git worktrees решают это на уровне файловой системы:
+
+```
+~/project/                  # Твоё основное рабочее дерево
+~/project-agent-tests/      # Агент 1: пишет тесты (своя ветка, свои файлы)
+~/project-agent-refactor/   # Агент 2: рефакторит auth (своя ветка, свои файлы)
+~/project-agent-docs/       # Агент 3: обновляет документацию (своя ветка, свои файлы)
+```
+
+У каждого worktree есть:
+- Своя копия рабочей директории
+- Своя ветка
+- Своя область индекса (git index)
+
+Они делят хранилище объектов git, поэтому создание worktree занимает секунды и стоит минимума места на диске.
+
+---
+
+## Паттерны оркестрации
+
+### Паттерн 1. Worktrees вручную
+
+Самый простой подход — создавать worktrees самому и запускать агентов вручную:
 
 ```bash
 git worktree add ../project-tests -b agent/tests
@@ -74,11 +74,11 @@ cd ../project-tests
 claude-code "Write unit tests for the auth module"
 ```
 
-This works for 2-3 agents but breaks down at scale. You're managing worktrees, branches, and terminals manually.
+Это работает для 2–3 агентов, но разваливается при масштабировании. Ты управляешь worktrees, ветками и терминалами вручную.
 
-### Pattern 2: Scripted Orchestration
+### Паттерн 2. Скриптовая оркестрация
 
-A shell script that automates worktree creation and agent launching:
+Shell-скрипт, который автоматизирует создание worktree и запуск агента:
 
 ```bash
 #!/bin/bash
@@ -92,119 +92,119 @@ cd "$WORKTREE_DIR"
 eval "$AGENT_CMD"
 ```
 
-Better, but still no unified view of all tasks, no session persistence, and no diff review workflow.
+Лучше, но всё ещё нет единого обзора всех задач, нет сохранения сессий и нет рабочего процесса ревью diff'ов.
 
-### Pattern 3: Dedicated Orchestrator
+### Паттерн 3. Выделенный оркестратор
 
-Tools like [Rox](https://rox.one) handle orchestration end-to-end:
+Инструменты вроде [Rox](https://rox.one) занимаются оркестрацией от начала до конца:
 
-1. **Task creation** — describe the task, pick an agent
-2. **Automatic isolation** — worktree and branch created automatically
-3. **Session management** — persistent daemon keeps sessions alive across crashes
-4. **Diff review** — built-in diff viewer for reviewing agent output
-5. **Editor integration** — open any worktree in VS Code, Cursor, JetBrains, or Xcode
+1. **Создание задачи** — опиши задачу, выбери агента
+2. **Автоматическая изоляция** — worktree и ветка создаются автоматически
+3. **Управление сессиями** — постоянный демон держит сессии живыми при падениях
+4. **Ревью diff'ов** — встроенный просмотрщик diff'ов для ревью вывода агента
+5. **Интеграция с редактором** — открыть любой worktree в VS Code, Cursor, JetBrains или Xcode
 
-This is the approach that scales to 5-10+ concurrent agents without operational overhead.
+Именно этот подход масштабируется до 5–10+ одновременных агентов без операционных издержек.
 
 ---
 
-## Choosing the Right Agent Per Task
+## Подбор правильного агента под задачу
 
-Different agents have different strengths. A parallel workflow lets you match agents to tasks:
+У разных агентов разные сильные стороны. Параллельный рабочий процесс позволяет подбирать агентов под задачи:
 
 ### Claude Code
-- Complex multi-file refactors
-- Architectural changes (new patterns, module restructuring)
-- Debugging subtle issues that require deep codebase understanding
-- Tasks requiring MCP tool integration
+- Сложные рефакторы по нескольким файлам
+- Архитектурные изменения (новые паттерны, реструктуризация модулей)
+- Отладка тонких проблем, требующих глубокого понимания кодовой базы
+- Задачи, требующие интеграции инструментов через MCP
 
 ### Codex CLI
-- Well-scoped, clearly defined tasks
-- Full Auto mode for autonomous execution
-- Tasks where OpenAI models (o3, o4-mini) perform well
-- Cost-sensitive tasks using cheaper models
+- Чётко очерченные, ясно определённые задачи
+- Режим Full Auto для автономного выполнения
+- Задачи, где хорошо себя показывают модели OpenAI (o3, o4-mini)
+- Чувствительные к стоимости задачи на более дешёвых моделях
 
 ### OpenCode
-- Tasks where model flexibility matters (75+ providers)
-- Cost optimization across different providers
-- Teams running local models via Ollama
-- Tasks that benefit from LSP integration
+- Задачи, где важна гибкость в выборе модели (75+ провайдеров)
+- Оптимизация стоимости между разными провайдерами
+- Команды, запускающие локальные модели через Ollama
+- Задачи, выигрывающие от интеграции с LSP
 
 ### Aider
-- Iterative pair programming tasks
-- Small, focused changes with tight feedback loops
-- Tasks requiring frequent back-and-forth
+- Итеративные задачи в стиле парного программирования
+- Небольшие точечные изменения с плотной обратной связью
+- Задачи, требующие частого обмена туда-обратно
 
-The key insight: you don't have to choose one agent for everything. Run Claude Code on the complex refactor and Codex on the test generation simultaneously.
-
----
-
-## The Review Bottleneck
-
-Parallel agents create a new problem: review throughput. If you run 10 agents and each produces a diff in 15 minutes, you have 10 diffs to review per hour.
-
-### Strategies for Fast Review
-
-**Prioritize by risk:** A test addition is low-risk and can be reviewed quickly. A database migration is high-risk and needs careful review. Triage diffs by impact.
-
-**Review diffs, not files:** Don't re-read the entire file. Focus on what changed. If the diff is scoped to what you asked for and the tests pass, a quick review is usually sufficient.
-
-**Let agents verify their own work:** Before reviewing, check if the agent ran tests. If tests pass and the diff is clean, your review is a sanity check rather than a first-pass audit.
-
-**Use structured task descriptions:** "Add input validation to the signup form: email must be valid, password must be 8+ characters, display inline errors" produces a reviewable diff. "Improve the signup form" produces something unpredictable.
-
-**Batch similar tasks:** Review all test additions together, then all refactors. Context switching between different types of changes is the biggest time sink in review.
+Ключевая идея: тебе не нужно выбирать одного агента на всё. Запусти Claude Code на сложном рефакторе и Codex на генерации тестов одновременно.
 
 ---
 
-## Resource Management
+## Узкое место ревью
 
-### CPU and Memory
+Параллельные агенты создают новую проблему: пропускную способность ревью. Если ты запускаешь 10 агентов и каждый выдаёт diff за 15 минут, у тебя 10 diff'ов на ревью в час.
 
-Each agent consumes local resources for:
-- The agent process itself (terminal, file I/O)
-- Language servers (TypeScript, Go, Python) if the agent uses them
-- Build processes if the agent runs builds
-- Test suites if the agent runs tests
+### Стратегии быстрого ревью
 
-On a modern laptop, 5-7 concurrent agents are comfortable. Beyond that, you may want to stagger agent launches or limit concurrent builds.
+**Расставляй приоритеты по риску:** добавление теста низкорисковое и ревьюится быстро. Миграция базы данных высокорисковая и требует тщательного ревью. Сортируй diff'ы по влиянию.
 
-### API Rate Limits
+**Ревьюй diff'ы, а не файлы:** не перечитывай весь файл. Сосредоточься на том, что изменилось. Если diff ограничен тем, что ты просил, и тесты проходят, быстрого ревью обычно достаточно.
 
-Each agent makes API calls to its model provider. Running 10 Claude Code instances hits Anthropic's rate limits faster than one. Monitor your provider's rate limit headers and throttle if needed.
+**Дай агентам проверять собственную работу:** перед ревью проверь, прогонял ли агент тесты. Если тесты проходят и diff чистый, твоё ревью — это проверка на здравомыслие, а не аудит с нуля.
 
-### Disk Space
+**Используй структурированные описания задач:** «Добавь валидацию ввода на форму регистрации: email должен быть валидным, пароль — от 8 символов, показывать ошибки прямо в форме» даёт пригодный для ревью diff. «Улучши форму регистрации» даёт что-то непредсказуемое.
 
-Each worktree is a full checkout of your working directory. For a 1GB repo, 10 worktrees use ~10GB. The git object store is shared, so history isn't duplicated. Clean up completed worktrees promptly.
+**Группируй похожие задачи:** ревьюй сначала все добавления тестов вместе, потом все рефакторы. Переключение контекста между разными типами изменений — самый большой пожиратель времени при ревью.
 
 ---
 
-## Common Mistakes
+## Управление ресурсами
 
-### Running Too Many Agents at Once
+### CPU и память
 
-Start with 2-3 until you're comfortable with the review workflow. Scaling to 10 before you can review at speed creates a backlog that slows everything down.
+Каждый агент потребляет локальные ресурсы на:
+- Сам процесс агента (терминал, файловый ввод-вывод)
+- Языковые серверы (TypeScript, Go, Python), если агент их использует
+- Процессы сборки, если агент запускает сборки
+- Наборы тестов, если агент запускает тесты
 
-### Vague Task Descriptions
+На современном ноутбуке 5–7 одновременных агентов работают комфортно. Сверх этого, возможно, стоит разносить запуски агентов по времени или ограничивать число одновременных сборок.
 
-"Fix the bugs" will produce unpredictable results. "Fix the null pointer in UserService.getProfile when user.avatar is null — add a null check and return a default avatar URL" gives the agent exactly what it needs.
+### Лимиты запросов к API
 
-### Ignoring Branch Conflicts
+Каждый агент делает запросы к API своего провайдера модели. Запуск 10 инстансов Claude Code упирается в лимиты Anthropic быстрее, чем один. Следи за заголовками лимитов своего провайдера и притормаживай при необходимости.
 
-If two agents modify the same file on different branches, you'll hit merge conflicts when merging. Plan your task allocation to minimize overlap. If tasks must touch the same files, run them sequentially.
+### Место на диске
 
-### Not Running Tests
-
-If the agent doesn't run tests, you're reviewing blind. Either include "run tests and fix any failures" in your prompt, or verify tests pass before reviewing the diff.
+Каждый worktree — это полная выгрузка твоей рабочей директории. Для репозитория в 1 ГБ 10 worktrees займут ~10 ГБ. Хранилище объектов git общее, поэтому история не дублируется. Своевременно подчищай завершённые worktrees.
 
 ---
 
-## Getting Started
+## Частые ошибки
 
-1. **Pick an orchestrator** — [Rox](https://rox.one) handles worktrees, sessions, and review
-2. **Pick your agents** — Start with Claude Code or Codex, expand later
-3. **Start with 2-3 tasks** — Parallelizable, non-overlapping tasks
-4. **Review quickly** — Focus on diffs, not full file reads
-5. **Scale gradually** — Add more agents as your review speed improves
+### Слишком много агентов разом
 
-The goal isn't to run the most agents possible. It's to maximize useful throughput — tasks completed per hour that meet your quality bar. Parallel agents get you there faster than sequential work, but only if the orchestration and review workflow supports it.
+Начни с 2–3, пока не освоишься с рабочим процессом ревью. Масштабирование до 10 раньше, чем ты сможешь ревьюить на скорости, создаёт затор, который тормозит всё.
+
+### Расплывчатые описания задач
+
+«Почини баги» даст непредсказуемые результаты. «Почини разыменование null в UserService.getProfile, когда user.avatar равен null — добавь проверку на null и возвращай URL дефолтного аватара» даёт агенту ровно то, что ему нужно.
+
+### Игнорирование конфликтов веток
+
+Если два агента меняют один и тот же файл в разных ветках, при слиянии ты упрёшься в конфликты. Планируй распределение задач так, чтобы минимизировать пересечения. Если задачи неизбежно трогают одни и те же файлы, запускай их последовательно.
+
+### Не запускать тесты
+
+Если агент не прогоняет тесты, ты ревьюишь вслепую. Либо включи в промпт «прогони тесты и почини любые падения», либо убедись, что тесты проходят, прежде чем ревьюить diff.
+
+---
+
+## С чего начать
+
+1. **Выбери оркестратор** — [Rox](https://rox.one) берёт на себя worktrees, сессии и ревью
+2. **Выбери своих агентов** — начни с Claude Code или Codex, расширишь позже
+3. **Начни с 2–3 задач** — распараллеливаемых, непересекающихся
+4. **Ревьюй быстро** — сосредоточься на diff'ах, а не на чтении файлов целиком
+5. **Масштабируй постепенно** — добавляй агентов по мере роста скорости ревью
+
+Цель не в том, чтобы запустить как можно больше агентов. Цель — максимизировать полезную пропускную способность: задачи, выполненные за час, которые соответствуют твоей планке качества. Параллельные агенты приведут тебя туда быстрее, чем последовательная работа, но только если оркестрация и рабочий процесс ревью это поддерживают.

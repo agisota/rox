@@ -1,6 +1,6 @@
 ---
-title: "Rox vs Windsurf (2026): Parallel Agent Orchestration vs AI IDE"
-description: "Compare Rox and Windsurf for AI-assisted development. See how parallel agent orchestration differs from an AI-powered integrated development environment."
+title: "Rox против Windsurf (2026): оркестрация параллельных агентов против AI-IDE"
+description: "Сравнение Rox и Windsurf для разработки с AI. Узнай, чем оркестрация параллельных агентов отличается от интегрированной среды разработки с AI."
 date: 2026-02-18
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -14,99 +14,99 @@ keywords:
   - ai coding tool comparison
 ---
 
-Windsurf is an AI-powered IDE that embeds AI into every part of the editing experience. Rox is a local-first workspace that runs many AI coding agents in parallel, each in its own Git worktree. They solve fundamentally different problems: Windsurf replaces your editor with an AI-native one, while Rox scales autonomous agent work alongside any editor.
+Windsurf — это IDE с AI, которая встраивает AI в каждую часть опыта редактирования. Rox — это local-first рабочее пространство, которое запускает множество AI-агентов кода параллельно, каждого в своём Git worktree. Они решают принципиально разные проблемы: Windsurf заменяет твой редактор на AI-нативный, тогда как Rox масштабирует автономную работу агентов вместе с любым редактором.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **Windsurf** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | AI-powered IDE (VS Code fork) |
-| **AI approach** | Agent-agnostic — works with Claude Code, Codex, Aider, Rox Chat, or any CLI agent | Built-in AI models proxied through Windsurf servers |
-| **Parallelism** | Core feature — 10+ agents across isolated worktrees | Sequential by default; Windsurf Flows handles multi-step tasks |
-| **Editor** | Works alongside any editor (VS Code, Cursor, JetBrains, Xcode) | You must use the Windsurf IDE |
-| **Pricing** | Free tier + Pro $20/seat/mo | Free tier (limited), Pro $15/mo, Ultra $60/mo, Teams $35/seat/mo |
-| **Privacy** | Local Git worktrees; you control agent and provider choices | Code sent to Windsurf servers and third-party AI providers |
-| **License** | Source-available (ELv2) | Closed source |
+| **Категория** | Рабочее пространство для оркестрации агентов | IDE с AI (форк VS Code) |
+| **Подход к AI** | Не зависит от агента — работает с Claude Code, Codex, Aider, Rox Chat или любым CLI-агентом | Встроенные AI-модели через прокси на серверах Windsurf |
+| **Параллелизм** | Ключевая функция — 10+ агентов в изолированных worktree | По умолчанию последовательный; Windsurf Flows справляется с многошаговыми задачами |
+| **Редактор** | Работает вместе с любым редактором (VS Code, Cursor, JetBrains, Xcode) | Ты обязан использовать Windsurf IDE |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес | Бесплатный тариф (ограниченный), Pro $15/мес, Ultra $60/мес, Teams $35/место/мес |
+| **Приватность** | Локальные Git worktree; ты управляешь выбором агента и провайдера | Код отправляется на серверы Windsurf и сторонним провайдерам AI |
+| **Лицензия** | Открытый исходный код (ELv2) | Закрытый исходный код |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is Windsurf?
-
-Windsurf (from Codeium) is a VS Code fork with AI integrated throughout the editing experience. Its core feature is Cascade, an agentic workflow engine that can read files, write code, run terminal commands, and search your codebase in multi-step flows. It also offers Tab completions, inline chat, and a Memories system that learns your project's patterns over time. Windsurf routes requests through its servers to provide access to multiple AI models.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое Windsurf?
 
-### Single Agent vs Many Agents
-
-Windsurf's Cascade is a single agentic flow — it tackles one task at a time through multiple steps (reading code, writing changes, running commands). Rox runs many agents simultaneously in isolated worktrees: one writing tests, another refactoring a service, a third updating docs. Windsurf improves single-task depth; Rox adds multi-task breadth.
-
-### Editor Lock-In vs Editor Freedom
-
-Using Windsurf means adopting the Windsurf IDE. If you use JetBrains, Xcode, Neovim, or even Cursor, you have to switch. Rox runs alongside any editor. It now has its own chat, diff/file review, and browser surfaces, but it still treats your editor as interchangeable rather than something it needs to own.
-
-### Model Lock-In vs Model Freedom
-
-Windsurf routes all AI requests through its servers and credit system. You get access to multiple models (GPT-4, Claude, etc.) but Windsurf controls the routing and pricing. Rox runs whatever CLI agents you install — or Rox Chat when you want a built-in surface — with your own provider choices. When a new agent ships, you can use it immediately.
-
-### Privacy
-
-Rox runs agents locally in Git worktrees, and the full source is on GitHub under Elastic License 2.0 (ELv2). Windsurf sends code to its servers and third-party AI providers. Windsurf is closed source, so you cannot audit what data is collected or how it's processed.
-
-### Session Persistence
-
-Windsurf's Cascade sessions live within the IDE. Rox adds a stronger workspace layer around autonomous runs: persistent sessions, task-level worktrees, in-app diff/file review, and browser previews for local apps. Long-running tasks are easier to manage when they are attached to explicit worktrees instead of a single editor thread.
+Windsurf (от Codeium) — это форк VS Code с AI, интегрированным во весь опыт редактирования. Его основная функция — Cascade, агентный движок воркфлоу, который умеет читать файлы, писать код, выполнять команды терминала и искать по твоей кодовой базе в многошаговых потоках. Он также предлагает Tab-дополнения, инлайн-чат и систему Memories, которая со временем изучает паттерны твоего проекта. Windsurf маршрутизирует запросы через свои серверы, чтобы дать доступ к нескольким AI-моделям.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and Pro at $20/seat/month. You also pay your agents' API providers directly — no markup, no credit system. Windsurf offers a free tier, Pro at $15/month, Ultra at $60/month, and Teams at $35/seat/month, all using a credit-based system for AI requests.
+### Один агент против множества агентов
+
+Cascade в Windsurf — это единственный агентный поток: он берётся за одну задачу за раз через несколько шагов (чтение кода, написание изменений, выполнение команд). Rox запускает множество агентов одновременно в изолированных worktree: один пишет тесты, другой рефакторит сервис, третий обновляет документацию. Windsurf улучшает глубину одной задачи; Rox добавляет широту множества задач.
+
+### Привязка к редактору против свободы редактора
+
+Использовать Windsurf — значит принять Windsurf IDE. Если ты используешь JetBrains, Xcode, Neovim или даже Cursor, тебе придётся переключиться. Rox работает вместе с любым редактором. Теперь у него есть собственные чат, ревью diff/файлов и интерфейсы браузера, но он по-прежнему относится к твоему редактору как к взаимозаменяемому, а не как к чему-то, чем ему нужно владеть.
+
+### Привязка к модели против свободы модели
+
+Windsurf маршрутизирует все AI-запросы через свои серверы и систему кредитов. Ты получаешь доступ к нескольким моделям (GPT-4, Claude и т.д.), но Windsurf контролирует маршрутизацию и цены. Rox запускает любых CLI-агентов, которых ты установишь, — или Rox Chat, когда тебе нужен встроенный интерфейс, — с твоим собственным выбором провайдеров. Когда выходит новый агент, ты можешь использовать его сразу же.
+
+### Приватность
+
+Rox запускает агентов локально в Git worktree, а полный исходный код есть на GitHub под Elastic License 2.0 (ELv2). Windsurf отправляет код на свои серверы и сторонним провайдерам AI. Windsurf — с закрытым исходным кодом, поэтому ты не можешь проверить, какие данные собираются и как они обрабатываются.
+
+### Сохранность сессий
+
+Сессии Cascade в Windsurf живут внутри IDE. Rox добавляет более сильный слой рабочего пространства вокруг автономных прогонов: постоянные сессии, worktree на уровне задач, встроенное ревью diff/файлов и превью локальных приложений в браузере. Долго работающими задачами легче управлять, когда они привязаны к явным worktree, а не к одному треду редактора.
 
 ---
 
-## Which Should You Choose?
+## Цена
 
-**Choose Windsurf if you:**
-- Want AI deeply embedded in your editing experience (completions, inline chat, multi-step flows)
-- Primarily use VS Code and are comfortable switching to a fork
-- Prefer a single integrated tool that handles editing and AI in one app
-- Don't need to run multiple agents in parallel
-
-**Choose Rox if you:**
-- Run CLI-based coding agents and want to parallelize across 10+ tasks
-- Use JetBrains, Xcode, Neovim, or any non-VS Code editor
-- Need local worktrees and direct control over providers
-- Want agent and model flexibility with no vendor lock-in
-- Need sessions that survive crashes and app restarts
-
-Both tools can coexist. Use Windsurf as your editor for inline AI assistance, and Rox alongside it to dispatch parallel agents for larger tasks like test generation, refactors, and migrations.
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц. Ты также платишь API-провайдерам своих агентов напрямую — без наценки, без системы кредитов. Windsurf предлагает бесплатный тариф, Pro за $15/месяц, Ultra за $60/месяц и Teams за $35/место/месяц — все на основе системы кредитов для AI-запросов.
 
 ---
 
-## Frequently Asked Questions
+## Что выбрать тебе?
 
-### Is Rox a Windsurf replacement?
+**Выбирай Windsurf, если ты:**
+- Хочешь AI, глубоко встроенный в твой опыт редактирования (дополнения, инлайн-чат, многошаговые потоки)
+- В основном используешь VS Code и тебе комфортно перейти на форк
+- Предпочитаешь один интегрированный инструмент, который занимается редактированием и AI в одном приложении
+- Не нуждаешься в запуске нескольких агентов параллельно
 
-No. Rox is not an AI IDE with inline completions. It does provide in-app chat, diff/file editing, browser previews, and worktree orchestration, but it is still not trying to replace Windsurf as your full editor. The two products can be used together.
+**Выбирай Rox, если ты:**
+- Запускаешь агентов кода на основе CLI и хочешь распараллелить работу по 10+ задачам
+- Используешь JetBrains, Xcode, Neovim или любой редактор, кроме VS Code
+- Нуждаешься в локальных worktree и прямом контроле над провайдерами
+- Хочешь гибкость в выборе агента и модели без привязки к вендору
+- Нуждаешься в сессиях, которые переживают сбои и перезапуски приложения
 
-### Does Windsurf support parallel agents?
+Оба инструмента могут сосуществовать. Используй Windsurf как редактор для инлайн-помощи AI, а Rox рядом с ним — чтобы раздавать параллельных агентов для более крупных задач вроде генерации тестов, рефакторингов и миграций.
 
-Windsurf's Cascade handles multi-step tasks sequentially within a single flow. It does not run multiple independent agents in parallel across isolated environments. Rox's worktree-based isolation is specifically designed for parallel agent execution.
+---
 
-### Is Rox open source?
+## Часто задаваемые вопросы
 
-No. Rox is source-available on GitHub under Elastic License 2.0 (ELv2). Windsurf is closed source from Codeium.
+### Заменяет ли Rox собой Windsurf?
 
-### Can I use Windsurf as my editor with Rox?
+Нет. Rox — не AI-IDE с инлайн-дополнениями. Он даёт встроенный чат, редактирование diff/файлов, превью в браузере и оркестрацию worktree, но он по-прежнему не пытается заменить Windsurf как твой полноценный редактор. Два продукта можно использовать вместе.
 
-Yes. Rox integrates with any editor. You can open Rox worktrees in Windsurf to review agent changes in the full IDE context.
+### Поддерживает ли Windsurf параллельных агентов?
+
+Cascade в Windsurf справляется с многошаговыми задачами последовательно внутри одного потока. Он не запускает несколько независимых агентов параллельно в изолированных окружениях. Изоляция Rox на основе worktree специально создана для параллельного выполнения агентов.
+
+### Open source ли Rox?
+
+Нет. Rox — с открытым исходным кодом на GitHub под Elastic License 2.0 (ELv2). Windsurf — с закрытым исходным кодом от Codeium.
+
+### Можно ли использовать Windsurf как редактор вместе с Rox?
+
+Да. Rox интегрируется с любым редактором. Ты можешь открывать worktree Rox в Windsurf, чтобы делать ревью изменений агента в полном контексте IDE.

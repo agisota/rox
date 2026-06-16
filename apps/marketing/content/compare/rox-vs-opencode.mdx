@@ -1,6 +1,6 @@
 ---
-title: "Rox vs OpenCode (2026): Agent Orchestration vs Open-Source AI Terminal"
-description: "Compare Rox and OpenCode for AI-assisted development. See how parallel agent orchestration differs from a single open-source AI coding terminal."
+title: "Rox против OpenCode (2026): оркестрация агентов против open-source AI-терминала"
+description: "Сравнение Rox и OpenCode для разработки с AI. Узнай, чем оркестрация параллельных агентов отличается от одного open-source AI-терминала для кода."
 date: 2026-02-02
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -14,89 +14,89 @@ keywords:
   - opencode vs rox
 ---
 
-OpenCode is a coding agent -- a single AI assistant that reads, writes, and debugs code in your terminal. Rox is a local-first desktop workspace that runs many coding agents, including OpenCode, in parallel across isolated Git worktrees. OpenCode is the agent. Rox is the orchestration and review layer around many agents, and many developers use them together.
+OpenCode — это агент для кода: единственный AI-ассистент, который читает, пишет и отлаживает код в твоём терминале. Rox — это local-first десктопное рабочее пространство, которое запускает множество агентов кода, включая OpenCode, параллельно в изолированных Git worktree. OpenCode — это агент. Rox — это слой оркестрации и ревью вокруг множества агентов, и многие разработчики используют их вместе.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **OpenCode** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | AI coding agent (terminal-native) |
-| **What it does** | Runs 10+ coding agents in parallel with Git worktrees, chat, diff/file review, and browser tooling | AI assistant for writing, debugging, and refactoring code |
-| **AI approach** | Agent-agnostic -- orchestrates external agents plus Rox Chat | Model-agnostic -- 75+ providers including local models |
-| **Parallelism** | Core feature -- many agents on separate branches | Single-session; multi-session recently added |
-| **Pricing** | Free tier + Pro $20/seat/mo, source-available (ELv2) | Free, open source (MIT); pay for API usage or use Zen |
-| **GitHub stars** | 1,100+ | 95,000+ |
+| **Категория** | Рабочее пространство для оркестрации агентов | AI-агент для кода (нативный для терминала) |
+| **Что делает** | Запускает 10+ агентов для кода параллельно с Git worktree, чатом, ревью diff/файлов и инструментами для браузера | AI-ассистент для написания, отладки и рефакторинга кода |
+| **Подход к AI** | Не зависит от агента — оркестрирует внешних агентов плюс Rox Chat | Не зависит от модели — 75+ провайдеров, включая локальные модели |
+| **Параллелизм** | Ключевая функция — множество агентов на отдельных ветках | Одна сессия; мульти-сессии добавлены недавно |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес, открытый исходный код (ELv2) | Бесплатно, open source (MIT); оплата за использование API или Zen |
+| **Звёзды на GitHub** | 1 100+ | 95 000+ |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Claude Code, OpenCode, Codex, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode.
-
----
-
-## What Is OpenCode?
-
-OpenCode is an open-source AI coding agent built for the terminal by the SST team (95,000+ GitHub stars). You describe what you want in natural language, and the AI reads your codebase, writes code, executes commands, and modifies files within a Bubble Tea TUI built in Go. Its standout feature is model flexibility: 75+ providers including Anthropic, OpenAI, Google, AWS Bedrock, OpenRouter, and local models via Ollama. It includes LSP integration, MCP support, and GitHub Actions integration.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Claude Code, OpenCode, Codex, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode.
 
 ---
 
-## Key Differences
+## Что такое OpenCode?
 
-### Orchestrator vs Agent
-
-OpenCode talks to AI models, reads your code, and makes changes. Rox is the workspace around agents: it runs tools like OpenCode in parallel, each in its own isolated environment, then layers on task management, chat, browser preview, and review tooling. Run OpenCode inside Rox to get model flexibility per session and parallel execution across sessions.
-
-### Sequential vs Parallel
-
-With OpenCode alone, you work one task at a time: prompt, review, iterate, next task. With Rox, you assign tasks to multiple agents simultaneously -- one writes tests, another refactors an API, a third fixes lint errors -- each on its own branch. You review diffs as they complete and merge when satisfied.
-
-### Code Isolation
-
-OpenCode modifies files directly in your project directory unless you set up isolation yourself. Rox creates a separate Git worktree per task, giving each agent an isolated copy of the repository. This is what makes running 10 agents at once safe -- no agent can corrupt another's work.
-
-### Model and Provider Support
-
-OpenCode supports 75+ providers and lets you switch mid-session. Rox inherits whatever its agents support -- run OpenCode inside Rox and you get all 75+ providers; run Claude Code and you get Claude.
+OpenCode — это open-source AI-агент для кода, созданный для терминала командой SST (95 000+ звёзд на GitHub). Ты описываешь, что хочешь, на естественном языке, и AI читает твою кодовую базу, пишет код, выполняет команды и изменяет файлы внутри TUI на Bubble Tea, написанного на Go. Его выдающаяся черта — гибкость моделей: 75+ провайдеров, включая Anthropic, OpenAI, Google, AWS Bedrock, OpenRouter и локальные модели через Ollama. Он включает интеграцию с LSP, поддержку MCP и интеграцию с GitHub Actions.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and Pro at $20/seat/month, plus whatever your agents' providers charge for API usage. OpenCode offers Zen (pay-per-use at provider cost, $20 initial credit) and OpenCode Black ($200/month for all-model access).
+### Оркестратор против агента
 
----
+OpenCode общается с AI-моделями, читает твой код и вносит изменения. Rox — это рабочее пространство вокруг агентов: оно запускает инструменты вроде OpenCode параллельно, каждый в своём изолированном окружении, а затем накладывает управление задачами, чат, превью в браузере и инструменты ревью. Запусти OpenCode внутри Rox, чтобы получить гибкость моделей на сессию и параллельное выполнение по сессиям.
 
-## Which Should You Choose?
+### Последовательно против параллельно
 
-**Choose OpenCode if you:**
-- Want a single, powerful AI coding agent with maximum model flexibility
-- Prefer interactive, real-time collaboration with an AI assistant
-- Want an open-source Claude Code alternative without provider lock-in
-- Need cost control across different models via Zen's at-cost pricing
+С одним только OpenCode ты работаешь по одной задаче за раз: промпт, ревью, итерация, следующая задача. С Rox ты назначаешь задачи нескольким агентам одновременно — один пишет тесты, другой рефакторит API, третий чинит ошибки линта — каждый на своей ветке. Ты делаешь ревью diff по мере их завершения и мержишь, когда доволен.
 
-**Choose Rox if you:**
-- Already use CLI coding agents and want to scale usage horizontally
-- Need to run 5-10 agents in parallel across separate tasks
-- Want Git worktree isolation so agents never conflict with each other
-- Work on large codebases where parallel execution saves hours
+### Изоляция кода
 
-**Use both** for the best of each: OpenCode as the agent, Rox as the orchestrator. Each Rox task launches its own OpenCode session in its own worktree -- model flexibility per session, parallel execution across all of them.
+OpenCode изменяет файлы прямо в директории твоего проекта, если ты сам не настроишь изоляцию. Rox создаёт отдельный Git worktree на каждую задачу, давая каждому агенту изолированную копию репозитория. Именно это делает безопасным запуск 10 агентов сразу — ни один агент не может испортить работу другого.
+
+### Поддержка моделей и провайдеров
+
+OpenCode поддерживает 75+ провайдеров и позволяет переключаться посреди сессии. Rox наследует то, что поддерживают его агенты — запусти OpenCode внутри Rox, и ты получишь все 75+ провайдеров; запусти Claude Code, и ты получишь Claude.
 
 ---
 
-## Frequently Asked Questions
+## Цена
 
-### Is Rox an OpenCode replacement?
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц плюс то, что провайдеры твоих агентов берут за использование API. OpenCode предлагает Zen (оплата по факту по цене провайдера, $20 стартового кредита) и OpenCode Black ($200/месяц за доступ ко всем моделям).
 
-Not really. Rox now has built-in chat, MCP tooling, browser previews, and file review, but its core job is still coordinating agents and worktrees. OpenCode is the agent. Rox is the layer that lets you run many OpenCode sessions safely or mix OpenCode with other agents on the same repo.
+---
 
-### Can I run OpenCode inside Rox?
+## Что выбрать тебе?
 
-Yes. Each Rox task launches its own OpenCode session in its own worktree and branch, giving you model flexibility per session plus isolation and parallelism across sessions.
+**Выбирай OpenCode, если ты:**
+- Хочешь единственного мощного AI-агента кода с максимальной гибкостью моделей
+- Предпочитаешь интерактивное сотрудничество с AI-ассистентом в реальном времени
+- Хочешь open-source альтернативу Claude Code без привязки к провайдеру
+- Нуждаешься в контроле расходов по разным моделям через оплату по себестоимости в Zen
 
-### How does OpenCode compare to Claude Code?
+**Выбирай Rox, если ты:**
+- Уже используешь CLI-агентов кода и хочешь масштабировать использование горизонтально
+- Нуждаешься в запуске 5-10 агентов параллельно по разным задачам
+- Хочешь изоляцию через Git worktree, чтобы агенты никогда не конфликтовали друг с другом
+- Работаешь над большими кодовыми базами, где параллельное выполнение экономит часы
 
-Both are terminal-based AI coding agents. OpenCode is open source (MIT) and supports 75+ providers; Claude Code is proprietary and locked to Anthropic. On the same underlying model, code quality is comparable. OpenCode offers provider flexibility; Claude Code offers tighter Anthropic optimization.
+**Используй оба** для лучшего от каждого: OpenCode как агент, Rox как оркестратор. Каждая задача Rox запускает свою сессию OpenCode в своём worktree — гибкость моделей на сессию, параллельное выполнение по всем из них.
+
+---
+
+## Часто задаваемые вопросы
+
+### Заменяет ли Rox собой OpenCode?
+
+Не совсем. У Rox теперь есть встроенный чат, инструменты MCP, превью в браузере и ревью файлов, но его главная задача по-прежнему — координировать агентов и worktree. OpenCode — это агент. Rox — это слой, который позволяет безопасно запускать множество сессий OpenCode или смешивать OpenCode с другими агентами на одном репозитории.
+
+### Можно ли запустить OpenCode внутри Rox?
+
+Да. Каждая задача Rox запускает свою сессию OpenCode в своём worktree и ветке, давая тебе гибкость моделей на сессию плюс изоляцию и параллелизм по сессиям.
+
+### Чем OpenCode отличается от Claude Code?
+
+Оба — терминальные AI-агенты для кода. OpenCode — open source (MIT) и поддерживает 75+ провайдеров; Claude Code — проприетарный и привязан к Anthropic. На одной и той же базовой модели качество кода сопоставимо. OpenCode предлагает гибкость по провайдерам; Claude Code предлагает более тесную оптимизацию под Anthropic.

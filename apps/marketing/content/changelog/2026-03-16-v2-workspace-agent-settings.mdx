@@ -1,69 +1,69 @@
 ---
-title: Configurable agent settings, streamlined workspace modal, and tab and pane enhancements
+title: Настраиваемые параметры агентов, упрощённое модальное окно и улучшения вкладок и панелей
 date: 2026-03-16
 image: /changelog/agents-customization.png
 ---
 
-## Configurable Agent Settings <PRBadge url="https://github.com/agisota/set/pull/2495" />
+## Настраиваемые параметры агентов <PRBadge url="https://github.com/agisota/set/pull/2495" />
 
-Agent behavior is now configurable from the desktop settings UI. You can override built-in presets, preview prompt templates, and reuse the same agent definitions everywhere you launch work without editing config files by hand.
+Поведение агентов теперь настраивается из интерфейса настроек десктопа. Ты можешь переопределять встроенные пресеты, делать предпросмотр шаблонов промптов и переиспользовать одни и те же определения агентов везде, где запускаешь работу, не редактируя конфигурационные файлы вручную.
 
-- Adjust model, labels, descriptions, commands, and prompt templates from one settings page
-- Changes save immediately and can be reset back to defaults
-- The same shared agent presets now power workspace creation and task launch flows
+- Настраивай модель, метки, описания, команды и шаблоны промптов с одной страницы настроек
+- Изменения сохраняются сразу и могут быть сброшены к значениям по умолчанию
+- Те же общие пресеты агентов теперь питают сценарии создания рабочих пространств и запуска задач
 
-## Streamlined Workspace Modal <PRBadge url="https://github.com/agisota/set/pull/2391" /> <PRBadge url="https://github.com/agisota/set/pull/2506" /> <PRBadge url="https://github.com/agisota/set/pull/2500" /> <PRBadge url="https://github.com/agisota/set/pull/2513" />
+## Упрощённое модальное окно рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/2391" /> <PRBadge url="https://github.com/agisota/set/pull/2506" /> <PRBadge url="https://github.com/agisota/set/pull/2500" /> <PRBadge url="https://github.com/agisota/set/pull/2513" />
 
-The workspace modal now keeps project selection, prompts, images, PRs, and issues in one flow, so it is faster to launch a workspace with complete context.
+Модальное окно рабочего пространства теперь держит выбор проекта, промпты, изображения, PR'ы и issue в одном потоке, так что запускать рабочее пространство с полным контекстом быстрее.
 
-![New workspace modal](/changelog/new-workspace-modal-2026-03-16.png)
+![Модальное окно нового рабочего пространства](/changelog/new-workspace-modal-2026-03-16.png)
 
-- Prompt-first creation flow with project selection built directly into the modal
-- Project avatars, GitHub owner details, and inline `Add from GitHub` in the selector
-- Prompt text, image attachments, linked PRs, linked issues, and selected agent all live in the same streamlined flow
-- Prompt text, attachments, and selected agent persist when you close and reopen the modal
-- Branch prefix previews, better long-name truncation, and PR lookup by pasted GitHub URL
+- Сценарий создания с приоритетом промпта и выбором проекта прямо в модальном окне
+- Аватары проектов, детали владельца GitHub и встроенное `Add from GitHub` в селекторе
+- Текст промпта, прикреплённые изображения, связанные PR'ы, связанные issue и выбранный агент — всё живёт в одном упрощённом потоке
+- Текст промпта, вложения и выбранный агент сохраняются, когда ты закрываешь и снова открываешь модальное окно
+- Предпросмотр префикса ветки, лучшее усечение длинных имён и поиск PR по вставленному URL GitHub
 
-## Tab and Pane Enhancements <PRBadge url="https://github.com/agisota/set/pull/2488" /> <PRBadge url="https://github.com/agisota/set/pull/2487" />
+## Улучшения вкладок и панелей <PRBadge url="https://github.com/agisota/set/pull/2488" /> <PRBadge url="https://github.com/agisota/set/pull/2487" />
 
-Desktop layouts are more flexible now. You can merge an entire tab into another pane layout with drag-and-drop, and rename pane headers inline to keep dense workspaces organized.
+Раскладки десктопа теперь гибче. Ты можешь объединить целую вкладку с раскладкой другой панели перетаскиванием и переименовать заголовки панелей на месте, чтобы держать плотные рабочие пространства в порядке.
 
-![Drag tab into pane](/changelog/drag-tab.png)
+![Перетаскивание вкладки в панель](/changelog/drag-tab.png)
 
-- Drag a top-level tab onto another tab's split zones to merge it left, right, top, or bottom
-- Source tabs are removed cleanly after the merge, preserving pane ownership and layout state
-- Double-click pane headers to rename them directly in place
+- Перетащи вкладку верхнего уровня в зоны сплита другой вкладки, чтобы объединить её слева, справа, сверху или снизу
+- Исходные вкладки чисто удаляются после объединения, сохраняя принадлежность панелей и состояние раскладки
+- Дважды кликни по заголовкам панелей, чтобы переименовать их прямо на месте
 
-## Improvements
+## Улучшения
 
-- **V2 workspace sidebar** - Workspaces are grouped by project in the redesigned sidebar, with the newer project-first flow feeding directly into that structure <PRBadge url="https://github.com/agisota/set/pull/2399" />
-- **Linked Linear issue pills** - Linear issues referenced in agent tasks now render as inline pills with the issue title and status, so you can reference tasks in chat without leaving context <PRBadge url="https://github.com/agisota/set/pull/2383" />
-- **Keyboard shortcut to equalize pane splits** - Press `Cmd+Shift+0` to instantly balance all pane splits to equal widths <PRBadge url="https://github.com/agisota/set/pull/2381" />
-- **Searchable font picker** - The font selector in settings is now a searchable dropdown instead of a plain text input <PRBadge url="https://github.com/agisota/set/pull/2458" />
-- **Terminal scrollback increased to 5k lines** - More history retained in terminal sessions <PRBadge url="https://github.com/agisota/set/pull/2480" />
-- **Server-side branch/PR/issue search** - Branch, PR, and issue pickers now search server-side and paginate for large repositories <PRBadge url="https://github.com/agisota/set/pull/2442" />
-- **Desktop themes applied to editor and diffs** - The active desktop theme now extends to the CodeMirror editor and diff views <PRBadge url="https://github.com/agisota/set/pull/2404" />
-- **PRs sorted by most recently updated** - PR lists in the workspace modal now sort by update time <PRBadge url="https://github.com/agisota/set/pull/2406" />
-- **Yearly pricing shown as monthly equivalent** - Plans page now displays the per-month cost for annual subscriptions <PRBadge url="https://github.com/agisota/set/pull/2396" />
-- **Android Studio added to IDE dropdown** <PRBadge url="https://github.com/agisota/set/pull/2428" />
-- **OpenAI GPT-5.4 available** - Updated OpenAI model list replaces GPT-5.2 with GPT-5.4 <PRBadge url="https://github.com/agisota/set/pull/2497" />
-- **New-tab as default preset execution mode** <PRBadge url="https://github.com/agisota/set/pull/1817" />
+- **Сайдбар рабочих пространств V2** — рабочие пространства сгруппированы по проектам в переработанном сайдбаре, а более новый сценарий с приоритетом проекта напрямую питает эту структуру <PRBadge url="https://github.com/agisota/set/pull/2399" />
+- **Пилюли связанных issue Linear** — issue Linear, упомянутые в задачах агента, теперь отображаются как встроенные пилюли с названием и статусом issue, так что ты можешь ссылаться на задачи в чате, не покидая контекст <PRBadge url="https://github.com/agisota/set/pull/2383" />
+- **Горячая клавиша для уравнивания сплитов панелей** — нажми `Cmd+Shift+0`, чтобы мгновенно сбалансировать все сплиты панелей до равной ширины <PRBadge url="https://github.com/agisota/set/pull/2381" />
+- **Селектор шрифтов с поиском** — селектор шрифтов в настройках теперь выпадающий список с поиском вместо обычного текстового поля <PRBadge url="https://github.com/agisota/set/pull/2458" />
+- **Буфер прокрутки терминала увеличен до 5к строк** — больше истории сохраняется в сессиях терминала <PRBadge url="https://github.com/agisota/set/pull/2480" />
+- **Серверный поиск веток/PR/issue** — селекторы веток, PR и issue теперь ищут на стороне сервера и используют пагинацию для больших репозиториев <PRBadge url="https://github.com/agisota/set/pull/2442" />
+- **Темы десктопа применяются к редактору и diff'ам** — активная тема десктопа теперь распространяется на редактор CodeMirror и представления diff'ов <PRBadge url="https://github.com/agisota/set/pull/2404" />
+- **PR'ы отсортированы по недавнему обновлению** — списки PR в модальном окне рабочего пространства теперь сортируются по времени обновления <PRBadge url="https://github.com/agisota/set/pull/2406" />
+- **Годовая цена показана как месячный эквивалент** — страница планов теперь отображает стоимость в месяц для годовых подписок <PRBadge url="https://github.com/agisota/set/pull/2396" />
+- **Android Studio добавлен в выпадающий список IDE** <PRBadge url="https://github.com/agisota/set/pull/2428" />
+- **Доступна OpenAI GPT-5.4** — обновлённый список моделей OpenAI заменяет GPT-5.2 на GPT-5.4 <PRBadge url="https://github.com/agisota/set/pull/2497" />
+- **Новая вкладка как режим выполнения пресета по умолчанию** <PRBadge url="https://github.com/agisota/set/pull/1817" />
 
 ---
 
-**Bug fixes:**
+**Исправления багов:**
 
-- Fixed macOS git spawn failures when shell-env PATH fallback is missing <PRBadge url="https://github.com/agisota/set/pull/2505" />
-- Fixed Linear two-way sync write-back to Linear <PRBadge url="https://github.com/agisota/set/pull/2477" />
-- Fixed stale project icon after image replacement <PRBadge url="https://github.com/agisota/set/pull/2485" />
-- Fixed agent hooks written to native config files <PRBadge url="https://github.com/agisota/set/pull/2479" />
-- Fixed pasted content reverting in CodeMirror <PRBadge url="https://github.com/agisota/set/pull/2463" />
-- Fixed agent launch from issues tab <PRBadge url="https://github.com/agisota/set/pull/2482" />
-- Fixed branch search and project switching in workspace modal <PRBadge url="https://github.com/agisota/set/pull/2465" />
-- Fixed terminal link path resolution to file viewer <PRBadge url="https://github.com/agisota/set/pull/2440" />
-- Fixed stale sidebar after workspace creation <PRBadge url="https://github.com/agisota/set/pull/2441" />
-- Fixed settings back button navigation <PRBadge url="https://github.com/agisota/set/pull/2425" />
-- Fixed new workspaces showing unrelated PRs <PRBadge url="https://github.com/agisota/set/pull/2405" />
-- Fixed git resolution from shell PATH <PRBadge url="https://github.com/agisota/set/pull/2403" />
-- Fixed git status buffer overflow in large repos <PRBadge url="https://github.com/agisota/set/pull/2400" />
-- Fixed Linear OAuth token revocation on disconnect <PRBadge url="https://github.com/agisota/set/pull/2443" />
+- Исправили сбои git spawn на macOS, когда отсутствует запасной PATH из окружения шелла <PRBadge url="https://github.com/agisota/set/pull/2505" />
+- Исправили обратную запись двусторонней синхронизации Linear в Linear <PRBadge url="https://github.com/agisota/set/pull/2477" />
+- Исправили устаревшую иконку проекта после замены изображения <PRBadge url="https://github.com/agisota/set/pull/2485" />
+- Исправили запись хуков агента в нативные конфигурационные файлы <PRBadge url="https://github.com/agisota/set/pull/2479" />
+- Исправили откат вставленного содержимого в CodeMirror <PRBadge url="https://github.com/agisota/set/pull/2463" />
+- Исправили запуск агента из вкладки issue <PRBadge url="https://github.com/agisota/set/pull/2482" />
+- Исправили поиск веток и переключение проектов в модальном окне рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/2465" />
+- Исправили разрешение пути ссылки терминала в просмотрщик файлов <PRBadge url="https://github.com/agisota/set/pull/2440" />
+- Исправили устаревший сайдбар после создания рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/2441" />
+- Исправили навигацию кнопки «Назад» в настройках <PRBadge url="https://github.com/agisota/set/pull/2425" />
+- Исправили, что новые рабочие пространства показывали несвязанные PR'ы <PRBadge url="https://github.com/agisota/set/pull/2405" />
+- Исправили разрешение git из PATH шелла <PRBadge url="https://github.com/agisota/set/pull/2403" />
+- Исправили переполнение буфера git status в больших репозиториях <PRBadge url="https://github.com/agisota/set/pull/2400" />
+- Исправили отзыв OAuth-токена Linear при отключении <PRBadge url="https://github.com/agisota/set/pull/2443" />

@@ -1,41 +1,41 @@
 ---
-title: Mobile agents, SOC 2 pen test passed, and theme marketplace
+title: Мобильные агенты, пройден пентест SOC 2 и маркетплейс тем
 date: 2026-03-30
 image: /changelog/mobile-agents.png
 ---
 
-## Mobile Agents Experience (WIP) <PRBadge url="https://github.com/agisota/set/pull/2595" />
+## Опыт мобильных агентов (в работе) <PRBadge url="https://github.com/agisota/set/pull/2595" />
 
-We're building out a mobile-first agents experience in the web app. This is still a work in progress, but you can already browse, start, and monitor agents from your phone with an interface designed for smaller screens. More to come here.
+Мы строим опыт работы с агентами с приоритетом на мобильные устройства в веб-приложении. Это всё ещё в работе, но ты уже можешь просматривать, запускать и отслеживать агентов с телефона через интерфейс, спроектированный для небольших экранов. Дальше будет больше.
 
-## SOC 2 Compliance & Pen Test Passed
+## Пройдены соответствие SOC 2 и пентест
 
-The big news this week: Rox now passes its independent penetration test and meets SOC 2 compliance requirements. We shipped a round of security hardening based on findings from the pen test. This is a major milestone for teams that need enterprise-grade security assurances.
+Главная новость недели: Rox теперь проходит независимый тест на проникновение и соответствует требованиям SOC 2. Мы выпустили серию усилений безопасности на основе находок пентеста. Это важная веха для команд, которым нужны гарантии безопасности корпоративного уровня.
 
-## Theme Marketplace <PRBadge url="https://github.com/agisota/set/pull/2966" />
+## Маркетплейс тем <PRBadge url="https://github.com/agisota/set/pull/2966" />
 
-![Theme Marketplace](/changelog/marketplace.png)
+![Маркетплейс тем](/changelog/marketplace.png)
 
-Browse and install themes from the new theme marketplace. When your system is set to auto mode, you can now independently configure which theme is used for light and dark <PRBadge url="https://github.com/agisota/set/pull/2557" />.
+Просматривай и устанавливай темы из нового маркетплейса тем. Когда твоя система настроена на авторежим, ты теперь можешь независимо настроить, какая тема используется для светлого и тёмного оформления <PRBadge url="https://github.com/agisota/set/pull/2557" />.
 
-## Improvements
-- **Open in editor from worktrees** - Jump straight from a worktree into your external editor <PRBadge url="https://github.com/agisota/set/pull/2999" />
-- **Cmd-click file paths** - File paths in chat or output can be Cmd-clicked to open in your editor <PRBadge url="https://github.com/agisota/set/pull/2903" />
-- **New workspace modal UX** - Cleaner layout with icon buttons and server-side PR search <PRBadge url="https://github.com/agisota/set/pull/2980" /> <PRBadge url="https://github.com/agisota/set/pull/2909" />
-- **Close workspace hotkey** - `Cmd+W` to close a workspace <PRBadge url="https://github.com/agisota/set/pull/2907" />
-- **Settings search indicator** - Visual indicator when a search filter is active in settings <PRBadge url="https://github.com/agisota/set/pull/2997" />
-- **Terminal flow control** - Hardened backlog and flow control to prevent output drops under heavy load <PRBadge url="https://github.com/agisota/set/pull/3006" />
+## Улучшения
+- **Открытие в редакторе из worktree** — переходи прямо из worktree в свой внешний редактор <PRBadge url="https://github.com/agisota/set/pull/2999" />
+- **Cmd-клик по путям файлов** — пути файлов в чате или выводе можно открыть в редакторе через Cmd-клик <PRBadge url="https://github.com/agisota/set/pull/2903" />
+- **UX модального окна нового рабочего пространства** — более чистая компоновка с кнопками-иконками и серверным поиском PR <PRBadge url="https://github.com/agisota/set/pull/2980" /> <PRBadge url="https://github.com/agisota/set/pull/2909" />
+- **Горячая клавиша закрытия рабочего пространства** — `Cmd+W` для закрытия рабочего пространства <PRBadge url="https://github.com/agisota/set/pull/2907" />
+- **Индикатор поиска в настройках** — визуальный индикатор, когда в настройках активен фильтр поиска <PRBadge url="https://github.com/agisota/set/pull/2997" />
+- **Управление потоком терминала** — усилили бэклог и управление потоком, чтобы предотвратить потери вывода под высокой нагрузкой <PRBadge url="https://github.com/agisota/set/pull/3006" />
 
 ---
 
-**Bug fixes**
+**Исправления багов**
 
-- Fixed PTY spawn failure leaving zombie sessions that blocked new terminals <PRBadge url="https://github.com/agisota/set/pull/2963" />
-- Batched PTY output to prevent bun dev crashes in terminal <PRBadge url="https://github.com/agisota/set/pull/3001" />
-- Preserved chat cursor position <PRBadge url="https://github.com/agisota/set/pull/2993" />
-- Restored Codex loading state <PRBadge url="https://github.com/agisota/set/pull/2998" />
-- Fixed workspace search regressions <PRBadge url="https://github.com/agisota/set/pull/2979" />
-- Honored linked PR push targets <PRBadge url="https://github.com/agisota/set/pull/2977" />
-- Fixed worktree deletion <PRBadge url="https://github.com/agisota/set/pull/2929" />
-- Removed spurious terminal backpressure warning <PRBadge url="https://github.com/agisota/set/pull/2996" />
-- Restored native text editing shortcuts in chat <PRBadge url="https://github.com/agisota/set/pull/2676" />
+- Исправили сбой PTY spawn, оставлявший зомби-сессии, которые блокировали новые терминалы <PRBadge url="https://github.com/agisota/set/pull/2963" />
+- Сгруппировали вывод PTY в пакеты, чтобы предотвратить падения bun dev в терминале <PRBadge url="https://github.com/agisota/set/pull/3001" />
+- Сохранили позицию курсора в чате <PRBadge url="https://github.com/agisota/set/pull/2993" />
+- Восстановили состояние загрузки Codex <PRBadge url="https://github.com/agisota/set/pull/2998" />
+- Исправили регрессии поиска по рабочим пространствам <PRBadge url="https://github.com/agisota/set/pull/2979" />
+- Учли цели push'а связанных PR <PRBadge url="https://github.com/agisota/set/pull/2977" />
+- Исправили удаление worktree <PRBadge url="https://github.com/agisota/set/pull/2929" />
+- Убрали ложное предупреждение о backpressure терминала <PRBadge url="https://github.com/agisota/set/pull/2996" />
+- Восстановили нативные горячие клавиши редактирования текста в чате <PRBadge url="https://github.com/agisota/set/pull/2676" />

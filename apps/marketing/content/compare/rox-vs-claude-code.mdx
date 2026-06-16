@@ -1,6 +1,6 @@
 ---
-title: "Rox vs Claude Code (2026): Agent Orchestrator vs AI Coding Agent"
-description: "Compare Rox and Claude Code for AI-powered development. Rox orchestrates many Claude Code instances in parallel across isolated worktrees."
+title: "Rox против Claude Code (2026): оркестратор агентов против AI-агента для кода"
+description: "Сравнение Rox и Claude Code для разработки с AI. Rox оркестрирует множество инстансов Claude Code параллельно в изолированных worktree."
 date: 2026-02-18
 lastUpdated: 2026-03-21
 type: "1v1"
@@ -15,103 +15,103 @@ keywords:
   - ai coding agent comparison
 ---
 
-Claude Code is Anthropic's AI coding agent, with both terminal and desktop app surfaces. Rox is a local-first desktop workspace that can run multiple Claude Code sessions, other agents, and Rox Chat in parallel across isolated Git worktrees. They're complementary — Claude Code is the agent, while Rox is the orchestration and review layer around many agents.
+Claude Code — это AI-агент для кода от Anthropic, доступный как в терминале, так и в десктопном приложении. Rox — это local-first десктопное рабочее пространство, которое умеет запускать несколько сессий Claude Code, других агентов и Rox Chat параллельно в изолированных Git worktree. Они дополняют друг друга: Claude Code — это агент, а Rox — слой оркестрации и ревью вокруг множества агентов.
 
 ---
 
-## At a Glance
+## Кратко
 
 | | **Rox** | **Claude Code** |
 |---|---|---|
-| **Category** | Agent orchestration workspace | AI coding agent (CLI + desktop app) |
-| **What it does** | Runs 10+ coding agents in parallel with Git worktrees, chat, diff/file review, and browser tooling | AI assistant that reads, writes, and debugs code in your terminal or desktop app |
-| **AI approach** | Agent-agnostic — orchestrates Claude Code, Codex, Aider, OpenCode, Rox Chat, and more | Claude models only (Sonnet, Opus, Haiku) via Anthropic API |
-| **Parallelism** | Core feature — many agents on separate branches simultaneously | Single session; requires separate terminal tabs for parallelism |
-| **Isolation** | Automatic Git worktree per task — agents cannot conflict | Shares your working directory — manual worktree setup needed |
-| **Pricing** | Free tier + Pro $20/seat/mo | Claude Pro / Max / Teams / Enterprise / Console account, or provider usage |
-| **License** | Source-available (ELv2) | Source-available (not open source) |
+| **Категория** | Рабочее пространство для оркестрации агентов | AI-агент для кода (CLI + десктопное приложение) |
+| **Что делает** | Запускает 10+ агентов для кода параллельно с Git worktree, чатом, ревью diff/файлов и инструментами для браузера | AI-ассистент, который читает, пишет и отлаживает код в твоём терминале или десктопном приложении |
+| **Подход к AI** | Не зависит от агента — оркестрирует Claude Code, Codex, Aider, OpenCode, Rox Chat и другие | Только модели Claude (Sonnet, Opus, Haiku) через Anthropic API |
+| **Параллелизм** | Ключевая функция — множество агентов на отдельных ветках одновременно | Одна сессия; для параллелизма нужны отдельные вкладки терминала |
+| **Изоляция** | Автоматический Git worktree на каждую задачу — агенты не могут конфликтовать | Делит твою рабочую директорию — worktree нужно настраивать вручную |
+| **Цена** | Бесплатный тариф + Pro $20/место/мес | Аккаунт Claude Pro / Max / Teams / Enterprise / Console или оплата по использованию у провайдера |
+| **Лицензия** | Открытый исходный код (ELv2) | Доступный исходный код (не open source) |
 
 ---
 
-## What Is Rox?
+## Что такое Rox?
 
-Rox is a local-first desktop workspace for AI coding agents. It launches Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat, and other agent workflows inside isolated Git worktrees with persistent terminal sessions. Around that core, it adds a built-in diff/file editor, chat panel, in-app browser for docs and dev servers, port management, and MCP tooling. You can review inside Rox or jump into VS Code, Cursor, Windsurf, JetBrains, or Xcode. Source-available under Elastic License 2.0 (ELv2).
-
----
-
-## What Is Claude Code?
-
-Claude Code is Anthropic's official coding agent. The CLI is still the core experience, but Anthropic now also documents a Desktop app for macOS and Windows if you want Claude Code without living in the terminal full time. Underneath, it is still the same product: you describe what you want, Claude reads your codebase, writes code, runs commands, and iterates through the task using Anthropic models.
+Rox — это local-first десктопное рабочее пространство для AI-агентов кода. Оно запускает Claude Code, Codex, OpenCode, Aider, Copilot, Cursor Agent, Gemini CLI, Rox Chat и другие агентские воркфлоу внутри изолированных Git worktree с постоянными сессиями терминала. Вокруг этого ядра добавлены встроенный редактор diff/файлов, панель чата, внутренний браузер для документации и dev-серверов, управление портами и инструменты MCP. Ты можешь делать ревью прямо в Rox или перейти в VS Code, Cursor, Windsurf, JetBrains или Xcode. Открытый исходный код под Elastic License 2.0 (ELv2).
 
 ---
 
-## Key Differences
+## Что такое Claude Code?
 
-### Orchestrator vs Agent
-
-Claude Code is the agent — it talks to Claude models, reads your code, and makes changes. Rox is the orchestration workspace — it runs many Claude Code instances in parallel, each in its own isolated environment, then gives you chat, browser preview, diff/file review, and MCP-connected workflow around them. Claude Code does the work; Rox scales and organizes it.
-
-### Single Product Surface vs Many Isolated Sessions
-
-With Claude Code alone, whether from the CLI or the Desktop app, you are still mostly working one task at a time. You can open multiple tabs or windows, but you have to manually set up isolation and keep track of the resulting repos, branches, diffs, and previews yourself. Rox automates that entire loop: create a task, and it spins up a worktree, creates a branch, launches Claude Code, and keeps the review surface in one place.
-
-### Automatic Isolation
-
-Running Claude Code directly, it modifies files in your current directory. If you start two Claude Code instances in the same directory, they'll overwrite each other's changes. Rox creates a separate Git worktree per task, giving each Claude Code instance an isolated copy of the repository. This is what makes running 10+ agents at once safe.
-
-### Agent Flexibility
-
-Claude Code only works with Anthropic's models. Rox doesn't care which agent you use — run Claude Code for complex refactors, Codex for well-defined tasks, Aider for iterative changes, or mix and match per task. If a better agent ships tomorrow, you can use it in Rox immediately without changing your workflow.
-
-### Session Persistence
-
-Claude Code gives you the agent surfaces themselves. Rox adds the operational layer around them: task lists, long-lived sessions, in-app diff/file review, browser previews for local apps, and chat/MCP workflow tied to the same workspace. That matters once you are coordinating many tasks across one repo instead of staying inside a single Claude session.
+Claude Code — это официальный агент для кода от Anthropic. CLI по-прежнему остаётся основным способом работы, но теперь Anthropic также документирует десктопное приложение для macOS и Windows, если тебе нужен Claude Code без постоянной жизни в терминале. Под капотом это всё тот же продукт: ты описываешь, что хочешь, Claude читает твою кодовую базу, пишет код, выполняет команды и итерирует по задаче, используя модели Anthropic.
 
 ---
 
-## Pricing
+## Ключевые отличия
 
-Rox offers a free tier and Pro at $20/seat/month. Claude Code currently requires a Pro, Max, Teams, Enterprise, or Console account, and Anthropic also documents support for provider-based access through services like Bedrock, Vertex AI, and Foundry. The important comparison is not just price, but structure: Claude Code gives you the agent, while Rox adds orchestration on top.
+### Оркестратор против агента
+
+Claude Code — это агент: он общается с моделями Claude, читает твой код и вносит изменения. Rox — это рабочее пространство для оркестрации: оно запускает множество инстансов Claude Code параллельно, каждый в своём изолированном окружении, а затем даёт тебе чат, превью в браузере, ревью diff/файлов и воркфлоу с подключением через MCP вокруг них. Claude Code делает работу; Rox масштабирует и организует её.
+
+### Один продуктовый интерфейс против множества изолированных сессий
+
+С одним только Claude Code — будь то из CLI или десктопного приложения — ты по-прежнему работаешь в основном над одной задачей за раз. Можно открыть несколько вкладок или окон, но настраивать изоляцию и отслеживать получившиеся репозитории, ветки, diff и превью придётся вручную. Rox автоматизирует весь этот цикл: создаёшь задачу — и он поднимает worktree, создаёт ветку, запускает Claude Code и держит весь интерфейс ревью в одном месте.
+
+### Автоматическая изоляция
+
+Запуская Claude Code напрямую, ты позволяешь ему менять файлы в текущей директории. Если запустить два инстанса Claude Code в одной директории, они перезапишут изменения друг друга. Rox создаёт отдельный Git worktree на каждую задачу, давая каждому инстансу Claude Code изолированную копию репозитория. Именно это делает безопасным запуск 10+ агентов сразу.
+
+### Гибкость в выборе агента
+
+Claude Code работает только с моделями Anthropic. Rox всё равно, каким агентом ты пользуешься — запускай Claude Code для сложных рефакторингов, Codex для чётко определённых задач, Aider для итеративных изменений или комбинируй их под каждую задачу. Если завтра выйдет агент получше, ты сможешь использовать его в Rox сразу же, не меняя свой воркфлоу.
+
+### Сохранность сессий
+
+Claude Code даёт тебе сами агентские интерфейсы. Rox добавляет операционный слой вокруг них: списки задач, долгоживущие сессии, встроенное ревью diff/файлов, превью локальных приложений в браузере и воркфлоу чат/MCP, привязанный к тому же рабочему пространству. Это важно, когда ты координируешь множество задач по одному репозиторию, а не остаёшься внутри одной сессии Claude.
 
 ---
 
-## Which Should You Choose?
+## Цена
 
-**Choose Claude Code alone if you:**
-- Work on one task at a time with real-time AI collaboration
-- Prefer a single-agent workflow with deep context
-- Don't need to run multiple agents in parallel
-- Want the simplest possible setup (just install and run)
-
-**Choose Rox + Claude Code if you:**
-- Want to run 5-10+ Claude Code instances in parallel across separate tasks
-- Need automatic Git worktree isolation so agents never conflict
-- Want sessions that survive crashes and app restarts
-- Plan to use other agents alongside Claude Code (Codex, Aider, OpenCode)
-- Work on large codebases where parallel execution saves hours
-
-Most Rox users run Claude Code as their primary agent. Rox doesn't compete with Claude Code — it makes Claude Code more powerful by adding parallelism, isolation, and persistence.
+Rox предлагает бесплатный тариф и Pro за $20/место/месяц. Claude Code сейчас требует аккаунт Pro, Max, Teams, Enterprise или Console, и Anthropic также документирует поддержку доступа через провайдеров — сервисы вроде Bedrock, Vertex AI и Foundry. Важно сравнивать не только цену, но и структуру: Claude Code даёт тебе агента, а Rox добавляет оркестрацию поверх.
 
 ---
 
-## Frequently Asked Questions
+## Что выбрать тебе?
 
-### Is Rox a Claude Code replacement?
+**Выбирай один только Claude Code, если ты:**
+- Работаешь над одной задачей за раз в режиме реального времени с AI
+- Предпочитаешь воркфлоу с одним агентом и глубоким контекстом
+- Не нуждаешься в запуске нескольких агентов параллельно
+- Хочешь максимально простую настройку (просто установить и запустить)
 
-Not really. Rox now has built-in chat, MCP tooling, browser previews, and file review, but its core job is still coordinating agents and worktrees. Claude Code is the coding agent. Rox is the layer that lets you run many Claude Code sessions safely or mix Claude Code with other agents on the same repo.
+**Выбирай Rox + Claude Code, если ты:**
+- Хочешь запускать 5-10+ инстансов Claude Code параллельно по разным задачам
+- Нуждаешься в автоматической изоляции через Git worktree, чтобы агенты никогда не конфликтовали
+- Хочешь сессии, которые переживают сбои и перезапуски приложения
+- Планируешь использовать другие агенты вместе с Claude Code (Codex, Aider, OpenCode)
+- Работаешь над большими кодовыми базами, где параллельное выполнение экономит часы
 
-### Can I use Claude Code without Rox?
+Большинство пользователей Rox запускают Claude Code как основного агента. Rox не конкурирует с Claude Code — он делает Claude Code мощнее, добавляя параллелизм, изоляцию и сохранность.
 
-Yes. Claude Code works on its own from the CLI or Anthropic's Desktop app. Rox adds value when you want to run multiple Claude Code sessions in parallel with automatic isolation — which becomes important as you scale from one agent to many.
+---
 
-### How many Claude Code instances can I run in Rox?
+## Часто задаваемые вопросы
 
-As many as your machine and API rate limits allow. Most developers run 5-10 concurrent agents. Rox's daemon handles concurrency, and its priority-based scheduling ensures the focused task gets full resources.
+### Заменяет ли Rox собой Claude Code?
 
-### Does Rox modify how Claude Code works?
+Не совсем. У Rox теперь есть встроенный чат, инструменты MCP, превью в браузере и ревью файлов, но его главная задача по-прежнему — координировать агентов и worktree. Claude Code — это агент для кода. Rox — это слой, который позволяет безопасно запускать множество сессий Claude Code или смешивать Claude Code с другими агентами на одном репозитории.
 
-No. Claude Code runs exactly as it would in any terminal. Rox just provides the worktree, branch, and terminal session. All Claude Code features — tool use, MCP servers, hooks, slash commands — work normally.
+### Можно ли использовать Claude Code без Rox?
 
-### Is Rox open source?
+Да. Claude Code работает сам по себе из CLI или десктопного приложения Anthropic. Rox добавляет ценность, когда ты хочешь запускать несколько сессий Claude Code параллельно с автоматической изоляцией — а это становится важным по мере того, как ты масштабируешься от одного агента к множеству.
 
-No. Rox is source-available on GitHub under Elastic License 2.0 (ELv2). Claude Code is also source-available rather than open source.
+### Сколько инстансов Claude Code можно запустить в Rox?
+
+Столько, сколько позволяют твоя машина и лимиты API. Большинство разработчиков запускают 5-10 агентов одновременно. Демон Rox управляет конкурентностью, а его планирование по приоритетам гарантирует, что задача в фокусе получает все ресурсы.
+
+### Меняет ли Rox то, как работает Claude Code?
+
+Нет. Claude Code работает ровно так же, как в любом терминале. Rox просто предоставляет worktree, ветку и сессию терминала. Все функции Claude Code — использование инструментов, MCP-серверы, хуки, слэш-команды — работают как обычно.
+
+### Open source ли Rox?
+
+Нет. Rox — с открытым исходным кодом на GitHub под Elastic License 2.0 (ELv2). Claude Code тоже скорее с доступным исходным кодом, чем open source.
