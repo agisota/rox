@@ -52,6 +52,10 @@
 			"types": "./src/rox-perks.ts",
 			"default": "./src/rox-perks.ts"
 		},
+		"./rox-charge": {
+			"types": "./src/rox-charge.ts",
+			"default": "./src/rox-charge.ts"
+		},
 		"./rox-topup": {
 			"types": "./src/rox-topup.ts",
 			"default": "./src/rox-topup.ts"

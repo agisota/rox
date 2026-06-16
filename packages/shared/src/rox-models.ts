@@ -132,7 +132,7 @@ export interface RoxRequestCost {
 }
 
 /** Catalog fields needed to price a request (a full entry satisfies this). */
-type PricingFields = Pick<
+export type PricingFields = Pick<
 	RoxModelCatalogEntry,
 	"publicUsdPerMIn" | "publicUsdPerMOut" | "pricingFamily" | "isFree"
 >;
