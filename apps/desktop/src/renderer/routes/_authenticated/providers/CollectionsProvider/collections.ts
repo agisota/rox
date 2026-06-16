@@ -6,6 +6,7 @@ import {
 import type {
 	SelectAccessGrant,
 	SelectAgentCommand,
+	SelectArtifact,
 	SelectAutomation,
 	SelectAutomationRun,
 	SelectChatSession,
@@ -162,6 +163,7 @@ export interface OrgCollections {
 	subscriptions: Collection<SelectSubscription>;
 	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
+	artifacts: Collection<SelectArtifact>;
 	githubRepositories: Collection<SelectGithubRepository>;
 	githubPullRequests: Collection<SelectGithubPullRequest>;
 	automations: Collection<SelectAutomation>;
@@ -719,6 +721,23 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	const artifacts = createPersistedElectricCollection(
+		electricCollectionOptions<SelectArtifact>({
+			id: `artifacts-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "artifacts",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const githubRepositories = createPersistedElectricCollection(
 		electricCollectionOptions<SelectGithubRepository>({
 			id: `github_repositories-${organizationId}`,
@@ -936,6 +955,7 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		subscriptions,
 		apiKeys,
 		chatSessions,
+		artifacts,
 		githubRepositories,
 		githubPullRequests,
 		automations,

@@ -15,6 +15,7 @@ import {
 	HiOutlineLockClosed,
 	HiOutlinePaintBrush,
 	HiOutlinePuzzlePiece,
+	HiOutlineShare,
 	HiOutlineShieldCheck,
 	HiOutlineSparkles,
 	HiOutlineUser,
@@ -43,6 +44,7 @@ type SettingsRoute =
 	| "/settings/agents"
 	| "/settings/terminal"
 	| "/settings/links"
+	| "/settings/shares"
 	| "/settings/models"
 	| "/settings/experimental"
 	| "/settings/integrations"
@@ -127,6 +129,12 @@ const SECTION_GROUPS: SectionGroup[] = [
 				section: "links",
 				label: "Ссылки",
 				icon: <HiOutlineLink className="h-4 w-4" />,
+			},
+			{
+				id: "/settings/shares",
+				section: "shares",
+				label: "Публичные ссылки",
+				icon: <HiOutlineShare className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/models",
