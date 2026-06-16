@@ -195,6 +195,51 @@ describe("resolveRoxRuntimeEnv", () => {
 		expect(result.env).toEqual({});
 		expect(result.error).toBeTruthy();
 	});
+
+	test("scopes the provisioned per-user key to the context userScope", async () => {
+		// The userScope (org id / real user id) is the per-user key bucket sent to
+		// the provisioning endpoint — this is what gives each user their own key.
+		const fetchImpl = mock(
+			async () =>
+				new Response(JSON.stringify({ apiKey: "minted-for-org" }), {
+					status: 200,
+				}),
+		);
+		const provisioner = new RoxKeyProvisioner({
+			env: () => ({ [ROX_KEY_PROVISION_URL_ENV]: "https://provision/key" }),
+			fetchImpl: fetchImpl as unknown as typeof fetch,
+		});
+		const result = await resolveRoxRuntimeEnv(
+			{ selectedModelId: "rox-r1", userScope: "org-123" },
+			provisioner,
+		);
+		expect(result.env.OPENAI_API_KEY).toBe("minted-for-org");
+		const [, init] = fetchImpl.mock.calls[0] as unknown as [
+			string,
+			{ body: string },
+		];
+		expect(JSON.parse(init.body)).toEqual({ userId: "org-123" });
+	});
+
+	test("falls back to a stable host-id scope when no userScope is given", async () => {
+		const fetchImpl = mock(
+			async () =>
+				new Response(JSON.stringify({ apiKey: "k" }), { status: 200 }),
+		);
+		const provisioner = new RoxKeyProvisioner({
+			env: () => ({ [ROX_KEY_PROVISION_URL_ENV]: "https://provision/key" }),
+			fetchImpl: fetchImpl as unknown as typeof fetch,
+		});
+		await resolveRoxRuntimeEnv({ selectedModelId: "rox-r1" }, provisioner);
+		const [, init] = fetchImpl.mock.calls[0] as unknown as [
+			string,
+			{ body: string },
+		];
+		const body = JSON.parse(init.body) as { userId: string };
+		// Host-scoped (not the legacy literal "host" constant), and non-empty.
+		expect(body.userId.startsWith("host:")).toBe(true);
+		expect(body.userId.length).toBeGreaterThan("host:".length);
+	});
 });
 
 describe("LocalModelProvider Rox branch", () => {
