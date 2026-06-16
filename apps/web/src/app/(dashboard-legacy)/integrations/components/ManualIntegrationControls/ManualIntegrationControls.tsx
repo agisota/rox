@@ -16,13 +16,15 @@ import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { toast } from "@rox/ui/sonner";
-import { Save, Unplug } from "lucide-react";
+import { CircleCheck, Save, Unplug } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { trpcClient } from "@/trpc/client";
 
 export type ManualIntegrationProvider =
 	| "telegram"
+	| "discord"
+	| "notion"
 	| "obsidian"
 	| "fibery"
 	| "lark";
@@ -32,6 +34,10 @@ type ManualConnection =
 type ManualConfigKey =
 	| "botUsername"
 	| "defaultChatId"
+	| "guildId"
+	| "defaultChannelId"
+	| "workspaceName"
+	| "botId"
 	| "vaultName"
 	| "account"
 	| "tenantKey";
@@ -70,6 +76,38 @@ const PROVIDER_FORM: Record<
 				key: "defaultChatId",
 				label: "Default chat ID",
 				placeholder: "-1001234567890",
+			},
+		],
+	},
+	discord: {
+		secretLabel: "Bot token",
+		secretPlaceholder: "discord-bot-token",
+		fields: [
+			{
+				key: "guildId",
+				label: "Guild ID",
+				placeholder: "123456789012345678",
+			},
+			{
+				key: "defaultChannelId",
+				label: "Default channel ID",
+				placeholder: "123456789012345678",
+			},
+		],
+	},
+	notion: {
+		secretLabel: "Internal integration token",
+		secretPlaceholder: "secret_...",
+		fields: [
+			{
+				key: "workspaceName",
+				label: "Workspace name",
+				placeholder: "Product wiki",
+			},
+			{
+				key: "botId",
+				label: "Bot user ID",
+				placeholder: "bot user id",
 			},
 		],
 	},
@@ -129,6 +167,10 @@ async function connectProvider(
 	switch (provider) {
 		case "telegram":
 			return trpcClient.integration.telegram.connect.mutate(input);
+		case "discord":
+			return trpcClient.integration.discord.connect.mutate(input);
+		case "notion":
+			return trpcClient.integration.notion.connect.mutate(input);
 		case "obsidian":
 			return trpcClient.integration.obsidian.connect.mutate(input);
 		case "fibery":
@@ -147,6 +189,14 @@ async function disconnectProvider(
 			return trpcClient.integration.telegram.disconnect.mutate({
 				organizationId,
 			});
+		case "discord":
+			return trpcClient.integration.discord.disconnect.mutate({
+				organizationId,
+			});
+		case "notion":
+			return trpcClient.integration.notion.disconnect.mutate({
+				organizationId,
+			});
 		case "obsidian":
 			return trpcClient.integration.obsidian.disconnect.mutate({
 				organizationId,
@@ -157,6 +207,38 @@ async function disconnectProvider(
 			});
 		case "lark":
 			return trpcClient.integration.lark.disconnect.mutate({
+				organizationId,
+			});
+	}
+}
+
+async function testProvider(
+	provider: ManualIntegrationProvider,
+	organizationId: string,
+) {
+	switch (provider) {
+		case "telegram":
+			return trpcClient.integration.telegram.testConnection.query({
+				organizationId,
+			});
+		case "discord":
+			return trpcClient.integration.discord.testConnection.query({
+				organizationId,
+			});
+		case "notion":
+			return trpcClient.integration.notion.testConnection.query({
+				organizationId,
+			});
+		case "obsidian":
+			return trpcClient.integration.obsidian.testConnection.query({
+				organizationId,
+			});
+		case "fibery":
+			return trpcClient.integration.fibery.testConnection.query({
+				organizationId,
+			});
+		case "lark":
+			return trpcClient.integration.lark.testConnection.query({
 				organizationId,
 			});
 	}
@@ -181,6 +263,7 @@ export function ManualIntegrationControls({
 	);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDisconnecting, setIsDisconnecting] = useState(false);
+	const [isTesting, setIsTesting] = useState(false);
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -219,6 +302,23 @@ export function ManualIntegrationControls({
 			toast.error("Не удалось отключить интеграцию");
 		} finally {
 			setIsDisconnecting(false);
+		}
+	}
+
+	async function handleTest() {
+		setIsTesting(true);
+
+		try {
+			const result = await testProvider(provider, organizationId);
+			if (result.success) {
+				toast.success("Подключение найдено");
+			} else {
+				toast.error(result.error);
+			}
+		} catch {
+			toast.error("Не удалось проверить интеграцию");
+		} finally {
+			setIsTesting(false);
 		}
 	}
 
@@ -264,6 +364,18 @@ export function ManualIntegrationControls({
 						<Save className="mr-2 size-4" />
 						{isSaving ? "Сохраняем..." : "Сохранить подключение"}
 					</Button>
+
+					{isConnected && (
+						<Button
+							type="button"
+							variant="outline"
+							disabled={isTesting}
+							onClick={handleTest}
+						>
+							<CircleCheck className="mr-2 size-4" />
+							{isTesting ? "Проверяем..." : "Проверить"}
+						</Button>
+					)}
 
 					{isConnected && (
 						<AlertDialog>
