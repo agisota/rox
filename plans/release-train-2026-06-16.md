@@ -1,15 +1,19 @@
 # Rox Release Train Receipt - 2026-06-16
 
-## Current State
+## Share/Auth/Branding Lane
 
 - Worktree: `.worktrees/share-auth-branding`
 - Branch: `issue/share-auth-branding`
 - PR: `https://github.com/agisota/rox/pull/142`
-- Base: `origin/main` at `1c7b425a90faf2ce21922ccd819c2d25a484e6fd`
-- Lane state: share/auth/branding lane has product code for public share management, artifact share publishing from desktop settings, public share revocation, and anonymous `/s/:slug` rendering proof.
-- Receipt state: this file travels with the lane PR because the separate release-train receipt worktree was not present in the active checkout.
+- State: merged to `main`
+- Base at lane verification: `origin/main` at `1c7b425a90faf2ce21922ccd819c2d25a484e6fd`
 
-## Target State
+### Current State
+
+- Share/auth/branding lane has product code for public share management, artifact share publishing from desktop settings, public share revocation, and anonymous `/s/:slug` rendering proof.
+- The lane receipt traveled with PR #142 because the separate release-train receipt worktree was not present in the active checkout.
+
+### Target State
 
 - Public chat/artifact snapshots are shareable through `public_shares` without exposing live private resources.
 - Owners can list/copy/revoke their shares; org admins can manage org public shares.
@@ -17,14 +21,14 @@
 - Anonymous visitors can open only non-revoked snapshots on `/s/:slug`.
 - The lane is reviewable as a single PR with local, targeted, and browser-visible evidence.
 
-## Gap / Transformation
+### Gap / Transformation
 
 - `packages/trpc` now exposes `share.listPublic` and `share.revokePublic`, with creator/admin scoping and revoked-link filtering.
 - Desktop settings now has a `shares` section, settings search metadata, sidebar entry, and `SharesSettings` UI for list/copy/revoke plus artifact publish/copy actions.
 - Desktop collections now include read-only org-scoped `artifacts` so the share UI can operate on existing artifact snapshots.
 - Local smoke seeds one immutable `public_shares` row and verifies the public web route renders the serialized snapshot through portless.
 
-## Share Lane Verification Proof
+### Share Lane Verification Proof
 
 - `./.rox/setup.local.sh`: passed; created ignored local `.env`, started `rox-share-auth-branding` Docker DB stack, applied local migrations, seeded `admin@local.test`.
 - Seeded local `public_shares` row:
@@ -39,7 +43,7 @@
   - content checks: `Rox Share Smoke 2026-06-16`, `rox-share-smoke-20260616-mqg3da8s`, `Browser-visible share smoke request`, and `Rox share smoke response visible through /s/:slug` were present in `/tmp/rox-share-smoke.html`.
   - browser-visible proof: `open https://rox-share-smoke.t/s/rox-share-smoke-20260616-mqg3da8s` exited 0 and opened the verified local portless URL in the default browser.
 
-## Automated Verification
+### Share Lane Automated Verification
 
 - `bunx @biomejs/biome@2.4.2 check --write --unsafe <touched share files>`: passed, 13 files, no fixes.
 - `bun test packages/trpc/src/router/share/share.test.ts`: passed, 11 tests, 23 expects.
@@ -51,9 +55,37 @@
 - `bun run typecheck` from `apps/desktop`: passed.
 - `bun run lint` from repo root: passed, 5044 files, no fixes.
 
+## Issue #27 Themes Lane
+
+- Worktree: `.worktrees/issue-27-themes`
+- Branch: `issue/27-themes`
+- PR: `https://github.com/agisota/rox/pull/143`
+- Base after receipt merge: `origin/main` at `b8b42aa15`
+- Scope: verify the Zed-derived theme library, preserve dark/glass defaults, and lock Electron glass/vibrancy behavior with desktop tests.
+
+### Current State
+
+- Zed theme conversion and generated library tests already cover conversion, unique non-reserved IDs, and generated dataset color validity.
+- Desktop persisted app defaults select the built-in dark theme and enable glass at `0.3` opacity.
+- Electron window creation uses `getGlassWindowOptions`, but the helper had no focused unit test coverage and `main.ts` had a stale comment saying the glass toggle defaulted off.
+
+### Target State
+
+- Zed library import remains verified through generated-dataset tests.
+- Default desktop state is explicitly verified as dark theme + glass enabled + `0.3` window opacity.
+- macOS vibrancy helper behavior is verified, while non-mac platforms continue to fall back to an opaque background.
+
+### Verification Proof
+
+- `bun test apps/desktop/src/shared/themes/zed/convert.test.ts apps/desktop/src/shared/themes/zed/base16.test.ts`: 10 pass, 2795 expects.
+- `bun test apps/desktop/src/main/lib/app-state/schemas.test.ts apps/desktop/src/main/lib/glass-window.test.ts`: 7 pass, 12 expects.
+- `bun run --cwd apps/desktop typecheck`: passed after `generate:icons` and `generate:routes`.
+- `bun run lint`: passed, checked 5047 files with no fixes after merging current `origin/main`.
+
 ## Remaining Blockers
 
-- #27, #28, #29, #30, and #32 still require their own lane receipts and PRs.
+- #28, #29, #30, and #32 still require their own lane receipts and PRs.
 - #34/#35 remain gated until billing interfaces stabilize.
-- This lane did not run full `bun test` or `bun run build`; those are reserved for the final integration train gate after all lane PRs settle.
-- Local DB migrations were applied only to the per-worktree Docker database. No production database or remote deployment was touched.
+- Full desktop app visual vibrancy smoke is still a final release-train gate, not claimed by #27.
+- Full monorepo `bun test` / `bun run build` are reserved for the final integration train gate after all lane PRs settle.
+- Local DB migrations for share smoke were applied only to the per-worktree Docker database. No production database or remote deployment was touched.
