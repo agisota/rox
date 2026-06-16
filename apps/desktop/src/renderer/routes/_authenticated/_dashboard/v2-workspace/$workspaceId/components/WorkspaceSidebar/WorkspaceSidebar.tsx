@@ -156,9 +156,9 @@ export function WorkspaceSidebar({
 
 	const filesTab: SidebarTabDefinition = {
 		id: "files",
-		label: "Files",
+		label: "Файлы",
 		icon: LuFile,
-		actions: <IconButton icon={Search} tooltip="Search" onClick={onSearch} />,
+		actions: <IconButton icon={Search} tooltip="Поиск" onClick={onSearch} />,
 		content: (
 			<FilesTab
 				onSelectFile={onSelectFile}

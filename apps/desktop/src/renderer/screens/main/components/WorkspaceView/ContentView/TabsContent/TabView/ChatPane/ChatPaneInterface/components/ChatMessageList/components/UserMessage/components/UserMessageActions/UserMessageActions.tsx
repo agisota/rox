@@ -73,9 +73,9 @@ export function UserMessageActions({
 				{fullText ? (
 					<MessageAction
 						className="size-7 text-muted-foreground hover:text-foreground"
-						label={copied ? "Copied" : "Copy message"}
+						label={copied ? "Скопировано" : "Копировать сообщение"}
 						onClick={onCopy}
-						tooltip={copied ? "Copied" : "Copy"}
+						tooltip={copied ? "Скопировано" : "Копировать"}
 					>
 						{copied ? (
 							<CheckIcon className="size-3.5" />
