@@ -79,6 +79,10 @@ export const ANALYTICS_EVENTS = {
 	PAYMENT_STARTED: "payment_started",
 	PAYMENT_SUCCEEDED: "payment_succeeded",
 	PAYMENT_FAILED: "payment_failed",
+	ACCOUNT_CREATED: "account_created",
+	SIGNED_IN: "signed_in",
+	ONBOARDING_COMPLETED: "onboarding_completed",
+	SESSION_STARTED: "session_started",
 } as const;
 
 export type AnalyticsEventName =
