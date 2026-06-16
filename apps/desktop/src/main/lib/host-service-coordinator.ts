@@ -466,6 +466,20 @@ export class HostServiceCoordinator extends EventEmitter {
 			NODE_ENV: app.isPackaged
 				? "production"
 				: (process.env.NODE_ENV ?? "development"),
+			// Disable mastra's gateway type-generation sync in the spawned
+			// host-service. That sync (gated on MASTRA_DEV=true) periodically
+			// calls fetchProviders() on registered gateways and writes
+			// TypeScript model-registry files into @mastra/core's dist/ — fine
+			// in a source checkout, but in a packaged .app that path lives inside
+			// the read-only app.asar, so every sync throws "ENOTDIR: not a
+			// directory, mkdir '/Applications/Rox.app/Contents/Resources/
+			// app.asar/node_modules/@mastra/core/dist'". The host-service is a
+			// headless runtime (dev and prod) that never needs IDE autocomplete
+			// types, so force the flag off regardless of any value inherited from
+			// the parent Electron process or the user's shell. The editor-side
+			// `mastra dev` flow that real type generation belongs to runs as a
+			// separate process and is unaffected.
+			MASTRA_DEV: "false",
 			ORGANIZATION_ID: organizationId,
 			HOST_CLIENT_ID: getHostId(),
 			HOST_NAME: getHostName(),
