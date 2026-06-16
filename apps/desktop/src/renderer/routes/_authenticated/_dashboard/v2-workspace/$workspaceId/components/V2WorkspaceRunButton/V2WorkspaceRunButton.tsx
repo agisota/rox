@@ -55,7 +55,7 @@ export function V2WorkspaceRunButton({
 		});
 	}, [definition, navigate, projectId, setSettingsSearchQuery]);
 
-	const label = isRunning ? "Stop" : hasRunCommand ? "Run" : "Set Run";
+	const label = isRunning ? "Стоп" : hasRunCommand ? "Запустить" : "Настроить запуск";
 	const Icon = isRunning ? Square : hasRunCommand ? Play : Settings;
 	const shouldAnimate = useShouldAnimate("decorative");
 

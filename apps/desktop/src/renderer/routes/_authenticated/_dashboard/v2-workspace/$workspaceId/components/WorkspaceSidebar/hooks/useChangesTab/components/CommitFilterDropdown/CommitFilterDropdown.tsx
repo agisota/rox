@@ -17,8 +17,8 @@ type Commit =
 	inferRouterOutputs<AppRouter>["git"]["listCommits"]["commits"][number];
 
 function getFilterLabel(filter: ChangesFilter, commits: Commit[]): string {
-	if (filter.kind === "all") return "All changes";
-	if (filter.kind === "uncommitted") return "Uncommitted";
+	if (filter.kind === "all") return "Все изменения";
+	if (filter.kind === "uncommitted") return "Незакоммиченные";
 	if (filter.kind === "range") {
 		const from = commits.find((c) => c.hash === filter.fromHash);
 		const to = commits.find((c) => c.hash === filter.toHash);

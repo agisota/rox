@@ -212,7 +212,7 @@ export function ChatInputFooter({
 									searchFiles={searchFiles}
 									slashCommands={slashCommands}
 									availableModels={availableModels}
-									placeholder="Ask to make changes, @mention files, run /commands"
+									placeholder="Попросите внести изменения, @упомяните файлы, /команды"
 								/>
 								<ChatComposerControls
 									availableModels={availableModels}
