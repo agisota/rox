@@ -97,10 +97,10 @@ export function V2WorkspaceRunButton({
 				)}
 				aria-label={
 					isRunning
-						? "Stop workspace run command"
+						? "Остановить команду запуска"
 						: hasRunCommand
-							? "Run workspace command"
-							: "Configure workspace run command"
+							? "Запустить команду рабочего пространства"
+							: "Настроить команду запуска"
 				}
 			>
 				<span className="relative inline-flex size-3 shrink-0 items-center justify-center">
@@ -149,7 +149,7 @@ export function V2WorkspaceRunButton({
 							isRunning &&
 								"border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 hover:bg-emerald-500/[0.12]",
 						)}
-						aria-label="Workspace run options"
+						aria-label="Параметры запуска"
 					>
 						<ChevronDown className="size-3" />
 					</button>
@@ -162,7 +162,7 @@ export function V2WorkspaceRunButton({
 								className="text-destructive focus:text-destructive"
 							>
 								<X className="mr-2 size-4 text-destructive" />
-								Force Stop
+								Остановить принудительно
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 						</>
@@ -170,8 +170,8 @@ export function V2WorkspaceRunButton({
 					<DropdownMenuItem onClick={handleConfigureClick}>
 						<Settings className="mr-2 size-4" />
 						{definition?.source === "terminal-preset"
-							? "Edit Run Preset"
-							: "Configure"}
+							? "Изменить пресет запуска"
+							: "Настроить"}
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
