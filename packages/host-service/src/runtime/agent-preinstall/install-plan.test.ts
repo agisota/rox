@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { AGENT_HARNESS_PRESETS } from "@rox/shared/agent-harness-presets";
 import {
 	buildPreinstallCatalog,
 	type PreinstallCatalogItem,
@@ -92,20 +93,17 @@ describe("buildPreinstallCatalog", () => {
 	});
 
 	it("carries harness audit receipts into the installer catalog", () => {
-		for (const presetId of [
-			"oh-my-claudecode",
-			"oh-my-codex",
-			"oh-my-openagent",
-			"hermes",
-			"openclaw",
-			"ouroboros",
-		]) {
-			const item = byId(presetId);
+		// Drive the check off the shared catalog so any harness preset added
+		// later is automatically verified for receipt propagation, instead of a
+		// hardcoded subset that silently skips new entries.
+		expect(AGENT_HARNESS_PRESETS.length).toBeGreaterThan(0);
+		for (const preset of AGENT_HARNESS_PRESETS) {
+			const item = byId(preset.id);
 			expect(item).toBeDefined();
 			expect(item?.kind).toBe("harness");
+			expect(item?.audit).toEqual(preset.audit);
 			expect(item?.audit?.license.length ?? 0).toBeGreaterThan(0);
 			expect(item?.audit?.notes.length ?? 0).toBeGreaterThan(0);
-			expect(item?.audit?.terminalPresetStrategy).toBe("base-agent");
 		}
 	});
 
