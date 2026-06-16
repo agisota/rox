@@ -418,7 +418,7 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 											htmlFor="anthropic-auth-token"
 											className="text-sm font-medium"
 										>
-											Auth token
+											Токен авторизации
 										</Label>
 										<Input
 											id="anthropic-auth-token"

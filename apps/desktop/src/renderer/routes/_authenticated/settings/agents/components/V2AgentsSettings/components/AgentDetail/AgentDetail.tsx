@@ -319,7 +319,7 @@ export function AgentDetail({
 
 				{showOdwHarness && (
 					<Section
-						title="Workflow harness"
+						title="Workflow-обвязка"
 						action={<AgentHarnessStatusBadge entry={odwHarnessEntry} />}
 					>
 						<div className="flex items-center justify-between gap-6 rounded-md border border-border bg-muted/30 px-3 py-3">
@@ -328,8 +328,8 @@ export function AgentDetail({
 									Open Dynamic Workflows
 								</div>
 								<p className="mt-0.5 text-xs text-muted-foreground">
-									Additive Rox workflow layer: ODW готовит workflow-контекст, а
-									запуск агента остается через Rox/omp.
+									Дополнительный workflow-слой Rox: ODW готовит
+									workflow-контекст, а запуск агента остается через Rox/omp.
 								</p>
 								{odwHarnessEntry?.lastError ? (
 									<p className="mt-2 line-clamp-2 text-xs text-destructive">
@@ -338,7 +338,7 @@ export function AgentDetail({
 								) : null}
 							</div>
 							<Switch
-								aria-label="Toggle Open Dynamic Workflows harness"
+								aria-label="Переключить обвязку Open Dynamic Workflows"
 								checked={
 									odwHarnessState === "ready" ||
 									odwHarnessState === "installing"
