@@ -10,6 +10,7 @@ import {
 	INTRO_LEAD_WORD,
 	INTRO_TAGLINE,
 } from "../../constants";
+import { CpuArchitecture } from "../CpuArchitecture";
 
 interface IntroOverlayProps {
 	onComplete: () => void;
@@ -111,6 +112,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		);
 		const logo = select<HTMLElement>(".rox-intro__logo");
 		const logoImg = select<HTMLElement>(".rox-intro__logo img");
+		const cpuMark = select<HTMLElement>(".rox-intro__cpu");
 		const slide2 = select<HTMLElement>(".rox-intro__slide--two");
 		const slide2Words = select<HTMLElement>(
 			".rox-intro__slide--two .rox-intro__feature",
@@ -254,6 +256,13 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<+=300",
 			)
+			// Reveal the animated CPU-architecture mark wrapping the locked wordmark:
+			// circuit traces draw in and light beams begin travelling around "ROX".
+			.add(
+				cpuMark,
+				{ opacity: { to: 1 }, scale: [0.92, 1], ease: "out(2)", duration: 700 },
+				"<+=150",
+			)
 			// Hold the brand lock-up on screen for a beat.
 			.add(slide1Center, { scale: 2.6, duration: 900 }, "<+=200");
 
@@ -261,6 +270,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		timeline
 			.add(root, { backgroundColor: "var(--rox-orange-5)" }, "<+=300")
 			.add(logo, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
+			.add(cpuMark, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
 			.set(slide1, { opacity: 0 }, "<<")
 			.set(slide2, { opacity: 1 }, "<<")
 			.add(
@@ -369,6 +379,11 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					height={213}
 					priority
 				/>
+			</div>
+
+			{/* Animated CPU-architecture wordmark revealed under the logo at brand-lock */}
+			<div className="rox-intro__cpu" aria-hidden="true">
+				<CpuArchitecture text="ROX" />
 			</div>
 
 			<div className="rox-intro__stage">
