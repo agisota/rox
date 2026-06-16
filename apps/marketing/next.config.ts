@@ -49,7 +49,17 @@ const config: NextConfig = {
 
 	async redirects() {
 		const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.rox.one";
+		const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://app.rox.one";
 		return [
+			{
+				// Public profiles live on the web app at `/u/<handle>`, but users
+				// share/visit the @-handle form on the marketing domain
+				// (`rox.one/@<handle>`). Redirect it to the canonical renderer.
+				// `@` is matched literally; `:handle` captures the nickname.
+				source: "/@:handle",
+				destination: `${webUrl}/u/:handle`,
+				permanent: false,
+			},
 			{
 				source: "/about",
 				destination: "/team",
