@@ -111,7 +111,7 @@
     },
     "apps/desktop": {
       "name": "@rox/desktop",
-      "version": "2.0.10",
+      "version": "2.0.17",
       "dependencies": {
         "@ai-sdk/anthropic": "3.0.64",
         "@ai-sdk/openai": "3.0.36",
@@ -672,6 +672,7 @@
         "better-auth": "1.6.13",
         "dotenv": "17.3.1",
         "drizzle-orm": "0.45.2",
+        "posthog-node": "5.28.8",
         "resend": "4.8.0",
         "stripe": "20.4.1",
         "zod": "4.3.6",
@@ -808,7 +809,7 @@
     },
     "packages/host-service": {
       "name": "@rox/host-service",
-      "version": "0.8.20",
+      "version": "0.8.25",
       "dependencies": {
         "@hono/node-server": "1.19.13",
         "@hono/node-ws": "1.3.0",
