@@ -1,4 +1,5 @@
 import {
+	type Dirent,
 	existsSync,
 	readdirSync,
 	readFileSync,
@@ -122,7 +123,7 @@ function listSkillFiles(skillDir: string): SkillFile[] {
 	const files: SkillFile[] = [];
 	const walk = (dir: string) => {
 		if (files.length >= MAX_SKILL_FILES) return;
-		let entries: ReturnType<typeof readdirSync>;
+		let entries: Dirent<string>[];
 		try {
 			entries = readdirSync(dir, { withFileTypes: true });
 		} catch {
@@ -198,7 +199,7 @@ export const createSkillsLibraryRouter = () => {
 			const seen = new Set<string>();
 			for (const root of SKILL_ROOTS) {
 				if (!existsSync(root.path)) continue;
-				let entries: ReturnType<typeof readdirSync>;
+				let entries: Dirent<string>[];
 				try {
 					entries = readdirSync(root.path, { withFileTypes: true });
 				} catch {
