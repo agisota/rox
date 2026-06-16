@@ -33,10 +33,11 @@ export const ROX_PROVIDER_STATUS = deriveModelProviderStatus({
 	},
 });
 
-// Public-facing display only. The real upstream model (`compound`) and endpoint
-// (api.zed.md) are intentionally masked behind the Rox brand — the user only
-// ever sees "ROX R1" and the branded api.rox.one endpoint. The actual chat
-// runtime reads the real values from @rox/shared/chat-models directly.
+// Public-facing display only. The real upstream model (`r1`) and endpoint
+// (api.zed.md, overridable via ROX_AI_BASE_URL) are intentionally masked behind
+// the Rox brand — the user only ever sees "ROX R1" and the branded api.rox.one
+// endpoint. The actual chat runtime reads the real values from
+// @rox/shared/chat-models directly.
 export const ROX_PROVIDER_DETAILS = {
 	modelId: ROX_CHAT_MODEL_NAME,
 	baseUrl: "https://api.rox.one/v1",

@@ -1,4 +1,4 @@
-import { isRoxHouseModel, ROX_AI_BASE_URL } from "@rox/shared/chat-models";
+import { isRoxHouseModel, resolveRoxBaseUrl } from "@rox/shared/chat-models";
 import type { RuntimeEnvContext } from "../types";
 import { RoxKeyProvisioner } from "./RoxKeyProvisioner";
 
@@ -57,17 +57,22 @@ export async function resolveRoxRuntimeEnv(
 		return {
 			env: {
 				OPENAI_API_KEY: resolution.apiKey,
-				OPENAI_BASE_URL: ROX_AI_BASE_URL,
+				// Env-overridable (ROX_AI_BASE_URL); falls back to the default
+				// api.zed.md gateway. Read from the same env the key came from.
+				OPENAI_BASE_URL: resolveRoxBaseUrl(),
 			},
 			isRoxModel: true,
 			error: null,
 		};
 	}
 
+	// `unconfigured` means neither a static ROX_AI_API_KEY nor a provisioning URL
+	// is set. The shared-key MVP only needs ROX_AI_API_KEY; provisioning is the
+	// optional per-user layer, so it is intentionally listed second.
 	const error =
 		resolution.kind === "error"
 			? resolution.message
-			: "ROX R1 is not configured on this host (set ROX_AI_API_KEY or ROX_KEY_PROVISION_URL)";
+			: "ROX R1 is not configured on this host (set ROX_AI_API_KEY, or optionally ROX_KEY_PROVISION_URL for per-user keys)";
 	return { env: {}, isRoxModel: true, error };
 }
 
