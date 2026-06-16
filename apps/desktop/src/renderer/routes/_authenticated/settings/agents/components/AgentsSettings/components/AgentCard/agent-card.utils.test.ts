@@ -55,7 +55,7 @@ describe("buildAgentFieldPatch", () => {
 				value: "   ",
 			}),
 		).toEqual({
-			error: "Prompt command is required for terminal agents.",
+			error: "Команда промпта обязательна для терминальных агентов.",
 		});
 	});
 });

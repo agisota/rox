@@ -11,9 +11,9 @@ import {
 } from "./workspace-starter-presets";
 
 describe("workspace-starter-presets", () => {
-	it("exposes 15-25 starters with unique ids", () => {
+	it("exposes 15-30 starters with unique ids", () => {
 		expect(WORKSPACE_STARTER_PRESETS.length).toBeGreaterThanOrEqual(15);
-		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(25);
+		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(30);
 		const ids = WORKSPACE_STARTER_PRESETS.map((s) => s.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
@@ -117,9 +117,74 @@ describe("workspace-starter-presets", () => {
 				files: [],
 			},
 			{
+				id: "code-intelligence-lite",
+				commandCount: 2,
+				files: [],
+			},
+			{
+				id: "cold-graph-only",
+				commandCount: 1,
+				files: [],
+			},
+			{
 				id: "open-source-baseline",
 				commandCount: 0,
 				files: [".gitignore", "README.md", ".editorconfig", "LICENSE"],
+			},
+			{
+				id: "minimal-readme-gitignore",
+				commandCount: 0,
+				files: [".gitignore", "README.md"],
+			},
+			{
+				id: "formatting-baseline",
+				commandCount: 0,
+				files: [".gitignore", ".editorconfig"],
+			},
+			{
+				id: "agent-planning-kit",
+				commandCount: 0,
+				files: ["AGENTS.md", "todo.md", "spec.md", "planner.md"],
+			},
+			{
+				id: "memory-backed-agent-kit",
+				commandCount: 1,
+				files: ["AGENTS.md"],
+			},
+			{
+				id: "rox-config-baseline",
+				commandCount: 1,
+				files: [".gitignore"],
+			},
+			{
+				id: "ci-release-baseline",
+				commandCount: 0,
+				files: [
+					".github/workflows/deploy.yml",
+					".gitignore",
+					"README.md",
+					"LICENSE",
+				],
+			},
+			{
+				id: "docs-first-bootstrap",
+				commandCount: 0,
+				files: ["spec.md", "planner.md", "README.md"],
+			},
+			{
+				id: "github-private-starter",
+				commandCount: 2,
+				files: [".gitignore", "README.md"],
+			},
+			{
+				id: "task-tracker-lite",
+				commandCount: 0,
+				files: ["todo.md", "planner.md"],
+			},
+			{
+				id: "spec-review-kit",
+				commandCount: 0,
+				files: ["AGENTS.md", "spec.md", "README.md"],
 			},
 			{
 				id: "everything",

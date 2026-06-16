@@ -1,3 +1,8 @@
+import {
+	CUSTOM_OPENAI_ENV_KEYS,
+	type CustomProviderRuntimeEnvResult,
+	resolveCustomProviderRuntimeEnv,
+} from "../CustomModelProvider";
 import type { RoxKeyProvisioner } from "../RoxModelProvider";
 import {
 	createRoxKeyProvisioner,
@@ -48,14 +53,24 @@ export class LocalModelProvider implements ModelProviderRuntimeResolver {
 		hasUsableRuntimeEnv: boolean;
 	}> {
 		const rox = await resolveRoxRuntimeEnv(context, this.roxKeyProvisioner);
+		// A custom OpenAI-compatible provider routes through the same OPENAI_*
+		// keys as Rox, so it can only apply when the Rox house model is NOT the
+		// selected model (the two model ids never collide).
+		const custom: CustomProviderRuntimeEnvResult = rox.isRoxModel
+			? { env: {}, isCustomModel: false }
+			: resolveCustomProviderRuntimeEnv(context);
 
-		// When the Rox house model is selected, the OpenAI-compatible client must
-		// point at the Rox endpoint. Keep OPENAI_BASE_URL/OPENAI_API_KEY out of
-		// the cleanup list so the values we just set are not stripped before the
-		// harness reads them.
-		const cleanupKeys = rox.isRoxModel
+		// When the Rox house model OR a custom OpenAI-compatible model is selected,
+		// the OpenAI-compatible client must point at that endpoint. Keep
+		// OPENAI_BASE_URL/OPENAI_API_KEY out of the cleanup list so the values we
+		// just set are not stripped before the harness reads them.
+		const keepOpenAIKeys = rox.isRoxModel || custom.isCustomModel;
+		const protectedKeys = rox.isRoxModel
+			? ROX_OPENAI_ENV_KEYS
+			: CUSTOM_OPENAI_ENV_KEYS;
+		const cleanupKeys = keepOpenAIKeys
 			? CLEANUP_KEYS.filter(
-					(key) => !(ROX_OPENAI_ENV_KEYS as readonly string[]).includes(key),
+					(key) => !(protectedKeys as readonly string[]).includes(key),
 				)
 			: [...CLEANUP_KEYS];
 
@@ -69,12 +84,14 @@ export class LocalModelProvider implements ModelProviderRuntimeResolver {
 		);
 
 		return {
-			env: { ...runtimeEnv, ...rox.env },
+			env: { ...runtimeEnv, ...rox.env, ...custom.env },
 			cleanupKeys,
 			hasUsableRuntimeEnv: rox.isRoxModel
 				? rox.error === null
-				: hasUsableCredential(anthropicCredential) ||
-					hasUsableCredential(openaiCredential),
+				: custom.isCustomModel
+					? true
+					: hasUsableCredential(anthropicCredential) ||
+						hasUsableCredential(openaiCredential),
 		};
 	}
 

@@ -196,7 +196,7 @@ export function ProfilePublicSettings() {
 					value={handleValue}
 					onChange={(event) => setHandleValue(event.target.value)}
 					onBlur={handleNicknameBlur}
-					placeholder="nickname"
+					placeholder="никнейм"
 					autoCapitalize="none"
 					autoCorrect="off"
 					spellCheck={false}
