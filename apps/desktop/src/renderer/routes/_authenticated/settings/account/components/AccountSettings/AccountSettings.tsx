@@ -119,7 +119,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 	}
 
 	return (
-		<div className="p-6 w-full">
+		<div className="p-6 max-w-5xl w-full mx-auto">
 			<div className="mb-8">
 				<h2 className="text-xl font-semibold">Аккаунт</h2>
 				<p className="text-sm text-muted-foreground mt-1">
