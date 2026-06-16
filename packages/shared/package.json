@@ -8,6 +8,10 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./posthog-session-replay": {
+			"types": "./src/posthog-session-replay.ts",
+			"default": "./src/posthog-session-replay.ts"
+		},
 		"./utm": {
 			"types": "./src/utm.ts",
 			"default": "./src/utm.ts"
