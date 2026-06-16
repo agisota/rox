@@ -89,6 +89,15 @@ export interface AnalyticsEventMap {
 	[ANALYTICS_EVENTS.PAYMENT_STARTED]: PaymentProps;
 	[ANALYTICS_EVENTS.PAYMENT_SUCCEEDED]: PaymentProps;
 	[ANALYTICS_EVENTS.PAYMENT_FAILED]: PaymentProps & { error?: string };
+	[ANALYTICS_EVENTS.ACCOUNT_CREATED]: {
+		organization_id?: string;
+		utm_source?: string;
+		utm_medium?: string;
+		utm_campaign?: string;
+	};
+	[ANALYTICS_EVENTS.SIGNED_IN]: { method?: string };
+	[ANALYTICS_EVENTS.ONBOARDING_COMPLETED]: { project_id?: string };
+	[ANALYTICS_EVENTS.SESSION_STARTED]: { app?: string };
 }
 
 /** Properties allowed on a given canonical event (catalog payload + free extras). */
