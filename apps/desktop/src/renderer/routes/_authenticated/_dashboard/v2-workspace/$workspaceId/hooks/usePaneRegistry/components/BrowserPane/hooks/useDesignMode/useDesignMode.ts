@@ -42,6 +42,15 @@ export function useDesignMode({
 	);
 	const workspaceRoot = workspace?.worktreePath || undefined;
 
+	// Read inside the subscription's onData via refs so the subscription effect
+	// doesn't tear down/recreate when these settle (which could drop a click).
+	const workspaceRootRef = useRef(workspaceRoot);
+	workspaceRootRef.current = workspaceRoot;
+	const presetIdRef = useRef(presetId);
+	presetIdRef.current = presetId;
+	// Monotonic guard so the most recent selection wins under rapid clicks.
+	const latestCaptureSeqRef = useRef(0);
+
 	const patchData = useCallback((patch: Partial<BrowserPaneData>) => {
 		const current = ctxRef.current.pane.data as BrowserPaneData;
 		ctxRef.current.actions.updateData({ ...current, ...patch });
@@ -86,7 +95,9 @@ export function useDesignMode({
 			.catch(() => {});
 	}, [paneId, presetId]);
 
-	// While enabled, listen for in-page selections and capture them.
+	// While enabled, listen for in-page selections and capture them. Deps are
+	// kept stable (no workspaceRoot/presetId) so a click is never dropped during
+	// a resubscribe; those values are read from refs at capture time.
 	useEffect(() => {
 		if (!enabled) return;
 		const sub = electronTrpcClient.browser.onDesignEvent.subscribe(
@@ -94,23 +105,32 @@ export function useDesignMode({
 			{
 				onData: (event: DesignModeEvent) => {
 					if (event.type !== "selected") return;
+					const seq = ++latestCaptureSeqRef.current;
 					setCapturing(true);
 					electronTrpcClient.browser.captureElement
 						.mutate({
 							paneId,
 							workspaceId,
-							workspaceRoot,
-							devicePresetId: presetId,
+							workspaceRoot: workspaceRootRef.current,
+							devicePresetId: presetIdRef.current,
 							clientPoint: event.clientPoint,
 						})
-						.then((result) => setCapture(result))
-						.catch(() => toast.error("Could not capture the selected element"))
-						.finally(() => setCapturing(false));
+						.then((result) => {
+							if (seq === latestCaptureSeqRef.current) setCapture(result);
+						})
+						.catch(() => {
+							if (seq === latestCaptureSeqRef.current) {
+								toast.error("Could not capture the selected element");
+							}
+						})
+						.finally(() => {
+							if (seq === latestCaptureSeqRef.current) setCapturing(false);
+						});
 				},
 			},
 		);
 		return () => sub.unsubscribe();
-	}, [enabled, paneId, workspaceId, workspaceRoot, presetId]);
+	}, [enabled, paneId, workspaceId]);
 
 	const dismissCapture = useCallback(() => setCapture(null), []);
 

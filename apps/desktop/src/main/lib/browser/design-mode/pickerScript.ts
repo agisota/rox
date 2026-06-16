@@ -14,11 +14,18 @@ export const DESIGN_SELECT_MARKER = "__ROX_DESIGN_SELECT__";
 
 const PAGE_NAMESPACE = "__ROX_DESIGN__";
 
-/** Installs the hover/click overlay and the `window.__ROX_DESIGN__` controller. */
-export function buildEnablePickerScript(): string {
+/**
+ * Installs the hover/click overlay and the `window.__ROX_DESIGN__` controller.
+ *
+ * `nonce` is a per-session secret embedded only in this injected script's
+ * closure (never on `window`); the click marker includes it so the host can
+ * reject spoofed markers emitted by arbitrary guest-page scripts.
+ */
+export function buildEnablePickerScript(nonce: string): string {
 	return `(() => {
   const NS = "${PAGE_NAMESPACE}";
   const MARKER = ${JSON.stringify(DESIGN_SELECT_MARKER)};
+  const NONCE = ${JSON.stringify(nonce)};
   if (window[NS] && window[NS].enabled) return true;
 
   const highlight = document.createElement("div");
@@ -78,7 +85,7 @@ export function buildEnablePickerScript(): string {
     e.preventDefault();
     e.stopPropagation();
     ctrl.lastPoint = { x: e.clientX, y: e.clientY };
-    console.log(MARKER + JSON.stringify(ctrl.lastPoint));
+    console.log(MARKER + JSON.stringify({ n: NONCE, x: e.clientX, y: e.clientY }));
   };
 
   const onKey = (e) => {

@@ -42,6 +42,8 @@ type ConsoleEntry = { level: string; message: string; timestamp: number };
 class DesignModeCaptureService extends EventEmitter {
 	private enabledPanes = new Set<string>();
 	private markerListeners = new Map<string, (entry: ConsoleEntry) => void>();
+	private navCleanups = new Map<string, () => void>();
+	private nonces = new Map<string, string>();
 	private captures = new Map<string, DesignModeCapture>();
 	private captureOrder: string[] = [];
 
@@ -56,18 +58,25 @@ class DesignModeCaptureService extends EventEmitter {
 
 	private async enable(paneId: string): Promise<void> {
 		if (this.enabledPanes.has(paneId)) return;
-		await browserManager.evaluateJS(paneId, buildEnablePickerScript());
+
+		// Per-session nonce: lives only in the injected script closure, so guest
+		// scripts can't forge a valid selection marker.
+		const nonce = randomUUID().replace(/-/g, "");
+		this.nonces.set(paneId, nonce);
+		await browserManager.evaluateJS(paneId, buildEnablePickerScript(nonce));
 		this.enabledPanes.add(paneId);
 
 		const listener = (entry: ConsoleEntry) => {
 			if (!entry.message?.startsWith(DESIGN_SELECT_MARKER)) return;
 			try {
-				const point = JSON.parse(
+				const payload = JSON.parse(
 					entry.message.slice(DESIGN_SELECT_MARKER.length),
-				) as { x: number; y: number };
+				) as { n?: string; x: number; y: number };
+				// Reject spoofed markers: the nonce must match this session's.
+				if (payload.n !== this.nonces.get(paneId)) return;
 				this.emit(`design-event:${paneId}`, {
 					type: "selected",
-					clientPoint: point,
+					clientPoint: { x: payload.x, y: payload.y },
 				} satisfies DesignModeEvent);
 			} catch {
 				// Ignore malformed markers.
@@ -75,6 +84,31 @@ class DesignModeCaptureService extends EventEmitter {
 		};
 		this.markerListeners.set(paneId, listener);
 		browserManager.on(`console:${paneId}`, listener);
+
+		// A full navigation/reload destroys the injected overlay; re-inject so
+		// Design Mode keeps working instead of silently breaking.
+		const wc = browserManager.getWebContents(paneId);
+		if (wc) {
+			const onNavigate = () => {
+				if (!this.enabledPanes.has(paneId)) return;
+				const current = this.nonces.get(paneId);
+				if (!current) return;
+				browserManager
+					.evaluateJS(paneId, buildEnablePickerScript(current))
+					.catch(() => {});
+			};
+			wc.on("did-navigate", onNavigate);
+			wc.on("did-navigate-in-page", onNavigate);
+			this.navCleanups.set(paneId, () => {
+				try {
+					wc.off("did-navigate", onNavigate);
+					wc.off("did-navigate-in-page", onNavigate);
+				} catch {
+					// webContents may be destroyed.
+				}
+			});
+		}
+
 		this.emit(`design-event:${paneId}`, {
 			type: "enabled",
 		} satisfies DesignModeEvent);
@@ -83,10 +117,16 @@ class DesignModeCaptureService extends EventEmitter {
 	private async disable(paneId: string): Promise<void> {
 		if (!this.enabledPanes.has(paneId)) return;
 		this.enabledPanes.delete(paneId);
+		this.nonces.delete(paneId);
 		const listener = this.markerListeners.get(paneId);
 		if (listener) {
 			browserManager.off(`console:${paneId}`, listener);
 			this.markerListeners.delete(paneId);
+		}
+		const navCleanup = this.navCleanups.get(paneId);
+		if (navCleanup) {
+			navCleanup();
+			this.navCleanups.delete(paneId);
 		}
 		try {
 			await browserManager.evaluateJS(paneId, buildDisablePickerScript());
@@ -179,11 +219,11 @@ class DesignModeCaptureService extends EventEmitter {
 		const screenshotBytes = base64ByteSize(shot.data);
 		const withinLimit = isScreenshotWithinLimit(screenshotBytes);
 
-		const screenshotPath = await this.persistScreenshot(
-			workspaceRoot,
-			captureId,
-			withinLimit ? shot.data : "",
-		);
+		// Only write (and reference) a file when we actually have in-limit data,
+		// so a `path`-style hand-off never points at a non-existent file.
+		const screenshotPath = withinLimit
+			? await this.persistScreenshot(workspaceRoot, captureId, shot.data)
+			: "";
 
 		const source = this.resolveSource(desc.sourceHint, workspaceRoot);
 
@@ -251,7 +291,7 @@ class DesignModeCaptureService extends EventEmitter {
 			? path.join(workspaceRoot, CAPTURE_DIR_NAME)
 			: path.join(os.tmpdir(), "rox-design-captures");
 		const filePath = path.join(dir, `${captureId}.png`);
-		if (!base64) return filePath;
+		if (!base64) return ""; // nothing written → no path to reference
 		await mkdir(dir, { recursive: true });
 		await writeFile(filePath, Buffer.from(base64, "base64"));
 		return filePath;

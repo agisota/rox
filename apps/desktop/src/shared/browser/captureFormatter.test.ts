@@ -82,6 +82,24 @@ describe("formatCaptureForAgent", () => {
 		expect(out.content).not.toContain("(attached)");
 	});
 
+	it("notes an omitted screenshot when the path is empty (over-limit)", () => {
+		const out = formatCaptureForAgent(
+			makeCapture({
+				screenshot: {
+					path: "",
+					data: "",
+					mimeType: "image/png",
+					width: 0,
+					height: 0,
+				},
+			}),
+			{ screenshotRef: "path" },
+		);
+		expect(out.content).toContain(
+			"Screenshot: (omitted — exceeded size limit)",
+		);
+	});
+
 	it("prepends an optional prompt prefix", () => {
 		const out = formatCaptureForAgent(makeCapture(), {
 			promptPrefix: "Fix the spacing of this element.",
