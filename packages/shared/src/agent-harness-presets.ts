@@ -267,3 +267,17 @@ export function getHarnessTerminalPresetBaseAgentIds(): Record<string, string> {
 		).map((preset) => [preset.id, preset.baseAgentId]),
 	);
 }
+
+/**
+ * All harnesses whose `baseAgentId` matches the given terminal agent preset id,
+ * in catalog order. Powers a per-base-agent harness picker (e.g. the desktop
+ * agent settings list every layer that can be stacked on a chosen base agent).
+ * Returns an empty array for an unknown base agent.
+ */
+export function getHarnessPresetsForBaseAgent(
+	baseAgentId: string,
+): AgentHarnessPreset[] {
+	return AGENT_HARNESS_PRESETS.filter(
+		(preset) => preset.baseAgentId === baseAgentId,
+	);
+}
