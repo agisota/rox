@@ -1,7 +1,16 @@
 import { db } from "@rox/db/client";
+import {
+	getProfileAggregateStats,
+	getProfileHeatmap,
+} from "@rox/trpc/profile-stats";
+import { ActivityHeatmap } from "@rox/ui/atoms/ActivityHeatmap";
+import {
+	type ProfileStat,
+	ProfileStatsGrid,
+} from "@rox/ui/atoms/ProfileStatsGrid";
 import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import { Badge } from "@rox/ui/badge";
-import { Card, CardContent } from "@rox/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@rox/ui/card";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -16,7 +25,6 @@ import {
 	ProfileTabs,
 	type ToolBreakdown,
 } from "./components/ProfileTabs";
-import { UsageBars } from "./components/UsageBars";
 
 type PublicProfilePageProps = {
 	params: Promise<{ handle: string }>;
@@ -28,6 +36,8 @@ type PublicProfile = {
 	displayName: string;
 	bio: string | null;
 	avatarUrl: string | null;
+	location: string | null;
+	websiteUrl: string | null;
 	contactEmail: string | null;
 	telegram: string | null;
 	max: string | null;
@@ -35,14 +45,17 @@ type PublicProfile = {
 	twitter: string | null;
 };
 
-type UsageDay = {
-	date: string;
-	totalTokens: number;
-};
-
 export const dynamic = "force-dynamic";
 
 const numberFormatter = new Intl.NumberFormat("ru");
+
+function formatRox(value: string): string {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed)) return value;
+	return new Intl.NumberFormat("ru", { maximumFractionDigits: 2 }).format(
+		parsed,
+	);
+}
 
 async function getPublicProfile(handle: string): Promise<PublicProfile | null> {
 	const profile = await db.query.userProfiles.findFirst({
@@ -59,6 +72,8 @@ async function getPublicProfile(handle: string): Promise<PublicProfile | null> {
 		displayName: profile.displayName ?? profile.user.name,
 		bio: profile.bio,
 		avatarUrl: profile.avatarUrl ?? profile.user.image,
+		location: profile.location,
+		websiteUrl: profile.websiteUrl,
 		contactEmail: profile.contactEmail,
 		telegram: profile.telegram,
 		max: profile.max,
@@ -67,105 +82,14 @@ async function getPublicProfile(handle: string): Promise<PublicProfile | null> {
 	};
 }
 
-async function getUsageRows() {
-	return db.query.usageDaily.findMany({
-		columns: {
-			userId: true,
-			date: true,
-			tool: true,
-			totalTokens: true,
-		},
+async function getToolBreakdown(userId: string): Promise<ToolBreakdown[]> {
+	const rows = await db.query.usageDaily.findMany({
+		where: (usageDaily, { eq }) => eq(usageDaily.userId, userId),
+		columns: { tool: true, totalTokens: true },
 	});
-}
 
-function getTotalTokens(
-	rows: Awaited<ReturnType<typeof getUsageRows>>,
-	userId: string,
-): number {
-	return rows
-		.filter((row) => row.userId === userId)
-		.reduce((total, row) => total + row.totalTokens, 0);
-}
-
-function getRank(
-	rows: Awaited<ReturnType<typeof getUsageRows>>,
-	userId: string,
-): number | null {
-	const tokensByUserId = new Map<string, number>();
-
-	for (const row of rows) {
-		tokensByUserId.set(
-			row.userId,
-			(tokensByUserId.get(row.userId) ?? 0) + row.totalTokens,
-		);
-	}
-
-	const rankedRows = [...tokensByUserId.entries()].sort((a, b) => b[1] - a[1]);
-	const index = rankedRows.findIndex(
-		([rankedUserId]) => rankedUserId === userId,
-	);
-	return index >= 0 ? index + 1 : null;
-}
-
-function getStreakDays(
-	rows: Awaited<ReturnType<typeof getUsageRows>>,
-	userId: string,
-): number {
-	const activeDates = new Set(
-		rows.filter((row) => row.userId === userId).map((row) => row.date),
-	);
-	let streak = 0;
-	const cursor = new Date();
-
-	while (true) {
-		const dateKey = cursor.toISOString().slice(0, 10);
-		if (!activeDates.has(dateKey)) {
-			break;
-		}
-		streak += 1;
-		cursor.setDate(cursor.getDate() - 1);
-	}
-
-	return streak;
-}
-
-function getDailyUsage(
-	rows: Awaited<ReturnType<typeof getUsageRows>>,
-	userId: string,
-): UsageDay[] {
-	const today = new Date();
-	const start = new Date(today);
-	start.setDate(today.getDate() - 13);
-
-	const tokensByDate = new Map<string, number>();
-	for (const row of rows) {
-		if (row.userId !== userId) continue;
-		tokensByDate.set(
-			row.date,
-			(tokensByDate.get(row.date) ?? 0) + row.totalTokens,
-		);
-	}
-
-	return Array.from({ length: 14 }, (_, index) => {
-		const date = new Date(start);
-		date.setDate(start.getDate() + index);
-		const dateKey = date.toISOString().slice(0, 10);
-
-		return {
-			date: dateKey,
-			totalTokens: tokensByDate.get(dateKey) ?? 0,
-		};
-	});
-}
-
-function getToolBreakdown(
-	rows: Awaited<ReturnType<typeof getUsageRows>>,
-	userId: string,
-): ToolBreakdown[] {
 	const tokensByTool = new Map<string, number>();
-
 	for (const row of rows) {
-		if (row.userId !== userId) continue;
 		tokensByTool.set(
 			row.tool,
 			(tokensByTool.get(row.tool) ?? 0) + row.totalTokens,
@@ -216,12 +140,12 @@ function getInitials(displayName: string) {
 		.join("");
 }
 
-function getLeague(totalTokens: number) {
-	if (totalTokens >= 1_000_000_000) return "Лига 1B+";
-	if (totalTokens >= 100_000_000) return "Лига 100M+";
-	if (totalTokens >= 10_000_000) return "Лига 10M+";
-	if (totalTokens >= 1_000_000) return "Лига 1M+";
-	if (totalTokens >= 100_000) return "Лига 100K+";
+function getLeague(tokens: number) {
+	if (tokens >= 1_000_000_000) return "Лига 1B+";
+	if (tokens >= 100_000_000) return "Лига 100M+";
+	if (tokens >= 10_000_000) return "Лига 10M+";
+	if (tokens >= 1_000_000) return "Лига 1M+";
+	if (tokens >= 100_000) return "Лига 100K+";
 	return "Лига старта";
 }
 
@@ -318,7 +242,7 @@ export async function generateMetadata({
 	return {
 		title: `${profile.displayName} (@${profile.handle}) · Rox`,
 		description:
-			profile.bio ?? "Публичный профиль Rox: токены, заметки и достижения.",
+			profile.bio ?? "Публичный профиль Rox: сессии, токены и активность.",
 	};
 }
 
@@ -332,22 +256,51 @@ export default async function PublicProfilePage({
 		notFound();
 	}
 
-	const [usageRows, notes, profileAchievements, profileUrl] = await Promise.all(
-		[
-			getUsageRows(),
-			getPublishedNotes(profile.userId),
-			getAchievements(profile.userId),
-			getProfileUrl(profile.handle),
-		],
-	);
-
-	const totalTokens = getTotalTokens(usageRows, profile.userId);
-	const rank = getRank(usageRows, profile.userId);
-	const streakDays = getStreakDays(usageRows, profile.userId);
-	const dailyUsage = getDailyUsage(usageRows, profile.userId);
-	const toolBreakdown = getToolBreakdown(usageRows, profile.userId);
+	const [
+		stats,
+		heatmap,
+		toolBreakdown,
+		notes,
+		profileAchievements,
+		profileUrl,
+	] = await Promise.all([
+		getProfileAggregateStats(profile.userId),
+		getProfileHeatmap(profile.userId),
+		getToolBreakdown(profile.userId),
+		getPublishedNotes(profile.userId),
+		getAchievements(profile.userId),
+		getProfileUrl(profile.handle),
+	]);
 
 	const contacts = buildContacts(profile);
+
+	const statCards: ProfileStat[] = [
+		{
+			key: "sessions",
+			label: "Сессии",
+			value: numberFormatter.format(stats.sessions),
+		},
+		{
+			key: "requests",
+			label: "Запросы",
+			value: numberFormatter.format(stats.requests),
+		},
+		{
+			key: "tokens",
+			label: "Токены",
+			value: numberFormatter.format(stats.tokens),
+		},
+		{
+			key: "rox",
+			label: "Потрачено Rox",
+			value: formatRox(stats.roxSpent),
+		},
+		{
+			key: "activeDays",
+			label: "Активных дней",
+			value: numberFormatter.format(stats.activeDays),
+		},
+	];
 
 	return (
 		<main className="min-h-screen bg-background">
@@ -372,11 +325,26 @@ export default async function PublicProfilePage({
 										<h1 className="text-2xl font-medium tracking-tight">
 											{profile.displayName}
 										</h1>
-										<Badge variant="secondary">{getLeague(totalTokens)}</Badge>
+										<Badge variant="secondary">{getLeague(stats.tokens)}</Badge>
 									</div>
 									<p className="mt-1 text-sm text-muted-foreground">
 										@{profile.handle}
 									</p>
+									{profile.location && (
+										<p className="mt-1 text-sm text-muted-foreground">
+											{profile.location}
+										</p>
+									)}
+									{profile.websiteUrl && (
+										<a
+											href={profile.websiteUrl}
+											target="_blank"
+											rel="noreferrer noopener"
+											className="mt-1 inline-block text-sm text-primary underline-offset-4 hover:underline"
+										>
+											{profile.websiteUrl.replace(/^https?:\/\//, "")}
+										</a>
+									)}
 								</div>
 								{profile.bio && (
 									<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
@@ -390,34 +358,24 @@ export default async function PublicProfilePage({
 					</div>
 				</section>
 
-				<section className="grid gap-3 sm:grid-cols-3" aria-label="Статистика">
-					<Card>
-						<CardContent className="pt-6">
-							<p className="text-sm text-muted-foreground">Всего токенов</p>
-							<p className="mt-2 text-2xl font-medium">
-								{numberFormatter.format(totalTokens)}
-							</p>
-						</CardContent>
-					</Card>
-					<Card>
-						<CardContent className="pt-6">
-							<p className="text-sm text-muted-foreground">Место</p>
-							<p className="mt-2 text-2xl font-medium">
-								{rank ? `#${numberFormatter.format(rank)}` : "Нет данных"}
-							</p>
-						</CardContent>
-					</Card>
-					<Card>
-						<CardContent className="pt-6">
-							<p className="text-sm text-muted-foreground">Дней подряд</p>
-							<p className="mt-2 text-2xl font-medium">
-								{numberFormatter.format(streakDays)}
-							</p>
-						</CardContent>
-					</Card>
+				<section aria-label="Статистика">
+					<ProfileStatsGrid stats={statCards} />
 				</section>
 
-				<UsageBars days={dailyUsage} />
+				<Card>
+					<CardHeader>
+						<CardTitle>Активность за год</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<ActivityHeatmap
+							days={heatmap.days}
+							ariaLabel={`Активность: ${numberFormatter.format(heatmap.total)} запросов за год`}
+						/>
+						<p className="mt-3 text-xs text-muted-foreground">
+							{numberFormatter.format(heatmap.total)} запросов за последний год
+						</p>
+					</CardContent>
+				</Card>
 
 				<ProfileTabs
 					tools={toolBreakdown}
