@@ -3,6 +3,7 @@ import {
 	decodeSecret,
 	ENCRYPTED_SECRET_PREFIX,
 	encodeSecret,
+	IntegrationSecretDecodeError,
 	isEncodedSecret,
 	isIntegrationSecretEncryptionEnabled,
 	storeSecret,
@@ -42,15 +43,20 @@ describe("integration secret-store codec", () => {
 		expect(decodeSecret(a)).toBe("same");
 		expect(decodeSecret(b)).toBe("same");
 	});
+
+	it("throws a typed error for corrupted encrypted payloads", () => {
+		const corrupted = `${ENCRYPTED_SECRET_PREFIX}not-valid-ciphertext`;
+		expect(() => decodeSecret(corrupted)).toThrow(IntegrationSecretDecodeError);
+	});
 });
 
 describe("storeSecret (flag-gated encryption-at-rest)", () => {
 	afterEach(() => {
-		process.env.INTEGRATION_SECRET_ENCRYPTION = undefined;
+		delete process.env.INTEGRATION_SECRET_ENCRYPTION;
 	});
 
 	it("stores plaintext when the flag is off (default)", () => {
-		process.env.INTEGRATION_SECRET_ENCRYPTION = undefined;
+		delete process.env.INTEGRATION_SECRET_ENCRYPTION;
 		expect(isIntegrationSecretEncryptionEnabled()).toBe(false);
 		const stored = storeSecret("xoxb-token");
 		expect(stored).toBe("xoxb-token");
@@ -60,7 +66,7 @@ describe("storeSecret (flag-gated encryption-at-rest)", () => {
 	});
 
 	it("encrypts on write when the flag is on", () => {
-		for (const on of ["1", "true", "on"]) {
+		for (const on of ["1", "true", "on", "TRUE", " true ", "On"]) {
 			process.env.INTEGRATION_SECRET_ENCRYPTION = on;
 			expect(isIntegrationSecretEncryptionEnabled()).toBe(true);
 			const stored = storeSecret("xoxb-token");

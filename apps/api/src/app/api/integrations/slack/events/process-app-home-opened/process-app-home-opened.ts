@@ -1,5 +1,6 @@
 import { db } from "@rox/db/client";
 import { integrationConnections, usersSlackUsers } from "@rox/db/schema";
+import { isIntegrationSecretDecodeError } from "@rox/trpc/integration-secret";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { generateConnectUrl } from "../utils/generate-connect-url";
 import { createSlackClient } from "../utils/slack-client";
@@ -50,7 +51,22 @@ export async function processAppHomeOpened({
 		? undefined
 		: generateConnectUrl({ slackUserId: event.user, teamId });
 
-	const slack = createSlackClient(connection.accessToken);
+	let slack: ReturnType<typeof createSlackClient>;
+	try {
+		slack = createSlackClient(connection.accessToken);
+	} catch (error) {
+		if (isIntegrationSecretDecodeError(error)) {
+			console.error(
+				"[slack/process-app-home-opened] Stored Slack token is unreadable",
+				{
+					connectionId: connection.id,
+					teamId,
+				},
+			);
+			return;
+		}
+		throw error;
+	}
 
 	await slack.views.publish({
 		user_id: event.user,

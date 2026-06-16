@@ -21,6 +21,23 @@ import { decryptSecret, encryptSecret } from "../crypto";
 /** Sentinel marking a value produced by `encodeSecret`. */
 export const ENCRYPTED_SECRET_PREFIX = "enc:v1:";
 
+export class IntegrationSecretDecodeError extends Error {
+	constructor(cause: unknown) {
+		super("Failed to decode integration secret");
+		this.name = "IntegrationSecretDecodeError";
+		Object.defineProperty(this, "cause", {
+			value: cause,
+			enumerable: false,
+		});
+	}
+}
+
+export function isIntegrationSecretDecodeError(
+	error: unknown,
+): error is IntegrationSecretDecodeError {
+	return error instanceof IntegrationSecretDecodeError;
+}
+
 /** True when `value` is an encoded secret (vs. legacy plaintext). */
 export function isEncodedSecret(value: string): boolean {
 	return value.startsWith(ENCRYPTED_SECRET_PREFIX);
@@ -42,7 +59,12 @@ export function encodeSecret(plaintext: string): string {
  */
 export function decodeSecret(stored: string): string {
 	if (!isEncodedSecret(stored)) return stored;
-	return decryptSecret(stored.slice(ENCRYPTED_SECRET_PREFIX.length));
+
+	try {
+		return decryptSecret(stored.slice(ENCRYPTED_SECRET_PREFIX.length));
+	} catch (error) {
+		throw new IntegrationSecretDecodeError(error);
+	}
 }
 
 /**
@@ -54,7 +76,7 @@ export function decodeSecret(stored: string): string {
  * both keep decoding).
  */
 export function isIntegrationSecretEncryptionEnabled(): boolean {
-	const flag = process.env.INTEGRATION_SECRET_ENCRYPTION;
+	const flag = process.env.INTEGRATION_SECRET_ENCRYPTION?.trim().toLowerCase();
 	return flag === "1" || flag === "true" || flag === "on";
 }
 

@@ -81,6 +81,7 @@ export async function GET(request: Request) {
 		const config: SlackConfig = {
 			provider: "slack",
 		};
+		const storedAccessToken = storeSecret(tokenData.access_token);
 
 		const [conflict] = await db
 			.select({ email: users.email })
@@ -108,7 +109,7 @@ export async function GET(request: Request) {
 				organizationId,
 				connectedByUserId: userId,
 				provider: "slack",
-				accessToken: storeSecret(tokenData.access_token),
+				accessToken: storedAccessToken,
 				externalOrgId: tokenData.team.id,
 				externalOrgName: tokenData.team.name,
 				config,
@@ -119,7 +120,7 @@ export async function GET(request: Request) {
 					integrationConnections.provider,
 				],
 				set: {
-					accessToken: storeSecret(tokenData.access_token),
+					accessToken: storedAccessToken,
 					externalOrgId: tokenData.team.id,
 					externalOrgName: tokenData.team.name,
 					connectedByUserId: userId,

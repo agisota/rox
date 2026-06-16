@@ -1,6 +1,9 @@
 import { db } from "@rox/db/client";
 import { integrationConnections, usersSlackUsers } from "@rox/db/schema";
-import { decodeSecret } from "@rox/trpc/integration-secret";
+import {
+	decodeSecret,
+	isIntegrationSecretDecodeError,
+} from "@rox/trpc/integration-secret";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
 import { generateConnectUrl } from "../utils/generate-connect-url";
@@ -75,7 +78,24 @@ export async function processSlackMention({
 		return;
 	}
 
-	const slack = createSlackClient(connection.accessToken);
+	let slackToken: string;
+	try {
+		slackToken = decodeSecret(connection.accessToken);
+	} catch (error) {
+		if (isIntegrationSecretDecodeError(error)) {
+			console.error(
+				"[slack/process-mention] Stored Slack token is unreadable",
+				{
+					connectionId: connection.id,
+					teamId,
+				},
+			);
+			return;
+		}
+		throw error;
+	}
+
+	const slack = createSlackClient(slackToken);
 
 	const slackUserLink = event.user
 		? await db.query.usersSlackUsers.findFirst({
@@ -166,7 +186,7 @@ export async function processSlackMention({
 		const imageAssets = await extractSlackImageAssets({
 			eventFiles: event.files,
 			slack,
-			slackToken: decodeSecret(connection.accessToken),
+			slackToken,
 		});
 
 		const resolve = await resolveUserMentions({
@@ -180,7 +200,7 @@ export async function processSlackMention({
 			threadTs,
 			organizationId: connection.organizationId,
 			userId: slackUserLink.userId,
-			slackToken: decodeSecret(connection.accessToken),
+			slackToken,
 			model: slackUserLink.modelPreference ?? undefined,
 			images: imageAssets,
 			onProgress: messageTs
