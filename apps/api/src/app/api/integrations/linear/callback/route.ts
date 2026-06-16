@@ -1,6 +1,7 @@
 import { LinearClient } from "@linear/sdk";
 import { db } from "@rox/db/client";
 import { integrationConnections, members } from "@rox/db/schema";
+import { storeSecret } from "@rox/trpc/integration-secret";
 import { linearTokenResponseSchema } from "@rox/trpc/integrations/linear";
 import { Client } from "@upstash/qstash";
 import { and, eq, sql } from "drizzle-orm";
@@ -101,7 +102,10 @@ export async function GET(request: Request) {
 		const linearOrg = await viewer.organization;
 
 		const tokenExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
-		const refreshToken = tokenData.refresh_token ?? null;
+		const storedAccessToken = storeSecret(tokenData.access_token);
+		const refreshToken = tokenData.refresh_token
+			? storeSecret(tokenData.refresh_token)
+			: null;
 
 		await db
 			.insert(integrationConnections)
@@ -109,7 +113,7 @@ export async function GET(request: Request) {
 				organizationId,
 				connectedByUserId: userId,
 				provider: "linear",
-				accessToken: tokenData.access_token,
+				accessToken: storedAccessToken,
 				refreshToken,
 				tokenExpiresAt,
 				externalOrgId: linearOrg.id,
@@ -129,7 +133,7 @@ export async function GET(request: Request) {
 				// ON CONFLICT specification") and the connect fails at finalize.
 				targetWhere: sql`${integrationConnections.workspaceId} IS NULL`,
 				set: {
-					accessToken: tokenData.access_token,
+					accessToken: storedAccessToken,
 					refreshToken,
 					tokenExpiresAt,
 					disconnectedAt: null,

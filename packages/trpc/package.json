@@ -23,6 +23,10 @@
 		"./crypto": {
 			"types": "./src/lib/crypto.ts",
 			"default": "./src/lib/crypto.ts"
+		},
+		"./integration-secret": {
+			"types": "./src/lib/integrations/secret-store.ts",
+			"default": "./src/lib/integrations/secret-store.ts"
 		}
 	},
 	"scripts": {

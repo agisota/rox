@@ -44,3 +44,26 @@ export function decodeSecret(stored: string): string {
 	if (!isEncodedSecret(stored)) return stored;
 	return decryptSecret(stored.slice(ENCRYPTED_SECRET_PREFIX.length));
 }
+
+/**
+ * Whether encryption-at-rest for integration tokens is switched on. Gated by
+ * the `INTEGRATION_SECRET_ENCRYPTION` env flag (`1` / `true` / `on`), OFF by
+ * default. Reads always go through {@link decodeSecret} regardless of this
+ * flag, so it is safe to enable in production once `SECRETS_ENCRYPTION_KEY` is
+ * present, and safe to disable again (legacy plaintext + already-encrypted rows
+ * both keep decoding).
+ */
+export function isIntegrationSecretEncryptionEnabled(): boolean {
+	const flag = process.env.INTEGRATION_SECRET_ENCRYPTION;
+	return flag === "1" || flag === "true" || flag === "on";
+}
+
+/**
+ * Shape a token for storage. Encrypts via {@link encodeSecret} when encryption
+ * is enabled, otherwise stores the value unchanged. Every write site routes
+ * through this so flipping the flag controls the whole integration token surface
+ * at once; idempotent (re-storing an already-encoded value is a no-op).
+ */
+export function storeSecret(value: string): string {
+	return isIntegrationSecretEncryptionEnabled() ? encodeSecret(value) : value;
+}

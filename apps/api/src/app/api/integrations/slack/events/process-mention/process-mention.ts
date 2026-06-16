@@ -1,5 +1,6 @@
 import { db } from "@rox/db/client";
 import { integrationConnections, usersSlackUsers } from "@rox/db/schema";
+import { decodeSecret } from "@rox/trpc/integration-secret";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
 import { generateConnectUrl } from "../utils/generate-connect-url";
@@ -165,7 +166,7 @@ export async function processSlackMention({
 		const imageAssets = await extractSlackImageAssets({
 			eventFiles: event.files,
 			slack,
-			slackToken: connection.accessToken,
+			slackToken: decodeSecret(connection.accessToken),
 		});
 
 		const resolve = await resolveUserMentions({
@@ -179,7 +180,7 @@ export async function processSlackMention({
 			threadTs,
 			organizationId: connection.organizationId,
 			userId: slackUserLink.userId,
-			slackToken: connection.accessToken,
+			slackToken: decodeSecret(connection.accessToken),
 			model: slackUserLink.modelPreference ?? undefined,
 			images: imageAssets,
 			onProgress: messageTs

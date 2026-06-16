@@ -1,9 +1,11 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { afterEach, beforeAll, describe, expect, it } from "bun:test";
 import {
 	decodeSecret,
 	ENCRYPTED_SECRET_PREFIX,
 	encodeSecret,
 	isEncodedSecret,
+	isIntegrationSecretEncryptionEnabled,
+	storeSecret,
 } from "./secret-store";
 
 beforeAll(() => {
@@ -39,5 +41,38 @@ describe("integration secret-store codec", () => {
 		expect(a).not.toBe(b);
 		expect(decodeSecret(a)).toBe("same");
 		expect(decodeSecret(b)).toBe("same");
+	});
+});
+
+describe("storeSecret (flag-gated encryption-at-rest)", () => {
+	afterEach(() => {
+		process.env.INTEGRATION_SECRET_ENCRYPTION = undefined;
+	});
+
+	it("stores plaintext when the flag is off (default)", () => {
+		process.env.INTEGRATION_SECRET_ENCRYPTION = undefined;
+		expect(isIntegrationSecretEncryptionEnabled()).toBe(false);
+		const stored = storeSecret("xoxb-token");
+		expect(stored).toBe("xoxb-token");
+		expect(isEncodedSecret(stored)).toBe(false);
+		// Reads round-trip regardless (decode passes plaintext through).
+		expect(decodeSecret(stored)).toBe("xoxb-token");
+	});
+
+	it("encrypts on write when the flag is on", () => {
+		for (const on of ["1", "true", "on"]) {
+			process.env.INTEGRATION_SECRET_ENCRYPTION = on;
+			expect(isIntegrationSecretEncryptionEnabled()).toBe(true);
+			const stored = storeSecret("xoxb-token");
+			expect(isEncodedSecret(stored)).toBe(true);
+			expect(stored).not.toContain("xoxb-token");
+			expect(decodeSecret(stored)).toBe("xoxb-token");
+		}
+	});
+
+	it("treats other flag values as off", () => {
+		process.env.INTEGRATION_SECRET_ENCRYPTION = "no";
+		expect(isIntegrationSecretEncryptionEnabled()).toBe(false);
+		expect(isEncodedSecret(storeSecret("tok"))).toBe(false);
 	});
 });

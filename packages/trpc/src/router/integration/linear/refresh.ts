@@ -5,6 +5,10 @@ import { withConnectionLock } from "@rox/db/utils";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../../env";
+import {
+	decodeSecret,
+	storeSecret,
+} from "../../../lib/integrations/secret-store";
 import { REFRESH_BUFFER_MS, REFRESH_TOKEN_TIMEOUT_MS } from "./constants";
 import { getLinearClient, markConnectionDisconnected } from "./utils";
 
@@ -47,7 +51,10 @@ export async function refreshLinearToken(
 			connection.tokenExpiresAt &&
 			connection.tokenExpiresAt.getTime() > Date.now() + REFRESH_BUFFER_MS
 		) {
-			return { disconnected: false, accessToken: connection.accessToken };
+			return {
+				disconnected: false,
+				accessToken: decodeSecret(connection.accessToken),
+			};
 		}
 
 		const controller = new AbortController();
@@ -63,7 +70,7 @@ export async function refreshLinearToken(
 				signal: controller.signal,
 				body: new URLSearchParams({
 					grant_type: "refresh_token",
-					refresh_token: connection.refreshToken,
+					refresh_token: decodeSecret(connection.refreshToken),
 					client_id: env.LINEAR_CLIENT_ID,
 					client_secret: env.LINEAR_CLIENT_SECRET,
 				}),
@@ -97,8 +104,10 @@ export async function refreshLinearToken(
 		await tx
 			.update(integrationConnections)
 			.set({
-				accessToken: data.access_token,
-				refreshToken: data.refresh_token,
+				accessToken: storeSecret(data.access_token),
+				refreshToken: data.refresh_token
+					? storeSecret(data.refresh_token)
+					: data.refresh_token,
 				tokenExpiresAt,
 				disconnectedAt: null,
 				disconnectReason: null,
