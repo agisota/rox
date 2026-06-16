@@ -48,9 +48,11 @@
 	--rox-c-15: #8ad2ff;
 	--rox-c-16: #ffc46b;
 
-	/* SF Pro UI family everywhere — thin, elegant sans (not monospace). The body
-	 * and headings render in SF Pro; only the scramble glyphs stay monospaced
-	 * (--rox-font-scramble) so they don't jitter while resolving. */
+	/* SF Pro UI family everywhere — thin, elegant sans. The founder wants SF Pro
+	 * across the entire experience, including the intro/loading screens and the
+	 * scramble glyphs (no monospace anywhere). --rox-font-scramble now resolves
+	 * to the same thin SF Pro sans stack so the intro text reads as SF Pro even
+	 * while the scramble characters resolve. */
 	--rox-font-display:
 		"SF Pro Display", "SF Pro Text", -apple-system, blinkmacsystemfont,
 		"Helvetica Neue", system-ui, sans-serif;
@@ -58,10 +60,11 @@
 		"SF Pro Text", "SF Pro Display", -apple-system, blinkmacsystemfont,
 		"Helvetica Neue", system-ui, sans-serif;
 	--rox-font-scramble:
-		"SF Mono", "SFMono-Regular", ui-monospace, menlo, monospace;
+		"SF Pro Display", "SF Pro Text", -apple-system, blinkmacsystemfont,
+		"Helvetica Neue", system-ui, sans-serif;
 
 	color: var(--rox-fg-1);
-	font-family: var(--rox-font-mono);
+	font-family: var(--rox-font-display);
 	font-weight: 300;
 }
 
@@ -116,11 +119,12 @@
 	font-weight: 300;
 }
 
-/* Scramble glyphs stay monospaced so resolving text doesn't jitter. */
+/* Intro text renders in thin SF Pro everywhere (no monospace), per founder. */
 .rox-intro__center,
 .rox-intro__flank,
 .rox-intro__feature {
-	font-family: var(--rox-font-scramble);
+	font-family: var(--rox-font-display);
+	font-weight: 300;
 }
 
 .rox-intro__features p {

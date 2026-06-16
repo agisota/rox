@@ -22,7 +22,7 @@ export function Header({ ctaButtons, starCounter }: HeaderProps) {
 				initial={{ opacity: 0, y: -8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3 }}
-				className="flex w-full max-w-3xl items-center justify-between gap-2 rounded-full border border-white/10 bg-background/40 px-4 py-2 shadow-lg backdrop-blur-xl"
+				className="flex w-full max-w-3xl items-center justify-between gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 shadow-lg backdrop-blur-md"
 			>
 				<Link
 					href="/"
