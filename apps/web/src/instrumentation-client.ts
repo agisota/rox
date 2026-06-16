@@ -1,4 +1,5 @@
 import { POSTHOG_COOKIE_NAME } from "@rox/shared/constants";
+import { posthogSessionReplayOptions } from "@rox/shared/posthog-session-replay";
 import * as Sentry from "@sentry/nextjs";
 import posthog from "posthog-js";
 
@@ -15,6 +16,10 @@ posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
 	cross_subdomain_cookie: true,
 	persistence: "cookie",
 	persistence_name: POSTHOG_COOKIE_NAME,
+	// Session replay: OFF unless explicitly enabled; always masks inputs + text.
+	...posthogSessionReplayOptions(
+		env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY === "true",
+	),
 	loaded: (posthog) => {
 		posthog.register({
 			app_name: "web",

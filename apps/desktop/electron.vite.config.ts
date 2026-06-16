@@ -101,6 +101,15 @@ export default defineConfig({
 			"process.env.ROX_WORKSPACE_NAME": defineEnv(
 				process.env.ROX_WORKSPACE_NAME,
 			),
+			// Rox house model ("ROX R1") credentials/endpoint. Inlined at build
+			// time (from CI secrets) into the bundled `host-service` entry so a
+			// Finder-launched .app — whose Electron main process inherits NO shell
+			// env — still ships a usable default key. At runtime an explicit
+			// process.env value (dev / self-host) still wins: the coordinator only
+			// falls back to the inlined value when process.env is empty.
+			"process.env.ROX_AI_API_KEY": defineEnv(process.env.ROX_AI_API_KEY),
+			"process.env.ROX_AI_BASE_URL": defineEnv(process.env.ROX_AI_BASE_URL),
+			"process.env.ROX_AI_MODEL": defineEnv(process.env.ROX_AI_MODEL),
 		},
 
 		build: {

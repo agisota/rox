@@ -8,6 +8,18 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./attribution": {
+			"types": "./src/attribution.ts",
+			"default": "./src/attribution.ts"
+		},
+		"./posthog-session-replay": {
+			"types": "./src/posthog-session-replay.ts",
+			"default": "./src/posthog-session-replay.ts"
+		},
+		"./utm": {
+			"types": "./src/utm.ts",
+			"default": "./src/utm.ts"
+		},
 		"./rox-dirs": {
 			"types": "./src/rox-dirs.ts",
 			"default": "./src/rox-dirs.ts"

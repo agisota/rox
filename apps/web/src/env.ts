@@ -29,6 +29,10 @@ export const env = createEnv({
 		NEXT_PUBLIC_DOCS_URL: z.string().url(),
 		NEXT_PUBLIC_POSTHOG_KEY: z.string(),
 		NEXT_PUBLIC_POSTHOG_HOST: z.string().url(),
+		// Privacy-sensitive: session recording is OFF unless explicitly enabled.
+		NEXT_PUBLIC_POSTHOG_SESSION_REPLAY: z
+			.enum(["true", "false"])
+			.default("false"),
 		NEXT_PUBLIC_SENTRY_DSN_WEB: z.string().optional(),
 		NEXT_PUBLIC_SENTRY_ENVIRONMENT: z
 			.enum(["development", "preview", "production"])
@@ -44,6 +48,8 @@ export const env = createEnv({
 		NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
 		NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
 		NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+		NEXT_PUBLIC_POSTHOG_SESSION_REPLAY:
+			process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY,
 		NEXT_PUBLIC_SENTRY_DSN_WEB: process.env.NEXT_PUBLIC_SENTRY_DSN_WEB,
 		NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
 	},
