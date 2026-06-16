@@ -96,7 +96,7 @@ export async function processAssistantMessage({
 		throw error;
 	}
 
-	const slack = createSlackClient(slackToken);
+	const slack = createSlackClient(connection.accessToken);
 
 	const slackUserLink = event.user
 		? await db.query.usersSlackUsers.findFirst({

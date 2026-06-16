@@ -95,7 +95,7 @@ export async function processSlackMention({
 		throw error;
 	}
 
-	const slack = createSlackClient(slackToken);
+	const slack = createSlackClient(connection.accessToken);
 
 	const slackUserLink = event.user
 		? await db.query.usersSlackUsers.findFirst({
