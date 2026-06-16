@@ -15,12 +15,14 @@ import {
 	parseCookieHeader,
 } from "@rox/shared/attribution";
 import { canInvite, type OrganizationRole } from "@rox/shared/auth";
+import { ANALYTICS_EVENTS } from "@rox/shared/constants";
 import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, customSession, organization } from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { captureAuthEvent } from "./analytics";
 import { env } from "./env";
 import { acceptInvitationEndpoint } from "./lib/accept-invitation-endpoint";
 import { generateMagicTokenForInvite } from "./lib/generate-magic-token";
@@ -181,6 +183,17 @@ export const auth = betterAuth({
 						const attribution = parseAttributionCookieValue(
 							parseCookieHeader(cookieHeader, ATTRIBUTION_COOKIE_NAME),
 						);
+						captureAuthEvent(ANALYTICS_EVENTS.ACCOUNT_CREATED, user.id, {
+							...(attribution?.utm.utmSource
+								? { utm_source: attribution.utm.utmSource }
+								: {}),
+							...(attribution?.utm.utmMedium
+								? { utm_medium: attribution.utm.utmMedium }
+								: {}),
+							...(attribution?.utm.utmCampaign
+								? { utm_campaign: attribution.utm.utmCampaign }
+								: {}),
+						});
 						if (attribution) {
 							await db
 								.insert(userAttribution)
@@ -202,6 +215,16 @@ export const auth = betterAuth({
 							error,
 						);
 					}
+				},
+			},
+		},
+		session: {
+			create: {
+				after: async (session: { userId: string }) => {
+					// signed_in: a new session = an authentication (login or signup).
+					captureAuthEvent(ANALYTICS_EVENTS.SIGNED_IN, session.userId, {
+						method: "github",
+					});
 				},
 			},
 		},
