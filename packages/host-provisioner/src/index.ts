@@ -13,7 +13,9 @@ export {
 export { ModalProvisioner } from "./modal";
 export {
 	type ReapableHost,
+	type ReapOutcome,
 	type ReapPartition,
+	reapExpiredHosts,
 	selectExpiredHosts,
 } from "./reaper";
 export { RoxSelfProvisioner } from "./rox-self";

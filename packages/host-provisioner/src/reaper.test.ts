@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { type ReapableHost, selectExpiredHosts } from "./reaper";
+import {
+	type ReapableHost,
+	reapExpiredHosts,
+	selectExpiredHosts,
+} from "./reaper";
 
 const now = new Date("2026-06-16T12:00:00.000Z");
 
@@ -53,5 +57,65 @@ describe("selectExpiredHosts", () => {
 		);
 		expect(expired).toHaveLength(0);
 		expect(live.map((h) => h.id)).toEqual(["bad"]);
+	});
+});
+
+describe("reapExpiredHosts", () => {
+	const hosts = [
+		host({ id: "expired-1", expiresAt: "2026-06-16T11:00:00.000Z" }),
+		host({ id: "expired-2", expiresAt: "2026-06-16T11:30:00.000Z" }),
+		host({ id: "future", expiresAt: "2026-06-16T13:00:00.000Z" }),
+		host({ id: "persistent", expiresAt: null }),
+	];
+
+	it("is disabled by default: reports candidates but destroys nothing", async () => {
+		const destroyed: string[] = [];
+		const outcome = await reapExpiredHosts({
+			hosts,
+			now,
+			destroy: async (h) => {
+				destroyed.push(h.id);
+			},
+		});
+		expect(outcome.enabled).toBe(false);
+		expect(outcome.expired.sort()).toEqual(["expired-1", "expired-2"]);
+		expect(outcome.reaped).toEqual([]);
+		expect(outcome.failed).toEqual([]);
+		expect(outcome.kept).toBe(2);
+		// The OFF flag means destroy is never invoked.
+		expect(destroyed).toEqual([]);
+	});
+
+	it("destroys exactly the expired hosts when enabled", async () => {
+		const destroyed: string[] = [];
+		const outcome = await reapExpiredHosts({
+			hosts,
+			now,
+			enabled: true,
+			destroy: async (h) => {
+				destroyed.push(h.id);
+			},
+		});
+		expect(outcome.enabled).toBe(true);
+		expect(outcome.reaped.sort()).toEqual(["expired-1", "expired-2"]);
+		expect(outcome.failed).toEqual([]);
+		expect(outcome.kept).toBe(2);
+		expect(destroyed.sort()).toEqual(["expired-1", "expired-2"]);
+	});
+
+	it("continues past a destroy failure and records it", async () => {
+		const outcome = await reapExpiredHosts({
+			hosts,
+			now,
+			enabled: true,
+			destroy: async (h) => {
+				if (h.id === "expired-1") throw new Error("provider 500");
+			},
+		});
+		expect(outcome.reaped).toEqual(["expired-2"]);
+		expect(outcome.failed).toEqual([
+			{ id: "expired-1", error: "provider 500" },
+		]);
+		expect(outcome.kept).toBe(2);
 	});
 });
