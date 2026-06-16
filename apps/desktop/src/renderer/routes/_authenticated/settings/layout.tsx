@@ -206,7 +206,7 @@ function SettingsLayout() {
 								{usesInnerSidebar ? (
 									<Outlet />
 								) : (
-									<div className="mx-auto w-full max-w-6xl">
+									<div className="mx-auto w-full max-w-7xl">
 										<Outlet />
 									</div>
 								)}
@@ -214,7 +214,7 @@ function SettingsLayout() {
 						) : usesInnerSidebar ? (
 							<Outlet />
 						) : (
-							<div className="mx-auto w-full max-w-6xl">
+							<div className="mx-auto w-full max-w-7xl">
 								<Outlet />
 							</div>
 						)}

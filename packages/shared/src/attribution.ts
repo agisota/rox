@@ -101,3 +101,23 @@ export function parseCookieHeader(
 	}
 	return undefined;
 }
+
+/** The production apex the attribution cookie is shared across. */
+const ROX_BASE_DOMAIN = "rox.one";
+
+/**
+ * The `Domain` attribute to scope the attribution cookie to so first-touch set
+ * on the marketing site (`rox.one`) is readable on the app (`app.rox.one`).
+ * Returns `undefined` for anything that isn't `rox.one`/`*.rox.one` (localhost,
+ * IPs, preview/public-suffix hosts) so the cookie stays host-only there — the
+ * browser would reject a `Domain` on those anyway.
+ */
+export function attributionCookieDomain(hostname: string): string | undefined {
+	if (
+		hostname === ROX_BASE_DOMAIN ||
+		hostname.endsWith(`.${ROX_BASE_DOMAIN}`)
+	) {
+		return `.${ROX_BASE_DOMAIN}`;
+	}
+	return undefined;
+}

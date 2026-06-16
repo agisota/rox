@@ -57,6 +57,7 @@ export const SETTING_ITEM_ID = {
 	MODELS_GROQ: "models-groq",
 	MODELS_GOOGLE: "models-google",
 	MODELS_DEEPSEEK: "models-deepseek",
+	MODELS_CUSTOM: "models-custom",
 
 	EXPERIMENTAL_V1_MIGRATION: "experimental-v1-migration",
 	EXPERIMENTAL_RERUN_ONBOARDING: "experimental-rerun-onboarding",
@@ -177,6 +178,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.MODELS_GROQ]: "shared",
 	[SETTING_ITEM_ID.MODELS_GOOGLE]: "shared",
 	[SETTING_ITEM_ID.MODELS_DEEPSEEK]: "shared",
+	[SETTING_ITEM_ID.MODELS_CUSTOM]: "shared",
 
 	[SETTING_ITEM_ID.EXPERIMENTAL_V1_MIGRATION]: "v2",
 	[SETTING_ITEM_ID.EXPERIMENTAL_RERUN_ONBOARDING]: "v2",
@@ -1380,6 +1382,27 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"модели",
 			"ключ api",
 			"авторизация",
+			"подключить",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.MODELS_CUSTOM,
+		section: "models",
+		title: "Свой провайдер",
+		description:
+			"Подключите любой OpenAI-совместимый эндпоинт по Base URL и ключу",
+		keywords: [
+			"models",
+			"custom",
+			"openai compatible",
+			"base url",
+			"api key",
+			"endpoint",
+			"свой провайдер",
+			"кастомный",
+			"совместимый",
+			"модели",
+			"ключ api",
 			"подключить",
 		],
 	},

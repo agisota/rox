@@ -35,13 +35,13 @@ export function MobileNav({ ctaButtons, starCounter }: MobileNavProps) {
 			<AnimatePresence>
 				{isOpen && (
 					<motion.div
-						className="absolute inset-x-0 top-14 border-t border-border bg-background/95 backdrop-blur-sm"
-						initial={{ opacity: 0, height: 0 }}
-						animate={{ opacity: 1, height: "auto" }}
-						exit={{ opacity: 0, height: 0 }}
+						className="fixed left-1/2 top-[4.75rem] z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-background/95 shadow-lg backdrop-blur-xl"
+						initial={{ opacity: 0, y: -8 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -8 }}
 						transition={{ duration: 0.2 }}
 					>
-						<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-6">
+						<div className="flex flex-col gap-6 px-5 py-4">
 							<MobileSection
 								title="Продукт"
 								links={PRODUCT_LINKS}

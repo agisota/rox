@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
 	ATTRIBUTION_COOKIE_NAME,
+	attributionCookieDomain,
 	buildAttributionCookieValue,
 	parseAttributionCookieValue,
 	parseCookieHeader,
@@ -53,5 +54,21 @@ describe("attribution cookie", () => {
 		expect(
 			parseCookieHeader(undefined, ATTRIBUTION_COOKIE_NAME),
 		).toBeUndefined();
+	});
+});
+
+describe("attributionCookieDomain", () => {
+	it("scopes to the shared parent for rox.one and its subdomains", () => {
+		expect(attributionCookieDomain("rox.one")).toBe(".rox.one");
+		expect(attributionCookieDomain("app.rox.one")).toBe(".rox.one");
+		expect(attributionCookieDomain("www.rox.one")).toBe(".rox.one");
+	});
+
+	it("returns undefined for non-rox hosts, localhost, IPs, and look-alikes", () => {
+		expect(attributionCookieDomain("localhost")).toBeUndefined();
+		expect(attributionCookieDomain("127.0.0.1")).toBeUndefined();
+		expect(attributionCookieDomain("rox.one.evil.com")).toBeUndefined();
+		expect(attributionCookieDomain("notrox.one")).toBeUndefined();
+		expect(attributionCookieDomain("preview.vercel.app")).toBeUndefined();
 	});
 });
