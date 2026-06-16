@@ -58,6 +58,17 @@ export const apiKeyProviderApiKeyInput = apiKeyProviderInput.extend({
 	apiKey: z.string().min(1),
 });
 
+export const customProviderDiscoverInput = z.object({
+	baseUrl: z.string().min(1),
+	apiKey: z.string().min(1),
+});
+
+export const customProviderConfigInput = z.object({
+	baseUrl: z.string().min(1),
+	apiKey: z.string().min(1),
+	modelId: z.string().min(1),
+});
+
 function resolveWorkspaceSlashCommand(input: { cwd: string; text: string }) {
 	return resolveSlashCommand(input.cwd, input.text);
 }
@@ -190,6 +201,29 @@ export function createChatServiceRouter(service: ChatService) {
 						providerId: input.providerId,
 					});
 				}),
+			getCustomProviderConfig: t.procedure.query(() => {
+				return service.getCustomProviderConfig();
+			}),
+			discoverCustomProviderModels: t.procedure
+				.input(customProviderDiscoverInput)
+				.mutation(({ input }) => {
+					return service.discoverCustomProviderModels({
+						baseUrl: input.baseUrl,
+						apiKey: input.apiKey,
+					});
+				}),
+			setCustomProviderConfig: t.procedure
+				.input(customProviderConfigInput)
+				.mutation(({ input }) => {
+					return service.setCustomProviderConfig({
+						baseUrl: input.baseUrl,
+						apiKey: input.apiKey,
+						modelId: input.modelId,
+					});
+				}),
+			clearCustomProviderConfig: t.procedure.mutation(() => {
+				return service.clearCustomProviderConfig();
+			}),
 		}),
 	});
 }
