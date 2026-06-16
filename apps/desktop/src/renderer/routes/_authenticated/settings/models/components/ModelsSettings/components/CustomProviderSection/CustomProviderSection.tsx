@@ -90,22 +90,20 @@ export function CustomProviderSection() {
 			toast.error("Укажите Base URL.");
 			return;
 		}
-		// Reuse the saved key when the user hasn't typed a new one, so discovery
-		// works without re-entering the secret.
-		const keyForDiscovery = effectiveApiKey;
-		if (!keyForDiscovery && !hasSavedApiKey) {
+		// Require a key only when none is saved yet. When a key is already stored,
+		// the backend reuses it — the renderer never receives the raw secret, so
+		// re-typing it just to re-list models is unnecessary friction.
+		if (!effectiveApiKey && !hasSavedApiKey) {
 			toast.error("Укажите ключ API.");
-			return;
-		}
-		if (!keyForDiscovery && hasSavedApiKey) {
-			toast.error("Введите ключ API заново, чтобы обнаружить модели.");
 			return;
 		}
 
 		try {
 			const result = await discoverModelsMutation.mutateAsync({
 				baseUrl: trimmedBaseUrl,
-				apiKey: keyForDiscovery,
+				// Omit the key when the field is empty so the backend reuses the
+				// saved one; send the typed value when the user is changing it.
+				...(effectiveApiKey ? { apiKey: effectiveApiKey } : {}),
 			});
 			const ids = result.models.map((model) => model.id);
 			setDiscoveredModels(ids);
@@ -138,17 +136,15 @@ export function CustomProviderSection() {
 			return;
 		}
 		// When the key field is empty but a key is already saved, the user only
-		// changed the model/base URL — there is no way to read the stored secret
-		// back here, so require re-entering it on any save.
-		if (!effectiveApiKey) {
-			toast.error("Введите ключ API заново, чтобы сохранить изменения.");
-			return;
-		}
+		// changed the model/base URL — the backend reuses the stored secret, so we
+		// persist without re-entering it.
 
 		try {
 			await setConfigMutation.mutateAsync({
 				baseUrl: trimmedBaseUrl,
-				apiKey: effectiveApiKey,
+				// Omit the key when the field is empty so the backend keeps the saved
+				// one; send the typed value only when the user changed it.
+				...(effectiveApiKey ? { apiKey: effectiveApiKey } : {}),
 				modelId: trimmedModel,
 			});
 			setApiKey("");

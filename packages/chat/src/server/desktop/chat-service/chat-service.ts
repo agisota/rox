@@ -34,11 +34,12 @@ import {
 	setApiKeyForProvider,
 } from "./auth-storage-utils";
 import {
-	type CustomProviderConfig,
 	clearCustomProviderConfig as clearCustomProviderConfigOnDisk,
 	type DiscoveredModel,
 	discoverCustomProviderModels as discoverCustomProviderModelsFromEndpoint,
 	getCustomProviderConfig as getCustomProviderConfigFromDisk,
+	getStoredCustomProviderApiKey,
+	type SetCustomProviderConfigInput,
 	setCustomProviderConfig as setCustomProviderConfigOnDisk,
 } from "./custom-provider-config";
 import {
@@ -518,8 +519,10 @@ export class ChatService {
 	}
 
 	async setCustomProviderConfig(
-		input: CustomProviderConfig,
+		input: SetCustomProviderConfigInput,
 	): Promise<{ success: true }> {
+		// `apiKey` may be omitted to keep the previously saved key; the disk layer
+		// reuses the stored secret so a model/base-URL-only edit persists cleanly.
 		setCustomProviderConfigOnDisk(input, {
 			configPath: this.customProviderConfigPath,
 		});
@@ -535,11 +538,19 @@ export class ChatService {
 
 	async discoverCustomProviderModels(input: {
 		baseUrl: string;
-		apiKey: string;
+		apiKey?: string;
 	}): Promise<{ models: DiscoveredModel[] }> {
+		// Fall back to the saved key when the renderer sends none, so discovery
+		// works after a reload without forcing the user to re-type the secret.
+		const apiKey =
+			input.apiKey?.trim() ||
+			getStoredCustomProviderApiKey({
+				configPath: this.customProviderConfigPath,
+			}) ||
+			"";
 		const models = await discoverCustomProviderModelsFromEndpoint({
 			baseUrl: input.baseUrl,
-			apiKey: input.apiKey,
+			apiKey,
 		});
 		return { models };
 	}

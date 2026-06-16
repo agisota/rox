@@ -6,6 +6,7 @@ import {
 	clearCustomProviderConfig,
 	discoverCustomProviderModels,
 	getCustomProviderConfig,
+	getStoredCustomProviderApiKey,
 	normalizeCustomProviderBaseUrl,
 	setCustomProviderConfig,
 	stripOpenAIProviderPrefix,
@@ -104,6 +105,78 @@ describe("config persistence", () => {
 		expect(getCustomProviderConfig({ configPath })).not.toBeNull();
 		clearCustomProviderConfig({ configPath });
 		expect(getCustomProviderConfig({ configPath })).toBeNull();
+	});
+});
+
+describe("getStoredCustomProviderApiKey", () => {
+	it("returns null when nothing is persisted", () => {
+		expect(getStoredCustomProviderApiKey({ configPath })).toBeNull();
+	});
+
+	it("returns the saved key", () => {
+		setCustomProviderConfig(
+			{ baseUrl: "https://x.example", apiKey: "sk-stored", modelId: "m" },
+			{ configPath },
+		);
+		expect(getStoredCustomProviderApiKey({ configPath })).toBe("sk-stored");
+	});
+});
+
+describe("setCustomProviderConfig key reuse", () => {
+	it("keeps the saved key when apiKey is omitted on a later save", () => {
+		setCustomProviderConfig(
+			{ baseUrl: "https://x.example", apiKey: "sk-stored", modelId: "m1" },
+			{ configPath },
+		);
+
+		// Re-point at a new model without re-supplying the key.
+		setCustomProviderConfig(
+			{ baseUrl: "https://x.example", modelId: "m2" },
+			{ configPath },
+		);
+
+		expect(getCustomProviderConfig({ configPath })).toEqual({
+			baseUrl: "https://x.example",
+			apiKey: "sk-stored",
+			modelId: "m2",
+		});
+	});
+
+	it("keeps the saved key when apiKey is blank on a later save", () => {
+		setCustomProviderConfig(
+			{ baseUrl: "https://x.example", apiKey: "sk-stored", modelId: "m1" },
+			{ configPath },
+		);
+
+		setCustomProviderConfig(
+			{ baseUrl: "https://x.example", apiKey: "   ", modelId: "m2" },
+			{ configPath },
+		);
+
+		expect(getCustomProviderConfig({ configPath })?.apiKey).toBe("sk-stored");
+	});
+
+	it("overwrites the saved key when a new one is supplied", () => {
+		setCustomProviderConfig(
+			{ baseUrl: "https://x.example", apiKey: "sk-old", modelId: "m1" },
+			{ configPath },
+		);
+
+		setCustomProviderConfig(
+			{ baseUrl: "https://x.example", apiKey: "sk-new", modelId: "m1" },
+			{ configPath },
+		);
+
+		expect(getCustomProviderConfig({ configPath })?.apiKey).toBe("sk-new");
+	});
+
+	it("still rejects a save when no key is stored and none is supplied", () => {
+		expect(() =>
+			setCustomProviderConfig(
+				{ baseUrl: "https://x.example", modelId: "m" },
+				{ configPath },
+			),
+		).toThrow();
 	});
 });
 

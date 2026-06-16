@@ -186,15 +186,43 @@ export function getCustomProviderConfig(
 	};
 }
 
+/**
+ * Read just the persisted API key (or null when nothing is stored). The renderer
+ * never receives the raw key back, so save/discover reuse the stored secret when
+ * the user leaves the key field blank after an earlier save — otherwise editing
+ * only the model or base URL would force re-entering the key on every change,
+ * which makes the saved key feel like it was never remembered.
+ */
+export function getStoredCustomProviderApiKey(
+	options?: CustomProviderConfigDiskOptions,
+): string | null {
+	const persisted = readPersistedCustomProviderConfig(options);
+	if (!persisted) return null;
+	return trimToNull(persisted.apiKey);
+}
+
+export interface SetCustomProviderConfigInput {
+	baseUrl: string;
+	/**
+	 * New API key. Omit (or pass blank) to keep the previously saved key — the
+	 * stored secret is reused for model/base-URL-only edits.
+	 */
+	apiKey?: string;
+	modelId: string;
+}
+
 export function setCustomProviderConfig(
-	input: CustomProviderConfig,
+	input: SetCustomProviderConfigInput,
 	options?: CustomProviderConfigDiskOptions,
 ): CustomProviderConfig {
 	const baseUrl = normalizeCustomProviderBaseUrl(input.baseUrl);
 	if (!baseUrl) {
 		throw new Error("Укажите корректный Base URL (http(s)://…).");
 	}
-	const apiKey = trimToNull(input.apiKey);
+	// Reuse the persisted key when the caller omits one, so an existing provider
+	// can be re-pointed at a new model/base URL without re-entering the secret.
+	const apiKey =
+		trimToNull(input.apiKey) ?? getStoredCustomProviderApiKey(options);
 	if (!apiKey) {
 		throw new Error("Укажите ключ API.");
 	}

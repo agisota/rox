@@ -60,12 +60,16 @@ export const apiKeyProviderApiKeyInput = apiKeyProviderInput.extend({
 
 export const customProviderDiscoverInput = z.object({
 	baseUrl: z.string().min(1),
-	apiKey: z.string().min(1),
+	// Optional: when omitted the service reuses the saved key, so discovery works
+	// after a reload without re-entering the secret.
+	apiKey: z.string().optional(),
 });
 
 export const customProviderConfigInput = z.object({
 	baseUrl: z.string().min(1),
-	apiKey: z.string().min(1),
+	// Optional: when omitted the service keeps the previously saved key, so a
+	// model/base-URL-only edit persists without re-entering the secret.
+	apiKey: z.string().optional(),
 	modelId: z.string().min(1),
 });
 
