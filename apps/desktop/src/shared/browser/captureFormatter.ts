@@ -78,7 +78,9 @@ export function formatCaptureForAgent(
 			? capture.screenshot.path
 				? `Screenshot: ${capture.screenshot.path}`
 				: "Screenshot: (omitted — exceeded size limit)"
-			: `Screenshot: ${filename} (attached)`,
+			: capture.screenshot.data
+				? `Screenshot: ${filename} (attached)`
+				: "Screenshot: (omitted — exceeded size limit)",
 	);
 
 	return {
