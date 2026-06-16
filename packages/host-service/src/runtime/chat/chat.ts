@@ -312,7 +312,8 @@ function buildRoxFallbackState(
 	selectedModel: string | undefined,
 	payload: ChatSendMessageInput["payload"],
 ): RoxFallbackState | null {
-	if (!isRoxHouseModel(selectedModel)) return null;
+	if (selectedModel === undefined || !isRoxHouseModel(selectedModel))
+		return null;
 	const primaryWire = resolveChatWireModelId(selectedModel);
 	const fallbackWireModelId = resolveRoxFallbackWireModelId();
 	if (primaryWire === fallbackWireModelId) return null;
