@@ -10,11 +10,14 @@ import { cn } from "@rox/ui/utils";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { HiMiniPlus, HiOutlineClipboardDocumentList } from "react-icons/hi2";
 import {
+	LuBookmark,
 	LuClock,
 	LuFolderInput,
 	LuFolderPlus,
 	LuLayers,
 	LuLayoutTemplate,
+	LuLibrary,
+	LuMessageCircle,
 	LuPlus,
 } from "react-icons/lu";
 import { GATED_FEATURES, usePaywall } from "renderer/components/Paywall";
@@ -78,6 +81,9 @@ export function DashboardSidebarHeader({
 	const isWorkspacesListOpen = !!matchRoute({ to: "/v2-workspaces" });
 	const isTasksOpen = !!matchRoute({ to: "/tasks", fuzzy: true });
 	const isAutomationsOpen = !!matchRoute({ to: "/automations", fuzzy: true });
+	const isQuickChatOpen = !!matchRoute({ to: "/quick-chat" });
+	const isSkillsLibraryOpen = !!matchRoute({ to: "/skills-library" });
+	const isSavedPromptsOpen = !!matchRoute({ to: "/saved-prompts" });
 
 	const {
 		tab: lastTab,
@@ -108,6 +114,18 @@ export function DashboardSidebarHeader({
 				}),
 			});
 		});
+	};
+
+	const handleQuickChatClick = () => {
+		navigate({ to: "/quick-chat" });
+	};
+
+	const handleSkillsLibraryClick = () => {
+		navigate({ to: "/skills-library" });
+	};
+
+	const handleSavedPromptsClick = () => {
+		navigate({ to: "/saved-prompts" });
 	};
 
 	if (isCollapsed) {
@@ -167,6 +185,60 @@ export function DashboardSidebarHeader({
 						</button>
 					</TooltipTrigger>
 					<TooltipContent side="right">Задачи и PR</TooltipContent>
+				</Tooltip>
+
+				<Tooltip delayDuration={300}>
+					<TooltipTrigger asChild>
+						<button
+							type="button"
+							onClick={handleQuickChatClick}
+							className={cn(
+								"flex size-8 items-center justify-center rounded-md transition-colors",
+								isQuickChatOpen
+									? "bg-accent text-foreground"
+									: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+							)}
+						>
+							<LuMessageCircle className="size-4" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="right">Быстрый чат</TooltipContent>
+				</Tooltip>
+
+				<Tooltip delayDuration={300}>
+					<TooltipTrigger asChild>
+						<button
+							type="button"
+							onClick={handleSkillsLibraryClick}
+							className={cn(
+								"flex size-8 items-center justify-center rounded-md transition-colors",
+								isSkillsLibraryOpen
+									? "bg-accent text-foreground"
+									: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+							)}
+						>
+							<LuLibrary className="size-4" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="right">Библиотека скиллов</TooltipContent>
+				</Tooltip>
+
+				<Tooltip delayDuration={300}>
+					<TooltipTrigger asChild>
+						<button
+							type="button"
+							onClick={handleSavedPromptsClick}
+							className={cn(
+								"flex size-8 items-center justify-center rounded-md transition-colors",
+								isSavedPromptsOpen
+									? "bg-accent text-foreground"
+									: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+							)}
+						>
+							<LuBookmark className="size-4" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent side="right">Сохранённые промпты</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
@@ -276,6 +348,48 @@ export function DashboardSidebarHeader({
 			>
 				<HiOutlineClipboardDocumentList className="size-4 shrink-0" />
 				<span className="flex-1 text-left">Задачи и PR</span>
+			</button>
+
+			<button
+				type="button"
+				onClick={handleQuickChatClick}
+				className={cn(
+					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+					isQuickChatOpen
+						? "bg-accent text-foreground"
+						: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+				)}
+			>
+				<LuMessageCircle className="size-4 shrink-0" />
+				<span className="flex-1 text-left">Быстрый чат</span>
+			</button>
+
+			<button
+				type="button"
+				onClick={handleSkillsLibraryClick}
+				className={cn(
+					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+					isSkillsLibraryOpen
+						? "bg-accent text-foreground"
+						: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+				)}
+			>
+				<LuLibrary className="size-4 shrink-0" />
+				<span className="flex-1 text-left">Библиотека скиллов</span>
+			</button>
+
+			<button
+				type="button"
+				onClick={handleSavedPromptsClick}
+				className={cn(
+					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+					isSavedPromptsOpen
+						? "bg-accent text-foreground"
+						: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+				)}
+			>
+				<LuBookmark className="size-4 shrink-0" />
+				<span className="flex-1 text-left">Сохранённые промпты</span>
 			</button>
 
 			<div className="flex items-center gap-0">

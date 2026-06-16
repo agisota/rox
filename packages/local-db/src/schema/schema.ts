@@ -449,6 +449,32 @@ export const browserHistory = sqliteTable(
 export type InsertBrowserHistory = typeof browserHistory.$inferInsert;
 export type SelectBrowserHistory = typeof browserHistory.$inferSelect;
 
+/**
+ * Saved prompts table - reusable prompt snippets the user authors locally and
+ * can copy back into a chat composer. Purely local (never synced); the
+ * "Сохранённые промпты" sidebar view is the only writer/reader.
+ */
+export const savedPrompts = sqliteTable(
+	"saved_prompts",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => uuidv4()),
+		title: text("title").notNull(),
+		body: text("body").notNull(),
+		createdAt: integer("created_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		updatedAt: integer("updated_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+	},
+	(table) => [index("saved_prompts_updated_at_idx").on(table.updatedAt)],
+);
+
+export type InsertSavedPrompt = typeof savedPrompts.$inferInsert;
+export type SelectSavedPrompt = typeof savedPrompts.$inferSelect;
+
 // ===========================================================================
 // Automation Fabric — Electric-synced read models
 //
