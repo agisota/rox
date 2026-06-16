@@ -85,11 +85,95 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 		presetIds: ["deep-wiki", "cold-graph", "understand-anything"],
 	},
 	{
+		id: "code-intelligence-lite",
+		label: "Code intelligence lite",
+		description:
+			"Generate the deep wiki and symbol/doc index without precomputing the full cold graph.",
+		presetIds: ["deep-wiki", "understand-anything"],
+	},
+	{
+		id: "cold-graph-only",
+		label: "Cold graph only",
+		description:
+			"Precompute only the dependency graph for faster structural navigation.",
+		presetIds: ["cold-graph"],
+	},
+	{
 		id: "open-source-baseline",
 		label: "Open-source baseline",
 		description:
 			"Lay down the files an open-source repo expects: README, MIT LICENSE, .gitignore, and .editorconfig.",
 		presetIds: ["readme", "license-mit", "gitignore", "editorconfig"],
+	},
+	{
+		id: "minimal-readme-gitignore",
+		label: "Minimal README + gitignore",
+		description:
+			"Add only a starter README and .gitignore for a small local project.",
+		presetIds: ["readme", "gitignore"],
+	},
+	{
+		id: "formatting-baseline",
+		label: "Formatting baseline",
+		description:
+			"Add .editorconfig and .gitignore so common local artifacts stay out of git.",
+		presetIds: ["editorconfig", "gitignore"],
+	},
+	{
+		id: "agent-planning-kit",
+		label: "Agent planning kit",
+		description:
+			"Combine AGENTS.md with todo/spec/planner templates for agent-led implementation.",
+		presetIds: ["agents-md", "todo-md", "spec-md", "planner-md"],
+	},
+	{
+		id: "memory-backed-agent-kit",
+		label: "Memory-backed agent kit",
+		description:
+			"Scaffold AGENTS.md plus the .memory directory used for persistent project context.",
+		presetIds: ["agents-md", "memory-folder"],
+	},
+	{
+		id: "rox-config-baseline",
+		label: "Rox config baseline",
+		description:
+			"Create the rox/ config directory and a .gitignore that keeps local overlays private.",
+		presetIds: ["rox-folder", "gitignore"],
+	},
+	{
+		id: "ci-release-baseline",
+		label: "CI release baseline",
+		description:
+			"Add deploy-on-main workflow files with README, LICENSE, and .gitignore placeholders.",
+		presetIds: ["ci-cd-deploy-on-commit", "readme", "license-mit", "gitignore"],
+	},
+	{
+		id: "docs-first-bootstrap",
+		label: "Docs-first bootstrap",
+		description:
+			"Start with README, spec, and planner templates before adding code.",
+		presetIds: ["readme", "spec-md", "planner-md"],
+	},
+	{
+		id: "github-private-starter",
+		label: "GitHub private starter",
+		description:
+			"Initialize git, create a private GitHub repo, and add README/.gitignore scaffolds.",
+		presetIds: ["git-init", "github-repo-create", "readme", "gitignore"],
+	},
+	{
+		id: "task-tracker-lite",
+		label: "Task tracker lite",
+		description:
+			"Add todo.md and planner.md without the heavier spec template.",
+		presetIds: ["todo-md", "planner-md"],
+	},
+	{
+		id: "spec-review-kit",
+		label: "Spec review kit",
+		description:
+			"Add AGENTS.md, spec.md, and README.md so reviewers have context and requirements.",
+		presetIds: ["agents-md", "spec-md", "readme"],
 	},
 	{
 		id: "everything",
