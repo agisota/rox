@@ -17,6 +17,7 @@ let accessGrantsFindManyResults: unknown[][] = [];
 let artifactsFindFirstResults: unknown[] = [];
 let chatSessionsFindFirstResults: unknown[] = [];
 let publicSharesFindFirstResults: unknown[] = [];
+let publicSharesFindManyResults: unknown[][] = [];
 let txInsertReturningResults: unknown[][] = [];
 let txDeleteReturningResults: unknown[][] = [];
 let txUpdateReturningResults: unknown[][] = [];
@@ -32,6 +33,9 @@ const chatSessionsFindFirst = mock(
 );
 const publicSharesFindFirst = mock(
 	async () => publicSharesFindFirstResults.shift() ?? null,
+);
+const publicSharesFindMany = mock(
+	async () => publicSharesFindManyResults.shift() ?? [],
 );
 
 const txInsertReturning = mock(
@@ -67,7 +71,10 @@ mock.module("@rox/db/client", () => ({
 			artifacts: { findFirst: artifactsFindFirst },
 			chatSessions: { findFirst: chatSessionsFindFirst },
 			members: { findFirst: mock(async () => null) },
-			publicShares: { findFirst: publicSharesFindFirst },
+			publicShares: {
+				findFirst: publicSharesFindFirst,
+				findMany: publicSharesFindMany,
+			},
 		},
 	},
 	dbWs: {
@@ -189,6 +196,7 @@ beforeEach(() => {
 	artifactsFindFirstResults = [];
 	chatSessionsFindFirstResults = [];
 	publicSharesFindFirstResults = [];
+	publicSharesFindManyResults = [];
 	txInsertReturningResults = [];
 	txDeleteReturningResults = [];
 	txUpdateReturningResults = [];
@@ -197,6 +205,7 @@ beforeEach(() => {
 	artifactsFindFirst.mockClear();
 	chatSessionsFindFirst.mockClear();
 	publicSharesFindFirst.mockClear();
+	publicSharesFindMany.mockClear();
 	txInsert.mockClear();
 	txInsertValues.mockClear();
 	txInsertOnConflict.mockClear();
@@ -287,6 +296,48 @@ describe("share.list", () => {
 
 		expect(result).toEqual(rows);
 		expect(accessGrantsFindMany).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("share.listPublic", () => {
+	it("returns active public shares with public URLs for org admins", async () => {
+		publicSharesFindManyResults.push([
+			{
+				id: SHARE_ID,
+				organizationId: ORG_ID,
+				resourceType: "chat_session",
+				resourceId: RESOURCE_ID,
+				slug: SHARE_SLUG,
+				title: "Build log",
+				payload: {},
+				createdByUserId: GRANTEE_ID,
+				createdAt: new Date("2026-06-15T10:00:00.000Z"),
+				revokedAt: null,
+			},
+		]);
+		const caller = createCaller(authedContext());
+
+		const result = await caller.share.listPublic({
+			resourceType: "chat_session",
+		});
+
+		expect(result).toEqual([
+			{
+				id: SHARE_ID,
+				organizationId: ORG_ID,
+				resourceType: "chat_session",
+				resourceId: RESOURCE_ID,
+				slug: SHARE_SLUG,
+				title: "Build log",
+				payload: {},
+				createdByUserId: GRANTEE_ID,
+				createdAt: new Date("2026-06-15T10:00:00.000Z"),
+				revokedAt: null,
+				url: `https://app.rox.one/s/${SHARE_SLUG}`,
+			},
+		]);
+		expect(verifyOrgAdminMock).toHaveBeenCalledTimes(1);
+		expect(publicSharesFindMany).toHaveBeenCalledTimes(1);
 	});
 });
 
@@ -385,5 +436,18 @@ describe("share.publishArtifact", () => {
 				artifactId: RESOURCE_ID,
 			}),
 		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+});
+
+describe("share.revokePublic", () => {
+	it("allows org admins to revoke another creator's public share and returns txid", async () => {
+		txUpdateReturningResults.push([{ id: SHARE_ID }]);
+		const caller = createCaller(authedContext());
+
+		const result = await caller.share.revokePublic({ id: SHARE_ID });
+
+		expect(result).toEqual({ success: true, txid: 123 });
+		expect(verifyOrgAdminMock).toHaveBeenCalledTimes(1);
+		expect(txUpdateWhere).toHaveBeenCalledTimes(1);
 	});
 });
