@@ -6,6 +6,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
+import { parsePromptImport } from "./prompt-import";
 
 const categorySchema = z.enum(memoryCategoryValues);
 const idInput = z.object({ id: z.string().uuid() });
@@ -153,6 +154,49 @@ export const memoryRouter = {
 			return row;
 		});
 	}),
+
+	/**
+	 * Import memories pasted from another assistant's export-prompt dump. Parses
+	 * the five export categories into Rox groups and inserts them as suggested
+	 * (source=prompt), skipping bodies the user already has in that category.
+	 */
+	submitPromptImport: protectedProcedure
+		.input(z.object({ text: z.string().trim().min(1).max(100_000) }))
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const parsed = parsePromptImport(input.text);
+			if (parsed.length === 0) return { imported: 0 };
+
+			const existing = await db
+				.select({ body: memoryItems.body, category: memoryItems.category })
+				.from(memoryItems)
+				.where(
+					and(
+						eq(memoryItems.organizationId, organizationId),
+						eq(memoryItems.createdBy, ctx.session.user.id),
+					),
+				);
+			const seen = new Set(
+				existing.map((e) => `${e.category}::${e.body.trim().toLowerCase()}`),
+			);
+			const fresh = parsed.filter(
+				(p) => !seen.has(`${p.category}::${p.body.trim().toLowerCase()}`),
+			);
+			if (fresh.length === 0) return { imported: 0 };
+
+			await db.insert(memoryItems).values(
+				fresh.map((p) => ({
+					organizationId,
+					createdBy: ctx.session.user.id,
+					category: p.category,
+					body: p.body,
+					source: "prompt" as const,
+					status: "suggested" as const,
+					sourceRef: { importedAt: new Date().toISOString() },
+				})),
+			);
+			return { imported: fresh.length };
+		}),
 } satisfies TRPCRouterRecord;
 
 function ownItem(organizationId: string, userId: string, id: string) {
