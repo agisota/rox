@@ -653,7 +653,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.APPEARANCE_GLASS,
 		section: "appearance",
-		title: "Стеклянные поверхности",
+		title: "Остекление",
 		description: "Полупрозрачные панели и эффект размытия окна",
 		keywords: [
 			"appearance",
@@ -667,9 +667,12 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"frosted",
 			"внешний вид",
 			"оформление",
+			"остекление",
 			"стекло",
+			"стеклянные поверхности",
 			"размытие",
 			"прозрачность",
+			"прозрачный дизайн",
 			"полупрозрачность",
 			"непрозрачность",
 			"акрил",
