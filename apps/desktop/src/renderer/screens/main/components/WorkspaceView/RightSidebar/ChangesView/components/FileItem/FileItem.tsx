@@ -168,10 +168,10 @@ export function FileItem({
 	};
 
 	const isDeleteAction = file.status === "untracked" || file.status === "added";
-	const discardLabel = isDeleteAction ? "Delete" : "Discard";
+	const discardLabel = isDeleteAction ? "Удалить" : "Отменить";
 	const discardDialogTitle = isDeleteAction
-		? `Delete "${fileName}"?`
-		: `Discard changes to "${fileName}"?`;
+		? `Удалить «${fileName}»?`
+		: `Отменить изменения в «${fileName}»?`;
 	const discardDialogDescription = isDeleteAction
 		? "This will permanently delete this file. This action cannot be undone."
 		: "This will revert all changes to this file. This action cannot be undone.";

@@ -6,11 +6,11 @@ import { motionSpring } from "./tokens";
 import { useShouldAnimate } from "./useMotionPreference";
 
 const SEGMENTS: { value: ThinkingLevel; label: string }[] = [
-	{ value: "off", label: "Off" },
-	{ value: "low", label: "Low" },
-	{ value: "medium", label: "Medium" },
-	{ value: "high", label: "High" },
-	{ value: "xhigh", label: "Max" },
+	{ value: "off", label: "Выкл" },
+	{ value: "low", label: "Низкий" },
+	{ value: "medium", label: "Средний" },
+	{ value: "high", label: "Высокий" },
+	{ value: "xhigh", label: "Макс" },
 ];
 
 export function ReasoningLevelSlider({

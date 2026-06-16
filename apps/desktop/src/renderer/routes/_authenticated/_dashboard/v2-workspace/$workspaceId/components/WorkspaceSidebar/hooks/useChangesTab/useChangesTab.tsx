@@ -215,7 +215,7 @@ export function useChangesTab({
 
 	return {
 		id: "changes",
-		label: "Changes",
+		label: "Изменения",
 		badge: totalChanges > 0 ? totalChanges : undefined,
 		actions,
 		content,

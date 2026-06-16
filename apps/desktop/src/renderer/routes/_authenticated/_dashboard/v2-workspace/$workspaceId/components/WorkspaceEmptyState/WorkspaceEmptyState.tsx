@@ -69,28 +69,28 @@ export function WorkspaceEmptyState({
 		() => [
 			{
 				id: "terminal",
-				label: "Open Terminal",
+				label: "Открыть терминал",
 				display: newGroupDisplay,
 				icon: BsTerminalPlus,
 				onClick: onOpenTerminal,
 			},
 			{
 				id: "chat",
-				label: "Open Chat",
+				label: "Открыть чат",
 				display: newChatDisplay,
 				icon: TbMessageCirclePlus,
 				onClick: onOpenChat,
 			},
 			{
 				id: "browser",
-				label: "Open Browser",
+				label: "Открыть браузер",
 				display: newBrowserDisplay,
 				icon: TbWorld,
 				onClick: onOpenBrowser,
 			},
 			{
 				id: "search-files",
-				label: "Search Files",
+				label: "Поиск файлов",
 				display: quickOpenDisplay,
 				icon: LuSearch,
 				onClick: onOpenQuickOpen,

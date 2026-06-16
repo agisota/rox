@@ -18,6 +18,10 @@ import {
 	requireActiveOrgId,
 	requireActiveOrgMembership,
 } from "../utils/active-org";
+import {
+	buildSelfManagedHostValues,
+	SELF_MANAGED_HOST_PROTOCOLS,
+} from "./self-managed";
 
 // Managed (provider-backed) hosts the provision procedure can create. `self`
 // is intentionally excluded: it now has a provisioner adapter
@@ -527,6 +531,83 @@ export const v2HostRouter = {
 				await provisioner.destroy(provisioned.id).catch(() => {});
 				throw err;
 			}
+		}),
+
+	/**
+	 * Register a user-managed remote host or sandbox endpoint. This is the
+	 * no-spend "add server" path: it records connection metadata for a host the
+	 * user already controls and never calls a live provisioner.
+	 */
+	addServer: protectedProcedure
+		.input(
+			z.object({
+				name: z
+					.string()
+					.max(120)
+					.transform((value) => value.trim())
+					.pipe(z.string().min(1, "Host name cannot be empty")),
+				host: z
+					.string()
+					.max(255)
+					.transform((value) => value.trim())
+					.pipe(z.string().min(1, "Host cannot be empty")),
+				port: z.number().int().min(1).max(65_535),
+				protocol: z.enum(SELF_MANAGED_HOST_PROTOCOLS),
+				kind: z.enum(v2ManagedHostKindValues),
+				ttlMs: z.number().int().positive().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const hostValues = buildSelfManagedHostValues(input);
+
+			const result = await dbWs.transaction(async (tx) => {
+				const [host] = await tx
+					.insert(v2Hosts)
+					.values({
+						organizationId,
+						machineId: hostValues.machineId,
+						name: hostValues.name,
+						kind: hostValues.kind,
+						provider: hostValues.provider,
+						port: hostValues.port,
+						protocol: hostValues.protocol,
+						expiresAt: hostValues.expiresAt,
+						createdByUserId: ctx.session.user.id,
+					})
+					.onConflictDoNothing({
+						target: [v2Hosts.organizationId, v2Hosts.machineId],
+					})
+					.returning();
+
+				if (!host) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "A host with this hostname already exists",
+					});
+				}
+
+				await tx
+					.insert(v2UsersHosts)
+					.values({
+						organizationId,
+						userId: ctx.session.user.id,
+						hostId: host.machineId,
+						role: "owner",
+					})
+					.onConflictDoNothing({
+						target: [
+							v2UsersHosts.organizationId,
+							v2UsersHosts.userId,
+							v2UsersHosts.hostId,
+						],
+					});
+
+				const txid = await getCurrentTxid(tx);
+				return { host, txid };
+			});
+
+			return { ...result.host, txid: result.txid };
 		}),
 
 	/**
