@@ -411,6 +411,7 @@ export function PresetEditorDialog({
 											{liveCommands.length > 0 ? (
 												liveCommands.map((command, index) => (
 													<div
+														// biome-ignore lint/suspicious/noArrayIndexKey: stable order, duplicates allowed
 														key={index}
 														className="break-all whitespace-pre-wrap text-foreground"
 													>
