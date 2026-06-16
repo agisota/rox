@@ -44,6 +44,13 @@ export interface PreinstallCatalogItem {
 	updateStrategy: AgentUpdateStrategy;
 	/** Exact version installed when `updateStrategy` is `"pinned"`. */
 	pinnedVersion?: string;
+	audit?: {
+		source: string;
+		license: string;
+		sizeRisk: string;
+		terminalPresetStrategy: string;
+		notes: string;
+	};
 }
 
 /**
@@ -68,6 +75,7 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 				optional: install.optional ?? false,
 				updateStrategy: install.updateStrategy ?? "latest",
 				pinnedVersion: install.pinnedVersion,
+				audit: undefined,
 			};
 		});
 
@@ -84,6 +92,7 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 			})),
 			optional: harness.optional ?? harness.install.length === 0,
 			updateStrategy: "latest" as const,
+			audit: harness.audit,
 		}),
 	);
 

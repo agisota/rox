@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
 	AGENT_HARNESS_PRESETS,
 	getHarnessPresetById,
+	getHarnessTerminalPresetBaseAgentIds,
 	getInstallableHarnessPresets,
 	harnessBaseAgentsAreValid,
 } from "./agent-harness-presets";
@@ -23,6 +24,29 @@ describe("agent-harness-presets", () => {
 				expect(preset.optional).toBe(true);
 			}
 		}
+	});
+
+	it("ships audit receipts for every harness", () => {
+		for (const preset of AGENT_HARNESS_PRESETS) {
+			expect(["npm", "manual", "unknown"]).toContain(preset.audit.source);
+			expect(preset.audit.license.length).toBeGreaterThan(0);
+			expect(["low", "medium", "unknown"]).toContain(preset.audit.sizeRisk);
+			expect(["base-agent", "unsupported"]).toContain(
+				preset.audit.terminalPresetStrategy,
+			);
+			expect(preset.audit.notes.length).toBeGreaterThan(0);
+		}
+	});
+
+	it("documents terminal preset support through base agents for target harnesses", () => {
+		expect(getHarnessTerminalPresetBaseAgentIds()).toMatchObject({
+			"oh-my-claudecode": "claude",
+			"oh-my-codex": "codex",
+			"oh-my-openagent": "opencode",
+			hermes: "claude",
+			openclaw: "claude",
+			ouroboros: "codex",
+		});
 	});
 
 	it("returns only non-optional, installable harnesses from the helper", () => {

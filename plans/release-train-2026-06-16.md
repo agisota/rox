@@ -57,3 +57,45 @@
 - #34/#35 remain gated until billing interfaces stabilize.
 - This lane did not run full `bun test` or `bun run build`; those are reserved for the final integration train gate after all lane PRs settle.
 - Local DB migrations were applied only to the per-worktree Docker database. No production database or remote deployment was touched.
+
+## #28 T-AGENTS Lane Receipt
+
+### Current State
+
+- Worktree: `.worktrees/issue-28-agents`
+- Branch: `issue/28-agents`
+- Base: `origin/main` at `b8b42aa15`
+- Scope state: Rox already had built-in terminal-agent config rows, a v2 Terminal Preset quick-add picker that links presets to host agent config ids, optional harness catalog entries for `oh-my-*`, `hermes`, `openclaw`, and `ouroboros`, and a host-service preinstall catalog built from shared agent/harness definitions.
+- Gap state: the harness catalog had no typed release receipt for installer source, license/size risk, or Terminal Preset support strategy, so the preinstall catalog could not prove which harnesses were installable, optional, or only supported through their base agent preset.
+
+### Target State
+
+- The #28 lane should materially close the catalog/receipt part of T-AGENTS without pretending the full XL epic is complete.
+- Harnesses must carry auditable metadata for installer source, license, size risk, and Terminal Preset support strategy.
+- The host-service preinstall catalog must preserve that metadata for CLI/runtime receipt consumers.
+- Built-in Rox chat must remain separate from terminal-only harness/preset handling.
+
+### Gap / Transformation
+
+- Added `HarnessAuditReceipt` to `packages/shared/src/agent-harness-presets.ts`.
+- Marked `oh-my-claudecode` and `oh-my-codex` as MIT npm harnesses with known size risk from the local package manifests.
+- Marked `oh-my-openagent`, `hermes`, `openclaw`, and `ouroboros` as optional/unknown installer surfaces whose current Terminal Preset support is through their base agents (`opencode`, `claude`, `claude`, `codex`).
+- Added `getHarnessTerminalPresetBaseAgentIds()` so the base-agent Terminal Preset strategy is programmatically checkable.
+- Propagated harness audit receipts into `PreinstallCatalogItem.audit` in `packages/host-service/src/runtime/agent-preinstall/install-plan.ts`.
+
+### Verification Proof
+
+- `bun install`: passed; restored workspace package aliases and native Electron modules in this clean worktree.
+- `bun test packages/shared/src/agent-harness-presets.test.ts`: passed, 8 tests, 64 expects.
+- `bun test src/runtime/agent-preinstall/install-plan.test.ts src/trpc/router/settings/agent-configs.test.ts` from `packages/host-service`: passed, 41 tests, 349 expects.
+- `bun test apps/desktop/src/renderer/routes/_authenticated/components/AgentHooks/hooks/useDefaultV2TerminalPresets/default-v2-terminal-presets.test.ts apps/desktop/src/renderer/lib/agent-launch-command.test.ts packages/shared/src/agent-settings.test.ts`: passed, 26 tests, 72 expects.
+- `bun run typecheck` from `packages/shared`: passed.
+- `bun run typecheck` from `packages/host-service`: passed.
+- `bun run lint` from repo root: passed, 5045 files, no fixes.
+
+### Remaining Blockers
+
+- This PR does not honestly close all of #28. It closes the catalog receipt/audit subset and preserves the existing per-agent Terminal Preset picker contract.
+- Full installer size verification for `oh-my-openagent`, `hermes`, `openclaw`, and `ouroboros` is still blocked by missing verified upstream install/package metadata in this branch; they remain optional with `unknown` license/size risk.
+- This PR does not add a new UI flow for multiple harness presets on the same base agent, because the current v2 preset architecture links one preset row to one host agent config id and already resolves live commands through that link.
+- Full release-train gate still needs broader final integration checks after #27/#29/#30/#32 settle.

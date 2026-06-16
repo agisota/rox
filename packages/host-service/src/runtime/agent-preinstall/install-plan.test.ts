@@ -86,6 +86,27 @@ describe("buildPreinstallCatalog", () => {
 				templateRef: "open-dynamic-workflows-omp",
 			},
 		]);
+		expect(item?.audit).toMatchObject({
+			terminalPresetStrategy: "base-agent",
+		});
+	});
+
+	it("carries harness audit receipts into the installer catalog", () => {
+		for (const presetId of [
+			"oh-my-claudecode",
+			"oh-my-codex",
+			"oh-my-openagent",
+			"hermes",
+			"openclaw",
+			"ouroboros",
+		]) {
+			const item = byId(presetId);
+			expect(item).toBeDefined();
+			expect(item?.kind).toBe("harness");
+			expect(item?.audit?.license.length ?? 0).toBeGreaterThan(0);
+			expect(item?.audit?.notes.length ?? 0).toBeGreaterThan(0);
+			expect(item?.audit?.terminalPresetStrategy).toBe("base-agent");
+		}
 	});
 
 	it("requires a pinnedVersion exactly when updateStrategy is pinned", () => {
