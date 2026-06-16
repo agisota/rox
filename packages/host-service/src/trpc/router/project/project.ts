@@ -395,6 +395,7 @@ export const projectRouter = router({
 		.input(
 			z.object({
 				name: z.string().min(1),
+				starterPresetIds: z.array(z.string().min(1)).optional(),
 				mode: z.discriminatedUnion("kind", [
 					z.object({
 						kind: z.literal("empty"),
@@ -432,24 +433,28 @@ export const projectRouter = router({
 					return createFromEmpty(ctx, {
 						name: input.name,
 						parentDir: input.mode.parentDir,
+						starterPresetIds: input.starterPresetIds,
 					});
 				case "template":
 					return createFromTemplate(ctx, {
 						name: input.name,
 						parentDir: input.mode.parentDir,
 						url: input.mode.url,
+						starterPresetIds: input.starterPresetIds,
 					});
 				case "clone":
 					return createFromClone(ctx, {
 						name: input.name,
 						parentDir: input.mode.parentDir,
 						url: input.mode.url,
+						starterPresetIds: input.starterPresetIds,
 					});
 				case "importLocal":
 					return createFromImportLocal(ctx, {
 						name: input.name,
 						repoPath: input.mode.repoPath,
 						initIfNeeded: input.mode.initIfNeeded,
+						starterPresetIds: input.starterPresetIds,
 					});
 			}
 		}),
