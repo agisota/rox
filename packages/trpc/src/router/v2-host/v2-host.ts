@@ -37,6 +37,28 @@ const PROVIDER_LABELS: Record<ProvisionProvider, string> = {
 	self: "Сервер Rox (удалённый)",
 };
 
+// Reject whitespace and ASCII control chars (0x00-0x1f, 0x7f); real API tokens
+// use none. Checked via char codes so no control chars appear in a regex.
+function isPrintableToken(value: string): boolean {
+	for (const char of value) {
+		const code = char.charCodeAt(0);
+		if (code <= 0x1f || code === 0x7f) return false;
+	}
+	return !/\s/.test(value);
+}
+
+// Shape guard for a per-request provider credential. Intentionally generic
+// (provider key formats differ and drift) — reject only obviously-invalid
+// values: empty/oversized, or containing whitespace/control characters that no
+// real API token uses. The trimmed value is passed straight to the provisioner
+// factory and never logged.
+const providerApiKeySchema = z
+	.string()
+	.trim()
+	.min(8, "Provider API key looks too short")
+	.max(512, "Provider API key looks too long")
+	.refine(isPrintableToken, "Provider API key contains invalid characters");
+
 async function requireHostOwner(
 	userId: string,
 	machineId: string,
@@ -396,6 +418,12 @@ export const v2HostRouter = {
 				provider: z.enum(MANAGED_PROVIDERS),
 				region: z.string().min(1).max(64).optional(),
 				ttlMs: z.number().int().positive().optional(),
+				// Per-request provider credential supplied by the client (e.g. the
+				// desktop Add Host dialog persists keys in local storage). When
+				// present it overrides the server env key, so a user can provision
+				// with only a locally-saved key. Shape-validated, never logged. Falls
+				// back to the server env credential when omitted.
+				providerApiKey: providerApiKeySchema.optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -407,12 +435,16 @@ export const v2HostRouter = {
 
 			let provisioner: ReturnType<typeof getHostProvisioner>;
 			try {
-				provisioner = getHostProvisioner(input.provider);
+				// Prefer the caller-supplied key (locally-saved provider credential),
+				// falling back to the server env credential inside the factory.
+				provisioner = getHostProvisioner(input.provider, {
+					apiKey: input.providerApiKey,
+				});
 			} catch (err) {
 				if (err instanceof MissingProvisionerCredentialsError) {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
-						message: `Provider "${input.provider}" is not configured on this server.`,
+						message: `Provider "${input.provider}" is not configured on this server. Save its API key in the Add Host dialog or set it on the server.`,
 					});
 				}
 				throw err;

@@ -44,6 +44,15 @@ describe("getHostProvisioner", () => {
 		expect(getHostProvisioner("e2b")).toBeInstanceOf(E2BProvisioner);
 	});
 
+	it("prefers an explicit api key over the env credential", () => {
+		// A per-request (locally-saved) key must override the server env key so a
+		// user can provision with their own credential.
+		process.env.DAYTONA_API_KEY = "env-key";
+		expect(
+			getHostProvisioner("daytona", { apiKey: "request-key" }),
+		).toBeInstanceOf(DaytonaProvisioner);
+	});
+
 	it("throws when credentials are missing", () => {
 		expect(() => getHostProvisioner("modal")).toThrow(
 			MissingProvisionerCredentialsError,

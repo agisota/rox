@@ -309,10 +309,15 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		if (!isManagedProvider(provider)) return;
 		setSubmitting(true);
 		try {
+			// Forward the locally-saved provider key (if any) so the server can
+			// provision with the user's own credential instead of a server env key.
+			// Omitted when empty so the server still falls back to its env key.
+			const providerApiKey = providerCredentials[provider]?.trim() || undefined;
 			const host = await apiTrpcClient.v2Host.provision.mutate({
 				name: name.trim(),
 				kind,
 				provider,
+				providerApiKey,
 			});
 			toast.success(`Подготавливаем ${host.name}…`);
 			onOpenChange(false);
