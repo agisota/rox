@@ -247,10 +247,10 @@ export function WorkspaceInitializingView({
 								{retryMutation.isPending ? (
 									<>
 										<LuLoader className="mr-2 size-4 animate-spin" />
-										Retrying...
+										Повтор...
 									</>
 								) : (
-									"Retry"
+									"Повторить"
 								)}
 							</Button>
 							{canRetryWithDeduplicatedBranch && (

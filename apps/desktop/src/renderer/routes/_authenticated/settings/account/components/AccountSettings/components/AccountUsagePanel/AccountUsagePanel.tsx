@@ -278,12 +278,15 @@ export function AccountUsagePanel() {
 					value={overview?.balance.balanceRox ?? "500"}
 				/>
 				<Metric label="Потрачено Rox" value={formatFixed(totals.roxCost)} />
-				<Metric label="USD cost" value={`$${formatFixed(totals.usdCost, 4)}`} />
+				<Metric
+					label="Расходы USD"
+					value={`$${formatFixed(totals.usdCost, 4)}`}
+				/>
 				<Metric
 					label="Токены"
 					value={formatNumber(totals.tokensIn + totals.tokensOut)}
 				/>
-				<Metric label="Requests" value={formatNumber(totals.requests)} />
+				<Metric label="Запросы" value={formatNumber(totals.requests)} />
 			</div>
 
 			<div className="grid gap-3 lg:grid-cols-[1fr_160px_200px_180px]">
@@ -328,10 +331,10 @@ export function AccountUsagePanel() {
 					</SelectTrigger>
 					<SelectContent>
 						<SelectItem value="last">Сначала активные</SelectItem>
-						<SelectItem value="rox">Rox cost</SelectItem>
-						<SelectItem value="usd">USD cost</SelectItem>
+						<SelectItem value="rox">Расходы Rox</SelectItem>
+						<SelectItem value="usd">Расходы USD</SelectItem>
 						<SelectItem value="tokens">Токены</SelectItem>
-						<SelectItem value="requests">Requests</SelectItem>
+						<SelectItem value="requests">Запросы</SelectItem>
 						<SelectItem value="title">Название</SelectItem>
 					</SelectContent>
 				</Select>
@@ -345,9 +348,9 @@ export function AccountUsagePanel() {
 							<TableHeader>
 								<TableRow>
 									<TableHead>Сессия</TableHead>
-									<TableHead>Models</TableHead>
-									<TableHead className="text-right">Requests</TableHead>
-									<TableHead className="text-right">Tokens</TableHead>
+									<TableHead>Модели</TableHead>
+									<TableHead className="text-right">Запросы</TableHead>
+									<TableHead className="text-right">Токены</TableHead>
 									<TableHead className="text-right">Rox</TableHead>
 									<TableHead>Последняя</TableHead>
 								</TableRow>
@@ -411,7 +414,7 @@ export function AccountUsagePanel() {
 								>
 									<div className="truncate font-medium">{row.modelId}</div>
 									<div className="mt-1 flex justify-between text-muted-foreground">
-										<span>{formatNumber(row.requests)} requests</span>
+										<span>{formatNumber(row.requests)} запросов</span>
 										<span>{formatFixed(row.roxCost)} Rox</span>
 									</div>
 								</div>
@@ -420,7 +423,10 @@ export function AccountUsagePanel() {
 					</div>
 
 					<div className="space-y-2">
-						<SectionTitle title="Ledger" count={overview?.ledger.length ?? 0} />
+						<SectionTitle
+							title="История баланса"
+							count={overview?.ledger.length ?? 0}
+						/>
 						<div className="max-h-52 space-y-2 overflow-auto">
 							{overview?.ledger.slice(0, 12).map((entry) => (
 								<div
@@ -447,16 +453,16 @@ export function AccountUsagePanel() {
 			</div>
 
 			<div className="space-y-2">
-				<SectionTitle title="Последние requests" count={usageRequests.length} />
+				<SectionTitle title="Последние запросы" count={usageRequests.length} />
 				<div className="max-h-64 overflow-auto rounded-md border">
 					<Table>
 						<TableHeader>
 							<TableRow>
 								<TableHead>Время</TableHead>
-								<TableHead>Model</TableHead>
-								<TableHead>Session</TableHead>
-								<TableHead className="text-right">In</TableHead>
-								<TableHead className="text-right">Out</TableHead>
+								<TableHead>Модель</TableHead>
+								<TableHead>Сессия</TableHead>
+								<TableHead className="text-right">Входящие</TableHead>
+								<TableHead className="text-right">Исходящие</TableHead>
 								<TableHead className="text-right">Rox</TableHead>
 								<TableHead className="text-right">USD</TableHead>
 							</TableRow>

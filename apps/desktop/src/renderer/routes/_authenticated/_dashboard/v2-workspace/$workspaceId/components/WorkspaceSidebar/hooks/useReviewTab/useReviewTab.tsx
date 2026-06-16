@@ -98,7 +98,7 @@ export function useReviewTab({
 
 	return {
 		id: "review",
-		label: "Review",
+		label: "Ревью",
 		icon: LuMessageSquare,
 		badge: openReviewCount > 0 ? openReviewCount : undefined,
 		content,

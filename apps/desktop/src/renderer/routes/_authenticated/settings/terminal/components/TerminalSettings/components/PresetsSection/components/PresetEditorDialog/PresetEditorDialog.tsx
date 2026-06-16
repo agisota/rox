@@ -467,7 +467,7 @@ export function PresetEditorDialog({
 											commands={preset.commands}
 											onChange={onCommandsChange}
 											onBlur={onCommandsBlur}
-											placeholder="e.g. bun run dev"
+											placeholder="напр. bun run dev"
 										/>
 									</DialogRow>
 								</>
