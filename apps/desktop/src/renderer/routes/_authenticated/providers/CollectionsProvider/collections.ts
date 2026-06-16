@@ -16,6 +16,7 @@ import type {
 	SelectInvitation,
 	SelectJournalEntry,
 	SelectMember,
+	SelectMemoryItem,
 	SelectOrganization,
 	SelectProject,
 	SelectSubscription,
@@ -165,6 +166,7 @@ export interface OrgCollections {
 	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
 	journalEntries: Collection<SelectJournalEntry>;
+	memoryItems: Collection<SelectMemoryItem>;
 	artifacts: Collection<SelectArtifact>;
 	githubRepositories: Collection<SelectGithubRepository>;
 	githubPullRequests: Collection<SelectGithubPullRequest>;
@@ -742,6 +744,59 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	const memoryItems = createPersistedElectricCollection(
+		electricCollectionOptions<SelectMemoryItem>({
+			id: `memory_items-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "memory_items",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onInsert: async ({ transaction }) => {
+				const item = transaction.mutations[0].modified;
+				const result = await apiClient.memory.create.mutate({
+					category: item.category,
+					body: item.body,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onUpdate: async ({ transaction }) => {
+				const { original, changes } = transaction.mutations[0];
+				if (changes.status === "approved") {
+					const result = await apiClient.memory.approve.mutate({
+						id: original.id,
+					});
+					return electricTxidMatch(result.txid);
+				}
+				if (changes.status === "dismissed") {
+					const result = await apiClient.memory.decline.mutate({
+						id: original.id,
+					});
+					return electricTxidMatch(result.txid);
+				}
+				if (changes.category !== undefined) {
+					const result = await apiClient.memory.updateGroup.mutate({
+						id: original.id,
+						category: changes.category,
+					});
+					return electricTxidMatch(result.txid);
+				}
+				throw new Error("Unsupported memory_items update");
+			},
+			onDelete: async ({ transaction }) => {
+				const item = transaction.mutations[0].original;
+				const result = await apiClient.memory.remove.mutate({ id: item.id });
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+
 	const artifacts = createPersistedElectricCollection(
 		electricCollectionOptions<SelectArtifact>({
 			id: `artifacts-${organizationId}`,
@@ -977,6 +1032,7 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		apiKeys,
 		chatSessions,
 		journalEntries,
+		memoryItems,
 		artifacts,
 		githubRepositories,
 		githubPullRequests,
