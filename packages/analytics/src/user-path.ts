@@ -42,9 +42,16 @@ export interface CoverageGap {
  */
 export const USER_PATH_COVERAGE: readonly UserPathStage[] = [
 	{
+		id: "acquisition",
+		label: "Acquisition — account creation and sign-in",
+		events: [ANALYTICS_EVENTS.ACCOUNT_CREATED, ANALYTICS_EVENTS.SIGNED_IN],
+	},
+	{
 		id: "activation",
-		label: "Activation — first project, workspace, and connected repo",
+		label:
+			"Activation — onboarding, first project, workspace, and connected repo",
 		events: [
+			ANALYTICS_EVENTS.ONBOARDING_COMPLETED,
 			ANALYTICS_EVENTS.PROJECT_CREATED,
 			ANALYTICS_EVENTS.WORKSPACE_CREATED,
 			ANALYTICS_EVENTS.REPO_CONNECTED,
@@ -80,6 +87,11 @@ export const USER_PATH_COVERAGE: readonly UserPathStage[] = [
 			ANALYTICS_EVENTS.PAYMENT_FAILED,
 		],
 	},
+	{
+		id: "retention",
+		label: "Retention — returning sessions",
+		events: [ANALYTICS_EVENTS.SESSION_STARTED],
+	},
 ];
 
 /**
@@ -89,24 +101,14 @@ export const USER_PATH_COVERAGE: readonly UserPathStage[] = [
  */
 export const KNOWN_COVERAGE_GAPS: readonly CoverageGap[] = [
 	{
-		stage: "acquisition",
-		description:
-			"No event marks signup / account creation — only first-touch UTM traits are attached on identify. Add an `account_created` event.",
-	},
-	{
-		stage: "acquisition",
-		description:
-			"No `signed_in` event for returning-user logins, so login frequency is invisible.",
-	},
-	{
-		stage: "activation",
-		description:
-			"No `onboarding_completed` event to mark the end of first-run setup, so activation drop-off can't be measured.",
-	},
-	{
 		stage: "retention",
 		description:
-			"No retention/engagement events (e.g. `session_started`, `feature_used`) to model returning usage over time.",
+			"No `feature_used` event for per-feature engagement depth — only coarse `session_started` is tracked.",
+	},
+	{
+		stage: "acquisition",
+		description:
+			"No `referral_*` events, so referral-program attribution cannot be measured yet.",
 	},
 ];
 

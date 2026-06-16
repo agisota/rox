@@ -2,13 +2,18 @@ import { apiKey } from "@better-auth/api-key";
 import { expo } from "@better-auth/expo";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { db } from "@rox/db/client";
-import { members } from "@rox/db/schema";
+import { members, userAttribution } from "@rox/db/schema";
 import type { sessions } from "@rox/db/schema/auth";
 import * as authSchema from "@rox/db/schema/auth";
 import { seedDefaultStatuses } from "@rox/db/seed-default-statuses";
 import { MemberAddedEmail } from "@rox/email/emails/member-added";
 import { MemberRemovedEmail } from "@rox/email/emails/member-removed";
 import { OrganizationInvitationEmail } from "@rox/email/emails/organization-invitation";
+import {
+	ATTRIBUTION_COOKIE_NAME,
+	parseAttributionCookieValue,
+	parseCookieHeader,
+} from "@rox/shared/attribution";
 import { canInvite, type OrganizationRole } from "@rox/shared/auth";
 import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { betterAuth } from "better-auth";
@@ -101,7 +106,7 @@ export const auth = betterAuth({
 	databaseHooks: {
 		user: {
 			create: {
-				after: async (user) => {
+				after: async (user, context?: unknown) => {
 					const domain = user.email.split("@")[1]?.toLowerCase();
 					let enrolledOrgId: string | null = null;
 
@@ -158,6 +163,44 @@ export const auth = betterAuth({
 							.update(authSchema.sessions)
 							.set({ activeOrganizationId: enrolledOrgId })
 							.where(eq(authSchema.sessions.userId, user.id));
+					}
+
+					// First-touch attribution: persist the landing UTM/referrer captured
+					// in the `rox_attribution` cookie. Best-effort — wrapped so a failure
+					// here can never block account creation. Idempotent via the unique
+					// user_id index (first-touch is never overwritten).
+					try {
+						const ctx = (context ?? {}) as {
+							headers?: Headers;
+							request?: { headers?: Headers };
+						};
+						const cookieHeader =
+							ctx.headers?.get("cookie") ??
+							ctx.request?.headers?.get("cookie") ??
+							null;
+						const attribution = parseAttributionCookieValue(
+							parseCookieHeader(cookieHeader, ATTRIBUTION_COOKIE_NAME),
+						);
+						if (attribution) {
+							await db
+								.insert(userAttribution)
+								.values({
+									userId: user.id,
+									utmSource: attribution.utm.utmSource,
+									utmMedium: attribution.utm.utmMedium,
+									utmCampaign: attribution.utm.utmCampaign,
+									utmTerm: attribution.utm.utmTerm,
+									utmContent: attribution.utm.utmContent,
+									landingPage: attribution.landingPage,
+									referrer: attribution.referrer,
+								})
+								.onConflictDoNothing();
+						}
+					} catch (error) {
+						console.error(
+							`[attribution] Failed to persist first-touch for ${user.id}:`,
+							error,
+						);
 					}
 				},
 			},
