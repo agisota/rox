@@ -48,6 +48,11 @@ class BrowserManager extends EventEmitter {
 					map.delete(paneId);
 				}
 			}
+			// A genuinely new webContents invalidates the cached original UA;
+			// keeping a stale snapshot could restore the wrong UA onto it.
+			if (prevId !== webContentsId) {
+				this.originalUserAgents.delete(paneId);
+			}
 		}
 		this.paneWebContentsIds.set(paneId, webContentsId);
 		const wc = webContents.fromId(webContentsId);

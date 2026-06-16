@@ -98,9 +98,14 @@ export const CSS_WHITELIST: readonly string[] = Object.freeze([
 
 const WHITELIST_SET = new Set(CSS_WHITELIST);
 
+// Properties whose `"none"` value is non-initial and meaningful for the agent
+// (e.g. `pointer-events: none`, `display: none`), so it must survive filtering.
+const NONE_IS_MEANINGFUL = new Set(["display", "pointer-events"]);
+
 /**
- * Filters a raw computed-style map down to the allowlist. Empty/`"none"`/initial
- * values are dropped to keep the payload tight and readable.
+ * Filters a raw computed-style map down to the allowlist. Empty/initial noise
+ * values (`""`, `"normal"`, and a default `"none"`) are dropped to keep the
+ * payload tight and readable, except where `"none"` carries real meaning.
  */
 export function filterComputedStyles(
 	computed: Record<string, string>,
@@ -110,7 +115,8 @@ export function filterComputedStyles(
 		const value = computed[prop];
 		if (value == null) continue;
 		const trimmed = value.trim();
-		if (trimmed === "" || trimmed === "none" || trimmed === "normal") continue;
+		if (trimmed === "" || trimmed === "normal") continue;
+		if (trimmed === "none" && !NONE_IS_MEANINGFUL.has(prop)) continue;
 		out[prop] = trimmed;
 	}
 	return out;

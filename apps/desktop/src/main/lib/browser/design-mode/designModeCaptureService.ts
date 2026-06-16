@@ -46,6 +46,10 @@ class DesignModeCaptureService extends EventEmitter {
 	private nonces = new Map<string, string>();
 	private captures = new Map<string, DesignModeCapture>();
 	private captureOrder: string[] = [];
+	// Per-pane capture queue. Captures hide the picker overlay, screenshot, then
+	// restore it; serializing per pane stops concurrent captures from interleaving
+	// that hide/show and leaking the overlay into a screenshot.
+	private captureChains = new Map<string, Promise<unknown>>();
 
 	async setDesignMode(paneId: string, enabled: boolean): Promise<void> {
 		if (enabled) await this.enable(paneId);
@@ -156,6 +160,30 @@ class DesignModeCaptureService extends EventEmitter {
 	}
 
 	async captureElement(input: {
+		paneId: string;
+		workspaceId: string;
+		workspaceRoot?: string;
+		devicePresetId?: string;
+		clientPoint?: { x: number; y: number };
+	}): Promise<DesignModeCapture> {
+		// Chain on the pane's previous capture (success or failure) so the
+		// overlay hide/show can't interleave across concurrent captures.
+		const prior = this.captureChains.get(input.paneId) ?? Promise.resolve();
+		const next = prior.then(
+			() => this.performCapture(input),
+			() => this.performCapture(input),
+		);
+		const tail = next.catch(() => {});
+		this.captureChains.set(input.paneId, tail);
+		void tail.then(() => {
+			if (this.captureChains.get(input.paneId) === tail) {
+				this.captureChains.delete(input.paneId);
+			}
+		});
+		return next;
+	}
+
+	private async performCapture(input: {
 		paneId: string;
 		workspaceId: string;
 		workspaceRoot?: string;

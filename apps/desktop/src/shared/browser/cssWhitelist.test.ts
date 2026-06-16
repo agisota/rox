@@ -29,6 +29,17 @@ describe("cssWhitelist", () => {
 		expect(filtered).toEqual({ color: "rgb(1, 2, 3)" });
 	});
 
+	it("keeps a meaningful none value but drops default ones", () => {
+		const filtered = filterComputedStyles({
+			"pointer-events": "none",
+			display: "none",
+			transform: "none",
+		});
+		expect(filtered["pointer-events"]).toBe("none");
+		expect(filtered.display).toBe("none");
+		expect(filtered.transform).toBeUndefined();
+	});
+
 	it("never leaks a non-whitelisted property even if present", () => {
 		const filtered = filterComputedStyles({
 			content: "secret-token",

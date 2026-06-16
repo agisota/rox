@@ -50,6 +50,9 @@ export function useDesignMode({
 	presetIdRef.current = presetId;
 	// Monotonic guard so the most recent selection wins under rapid clicks.
 	const latestCaptureSeqRef = useRef(0);
+	// Tracks the preset already pushed to main so the mount effect doesn't
+	// re-send it right after a user-driven change (avoids double emulation).
+	const appliedPresetRef = useRef<string | null>(null);
 
 	const patchData = useCallback((patch: Partial<BrowserPaneData>) => {
 		const current = ctxRef.current.pane.data as BrowserPaneData;
@@ -74,6 +77,9 @@ export function useDesignMode({
 
 	const setPreset = useCallback(
 		async (id: string) => {
+			// Mark as applied before sending so the mount effect (which re-runs
+			// when `presetId` changes via patchData) doesn't send it a second time.
+			appliedPresetRef.current = id;
 			try {
 				await electronTrpcClient.browser.setDevicePreset.mutate({
 					paneId,
@@ -87,13 +93,16 @@ export function useDesignMode({
 		[paneId, patchData],
 	);
 
-	// Re-apply a persisted non-default preset after the webview (re)attaches.
+	// Apply a persisted non-default preset on mount. Guarded so a user-driven
+	// change (which sends the preset itself) isn't redundantly re-sent here.
 	useEffect(() => {
 		if (presetId === DEFAULT_DEVICE_PRESET_ID) return;
+		if (appliedPresetRef.current === presetId) return;
+		appliedPresetRef.current = presetId;
 		electronTrpcClient.browser.setDevicePreset
 			.mutate({ paneId, presetId })
 			.catch(() => {
-				// Best-effort reapply on reattach; a failure is non-critical.
+				// Best-effort apply; a failure is non-critical.
 			});
 	}, [paneId, presetId]);
 
@@ -131,7 +140,12 @@ export function useDesignMode({
 				},
 			},
 		);
-		return () => sub.unsubscribe();
+		return () => {
+			sub.unsubscribe();
+			// Invalidate any in-flight capture so a late resolve can't revive the
+			// preview after Design Mode is turned off (the seq guard then fails).
+			latestCaptureSeqRef.current++;
+		};
 	}, [enabled, paneId, workspaceId]);
 
 	const dismissCapture = useCallback(() => setCapture(null), []);
