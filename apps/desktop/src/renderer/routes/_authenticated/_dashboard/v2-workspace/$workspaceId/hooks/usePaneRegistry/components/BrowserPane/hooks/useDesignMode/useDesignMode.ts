@@ -92,7 +92,9 @@ export function useDesignMode({
 		if (presetId === DEFAULT_DEVICE_PRESET_ID) return;
 		electronTrpcClient.browser.setDevicePreset
 			.mutate({ paneId, presetId })
-			.catch(() => {});
+			.catch(() => {
+				// Best-effort reapply on reattach; a failure is non-critical.
+			});
 	}, [paneId, presetId]);
 
 	// While enabled, listen for in-page selections and capture them. Deps are

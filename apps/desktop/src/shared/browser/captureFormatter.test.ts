@@ -98,6 +98,7 @@ describe("formatCaptureForAgent", () => {
 		expect(out.content).toContain(
 			"Screenshot: (omitted — exceeded size limit)",
 		);
+		expect(out.files).toHaveLength(0);
 	});
 
 	it("prepends an optional prompt prefix", () => {

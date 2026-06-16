@@ -83,12 +83,16 @@ export function formatCaptureForAgent(
 
 	return {
 		content: sections.join("\n\n"),
-		files: [
-			{
-				data: capture.screenshot.data,
-				mediaType: capture.screenshot.mimeType,
-				filename,
-			},
-		],
+		// Omit the attachment entirely when the screenshot was dropped (over the
+		// size limit), so downstream code never decodes an empty base64 string.
+		files: capture.screenshot.data
+			? [
+					{
+						data: capture.screenshot.data,
+						mediaType: capture.screenshot.mimeType,
+						filename,
+					},
+				]
+			: [],
 	};
 }
