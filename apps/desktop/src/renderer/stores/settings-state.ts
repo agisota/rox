@@ -13,6 +13,7 @@ export type SettingsSection =
 	| "agents"
 	| "terminal"
 	| "links"
+	| "shares"
 	| "models"
 	| "experimental"
 	| "integrations"

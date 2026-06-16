@@ -63,3 +63,11 @@ describe("settings search - font settings", () => {
 		expect(terminalFont?.section).toBe("appearance");
 	});
 });
+
+describe("settings search - share settings", () => {
+	it('searching "share" returns public share management', () => {
+		const results = searchSettings("share");
+		const ids = getIds(results);
+		expect(ids).toContain(SETTING_ITEM_ID.PUBLIC_SHARES);
+	});
+});
