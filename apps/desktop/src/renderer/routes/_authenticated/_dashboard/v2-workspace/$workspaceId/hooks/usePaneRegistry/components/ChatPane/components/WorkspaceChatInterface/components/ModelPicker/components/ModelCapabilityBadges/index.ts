@@ -1,0 +1,1 @@
+export { ModelCapabilityBadges } from "./ModelCapabilityBadges";
