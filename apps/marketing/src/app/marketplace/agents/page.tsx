@@ -30,7 +30,7 @@ export default function MarketplaceAgentsPage() {
 				<div className="border border-border">
 					<div className="border-b border-border px-4 py-3">
 						<p className="text-sm text-muted-foreground">
-							Когда будете готовы публиковать конфигурации агентов, они появятся
+							Когда будешь готов публиковать конфигурации агентов, они появятся
 							здесь.
 						</p>
 					</div>

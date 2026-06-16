@@ -48,12 +48,12 @@ const pixelifySans = Pixelify_Sans({
 });
 
 const siteDescription =
-	"Запускайте 10+ кодинг-агентов параллельно на своей машине. Создавайте новые задачи, пока текущий агент работает, и быстро переключайтесь между задачами, когда им нужно ваше внимание.";
+	"Запускай 10+ кодинг-агентов параллельно на своей машине. Создавай новые задачи, пока текущий агент работает, и быстро переключайся между задачами, когда им нужно твоё внимание.";
 
 export const metadata: Metadata = {
 	metadataBase: new URL(COMPANY.MARKETING_URL),
 	title: {
-		default: `${COMPANY.NAME} - параллельные кодинг-агенты на вашей машине`,
+		default: `${COMPANY.NAME} - параллельные кодинг-агенты на твоей машине`,
 		template: `%s | ${COMPANY.NAME}`,
 	},
 	description: siteDescription,
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
 		locale: "ru_RU",
 		url: COMPANY.MARKETING_URL,
 		siteName: COMPANY.NAME,
-		title: `${COMPANY.NAME} - параллельные кодинг-агенты на вашей машине`,
+		title: `${COMPANY.NAME} - параллельные кодинг-агенты на твоей машине`,
 		description: siteDescription,
 		images: [
 			{
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: `${COMPANY.NAME} - параллельные кодинг-агенты на вашей машине`,
+		title: `${COMPANY.NAME} - параллельные кодинг-агенты на твоей машине`,
 		description: siteDescription,
 		images: ["/og-image.png"],
 		creator: "@rox_sh",

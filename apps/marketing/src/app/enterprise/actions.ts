@@ -32,13 +32,13 @@ export async function submitEnterpriseInquiry(data: unknown) {
 	if (honeypot && honeypot.length > 0) {
 		return {
 			success: false,
-			error: "Что-то пошло не так. Попробуйте ещё раз.",
+			error: "Что-то пошло не так. Попробуй ещё раз.",
 		};
 	}
 
 	// Validate required fields exist
 	if (!name || !role || !company || !email) {
-		return { success: false, error: "Заполните обязательные поля." };
+		return { success: false, error: "Заполни обязательные поля." };
 	}
 
 	// Sanitize inputs FIRST to prevent header injection
@@ -68,7 +68,7 @@ export async function submitEnterpriseInquiry(data: unknown) {
 		if (!(await checkEmailFormRateLimit(sanitizedEmail))) {
 			return {
 				success: false,
-				error: "Слишком много сообщений. Попробуйте позже.",
+				error: "Слишком много сообщений. Попробуй позже.",
 			};
 		}
 
@@ -91,7 +91,7 @@ export async function submitEnterpriseInquiry(data: unknown) {
 			console.error("Failed to send enterprise inquiry email:", error);
 			return {
 				success: false,
-				error: "Что-то пошло не так. Попробуйте ещё раз.",
+				error: "Что-то пошло не так. Попробуй ещё раз.",
 			};
 		}
 
@@ -100,7 +100,7 @@ export async function submitEnterpriseInquiry(data: unknown) {
 		console.error("Failed to send enterprise inquiry email:", error);
 		return {
 			success: false,
-			error: "Что-то пошло не так. Попробуйте ещё раз.",
+			error: "Что-то пошло не так. Попробуй ещё раз.",
 		};
 	}
 }

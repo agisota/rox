@@ -277,7 +277,7 @@ export function ParallelExecutionDemo() {
 									{line || "\u00A0"}
 								</div>
 								<div className="mt-1">
-									Попробуйте Rox:{" "}
+									Попробуй Rox:{" "}
 									<a
 										href="/download"
 										className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
@@ -306,7 +306,7 @@ export function ParallelExecutionDemo() {
 								value={inputValue}
 								onChange={(e) => setInputValue(e.target.value)}
 								onKeyDown={handleKeyDown}
-								placeholder="Введите сообщение..."
+								placeholder="Введи сообщение..."
 								className="text-white/80 text-xs flex-1 bg-transparent outline-none placeholder:text-white/50"
 							/>
 							<div className="flex items-center gap-1">

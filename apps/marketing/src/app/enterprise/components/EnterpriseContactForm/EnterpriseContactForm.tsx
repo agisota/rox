@@ -35,7 +35,7 @@ export function EnterpriseContactForm() {
 			}
 		} catch (_error) {
 			setStatus("error");
-			setErrorMessage("Что-то пошло не так. Попробуйте ещё раз.");
+			setErrorMessage("Что-то пошло не так. Попробуй ещё раз.");
 		}
 	};
 
@@ -47,7 +47,7 @@ export function EnterpriseContactForm() {
 					Спасибо за обращение
 				</p>
 				<p className="mt-2 text-sm text-muted-foreground">
-					Мы скоро свяжемся с вами.
+					Мы скоро свяжемся с тобой.
 				</p>
 			</div>
 		);
@@ -158,7 +158,7 @@ export function EnterpriseContactForm() {
 					htmlFor="ent-message"
 					className="block text-sm text-muted-foreground mb-1.5"
 				>
-					Какую проблему вы хотите решить?
+					Какую проблему ты хочешь решить?
 				</label>
 				<textarea
 					id="ent-message"

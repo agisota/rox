@@ -79,7 +79,7 @@ export function DownloadInterstitial() {
 								Сейчас начнётся загрузка Rox
 							</h1>
 							<p className="text-sm text-muted-foreground sm:text-base">
-								<GlossaryText text="Загрузка начнётся автоматически. Если она не началась, вы можете " />
+								<GlossaryText text="Загрузка начнётся автоматически. Если она не началась, ты можешь " />
 								<a
 									href={macUrlFor(platform)}
 									onClick={() => track("download_manual_clicked", { platform })}

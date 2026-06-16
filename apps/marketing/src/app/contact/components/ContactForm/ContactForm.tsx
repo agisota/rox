@@ -33,7 +33,7 @@ export function ContactForm() {
 			}
 		} catch (_error) {
 			setStatus("error");
-			setErrorMessage("Что-то пошло не так. Попробуйте ещё раз.");
+			setErrorMessage("Что-то пошло не так. Попробуй ещё раз.");
 		}
 	};
 

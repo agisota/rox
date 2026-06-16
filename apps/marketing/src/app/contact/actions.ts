@@ -24,7 +24,7 @@ const contactFormDataSchema = z.object({
 export async function submitContactInquiry(data: unknown) {
 	const parsedData = contactFormDataSchema.safeParse(data);
 	if (!parsedData.success) {
-		return { success: false, error: "Проверьте введённые данные." };
+		return { success: false, error: "Проверь введённые данные." };
 	}
 
 	const { name, email, topic, message, honeypot } = parsedData.data;
@@ -32,12 +32,12 @@ export async function submitContactInquiry(data: unknown) {
 	if (honeypot && honeypot.length > 0) {
 		return {
 			success: false,
-			error: "Что-то пошло не так. Попробуйте ещё раз.",
+			error: "Что-то пошло не так. Попробуй ещё раз.",
 		};
 	}
 
 	if (!name || !email || !message) {
-		return { success: false, error: "Заполните обязательные поля." };
+		return { success: false, error: "Заполни обязательные поля." };
 	}
 
 	const sanitizedName = sanitizeSingleLine(name);
@@ -46,18 +46,18 @@ export async function submitContactInquiry(data: unknown) {
 	const sanitizedMessage = sanitizeMessage(message);
 
 	if (!sanitizedName || !sanitizedEmail || !sanitizedMessage) {
-		return { success: false, error: "Проверьте введённые данные." };
+		return { success: false, error: "Проверь введённые данные." };
 	}
 
 	if (!validateEmail(sanitizedEmail)) {
-		return { success: false, error: "Введите корректный email." };
+		return { success: false, error: "Введи корректный email." };
 	}
 
 	try {
 		if (!(await checkEmailFormRateLimit(sanitizedEmail))) {
 			return {
 				success: false,
-				error: "Слишком много сообщений. Попробуйте позже.",
+				error: "Слишком много сообщений. Попробуй позже.",
 			};
 		}
 
@@ -78,7 +78,7 @@ export async function submitContactInquiry(data: unknown) {
 			console.error("Failed to send contact inquiry email:", error);
 			return {
 				success: false,
-				error: "Что-то пошло не так. Попробуйте ещё раз.",
+				error: "Что-то пошло не так. Попробуй ещё раз.",
 			};
 		}
 
@@ -87,7 +87,7 @@ export async function submitContactInquiry(data: unknown) {
 		console.error("Failed to send contact inquiry email:", error);
 		return {
 			success: false,
-			error: "Что-то пошло не так. Попробуйте ещё раз.",
+			error: "Что-то пошло не так. Попробуй ещё раз.",
 		};
 	}
 }
