@@ -45,6 +45,13 @@ export const env = createEnv({
 		LARK_APP_SECRET: z.string().optional(),
 		LARK_ENCRYPT_KEY: z.string().optional(),
 		ANTHROPIC_API_KEY: z.string(),
+		// Rox R1 server-side generation (journal-memory epic). The ROX gateway
+		// (ROX_AI_API_KEY → api.zed.md, free house model) is preferred; GROQ_API_KEY
+		// is the direct groq-compound fallback. All optional so non-AI envs boot.
+		GROQ_API_KEY: z.string().optional(),
+		ROX_AI_API_KEY: z.string().optional(),
+		ROX_AI_BASE_URL: z.string().url().optional(),
+		ROX_AI_MODEL: z.string().optional(),
 		QSTASH_TOKEN: z.string().min(1),
 		QSTASH_URL: z.string().url(),
 		QSTASH_CURRENT_SIGNING_KEY: z.string().min(1),

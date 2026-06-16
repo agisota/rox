@@ -15,7 +15,8 @@
 	background-color: #f0792a;
 	-webkit-mask: url("/rox-logo-light.png") center / contain no-repeat;
 	mask: url("/rox-logo-light.png") center / contain no-repeat;
-	clip-path: inset(72% 0 0 0);
+	/* Only the scarf/neckerchief at the bottom of the mark. */
+	clip-path: inset(78% 0 0 0);
 	opacity: 0;
 	filter: drop-shadow(0 0 6px rgba(240, 121, 42, 0.7));
 	transition: opacity 0.3s ease;

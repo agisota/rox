@@ -435,3 +435,55 @@ export type AgentSourceStatus = z.infer<typeof agentSourceStatusEnum>;
 export const chatSessionStatusValues = ["active", "archived"] as const;
 export const chatSessionStatusEnum = z.enum(chatSessionStatusValues);
 export type ChatSessionStatus = z.infer<typeof chatSessionStatusEnum>;
+
+// Journal & Memory (journal-memory epic) --------------------------------------
+// Per-user daily journal (AI-generated from chat sessions) + a curated memory
+// store. Append-only string unions backing Postgres pgEnums; never reorder/remove.
+
+export const journalEntryStatusValues = [
+	"pending",
+	"generated",
+	"failed",
+] as const;
+export const journalEntryStatusEnum = z.enum(journalEntryStatusValues);
+export type JournalEntryStatus = z.infer<typeof journalEntryStatusEnum>;
+
+export const memoryCategoryValues = [
+	"projects",
+	"identity",
+	"instructions",
+	"career",
+	"general",
+] as const;
+export const memoryCategoryEnum = z.enum(memoryCategoryValues);
+export type MemoryCategory = z.infer<typeof memoryCategoryEnum>;
+
+export const memorySourceValues = [
+	"manual",
+	"agent",
+	"archive",
+	"prompt",
+] as const;
+export const memorySourceEnum = z.enum(memorySourceValues);
+export type MemorySource = z.infer<typeof memorySourceEnum>;
+
+export const memoryStatusValues = [
+	"suggested",
+	"approved",
+	"dismissed",
+] as const;
+export const memoryStatusEnum = z.enum(memoryStatusValues);
+export type MemoryStatus = z.infer<typeof memoryStatusEnum>;
+
+export const memoryImportProviderValues = ["chatgpt", "anthropic"] as const;
+export const memoryImportProviderEnum = z.enum(memoryImportProviderValues);
+export type MemoryImportProvider = z.infer<typeof memoryImportProviderEnum>;
+
+export const memoryImportStatusValues = [
+	"pending",
+	"processing",
+	"done",
+	"failed",
+] as const;
+export const memoryImportStatusEnum = z.enum(memoryImportStatusValues);
+export type MemoryImportStatus = z.infer<typeof memoryImportStatusEnum>;

@@ -249,7 +249,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				cpuMark,
 				{
 					opacity: { to: 1 },
-					scale: [0.92, 1],
 					ease: "out(2)",
 					duration: 900,
 				},
