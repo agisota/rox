@@ -49,7 +49,10 @@
 - `packages/shared/src/appearance/`
   - `quotes.ts` — курируемый массив `{ id, text, author?, emphasis? }`.
   - `wallpapers.ts` — манифест `{ id, name, src, thumb, tone: "dark"|"light", credit? }`.
-  - `types.ts` — `AppearanceSettings` (расширение текущего `appearanceState`):
+  - `types.ts` — `AppearanceSettings` (расширение текущего `appearanceState`). Для
+    слайса №1 **все поля локальны** (вариант 2a, desktop `appState`); граница
+    «локальное ↔ синкаемое» фиксируется при выборе 2b (см. раздел Web). Форма:
+
     ```ts
     interface AppearanceSettings {
       glassEnabled: boolean;
@@ -60,6 +63,7 @@
       quoteLoaderEnabled: boolean;
     }
     ```
+
   - `selectQuote.ts` / `selectWallpaper.ts` — детерминированный/случайный выбор без повтора подряд.
 
 - `packages/ui/src/components/` (чистые презентационные, без платформенных API)
@@ -99,6 +103,7 @@
   - *Переходы:* подключить к pending-состоянию TanStack Router, но **дебаунсить видимость,
     а не рендер** — иначе на медленном соединении (router «висит» 5+ с) экран мелькнёт.
     Паттерн:
+
     ```tsx
     const [showQuote, setShowQuote] = useState(false);
     useEffect(() => {
@@ -107,6 +112,7 @@
       return () => clearTimeout(id);
     }, [isPending]);
     ```
+
     Так быстрые переходы (<350 мс) не показывают цитату вовсе, а долгие — показывают.
   - *Режим «фокуса»:* команда в Command Palette + хоткей — полноэкранный `QuoteScreen`
     с авто-сменой цитат, закрытие по Esc/клику.
