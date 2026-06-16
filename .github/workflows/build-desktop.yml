@@ -95,6 +95,9 @@ jobs:
         env:
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
+          ROX_AI_API_KEY: ${{ secrets.ROX_AI_API_KEY }}
+          ROX_AI_BASE_URL: ${{ secrets.ROX_AI_BASE_URL }}
+          ROX_AI_MODEL: ${{ secrets.ROX_AI_MODEL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
           NEXT_PUBLIC_WEB_URL: ${{ secrets.NEXT_PUBLIC_WEB_URL }}
@@ -263,6 +266,9 @@ jobs:
         env:
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
+          ROX_AI_API_KEY: ${{ secrets.ROX_AI_API_KEY }}
+          ROX_AI_BASE_URL: ${{ secrets.ROX_AI_BASE_URL }}
+          ROX_AI_MODEL: ${{ secrets.ROX_AI_MODEL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
           NEXT_PUBLIC_WEB_URL: ${{ secrets.NEXT_PUBLIC_WEB_URL }}
@@ -407,6 +413,9 @@ jobs:
         env:
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
+          ROX_AI_API_KEY: ${{ secrets.ROX_AI_API_KEY }}
+          ROX_AI_BASE_URL: ${{ secrets.ROX_AI_BASE_URL }}
+          ROX_AI_MODEL: ${{ secrets.ROX_AI_MODEL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
           NEXT_PUBLIC_WEB_URL: ${{ secrets.NEXT_PUBLIC_WEB_URL }}
