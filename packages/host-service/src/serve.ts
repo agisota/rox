@@ -1,3 +1,7 @@
+// Import first: disables mastra's gateway type-generation sync before the
+// harness import graph (`./app` → `mastracode` → `@mastra/*`) loads, so the
+// packaged runtime never tries to mkdir/write inside the read-only app.asar.
+import "./disable-gateway-sync";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app";
 import { getSupervisor, startDaemonBootstrap } from "./daemon";
