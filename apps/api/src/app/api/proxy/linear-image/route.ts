@@ -1,6 +1,10 @@
 import { auth } from "@rox/auth/server";
 import { db } from "@rox/db/client";
 import { integrationConnections } from "@rox/db/schema";
+import {
+	decodeSecret,
+	isIntegrationSecretDecodeError,
+} from "@rox/trpc/integration-secret";
 import { and, eq } from "drizzle-orm";
 
 const LINEAR_IMAGE_HOST = "uploads.linear.app";
@@ -53,10 +57,22 @@ export async function GET(request: Request): Promise<Response> {
 		return new Response("Linear integration not connected", { status: 400 });
 	}
 
+	let accessToken: string;
+	try {
+		accessToken = decodeSecret(connection.accessToken);
+	} catch (error) {
+		if (isIntegrationSecretDecodeError(error)) {
+			return new Response("Linear integration requires reconnect", {
+				status: 401,
+			});
+		}
+		throw error;
+	}
+
 	// Fetch the image from Linear with auth
 	const linearResponse = await fetch(linearUrl, {
 		headers: {
-			Authorization: `Bearer ${connection.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		},
 	});
 

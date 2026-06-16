@@ -21,6 +21,23 @@ import { decryptSecret, encryptSecret } from "../crypto";
 /** Sentinel marking a value produced by `encodeSecret`. */
 export const ENCRYPTED_SECRET_PREFIX = "enc:v1:";
 
+export class IntegrationSecretDecodeError extends Error {
+	constructor(cause: unknown) {
+		super("Failed to decode integration secret");
+		this.name = "IntegrationSecretDecodeError";
+		Object.defineProperty(this, "cause", {
+			value: cause,
+			enumerable: false,
+		});
+	}
+}
+
+export function isIntegrationSecretDecodeError(
+	error: unknown,
+): error is IntegrationSecretDecodeError {
+	return error instanceof IntegrationSecretDecodeError;
+}
+
 /** True when `value` is an encoded secret (vs. legacy plaintext). */
 export function isEncodedSecret(value: string): boolean {
 	return value.startsWith(ENCRYPTED_SECRET_PREFIX);
@@ -42,5 +59,33 @@ export function encodeSecret(plaintext: string): string {
  */
 export function decodeSecret(stored: string): string {
 	if (!isEncodedSecret(stored)) return stored;
-	return decryptSecret(stored.slice(ENCRYPTED_SECRET_PREFIX.length));
+
+	try {
+		return decryptSecret(stored.slice(ENCRYPTED_SECRET_PREFIX.length));
+	} catch (error) {
+		throw new IntegrationSecretDecodeError(error);
+	}
+}
+
+/**
+ * Whether encryption-at-rest for integration tokens is switched on. Gated by
+ * the `INTEGRATION_SECRET_ENCRYPTION` env flag (`1` / `true` / `on`), OFF by
+ * default. Reads always go through {@link decodeSecret} regardless of this
+ * flag, so it is safe to enable in production once `SECRETS_ENCRYPTION_KEY` is
+ * present, and safe to disable again (legacy plaintext + already-encrypted rows
+ * both keep decoding).
+ */
+export function isIntegrationSecretEncryptionEnabled(): boolean {
+	const flag = process.env.INTEGRATION_SECRET_ENCRYPTION?.trim().toLowerCase();
+	return flag === "1" || flag === "true" || flag === "on";
+}
+
+/**
+ * Shape a token for storage. Encrypts via {@link encodeSecret} when encryption
+ * is enabled, otherwise stores the value unchanged. Every write site routes
+ * through this so flipping the flag controls the whole integration token surface
+ * at once; idempotent (re-storing an already-encoded value is a no-op).
+ */
+export function storeSecret(value: string): string {
+	return isIntegrationSecretEncryptionEnabled() ? encodeSecret(value) : value;
 }

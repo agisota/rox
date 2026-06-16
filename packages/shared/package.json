@@ -56,6 +56,10 @@
 			"types": "./src/rox-charge.ts",
 			"default": "./src/rox-charge.ts"
 		},
+		"./rox-settlement": {
+			"types": "./src/rox-settlement.ts",
+			"default": "./src/rox-settlement.ts"
+		},
 		"./rox-topup": {
 			"types": "./src/rox-topup.ts",
 			"default": "./src/rox-topup.ts"

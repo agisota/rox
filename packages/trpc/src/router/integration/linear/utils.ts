@@ -2,6 +2,10 @@ import { LinearClient } from "@linear/sdk";
 import { db } from "@rox/db/client";
 import { integrationConnections } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
+import {
+	decodeSecret,
+	isIntegrationSecretDecodeError,
+} from "../../../lib/integrations/secret-store";
 import { REFRESH_BUFFER_MS } from "./constants";
 import { isLinearAuthError, refreshLinearToken } from "./refresh";
 
@@ -51,6 +55,21 @@ export async function getLinearClient(
 		return null;
 	}
 
+	const buildClientFromStoredAccessToken =
+		async (): Promise<LinearClient | null> => {
+			try {
+				return new LinearClient({
+					accessToken: decodeSecret(connection.accessToken),
+				});
+			} catch (error) {
+				if (isIntegrationSecretDecodeError(error)) {
+					await markConnectionDisconnected(connection.id, "invalid_secret");
+					return null;
+				}
+				throw error;
+			}
+		};
+
 	const expiresSoon =
 		connection.tokenExpiresAt &&
 		connection.tokenExpiresAt.getTime() - Date.now() < REFRESH_BUFFER_MS;
@@ -69,13 +88,13 @@ export async function getLinearClient(
 				connection.tokenExpiresAt &&
 				connection.tokenExpiresAt.getTime() > Date.now();
 			if (tokenStillValid && !isLinearAuthError(error)) {
-				return new LinearClient({ accessToken: connection.accessToken });
+				return buildClientFromStoredAccessToken();
 			}
 			throw error;
 		}
 	}
 
-	return new LinearClient({ accessToken: connection.accessToken });
+	return buildClientFromStoredAccessToken();
 }
 
 export async function markConnectionDisconnected(

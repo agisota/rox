@@ -5,6 +5,11 @@ import { withConnectionLock } from "@rox/db/utils";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../../env";
+import {
+	decodeSecret,
+	isIntegrationSecretDecodeError,
+	storeSecret,
+} from "../../../lib/integrations/secret-store";
 import { REFRESH_BUFFER_MS, REFRESH_TOKEN_TIMEOUT_MS } from "./constants";
 import { getLinearClient, markConnectionDisconnected } from "./utils";
 
@@ -43,11 +48,42 @@ export async function refreshLinearToken(
 		if (!connection?.refreshToken) return { disconnected: true };
 		if (connection.disconnectedAt) return { disconnected: true };
 
+		const disconnectInvalidSecret = async (): Promise<RefreshResult> => {
+			await tx
+				.update(integrationConnections)
+				.set({
+					disconnectedAt: new Date(),
+					disconnectReason: "invalid_secret",
+				})
+				.where(eq(integrationConnections.id, connectionId));
+			return { disconnected: true };
+		};
+
 		if (
 			connection.tokenExpiresAt &&
 			connection.tokenExpiresAt.getTime() > Date.now() + REFRESH_BUFFER_MS
 		) {
-			return { disconnected: false, accessToken: connection.accessToken };
+			try {
+				return {
+					disconnected: false,
+					accessToken: decodeSecret(connection.accessToken),
+				};
+			} catch (error) {
+				if (isIntegrationSecretDecodeError(error)) {
+					return disconnectInvalidSecret();
+				}
+				throw error;
+			}
+		}
+
+		let refreshToken: string;
+		try {
+			refreshToken = decodeSecret(connection.refreshToken);
+		} catch (error) {
+			if (isIntegrationSecretDecodeError(error)) {
+				return disconnectInvalidSecret();
+			}
+			throw error;
 		}
 
 		const controller = new AbortController();
@@ -63,7 +99,7 @@ export async function refreshLinearToken(
 				signal: controller.signal,
 				body: new URLSearchParams({
 					grant_type: "refresh_token",
-					refresh_token: connection.refreshToken,
+					refresh_token: refreshToken,
 					client_id: env.LINEAR_CLIENT_ID,
 					client_secret: env.LINEAR_CLIENT_SECRET,
 				}),
@@ -97,8 +133,10 @@ export async function refreshLinearToken(
 		await tx
 			.update(integrationConnections)
 			.set({
-				accessToken: data.access_token,
-				refreshToken: data.refresh_token,
+				accessToken: storeSecret(data.access_token),
+				refreshToken: data.refresh_token
+					? storeSecret(data.refresh_token)
+					: data.refresh_token,
 				tokenExpiresAt,
 				disconnectedAt: null,
 				disconnectReason: null,

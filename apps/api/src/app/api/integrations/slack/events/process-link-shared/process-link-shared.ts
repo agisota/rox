@@ -1,5 +1,6 @@
 import { db } from "@rox/db/client";
 import { integrationConnections, tasks } from "@rox/db/schema";
+import { isIntegrationSecretDecodeError } from "@rox/trpc/integration-secret";
 import type { EntityMetadata, LinkSharedEvent } from "@slack/types";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { createSlackClient } from "../utils/slack-client";
@@ -45,7 +46,22 @@ export async function processLinkShared({
 		return;
 	}
 
-	const slack = createSlackClient(connection.accessToken);
+	let slack: ReturnType<typeof createSlackClient>;
+	try {
+		slack = createSlackClient(connection.accessToken);
+	} catch (error) {
+		if (isIntegrationSecretDecodeError(error)) {
+			console.error(
+				"[slack/process-link-shared] Stored Slack token is unreadable",
+				{
+					connectionId: connection.id,
+					teamId,
+				},
+			);
+			return;
+		}
+		throw error;
+	}
 
 	const entities: EntityMetadata[] = [];
 

@@ -1,6 +1,7 @@
 import { db } from "@rox/db/client";
 import type { SlackConfig } from "@rox/db/schema";
 import { integrationConnections, members, users } from "@rox/db/schema";
+import { storeSecret } from "@rox/trpc/integration-secret";
 import { WebClient } from "@slack/web-api";
 import { and, eq, isNull, ne } from "drizzle-orm";
 
@@ -80,6 +81,7 @@ export async function GET(request: Request) {
 		const config: SlackConfig = {
 			provider: "slack",
 		};
+		const storedAccessToken = storeSecret(tokenData.access_token);
 
 		const [conflict] = await db
 			.select({ email: users.email })
@@ -107,7 +109,7 @@ export async function GET(request: Request) {
 				organizationId,
 				connectedByUserId: userId,
 				provider: "slack",
-				accessToken: tokenData.access_token,
+				accessToken: storedAccessToken,
 				externalOrgId: tokenData.team.id,
 				externalOrgName: tokenData.team.name,
 				config,
@@ -118,7 +120,7 @@ export async function GET(request: Request) {
 					integrationConnections.provider,
 				],
 				set: {
-					accessToken: tokenData.access_token,
+					accessToken: storedAccessToken,
 					externalOrgId: tokenData.team.id,
 					externalOrgName: tokenData.team.name,
 					connectedByUserId: userId,

@@ -1,9 +1,12 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { afterEach, beforeAll, describe, expect, it } from "bun:test";
 import {
 	decodeSecret,
 	ENCRYPTED_SECRET_PREFIX,
 	encodeSecret,
+	IntegrationSecretDecodeError,
 	isEncodedSecret,
+	isIntegrationSecretEncryptionEnabled,
+	storeSecret,
 } from "./secret-store";
 
 beforeAll(() => {
@@ -39,5 +42,43 @@ describe("integration secret-store codec", () => {
 		expect(a).not.toBe(b);
 		expect(decodeSecret(a)).toBe("same");
 		expect(decodeSecret(b)).toBe("same");
+	});
+
+	it("throws a typed error for corrupted encrypted payloads", () => {
+		const corrupted = `${ENCRYPTED_SECRET_PREFIX}not-valid-ciphertext`;
+		expect(() => decodeSecret(corrupted)).toThrow(IntegrationSecretDecodeError);
+	});
+});
+
+describe("storeSecret (flag-gated encryption-at-rest)", () => {
+	afterEach(() => {
+		delete process.env.INTEGRATION_SECRET_ENCRYPTION;
+	});
+
+	it("stores plaintext when the flag is off (default)", () => {
+		delete process.env.INTEGRATION_SECRET_ENCRYPTION;
+		expect(isIntegrationSecretEncryptionEnabled()).toBe(false);
+		const stored = storeSecret("xoxb-token");
+		expect(stored).toBe("xoxb-token");
+		expect(isEncodedSecret(stored)).toBe(false);
+		// Reads round-trip regardless (decode passes plaintext through).
+		expect(decodeSecret(stored)).toBe("xoxb-token");
+	});
+
+	it("encrypts on write when the flag is on", () => {
+		for (const on of ["1", "true", "on", "TRUE", " true ", "On"]) {
+			process.env.INTEGRATION_SECRET_ENCRYPTION = on;
+			expect(isIntegrationSecretEncryptionEnabled()).toBe(true);
+			const stored = storeSecret("xoxb-token");
+			expect(isEncodedSecret(stored)).toBe(true);
+			expect(stored).not.toContain("xoxb-token");
+			expect(decodeSecret(stored)).toBe("xoxb-token");
+		}
+	});
+
+	it("treats other flag values as off", () => {
+		process.env.INTEGRATION_SECRET_ENCRYPTION = "no";
+		expect(isIntegrationSecretEncryptionEnabled()).toBe(false);
+		expect(isEncodedSecret(storeSecret("tok"))).toBe(false);
 	});
 });

@@ -4,6 +4,7 @@ import { integrationConnections } from "@rox/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { storeSecret } from "../../../lib/integrations/secret-store";
 import { protectedProcedure } from "../../../trpc";
 import { verifyOrgAdmin, verifyOrgMembership } from "../utils";
 
@@ -226,7 +227,7 @@ export function createProviderConnectionRouter(provider: IntegrationProvider) {
 						.update(integrationConnections)
 						.set({
 							connectedByUserId: ctx.session.user.id,
-							accessToken,
+							accessToken: storeSecret(accessToken),
 							externalOrgId,
 							externalOrgName,
 							config,
@@ -263,7 +264,7 @@ export function createProviderConnectionRouter(provider: IntegrationProvider) {
 						workspaceId: input.workspaceId ?? null,
 						connectedByUserId: ctx.session.user.id,
 						provider,
-						accessToken,
+						accessToken: storeSecret(accessToken),
 						externalOrgId,
 						externalOrgName,
 						config,
