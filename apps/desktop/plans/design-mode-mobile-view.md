@@ -72,7 +72,7 @@ shared/browser/                         pure, unit-tested, no Electron imports
   captureFormatter.ts DesignModeCapture -> { markdown, file } for the agent
 
 main/lib/browser/
-  browser-manager.ts            (extended) capturePageRegion, device emulation
+  browser-manager.ts            (extended) captureRegion, device emulation
   design-mode/
     pickerScript.ts             injectable hover+click overlay (guest-side string)
     serializeElementScript.ts   one-shot element serialization (guest-side string)
