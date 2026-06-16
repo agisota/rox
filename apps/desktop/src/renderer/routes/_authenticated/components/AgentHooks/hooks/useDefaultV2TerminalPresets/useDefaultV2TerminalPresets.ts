@@ -79,4 +79,23 @@ export function useDefaultV2TerminalPresets(hostUrl: string | null): void {
 		presetsReady,
 		v2Presets,
 	]);
+
+	// One-time normalization: builds before the omp agent was rebranded persisted
+	// its default terminal preset as "Oh My Pi". Preset re-initialization is
+	// skipped once `terminalPresetsInitialized` is set, so existing installs keep
+	// the stale name. Rename any legacy "Oh My Pi" preset to the current omp agent
+	// label ("Rox") so the rebrand reaches already-initialized profiles too.
+	useEffect(() => {
+		if (!presetsReady) return;
+		const ompAgent = agents.find((agent) => agent.presetId === "omp");
+		const targetLabel = ompAgent?.label;
+		if (!targetLabel || targetLabel === "Oh My Pi") return;
+		for (const preset of v2Presets) {
+			if (preset.name === "Oh My Pi") {
+				collections.v2TerminalPresets.update(preset.id, (draft) => {
+					draft.name = targetLabel;
+				});
+			}
+		}
+	}, [agents, presetsReady, v2Presets, collections.v2TerminalPresets]);
 }

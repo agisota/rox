@@ -49,6 +49,8 @@ export const SETTING_ITEM_ID = {
 	LINKS_URL: "links-url",
 	LINKS_SIDEBAR_FILE: "links-sidebar-file",
 
+	PUBLIC_SHARES: "public-shares",
+
 	MODELS_ROX: "models-rox",
 	MODELS_ANTHROPIC: "models-anthropic",
 	MODELS_OPENAI: "models-openai",
@@ -159,6 +161,8 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.LINKS_FILE]: "v2",
 	[SETTING_ITEM_ID.LINKS_URL]: "v2",
 	[SETTING_ITEM_ID.LINKS_SIDEBAR_FILE]: "v2",
+
+	[SETTING_ITEM_ID.PUBLIC_SHARES]: "shared",
 
 	[SETTING_ITEM_ID.MODELS_ROX]: "shared",
 	[SETTING_ITEM_ID.MODELS_ANTHROPIC]: "shared",
@@ -653,7 +657,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.APPEARANCE_GLASS,
 		section: "appearance",
-		title: "Стеклянные поверхности",
+		title: "Остекление",
 		description: "Полупрозрачные панели и эффект размытия окна",
 		keywords: [
 			"appearance",
@@ -667,9 +671,12 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"frosted",
 			"внешний вид",
 			"оформление",
+			"остекление",
 			"стекло",
+			"стеклянные поверхности",
 			"размытие",
 			"прозрачность",
+			"прозрачный дизайн",
 			"полупрозрачность",
 			"непрозрачность",
 			"акрил",
@@ -1216,6 +1223,36 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"открыть",
 			"выбрать",
 			"поведение",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.PUBLIC_SHARES,
+		section: "shares",
+		title: "Публичные ссылки",
+		description:
+			"Просмотр, копирование и отзыв публичных ссылок на чаты и артефакты",
+		keywords: [
+			"share",
+			"shares",
+			"sharing",
+			"public",
+			"link",
+			"links",
+			"chat",
+			"artifact",
+			"copy",
+			"revoke",
+			"snapshot",
+			"ссылка",
+			"ссылки",
+			"публичные",
+			"поделиться",
+			"шаринг",
+			"чат",
+			"артефакт",
+			"копировать",
+			"отозвать",
+			"снапшот",
 		],
 	},
 	{

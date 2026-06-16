@@ -36,6 +36,7 @@ const SECTION_ORDER: SettingsSection[] = [
 	"git",
 	"terminal",
 	"links",
+	"shares",
 	"models",
 	"organization",
 	"teams",
@@ -57,6 +58,7 @@ function getSectionFromPath(pathname: string): SettingsSection | null {
 	if (pathname.includes("/settings/git")) return "git";
 	if (pathname.includes("/settings/terminal")) return "terminal";
 	if (pathname.includes("/settings/links")) return "links";
+	if (pathname.includes("/settings/shares")) return "shares";
 	if (pathname.includes("/settings/models")) return "models";
 	if (pathname.includes("/settings/experimental")) return "experimental";
 	if (pathname.includes("/settings/integrations")) return "integrations";
@@ -88,6 +90,8 @@ function getPathFromSection(section: SettingsSection): string {
 			return "/settings/terminal";
 		case "links":
 			return "/settings/links";
+		case "shares":
+			return "/settings/shares";
 		case "models":
 			return "/settings/models";
 		case "experimental":
@@ -202,7 +206,7 @@ function SettingsLayout() {
 								{usesInnerSidebar ? (
 									<Outlet />
 								) : (
-									<div className="mx-auto max-w-4xl">
+									<div className="mx-auto w-full max-w-6xl">
 										<Outlet />
 									</div>
 								)}
@@ -210,7 +214,7 @@ function SettingsLayout() {
 						) : usesInnerSidebar ? (
 							<Outlet />
 						) : (
-							<div className="mx-auto max-w-4xl">
+							<div className="mx-auto w-full max-w-6xl">
 								<Outlet />
 							</div>
 						)}

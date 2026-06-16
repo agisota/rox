@@ -18,6 +18,7 @@ import {
 	type SettingItemId,
 } from "../../../utils/settings-search";
 import { AccountUsagePanel } from "./components/AccountUsagePanel";
+import { ProfilePublicSettings } from "./components/ProfilePublicSettings";
 import { ProfileSkeleton } from "./components/ProfileSkeleton";
 
 interface AccountSettingsProps {
@@ -118,7 +119,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 	}
 
 	return (
-		<div className="p-6 max-w-4xl w-full">
+		<div className="p-6 w-full">
 			<div className="mb-8">
 				<h2 className="text-xl font-semibold">Аккаунт</h2>
 				<p className="text-sm text-muted-foreground mt-1">
@@ -127,6 +128,8 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 			</div>
 
 			<div className="space-y-3">
+				{showProfile && <ProfilePublicSettings />}
+
 				{showProfile &&
 					(!isReady && !user && !session ? (
 						<ProfileSkeleton />

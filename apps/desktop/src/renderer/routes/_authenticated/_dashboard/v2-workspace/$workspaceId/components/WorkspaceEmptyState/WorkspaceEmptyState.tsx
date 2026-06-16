@@ -7,9 +7,8 @@ import { LuSearch } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
-import roxEmptyStateWordmark from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/assets/rox-empty-state-wordmark.svg";
+import { RoxLogo } from "renderer/routes/sign-in/components/RoxLogo";
 import { EmptyTabActionButton } from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/components/EmptyTabActionButton";
-import { useTheme } from "renderer/stores/theme";
 
 interface WorkspaceEmptyStateProps {
 	onOpenBrowser: () => void;
@@ -58,7 +57,6 @@ export function WorkspaceEmptyState({
 	onOpenQuickOpen,
 	onOpenTerminal,
 }: WorkspaceEmptyStateProps) {
-	const activeTheme = useTheme();
 	// Essential: stagger entrance conveys structure; decorative: ambient float panels.
 	const animate = useShouldAnimate("essential");
 	const decorate = useShouldAnimate("decorative");
@@ -145,16 +143,7 @@ export function WorkspaceEmptyState({
 					className="mb-7 flex items-center justify-center py-3"
 					variants={wordmarkVariants}
 				>
-					<img
-						alt="Rox"
-						className={`h-8 w-auto select-none ${
-							activeTheme?.type === "dark"
-								? "opacity-85"
-								: "brightness-0 opacity-75"
-						}`}
-						draggable={false}
-						src={roxEmptyStateWordmark}
-					/>
+					<RoxLogo className="h-12 w-auto select-none opacity-90" />
 				</motion.div>
 				<div className="mx-auto grid w-full max-w-md gap-0.5">
 					{actions.map((action) => (

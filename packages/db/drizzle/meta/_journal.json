@@ -505,6 +505,13 @@
       "when": 1781558072444,
       "tag": "0071_agent_sources_project_delete_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1781567908183,
+      "tag": "0072_add_user_profile",
+      "breakpoints": true
     }
   ]
 }

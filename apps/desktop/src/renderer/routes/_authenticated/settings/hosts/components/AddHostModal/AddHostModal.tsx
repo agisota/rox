@@ -246,6 +246,21 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 	const canProvision =
 		isManaged && name.trim().length > 0 && selectedProvider?.available === true;
 
+	// Keep the dropdown on a usable provider. When providers load or saved keys
+	// change (e.g. server returns all-unconfigured but the user has a local
+	// Daytona key, or they just cleared the selected provider's key), snap the
+	// selection to the first available provider so the picker reflects configured
+	// providers without an app restart and never sits on an unconfigured one when
+	// a configured option exists.
+	const firstAvailableProviderId = displayProviders.find(
+		(p) => p.available,
+	)?.id;
+	useEffect(() => {
+		if (!isManaged) return;
+		if (selectedProvider?.available) return;
+		if (firstAvailableProviderId) setProvider(firstAvailableProviderId);
+	}, [isManaged, selectedProvider?.available, firstAvailableProviderId]);
+
 	const handleProviderCredentialChange = (
 		providerId: ManagedProviderId,
 		value: string,
@@ -270,6 +285,11 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 			...current,
 			[providerId]: "",
 		}));
+		// Auto-configure on save: the saved key flips this provider to available
+		// (see `displayProviders`), so select it immediately. Without this the
+		// dropdown can stay on a still-unconfigured provider and "Подготовить"
+		// stays disabled, making the freshly-saved key feel inert until restart.
+		setProvider(providerId);
 		toast.success(`Ключ ${PROVIDER_COPY[providerId].label} сохранён`);
 	};
 
@@ -289,10 +309,15 @@ export function AddHostModal({ open, onOpenChange }: AddHostModalProps) {
 		if (!isManagedProvider(provider)) return;
 		setSubmitting(true);
 		try {
+			// Forward the locally-saved provider key (if any) so the server can
+			// provision with the user's own credential instead of a server env key.
+			// Omitted when empty so the server still falls back to its env key.
+			const providerApiKey = providerCredentials[provider]?.trim() || undefined;
 			const host = await apiTrpcClient.v2Host.provision.mutate({
 				name: name.trim(),
 				kind,
 				provider,
+				providerApiKey,
 			});
 			toast.success(`Подготавливаем ${host.name}…`);
 			onOpenChange(false);

@@ -119,7 +119,7 @@ function SignInPage() {
 			<div className="flex flex-1 items-center justify-center">
 				<div className="flex flex-col items-center w-full max-w-md px-8">
 					<div className="mb-8">
-						<RoxLogo className="h-12 w-auto" />
+						<RoxLogo className="h-24 w-auto" />
 					</div>
 
 					<div className="text-center mb-8">
