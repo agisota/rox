@@ -6,7 +6,10 @@ import {
 	type AgentUpdateStrategy,
 	resolveInstallCommands,
 } from "@rox/shared/agent-definition";
-import { AGENT_HARNESS_PRESETS } from "@rox/shared/agent-harness-presets";
+import {
+	AGENT_HARNESS_PRESETS,
+	type HarnessAuditReceipt,
+} from "@rox/shared/agent-harness-presets";
 import type { AgentInstallStatus } from "../../db/schema";
 
 export type PreinstallItemKind = "agent" | "harness";
@@ -44,6 +47,14 @@ export interface PreinstallCatalogItem {
 	updateStrategy: AgentUpdateStrategy;
 	/** Exact version installed when `updateStrategy` is `"pinned"`. */
 	pinnedVersion?: string;
+	/**
+	 * Release-train audit receipt copied verbatim from the shared harness
+	 * catalog. Reuses the canonical `HarnessAuditReceipt` so the union-typed
+	 * installer source, size risk, and preset strategy survive the hop into
+	 * host-service instead of being widened to plain strings. `undefined` for
+	 * agent items, which carry no harness receipt.
+	 */
+	audit?: HarnessAuditReceipt;
 }
 
 /**
@@ -68,6 +79,7 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 				optional: install.optional ?? false,
 				updateStrategy: install.updateStrategy ?? "latest",
 				pinnedVersion: install.pinnedVersion,
+				audit: undefined,
 			};
 		});
 
@@ -84,6 +96,7 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 			})),
 			optional: harness.optional ?? harness.install.length === 0,
 			updateStrategy: "latest" as const,
+			audit: harness.audit,
 		}),
 	);
 
