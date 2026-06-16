@@ -1,3 +1,8 @@
+import {
+	CUSTOM_OPENAI_ENV_KEYS,
+	type CustomProviderRuntimeEnvResult,
+	resolveCustomProviderRuntimeEnv,
+} from "../CustomModelProvider";
 import type { RoxKeyProvisioner } from "../RoxModelProvider";
 import {
 	createRoxKeyProvisioner,
@@ -72,6 +77,11 @@ export class CloudModelProvider implements ModelProviderRuntimeResolver {
 		});
 
 		const rox = await resolveRoxRuntimeEnv(context, this.roxKeyProvisioner);
+		// A custom OpenAI-compatible provider shares the OPENAI_* keys with Rox, so
+		// it only applies when the Rox house model is NOT selected.
+		const custom: CustomProviderRuntimeEnvResult = rox.isRoxModel
+			? { env: {}, isCustomModel: false }
+			: resolveCustomProviderRuntimeEnv(context);
 
 		const env = {
 			...nextEnv,
@@ -80,13 +90,16 @@ export class CloudModelProvider implements ModelProviderRuntimeResolver {
 			),
 			// Rox env (when selected) wins over any ambient OpenAI base/key so the
 			// house model always targets the Rox endpoint with the per-user key.
+			// A custom provider (when selected, and not Rox) likewise wins.
 			...rox.env,
+			...custom.env,
 		};
 
-		// Rox base/key are set explicitly above; they are already in
-		// CLOUD_PROVIDER_ENV_KEYS so the cleanup list needs no special-casing.
+		// Rox/custom base/key are set explicitly above. ROX_OPENAI_ENV_KEYS and
+		// CUSTOM_OPENAI_ENV_KEYS are the same OPENAI_* pair; add them to cleanup so
+		// stale values are cleared when neither model is active.
 		const cleanupKeys = [...CLOUD_PROVIDER_ENV_KEYS] as string[];
-		for (const key of ROX_OPENAI_ENV_KEYS) {
+		for (const key of [...ROX_OPENAI_ENV_KEYS, ...CUSTOM_OPENAI_ENV_KEYS]) {
 			if (!cleanupKeys.includes(key)) cleanupKeys.push(key);
 		}
 
@@ -95,12 +108,14 @@ export class CloudModelProvider implements ModelProviderRuntimeResolver {
 			cleanupKeys,
 			hasUsableRuntimeEnv: rox.isRoxModel
 				? rox.error === null
-				: Boolean(
-						env.ANTHROPIC_API_KEY ||
-							env.ANTHROPIC_AUTH_TOKEN ||
-							env.OPENAI_API_KEY ||
-							env.OPENAI_AUTH_TOKEN,
-					),
+				: custom.isCustomModel
+					? true
+					: Boolean(
+							env.ANTHROPIC_API_KEY ||
+								env.ANTHROPIC_AUTH_TOKEN ||
+								env.OPENAI_API_KEY ||
+								env.OPENAI_AUTH_TOKEN,
+						),
 		};
 	}
 

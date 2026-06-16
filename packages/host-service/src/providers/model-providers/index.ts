@@ -1,4 +1,10 @@
 export { CloudModelProvider } from "./CloudModelProvider";
+export {
+	CUSTOM_OPENAI_ENV_KEYS,
+	type CustomProviderRuntimeEnvResult,
+	isCustomProviderModel,
+	resolveCustomProviderRuntimeEnv,
+} from "./CustomModelProvider";
 export { LocalModelProvider } from "./LocalModelProvider";
 export {
 	createRoxKeyProvisioner,
