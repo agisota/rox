@@ -225,7 +225,7 @@ function getCollectionsCacheKey(organizationId: string): string {
 }
 
 // Singleton API client with dynamic auth headers
-const apiClient = createTRPCProxyClient<AppRouter>({
+export const apiClient = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
 			url: `${env.NEXT_PUBLIC_API_URL}/api/trpc`,

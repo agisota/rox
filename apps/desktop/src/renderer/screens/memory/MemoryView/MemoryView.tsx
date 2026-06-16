@@ -4,6 +4,7 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import { ImportPanel } from "./components/ImportPanel";
 import { MemoryGroup } from "./components/MemoryGroup";
 import { MemorySuggestions } from "./components/MemorySuggestions";
 import { MEMORY_GROUPS } from "./groups";
@@ -55,6 +56,8 @@ export function MemoryView() {
 						агент учитывает их в работе.
 					</p>
 				</header>
+
+				<ImportPanel />
 
 				<MemorySuggestions items={suggested} />
 
