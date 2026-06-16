@@ -65,10 +65,9 @@ shared/browser/                         pure, unit-tested, no Electron imports
   schemas.ts          zod schemas (tRPC IO + runtime validation)
   devicePresets.ts    preset table + lookup
   cssWhitelist.ts     computed-style allowlist + filter
-  htmlContext.ts      outerHTML/context truncation + size limits
   selectorHints.ts    stable selector synthesis from a serialized descriptor
   originPolicy.ts     local vs remote origin + capture-warning policy
-  payloadLimits.ts    HTML / screenshot size limits
+  payloadLimits.ts    outerHTML truncation + HTML / screenshot size limits
   sourcePath.ts       sourcemap path normalization within workspace root
   captureFormatter.ts DesignModeCapture -> { markdown, file } for the agent
 

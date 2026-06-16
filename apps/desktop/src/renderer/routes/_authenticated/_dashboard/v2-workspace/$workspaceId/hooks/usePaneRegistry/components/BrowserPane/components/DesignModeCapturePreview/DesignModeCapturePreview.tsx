@@ -56,7 +56,8 @@ export function DesignModeCapturePreview({
 			};
 			publishDesignCapture(detail);
 		} catch {
-			// The clipboard hand-off already succeeded; the bus is best-effort.
+			toast.warning("Capture copied, but agent hand-off failed");
+			return;
 		}
 		toast.success("Design capture copied — paste it into the agent");
 		onDismiss();
