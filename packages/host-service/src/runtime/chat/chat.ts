@@ -6,6 +6,7 @@ import {
 	getSlashCommands as getSlashCommandsFromCwd,
 	resolveSlashCommand as resolveSlashCommandFromCwd,
 } from "@rox/chat/server/desktop";
+import { resolveChatWireModelId } from "@rox/shared/chat-models";
 import { eq } from "drizzle-orm";
 import { createMastraCode } from "mastracode";
 import type { HostDb } from "../../db";
@@ -300,6 +301,7 @@ async function getRuntimeMemoryStore(
 async function restartRuntimeFromUserMessage(
 	runtime: RuntimeSession,
 	input: RestartPayload,
+	runtimeResolver: ModelProviderRuntimeResolver,
 ): Promise<void> {
 	const threadId = runtime.harness.getCurrentThreadId();
 	if (!threadId) {
@@ -347,8 +349,12 @@ async function restartRuntimeFromUserMessage(
 
 	const selectedModel = input.metadata?.model?.trim();
 	if (selectedModel) {
+		// Re-prepare the runtime env for the selected model before switching so a
+		// switch to/from the Rox house model points the OpenAI-compatible client
+		// at the right endpoint + key for this turn.
+		await runtimeResolver.prepareRuntimeEnv({ selectedModelId: selectedModel });
 		await runtime.harness.switchModel({
-			modelId: selectedModel,
+			modelId: resolveChatWireModelId(selectedModel),
 			scope: "thread",
 		});
 	}
@@ -462,8 +468,10 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 	private async createRuntime(
 		sessionId: string,
 		workspaceId: string,
+		selectedModelId?: string,
 	): Promise<RuntimeSession> {
-		if (!(await this.runtimeResolver.hasUsableRuntimeEnv())) {
+		const runtimeEnvContext = selectedModelId ? { selectedModelId } : undefined;
+		if (!(await this.runtimeResolver.hasUsableRuntimeEnv(runtimeEnvContext))) {
 			throw new Error("No model provider credentials available");
 		}
 
@@ -478,7 +486,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		const cwd = workspace.worktreePath;
 
 		this.ensureGlobalAgentInstructions();
-		await this.runtimeResolver.prepareRuntimeEnv();
+		await this.runtimeResolver.prepareRuntimeEnv(runtimeEnvContext);
 
 		const runtime = await createMastraCode({
 			cwd,
@@ -510,6 +518,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 	private async getOrCreateRuntime(
 		sessionId: string,
 		workspaceId: string,
+		selectedModelId?: string,
 	): Promise<RuntimeSession> {
 		const existing = this.runtimes.get(sessionId);
 		if (existing) {
@@ -531,7 +540,11 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			return inflight.promise;
 		}
 
-		const promise = this.createRuntime(sessionId, workspaceId).finally(() => {
+		const promise = this.createRuntime(
+			sessionId,
+			workspaceId,
+			selectedModelId,
+		).finally(() => {
 			this.runtimeCreations.delete(sessionId);
 		});
 		this.runtimeCreations.set(sessionId, { workspaceId, promise });
@@ -693,16 +706,24 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 	async sendMessage(
 		input: ChatSendMessageInput,
 	): Promise<RuntimeSendMessageResult> {
+		const selectedModel = input.metadata?.model?.trim();
 		const runtime = await this.getOrCreateRuntime(
 			input.sessionId,
 			input.workspaceId,
+			selectedModel,
 		);
 		runtime.lastErrorMessage = null;
 
-		const selectedModel = input.metadata?.model?.trim();
 		if (selectedModel) {
+			// Re-prepare the runtime env for the selected model before switching.
+			// For an existing runtime created under a different model this is what
+			// points the OpenAI-compatible client at the Rox endpoint (or restores
+			// the default env when switching away from the Rox house model).
+			await this.runtimeResolver.prepareRuntimeEnv({
+				selectedModelId: selectedModel,
+			});
 			await runtime.harness.switchModel({
-				modelId: selectedModel,
+				modelId: resolveChatWireModelId(selectedModel),
 				scope: "thread",
 			});
 		}
@@ -719,9 +740,10 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		const runtime = await this.getOrCreateRuntime(
 			input.sessionId,
 			input.workspaceId,
+			input.metadata?.model?.trim(),
 		);
 		runtime.lastErrorMessage = null;
-		await restartRuntimeFromUserMessage(runtime, input);
+		await restartRuntimeFromUserMessage(runtime, input, this.runtimeResolver);
 	}
 
 	async stop(input: { sessionId: string; workspaceId: string }): Promise<void> {
