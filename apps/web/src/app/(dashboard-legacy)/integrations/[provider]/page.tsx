@@ -11,7 +11,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { FaBookOpen, FaComments } from "react-icons/fa";
-import { SiObsidian, SiTelegram } from "react-icons/si";
+import { SiDiscord, SiNotion, SiObsidian, SiTelegram } from "react-icons/si";
 import { api } from "@/trpc/server";
 import {
 	ManualIntegrationControls,
@@ -36,6 +36,24 @@ const MANUAL_PROVIDERS: Record<ManualIntegrationProvider, ManualProviderMeta> =
 			setupDescription:
 				"Создайте бота через BotFather, добавьте его в нужный чат и сохраните токен в Rox.",
 			icon: <SiTelegram className="size-10" />,
+		},
+		discord: {
+			name: "Discord",
+			description:
+				"Подключите Discord-бота, чтобы запускать агентов и получать ответы на сервере.",
+			setupTitle: "Bot token и канал",
+			setupDescription:
+				"Создайте Discord bot, добавьте его на сервер и сохраните token, guild ID и default channel ID в Rox.",
+			icon: <SiDiscord className="size-10" />,
+		},
+		notion: {
+			name: "Notion",
+			description:
+				"Подключите Notion workspace, чтобы использовать документы и базы данных как рабочий контекст.",
+			setupTitle: "Integration token и workspace",
+			setupDescription:
+				"Создайте internal integration в Notion, выдайте доступ нужным страницам и сохраните token в Rox.",
+			icon: <SiNotion className="size-10" />,
 		},
 		obsidian: {
 			name: "Obsidian",
@@ -78,6 +96,10 @@ async function getConnection(
 	switch (provider) {
 		case "telegram":
 			return trpc.integration.telegram.getConnection.query({ organizationId });
+		case "discord":
+			return trpc.integration.discord.getConnection.query({ organizationId });
+		case "notion":
+			return trpc.integration.notion.getConnection.query({ organizationId });
 		case "obsidian":
 			return trpc.integration.obsidian.getConnection.query({ organizationId });
 		case "fibery":

@@ -26,6 +26,7 @@ import {
 	useFinalizeProjectSetup,
 } from "renderer/react-query/projects";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
+import { WorkspaceSetupPresets } from "../WorkspaceSetupPresets";
 
 interface NewProjectModalProps {
 	open: boolean;
@@ -60,6 +61,7 @@ export function NewProjectModal({
 	const [url, setUrl] = useState("");
 	const [name, setName] = useState("");
 	const [nameTouched, setNameTouched] = useState(false);
+	const [starterPresetIds, setStarterPresetIds] = useState<string[]>([]);
 	const [working, setWorking] = useState(false);
 	const [phase, setPhase] = useState<"idle" | "success" | "error">("idle");
 
@@ -88,6 +90,7 @@ export function NewProjectModal({
 		setUrl("");
 		setName("");
 		setNameTouched(false);
+		setStarterPresetIds([]);
 		setWorking(false);
 		setPhase("idle");
 	};
@@ -143,6 +146,7 @@ export function NewProjectModal({
 			const result = await client.project.create.mutate({
 				name: trimmedName,
 				mode: { kind: "clone", parentDir: trimmedParent, url: trimmedUrl },
+				starterPresetIds,
 			});
 			// Fire product callbacks immediately — no delay on product logic.
 			finalizeSetup(activeHostUrl, result);
@@ -257,6 +261,15 @@ export function NewProjectModal({
 								<LuFolderOpen className="size-4" />
 							</Button>
 						</div>
+					</div>
+
+					<div className="flex flex-col gap-2">
+						<Label className="text-xs">Starter presets</Label>
+						<WorkspaceSetupPresets
+							selectedIds={starterPresetIds}
+							onChange={setStarterPresetIds}
+							className="max-h-56 overflow-y-auto rounded-md border border-border/60 p-1"
+						/>
 					</div>
 				</Shake>
 

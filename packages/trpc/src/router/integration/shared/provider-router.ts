@@ -152,6 +152,42 @@ export function createProviderConnectionRouter(provider: IntegrationProvider) {
 				};
 			}),
 
+		testConnection: protectedProcedure
+			.input(scope)
+			.query(async ({ ctx, input }) => {
+				await verifyOrgMembership(ctx.session.user.id, input.organizationId);
+
+				const connection = await db.query.integrationConnections.findFirst({
+					where: and(
+						eq(integrationConnections.organizationId, input.organizationId),
+						eq(integrationConnections.provider, provider),
+						workspaceFilter(input.workspaceId),
+					),
+					columns: {
+						id: true,
+						externalOrgName: true,
+						config: true,
+					},
+				});
+				const checkedAt = new Date();
+
+				if (!connection) {
+					return {
+						success: false as const,
+						provider,
+						error: "No connection found",
+						checkedAt,
+					};
+				}
+
+				return {
+					success: true as const,
+					provider,
+					externalOrgName: connection.externalOrgName,
+					checkedAt,
+				};
+			}),
+
 		connect: protectedProcedure
 			.input(connectInput)
 			.mutation(async ({ ctx, input }) => {
