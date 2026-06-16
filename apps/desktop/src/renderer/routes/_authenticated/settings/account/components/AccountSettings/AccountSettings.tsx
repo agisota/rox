@@ -18,6 +18,7 @@ import {
 	type SettingItemId,
 } from "../../../utils/settings-search";
 import { AccountUsagePanel } from "./components/AccountUsagePanel";
+import { ProfilePublicSettings } from "./components/ProfilePublicSettings";
 import { ProfileSkeleton } from "./components/ProfileSkeleton";
 
 interface AccountSettingsProps {
@@ -127,6 +128,8 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 			</div>
 
 			<div className="space-y-3">
+				{showProfile && <ProfilePublicSettings />}
+
 				{showProfile &&
 					(!isReady && !user && !session ? (
 						<ProfileSkeleton />

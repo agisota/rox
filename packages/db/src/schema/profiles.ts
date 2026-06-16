@@ -18,11 +18,16 @@ export const userProfiles = pgTable(
 		userId: uuid("user_id")
 			.primaryKey()
 			.references(() => users.id, { onDelete: "cascade" }),
+		// `handle` is the canonical slug-safe, unique public nickname.
+		// The public profile is served at rox.one/@<handle> (route /u/<handle>).
 		handle: text("handle").notNull().unique(),
 		displayName: text("display_name"),
 		bio: text("bio"),
 		avatarUrl: text("avatar_url"),
 		isPublic: boolean("is_public").default(false).notNull(),
+		// Minimal public profile metadata.
+		location: text("location"),
+		websiteUrl: text("website_url"),
 		contactEmail: text("contact_email"),
 		telegram: text("telegram"),
 		max: text("max"),
