@@ -14,6 +14,7 @@ import type {
 	SelectGithubRepository,
 	SelectIntegrationConnection,
 	SelectInvitation,
+	SelectJournalEntry,
 	SelectMember,
 	SelectOrganization,
 	SelectProject,
@@ -163,6 +164,7 @@ export interface OrgCollections {
 	subscriptions: Collection<SelectSubscription>;
 	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
+	journalEntries: Collection<SelectJournalEntry>;
 	artifacts: Collection<SelectArtifact>;
 	githubRepositories: Collection<SelectGithubRepository>;
 	githubPullRequests: Collection<SelectGithubPullRequest>;
@@ -721,6 +723,25 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	// Read-only on the client: journal entries are generated server-side by the
+	// daily R1 job and synced down. No onInsert/Update/Delete.
+	const journalEntries = createPersistedElectricCollection(
+		electricCollectionOptions<SelectJournalEntry>({
+			id: `journal_entries-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "journal_entries",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const artifacts = createPersistedElectricCollection(
 		electricCollectionOptions<SelectArtifact>({
 			id: `artifacts-${organizationId}`,
@@ -955,6 +976,7 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		subscriptions,
 		apiKeys,
 		chatSessions,
+		journalEntries,
 		artifacts,
 		githubRepositories,
 		githubPullRequests,

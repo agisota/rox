@@ -23,7 +23,7 @@ import { cn } from "@rox/ui/utils";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { HiOutlineCog6Tooth } from "react-icons/hi2";
+import { HiOutlineBookOpen, HiOutlineCog6Tooth } from "react-icons/hi2";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { CollapseLabel } from "renderer/motion";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
@@ -103,6 +103,7 @@ export function DashboardSidebar({
 	const matchRoute = useMatchRoute();
 	const settingsHotkey = useHotkeyDisplay("OPEN_SETTINGS").text;
 	const isSettingsOpen = !!matchRoute({ to: "/settings", fuzzy: true });
+	const isJournalOpen = !!matchRoute({ to: "/journal", fuzzy: true });
 	const { activeHostUrl } = useLocalHostService();
 	const v2RouteMatch = matchRoute({ to: "/v2-workspace/$workspaceId" });
 	const activeV2WorkspaceId = v2RouteMatch ? v2RouteMatch.workspaceId : null;
@@ -238,6 +239,56 @@ export function DashboardSidebar({
 								projectName={activeV2Project.name}
 							/>
 						)}
+						{/* Journal / Memory navigation */}
+						<div
+							className={cn(
+								"border-t border-border",
+								isCollapsed
+									? "flex flex-col items-center gap-1 py-1"
+									: "flex flex-col gap-0.5 px-2 py-1",
+							)}
+						>
+							{isCollapsed ? (
+								<Tooltip delayDuration={300}>
+									<TooltipTrigger asChild>
+										<button
+											type="button"
+											aria-label="Журнал"
+											onClick={() => navigate({ to: "/journal" })}
+											className={cn(
+												"flex size-8 items-center justify-center rounded-md transition-colors",
+												isJournalOpen
+													? "bg-accent text-foreground"
+													: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+											)}
+										>
+											<HiOutlineBookOpen className="size-4" />
+										</button>
+									</TooltipTrigger>
+									<TooltipContent side="right">Журнал</TooltipContent>
+								</Tooltip>
+							) : (
+								<button
+									type="button"
+									onClick={() => navigate({ to: "/journal" })}
+									className={cn(
+										"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",
+										isJournalOpen
+											? "bg-accent text-foreground"
+											: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+									)}
+								>
+									<HiOutlineBookOpen className="size-4 shrink-0" />
+									<CollapseLabel
+										show={!isCollapsed}
+										className="flex-1 text-left"
+									>
+										Журнал
+									</CollapseLabel>
+								</button>
+							)}
+						</div>
+
 						<div
 							className={cn(
 								"border-t border-border",
