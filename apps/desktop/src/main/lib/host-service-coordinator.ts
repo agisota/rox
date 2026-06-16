@@ -502,6 +502,8 @@ export class HostServiceCoordinator extends EventEmitter {
 			delete childEnv.RELAY_URL;
 		}
 
+		seedRoxModelEnv(childEnv);
+
 		return childEnv;
 	}
 
@@ -663,6 +665,34 @@ function formatStartupFailure(
 
 function formatErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Build-time defaults for the Rox house model ("ROX R1"). These literal
+ * `process.env.*` reads are replaced by electron.vite.config's `main.define`
+ * at bundle time, so a packaged .app carries the CI-provided key/endpoint even
+ * though a Finder-launched Electron main process inherits no shell env. In dev
+ * (unbundled) they read the real process env.
+ */
+const ROX_MODEL_BUILD_DEFAULTS: Readonly<Record<string, string | undefined>> = {
+	ROX_AI_API_KEY: process.env.ROX_AI_API_KEY,
+	ROX_AI_BASE_URL: process.env.ROX_AI_BASE_URL,
+	ROX_AI_MODEL: process.env.ROX_AI_MODEL,
+};
+
+/**
+ * Seed the spawned host-service env with the Rox house-model credentials so
+ * "ROX R1" works out of the box. A value already present in `childEnv` (real
+ * runtime env / user shell — dev or self-host) always wins; the build-time
+ * default only fills a gap. Empty/whitespace values are treated as absent.
+ */
+function seedRoxModelEnv(childEnv: Record<string, string>): void {
+	for (const [key, buildDefault] of Object.entries(ROX_MODEL_BUILD_DEFAULTS)) {
+		const existing = childEnv[key]?.trim();
+		if (existing) continue;
+		const fallback = buildDefault?.trim();
+		if (fallback) childEnv[key] = fallback;
+	}
 }
 
 let coordinator: HostServiceCoordinator | null = null;
