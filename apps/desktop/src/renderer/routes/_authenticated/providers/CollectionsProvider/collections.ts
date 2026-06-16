@@ -16,6 +16,7 @@ import type {
 	SelectInvitation,
 	SelectJournalEntry,
 	SelectMember,
+	SelectMemoryImportJob,
 	SelectMemoryItem,
 	SelectOrganization,
 	SelectProject,
@@ -167,6 +168,7 @@ export interface OrgCollections {
 	chatSessions: Collection<SelectChatSession>;
 	journalEntries: Collection<SelectJournalEntry>;
 	memoryItems: Collection<SelectMemoryItem>;
+	memoryImportJobs: Collection<SelectMemoryImportJob>;
 	artifacts: Collection<SelectArtifact>;
 	githubRepositories: Collection<SelectGithubRepository>;
 	githubPullRequests: Collection<SelectGithubPullRequest>;
@@ -797,6 +799,24 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	// Read-only: archive-import job progress is written server-side.
+	const memoryImportJobs = createPersistedElectricCollection(
+		electricCollectionOptions<SelectMemoryImportJob>({
+			id: `memory_import_jobs-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "memory_import_jobs",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const artifacts = createPersistedElectricCollection(
 		electricCollectionOptions<SelectArtifact>({
 			id: `artifacts-${organizationId}`,
@@ -1033,6 +1053,7 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		chatSessions,
 		journalEntries,
 		memoryItems,
+		memoryImportJobs,
 		artifacts,
 		githubRepositories,
 		githubPullRequests,

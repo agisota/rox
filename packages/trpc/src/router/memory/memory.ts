@@ -1,12 +1,21 @@
 import { db, dbWs } from "@rox/db/client";
-import { memoryCategoryValues, memoryItems } from "@rox/db/schema";
+import {
+	memoryCategoryValues,
+	memoryImportJobs,
+	memoryItems,
+} from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import { Client } from "@upstash/qstash";
+import { put } from "@vercel/blob";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { env } from "../../env";
 import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { parsePromptImport } from "./prompt-import";
+
+const qstash = new Client({ token: env.QSTASH_TOKEN });
 
 const categorySchema = z.enum(memoryCategoryValues);
 const idInput = z.object({ id: z.string().uuid() });
@@ -196,6 +205,53 @@ export const memoryRouter = {
 				})),
 			);
 			return { imported: fresh.length };
+		}),
+
+	/**
+	 * Begin an archive import: store the export JSON on Vercel Blob, create a job
+	 * row, and enqueue the async processor (parse → R1 classify → memory_items).
+	 * Returns the jobId; progress is observed via the memoryImportJobs collection.
+	 */
+	startArchiveImport: protectedProcedure
+		.input(
+			z.object({
+				provider: z.enum(["chatgpt", "anthropic"]),
+				content: z.string().min(1).max(8_000_000),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const [job] = await db
+				.insert(memoryImportJobs)
+				.values({
+					organizationId,
+					createdBy: ctx.session.user.id,
+					provider: input.provider,
+					status: "pending",
+				})
+				.returning({ id: memoryImportJobs.id });
+			if (!job) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Не удалось создать задачу импорта.",
+				});
+			}
+
+			const blob = await put(`memory-imports/${job.id}.json`, input.content, {
+				access: "public",
+				contentType: "application/json",
+			});
+			await db
+				.update(memoryImportJobs)
+				.set({ blobUrl: blob.url })
+				.where(eq(memoryImportJobs.id, job.id));
+
+			await qstash.publishJSON({
+				url: `${env.NEXT_PUBLIC_API_URL}/api/memory/import/process`,
+				body: { jobId: job.id },
+				retries: 1,
+			});
+			return { jobId: job.id };
 		}),
 } satisfies TRPCRouterRecord;
 
