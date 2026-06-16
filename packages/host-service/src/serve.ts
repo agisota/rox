@@ -63,7 +63,11 @@ async function main(): Promise<void> {
 			auth: authProvider,
 			hostAuth: new PskHostAuthProvider(env.HOST_SERVICE_SECRET),
 			credentials: new LocalGitCredentialProvider(),
-			modelResolver: new LocalModelProvider(),
+			modelResolver: new LocalModelProvider({
+				// Scope the per-user Rox key bucket to this org so two orgs on one
+				// machine get distinct provisioned keys (falls back to host id).
+				roxUserScope: env.ORGANIZATION_ID,
+			}),
 		},
 	});
 

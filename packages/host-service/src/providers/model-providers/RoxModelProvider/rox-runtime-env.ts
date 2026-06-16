@@ -1,4 +1,5 @@
 import { isRoxHouseModel, resolveRoxBaseUrl } from "@rox/shared/chat-models";
+import { getHostId } from "@rox/shared/host-info";
 import type { RuntimeEnvContext } from "../types";
 import { RoxKeyProvisioner } from "./RoxKeyProvisioner";
 
@@ -14,12 +15,16 @@ export const ROX_OPENAI_ENV_KEYS = [
 ] as const;
 
 /**
- * Stable user id used to scope a provisioned key. The host-service runs a
- * single signed-in user per process, so a process-stable constant is
- * sufficient until multi-user hosting lands. Centralised here so the
- * provisioning cache key has one definition.
+ * Default scope used to bucket a provisioned per-user Rox key when the caller
+ * does not pass an explicit {@link RuntimeEnvContext.userScope}. The host-service
+ * runs a single signed-in user per process, so the stable, non-PII host id is
+ * the right per-install bucket — it also lines up with OmniRouter's
+ * `api_keys.machine_id` scoping. A caller that knows a real per-user id (multi-
+ * user hosting) overrides this via the context.
  */
-const HOST_USER_SCOPE = "host";
+function defaultHostUserScope(): string {
+	return `host:${getHostId()}`;
+}
 
 export interface RoxRuntimeEnvResult {
 	/** Env to merge into the prepared runtime. Empty when not applicable. */
@@ -52,7 +57,12 @@ export async function resolveRoxRuntimeEnv(
 		return EMPTY_RESULT;
 	}
 
-	const resolution = await provisioner.resolveKey(HOST_USER_SCOPE);
+	// Per-user key bucket: an explicit scope from the caller (real user id under
+	// multi-user hosting) wins; otherwise the stable host id. This is what
+	// decouples ROX R1 from the app.rox.one session — the resolved key is used
+	// directly as OPENAI_API_KEY against the gateway.
+	const userScope = context?.userScope?.trim() || defaultHostUserScope();
+	const resolution = await provisioner.resolveKey(userScope);
 	if (resolution.kind === "ok") {
 		return {
 			env: {

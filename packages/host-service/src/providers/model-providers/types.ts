@@ -10,6 +10,14 @@ export interface RuntimeEnvContext {
 	 * generic runtime (no specific model yet) omit it.
 	 */
 	selectedModelId?: string;
+	/**
+	 * Stable identity used to scope a per-user Rox key when provisioning is
+	 * configured. The host-service runs a single signed-in user per process, so
+	 * this is normally the org-scoped host id; it becomes a real per-user id once
+	 * multi-user hosting lands. Optional: when omitted, the provider falls back to
+	 * its configured default scope (host id).
+	 */
+	userScope?: string;
 }
 
 export interface ModelProviderRuntimeResolver {

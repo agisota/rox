@@ -34,17 +34,26 @@ interface LocalModelProviderOptions {
 	anthropicEnvConfigPath?: string;
 	/** Injected for tests; defaults to a process-wide provisioner. */
 	roxKeyProvisioner?: RoxKeyProvisioner;
+	/**
+	 * Default scope used to bucket the per-user Rox key when a turn does not
+	 * carry an explicit {@link RuntimeEnvContext.userScope}. Normally the org id,
+	 * so two orgs on one machine get distinct provisioned keys. When unset, the
+	 * Rox resolver falls back to the stable host id.
+	 */
+	roxUserScope?: string;
 }
 
 export class LocalModelProvider implements ModelProviderRuntimeResolver {
 	private readonly anthropicEnvConfigPath?: string;
 	private readonly roxKeyProvisioner: RoxKeyProvisioner;
+	private readonly roxUserScope?: string;
 	private currentRuntimeEnv: Record<string, string> = {};
 
 	constructor(options?: LocalModelProviderOptions) {
 		this.anthropicEnvConfigPath = options?.anthropicEnvConfigPath;
 		this.roxKeyProvisioner =
 			options?.roxKeyProvisioner ?? createRoxKeyProvisioner();
+		this.roxUserScope = options?.roxUserScope?.trim() || undefined;
 	}
 
 	private async resolveRuntimeEnv(context?: RuntimeEnvContext): Promise<{
@@ -52,7 +61,15 @@ export class LocalModelProvider implements ModelProviderRuntimeResolver {
 		cleanupKeys: string[];
 		hasUsableRuntimeEnv: boolean;
 	}> {
-		const rox = await resolveRoxRuntimeEnv(context, this.roxKeyProvisioner);
+		// Fill in the default per-user scope (org id) when the turn didn't carry an
+		// explicit one, so the Rox key bucket is stable per org/install. An explicit
+		// context.userScope always wins; if neither is set the Rox resolver falls
+		// back to the host id.
+		const roxContext: RuntimeEnvContext | undefined =
+			this.roxUserScope && !context?.userScope
+				? { ...context, userScope: this.roxUserScope }
+				: context;
+		const rox = await resolveRoxRuntimeEnv(roxContext, this.roxKeyProvisioner);
 		// A custom OpenAI-compatible provider routes through the same OPENAI_*
 		// keys as Rox, so it can only apply when the Rox house model is NOT the
 		// selected model (the two model ids never collide).

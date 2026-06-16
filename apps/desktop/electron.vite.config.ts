@@ -110,6 +110,17 @@ export default defineConfig({
 			"process.env.ROX_AI_API_KEY": defineEnv(process.env.ROX_AI_API_KEY),
 			"process.env.ROX_AI_BASE_URL": defineEnv(process.env.ROX_AI_BASE_URL),
 			"process.env.ROX_AI_MODEL": defineEnv(process.env.ROX_AI_MODEL),
+			// Optional per-user ROX R1 key provisioning. When both are set (repo
+			// secrets baked here), the host-service mints/fetches a distinct
+			// OmniRouter key per user/install instead of sharing ROX_AI_API_KEY.
+			// Unset by default → the shared-key MVP above is used. Same
+			// process.env-wins-at-runtime semantics as the ROX_AI_* values.
+			"process.env.ROX_KEY_PROVISION_URL": defineEnv(
+				process.env.ROX_KEY_PROVISION_URL,
+			),
+			"process.env.ROX_KEY_PROVISION_TOKEN": defineEnv(
+				process.env.ROX_KEY_PROVISION_TOKEN,
+			),
 		},
 
 		build: {

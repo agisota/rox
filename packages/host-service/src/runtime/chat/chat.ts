@@ -6,7 +6,11 @@ import {
 	getSlashCommands as getSlashCommandsFromCwd,
 	resolveSlashCommand as resolveSlashCommandFromCwd,
 } from "@rox/chat/server/desktop";
-import { resolveChatWireModelId } from "@rox/shared/chat-models";
+import {
+	isRoxHouseModel,
+	resolveChatWireModelId,
+	resolveRoxFallbackWireModelId,
+} from "@rox/shared/chat-models";
 import { eq } from "drizzle-orm";
 import { createMastraCode } from "mastracode";
 import type { HostDb } from "../../db";
@@ -100,6 +104,21 @@ interface ChatPlanPayload {
 	};
 }
 
+/**
+ * Per-turn state for the Rox house-model failover. When the user sends a turn on
+ * the Rox house model (Compound), we record the payload and the fallback wire id
+ * so a model-level error event can re-issue the turn once with
+ * `deepseek-v4-flash`. Cleared when a turn starts/ends or the user switches away.
+ */
+interface RoxFallbackState {
+	/** The fallback wire id to switch to (`openai/deepseek-v4-flash`). */
+	fallbackWireModelId: string;
+	/** The original user payload, replayed verbatim on fallback. */
+	payload: ChatSendMessageInput["payload"];
+	/** Set once the fallback has been attempted so it fires at most once. */
+	attempted: boolean;
+}
+
 interface RuntimeSession {
 	sessionId: string;
 	workspaceId: string;
@@ -111,6 +130,8 @@ interface RuntimeSession {
 	pendingSandboxQuestion: PendingSandboxQuestion | null;
 	answeredQuestionIds: Set<string>;
 	pendingQuestionResponses: Map<string, Promise<RuntimeQuestionResult>>;
+	/** Armed only while a Rox house-model turn awaits its first response. */
+	roxFallback: RoxFallbackState | null;
 }
 
 function respondToQuestionWithOptimisticState(
@@ -281,6 +302,23 @@ function toRuntimeErrorMessage(error: unknown): string {
 	return "Unexpected chat error";
 }
 
+/**
+ * Build the armed {@link RoxFallbackState} for a turn, or `null` when failover
+ * does not apply: the model isn't the Rox house model, or the configured primary
+ * already *is* the fallback (so there is nothing distinct to fall back to). Wire
+ * ids come from the shared resolver so the chain stays defined in one place.
+ */
+function buildRoxFallbackState(
+	selectedModel: string | undefined,
+	payload: ChatSendMessageInput["payload"],
+): RoxFallbackState | null {
+	if (!isRoxHouseModel(selectedModel)) return null;
+	const primaryWire = resolveChatWireModelId(selectedModel);
+	const fallbackWireModelId = resolveRoxFallbackWireModelId();
+	if (primaryWire === fallbackWireModelId) return null;
+	return { fallbackWireModelId, payload, attempted: false };
+}
+
 async function getRuntimeMemoryStore(
 	runtime: RuntimeSession,
 ): Promise<RuntimeMemoryStore> {
@@ -365,6 +403,8 @@ async function restartRuntimeFromUserMessage(
 	}
 
 	runtime.lastErrorMessage = null;
+	// Arm ROX R1 failover for the replayed turn as well (mirror of sendMessage).
+	runtime.roxFallback = buildRoxFallbackState(selectedModel, input.payload);
 	await runtime.harness.sendMessage(input.payload);
 }
 
@@ -391,6 +431,11 @@ export class ChatRuntimeManager {
 		runtime.harness.subscribe((event: unknown) => {
 			if (isHarnessErrorEvent(event) || isHarnessWorkspaceErrorEvent(event)) {
 				runtime.lastErrorMessage = toRuntimeErrorMessage(event.error);
+				// ROX R1 failover: a model-level error on the primary Compound model
+				// triggers exactly one retry with the deepseek-v4-flash fallback. The
+				// primary produced no assistant output (it errored), so replaying the
+				// turn cannot double up a visible response.
+				this.maybeRunRoxFallback(runtime);
 				return;
 			}
 
@@ -408,6 +453,9 @@ export class ChatRuntimeManager {
 				runtime.pendingSandboxQuestion = null;
 				runtime.answeredQuestionIds.clear();
 				runtime.pendingQuestionResponses.clear();
+				// Note: roxFallback is intentionally NOT cleared here — agent_start
+				// fires for both the primary and the fallback attempt, and we must
+				// keep the armed state across the primary's failure.
 				return;
 			}
 
@@ -415,8 +463,38 @@ export class ChatRuntimeManager {
 				runtime.pendingSandboxQuestion = null;
 				runtime.answeredQuestionIds.clear();
 				runtime.pendingQuestionResponses.clear();
+				// The turn finished (success or the fallback's own end). Disarm so a
+				// later, unrelated error never replays this payload.
+				runtime.roxFallback = null;
 			}
 		});
+	}
+
+	/**
+	 * Re-issue the current turn once with the Rox fallback model
+	 * (`deepseek-v4-flash`) when the primary Compound model errored. Fires at most
+	 * once per turn and only while {@link RoxFallbackState} is armed and
+	 * un-attempted. All failures are swallowed: the original error is already
+	 * surfaced via `lastErrorMessage`, so a failed fallback must not crash the
+	 * subscribe loop or mask the first error.
+	 */
+	private maybeRunRoxFallback(runtime: RuntimeSession): void {
+		const fallback = runtime.roxFallback;
+		if (!fallback || fallback.attempted) return;
+		fallback.attempted = true;
+
+		void (async () => {
+			try {
+				await runtime.harness.switchModel({
+					modelId: fallback.fallbackWireModelId,
+					scope: "thread",
+				});
+				runtime.lastErrorMessage = null;
+				await runtime.harness.sendMessage(fallback.payload);
+			} catch {
+				// Keep the primary's error visible; the fallback attempt is best-effort.
+			}
+		})();
 	}
 
 	/**
@@ -509,6 +587,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			pendingSandboxQuestion: null,
 			answeredQuestionIds: new Set(),
 			pendingQuestionResponses: new Map(),
+			roxFallback: null,
 		};
 		this.subscribeToSessionEvents(sessionRuntime);
 		this.runtimes.set(sessionId, sessionRuntime);
@@ -732,6 +811,12 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		if (thinkingLevel) {
 			await runtime.harness.setState({ thinkingLevel });
 		}
+
+		// Arm the ROX R1 failover for this turn: if the primary Compound model
+		// errors, the subscribe handler replays this payload once with
+		// deepseek-v4-flash. Disarm for every non-Rox model so an unrelated error
+		// never triggers a replay.
+		runtime.roxFallback = buildRoxFallbackState(selectedModel, input.payload);
 
 		return runtime.harness.sendMessage(input.payload);
 	}

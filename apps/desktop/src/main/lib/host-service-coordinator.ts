@@ -692,6 +692,12 @@ const ROX_MODEL_BUILD_DEFAULTS: Readonly<Record<string, string | undefined>> = {
 	ROX_AI_API_KEY: process.env.ROX_AI_API_KEY,
 	ROX_AI_BASE_URL: process.env.ROX_AI_BASE_URL,
 	ROX_AI_MODEL: process.env.ROX_AI_MODEL,
+	// Optional per-user key provisioning (see chat-models ROX_KEY_PROVISION_*).
+	// When set (via repo secrets baked by electron.vite.config), the spawned
+	// host-service mints a distinct OmniRouter key per user/install instead of
+	// sharing ROX_AI_API_KEY. Absent by default → shared-key MVP path.
+	ROX_KEY_PROVISION_URL: process.env.ROX_KEY_PROVISION_URL,
+	ROX_KEY_PROVISION_TOKEN: process.env.ROX_KEY_PROVISION_TOKEN,
 };
 
 /**
