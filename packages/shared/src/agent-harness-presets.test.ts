@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
 	AGENT_HARNESS_PRESETS,
 	getHarnessPresetById,
+	getHarnessPresetsForBaseAgent,
 	getHarnessTerminalPresetBaseAgentIds,
 	getInstallableHarnessPresets,
 	harnessBaseAgentsAreValid,
@@ -77,5 +78,24 @@ describe("agent-harness-presets", () => {
 			],
 			optional: true,
 		});
+	});
+
+	it("groups harnesses by their base terminal agent", () => {
+		const claudeIds = getHarnessPresetsForBaseAgent("claude").map((p) => p.id);
+		expect(claudeIds).toEqual(
+			expect.arrayContaining(["oh-my-claudecode", "hermes", "openclaw"]),
+		);
+		for (const preset of getHarnessPresetsForBaseAgent("claude")) {
+			expect(preset.baseAgentId).toBe("claude");
+		}
+
+		// OMP layer is exactly the bundled Rox harness plus the optional ODW layer,
+		// in catalog order.
+		expect(getHarnessPresetsForBaseAgent("omp").map((p) => p.id)).toEqual([
+			"rox",
+			"open-dynamic-workflows-omp",
+		]);
+
+		expect(getHarnessPresetsForBaseAgent("does-not-exist")).toEqual([]);
 	});
 });
