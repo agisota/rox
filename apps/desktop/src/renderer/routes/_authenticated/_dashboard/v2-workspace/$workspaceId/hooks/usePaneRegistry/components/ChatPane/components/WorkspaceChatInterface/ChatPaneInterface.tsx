@@ -1,3 +1,4 @@
+import { chatServiceTrpc } from "@rox/chat/client";
 import type { AppRouter } from "@rox/host-service";
 import {
 	PromptInputAttachment,
@@ -37,6 +38,7 @@ import { ChatMessageList } from "./components/ChatMessageList";
 import type { UserMessageRestartRequest } from "./components/ChatMessageList/ChatMessageList.types";
 import { PendingApprovalMessage } from "./components/ChatMessageList/components/PendingApprovalMessage/PendingApprovalMessage";
 import { McpControls } from "./components/McpControls";
+import { resolveSelectableModels } from "./components/ModelPicker/utils/selectableModels";
 import { useMcpUi } from "./hooks/useMcpUi";
 import { useOptimisticUpload } from "./hooks/useOptimisticUpload";
 import { useSlashCommandExecutor } from "./hooks/useSlashCommandExecutor";
@@ -288,7 +290,19 @@ export function ChatPaneInterface({
 	onResetSession,
 	onUserMessageSubmitted,
 }: ChatPaneInterfaceProps) {
-	const { models: availableModels, defaultModel } = useAvailableModels();
+	const { models: catalogModels, defaultModel } = useAvailableModels();
+	const { data: customProviderConfig } =
+		chatServiceTrpc.auth.getCustomProviderConfig.useQuery();
+	// The picker offers the catalog plus the user's configured custom
+	// OpenAI-compatible model, so the active-model lookup has to resolve against
+	// that same superset. Resolving against the catalog alone made a custom
+	// selection (id `openai/<modelId>`) miss, silently snapping the composer back
+	// to the default house model ("ROX R1").
+	const availableModels = useMemo(
+		() =>
+			resolveSelectableModels({ models: catalogModels, customProviderConfig }),
+		[catalogModels, customProviderConfig],
+	);
 	const selectedModelId = useChatPreferencesStore(
 		(state) => state.selectedModelId,
 	);
