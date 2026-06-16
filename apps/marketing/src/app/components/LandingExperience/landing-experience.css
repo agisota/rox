@@ -216,7 +216,9 @@
 	background-color: var(--rox-orange-2);
 	-webkit-mask: url("/rox-logo-light.png") center / contain no-repeat;
 	mask: url("/rox-logo-light.png") center / contain no-repeat;
-	clip-path: inset(72% 0 0 0);
+	/* Reveal ONLY the scarf/neckerchief (bottom ~22% of the mark) — higher values
+	 * bled orange onto the collar/shoulders. */
+	clip-path: inset(78% 0 0 0);
 	opacity: 0;
 	filter: drop-shadow(0 0 9px rgba(240, 121, 42, 0.75));
 	animation: rox-tie-glow 2.4s ease-in-out infinite;
@@ -239,9 +241,13 @@
  * intro timeline so it draws in at the brand lock and fades out for slide 2. */
 .rox-intro__cpu {
 	position: absolute;
-	top: 47%;
-	left: 50%;
-	transform: translate(-50%, -50%) scale(0.92);
+	top: 42%;
+	left: 0;
+	right: 0;
+	/* Horizontal centering via margin-auto, NOT transform: the intro's anime.js
+	 * writes `transform` on this element, which clobbers a translate-based center
+	 * and drifts the mark right. margin-auto is immune to anime's transform. */
+	margin-inline: auto;
 	width: clamp(240px, 42vw, 460px);
 	aspect-ratio: 2 / 1;
 	opacity: 0;
