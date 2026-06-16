@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import {
 	ROX_AI_API_KEY_ENV,
 	ROX_AI_BASE_URL,
+	ROX_AI_BASE_URL_ENV,
+	ROX_AI_MODEL_ENV,
 	ROX_KEY_PROVISION_TOKEN_ENV,
 	ROX_KEY_PROVISION_URL_ENV,
 } from "@rox/shared/chat-models";
@@ -11,6 +13,8 @@ import { resolveRoxRuntimeEnv } from "./rox-runtime-env";
 
 const ROX_KEYS = [
 	ROX_AI_API_KEY_ENV,
+	ROX_AI_BASE_URL_ENV,
+	ROX_AI_MODEL_ENV,
 	ROX_KEY_PROVISION_URL_ENV,
 	ROX_KEY_PROVISION_TOKEN_ENV,
 	"OPENAI_API_KEY",
@@ -154,7 +158,7 @@ describe("resolveRoxRuntimeEnv", () => {
 			env: () => ({ [ROX_AI_API_KEY_ENV]: "rox-key" }),
 		});
 		const result = await resolveRoxRuntimeEnv(
-			{ selectedModelId: "compound" },
+			{ selectedModelId: "r1" },
 			provisioner,
 		);
 		expect(result.isRoxModel).toBe(true);
@@ -162,6 +166,22 @@ describe("resolveRoxRuntimeEnv", () => {
 		expect(result.env).toEqual({
 			OPENAI_API_KEY: "rox-key",
 			OPENAI_BASE_URL: ROX_AI_BASE_URL,
+		});
+	});
+
+	test("honors ROX_AI_BASE_URL for the OpenAI base URL", async () => {
+		// resolveRoxBaseUrl() reads process.env; the per-test snapshot clears it.
+		process.env[ROX_AI_BASE_URL_ENV] = "https://api.rox.one/v1";
+		const provisioner = new RoxKeyProvisioner({
+			env: () => ({ [ROX_AI_API_KEY_ENV]: "rox-key" }),
+		});
+		const result = await resolveRoxRuntimeEnv(
+			{ selectedModelId: "r1" },
+			provisioner,
+		);
+		expect(result.env).toEqual({
+			OPENAI_API_KEY: "rox-key",
+			OPENAI_BASE_URL: "https://api.rox.one/v1",
 		});
 	});
 
