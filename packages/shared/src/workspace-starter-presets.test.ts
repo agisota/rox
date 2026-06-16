@@ -11,9 +11,9 @@ import {
 } from "./workspace-starter-presets";
 
 describe("workspace-starter-presets", () => {
-	it("exposes 6-10 starters with unique ids", () => {
-		expect(WORKSPACE_STARTER_PRESETS.length).toBeGreaterThanOrEqual(6);
-		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(10);
+	it("exposes 15-25 starters with unique ids", () => {
+		expect(WORKSPACE_STARTER_PRESETS.length).toBeGreaterThanOrEqual(15);
+		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(25);
 		const ids = WORKSPACE_STARTER_PRESETS.map((s) => s.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
@@ -135,6 +135,41 @@ describe("workspace-starter-presets", () => {
 					".editorconfig",
 					"LICENSE",
 				],
+			},
+			{
+				id: "minimal-git",
+				commandCount: 1,
+				files: [],
+			},
+			{
+				id: "agent-ready",
+				commandCount: 3,
+				files: ["AGENTS.md"],
+			},
+			{
+				id: "prototyping",
+				commandCount: 0,
+				files: ["todo.md", "spec.md", "README.md"],
+			},
+			{
+				id: "community-health",
+				commandCount: 0,
+				files: ["README.md", "LICENSE", "CONTRIBUTING.md"],
+			},
+			{
+				id: "dockerized",
+				commandCount: 0,
+				files: ["Dockerfile", ".dockerignore"],
+			},
+			{
+				id: "devcontainer-ready",
+				commandCount: 0,
+				files: [".editorconfig", ".devcontainer/devcontainer.json", ".nvmrc"],
+			},
+			{
+				id: "env-config",
+				commandCount: 0,
+				files: [".gitignore", ".env.example"],
 			},
 		]);
 	});
