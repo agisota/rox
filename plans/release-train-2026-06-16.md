@@ -4,6 +4,7 @@
 
 - Worktree: `.worktrees/share-auth-branding`
 - Branch: `issue/share-auth-branding`
+- PR: `https://github.com/agisota/rox/pull/142`
 - Base: `origin/main` at `1c7b425a90faf2ce21922ccd819c2d25a484e6fd`
 - Lane state: share/auth/branding lane has product code for public share management, artifact share publishing from desktop settings, public share revocation, and anonymous `/s/:slug` rendering proof.
 - Receipt state: this file travels with the lane PR because the separate release-train receipt worktree was not present in the active checkout.
