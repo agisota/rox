@@ -65,12 +65,28 @@
 - `packages/ui/src/components/` (чистые презентационные, без платформенных API)
   - `QuoteScreen` — полноэкранный кадр: фон (обои или градиент) + затемнение + цитата,
     `framer-motion` crossfade между цитатами. Пропсы: `quote`, `backgroundSrc?`, `variant`.
-  - `WallpaperLayer` — фиксированный фон z-index под контентом, crossfade при смене `src`.
-    Принимает текущий `wallpaperId` + список, сам гоняет таймер ротации (через проп-интервал).
+  - `WallpaperLayer` — **чистый** фиксированный фон z-index под контентом, crossfade при
+    смене `src`. Принимает только `currentSrc` (и опц. `prevSrc` для перехода) — **никакого
+    собственного таймера/состояния**. Таймер ротации и текущий индекс живут в глобальном
+    сторе (см. ниже `wallpaperStore`), иначе обои сбрасывались бы на каждом ремоунте
+    (навигация, React StrictMode double-mount, HMR).
 
 ### Desktop (слайс №1)
 
-- **Ассеты:** `apps/desktop/src/renderer/assets/wallpapers/` (+ оптимизированные webp/jpg).
+- **Доставка ассетов (решение):** для слайса №1 — **Option A, бандл** небольшого
+  стартового пака (3–5 webp) в `apps/desktop/src/renderer/assets/wallpapers/`: просто,
+  работает офлайн, предсказуемо. НО манифест `wallpapers.ts` сразу проектируем с полем
+  `src: { kind: "bundled" | "remote"; path | url }`, чтобы позже без переписывания
+  перейти на **Option B — ленивую докачку** по образцу существующего
+  `apps/desktop/src/main/lib/preinstall-catalog/` (скачивание из GitHub Release/CDN в
+  `~/rox/wallpapers/` при первом запуске). Это снимает раздувание инсталлятора при росте
+  пака и добавление обоев без релиза. Option C (только CDN-URL) отклонён для desktop из-за
+  оффлайна и CORS/CSP в рендерере.
+  - *Tradeoff:* бандл добавляет ~единицы–десятки МБ к инсталлятору при 2–4 МБ/изображение —
+    поэтому пак на старте маленький, дальше — preinstall-паттерн.
+- **`wallpaperStore` (глобальный):** в `apps/desktop/src/renderer/stores/theme/` — владеет
+  `currentWallpaperId`, индексом ротации и таймером (`setInterval` на
+  `wallpaperRotateSeconds`), переживает навигацию. `WallpaperLayer` лишь читает `currentSrc`.
 - **Persist:** расширить `appState.data.appearanceState` новыми полями; добавить
   мутации `window.setWallpaper` / расширить `setGlass` или единый `setAppearance`.
 - **Boot:** в `index.tsx` после `getAppearance` применять обои (рендер `WallpaperLayer`)
@@ -80,8 +96,18 @@
   перевести на `glass-panel`, чтобы фон просвечивал.
 - **Экран-цитата:**
   - *Старт:* показать `QuoteScreen` поверх до готовности роутера/первых данных.
-  - *Переходы:* подключить к pending-состоянию TanStack Router (порог ~300–400 мс,
-    чтобы не мигало на быстрых переходах).
+  - *Переходы:* подключить к pending-состоянию TanStack Router, но **дебаунсить видимость,
+    а не рендер** — иначе на медленном соединении (router «висит» 5+ с) экран мелькнёт.
+    Паттерн:
+    ```tsx
+    const [showQuote, setShowQuote] = useState(false);
+    useEffect(() => {
+      if (!isPending) { setShowQuote(false); return; }
+      const id = setTimeout(() => setShowQuote(true), 350);
+      return () => clearTimeout(id);
+    }, [isPending]);
+    ```
+    Так быстрые переходы (<350 мс) не показывают цитату вовсе, а долгие — показывают.
   - *Режим «фокуса»:* команда в Command Palette + хоткей — полноэкранный `QuoteScreen`
     с авто-сменой цитат, закрытие по Esc/клику.
 - **Настройки:** новые секции в `AppearanceSettings`:
@@ -92,8 +118,22 @@
 
 ### Web (слайс №2)
 
-- Аналог `applyGlass` на web + провайдер настроек (tRPC `user.appearanceSettings`,
-  таблица в `packages/db`, см. `profiles.ts`).
+> **Блокер до старта слайса №2 (продуктовое решение):** сейчас desktop хранит
+> appearance локально в Electron-`appState` (JSON, `window.ts`), а web потребует
+> облако. Нужно явно выбрать ДО реализации web:
+> - **2a (рекомендую для старта):** appearance **локально на каждой платформе** —
+>   desktop = `appState`, web = `localStorage`/per-user. Быстро, без синка; обои
+>   между web и desktop могут различаться (осознанно).
+> - **2b:** единый источник правды — новая таблица `user_appearance_settings` в
+>   `packages/db` + tRPC `user.appearanceSettings` + Electric-sync, desktop тоже
+>   читает из облака. Даёт единый выбор на всех устройствах, но это отдельная работа.
+>
+> Важно: форма `AppearanceSettings` из `packages/shared` единая в обоих вариантах —
+> это позволяет начать с 2a и перейти на 2b без переписывания компонентов.
+> (NB: расширять Electric-синкаемый `user_profile` из `0072_add_user_profile.sql`
+> не стоит — для appearance заводим отдельную таблицу, чтобы не раздувать общий профиль.)
+
+- Аналог `applyGlass` на web + провайдер настроек (источник — по решению 2a/2b выше).
 - `WallpaperLayer` в корневом `apps/web/src/app/layout.tsx` за `{children}`.
 - `QuoteScreen` через `app/loading.tsx` + Suspense fallback.
 - Ассеты: `apps/web/public/wallpapers/` (или CDN через `NEXT_PUBLIC_*`).
@@ -116,6 +156,6 @@
 ## Открытые вопросы
 
 - Финальный набор цитат и изображений (нужны лицензионно-чистые ассеты/исходники).
-- Точные пороги показа на переходах, чтобы не было мигания.
-- Нужна ли синхронизация выбора между устройствами (web↔desktop) с первого слайса
-  или достаточно локального persist на desktop.
+- Какой из вариантов синхронизации (2a локально / 2b облако+Electric) выбираем —
+  решение нужно до старта слайса №2 (см. раздел Web). Для слайса №1 (desktop) это
+  не блокер: используем локальный `appState`.
