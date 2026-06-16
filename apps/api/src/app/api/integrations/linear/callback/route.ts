@@ -3,7 +3,7 @@ import { db } from "@rox/db/client";
 import { integrationConnections, members } from "@rox/db/schema";
 import { linearTokenResponseSchema } from "@rox/trpc/integrations/linear";
 import { Client } from "@upstash/qstash";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@/env";
 import { buildLinearRedirectUri } from "@/lib/integrations/linear-oauth";
@@ -120,6 +120,14 @@ export async function GET(request: Request) {
 					integrationConnections.organizationId,
 					integrationConnections.provider,
 				],
+				// Migration 0064 replaced the simple (org, provider) unique with two
+				// PARTIAL unique indexes. The org-level arbiter is
+				// `integration_connections_org_provider_unique` WHERE workspace_id IS
+				// NULL. Postgres only matches a partial unique index when the conflict
+				// target carries the same predicate, so without this targetWhere the
+				// upsert throws 42P10 ("no unique or exclusion constraint matching the
+				// ON CONFLICT specification") and the connect fails at finalize.
+				targetWhere: sql`${integrationConnections.workspaceId} IS NULL`,
 				set: {
 					accessToken: tokenData.access_token,
 					refreshToken,
@@ -133,10 +141,23 @@ export async function GET(request: Request) {
 				},
 			});
 	} catch (connectError) {
-		console.error(
-			"[linear/callback] Failed to finalize Linear connection:",
-			connectError,
-		);
+		// Surface a precise reason (name + message + any pg error code/constraint)
+		// WITHOUT logging tokens, so Vercel logs show why finalize failed instead of
+		// an opaque "token_exchange_failed". Likely culprits: a Postgres 42P10/23505
+		// on the partial unique index, or a Linear GraphQL/scope error from
+		// viewer/organization.
+		const e = connectError as {
+			name?: string;
+			message?: string;
+			code?: string;
+			constraint?: string;
+		};
+		console.error("[linear/callback] Failed to finalize Linear connection:", {
+			name: e?.name,
+			message: e?.message,
+			code: e?.code,
+			constraint: e?.constraint,
+		});
 		return Response.redirect(
 			`${env.NEXT_PUBLIC_WEB_URL}/integrations/linear?error=token_exchange_failed`,
 		);
