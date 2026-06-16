@@ -37,9 +37,13 @@ export function buildSerializeElementScript(opts: {
   }
 
   const attributes = {};
+  const MAX_ATTRIBUTES = 64;
+  const MAX_ATTRIBUTE_VALUE = 2048;
   for (const a of Array.from(el.attributes || [])) {
     if (a.name === "data-rox-design-overlay") continue;
-    attributes[a.name] = a.value;
+    if (Object.keys(attributes).length >= MAX_ATTRIBUTES) break;
+    // Cap per-attribute size so a huge data-* value can't bloat the IPC payload.
+    attributes[a.name] = String(a.value).slice(0, MAX_ATTRIBUTE_VALUE);
   }
 
   const testId = el.getAttribute("data-testid") || el.getAttribute("data-test-id") || el.getAttribute("data-cy") || undefined;

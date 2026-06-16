@@ -62,12 +62,16 @@ export function normalizeSourcePath(
 	if (!workspaceRoot || !rawSourcePath) return null;
 
 	const stripped = stripSourceUrlPrefix(rawSourcePath);
-	if (!stripped) return null;
+	// A path extracted from an http(s) dev URL is server-absolute ("/src/..."),
+	// but maps to a workspace-relative file — treat it as relative to the root.
+	const fromHttpUrl = /^https?:\/\//i.test(rawSourcePath.trim());
+	const candidate = fromHttpUrl ? stripped.replace(/^\/+/, "") : stripped;
+	if (!candidate) return null;
 
 	// Resolve absolute candidates against the FS; relative ones against the root.
-	const absolutePath = path.isAbsolute(stripped)
-		? path.normalize(stripped)
-		: path.resolve(workspaceRoot, stripped);
+	const absolutePath = path.isAbsolute(candidate)
+		? path.normalize(candidate)
+		: path.resolve(workspaceRoot, candidate);
 
 	if (!isPathWithinRoot(workspaceRoot, absolutePath)) return null;
 

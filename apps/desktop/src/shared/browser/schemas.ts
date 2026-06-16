@@ -11,20 +11,25 @@ export const setDesignModeInputSchema = z.object({
 	enabled: z.boolean(),
 });
 
-export const setDevicePresetInputSchema = z.object({
-	paneId: z.string(),
-	presetId: z.string(),
-	custom: z
-		.object({
-			width: z.number(),
-			height: z.number(),
-			deviceScaleFactor: z.number().optional(),
-			isMobile: z.boolean().optional(),
-			hasTouch: z.boolean().optional(),
-			userAgent: z.string().optional(),
-		})
-		.optional(),
-});
+export const setDevicePresetInputSchema = z
+	.object({
+		paneId: z.string(),
+		presetId: z.string(),
+		custom: z
+			.object({
+				width: z.number(),
+				height: z.number(),
+				deviceScaleFactor: z.number().optional(),
+				isMobile: z.boolean().optional(),
+				hasTouch: z.boolean().optional(),
+				userAgent: z.string().optional(),
+			})
+			.optional(),
+	})
+	.refine((input) => input.presetId !== "custom" || input.custom != null, {
+		path: ["custom"],
+		message: "`custom` dimensions are required when presetId is 'custom'",
+	});
 
 export const captureElementInputSchema = z.object({
 	paneId: z.string(),

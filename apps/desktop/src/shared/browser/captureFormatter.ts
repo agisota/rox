@@ -48,7 +48,9 @@ export function formatCaptureForAgent(
 		screenshotRef?: "attachment" | "path";
 	} = {},
 ): AgentAttachment {
-	const filename = `design-capture-${capture.id}.png`;
+	const extension =
+		capture.screenshot.mimeType === "image/webp" ? "webp" : "png";
+	const filename = `design-capture-${capture.id}.${extension}`;
 	const selectorLine =
 		capture.selector.css ?? capture.selector.xpath ?? "(unknown)";
 	const screenshotRef = options.screenshotRef ?? "attachment";

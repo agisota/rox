@@ -44,6 +44,13 @@ describe("buildCssSelector", () => {
 			"div.w-1\\/2",
 		);
 	});
+
+	it("escapes quotes/backslashes in a test id attribute value", () => {
+		const s = buildCssSelector(
+			desc({ attributes: { "data-testid": 'a"b\\c' } }),
+		);
+		expect(s).toBe('div[data-testid="a\\"b\\\\c"]');
+	});
 });
 
 describe("buildXPath", () => {

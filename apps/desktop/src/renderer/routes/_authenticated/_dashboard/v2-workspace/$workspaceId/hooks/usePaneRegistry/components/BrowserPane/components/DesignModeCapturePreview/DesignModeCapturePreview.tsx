@@ -33,22 +33,31 @@ export function DesignModeCapturePreview({
 		? `data:${capture.screenshot.mimeType};base64,${capture.screenshot.data}`
 		: null;
 
-	const handleCopyForAgent = () => {
+	const handleCopyForAgent = async () => {
 		// Clipboard hand-off references the on-disk screenshot path so CLI agents
 		// can read the image; the bus event carries the attachment for composers.
 		const clipboardPrompt = formatCaptureForAgent(capture, {
 			screenshotRef: "path",
 		});
-		copyToClipboard(clipboardPrompt.content);
+		try {
+			await Promise.resolve(copyToClipboard(clipboardPrompt.content));
+		} catch {
+			toast.error("Could not copy the capture — try again");
+			return;
+		}
 
-		const detail: DesignCaptureEventDetail = {
-			workspaceId,
-			browserSessionId,
-			attachment: formatCaptureForAgent(capture, {
-				screenshotRef: "attachment",
-			}),
-		};
-		publishDesignCapture(detail);
+		try {
+			const detail: DesignCaptureEventDetail = {
+				workspaceId,
+				browserSessionId,
+				attachment: formatCaptureForAgent(capture, {
+					screenshotRef: "attachment",
+				}),
+			};
+			publishDesignCapture(detail);
+		} catch {
+			// The clipboard hand-off already succeeded; the bus is best-effort.
+		}
 		toast.success("Design capture copied — paste it into the agent");
 		onDismiss();
 	};
@@ -97,7 +106,9 @@ export function DesignModeCapturePreview({
 
 			<button
 				type="button"
-				onClick={handleCopyForAgent}
+				onClick={() => {
+					void handleCopyForAgent();
+				}}
 				className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90"
 			>
 				<TbClipboardCheck className="size-3.5" />

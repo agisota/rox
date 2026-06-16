@@ -15,6 +15,11 @@ function cssEscape(value: string): string {
 	return value.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
 }
 
+/** Escapes a value for use inside a double-quoted CSS attribute selector. */
+function cssStringEscape(value: string): string {
+	return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 /**
  * Synthesizes a stable, human-readable CSS selector from a serialized element
  * descriptor, preferring (in order): test id, id, role, tag + class subset.
@@ -25,7 +30,7 @@ export function buildCssSelector(desc: RawElementDescriptor): string {
 	const testId = desc.testId ?? findTestId(desc.attributes);
 	if (testId) {
 		const attr = TEST_ID_ATTRS.find((a) => desc.attributes[a] === testId);
-		return `${tag}[${attr ?? "data-testid"}="${testId}"]`;
+		return `${tag}[${attr ?? "data-testid"}="${cssStringEscape(testId)}"]`;
 	}
 
 	if (desc.id) return `${tag}#${cssEscape(desc.id)}`;

@@ -26,8 +26,13 @@ export const createBrowserRouter = () => {
 		unregister: publicProcedure
 			.input(z.object({ paneId: z.string() }))
 			.mutation(async ({ input }) => {
-				await designModeCaptureService.cleanup(input.paneId);
-				browserManager.unregister(input.paneId);
+				try {
+					await designModeCaptureService.cleanup(input.paneId);
+				} finally {
+					// Always unregister even if cleanup throws, so the pane never
+					// leaks its webContents listeners.
+					browserManager.unregister(input.paneId);
+				}
 				return { success: true };
 			}),
 

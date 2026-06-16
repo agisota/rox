@@ -71,12 +71,16 @@ class DesignModeCaptureService extends EventEmitter {
 			try {
 				const payload = JSON.parse(
 					entry.message.slice(DESIGN_SELECT_MARKER.length),
-				) as { n?: string; x: number; y: number };
+				) as { n?: string; x: unknown; y: unknown };
 				// Reject spoofed markers: the nonce must match this session's.
 				if (payload.n !== this.nonces.get(paneId)) return;
+				// Reject non-numeric coordinates a forged marker might inject.
+				if (!Number.isFinite(payload.x) || !Number.isFinite(payload.y)) {
+					return;
+				}
 				this.emit(`design-event:${paneId}`, {
 					type: "selected",
-					clientPoint: { x: payload.x, y: payload.y },
+					clientPoint: { x: payload.x as number, y: payload.y as number },
 				} satisfies DesignModeEvent);
 			} catch {
 				// Ignore malformed markers.
@@ -315,14 +319,17 @@ class DesignModeCaptureService extends EventEmitter {
 	/** Tears down Design Mode + cached captures for a pane (on pane/app close). */
 	async cleanup(paneId: string): Promise<void> {
 		await this.disable(paneId).catch(() => {});
+		const removals: Promise<unknown>[] = [];
 		for (const [id, capture] of [...this.captures]) {
 			if (capture.browserSessionId !== paneId) continue;
 			this.captures.delete(id);
 			this.captureOrder = this.captureOrder.filter((c) => c !== id);
 			if (capture.screenshot.path) {
-				void rm(capture.screenshot.path, { force: true }).catch(() => {});
+				removals.push(rm(capture.screenshot.path, { force: true }));
 			}
 		}
+		// Wait for deletions so screenshots are gone on disk before we return.
+		await Promise.allSettled(removals);
 	}
 }
 

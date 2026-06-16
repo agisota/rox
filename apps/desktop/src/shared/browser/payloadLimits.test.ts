@@ -29,6 +29,17 @@ describe("payloadLimits", () => {
 		expect(Buffer.byteLength(result.html, "utf8")).toBeLessThanOrEqual(100);
 	});
 
+	it("never exceeds the budget even when smaller than the notice", () => {
+		const result = truncateHtml("y".repeat(500), 10);
+		expect(result.truncated).toBe(true);
+		expect(Buffer.byteLength(result.html, "utf8")).toBeLessThanOrEqual(10);
+		expect(result.html).not.toContain("truncated by Rox Design Mode");
+	});
+
+	it("returns empty for a non-positive budget", () => {
+		expect(truncateHtml("abc", 0)).toEqual({ html: "", truncated: true });
+	});
+
 	it("does not leave a dangling replacement char on multibyte truncation", () => {
 		const result = truncateHtml("😀".repeat(200), 120);
 		expect(result.html).not.toMatch(/�/u);

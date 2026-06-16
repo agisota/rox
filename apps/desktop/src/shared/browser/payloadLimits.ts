@@ -18,9 +18,21 @@ export function truncateHtml(
 	html: string,
 	maxBytes: number = MAX_HTML_BYTES,
 ): { html: string; truncated: boolean } {
+	if (maxBytes <= 0) return { html: "", truncated: true };
 	if (byteLength(html) <= maxBytes) return { html, truncated: false };
 
-	const budget = Math.max(0, maxBytes - byteLength(TRUNCATION_NOTICE));
+	const noticeBytes = byteLength(TRUNCATION_NOTICE);
+	// If the notice itself wouldn't fit, return the clipped html without it
+	// rather than overshooting the budget.
+	if (maxBytes <= noticeBytes) {
+		const clipped = Buffer.from(html, "utf8")
+			.subarray(0, maxBytes)
+			.toString("utf8")
+			.replace(/�+$/u, "");
+		return { html: clipped, truncated: true };
+	}
+
+	const budget = maxBytes - noticeBytes;
 	const buf = Buffer.from(html, "utf8").subarray(0, budget);
 	// Drop a trailing partial multi-byte char by decoding leniently then re-encoding.
 	const safe = buf.toString("utf8").replace(/�+$/u, "");

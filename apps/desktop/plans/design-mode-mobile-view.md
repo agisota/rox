@@ -59,7 +59,7 @@ shapes.
 
 ## Layering
 
-```
+```text
 shared/browser/                         pure, unit-tested, no Electron imports
   types.ts            DevicePreset, DesignModeCapture, element descriptor
   schemas.ts          zod schemas (tRPC IO + runtime validation)

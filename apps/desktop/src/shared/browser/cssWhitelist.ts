@@ -16,11 +16,10 @@ export const CSS_WHITELIST: readonly string[] = Object.freeze([
 	"text-decoration",
 	"white-space",
 	"text-overflow",
-	// color
+	// color — note: `background`/`background-image` are intentionally excluded
+	// so signed URLs / data URIs in background images can't leak to the agent.
 	"color",
 	"background-color",
-	"background",
-	"background-image",
 	"opacity",
 	// spacing
 	"margin",

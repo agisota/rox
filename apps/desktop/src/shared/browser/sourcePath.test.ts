@@ -44,6 +44,15 @@ describe("normalizeSourcePath", () => {
 		});
 	});
 
+	it("resolves an http(s) dev-server URL relative to the root", () => {
+		const r = normalizeSourcePath(
+			ROOT,
+			"http://localhost:3000/src/App.tsx?t=1",
+		);
+		expect(r?.filePath).toBe("src/App.tsx");
+		expect(r?.absolutePath).toBe(`${ROOT}/src/App.tsx`);
+	});
+
 	it("accepts absolute paths inside the root", () => {
 		const r = normalizeSourcePath(ROOT, `${ROOT}/src/components/Card.tsx`);
 		expect(r?.filePath).toBe("src/components/Card.tsx");

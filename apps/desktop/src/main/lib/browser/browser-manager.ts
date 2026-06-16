@@ -173,7 +173,11 @@ class BrowserManager extends EventEmitter {
 			deviceScaleFactor: preset.deviceScaleFactor,
 			scale: 1,
 		});
+		// Reset to the original UA when an emulated preset omits one, so a mobile
+		// UA from a previous preset doesn't linger under a different viewport.
+		const original = this.originalUserAgents.get(paneId);
 		if (preset.userAgent) wc.setUserAgent(preset.userAgent);
+		else if (original != null) wc.setUserAgent(original);
 		this.setTouchEmulation(wc, preset.hasTouch);
 	}
 
@@ -181,14 +185,20 @@ class BrowserManager extends EventEmitter {
 	// swallow failures so an unsupported environment never crashes capture.
 	private setTouchEmulation(wc: Electron.WebContents, enabled: boolean): void {
 		try {
+			// Don't attach the debugger just to disable touch on a fresh pane.
+			if (!enabled && !wc.debugger.isAttached()) return;
 			if (!wc.debugger.isAttached()) wc.debugger.attach("1.3");
-			void wc.debugger.sendCommand("Emulation.setTouchEmulationEnabled", {
-				enabled,
-				maxTouchPoints: enabled ? 5 : 0,
-			});
-			void wc.debugger.sendCommand("Emulation.setEmitTouchEventsForMouse", {
-				enabled,
-				configuration: "mobile",
+			void Promise.all([
+				wc.debugger.sendCommand("Emulation.setTouchEmulationEnabled", {
+					enabled,
+					maxTouchPoints: enabled ? 5 : 0,
+				}),
+				wc.debugger.sendCommand("Emulation.setEmitTouchEventsForMouse", {
+					enabled,
+					configuration: "mobile",
+				}),
+			]).catch(() => {
+				// Async CDP rejection (target gone / protocol error) — non-fatal.
 			});
 		} catch {
 			// CDP unavailable (e.g. devtools already attached) — non-fatal.
