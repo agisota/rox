@@ -76,7 +76,7 @@ function buildField(): FieldData {
 		{ radius: 4.9, tube: 0.26, tiltX: 0.52, yaw: 0.7, share: 0.24, role: 2 },
 		{ radius: 6.6, tube: 0.32, tiltX: 1.38, yaw: -0.4, share: 0.22, role: 3 },
 	];
-	const hubShare = 0.1;
+	const hubShare = 0.07;
 	let cursor = 0;
 
 	const writeRing = (
@@ -113,7 +113,7 @@ function buildField(): FieldData {
 			colors[i * 3] = tmp.r;
 			colors[i * 3 + 1] = tmp.g;
 			colors[i * 3 + 2] = tmp.b;
-			sizes[i] = 0.12 + Math.random() * 0.16;
+			sizes[i] = 0.1 + Math.random() * 0.13;
 		}
 	};
 
@@ -144,7 +144,7 @@ function buildField(): FieldData {
 		colors[i * 3] = tmp.r;
 		colors[i * 3 + 1] = tmp.g;
 		colors[i * 3 + 2] = tmp.b;
-		sizes[i] = 0.1 + Math.random() * 0.16;
+		sizes[i] = 0.09 + Math.random() * 0.13;
 	}
 	cursor = hubEnd;
 
@@ -161,7 +161,7 @@ function buildField(): FieldData {
 		colors[i * 3] = tmp.r * 0.65;
 		colors[i * 3 + 1] = tmp.g * 0.65;
 		colors[i * 3 + 2] = tmp.b * 0.65;
-		sizes[i] = 0.06 + Math.random() * 0.09;
+		sizes[i] = 0.055 + Math.random() * 0.08;
 	}
 
 	// Scattered start: a wide chaotic cloud the particles fly in from.
@@ -258,6 +258,15 @@ function Swarm({ pulse }: ParticleFieldProps) {
 	const lastPulse = useRef(pulse);
 	const pulseStart = useRef(-10);
 
+	// Interaction-driven orchestration: the swarm is chaotic by default and only
+	// gathers into rings as the visitor moves the mouse (`activity`) or dispatches
+	// a command (`dispatchUntil` holds it organised for a few seconds). `orch` is
+	// the smoothed 0→1 organisation level; it decays back to chaos when idle.
+	const orch = useRef(0);
+	const activity = useRef(0);
+	const lastPointer = useRef({ x: 0, y: 0 });
+	const dispatchUntil = useRef(-10);
+
 	// Pointer attraction state (world-space point on the z=0 plane). We track the
 	// cursor at the window level rather than via the canvas, so the wake works
 	// even over the centered hero copy/controls that sit above the canvas.
@@ -291,14 +300,34 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		const t = state.clock.elapsedTime;
 		uniforms.uPixelRatio.value = Math.min(state.gl.getPixelRatio(), 2);
 
+		// A dispatched command both flashes the field and locks it organised for a
+		// few seconds while the agents "run".
 		if (pulse !== lastPulse.current) {
 			lastPulse.current = pulse;
 			pulseStart.current = t;
+			dispatchUntil.current = t + 7;
 		}
 
-		// Coalesce from chaos → structure over the first ~3.6s (smoothstep).
-		const intro = Math.min(t / 3.6, 1);
-		const ease = intro * intro * (3 - 2 * intro);
+		const ndc = pointerNdc.current;
+
+		// Mouse movement charges `activity` (and decays when still). A command
+		// holds the swarm fully organised. Together they drive `orch`.
+		const mdx = ndc.x - lastPointer.current.x;
+		const mdy = ndc.y - lastPointer.current.y;
+		lastPointer.current.x = ndc.x;
+		lastPointer.current.y = ndc.y;
+		const moveSpeed = Math.sqrt(mdx * mdx + mdy * mdy);
+		activity.current = Math.max(
+			0,
+			Math.min(1, activity.current + moveSpeed * 9 - delta * 0.32),
+		);
+		const orchTarget = Math.max(
+			activity.current,
+			t < dispatchUntil.current ? 1 : 0,
+		);
+		orch.current += (orchTarget - orch.current) * Math.min(delta * 2.6, 1);
+		const o = orch.current;
+		const ease = o * o * (3 - 2 * o);
 
 		// Impulse decay after a command pulse (slow enough to read on screen).
 		const since = t - pulseStart.current;
@@ -313,7 +342,6 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		const sinY = Math.sin(spin);
 
 		// Pointer → world point on the z=0 plane.
-		const ndc = pointerNdc.current;
 		pointerVec.set(ndc.x, ndc.y);
 		raycaster.setFromCamera(pointerVec, state.camera);
 		raycaster.ray.intersectPlane(plane, pointerWorld.current);
@@ -338,11 +366,18 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			const rz = -sx * sinY + sz * cosY;
 			const ry = (structured[iy] ?? 0) * expand;
 
-			// Blend chaos → structure, with a gentle living swirl.
+			// Chaos: when not orchestrated the swarm drifts freely (a living,
+			// wandering cloud). The drift fades out as the rings form.
+			const chaos = 1 - ease;
+			const cx =
+				(scattered[ix] ?? 0) + Math.sin(t * 0.3 + i * 0.7) * 1.5 * chaos;
+			const cy =
+				(scattered[iy] ?? 0) + Math.cos(t * 0.27 + i * 1.3) * 1.5 * chaos;
+			const cz =
+				(scattered[iz] ?? 0) + Math.sin(t * 0.21 + i * 0.5) * 1.2 * chaos;
+
+			// Blend chaos → structure, with a gentle living swirl once organised.
 			const swirl = Math.sin(t * 0.6 + i) * 0.05 * ease;
-			const cx = scattered[ix] ?? 0;
-			const cy = scattered[iy] ?? 0;
-			const cz = scattered[iz] ?? 0;
 			let x = cx + (rx - cx) * ease + swirl;
 			let y = cy + (ry - cy) * ease + swirl;
 			const z = cz + (rz - cz) * ease;

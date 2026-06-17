@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	AGENT_ROLES,
 	COMMAND_BUTTON,
+	COMMAND_EXAMPLE,
 	COMMAND_PLACEHOLDER,
 	COMMAND_SUGGESTIONS,
 	DISPATCH_STEPS,
@@ -29,7 +30,7 @@ interface LogLine {
  * agents into a log — the interactive payoff of the "orchestration" metaphor.
  */
 export function CommandConsole({ onDispatch }: CommandConsoleProps) {
-	const [value, setValue] = useState("");
+	const [value, setValue] = useState(COMMAND_EXAMPLE);
 	const [log, setLog] = useState<LogLine[]>([]);
 	const [running, setRunning] = useState(false);
 	const idRef = useRef(0);

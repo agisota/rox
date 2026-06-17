@@ -21,6 +21,7 @@ import {
 	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
 import { OrchestrationField } from "../OrchestrationField";
+import { FIELD_HINT } from "../OrchestrationField/constants";
 import { CommandConsole } from "./components/CommandConsole";
 import { RoxDivider } from "./components/RoxDivider";
 import { Term } from "./components/Term";
@@ -197,6 +198,8 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 					<p className="rox-scramble rox-hero__sub">
 						{LANDING_INTRO_PARAGRAPH}
 					</p>
+
+					<p className="rox-hero__hint">{FIELD_HINT}</p>
 
 					<CommandConsole onDispatch={handleDispatch} />
 
