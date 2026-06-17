@@ -1,32 +1,24 @@
 "use client";
 
-import { animate, scrambleText, utils } from "animejs";
+import { animate, scrambleText } from "animejs";
 import { useEffect, useRef } from "react";
 import {
-	LANDING_ACPX_TERM,
-	LANDING_AGENT_LEAD,
-	LANDING_AGENT_TAIL,
-	LANDING_AGENT_TERMS,
-	LANDING_DOWNLOAD_HEADING,
-	LANDING_EDITOR_LEAD,
-	LANDING_EDITOR_TERMS,
-	LANDING_FEAT_CONTROL,
-	LANDING_FEAT_ISOLATION,
-	LANDING_FEAT_SPEED,
-	LANDING_FEAT_SWITCH,
-	LANDING_FEATURES_HEADING,
+	HERO_BRAND_WORDMARK,
+	HERO_LLM_TERM,
+	HERO_RUNTIME_TERM,
+	HERO_SUB_AGENT_CYCLE_WORDS,
+	HERO_SUB_LINE_ONE,
+	HERO_SUB_LINE_TWO_LEAD,
+	HERO_SUB_TAIL,
+	HERO_WORKTREE_TERM,
 	LANDING_HEADLINE,
-	LANDING_HOW_HEADING,
-	LANDING_HOW_PARAGRAPH,
-	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
-import { LandingBackdrop } from "./components/LandingBackdrop";
-import { RoxDivider } from "./components/RoxDivider";
+import { AnimatedTextCycle } from "../AnimatedTextCycle";
+import { OrchestrationField } from "../OrchestrationField";
+import { FIELD_HINT } from "../OrchestrationField/constants";
+import { HeroDownloadCta } from "./components/HeroDownloadCta";
+import { HeroStackLine } from "./components/HeroStackLine";
 import { Term } from "./components/Term";
-
-interface ScrambleLandingProps {
-	children?: React.ReactNode;
-}
 
 /**
  * Scramble-text landing document, ported from Julian Garnier's anime.js v4
@@ -45,7 +37,7 @@ interface ScrambleLandingProps {
  * restores it. Hovering any line re-scrambles it. Everything is scoped to the
  * container ref and skipped entirely under `prefers-reduced-motion`.
  */
-export function ScrambleLanding({ children }: ScrambleLandingProps) {
+export function ScrambleLanding() {
 	const containerRef = useRef<HTMLElement>(null);
 	const animationsRef = useRef<
 		Array<{ cancel?: () => void; revert?: () => void }>
@@ -139,34 +131,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 		}
 		cleanups.push(() => revealObserver.disconnect());
 
-		// ── E. SVG dividers draw themselves in on scroll ────────────────────
-		const dividers = Array.from(
-			container.querySelectorAll<SVGLineElement>(".rox-divider__line"),
-		);
-		const drawObserver = new IntersectionObserver(
-			(entries) => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) {
-						trackAnimation(
-							animate(entry.target, {
-								strokeDashoffset: [1, 0],
-								ease: "inOut(3)",
-								duration: 900,
-							}),
-						);
-						drawObserver.unobserve(entry.target);
-					}
-				}
-			},
-			{ rootMargin: "0px 0px -10% 0px", threshold: 0.5 },
-		);
-		for (const line of dividers) {
-			// Pathless hairline: dash the whole length, offset it, then draw to 0.
-			utils.set(line, { strokeDasharray: 1, strokeDashoffset: 1 });
-			drawObserver.observe(line);
-		}
-		cleanups.push(() => drawObserver.disconnect());
-
 		return () => {
 			for (const cleanup of cleanups) cleanup();
 			cleanupAnimations();
@@ -175,65 +139,54 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 	return (
 		<main ref={containerRef} className="rox-anime rox-landing">
-			<LandingBackdrop />
-			<div className="rox-landing__main">
-				<div className="rox-landing__brand">
-					<span aria-hidden="true">▸</span>
-					<span className="rox-scramble">Rox One</span>
+			<OrchestrationField />
+
+			<section className="rox-hero">
+				<div className="rox-hero__inner">
+					<div className="rox-landing__brand">
+						<span className="rox-scramble">{HERO_BRAND_WORDMARK}</span>
+					</div>
+
+					<h1 className="rox-scramble rox-hero__headline">
+						{LANDING_HEADLINE}
+					</h1>
+
+					<div className="rox-hero__sub">
+						<span className="rox-hero__sub-line">{HERO_SUB_LINE_ONE}</span>
+						<span className="rox-hero__sub-line">
+							{HERO_SUB_LINE_TWO_LEAD}{" "}
+							<AnimatedTextCycle
+								words={HERO_SUB_AGENT_CYCLE_WORDS}
+								interval={1000}
+								fast
+								className="rox-hero__sub-cycle"
+							/>{" "}
+							{HERO_SUB_TAIL}
+						</span>
+					</div>
+
+					<div className="rox-hero__hints">
+						<p className="rox-hero__hint">{FIELD_HINT}</p>
+
+						<p className="rox-hero__hint">
+							Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
+							<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
+							конфликтов
+						</p>
+
+						<p className="rox-hero__hint">
+							<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
+							<Term {...HERO_LLM_TERM} /> — бесплатно
+						</p>
+
+						<p className="rox-hero__hint">
+							<HeroStackLine />
+						</p>
+					</div>
+
+					<HeroDownloadCta />
 				</div>
-
-				<h1 className="rox-scramble">{LANDING_HEADLINE}</h1>
-
-				<p className="rox-scramble">{LANDING_INTRO_PARAGRAPH}</p>
-
-				<a className="rox-landing__hero-cta" href="/download">
-					Скачать для macOS
-					<span aria-hidden="true">↓</span>
-				</a>
-
-				<RoxDivider />
-
-				<h2 className="rox-scramble">{LANDING_FEATURES_HEADING}</h2>
-
-				<ul>
-					<li className="rox-scramble">{LANDING_FEAT_SPEED}</li>
-					<li>
-						{LANDING_AGENT_LEAD}{" "}
-						{LANDING_AGENT_TERMS.map((term, index) => (
-							<span key={term.label}>
-								{index > 0 ? ", " : ""}
-								<Term label={term.label} tip={term.tip} />
-							</span>
-						))}
-						{LANDING_AGENT_TAIL}
-						<Term label={LANDING_ACPX_TERM.label} tip={LANDING_ACPX_TERM.tip} />
-					</li>
-					<li className="rox-scramble">{LANDING_FEAT_ISOLATION}</li>
-					<li className="rox-scramble">{LANDING_FEAT_CONTROL}</li>
-					<li>
-						{LANDING_EDITOR_LEAD}{" "}
-						{LANDING_EDITOR_TERMS.map((term, index) => (
-							<span key={term.label}>
-								{index > 0 ? ", " : ""}
-								<Term label={term.label} tip={term.tip} />
-							</span>
-						))}
-					</li>
-					<li className="rox-scramble">{LANDING_FEAT_SWITCH}</li>
-				</ul>
-
-				<RoxDivider />
-
-				<h2 className="rox-scramble">{LANDING_HOW_HEADING}</h2>
-
-				<p className="rox-scramble">{LANDING_HOW_PARAGRAPH}</p>
-
-				<RoxDivider />
-
-				<h2 className="rox-scramble">{LANDING_DOWNLOAD_HEADING}</h2>
-
-				<div className="rox-landing__cta">{children}</div>
-			</div>
+			</section>
 		</main>
 	);
 }

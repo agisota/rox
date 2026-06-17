@@ -1,0 +1,1 @@
+export { LegalHub } from "./LegalHub";

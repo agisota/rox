@@ -1,106 +1,86 @@
 "use client";
 
 import { COMPANY } from "@rox/shared/constants";
-import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-function RoxLogo() {
-	return (
-		<Image
-			src="/rox-logo-light.png"
-			alt="Rox"
-			width={683}
-			height={1040}
-			className="h-10 w-auto"
-		/>
-	);
-}
+import type { ReactNode } from "react";
 
 interface FooterLink {
 	href: string;
-	label: string;
+	label: ReactNode;
 	external?: boolean;
 }
 
-const COMPANY_LINKS: FooterLink[] = [
-	{ href: "/contact", label: "Контакты" },
-	{ href: COMPANY.STATUS_URL, label: "Статус", external: true },
+const FOOTER_LINKS: FooterLink[] = [
+	{
+		href: COMPANY.DOCS_URL,
+		label: "Документация",
+		external: true,
+	},
+	{
+		href: "/changelog",
+		label: (
+			<span className="inline-flex items-center gap-2">
+				Changelog
+				<span className="rox-footer__badge" title="Новые записи">
+					new
+				</span>
+			</span>
+		),
+	},
+	{
+		href: "/legal",
+		label: (
+			<span className="inline-flex flex-col items-center leading-[1.15] text-center">
+				<span>Условия и</span>
+				<span>конфиденциальность</span>
+			</span>
+		),
+	},
 ];
 
-const RESOURCE_LINKS: FooterLink[] = [
-	{ href: COMPANY.DOCS_URL, label: "Документация", external: true },
-	{ href: "/blog", label: "Блог" },
-	{ href: "/changelog", label: "Журнал изменений" },
-];
-
-const LEGAL_LINKS: FooterLink[] = [
-	{ href: COMPANY.TRUST_URL, label: "Безопасность", external: true },
-	{ href: "/terms", label: "Условия" },
-	{ href: "/privacy", label: "Конфиденциальность" },
-];
+const FOOTER_TEXT =
+	"font-sans text-[11px] font-extralight tracking-wide text-white/24";
 
 export function Footer() {
 	const pathname = usePathname();
 	if (pathname === "/download") return null;
 
-	return (
-		<footer className="border-t border-border bg-background">
-			<motion.div
-				initial={{ opacity: 0 }}
-				whileInView={{ opacity: 1 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.5 }}
-				className="max-w-7xl mx-auto px-6 sm:px-8 py-14 sm:py-20"
-			>
-				<div className="grid grid-cols-2 gap-10 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-x-20">
-					<div className="col-span-2 flex flex-col gap-6 md:col-span-1">
-						<Link
-							href="/"
-							className="inline-block text-foreground transition-colors hover:text-foreground/80"
-						>
-							<RoxLogo />
-						</Link>
-						<p className="text-sm text-muted-foreground">
-							© {new Date().getFullYear()} ROX ONE PUBLIC BENEFIT COMPANY
-						</p>
-					</div>
+	const isHome = pathname === "/";
 
-					<FooterColumn title="Компания" links={COMPANY_LINKS} />
-					<FooterColumn title="Ресурсы" links={RESOURCE_LINKS} />
-					<FooterColumn title="Правовая информация" links={LEGAL_LINKS} />
-				</div>
-			</motion.div>
+	return (
+		<footer
+			className={
+				isHome
+					? "pointer-events-none fixed inset-x-0 bottom-0 z-30"
+					: "relative z-10"
+			}
+		>
+			<div
+				className={`pointer-events-auto mx-auto max-w-7xl px-5 sm:px-8 ${
+					isHome ? "pb-6 pt-3 sm:pb-7" : "pb-8 pt-5 sm:pb-10"
+				}`}
+			>
+				<nav
+					className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 sm:gap-x-9"
+					aria-label="Нижняя навигация"
+				>
+					{FOOTER_LINKS.map((link) => (
+						<FooterLinkItem key={link.href} link={link} />
+					))}
+				</nav>
+				<p className={`${FOOTER_TEXT} mt-7 text-center sm:mt-8`}>
+					© {new Date().getFullYear()} Rox
+				</p>
+			</div>
 		</footer>
 	);
 }
 
-function FooterColumn({
-	title,
-	links,
-}: {
-	title: string;
-	links: FooterLink[];
-}) {
-	return (
-		<div className="flex flex-col gap-4">
-			<p className="text-sm font-medium text-foreground">{title}</p>
-			<ul className="flex flex-col gap-3">
-				{links.map((link) => (
-					<li key={link.href}>
-						<FooterLinkItem link={link} />
-					</li>
-				))}
-			</ul>
-		</div>
-	);
-}
-
 function FooterLinkItem({ link }: { link: FooterLink }) {
-	const className =
-		"group inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground";
+	const className = `group inline-flex items-center gap-1.5 font-sans text-[13px] font-light text-white/45 transition-colors hover:text-white/70`;
+
 	if (link.external) {
 		return (
 			<a
@@ -110,10 +90,11 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 				className={className}
 			>
 				{link.label}
-				<ArrowUpRight className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+				<ArrowUpRight className="rox-footer__arrow h-3 w-3" />
 			</a>
 		);
 	}
+
 	return (
 		<Link href={link.href} className={className}>
 			{link.label}
