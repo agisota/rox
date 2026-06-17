@@ -261,6 +261,25 @@ export const settings = sqliteTable("settings", {
 export type InsertSettings = typeof settings.$inferInsert;
 export type SelectSettings = typeof settings.$inferSelect;
 
+export type ExperimentalFeatureOverrideSource = "migration" | "reset" | "user";
+
+export const experimentalFeatureOverrides = sqliteTable(
+	"experimental_feature_overrides",
+	{
+		featureId: text("feature_id").primaryKey(),
+		enabled: integer("enabled", { mode: "boolean" }).notNull(),
+		updatedAt: integer("updated_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		source: text("source").$type<ExperimentalFeatureOverrideSource>(),
+	},
+);
+
+export type InsertExperimentalFeatureOverride =
+	typeof experimentalFeatureOverrides.$inferInsert;
+export type SelectExperimentalFeatureOverride =
+	typeof experimentalFeatureOverrides.$inferSelect;
+
 export type V1MigrationKind = "project" | "workspace" | "preset";
 export type V1MigrationStatus = "success" | "linked" | "error" | "skipped";
 

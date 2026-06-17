@@ -23,6 +23,11 @@ LOCAL_DB_PROJECT=""
 LOCAL_PG_PORT=""
 LOCAL_NEON_PROXY_PORT=""
 LOCAL_ELECTRIC_PORT=""
+# Infra-runtime (#02) host ports.
+LOCAL_MINIO_PORT=""
+LOCAL_MINIO_CONSOLE_PORT=""
+LOCAL_QDRANT_PORT=""
+LOCAL_EMBEDDER_PORT=""
 
 sanitize_name() {
   echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g; s/--*/-/g; s/^-//; s/-$//' | cut -c1-48
@@ -71,7 +76,15 @@ local_allocate_ports() {
   LOCAL_PG_PORT=$((base + 14))
   LOCAL_NEON_PROXY_PORT=$((base + 15))
   LOCAL_ELECTRIC_PORT=$((base + 9))
+  # Infra-runtime (#02): minio +16/+17, qdrant HTTP +18, embedder +19
+  # (free tail of the 20-port window; no overlap with +0/+1/+9/+14/+15).
+  LOCAL_MINIO_PORT=$((base + 16))
+  LOCAL_MINIO_CONSOLE_PORT=$((base + 17))
+  LOCAL_QDRANT_PORT=$((base + 18))
+  LOCAL_EMBEDDER_PORT=$((base + 19))
   export LOCAL_PG_PORT LOCAL_NEON_PROXY_PORT LOCAL_ELECTRIC_PORT
+  export LOCAL_MINIO_PORT LOCAL_MINIO_CONSOLE_PORT LOCAL_QDRANT_PORT \
+    LOCAL_EMBEDDER_PORT
   # Export so migrate/seed (child bun processes) use these — an inherited env
   # var beats the .env file, so this overrides any stale DATABASE_URL.
   export DATABASE_URL="postgres://postgres:postgres@db.localtest.me:$LOCAL_NEON_PROXY_PORT/main"
@@ -187,6 +200,15 @@ local_write_env() {
     write_env_var "DATABASE_URL" "$DATABASE_URL"
     write_env_var "DATABASE_URL_UNPOOLED" "$DATABASE_URL_UNPOOLED"
     echo ""
+    echo "# Infra-runtime local services"
+    write_env_var "LOCAL_MINIO_PORT" "$LOCAL_MINIO_PORT"
+    write_env_var "LOCAL_MINIO_CONSOLE_PORT" "$LOCAL_MINIO_CONSOLE_PORT"
+    write_env_var "LOCAL_QDRANT_PORT" "$LOCAL_QDRANT_PORT"
+    write_env_var "LOCAL_EMBEDDER_PORT" "$LOCAL_EMBEDDER_PORT"
+    write_env_var "S3_ENDPOINT" "http://127.0.0.1:$LOCAL_MINIO_PORT"
+    write_env_var "QDRANT_URL" "http://127.0.0.1:$LOCAL_QDRANT_PORT"
+    write_env_var "EMBEDDER_URL" "http://127.0.0.1:$LOCAL_EMBEDDER_PORT"
+    echo ""
     echo "# Workspace ports"
     write_env_var "WEB_PORT" "$WEB_PORT"
     write_env_var "API_PORT" "$API_PORT"
@@ -262,7 +284,11 @@ DEVVARS
     { "port": $CADDY_ELECTRIC_PORT, "label": "Caddy Electric" },
     { "port": $WRANGLER_PORT, "label": "Electric Proxy (Wrangler)" },
     { "port": $LOCAL_PG_PORT, "label": "Postgres" },
-    { "port": $LOCAL_NEON_PROXY_PORT, "label": "Neon Proxy" }
+    { "port": $LOCAL_NEON_PROXY_PORT, "label": "Neon Proxy" },
+    { "port": $LOCAL_MINIO_PORT, "label": "MinIO" },
+    { "port": $LOCAL_MINIO_CONSOLE_PORT, "label": "MinIO Console" },
+    { "port": $LOCAL_QDRANT_PORT, "label": "Qdrant" },
+    { "port": $LOCAL_EMBEDDER_PORT, "label": "Embedder" }
   ]
 }
 PORTSJSON

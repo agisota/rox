@@ -95,10 +95,30 @@ console.log(`[local-db] Running migrations from: ${migrationsFolder}`);
 
 export const localDb = drizzle(sqlite, { schema });
 
+function ensureExperimentalFeatureOverridesTable() {
+	sqlite.exec(`
+		CREATE TABLE IF NOT EXISTS experimental_feature_overrides (
+			feature_id text PRIMARY KEY NOT NULL,
+			enabled integer NOT NULL,
+			updated_at integer NOT NULL,
+			source text
+		);
+	`);
+}
+
 try {
 	migrate(localDb, { migrationsFolder });
 } catch (error) {
 	console.error("[local-db] Migration failed:", error);
+}
+
+try {
+	ensureExperimentalFeatureOverridesTable();
+} catch (error) {
+	console.error(
+		"[local-db] Failed to ensure experimental feature overrides:",
+		error,
+	);
 }
 
 console.log("[local-db] Migrations complete");

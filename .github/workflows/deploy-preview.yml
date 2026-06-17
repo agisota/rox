@@ -44,6 +44,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen --ignore-scripts
 
+      - name: Reset stale Neon branch
+        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776 # v3.2.1
+        continue-on-error: true
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          branch: ${{ github.head_ref }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
       - name: Create Neon branch
         id: create-branch
         uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c # 6.3.1

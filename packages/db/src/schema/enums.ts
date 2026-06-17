@@ -513,3 +513,159 @@ export const voiceTranscriptionStatusEnum = z.enum(
 export type VoiceTranscriptionStatus = z.infer<
 	typeof voiceTranscriptionStatusEnum
 >;
+
+// ---------------------------------------------------------------------------
+// Core graph (#01, phase 0) — universal entity/edge/identity/activity backbone.
+// These are the canonical kinds/relations/statuses for the graph core; every
+// domain subsystem (notes, tasks, capture, chat, agent sessions, design) reuses
+// them and never redefines core tables. Append-only string unions backing
+// Postgres pgEnums (declared in schema/{entity,edges,identity,activity}.ts);
+// NEVER reorder/remove values. Domains may only EXTEND these.
+// ---------------------------------------------------------------------------
+
+export const entityKindValues = [
+	"note",
+	"email",
+	"email_thread",
+	"message",
+	"channel",
+	"task",
+	"project",
+	"area",
+	"calendar_event",
+	"agent_session",
+	"activity_event",
+	"feed",
+	"feed_item",
+	"file",
+	"design_artifact",
+	"contact",
+	"osint_entity",
+	"tag",
+	"journal",
+] as const;
+export const entityKindEnum = z.enum(entityKindValues);
+export type EntityKind = z.infer<typeof entityKindEnum>;
+
+export const edgeRelationValues = [
+	"links_to",
+	"derived_from",
+	"attached_to",
+	"scheduled_as",
+	"blocks",
+	"mentions",
+	"authored_by",
+	"participant_of",
+	"replies_to",
+	"child_of",
+	"tagged_with",
+	"about",
+	"references",
+	"embeds",
+	"captured_from",
+] as const;
+export const edgeRelationEnum = z.enum(edgeRelationValues);
+export type EdgeRelation = z.infer<typeof edgeRelationEnum>;
+
+export const entityStatusValues = ["active", "archived", "trashed"] as const;
+export const entityStatusEnum = z.enum(entityStatusValues);
+export type EntityStatus = z.infer<typeof entityStatusEnum>;
+
+export const identityKindValues = [
+	"email",
+	"chat",
+	"attendee",
+	"git",
+	"selector",
+	"phone",
+	"domain",
+] as const;
+export const identityKindEnum = z.enum(identityKindValues);
+export type IdentityKind = z.infer<typeof identityKindEnum>;
+
+export const activityEventKindValues = [
+	"screen_block",
+	"app_usage",
+	"session",
+	"calendar",
+	"comms",
+	"feed_read",
+	"journal",
+	"file_op",
+] as const;
+export const activityEventKindEnum = z.enum(activityEventKindValues);
+export type ActivityEventKind = z.infer<typeof activityEventKindEnum>;
+
+// ---------------------------------------------------------------------------
+// Infra-runtime (#02, phase 0) — control-plane detail enums for the runtime
+// foundation (minio/qdrant/embedder/Turso/Electric). Append-only string unions
+// backing Postgres pgEnums (declared in schema/runtime.ts). These do NOT
+// overlap with the core graph enums above (entityKind/edgeRelation/…); the
+// runtime never adds core kinds. NEVER reorder/remove values.
+// ---------------------------------------------------------------------------
+
+/** Logical bucket prefix in minio (A8). bucket = `org-<orgId>`, prefix below. */
+export const storageBucketPrefixValues = [
+	"files", // attachments, Drive
+	"frames", // screen-capture frames (#8)
+	"recordings", // audio/video recordings
+	"artifacts", // design artifacts (#15)
+	"exports", // vault snapshots / exports
+	"sessions", // large agent-session transcripts (#11)
+] as const;
+export const storageBucketPrefixEnum = z.enum(storageBucketPrefixValues);
+export type StorageBucketPrefix = z.infer<typeof storageBucketPrefixEnum>;
+
+/** Lifecycle of a minio object (status enum instead of deleted_at). */
+export const storageObjectStatusValues = [
+	"pending", // presigned URL issued, object not yet confirmed by client
+	"stored", // confirmed (HEAD passed), available
+	"missing", // absent in minio (reconciliation found drift)
+	"trashed", // marked for deletion (GC removes from minio)
+] as const;
+export const storageObjectStatusEnum = z.enum(storageObjectStatusValues);
+export type StorageObjectStatus = z.infer<typeof storageObjectStatusEnum>;
+
+/** State of an embedding job (entities→qdrant indexing queue). */
+export const embeddingJobStatusValues = [
+	"queued",
+	"running",
+	"done",
+	"failed",
+	"skipped", // no embed-text / non-indexable kind
+] as const;
+export const embeddingJobStatusEnum = z.enum(embeddingJobStatusValues);
+export type EmbeddingJobStatus = z.infer<typeof embeddingJobStatusEnum>;
+
+/** AI-provider capability backing an embed (D12). */
+export const aiProviderKindValues = [
+	"local", // ONNX/fastembed in-process
+	"zed_gateway", // api.zed.md/v1 (R1 + Groq)
+	"openai",
+	"gemini",
+	"anthropic",
+] as const;
+export const aiProviderKindEnum = z.enum(aiProviderKindValues);
+export type AiProviderKind = z.infer<typeof aiProviderKindEnum>;
+
+/** Kind of a provisioned runtime sidecar (service registry). */
+export const runtimeServiceKindValues = [
+	"minio",
+	"qdrant",
+	"embedder",
+	"turso", // local-replica sync-engine (per-device)
+	"electric", // shape-proxy upstream
+] as const;
+export const runtimeServiceKindEnum = z.enum(runtimeServiceKindValues);
+export type RuntimeServiceKind = z.infer<typeof runtimeServiceKindEnum>;
+
+/** Health of a runtime service. */
+export const runtimeServiceStateValues = [
+	"provisioning",
+	"healthy",
+	"degraded",
+	"stopped",
+	"failed",
+] as const;
+export const runtimeServiceStateEnum = z.enum(runtimeServiceStateValues);
+export type RuntimeServiceState = z.infer<typeof runtimeServiceStateEnum>;

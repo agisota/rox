@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 
+import { activityEvents } from "./activity";
 import { agentSources } from "./agent";
 import { paymentAttributions, userAttribution } from "./attribution";
 import {
@@ -15,12 +16,16 @@ import {
 	experienceTraceEvents,
 	transitionRuns,
 } from "./circuit";
+import { contacts } from "./contact";
 import { roxBalances, roxLedger, roxTopups, usageRequests } from "./economy";
+import { edges } from "./edges";
+import { entities } from "./entity";
 import {
 	githubInstallations,
 	githubPullRequests,
 	githubRepositories,
 } from "./github";
+import { identityLinks } from "./identity";
 import { knowledgeDocuments, knowledgeLinks } from "./knowledge";
 import {
 	accessGrants,
@@ -124,6 +129,11 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	publicShares: many(publicShares),
 	knowledgeDocuments: many(knowledgeDocuments),
 	agentSources: many(agentSources),
+	entities: many(entities),
+	edges: many(edges),
+	identityLinks: many(identityLinks),
+	activityEvents: many(activityEvents),
+	contacts: many(contacts),
 }));
 
 export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
@@ -358,6 +368,7 @@ export const v2ProjectsRelations = relations(v2Projects, ({ one, many }) => ({
 	}),
 	workspaces: many(v2Workspaces),
 	knowledgeDocuments: many(knowledgeDocuments),
+	entities: many(entities),
 }));
 
 export const v2HostsRelations = relations(v2Hosts, ({ one, many }) => ({
@@ -776,6 +787,86 @@ export const knowledgeLinksRelations = relations(knowledgeLinks, ({ one }) => ({
 		references: [knowledgeDocuments.id],
 		relationName: "linkTarget",
 	}),
+}));
+
+// Core graph (#01) — entities / edges / identity_links / activity_events ------
+
+export const entitiesRelations = relations(entities, ({ one, many }) => ({
+	organization: one(organizations, {
+		fields: [entities.organizationId],
+		references: [organizations.id],
+	}),
+	v2Project: one(v2Projects, {
+		fields: [entities.v2ProjectId],
+		references: [v2Projects.id],
+	}),
+	createdByUser: one(users, {
+		fields: [entities.createdByUserId],
+		references: [users.id],
+	}),
+	outgoingEdges: many(edges, { relationName: "edgeSource" }),
+	incomingEdges: many(edges, { relationName: "edgeTarget" }),
+	contact: one(contacts),
+	activityEvents: many(activityEvents),
+}));
+
+export const edgesRelations = relations(edges, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [edges.organizationId],
+		references: [organizations.id],
+	}),
+	sourceEntity: one(entities, {
+		fields: [edges.sourceEntityId],
+		references: [entities.id],
+		relationName: "edgeSource",
+	}),
+	targetEntity: one(entities, {
+		fields: [edges.targetEntityId],
+		references: [entities.id],
+		relationName: "edgeTarget",
+	}),
+}));
+
+export const identityLinksRelations = relations(identityLinks, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [identityLinks.organizationId],
+		references: [organizations.id],
+	}),
+	contact: one(contacts, {
+		fields: [identityLinks.contactEntityId],
+		references: [contacts.entityId],
+	}),
+}));
+
+export const activityEventsRelations = relations(activityEvents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [activityEvents.organizationId],
+		references: [organizations.id],
+	}),
+	user: one(users, {
+		fields: [activityEvents.userId],
+		references: [users.id],
+	}),
+	sourceEntity: one(entities, {
+		fields: [activityEvents.sourceEntityId],
+		references: [entities.id],
+	}),
+}));
+
+export const contactsRelations = relations(contacts, ({ one, many }) => ({
+	organization: one(organizations, {
+		fields: [contacts.organizationId],
+		references: [organizations.id],
+	}),
+	entity: one(entities, {
+		fields: [contacts.entityId],
+		references: [entities.id],
+	}),
+	linkedUser: one(users, {
+		fields: [contacts.linkedUserId],
+		references: [users.id],
+	}),
+	identityLinks: many(identityLinks),
 }));
 
 // Marketing attribution (openpanel epic) --------------------------------------

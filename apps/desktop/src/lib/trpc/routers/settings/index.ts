@@ -4,6 +4,7 @@ import {
 	BRANCH_PREFIX_MODES,
 	EXECUTION_MODES,
 	EXTERNAL_APPS,
+	experimentalFeatureOverrides,
 	FILE_OPEN_MODES,
 	NON_EDITOR_APPS,
 	settings,
@@ -40,7 +41,14 @@ import {
 	resolveAgentConfigs,
 	upsertCustomAgentDefinition,
 } from "@rox/shared/agent-settings";
+import {
+	EXPERIMENTAL_FEATURES,
+	type ExperimentalFeatureDependencyStatus,
+	isExperimentalFeatureId,
+	resolveExperimentalFeatureState,
+} from "@rox/shared/experimental-features";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { app } from "electron";
 import { env } from "main/env.main";
 import { exitImmediately } from "main/index";
@@ -121,6 +129,66 @@ function getSettings() {
 			.get();
 	}
 	return row;
+}
+
+const EXPERIMENTAL_PROVIDER_ENV_KEYS = {
+	"agent-native": [["AGENT_NATIVE_API_KEY", "AGENT_NATIVE_URL"]],
+	"agent-native-templates": [
+		["AGENT_NATIVE_TEMPLATES_URL", "AGENT_NATIVE_TEMPLATES_TOKEN"],
+	],
+	github: [["GITHUB_TOKEN"], ["GH_TOKEN"]],
+	huly: [["HULY_API_TOKEN", "HULY_URL"]],
+	liveblocks: [["LIVEBLOCKS_SECRET_KEY", "NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY"]],
+	livekit: [
+		["LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "NEXT_PUBLIC_LIVEKIT_URL"],
+	],
+} as const;
+
+function hasConfiguredEnvKeyGroup(groups: readonly (readonly string[])[]) {
+	return groups.some((group) =>
+		group.every((key) => Boolean(process.env[key]?.trim())),
+	);
+}
+
+function readExperimentalDependencyStates(): Record<
+	string,
+	ExperimentalFeatureDependencyStatus
+> {
+	return {
+		"desktop-runtime": "configured",
+		...Object.fromEntries(
+			Object.entries(EXPERIMENTAL_PROVIDER_ENV_KEYS).map(([id, groups]) => [
+				id,
+				hasConfiguredEnvKeyGroup(groups) ? "configured" : "missing",
+			]),
+		),
+	};
+}
+
+function readExperimentalFeatureOverrides(): Record<string, boolean> {
+	const rows = localDb.select().from(experimentalFeatureOverrides).all();
+	return Object.fromEntries(rows.map((row) => [row.featureId, row.enabled]));
+}
+
+function resolveExperimentalFeatureStates() {
+	const dependencies = readExperimentalDependencyStates();
+	const overrides = readExperimentalFeatureOverrides();
+	return EXPERIMENTAL_FEATURES.map((feature) =>
+		resolveExperimentalFeatureState(feature, {
+			dependencies,
+			overrides,
+		}),
+	);
+}
+
+function assertExperimentalFeatureId(id: string) {
+	if (!isExperimentalFeatureId(id)) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `Unknown experimental feature: ${id}`,
+		});
+	}
+	return id;
 }
 
 function readRawTerminalPresets(): PresetWithUnknownMode[] {
@@ -285,6 +353,69 @@ export function getPresetsForTrigger(
 
 export const createSettingsRouter = () => {
 	return router({
+		experimentalFeatures: router({
+			list: publicProcedure.query(() => resolveExperimentalFeatureStates()),
+			get: publicProcedure
+				.input(z.object({ id: z.string() }))
+				.query(({ input }) => {
+					const id = assertExperimentalFeatureId(input.id);
+					return resolveExperimentalFeatureStates().find(
+						(state) => state.id === id,
+					);
+				}),
+			setOverride: publicProcedure
+				.input(
+					z.object({
+						id: z.string(),
+						enabled: z.boolean(),
+					}),
+				)
+				.mutation(({ input }) => {
+					const featureId = assertExperimentalFeatureId(input.id);
+					const now = Date.now();
+
+					localDb
+						.insert(experimentalFeatureOverrides)
+						.values({
+							featureId,
+							enabled: input.enabled,
+							updatedAt: now,
+							source: "user",
+						})
+						.onConflictDoUpdate({
+							target: experimentalFeatureOverrides.featureId,
+							set: {
+								enabled: input.enabled,
+								updatedAt: now,
+								source: "user",
+							},
+						})
+						.run();
+
+					return resolveExperimentalFeatureState(featureId, {
+						dependencies: readExperimentalDependencyStates(),
+						overrides: readExperimentalFeatureOverrides(),
+					});
+				}),
+			resetOverride: publicProcedure
+				.input(z.object({ id: z.string() }))
+				.mutation(({ input }) => {
+					const featureId = assertExperimentalFeatureId(input.id);
+					localDb
+						.delete(experimentalFeatureOverrides)
+						.where(eq(experimentalFeatureOverrides.featureId, featureId))
+						.run();
+
+					return resolveExperimentalFeatureState(featureId, {
+						dependencies: readExperimentalDependencyStates(),
+						overrides: readExperimentalFeatureOverrides(),
+					});
+				}),
+			resetAll: publicProcedure.mutation(() => {
+				localDb.delete(experimentalFeatureOverrides).run();
+				return resolveExperimentalFeatureStates();
+			}),
+		}),
 		getTerminalPresets: publicProcedure.query(() => {
 			const row = getSettings();
 			if (!row.terminalPresetsInitialized) {

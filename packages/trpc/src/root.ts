@@ -9,6 +9,7 @@ import { automationRouter } from "./router/automation";
 import { chatRouter } from "./router/chat";
 import { deviceRouter } from "./router/device";
 import { executionCircuitRouter } from "./router/executionCircuit";
+import { graphRouter } from "./router/graph";
 import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
 import { journalRouter } from "./router/journal";
@@ -24,6 +25,7 @@ import {
 import { profileRouter } from "./router/profile";
 import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
+import { runtimeRouter } from "./router/runtime";
 import { shareRouter } from "./router/share";
 import { skillRouter } from "./router/skill";
 import { supportRouter } from "./router/support/support";
@@ -51,6 +53,7 @@ export const appRouter = createTRPCRouter({
 	chat: chatRouter,
 	device: deviceRouter,
 	executionCircuit: executionCircuitRouter,
+	graph: graphRouter,
 	host: hostRouter,
 	integration: integrationRouter,
 	journal: journalRouter,
@@ -63,6 +66,7 @@ export const appRouter = createTRPCRouter({
 	profile: profileRouter,
 	project: projectRouter,
 	ranking: rankingRouter,
+	runtime: runtimeRouter,
 	share: shareRouter,
 	skill: skillRouter,
 	support: supportRouter,
