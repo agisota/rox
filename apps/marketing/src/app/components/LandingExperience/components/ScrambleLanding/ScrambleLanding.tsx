@@ -208,8 +208,12 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 					</p>
 
 					<a className="rox-landing__hero-cta" href="/download">
-						Скачать для macOS
-						<span aria-hidden="true">↓</span>
+						<span className="rox-landing__hero-cta__label">
+							Скачать для macOS
+						</span>
+						<span className="rox-landing__hero-cta__arrow" aria-hidden="true">
+							↓
+						</span>
 					</a>
 				</div>
 
