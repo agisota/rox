@@ -12,7 +12,7 @@ const ParticleField = dynamic(
 
 interface OrchestrationFieldProps {
 	/** Increment to dispatch an orchestration pulse (see ParticleField). */
-	pulse: number;
+	pulse?: number;
 }
 
 type Capability = "unknown" | "webgl" | "fallback";
@@ -49,7 +49,7 @@ function detectCapability(): Capability {
  * back to the original CSS device backdrop on mobile / reduced-motion / when
  * WebGL is unavailable, so the page is always fast and legible.
  */
-export function OrchestrationField({ pulse }: OrchestrationFieldProps) {
+export function OrchestrationField({ pulse = 0 }: OrchestrationFieldProps) {
 	const [capability, setCapability] = useState<Capability>("unknown");
 
 	useEffect(() => {

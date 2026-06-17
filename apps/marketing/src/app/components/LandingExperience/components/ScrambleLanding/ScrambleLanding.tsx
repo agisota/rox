@@ -1,7 +1,7 @@
 "use client";
 
 import { animate, scrambleText, utils } from "animejs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
 	LANDING_ACPX_TERM,
 	LANDING_AGENT_LEAD,
@@ -22,7 +22,6 @@ import {
 } from "../../constants";
 import { OrchestrationField } from "../OrchestrationField";
 import { FIELD_HINT } from "../OrchestrationField/constants";
-import { CommandConsole } from "./components/CommandConsole";
 import { RoxDivider } from "./components/RoxDivider";
 import { Term } from "./components/Term";
 
@@ -52,11 +51,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 	const animationsRef = useRef<
 		Array<{ cancel?: () => void; revert?: () => void }>
 	>([]);
-
-	// Each dispatched command bumps this counter, which the orchestration field
-	// watches to fire a "pulse" (rings expand, spin and flash, then re-coalesce).
-	const [pulse, setPulse] = useState(0);
-	const handleDispatch = useCallback(() => setPulse((value) => value + 1), []);
 
 	useEffect(() => {
 		const container = containerRef.current;
@@ -182,7 +176,7 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 	return (
 		<main ref={containerRef} className="rox-anime rox-landing">
-			<OrchestrationField pulse={pulse} />
+			<OrchestrationField />
 
 			<section className="rox-hero">
 				<div className="rox-hero__inner">
@@ -199,8 +193,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 					</p>
 
 					<p className="rox-hero__hint">{FIELD_HINT}</p>
-
-					<CommandConsole onDispatch={handleDispatch} />
 
 					<a className="rox-landing__hero-cta" href="/download">
 						Скачать для macOS
