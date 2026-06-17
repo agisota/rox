@@ -161,7 +161,15 @@ export interface AgentRunInput {
 }
 
 export type AgentRunResult =
-	| { kind: "terminal"; sessionId: string; label: string }
+	| {
+			kind: "terminal";
+			sessionId: string;
+			label: string;
+			/** The exact shell command queued into the pty (incl. env overlay). The
+			 * shell echoes this back before running it; the capture path strips that
+			 * echoed line so it doesn't leak into the threaded output. */
+			command: string;
+	  }
 	| { kind: "chat"; sessionId: string; label: string };
 
 const ROX_AGENT_ID = "rox";
@@ -272,6 +280,7 @@ async function runTerminalAgent(
 		kind: "terminal",
 		sessionId: result.terminalId,
 		label: config.label,
+		command: fullCommand,
 	};
 }
 
