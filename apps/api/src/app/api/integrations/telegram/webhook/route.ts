@@ -70,12 +70,16 @@ export async function POST(request: Request) {
 		textLength: update.text.length,
 	});
 
+	const dedupEventId = `${connection.id}:${update.updateId}`;
 	const [inserted] = await db
 		.insert(integrationInboundEvents)
 		.values({
 			connectionId: connection.id,
 			provider: "telegram",
-			externalEventId: String(update.updateId),
+			// Telegram update IDs are scoped to a bot. Include the resolved
+			// connection so different bot connections cannot drop each other's
+			// update with the same provider-local ID.
+			externalEventId: dedupEventId,
 		})
 		.onConflictDoNothing({
 			target: [
@@ -88,6 +92,7 @@ export async function POST(request: Request) {
 	if (!inserted) {
 		console.info("[telegram/webhook] Duplicate update ignored", {
 			updateId: update.updateId,
+			dedupEventId,
 			connectionId: connection.id,
 		});
 		return new Response("ok", { status: 200 });

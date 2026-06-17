@@ -149,7 +149,7 @@ describe("telegram webhook route", () => {
 			{
 				connectionId: "conn-1",
 				provider: "telegram",
-				externalEventId: "1",
+				externalEventId: "conn-1:1",
 			},
 		]);
 		expect(publishJSONMock).toHaveBeenCalledTimes(1);
