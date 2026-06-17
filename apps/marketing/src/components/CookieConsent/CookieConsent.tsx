@@ -88,7 +88,7 @@ export function CookieConsent() {
 							</Button>
 						</div>
 						<Link
-							href="/privacy"
+							href="/legal#privacy"
 							className="mt-3 block text-center text-xs text-white/40 underline-offset-4 transition-colors hover:text-white/70 hover:underline"
 						>
 							Политика приватности

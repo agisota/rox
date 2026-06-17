@@ -1,0 +1,1 @@
+export { LegalContactsSpoiler } from "./LegalContactsSpoiler";

@@ -78,6 +78,23 @@
 	scroll-margin-top: 6rem;
 }
 
+/* Footer — compact overlay on the landing hero */
+.rox-footer__badge {
+	display: inline-block;
+	padding: 1px 5px 0;
+	border-radius: 3px;
+	font-size: 8px;
+	font-weight: 500;
+	line-height: 1.5;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: rgba(255, 178, 108, 0.95);
+	background: rgba(210, 86, 17, 0.18);
+	box-shadow:
+		0 0 10px rgba(255, 154, 77, 0.45),
+		inset 0 0 8px rgba(255, 154, 77, 0.12);
+}
+
 .prose p {
 	margin-top: 1.25rem;
 	margin-bottom: 1.25rem;

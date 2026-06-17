@@ -1,0 +1,1 @@
+export { LegalDocumentSection } from "./LegalDocumentSection";
