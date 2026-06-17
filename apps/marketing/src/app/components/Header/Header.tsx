@@ -17,12 +17,12 @@ export function Header({ ctaButtons, starCounter }: HeaderProps) {
 	if (pathname === "/download") return null;
 
 	return (
-		<header className="fixed inset-x-0 top-3 z-50 flex justify-center px-4">
+		<header className="fixed inset-x-0 top-6 z-50 flex justify-center px-4">
 			<motion.nav
 				initial={{ opacity: 0, y: -8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3 }}
-				className="flex w-full max-w-3xl items-center justify-between gap-2 rounded-full border border-white/10 px-4 py-2 backdrop-blur-md"
+				className="flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-2"
 			>
 				<Link
 					href="/"
