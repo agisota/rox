@@ -188,6 +188,12 @@ export PATH="$HOME/.bun/bin:$PATH"
 bun run dev             # API + Web + Desktop + electric-proxy + Caddy
 ```
 
+On a **headless** cloud VM, do NOT use `bun run dev` — it includes `--filter=@rox/desktop`, and when Electron fails to launch (no display, "Electron uninstall") turbo treats it as a failed task and tears down ALL the other dev servers (web/api/electric-proxy/caddy) too. Run the desktop-excluded set instead:
+
+```bash
+bunx turbo run dev dev:caddy --filter=@rox/api --filter=@rox/web --filter=electric-proxy --filter=//
+```
+
 See `DEVELOPMENT.md` for full details. Dev sign-in: **Sign in as Local Admin (dev)** or `admin@local.test` / `roxdev12`.
 
 ### Services (default `bun run dev`)
@@ -225,5 +231,7 @@ Writes `NEXT_PUBLIC_*` URLs + `.rox/tailscale-urls.json`. Cloud VMs: userspace `
 - **neon-proxy timeouts after idle** — restart the stack: `docker compose -p rox-workspace -f docker-compose.yml down && docker compose -p rox-workspace -f docker-compose.yml up -d` (export `LOCAL_PG_PORT` / `LOCAL_NEON_PROXY_PORT` / `LOCAL_ELECTRIC_PORT` from `.env` first). If `DOCKER-ISOLATION-STAGE-2` iptables errors appear, restart `dockerd`.
 - **Stale dev user / wrong password** — delete `admin@local.test` from `auth.users` and re-run `NODE_ENV=development bun run db:seed-dev`, or re-run `./.rox/setup.local.sh`.
 - **Tailscale serve** — requires logged-in tailnet (`TS_AUTHKEY` or browser login via `tailscale up`). Restart `bun run dev` after URL changes.
+- **Lint hangs in non-interactive shells** — `scripts/lint.sh`'s git-check scripts call `rg` with no path argument, so when stdin is a non-TTY pipe (background jobs, CI-style runs) `rg` blocks reading stdin forever (biome itself finishes in seconds). Run lint with stdin redirected: `bun run lint < /dev/null`.
 - **Lint** — `plugins/rox/skills/rox` must symlink to `skills/rox` (not `skills/superset`).
+- **Web 500 / `Module not found` for `framer-motion` internal `.mjs`** — symptom of a partially-extracted bun cache (the `.mjs.map` files exist but the `.mjs` siblings are missing). Fix with a clean re-extract: `bun pm cache rm && rm -rf node_modules/.bun/framer-motion@* && bun install --force`.
 - **Tests** — full `bun test` includes git/worktree integration suites (`packages/host-service`, etc.) that may fail in minimal VMs. Smoke: `bun test packages/shared packages/auth`.
