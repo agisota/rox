@@ -281,9 +281,23 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 	useEffect(() => {
 		const onMove = (event: PointerEvent) => {
-			pointerNdc.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-			pointerNdc.current.y = -((event.clientY / window.innerHeight) * 2 - 1);
+			const nx = (event.clientX / window.innerWidth) * 2 - 1;
+			const ny = -((event.clientY / window.innerHeight) * 2 - 1);
+			// Charge `activity` by how far the cursor moved this event (frame-rate
+			// independent): deliberate movement quickly gathers the swarm.
+			if (pointerNdc.current.active) {
+				const dx = nx - lastPointer.current.x;
+				const dy = ny - lastPointer.current.y;
+				activity.current = Math.min(
+					1,
+					activity.current + Math.sqrt(dx * dx + dy * dy) * 14,
+				);
+			}
+			pointerNdc.current.x = nx;
+			pointerNdc.current.y = ny;
 			pointerNdc.current.active = true;
+			lastPointer.current.x = nx;
+			lastPointer.current.y = ny;
 		};
 		const onLeave = () => {
 			pointerNdc.current.active = false;
@@ -310,22 +324,15 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 		const ndc = pointerNdc.current;
 
-		// Mouse movement charges `activity` (and decays when still). A command
-		// holds the swarm fully organised. Together they drive `orch`.
-		const mdx = ndc.x - lastPointer.current.x;
-		const mdy = ndc.y - lastPointer.current.y;
-		lastPointer.current.x = ndc.x;
-		lastPointer.current.y = ndc.y;
-		const moveSpeed = Math.sqrt(mdx * mdx + mdy * mdy);
-		activity.current = Math.max(
-			0,
-			Math.min(1, activity.current + moveSpeed * 9 - delta * 0.32),
-		);
+		// `activity` (charged by mouse movement in the pointer handler) decays when
+		// the cursor is still; a command holds the swarm fully organised. Together
+		// they drive `orch`, the smoothed organisation level.
+		activity.current = Math.max(0, activity.current - delta * 0.28);
 		const orchTarget = Math.max(
 			activity.current,
 			t < dispatchUntil.current ? 1 : 0,
 		);
-		orch.current += (orchTarget - orch.current) * Math.min(delta * 2.6, 1);
+		orch.current += (orchTarget - orch.current) * Math.min(delta * 3, 1);
 		const o = orch.current;
 		const ease = o * o * (3 - 2 * o);
 
