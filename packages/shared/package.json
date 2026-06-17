@@ -136,6 +136,10 @@
 			"types": "./src/billing.ts",
 			"default": "./src/billing.ts"
 		},
+		"./canvas": {
+			"types": "./src/canvas/index.ts",
+			"default": "./src/canvas/index.ts"
+		},
 		"./workspace-launch": {
 			"types": "./src/workspace-launch/index.ts",
 			"default": "./src/workspace-launch/index.ts"
