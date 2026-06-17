@@ -7,9 +7,11 @@ import {
 	PanelLeftIcon,
 	PanelRightIcon,
 	RefreshCwIcon,
+	SparklesIcon,
 } from "lucide-react";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
+import { useFocusModeStore } from "renderer/stores/focus-mode";
 import { useRightSidebarToggleIntent } from "renderer/stores/right-sidebar-toggle-intent";
 import { SYSTEM_THEME_ID, useThemeStore } from "renderer/stores/theme/store";
 import { useWorkspaceSidebarStore } from "renderer/stores/workspace-sidebar-state";
@@ -58,6 +60,23 @@ export const actionsProvider: CommandProvider = {
 				icon: PanelLeftIcon,
 				hotkeyId: "TOGGLE_WORKSPACE_SIDEBAR",
 				run: () => useWorkspaceSidebarStore.getState().toggleOpen(),
+			},
+			{
+				id: "actions.focusMode",
+				title: "Режим фокуса",
+				section: "actions",
+				icon: SparklesIcon,
+				keywords: [
+					"фокус",
+					"цитата",
+					"цитаты",
+					"мотивация",
+					"заставка",
+					"focus",
+					"quote",
+					"motivation",
+				],
+				run: () => useFocusModeStore.getState().open(),
 			},
 		];
 

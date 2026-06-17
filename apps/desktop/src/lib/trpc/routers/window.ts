@@ -8,6 +8,23 @@ import { getImageMimeType } from "shared/file-types";
 import { z } from "zod";
 import { publicProcedure, router } from "..";
 
+/**
+ * Apply the persisted glass/vibrancy settings to the given window (macOS only).
+ * No-op when the window is null. Centralizes the fallback-color logic shared by
+ * the `setGlass` and `setAppearance` mutations.
+ */
+function applyGlassFromState(window: BrowserWindow | null): void {
+	if (!window) return;
+	const fallbackBackgroundColor = nativeTheme.shouldUseDarkColors
+		? "#252525"
+		: "#ffffff";
+	applyGlassToWindow(
+		window,
+		appState.data.appearanceState,
+		fallbackBackgroundColor,
+	);
+}
+
 export const createWindowRouter = (getWindow: () => BrowserWindow | null) => {
 	return router({
 		/** Read the persisted glass / window-vibrancy appearance settings. */
@@ -18,6 +35,10 @@ export const createWindowRouter = (getWindow: () => BrowserWindow | null) => {
 		/**
 		 * Persist glass settings and apply them live to the window (macOS only).
 		 * The renderer separately toggles the `.glass` document-root class.
+		 *
+		 * Only the glass fields are touched: the wallpaper / quote-loader fields
+		 * of `appearanceState` are merged through so this mutation never clobbers
+		 * them. For multi-field updates use `setAppearance`.
 		 */
 		setGlass: publicProcedure
 			.input(
@@ -28,24 +49,55 @@ export const createWindowRouter = (getWindow: () => BrowserWindow | null) => {
 			)
 			.mutation(async ({ input }) => {
 				appState.data.appearanceState = {
+					...appState.data.appearanceState,
 					glassEnabled: input.glassEnabled,
 					windowOpacity: input.windowOpacity,
 				};
 				await appState.write();
 
-				const window = getWindow();
-				if (window) {
-					const fallbackBackgroundColor = nativeTheme.shouldUseDarkColors
-						? "#252525"
-						: "#ffffff";
-					applyGlassToWindow(
-						window,
-						appState.data.appearanceState,
-						fallbackBackgroundColor,
-					);
-				}
+				applyGlassFromState(getWindow());
 
 				return { success: true };
+			}),
+
+		/**
+		 * Persist a partial patch of the full appearance settings (glass +
+		 * wallpaper + quote loader) and re-apply window vibrancy when the glass
+		 * fields change. Every field is optional so callers can update a single
+		 * toggle without round-tripping the whole object; unspecified fields keep
+		 * their persisted value.
+		 */
+		setAppearance: publicProcedure
+			.input(
+				z
+					.object({
+						glassEnabled: z.boolean(),
+						windowOpacity: z.number().min(0.2).max(1),
+						wallpaperId: z.string().nullable(),
+						wallpaperAutoRotate: z.boolean(),
+						wallpaperRotateSeconds: z.number().int().min(5).max(3600),
+						quoteLoaderEnabled: z.boolean(),
+					})
+					.partial(),
+			)
+			.mutation(async ({ input }) => {
+				const previousGlass = appState.data.appearanceState.glassEnabled;
+				const previousOpacity = appState.data.appearanceState.windowOpacity;
+
+				appState.data.appearanceState = {
+					...appState.data.appearanceState,
+					...input,
+				};
+				await appState.write();
+
+				const glassChanged =
+					appState.data.appearanceState.glassEnabled !== previousGlass ||
+					appState.data.appearanceState.windowOpacity !== previousOpacity;
+				if (glassChanged) {
+					applyGlassFromState(getWindow());
+				}
+
+				return { success: true, appearance: appState.data.appearanceState };
 			}),
 
 		minimize: publicProcedure.mutation(() => {

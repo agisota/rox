@@ -1,4 +1,5 @@
 export * from "./chat-preferences";
+export * from "./focus-mode";
 export * from "./markdown-preferences";
 export * from "./ports";
 export * from "./ringtone";
@@ -6,5 +7,6 @@ export * from "./settings-state";
 export * from "./sidebar-state";
 export * from "./tabs";
 export * from "./theme";
+export * from "./wallpaper";
 export * from "./workspace-init";
 export * from "./workspace-sidebar-state";
