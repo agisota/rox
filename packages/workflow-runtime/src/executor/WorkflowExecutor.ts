@@ -165,12 +165,15 @@ export class WorkflowExecutor {
 		 * continue. `seedNode` is the run's entry node (start or node-entry target):
 		 * it is always active even with no live in-edges. `forceInput`, when given,
 		 * seeds the block directly (used to re-enter a loop body's entry node with
-		 * the back-edge's payload).
+		 * the back-edge's payload). `iteration` is the loop replay index (0 on the
+		 * main pass, ≥1 on bounded loop re-entries) — stamped onto the
+		 * `onAgentRunFinished` emit so the cross-run dispatcher dedupes replays.
 		 */
 		const runBlock = async (
 			blockId: string,
 			seedNode: string | undefined,
 			forceInput?: Record<string, unknown>,
+			iteration = 0,
 		): Promise<RunResult | "skipped" | undefined> => {
 			if (options.isCanceled?.()) {
 				return withContext({ status: "canceled", steps, output: runOutput });
@@ -378,6 +381,7 @@ export class WorkflowExecutor {
 							roleSkillSlug: req.roleSkillSlug,
 							output,
 							childRunRef: res.childRunRef,
+							iteration,
 						});
 					} catch {
 						// Hook owns its own error reporting.
@@ -506,6 +510,7 @@ export class WorkflowExecutor {
 			blockId: string,
 			seedNode: string | undefined,
 			forceInput?: Record<string, unknown>,
+			iteration?: number,
 		) => Promise<RunResult | "skipped" | undefined>;
 	}): Promise<RunResult | undefined> {
 		const { loop, executionPlan, edgeFires, outputs, runBlock, cap } = args;
@@ -525,7 +530,15 @@ export class WorkflowExecutor {
 			const feedback = outputs.get(firing.source) ?? {};
 			for (const blockId of replaySlice) {
 				const forceInput = blockId === loop.entryNodeId ? feedback : undefined;
-				const signal = await runBlock(blockId, undefined, forceInput);
+				// Stamp the replay index so a finished agent_run node re-fired on this
+				// loop iteration carries iteration ≥ 1; the cross-run dispatcher dedupes
+				// replays and fans out at most once per settled node.
+				const signal = await runBlock(
+					blockId,
+					undefined,
+					forceInput,
+					iteration,
+				);
 				if (signal != null && signal !== "skipped") return signal;
 			}
 		}

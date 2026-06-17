@@ -1,4 +1,4 @@
-import { db } from "@rox/db/client";
+import { dbWs } from "@rox/db/client";
 import {
 	objectRelations,
 	type SelectWorkflowDefinition,
@@ -31,6 +31,14 @@ export interface RunPipelineArgs {
 	input: Record<string, unknown>;
 	/** Seed message + transcript threaded into every agent_run node (design §5). */
 	initialContext: AccumulatedContext;
+	/**
+	 * The run that triggered this one, when fired by the cross-run dispatcher off
+	 * another run's `agent_run_finished` event. Persisted to
+	 * `workflow_runs.parentRunId` so the dispatcher can walk the ancestor chain
+	 * and refuse to re-fire a pipeline already in it (recursion guard, §3.3).
+	 * Undefined for top-level runs (manual `runOnce`, host-originating events).
+	 */
+	parentRunId?: string;
 }
 
 export interface RunPipelineResult {
@@ -45,7 +53,7 @@ export interface RunPipelineResult {
 class DbRunRecorder implements RunRecorder {
 	constructor(private readonly runId: string) {}
 	async recordStep(step: StepRecord): Promise<void> {
-		await db.insert(workflowRunSteps).values({
+		await dbWs.insert(workflowRunSteps).values({
 			runId: this.runId,
 			blockId: step.blockId,
 			blockType: step.blockType,
@@ -76,12 +84,15 @@ export async function runPipeline(
 ): Promise<RunPipelineResult> {
 	const state = args.pipeline.draftState;
 
-	const [run] = await db
+	const [run] = await dbWs
 		.insert(workflowRuns)
 		.values({
 			organizationId: args.organizationId,
 			v2ProjectId: args.pipeline.v2ProjectId,
 			workflowId: args.pipeline.id,
+			// Provenance for the recursion guard: the run whose agent_run_finished
+			// event fired this one (null for top-level runs).
+			parentRunId: args.parentRunId ?? null,
 			triggerKind: args.triggerKind,
 			triggerRef: args.triggerRef ?? null,
 			status: "running",
@@ -117,13 +128,14 @@ export async function runPipeline(
 				{
 					organizationId: args.organizationId,
 					v2ProjectId: args.pipeline.v2ProjectId ?? null,
+					runId,
 				},
 				info,
 			),
 	});
 
 	// Persist terminal state + the final accumulating context.
-	await db
+	await dbWs
 		.update(workflowRuns)
 		.set({
 			status: result.status,
@@ -135,7 +147,7 @@ export async function runPipeline(
 		.where(eq(workflowRuns.id, runId));
 
 	// Object-graph link: pipeline produced run.
-	await db
+	await dbWs
 		.insert(objectRelations)
 		.values({
 			organizationId: args.organizationId,

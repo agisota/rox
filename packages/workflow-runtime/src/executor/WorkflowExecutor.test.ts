@@ -662,6 +662,37 @@ describe("WorkflowExecutor", () => {
 		expect(improverRuns).toBe(5);
 	});
 
+	test("RUN-LOOP-04: onAgentRunFinished tags the loop iteration (0 on main pass, ≥1 on replays)", async () => {
+		// The cross-run dispatcher dedupes loop replays by `iteration`: only the
+		// settled (iteration 0) emit should fan out a triggered run. This proves the
+		// executor stamps the replay index so a feedback loop can't amplify one
+		// finished node into one cross-run dispatch per iteration (design §3.3).
+		const iterations: number[] = [];
+		const r = await exec.execute(
+			feedbackLoopState(3), // initial pass + 2 re-entries
+			{ seed: "draft" },
+			{
+				initialContext: { seedMessage: "draft", entries: [] },
+				handlers: {
+					critic_gate: () => ({
+						handle: "revise",
+						output: { verdict: "revise" },
+					}),
+				},
+				resolveAgentRun: async (req) => ({
+					output: { message: `improved-${req.blockId}` },
+				}),
+				onAgentRunFinished: (info) => {
+					iterations.push(info.iteration);
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		// improver fires the hook 3 times: iteration 0 (main pass), then 1 and 2
+		// (the two bounded loop replays). Only the leading 0 should dispatch.
+		expect(iterations).toEqual([0, 1, 2]);
+	});
+
 	// --- Node-entry dispatch --------------------------------------------------
 
 	test("RUN-ENTRY-01: execution starts at a bound node, skipping upstream", async () => {

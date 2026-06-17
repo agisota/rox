@@ -15,19 +15,30 @@ import type { AgentRunFinishedInfo } from "@rox/workflow-runtime";
  * skill graphs that contain `agent_run` nodes). Fire-and-forget — never throws.
  */
 export function emitAgentRunFinished(
-	scope: { organizationId: string; v2ProjectId: string | null },
+	scope: {
+		organizationId: string;
+		v2ProjectId: string | null;
+		/** The emitting `workflow_runs.id`. Threaded onto the event as `sourceRunId`
+		 * so the dispatcher can chase the parentRun ancestry (recursion guard). */
+		runId: string;
+	},
 	info: AgentRunFinishedInfo,
 ): void {
 	// 1. The node itself finished — fires `agent_run_finished` triggers, the
 	//    cross-run feedback signal (e.g. critic → improver in a different node).
+	//    `sourceRunId` lets the dispatcher walk the ancestor chain and refuse to
+	//    re-fire a pipeline already in it; `iteration` lets it dedupe in-run loop
+	//    replays so a settled node fans out at most once (design §3.3).
 	publishPipelineEvent({
 		kind: "agent_run_finished",
 		organizationId: scope.organizationId,
 		v2ProjectId: scope.v2ProjectId,
+		sourceRunId: scope.runId,
 		payload: {
 			nodeId: info.blockId,
 			roleSlug: info.roleSkillSlug,
 			childSessionId: info.childRunRef?.sessionId,
+			iteration: info.iteration,
 		},
 	});
 
@@ -40,10 +51,12 @@ export function emitAgentRunFinished(
 			kind: "file_or_artifact_created",
 			organizationId: scope.organizationId,
 			v2ProjectId: scope.v2ProjectId,
+			sourceRunId: scope.runId,
 			payload: {
 				nodeId: info.blockId,
 				artifactKind: artifact.kind,
 				path: artifact.ref,
+				iteration: info.iteration,
 			},
 		});
 	}

@@ -255,6 +255,7 @@ export async function runSkill(args: RunSkillArgs): Promise<RunSkillResult> {
 				{
 					organizationId: args.organizationId,
 					v2ProjectId: args.v2ProjectId ?? null,
+					runId,
 				},
 				info,
 			),

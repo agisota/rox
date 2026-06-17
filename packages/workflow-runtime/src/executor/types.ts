@@ -131,6 +131,14 @@ export interface AgentRunFinishedInfo {
 	output: Record<string, unknown>;
 	/** Reference to the spawned chat/terminal session, when one was created. */
 	childRunRef?: { kind: "chat" | "terminal"; sessionId: string };
+	/**
+	 * In-run loop iteration that produced this completion. 0 is the initial
+	 * (main-pass) execution; ≥1 are bounded feedback-loop replays (critic →
+	 * improver). The cross-run dispatcher's dedupe ignores replays so a single
+	 * settled node does not fan out one triggered run per loop iteration
+	 * (design §3.3 — loop-replay event amplification).
+	 */
+	iteration: number;
 }
 
 /**

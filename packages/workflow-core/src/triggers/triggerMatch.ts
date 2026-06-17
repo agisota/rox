@@ -61,6 +61,14 @@ export interface PipelineEvent {
 	kind: PipelineTriggerEventKind;
 	organizationId: string;
 	v2ProjectId?: string | null;
+	/**
+	 * The `workflow_runs.id` of the run that emitted this event, when the source
+	 * is an in-run emit (a finished `agent_run` node). Threaded so the dispatcher
+	 * can chase the `parentRunId` ancestry and refuse to re-fire a pipeline that
+	 * already appears in the chain (recursion/depth guard, design §3.3 / §9).
+	 * Absent for host-originating events that aren't tied to a pipeline run.
+	 */
+	sourceRunId?: string;
 	/** Event-specific payload (chat session, node id, artifact, skill, …). */
 	payload: PipelineEventPayload;
 }
