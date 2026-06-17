@@ -4,7 +4,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { AGENT_ROLES, FIELD } from "../../constants";
 
@@ -256,13 +256,34 @@ function Swarm({ pulse }: ParticleFieldProps) {
 	const lastPulse = useRef(pulse);
 	const pulseStart = useRef(-10);
 
-	// Pointer attraction state (world-space point on the z=0 plane).
+	// Pointer attraction state (world-space point on the z=0 plane). We track the
+	// cursor at the window level rather than via the canvas, so the wake works
+	// even over the centered hero copy/controls that sit above the canvas.
 	const pointerWorld = useRef(new THREE.Vector3());
+	const pointerNdc = useRef({ x: 0, y: 0, active: false });
+	const pointerVec = useMemo(() => new THREE.Vector2(), []);
 	const plane = useMemo(
 		() => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0),
 		[],
 	);
 	const raycaster = useMemo(() => new THREE.Raycaster(), []);
+
+	useEffect(() => {
+		const onMove = (event: PointerEvent) => {
+			pointerNdc.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+			pointerNdc.current.y = -((event.clientY / window.innerHeight) * 2 - 1);
+			pointerNdc.current.active = true;
+		};
+		const onLeave = () => {
+			pointerNdc.current.active = false;
+		};
+		window.addEventListener("pointermove", onMove, { passive: true });
+		window.addEventListener("pointerout", onLeave);
+		return () => {
+			window.removeEventListener("pointermove", onMove);
+			window.removeEventListener("pointerout", onLeave);
+		};
+	}, []);
 
 	useFrame((state, delta) => {
 		const t = state.clock.elapsedTime;
@@ -288,12 +309,14 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		const sinY = Math.sin(spin);
 
 		// Pointer → world point on the z=0 plane.
-		raycaster.setFromCamera(state.pointer, state.camera);
+		const ndc = pointerNdc.current;
+		pointerVec.set(ndc.x, ndc.y);
+		raycaster.setFromCamera(pointerVec, state.camera);
 		raycaster.ray.intersectPlane(plane, pointerWorld.current);
 		const px = pointerWorld.current.x;
 		const py = pointerWorld.current.y;
 		const pointerActive =
-			Number.isFinite(px) && Number.isFinite(py) && state.pointer.length() > 0;
+			ndc.active && Number.isFinite(px) && Number.isFinite(py);
 
 		const structured = data.structured;
 		const scattered = data.scattered;
@@ -325,8 +348,8 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				const dx = x - px;
 				const dy = y - py;
 				const d2 = dx * dx + dy * dy;
-				if (d2 < 9) {
-					const f = (1 - d2 / 9) * 1.4;
+				if (d2 < 14) {
+					const f = (1 - d2 / 14) * 2;
 					const inv = 1 / Math.sqrt(d2 + 0.001);
 					x += dx * inv * f;
 					y += dy * inv * f;
@@ -369,9 +392,9 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		// Subtle camera drift toward the pointer, parked slightly above the plane
 		// so the tilted rings read as Saturn-like ellipses (3D depth).
 		state.camera.position.x +=
-			(state.pointer.x * 1.4 - state.camera.position.x) * delta * 1.5;
+			(ndc.x * 1.4 - state.camera.position.x) * delta * 1.5;
 		state.camera.position.y +=
-			(1.3 + state.pointer.y * 0.8 - state.camera.position.y) * delta * 1.5;
+			(1.3 + ndc.y * 0.8 - state.camera.position.y) * delta * 1.5;
 		state.camera.lookAt(0, 0, 0);
 	});
 
