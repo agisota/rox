@@ -27,6 +27,7 @@
 - `packages/host-service/src/trpc/router/agents/agent-run-capture.ts`
 - `packages/host-service/src/trpc/router/agents/agent-run-capture.test.ts`
 - `packages/host-service/src/trpc/router/agents/agents.ts`
+- `.bun-version`
 - `plans/receipts/2026-06-17-node-entry-maxturns.md`
 
 ## Commands and evidence
@@ -52,6 +53,12 @@
 - `bun run --cwd packages/host-service typecheck` -> pass.
 - `bun run typecheck` -> pass, 34/34 turbo tasks.
 - `codex --help`, `claude --help`, `omp --help` -> no shared `--max-turns` CLI flag found for the default terminal-agent adapters.
+- CI parity fix: `bunx --bun bun@1.3.11 test --isolate` in `packages/trpc`
+  reproduced a Bun 1.3.11 `mock.module` leak where `run-pipeline.test.ts`
+  mocked `./agent-run-service` and the mock bled into
+  `agent-run-service.test.ts` despite `--isolate` (15 failures / 7 errors).
+  `bun test --isolate` on Bun 1.3.14 passes the same `@rox/trpc` suite
+  (221 tests), so the repo Bun pin was bumped from 1.3.11 to 1.3.14.
 
 ## Remaining risks
 
