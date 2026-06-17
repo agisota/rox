@@ -5,9 +5,9 @@
  * and a small context, it returns the typed insert payload. This keeps the
  * transform unit-testable and lets the job route stay a thin orchestration shell.
  *
- * Foundation scope: `markdown` is left empty. Converting Notion blocks to
- * markdown requires per-page block fetches (`GET /blocks/{id}/children`) and is
- * deliberately out of scope here — tracked as a TODO below.
+ * The job route fetches page block children and passes rendered Markdown by
+ * page id. This module stays pure: it maps search result metadata plus
+ * already-rendered Markdown into `knowledge_documents` rows.
  *
  * Storage decisions (no migration / no new enum):
  *  - `sourceKind: "file"` reuses an existing `knowledge_source_kind` value.
@@ -17,13 +17,19 @@
  */
 
 import type { InsertKnowledgeDocument } from "@rox/db/schema";
-import type { NotionSearchResult } from "./notion-client";
+import type {
+	NotionBlock,
+	NotionRichText,
+	NotionSearchResult,
+} from "./notion-client";
 
 /** Context needed to materialize a knowledge document from a Notion page. */
 export type NotionMapContext = {
 	organizationId: string;
 	/** Correlates every row written by one sync run (stored in `sourceRef`). */
 	importBatchId: string;
+	/** Optional rendered page bodies keyed by Notion page id. */
+	markdownByPageId?: ReadonlyMap<string, string>;
 };
 
 /** Fallback title when a page exposes no usable title-type property. */
@@ -49,6 +55,168 @@ function richTextToPlain(fragments: unknown): string {
 		}
 	}
 	return parts.join("").trim();
+}
+
+function richTextToMarkdown(fragments: unknown): string {
+	if (!Array.isArray(fragments)) return "";
+	return fragments
+		.map((fragment) => {
+			if (typeof fragment !== "object" || fragment === null) return "";
+			const rich = fragment as NotionRichText;
+			let text = rich.plain_text ?? "";
+			if (!text) return "";
+			const annotations = rich.annotations;
+			if (annotations?.code) return formatInlineCode(text);
+			if (annotations?.bold) text = `**${text}**`;
+			if (annotations?.italic) text = `_${text}_`;
+			if (annotations?.strikethrough) text = `~~${text}~~`;
+			if (rich.href) text = `[${text}](${rich.href})`;
+			return text;
+		})
+		.join("")
+		.trim();
+}
+
+function richTextToCode(fragments: unknown): string {
+	if (!Array.isArray(fragments)) return "";
+	return fragments
+		.map((fragment) => {
+			if (typeof fragment !== "object" || fragment === null) return "";
+			const rich = fragment as NotionRichText;
+			return rich.plain_text ?? "";
+		})
+		.join("");
+}
+
+function formatInlineCode(text: string): string {
+	const fence = text.includes("`") ? "``" : "`";
+	return `${fence}${text}${fence}`;
+}
+
+function getBlockPayload(block: NotionBlock): Record<string, unknown> | null {
+	const payload = block[block.type];
+	return typeof payload === "object" && payload !== null
+		? (payload as Record<string, unknown>)
+		: null;
+}
+
+function getRichText(block: NotionBlock): string {
+	return richTextToMarkdown(getBlockPayload(block)?.rich_text);
+}
+
+function getCodeText(block: NotionBlock): string {
+	return richTextToCode(getBlockPayload(block)?.rich_text);
+}
+
+function getMarkdownCodeFence(code: string): string {
+	const runs = code.match(/`+/g) ?? [];
+	const maxRun = runs.reduce((max, run) => Math.max(max, run.length), 0);
+	return "`".repeat(Math.max(3, maxRun + 1));
+}
+
+function getCaption(payload: Record<string, unknown> | null): string {
+	const caption = richTextToMarkdown(payload?.caption);
+	return caption.length > 0 ? caption : "Attachment";
+}
+
+function getExternalUrl(
+	payload: Record<string, unknown> | null,
+): string | null {
+	const external = payload?.external;
+	if (typeof external === "object" && external !== null) {
+		const url = (external as Record<string, unknown>).url;
+		if (typeof url === "string") return url;
+	}
+	const file = payload?.file;
+	if (typeof file === "object" && file !== null) {
+		const url = (file as Record<string, unknown>).url;
+		if (typeof url === "string") return url;
+	}
+	const url = payload?.url;
+	return typeof url === "string" ? url : null;
+}
+
+function indentMarkdown(markdown: string, spaces: number): string {
+	if (!markdown.trim()) return "";
+	const prefix = " ".repeat(spaces);
+	return markdown
+		.split("\n")
+		.map((line) => (line.length > 0 ? `${prefix}${line}` : line))
+		.join("\n");
+}
+
+function renderChildren(block: NotionBlock, depth: number): string {
+	return renderNotionBlocksToMarkdown(block.children ?? [], depth + 1);
+}
+
+function renderBlockToMarkdown(block: NotionBlock, depth: number): string {
+	const payload = getBlockPayload(block);
+	const text = getRichText(block);
+	const children = renderChildren(block, depth);
+	const nested = children ? `\n${indentMarkdown(children, 2)}` : "";
+
+	switch (block.type) {
+		case "paragraph":
+			return `${text}${nested}`.trim();
+		case "heading_1":
+			return `# ${text}`.trim();
+		case "heading_2":
+			return `## ${text}`.trim();
+		case "heading_3":
+			return `### ${text}`.trim();
+		case "bulleted_list_item":
+			return `${"  ".repeat(depth)}- ${text}${nested}`.trimEnd();
+		case "numbered_list_item":
+			return `${"  ".repeat(depth)}1. ${text}${nested}`.trimEnd();
+		case "to_do": {
+			const checked = payload?.checked === true ? "x" : " ";
+			return `${"  ".repeat(depth)}- [${checked}] ${text}${nested}`.trimEnd();
+		}
+		case "quote":
+		case "callout":
+			return `> ${text}${nested}`.trimEnd();
+		case "toggle":
+			return `${text}${nested}`.trim();
+		case "code": {
+			const language =
+				typeof payload?.language === "string" ? payload.language : "";
+			const code = getCodeText(block).replace(/\n$/, "");
+			const fence = getMarkdownCodeFence(code);
+			return `${fence}${language}\n${code}\n${fence}`;
+		}
+		case "divider":
+			return "---";
+		case "child_page":
+			return `## ${typeof payload?.title === "string" ? payload.title : "Page"}`;
+		case "child_database":
+			return `## ${typeof payload?.title === "string" ? payload.title : "Database"}`;
+		case "bookmark":
+		case "embed":
+		case "link_preview": {
+			const url = getExternalUrl(payload);
+			return url ? `[${url}](${url})` : "";
+		}
+		case "image":
+		case "file":
+		case "pdf":
+		case "video": {
+			const url = getExternalUrl(payload);
+			return url ? `[${getCaption(payload)}](${url})` : "";
+		}
+		default:
+			return children;
+	}
+}
+
+export function renderNotionBlocksToMarkdown(
+	blocks: readonly NotionBlock[],
+	depth = 0,
+): string {
+	return blocks
+		.map((block) => renderBlockToMarkdown(block, depth))
+		.filter((line) => line.trim().length > 0)
+		.join("\n\n")
+		.trim();
 }
 
 /**
@@ -94,7 +262,8 @@ export function buildSlug(title: string, pageId: string): string {
 
 /**
  * Maps a single Notion page to a `knowledge_documents` insert row. Pure — no
- * network, no DB. `markdown` is empty for the foundation (see file header TODO).
+ * network, no DB. `markdown` comes from already-rendered page blocks when the
+ * sync job supplies a `markdownByPageId` entry.
  */
 export function mapNotionPageToKnowledgeDoc(
 	page: NotionSearchResult,
@@ -106,9 +275,7 @@ export function mapNotionPageToKnowledgeDoc(
 		organizationId: ctx.organizationId,
 		slug: buildSlug(title, page.id),
 		title,
-		// TODO(notion-blocks): fetch GET /blocks/{id}/children and render the
-		// page body to markdown. Empty for the sync foundation.
-		markdown: "",
+		markdown: ctx.markdownByPageId?.get(page.id) ?? "",
 		sourceKind: "file",
 		type: "note",
 		sourceRef: {

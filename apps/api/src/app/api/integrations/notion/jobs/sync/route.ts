@@ -7,10 +7,9 @@
  * page to a knowledge document, and upsert with `onConflictDoUpdate` keyed on
  * the unique `(organizationId, slug)` index.
  *
- * Foundation scope: pages are imported with empty `markdown` (block → markdown
- * conversion is a TODO in ./sync). The route always returns 200 + typechecks;
- * a missing/disconnected connection or an empty result set is logged and 200ed
- * so QStash does not retry a non-actionable job.
+ * PR-2 scope: for each page, retrieve its child blocks and render Markdown into
+ * `knowledge_documents.markdown`. Block import is best-effort per page so one
+ * inaccessible page does not make QStash retry the whole sync job.
  */
 
 import { buildConflictUpdateColumns, db } from "@rox/db";
@@ -21,14 +20,27 @@ import { and, eq, isNull } from "drizzle-orm";
 import chunk from "lodash.chunk";
 import { z } from "zod";
 import { env } from "@/env";
-import { search } from "../../notion-client";
-import { mapNotionPages } from "../../sync";
+import {
+	listBlockChildren,
+	type NotionBlock,
+	type NotionSearchResult,
+	search,
+} from "../../notion-client";
+import { mapNotionPages, renderNotionBlocksToMarkdown } from "../../sync";
 
 /** Insert chunk size — keeps each upsert statement within sane bounds. */
 const BATCH_SIZE = 100;
 
 /** Safety cap on `/search` pagination so one job can't loop unbounded. */
 const MAX_PAGES = 50;
+/** Safety cap on child-block pagination for a single page/block. */
+const MAX_BLOCK_PAGES_PER_LEVEL = 10;
+/** Safety cap on recursive child-block traversal depth. */
+const MAX_BLOCK_DEPTH = 4;
+/** Fetch page blocks in small batches so one sync job cannot fan out unbounded. */
+const BLOCK_FETCH_CONCURRENCY = 5;
+const MAX_NOTION_ATTEMPTS = 3;
+const NOTION_RETRY_BASE_MS = 250;
 
 const receiver = new Receiver({
 	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
@@ -55,11 +67,17 @@ export async function POST(request: Request) {
 			return Response.json({ error: "Missing signature" }, { status: 401 });
 		}
 
-		const isValid = await receiver.verify({
-			body,
-			signature,
-			url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/notion/jobs/sync`,
-		});
+		let isValid = false;
+		try {
+			isValid = await receiver.verify({
+				body,
+				signature,
+				url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/notion/jobs/sync`,
+			});
+		} catch (error) {
+			console.warn("[notion-sync] signature verification failed", error);
+			return Response.json({ error: "Invalid signature" }, { status: 401 });
+		}
 
 		if (!isValid) {
 			return Response.json({ error: "Invalid signature" }, { status: 401 });
@@ -152,15 +170,21 @@ async function importNotionPages({
 	let totalImported = 0;
 
 	do {
-		const response = await search({
-			token,
-			query,
-			startCursor: cursor,
-		});
+		const response = await withNotionRetry("search", () =>
+			search({
+				token,
+				query,
+				startCursor: cursor,
+			}),
+		);
 
 		const docs = mapNotionPages(response.results, {
 			organizationId,
 			importBatchId,
+			markdownByPageId: await fetchMarkdownByPageId({
+				token,
+				pages: response.results,
+			}),
 		});
 
 		for (const batch of chunk(docs, BATCH_SIZE)) {
@@ -188,4 +212,128 @@ async function importNotionPages({
 	} while (cursor && pagesWalked < MAX_PAGES);
 
 	return totalImported;
+}
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableNotionError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error);
+	return /\b(408|409|429|5\d\d)\b|timeout|network|temporarily|rate limit|overload/i.test(
+		message,
+	);
+}
+
+async function withNotionRetry<T>(
+	label: string,
+	fn: () => Promise<T>,
+): Promise<T> {
+	for (let attempt = 1; attempt <= MAX_NOTION_ATTEMPTS; attempt++) {
+		try {
+			return await fn();
+		} catch (error) {
+			if (attempt >= MAX_NOTION_ATTEMPTS || !isRetryableNotionError(error)) {
+				throw error;
+			}
+			console.warn(`[notion-sync] retrying Notion ${label}`, {
+				attempt,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			await delay(NOTION_RETRY_BASE_MS * 2 ** (attempt - 1));
+		}
+	}
+	throw new Error(`Notion ${label} failed after retries`);
+}
+
+async function fetchMarkdownByPageId({
+	token,
+	pages,
+}: {
+	token: string;
+	pages: readonly NotionSearchResult[];
+}): Promise<Map<string, string>> {
+	const markdownByPageId = new Map<string, string>();
+
+	for (const pageBatch of chunk(pages, BLOCK_FETCH_CONCURRENCY)) {
+		const results = await Promise.allSettled(
+			pageBatch.map(async (page) => ({
+				page,
+				blocks: await fetchBlockTree({
+					token,
+					blockId: page.id,
+					depth: 0,
+				}),
+			})),
+		);
+
+		for (const [index, result] of results.entries()) {
+			if (result.status === "fulfilled") {
+				markdownByPageId.set(
+					result.value.page.id,
+					renderNotionBlocksToMarkdown(result.value.blocks),
+				);
+				continue;
+			}
+			const page = pageBatch[index];
+			if (!page) continue;
+			console.warn(
+				`[notion-sync] failed to import blocks for page ${page.id}`,
+				{
+					error:
+						result.reason instanceof Error
+							? result.reason.message
+							: String(result.reason),
+				},
+			);
+			markdownByPageId.set(page.id, "");
+		}
+	}
+
+	return markdownByPageId;
+}
+
+async function fetchBlockTree({
+	token,
+	blockId,
+	depth,
+}: {
+	token: string;
+	blockId: string;
+	depth: number;
+}): Promise<NotionBlock[]> {
+	if (depth > MAX_BLOCK_DEPTH) return [];
+
+	let cursor: string | undefined;
+	let pagesWalked = 0;
+	const blocks: NotionBlock[] = [];
+
+	do {
+		const response = await withNotionRetry("block children", () =>
+			listBlockChildren({
+				token,
+				blockId,
+				startCursor: cursor,
+			}),
+		);
+
+		for (const block of response.results) {
+			const next = { ...block };
+			if (block.has_children) {
+				next.children = await fetchBlockTree({
+					token,
+					blockId: block.id,
+					depth: depth + 1,
+				});
+			}
+			blocks.push(next);
+		}
+
+		cursor = response.has_more
+			? (response.next_cursor ?? undefined)
+			: undefined;
+		pagesWalked += 1;
+	} while (cursor && pagesWalked < MAX_BLOCK_PAGES_PER_LEVEL);
+
+	return blocks;
 }

@@ -6,6 +6,7 @@ import {
 	mapNotionPages,
 	mapNotionPageToKnowledgeDoc,
 	type NotionMapContext,
+	renderNotionBlocksToMarkdown,
 } from "./sync";
 
 const ctx: NotionMapContext = {
@@ -82,7 +83,6 @@ describe("mapNotionPageToKnowledgeDoc", () => {
 		expect(doc.slug).toBe("roadmap-34567890");
 		expect(doc.sourceKind).toBe("file");
 		expect(doc.type).toBe("note");
-		// Foundation: markdown is empty (block fetch is a TODO).
 		expect(doc.markdown).toBe("");
 		expect(doc.sourceRef).toMatchObject({
 			importBatchId: "batch-1",
@@ -113,6 +113,20 @@ describe("mapNotionPageToKnowledgeDoc", () => {
 		expect(a.slug).toBe("notes-11111111");
 		expect(b.slug).toBe("notes-22222222");
 	});
+
+	test("uses rendered markdown when provided by page id", () => {
+		const doc = mapNotionPageToKnowledgeDoc(
+			pageWithTitle("page-abcdef1234567890", "Roadmap"),
+			{
+				...ctx,
+				markdownByPageId: new Map([
+					["page-abcdef1234567890", "## Goals\n\n- Ship"],
+				]),
+			},
+		);
+
+		expect(doc.markdown).toBe("## Goals\n\n- Ship");
+	});
 });
 
 describe("mapNotionPages", () => {
@@ -131,5 +145,138 @@ describe("mapNotionPages", () => {
 
 		expect(docs).toHaveLength(1);
 		expect(docs[0]?.title).toBe("Keep");
+	});
+});
+
+describe("renderNotionBlocksToMarkdown", () => {
+	test("renders common block types to markdown", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "h1",
+				type: "heading_1",
+				heading_1: { rich_text: [{ plain_text: "Strategy" }] },
+			},
+			{
+				id: "p1",
+				type: "paragraph",
+				paragraph: {
+					rich_text: [
+						{ plain_text: "Read " },
+						{
+							plain_text: "the docs",
+							href: "https://example.com",
+							annotations: { bold: true },
+						},
+					],
+				},
+			},
+			{
+				id: "todo",
+				type: "to_do",
+				to_do: {
+					checked: true,
+					rich_text: [{ plain_text: "Done" }],
+				},
+			},
+			{
+				id: "code",
+				type: "code",
+				code: {
+					language: "typescript",
+					rich_text: [{ plain_text: "const ok = true;" }],
+				},
+			},
+			{
+				id: "image",
+				type: "image",
+				image: {
+					external: { url: "https://example.com/image.png" },
+					caption: [{ plain_text: "Diagram" }],
+				},
+			},
+		]);
+
+		expect(markdown).toContain("# Strategy");
+		expect(markdown).toContain("Read [**the docs**](https://example.com)");
+		expect(markdown).toContain("- [x] Done");
+		expect(markdown).toContain("```typescript\nconst ok = true;\n```");
+		expect(markdown).toContain("[Diagram](https://example.com/image.png)");
+	});
+
+	test("preserves code block indentation without adding a blank line before the closing fence", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "code",
+				type: "code",
+				code: {
+					language: "python",
+					rich_text: [{ plain_text: "  def run():\n    return True\n" }],
+				},
+			},
+		]);
+
+		expect(markdown).toBe("```python\n  def run():\n    return True\n```");
+	});
+
+	test("renders code containing triple backticks without breaking fences", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "code-fence",
+				type: "code",
+				code: {
+					language: "markdown",
+					rich_text: [{ plain_text: "before\n```ts\nconst x = 1;\n```" }],
+				},
+			},
+		]);
+
+		expect(markdown).toContain("```ts");
+		expect(markdown.startsWith("````markdown\n")).toBe(true);
+		expect(markdown.endsWith("\n````")).toBe(true);
+	});
+
+	test("gives inline code annotation priority over other rich-text formatting", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "p1",
+				type: "paragraph",
+				paragraph: {
+					rich_text: [
+						{
+							plain_text: "const ok = true",
+							href: "https://example.com",
+							annotations: {
+								bold: true,
+								italic: true,
+								strikethrough: true,
+								code: true,
+							},
+						},
+					],
+				},
+			},
+		]);
+
+		expect(markdown).toBe("`const ok = true`");
+	});
+
+	test("renders nested child blocks under list items", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "list",
+				type: "bulleted_list_item",
+				has_children: true,
+				bulleted_list_item: { rich_text: [{ plain_text: "Parent" }] },
+				children: [
+					{
+						id: "child",
+						type: "paragraph",
+						paragraph: { rich_text: [{ plain_text: "Child body" }] },
+					},
+				],
+			},
+		]);
+
+		expect(markdown).toBe("- Parent\n  Child body");
 	});
 });

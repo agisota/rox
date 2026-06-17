@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { NOTION_API_BASE, NOTION_VERSION } from "./constants";
-import { type FetchImpl, search } from "./notion-client";
+import { type FetchImpl, listBlockChildren, search } from "./notion-client";
 
 /** Builds a stub `fetch` returning `body` as JSON with the given `status`. */
 function jsonFetch(body: unknown, status = 200): FetchImpl {
@@ -118,5 +118,117 @@ describe("notion-client search", () => {
 		await expect(search({ token: "t", fetchImpl })).rejects.toThrow(
 			/Notion \/search request failed: socket hang up/,
 		);
+	});
+});
+
+describe("notion-client listBlockChildren", () => {
+	test("sends the correct URL, headers, and cursor", async () => {
+		const calls: Array<{ url: string; init?: RequestInit }> = [];
+		const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+			calls.push({ url: String(url), init });
+			return new Response(
+				JSON.stringify({ results: [], has_more: false, next_cursor: null }),
+				{ status: 200, headers: { "Content-Type": "application/json" } },
+			);
+		}) as unknown as FetchImpl;
+
+		await listBlockChildren({
+			token: "secret-tok",
+			blockId: "page 1",
+			startCursor: "cursor-123",
+			pageSize: 50,
+			fetchImpl,
+		});
+
+		expect(calls).toHaveLength(1);
+		const call = calls[0];
+		expect(call).toBeDefined();
+		if (!call) throw new Error("expected a fetch call");
+
+		expect(call.url).toBe(
+			`${NOTION_API_BASE}/blocks/page%201/children?page_size=50&start_cursor=cursor-123`,
+		);
+		expect(call.init?.method).toBe("GET");
+
+		const headers = call.init?.headers as Record<string, string>;
+		expect(headers.Authorization).toBe("Bearer secret-tok");
+		expect(headers["Notion-Version"]).toBe(NOTION_VERSION);
+	});
+
+	test("normalizes child blocks and pagination", async () => {
+		const fetchImpl = jsonFetch({
+			results: [
+				{
+					id: "block-1",
+					type: "paragraph",
+					has_children: true,
+					paragraph: { rich_text: [{ plain_text: "Hello" }] },
+				},
+				{ type: "paragraph" },
+			],
+			has_more: true,
+			next_cursor: "next-abc",
+		});
+
+		const result = await listBlockChildren({
+			token: "t",
+			blockId: "page-1",
+			fetchImpl,
+		});
+
+		expect(result.results).toHaveLength(1);
+		expect(result.results[0]?.id).toBe("block-1");
+		expect(result.results[0]?.has_children).toBe(true);
+		expect(result.has_more).toBe(true);
+		expect(result.next_cursor).toBe("next-abc");
+	});
+
+	test("throws on a non-ok response", async () => {
+		const fetchImpl = (async () =>
+			new Response("forbidden", {
+				status: 403,
+				statusText: "Forbidden",
+			})) as unknown as FetchImpl;
+
+		await expect(
+			listBlockChildren({ token: "bad", blockId: "page-1", fetchImpl }),
+		).rejects.toThrow(/Notion block children returned 403/);
+	});
+
+	test("validates page_size before making a request", async () => {
+		const fetchImpl = (async () => {
+			throw new Error("fetch should not be called");
+		}) as unknown as FetchImpl;
+
+		await expect(
+			listBlockChildren({
+				token: "t",
+				blockId: "page-1",
+				pageSize: 0,
+				fetchImpl,
+			}),
+		).rejects.toThrow(/pageSize/);
+		await expect(
+			listBlockChildren({
+				token: "t",
+				blockId: "page-1",
+				pageSize: 101,
+				fetchImpl,
+			}),
+		).rejects.toThrow(/pageSize/);
+	});
+
+	test("validates blockId before making a request", async () => {
+		const fetchImpl = (async () => {
+			throw new Error("fetch should not be called");
+		}) as unknown as FetchImpl;
+
+		await expect(
+			listBlockChildren({
+				token: "t",
+				blockId: "  ",
+				fetchImpl,
+			}),
+		).rejects.toThrow(/blockId/);
 	});
 });
