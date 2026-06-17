@@ -30,7 +30,7 @@ interface ChatComposerControlsProps {
 	submitStatus?: ChatStatus;
 	submitDisabled?: boolean;
 	onStop: (event: React.MouseEvent) => void;
-	onDictationComplete?: (recording: Recording) => void;
+	onDictationComplete?: (recording: Recording, locked: boolean) => void;
 	dictationTranscribing?: boolean;
 }
 

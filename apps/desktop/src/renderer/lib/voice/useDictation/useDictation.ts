@@ -27,8 +27,12 @@ export interface Recording {
 }
 
 export interface UseDictationOptions {
-	/** Fired when a recording finishes (stop, not cancel) with ≥ minimal audio. */
-	onComplete?: (recording: Recording) => void;
+	/**
+	 * Fired when a recording finishes (stop, not cancel) with ≥ minimal audio.
+	 * `locked` is true when it was stopped from toggle-lock mode (insert), false
+	 * for a push-to-talk release (send).
+	 */
+	onComplete?: (recording: Recording, locked: boolean) => void;
 	/** Minimum duration to treat a recording as real (ms). */
 	minDurationMs?: number;
 }
@@ -80,6 +84,7 @@ export function useDictation(options: UseDictationOptions = {}): UseDictation {
 	const chunksRef = useRef<Blob[]>([]);
 	const startedAtRef = useRef(0);
 	const cancelledRef = useRef(false);
+	const lockedAtStopRef = useRef(false);
 	const mimeRef = useRef("audio/webm");
 	const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const audioCtxRef = useRef<AudioContext | null>(null);
@@ -129,6 +134,7 @@ export function useDictation(options: UseDictationOptions = {}): UseDictation {
 		setError(null);
 		setState("requesting");
 		cancelledRef.current = false;
+		lockedAtStopRef.current = false;
 		try {
 			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 			streamRef.current = stream;
@@ -153,7 +159,7 @@ export function useDictation(options: UseDictationOptions = {}): UseDictation {
 					durationMs: durationFinal,
 				};
 				setLastRecording(recording);
-				onComplete?.(recording);
+				onComplete?.(recording, lockedAtStopRef.current);
 			};
 
 			// Audio level metering.
@@ -190,7 +196,11 @@ export function useDictation(options: UseDictationOptions = {}): UseDictation {
 	}, [state, onComplete, minDurationMs, teardown, tickLevel]);
 
 	const lock = useCallback(() => {
-		setState((s) => (s === "recording" ? "locked" : s));
+		setState((s) => {
+			if (s !== "recording") return s;
+			lockedAtStopRef.current = true;
+			return "locked";
+		});
 	}, []);
 
 	const finish = useCallback(

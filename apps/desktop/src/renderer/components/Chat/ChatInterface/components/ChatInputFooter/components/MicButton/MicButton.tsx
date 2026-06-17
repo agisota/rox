@@ -9,7 +9,7 @@ import { WaveformOverlay } from "./WaveformOverlay";
 const LOCK_DRAG_THRESHOLD = 44;
 
 interface MicButtonProps {
-	onComplete?: (recording: Recording) => void;
+	onComplete?: (recording: Recording, locked: boolean) => void;
 	transcribing?: boolean;
 	disabled?: boolean;
 }
