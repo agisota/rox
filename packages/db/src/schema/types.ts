@@ -47,6 +47,13 @@ export type LarkConfig = {
 	provider: "lark";
 	/** Tenant key the app was installed for. */
 	tenantKey?: string;
+	/** App ID (`cli_...`) used to resolve the org from inbound event callbacks. */
+	appId?: string;
+	/**
+	 * Event-subscription verification token (plaintext mode). Lark echoes this in
+	 * every callback; the inbound events route uses it to authenticate requests.
+	 */
+	verificationToken?: string;
 };
 
 export type IntegrationConfig =
