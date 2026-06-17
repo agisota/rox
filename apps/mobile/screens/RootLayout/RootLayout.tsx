@@ -8,32 +8,47 @@ import { NAV_THEME } from "@/lib/theme";
 
 Uniwind.setTheme("dark");
 
+import { QuoteLoadingScreen } from "@/components/appearance/QuoteLoadingScreen";
 import { PostHogUserIdentifier } from "./components/PostHogUserIdentifier";
+import { AppearanceProvider } from "./providers/AppearanceProvider";
 import { PostHogProvider } from "./providers/PostHogProvider";
 
 const queryClient = new QueryClient();
 
-export function RootLayout() {
+/**
+ * Inner tree that can read appearance settings. Renders the motivational quote
+ * loading screen (gated on `quoteLoaderEnabled`) while the session is resolving,
+ * then the navigation stack once `isPending` clears.
+ */
+function RootLayoutContent() {
 	const { data: session, isPending } = useSession();
 
-	if (isPending) return null;
+	if (isPending) return <QuoteLoadingScreen />;
 
 	return (
+		<ThemeProvider value={NAV_THEME.dark}>
+			<Stack screenOptions={{ headerShown: false }}>
+				<Stack.Protected guard={!!session}>
+					<Stack.Screen name="(authenticated)" />
+				</Stack.Protected>
+				<Stack.Protected guard={!session}>
+					<Stack.Screen name="(auth)" />
+				</Stack.Protected>
+			</Stack>
+			<PostHogUserIdentifier />
+			<PortalHost />
+		</ThemeProvider>
+	);
+}
+
+export function RootLayout() {
+	return (
 		<QueryClientProvider client={queryClient}>
-			<PostHogProvider>
-				<ThemeProvider value={NAV_THEME.dark}>
-					<Stack screenOptions={{ headerShown: false }}>
-						<Stack.Protected guard={!!session}>
-							<Stack.Screen name="(authenticated)" />
-						</Stack.Protected>
-						<Stack.Protected guard={!session}>
-							<Stack.Screen name="(auth)" />
-						</Stack.Protected>
-					</Stack>
-					<PostHogUserIdentifier />
-					<PortalHost />
-				</ThemeProvider>
-			</PostHogProvider>
+			<AppearanceProvider>
+				<PostHogProvider>
+					<RootLayoutContent />
+				</PostHogProvider>
+			</AppearanceProvider>
 		</QueryClientProvider>
 	);
 }

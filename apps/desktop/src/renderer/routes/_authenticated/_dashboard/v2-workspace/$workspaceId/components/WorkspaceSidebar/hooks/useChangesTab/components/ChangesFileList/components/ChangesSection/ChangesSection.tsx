@@ -46,7 +46,7 @@ export function ChangesSection({
 	const discardAllUnstaged = workspaceTrpc.git.discardAllUnstaged.useMutation({
 		onSuccess: invalidate,
 		onError: (err) => {
-			toast.error("Couldn't discard unstaged changes", {
+			toast.error("Не удалось отменить непроиндексированные изменения", {
 				description: err.message,
 			});
 		},
@@ -54,7 +54,7 @@ export function ChangesSection({
 	const discardAllStaged = workspaceTrpc.git.discardAllStaged.useMutation({
 		onSuccess: invalidate,
 		onError: (err) => {
-			toast.error("Couldn't discard staged changes", {
+			toast.error("Не удалось отменить проиндексированные изменения", {
 				description: err.message,
 			});
 		},
@@ -62,13 +62,17 @@ export function ChangesSection({
 	const stageAll = workspaceTrpc.git.stageAll.useMutation({
 		onSuccess: invalidate,
 		onError: (err) => {
-			toast.error("Couldn't stage changes", { description: err.message });
+			toast.error("Не удалось проиндексировать изменения", {
+				description: err.message,
+			});
 		},
 	});
 	const unstageAll = workspaceTrpc.git.unstageAll.useMutation({
 		onSuccess: invalidate,
 		onError: (err) => {
-			toast.error("Couldn't unstage changes", { description: err.message });
+			toast.error("Не удалось снять изменения из индекса", {
+				description: err.message,
+			});
 		},
 	});
 
@@ -97,18 +101,23 @@ export function ChangesSection({
 	const dialogCopy =
 		stagingActions?.kind === "unstaged"
 			? {
-					title: "Discard all unstaged changes?",
+					title: "Отменить все непроиндексированные изменения?",
 					description:
-						"This will revert all unstaged modifications and delete untracked files. This cannot be undone.",
+						"Все непроиндексированные правки будут отменены, а неотслеживаемые файлы — удалены. Это действие нельзя отменить.",
 				}
 			: {
-					title: "Discard all staged changes?",
+					title: "Отменить все проиндексированные изменения?",
 					description:
-						"This will unstage and revert all staged changes. Staged new files will be deleted. This cannot be undone.",
+						"Все проиндексированные изменения будут сняты из индекса и отменены. Новые проиндексированные файлы будут удалены. Это действие нельзя отменить.",
 				};
 
 	const isUnstaged = stagingActions?.kind === "unstaged";
-	const stagingToggleLabel = isUnstaged ? "Stage all" : "Unstage all";
+	const stagingToggleLabel = isUnstaged
+		? "Проиндексировать все"
+		: "Снять из индекса все";
+	const discardAllLabel = isUnstaged
+		? "Отменить все непроиндексированные"
+		: "Отменить все проиндексированные";
 	const StagingToggleIcon = isUnstaged ? Plus : Minus;
 
 	return (
@@ -132,16 +141,14 @@ export function ChangesSection({
 							<TooltipTrigger asChild>
 								<button
 									type="button"
-									aria-label={`Discard all ${stagingActions.kind} changes`}
+									aria-label={discardAllLabel}
 									onClick={() => setShowConfirm(true)}
 									className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-destructive"
 								>
 									<LuUndo2 className="size-3.5" />
 								</button>
 							</TooltipTrigger>
-							<TooltipContent side="bottom">
-								Discard all {stagingActions.kind}
-							</TooltipContent>
+							<TooltipContent side="bottom">{discardAllLabel}</TooltipContent>
 						</Tooltip>
 						<Tooltip>
 							<TooltipTrigger asChild>

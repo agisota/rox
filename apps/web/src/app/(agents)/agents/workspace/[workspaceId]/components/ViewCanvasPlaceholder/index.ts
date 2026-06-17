@@ -1,0 +1,1 @@
+export { ViewCanvasPlaceholder } from "./ViewCanvasPlaceholder";

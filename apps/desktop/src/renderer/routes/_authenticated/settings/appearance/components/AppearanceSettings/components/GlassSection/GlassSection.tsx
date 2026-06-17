@@ -28,7 +28,10 @@ export function GlassSection() {
 		onMutate: async (input) => {
 			await utils.window.getAppearance.cancel();
 			const previous = utils.window.getAppearance.getData();
-			utils.window.getAppearance.setData(undefined, input);
+			// Merge so the optimistic write keeps wallpaper/quote fields intact.
+			utils.window.getAppearance.setData(undefined, (prev) =>
+				prev ? { ...prev, ...input } : prev,
+			);
 			applyAppearanceGlass(input);
 			return { previous };
 		},

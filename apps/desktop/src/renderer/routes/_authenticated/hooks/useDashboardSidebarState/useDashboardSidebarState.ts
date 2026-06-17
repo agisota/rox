@@ -303,7 +303,7 @@ export function useDashboardSidebarState() {
 
 	const createSection = useCallback(
 		(projectId: string, options: { name?: string } = {}) => {
-			const { name = "New group" } = options;
+			const { name = "Новая группа" } = options;
 			ensureSidebarProjectRecord(collections, projectId);
 
 			const sectionId = crypto.randomUUID();

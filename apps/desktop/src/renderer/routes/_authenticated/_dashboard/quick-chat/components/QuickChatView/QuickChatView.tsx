@@ -1,4 +1,9 @@
-import { AVAILABLE_CHAT_MODELS, ROX_CHAT_MODEL } from "@rox/shared/chat-models";
+import {
+	AVAILABLE_CHAT_MODELS,
+	isRoxHouseModel,
+	ROX_CHAT_MODEL,
+	ROX_CHAT_MODEL_NAME,
+} from "@rox/shared/chat-models";
 import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
@@ -8,8 +13,14 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
-import { useEffect, useRef, useState } from "react";
-import { LuArrowUp, LuChevronDown, LuSparkles } from "react-icons/lu";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	LuArrowUp,
+	LuChevronDown,
+	LuLoaderCircle,
+	LuSparkles,
+} from "react-icons/lu";
+import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
 import {
 	DEFAULT_REASONING_LEVEL,
@@ -23,6 +34,14 @@ interface QuickChatMessage {
 	text: string;
 }
 
+/** RU notice shown when a non-Rox model is picked but no user key is configured. */
+const NEEDS_USER_KEY_NOTICE = `Для этой модели нужен ваш ключ провайдера. Откройте «Настройки → Модели», чтобы добавить ключ, либо выберите ${ROX_CHAT_MODEL_NAME} — она работает без настройки.`;
+/** RU notice shown when the Rox house model itself is not configured server-side. */
+const NOT_CONFIGURED_NOTICE =
+	"Модель пока недоступна. Попробуйте позже или обратитесь к администратору.";
+const GENERIC_ERROR_NOTICE =
+	"Не удалось получить ответ. Проверьте соединение и попробуйте снова.";
+
 export function QuickChatView() {
 	const consumePrompt = useQuickChatDraftStore((state) => state.consumePrompt);
 
@@ -32,6 +51,11 @@ export function QuickChatView() {
 	);
 	const [input, setInput] = useState("");
 	const [messages, setMessages] = useState<QuickChatMessage[]>([]);
+	const [isSending, setIsSending] = useState(false);
+	// One persisted chat_sessions row per QuickChat conversation. Generated lazily
+	// on first send and reused for the rest of the conversation so the whole thread
+	// lands in a single session the Журнал can summarize.
+	const sessionIdRef = useRef<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	// Pick up a prompt staged from the "Сохранённые промпты" view, if any.
@@ -44,29 +68,74 @@ export function QuickChatView() {
 		scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
 	}, []);
 
-	const send = () => {
-		const text = input.trim();
-		if (text.length === 0) return;
-		const now = Date.now();
-		setMessages((prev) => [
-			...prev,
-			{ id: `u-${now}`, role: "user", text },
-			{
-				id: `a-${now}`,
-				role: "assistant",
-				text: `Быстрый чат получил ваше сообщение (модель: ${model.name}, рассуждение: ${reasoning}). Подключение модели к этому окну выполняется без проекта — ответы появятся, как только активирован провайдер. Откройте «Настройки → Модели», чтобы выбрать активного провайдера.`,
-			},
-		]);
-		setInput("");
+	const scrollToBottom = useCallback(() => {
 		requestAnimationFrame(() => {
 			scrollRef.current?.scrollTo({
 				top: scrollRef.current.scrollHeight,
 				behavior: "smooth",
 			});
 		});
-	};
+	}, []);
+
+	const send = useCallback(async () => {
+		const text = input.trim();
+		if (text.length === 0 || isSending) return;
+
+		if (!sessionIdRef.current) {
+			sessionIdRef.current = crypto.randomUUID();
+		}
+		const sessionId = sessionIdRef.current;
+
+		const now = Date.now();
+		const userMessage: QuickChatMessage = {
+			id: `u-${now}`,
+			role: "user",
+			text,
+		};
+		// History sent to the model: prior turns + this one (excludes placeholders).
+		const history = [...messages, userMessage].map((message) => ({
+			role: message.role,
+			content: message.text,
+		}));
+
+		setMessages((prev) => [...prev, userMessage]);
+		setInput("");
+		setIsSending(true);
+		scrollToBottom();
+
+		const appendAssistant = (assistantText: string) => {
+			setMessages((prev) => [
+				...prev,
+				{ id: `a-${now}`, role: "assistant", text: assistantText },
+			]);
+			scrollToBottom();
+		};
+
+		try {
+			const result = await apiClient.chat.complete.mutate({
+				sessionId,
+				messages: history,
+				modelId: model.id,
+				reasoning,
+			});
+
+			if (result.status === "ok") {
+				appendAssistant(result.reply);
+			} else if (result.status === "needs-user-key") {
+				appendAssistant(NEEDS_USER_KEY_NOTICE);
+			} else {
+				appendAssistant(NOT_CONFIGURED_NOTICE);
+			}
+		} catch (error) {
+			console.error("[quick-chat] completion failed", error);
+			appendAssistant(GENERIC_ERROR_NOTICE);
+		} finally {
+			setIsSending(false);
+		}
+	}, [input, isSending, messages, model.id, reasoning, scrollToBottom]);
 
 	const isEmpty = messages.length === 0;
+	const isHouseModel = isRoxHouseModel(model.id);
 
 	return (
 		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
@@ -115,6 +184,14 @@ export function QuickChatView() {
 							</div>
 						))
 					)}
+					{isSending ? (
+						<div className="flex justify-start">
+							<div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
+								<LuLoaderCircle className="size-4 animate-spin" />
+								{model.name} печатает…
+							</div>
+						</div>
+					) : null}
 				</div>
 			</div>
 
@@ -126,7 +203,7 @@ export function QuickChatView() {
 						onKeyDown={(event) => {
 							if (event.key === "Enter" && !event.shiftKey) {
 								event.preventDefault();
-								send();
+								void send();
 							}
 						}}
 						placeholder="Напишите сообщение…"
@@ -181,13 +258,23 @@ export function QuickChatView() {
 						<Button
 							size="icon"
 							className="ml-auto size-8 rounded-full"
-							disabled={input.trim().length === 0}
-							onClick={send}
+							disabled={input.trim().length === 0 || isSending}
+							onClick={() => void send()}
 							aria-label="Отправить"
 						>
-							<LuArrowUp className="size-4" />
+							{isSending ? (
+								<LuLoaderCircle className="size-4 animate-spin" />
+							) : (
+								<LuArrowUp className="size-4" />
+							)}
 						</Button>
 					</div>
+					{!isHouseModel ? (
+						<p className="px-1 text-[11px] text-muted-foreground">
+							{ROX_CHAT_MODEL_NAME} работает без настройки. Для {model.name}{" "}
+							нужен ваш ключ провайдера.
+						</p>
+					) : null}
 				</div>
 			</div>
 		</div>

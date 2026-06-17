@@ -7,8 +7,10 @@ import {
 import { AnimationSection } from "./components/AnimationSection";
 import { FontSettingSection } from "./components/FontSettingSection";
 import { GlassSection } from "./components/GlassSection";
+import { LoadingScreenSection } from "./components/LoadingScreenSection";
 import { MarkdownStyleSection } from "./components/MarkdownStyleSection";
 import { ThemeSection } from "./components/ThemeSection";
+import { WallpaperSection } from "./components/WallpaperSection";
 
 /**
  * Renders a list of visible sections with automatic border separators.
@@ -59,6 +61,14 @@ export function AppearanceSettings({ visibleItems }: AppearanceSettingsProps) {
 		SETTING_ITEM_ID.APPEARANCE_GLASS,
 		visibleItems,
 	);
+	const showWallpaper = isItemVisible(
+		SETTING_ITEM_ID.APPEARANCE_WALLPAPER,
+		visibleItems,
+	);
+	const showLoadingScreen = isItemVisible(
+		SETTING_ITEM_ID.APPEARANCE_LOADING_SCREEN,
+		visibleItems,
+	);
 	const showThemeSection = showTheme || showCustomThemes;
 
 	return (
@@ -73,6 +83,8 @@ export function AppearanceSettings({ visibleItems }: AppearanceSettingsProps) {
 			<SectionList>
 				{showThemeSection && <ThemeSection key="theme" />}
 				{showGlass && <GlassSection key="glass" />}
+				{showWallpaper && <WallpaperSection key="wallpaper" />}
+				{showLoadingScreen && <LoadingScreenSection key="loading-screen" />}
 				{showMarkdown && <MarkdownStyleSection key="markdown" />}
 				{showAnimations && <AnimationSection key="animations" />}
 				{showEditorFont && (

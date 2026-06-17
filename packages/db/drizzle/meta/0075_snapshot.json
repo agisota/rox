@@ -1,5 +1,5 @@
 {
-  "id": "010dc883-d362-4556-a181-7dd0b0e4f101",
+  "id": "b620f8f8-58f5-4a83-bef1-253c67661cca",
   "prevId": "4a5b40b2-f3a3-4e7d-99fe-cd180554cc54",
   "version": "7",
   "dialect": "postgresql",
@@ -2535,6 +2535,170 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.chat_messages": {
+      "name": "chat_messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_message_id": {
+          "name": "parent_message_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "chat_message_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "chat_messages_org_session_created_idx": {
+          "name": "chat_messages_org_session_created_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "chat_messages_parent_idx": {
+          "name": "chat_messages_parent_idx",
+          "columns": [
+            {
+              "expression": "parent_message_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "chat_messages_organization_id_organizations_id_fk": {
+          "name": "chat_messages_organization_id_organizations_id_fk",
+          "tableFrom": "chat_messages",
+          "tableTo": "organizations",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "chat_messages_created_by_users_id_fk": {
+          "name": "chat_messages_created_by_users_id_fk",
+          "tableFrom": "chat_messages",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "chat_messages_parent_message_id_chat_messages_id_fk": {
+          "name": "chat_messages_parent_message_id_chat_messages_id_fk",
+          "tableFrom": "chat_messages",
+          "tableTo": "chat_messages",
+          "columnsFrom": [
+            "parent_message_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -5268,193 +5432,6 @@
             "id"
           ],
           "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.pipeline_triggers": {
-      "name": "pipeline_triggers",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "v2_project_id": {
-          "name": "v2_project_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "workflow_id": {
-          "name": "workflow_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "node_id": {
-          "name": "node_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "trigger_kind": {
-          "name": "trigger_kind",
-          "type": "trigger_kind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "match_config": {
-          "name": "match_config",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
-        "enabled": {
-          "name": "enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "pipeline_triggers_match_idx": {
-          "name": "pipeline_triggers_match_idx",
-          "columns": [
-            {
-              "expression": "trigger_kind",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "enabled",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "pipeline_triggers_project_idx": {
-          "name": "pipeline_triggers_project_idx",
-          "columns": [
-            {
-              "expression": "v2_project_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "pipeline_triggers_workflow_idx": {
-          "name": "pipeline_triggers_workflow_idx",
-          "columns": [
-            {
-              "expression": "workflow_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "pipeline_triggers_org_idx": {
-          "name": "pipeline_triggers_org_idx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "pipeline_triggers_organization_id_organizations_id_fk": {
-          "name": "pipeline_triggers_organization_id_organizations_id_fk",
-          "tableFrom": "pipeline_triggers",
-          "tableTo": "organizations",
-          "schemaTo": "auth",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "pipeline_triggers_v2_project_id_v2_projects_id_fk": {
-          "name": "pipeline_triggers_v2_project_id_v2_projects_id_fk",
-          "tableFrom": "pipeline_triggers",
-          "tableTo": "v2_projects",
-          "columnsFrom": [
-            "v2_project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "pipeline_triggers_workflow_id_workflow_definitions_id_fk": {
-          "name": "pipeline_triggers_workflow_id_workflow_definitions_id_fk",
-          "tableFrom": "pipeline_triggers",
-          "tableTo": "workflow_definitions",
-          "columnsFrom": [
-            "workflow_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -11884,12 +11861,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "agent_config": {
-          "name": "agent_config",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "documentation_md": {
           "name": "documentation_md",
           "type": "text",
@@ -12967,12 +12938,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "accumulated_context": {
-          "name": "accumulated_context",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "context_pack_id": {
           "name": "context_pack_id",
           "type": "uuid",
@@ -13417,6 +13382,16 @@
         "archived"
       ]
     },
+    "public.chat_message_role": {
+      "name": "chat_message_role",
+      "schema": "public",
+      "values": [
+        "user",
+        "assistant",
+        "system",
+        "tool"
+      ]
+    },
     "public.trace_event_kind": {
       "name": "trace_event_kind",
       "schema": "public",
@@ -13779,8 +13754,7 @@
         "artifact",
         "approval",
         "policy",
-        "agent_source",
-        "pipeline_trigger"
+        "agent_source"
       ]
     },
     "public.public_share_resource_type": {
@@ -13853,9 +13827,7 @@
         "task_status_changed",
         "file_uploaded",
         "approval_resolved",
-        "agent_run_finished",
-        "project_initialized",
-        "service_connected"
+        "agent_run_finished"
       ]
     },
     "public.workflow_deployment_status": {
@@ -13874,8 +13846,7 @@
         "rox",
         "sim_sidecar",
         "legacy_automation",
-        "external_tool",
-        "pipeline"
+        "external_tool"
       ]
     },
     "public.workflow_run_status": {

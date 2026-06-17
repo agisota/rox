@@ -38,6 +38,18 @@ export const env = createEnv({
 		RELAY_URL: z.string().url(),
 		LINEAR_CLIENT_ID: z.string().min(1),
 		LINEAR_CLIENT_SECRET: z.string().min(1),
+		// Rox house model (ROX R1) — server-side shared key + optional upstream
+		// model override. When ROX_AI_API_KEY is set, chat.complete can answer as
+		// "ROX R1" for every user with no per-user provider key. Optional so
+		// environments without the gateway configured keep validating (the
+		// procedure degrades to a typed "not configured" result).
+		ROX_AI_API_KEY: z.string().optional(),
+		ROX_AI_MODEL: z.string().optional(),
+		// Durable-streams (chat transcript store the Журнал reads). Optional so the
+		// chat completion still returns a reply even when transcript persistence is
+		// not configured; persistence is skipped gracefully in that case.
+		DURABLE_STREAMS_URL: z.string().url().optional(),
+		DURABLE_STREAMS_SECRET: z.string().min(1).optional(),
 	},
 	clientPrefix: "PUBLIC_",
 	client: {},

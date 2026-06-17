@@ -2,14 +2,35 @@ import { db, dbWs } from "@rox/db/client";
 import { chatSessionStatusEnum } from "@rox/db/enums";
 import { chatSessions, usageRequests } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
-import { AVAILABLE_CHAT_MODELS } from "@rox/shared/chat-models";
+import {
+	AVAILABLE_CHAT_MODELS,
+	ROX_CHAT_MODEL_ID,
+} from "@rox/shared/chat-models";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgId } from "../utils/active-org";
+import {
+	type ChatCompletionResult,
+	deriveSessionTitle,
+	persistQuickChatTurns,
+	runQuickChatCompletion,
+} from "./utils/chat-completion";
 import { uploadChatAttachment } from "./utils/upload-chat-attachment";
+
+/** Shape of a single quick-chat turn accepted by `chat.complete`. */
+const chatCompletionMessageSchema = z.object({
+	role: z.enum(["system", "user", "assistant"]),
+	content: z.string().min(1).max(32_000),
+});
+
+/** Discriminated reply from `chat.complete` — the renderer switches on `status`. */
+export type ChatCompleteOutput =
+	| { status: "ok"; sessionId: string; reply: string; persisted: boolean }
+	| { status: "needs-user-key"; sessionId: string }
+	| { status: "not-configured"; sessionId: string };
 
 export const chatRouter = {
 	getModels: protectedProcedure.query(() => {
@@ -178,6 +199,102 @@ export const chatRouter = {
 			return {
 				sessionId: input.sessionId,
 				txid: result.txid,
+			};
+		}),
+
+	/**
+	 * Quick-chat completion (WS-G). Ensures a project-less `chat_sessions` row
+	 * (title from the first user message), calls the model, persists the
+	 * user+assistant turns to the durable-streams transcript the Журнал reads, and
+	 * returns the full reply.
+	 *
+	 * Non-streaming by design: the desktop tRPC transport is `httpBatchLink` only
+	 * (no WS/subscription link), so reliable token streaming is out of scope here —
+	 * the procedure returns the complete reply (an acceptable MVP). The default
+	 * model is the Rox house model (ROX R1), answered with the server-side shared
+	 * key, so it works for every user with no per-user provider key.
+	 */
+	complete: protectedProcedure
+		.input(
+			z.object({
+				sessionId: z.uuid(),
+				messages: z.array(chatCompletionMessageSchema).min(1).max(50),
+				modelId: z.string().min(1).default(ROX_CHAT_MODEL_ID),
+				reasoning: z.string().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }): Promise<ChatCompleteOutput> => {
+			const organizationId = requireActiveOrgId(ctx);
+
+			const lastUser = [...input.messages]
+				.reverse()
+				.find((message) => message.role === "user");
+			if (!lastUser) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "At least one user message is required",
+				});
+			}
+
+			// Ensure the session row exists (idempotent on its id). Project-less
+			// quick chats carry no workspace; the title is seeded from the first
+			// user message so the Журнал / history list have a label.
+			await dbWs
+				.insert(chatSessions)
+				.values({
+					id: input.sessionId,
+					organizationId,
+					createdBy: ctx.session.user.id,
+					title: deriveSessionTitle(input.messages[0]?.content ?? ""),
+				})
+				.onConflictDoNothing();
+
+			let result: ChatCompletionResult;
+			try {
+				result = await runQuickChatCompletion({
+					modelId: input.modelId,
+					messages: input.messages,
+					reasoning: input.reasoning,
+					maxTokens: 4_096,
+				});
+			} catch (error) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message:
+						error instanceof Error
+							? error.message
+							: "Quick-chat request failed",
+				});
+			}
+
+			if (result.status !== "ok") {
+				return { status: result.status, sessionId: input.sessionId };
+			}
+
+			const persisted = await persistQuickChatTurns({
+				sessionId: input.sessionId,
+				userMessage: lastUser.content,
+				assistantMessage: result.reply,
+			});
+
+			// Bump activity so the session sorts correctly in history and lands in
+			// the right day for the Журнал.
+			await dbWs
+				.update(chatSessions)
+				.set({ lastActiveAt: new Date() })
+				.where(
+					and(
+						eq(chatSessions.id, input.sessionId),
+						eq(chatSessions.organizationId, organizationId),
+						eq(chatSessions.createdBy, ctx.session.user.id),
+					),
+				);
+
+			return {
+				status: "ok",
+				sessionId: input.sessionId,
+				reply: result.reply,
+				persisted,
 			};
 		}),
 
