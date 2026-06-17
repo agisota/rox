@@ -76,7 +76,7 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 export const LANDING_HEADLINE = "Кодируй и вайбуй в тыщу рук";
 
 export const LANDING_INTRO_PARAGRAPH =
-	"ROX оркестрирует 1000+ AI-агентов параллельно.";
+	"Rox за 1 секунду запускает оркестрацию 1000+ агентов параллельно";
 
 export const LANDING_FEATURES_HEADING = "Почему ROX";
 
