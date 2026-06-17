@@ -224,7 +224,7 @@ export const HERO_BYOM_TERMS: ReadonlyArray<LandingTerm> = [
 ];
 
 export const HERO_STACK_TERM: LandingTerm = {
-	label: "стэк",
+	label: "стэке",
 	tip: "можно выбрать любого привычного тебе агента и любую привычную тебе модель",
 };
 
