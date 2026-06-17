@@ -342,6 +342,25 @@ describe("runAgentAndCapture — host handler orchestration contract", () => {
 		});
 	});
 
+	test("ARC-17B: runAndCapture passes a normalized hard maxTurns cap to the starter", async () => {
+		let seenMaxTurns = 0;
+		const startAgent: StartAgentPort = async (_ctx, startedInput) => {
+			seenMaxTurns = startedInput.maxTurns ?? 0;
+			return {
+				kind: "chat",
+				sessionId: "sess-chat",
+				label: "Rox",
+			};
+		};
+		await runAgentAndCapture(
+			chatCtx("bounded"),
+			{ ...input, maxTurns: 999 },
+			{ startAgent },
+		);
+
+		expect(seenMaxTurns).toBe(200);
+	});
+
 	test("ARC-18: terminal role strips the echoed command + ANSI and extracts the tail", async () => {
 		// The handler threads `started.command` as the echoed command, so the
 		// shell-echoed command line is dropped from the captured output.

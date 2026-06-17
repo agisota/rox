@@ -50,7 +50,7 @@ export interface RunAgentOnHostArgs {
 	agentId: string;
 	/** The fully-built prompt (persona + node template + rendered transcript). */
 	prompt: string;
-	/** Max agent turns before the host forces a stop. */
+	/** Bounded max-turn budget handed to the host agent runtime. */
 	maxTurns: number;
 	/** Human-readable label for the created workspace / branch slug. */
 	label: string;

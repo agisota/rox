@@ -61,6 +61,9 @@ export const ROX_AGENT_ID = "rox";
 /** Default cap on agent turns when a role preset omits `settings.maxTurns`. */
 export const DEFAULT_AGENT_MAX_TURNS = 8;
 
+/** Hard upper bound for agent pipeline turns before dispatch crosses process boundaries. */
+export const MAX_AGENT_MAX_TURNS = 200;
+
 /**
  * Build the prompt fed to the agent for an `agent_run` node. Deterministic
  * composition of three parts (any empty part is dropped), joined by blank lines:
@@ -120,7 +123,7 @@ export function agentOutputToContextEntry(args: {
  * Derive the dispatch target (chat vs terminal) from a role preset. Pure: it
  * only reads the preset — the resolver performs the actual host call. A missing
  * `agentKind` defaults to chat (the safe in-process path); `maxTurns` is clamped
- * out of negative/NaN territory to {@link DEFAULT_AGENT_MAX_TURNS}.
+ * to a positive integer and capped at {@link MAX_AGENT_MAX_TURNS}.
  */
 export function resolveAgentDispatchTarget(
 	preset: AgentRolePreset,
@@ -146,7 +149,8 @@ export function resolveAgentDispatchTarget(
 function normalizeMaxTurns(value: number | undefined): number {
 	if (value == null || !Number.isFinite(value)) return DEFAULT_AGENT_MAX_TURNS;
 	const floored = Math.floor(value);
-	return floored >= 1 ? floored : DEFAULT_AGENT_MAX_TURNS;
+	if (floored < 1) return DEFAULT_AGENT_MAX_TURNS;
+	return Math.min(floored, MAX_AGENT_MAX_TURNS);
 }
 
 /**

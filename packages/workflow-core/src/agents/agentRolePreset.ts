@@ -18,7 +18,7 @@ export type AgentRoleKind =
 
 /** Tunables applied when an agent role runs. */
 export interface AgentRoleSettings {
-	/** Max agent turns before the node is forced to stop. */
+	/** Max agent turns budget handed to the selected agent runtime. */
 	maxTurns?: number;
 	/** Sampling temperature, when the model supports it. */
 	temperature?: number;

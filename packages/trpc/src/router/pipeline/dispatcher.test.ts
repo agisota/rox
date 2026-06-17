@@ -68,6 +68,7 @@ const {
 	dispatchPipelineEvent,
 	isLoopReplayEvent,
 	evaluateAncestryGuard,
+	buildDispatchedPipelineRunArgs,
 	triggerRefMatchesDispatch,
 	MAX_AGENT_RUN_DEPTH,
 } = await import("./dispatcher");
@@ -224,5 +225,38 @@ describe("dispatchPipelineEvent — loop-replay short-circuit", () => {
 			),
 		).rejects.toThrow("dispatcher touched the DB");
 		expect(runPipelineCalls).toHaveLength(0);
+	});
+});
+
+describe("buildDispatchedPipelineRunArgs — node-entry run handoff", () => {
+	test("DISP-ENTRY-01: binds the dispatched run to the trigger row node", () => {
+		const args = buildDispatchedPipelineRunArgs({
+			organizationId: "org-1",
+			userId: "owner-1",
+			pipeline: {
+				id: "pipe-1",
+				ownerUserId: "owner-1",
+				v2ProjectId: "proj-1",
+				draftState: { blocks: {}, edges: [] },
+			},
+			triggerKind: "agent_run_finished",
+			triggerId: "trigger-1",
+			nodeId: "target-node",
+			event: agentRunFinishedEvent({
+				payload: { message: "resume here", nodeId: "source-node" },
+			}),
+		});
+
+		expect(args.entryNodeId).toBe("target-node");
+		expect(args.input).toEqual({
+			message: "resume here",
+			nodeId: "source-node",
+		});
+		expect(args.initialContext.seedMessage).toBe("resume here");
+		expect(args.triggerRef).toMatchObject({
+			triggerId: "trigger-1",
+			nodeId: "target-node",
+			eventKind: "agent_run_finished",
+		});
 	});
 });

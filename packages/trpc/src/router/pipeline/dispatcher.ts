@@ -2,6 +2,7 @@ import { dbWs } from "@rox/db/client";
 import type { TriggerKind } from "@rox/db/enums";
 import {
 	pipelineTriggers,
+	type SelectWorkflowDefinition,
 	workflowDefinitions,
 	workflowRuns,
 } from "@rox/db/schema";
@@ -14,7 +15,7 @@ import {
 } from "@rox/workflow-core";
 import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 import type { RunSkillTriggerKind } from "../skill/run-service";
-import { runPipeline } from "./run-pipeline";
+import { type RunPipelineArgs, runPipeline } from "./run-pipeline";
 
 /**
  * Hard cap on cross-run agent-pipeline trigger depth (design §3.3 / §9). A
@@ -107,6 +108,44 @@ export function triggerRefMatchesDispatch(
 	const refEventKind = (ref as { eventKind?: unknown }).eventKind;
 	const nodeMatches = nodeId == null ? refNodeId == null : refNodeId === nodeId;
 	return nodeMatches && refEventKind === eventKind;
+}
+
+export function buildDispatchedPipelineRunArgs(args: {
+	organizationId: string;
+	userId: string;
+	pipeline: SelectWorkflowDefinition;
+	triggerKind: RunSkillTriggerKind;
+	triggerId: string;
+	nodeId: string | null;
+	event: PipelineEvent;
+}): RunPipelineArgs {
+	const seedMessage =
+		typeof args.event.payload.message === "string"
+			? args.event.payload.message
+			: `Triggered by ${args.event.kind}`;
+
+	return {
+		organizationId: args.organizationId,
+		userId: args.userId,
+		pipeline: args.pipeline,
+		triggerKind: args.triggerKind,
+		parentRunId: args.event.sourceRunId,
+		entryNodeId: args.nodeId ?? undefined,
+		triggerRef: {
+			triggerId: args.triggerId,
+			nodeId: args.nodeId,
+			eventKind: args.event.kind,
+			payload: args.event.payload,
+			...(args.event.sourceRunId != null
+				? { sourceRunId: args.event.sourceRunId }
+				: {}),
+			...(typeof args.event.payload.triggeredByUserId === "string"
+				? { triggeredByUserId: args.event.payload.triggeredByUserId }
+				: {}),
+		},
+		input: args.event.payload,
+		initialContext: createAccumulatedContext(seedMessage),
+	};
 }
 
 /** Map an event kind back to the candidate `trigger_kind` enum values to query. */
@@ -336,45 +375,20 @@ export async function dispatchPipelineEvent(
 				continue;
 			}
 
-			// Seed the run with a human-readable description of the firing event.
-			const seedMessage =
-				typeof event.payload.message === "string"
-					? event.payload.message
-					: `Triggered by ${event.kind}`;
-
-			// TODO(agent-pipelines): start execution AT row.nodeId (the bound node)
-			// rather than the graph's Start node. The executor currently linearizes
-			// from Start; node-entry requires either a synthetic Start→nodeId edge or
-			// an executor entry-node option. For now we run the whole pipeline graph,
-			// which is correct for single-entry pipelines.
-			await runPipeline({
-				organizationId: event.organizationId,
-				userId: pipeline.ownerUserId,
-				pipeline,
-				// Safe narrowing: the query filtered triggerKind to `candidateKinds`,
-				// all of which are members of RunSkillTriggerKind (the cross-run event
-				// subset), and `mappedKind` is non-null here.
-				triggerKind: row.triggerKind as RunSkillTriggerKind,
-				// Recursion-guard provenance: the new run's parent is the run that
-				// emitted this event, so its own ancestry chain extends this one.
-				parentRunId: event.sourceRunId,
-				triggerRef: {
+			await runPipeline(
+				buildDispatchedPipelineRunArgs({
+					organizationId: event.organizationId,
+					userId: pipeline.ownerUserId,
+					pipeline,
+					// Safe narrowing: the query filtered triggerKind to `candidateKinds`,
+					// all of which are members of RunSkillTriggerKind (the cross-run event
+					// subset), and `mappedKind` is non-null here.
+					triggerKind: row.triggerKind as RunSkillTriggerKind,
 					triggerId: row.id,
 					nodeId: row.nodeId,
-					eventKind: event.kind,
-					payload: event.payload,
-					// Audit: the run executes as pipeline.ownerUserId, but record who
-					// (the source run's owner) actually triggered it, when known.
-					...(event.sourceRunId != null
-						? { sourceRunId: event.sourceRunId }
-						: {}),
-					...(typeof event.payload.triggeredByUserId === "string"
-						? { triggeredByUserId: event.payload.triggeredByUserId }
-						: {}),
-				},
-				input: {},
-				initialContext: createAccumulatedContext(seedMessage),
-			});
+					event,
+				}),
+			);
 			dispatched++;
 		} catch (err) {
 			// Never let one pipeline's failure break the event source. Log so a
