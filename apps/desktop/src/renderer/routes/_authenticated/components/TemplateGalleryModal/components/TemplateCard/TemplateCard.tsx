@@ -1,5 +1,4 @@
 import { cn } from "@rox/ui/utils";
-import { useState } from "react";
 import { LuLoader } from "react-icons/lu";
 import type { ProjectTemplate } from "../../templates";
 
@@ -16,10 +15,8 @@ export function TemplateCard({
 	disabled,
 	onSelect,
 }: TemplateCardProps) {
-	const [imageFailed, setImageFailed] = useState(false);
 	const available = !!template.repo;
 	const Icon = template.icon;
-	const bannerImage = template.banner;
 
 	return (
 		<button
@@ -39,16 +36,7 @@ export function TemplateCard({
 					template.bannerClassName,
 				)}
 			>
-				{bannerImage && !imageFailed ? (
-					<img
-						src={bannerImage}
-						alt=""
-						className="absolute inset-0 size-full object-cover"
-						onError={() => setImageFailed(true)}
-					/>
-				) : (
-					<Icon className="size-7" />
-				)}
+				<Icon className="size-7" />
 				{cloning && (
 					<div className="absolute inset-0 flex items-center justify-center bg-black/40">
 						<LuLoader className="size-6 animate-spin text-white" />
@@ -60,7 +48,7 @@ export function TemplateCard({
 					{template.name}
 				</span>
 				<span className="line-clamp-2 text-xs text-muted-foreground">
-					{available ? template.description : "Coming soon"}
+					{available ? template.description : "Скоро"}
 				</span>
 			</div>
 		</button>

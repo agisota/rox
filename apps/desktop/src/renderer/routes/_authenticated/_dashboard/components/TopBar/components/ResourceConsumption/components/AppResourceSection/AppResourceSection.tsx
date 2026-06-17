@@ -51,32 +51,32 @@ export function AppResourceSection({
 		<div className="border-b border-border/60 py-1">
 			<div className="flex items-center justify-between px-3.5 py-1.5">
 				<div className="flex items-center gap-1.5 min-w-0 mr-2">
-					<span className="text-[12px] font-medium text-foreground truncate min-w-0">
-						Rox App
+					<span className="text-[11px] font-medium text-foreground truncate min-w-0">
+						Приложение Rox
 					</span>
 					<UsageSeverityBadge severity={appSeverity} />
 				</div>
-				<div className={cn(METRIC_COLS, "text-[12px] text-foreground")}>
+				<div className={cn(METRIC_COLS, "text-[11px] text-foreground")}>
 					<span className={CPU_COL}>{formatCpu(app.cpu)}</span>
 					<span className={MEM_COL}>{formatMemory(app.memory)}</span>
 				</div>
 			</div>
 
 			<SubRow
-				label="Main"
+				label="Главный"
 				cpu={app.main.cpu}
 				memory={app.main.memory}
 				severity={mainSeverity}
 			/>
 			<SubRow
-				label="Renderer"
+				label="Рендерер"
 				cpu={app.renderer.cpu}
 				memory={app.renderer.memory}
 				severity={rendererSeverity}
 			/>
 			{showOther && (
 				<SubRow
-					label="Other"
+					label="Прочее"
 					cpu={app.other.cpu}
 					memory={app.other.memory}
 					severity={otherSeverity}

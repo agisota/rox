@@ -34,10 +34,10 @@ const GROUP_ORDER: GroupKey[] = [
 ];
 
 const GROUP_TITLES: Record<GroupKey, string> = {
-	unstaged: "Unstaged",
-	staged: "Staged",
-	"against-base": "Against base",
-	commit: "Committed",
+	unstaged: "Не проиндексировано",
+	staged: "Проиндексировано",
+	"against-base": "Относительно базы",
+	commit: "Коммиты",
 };
 
 export const ChangesFileList = memo(function ChangesFileList({
@@ -68,7 +68,7 @@ export const ChangesFileList = memo(function ChangesFileList({
 	if (isLoading) {
 		return (
 			<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-				Loading...
+				Загрузка…
 			</div>
 		);
 	}
@@ -76,7 +76,7 @@ export const ChangesFileList = memo(function ChangesFileList({
 	if (files.length === 0) {
 		return (
 			<div className="px-3 py-6 text-center text-sm text-muted-foreground">
-				No changes
+				Нет изменений
 			</div>
 		);
 	}
