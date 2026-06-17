@@ -9,11 +9,15 @@
 import { useEffect } from "react";
 import { useWallpaperStore } from "./store";
 
+let hydrateInFlight: Promise<void> | null = null;
+
 /** Hydrate the global wallpaper store a single time on mount. */
 export function useInitWallpaperStore(): void {
 	useEffect(() => {
-		// Guard against React StrictMode's double-invoke: only hydrate once.
-		if (useWallpaperStore.getState().isHydrated) return;
-		void useWallpaperStore.getState().hydrate();
+		const state = useWallpaperStore.getState();
+		if (state.isHydrated || hydrateInFlight) return;
+		hydrateInFlight = state.hydrate().finally(() => {
+			hydrateInFlight = null;
+		});
 	}, []);
 }

@@ -52,13 +52,14 @@ export function FocusMode() {
 	if (!isOpen) return null;
 
 	return (
-		<button
-			type="button"
-			aria-label="Закрыть режим фокуса"
-			className="fixed inset-0 z-[60] cursor-default"
-			onClick={close}
-		>
+		<div className="fixed inset-0 z-[60]">
 			<QuoteScreen quote={quote} wallpaper={wallpaper} />
-		</button>
+			<button
+				type="button"
+				aria-label="Закрыть режим фокуса"
+				className="absolute inset-0 cursor-default bg-transparent"
+				onClick={close}
+			/>
+		</div>
 	);
 }

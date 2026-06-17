@@ -6,11 +6,13 @@
 
 import {
 	type AppearanceSettings,
+	clampWindowOpacity,
 	DEFAULT_APPEARANCE_SETTINGS,
 } from "@rox/shared/appearance";
 
 /** localStorage key holding the JSON-serialized appearance settings. */
 export const APPEARANCE_STORAGE_KEY = "rox-appearance";
+const MIN_ROTATE_SECONDS = 5;
 
 /** Coerce an unknown persisted blob into valid {@link AppearanceSettings}. */
 function normalize(raw: unknown): AppearanceSettings {
@@ -24,8 +26,9 @@ function normalize(raw: unknown): AppearanceSettings {
 				? value.glassEnabled
 				: DEFAULT_APPEARANCE_SETTINGS.glassEnabled,
 		windowOpacity:
-			typeof value.windowOpacity === "number"
-				? value.windowOpacity
+			typeof value.windowOpacity === "number" &&
+			Number.isFinite(value.windowOpacity)
+				? clampWindowOpacity(value.windowOpacity)
 				: DEFAULT_APPEARANCE_SETTINGS.windowOpacity,
 		wallpaperId:
 			typeof value.wallpaperId === "string" || value.wallpaperId === null
@@ -36,8 +39,9 @@ function normalize(raw: unknown): AppearanceSettings {
 				? value.wallpaperAutoRotate
 				: DEFAULT_APPEARANCE_SETTINGS.wallpaperAutoRotate,
 		wallpaperRotateSeconds:
-			typeof value.wallpaperRotateSeconds === "number"
-				? value.wallpaperRotateSeconds
+			typeof value.wallpaperRotateSeconds === "number" &&
+			Number.isFinite(value.wallpaperRotateSeconds)
+				? Math.max(MIN_ROTATE_SECONDS, value.wallpaperRotateSeconds)
 				: DEFAULT_APPEARANCE_SETTINGS.wallpaperRotateSeconds,
 		quoteLoaderEnabled:
 			typeof value.quoteLoaderEnabled === "boolean"

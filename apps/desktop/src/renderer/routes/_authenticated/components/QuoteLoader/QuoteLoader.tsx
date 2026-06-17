@@ -26,8 +26,10 @@ function nextQuote(currentId: string | null): Quote {
  * on the persisted `quoteLoaderEnabled` appearance setting.
  */
 export function QuoteLoader() {
-	const { data: appearance } = electronTrpc.window.getAppearance.useQuery();
-	const quoteLoaderEnabled = appearance?.quoteLoaderEnabled ?? true;
+	const { data: appearance, isPending: isAppearancePending } =
+		electronTrpc.window.getAppearance.useQuery();
+	const quoteLoaderEnabled =
+		!isAppearancePending && (appearance?.quoteLoaderEnabled ?? false);
 
 	const status = useRouterState({ select: (s) => s.status });
 	const isPending = status === "pending";

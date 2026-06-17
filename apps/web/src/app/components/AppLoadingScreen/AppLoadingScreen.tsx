@@ -34,12 +34,18 @@ export function AppLoadingScreen() {
 
 	if (!settings.quoteLoaderEnabled) {
 		return (
-			<output
-				aria-label="Загрузка"
+			// biome-ignore lint/a11y/useSemanticElements: role=status gives screen readers a reliable loading live region.
+			<div
+				aria-live="polite"
 				className="flex min-h-[50vh] items-center justify-center"
+				role="status"
 			>
-				<span className="size-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-			</output>
+				<span className="sr-only">Загрузка</span>
+				<span
+					aria-hidden="true"
+					className="size-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
+				/>
+			</div>
 		);
 	}
 

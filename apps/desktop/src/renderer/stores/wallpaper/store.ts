@@ -19,8 +19,8 @@ import {
 	WALLPAPERS,
 	type Wallpaper,
 } from "@rox/shared/appearance";
+import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { create } from "zustand";
-import { electronTrpcClient } from "../../lib/trpc-client";
 
 interface WallpaperState {
 	/** Active wallpaper id, or null when no wallpaper background is shown. */
