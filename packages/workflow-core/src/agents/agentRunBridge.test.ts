@@ -10,6 +10,7 @@ import {
 	buildAgentRunPrompt,
 	classifyAgentRunError,
 	DEFAULT_AGENT_MAX_TURNS,
+	MAX_AGENT_MAX_TURNS,
 	ROX_AGENT_ID,
 	resolveAgentDispatchTarget,
 } from "./agentRunBridge";
@@ -183,6 +184,14 @@ describe("resolveAgentDispatchTarget", () => {
 				chatPreset({ settings: { maxTurns: Number.NaN } }),
 			).maxTurns,
 		).toBe(DEFAULT_AGENT_MAX_TURNS);
+	});
+
+	test("ARB-10B: maxTurns is hard-capped before host dispatch", () => {
+		expect(
+			resolveAgentDispatchTarget(
+				chatPreset({ settings: { maxTurns: MAX_AGENT_MAX_TURNS + 99 } }),
+			).maxTurns,
+		).toBe(MAX_AGENT_MAX_TURNS);
 	});
 
 	test("ARB-11: terminal preset with empty agentId defaults to claude", () => {

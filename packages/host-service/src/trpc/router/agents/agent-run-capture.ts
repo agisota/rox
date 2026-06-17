@@ -32,8 +32,7 @@ import { extractTerminalOutputTail } from "./extract-terminal-output-tail";
  */
 
 export interface AgentRunCaptureInput extends AgentRunInput {
-	/** Max agent turns before the host forces a stop (advisory; honored once the
-	 * harness exposes a turn cap). */
+	/** Max agent turns before the host forces a stop. */
 	maxTurns: number;
 }
 
@@ -162,6 +161,14 @@ export interface TerminalCaptureOptions {
 
 const DEFAULT_TERMINAL_DEADLINE_MS = 600_000;
 const DEFAULT_TERMINAL_POLL_INTERVAL_MS = 1_000;
+export const MAX_AGENT_CAPTURE_TURNS = 200;
+
+function normalizeAgentCaptureMaxTurns(value: number): number {
+	if (!Number.isFinite(value)) return 8;
+	const floored = Math.floor(value);
+	if (floored < 1) return 8;
+	return Math.min(floored, MAX_AGENT_CAPTURE_TURNS);
+}
 
 /**
  * Cross-process boundary for terminal/CLI agent capture, isolated behind a typed
@@ -302,7 +309,11 @@ export async function runAgentAndCapture(
 ): Promise<AgentRunCaptureResult> {
 	const startAgent = ports.startAgent ?? runAgentInWorkspace;
 	const terminalPort = ports.terminalPort ?? defaultTerminalCapturePort;
-	const started = await startAgent(ctx, input);
+	const boundedInput = {
+		...input,
+		maxTurns: normalizeAgentCaptureMaxTurns(input.maxTurns),
+	};
+	const started = await startAgent(ctx, boundedInput);
 
 	if (started.kind === "chat") {
 		const message = await captureChatOutput(async () => {
@@ -311,7 +322,7 @@ export async function runAgentAndCapture(
 			// and has no pending question/permission gate.
 			const snapshot = await ctx.runtime.chat.getSnapshot({
 				sessionId: started.sessionId,
-				workspaceId: input.workspaceId,
+				workspaceId: boundedInput.workspaceId,
 			});
 			const displayState = snapshot.displayState as {
 				isRunning?: unknown;
@@ -334,7 +345,7 @@ export async function runAgentAndCapture(
 	// the shell-echoed command line from the captured output.
 	const captured = await captureTerminalOutput(terminalPort, {
 		terminalId: started.sessionId,
-		workspaceId: input.workspaceId,
+		workspaceId: boundedInput.workspaceId,
 		echoedCommand: started.command,
 	});
 
@@ -345,7 +356,7 @@ export async function runAgentAndCapture(
 	// flows through as the extracted tail.
 	const message =
 		captured === null
-			? `[terminal agent ${input.agent}] dispatched; terminal session not readable from host`
+			? `[terminal agent ${boundedInput.agent}] dispatched; terminal session not readable from host`
 			: captured;
 
 	return {

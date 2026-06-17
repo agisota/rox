@@ -29,6 +29,8 @@ export interface RunPipelineArgs {
 	triggerRef?: Record<string, unknown>;
 	/** Structured input handed to the entry node. */
 	input: Record<string, unknown>;
+	/** Optional node to start at when an event trigger is bound to a graph node. */
+	entryNodeId?: string;
 	/** Seed message + transcript threaded into every agent_run node (design §5). */
 	initialContext: AccumulatedContext;
 	/**
@@ -118,6 +120,7 @@ export async function runPipeline(
 		recorder: new DbRunRecorder(runId),
 		// Pipelines have no published output schema; the executor skips output
 		// validation when omitted.
+		entryNodeId: args.entryNodeId,
 		initialContext: args.initialContext,
 		resolveAgentRun,
 		// Cross-run emit seam (design §4.3): each finished agent_run node fires an

@@ -157,6 +157,7 @@ export interface AgentRunInput {
 	workspaceId: string;
 	agent: string;
 	prompt: string;
+	maxTurns?: number;
 	attachmentIds?: string[];
 }
 
@@ -318,7 +319,7 @@ export const agentsRouter = router({
 				workspaceId: z.string().uuid(),
 				agent: z.string().min(1),
 				prompt: z.string().min(1),
-				maxTurns: z.number().int().positive().default(8),
+				maxTurns: z.number().int().positive().max(200).default(8),
 				attachmentIds: z.array(z.string().uuid()).optional(),
 			}),
 		)
