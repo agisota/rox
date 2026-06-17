@@ -58,6 +58,8 @@ export function PipelineEditor({
 	const [graph, setGraph] = useState<RoxWorkflowState>(
 		initialPipeline.draftState,
 	);
+	const graphRef = useRef(graph);
+	graphRef.current = graph;
 	const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 	const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">(
 		"idle",
@@ -128,51 +130,54 @@ export function PipelineEditor({
 
 	useEffect(() => () => flushPendingSave(), [flushPendingSave]);
 
-	// Canvas → state: fold node/edge edits back into the working graph + persist.
-	const handleGraphChange = useCallback(
-		(nextNodes: PipelineFlowNode[], nextEdges: PipelineFlowEdge[]) => {
-			setGraph((prev) => {
-				const next = flowToState(prev, nextNodes, nextEdges);
-				persist(next);
-				return next;
-			});
+	const applyGraphChange = useCallback(
+		(next: RoxWorkflowState) => {
+			graphRef.current = next;
+			setGraph(next);
+			persist(next);
 		},
 		[persist],
 	);
 
+	// Canvas → state: fold node/edge edits back into the working graph + persist.
+	const handleGraphChange = useCallback(
+		(nextNodes: PipelineFlowNode[], nextEdges: PipelineFlowEdge[]) => {
+			applyGraphChange(flowToState(graphRef.current, nextNodes, nextEdges));
+		},
+		[applyGraphChange],
+	);
+
 	const addNode = useCallback(
 		(kind: PipelineNodeKind, roleSlug?: string, label?: string) => {
-			setGraph((prev) => {
-				const id = newBlockId(kind);
-				const count = Object.keys(prev.blocks).length;
-				const next: RoxWorkflowState = {
-					...prev,
-					blocks: {
-						...prev.blocks,
-						[id]: {
-							type: kind,
-							name:
-								label ??
-								(kind === "agent_run"
-									? "Агент"
-									: kind === "loop"
-										? "Цикл"
-										: kind === "human_approval"
-											? "Подтверждение"
-											: "Финал"),
-							position: {
-								x: 180 + (count % 4) * 280,
-								y: 360 + Math.floor(count / 4) * 180,
-							},
-							subBlocks: roleSlug ? { roleSlug } : undefined,
+			const prev = graphRef.current;
+			const id = newBlockId(kind);
+			const count = Object.keys(prev.blocks).length;
+			const next: RoxWorkflowState = {
+				...prev,
+				blocks: {
+					...prev.blocks,
+					[id]: {
+						type: kind,
+						name:
+							label ??
+							(kind === "agent_run"
+								? "Агент"
+								: kind === "loop"
+									? "Цикл"
+									: kind === "human_approval"
+										? "Подтверждение"
+										: "Финал"),
+						position: {
+							x: 180 + (count % 4) * 280,
+							y: 360 + Math.floor(count / 4) * 180,
 						},
+						subBlocks: roleSlug ? { roleSlug } : undefined,
 					},
-				};
-				persist(next);
-				return next;
-			});
+				},
+			};
+			applyGraphChange(next);
 		},
-		[persist],
+		[applyGraphChange],
 	);
 
 	const addRoleNode = useCallback(

@@ -104,38 +104,39 @@ export function PipelineCanvas({
 
 	const handleConnect = useCallback<OnConnect>(
 		(connection: Connection) => {
-			setEdges((current) => {
-				const next = addEdge(
-					{ ...connection, ...ANIMATED_EDGE_DEFAULTS },
-					current,
-				) as PipelineFlowEdge[];
-				onGraphChange(latest.current.nodes, next);
-				return next;
-			});
+			const next = addEdge(
+				{ ...connection, ...ANIMATED_EDGE_DEFAULTS },
+				latest.current.edges,
+			) as PipelineFlowEdge[];
+			latest.current = { nodes: latest.current.nodes, edges: next };
+			setEdges(next);
+			onGraphChange(latest.current.nodes, next);
 		},
 		[setEdges, onGraphChange],
 	);
 
 	const handleNodesChange = useCallback(
 		(changes: NodeChange<PipelineFlowNode>[]) => {
-			setNodes((current) => {
-				const next = applyNodeChanges(changes, current) as PipelineFlowNode[];
-				latest.current = { nodes: next, edges: latest.current.edges };
-				onGraphChange(next, latest.current.edges);
-				return next;
-			});
+			const next = applyNodeChanges(
+				changes,
+				latest.current.nodes,
+			) as PipelineFlowNode[];
+			latest.current = { nodes: next, edges: latest.current.edges };
+			setNodes(next);
+			onGraphChange(next, latest.current.edges);
 		},
 		[setNodes, onGraphChange],
 	);
 
 	const handleEdgesChange = useCallback(
 		(changes: EdgeChange<PipelineFlowEdge>[]) => {
-			setEdges((current) => {
-				const next = applyEdgeChanges(changes, current) as PipelineFlowEdge[];
-				latest.current = { nodes: latest.current.nodes, edges: next };
-				onGraphChange(latest.current.nodes, next);
-				return next;
-			});
+			const next = applyEdgeChanges(
+				changes,
+				latest.current.edges,
+			) as PipelineFlowEdge[];
+			latest.current = { nodes: latest.current.nodes, edges: next };
+			setEdges(next);
+			onGraphChange(latest.current.nodes, next);
 		},
 		[setEdges, onGraphChange],
 	);
