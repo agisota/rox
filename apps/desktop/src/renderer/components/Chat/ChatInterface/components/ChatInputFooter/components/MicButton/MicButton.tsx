@@ -2,6 +2,7 @@ import { cn } from "@rox/ui/utils";
 import { Loader2Icon, MicIcon } from "lucide-react";
 import type React from "react";
 import { useRef } from "react";
+import { useHotkey } from "renderer/hotkeys";
 import { type Recording, useDictation } from "renderer/lib/voice/useDictation";
 import { WaveformOverlay } from "./WaveformOverlay";
 
@@ -27,6 +28,17 @@ export function MicButton({
 }: MicButtonProps) {
 	const dictation = useDictation({ onComplete });
 	const pointerStartY = useRef<number | null>(null);
+
+	// Keyboard shortcut toggles dictation in locked mode — press to start, press
+	// again to stop + insert. Modifiable in Settings → Keyboard.
+	useHotkey("DICTATE", () => {
+		if (disabled || transcribing) return;
+		if (dictation.isActive) {
+			dictation.stop();
+		} else {
+			void dictation.start().then(() => dictation.lock());
+		}
+	});
 
 	const handlePointerDown = (e: React.PointerEvent) => {
 		if (disabled || transcribing) return;
