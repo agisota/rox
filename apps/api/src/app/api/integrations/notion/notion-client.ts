@@ -226,6 +226,9 @@ export async function listBlockChildren({
 	pageSize = 100,
 	fetchImpl,
 }: NotionBlockChildrenArgs): Promise<NotionBlockChildrenResponse> {
+	if (blockId.trim().length === 0) {
+		throw new Error("Notion block children blockId must be a non-empty string");
+	}
 	assertValidPageSize(pageSize);
 	const doFetch = fetchImpl ?? fetch;
 	const url = new URL(

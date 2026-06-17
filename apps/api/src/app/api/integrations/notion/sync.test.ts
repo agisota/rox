@@ -203,7 +203,7 @@ describe("renderNotionBlocksToMarkdown", () => {
 		expect(markdown).toContain("[Diagram](https://example.com/image.png)");
 	});
 
-	test("preserves code block whitespace exactly", () => {
+	test("preserves code block indentation without adding a blank line before the closing fence", () => {
 		const markdown = renderNotionBlocksToMarkdown([
 			{
 				id: "code",
@@ -215,7 +215,7 @@ describe("renderNotionBlocksToMarkdown", () => {
 			},
 		]);
 
-		expect(markdown).toBe("```python\n  def run():\n    return True\n\n```");
+		expect(markdown).toBe("```python\n  def run():\n    return True\n```");
 	});
 
 	test("gives inline code annotation priority over other rich-text formatting", () => {

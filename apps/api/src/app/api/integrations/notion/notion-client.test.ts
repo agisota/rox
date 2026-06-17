@@ -217,4 +217,18 @@ describe("notion-client listBlockChildren", () => {
 			}),
 		).rejects.toThrow(/pageSize/);
 	});
+
+	test("validates blockId before making a request", async () => {
+		const fetchImpl = (async () => {
+			throw new Error("fetch should not be called");
+		}) as unknown as FetchImpl;
+
+		await expect(
+			listBlockChildren({
+				token: "t",
+				blockId: "  ",
+				fetchImpl,
+			}),
+		).rejects.toThrow(/blockId/);
+	});
 });

@@ -174,7 +174,7 @@ function renderBlockToMarkdown(block: NotionBlock, depth: number): string {
 		case "code": {
 			const language =
 				typeof payload?.language === "string" ? payload.language : "";
-			return `\`\`\`${language}\n${getCodeText(block)}\n\`\`\``;
+			return `\`\`\`${language}\n${getCodeText(block).replace(/\n$/, "")}\n\`\`\``;
 		}
 		case "divider":
 			return "---";
