@@ -388,24 +388,25 @@
 	gap: 18px;
 }
 
-/* Soft dark halo so the headline + console stay crisp over bright particles. */
+/* Soft dark halo so the headline + copy stay crisp over bright particles. */
 .rox-hero__inner::before {
 	content: "";
 	position: absolute;
 	z-index: -1;
-	inset: -16% -10%;
+	inset: -20% -14%;
 	pointer-events: none;
 	background: radial-gradient(
-		46% 42% at 50% 46%,
-		rgba(10, 7, 5, 0.66),
-		rgba(10, 7, 5, 0.28) 58%,
-		transparent 82%
+		50% 46% at 50% 44%,
+		rgba(8, 5, 3, 0.82),
+		rgba(8, 5, 3, 0.42) 56%,
+		transparent 84%
 	);
 }
 
 .rox-hero .rox-landing__brand {
 	justify-content: center;
 	margin-bottom: 0;
+	color: rgba(255, 236, 220, 0.58);
 }
 
 .rox-hero .rox-hero__headline {
@@ -413,13 +414,15 @@
 	line-height: 1.04;
 	margin: 4px 0 2px;
 	max-width: 15ch;
-	text-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+	color: #ffffff;
+	text-shadow: 0 2px 28px rgba(0, 0, 0, 0.65);
 }
 
+/* Agent cycle — warm gold accent, distinct from hint body + particle orange. */
 .rox-hero__sub-cycle {
-	color: var(--rox-orange-1);
-	font-weight: 300;
-	text-shadow: 0 0 24px rgba(210, 86, 17, 0.32);
+	color: #ffd28e;
+	font-weight: 400;
+	text-shadow: 0 0 20px rgba(255, 180, 84, 0.45);
 }
 
 .rox-hero .rox-hero__sub {
@@ -439,13 +442,31 @@
 	display: block;
 }
 
-/* Run-anywhere tagline under the subhead. */
-.rox-hero__hint {
-	margin: 2px 0 0;
-	font-size: 0.82rem;
-	letter-spacing: 0.04em;
-	color: var(--rox-orange-1);
-	opacity: 0.82;
+/* Secondary hero copy — muted neutral so accents (cycle, terms) pop. */
+.rox-hero .rox-hero__hint {
+	margin: 4px 0 0;
+	font-size: 0.8rem;
+	letter-spacing: 0.03em;
+	color: rgba(255, 255, 255, 0.5);
+	opacity: 1;
+	text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+}
+
+/* First hint line reads slightly louder than the rest. */
+.rox-hero .rox-hero__hint:first-of-type {
+	color: rgba(255, 255, 255, 0.62);
+}
+
+/* Glossary terms — cool cyan underline on dim body copy. */
+.rox-hero .rox-hero__hint .rox-term {
+	color: rgba(255, 255, 255, 0.86);
+	text-decoration-color: rgba(138, 210, 255, 0.55);
+}
+
+.rox-hero .rox-hero__hint .rox-term:hover,
+.rox-hero .rox-hero__hint .rox-term:focus {
+	color: #c8e8ff;
+	text-decoration-color: #8ad2ff;
 }
 
 /* Command console: composer input + suggestion chips + mock dispatch log. */
