@@ -67,15 +67,45 @@ export async function POST(request: Request): Promise<Response> {
 			),
 		);
 
-	let queued = 0;
-	for (const row of rows) {
-		await qstash.publishJSON({
-			url: `${env.NEXT_PUBLIC_API_URL}/api/journal/generate/user`,
-			body: { organizationId: row.organizationId, userId: row.createdBy, day },
-			retries: 2,
+	const publishResults = await Promise.allSettled(
+		rows.map((row) =>
+			qstash.publishJSON({
+				url: `${env.NEXT_PUBLIC_API_URL}/api/journal/generate/user`,
+				body: {
+					organizationId: row.organizationId,
+					userId: row.createdBy,
+					day,
+				},
+				retries: 2,
+			}),
+		),
+	);
+	const failedPublishes = publishResults.filter(
+		(result): result is PromiseRejectedResult => result.status === "rejected",
+	);
+	const queued = rows.length - failedPublishes.length;
+	if (failedPublishes.length > 0) {
+		console.error("[journal/generate] Failed to enqueue some user jobs", {
+			day,
+			queued,
+			failed: failedPublishes.length,
+			total: rows.length,
+			errors: failedPublishes.map((result) =>
+				String(result.reason).slice(0, 500),
+			),
 		});
-		queued++;
+	}
+	if (rows.length > 0 && queued === 0) {
+		return Response.json(
+			{
+				error: "Failed to enqueue journal generation jobs",
+				day,
+				queued,
+				failed: failedPublishes.length,
+			},
+			{ status: 500 },
+		);
 	}
 
-	return Response.json({ day, queued });
+	return Response.json({ day, queued, failed: failedPublishes.length });
 }

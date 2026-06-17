@@ -11,6 +11,12 @@ const CORS_HEADERS: Record<string, string> = {
 		"electric-handle, electric-offset, electric-schema, electric-up-to-date, electric-cursor",
 };
 
+const USER_SCOPED_TABLES = new Set([
+	"journal_entries",
+	"memory_import_jobs",
+	"memory_items",
+]);
+
 function corsResponse(status: number, body: string): Response {
 	return new Response(body, { status, headers: CORS_HEADERS });
 }
@@ -61,6 +67,7 @@ export default {
 		}
 
 		const organizationId = url.searchParams.get("organizationId");
+		const userId = url.searchParams.get("userId");
 
 		if (tableName !== "auth.organizations") {
 			if (!organizationId) {
@@ -70,12 +77,21 @@ export default {
 				return corsResponse(403, "Not a member of this organization");
 			}
 		}
+		if (USER_SCOPED_TABLES.has(tableName)) {
+			if (!userId) {
+				return corsResponse(400, "Missing userId parameter");
+			}
+			if (userId !== auth.sub) {
+				return corsResponse(403, "Cannot sync another user's data");
+			}
+		}
 
 		const authorizedOrganizationIds = [...auth.organizationIds].sort();
 		const whereClause = buildWhereClause(
 			tableName,
 			organizationId ?? "",
 			authorizedOrganizationIds,
+			auth.sub,
 		);
 		if (!whereClause) {
 			return corsResponse(400, `Unknown table: ${tableName}`);

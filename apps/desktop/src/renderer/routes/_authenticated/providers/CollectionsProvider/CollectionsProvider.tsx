@@ -17,12 +17,14 @@ type CollectionsContextType = ReturnType<typeof getCollections> & {
 };
 
 const CollectionsContext = createContext<CollectionsContextType | null>(null);
+const MOCK_USER_ID = "mock-user-id";
 
 export function preloadActiveOrganizationCollections(
 	activeOrganizationId: string | null | undefined,
+	activeUserId: string | null | undefined,
 ): void {
-	if (!activeOrganizationId) return;
-	void preloadCollections(activeOrganizationId).catch((error) => {
+	if (!activeOrganizationId || !activeUserId) return;
+	void preloadCollections(activeOrganizationId, activeUserId).catch((error) => {
 		console.error(
 			"[collections-provider] Failed to preload active org collections:",
 			error,
@@ -33,9 +35,14 @@ export function preloadActiveOrganizationCollections(
 export function CollectionsProvider({ children }: { children: ReactNode }) {
 	const { data: session, refetch: refetchSession } = authClient.useSession();
 	const [isSwitching, setIsSwitching] = useState(false);
+	// Local mock mode pins the org but still isolates personal collections by user
+	// when a dev session exists.
 	const activeOrganizationId = env.SKIP_ENV_VALIDATION
 		? MOCK_ORG_ID
 		: session?.session?.activeOrganizationId;
+	const activeUserId = env.SKIP_ENV_VALIDATION
+		? (session?.user?.id ?? MOCK_USER_ID)
+		: session?.user?.id;
 
 	const switchOrganization = useCallback(
 		async (organizationId: string) => {
@@ -43,22 +50,27 @@ export function CollectionsProvider({ children }: { children: ReactNode }) {
 			setIsSwitching(true);
 			try {
 				await authClient.organization.setActive({ organizationId });
-				await preloadCollections(organizationId);
+				if (activeUserId) {
+					await preloadCollections(organizationId, activeUserId);
+				}
 				await refetchSession();
 			} finally {
 				setIsSwitching(false);
 			}
 		},
-		[activeOrganizationId, refetchSession],
+		[activeOrganizationId, activeUserId, refetchSession],
 	);
 
 	useEffect(() => {
-		preloadActiveOrganizationCollections(activeOrganizationId);
-	}, [activeOrganizationId]);
+		preloadActiveOrganizationCollections(activeOrganizationId, activeUserId);
+	}, [activeOrganizationId, activeUserId]);
 
 	const collections = useMemo(
-		() => (activeOrganizationId ? getCollections(activeOrganizationId) : null),
-		[activeOrganizationId],
+		() =>
+			activeOrganizationId && activeUserId
+				? getCollections(activeOrganizationId, activeUserId)
+				: null,
+		[activeOrganizationId, activeUserId],
 	);
 
 	const contextValue = useMemo<CollectionsContextType | null>(
