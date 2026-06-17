@@ -13,6 +13,8 @@
 
 export {
 	addEdge,
+	applyEdgeChanges,
+	applyNodeChanges,
 	Background,
 	type Connection,
 	type Edge,

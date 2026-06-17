@@ -1,5 +1,3 @@
-"use client";
-
 import { Canvas } from "@rox/ui/ai-elements/canvas";
 import { Controls } from "@rox/ui/ai-elements/controls";
 import {
