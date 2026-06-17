@@ -7,12 +7,14 @@ import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";
+import type { Recording } from "renderer/lib/voice/useDictation";
 import { ReasoningLevelSlider } from "renderer/motion/ReasoningLevelSlider";
 import { PILL_BUTTON_CLASS } from "../../../../styles";
 import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";
 import { PermissionModePicker } from "../../../PermissionModePicker";
 import { PlusMenu } from "../../../PlusMenu";
+import { MicButton } from "../MicButton";
 
 interface ChatComposerControlsProps {
 	availableModels: ModelOption[];
@@ -28,6 +30,8 @@ interface ChatComposerControlsProps {
 	submitStatus?: ChatStatus;
 	submitDisabled?: boolean;
 	onStop: (event: React.MouseEvent) => void;
+	onDictationComplete?: (recording: Recording) => void;
+	dictationTranscribing?: boolean;
 }
 
 export function ChatComposerControls({
@@ -44,6 +48,8 @@ export function ChatComposerControls({
 	submitStatus,
 	submitDisabled,
 	onStop,
+	onDictationComplete,
+	dictationTranscribing,
 }: ChatComposerControlsProps) {
 	return (
 		<PromptInputFooter>
@@ -67,6 +73,10 @@ export function ChatComposerControls({
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />
+				<MicButton
+					onComplete={onDictationComplete}
+					transcribing={dictationTranscribing}
+				/>
 				<PromptInputSubmit
 					className="size-[23px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
 					status={submitStatus}
