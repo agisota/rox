@@ -6,7 +6,7 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { AGENT_ROLES, FIELD } from "../../constants";
+import { AGENT_ROLES, FACE, FIELD } from "../../constants";
 
 interface ParticleFieldProps {
 	/**
@@ -55,6 +55,74 @@ interface FieldData {
 	sizes: Float32Array;
 	/** Indices of ring particles used as delegation-edge endpoints. */
 	edgeIndices: Uint32Array;
+	/** 1 for face-constellation particles (no spin, sit behind the rings). */
+	isFace: Uint8Array;
+	/** First index of the contiguous face-constellation block. */
+	faceStart: number;
+	/** Number of particles in the face-constellation block. */
+	faceCount: number;
+}
+
+/** Load an <img> as a promise (same-origin: no taint, getImageData is allowed). */
+function loadImage(src: string): Promise<HTMLImageElement> {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => resolve(img);
+		img.onerror = reject;
+		img.src = src;
+	});
+}
+
+/**
+ * Sample `count` points from the opaque pixels of an image's alpha channel and
+ * map them into a camera-facing plane (world XY) centered on the origin. Used to
+ * draw the logo-girl silhouette as a particle constellation.
+ */
+async function sampleFacePoints(count: number): Promise<Float32Array | null> {
+	const out = new Float32Array(count * 3);
+	try {
+		const img = await loadImage(FACE.src);
+		const naturalW = img.naturalWidth || img.width;
+		const naturalH = img.naturalHeight || img.height;
+		if (!naturalW || !naturalH) return null;
+
+		const scale = Math.min(1, FACE.sampleMaxWidth / naturalW);
+		const w = Math.max(1, Math.round(naturalW * scale));
+		const h = Math.max(1, Math.round(naturalH * scale));
+
+		const canvas = document.createElement("canvas");
+		canvas.width = w;
+		canvas.height = h;
+		const ctx = canvas.getContext("2d", { willReadFrequently: true });
+		if (!ctx) return null;
+		ctx.drawImage(img, 0, 0, w, h);
+		const pixels = ctx.getImageData(0, 0, w, h).data;
+
+		// Collect indices of pixels solid enough to belong to the silhouette.
+		const candidates: number[] = [];
+		const minAlpha = FACE.alphaThreshold * 255;
+		for (let p = 0; p < w * h; p++) {
+			if ((pixels[p * 4 + 3] ?? 0) >= minAlpha) candidates.push(p);
+		}
+		if (candidates.length === 0) return null;
+
+		const worldH = FACE.worldHeight;
+		const worldW = worldH * (w / h);
+		for (let i = 0; i < count; i++) {
+			const p = candidates[(Math.random() * candidates.length) | 0] ?? 0;
+			const px = p % w;
+			const py = (p / w) | 0;
+			// Sub-pixel jitter so points don't snap to a visible grid.
+			const jx = px + Math.random();
+			const jy = py + Math.random();
+			out[i * 3] = (jx / w - 0.5) * worldW;
+			out[i * 3 + 1] = (0.5 - jy / h) * worldH;
+			out[i * 3 + 2] = FACE.baseZ + (Math.random() - 0.5) * FACE.depth * 2;
+		}
+		return out;
+	} catch {
+		return null;
+	}
 }
 
 /** Build the particle clouds: 3 tilted rings, a bright hub, and a halo nebula. */
@@ -64,19 +132,22 @@ function buildField(): FieldData {
 	const scattered = new Float32Array(count * 3);
 	const colors = new Float32Array(count * 3);
 	const sizes = new Float32Array(count);
+	const isFace = new Uint8Array(count);
 
 	const palette = AGENT_ROLES.map((role) => new THREE.Color(role.color));
 	const white = new THREE.Color("#fff3e6");
+	const faceTint = new THREE.Color("#ffd9b0");
 	const tmp = new THREE.Color();
 	const colorAt = (index: number) => palette[index] ?? white;
 
+	// Ring shares are trimmed to leave room for the face constellation block.
 	// Ring layout: radius, tube thickness, tilt about X, yaw about Y, share.
 	const rings = [
-		{ radius: 3.1, tube: 0.22, tiltX: 1.12, yaw: 0.0, share: 0.22, role: 1 },
-		{ radius: 4.9, tube: 0.26, tiltX: 0.52, yaw: 0.7, share: 0.24, role: 2 },
-		{ radius: 6.6, tube: 0.32, tiltX: 1.38, yaw: -0.4, share: 0.22, role: 3 },
+		{ radius: 3.1, tube: 0.22, tiltX: 1.12, yaw: 0.0, share: 0.13, role: 1 },
+		{ radius: 4.9, tube: 0.26, tiltX: 0.52, yaw: 0.7, share: 0.12, role: 2 },
+		{ radius: 6.6, tube: 0.32, tiltX: 1.38, yaw: -0.4, share: 0.1, role: 3 },
 	];
-	const hubShare = 0.07;
+	const hubShare = 0.05;
 	let cursor = 0;
 
 	const writeRing = (
@@ -148,8 +219,14 @@ function buildField(): FieldData {
 	}
 	cursor = hubEnd;
 
+	// Face constellation block lives at the END of the buffer; its positions are
+	// filled asynchronously from the logo alpha (see sampleFacePoints). The halo
+	// fills whatever remains between the hub and the face block.
+	const faceCount = Math.floor(count * FACE.share);
+	const faceStart = count - faceCount;
+
 	// Halo nebula — faint particles filling the surrounding volume.
-	for (let i = cursor; i < count; i++) {
+	for (let i = cursor; i < faceStart; i++) {
 		const r = 4 + Math.cbrt(Math.random()) * 6;
 		const phi = Math.acos(2 * Math.random() - 1);
 		const theta = Math.random() * Math.PI * 2;
@@ -162,6 +239,30 @@ function buildField(): FieldData {
 		colors[i * 3 + 1] = tmp.g * 0.65;
 		colors[i * 3 + 2] = tmp.b * 0.65;
 		sizes[i] = 0.055 + Math.random() * 0.08;
+	}
+
+	// Face constellation — dim warm star-points. Until the image is sampled they
+	// sit on a faint backdrop shell so they blend with the halo (and degrade
+	// gracefully if the asset ever fails to load).
+	for (let i = faceStart; i < count; i++) {
+		isFace[i] = 1;
+		const r = 7 + Math.random() * 3;
+		const phi = Math.acos(2 * Math.random() - 1);
+		const theta = Math.random() * Math.PI * 2;
+		structured[i * 3] = r * Math.sin(phi) * Math.cos(theta) * 0.6;
+		structured[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.7;
+		structured[i * 3 + 2] = FACE.baseZ;
+
+		// Occasional brighter, larger "stars" give the portrait some twinkle.
+		const sparkle = Math.random() < 0.08;
+		const brightness = sparkle
+			? 0.85 + Math.random() * 0.4
+			: 0.42 + Math.random() * 0.3;
+		tmp.copy(faceTint).lerp(white, Math.random() * 0.4);
+		colors[i * 3] = tmp.r * brightness;
+		colors[i * 3 + 1] = tmp.g * brightness;
+		colors[i * 3 + 2] = tmp.b * brightness;
+		sizes[i] = (sparkle ? 0.11 : 0.05) + Math.random() * 0.05;
 	}
 
 	// Scattered start: a wide chaotic cloud the particles fly in from.
@@ -185,7 +286,17 @@ function buildField(): FieldData {
 		edgeIndices[i] = Math.floor(Math.random() * ringTotal);
 	}
 
-	return { count, structured, scattered, colors, sizes, edgeIndices };
+	return {
+		count,
+		structured,
+		scattered,
+		colors,
+		sizes,
+		edgeIndices,
+		isFace,
+		faceStart,
+		faceCount,
+	};
 }
 
 const VERTEX_SHADER = /* glsl */ `
@@ -310,6 +421,20 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		};
 	}, []);
 
+	// Sample the logo silhouette once and write it into the face block's home
+	// positions. The frame loop reads `structured` every frame, so no GL buffer
+	// update is needed — particles simply gather toward the new targets.
+	useEffect(() => {
+		let cancelled = false;
+		sampleFacePoints(data.faceCount).then((points) => {
+			if (cancelled || !points) return;
+			data.structured.set(points, data.faceStart * 3);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [data]);
+
 	useFrame((state, delta) => {
 		const t = state.clock.elapsedTime;
 		uniforms.uPixelRatio.value = Math.min(state.gl.getPixelRatio(), 2);
@@ -359,6 +484,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 		const structured = data.structured;
 		const scattered = data.scattered;
+		const isFace = data.isFace;
 		const count = data.count;
 
 		for (let i = 0; i < count; i++) {
@@ -366,12 +492,25 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			const iy = ix + 1;
 			const iz = ix + 2;
 
-			// Spin the structured target around Y, then expand on pulse.
-			const sx = (structured[ix] ?? 0) * expand;
-			const sz = (structured[iz] ?? 0) * expand;
-			const rx = sx * cosY + sz * sinY;
-			const rz = -sx * sinY + sz * cosY;
-			const ry = (structured[iy] ?? 0) * expand;
+			const face = isFace[i] === 1;
+
+			// Rings/hub/halo spin around Y (Saturn-style) and expand on a pulse.
+			// The face constellation stays camera-facing (no spin, no expand) so the
+			// portrait reads clearly behind the rotating rings.
+			let rx: number;
+			let ry: number;
+			let rz: number;
+			if (face) {
+				rx = structured[ix] ?? 0;
+				ry = structured[iy] ?? 0;
+				rz = structured[iz] ?? 0;
+			} else {
+				const sx = (structured[ix] ?? 0) * expand;
+				const sz = (structured[iz] ?? 0) * expand;
+				rx = sx * cosY + sz * sinY;
+				rz = -sx * sinY + sz * cosY;
+				ry = (structured[iy] ?? 0) * expand;
+			}
 
 			// Chaos: when not orchestrated the swarm drifts freely (a living,
 			// wandering cloud). The drift fades out as the rings form.
@@ -384,7 +523,8 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				(scattered[iz] ?? 0) + Math.sin(t * 0.21 + i * 0.5) * 1.2 * chaos;
 
 			// Blend chaos → structure, with a gentle living swirl once organised.
-			const swirl = Math.sin(t * 0.6 + i) * 0.05 * ease;
+			// The face stays crisp (no swirl) so the silhouette is legible.
+			const swirl = face ? 0 : Math.sin(t * 0.6 + i) * 0.05 * ease;
 			let x = cx + (rx - cx) * ease + swirl;
 			let y = cy + (ry - cy) * ease + swirl;
 			const z = cz + (rz - cz) * ease;

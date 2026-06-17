@@ -81,3 +81,26 @@ export const FIELD = {
 	/** Number of glowing delegation edges drawn between hub and ring nodes. */
 	edgeCount: 220,
 } as const;
+
+/**
+ * Background "constellation": a portion of the swarm coalesces into the silhouette
+ * of the Rox logo girl, sampled from the PNG's alpha channel. These particles sit
+ * behind the orchestration rings (variant C: face as backdrop, rings on top),
+ * face the camera (no Saturn spin) and read as a faint star portrait.
+ */
+export const FACE = {
+	/** Source image (transparent line-art portrait in /public). */
+	src: "/rox-logo-light.png",
+	/** Fraction of the total swarm devoted to the face constellation. */
+	share: 0.45,
+	/** World-space height the portrait is scaled to (width follows aspect). */
+	worldHeight: 13,
+	/** Pushed back behind the rings so they clearly float in front. */
+	baseZ: -7,
+	/** Half-thickness of random depth jitter applied to face points. */
+	depth: 0.8,
+	/** Minimum pixel alpha (0–1) to treat a pixel as part of the silhouette. */
+	alphaThreshold: 0.28,
+	/** Cap the sampling canvas width to keep getImageData cheap. */
+	sampleMaxWidth: 360,
+} as const;
