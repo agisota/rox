@@ -235,10 +235,10 @@ function buildField(): FieldData {
 		structured[i * 3 + 2] = r * Math.cos(phi);
 		const base = colorAt((Math.random() * palette.length) | 0);
 		tmp.copy(base).lerp(white, Math.random() * 0.2);
-		colors[i * 3] = tmp.r * 0.65;
-		colors[i * 3 + 1] = tmp.g * 0.65;
-		colors[i * 3 + 2] = tmp.b * 0.65;
-		sizes[i] = 0.055 + Math.random() * 0.08;
+		colors[i * 3] = tmp.r * 0.4;
+		colors[i * 3 + 1] = tmp.g * 0.4;
+		colors[i * 3 + 2] = tmp.b * 0.4;
+		sizes[i] = 0.05 + Math.random() * 0.06;
 	}
 
 	// Face constellation — dim warm star-points. Until the image is sampled they
@@ -254,15 +254,15 @@ function buildField(): FieldData {
 		structured[i * 3 + 2] = FACE.baseZ;
 
 		// Occasional brighter, larger "stars" give the portrait some twinkle.
-		const sparkle = Math.random() < 0.08;
+		const sparkle = Math.random() < 0.12;
 		const brightness = sparkle
-			? 0.85 + Math.random() * 0.4
-			: 0.42 + Math.random() * 0.3;
+			? 1.5 + Math.random() * 0.5
+			: 0.95 + Math.random() * 0.4;
 		tmp.copy(faceTint).lerp(white, Math.random() * 0.4);
 		colors[i * 3] = tmp.r * brightness;
 		colors[i * 3 + 1] = tmp.g * brightness;
 		colors[i * 3 + 2] = tmp.b * brightness;
-		sizes[i] = (sparkle ? 0.11 : 0.05) + Math.random() * 0.05;
+		sizes[i] = (sparkle ? 0.16 : 0.08) + Math.random() * 0.05;
 	}
 
 	// Scattered start: a wide chaotic cloud the particles fly in from.
@@ -378,6 +378,12 @@ function Swarm({ pulse }: ParticleFieldProps) {
 	const lastPointer = useRef({ x: 0, y: 0 });
 	const dispatchUntil = useRef(-10);
 
+	// Intro coalesce: on first frame the swarm gathers from chaos into the
+	// face + rings for a few seconds (so the portrait is always seen at least
+	// once), then relaxes back to chaos and re-gathers on pointer activity.
+	const introStarted = useRef(false);
+	const introUntil = useRef(-10);
+
 	// Pointer attraction state (world-space point on the z=0 plane). We track the
 	// cursor at the window level rather than via the canvas, so the wake works
 	// even over the centered hero copy/controls that sit above the canvas.
@@ -449,17 +455,32 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 		const ndc = pointerNdc.current;
 
+		// Kick off the one-time intro coalesce on the first rendered frame.
+		if (!introStarted.current) {
+			introStarted.current = true;
+			introUntil.current = t + 7;
+		}
+
 		// `activity` (charged by mouse movement in the pointer handler) decays when
-		// the cursor is still; a command holds the swarm fully organised. Together
-		// they drive `orch`, the smoothed organisation level.
+		// the cursor is still; a command (or the intro) holds the swarm fully
+		// organised. Together they drive `orch`, the smoothed organisation level.
 		activity.current = Math.max(0, activity.current - delta * 0.15);
 		const orchTarget = Math.max(
 			activity.current,
 			t < dispatchUntil.current ? 1 : 0,
+			t < introUntil.current ? 1 : 0,
 		);
 		orch.current += (orchTarget - orch.current) * Math.min(delta * 3, 1);
 		const o = orch.current;
 		const ease = o * o * (3 - 2 * o);
+
+		// The face constellation persists as a faint backdrop: after the intro
+		// fly-in (its floor ramps up over the first ~2s) the portrait stays
+		// assembled even when the rings relax back to chaos. The floor is kept
+		// near 1 so the thin contour lines aren't smeared by the far-away chaos
+		// positions; the cursor wake still ripples it for a living feel.
+		const faceFloor = Math.min(0.985, t * 0.5);
+		const faceEase = Math.max(ease, faceFloor);
 
 		// Impulse decay after a command pulse (slow enough to read on screen).
 		const since = t - pulseStart.current;
@@ -512,9 +533,13 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				ry = (structured[iy] ?? 0) * expand;
 			}
 
+			// Face particles use their own persistent organisation level; rings,
+			// hub and halo follow the interaction-driven `ease`.
+			const e = face ? faceEase : ease;
+
 			// Chaos: when not orchestrated the swarm drifts freely (a living,
-			// wandering cloud). The drift fades out as the rings form.
-			const chaos = 1 - ease;
+			// wandering cloud). The drift fades out as the structure forms.
+			const chaos = 1 - e;
 			const cx =
 				(scattered[ix] ?? 0) + Math.sin(t * 0.3 + i * 0.7) * 1.5 * chaos;
 			const cy =
@@ -525,9 +550,9 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			// Blend chaos → structure, with a gentle living swirl once organised.
 			// The face stays crisp (no swirl) so the silhouette is legible.
 			const swirl = face ? 0 : Math.sin(t * 0.6 + i) * 0.05 * ease;
-			let x = cx + (rx - cx) * ease + swirl;
-			let y = cy + (ry - cy) * ease + swirl;
-			const z = cz + (rz - cz) * ease;
+			let x = cx + (rx - cx) * e + swirl;
+			let y = cy + (ry - cy) * e + swirl;
+			const z = cz + (rz - cz) * e;
 
 			// Pointer perturbation: push nearby particles outward (a soft wake).
 			if (pointerActive) {
@@ -572,7 +597,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			) as THREE.BufferAttribute;
 			eAttr.needsUpdate = true;
 			const mat = edges.material as THREE.LineBasicMaterial;
-			mat.opacity = 0.12 * ease + impulse * 0.55;
+			mat.opacity = 0.05 * ease + impulse * 0.45;
 		}
 
 		// Subtle camera drift toward the pointer, parked slightly above the plane

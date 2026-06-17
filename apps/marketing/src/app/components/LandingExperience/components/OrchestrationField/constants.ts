@@ -77,9 +77,9 @@ export const DISPATCH_STEPS: ReadonlyArray<{ role: number; text: string }> = [
 /** WebGL field tuning (desktop). Mobile/low-power falls back to CSS backdrop. */
 export const FIELD = {
 	/** Total particle count on capable devices (a dense agent swarm). */
-	particleCount: 16000,
+	particleCount: 18000,
 	/** Number of glowing delegation edges drawn between hub and ring nodes. */
-	edgeCount: 220,
+	edgeCount: 120,
 } as const;
 
 /**
@@ -92,15 +92,16 @@ export const FACE = {
 	/** Source image (transparent line-art portrait in /public). */
 	src: "/rox-logo-light.png",
 	/** Fraction of the total swarm devoted to the face constellation. */
-	share: 0.45,
+	share: 0.5,
 	/** World-space height the portrait is scaled to (width follows aspect). */
-	worldHeight: 13,
-	/** Pushed back behind the rings so they clearly float in front. */
-	baseZ: -7,
+	worldHeight: 14,
+	/** Sits just behind the rings so they clearly float in front. */
+	baseZ: -3.5,
 	/** Half-thickness of random depth jitter applied to face points. */
 	depth: 0.8,
-	/** Minimum pixel alpha (0–1) to treat a pixel as part of the silhouette. */
-	alphaThreshold: 0.28,
+	/** Minimum pixel alpha (0–1) to treat a pixel as part of the silhouette.
+	 * Kept low so anti-aliased line-art edges count, thickening the contour. */
+	alphaThreshold: 0.12,
 	/** Cap the sampling canvas width to keep getImageData cheap. */
 	sampleMaxWidth: 360,
 } as const;
