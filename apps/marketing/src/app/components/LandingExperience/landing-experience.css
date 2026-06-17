@@ -404,7 +404,7 @@
 	line-height: 1.5;
 	color: var(--rox-fg-1);
 	max-width: 40ch;
-	margin: 0;
+	margin: clamp(14px, 2.5vh, 24px) 0;
 }
 
 /* Run-anywhere tagline under the subhead. */
