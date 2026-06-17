@@ -6,6 +6,7 @@ interface TemplateCardProps {
 	template: ProjectTemplate;
 	cloning: boolean;
 	disabled: boolean;
+	presetOnlyEnabled: boolean;
 	onSelect: (template: ProjectTemplate) => void;
 }
 
@@ -13,9 +14,12 @@ export function TemplateCard({
 	template,
 	cloning,
 	disabled,
+	presetOnlyEnabled,
 	onSelect,
 }: TemplateCardProps) {
-	const available = !!template.repo;
+	const available =
+		!!template.repo ||
+		(!!template.starterPresetIds?.length && presetOnlyEnabled);
 	const Icon = template.icon;
 
 	return (
