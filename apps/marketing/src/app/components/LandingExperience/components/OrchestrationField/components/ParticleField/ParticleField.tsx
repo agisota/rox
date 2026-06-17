@@ -290,7 +290,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				const dy = ny - lastPointer.current.y;
 				activity.current = Math.min(
 					1,
-					activity.current + Math.sqrt(dx * dx + dy * dy) * 14,
+					activity.current + Math.sqrt(dx * dx + dy * dy) * 18,
 				);
 			}
 			pointerNdc.current.x = nx;
@@ -327,7 +327,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		// `activity` (charged by mouse movement in the pointer handler) decays when
 		// the cursor is still; a command holds the swarm fully organised. Together
 		// they drive `orch`, the smoothed organisation level.
-		activity.current = Math.max(0, activity.current - delta * 0.28);
+		activity.current = Math.max(0, activity.current - delta * 0.15);
 		const orchTarget = Math.max(
 			activity.current,
 			t < dispatchUntil.current ? 1 : 0,
