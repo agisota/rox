@@ -9,6 +9,7 @@ import {
 } from "../../constants";
 import { OrchestrationField } from "../OrchestrationField";
 import { FIELD_HINT } from "../OrchestrationField/constants";
+import { HeroDownloadCta } from "./components/HeroDownloadCta";
 import { HeroStackLine } from "./components/HeroStackLine";
 
 /**
@@ -154,14 +155,7 @@ export function ScrambleLanding() {
 						<HeroStackLine />
 					</p>
 
-					<a className="rox-landing__hero-cta" href="/download">
-						<span className="rox-landing__hero-cta__label">
-							Скачать для macOS
-						</span>
-						<span className="rox-landing__hero-cta__arrow" aria-hidden="true">
-							↓
-						</span>
-					</a>
+					<HeroDownloadCta />
 				</div>
 			</section>
 		</main>

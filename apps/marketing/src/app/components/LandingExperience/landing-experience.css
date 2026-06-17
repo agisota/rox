@@ -683,105 +683,107 @@
 	transform: translateX(-50%) translateY(0);
 }
 
-/* Above-the-fold primary CTA — premium pill with glow, depth, and hover lift. */
+/* Above-the-fold primary CTA — slim glass pill, thin SF Pro, refined arrow. */
 .rox-landing__hero-cta {
 	position: relative;
 	z-index: 0;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	gap: 10px;
+	gap: 9px;
 	width: fit-content;
 	margin-top: 16px;
-	padding: 14px 30px;
+	padding: 11px 24px 11px 26px;
 	border-radius: 999px;
-	border: 1px solid rgba(255, 210, 160, 0.42);
-	background: linear-gradient(
-		145deg,
-		#ffc46b 0%,
-		var(--rox-orange-1) 22%,
-		var(--rox-orange-2) 48%,
-		var(--rox-orange-3) 78%,
-		var(--rox-orange-4) 100%
-	);
-	color: #100804;
+	border: 1px solid rgba(255, 178, 108, 0.36);
+	background: rgba(12, 8, 5, 0.48);
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+	color: rgba(255, 238, 220, 0.94);
 	font-family: var(--rox-font-display);
-	font-weight: 600;
-	font-size: 1rem;
-	letter-spacing: 0.02em;
+	font-weight: 300;
+	font-size: 0.86rem;
+	letter-spacing: 0.09em;
 	text-decoration: none;
 	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.35),
-		inset 0 -2px 6px rgba(120, 40, 8, 0.35),
-		0 14px 44px rgba(210, 86, 17, 0.48),
-		0 0 48px rgba(255, 154, 77, 0.28);
+		inset 0 1px 0 rgba(255, 255, 255, 0.07),
+		0 10px 34px rgba(0, 0, 0, 0.38),
+		0 0 24px rgba(210, 86, 17, 0.12);
 	transition:
-		transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-		box-shadow 0.28s,
-		filter 0.28s,
-		border-color 0.28s;
+		transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+		box-shadow 0.32s,
+		border-color 0.32s,
+		background 0.32s,
+		color 0.32s;
 }
 
-/* Soft halo behind the pill — intensifies on hover. */
+/* Soft warm halo behind the pill. */
 .rox-landing__hero-cta::before {
 	content: "";
 	position: absolute;
 	z-index: -1;
-	inset: -4px;
-	border-radius: inherit;
-	background: linear-gradient(135deg, #ff9a4d, #d25611, #ff6b3d);
-	filter: blur(14px);
-	opacity: 0.65;
-	transition:
-		opacity 0.28s,
-		filter 0.28s;
-}
-
-/* Top gloss highlight. */
-.rox-landing__hero-cta::after {
-	content: "";
-	position: absolute;
-	inset: 1px;
+	inset: -3px;
 	border-radius: inherit;
 	background: linear-gradient(
-		180deg,
-		rgba(255, 255, 255, 0.28) 0%,
-		rgba(255, 255, 255, 0.06) 38%,
-		transparent 62%
+		135deg,
+		rgba(255, 154, 77, 0.28),
+		rgba(210, 86, 17, 0.18)
 	);
-	pointer-events: none;
+	filter: blur(12px);
+	opacity: 0.55;
+	transition:
+		opacity 0.32s,
+		filter 0.32s;
+}
+
+.rox-landing__hero-cta::after {
+	content: none;
 }
 
 .rox-landing__hero-cta:hover {
-	transform: translateY(-3px) scale(1.04);
-	filter: brightness(1.08) saturate(1.12);
-	border-color: rgba(255, 228, 190, 0.65);
+	transform: translateY(-2px);
+	border-color: rgba(255, 196, 140, 0.58);
+	background: rgba(18, 11, 7, 0.62);
+	color: #fff8f0;
 	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.45),
-		inset 0 -2px 8px rgba(120, 40, 8, 0.4),
-		0 22px 56px rgba(210, 86, 17, 0.58),
-		0 0 72px rgba(255, 154, 77, 0.45);
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		0 14px 40px rgba(0, 0, 0, 0.42),
+		0 0 36px rgba(210, 86, 17, 0.22);
 }
 
 .rox-landing__hero-cta:hover::before {
-	opacity: 0.95;
-	filter: blur(18px);
+	opacity: 0.82;
+	filter: blur(14px);
 }
 
 .rox-landing__hero-cta__label,
 .rox-landing__hero-cta__arrow {
 	position: relative;
 	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+}
+
+.rox-landing__hero-cta__label {
+	font-weight: 300;
 }
 
 .rox-landing__hero-cta__arrow {
-	font-weight: 700;
-	font-size: 1.05em;
-	transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+	color: rgba(255, 196, 140, 0.88);
+	transition:
+		transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+		color 0.32s;
+}
+
+.rox-landing__hero-cta__arrow-icon {
+	display: block;
+	width: 10px;
+	height: 12px;
 }
 
 .rox-landing__hero-cta:hover .rox-landing__hero-cta__arrow {
-	transform: translateY(3px);
+	color: rgba(255, 214, 168, 1);
+	transform: translateY(2px);
 }
 
 /* Respect reduced-motion: collapse the intro, keep content readable. */
