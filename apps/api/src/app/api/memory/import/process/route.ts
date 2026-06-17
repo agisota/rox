@@ -93,9 +93,42 @@ export async function POST(request: Request): Promise<Response> {
 			existing.map((e) => `${e.category}::${e.body.trim().toLowerCase()}`),
 		);
 
+		const classificationResults = await Promise.allSettled(
+			conversations.map((convo) => classifyConversation(convo.text)),
+		);
+		const failedClassifications = classificationResults.filter(
+			(result): result is PromiseRejectedResult => result.status === "rejected",
+		);
+		if (failedClassifications.length > 0) {
+			console.warn("[memory/import/process] Some conversations failed R1", {
+				jobId,
+				failed: failedClassifications.length,
+				total: conversations.length,
+				errors: failedClassifications.map((result) =>
+					String(result.reason).slice(0, 500),
+				),
+			});
+		}
+		if (
+			conversations.length > 0 &&
+			failedClassifications.length === conversations.length
+		) {
+			throw new Error(
+				`All ${conversations.length} conversations failed classification`,
+			);
+		}
+		const classifiedConversations = classificationResults
+			.filter(
+				(
+					result,
+				): result is PromiseFulfilledResult<
+					Awaited<ReturnType<typeof classifyConversation>>
+				> => result.status === "fulfilled",
+			)
+			.map((result) => result.value);
+
 		const toInsert: (typeof memoryItems.$inferInsert)[] = [];
-		for (const convo of conversations) {
-			const memories = await classifyConversation(convo.text);
+		for (const memories of classifiedConversations) {
 			for (const m of memories) {
 				const key = `${m.category}::${m.body.trim().toLowerCase()}`;
 				if (seen.has(key)) continue;
@@ -122,20 +155,30 @@ export async function POST(request: Request): Promise<Response> {
 				status: "done",
 				stats: {
 					conversations: conversations.length,
+					failedConversations: failedClassifications.length,
 					imported: toInsert.length,
 				},
 			})
 			.where(eq(memoryImportJobs.id, jobId));
 
-		// The export contains private chats — drop it once processed.
-		void del(job.blobUrl).catch(() => {});
-
-		return Response.json({ status: "done", imported: toInsert.length });
+		return Response.json({
+			status: "done",
+			imported: toInsert.length,
+			failedConversations: failedClassifications.length,
+		});
 	} catch (error) {
 		await db
 			.update(memoryImportJobs)
 			.set({ status: "failed", error: String(error).slice(0, 500) })
 			.where(eq(memoryImportJobs.id, jobId));
 		return Response.json({ status: "failed" }, { status: 500 });
+	} finally {
+		// The export contains private chats — drop it after every terminal path.
+		await del(job.blobUrl).catch((deleteError) => {
+			console.error("[memory/import/process] Failed to delete blob", {
+				jobId,
+				deleteError,
+			});
+		});
 	}
 }

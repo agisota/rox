@@ -116,7 +116,9 @@ export const memoryRouter = {
 				const [row] = await tx
 					.update(memoryItems)
 					.set({ status: "approved" })
-					.where(ownItem(organizationId, ctx.session.user.id, input.id))
+					.where(
+						ownSuggestedItem(organizationId, ctx.session.user.id, input.id),
+					)
 					.returning({ id: memoryItems.id });
 				return row;
 			});
@@ -131,7 +133,9 @@ export const memoryRouter = {
 				const [row] = await tx
 					.update(memoryItems)
 					.set({ status: "dismissed" })
-					.where(ownItem(organizationId, ctx.session.user.id, input.id))
+					.where(
+						ownSuggestedItem(organizationId, ctx.session.user.id, input.id),
+					)
 					.returning({ id: memoryItems.id });
 				return row;
 			});
@@ -260,5 +264,12 @@ function ownItem(organizationId: string, userId: string, id: string) {
 		eq(memoryItems.id, id),
 		eq(memoryItems.organizationId, organizationId),
 		eq(memoryItems.createdBy, userId),
+	);
+}
+
+function ownSuggestedItem(organizationId: string, userId: string, id: string) {
+	return and(
+		ownItem(organizationId, userId, id),
+		eq(memoryItems.status, "suggested"),
 	);
 }
