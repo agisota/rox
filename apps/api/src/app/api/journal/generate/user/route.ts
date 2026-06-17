@@ -3,13 +3,18 @@
  *
  * Enqueued by the fan-out endpoint. Verifies the QStash signature, then runs R1
  * generation for one (organization, user, day) and upserts the journal entry +
- * memory suggestions. Returns the generation result for QStash logging.
+ * memory suggestions. When the user has no sessions that day and no entry yet,
+ * falls back to a GitHub-profile seed entry (first-time onboarding) so the
+ * Журнал isn't empty on day one. Returns the generation result for QStash logging.
  */
 
 import { Receiver } from "@upstash/qstash";
 import { z } from "zod";
 import { env } from "@/env";
-import { generateJournalForUserDay } from "@/lib/journal/journal-generation";
+import {
+	generateJournalForUserDay,
+	generateJournalSeedForUser,
+} from "@/lib/journal/journal-generation";
 
 export const dynamic = "force-dynamic";
 
@@ -53,5 +58,11 @@ export async function POST(request: Request): Promise<Response> {
 	}
 
 	const result = await generateJournalForUserDay(parsed.data);
+	// First-time onboarding: no sessions yet → seed a journal entry from the
+	// user's GitHub profile so the Журнал isn't empty on day one.
+	if (result.status === "skipped" && result.reason === "no-sessions") {
+		const seed = await generateJournalSeedForUser(parsed.data);
+		return Response.json(seed);
+	}
 	return Response.json(result);
 }
