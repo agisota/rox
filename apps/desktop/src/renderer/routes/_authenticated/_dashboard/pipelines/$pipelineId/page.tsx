@@ -56,6 +56,7 @@ function PipelineEditorPage() {
 
 	return (
 		<PipelineEditor
+			key={pipeline.id}
 			pipeline={{
 				id: pipeline.id,
 				name: pipeline.name,

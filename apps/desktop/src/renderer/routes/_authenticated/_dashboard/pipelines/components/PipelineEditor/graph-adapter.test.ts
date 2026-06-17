@@ -59,7 +59,11 @@ describe("pipeline graph adapter", () => {
 		});
 		expect(nodes.find((node) => node.id === "custom")).toMatchObject({
 			type: "pipeline_agent_run",
-			data: { kind: "agent_run", label: "Legacy skill" },
+			data: {
+				kind: "agent_run",
+				blockType: "skill_call:legacy",
+				label: "Legacy skill",
+			},
 		});
 		expect(edges).toEqual([
 			{
@@ -120,6 +124,7 @@ describe("pipeline graph adapter", () => {
 			subBlocks: { roleSlug: "critic", temperature: 0.2 },
 			metadata: { stable: true },
 		});
+		expect(next.blocks.custom?.type).toBe("skill_call:legacy");
 		expect(next.edges).toEqual([
 			{
 				id: "e-improve-custom",
@@ -128,6 +133,40 @@ describe("pipeline graph adapter", () => {
 				targetHandle: "input",
 			},
 		]);
+	});
+
+	test("preserves unsupported persisted block types on a position-only save", () => {
+		const state = {
+			...baseState,
+			blocks: {
+				...baseState.blocks,
+				condition: {
+					type: "condition",
+					name: "Branch",
+					position: { x: 840, y: 20 },
+					subBlocks: { expression: "ok" },
+				},
+			},
+		} satisfies RoxWorkflowState;
+
+		const nodes = stateToNodes(state).map((node) =>
+			node.id === "custom"
+				? { ...node, position: { x: 600, y: 80 } }
+				: node.id === "condition"
+					? { ...node, position: { x: 900, y: 80 } }
+					: node,
+		);
+		const next = flowToState(state, nodes, stateToEdges(state));
+
+		expect(next.blocks.custom).toMatchObject({
+			type: "skill_call:legacy",
+			position: { x: 600, y: 80 },
+		});
+		expect(next.blocks.condition).toMatchObject({
+			type: "condition",
+			position: { x: 900, y: 80 },
+			subBlocks: { expression: "ok" },
+		});
 	});
 
 	test("reads role slugs only from non-empty string subBlocks", () => {

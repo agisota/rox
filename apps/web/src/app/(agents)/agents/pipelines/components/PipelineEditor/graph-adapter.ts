@@ -34,6 +34,8 @@ export type PipelineNodeData = {
 	blockId: string;
 	/** Canvas node kind. */
 	kind: PipelineNodeKind;
+	/** Persisted workflow block type. Can be broader than the rendered kind. */
+	blockType: string;
 	/** Human-facing label. */
 	label: string;
 	/** Role skill slug bound to an `agent_run` node (if chosen yet). */
@@ -56,7 +58,7 @@ const KNOWN_KINDS: ReadonlySet<string> = new Set([
 	"response",
 ]);
 
-/** Coerce a persisted block type to a canvas node kind (defaults to agent_run). */
+/** Coerce a persisted block type to a renderable canvas node kind. */
 function toNodeKind(type: string): PipelineNodeKind {
 	return (KNOWN_KINDS.has(type) ? type : "agent_run") as PipelineNodeKind;
 }
@@ -92,6 +94,7 @@ export function stateToNodes(state: RoxWorkflowState): PipelineFlowNode[] {
 			data: {
 				blockId,
 				kind,
+				blockType: block.type,
 				label: blockLabel(block, blockId),
 				roleSlug: readRoleSlug(block),
 				subBlocks: block.subBlocks,
@@ -117,9 +120,9 @@ export function stateToEdges(state: RoxWorkflowState): PipelineFlowEdge[] {
 // xyflow -> state
 // ---------------------------------------------------------------------------
 
-/** Map a canvas node kind back to a persisted block type. */
-function toBlockType(kind: PipelineNodeKind): string {
-	return kind;
+/** Preserve broader persisted block types when the canvas is only rendering them. */
+function toBlockType(data: PipelineNodeData): string {
+	return data.blockType || data.kind;
 }
 
 /**
@@ -142,7 +145,7 @@ export function flowToState(
 			delete subBlocks.roleSlug;
 		}
 		blocks[data.blockId] = {
-			type: toBlockType(data.kind),
+			type: toBlockType(data),
 			name: data.label,
 			enabled: data.enabled,
 			position: { x: node.position.x, y: node.position.y },

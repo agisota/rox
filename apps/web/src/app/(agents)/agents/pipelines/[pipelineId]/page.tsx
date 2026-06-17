@@ -34,6 +34,7 @@ export default async function PipelineEditorPage({
 		<>
 			{hasAgentsUiAccess && <AgentsHeader />}
 			<PipelineEditor
+				key={pipeline.id}
 				pipeline={{
 					id: pipeline.id,
 					name: pipeline.name,

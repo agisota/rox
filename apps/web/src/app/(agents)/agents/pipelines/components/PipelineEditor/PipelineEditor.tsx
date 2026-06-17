@@ -93,22 +93,42 @@ export function PipelineEditor({
 
 	// Debounced persistence of the working graph.
 	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pendingSave = useRef<{
+		pipelineId: string;
+		draftState: RoxWorkflowState;
+	} | null>(null);
+	const updateGraphMutationRef = useRef(updateGraphMutation);
+	useEffect(() => {
+		updateGraphMutationRef.current = updateGraphMutation;
+	}, [updateGraphMutation]);
+
+	const flushPendingSave = useCallback(() => {
+		if (saveTimer.current) {
+			clearTimeout(saveTimer.current);
+			saveTimer.current = null;
+		}
+		const pending = pendingSave.current;
+		if (!pending) return;
+		pendingSave.current = null;
+		updateGraphMutationRef.current.mutate({
+			pipelineId: pending.pipelineId,
+			draftState: pending.draftState,
+		});
+	}, []);
+
 	const persist = useCallback(
 		(next: RoxWorkflowState) => {
 			setSaveState("saving");
+			pendingSave.current = { pipelineId, draftState: next };
 			if (saveTimer.current) clearTimeout(saveTimer.current);
 			saveTimer.current = setTimeout(() => {
-				updateGraphMutation.mutate({ pipelineId, draftState: next });
+				flushPendingSave();
 			}, SAVE_DEBOUNCE_MS);
 		},
-		[pipelineId, updateGraphMutation],
+		[pipelineId, flushPendingSave],
 	);
 
-	useEffect(() => {
-		return () => {
-			if (saveTimer.current) clearTimeout(saveTimer.current);
-		};
-	}, []);
+	useEffect(() => () => flushPendingSave(), [flushPendingSave]);
 
 	// Canvas → state: fold node/edge edits back into the working graph + persist.
 	const handleGraphChange = useCallback(
