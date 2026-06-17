@@ -254,5 +254,10 @@ describe("createObsidianVaultWatcher", () => {
 		expect(first).toEqual({ scanned: 1, imported: 1, batches: 1 });
 		expect(second).toEqual({ scanned: 1, imported: 1, batches: 1 });
 		expect(calls).toHaveLength(1);
+		expect(calls[0]).toEqual({
+			organizationId: "org-1",
+			workspaceId: null,
+			notes: [{ path: "Daily.md", content: "# Daily" }],
+		});
 	});
 });
