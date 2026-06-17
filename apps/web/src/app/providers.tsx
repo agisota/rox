@@ -9,6 +9,10 @@ import { PostHogProvider } from "posthog-js/react";
 import { PostHogUserIdentifier } from "@/components/PostHogUserIdentifier";
 
 import { TRPCReactProvider } from "../trpc/react";
+import {
+	AppearanceProvider,
+	AppearanceWallpaper,
+} from "./providers/AppearanceProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
 	return (
@@ -21,9 +25,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 					storageKey={THEME_STORAGE_KEY}
 					disableTransitionOnChange
 				>
-					<PostHogUserIdentifier />
-					{children}
-					<ReactQueryDevtools initialIsOpen={false} />
+					<AppearanceProvider>
+						<PostHogUserIdentifier />
+						<AppearanceWallpaper />
+						{children}
+						<ReactQueryDevtools initialIsOpen={false} />
+					</AppearanceProvider>
 				</ThemeProvider>
 			</TRPCReactProvider>
 		</PostHogProvider>

@@ -12,3 +12,13 @@
 	touch-action: pan-y;
 	overscroll-behavior: contain;
 }
+
+/*
+ * Glass mode (custom-loading-screens epic). When the AppearanceProvider toggles
+ * `.glass` on the document root, drop the opaque body background so the fixed
+ * WallpaperLayer (z-index -10) shows through translucent glass-panel surfaces.
+ * Mirrors `:root.glass body` in the desktop renderer globals.
+ */
+:root.glass body {
+	background-color: transparent;
+}
