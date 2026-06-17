@@ -120,23 +120,33 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 /** Hero wordmark — four spaces between each letter for a wide tracked lockup. */
 export const HERO_BRAND_WORDMARK = "R    O    X    O    N    E";
 
-export const HERO_HEADLINE_LEAD = "Кодируй и вайбуй";
-
-/** Rotating tail of the hero headline (AnimatedTextCycle). */
-export const HERO_HEADLINE_CYCLE_WORDS: ReadonlyArray<string> = [
-	"в тыщу рук",
-	"с Claude Code",
-	"с Codex",
-	"с Cursor",
-	"с OpenCode",
-	"с Gemini",
-	"с OpenClaw",
-	"с Hermes",
-	"с Zed",
-	"с Windsurf",
-];
-
 export const LANDING_HEADLINE = "Кодируй и вайбуй в тыщу рук";
+
+/** Static lead/tail around the cycling agent name in the hero subhead. */
+export const HERO_SUB_LEAD = "Rox за 1 секунду запускает оркестрацию 1000+";
+export const HERO_SUB_TAIL = "агентов параллельно";
+
+/** Agent names cycled in the hero subhead (AnimatedTextCycle). */
+export const HERO_SUB_AGENT_CYCLE_WORDS: ReadonlyArray<string> = [
+	"Claude Code",
+	"Codex",
+	"Cursor",
+	"Grok",
+	"Devin",
+	"Zed",
+	"Kilo Code",
+	"OpenClaw",
+	"Hermes",
+	"Pi",
+	"OpenHands",
+	"Cline",
+	"Kimi",
+	"Gemini",
+	"Qwen",
+	"Windsurf",
+	"Copilot",
+	"OpenCode",
+];
 
 export const LANDING_INTRO_PARAGRAPH =
 	"Rox за 1 секунду запускает оркестрацию 1000+ агентов параллельно";

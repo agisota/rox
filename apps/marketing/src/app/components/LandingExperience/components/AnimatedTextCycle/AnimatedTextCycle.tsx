@@ -7,12 +7,15 @@ interface AnimatedTextCycleProps {
 	words: ReadonlyArray<string>;
 	interval?: number;
 	className?: string;
+	/** Snappier blur/slide transitions for fast agent cycling. */
+	fast?: boolean;
 }
 
 export function AnimatedTextCycle({
 	words,
 	interval = 5000,
 	className = "",
+	fast = false,
 }: AnimatedTextCycleProps) {
 	const prefersReducedMotion = useReducedMotion();
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,25 +52,25 @@ export function AnimatedTextCycle({
 
 	const containerVariants = {
 		hidden: {
-			y: -14,
+			y: fast ? -8 : -14,
 			opacity: 0,
-			filter: "blur(6px)",
+			filter: fast ? "blur(4px)" : "blur(6px)",
 		},
 		visible: {
 			y: 0,
 			opacity: 1,
 			filter: "blur(0px)",
 			transition: {
-				duration: 0.38,
+				duration: fast ? 0.18 : 0.38,
 				ease: "easeOut" as const,
 			},
 		},
 		exit: {
-			y: 14,
+			y: fast ? 8 : 14,
 			opacity: 0,
-			filter: "blur(6px)",
+			filter: fast ? "blur(4px)" : "blur(6px)",
 			transition: {
-				duration: 0.28,
+				duration: fast ? 0.14 : 0.28,
 				ease: "easeIn" as const,
 			},
 		},
@@ -93,9 +96,9 @@ export function AnimatedTextCycle({
 					width,
 					transition: {
 						type: "spring",
-						stiffness: 150,
-						damping: 18,
-						mass: 1.1,
+						stiffness: fast ? 220 : 150,
+						damping: fast ? 22 : 18,
+						mass: fast ? 0.9 : 1.1,
 					},
 				}}
 			>

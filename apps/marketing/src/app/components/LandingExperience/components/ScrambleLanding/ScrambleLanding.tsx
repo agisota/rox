@@ -4,15 +4,15 @@ import { animate, scrambleText } from "animejs";
 import { useEffect, useRef } from "react";
 import {
 	HERO_BRAND_WORDMARK,
-	HERO_HEADLINE_CYCLE_WORDS,
-	HERO_HEADLINE_LEAD,
+	HERO_SUB_AGENT_CYCLE_WORDS,
+	HERO_SUB_LEAD,
+	HERO_SUB_TAIL,
 	LANDING_FEAT_ISOLATION,
-	LANDING_INTRO_PARAGRAPH,
+	LANDING_HEADLINE,
 } from "../../constants";
 import { AnimatedTextCycle } from "../AnimatedTextCycle";
 import { OrchestrationField } from "../OrchestrationField";
 import { FIELD_HINT } from "../OrchestrationField/constants";
-import { Typewriter } from "../Typewriter";
 import { HeroDownloadCta } from "./components/HeroDownloadCta";
 import { HeroStackLine } from "./components/HeroStackLine";
 
@@ -143,23 +143,19 @@ export function ScrambleLanding() {
 						<span className="rox-scramble">{HERO_BRAND_WORDMARK}</span>
 					</div>
 
-					<h1 className="rox-hero__headline">
-						{HERO_HEADLINE_LEAD}{" "}
-						<AnimatedTextCycle
-							words={HERO_HEADLINE_CYCLE_WORDS}
-							interval={2800}
-							className="rox-hero__headline-cycle"
-						/>
+					<h1 className="rox-scramble rox-hero__headline">
+						{LANDING_HEADLINE}
 					</h1>
 
 					<p className="rox-hero__sub">
-						<Typewriter
-							text={LANDING_INTRO_PARAGRAPH}
-							speed={26}
-							initialDelay={500}
-							loop={false}
-							showCursor={false}
-						/>
+						{HERO_SUB_LEAD}{" "}
+						<AnimatedTextCycle
+							words={HERO_SUB_AGENT_CYCLE_WORDS}
+							interval={1000}
+							fast
+							className="rox-hero__sub-cycle"
+						/>{" "}
+						{HERO_SUB_TAIL}
 					</p>
 
 					<p className="rox-hero__hint">{FIELD_HINT}</p>
