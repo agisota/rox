@@ -5,7 +5,8 @@ import { useEffect, useRef } from "react";
 import {
 	HERO_BRAND_WORDMARK,
 	HERO_SUB_AGENT_CYCLE_WORDS,
-	HERO_SUB_LEAD,
+	HERO_SUB_LINE_ONE,
+	HERO_SUB_LINE_TWO_LEAD,
 	HERO_SUB_TAIL,
 	LANDING_FEAT_ISOLATION,
 	LANDING_HEADLINE,
@@ -147,16 +148,19 @@ export function ScrambleLanding() {
 						{LANDING_HEADLINE}
 					</h1>
 
-					<p className="rox-hero__sub">
-						{HERO_SUB_LEAD}{" "}
-						<AnimatedTextCycle
-							words={HERO_SUB_AGENT_CYCLE_WORDS}
-							interval={1000}
-							fast
-							className="rox-hero__sub-cycle"
-						/>{" "}
-						{HERO_SUB_TAIL}
-					</p>
+					<div className="rox-hero__sub">
+						<span className="rox-hero__sub-line">{HERO_SUB_LINE_ONE}</span>
+						<span className="rox-hero__sub-line">
+							{HERO_SUB_LINE_TWO_LEAD}{" "}
+							<AnimatedTextCycle
+								words={HERO_SUB_AGENT_CYCLE_WORDS}
+								interval={1000}
+								fast
+								className="rox-hero__sub-cycle"
+							/>{" "}
+							{HERO_SUB_TAIL}
+						</span>
+					</div>
 
 					<p className="rox-hero__hint">{FIELD_HINT}</p>
 

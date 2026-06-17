@@ -124,8 +124,9 @@ export const HERO_BRAND_WORDMARK = ["R", "O", "X", "O", "N", "E"].join(
 
 export const LANDING_HEADLINE = "Кодируй и вайбуй в тыщу рук";
 
-/** Static lead/tail around the cycling agent name in the hero subhead. */
-export const HERO_SUB_LEAD = "Rox за 1 секунду запускает оркестрацию 1000+";
+/** Hero subhead — line 1 and the static parts of line 2 around the agent cycle. */
+export const HERO_SUB_LINE_ONE = "Rox за 1 секунду";
+export const HERO_SUB_LINE_TWO_LEAD = "запускает оркестрацию 1000+";
 export const HERO_SUB_TAIL = "агентов параллельно";
 
 /** Agent names cycled in the hero subhead (AnimatedTextCycle). */
