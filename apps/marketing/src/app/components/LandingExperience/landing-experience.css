@@ -382,8 +382,13 @@
 
 .rox-hero .rox-landing__brand {
 	justify-content: center;
+	margin-top: clamp(-22px, -2.8vh, -14px);
 	margin-bottom: 0;
 	color: rgba(255, 236, 220, 0.55);
+}
+
+.rox-hero .rox-landing__brand .rox-scramble {
+	letter-spacing: 0.14em;
 }
 
 .rox-hero .rox-hero__headline {
