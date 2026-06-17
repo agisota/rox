@@ -1,5 +1,25 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
+const publishJSONMock = mock(async () => ({}));
+let inboundInsertValues: unknown[] = [];
+let insertReturningResult: Array<Record<string, unknown>> = [{ id: "event-1" }];
+
+mock.module("@/env", () => ({
+	env: {
+		QSTASH_TOKEN: "test-qstash-token",
+		NEXT_PUBLIC_API_URL: "http://localhost",
+	},
+}));
+
+mock.module("@upstash/qstash", () => ({
+	Client: class {
+		publishJSON = publishJSONMock;
+	},
+	Receiver: class {
+		verify = mock(async () => true);
+	},
+}));
+
 // Configurable result for db.query.integrationConnections.findMany. Tests mutate
 // this to simulate "no match" vs. a stored connection whose config.webhookSecret
 // equals the request header.
@@ -12,6 +32,16 @@ mock.module("@rox/db/client", () => ({
 				findMany: mock(async () => connectionsResult),
 			},
 		},
+		insert: mock(() => ({
+			values: mock((values: unknown) => {
+				inboundInsertValues.push(values);
+				return {
+					onConflictDoNothing: mock(() => ({
+						returning: mock(async () => insertReturningResult),
+					})),
+				};
+			}),
+		})),
 	},
 }));
 
@@ -22,6 +52,12 @@ mock.module("@rox/db/schema", () => ({
 		provider: "provider",
 		disconnectedAt: "disconnectedAt",
 		id: "id",
+	},
+	integrationInboundEvents: {
+		id: "id",
+		connectionId: "connectionId",
+		provider: "provider",
+		externalEventId: "externalEventId",
 	},
 }));
 
@@ -69,6 +105,9 @@ const BOT_UPDATE = {
 describe("telegram webhook route", () => {
 	beforeEach(() => {
 		connectionsResult = [MATCHING_CONNECTION];
+		inboundInsertValues = [];
+		insertReturningResult = [{ id: "event-1" }];
+		publishJSONMock.mockClear();
 	});
 
 	test("returns 401 when the secret header is missing", async () => {
@@ -91,12 +130,43 @@ describe("telegram webhook route", () => {
 		const response = await POST(buildRequest(WEBHOOK_SECRET, BOT_UPDATE));
 		expect(response.status).toBe(200);
 		expect(await response.text()).toBe("ok");
+		expect(publishJSONMock).not.toHaveBeenCalled();
 	});
 
-	test("returns 200 for a valid human message", async () => {
+	test("returns 200 and queues a valid human message", async () => {
 		const response = await POST(buildRequest(WEBHOOK_SECRET, HUMAN_UPDATE));
 		expect(response.status).toBe(200);
 		expect(await response.text()).toBe("ok");
+		expect(inboundInsertValues).toEqual([
+			{
+				connectionId: "conn-1",
+				provider: "telegram",
+				externalEventId: "1",
+			},
+		]);
+		expect(publishJSONMock).toHaveBeenCalledTimes(1);
+		expect(publishJSONMock.mock.calls[0]?.[0]).toEqual({
+			url: "http://localhost/api/integrations/telegram/jobs/process-message",
+			body: {
+				connectionId: "conn-1",
+				update: {
+					updateId: 1,
+					chatId: 555,
+					text: "hello",
+					fromUserId: 999,
+					fromIsBot: false,
+				},
+			},
+			retries: 3,
+		});
+	});
+
+	test("returns 200 without queuing duplicate updates", async () => {
+		insertReturningResult = [];
+		const response = await POST(buildRequest(WEBHOOK_SECRET, HUMAN_UPDATE));
+		expect(response.status).toBe(200);
+		expect(await response.text()).toBe("ok");
+		expect(publishJSONMock).not.toHaveBeenCalled();
 	});
 
 	test("returns 200 (acks) when an authenticated request has a non-message update", async () => {
@@ -107,5 +177,6 @@ describe("telegram webhook route", () => {
 			}),
 		);
 		expect(response.status).toBe(200);
+		expect(publishJSONMock).not.toHaveBeenCalled();
 	});
 });
