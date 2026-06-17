@@ -1,0 +1,1 @@
+export { WallpaperSection } from "./WallpaperSection";
