@@ -26,6 +26,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	unique,
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
@@ -94,7 +95,7 @@ export const entities = pgTable(
 		uniqueIndex("entities_org_kind_slug_uniq")
 			.on(t.organizationId, t.kind, t.slug)
 			.where(sql`${t.slug} IS NOT NULL`),
-		uniqueIndex("entities_id_org_uniq").on(t.id, t.organizationId),
+		unique("entities_id_org_uniq").on(t.id, t.organizationId),
 	],
 );
 

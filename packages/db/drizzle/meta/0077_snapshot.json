@@ -1,5 +1,5 @@
 {
-  "id": "5e9ee9ad-083d-4590-bcbd-7a2fa9d1e445",
+  "id": "c412ebf6-0a24-41f5-b1e9-aae1100dbf4e",
   "prevId": "9e29bb3f-e171-4079-8248-2eaa305ea815",
   "version": "7",
   "dialect": "postgresql",
@@ -4523,27 +4523,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "entities_id_org_uniq": {
-          "name": "entities_id_org_uniq",
-          "columns": [
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -4590,7 +4569,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "entities_id_org_uniq": {
+          "name": "entities_id_org_uniq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organization_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

@@ -59,7 +59,8 @@ CREATE TABLE "entities" (
 	"status" "entity_status" DEFAULT 'active' NOT NULL,
 	"created_by_user_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "entities_id_org_uniq" UNIQUE("id","organization_id")
 );
 --> statement-breakpoint
 CREATE TABLE "idempotency_keys" (
@@ -187,7 +188,6 @@ CREATE INDEX "entities_org_idx" ON "entities" USING btree ("organization_id");--
 CREATE INDEX "entities_kind_idx" ON "entities" USING btree ("kind");--> statement-breakpoint
 CREATE INDEX "entities_project_idx" ON "entities" USING btree ("v2_project_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "entities_org_kind_slug_uniq" ON "entities" USING btree ("organization_id","kind","slug") WHERE "entities"."slug" IS NOT NULL;--> statement-breakpoint
-CREATE UNIQUE INDEX "entities_id_org_uniq" ON "entities" USING btree ("id","organization_id");--> statement-breakpoint
 CREATE INDEX "idempotency_keys_org_idx" ON "idempotency_keys" USING btree ("organization_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idempotency_keys_org_scope_key_uniq" ON "idempotency_keys" USING btree ("organization_id","scope","key");--> statement-breakpoint
 CREATE INDEX "identity_links_contact_idx" ON "identity_links" USING btree ("contact_entity_id");--> statement-breakpoint
