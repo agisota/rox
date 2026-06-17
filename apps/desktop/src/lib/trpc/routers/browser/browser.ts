@@ -1,6 +1,16 @@
 import { observable } from "@trpc/server/observable";
 import { session } from "electron";
 import { browserManager } from "main/lib/browser/browser-manager";
+import { designModeCaptureService } from "main/lib/browser/design-mode/designModeCaptureService";
+import {
+	captureElementInputSchema,
+	createCustomPreset,
+	type DesignModeEvent,
+	getCaptureInputSchema,
+	resolveDevicePreset,
+	setDesignModeInputSchema,
+	setDevicePresetInputSchema,
+} from "shared/browser";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 
@@ -15,8 +25,14 @@ export const createBrowserRouter = () => {
 
 		unregister: publicProcedure
 			.input(z.object({ paneId: z.string() }))
-			.mutation(({ input }) => {
-				browserManager.unregister(input.paneId);
+			.mutation(async ({ input }) => {
+				try {
+					await designModeCaptureService.cleanup(input.paneId);
+				} finally {
+					// Always unregister even if cleanup throws, so the pane never
+					// leaks its webContents listeners.
+					browserManager.unregister(input.paneId);
+				}
 				return { success: true };
 			}),
 
@@ -176,6 +192,49 @@ export const createBrowserRouter = () => {
 					canGoForward: wc.canGoForward(),
 					isLoading: wc.isLoading(),
 				};
+			}),
+
+		setDevicePreset: publicProcedure
+			.input(setDevicePresetInputSchema)
+			.mutation(({ input }) => {
+				const preset =
+					input.presetId === "custom" && input.custom
+						? createCustomPreset(input.custom)
+						: resolveDevicePreset(input.presetId);
+				browserManager.setDevicePreset(input.paneId, preset);
+				return { preset };
+			}),
+
+		setDesignMode: publicProcedure
+			.input(setDesignModeInputSchema)
+			.mutation(async ({ input }) => {
+				await designModeCaptureService.setDesignMode(
+					input.paneId,
+					input.enabled,
+				);
+				return { enabled: designModeCaptureService.isEnabled(input.paneId) };
+			}),
+
+		captureElement: publicProcedure
+			.input(captureElementInputSchema)
+			.mutation(async ({ input }) => {
+				return designModeCaptureService.captureElement(input);
+			}),
+
+		getCapture: publicProcedure
+			.input(getCaptureInputSchema)
+			.query(({ input }) => {
+				return designModeCaptureService.getCapture(input.captureId) ?? null;
+			}),
+
+		onDesignEvent: publicProcedure
+			.input(z.object({ paneId: z.string() }))
+			.subscription(({ input }) => {
+				return observable<DesignModeEvent>((emit) => {
+					return designModeCaptureService.onEvent(input.paneId, (event) => {
+						emit.next(event);
+					});
+				});
 			}),
 
 		clearBrowsingData: publicProcedure

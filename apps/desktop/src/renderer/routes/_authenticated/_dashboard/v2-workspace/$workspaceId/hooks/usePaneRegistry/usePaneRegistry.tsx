@@ -472,7 +472,7 @@ export function usePaneRegistry({
 					<BrowserPane ctx={ctx} />
 				),
 				renderToolbar: (ctx: RendererContext<PaneViewerData>) => (
-					<BrowserPaneToolbar ctx={ctx} />
+					<BrowserPaneToolbar ctx={ctx} workspaceId={workspaceId} />
 				),
 				// Destruction handled by useGlobalBrowserLifecycle for now.
 				contextMenuActions: (_ctx, defaults) =>
