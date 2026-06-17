@@ -362,7 +362,7 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 18px;
+	gap: 0;
 }
 
 /* Soft dark halo so the headline + copy stay crisp over bright particles. */
@@ -411,7 +411,7 @@
 	line-height: 1.45;
 	color: var(--rox-fg-1);
 	max-width: min(100%, 52rem);
-	margin: clamp(26px, 4.8vh, 46px) 0;
+	margin: clamp(22px, 4vh, 38px) 0 0;
 	text-align: center;
 }
 
@@ -419,25 +419,20 @@
 	display: block;
 }
 
-/* Variant C — frosted glass panel for secondary hero copy. */
-.rox-hero__hints-glass {
-	margin-top: 10px;
-	padding: 18px 24px;
-	border-radius: 18px;
-	background: rgba(10, 7, 5, 0.52);
-	border: 1px solid rgba(255, 255, 255, 0.09);
-	box-shadow:
-		0 14px 44px rgba(0, 0, 0, 0.42),
-		inset 0 1px 0 rgba(255, 255, 255, 0.05);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
+/* Feature hints — hairline dividers only (no card / scrim). */
+.rox-hero__hints {
+	width: 100%;
 	max-width: min(100%, 44rem);
+	margin: clamp(22px, 3.6vh, 34px) 0 0;
+	padding: clamp(18px, 2.8vh, 26px) 0;
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 10px;
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.rox-hero .rox-hero__hints-glass .rox-hero__hint {
+.rox-hero .rox-hero__hints .rox-hero__hint {
 	margin: 0;
 	font-size: 0.78rem;
 	letter-spacing: 0.03em;
@@ -445,22 +440,21 @@
 	text-shadow: none;
 }
 
-.rox-hero .rox-hero__hints-glass .rox-hero__hint:first-of-type {
+.rox-hero .rox-hero__hints .rox-hero__hint:first-of-type {
 	color: rgba(255, 255, 255, 0.68);
 }
 
-.rox-hero .rox-hero__hints-glass .rox-hero__hint .rox-term {
+.rox-hero .rox-hero__hints .rox-hero__hint .rox-term {
 	color: rgba(255, 255, 255, 0.9);
 	text-decoration-color: rgba(255, 154, 77, 0.55);
 }
 
-.rox-hero .rox-hero__hints-glass .rox-hero__hint .rox-term:hover,
-.rox-hero .rox-hero__hints-glass .rox-hero__hint .rox-term:focus {
+.rox-hero .rox-hero__hints .rox-hero__hint .rox-term:hover,
+.rox-hero .rox-hero__hints .rox-hero__hint .rox-term:focus {
 	color: #ffffff;
 	text-decoration-color: var(--rox-orange-1);
 }
 
-/* Legacy selector — hints only live inside the glass panel now. */
 .rox-hero .rox-hero__hint {
 	margin: 4px 0 0;
 	font-size: 0.8rem;
@@ -746,7 +740,7 @@
 	justify-content: center;
 	gap: 9px;
 	width: fit-content;
-	margin-top: 16px;
+	margin-top: clamp(22px, 3.6vh, 34px);
 	padding: 11px 24px 11px 26px;
 	border-radius: 999px;
 	border: 1px solid rgba(255, 178, 108, 0.36);

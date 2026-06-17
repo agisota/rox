@@ -165,7 +165,7 @@ export function ScrambleLanding() {
 						</span>
 					</div>
 
-					<div className="rox-hero__hints-glass">
+					<div className="rox-hero__hints">
 						<p className="rox-hero__hint">{FIELD_HINT}</p>
 
 						<p className="rox-hero__hint">
