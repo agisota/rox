@@ -294,7 +294,9 @@
 
 	position: relative;
 	display: flex;
-	justify-content: center;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
 	min-height: 100svh;
 	overflow: hidden;
 	background:
@@ -305,6 +307,287 @@
 			transparent 62%
 		),
 		var(--rox-bg);
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * ②a ORCHESTRATION HERO — Mercury Command–style particle field + command bar
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/* Full-bleed WebGL field, sized to the first viewport and parked behind the
+ * hero copy (z-index 0). The canvas keeps pointer-events so R3F can read the
+ * cursor for the particle wake; the hero copy/controls sit above it. */
+.rox-field {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100svh;
+	z-index: 0;
+	pointer-events: none;
+	background: radial-gradient(
+		120% 80% at 50% 32%,
+		rgba(210, 86, 17, 0.12),
+		transparent 60%
+	);
+}
+
+.rox-field canvas {
+	display: block;
+	pointer-events: auto;
+}
+
+.rox-field__vignette {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: radial-gradient(
+		120% 90% at 50% 40%,
+		transparent 32%,
+		rgba(10, 7, 5, 0.62) 100%
+	);
+}
+
+/* The first viewport: centered brand, headline, subhead, command bar + CTA. */
+.rox-hero {
+	position: relative;
+	z-index: 1;
+	min-height: 100svh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	padding: 96px 24px 72px;
+}
+
+.rox-hero__inner {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	max-width: 720px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 18px;
+}
+
+/* Soft dark halo so the headline + console stay crisp over bright particles. */
+.rox-hero__inner::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	inset: -16% -10%;
+	pointer-events: none;
+	background: radial-gradient(
+		46% 42% at 50% 46%,
+		rgba(10, 7, 5, 0.66),
+		rgba(10, 7, 5, 0.28) 58%,
+		transparent 82%
+	);
+}
+
+.rox-hero .rox-landing__brand {
+	justify-content: center;
+	margin-bottom: 0;
+}
+
+.rox-hero .rox-hero__headline {
+	font-size: clamp(2.6rem, 8vw, 4.6rem);
+	line-height: 1.04;
+	margin: 4px 0 2px;
+	max-width: 15ch;
+	text-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+}
+
+.rox-hero .rox-hero__sub {
+	font-size: clamp(1.02rem, 2.4vw, 1.28rem);
+	line-height: 1.5;
+	color: var(--rox-fg-1);
+	max-width: 40ch;
+	margin: 0;
+}
+
+.rox-hero__scroll {
+	position: absolute;
+	bottom: 22px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 0.72rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--rox-fg-3);
+	animation: rox-scroll-bob 2.1s ease-in-out infinite;
+}
+
+@keyframes rox-scroll-bob {
+	0%,
+	100% {
+		transform: translateX(-50%) translateY(0);
+		opacity: 0.5;
+	}
+	50% {
+		transform: translateX(-50%) translateY(6px);
+		opacity: 0.95;
+	}
+}
+
+/* Command console: composer input + suggestion chips + mock dispatch log. */
+.rox-cmd {
+	width: 100%;
+	max-width: 560px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	margin-top: 6px;
+}
+
+.rox-cmd__bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 6px 6px 6px 16px;
+	border-radius: 14px;
+	background: rgba(20, 13, 7, 0.62);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	box-shadow:
+		0 12px 44px rgba(0, 0, 0, 0.45),
+		inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+}
+
+.rox-cmd__prompt {
+	color: var(--rox-orange-1);
+	font-size: 0.95rem;
+	flex-shrink: 0;
+}
+
+.rox-cmd__input {
+	flex: 1;
+	min-width: 0;
+	background: transparent;
+	border: none;
+	outline: none;
+	color: var(--rox-fg-1);
+	font-family: var(--rox-font-display);
+	font-size: 0.95rem;
+	font-weight: 300;
+}
+
+.rox-cmd__input::placeholder {
+	color: var(--rox-fg-3);
+}
+
+.rox-cmd__send {
+	flex-shrink: 0;
+	border: none;
+	cursor: pointer;
+	padding: 9px 16px;
+	border-radius: 10px;
+	background: linear-gradient(135deg, var(--rox-orange-2), var(--rox-orange-3));
+	color: #1a0e06;
+	font-family: var(--rox-font-display);
+	font-weight: 600;
+	font-size: 0.85rem;
+	transition:
+		transform 0.2s,
+		filter 0.2s,
+		opacity 0.2s;
+}
+
+.rox-cmd__send:hover:not(:disabled) {
+	transform: translateY(-1px);
+	filter: brightness(1.07);
+}
+
+.rox-cmd__send:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.rox-cmd__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: center;
+}
+
+.rox-cmd__chip {
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.03);
+	color: var(--rox-fg-2);
+	border-radius: 999px;
+	padding: 6px 13px;
+	font-family: var(--rox-font-display);
+	font-size: 0.8rem;
+	cursor: pointer;
+	transition:
+		color 0.2s,
+		border-color 0.2s,
+		background 0.2s;
+}
+
+.rox-cmd__chip:hover {
+	color: var(--rox-fg-1);
+	border-color: var(--rox-orange-3);
+	background: rgba(210, 86, 17, 0.14);
+}
+
+.rox-cmd__log {
+	list-style: none;
+	width: 100%;
+	margin: 4px 0 0;
+	padding: 12px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 9px;
+	text-align: left;
+	border-radius: 12px;
+	background: rgba(10, 7, 5, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+
+.rox-cmd__log-line {
+	display: flex;
+	gap: 10px;
+	align-items: baseline;
+	font-size: 0.82rem;
+	line-height: 1.4;
+	animation: rox-cmd-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.rox-cmd__log-role {
+	flex-shrink: 0;
+	min-width: 118px;
+	font-weight: 600;
+}
+
+.rox-cmd__log-text {
+	color: var(--rox-fg-2);
+}
+
+@keyframes rox-cmd-in {
+	from {
+		opacity: 0;
+		transform: translateY(7px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (max-width: 720px) {
+	.rox-hero {
+		padding: 80px 20px 64px;
+	}
+	.rox-cmd__log-role {
+		min-width: 100px;
+	}
 }
 
 /* SVG hairline dividers between sections; drawn in on scroll. */
@@ -740,5 +1023,9 @@
 @media (prefers-reduced-motion: reduce) {
 	.rox-intro {
 		display: none;
+	}
+	.rox-hero__scroll,
+	.rox-cmd__log-line {
+		animation: none;
 	}
 }

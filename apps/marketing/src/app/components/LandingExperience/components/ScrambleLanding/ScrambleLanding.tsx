@@ -1,7 +1,7 @@
 "use client";
 
 import { animate, scrambleText, utils } from "animejs";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	LANDING_ACPX_TERM,
 	LANDING_AGENT_LEAD,
@@ -20,7 +20,8 @@ import {
 	LANDING_HOW_PARAGRAPH,
 	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
-import { LandingBackdrop } from "./components/LandingBackdrop";
+import { OrchestrationField } from "../OrchestrationField";
+import { CommandConsole } from "./components/CommandConsole";
 import { RoxDivider } from "./components/RoxDivider";
 import { Term } from "./components/Term";
 
@@ -50,6 +51,11 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 	const animationsRef = useRef<
 		Array<{ cancel?: () => void; revert?: () => void }>
 	>([]);
+
+	// Each dispatched command bumps this counter, which the orchestration field
+	// watches to fire a "pulse" (rings expand, spin and flash, then re-coalesce).
+	const [pulse, setPulse] = useState(0);
+	const handleDispatch = useCallback(() => setPulse((value) => value + 1), []);
 
 	useEffect(() => {
 		const container = containerRef.current;
@@ -175,24 +181,37 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 	return (
 		<main ref={containerRef} className="rox-anime rox-landing">
-			<LandingBackdrop />
-			<div className="rox-landing__main">
-				<div className="rox-landing__brand">
-					<span aria-hidden="true">▸</span>
-					<span className="rox-scramble">Rox One</span>
+			<OrchestrationField pulse={pulse} />
+
+			<section className="rox-hero">
+				<div className="rox-hero__inner">
+					<div className="rox-landing__brand">
+						<span aria-hidden="true">▸</span>
+						<span className="rox-scramble">Rox One</span>
+					</div>
+
+					<h1 className="rox-scramble rox-hero__headline">
+						{LANDING_HEADLINE}
+					</h1>
+
+					<p className="rox-scramble rox-hero__sub">
+						{LANDING_INTRO_PARAGRAPH}
+					</p>
+
+					<CommandConsole onDispatch={handleDispatch} />
+
+					<a className="rox-landing__hero-cta" href="/download">
+						Скачать для macOS
+						<span aria-hidden="true">↓</span>
+					</a>
 				</div>
 
-				<h1 className="rox-scramble">{LANDING_HEADLINE}</h1>
+				<span className="rox-hero__scroll" aria-hidden="true">
+					Листай ниже
+				</span>
+			</section>
 
-				<p className="rox-scramble">{LANDING_INTRO_PARAGRAPH}</p>
-
-				<a className="rox-landing__hero-cta" href="/download">
-					Скачать для macOS
-					<span aria-hidden="true">↓</span>
-				</a>
-
-				<RoxDivider />
-
+			<div className="rox-landing__main">
 				<h2 className="rox-scramble">{LANDING_FEATURES_HEADING}</h2>
 
 				<ul>
