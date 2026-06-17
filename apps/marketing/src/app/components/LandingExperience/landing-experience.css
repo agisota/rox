@@ -131,6 +131,23 @@
 	color: var(--rox-c-0);
 }
 
+.rox-intro__slide--two.rox-intro__features {
+	justify-content: center;
+	gap: 0.1rem;
+	padding-inline: 0.5rem;
+}
+
+.rox-intro__row--features {
+	flex-wrap: wrap;
+	max-width: 100%;
+}
+
+.rox-intro__feature {
+	font-size: clamp(0.56rem, 1.75vw, 0.92rem);
+	margin: 0.28ch 0.42ch;
+	letter-spacing: 0.02em;
+}
+
 .rox-intro__skip {
 	position: fixed;
 	bottom: 1.5rem;

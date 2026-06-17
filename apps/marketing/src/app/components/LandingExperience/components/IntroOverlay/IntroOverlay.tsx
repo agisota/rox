@@ -43,8 +43,8 @@ const SLIDE_ONE_ROWS = SLIDE_ONE_GRID.map((count, rowIndex) => ({
 const GRID_COLS = Math.max(...SLIDE_ONE_GRID);
 const GRID_ROWS = SLIDE_ONE_GRID.length;
 
-/** Row distribution for the feature scramble grid on slide 2 (sums to 11). */
-const FEATURE_ROW_SIZES = [2, 3, 3, 3] as const;
+/** Row distribution for the feature scramble grid on slide 2 (sums to 55). */
+const FEATURE_ROW_SIZES = [5, 6, 6, 6, 5, 6, 5, 6, 5, 5] as const;
 
 /** Scramble cursor glyphs reused from the original anime.js demo. */
 const CURSOR_HEAVY = "░▒▓█";
@@ -57,18 +57,36 @@ const SAFETY_TIMEOUT_MS = 18_000;
 const LOGO_FLOAT_DELAY_MS = 2_200;
 
 /** Split the flat feature list into the grid rows rendered on slide 2. */
-function chunkFeatures(): ReadonlyArray<
-	ReadonlyArray<{ text: string; color: number }>
-> {
-	const rows: Array<Array<{ text: string; color: number }>> = [];
+function chunkFeatures(): ReadonlyArray<{
+	id: string;
+	tags: ReadonlyArray<{ id: string; text: string; color: number }>;
+}> {
+	const rows: Array<{
+		id: string;
+		tags: Array<{ id: string; text: string; color: number }>;
+	}> = [];
 	let cursor = 0;
-	for (const size of FEATURE_ROW_SIZES) {
-		rows.push(INTRO_FEATURE_TAGS.slice(cursor, cursor + size).slice());
+	for (const [rowIndex, size] of FEATURE_ROW_SIZES.entries()) {
+		rows.push({
+			id: `intro-feature-row-${rowIndex}`,
+			tags: INTRO_FEATURE_TAGS.slice(cursor, cursor + size).map(
+				(tag, tagIndex) => ({
+					...tag,
+					id: `intro-feature-${rowIndex}-${tagIndex}`,
+				}),
+			),
+		});
 		cursor += size;
 	}
 	const rest = INTRO_FEATURE_TAGS.slice(cursor);
 	if (rest.length > 0) {
-		rows.push(rest.slice());
+		rows.push({
+			id: "intro-feature-row-rest",
+			tags: rest.map((tag, tagIndex) => ({
+				...tag,
+				id: `intro-feature-rest-${tagIndex}`,
+			})),
+		});
 	}
 	return rows;
 }
@@ -276,7 +294,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 						perturbation: 0.5,
 					}),
 				},
-				stagger([0, 1400], {
+				stagger([0, 2200], {
 					grid: [Math.max(...FEATURE_ROW_SIZES), FEATURE_ROW_SIZES.length],
 					from: "center",
 					ease: "out(3)",
@@ -297,12 +315,12 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 						perturbation: 0.4,
 					}),
 				},
-				stagger([0, 900], { from: "center", start: "<+=1600" }),
+				stagger([0, 1400], { from: "center", start: "<+=1800" }),
 			);
 
 		// ── Slide 3: closing tagline ───────────────────────────────────────
 		timeline
-			.add(root, { backgroundColor: "#000" }, "<+=1700")
+			.add(root, { backgroundColor: "#000" }, "<+=2000")
 			.set(slide2, { opacity: 0 }, "<<")
 			.set(slide3, { opacity: 1 }, "<<")
 			.add(
@@ -401,12 +419,12 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				<div className="rox-intro__slide rox-intro__slide--two rox-intro__features">
 					{featureRows.map((row) => (
 						<div
-							key={`feature-row-${row[0]?.text ?? "empty"}`}
-							className="rox-intro__row"
+							key={row.id}
+							className="rox-intro__row rox-intro__row--features"
 						>
-							{row.map((tag) => (
+							{row.tags.map((tag) => (
 								<p
-									key={tag.text}
+									key={tag.id}
 									className="rox-intro__feature"
 									style={{ color: `var(--rox-c-${tag.color})` }}
 								>
