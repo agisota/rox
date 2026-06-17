@@ -129,6 +129,54 @@ describe("importObsidianVault", () => {
 		expect(calls[1]?.notes).toEqual([{ path: "c.md", content: "C" }]);
 	});
 
+	it("rejects batches larger than the cloud import mutation limit", async () => {
+		const vaultPath = await makeVault();
+		await writeVaultFile(vaultPath, "a.md", "A");
+		const { api, calls } = createMockApi();
+
+		await expect(
+			importObsidianVault({
+				api,
+				organizationId: "org-1",
+				vaultPath,
+				batchSize: 1001,
+			}),
+		).rejects.toThrow(/batchSize must be <= 1000/);
+		expect(calls).toHaveLength(0);
+	});
+
+	it("retries transient import mutation failures", async () => {
+		const vaultPath = await makeVault();
+		await writeVaultFile(vaultPath, "a.md", "A");
+		let attempts = 0;
+		const api = {
+			integration: {
+				obsidian: {
+					importNotes: {
+						mutate: async (input: ObsidianImportInput) => {
+							attempts += 1;
+							if (attempts === 1) {
+								throw Object.assign(new Error("429 rate limit"), {
+									status: 429,
+								});
+							}
+							return { imported: input.notes.length };
+						},
+					},
+				},
+			},
+		} satisfies ObsidianImportApi;
+
+		const result = await importObsidianVault({
+			api,
+			organizationId: "org-1",
+			vaultPath,
+		});
+
+		expect(result).toEqual({ scanned: 1, imported: 1, batches: 1 });
+		expect(attempts).toBe(2);
+	});
+
 	it("stops before sending another batch when the import is aborted", async () => {
 		const vaultPath = await makeVault();
 		await writeVaultFile(vaultPath, "a.md", "A");
@@ -183,5 +231,28 @@ describe("createObsidianVaultWatcher", () => {
 		expect(calls).toHaveLength(1);
 		expect(calls[0]?.workspaceId).toBeNull();
 		expect(calls[0]?.notes).toEqual([{ path: "Daily.md", content: "# Daily" }]);
+	});
+
+	it("deduplicates concurrent start calls", async () => {
+		const vaultPath = await makeVault();
+		await writeVaultFile(vaultPath, "Daily.md", "# Daily");
+		const { api, calls } = createMockApi();
+
+		const watcher = createObsidianVaultWatcher({
+			api,
+			organizationId: "org-1",
+			vaultPath,
+			debounceMs: 1,
+		});
+
+		const [first, second] = await Promise.all([
+			watcher.start(),
+			watcher.start(),
+		]);
+		watcher.stop();
+
+		expect(first).toEqual({ scanned: 1, imported: 1, batches: 1 });
+		expect(second).toEqual({ scanned: 1, imported: 1, batches: 1 });
+		expect(calls).toHaveLength(1);
 	});
 });

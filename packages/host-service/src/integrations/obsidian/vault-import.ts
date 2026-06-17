@@ -5,7 +5,10 @@ import { basename, join, relative, resolve, sep } from "node:path";
 const DEFAULT_BATCH_SIZE = 100;
 const DEFAULT_MAX_FILES = 1000;
 const DEFAULT_DEBOUNCE_MS = 750;
+const MAX_IMPORT_NOTES_BATCH_SIZE = 1000;
 const MAX_NOTE_BYTES = 1_000_000;
+const MAX_IMPORT_NOTES_ATTEMPTS = 3;
+const IMPORT_RETRY_BASE_MS = 200;
 const MARKDOWN_EXTENSIONS = new Set([".md", ".mdx", ".markdown"]);
 const IGNORED_DIRECTORIES = new Set([
 	".git",
@@ -87,10 +90,86 @@ function assertPositiveInteger(name: string, value: number): void {
 	}
 }
 
+function assertMaxInteger(name: string, value: number, max: number): void {
+	if (value > max) {
+		throw new Error(`${name} must be <= ${max}`);
+	}
+}
+
 function throwIfAborted(signal?: AbortSignal): void {
 	if (signal?.aborted) {
 		throw new DOMException("Obsidian vault import aborted", "AbortError");
 	}
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+	throwIfAborted(signal);
+	return new Promise((resolve, reject) => {
+		const timer = setTimeout(() => {
+			signal?.removeEventListener("abort", handleAbort);
+			resolve();
+		}, ms);
+
+		const handleAbort = () => {
+			clearTimeout(timer);
+			reject(new DOMException("Obsidian vault import aborted", "AbortError"));
+		};
+
+		signal?.addEventListener("abort", handleAbort, { once: true });
+	});
+}
+
+function getErrorStatus(error: unknown): number | null {
+	const status = (error as { status?: unknown }).status;
+	if (typeof status === "number") return status;
+
+	const responseStatus = (error as { response?: { status?: unknown } }).response
+		?.status;
+	if (typeof responseStatus === "number") return responseStatus;
+
+	return null;
+}
+
+function isRetryableImportError(error: unknown): boolean {
+	const status = getErrorStatus(error);
+	if (
+		status !== null &&
+		(status === 408 ||
+			status === 409 ||
+			status === 429 ||
+			(status >= 500 && status <= 599))
+	) {
+		return true;
+	}
+
+	const message = error instanceof Error ? error.message : String(error);
+	return /(?:\b(?:408|409|429|5\d\d)\b|timeout|network|temporar|rate limit|overload|econnreset|econnrefused)/i.test(
+		message,
+	);
+}
+
+async function mutateImportNotesWithRetry(
+	api: ObsidianImportApi,
+	input: ObsidianImportInput,
+	signal?: AbortSignal,
+): Promise<{ imported: number }> {
+	let lastError: unknown;
+	for (let attempt = 1; attempt <= MAX_IMPORT_NOTES_ATTEMPTS; attempt += 1) {
+		throwIfAborted(signal);
+		try {
+			return await api.integration.obsidian.importNotes.mutate(input);
+		} catch (error) {
+			lastError = error;
+			if (
+				attempt >= MAX_IMPORT_NOTES_ATTEMPTS ||
+				!isRetryableImportError(error)
+			) {
+				throw error;
+			}
+			await delay(IMPORT_RETRY_BASE_MS * 2 ** (attempt - 1), signal);
+		}
+	}
+	throw lastError;
 }
 
 function sortByPath(notes: ObsidianVaultNote[]): ObsidianVaultNote[] {
@@ -206,6 +285,7 @@ export async function importObsidianVault(
 ): Promise<ImportObsidianVaultResult> {
 	const batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
 	assertPositiveInteger("batchSize", batchSize);
+	assertMaxInteger("batchSize", batchSize, MAX_IMPORT_NOTES_BATCH_SIZE);
 
 	const notes = await collectObsidianVaultNotes(options);
 	const batches = chunkNotes(notes, batchSize);
@@ -213,11 +293,15 @@ export async function importObsidianVault(
 
 	for (const batch of batches) {
 		throwIfAborted(options.signal);
-		const result = await options.api.integration.obsidian.importNotes.mutate({
-			organizationId: options.organizationId,
-			workspaceId: options.workspaceId ?? null,
-			notes: batch,
-		});
+		const result = await mutateImportNotesWithRetry(
+			options.api,
+			{
+				organizationId: options.organizationId,
+				workspaceId: options.workspaceId ?? null,
+				notes: batch,
+			},
+			options.signal,
+		);
 		imported += result.imported;
 	}
 
@@ -237,6 +321,7 @@ export function createObsidianVaultWatcher(
 
 	let watcher: FSWatcher | null = null;
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let startPromise: Promise<ImportObsidianVaultResult> | null = null;
 	let runningSync: Promise<ImportObsidianVaultResult> | null = null;
 	let abortController: AbortController | null = null;
 
@@ -273,23 +358,35 @@ export function createObsidianVaultWatcher(
 
 	return {
 		async start() {
-			const result = await syncNow();
-			if (watcher) return result;
+			if (startPromise) return startPromise;
 
-			try {
-				watcher = watch(vaultPath, { recursive: true }, (_event, filename) => {
-					scheduleSync(filename);
-				});
-				watcher.on("error", (error) => {
+			startPromise = (async () => {
+				const result = await syncNow();
+				if (watcher) return result;
+
+				try {
+					watcher = watch(
+						vaultPath,
+						{ recursive: true },
+						(_event, filename) => {
+							scheduleSync(filename);
+						},
+					);
+					watcher.on("error", (error) => {
+						options.onError?.(error);
+					});
+				} catch (error) {
+					// Recursive fs.watch is not available on every platform. Initial sync
+					// still completed, and callers can surface the watch limitation.
 					options.onError?.(error);
-				});
-			} catch (error) {
-				// Recursive fs.watch is not available on every platform. Initial sync
-				// still completed, and callers can surface the watch limitation.
-				options.onError?.(error);
-			}
+				}
 
-			return result;
+				return result;
+			})().finally(() => {
+				startPromise = null;
+			});
+
+			return startPromise;
 		},
 		stop() {
 			clearDebounce();
