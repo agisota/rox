@@ -189,6 +189,7 @@ function V2WorkspaceContent() {
 	const {
 		openDiffPane,
 		addTerminalTab,
+		addCanvasTab,
 		addChatTab,
 		addBrowserTab,
 		openCommentPane,
@@ -332,6 +333,7 @@ function V2WorkspaceContent() {
 								renderAddTabMenu={() => (
 									<AddTabMenu
 										onAddTerminal={addTerminalTab}
+										onAddCanvas={addCanvasTab}
 										onAddChat={addChatTab}
 										onAddBrowser={addBrowserTab}
 										showPresetsBar={showPresetsBar}

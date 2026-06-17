@@ -25,7 +25,7 @@ import {
 	rmSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { satisfies } from "semver";
+import { maxSatisfying, satisfies } from "semver";
 import { requiredMaterializedNodeModules } from "../runtime-dependencies";
 
 // Target architecture for cross-compilation. When set, platform-specific
@@ -33,6 +33,7 @@ import { requiredMaterializedNodeModules } from "../runtime-dependencies";
 // Set via TARGET_ARCH env var (e.g., TARGET_ARCH=x64).
 const TARGET_ARCH = process.env.TARGET_ARCH || process.arch;
 const TARGET_PLATFORM = process.env.TARGET_PLATFORM || process.platform;
+const NATIVE_DEPENDENCY_TREE_DEPTH = 8;
 
 function getWorkspaceRootNodeModulesDir(nodeModulesDir: string): string {
 	return join(nodeModulesDir, "..", "..", "..", "node_modules");
@@ -61,7 +62,33 @@ function findBunStoreFolderName(
 	const exactPrefix = `${modulePrefix}${version}`;
 	const exactMatch = entries.find((entry) => entry.startsWith(exactPrefix));
 	if (exactMatch) return exactMatch;
+	if (version) return null;
 	return entries.find((entry) => entry.startsWith(modulePrefix)) ?? null;
+}
+
+function findBunStoreFolderNameSatisfying(
+	bunStoreDir: string,
+	moduleName: string,
+	versionRange: string,
+): string | null {
+	if (!existsSync(bunStoreDir)) return null;
+	const entries = readdirSync(bunStoreDir);
+	const modulePrefix = `${moduleName.replace("/", "+")}@`;
+	const candidates = entries
+		.filter((entry) => entry.startsWith(modulePrefix))
+		.map((entry) => {
+			const version = entry.slice(modulePrefix.length).split("+")[0];
+			return { entry, version };
+		});
+	const matchingVersion = maxSatisfying(
+		candidates.map((candidate) => candidate.version),
+		versionRange,
+	);
+	if (!matchingVersion) return null;
+	return (
+		candidates.find((candidate) => candidate.version === matchingVersion)
+			?.entry ?? null
+	);
 }
 
 function copyModuleIfSymlink(
@@ -80,6 +107,38 @@ function copyModuleIfSymlink(
 			cpSync(realpathSync(bunFlatModulePath), modulePath, { recursive: true });
 			console.log(`    Copied to: ${modulePath}`);
 			return true;
+		}
+		const bunStoreFolderName = findBunStoreFolderName(
+			getBunStoreDir(nodeModulesDir),
+			moduleName,
+			"",
+		);
+		if (bunStoreFolderName) {
+			const modulePrefix = `${moduleName.replace("/", "+")}@`;
+			const storeVersion = bunStoreFolderName.startsWith(modulePrefix)
+				? bunStoreFolderName.slice(modulePrefix.length).split("+")[0]
+				: null;
+			const bunStoreModulePath = join(
+				getBunStoreDir(nodeModulesDir),
+				bunStoreFolderName,
+				"node_modules",
+				moduleName,
+			);
+			if (existsSync(bunStoreModulePath)) {
+				console.log(`  ${moduleName}: materializing from Bun store`);
+				mkdirSync(dirname(modulePath), { recursive: true });
+				cpSync(bunStoreModulePath, modulePath, { recursive: true });
+				console.log(`    Copied to: ${modulePath}`);
+				return true;
+			}
+			if (required && storeVersion) {
+				console.log(
+					`  ${moduleName}: Bun store payload missing; fetching ${storeVersion} from npm`,
+				);
+				if (fetchNpmPackage(moduleName, storeVersion, modulePath)) {
+					return true;
+				}
+			}
 		}
 		if (required) {
 			console.error(`  [ERROR] ${moduleName} not found at ${modulePath}`);
@@ -113,6 +172,281 @@ function copyModuleIfSymlink(
 	return true;
 }
 
+function copyNestedDependencyForPackage(
+	nodeModulesDir: string,
+	parentModuleName: string,
+	dependencyName: string,
+	required: boolean,
+): void {
+	const parentPath = join(nodeModulesDir, parentModuleName);
+	if (!existsSync(parentPath)) {
+		if (required) {
+			console.error(`  [ERROR] ${parentModuleName} not found at ${parentPath}`);
+			process.exit(1);
+		}
+		return;
+	}
+
+	if (!copyModuleIfSymlink(nodeModulesDir, dependencyName, required)) {
+		return;
+	}
+
+	const sourcePath = join(nodeModulesDir, dependencyName);
+	const nestedDependencyPath = join(parentPath, "node_modules", dependencyName);
+
+	if (existsSync(nestedDependencyPath)) {
+		const nestedStats = lstatSync(nestedDependencyPath);
+		if (!nestedStats.isSymbolicLink()) {
+			console.log(
+				`  ${parentModuleName} -> ${dependencyName}: refreshing real directory`,
+			);
+		}
+	}
+
+	console.log(
+		`  ${parentModuleName} -> ${dependencyName}: materializing nested dependency`,
+	);
+	rmSync(nestedDependencyPath, { recursive: true, force: true });
+	mkdirSync(dirname(nestedDependencyPath), { recursive: true });
+	cpSync(realpathSync(sourcePath), nestedDependencyPath, { recursive: true });
+}
+
+function versionSatisfiesRange(
+	version: string,
+	dependencyRange: string,
+): boolean {
+	try {
+		return satisfies(version, dependencyRange);
+	} catch {
+		return false;
+	}
+}
+
+function resolveDependencySourcePath(
+	nodeModulesDir: string,
+	dependencyName: string,
+	required: boolean,
+	dependencyRange = "",
+): string | null {
+	const topLevelDependencyPath = join(nodeModulesDir, dependencyName);
+	if (!dependencyRange) {
+		if (!copyModuleIfSymlink(nodeModulesDir, dependencyName, required)) {
+			return null;
+		}
+		return topLevelDependencyPath;
+	}
+
+	const topLevelVersion = readInstalledModuleVersion(topLevelDependencyPath);
+	if (
+		topLevelVersion &&
+		versionSatisfiesRange(topLevelVersion, dependencyRange)
+	) {
+		if (!copyModuleIfSymlink(nodeModulesDir, dependencyName, required)) {
+			return null;
+		}
+		return topLevelDependencyPath;
+	}
+
+	const bunStoreDir = getBunStoreDir(nodeModulesDir);
+	const bunStoreFolderName = findBunStoreFolderNameSatisfying(
+		bunStoreDir,
+		dependencyName,
+		dependencyRange,
+	);
+	if (bunStoreFolderName) {
+		const sourcePath = join(
+			bunStoreDir,
+			bunStoreFolderName,
+			"node_modules",
+			dependencyName,
+		);
+		if (existsSync(sourcePath)) {
+			console.log(
+				`  ${dependencyName}: using Bun store version for range ${dependencyRange}`,
+			);
+			return sourcePath;
+		}
+	}
+
+	if (!topLevelVersion) {
+		if (!copyModuleIfSymlink(nodeModulesDir, dependencyName, required)) {
+			return null;
+		}
+		return topLevelDependencyPath;
+	}
+
+	if (required) {
+		console.error(
+			`  [ERROR] ${dependencyName}@${topLevelVersion} does not satisfy ${dependencyRange} and no matching Bun store package was found`,
+		);
+		process.exit(1);
+	}
+
+	return null;
+}
+
+function copyDependencyIntoPackage(
+	nodeModulesDir: string,
+	parentPackagePath: string,
+	dependencyName: string,
+	required: boolean,
+	dependencyRange = "",
+): string | null {
+	const sourcePath = resolveDependencySourcePath(
+		nodeModulesDir,
+		dependencyName,
+		required,
+		dependencyRange,
+	);
+	if (!sourcePath) {
+		return null;
+	}
+
+	const nestedDependencyPath = join(
+		parentPackagePath,
+		"node_modules",
+		dependencyName,
+	);
+
+	if (existsSync(nestedDependencyPath)) {
+		const nestedStats = lstatSync(nestedDependencyPath);
+		if (!nestedStats.isSymbolicLink()) {
+			console.log(
+				`  ${dependencyName}: refreshing nested dependency in ${parentPackagePath}`,
+			);
+		}
+	}
+
+	rmSync(nestedDependencyPath, { recursive: true, force: true });
+	mkdirSync(dirname(nestedDependencyPath), { recursive: true });
+	cpSync(realpathSync(sourcePath), nestedDependencyPath, { recursive: true });
+	return nestedDependencyPath;
+}
+
+function getBunStorePackagePath(
+	nodeModulesDir: string,
+	packagePath: string,
+): string | null {
+	const packageJsonPath = join(packagePath, "package.json");
+	if (!existsSync(packageJsonPath)) return null;
+
+	type PackageJson = { name?: string; version?: string };
+	const packageJson = JSON.parse(
+		readFileSync(packageJsonPath, "utf8"),
+	) as PackageJson;
+	if (!packageJson.name || !packageJson.version) return null;
+
+	const bunStoreFolderName = findBunStoreFolderName(
+		getBunStoreDir(nodeModulesDir),
+		packageJson.name,
+		packageJson.version,
+	);
+	if (!bunStoreFolderName) return null;
+
+	const bunStorePackagePath = join(
+		getBunStoreDir(nodeModulesDir),
+		bunStoreFolderName,
+		"node_modules",
+		packageJson.name,
+	);
+	if (!existsSync(bunStorePackagePath)) return null;
+
+	try {
+		if (realpathSync(bunStorePackagePath) === realpathSync(packagePath)) {
+			return null;
+		}
+	} catch {
+		return null;
+	}
+
+	return bunStorePackagePath;
+}
+
+function copyDependencyIntoBunStorePackage(
+	nodeModulesDir: string,
+	parentPackagePath: string,
+	dependencyName: string,
+	required: boolean,
+	dependencyRange = "",
+): string | null {
+	const bunStorePackagePath = getBunStorePackagePath(
+		nodeModulesDir,
+		parentPackagePath,
+	);
+	if (!bunStorePackagePath) return null;
+
+	return copyDependencyIntoPackage(
+		nodeModulesDir,
+		bunStorePackagePath,
+		dependencyName,
+		required,
+		dependencyRange,
+	);
+}
+
+function materializePackageDependencyTree(
+	nodeModulesDir: string,
+	packagePath: string,
+	depth: number,
+	seen = new Set<string>(),
+): void {
+	if (depth <= 0) return;
+	const packageJsonPath = join(packagePath, "package.json");
+	if (!existsSync(packageJsonPath)) return;
+
+	const seenKey = `${packagePath}:${depth}`;
+	if (seen.has(seenKey)) return;
+	seen.add(seenKey);
+
+	type PackageJson = { dependencies?: Record<string, string> };
+	const packageJson = JSON.parse(
+		readFileSync(packageJsonPath, "utf8"),
+	) as PackageJson;
+
+	for (const dependencyName of Object.keys(packageJson.dependencies ?? {})) {
+		const dependencyRange = packageJson.dependencies?.[dependencyName] ?? "";
+		const nestedDependencyPath = copyDependencyIntoPackage(
+			nodeModulesDir,
+			packagePath,
+			dependencyName,
+			true,
+			dependencyRange,
+		);
+		const bunStoreNestedDependencyPath = copyDependencyIntoBunStorePackage(
+			nodeModulesDir,
+			packagePath,
+			dependencyName,
+			true,
+			dependencyRange,
+		);
+		const topLevelDependencyPath = join(nodeModulesDir, dependencyName);
+		if (existsSync(topLevelDependencyPath)) {
+			materializePackageDependencyTree(
+				nodeModulesDir,
+				topLevelDependencyPath,
+				depth - 1,
+				seen,
+			);
+		}
+		if (nestedDependencyPath) {
+			materializePackageDependencyTree(
+				nodeModulesDir,
+				nestedDependencyPath,
+				depth - 1,
+				seen,
+			);
+		}
+		if (bunStoreNestedDependencyPath) {
+			materializePackageDependencyTree(
+				nodeModulesDir,
+				bunStoreNestedDependencyPath,
+				depth - 1,
+				seen,
+			);
+		}
+	}
+}
+
 function readInstalledModuleVersion(modulePath: string): string | null {
 	const packageJsonPath = join(modulePath, "package.json");
 	if (!existsSync(packageJsonPath)) return null;
@@ -131,11 +465,9 @@ function copyExactModuleVersion(
 	required: boolean,
 ): boolean {
 	const bunStoreDir = getBunStoreDir(nodeModulesDir);
-	const bunStoreFolderName = findBunStoreFolderName(
-		bunStoreDir,
-		moduleName,
-		version,
-	);
+	const bunStoreFolderName =
+		findBunStoreFolderName(bunStoreDir, moduleName, version) ??
+		findBunStoreFolderNameSatisfying(bunStoreDir, moduleName, version);
 	if (bunStoreFolderName) {
 		const sourcePath = join(
 			bunStoreDir,
@@ -243,6 +575,7 @@ function fetchNpmPackage(
 	const url = `https://registry.npmjs.org/${packageName}/-/${barePackageName}-${version}.tgz`;
 	console.log(`  ${packageName}: fetching from npm (${version})`);
 	try {
+		rmSync(destPath, { recursive: true, force: true });
 		mkdirSync(destPath, { recursive: true });
 		execSync(
 			`curl -sL "${url}" | tar xz -C "${destPath}" --strip-components=1`,
@@ -530,6 +863,34 @@ function prepareNativeModules() {
 	for (const moduleName of requiredMaterializedNodeModules) {
 		copyModuleIfSymlink(nodeModulesDir, moduleName, true);
 	}
+
+	console.log("\nMaterializing native package dependency trees...");
+	for (const moduleName of [
+		"better-sqlite3",
+		"node-pty",
+		"@parcel/watcher",
+		"libsql",
+	]) {
+		materializePackageDependencyTree(
+			nodeModulesDir,
+			join(nodeModulesDir, moduleName),
+			NATIVE_DEPENDENCY_TREE_DEPTH,
+		);
+	}
+
+	console.log("\nMaterializing workspace package runtime dependencies...");
+	copyNestedDependencyForPackage(
+		nodeModulesDir,
+		"@rox/host-service",
+		"better-sqlite3",
+		true,
+	);
+	copyNestedDependencyForPackage(
+		nodeModulesDir,
+		"@rox/host-service",
+		"node-pty",
+		true,
+	);
 
 	console.log("\nPreparing ast-grep platform package...");
 	copyAstGrepPlatformPackages(nodeModulesDir);

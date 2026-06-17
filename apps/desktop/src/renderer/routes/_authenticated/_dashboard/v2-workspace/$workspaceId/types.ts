@@ -29,6 +29,11 @@ export interface ChatPaneData {
 	} | null;
 }
 
+export interface CanvasPaneData {
+	canvasId: string | null;
+	title?: string;
+}
+
 export interface BrowserPaneData {
 	url: string;
 	pageTitle?: string;
@@ -70,6 +75,7 @@ export type PaneViewerData =
 	| FilePaneData
 	| TerminalPaneData
 	| ChatPaneData
+	| CanvasPaneData
 	| BrowserPaneData
 	| DevtoolsPaneData
 	| DiffPaneData

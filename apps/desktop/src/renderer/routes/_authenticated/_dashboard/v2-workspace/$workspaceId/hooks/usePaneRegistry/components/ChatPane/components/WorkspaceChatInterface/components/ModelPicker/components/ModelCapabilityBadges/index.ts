@@ -1,1 +1,4 @@
-export { ModelCapabilityBadges } from "./ModelCapabilityBadges";
+export {
+	ContextUsageChip,
+	ModelCapabilityBadges,
+} from "./ModelCapabilityBadges";

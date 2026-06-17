@@ -194,6 +194,14 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			"process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS": defineEnv(
+				process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS,
+				"",
+			),
+			"process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE": defineEnv(
+				process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE,
+				"",
+			),
 			"process.platform": defineEnv(process.platform),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,

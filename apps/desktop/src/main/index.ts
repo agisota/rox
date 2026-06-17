@@ -27,6 +27,7 @@ import {
 	PLATFORM,
 	PROTOCOL_SCHEME,
 } from "shared/constants";
+import { shouldBypassAuthForE2E } from "shared/e2e-auth-bypass";
 import { setupAgentHooks } from "./lib/agent-setup";
 import { initAppState } from "./lib/app-state";
 import { requestAppleEventsAccess } from "./lib/apple-events-permission";
@@ -382,19 +383,28 @@ protocol.registerSchemesAsPrivileged([
 	},
 ]);
 
-const gotTheLock = app.requestSingleInstanceLock();
+const skipSingleInstanceLockForE2E = shouldBypassAuthForE2E({
+	nodeEnv: process.env.NODE_ENV,
+	flag: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS,
+	scope: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE,
+});
+
+const gotTheLock =
+	skipSingleInstanceLockForE2E || app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
 	app.exit(0);
 } else {
-	// Windows/Linux: protocol URL arrives as argv on the second instance
-	app.on("second-instance", async (_event, argv) => {
-		focusMainWindow();
-		const url = findDeepLinkInArgv(argv);
-		if (url) {
-			await processDeepLink(url);
-		}
-	});
+	if (!skipSingleInstanceLockForE2E) {
+		// Windows/Linux: protocol URL arrives as argv on the second instance
+		app.on("second-instance", async (_event, argv) => {
+			focusMainWindow();
+			const url = findDeepLinkInArgv(argv);
+			if (url) {
+				await processDeepLink(url);
+			}
+		});
+	}
 
 	(async () => {
 		await app.whenReady();

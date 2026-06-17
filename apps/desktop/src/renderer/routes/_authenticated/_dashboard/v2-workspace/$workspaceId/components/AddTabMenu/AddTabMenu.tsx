@@ -4,11 +4,13 @@ import {
 	DropdownMenuSeparator,
 } from "@rox/ui/dropdown-menu";
 import { BsTerminalPlus } from "react-icons/bs";
+import { HiOutlineSparkles } from "react-icons/hi2";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { HotkeyMenuShortcut } from "renderer/components/HotkeyMenuShortcut";
 
 interface AddTabMenuProps {
 	onAddTerminal: () => void;
+	onAddCanvas: () => void;
 	onAddChat: () => void;
 	onAddBrowser: () => void;
 	showPresetsBar: boolean;
@@ -17,6 +19,7 @@ interface AddTabMenuProps {
 
 export function AddTabMenu({
 	onAddTerminal,
+	onAddCanvas,
 	onAddChat,
 	onAddBrowser,
 	showPresetsBar,
@@ -28,6 +31,10 @@ export function AddTabMenu({
 				<BsTerminalPlus className="size-4" />
 				<span>Terminal</span>
 				<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
+			</DropdownMenuItem>
+			<DropdownMenuItem className="gap-2" onClick={onAddCanvas}>
+				<HiOutlineSparkles className="size-4" />
+				<span>Canvas</span>
 			</DropdownMenuItem>
 			<DropdownMenuItem className="gap-2" onClick={onAddChat}>
 				<TbMessageCirclePlus className="size-4" />

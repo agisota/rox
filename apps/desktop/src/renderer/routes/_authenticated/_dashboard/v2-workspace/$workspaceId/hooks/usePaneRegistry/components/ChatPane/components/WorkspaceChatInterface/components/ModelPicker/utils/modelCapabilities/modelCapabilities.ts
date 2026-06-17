@@ -46,6 +46,93 @@ export const CAPABILITY_LABELS: Record<ModelCapability, string> = {
 const TOKENS_PER_K = 1000;
 const LONG_CONTEXT_THRESHOLD_TOKENS = 200 * TOKENS_PER_K;
 
+export type ContextUsageSegmentId =
+	| "systemPrompt"
+	| "toolDefinitions"
+	| "rules"
+	| "skills"
+	| "mcp"
+	| "subagents"
+	| "summarizedConversation"
+	| "conversation";
+
+export interface ContextUsageSegmentDefinition {
+	id: ContextUsageSegmentId;
+	label: string;
+	color: string;
+}
+
+export interface ContextUsageSegment extends ContextUsageSegmentDefinition {
+	tokens: number;
+	percent: number;
+}
+
+export interface ContextUsageSnapshot {
+	maxTokens: number;
+	usedTokens: number;
+	usedPercent: number;
+	source: "runtime" | "capacity-only";
+	segments: ContextUsageSegment[];
+}
+
+export const CONTEXT_USAGE_SEGMENTS: ContextUsageSegmentDefinition[] = [
+	{ id: "systemPrompt", label: "System prompt", color: "#a3a3a3" },
+	{ id: "toolDefinitions", label: "Tool definitions", color: "#8b5cf6" },
+	{ id: "rules", label: "Rules", color: "#42b883" },
+	{ id: "skills", label: "Skills", color: "#f6bd60" },
+	{ id: "mcp", label: "MCP", color: "#b38bbd" },
+	{ id: "subagents", label: "Subagent definitions", color: "#7db4e8" },
+	{
+		id: "summarizedConversation",
+		label: "Summarized conversation",
+		color: "#ff5c8a",
+	},
+	{ id: "conversation", label: "Conversation", color: "#9fb7cf" },
+];
+
+function clampTokens(value: number, max = Number.POSITIVE_INFINITY): number {
+	if (!Number.isFinite(value) || value < 0) return 0;
+	return Math.min(value, max);
+}
+
+export function createContextUsageSnapshot({
+	maxTokens,
+	segments = [],
+}: {
+	maxTokens: number;
+	segments?: Array<{ id: ContextUsageSegmentId; tokens: number }>;
+}): ContextUsageSnapshot {
+	const normalizedMax = clampTokens(maxTokens);
+	const segmentTokens = new Map<ContextUsageSegmentId, number>();
+	for (const segment of segments) {
+		segmentTokens.set(
+			segment.id,
+			(segmentTokens.get(segment.id) ?? 0) + clampTokens(segment.tokens),
+		);
+	}
+	const usedTokens = clampTokens(
+		Array.from(segmentTokens.values()).reduce((sum, tokens) => sum + tokens, 0),
+		normalizedMax,
+	);
+	const usedPercent =
+		normalizedMax > 0 ? (usedTokens / normalizedMax) * 100 : 0;
+
+	return {
+		maxTokens: normalizedMax,
+		usedTokens,
+		usedPercent,
+		source: segments.length > 0 ? "runtime" : "capacity-only",
+		segments: CONTEXT_USAGE_SEGMENTS.map((definition) => {
+			const tokens = segmentTokens.get(definition.id) ?? 0;
+			return {
+				...definition,
+				tokens,
+				percent: normalizedMax > 0 ? (tokens / normalizedMax) * 100 : 0,
+			};
+		}),
+	};
+}
+
 /**
  * Strip a leading `openai/`, `anthropic/`, … provider prefix and lowercase, so
  * catalog lookups and heuristics work on the bare model id regardless of how
@@ -224,6 +311,19 @@ export function formatContextWindow(tokens: number): string | null {
 		return `${Number.isInteger(millions) ? millions : millions.toFixed(1)}M`;
 	}
 	return `${Math.round(tokens / TOKENS_PER_K)}K`;
+}
+
+export function formatTokenCount(tokens: number): string {
+	if (!Number.isFinite(tokens) || tokens <= 0) return "0";
+	if (tokens >= 1000 * TOKENS_PER_K) {
+		const millions = tokens / (1000 * TOKENS_PER_K);
+		return `${millions >= 10 ? Math.round(millions) : millions.toFixed(1)}M`;
+	}
+	if (tokens >= TOKENS_PER_K) {
+		const thousands = tokens / TOKENS_PER_K;
+		return `${thousands >= 10 ? Math.round(thousands) : thousands.toFixed(1)}K`;
+	}
+	return `${Math.round(tokens)}`;
 }
 
 /**

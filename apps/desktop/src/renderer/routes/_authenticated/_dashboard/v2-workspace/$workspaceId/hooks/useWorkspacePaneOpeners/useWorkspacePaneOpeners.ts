@@ -4,6 +4,7 @@ import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/provide
 import type { StoreApi } from "zustand/vanilla";
 import type {
 	BrowserPaneData,
+	CanvasPaneData,
 	ChatPaneData,
 	CommentPaneData,
 	DiffFocusSide,
@@ -34,6 +35,7 @@ export function useWorkspacePaneOpeners({
 		side?: DiffFocusSide,
 	) => void;
 	addTerminalTab: () => Promise<void>;
+	addCanvasTab: () => void;
 	addChatTab: () => void;
 	addBrowserTab: () => void;
 	openCommentPane: (comment: CommentPaneData) => void;
@@ -142,6 +144,21 @@ export function useWorkspacePaneOpeners({
 		});
 	}, [store]);
 
+	const addCanvasTab = useCallback(() => {
+		store.getState().addTab({
+			panes: [
+				{
+					kind: "canvas",
+					titleOverride: "Canvas",
+					data: {
+						canvasId: null,
+						title: "Canvas",
+					} as CanvasPaneData,
+				},
+			],
+		});
+	}, [store]);
+
 	const addBrowserTab = useCallback(() => {
 		store.getState().addTab({
 			panes: [
@@ -185,6 +202,7 @@ export function useWorkspacePaneOpeners({
 	return {
 		openDiffPane,
 		addTerminalTab,
+		addCanvasTab,
 		addChatTab,
 		addBrowserTab,
 		openCommentPane,

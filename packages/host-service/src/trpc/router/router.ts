@@ -3,6 +3,7 @@ import { agentBridgeRouter } from "./agent-bridge";
 import { agentsRouter } from "./agents";
 import { attachmentsRouter } from "./attachments";
 import { authRouter } from "./auth";
+import { canvasRouter } from "./canvas";
 import { chatRouter } from "./chat";
 import { cloudRouter } from "./cloud";
 import { configRouter } from "./config";
@@ -29,6 +30,7 @@ export const appRouter = router({
 	agents: agentsRouter,
 	attachments: attachmentsRouter,
 	auth: authRouter,
+	canvas: canvasRouter,
 	health: healthRouter,
 	host: hostRouter,
 	chat: chatRouter,

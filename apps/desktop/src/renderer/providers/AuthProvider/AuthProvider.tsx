@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { env } from "renderer/env.renderer";
 import { authClient, setAuthToken, setJwt } from "renderer/lib/auth-client";
 import { RoxLogo } from "renderer/routes/sign-in/components/RoxLogo/RoxLogo";
 import { electronTrpc } from "../../lib/electron-trpc";
@@ -14,6 +15,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		});
 
 	useEffect(() => {
+		if (!env.E2E_AUTH_BYPASS || isHydrated) return;
+		setIsHydrated(true);
+	}, [isHydrated]);
+
+	useEffect(() => {
+		if (env.E2E_AUTH_BYPASS) return;
 		if (!isSuccess || isHydrated) return;
 
 		let cancelled = false;
@@ -86,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	});
 
 	useEffect(() => {
+		if (env.E2E_AUTH_BYPASS) return;
 		if (!isHydrated) return;
 
 		const refreshJwt = () =>

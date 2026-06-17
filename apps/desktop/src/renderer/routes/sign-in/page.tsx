@@ -24,6 +24,10 @@ function SignInPage() {
 	const [devError, setDevError] = useState<string | null>(null);
 	const { hasLocalToken, isPending, session } = useSessionRecovery();
 
+	if (env.E2E_AUTH_BYPASS) {
+		return <Navigate to="/canvas" replace />;
+	}
+
 	// Dev bypass: skip sign-in entirely
 	if (env.SKIP_ENV_VALIDATION) {
 		return <Navigate to="/workspace" replace />;

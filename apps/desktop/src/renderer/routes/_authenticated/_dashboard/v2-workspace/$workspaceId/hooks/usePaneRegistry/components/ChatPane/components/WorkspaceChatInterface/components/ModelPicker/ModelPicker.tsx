@@ -21,11 +21,13 @@ import {
 	motionSpring,
 	useShouldAnimate,
 } from "renderer/motion";
+import { ContextUsageChip } from "./components/ModelCapabilityBadges";
 import { ModelProviderGroup } from "./components/ModelProviderGroup";
 import { groupModelsByProvider } from "./utils/groupModelsByProvider";
 import {
 	type EnrichedModelOption,
 	enrichModelOption,
+	formatContextWindow,
 	rankEnrichedModels,
 } from "./utils/modelCapabilities";
 import {
@@ -81,6 +83,12 @@ export function ModelPicker({
 	const navigate = useNavigate();
 	const selectedLogo = selectedModel
 		? providerToLogo(selectedModel.provider)
+		: null;
+	const selectedModelMeta = selectedModel
+		? enrichModelOption(selectedModel)
+		: null;
+	const selectedContextWindowLabel = selectedModelMeta
+		? formatContextWindow(selectedModelMeta.contextWindowTokens)
 		: null;
 
 	const { data: anthropicStatus, refetch: refetchAnthropicStatus } =
@@ -188,6 +196,13 @@ export function ModelPicker({
 							<ModelSelectorLogo provider={selectedLogo} />
 						) : null}
 						<span>{selectedModel?.name ?? "Модель"}</span>
+						{selectedModelMeta && selectedContextWindowLabel ? (
+							<ContextUsageChip
+								contextWindowLabel={selectedContextWindowLabel}
+								contextWindowTokens={selectedModelMeta.contextWindowTokens}
+								className="ml-0.5"
+							/>
+						) : null}
 						<ChevronDownIcon className="size-2.5 opacity-50" />
 					</PromptInputButton>
 				</ModelSelectorTrigger>

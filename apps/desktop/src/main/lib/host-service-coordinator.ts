@@ -86,6 +86,26 @@ function isValidPort(port: number | null | undefined): port is number {
 	);
 }
 
+function hasHostMigrationsJournal(folder: string): boolean {
+	return fs.existsSync(path.join(folder, "meta/_journal.json"));
+}
+
+function resolveHostMigrationsFolder(): string {
+	if (app.isPackaged) {
+		return path.join(process.resourcesPath, "resources/host-migrations");
+	}
+
+	const appPath = app.getAppPath();
+	const candidates = [
+		path.join(appPath, "../../packages/host-service/drizzle"),
+		path.join(appPath, "../../../../packages/host-service/drizzle"),
+		path.join(process.cwd(), "../../packages/host-service/drizzle"),
+		path.join(process.cwd(), "packages/host-service/drizzle"),
+	];
+
+	return candidates.find(hasHostMigrationsJournal) ?? candidates[0];
+}
+
 /**
  * Coupled to Electron: each child is spawned attached and SIGTERMed on
  * before-quit. PTYs survive across Electron restarts via the pty-daemon
@@ -487,9 +507,7 @@ export class HostServiceCoordinator extends EventEmitter {
 			HOST_SERVICE_PORT: String(port),
 			HOST_MANIFEST_DIR: organizationDir,
 			HOST_DB_PATH: path.join(organizationDir, "host.db"),
-			HOST_MIGRATIONS_FOLDER: app.isPackaged
-				? path.join(process.resourcesPath, "resources/host-migrations")
-				: path.join(app.getAppPath(), "../../packages/host-service/drizzle"),
+			HOST_MIGRATIONS_FOLDER: resolveHostMigrationsFolder(),
 			DESKTOP_VITE_PORT: String(sharedEnv.DESKTOP_VITE_PORT),
 			ROX_HOME_DIR: ROX_HOME_DIR,
 			ROX_LEGACY_WORKTREE_BASE_DIR: row?.worktreeBaseDir ?? "",

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
+	createContextUsageSnapshot,
 	enrichModelOption,
 	formatContextWindow,
+	formatTokenCount,
 	getModelCapabilityMeta,
 	normalizeModelId,
 	rankEnrichedModels,
@@ -53,6 +55,44 @@ describe("formatContextWindow", () => {
 		expect(formatContextWindow(1_000_000)).toBe("1M");
 		expect(formatContextWindow(400_000)).toBe("400K");
 		expect(formatContextWindow(500)).toBeNull();
+	});
+});
+
+describe("formatTokenCount", () => {
+	it("formats token counts for detailed context usage", () => {
+		expect(formatTokenCount(0)).toBe("0");
+		expect(formatTokenCount(1500)).toBe("1.5K");
+		expect(formatTokenCount(155_000)).toBe("155K");
+		expect(formatTokenCount(1_250_000)).toBe("1.3M");
+	});
+});
+
+describe("createContextUsageSnapshot", () => {
+	it("creates a capacity-only snapshot when runtime segments are absent", () => {
+		const snapshot = createContextUsageSnapshot({ maxTokens: 200_000 });
+		expect(snapshot.source).toBe("capacity-only");
+		expect(snapshot.usedTokens).toBe(0);
+		expect(snapshot.usedPercent).toBe(0);
+		expect(snapshot.segments.map((segment) => segment.id)).toContain(
+			"conversation",
+		);
+	});
+
+	it("sums runtime segments and clamps usage to the model window", () => {
+		const snapshot = createContextUsageSnapshot({
+			maxTokens: 10_000,
+			segments: [
+				{ id: "systemPrompt", tokens: 1_000 },
+				{ id: "conversation", tokens: 12_000 },
+			],
+		});
+		expect(snapshot.source).toBe("runtime");
+		expect(snapshot.usedTokens).toBe(10_000);
+		expect(snapshot.usedPercent).toBe(100);
+		expect(
+			snapshot.segments.find((segment) => segment.id === "systemPrompt")
+				?.percent,
+		).toBe(10);
 	});
 });
 

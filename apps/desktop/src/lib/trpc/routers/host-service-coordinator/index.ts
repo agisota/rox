@@ -4,22 +4,40 @@ import {
 	getHostServiceCoordinator,
 	type HostServiceStatusEvent,
 } from "main/lib/host-service-coordinator";
+import {
+	LOCAL_PLAYWRIGHT_SMOKE_AUTH_TOKEN,
+	shouldBypassAuthForE2E,
+} from "shared/e2e-auth-bypass";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import { loadToken } from "../auth/utils/auth-functions";
 
 const orgInput = z.object({ organizationId: z.string() });
 
+function getLocalSmokeAuthToken(): string | null {
+	if (
+		shouldBypassAuthForE2E({
+			nodeEnv: process.env.NODE_ENV,
+			flag: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS,
+			scope: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE,
+		})
+	) {
+		return LOCAL_PLAYWRIGHT_SMOKE_AUTH_TOKEN;
+	}
+	return null;
+}
+
 export const createHostServiceCoordinatorRouter = () => {
 	return router({
 		start: publicProcedure.input(orgInput).mutation(async ({ input }) => {
 			const coordinator = getHostServiceCoordinator();
 			const { token } = await loadToken();
-			if (!token) {
+			const authToken = token ?? getLocalSmokeAuthToken();
+			if (!authToken) {
 				throw new Error("No auth token available — user must be logged in");
 			}
 			return coordinator.start(input.organizationId, {
-				authToken: token,
+				authToken,
 				cloudApiUrl: env.NEXT_PUBLIC_API_URL,
 			});
 		}),
@@ -37,11 +55,12 @@ export const createHostServiceCoordinatorRouter = () => {
 		restart: publicProcedure.input(orgInput).mutation(async ({ input }) => {
 			const coordinator = getHostServiceCoordinator();
 			const { token } = await loadToken();
-			if (!token) {
+			const authToken = token ?? getLocalSmokeAuthToken();
+			if (!authToken) {
 				throw new Error("No auth token available — user must be logged in");
 			}
 			return coordinator.restart(input.organizationId, {
-				authToken: token,
+				authToken,
 				cloudApiUrl: env.NEXT_PUBLIC_API_URL,
 			});
 		}),
@@ -49,11 +68,12 @@ export const createHostServiceCoordinatorRouter = () => {
 		reset: publicProcedure.input(orgInput).mutation(async ({ input }) => {
 			const coordinator = getHostServiceCoordinator();
 			const { token } = await loadToken();
-			if (!token) {
+			const authToken = token ?? getLocalSmokeAuthToken();
+			if (!authToken) {
 				throw new Error("No auth token available — user must be logged in");
 			}
 			return coordinator.reset(input.organizationId, {
-				authToken: token,
+				authToken,
 				cloudApiUrl: env.NEXT_PUBLIC_API_URL,
 			});
 		}),

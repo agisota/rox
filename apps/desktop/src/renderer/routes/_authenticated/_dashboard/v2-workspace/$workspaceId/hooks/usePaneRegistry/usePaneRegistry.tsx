@@ -8,7 +8,13 @@ import { alert } from "@rox/ui/atoms/Alert";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
-import { Circle, GitCompareArrows, Globe, MessageSquare } from "lucide-react";
+import {
+	Circle,
+	GitCompareArrows,
+	Globe,
+	MessageSquare,
+	Network,
+} from "lucide-react";
 import { useCallback, useMemo } from "react";
 import {
 	LuArrowDownToLine,
@@ -24,6 +30,7 @@ import { consumeTerminalBackgroundIntent } from "renderer/lib/terminal/terminal-
 import { terminalRuntimeRegistry } from "renderer/lib/terminal/terminal-runtime-registry";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import { CanvasWorkspaceView } from "renderer/screens/canvas/CanvasWorkspaceView";
 import {
 	clearV2TerminalRunStatus,
 	getV2NotificationSourcesForPane,
@@ -36,6 +43,7 @@ import {
 } from "../../state/fileDocumentStore";
 import type {
 	BrowserPaneData,
+	CanvasPaneData,
 	ChatPaneData,
 	CommentPaneData,
 	DevtoolsPaneData,
@@ -478,6 +486,20 @@ export function usePaneRegistry({
 				contextMenuActions: (_ctx, defaults) =>
 					defaults.map((d) =>
 						d.key === "close-pane" ? { ...d, label: "Close Browser" } : d,
+					),
+			},
+			canvas: {
+				getIcon: () => <Network className="size-3.5" />,
+				getTitle: (pane) => {
+					const data = pane.data as CanvasPaneData;
+					return data.title ?? "Canvas";
+				},
+				renderPane: () => (
+					<CanvasWorkspaceView compact workspaceId={workspaceId} />
+				),
+				contextMenuActions: (_ctx, defaults) =>
+					defaults.map((d) =>
+						d.key === "close-pane" ? { ...d, label: "Close Canvas" } : d,
 					),
 			},
 			chat: {

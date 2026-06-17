@@ -1,44 +1,6 @@
-export { CANVAS_DOCUMENT_FIXTURE } from "./fixtures";
-export {
-	applyCanvasMutation,
-	applyCanvasMutations,
-	createCanvasEdge,
-	createCanvasGroup,
-	createCanvasNodeRef,
-} from "./mutations";
-export type {
-	CanvasCapability,
-	CanvasCapabilityAction,
-	CanvasCapabilitySubject,
-	CanvasDocument,
-	CanvasEdge,
-	CanvasEdgeEndpoint,
-	CanvasGroup,
-	CanvasId,
-	CanvasJsonObject,
-	CanvasJsonPrimitive,
-	CanvasJsonValue,
-	CanvasMutation,
-	CanvasNode,
-	CanvasNodeRef,
-	CanvasPoint,
-	CanvasSize,
-	PartialCanvasDocument,
-	PartialCanvasEdge,
-	PartialCanvasGroup,
-	PartialCanvasNode,
-} from "./types";
-export {
-	assertCanvasDocument,
-	assertCanvasEdge,
-	assertCanvasGroup,
-	assertCanvasNode,
-	isCanvasCapability,
-	isCanvasDocument,
-	isCanvasEdge,
-	isCanvasGroup,
-	isCanvasJsonObject,
-	isCanvasJsonValue,
-	isCanvasNode,
-	isCanvasNodeRef,
-} from "./validators";
+export * from "./capabilities";
+export * from "./fixtures";
+export * from "./json-canvas-codec";
+export * from "./mutations";
+export * from "./projections";
+export * from "./schema";

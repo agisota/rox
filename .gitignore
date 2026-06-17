@@ -55,6 +55,7 @@ next-env.d.ts
 # Rox (track scripts/config; ignore generated workspace artifacts)
 .rox/ports.json
 .rox/config.local.json
+.rox/canvases/
 
 # tsbuildinfo
 *.tsbuildinfo

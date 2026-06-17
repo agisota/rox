@@ -37,10 +37,11 @@ export function CollectionsProvider({ children }: { children: ReactNode }) {
 	const [isSwitching, setIsSwitching] = useState(false);
 	// Local mock mode pins the org but still isolates personal collections by user
 	// when a dev session exists.
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const useMockIdentity = env.SKIP_ENV_VALIDATION || env.E2E_AUTH_BYPASS;
+	const activeOrganizationId = useMockIdentity
 		? MOCK_ORG_ID
 		: session?.session?.activeOrganizationId;
-	const activeUserId = env.SKIP_ENV_VALIDATION
+	const activeUserId = useMockIdentity
 		? (session?.user?.id ?? MOCK_USER_ID)
 		: session?.user?.id;
 

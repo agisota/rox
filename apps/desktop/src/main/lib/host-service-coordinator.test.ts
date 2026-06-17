@@ -18,6 +18,8 @@ const APP_VERSION = "1.2.3";
 let killedPids: Array<{ pid: number; signal: NodeJS.Signals | number }> = [];
 let killProcessError: NodeJS.ErrnoException | null = null;
 const testRoxHomeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hsc-home-"));
+const repoRoot = path.resolve(import.meta.dir, "../../../../..");
+let mockAppPath = "/tmp/app";
 
 const realChildProcess = await import("node:child_process");
 const childProcessSpawnMock = mock(realChildProcess.spawn);
@@ -79,7 +81,7 @@ mock.module("electron", () => ({
 	app: {
 		getVersion: () => APP_VERSION,
 		isPackaged: false,
-		getAppPath: () => "/tmp/app",
+		getAppPath: () => mockAppPath,
 	},
 	// bun runs all tests in one process and mock.module("electron") leaks across
 	// files; include `dialog` so a later file linking auto-updater.ts (imports
@@ -141,6 +143,7 @@ interface FakeHostChild extends ChildProcess.ChildProcessWithoutNullStreams {
 }
 
 function resetMocks(): void {
+	mockAppPath = "/tmp/app";
 	manifestStore.current = null;
 	readManifestMock.mockClear();
 	removeManifestMock.mockClear();
@@ -268,6 +271,26 @@ describe("HostServiceCoordinator child diagnostics", () => {
 		await expect(
 			internals.spawn("org-1", spawnConfig, [40000]),
 		).rejects.toThrow("migration failed before listen");
+	});
+
+	test("resolves dev migrations from repo root when app path is compiled dist", async () => {
+		mockAppPath = path.join(repoRoot, "apps/desktop/dist/main");
+		const fakeChild = createFakeChild(4244);
+		childProcessSpawnMock.mockReturnValueOnce(fakeChild);
+		const internals = coordinator as unknown as HostServiceCoordinatorInternals;
+
+		await internals.spawn("org-1", spawnConfig, [40000]);
+
+		const spawnOptions = childProcessSpawnMock.mock.calls[0]?.[2] as
+			| { env?: Record<string, string> }
+			| undefined;
+		const migrationsFolder = spawnOptions?.env?.HOST_MIGRATIONS_FOLDER;
+		expect(migrationsFolder).toBe(
+			path.join(repoRoot, "packages/host-service/drizzle"),
+		);
+		expect(
+			fs.existsSync(path.join(migrationsFolder ?? "", "meta/_journal.json")),
+		).toBe(true);
 	});
 });
 

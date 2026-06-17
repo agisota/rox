@@ -1,176 +1,216 @@
 import { describe, expect, test } from "bun:test";
 import {
 	applyCanvasMutation,
-	applyCanvasMutations,
-	CANVAS_DOCUMENT_FIXTURE,
-	createCanvasEdge,
-	createCanvasGroup,
-	createCanvasNodeRef,
-	isCanvasDocument,
-	isCanvasJsonValue,
+	applyCanvasMutationBatch,
+	builtInCanvasCapabilities,
+	canvasDocumentSchema,
+	createInverseCanvasMutationBatch,
+	createLargeCanvasDocument,
+	rebaseCanvasMutationBatch,
+	sampleCanvasDocument,
 } from "./index";
-import type { CanvasDocument } from "./types";
 
 describe("canvas contracts", () => {
 	test("accepts the JSON round-tripped fixture", () => {
-		const parsed = JSON.parse(JSON.stringify(CANVAS_DOCUMENT_FIXTURE));
+		const parsed = JSON.parse(JSON.stringify(sampleCanvasDocument));
 
-		expect(isCanvasDocument(parsed)).toBe(true);
-		expect(parsed).toEqual(CANVAS_DOCUMENT_FIXTURE);
+		expect(canvasDocumentSchema.safeParse(parsed).success).toBe(true);
+		expect(parsed).toEqual(sampleCanvasDocument);
 	});
 
-	test("rejects non-JSON node data", () => {
-		expect(isCanvasJsonValue({ run: () => "not json" })).toBe(false);
+	test("rejects duplicate ids and dangling references", () => {
 		expect(
-			isCanvasDocument({
-				...CANVAS_DOCUMENT_FIXTURE,
-				nodes: [
-					{
-						...CANVAS_DOCUMENT_FIXTURE.nodes[0],
-						data: { invalid: Number.NaN },
-					},
-				],
-			}),
+			canvasDocumentSchema.safeParse({
+				...sampleCanvasDocument,
+				nodes: [sampleCanvasDocument.nodes[0], sampleCanvasDocument.nodes[0]],
+			}).success,
 		).toBe(false);
-	});
 
-	test("rejects duplicate ids", () => {
 		expect(
-			isCanvasDocument({
-				...CANVAS_DOCUMENT_FIXTURE,
-				nodes: [
-					CANVAS_DOCUMENT_FIXTURE.nodes[0],
-					CANVAS_DOCUMENT_FIXTURE.nodes[0],
-				],
-			}),
-		).toBe(false);
-	});
-
-	test("rejects dangling node, edge, and group references", () => {
-		expect(
-			isCanvasDocument({
-				...CANVAS_DOCUMENT_FIXTURE,
+			canvasDocumentSchema.safeParse({
+				...sampleCanvasDocument,
 				edges: [
 					{
-						...CANVAS_DOCUMENT_FIXTURE.edges[0],
-						target: { node: { kind: "node", id: "missing-node" } },
+						...sampleCanvasDocument.edges[0],
+						to: { nodeId: "missing-node", side: "auto" },
 					},
 				],
-			}),
+			}).success,
 		).toBe(false);
+	});
 
-		expect(
-			isCanvasDocument({
-				...CANVAS_DOCUMENT_FIXTURE,
-				nodes: [
-					{
-						...CANVAS_DOCUMENT_FIXTURE.nodes[0],
-						groupId: "missing-group",
-					},
-				],
-			}),
-		).toBe(false);
-
-		expect(
-			isCanvasDocument({
-				...CANVAS_DOCUMENT_FIXTURE,
-				groups: [
-					{
-						...CANVAS_DOCUMENT_FIXTURE.groups[0],
-						nodeIds: ["missing-node"],
-					},
-				],
-			}),
-		).toBe(false);
+	test("keeps the full production capability inventory available", () => {
+		const capabilityIds = new Set(
+			builtInCanvasCapabilities.map((capability) => capability.id),
+		);
+		expect(capabilityIds.has("canvas.runAgentOnSelection")).toBe(true);
+		expect(capabilityIds.has("canvas.validateMutationReplay")).toBe(true);
+		expect(capabilityIds.has("canvas.importJsonCanvas")).toBe(true);
 	});
 });
 
 describe("canvas mutations", () => {
 	test("adds nodes and edges without mutating the source document", () => {
-		const nextDocument = applyCanvasMutations(CANVAS_DOCUMENT_FIXTURE, [
-			{
-				type: "node.add",
-				node: {
-					id: "node-result",
-					type: "artifact",
-					title: "Result",
-					position: { x: 720, y: 0 },
-					refs: [createCanvasNodeRef("node-agent")],
+		const nextDocument = applyCanvasMutationBatch(sampleCanvasDocument, {
+			id: "batch-add-result",
+			canvasId: sampleCanvasDocument.id,
+			baseVersion: 0,
+			createdAt: "2026-06-17T00:00:00.000Z",
+			actor: { id: "test", type: "system" },
+			mutations: [
+				{
+					type: "node.add",
+					node: {
+						id: "node-result",
+						type: "artifact",
+						title: "Result",
+						position: { x: 720, y: 0 },
+						size: { width: 280, height: 160 },
+						tags: [],
+						locked: false,
+						collapsed: false,
+						metadata: {},
+					},
 				},
-			},
-			{
-				type: "edge.add",
-				edge: createCanvasEdge({
-					id: "edge-agent-result",
-					type: "flow",
-					sourceNodeId: "node-agent",
-					targetNodeId: "node-result",
-				}),
-			},
-		]);
+				{
+					type: "edge.add",
+					edge: {
+						id: "edge-agent-result",
+						from: { nodeId: "node-session", side: "right" },
+						to: { nodeId: "node-result", side: "left" },
+						directed: true,
+						metadata: {},
+					},
+				},
+			],
+		});
 
-		expect(CANVAS_DOCUMENT_FIXTURE.nodes).toHaveLength(2);
+		expect(sampleCanvasDocument.nodes).toHaveLength(2);
 		expect(nextDocument.nodes).toHaveLength(3);
 		expect(nextDocument.edges).toHaveLength(2);
-		expect(isCanvasDocument(nextDocument)).toBe(true);
+		expect(canvasDocumentSchema.safeParse(nextDocument).success).toBe(true);
 	});
 
-	test("removes dangling edges and group references when a node is removed", () => {
-		const nextDocument = applyCanvasMutation(CANVAS_DOCUMENT_FIXTURE, {
-			type: "node.remove",
-			id: "node-prompt",
+	test("removes dangling edges and group references when a node is deleted", () => {
+		const nextDocument = applyCanvasMutation(sampleCanvasDocument, {
+			type: "node.delete",
+			nodeId: "node-note",
 		});
 
-		expect(nextDocument.nodes.map((node) => node.id)).toEqual(["node-agent"]);
+		expect(nextDocument.nodes.map((node) => node.id)).toEqual(["node-session"]);
 		expect(nextDocument.edges).toEqual([]);
-		expect(nextDocument.groups[0]?.nodeIds).toEqual(["node-agent"]);
-	});
-
-	test("sets capabilities by subject and action", () => {
-		const nextDocument = applyCanvasMutation(CANVAS_DOCUMENT_FIXTURE, {
-			type: "capability.set",
-			capability: {
-				subject: "node",
-				action: "create",
-				enabled: false,
-				reason: "readonly session",
-			},
-		});
-
-		expect(
-			nextDocument.capabilities?.find(
-				(capability) =>
-					capability.subject === "node" && capability.action === "create",
-			),
-		).toMatchObject({ enabled: false, reason: "readonly session" });
-	});
-
-	test("creates groups with optional title omitted from JSON when absent", () => {
-		const group = createCanvasGroup({
-			id: "group-empty",
-			type: "stage",
-			nodeIds: [],
-		});
-
-		expect(group).toEqual({
-			id: "group-empty",
-			type: "stage",
-			nodeIds: [],
-		});
 	});
 
 	test("throws on invalid mutation results", () => {
-		const invalidDocument = {
-			...CANVAS_DOCUMENT_FIXTURE,
-			nodes: [],
-		} satisfies CanvasDocument;
-
 		expect(() =>
-			applyCanvasMutation(invalidDocument, {
+			applyCanvasMutation(sampleCanvasDocument, {
 				type: "node.update",
-				id: "missing",
+				nodeId: "missing",
 				patch: { title: "Missing" },
 			}),
-		).toThrow('Cannot find canvas node "missing"');
+		).toThrow("Canvas item not found: missing");
+	});
+
+	test("creates renderer-neutral inverse and rebased mutation batches", () => {
+		const moveBatch = {
+			id: "move-batch",
+			canvasId: sampleCanvasDocument.id,
+			baseVersion: 0,
+			createdAt: "2026-06-17T00:00:00.000Z",
+			actor: { id: "test", type: "system" as const },
+			mutations: [
+				{
+					type: "node.update" as const,
+					nodeId: "node-note",
+					patch: { position: { x: 900, y: 320 } },
+				},
+			],
+		};
+
+		const inverse = createInverseCanvasMutationBatch({
+			document: sampleCanvasDocument,
+			batch: moveBatch,
+			baseVersion: 1,
+			actorId: "history-undo",
+			createId: () => "inverse-batch",
+			now: () => "2026-06-17T00:00:01.000Z",
+		});
+
+		expect(inverse).toMatchObject({
+			id: "inverse-batch",
+			baseVersion: 1,
+			actor: { id: "history-undo" },
+			mutations: [
+				{
+					type: "node.update",
+					nodeId: "node-note",
+					patch: { position: sampleCanvasDocument.nodes[1]?.position },
+				},
+			],
+		});
+
+		const rebased = rebaseCanvasMutationBatch({
+			batch: moveBatch,
+			baseVersion: 8,
+			actorId: "history-redo",
+			createId: () => "redo-batch",
+			now: () => "2026-06-17T00:00:02.000Z",
+		});
+
+		expect(rebased).toMatchObject({
+			id: "redo-batch",
+			baseVersion: 8,
+			createdAt: "2026-06-17T00:00:02.000Z",
+			actor: { id: "history-redo" },
+		});
+	});
+
+	test("validates and replays large canvas mutation batches deterministically", () => {
+		const largeDocument = createLargeCanvasDocument({
+			nodeCount: 250,
+			edgeCount: 320,
+		});
+		const batch = {
+			id: "large-move-batch",
+			canvasId: largeDocument.id,
+			baseVersion: 0,
+			createdAt: "2026-06-17T00:00:00.000Z",
+			actor: { id: "large-fixture", type: "system" as const },
+			mutations: [
+				{
+					type: "node.update" as const,
+					nodeId: "large-node-042",
+					patch: { position: { x: 4242, y: 2424 } },
+				},
+				{
+					type: "node.update" as const,
+					nodeId: "large-node-177",
+					patch: { tags: ["large", "reviewed"] },
+				},
+			],
+		};
+
+		expect(canvasDocumentSchema.safeParse(largeDocument).success).toBe(true);
+
+		const startedAt = performance.now();
+		const patchedDocument = applyCanvasMutationBatch(largeDocument, batch);
+		const elapsedMs = performance.now() - startedAt;
+		const replayedDocument = [batch].reduce(
+			(document, nextBatch) => applyCanvasMutationBatch(document, nextBatch),
+			largeDocument,
+		);
+
+		expect(elapsedMs).toBeLessThan(5000);
+		expect(patchedDocument).toEqual(replayedDocument);
+		expect(
+			patchedDocument.nodes.find((node) => node.id === "large-node-042")
+				?.position,
+		).toEqual({ x: 4242, y: 2424 });
+		expect(
+			largeDocument.nodes.find((node) => node.id === "large-node-042")
+				?.position,
+		).not.toEqual({ x: 4242, y: 2424 });
+		expect(patchedDocument.nodes).toHaveLength(250);
+		expect(patchedDocument.edges).toHaveLength(320);
 	});
 });

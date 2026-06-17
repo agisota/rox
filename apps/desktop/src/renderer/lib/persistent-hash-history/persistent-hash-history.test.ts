@@ -25,6 +25,12 @@ const mockLocalStorage = {
 const mockReplaceState = mock(
 	(_state: unknown, _unused: string, _url?: string | URL | null) => {},
 );
+const windowListeners = new Map<string, Set<() => void>>();
+const emitWindowEvent = (event: string) => {
+	for (const listener of windowListeners.get(event) ?? []) {
+		listener();
+	}
+};
 
 // Set up globals BEFORE importing the module (the singleton runs at import time).
 // bun test runs files in one process, so capture the previous globals and
@@ -51,9 +57,16 @@ Object.defineProperty(globalThis, "window", {
 		location: {
 			pathname: "/",
 			search: "",
+			hash: "",
 		},
-		addEventListener: mock(() => {}),
-		removeEventListener: mock(() => {}),
+		addEventListener: mock((event: string, listener: () => void) => {
+			const listeners = windowListeners.get(event) ?? new Set<() => void>();
+			listeners.add(listener);
+			windowListeners.set(event, listeners);
+		}),
+		removeEventListener: mock((event: string, listener: () => void) => {
+			windowListeners.get(event)?.delete(listener);
+		}),
 	},
 	writable: true,
 	configurable: true,
@@ -79,6 +92,8 @@ const { createPersistentHashHistory } = await import(
 
 beforeEach(() => {
 	storage.clear();
+	windowListeners.clear();
+	(globalThis.window as { location: { hash: string } }).location.hash = "";
 	mockReplaceState.mockClear();
 });
 
@@ -247,6 +262,64 @@ describe("createPersistentHashHistory", () => {
 			const history = createPersistentHashHistory();
 			expect(history.length).toBe(1);
 			expect(history.location.pathname).toBe("/");
+		});
+
+		it("opens the current hash path on cold start", () => {
+			(globalThis.window as { location: { hash: string } }).location.hash =
+				"#/canvas/";
+
+			const history = createPersistentHashHistory();
+
+			expect(history.location.pathname).toBe("/canvas/");
+			expect(history.length).toBe(2);
+			expect(history.getEntries().map((entry) => entry.path)).toEqual([
+				"/",
+				"/canvas/",
+			]);
+		});
+
+		it("prefers current hash path over stale persisted history", () => {
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/tasks"],
+					index: 1,
+				}),
+			);
+			(globalThis.window as { location: { hash: string } }).location.hash =
+				"#/canvas/";
+
+			const history = createPersistentHashHistory();
+
+			expect(history.location.pathname).toBe("/canvas/");
+			expect(history.getEntries().map((entry) => entry.path)).toEqual([
+				"/",
+				"/tasks",
+				"/canvas/",
+			]);
+			const stored = JSON.parse(storage.get("router-history") ?? "{}");
+			expect(stored.entries).toEqual(["/", "/tasks", "/canvas/"]);
+			expect(stored.index).toBe(2);
+		});
+
+		it("notifies subscribers when the hash changes after boot", () => {
+			const history = createPersistentHashHistory();
+			const seen: string[] = [];
+			const unsubscribe = history.subscribe(({ location }) => {
+				seen.push(location.pathname);
+			});
+
+			(globalThis.window as { location: { hash: string } }).location.hash =
+				"#/canvas/";
+			emitWindowEvent("hashchange");
+
+			expect(history.location.pathname).toBe("/canvas/");
+			expect(seen).toEqual(["/canvas/"]);
+			expect(history.getEntries().map((entry) => entry.path)).toEqual([
+				"/",
+				"/canvas/",
+			]);
+			unsubscribe();
 		});
 
 		it("handles corrupted localStorage gracefully", () => {

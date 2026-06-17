@@ -10,6 +10,10 @@
  * For main process env vars, use src/main/env.main.ts instead.
  */
 import { z } from "zod/v4";
+import {
+	LOCAL_PLAYWRIGHT_SMOKE_SCOPE,
+	resolveE2EAuthBypass,
+} from "./lib/e2e-auth-bypass";
 
 const envSchema = z.object({
 	NODE_ENV: z
@@ -24,6 +28,8 @@ const envSchema = z.object({
 	NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
 	NEXT_PUBLIC_POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
 	NEXT_PUBLIC_OPENPANEL_CLIENT_ID: z.string().optional(),
+	NEXT_PUBLIC_E2E_AUTH_BYPASS: z.string().optional(),
+	NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE: z.string().optional(),
 	OPENPANEL_API_URL: z.string().default("https://api.openpanel.dev"),
 	SENTRY_DSN_DESKTOP: z.string().optional(),
 	RELAY_URL: z.url().default("https://relay.rox.one"),
@@ -50,6 +56,9 @@ const rawEnv = {
 		| undefined,
 	NEXT_PUBLIC_OPENPANEL_CLIENT_ID: import.meta.env
 		.NEXT_PUBLIC_OPENPANEL_CLIENT_ID as string | undefined,
+	NEXT_PUBLIC_E2E_AUTH_BYPASS: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS,
+	NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE:
+		process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE,
 	OPENPANEL_API_URL: import.meta.env.OPENPANEL_API_URL as string | undefined,
 	SENTRY_DSN_DESKTOP: import.meta.env.SENTRY_DSN_DESKTOP as string | undefined,
 	RELAY_URL: process.env.RELAY_URL,
@@ -58,10 +67,27 @@ const rawEnv = {
 // Only allow skipping validation in development (never in production)
 const SKIP_ENV_VALIDATION =
 	process.env.NODE_ENV === "development" && !!process.env.SKIP_ENV_VALIDATION;
+const RUNTIME_E2E_AUTH_BYPASS =
+	typeof window !== "undefined" && window.App?.e2eAuthBypass === true;
+const E2E_AUTH_BYPASS = resolveE2EAuthBypass({
+	buildTime: {
+		nodeEnv: process.env.NODE_ENV,
+		flag: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS,
+		scope: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE,
+	},
+	runtime: RUNTIME_E2E_AUTH_BYPASS
+		? {
+				nodeEnv: "production",
+				flag: true,
+				scope: LOCAL_PLAYWRIGHT_SMOKE_SCOPE,
+			}
+		: undefined,
+});
 
 export const env = {
 	...(SKIP_ENV_VALIDATION
 		? (rawEnv as z.infer<typeof envSchema>)
 		: envSchema.parse(rawEnv)),
 	SKIP_ENV_VALIDATION,
+	E2E_AUTH_BYPASS,
 };

@@ -107,6 +107,7 @@ export function DashboardSidebar({
 	const matchRoute = useMatchRoute();
 	const settingsHotkey = useHotkeyDisplay("OPEN_SETTINGS").text;
 	const isSettingsOpen = !!matchRoute({ to: "/settings", fuzzy: true });
+	const isCanvasOpen = !!matchRoute({ to: "/canvas", fuzzy: true });
 	const isJournalOpen = !!matchRoute({ to: "/journal", fuzzy: true });
 	const isMemoryOpen = !!matchRoute({ to: "/memory", fuzzy: true });
 	const { activeHostUrl } = useLocalHostService();
@@ -253,6 +254,40 @@ export function DashboardSidebar({
 									: "flex flex-col gap-0.5 px-2 py-1",
 							)}
 						>
+							{isCollapsed ? (
+								<Tooltip delayDuration={300}>
+									<TooltipTrigger asChild>
+										<button
+											type="button"
+											aria-label="Canvas"
+											onClick={() => navigate({ to: "/canvas" })}
+											className={cn(
+												"flex size-8 items-center justify-center rounded-md transition-colors",
+												isCanvasOpen
+													? "bg-accent text-foreground"
+													: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+											)}
+										>
+											<HiOutlineSparkles className="size-4" />
+										</button>
+									</TooltipTrigger>
+									<TooltipContent side="right">Canvas</TooltipContent>
+								</Tooltip>
+							) : (
+								<button
+									type="button"
+									onClick={() => navigate({ to: "/canvas" })}
+									className={cn(
+										"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",
+										isCanvasOpen
+											? "bg-accent text-foreground"
+											: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+									)}
+								>
+									<HiOutlineSparkles className="size-4 shrink-0" />
+									<span className="min-w-0 truncate">Canvas</span>
+								</button>
+							)}
 							{isCollapsed ? (
 								<Tooltip delayDuration={300}>
 									<TooltipTrigger asChild>

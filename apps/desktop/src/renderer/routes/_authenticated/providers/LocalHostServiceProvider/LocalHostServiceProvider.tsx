@@ -38,7 +38,8 @@ export function LocalHostServiceProvider({
 	const { mutate: startHostService } =
 		electronTrpc.hostServiceCoordinator.start.useMutation();
 
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	const useMockIdentity = env.SKIP_ENV_VALIDATION || env.E2E_AUTH_BYPASS;
+	const activeOrganizationId = useMockIdentity
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
 
@@ -47,10 +48,18 @@ export function LocalHostServiceProvider({
 		[collections],
 	);
 
-	const organizationIds = useMemo(
-		() => organizations?.map((organization) => organization.id) ?? [],
-		[organizations],
-	);
+	const organizationIds = useMemo(() => {
+		const syncedIds =
+			organizations?.map((organization) => organization.id) ?? [];
+		if (
+			useMockIdentity &&
+			activeOrganizationId &&
+			!syncedIds.includes(activeOrganizationId)
+		) {
+			return [activeOrganizationId, ...syncedIds];
+		}
+		return syncedIds;
+	}, [activeOrganizationId, organizations, useMockIdentity]);
 
 	useEffect(() => {
 		for (const organizationId of organizationIds) {

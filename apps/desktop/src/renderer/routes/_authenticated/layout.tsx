@@ -65,10 +65,13 @@ function AuthenticatedLayout() {
 	const shownWorkspaceInitWarningsRef = useRef(new Set<string>());
 	const isV2CloudEnabled = useIsV2CloudEnabled();
 
-	const isSignedIn = env.SKIP_ENV_VALIDATION || !!session?.user;
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
-		? MOCK_ORG_ID
-		: session?.session?.activeOrganizationId;
+	const isE2EAuthBypass = env.E2E_AUTH_BYPASS;
+	const isSignedIn =
+		env.SKIP_ENV_VALIDATION || isE2EAuthBypass || !!session?.user;
+	const activeOrganizationId =
+		env.SKIP_ENV_VALIDATION || isE2EAuthBypass
+			? MOCK_ORG_ID
+			: session?.session?.activeOrganizationId;
 
 	useAgentHookListener();
 	useUpdateListener();
@@ -162,12 +165,18 @@ function AuthenticatedLayout() {
 		},
 	});
 
-	if (isPending && !hasLocalToken && !env.SKIP_ENV_VALIDATION) {
+	if (
+		isPending &&
+		!hasLocalToken &&
+		!env.SKIP_ENV_VALIDATION &&
+		!isE2EAuthBypass
+	) {
 		return <Navigate to="/sign-in" replace />;
 	}
 	if (
 		(isPending || (isRefetching && !session?.user && hasLocalToken)) &&
-		!env.SKIP_ENV_VALIDATION
+		!env.SKIP_ENV_VALIDATION &&
+		!isE2EAuthBypass
 	) {
 		return (
 			<div className="flex h-screen w-screen items-center justify-center bg-background">

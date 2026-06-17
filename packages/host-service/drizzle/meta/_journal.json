@@ -50,6 +50,13 @@
       "when": 1780882462688,
       "tag": "0006_agent_install_state",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1781679240154,
+      "tag": "0007_misty_doctor_doom",
+      "breakpoints": true
     }
   ]
 }

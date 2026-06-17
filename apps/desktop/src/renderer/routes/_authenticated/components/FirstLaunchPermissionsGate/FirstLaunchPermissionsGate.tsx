@@ -11,6 +11,7 @@ import { Button } from "@rox/ui/button";
 import { Label } from "@rox/ui/label";
 import { useMemo, useState } from "react";
 import { LuExternalLink } from "react-icons/lu";
+import { env } from "renderer/env.renderer";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
 	PERMISSION_GATE_ITEMS,
@@ -151,6 +152,8 @@ export function FirstLaunchPermissionsGate() {
 		setDismissed(true);
 		saveDismissed();
 	};
+
+	if (env.E2E_AUTH_BYPASS) return null;
 
 	const open = shouldShowPermissionsGate({
 		platform: getPlatform(),

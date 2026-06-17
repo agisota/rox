@@ -122,6 +122,7 @@ export function ModelProviderGroup({
 							<ModelCapabilityBadges
 								capabilities={model.capabilities}
 								contextWindowLabel={contextWindowLabel}
+								contextWindowTokens={model.contextWindowTokens}
 							/>
 						</div>
 					</ModelSelectorItem>

@@ -84,6 +84,10 @@
 			"types": "./src/appearance/index.ts",
 			"default": "./src/appearance/index.ts"
 		},
+		"./canvas": {
+			"types": "./src/canvas/index.ts",
+			"default": "./src/canvas/index.ts"
+		},
 		"./terminal-link-parsing": {
 			"types": "./src/terminal-link-parsing/index.ts",
 			"default": "./src/terminal-link-parsing/index.ts"
@@ -135,10 +139,6 @@
 		"./billing": {
 			"types": "./src/billing.ts",
 			"default": "./src/billing.ts"
-		},
-		"./canvas": {
-			"types": "./src/canvas/index.ts",
-			"default": "./src/canvas/index.ts"
 		},
 		"./workspace-launch": {
 			"types": "./src/workspace-launch/index.ts",

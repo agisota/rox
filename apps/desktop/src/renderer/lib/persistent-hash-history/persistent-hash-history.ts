@@ -41,6 +41,17 @@ function loadPersistedState(): PersistedState {
 	return { entries: ["/"], index: 0 };
 }
 
+function loadInitialHashPath(): string | null {
+	const hash =
+		typeof window.location.hash === "string" ? window.location.hash : "";
+	if (!hash || hash === "#") return null;
+
+	const path = hash.startsWith("#") ? hash.slice(1) : hash;
+	if (!path.startsWith("/") || path.length === 0) return null;
+
+	return path;
+}
+
 function persistState(entries: string[], index: number) {
 	try {
 		const capped =
@@ -109,13 +120,54 @@ export interface PersistentHashHistory extends RouterHistory {
 
 export function createPersistentHashHistory(): PersistentHashHistory {
 	const persisted = loadPersistedState();
+	const initialHashPath = loadInitialHashPath();
 
 	const entries: string[] = [...persisted.entries];
+	let index = persisted.index;
+
+	if (initialHashPath && entries[index] !== initialHashPath) {
+		const existingIndex = entries.indexOf(initialHashPath);
+		if (existingIndex >= 0) {
+			index = existingIndex;
+		} else {
+			if (index < entries.length - 1) {
+				entries.splice(index + 1);
+			}
+			entries.push(initialHashPath);
+			index = entries.length - 1;
+		}
+		persistState(entries, index);
+	}
+
 	const timestamps: number[] = entries.map(() => Date.now());
 	const states: LocationState[] = entries.map((_entry, i) =>
 		assignKeyAndIndex(i),
 	);
-	let index = persisted.index;
+
+	const applyExternalPath = (path: string): boolean => {
+		if (entries[index] === path) return false;
+
+		const existingIndex = entries.indexOf(path);
+		if (existingIndex >= 0) {
+			index = existingIndex;
+			timestamps[index] = Date.now();
+			states[index] = assignKeyAndIndex(index, states[index]);
+			persistState(entries, index);
+			return true;
+		}
+
+		if (index < entries.length - 1) {
+			entries.splice(index + 1);
+			timestamps.splice(index + 1);
+			states.splice(index + 1);
+		}
+		entries.push(path);
+		timestamps.push(Date.now());
+		index = entries.length - 1;
+		states.push(assignKeyAndIndex(index));
+		persistState(entries, index);
+		return true;
+	};
 
 	const getLocation = () =>
 		parseHref(entries[index] ?? "/", states[index] ?? assignKeyAndIndex(index));
@@ -172,7 +224,22 @@ export function createPersistentHashHistory(): PersistentHashHistory {
 		},
 	});
 
+	const onHashChange = () => {
+		const nextPath = loadInitialHashPath();
+		if (!nextPath) return;
+		if (applyExternalPath(nextPath)) {
+			history.notify({ type: "PUSH" });
+		}
+	};
+
+	window.addEventListener("hashchange", onHashChange);
+	const destroy = history.destroy;
+
 	return Object.assign(history, {
+		destroy: () => {
+			window.removeEventListener("hashchange", onHashChange);
+			destroy();
+		},
 		getEntries: (): HistoryEntry[] =>
 			entries.map((path, i) => ({
 				path,

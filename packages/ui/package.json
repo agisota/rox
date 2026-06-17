@@ -57,7 +57,7 @@
 		"@radix-ui/react-use-controllable-state": "1.2.2",
 		"@rox/shared": "workspace:*",
 		"@streamdown/mermaid": "1.0.2",
-		"@xyflow/react": "12.10.2",
+		"@xyflow/react": "12.11.0",
 		"ai": "6.0.141",
 		"class-variance-authority": "0.7.1",
 		"clsx": "2.1.1",
