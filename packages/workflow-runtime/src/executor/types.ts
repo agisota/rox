@@ -161,6 +161,15 @@ export interface ExecuteOptions {
 	 * every `agent_run` node. Defaults to an empty context when omitted.
 	 */
 	initialContext?: AccumulatedContext;
+	/**
+	 * Node-entry dispatch: begin execution AT this node instead of the `start`
+	 * block. Used by event triggers that target a specific pipeline node (the
+	 * trigger resolves to a `pipeline_triggers.targetNodeId`). The entry node is
+	 * seeded with `runInput` exactly as `start` would be, and only nodes reachable
+	 * from it run; upstream nodes are skipped. When omitted, the run starts at the
+	 * single `start` block (legacy behavior). Unknown ids fall back to `start`.
+	 */
+	entryNodeId?: string;
 	/** Validate the final output against this schema when set. */
 	outputSchema?: JsonSchema;
 	/** Signal cooperative cancellation. */

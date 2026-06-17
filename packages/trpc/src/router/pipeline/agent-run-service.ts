@@ -2,9 +2,11 @@ import { db } from "@rox/db/client";
 import { skills, skillVersions } from "@rox/db/schema";
 import {
 	type AgentRolePreset,
-	appendContextEntry,
+	agentOutputToContextEntry,
+	buildAgentRunPrompt,
 	type ContextEntry,
-	renderContextForPrompt,
+	classifyAgentRunError,
+	resolveAgentDispatchTarget,
 } from "@rox/workflow-core";
 import type {
 	AgentRunRequest,
@@ -12,6 +14,22 @@ import type {
 	AgentRunResultPort,
 } from "@rox/workflow-runtime";
 import { and, eq } from "drizzle-orm";
+import {
+	type RunAgentOnHostArgs,
+	type RunAgentOnHostResult,
+	runAgentOnHostAndCapture,
+} from "./agent-run-host-bridge";
+
+/** Loads a role preset by org + slug (the DB port; injectable for tests). */
+export type LoadRolePresetPort = (
+	organizationId: string,
+	roleSkillSlug: string,
+) => Promise<{ preset: AgentRolePreset } | null>;
+
+/** Dispatches the built prompt to the host and captures output (the host port). */
+export type RunAgentOnHostPort = (
+	args: RunAgentOnHostArgs,
+) => Promise<RunAgentOnHostResult>;
 
 export interface MakeAgentRunResolverArgs {
 	organizationId: string;
@@ -21,6 +39,22 @@ export interface MakeAgentRunResolverArgs {
 	relayUrl: string;
 	/** The pipeline run id (provenance for the dispatched agent session). */
 	runId: string;
+	/**
+	 * Pre-existing workspace to run every agent_run node in. When null, the first
+	 * dispatched node creates a git-worktree workspace on the host and subsequent
+	 * nodes in the same run reuse it (see the in-run cache in
+	 * {@link makeAgentRunResolver}).
+	 */
+	initialWorkspaceId?: string | null;
+	/**
+	 * Injectable ports (default to the real DB lookup + host relay). Exposed so the
+	 * resolver's pure composition — prompt build → dispatch → context append →
+	 * error mapping — can be unit tested without a DB or a live host.
+	 */
+	ports?: {
+		loadRolePreset?: LoadRolePresetPort;
+		runOnHost?: RunAgentOnHostPort;
+	};
 }
 
 /**
@@ -56,19 +90,30 @@ async function loadRolePreset(
 /**
  * Build the {@link AgentRunResolver} injected into the WorkflowExecutor for an
  * `agent_run` block. It mirrors `dispatchAutomation` (mint JWT → reuse/create a
- * workspace → relay `agents.run` to the host), routing chat vs CLI from the role
- * preset's `agentKind`.
+ * workspace → relay the run to the host), routing chat vs CLI from the role
+ * preset's `agentKind` (design §3.2 / §5).
  *
  * The executor stays DB-free + host-free; this resolver carries the DB lookup of
- * the role preset and (TODO) the host bridge. It already renders the
- * accumulating context into the prompt and returns the appended context entry so
- * downstream nodes see the full transcript (design §5).
+ * the role preset and the host bridge. The PURE pieces — prompt build, output →
+ * context mapping, dispatch-target selection, error classification — live in
+ * `@rox/workflow-core` (`agentRunBridge`) and are unit tested there. The impure
+ * host call lives in `./agent-run-host-bridge`.
+ *
+ * One worktree per run: the resolver caches the workspace id created by the
+ * first dispatched node and threads it into the rest, so all agent nodes in a
+ * pipeline run share a single workspace (and its accumulating git state).
  */
 export function makeAgentRunResolver(
 	args: MakeAgentRunResolverArgs,
 ): AgentRunResolver {
+	// Shared across every agent_run node in this run: the first dispatch creates
+	// the workspace (when none was supplied) and later nodes reuse it.
+	let runWorkspaceId: string | null = args.initialWorkspaceId ?? null;
+	const loadPreset = args.ports?.loadRolePreset ?? loadRolePreset;
+	const runOnHost = args.ports?.runOnHost ?? runAgentOnHostAndCapture;
+
 	return async (req: AgentRunRequest): Promise<AgentRunResultPort> => {
-		const role = await loadRolePreset(args.organizationId, req.roleSkillSlug);
+		const role = await loadPreset(args.organizationId, req.roleSkillSlug);
 		if (!role) {
 			return {
 				error: {
@@ -80,46 +125,71 @@ export function makeAgentRunResolver(
 
 		const { preset } = role;
 		// Prompt = role persona + optional per-node template + rendered transcript.
-		const renderedContext = renderContextForPrompt(req.context);
-		const prompt = [
-			preset.systemPrompt,
-			req.promptTemplate?.trim() ? req.promptTemplate : undefined,
-			renderedContext,
-		]
-			.filter(Boolean)
-			.join("\n\n");
+		const prompt = buildAgentRunPrompt({
+			preset,
+			promptTemplate: req.promptTemplate,
+			context: req.context,
+		});
+		const target = resolveAgentDispatchTarget(preset);
 
-		// TODO(agent-pipelines): dispatch to the host via the relay primitive
-		// (mirror packages/trpc/src/router/automation/dispatch.ts):
-		//   1. mintUserJwt({ userId, organizationIds:[organizationId], scope:
-		//      "pipeline-run", runId, ttlSeconds: 300 })
-		//   2. preset.agentKind === "chat"  -> run in-process via host chat runtime
-		//      preset.agentKind === "terminal" -> create a git-worktree workspace +
-		//      relay "agents.run", read back the final message/diff on
-		//      agent:lifecycle Stop (Stage E, host-service).
-		// Until the host bridge lands we record a deterministic placeholder output
-		// so the executor branch + context accumulation are exercised end-to-end.
-		const message = `[agent ${preset.agentId} | role ${req.roleSkillSlug}] pending host execution`;
-		void prompt;
-		void args.relayUrl;
-		void args.userId;
-		void args.v2ProjectId;
-		void args.runId;
+		try {
+			// Cross-process host bridge: resolve host + workspace, relay the run, and
+			// block for the captured output (mirrors dispatchAutomation, but the
+			// pipeline variant returns the agent's output inline so we can thread it
+			// into the accumulating context). See ./agent-run-host-bridge.
+			const result = await runOnHost({
+				relayUrl: args.relayUrl,
+				organizationId: args.organizationId,
+				userId: args.userId,
+				runId: args.runId,
+				v2ProjectId: args.v2ProjectId,
+				workspaceId: runWorkspaceId,
+				agentKind: target.kind,
+				agentId: target.agentId,
+				prompt,
+				maxTurns: target.maxTurns,
+				label: req.roleSkillSlug,
+			});
 
-		const entry: ContextEntry = {
-			nodeId: req.blockId,
-			role: req.roleSkillSlug,
-			agentId: preset.agentId,
-			message,
-			at: new Date().toISOString(),
-		};
-		// Appending here is belt-and-suspenders; the executor also appends from
-		// `appendedContext`. We expose the helper usage to keep the contract clear.
-		void appendContextEntry(req.context, entry);
+			// Reuse the (possibly freshly created) workspace for downstream nodes.
+			runWorkspaceId = result.workspaceId;
 
-		return {
-			output: { message },
-			appendedContext: [entry],
-		};
+			// An empty capture means the agent settled without producing output —
+			// surface it as a typed error so the node's errorMode applies (the run
+			// doesn't silently absorb an empty turn).
+			if (!result.message.trim()) {
+				return {
+					error: {
+						code: "AGENT_NO_OUTPUT",
+						message: `Agent role "${req.roleSkillSlug}" produced no output`,
+					},
+					childRunRef: { kind: result.kind, sessionId: result.sessionId },
+				};
+			}
+
+			const entry: ContextEntry = agentOutputToContextEntry({
+				blockId: req.blockId,
+				roleSkillSlug: req.roleSkillSlug,
+				agentId: target.agentId,
+				message: result.message,
+				artifacts: result.artifacts,
+			});
+
+			return {
+				output: {
+					message: entry.message,
+					...(result.artifacts && result.artifacts.length > 0
+						? { artifacts: result.artifacts }
+						: {}),
+				},
+				appendedContext: [entry],
+				childRunRef: { kind: result.kind, sessionId: result.sessionId },
+			};
+		} catch (cause) {
+			// Any host-bridge failure (no host / offline / relay error / no output)
+			// becomes a typed, classified error so the executor can apply the node's
+			// errorMode (fail_parent vs continue) — design §3.2.
+			return { error: classifyAgentRunError(cause) };
+		}
 	};
 }

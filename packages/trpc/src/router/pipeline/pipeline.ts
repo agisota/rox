@@ -15,10 +15,12 @@ import { and, desc, eq } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { getPipelineForOrg } from "./access";
+import { ingestPipelineEvent } from "./ingest-event";
 import { runPipeline } from "./run-pipeline";
 import {
 	createPipelineSchema,
 	getPipelineRunSchema,
+	ingestEventSchema,
 	listPipelineRunsSchema,
 	listPipelinesSchema,
 	pipelineIdSchema,
@@ -201,6 +203,26 @@ export const pipelineRouter = {
 				});
 			}
 			return result;
+		}),
+
+	/**
+	 * Host → main relay for REAL host-originating pipeline events (design §4.3).
+	 *
+	 * The desktop host runs on local SQLite and cannot reach this Neon-backed
+	 * dispatcher, so its chat-send and CLI-agent-finished seams relay the event
+	 * here through the host's authenticated api client. We resolve org from the
+	 * caller's verified membership (never trust a host-supplied org), resolve the
+	 * project scope server-side, build the typed event, and hand it to the shared
+	 * `publishPipelineEvent` → `dispatchPipelineEvent` fan-out.
+	 *
+	 * Fire-and-forget by contract on the host side; here it returns whether a
+	 * scope was resolved + the event published, so the host can log a no-op.
+	 */
+	ingestEvent: protectedProcedure
+		.input(ingestEventSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			return ingestPipelineEvent({ organizationId, input });
 		}),
 
 	listRuns: protectedProcedure

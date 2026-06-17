@@ -82,6 +82,43 @@ export const listPipelineRunsSchema = z.object({
 	limit: z.number().int().min(1).max(200).default(50),
 });
 
+/**
+ * Host → main relay input for `pipeline.ingestEvent` (design §4.3 "emit seams").
+ *
+ * The desktop host (local SQLite) cannot reach the Neon-backed dispatcher, so it
+ * relays the REAL host-originating events here via its authenticated api client.
+ * The org is resolved server-side from the caller's active membership (never
+ * trusted from the host); the project is resolved from the referenced chat
+ * session / supplied directly. A discriminated union keeps each kind's payload
+ * minimal and validated.
+ */
+export const ingestEventSchema = z.discriminatedUnion("kind", [
+	z.object({
+		kind: z.literal("user_sent_message"),
+		/** The chat session the message was sent in (resolves project scope). */
+		chatSessionId: z.string().uuid(),
+		/** The submitted message text (seeds the dispatched run's context). */
+		message: z.string().min(1).max(100_000),
+	}),
+	z.object({
+		kind: z.literal("agent_run_finished"),
+		/** The finished CLI/terminal agent's host session reference. */
+		agentRunRef: z.object({
+			kind: z.enum(["terminal", "chat"]),
+			sessionId: z.string().min(1),
+			roleSlug: z.string().min(1).optional(),
+			nodeId: z.string().min(1).optional(),
+		}),
+		/**
+		 * Project scope for the run. Optional: when omitted the event is org-wide
+		 * (matches only unscoped triggers). The host supplies this when it knows the
+		 * workspace's project; the main API does not re-resolve it from a terminal
+		 * session (terminals aren't persisted in the Neon chat tables).
+		 */
+		v2ProjectId: z.string().uuid().optional(),
+	}),
+]);
+
 export const getPipelineRunSchema = z.object({
 	pipelineId: z.string().uuid(),
 	runId: z.string().uuid(),

@@ -3,7 +3,37 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { terminalSessions } from "../../../db/schema";
 import { mapEventType } from "../../../events";
+import type { ApiClient } from "../../../types";
 import { publicProcedure, router } from "../../index";
+
+/**
+ * Relay a CLI/terminal `agent_run_finished` pipeline event to the main API
+ * (Agent Pipelines, design §4.3). The host runs on local SQLite and cannot reach
+ * the Neon-backed pipeline dispatcher; the main API resolves matching pipeline
+ * triggers and fires them. Fire-and-forget: never awaited, never throws into the
+ * lifecycle hook. A missing/older API (no `pipeline.ingestEvent`) or a transport
+ * error is swallowed — agent lifecycle handling must not depend on a listener.
+ *
+ * `v2ProjectId` is intentionally omitted: the lifecycle hook doesn't carry the
+ * workspace's project, so the event is org-wide (matches unscoped triggers). The
+ * pipeline-run path that needs project scope is the in-process executor emit,
+ * which already carries it.
+ */
+function emitCliAgentRunFinished(
+	api: ApiClient,
+	agentRunRef: {
+		kind: "terminal" | "chat";
+		sessionId: string;
+		roleSlug?: string;
+		nodeId?: string;
+	},
+): void {
+	void api.pipeline.ingestEvent
+		.mutate({ kind: "agent_run_finished", agentRunRef })
+		.catch(() => {
+			// Best-effort signal — never break the lifecycle broadcast.
+		});
+}
 
 // Hook scripts emit "" for unset env vars; we coerce to undefined so the
 // AgentIdentity broadcast carries only meaningful fields.
@@ -82,16 +112,25 @@ export const notificationsRouter = router({
 			occurredAt,
 		});
 
-		// TODO(agent-pipelines) Stage E: on `eventType === "Stop"`, emit the
-		// `agent_run_finished` pipeline event for CLI/terminal agents (the async
-		// read-back path; the in-process executor agent_run branch already emits
-		// it directly via onAgentRunFinished). This hook runs in the host-service
-		// process, where the DB-backed pipeline dispatcher CANNOT run
-		// (`pipeline_triggers` is in the Neon main DB). Wiring requires the
-		// host→main relay: resolve the agent's pipeline run from the agent
-		// session id (provenance carried on workflow_runs.triggerRef /
-		// childRunId) and relay a `pipeline.dispatchEvent`-style mutation to the
-		// main API, which calls `dispatchPipelineEvent` from @rox/trpc.
+		// On `Stop`, emit the `agent_run_finished` pipeline event for CLI/terminal
+		// agents (Agent Pipelines, design §4.3). This is the host-lifecycle seam for
+		// terminal agents finishing OUTSIDE a pipeline run's blocking capture (the
+		// in-process executor agent_run branch already emits it directly for nodes it
+		// dispatched). This hook runs in the host-service process on local SQLite,
+		// where the DB-backed dispatcher CANNOT run (`pipeline_triggers` is in the
+		// Neon main DB), so we relay to the main API over the host's authenticated
+		// api client; `pipeline.ingestEvent` fans it out through
+		// `publishPipelineEvent` → `dispatchPipelineEvent`. Fire-and-forget: a failing
+		// relay must never break the lifecycle broadcast / chime.
+		if (eventType === "Stop") {
+			emitCliAgentRunFinished(ctx.api, {
+				kind: "terminal",
+				sessionId: agent?.sessionId ?? input.terminalId,
+				// The role slug isn't carried on the lifecycle hook; the agent's
+				// definitionId (when present) is the closest stable role handle.
+				...(agent?.definitionId ? { roleSlug: agent.definitionId } : {}),
+			});
+		}
 
 		ctx.terminalAgentStore.recordEvent({
 			terminalId: input.terminalId,

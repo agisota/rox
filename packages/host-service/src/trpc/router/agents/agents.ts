@@ -8,6 +8,7 @@ import { createTerminalSessionInternal } from "../../../terminal/terminal";
 import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
 import { resolveAttachmentPath } from "../attachments/storage";
+import { runAgentAndCapture } from "./agent-run-capture";
 
 interface ResolvedHostAgentConfig {
 	id: string;
@@ -295,4 +296,22 @@ export const agentsRouter = router({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => runAgentInWorkspace(ctx, input)),
+
+	/**
+	 * Blocking variant of {@link agentsRouter.run} for Agent Pipelines: start the
+	 * agent, wait for it to settle, and return its captured output so the cloud
+	 * pipeline executor can thread it into the run's accumulating context. See
+	 * `./agent-run-capture` (host side) and `agent-run-host-bridge` (cloud side).
+	 */
+	runAndCapture: protectedProcedure
+		.input(
+			z.object({
+				workspaceId: z.string().uuid(),
+				agent: z.string().min(1),
+				prompt: z.string().min(1),
+				maxTurns: z.number().int().positive().default(8),
+				attachmentIds: z.array(z.string().uuid()).optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => runAgentAndCapture(ctx, input)),
 });
