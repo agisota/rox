@@ -346,6 +346,23 @@
 	gap: 22px;
 }
 
+/* Legibility scrim: a soft dark halo behind the copy column so the brighter
+ * LandingBackdrop never fights the headline/features. Weighted toward the
+ * upper-left, where the headline sits; fades out so the rig stays visible. */
+.rox-landing__main::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	inset: -6% -14% -2%;
+	background: radial-gradient(
+		78% 56% at 32% 26%,
+		rgba(10, 7, 5, 0.78),
+		rgba(10, 7, 5, 0.42) 52%,
+		transparent 80%
+	);
+	pointer-events: none;
+}
+
 .rox-landing__brand {
 	display: flex;
 	align-items: center;
