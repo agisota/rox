@@ -95,6 +95,16 @@ export class DvNetInvoiceError extends Error {
 	}
 }
 
+function isTimeoutError(error: unknown): boolean {
+	if (error instanceof DOMException) {
+		return error.name === "TimeoutError" || error.name === "AbortError";
+	}
+	return (
+		error instanceof Error &&
+		(error.name === "TimeoutError" || error.name === "AbortError")
+	);
+}
+
 /**
  * Map a dv.net raw status to the normalized {@link CryptoPaymentStatus}.
  * dv.net uses "paid" as a synonym for "confirmed" — we normalise here so
@@ -267,13 +277,24 @@ export class DvNetHttpClient implements DvNetClient {
 
 	async getPayment(id: string): Promise<CryptoPayment | null> {
 		const url = `${this.baseUrl}/charges/${encodeURIComponent(id)}`;
-		const response = await fetch(url, {
-			headers: {
-				Authorization: `Bearer ${this.getApiKey()}`,
-				"Content-Type": "application/json",
-			},
-			signal: AbortSignal.timeout(DVNET_REQUEST_TIMEOUT_MS),
-		});
+		let response: Response;
+		try {
+			response = await fetch(url, {
+				headers: {
+					Authorization: `Bearer ${this.getApiKey()}`,
+					"Content-Type": "application/json",
+				},
+				signal: AbortSignal.timeout(DVNET_REQUEST_TIMEOUT_MS),
+			});
+		} catch (error) {
+			if (isTimeoutError(error)) {
+				throw new Error(
+					`dv.net GET /charges/${encodeURIComponent(id)} timed out after ${DVNET_REQUEST_TIMEOUT_MS}ms`,
+					{ cause: error },
+				);
+			}
+			throw error;
+		}
 
 		if (response.status === 404) return null;
 

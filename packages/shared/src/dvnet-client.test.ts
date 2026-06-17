@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import {
 	buildInvoiceRequest,
 	DvNetConfigError,
@@ -306,6 +306,12 @@ describe("normalizeDvNetWebhook → creditConfirmedPayment integration", () => {
 // ---------------------------------------------------------------------------
 
 describe("DvNetHttpClient", () => {
+	const originalFetch = globalThis.fetch;
+
+	afterEach(() => {
+		globalThis.fetch = originalFetch;
+	});
+
 	it("throws DvNetConfigError when DVNET_API_KEY is absent", () => {
 		expect(() => new DvNetHttpClient({})).toThrow(DvNetConfigError);
 	});
@@ -326,5 +332,16 @@ describe("DvNetHttpClient", () => {
 		expect(
 			() => new DvNetHttpClient({ DVNET_API_KEY: "test-key-12345" }),
 		).not.toThrow();
+	});
+
+	it("wraps timeout failures with dv.net request context", async () => {
+		globalThis.fetch = (async () => {
+			throw new DOMException("request timed out", "TimeoutError");
+		}) as unknown as typeof fetch;
+
+		const client = new DvNetHttpClient({ DVNET_API_KEY: "test-key-12345" });
+		await expect(client.getPayment("chg_timeout")).rejects.toThrow(
+			"dv.net GET /charges/chg_timeout timed out after 10000ms",
+		);
 	});
 });

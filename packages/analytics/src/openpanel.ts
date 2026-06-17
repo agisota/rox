@@ -71,7 +71,6 @@ export function createOpenPanelServerClient(
 					"openpanel-client-secret": clientSecret,
 				},
 				body: JSON.stringify(body),
-				keepalive: true,
 				signal: AbortSignal.timeout(OPENPANEL_REQUEST_TIMEOUT_MS),
 			});
 		} catch {
