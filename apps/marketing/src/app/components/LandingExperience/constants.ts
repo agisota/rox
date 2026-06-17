@@ -231,6 +231,11 @@ export const HERO_STACK_TERM: LandingTerm = {
 	tip: "можно выбрать любого привычного тебе агента и любую привычную тебе модель",
 };
 
+export const HERO_WORKTREE_TERM: LandingTerm = {
+	label: "рабочей ветке",
+	tip: "Git worktree — отдельная рабочая копия репозитория в своей папке и ветке: агент пишет код изолированно, не трогая твою основную рабочую директорию.",
+};
+
 export const HERO_ROX_ORCHESTRATION_TERM: LandingTerm = {
 	label: "легко",
 	tip: "для оркестрации используем собственное комбо из ODW (opendynamicworkflows) x ACPX x Autopilot x Swarm",

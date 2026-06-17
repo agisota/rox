@@ -8,7 +8,7 @@ import {
 	HERO_SUB_LINE_ONE,
 	HERO_SUB_LINE_TWO_LEAD,
 	HERO_SUB_TAIL,
-	LANDING_FEAT_ISOLATION,
+	HERO_WORKTREE_TERM,
 	LANDING_HEADLINE,
 } from "../../constants";
 import { AnimatedTextCycle } from "../AnimatedTextCycle";
@@ -16,6 +16,7 @@ import { OrchestrationField } from "../OrchestrationField";
 import { FIELD_HINT } from "../OrchestrationField/constants";
 import { HeroDownloadCta } from "./components/HeroDownloadCta";
 import { HeroStackLine } from "./components/HeroStackLine";
+import { Term } from "./components/Term";
 
 /**
  * Scramble-text landing document, ported from Julian Garnier's anime.js v4
@@ -164,7 +165,11 @@ export function ScrambleLanding() {
 
 					<p className="rox-hero__hint">{FIELD_HINT}</p>
 
-					<p className="rox-hero__hint">{LANDING_FEAT_ISOLATION}</p>
+					<p className="rox-hero__hint">
+						Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
+						<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
+						конфликтов
+					</p>
 
 					<p className="rox-hero__hint">
 						<HeroStackLine />
