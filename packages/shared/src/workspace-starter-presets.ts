@@ -177,6 +177,27 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 		presetIds: ["agents-md", "spec-md", "readme"],
 	},
 	{
+		id: "product-manager-kit",
+		label: "Product manager kit",
+		description:
+			"Start a non-code product workspace with a brief, README, todo list, and planner.",
+		presetIds: ["readme", "product-brief", "todo-md", "planner-md"],
+	},
+	{
+		id: "seo-content-kit",
+		label: "SEO content kit",
+		description:
+			"Start a content workspace with an SEO plan, README, and publishing planner.",
+		presetIds: ["readme", "seo-content-plan", "planner-md"],
+	},
+	{
+		id: "finance-ops-kit",
+		label: "Finance ops kit",
+		description:
+			"Start a finance workspace with an operating model, README, and planner.",
+		presetIds: ["readme", "finance-operating-model", "planner-md"],
+	},
+	{
 		id: "everything",
 		label: "Everything",
 		description:

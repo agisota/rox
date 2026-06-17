@@ -13,7 +13,7 @@ import {
 describe("workspace-starter-presets", () => {
 	it("exposes 15-30 starters with unique ids", () => {
 		expect(WORKSPACE_STARTER_PRESETS.length).toBeGreaterThanOrEqual(15);
-		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(30);
+		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(35);
 		const ids = WORKSPACE_STARTER_PRESETS.map((s) => s.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
@@ -185,6 +185,21 @@ describe("workspace-starter-presets", () => {
 				id: "spec-review-kit",
 				commandCount: 0,
 				files: ["AGENTS.md", "spec.md", "README.md"],
+			},
+			{
+				id: "product-manager-kit",
+				commandCount: 0,
+				files: ["todo.md", "planner.md", "product/brief.md", "README.md"],
+			},
+			{
+				id: "seo-content-kit",
+				commandCount: 0,
+				files: ["planner.md", "marketing/seo-content-plan.md", "README.md"],
+			},
+			{
+				id: "finance-ops-kit",
+				commandCount: 0,
+				files: ["planner.md", "finance/operating-model.md", "README.md"],
 			},
 			{
 				id: "everything",

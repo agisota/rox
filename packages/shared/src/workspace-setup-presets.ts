@@ -69,6 +69,45 @@ const PLANNER_MD_STUB = `# Planner
 ## Later
 `;
 
+const PRODUCT_BRIEF_MD_STUB = `# Product Brief
+
+## Customer
+
+## Problem
+
+## Offer
+
+## Success metrics
+
+## Decisions
+`;
+
+const SEO_CONTENT_PLAN_MD_STUB = `# SEO Content Plan
+
+## Search themes
+
+## Content backlog
+
+## Publishing cadence
+
+## Internal links
+
+## Owners
+`;
+
+const FINANCE_OPERATING_MODEL_MD_STUB = `# Finance Operating Model
+
+## Revenue
+
+## Costs
+
+## Cash runway
+
+## Risks
+
+## Next review
+`;
+
 export const WORKSPACE_SETUP_PRESETS: readonly WorkspaceSetupPreset[] = [
 	{
 		id: "git-init",
@@ -173,6 +212,37 @@ jobs:
 		label: "Add planner template",
 		description: "Scaffold a planner.md with now/next/later sections.",
 		scaffoldFiles: [{ path: "planner.md", contents: PLANNER_MD_STUB }],
+	},
+	{
+		id: "product-brief",
+		label: "Add product brief",
+		description: "Scaffold a product brief for non-developer planning work.",
+		scaffoldFiles: [
+			{ path: "product/brief.md", contents: PRODUCT_BRIEF_MD_STUB },
+		],
+	},
+	{
+		id: "seo-content-plan",
+		label: "Add SEO content plan",
+		description: "Scaffold a lightweight SEO/content planning document.",
+		scaffoldFiles: [
+			{
+				path: "marketing/seo-content-plan.md",
+				contents: SEO_CONTENT_PLAN_MD_STUB,
+			},
+		],
+	},
+	{
+		id: "finance-operating-model",
+		label: "Add finance operating model",
+		description:
+			"Scaffold a simple finance operating model for runway and planning.",
+		scaffoldFiles: [
+			{
+				path: "finance/operating-model.md",
+				contents: FINANCE_OPERATING_MODEL_MD_STUB,
+			},
+		],
 	},
 	{
 		id: "gitignore",
