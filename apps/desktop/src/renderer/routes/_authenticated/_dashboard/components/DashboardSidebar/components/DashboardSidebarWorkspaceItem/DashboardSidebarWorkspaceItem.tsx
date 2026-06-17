@@ -7,6 +7,7 @@ import {
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDiffStats } from "renderer/hooks/host-service/useDiffStats";
+import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import { useDeletingWorkspaces } from "renderer/routes/_authenticated/providers/DeletingWorkspacesProvider";
 import { RenameBranchDialog } from "renderer/screens/main/components/WorkspaceSidebar/WorkspaceListItem/components";
@@ -17,6 +18,7 @@ import { DashboardSidebarDeleteDialog } from "../DashboardSidebarDeleteDialog";
 import { DashboardSidebarCollapsedWorkspaceButton } from "./components/DashboardSidebarCollapsedWorkspaceButton";
 import { DashboardSidebarExpandedWorkspaceRow } from "./components/DashboardSidebarExpandedWorkspaceRow";
 import { DashboardSidebarWorkspaceContextMenu } from "./components/DashboardSidebarWorkspaceContextMenu/DashboardSidebarWorkspaceContextMenu";
+import { WorkspaceLabelsDialog } from "./components/WorkspaceLabelsDialog";
 import { useDashboardSidebarWorkspaceItemActions } from "./hooks/useDashboardSidebarWorkspaceItemActions";
 
 interface DashboardSidebarWorkspaceItemProps {
@@ -77,6 +79,8 @@ export function DashboardSidebarWorkspaceItem({
 	});
 
 	const { v2Workspaces: v2WorkspaceActions } = useOptimisticCollectionActions();
+	const { setWorkspaceColor, setWorkspaceLabels } = useDashboardSidebarState();
+	const [labelsDialogOpen, setLabelsDialogOpen] = useState(false);
 	const [renameBranchTarget, setRenameBranchTarget] = useState<string | null>(
 		null,
 	);
@@ -183,6 +187,8 @@ export function DashboardSidebarWorkspaceItem({
 								isUnread={isUnread}
 								isLocalWorkspace={hostType === "local-device"}
 								isPinned={isMainWorkspace && hostType === "local-device"}
+								color={accentColor}
+								onSetColor={(targetColor) => setWorkspaceColor(id, targetColor)}
 								onCreateSection={handleCreateSection}
 								showDeleteHotkey={isActive}
 								onMoveToSection={(targetSectionId) =>
@@ -274,6 +280,9 @@ export function DashboardSidebarWorkspaceItem({
 							projectId={projectId}
 							isInSection={isInSection}
 							isUnread={isUnread}
+							color={accentColor}
+							onSetColor={(targetColor) => setWorkspaceColor(id, targetColor)}
+							onEditLabels={() => setLabelsDialogOpen(true)}
 							onCreateSection={handleCreateSection}
 							onMoveToSection={(targetSectionId) =>
 								moveWorkspaceToSection(id, projectId, targetSectionId)
@@ -317,6 +326,12 @@ export function DashboardSidebarWorkspaceItem({
 					onAfterRename={handleAfterBranchRename}
 				/>
 			)}
+			<WorkspaceLabelsDialog
+				open={labelsDialogOpen}
+				onOpenChange={setLabelsDialogOpen}
+				labels={workspace.labels}
+				onSave={(labels) => setWorkspaceLabels(id, labels)}
+			/>
 		</>
 	);
 }

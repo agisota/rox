@@ -16,6 +16,11 @@ import { knowledgeRouter } from "./router/knowledge";
 import { memoryRouter } from "./router/memory";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
+import {
+	agentRoleRouter,
+	pipelineRouter,
+	triggerRouter,
+} from "./router/pipeline";
 import { profileRouter } from "./router/profile";
 import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
@@ -38,6 +43,7 @@ export const appRouter = createTRPCRouter({
 	achievements: achievementsRouter,
 	admin: adminRouter,
 	agent: agentRouter,
+	agentRole: agentRoleRouter,
 	agentSource: agentSourceRouter,
 	apiKey: apiKeyRouter,
 	analytics: analyticsRouter,
@@ -52,6 +58,8 @@ export const appRouter = createTRPCRouter({
 	memory: memoryRouter,
 	notes: notesRouter,
 	organization: organizationRouter,
+	pipeline: pipelineRouter,
+	pipelineTrigger: triggerRouter,
 	profile: profileRouter,
 	project: projectRouter,
 	ranking: rankingRouter,

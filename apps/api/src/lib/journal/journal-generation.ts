@@ -15,13 +15,25 @@
 import { db } from "@rox/db/client";
 import {
 	chatSessions,
+	githubInstallations,
+	githubPullRequests,
+	githubRepositories,
 	type JournalMemorySuggestion,
 	journalEntries,
 	memoryItems,
 } from "@rox/db/schema";
-import { and, eq, gte, lt } from "drizzle-orm";
+import { and, desc, eq, gte, lt } from "drizzle-orm";
 import { callR1Json, isR1Configured, type R1Message } from "../r1";
 import { readSessionTranscript } from "../session-transcript";
+import {
+	buildSeedMessages,
+	type GithubProfilePr,
+	type GithubProfileRepo,
+	type GithubProfileSummary,
+	MAX_SEED_PRS,
+	MAX_SEED_REPOS,
+	shapeSeedStreams,
+} from "./journal-seed";
 import {
 	dayBounds,
 	JOURNAL_SYSTEM_PROMPT,
@@ -203,4 +215,205 @@ async function materializeMemorySuggestions(args: {
 		})),
 	);
 	return fresh.length;
+}
+
+// ---------------------------------------------------------------------------
+// GitHub-seeded first journal entry (journal-memory epic).
+//
+// When a brand-new user has no chat sessions for the day and no journal entry
+// yet, seed a warm onboarding entry from their GitHub profile so the Журнал
+// isn't empty on day one. The seed is marked via `SEED_SOURCE_MARKER` so a
+// later real daily digest still regenerates the same (org, user, day) row.
+// ---------------------------------------------------------------------------
+
+/** Sentinel stored in `sourceSessionIds` to mark a GitHub-seed entry. */
+export const SEED_SOURCE_MARKER = "seed:github";
+
+/** True when a journal entry was produced by the GitHub seed (not real sessions). */
+export function isSeedEntry(
+	sourceSessionIds: readonly string[] | null | undefined,
+): boolean {
+	return (
+		Array.isArray(sourceSessionIds) &&
+		sourceSessionIds.includes(SEED_SOURCE_MARKER)
+	);
+}
+
+export type GenerateJournalSeedResult =
+	| {
+			status: "seeded";
+			entryId: string;
+			repoCount: number;
+			prCount: number;
+			memoryCount: number;
+	  }
+	| {
+			status: "skipped";
+			reason:
+				| "r1-unconfigured"
+				| "no-github"
+				| "has-entry"
+				| "already-seeded"
+				| "has-sessions";
+	  };
+
+/**
+ * Build a compact GitHub profile summary for an org from already-synced data
+ * (the GitHub App keeps `github_repositories` / `github_pull_requests` fresh),
+ * so the seed needs no live Octokit call. Returns `null` when the org has no
+ * GitHub installation.
+ */
+async function buildGithubProfileSummary(
+	organizationId: string,
+): Promise<GithubProfileSummary | null> {
+	const [installation] = await db
+		.select({
+			accountLogin: githubInstallations.accountLogin,
+			accountType: githubInstallations.accountType,
+		})
+		.from(githubInstallations)
+		.where(eq(githubInstallations.organizationId, organizationId))
+		.limit(1);
+	if (!installation) return null;
+
+	const repoRows = await db
+		.select({
+			fullName: githubRepositories.fullName,
+			isPrivate: githubRepositories.isPrivate,
+			defaultBranch: githubRepositories.defaultBranch,
+		})
+		.from(githubRepositories)
+		.where(eq(githubRepositories.organizationId, organizationId))
+		.limit(MAX_SEED_REPOS);
+
+	const prRows = await db
+		.select({
+			title: githubPullRequests.title,
+			state: githubPullRequests.state,
+			headBranch: githubPullRequests.headBranch,
+		})
+		.from(githubPullRequests)
+		.where(eq(githubPullRequests.organizationId, organizationId))
+		.orderBy(desc(githubPullRequests.updatedAt))
+		.limit(MAX_SEED_PRS);
+
+	const repos: GithubProfileRepo[] = repoRows.map((r) => ({
+		fullName: r.fullName,
+		isPrivate: r.isPrivate,
+		defaultBranch: r.defaultBranch,
+	}));
+	const recentPrs: GithubProfilePr[] = prRows.map((p) => ({
+		title: p.title,
+		state: p.state,
+		headBranch: p.headBranch,
+	}));
+
+	return {
+		login: installation.accountLogin,
+		accountType: installation.accountType,
+		repos,
+		recentPrs,
+	};
+}
+
+/**
+ * Seed a first journal entry for `(organization, user, day)` from the org's
+ * GitHub profile. Safe + idempotent: never clobbers an existing entry, defers
+ * to the normal digest when the day has real sessions, and skips (not throws)
+ * when there is no GitHub installation or R1 is unconfigured.
+ */
+export async function generateJournalSeedForUser(
+	input: GenerateJournalInput,
+): Promise<GenerateJournalSeedResult> {
+	if (!isR1Configured())
+		return { status: "skipped", reason: "r1-unconfigured" };
+
+	const { organizationId, userId, day } = input;
+	const { start, end } = dayBounds(day);
+
+	// Guard A: never overwrite an existing entry (real digest or prior seed).
+	const [existing] = await db
+		.select({ sourceSessionIds: journalEntries.sourceSessionIds })
+		.from(journalEntries)
+		.where(
+			and(
+				eq(journalEntries.organizationId, organizationId),
+				eq(journalEntries.createdBy, userId),
+				eq(journalEntries.day, day),
+			),
+		)
+		.limit(1);
+	if (existing)
+		return {
+			status: "skipped",
+			reason: isSeedEntry(existing.sourceSessionIds)
+				? "already-seeded"
+				: "has-entry",
+		};
+
+	// Guard B: the normal digest owns any day with real chat sessions.
+	const [session] = await db
+		.select({ id: chatSessions.id })
+		.from(chatSessions)
+		.where(
+			and(
+				eq(chatSessions.createdBy, userId),
+				eq(chatSessions.organizationId, organizationId),
+				gte(chatSessions.lastActiveAt, start),
+				lt(chatSessions.lastActiveAt, end),
+			),
+		)
+		.limit(1);
+	if (session) return { status: "skipped", reason: "has-sessions" };
+
+	const summary = await buildGithubProfileSummary(organizationId);
+	if (!summary) return { status: "skipped", reason: "no-github" };
+
+	const rawStreams = await callR1Json<Partial<JournalStreams>>(
+		buildSeedMessages(summary),
+		{ temperature: 0.5, maxTokens: 2_048 },
+	);
+	const streams = shapeSeedStreams(rawStreams);
+
+	const [entry] = await db
+		.insert(journalEntries)
+		.values({
+			organizationId,
+			createdBy: userId,
+			day,
+			reflection: streams.reflection || null,
+			learnings: streams.learnings,
+			memorySuggestions: streams.memorySuggestions,
+			tips: streams.tips,
+			status: "generated",
+			modelId: "rox-r1",
+			sourceSessionIds: [SEED_SOURCE_MARKER],
+			generatedAt: new Date(),
+		})
+		// Do NOT clobber a concurrently-created entry — a race means the digest
+		// (or another seed) won the day; treat it as an existing entry.
+		.onConflictDoNothing({
+			target: [
+				journalEntries.organizationId,
+				journalEntries.createdBy,
+				journalEntries.day,
+			],
+		})
+		.returning({ id: journalEntries.id });
+	if (!entry) return { status: "skipped", reason: "has-entry" };
+
+	const memoryCount = await materializeMemorySuggestions({
+		organizationId,
+		userId,
+		day,
+		suggestions: streams.memorySuggestions,
+	});
+
+	return {
+		status: "seeded",
+		entryId: entry.id,
+		repoCount: summary.repos.length,
+		prCount: summary.recentPrs.length,
+		memoryCount,
+	};
 }

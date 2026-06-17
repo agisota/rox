@@ -1,6 +1,7 @@
 export * from "./agent";
 export * from "./attribution";
 export * from "./auth";
+export * from "./chat";
 export * from "./circuit";
 export * from "./economy";
 export * from "./enums";
@@ -9,6 +10,7 @@ export * from "./ingest";
 export * from "./journal";
 export * from "./knowledge";
 export * from "./memory";
+export * from "./pipeline";
 export * from "./profiles";
 export * from "./relations";
 export * from "./schema";

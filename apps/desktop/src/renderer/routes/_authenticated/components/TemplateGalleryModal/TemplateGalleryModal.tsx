@@ -54,9 +54,9 @@ export function TemplateGalleryModal({
 	const handleSelect = async (template: ProjectTemplate) => {
 		if (!template.repo || cloningId) return;
 		if (!parentDir) {
-			const message = "Projects directory not ready yet.";
+			const message = "Каталог проектов ещё не готов.";
 			if (onError) onError(message);
-			else toast.error("Could not create project", { description: message });
+			else toast.error("Не удалось создать проект", { description: message });
 			return;
 		}
 		setCloningId(template.id);
@@ -85,7 +85,7 @@ export function TemplateGalleryModal({
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			if (onError) onError(message);
-			else toast.error("Could not create project", { description: message });
+			else toast.error("Не удалось создать проект", { description: message });
 		} finally {
 			setCloningId(null);
 		}
@@ -104,10 +104,10 @@ export function TemplateGalleryModal({
 				onOpenAutoFocus={(event) => event.preventDefault()}
 			>
 				<DialogHeader>
-					<DialogTitle>Start from a template</DialogTitle>
+					<DialogTitle>Начать с шаблона</DialogTitle>
 					<DialogDescription>
-						Scaffold a new project from a starter, cloned with a fresh git
-						history.
+						Создайте новый проект из стартера — клонируется с чистой историей
+						git.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid grid-cols-3 gap-3">

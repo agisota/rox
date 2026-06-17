@@ -46,10 +46,10 @@ import { normalizeResourceMetricsSnapshot } from "./utils/normalizeSnapshot";
 import { getTrackedHostMemorySeverity } from "./utils/resourceSeverity";
 
 const SORT_LABELS: Record<SortOption, string> = {
-	memory: "Memory",
-	cpu: "CPU",
-	name: "Name",
-	sidebar: "Sidebar order",
+	memory: "Память",
+	cpu: "ЦП",
+	name: "Имя",
+	sidebar: "Порядок в сайдбаре",
 };
 
 function getTotalUsage(
@@ -127,7 +127,7 @@ export function ResourceConsumption({
 						<Button
 							variant="ghost"
 							size="icon-xs"
-							aria-label="Resource consumption"
+							aria-label="Потребление ресурсов"
 							className={cn(
 								"no-drag relative text-muted-foreground hover:text-foreground",
 								className,
@@ -138,7 +138,7 @@ export function ResourceConsumption({
 					</PopoverTrigger>
 				</TooltipTrigger>
 				<TooltipContent side="bottom" sideOffset={6} showArrow={false}>
-					Resources
+					Ресурсы
 				</TooltipContent>
 			</Tooltip>
 
@@ -392,8 +392,8 @@ function ResourceConsumptionContent({
 		<PopoverContent align="start" className="w-[28rem] p-0 overflow-hidden">
 			<div className="px-3.5 pt-3 pb-3 border-b border-border/60">
 				<div className="flex items-center justify-between">
-					<h4 className="text-[13px] font-medium tracking-tight text-foreground">
-						Resources
+					<h4 className="text-[12px] font-medium tracking-tight text-foreground">
+						Ресурсы
 					</h4>
 					<div className="flex items-center gap-0.5">
 						<DropdownMenu>
@@ -401,7 +401,7 @@ function ResourceConsumptionContent({
 								<button
 									type="button"
 									className="flex items-center gap-1 h-6 px-1.5 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
-									aria-label="Sort workspaces"
+									aria-label="Сортировка"
 								>
 									<HiOutlineBarsArrowDown className="h-3.5 w-3.5" />
 									<span>{SORT_LABELS[sortOption]}</span>
@@ -413,14 +413,14 @@ function ResourceConsumptionContent({
 									onValueChange={(value) => setSortOption(value as SortOption)}
 								>
 									<DropdownMenuRadioItem value="memory">
-										Memory
+										Память
 									</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="cpu">CPU</DropdownMenuRadioItem>
+									<DropdownMenuRadioItem value="cpu">ЦП</DropdownMenuRadioItem>
 									<DropdownMenuRadioItem value="name">
-										Name
+										Имя
 									</DropdownMenuRadioItem>
 									<DropdownMenuRadioItem value="sidebar">
-										Sidebar order
+										Порядок в сайдбаре
 									</DropdownMenuRadioItem>
 								</DropdownMenuRadioGroup>
 							</DropdownMenuContent>
@@ -429,7 +429,7 @@ function ResourceConsumptionContent({
 							type="button"
 							onClick={() => refetch()}
 							className="h-6 w-6 inline-flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
-							aria-label="Refresh metrics"
+							aria-label="Обновить метрики"
 						>
 							<HiOutlineArrowPath
 								className={cn("h-3.5 w-3.5", isFetching && "animate-spin")}
@@ -442,25 +442,25 @@ function ResourceConsumptionContent({
 					<>
 						<div className="mt-3 grid grid-cols-3 divide-x divide-border/50">
 							<MetricBadge
-								label="CPU"
+								label="ЦП"
 								value={formatCpu(normalizedSnapshot.totalCpu)}
 								numericValue={normalizedSnapshot.totalCpu}
 								format={formatCpu}
-								tooltip="Sum of CPU used by Rox and monitored terminal process trees. Over 100% means multiple CPU cores are busy. Sustained high values usually cause UI sluggishness and higher battery drain."
+								tooltip="Суммарная загрузка ЦП приложением Rox и отслеживаемыми деревьями процессов терминалов. Больше 100% — заняты несколько ядер. Долгая высокая загрузка обычно вызывает тормоза интерфейса и повышенный расход батареи."
 							/>
 							<MetricBadge
-								label="Memory"
+								label="Память"
 								value={formatMemory(normalizedSnapshot.totalMemory)}
 								numericValue={normalizedSnapshot.totalMemory}
 								format={formatMemory}
-								tooltip="Resident memory used by Rox and monitored terminal process trees. If this keeps climbing without dropping, a workspace process may be retaining memory. High values increase swap risk and can cause stutter."
+								tooltip="Резидентная память приложения Rox и отслеживаемых деревьев процессов терминалов. Если значение постоянно растёт и не падает — процесс рабочего пространства может удерживать память. Высокие значения повышают риск свопа и подтормаживаний."
 							/>
 							<MetricBadge
-								label="RAM Share"
+								label="Доля ОЗУ"
 								value={formatPercent(trackedMemorySharePercent)}
 								numericValue={trackedMemorySharePercent}
 								format={formatPercent}
-								tooltip="Percent of total system RAM used by monitored Rox resources only (not all apps). A high share means Rox is a major contributor to system memory pressure; a low share means pressure is likely elsewhere."
+								tooltip="Доля общей системной ОЗУ, занятая только отслеживаемыми ресурсами Rox (не всеми приложениями). Высокая доля — Rox главный источник нагрузки на память; низкая — нагрузка, вероятно, в другом месте."
 							/>
 						</div>
 						<Tooltip delayDuration={150}>
@@ -468,7 +468,7 @@ function ResourceConsumptionContent({
 								<div
 									className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted/60"
 									role="progressbar"
-									aria-label="System RAM share"
+									aria-label="Доля системной ОЗУ"
 									aria-valuenow={Math.round(trackedMemorySharePercent)}
 									aria-valuemin={0}
 									aria-valuemax={100}
@@ -492,8 +492,8 @@ function ResourceConsumptionContent({
 								</div>
 							</TooltipTrigger>
 							<TooltipContent side="bottom" sideOffset={6} showArrow={false}>
-								Rox uses {formatPercent(trackedMemorySharePercent)} of system
-								RAM
+								Rox использует {formatPercent(trackedMemorySharePercent)}{" "}
+								системной ОЗУ
 							</TooltipContent>
 						</Tooltip>
 					</>
@@ -526,13 +526,13 @@ function ResourceConsumptionContent({
 
 				{normalizedSnapshot && normalizedSnapshot.workspaces.length === 0 && (
 					<div className="px-3.5 py-6 text-center text-[11px] text-muted-foreground">
-						No active terminal sessions
+						Нет активных сессий терминала
 					</div>
 				)}
 
 				{!normalizedSnapshot && (
 					<div className="px-3.5 py-6 text-center text-[11px] text-muted-foreground">
-						Loading…
+						Загрузка…
 					</div>
 				)}
 			</div>

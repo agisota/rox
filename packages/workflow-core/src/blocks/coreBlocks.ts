@@ -76,6 +76,14 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }],
 		risk: "medium",
 	}),
+	defineBlock("agent_run", {
+		label: "Agent Run",
+		description:
+			"Runs an agent role (chat in-process or CLI in a worktree) as a pipeline node.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "high",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",

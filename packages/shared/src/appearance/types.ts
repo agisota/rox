@@ -18,6 +18,16 @@ export type WallpaperSource =
 	| { kind: "remote"; url: string }
 	| { kind: "gradient"; colors: readonly [string, string, string, string] };
 
+/**
+ * Atmosphere applied on top of a `gradient` source to make it read as a
+ * cinematic scene rather than a flat mesh. Renderers layer scene-specific light
+ * (aurora bands, nebula glow, drifting dunes, a low horizon, or a calm haze)
+ * plus shared film grain + vignette over the base gradient. Zero-asset, so
+ * cinematic wallpapers stay offline and add no installer weight. Defaults to
+ * `"calm"` when a gradient wallpaper omits a scene.
+ */
+export type WallpaperScene = "aurora" | "nebula" | "dunes" | "horizon" | "calm";
+
 /** A single background image in the curated wallpaper pack. */
 export interface Wallpaper {
 	id: string;
@@ -28,6 +38,11 @@ export interface Wallpaper {
 	thumb?: WallpaperSource;
 	/** Dominant tone — used to pick legible foreground/quote colors. */
 	tone: "dark" | "light";
+	/**
+	 * Cinematic atmosphere for `gradient` sources. Ignored for image sources
+	 * (`bundled` / `remote`), which already carry their own scene.
+	 */
+	scene?: WallpaperScene;
 	/** Optional attribution shown in settings. */
 	credit?: string;
 }

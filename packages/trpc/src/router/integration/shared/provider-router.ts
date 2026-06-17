@@ -1,6 +1,7 @@
 import { db } from "@rox/db/client";
 import type { IntegrationConfig, IntegrationProvider } from "@rox/db/schema";
 import { integrationConnections } from "@rox/db/schema";
+import { publishPipelineEvent } from "@rox/workflow-core";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
@@ -282,6 +283,18 @@ export function createProviderConnectionRouter(provider: IntegrationProvider) {
 						message: "Failed to create integration connection",
 					});
 				}
+
+				// Agent Pipelines: a brand-new integration connection fires the
+				// `service_or_skill_connected` event (design §4.3). Only emitted on
+				// first connect, not on the reconnect/update path above. Integrations
+				// are org-scoped (no project), so triggers match by org.
+				// Fire-and-forget — never blocks or fails the connect mutation.
+				publishPipelineEvent({
+					kind: "service_or_skill_connected",
+					organizationId: input.organizationId,
+					v2ProjectId: null,
+					payload: { integrationId: created.id, provider },
+				});
 
 				return {
 					id: created.id,

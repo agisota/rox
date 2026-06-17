@@ -1,0 +1,1 @@
+export { CinematicGradient } from "./CinematicGradient";

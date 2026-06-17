@@ -28,9 +28,9 @@ export interface WorkspaceSetupPreset {
 	label: string;
 	description: string;
 	/** Shell commands appended to the `rox/config.json` setup array. */
-	setupCommands?: string[];
+	setupCommands?: readonly string[];
 	/** Files written into the workspace root on creation. */
-	scaffoldFiles?: WorkspaceScaffoldFile[];
+	scaffoldFiles?: readonly WorkspaceScaffoldFile[];
 }
 
 const AGENTS_MD_STUB = `# Agent Guide
@@ -69,7 +69,46 @@ const PLANNER_MD_STUB = `# Planner
 ## Later
 `;
 
-export const WORKSPACE_SETUP_PRESETS: readonly WorkspaceSetupPreset[] = [
+const PRODUCT_BRIEF_MD_STUB = `# Product Brief
+
+## Customer
+
+## Problem
+
+## Offer
+
+## Success metrics
+
+## Decisions
+`;
+
+const SEO_CONTENT_PLAN_MD_STUB = `# SEO Content Plan
+
+## Search themes
+
+## Content backlog
+
+## Publishing cadence
+
+## Internal links
+
+## Owners
+`;
+
+const FINANCE_OPERATING_MODEL_MD_STUB = `# Finance Operating Model
+
+## Revenue
+
+## Costs
+
+## Cash runway
+
+## Risks
+
+## Next review
+`;
+
+export const WORKSPACE_SETUP_PRESETS = [
 	{
 		id: "git-init",
 		label: "Initialize git",
@@ -173,6 +212,37 @@ jobs:
 		label: "Add planner template",
 		description: "Scaffold a planner.md with now/next/later sections.",
 		scaffoldFiles: [{ path: "planner.md", contents: PLANNER_MD_STUB }],
+	},
+	{
+		id: "product-brief",
+		label: "Add product brief",
+		description: "Scaffold a product brief for non-developer planning work.",
+		scaffoldFiles: [
+			{ path: "product/brief.md", contents: PRODUCT_BRIEF_MD_STUB },
+		],
+	},
+	{
+		id: "seo-content-plan",
+		label: "Add SEO content plan",
+		description: "Scaffold a lightweight SEO/content planning document.",
+		scaffoldFiles: [
+			{
+				path: "marketing/seo-content-plan.md",
+				contents: SEO_CONTENT_PLAN_MD_STUB,
+			},
+		],
+	},
+	{
+		id: "finance-operating-model",
+		label: "Add finance operating model",
+		description:
+			"Scaffold a simple finance operating model for runway and planning.",
+		scaffoldFiles: [
+			{
+				path: "finance/operating-model.md",
+				contents: FINANCE_OPERATING_MODEL_MD_STUB,
+			},
+		],
 	},
 	{
 		id: "gitignore",
@@ -287,7 +357,10 @@ jobs:
 			"Pin the Node.js version with an .nvmrc for consistent tooling.",
 		scaffoldFiles: [{ path: ".nvmrc", contents: "lts/*\n" }],
 	},
-];
+] as const satisfies readonly WorkspaceSetupPreset[];
+
+export type WorkspaceSetupPresetId =
+	(typeof WORKSPACE_SETUP_PRESETS)[number]["id"];
 
 /** Look up a preset by id. */
 export function getWorkspaceSetupPresetById(
@@ -311,10 +384,14 @@ export function resolveWorkspaceSetupPresets(selectedIds: readonly string[]): {
 
 	for (const preset of WORKSPACE_SETUP_PRESETS) {
 		if (!selected.has(preset.id)) continue;
-		for (const command of preset.setupCommands ?? []) {
+		const presetSetupCommands =
+			"setupCommands" in preset ? preset.setupCommands : [];
+		const presetScaffoldFiles =
+			"scaffoldFiles" in preset ? preset.scaffoldFiles : [];
+		for (const command of presetSetupCommands) {
 			if (!setupCommands.includes(command)) setupCommands.push(command);
 		}
-		for (const file of preset.scaffoldFiles ?? []) {
+		for (const file of presetScaffoldFiles) {
 			if (seenPaths.has(file.path)) continue;
 			seenPaths.add(file.path);
 			scaffoldFiles.push(file);

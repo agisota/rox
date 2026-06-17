@@ -1,0 +1,3 @@
+[test]
+# Seed dummy env before any test file loads — see test-setup.ts for why.
+preload = ["./test-setup.ts"]

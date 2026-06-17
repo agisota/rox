@@ -303,7 +303,7 @@ export function useDashboardSidebarState() {
 
 	const createSection = useCallback(
 		(projectId: string, options: { name?: string } = {}) => {
-			const { name = "New group" } = options;
+			const { name = "Новая группа" } = options;
 			ensureSidebarProjectRecord(collections, projectId);
 
 			const sectionId = crypto.randomUUID();
@@ -356,6 +356,29 @@ export function useDashboardSidebarState() {
 			if (!collections.v2SidebarSections.get(sectionId)) return;
 			collections.v2SidebarSections.update(sectionId, (draft) => {
 				draft.color = color;
+			});
+		},
+		[collections],
+	);
+
+	const setWorkspaceColor = useCallback(
+		(workspaceId: string, color: string | null) => {
+			if (!collections.v2WorkspaceLocalState.get(workspaceId)) return;
+			collections.v2WorkspaceLocalState.update(workspaceId, (draft) => {
+				draft.sidebarState.color = color;
+			});
+		},
+		[collections],
+	);
+
+	const setWorkspaceLabels = useCallback(
+		(workspaceId: string, labels: string[]) => {
+			if (!collections.v2WorkspaceLocalState.get(workspaceId)) return;
+			const cleaned = Array.from(
+				new Set(labels.map((label) => label.trim()).filter(Boolean)),
+			);
+			collections.v2WorkspaceLocalState.update(workspaceId, (draft) => {
+				draft.sidebarState.labels = cleaned;
 			});
 		},
 		[collections],
@@ -523,6 +546,8 @@ export function useDashboardSidebarState() {
 		reorderWorkspaces,
 		renameSection,
 		setSectionColor,
+		setWorkspaceColor,
+		setWorkspaceLabels,
 		toggleProjectCollapsed,
 		toggleSectionCollapsed,
 	};

@@ -43,6 +43,7 @@ import { useDashboardSidebarData } from "./hooks/useDashboardSidebarData";
 import { useDashboardSidebarShortcuts } from "./hooks/useDashboardSidebarShortcuts";
 import { DashboardSidebarHoverProvider } from "./providers/DashboardSidebarHoverProvider";
 import type { DashboardSidebarProject } from "./types";
+import { filterSidebarGroups } from "./utils/filterSidebarGroups";
 
 interface DashboardSidebarProps {
 	isCollapsed?: boolean;
@@ -141,6 +142,13 @@ export function DashboardSidebar({
 			.filter((g): g is DashboardSidebarProject => g != null);
 	}, [groups, projectOrder]);
 
+	const [filterQuery, setFilterQuery] = useState("");
+	const isFiltering = filterQuery.trim().length > 0;
+	const displayGroups = useMemo(
+		() => filterSidebarGroups(orderedGroups, filterQuery),
+		[orderedGroups, filterQuery],
+	);
+
 	const workspaceShortcutLabels = useDashboardSidebarShortcuts(orderedGroups);
 
 	const activeV2Project = useMemo(() => {
@@ -165,6 +173,10 @@ export function DashboardSidebar({
 
 	const handleDragEnd = useCallback(
 		({ active, over }: DragEndEvent) => {
+			if (isFiltering) {
+				setActiveProject(null);
+				return;
+			}
 			if (over && active.id !== over.id) {
 				const oldIndex = projectOrder.indexOf(String(active.id));
 				const newIndex = projectOrder.indexOf(String(over.id));
@@ -176,7 +188,7 @@ export function DashboardSidebar({
 			}
 			setActiveProject(null);
 		},
-		[projectOrder, reorderProjects],
+		[isFiltering, projectOrder, reorderProjects],
 	);
 
 	return (
@@ -185,6 +197,18 @@ export function DashboardSidebar({
 				<DashboardSidebarHoverCardOverlay>
 					<div className="flex h-full flex-col border-r border-border bg-muted/45 dark:bg-muted/35">
 						<DashboardSidebarHeader isCollapsed={isCollapsed} />
+
+						{!isCollapsed && (
+							<div className="px-2 pt-0.5 pb-1">
+								<input
+									value={filterQuery}
+									onChange={(event) => setFilterQuery(event.target.value)}
+									placeholder="Фильтр по метке или ветке…"
+									aria-label="Фильтр веток"
+									className="h-7 w-full rounded-md border border-border bg-background px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								/>
+							</div>
+						)}
 
 						<div className="flex-1 overflow-y-auto hide-scrollbar">
 							<DndContext
@@ -201,10 +225,10 @@ export function DashboardSidebar({
 								onDragCancel={() => setActiveProject(null)}
 							>
 								<SortableContext
-									items={projectOrder}
+									items={displayGroups.map((project) => project.id)}
 									strategy={verticalListSortingStrategy}
 								>
-									{orderedGroups.map((project) => (
+									{displayGroups.map((project) => (
 										<SortableProjectWrapper
 											key={project.id}
 											project={project}
@@ -235,6 +259,11 @@ export function DashboardSidebar({
 									document.body,
 								)}
 							</DndContext>
+							{isFiltering && displayGroups.length === 0 && (
+								<p className="px-3 py-4 text-center text-xs text-muted-foreground">
+									Ничего не найдено
+								</p>
+							)}
 						</div>
 						{!isCollapsed && <DashboardSidebarPortsList />}
 						{!isCollapsed && activeV2Project && activeHostUrl && (

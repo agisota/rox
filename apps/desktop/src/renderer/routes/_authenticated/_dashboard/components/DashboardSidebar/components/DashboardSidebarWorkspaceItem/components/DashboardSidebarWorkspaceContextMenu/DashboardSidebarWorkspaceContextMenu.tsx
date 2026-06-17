@@ -11,6 +11,7 @@ import {
 } from "@rox/ui/context-menu";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
+import { HiCheck } from "react-icons/hi2";
 import {
 	LuArrowRightLeft,
 	LuArrowUp,
@@ -20,12 +21,18 @@ import {
 	LuFolderOpen,
 	LuFolderPlus,
 	LuGitBranch,
+	LuPalette,
 	LuPencil,
+	LuTags,
 	LuTrash2,
 	LuX,
 } from "react-icons/lu";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import {
+	PROJECT_COLOR_DEFAULT,
+	PROJECT_COLORS,
+} from "shared/constants/project-colors";
 import { useDashboardSidebarHover } from "../../../../providers/DashboardSidebarHoverProvider";
 
 interface DashboardSidebarWorkspaceContextMenuProps {
@@ -35,6 +42,9 @@ interface DashboardSidebarWorkspaceContextMenuProps {
 	isPinned?: boolean;
 	isUnread: boolean;
 	showDeleteHotkey?: boolean;
+	color?: string | null;
+	onSetColor?: (color: string | null) => void;
+	onEditLabels?: () => void;
 	onCreateSection: () => void;
 	onMoveToSection: (sectionId: string | null) => void;
 	onOpenInFinder: () => void;
@@ -54,6 +64,9 @@ export function DashboardSidebarWorkspaceContextMenu({
 	isPinned = false,
 	isUnread,
 	showDeleteHotkey = false,
+	color = null,
+	onSetColor,
+	onEditLabels,
 	onCreateSection,
 	onMoveToSection,
 	onOpenInFinder,
@@ -112,6 +125,58 @@ export function DashboardSidebarWorkspaceContextMenu({
 					<LuGitBranch className="size-4 mr-2" />
 					Скопировать имя ветки
 				</ContextMenuItem>
+				{onSetColor && (
+					<>
+						<ContextMenuSeparator />
+						<ContextMenuSub>
+							<ContextMenuSubTrigger>
+								<LuPalette className="size-4 mr-2" />
+								Цвет ветки
+							</ContextMenuSubTrigger>
+							<ContextMenuSubContent className="max-h-80 overflow-y-auto">
+								{[
+									{ name: "По умолчанию", value: PROJECT_COLOR_DEFAULT },
+									...PROJECT_COLORS,
+								].map((option) => {
+									const isDefault = option.value === PROJECT_COLOR_DEFAULT;
+									const isSelected =
+										(color ?? PROJECT_COLOR_DEFAULT) === option.value;
+									return (
+										<ContextMenuItem
+											key={option.value}
+											onSelect={() =>
+												onSetColor(isDefault ? null : option.value)
+											}
+										>
+											<span
+												className="relative mr-2 inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border border-border/50"
+												style={
+													isDefault
+														? undefined
+														: { backgroundColor: option.value }
+												}
+											>
+												{isDefault ? (
+													<span className="size-1.5 rounded-full bg-muted-foreground/35" />
+												) : null}
+											</span>
+											{option.name}
+											{isSelected ? (
+												<HiCheck className="ml-auto size-3.5 text-muted-foreground" />
+											) : null}
+										</ContextMenuItem>
+									);
+								})}
+							</ContextMenuSubContent>
+						</ContextMenuSub>
+					</>
+				)}
+				{onEditLabels && (
+					<ContextMenuItem onSelect={onEditLabels}>
+						<LuTags className="size-4 mr-2" />
+						Метки…
+					</ContextMenuItem>
+				)}
 				<ContextMenuSeparator />
 				<ContextMenuItem onSelect={onToggleUnread}>
 					{isUnread ? (

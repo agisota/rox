@@ -5,6 +5,7 @@ export type {
 	ClientMessage as EventBusClientMessage,
 	ServerMessage as EventBusServerMessage,
 } from "./events";
+export * from "./integrations";
 export type { ApiAuthProvider } from "./providers/auth";
 export { DeviceKeyApiAuthProvider, JwtApiAuthProvider } from "./providers/auth";
 export {

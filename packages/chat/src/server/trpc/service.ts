@@ -181,6 +181,28 @@ export class ChatRuntimeService {
 		return creationPromise;
 	}
 
+	/**
+	 * Relay a `user_sent_message` pipeline event to the main API (Agent Pipelines,
+	 * design §4.3 "emit seams"). The host runs on local SQLite and cannot reach the
+	 * Neon-backed pipeline dispatcher, so the main API resolves org/project from the
+	 * chat session and fans the event out to matching pipeline triggers.
+	 *
+	 * Fire-and-forget: the relay is dispatched without awaiting and never throws
+	 * into the chat send path. A missing/older API (no `pipeline.ingestEvent`) or a
+	 * transport failure is swallowed — a chat message must always send regardless of
+	 * whether any pipeline is listening.
+	 */
+	private emitUserSentMessagePipelineEvent(
+		chatSessionId: string,
+		message: string,
+	): void {
+		void this.apiClient.pipeline.ingestEvent
+			.mutate({ kind: "user_sent_message", chatSessionId, message })
+			.catch(() => {
+				// Best-effort signal — never break the user's chat send.
+			});
+	}
+
 	createRouter() {
 		const t = initTRPC.create({ transformer: superjson });
 
@@ -298,7 +320,23 @@ export class ChatRuntimeService {
 						const userMessage =
 							input.payload.content.trim() || "[non-text message]";
 						await onUserPromptSubmit(runtime, userMessage);
+						// Emit the `user_sent_message` pipeline event (Agent Pipelines,
+						// design §4.3). This ChatService runs in the host-service process
+						// (apps/desktop host) on local SQLite, where the DB-backed pipeline
+						// dispatcher CANNOT run — `pipeline_triggers` lives in the Neon main
+						// DB. So we relay to the main API over the host's authenticated api
+						// client; `pipeline.ingestEvent` resolves org/project from
+						// chatSessions.id server-side and fans out through
+						// `publishPipelineEvent` → `dispatchPipelineEvent`. Fire-and-forget:
+						// a failing relay must never break the user's chat send (mirrors the
+						// `void generateAndSetTitle` pattern below).
 						const submittedUserMessage = input.payload.content.trim();
+						this.emitUserSentMessagePipelineEvent(
+							input.sessionId,
+							submittedUserMessage.length > 0
+								? submittedUserMessage
+								: userMessage,
+						);
 						const selectedModel = input.metadata?.model?.trim();
 						if (selectedModel) {
 							await runtime.harness.switchModel({

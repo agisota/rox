@@ -263,7 +263,7 @@ export function FilesTab({
 				{workspaceQuery.isLoading ? (
 					<>
 						<Loader2 className="size-3.5 animate-spin" />
-						<span>Loading files...</span>
+						<span>Загрузка файлов...</span>
 					</>
 				) : (
 					"Workspace worktree not available"
@@ -287,28 +287,27 @@ export function FilesTab({
 					className="flex-1 min-h-0"
 					style={TREE_STYLE}
 					header={
-						<div className="group flex h-7 items-center justify-between bg-background px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-							<span className="truncate">Explorer</span>
+						<div className="group flex h-6 items-center justify-end bg-background px-2 text-muted-foreground">
 							<div className="flex items-center gap-0.5">
 								<FilesTabHeaderButton
 									icon={FilePlus}
-									label="New File"
+									label="Новый файл"
 									onClick={() => void startCreating("file")}
 								/>
 								<FilesTabHeaderButton
 									icon={FolderPlus}
-									label="New Folder"
+									label="Новая папка"
 									onClick={() => void startCreating("folder")}
 								/>
 								<FilesTabHeaderButton
 									icon={RefreshCw}
-									label="Refresh"
+									label="Обновить"
 									loading={bridge.isRefreshing}
 									onClick={() => void bridge.doRefresh()}
 								/>
 								<FilesTabHeaderButton
 									icon={FoldVertical}
-									label="Collapse All"
+									label="Свернуть всё"
 									onClick={collapseAll}
 								/>
 							</div>

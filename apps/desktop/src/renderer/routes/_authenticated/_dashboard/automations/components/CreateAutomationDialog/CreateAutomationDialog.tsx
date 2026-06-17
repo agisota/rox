@@ -236,7 +236,7 @@ export function CreateAutomationDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				blur
-				className="sm:max-w-[960px] p-0 gap-0 overflow-hidden"
+				className="sm:max-w-[960px] p-0 gap-0 overflow-hidden border border-border shadow-lg"
 				aria-describedby={undefined}
 				showCloseButton={false}
 				onPointerDownOutside={(event) => event.preventDefault()}
@@ -305,7 +305,7 @@ export function CreateAutomationDialog({
 								)}
 							</div>
 
-							<DialogFooter className="flex-row items-center justify-between gap-2 border-t p-3 sm:justify-between">
+							<DialogFooter className="flex-row items-center justify-between gap-2 border-t border-border bg-card p-3 sm:justify-between">
 								<div className="flex items-center gap-2">
 									<DevicePicker
 										className="w-[160px]"

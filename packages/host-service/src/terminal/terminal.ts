@@ -371,6 +371,33 @@ export function listTerminalSessions(
 		}));
 }
 
+/**
+ * Read the raw PTY scrollback ring buffer for a session as its byte chunks.
+ *
+ * Returns the session's retained output chunks (`Uint8Array[]` — the same bytes
+ * broadcast to renderers, bounded by `MAX_BUFFER_BYTES`) when the terminal
+ * exists and matches `workspaceId`, or `null` when no such session is known to
+ * this process (unknown id, or a workspace mismatch). The returned array is a
+ * shallow copy so callers can't mutate the live session buffer.
+ *
+ * This is the read-back the Agent Pipelines capture path uses: once a CLI
+ * agent's pty exits (the `terminal:lifecycle` exit edge flips `session.exited`),
+ * `agent-run-capture.ts` reads these bytes and feeds them through the pure
+ * `extractTerminalOutputTail` pipeline to thread the agent's output into the
+ * run's accumulating context. Kept byte-aligned (no decode here) so multi-byte
+ * codepoints straddling chunk boundaries decode correctly downstream.
+ */
+export function readTerminalBufferBytes(options: {
+	terminalId: string;
+	workspaceId: string;
+}): Uint8Array[] | null {
+	const session = sessions.get(options.terminalId);
+	if (!session || session.workspaceId !== options.workspaceId) return null;
+	// Shallow copy: the chunks themselves are immutable on the wire, but the
+	// array is the live ring buffer — don't hand callers a reference to it.
+	return [...session.buffer];
+}
+
 export function countTerminalSessions(
 	options: {
 		workspaceId?: string;

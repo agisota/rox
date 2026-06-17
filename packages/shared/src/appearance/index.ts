@@ -16,6 +16,7 @@ export {
 	MIN_WINDOW_OPACITY,
 	type Quote,
 	type Wallpaper,
+	type WallpaperScene,
 	type WallpaperSource,
 } from "./types";
 export { getWallpaper, WALLPAPERS } from "./wallpapers";

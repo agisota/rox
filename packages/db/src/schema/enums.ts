@@ -137,6 +137,8 @@ export const workflowEngineValues = [
 	"sim_sidecar",
 	"legacy_automation",
 	"external_tool",
+	// Agent Pipelines: a workflow whose graph is mostly `agent_run` nodes.
+	"pipeline",
 ] as const;
 export const workflowEngineEnum = z.enum(workflowEngineValues);
 export type WorkflowEngine = z.infer<typeof workflowEngineEnum>;
@@ -242,6 +244,12 @@ export const triggerKindValues = [
 	"file_uploaded",
 	"approval_resolved",
 	"agent_run_finished",
+	// Agent Pipelines event triggers (design spec §1.2 / §2.4). The other
+	// product triggers reuse existing values (chat / agent_run_finished /
+	// file_uploaded / repo_connected). `all_prior_agents_finished` is a graph
+	// JOIN, not an enum value.
+	"project_initialized",
+	"service_connected",
 ] as const;
 export const triggerKindEnum = z.enum(triggerKindValues);
 export type TriggerKind = z.infer<typeof triggerKindEnum>;
@@ -262,6 +270,8 @@ export const objectTypeValues = [
 	"approval",
 	"policy",
 	"agent_source",
+	// Agent Pipelines: typed object-graph edges for trigger → run, etc.
+	"pipeline_trigger",
 ] as const;
 export const objectTypeEnum = z.enum(objectTypeValues);
 export type ObjectType = z.infer<typeof objectTypeEnum>;

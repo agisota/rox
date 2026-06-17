@@ -46,7 +46,9 @@ function renderQuoteText(quote: Quote): ReactNode {
 
 /** Full-screen quote card; changing `quote` crossfades to the new line. */
 export function QuoteScreen({ quote, wallpaper, className }: QuoteScreenProps) {
-	const reduceMotion = useReducedMotion();
+	// `null` (pre-resolve) collapses to reduced motion so the quote doesn't
+	// animate in for reduced-motion users before the hook settles.
+	const reduceMotion = useReducedMotion() ?? true;
 	const duration = reduceMotion ? 0 : 0.6;
 
 	return (

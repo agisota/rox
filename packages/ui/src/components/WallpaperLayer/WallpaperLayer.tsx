@@ -13,7 +13,7 @@
 import type { Wallpaper, WallpaperSource } from "@rox/shared/appearance";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { cn } from "../../lib/utils";
-import { MeshGradient } from "../mesh-gradient";
+import { CinematicGradient } from "../CinematicGradient";
 
 interface WallpaperLayerProps {
 	/** Wallpaper to show, or null/undefined for nothing (transparent). */
@@ -36,17 +36,28 @@ function sourceKey(source: WallpaperSource): string {
 	}
 }
 
-/** Render a wallpaper's visual fill: an animated mesh gradient or a cover image. */
+/** Render a wallpaper's visual fill: a cinematic gradient scene or a cover image. */
 function WallpaperFill({ wallpaper }: { wallpaper: Wallpaper }) {
 	const { source } = wallpaper;
 	if (source.kind === "gradient") {
-		return <MeshGradient colors={source.colors} className="h-full w-full" />;
+		return (
+			<CinematicGradient
+				colors={source.colors}
+				scene={wallpaper.scene}
+				tone={wallpaper.tone}
+				className="h-full w-full"
+			/>
+		);
 	}
 	const url = source.kind === "bundled" ? source.path : source.url;
+	// Encode before interpolating into `url("…")`: encodeURI escapes `"` (→ %22)
+	// so a `remote`/user-supplied source can't break out of the quoted value and
+	// inject extra CSS. Future remote/user wallpaper packs are anticipated by the
+	// manifest, so harden the boundary now.
 	return (
 		<div
 			className="h-full w-full bg-center bg-cover"
-			style={{ backgroundImage: `url("${url}")` }}
+			style={{ backgroundImage: `url("${encodeURI(url)}")` }}
 			role="img"
 			aria-label={wallpaper.name}
 		/>
@@ -59,7 +70,9 @@ export function WallpaperLayer({
 	fadeSeconds = 1.2,
 	className,
 }: WallpaperLayerProps) {
-	const reduceMotion = useReducedMotion();
+	// `null` (pre-resolve) collapses to reduced motion so no crossfade flashes
+	// for reduced-motion users on first paint.
+	const reduceMotion = useReducedMotion() ?? true;
 	const duration = reduceMotion ? 0 : fadeSeconds;
 
 	return (

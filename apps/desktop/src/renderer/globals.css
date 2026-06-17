@@ -283,6 +283,9 @@
 	:root.glass {
 		--surface-opacity: 0.3;
 		--backdrop-blur: 24px;
+		/* Liquid-glass: lift backdrop saturation so wallpaper color reads richly
+		   through panels. Mirrors `packages/ui/src/globals.css`. */
+		--backdrop-saturate: 1.8;
 	}
 
 	:root.glass body {
@@ -296,8 +299,10 @@
 			var(--background) calc(var(--surface-opacity) * 100%),
 			transparent
 		);
-		backdrop-filter: blur(var(--backdrop-blur));
-		-webkit-backdrop-filter: blur(var(--backdrop-blur));
+		backdrop-filter: blur(var(--backdrop-blur))
+			saturate(var(--backdrop-saturate, 1));
+		-webkit-backdrop-filter: blur(var(--backdrop-blur))
+			saturate(var(--backdrop-saturate, 1));
 	}
 
 	.glass-panel {
@@ -306,6 +311,17 @@
 			var(--card) calc(var(--surface-opacity) * 100%),
 			transparent
 		);
+	}
+
+	/* Liquid-glass specular edge: bright top hairline + faint inner outline +
+	   soft drop shadow. Inset shadows only (no layout shift). Mirrors
+	   `packages/ui/src/globals.css`. */
+	:root.glass .glass-panel,
+	:root.glass.glass-panel {
+		box-shadow:
+			inset 0 1px 0 0 color-mix(in srgb, white 12%, transparent),
+			inset 0 0 0 1px color-mix(in srgb, white 4%, transparent),
+			0 10px 40px -16px color-mix(in srgb, black 55%, transparent);
 	}
 
 	/* xterm 6.0.0+ requires explicit sizing due to VS Code scrollbar integration */
