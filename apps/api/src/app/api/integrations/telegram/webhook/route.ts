@@ -1,6 +1,11 @@
 import { db } from "@rox/db/client";
-import { integrationConnections } from "@rox/db/schema";
+import {
+	integrationConnections,
+	integrationInboundEvents,
+} from "@rox/db/schema";
+import { Client } from "@upstash/qstash";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { env } from "@/env";
 import { parseTelegramUpdate } from "../parse-update";
 
 /**
@@ -9,6 +14,7 @@ import { parseTelegramUpdate } from "../parse-update";
  * signing, so this header is the only inbound authenticator.
  */
 const SECRET_HEADER = "x-telegram-bot-api-secret-token";
+const qstash = new Client({ token: env.QSTASH_TOKEN });
 
 export async function POST(request: Request) {
 	const secret = request.headers.get(SECRET_HEADER);
@@ -64,9 +70,63 @@ export async function POST(request: Request) {
 		textLength: update.text.length,
 	});
 
-	// TODO(telegram PR-2): enqueue QStash process-message job -> runTelegramAgent
-	// (mirror slack/events publishJSON to a /jobs/process-message route). For this
-	// PR we only acknowledge inbound updates.
+	const dedupEventId = `${connection.id}:${update.updateId}`;
+	const [inserted] = await db
+		.insert(integrationInboundEvents)
+		.values({
+			connectionId: connection.id,
+			provider: "telegram",
+			// Telegram update IDs are scoped to a bot. Include the resolved
+			// connection so different bot connections cannot drop each other's
+			// update with the same provider-local ID.
+			externalEventId: dedupEventId,
+		})
+		.onConflictDoNothing({
+			target: [
+				integrationInboundEvents.provider,
+				integrationInboundEvents.externalEventId,
+			],
+		})
+		.returning({ id: integrationInboundEvents.id });
+
+	if (!inserted) {
+		console.info("[telegram/webhook] Duplicate update ignored", {
+			updateId: update.updateId,
+			dedupEventId,
+			connectionId: connection.id,
+		});
+		return new Response("ok", { status: 200 });
+	}
+
+	try {
+		await qstash.publishJSON({
+			url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/telegram/jobs/process-message`,
+			body: {
+				connectionId: connection.id,
+				update,
+			},
+			retries: 3,
+		});
+	} catch (error) {
+		console.error(
+			"[telegram/webhook] Failed to queue process-message job:",
+			error,
+		);
+		try {
+			await db
+				.delete(integrationInboundEvents)
+				.where(eq(integrationInboundEvents.id, inserted.id));
+		} catch (deleteError) {
+			console.error(
+				"[telegram/webhook] Failed to roll back inbound event after queue failure:",
+				deleteError,
+			);
+		}
+		return Response.json(
+			{ error: "Failed to queue Telegram update" },
+			{ status: 503 },
+		);
+	}
 
 	// Telegram retries on any non-200, so always ack quickly for valid updates.
 	return new Response("ok", { status: 200 });

@@ -14,6 +14,7 @@ describe("parseTelegramUpdate", () => {
 		});
 
 		expect(result).toEqual({
+			updateId: 1,
 			chatId: 555,
 			text: "hello rox",
 			fromUserId: 999,
@@ -37,6 +38,7 @@ describe("parseTelegramUpdate", () => {
 
 	test("defaults fromIsBot to false when is_bot is absent", () => {
 		const result = parseTelegramUpdate({
+			update_id: 12,
 			message: {
 				text: "no is_bot field",
 				chat: { id: 1 },
@@ -71,6 +73,7 @@ describe("parseTelegramUpdate", () => {
 
 	test("returns null for an empty/whitespaceless message (no text)", () => {
 		const result = parseTelegramUpdate({
+			update_id: 5,
 			message: {
 				message_id: 12,
 				chat: { id: 1 },
@@ -84,6 +87,7 @@ describe("parseTelegramUpdate", () => {
 
 	test("returns null for an empty-string text", () => {
 		const result = parseTelegramUpdate({
+			update_id: 6,
 			message: { text: "", chat: { id: 1 }, from: { id: 2 } },
 		});
 
@@ -100,11 +104,13 @@ describe("parseTelegramUpdate", () => {
 	test("returns null when chat.id is missing or not a number", () => {
 		expect(
 			parseTelegramUpdate({
+				update_id: 7,
 				message: { text: "hi", chat: {}, from: { id: 2 } },
 			}),
 		).toBeNull();
 		expect(
 			parseTelegramUpdate({
+				update_id: 8,
 				message: { text: "hi", chat: { id: "555" }, from: { id: 2 } },
 			}),
 		).toBeNull();
@@ -113,7 +119,20 @@ describe("parseTelegramUpdate", () => {
 	test("returns null when from.id is missing", () => {
 		expect(
 			parseTelegramUpdate({
+				update_id: 9,
 				message: { text: "hi", chat: { id: 1 }, from: {} },
+			}),
+		).toBeNull();
+	});
+
+	test("returns null when update_id is missing", () => {
+		expect(
+			parseTelegramUpdate({
+				message: {
+					text: "hi",
+					chat: { id: 1 },
+					from: { id: 2, is_bot: false },
+				},
 			}),
 		).toBeNull();
 	});
