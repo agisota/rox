@@ -4,11 +4,11 @@ import {
 	PromptInputTools,
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
+import { ReasoningLevelSlider } from "@rox/ui/motion";
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";
 import type { Recording } from "renderer/lib/voice/useDictation";
-import { ReasoningLevelSlider } from "renderer/motion/ReasoningLevelSlider";
 import { PILL_BUTTON_CLASS } from "../../../../styles";
 import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";

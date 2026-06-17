@@ -2,6 +2,7 @@ import { initSentry } from "./lib/sentry";
 
 initSentry();
 
+import { setMotionPreferenceSource } from "@rox/ui/motion";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import ReactDom from "react-dom/client";
 import { BootErrorBoundary } from "./components/BootErrorBoundary";
@@ -18,10 +19,19 @@ import { electronTrpcClient } from "./lib/trpc-client";
 import { electronQueryClient } from "./providers/ElectronTRPCProvider";
 import { NotFound } from "./routes/not-found";
 import { routeTree } from "./routeTree.gen";
+import { useSettings } from "./stores/settings";
 import { applyGlass } from "./stores/theme/utils/glass";
 
 import "./globals.css";
 import "./styles/bundled-fonts.css";
+
+// Wire the `@rox/ui` motion kit to the desktop settings store. Registered before
+// the first render so `useMotionPreference`/`useShouldAnimate` resolve the
+// persisted `animationPreference` instead of the kit's `"full"` default.
+setMotionPreferenceSource({
+	getSnapshot: () => useSettings.getState().animationPreference,
+	subscribe: (onStoreChange) => useSettings.subscribe(onStoreChange),
+});
 
 const rootElement = document.querySelector("app");
 initBootErrorHandling(rootElement);

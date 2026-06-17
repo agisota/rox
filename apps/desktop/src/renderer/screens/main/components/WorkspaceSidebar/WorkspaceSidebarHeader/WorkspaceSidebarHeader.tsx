@@ -1,10 +1,10 @@
+import { CollapseLabel } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 import { LuLayers } from "react-icons/lu";
 import { GATED_FEATURES, usePaywall } from "renderer/components/Paywall";
-import { CollapseLabel } from "renderer/motion";
 import {
 	tasksSearchFromFilters,
 	useTasksFilterStore,

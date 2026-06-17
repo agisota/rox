@@ -1,4 +1,5 @@
 import { Button } from "@rox/ui/button";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -6,7 +7,6 @@ import { LuCornerDownLeft, LuLoaderCircle } from "react-icons/lu";
 import { useTerminalAgentBindings } from "renderer/hooks/host-service/useTerminalAgentBindings";
 import { useWorkspaceHostUrl } from "renderer/hooks/host-service/useWorkspaceHostUrl";
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { AgentPickerSelect } from "./components/AgentPickerSelect";
 import { AgentPlacementToggle } from "./components/AgentPlacementToggle";
 import {

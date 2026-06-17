@@ -1,9 +1,9 @@
 import type { SelectAutomation, SelectAutomationRun } from "@rox/db/schema";
 import { formatDateTimeInTimezone } from "@rox/shared/rrule";
+import { StatusPulse } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { useMutation } from "@tanstack/react-query";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
-import { StatusPulse } from "renderer/motion";
 import { DevicePicker } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker";
 import { useWorkspaceHostOptions } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker/hooks/useWorkspaceHostOptions/useWorkspaceHostOptions";
 import { AgentPicker } from "../../../components/AgentPicker";

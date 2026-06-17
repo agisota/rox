@@ -4,6 +4,7 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from "@rox/ui/context-menu";
+import { HighlightFlash } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
@@ -16,7 +17,6 @@ import {
 } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useHoverGitHubStatus } from "renderer/lib/githubQueryPolicy";
-import { HighlightFlash } from "renderer/motion";
 import { useWorkspaceDeleteHandler } from "renderer/react-query/workspaces/useWorkspaceDeleteHandler";
 import { STROKE_WIDTH } from "../../WorkspaceSidebar/constants";
 import { DeleteWorkspaceDialog } from "../../WorkspaceSidebar/WorkspaceListItem/components/DeleteWorkspaceDialog/DeleteWorkspaceDialog";

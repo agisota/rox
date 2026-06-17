@@ -1,3 +1,4 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -7,7 +8,6 @@ import {
 	TbLoader2,
 	TbRefresh,
 } from "react-icons/tb";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { UrlSuggestions } from "./components/UrlSuggestions";
 import { useUrlAutocomplete } from "./hooks/useUrlAutocomplete";
 

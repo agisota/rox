@@ -5,9 +5,9 @@ import {
 } from "@rox/ui/ai-elements/message";
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
+import { useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 
 type PendingQuestion = UseChatDisplayReturn["pendingQuestion"];

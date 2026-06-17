@@ -1,4 +1,5 @@
 import { Workspace } from "@rox/panes";
+import { AnimatedHeight, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
@@ -7,11 +8,6 @@ import { createPortal } from "react-dom";
 import { useQuickOpenStore } from "renderer/commandPalette/ui/QuickOpen/quickOpenStore";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { useHotkey } from "renderer/hotkeys";
-import {
-	AnimatedHeight,
-	motionSpring,
-	useShouldAnimate,
-} from "renderer/motion";
 import { CommandPalette } from "renderer/screens/main/components/CommandPalette";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
 import { getV2NotificationSourcesForTab } from "renderer/stores/v2-notifications";

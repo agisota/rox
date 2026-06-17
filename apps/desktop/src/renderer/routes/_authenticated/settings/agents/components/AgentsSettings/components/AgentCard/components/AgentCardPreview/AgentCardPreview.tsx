@@ -1,7 +1,7 @@
 import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
 import { Button } from "@rox/ui/button";
+import { AnimatedHeight } from "@rox/ui/motion";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
-import { AnimatedHeight } from "renderer/motion";
 
 interface AgentCardPreviewProps {
 	preset: ResolvedAgentConfig;

@@ -1,9 +1,9 @@
+import { AnimatedHeight } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { useEffect, useMemo, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { AnimatedHeight } from "renderer/motion";
 import { useReorderProjects } from "renderer/react-query/projects";
 import { useWorkspaceSidebarStore } from "renderer/stores";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";

@@ -1,8 +1,8 @@
 import { Kbd, KbdGroup } from "@rox/ui/kbd";
+import { Pressable } from "@rox/ui/motion";
 import { useCallback } from "react";
 import { LuSearch } from "react-icons/lu";
 import { getDispatchChord, useHotkeyDisplay } from "renderer/hotkeys";
-import { Pressable } from "renderer/motion";
 
 interface SearchBarTriggerProps {
 	workspaceName?: string;

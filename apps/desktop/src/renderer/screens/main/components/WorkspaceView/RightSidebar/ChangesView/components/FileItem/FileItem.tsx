@@ -6,6 +6,7 @@ import {
 	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from "@rox/ui/context-menu";
+import { ActiveIndicator } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,7 +19,6 @@ import {
 	VscRemove,
 	VscTrash,
 } from "react-icons/vsc";
-import { ActiveIndicator } from "renderer/motion";
 import { toAbsoluteWorkspacePath } from "shared/absolute-paths";
 import type { ChangeCategory, ChangedFile } from "shared/changes-types";
 import { createFileKey, useScrollContext } from "../../../../ChangesContent";

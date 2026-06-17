@@ -4,11 +4,11 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@rox/ui/hover-card";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import type { UIMessage } from "ai";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 
 const PREVIEW_CHARACTER_LIMIT = 80;
 const JUMP_TOP_OFFSET_PX = 8;

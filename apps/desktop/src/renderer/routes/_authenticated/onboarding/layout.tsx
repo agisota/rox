@@ -1,4 +1,5 @@
 import { ChatServiceProvider } from "@rox/chat/client";
+import { motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import {
 	createFileRoute,
@@ -14,7 +15,6 @@ import { track } from "renderer/lib/analytics";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { motionDuration, useShouldAnimate } from "renderer/motion";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
 import { OnboardingNavigation } from "./components/OnboardingNavigation";
 

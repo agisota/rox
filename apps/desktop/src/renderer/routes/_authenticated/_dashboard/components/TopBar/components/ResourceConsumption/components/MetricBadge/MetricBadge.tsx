@@ -1,5 +1,5 @@
+import { AnimatedNumber } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
-import { AnimatedNumber } from "renderer/motion";
 
 interface MetricBadgeProps {
 	label: string;

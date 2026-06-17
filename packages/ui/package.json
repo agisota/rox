@@ -20,6 +20,7 @@
 		"./icons/preset-icons/*": "./src/assets/icons/preset-icons/*.svg",
 		"./atoms/*": "./src/atoms/*/index.ts",
 		"./motion-frame": "./src/motion-frame/index.ts",
+		"./motion": "./src/motion/index.ts",
 		"./*": "./src/components/ui/*.tsx"
 	},
 	"scripts": {

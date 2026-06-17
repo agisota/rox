@@ -8,11 +8,11 @@ import {
 import { Button } from "@rox/ui/button";
 import { Checkbox } from "@rox/ui/checkbox";
 import { Label } from "@rox/ui/label";
+import { AnimatedAlertDialogContent } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { AnimatedAlertDialogContent } from "renderer/motion";
 import {
 	useCloseWorkspace,
 	useDeleteWorkspace,

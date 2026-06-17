@@ -8,6 +8,7 @@ import {
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
 import { cn } from "@rox/ui/lib/utils";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useLiveQuery } from "@tanstack/react-db";
@@ -25,7 +26,6 @@ import {
 	logStressEvent,
 	useRenderStressInstrumentation,
 } from "renderer/lib/performance/stress-instrumentation";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 import {
 	navigateToWorkspace as navigateToV1Workspace,
 	navigateToV2Workspace,

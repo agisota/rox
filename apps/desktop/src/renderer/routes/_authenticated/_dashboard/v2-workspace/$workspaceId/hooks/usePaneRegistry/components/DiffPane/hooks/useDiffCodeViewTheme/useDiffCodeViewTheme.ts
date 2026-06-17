@@ -1,9 +1,8 @@
 import type { CodeViewOptions } from "@pierre/diffs";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import {
 	getDiffsTheme,
 	getDiffViewerStyle,

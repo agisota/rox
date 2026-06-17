@@ -1,8 +1,8 @@
+import { AnimatedHeight, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { AnimatedHeight, useShouldAnimate } from "renderer/motion";
 import { SectionTitle } from "../SectionTitle";
 
 export function Section({

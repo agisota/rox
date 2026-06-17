@@ -5,8 +5,6 @@ import type {
 } from "@pierre/diffs";
 import { CodeView, type CodeViewHandle } from "@pierre/diffs/react";
 import type { RendererContext } from "@rox/panes";
-import { motion } from "framer-motion";
-import { useCallback, useMemo, useRef } from "react";
 import {
 	DiffSkeleton,
 	ease,
@@ -14,7 +12,9 @@ import {
 	motionDuration,
 	useDiffFlash,
 	useShouldAnimate,
-} from "renderer/motion";
+} from "@rox/ui/motion";
+import { motion } from "framer-motion";
+import { useCallback, useMemo, useRef } from "react";
 import type { DiffPaneData, PaneViewerData } from "../../../../types";
 import { type ChangesetFile, useChangeset } from "../../../useChangeset";
 import { useOpenInExternalEditor } from "../../../useOpenInExternalEditor";

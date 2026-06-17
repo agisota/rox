@@ -3,9 +3,9 @@ import {
 	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useShouldAnimate } from "@rox/ui/motion";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { useShouldAnimate } from "renderer/motion";
 import { useSidebarDnd } from "../../../../hooks/useSidebarDnd";
 import { parseId } from "../../../../hooks/useSidebarDnd/useSidebarDnd";
 import type { DashboardSidebarProjectChild } from "../../../../types";

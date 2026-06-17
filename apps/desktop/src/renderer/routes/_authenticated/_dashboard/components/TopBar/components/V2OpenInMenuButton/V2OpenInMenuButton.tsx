@@ -5,6 +5,7 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { OverflowFadeText } from "@rox/ui/overflow-fade-text";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
@@ -18,8 +19,6 @@ import {
 } from "renderer/components/OpenInExternalDropdown";
 import { HotkeyLabel, useHotkey, useHotkeyDisplay } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { useV2ProjectDefaultApp } from "renderer/routes/_authenticated/hooks/useV2ProjectDefaultApp";
 import { useThemeStore } from "renderer/stores";
 

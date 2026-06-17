@@ -1,7 +1,7 @@
+import { MotionPressable } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { LuPanelLeft, LuPanelLeftClose, LuPanelLeftOpen } from "react-icons/lu";
 import { HotkeyLabel } from "renderer/hotkeys";
-import { MotionPressable } from "renderer/motion";
 import { useWorkspaceSidebarStore } from "renderer/stores";
 
 export function SidebarToggle() {

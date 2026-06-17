@@ -1,6 +1,6 @@
 import { CommandEmpty, CommandGroup, CommandList } from "@rox/ui/command";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { useCommandContext } from "../../core/ContextProvider";
 import type { Command } from "../../core/types";
 import { useActiveCommands } from "../../core/useActiveCommands";

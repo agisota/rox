@@ -1,3 +1,4 @@
+import { MotionPressable } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import {
 	LuPanelRight,
@@ -6,7 +7,6 @@ import {
 } from "react-icons/lu";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { HotkeyLabel } from "renderer/hotkeys";
-import { MotionPressable } from "renderer/motion";
 
 export function RightSidebarToggle() {
 	const { preferences, setRightSidebarOpen } = useV2UserPreferences();

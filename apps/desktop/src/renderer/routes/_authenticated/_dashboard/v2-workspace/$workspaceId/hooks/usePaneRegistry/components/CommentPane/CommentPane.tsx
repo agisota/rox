@@ -1,4 +1,5 @@
 import type { RendererContext } from "@rox/panes";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import {
 	type ReactNode,
@@ -10,8 +11,6 @@ import {
 import { LuCheck } from "react-icons/lu";
 import { CommentMarkdown } from "renderer/components/CommentMarkdown";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import type { CommentPaneData, PaneViewerData } from "../../../../types";
 import "./comment-pane.css";
 

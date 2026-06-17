@@ -1,8 +1,8 @@
+import { CompletionBurst } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { createElement } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { CompletionBurst } from "renderer/motion/CompletionBurst";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { NOTIFICATION_EVENTS } from "shared/constants";
 import { debugLog } from "shared/debug";

@@ -1,3 +1,10 @@
+import {
+	ease,
+	motionDuration,
+	motionSpring,
+	PopIn,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -13,13 +20,6 @@ import { LuStar } from "react-icons/lu";
 import type { DiffStats } from "renderer/hooks/host-service/useDiffStats";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import {
-	ease,
-	motionDuration,
-	motionSpring,
-	PopIn,
-	useShouldAnimate,
-} from "renderer/motion";
 import { RenameInput } from "renderer/screens/main/components/WorkspaceSidebar/RenameInput";
 import type { ActivePaneStatus } from "shared/tabs-types";
 import type {

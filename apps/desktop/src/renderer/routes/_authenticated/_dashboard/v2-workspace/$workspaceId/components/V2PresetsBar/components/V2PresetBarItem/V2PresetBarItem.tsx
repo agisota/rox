@@ -7,6 +7,7 @@ import {
 	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from "@rox/ui/context-menu";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -15,8 +16,6 @@ import { HiMiniCommandLine } from "react-icons/hi2";
 import type { HotkeyId } from "renderer/hotkeys";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { resolveV2PresetIcon } from "renderer/lib/preset-icon";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
 
 const V2_PRESET_BAR_ITEM_TYPE = "V2_PRESET_BAR_ITEM";

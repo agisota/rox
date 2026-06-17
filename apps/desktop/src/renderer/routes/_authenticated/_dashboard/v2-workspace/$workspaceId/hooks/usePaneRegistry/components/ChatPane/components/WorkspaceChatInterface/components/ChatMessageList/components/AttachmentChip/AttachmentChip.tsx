@@ -1,5 +1,5 @@
+import { Pressable } from "@rox/ui/motion";
 import { FileIcon, FileTextIcon } from "lucide-react";
-import { Pressable } from "renderer/motion";
 
 interface AttachmentChipProps {
 	data: string;

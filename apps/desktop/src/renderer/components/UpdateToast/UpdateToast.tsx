@@ -1,12 +1,16 @@
 import { COMPANY } from "@rox/shared/constants";
 import { Button } from "@rox/ui/button";
+import {
+	ease,
+	MotionToast,
+	motionDuration,
+	ProgressBar,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import { HiArrowPath, HiMiniXMark } from "react-icons/hi2";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { MotionToast, ProgressBar } from "renderer/motion";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { AUTO_UPDATE_STATUS } from "shared/auto-update";
 
 interface UpdateToastProps {

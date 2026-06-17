@@ -1,7 +1,7 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
 import { VscGitPullRequest, VscLoading } from "react-icons/vsc";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import type { PRFlowDispatch } from "../../hooks/usePRFlowDispatch";
 import { PRStatusGroup } from "./components/PRStatusGroup";
 import {

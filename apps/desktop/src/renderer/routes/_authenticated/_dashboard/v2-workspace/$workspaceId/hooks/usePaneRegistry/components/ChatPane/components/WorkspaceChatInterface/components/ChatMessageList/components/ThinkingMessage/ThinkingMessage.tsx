@@ -1,6 +1,6 @@
 import { Message, MessageContent } from "@rox/ui/ai-elements/message";
 import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
-import { ThinkingDots, useShouldAnimate } from "renderer/motion";
+import { ThinkingDots, useShouldAnimate } from "@rox/ui/motion";
 
 export function ThinkingMessage() {
 	const shouldAnimate = useShouldAnimate("decorative");

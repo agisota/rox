@@ -1,8 +1,8 @@
 import { Message, MessageContent } from "@rox/ui/ai-elements/message";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { AnimatePresence, motion } from "framer-motion";
 import { ToolCallBlock } from "renderer/components/Chat/ChatInterface/components/ToolCallBlock";
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { ChatPendingPlanApproval } from "../../ChatMessageList.types";
 import { PendingPlanApprovalMessage } from "../PendingPlanApprovalMessage";
 

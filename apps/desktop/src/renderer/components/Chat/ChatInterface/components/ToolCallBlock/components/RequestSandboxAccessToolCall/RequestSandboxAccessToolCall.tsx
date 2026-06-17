@@ -1,4 +1,5 @@
 import { ToolCallRow } from "@rox/ui/ai-elements/tool-call-row";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { AnimatePresence, motion } from "framer-motion";
 import {
 	CheckIcon,
@@ -10,7 +11,6 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { useCallback } from "react";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import type { ToolStatusBadgeVariant } from "../ToolStatusBadge";
 import { ToolStatusBadge } from "../ToolStatusBadge";

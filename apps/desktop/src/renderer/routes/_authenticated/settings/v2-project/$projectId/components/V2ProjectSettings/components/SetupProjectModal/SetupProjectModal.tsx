@@ -8,6 +8,7 @@ import {
 } from "@rox/ui/dialog";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
+import { AnimatedDialogContent } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import { useEffect, useState } from "react";
@@ -15,7 +16,6 @@ import { LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
 import { RemotePathPicker } from "renderer/components/RemotePathPicker";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
-import { AnimatedDialogContent } from "renderer/motion";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 
 type SetupMode = "clone" | "import";

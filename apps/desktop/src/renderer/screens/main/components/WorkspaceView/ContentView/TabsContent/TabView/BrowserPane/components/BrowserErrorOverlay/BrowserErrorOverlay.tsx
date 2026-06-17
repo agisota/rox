@@ -1,10 +1,10 @@
 import { Button } from "@rox/ui/button";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { GlobeIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { TbCopy } from "react-icons/tb";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { BrowserLoadError } from "shared/tabs-types";
 
 const ERROR_LABELS: Record<number, string> = {

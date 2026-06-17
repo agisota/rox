@@ -9,6 +9,7 @@ import {
 } from "@rox/ui/dialog";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
+import { Shake, useMotionPreference, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -16,11 +17,6 @@ import { LuCheck, LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
-import { Shake } from "renderer/motion/Shake";
-import {
-	useMotionPreference,
-	useShouldAnimate,
-} from "renderer/motion/useMotionPreference";
 import {
 	type ProjectSetupResult,
 	useFinalizeProjectSetup,

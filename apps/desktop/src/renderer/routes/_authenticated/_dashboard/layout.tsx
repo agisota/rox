@@ -1,3 +1,8 @@
+import {
+	RouteTransition,
+	shellBootVariants,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import {
@@ -13,8 +18,6 @@ import { CommandPaletteHost } from "renderer/commandPalette";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { useHotkey } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { shellBootVariants, useShouldAnimate } from "renderer/motion";
-import { RouteTransition } from "renderer/motion/RouteTransition";
 import { DashboardSidebar } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar";
 import { DashboardSidebarDeleteDialog } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/components/DashboardSidebarDeleteDialog";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";

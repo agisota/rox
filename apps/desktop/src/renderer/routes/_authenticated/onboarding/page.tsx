@@ -1,6 +1,7 @@
 import { chatServiceTrpc } from "@rox/chat/client";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
+import { DrawnCheck, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { Spinner } from "@rox/ui/spinner";
 import { cn } from "@rox/ui/utils";
 import { createFileRoute } from "@tanstack/react-router";
@@ -10,7 +11,6 @@ import { FaAws } from "react-icons/fa";
 import { HiArrowUpRight } from "react-icons/hi2";
 import { SiGithub, SiOpenai } from "react-icons/si";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { DrawnCheck, motionDuration, useShouldAnimate } from "renderer/motion";
 import { GhAuthDialog } from "./components/GhAuthDialog";
 import {
 	type Provider,

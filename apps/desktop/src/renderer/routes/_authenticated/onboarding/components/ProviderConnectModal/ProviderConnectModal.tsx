@@ -8,6 +8,7 @@ import {
 	DialogTitle,
 } from "@rox/ui/dialog";
 import { Input } from "@rox/ui/input";
+import { shakeVariants, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { motion } from "framer-motion";
 import { type FormEvent, useState } from "react";
@@ -17,7 +18,6 @@ import { OpenAIOAuthDialog } from "renderer/components/Chat/ChatInterface/compon
 import { useAnthropicOAuth } from "renderer/components/Chat/ChatInterface/components/ModelPicker/hooks/useAnthropicOAuth";
 import { useOpenAIOAuth } from "renderer/components/Chat/ChatInterface/components/ModelPicker/hooks/useOpenAIOAuth";
 import { track } from "renderer/lib/analytics";
-import { shakeVariants, useShouldAnimate } from "renderer/motion";
 
 export type Provider = "anthropic" | "openai";
 
