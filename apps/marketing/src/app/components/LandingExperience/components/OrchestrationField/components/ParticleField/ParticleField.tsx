@@ -461,26 +461,22 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			introUntil.current = t + 7;
 		}
 
-		// `activity` (charged by mouse movement in the pointer handler) decays when
-		// the cursor is still; a command (or the intro) holds the swarm fully
-		// organised. Together they drive `orch`, the smoothed organisation level.
+		// After the intro fly-in the whole scene settles assembled and stays that
+		// way (face backdrop + spinning rings on top). `baseFloor` ramps up over
+		// the first ~2s so particles still fly in from chaos on load; smoothstep
+		// then pushes it close to 1 so the structure reads crisp. Pointer activity
+		// and a command can still drive it to a hard 1.
 		activity.current = Math.max(0, activity.current - delta * 0.15);
+		const baseFloor = Math.min(0.95, t * 0.45);
 		const orchTarget = Math.max(
 			activity.current,
+			baseFloor,
 			t < dispatchUntil.current ? 1 : 0,
 			t < introUntil.current ? 1 : 0,
 		);
 		orch.current += (orchTarget - orch.current) * Math.min(delta * 3, 1);
 		const o = orch.current;
 		const ease = o * o * (3 - 2 * o);
-
-		// The face constellation persists as a faint backdrop: after the intro
-		// fly-in (its floor ramps up over the first ~2s) the portrait stays
-		// assembled even when the rings relax back to chaos. The floor is kept
-		// near 1 so the thin contour lines aren't smeared by the far-away chaos
-		// positions; the cursor wake still ripples it for a living feel.
-		const faceFloor = Math.min(0.985, t * 0.5);
-		const faceEase = Math.max(ease, faceFloor);
 
 		// Impulse decay after a command pulse (slow enough to read on screen).
 		const since = t - pulseStart.current;
@@ -533,13 +529,9 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				ry = (structured[iy] ?? 0) * expand;
 			}
 
-			// Face particles use their own persistent organisation level; rings,
-			// hub and halo follow the interaction-driven `ease`.
-			const e = face ? faceEase : ease;
-
-			// Chaos: when not orchestrated the swarm drifts freely (a living,
-			// wandering cloud). The drift fades out as the structure forms.
-			const chaos = 1 - e;
+			// Chaos: on load the swarm flies in from a scattered cloud; the drift
+			// fades out as the structure forms and then stays assembled.
+			const chaos = 1 - ease;
 			const cx =
 				(scattered[ix] ?? 0) + Math.sin(t * 0.3 + i * 0.7) * 1.5 * chaos;
 			const cy =
@@ -550,9 +542,9 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			// Blend chaos → structure, with a gentle living swirl once organised.
 			// The face stays crisp (no swirl) so the silhouette is legible.
 			const swirl = face ? 0 : Math.sin(t * 0.6 + i) * 0.05 * ease;
-			let x = cx + (rx - cx) * e + swirl;
-			let y = cy + (ry - cy) * e + swirl;
-			const z = cz + (rz - cz) * e;
+			let x = cx + (rx - cx) * ease + swirl;
+			let y = cy + (ry - cy) * ease + swirl;
+			const z = cz + (rz - cz) * ease;
 
 			// Pointer perturbation: push nearby particles outward (a soft wake).
 			if (pointerActive) {
