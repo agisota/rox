@@ -4,6 +4,8 @@ import { animate, scrambleText } from "animejs";
 import { useEffect, useRef } from "react";
 import {
 	HERO_BRAND_WORDMARK,
+	HERO_LLM_TERM,
+	HERO_RUNTIME_TERM,
 	HERO_SUB_AGENT_CYCLE_WORDS,
 	HERO_SUB_LINE_ONE,
 	HERO_SUB_LINE_TWO_LEAD,
@@ -169,6 +171,11 @@ export function ScrambleLanding() {
 						Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
 						<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
 						конфликтов
+					</p>
+
+					<p className="rox-hero__hint">
+						<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
+						<Term {...HERO_LLM_TERM} /> — бесплатно
 					</p>
 
 					<p className="rox-hero__hint">

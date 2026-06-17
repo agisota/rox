@@ -236,6 +236,16 @@ export const HERO_WORKTREE_TERM: LandingTerm = {
 	tip: "Git worktree — отдельная рабочая копия репозитория в своей папке и ветке: агент пишет код изолированно, не трогая твою основную рабочую директорию.",
 };
 
+export const HERO_RUNTIME_TERM: LandingTerm = {
+	label: "Рантайм",
+	tip: "Всегда и без ограничений доступен выделенный sandbox (1 vCPU 1 RAM 10G SSD); более мощное железо можно арендовать по рыночной цене",
+};
+
+export const HERO_LLM_TERM: LandingTerm = {
+	label: "LLM",
+	tip: "Всегда и без ограничений доступна модель Rox-R1 (MoE, 550 bn параметров, 128K контекстное окно), все остальные модели доступны бесплатно первые 30 дней, дальше придётся башлять по рыночной цене",
+};
+
 export const HERO_ROX_ORCHESTRATION_TERM: LandingTerm = {
 	label: "легко",
 	tip: "для оркестрации используем собственное комбо из ODW (opendynamicworkflows) x ACPX x Autopilot x Swarm",
