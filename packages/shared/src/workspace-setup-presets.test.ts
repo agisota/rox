@@ -17,8 +17,10 @@ describe("workspace-setup-presets", () => {
 		for (const preset of WORKSPACE_SETUP_PRESETS) {
 			expect(preset.label.length).toBeGreaterThan(0);
 			expect(preset.description.length).toBeGreaterThan(0);
-			const hasCommands = (preset.setupCommands?.length ?? 0) > 0;
-			const hasFiles = (preset.scaffoldFiles?.length ?? 0) > 0;
+			const hasCommands =
+				("setupCommands" in preset ? preset.setupCommands.length : 0) > 0;
+			const hasFiles =
+				("scaffoldFiles" in preset ? preset.scaffoldFiles.length : 0) > 0;
 			expect(hasCommands || hasFiles).toBe(true);
 		}
 	});

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { getWorkspaceSetupPresetById } from "./workspace-setup-presets";
+import {
+	getWorkspaceSetupPresetById,
+	WORKSPACE_SETUP_PRESETS,
+} from "./workspace-setup-presets";
 import {
 	applyStarterToSelection,
 	getWorkspaceStarterPresetById,
@@ -11,9 +14,9 @@ import {
 } from "./workspace-starter-presets";
 
 describe("workspace-starter-presets", () => {
-	it("exposes 15-30 starters with unique ids", () => {
+	it("exposes 15-40 starters with unique ids", () => {
 		expect(WORKSPACE_STARTER_PRESETS.length).toBeGreaterThanOrEqual(15);
-		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(35);
+		expect(WORKSPACE_STARTER_PRESETS.length).toBeLessThanOrEqual(40);
 		const ids = WORKSPACE_STARTER_PRESETS.map((s) => s.id);
 		expect(new Set(ids).size).toBe(ids.length);
 	});
@@ -32,6 +35,21 @@ describe("workspace-starter-presets", () => {
 				expect(getWorkspaceSetupPresetById(id)).toBeDefined();
 			}
 		}
+	});
+
+	it("keeps the everything starter within the developer setup catalog", () => {
+		const setupIds = new Set(
+			WORKSPACE_SETUP_PRESETS.map((preset) => preset.id),
+		);
+		const everything = getWorkspaceStarterPresetById("everything");
+		expect(everything).toBeDefined();
+		expect(everything?.description).toContain("developer bootstrap");
+		for (const id of everything?.presetIds ?? []) {
+			expect(setupIds.has(id)).toBe(true);
+		}
+		expect(everything?.presetIds).not.toContain("product-brief");
+		expect(everything?.presetIds).not.toContain("seo-content-plan");
+		expect(everything?.presetIds).not.toContain("finance-operating-model");
 	});
 
 	it("has no duplicate preset ids within a single starter", () => {

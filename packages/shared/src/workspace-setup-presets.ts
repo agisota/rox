@@ -28,9 +28,9 @@ export interface WorkspaceSetupPreset {
 	label: string;
 	description: string;
 	/** Shell commands appended to the `rox/config.json` setup array. */
-	setupCommands?: string[];
+	setupCommands?: readonly string[];
 	/** Files written into the workspace root on creation. */
-	scaffoldFiles?: WorkspaceScaffoldFile[];
+	scaffoldFiles?: readonly WorkspaceScaffoldFile[];
 }
 
 const AGENTS_MD_STUB = `# Agent Guide
@@ -108,7 +108,7 @@ const FINANCE_OPERATING_MODEL_MD_STUB = `# Finance Operating Model
 ## Next review
 `;
 
-export const WORKSPACE_SETUP_PRESETS: readonly WorkspaceSetupPreset[] = [
+export const WORKSPACE_SETUP_PRESETS = [
 	{
 		id: "git-init",
 		label: "Initialize git",
@@ -357,7 +357,10 @@ jobs:
 			"Pin the Node.js version with an .nvmrc for consistent tooling.",
 		scaffoldFiles: [{ path: ".nvmrc", contents: "lts/*\n" }],
 	},
-];
+] as const satisfies readonly WorkspaceSetupPreset[];
+
+export type WorkspaceSetupPresetId =
+	(typeof WORKSPACE_SETUP_PRESETS)[number]["id"];
 
 /** Look up a preset by id. */
 export function getWorkspaceSetupPresetById(
@@ -381,10 +384,14 @@ export function resolveWorkspaceSetupPresets(selectedIds: readonly string[]): {
 
 	for (const preset of WORKSPACE_SETUP_PRESETS) {
 		if (!selected.has(preset.id)) continue;
-		for (const command of preset.setupCommands ?? []) {
+		const presetSetupCommands =
+			"setupCommands" in preset ? preset.setupCommands : [];
+		const presetScaffoldFiles =
+			"scaffoldFiles" in preset ? preset.scaffoldFiles : [];
+		for (const command of presetSetupCommands) {
 			if (!setupCommands.includes(command)) setupCommands.push(command);
 		}
-		for (const file of preset.scaffoldFiles ?? []) {
+		for (const file of presetScaffoldFiles) {
 			if (seenPaths.has(file.path)) continue;
 			seenPaths.add(file.path);
 			scaffoldFiles.push(file);

@@ -23,6 +23,7 @@ import {
 	WORKSPACE_SETUP_PRESETS,
 	type WorkspaceScaffoldFile,
 	type WorkspaceSetupPreset,
+	type WorkspaceSetupPresetId,
 } from "./workspace-setup-presets";
 
 /**
@@ -35,7 +36,7 @@ export interface WorkspaceStarterPreset {
 	label: string;
 	description: string;
 	/** Ids of the single-effect presets this starter bundles. */
-	presetIds: readonly string[];
+	presetIds: readonly WorkspaceSetupPresetId[];
 }
 
 /**
@@ -180,7 +181,7 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 		id: "product-manager-kit",
 		label: "Product manager kit",
 		description:
-			"Start a non-code product workspace with a brief, README, todo list, and planner.",
+			"Start a non-code product workspace with a todo list, planner, product brief, and README.",
 		presetIds: ["readme", "product-brief", "todo-md", "planner-md"],
 	},
 	{
@@ -201,7 +202,9 @@ export const WORKSPACE_STARTER_PRESETS: readonly WorkspaceStarterPreset[] = [
 		id: "everything",
 		label: "Everything",
 		description:
-			"Run the full bootstrap: repo init + GitHub sync, agent context, planning docs, CI/CD, deep-wiki/cold-graph, and the open-source baseline.",
+			"Run the full developer bootstrap: repo init + GitHub sync, agent context, planning docs, CI/CD, deep-wiki/cold-graph, and the open-source baseline.",
+		// Keep non-dev kits opt-in. `everything` is the developer bootstrap bundle,
+		// not a product/SEO/finance workspace scaffold.
 		presetIds: [
 			"git-init",
 			"github-repo-create",
@@ -363,7 +366,7 @@ export function removeStarterFromSelection(
 	const starter = getWorkspaceStarterPresetById(starterId);
 	const normalized = normalizeSelection(selectedIds);
 	if (!starter) return normalized;
-	const toRemove = new Set(starter.presetIds);
+	const toRemove = new Set<string>(starter.presetIds);
 	return normalized.filter((id) => !toRemove.has(id));
 }
 
