@@ -42,6 +42,9 @@ const LEGAL_LINKS: FooterLink[] = [
 	{ href: "/privacy", label: "Конфиденциальность" },
 ];
 
+const FOOTER_TEXT =
+	"font-sans text-[calc(0.875rem/1.5)] font-extralight text-white/28";
+
 export function Footer() {
 	const pathname = usePathname();
 	if (pathname === "/download") return null;
@@ -55,7 +58,7 @@ export function Footer() {
 				transition={{ duration: 0.5 }}
 				className="max-w-7xl mx-auto px-6 sm:px-8 pt-6 pb-10 sm:pt-8 sm:pb-12"
 			>
-				<div className="grid grid-cols-2 gap-10 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-x-20">
+				<div className="grid grid-cols-2 gap-10 font-sans md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-x-20">
 					<div className="col-span-2 flex flex-col gap-6 md:col-span-1">
 						<Link
 							href="/"
@@ -63,7 +66,7 @@ export function Footer() {
 						>
 							<RoxLogo />
 						</Link>
-						<p className="text-sm text-muted-foreground">
+						<p className={FOOTER_TEXT}>
 							© {new Date().getFullYear()} ROX ONE PUBLIC BENEFIT COMPANY
 						</p>
 					</div>
@@ -86,7 +89,7 @@ function FooterColumn({
 }) {
 	return (
 		<div className="flex flex-col gap-4">
-			<p className="text-sm font-medium text-foreground">{title}</p>
+			<p className={`${FOOTER_TEXT} text-white/34`}>{title}</p>
 			<ul className="flex flex-col gap-3">
 				{links.map((link) => (
 					<li key={link.href}>
@@ -99,8 +102,7 @@ function FooterColumn({
 }
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
-	const className =
-		"group inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground";
+	const className = `group inline-flex items-center gap-1 ${FOOTER_TEXT} transition-colors hover:text-white/42`;
 	if (link.external) {
 		return (
 			<a
@@ -110,7 +112,7 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 				className={className}
 			>
 				{link.label}
-				<ArrowUpRight className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+				<ArrowUpRight className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
 			</a>
 		);
 	}
