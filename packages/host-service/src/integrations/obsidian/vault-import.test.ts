@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -85,6 +85,19 @@ describe("collectObsidianVaultNotes", () => {
 			collectObsidianVaultNotes({ vaultPath, maxFiles: 1 }),
 		).rejects.toThrow(/file limit exceeded/);
 	});
+
+	it("skips markdown symlinks so imports cannot escape the vault", async () => {
+		const vaultPath = await makeVault();
+		const outsidePath = await mkdtemp(join(tmpdir(), "rox-obsidian-outside-"));
+		tempDirs.push(outsidePath);
+		await writeFile(join(outsidePath, "secret.md"), "SECRET", "utf8");
+		await writeVaultFile(vaultPath, "safe.md", "SAFE");
+		await symlink(join(outsidePath, "secret.md"), join(vaultPath, "leak.md"));
+
+		const notes = await collectObsidianVaultNotes({ vaultPath });
+
+		expect(notes).toEqual([{ path: "safe.md", content: "SAFE" }]);
+	});
 });
 
 describe("importObsidianVault", () => {
@@ -114,6 +127,39 @@ describe("importObsidianVault", () => {
 			],
 		});
 		expect(calls[1]?.notes).toEqual([{ path: "c.md", content: "C" }]);
+	});
+
+	it("stops before sending another batch when the import is aborted", async () => {
+		const vaultPath = await makeVault();
+		await writeVaultFile(vaultPath, "a.md", "A");
+		await writeVaultFile(vaultPath, "b.md", "B");
+		const controller = new AbortController();
+		const calls: ObsidianImportInput[] = [];
+		const api = {
+			integration: {
+				obsidian: {
+					importNotes: {
+						mutate: async (input: ObsidianImportInput) => {
+							calls.push(input);
+							controller.abort();
+							return { imported: input.notes.length };
+						},
+					},
+				},
+			},
+		} satisfies ObsidianImportApi;
+
+		await expect(
+			importObsidianVault({
+				api,
+				organizationId: "org-1",
+				vaultPath,
+				batchSize: 1,
+				signal: controller.signal,
+			}),
+		).rejects.toThrow(/aborted/);
+		expect(calls).toHaveLength(1);
+		expect(calls[0]?.notes).toEqual([{ path: "a.md", content: "A" }]);
 	});
 });
 

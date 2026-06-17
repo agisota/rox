@@ -1,5 +1,5 @@
 import { type Dirent, type FSWatcher, watch } from "node:fs";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { lstat, readdir, readFile, stat } from "node:fs/promises";
 import { basename, join, relative, resolve, sep } from "node:path";
 
 const DEFAULT_BATCH_SIZE = 100;
@@ -40,6 +40,7 @@ export interface ObsidianImportApi {
 export interface CollectObsidianVaultNotesOptions {
 	vaultPath: string;
 	maxFiles?: number;
+	signal?: AbortSignal;
 }
 
 export interface ImportObsidianVaultOptions
@@ -86,6 +87,12 @@ function assertPositiveInteger(name: string, value: number): void {
 	}
 }
 
+function throwIfAborted(signal?: AbortSignal): void {
+	if (signal?.aborted) {
+		throw new DOMException("Obsidian vault import aborted", "AbortError");
+	}
+}
+
 function sortByPath(notes: ObsidianVaultNote[]): ObsidianVaultNote[] {
 	return notes.sort((a, b) => a.path.localeCompare(b.path));
 }
@@ -95,7 +102,10 @@ async function collectMarkdownFiles(
 	currentDir: string,
 	notes: ObsidianVaultNote[],
 	maxFiles: number,
+	signal?: AbortSignal,
 ): Promise<void> {
+	throwIfAborted(signal);
+
 	let entries: Dirent<string>[];
 	try {
 		entries = await readdir(currentDir, {
@@ -113,30 +123,38 @@ async function collectMarkdownFiles(
 		const absolutePath = join(currentDir, entry.name);
 		if (entry.isDirectory()) {
 			if (IGNORED_DIRECTORIES.has(entry.name)) continue;
-			await collectMarkdownFiles(root, absolutePath, notes, maxFiles);
+			await collectMarkdownFiles(root, absolutePath, notes, maxFiles, signal);
 			continue;
 		}
 
-		if (!entry.isFile() || !isMarkdownPath(entry.name)) continue;
+		if (
+			entry.isSymbolicLink() ||
+			!entry.isFile() ||
+			!isMarkdownPath(entry.name)
+		) {
+			continue;
+		}
 		if (notes.length >= maxFiles) {
 			throw new Error(
 				`Obsidian vault import file limit exceeded (${maxFiles} markdown files)`,
 			);
 		}
 
+		throwIfAborted(signal);
 		let fileStat: Awaited<ReturnType<typeof stat>>;
 		try {
-			fileStat = await stat(absolutePath);
+			fileStat = await lstat(absolutePath);
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
 			throw error;
 		}
 
+		if (fileStat.isSymbolicLink()) continue;
 		if (fileStat.size > MAX_NOTE_BYTES) continue;
 
 		let content: string;
 		try {
-			content = await readFile(absolutePath, "utf8");
+			content = await readFile(absolutePath, { encoding: "utf8", signal });
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
 			throw error;
@@ -162,7 +180,13 @@ export async function collectObsidianVaultNotes(
 	}
 
 	const notes: ObsidianVaultNote[] = [];
-	await collectMarkdownFiles(vaultPath, vaultPath, notes, maxFiles);
+	await collectMarkdownFiles(
+		vaultPath,
+		vaultPath,
+		notes,
+		maxFiles,
+		options.signal,
+	);
 	return sortByPath(notes);
 }
 
@@ -188,6 +212,7 @@ export async function importObsidianVault(
 	let imported = 0;
 
 	for (const batch of batches) {
+		throwIfAborted(options.signal);
 		const result = await options.api.integration.obsidian.importNotes.mutate({
 			organizationId: options.organizationId,
 			workspaceId: options.workspaceId ?? null,
@@ -213,6 +238,7 @@ export function createObsidianVaultWatcher(
 	let watcher: FSWatcher | null = null;
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let runningSync: Promise<ImportObsidianVaultResult> | null = null;
+	let abortController: AbortController | null = null;
 
 	const clearDebounce = () => {
 		if (!debounceTimer) return;
@@ -222,14 +248,22 @@ export function createObsidianVaultWatcher(
 
 	const syncNow = async () => {
 		if (runningSync) return runningSync;
-		runningSync = importObsidianVault({ ...options, vaultPath }).finally(() => {
+		abortController = new AbortController();
+		runningSync = importObsidianVault({
+			...options,
+			vaultPath,
+			signal: abortController.signal,
+		}).finally(() => {
 			runningSync = null;
+			abortController = null;
 		});
 		return runningSync;
 	};
 
 	const scheduleSync = (filename: string | Buffer | null) => {
-		if (filename && !isMarkdownPath(String(filename))) return;
+		// Some platforms emit `filename = null` for broad/rename events. Fall
+		// through to a full vault sync because the changed path is unknowable.
+		if (filename !== null && !isMarkdownPath(String(filename))) return;
 		clearDebounce();
 		debounceTimer = setTimeout(() => {
 			debounceTimer = null;
@@ -259,6 +293,8 @@ export function createObsidianVaultWatcher(
 		},
 		stop() {
 			clearDebounce();
+			abortController?.abort();
+			abortController = null;
 			watcher?.close();
 			watcher = null;
 		},
