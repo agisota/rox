@@ -21,6 +21,8 @@ export type DiscordConfig = {
 	guildId?: string;
 	/** Default channel for outbound messages. */
 	defaultChannelId?: string;
+	/** Discord application id, used to build the interactions endpoint URL. */
+	applicationId?: string;
 };
 
 export type NotionConfig = {
