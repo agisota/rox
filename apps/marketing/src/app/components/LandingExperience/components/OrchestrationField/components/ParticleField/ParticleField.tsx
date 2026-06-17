@@ -115,8 +115,8 @@ async function sampleFacePoints(count: number): Promise<Float32Array | null> {
 			// Sub-pixel jitter so points don't snap to a visible grid.
 			const jx = px + Math.random();
 			const jy = py + Math.random();
-			out[i * 3] = (jx / w - 0.5) * worldW;
-			out[i * 3 + 1] = (0.5 - jy / h) * worldH;
+			out[i * 3] = (jx / w - 0.5) * worldW + FACE.offsetX;
+			out[i * 3 + 1] = (0.5 - jy / h) * worldH + FACE.offsetY;
 			out[i * 3 + 2] = FACE.baseZ + (Math.random() - 0.5) * FACE.depth * 2;
 		}
 		return out;
@@ -178,13 +178,16 @@ function buildField(): FieldData {
 			structured[i * 3 + 1] = v.y;
 			structured[i * 3 + 2] = v.z;
 
-			// Two-tone ring: mostly its role color, sometimes brand orange.
+			// Two-tone ring: mostly its role color, sometimes brand orange. Kept
+			// saturated and slightly boosted so the rings clearly read on top of
+			// the face constellation behind them.
 			const base = Math.random() < 0.78 ? colorAt(roleIndex) : colorAt(1);
-			tmp.copy(base).lerp(white, Math.random() * 0.3);
-			colors[i * 3] = tmp.r;
-			colors[i * 3 + 1] = tmp.g;
-			colors[i * 3 + 2] = tmp.b;
-			sizes[i] = 0.1 + Math.random() * 0.13;
+			tmp.copy(base).lerp(white, Math.random() * 0.2);
+			const ringBoost = 1.25;
+			colors[i * 3] = tmp.r * ringBoost;
+			colors[i * 3 + 1] = tmp.g * ringBoost;
+			colors[i * 3 + 2] = tmp.b * ringBoost;
+			sizes[i] = 0.12 + Math.random() * 0.14;
 		}
 	};
 
@@ -249,20 +252,22 @@ function buildField(): FieldData {
 		const r = 7 + Math.random() * 3;
 		const phi = Math.acos(2 * Math.random() - 1);
 		const theta = Math.random() * Math.PI * 2;
-		structured[i * 3] = r * Math.sin(phi) * Math.cos(theta) * 0.6;
-		structured[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.7;
+		structured[i * 3] =
+			r * Math.sin(phi) * Math.cos(theta) * 0.6 + FACE.offsetX;
+		structured[i * 3 + 1] =
+			r * Math.sin(phi) * Math.sin(theta) * 0.7 + FACE.offsetY;
 		structured[i * 3 + 2] = FACE.baseZ;
 
 		// Occasional brighter, larger "stars" give the portrait some twinkle.
-		const sparkle = Math.random() < 0.12;
+		const sparkle = Math.random() < 0.14;
 		const brightness = sparkle
-			? 1.5 + Math.random() * 0.5
-			: 0.95 + Math.random() * 0.4;
+			? 2.0 + Math.random() * 0.6
+			: 1.3 + Math.random() * 0.5;
 		tmp.copy(faceTint).lerp(white, Math.random() * 0.4);
 		colors[i * 3] = tmp.r * brightness;
 		colors[i * 3 + 1] = tmp.g * brightness;
 		colors[i * 3 + 2] = tmp.b * brightness;
-		sizes[i] = (sparkle ? 0.16 : 0.08) + Math.random() * 0.05;
+		sizes[i] = (sparkle ? 0.2 : 0.11) + Math.random() * 0.06;
 	}
 
 	// Scattered start: a wide chaotic cloud the particles fly in from.
