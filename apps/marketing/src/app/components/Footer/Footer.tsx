@@ -14,7 +14,7 @@ function RoxLogo() {
 			alt="Rox"
 			width={683}
 			height={1040}
-			className="h-10 w-auto"
+			className="h-[70px] w-auto opacity-90"
 		/>
 	);
 }
