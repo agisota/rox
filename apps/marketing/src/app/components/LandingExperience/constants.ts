@@ -117,8 +117,10 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 
 /* ── ② Scramble landing document (gbLOvrw) ─────────────────────────────── */
 
-/** Hero wordmark — four spaces between each letter for a wide tracked lockup. */
-export const HERO_BRAND_WORDMARK = "R    O    X    O    N    E";
+/** Hero wordmark — ten spaces between each letter for a wide tracked lockup. */
+export const HERO_BRAND_WORDMARK = ["R", "O", "X", "O", "N", "E"].join(
+	"          ",
+);
 
 export const LANDING_HEADLINE = "Кодируй и вайбуй в тыщу рук";
 
