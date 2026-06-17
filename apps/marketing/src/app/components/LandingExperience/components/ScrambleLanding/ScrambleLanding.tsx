@@ -193,6 +193,8 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 					<p className="rox-hero__hint">{FIELD_HINT}</p>
 
+					<p className="rox-hero__hint">{LANDING_FEAT_ISOLATION}</p>
+
 					<a className="rox-landing__hero-cta" href="/download">
 						Скачать для macOS
 						<span aria-hidden="true">↓</span>
@@ -218,7 +220,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 						{LANDING_AGENT_TAIL}
 						<Term label={LANDING_ACPX_TERM.label} tip={LANDING_ACPX_TERM.tip} />
 					</li>
-					<li className="rox-scramble">{LANDING_FEAT_ISOLATION}</li>
 					<li className="rox-scramble">{LANDING_FEAT_CONTROL}</li>
 					<li>
 						{LANDING_EDITOR_LEAD}{" "}
