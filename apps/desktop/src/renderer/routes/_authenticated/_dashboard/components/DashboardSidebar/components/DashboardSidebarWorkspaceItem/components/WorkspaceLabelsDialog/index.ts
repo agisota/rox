@@ -1,0 +1,1 @@
+export { WorkspaceLabelsDialog } from "./WorkspaceLabelsDialog";
