@@ -13,6 +13,7 @@ import {
 	type SettingItemId,
 } from "../../../utils/settings-search";
 import { AnimationAuditPanel } from "../AnimationAuditPanel";
+import { ExperimentalFeatureCatalog } from "../ExperimentalFeatureCatalog";
 
 interface ExperimentalSettingsProps {
 	visibleItems?: SettingItemId[] | null;
@@ -27,6 +28,10 @@ export function ExperimentalSettings({
 	);
 	const showRerunOnboarding = isItemVisible(
 		SETTING_ITEM_ID.EXPERIMENTAL_RERUN_ONBOARDING,
+		visibleItems,
+	);
+	const showTeamOsFeatures = isItemVisible(
+		SETTING_ITEM_ID.EXPERIMENTAL_TEAM_OS,
 		visibleItems,
 	);
 	const isV2CloudEnabled = useIsV2CloudEnabled();
@@ -49,6 +54,7 @@ export function ExperimentalSettings({
 			</div>
 
 			<div className="space-y-6">
+				{showTeamOsFeatures && <ExperimentalFeatureCatalog />}
 				{showV1Migration && !isV2OnlyUser && (
 					<div className="flex items-center justify-between gap-6">
 						<div className="min-w-0 flex-1 space-y-0.5">

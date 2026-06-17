@@ -208,6 +208,10 @@
 			"types": "./src/integrations/index.ts",
 			"default": "./src/integrations/index.ts"
 		},
+		"./experimental-features": {
+			"types": "./src/experimental-features/index.ts",
+			"default": "./src/experimental-features/index.ts"
+		},
 		"./workspace-setup-presets": {
 			"types": "./src/workspace-setup-presets.ts",
 			"default": "./src/workspace-setup-presets.ts"

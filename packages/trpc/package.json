@@ -40,6 +40,7 @@
 		"@rox/auth": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/host-provisioner": "workspace:*",
+		"@rox/runtime-clients": "workspace:*",
 		"@rox/shared": "workspace:*",
 		"@rox/workflow-core": "workspace:*",
 		"@rox/workflow-runtime": "workspace:*",

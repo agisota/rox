@@ -1,0 +1,47 @@
+{
+	"name": "@rox/runtime-clients",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./object-store": {
+			"types": "./src/object-store.ts",
+			"default": "./src/object-store.ts"
+		},
+		"./vector-store": {
+			"types": "./src/vector-store.ts",
+			"default": "./src/vector-store.ts"
+		},
+		"./ai-provider": {
+			"types": "./src/ai-provider.ts",
+			"default": "./src/ai-provider.ts"
+		},
+		"./embed-text": {
+			"types": "./src/embed-text.ts",
+			"default": "./src/embed-text.ts"
+		},
+		"./config": {
+			"types": "./src/config.ts",
+			"default": "./src/config.ts"
+		},
+		"./runtime-config": {
+			"types": "./src/runtime-config.ts",
+			"default": "./src/runtime-config.ts"
+		}
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit --emitDeclarationOnly false"
+	},
+	"dependencies": {
+		"@rox/db": "workspace:*"
+	},
+	"devDependencies": {
+		"@rox/typescript": "workspace:*",
+		"bun-types": "1.3.11",
+		"typescript": "6.0.3"
+	}
+}
