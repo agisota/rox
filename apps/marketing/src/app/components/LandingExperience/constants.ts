@@ -133,6 +133,26 @@ export const LANDING_ACPX_TERM: LandingTerm = {
 	tip: "acpx — наш слой оркестрации: раскидывает задачи по агентам и git-worktree, запускает их параллельно и сводит результат воедино.",
 };
 
+/* ── Hero stack line (BYOM / BYOA / BYOH) ─────────────────────────────── */
+
+export const HERO_BYOM_TERM: LandingTerm = {
+	label: "BYOM + BYOA + BYOH",
+	tip: "bring your own model, bring your own agent, bring your own harness",
+};
+
+export const HERO_STACK_TERM: LandingTerm = {
+	label: "залетай на любом привычном стэке",
+	tip: "можно выбрать любого привычного тебе агента и любую привычную тебе модель",
+};
+
+export const HERO_ROX_ORCHESTRATION_TERM: LandingTerm = {
+	label: "легко",
+	tip: "для оркестрации используем собственное комбо из ODW (opendynamicworkflows) x ACPX x Autopilot x Swarm",
+};
+
+export const HERO_AGENT_STACK_LIST =
+	"Claude Code, Codex, Cursor, OpenCode, Gemini, Openclaw, Hermes, Kimi, Deepseek, Qwen...";
+
 /** Lead-in for the "open in editor" line; editor names render as terms. */
 export const LANDING_EDITOR_LEAD =
 	"Открывай результат в своём редакторе одним кликом:";

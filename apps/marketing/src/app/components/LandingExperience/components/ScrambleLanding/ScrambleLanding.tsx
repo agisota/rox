@@ -3,10 +3,10 @@
 import { animate, scrambleText, utils } from "animejs";
 import { useEffect, useRef } from "react";
 import {
-	LANDING_ACPX_TERM,
-	LANDING_AGENT_LEAD,
-	LANDING_AGENT_TAIL,
-	LANDING_AGENT_TERMS,
+	HERO_AGENT_STACK_LIST,
+	HERO_BYOM_TERM,
+	HERO_ROX_ORCHESTRATION_TERM,
+	HERO_STACK_TERM,
 	LANDING_DOWNLOAD_HEADING,
 	LANDING_EDITOR_LEAD,
 	LANDING_EDITOR_TERMS,
@@ -196,15 +196,15 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 					<p className="rox-hero__hint">{LANDING_FEAT_ISOLATION}</p>
 
 					<p className="rox-hero__hint">
-						{LANDING_AGENT_LEAD}{" "}
-						{LANDING_AGENT_TERMS.map((term, index) => (
-							<span key={term.label}>
-								{index > 0 ? ", " : ""}
-								<Term label={term.label} tip={term.tip} />
-							</span>
-						))}
-						{LANDING_AGENT_TAIL}
-						<Term label={LANDING_ACPX_TERM.label} tip={LANDING_ACPX_TERM.tip} />
+						<Term label={HERO_BYOM_TERM.label} tip={HERO_BYOM_TERM.tip} />:{" "}
+						<Term label={HERO_STACK_TERM.label} tip={HERO_STACK_TERM.tip} />{" "}
+						{HERO_AGENT_STACK_LIST} ну, или сходу газуй на заряженном агенте Rox
+						One, который{" "}
+						<Term
+							label={HERO_ROX_ORCHESTRATION_TERM.label}
+							tip={HERO_ROX_ORCHESTRATION_TERM.tip}
+						/>{" "}
+						управится с любым нынешним зоопарком ИИ-решений
 					</p>
 
 					<a className="rox-landing__hero-cta" href="/download">
