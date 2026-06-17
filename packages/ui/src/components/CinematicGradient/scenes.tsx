@@ -16,11 +16,16 @@ import type { CSSProperties } from "react";
 
 /** Shared base style for a soft, blurred light blob. */
 function blob(style: CSSProperties): CSSProperties {
+	// Only hint the compositor when the layer actually animates — under reduced
+	// motion `anim()` returns undefined, so `willChange` would pin a useless GPU
+	// layer for a static blob.
+	const hasAnimation =
+		typeof style.animation === "string" && style.animation.length > 0;
 	return {
 		position: "absolute",
 		borderRadius: "9999px",
 		filter: "blur(60px)",
-		willChange: "transform, opacity",
+		...(hasAnimation ? { willChange: "transform, opacity" } : {}),
 		...style,
 	};
 }

@@ -136,7 +136,8 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
 		if (!settings.wallpaperAutoRotate || !hasWallpaper) {
 			return;
 		}
-		const intervalMs = Math.max(5, settings.wallpaperRotateSeconds) * 1000;
+		const intervalMs =
+			Math.max(MIN_ROTATE_SECONDS, settings.wallpaperRotateSeconds) * 1000;
 		const timer = setInterval(() => {
 			const next = pickNext(WALLPAPERS, wallpaperIdRef.current);
 			if (next) updateSettings({ wallpaperId: next.id });

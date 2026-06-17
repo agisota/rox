@@ -40,7 +40,12 @@ describe("CinematicGradient", () => {
 	});
 
 	it("defaults to the calm scene when none is given", () => {
-		const html = renderToStaticMarkup(<CinematicGradient colors={PALETTE} />);
-		expect(html).toContain("<canvas");
+		const defaultHtml = renderToStaticMarkup(
+			<CinematicGradient colors={PALETTE} />,
+		);
+		const calmHtml = renderToStaticMarkup(
+			<CinematicGradient colors={PALETTE} scene="calm" />,
+		);
+		expect(defaultHtml).toBe(calmHtml);
 	});
 });

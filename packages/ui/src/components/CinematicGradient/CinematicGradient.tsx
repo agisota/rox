@@ -67,8 +67,13 @@ export function CinematicGradient({
 			className={cn("relative h-full w-full overflow-hidden", className)}
 			style={paletteVars}
 		>
-			{/* 1. Base animated mesh. */}
-			<MeshGradient colors={colors} className="absolute inset-0" />
+			{/* 1. Base mesh. `speed={0}` freezes the noise for reduced motion so
+			    the whole motion layer — not just the scene — is disabled. */}
+			<MeshGradient
+				colors={colors}
+				className="absolute inset-0"
+				speed={animate ? 3e-6 : 0}
+			/>
 
 			{/* 2. Scene light. */}
 			<div className="absolute inset-0">
