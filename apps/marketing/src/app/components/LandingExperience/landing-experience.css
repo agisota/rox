@@ -407,24 +407,13 @@
 	margin: 0;
 }
 
-/* Teaches the core interaction (move the mouse to gather the swarm). */
+/* Run-anywhere tagline under the subhead. */
 .rox-hero__hint {
 	margin: 2px 0 0;
 	font-size: 0.82rem;
 	letter-spacing: 0.04em;
 	color: var(--rox-orange-1);
 	opacity: 0.82;
-	animation: rox-hint-pulse 2.6s ease-in-out infinite;
-}
-
-@keyframes rox-hint-pulse {
-	0%,
-	100% {
-		opacity: 0.45;
-	}
-	50% {
-		opacity: 0.9;
-	}
 }
 
 .rox-hero__scroll {

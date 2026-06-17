@@ -53,7 +53,7 @@ export const COMMAND_BUTTON = "Оркестровать";
 
 /** Tagline shown under the subhead in the hero. */
 export const FIELD_HINT =
-	"Запускай где захочешь: локально, в изолированных песочницах, в частном облаке, на древнейшем пентиуме, и даже на мобилке";
+	"Запускай где хочешь: локально, в изолированных песочницах, в частном облаке, на древнейшем пентиуме, и даже на мобилке";
 
 /**
  * Steps of the mock orchestration run streamed into the dispatch log after a
