@@ -19,6 +19,12 @@ interface DesignModeCapturePreviewProps {
 	onDismiss: () => void;
 }
 
+const HANDOFF_RETRY_DELAYS_MS = [100, 250] as const;
+
+function wait(ms: number): Promise<void> {
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 export function DesignModeCapturePreview({
 	capture,
 	workspaceId,
@@ -46,16 +52,27 @@ export function DesignModeCapturePreview({
 			return;
 		}
 
-		try {
-			const detail: DesignCaptureEventDetail = {
-				workspaceId,
-				browserSessionId,
-				attachment: formatCaptureForAgent(capture, {
-					screenshotRef: "attachment",
-				}),
-			};
-			publishDesignCapture(detail);
-		} catch {
+		const detail: DesignCaptureEventDetail = {
+			workspaceId,
+			browserSessionId,
+			attachment: formatCaptureForAgent(capture, {
+				screenshotRef: "attachment",
+			}),
+		};
+
+		let published = false;
+		for (const delayMs of [0, ...HANDOFF_RETRY_DELAYS_MS]) {
+			if (delayMs > 0) await wait(delayMs);
+			try {
+				publishDesignCapture(detail);
+				published = true;
+				break;
+			} catch {
+				// Retry transient event-bus failures before falling back to clipboard.
+			}
+		}
+
+		if (!published) {
 			toast.warning("Capture copied, but agent hand-off failed");
 			return;
 		}

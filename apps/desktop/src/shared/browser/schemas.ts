@@ -29,6 +29,10 @@ export const setDevicePresetInputSchema = z
 	.refine((input) => input.presetId !== "custom" || input.custom != null, {
 		path: ["custom"],
 		message: "`custom` dimensions are required when presetId is 'custom'",
+	})
+	.refine((input) => input.presetId === "custom" || input.custom == null, {
+		path: ["custom"],
+		message: "`custom` dimensions are only accepted when presetId is 'custom'",
 	});
 
 export const captureElementInputSchema = z.object({
