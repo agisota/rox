@@ -12,6 +12,7 @@ import {
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { toast } from "@rox/ui/sonner";
+import { cn } from "@rox/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Network, Plus, Workflow } from "lucide-react";
@@ -87,23 +88,23 @@ export function PipelinesIndex() {
 
 	return (
 		<div className="mx-auto w-full max-w-5xl px-4 py-6">
-			<div className="mb-6 flex items-center justify-between">
-				<div>
-					<h1 className="flex items-center gap-2 text-xl font-medium">
+			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+				<div className="min-w-0">
+					<h1 className="flex min-w-0 items-center gap-2 text-xl font-medium">
 						<Network className="size-5 text-primary" /> Пайплайны агентов
 					</h1>
-					<p className="text-sm text-muted-foreground">
+					<p className="max-w-2xl text-sm text-muted-foreground">
 						Конструктор графов из агентов-ролей, триггеров и гейтов.
 					</p>
 				</div>
 
 				<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 					<DialogTrigger asChild>
-						<Button>
+						<Button className="w-fit shrink-0 self-start">
 							<Plus className="size-4" /> Новый пайплайн
 						</Button>
 					</DialogTrigger>
-					<DialogContent>
+					<DialogContent className="max-h-[min(720px,calc(100dvh-2rem))] overflow-y-auto">
 						<DialogHeader>
 							<DialogTitle>Новый пайплайн</DialogTitle>
 							<DialogDescription>
@@ -127,12 +128,14 @@ export function PipelinesIndex() {
 										<button
 											key={template.id}
 											type="button"
+											aria-pressed={template.id === templateId}
+											aria-label={`Выбрать шаблон: ${template.name}`}
 											onClick={() => setTemplateId(template.id)}
-											className={`flex flex-col items-start gap-0.5 rounded-md border p-3 text-left transition-colors hover:border-primary/50 ${
-												template.id === templateId
-													? "border-primary bg-primary/5"
-													: ""
-											}`}
+											className={cn(
+												"flex min-h-20 flex-col items-start gap-0.5 rounded-md border p-3 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+												template.id === templateId &&
+													"border-primary bg-primary/5",
+											)}
 										>
 											<span className="text-sm font-medium">
 												{template.name}
@@ -187,13 +190,14 @@ export function PipelinesIndex() {
 					<button
 						key={pipeline.id}
 						type="button"
+						aria-label={`Открыть пайплайн ${pipeline.name}`}
 						onClick={() =>
 							navigate({
 								to: "/pipelines/$pipelineId",
 								params: { pipelineId: pipeline.id },
 							})
 						}
-						className="flex flex-col items-start gap-2 rounded-lg border bg-card p-4 text-left transition-colors hover:border-primary/50"
+						className="flex min-h-32 flex-col items-start gap-2 rounded-lg border bg-card p-4 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 					>
 						<div className="flex w-full items-center gap-2">
 							<Workflow className="size-4 text-primary" />
@@ -206,7 +210,7 @@ export function PipelinesIndex() {
 								</Badge>
 							)}
 						</div>
-						<span className="truncate font-mono text-[11px] text-muted-foreground">
+						<span className="w-full truncate font-mono text-[11px] text-muted-foreground">
 							{pipeline.slug}
 						</span>
 						{pipeline.description && (

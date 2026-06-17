@@ -211,15 +211,15 @@ export function PipelineEditor({
 	const validation = validateQuery.data;
 
 	return (
-		<div className="flex h-[calc(100dvh-3rem)] flex-col">
+		<div className="flex h-[calc(100dvh-3rem)] min-w-0 flex-col">
 			{/* Toolbar */}
-			<div className="flex items-center gap-3 border-b px-4 py-2">
+			<div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
 				<Button asChild size="icon" variant="ghost" className="size-8">
 					<Link to="/pipelines" aria-label="К списку пайплайнов">
 						<ArrowLeft className="size-4" />
 					</Link>
 				</Button>
-				<div className="min-w-0 flex-1">
+				<div className="min-w-48 flex-1">
 					<h1 className="truncate text-sm font-medium">
 						{initialPipeline.name}
 					</h1>
@@ -227,21 +227,23 @@ export function PipelineEditor({
 						{initialPipeline.slug}
 					</p>
 				</div>
-				{validation &&
-					(validation.valid ? (
-						<Badge variant="default" className="gap-1">
-							<CheckCircle2 className="size-3" /> граф валиден
-						</Badge>
-					) : (
-						<Badge variant="destructive">
-							{validation.issues.length} проблем(ы)
-						</Badge>
-					))}
-				<SaveIndicator state={saveState} />
+				<div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+					{validation &&
+						(validation.valid ? (
+							<Badge variant="default" className="gap-1 whitespace-nowrap">
+								<CheckCircle2 className="size-3" /> граф валиден
+							</Badge>
+						) : (
+							<Badge variant="destructive" className="whitespace-nowrap">
+								{validation.issues.length} проблем(ы)
+							</Badge>
+						))}
+					<SaveIndicator state={saveState} />
+				</div>
 			</div>
 
 			{/* Body: canvas + side panels */}
-			<div className="flex min-h-0 flex-1">
+			<div className="flex min-h-0 flex-1 overflow-hidden">
 				<div className="min-w-0 flex-1">
 					<ReactFlowProvider>
 						<PipelineCanvas
@@ -255,9 +257,9 @@ export function PipelineEditor({
 					</ReactFlowProvider>
 				</div>
 
-				<aside className="flex w-80 shrink-0 flex-col border-l">
+				<aside className="flex w-[clamp(17rem,32vw,21rem)] shrink-0 flex-col border-l bg-background">
 					<Tabs defaultValue="roles" className="flex min-h-0 flex-1 flex-col">
-						<TabsList className="mx-2 mt-2 grid grid-cols-3">
+						<TabsList className="mx-2 mt-2 grid h-auto grid-cols-3">
 							<TabsTrigger value="roles" className="text-xs">
 								Роли
 							</TabsTrigger>
@@ -294,16 +296,22 @@ export function PipelineEditor({
 function SaveIndicator({ state }: { state: "idle" | "saving" | "saved" }) {
 	if (state === "saving") {
 		return (
-			<span className="flex items-center gap-1 text-xs text-muted-foreground">
+			<output
+				aria-live="polite"
+				className="flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
+			>
 				<Loader2 className="size-3 animate-spin" /> сохранение…
-			</span>
+			</output>
 		);
 	}
 	if (state === "saved") {
 		return (
-			<span className="flex items-center gap-1 text-xs text-emerald-500">
+			<output
+				aria-live="polite"
+				className="flex items-center gap-1 whitespace-nowrap text-xs text-emerald-500"
+			>
 				<Save className="size-3" /> сохранено
-			</span>
+			</output>
 		);
 	}
 	return null;

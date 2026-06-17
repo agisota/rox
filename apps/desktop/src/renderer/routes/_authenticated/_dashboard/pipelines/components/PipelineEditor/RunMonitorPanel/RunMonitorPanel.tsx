@@ -187,27 +187,49 @@ export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
 						</p>
 					)}
 					{runs.map((run) => (
-						<button
+						<RunHistoryButton
 							key={run.id}
-							type="button"
+							status={run.status}
+							createdAt={run.createdAt}
+							selected={run.id === activeRunId}
 							onClick={() => setActiveRunId(run.id)}
-							className={`flex items-center gap-2 rounded-md border p-2 text-left transition-colors hover:border-primary/50 ${
-								run.id === activeRunId ? "border-primary" : "bg-card"
-							}`}
-						>
-							<Badge
-								variant={statusVariant(run.status)}
-								className="text-[10px]"
-							>
-								{run.status}
-							</Badge>
-							<span className="flex-1 truncate text-xs text-muted-foreground">
-								{new Date(run.createdAt).toLocaleString("ru-RU")}
-							</span>
-						</button>
+						/>
 					))}
 				</div>
 			</ScrollArea>
 		</div>
+	);
+}
+
+function RunHistoryButton({
+	status,
+	createdAt,
+	selected,
+	onClick,
+}: {
+	status: string;
+	createdAt: Date | string;
+	selected: boolean;
+	onClick: () => void;
+}) {
+	const createdAtLabel = new Date(createdAt).toLocaleString("ru-RU");
+
+	return (
+		<button
+			type="button"
+			aria-pressed={selected}
+			aria-label={`Открыть запуск от ${createdAtLabel}, статус ${status}`}
+			onClick={onClick}
+			className={`flex items-center gap-2 rounded-md border p-2 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+				selected ? "border-primary" : "bg-card"
+			}`}
+		>
+			<Badge variant={statusVariant(status)} className="text-[10px]">
+				{status}
+			</Badge>
+			<span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+				{createdAtLabel}
+			</span>
+		</button>
 	);
 }

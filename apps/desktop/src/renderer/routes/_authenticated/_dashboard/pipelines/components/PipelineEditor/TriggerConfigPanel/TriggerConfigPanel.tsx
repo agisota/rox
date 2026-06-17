@@ -126,7 +126,10 @@ export function TriggerConfigPanel({
 		<div className="flex h-full flex-col gap-3 p-3">
 			<div>
 				<h2 className="text-sm font-medium">Триггеры узла</h2>
-				<p className="truncate text-xs text-muted-foreground">
+				<p
+					className="truncate text-xs text-muted-foreground"
+					title={selectedNodeLabel ?? selectedNodeId}
+				>
 					{selectedNodeLabel ?? selectedNodeId}
 				</p>
 			</div>
@@ -192,15 +195,20 @@ export function TriggerConfigPanel({
 				{nodeTriggers.map((trigger) => (
 					<div
 						key={trigger.id}
-						className="flex items-center gap-2 rounded-md border bg-card p-2"
+						className="flex min-w-0 items-center gap-2 rounded-md border bg-card p-2"
 					>
-						<Badge variant="secondary" className="text-[10px]">
+						<Badge
+							variant="secondary"
+							className="max-w-[11rem] truncate text-[10px]"
+						>
 							{triggerKindLabel(trigger.triggerKind)}
 						</Badge>
 						<div className="flex-1" />
 						<Switch
 							checked={trigger.enabled}
-							aria-label="Включён"
+							aria-label={`${
+								trigger.enabled ? "Выключить" : "Включить"
+							} триггер ${triggerKindLabel(trigger.triggerKind)}`}
 							onCheckedChange={(enabled) =>
 								setEnabledMutation.mutate({ triggerId: trigger.id, enabled })
 							}
@@ -209,7 +217,9 @@ export function TriggerConfigPanel({
 							size="icon"
 							variant="ghost"
 							className="size-7"
-							aria-label="Удалить триггер"
+							aria-label={`Удалить триггер ${triggerKindLabel(
+								trigger.triggerKind,
+							)}`}
 							onClick={() => deleteMutation.mutate({ triggerId: trigger.id })}
 						>
 							<Trash2 className="size-4" />

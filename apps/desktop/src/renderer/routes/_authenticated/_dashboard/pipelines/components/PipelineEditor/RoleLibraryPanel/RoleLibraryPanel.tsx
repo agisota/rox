@@ -53,7 +53,7 @@ export function RoleLibraryPanel({
 
 	return (
 		<div className="flex h-full flex-col gap-3 p-3">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-wrap items-center justify-between gap-2">
 				<h2 className="text-sm font-medium">Библиотека ролей</h2>
 				<Button
 					size="sm"
@@ -170,7 +170,7 @@ function RoleRow({
 				size="icon"
 				variant="ghost"
 				className="size-7 shrink-0"
-				aria-label={`Добавить ${name}`}
+				aria-label={`Добавить роль ${name} на холст`}
 				onClick={onAdd}
 			>
 				<Plus className="size-4" />

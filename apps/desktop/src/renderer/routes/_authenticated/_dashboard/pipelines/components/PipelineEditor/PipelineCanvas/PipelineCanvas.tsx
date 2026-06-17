@@ -170,27 +170,43 @@ export function PipelineCanvas({
 			onConnect={handleConnect}
 			onNodeClick={handleNodeClick}
 			onPaneClick={handlePaneClick}
+			aria-label="Холст пайплайна агентов"
 		>
 			<Controls showInteractive={false} />
-			<Panel position="top-left" className="flex gap-1">
+			<Panel
+				position="top-left"
+				className="flex max-w-[min(42rem,calc(100vw-24rem))] flex-wrap gap-1"
+			>
 				<Button
 					size="sm"
 					variant="ghost"
+					aria-label="Добавить узел: Агент"
 					onClick={() => onAddNode("agent_run")}
 				>
 					<Plus className="size-3.5" /> Агент
 				</Button>
-				<Button size="sm" variant="ghost" onClick={() => onAddNode("loop")}>
+				<Button
+					size="sm"
+					variant="ghost"
+					aria-label="Добавить узел: Цикл"
+					onClick={() => onAddNode("loop")}
+				>
 					<Plus className="size-3.5" /> Цикл
 				</Button>
 				<Button
 					size="sm"
 					variant="ghost"
+					aria-label="Добавить узел: Подтверждение"
 					onClick={() => onAddNode("human_approval")}
 				>
 					<Plus className="size-3.5" /> Подтверждение
 				</Button>
-				<Button size="sm" variant="ghost" onClick={() => onAddNode("response")}>
+				<Button
+					size="sm"
+					variant="ghost"
+					aria-label="Добавить узел: Финал"
+					onClick={() => onAddNode("response")}
+				>
 					<Plus className="size-3.5" /> Финал
 				</Button>
 			</Panel>
