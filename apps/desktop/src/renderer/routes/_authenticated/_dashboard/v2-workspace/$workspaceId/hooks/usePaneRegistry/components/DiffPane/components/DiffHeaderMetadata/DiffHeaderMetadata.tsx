@@ -1,4 +1,5 @@
 import { Checkbox } from "@rox/ui/checkbox";
+import { DrawCheck, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { workspaceTrpc } from "@rox/workspace-client";
@@ -14,7 +15,6 @@ import {
 import { LuArrowUpRight, LuCheck, LuCopy, LuUndo2 } from "react-icons/lu";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { useSidebarFilePolicy } from "renderer/lib/clickPolicy";
-import { DrawCheck, motionDuration, useShouldAnimate } from "renderer/motion";
 import { DiscardConfirmDialog } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/DiscardConfirmDialog";
 import { StatusIndicator } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/StatusIndicator";
 import type { ChangesetFile } from "../../../../../useChangeset";

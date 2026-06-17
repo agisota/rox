@@ -4,14 +4,14 @@ import {
 	MessageResponse,
 } from "@rox/ui/ai-elements/message";
 import { cn } from "@rox/ui/lib/utils";
-import { motion } from "framer-motion";
-import { SubagentInnerToolCall } from "renderer/components/Chat/components/SubagentInnerToolCall";
 import {
 	AnimatedHeight,
 	motionSpring,
 	StatusPulse,
 	useShouldAnimate,
-} from "renderer/motion";
+} from "@rox/ui/motion";
+import { motion } from "framer-motion";
+import { SubagentInnerToolCall } from "renderer/components/Chat/components/SubagentInnerToolCall";
 import {
 	type SubagentEntries,
 	toSubagentViewModels,

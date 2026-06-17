@@ -5,6 +5,7 @@ import {
 	type MessageResponseProps,
 } from "@rox/ui/ai-elements/message";
 import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
+import { AnimatedFileLink } from "@rox/ui/motion";
 import { FileSearchIcon } from "lucide-react";
 import { type ReactNode, useCallback } from "react";
 import { StreamingMessageText } from "renderer/components/Chat/ChatInterface/components/MessagePartsRenderer/components/StreamingMessageText";
@@ -12,7 +13,6 @@ import { ReasoningBlock } from "renderer/components/Chat/ChatInterface/component
 import { ToolCallBlock } from "renderer/components/Chat/ChatInterface/components/ToolCallBlock";
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import { normalizeToolName } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
-import { AnimatedFileLink } from "renderer/motion/AnimatedFileLink";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { AttachmentChip } from "../AttachmentChip";
 import { PendingPlanApprovalMessage } from "../PendingPlanApprovalMessage";

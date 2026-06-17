@@ -1,3 +1,4 @@
+import { animateThemeChange } from "@rox/ui/motion";
 import type { ITheme } from "@xterm/xterm";
 import {
 	builtInThemes,
@@ -13,8 +14,8 @@ import type { UIColors } from "shared/themes/types";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { trpcThemeStorage } from "../../lib/trpc-storage";
-import { animateThemeChange } from "../../motion/animateThemeChange";
 import { toXtermTheme, updateThemeClass } from "./utils";
+import { applyUIColors, UI_COLOR_TO_CSS_VAR } from "./utils/css-variables";
 
 /** Special theme ID for system preference (follows OS dark/light mode) */
 export const SYSTEM_THEME_ID = "system";
@@ -152,8 +153,13 @@ function applyTheme(
 ): {
 	terminalTheme: ITheme;
 } {
-	// Apply UI colors to CSS variables (animated transition from prevColors)
-	animateThemeChange(prevColors, theme.ui);
+	// Apply UI colors to CSS variables (animated transition from prevColors).
+	// The kit owns the generic tween; the desktop palette wires in its key→var
+	// map and hard-set applier.
+	animateThemeChange(prevColors, theme.ui, {
+		colorToCssVar: UI_COLOR_TO_CSS_VAR,
+		applyColors: applyUIColors,
+	});
 
 	// Update dark/light class
 	updateThemeClass(theme.type);

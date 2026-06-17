@@ -10,6 +10,14 @@ import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { Kbd, KbdGroup } from "@rox/ui/kbd";
 import { Label } from "@rox/ui/label";
+import {
+	ease,
+	KeyCapGroup,
+	motionDuration,
+	staggerContainer,
+	staggerItem,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Switch } from "@rox/ui/switch";
 import { cn } from "@rox/ui/utils";
@@ -28,13 +36,6 @@ import {
 	useKeyboardPreferencesStore,
 	useRecordHotkeys,
 } from "renderer/hotkeys";
-import {
-	ease,
-	KeyCapGroup,
-	motionDuration,
-	useShouldAnimate,
-} from "renderer/motion";
-import { staggerContainer, staggerItem } from "renderer/motion/variants";
 
 const CATEGORY_ORDER: HotkeyCategory[] = [
 	"Navigation",

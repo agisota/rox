@@ -7,6 +7,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { motionShake, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { eq } from "@tanstack/db";
@@ -24,7 +25,6 @@ import {
 import { useRenderStressInstrumentation } from "renderer/lib/performance/stress-instrumentation";
 import { markTerminalForBackground } from "renderer/lib/terminal/terminal-background-intents";
 import { terminalRuntimeRegistry } from "renderer/lib/terminal/terminal-runtime-registry";
-import { motionShake, useShouldAnimate } from "renderer/motion";
 import type { TerminalLauncher } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useV2TerminalLauncher";
 import type {
 	PaneViewerData,

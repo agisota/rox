@@ -1,5 +1,5 @@
+import { listItemVariants } from "@rox/ui/motion";
 import { motion } from "framer-motion";
-import { listItemVariants } from "renderer/motion";
 
 export interface Finding {
 	id: string;

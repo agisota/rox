@@ -1,8 +1,8 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion } from "framer-motion";
 import { useCallback, useRef, useState } from "react";
 import type { MosaicNode, MosaicPath } from "react-mosaic-component";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { useDragPaneStore } from "renderer/stores/drag-pane-store";
 import { equalizeSplitPercentages } from "renderer/stores/tabs/utils";
 

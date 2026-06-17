@@ -5,12 +5,16 @@ import {
 	MessageResponse,
 } from "@rox/ui/ai-elements/message";
 import { Button } from "@rox/ui/button";
+import {
+	ease,
+	motionDuration,
+	motionSpring,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { Switch } from "@rox/ui/switch";
 import { Textarea } from "@rox/ui/textarea";
 import { motion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
-import { useShouldAnimate } from "renderer/motion";
-import { ease, motionDuration, motionSpring } from "renderer/motion/tokens";
 
 type PendingPlanApproval = UseChatDisplayReturn["pendingPlanApproval"];
 

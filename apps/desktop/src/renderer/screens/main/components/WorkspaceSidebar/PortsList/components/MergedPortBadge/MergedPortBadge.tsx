@@ -1,9 +1,3 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
-import { cn } from "@rox/ui/utils";
-import { useNavigate } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { LuExternalLink, LuLoaderCircle, LuX } from "react-icons/lu";
-import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
 	motionDuration,
 	openButtonPulse,
@@ -11,7 +5,13 @@ import {
 	portNumberSpring,
 	StatusPulse,
 	useShouldAnimate,
-} from "renderer/motion";
+} from "@rox/ui/motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
+import { useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import { LuExternalLink, LuLoaderCircle, LuX } from "react-icons/lu";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { EnrichedPort } from "shared/types";

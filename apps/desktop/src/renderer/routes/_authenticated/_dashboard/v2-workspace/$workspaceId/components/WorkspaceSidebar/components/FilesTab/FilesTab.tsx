@@ -10,6 +10,7 @@ import {
 	useFileTree as usePierreFileTree,
 } from "@pierre/trees/react";
 import type { AppRouter } from "@rox/host-service";
+import { RevealFlash, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import type { inferRouterOutputs } from "@trpc/server";
@@ -29,7 +30,6 @@ import {
 } from "renderer/lib/clickPolicy";
 import { useFallthroughIcons } from "renderer/lib/fileIcons";
 import { createPierreTreeStyle } from "renderer/lib/pierreTree";
-import { RevealFlash, useShouldAnimate } from "renderer/motion";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import { PierreRowContextMenu } from "../PierreRowContextMenu";
 import { FileMenuItems } from "./components/FileMenuItems";

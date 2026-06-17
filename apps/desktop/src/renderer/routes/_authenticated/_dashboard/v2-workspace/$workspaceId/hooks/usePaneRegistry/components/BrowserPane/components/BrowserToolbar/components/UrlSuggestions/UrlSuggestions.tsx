@@ -1,7 +1,7 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { TbGlobe } from "react-icons/tb";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import type { HistorySuggestion } from "../../hooks/useUrlAutocomplete";
 
 interface UrlSuggestionsProps {

@@ -1,11 +1,4 @@
 import type { SelectAutomationRun } from "@rox/db/schema";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
-import { cn } from "@rox/ui/utils";
-import { useNavigate } from "@tanstack/react-router";
-import { formatDistanceStrict } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
-import { type ReactNode, useEffect } from "react";
-import { useNow } from "renderer/hooks/useNow";
 import {
 	DrawnCheck,
 	ease,
@@ -14,7 +7,14 @@ import {
 	StatusPulse,
 	useShake,
 	useShouldAnimate,
-} from "renderer/motion";
+} from "@rox/ui/motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
+import { useNavigate } from "@tanstack/react-router";
+import { formatDistanceStrict } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import { type ReactNode, useEffect } from "react";
+import { useNow } from "renderer/hooks/useNow";
 
 const STATUS_DOT: Record<SelectAutomationRun["status"], string> = {
 	dispatched: "bg-emerald-500",

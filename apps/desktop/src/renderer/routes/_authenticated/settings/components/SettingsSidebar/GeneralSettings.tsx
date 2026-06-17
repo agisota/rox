@@ -1,3 +1,4 @@
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -24,7 +25,6 @@ import {
 import { LuBrain, LuGitBranch, LuKeyboard, LuMic } from "react-icons/lu";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { SettingsSection } from "renderer/stores/settings-state";
 import { getAllowedSectionsForVariant } from "../../utils/settings-search";
 

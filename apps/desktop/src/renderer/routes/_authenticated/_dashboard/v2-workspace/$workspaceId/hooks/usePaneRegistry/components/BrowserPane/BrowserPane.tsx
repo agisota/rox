@@ -1,10 +1,10 @@
 import type { RendererContext, Tab } from "@rox/panes";
+import { BrowserFullscreenPreview, BrowserLoadingBar } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { GlobeIcon } from "lucide-react";
 import { useCallback, useSyncExternalStore } from "react";
 import { TbDeviceDesktop, TbPointer } from "react-icons/tb";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
-import { BrowserFullscreenPreview, BrowserLoadingBar } from "renderer/motion";
 import type { BrowserPaneData, PaneViewerData } from "../../../../types";
 import { browserRuntimeRegistry } from "./browserRuntimeRegistry";
 import { BrowserErrorOverlay } from "./components/BrowserErrorOverlay";

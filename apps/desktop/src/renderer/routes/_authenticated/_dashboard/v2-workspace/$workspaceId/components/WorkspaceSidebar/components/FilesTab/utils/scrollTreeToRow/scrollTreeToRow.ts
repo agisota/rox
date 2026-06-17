@@ -1,5 +1,5 @@
 import { type FileTree, prepareFileTreeInput } from "@pierre/trees";
-import { animateScrollTo } from "renderer/motion";
+import { animateScrollTo } from "@rox/ui/motion";
 import { asDirectoryHandle } from "../treePath";
 
 /**

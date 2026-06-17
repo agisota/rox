@@ -1,7 +1,7 @@
+import { useShouldAnimate } from "@rox/ui/motion";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { ClipboardListIcon } from "lucide-react";
-import { useShouldAnimate } from "renderer/motion";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getResult } from "../../../../utils/tool-helpers";
 import { formatTaskDate, toStringArray } from "../../utils/taskToolCallHelpers";

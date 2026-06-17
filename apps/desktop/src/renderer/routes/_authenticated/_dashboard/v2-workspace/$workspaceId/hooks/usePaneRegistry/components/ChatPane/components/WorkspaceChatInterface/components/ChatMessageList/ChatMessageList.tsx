@@ -7,11 +7,11 @@ import {
 	useConversationContext,
 } from "@rox/ui/ai-elements/conversation";
 import { Button } from "@rox/ui/button";
+import { MessageRow } from "@rox/ui/motion";
 import { AnimatePresence } from "framer-motion";
 import { CheckIcon, Loader2Icon, Share2Icon } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
-import { MessageRow } from "renderer/motion";
 import type {
 	ChatMessage,
 	ChatMessageListProps,

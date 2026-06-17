@@ -4,6 +4,7 @@ import {
 	PromptInputTools,
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
+import { ReasoningLevelSlider } from "@rox/ui/motion";
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";
@@ -14,7 +15,6 @@ import type {
 	ModelOption,
 	PermissionMode,
 } from "renderer/components/Chat/ChatInterface/types";
-import { ReasoningLevelSlider } from "renderer/motion/ReasoningLevelSlider";
 import { ModelPicker } from "../../../ModelPicker";
 
 interface ChatComposerControlsProps {

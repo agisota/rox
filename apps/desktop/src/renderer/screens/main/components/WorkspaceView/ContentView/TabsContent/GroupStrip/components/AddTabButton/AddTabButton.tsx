@@ -8,6 +8,12 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import {
+	motionDuration,
+	motionSpring,
+	Pressable,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { BsTerminalPlus } from "react-icons/bs";
@@ -15,12 +21,6 @@ import { HiMiniChevronDown } from "react-icons/hi2";
 import { LuPlus } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { HotkeyMenuShortcut } from "renderer/components/HotkeyMenuShortcut";
-import {
-	motionDuration,
-	motionSpring,
-	Pressable,
-	useShouldAnimate,
-} from "renderer/motion";
 import { NewTabDropZone } from "../../NewTabDropZone";
 import { PresetsSubmenu } from "./components/PresetsSubmenu";
 

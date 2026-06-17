@@ -1,6 +1,5 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { getTerminalColors, type Theme } from "shared/themes";
 
 export function ThemeSwatch({ theme }: { theme: Theme }) {

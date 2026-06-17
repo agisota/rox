@@ -18,6 +18,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { CollapseLabel } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
@@ -29,7 +30,6 @@ import {
 	HiOutlineSparkles,
 } from "react-icons/hi2";
 import { useHotkeyDisplay } from "renderer/hotkeys";
-import { CollapseLabel } from "renderer/motion";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { DashboardSidebarHeader } from "./components/DashboardSidebarHeader";

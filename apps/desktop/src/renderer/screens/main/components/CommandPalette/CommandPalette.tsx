@@ -1,9 +1,9 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { CommandPrimitive, CommandSeparator } from "@rox/ui/command";
+import { fileLayoutId, useShouldAnimate } from "@rox/ui/motion";
 import { SearchIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuChevronDown, LuChevronRight } from "react-icons/lu";
-import { fileLayoutId, useShouldAnimate } from "renderer/motion";
 import type { RecentFile } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useRecentlyViewedFiles";
 import { RECENT_DISPLAY_LIMIT } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useRecentlyViewedFiles";
 import { useFileSearch } from "renderer/screens/main/components/WorkspaceView/RightSidebar/FilesView/hooks/useFileSearch/useFileSearch";

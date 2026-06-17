@@ -5,6 +5,7 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@rox/ui/collapsible";
+import { AnimatedSkeleton } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { useEffect, useRef, useState } from "react";
@@ -18,7 +19,6 @@ import {
 } from "react-icons/lu";
 import { VscChevronRight } from "react-icons/vsc";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { AnimatedSkeleton } from "renderer/motion";
 import { PRIcon } from "renderer/screens/main/components/PRIcon";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import {

@@ -8,6 +8,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { AnimatedNumber, StatusPulse, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { AnimatePresence, motion } from "framer-motion";
@@ -31,8 +32,6 @@ import {
 	getTerminalBackgroundMarkerIdsKey,
 	subscribeTerminalBackgroundMarkers,
 } from "renderer/lib/terminal/terminal-background-intents";
-import { AnimatedNumber, StatusPulse } from "renderer/motion";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { getRelativeTime } from "renderer/screens/main/components/WorkspacesListView/utils";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";

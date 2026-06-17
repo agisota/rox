@@ -5,10 +5,10 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@rox/ui/hover-card";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
 type ChatMessagePart = ChatMessage["content"][number];

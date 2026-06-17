@@ -10,17 +10,13 @@ import {
 } from "@rox/ui/ai-elements/model-selector";
 import { PromptInputButton } from "@rox/ui/ai-elements/prompt-input";
 import { claudeIcon } from "@rox/ui/icons/preset-icons";
+import { motionDuration, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { useNavigate } from "@tanstack/react-router";
 import { LayoutGroup, motion } from "framer-motion";
 import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { PILL_BUTTON_CLASS } from "renderer/components/Chat/ChatInterface/styles";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
-import {
-	motionDuration,
-	motionSpring,
-	useShouldAnimate,
-} from "renderer/motion";
 import { ModelProviderGroup } from "./components/ModelProviderGroup";
 import { groupModelsByProvider } from "./utils/groupModelsByProvider";
 import {

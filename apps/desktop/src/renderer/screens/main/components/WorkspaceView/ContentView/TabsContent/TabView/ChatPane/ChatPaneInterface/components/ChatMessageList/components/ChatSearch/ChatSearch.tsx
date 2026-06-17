@@ -1,9 +1,9 @@
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { HiChevronDown, HiChevronUp, HiMiniXMark } from "react-icons/hi2";
 import { PiTextAa } from "react-icons/pi";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 
 interface ChatSearchProps {
 	isOpen: boolean;

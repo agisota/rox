@@ -10,12 +10,12 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@rox/ui/hover-card";
+import { DangerShake, MenuItemReveal } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useMemo } from "react";
 import { VscChevronDown, VscGitMerge, VscLoading } from "react-icons/vsc";
-import { DangerShake, MenuItemReveal } from "renderer/motion/StaggeredMenuItem";
 import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
 import { computeChecksRollup } from "../../utils/computeChecksStatus";
 import type { PRFlowState } from "../../utils/getPRFlowState";

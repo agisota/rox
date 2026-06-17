@@ -9,6 +9,7 @@ import {
 	AlertDialogTrigger,
 } from "@rox/ui/alert-dialog";
 import { Button } from "@rox/ui/button";
+import { AnimatedAlertDialogContent } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useNavigate } from "@tanstack/react-router";
@@ -16,7 +17,6 @@ import { useState } from "react";
 import { authClient } from "renderer/lib/auth-client";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
-import { AnimatedAlertDialogContent } from "renderer/motion";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 
 interface DeleteProjectSectionProps {

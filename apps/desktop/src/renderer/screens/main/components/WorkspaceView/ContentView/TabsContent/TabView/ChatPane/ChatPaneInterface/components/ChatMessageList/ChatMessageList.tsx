@@ -6,10 +6,10 @@ import {
 	ConversationScrollButton,
 	useConversationContext,
 } from "@rox/ui/ai-elements/conversation";
+import { MessageRow } from "@rox/ui/motion";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
-import { MessageRow } from "renderer/motion";
 import type {
 	ChatMessage,
 	ChatMessageListProps,

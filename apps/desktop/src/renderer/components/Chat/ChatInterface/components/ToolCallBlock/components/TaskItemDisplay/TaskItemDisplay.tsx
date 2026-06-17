@@ -1,8 +1,8 @@
 import { TaskItem } from "@rox/ui/ai-elements/task";
 import { Badge } from "@rox/ui/badge";
 import { cn } from "@rox/ui/lib/utils";
+import { motionSpring, Pressable, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
-import { motionSpring, Pressable, useShouldAnimate } from "renderer/motion";
 
 interface TaskItemDisplayDetail {
 	label: string;

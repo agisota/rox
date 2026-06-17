@@ -1,11 +1,7 @@
+import { AnimatedNumber, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion, useAnimationControls } from "framer-motion";
 import { useEffect, useRef } from "react";
-import {
-	AnimatedNumber,
-	motionSpring,
-	useShouldAnimate,
-} from "renderer/motion";
 
 interface TabBadgeProps {
 	count: number;

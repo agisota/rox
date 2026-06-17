@@ -1,9 +1,5 @@
+import { AnimatedNumber, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
-import {
-	AnimatedNumber,
-	motionSpring,
-	useShouldAnimate,
-} from "renderer/motion";
 
 export interface AuditGradeRingProps {
 	score: number;

@@ -1,3 +1,9 @@
+import {
+	ease,
+	motionDuration,
+	StatusPulse,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion } from "framer-motion";
 import {
@@ -9,12 +15,6 @@ import {
 	LuMonitor,
 } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import {
-	ease,
-	motionDuration,
-	StatusPulse,
-	useShouldAnimate,
-} from "renderer/motion";
 import { STROKE_WIDTH } from "../constants";
 
 type PRState = "open" | "merged" | "closed" | "draft";

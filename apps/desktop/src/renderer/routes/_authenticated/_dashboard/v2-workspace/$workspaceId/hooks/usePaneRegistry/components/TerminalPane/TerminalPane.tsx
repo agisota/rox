@@ -2,6 +2,13 @@ import type { RendererContext } from "@rox/panes";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
 import "@xterm/xterm/css/xterm.css";
+import {
+	ease,
+	motionDuration,
+	ShellReadyPulse,
+	SweepIndicator,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import {
 	useCallback,
@@ -25,13 +32,6 @@ import {
 	terminalRuntimeRegistry,
 } from "renderer/lib/terminal/terminal-runtime-registry";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
-import {
-	ease,
-	motionDuration,
-	ShellReadyPulse,
-	SweepIndicator,
-	useShouldAnimate,
-} from "renderer/motion";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import type {
 	PaneViewerData,

@@ -1,7 +1,7 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type {
 	UserMessageActionPayload,

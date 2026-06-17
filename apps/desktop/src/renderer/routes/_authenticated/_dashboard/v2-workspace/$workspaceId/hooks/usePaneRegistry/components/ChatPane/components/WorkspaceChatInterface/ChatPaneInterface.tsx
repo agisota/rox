@@ -6,6 +6,11 @@ import {
 	PromptInputProvider,
 	useProviderAttachments,
 } from "@rox/ui/ai-elements/prompt-input";
+import {
+	AnimatedPresence,
+	motionSpring,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useQuery } from "@tanstack/react-query";
@@ -25,9 +30,6 @@ import {
 	isDesktopChatDevMode,
 } from "renderer/lib/dev-chat";
 import { posthog } from "renderer/lib/posthog";
-import { AnimatedPresence } from "renderer/motion/AnimatedPresence";
-import { motionSpring } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
 import {
 	type UseChatDisplayReturn,

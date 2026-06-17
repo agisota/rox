@@ -7,6 +7,7 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@rox/ui/empty";
+import { ease, useShouldAnimate } from "@rox/ui/motion";
 import { ScrollArea } from "@rox/ui/scroll-area";
 import { cn } from "@rox/ui/utils";
 import { useMatchRoute } from "@tanstack/react-router";
@@ -18,7 +19,6 @@ import {
 	LuLayers,
 	LuSearchX,
 } from "react-icons/lu";
-import { ease, useShouldAnimate } from "renderer/motion";
 import type {
 	AccessibleV2Workspace,
 	V2WorkspaceHostType,

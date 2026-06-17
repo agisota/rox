@@ -1,6 +1,6 @@
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { AnimatePresence, motion } from "framer-motion";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 import type { ChangesetFile } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import type { FoldSignal } from "../../ChangesFileList";
 import { FileRow } from "../FileRow";

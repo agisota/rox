@@ -1,6 +1,6 @@
+import { StatusPulse, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { useEffect, useRef, useState } from "react";
-import { StatusPulse, useShouldAnimate } from "renderer/motion";
 import { useWorkspace } from "renderer/routes/_authenticated/_dashboard/v2-workspace/providers/WorkspaceProvider";
 import { StatusIndicator } from "renderer/screens/main/components/StatusIndicator";
 import {
