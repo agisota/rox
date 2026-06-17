@@ -23,6 +23,7 @@ import {
 	LuGitBranch,
 	LuPalette,
 	LuPencil,
+	LuTags,
 	LuTrash2,
 	LuX,
 } from "react-icons/lu";
@@ -43,6 +44,7 @@ interface DashboardSidebarWorkspaceContextMenuProps {
 	showDeleteHotkey?: boolean;
 	color?: string | null;
 	onSetColor?: (color: string | null) => void;
+	onEditLabels?: () => void;
 	onCreateSection: () => void;
 	onMoveToSection: (sectionId: string | null) => void;
 	onOpenInFinder: () => void;
@@ -64,6 +66,7 @@ export function DashboardSidebarWorkspaceContextMenu({
 	showDeleteHotkey = false,
 	color = null,
 	onSetColor,
+	onEditLabels,
 	onCreateSection,
 	onMoveToSection,
 	onOpenInFinder,
@@ -167,6 +170,12 @@ export function DashboardSidebarWorkspaceContextMenu({
 							</ContextMenuSubContent>
 						</ContextMenuSub>
 					</>
+				)}
+				{onEditLabels && (
+					<ContextMenuItem onSelect={onEditLabels}>
+						<LuTags className="size-4 mr-2" />
+						Метки…
+					</ContextMenuItem>
 				)}
 				<ContextMenuSeparator />
 				<ContextMenuItem onSelect={onToggleUnread}>
