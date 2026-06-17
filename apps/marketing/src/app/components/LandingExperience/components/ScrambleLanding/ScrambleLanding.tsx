@@ -216,10 +216,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 						</span>
 					</a>
 				</div>
-
-				<span className="rox-hero__scroll" aria-hidden="true">
-					Листай ниже
-				</span>
 			</section>
 
 			<div className="rox-landing__main">
