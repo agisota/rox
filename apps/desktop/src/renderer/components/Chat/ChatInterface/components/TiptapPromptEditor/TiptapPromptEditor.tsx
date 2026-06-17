@@ -659,7 +659,7 @@ export function TiptapPromptEditor({
 						role="presentation"
 						className={cn(
 							"relative w-full overflow-y-auto px-3 py-3 text-sm",
-							"min-h-10 max-h-48",
+							"min-h-20 max-h-48",
 							focusShortcutText && !isFocused && "pr-20",
 							className,
 						)}
