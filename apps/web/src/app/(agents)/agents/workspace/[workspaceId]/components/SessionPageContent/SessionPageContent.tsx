@@ -7,12 +7,13 @@ import type {
 	MockSession,
 } from "../../../../../mock-data";
 import { FollowUpInput } from "../FollowUpInput";
+import { SessionAtlas } from "../SessionAtlas";
 import { SessionChat } from "../SessionChat";
 import { SessionDiff } from "../SessionDiff";
+import { SessionFlow } from "../SessionFlow";
 import { SessionHeader } from "../SessionHeader";
-import { SessionTabs } from "../SessionTabs";
-
-type ActiveTab = "chat" | "diff";
+import { SessionMap } from "../SessionMap";
+import { panelId, SessionTabs, type SessionView, tabId } from "../SessionTabs";
 
 type SessionPageContentProps = {
 	diffFiles: MockDiffFile[];
@@ -20,40 +21,37 @@ type SessionPageContentProps = {
 	session: MockSession;
 };
 
-const panelIds = {
-	chat: "session-panel-chat",
-	diff: "session-panel-diff",
-} as const;
-
-const tabIds = {
-	chat: "session-tab-chat",
-	diff: "session-tab-diff",
-} as const;
+/** Views that are part of the conversation and keep the follow-up input. */
+const conversationalViews: SessionView[] = ["chat", "map", "flow", "atlas"];
 
 export function SessionPageContent({
 	diffFiles,
 	messages,
 	session,
 }: SessionPageContentProps) {
-	const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
+	const [activeView, setActiveView] = useState<SessionView>("chat");
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
 			<SessionHeader backHref="/agents" session={session} />
-			<SessionTabs activeTab={activeTab} onTabChange={setActiveTab} />
+			<SessionTabs activeView={activeView} onViewChange={setActiveView} />
 			<div
 				role="tabpanel"
-				id={panelIds[activeTab]}
-				aria-labelledby={tabIds[activeTab]}
+				id={panelId(activeView)}
+				aria-labelledby={tabId(activeView)}
 				className="flex-1 overflow-hidden"
 			>
-				{activeTab === "chat" ? (
+				{activeView === "chat" && (
 					<SessionChat diffFiles={diffFiles} messages={messages} />
-				) : (
-					<SessionDiff diffFiles={diffFiles} />
 				)}
+				{activeView === "map" && <SessionMap />}
+				{activeView === "flow" && <SessionFlow />}
+				{activeView === "atlas" && <SessionAtlas />}
+				{activeView === "diff" && <SessionDiff diffFiles={diffFiles} />}
 			</div>
-			{activeTab === "chat" && <FollowUpInput modelName={session.modelName} />}
+			{conversationalViews.includes(activeView) && (
+				<FollowUpInput modelName={session.modelName} />
+			)}
 		</div>
 	);
 }
