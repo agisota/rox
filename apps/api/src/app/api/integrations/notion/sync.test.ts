@@ -203,6 +203,46 @@ describe("renderNotionBlocksToMarkdown", () => {
 		expect(markdown).toContain("[Diagram](https://example.com/image.png)");
 	});
 
+	test("preserves code block whitespace exactly", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "code",
+				type: "code",
+				code: {
+					language: "python",
+					rich_text: [{ plain_text: "  def run():\n    return True\n" }],
+				},
+			},
+		]);
+
+		expect(markdown).toBe("```python\n  def run():\n    return True\n\n```");
+	});
+
+	test("gives inline code annotation priority over other rich-text formatting", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "p1",
+				type: "paragraph",
+				paragraph: {
+					rich_text: [
+						{
+							plain_text: "const ok = true",
+							href: "https://example.com",
+							annotations: {
+								bold: true,
+								italic: true,
+								strikethrough: true,
+								code: true,
+							},
+						},
+					],
+				},
+			},
+		]);
+
+		expect(markdown).toBe("`const ok = true`");
+	});
+
 	test("renders nested child blocks under list items", () => {
 		const markdown = renderNotionBlocksToMarkdown([
 			{

@@ -37,6 +37,10 @@ const MAX_PAGES = 50;
 const MAX_BLOCK_PAGES_PER_LEVEL = 10;
 /** Safety cap on recursive child-block traversal depth. */
 const MAX_BLOCK_DEPTH = 4;
+/** Fetch page blocks in small batches so one sync job cannot fan out unbounded. */
+const BLOCK_FETCH_CONCURRENCY = 5;
+const MAX_NOTION_ATTEMPTS = 3;
+const NOTION_RETRY_BASE_MS = 250;
 
 const receiver = new Receiver({
 	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
@@ -63,11 +67,17 @@ export async function POST(request: Request) {
 			return Response.json({ error: "Missing signature" }, { status: 401 });
 		}
 
-		const isValid = await receiver.verify({
-			body,
-			signature,
-			url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/notion/jobs/sync`,
-		});
+		let isValid = false;
+		try {
+			isValid = await receiver.verify({
+				body,
+				signature,
+				url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/notion/jobs/sync`,
+			});
+		} catch (error) {
+			console.warn("[notion-sync] signature verification failed", error);
+			return Response.json({ error: "Invalid signature" }, { status: 401 });
+		}
 
 		if (!isValid) {
 			return Response.json({ error: "Invalid signature" }, { status: 401 });
@@ -160,11 +170,13 @@ async function importNotionPages({
 	let totalImported = 0;
 
 	do {
-		const response = await search({
-			token,
-			query,
-			startCursor: cursor,
-		});
+		const response = await withNotionRetry("search", () =>
+			search({
+				token,
+				query,
+				startCursor: cursor,
+			}),
+		);
 
 		const docs = mapNotionPages(response.results, {
 			organizationId,
@@ -202,6 +214,38 @@ async function importNotionPages({
 	return totalImported;
 }
 
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableNotionError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error);
+	return /\b(408|409|429|5\d\d)\b|timeout|network|temporarily|rate limit|overload/i.test(
+		message,
+	);
+}
+
+async function withNotionRetry<T>(
+	label: string,
+	fn: () => Promise<T>,
+): Promise<T> {
+	for (let attempt = 1; attempt <= MAX_NOTION_ATTEMPTS; attempt++) {
+		try {
+			return await fn();
+		} catch (error) {
+			if (attempt >= MAX_NOTION_ATTEMPTS || !isRetryableNotionError(error)) {
+				throw error;
+			}
+			console.warn(`[notion-sync] retrying Notion ${label}`, {
+				attempt,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			await delay(NOTION_RETRY_BASE_MS * 2 ** (attempt - 1));
+		}
+	}
+	throw new Error(`Notion ${label} failed after retries`);
+}
+
 async function fetchMarkdownByPageId({
 	token,
 	pages,
@@ -211,19 +255,35 @@ async function fetchMarkdownByPageId({
 }): Promise<Map<string, string>> {
 	const markdownByPageId = new Map<string, string>();
 
-	for (const page of pages) {
-		try {
-			const blocks = await fetchBlockTree({
-				token,
-				blockId: page.id,
-				depth: 0,
-			});
-			markdownByPageId.set(page.id, renderNotionBlocksToMarkdown(blocks));
-		} catch (error) {
+	for (const pageBatch of chunk(pages, BLOCK_FETCH_CONCURRENCY)) {
+		const results = await Promise.allSettled(
+			pageBatch.map(async (page) => ({
+				page,
+				blocks: await fetchBlockTree({
+					token,
+					blockId: page.id,
+					depth: 0,
+				}),
+			})),
+		);
+
+		for (const [index, result] of results.entries()) {
+			if (result.status === "fulfilled") {
+				markdownByPageId.set(
+					result.value.page.id,
+					renderNotionBlocksToMarkdown(result.value.blocks),
+				);
+				continue;
+			}
+			const page = pageBatch[index];
+			if (!page) continue;
 			console.warn(
 				`[notion-sync] failed to import blocks for page ${page.id}`,
 				{
-					error: error instanceof Error ? error.message : String(error),
+					error:
+						result.reason instanceof Error
+							? result.reason.message
+							: String(result.reason),
 				},
 			);
 			markdownByPageId.set(page.id, "");
@@ -249,11 +309,13 @@ async function fetchBlockTree({
 	const blocks: NotionBlock[] = [];
 
 	do {
-		const response = await listBlockChildren({
-			token,
-			blockId,
-			startCursor: cursor,
-		});
+		const response = await withNotionRetry("block children", () =>
+			listBlockChildren({
+				token,
+				blockId,
+				startCursor: cursor,
+			}),
+		);
 
 		for (const block of response.results) {
 			const next = { ...block };

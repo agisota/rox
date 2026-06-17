@@ -5,9 +5,9 @@
  * and a small context, it returns the typed insert payload. This keeps the
  * transform unit-testable and lets the job route stay a thin orchestration shell.
  *
- * PR-2 scope: the job route fetches page block children and passes rendered
- * Markdown by page id. This module stays pure: it maps search result metadata
- * plus already-rendered Markdown into `knowledge_documents` rows.
+ * The job route fetches page block children and passes rendered Markdown by
+ * page id. This module stays pure: it maps search result metadata plus
+ * already-rendered Markdown into `knowledge_documents` rows.
  *
  * Storage decisions (no migration / no new enum):
  *  - `sourceKind: "file"` reuses an existing `knowledge_source_kind` value.
@@ -66,7 +66,7 @@ function richTextToMarkdown(fragments: unknown): string {
 			let text = rich.plain_text ?? "";
 			if (!text) return "";
 			const annotations = rich.annotations;
-			if (annotations?.code) text = `\`${text}\``;
+			if (annotations?.code) return formatInlineCode(text);
 			if (annotations?.bold) text = `**${text}**`;
 			if (annotations?.italic) text = `_${text}_`;
 			if (annotations?.strikethrough) text = `~~${text}~~`;
@@ -75,6 +75,22 @@ function richTextToMarkdown(fragments: unknown): string {
 		})
 		.join("")
 		.trim();
+}
+
+function richTextToCode(fragments: unknown): string {
+	if (!Array.isArray(fragments)) return "";
+	return fragments
+		.map((fragment) => {
+			if (typeof fragment !== "object" || fragment === null) return "";
+			const rich = fragment as NotionRichText;
+			return rich.plain_text ?? "";
+		})
+		.join("");
+}
+
+function formatInlineCode(text: string): string {
+	const fence = text.includes("`") ? "``" : "`";
+	return `${fence}${text}${fence}`;
 }
 
 function getBlockPayload(block: NotionBlock): Record<string, unknown> | null {
@@ -86,6 +102,10 @@ function getBlockPayload(block: NotionBlock): Record<string, unknown> | null {
 
 function getRichText(block: NotionBlock): string {
 	return richTextToMarkdown(getBlockPayload(block)?.rich_text);
+}
+
+function getCodeText(block: NotionBlock): string {
+	return richTextToCode(getBlockPayload(block)?.rich_text);
 }
 
 function getCaption(payload: Record<string, unknown> | null): string {
@@ -154,7 +174,7 @@ function renderBlockToMarkdown(block: NotionBlock, depth: number): string {
 		case "code": {
 			const language =
 				typeof payload?.language === "string" ? payload.language : "";
-			return `\`\`\`${language}\n${text}\n\`\`\``;
+			return `\`\`\`${language}\n${getCodeText(block)}\n\`\`\``;
 		}
 		case "divider":
 			return "---";
@@ -234,7 +254,8 @@ export function buildSlug(title: string, pageId: string): string {
 
 /**
  * Maps a single Notion page to a `knowledge_documents` insert row. Pure — no
- * network, no DB. `markdown` is empty for the foundation (see file header TODO).
+ * network, no DB. `markdown` comes from already-rendered page blocks when the
+ * sync job supplies a `markdownByPageId` entry.
  */
 export function mapNotionPageToKnowledgeDoc(
 	page: NotionSearchResult,

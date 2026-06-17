@@ -194,4 +194,27 @@ describe("notion-client listBlockChildren", () => {
 			listBlockChildren({ token: "bad", blockId: "page-1", fetchImpl }),
 		).rejects.toThrow(/Notion block children returned 403/);
 	});
+
+	test("validates page_size before making a request", async () => {
+		const fetchImpl = (async () => {
+			throw new Error("fetch should not be called");
+		}) as unknown as FetchImpl;
+
+		await expect(
+			listBlockChildren({
+				token: "t",
+				blockId: "page-1",
+				pageSize: 0,
+				fetchImpl,
+			}),
+		).rejects.toThrow(/pageSize/);
+		await expect(
+			listBlockChildren({
+				token: "t",
+				blockId: "page-1",
+				pageSize: 101,
+				fetchImpl,
+			}),
+		).rejects.toThrow(/pageSize/);
+	});
 });

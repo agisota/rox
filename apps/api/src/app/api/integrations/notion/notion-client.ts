@@ -99,8 +99,23 @@ type RawSearchPayload = {
 	next_cursor?: unknown;
 };
 
+/** Shape of a raw `/blocks/{block_id}/children` payload before normalization. */
+type RawBlockChildrenPayload = {
+	results?: unknown;
+	has_more?: unknown;
+	next_cursor?: unknown;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
+}
+
+function assertValidPageSize(pageSize: number): void {
+	if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+		throw new Error(
+			"Notion block children pageSize must be an integer from 1 to 100",
+		);
+	}
 }
 
 /** Normalizes one raw result object, dropping anything without a string id. */
@@ -211,6 +226,7 @@ export async function listBlockChildren({
 	pageSize = 100,
 	fetchImpl,
 }: NotionBlockChildrenArgs): Promise<NotionBlockChildrenResponse> {
+	assertValidPageSize(pageSize);
 	const doFetch = fetchImpl ?? fetch;
 	const url = new URL(
 		`${NOTION_API_BASE}/blocks/${encodeURIComponent(blockId)}/children`,
@@ -247,7 +263,7 @@ export async function listBlockChildren({
 		);
 	}
 
-	const payload = (await response.json()) as RawSearchPayload;
+	const payload = (await response.json()) as RawBlockChildrenPayload;
 	const rawResults = Array.isArray(payload.results) ? payload.results : [];
 	const results = rawResults
 		.map(normalizeBlock)
