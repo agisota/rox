@@ -54,10 +54,12 @@ export function FocusMode() {
 	return (
 		<div className="fixed inset-0 z-[60]">
 			<QuoteScreen quote={quote} wallpaper={wallpaper} />
+			{/* z-[60] keeps the dismiss overlay above QuoteScreen's own z-50 so
+			    clicks anywhere close focus mode. */}
 			<button
 				type="button"
 				aria-label="Закрыть режим фокуса"
-				className="absolute inset-0 cursor-default bg-transparent"
+				className="absolute inset-0 z-[60] cursor-default bg-transparent"
 				onClick={close}
 			/>
 		</div>
