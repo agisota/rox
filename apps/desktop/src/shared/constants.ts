@@ -41,12 +41,14 @@ export const NOTIFICATION_EVENTS = {
 	TERMINAL_EXIT: "terminal-exit",
 } as const;
 
-// Development/testing mock values (used when SKIP_ENV_VALIDATION is set)
-export const MOCK_ORG_ID = "mock-org-id";
+// Development/testing mock values (used when SKIP_ENV_VALIDATION is set).
+// Keep these UUID-shaped because packaged smoke paths still exercise production
+// tRPC validators; the fixture must pass validation without weakening it.
+export const MOCK_ORG_ID = "00000000-0000-4000-8000-000000000001";
 export const E2E_CANVAS_FIXTURE = {
 	organizationId: MOCK_ORG_ID,
-	projectId: "e2e-canvas-project",
-	workspaceId: "e2e-canvas-workspace",
+	projectId: "00000000-0000-4000-8000-000000000002",
+	workspaceId: "00000000-0000-4000-8000-000000000003",
 } as const;
 
 // Terminal defaults

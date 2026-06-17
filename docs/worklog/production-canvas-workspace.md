@@ -1936,3 +1936,35 @@ Remaining risks / blockers:
 - Full DMG packaging remains blocked by local disk space only: prior full `electron-builder` run created signed app and ZIP, then failed at DMG with `hdiutil: create failed - No space left on device`.
 - Working tree is intentionally dirty and not yet commit-clean; release outputs under `apps/desktop/release/` are generated artifacts and should not be committed.
 - Smoke was run while an installed `/Applications/Rox.app` instance was active; e2e-only single-instance bypass fixed packaged route proof, but main-process stderr can still show local IndexedDB lock noise from concurrent app support usage. Page-level Canvas smoke stayed green with zero auth/network console errors.
+
+## 2026-06-17 final packaged Canvas smoke stabilization
+
+Current state: the production Canvas slice is integrated on `feat/canvas-production-integration` and the compiled/packageable app opens the authenticated Canvas route through the local e2e-only session harness. The remaining blocker from the previous proof loop was packaged smoke instability caused by production validators, stale local fixture rows, and brittle React Flow node hit-testing.
+
+Transformation completed:
+
+- Converted the local e2e Canvas fixture identifiers to UUID-shaped ids so the packaged production validator path accepts the mock organization/project/workspace scope without weakening runtime validators.
+- Made e2e Canvas route selection prefer the scoped fixture workspace before stale persisted UI state so local smoke cannot be redirected to an operator workspace.
+- Made host-service e2e seeding purge legacy/current fixture project and workspace rows before inserting the current hermetic temp workspace root.
+- Made the packaged smoke harness use a fresh temporary workspace root, preserve failure timelines in reports, dismiss the update notification overlay, create a node before selection-aware checks, and click nodes through a stable `data-canvas-node-id` marker.
+- Added a stable `data-testid="canvas-flow-node"` / `data-canvas-node-id` marker to React Flow node wrappers for deterministic e2e proof without changing Canvas domain state.
+
+Verification proof:
+
+- `bun test packages/shared/src/canvas/canvas.test.ts packages/shared/src/canvas/schema.test.ts packages/shared/src/canvas/json-canvas-codec.test.ts packages/host-service/src/trpc/router/canvas/canvas.test.ts packages/host-service/src/trpc/router/canvas/storage.test.ts apps/desktop/src/renderer/screens/canvas/ReactFlowCanvasAdapter/react-flow-canvas-adapter.test.ts apps/desktop/src/renderer/screens/canvas/CanvasWorkspaceView/canvas-active-selection.test.ts apps/desktop/src/renderer/screens/canvas/CanvasWorkspaceView/canvas-capability-selection.test.ts apps/desktop/src/renderer/screens/canvas/CanvasWorkspaceView/canvas-node-display.test.ts apps/desktop/src/renderer/screens/canvas/CanvasWorkspaceView/canvas-sync-status.test.ts apps/desktop/scripts/canvas-smoke-process-cleanup.test.js apps/desktop/src/renderer/lib/e2e-auth-bypass.test.ts apps/desktop/src/renderer/routes/_authenticated/_dashboard/canvas/canvasWorkspaceSelection.test.ts apps/desktop/src/renderer/lib/dev-chat.test.ts` -> 75 pass, 0 fail, 272 expect() calls.
+- `bun run lint` -> passed; Biome checked 5292 files.
+- `bun run typecheck` -> passed; 34 successful tasks.
+- `bun run --cwd apps/desktop compile:app` -> passed, including native runtime validation.
+- `CSC_IDENTITY_AUTO_DISCOVERY=false bun run --cwd apps/desktop package -- --mac zip --arm64 --publish never --config electron-builder.ts` -> produced `apps/desktop/release/Rox-2.0.21-arm64-mac.zip` and `apps/desktop/release/mac-arm64/Rox.app`.
+- `codesign --verify --deep --strict --verbose=2 apps/desktop/release/mac-arm64/Rox.app` -> `Rox.app: valid on disk`, satisfies Designated Requirement.
+- `bun run --cwd apps/desktop smoke:canvas -- --mode packaged` -> passed with `ok: true`.
+
+Packaged smoke evidence:
+
+- Report: `/Users/marklindgreen/.ai-agent-hub/evidence/playwright-smoke/rox-canvas-20260617/canvas-packaged-journey-smoke.json`.
+- Screenshot: `/Users/marklindgreen/.ai-agent-hub/evidence/playwright-smoke/rox-canvas-20260617/canvas-packaged-journey-smoke.png`.
+- Assertions covered authenticated `/canvas/` route with no sign-in gate, empty initial canonical canvas, add text node, selection-aware capability enablement, keyboard undo/redo across persisted revisions, command-palette JSON export, invalid import rejection, textarea shortcut guard, valid JSON Canvas import, exported imported graph, and external-network console quarantine.
+
+Remaining blocker:
+
+- DMG creation is still blocked by local disk capacity (`hdiutil: create failed - No space left on device`). ZIP packaging, packaged `Rox.app`, codesign, and packaged Canvas Playwright journey are proven. No release publish or git push has been performed in this worklog slice.

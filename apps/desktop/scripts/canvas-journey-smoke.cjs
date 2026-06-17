@@ -7,7 +7,6 @@ const {
 } = require("./canvas-smoke-process-cleanup.cjs");
 
 const desktopRoot = path.resolve(__dirname, "..");
-const repoRoot = path.resolve(desktopRoot, "../..");
 const today = new Date().toISOString().slice(0, 10).replaceAll("-", "");
 const evidenceDir =
 	process.env.ROX_CANVAS_SMOKE_EVIDENCE_DIR ??
@@ -42,6 +41,7 @@ const compiledRendererUrl = `file://${path.join(
 	desktopRoot,
 	"dist/renderer/index.html",
 )}#/canvas/`;
+let activeReport = null;
 
 function resolveCompiledElectronExecutable() {
 	if (process.env.ROX_ELECTRON_EXECUTABLE) {
@@ -134,6 +134,79 @@ async function waitForState(page, predicate, timeoutMs, label, events) {
 	const error = new Error(`Timed out waiting for ${label}`);
 	error.state = state;
 	throw error;
+}
+
+async function clickHitTestableReactFlowNode(page, events) {
+	const marker = page.getByTestId("canvas-flow-node").first();
+	const markerBox = await marker.boundingBox().catch(() => null);
+	if (markerBox) {
+		events.push({
+			type: "reactFlowNode.markerClick",
+			at: new Date().toISOString(),
+			x: Math.round(markerBox.x + markerBox.width / 2),
+			y: Math.round(markerBox.y + markerBox.height / 2),
+		});
+		await marker.click({ force: true, timeout: 10_000 });
+		return;
+	}
+
+	const hitTarget = await page.evaluate(() => {
+		const flow = document.querySelector(".canvas-react-flow");
+		const flowRect =
+			flow instanceof HTMLElement ? flow.getBoundingClientRect() : null;
+		const left = Math.max(0, flowRect?.left ?? 0);
+		const top = Math.max(0, flowRect?.top ?? 0);
+		const right = Math.min(
+			window.innerWidth,
+			flowRect?.right ?? window.innerWidth,
+		);
+		const bottom = Math.min(
+			window.innerHeight,
+			flowRect?.bottom ?? window.innerHeight,
+		);
+		for (let y = top + 24; y < bottom - 24; y += 24) {
+			for (let x = left + 24; x < right - 24; x += 24) {
+				const topElement = document.elementFromPoint(x, y);
+				const node = topElement?.closest(".react-flow__node");
+				if (!(node instanceof HTMLElement)) continue;
+				const marker = node.querySelector("[data-testid='canvas-flow-node']");
+				if (!marker) continue;
+				return {
+					id: node.dataset.id ?? marker.getAttribute("data-canvas-node-id"),
+					x,
+					y,
+				};
+			}
+		}
+		return null;
+	});
+	if (!hitTarget) {
+		throw new Error("No hit-testable React Flow node was available");
+	}
+	events.push({
+		type: "reactFlowNode.hitTarget",
+		at: new Date().toISOString(),
+		id: hitTarget.id,
+		x: Math.round(hitTarget.x),
+		y: Math.round(hitTarget.y),
+	});
+	await page.mouse.click(hitTarget.x, hitTarget.y);
+}
+
+async function dismissUpdateNotification(page, events) {
+	const laterButton = page.getByRole("button", { name: /^Позже$/ });
+	if (!(await laterButton.isVisible().catch(() => false))) return;
+	await laterButton.click({ timeout: 5_000 }).catch((error) => {
+		events.push({
+			type: "updateNotification.dismissFailed",
+			at: new Date().toISOString(),
+			message: error.message,
+		});
+	});
+	events.push({
+		type: "updateNotification.dismissed",
+		at: new Date().toISOString(),
+	});
 }
 
 async function navigateToCanvas(page, events) {
@@ -358,16 +431,21 @@ async function getExportedJsonCanvas(page, predicate = () => true) {
 
 async function run() {
 	const events = [];
+	const e2eWorkspaceRoot = await fs.mkdtemp(
+		path.join(os.tmpdir(), "rox-canvas-smoke-workspace-"),
+	);
 	const report = {
 		ok: false,
 		mode,
 		evidenceDir,
 		reportPath,
 		screenshotPath,
+		e2eWorkspaceRoot,
 		checkedAt: new Date().toISOString(),
 		events,
 		assertions: {},
 	};
+	activeReport = report;
 	const externalNetworkQuarantine = { total: 0, hosts: {} };
 	const push = async (type, data = {}) => {
 		events.push({ type, at: new Date().toISOString(), ...data });
@@ -401,7 +479,7 @@ async function run() {
 			ELECTRON_DISABLE_SECURITY_WARNINGS: "true",
 			NEXT_PUBLIC_E2E_AUTH_BYPASS: "1",
 			NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE: "local-playwright-smoke",
-			ROX_E2E_CANVAS_WORKSPACE_ROOT: repoRoot,
+			ROX_E2E_CANVAS_WORKSPACE_ROOT: e2eWorkspaceRoot,
 			ROX_E2E_CANVAS_WORKSPACE_BRANCH: "main",
 		},
 		timeout: 25_000,
@@ -475,6 +553,7 @@ async function run() {
 		if (!initialState.hasCanvasLiveSync) {
 			throw new Error("Canvas live sync status was not visible");
 		}
+		await dismissUpdateNotification(page, events);
 		await push("usable", {
 			nodeCount: initialState.nodeCount,
 			edgeCount: initialState.edgeCount,
@@ -493,10 +572,30 @@ async function run() {
 				"zoomToSelection capability was enabled before a Canvas selection existed",
 			);
 		}
+
+		await page.getByRole("button", { name: /^Add text node$/ }).click({
+			timeout: 10_000,
+		});
+		const afterAdd = await waitForState(
+			page,
+			(state) =>
+				state.hasTextCard && state.nodeCount >= initialState.nodeCount + 1,
+			15_000,
+			"added text node rendered and counted",
+			events,
+		);
+		report.assertions.afterAdd = {
+			nodeCount: afterAdd.nodeCount,
+			revision: afterAdd.revision,
+			hasTextCard: afterAdd.hasTextCard,
+		};
+		await push("after.addTextNode", report.assertions.afterAdd);
+
 		await page
-			.locator(".react-flow__node")
+			.getByTestId("canvas-flow-node")
 			.first()
-			.click({ timeout: 10_000, force: true });
+			.waitFor({ state: "visible", timeout: 10_000 });
+		await clickHitTestableReactFlowNode(page, events);
 		const afterNodeSelection = await waitForState(
 			page,
 			(state) => /\b1 selected\b/i.test(state.visibleTextSample),
@@ -528,24 +627,6 @@ async function run() {
 			"after.selectionAwareCapability",
 			report.assertions.selectionAwareCapability,
 		);
-
-		await page.getByRole("button", { name: /^Add text node$/ }).click({
-			timeout: 10_000,
-		});
-		const afterAdd = await waitForState(
-			page,
-			(state) =>
-				state.hasTextCard && state.nodeCount >= initialState.nodeCount + 1,
-			15_000,
-			"added text node rendered and counted",
-			events,
-		);
-		report.assertions.afterAdd = {
-			nodeCount: afterAdd.nodeCount,
-			revision: afterAdd.revision,
-			hasTextCard: afterAdd.hasTextCard,
-		};
-		await push("after.addTextNode", report.assertions.afterAdd);
 
 		await page.keyboard.press(`${modifierKey()}+Z`);
 		const afterKeyboardUndo = await waitForState(
@@ -765,6 +846,9 @@ async function run() {
 				await writeReport(report).catch(() => {});
 			}
 		}
+		await fs
+			.rm(e2eWorkspaceRoot, { force: true, recursive: true })
+			.catch(() => {});
 	}
 }
 
@@ -782,13 +866,21 @@ Promise.race([
 	},
 	async (error) => {
 		const fallback = {
+			...(activeReport ?? {}),
 			ok: false,
 			mode,
 			error: error.message,
-			lastState: error.state,
+			lastState: error.state ?? activeReport?.lastState,
 			stack: error.stack,
 			checkedAt: new Date().toISOString(),
 		};
+		if (Array.isArray(fallback.events)) {
+			fallback.events.push({
+				type: "error",
+				at: fallback.checkedAt,
+				message: error.message,
+			});
+		}
 		await writeReport(fallback).catch(() => {});
 		console.error(JSON.stringify(fallback, null, 2));
 		process.exit(1);

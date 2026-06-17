@@ -94,6 +94,8 @@ function RoxCanvasNode({ data, selected }: NodeProps<RoxFlowNode>) {
 				getNodeTone(data.nodeType),
 				selected && "ring-2 ring-cyan-200/80",
 			)}
+			data-canvas-node-id={data.canvasNodeId}
+			data-testid="canvas-flow-node"
 		>
 			<NodeResizer
 				color="rgba(125, 211, 252, 0.92)"

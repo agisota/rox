@@ -13,6 +13,7 @@ export function selectDefaultCanvasWorkspace({
 	isE2EAuthBypass?: boolean;
 	e2eFallbackWorkspace?: AccessibleV2Workspace | null;
 }): AccessibleV2Workspace | null {
+	if (isE2EAuthBypass && e2eFallbackWorkspace) return e2eFallbackWorkspace;
 	const lastActive = lastActiveWorkspaceId
 		? all.find((workspace) => workspace.id === lastActiveWorkspaceId)
 		: null;

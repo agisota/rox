@@ -72,17 +72,18 @@ describe("selectDefaultCanvasWorkspace", () => {
 	});
 
 	it("uses an e2e fallback workspace only when the scoped auth bypass is active", () => {
-		const fallback = workspace("e2e-canvas-workspace");
+		const fallback = workspace("00000000-0000-4000-8000-000000000003");
+		const staleLocal = workspace("stale-local");
 
 		expect(
 			selectDefaultCanvasWorkspace({
-				all: [],
-				pinned: [],
-				lastActiveWorkspaceId: null,
+				all: [staleLocal],
+				pinned: [staleLocal],
+				lastActiveWorkspaceId: "stale-local",
 				isE2EAuthBypass: true,
 				e2eFallbackWorkspace: fallback,
 			})?.id,
-		).toBe("e2e-canvas-workspace");
+		).toBe("00000000-0000-4000-8000-000000000003");
 
 		expect(
 			selectDefaultCanvasWorkspace({

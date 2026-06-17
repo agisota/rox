@@ -8,9 +8,11 @@ import {
 
 describe("dev chat helpers", () => {
 	it("uses the mock organization in dev mode", () => {
-		expect(resolveDesktopChatOrganizationId(null, true)).toBe("mock-org-id");
+		expect(resolveDesktopChatOrganizationId(null, true)).toBe(
+			"00000000-0000-4000-8000-000000000001",
+		);
 		expect(resolveDesktopChatOrganizationId("org-123", true)).toBe(
-			"mock-org-id",
+			"00000000-0000-4000-8000-000000000001",
 		);
 	});
 

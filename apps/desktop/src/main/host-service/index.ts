@@ -22,6 +22,7 @@ import {
 	resolveTerminalBaseEnv,
 } from "@rox/host-service/terminal-env";
 import { connectRelay } from "@rox/host-service/tunnel";
+import { inArray } from "drizzle-orm";
 import { loadToken } from "lib/trpc/routers/auth/utils/auth-functions";
 import { writeManifest } from "main/lib/host-service-manifest";
 import { E2E_CANVAS_FIXTURE } from "shared/constants";
@@ -30,6 +31,8 @@ import { env } from "./env";
 
 const SHUTDOWN_GRACE_MS = 3_000;
 const WATCHDOG_INTERVAL_MS = 2_000;
+const LEGACY_E2E_CANVAS_PROJECT_ID = "e2e-canvas-project";
+const LEGACY_E2E_CANVAS_WORKSPACE_ID = "e2e-canvas-workspace";
 
 type Server = ReturnType<typeof serve>;
 
@@ -54,6 +57,22 @@ function seedE2ECanvasWorkspace(db: HostDb): void {
 	const branch = process.env.ROX_E2E_CANVAS_WORKSPACE_BRANCH || "main";
 
 	try {
+		db.delete(workspaces)
+			.where(
+				inArray(workspaces.id, [
+					LEGACY_E2E_CANVAS_WORKSPACE_ID,
+					E2E_CANVAS_FIXTURE.workspaceId,
+				]),
+			)
+			.run();
+		db.delete(projects)
+			.where(
+				inArray(projects.id, [
+					LEGACY_E2E_CANVAS_PROJECT_ID,
+					E2E_CANVAS_FIXTURE.projectId,
+				]),
+			)
+			.run();
 		db.insert(projects)
 			.values({
 				id: E2E_CANVAS_FIXTURE.projectId,
