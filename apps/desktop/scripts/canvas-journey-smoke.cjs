@@ -138,15 +138,91 @@ async function waitForState(page, predicate, timeoutMs, label, events) {
 
 async function clickHitTestableReactFlowNode(page, events) {
 	const marker = page.getByTestId("canvas-flow-node").first();
-	const markerBox = await marker.boundingBox().catch(() => null);
+	let markerBox = await marker.boundingBox().catch(() => null);
 	if (markerBox) {
+		const viewport = page.viewportSize() ?? { width: 1440, height: 1000 };
+		const isInsideViewport = (box) => {
+			const x = box.x + box.width / 2;
+			const y = box.y + box.height / 2;
+			return x >= 0 && x <= viewport.width && y >= 0 && y <= viewport.height;
+		};
+		if (!isInsideViewport(markerBox)) {
+			const paneBox = await page
+				.locator(".react-flow__pane")
+				.first()
+				.boundingBox()
+				.catch(() => null);
+			if (paneBox) {
+				const markerCenterX = markerBox.x + markerBox.width / 2;
+				const markerCenterY = markerBox.y + markerBox.height / 2;
+				const targetX = paneBox.x + paneBox.width / 2;
+				const targetY = paneBox.y + paneBox.height / 2;
+				const dragDeltaX = targetX - markerCenterX;
+				const dragDeltaY = targetY - markerCenterY;
+				const dragStartX = paneBox.x + paneBox.width / 2;
+				const dragStartY = paneBox.y + paneBox.height / 2;
+				events.push({
+					type: "reactFlowNode.panIntoView",
+					at: new Date().toISOString(),
+					dragDeltaX: Math.round(dragDeltaX),
+					dragDeltaY: Math.round(dragDeltaY),
+				});
+				await page.mouse.move(dragStartX, dragStartY);
+				await page.mouse.down();
+				await page.mouse.move(
+					dragStartX + dragDeltaX,
+					dragStartY + dragDeltaY,
+					{
+						steps: 12,
+					},
+				);
+				await page.mouse.up();
+				markerBox = await marker.boundingBox().catch(() => markerBox);
+			}
+		}
+		if (!isInsideViewport(markerBox)) {
+			events.push({
+				type: "reactFlowNode.domDispatchClick",
+				at: new Date().toISOString(),
+				x: Math.round(markerBox.x + markerBox.width / 2),
+				y: Math.round(markerBox.y + markerBox.height / 2),
+			});
+			await marker.evaluate((element) => {
+				const target = element.closest(".react-flow__node") ?? element;
+				const eventInit = {
+					bubbles: true,
+					button: 0,
+					buttons: 1,
+					cancelable: true,
+					clientX: 1,
+					clientY: 1,
+					view: window,
+				};
+				for (const type of [
+					"pointerdown",
+					"mousedown",
+					"pointerup",
+					"mouseup",
+					"click",
+				]) {
+					const EventConstructor =
+						type.startsWith("pointer") && "PointerEvent" in window
+							? PointerEvent
+							: MouseEvent;
+					target.dispatchEvent(new EventConstructor(type, eventInit));
+				}
+			});
+			return;
+		}
+		const clickX = markerBox.x + markerBox.width / 2;
+		const clickY = markerBox.y + markerBox.height / 2;
 		events.push({
 			type: "reactFlowNode.markerClick",
 			at: new Date().toISOString(),
-			x: Math.round(markerBox.x + markerBox.width / 2),
-			y: Math.round(markerBox.y + markerBox.height / 2),
+			x: Math.round(clickX),
+			y: Math.round(clickY),
 		});
-		await marker.click({ force: true, timeout: 10_000 });
+		await page.mouse.click(clickX, clickY);
 		return;
 	}
 

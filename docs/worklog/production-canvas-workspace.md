@@ -1968,3 +1968,39 @@ Packaged smoke evidence:
 Remaining blocker:
 
 - DMG creation is still blocked by local disk capacity (`hdiutil: create failed - No space left on device`). ZIP packaging, packaged `Rox.app`, codesign, and packaged Canvas Playwright journey are proven. No release publish or git push has been performed in this worklog slice.
+
+## 2026-06-18 - DMG retry and restored packaged Canvas smoke proof
+
+Current state: the production Canvas branch remains `feat/canvas-production-integration`; the committed Canvas slice is locally integrated and the only fresh working-tree code change is the packaged smoke harness hardening for off-viewport React Flow node selection.
+
+DMG retry evidence:
+
+- Retried DMG packaging with existing generated release output: `CSC_IDENTITY_AUTO_DISCOVERY=false bun run --cwd apps/desktop package -- --mac dmg --arm64 --publish never --config electron-builder.ts`.
+- Result: Electron build reached signed mac-arm64 app packaging and failed at DMG creation with `hdiutil: create failed - No space left on device`.
+- Removed generated `apps/desktop/release/` output and retried from about 5.9 GiB free disk.
+- Result: clean retry again reached `building target=DMG arch=arm64 file=release/Rox-2.0.21-arm64.dmg` and failed with `hdiutil: create failed - No space left on device`.
+- Disk inspection found no safe generated cleanup large enough to complete DMG: `~/.Trash` was empty; project release output and browser/tool caches were not enough; the largest reclaimable-looking areas were user/app-state directories under `~/Library/Application Support`, which were not deleted automatically.
+
+Restored package evidence:
+
+- Rebuilt ZIP/package output after the clean-DMG retry deleted release artifacts: `CSC_IDENTITY_AUTO_DISCOVERY=false bun run --cwd apps/desktop package -- --mac zip --arm64 --publish never --config electron-builder.ts`.
+- `codesign --verify --deep --strict --verbose=2 apps/desktop/release/mac-arm64/Rox.app` -> `valid on disk` and satisfies its Designated Requirement.
+- Restored artifacts: `apps/desktop/release/mac-arm64/Rox.app`, `apps/desktop/release/Rox-2.0.21-arm64-mac.zip`, and `apps/desktop/release/Rox-2.0.21-arm64-mac.zip.blockmap`.
+
+Packaged smoke stabilization:
+
+- Initial restored packaged smoke opened Canvas and created the node, but failed because Playwright attempted a physical click on a React Flow node marker whose bounding box was outside the viewport.
+- Hardened `apps/desktop/scripts/canvas-journey-smoke.cjs` so the harness first pans the React Flow pane toward the node marker, then falls back to dispatching the pointer/mouse event sequence on the node element if the marker remains outside the physical viewport.
+- The smoke still proves real product behavior through observable UI state after the click path: selection-aware capability starts disabled, becomes enabled after selection, and produces the visible run result.
+
+Verification proof:
+
+- `bunx biome format --write apps/desktop/scripts/canvas-journey-smoke.cjs` -> formatted the touched smoke file.
+- `bun run lint` -> passed; Biome checked 5292 files with no fixes applied.
+- `bun run --cwd apps/desktop smoke:canvas -- --mode packaged` -> passed with `ok: true`.
+- Report: `/Users/marklindgreen/.ai-agent-hub/evidence/playwright-smoke/rox-canvas-20260617/canvas-packaged-journey-smoke.json`.
+- Screenshot: `/Users/marklindgreen/.ai-agent-hub/evidence/playwright-smoke/rox-canvas-20260617/canvas-packaged-journey-smoke.png`.
+
+Remaining blocker:
+
+- DMG proof remains blocked by local disk capacity, not by Canvas code or package/codesign behavior. A final DMG proof needs several more GiB of safe free scratch space or a packaging run on a machine/volume with enough capacity. No release publish or git push was performed.
