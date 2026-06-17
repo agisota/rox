@@ -45,6 +45,8 @@ export interface SidebarWorkspaceInput {
 	updatedAt: Date;
 	tabOrder: number;
 	sectionId: string | null;
+	color?: string | null;
+	labels?: string[];
 	pendingTransaction: WorkspaceTransactionSnapshot | null;
 }
 
@@ -122,7 +124,8 @@ export function buildDashboardSidebarProjects({
 			type: workspace.type,
 			hostIsOnline:
 				hostType === "remote-device" ? workspace.hostIsOnline : null,
-			accentColor: null,
+			accentColor: workspace.color ?? null,
+			labels: workspace.labels ?? [],
 			name: workspace.name,
 			branch: workspace.branch,
 			pullRequest: pullRequestsByWorkspaceId.get(workspace.id) ?? null,
@@ -146,7 +149,7 @@ export function buildDashboardSidebarProjects({
 			if (section) {
 				section.workspaces.push({
 					...sidebarWorkspace,
-					accentColor: section.color,
+					accentColor: sidebarWorkspace.accentColor ?? section.color,
 				});
 				continue;
 			}
@@ -219,7 +222,7 @@ export function buildDashboardSidebarProjects({
 			} else if (currentSection) {
 				currentSection.workspaces.push({
 					...child.workspace,
-					accentColor: currentSection.color,
+					accentColor: child.workspace.accentColor ?? currentSection.color,
 				});
 			} else {
 				children.push(child);

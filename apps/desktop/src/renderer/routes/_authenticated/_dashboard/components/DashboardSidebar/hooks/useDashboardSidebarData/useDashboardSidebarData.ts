@@ -235,6 +235,8 @@ export function useDashboardSidebarData() {
 					tabOrder: sidebarWorkspaces.sidebarState.tabOrder,
 					sectionId: sidebarWorkspaces.sidebarState.sectionId,
 					isHidden: sidebarWorkspaces.sidebarState.isHidden,
+					color: sidebarWorkspaces.sidebarState.color,
+					labels: sidebarWorkspaces.sidebarState.labels,
 				})),
 		[collections],
 	);

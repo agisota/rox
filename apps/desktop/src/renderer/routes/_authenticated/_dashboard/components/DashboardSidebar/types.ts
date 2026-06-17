@@ -32,6 +32,8 @@ export interface DashboardSidebarWorkspace {
 	type: DashboardSidebarWorkspaceType;
 	hostIsOnline: boolean | null;
 	accentColor: string | null;
+	/** Free-text labels/tags assigned to this branch (per-branch, local). */
+	labels: string[];
 	name: string;
 	branch: string;
 	pullRequest: DashboardSidebarWorkspacePullRequest | null;
