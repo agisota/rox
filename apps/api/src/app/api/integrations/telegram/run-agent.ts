@@ -48,6 +48,10 @@ const TOOL_PROGRESS_STATUS: Record<string, string> = {
 	list_projects: "Fetching projects...",
 };
 
+const MAX_ANTHROPIC_ATTEMPTS = 3;
+const ANTHROPIC_RETRY_BASE_MS = 250;
+const MAX_TOOL_ITERATIONS = 10;
+
 const SYSTEM_PROMPT = `You are a helpful assistant in Telegram for Rox, a platform for managing tasks and running coding agents in workspaces.
 
 You can:
@@ -61,6 +65,55 @@ Guidelines:
 - If an action fails, explain what went wrong and suggest the next concrete step
 - Use plain Markdown-friendly text, not Slack-specific formatting
 - Cite sources when sharing information from web search results`;
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getErrorStatus(error: unknown): number | undefined {
+	if (typeof error !== "object" || error === null) return undefined;
+	const status = (error as { status?: unknown }).status;
+	return typeof status === "number" ? status : undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
+function isRetryableAnthropicError(error: unknown): boolean {
+	const status = getErrorStatus(error);
+	if (
+		status === 408 ||
+		status === 409 ||
+		status === 429 ||
+		(status !== undefined && status >= 500 && status < 600)
+	) {
+		return true;
+	}
+	return /timeout|network|econnreset|econnrefused|temporarily|overload|rate limit/i.test(
+		getErrorMessage(error),
+	);
+}
+
+async function createAnthropicMessage(
+	anthropic: Anthropic,
+	params: Anthropic.MessageCreateParamsNonStreaming,
+): Promise<Anthropic.Message> {
+	for (let attempt = 1; attempt <= MAX_ANTHROPIC_ATTEMPTS; attempt++) {
+		try {
+			return await anthropic.messages.create(params);
+		} catch (error) {
+			if (
+				attempt >= MAX_ANTHROPIC_ATTEMPTS ||
+				!isRetryableAnthropicError(error)
+			) {
+				throw error;
+			}
+			await delay(ANTHROPIC_RETRY_BASE_MS * 2 ** (attempt - 1));
+		}
+	}
+	throw new Error("Anthropic request failed after retries");
+}
 
 async function createTelegramMcpClient({
 	organizationId,
@@ -187,26 +240,11 @@ export function formatActionsForTelegram(
 }
 
 export async function formatErrorForTelegram(error: unknown): Promise<string> {
-	const message = error instanceof Error ? error.message : String(error);
-	try {
-		const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-		const response = await anthropic.messages.create({
-			model: "claude-haiku-4-5",
-			max_tokens: 192,
-			messages: [
-				{
-					role: "user",
-					content: `Rewrite this API error as a brief, friendly Telegram message (1 sentence). No JSON.\n\nError: ${message}`,
-				},
-			],
-		});
-		const text = response.content.find(
-			(b): b is Anthropic.TextBlock => b.type === "text",
-		);
-		return text?.text ?? "Sorry, something went wrong. Please try again.";
-	} catch {
-		return "Sorry, something went wrong. Please try again.";
+	const message = getErrorMessage(error);
+	if (/rate limit|overload|temporarily|timeout/i.test(message)) {
+		return "The model provider is temporarily unavailable. Please try again in a moment.";
 	}
+	return "Sorry, I couldn't complete that. Please try again.";
 }
 
 export async function runTelegramAgent(
@@ -225,6 +263,8 @@ export async function runTelegramAgent(
 		roxMcp = roxMcpResult.client;
 		cleanupRox = roxMcpResult.cleanup;
 
+		// These readonly context tools are denied to model-initiated calls below,
+		// but the agent prefetches them once to give the model safe task context.
 		const [roxToolsResult, agentContext] = await Promise.all([
 			roxMcp.listTools(),
 			fetchAgentContext({ mcpClient: roxMcp, userId: params.userId }),
@@ -254,7 +294,7 @@ ${agentContext}`;
 			{ role: "user", content: params.prompt },
 		];
 
-		let response = await anthropic.messages.create({
+		let response = await createAnthropicMessage(anthropic, {
 			model: params.model ?? DEFAULT_TELEGRAM_MODEL,
 			max_tokens: 2048,
 			system,
@@ -262,7 +302,6 @@ ${agentContext}`;
 			messages,
 		});
 
-		const MAX_TOOL_ITERATIONS = 10;
 		let iterations = 0;
 
 		while (
@@ -275,7 +314,7 @@ ${agentContext}`;
 			if (response.stop_reason === "pause_turn") {
 				await params.onProgress?.("Searching the web...");
 				messages.push({ role: "assistant", content: response.content });
-				response = await anthropic.messages.create({
+				response = await createAnthropicMessage(anthropic, {
 					model: params.model ?? DEFAULT_TELEGRAM_MODEL,
 					max_tokens: 2048,
 					system,
@@ -344,7 +383,7 @@ ${agentContext}`;
 			});
 			messages.push({ role: "user", content: toolResults });
 
-			response = await anthropic.messages.create({
+			response = await createAnthropicMessage(anthropic, {
 				model: params.model ?? DEFAULT_TELEGRAM_MODEL,
 				max_tokens: 2048,
 				system,
@@ -357,6 +396,20 @@ ${agentContext}`;
 			(b): b is Anthropic.TextBlock => b.type === "text",
 		);
 		const textBlock = textBlocks.at(-1);
+		const stoppedAtToolLimit =
+			(response.stop_reason === "tool_use" ||
+				response.stop_reason === "pause_turn") &&
+			iterations >= MAX_TOOL_ITERATIONS;
+
+		if (stoppedAtToolLimit) {
+			const prefix = textBlock?.text?.trim();
+			const limitMessage =
+				"I stopped after reaching the Telegram agent tool limit. Please narrow the request or ask me to continue with a smaller step.";
+			return {
+				text: prefix ? `${prefix}\n\n${limitMessage}` : limitMessage,
+				actions,
+			};
+		}
 
 		return {
 			text: textBlock?.text ?? "Done!",

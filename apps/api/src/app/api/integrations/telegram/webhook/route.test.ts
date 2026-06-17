@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 const publishJSONMock = mock(async () => ({}));
 let inboundInsertValues: unknown[] = [];
+let deleteWhereCalls: unknown[] = [];
 let insertReturningResult: Array<Record<string, unknown>> = [{ id: "event-1" }];
 
 mock.module("@/env", () => ({
@@ -40,6 +41,11 @@ mock.module("@rox/db/client", () => ({
 						returning: mock(async () => insertReturningResult),
 					})),
 				};
+			}),
+		})),
+		delete: mock(() => ({
+			where: mock(async (where: unknown) => {
+				deleteWhereCalls.push(where);
 			}),
 		})),
 	},
@@ -106,8 +112,10 @@ describe("telegram webhook route", () => {
 	beforeEach(() => {
 		connectionsResult = [MATCHING_CONNECTION];
 		inboundInsertValues = [];
+		deleteWhereCalls = [];
 		insertReturningResult = [{ id: "event-1" }];
 		publishJSONMock.mockClear();
+		publishJSONMock.mockImplementation(async () => ({}));
 	});
 
 	test("returns 401 when the secret header is missing", async () => {
@@ -159,6 +167,18 @@ describe("telegram webhook route", () => {
 			},
 			retries: 3,
 		});
+	});
+
+	test("returns 503 and rolls back the inbound event when queueing fails", async () => {
+		publishJSONMock.mockImplementation(async () => {
+			throw new Error("qstash unavailable");
+		});
+
+		const response = await POST(buildRequest(WEBHOOK_SECRET, HUMAN_UPDATE));
+
+		expect(response.status).toBe(503);
+		expect(inboundInsertValues).toHaveLength(1);
+		expect(deleteWhereCalls).toHaveLength(1);
 	});
 
 	test("returns 200 without queuing duplicate updates", async () => {

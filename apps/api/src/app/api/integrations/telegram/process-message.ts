@@ -107,12 +107,25 @@ export async function processTelegramMessage(
 		return { success: true, replied: true, messagesSent };
 	} catch (error) {
 		console.error("[telegram/process-message] Agent failed:", error);
-		const text = await formatErrorForTelegram(error);
-		const messagesSent = await sendTelegramText({
-			botToken,
-			chatId: payload.update.chatId,
-			text,
-		});
-		return { success: true, replied: false, messagesSent };
+		try {
+			const text = await formatErrorForTelegram(error);
+			const messagesSent = await sendTelegramText({
+				botToken,
+				chatId: payload.update.chatId,
+				text,
+			});
+			return { success: true, replied: false, messagesSent };
+		} catch (fallbackError) {
+			console.error(
+				"[telegram/process-message] Failed to send fallback error reply:",
+				fallbackError,
+			);
+			return {
+				success: true,
+				replied: false,
+				messagesSent: 0,
+				reason: "Agent failed and fallback reply could not be sent",
+			};
+		}
 	}
 }

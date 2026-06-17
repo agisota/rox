@@ -75,6 +75,7 @@ describe("processTelegramMessage", () => {
 		formatActionsForTelegramMock.mockClear();
 		formatErrorForTelegramMock.mockClear();
 		sendMessageMock.mockClear();
+		sendMessageMock.mockImplementation(async () => ({ ok: true }));
 		runTelegramAgentMock.mockImplementation(async () => ({
 			text: "I created the task.",
 			actions: [{ type: "create_task" }],
@@ -128,6 +129,25 @@ describe("processTelegramMessage", () => {
 			chatId: 555,
 			text: "Sorry, that failed.",
 		});
+	});
+
+	test("does not retry the job when sending the fallback error reply fails", async () => {
+		runTelegramAgentMock.mockImplementation(async () => {
+			throw new Error("provider failed");
+		});
+		sendMessageMock.mockImplementation(async () => {
+			throw new Error("telegram unavailable");
+		});
+
+		const result = await processTelegramMessage(PAYLOAD);
+
+		expect(result).toEqual({
+			success: true,
+			replied: false,
+			messagesSent: 0,
+			reason: "Agent failed and fallback reply could not be sent",
+		});
+		expect(formatErrorForTelegramMock).toHaveBeenCalled();
 	});
 
 	test("skips when the connection is missing", async () => {

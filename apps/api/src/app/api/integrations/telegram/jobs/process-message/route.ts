@@ -8,6 +8,8 @@ const receiver = new Receiver({
 	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
 });
 
+export const maxDuration = 30;
+
 const payloadSchema = z.object({
 	connectionId: z.string().min(1),
 	update: z.object({
@@ -27,11 +29,20 @@ export async function POST(request: Request) {
 		return Response.json({ error: "Missing signature" }, { status: 401 });
 	}
 
-	const isValid = await receiver.verify({
-		body,
-		signature,
-		url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/telegram/jobs/process-message`,
-	});
+	let isValid = false;
+	try {
+		isValid = await receiver.verify({
+			body,
+			signature,
+			url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/telegram/jobs/process-message`,
+		});
+	} catch (error) {
+		console.warn(
+			"[telegram/process-message-job] Signature verification failed:",
+			error,
+		);
+		return Response.json({ error: "Invalid signature" }, { status: 401 });
+	}
 
 	if (!isValid) {
 		return Response.json({ error: "Invalid signature" }, { status: 401 });

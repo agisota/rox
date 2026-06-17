@@ -107,6 +107,20 @@ export async function POST(request: Request) {
 			"[telegram/webhook] Failed to queue process-message job:",
 			error,
 		);
+		try {
+			await db
+				.delete(integrationInboundEvents)
+				.where(eq(integrationInboundEvents.id, inserted.id));
+		} catch (deleteError) {
+			console.error(
+				"[telegram/webhook] Failed to roll back inbound event after queue failure:",
+				deleteError,
+			);
+		}
+		return Response.json(
+			{ error: "Failed to queue Telegram update" },
+			{ status: 503 },
+		);
 	}
 
 	// Telegram retries on any non-200, so always ack quickly for valid updates.

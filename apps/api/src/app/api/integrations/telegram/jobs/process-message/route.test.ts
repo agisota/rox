@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 let verifyResult = true;
-const verifyMock = mock(async () => verifyResult);
+let verifyError: unknown = null;
+const verifyMock = mock(async () => {
+	if (verifyError) throw verifyError;
+	return verifyResult;
+});
 
 mock.module("@/env", () => ({
 	env: {
@@ -58,6 +62,7 @@ function buildRequest(body: unknown, signature: string | null = "sig") {
 describe("telegram process-message job route", () => {
 	beforeEach(() => {
 		verifyResult = true;
+		verifyError = null;
 		verifyMock.mockClear();
 		processTelegramMessageMock.mockClear();
 	});
@@ -71,6 +76,13 @@ describe("telegram process-message job route", () => {
 		verifyResult = false;
 		const response = await POST(buildRequest(VALID_PAYLOAD));
 		expect(response.status).toBe(401);
+	});
+
+	test("rejects when Upstash signature verification throws", async () => {
+		verifyError = new Error("bad signature");
+		const response = await POST(buildRequest(VALID_PAYLOAD));
+		expect(response.status).toBe(401);
+		expect(processTelegramMessageMock).not.toHaveBeenCalled();
 	});
 
 	test("processes a valid signed payload", async () => {
