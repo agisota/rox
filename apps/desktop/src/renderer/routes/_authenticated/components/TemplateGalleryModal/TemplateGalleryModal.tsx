@@ -138,6 +138,7 @@ export function TemplateGalleryModal({
 							template={template}
 							cloning={cloningId === template.id}
 							disabled={cloningId !== null || !parentDir}
+							presetOnlyEnabled={isV2CloudEnabled}
 							onSelect={handleSelect}
 						/>
 					))}
