@@ -44,6 +44,7 @@ function renderQuoteText(quote: Quote): ReactNode {
 	);
 }
 
+/** Full-screen quote card; changing `quote` crossfades to the new line. */
 export function QuoteScreen({ quote, wallpaper, className }: QuoteScreenProps) {
 	const reduceMotion = useReducedMotion();
 	const duration = reduceMotion ? 0 : 0.6;

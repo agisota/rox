@@ -24,6 +24,7 @@ interface WallpaperLayerProps {
 	className?: string;
 }
 
+/** Stable identity for a source so AnimatePresence remounts on any change. */
 function sourceKey(source: WallpaperSource): string {
 	switch (source.kind) {
 		case "bundled":
@@ -35,6 +36,7 @@ function sourceKey(source: WallpaperSource): string {
 	}
 }
 
+/** Render a wallpaper's visual fill: an animated mesh gradient or a cover image. */
 function WallpaperFill({ wallpaper }: { wallpaper: Wallpaper }) {
 	const { source } = wallpaper;
 	if (source.kind === "gradient") {
@@ -51,6 +53,7 @@ function WallpaperFill({ wallpaper }: { wallpaper: Wallpaper }) {
 	);
 }
 
+/** Fixed full-bleed background that crossfades whenever `wallpaper` changes. */
 export function WallpaperLayer({
 	wallpaper,
 	fadeSeconds = 1.2,

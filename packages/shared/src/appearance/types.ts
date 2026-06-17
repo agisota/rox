@@ -73,3 +73,17 @@ export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
 	wallpaperRotateSeconds: 120,
 	quoteLoaderEnabled: true,
 };
+
+/** Inclusive bounds for {@link AppearanceSettings.windowOpacity}. */
+export const MIN_WINDOW_OPACITY = 0.2;
+export const MAX_WINDOW_OPACITY = 1;
+
+/**
+ * Clamp a window-opacity value into the valid 0.2–1 range. `windowOpacity` is a
+ * plain `number` (settings are persisted as JSON), so callers normalize at the
+ * boundary rather than relying on a branded type. NaN falls back to the default.
+ */
+export function clampWindowOpacity(value: number): number {
+	if (Number.isNaN(value)) return DEFAULT_APPEARANCE_SETTINGS.windowOpacity;
+	return Math.min(MAX_WINDOW_OPACITY, Math.max(MIN_WINDOW_OPACITY, value));
+}

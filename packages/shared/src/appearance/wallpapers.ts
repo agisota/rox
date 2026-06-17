@@ -55,6 +55,24 @@ export const WALLPAPERS: readonly Wallpaper[] = [
 		},
 		tone: "dark",
 	},
+	{
+		id: "dawn-mist",
+		name: "Dawn Mist",
+		source: {
+			kind: "gradient",
+			colors: ["#eef3fb", "#d8e6f7", "#bcd3ef", "#eef3fb"],
+		},
+		tone: "light",
+	},
+	{
+		id: "warm-linen",
+		name: "Warm Linen",
+		source: {
+			kind: "gradient",
+			colors: ["#f7f2ea", "#efe4d3", "#e3d2b8", "#f7f2ea"],
+		},
+		tone: "light",
+	},
 ];
 
 /** Look up a wallpaper by id, or undefined if it is not in the pack. */
