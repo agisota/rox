@@ -82,6 +82,17 @@ export const notificationsRouter = router({
 			occurredAt,
 		});
 
+		// TODO(agent-pipelines) Stage E: on `eventType === "Stop"`, emit the
+		// `agent_run_finished` pipeline event for CLI/terminal agents (the async
+		// read-back path; the in-process executor agent_run branch already emits
+		// it directly via onAgentRunFinished). This hook runs in the host-service
+		// process, where the DB-backed pipeline dispatcher CANNOT run
+		// (`pipeline_triggers` is in the Neon main DB). Wiring requires the
+		// host→main relay: resolve the agent's pipeline run from the agent
+		// session id (provenance carried on workflow_runs.triggerRef /
+		// childRunId) and relay a `pipeline.dispatchEvent`-style mutation to the
+		// main API, which calls `dispatchPipelineEvent` from @rox/trpc.
+
 		ctx.terminalAgentStore.recordEvent({
 			terminalId: input.terminalId,
 			workspaceId: terminalSession.originWorkspaceId,

@@ -1,4 +1,7 @@
 import {
+	type AccumulatedContext,
+	appendContextEntry,
+	createAccumulatedContext,
 	isSkillCallType,
 	type RoxEdge,
 	type RoxWorkflowState,
@@ -8,12 +11,33 @@ import {
 } from "@rox/workflow-core";
 import { Redactor } from "../context/Redactor";
 import type {
+	AgentRunRequest,
 	BlockHandler,
 	BlockHandlerContext,
 	ExecuteOptions,
 	RunResult,
 	StepRecord,
 } from "./types";
+
+/**
+ * Default and hard caps on loop-body iterations for feedback loops
+ * (critic → improver). Honored by the `agent_run` accumulation so a feedback
+ * loop cannot append context forever. The full re-entrant loop walk is scaffolded
+ * (see TODO in `execute`); these bound it once it lands.
+ */
+export const DEFAULT_MAX_LOOP_ITERATIONS = 5;
+export const MAX_LOOP_ITERATIONS = 20;
+
+/** Clamp a configured loop cap into the supported `[1, MAX_LOOP_ITERATIONS]` range. */
+export function resolveLoopIterationCap(maxIterations?: number): number {
+	if (maxIterations == null || !Number.isFinite(maxIterations)) {
+		return DEFAULT_MAX_LOOP_ITERATIONS;
+	}
+	const floored = Math.floor(maxIterations);
+	if (floored < 1) return 1;
+	if (floored > MAX_LOOP_ITERATIONS) return MAX_LOOP_ITERATIONS;
+	return floored;
+}
 
 /** Built-in handlers used when a block type has no injected handler. */
 function builtinHandlers(): Record<string, BlockHandler> {
@@ -48,6 +72,21 @@ export class WorkflowExecutor {
 		const redactor = new Redactor(options.secrets);
 		const handlers = { ...builtinHandlers(), ...(options.handlers ?? {}) };
 		const resolveSecret = (key: string) => options.secrets?.[key];
+
+		// Accumulating context (message + transcript) threaded into agent_run nodes.
+		// Seeded from initialContext; each agent_run appends its output (design §5).
+		let runContext: AccumulatedContext =
+			options.initialContext ?? createAccumulatedContext("");
+		// True once an agent_run executed (or a seed was supplied) so we only attach
+		// accumulatedContext to the result when pipelines are actually in play.
+		let contextTouched = options.initialContext != null;
+
+		// TODO(agent-pipelines): re-entrant loop execution. Today the executor walks
+		// `validateGraph`'s single-pass topological plan once, and raw cycles are
+		// rejected by `detectCycle`; feedback loops live in `state.loops` and are not
+		// yet iterated here. When the loop walk lands, bound each loop body by
+		// `resolveLoopIterationCap(state.loops[id]?.maxIterations)` and force the exit
+		// edge once the cap is hit, appending each iteration to `runContext`.
 
 		const record = async (step: StepRecord): Promise<void> => {
 			const redacted: StepRecord = {
@@ -90,9 +129,13 @@ export class WorkflowExecutor {
 			return chosenHandle.get(edge.source) === edge.sourceHandle;
 		};
 
+		/** Attach the accumulating context to a result only when pipelines used it. */
+		const withContext = (result: RunResult): RunResult =>
+			contextTouched ? { ...result, accumulatedContext: runContext } : result;
+
 		for (const blockId of validation.executionPlan) {
 			if (options.isCanceled?.()) {
-				return { status: "canceled", steps, output: runOutput };
+				return withContext({ status: "canceled", steps, output: runOutput });
 			}
 			const block = state.blocks[blockId];
 			if (!block) continue;
@@ -146,7 +189,7 @@ export class WorkflowExecutor {
 					status: "waiting_approval",
 					input,
 				});
-				return {
+				return withContext({
 					status: "waiting_approval",
 					steps,
 					output: runOutput,
@@ -155,7 +198,7 @@ export class WorkflowExecutor {
 						title: block.name,
 						payload: input,
 					},
-				};
+				});
 			}
 
 			// Skill call spawns a child run via the resolver.
@@ -208,6 +251,89 @@ export class WorkflowExecutor {
 					output,
 					childRunId: result.childRunId,
 				});
+				continue;
+			}
+
+			// Agent run: dispatches a chat/CLI agent via the injected resolver,
+			// threading the accumulating context (message + prior outputs) and
+			// appending this node's output for downstream nodes (design §3.2).
+			if (block.type === "agent_run") {
+				contextTouched = true;
+				if (!options.resolveAgentRun) {
+					const error = {
+						code: "NO_AGENT_RESOLVER",
+						message: `No resolver for agent_run block "${blockId}"`,
+					};
+					await record({
+						blockId,
+						blockType: block.type,
+						blockName: block.name,
+						status: "failed",
+						input,
+						error,
+					});
+					return withContext({ status: "failed", steps, error });
+				}
+				const req: AgentRunRequest = {
+					blockId,
+					roleSkillSlug: String(block.subBlocks?.roleSkillSlug ?? ""),
+					promptTemplate:
+						typeof block.subBlocks?.promptTemplate === "string"
+							? block.subBlocks.promptTemplate
+							: undefined,
+					input,
+					context: runContext,
+				};
+				const res = await options.resolveAgentRun(req);
+				if (res.error) {
+					const errorMode = String(block.subBlocks?.errorMode ?? "fail_parent");
+					await record({
+						blockId,
+						blockType: block.type,
+						blockName: block.name,
+						status: "failed",
+						input,
+						error: res.error,
+						childRunId: res.childRunRef?.sessionId,
+					});
+					if (errorMode === "continue") {
+						chosenHandle.set(blockId, "error");
+						outputs.set(blockId, { error: res.error });
+						continue;
+					}
+					return withContext({ status: "failed", steps, error: res.error });
+				}
+				// Accumulate: later nodes see this node's output in the transcript.
+				for (const entry of res.appendedContext ?? []) {
+					runContext = appendContextEntry(runContext, entry);
+				}
+				const output = res.output ?? {};
+				outputs.set(blockId, output);
+				chosenHandle.set(blockId, "out");
+				await record({
+					blockId,
+					blockType: block.type,
+					blockName: block.name,
+					status: "succeeded",
+					input,
+					output,
+					childRunId: res.childRunRef?.sessionId,
+				});
+				// In-run emit seam (design §4.3): notify the run-service so it can
+				// fire the `agent_run_finished` (+ per-artifact) pipeline events.
+				// Fire-and-forget — a throwing hook must never break the run loop.
+				if (options.onAgentRunFinished) {
+					try {
+						options.onAgentRunFinished({
+							blockId,
+							roleSkillSlug: req.roleSkillSlug,
+							output,
+							childRunRef: res.childRunRef,
+						});
+					} catch {
+						// Hook owns its own error reporting.
+					}
+				}
 				continue;
 			}
 
@@ -268,7 +394,7 @@ export class WorkflowExecutor {
 		if (options.outputSchema) {
 			const issues = validateOutput(runOutput ?? {}, options.outputSchema);
 			if (issues.length > 0) {
-				return {
+				return withContext({
 					status: "failed",
 					steps,
 					output: runOutput,
@@ -277,11 +403,11 @@ export class WorkflowExecutor {
 						message: "Run output did not match the output schema",
 						details: { issues },
 					},
-				};
+				});
 			}
 		}
 
-		return { status: "succeeded", steps, output: runOutput };
+		return withContext({ status: "succeeded", steps, output: runOutput });
 	}
 }
 

@@ -298,6 +298,17 @@ export class ChatRuntimeService {
 						const userMessage =
 							input.payload.content.trim() || "[non-text message]";
 						await onUserPromptSubmit(runtime, userMessage);
+						// TODO(agent-pipelines) Stage E: emit the `user_sent_message`
+						// pipeline event here. This ChatService runs in the host-service
+						// process (apps/desktop host), where the DB-backed pipeline
+						// dispatcher/sink CANNOT run — `pipeline_triggers` lives in the
+						// Neon main DB, not the host's local SQLite. Wiring requires the
+						// host→main relay (mint scoped JWT → relay a
+						// `pipeline.dispatchEvent`-style mutation to the main API, which
+						// resolves org/project from chatSessions.id and calls
+						// `dispatchPipelineEvent` from @rox/trpc). The pure publisher
+						// (`publishPipelineEvent` in @rox/workflow-core) is the in-process
+						// half of that seam and is already live for in-process triggers.
 						const submittedUserMessage = input.payload.content.trim();
 						const selectedModel = input.metadata?.model?.trim();
 						if (selectedModel) {

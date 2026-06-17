@@ -289,4 +289,235 @@ describe("WorkflowExecutor", () => {
 		);
 		expect(r.steps.find((s) => s.blockId === "task")?.status).toBe("skipped");
 	});
+
+	test("RUN-AR-01: agent_run dispatches via resolver and records the session", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				improve: {
+					type: "agent_run",
+					subBlocks: { roleSkillSlug: "prompt-improver" },
+				},
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "improve" },
+				{ source: "improve", target: "resp" },
+			],
+		);
+		const r = await exec.execute(
+			wf,
+			{ task: "ship it" },
+			{
+				initialContext: { seedMessage: "ship it", entries: [] },
+				resolveAgentRun: async (req) => {
+					expect(req.roleSkillSlug).toBe("prompt-improver");
+					expect(req.context.seedMessage).toBe("ship it");
+					return {
+						output: { message: "improved" },
+						appendedContext: [
+							{
+								nodeId: req.blockId,
+								role: "prompt-improver",
+								agentId: "rox",
+								message: "improved",
+								at: "2026-06-17T00:00:00.000Z",
+							},
+						],
+						childRunRef: { kind: "chat", sessionId: "sess_1" },
+					};
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		expect(r.output).toEqual({ message: "improved" });
+		const step = r.steps.find((s) => s.blockId === "improve");
+		expect(step?.status).toBe("succeeded");
+		expect(step?.childRunId).toBe("sess_1");
+		expect(r.accumulatedContext?.entries).toHaveLength(1);
+		expect(r.accumulatedContext?.entries[0]?.message).toBe("improved");
+	});
+
+	test("RUN-AR-02: context accumulates across two agent_run nodes", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				a: { type: "agent_run", subBlocks: { roleSkillSlug: "decomposer" } },
+				b: { type: "agent_run", subBlocks: { roleSkillSlug: "critic" } },
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "a" },
+				{ source: "a", target: "b" },
+				{ source: "b", target: "resp" },
+			],
+		);
+		const seenBySecond: string[] = [];
+		const r = await exec.execute(
+			wf,
+			{ seed: "x" },
+			{
+				initialContext: { seedMessage: "x", entries: [] },
+				resolveAgentRun: async (req) => {
+					// The critic node must see the decomposer's appended entry.
+					seenBySecond.push(
+						...req.context.entries.map((e) => `${e.role}:${e.message}`),
+					);
+					const message = `${req.roleSkillSlug}-out`;
+					return {
+						output: { message },
+						appendedContext: [
+							{
+								nodeId: req.blockId,
+								role: req.roleSkillSlug,
+								agentId: "rox",
+								message,
+								at: "2026-06-17T00:00:00.000Z",
+							},
+						],
+					};
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		// First node saw nothing; second node saw the first node's output.
+		expect(seenBySecond).toEqual(["decomposer:decomposer-out"]);
+		expect(r.accumulatedContext?.entries.map((e) => e.role)).toEqual([
+			"decomposer",
+			"critic",
+		]);
+	});
+
+	test("RUN-AR-03: agent_run error honors fail_parent vs continue", async () => {
+		const mk = (errorMode?: string) =>
+			state(
+				{
+					start: { type: "start" },
+					ag: {
+						type: "agent_run",
+						subBlocks: {
+							roleSkillSlug: "critic",
+							...(errorMode ? { errorMode } : {}),
+						},
+					},
+					resp: { type: "response" },
+				},
+				[
+					{ source: "start", target: "ag" },
+					{ source: "ag", target: "resp" },
+				],
+			);
+		const failing = {
+			resolveAgentRun: async () => ({
+				error: { code: "AGENT_FAILED", message: "boom" },
+				childRunRef: { kind: "chat" as const, sessionId: "c" },
+			}),
+		};
+		const failParent = await exec.execute(mk("fail_parent"), {}, failing);
+		expect(failParent.status).toBe("failed");
+		expect(failParent.error?.code).toBe("AGENT_FAILED");
+
+		const cont = await exec.execute(mk("continue"), {}, failing);
+		expect(cont.status).toBe("succeeded");
+		expect(cont.steps.find((s) => s.blockId === "ag")?.status).toBe("failed");
+	});
+
+	test("RUN-AR-04: agent_run without a resolver fails the run", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				ag: { type: "agent_run", subBlocks: { roleSkillSlug: "critic" } },
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "ag" },
+				{ source: "ag", target: "resp" },
+			],
+		);
+		const r = await exec.execute(wf, {}, {});
+		expect(r.status).toBe("failed");
+		expect(r.error?.code).toBe("NO_AGENT_RESOLVER");
+		expect(r.steps.find((s) => s.blockId === "ag")?.status).toBe("failed");
+	});
+
+	test("RUN-AR-05: onAgentRunFinished fires per finished node with output + session", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				a: { type: "agent_run", subBlocks: { roleSkillSlug: "decomposer" } },
+				b: { type: "agent_run", subBlocks: { roleSkillSlug: "critic" } },
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "a" },
+				{ source: "a", target: "b" },
+				{ source: "b", target: "resp" },
+			],
+		);
+		const finished: {
+			blockId: string;
+			roleSkillSlug: string;
+			output: Record<string, unknown>;
+			sessionId?: string;
+		}[] = [];
+		const r = await exec.execute(
+			wf,
+			{ seed: "x" },
+			{
+				initialContext: { seedMessage: "x", entries: [] },
+				resolveAgentRun: async (req) => ({
+					output: {
+						message: `${req.roleSkillSlug}-out`,
+						artifacts: [{ kind: "file", ref: `out/${req.blockId}.md` }],
+					},
+					childRunRef: { kind: "chat", sessionId: `sess_${req.blockId}` },
+				}),
+				onAgentRunFinished: (info) => {
+					finished.push({
+						blockId: info.blockId,
+						roleSkillSlug: info.roleSkillSlug,
+						output: info.output,
+						sessionId: info.childRunRef?.sessionId,
+					});
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		// Both agent_run nodes (a, b) fired the hook in topological order; the
+		// terminal `response` node does not.
+		expect(finished.map((f) => f.blockId)).toEqual(["a", "b"]);
+		expect(finished[0]?.roleSkillSlug).toBe("decomposer");
+		expect(finished[0]?.sessionId).toBe("sess_a");
+		expect(finished[0]?.output.message).toBe("decomposer-out");
+		expect(finished[1]?.output.artifacts).toEqual([
+			{ kind: "file", ref: "out/b.md" },
+		]);
+	});
+
+	test("RUN-AR-06: a throwing onAgentRunFinished never breaks the run", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				ag: { type: "agent_run", subBlocks: { roleSkillSlug: "critic" } },
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "ag" },
+				{ source: "ag", target: "resp" },
+			],
+		);
+		const r = await exec.execute(
+			wf,
+			{},
+			{
+				initialContext: { seedMessage: "x", entries: [] },
+				resolveAgentRun: async () => ({ output: { message: "ok" } }),
+				onAgentRunFinished: () => {
+					throw new Error("hook boom");
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		expect(r.steps.find((s) => s.blockId === "ag")?.status).toBe("succeeded");
+	});
 });
