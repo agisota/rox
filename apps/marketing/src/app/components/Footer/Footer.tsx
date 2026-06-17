@@ -47,13 +47,13 @@ export function Footer() {
 	if (pathname === "/download") return null;
 
 	return (
-		<footer className="border-t border-border bg-background">
+		<footer>
 			<motion.div
 				initial={{ opacity: 0 }}
 				whileInView={{ opacity: 1 }}
 				viewport={{ once: true }}
 				transition={{ duration: 0.5 }}
-				className="max-w-7xl mx-auto px-6 sm:px-8 py-14 sm:py-20"
+				className="max-w-7xl mx-auto px-6 sm:px-8 pt-6 pb-10 sm:pt-8 sm:pb-12"
 			>
 				<div className="grid grid-cols-2 gap-10 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-x-20">
 					<div className="col-span-2 flex flex-col gap-6 md:col-span-1">
