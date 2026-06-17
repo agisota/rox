@@ -28,8 +28,8 @@ function isMixable(from: string, to: string): boolean {
  * hard-set applier. This keeps `@rox/ui` free of any app theme module.
  */
 export interface AnimateThemeChangeOptions<C> {
-	/** Maps each palette key to the CSS custom property it drives. */
-	colorToCssVar: Record<keyof C, string>;
+	/** Maps each present palette key to the CSS custom property it drives. */
+	colorToCssVar: { [K in keyof C]?: string };
 	/** Hard-sets every palette color at once (the no-animation path). */
 	applyColors: (colors: C) => void;
 }
@@ -73,6 +73,8 @@ export function animateThemeChange<C extends Partial<Record<keyof C, string>>>(
 
 	for (const key of Object.keys(colorToCssVar) as Array<keyof C>) {
 		const cssVar = colorToCssVar[key];
+		// Map coverage need not be exhaustive — skip any unmapped key.
+		if (!cssVar) continue;
 		const from = prevColors[key];
 		const to = nextColors[key];
 

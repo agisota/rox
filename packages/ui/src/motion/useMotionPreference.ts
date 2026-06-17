@@ -79,17 +79,26 @@ function shouldAnimateForPreference(
 }
 
 /**
+ * Stable `useSyncExternalStore` subscribe binding — defined once at module level
+ * so the subscription is not torn down and rebuilt on every render. It closes
+ * over the `preferenceSource` variable by reference, so a source registered
+ * after mount is still picked up. ({@link getStoredMotionPreference} is the
+ * matching stable snapshot getter.)
+ */
+function subscribeToPreference(onStoreChange: () => void): () => void {
+	return preferenceSource.subscribe(onStoreChange);
+}
+
+/**
  * Hook: the current resolved motion preference. Re-renders when the OS
  * reduce-motion setting or the registered preference source changes.
  */
 export function useMotionPreference(): MotionPreference {
 	const prefersReducedMotion = useReducedMotion();
-	// Wrapper closures read the CURRENT source on every call, so a source
-	// registered after mount is picked up without changing the hook identity.
 	const stored = useSyncExternalStore(
-		(onStoreChange) => preferenceSource.subscribe(onStoreChange),
-		() => preferenceSource.getSnapshot(),
-		() => preferenceSource.getSnapshot(),
+		subscribeToPreference,
+		getStoredMotionPreference,
+		getStoredMotionPreference,
 	);
 	return resolveMotionPreference(prefersReducedMotion, stored);
 }
