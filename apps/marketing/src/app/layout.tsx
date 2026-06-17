@@ -12,10 +12,7 @@ import {
 } from "@/components/JsonLd";
 import { REDDIT_PIXEL_ID } from "@/lib/constants";
 
-import { CTAButtons } from "./components/CTAButtons";
 import { Footer } from "./components/Footer";
-import { GitHubStarCounter } from "./components/GitHubStarCounter";
-import { Header } from "./components/Header";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -153,13 +150,7 @@ export default function RootLayout({
 			</head>
 			<body className="overscroll-none font-sans">
 				<Providers>
-					<Header
-						ctaButtons={<CTAButtons />}
-						starCounter={<GitHubStarCounter />}
-					/>
-					{/* Clear the fixed floating-pill navbar so page content isn't tucked
-					    under it (the landing's fixed intro overlay is unaffected). */}
-					<div className="pt-[4.5rem]">{children}</div>
+					{children}
 					<Footer />
 					<CookieConsent />
 				</Providers>
