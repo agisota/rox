@@ -157,7 +157,23 @@ export function PipelinesIndex() {
 				</Dialog>
 			</div>
 
-			{pipelines.length === 0 && !pipelinesQuery.isLoading && (
+			{pipelinesQuery.isError && (
+				<div className="rounded-lg border border-destructive/40 p-6 text-center">
+					<p className="select-text cursor-text text-sm text-destructive">
+						{pipelinesQuery.error.message}
+					</p>
+					<Button
+						size="sm"
+						variant="outline"
+						className="mt-3"
+						onClick={() => pipelinesQuery.refetch()}
+					>
+						Повторить
+					</Button>
+				</div>
+			)}
+
+			{pipelinesQuery.isSuccess && pipelines.length === 0 && (
 				<div className="rounded-lg border border-dashed p-10 text-center">
 					<Workflow className="mx-auto mb-3 size-8 text-muted-foreground" />
 					<p className="text-sm text-muted-foreground">

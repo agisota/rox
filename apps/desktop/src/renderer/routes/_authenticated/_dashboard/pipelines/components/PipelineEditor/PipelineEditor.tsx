@@ -4,7 +4,7 @@ import { Button } from "@rox/ui/button";
 import { toast } from "@rox/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import type { RoxWorkflowState } from "@rox/workflow-core";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -52,6 +52,7 @@ export function PipelineEditor({
 	pipeline: initialPipeline,
 }: PipelineEditorProps) {
 	const trpc = useTRPC();
+	const queryClient = useQueryClient();
 
 	// Authoritative working graph. Seeded from the server row, then mutated
 	// locally and pushed back (debounced).
@@ -67,6 +68,7 @@ export function PipelineEditor({
 
 	const pipelineId = initialPipeline.id;
 	const v2ProjectId = initialPipeline.v2ProjectId ?? undefined;
+	const validateInput = useMemo(() => ({ pipelineId }), [pipelineId]);
 
 	const nodes = useMemo(() => stateToNodes(graph), [graph]);
 	const edges = useMemo(() => stateToEdges(graph), [graph]);
@@ -76,11 +78,35 @@ export function PipelineEditor({
 		[nodes, selectedNodeId],
 	);
 
+	// Debounced persistence of the working graph.
+	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pendingSave = useRef<{
+		pipelineId: string;
+		draftState: RoxWorkflowState;
+	} | null>(null);
+	const saveInFlight = useRef(false);
+	const flushPendingSaveRef = useRef<() => void>(() => {});
+
 	const updateGraphMutation = useMutation(
 		trpc.pipeline.updateGraph.mutationOptions({
-			onSuccess: () => setSaveState("saved"),
+			onSuccess: () => {
+				void queryClient.invalidateQueries({
+					queryKey: trpc.pipeline.validate.queryKey(validateInput),
+				});
+				saveInFlight.current = false;
+				if (pendingSave.current) {
+					flushPendingSaveRef.current();
+					return;
+				}
+				setSaveState("saved");
+			},
 			onError: (error) => {
+				saveInFlight.current = false;
 				console.error("[PipelineEditor] updateGraph failed", error);
+				if (pendingSave.current) {
+					flushPendingSaveRef.current();
+					return;
+				}
 				setSaveState("idle");
 				toast.error("Не удалось сохранить граф");
 			},
@@ -88,15 +114,9 @@ export function PipelineEditor({
 	);
 
 	const validateQuery = useQuery(
-		trpc.pipeline.validate.queryOptions({ pipelineId }),
+		trpc.pipeline.validate.queryOptions(validateInput),
 	);
 
-	// Debounced persistence of the working graph.
-	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const pendingSave = useRef<{
-		pipelineId: string;
-		draftState: RoxWorkflowState;
-	} | null>(null);
 	const updateGraphMutationRef = useRef(updateGraphMutation);
 	useEffect(() => {
 		updateGraphMutationRef.current = updateGraphMutation;
@@ -109,12 +129,15 @@ export function PipelineEditor({
 		}
 		const pending = pendingSave.current;
 		if (!pending) return;
+		if (saveInFlight.current) return;
 		pendingSave.current = null;
+		saveInFlight.current = true;
 		updateGraphMutationRef.current.mutate({
 			pipelineId: pending.pipelineId,
 			draftState: pending.draftState,
 		});
 	}, []);
+	flushPendingSaveRef.current = flushPendingSave;
 
 	const persist = useCallback(
 		(next: RoxWorkflowState) => {

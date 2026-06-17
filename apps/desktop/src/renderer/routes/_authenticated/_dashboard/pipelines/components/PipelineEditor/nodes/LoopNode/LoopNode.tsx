@@ -33,7 +33,9 @@ export function LoopNode({ data, selected }: NodeProps<PipelineFlowNode>) {
 			</NodeHeader>
 			<NodeContent>
 				<span className="text-xs text-muted-foreground">
-					{maxIterations ? `До ${maxIterations} итераций` : "Повтор тела цикла"}
+					{maxIterations !== undefined
+						? `До ${maxIterations} итераций`
+						: "Повтор тела цикла"}
 				</span>
 			</NodeContent>
 		</Node>

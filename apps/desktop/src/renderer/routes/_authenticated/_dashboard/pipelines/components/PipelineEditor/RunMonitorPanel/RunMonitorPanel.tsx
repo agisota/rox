@@ -166,7 +166,22 @@ export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
 						</span>
 						<div className="h-px flex-1 bg-border" />
 					</div>
-					{runs.length === 0 && !runsQuery.isLoading && (
+					{runsQuery.isError && (
+						<div className="rounded-md border border-destructive/40 p-2">
+							<p className="select-text cursor-text text-xs text-destructive">
+								{runsQuery.error.message}
+							</p>
+							<Button
+								size="sm"
+								variant="outline"
+								className="mt-2 h-7 text-xs"
+								onClick={() => runsQuery.refetch()}
+							>
+								Повторить
+							</Button>
+						</div>
+					)}
+					{runs.length === 0 && !runsQuery.isLoading && !runsQuery.isError && (
 						<p className="text-xs text-muted-foreground">
 							Запусков ещё не было.
 						</p>

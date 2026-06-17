@@ -79,7 +79,15 @@ export function RoleLibraryPanel({
 							))
 						: null}
 
-					{!hasRoles && !rolesQuery.isLoading && (
+					{!hasRoles && rolesQuery.isError && (
+						<div className="rounded-md border border-destructive/40 p-3">
+							<p className="select-text cursor-text text-xs text-destructive">
+								{rolesQuery.error.message}
+							</p>
+						</div>
+					)}
+
+					{!hasRoles && !rolesQuery.isLoading && !rolesQuery.isError && (
 						<div className="rounded-md border border-dashed p-3">
 							<p className="text-xs text-muted-foreground">
 								Пока нет сохранённых ролей. Добавьте базовые или из шаблонов

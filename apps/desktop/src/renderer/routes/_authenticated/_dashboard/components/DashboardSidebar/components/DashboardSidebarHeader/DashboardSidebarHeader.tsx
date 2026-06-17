@@ -180,6 +180,7 @@ export function DashboardSidebarHeader({
 						<button
 							type="button"
 							onClick={handlePipelinesClick}
+							aria-label="Пайплайны"
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
 								isPipelinesOpen

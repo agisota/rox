@@ -168,11 +168,27 @@ export function TriggerConfigPanel({
 			<div className="flex flex-1 flex-col gap-2 overflow-y-auto">
 				{nodeTriggers.length === 0 &&
 					!triggersQuery.isLoading &&
+					!triggersQuery.isError &&
 					selectedNodeId && (
 						<p className="text-xs text-muted-foreground">
 							У этого узла пока нет триггеров.
 						</p>
 					)}
+				{triggersQuery.isError && selectedNodeId && (
+					<div className="rounded-md border border-destructive/40 p-2">
+						<p className="select-text cursor-text text-xs text-destructive">
+							{triggersQuery.error.message}
+						</p>
+						<Button
+							size="sm"
+							variant="outline"
+							className="mt-2 h-7 text-xs"
+							onClick={() => triggersQuery.refetch()}
+						>
+							Повторить
+						</Button>
+					</div>
+				)}
 				{nodeTriggers.map((trigger) => (
 					<div
 						key={trigger.id}

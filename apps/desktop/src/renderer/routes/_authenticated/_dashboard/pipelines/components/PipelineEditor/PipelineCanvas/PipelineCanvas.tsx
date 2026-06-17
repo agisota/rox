@@ -115,26 +115,32 @@ export function PipelineCanvas({
 
 	const handleNodesChange = useCallback(
 		(changes: NodeChange<PipelineFlowNode>[]) => {
+			const shouldPersist = hasStructuralNodeChanges(changes);
 			const next = applyNodeChanges(
 				changes,
 				latest.current.nodes,
 			) as PipelineFlowNode[];
 			latest.current = { nodes: next, edges: latest.current.edges };
 			setNodes(next);
-			onGraphChange(next, latest.current.edges);
+			if (shouldPersist) {
+				onGraphChange(next, latest.current.edges);
+			}
 		},
 		[setNodes, onGraphChange],
 	);
 
 	const handleEdgesChange = useCallback(
 		(changes: EdgeChange<PipelineFlowEdge>[]) => {
+			const shouldPersist = hasStructuralEdgeChanges(changes);
 			const next = applyEdgeChanges(
 				changes,
 				latest.current.edges,
 			) as PipelineFlowEdge[];
 			latest.current = { nodes: latest.current.nodes, edges: next };
 			setEdges(next);
-			onGraphChange(latest.current.nodes, next);
+			if (shouldPersist) {
+				onGraphChange(latest.current.nodes, next);
+			}
 		},
 		[setEdges, onGraphChange],
 	);
@@ -206,4 +212,20 @@ function signatureOf(
 		.sort()
 		.join("|");
 	return `${nodePart}##${edgePart}`;
+}
+
+function hasStructuralNodeChanges(
+	changes: NodeChange<PipelineFlowNode>[],
+): boolean {
+	return changes.some((change) =>
+		["add", "position", "remove", "replace"].includes(change.type),
+	);
+}
+
+function hasStructuralEdgeChanges(
+	changes: EdgeChange<PipelineFlowEdge>[],
+): boolean {
+	return changes.some((change) =>
+		["add", "remove", "replace"].includes(change.type),
+	);
 }
