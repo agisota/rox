@@ -14,7 +14,10 @@ import type {
 	SelectGithubRepository,
 	SelectIntegrationConnection,
 	SelectInvitation,
+	SelectJournalEntry,
 	SelectMember,
+	SelectMemoryImportJob,
+	SelectMemoryItem,
 	SelectOrganization,
 	SelectProject,
 	SelectSubscription,
@@ -163,6 +166,9 @@ export interface OrgCollections {
 	subscriptions: Collection<SelectSubscription>;
 	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
+	journalEntries: Collection<SelectJournalEntry>;
+	memoryItems: Collection<SelectMemoryItem>;
+	memoryImportJobs: Collection<SelectMemoryImportJob>;
 	artifacts: Collection<SelectArtifact>;
 	githubRepositories: Collection<SelectGithubRepository>;
 	githubPullRequests: Collection<SelectGithubPullRequest>;
@@ -221,7 +227,7 @@ function getCollectionsCacheKey(organizationId: string): string {
 }
 
 // Singleton API client with dynamic auth headers
-const apiClient = createTRPCProxyClient<AppRouter>({
+export const apiClient = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
 			url: `${env.NEXT_PUBLIC_API_URL}/api/trpc`,
@@ -721,6 +727,96 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	// Read-only on the client: journal entries are generated server-side by the
+	// daily R1 job and synced down. No onInsert/Update/Delete.
+	const journalEntries = createPersistedElectricCollection(
+		electricCollectionOptions<SelectJournalEntry>({
+			id: `journal_entries-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "journal_entries",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
+	const memoryItems = createPersistedElectricCollection(
+		electricCollectionOptions<SelectMemoryItem>({
+			id: `memory_items-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "memory_items",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onInsert: async ({ transaction }) => {
+				const item = transaction.mutations[0].modified;
+				const result = await apiClient.memory.create.mutate({
+					category: item.category,
+					body: item.body,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onUpdate: async ({ transaction }) => {
+				const { original, changes } = transaction.mutations[0];
+				if (changes.status === "approved") {
+					const result = await apiClient.memory.approve.mutate({
+						id: original.id,
+					});
+					return electricTxidMatch(result.txid);
+				}
+				if (changes.status === "dismissed") {
+					const result = await apiClient.memory.decline.mutate({
+						id: original.id,
+					});
+					return electricTxidMatch(result.txid);
+				}
+				if (changes.category !== undefined) {
+					const result = await apiClient.memory.updateGroup.mutate({
+						id: original.id,
+						category: changes.category,
+					});
+					return electricTxidMatch(result.txid);
+				}
+				throw new Error("Unsupported memory_items update");
+			},
+			onDelete: async ({ transaction }) => {
+				const item = transaction.mutations[0].original;
+				const result = await apiClient.memory.remove.mutate({ id: item.id });
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+
+	// Read-only: archive-import job progress is written server-side.
+	const memoryImportJobs = createPersistedElectricCollection(
+		electricCollectionOptions<SelectMemoryImportJob>({
+			id: `memory_import_jobs-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "memory_import_jobs",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const artifacts = createPersistedElectricCollection(
 		electricCollectionOptions<SelectArtifact>({
 			id: `artifacts-${organizationId}`,
@@ -955,6 +1051,9 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		subscriptions,
 		apiKeys,
 		chatSessions,
+		journalEntries,
+		memoryItems,
+		memoryImportJobs,
 		artifacts,
 		githubRepositories,
 		githubPullRequests,

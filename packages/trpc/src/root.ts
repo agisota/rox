@@ -11,7 +11,9 @@ import { deviceRouter } from "./router/device";
 import { executionCircuitRouter } from "./router/executionCircuit";
 import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
+import { journalRouter } from "./router/journal";
 import { knowledgeRouter } from "./router/knowledge";
+import { memoryRouter } from "./router/memory";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
 import { profileRouter } from "./router/profile";
@@ -44,7 +46,9 @@ export const appRouter = createTRPCRouter({
 	executionCircuit: executionCircuitRouter,
 	host: hostRouter,
 	integration: integrationRouter,
+	journal: journalRouter,
 	knowledge: knowledgeRouter,
+	memory: memoryRouter,
 	notes: notesRouter,
 	organization: organizationRouter,
 	profile: profileRouter,
