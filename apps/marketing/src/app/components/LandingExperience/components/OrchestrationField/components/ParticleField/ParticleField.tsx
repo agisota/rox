@@ -378,11 +378,9 @@ function Swarm({ pulse }: ParticleFieldProps) {
 	const lastPointer = useRef({ x: 0, y: 0 });
 	const dispatchUntil = useRef(-10);
 
-	// Intro coalesce: on first frame the swarm gathers from chaos into the
-	// face + rings for a few seconds (so the portrait is always seen at least
-	// once), then relaxes back to chaos and re-gathers on pointer activity.
-	const introStarted = useRef(false);
-	const introUntil = useRef(-10);
+	// Clock origin for the intro coalesce (the swarm flies in from chaos and
+	// assembles into the face + rings over the first few seconds after mount).
+	const startTime = useRef(-1);
 
 	// Pointer attraction state (world-space point on the z=0 plane). We track the
 	// cursor at the window level rather than via the canvas, so the wake works
@@ -455,24 +453,22 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 		const ndc = pointerNdc.current;
 
-		// Kick off the one-time intro coalesce on the first rendered frame.
-		if (!introStarted.current) {
-			introStarted.current = true;
-			introUntil.current = t + 7;
-		}
+		// Time since this scene mounted (its own clock so the coalesce always
+		// starts at 0 when the hero appears).
+		if (startTime.current < 0) startTime.current = t;
+		const local = t - startTime.current;
 
-		// After the intro fly-in the whole scene settles assembled and stays that
-		// way (face backdrop + spinning rings on top). `baseFloor` ramps up over
-		// the first ~2s so particles still fly in from chaos on load; smoothstep
+		// The swarm flies in from chaos and assembles into the face + rings, then
+		// stays assembled (face backdrop + spinning rings on top). `baseFloor`
+		// ramps up gradually so the coalesce is clearly visible (~4.5s); smoothstep
 		// then pushes it close to 1 so the structure reads crisp. Pointer activity
 		// and a command can still drive it to a hard 1.
 		activity.current = Math.max(0, activity.current - delta * 0.15);
-		const baseFloor = Math.min(0.95, t * 0.45);
+		const baseFloor = Math.min(0.95, local * 0.21);
 		const orchTarget = Math.max(
 			activity.current,
 			baseFloor,
 			t < dispatchUntil.current ? 1 : 0,
-			t < introUntil.current ? 1 : 0,
 		);
 		orch.current += (orchTarget - orch.current) * Math.min(delta * 3, 1);
 		const o = orch.current;
