@@ -11,6 +11,7 @@ import {
 import {
 	buildSkillNodeDefinition,
 	type JsonSchema,
+	publishPipelineEvent,
 	validateGraph,
 	validateInput,
 } from "@rox/workflow-core";
@@ -387,7 +388,7 @@ export const skillRouter = {
 		.input(bindSkillSchema)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
-			await getSkillForOrg(organizationId, input.skillId);
+			const skill = await getSkillForOrg(organizationId, input.skillId);
 			const [row] = await db
 				.insert(skillBindings)
 				.values({
@@ -401,6 +402,17 @@ export const skillRouter = {
 					enabled: true,
 				})
 				.returning();
+
+			// Agent Pipelines: binding a skill to a surface fires the
+			// `service_or_skill_connected` event (design §4.3), keyed by skill slug.
+			// Bindings are org-scoped (no project); fire-and-forget — never blocks.
+			publishPipelineEvent({
+				kind: "service_or_skill_connected",
+				organizationId,
+				v2ProjectId: null,
+				payload: { skillSlug: skill.slug, surface: input.surface },
+			});
+
 			return row;
 		}),
 

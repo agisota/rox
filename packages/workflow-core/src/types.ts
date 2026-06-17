@@ -20,6 +20,7 @@ export type CoreBlockType =
 	| "delay"
 	| "human_approval"
 	| "skill_call"
+	| "agent_run"
 	| "error_boundary";
 
 export interface RoxBlockState {
