@@ -14,7 +14,8 @@
 // file is only ever loaded by `bun test` (see bunfig.toml).
 process.env.SKIP_ENV_VALIDATION ??= "1";
 process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
-process.env.DATABASE_URL_UNPOOLED ??= "postgresql://test:test@localhost:5432/test";
+process.env.DATABASE_URL_UNPOOLED ??=
+	"postgresql://test:test@localhost:5432/test";
 process.env.NEXT_PUBLIC_MARKETING_URL ??= "https://marketing.test";
 process.env.RESEND_API_KEY ??= "re_test_0000000000000000000000";
 process.env.KV_REST_API_URL ??= "https://kv.test";
