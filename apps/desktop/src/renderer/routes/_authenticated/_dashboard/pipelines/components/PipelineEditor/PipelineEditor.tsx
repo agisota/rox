@@ -1,5 +1,3 @@
-"use client";
-
 import { ReactFlowProvider } from "@rox/ui/ai-elements/flow";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
@@ -7,10 +5,10 @@ import { toast } from "@rox/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import type { RoxWorkflowState } from "@rox/workflow-core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTRPC } from "@/trpc/react";
+import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import {
 	flowToState,
 	type PipelineFlowEdge,
@@ -217,7 +215,7 @@ export function PipelineEditor({
 			{/* Toolbar */}
 			<div className="flex items-center gap-3 border-b px-4 py-2">
 				<Button asChild size="icon" variant="ghost" className="size-8">
-					<Link href="/agents/pipelines" aria-label="К списку пайплайнов">
+					<Link to="/pipelines" aria-label="К списку пайплайнов">
 						<ArrowLeft className="size-4" />
 					</Link>
 				</Button>
