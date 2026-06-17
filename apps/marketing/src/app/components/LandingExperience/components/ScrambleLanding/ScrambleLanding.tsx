@@ -186,6 +186,11 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 
 				<p className="rox-scramble">{LANDING_INTRO_PARAGRAPH}</p>
 
+				<a className="rox-landing__hero-cta" href="/download">
+					Скачать для macOS
+					<span aria-hidden="true">↓</span>
+				</a>
+
 				<RoxDivider />
 
 				<h2 className="rox-scramble">{LANDING_FEATURES_HEADING}</h2>
