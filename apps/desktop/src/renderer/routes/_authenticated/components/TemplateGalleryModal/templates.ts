@@ -23,6 +23,8 @@ export interface ProjectTemplate {
 	icon: IconType;
 	bannerClassName: string;
 	repo?: string;
+	starterPresetIds?: readonly string[];
+	defaultProjectName?: string;
 	banner?: string;
 }
 
@@ -96,5 +98,42 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
 		icon: LuServer,
 		bannerClassName: "bg-teal-700 text-white",
 		repo: "https://github.com/fastapi/full-stack-fastapi-template",
+	},
+	{
+		id: "strategy-brief",
+		name: "Strategy brief",
+		description:
+			"Пустой git-проект с README, spec и planner для продуктовой стратегии",
+		icon: LuLayers,
+		bannerClassName: "bg-emerald-700 text-white",
+		starterPresetIds: ["docs-first-bootstrap", "agent-planning-kit"],
+		defaultProjectName: "strategy-brief",
+	},
+	{
+		id: "seo-content-hub",
+		name: "SEO content hub",
+		description: "Контент-план, TODO и агентный контекст для SEO/AEO работы",
+		icon: LuGlobe,
+		bannerClassName: "bg-cyan-700 text-white",
+		starterPresetIds: [
+			"minimal-readme-gitignore",
+			"planning-docs",
+			"agent-context-scaffold",
+		],
+		defaultProjectName: "seo-content-hub",
+	},
+	{
+		id: "ops-analytics",
+		name: "Ops analytics",
+		description:
+			"Операционный workspace с planner, env baseline и task tracker",
+		icon: LuBoxes,
+		bannerClassName: "bg-slate-800 text-white",
+		starterPresetIds: [
+			"docs-first-bootstrap",
+			"task-tracker-lite",
+			"env-config",
+		],
+		defaultProjectName: "ops-analytics",
 	},
 ];

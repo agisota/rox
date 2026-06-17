@@ -36,6 +36,15 @@ function deriveProjectNameFromUrl(url: string): string {
 	return segments[segments.length - 1] ?? "";
 }
 
+function isTemplateAvailable(template: ProjectTemplate): boolean {
+	return !!template.repo || !!template.starterPresetIds?.length;
+}
+
+function deriveProjectNameFromTemplate(template: ProjectTemplate): string {
+	if (template.repo) return deriveProjectNameFromUrl(template.repo);
+	return template.defaultProjectName ?? template.id;
+}
+
 export function TemplateGalleryModal({
 	open,
 	onOpenChange,
@@ -52,9 +61,16 @@ export function TemplateGalleryModal({
 	const [cloningId, setCloningId] = useState<string | null>(null);
 
 	const handleSelect = async (template: ProjectTemplate) => {
-		if (!template.repo || cloningId) return;
+		if (!isTemplateAvailable(template) || cloningId) return;
 		if (!parentDir) {
 			const message = "Каталог проектов ещё не готов.";
+			if (onError) onError(message);
+			else toast.error("Не удалось создать проект", { description: message });
+			return;
+		}
+		if (!isV2CloudEnabled && !template.repo) {
+			const message =
+				"Пресет без репозитория доступен только в новом проектном флоу.";
 			if (onError) onError(message);
 			else toast.error("Не удалось создать проект", { description: message });
 			return;
@@ -71,12 +87,17 @@ export function TemplateGalleryModal({
 				}
 				const client = getHostServiceClientByUrl(activeHostUrl);
 				const result = await client.project.create.mutate({
-					name: deriveProjectNameFromUrl(template.repo),
-					mode: { kind: "template", parentDir, url: template.repo },
+					name: deriveProjectNameFromTemplate(template),
+					mode: template.repo
+						? { kind: "template", parentDir, url: template.repo }
+						: { kind: "empty", parentDir },
+					starterPresetIds: template.starterPresetIds
+						? [...template.starterPresetIds]
+						: undefined,
 				});
 				finalizeSetup(activeHostUrl, result);
 				createdProjectId = result.projectId;
-			} else {
+			} else if (template.repo) {
 				createdProjectId = await createV1Project.createFromTemplate({
 					repoUrl: template.repo,
 					parentDir,
@@ -106,8 +127,8 @@ export function TemplateGalleryModal({
 				<DialogHeader>
 					<DialogTitle>Начать с шаблона</DialogTitle>
 					<DialogDescription>
-						Создайте новый проект из стартера — клонируется с чистой историей
-						git.
+						Создайте проект из репозитория или пустой git-workspace с готовыми
+						пресетами.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid grid-cols-3 gap-3">

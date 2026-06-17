@@ -15,7 +15,7 @@ export function TemplateCard({
 	disabled,
 	onSelect,
 }: TemplateCardProps) {
-	const available = !!template.repo;
+	const available = !!template.repo || !!template.starterPresetIds?.length;
 	const Icon = template.icon;
 
 	return (
