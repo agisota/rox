@@ -13,7 +13,7 @@ import { SessionDiff } from "../SessionDiff";
 import { SessionFlow } from "../SessionFlow";
 import { SessionHeader } from "../SessionHeader";
 import { SessionMap } from "../SessionMap";
-import { SessionTabs, type SessionView } from "../SessionTabs";
+import { panelId, SessionTabs, type SessionView, tabId } from "../SessionTabs";
 
 type SessionPageContentProps = {
 	diffFiles: MockDiffFile[];
@@ -37,8 +37,8 @@ export function SessionPageContent({
 			<SessionTabs activeView={activeView} onViewChange={setActiveView} />
 			<div
 				role="tabpanel"
-				id={`session-panel-${activeView}`}
-				aria-labelledby={`session-tab-${activeView}`}
+				id={panelId(activeView)}
+				aria-labelledby={tabId(activeView)}
 				className="flex-1 overflow-hidden"
 			>
 				{activeView === "chat" && (

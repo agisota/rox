@@ -7,12 +7,16 @@ import {
 	usePromptInputController,
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
+import { toast } from "@rox/ui/sonner";
 import type { ChatStatus, FileUIPart } from "ai";
 import type React from "react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusPromptOnPane } from "renderer/components/Chat/ChatInterface/hooks/useFocusPromptOnPane";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { blobToBase64 } from "renderer/lib/voice/audioToBase64";
+import type { Recording } from "renderer/lib/voice/useDictation";
+import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import type { SlashCommand } from "../../hooks/useSlashCommands";
 import type { ModelOption, PermissionMode } from "../../types";
 import { TiptapPromptEditor } from "../TiptapPromptEditor";
@@ -156,6 +160,40 @@ export function ChatInputFooter({
 		[linkedIssues, onSend],
 	);
 
+	const [transcribing, setTranscribing] = useState(false);
+	const handleDictationComplete = useCallback(
+		async (recording: Recording, locked: boolean) => {
+			setTranscribing(true);
+			try {
+				const audioBase64 = await blobToBase64(recording.blob);
+				const result = await apiClient.voice.transcribe.mutate({
+					audioBase64,
+					mimeType: recording.mimeType,
+					durationMs: recording.durationMs,
+				});
+				const text = (result.processed?.ru || result.rawText || "").trim();
+				if (!text) {
+					toast.info("Не удалось распознать речь");
+					return;
+				}
+				if (locked) {
+					// Toggle-lock: insert into the composer for review before sending.
+					const prev = textInput.value;
+					textInput.setInput(prev ? `${prev} ${text}` : text);
+					textInput.focus();
+				} else {
+					// Push-to-talk: release sends immediately.
+					void handleSend({ text, files: [] });
+				}
+			} catch {
+				toast.error("Ошибка расшифровки — запись сохранена для повтора");
+			} finally {
+				setTranscribing(false);
+			}
+		},
+		[textInput, handleSend],
+	);
+
 	return (
 		<ChatInputDropZone className="relative bg-background px-4 pb-3 before:pointer-events-none before:absolute before:left-0 before:right-3 before:-top-8 before:h-8 before:bg-gradient-to-t before:from-background before:to-transparent">
 			{(dragType) => (
@@ -229,6 +267,8 @@ export function ChatInputFooter({
 									submitStatus={submitStatus}
 									submitDisabled={submitDisabled}
 									onStop={onStop}
+									onDictationComplete={handleDictationComplete}
+									dictationTranscribing={transcribing}
 								/>
 							</PromptInput>
 						</div>

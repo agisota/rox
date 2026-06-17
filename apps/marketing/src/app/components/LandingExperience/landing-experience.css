@@ -346,6 +346,23 @@
 	gap: 22px;
 }
 
+/* Legibility scrim: a soft dark halo behind the copy column so the brighter
+ * LandingBackdrop never fights the headline/features. Weighted toward the
+ * upper-left, where the headline sits; fades out so the rig stays visible. */
+.rox-landing__main::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	inset: -6% -14% -2%;
+	background: radial-gradient(
+		78% 56% at 32% 26%,
+		rgba(10, 7, 5, 0.78),
+		rgba(10, 7, 5, 0.42) 52%,
+		transparent 80%
+	);
+	pointer-events: none;
+}
+
 .rox-landing__brand {
 	display: flex;
 	align-items: center;
@@ -437,7 +454,7 @@
 }
 
 .rox-term:hover,
-.rox-term:focus-visible {
+.rox-term:focus {
 	color: var(--rox-orange-1);
 	text-decoration-color: var(--rox-orange-1);
 	outline: none;
@@ -449,7 +466,8 @@
 	bottom: calc(100% + 8px);
 	transform: translateX(-50%) translateY(4px);
 	width: max-content;
-	max-width: 260px;
+	/* Stay inside narrow viewports (mobile) instead of overflowing off-screen. */
+	max-width: min(260px, 80vw);
 	padding: 8px 11px;
 	border-radius: 8px;
 	background: #15100c;
@@ -471,7 +489,7 @@
 }
 
 .rox-term:hover .rox-term__tip,
-.rox-term:focus-visible .rox-term__tip {
+.rox-term:focus .rox-term__tip {
 	opacity: 1;
 	transform: translateX(-50%) translateY(0);
 }
@@ -500,6 +518,46 @@
 .rox-landing__secondary:hover {
 	color: var(--rox-orange-1);
 	gap: 10px;
+}
+
+/* Above-the-fold primary CTA in the hero — the landing's main action (download)
+ * was only reachable from the nav or the very bottom. Refined brand-orange
+ * button, on-brand with the dark/minimal scramble aesthetic. */
+.rox-landing__hero-cta {
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+	width: fit-content;
+	margin-top: 6px;
+	padding: 11px 20px;
+	border-radius: 11px;
+	background: linear-gradient(135deg, var(--rox-orange-2), var(--rox-orange-3));
+	color: #1a0e06;
+	font-family: var(--rox-font-display);
+	font-weight: 600;
+	font-size: 0.92rem;
+	letter-spacing: 0.01em;
+	text-decoration: none;
+	box-shadow: 0 10px 26px rgba(210, 86, 17, 0.28);
+	transition:
+		transform 0.2s,
+		box-shadow 0.2s,
+		filter 0.2s;
+}
+
+.rox-landing__hero-cta:hover {
+	transform: translateY(-1px);
+	filter: brightness(1.06);
+	box-shadow: 0 14px 32px rgba(210, 86, 17, 0.4);
+}
+
+.rox-landing__hero-cta span {
+	font-weight: 700;
+	transition: transform 0.2s;
+}
+
+.rox-landing__hero-cta:hover span {
+	transform: translateY(2px);
 }
 
 /* ────────────────────────────────────────────────────────────────────────

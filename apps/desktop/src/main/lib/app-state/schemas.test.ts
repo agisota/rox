@@ -9,10 +9,14 @@ describe("defaultAppState", () => {
 		expect(defaultAppState.themeState.systemLightThemeId).toBe("light");
 	});
 
-	it("starts with glass enabled at 30 percent opacity", () => {
+	it("starts with glass enabled at 30 percent opacity and wallpaper off", () => {
 		expect(defaultAppState.appearanceState).toEqual({
 			glassEnabled: true,
 			windowOpacity: 0.3,
+			wallpaperId: null,
+			wallpaperAutoRotate: true,
+			wallpaperRotateSeconds: 120,
+			quoteLoaderEnabled: true,
 		});
 	});
 });

@@ -1,1 +1,7 @@
-export { SessionTabs, type SessionView, sessionViews } from "./SessionTabs";
+export {
+	panelId,
+	SessionTabs,
+	type SessionView,
+	sessionViews,
+	tabId,
+} from "./SessionTabs";

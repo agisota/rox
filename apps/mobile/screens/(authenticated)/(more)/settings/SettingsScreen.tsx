@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
+import { AppearanceSettings } from "./components/AppearanceSettings";
 
 export function SettingsScreen() {
 	const router = useRouter();
@@ -34,16 +35,7 @@ export function SettingsScreen() {
 					</CardContent>
 				</Card>
 
-				<Card>
-					<CardHeader>
-						<CardTitle>Appearance</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<Text className="text-muted-foreground">
-							Theme and display settings will appear here
-						</Text>
-					</CardContent>
-				</Card>
+				<AppearanceSettings />
 
 				<Card>
 					<CardHeader>

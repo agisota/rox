@@ -14,7 +14,10 @@ import type {
 	SelectGithubRepository,
 	SelectIntegrationConnection,
 	SelectInvitation,
+	SelectJournalEntry,
 	SelectMember,
+	SelectMemoryImportJob,
+	SelectMemoryItem,
 	SelectOrganization,
 	SelectProject,
 	SelectSubscription,
@@ -46,7 +49,11 @@ import {
 	createCollection,
 	localStorageCollectionOptions,
 } from "@tanstack/react-db";
-import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
+import {
+	createTRPCProxyClient,
+	httpBatchLink,
+	TRPCClientError,
+} from "@trpc/client";
 import type { inferRouterOutputs } from "@trpc/server";
 import { env } from "renderer/env.renderer";
 import {
@@ -86,6 +93,12 @@ export const ELECTRIC_WRITE_SYNC_TIMEOUT_MS = 30_000;
 function electricTxidMatch(txid: unknown) {
 	if (typeof txid !== "number") return undefined;
 	return { txid, timeout: ELECTRIC_WRITE_SYNC_TIMEOUT_MS };
+}
+
+function isTrpcNotFoundError(error: unknown): boolean {
+	if (!(error instanceof TRPCClientError)) return false;
+	const data = error.data as { code?: string } | undefined;
+	return data?.code === "NOT_FOUND";
 }
 
 type HostWorkspacesCreateResult =
@@ -163,6 +176,9 @@ export interface OrgCollections {
 	subscriptions: Collection<SelectSubscription>;
 	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
+	journalEntries: Collection<SelectJournalEntry>;
+	memoryItems: Collection<SelectMemoryItem>;
+	memoryImportJobs: Collection<SelectMemoryImportJob>;
 	artifacts: Collection<SelectArtifact>;
 	githubRepositories: Collection<SelectGithubRepository>;
 	githubPullRequests: Collection<SelectGithubPullRequest>;
@@ -213,15 +229,19 @@ export interface OrgCollections {
 	>;
 }
 
-// Per-org collections cache
+// Per-org/user collections cache. Most shapes are org-scoped, but journal and
+// memory shapes are personal and must not be reused across users in one org.
 const collectionsCache = new Map<string, OrgCollections>();
 
-function getCollectionsCacheKey(organizationId: string): string {
-	return organizationId;
+function getCollectionsCacheKey(
+	organizationId: string,
+	userId: string,
+): string {
+	return `${organizationId}:${userId}`;
 }
 
 // Singleton API client with dynamic auth headers
-const apiClient = createTRPCProxyClient<AppRouter>({
+export const apiClient = createTRPCProxyClient<AppRouter>({
 	links: [
 		httpBatchLink({
 			url: `${env.NEXT_PUBLIC_API_URL}/api/trpc`,
@@ -273,7 +293,10 @@ const organizationsCollection = createPersistedElectricCollection(
 	}),
 );
 
-function createOrgCollections(organizationId: string): OrgCollections {
+function createOrgCollections(
+	organizationId: string,
+	userId: string,
+): OrgCollections {
 	const tasks = createPersistedElectricCollection(
 		electricCollectionOptions<SelectTask>({
 			id: `tasks-${organizationId}`,
@@ -721,6 +744,125 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	// Read-only on the client: journal entries are generated server-side by the
+	// daily R1 job and synced down. No onInsert/Update/Delete.
+	const journalEntries = createPersistedElectricCollection(
+		electricCollectionOptions<SelectJournalEntry>({
+			id: `journal_entries-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "journal_entries",
+					organizationId,
+					userId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
+	const memoryItems = createPersistedElectricCollection(
+		electricCollectionOptions<SelectMemoryItem>({
+			id: `memory_items-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "memory_items",
+					organizationId,
+					userId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onInsert: async ({ transaction }) => {
+				const item = transaction.mutations[0].modified;
+				const result = await apiClient.memory.create.mutate({
+					category: item.category,
+					body: item.body,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onUpdate: async ({ transaction }) => {
+				const { original, changes } = transaction.mutations[0];
+				let lastTxid: number | undefined;
+				if (changes.status === "approved") {
+					try {
+						const result = await apiClient.memory.approve.mutate({
+							id: original.id,
+						});
+						lastTxid = result.txid;
+					} catch (error) {
+						if (!isTrpcNotFoundError(error)) throw error;
+						console.warn("[collections] Ignoring stale memory approve", {
+							id: original.id,
+						});
+					}
+				} else if (changes.status === "dismissed") {
+					try {
+						const result = await apiClient.memory.decline.mutate({
+							id: original.id,
+						});
+						lastTxid = result.txid;
+					} catch (error) {
+						if (!isTrpcNotFoundError(error)) throw error;
+						console.warn("[collections] Ignoring stale memory decline", {
+							id: original.id,
+						});
+					}
+				}
+
+				if (changes.category !== undefined) {
+					const result = await apiClient.memory.updateGroup.mutate({
+						id: original.id,
+						category: changes.category,
+					});
+					lastTxid = result.txid;
+				}
+
+				const handledFields = new Set(["status", "category"]);
+				const unsupportedFields = Object.keys(changes).filter(
+					(field) => !handledFields.has(field),
+				);
+				if (unsupportedFields.length > 0) {
+					console.warn("[collections] Ignoring memory_items update fields", {
+						fields: unsupportedFields,
+					});
+				}
+
+				return electricTxidMatch(lastTxid);
+			},
+			onDelete: async ({ transaction }) => {
+				const item = transaction.mutations[0].original;
+				const result = await apiClient.memory.remove.mutate({ id: item.id });
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+
+	// Read-only: archive-import job progress is written server-side.
+	const memoryImportJobs = createPersistedElectricCollection(
+		electricCollectionOptions<SelectMemoryImportJob>({
+			id: `memory_import_jobs-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "memory_import_jobs",
+					organizationId,
+					userId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const artifacts = createPersistedElectricCollection(
 		electricCollectionOptions<SelectArtifact>({
 			id: `artifacts-${organizationId}`,
@@ -955,6 +1097,9 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		subscriptions,
 		apiKeys,
 		chatSessions,
+		journalEntries,
+		memoryItems,
+		memoryImportJobs,
 		artifacts,
 		githubRepositories,
 		githubPullRequests,
@@ -977,8 +1122,9 @@ function createOrgCollections(organizationId: string): OrgCollections {
  */
 export async function preloadCollections(
 	organizationId: string,
+	userId: string,
 ): Promise<void> {
-	const collections = getCollections(organizationId);
+	const collections = getCollections(organizationId, userId);
 	const collectionsToPreload = Object.entries(collections)
 		.filter(([name]) => name !== "organizations")
 		.map(([, collection]) => collection as Collection<object>);
@@ -989,21 +1135,26 @@ export async function preloadCollections(
 }
 
 /**
- * Get collections for an organization, creating them if needed.
- * Collections are cached per org for instant switching.
+ * Get collections for an organization/user pair, creating them if needed.
+ * Collections are cached per org/user so personal shapes don't leak locally.
  * Auth token is read dynamically via getAuthToken() - no need to pass it.
  */
-export function getCollections(organizationId: string) {
-	const cacheKey = getCollectionsCacheKey(organizationId);
+export function getCollections(organizationId: string, userId: string) {
+	const cacheKey = getCollectionsCacheKey(organizationId, userId);
 
 	// Get or create org-specific collections
 	if (!collectionsCache.has(cacheKey)) {
-		collectionsCache.set(cacheKey, createOrgCollections(organizationId));
+		collectionsCache.set(
+			cacheKey,
+			createOrgCollections(organizationId, userId),
+		);
 	}
 
 	const orgCollections = collectionsCache.get(cacheKey);
 	if (!orgCollections) {
-		throw new Error(`Collections not found for org: ${organizationId}`);
+		throw new Error(
+			`Collections not found for org/user: ${organizationId}/${userId}`,
+		);
 	}
 
 	return {

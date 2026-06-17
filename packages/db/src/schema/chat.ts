@@ -55,6 +55,11 @@ export const chatMessages = pgTable(
 		organizationId: uuid("organization_id")
 			.notNull()
 			.references(() => organizations.id, { onDelete: "cascade" }),
+		// Author of the message. Sessions are single-user (one agent session per
+		// user — Rox has no session participants/shared-session model), so cascade
+		// is intentional: deleting a user removes their own session history. If a
+		// multi-participant session model is ever introduced, revisit this to
+		// `set null` so a leaver's messages don't vanish from shared history.
 		createdBy: uuid("created_by")
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
@@ -84,9 +89,15 @@ export const chatMessages = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(t) => [
-		index("chat_messages_org_idx").on(t.organizationId),
-		// Primary feed read: all messages of a session in chronological order.
-		index("chat_messages_session_created_idx").on(t.sessionId, t.createdAt),
+		// Primary feed read: a session's messages in chronological order, scoped by
+		// org. Org-leading so a query that forgets the org filter can't use the
+		// index (seq scan surfaces the mistake), and so it also covers org-only
+		// lookups via its leftmost prefix — no separate org index needed.
+		index("chat_messages_org_session_created_idx").on(
+			t.organizationId,
+			t.sessionId,
+			t.createdAt,
+		),
 		// Branch lookups for Map/Flow views (children of a given message).
 		index("chat_messages_parent_idx").on(t.parentMessageId),
 	],

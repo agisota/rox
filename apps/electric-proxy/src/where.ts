@@ -9,7 +9,10 @@ import {
 	githubRepositories,
 	integrationConnections,
 	invitations,
+	journalEntries,
 	members,
+	memoryImportJobs,
+	memoryItems,
 	organizations,
 	projects,
 	subscriptions,
@@ -24,7 +27,7 @@ import {
 	v2Workspaces,
 	workspaces,
 } from "@rox/db/schema";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { QueryBuilder } from "drizzle-orm/pg-core";
 import type { WhereClause } from "./auth";
@@ -41,10 +44,32 @@ function build(table: PgTable, column: PgColumn, id: string): WhereClause {
 	return { fragment, params };
 }
 
+function buildUserScoped(
+	table: PgTable,
+	organizationColumn: PgColumn,
+	userColumn: PgColumn,
+	organizationId: string,
+	userId: string,
+): WhereClause {
+	const whereExpr = and(
+		eq(sql`${sql.identifier(organizationColumn.name)}`, organizationId),
+		eq(sql`${sql.identifier(userColumn.name)}`, userId),
+	);
+	const qb = new QueryBuilder();
+	const { sql: query, params } = qb
+		.select()
+		.from(table)
+		.where(whereExpr)
+		.toSQL();
+	const fragment = query.replace(/^select .* from .* where\s+/i, "");
+	return { fragment, params };
+}
+
 export function buildWhereClause(
 	tableName: string,
 	organizationId: string,
 	organizationIds: string[],
+	userId: string,
 ): WhereClause | null {
 	switch (tableName) {
 		case "tasks":
@@ -139,6 +164,33 @@ export function buildWhereClause(
 
 		case "chat_sessions":
 			return build(chatSessions, chatSessions.organizationId, organizationId);
+
+		case "journal_entries":
+			return buildUserScoped(
+				journalEntries,
+				journalEntries.organizationId,
+				journalEntries.createdBy,
+				organizationId,
+				userId,
+			);
+
+		case "memory_import_jobs":
+			return buildUserScoped(
+				memoryImportJobs,
+				memoryImportJobs.organizationId,
+				memoryImportJobs.createdBy,
+				organizationId,
+				userId,
+			);
+
+		case "memory_items":
+			return buildUserScoped(
+				memoryItems,
+				memoryItems.organizationId,
+				memoryItems.createdBy,
+				organizationId,
+				userId,
+			);
 
 		case "github_repositories":
 			return build(
