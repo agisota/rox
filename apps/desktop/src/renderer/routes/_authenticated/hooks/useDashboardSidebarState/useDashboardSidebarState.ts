@@ -361,6 +361,29 @@ export function useDashboardSidebarState() {
 		[collections],
 	);
 
+	const setWorkspaceColor = useCallback(
+		(workspaceId: string, color: string | null) => {
+			if (!collections.v2WorkspaceLocalState.get(workspaceId)) return;
+			collections.v2WorkspaceLocalState.update(workspaceId, (draft) => {
+				draft.sidebarState.color = color;
+			});
+		},
+		[collections],
+	);
+
+	const setWorkspaceLabels = useCallback(
+		(workspaceId: string, labels: string[]) => {
+			if (!collections.v2WorkspaceLocalState.get(workspaceId)) return;
+			const cleaned = Array.from(
+				new Set(labels.map((label) => label.trim()).filter(Boolean)),
+			);
+			collections.v2WorkspaceLocalState.update(workspaceId, (draft) => {
+				draft.sidebarState.labels = cleaned;
+			});
+		},
+		[collections],
+	);
+
 	const moveWorkspaceToSection = useCallback(
 		(workspaceId: string, projectId: string, sectionId: string | null) => {
 			const existing = collections.v2WorkspaceLocalState.get(workspaceId);
@@ -523,6 +546,8 @@ export function useDashboardSidebarState() {
 		reorderWorkspaces,
 		renameSection,
 		setSectionColor,
+		setWorkspaceColor,
+		setWorkspaceLabels,
 		toggleProjectCollapsed,
 		toggleSectionCollapsed,
 	};

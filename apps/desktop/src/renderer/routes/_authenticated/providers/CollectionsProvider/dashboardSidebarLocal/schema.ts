@@ -63,6 +63,10 @@ export const workspaceLocalStateSchema = z.object({
 		changesViewMode: z.enum(["folders", "tree"]).default("folders"),
 		activeTab: z.enum(["changes", "files", "review"]).default("changes"),
 		isHidden: z.boolean().default(false),
+		/** Per-branch accent color (hex/oklch string) or null for default. */
+		color: z.string().nullable().default(null),
+		/** Per-branch free-text labels/tags for grouping + filtering. */
+		labels: z.array(z.string()).default([]),
 	}),
 	paneLayout: paneWorkspaceStateSchema,
 	viewedFiles: z.array(z.string()).default([]),
@@ -90,6 +94,8 @@ const SIDEBAR_STATE_DEFAULTS = {
 	changesViewMode: "folders",
 	activeTab: "changes",
 	isHidden: false,
+	color: null,
+	labels: [],
 } as const;
 
 const WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS = {

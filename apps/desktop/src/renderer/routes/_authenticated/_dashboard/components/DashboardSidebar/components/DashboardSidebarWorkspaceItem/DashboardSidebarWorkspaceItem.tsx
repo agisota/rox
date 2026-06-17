@@ -7,6 +7,7 @@ import {
 	motionSpring,
 	useShouldAnimate,
 } from "renderer/motion";
+import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import { useDeletingWorkspaces } from "renderer/routes/_authenticated/providers/DeletingWorkspacesProvider";
 import { RenameBranchDialog } from "renderer/screens/main/components/WorkspaceSidebar/WorkspaceListItem/components";
@@ -77,6 +78,7 @@ export function DashboardSidebarWorkspaceItem({
 	});
 
 	const { v2Workspaces: v2WorkspaceActions } = useOptimisticCollectionActions();
+	const { setWorkspaceColor } = useDashboardSidebarState();
 	const [renameBranchTarget, setRenameBranchTarget] = useState<string | null>(
 		null,
 	);
@@ -183,6 +185,8 @@ export function DashboardSidebarWorkspaceItem({
 								isUnread={isUnread}
 								isLocalWorkspace={hostType === "local-device"}
 								isPinned={isMainWorkspace && hostType === "local-device"}
+								color={accentColor}
+								onSetColor={(targetColor) => setWorkspaceColor(id, targetColor)}
 								onCreateSection={handleCreateSection}
 								showDeleteHotkey={isActive}
 								onMoveToSection={(targetSectionId) =>
@@ -274,6 +278,8 @@ export function DashboardSidebarWorkspaceItem({
 							projectId={projectId}
 							isInSection={isInSection}
 							isUnread={isUnread}
+							color={accentColor}
+							onSetColor={(targetColor) => setWorkspaceColor(id, targetColor)}
 							onCreateSection={handleCreateSection}
 							onMoveToSection={(targetSectionId) =>
 								moveWorkspaceToSection(id, projectId, targetSectionId)
