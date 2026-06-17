@@ -395,8 +395,14 @@
 	font-size: clamp(2.6rem, 8vw, 4.6rem);
 	line-height: 1.04;
 	margin: 4px 0 2px;
-	max-width: 15ch;
+	max-width: 18ch;
 	text-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+}
+
+.rox-hero__headline-cycle {
+	color: var(--rox-orange-1);
+	font-weight: 300;
+	text-shadow: 0 0 32px rgba(210, 86, 17, 0.35);
 }
 
 .rox-hero .rox-hero__sub {

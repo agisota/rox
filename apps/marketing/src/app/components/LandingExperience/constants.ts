@@ -76,6 +76,22 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 /** Hero wordmark — four spaces between each letter for a wide tracked lockup. */
 export const HERO_BRAND_WORDMARK = "R    O    X    O    N    E";
 
+export const HERO_HEADLINE_LEAD = "Кодируй и вайбуй";
+
+/** Rotating tail of the hero headline (AnimatedTextCycle). */
+export const HERO_HEADLINE_CYCLE_WORDS: ReadonlyArray<string> = [
+	"в тыщу рук",
+	"с Claude Code",
+	"с Codex",
+	"с Cursor",
+	"с OpenCode",
+	"с Gemini",
+	"с OpenClaw",
+	"с Hermes",
+	"с Zed",
+	"с Windsurf",
+];
+
 export const LANDING_HEADLINE = "Кодируй и вайбуй в тыщу рук";
 
 export const LANDING_INTRO_PARAGRAPH =
