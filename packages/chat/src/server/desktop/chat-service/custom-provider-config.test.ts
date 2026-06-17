@@ -241,6 +241,46 @@ describe("discoverCustomProviderModels", () => {
 		).rejects.toThrow(/401/);
 	});
 
+	it("falls back to /v1/models when the bare host 404s", async () => {
+		const calls: string[] = [];
+		const fetchImpl = (async (url: string) => {
+			calls.push(url);
+			if (url.endsWith("/v1/models")) {
+				return jsonResponse({ data: [{ id: "m1" }] });
+			}
+			return jsonResponse({}, { ok: false, status: 404 });
+		}) as unknown as typeof fetch;
+
+		const models = await discoverCustomProviderModels({
+			baseUrl: "https://api.example.com",
+			apiKey: "sk-test",
+			fetchImpl,
+		});
+
+		expect(calls).toEqual([
+			"https://api.example.com/models",
+			"https://api.example.com/v1/models",
+		]);
+		expect(models).toEqual([{ id: "m1" }]);
+	});
+
+	it("does not double-try when the base URL already ends in /v1", async () => {
+		const calls: string[] = [];
+		const fetchImpl = (async (url: string) => {
+			calls.push(url);
+			return jsonResponse({}, { ok: false, status: 404 });
+		}) as unknown as typeof fetch;
+
+		await expect(
+			discoverCustomProviderModels({
+				baseUrl: "https://api.example.com/v1",
+				apiKey: "sk-test",
+				fetchImpl,
+			}),
+		).rejects.toThrow();
+		expect(calls).toEqual(["https://api.example.com/v1/models"]);
+	});
+
 	it("validates inputs before calling fetch", async () => {
 		let called = false;
 		const fetchImpl = (async () => {

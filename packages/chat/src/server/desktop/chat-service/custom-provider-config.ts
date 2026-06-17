@@ -282,29 +282,44 @@ export async function discoverCustomProviderModels(input: {
 	}
 
 	const fetchImpl = input.fetchImpl ?? fetch;
-	const url = `${baseUrl}/models`;
-
-	let response: Response;
-	try {
-		response = await fetchImpl(url, {
-			method: "GET",
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				Accept: "application/json",
-			},
-			signal: input.signal,
-		});
-	} catch (error) {
-		throw new Error(
-			`Не удалось подключиться к ${url}: ${
-				error instanceof Error ? error.message : String(error)
-			}`,
-		);
+	// Try `${baseUrl}/models` first. Many OpenAI-compatible servers live under a
+	// `/v1` prefix, so when the user pastes the bare host (no `/v1`) the first
+	// call 404s — fall back to `${baseUrl}/v1/models` before giving up. A base
+	// URL that already ends in `/vN` only ever tries that single correct path.
+	const candidates = [`${baseUrl}/models`];
+	if (!/\/v\d+$/i.test(baseUrl)) {
+		candidates.push(`${baseUrl}/v1/models`);
 	}
 
-	if (!response.ok) {
+	let response: Response | null = null;
+	let lastError = "";
+	for (const url of candidates) {
+		if (input.signal?.aborted) break;
+		try {
+			const attempt = await fetchImpl(url, {
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					Accept: "application/json",
+				},
+				signal: input.signal,
+			});
+			if (attempt.ok) {
+				response = attempt;
+				break;
+			}
+			lastError = `${url} → ${attempt.status} ${attempt.statusText}`;
+		} catch (error) {
+			lastError = `${url} → ${
+				error instanceof Error ? error.message : String(error)
+			}`;
+			if (input.signal?.aborted) break;
+		}
+	}
+
+	if (!response) {
 		throw new Error(
-			`Эндпоинт моделей вернул ${response.status} ${response.statusText}.`,
+			`Не удалось получить список моделей (${lastError || "нет ответа"}). Проверьте Base URL и ключ API.`,
 		);
 	}
 
