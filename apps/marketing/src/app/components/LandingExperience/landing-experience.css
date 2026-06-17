@@ -132,20 +132,27 @@
 }
 
 .rox-intro__slide--two.rox-intro__features {
-	justify-content: center;
-	gap: 0.1rem;
-	padding-inline: 0.5rem;
+	justify-content: stretch;
+	align-items: stretch;
+	padding: 0;
 }
 
-.rox-intro__row--features {
+.rox-intro__features-cloud {
+	position: absolute;
+	inset: 9% 2.5% 7%;
+	display: flex;
 	flex-wrap: wrap;
-	max-width: 100%;
+	align-content: space-between;
+	justify-content: space-between;
+	column-gap: clamp(0.5rem, 2vw, 1.6rem);
+	row-gap: clamp(0.35rem, 1.2vh, 0.75rem);
 }
 
 .rox-intro__feature {
-	font-size: clamp(0.56rem, 1.75vw, 0.92rem);
-	margin: 0.28ch 0.42ch;
+	font-size: clamp(0.48rem, 0.95vw, 0.68rem);
+	margin: 0;
 	letter-spacing: 0.02em;
+	white-space: nowrap;
 }
 
 .rox-intro__skip {
@@ -221,36 +228,6 @@
 	height: clamp(52px, 12vh, 112px);
 	width: auto;
 	display: block;
-}
-
-/* Living necktie: an orange→red glow masked to the girl silhouette and clipped
- * to the scarf/tie at the bottom of the mark, so only the tie shimmers. The PNG
- * is flat (no per-part vectors), so we paint a masked orange layer over it. */
-.rox-intro__tie {
-	position: absolute;
-	inset: 0;
-	pointer-events: none;
-	background-color: var(--rox-orange-2);
-	-webkit-mask: url("/rox-logo-light.png") center / contain no-repeat;
-	mask: url("/rox-logo-light.png") center / contain no-repeat;
-	/* Reveal ONLY the scarf/neckerchief (bottom ~22% of the mark) — higher values
-	 * bled orange onto the collar/shoulders. */
-	clip-path: inset(78% 0 0 0);
-	opacity: 0;
-	filter: drop-shadow(0 0 9px rgba(240, 121, 42, 0.75));
-	animation: rox-tie-glow 2.4s ease-in-out infinite;
-}
-
-@keyframes rox-tie-glow {
-	0%,
-	100% {
-		opacity: 0.5;
-		background-color: var(--rox-orange-3);
-	}
-	50% {
-		opacity: 1;
-		background-color: var(--rox-c-5);
-	}
 }
 
 /* Animated CPU-architecture wordmark, centered just under the girl logo. The
@@ -406,7 +383,7 @@
 .rox-hero .rox-landing__brand {
 	justify-content: center;
 	margin-bottom: 0;
-	color: rgba(138, 210, 255, 0.48);
+	color: rgba(255, 236, 220, 0.55);
 }
 
 .rox-hero .rox-hero__headline {
@@ -442,29 +419,54 @@
 	display: block;
 }
 
-/* Variant B — dual-tone: cool cyan hint block vs warm particle field. */
+/* Variant C — frosted glass panel for secondary hero copy. */
+.rox-hero__hints-glass {
+	margin-top: 10px;
+	padding: 18px 24px;
+	border-radius: 18px;
+	background: rgba(10, 7, 5, 0.52);
+	border: 1px solid rgba(255, 255, 255, 0.09);
+	box-shadow:
+		0 14px 44px rgba(0, 0, 0, 0.42),
+		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	max-width: min(100%, 44rem);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.rox-hero .rox-hero__hints-glass .rox-hero__hint {
+	margin: 0;
+	font-size: 0.78rem;
+	letter-spacing: 0.03em;
+	color: rgba(255, 255, 255, 0.56);
+	text-shadow: none;
+}
+
+.rox-hero .rox-hero__hints-glass .rox-hero__hint:first-of-type {
+	color: rgba(255, 255, 255, 0.68);
+}
+
+.rox-hero .rox-hero__hints-glass .rox-hero__hint .rox-term {
+	color: rgba(255, 255, 255, 0.9);
+	text-decoration-color: rgba(255, 154, 77, 0.55);
+}
+
+.rox-hero .rox-hero__hints-glass .rox-hero__hint .rox-term:hover,
+.rox-hero .rox-hero__hints-glass .rox-hero__hint .rox-term:focus {
+	color: #ffffff;
+	text-decoration-color: var(--rox-orange-1);
+}
+
+/* Legacy selector — hints only live inside the glass panel now. */
 .rox-hero .rox-hero__hint {
 	margin: 4px 0 0;
 	font-size: 0.8rem;
 	letter-spacing: 0.03em;
-	color: rgba(138, 210, 255, 0.66);
+	color: rgba(255, 255, 255, 0.56);
 	opacity: 1;
-	text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
-}
-
-.rox-hero .rox-hero__hint:first-of-type {
-	color: rgba(138, 210, 255, 0.78);
-}
-
-.rox-hero .rox-hero__hint .rox-term {
-	color: rgba(210, 236, 255, 0.94);
-	text-decoration-color: rgba(255, 255, 255, 0.5);
-}
-
-.rox-hero .rox-hero__hint .rox-term:hover,
-.rox-hero .rox-hero__hint .rox-term:focus {
-	color: #ffffff;
-	text-decoration-color: rgba(255, 255, 255, 0.85);
 }
 
 /* Command console: composer input + suggestion chips + mock dispatch log. */

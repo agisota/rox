@@ -165,22 +165,24 @@ export function ScrambleLanding() {
 						</span>
 					</div>
 
-					<p className="rox-hero__hint">{FIELD_HINT}</p>
+					<div className="rox-hero__hints-glass">
+						<p className="rox-hero__hint">{FIELD_HINT}</p>
 
-					<p className="rox-hero__hint">
-						Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
-						<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
-						конфликтов
-					</p>
+						<p className="rox-hero__hint">
+							Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
+							<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
+							конфликтов
+						</p>
 
-					<p className="rox-hero__hint">
-						<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
-						<Term {...HERO_LLM_TERM} /> — бесплатно
-					</p>
+						<p className="rox-hero__hint">
+							<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
+							<Term {...HERO_LLM_TERM} /> — бесплатно
+						</p>
 
-					<p className="rox-hero__hint">
-						<HeroStackLine />
-					</p>
+						<p className="rox-hero__hint">
+							<HeroStackLine />
+						</p>
+					</div>
 
 					<HeroDownloadCta />
 				</div>

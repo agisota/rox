@@ -8,7 +8,6 @@ import {
 	INTRO_FEATURE_TAGS,
 	INTRO_LANGS,
 	INTRO_LEAD_WORD,
-	INTRO_TAGLINE,
 } from "../../constants";
 import { CpuArchitecture } from "../CpuArchitecture";
 
@@ -43,8 +42,10 @@ const SLIDE_ONE_ROWS = SLIDE_ONE_GRID.map((count, rowIndex) => ({
 const GRID_COLS = Math.max(...SLIDE_ONE_GRID);
 const GRID_ROWS = SLIDE_ONE_GRID.length;
 
-/** Row distribution for the feature scramble grid on slide 2 (sums to 55). */
-const FEATURE_ROW_SIZES = [5, 6, 6, 6, 5, 6, 5, 6, 5, 5] as const;
+const INTRO_FEATURES = INTRO_FEATURE_TAGS.map((tag, index) => ({
+	...tag,
+	id: `intro-feature-${index}`,
+}));
 
 /** Scramble cursor glyphs reused from the original anime.js demo. */
 const CURSOR_HEAVY = "░▒▓█";
@@ -56,47 +57,12 @@ const SAFETY_TIMEOUT_MS = 18_000;
 /** Delay the independent logo float until the one-shot reveal tween has landed. */
 const LOGO_FLOAT_DELAY_MS = 2_200;
 
-/** Split the flat feature list into the grid rows rendered on slide 2. */
-function chunkFeatures(): ReadonlyArray<{
-	id: string;
-	tags: ReadonlyArray<{ id: string; text: string; color: number }>;
-}> {
-	const rows: Array<{
-		id: string;
-		tags: Array<{ id: string; text: string; color: number }>;
-	}> = [];
-	let cursor = 0;
-	for (const [rowIndex, size] of FEATURE_ROW_SIZES.entries()) {
-		rows.push({
-			id: `intro-feature-row-${rowIndex}`,
-			tags: INTRO_FEATURE_TAGS.slice(cursor, cursor + size).map(
-				(tag, tagIndex) => ({
-					...tag,
-					id: `intro-feature-${rowIndex}-${tagIndex}`,
-				}),
-			),
-		});
-		cursor += size;
-	}
-	const rest = INTRO_FEATURE_TAGS.slice(cursor);
-	if (rest.length > 0) {
-		rows.push({
-			id: "intro-feature-row-rest",
-			tags: rest.map((tag, tagIndex) => ({
-				...tag,
-				id: `intro-feature-rest-${tagIndex}`,
-			})),
-		});
-	}
-	return rows;
-}
-
 /**
  * Fullscreen one-shot intro that fills the screen with «Introducing» in many
  * languages, collapses it into the ROX wordmark (with the logo revealed beside
- * it), fans out the feature tags, then resolves to the tagline before
- * signalling completion. Ports Julian Garnier's "Scramble Text timeline"
- * CodePen onto the Rox palette.
+ * it), fans out the feature tags across the viewport width, then hands off to
+ * the hero. Ports Julian Garnier's "Scramble Text timeline" CodePen onto the
+ * Rox palette.
  */
 export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -134,10 +100,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		const slide2 = select<HTMLElement>(".rox-intro__slide--two");
 		const slide2Words = select<HTMLElement>(
 			".rox-intro__slide--two .rox-intro__feature",
-		);
-		const slide3 = select<HTMLElement>(".rox-intro__slide--three");
-		const slide3Center = select<HTMLElement>(
-			".rox-intro__slide--three .rox-intro__center",
 		);
 
 		const timeline = createTimeline({
@@ -211,10 +173,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					start: "<+=200",
 				}),
 			)
-			// Collapse the multilingual lead word inward and dissolve it to nothing:
-			// the centered word is NOT resolved into a plain "ROX" wordmark. The
-			// animated CPU-architecture mark below becomes the sole ROX brand-lock,
-			// so only ONE ROX is ever on screen.
 			.add(
 				slide1Center,
 				{
@@ -233,8 +191,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Reveal the brand logo just above where the wordmark lands, with a
-			// brief blur-clear and a brand-glow halo that pulses up as it lands.
 			.add(logo, { opacity: { to: 1 }, ease: "out(2)", duration: 700 }, "<<")
 			.add(
 				logoImg,
@@ -245,10 +201,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Blur-clear + glow-halo land pulse on the logo wrapper (the wrapper owns
-			// the `--rox-logo-*` custom props that `filter` and the `::before` halo
-			// read). The standalone breathing loop below is delayed so it never
-			// clobbers this one-shot pulse.
 			.add(
 				logo,
 				{
@@ -260,9 +212,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Brand lock: the animated CPU-architecture mark IS the ROX wordmark.
-			// It resolves into the spot the lead-word collapsed into — circuit
-			// traces draw in and light beams travel around the "ROX" the SVG holds.
 			.add(
 				cpuMark,
 				{
@@ -272,10 +221,9 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<+=200",
 			)
-			// Hold the CPU brand lock-up on screen for a beat.
 			.add(cpuMark, { opacity: 1, duration: 900 }, "<+=200");
 
-		// ── Slide 2: feature tags scramble in across the grid (held ~2× longer)
+		// ── Slide 2: feature tags scattered across the viewport width ───────
 		timeline
 			.add(root, { backgroundColor: "#000" }, "<+=300")
 			.add(logo, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
@@ -294,15 +242,12 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 						perturbation: 0.5,
 					}),
 				},
-				stagger([0, 2200], {
-					grid: [Math.max(...FEATURE_ROW_SIZES), FEATURE_ROW_SIZES.length],
-					from: "center",
+				stagger([40, 1800], {
+					from: "random",
 					ease: "out(3)",
 					start: "<<+=250",
-					reversed: true,
 				}),
 			)
-			// Re-scramble the tags in place once, to keep the screen alive longer.
 			.add(
 				slide2Words,
 				{
@@ -315,37 +260,12 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 						perturbation: 0.4,
 					}),
 				},
-				stagger([0, 1400], { from: "center", start: "<+=1800" }),
-			);
-
-		// ── Slide 3: closing tagline ───────────────────────────────────────
-		timeline
-			.add(root, { backgroundColor: "#000" }, "<+=2000")
-			.set(slide2, { opacity: 0 }, "<<")
-			.set(slide3, { opacity: 1 }, "<<")
-			.add(
-				slide3Center,
-				{
-					color: { to: "var(--rox-orange-1)", duration: 750 },
-					ease: "inOutExpo",
-					duration: 1250,
-					innerHTML: scrambleText({
-						text: INTRO_TAGLINE,
-						override: false,
-						from: "right",
-						cursor: CURSOR_LIGHT,
-						duration: 750,
-						ease: "inOut",
-					}),
-				},
-				"<+=250",
-			);
+				stagger([30, 1200], { from: "random", start: "<+=1600" }),
+			)
+			.add(root, { opacity: 1, duration: 1800 }, "<+=1200");
 
 		timeline.init();
 
-		// Subtle "alive" float once the logo has landed: the mark drifts ±4px and
-		// the halo breathes. Tracked separately so we can revert it on cleanup
-		// (the timeline's own revert() won't touch these standalone loops).
 		const prefersReducedMotion = window.matchMedia(
 			"(prefers-reduced-motion: reduce)",
 		).matches;
@@ -362,7 +282,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					});
 				}, LOGO_FLOAT_DELAY_MS);
 
-		// Belt-and-braces: guarantee completion even if a tween never settles.
 		const safety = window.setTimeout(finishOnce, SAFETY_TIMEOUT_MS);
 
 		return () => {
@@ -376,8 +295,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		};
 	}, []);
 
-	const featureRows = chunkFeatures();
-
 	return (
 		<div ref={rootRef} className="rox-anime rox-intro">
 			<div className="rox-intro__logo">
@@ -388,11 +305,8 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					height={213}
 					priority
 				/>
-				<span className="rox-intro__tie" aria-hidden="true" />
 			</div>
 
-			{/* Animated CPU-architecture wordmark: the sole ROX brand-lock, revealed
-			    under the logo where the lead-word collapsed (replaces a text "ROX"). */}
 			<div className="rox-intro__cpu" aria-hidden="true">
 				<CpuArchitecture text={INTRO_BRAND} />
 			</div>
@@ -417,27 +331,16 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				</div>
 
 				<div className="rox-intro__slide rox-intro__slide--two rox-intro__features">
-					{featureRows.map((row) => (
-						<div
-							key={row.id}
-							className="rox-intro__row rox-intro__row--features"
-						>
-							{row.tags.map((tag) => (
-								<p
-									key={tag.id}
-									className="rox-intro__feature"
-									style={{ color: `var(--rox-c-${tag.color})` }}
-								>
-									{tag.text}
-								</p>
-							))}
-						</div>
-					))}
-				</div>
-
-				<div className="rox-intro__slide rox-intro__slide--three">
-					<div className="rox-intro__row">
-						<p className="rox-intro__center">{INTRO_TAGLINE}</p>
+					<div className="rox-intro__features-cloud">
+						{INTRO_FEATURES.map((tag) => (
+							<p
+								key={tag.id}
+								className="rox-intro__feature"
+								style={{ color: `var(--rox-c-${tag.color})` }}
+							>
+								{tag.text}
+							</p>
+						))}
 					</div>
 				</div>
 			</div>
