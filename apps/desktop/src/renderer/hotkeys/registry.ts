@@ -658,6 +658,16 @@ export const HOTKEYS_REGISTRY = {
 		label: "Add Attachment",
 		category: "Terminal",
 	},
+	DICTATE: {
+		key: {
+			mac: L("ctrl+shift+d"),
+			windows: L("ctrl+shift+d"),
+			linux: L("ctrl+shift+d"),
+		},
+		label: "Dictate Prompt",
+		category: "Terminal",
+		description: "Hold to talk (push-to-talk); tap to toggle dictation",
+	},
 
 	// Window
 	OPEN_IN_APP: {

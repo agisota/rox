@@ -487,3 +487,19 @@ export const memoryImportStatusValues = [
 ] as const;
 export const memoryImportStatusEnum = z.enum(memoryImportStatusValues);
 export type MemoryImportStatus = z.infer<typeof memoryImportStatusEnum>;
+
+// Voice dictation (voice-dictation epic) --------------------------------------
+// Lifecycle of a dictated prompt: transcribed (Whisper done) → processed (R1
+// post-processing done) or failed. Append-only string union backing a pgEnum.
+
+export const voiceTranscriptionStatusValues = [
+	"transcribed",
+	"processed",
+	"failed",
+] as const;
+export const voiceTranscriptionStatusEnum = z.enum(
+	voiceTranscriptionStatusValues,
+);
+export type VoiceTranscriptionStatus = z.infer<
+	typeof voiceTranscriptionStatusEnum
+>;
