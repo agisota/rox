@@ -107,15 +107,31 @@ export function LandingBackdrop() {
 							<span className={styles.navItem} />
 						</div>
 						<div className={styles.content}>
-							<span className={styles.line} />
-							<span className={styles.line} />
-							<span className={`${styles.line} ${styles.lineIndent}`} />
-							<span className={`${styles.lineAccent} ${styles.lineIndent}`} />
-							<span className={styles.line} />
-							<span className={styles.line} />
-							<span className={`${styles.line} ${styles.lineIndent}`} />
-							<span className={`${styles.lineAccent} ${styles.lineIndent}`} />
-							<span className={styles.line} />
+							{/* Parallel-agent tabs — the core Rox story (one active). */}
+							<div className={styles.tabs}>
+								<span className={`${styles.tab} ${styles.tabActive}`} />
+								<span className={styles.tab} />
+								<span className={styles.tab} />
+								<span className={styles.tab} />
+							</div>
+							{/* Code / diff lines. */}
+							<div className={styles.code}>
+								<span className={styles.line} />
+								<span className={styles.line} />
+								<span className={`${styles.line} ${styles.lineIndent}`} />
+								<span className={`${styles.lineAccent} ${styles.lineIndent}`} />
+								<span className={styles.line} />
+								<span className={styles.line} />
+								<span className={`${styles.line} ${styles.lineIndent}`} />
+								<span className={`${styles.lineAccent} ${styles.lineIndent}`} />
+								<span className={styles.line} />
+							</div>
+							{/* Rox terminal strip at the bottom of the window. */}
+							<div className={styles.terminal}>
+								<span className={styles.termPrompt} />
+								<span className={`${styles.termLine} ${styles.termAccent}`} />
+								<span className={styles.termLine} />
+							</div>
 						</div>
 					</div>
 				</div>
