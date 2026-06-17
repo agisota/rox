@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
 	type AppearanceSettings,
+	clampWindowOpacity,
 	DEFAULT_APPEARANCE_SETTINGS,
 	pickNext,
 	WALLPAPERS,
@@ -18,6 +19,8 @@ import {
 
 /** AsyncStorage key under which appearance settings are persisted (local-only). */
 const STORAGE_KEY = "rox.appearance.settings";
+/** Lower bound for the rotation interval — mirrors web `storage.ts`. */
+const MIN_ROTATE_SECONDS = 5;
 
 /** Value exposed by {@link AppearanceProvider}. */
 interface AppearanceContextValue {
@@ -52,8 +55,9 @@ function normalizeSettings(raw: unknown): AppearanceSettings {
 				? value.glassEnabled
 				: d.glassEnabled,
 		windowOpacity:
-			typeof value.windowOpacity === "number"
-				? value.windowOpacity
+			typeof value.windowOpacity === "number" &&
+			Number.isFinite(value.windowOpacity)
+				? clampWindowOpacity(value.windowOpacity)
 				: d.windowOpacity,
 		wallpaperId:
 			typeof value.wallpaperId === "string" || value.wallpaperId === null
@@ -64,8 +68,9 @@ function normalizeSettings(raw: unknown): AppearanceSettings {
 				? value.wallpaperAutoRotate
 				: d.wallpaperAutoRotate,
 		wallpaperRotateSeconds:
-			typeof value.wallpaperRotateSeconds === "number"
-				? value.wallpaperRotateSeconds
+			typeof value.wallpaperRotateSeconds === "number" &&
+			Number.isFinite(value.wallpaperRotateSeconds)
+				? Math.max(MIN_ROTATE_SECONDS, value.wallpaperRotateSeconds)
 				: d.wallpaperRotateSeconds,
 		quoteLoaderEnabled:
 			typeof value.quoteLoaderEnabled === "boolean"

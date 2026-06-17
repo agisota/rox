@@ -39,7 +39,10 @@ export function CinematicGradient({
 	tone = "dark",
 	className,
 }: CinematicGradientProps) {
-	const reduceMotion = useReducedMotion();
+	// `useReducedMotion` is `null` until the media query resolves on the client.
+	// Default the unknown state to "reduce motion" so reduced-motion users never
+	// see a frame of animation before the hook settles.
+	const reduceMotion = useReducedMotion() ?? true;
 	const animate = !reduceMotion;
 
 	useEffect(() => {

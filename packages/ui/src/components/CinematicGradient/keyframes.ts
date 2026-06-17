@@ -32,15 +32,17 @@ const KEYFRAMES = `
 }
 `;
 
-let injected = false;
-
 /**
  * Inject the cinematic keyframes into <head> exactly once. No-ops on the server
- * (no `document`) and after the first call. Safe to invoke from every instance.
+ * (no `document`) and when the style is already present. Safe to invoke from
+ * every instance.
  */
 export function ensureCinematicStyles(): void {
-	if (injected || typeof document === "undefined") return;
-	injected = true;
+	if (typeof document === "undefined") return;
+	// The DOM is the source of truth: checking for the element (rather than a
+	// module flag) means the style re-injects if it was ever removed — by a test
+	// teardown or a third-party DOM cleaner — instead of getting stuck silently
+	// absent.
 	if (document.getElementById(STYLE_ID)) return;
 	const style = document.createElement("style");
 	style.id = STYLE_ID;

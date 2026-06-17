@@ -50,10 +50,14 @@ function WallpaperFill({ wallpaper }: { wallpaper: Wallpaper }) {
 		);
 	}
 	const url = source.kind === "bundled" ? source.path : source.url;
+	// Encode before interpolating into `url("…")`: encodeURI escapes `"` (→ %22)
+	// so a `remote`/user-supplied source can't break out of the quoted value and
+	// inject extra CSS. Future remote/user wallpaper packs are anticipated by the
+	// manifest, so harden the boundary now.
 	return (
 		<div
 			className="h-full w-full bg-center bg-cover"
-			style={{ backgroundImage: `url("${url}")` }}
+			style={{ backgroundImage: `url("${encodeURI(url)}")` }}
 			role="img"
 			aria-label={wallpaper.name}
 		/>
@@ -66,7 +70,9 @@ export function WallpaperLayer({
 	fadeSeconds = 1.2,
 	className,
 }: WallpaperLayerProps) {
-	const reduceMotion = useReducedMotion();
+	// `null` (pre-resolve) collapses to reduced motion so no crossfade flashes
+	// for reduced-motion users on first paint.
+	const reduceMotion = useReducedMotion() ?? true;
 	const duration = reduceMotion ? 0 : fadeSeconds;
 
 	return (
