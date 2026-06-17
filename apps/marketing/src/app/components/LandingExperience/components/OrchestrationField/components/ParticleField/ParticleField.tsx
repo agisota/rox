@@ -203,11 +203,12 @@ const VERTEX_SHADER = /* glsl */ `
 
 const FRAGMENT_SHADER = /* glsl */ `
 	uniform sampler2D uTexture;
+	uniform float uBoost;
 	varying vec3 vColor;
 	void main() {
 		float a = texture2D(uTexture, gl_PointCoord).a;
 		if (a < 0.02) discard;
-		gl_FragColor = vec4(vColor, 1.0) * a;
+		gl_FragColor = vec4(vColor * uBoost, 1.0) * a;
 	}
 `;
 
@@ -235,6 +236,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		() => ({
 			uTexture: { value: glow },
 			uPixelRatio: { value: 1 },
+			uBoost: { value: 1 },
 		}),
 		[glow],
 	);
@@ -298,13 +300,15 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		const intro = Math.min(t / 3.6, 1);
 		const ease = intro * intro * (3 - 2 * intro);
 
-		// Impulse decay after a command pulse.
+		// Impulse decay after a command pulse (slow enough to read on screen).
 		const since = t - pulseStart.current;
-		const impulse = since >= 0 ? Math.exp(-since * 1.8) : 0;
-		const expand = 1 + impulse * 0.4;
+		const impulse = since >= 0 ? Math.exp(-since * 1.1) : 0;
+		const expand = 1 + impulse * 0.7;
+		// Whole-field brightness flash on a pulse — unmistakable visual payoff.
+		uniforms.uBoost.value = 1 + impulse * 1.6;
 
 		// Rotation: a steady Saturn-ring spin, briefly boosted by a pulse.
-		const spin = t * 0.12 + impulse * since * 0.9;
+		const spin = t * 0.12 + impulse * since * 1.2;
 		const cosY = Math.cos(spin);
 		const sinY = Math.sin(spin);
 
@@ -348,8 +352,8 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				const dx = x - px;
 				const dy = y - py;
 				const d2 = dx * dx + dy * dy;
-				if (d2 < 14) {
-					const f = (1 - d2 / 14) * 2;
+				if (d2 < 16) {
+					const f = (1 - d2 / 16) * 2.6;
 					const inv = 1 / Math.sqrt(d2 + 0.001);
 					x += dx * inv * f;
 					y += dy * inv * f;
@@ -386,7 +390,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			) as THREE.BufferAttribute;
 			eAttr.needsUpdate = true;
 			const mat = edges.material as THREE.LineBasicMaterial;
-			mat.opacity = 0.12 * ease + impulse * 0.3;
+			mat.opacity = 0.12 * ease + impulse * 0.55;
 		}
 
 		// Subtle camera drift toward the pointer, parked slightly above the plane
