@@ -108,6 +108,12 @@ function getCodeText(block: NotionBlock): string {
 	return richTextToCode(getBlockPayload(block)?.rich_text);
 }
 
+function getMarkdownCodeFence(code: string): string {
+	const runs = code.match(/`+/g) ?? [];
+	const maxRun = runs.reduce((max, run) => Math.max(max, run.length), 0);
+	return "`".repeat(Math.max(3, maxRun + 1));
+}
+
 function getCaption(payload: Record<string, unknown> | null): string {
 	const caption = richTextToMarkdown(payload?.caption);
 	return caption.length > 0 ? caption : "Attachment";
@@ -174,7 +180,9 @@ function renderBlockToMarkdown(block: NotionBlock, depth: number): string {
 		case "code": {
 			const language =
 				typeof payload?.language === "string" ? payload.language : "";
-			return `\`\`\`${language}\n${getCodeText(block).replace(/\n$/, "")}\n\`\`\``;
+			const code = getCodeText(block).replace(/\n$/, "");
+			const fence = getMarkdownCodeFence(code);
+			return `${fence}${language}\n${code}\n${fence}`;
 		}
 		case "divider":
 			return "---";

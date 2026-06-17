@@ -218,6 +218,23 @@ describe("renderNotionBlocksToMarkdown", () => {
 		expect(markdown).toBe("```python\n  def run():\n    return True\n```");
 	});
 
+	test("renders code containing triple backticks without breaking fences", () => {
+		const markdown = renderNotionBlocksToMarkdown([
+			{
+				id: "code-fence",
+				type: "code",
+				code: {
+					language: "markdown",
+					rich_text: [{ plain_text: "before\n```ts\nconst x = 1;\n```" }],
+				},
+			},
+		]);
+
+		expect(markdown).toContain("```ts");
+		expect(markdown.startsWith("````markdown\n")).toBe(true);
+		expect(markdown.endsWith("\n````")).toBe(true);
+	});
+
 	test("gives inline code annotation priority over other rich-text formatting", () => {
 		const markdown = renderNotionBlocksToMarkdown([
 			{
