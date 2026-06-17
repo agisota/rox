@@ -145,6 +145,17 @@
 	:root {
 		--surface-opacity: 1;
 		--backdrop-blur: 0px;
+		/* Backdrop saturation boost — only lifts in glass mode (see `.glass`),
+		   otherwise saturate(1) is a no-op even though blur is 0. */
+		--backdrop-saturate: 1;
+	}
+
+	/* Liquid-glass: punch up backdrop saturation so wallpaper color reads
+	   richly through translucent panels. Keyed on `.glass` so it never touches
+	   the opaque default theme. Web toggles `.glass` on <html>; the desktop
+	   renderer uses `:root.glass` (mirrored block). */
+	.glass {
+		--backdrop-saturate: 1.8;
 	}
 
 	.glass,
@@ -154,8 +165,10 @@
 			var(--background) calc(var(--surface-opacity) * 100%),
 			transparent
 		);
-		backdrop-filter: blur(var(--backdrop-blur));
-		-webkit-backdrop-filter: blur(var(--backdrop-blur));
+		backdrop-filter: blur(var(--backdrop-blur))
+			saturate(var(--backdrop-saturate));
+		-webkit-backdrop-filter: blur(var(--backdrop-blur))
+			saturate(var(--backdrop-saturate));
 	}
 
 	.glass-panel {
@@ -164,6 +177,17 @@
 			var(--card) calc(var(--surface-opacity) * 100%),
 			transparent
 		);
+	}
+
+	/* Liquid-glass specular edge: a bright top hairline + faint inner outline +
+	   soft drop shadow give panels depth and a wet, glassy rim. Inset shadows
+	   only, so nothing shifts layout. Scoped to glass mode. */
+	.glass .glass-panel,
+	.glass.glass-panel {
+		box-shadow:
+			inset 0 1px 0 0 color-mix(in srgb, white 12%, transparent),
+			inset 0 0 0 1px color-mix(in srgb, white 4%, transparent),
+			0 10px 40px -16px color-mix(in srgb, black 55%, transparent);
 	}
 }
 

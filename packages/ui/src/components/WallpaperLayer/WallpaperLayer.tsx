@@ -13,7 +13,7 @@
 import type { Wallpaper, WallpaperSource } from "@rox/shared/appearance";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { cn } from "../../lib/utils";
-import { MeshGradient } from "../mesh-gradient";
+import { CinematicGradient } from "../CinematicGradient";
 
 interface WallpaperLayerProps {
 	/** Wallpaper to show, or null/undefined for nothing (transparent). */
@@ -36,11 +36,18 @@ function sourceKey(source: WallpaperSource): string {
 	}
 }
 
-/** Render a wallpaper's visual fill: an animated mesh gradient or a cover image. */
+/** Render a wallpaper's visual fill: a cinematic gradient scene or a cover image. */
 function WallpaperFill({ wallpaper }: { wallpaper: Wallpaper }) {
 	const { source } = wallpaper;
 	if (source.kind === "gradient") {
-		return <MeshGradient colors={source.colors} className="h-full w-full" />;
+		return (
+			<CinematicGradient
+				colors={source.colors}
+				scene={wallpaper.scene}
+				tone={wallpaper.tone}
+				className="h-full w-full"
+			/>
+		);
 	}
 	const url = source.kind === "bundled" ? source.path : source.url;
 	return (
