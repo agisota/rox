@@ -2,68 +2,87 @@
 
 import { cn } from "@rox/ui/utils";
 
-type SessionTabsProps = {
-	activeTab: "chat" | "diff";
-	onTabChange: (tab: "chat" | "diff") => void;
+/** The view rendered in the session canvas. */
+export type SessionView = "chat" | "map" | "flow" | "atlas" | "diff";
+
+type ViewConfig = {
+	id: SessionView;
+	label: string;
+	tabId: string;
+	panelId: string;
 };
 
-const tabIds = {
-	chat: "session-tab-chat",
-	diff: "session-tab-diff",
-} as const;
+export const sessionViews: ViewConfig[] = [
+	{
+		id: "chat",
+		label: "Чат",
+		tabId: "session-tab-chat",
+		panelId: "session-panel-chat",
+	},
+	{
+		id: "map",
+		label: "Карта",
+		tabId: "session-tab-map",
+		panelId: "session-panel-map",
+	},
+	{
+		id: "flow",
+		label: "Поток",
+		tabId: "session-tab-flow",
+		panelId: "session-panel-flow",
+	},
+	{
+		id: "atlas",
+		label: "Атлас",
+		tabId: "session-tab-atlas",
+		panelId: "session-panel-atlas",
+	},
+	{
+		id: "diff",
+		label: "Изменения",
+		tabId: "session-tab-diff",
+		panelId: "session-panel-diff",
+	},
+];
 
-const panelIds = {
-	chat: "session-panel-chat",
-	diff: "session-panel-diff",
-} as const;
+type SessionTabsProps = {
+	activeView: SessionView;
+	onViewChange: (view: SessionView) => void;
+};
 
-export function SessionTabs({ activeTab, onTabChange }: SessionTabsProps) {
+export function SessionTabs({ activeView, onViewChange }: SessionTabsProps) {
 	return (
 		<div
 			role="tablist"
 			aria-label="Просмотр сессии"
 			className="flex shrink-0 border-b border-border px-4"
 		>
-			<button
-				type="button"
-				role="tab"
-				id={tabIds.chat}
-				aria-selected={activeTab === "chat"}
-				aria-controls={panelIds.chat}
-				tabIndex={activeTab === "chat" ? 0 : -1}
-				onClick={() => onTabChange("chat")}
-				className={cn(
-					"relative px-4 py-2 text-sm font-medium transition-colors",
-					activeTab === "chat"
-						? "text-foreground"
-						: "text-muted-foreground hover:text-foreground",
-				)}
-			>
-				Чат
-				{activeTab === "chat" && (
-					<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
-				)}
-			</button>
-			<button
-				type="button"
-				role="tab"
-				id={tabIds.diff}
-				aria-selected={activeTab === "diff"}
-				aria-controls={panelIds.diff}
-				tabIndex={activeTab === "diff" ? 0 : -1}
-				onClick={() => onTabChange("diff")}
-				className={cn(
-					"relative px-4 py-2 text-sm font-medium transition-colors",
-					activeTab === "diff"
-						? "text-foreground"
-						: "text-muted-foreground hover:text-foreground",
-				)}
-			>
-				Изменения
-				{activeTab === "diff" && (
-					<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
-				)}
-			</button>
+			{sessionViews.map((view) => {
+				const isActive = activeView === view.id;
+				return (
+					<button
+						key={view.id}
+						type="button"
+						role="tab"
+						id={view.tabId}
+						aria-selected={isActive}
+						aria-controls={view.panelId}
+						tabIndex={isActive ? 0 : -1}
+						onClick={() => onViewChange(view.id)}
+						className={cn(
+							"relative px-4 py-2 text-sm font-medium transition-colors",
+							isActive
+								? "text-foreground"
+								: "text-muted-foreground hover:text-foreground",
+						)}
+					>
+						{view.label}
+						{isActive && (
+							<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+						)}
+					</button>
+				);
+			})}
 		</div>
 	);
 }

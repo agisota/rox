@@ -1,6 +1,7 @@
 export * from "./agent";
 export * from "./attribution";
 export * from "./auth";
+export * from "./chat";
 export * from "./circuit";
 export * from "./economy";
 export * from "./enums";
