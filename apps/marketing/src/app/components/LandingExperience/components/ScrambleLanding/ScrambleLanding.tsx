@@ -1,32 +1,19 @@
 "use client";
 
-import { animate, scrambleText, utils } from "animejs";
+import { animate, scrambleText } from "animejs";
 import { useEffect, useRef } from "react";
 import {
 	HERO_AGENT_STACK_LIST,
 	HERO_BYOM_TERM,
 	HERO_ROX_ORCHESTRATION_TERM,
 	HERO_STACK_TERM,
-	LANDING_DOWNLOAD_HEADING,
-	LANDING_EDITOR_LEAD,
-	LANDING_EDITOR_TERMS,
-	LANDING_FEAT_CONTROL,
 	LANDING_FEAT_ISOLATION,
-	LANDING_FEAT_SPEED,
-	LANDING_FEAT_SWITCH,
 	LANDING_HEADLINE,
-	LANDING_HOW_HEADING,
-	LANDING_HOW_PARAGRAPH,
 	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
 import { OrchestrationField } from "../OrchestrationField";
 import { FIELD_HINT } from "../OrchestrationField/constants";
-import { RoxDivider } from "./components/RoxDivider";
 import { Term } from "./components/Term";
-
-interface ScrambleLandingProps {
-	children?: React.ReactNode;
-}
 
 /**
  * Scramble-text landing document, ported from Julian Garnier's anime.js v4
@@ -45,7 +32,7 @@ interface ScrambleLandingProps {
  * restores it. Hovering any line re-scrambles it. Everything is scoped to the
  * container ref and skipped entirely under `prefers-reduced-motion`.
  */
-export function ScrambleLanding({ children }: ScrambleLandingProps) {
+export function ScrambleLanding() {
 	const containerRef = useRef<HTMLElement>(null);
 	const animationsRef = useRef<
 		Array<{ cancel?: () => void; revert?: () => void }>
@@ -139,34 +126,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 		}
 		cleanups.push(() => revealObserver.disconnect());
 
-		// ── E. SVG dividers draw themselves in on scroll ────────────────────
-		const dividers = Array.from(
-			container.querySelectorAll<SVGLineElement>(".rox-divider__line"),
-		);
-		const drawObserver = new IntersectionObserver(
-			(entries) => {
-				for (const entry of entries) {
-					if (entry.isIntersecting) {
-						trackAnimation(
-							animate(entry.target, {
-								strokeDashoffset: [1, 0],
-								ease: "inOut(3)",
-								duration: 900,
-							}),
-						);
-						drawObserver.unobserve(entry.target);
-					}
-				}
-			},
-			{ rootMargin: "0px 0px -10% 0px", threshold: 0.5 },
-		);
-		for (const line of dividers) {
-			// Pathless hairline: dash the whole length, offset it, then draw to 0.
-			utils.set(line, { strokeDasharray: 1, strokeDashoffset: 1 });
-			drawObserver.observe(line);
-		}
-		cleanups.push(() => drawObserver.disconnect());
-
 		return () => {
 			for (const cleanup of cleanups) cleanup();
 			cleanupAnimations();
@@ -217,35 +176,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 					</a>
 				</div>
 			</section>
-
-			<div className="rox-landing__main">
-				<ul>
-					<li className="rox-scramble">{LANDING_FEAT_SPEED}</li>
-					<li className="rox-scramble">{LANDING_FEAT_CONTROL}</li>
-					<li>
-						{LANDING_EDITOR_LEAD}{" "}
-						{LANDING_EDITOR_TERMS.map((term, index) => (
-							<span key={term.label}>
-								{index > 0 ? ", " : ""}
-								<Term label={term.label} tip={term.tip} />
-							</span>
-						))}
-					</li>
-					<li className="rox-scramble">{LANDING_FEAT_SWITCH}</li>
-				</ul>
-
-				<RoxDivider />
-
-				<h2 className="rox-scramble">{LANDING_HOW_HEADING}</h2>
-
-				<p className="rox-scramble">{LANDING_HOW_PARAGRAPH}</p>
-
-				<RoxDivider />
-
-				<h2 className="rox-scramble">{LANDING_DOWNLOAD_HEADING}</h2>
-
-				<div className="rox-landing__cta">{children}</div>
-			</div>
 		</main>
 	);
 }

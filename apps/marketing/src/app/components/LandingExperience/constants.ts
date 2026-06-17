@@ -7,7 +7,7 @@
  */
 
 /** Phases of the landing experience state machine. */
-export type LandingPhase = "intro" | "main" | "downloading";
+export type LandingPhase = "intro" | "main";
 
 /* ── ① Intro overlay (vEyYdXN) ─────────────────────────────────────────── */
 

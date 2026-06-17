@@ -575,22 +575,6 @@
 	}
 }
 
-/* SVG hairline dividers between sections; drawn in on scroll. */
-.rox-divider {
-	width: 100%;
-	height: 1px;
-	margin: clamp(10px, 2.5vh, 24px) 0;
-	overflow: visible;
-	color: var(--rox-orange-3);
-	opacity: 0.55;
-}
-
-.rox-divider__line {
-	stroke: currentcolor;
-	stroke-width: 1;
-	vector-effect: non-scaling-stroke;
-}
-
 /* Fine film grain for premium depth without flattening the minimalism. */
 .rox-landing::before {
 	content: "";
@@ -601,34 +585,6 @@
 	opacity: 0.05;
 	mix-blend-mode: overlay;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-.rox-landing__main {
-	position: relative;
-	z-index: 1;
-	width: 100%;
-	max-width: 680px;
-	padding: clamp(80px, 16vh, 180px) 24px 128px;
-	display: flex;
-	flex-direction: column;
-	gap: 22px;
-}
-
-/* Legibility scrim: a soft dark halo behind the copy column so the brighter
- * LandingBackdrop never fights the headline/features. Weighted toward the
- * upper-left, where the headline sits; fades out so the rig stays visible. */
-.rox-landing__main::before {
-	content: "";
-	position: absolute;
-	z-index: -1;
-	inset: -6% -14% -2%;
-	background: radial-gradient(
-		78% 56% at 32% 26%,
-		rgba(10, 7, 5, 0.78),
-		rgba(10, 7, 5, 0.42) 52%,
-		transparent 80%
-	);
-	pointer-events: none;
 }
 
 .rox-landing__brand {
@@ -653,17 +609,6 @@
 	color: var(--rox-fg-1);
 }
 
-.rox-landing h2 {
-	font-family: var(--rox-font-display);
-	font-size: 1.45rem;
-	font-weight: 400;
-	line-height: 1.3;
-	letter-spacing: -0.01em;
-	margin-top: clamp(32px, 6vh, 64px);
-	cursor: default;
-	color: var(--rox-orange-1);
-}
-
 .rox-landing p {
 	font-size: 0.98rem;
 	line-height: 1.75;
@@ -672,32 +617,7 @@
 	cursor: default;
 }
 
-.rox-landing ul {
-	list-style: none;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	padding: 0;
-	margin: 0;
-}
-
-.rox-landing li {
-	font-size: 0.95rem;
-	line-height: 1.4;
-	color: var(--rox-fg-2);
-	padding-left: 22px;
-	position: relative;
-	cursor: default;
-}
-
-.rox-landing li:not(:empty)::before {
-	content: ">";
-	position: absolute;
-	left: 0;
-	color: var(--rox-orange-2);
-}
-
-/* Inline glossary terms in the feature list: underlined words that reveal a
+/* Inline glossary terms in the hero: underlined words that reveal a
  * tooltip on hover/focus, explaining each agent/editor integration + acpx. */
 .rox-term {
 	appearance: none;
@@ -760,32 +680,6 @@
 .rox-term:focus .rox-term__tip {
 	opacity: 1;
 	transform: translateX(-50%) translateY(0);
-}
-
-.rox-landing__cta {
-	margin-top: 20px;
-	min-height: 96px;
-	display: flex;
-	flex-direction: column;
-	gap: 18px;
-}
-
-.rox-landing__secondary {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	width: fit-content;
-	font-size: 0.88rem;
-	color: var(--rox-fg-3);
-	text-decoration: none;
-	transition:
-		color 0.2s,
-		gap 0.2s;
-}
-
-.rox-landing__secondary:hover {
-	color: var(--rox-orange-1);
-	gap: 10px;
 }
 
 /* Above-the-fold primary CTA — premium pill with glow, depth, and hover lift. */
@@ -887,182 +781,6 @@
 
 .rox-landing__hero-cta:hover .rox-landing__hero-cta__arrow {
 	transform: translateY(3px);
-}
-
-/* ────────────────────────────────────────────────────────────────────────
- * ③ DOWNLOAD — Snap X slide-to-download (qEBgEPz)
- * ──────────────────────────────────────────────────────────────────────── */
-
-.rox-snap {
-	--track-h: 40px;
-	position: relative;
-	width: 100%;
-	max-width: 360px;
-	height: var(--track-h);
-	border-radius: 12px;
-	background: var(--rox-bg-2);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-	overflow: hidden;
-	touch-action: pan-y;
-	user-select: none;
-}
-
-/* Filled progress trail that grows as the handle is dragged right. */
-.rox-snap__fill {
-	position: absolute;
-	inset: 0;
-	transform-origin: left center;
-	transform: scaleX(0);
-	background: linear-gradient(90deg, var(--rox-orange-4), var(--rox-orange-2));
-	opacity: 0.35;
-	pointer-events: none;
-}
-
-.rox-snap__label {
-	position: absolute;
-	inset: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	font-size: 0.82rem;
-	letter-spacing: 0.02em;
-	color: var(--rox-fg-2);
-	pointer-events: none;
-	padding-left: 28px;
-}
-
-.rox-snap__handle {
-	position: absolute;
-	top: 6px;
-	left: 6px;
-	width: calc(var(--track-h) - 12px);
-	height: calc(var(--track-h) - 12px);
-	border-radius: 9px;
-	background: linear-gradient(135deg, var(--rox-orange-1), var(--rox-orange-3));
-	box-shadow: 0 6px 20px rgba(210, 86, 17, 0.45);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: #1a0e06;
-	z-index: 2;
-	will-change: transform;
-}
-
-.rox-snap__handle svg {
-	width: 18px;
-	height: 18px;
-}
-
-/* ────────────────────────────────────────────────────────────────────────
- * ④ THANK-YOU + GitHub star button counter (mydvebj)
- * ──────────────────────────────────────────────────────────────────────── */
-
-.rox-thanks {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
-.rox-thanks__heading {
-	font-size: 1.05rem;
-	font-weight: 600;
-	color: var(--rox-fg-1);
-}
-
-.rox-thanks__hint {
-	font-size: 0.85rem;
-	color: var(--rox-fg-3);
-}
-
-.rox-thanks__prompt {
-	margin-top: 4px;
-	font-size: 0.9rem;
-	color: var(--rox-orange-1);
-}
-
-.rox-star {
-	position: relative;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	min-height: 120px;
-	overflow: visible;
-}
-
-.rox-star__button {
-	--sbtn-1: #212830;
-	--sbtn-2: #3d444d;
-	position: relative;
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	width: fit-content;
-	min-width: 220px;
-	background: var(--sbtn-1);
-	border: 2px solid var(--sbtn-2);
-	border-radius: 12px;
-	padding: 8px 24px 8px 18px;
-	font-family: var(--rox-font-mono);
-	font-size: 22px;
-	color: #ffffff;
-	text-decoration: none;
-	transform-origin: 50% 50%;
-	height: 56px;
-	cursor: pointer;
-	z-index: 2;
-}
-
-.rox-star__icon {
-	color: #e3b342;
-	flex-shrink: 0;
-}
-
-.rox-star__icon polygon {
-	transform-box: fill-box;
-	transform-origin: 50% 50%;
-}
-
-.rox-star__label {
-	padding: 0 14px;
-	min-width: 96px;
-	text-align: center;
-	line-height: 1.4;
-	font-size: 0.95rem;
-}
-
-.rox-star__count {
-	position: relative;
-	display: inline-block;
-	z-index: 2;
-	padding: 0 10px;
-	min-width: 40px;
-	text-align: center;
-	font-variant-numeric: tabular-nums;
-}
-
-.rox-star__count::before {
-	content: "";
-	position: absolute;
-	z-index: -1;
-	inset: -2px -4px;
-	display: block;
-	border-radius: 8px;
-	background-color: var(--sbtn-2);
-}
-
-.rox-star__particle {
-	position: absolute;
-	z-index: 1;
-	top: 50%;
-	left: 22px;
-	width: 32px;
-	height: 32px;
-	margin-top: -16px;
-	overflow: visible;
-	pointer-events: none;
-	color: #e3b342;
 }
 
 /* Respect reduced-motion: collapse the intro, keep content readable. */

@@ -17,6 +17,10 @@ const config: NextConfig = {
 	reactCompiler: true,
 	typescript: { ignoreBuildErrors: true },
 
+	// Local preview only (not committed): allow the Cloudflare quick-tunnel host
+	// to load Next dev resources so the page renders when shared externally.
+	allowedDevOrigins: ["*.trycloudflare.com"],
+
 	images: {
 		remotePatterns: [
 			{
