@@ -593,9 +593,10 @@
 	gap: 12px;
 	margin-bottom: 8px;
 	color: var(--rox-orange-1);
-	font-size: 0.85rem;
-	letter-spacing: 0.18em;
+	font-size: calc(0.85rem - 1pt);
+	letter-spacing: normal;
 	text-transform: uppercase;
+	white-space: pre;
 }
 
 .rox-landing h1 {

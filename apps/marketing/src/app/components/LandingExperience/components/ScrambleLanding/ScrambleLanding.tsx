@@ -3,6 +3,7 @@
 import { animate, scrambleText } from "animejs";
 import { useEffect, useRef } from "react";
 import {
+	HERO_BRAND_WORDMARK,
 	LANDING_FEAT_ISOLATION,
 	LANDING_HEADLINE,
 	LANDING_INTRO_PARAGRAPH,
@@ -136,7 +137,7 @@ export function ScrambleLanding() {
 			<section className="rox-hero">
 				<div className="rox-hero__inner">
 					<div className="rox-landing__brand">
-						<span className="rox-scramble">Rox One</span>
+						<span className="rox-scramble">{HERO_BRAND_WORDMARK}</span>
 					</div>
 
 					<h1 className="rox-scramble rox-hero__headline">
