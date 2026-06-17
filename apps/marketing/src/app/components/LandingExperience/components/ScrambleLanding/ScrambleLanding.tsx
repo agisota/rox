@@ -187,7 +187,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 			<section className="rox-hero">
 				<div className="rox-hero__inner">
 					<div className="rox-landing__brand">
-						<span aria-hidden="true">▸</span>
 						<span className="rox-scramble">Rox One</span>
 					</div>
 
