@@ -26,6 +26,13 @@ import type {
 
 export const DVNET_DEFAULT_BASE_URL = "https://api.dv.net/v1";
 
+/**
+ * Hard ceiling on a single dv.net HTTP request. Without this a hung upstream
+ * keeps the awaiting caller (and any webhook/credit path behind it) blocked
+ * indefinitely; `AbortSignal.timeout` rejects the `fetch` instead.
+ */
+export const DVNET_REQUEST_TIMEOUT_MS = 10_000;
+
 /** Status strings dv.net reports for a charge. */
 export type DvNetRawStatus =
 	| "pending"
@@ -125,17 +132,22 @@ export function buildInvoiceRequest(
 			`usdtAmount must be a finite positive number, got ${usdtAmount}`,
 		);
 	}
-	if (!orderId) {
+	// Trim before the emptiness check so a whitespace-only reference (which is
+	// truthy and would otherwise slip through) is rejected, and the value we
+	// send matches the one the webhook will be reconciled against.
+	const trimmedOrderId = orderId.trim();
+	if (trimmedOrderId === "") {
 		throw new DvNetInvoiceError("orderId must not be empty");
 	}
-	if (!callbackUrl) {
+	const trimmedCallbackUrl = callbackUrl.trim();
+	if (trimmedCallbackUrl === "") {
 		throw new DvNetInvoiceError("callbackUrl must not be empty");
 	}
 	return {
 		amount: usdtAmount.toFixed(6),
 		currency: "USDT",
-		callback_url: callbackUrl,
-		order_id: orderId,
+		callback_url: trimmedCallbackUrl,
+		order_id: trimmedOrderId,
 	};
 }
 
@@ -260,6 +272,7 @@ export class DvNetHttpClient implements DvNetClient {
 				Authorization: `Bearer ${this.getApiKey()}`,
 				"Content-Type": "application/json",
 			},
+			signal: AbortSignal.timeout(DVNET_REQUEST_TIMEOUT_MS),
 		});
 
 		if (response.status === 404) return null;

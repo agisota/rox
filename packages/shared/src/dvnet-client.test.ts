@@ -91,6 +91,28 @@ describe("buildInvoiceRequest", () => {
 			DvNetInvoiceError,
 		);
 	});
+
+	it("rejects whitespace-only orderId", () => {
+		expect(() =>
+			buildInvoiceRequest(5, "   ", "https://example.com/cb"),
+		).toThrow(DvNetInvoiceError);
+	});
+
+	it("rejects whitespace-only callbackUrl", () => {
+		expect(() => buildInvoiceRequest(5, "ord-1", "  \t ")).toThrow(
+			DvNetInvoiceError,
+		);
+	});
+
+	it("trims surrounding whitespace from orderId and callbackUrl", () => {
+		const req = buildInvoiceRequest(
+			5,
+			"  order-abc-123  ",
+			"  https://example.com/cb  ",
+		);
+		expect(req.order_id).toBe("order-abc-123");
+		expect(req.callback_url).toBe("https://example.com/cb");
+	});
 });
 
 // ---------------------------------------------------------------------------
