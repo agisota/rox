@@ -5,6 +5,8 @@ import {
 	LuGlobe,
 	LuLayers,
 	LuMessageSquare,
+	LuRocket,
+	LuServer,
 	LuSmartphone,
 } from "react-icons/lu";
 import gstackBanner from "./assets/gstack.png";
@@ -28,7 +30,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
 	{
 		id: "gstack",
 		name: "gstack",
-		description: "Garry Tan's role-based Claude Code workflow",
+		description: "Ролевой воркфлоу Claude Code от Гэрри Тана",
 		icon: LuLayers,
 		bannerClassName: "bg-zinc-900 text-white",
 		repo: "https://github.com/garrytan/gstack",
@@ -37,7 +39,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
 	{
 		id: "nextjs",
 		name: "Next.js",
-		description: "Vercel's starter with Drizzle, NextAuth, and Postgres",
+		description: "Стартер от Vercel с Drizzle, NextAuth и Postgres",
 		icon: LuGlobe,
 		bannerClassName: "bg-black text-white",
 		repo: "https://github.com/vercel/nextjs-postgres-auth-starter",
@@ -46,7 +48,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
 	{
 		id: "nextjs-chatbot",
 		name: "Next.js Chatbot",
-		description: "AI chatbot built with Next.js and the AI SDK",
+		description: "ИИ-чатбот на Next.js и AI SDK",
 		icon: LuMessageSquare,
 		bannerClassName: "bg-black text-white",
 		repo: "https://github.com/vercel/ai-chatbot",
@@ -55,7 +57,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
 	{
 		id: "react-native",
 		name: "React Native",
-		description: "Cross-platform mobile app with Expo",
+		description: "Кроссплатформенное мобильное приложение на Expo",
 		icon: LuSmartphone,
 		bannerClassName: "bg-blue-500 text-white",
 		repo: "https://github.com/expo/expo-template-default",
@@ -64,7 +66,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
 	{
 		id: "t3-turbo",
 		name: "T3 Turbo",
-		description: "Full-stack Turborepo with Next.js, Expo, and tRPC",
+		description: "Фуллстек-монорепо на Turborepo с Next.js, Expo и tRPC",
 		icon: LuBoxes,
 		bannerClassName: "bg-purple-700 text-white",
 		repo: "https://github.com/t3-oss/create-t3-turbo",
@@ -73,10 +75,26 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
 	{
 		id: "hono",
 		name: "React Router + Hono",
-		description: "Fullstack template on Cloudflare Workers",
+		description: "Фуллстек-шаблон на Cloudflare Workers",
 		icon: LuFlame,
 		bannerClassName: "bg-orange-600 text-white",
 		repo: "https://github.com/cloudflare/react-router-hono-fullstack-template",
 		banner: honoBanner,
+	},
+	{
+		id: "remix",
+		name: "Remix",
+		description: "Фуллстек-стартер Remix (Indie Stack)",
+		icon: LuRocket,
+		bannerClassName: "bg-sky-600 text-white",
+		repo: "https://github.com/remix-run/indie-stack",
+	},
+	{
+		id: "fastapi",
+		name: "FastAPI",
+		description: "Фуллстек FastAPI + React + PostgreSQL",
+		icon: LuServer,
+		bannerClassName: "bg-teal-700 text-white",
+		repo: "https://github.com/fastapi/full-stack-fastapi-template",
 	},
 ];
