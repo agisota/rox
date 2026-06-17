@@ -32,7 +32,7 @@ import { extractTerminalOutputTail } from "./extract-terminal-output-tail";
  */
 
 export interface AgentRunCaptureInput extends AgentRunInput {
-	/** Max agent turns before the host forces a stop. */
+	/** Bounded max-turn budget handed to the host agent runtime. */
 	maxTurns: number;
 }
 

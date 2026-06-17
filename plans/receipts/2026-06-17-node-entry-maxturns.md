@@ -11,13 +11,15 @@
 
 - A pipeline trigger bound to `pipeline_triggers.nodeId` starts the run at that node via `WorkflowExecutor.execute(..., { entryNodeId })`.
 - The full trigger payload is handed to the entry node as `input`, while `payload.message` still seeds the accumulated transcript when present.
-- Agent pipeline `maxTurns` is a hard bounded value before dispatch: invalid/missing values default to `8`, and high values cap at `200`.
+- Agent pipeline `maxTurns` is a hard bounded value before relay/host dispatch: invalid/missing values default to `8`, and high values cap at `200`.
 - Existing anti-storm constraints continue to pass their tests.
 
 ## Changed files
 
 - `packages/workflow-core/src/agents/agentRunBridge.ts`
 - `packages/workflow-core/src/agents/agentRunBridge.test.ts`
+- `packages/workflow-core/src/agents/agentRolePreset.ts`
+- `packages/trpc/src/router/pipeline/agent-run-host-bridge.ts`
 - `packages/trpc/src/router/pipeline/dispatcher.ts`
 - `packages/trpc/src/router/pipeline/dispatcher.test.ts`
 - `packages/trpc/src/router/pipeline/run-pipeline.ts`
@@ -49,8 +51,9 @@
 - `bun run --cwd packages/trpc typecheck` -> pass.
 - `bun run --cwd packages/host-service typecheck` -> pass.
 - `bun run typecheck` -> pass, 34/34 turbo tasks.
+- `codex --help`, `claude --help`, `omp --help` -> no shared `--max-turns` CLI flag found for the default terminal-agent adapters.
 
 ## Remaining risks
 
-- The host chat/terminal harness receives the bounded value structurally, but deeper runtime turn-stop enforcement depends on the downstream harness honoring `maxTurns`.
+- The host chat/terminal harness receives the bounded value structurally. The installed CLI adapters checked in this worktree do not expose a shared `--max-turns` flag, so per-CLI turn-stop enforcement still depends on downstream harness support.
 - No live DB-backed event dispatch was run in this worktree; coverage is unit-level around argument construction and existing storm guards.
