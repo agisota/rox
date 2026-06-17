@@ -28,9 +28,13 @@ function emitCliAgentRunFinished(
 		nodeId?: string;
 	},
 ): void {
-	void api.pipeline.ingestEvent
-		.mutate({ kind: "agent_run_finished", agentRunRef })
-		.catch(() => {
+	// Guard every hop: a context without an api client (tests) or an older/missing
+	// `pipeline` router would otherwise throw SYNCHRONOUSLY (before any `.catch`)
+	// and break the lifecycle broadcast. `api` itself can be undefined here, so the
+	// chain starts at `api?.` — optional chaining keeps the relay fire-and-forget.
+	void api?.pipeline?.ingestEvent
+		?.mutate({ kind: "agent_run_finished", agentRunRef })
+		?.catch(() => {
 			// Best-effort signal — never break the lifecycle broadcast.
 		});
 }
