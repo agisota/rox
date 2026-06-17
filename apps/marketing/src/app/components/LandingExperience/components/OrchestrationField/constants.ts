@@ -22,13 +22,20 @@ export interface AgentRole {
  * cyan / violet / amber accents, echoing Mercury Command's palette while
  * staying on-brand.
  */
-export const AGENT_ROLES: ReadonlyArray<AgentRole> = [
+export const AGENT_ROLES = [
 	{ label: "Planner", glyph: "🧠", color: "#a855f7" },
 	{ label: "Executor", glyph: "🤖", color: "#ff9a4d" },
 	{ label: "Researcher", glyph: "🔍", color: "#22d3ee" },
 	{ label: "Analyst", glyph: "📊", color: "#eab308" },
 	{ label: "Reviewer", glyph: "✅", color: "#6bd3a8" },
-];
+] as const satisfies ReadonlyArray<AgentRole>;
+
+type TupleIndex<T extends readonly unknown[]> = Exclude<
+	keyof T,
+	keyof (readonly unknown[])
+>;
+type ToNumber<T> = T extends `${infer N extends number}` ? N : never;
+export type AgentRoleIndex = ToNumber<TupleIndex<typeof AGENT_ROLES>>;
 
 /** Suggested commands shown as clickable chips under the command input. */
 export const COMMAND_SUGGESTIONS: ReadonlyArray<string> = [
@@ -61,7 +68,10 @@ export const FIELD_HINT =
  * {@link AGENT_ROLES}) so it picks up that role's accent color. Multiple
  * Executor lines read as many agents running in parallel.
  */
-export const DISPATCH_STEPS: ReadonlyArray<{ role: number; text: string }> = [
+export const DISPATCH_STEPS: ReadonlyArray<{
+	role: AgentRoleIndex;
+	text: string;
+}> = [
 	{ role: 0, text: "разбил задачу на 12 подзадач" },
 	{ role: 2, text: "собрал контекст из репозитория" },
 	{ role: 1, text: "агент #1 · пишет REST API в ветке feat/api" },

@@ -87,6 +87,10 @@ export function Typewriter({
 				return;
 			}
 
+			if (!loop && currentTextIndex === texts.length - 1) {
+				return;
+			}
+
 			if (texts.length > 1) {
 				timeout = setTimeout(() => {
 					setIsDeleting(true);

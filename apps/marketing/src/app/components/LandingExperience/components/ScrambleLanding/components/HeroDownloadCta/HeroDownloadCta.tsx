@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 function DownloadArrowIcon() {
 	return (
 		<svg
@@ -25,11 +27,11 @@ function DownloadArrowIcon() {
 
 export function HeroDownloadCta() {
 	return (
-		<a className="rox-landing__hero-cta" href="/download">
+		<Link className="rox-landing__hero-cta" href="/download">
 			<span className="rox-landing__hero-cta__label">Скачать для macOS</span>
 			<span className="rox-landing__hero-cta__arrow">
 				<DownloadArrowIcon />
 			</span>
-		</a>
+		</Link>
 	);
 }

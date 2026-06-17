@@ -345,6 +345,11 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		() => new Float32Array(FIELD.edgeCount * 2 * 3),
 		[],
 	);
+	const pixelRatio = useMemo(
+		() =>
+			typeof window === "undefined" ? 1 : Math.min(window.devicePixelRatio, 2),
+		[],
+	);
 
 	// Keep a concrete handle on the uniforms so the frame loop can mutate them
 	// without tripping ShaderMaterial's `{ [key]: IUniform }` index signature.
@@ -446,7 +451,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 	useFrame((state, delta) => {
 		const t = state.clock.elapsedTime;
-		uniforms.uPixelRatio.value = Math.min(state.gl.getPixelRatio(), 2);
+		uniforms.uPixelRatio.value = pixelRatio;
 
 		// A dispatched command both flashes the field and locks it organised for a
 		// few seconds while the agents "run".
@@ -542,7 +547,8 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 			// Blend chaos → structure, with a gentle living swirl once organised.
 			// The face stays crisp (no swirl) so the silhouette is legible.
-			const swirl = face ? 0 : Math.sin(t * 0.6 + i) * 0.05 * ease;
+			const swirlSeed = (((i * 2_654_435_761) >>> 0) / 0xffffffff - 0.5) * 0.1;
+			const swirl = face ? 0 : swirlSeed * ease;
 			let x = cx + (rx - cx) * ease + swirl;
 			let y = cy + (ry - cy) * ease + swirl;
 			const z = cz + (rz - cz) * ease;
@@ -552,9 +558,9 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				const dx = x - px;
 				const dy = y - py;
 				const d2 = dx * dx + dy * dy;
-				if (d2 < 16) {
+				if (d2 < 16 && d2 > 0.04) {
 					const f = (1 - d2 / 16) * 2.6;
-					const inv = 1 / Math.sqrt(d2 + 0.001);
+					const inv = 1 / Math.sqrt(d2);
 					x += dx * inv * f;
 					y += dy * inv * f;
 				}
@@ -567,8 +573,8 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 		const geom = pointsRef.current?.geometry;
 		if (geom) {
-			const attr = geom.getAttribute("position") as THREE.BufferAttribute;
-			attr.needsUpdate = true;
+			const attr = geom.getAttribute("position");
+			if (attr) attr.needsUpdate = true;
 		}
 
 		// Delegation edges: hub (origin) → selected ring nodes, faded in with the
@@ -585,10 +591,8 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				edgePositions[base + 4] = positions[target + 1] ?? 0;
 				edgePositions[base + 5] = positions[target + 2] ?? 0;
 			}
-			const eAttr = edges.geometry.getAttribute(
-				"position",
-			) as THREE.BufferAttribute;
-			eAttr.needsUpdate = true;
+			const eAttr = edges.geometry.getAttribute("position");
+			if (eAttr) eAttr.needsUpdate = true;
 			const mat = edges.material as THREE.LineBasicMaterial;
 			mat.opacity = 0.05 * ease + impulse * 0.45;
 		}

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface AnimatedTextCycleProps {
 	words: ReadonlyArray<string>;
@@ -21,8 +21,21 @@ export function AnimatedTextCycle({
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [width, setWidth] = useState("auto");
 	const measureRef = useRef<HTMLDivElement>(null);
+	const measuredWords = useMemo(() => {
+		const seen = new Map<string, number>();
+		return words.map((word) => {
+			const count = seen.get(word) ?? 0;
+			seen.set(word, count + 1);
+			return { key: `${word}-${count}`, word };
+		});
+	}, [words]);
 
 	useEffect(() => {
+		if (words.length === 0) return;
+		if (currentIndex >= words.length) {
+			setCurrentIndex(0);
+			return;
+		}
 		if (measureRef.current) {
 			const elements = measureRef.current.children;
 			const element = elements[currentIndex];
@@ -30,7 +43,7 @@ export function AnimatedTextCycle({
 				setWidth(`${element.getBoundingClientRect().width}px`);
 			}
 		}
-	}, [currentIndex]);
+	}, [currentIndex, words]);
 
 	useEffect(() => {
 		if (prefersReducedMotion || words.length <= 1) return;
@@ -83,9 +96,9 @@ export function AnimatedTextCycle({
 				className="pointer-events-none absolute opacity-0"
 				aria-hidden="true"
 			>
-				{words.map((word) => (
-					<span key={word} className={`inline-block ${className}`}>
-						{word}
+				{measuredWords.map((entry) => (
+					<span key={entry.key} className={`inline-block ${className}`}>
+						{entry.word}
 					</span>
 				))}
 			</div>
