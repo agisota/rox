@@ -89,7 +89,7 @@ export const LANDING_FEATURES_HEADING = "Почему ROX";
 export const LANDING_FEAT_SPEED =
 	"Неделя работы — за день: десятки агентов кодят одновременно";
 export const LANDING_FEAT_ISOLATION =
-	"Агенты не мешают друг другу — каждый в своей изолированной ветке";
+	"Агенты не мешают друг другу: каждый решает вопросики в своей рабочей ветке — без ошибок, пересечений и конфликтов";
 export const LANDING_FEAT_CONTROL =
 	"Ты решаешь, что попадёт в проект — принимаешь только готовое";
 export const LANDING_FEAT_SWITCH =
