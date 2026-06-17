@@ -12,13 +12,13 @@ import { useAppearance } from "@/screens/RootLayout/providers/AppearanceProvider
  * fall back to their own loading UI.
  */
 export function QuoteLoadingScreen() {
-	const { settings } = useAppearance();
+	const { isHydrated, settings } = useAppearance();
 
 	// Stable per-mount quote: re-picking on every render would flicker the text.
 	const quote = useMemo(() => pickNext(QUOTES, null) ?? QUOTES[0], []);
 	const wallpaper = getWallpaper(settings.wallpaperId) ?? null;
 
-	if (!settings.quoteLoaderEnabled || !quote) return null;
+	if (!isHydrated || !settings.quoteLoaderEnabled || !quote) return null;
 
 	return <QuoteScreen quote={quote} wallpaper={wallpaper} />;
 }

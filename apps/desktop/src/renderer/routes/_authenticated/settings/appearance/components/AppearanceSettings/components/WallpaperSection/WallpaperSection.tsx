@@ -39,29 +39,51 @@ export function WallpaperSection() {
 		appearance?.wallpaperRotateSeconds ?? DEFAULT_ROTATE_SECONDS;
 	const enabled = wallpaperId !== null;
 
+	const resolvePatch = (patch: {
+		wallpaperId?: string | null;
+		wallpaperAutoRotate?: boolean;
+		wallpaperRotateSeconds?: number;
+	}) => ({
+		wallpaperId:
+			patch.wallpaperId !== undefined ? patch.wallpaperId : wallpaperId,
+		wallpaperAutoRotate:
+			patch.wallpaperAutoRotate !== undefined
+				? patch.wallpaperAutoRotate
+				: autoRotate,
+		wallpaperRotateSeconds:
+			patch.wallpaperRotateSeconds !== undefined
+				? patch.wallpaperRotateSeconds
+				: rotateSeconds,
+	});
+
+	/** Mirror wallpaper-driving fields into query cache + live store. */
+	const mirrorSettings = (next: {
+		wallpaperId: string | null;
+		wallpaperAutoRotate: boolean;
+		wallpaperRotateSeconds: number;
+	}) => {
+		utils.window.getAppearance.setData(undefined, (prev) =>
+			prev ? { ...prev, ...next } : prev,
+		);
+		applyToStore(next);
+	};
+
 	/** Persist a patch and mirror the wallpaper-driving fields into the store. */
 	const persist = (patch: {
 		wallpaperId?: string | null;
 		wallpaperAutoRotate?: boolean;
 		wallpaperRotateSeconds?: number;
 	}) => {
-		const next = {
-			wallpaperId:
-				patch.wallpaperId !== undefined ? patch.wallpaperId : wallpaperId,
-			wallpaperAutoRotate:
-				patch.wallpaperAutoRotate !== undefined
-					? patch.wallpaperAutoRotate
-					: autoRotate,
-			wallpaperRotateSeconds:
-				patch.wallpaperRotateSeconds !== undefined
-					? patch.wallpaperRotateSeconds
-					: rotateSeconds,
-		};
-		utils.window.getAppearance.setData(undefined, (prev) =>
-			prev ? { ...prev, ...next } : prev,
-		);
-		applyToStore(next);
+		mirrorSettings(resolvePatch(patch));
 		setAppearance.mutate(patch);
+	};
+
+	const preview = (patch: {
+		wallpaperId?: string | null;
+		wallpaperAutoRotate?: boolean;
+		wallpaperRotateSeconds?: number;
+	}) => {
+		mirrorSettings(resolvePatch(patch));
 	};
 
 	const handleToggle = (on: boolean) => {
@@ -78,6 +100,12 @@ export function WallpaperSection() {
 	};
 
 	const handleInterval = (values: number[]) => {
+		const next = values[0];
+		if (next === undefined) return;
+		preview({ wallpaperRotateSeconds: next });
+	};
+
+	const handleIntervalCommit = (values: number[]) => {
 		const next = values[0];
 		if (next === undefined) return;
 		persist({ wallpaperRotateSeconds: next });
@@ -179,6 +207,7 @@ export function WallpaperSection() {
 								step={30}
 								value={[rotateSeconds]}
 								onValueChange={handleInterval}
+								onValueCommit={handleIntervalCommit}
 							/>
 						</div>
 					) : null}

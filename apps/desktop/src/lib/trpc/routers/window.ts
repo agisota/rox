@@ -83,10 +83,13 @@ export const createWindowRouter = (getWindow: () => BrowserWindow | null) => {
 			.mutation(async ({ input }) => {
 				const previousGlass = appState.data.appearanceState.glassEnabled;
 				const previousOpacity = appState.data.appearanceState.windowOpacity;
+				const patch = Object.fromEntries(
+					Object.entries(input).filter(([, value]) => value !== undefined),
+				) as Partial<typeof appState.data.appearanceState>;
 
 				appState.data.appearanceState = {
 					...appState.data.appearanceState,
-					...input,
+					...patch,
 				};
 				await appState.write();
 
