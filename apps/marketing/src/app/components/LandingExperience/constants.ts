@@ -119,10 +119,14 @@ export const INTRO_FEATURE_TAGS: ReadonlyArray<{
 
 /** Hero wordmark — wide tracked lockup via pre-spaced letters. */
 export const HERO_BRAND_WORDMARK = ["R", "O", "X", "O", "N", "E"].join(
-	"                  ",
+	"             ",
 );
 
-export const LANDING_HEADLINE = "Кодируй и вайбуй в тыщу рук";
+/**
+ * Headline. A non-breaking space glues «в» to «тыщу» so the line breaks before
+ * it — keeping «в тыщу рук» together on the second line.
+ */
+export const LANDING_HEADLINE = "Кодируй и вайбуй в\u00A0тыщу рук";
 
 /** Hero subhead — line 1 and the static parts of line 2 around the agent cycle. */
 export const HERO_SUB_LINE_ONE = "Rox за 1 секунду";
