@@ -80,10 +80,18 @@ export function RoleLibraryPanel({
 						: null}
 
 					{!hasRoles && rolesQuery.isError && (
-						<div className="rounded-md border border-destructive/40 p-3">
+						<div className="flex flex-col gap-2 rounded-md border border-destructive/40 p-3">
 							<p className="select-text cursor-text text-xs text-destructive">
 								{rolesQuery.error.message}
 							</p>
+							<Button
+								size="sm"
+								variant="outline"
+								className="self-start"
+								onClick={() => void rolesQuery.refetch()}
+							>
+								Повторить
+							</Button>
 						</div>
 					)}
 
