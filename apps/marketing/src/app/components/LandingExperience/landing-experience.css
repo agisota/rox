@@ -406,7 +406,7 @@
 .rox-hero .rox-landing__brand {
 	justify-content: center;
 	margin-bottom: 0;
-	color: rgba(255, 236, 220, 0.58);
+	color: rgba(138, 210, 255, 0.48);
 }
 
 .rox-hero .rox-hero__headline {
@@ -418,11 +418,11 @@
 	text-shadow: 0 2px 28px rgba(0, 0, 0, 0.65);
 }
 
-/* Agent cycle — warm gold accent, distinct from hint body + particle orange. */
+/* Variant B: warm accent only on the agent name cycle. */
 .rox-hero__sub-cycle {
-	color: #ffd28e;
+	color: var(--rox-orange-1);
 	font-weight: 400;
-	text-shadow: 0 0 20px rgba(255, 180, 84, 0.45);
+	text-shadow: 0 0 22px rgba(255, 154, 77, 0.5);
 }
 
 .rox-hero .rox-hero__sub {
@@ -442,31 +442,29 @@
 	display: block;
 }
 
-/* Secondary hero copy — muted neutral so accents (cycle, terms) pop. */
+/* Variant B — dual-tone: cool cyan hint block vs warm particle field. */
 .rox-hero .rox-hero__hint {
 	margin: 4px 0 0;
 	font-size: 0.8rem;
 	letter-spacing: 0.03em;
-	color: rgba(255, 255, 255, 0.5);
+	color: rgba(138, 210, 255, 0.66);
 	opacity: 1;
-	text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+	text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
 }
 
-/* First hint line reads slightly louder than the rest. */
 .rox-hero .rox-hero__hint:first-of-type {
-	color: rgba(255, 255, 255, 0.62);
+	color: rgba(138, 210, 255, 0.78);
 }
 
-/* Glossary terms — cool cyan underline on dim body copy. */
 .rox-hero .rox-hero__hint .rox-term {
-	color: rgba(255, 255, 255, 0.86);
-	text-decoration-color: rgba(138, 210, 255, 0.55);
+	color: rgba(210, 236, 255, 0.94);
+	text-decoration-color: rgba(255, 255, 255, 0.5);
 }
 
 .rox-hero .rox-hero__hint .rox-term:hover,
 .rox-hero .rox-hero__hint .rox-term:focus {
-	color: #c8e8ff;
-	text-decoration-color: #8ad2ff;
+	color: #ffffff;
+	text-decoration-color: rgba(255, 255, 255, 0.85);
 }
 
 /* Command console: composer input + suggestion chips + mock dispatch log. */
