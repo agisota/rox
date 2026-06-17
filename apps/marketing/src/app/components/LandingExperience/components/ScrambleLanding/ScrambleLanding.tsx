@@ -14,7 +14,6 @@ import {
 	LANDING_FEAT_ISOLATION,
 	LANDING_FEAT_SPEED,
 	LANDING_FEAT_SWITCH,
-	LANDING_FEATURES_HEADING,
 	LANDING_HEADLINE,
 	LANDING_HOW_HEADING,
 	LANDING_HOW_PARAGRAPH,
@@ -206,8 +205,6 @@ export function ScrambleLanding({ children }: ScrambleLandingProps) {
 			</section>
 
 			<div className="rox-landing__main">
-				<h2 className="rox-scramble">{LANDING_FEATURES_HEADING}</h2>
-
 				<ul>
 					<li className="rox-scramble">{LANDING_FEAT_SPEED}</li>
 					<li>
