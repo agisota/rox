@@ -21,7 +21,7 @@ import {
 	HiOutlineUser,
 	HiOutlineUserGroup,
 } from "react-icons/hi2";
-import { LuBrain, LuGitBranch, LuKeyboard } from "react-icons/lu";
+import { LuBrain, LuGitBranch, LuKeyboard, LuMic } from "react-icons/lu";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { motionSpring, useShouldAnimate } from "renderer/motion";
@@ -39,6 +39,7 @@ type SettingsRoute =
 	| "/settings/appearance"
 	| "/settings/ringtones"
 	| "/settings/keyboard"
+	| "/settings/voice"
 	| "/settings/behavior"
 	| "/settings/git"
 	| "/settings/agents"
@@ -105,6 +106,12 @@ const SECTION_GROUPS: SectionGroup[] = [
 				section: "keyboard",
 				label: "Клавиатура",
 				icon: <LuKeyboard className="h-4 w-4" />,
+			},
+			{
+				id: "/settings/voice",
+				section: "voice",
+				label: "Голос",
+				icon: <LuMic className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/git",

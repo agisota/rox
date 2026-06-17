@@ -29,6 +29,7 @@ import { userRouter } from "./router/user";
 import { v2HostRouter } from "./router/v2-host";
 import { v2ProjectRouter } from "./router/v2-project";
 import { v2WorkspaceRouter } from "./router/v2-workspace";
+import { voiceRouter } from "./router/voice";
 import { workflowRouter } from "./router/workflow";
 import { workspaceRouter } from "./router/workspace";
 import { createCallerFactory, createTRPCRouter } from "./trpc";
@@ -64,6 +65,7 @@ export const appRouter = createTRPCRouter({
 	v2Host: v2HostRouter,
 	v2Project: v2ProjectRouter,
 	v2Workspace: v2WorkspaceRouter,
+	voice: voiceRouter,
 	workflow: workflowRouter,
 	workspace: workspaceRouter,
 });

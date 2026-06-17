@@ -13,5 +13,6 @@ export * from "./profiles";
 export * from "./relations";
 export * from "./schema";
 export * from "./types";
+export * from "./voice";
 export * from "./workflow";
 export * from "./zod";
