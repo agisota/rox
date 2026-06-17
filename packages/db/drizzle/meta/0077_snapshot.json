@@ -1,5 +1,5 @@
 {
-  "id": "c412ebf6-0a24-41f5-b1e9-aae1100dbf4e",
+  "id": "99ff672d-eace-4db4-ae88-bfe2440ff328",
   "prevId": "9e29bb3f-e171-4079-8248-2eaa305ea815",
   "version": "7",
   "dialect": "postgresql",
@@ -3396,27 +3396,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "contacts_entity_org_uniq": {
-          "name": "contacts_entity_org_uniq",
-          "columns": [
-            {
-              "expression": "entity_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -3465,7 +3444,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "contacts_entity_org_uniq": {
+          "name": "contacts_entity_org_uniq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "entity_id",
+            "organization_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

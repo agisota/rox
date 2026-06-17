@@ -30,7 +30,8 @@ CREATE TABLE "contacts" (
 	"is_self" boolean DEFAULT false NOT NULL,
 	"fields" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "contacts_entity_org_uniq" UNIQUE("entity_id","organization_id")
 );
 --> statement-breakpoint
 CREATE TABLE "edges" (
@@ -177,7 +178,6 @@ CREATE INDEX "activity_events_source_idx" ON "activity_events" USING btree ("sou
 CREATE INDEX "contacts_org_idx" ON "contacts" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "contacts_linked_user_idx" ON "contacts" USING btree ("linked_user_id");--> statement-breakpoint
 CREATE INDEX "contacts_primary_email_idx" ON "contacts" USING btree ("primary_email");--> statement-breakpoint
-CREATE UNIQUE INDEX "contacts_entity_org_uniq" ON "contacts" USING btree ("entity_id","organization_id");--> statement-breakpoint
 CREATE INDEX "edges_org_idx" ON "edges" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "edges_source_idx" ON "edges" USING btree ("source_entity_id");--> statement-breakpoint
 CREATE INDEX "edges_target_idx" ON "edges" USING btree ("target_entity_id");--> statement-breakpoint

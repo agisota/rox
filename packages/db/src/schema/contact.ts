@@ -21,7 +21,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
-	uniqueIndex,
+	unique,
 	uuid,
 } from "drizzle-orm/pg-core";
 import { organizations, users } from "./auth";
@@ -64,7 +64,7 @@ export const contacts = pgTable(
 		index("contacts_org_idx").on(t.organizationId),
 		index("contacts_linked_user_idx").on(t.linkedUserId),
 		index("contacts_primary_email_idx").on(t.primaryEmail),
-		uniqueIndex("contacts_entity_org_uniq").on(t.entityId, t.organizationId),
+		unique("contacts_entity_org_uniq").on(t.entityId, t.organizationId),
 		foreignKey({
 			columns: [t.entityId, t.organizationId],
 			foreignColumns: [entities.id, entities.organizationId],
