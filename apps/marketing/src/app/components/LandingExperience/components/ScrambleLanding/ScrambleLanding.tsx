@@ -3,17 +3,13 @@
 import { animate, scrambleText } from "animejs";
 import { useEffect, useRef } from "react";
 import {
-	HERO_AGENT_STACK_LIST,
-	HERO_BYOM_TERM,
-	HERO_ROX_ORCHESTRATION_TERM,
-	HERO_STACK_TERM,
 	LANDING_FEAT_ISOLATION,
 	LANDING_HEADLINE,
 	LANDING_INTRO_PARAGRAPH,
 } from "../../constants";
 import { OrchestrationField } from "../OrchestrationField";
 import { FIELD_HINT } from "../OrchestrationField/constants";
-import { Term } from "./components/Term";
+import { HeroStackLine } from "./components/HeroStackLine";
 
 /**
  * Scramble-text landing document, ported from Julian Garnier's anime.js v4
@@ -155,15 +151,7 @@ export function ScrambleLanding() {
 					<p className="rox-hero__hint">{LANDING_FEAT_ISOLATION}</p>
 
 					<p className="rox-hero__hint">
-						<Term label={HERO_BYOM_TERM.label} tip={HERO_BYOM_TERM.tip} />:{" "}
-						<Term label={HERO_STACK_TERM.label} tip={HERO_STACK_TERM.tip} />{" "}
-						{HERO_AGENT_STACK_LIST} ну, или сходу газуй на заряженном агенте Rox
-						One, который{" "}
-						<Term
-							label={HERO_ROX_ORCHESTRATION_TERM.label}
-							tip={HERO_ROX_ORCHESTRATION_TERM.tip}
-						/>{" "}
-						управится с любым нынешним зоопарком ИИ-решений
+						<HeroStackLine />
 					</p>
 
 					<a className="rox-landing__hero-cta" href="/download">

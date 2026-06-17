@@ -135,13 +135,23 @@ export const LANDING_ACPX_TERM: LandingTerm = {
 
 /* ── Hero stack line (BYOM / BYOA / BYOH) ─────────────────────────────── */
 
-export const HERO_BYOM_TERM: LandingTerm = {
-	label: "BYOM + BYOA + BYOH",
-	tip: "bring your own model, bring your own agent, bring your own harness",
-};
+export const HERO_BYOM_TERMS: ReadonlyArray<LandingTerm> = [
+	{
+		label: "BYOM",
+		tip: "bring your own model — подключай любую модель на своих ключах и лимитах.",
+	},
+	{
+		label: "BYOA",
+		tip: "bring your own agent — гоняй привычного CLI-агента от своего аккаунта.",
+	},
+	{
+		label: "BYOH",
+		tip: "bring your own harness — накладывай свой skill/harness-слой поверх агента.",
+	},
+];
 
 export const HERO_STACK_TERM: LandingTerm = {
-	label: "залетай на любом привычном стэке",
+	label: "стэк",
 	tip: "можно выбрать любого привычного тебе агента и любую привычную тебе модель",
 };
 
@@ -150,8 +160,89 @@ export const HERO_ROX_ORCHESTRATION_TERM: LandingTerm = {
 	tip: "для оркестрации используем собственное комбо из ODW (opendynamicworkflows) x ACPX x Autopilot x Swarm",
 };
 
-export const HERO_AGENT_STACK_LIST =
-	"Claude Code, Codex, Cursor, OpenCode, Gemini, Openclaw, Hermes, Kimi, Deepseek, Qwen...";
+/** Agent names in the hero stack line — each renders as its own underlined hover term. */
+export const HERO_AGENT_TERMS: ReadonlyArray<LandingTerm> = [
+	{
+		label: "Claude Code",
+		tip: "Работаем с твоей подпиской Claude Code (Anthropic Agents SDK) — ключи и лимиты остаются твоими.",
+	},
+	{
+		label: "Codex",
+		tip: "Запускаем через Codex CLI (OpenAI) на твоём аккаунте.",
+	},
+	{
+		label: "Cursor",
+		tip: "Поддерживаем подписку Cursor и Cursor CLI — гоняем агентов Cursor от твоего имени.",
+	},
+	{
+		label: "OpenCode",
+		tip: "Поддерживаем OpenCode CLI — открытый агент с твоим выбором моделей.",
+	},
+	{
+		label: "Gemini",
+		tip: "Работаем через Gemini CLI (Google) с твоим ключом.",
+	},
+	{
+		label: "OpenClaw",
+		tip: "OpenClaw — persona/skill-харнесс поверх Claude Code; Rox гоняет его параллельно в worktree.",
+	},
+	{
+		label: "Hermes",
+		tip: "Hermes Agent — самоулучшающийся агент с навыками и крон-задачами; Rox оркестрирует его в общем зоопарке.",
+	},
+	{
+		label: "Kimi",
+		tip: "Kimi CLI (Moonshot) — терминальный coding-агент на твоём аккаунте.",
+	},
+	{
+		label: "DeepSeek",
+		tip: "DeepSeek — модели и CLI-агент; подключай свои ключи и гоняй параллельно.",
+	},
+	{
+		label: "Qwen",
+		tip: "Qwen Code (Alibaba) — читает, правит и запускает код из терминала.",
+	},
+	{
+		label: "Zed",
+		tip: "Zed — быстрый редактор с агентом внутри; Rox открывает diff и координирует CLI.",
+	},
+	{
+		label: "Windsurf",
+		tip: "Windsurf (Cascade) — IDE-агент от Codeium; Rox запускает его CLI параллельно.",
+	},
+	{
+		label: "Devin",
+		tip: "Devin — облачный AI-инженер от Cognition; Rox соседствует с ним в одном оркестре задач.",
+	},
+	{
+		label: "Copilot",
+		tip: "GitHub Copilot CLI — агент от GitHub для планирования, правок и сборки в репо.",
+	},
+	{
+		label: "Grok Build",
+		tip: "Grok Build — coding-агент от xAI в терминале; твой ключ, твой аккаунт.",
+	},
+	{
+		label: "Mira",
+		tip: "Mira — агентский CLI из экосистемы Mira; Rox подключает его как любой другой harness.",
+	},
+	{
+		label: "OpenHands",
+		tip: "OpenHands — open-source агент для автономной разработки; Rox гоняет его в изолированной ветке.",
+	},
+	{
+		label: "Pi",
+		tip: "Pi — минимальный terminal harness для гибких coding-воркфлоу через ACP.",
+	},
+	{
+		label: "Cline",
+		tip: "Cline — агент-расширение для VS Code; Rox координирует его рядом с CLI-агентами.",
+	},
+	{
+		label: "Kilo Code",
+		tip: "Kilo Code — форк Cline с расширенными моделями; Rox подключает как отдельного агента.",
+	},
+];
 
 /** Lead-in for the "open in editor" line; editor names render as terms. */
 export const LANDING_EDITOR_LEAD =

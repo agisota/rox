@@ -622,6 +622,7 @@
 .rox-term {
 	appearance: none;
 	-webkit-appearance: none;
+	display: inline;
 	border: none;
 	background: none;
 	padding: 0;
