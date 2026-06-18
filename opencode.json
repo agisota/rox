@@ -34,6 +34,10 @@
 			"type": "remote",
 			"url": "https://mcp.posthog.com/mcp",
 			"oauth": {}
+		},
+		"codebase-memory": {
+			"type": "local",
+			"command": ["codebase-memory-mcp"]
 		}
 	}
 }

@@ -22,3 +22,6 @@ url = "https://mcp.linear.app/mcp"
 [mcp_servers.sentry]
 type = "sse"
 url = "https://mcp.sentry.dev/mcp"
+
+[mcp_servers.codebase-memory]
+command = "codebase-memory-mcp"
