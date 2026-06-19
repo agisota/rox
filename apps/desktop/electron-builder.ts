@@ -144,6 +144,9 @@ const config: Configuration = {
 			// Required for Apple Events / Automation permission prompt
 			NSAppleEventsUsageDescription:
 				"Rox needs to interact with other applications to run terminal commands and development tools.",
+			// Surfaces the Full Disk Access redirect prompt copy
+			NSSystemAdministrationUsageDescription:
+				"Rox needs administrative file access to read and manage your projects across the filesystem.",
 		},
 	},
 
