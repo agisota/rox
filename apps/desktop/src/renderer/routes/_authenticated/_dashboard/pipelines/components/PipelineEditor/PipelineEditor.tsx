@@ -6,7 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import type { RoxWorkflowState } from "@rox/workflow-core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react";
+import {
+	ArrowLeft,
+	CheckCircle2,
+	Loader2,
+	PanelRightClose,
+	PanelRightOpen,
+	Save,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import {
@@ -65,6 +72,7 @@ export function PipelineEditor({
 	const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">(
 		"idle",
 	);
+	const [rolesPanelOpen, setRolesPanelOpen] = useState(true);
 
 	const pipelineId = initialPipeline.id;
 	const v2ProjectId = initialPipeline.v2ProjectId ?? undefined;
@@ -239,12 +247,30 @@ export function PipelineEditor({
 							</Badge>
 						))}
 					<SaveIndicator state={saveState} />
+					<Button
+						size="icon"
+						variant="ghost"
+						className="size-8"
+						aria-label={
+							rolesPanelOpen
+								? "Скрыть библиотеку ролей"
+								: "Показать библиотеку ролей"
+						}
+						aria-pressed={rolesPanelOpen}
+						onClick={() => setRolesPanelOpen((open) => !open)}
+					>
+						{rolesPanelOpen ? (
+							<PanelRightClose className="size-4" />
+						) : (
+							<PanelRightOpen className="size-4" />
+						)}
+					</Button>
 				</div>
 			</div>
 
 			{/* Body: canvas + side panels */}
 			<div className="flex min-h-0 flex-1 overflow-hidden">
-				<div className="min-w-0 flex-1">
+				<div className="relative h-full min-w-0 flex-1 basis-0">
 					<ReactFlowProvider>
 						<PipelineCanvas
 							nodes={nodes}
@@ -257,37 +283,39 @@ export function PipelineEditor({
 					</ReactFlowProvider>
 				</div>
 
-				<aside className="flex w-[clamp(17rem,32vw,21rem)] shrink-0 flex-col border-l bg-background">
-					<Tabs defaultValue="roles" className="flex min-h-0 flex-1 flex-col">
-						<TabsList className="mx-2 mt-2 grid h-auto grid-cols-3">
-							<TabsTrigger value="roles" className="text-xs">
-								Роли
-							</TabsTrigger>
-							<TabsTrigger value="triggers" className="text-xs">
-								Триггеры
-							</TabsTrigger>
-							<TabsTrigger value="runs" className="text-xs">
-								Запуски
-							</TabsTrigger>
-						</TabsList>
-						<TabsContent value="roles" className="min-h-0 flex-1">
-							<RoleLibraryPanel
-								v2ProjectId={v2ProjectId}
-								onAddRole={addRoleNode}
-							/>
-						</TabsContent>
-						<TabsContent value="triggers" className="min-h-0 flex-1">
-							<TriggerConfigPanel
-								pipelineId={pipelineId}
-								selectedNodeId={selectedNodeId}
-								selectedNodeLabel={selectedNode?.data.label ?? null}
-							/>
-						</TabsContent>
-						<TabsContent value="runs" className="min-h-0 flex-1">
-							<RunMonitorPanel pipelineId={pipelineId} />
-						</TabsContent>
-					</Tabs>
-				</aside>
+				{rolesPanelOpen && (
+					<aside className="flex w-[clamp(17rem,30vw,21rem)] shrink-0 flex-col border-l bg-background">
+						<Tabs defaultValue="roles" className="flex min-h-0 flex-1 flex-col">
+							<TabsList className="mx-2 mt-2 grid h-auto grid-cols-3">
+								<TabsTrigger value="roles" className="text-xs">
+									Роли
+								</TabsTrigger>
+								<TabsTrigger value="triggers" className="text-xs">
+									Триггеры
+								</TabsTrigger>
+								<TabsTrigger value="runs" className="text-xs">
+									Запуски
+								</TabsTrigger>
+							</TabsList>
+							<TabsContent value="roles" className="min-h-0 flex-1">
+								<RoleLibraryPanel
+									v2ProjectId={v2ProjectId}
+									onAddRole={addRoleNode}
+								/>
+							</TabsContent>
+							<TabsContent value="triggers" className="min-h-0 flex-1">
+								<TriggerConfigPanel
+									pipelineId={pipelineId}
+									selectedNodeId={selectedNodeId}
+									selectedNodeLabel={selectedNode?.data.label ?? null}
+								/>
+							</TabsContent>
+							<TabsContent value="runs" className="min-h-0 flex-1">
+								<RunMonitorPanel pipelineId={pipelineId} />
+							</TabsContent>
+						</Tabs>
+					</aside>
+				)}
 			</div>
 		</div>
 	);

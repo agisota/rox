@@ -1,10 +1,12 @@
-import { getHostId } from "@rox/shared/host-info";
+import { getHostId, getHostName } from "@rox/shared/host-info";
 import { publicProcedure, router } from "..";
 
 export const createDeviceRouter = () => {
 	return router({
-		getMachineId: publicProcedure.query((): { machineId: string } => {
-			return { machineId: getHostId() };
-		}),
+		getMachineId: publicProcedure.query(
+			(): { machineId: string; hostName: string } => {
+				return { machineId: getHostId(), hostName: getHostName() };
+			},
+		),
 	});
 };

@@ -195,7 +195,9 @@ export function DashboardSidebar({
 		<DashboardSidebarSectionRenameProvider>
 			<DashboardSidebarHoverProvider>
 				<DashboardSidebarHoverCardOverlay>
-					<div className="flex h-full flex-col border-r border-border bg-muted/45 dark:bg-muted/35">
+					{/* No own border-r: the wrapping ResizablePanel already draws the
+					    single 1px divider — a second border here stacked into 2px. */}
+					<div className="flex h-full flex-col bg-muted/45 dark:bg-muted/35">
 						<DashboardSidebarHeader isCollapsed={isCollapsed} />
 
 						{!isCollapsed && (

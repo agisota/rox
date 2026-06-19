@@ -79,12 +79,12 @@ export interface AppearanceSettings {
 	quoteLoaderEnabled: boolean;
 }
 
-/** Default appearance — matches the desktop glass defaults, wallpaper off. */
+/** Default appearance — soft light look: 60% opacity, dawn-mist, no auto-rotate. */
 export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
 	glassEnabled: false,
-	windowOpacity: 0.3,
-	wallpaperId: null,
-	wallpaperAutoRotate: true,
+	windowOpacity: 0.6,
+	wallpaperId: "dawn-mist",
+	wallpaperAutoRotate: false,
 	wallpaperRotateSeconds: 120,
 	quoteLoaderEnabled: true,
 };

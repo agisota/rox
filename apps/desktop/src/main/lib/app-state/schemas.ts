@@ -61,16 +61,18 @@ export const defaultAppState: AppState = {
 		tabHistoryStacks: {},
 	},
 	themeState: {
-		activeThemeId: "dark",
+		// Default to the light "classic" theme with the dawn-mist wallpaper and
+		// 60% window opacity (glass on) for a soft, bright first-run look.
+		activeThemeId: "light",
 		customThemes: [],
 		systemLightThemeId: "light",
 		systemDarkThemeId: "dark",
 	},
 	appearanceState: {
 		glassEnabled: true,
-		windowOpacity: 0.3,
-		wallpaperId: null,
-		wallpaperAutoRotate: true,
+		windowOpacity: 0.6,
+		wallpaperId: "dawn-mist",
+		wallpaperAutoRotate: false,
 		wallpaperRotateSeconds: 120,
 		quoteLoaderEnabled: true,
 	},
