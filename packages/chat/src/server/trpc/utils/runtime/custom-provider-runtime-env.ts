@@ -1,31 +1,38 @@
 import {
 	type CustomProviderConfig,
 	getCustomProviderConfig,
-	stripOpenAIProviderPrefix,
+	stripCustomProviderPrefix,
 	toCustomProviderWireModelId,
 } from "../../../desktop/chat-service/custom-provider-config";
 
-const CUSTOM_OPENAI_ENV_KEYS = ["OPENAI_API_KEY", "OPENAI_BASE_URL"] as const;
+/**
+ * Detect when the selected chat model belongs to the user's custom
+ * OpenAI-compatible provider and resolve its harness wire id
+ * (`<slug>/<modelId>`). The provider is registered in mastracode's global
+ * `settings.json` (written by `setCustomProviderConfig`), so the harness routes
+ * the wire id through its OpenAI-compatible chat-completions client. No process
+ * env is injected here — the settings.json registration is the bridge, and the
+ * old `OPENAI_*` injection forced the `/responses` path and could clobber real
+ * OpenAI auth.
+ */
 
-type CustomOpenAIEnvKey = (typeof CUSTOM_OPENAI_ENV_KEYS)[number];
-
-interface AppliedCustomProviderEnv {
-	values: Record<CustomOpenAIEnvKey, string>;
-	previous: Partial<Record<CustomOpenAIEnvKey, string>>;
-}
-
-let appliedCustomProviderEnv: AppliedCustomProviderEnv | null = null;
 let customProviderRuntimeEnvTail = Promise.resolve();
 
+/**
+ * True when `selectedModelId` (bare, `rox-custom/`-prefixed, or a stray legacy
+ * `openai/`-prefixed id) refers to one of the configured custom-provider models.
+ */
 function isCustomProviderModel(
 	selectedModelId: string | null | undefined,
 	config: CustomProviderConfig,
 ): boolean {
 	if (!selectedModelId) return false;
-	const normalized = stripOpenAIProviderPrefix(
+	const normalized = stripCustomProviderPrefix(
 		selectedModelId.trim(),
 	).toLowerCase();
-	return normalized === config.modelId.trim().toLowerCase();
+	return config.models.some(
+		(model) => model.trim().toLowerCase() === normalized,
+	);
 }
 
 function resolveCustomProviderConfigForModel(
@@ -36,23 +43,6 @@ function resolveCustomProviderConfigForModel(
 	return isCustomProviderModel(selectedModelId, config) ? config : null;
 }
 
-function clearAppliedCustomProviderRuntimeEnv(): void {
-	const applied = appliedCustomProviderEnv;
-	if (!applied) return;
-
-	for (const key of CUSTOM_OPENAI_ENV_KEYS) {
-		if (process.env[key] !== applied.values[key]) continue;
-		const previous = applied.previous[key];
-		if (previous === undefined) {
-			delete process.env[key];
-		} else {
-			process.env[key] = previous;
-		}
-	}
-
-	appliedCustomProviderEnv = null;
-}
-
 export function resolveCustomProviderRuntimeModelId(
 	selectedModelId: string | null | undefined,
 ): string | undefined {
@@ -60,7 +50,7 @@ export function resolveCustomProviderRuntimeModelId(
 	if (!trimmed) return undefined;
 
 	const config = resolveCustomProviderConfigForModel(trimmed);
-	return config ? toCustomProviderWireModelId(config.modelId) : trimmed;
+	return config ? toCustomProviderWireModelId(trimmed) : trimmed;
 }
 
 export function prepareCustomProviderRuntimeEnv(
@@ -68,32 +58,17 @@ export function prepareCustomProviderRuntimeEnv(
 ): { isCustomModel: boolean; modelId?: string } {
 	const trimmed = selectedModelId?.trim();
 	if (!trimmed) {
-		clearAppliedCustomProviderRuntimeEnv();
 		return { isCustomModel: false };
 	}
 
 	const config = resolveCustomProviderConfigForModel(trimmed);
 	if (!config) {
-		clearAppliedCustomProviderRuntimeEnv();
 		return { isCustomModel: false, modelId: trimmed };
 	}
 
-	clearAppliedCustomProviderRuntimeEnv();
-
-	const values = {
-		OPENAI_API_KEY: config.apiKey,
-		OPENAI_BASE_URL: config.baseUrl,
-	};
-	const previous: Partial<Record<CustomOpenAIEnvKey, string>> = {};
-	for (const key of CUSTOM_OPENAI_ENV_KEYS) {
-		previous[key] = process.env[key];
-		process.env[key] = values[key];
-	}
-	appliedCustomProviderEnv = { values, previous };
-
 	return {
 		isCustomModel: true,
-		modelId: toCustomProviderWireModelId(config.modelId),
+		modelId: toCustomProviderWireModelId(trimmed),
 	};
 }
 
@@ -104,6 +79,9 @@ export async function withCustomProviderRuntimeEnv<T>(
 		modelId?: string;
 	}) => Promise<T>,
 ): Promise<T> {
+	// Serialize turns so the wire-id resolution observed by `operation` is stable
+	// even when overlapping turns prepare different models. No env is mutated, but
+	// keeping the queue preserves the previous ordering guarantees callers rely on.
 	let releaseCurrentTurn: (() => void) | undefined;
 	const waitForTurn = customProviderRuntimeEnvTail;
 	customProviderRuntimeEnvTail = new Promise<void>((resolve) => {
@@ -115,7 +93,6 @@ export async function withCustomProviderRuntimeEnv<T>(
 		const prepared = prepareCustomProviderRuntimeEnv(selectedModelId);
 		return await operation(prepared);
 	} finally {
-		clearAppliedCustomProviderRuntimeEnv();
 		releaseCurrentTurn?.();
 	}
 }

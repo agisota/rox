@@ -3,13 +3,6 @@ import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@rox/ui/select";
 import { toast } from "@rox/ui/sonner";
 import { useEffect, useMemo, useState } from "react";
 import { HiOutlineCube } from "react-icons/hi2";
@@ -36,7 +29,6 @@ function getErrorMessage(error: unknown, fallback: string): string {
 export function CustomProviderSection() {
 	const [baseUrl, setBaseUrl] = useState("");
 	const [apiKey, setApiKey] = useState("");
-	const [selectedModel, setSelectedModel] = useState("");
 	const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
 
 	const { data: config, refetch } =
@@ -57,14 +49,7 @@ export function CustomProviderSection() {
 	useEffect(() => {
 		if (!config) return;
 		setBaseUrl(config.baseUrl);
-		setSelectedModel(config.modelId);
-		if (config.modelId) {
-			setDiscoveredModels((current) =>
-				current.includes(config.modelId)
-					? current
-					: [config.modelId, ...current],
-			);
-		}
+		setDiscoveredModels(config.models);
 	}, [config]);
 
 	const status = useMemo(
@@ -79,20 +64,25 @@ export function CustomProviderSection() {
 
 	const hasSavedApiKey = config?.hasApiKey ?? false;
 	const effectiveApiKey = apiKey.trim();
-	const canDiscover =
+	const canConnect =
 		baseUrl.trim().length > 0 &&
 		(effectiveApiKey.length > 0 || hasSavedApiKey) &&
-		!isDiscovering;
+		!isDiscovering &&
+		!isSaving;
 
-	const discoverModels = async () => {
+	/**
+	 * Connect (or refresh): parse `/v1/models` and persist the full list. The
+	 * picker surfaces every discovered model; Settings no longer asks the user to
+	 * pick a single one.
+	 */
+	const connectAndSave = async () => {
 		const trimmedBaseUrl = baseUrl.trim();
 		if (!trimmedBaseUrl) {
 			toast.error("Укажите Base URL.");
 			return;
 		}
 		// Require a key only when none is saved yet. When a key is already stored,
-		// the backend reuses it — the renderer never receives the raw secret, so
-		// re-typing it just to re-list models is unnecessary friction.
+		// the backend reuses it — the renderer never receives the raw secret.
 		if (!effectiveApiKey && !hasSavedApiKey) {
 			toast.error("Укажите ключ API.");
 			return;
@@ -101,8 +91,8 @@ export function CustomProviderSection() {
 		try {
 			const result = await discoverModelsMutation.mutateAsync({
 				baseUrl: trimmedBaseUrl,
-				// Omit the key when the field is empty so the backend reuses the
-				// saved one; send the typed value when the user is changing it.
+				// Omit the key when the field is empty so the backend reuses the saved
+				// one; send the typed value when the user is changing it.
 				...(effectiveApiKey ? { apiKey: effectiveApiKey } : {}),
 			});
 			const ids = result.models.map((model) => model.id);
@@ -111,47 +101,17 @@ export function CustomProviderSection() {
 				toast.warning("Эндпоинт не вернул ни одной модели.");
 				return;
 			}
-			if (!ids.includes(selectedModel)) {
-				setSelectedModel(ids[0] ?? "");
-			}
-			toast.success(`Найдено моделей: ${ids.length}`);
-		} catch (error) {
-			toast.error(getErrorMessage(error, "Не удалось обнаружить модели."));
-		}
-	};
 
-	const saveConfig = async () => {
-		const trimmedBaseUrl = baseUrl.trim();
-		const trimmedModel = selectedModel.trim();
-		if (!trimmedBaseUrl) {
-			toast.error("Укажите Base URL.");
-			return;
-		}
-		if (!effectiveApiKey && !hasSavedApiKey) {
-			toast.error("Укажите ключ API.");
-			return;
-		}
-		if (!trimmedModel) {
-			toast.error("Выберите модель.");
-			return;
-		}
-		// When the key field is empty but a key is already saved, the user only
-		// changed the model/base URL — the backend reuses the stored secret, so we
-		// persist without re-entering it.
-
-		try {
 			await setConfigMutation.mutateAsync({
 				baseUrl: trimmedBaseUrl,
-				// Omit the key when the field is empty so the backend keeps the saved
-				// one; send the typed value only when the user changed it.
 				...(effectiveApiKey ? { apiKey: effectiveApiKey } : {}),
-				modelId: trimmedModel,
+				models: ids,
 			});
 			setApiKey("");
 			await refetch();
-			toast.success("Свой провайдер сохранён");
+			toast.success(`Свой провайдер сохранён — моделей: ${ids.length}`);
 		} catch (error) {
-			toast.error(getErrorMessage(error, "Не удалось сохранить."));
+			toast.error(getErrorMessage(error, "Не удалось подключиться."));
 		}
 	};
 
@@ -160,7 +120,6 @@ export function CustomProviderSection() {
 			await clearConfigMutation.mutateAsync();
 			setBaseUrl("");
 			setApiKey("");
-			setSelectedModel("");
 			setDiscoveredModels([]);
 			await refetch();
 			toast.success("Свой провайдер удалён");
@@ -169,11 +128,14 @@ export function CustomProviderSection() {
 		}
 	};
 
+	const modelCount = discoveredModels.length;
+	const primaryLabel = hasSavedApiKey ? "Сохранить" : "Подключить";
+
 	return (
 		<SettingsSection
 			title="Свой провайдер"
 			icon={<HiOutlineCube className="size-4" />}
-			description="Подключите любой OpenAI-совместимый эндпоинт: укажите Base URL и ключ API, затем обнаружьте доступные модели."
+			description="Подключите любой OpenAI-совместимый эндпоинт: укажите Base URL и ключ API. Все доступные модели появятся в выборе модели в чате."
 			action={
 				badge ? (
 					<Badge variant={badge.variant}>
@@ -198,7 +160,7 @@ export function CustomProviderSection() {
 						}}
 						placeholder="https://api.example.com/v1"
 						className="font-mono"
-						disabled={isSaving}
+						disabled={isSaving || isDiscovering}
 					/>
 				</div>
 
@@ -218,66 +180,22 @@ export function CustomProviderSection() {
 						}}
 						placeholder={hasSavedApiKey ? "Сохранённый ключ API" : "sk-..."}
 						className="font-mono"
-						disabled={isSaving}
+						disabled={isSaving || isDiscovering}
 					/>
 				</div>
 
-				<div className="space-y-1.5">
-					<Label
-						htmlFor="custom-provider-model"
-						className="text-sm font-medium"
-					>
-						Модель
-					</Label>
-					<div className="flex items-center gap-2">
-						<div className="min-w-0 flex-1">
-							<Select
-								value={selectedModel || undefined}
-								onValueChange={setSelectedModel}
-								disabled={discoveredModels.length === 0 || isSaving}
-							>
-								<SelectTrigger
-									id="custom-provider-model"
-									className="w-full font-mono"
-								>
-									<SelectValue
-										placeholder={
-											discoveredModels.length === 0
-												? "Сначала обнаружьте модели"
-												: "Выберите модель"
-										}
-									/>
-								</SelectTrigger>
-								<SelectContent>
-									{discoveredModels.map((modelId) => (
-										<SelectItem
-											key={modelId}
-											value={modelId}
-											className="font-mono"
-										>
-											{modelId}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => {
-								void discoverModels();
-							}}
-							disabled={!canDiscover}
-						>
-							{isDiscovering ? "Обнаружение…" : "Обнаружить модели"}
-						</Button>
-					</div>
-					<p className="text-xs text-muted-foreground">
-						Список запрашивается по адресу{" "}
-						<span className="font-mono">{"{Base URL}/models"}</span>{" "}
-						(OpenAI-совместимо). Ключ сохраняется в локальном хранилище Rox.
-					</p>
-				</div>
+				<p className="text-xs text-muted-foreground">
+					Список моделей запрашивается по адресу{" "}
+					<span className="font-mono">{"{Base URL}/models"}</span>{" "}
+					(OpenAI-совместимо). Ключ сохраняется в локальном хранилище Rox.
+					{modelCount > 0 ? (
+						<>
+							{" "}
+							Найдено моделей: <span className="font-medium">{modelCount}</span>
+							.
+						</>
+					) : null}
+				</p>
 
 				<div className="flex items-center justify-end gap-2">
 					{hasSavedApiKey ? (
@@ -285,9 +203,21 @@ export function CustomProviderSection() {
 							variant="outline"
 							size="sm"
 							onClick={() => {
+								void connectAndSave();
+							}}
+							disabled={!canConnect}
+						>
+							{isDiscovering ? "Обновление…" : "Обновить список моделей"}
+						</Button>
+					) : null}
+					{hasSavedApiKey ? (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
 								void clearConfig();
 							}}
-							disabled={isSaving}
+							disabled={isSaving || isDiscovering}
 						>
 							Очистить
 						</Button>
@@ -295,11 +225,11 @@ export function CustomProviderSection() {
 					<Button
 						size="sm"
 						onClick={() => {
-							void saveConfig();
+							void connectAndSave();
 						}}
-						disabled={isSaving || selectedModel.trim().length === 0}
+						disabled={!canConnect}
 					>
-						Сохранить
+						{isDiscovering || isSaving ? "Подключение…" : primaryLabel}
 					</Button>
 				</div>
 			</div>
