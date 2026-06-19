@@ -1,46 +1,46 @@
 ---
 title: "//# sourceMappingURL=data:...;base64,..."
-description: What the inline base64 sourceMappingURL comment means
+description: Что означает встроенный комментарий sourceMappingURL в формате base64
 ---
 
-## What you're seeing
+## Что вы видите
 
-At the bottom of a bundled JavaScript file you may find a comment like:
+Внизу собранного файла JavaScript вы можете обнаружить комментарий вида:
 
 ```js
 //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjoz...
 ```
 
-This is an **inline source map**. Instead of shipping a separate `app.js.map`
-file, the bundler base64-encodes the entire source map and embeds it directly in
-the JS file as a `data:` URL. When DevTools loads the file, it decodes that blob
-and uses it to map the minified/transpiled output back to your original source —
-so breakpoints, stack traces, and the Sources panel show readable code.
+Это **встроенный source map**. Вместо поставки отдельного файла `app.js.map`
+сборщик кодирует весь source map в base64 и встраивает его прямо в
+JS-файл в виде `data:`-URL. Когда DevTools загружает файл, он декодирует этот блоб
+и использует его для сопоставления минифицированного/транспилированного вывода с вашим исходным кодом —
+так что точки останова, трассировки стека и панель Sources показывают читаемый код.
 
-## Is it reliable / deterministic?
+## Надёжно ли это / детерминированно?
 
-Yes. The source map is generated deterministically by the bundler
-(esbuild, Vite, Next.js/Turbopack, webpack, etc.) from the same inputs, so the
-mapping is exact and reproducible. It is decoded by the browser, not guessed.
+Да. Source map генерируется детерминированно сборщиком
+(esbuild, Vite, Next.js/Turbopack, webpack и т. д.) из тех же входных данных, поэтому
+сопоставление точное и воспроизводимое. Оно декодируется браузером, а не угадывается.
 
-## Why it appears "per module" and not everywhere
+## Почему он появляется «на каждый модуль», а не везде
 
-You only see this comment **when inline source maps are enabled**. It is one of
-several source-map strategies a bundler can use:
+Вы видите этот комментарий **только когда включены встроенные source maps**. Это одна из
+нескольких стратегий source map, которые может использовать сборщик:
 
-- **Inline** (`data:...;base64,...`) — embedded in each emitted module/chunk.
-  Convenient (one file) but inflates file size.
-- **External** (`//# sourceMappingURL=app.js.map`) — points to a separate
-  `.map` file fetched on demand. Smaller JS, common in production.
-- **None** — source maps disabled entirely (typical for hardened production
-  builds); no comment at all.
+- **Inline** (`data:...;base64,...`) — встроен в каждый создаваемый модуль/чанк.
+  Удобно (один файл), но раздувает размер файла.
+- **External** (`//# sourceMappingURL=app.js.map`) — указывает на отдельный
+  файл `.map`, загружаемый по требованию. Меньший JS, распространено в production.
+- **None** — source maps полностью отключены (типично для защищённых production-
+  сборок); комментария нет вообще.
 
-So it is not "everywhere" — its presence simply tells you the build was
-configured to inline source maps for that output. Different files in the same app
-can use different strategies depending on how each was built.
+Поэтому он не «везде» — его наличие просто говорит вам, что сборка была
+настроена на встраивание source maps для этого вывода. Разные файлы в одном приложении
+могут использовать разные стратегии в зависимости от того, как каждый из них был собран.
 
 <Callout type="info">
-  Inline source maps are great for local development and debugging. For
-  production, prefer external `.map` files (or upload them to your error
-  tracker) so you ship smaller bundles while keeping symbolicated stack traces.
+  Встроенные source maps отлично подходят для локальной разработки и отладки. Для
+  production предпочтительнее внешние файлы `.map` (или загрузка их в ваш трекер
+  ошибок), чтобы поставлять меньшие бандлы, сохраняя символизированные трассировки стека.
 </Callout>

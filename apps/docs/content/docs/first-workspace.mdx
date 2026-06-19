@@ -1,35 +1,35 @@
 ---
-title: Your First Workspace
-description: Create and set up your first workspace in Rox
+title: Ваше первое рабочее пространство
+description: Создайте и настройте своё первое рабочее пространство в Rox
 ---
 
-## Add a Repository
+## Добавление репозитория
 
-Add your repo from a local folder or Git URL. Requires GitHub auth (`gh auth status`).
+Добавьте свой репозиторий из локальной папки или по Git URL. Требуется аутентификация GitHub (`gh auth status`).
 
 ![Add Repository](/images/add-repo.png)
 
-## Create a Workspace
+## Создание рабочего пространства
 
-Each workspace is an isolated git worktree on its own branch. Rox only copies git-tracked files—use [setup scripts](/setup-teardown-scripts) for `.env` files or `bun install`.
+Каждое рабочее пространство — это изолированный git worktree на собственной ветке. Rox копирует только файлы, отслеживаемые git — используйте [скрипты настройки](/setup-teardown-scripts) для файлов `.env` или `bun install`.
 
-Create workspaces from:
-- New branch from main
-- Existing branch
+Создавайте рабочие пространства из:
+- Новой ветки от main
+- Существующей ветки
 - Pull request
 
-In the prompt-first flow, you can link a pull request by searching for it or pasting the full PR URL.
+В сценарии «сначала промпт» вы можете привязать pull request, выполнив поиск по нему или вставив полный URL PR.
 
 ![New Workspace](/images/new-workspace.png)
 
-## Start Working
+## Начало работы
 
-- **⌘O** - Open in Cursor/VS Code
-- **Terminal** - Built-in terminal ready to use
-- **Changes** - View diffs and commit
+- **⌘O** — открыть в Cursor/VS Code
+- **Terminal** — встроенный терминал готов к использованию
+- **Changes** — просмотр изменений и коммит
 
-## Next Steps
+## Дальнейшие шаги
 
-- [Setup Scripts](/setup-teardown-scripts) - Automate `bun install`, env files
-- [Workspaces](/workspaces) - Run multiple branches at once
-- [IDE Integration](/use-with-ide) - Configure your editor
+- [Скрипты настройки](/setup-teardown-scripts) — автоматизация `bun install`, файлов env
+- [Рабочие пространства](/workspaces) — запуск нескольких веток одновременно
+- [Интеграция с IDE](/use-with-ide) — настройка вашего редактора

@@ -1,13 +1,13 @@
 ---
-title: Setup, Teardown & Run Scripts
-description: Automate workspace initialization and dev servers
+title: Скрипты инициализации, завершения и запуска
+description: Автоматизация инициализации рабочего пространства и dev-серверов
 ---
 
-## Overview
+## Обзор
 
-Run commands automatically when creating or deleting workspaces, and define dev server commands that launch via the Run button.
+Выполняйте команды автоматически при создании или удалении рабочих пространств и определяйте команды dev-сервера, которые запускаются через кнопку Run.
 
-Create `.rox/config.json` in your project:
+Создайте `.rox/config.json` в вашем проекте:
 
 ```json
 {
@@ -17,21 +17,21 @@ Create `.rox/config.json` in your project:
 }
 ```
 
-## How It Works
+## Как это работает
 
-1. Create workspace → **setup** commands run in a terminal
-2. Delete workspace → **teardown** commands run
-3. Click the **Run** button → **run** commands execute in a dedicated pane
+1. Создание рабочего пространства → команды **setup** выполняются в терминале
+2. Удаление рабочего пространства → выполняются команды **teardown**
+3. Нажатие кнопки **Run** → команды **run** выполняются в отдельной панели
 
-Setup and teardown commands run sequentially in the workspace directory.
+Команды setup и teardown выполняются последовательно в каталоге рабочего пространства.
 
-## Run Script
+## Скрипт запуска
 
-The `run` field defines commands that start your dev server or other long-running processes. Unlike setup/teardown, run commands are:
+Поле `run` определяет команды, которые запускают ваш dev-сервер или другие долго работающие процессы. В отличие от setup/teardown, команды run:
 
-- **On-demand** — triggered by the Run button, not automatically on workspace creation
-- **Restartable** — stop and restart from the UI without recreating the workspace
-- **Dedicated pane** — runs in its own terminal pane separate from your shell
+- **По запросу** — запускаются кнопкой Run, а не автоматически при создании рабочего пространства
+- **Перезапускаемые** — останавливаются и перезапускаются из интерфейса без пересоздания рабочего пространства
+- **Отдельная панель** — выполняются в собственной панели терминала, отдельной от вашей оболочки
 
 ```json
 {
@@ -40,15 +40,15 @@ The `run` field defines commands that start your dev server or other long-runnin
 }
 ```
 
-## Environment Variables
+## Переменные окружения
 
-| Variable | Description |
+| Переменная | Описание |
 |----------|-------------|
-| `ROX_ROOT_PATH` | Path to root repository |
-| `ROX_WORKSPACE_NAME` | Current workspace name |
-| `ROX_WORKSPACE_PATH` | Path to the workspace worktree |
+| `ROX_ROOT_PATH` | Путь к корневому репозиторию |
+| `ROX_WORKSPACE_NAME` | Имя текущего рабочего пространства |
+| `ROX_WORKSPACE_PATH` | Путь к worktree рабочего пространства |
 
-## Examples
+## Примеры
 
 **Node.js:**
 ```json
@@ -63,7 +63,7 @@ The `run` field defines commands that start your dev server or other long-runnin
 }
 ```
 
-**Full config:**
+**Полная конфигурация:**
 ```json
 {
   "setup": ["./.rox/setup.sh"],
@@ -72,28 +72,28 @@ The `run` field defines commands that start your dev server or other long-runnin
 }
 ```
 
-## User Overrides
+## Пользовательские переопределения
 
-Override project scripts without modifying the repo by placing a `config.json` in your home directory:
+Переопределяйте скрипты проекта без изменения репозитория, разместив `config.json` в вашем домашнем каталоге:
 
 ```
 ~/.rox/projects/<project-id>/config.json
 ```
 
-Where `<project-id>` is your project's unique ID in Rox (visible in the app's project settings).
+Где `<project-id>` — это уникальный ID вашего проекта в Rox (виден в настройках проекта в приложении).
 
-### Priority Order
+### Порядок приоритета
 
-Config is resolved in this order (first found wins, for setup, teardown, and run):
-1. `~/.rox/projects/<project-id>/config.json` — user override
-2. `<worktree>/.rox/config.json` — worktree-specific
-3. `<repo>/.rox/config.json` — project default
+Конфигурация разрешается в этом порядке (побеждает первая найденная, для setup, teardown и run):
+1. `~/.rox/projects/<project-id>/config.json` — пользовательское переопределение
+2. `<worktree>/.rox/config.json` — специфичная для worktree
+3. `<repo>/.rox/config.json` — по умолчанию для проекта
 
-No merging occurs between levels—the first config found is used entirely.
+Слияние между уровнями не происходит — целиком используется первая найденная конфигурация.
 
-### Examples
+### Примеры
 
-**Custom setup script:**
+**Пользовательский скрипт инициализации:**
 ```json
 {
   "setup": ["~/.rox/projects/<project-id>/setup.sh"],
@@ -101,18 +101,18 @@ No merging occurs between levels—the first config found is used entirely.
 }
 ```
 
-**Skip setup entirely:**
+**Полностью пропустить инициализацию:**
 ```json
 { "setup": [], "teardown": [] }
 ```
 
-## Local Config
+## Локальная конфигурация
 
-Extend or override your team's committed scripts without modifying the repo. Create `.rox/config.local.json` alongside `config.json` — it's gitignored automatically.
+Расширяйте или переопределяйте закоммиченные командой скрипты без изменения репозитория. Создайте `.rox/config.local.json` рядом с `config.json` — он автоматически добавляется в gitignore.
 
-### Prepend and/or append
+### Добавление в начало и/или в конец
 
-Add steps before or after the team's scripts:
+Добавляйте шаги до или после скриптов команды:
 
 ```json
 {
@@ -126,11 +126,11 @@ Add steps before or after the team's scripts:
 }
 ```
 
-Result: `before` → committed setup scripts → `after`. Keys you don't specify pass through unchanged.
+Результат: `before` → закоммиченные скрипты setup → `after`. Ключи, которые вы не указываете, проходят без изменений.
 
-### Override entirely
+### Полное переопределение
 
-Use a plain array to replace the team's scripts completely:
+Используйте обычный массив, чтобы полностью заменить скрипты команды:
 
 ```json
 {
@@ -138,9 +138,9 @@ Use a plain array to replace the team's scripts completely:
 }
 ```
 
-### Mix and match
+### Сочетание подходов
 
-Override one key while extending the other:
+Переопределите один ключ, расширяя другой:
 
 ```json
 {
@@ -149,24 +149,24 @@ Override one key while extending the other:
 }
 ```
 
-### Resolution order
+### Порядок разрешения
 
-The local config merges on top of whichever base config wins the [priority order](#priority-order). If a `config.local.json` exists in both the worktree and main repo, the worktree's local config takes priority.
+Локальная конфигурация накладывается поверх той базовой конфигурации, которая побеждает в [порядке приоритета](#priority-order). Если `config.local.json` существует и в worktree, и в основном репозитории, приоритет имеет локальная конфигурация worktree.
 
-## Force Delete
+## Принудительное удаление
 
-If teardown scripts fail during workspace deletion, you can force-delete to skip the failed teardown and continue cleanup.
+Если скрипты teardown завершаются с ошибкой при удалении рабочего пространства, вы можете выполнить принудительное удаление, чтобы пропустить неудавшийся teardown и продолжить очистку.
 
-When teardown fails:
-1. Error toast appears with "Delete Anyway" and "View Logs" buttons
-2. Click "Delete Anyway" to force-delete immediately
-3. Or click "View Logs" to review the failure, then force-delete from the dialog
+При сбое teardown:
+1. Появляется уведомление об ошибке с кнопками «Delete Anyway» и «View Logs»
+2. Нажмите «Delete Anyway», чтобы немедленно выполнить принудительное удаление
+3. Или нажмите «View Logs», чтобы изучить сбой, а затем выполните принудительное удаление из диалога
 
-## Tips
+## Советы
 
-- Keep setup fast—runs every workspace creation
-- Commit `.rox/` to share with team
-- Use shell scripts for complex logic: `"setup": ["./.rox/setup.sh"]`
-- Use `config.local.json` to add personal steps without touching the team's config
-- Use user overrides (`~/.rox/projects/`) to replace scripts entirely per-project
-- Use `run` for dev servers instead of putting them in `setup`—run scripts are restartable and don't block workspace creation
+- Делайте инициализацию быстрой — она выполняется при каждом создании рабочего пространства
+- Закоммитьте `.rox/`, чтобы поделиться с командой
+- Используйте shell-скрипты для сложной логики: `"setup": ["./.rox/setup.sh"]`
+- Используйте `config.local.json`, чтобы добавить личные шаги, не трогая конфигурацию команды
+- Используйте пользовательские переопределения (`~/.rox/projects/`), чтобы полностью заменить скрипты для каждого проекта
+- Используйте `run` для dev-серверов вместо того, чтобы помещать их в `setup` — скрипты run перезапускаемы и не блокируют создание рабочего пространства

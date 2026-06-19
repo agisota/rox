@@ -1,73 +1,73 @@
 ---
-title: AI Agents
-description: Use Claude Code and other AI agents
+title: AI-агенты
+description: Используйте Claude Code и других AI-агентов
 ---
 
-## Overview
+## Обзор
 
-Run AI coding agents in isolated workspaces. Each agent works independently without interfering with others.
+Запускайте AI-агентов для программирования в изолированных рабочих пространствах. Каждый агент работает независимо, не мешая другим.
 
 ![AI Agents](/images/agents.png)
 
-## Supported Agents
+## Поддерживаемые агенты
 
-- **Amp** - Amp Code CLI
-- **Claude Code** - Anthropic's CLI
-- **Codex** - OpenAI's assistant
-- **OpenCode** - Open-source alternative
-- **Pi** - Minimal terminal coding harness
-- **Gemini CLI** - Google's CLI agent
-- **Cursor Agent** - Cursor AI agent
+- **Amp** — Amp Code CLI
+- **Claude Code** — CLI от Anthropic
+- **Codex** — ассистент от OpenAI
+- **OpenCode** — альтернатива с открытым исходным кодом
+- **Pi** — минималистичный терминальный инструмент для программирования
+- **Gemini CLI** — CLI-агент от Google
+- **Cursor Agent** — AI-агент Cursor
 
-## Chat
+## Чат
 
-Rox includes a built-in chat panel for AI interactions without leaving the app.
+Rox включает встроенную панель чата для взаимодействия с AI, не покидая приложение.
 
-- Use the model picker to choose supported models and connect providers
-- Chat session titles are generated automatically from the conversation
-- Use the thinking level control to set reasoning effort: **Off**, **Low**, **Medium**, **High**, or **Max**
+- Используйте выбор модели, чтобы выбрать поддерживаемые модели и подключить провайдеров
+- Заголовки сессий чата генерируются автоматически из разговора
+- Используйте управление уровнем размышления, чтобы задать усилие рассуждения: **Off**, **Low**, **Medium**, **High** или **Max**
 
-## Agent Settings
+## Настройки агентов
 
-Go to **Settings → Agents** to customize launch behavior for each built-in agent.
+Перейдите в **Settings → Agents**, чтобы настроить поведение запуска для каждого встроенного агента.
 
-- **Enabled** - Show or hide the agent in launchers
-- **Command (No Prompt)** - Base command for terminal agents
-- **Command (With Prompt)** - Prompt-aware command for terminal agents
-- **Prompt Command Suffix** - Optional flags appended after the prompt payload
-- **Task Prompt Template** - Template used when launching an agent from a task
-- **Model Override** - Optional model override for Rox Chat
-- **Reset to Defaults** - Restore the shipped configuration for that agent
+- **Enabled** — показать или скрыть агента в средствах запуска
+- **Command (No Prompt)** — базовая команда для терминальных агентов
+- **Command (With Prompt)** — команда с учётом промпта для терминальных агентов
+- **Prompt Command Suffix** — необязательные флаги, добавляемые после полезной нагрузки промпта
+- **Task Prompt Template** — шаблон, используемый при запуске агента из задачи
+- **Model Override** — необязательное переопределение модели для Rox Chat
+- **Reset to Defaults** — восстановить поставляемую конфигурацию для этого агента
 
-## Usage
+## Использование
 
-Run agents directly in the terminal:
+Запускайте агентов прямо в терминале:
 
 ```bash
 claude "Add error handling to fetchUser"
 ```
 
-## Auto-Run Command
+## Команда автозапуска
 
-When launching an agent from a task, the **Auto-run command** toggle controls whether it executes immediately.
+При запуске агента из задачи переключатель **Auto-run command** определяет, выполняется ли она немедленно.
 
-- **On** - Terminal agents run their command right away, and Rox Chat sends the task prompt immediately
-- **Off** - Terminal agents stage the command without pressing Enter, and Rox Chat opens as a draft instead
+- **On** — терминальные агенты сразу выполняют свою команду, а Rox Chat немедленно отправляет промпт задачи
+- **Off** — терминальные агенты подготавливают команду без нажатия Enter, а Rox Chat открывается как черновик
 
-The setting is remembered between sessions.
+Эта настройка запоминается между сессиями.
 
-## Parallel Agents
+## Параллельные агенты
 
-Create multiple workspaces and run an agent in each. Compare results and merge the best solution.
+Создавайте несколько рабочих пространств и запускайте агента в каждом. Сравнивайте результаты и объединяйте лучшее решение.
 
-## Inline Prompts
+## Встроенные промпты
 
-Agents can pause and ask questions, request tool approval, and ask for plan review directly in the chat pane.
+Агенты могут приостанавливаться и задавать вопросы, запрашивать подтверждение инструментов и просить о ревью плана прямо в панели чата.
 
-## Sandbox Access
+## Доступ к песочнице
 
-When an agent needs access to files outside its workspace, it will prompt for permission in chat so you can approve or deny the request inline.
+Когда агенту нужен доступ к файлам за пределами его рабочего пространства, он запросит разрешение в чате, чтобы вы могли подтвердить или отклонить запрос на месте.
 
-## Notifications
+## Уведомления
 
-Get notified when agents finish. Configure sounds in Settings.
+Получайте уведомления, когда агенты завершают работу. Настройте звуки в Settings.
