@@ -4,21 +4,16 @@ import { animate, scrambleText } from "animejs";
 import { useEffect, useRef } from "react";
 import {
 	HERO_BRAND_WORDMARK,
-	HERO_LLM_TERM,
-	HERO_RUNTIME_TERM,
 	HERO_SUB_AGENT_CYCLE_WORDS,
 	HERO_SUB_LINE_ONE,
 	HERO_SUB_LINE_TWO_LEAD,
 	HERO_SUB_TAIL,
-	HERO_WORKTREE_TERM,
 	LANDING_HEADLINE,
 } from "../../constants";
 import { AnimatedTextCycle } from "../AnimatedTextCycle";
 import { OrchestrationField } from "../OrchestrationField";
 import { FIELD_HINT } from "../OrchestrationField/constants";
 import { HeroDownloadCta } from "./components/HeroDownloadCta";
-import { HeroStackLine } from "./components/HeroStackLine";
-import { Term } from "./components/Term";
 
 /**
  * Scramble-text landing document, ported from Julian Garnier's anime.js v4
@@ -165,24 +160,24 @@ export function ScrambleLanding() {
 						</span>
 					</div>
 
-					<div className="rox-hero__hints">
-						<p className="rox-hero__hint">{FIELD_HINT}</p>
+					<ul className="rox-hero__hints" aria-label="Фишки Rox">
+						<li className="rox-hero__hint">{FIELD_HINT}</li>
 
-						<p className="rox-hero__hint">
-							Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
-							<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
-							конфликтов
-						</p>
+						<li className="rox-hero__hint">
+							Агенты не мешают друг другу: каждый решает вопросики в своей
+							рабочей ветке — без ошибок, пересечений и конфликтов
+						</li>
 
-						<p className="rox-hero__hint">
-							<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
-							<Term {...HERO_LLM_TERM} /> — бесплатно
-						</p>
+						<li className="rox-hero__hint">
+							Рантайм 24/7 и безлимитный доступ к LLM — бесплатно
+						</li>
 
-						<p className="rox-hero__hint">
-							<HeroStackLine />
-						</p>
-					</div>
+						<li className="rox-hero__hint">
+							BYOM + BYOA + BYOH: залетай на любом привычном стэке или сходу
+							газуй на заряженном агенте Rox One, он легко справится с этим
+							зоопарком галлюциногенов
+						</li>
+					</ul>
 
 					<HeroDownloadCta />
 				</div>

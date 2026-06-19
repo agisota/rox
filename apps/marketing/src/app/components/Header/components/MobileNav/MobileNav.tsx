@@ -13,10 +13,9 @@ import {
 
 interface MobileNavProps {
 	ctaButtons: React.ReactNode;
-	starCounter?: React.ReactNode;
 }
 
-export function MobileNav({ ctaButtons, starCounter }: MobileNavProps) {
+export function MobileNav({ ctaButtons }: MobileNavProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const close = () => setIsOpen(false);
 
@@ -54,7 +53,6 @@ export function MobileNav({ ctaButtons, starCounter }: MobileNavProps) {
 							/>
 							<MobileSection links={TOP_LEVEL_LINKS} onNavigate={close} />
 							<div className="pt-4 border-t border-border flex flex-col gap-3">
-								{starCounter}
 								{ctaButtons}
 							</div>
 						</div>

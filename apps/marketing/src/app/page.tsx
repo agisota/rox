@@ -8,6 +8,16 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function Home() {
-	return <LandingExperience />;
+interface HomeProps {
+	searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+	const params = await searchParams;
+	const introParam = params?.intro;
+	const skipIntro = Array.isArray(introParam)
+		? introParam.includes("skip")
+		: introParam === "skip";
+
+	return <LandingExperience initialPhase={skipIntro ? "main" : "intro"} />;
 }

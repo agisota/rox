@@ -10,11 +10,10 @@ import {
 	SoftwareApplicationJsonLd,
 	WebsiteJsonLd,
 } from "@/components/JsonLd";
+import { env } from "@/env";
 import { REDDIT_PIXEL_ID } from "@/lib/constants";
 
-import { CTAButtons } from "./components/CTAButtons";
 import { Footer } from "./components/Footer";
-import { GitHubStarCounter } from "./components/GitHubStarCounter";
 import { Header } from "./components/Header";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -153,13 +152,10 @@ export default function RootLayout({
 			</head>
 			<body className="overscroll-none font-sans">
 				<Providers>
-					<Header
-						ctaButtons={<CTAButtons />}
-						starCounter={<GitHubStarCounter />}
-					/>
-					{/* Clear the fixed floating-pill navbar so page content isn't tucked
-					    under it (the landing's fixed intro overlay is unaffected). */}
-					<div className="pt-[4.5rem]">{children}</div>
+					<Header dashboardUrl={env.NEXT_PUBLIC_WEB_URL} />
+					{/* Clear the fixed floating-pill navbar on inner pages. Landing removes
+					    this offset because its chrome is bottom-locked. */}
+					<div className="marketing-page-shell pt-[4.5rem]">{children}</div>
 					<Footer />
 					<CookieConsent />
 				</Providers>
