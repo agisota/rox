@@ -58,6 +58,10 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			// LOCAL_ONLY_AUTH (ROX-518): offline-SKU flag, inlined at build time.
+			// SECURITY: absent from the cloud/production build env, so it compiles
+			// to "" (falsey) and can never be enabled at runtime in a cloud build.
+			"process.env.LOCAL_ONLY_AUTH": defineEnv(process.env.LOCAL_ONLY_AUTH, ""),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,
 				"https://api.rox.one",
@@ -174,6 +178,10 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			// LOCAL_ONLY_AUTH (ROX-518): offline-SKU flag, inlined at build time.
+			// SECURITY: absent from the cloud/production build env, so it compiles
+			// to "" (falsey) and can never be enabled at runtime in a cloud build.
+			"process.env.LOCAL_ONLY_AUTH": defineEnv(process.env.LOCAL_ONLY_AUTH, ""),
 			__APP_VERSION__: defineEnv(version),
 		},
 
@@ -194,6 +202,10 @@ export default defineConfig({
 				process.env.SKIP_ENV_VALIDATION,
 				"",
 			),
+			// LOCAL_ONLY_AUTH (ROX-518): offline-SKU flag, inlined at build time.
+			// SECURITY: absent from the cloud/production build env, so it compiles
+			// to "" (falsey) and can never be enabled at runtime in a cloud build.
+			"process.env.LOCAL_ONLY_AUTH": defineEnv(process.env.LOCAL_ONLY_AUTH, ""),
 			"process.platform": defineEnv(process.platform),
 			"process.env.NEXT_PUBLIC_API_URL": defineEnv(
 				process.env.NEXT_PUBLIC_API_URL,
