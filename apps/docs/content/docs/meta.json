@@ -1,10 +1,10 @@
 {
-	"title": "Documentation",
+	"title": "Документация",
 	"pages": [
-		"---Rocket Get Started---",
+		"---Rocket Начало работы---",
 		"overview",
 		"first-workspace",
-		"---Gauge Core Features---",
+		"---Gauge Основные возможности---",
 		"workspaces",
 		"diff-viewer",
 		"terminal-integration",
@@ -23,7 +23,7 @@
 		"sdk/getting-started",
 		"sdk/reference",
 		"sdk/advanced",
-		"---BookOpen Guides---",
+		"---BookOpen Руководства---",
 		"setup-teardown-scripts",
 		"use-with-ide",
 		"use-with-linear",
@@ -33,7 +33,7 @@
 		"keyboard-shortcuts",
 		"custom-themes",
 		"customization",
-		"---CircleHelp Help---",
+		"---CircleHelp Справка---",
 		"faq",
 		"manage-app-updater-menu",
 		"base64-sourcemappingurl"

@@ -1,56 +1,56 @@
 ---
-title: Terminal
-description: Built-in terminal with multiple tabs and persistence
+title: Терминал
+description: Встроенный терминал с несколькими вкладками и сохранением сессий
 ---
 
-## Overview
+## Обзор
 
-Built-in terminal per workspace with multiple tabs and session persistence.
+Встроенный терминал для каждого рабочего пространства с несколькими вкладками и сохранением сессий.
 
 ![Terminal](/images/terminal.png)
 
-## Multiple Tabs
+## Несколько вкладок
 
-Open several terminal tabs per workspace. Each runs independently.
+Открывайте несколько вкладок терминала в каждом рабочем пространстве. Каждая работает независимо.
 
-- **⌘T** - New tab
-- **⌘W** - Close tab
-- **⌘1-9** - Switch tabs
+- **⌘T** — новая вкладка
+- **⌘W** — закрыть вкладку
+- **⌘1-9** — переключение между вкладками
 
-## Session Persistence
+## Сохранение сессий
 
-Sessions survive app restarts:
-- Running processes continue
-- Output history preserved
-- Scrollback maintained
+Сессии переживают перезапуски приложения:
+- Запущенные процессы продолжают работу
+- История вывода сохраняется
+- Прокрутка истории (scrollback) сохраняется
 
-## Pane Rename
+## Переименование панели
 
-Double-click a pane title to rename it.
+Дважды кликните по заголовку панели, чтобы переименовать её.
 
-## Merge Tabs
+## Объединение вкладок
 
-Drag a tab onto another tab's split drop zone to merge the source tab's panes into that layout. The source tab closes after the merge.
+Перетащите вкладку в зону разделения другой вкладки, чтобы объединить панели исходной вкладки с этой раскладкой. Исходная вкладка закрывается после объединения.
 
-## Right-Click Menu
+## Меню по правому клику
 
-Right-click in the terminal for quick actions:
+Кликните правой кнопкой в терминале для быстрых действий:
 
-- **Copy** - Copy selected text (enabled when text is selected)
-- **Paste** - Paste from clipboard (enabled when clipboard has content)
-- **Mark as Unread** - Show the unread indicator again
+- **Copy** — копировать выделенный текст (активно, когда текст выделен)
+- **Paste** — вставить из буфера обмена (активно, когда в буфере есть содержимое)
+- **Mark as Unread** — снова показать индикатор непрочитанного
 - Split, Clear, Move to Tab, Close
 
-## Cmd/Ctrl-Click Links
+## Ссылки по Cmd/Ctrl-клику
 
-Hold `Cmd` (macOS) or `Ctrl` and click links in terminal output:
-- URLs open in browser
-- File paths open in the built-in file viewer by default
-- Change file-path behavior in **Settings → Terminal**
+Удерживайте `Cmd` (macOS) или `Ctrl` и кликайте по ссылкам в выводе терминала:
+- URL открываются в браузере
+- Пути к файлам по умолчанию открываются во встроенном просмотрщике файлов
+- Измените поведение для путей к файлам в **Settings → Terminal**
 
-## Environment Variables
+## Переменные окружения
 
-| Variable | Description |
+| Переменная | Описание |
 |----------|-------------|
-| `ROX_ROOT_PATH` | Path to root repository |
-| `ROX_WORKSPACE_NAME` | Current workspace name |
+| `ROX_ROOT_PATH` | Путь к корневому репозиторию |
+| `ROX_WORKSPACE_NAME` | Имя текущего рабочего пространства |

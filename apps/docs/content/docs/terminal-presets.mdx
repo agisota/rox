@@ -1,76 +1,76 @@
 ---
-title: Presets
-description: Save and reuse terminal configurations
+title: Пресеты
+description: Сохранение и повторное использование конфигураций терминала
 ---
 
 <YouTubeVideo id="jT8AoqYTwRU" title="Rox Presets" thumbnail="/images/preset.png" />
 
-## Overview
+## Обзор
 
-Presets let you quickly launch terminals with pre-configured commands. Save common workflows and apply them with a single click.
+Пресеты позволяют быстро запускать терминалы с заранее настроенными командами. Сохраняйте типовые рабочие процессы и применяйте их в один клик.
 
-## What Presets Do
+## Что делают пресеты
 
-- **Custom commands for new tabs** - Define commands that run when opening a terminal
-- **Working directory** - Specify where commands run in your project (e.g., `apps/web`)
-- **Split pane or new tab launch mode** - Run commands in parallel in one tab, or one tab per command
-- **Default preset** - Auto-apply a preset to new workspaces
-- **Quick-add templates** - One-click setup for Claude, Codex, Gemini, and other agents
+- **Пользовательские команды для новых вкладок** — задайте команды, которые выполняются при открытии терминала
+- **Рабочий каталог** — укажите, где выполняются команды в вашем проекте (например, `apps/web`)
+- **Режим запуска: разделение панели или новая вкладка** — выполняйте команды параллельно в одной вкладке или по одной вкладке на команду
+- **Пресет по умолчанию** — автоматическое применение пресета к новым рабочим пространствам
+- **Шаблоны быстрого добавления** — настройка в один клик для Claude, Codex, Gemini и других агентов
 
-## Creating a Preset
+## Создание пресета
 
-Go to **Settings → Terminal** and click **Add Preset**.
+Перейдите в **Settings → Terminal** и нажмите **Add Preset**.
 
-Each preset has:
+Каждый пресет содержит:
 
-| Field | Description |
+| Поле | Описание |
 |-------|-------------|
-| **Name** | Display name for the preset |
-| **Description** | Optional description |
-| **Working Directory** | Relative path in your project (leave empty for root) |
-| **Commands** | One or more commands to run |
-| **Mode** | Split Pane (parallel panes) or New Tab (parallel tabs) |
+| **Name** | Отображаемое имя пресета |
+| **Description** | Необязательное описание |
+| **Working Directory** | Относительный путь в вашем проекте (оставьте пустым для корня) |
+| **Commands** | Одна или несколько команд для выполнения |
+| **Mode** | Split Pane (параллельные панели) или New Tab (параллельные вкладки) |
 
-## Launch Modes
+## Режимы запуска
 
-**Split Pane** - Commands run in parallel in a single tab, with one split pane per command.
+**Split Pane** — команды выполняются параллельно в одной вкладке, по одной разделённой панели на команду.
 
-**New Tab** - Commands run in parallel in separate tabs, with one tab per command.
+**New Tab** — команды выполняются параллельно в отдельных вкладках, по одной вкладке на команду.
 
-Presets are parallel by default.
+Пресеты по умолчанию выполняются параллельно.
 
-## Quick-Add Templates
+## Шаблоны быстрого добавления
 
-Pre-configured presets for popular AI agents. Defaults mirror the bundled Rox launch settings for each agent. Claude and Codex use their most permissive bypass flags; edit any preset to change its permission mode.
+Заранее настроенные пресеты для популярных ИИ-агентов. Значения по умолчанию повторяют встроенные настройки запуска Rox для каждого агента. Claude и Codex используют свои наиболее разрешительные флаги обхода; отредактируйте любой пресет, чтобы изменить режим разрешений.
 
-- **amp** - `amp` (built-in permission rules auto-deny destructive ops)
-- **claude** - `claude --dangerously-skip-permissions`
-- **codex** - `codex --dangerously-bypass-approvals-and-sandbox` (most permissive)
-- **gemini** - `gemini --approval-mode=auto_edit`
-- **copilot** - `copilot --allow-tool=write`
-- **cursor-agent** - `cursor-agent` (prompts for every action)
-- **mastracode** - Mastra's coding agent (opt-in: auto-approves all actions by default at the CLI; no startup flag to restrict)
-- **opencode** - Open-source AI coding agent (opt-in: full file and shell access by default at the CLI; no startup flag to restrict)
-- **pi** - Minimal terminal coding harness (opt-in: auto-approves all actions by default at the CLI; no startup flag to restrict)
+- **amp** — `amp` (встроенные правила разрешений автоматически отклоняют деструктивные операции)
+- **claude** — `claude --dangerously-skip-permissions`
+- **codex** — `codex --dangerously-bypass-approvals-and-sandbox` (наиболее разрешительный)
+- **gemini** — `gemini --approval-mode=auto_edit`
+- **copilot** — `copilot --allow-tool=write`
+- **cursor-agent** — `cursor-agent` (запрашивает подтверждение для каждого действия)
+- **mastracode** — агент-кодер от Mastra (opt-in: по умолчанию автоматически одобряет все действия на уровне CLI; нет флага запуска для ограничения)
+- **opencode** — ИИ-агент-кодер с открытым исходным кодом (opt-in: по умолчанию полный доступ к файлам и shell на уровне CLI; нет флага запуска для ограничения)
+- **pi** — минимальная терминальная среда для кодинга (opt-in: по умолчанию автоматически одобряет все действия на уровне CLI; нет флага запуска для ограничения)
 
-## Preset Bar
+## Панель пресетов
 
-The preset bar appears above terminal tabs and shows your pinned presets for one-click access.
+Панель пресетов появляется над вкладками терминала и показывает закреплённые пресеты для доступа в один клик.
 
-- **Pin a preset** - Use the pin control in **Settings → Terminal** or the preset bar menu
-- **Launch** - Click a pinned preset to open it in the current workspace
-- **Right-click** - Open in the current terminal, current tab, or a new tab, or edit the preset
-- **Reorder** - Drag pinned items to rearrange their order in the bar
-- **Manage** - Use the gear menu to browse presets, add quick-add templates, and show or hide the bar
+- **Закрепить пресет** — используйте элемент управления закреплением в **Settings → Terminal** или меню панели пресетов
+- **Запуск** — нажмите на закреплённый пресет, чтобы открыть его в текущем рабочем пространстве
+- **Правый клик** — откройте в текущем терминале, текущей вкладке или новой вкладке либо отредактируйте пресет
+- **Изменение порядка** — перетаскивайте закреплённые элементы, чтобы переупорядочить их на панели
+- **Управление** — используйте меню с шестерёнкой, чтобы просматривать пресеты, добавлять шаблоны быстрого добавления и показывать или скрывать панель
 
-## Default Preset
+## Пресет по умолчанию
 
-Mark a preset as default to auto-apply it when creating workspaces or opening new tabs.
+Отметьте пресет как используемый по умолчанию, чтобы он автоматически применялся при создании рабочих пространств или открытии новых вкладок.
 
-**Auto-apply settings** in Settings → Terminal:
-- **Apply preset on workspace creation** - Runs default preset when creating new workspaces
-- **Apply preset on new tab** - Runs default preset when opening new terminal tabs/panes/splits
+**Настройки автоматического применения** в Settings → Terminal:
+- **Apply preset on workspace creation** — выполняет пресет по умолчанию при создании новых рабочих пространств
+- **Apply preset on new tab** — выполняет пресет по умолчанию при открытии новых вкладок/панелей/разделений терминала
 
-Both settings are enabled by default. Disable either to prevent automatic preset application in that context.
+Обе настройки включены по умолчанию. Отключите любую из них, чтобы предотвратить автоматическое применение пресета в этом контексте.
 
-Explicit preset launches (via hotkey or menu) always work regardless of these settings.
+Явные запуски пресетов (через горячую клавишу или меню) всегда работают независимо от этих настроек.

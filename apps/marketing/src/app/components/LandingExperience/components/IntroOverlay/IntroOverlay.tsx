@@ -224,11 +224,26 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			.add(cpuMark, { opacity: 1, duration: 900 }, "<+=200");
 
 		// ── Slide 2: feature tags scattered across the viewport width ───────
+		// The logo + CPU mark ("screen 2") must FULLY fade out before the
+		// feature cloud ("screen 3") is revealed — otherwise the two screens
+		// overlap and visually collapse into one. Hold the logo a beat longer,
+		// fade it over LOGO_FADE_MS, then swap slides and scramble in the
+		// features only once the fade has landed.
+		const LOGO_FADE_MS = 450;
 		timeline
-			.add(root, { backgroundColor: "#000" }, "<+=300")
-			.add(logo, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
-			.add(cpuMark, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
-			.set(slide1, { opacity: 0 }, "<<")
+			.add(root, { backgroundColor: "#000" }, "<+=600")
+			.add(
+				logo,
+				{ opacity: { to: 0 }, ease: "out(2)", duration: LOGO_FADE_MS },
+				"<<",
+			)
+			.add(
+				cpuMark,
+				{ opacity: { to: 0 }, ease: "out(2)", duration: LOGO_FADE_MS },
+				"<<",
+			)
+			// Swap slides only once the logo/CPU fade has completed.
+			.set(slide1, { opacity: 0 }, `<+=${LOGO_FADE_MS}`)
 			.set(slide2, { opacity: 1 }, "<<")
 			.add(
 				slide2Words,
@@ -245,7 +260,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				stagger([40, 1800], {
 					from: "random",
 					ease: "out(3)",
-					start: "<<+=250",
+					start: "<<+=120",
 				}),
 			)
 			.add(

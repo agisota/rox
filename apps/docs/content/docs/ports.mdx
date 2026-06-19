@@ -1,31 +1,31 @@
 ---
-title: Port Management
-description: View and manage active ports per workspace
+title: Управление портами
+description: Просматривайте и управляйте активными портами для каждого рабочего пространства
 ---
 
-## Overview
+## Обзор
 
-Rox does not assign per-workspace port ranges. It discovers listening ports from processes running in each workspace and lets you manage them from the UI.
+Rox не назначает диапазоны портов для каждого рабочего пространства. Он обнаруживает прослушиваемые порты от процессов, запущенных в каждом рабочем пространстве, и позволяет управлять ими из интерфейса.
 
 ![Port Panel](/images/ports.png)
 
-## Features
+## Возможности
 
-- **View active ports** - See which processes are using which ports
-- **Kill processes** - Stop a process by clicking its port
-- **Workspace grouping** - Ports are grouped by the workspace that owns the process
-- **Terminal focus** - Select a port to jump back to the terminal that owns it
-- **Browser actions** - Open local web servers in the in-app browser or externally from the port action
+- **View active ports** — просмотр того, какие процессы используют какие порты
+- **Kill processes** — остановка процесса кликом по его порту
+- **Workspace grouping** — порты группируются по рабочему пространству, которому принадлежит процесс
+- **Terminal focus** — выберите порт, чтобы вернуться к терминалу, которому он принадлежит
+- **Browser actions** — открытие локальных веб-серверов во встроенном браузере или во внешнем браузере из действия порта
 
-## Port Labels
+## Метки портов
 
-Add friendly names to automatically detected ports with a workspace
-configuration file. Useful for:
+Добавляйте понятные имена для автоматически обнаруженных портов с помощью
+файла конфигурации рабочего пространства. Полезно для:
 
-- Providing meaningful labels for your team
-- Making common dev-server ports easier to scan in the UI
+- Предоставления понятных меток для вашей команды
+- Упрощения визуального поиска часто используемых портов dev-серверов в интерфейсе
 
-Create `.rox/ports.json` in your repository:
+Создайте `.rox/ports.json` в вашем репозитории:
 
 ```json
 {
@@ -37,31 +37,31 @@ Create `.rox/ports.json` in your repository:
 }
 ```
 
-**Fields:**
-- `port` - Port number (1-65535)
-- `label` - Display text shown in tooltip
+**Поля:**
+- `port` — номер порта (1-65535)
+- `label` — отображаемый текст, показываемый во всплывающей подсказке
 
-**Behavior:**
-- Dynamic port discovery is still authoritative
-- `ports.json` only labels ports that Rox already detects as listening
-- Ports without a matching label still appear
-- Label entries for ports that are not currently listening are ignored
-- Each workspace reads labels from its own worktree's file
-- Changes are detected automatically
-- Ports can be opened at `localhost:PORT` from the browser action
+**Поведение:**
+- Динамическое обнаружение портов по-прежнему имеет приоритет
+- `ports.json` лишь маркирует порты, которые Rox уже обнаруживает как прослушиваемые
+- Порты без подходящей метки всё равно отображаются
+- Записи меток для портов, которые сейчас не прослушиваются, игнорируются
+- Каждое рабочее пространство читает метки из файла собственного worktree
+- Изменения обнаруживаются автоматически
+- Порты можно открыть по адресу `localhost:PORT` из действия браузера
 
-**Error Handling:**
+**Обработка ошибок:**
 
-If `ports.json` is malformed:
-- Labels from that file are ignored until fixed
-- Detected ports still appear without those labels
+Если `ports.json` повреждён:
+- Метки из этого файла игнорируются до исправления
+- Обнаруженные порты по-прежнему отображаются без этих меток
 
-**Tips:**
-- Commit `.rox/ports.json` to share port labels with your team
-- **Pro tip:** If you want deterministic per-workspace port ranges, implement it in setup/teardown scripts by reserving a range in a shared file (for example `~/.rox/port-allocations.json`) during setup and releasing it during teardown. See this repo's examples: [`.rox/setup.sh`](https://github.com/agisota/set/blob/main/.rox/setup.sh) and [`.rox/teardown.sh`](https://github.com/agisota/set/blob/main/.rox/teardown.sh).
+**Советы:**
+- Закоммитьте `.rox/ports.json`, чтобы поделиться метками портов с вашей командой
+- **Совет профи:** если вам нужны детерминированные диапазоны портов для каждого рабочего пространства, реализуйте это в скриптах setup/teardown, резервируя диапазон в общем файле (например, `~/.rox/port-allocations.json`) во время setup и освобождая его во время teardown. Смотрите примеры в этом репозитории: [`.rox/setup.sh`](https://github.com/agisota/rox/blob/main/.rox/setup.sh) и [`.rox/teardown.sh`](https://github.com/agisota/rox/blob/main/.rox/teardown.sh).
 
-## Discovery and Updates
+## Обнаружение и обновления
 
-Port discovery runs in each host server, not in the desktop renderer. The host server watches terminal process trees, scans for listening ports, resolves any matching port label, and publishes `port:changed` events when ports appear or disappear.
+Обнаружение портов выполняется в каждом host-сервере, а не в десктопном рендерере. Host-сервер отслеживает деревья процессов терминала, сканирует прослушиваемые порты, сопоставляет любую подходящую метку порта и публикует события `port:changed`, когда порты появляются или исчезают.
 
-The desktop sidebar keeps one ports query per online host. It patches that cached host snapshot from port events, batching bursts so updates stay responsive without refetching every time a port changes. A slower fallback refetch still runs so the UI recovers if an event is missed during reconnect.
+Боковая панель десктопа поддерживает один запрос портов на каждый онлайн-хост. Она обновляет кешированный снимок хоста по событиям портов, группируя всплески, чтобы обновления оставались отзывчивыми без повторной выборки при каждом изменении порта. При этом более медленная резервная повторная выборка всё равно выполняется, чтобы интерфейс восстановился, если событие было пропущено при переподключении.

@@ -1,24 +1,24 @@
 ---
-title: Getting Started
-description: Drive Rox programmatically from any TypeScript or JavaScript codebase.
+title: Начало работы
+description: Управляйте Rox программно из любой кодовой базы на TypeScript или JavaScript.
 ---
 
 <Callout type="warn">
-The SDK is in early alpha — it is not meant for production use and may be removed in the future. Stay on the latest version (`@rox_sh/sdk@latest`) while we iterate.
+SDK находится на стадии раннего альфа-тестирования — он не предназначен для использования в продакшене и может быть удалён в будущем. Оставайтесь на последней версии (`@rox_sh/sdk@latest`), пока мы дорабатываем его.
 </Callout>
 
-The Rox TypeScript SDK lets you create and manage your workspaces, tasks, projects, and automations from code — anything you can do in the dashboard, your scripts and services can do too.
+TypeScript SDK для Rox позволяет создавать и управлять вашими рабочими пространствами, задачами, проектами и автоматизациями из кода — всё, что вы можете сделать в панели управления, могут делать и ваши скрипты и сервисы.
 
-A few things you might use it for:
+Вот несколько вариантов использования:
 
-- **Bulk task management** — script the creation, triage, or cleanup of tasks across one or many projects.
-- **Integrations** — sync tasks to/from your CRM, issue tracker, or internal tools.
-- **Provisioning** — spin up workspaces on a developer's machine when an issue is opened, a PR is reviewed, or a customer ticket lands.
-- **On-demand agents** — kick off a recurring automation off-schedule when a webhook fires.
+- **Массовое управление задачами** — автоматизируйте создание, сортировку или очистку задач в одном или многих проектах с помощью скриптов.
+- **Интеграции** — синхронизируйте задачи с вашим CRM, трекером задач или внутренними инструментами и обратно.
+- **Подготовка окружений** — разворачивайте рабочие пространства на машине разработчика, когда открывается issue, рецензируется PR или поступает обращение клиента.
+- **Агенты по запросу** — запускайте регулярную автоматизацию вне расписания при срабатывании вебхука.
 
-Everything is fully typed and works in Node, Bun, and Deno. The bundle also runs in browsers, but **don't ship `sk_live_…` keys to a frontend** — they're long-lived and grant full org access. From the browser, talk to a thin server proxy that holds the key.
+Всё полностью типизировано и работает в Node, Bun и Deno. Сборка также работает в браузерах, но **не передавайте ключи `sk_live_…` во фронтенд** — они долгоживущие и дают полный доступ к организации. Из браузера обращайтесь к тонкому серверному прокси, который хранит ключ.
 
-## Install
+## Установка
 
 <Tabs items={["npm", "pnpm", "yarn", "bun"]}>
 <Tab value="npm">
@@ -43,19 +43,19 @@ bun add @rox_sh/sdk
 </Tab>
 </Tabs>
 
-We're under active development — the SDK follows the API as it grows, so **stay on the latest version** rather than pinning. New methods get added; existing ones don't change shape without a version bump and a note in the changelog.
+Мы ведём активную разработку — SDK следует за API по мере его роста, поэтому **оставайтесь на последней версии**, а не фиксируйте конкретную. Добавляются новые методы; существующие не меняют свою форму без повышения версии и записи в журнале изменений.
 
-## Get an API key
+## Получение API-ключа
 
-1. Open the [Rox desktop app](https://rox.one/download) → **Settings → API Keys** → **Create**. The key starts with `sk_live_…` — copy it now (you won't be able to see it again).
-2. Note your **organization ID** — find it in the org switcher inside the desktop app.
+1. Откройте [десктопное приложение Rox](https://rox.one/download) → **Settings → API Keys** → **Create**. Ключ начинается с `sk_live_…` — скопируйте его сейчас (вы больше не сможете его увидеть).
+2. Запишите свой **идентификатор организации** — найдите его в переключателе организаций внутри десктопного приложения.
 
 ```bash
 export ROX_API_KEY=sk_live_…
 export ROX_ORGANIZATION_ID=…
 ```
 
-## Create the client
+## Создание клиента
 
 ```ts
 import Rox from '@rox_sh/sdk';
@@ -64,7 +64,7 @@ const client = new Rox();
 // reads ROX_API_KEY and ROX_ORGANIZATION_ID from env
 ```
 
-That's all the setup. From here, every resource works the same way:
+На этом вся настройка завершена. Дальше каждый ресурс работает одинаково:
 
 ```ts
 // Create a task
@@ -103,11 +103,11 @@ await client.workspaces.create({
 });
 ```
 
-See the [reference](/docs/sdk/reference) for every method, parameter, and return type.
+Смотрите [справочник](/docs/sdk/reference), чтобы узнать о каждом методе, параметре и возвращаемом типе.
 
-## Configuration
+## Конфигурация
 
-You can configure the client explicitly instead of (or alongside) the env vars:
+Вы можете настроить клиент явно вместо переменных окружения (или вместе с ними):
 
 ```ts
 const client = new Rox({
@@ -119,11 +119,11 @@ const client = new Rox({
 });
 ```
 
-The client retries automatically on network errors and 429/5xx responses, so transient failures usually fix themselves.
+Клиент автоматически повторяет запросы при сетевых ошибках и ответах 429/5xx, поэтому временные сбои обычно устраняются сами собой.
 
-## Handling errors
+## Обработка ошибок
 
-The SDK throws typed errors for any non-success response, so you can catch what you actually care about:
+SDK выбрасывает типизированные ошибки для любого неуспешного ответа, поэтому вы можете перехватывать именно то, что вас действительно интересует:
 
 ```ts
 import Rox, { APIError, NotFoundError, RateLimitError } from '@rox_sh/sdk';
@@ -144,6 +144,6 @@ try {
 }
 ```
 
-## Next
+## Дальше
 
-Head to the [reference](/docs/sdk/reference) for the complete surface.
+Перейдите к [справочнику](/docs/sdk/reference), чтобы изучить весь набор возможностей.

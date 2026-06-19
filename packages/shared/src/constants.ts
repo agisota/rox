@@ -35,9 +35,11 @@ export const COMPANY = {
 // Theme
 export const THEME_STORAGE_KEY = "rox-theme";
 
-// Download URLs
+// Download URLs — stable-named assets attached to the latest desktop release.
 export const DOWNLOAD_URL_MAC_ARM64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-arm64.dmg`;
 export const DOWNLOAD_URL_MAC_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-x64.dmg`;
+export const DOWNLOAD_URL_WIN_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-x64.exe`;
+export const DOWNLOAD_URL_LINUX = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-x86_64.AppImage`;
 
 // Auth token configuration
 export const TOKEN_CONFIG = {

@@ -123,17 +123,22 @@ export function DownloadButton({
 		);
 	}
 
+	// Windows / Linux: real builds now ship, so route to the interstitial with
+	// the chosen OS instead of the (now-outdated) waitlist.
+	const os = platform === Platform.Windows ? "windows" : "linux";
 	return (
 		<button
 			type="button"
 			className={buttonClasses}
 			onClick={() => {
-				track("waitlist_clicked");
-				onJoinWaitlist?.();
+				track("download_clicked");
+				router.push(`${INTERSTITIAL_PATH}?os=${os}`);
 			}}
 		>
-			В лист ожидания
-			<HiMiniClock className="size-4" />
+			{platform === Platform.Windows
+				? "Скачать для Windows"
+				: "Скачать для Linux"}
+			<HiMiniArrowDownTray className="size-4" />
 		</button>
 	);
 }

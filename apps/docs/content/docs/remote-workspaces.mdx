@@ -1,73 +1,73 @@
 ---
-title: Remote Workspaces
-description: Access workspaces hosted on another machine
+title: Удалённые рабочие пространства
+description: Доступ к рабочим пространствам, размещённым на другой машине
 pro: true
 ---
 
-## Overview
+## Обзор
 
-A workspace lives on the machine that hosts its files, terminal, and ports. **Remote workspaces** let you reach a workspace that's hosted on a different machine, like a Mac mini under your desk, a sandbox your team shares, or a spare laptop in the office.
+Рабочее пространство существует на машине, где размещены его файлы, терминал и порты. **Удалённые рабочие пространства** позволяют обращаться к рабочему пространству, размещённому на другой машине, — например, на Mac mini под столом, в общей для команды песочнице или на запасном ноутбуке в офисе.
 
-**Rox Relay** is a service that provides a secure way to route traffic between your different devices. There are two ways to grant a device remote access through the relay:
+**Rox Relay** — это сервис, обеспечивающий безопасный способ маршрутизации трафика между вашими устройствами. Есть два способа предоставить устройству удалённый доступ через relay:
 
-## Option 1 — Desktop
+## Вариант 1 — Desktop
 
 <Callout type="warn">
-Exposing your primary workstation through the relay means anything reachable by your local host service — files, terminals, agent runs — becomes reachable by clients you grant access to. The recommended setup is a **separate machine** provisioned with only the repos and credentials you intend to share. That way a misclick or compromised client can't wipe an unrelated project or leak unrelated secrets.
+Открытие вашей основной рабочей станции через relay означает, что всё, доступное вашему локальному хост-сервису — файлы, терминалы, запуски агентов, — становится доступным клиентам, которым вы предоставили доступ. Рекомендуемая настройка — **отдельная машина**, на которой развёрнуты только те репозитории и учётные данные, которыми вы намерены делиться. Так случайный клик или скомпрометированный клиент не сможет стереть посторонний проект или утечь посторонние секреты.
 
-Use the desktop toggle when you genuinely need it on this machine. Otherwise prefer the CLI path on a dedicated host.
+Используйте десктопный переключатель, когда он действительно нужен на этой машине. В остальных случаях предпочитайте путь через CLI на выделенном хосте.
 </Callout>
 
-Open the desktop app and go to **Settings → Security**. Flip on **Allow remote workspaces to access this device via relay**.
+Откройте десктоп-приложение и перейдите в **Settings → Security**. Включите **Allow remote workspaces to access this device via relay**.
 
 ![Settings → Security relay toggle](/images/remote-workspaces-security-toggle.png)
 
-Enabling the toggle restarts the host service, so any running terminals on this device will be interrupted. You'll be asked to type a confirmation phrase before the change applies.
+Включение переключателя перезапускает хост-сервис, поэтому любые работающие терминалы на этом устройстве будут прерваны. Перед применением изменения вас попросят ввести подтверждающую фразу.
 
-## Option 2 — CLI
+## Вариант 2 — CLI
 
 <Callout type="info">
-See the CLI's [Getting Started](/cli/getting-started) and [Host Server](/cli/host-server) docs to get set up.
+Чтобы выполнить настройку, см. документацию CLI [Getting Started](/cli/getting-started) и [Host Server](/cli/host-server).
 </Callout>
 
-On the machine you want to add to your shared relay network, sign in and start the host server.
+На машине, которую вы хотите добавить в свою общую сеть relay, войдите в систему и запустите хост-сервер.
 
 ```bash
 rox auth login
 rox start --daemon
 ```
 
-`rox start --daemon` runs a small HTTP server in the background and registers the machine with the relay so other clients in your organization can find it.
+`rox start --daemon` запускает небольшой HTTP-сервер в фоновом режиме и регистрирует машину в relay, чтобы другие клиенты в вашей организации могли её найти.
 
-Verify it's online:
+Проверьте, что она в сети:
 
 ```bash
 rox status
 ```
 
-## Grant teammates access
+## Предоставление доступа коллегам
 
-When a host first comes online, the user who started it is the only one with access. Other members of your organization won't see it in their workspaces list until you add them.
+Когда хост впервые выходит в сеть, доступ к нему есть только у пользователя, который его запустил. Другие участники вашей организации не увидят его в своём списке рабочих пространств, пока вы их не добавите.
 
-Open **Settings → Hosts** in the desktop app, pick the host, and use **Add member** to grant teammates access. Owners can promote members to owner or remove them from the host.
+Откройте **Settings → Hosts** в десктоп-приложении, выберите хост и используйте **Add member**, чтобы предоставить доступ коллегам. Владельцы могут повышать участников до владельцев или удалять их с хоста.
 
 ![Settings → Hosts members table](/images/remote-workspaces-hosts-members.png)
 
-## Access remote workspaces from another device
+## Доступ к удалённым рабочим пространствам с другого устройства
 
-On any other device signed into the same organization, open the desktop app's **Workspaces** list. Use the **Device** filter in the top right to pick a remote host:
+На любом другом устройстве, вошедшем в ту же организацию, откройте список **Workspaces** в десктоп-приложении. Используйте фильтр **Device** в правом верхнем углу, чтобы выбрать удалённый хост:
 
-- **This device** — workspaces on the machine you're using now
-- **All devices** — everything you can reach
-- **Other devices** — each remote host that has opted in, with an online indicator
+- **This device** — рабочие пространства на машине, которую вы используете сейчас
+- **All devices** — всё, к чему у вас есть доступ
+- **Other devices** — каждый удалённый хост, который согласился на доступ, с индикатором онлайна
 
 ![Device filter in the workspaces list](/images/remote-workspaces-device-filter.png)
 
-Pick a remote host to see the workspaces hosted there. Open one and you get the full Rox experience — terminals, ports, agent runs, the diff viewer — proxied through the relay to the host machine.
+Выберите удалённый хост, чтобы увидеть размещённые на нём рабочие пространства. Откройте одно из них — и вы получите полноценный опыт Rox: терминалы, порты, запуски агентов, просмотрщик diff — проксированные через relay к хост-машине.
 
-## Turning access off
+## Отключение доступа
 
-- **Desktop**: flip the toggle in **Settings → Security** back off. The host service restarts and stops accepting relay traffic.
-- **CLI**: run `rox stop` on the host machine.
+- **Desktop**: выключите переключатель обратно в **Settings → Security**. Хост-сервис перезапускается и перестаёт принимать трафик relay.
+- **CLI**: выполните `rox stop` на хост-машине.
 
-In both cases, in-flight terminals and host-backed work on that machine are interrupted.
+В обоих случаях текущие терминалы и работа на стороне хоста на этой машине прерываются.
