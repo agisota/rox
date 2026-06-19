@@ -81,6 +81,7 @@ const CURSOR_LIGHT = "░▒▓";
 
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
 const SAFETY_TIMEOUT_MS = 18_000;
+const MIN_INTRO_DURATION_MS = 7_600;
 
 /** Delay the independent logo float until the one-shot reveal tween has landed. */
 const LOGO_FLOAT_DELAY_MS = 2_200;
@@ -104,15 +105,39 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		}
 		root.removeAttribute("data-intro-fallback");
 
+		const introStartedAt = window.performance.now();
 		let finished = false;
 		let fallbackStarted = false;
+		let finishQueued = false;
 		const fallbackTimers: number[] = [];
-		const finishOnce = () => {
+		const queueFallbackTimer = (callback: () => void, delay: number) => {
+			const timer = window.setTimeout(callback, delay);
+			fallbackTimers.push(timer);
+		};
+		const completeNow = () => {
 			if (finished) {
 				return;
 			}
 			finished = true;
+			root.style.pointerEvents = "none";
+			root.style.visibility = "hidden";
 			onCompleteRef.current();
+		};
+		const finishOnce = () => {
+			if (finished || finishQueued) {
+				return;
+			}
+			const remainingIntroTime =
+				MIN_INTRO_DURATION_MS - (window.performance.now() - introStartedAt);
+			if (remainingIntroTime > 0) {
+				finishQueued = true;
+				queueFallbackTimer(() => {
+					finishQueued = false;
+					finishOnce();
+				}, remainingIntroTime);
+				return;
+			}
+			completeNow();
 		};
 
 		const select = <T extends Element>(selector: string): T[] =>
@@ -137,10 +162,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			loop: false,
 			onComplete: finishOnce,
 		});
-		const queueFallbackTimer = (callback: () => void, delay: number) => {
-			const timer = window.setTimeout(callback, delay);
-			fallbackTimers.push(timer);
-		};
 		const startTimelineFallback = (showTagsImmediately = false) => {
 			if (finished || fallbackStarted) {
 				return;
@@ -327,6 +348,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		timeline.restart();
 		timeline.play();
 
+		queueFallbackTimer(completeNow, MIN_INTRO_DURATION_MS);
 		queueFallbackTimer(() => {
 			const slideOneOpacity = Number.parseFloat(
 				slide1[0] ? getComputedStyle(slide1[0]).opacity : "0",
