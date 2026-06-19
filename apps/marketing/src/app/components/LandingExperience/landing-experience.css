@@ -89,8 +89,8 @@
 .rox-intro__stage {
 	position: relative;
 	width: 100%;
-	max-width: min(1500px, 94vw);
-	aspect-ratio: 16 / 9;
+	height: 100%;
+	max-width: none;
 	backface-visibility: hidden;
 }
 
@@ -195,10 +195,10 @@
 
 .rox-intro__features-cloud {
 	position: absolute;
-	inset: 9% 2.5% 7%;
+	inset: clamp(34px, 8vh, 88px) clamp(20px, 5vw, 88px);
 }
 
-.rox-intro__feature {
+.rox-intro__slide .rox-intro__feature {
 	position: absolute;
 	top: var(--rox-tag-y);
 	left: var(--rox-tag-x);
@@ -399,6 +399,68 @@
 	);
 }
 
+.rox-field--fallback {
+	overflow: hidden;
+	background:
+		radial-gradient(
+			70% 58% at 50% 38%,
+			rgba(255, 128, 46, 0.16),
+			transparent 62%
+		),
+		radial-gradient(
+			80% 72% at 50% 42%,
+			rgba(255, 231, 202, 0.07),
+			transparent 70%
+		),
+		#080604;
+}
+
+.rox-field__fallback-particles,
+.rox-field__portrait {
+	position: absolute;
+	inset: 0;
+}
+
+.rox-field__fallback-particle {
+	position: absolute;
+	left: var(--x);
+	top: var(--y);
+	width: var(--size);
+	height: var(--size);
+	border-radius: 999px;
+	background: rgba(255, 192, 137, var(--opacity));
+	box-shadow:
+		0 0 10px rgba(255, 136, 52, 0.62),
+		0 0 26px rgba(255, 93, 20, 0.24);
+	animation: rox-fallback-particle-drift 3.8s ease-in-out var(--delay) infinite
+		alternate;
+}
+
+.rox-field__portrait {
+	width: min(34vw, 390px);
+	height: min(56vh, 560px);
+	top: 11vh;
+	left: 50%;
+	transform: translateX(-50%);
+	opacity: 0.76;
+	background:
+		radial-gradient(
+			circle at 48% 30%,
+			rgba(255, 231, 202, 0.98),
+			transparent 8%
+		),
+		linear-gradient(180deg, rgba(255, 154, 75, 0.86), rgba(255, 94, 22, 0.14));
+	filter: drop-shadow(0 0 28px rgba(255, 113, 36, 0.34));
+	mask-image: url("/rox-logo-light.png");
+	mask-position: center;
+	mask-repeat: no-repeat;
+	mask-size: contain;
+	-webkit-mask-image: url("/rox-logo-light.png");
+	-webkit-mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-size: contain;
+}
+
 /* The first viewport: centered brand, headline, subhead, command bar + CTA. */
 .rox-hero {
 	position: relative;
@@ -483,6 +545,7 @@
 
 .rox-hero__sub-line {
 	display: block;
+	min-height: 1.45em;
 }
 
 /* Feature hints — centered, scan-friendly list. No card or frame. */
@@ -701,12 +764,38 @@
 	}
 }
 
+@keyframes rox-fallback-particle-drift {
+	from {
+		opacity: calc(var(--opacity) * 0.72);
+		transform: translate3d(
+			calc(var(--drift-x) * -1),
+			calc(var(--drift-y) * -1),
+			0
+		);
+	}
+	to {
+		opacity: var(--opacity);
+		transform: translate3d(var(--drift-x), var(--drift-y), 0);
+	}
+}
+
 @media (max-width: 720px) {
 	.rox-landing {
 		--rox-feature-gap: clamp(28px, 4.5vh, 38px);
 	}
 	.rox-hero {
 		padding: 56px 20px 128px;
+	}
+	.rox-field__portrait {
+		width: min(58vw, 300px);
+		height: min(50vh, 430px);
+		top: 13vh;
+	}
+	.rox-intro__features-cloud {
+		inset: clamp(44px, 9vh, 72px) clamp(16px, 4vw, 30px);
+	}
+	.rox-intro__slide .rox-intro__feature {
+		font-size: clamp(0.48rem, 2.45vw, 0.72rem);
 	}
 	.rox-cmd__log-role {
 		min-width: 100px;
