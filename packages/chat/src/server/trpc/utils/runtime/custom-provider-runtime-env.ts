@@ -111,8 +111,8 @@ export async function withCustomProviderRuntimeEnv<T>(
 	});
 
 	await waitForTurn;
-	const prepared = prepareCustomProviderRuntimeEnv(selectedModelId);
 	try {
+		const prepared = prepareCustomProviderRuntimeEnv(selectedModelId);
 		return await operation(prepared);
 	} finally {
 		clearAppliedCustomProviderRuntimeEnv();

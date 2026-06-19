@@ -139,4 +139,37 @@ describe("prepareCustomProviderRuntimeEnv", () => {
 		expect(process.env.OPENAI_API_KEY).toBe("sk-original");
 		expect(process.env.OPENAI_BASE_URL).toBe("https://openai.example.com/v1");
 	});
+
+	it("releases the scoped env queue when preparation throws", async () => {
+		const throwingModelId = {
+			trim() {
+				throw new Error("prepare failed");
+			},
+		} as unknown as string;
+
+		await expect(
+			withCustomProviderRuntimeEnv(throwingModelId, async () => {
+				throw new Error("operation should not run");
+			}),
+		).rejects.toThrow("prepare failed");
+
+		let secondStarted = false;
+		await Promise.race([
+			withCustomProviderRuntimeEnv(
+				"anthropic/claude-sonnet-4",
+				async (prepared) => {
+					secondStarted = true;
+					expect(prepared).toEqual({
+						isCustomModel: false,
+						modelId: "anthropic/claude-sonnet-4",
+					});
+				},
+			),
+			new Promise((_, reject) =>
+				setTimeout(() => reject(new Error("queue did not release")), 100),
+			),
+		]);
+
+		expect(secondStarted).toBe(true);
+	});
 });
