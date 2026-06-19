@@ -48,7 +48,7 @@ export function Footer() {
 		>
 			<div
 				className={`pointer-events-auto mx-auto max-w-7xl px-5 sm:px-8 ${
-					isHome ? "pb-4 pt-3 sm:pb-5" : "pb-8 pt-5 sm:pb-10"
+					isHome ? "pb-9 pt-3 sm:pb-10" : "pb-8 pt-5 sm:pb-10"
 				}`}
 			>
 				<nav
@@ -67,7 +67,7 @@ export function Footer() {
 					<Link
 						href="/"
 						aria-label="Rox"
-						className="mx-auto mt-4 flex w-fit items-center justify-center text-white/70 transition-colors hover:text-white sm:mt-5"
+						className="mx-auto mt-8 flex w-fit items-center justify-center text-white/70 transition-colors hover:text-white"
 					>
 						<RoxLogo />
 					</Link>

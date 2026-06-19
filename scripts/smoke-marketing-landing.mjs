@@ -58,8 +58,10 @@ async function captureViewport(viewport) {
 		const cta = document.querySelector(".rox-landing__hero-cta");
 		const shell = document.querySelector(".marketing-page-shell");
 		const hints = document.querySelector(".rox-hero__hints");
+		const footerLogo = document.querySelector('footer a[href="/"] img');
 		const footerRect = footer?.getBoundingClientRect();
 		const ctaRect = cta?.getBoundingClientRect();
+		const footerLogoRect = footerLogo?.getBoundingClientRect();
 		const footerLinkRows = [
 			...new Set(
 				Array.from(document.querySelectorAll("footer a"))
@@ -75,9 +77,17 @@ async function captureViewport(viewport) {
 			shellPaddingTop: shell ? getComputedStyle(shell).paddingTop : null,
 			hintsTag: hints?.tagName ?? null,
 			hintCount: document.querySelectorAll(".rox-hero__hint").length,
+			termCount: document.querySelectorAll(".rox-hero__hint .rox-term").length,
 			footerLinkRows,
 			footerLogoCount: document.querySelectorAll('footer a[href="/"] img')
 				.length,
+			footerLogoBottomGap: footerLogoRect
+				? Math.round(window.innerHeight - footerLogoRect.bottom)
+				: null,
+			footerNavLogoGap:
+				footerLogoRect && footerLinkRows.length > 0
+					? Math.round(footerLogoRect.top - footerLinkRows[0])
+					: null,
 			ctaFooterGap:
 				ctaRect && footerRect
 					? Math.round(footerRect.top - ctaRect.bottom)
@@ -124,12 +134,26 @@ for (const viewport of viewports) {
 		`${viewport.name}: expected 4 hints`,
 	);
 	assertSmoke(
+		result.metrics.termCount >= 6,
+		`${viewport.name}: feature terms lost underline/hover targets`,
+	);
+	assertSmoke(
 		result.metrics.footerLinkRows.length === 1,
 		`${viewport.name}: footer links are not in one row`,
 	);
 	assertSmoke(
 		result.metrics.footerLogoCount === 1,
 		`${viewport.name}: footer logo is missing`,
+	);
+	assertSmoke(
+		typeof result.metrics.footerLogoBottomGap === "number" &&
+			result.metrics.footerLogoBottomGap >= 36,
+		`${viewport.name}: footer logo is still too close to the viewport bottom`,
+	);
+	assertSmoke(
+		typeof result.metrics.footerNavLogoGap === "number" &&
+			result.metrics.footerNavLogoGap >= 32,
+		`${viewport.name}: footer links and logo are too close together`,
 	);
 	assertSmoke(
 		typeof result.metrics.ctaFooterGap === "number" &&
