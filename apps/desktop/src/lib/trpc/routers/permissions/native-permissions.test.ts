@@ -46,6 +46,7 @@ const {
 	checkMicrophone,
 	checkScreenRecording,
 	getAutomationTargets,
+	isAutomationEnabled,
 	openAutomationSettings,
 	PERMISSION_SETTINGS_URLS,
 	requestAccessibility,
@@ -196,17 +197,45 @@ describe("native permissions", () => {
 		expect(openedUrls).toEqual([PERMISSION_SETTINGS_URLS.appleEvents]);
 	});
 
-	it("requestAppleEvents requests automation for all targets (no settings URL)", async () => {
+	it("is disabled by default (Developer ID gate)", () => {
+		expect(isAutomationEnabled()).toBe(false);
+	});
+
+	it("requestAppleEvents is a no-op when automation is disabled", async () => {
 		requestAllMock.mockClear();
-		const result = await requestAppleEvents();
+		const result = await requestAppleEvents({ enabled: false });
+		expect(requestAllMock).not.toHaveBeenCalled();
+		expect(result).toEqual([]);
+	});
+
+	it("requestAppleEvents requests all targets when enabled", async () => {
+		requestAllMock.mockClear();
+		const result = await requestAppleEvents({ enabled: true });
 		expect(requestAllMock).toHaveBeenCalledTimes(1);
 		expect(result).toEqual([{ bundleId: "com.apple.finder", granted: true }]);
 	});
 
-	it("requestAutomation validates the target then requests it", async () => {
+	it("requestAutomation is a no-op when automation is disabled", async () => {
 		assertKnownMock.mockClear();
 		requestOneMock.mockClear();
-		const result = await requestAutomation("com.apple.finder");
+		const result = await requestAutomation("com.apple.finder", {
+			enabled: false,
+		});
+		expect(assertKnownMock).not.toHaveBeenCalled();
+		expect(requestOneMock).not.toHaveBeenCalled();
+		expect(result).toEqual({
+			bundleId: "com.apple.finder",
+			granted: false,
+			error: "automation-disabled",
+		});
+	});
+
+	it("requestAutomation validates then requests the target when enabled", async () => {
+		assertKnownMock.mockClear();
+		requestOneMock.mockClear();
+		const result = await requestAutomation("com.apple.finder", {
+			enabled: true,
+		});
 		expect(assertKnownMock).toHaveBeenCalledWith("com.apple.finder");
 		expect(requestOneMock).toHaveBeenCalledWith("com.apple.finder");
 		expect(result).toEqual({ bundleId: "com.apple.finder", granted: true });

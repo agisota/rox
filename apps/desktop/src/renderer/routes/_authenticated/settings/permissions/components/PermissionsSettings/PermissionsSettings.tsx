@@ -75,12 +75,31 @@ function PermissionRowSkeleton() {
  * deep link to the Automation pane.
  */
 function AutomationSection() {
+	const { data: enabled } =
+		electronTrpc.permissions.getAutomationEnabled.useQuery();
 	const { data: targets } =
 		electronTrpc.permissions.getAutomationTargets.useQuery();
 	const requestAll = electronTrpc.permissions.requestAppleEvents.useMutation();
 	const requestOne = electronTrpc.permissions.requestAutomation.useMutation();
 	const openSettings =
 		electronTrpc.permissions.openAutomationSettings.useMutation();
+
+	// Developer ID gate: until a signed build is configured, surface the row but
+	// keep it inert (no Apple Events are sent on unsigned builds anyway).
+	if (enabled === false) {
+		return (
+			<div className="flex items-center justify-between gap-6">
+				<div className="min-w-0 flex-1 space-y-0.5">
+					<Label className="text-sm font-medium">Автоматизация</Label>
+					<p className="text-xs text-muted-foreground">
+						Управление другими приложениями (Apple Events) станет доступно в
+						подписанной сборке Rox. Временно отключено.
+					</p>
+				</div>
+				<Badge variant="outline">Скоро</Badge>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-3">
