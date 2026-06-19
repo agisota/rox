@@ -75,6 +75,10 @@ describe("requestAllAutomationTargets", () => {
 		expect(results).toHaveLength(AUTOMATION_TARGETS.length);
 		expect(execFileImpl).toHaveBeenCalledTimes(AUTOMATION_TARGETS.length);
 		expect(results.every((r) => r.granted)).toBe(true);
+		// Bulk path must use a bounded per-target timeout (not the 120s single
+		// timeout) so a stuck target can't hold the sequence ~16 min.
+		const opts = execFileImpl.mock.calls[0]?.[2] as { timeout: number };
+		expect(opts.timeout).toBeLessThanOrEqual(30_000);
 	});
 });
 

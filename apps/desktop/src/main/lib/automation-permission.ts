@@ -97,6 +97,14 @@ export function requestAutomationForTarget(
 }
 
 /**
+ * Per-target timeout for the bulk "request all" path. Shorter than the
+ * single-target timeout: a dialog the user is actively dismissing resolves
+ * fast, and a stuck/unresponsive target must not hold the whole sequence
+ * hostage (8 × 120s ≈ 16 min). This bounds the worst case to ~4 min.
+ */
+const BULK_REQUEST_TIMEOUT_MS = 30_000;
+
+/**
  * Request automation for every known target, sequentially, so the macOS consent
  * dialogs queue one-at-a-time (firing all at once is incomprehensible to users).
  * Returns the per-target outcomes.
@@ -108,9 +116,13 @@ export async function requestAllAutomationTargets(
 		timeoutMs?: number;
 	} = {},
 ): Promise<AutomationRequestResult[]> {
+	const perTarget = {
+		...options,
+		timeoutMs: options.timeoutMs ?? BULK_REQUEST_TIMEOUT_MS,
+	};
 	const results: AutomationRequestResult[] = [];
 	for (const target of AUTOMATION_TARGETS) {
-		results.push(await requestAutomationForTarget(target.bundleId, options));
+		results.push(await requestAutomationForTarget(target.bundleId, perTarget));
 	}
 	return results;
 }
