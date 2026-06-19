@@ -26,9 +26,12 @@ export function LandingExperience({
 		setPhase((current) => (current === "intro" ? "main" : current));
 	}, []);
 
-	if (phase === "intro") {
-		return <IntroOverlay onComplete={handleIntroComplete} />;
-	}
-
-	return <ScrambleLanding />;
+	return (
+		<>
+			<ScrambleLanding />
+			{phase === "intro" ? (
+				<IntroOverlay onComplete={handleIntroComplete} />
+			) : null}
+		</>
+	);
 }

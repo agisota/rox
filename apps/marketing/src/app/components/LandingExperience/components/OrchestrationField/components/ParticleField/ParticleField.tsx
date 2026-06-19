@@ -57,6 +57,8 @@ interface FieldData {
 	edgeIndices: Uint32Array;
 	/** 1 for face-constellation particles (no spin, sit behind the rings). */
 	isFace: Uint8Array;
+	/** Per-particle Y-orbit multiplier: rings spin at intentionally different speeds. */
+	orbitSpeed: Float32Array;
 	/** First index of the contiguous face-constellation block. */
 	faceStart: number;
 	/** Number of particles in the face-constellation block. */
@@ -133,6 +135,7 @@ function buildField(): FieldData {
 	const colors = new Float32Array(count * 3);
 	const sizes = new Float32Array(count);
 	const isFace = new Uint8Array(count);
+	const orbitSpeed = new Float32Array(count);
 
 	const palette = AGENT_ROLES.map((role) => new THREE.Color(role.color));
 	const white = new THREE.Color("#fff3e6");
@@ -143,9 +146,33 @@ function buildField(): FieldData {
 	// Ring shares are trimmed to leave room for the face constellation block.
 	// Ring layout: radius, tube thickness, tilt about X, yaw about Y, share.
 	const rings = [
-		{ radius: 3.1, tube: 0.22, tiltX: 1.12, yaw: 0.0, share: 0.13, role: 1 },
-		{ radius: 4.9, tube: 0.26, tiltX: 0.52, yaw: 0.7, share: 0.12, role: 2 },
-		{ radius: 6.6, tube: 0.32, tiltX: 1.38, yaw: -0.4, share: 0.1, role: 3 },
+		{
+			radius: 3.1,
+			tube: 0.22,
+			tiltX: 1.12,
+			yaw: 0.0,
+			share: 0.13,
+			role: 1,
+			speed: 1.5,
+		},
+		{
+			radius: 4.9,
+			tube: 0.26,
+			tiltX: 0.52,
+			yaw: 0.7,
+			share: 0.12,
+			role: 2,
+			speed: 1.7,
+		},
+		{
+			radius: 6.6,
+			tube: 0.32,
+			tiltX: 1.38,
+			yaw: -0.4,
+			share: 0.1,
+			role: 3,
+			speed: 2,
+		},
 	];
 	const hubShare = 0.05;
 	let cursor = 0;
@@ -158,6 +185,7 @@ function buildField(): FieldData {
 		tiltX: number,
 		yaw: number,
 		roleIndex: number,
+		speed: number,
 	) => {
 		const rotX = new THREE.Matrix4().makeRotationX(tiltX);
 		const rotY = new THREE.Matrix4().makeRotationY(yaw);
@@ -188,6 +216,7 @@ function buildField(): FieldData {
 			colors[i * 3 + 1] = tmp.g * ringBoost;
 			colors[i * 3 + 2] = tmp.b * ringBoost;
 			sizes[i] = 0.12 + Math.random() * 0.14;
+			orbitSpeed[i] = speed;
 		}
 	};
 
@@ -201,6 +230,7 @@ function buildField(): FieldData {
 			ring.tiltX,
 			ring.yaw,
 			ring.role,
+			ring.speed,
 		);
 		cursor += span;
 	}
@@ -219,6 +249,7 @@ function buildField(): FieldData {
 		colors[i * 3 + 1] = tmp.g;
 		colors[i * 3 + 2] = tmp.b;
 		sizes[i] = 0.09 + Math.random() * 0.13;
+		orbitSpeed[i] = 1.5;
 	}
 	cursor = hubEnd;
 
@@ -242,6 +273,7 @@ function buildField(): FieldData {
 		colors[i * 3 + 1] = tmp.g * 0.4;
 		colors[i * 3 + 2] = tmp.b * 0.4;
 		sizes[i] = 0.05 + Math.random() * 0.06;
+		orbitSpeed[i] = 1.35 + Math.random() * 0.45;
 	}
 
 	// Face constellation — dim warm star-points. Until the image is sampled they
@@ -268,16 +300,17 @@ function buildField(): FieldData {
 		colors[i * 3 + 1] = tmp.g * brightness;
 		colors[i * 3 + 2] = tmp.b * brightness;
 		sizes[i] = (sparkle ? 0.2 : 0.11) + Math.random() * 0.06;
+		orbitSpeed[i] = 0;
 	}
 
 	// Scattered start: a wide chaotic cloud the particles fly in from.
 	for (let i = 0; i < count; i++) {
-		const r = 6 + Math.random() * 12;
+		const r = 7 + Math.random() * 18;
 		const phi = Math.acos(2 * Math.random() - 1);
 		const theta = Math.random() * Math.PI * 2;
-		scattered[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-		scattered[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-		scattered[i * 3 + 2] = r * Math.cos(phi) - 3;
+		scattered[i * 3] = r * Math.sin(phi) * Math.cos(theta) * 1.12;
+		scattered[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.96;
+		scattered[i * 3 + 2] = r * Math.cos(phi) * 1.2 - 4;
 	}
 
 	// Pick edge endpoints from the first (innermost two) rings for delegation
@@ -299,6 +332,7 @@ function buildField(): FieldData {
 		sizes,
 		edgeIndices,
 		isFace,
+		orbitSpeed,
 		faceStart,
 		faceCount,
 	};
@@ -415,7 +449,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				const dy = ny - lastPointer.current.y;
 				activity.current = Math.min(
 					1,
-					activity.current + Math.sqrt(dx * dx + dy * dy) * 18,
+					activity.current + Math.sqrt(dx * dx + dy * dy) * 24,
 				);
 			}
 			pointerNdc.current.x = nx;
@@ -470,11 +504,11 @@ function Swarm({ pulse }: ParticleFieldProps) {
 
 		// The swarm flies in from chaos and assembles into the face + rings, then
 		// stays assembled (face backdrop + spinning rings on top). `baseFloor`
-		// ramps up gradually so the coalesce is clearly visible (~4.5s); smoothstep
-		// then pushes it close to 1 so the structure reads crisp. Pointer activity
-		// and a command can still drive it to a hard 1.
+		// ramps up gradually so the coalesce is clearly visible (~7.5s);
+		// smoothstep then pushes it close to 1 so the structure reads crisp.
+		// Pointer activity and a command can still drive it to a hard 1.
 		activity.current = Math.max(0, activity.current - delta * 0.15);
-		const baseFloor = Math.min(0.95, local * 0.21);
+		const baseFloor = Math.min(0.95, local * 0.126);
 		const orchTarget = Math.max(
 			activity.current,
 			baseFloor,
@@ -491,10 +525,10 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		// Whole-field brightness flash on a pulse — unmistakable visual payoff.
 		uniforms.uBoost.value = 1 + impulse * 1.6;
 
-		// Rotation: a steady Saturn-ring spin, briefly boosted by a pulse.
-		const spin = t * 0.12 + impulse * since * 1.2;
-		const cosY = Math.cos(spin);
-		const sinY = Math.sin(spin);
+		// Rotation: steady Saturn-ring spins, with each ring moving at its own
+		// multiplier and a brief global boost on a pulse.
+		const spinBase = t * 0.12;
+		const pulseSpin = impulse * since * 1.35;
 
 		// Pointer → world point on the z=0 plane.
 		pointerVec.set(ndc.x, ndc.y);
@@ -508,6 +542,7 @@ function Swarm({ pulse }: ParticleFieldProps) {
 		const structured = data.structured;
 		const scattered = data.scattered;
 		const isFace = data.isFace;
+		const orbitSpeed = data.orbitSpeed;
 		const count = data.count;
 
 		for (let i = 0; i < count; i++) {
@@ -530,6 +565,9 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			} else {
 				const sx = (structured[ix] ?? 0) * expand;
 				const sz = (structured[iz] ?? 0) * expand;
+				const spin = spinBase * (orbitSpeed[i] || 1) + pulseSpin;
+				const cosY = Math.cos(spin);
+				const sinY = Math.sin(spin);
 				rx = sx * cosY + sz * sinY;
 				rz = -sx * sinY + sz * cosY;
 				ry = (structured[iy] ?? 0) * expand;
@@ -539,15 +577,15 @@ function Swarm({ pulse }: ParticleFieldProps) {
 			// fades out as the structure forms and then stays assembled.
 			const chaos = 1 - ease;
 			const cx =
-				(scattered[ix] ?? 0) + Math.sin(t * 0.3 + i * 0.7) * 1.5 * chaos;
+				(scattered[ix] ?? 0) + Math.sin(t * 0.44 + i * 0.7) * 2.4 * chaos;
 			const cy =
-				(scattered[iy] ?? 0) + Math.cos(t * 0.27 + i * 1.3) * 1.5 * chaos;
+				(scattered[iy] ?? 0) + Math.cos(t * 0.39 + i * 1.3) * 2.2 * chaos;
 			const cz =
-				(scattered[iz] ?? 0) + Math.sin(t * 0.21 + i * 0.5) * 1.2 * chaos;
+				(scattered[iz] ?? 0) + Math.sin(t * 0.31 + i * 0.5) * 1.8 * chaos;
 
 			// Blend chaos → structure, with a gentle living swirl once organised.
 			// The face stays crisp (no swirl) so the silhouette is legible.
-			const swirlSeed = (((i * 2_654_435_761) >>> 0) / 0xffffffff - 0.5) * 0.1;
+			const swirlSeed = (((i * 2_654_435_761) >>> 0) / 0xffffffff - 0.5) * 0.18;
 			const swirl = face ? 0 : swirlSeed * ease;
 			let x = cx + (rx - cx) * ease + swirl;
 			let y = cy + (ry - cy) * ease + swirl;
@@ -558,8 +596,8 @@ function Swarm({ pulse }: ParticleFieldProps) {
 				const dx = x - px;
 				const dy = y - py;
 				const d2 = dx * dx + dy * dy;
-				if (d2 < 16 && d2 > 0.04) {
-					const f = (1 - d2 / 16) * 2.6;
+				if (d2 < 30 && d2 > 0.04) {
+					const f = (1 - d2 / 30) * 4.6;
 					const inv = 1 / Math.sqrt(d2);
 					x += dx * inv * f;
 					y += dy * inv * f;

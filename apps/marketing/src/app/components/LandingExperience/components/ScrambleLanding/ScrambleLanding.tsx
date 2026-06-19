@@ -15,7 +15,10 @@ import {
 } from "../../constants";
 import { AnimatedTextCycle } from "../AnimatedTextCycle";
 import { OrchestrationField } from "../OrchestrationField";
-import { FIELD_HINT } from "../OrchestrationField/constants";
+import {
+	FIELD_HINT_LEAD,
+	FIELD_HINT_TAIL,
+} from "../OrchestrationField/constants";
 import { HeroDownloadCta } from "./components/HeroDownloadCta";
 import { HeroStackLine } from "./components/HeroStackLine";
 import { Term } from "./components/Term";
@@ -167,21 +170,27 @@ export function ScrambleLanding() {
 
 					<ul className="rox-hero__hints" aria-label="Фишки Rox">
 						<li className="rox-hero__hint">
-							<span className="rox-hero__hint-body">{FIELD_HINT}</span>
-						</li>
-
-						<li className="rox-hero__hint">
 							<span className="rox-hero__hint-body">
-								Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
-								<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
-								конфликтов
+								{FIELD_HINT_LEAD}
+								<span className="rox-hero__line-break">{FIELD_HINT_TAIL}</span>
 							</span>
 						</li>
 
 						<li className="rox-hero__hint">
 							<span className="rox-hero__hint-body">
-								<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
-								<Term {...HERO_LLM_TERM} /> — бесплатно
+								Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
+								<Term {...HERO_WORKTREE_TERM} /> —
+								<span className="rox-hero__line-break">
+									без ошибок, пересечений и конфликтов
+								</span>
+							</span>
+						</li>
+
+						<li className="rox-hero__hint">
+							<span className="rox-hero__hint-body">
+								Выдаем под твоего агента <Term {...HERO_RUNTIME_TERM} /> 24/7 с
+								безлимитным доступом к <Term {...HERO_LLM_TERM} /> — всем,
+								бесплатно, навсегда
 							</span>
 						</li>
 

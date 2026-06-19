@@ -54,13 +54,13 @@ export function Footer() {
 		>
 			<div
 				className={`pointer-events-auto mx-auto max-w-7xl px-5 sm:px-8 ${
-					isHome ? "pb-14 pt-3 sm:pb-16" : "pb-8 pt-5 sm:pb-10"
+					isHome ? "pb-10 pt-3 sm:pb-11" : "pb-8 pt-5 sm:pb-10"
 				}`}
 			>
 				<nav
 					className={
 						isHome
-							? "flex flex-nowrap items-center justify-center gap-x-5 overflow-visible whitespace-nowrap sm:gap-x-14 md:gap-x-20"
+							? "grid w-full grid-cols-[1fr_auto_1fr] items-start gap-x-5 overflow-visible whitespace-nowrap sm:gap-x-20 md:gap-x-32"
 							: "flex flex-wrap items-center justify-center gap-x-7 gap-y-2 sm:gap-x-9"
 					}
 					aria-label="Нижняя навигация"
@@ -73,7 +73,7 @@ export function Footer() {
 					<Link
 						href="/"
 						aria-label="Rox"
-						className="mx-auto mt-20 flex w-fit items-center justify-center text-white/70 opacity-50 transition-[color,opacity] hover:text-white hover:opacity-100 [&_img]:h-[54px] [&_img]:w-auto"
+						className="mx-auto mt-16 flex w-fit items-center justify-center text-white/70 opacity-40 saturate-[0.4] transition-[color,filter,opacity] hover:text-white hover:opacity-80 hover:saturate-[0.8] sm:mt-28 [&_img]:h-[54px] [&_img]:w-auto"
 					>
 						<RoxLogo />
 					</Link>
@@ -95,7 +95,7 @@ function FooterLinkItem({
 	isHome: boolean;
 }) {
 	const className = isHome
-		? "group relative inline-flex min-w-0 items-center gap-1 font-sans text-[9px] font-extralight leading-none tracking-[0.12em] text-white/36 transition-colors hover:text-white/62 sm:text-[10px]"
+		? `group relative inline-flex min-w-0 items-center gap-1 font-sans text-[7px] font-extralight leading-none tracking-[0.1em] text-white/36 transition-colors hover:text-white/62 sm:text-[10px] sm:tracking-[0.12em] ${getHomeFooterAlign(link.id)}`
 		: "group inline-flex items-center gap-1.5 font-sans text-[13px] font-light text-white/45 transition-colors hover:text-white/70";
 	const content = (
 		<>
@@ -131,4 +131,10 @@ function FooterLinkItem({
 			{content}
 		</Link>
 	);
+}
+
+function getHomeFooterAlign(id: FooterLink["id"]) {
+	if (id === "changelog") return "justify-self-start";
+	if (id === "docs") return "justify-self-center";
+	return "justify-self-end text-right";
 }
