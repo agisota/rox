@@ -83,6 +83,9 @@ async function captureViewport(viewport) {
 		const footerLinkRects = footerNavLinks.map((node) =>
 			node.getBoundingClientRect(),
 		);
+		const footerLinkCenters = footerLinkRects.map((rect) =>
+			Math.round(rect.left + rect.width / 2),
+		);
 		const footerLinkGaps = footerLinkRects
 			.slice(1)
 			.map((rect, index) =>
@@ -121,6 +124,7 @@ async function captureViewport(viewport) {
 			hintCount: document.querySelectorAll(".rox-hero__hint").length,
 			termCount: document.querySelectorAll(".rox-hero__hint .rox-term").length,
 			footerLinkIds,
+			footerLinkCenters,
 			footerLinkGaps,
 			footerNewBadgeCount: document.querySelectorAll(
 				'[data-footer-badge="changelog-new"]',
@@ -140,8 +144,8 @@ async function captureViewport(viewport) {
 					? Math.round(footerLogoRect.top - footerLinkRows[0])
 					: null,
 			ctaFooterGap:
-				ctaRect && footerRect
-					? Math.round(footerRect.top - ctaRect.bottom)
+				ctaRect && footerLinkRows.length > 0
+					? Math.round(footerLinkRows[0] - ctaRect.bottom)
 					: null,
 		};
 	});
@@ -211,6 +215,16 @@ for (const viewport of viewports) {
 		`${viewport.name}: footer links are in the wrong order`,
 	);
 	assertSmoke(
+		Math.abs(result.metrics.footerLinkCenters[1] - viewport.width / 2) <=
+			(viewport.name === "mobile" ? 24 : 18),
+		`${viewport.name}: documentation footer link is not centered`,
+	);
+	assertSmoke(
+		result.metrics.footerLinkCenters[0] < viewport.width * 0.43 &&
+			result.metrics.footerLinkCenters[2] > viewport.width * 0.57,
+		`${viewport.name}: footer side links are not left/right aligned`,
+	);
+	assertSmoke(
 		result.metrics.footerNewBadgeCount === 1,
 		`${viewport.name}: changelog new badge is missing`,
 	);
@@ -230,18 +244,19 @@ for (const viewport of viewports) {
 		`${viewport.name}: footer logo is not enlarged`,
 	);
 	assertSmoke(
-		result.metrics.footerLogoOpacity === "0.5",
-		`${viewport.name}: footer logo base opacity is not 50%`,
+		result.metrics.footerLogoOpacity === "0.4",
+		`${viewport.name}: footer logo base opacity is not 40%`,
 	);
 	assertSmoke(
 		typeof result.metrics.footerLogoBottomGap === "number" &&
 			result.metrics.footerLogoBottomGap >=
-				(viewport.name === "mobile" ? 44 : 52),
+				(viewport.name === "mobile" ? 34 : 38),
 		`${viewport.name}: footer logo is still too close to the viewport bottom`,
 	);
 	assertSmoke(
 		typeof result.metrics.footerNavLogoGap === "number" &&
-			result.metrics.footerNavLogoGap >= 74,
+			result.metrics.footerNavLogoGap >=
+				(viewport.name === "mobile" ? 68 : 118),
 		`${viewport.name}: footer links and logo are too close together`,
 	);
 	assertSmoke(

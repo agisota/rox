@@ -31,7 +31,7 @@ export function HeroStackLine() {
 		<>
 			<TermJoin terms={HERO_BYOM_TERMS} separator=" + " />: залетай на любом
 			привычном <Term {...HERO_STACK_TERM} /> или сходу газуй на заряженном
-			агенте Rox One, - он <Term {...HERO_ROX_ORCHESTRATION_TERM} /> справится с
+			агенте Rox, который <Term {...HERO_ROX_ORCHESTRATION_TERM} /> справится с
 			этим зоопарком галлюциногенов
 		</>
 	);

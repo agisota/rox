@@ -241,7 +241,7 @@ export const HERO_WORKTREE_TERM: LandingTerm = {
 };
 
 export const HERO_RUNTIME_TERM: LandingTerm = {
-	label: "Рантайм",
+	label: "runtime",
 	tip: "Всегда и без ограничений доступен выделенный sandbox (1 vCPU 1 RAM 10G SSD); более мощное железо можно арендовать по рыночной цене",
 };
 
@@ -251,7 +251,7 @@ export const HERO_LLM_TERM: LandingTerm = {
 };
 
 export const HERO_ROX_ORCHESTRATION_TERM: LandingTerm = {
-	label: "легко",
+	label: "легчайше",
 	tip: "для оркестрации используем собственное комбо из ODW (opendynamicworkflows) x ACPX x Autopilot x Swarm",
 };
 

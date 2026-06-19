@@ -2,6 +2,7 @@
 
 import { animate, createTimeline, scrambleText, stagger } from "animejs";
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
 import {
 	INTRO_BRAND,
@@ -47,12 +48,40 @@ const INTRO_FEATURES = INTRO_FEATURE_TAGS.map((tag, index) => ({
 	id: `intro-feature-${index}`,
 }));
 
+type FeatureCloudStyle = CSSProperties &
+	Record<
+		"--rox-tag-x" | "--rox-tag-y" | "--rox-tag-rot" | "--rox-tag-scale",
+		string
+	>;
+
+function getFeatureCloudStyle(index: number, color: number): FeatureCloudStyle {
+	const goldenAngle = 137.50776405;
+	const angle = (index * goldenAngle * Math.PI) / 180;
+	const ring = index % 6;
+	const spread = [13, 24, 34, 42, 18, 38][ring] ?? 28;
+	const wobble = ((index * 23) % 17) - 8;
+	const x = 50 + Math.cos(angle) * spread * 1.05 + wobble * 0.58;
+	const y =
+		50 + Math.sin(angle) * spread * 0.74 + (((index * 37) % 19) - 9) * 0.72;
+	const rotation = (((index * 29) % 31) - 15) * (index % 4 === 0 ? 1.35 : 0.7);
+	const scale = [0.9, 1.08, 0.78, 1.24, 0.96, 1.16, 0.84][index % 7] ?? 1;
+
+	return {
+		"--rox-tag-x": `${Math.max(5, Math.min(95, x)).toFixed(2)}%`,
+		"--rox-tag-y": `${Math.max(7, Math.min(93, y)).toFixed(2)}%`,
+		"--rox-tag-rot": `${rotation.toFixed(2)}deg`,
+		"--rox-tag-scale": scale.toString(),
+		color: `var(--rox-c-${color})`,
+	};
+}
+
 /** Scramble cursor glyphs reused from the original anime.js demo. */
 const CURSOR_HEAVY = "░▒▓█";
 const CURSOR_LIGHT = "░▒▓";
 
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
 const SAFETY_TIMEOUT_MS = 18_000;
+const MIN_INTRO_DURATION_MS = 7_600;
 
 /** Delay the independent logo float until the one-shot reveal tween has landed. */
 const LOGO_FLOAT_DELAY_MS = 2_200;
@@ -74,14 +103,41 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		if (!root) {
 			return;
 		}
+		root.setAttribute("data-intro-js", "enhanced");
 
+		const introStartedAt = window.performance.now();
 		let finished = false;
-		const finishOnce = () => {
+		let fallbackStarted = false;
+		let finishQueued = false;
+		const fallbackTimers: number[] = [];
+		const queueFallbackTimer = (callback: () => void, delay: number) => {
+			const timer = window.setTimeout(callback, delay);
+			fallbackTimers.push(timer);
+		};
+		const completeNow = () => {
 			if (finished) {
 				return;
 			}
 			finished = true;
+			root.style.pointerEvents = "none";
+			root.style.visibility = "hidden";
 			onCompleteRef.current();
+		};
+		const finishOnce = () => {
+			if (finished || finishQueued) {
+				return;
+			}
+			const remainingIntroTime =
+				MIN_INTRO_DURATION_MS - (window.performance.now() - introStartedAt);
+			if (remainingIntroTime > 0) {
+				finishQueued = true;
+				queueFallbackTimer(() => {
+					finishQueued = false;
+					finishOnce();
+				}, remainingIntroTime);
+				return;
+			}
+			completeNow();
 		};
 
 		const select = <T extends Element>(selector: string): T[] =>
@@ -106,6 +162,30 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			loop: false,
 			onComplete: finishOnce,
 		});
+		const startTimelineFallback = (showTagsImmediately = false) => {
+			if (finished || fallbackStarted) {
+				return;
+			}
+			fallbackStarted = true;
+			timeline.pause();
+			root.style.backgroundColor = "#000";
+			if (slide1[0]) slide1[0].style.opacity = "1";
+			if (slide2[0]) slide2[0].style.opacity = "0";
+
+			if (showTagsImmediately) {
+				if (slide1[0]) slide1[0].style.opacity = "0";
+				if (slide2[0]) slide2[0].style.opacity = "1";
+				queueFallbackTimer(finishOnce, 4000);
+				return;
+			}
+
+			queueFallbackTimer(() => {
+				if (finished) return;
+				if (slide1[0]) slide1[0].style.opacity = "0";
+				if (slide2[0]) slide2[0].style.opacity = "1";
+			}, 2200);
+			queueFallbackTimer(finishOnce, 6200);
+		};
 
 		// ── Slide 1: multilingual word grid collapses into the ROX wordmark ──
 		timeline
@@ -245,17 +325,21 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			// Swap slides only once the logo/CPU fade has completed.
 			.set(slide1, { opacity: 0 }, `<+=${LOGO_FADE_MS}`)
 			.set(slide2, { opacity: 1 }, "<<")
+			.set(
+				slide2Words,
+				{
+					opacity: 0,
+					scale: 0.82,
+					translateY: 12,
+				},
+				"<<",
+			)
 			.add(
 				slide2Words,
 				{
-					innerHTML: scrambleText({
-						override: " ",
-						from: "center",
-						duration: 600,
-						revealDelay: 250,
-						cursor: CURSOR_LIGHT,
-						perturbation: 0.5,
-					}),
+					opacity: { to: 1, duration: 520, ease: "out(2)" },
+					scale: { to: 1, duration: 720, ease: "out(3)" },
+					translateY: { to: 0, duration: 720, ease: "out(3)" },
 				},
 				stagger([40, 1800], {
 					from: "random",
@@ -280,6 +364,26 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			.add(root, { opacity: 1, duration: 1800 }, "<+=1200");
 
 		timeline.init();
+		timeline.restart();
+		timeline.play();
+
+		queueFallbackTimer(completeNow, MIN_INTRO_DURATION_MS);
+		queueFallbackTimer(() => {
+			const slideOneOpacity = Number.parseFloat(
+				slide1[0] ? getComputedStyle(slide1[0]).opacity : "0",
+			);
+			if (slideOneOpacity < 0.05) {
+				startTimelineFallback();
+			}
+		}, 900);
+		queueFallbackTimer(() => {
+			const slideTwoOpacity = Number.parseFloat(
+				slide2[0] ? getComputedStyle(slide2[0]).opacity : "0",
+			);
+			if (slideTwoOpacity < 0.05) {
+				startTimelineFallback(true);
+			}
+		}, 4200);
 
 		const prefersReducedMotion = window.matchMedia(
 			"(prefers-reduced-motion: reduce)",
@@ -301,6 +405,9 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 
 		return () => {
 			window.clearTimeout(safety);
+			for (const timer of fallbackTimers) {
+				window.clearTimeout(timer);
+			}
 			if (logoFloatDelay !== undefined) {
 				window.clearTimeout(logoFloatDelay);
 			}
@@ -311,7 +418,11 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 	}, []);
 
 	return (
-		<div ref={rootRef} className="rox-anime rox-intro">
+		<div
+			ref={rootRef}
+			className="rox-anime rox-intro"
+			data-intro-fallback="pending"
+		>
 			<div className="rox-intro__logo">
 				<Image
 					src="/rox-logo-light.png"
@@ -347,11 +458,11 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 
 				<div className="rox-intro__slide rox-intro__slide--two rox-intro__features">
 					<div className="rox-intro__features-cloud">
-						{INTRO_FEATURES.map((tag) => (
+						{INTRO_FEATURES.map((tag, index) => (
 							<p
 								key={tag.id}
 								className="rox-intro__feature"
-								style={{ color: `var(--rox-c-${tag.color})` }}
+								style={getFeatureCloudStyle(index, tag.color)}
 							>
 								{tag.text}
 							</p>

@@ -1,13 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 interface AnimatedTextCycleProps {
 	words: ReadonlyArray<string>;
 	interval?: number;
 	className?: string;
-	/** Snappier blur/slide transitions for fast agent cycling. */
+	/** Backward-compatible flag for call sites that opt into fast agent cycling. */
 	fast?: boolean;
 }
 
@@ -15,11 +14,9 @@ export function AnimatedTextCycle({
 	words,
 	interval = 5000,
 	className = "",
-	fast = false,
 }: AnimatedTextCycleProps) {
-	const prefersReducedMotion = useReducedMotion();
 	const [currentIndex, setCurrentIndex] = useState(0);
-	const [width, setWidth] = useState("auto");
+	const [box, setBox] = useState({ height: "1em", width: "auto" });
 	const measureRef = useRef<HTMLDivElement>(null);
 	const measuredWords = useMemo(() => {
 		const seen = new Map<string, number>();
@@ -30,64 +27,46 @@ export function AnimatedTextCycle({
 		});
 	}, [words]);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (words.length === 0) return;
 		if (currentIndex >= words.length) {
 			setCurrentIndex(0);
 			return;
 		}
 		if (measureRef.current) {
-			const elements = measureRef.current.children;
-			const element = elements[currentIndex];
-			if (element instanceof HTMLElement) {
-				setWidth(`${element.getBoundingClientRect().width}px`);
+			let maxWidth = 0;
+			let maxHeight = 0;
+
+			for (const element of Array.from(measureRef.current.children)) {
+				if (element instanceof HTMLElement) {
+					const rect = element.getBoundingClientRect();
+					maxWidth = Math.max(maxWidth, rect.width);
+					maxHeight = Math.max(maxHeight, rect.height);
+				}
+			}
+
+			if (maxWidth > 0 && maxHeight > 0) {
+				setBox({
+					height: `${Math.ceil(maxHeight)}px`,
+					width: `${Math.ceil(maxWidth)}px`,
+				});
 			}
 		}
-	}, [currentIndex, words]);
+	}, [currentIndex, words.length]);
 
 	useEffect(() => {
-		if (prefersReducedMotion || words.length <= 1) return;
+		if (words.length <= 1) return;
 
 		const timer = setInterval(() => {
 			setCurrentIndex((prevIndex) => (prevIndex + 1) % words.length);
 		}, interval);
 
 		return () => clearInterval(timer);
-	}, [interval, prefersReducedMotion, words.length]);
+	}, [interval, words.length]);
 
 	if (words.length === 0) return null;
 
 	const activeWord = words[currentIndex] ?? words[0];
-
-	if (prefersReducedMotion) {
-		return <span className={className}>{activeWord}</span>;
-	}
-
-	const containerVariants = {
-		hidden: {
-			y: fast ? -8 : -14,
-			opacity: 0,
-			filter: fast ? "blur(4px)" : "blur(6px)",
-		},
-		visible: {
-			y: 0,
-			opacity: 1,
-			filter: "blur(0px)",
-			transition: {
-				duration: fast ? 0.18 : 0.38,
-				ease: "easeOut" as const,
-			},
-		},
-		exit: {
-			y: fast ? 8 : 14,
-			opacity: 0,
-			filter: fast ? "blur(4px)" : "blur(6px)",
-			transition: {
-				duration: fast ? 0.14 : 0.28,
-				ease: "easeIn" as const,
-			},
-		},
-	};
 
 	return (
 		<>
@@ -103,32 +82,23 @@ export function AnimatedTextCycle({
 				))}
 			</div>
 
-			<motion.span
-				className="relative inline-block align-baseline"
-				animate={{
-					width,
-					transition: {
-						type: "spring",
-						stiffness: fast ? 220 : 150,
-						damping: fast ? 22 : 18,
-						mass: fast ? 0.9 : 1.1,
-					},
+			<span
+				className="relative inline-grid align-baseline"
+				style={{
+					height: box.height,
+					lineHeight: "inherit",
+					minWidth: box.width,
+					width: box.width,
 				}}
 			>
-				<AnimatePresence mode="wait">
-					<motion.span
-						key={currentIndex}
-						className={`inline-block ${className}`}
-						variants={containerVariants}
-						initial="hidden"
-						animate="visible"
-						exit="exit"
-						style={{ whiteSpace: "nowrap" }}
-					>
-						{activeWord}
-					</motion.span>
-				</AnimatePresence>
-			</motion.span>
+				<span
+					key={currentIndex}
+					className={`inline-block ${className}`}
+					style={{ gridArea: "1 / 1", whiteSpace: "nowrap" }}
+				>
+					{activeWord}
+				</span>
+			</span>
 		</>
 	);
 }
