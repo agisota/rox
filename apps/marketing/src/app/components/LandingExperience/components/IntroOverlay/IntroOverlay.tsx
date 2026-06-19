@@ -141,7 +141,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			const timer = window.setTimeout(callback, delay);
 			fallbackTimers.push(timer);
 		};
-		const startTimelineFallback = () => {
+		const startTimelineFallback = (showTagsImmediately = false) => {
 			if (finished || fallbackStarted) {
 				return;
 			}
@@ -150,6 +150,13 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			root.style.backgroundColor = "#000";
 			if (slide1[0]) slide1[0].style.opacity = "1";
 			if (slide2[0]) slide2[0].style.opacity = "0";
+
+			if (showTagsImmediately) {
+				if (slide1[0]) slide1[0].style.opacity = "0";
+				if (slide2[0]) slide2[0].style.opacity = "1";
+				queueFallbackTimer(finishOnce, 4000);
+				return;
+			}
 
 			queueFallbackTimer(() => {
 				if (finished) return;
@@ -328,6 +335,14 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				startTimelineFallback();
 			}
 		}, 900);
+		queueFallbackTimer(() => {
+			const slideTwoOpacity = Number.parseFloat(
+				slide2[0] ? getComputedStyle(slide2[0]).opacity : "0",
+			);
+			if (slideTwoOpacity < 0.05) {
+				startTimelineFallback(true);
+			}
+		}, 4200);
 
 		const prefersReducedMotion = window.matchMedia(
 			"(prefers-reduced-motion: reduce)",
