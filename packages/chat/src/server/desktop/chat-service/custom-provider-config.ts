@@ -118,7 +118,7 @@ export function normalizeCustomProviderBaseUrl(
  * re-adds the prefix when handing the id to mastracode.
  */
 export function stripOpenAIProviderPrefix(modelId: string): string {
-	return modelId.startsWith(OPENAI_PROVIDER_PREFIX)
+	return modelId.toLowerCase().startsWith(OPENAI_PROVIDER_PREFIX)
 		? modelId.slice(OPENAI_PROVIDER_PREFIX.length)
 		: modelId;
 }

@@ -20,6 +20,7 @@ import {
 	subscribeToSessionEvents,
 	syncRuntimeHookSessionId,
 } from "./utils/runtime";
+import { withCustomProviderRuntimeEnv } from "./utils/runtime/custom-provider-runtime-env";
 import { getRoxMcpTools } from "./utils/runtime/rox-mcp";
 import {
 	approvalRespondInput,
@@ -117,6 +118,7 @@ export class ChatRuntimeService {
 	private async getOrCreateRuntime(
 		sessionId: string,
 		cwd?: string,
+		selectedModelId?: string,
 	): Promise<RuntimeSession> {
 		const runtimeCwd = cwd ?? process.cwd();
 		const runtimeKey = `${sessionId}:${runtimeCwd}`;
@@ -144,14 +146,20 @@ export class ChatRuntimeService {
 					this.opts.apiUrl,
 				);
 
-				const runtime = await createMastraCode({
-					cwd: runtimeCwd,
-					extraTools,
-					disableMcp: !ENABLE_MASTRA_MCP_SERVERS,
-					memory: new Memory({ options: { observationalMemory: false } }),
-				});
+				const runtime = await withCustomProviderRuntimeEnv(
+					selectedModelId,
+					async () => {
+						const createdRuntime = await createMastraCode({
+							cwd: runtimeCwd,
+							extraTools,
+							disableMcp: !ENABLE_MASTRA_MCP_SERVERS,
+							memory: new Memory({ options: { observationalMemory: false } }),
+						});
+						await createdRuntime.harness.init();
+						return createdRuntime;
+					},
+				);
 				runtime.hookManager?.setSessionId(sessionId);
-				await runtime.harness.init();
 				runtime.harness.setResourceId({ resourceId: sessionId });
 				await runtime.harness.selectOrCreateThread();
 
@@ -312,9 +320,11 @@ export class ChatRuntimeService {
 				sendMessage: t.procedure
 					.input(sendMessageInput)
 					.mutation(async ({ input }) => {
+						const selectedModel = input.metadata?.model?.trim();
 						const runtime = await this.getOrCreateRuntime(
 							input.sessionId,
 							input.cwd,
+							selectedModel,
 						);
 						runtime.lastErrorMessage = null;
 						const userMessage =
@@ -337,12 +347,16 @@ export class ChatRuntimeService {
 								? submittedUserMessage
 								: userMessage,
 						);
-						const selectedModel = input.metadata?.model?.trim();
 						if (selectedModel) {
-							await runtime.harness.switchModel({
-								modelId: selectedModel,
-								scope: "thread",
-							});
+							await withCustomProviderRuntimeEnv(
+								selectedModel,
+								async (prepared) => {
+									await runtime.harness.switchModel({
+										modelId: prepared.modelId ?? selectedModel,
+										scope: "thread",
+									});
+								},
+							);
 						}
 						const thinkingLevel = input.metadata?.thinkingLevel;
 						if (thinkingLevel) {
@@ -360,9 +374,11 @@ export class ChatRuntimeService {
 				restartFromMessage: t.procedure
 					.input(restartFromMessageInput)
 					.mutation(async ({ input }) => {
+						const selectedModel = input.metadata?.model?.trim();
 						const runtime = await this.getOrCreateRuntime(
 							input.sessionId,
 							input.cwd,
+							selectedModel,
 						);
 						runtime.lastErrorMessage = null;
 						const userMessage =
