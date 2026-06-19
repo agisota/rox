@@ -496,7 +496,8 @@ export class ChatService {
 	 */
 	getCustomProviderConfig(): {
 		baseUrl: string;
-		modelId: string;
+		models: string[];
+		defaultModelId: string | null;
 		hasApiKey: boolean;
 		status: AuthStatus;
 	} {
@@ -512,7 +513,8 @@ export class ChatService {
 		};
 		return {
 			baseUrl: config?.baseUrl ?? "",
-			modelId: config?.modelId ?? "",
+			models: config?.models ?? [],
+			defaultModelId: config?.defaultModelId ?? null,
 			hasApiKey: configured,
 			status,
 		};
@@ -522,7 +524,8 @@ export class ChatService {
 		input: SetCustomProviderConfigInput,
 	): Promise<{ success: true }> {
 		// `apiKey` may be omitted to keep the previously saved key; the disk layer
-		// reuses the stored secret so a model/base-URL-only edit persists cleanly.
+		// reuses the stored secret so a base-URL/model-list-only edit persists
+		// cleanly. The disk layer also registers the provider with mastracode.
 		setCustomProviderConfigOnDisk(input, {
 			configPath: this.customProviderConfigPath,
 		});

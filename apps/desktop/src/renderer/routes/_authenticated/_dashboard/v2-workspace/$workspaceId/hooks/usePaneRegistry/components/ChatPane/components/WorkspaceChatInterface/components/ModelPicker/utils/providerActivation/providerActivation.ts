@@ -77,23 +77,35 @@ export function getActivatedProviderIds(
 	return activated;
 }
 
+/** Wire-id prefix for custom-provider models (mirrors the server slug). */
+export const CUSTOM_PROVIDER_WIRE_PREFIX = "rox-custom/";
+
 /**
- * A model carried by the user's configured custom provider. Built from the
- * persisted custom-provider config (base URL + chosen model id) so the picker
- * can list and select it like any catalog model.
+ * The models carried by the user's configured custom provider. Built from the
+ * persisted custom-provider config's full `models` list so the picker can list
+ * and select every one like a catalog model. Emits one {@link ModelOption} per
+ * model, de-duplicated by bare id.
  */
-export function buildCustomProviderModel(
-	config: { modelId: string } | null | undefined,
-): ModelOption | null {
-	const modelId = config?.modelId?.trim();
-	if (!modelId) return null;
-	return {
-		// Prefix mirrors how the runtime routes custom models through the
-		// OpenAI-compatible client; the bare id is what the user picked.
-		id: `openai/${modelId}`,
-		name: modelId,
-		provider: CUSTOM_PROVIDER_DISPLAY_NAME,
-	};
+export function buildCustomProviderModels(
+	config: { models?: string[] } | null | undefined,
+): ModelOption[] {
+	const models = config?.models;
+	if (!Array.isArray(models)) return [];
+	const seen = new Set<string>();
+	const options: ModelOption[] = [];
+	for (const rawId of models) {
+		const modelId = rawId?.trim();
+		if (!modelId || seen.has(modelId)) continue;
+		seen.add(modelId);
+		options.push({
+			// Prefix mirrors how the runtime routes custom models through the
+			// registered mastracode custom provider; the bare id is the model name.
+			id: `${CUSTOM_PROVIDER_WIRE_PREFIX}${modelId}`,
+			name: modelId,
+			provider: CUSTOM_PROVIDER_DISPLAY_NAME,
+		});
+	}
+	return options;
 }
 
 /** True when a model belongs to the synthetic custom-provider group. */
@@ -121,15 +133,17 @@ export function filterModelsByActivation(params: {
 }
 
 /**
- * Merge the configured custom-provider model into the catalog list (appended,
- * de-duplicated by id) so downstream filtering/grouping treats it uniformly.
+ * Merge the configured custom-provider models into the catalog list (appended,
+ * de-duplicated by id) so downstream filtering/grouping treats them uniformly.
  */
-export function withCustomProviderModel(params: {
+export function withCustomProviderModels(params: {
 	models: ModelOption[];
-	customModel: ModelOption | null;
+	customModels: ModelOption[];
 }): ModelOption[] {
-	const { models, customModel } = params;
-	if (!customModel) return models;
-	if (models.some((model) => model.id === customModel.id)) return models;
-	return [...models, customModel];
+	const { models, customModels } = params;
+	if (customModels.length === 0) return models;
+	const existingIds = new Set(models.map((model) => model.id));
+	const additions = customModels.filter((model) => !existingIds.has(model.id));
+	if (additions.length === 0) return models;
+	return [...models, ...additions];
 }

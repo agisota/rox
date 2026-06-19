@@ -2,13 +2,13 @@ import { describe, expect, it } from "bun:test";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import type { AuthStatusLike } from "shared/ai/provider-status";
 import {
-	buildCustomProviderModel,
+	buildCustomProviderModels,
 	CUSTOM_PROVIDER_DISPLAY_NAME,
 	filterModelsByActivation,
 	getActivatedProviderIds,
 	isCustomProviderModel,
 	providerDisplayNameToId,
-	withCustomProviderModel,
+	withCustomProviderModels,
 } from "./providerActivation";
 
 const connected: AuthStatusLike = {
@@ -90,10 +90,12 @@ describe("filterModelsByActivation", () => {
 	});
 
 	it("always keeps custom-provider models regardless of activation", () => {
-		const customModel = buildCustomProviderModel({ modelId: "my-model" });
-		const withCustom = withCustomProviderModel({
+		const customModels = buildCustomProviderModels({
+			models: ["my-model", "second-model"],
+		});
+		const withCustom = withCustomProviderModels({
 			models: CATALOG,
-			customModel,
+			customModels,
 		});
 		const visible = filterModelsByActivation({
 			models: withCustom,
@@ -102,41 +104,54 @@ describe("filterModelsByActivation", () => {
 		expect(
 			visible.some((model) => model.provider === CUSTOM_PROVIDER_DISPLAY_NAME),
 		).toBe(true);
-		// Only Rox + custom survive when nothing else is connected.
+		// Only Rox + both custom models survive when nothing else is connected.
 		expect(visible.map((model) => model.id).sort()).toEqual([
-			"openai/my-model",
 			"r1",
+			"rox-custom/my-model",
+			"rox-custom/second-model",
 		]);
 	});
 });
 
-describe("buildCustomProviderModel", () => {
-	it("builds an openai-prefixed model from config", () => {
-		expect(buildCustomProviderModel({ modelId: "llama-3.3" })).toEqual({
-			id: "openai/llama-3.3",
-			name: "llama-3.3",
-			provider: CUSTOM_PROVIDER_DISPLAY_NAME,
-		});
+describe("buildCustomProviderModels", () => {
+	it("emits one rox-custom-prefixed model per entry, de-duplicated", () => {
+		expect(
+			buildCustomProviderModels({
+				models: ["llama-3.3", "gpt-oss", "llama-3.3"],
+			}),
+		).toEqual([
+			{
+				id: "rox-custom/llama-3.3",
+				name: "llama-3.3",
+				provider: CUSTOM_PROVIDER_DISPLAY_NAME,
+			},
+			{
+				id: "rox-custom/gpt-oss",
+				name: "gpt-oss",
+				provider: CUSTOM_PROVIDER_DISPLAY_NAME,
+			},
+		]);
 	});
 
-	it("returns null without a model id", () => {
-		expect(buildCustomProviderModel(null)).toBeNull();
-		expect(buildCustomProviderModel({ modelId: "  " })).toBeNull();
+	it("returns an empty list without models", () => {
+		expect(buildCustomProviderModels(null)).toEqual([]);
+		expect(buildCustomProviderModels({ models: [] })).toEqual([]);
+		expect(buildCustomProviderModels({ models: ["  "] })).toEqual([]);
 	});
 });
 
-describe("withCustomProviderModel", () => {
-	it("appends the custom model, de-duplicated by id", () => {
-		const customModel = buildCustomProviderModel({ modelId: "x" });
-		const once = withCustomProviderModel({ models: CATALOG, customModel });
-		expect(once).toHaveLength(CATALOG.length + 1);
-		const twice = withCustomProviderModel({ models: once, customModel });
-		expect(twice).toHaveLength(CATALOG.length + 1);
+describe("withCustomProviderModels", () => {
+	it("appends the custom models, de-duplicated by id", () => {
+		const customModels = buildCustomProviderModels({ models: ["x", "y"] });
+		const once = withCustomProviderModels({ models: CATALOG, customModels });
+		expect(once).toHaveLength(CATALOG.length + 2);
+		const twice = withCustomProviderModels({ models: once, customModels });
+		expect(twice).toHaveLength(CATALOG.length + 2);
 	});
 
-	it("is a no-op when there is no custom model", () => {
+	it("is a no-op when there are no custom models", () => {
 		expect(
-			withCustomProviderModel({ models: CATALOG, customModel: null }),
+			withCustomProviderModels({ models: CATALOG, customModels: [] }),
 		).toBe(CATALOG);
 	});
 });
@@ -145,7 +160,7 @@ describe("isCustomProviderModel", () => {
 	it("detects the synthetic custom group", () => {
 		expect(
 			isCustomProviderModel({
-				id: "openai/x",
+				id: "rox-custom/x",
 				name: "x",
 				provider: CUSTOM_PROVIDER_DISPLAY_NAME,
 			}),

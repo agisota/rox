@@ -58,6 +58,7 @@ const { setCustomProviderConfig } = await import(
 );
 
 let tempDir: string;
+let mastracodeSettingsPath: string;
 let originalRoxHomeDir: string | undefined;
 let originalOpenAIKey: string | undefined;
 let originalOpenAIBaseUrl: string | undefined;
@@ -65,6 +66,7 @@ let originalOpenAIBaseUrl: string | undefined;
 describe("ChatRuntimeService runtime creation", () => {
 	beforeEach(() => {
 		tempDir = mkdtempSync(join(tmpdir(), "rox-chat-service-runtime-"));
+		mastracodeSettingsPath = join(tempDir, "mastracode-settings.json");
 		originalRoxHomeDir = process.env.ROX_HOME_DIR;
 		originalOpenAIKey = process.env.OPENAI_API_KEY;
 		originalOpenAIBaseUrl = process.env.OPENAI_BASE_URL;
@@ -123,12 +125,15 @@ describe("ChatRuntimeService runtime creation", () => {
 		expect(runSessionStartMock).toHaveBeenCalledTimes(1);
 	});
 
-	it("prepares custom provider env before creating the mastracode runtime", async () => {
-		setCustomProviderConfig({
-			baseUrl: "https://api.example.com/v1",
-			apiKey: "sk-custom",
-			modelId: "llama-3.3-70b",
-		});
+	it("does not inject OPENAI env when creating the mastracode runtime for a custom model", async () => {
+		setCustomProviderConfig(
+			{
+				baseUrl: "https://api.example.com/v1",
+				apiKey: "sk-custom",
+				models: ["llama-3.3-70b"],
+			},
+			{ mastracodeSettingsPath },
+		);
 
 		const service = new ChatRuntimeService({
 			headers: async () => ({}),
@@ -145,10 +150,11 @@ describe("ChatRuntimeService runtime creation", () => {
 			}
 		).getOrCreateRuntime(SESSION_ID, "/tmp/project", "llama-3.3-70b");
 
+		// The custom provider routes through mastracode settings.json now, not env.
 		expect(createMastraCodeEnvSnapshots).toEqual([
 			{
-				OPENAI_API_KEY: "sk-custom",
-				OPENAI_BASE_URL: "https://api.example.com/v1",
+				OPENAI_API_KEY: undefined,
+				OPENAI_BASE_URL: undefined,
 			},
 		]);
 		expect(process.env.OPENAI_API_KEY).toBeUndefined();
@@ -156,11 +162,14 @@ describe("ChatRuntimeService runtime creation", () => {
 	});
 
 	it("does not mutate custom provider env when reusing an existing runtime", async () => {
-		setCustomProviderConfig({
-			baseUrl: "https://api.example.com/v1",
-			apiKey: "sk-custom",
-			modelId: "llama-3.3-70b",
-		});
+		setCustomProviderConfig(
+			{
+				baseUrl: "https://api.example.com/v1",
+				apiKey: "sk-custom",
+				models: ["llama-3.3-70b"],
+			},
+			{ mastracodeSettingsPath },
+		);
 
 		const service = new ChatRuntimeService({
 			headers: async () => ({}),
