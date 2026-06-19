@@ -27,9 +27,9 @@ export const builtInThemes: Theme[] = [
 ];
 
 /**
- * Default theme ID
+ * Default theme ID — the built-in light ("classic light") theme.
  */
-export const DEFAULT_THEME_ID = "dark";
+export const DEFAULT_THEME_ID = "light";
 
 /**
  * Get a built-in theme by ID

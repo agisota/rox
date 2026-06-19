@@ -1,6 +1,7 @@
 import "highlight.js/styles/github-dark.css";
 import "./markdown-editor.css";
 
+import { isImeComposing } from "@rox/ui/lib/keyboard";
 import { cn } from "@rox/ui/utils";
 import { Extension } from "@tiptap/core";
 import { Blockquote } from "@tiptap/extension-blockquote";
@@ -141,6 +142,12 @@ interface MarkdownEditorProps {
 	className?: string;
 	editorClassName?: string;
 	onModEnter?: () => void;
+	/**
+	 * Opt-in: when provided, a plain Enter (no modifier, no Shift, not during IME
+	 * composition) submits via this callback and Shift+Enter inserts a newline.
+	 * Used by the workspace-creation prompt so Enter launches the workspace.
+	 */
+	onEnter?: () => void;
 	/** If provided, enables @-mention file search for the editor. */
 	searchFiles?: FileMentionSearchFn;
 	/** Toggle optional affordances. Each defaults to enabled. */
@@ -182,6 +189,7 @@ export function MarkdownEditor({
 	className,
 	editorClassName,
 	onModEnter,
+	onEnter,
 	searchFiles,
 	features,
 }: MarkdownEditorProps) {
@@ -327,6 +335,15 @@ export function MarkdownEditor({
 			handleKeyDown: (_, event) => {
 				if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
 					onModEnter?.();
+					return true;
+				}
+				if (
+					onEnter &&
+					event.key === "Enter" &&
+					!event.shiftKey &&
+					!isImeComposing(event)
+				) {
+					onEnter();
 					return true;
 				}
 				return false;

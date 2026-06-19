@@ -68,18 +68,18 @@ export function WorkspaceEmptyState({
 	const actions = useMemo<Array<WorkspaceEmptyStateAction>>(
 		() => [
 			{
-				id: "terminal",
-				label: "Открыть терминал",
-				display: newGroupDisplay,
-				icon: BsTerminalPlus,
-				onClick: onOpenTerminal,
-			},
-			{
 				id: "chat",
 				label: "Открыть чат",
 				display: newChatDisplay,
 				icon: TbMessageCirclePlus,
 				onClick: onOpenChat,
+			},
+			{
+				id: "terminal",
+				label: "Открыть терминал",
+				display: newGroupDisplay,
+				icon: BsTerminalPlus,
+				onClick: onOpenTerminal,
 			},
 			{
 				id: "browser",
