@@ -351,7 +351,7 @@
 	align-items: center;
 	justify-content: center;
 	text-align: center;
-	padding: 96px 24px 72px;
+	padding: clamp(42px, 6vh, 86px) 24px clamp(130px, 16vh, 172px);
 }
 
 .rox-hero__inner {
@@ -424,29 +424,51 @@
 	display: block;
 }
 
-/* Feature hints — hairline dividers only (no card / scrim). */
+/* Feature hints — centered, scan-friendly list. No card or frame. */
 .rox-hero__hints {
 	width: 100%;
-	max-width: min(100%, 44rem);
-	margin: clamp(22px, 3.6vh, 34px) 0 0;
-	padding: clamp(18px, 2.8vh, 26px) 0;
+	max-width: min(100%, 48rem);
+	margin: clamp(24px, 3.8vh, 38px) 0 0;
+	padding: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	border-top: 1px solid rgba(255, 255, 255, 0.1);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	align-items: stretch;
+	gap: 9px;
+	list-style: none;
+	counter-reset: rox-hero-hint;
 }
 
 .rox-hero .rox-hero__hints .rox-hero__hint {
+	position: relative;
+	display: grid;
+	grid-template-columns: 2.8rem minmax(0, 1fr);
+	align-items: baseline;
+	column-gap: 12px;
 	margin: 0;
-	font-size: 0.78rem;
-	letter-spacing: 0.03em;
-	color: rgba(255, 255, 255, 0.56);
+	font-size: clamp(0.78rem, 1.4vw, 0.88rem);
+	letter-spacing: 0.01em;
+	line-height: 1.55;
+	color: rgba(255, 255, 255, 0.62);
 	text-shadow: none;
+	text-align: left;
+}
+
+.rox-hero .rox-hero__hints .rox-hero__hint::before {
+	counter-increment: rox-hero-hint;
+	content: counter(rox-hero-hint, decimal-leading-zero);
+	font-size: 0.62rem;
+	font-weight: 400;
+	letter-spacing: 0.18em;
+	color: rgba(255, 154, 77, 0.74);
+	text-align: right;
 }
 
 .rox-hero .rox-hero__hints .rox-hero__hint:first-of-type {
-	color: rgba(255, 255, 255, 0.68);
+	color: rgba(255, 255, 255, 0.74);
+}
+
+.rox-hero .rox-hero__hints .rox-hero__hint-body {
+	min-width: 0;
 }
 
 .rox-hero .rox-hero__hints .rox-hero__hint .rox-term {
@@ -461,10 +483,6 @@
 }
 
 .rox-hero .rox-hero__hint {
-	margin: 4px 0 0;
-	font-size: 0.8rem;
-	letter-spacing: 0.03em;
-	color: rgba(255, 255, 255, 0.56);
 	opacity: 1;
 }
 
@@ -620,7 +638,7 @@
 
 @media (max-width: 720px) {
 	.rox-hero {
-		padding: 80px 20px 64px;
+		padding: 56px 20px 128px;
 	}
 	.rox-cmd__log-role {
 		min-width: 100px;
@@ -641,8 +659,15 @@
 	.rox-cmd__send {
 		padding: 8px 12px;
 	}
-	.rox-hero .rox-hero__hint {
-		display: none;
+	.rox-hero .rox-hero__hints {
+		gap: 7px;
+		margin-top: 20px;
+	}
+	.rox-hero .rox-hero__hints .rox-hero__hint {
+		grid-template-columns: 2.2rem minmax(0, 1fr);
+		column-gap: 9px;
+		font-size: 0.68rem;
+		line-height: 1.42;
 	}
 }
 

@@ -13,8 +13,14 @@ import "./landing-experience.css";
  *
  * The intro plays on every entry (no persistence by request).
  */
-export function LandingExperience() {
-	const [phase, setPhase] = useState<LandingPhase>("intro");
+interface LandingExperienceProps {
+	initialPhase?: LandingPhase;
+}
+
+export function LandingExperience({
+	initialPhase = "intro",
+}: LandingExperienceProps) {
+	const [phase, setPhase] = useState<LandingPhase>(initialPhase);
 
 	const handleIntroComplete = useCallback(() => {
 		setPhase((current) => (current === "intro" ? "main" : current));

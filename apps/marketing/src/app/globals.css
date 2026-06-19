@@ -30,6 +30,10 @@
 	}
 }
 
+.marketing-page-shell:has(.rox-landing) {
+	padding-top: 0;
+}
+
 @utility scrollbar-hide {
 	-ms-overflow-style: none;
 	scrollbar-width: none;

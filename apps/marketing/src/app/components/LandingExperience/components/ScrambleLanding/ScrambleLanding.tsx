@@ -165,24 +165,32 @@ export function ScrambleLanding() {
 						</span>
 					</div>
 
-					<div className="rox-hero__hints">
-						<p className="rox-hero__hint">{FIELD_HINT}</p>
+					<ul className="rox-hero__hints" aria-label="Фишки Rox">
+						<li className="rox-hero__hint">
+							<span className="rox-hero__hint-body">{FIELD_HINT}</span>
+						</li>
 
-						<p className="rox-hero__hint">
-							Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
-							<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
-							конфликтов
-						</p>
+						<li className="rox-hero__hint">
+							<span className="rox-hero__hint-body">
+								Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
+								<Term {...HERO_WORKTREE_TERM} /> — без ошибок, пересечений и
+								конфликтов
+							</span>
+						</li>
 
-						<p className="rox-hero__hint">
-							<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
-							<Term {...HERO_LLM_TERM} /> — бесплатно
-						</p>
+						<li className="rox-hero__hint">
+							<span className="rox-hero__hint-body">
+								<Term {...HERO_RUNTIME_TERM} /> 24/7 и безлимитный доступ к{" "}
+								<Term {...HERO_LLM_TERM} /> — бесплатно
+							</span>
+						</li>
 
-						<p className="rox-hero__hint">
-							<HeroStackLine />
-						</p>
-					</div>
+						<li className="rox-hero__hint">
+							<span className="rox-hero__hint-body">
+								<HeroStackLine />
+							</span>
+						</li>
+					</ul>
 
 					<HeroDownloadCta />
 				</div>

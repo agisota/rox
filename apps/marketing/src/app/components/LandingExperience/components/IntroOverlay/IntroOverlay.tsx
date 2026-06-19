@@ -345,13 +345,13 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				</div>
 			</div>
 
-			<button
-				type="button"
+			<a
 				className="rox-intro__skip"
+				href="/?intro=skip"
 				onClick={() => onCompleteRef.current()}
 			>
 				Пропустить
-			</button>
+			</a>
 		</div>
 	);
 }

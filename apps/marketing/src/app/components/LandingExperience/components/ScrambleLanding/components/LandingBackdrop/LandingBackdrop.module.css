@@ -27,7 +27,7 @@
 	/* Present enough to read clearly as the Rox app (desktop + phone), while a
 	 * scrim behind the centered copy column (landing-experience.css) keeps the
 	 * headline/features crisp. Dial toward 0.5 if it ever fights the copy. */
-	opacity: 0.58;
+	opacity: 0.22;
 	/* Establish the shared 3D camera for every floating surface. */
 	perspective: 1600px;
 	perspective-origin: 50% 42%;
@@ -406,7 +406,7 @@
 /* ── Responsive: simplify hard on small screens ──────────────────────────── */
 @media (max-width: 720px) {
 	.backdrop {
-		opacity: 0.3;
+		opacity: 0.16;
 		perspective: 1100px;
 	}
 
