@@ -20,10 +20,7 @@ import {
 	subscribeToSessionEvents,
 	syncRuntimeHookSessionId,
 } from "./utils/runtime";
-import {
-	prepareCustomProviderRuntimeEnv,
-	resolveCustomProviderRuntimeModelId,
-} from "./utils/runtime/custom-provider-runtime-env";
+import { withCustomProviderRuntimeEnv } from "./utils/runtime/custom-provider-runtime-env";
 import { getRoxMcpTools } from "./utils/runtime/rox-mcp";
 import {
 	approvalRespondInput,
@@ -123,7 +120,6 @@ export class ChatRuntimeService {
 		cwd?: string,
 		selectedModelId?: string,
 	): Promise<RuntimeSession> {
-		prepareCustomProviderRuntimeEnv(selectedModelId);
 		const runtimeCwd = cwd ?? process.cwd();
 		const runtimeKey = `${sessionId}:${runtimeCwd}`;
 
@@ -150,14 +146,20 @@ export class ChatRuntimeService {
 					this.opts.apiUrl,
 				);
 
-				const runtime = await createMastraCode({
-					cwd: runtimeCwd,
-					extraTools,
-					disableMcp: !ENABLE_MASTRA_MCP_SERVERS,
-					memory: new Memory({ options: { observationalMemory: false } }),
-				});
+				const runtime = await withCustomProviderRuntimeEnv(
+					selectedModelId,
+					async () => {
+						const createdRuntime = await createMastraCode({
+							cwd: runtimeCwd,
+							extraTools,
+							disableMcp: !ENABLE_MASTRA_MCP_SERVERS,
+							memory: new Memory({ options: { observationalMemory: false } }),
+						});
+						await createdRuntime.harness.init();
+						return createdRuntime;
+					},
+				);
 				runtime.hookManager?.setSessionId(sessionId);
-				await runtime.harness.init();
 				runtime.harness.setResourceId({ resourceId: sessionId });
 				await runtime.harness.selectOrCreateThread();
 
@@ -346,12 +348,15 @@ export class ChatRuntimeService {
 								: userMessage,
 						);
 						if (selectedModel) {
-							const runtimeModelId =
-								resolveCustomProviderRuntimeModelId(selectedModel);
-							await runtime.harness.switchModel({
-								modelId: runtimeModelId ?? selectedModel,
-								scope: "thread",
-							});
+							await withCustomProviderRuntimeEnv(
+								selectedModel,
+								async (prepared) => {
+									await runtime.harness.switchModel({
+										modelId: prepared.modelId ?? selectedModel,
+										scope: "thread",
+									});
+								},
+							);
 						}
 						const thinkingLevel = input.metadata?.thinkingLevel;
 						if (thinkingLevel) {

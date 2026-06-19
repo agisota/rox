@@ -27,7 +27,7 @@ scripts/render-deploy.sh marketing ea460202d8ac7e7a5ffb7049e5330eaf25346910
 The helper runs:
 
 ```bash
-render deploys create <service-id> --commit <sha> --wait --confirm
+render deploys create <service-id> [--commit <sha>] --wait --confirm
 ```
 
 ## Verification

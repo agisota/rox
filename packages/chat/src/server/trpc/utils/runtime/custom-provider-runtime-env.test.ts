@@ -6,6 +6,7 @@ import { setCustomProviderConfig } from "../../../desktop/chat-service/custom-pr
 import {
 	prepareCustomProviderRuntimeEnv,
 	resolveCustomProviderRuntimeModelId,
+	withCustomProviderRuntimeEnv,
 } from "./custom-provider-runtime-env";
 
 let tempDir: string;
@@ -81,6 +82,60 @@ describe("prepareCustomProviderRuntimeEnv", () => {
 			isCustomModel: false,
 			modelId: "anthropic/claude-sonnet-4",
 		});
+		expect(process.env.OPENAI_API_KEY).toBe("sk-original");
+		expect(process.env.OPENAI_BASE_URL).toBe("https://openai.example.com/v1");
+	});
+
+	it("restores prior OPENAI env when the selected model is cleared", () => {
+		process.env.OPENAI_API_KEY = "sk-original";
+		process.env.OPENAI_BASE_URL = "https://openai.example.com/v1";
+		setCustomProviderConfig({
+			baseUrl: "https://api.example.com/v1",
+			apiKey: "sk-custom",
+			modelId: "llama-3.3-70b",
+		});
+
+		prepareCustomProviderRuntimeEnv("openai/llama-3.3-70b");
+		const prepared = prepareCustomProviderRuntimeEnv(undefined);
+
+		expect(prepared).toEqual({ isCustomModel: false });
+		expect(process.env.OPENAI_API_KEY).toBe("sk-original");
+		expect(process.env.OPENAI_BASE_URL).toBe("https://openai.example.com/v1");
+	});
+
+	it("serializes scoped custom env operations", async () => {
+		process.env.OPENAI_API_KEY = "sk-original";
+		process.env.OPENAI_BASE_URL = "https://openai.example.com/v1";
+		setCustomProviderConfig({
+			baseUrl: "https://api.example.com/v1",
+			apiKey: "sk-custom",
+			modelId: "llama-3.3-70b",
+		});
+
+		let secondStarted = false;
+		let secondOperation: Promise<void> | undefined;
+
+		await withCustomProviderRuntimeEnv("llama-3.3-70b", async () => {
+			expect(process.env.OPENAI_API_KEY).toBe("sk-custom");
+			expect(process.env.OPENAI_BASE_URL).toBe("https://api.example.com/v1");
+
+			secondOperation = withCustomProviderRuntimeEnv(
+				"anthropic/claude-sonnet-4",
+				async () => {
+					secondStarted = true;
+					expect(process.env.OPENAI_API_KEY).toBe("sk-original");
+					expect(process.env.OPENAI_BASE_URL).toBe(
+						"https://openai.example.com/v1",
+					);
+				},
+			);
+
+			await Promise.resolve();
+			expect(secondStarted).toBe(false);
+		});
+
+		await secondOperation;
+		expect(secondStarted).toBe(true);
 		expect(process.env.OPENAI_API_KEY).toBe("sk-original");
 		expect(process.env.OPENAI_BASE_URL).toBe("https://openai.example.com/v1");
 	});

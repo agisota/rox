@@ -15,6 +15,7 @@ interface AppliedCustomProviderEnv {
 }
 
 let appliedCustomProviderEnv: AppliedCustomProviderEnv | null = null;
+let customProviderRuntimeEnvTail = Promise.resolve();
 
 function isCustomProviderModel(
 	selectedModelId: string | null | undefined,
@@ -67,6 +68,7 @@ export function prepareCustomProviderRuntimeEnv(
 ): { isCustomModel: boolean; modelId?: string } {
 	const trimmed = selectedModelId?.trim();
 	if (!trimmed) {
+		clearAppliedCustomProviderRuntimeEnv();
 		return { isCustomModel: false };
 	}
 
@@ -93,4 +95,27 @@ export function prepareCustomProviderRuntimeEnv(
 		isCustomModel: true,
 		modelId: toCustomProviderWireModelId(config.modelId),
 	};
+}
+
+export async function withCustomProviderRuntimeEnv<T>(
+	selectedModelId: string | null | undefined,
+	operation: (prepared: {
+		isCustomModel: boolean;
+		modelId?: string;
+	}) => Promise<T>,
+): Promise<T> {
+	let releaseCurrentTurn: (() => void) | undefined;
+	const waitForTurn = customProviderRuntimeEnvTail;
+	customProviderRuntimeEnvTail = new Promise<void>((resolve) => {
+		releaseCurrentTurn = resolve;
+	});
+
+	await waitForTurn;
+	const prepared = prepareCustomProviderRuntimeEnv(selectedModelId);
+	try {
+		return await operation(prepared);
+	} finally {
+		clearAppliedCustomProviderRuntimeEnv();
+		releaseCurrentTurn?.();
+	}
 }

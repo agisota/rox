@@ -151,5 +151,45 @@ describe("ChatRuntimeService runtime creation", () => {
 				OPENAI_BASE_URL: "https://api.example.com/v1",
 			},
 		]);
+		expect(process.env.OPENAI_API_KEY).toBeUndefined();
+		expect(process.env.OPENAI_BASE_URL).toBeUndefined();
+	});
+
+	it("does not mutate custom provider env when reusing an existing runtime", async () => {
+		setCustomProviderConfig({
+			baseUrl: "https://api.example.com/v1",
+			apiKey: "sk-custom",
+			modelId: "llama-3.3-70b",
+		});
+
+		const service = new ChatRuntimeService({
+			headers: async () => ({}),
+			apiUrl: "http://localhost:3000",
+		});
+
+		const runtimeApi = service as unknown as {
+			getOrCreateRuntime: (
+				sessionId: string,
+				cwd?: string,
+				selectedModelId?: string,
+			) => Promise<{ sessionId: string }>;
+		};
+
+		await runtimeApi.getOrCreateRuntime(SESSION_ID, "/tmp/project");
+		await runtimeApi.getOrCreateRuntime(
+			SESSION_ID,
+			"/tmp/project",
+			"llama-3.3-70b",
+		);
+
+		expect(createMastraCodeMock).toHaveBeenCalledTimes(1);
+		expect(createMastraCodeEnvSnapshots).toEqual([
+			{
+				OPENAI_API_KEY: undefined,
+				OPENAI_BASE_URL: undefined,
+			},
+		]);
+		expect(process.env.OPENAI_API_KEY).toBeUndefined();
+		expect(process.env.OPENAI_BASE_URL).toBeUndefined();
 	});
 });
