@@ -9,6 +9,8 @@ import {
 	withCustomProviderRuntimeEnv,
 } from "./custom-provider-runtime-env";
 
+const QUEUE_RELEASE_TIMEOUT_MS = 1000;
+
 let tempDir: string;
 let originalRoxHomeDir: string | undefined;
 let originalOpenAIKey: string | undefined;
@@ -166,7 +168,10 @@ describe("prepareCustomProviderRuntimeEnv", () => {
 				},
 			),
 			new Promise((_, reject) =>
-				setTimeout(() => reject(new Error("queue did not release")), 100),
+				setTimeout(
+					() => reject(new Error("queue did not release")),
+					QUEUE_RELEASE_TIMEOUT_MS,
+				),
 			),
 		]);
 
