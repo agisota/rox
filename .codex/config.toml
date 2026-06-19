@@ -22,3 +22,10 @@ url = "https://mcp.linear.app/mcp"
 [mcp_servers.sentry]
 type = "sse"
 url = "https://mcp.sentry.dev/mcp"
+
+# Opt-in: codebase-memory MCP. Requires the `codebase-memory-mcp` binary on PATH.
+# Do NOT commit this enabled — it breaks anyone (and CI) without the binary.
+# To use it locally, copy these lines into your own machine-local Codex config
+# (see docs/codebase-memory-mcp.md) or uncomment here without committing.
+# [mcp_servers.codebase-memory]
+# command = "codebase-memory-mcp"
