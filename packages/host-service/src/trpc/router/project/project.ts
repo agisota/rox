@@ -22,6 +22,7 @@ import { getGitHubRemotes } from "./utils/git-remote";
 import { persistLocalProject } from "./utils/persist-project";
 import {
 	cloneRepoInto,
+	getOriginUrl,
 	type ResolvedRepo,
 	resolveLocalRepo,
 	resolveMatchingSlug,
@@ -665,6 +666,15 @@ export const projectRouter = router({
 					message: "Could not derive a repository name.",
 				});
 			}
+			// Reject names `gh` would parse as a flag (leading `-`) or that GitHub
+			// rejects — the name is passed as the positional repo arg to `gh`.
+			if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repoName)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"Имя репозитория может содержать только буквы, цифры, «.», «_», «-» и не может начинаться с «-».",
+				});
+			}
 
 			// `gh repo create <name> --source <path> --remote origin --push`
 			// creates the remote, wires origin, and pushes the initial commit.
@@ -695,6 +705,10 @@ export const projectRouter = router({
 			// Re-resolve so we pick up the freshly-added origin remote, then mirror
 			// the clone URL into local DB + cloud so the project is GitHub-backed.
 			const resolved = await resolveLocalRepo(project.repoPath);
+			// Raw origin URL as a fallback when the URL doesn't parse into GitHub
+			// owner/name — gh has already created + pushed the remote.
+			const originUrl =
+				resolved.parsed?.url ?? (await getOriginUrl(project.repoPath));
 			if (resolved.parsed) {
 				persistLocalProject(ctx, input.projectId, resolved);
 				try {
@@ -711,10 +725,19 @@ export const projectRouter = router({
 						err,
 					});
 				}
+			} else if (originUrl) {
+				// Record the remote locally even without a parse so a retry hits the
+				// "already has a GitHub remote" guard instead of re-running gh create
+				// (which would fail with "name already exists").
+				ctx.db
+					.update(projects)
+					.set({ repoUrl: originUrl })
+					.where(eq(projects.id, input.projectId))
+					.run();
 			}
 
 			return {
-				repoUrl: resolved.parsed?.url ?? null,
+				repoUrl: resolved.parsed?.url ?? originUrl ?? null,
 				owner: resolved.parsed?.owner ?? null,
 				name: resolved.parsed?.name ?? null,
 			};

@@ -182,6 +182,24 @@ export async function tryRevParseGitRoot(path: string): Promise<string | null> {
 	}
 }
 
+/**
+ * Best-effort raw URL of the `origin` remote, or null when it is absent or the
+ * command fails. Used to record a remote locally even when the URL doesn't
+ * parse into GitHub owner/name, so a retry won't re-run `gh repo create`.
+ */
+export async function getOriginUrl(repoPath: string): Promise<string | null> {
+	try {
+		const url = await createUserSimpleGit(repoPath).remote([
+			"get-url",
+			"origin",
+		]);
+		const trimmed = typeof url === "string" ? url.trim() : "";
+		return trimmed.length > 0 ? trimmed : null;
+	} catch {
+		return null;
+	}
+}
+
 async function revParseGitRoot(path: string): Promise<string> {
 	const root = await tryRevParseGitRoot(path);
 	if (root === null) {
