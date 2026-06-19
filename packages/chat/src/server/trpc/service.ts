@@ -20,6 +20,10 @@ import {
 	subscribeToSessionEvents,
 	syncRuntimeHookSessionId,
 } from "./utils/runtime";
+import {
+	prepareCustomProviderRuntimeEnv,
+	resolveCustomProviderRuntimeModelId,
+} from "./utils/runtime/custom-provider-runtime-env";
 import { getRoxMcpTools } from "./utils/runtime/rox-mcp";
 import {
 	approvalRespondInput,
@@ -117,7 +121,9 @@ export class ChatRuntimeService {
 	private async getOrCreateRuntime(
 		sessionId: string,
 		cwd?: string,
+		selectedModelId?: string,
 	): Promise<RuntimeSession> {
+		prepareCustomProviderRuntimeEnv(selectedModelId);
 		const runtimeCwd = cwd ?? process.cwd();
 		const runtimeKey = `${sessionId}:${runtimeCwd}`;
 
@@ -312,9 +318,11 @@ export class ChatRuntimeService {
 				sendMessage: t.procedure
 					.input(sendMessageInput)
 					.mutation(async ({ input }) => {
+						const selectedModel = input.metadata?.model?.trim();
 						const runtime = await this.getOrCreateRuntime(
 							input.sessionId,
 							input.cwd,
+							selectedModel,
 						);
 						runtime.lastErrorMessage = null;
 						const userMessage =
@@ -337,10 +345,11 @@ export class ChatRuntimeService {
 								? submittedUserMessage
 								: userMessage,
 						);
-						const selectedModel = input.metadata?.model?.trim();
 						if (selectedModel) {
+							const runtimeModelId =
+								resolveCustomProviderRuntimeModelId(selectedModel);
 							await runtime.harness.switchModel({
-								modelId: selectedModel,
+								modelId: runtimeModelId ?? selectedModel,
 								scope: "thread",
 							});
 						}
@@ -360,9 +369,11 @@ export class ChatRuntimeService {
 				restartFromMessage: t.procedure
 					.input(restartFromMessageInput)
 					.mutation(async ({ input }) => {
+						const selectedModel = input.metadata?.model?.trim();
 						const runtime = await this.getOrCreateRuntime(
 							input.sessionId,
 							input.cwd,
+							selectedModel,
 						);
 						runtime.lastErrorMessage = null;
 						const userMessage =

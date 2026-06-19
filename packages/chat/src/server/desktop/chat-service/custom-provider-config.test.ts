@@ -43,12 +43,14 @@ describe("normalizeCustomProviderBaseUrl", () => {
 describe("model id helpers", () => {
 	it("strips an openai/ prefix", () => {
 		expect(stripOpenAIProviderPrefix("openai/foo-1")).toBe("foo-1");
+		expect(stripOpenAIProviderPrefix("OpenAI/foo-1")).toBe("foo-1");
 		expect(stripOpenAIProviderPrefix("foo-1")).toBe("foo-1");
 	});
 
 	it("builds an openai/-prefixed wire id from any spelling", () => {
 		expect(toCustomProviderWireModelId("foo-1")).toBe("openai/foo-1");
 		expect(toCustomProviderWireModelId("openai/foo-1")).toBe("openai/foo-1");
+		expect(toCustomProviderWireModelId("OpenAI/foo-1")).toBe("openai/foo-1");
 		expect(toCustomProviderWireModelId("  foo-1 ")).toBe("openai/foo-1");
 	});
 });

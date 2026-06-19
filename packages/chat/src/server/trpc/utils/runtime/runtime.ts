@@ -3,6 +3,10 @@ import type { createTRPCClient } from "@trpc/client";
 import type { createMastraCode } from "mastracode";
 import { generateTitleFromMessage } from "../../../desktop";
 import type { ThinkingLevel } from "../../zod";
+import {
+	prepareCustomProviderRuntimeEnv,
+	resolveCustomProviderRuntimeModelId,
+} from "./custom-provider-runtime-env";
 
 export type RuntimeHarness = Awaited<
 	ReturnType<typeof createMastraCode>
@@ -438,8 +442,10 @@ export async function restartRuntimeFromUserMessage(
 
 	const selectedModel = input.metadata?.model?.trim();
 	if (selectedModel) {
+		prepareCustomProviderRuntimeEnv(selectedModel);
+		const runtimeModelId = resolveCustomProviderRuntimeModelId(selectedModel);
 		await runtime.harness.switchModel({
-			modelId: selectedModel,
+			modelId: runtimeModelId ?? selectedModel,
 			scope: "thread",
 		});
 	}
