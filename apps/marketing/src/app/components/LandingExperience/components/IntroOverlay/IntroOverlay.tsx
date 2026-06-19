@@ -310,22 +310,26 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			.add(cpuMark, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
 			.set(slide1, { opacity: 0 }, "<<")
 			.set(slide2, { opacity: 1 }, "<<")
+			.set(
+				slide2Words,
+				{
+					opacity: 0,
+					scale: 0.82,
+					translateY: 12,
+				},
+				"<<",
+			)
 			.add(
 				slide2Words,
 				{
-					innerHTML: scrambleText({
-						override: " ",
-						from: "center",
-						duration: 600,
-						revealDelay: 250,
-						cursor: CURSOR_LIGHT,
-						perturbation: 0.5,
-					}),
+					opacity: { to: 1, duration: 520, ease: "out(2)" },
+					scale: { to: 1, duration: 720, ease: "out(3)" },
+					translateY: { to: 0, duration: 720, ease: "out(3)" },
 				},
 				stagger([40, 1800], {
 					from: "random",
 					ease: "out(3)",
-					start: "<<+=250",
+					start: "<<+=120",
 				}),
 			)
 			.add(
