@@ -108,12 +108,14 @@
 	animation: rox-intro-fallback-exit 8s linear forwards;
 }
 
-.rox-intro[data-intro-fallback="pending"] .rox-intro__slide--one {
+.rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
+	.rox-intro__slide--one {
 	opacity: 1;
 	animation: rox-intro-fallback-slide-one 8s linear forwards;
 }
 
-.rox-intro[data-intro-fallback="pending"] .rox-intro__slide--two {
+.rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
+	.rox-intro__slide--two {
 	opacity: 0;
 	animation: rox-intro-fallback-slide-two 8s linear forwards;
 }
@@ -149,10 +151,12 @@
 	88% {
 		opacity: 1;
 		visibility: visible;
+		pointer-events: auto;
 	}
 	100% {
 		opacity: 0;
 		visibility: hidden;
+		pointer-events: none;
 	}
 }
 

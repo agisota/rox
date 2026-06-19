@@ -103,7 +103,7 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		if (!root) {
 			return;
 		}
-		root.removeAttribute("data-intro-fallback");
+		root.setAttribute("data-intro-js", "enhanced");
 
 		const introStartedAt = window.performance.now();
 		let finished = false;
