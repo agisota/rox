@@ -4,8 +4,12 @@ import { chromium } from "playwright";
 
 const smokeUrl =
 	process.env.MARKETING_SMOKE_URL ?? "https://rox-marketing.t/?intro=skip";
+const smokeHost = new URL(smokeUrl).hostname;
 const outputDir = process.env.MARKETING_SMOKE_DIR ?? "/tmp";
 const chromeChannel = process.env.PLAYWRIGHT_CHANNEL ?? "chrome";
+const browserArgs = smokeHost.endsWith(".t")
+	? [`--host-resolver-rules=MAP ${smokeHost} 127.0.0.1`]
+	: [];
 
 const viewports = [
 	{ name: "desktop", width: 1440, height: 1100 },
@@ -14,10 +18,14 @@ const viewports = [
 
 async function launchBrowser() {
 	try {
-		return await chromium.launch({ headless: true, channel: chromeChannel });
+		return await chromium.launch({
+			args: browserArgs,
+			headless: true,
+			channel: chromeChannel,
+		});
 	} catch (channelError) {
 		try {
-			return await chromium.launch({ headless: true });
+			return await chromium.launch({ args: browserArgs, headless: true });
 		} catch (defaultError) {
 			throw new Error(
 				`Unable to launch Playwright Chromium. Tried channel "${chromeChannel}" and bundled Chromium.\nChannel error: ${channelError}\nDefault error: ${defaultError}`,
@@ -49,6 +57,7 @@ async function captureViewport(viewport) {
 		state: "visible",
 		timeout: 30_000,
 	});
+	await page.waitForTimeout(700);
 
 	const screenshotPath = join(outputDir, `rox-marketing-${viewport.name}.png`);
 	await page.screenshot({ path: screenshotPath, fullPage: false });
@@ -58,9 +67,11 @@ async function captureViewport(viewport) {
 		const cta = document.querySelector(".rox-landing__hero-cta");
 		const shell = document.querySelector(".marketing-page-shell");
 		const hints = document.querySelector(".rox-hero__hints");
+		const cookieConsent = document.querySelector("[data-cookie-consent]");
 		const footerLogo = document.querySelector('footer a[href="/"] img');
 		const footerRect = footer?.getBoundingClientRect();
 		const ctaRect = cta?.getBoundingClientRect();
+		const cookieRect = cookieConsent?.getBoundingClientRect();
 		const footerLogoRect = footerLogo?.getBoundingClientRect();
 		const footerLogoOpacity = footerLogo
 			? getComputedStyle(footerLogo.closest("a")).opacity
@@ -87,6 +98,22 @@ async function captureViewport(viewport) {
 
 		return {
 			bodyHas500: document.body.textContent?.includes("Internal Server Error"),
+			cookieConsentCount: document.querySelectorAll("[data-cookie-consent]")
+				.length,
+			cookieConsentHeight: cookieRect ? Math.round(cookieRect.height) : null,
+			cookieFooterOverlap:
+				cookieRect && footerRect
+					? Math.max(
+							0,
+							Math.min(cookieRect.right, footerRect.right) -
+								Math.max(cookieRect.left, footerRect.left),
+						) *
+						Math.max(
+							0,
+							Math.min(cookieRect.bottom, footerRect.bottom) -
+								Math.max(cookieRect.top, footerRect.top),
+						)
+					: null,
 			headerCount: document.querySelectorAll("body > header, .marketing-header")
 				.length,
 			shellPaddingTop: shell ? getComputedStyle(shell).paddingTop : null,
@@ -140,6 +167,20 @@ for (const viewport of viewports) {
 	assertSmoke(
 		!result.metrics.bodyHas500,
 		`${viewport.name}: page contains 500 copy`,
+	);
+	assertSmoke(
+		result.metrics.cookieConsentCount === 1,
+		`${viewport.name}: cookie consent is missing on first visit`,
+	);
+	assertSmoke(
+		typeof result.metrics.cookieConsentHeight === "number" &&
+			result.metrics.cookieConsentHeight <=
+				(viewport.name === "mobile" ? 110 : 130),
+		`${viewport.name}: cookie consent is too tall for the landing page`,
+	);
+	assertSmoke(
+		result.metrics.cookieFooterOverlap === 0,
+		`${viewport.name}: cookie consent overlaps the footer`,
 	);
 	assertSmoke(
 		result.metrics.headerCount === 0,
