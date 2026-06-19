@@ -4,6 +4,14 @@
 	"private": true,
 	"type": "module",
 	"exports": {
+		"./async": {
+			"types": "./src/async.ts",
+			"default": "./src/async.ts"
+		},
+		"./error": {
+			"types": "./src/error.ts",
+			"default": "./src/error.ts"
+		},
 		"./constants": {
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"

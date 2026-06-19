@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
+import { getErrorMessage } from "@rox/shared/error";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { projects } from "../../../db/schema";
@@ -59,7 +60,7 @@ interface CreateResult {
 const SLUG_CONFLICT_MESSAGE = "Project slug already exists";
 
 function isSlugConflict(err: unknown): boolean {
-	const message = err instanceof Error ? err.message : String(err);
+	const message = getErrorMessage(err);
 	return message === SLUG_CONFLICT_MESSAGE;
 }
 
