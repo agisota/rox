@@ -115,6 +115,10 @@ export function FirstLaunchPermissionsGate() {
 		},
 	);
 
+	// Developer ID gate: hide the Automation row until a signed build exists.
+	const { data: automationEnabled } =
+		electronTrpc.permissions.getAutomationEnabled.useQuery();
+
 	const requestFullDiskAccess =
 		electronTrpc.permissions.requestFullDiskAccess.useMutation();
 	const requestAccessibility =
@@ -183,7 +187,9 @@ export function FirstLaunchPermissionsGate() {
 				</AlertDialogHeader>
 
 				<div className="space-y-4 px-5 py-3">
-					{PERMISSION_GATE_ITEMS.map((item) => (
+					{PERMISSION_GATE_ITEMS.filter(
+						(item) => item.id !== "automation" || automationEnabled === true,
+					).map((item) => (
 						<GatePermissionRow
 							key={item.id}
 							item={item}

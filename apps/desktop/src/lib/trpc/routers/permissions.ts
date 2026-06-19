@@ -3,6 +3,7 @@ import { publicProcedure, router } from "..";
 import {
 	getAutomationTargets,
 	getPermissionStatus,
+	isAutomationEnabled,
 	openAutomationSettings,
 	requestAccessibility,
 	requestAppleEvents,
@@ -21,6 +22,11 @@ export const createPermissionsRouter = () => {
 
 		getAutomationTargets: publicProcedure.query(() => {
 			return getAutomationTargets();
+		}),
+
+		/** Developer ID gate: false until a signed build is configured. */
+		getAutomationEnabled: publicProcedure.query(() => {
+			return isAutomationEnabled();
 		}),
 
 		requestFullDiskAccess: publicProcedure.mutation(async () => {

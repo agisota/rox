@@ -14,6 +14,20 @@
  * and never appears in the Automation pane — it is reached via Terminal
  * automation or a direct child process. Listing it would be a category error.
  */
+/**
+ * Master switch for the macOS Automation (Apple Events) permission feature.
+ *
+ * Apple Events only behave correctly on a SIGNED Developer ID + hardened +
+ * notarized build (otherwise TCC silently denies and the app never persists in
+ * the Automation pane). Until a Developer ID certificate is configured, keep
+ * this OFF: no Apple Events are sent (at boot or on demand) and the in-app
+ * Automation UI is hidden, so unsigned/dev builds don't fire useless prompts or
+ * mislead users.
+ *
+ * FLIP TO `true` once Developer ID signing is wired (CSC_LINK / APPLE_TEAM_ID).
+ */
+export const AUTOMATION_PERMISSIONS_ENABLED = false;
+
 export interface AutomationTarget {
 	/** Stable id for React keys, tests, and tRPC input validation. */
 	id: string;

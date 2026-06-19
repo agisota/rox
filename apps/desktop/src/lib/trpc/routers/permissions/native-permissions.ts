@@ -8,7 +8,10 @@ import {
 	requestAllAutomationTargets,
 	requestAutomationForTarget,
 } from "../../../../main/lib/automation-permission";
-import { AUTOMATION_TARGETS } from "../../../../main/lib/automation-targets";
+import {
+	AUTOMATION_PERMISSIONS_ENABLED,
+	AUTOMATION_TARGETS,
+} from "../../../../main/lib/automation-targets";
 import { checkFullDiskAccess } from "./full-disk-access";
 
 export const PERMISSION_SETTINGS_URLS = {
@@ -88,6 +91,11 @@ export function getPermissionStatus() {
 	};
 }
 
+/** Whether the Apple Events / Automation feature is enabled (Developer ID gate). */
+export function isAutomationEnabled(): boolean {
+	return AUTOMATION_PERMISSIONS_ENABLED;
+}
+
 /** The Automation targets registry, surfaced to the renderer for per-target UI. */
 export function getAutomationTargets(): readonly {
 	id: string;
@@ -156,14 +164,24 @@ export async function requestScreenRecording({
  * per-app consent dialogs one at a time. Used by the first-launch gate's
  * "enable automation" action.
  */
-export async function requestAppleEvents(): Promise<AutomationRequestResult[]> {
+export async function requestAppleEvents({
+	enabled = AUTOMATION_PERMISSIONS_ENABLED,
+}: {
+	enabled?: boolean;
+} = {}): Promise<AutomationRequestResult[]> {
+	// Developer ID gate: never send Apple Events on an unsigned/dev build.
+	if (!enabled) return [];
 	return requestAllAutomationTargets();
 }
 
 /** Request Automation access for a single target (raises one consent dialog). */
 export async function requestAutomation(
 	bundleId: string,
+	{ enabled = AUTOMATION_PERMISSIONS_ENABLED }: { enabled?: boolean } = {},
 ): Promise<AutomationRequestResult> {
+	if (!enabled) {
+		return { bundleId, granted: false, error: "automation-disabled" };
+	}
 	assertKnownAutomationTarget(bundleId);
 	return requestAutomationForTarget(bundleId);
 }
