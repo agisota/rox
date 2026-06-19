@@ -424,13 +424,14 @@
 	content: "";
 	position: absolute;
 	z-index: -1;
-	inset: -20% -14%;
+	inset: -22% -18% -18%;
 	pointer-events: none;
 	background: radial-gradient(
-		50% 46% at 50% 44%,
-		rgba(8, 5, 3, 0.62),
-		rgba(8, 5, 3, 0.3) 56%,
-		transparent 84%
+		60% 54% at 50% 50%,
+		rgba(8, 5, 3, 0.84),
+		rgba(8, 5, 3, 0.58) 48%,
+		rgba(8, 5, 3, 0.28) 72%,
+		transparent 94%
 	);
 }
 
@@ -504,8 +505,8 @@
 	font-size: clamp(0.9rem, 1.46vw, 1rem);
 	letter-spacing: 0.01em;
 	line-height: 1.55;
-	color: rgba(255, 255, 255, 0.62);
-	text-shadow: none;
+	color: rgba(255, 255, 255, 0.7);
+	text-shadow: 0 1px 16px rgba(0, 0, 0, 0.88);
 	text-align: left;
 }
 
