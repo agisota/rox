@@ -108,8 +108,12 @@ export const auth = betterAuth({
 		},
 	},
 	emailAndPassword: {
-		// NOTE (ROX-519): kept dev-gated on purpose. Flipping this to always-on
-		// (enabling email/password sign-in in production) is a pending
+		// NOTE (ROX-519 / ROX-522 Phase 3): kept dev-gated on purpose.
+		// Production is social-only (Telegram / Yandex / GitHub); the public
+		// email/password sign-in & sign-up forms were removed from the web app.
+		// This flag stays enabled in development only because dev login and the
+		// dev seed flow ("Local Admin (dev)") rely on it. Flipping this to
+		// always-on (enabling email/password sign-in in production) is a pending
 		// product/security decision and must NOT be flipped here without that
 		// sign-off — production needs email verification + rate limiting first.
 		enabled: process.env.NODE_ENV === "development",
