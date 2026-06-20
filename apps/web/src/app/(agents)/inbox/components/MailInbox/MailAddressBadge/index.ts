@@ -1,0 +1,1 @@
+export { MailAddressBadge } from "./MailAddressBadge";
