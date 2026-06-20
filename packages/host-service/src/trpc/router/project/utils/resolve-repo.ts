@@ -93,17 +93,20 @@ const FALLBACK_COMMIT_IDENTITY_ARGS = [
  */
 async function commitInitialAllowEmpty(repoPath: string): Promise<void> {
 	const git = createUserSimpleGit(repoPath);
+	// `--no-verify` so an inherited commit hook (e.g. from a global core.hooksPath)
+	// can't block a freshly-onboarded user's very first commit.
+	const args = [
+		"commit",
+		"--allow-empty",
+		"--no-verify",
+		"-m",
+		"Initial commit",
+	];
 	try {
-		await git.raw(["commit", "--allow-empty", "-m", "Initial commit"]);
+		await git.raw(args);
 	} catch (err) {
 		if (!isMissingGitIdentityError(err)) throw asInitialCommitTrpcError(err);
-		await git.raw([
-			...FALLBACK_COMMIT_IDENTITY_ARGS,
-			"commit",
-			"--allow-empty",
-			"-m",
-			"Initial commit",
-		]);
+		await git.raw([...FALLBACK_COMMIT_IDENTITY_ARGS, ...args]);
 	}
 }
 
@@ -113,16 +116,13 @@ async function commitInitialAllowEmpty(repoPath: string): Promise<void> {
  */
 async function commitInitialStaged(repoPath: string): Promise<void> {
 	const git = createUserSimpleGit(repoPath);
+	// `--no-verify`: see commitInitialAllowEmpty.
+	const args = ["commit", "--no-verify", "-m", "Initial commit"];
 	try {
-		await git.raw(["commit", "-m", "Initial commit"]);
+		await git.raw(args);
 	} catch (err) {
 		if (!isMissingGitIdentityError(err)) throw asInitialCommitTrpcError(err);
-		await git.raw([
-			...FALLBACK_COMMIT_IDENTITY_ARGS,
-			"commit",
-			"-m",
-			"Initial commit",
-		]);
+		await git.raw([...FALLBACK_COMMIT_IDENTITY_ARGS, ...args]);
 	}
 }
 

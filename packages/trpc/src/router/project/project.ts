@@ -78,6 +78,19 @@ async function getScopedProject(organizationId: string, projectId: string) {
 	);
 }
 
+// Sandbox image build configuration (remote-hosts epic, C4). Threaded from
+// the project create call onto the auto-provisioned sandbox_images row so a
+// managed sandbox can be built with the project's base image, system packages,
+// and setup commands. All fields optional — omitting them falls back to the
+// schema defaults (empty arrays / null base image).
+const sandboxImageInput = z
+	.object({
+		baseImage: z.string().min(1).optional(),
+		setupCommands: z.array(z.string()).optional(),
+		systemPackages: z.array(z.string()).optional(),
+	})
+	.optional();
+
 export const projectRouter = {
 	secrets: secretsRouter,
 
@@ -92,6 +105,7 @@ export const projectRouter = {
 				repoUrl: z.string().url(),
 				defaultBranch: z.string().optional(),
 				githubRepositoryId: z.string().uuid().optional(),
+				sandboxImage: sandboxImageInput,
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -124,8 +138,36 @@ export const projectRouter = {
 			await dbWs.insert(sandboxImages).values({
 				organizationId: input.organizationId,
 				projectId: project.id,
+				// Thread the optional build config through; omitted fields keep the
+				// schema defaults rather than overwriting them with undefined.
+				...(input.sandboxImage?.baseImage !== undefined
+					? { baseImage: input.sandboxImage.baseImage }
+					: {}),
+				...(input.sandboxImage?.setupCommands !== undefined
+					? { setupCommands: input.sandboxImage.setupCommands }
+					: {}),
+				...(input.sandboxImage?.systemPackages !== undefined
+					? { systemPackages: input.sandboxImage.systemPackages }
+					: {}),
 			});
 			return project;
+		}),
+
+	getSandboxImage: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string().uuid(),
+				organizationId: z.string().uuid(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			await getProjectAccess(ctx.session.user.id, input.projectId, {
+				organizationId: input.organizationId,
+			});
+			const row = await dbWs.query.sandboxImages.findFirst({
+				where: eq(sandboxImages.projectId, input.projectId),
+			});
+			return row ?? null;
 		}),
 
 	update: protectedProcedure

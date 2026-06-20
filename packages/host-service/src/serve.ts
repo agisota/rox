@@ -19,6 +19,7 @@ import { installProcessSafetyNet } from "./safety";
 import { initTerminalBaseEnv, resolveTerminalBaseEnv } from "./terminal/env";
 import { startTerminalReaper } from "./terminal/reaper";
 import { connectRelay } from "./tunnel";
+import { resolveHostCredentialSource } from "./tunnel/bootstrap-credential";
 
 async function main(): Promise<void> {
 	logger.info(
@@ -42,10 +43,32 @@ async function main(): Promise<void> {
 				apiUrl: env.ROX_API_URL,
 			})
 		: null;
+
+	// Resolve which relay credential to authenticate with (C5/D7): config-file
+	// session > relay bootstrap token > static AUTH_TOKEN. Managed sandboxes
+	// inject RELAY_BOOTSTRAP_TOKEN instead of AUTH_TOKEN, so we no longer assume
+	// AUTH_TOKEN is always present.
+	const credentialSource = resolveHostCredentialSource({
+		hasConfigSource: configTokenSource !== null,
+		relayBootstrapToken: env.RELAY_BOOTSTRAP_TOKEN,
+		authToken: env.AUTH_TOKEN,
+	});
+	const staticToken =
+		credentialSource.kind === "bootstrap" || credentialSource.kind === "auth"
+			? credentialSource.token
+			: null;
+
 	const authProvider = new JwtApiAuthProvider({
 		getSessionToken: configTokenSource
 			? () => configTokenSource.getSessionToken()
-			: async () => env.AUTH_TOKEN,
+			: async () => {
+					if (!staticToken) {
+						throw new Error(
+							"No relay credential configured (set ROX_AUTH_CONFIG_PATH, RELAY_BOOTSTRAP_TOKEN, or AUTH_TOKEN)",
+						);
+					}
+					return staticToken;
+				},
 		onInvalidateCache: configTokenSource
 			? () => configTokenSource.invalidateCache()
 			: undefined,
@@ -116,6 +139,9 @@ async function main(): Promise<void> {
 				organizationId: env.ORGANIZATION_ID,
 				authProvider,
 				hostServiceSecret: env.HOST_SERVICE_SECRET,
+				// Managed sandboxes pre-assign the host id (C5/D7) so the relay
+				// routing key matches the host row the provisioner created.
+				machineIdOverride: env.HOST_ID,
 			});
 		}
 	});

@@ -1,7 +1,26 @@
 import { createApiClient } from "./api-client";
 import * as directory from "./directory";
 import { env } from "./env";
-import type { TunnelHttpResponse, TunnelRequest } from "./types";
+import type { TunnelRequest } from "./types";
+
+/**
+ * Result of a tunnelled HTTP request. For ordinary buffered responses the
+ * whole body is in `body`. For streaming responses (SSE / chunked) the body
+ * is delivered incrementally via `stream`, a `ReadableStream` the relay's
+ * Hono handler hands straight to the downstream client so chunks flow as the
+ * host produces them. Exactly one of `body` / `stream` is set.
+ */
+export interface TunnelHttpResult {
+	status: number;
+	headers: Record<string, string>;
+	body?: string;
+	stream?: ReadableStream<Uint8Array>;
+}
+
+interface StreamingResponse {
+	controller: ReadableStreamDefaultController<Uint8Array>;
+	timer: ReturnType<typeof setTimeout> | null;
+}
 
 type WsSocket = {
 	send: (data: string | ArrayBuffer | Uint8Array<ArrayBuffer>) => void;
@@ -18,7 +37,7 @@ const SET_ONLINE_MAX_ATTEMPTS = 3;
 const MAX_PENDING_REQUESTS_PER_TUNNEL = 1_000;
 
 interface PendingRequest {
-	resolve: (response: TunnelHttpResponse) => void;
+	resolve: (response: TunnelHttpResult) => void;
 	reject: (error: Error) => void;
 	timer: ReturnType<typeof setTimeout>;
 }
@@ -29,6 +48,10 @@ interface TunnelState {
 	ws: WsSocket;
 	pendingRequests: Map<string, PendingRequest>;
 	activeChannels: Map<string, WsSocket>;
+	// Streaming responses in flight: once the head frame arrives the pending
+	// request resolves with a ReadableStream and ownership of `id` moves here,
+	// where subsequent chunk/end frames feed the controller.
+	streamingResponses: Map<string, StreamingResponse>;
 	pingTimer: ReturnType<typeof setInterval> | null;
 	missedPings: number;
 }
@@ -128,6 +151,7 @@ export class TunnelManager {
 			ws,
 			pendingRequests: new Map(),
 			activeChannels: new Map(),
+			streamingResponses: new Map(),
 			pingTimer: null,
 			missedPings: 0,
 		};
@@ -265,6 +289,18 @@ export class TunnelManager {
 			pending.reject(new Error(reason));
 		}
 
+		// In-flight streaming responses: head already resolved, so error the
+		// downstream ReadableStream instead of a pending promise.
+		for (const [, streaming] of tunnel.streamingResponses) {
+			if (streaming.timer) clearTimeout(streaming.timer);
+			try {
+				streaming.controller.error(new Error(reason));
+			} catch {
+				// controller may already be closed/errored
+			}
+		}
+		tunnel.streamingResponses.clear();
+
 		for (const [, clientWs] of tunnel.activeChannels) {
 			clientWs.close(1001, reason);
 		}
@@ -372,7 +408,7 @@ export class TunnelManager {
 			headers: Record<string, string>;
 			body?: string;
 		},
-	): Promise<TunnelHttpResponse> {
+	): Promise<TunnelHttpResult> {
 		const tunnel = this.tunnels.get(hostId);
 		if (!tunnel) throw new Error("Host not connected");
 
@@ -382,7 +418,7 @@ export class TunnelManager {
 
 		const id = crypto.randomUUID();
 
-		return new Promise<TunnelHttpResponse>((resolve, reject) => {
+		return new Promise<TunnelHttpResult>((resolve, reject) => {
 			const timer = setTimeout(() => {
 				tunnel.pendingRequests.delete(id);
 				reject(new Error("Request timed out"));
@@ -446,7 +482,77 @@ export class TunnelManager {
 			if (pending) {
 				clearTimeout(pending.timer);
 				tunnel.pendingRequests.delete(msg.id as string);
-				pending.resolve(msg as unknown as TunnelHttpResponse);
+				pending.resolve({
+					status: msg.status as number,
+					headers: (msg.headers as Record<string, string>) ?? {},
+					body: msg.body as string | undefined,
+				});
+			}
+		} else if (msg.type === "http:response:head") {
+			// Streaming begins: resolve the pending promise with a ReadableStream
+			// and hand ownership of `id` to streamingResponses for chunk/end.
+			const id = msg.id as string;
+			const pending = tunnel.pendingRequests.get(id);
+			if (!pending) return;
+			clearTimeout(pending.timer);
+			tunnel.pendingRequests.delete(id);
+
+			// Reuse the per-request timeout to bound the whole stream: if the
+			// host stops sending chunks before the end frame, error it out
+			// rather than leaking the controller forever.
+			const stream = new ReadableStream<Uint8Array>({
+				start: (controller) => {
+					const timer = setTimeout(() => {
+						const existing = tunnel.streamingResponses.get(id);
+						if (!existing) return;
+						tunnel.streamingResponses.delete(id);
+						try {
+							controller.error(new Error("Stream timed out"));
+						} catch {
+							// already closed
+						}
+					}, this.requestTimeoutMs);
+					tunnel.streamingResponses.set(id, { controller, timer });
+				},
+				cancel: () => {
+					const existing = tunnel.streamingResponses.get(id);
+					if (existing?.timer) clearTimeout(existing.timer);
+					tunnel.streamingResponses.delete(id);
+				},
+			});
+
+			pending.resolve({
+				status: msg.status as number,
+				headers: (msg.headers as Record<string, string>) ?? {},
+				stream,
+			});
+		} else if (msg.type === "http:response:chunk") {
+			const streaming = tunnel.streamingResponses.get(msg.id as string);
+			if (!streaming) return;
+			if (typeof msg.data !== "string") return;
+			const bytes =
+				msg.encoding === "base64"
+					? new Uint8Array(Buffer.from(msg.data, "base64"))
+					: new TextEncoder().encode(msg.data);
+			try {
+				streaming.controller.enqueue(bytes);
+			} catch {
+				// downstream cancelled; cancel handler already cleaned up
+			}
+		} else if (msg.type === "http:response:end") {
+			const id = msg.id as string;
+			const streaming = tunnel.streamingResponses.get(id);
+			if (!streaming) return;
+			if (streaming.timer) clearTimeout(streaming.timer);
+			tunnel.streamingResponses.delete(id);
+			try {
+				if (typeof msg.error === "string") {
+					streaming.controller.error(new Error(msg.error));
+				} else {
+					streaming.controller.close();
+				}
+			} catch {
+				// already closed/errored
 			}
 		} else if (msg.type === "ws:frame") {
 			if (typeof msg.data !== "string") return;

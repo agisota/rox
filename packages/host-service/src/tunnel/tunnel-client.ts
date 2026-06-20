@@ -1,4 +1,5 @@
 import { getErrorMessage } from "@rox/shared/error";
+import { forwardResponse } from "./stream-response";
 import { logger } from "../lib/logger";
 import type {
 	TunnelHttpRequest,
@@ -251,19 +252,13 @@ export class TunnelClient {
 				body: request.body ?? undefined,
 			});
 
-			const body = await response.text();
-			const headers: Record<string, string> = {};
-			for (const [key, value] of response.headers.entries()) {
-				headers[key] = value;
-			}
-
-			this.send({
-				type: "http:response",
-				id: request.id,
-				status: response.status,
-				headers,
-				body,
-			});
+			// Buffer ordinary responses into one frame; stream SSE/chunked
+			// responses (agent runs, chat completions) as head/chunk*/end so the
+			// relay can forward them to the client incrementally instead of
+			// stalling on `await response.text()`.
+			await forwardResponse(request.id, response, (message) =>
+				this.send(message),
+			);
 		} catch (error) {
 			logger.error(
 				`[host-service:tunnel] HTTP proxy failed ${request.method} ${request.path}:`,

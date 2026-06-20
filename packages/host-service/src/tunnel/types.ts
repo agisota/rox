@@ -1,6 +1,9 @@
 export type {
 	TunnelHttpRequest,
 	TunnelHttpResponse,
+	TunnelHttpResponseChunk,
+	TunnelHttpResponseEnd,
+	TunnelHttpResponseHead,
 	TunnelPing,
 	TunnelPong,
 	TunnelRequest,
