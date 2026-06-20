@@ -1,5 +1,6 @@
 import type { MemoryCategory, SelectMemoryItem } from "@rox/db/schema";
 import { Input } from "@rox/ui/input";
+import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
 import { HiOutlinePlus, HiOutlineTrash } from "react-icons/hi2";
 import { authClient } from "renderer/lib/auth-client";
@@ -47,7 +48,7 @@ export function MemoryGroup({
 		const trimmed = body.trim();
 		if (!trimmed || !userId || !organizationId) return;
 		const now = new Date();
-		collections.memoryItems.insert({
+		const tx = collections.memoryItems.insert({
 			id: crypto.randomUUID(),
 			organizationId,
 			createdBy: userId,
@@ -60,6 +61,9 @@ export function MemoryGroup({
 			createdAt: now,
 			updatedAt: now,
 		});
+		void tx.isPersisted.promise.catch(() =>
+			toast.error("Не удалось сохранить — попробуйте ещё раз"),
+		);
 	};
 
 	const handleSubmit = () => {
@@ -96,7 +100,12 @@ export function MemoryGroup({
 							<button
 								type="button"
 								aria-label="Удалить"
-								onClick={() => collections.memoryItems.delete(item.id)}
+								onClick={() => {
+									const tx = collections.memoryItems.delete(item.id);
+									void tx.isPersisted.promise.catch(() =>
+										toast.error("Не удалось удалить — попробуйте ещё раз"),
+									);
+								}}
 								className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
 							>
 								<HiOutlineTrash className="size-3.5" />

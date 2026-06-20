@@ -1,5 +1,6 @@
 import type { SelectMemoryItem } from "@rox/db/schema";
 import { Button } from "@rox/ui/button";
+import { toast } from "@rox/ui/sonner";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { CATEGORY_LABEL } from "../../groups";
 
@@ -18,14 +19,22 @@ export function MemorySuggestions({ items }: MemorySuggestionsProps) {
 	const collections = useCollections();
 	if (items.length === 0) return null;
 
-	const approve = (id: string) =>
-		collections.memoryItems.update(id, (draft) => {
+	const approve = (id: string) => {
+		const tx = collections.memoryItems.update(id, (draft) => {
 			draft.status = "approved";
 		});
-	const decline = (id: string) =>
-		collections.memoryItems.update(id, (draft) => {
+		void tx.isPersisted.promise.catch(() =>
+			toast.error("Не удалось сохранить — попробуйте ещё раз"),
+		);
+	};
+	const decline = (id: string) => {
+		const tx = collections.memoryItems.update(id, (draft) => {
 			draft.status = "dismissed";
 		});
+		void tx.isPersisted.promise.catch(() =>
+			toast.error("Не удалось отклонить — попробуйте ещё раз"),
+		);
+	};
 
 	return (
 		<section className="mb-6 rounded-lg border border-primary/30 bg-primary/5 p-4">
