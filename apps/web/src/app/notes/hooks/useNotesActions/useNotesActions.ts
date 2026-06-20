@@ -29,6 +29,18 @@ export function useNotesActions(notebookId: string | null) {
 		});
 	}, [queryClient, trpc, notebookId]);
 
+	// `getNote` powers the editor (publish state + public URL); it lives outside
+	// the list queries, so writes that change a single note must invalidate it by
+	// id or the editor keeps a stale snapshot until an unrelated refetch.
+	const invalidateNote = useCallback(
+		async (noteId: string) => {
+			await queryClient.invalidateQueries({
+				queryKey: trpc.notebooks.getNote.queryKey({ noteId }),
+			});
+		},
+		[queryClient, trpc],
+	);
+
 	const onError = (fallback: string) => (error: { message?: string }) => {
 		toast.error(error.message || fallback);
 	};
@@ -59,7 +71,13 @@ export function useNotesActions(notebookId: string | null) {
 
 	const updateNote = useMutation(
 		trpc.notebooks.updateNote.mutationOptions({
-			onSuccess: invalidateNotes,
+			// `updateNote` returns the row WITHOUT `publicUrl`, so we refetch
+			// `getNote` (and the lists) rather than seeding the cache with a row
+			// that would blank the editor's public-link block.
+			onSuccess: async (row) => {
+				if (row?.id) await invalidateNote(row.id);
+				await invalidateNotes();
+			},
 			onError: onError("Не удалось сохранить заметку"),
 		}),
 	);
@@ -73,7 +91,18 @@ export function useNotesActions(notebookId: string | null) {
 
 	const setPublished = useMutation(
 		trpc.notebooks.setPublished.mutationOptions({
-			onSuccess: invalidateNotes,
+			// The returned row carries the freshly-minted `publicUrl`, so we seed
+			// the `getNote` cache directly (exact, no refetch flicker) before
+			// refreshing the list so the published dot updates too.
+			onSuccess: async (row) => {
+				if (row?.id) {
+					queryClient.setQueryData(
+						trpc.notebooks.getNote.queryKey({ noteId: row.id }),
+						row,
+					);
+				}
+				await invalidateNotes();
+			},
 			onError: onError("Не удалось изменить публикацию"),
 		}),
 	);

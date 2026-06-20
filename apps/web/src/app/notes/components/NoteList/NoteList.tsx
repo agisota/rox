@@ -5,7 +5,7 @@ import { Input } from "@rox/ui/input";
 import { Skeleton } from "@rox/ui/skeleton";
 import { cn } from "@rox/ui/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTRPC } from "@/trpc/react";
 import { useNotesActions } from "../../hooks/useNotesActions";
@@ -13,7 +13,7 @@ import { useNotesActions } from "../../hooks/useNotesActions";
 export interface NoteListProps {
 	notebookId: string | null;
 	selectedNoteId: string | null;
-	onSelect: (noteId: string) => void;
+	onSelect: (noteId: string | null) => void;
 }
 
 /**
@@ -58,8 +58,20 @@ export function NoteList({
 		);
 	};
 
+	const handleDelete = (id: string, noteTitle: string) => {
+		if (!window.confirm(`Удалить заметку «${noteTitle}»?`)) return;
+		actions.deleteNote.mutate(
+			{ noteId: id },
+			{
+				onSuccess: () => {
+					if (selectedNoteId === id) onSelect(null);
+				},
+			},
+		);
+	};
+
 	return (
-		<div className="flex w-72 shrink-0 flex-col gap-2 border-r pr-3">
+		<div className="flex w-full shrink-0 flex-col gap-2 border-b pb-3 md:w-72 md:border-r md:border-b-0 md:pr-3 md:pb-0">
 			<div className="flex items-center gap-2">
 				<Input
 					value={filter}
@@ -98,12 +110,12 @@ export function NoteList({
 					{filtered.map((note) => {
 						const tags = (note.tags ?? []) as string[];
 						return (
-							<li key={note.id}>
+							<li key={note.id} className="group relative">
 								<button
 									type="button"
 									onClick={() => onSelect(note.id)}
 									className={cn(
-										"flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-muted",
+										"flex w-full flex-col gap-0.5 rounded-md py-1.5 pr-9 pl-2 text-left hover:bg-muted",
 										selectedNoteId === note.id && "bg-muted",
 									)}
 								>
@@ -122,6 +134,16 @@ export function NoteList({
 										</span>
 									) : null}
 								</button>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="-translate-y-1/2 absolute top-1/2 right-1 size-7 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+									aria-label="Удалить заметку"
+									onClick={() => handleDelete(note.id, note.title)}
+								>
+									<Trash2 className="size-4" />
+								</Button>
 							</li>
 						);
 					})}
