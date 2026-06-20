@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { MOCK_ORG_ID } from "shared/constants";
 import {
 	DEV_CHAT_MODELS,
 	getDesktopChatModelOptions,
@@ -8,10 +9,8 @@ import {
 
 describe("dev chat helpers", () => {
 	it("uses the mock organization in dev mode", () => {
-		expect(resolveDesktopChatOrganizationId(null, true)).toBe("mock-org-id");
-		expect(resolveDesktopChatOrganizationId("org-123", true)).toBe(
-			"mock-org-id",
-		);
+		expect(resolveDesktopChatOrganizationId(null, true)).toBe(MOCK_ORG_ID);
+		expect(resolveDesktopChatOrganizationId("org-123", true)).toBe(MOCK_ORG_ID);
 	});
 
 	it("keeps the real organization outside dev mode", () => {

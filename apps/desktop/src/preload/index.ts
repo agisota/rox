@@ -2,6 +2,7 @@ import { logger } from "shared/logger";
 import "@sentry/electron/preload";
 
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { shouldBypassAuthForE2E } from "shared/e2e-auth-bypass";
 import { exposeElectronTRPC } from "trpc-electron/main";
 import type {
 	IpcEventChannel,
@@ -25,6 +26,11 @@ const API = {
 	sayHelloFromBridge: () => logger.info("\nHello from bridgeAPI! 👋\n\n"),
 	username: process.env.USER,
 	appVersion: __APP_VERSION__,
+	e2eAuthBypass: shouldBypassAuthForE2E({
+		nodeEnv: process.env.NODE_ENV,
+		flag: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS,
+		scope: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE,
+	}),
 };
 
 // Store mapping of user listeners to wrapped listeners for proper cleanup
