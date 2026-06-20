@@ -2,6 +2,7 @@ import { db } from "@rox/db/client";
 import { integrationConnections } from "@rox/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { InteractionResponseType, InteractionType } from "../constants";
 import { parseDiscordInteraction } from "../parse-interaction";
 import { verifyDiscordSignature } from "../verify-signature";
@@ -30,9 +31,7 @@ export async function POST(request: Request) {
 	// Optional until the Discord app is provisioned in this environment.
 	const publicKeyHex = env.DISCORD_PUBLIC_KEY;
 	if (!publicKeyHex) {
-		console.error(
-			"[discord/interactions] DISCORD_PUBLIC_KEY is not configured",
-		);
+		logger.error("[discord/interactions] DISCORD_PUBLIC_KEY is not configured");
 		return Response.json(
 			{ error: "Discord integration is not configured" },
 			{ status: 503 },
@@ -42,7 +41,7 @@ export async function POST(request: Request) {
 	if (
 		!verifyDiscordSignature({ publicKeyHex, signatureHex, timestamp, rawBody })
 	) {
-		console.error("[discord/interactions] Signature verification failed");
+		logger.error("[discord/interactions] Signature verification failed");
 		return Response.json({ error: "Invalid signature" }, { status: 401 });
 	}
 
@@ -50,13 +49,13 @@ export async function POST(request: Request) {
 	try {
 		json = JSON.parse(rawBody);
 	} catch {
-		console.error("[discord/interactions] Failed to parse JSON payload");
+		logger.error("[discord/interactions] Failed to parse JSON payload");
 		return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
 	}
 
 	const interaction = parseDiscordInteraction(json);
 	if (!interaction) {
-		console.error("[discord/interactions] Invalid interaction payload shape");
+		logger.error("[discord/interactions] Invalid interaction payload shape");
 		return Response.json({ error: "Invalid payload shape" }, { status: 400 });
 	}
 
@@ -93,7 +92,7 @@ export async function POST(request: Request) {
 	}
 
 	if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-		console.info("[discord/interactions] Application command received", {
+		logger.info("[discord/interactions] Application command received", {
 			connectionId: connection.id,
 			organizationId: connection.organizationId,
 			guildId,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 import { processAssistantMessage } from "../../events/process-assistant-message";
 
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
 
 	const parsed = payloadSchema.safeParse(JSON.parse(body));
 	if (!parsed.success) {
-		console.error(
+		logger.error(
 			"[slack/process-assistant-message] Invalid payload:",
 			parsed.error,
 		);
