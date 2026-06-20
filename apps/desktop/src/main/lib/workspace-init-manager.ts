@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import { logger } from "main/lib/logger";
 import type {
 	WorkspaceInitProgress,
 	WorkspaceInitStep,
@@ -71,7 +72,7 @@ class WorkspaceInitManager extends EventEmitter {
 	 */
 	startJob(workspaceId: string, projectId: string): void {
 		if (this.jobs.has(workspaceId)) {
-			console.warn(
+			logger.warn(
 				`[workspace-init] Job already exists for ${workspaceId}, clearing old job`,
 			);
 			this.jobs.delete(workspaceId);
@@ -119,7 +120,7 @@ class WorkspaceInitManager extends EventEmitter {
 	): void {
 		const job = this.jobs.get(workspaceId);
 		if (!job) {
-			console.warn(`[workspace-init] No job found for ${workspaceId}`);
+			logger.warn(`[workspace-init] No job found for ${workspaceId}`);
 			return;
 		}
 
@@ -175,7 +176,7 @@ class WorkspaceInitManager extends EventEmitter {
 		if (job) {
 			job.cancelled = true;
 		}
-		console.log(`[workspace-init] Cancelled job for ${workspaceId}`);
+		logger.info(`[workspace-init] Cancelled job for ${workspaceId}`);
 	}
 
 	/**
@@ -215,7 +216,7 @@ class WorkspaceInitManager extends EventEmitter {
 		const resolve = this.doneResolvers.get(workspaceId);
 		if (resolve) {
 			resolve();
-			console.log(`[workspace-init] Finalized job for ${workspaceId}`);
+			logger.info(`[workspace-init] Finalized job for ${workspaceId}`);
 		}
 
 		// Clean up coordination state to prevent memory leaks
@@ -242,7 +243,7 @@ class WorkspaceInitManager extends EventEmitter {
 			return;
 		}
 
-		console.log(
+		logger.info(
 			`[workspace-init] Waiting for init to complete: ${workspaceId}`,
 		);
 
@@ -250,7 +251,7 @@ class WorkspaceInitManager extends EventEmitter {
 			promise,
 			new Promise<void>((resolve) => {
 				setTimeout(() => {
-					console.warn(
+					logger.warn(
 						`[workspace-init] Wait timed out after ${timeoutMs}ms for ${workspaceId}`,
 					);
 					resolve();

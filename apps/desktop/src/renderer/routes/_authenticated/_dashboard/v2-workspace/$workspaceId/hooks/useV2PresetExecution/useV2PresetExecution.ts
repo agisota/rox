@@ -5,6 +5,7 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useMemo } from "react";
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
 import { resolvePresetLaunchCommands } from "renderer/lib/agent-launch-command";
+import { logger } from "renderer/lib/logger";
 import {
 	buildTerminalCommand,
 	normalizeTerminalCommand,
@@ -290,7 +291,7 @@ export function useV2PresetExecution({
 					}
 				}
 			} catch (err) {
-				console.error("[useV2PresetExecution] Failed to execute preset:", err);
+				logger.error("[useV2PresetExecution] Failed to execute preset:", err);
 				toast.error("Failed to run preset", {
 					description:
 						err instanceof Error

@@ -1,5 +1,6 @@
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
 import type { PromptContextBody } from "./store";
 
 export async function fetchPrBody(args: {
@@ -16,7 +17,7 @@ export async function fetchPrBody(args: {
 		const text = (result.body ?? "").trim();
 		return text ? { text } : null;
 	} catch (err) {
-		console.error("[promptContext] fetchPrBody failed", { args, err });
+		logger.error("[promptContext] fetchPrBody failed", { args, err });
 		return null;
 	}
 }
@@ -35,7 +36,7 @@ export async function fetchGitHubIssueBody(args: {
 		const text = (result.body ?? "").trim();
 		return text ? { text } : null;
 	} catch (err) {
-		console.error("[promptContext] fetchGitHubIssueBody failed", { args, err });
+		logger.error("[promptContext] fetchGitHubIssueBody failed", { args, err });
 		return null;
 	}
 }
@@ -48,7 +49,7 @@ export async function fetchInternalTaskBody(args: {
 		const text = (result?.description ?? "").trim();
 		return text ? { text } : null;
 	} catch (err) {
-		console.error("[promptContext] fetchInternalTaskBody failed", {
+		logger.error("[promptContext] fetchInternalTaskBody failed", {
 			args,
 			err,
 		});

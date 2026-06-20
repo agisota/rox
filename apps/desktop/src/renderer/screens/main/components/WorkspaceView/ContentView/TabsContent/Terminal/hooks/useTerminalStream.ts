@@ -1,6 +1,7 @@
 import { toast } from "@rox/ui/sonner";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { useCallback, useRef } from "react";
+import { logger } from "renderer/lib/logger";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { setPaneWorkspaceRunState } from "renderer/stores/tabs/workspace-run";
 import { DEBUG_TERMINAL } from "../config";
@@ -117,7 +118,7 @@ export function useTerminalStream({
 			const message = event.code
 				? `${event.code}: ${event.error}`
 				: event.error;
-			console.warn("[Terminal] stream error:", message);
+			logger.warn("[Terminal] stream error:", message);
 
 			if (
 				event.code === "WRITE_FAILED" &&
@@ -154,7 +155,7 @@ export function useTerminalStream({
 			// flushPendingEvents will process them in sequence after restore
 			if (!xterm || !isStreamReadyRef.current) {
 				if (DEBUG_TERMINAL && event.type === "data") {
-					console.log(
+					logger.info(
 						`[Terminal] Queuing event (not ready): ${paneId}, type=${event.type}, bytes=${event.data.length}`,
 					);
 				}
@@ -166,7 +167,7 @@ export function useTerminalStream({
 			if (event.type === "data") {
 				if (DEBUG_TERMINAL && !firstStreamDataReceivedRef.current) {
 					firstStreamDataReceivedRef.current = true;
-					console.log(
+					logger.info(
 						`[Terminal] First stream data received: ${paneId}, ${event.data.length} bytes`,
 					);
 				}

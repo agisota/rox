@@ -6,6 +6,7 @@ import {
 } from "@rox/trpc/integration-secret";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 import { generateConnectUrl } from "../utils/generate-connect-url";
 import {
 	formatErrorForSlack,
@@ -51,7 +52,7 @@ export async function processSlackMention({
 	teamId,
 	eventId,
 }: ProcessMentionParams): Promise<void> {
-	console.log("[slack/process-mention] Processing mention:", {
+	logger.info("[slack/process-mention] Processing mention:", {
 		eventId,
 		teamId,
 		channel: event.channel,
@@ -71,7 +72,7 @@ export async function processSlackMention({
 	});
 
 	if (!connection) {
-		console.error(
+		logger.error(
 			"[slack/process-mention] No connection found for team:",
 			teamId,
 		);
@@ -83,13 +84,10 @@ export async function processSlackMention({
 		slackToken = decodeSecret(connection.accessToken);
 	} catch (error) {
 		if (isIntegrationSecretDecodeError(error)) {
-			console.error(
-				"[slack/process-mention] Stored Slack token is unreadable",
-				{
-					connectionId: connection.id,
-					teamId,
-				},
-			);
+			logger.error("[slack/process-mention] Stored Slack token is unreadable", {
+				connectionId: connection.id,
+				teamId,
+			});
 			return;
 		}
 		throw error;
@@ -161,7 +159,7 @@ export async function processSlackMention({
 			name: "eyes",
 		});
 	} catch (err) {
-		console.warn("[slack/process-mention] Failed to add reaction:", err);
+		logger.warn("[slack/process-mention] Failed to add reaction:", err);
 	}
 
 	const threadTs = event.thread_ts ?? event.ts;
@@ -176,7 +174,7 @@ export async function processSlackMention({
 		});
 		messageTs = initialMsg.ts;
 	} catch (err) {
-		console.error(
+		logger.error(
 			"[slack/process-mention] Failed to post initial message:",
 			err,
 		);
@@ -253,14 +251,14 @@ export async function processSlackMention({
 					text: formatSideEffectsMessage(result.actions),
 				});
 			} catch (err) {
-				console.error(
+				logger.error(
 					"[slack/process-mention] Failed to post side effects:",
 					err,
 				);
 			}
 		}
 	} catch (err) {
-		console.error("[slack/process-mention] Agent error:", err);
+		logger.error("[slack/process-mention] Agent error:", err);
 
 		const errorText =
 			err instanceof SlackImageAssetError

@@ -3,6 +3,7 @@ import { integrationConnections, tasks } from "@rox/db/schema";
 import { isIntegrationSecretDecodeError } from "@rox/trpc/integration-secret";
 import type { EntityMetadata, LinkSharedEvent } from "@slack/types";
 import { and, desc, eq, isNull } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 import { createSlackClient } from "../utils/slack-client";
 import {
 	createTaskWorkObject,
@@ -20,7 +21,7 @@ export async function processLinkShared({
 	teamId,
 	eventId,
 }: ProcessLinkSharedParams): Promise<void> {
-	console.log("[slack/process-link-shared] Processing links:", {
+	logger.info("[slack/process-link-shared] Processing links:", {
 		eventId,
 		teamId,
 		linkCount: event.links.length,
@@ -39,7 +40,7 @@ export async function processLinkShared({
 	});
 
 	if (!connection) {
-		console.error(
+		logger.error(
 			"[slack/process-link-shared] No connection found for team:",
 			teamId,
 		);
@@ -51,7 +52,7 @@ export async function processLinkShared({
 		slack = createSlackClient(connection.accessToken);
 	} catch (error) {
 		if (isIntegrationSecretDecodeError(error)) {
-			console.error(
+			logger.error(
 				"[slack/process-link-shared] Stored Slack token is unreadable",
 				{
 					connectionId: connection.id,
@@ -102,7 +103,7 @@ export async function processLinkShared({
 				},
 			});
 		} catch (err) {
-			console.error("[slack/process-link-shared] Failed to send unfurls:", err);
+			logger.error("[slack/process-link-shared] Failed to send unfurls:", err);
 		}
 	}
 }

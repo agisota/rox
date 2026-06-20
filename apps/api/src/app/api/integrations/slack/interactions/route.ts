@@ -2,6 +2,7 @@ import { db } from "@rox/db/client";
 import { usersSlackUsers } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 import { DEFAULT_SLACK_MODEL } from "../constants";
 import { processAppHomeOpened } from "../events/process-app-home-opened";
 import { verifySlackSignature } from "../verify-signature";
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
 	}
 
 	if (!verifySlackSignature({ body, signature, timestamp })) {
-		console.error("[slack/interactions] Signature verification failed");
+		logger.error("[slack/interactions] Signature verification failed");
 		return Response.json({ error: "Invalid signature" }, { status: 401 });
 	}
 
@@ -45,12 +46,12 @@ export async function POST(request: Request) {
 	try {
 		const parsed = JSON.parse(payloadRaw);
 		if (parsed === null || typeof parsed !== "object") {
-			console.error("[slack/interactions] Invalid JSON payload");
+			logger.error("[slack/interactions] Invalid JSON payload");
 			return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
 		}
 		payload = parsed as SlackInteractionPayload;
 	} catch {
-		console.error("[slack/interactions] Failed to parse JSON payload");
+		logger.error("[slack/interactions] Failed to parse JSON payload");
 		return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
 	}
 
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
 			typeof slackUserId !== "string" ||
 			slackUserId.length === 0
 		) {
-			console.error("[slack/interactions] Missing team or user ID");
+			logger.error("[slack/interactions] Missing team or user ID");
 			return new Response("ok", { status: 200 });
 		}
 
@@ -104,7 +105,7 @@ async function handleModelSelect({
 	});
 
 	if (!existing) {
-		console.warn(
+		logger.warn(
 			"[slack/interactions] Model select from unlinked user, ignoring:",
 			{ slackUserId, teamId },
 		);
@@ -161,7 +162,7 @@ async function handleDisconnectAccount({
 		teamId,
 		eventId: `disconnect-${Date.now()}`,
 	}).catch((err: unknown) => {
-		console.error("[slack/interactions] Failed to republish home tab:", err);
+		logger.error("[slack/interactions] Failed to republish home tab:", err);
 	});
 }
 

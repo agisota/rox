@@ -16,6 +16,7 @@ import {
 import { env } from "renderer/env.renderer";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	isItemVisible,
@@ -85,7 +86,7 @@ export function IntegrationsSettings({
 				});
 			setGithubInstallation(result);
 		} catch (err) {
-			console.error("[integrations] Failed to fetch GitHub installation:", err);
+			logger.error("[integrations] Failed to fetch GitHub installation:", err);
 		} finally {
 			setIsLoadingGithub(false);
 		}

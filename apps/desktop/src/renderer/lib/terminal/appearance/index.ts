@@ -3,6 +3,7 @@ import {
 	DEFAULT_SETTINGS_TERMINAL_FONT_SIZE,
 } from "@rox/local-db/schema";
 import type { ITheme } from "@xterm/xterm";
+import { logger } from "renderer/lib/logger";
 import { toXtermTheme } from "renderer/stores/theme/utils";
 import {
 	builtInThemes,
@@ -163,14 +164,14 @@ export function sanitizeTerminalFontFamily(
 
 	if (GENERIC_FONT_FAMILIES.has(primaryKey)) {
 		if (MONOSPACE_GENERIC_FAMILIES.has(primaryKey)) return cssValue;
-		console.warn(
+		logger.warn(
 			`[terminal] Font stack "${cssValue}" has no monospace primary family; falling back to default terminal font.`,
 		);
 		return DEFAULT_TERMINAL_FONT_FAMILY;
 	}
 
 	if (!isFontFamilyMonospace(primary)) {
-		console.warn(
+		logger.warn(
 			`[terminal] Font "${primary}" is not monospace; falling back to default terminal font.`,
 		);
 		return DEFAULT_TERMINAL_FONT_FAMILY;

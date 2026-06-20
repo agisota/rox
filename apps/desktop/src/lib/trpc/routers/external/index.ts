@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { clipboard, shell } from "electron";
 import { localDb } from "main/lib/local-db";
 import { externalUrlLogLabel, isSafeExternalUrl } from "main/lib/safe-url";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import { getWorkspace } from "../workspaces/utils/db-helpers";
@@ -94,7 +95,7 @@ async function openPathInApp(
 			} catch (error) {
 				lastError = error instanceof Error ? error : new Error(String(error));
 				if (candidates.length > 1) {
-					console.warn(
+					logger.warn(
 						`[external/openInApp] ${cmd.args[1]} not found, trying next candidate`,
 					);
 				}
@@ -114,7 +115,7 @@ export const createExternalRouter = () => {
 	return router({
 		openUrl: publicProcedure.input(z.string()).mutation(async ({ input }) => {
 			if (!isSafeExternalUrl(input)) {
-				console.warn(
+				logger.warn(
 					"[external/openUrl] Blocked unsafe URL scheme:",
 					externalUrlLogLabel(input),
 				);
@@ -128,7 +129,7 @@ export const createExternalRouter = () => {
 			} catch (error) {
 				const errorMessage =
 					error instanceof Error ? error.message : "Unknown error";
-				console.error(
+				logger.error(
 					"[external/openUrl] Failed to open URL:",
 					externalUrlLogLabel(input),
 					error,
@@ -180,7 +181,7 @@ export const createExternalRouter = () => {
 				try {
 					ensureGlobalDefaultEditor(input.app);
 				} catch (err) {
-					console.warn(
+					logger.warn(
 						"[external/openInApp] Failed to persist global default editor:",
 						err,
 					);

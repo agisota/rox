@@ -3,6 +3,7 @@ import { toast } from "@rox/ui/sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { XIcon } from "lucide-react";
 import { LinearIcon } from "renderer/components/icons/LinearIcon";
+import { logger } from "renderer/lib/logger";
 
 interface LinkedIssuePillProps {
 	slug: string;
@@ -25,7 +26,7 @@ export function LinkedIssuePill({
 		// Prefer internal navigation over external URL for better UX
 		if (taskId?.trim()) {
 			navigate({ to: "/tasks/$taskId", params: { taskId } }).catch((error) => {
-				console.error("Failed to navigate to task:", error);
+				logger.error("Failed to navigate to task:", error);
 				toast.error("Не удалось открыть задачу");
 				// Fallback to external URL if available
 				if (url) {

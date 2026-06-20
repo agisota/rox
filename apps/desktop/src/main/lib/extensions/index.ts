@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { app, session } from "electron";
 import { env } from "main/env.main";
+import { logger } from "main/lib/logger";
 
 const APP_PARTITION = "persist:rox";
 const REACT_DEVTOOLS_EXTENSION_ID = "fmkadmapgofadopljbjfkapdkoienihi";
@@ -119,7 +120,7 @@ function resolveReactDevToolsPath(): string | null {
 	if (overridePath) {
 		const resolvedOverridePath = resolveExtensionVersionPath(overridePath);
 		if (resolvedOverridePath) return resolvedOverridePath;
-		console.warn(
+		logger.warn(
 			`[main] ELECTRON_REACT_DEVTOOLS_PATH does not exist: ${overridePath}`,
 		);
 	}
@@ -172,7 +173,7 @@ export async function loadReactDevToolsExtension(): Promise<void> {
 
 	const extensionPath = resolveReactDevToolsPath();
 	if (!extensionPath) {
-		console.warn(
+		logger.warn(
 			"[main] React DevTools extension not found. Install it in Chrome, or set ELECTRON_REACT_DEVTOOLS_PATH.",
 		);
 		return;
@@ -190,13 +191,13 @@ export async function loadReactDevToolsExtension(): Promise<void> {
 			const extension = await ses.extensions.loadExtension(extensionPath, {
 				allowFileAccess: true,
 			});
-			console.log(
+			logger.info(
 				`[main] React DevTools loaded in ${label} session (v${extension.version})`,
 			);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			if (message.includes("already loaded")) continue;
-			console.error(
+			logger.error(
 				`[main] Failed to load React DevTools in ${label} session:`,
 				error,
 			);
@@ -207,7 +208,7 @@ export async function loadReactDevToolsExtension(): Promise<void> {
 export async function loadWebviewBrowserExtension(): Promise<void> {
 	const extensionPath = resolveWebviewExtensionPath();
 	if (!extensionPath) {
-		console.warn(
+		logger.warn(
 			"[main] Browser extension not found; skipping webview extension load",
 		);
 		return;
@@ -217,10 +218,10 @@ export async function loadWebviewBrowserExtension(): Promise<void> {
 		await session
 			.fromPartition(APP_PARTITION)
 			.extensions.loadExtension(extensionPath);
-		console.log("[main] Browser extension loaded");
+		logger.info("[main] Browser extension loaded");
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		if (message.includes("already loaded")) return;
-		console.error("[main] Failed to load browser extension:", error);
+		logger.error("[main] Failed to load browser extension:", error);
 	}
 }

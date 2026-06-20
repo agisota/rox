@@ -4,6 +4,7 @@ import { FEATURE_FLAGS } from "@rox/shared/constants";
 import { WebClient } from "@slack/web-api";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 import {
 	mcpToolToAnthropicTool,
 	runMcpAgentLoop,
@@ -45,7 +46,7 @@ export async function resolveUserMentions({
 					userMap.set(id, name);
 				}
 			} catch (error) {
-				console.warn(`[slack-agent] Failed to resolve user ${id}:`, error);
+				logger.warn(`[slack-agent] Failed to resolve user ${id}:`, error);
 			}
 		}),
 	);
@@ -103,7 +104,7 @@ async function fetchThreadContext({
 
 		return `--- Thread Context (${messages.length} previous messages) ---\n${formatted}\n--- End Thread Context ---`;
 	} catch (error) {
-		console.warn("[slack-agent] Failed to fetch thread context:", error);
+		logger.warn("[slack-agent] Failed to fetch thread context:", error);
 		return "";
 	}
 }
@@ -541,7 +542,7 @@ export async function runSlackAgent(
 			await posthog.getFeatureFlag(FEATURE_FLAGS.SLACK_MCP_V2, params.userId),
 		);
 	} catch (error) {
-		console.warn("[slack-agent] Failed to load mcp-v2 flag:", error);
+		logger.warn("[slack-agent] Failed to load mcp-v2 flag:", error);
 	}
 
 	let roxMcp: Client | null = null;

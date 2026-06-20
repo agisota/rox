@@ -1,5 +1,3 @@
-import type { AgentLaunchRequest } from "@rox/shared/agent-launch";
-import { buildPromptAgentLaunchRequest } from "@rox/shared/agent-launch-request";
 import {
 	type AgentDefinitionId,
 	DEFAULT_TERMINAL_AGENT_TYPE,
@@ -30,9 +28,7 @@ import {
 	CommandSeparator,
 } from "@rox/ui/command";
 import { Input } from "@rox/ui/input";
-import { isEnterSubmit } from "@rox/ui/lib/keyboard";
 import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
-import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
@@ -43,7 +39,7 @@ import {
 	PaperclipIcon,
 	PlusIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
 	GoArrowUpRight,
 	GoGitBranch,
@@ -58,23 +54,17 @@ import { useAgentLaunchPreferences } from "renderer/hooks/useAgentLaunchPreferen
 import { PLATFORM } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { formatRelativeTime } from "renderer/lib/formatRelativeTime";
-import { resolveEffectiveWorkspaceBaseBranch } from "renderer/lib/workspaceBaseBranch";
-import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { ProjectThumbnail } from "renderer/screens/main/components/WorkspaceSidebar/ProjectSection/ProjectThumbnail";
-import {
-	useClearPendingWorkspace,
-	useNewWorkspaceModalOpen,
-	useSetPendingWorkspace,
-	useSetPendingWorkspaceStatus,
-} from "renderer/stores/new-workspace-modal";
+import { useNewWorkspaceModalOpen } from "renderer/stores/new-workspace-modal";
 import type { LinkedPR } from "../../NewWorkspaceModalDraftContext";
 import { useNewWorkspaceModalDraft } from "../../NewWorkspaceModalDraftContext";
 import { GitHubIssueLinkCommand } from "./components/GitHubIssueLinkCommand";
 import { LinkedGitHubIssuePill } from "./components/LinkedGitHubIssuePill";
 import { LinkedPRPill } from "./components/LinkedPRPill";
 import { PRLinkCommand } from "./components/PRLinkCommand";
+import { useBranchResolution } from "./hooks/useBranchResolution";
+import { useWorkspaceCreate } from "./hooks/useWorkspaceCreate";
 import type { OpenableWorktreeAction } from "./utils/resolveOpenableWorktrees";
-import { resolveOpenableWorktrees } from "./utils/resolveOpenableWorktrees";
 
 type WorkspaceCreateAgent = AgentDefinitionId | "none";
 
@@ -82,12 +72,6 @@ const AGENT_STORAGE_KEY = "lastSelectedWorkspaceCreateAgent";
 
 const PILL_BUTTON_CLASS =
 	"!h-[22px] min-h-0 rounded-md border-[0.5px] border-border bg-foreground/[0.04] shadow-none text-[11px]";
-
-type ConvertedFile = {
-	data: string;
-	mediaType: string;
-	filename?: string;
-};
 
 interface ProjectOption {
 	id: string;
@@ -533,7 +517,6 @@ function PromptGroupInner({
 	const navigate = useNavigate();
 	const modKey = PLATFORM === "mac" ? "⌘" : "Ctrl";
 	const isNewWorkspaceModalOpen = useNewWorkspaceModalOpen();
-	const utils = electronTrpc.useUtils();
 	const {
 		closeAndResetDraft,
 		closeModal,
@@ -546,17 +529,11 @@ function PromptGroupInner({
 		updateDraft,
 	} = useNewWorkspaceModalDraft();
 	const attachments = useProviderAttachments();
-	const clearPendingWorkspace = useClearPendingWorkspace();
-	const setPendingWorkspace = useSetPendingWorkspace();
-	const setPendingWorkspaceStatus = useSetPendingWorkspaceStatus();
 	const {
 		compareBaseBranch,
 		prompt,
-		runSetupScript,
 		workspaceName,
-		workspaceNameEdited,
 		branchName,
-		branchNameEdited,
 		linkedIssues,
 		linkedPR,
 	} = draft;
@@ -585,551 +562,42 @@ function PromptGroupInner({
 	const [gitHubIssueLinkOpen, setGitHubIssueLinkOpen] = useState(false);
 	const [prLinkOpen, setPRLinkOpen] = useState(false);
 	const plusMenuRef = useRef<HTMLDivElement>(null);
-	const submitStartedRef = useRef(false);
-	const trimmedPrompt = prompt.trim();
-	const firstIssueSlug = linkedIssues[0]?.slug ?? null;
 
-	// AI branch name generation (on submit only)
-	const generateBranchNameMutation =
-		electronTrpc.workspaces.generateBranchName.useMutation();
-	useEffect(() => {
-		if (isNewWorkspaceModalOpen) {
-			submitStartedRef.current = false;
-		}
-	}, [isNewWorkspaceModalOpen]);
-
-	const { data: project } = electronTrpc.projects.get.useQuery(
-		{ id: projectId ?? "" },
-		{ enabled: !!projectId },
-	);
-	const {
-		data: localBranchData,
-		isLoading: isLocalBranchesLoading,
-		isError: isBranchesError,
-	} = electronTrpc.projects.getBranchesLocal.useQuery(
-		{ projectId: projectId ?? "" },
-		{ enabled: !!projectId },
-	);
-	const { data: remoteBranchData } = electronTrpc.projects.getBranches.useQuery(
-		{ projectId: projectId ?? "" },
-		{ enabled: !!projectId },
-	);
-	// Show local data immediately (fast, no network), upgrade to remote when available
-	const branchData = remoteBranchData ?? localBranchData;
-	// Only show loading while waiting for the fast local query
-	const isBranchesLoading = isLocalBranchesLoading && !branchData;
-
-	const { data: externalWorktrees = [] } =
-		electronTrpc.workspaces.getExternalWorktrees.useQuery(
-			{ projectId: projectId ?? "" },
-			{ enabled: !!projectId },
-		);
-
-	const { data: trackedWorktrees = [] } =
-		electronTrpc.workspaces.getWorktreesByProject.useQuery(
-			{ projectId: projectId ?? "" },
-			{ enabled: !!projectId },
-		);
-
-	const worktreeBranches = useMemo(() => {
-		const set = new Set<string>();
-		for (const wt of externalWorktrees) set.add(wt.branch);
-		for (const wt of trackedWorktrees) set.add(wt.branch);
-		return set;
-	}, [externalWorktrees, trackedWorktrees]);
-
-	// Fetch active workspaces for this project
-	const { data: activeWorkspaces = [] } =
-		electronTrpc.workspaces.getAll.useQuery();
-
-	const activeWorkspacesByBranch = useMemo(() => {
-		const map = new Map<string, string>(); // branch → workspaceId
-		for (const ws of activeWorkspaces) {
-			if (ws.projectId === projectId && !ws.deletingAt) {
-				map.set(ws.branch, ws.id);
-			}
-		}
-		return map;
-	}, [activeWorkspaces, projectId]);
-
-	// Resolve openable worktrees (no active workspace)
-	const openableWorktrees = useMemo(
-		() => resolveOpenableWorktrees(trackedWorktrees, externalWorktrees),
-		[trackedWorktrees, externalWorktrees],
-	);
-
-	// Map external worktree paths for badge display
-	const externalWorktreeBranches = useMemo(() => {
-		const set = new Set<string>();
-		for (const wt of externalWorktrees) {
-			set.add(wt.branch);
-		}
-		return set;
-	}, [externalWorktrees]);
-
-	const effectiveCompareBaseBranch = resolveEffectiveWorkspaceBaseBranch({
-		explicitBaseBranch: compareBaseBranch,
-		workspaceBaseBranch: project?.workspaceBaseBranch,
-		defaultBranch: branchData?.defaultBranch,
-		branches: branchData?.branches,
+	const { handleCreate, handlePromptSubmit } = useWorkspaceCreate({
+		projectId,
+		isNewWorkspaceModalOpen,
+		selectedAgent,
+		agentConfigsById,
+		draft,
+		closeAndResetDraft,
+		createWorkspace,
+		createFromPr,
+		runAsyncAction,
 	});
 
-	const previousProjectIdRef = useRef(projectId);
-
-	useEffect(() => {
-		if (previousProjectIdRef.current === projectId) {
-			return;
-		}
-		previousProjectIdRef.current = projectId;
-		updateDraft({ compareBaseBranch: null });
-	}, [projectId, updateDraft]);
-
-	const buildLaunchRequest = useCallback(
-		(prompt: string, files?: ConvertedFile[]): AgentLaunchRequest | null => {
-			return buildPromptAgentLaunchRequest({
-				workspaceId: "pending-workspace",
-				source: "new-workspace",
-				selectedAgent,
-				prompt,
-				initialFiles: files,
-				taskSlug: firstIssueSlug || undefined,
-				configsById: agentConfigsById,
-			});
-		},
-		[agentConfigsById, firstIssueSlug, selectedAgent],
-	);
-
-	const convertBlobUrlToDataUrl = useCallback(
-		async (url: string): Promise<string> => {
-			const response = await fetch(url);
-			if (!response.ok) {
-				throw new Error(`Failed to fetch attachment: ${response.statusText}`);
-			}
-			const blob = await response.blob();
-			return new Promise<string>((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onloadend = () => resolve(reader.result as string);
-				reader.onerror = () =>
-					reject(new Error("Failed to read attachment data"));
-				reader.onabort = () => reject(new Error("Attachment read was aborted"));
-				reader.readAsDataURL(blob);
-			});
-		},
-		[],
-	);
-
-	const handleCreate = useCallback(
-		async (preConvertedFiles?: ConvertedFile[]) => {
-			if (!projectId) {
-				toast.error("Сначала выберите проект");
-				return;
-			}
-
-			if (submitStartedRef.current) {
-				return;
-			}
-			submitStartedRef.current = true;
-
-			const displayName =
-				workspaceNameEdited && workspaceName.trim()
-					? workspaceName.trim()
-					: trimmedPrompt || "New workspace";
-			const willGenerateAIName =
-				!branchNameEdited && !!trimmedPrompt && !linkedPR;
-			const pendingWorkspaceId = crypto.randomUUID();
-			const detachedFiles = preConvertedFiles ? [] : attachments.takeFiles();
-
-			setPendingWorkspace({
-				id: pendingWorkspaceId,
-				projectId,
-				name: displayName,
-				status: willGenerateAIName ? "generating-branch" : "preparing",
-			});
-			closeAndResetDraft();
-
-			try {
-				let aiBranchName: string | null = null;
-				if (willGenerateAIName) {
-					let timeoutId: NodeJS.Timeout | null = null;
-					try {
-						const AI_GENERATION_TIMEOUT_MS = 30000;
-						const timeoutPromise = new Promise<never>((_, reject) => {
-							timeoutId = setTimeout(
-								() => reject(new Error("AI generation timeout")),
-								AI_GENERATION_TIMEOUT_MS,
-							);
-						});
-
-						const result = await Promise.race([
-							generateBranchNameMutation.mutateAsync({
-								prompt: trimmedPrompt,
-								projectId,
-							}),
-							timeoutPromise,
-						]);
-
-						if (timeoutId) clearTimeout(timeoutId);
-						aiBranchName = result.branchName;
-					} catch (error) {
-						if (timeoutId) clearTimeout(timeoutId);
-
-						const errorMessage =
-							error instanceof Error ? error.message : String(error);
-						if (errorMessage.includes("timeout")) {
-							console.warn("[PromptGroup] AI generation timeout");
-							toast.info(
-								"Используется случайное имя ветки (истекло время генерации ИИ)",
-							);
-						} else if (
-							errorMessage.toLowerCase().includes("auth") ||
-							errorMessage.includes("401") ||
-							errorMessage.includes("403")
-						) {
-							console.error("[PromptGroup] AI auth error:", error);
-							toast.error(
-								"Не удалось пройти аутентификацию ИИ. Проверьте настройки ИИ.",
-							);
-							clearPendingWorkspace(pendingWorkspaceId);
-							return;
-						} else {
-							console.warn("[PromptGroup] AI generation failed:", error);
-							toast.info(
-								"Используется случайное имя ветки (генерация ИИ недоступна)",
-							);
-						}
-					} finally {
-						setPendingWorkspaceStatus(pendingWorkspaceId, "preparing");
-					}
-				}
-
-				let convertedFiles: ConvertedFile[] = preConvertedFiles ?? [];
-				if (!preConvertedFiles && detachedFiles.length > 0) {
-					try {
-						convertedFiles = await Promise.all(
-							detachedFiles.map(async (file) => ({
-								data: await convertBlobUrlToDataUrl(file.url),
-								mediaType: file.mediaType,
-								filename: file.filename,
-							})),
-						);
-					} catch (err) {
-						clearPendingWorkspace(pendingWorkspaceId);
-						toast.error(
-							err instanceof Error
-								? err.message
-								: "Не удалось обработать вложения",
-						);
-						return;
-					}
-				}
-
-				// Fetch and attach GitHub issue content
-				const githubIssues = linkedIssues.filter(
-					(issue): issue is typeof issue & { number: number } =>
-						issue.source === "github" && typeof issue.number === "number",
-				);
-				if (githubIssues.length > 0 && projectId) {
-					try {
-						// Helper to add timeout to promises
-						const fetchWithTimeout = <T,>(
-							promise: Promise<T>,
-							timeoutMs: number,
-						): Promise<T> => {
-							return Promise.race([
-								promise,
-								new Promise<T>((_, reject) =>
-									setTimeout(
-										() => reject(new Error("Request timeout")),
-										timeoutMs,
-									),
-								),
-							]);
-						};
-
-						const issueContents = await Promise.all(
-							githubIssues.map(async (issue) => {
-								try {
-									const content = await fetchWithTimeout(
-										utils.client.projects.getIssueContent.query({
-											projectId,
-											issueNumber: issue.number,
-										}),
-										10000, // 10 second timeout per issue
-									);
-
-									// Sanitize user-generated content to prevent injection
-									const sanitizeText = (str: string) =>
-										str.replace(/[&<>"']/g, (char) => {
-											const entities: Record<string, string> = {
-												"&": "&amp;",
-												"<": "&lt;",
-												">": "&gt;",
-												'"': "&quot;",
-												"'": "&#39;",
-											};
-											return entities[char] || char;
-										});
-
-									const sanitizeUrl = (url: string) => {
-										try {
-											const parsed = new URL(url);
-											// Only allow http/https protocols
-											if (!["http:", "https:"].includes(parsed.protocol)) {
-												return "#invalid-url";
-											}
-											return url;
-										} catch {
-											return "#invalid-url";
-										}
-									};
-
-									// Limit body size to prevent memory issues
-									const MAX_BODY_LENGTH = 50000; // 50KB
-									const truncatedBody =
-										content.body.length > MAX_BODY_LENGTH
-											? `${content.body.slice(0, MAX_BODY_LENGTH)}\n\n[... content truncated due to length ...]`
-											: content.body;
-
-									const markdown = `# GitHub Issue #${content.number}: ${sanitizeText(content.title)}
-
-**URL:** ${sanitizeUrl(content.url)}
-**State:** ${content.state}
-**Author:** ${sanitizeText(content.author || "Unknown")}
-**Created:** ${content.createdAt ? new Date(content.createdAt).toLocaleString() : "Unknown"}
-**Updated:** ${content.updatedAt ? new Date(content.updatedAt).toLocaleString() : "Unknown"}
-
----
-
-${sanitizeText(truncatedBody)}`;
-
-									// Convert markdown to base64 data URL
-									const base64 = btoa(
-										encodeURIComponent(markdown).replace(
-											/%([0-9A-F]{2})/g,
-											(_, p1) => String.fromCharCode(Number.parseInt(p1, 16)),
-										),
-									);
-
-									return {
-										data: `data:text/markdown;base64,${base64}`,
-										mediaType: "text/markdown",
-										filename: `github-issue-${content.number}.md`,
-									};
-								} catch (err) {
-									console.warn(
-										`Failed to fetch GitHub issue #${issue.number}:`,
-										err,
-									);
-									return null;
-								}
-							}),
-						);
-
-						// Add successfully fetched issues to convertedFiles
-						const validIssueFiles = issueContents.filter(
-							(file) => file !== null,
-						) as ConvertedFile[];
-						convertedFiles = [...convertedFiles, ...validIssueFiles];
-					} catch (err) {
-						console.warn("Failed to fetch GitHub issue contents:", err);
-						// Don't block workspace creation if issue fetching fails
-					}
-				}
-
-				let launchRequest: AgentLaunchRequest | null = null;
-				try {
-					launchRequest = buildLaunchRequest(
-						trimmedPrompt,
-						convertedFiles.length > 0 ? convertedFiles : undefined,
-					);
-				} catch (error) {
-					clearPendingWorkspace(pendingWorkspaceId);
-					toast.error(
-						error instanceof Error
-							? error.message
-							: "Не удалось подготовить запуск агента",
-					);
-					return;
-				}
-
-				setPendingWorkspaceStatus(pendingWorkspaceId, "creating");
-
-				if (linkedPR) {
-					void runAsyncAction(
-						createFromPr.mutateAsyncWithSetup(
-							{ projectId, prUrl: linkedPR.url },
-							launchRequest ?? undefined,
-						),
-						{
-							loading: `Creating workspace from PR #${linkedPR.prNumber}...`,
-							success: "Workspace created from PR",
-							error: (err) =>
-								err instanceof Error
-									? err.message
-									: "Failed to create workspace from PR",
-						},
-						{ closeAndReset: false },
-					).finally(() => {
-						clearPendingWorkspace(pendingWorkspaceId);
-					});
-					return;
-				}
-
-				void runAsyncAction(
-					createWorkspace.mutateAsyncWithPendingSetup(
-						{
-							projectId,
-							name:
-								workspaceNameEdited && workspaceName.trim()
-									? workspaceName.trim()
-									: undefined,
-							prompt: trimmedPrompt || undefined,
-							branchName:
-								(branchNameEdited && branchName.trim()
-									? sanitizeBranchNameWithMaxLength(
-											branchName.trim(),
-											undefined,
-											{
-												preserveCase: true,
-											},
-										)
-									: aiBranchName) || undefined,
-							compareBaseBranch: compareBaseBranch || undefined,
-						},
-						{
-							agentLaunchRequest: launchRequest ?? undefined,
-							resolveInitialCommands: runSetupScript
-								? (commands) => commands
-								: () => null,
-						},
-					),
-					{
-						loading: "Creating workspace...",
-						success: "Workspace created",
-						error: (err) =>
-							err instanceof Error
-								? err.message
-								: "Не удалось создать рабочее пространство",
-					},
-					{ closeAndReset: false },
-				).finally(() => {
-					clearPendingWorkspace(pendingWorkspaceId);
-				});
-			} finally {
-				for (const file of detachedFiles) {
-					if (file.url?.startsWith("blob:")) {
-						URL.revokeObjectURL(file.url);
-					}
-				}
-			}
-		},
-		[
-			attachments,
-			compareBaseBranch,
-			branchName,
-			branchNameEdited,
-			buildLaunchRequest,
-			closeAndResetDraft,
-			clearPendingWorkspace,
-			convertBlobUrlToDataUrl,
-			createFromPr,
-			createWorkspace,
-			generateBranchNameMutation,
-			linkedIssues,
-			linkedPR,
-			projectId,
-			runAsyncAction,
-			runSetupScript,
-			setPendingWorkspace,
-			setPendingWorkspaceStatus,
-			trimmedPrompt,
-			utils,
-			workspaceName,
-			workspaceNameEdited,
-		],
-	);
-
-	const handlePromptSubmit = useCallback(
-		(message: {
-			files: Array<{ url: string; mediaType: string; filename?: string }>;
-		}) => {
-			const converted: ConvertedFile[] = message.files
-				.filter((f) => f.url)
-				.map((f) => ({
-					data: f.url,
-					mediaType: f.mediaType,
-					filename: f.filename,
-				}));
-			void handleCreate(converted.length > 0 ? converted : undefined);
-		},
-		[handleCreate],
-	);
-
-	useEffect(() => {
-		if (!isNewWorkspaceModalOpen) return;
-		const handler = (e: KeyboardEvent) => {
-			if (!isEnterSubmit(e, { requireMod: true })) return;
-			e.preventDefault();
-			void handleCreate();
-		};
-		window.addEventListener("keydown", handler);
-		return () => window.removeEventListener("keydown", handler);
-	}, [isNewWorkspaceModalOpen, handleCreate]);
-
-	const handleCompareBaseBranchSelect = (selectedBaseBranch: string) => {
-		updateDraft({ compareBaseBranch: selectedBaseBranch });
-	};
-
-	const handleOpenWorktree = useCallback(
-		(action: OpenableWorktreeAction) => {
-			if (!projectId) return;
-
-			if (action.type === "tracked") {
-				void runAsyncAction(
-					openTrackedWorktree.mutateAsync({
-						worktreeId: action.worktreeId,
-					}),
-					{
-						loading: "Opening worktree...",
-						success: "Worktree opened",
-						error: (err) =>
-							err instanceof Error
-								? err.message
-								: "Не удалось открыть worktree",
-					},
-				);
-			} else {
-				void runAsyncAction(
-					openExternalWorktree.mutateAsync({
-						projectId,
-						worktreePath: action.worktreePath,
-					}),
-					{
-						loading: "Opening worktree...",
-						success: "Worktree opened",
-						error: (err) =>
-							err instanceof Error
-								? err.message
-								: "Не удалось открыть worktree",
-					},
-				);
-			}
-		},
-		[
-			projectId,
-			runAsyncAction,
-			openExternalWorktree.mutateAsync,
-			openTrackedWorktree.mutateAsync,
-		],
-	);
-
-	const handleOpenActiveWorkspace = useCallback(
-		(workspaceId: string) => {
-			closeModal();
-			void navigateToWorkspace(workspaceId, navigate);
-		},
-		[closeModal, navigate],
-	);
+	const {
+		project,
+		branchData,
+		isBranchesLoading,
+		isBranchesError,
+		worktreeBranches,
+		activeWorkspacesByBranch,
+		openableWorktrees,
+		externalWorktreeBranches,
+		effectiveCompareBaseBranch,
+		handleCompareBaseBranchSelect,
+		handleOpenWorktree,
+		handleOpenActiveWorkspace,
+	} = useBranchResolution({
+		projectId,
+		compareBaseBranch,
+		closeModal,
+		navigate,
+		openTrackedWorktree,
+		openExternalWorktree,
+		runAsyncAction,
+		updateDraft,
+	});
 
 	const addLinkedGitHubIssue = (
 		issueNumber: number,

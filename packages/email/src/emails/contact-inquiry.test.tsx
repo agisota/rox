@@ -17,7 +17,8 @@ describe("ContactInquiryEmail", () => {
 			/>,
 		);
 
-		expect(html).toContain("New Contact Message");
+		expect(html).toContain("Новое сообщение из формы контактов");
+		expect(html).not.toContain("New Contact Message");
 		expect(html).toContain("Ada Lovelace");
 		expect(html).toContain("ada@example.com");
 		expect(html).toContain("Billing");

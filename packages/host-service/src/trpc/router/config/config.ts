@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { projects } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import {
 	getProjectConfigPath,
 	hasConfiguredScripts,
@@ -70,7 +71,7 @@ export const configRouter = router({
 					exists: true,
 				};
 			} catch (error) {
-				console.error(
+				logger.error(
 					`[config.getConfigContent] failed to read ${configPath}: ${error instanceof Error ? error.message : String(error)}`,
 				);
 				return { content: null as string | null, exists: false };

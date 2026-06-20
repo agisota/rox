@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useCreateOrAttachWithTheme } from "renderer/hooks/useCreateOrAttachWithTheme";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type {
 	TerminalCancelCreateOrAttachMutate,
@@ -60,12 +61,12 @@ export function useTerminalConnection({
 	});
 	const resizeRef = useRef<TerminalResizeMutate>((input) => {
 		electronTrpcClient.terminal.resize.mutate(input).catch((error) => {
-			console.warn("[Terminal] Failed to resize terminal:", error);
+			logger.warn("[Terminal] Failed to resize terminal:", error);
 		});
 	});
 	const detachRef = useRef<TerminalDetachMutate>((input) => {
 		electronTrpcClient.terminal.detach.mutate(input).catch((error) => {
-			console.warn("[Terminal] Failed to detach terminal:", error);
+			logger.warn("[Terminal] Failed to detach terminal:", error);
 		});
 	});
 	const cancelCreateOrAttachRef = useRef<TerminalCancelCreateOrAttachMutate>(
@@ -73,13 +74,13 @@ export function useTerminalConnection({
 			electronTrpcClient.terminal.cancelCreateOrAttach
 				.mutate(input)
 				.catch((error) => {
-					console.warn("[Terminal] Failed to cancel create/attach:", error);
+					logger.warn("[Terminal] Failed to cancel create/attach:", error);
 				});
 		},
 	);
 	const clearScrollbackRef = useRef<TerminalClearScrollbackMutate>((input) => {
 		electronTrpcClient.terminal.clearScrollback.mutate(input).catch((error) => {
-			console.warn("[Terminal] Failed to clear scrollback:", error);
+			logger.warn("[Terminal] Failed to clear scrollback:", error);
 		});
 	});
 

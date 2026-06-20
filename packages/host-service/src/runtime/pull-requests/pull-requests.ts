@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { HostDb } from "../../db";
 import { projects, pullRequests, workspaces } from "../../db/schema";
 import type { GitWatcher } from "../../events/git-watcher";
+import { logger } from "../../lib/logger";
 import type { ExecGh } from "../../trpc/router/workspace-creation/utils/exec-gh";
 import type { GitFactory } from "../git";
 import {
@@ -405,7 +406,7 @@ export class PullRequestRuntimeManager {
 	}): Promise<string | null> {
 		const repo = await this.getProjectRepository(projectId);
 		if (!repo) {
-			console.warn(
+			logger.warn(
 				"[host-service:pull-request-runtime] linkWorkspaceToCheckoutPullRequest: skipping; project repo metadata unavailable",
 				{ projectId, workspaceId, prNumber: pullRequest.number },
 			);
@@ -558,7 +559,7 @@ export class PullRequestRuntimeManager {
 
 			return workspace.projectId;
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				"[host-service:pull-request-runtime] Failed to sync workspace branch",
 				{
 					workspaceId: workspace.id,
@@ -595,7 +596,7 @@ export class PullRequestRuntimeManager {
 
 		const refreshPromise = this.performProjectRefresh(projectId, options)
 			.catch((error) => {
-				console.warn(
+				logger.warn(
 					"[host-service:pull-request-runtime] Project refresh failed",
 					{
 						projectId,
@@ -889,7 +890,7 @@ export class PullRequestRuntimeManager {
 					head,
 				);
 			} catch (ghError) {
-				console.warn(
+				logger.warn(
 					"[host-service:pull-request-runtime] gh PR head lookup failed; falling back to Octokit",
 					{
 						owner: repo.owner,
@@ -954,7 +955,7 @@ export class PullRequestRuntimeManager {
 					if (nodeKey === key) latestByKey.set(key, node);
 				} catch (error) {
 					failedKeys.add(key);
-					console.warn(
+					logger.warn(
 						"[host-service:pull-request-runtime] Failed to fetch PR by head",
 						{
 							projectId,
@@ -1015,7 +1016,7 @@ export class PullRequestRuntimeManager {
 						reviewDecisionByNumber.set(node.number, reviewDecision);
 						checksByNumber.set(node.number, checks);
 					} catch (error) {
-						console.warn(
+						logger.warn(
 							"[host-service:pull-request-runtime] Failed to fetch PR review/check state",
 							{
 								projectId,
@@ -1054,7 +1055,7 @@ export class PullRequestRuntimeManager {
 							),
 						);
 					} catch (error) {
-						console.warn(
+						logger.warn(
 							"[host-service:pull-request-runtime] Failed to fetch PR merge-queue state",
 							{
 								projectId,

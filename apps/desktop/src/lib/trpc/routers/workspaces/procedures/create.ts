@@ -3,6 +3,7 @@ import { and, eq, isNull, not } from "drizzle-orm";
 import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
 import { workspaceInitManager } from "main/lib/workspace-init-manager";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../../..";
 import { attemptWorkspaceAutoRenameFromPrompt } from "../utils/ai-name";
@@ -322,7 +323,7 @@ async function getKnownBranchesSafe(
 		const { local, remote } = await listBranches(repoPath);
 		return [...local, ...remote];
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			`[workspaces/create] Failed to list branches for ${repoPath}:`,
 			error,
 		);
@@ -522,7 +523,7 @@ export const createCreateProcedures = () => {
 					try {
 						branchPrefix = await resolveBranchPrefix(project, existingBranches);
 					} catch (error) {
-						console.warn(
+						logger.warn(
 							"[workspace/create] Failed to resolve branch prefix:",
 							error,
 						);
@@ -593,7 +594,7 @@ export const createCreateProcedures = () => {
 								});
 							autoRenameWarning = autoRenameResult.warning;
 						} catch (error) {
-							console.warn("[workspaces/create] Auto naming failed", {
+							logger.warn("[workspaces/create] Auto naming failed", {
 								workspaceId: workspace.id,
 								error: error instanceof Error ? error.message : String(error),
 							});

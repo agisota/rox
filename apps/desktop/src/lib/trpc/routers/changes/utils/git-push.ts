@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { logger } from "shared/logger";
 import type { RemoteWithRefs, SimpleGit } from "simple-git";
 import { getCurrentBranch } from "../../workspaces/utils/git";
 import { fetchGitHubPRStatus } from "../../workspaces/utils/github";
@@ -44,7 +45,7 @@ export async function hasUpstreamBranch(git: SimpleGit): Promise<boolean> {
 			!msg.includes("no upstream configured") &&
 			!msg.includes("@{upstream}")
 		) {
-			console.warn("[git] Unexpected error checking upstream branch:", msg);
+			logger.warn("[git] Unexpected error checking upstream branch:", msg);
 		}
 		return false;
 	}
@@ -79,7 +80,7 @@ export async function fetchCurrentBranch(
 						? fallbackError.message
 						: String(fallbackError);
 				if (!isUpstreamMissingError(fallbackMessage)) {
-					console.error(
+					logger.error(
 						`[git/fetch] failed fallback fetch for branch ${branch}:`,
 						fallbackError,
 					);
@@ -328,7 +329,7 @@ export async function getTrackingBranchStatus(
 		if (isUpstreamMissingError(message)) {
 			return { pushCount: 0, pullCount: 0, hasUpstream: false };
 		}
-		console.warn(
+		logger.warn(
 			"[git/tracking] Failed to resolve upstream tracking status:",
 			message,
 		);

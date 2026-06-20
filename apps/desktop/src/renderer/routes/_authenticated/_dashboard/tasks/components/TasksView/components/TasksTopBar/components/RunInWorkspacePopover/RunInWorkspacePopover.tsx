@@ -26,6 +26,7 @@ import { AgentSelect } from "renderer/components/AgentSelect";
 import { useAgentLaunchPreferences } from "renderer/hooks/useAgentLaunchPreferences";
 import { launchAgentSession } from "renderer/lib/agent-session-orchestrator";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useCreateWorkspace } from "renderer/react-query/workspaces";
 import { ProjectThumbnail } from "renderer/screens/main/components/WorkspaceSidebar/ProjectSection/ProjectThumbnail";
 import { deriveBranchName } from "../../../../../../$taskId/utils/deriveBranchName";
@@ -205,7 +206,7 @@ export function RunInWorkspacePopover({
 				});
 				successCount++;
 			} catch (err) {
-				console.error(
+				logger.error(
 					`[RunInWorkspacePopover] Failed to create workspace for task ${task.slug}:`,
 					err,
 				);

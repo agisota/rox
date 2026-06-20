@@ -5,6 +5,7 @@ import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuFileCode, LuLoader } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { CodeEditor } from "renderer/screens/main/components/WorkspaceView/components/CodeEditor";
 import { FileSaveConflictDialog } from "renderer/screens/main/components/WorkspaceView/components/FileSaveConflictDialog";
 import { useChangesStore } from "renderer/stores/changes";
@@ -157,7 +158,7 @@ export function FileDiffSection({
 					copyTimeoutRef.current = setTimeout(() => setIsCopied(false), 2000);
 				})
 				.catch((err) => {
-					console.error("[FileDiffSection/copyPath] Failed to copy:", err);
+					logger.error("[FileDiffSection/copyPath] Failed to copy:", err);
 				});
 		},
 		[file.path],

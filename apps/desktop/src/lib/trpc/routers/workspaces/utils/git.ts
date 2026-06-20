@@ -11,6 +11,7 @@ import {
 	sanitizeBranchNameWithMaxLength,
 } from "@rox/shared/workspace-launch";
 import friendlyWords from "friendly-words";
+import { logger } from "shared/logger";
 import type { StatusResult } from "simple-git";
 import { runWithPostCheckoutHookTolerance } from "../../utils/git-hook-tolerance";
 import { execGitWithShellPath, getSimpleGitWithShellPath } from "./git-client";
@@ -57,7 +58,7 @@ export function getWorktreeCreatedAt(worktreePath: string): number {
 			return worktreeDirectoryCreatedAt;
 		}
 	} catch (error) {
-		console.warn("[git] Failed to read worktree created time", {
+		logger.warn("[git] Failed to read worktree created time", {
 			worktreePath,
 			error: error instanceof Error ? error.message : String(error),
 		});
@@ -445,7 +446,7 @@ export async function getGitAuthorName(
 		const name = await git.getConfig("user.name");
 		return name.value?.trim() || null;
 	} catch (error) {
-		console.warn("[git/getGitAuthorName] Failed to read git user.name:", error);
+		logger.warn("[git/getGitAuthorName] Failed to read git user.name:", error);
 		return null;
 	}
 }
@@ -476,7 +477,7 @@ export async function getGitHubUsername(
 		cachedGitHubUsername = { value, timestamp: Date.now() };
 		return value;
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[git/getGitHubUsername] Failed to get GitHub username:",
 			error instanceof Error ? error.message : String(error),
 		);
@@ -601,7 +602,7 @@ function mapWorktreeError(
 			lowerError.includes("unable to lock") ||
 			(lowerError.includes(".lock") && lowerError.includes("file exists"));
 		if (isLockError) {
-			console.error(
+			logger.error(
 				`Git lock file error during worktree creation: ${errorMessage}`,
 			);
 			throw new Error(
@@ -621,7 +622,7 @@ function mapWorktreeError(
 		throw new Error(opts.alreadyCheckedOutMessage);
 	}
 
-	console.error(`${opts.genericPrefix}: ${errorMessage}`);
+	logger.error(`${opts.genericPrefix}: ${errorMessage}`);
 	throw new Error(`${opts.genericPrefix}: ${errorMessage}`);
 }
 
@@ -660,7 +661,7 @@ export async function createWorktree(
 			{ timeout: 10_000 },
 		);
 
-		console.log(
+		logger.info(
 			`Created worktree at ${worktreePath} with branch ${branch} from ${startPoint}`,
 		);
 	} catch (error) {
@@ -731,7 +732,7 @@ export async function createWorktreeFromExistingBranch({
 			{ timeout: 10_000 },
 		);
 
-		console.log(
+		logger.info(
 			`Created worktree at ${worktreePath} using existing branch ${branch}`,
 		);
 	} catch (error) {
@@ -756,10 +757,10 @@ export async function deleteLocalBranch({
 		await execGitWithShellPath(["-C", mainRepoPath, "branch", "-D", branch], {
 			timeout: 10_000,
 		});
-		console.log(`[workspace/delete] Deleted local branch "${branch}"`);
+		logger.info(`[workspace/delete] Deleted local branch "${branch}"`);
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.error(
+		logger.error(
 			`[workspace/delete] Failed to delete local branch "${branch}": ${errorMessage}`,
 		);
 		throw new Error(
@@ -791,14 +792,14 @@ export async function removeWorktree(
 		});
 		child.unref();
 		child.on("error", (err) => {
-			console.error(
+			logger.error(
 				`[removeWorktree] Failed to spawn rm for ${tempPath}:`,
 				err.message,
 			);
 		});
 		child.on("exit", (code: number | null) => {
 			if (code !== 0) {
-				console.error(
+				logger.error(
 					`[removeWorktree] Background cleanup of ${tempPath} failed (exit ${code})`,
 				);
 			}
@@ -815,7 +816,7 @@ export async function removeWorktree(
 			return;
 		}
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.error(`Failed to remove worktree: ${errorMessage}`);
+		logger.error(`Failed to remove worktree: ${errorMessage}`);
 		throw new Error(`Failed to remove worktree: ${errorMessage}`);
 	}
 }
@@ -846,7 +847,7 @@ export async function worktreeExists(
 		const worktreePrefix = `worktree ${worktreePath}`;
 		return lines.some((line) => line.trim() === worktreePrefix);
 	} catch (error) {
-		console.error(`Failed to check worktree existence: ${error}`);
+		logger.error(`Failed to check worktree existence: ${error}`);
 		throw error;
 	}
 }
@@ -899,7 +900,7 @@ export async function listExternalWorktrees(
 
 		return result;
 	} catch (error) {
-		console.error(`Failed to list external worktrees: ${error}`);
+		logger.error(`Failed to list external worktrees: ${error}`);
 		throw error;
 	}
 }
@@ -941,7 +942,7 @@ export async function getBranchWorktreePath({
 
 		return null;
 	} catch (error) {
-		console.error(`Failed to check branch worktree: ${error}`);
+		logger.error(`Failed to check branch worktree: ${error}`);
 		throw error;
 	}
 }
@@ -1136,7 +1137,7 @@ export async function hasUnpushedCommits(
 				return false;
 			}
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				"[git/hasUnpushedCommits] Cherry-pick fallback failed; falling back to remote reachability check.",
 				{
 					worktreePath,
@@ -1985,7 +1986,7 @@ export async function createWorktreeFromPr({
 			if (!ghMsg.includes("is not a branch")) {
 				throw ghError;
 			}
-			console.log(
+			logger.info(
 				`[git] gh pr checkout failed with tracking error for PR #${prInfo.number}, falling back to FETCH_HEAD checkout`,
 			);
 			await execGitWithShellPath(
@@ -2008,7 +2009,7 @@ export async function createWorktreeFromPr({
 			{ timeout: 10_000 },
 		);
 
-		console.log(
+		logger.info(
 			`[git] Created worktree at ${worktreePath} for PR #${prInfo.number}`,
 		);
 	} catch (error) {

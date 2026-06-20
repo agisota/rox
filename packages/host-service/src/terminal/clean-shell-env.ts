@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import * as os from "node:os";
 import { signalProcessTreeAndGroups } from "@rox/pty-daemon/process-tree";
+import { logger } from "../lib/logger";
 import { resolveConfiguredShell } from "./user-shell.ts";
 
 const SHELL_ENV_TIMEOUT_MS = 8_000;
@@ -189,7 +190,7 @@ function spawnCleanShellEnv(): Promise<Record<string, string>> {
 			const stdout = Buffer.concat(stdoutBuffers).toString("utf8");
 			const stderr = Buffer.concat(stderrBuffers).toString("utf8").trim();
 			if (stderr) {
-				console.debug("[terminal-clean-shell-env] stderr:", stderr);
+				logger.debug("[terminal-clean-shell-env] stderr:", stderr);
 			}
 
 			if (code !== 0 && code !== null) {

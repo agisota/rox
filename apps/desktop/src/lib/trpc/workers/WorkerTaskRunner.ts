@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Worker } from "node:worker_threads";
+import { logger } from "shared/logger";
 import type {
 	SerializedWorkerError,
 	WorkerTaskRequestMessage,
@@ -454,7 +455,7 @@ export class WorkerTaskRunner {
 
 	private log(message: string): void {
 		if (!this.debug) return;
-		console.log(`[WorkerTaskRunner:${this.name}] ${message}`);
+		logger.info(`[WorkerTaskRunner:${this.name}] ${message}`);
 	}
 
 	private ensureWorkerCapacity(): void {

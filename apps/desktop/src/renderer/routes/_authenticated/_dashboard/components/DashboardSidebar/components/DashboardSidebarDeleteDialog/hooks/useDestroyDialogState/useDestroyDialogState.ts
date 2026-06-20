@@ -9,6 +9,7 @@ import {
 	useDestroyWorkspace,
 } from "renderer/hooks/host-service/useDestroyWorkspace";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences/useV2UserPreferences";
+import { logger } from "renderer/lib/logger";
 import { useNavigateAwayFromWorkspace } from "renderer/routes/_authenticated/_dashboard/components/DashboardSidebar/hooks/useNavigateAwayFromWorkspace";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { waitForWorkspaceDeleted } from "renderer/routes/_authenticated/providers/CollectionsProvider/workspaceSyncWaits";
@@ -132,7 +133,7 @@ export function useDestroyDialogState({
 				} catch (syncErr) {
 					keepDeleting = true;
 					onDeleted?.();
-					console.warn("[workspace-delete] delete synced slowly", {
+					logger.warn("[workspace-delete] delete synced slowly", {
 						workspaceId,
 						err: syncErr,
 					});

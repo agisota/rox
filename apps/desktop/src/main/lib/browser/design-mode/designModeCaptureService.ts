@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import {
 	base64ByteSize,
 	buildSelectorHints,
@@ -288,7 +289,7 @@ class DesignModeCaptureService extends EventEmitter {
 		};
 
 		this.store(capture);
-		console.log(
+		logger.info(
 			`[design-mode] capture ${captureId} pane=${paneId} html=${Buffer.byteLength(
 				outerHTML,
 			)}B css=${Object.keys(computed).length} shot=${screenshotBytes}B${

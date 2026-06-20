@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { projects, workspaces } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import { createUserSimpleGit } from "../../../runtime/git/simple-git";
 import { protectedProcedure, router } from "../../index";
 import { normalizeWorktreeBaseDir } from "../workspace-creation/shared/worktree-paths";
@@ -325,7 +326,7 @@ export const projectRouter = router({
 				} catch (err) {
 					const message = err instanceof Error ? err.message : String(err);
 					cloudErrors.push({ url: parsed.url, message });
-					console.warn(
+					logger.warn(
 						"[project.findByPath] cloud findByGitHubRemote failed for",
 						parsed.url,
 						err,
@@ -720,7 +721,7 @@ export const projectRouter = router({
 				} catch (err) {
 					// Non-fatal: the GitHub repo exists and is pushed; cloud linking
 					// can be retried later. Surface nothing destructive to the user.
-					console.warn("[project.createGitHubRepo] cloud link failed", {
+					logger.warn("[project.createGitHubRepo] cloud link failed", {
 						projectId: input.projectId,
 						err,
 					});
@@ -786,7 +787,7 @@ export const projectRouter = router({
 					const git = await ctx.git(localProject.repoPath);
 					await git.raw(["worktree", "remove", ws.worktreePath]);
 				} catch (err) {
-					console.warn("[project.remove] failed to remove worktree", {
+					logger.warn("[project.remove] failed to remove worktree", {
 						projectId: input.projectId,
 						worktreePath: ws.worktreePath,
 						err,
@@ -801,7 +802,7 @@ export const projectRouter = router({
 					.run();
 				ctx.db.delete(projects).where(eq(projects.id, input.projectId)).run();
 			} catch (err) {
-				console.warn("[project.remove] failed to delete local rows", {
+				logger.warn("[project.remove] failed to delete local rows", {
 					projectId: input.projectId,
 					err,
 				});

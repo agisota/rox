@@ -13,6 +13,7 @@ import { toast } from "@rox/ui/sonner";
 import { Textarea } from "@rox/ui/textarea";
 import { useState } from "react";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { logger } from "renderer/lib/logger";
 
 interface SubmitPromptDialogProps {
 	open: boolean;
@@ -51,7 +52,7 @@ export function SubmitPromptDialog({
 			toast.success("Промпт отправлен — спасибо!");
 			handleOpenChange(false);
 		} catch (error) {
-			console.error("[submit-prompt] failed", error);
+			logger.error("[submit-prompt] failed", error);
 			toast.error("Не удалось отправить промпт. Попробуйте ещё раз.");
 			setIsSubmitting(false);
 		}

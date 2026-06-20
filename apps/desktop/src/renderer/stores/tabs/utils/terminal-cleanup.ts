@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import { rejectTerminalSessionReady } from "../../../lib/terminal/session-readiness";
 import { electronTrpcClient } from "../../../lib/trpc-client";
 
@@ -10,6 +11,6 @@ export const killTerminalForPane = (paneId: string): void => {
 		new Error("Terminal pane was closed before the session became ready"),
 	);
 	electronTrpcClient.terminal.kill.mutate({ paneId }).catch((error) => {
-		console.warn(`Failed to kill terminal for pane ${paneId}:`, error);
+		logger.warn(`Failed to kill terminal for pane ${paneId}:`, error);
 	});
 };

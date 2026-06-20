@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import { env } from "shared/env.shared";
 import {
 	buildWrapperScript,
@@ -35,7 +36,7 @@ export function createCopilotHookScript(): void {
 	const scriptPath = getCopilotHookScriptPath();
 	const content = getCopilotHookScriptContent();
 	const changed = writeFileIfChanged(scriptPath, content, 0o755);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} Copilot hook script`,
 	);
 }

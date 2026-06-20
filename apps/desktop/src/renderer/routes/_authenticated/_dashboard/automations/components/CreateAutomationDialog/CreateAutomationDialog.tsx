@@ -16,6 +16,7 @@ import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useV2AgentChoices } from "renderer/hooks/useV2AgentChoices";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { logger } from "renderer/lib/logger";
 import { DevicePicker } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker";
 import { useWorkspaceHostOptions } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal/components/DashboardNewWorkspaceForm/components/DevicePicker/hooks/useWorkspaceHostOptions/useWorkspaceHostOptions";
 import { hideAll as hideAllTippy } from "tippy.js";
@@ -204,7 +205,7 @@ export function CreateAutomationDialog({
 			onCreated({ id: result.id, name: result.name });
 		},
 		onError: (error) => {
-			console.error("[CreateAutomation] create failed:", error);
+			logger.error("[CreateAutomation] create failed:", error);
 		},
 	});
 

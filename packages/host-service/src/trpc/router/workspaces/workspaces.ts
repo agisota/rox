@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { workspaces } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import {
 	asRemoteRef,
 	type ResolvedRef,
@@ -320,7 +321,7 @@ async function resolveNewBranchStartPoint(
 				"--no-tags",
 			]);
 		} catch (err) {
-			console.warn(
+			logger.warn(
 				`[workspaces.create] fetch ${startPoint.remoteShortName} failed:`,
 				err,
 			);
@@ -436,7 +437,7 @@ async function recordBaseBranchConfig(args: {
 			args.baseBranch,
 		])
 		.catch((err) => {
-			console.warn(
+			logger.warn(
 				`[workspaces.create] failed to record base branch ${args.baseBranch}:`,
 				err,
 			);
@@ -526,7 +527,7 @@ async function registerCloudAndLocal(args: {
 		await ctx.api.v2Workspace.delete
 			.mutate({ id: cloudRow.id })
 			.catch((cleanupErr) => {
-				console.warn("[workspaces.create] failed to rollback cloud workspace", {
+				logger.warn("[workspaces.create] failed to rollback cloud workspace", {
 					workspaceId: cloudRow.id,
 					err: cleanupErr,
 				});
@@ -595,7 +596,7 @@ export const workspacesRouter = router({
 			const aiNamesPromise: Promise<GeneratedWorkspaceNames | null> | null =
 				wantAi
 					? generateWorkspaceNamesFromPrompt(composerPrompt).catch((err) => {
-							console.warn("[workspaces.create] AI naming failed", err);
+							logger.warn("[workspaces.create] AI naming failed", err);
 							return null;
 						})
 					: null;
@@ -628,7 +629,7 @@ export const workspacesRouter = router({
 			await git
 				.raw(["worktree", "prune"])
 				.catch((err) =>
-					console.warn("[workspaces.create] worktree prune failed:", err),
+					logger.warn("[workspaces.create] worktree prune failed:", err),
 				);
 
 			let resolvedBranch: string;
@@ -673,7 +674,7 @@ export const workspacesRouter = router({
 							materialized: MaterializePrBranchResult,
 						) => {
 							if (materialized.warning) {
-								console.warn(`[workspaces.create] ${materialized.warning}`);
+								logger.warn(`[workspaces.create] ${materialized.warning}`);
 							}
 						};
 						const normalizeExistingPrBranch = async () => {
@@ -744,7 +745,7 @@ export const workspacesRouter = router({
 										worktreePath,
 									]);
 								} catch (err) {
-									console.warn(
+									logger.warn(
 										"[workspaces.create] failed to rollback PR worktree",
 										{ worktreePath, err },
 									);
@@ -781,7 +782,7 @@ export const workspacesRouter = router({
 											branch: resolvedBranch,
 											expectedHeadOid: prMetadata.headRefOid,
 										}).catch((cleanupErr) => {
-											console.warn(
+											logger.warn(
 												"[workspaces.create] failed to rollback PR branch",
 												{ branch: resolvedBranch, err: cleanupErr },
 											);
@@ -1001,10 +1002,10 @@ export const workspacesRouter = router({
 									ourWorktreePath,
 								]);
 							} catch (err) {
-								console.warn(
-									"[workspaces.create] failed to rollback worktree",
-									{ worktreePath: ourWorktreePath, err },
-								);
+								logger.warn("[workspaces.create] failed to rollback worktree", {
+									worktreePath: ourWorktreePath,
+									err,
+								});
 							}
 						};
 
@@ -1070,7 +1071,7 @@ export const workspacesRouter = router({
 										baseShortName,
 									])
 									.catch((err) => {
-										console.warn(
+										logger.warn(
 											`[workspaces.create] failed to record base branch ${baseShortName}:`,
 											err,
 										);
@@ -1117,7 +1118,7 @@ export const workspacesRouter = router({
 						});
 					})
 					.catch((err) => {
-						console.warn("[workspaces.create] late AI rename failed", err);
+						logger.warn("[workspaces.create] late AI rename failed", err);
 					});
 			}
 
@@ -1134,13 +1135,13 @@ export const workspacesRouter = router({
 						seedWorkspaceSkills({ ctx, workspaceId: workspaceRow.id }),
 					]);
 				if (warning) {
-					console.warn(`[workspaces.create] setup warning: ${warning}`);
+					logger.warn(`[workspaces.create] setup warning: ${warning}`);
 				}
 				if (mcpResult.warning) {
-					console.warn(`[workspaces.create] mcp warning: ${mcpResult.warning}`);
+					logger.warn(`[workspaces.create] mcp warning: ${mcpResult.warning}`);
 				}
 				if (skillsResult.warning) {
-					console.warn(
+					logger.warn(
 						`[workspaces.create] skills warning: ${skillsResult.warning}`,
 					);
 				}
@@ -1164,7 +1165,7 @@ export const workspacesRouter = router({
 			]);
 
 			if (commandResult?.warning) {
-				console.warn(
+				logger.warn(
 					`[workspaces.create] command warning: ${commandResult.warning}`,
 				);
 			}
@@ -1231,7 +1232,7 @@ export const workspacesRouter = router({
 				renameTitle: true,
 				renameBranch: true,
 			}).catch((err) => {
-				console.warn("[workspaces.aiRename] failed", err);
+				logger.warn("[workspaces.aiRename] failed", err);
 			});
 			return { success: true as const };
 		}),

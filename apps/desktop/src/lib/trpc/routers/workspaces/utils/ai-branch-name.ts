@@ -1,6 +1,7 @@
 import { generateTitleFromMessage } from "@rox/chat/server/desktop";
 import { getSmallModel } from "@rox/chat/server/shared";
 import { sanitizeBranchNameWithMaxLength } from "@rox/shared/workspace-launch";
+import { logger } from "shared/logger";
 
 const BRANCH_NAME_INSTRUCTIONS =
 	"Generate a concise git branch name (2-4 words, kebab-case, descriptive, 20 characters or less). Return ONLY the branch name, nothing else.";
@@ -72,7 +73,7 @@ export async function generateBranchNameFromPrompt(
 			tracingContext: { surface: "workspace-branch-name" },
 		});
 	} catch (error) {
-		console.warn("[generateBranchNameFromPrompt] generation failed:", error);
+		logger.warn("[generateBranchNameFromPrompt] generation failed:", error);
 		return null;
 	}
 

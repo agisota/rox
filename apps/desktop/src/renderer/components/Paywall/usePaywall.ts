@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import type { GatedFeature } from "./constants";
 
 /**
@@ -15,11 +16,11 @@ export function usePaywall() {
 			const result = callback();
 			if (result instanceof Promise) {
 				result.catch((error) => {
-					console.error(`[paywall] Callback error for ${feature}:`, error);
+					logger.error(`[paywall] Callback error for ${feature}:`, error);
 				});
 			}
 		} catch (error) {
-			console.error(`[paywall] Callback error for ${feature}:`, error);
+			logger.error(`[paywall] Callback error for ${feature}:`, error);
 		}
 	}
 

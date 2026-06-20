@@ -14,6 +14,7 @@ import {
 	HiOutlinePlus,
 } from "react-icons/hi2";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { logger } from "renderer/lib/logger";
 import { SecretRow } from "./components/SecretRow";
 
 interface Secret {
@@ -77,7 +78,7 @@ export function EnvironmentVariablesList({
 			});
 			setSecrets(result);
 		} catch (err) {
-			console.error("[secrets/fetch] Failed to fetch secrets:", err);
+			logger.error("[secrets/fetch] Failed to fetch secrets:", err);
 		} finally {
 			setIsLoading(false);
 		}

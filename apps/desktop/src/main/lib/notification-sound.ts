@@ -1,4 +1,5 @@
 import { settings } from "@rox/local-db";
+import { logger } from "main/lib/logger";
 import {
 	CUSTOM_RINGTONE_ID,
 	DEFAULT_RINGTONE_ID,
@@ -77,7 +78,7 @@ export function playNotificationSound(): void {
 				? Math.max(0, Math.min(100, raw))
 				: 100;
 	} catch (err) {
-		console.warn(
+		logger.warn(
 			"[notification-sound] Failed to read notification volume setting",
 			err,
 		);

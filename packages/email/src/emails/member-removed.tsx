@@ -13,28 +13,27 @@ export function MemberRemovedEmail({
 	removedByName = "John Smith",
 }: MemberRemovedEmailProps) {
 	return (
-		<StandardLayout preview={`You've been removed from ${organizationName}`}>
+		<StandardLayout preview={`Вас удалили из ${organizationName}`}>
 			<Heading className="text-lg font-normal leading-7 mb-8 text-foreground text-center">
-				You've been removed from <strong>{organizationName}</strong>
+				Вас удалили из <strong>{organizationName}</strong>
 			</Heading>
 
 			<Text className="text-base leading-[26px] mb-4 text-foreground">
-				Hi {memberName ?? "there"},
+				{memberName ? `Здравствуйте, ${memberName}!` : "Здравствуйте!"}
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				{removedByName} has removed you from <strong>{organizationName}</strong>{" "}
-				on Rox.
+				{removedByName} удалил вас из <strong>{organizationName}</strong> в Rox.
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				You no longer have access to this organization's workspaces, tasks, or
-				workflows.
+				У вас больше нет доступа к рабочим пространствам, задачам и процессам
+				этой организации.
 			</Text>
 
 			<Text className="text-xs leading-5 text-muted">
-				If you believe this was a mistake, please contact {removedByName} or
-				your team administrator.
+				Если вы считаете, что это ошибка, свяжитесь с {removedByName} или
+				администратором команды.
 			</Text>
 		</StandardLayout>
 	);

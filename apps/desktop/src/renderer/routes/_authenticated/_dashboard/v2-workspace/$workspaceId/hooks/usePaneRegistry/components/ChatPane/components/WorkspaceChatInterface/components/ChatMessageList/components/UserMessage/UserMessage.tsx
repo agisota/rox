@@ -2,6 +2,7 @@ import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
+import { logger } from "renderer/lib/logger";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type {
 	UserMessageActionPayload,
@@ -96,7 +97,7 @@ export function UserMessage({
 			prefixMessages,
 			payload: resendPayload,
 		}).catch((error) => {
-			console.debug("[UserMessage] resend failed", error);
+			logger.debug("[UserMessage] resend failed", error);
 		});
 	}, [draft.files, draft.text, message.id, onRestart, prefixMessages]);
 	const showActions =

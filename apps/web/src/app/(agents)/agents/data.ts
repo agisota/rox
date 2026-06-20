@@ -3,6 +3,10 @@ import "server-only";
 import { api } from "@/trpc/server";
 
 import {
+	type AgentsHostTarget,
+	resolveAgentsHostListing,
+} from "./resolveAgentsHostListing";
+import {
 	buildSessionDashboardDetail,
 	buildSessionDashboardSummary,
 	type SessionDashboardDetail,
@@ -50,6 +54,39 @@ export async function loadAgentsDashboardData(): Promise<AgentsDashboardData> {
 			activeSessions: sessions.length,
 		},
 	};
+}
+
+export type AgentsHostListing = {
+	targets: AgentsHostTarget[];
+	useMock: boolean;
+};
+
+/**
+ * Real host/workspace listing for the cabinet (WS-B T3). Reads `host.list` for
+ * the active org and maps it through {@link resolveAgentsHostListing}, so the
+ * cabinet can bind to a real attached host (D6 read plane A) instead of mock
+ * data. Falls back to the mock prototype ONLY when the org has no hosts at all
+ * (the mock module is kept, never deleted). Returns the mock fallback if there
+ * is no active organization.
+ */
+export async function loadAgentsHostTargets(): Promise<AgentsHostListing> {
+	const trpc = await api();
+	const organization = await trpc.organization.getActive.query();
+	if (!organization) {
+		return { targets: [], useMock: true };
+	}
+	const hosts = await trpc.host.list.query({
+		organizationId: organization.id,
+	});
+	return resolveAgentsHostListing(
+		organization.id,
+		hosts.map((host) => ({
+			id: host.id,
+			name: host.name,
+			online: host.online,
+			kind: host.kind,
+		})),
+	);
 }
 
 export async function loadAgentsSessionDetail({

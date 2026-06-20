@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { logger } from "main/lib/logger";
 import { AUTOMATION_PERMISSIONS_ENABLED } from "./automation-targets";
 
 /**
@@ -27,12 +28,12 @@ export function requestAppleEventsAccess(): void {
 		["-e", 'tell application "System Events" to return 1'],
 		(err) => {
 			if (err) {
-				console.log(
+				logger.info(
 					"[apple-events] Permission request error (expected if denied):",
 					err.message,
 				);
 			} else {
-				console.log("[apple-events] Apple Events access granted");
+				logger.info("[apple-events] Apple Events access granted");
 			}
 		},
 	);

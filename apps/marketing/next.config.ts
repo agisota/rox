@@ -58,13 +58,22 @@ const config: NextConfig = {
 			{
 				// Public profiles + share links live on the web app (app.rox.one),
 				// which is the only app with DB access. Users share/visit the
-				// `@<handle>` form on the marketing domain (`rox.one/@<handle>/…`).
-				// Redirect the whole `@<handle>` namespace to the canonical renderer,
-				// preserving the `@` and any sub-path (sections / skills / shared).
-				// `@` is matched literally; `:handle*` captures the nickname plus the
-				// rest of the path.
-				source: "/@:handle*",
-				destination: `${webUrl}/@:handle*`,
+				// `@<handle>` form on the marketing domain (`rox.one/@<handle>`).
+				// Redirect the profile ROOT to the canonical renderer. `@` is
+				// matched literally; `:handle` captures the nickname.
+				// NOTE: must be a single, non-repeated param — Next 16's
+				// path-to-regexp rejects `/@:handle*` ("Can not repeat 'handle'
+				// without a prefix and suffix"), so the sub-path case is a
+				// separate rule below.
+				source: "/@:handle",
+				destination: `${webUrl}/@:handle`,
+				permanent: false,
+			},
+			{
+				// Sub-paths (sections / skills / shared). The `/` before `:path*`
+				// gives the repeated param its required delimiter.
+				source: "/@:handle/:path*",
+				destination: `${webUrl}/@:handle/:path*`,
 				permanent: false,
 			},
 			{

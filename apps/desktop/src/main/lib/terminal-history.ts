@@ -17,6 +17,7 @@
 import { createWriteStream, promises as fs, type WriteStream } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
+import { logger } from "main/lib/logger";
 import { ROX_DIR_NAME } from "shared/constants";
 
 const MAX_HISTORY_BYTES = 5 * 1024 * 1024; // 5MB per session
@@ -177,7 +178,7 @@ export class HistoryWriter {
 				});
 				this.bytesWritten = Buffer.byteLength(truncated, "utf8");
 				this.warnedCapReached = true;
-				console.warn(
+				logger.warn(
 					`[HistoryWriter] Initial scrollback truncated for ${this.paneId} (${initialBytes} bytes > ${MAX_HISTORY_BYTES})`,
 				);
 			} else {
@@ -200,7 +201,7 @@ export class HistoryWriter {
 			mode: HISTORY_FILE_MODE,
 		});
 		this.stream.on("error", (error) => {
-			console.error(
+			logger.error(
 				`[HistoryWriter] Stream error for ${this.paneId}:`,
 				error.message,
 			);
@@ -242,7 +243,7 @@ export class HistoryWriter {
 			if (this.bytesWritten + bytes > MAX_HISTORY_BYTES) {
 				if (!this.warnedCapReached) {
 					this.warnedCapReached = true;
-					console.warn(
+					logger.warn(
 						`[HistoryWriter] History cap reached for ${this.paneId} (${MAX_HISTORY_BYTES} bytes); dropping additional output`,
 					);
 				}
@@ -255,7 +256,7 @@ export class HistoryWriter {
 				if (this.pendingWriteBytes + bytes > MAX_PENDING_WRITE_BYTES) {
 					if (!this.warnedBackpressureDrop) {
 						this.warnedBackpressureDrop = true;
-						console.warn(
+						logger.warn(
 							`[HistoryWriter] Write backlog cap reached for ${this.paneId} (${MAX_PENDING_WRITE_BYTES} bytes); dropping history until drain`,
 						);
 					}
@@ -437,7 +438,7 @@ export class HistoryWriter {
 
 		// Delete the directory
 		await fs.rm(this.dir, { recursive: true, force: true }).catch((error) => {
-			console.warn(
+			logger.warn(
 				`[HistoryWriter] Failed to delete history for ${this.paneId}:`,
 				error.message,
 			);
@@ -455,7 +456,7 @@ export class HistoryWriter {
 			);
 			await fs.chmod(this.metaPath, HISTORY_FILE_MODE).catch(() => {});
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				`[HistoryWriter] Failed to write metadata for ${this.paneId}:`,
 				error instanceof Error ? error.message : String(error),
 			);
@@ -545,7 +546,7 @@ export class HistoryReader {
 	 */
 	async cleanup(): Promise<void> {
 		await fs.rm(this.dir, { recursive: true, force: true }).catch((error) => {
-			console.warn(
+			logger.warn(
 				`[HistoryReader] Failed to cleanup history for ${this.paneId}:`,
 				error instanceof Error ? error.message : String(error),
 			);

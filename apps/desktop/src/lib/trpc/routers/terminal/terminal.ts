@@ -13,6 +13,7 @@ import {
 } from "main/lib/terminal/errors";
 import { getTerminalHostClient } from "main/lib/terminal-host/client";
 import { getWorkspaceRuntimeRegistry } from "main/lib/workspace-runtime";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import { assertWorkspaceUsable } from "../workspaces/utils/usability";
@@ -20,7 +21,6 @@ import { resolveTerminalThemeType } from "./theme-type";
 import { getWorkspaceTerminalContext, resolveCwd } from "./utils";
 
 const DEBUG_TERMINAL = process.env.ROX_TERMINAL_DEBUG === "1";
-const logger = console;
 let createOrAttachCallCounter = 0;
 
 const SAFE_ID = z
@@ -50,7 +50,7 @@ export const createTerminalRouter = () => {
 	const registry = getWorkspaceRuntimeRegistry();
 	const terminal = registry.getDefault().terminal;
 	if (DEBUG_TERMINAL) {
-		console.log(
+		logger.info(
 			"[Terminal Router] Using terminal runtime, capabilities:",
 			terminal.capabilities,
 		);
@@ -100,7 +100,7 @@ export const createTerminalRouter = () => {
 				const cwd = resolveCwd(cwdOverride, workspacePath);
 
 				if (DEBUG_TERMINAL) {
-					console.log("[Terminal Router] createOrAttach called:", {
+					logger.info("[Terminal Router] createOrAttach called:", {
 						paneId,
 						workspaceId,
 						workspacePath,
@@ -136,7 +136,7 @@ export const createTerminalRouter = () => {
 					});
 
 					if (DEBUG_TERMINAL) {
-						console.log("[Terminal Router] createOrAttach result:", {
+						logger.info("[Terminal Router] createOrAttach result:", {
 							callId,
 							paneId,
 							isNew: result.isNew,
@@ -164,7 +164,7 @@ export const createTerminalRouter = () => {
 					const isAttachCanceled = isTerminalAttachCanceledError(error);
 					if (isKilledError) {
 						if (DEBUG_TERMINAL) {
-							console.warn(
+							logger.warn(
 								"[Terminal Router] createOrAttach blocked (killed):",
 								{
 									paneId,
@@ -184,14 +184,14 @@ export const createTerminalRouter = () => {
 						});
 					}
 					if (DEBUG_TERMINAL) {
-						console.warn("[Terminal Router] createOrAttach failed:", {
+						logger.warn("[Terminal Router] createOrAttach failed:", {
 							callId,
 							paneId,
 							durationMs: Date.now() - startedAt,
 							error: error instanceof Error ? error.message : String(error),
 						});
 					}
-					console.error("[Terminal Router] createOrAttach ERROR:", error);
+					logger.error("[Terminal Router] createOrAttach ERROR:", error);
 					throw error;
 				}
 			}),
@@ -318,7 +318,7 @@ export const createTerminalRouter = () => {
 			const client = getTerminalHostClient();
 			const before = await terminal.management.listSessions();
 			const beforeIds = before.sessions.map((s) => s.sessionId);
-			console.log(
+			logger.info(
 				"[killAllDaemonSessions] Before kill:",
 				beforeIds.length,
 				"sessions",
@@ -358,7 +358,7 @@ export const createTerminalRouter = () => {
 				remainingCount = afterIds.length;
 
 				if (remainingCount > 0) {
-					console.log(
+					logger.info(
 						`[killAllDaemonSessions] Retry ${i + 1}/${MAX_RETRIES}: ${remainingCount} sessions still alive`,
 						afterIds,
 					);
@@ -366,7 +366,7 @@ export const createTerminalRouter = () => {
 			}
 
 			const killedCount = before.sessions.length - remainingCount;
-			console.log(
+			logger.info(
 				"[killAllDaemonSessions] Complete:",
 				killedCount,
 				"killed,",
@@ -464,7 +464,7 @@ export const createTerminalRouter = () => {
 					| { type: "error"; error: string; code?: string }
 				>((emit) => {
 					if (DEBUG_TERMINAL) {
-						console.log(`[Terminal Stream] Subscribe: ${paneId}`);
+						logger.info(`[Terminal Stream] Subscribe: ${paneId}`);
 					}
 
 					let firstDataReceived = false;
@@ -472,7 +472,7 @@ export const createTerminalRouter = () => {
 					const onData = (data: string) => {
 						if (DEBUG_TERMINAL && !firstDataReceived) {
 							firstDataReceived = true;
-							console.log(
+							logger.info(
 								`[Terminal Stream] First data for ${paneId}: ${data.length} bytes`,
 							);
 						}
@@ -507,7 +507,7 @@ export const createTerminalRouter = () => {
 
 					return () => {
 						if (DEBUG_TERMINAL) {
-							console.log(`[Terminal Stream] Unsubscribe: ${paneId}`);
+							logger.info(`[Terminal Stream] Unsubscribe: ${paneId}`);
 						}
 						terminal.off(`data:${paneId}`, onData);
 						terminal.off(`exit:${paneId}`, onExit);

@@ -1,4 +1,5 @@
 import type { Socket } from "node:net";
+import { logger } from "main/lib/logger";
 import { TerminalAttachCanceledError } from "../lib/terminal/errors";
 import type {
 	CancelCreateOrAttachRequest,
@@ -143,7 +144,7 @@ export class TerminalHost {
 							SPAWN_READY_TIMEOUT_MS,
 						);
 					} catch {
-						console.warn(
+						logger.warn(
 							`[TerminalHost] Timeout waiting for PTY ready for session ${sessionId}`,
 						);
 					} finally {
@@ -278,7 +279,7 @@ export class TerminalHost {
 			const timer = setTimeout(() => {
 				const s = this.sessions.get(sessionId);
 				if (s?.isTerminating) {
-					console.warn(
+					logger.warn(
 						`[TerminalHost] Force disposing stuck session ${sessionId} after ${KILL_TIMEOUT_MS}ms`,
 					);
 					void s.dispose();

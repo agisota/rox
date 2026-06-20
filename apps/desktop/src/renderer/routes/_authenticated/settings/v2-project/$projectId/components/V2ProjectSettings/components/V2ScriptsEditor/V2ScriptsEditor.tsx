@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HiCheckCircle } from "react-icons/hi2";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
 import { ScriptField } from "./components/ScriptField";
 
 interface V2ScriptsEditorProps {
@@ -206,7 +207,7 @@ export function V2ScriptsEditor({
 					savedTimerRef.current = null;
 				}, 2000);
 			} catch (error) {
-				console.error("[v2-scripts/save] failed", error);
+				logger.error("[v2-scripts/save] failed", error);
 				queuedPayloadRef.current =
 					queuedPayloadRef.current ?? buildPayload(latestValuesRef.current);
 				setSaveStatus("idle");

@@ -19,6 +19,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import chunk from "lodash.chunk";
 import { z } from "zod";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 import {
 	listBlockChildren,
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 		devBypass: env.NODE_ENV === "development",
 		onError: "respond",
 		logError: (error) =>
-			console.warn("[notion-sync] signature verification failed", error),
+			logger.warn("[notion-sync] signature verification failed", error),
 	});
 	if (!verified.ok) {
 		return verified.response;
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
 		token = decodeSecret(connection.accessToken);
 	} catch {
 		// Token can't be decoded — nothing actionable; ack so QStash stops retrying.
-		console.warn(
+		logger.warn(
 			`[notion-sync] failed to decode access token for org ${organizationId}`,
 		);
 		return Response.json({
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
 	});
 
 	if (imported === 0) {
-		console.info(
+		logger.info(
 			`[notion-sync] no pages mapped for org ${organizationId} (batch ${importBatchId})`,
 		);
 		return Response.json({ success: true, imported: 0, importBatchId });
@@ -216,7 +217,7 @@ async function withNotionRetry<T>(
 			if (attempt >= MAX_NOTION_ATTEMPTS || !isRetryableNotionError(error)) {
 				throw error;
 			}
-			console.warn(`[notion-sync] retrying Notion ${label}`, {
+			logger.warn(`[notion-sync] retrying Notion ${label}`, {
 				attempt,
 				error: error instanceof Error ? error.message : String(error),
 			});
@@ -257,15 +258,12 @@ async function fetchMarkdownByPageId({
 			}
 			const page = pageBatch[index];
 			if (!page) continue;
-			console.warn(
-				`[notion-sync] failed to import blocks for page ${page.id}`,
-				{
-					error:
-						result.reason instanceof Error
-							? result.reason.message
-							: String(result.reason),
-				},
-			);
+			logger.warn(`[notion-sync] failed to import blocks for page ${page.id}`, {
+				error:
+					result.reason instanceof Error
+						? result.reason.message
+						: String(result.reason),
+			});
 			markdownByPageId.set(page.id, "");
 		}
 	}

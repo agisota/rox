@@ -2,6 +2,7 @@ import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
 import { useCallback, useRef, useState } from "react";
 import { HiDocumentArrowUp } from "react-icons/hi2";
+import { logger } from "renderer/lib/logger";
 
 interface ScriptFieldProps {
 	placeholder: string;
@@ -30,7 +31,7 @@ export function ScriptField({
 			try {
 				onChange(await scriptFile.text());
 			} catch (error) {
-				console.error("[v2-scripts/import] failed to read file", error);
+				logger.error("[v2-scripts/import] failed to read file", error);
 			}
 		},
 		[onChange],

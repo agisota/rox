@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import { writeFileIfChanged } from "./agent-wrappers-common";
 
 export const PI_EXTENSION_FILE = "rox-hooks.ts";
@@ -60,5 +61,5 @@ export function createPiExtension(): void {
 	const content = getPiExtensionContent();
 	fs.mkdirSync(path.dirname(extensionPath), { recursive: true });
 	const changed = writeFileIfChanged(extensionPath, content, 0o644);
-	console.log(`[agent-setup] ${changed ? "Updated" : "Verified"} pi extension`);
+	logger.info(`[agent-setup] ${changed ? "Updated" : "Verified"} pi extension`);
 }

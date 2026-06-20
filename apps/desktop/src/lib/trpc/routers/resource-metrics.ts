@@ -1,4 +1,5 @@
 import { collectResourceMetrics } from "main/lib/resource-metrics";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "..";
 import {
@@ -29,7 +30,7 @@ export const createResourceMetricsRouter = () => {
 				});
 				const validation = validateResourceMetricsSnapshot(snapshot);
 				if (!validation.isValid) {
-					console.warn(
+					logger.warn(
 						"[resource-metrics] Invalid snapshot payload; returning fallback snapshot",
 						validation.issues,
 					);

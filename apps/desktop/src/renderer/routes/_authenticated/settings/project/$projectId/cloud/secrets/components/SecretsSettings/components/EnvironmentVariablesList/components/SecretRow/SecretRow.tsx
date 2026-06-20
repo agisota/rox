@@ -20,6 +20,7 @@ import {
 } from "react-icons/hi2";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { logger } from "renderer/lib/logger";
 
 interface SecretRowProps {
 	secret: {
@@ -57,7 +58,7 @@ export function SecretRow({
 			});
 			onDeleted();
 		} catch (err) {
-			console.error("[secrets/delete] Failed to delete:", err);
+			logger.error("[secrets/delete] Failed to delete:", err);
 		} finally {
 			setIsDeleting(false);
 		}

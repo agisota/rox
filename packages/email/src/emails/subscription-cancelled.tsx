@@ -10,6 +10,12 @@ interface SubscriptionCancelledEmailProps {
 	billingPortalUrl?: string;
 }
 
+/**
+ * @deprecated Stripe seat-billing was retired in favor of the prepaid Rox token
+ * economy (packages/db/src/schema/economy.ts). There is no subscription
+ * lifecycle in the token model, so this template is unwired and kept only for
+ * reference; do not send it.
+ */
 export function SubscriptionCancelledEmail({
 	ownerName = "there",
 	organizationName = "Acme Inc",

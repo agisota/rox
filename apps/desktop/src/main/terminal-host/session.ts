@@ -17,6 +17,7 @@ import {
 	type ShellReadyScanState,
 	scanForShellReady,
 } from "@rox/shared/shell-ready-scanner";
+import { logger } from "main/lib/logger";
 import { DEFAULT_TERMINAL_SCROLLBACK } from "shared/constants";
 import {
 	getCommandShellArgs,
@@ -281,7 +282,7 @@ export class Session {
 						this.handleSubprocessFrame(frame.type, frame.payload);
 					}
 				} catch (error) {
-					console.error(
+					logger.error(
 						`[Session ${this.sessionId}] Failed to parse subprocess frames:`,
 						error,
 					);
@@ -291,14 +292,14 @@ export class Session {
 
 		// Handle subprocess exit
 		this.subprocess.on("exit", (code) => {
-			console.log(
+			logger.info(
 				`[Session ${this.sessionId}] Subprocess exited with code ${code}`,
 			);
 			this.handleSubprocessExit(code ?? -1);
 		});
 
 		this.subprocess.on("error", (error) => {
-			console.error(`[Session ${this.sessionId}] Subprocess error:`, error);
+			logger.error(`[Session ${this.sessionId}] Subprocess error:`, error);
 			this.handleSubprocessExit(-1);
 		});
 
@@ -421,7 +422,7 @@ export class Session {
 						? payload.toString("utf8")
 						: "Unknown subprocess error";
 
-				console.error(
+				logger.error(
 					`[Session ${this.sessionId}] Subprocess error:`,
 					errorMessage,
 				);
@@ -507,7 +508,7 @@ export class Session {
 			this.subprocessStdinQueuedBytes + frameSize >
 			MAX_SUBPROCESS_STDIN_QUEUE_BYTES
 		) {
-			console.warn(
+			logger.warn(
 				`[Session ${this.sessionId}] stdin queue full (${this.subprocessStdinQueuedBytes} bytes), dropping frame`,
 			);
 			this.broadcastEvent("error", {
@@ -532,7 +533,7 @@ export class Session {
 		this.flushSubprocessStdinQueue();
 
 		if (this.subprocessStdinDrainArmed && !wasBackpressured) {
-			console.warn(
+			logger.warn(
 				`[Session ${this.sessionId}] stdin buffer full, write may be delayed`,
 			);
 		}
@@ -819,7 +820,7 @@ export class Session {
 			);
 
 			if (!reachedBoundary) {
-				console.warn(
+				logger.warn(
 					`[Session ${this.sessionId}] Attach flush timeout after ${ATTACH_FLUSH_TIMEOUT_MS}ms`,
 				);
 			}
@@ -1123,7 +1124,7 @@ export class Session {
 		}
 
 		this.emulatorWriteBackpressured = true;
-		console.warn(
+		logger.warn(
 			`[Session ${this.sessionId}] Emulator backlog reached ${this.emulatorWriteQueuedBytes} bytes, pausing PTY reads`,
 		);
 		this.updateSubprocessStdoutFlow();

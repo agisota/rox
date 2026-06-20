@@ -1,5 +1,6 @@
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
+import { logger } from "renderer/lib/logger";
 import { navigateToV2Workspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useDeletingWorkspaces } from "renderer/routes/_authenticated/providers/DeletingWorkspacesProvider";
@@ -7,7 +8,7 @@ import { getFlattenedV2WorkspaceIds } from "../../utils/getFlattenedV2WorkspaceI
 import { resolveWorkspaceRemovalNavigationTarget } from "./navigationTarget";
 
 function reportRemovalNavigationError(error: unknown) {
-	console.error("[useNavigateAwayFromWorkspace] navigation failed", error);
+	logger.error("[useNavigateAwayFromWorkspace] navigation failed", error);
 }
 
 /**

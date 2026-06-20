@@ -9,6 +9,7 @@ import {
 	getHostServiceClientByUrl,
 	type HostServiceClient,
 } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
 import { getBaseName } from "renderer/lib/pathBasename";
 import { useFinalizeProjectSetup } from "renderer/react-query/projects";
 import { ImportPageShell } from "../components/ImportPageShell";
@@ -100,7 +101,7 @@ export function ImportProjectsPage({
 						await invalidateProjectImportQueries(queryClient, project);
 					}
 				} catch (err) {
-					console.error("[v1-import] project import all failed", {
+					logger.error("[v1-import] project import all failed", {
 						v1ProjectId: project.id,
 						mainRepoPath: project.mainRepoPath,
 						organizationId,
@@ -370,7 +371,7 @@ function ProjectRow({
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			setErrorMessage(message);
-			console.error("[v1-import] project import failed", {
+			logger.error("[v1-import] project import failed", {
 				v1ProjectId: project.id,
 				mainRepoPath: project.mainRepoPath,
 				organizationId,

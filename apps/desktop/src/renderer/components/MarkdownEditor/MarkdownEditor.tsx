@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import "highlight.js/styles/github-dark.css";
 import "./markdown-editor.css";
 
@@ -376,7 +377,7 @@ export function MarkdownEditor({
 				if (urlPolicy.getAction(event) === null) return false;
 				event.preventDefault();
 				electronTrpcClient.external.openUrl.mutate(href).catch((error) => {
-					console.error("[MarkdownEditor] Failed to open URL:", href, error);
+					logger.error("[MarkdownEditor] Failed to open URL:", href, error);
 				});
 				return true;
 			},

@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import { create } from "zustand";
 import {
 	createJSONStorage,
@@ -70,7 +71,7 @@ const ringtoneStorage = createJSONStorage(
 					version,
 				});
 			} catch (error) {
-				console.error("[ringtone-store] Failed to load ringtone state:", error);
+				logger.error("[ringtone-store] Failed to load ringtone state:", error);
 				return null;
 			}
 		},
@@ -85,7 +86,7 @@ const ringtoneStorage = createJSONStorage(
 					ringtoneId: parsed.state.selectedRingtoneId,
 				});
 			} catch (error) {
-				console.error(
+				logger.error(
 					"[ringtone-store] Failed to persist ringtone state:",
 					error,
 				);
@@ -113,7 +114,7 @@ export const useRingtoneStore = create<RingtoneState>()(
 
 				setRingtone: (ringtoneId: string) => {
 					if (!isValidRingtoneId(ringtoneId)) {
-						console.error(`Ringtone not found: ${ringtoneId}`);
+						logger.error(`Ringtone not found: ${ringtoneId}`);
 						return;
 					}
 					set({ selectedRingtoneId: ringtoneId });
@@ -145,7 +146,7 @@ export const useRingtoneStore = create<RingtoneState>()(
 				onRehydrateStorage: () => (state) => {
 					// Validate persisted ringtone ID on rehydration
 					if (state && !isValidRingtoneId(state.selectedRingtoneId)) {
-						console.warn(
+						logger.warn(
 							`[RingtoneStore] Invalid ringtone ID "${state.selectedRingtoneId}", resetting to default`,
 						);
 						state.selectedRingtoneId = DEFAULT_RINGTONE_ID;

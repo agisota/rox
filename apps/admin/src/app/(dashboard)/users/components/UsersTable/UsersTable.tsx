@@ -24,8 +24,10 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { Input } from "@rox/ui/input";
 import { toast } from "@rox/ui/sonner";
 import {
 	Table,
@@ -37,16 +39,30 @@ import {
 } from "@rox/ui/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LuEllipsis, LuLoaderCircle, LuTrash2, LuUser } from "react-icons/lu";
+import {
+	LuCoins,
+	LuEllipsis,
+	LuFlag,
+	LuLoaderCircle,
+	LuTrash2,
+	LuUser,
+} from "react-icons/lu";
 
 import { useTRPC } from "@/trpc/react";
 
 export function UsersTable() {
 	const trpc = useTRPC();
+	const router = useRouter();
 	const queryClient = useQueryClient();
+	const [search, setSearch] = useState("");
+
 	const { data, isLoading, error } = useQuery(
-		trpc.admin.listUsers.queryOptions(),
+		trpc.admin.listUsers.queryOptions({
+			q: search.trim() || undefined,
+			limit: 50,
+		}),
 	);
 
 	const [userToDelete, setUserToDelete] = useState<{
@@ -74,6 +90,17 @@ export function UsersTable() {
 		if (!userToDelete) return;
 		deleteMutation.mutate({ userId: userToDelete.id });
 	};
+
+	const users = data?.users ?? [];
+
+	const searchBox = (
+		<Input
+			className="max-w-xs"
+			placeholder="Search name or email…"
+			value={search}
+			onChange={(e) => setSearch(e.target.value)}
+		/>
+	);
 
 	if (isLoading) {
 		return (
@@ -114,90 +141,111 @@ export function UsersTable() {
 		);
 	}
 
-	if (!data || data.length === 0) {
-		return (
-			<Card>
-				<CardContent className="flex flex-col items-center justify-center py-12 text-center">
-					<LuUser className="text-muted-foreground mb-4 h-12 w-12" />
-					<p className="text-lg font-medium">No active users</p>
-					<p className="text-muted-foreground text-sm">
-						Users will appear here as they sign up
-					</p>
-				</CardContent>
-			</Card>
-		);
-	}
-
 	return (
 		<>
 			<Card>
 				<CardHeader>
-					<CardTitle>Active Users</CardTitle>
-					<CardDescription>
-						{data.length} active user{data.length !== 1 ? "s" : ""}
-					</CardDescription>
+					<div className="flex items-center justify-between gap-4">
+						<div>
+							<CardTitle>Users</CardTitle>
+							<CardDescription>
+								{users.length} user{users.length !== 1 ? "s" : ""}
+								{data?.nextCursor ? " (more available)" : ""}
+							</CardDescription>
+						</div>
+						{searchBox}
+					</div>
 				</CardHeader>
 				<CardContent>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>User</TableHead>
-								<TableHead>Email</TableHead>
-								<TableHead>Joined</TableHead>
-								<TableHead className="w-[50px]" />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.map((user) => (
-								<TableRow key={user.id}>
-									<TableCell>
-										<div className="flex items-center gap-3">
-											<Avatar className="h-8 w-8">
-												<AvatarImage src={user.image ?? undefined} />
-												<AvatarFallback>
-													{getInitials(user.name, user.email)}
-												</AvatarFallback>
-											</Avatar>
-											<span className="font-medium">{user.name}</span>
-										</div>
-									</TableCell>
-									<TableCell>{user.email}</TableCell>
-									<TableCell>
-										<div className="text-sm">
-											{formatDistanceToNow(new Date(user.createdAt), {
-												addSuffix: true,
-											})}
-										</div>
-									</TableCell>
-									<TableCell>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button variant="ghost" className="h-8 w-8 p-0">
-													<span className="sr-only">Open menu</span>
-													<LuEllipsis className="h-4 w-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end">
-												<DropdownMenuItem
-													className="text-destructive focus:text-destructive"
-													onClick={() =>
-														setUserToDelete({
-															id: user.id,
-															email: user.email,
-															name: user.name,
-														})
-													}
-												>
-													<LuTrash2 className="mr-2 h-4 w-4" />
-													Delete Permanently
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</TableCell>
+					{users.length === 0 ? (
+						<div className="flex flex-col items-center justify-center py-12 text-center">
+							<LuUser className="text-muted-foreground mb-4 h-12 w-12" />
+							<p className="text-lg font-medium">No users found</p>
+							<p className="text-muted-foreground text-sm">
+								{search
+									? "Try a different search."
+									: "Users will appear here as they sign up"}
+							</p>
+						</div>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>User</TableHead>
+									<TableHead>Email</TableHead>
+									<TableHead>Joined</TableHead>
+									<TableHead className="w-[50px]" />
 								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+							</TableHeader>
+							<TableBody>
+								{users.map((user) => (
+									<TableRow
+										key={user.id}
+										className="hover:bg-muted/50 cursor-pointer"
+										onClick={() => router.push(`/users/${user.id}`)}
+									>
+										<TableCell>
+											<div className="flex items-center gap-3">
+												<Avatar className="h-8 w-8">
+													<AvatarImage src={user.image ?? undefined} />
+													<AvatarFallback>
+														{getInitials(user.name, user.email)}
+													</AvatarFallback>
+												</Avatar>
+												<span className="font-medium">{user.name}</span>
+											</div>
+										</TableCell>
+										<TableCell>{user.email}</TableCell>
+										<TableCell>
+											<div className="text-sm">
+												{formatDistanceToNow(new Date(user.createdAt), {
+													addSuffix: true,
+												})}
+											</div>
+										</TableCell>
+										<TableCell onClick={(e) => e.stopPropagation()}>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button variant="ghost" className="h-8 w-8 p-0">
+														<span className="sr-only">Open menu</span>
+														<LuEllipsis className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													<DropdownMenuItem
+														onClick={() => router.push(`/users/${user.id}`)}
+													>
+														<LuCoins className="mr-2 h-4 w-4" />
+														Top up
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() => router.push(`/users/${user.id}`)}
+													>
+														<LuFlag className="mr-2 h-4 w-4" />
+														Manage flags
+													</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem
+														className="text-destructive focus:text-destructive"
+														onClick={() =>
+															setUserToDelete({
+																id: user.id,
+																email: user.email,
+																name: user.name,
+															})
+														}
+													>
+														<LuTrash2 className="mr-2 h-4 w-4" />
+														Delete Permanently
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					)}
 				</CardContent>
 			</Card>
 

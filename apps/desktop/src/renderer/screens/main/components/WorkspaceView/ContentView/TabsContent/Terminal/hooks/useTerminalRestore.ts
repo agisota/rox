@@ -1,6 +1,7 @@
 import type { FitAddon } from "@xterm/addon-fit";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { useCallback, useRef } from "react";
+import { logger } from "renderer/lib/logger";
 import { DEBUG_TERMINAL } from "../config";
 import type {
 	CreateOrAttachResult,
@@ -178,7 +179,7 @@ export function useTerminalRestore({
 
 					isStreamReadyRef.current = true;
 					if (DEBUG_TERMINAL) {
-						console.log(
+						logger.info(
 							`[Terminal] isStreamReady=true (altScreen): ${paneId}, pendingEvents=${pendingEventsRef.current.length}`,
 						);
 					}
@@ -201,7 +202,7 @@ export function useTerminalRestore({
 				isStreamReadyRef.current = true;
 				scheduleScrollToBottom();
 				if (DEBUG_TERMINAL) {
-					console.log(
+					logger.info(
 						`[Terminal] isStreamReady=true (finalizeRestore): ${paneId}, pendingEvents=${pendingEventsRef.current.length}`,
 					);
 				}
@@ -228,7 +229,7 @@ export function useTerminalRestore({
 				updateCwdRef.current(initialAnsi);
 			}
 		} catch (error) {
-			console.error("[Terminal] Restoration failed:", error);
+			logger.error("[Terminal] Restoration failed:", error);
 			isStreamReadyRef.current = true;
 			flushPendingEvents();
 		}

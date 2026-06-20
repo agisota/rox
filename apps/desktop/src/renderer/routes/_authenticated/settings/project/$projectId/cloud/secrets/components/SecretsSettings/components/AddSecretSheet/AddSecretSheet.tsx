@@ -21,6 +21,7 @@ import {
 	HiPlus,
 } from "react-icons/hi2";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { logger } from "renderer/lib/logger";
 import { parseEnvContent, validateEnvContent } from "../../utils/env-file";
 
 interface SecretEntry {
@@ -224,7 +225,7 @@ export function AddSecretSheet({
 			onSaved();
 			onOpenChange(false);
 		} catch (err) {
-			console.error("[secrets/upsert] Failed to save:", err);
+			logger.error("[secrets/upsert] Failed to save:", err);
 			toast.error("Не удалось сохранить переменные окружения");
 		} finally {
 			setIsSaving(false);

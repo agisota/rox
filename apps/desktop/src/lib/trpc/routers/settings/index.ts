@@ -67,6 +67,7 @@ import {
 	DEFAULT_TERMINAL_LINK_BEHAVIOR,
 	DEFAULT_USE_COMPACT_TERMINAL_ADD_BUTTON,
 } from "shared/constants";
+import { logger } from "shared/logger";
 import { normalizePresetProjectIds } from "shared/preset-project-targeting";
 import {
 	CUSTOM_RINGTONE_ID,
@@ -737,7 +738,7 @@ export const createSettingsRouter = () => {
 				return storedId;
 			}
 
-			console.warn(
+			logger.warn(
 				`[settings] Invalid ringtone ID "${storedId}" found, resetting to default`,
 			);
 			localDb

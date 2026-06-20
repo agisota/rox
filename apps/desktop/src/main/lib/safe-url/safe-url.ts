@@ -1,4 +1,5 @@
 import { shell } from "electron";
+import { logger } from "main/lib/logger";
 import { externalUrlLogLabel, isSafeExternalUrl } from "./scheme";
 
 /**
@@ -9,7 +10,7 @@ import { externalUrlLogLabel, isSafeExternalUrl } from "./scheme";
  */
 export async function safeOpenExternal(url: string): Promise<boolean> {
 	if (!isSafeExternalUrl(url)) {
-		console.warn(
+		logger.warn(
 			"[safeOpenExternal] blocked unsafe URL scheme:",
 			externalUrlLogLabel(url),
 		);
@@ -19,7 +20,7 @@ export async function safeOpenExternal(url: string): Promise<boolean> {
 		await shell.openExternal(url);
 		return true;
 	} catch (error) {
-		console.error(
+		logger.error(
 			"[safeOpenExternal] openExternal failed:",
 			externalUrlLogLabel(url),
 			error,

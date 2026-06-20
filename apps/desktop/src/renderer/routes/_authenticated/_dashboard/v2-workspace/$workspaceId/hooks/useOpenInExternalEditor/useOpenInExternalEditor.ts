@@ -3,6 +3,7 @@ import { workspaceTrpc } from "@rox/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback } from "react";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { useV2ProjectDefaultApp } from "renderer/routes/_authenticated/hooks/useV2ProjectDefaultApp";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
@@ -55,7 +56,7 @@ export function useOpenInExternalEditor(workspaceId: string) {
 					app: v2PreferredApp,
 				})
 				.catch((error) => {
-					console.error("Failed to open in external editor:", error);
+					logger.error("Failed to open in external editor:", error);
 					toast.error("Failed to open in external editor");
 				});
 		},

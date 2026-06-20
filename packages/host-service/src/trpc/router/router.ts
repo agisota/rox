@@ -1,5 +1,6 @@
 import { router } from "../index";
 import { agentBridgeRouter } from "./agent-bridge";
+import { agentStateRouter } from "./agent-state";
 import { agentsRouter } from "./agents";
 import { attachmentsRouter } from "./attachments";
 import { authRouter } from "./auth";
@@ -26,6 +27,7 @@ import { workspacesRouter } from "./workspaces";
 
 export const appRouter = router({
 	agentBridge: agentBridgeRouter,
+	agentState: agentStateRouter,
 	agents: agentsRouter,
 	attachments: attachmentsRouter,
 	auth: authRouter,

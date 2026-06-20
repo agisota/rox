@@ -8,6 +8,7 @@ import {
 	getGitHubPRCommentsQueryPolicy,
 	getGitHubStatusQueryPolicy,
 } from "renderer/lib/githubQueryPolicy";
+import { logger } from "renderer/lib/logger";
 import { useWorkspaceFileEvents } from "renderer/screens/main/components/WorkspaceView/hooks/useWorkspaceFileEvents";
 import {
 	checkSummaryIconConfig,
@@ -122,7 +123,7 @@ export function ChangesView({
 	const stageAllMutation = electronTrpc.changes.stageAll.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error) => {
-			console.error("Failed to stage all files:", error);
+			logger.error("Failed to stage all files:", error);
 			toast.error(`Не удалось проиндексировать все: ${error.message}`);
 		},
 	});
@@ -130,7 +131,7 @@ export function ChangesView({
 	const unstageAllMutation = electronTrpc.changes.unstageAll.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error) => {
-			console.error("Failed to unstage all files:", error);
+			logger.error("Failed to unstage all files:", error);
 			toast.error(`Не удалось снять из индекса все: ${error.message}`);
 		},
 	});
@@ -138,7 +139,7 @@ export function ChangesView({
 	const stageFileMutation = electronTrpc.changes.stageFile.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
-			console.error(`Failed to stage file ${variables.filePath}:`, error);
+			logger.error(`Failed to stage file ${variables.filePath}:`, error);
 			toast.error(
 				`Не удалось проиндексировать ${variables.filePath}: ${error.message}`,
 			);
@@ -148,7 +149,7 @@ export function ChangesView({
 	const unstageFileMutation = electronTrpc.changes.unstageFile.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
-			console.error(`Failed to unstage file ${variables.filePath}:`, error);
+			logger.error(`Failed to unstage file ${variables.filePath}:`, error);
 			toast.error(
 				`Не удалось снять из индекса ${variables.filePath}: ${error.message}`,
 			);
@@ -158,7 +159,7 @@ export function ChangesView({
 	const stageFilesMutation = electronTrpc.changes.stageFiles.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
-			console.error(
+			logger.error(
 				`Failed to stage files ${variables.filePaths.join(", ")}:`,
 				error,
 			);
@@ -169,7 +170,7 @@ export function ChangesView({
 	const unstageFilesMutation = electronTrpc.changes.unstageFiles.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
-			console.error(
+			logger.error(
 				`Failed to unstage files ${variables.filePaths.join(", ")}:`,
 				error,
 			);
@@ -181,7 +182,7 @@ export function ChangesView({
 		electronTrpc.changes.discardChanges.useMutation({
 			onSuccess: () => refetch(),
 			onError: (error, variables) => {
-				console.error(
+				logger.error(
 					`Failed to discard changes for ${variables.filePath}:`,
 					error,
 				);
@@ -193,7 +194,7 @@ export function ChangesView({
 		electronTrpc.changes.deleteUntracked.useMutation({
 			onSuccess: () => refetch(),
 			onError: (error, variables) => {
-				console.error(`Failed to delete ${variables.filePath}:`, error);
+				logger.error(`Failed to delete ${variables.filePath}:`, error);
 				toast.error(`Не удалось удалить файл: ${error.message}`);
 			},
 		});
@@ -205,7 +206,7 @@ export function ChangesView({
 				refetch();
 			},
 			onError: (error) => {
-				console.error("Failed to discard all unstaged:", error);
+				logger.error("Failed to discard all unstaged:", error);
 				toast.error(`Не удалось отменить: ${error.message}`);
 			},
 		});
@@ -217,7 +218,7 @@ export function ChangesView({
 				refetch();
 			},
 			onError: (error) => {
-				console.error("Failed to discard all staged:", error);
+				logger.error("Failed to discard all staged:", error);
 				toast.error(`Не удалось отменить: ${error.message}`);
 			},
 		});
@@ -228,7 +229,7 @@ export function ChangesView({
 			refetch();
 		},
 		onError: (error) => {
-			console.error("Failed to stash:", error);
+			logger.error("Failed to stash:", error);
 			toast.error(`Не удалось спрятать в stash: ${error.message}`);
 		},
 	});
@@ -242,7 +243,7 @@ export function ChangesView({
 				refetch();
 			},
 			onError: (error) => {
-				console.error("Failed to stash:", error);
+				logger.error("Failed to stash:", error);
 				toast.error(`Не удалось спрятать в stash: ${error.message}`);
 			},
 		});
@@ -253,7 +254,7 @@ export function ChangesView({
 			refetch();
 		},
 		onError: (error) => {
-			console.error("Failed to pop stash:", error);
+			logger.error("Failed to pop stash:", error);
 			toast.error(`Не удалось применить stash: ${error.message}`);
 		},
 	});
@@ -422,7 +423,7 @@ export function ChangesView({
 				}
 
 				Promise.all(invalidations).catch((error) => {
-					console.error("[ChangesView] Failed to refresh changes state:", {
+					logger.error("[ChangesView] Failed to refresh changes state:", {
 						worktreePath,
 						error,
 					});

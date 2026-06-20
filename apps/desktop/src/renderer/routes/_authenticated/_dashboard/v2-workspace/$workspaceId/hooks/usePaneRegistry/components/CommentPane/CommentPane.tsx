@@ -10,6 +10,7 @@ import {
 } from "react";
 import { LuCheck } from "react-icons/lu";
 import { CommentMarkdown } from "renderer/components/CommentMarkdown";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type { CommentPaneData, PaneViewerData } from "../../../../types";
 import "./comment-pane.css";
@@ -104,7 +105,7 @@ function CopyableTable({ children }: { children?: ReactNode }) {
 				}, 1500);
 			})
 			.catch((err) => {
-				console.warn("Failed to copy table text", err);
+				logger.warn("Failed to copy table text", err);
 			});
 	}, []);
 

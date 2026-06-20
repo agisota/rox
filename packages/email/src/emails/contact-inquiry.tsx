@@ -26,28 +26,29 @@ export function ContactInquiryEmail({
 		<Html>
 			<Head />
 			<Preview>
-				Contact message from {name} ({email})
+				Сообщение из формы контактов от {name} ({email})
 			</Preview>
 			<Body style={body}>
 				<Container style={container}>
-					<Heading style={heading}>New Contact Message</Heading>
+					<Heading style={heading}>Новое сообщение из формы контактов</Heading>
 
 					<Text style={paragraph}>
-						A new contact message was submitted from the marketing site.
+						С маркетингового сайта отправлено новое сообщение из формы
+						контактов.
 					</Text>
 
 					<Hr style={hr} />
 
-					<Text style={label}>Name</Text>
+					<Text style={label}>Имя</Text>
 					<Text style={value}>{name}</Text>
 
 					<Text style={label}>Email</Text>
 					<Text style={value}>{email}</Text>
 
-					<Text style={label}>Topic</Text>
+					<Text style={label}>Тема</Text>
 					<Text style={value}>{topic}</Text>
 
-					<Text style={label}>Message</Text>
+					<Text style={label}>Сообщение</Text>
 					<Text style={messageValue}>{message}</Text>
 				</Container>
 			</Body>

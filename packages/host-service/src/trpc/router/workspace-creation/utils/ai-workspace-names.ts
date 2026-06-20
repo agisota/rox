@@ -3,6 +3,7 @@ import { getSmallModel } from "@rox/chat/server/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { workspaces } from "../../../../db/schema";
+import { logger } from "../../../../lib/logger";
 import type { HostServiceContext } from "../../../../types";
 import { listBranchNames } from "./list-branch-names";
 import { deduplicateBranchName } from "./sanitize-branch";
@@ -98,10 +99,7 @@ export async function generateWorkspaceNamesFromPrompt(
 		]);
 		return object;
 	} catch (error) {
-		console.warn(
-			"[generateWorkspaceNamesFromPrompt] generation failed:",
-			error,
-		);
+		logger.warn("[generateWorkspaceNamesFromPrompt] generation failed:", error);
 		return null;
 	}
 }
@@ -181,7 +179,7 @@ export async function applyGeneratedWorkspaceNames(
 			await worktreeGit.raw(["branch", "-m", oldBranchName, deduped]);
 			gitRenamed = true;
 		} catch (err) {
-			console.warn("[applyAiWorkspaceRename] git branch rename failed", err);
+			logger.warn("[applyAiWorkspaceRename] git branch rename failed", err);
 		}
 	}
 
@@ -206,7 +204,7 @@ export async function applyGeneratedWorkspaceNames(
 				.git(worktreePath)
 				.then((g) => g.raw(["branch", "-m", deduped, oldBranchName]))
 				.catch((rollbackErr) => {
-					console.warn(
+					logger.warn(
 						`[applyAiWorkspaceRename] git branch rollback failed (workspace ${workspaceId}, ${deduped} → ${oldBranchName})`,
 						rollbackErr,
 					);

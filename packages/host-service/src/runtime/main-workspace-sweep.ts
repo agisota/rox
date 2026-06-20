@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { projects } from "../db/schema";
+import { logger } from "../lib/logger";
 import {
 	type EnsureMainWorkspaceContext,
 	ensureMainWorkspace,
@@ -23,7 +24,7 @@ export async function runMainWorkspaceSweep(
 
 	for (const row of rows) {
 		if (!existsSync(row.repoPath)) {
-			console.warn(
+			logger.warn(
 				`[main-workspace-sweep] skipping ${row.id}: repoPath ${row.repoPath} does not exist`,
 			);
 			continue;

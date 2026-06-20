@@ -11,6 +11,7 @@ import { chatSessions } from "@rox/db/schema";
 import { Client } from "@upstash/qstash";
 import { and, gte, lt } from "drizzle-orm";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +76,7 @@ export async function POST(request: Request): Promise<Response> {
 	);
 	const queued = rows.length - failedPublishes.length;
 	if (failedPublishes.length > 0) {
-		console.error("[journal/generate] Failed to enqueue some user jobs", {
+		logger.error("[journal/generate] Failed to enqueue some user jobs", {
 			day,
 			queued,
 			failed: failedPublishes.length,

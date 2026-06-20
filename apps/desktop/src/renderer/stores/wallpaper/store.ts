@@ -19,6 +19,7 @@ import {
 	WALLPAPERS,
 	type Wallpaper,
 } from "@rox/shared/appearance";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { create } from "zustand";
 
@@ -105,7 +106,7 @@ export const useWallpaperStore = create<WallpaperState>((set, get) => {
 					set({ isHydrated: true });
 				}
 			} catch (error) {
-				console.warn("[wallpaper] Failed to hydrate from appState:", error);
+				logger.warn("[wallpaper] Failed to hydrate from appState:", error);
 				set({ isHydrated: true });
 			}
 			syncTimer();

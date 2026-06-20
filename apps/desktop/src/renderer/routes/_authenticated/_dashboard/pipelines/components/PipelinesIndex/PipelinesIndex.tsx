@@ -18,6 +18,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Network, Plus, Workflow } from "lucide-react";
 import { useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { logger } from "renderer/lib/logger";
 import { PIPELINE_TEMPLATES } from "../templates";
 
 /** Kebab-case a free-text name into a slug seed. */
@@ -62,7 +63,7 @@ export function PipelinesIndex() {
 				});
 			},
 			onError: (error) => {
-				console.error("[PipelinesIndex] createDraft failed", error);
+				logger.error("[PipelinesIndex] createDraft failed", error);
 				toast.error("Не удалось создать пайплайн");
 			},
 		}),

@@ -5,6 +5,7 @@ import { HiOutlineCloud } from "react-icons/hi2";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { SettingsSection } from "../../../../components/ProjectSettings";
 import { ProjectSettingsHeader } from "../../../../components/ProjectSettingsHeader";
@@ -100,7 +101,7 @@ export function SecretsSettings({ projectId }: SecretsSettingsProps) {
 				neonProjectId: cloudProject.id,
 			});
 		} catch (err) {
-			console.error("[project-settings] Failed to create cloud project:", err);
+			logger.error("[project-settings] Failed to create cloud project:", err);
 		} finally {
 			setIsCreatingCloud(false);
 		}

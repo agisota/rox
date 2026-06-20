@@ -1,6 +1,7 @@
 import { toast } from "@rox/ui/sonner";
 import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+import { logger } from "renderer/lib/logger";
 import {
 	killPortTarget,
 	type LocalPortKill,
@@ -31,7 +32,7 @@ export function usePortKillActions<TPort extends PortKillTarget>({
 		try {
 			await queryClient.invalidateQueries({ queryKey: refreshQueryKey });
 		} catch (error) {
-			console.error("[ports] Failed to refresh ports after kill:", error);
+			logger.error("[ports] Failed to refresh ports after kill:", error);
 		}
 	}, [queryClient, refreshQueryKey]);
 

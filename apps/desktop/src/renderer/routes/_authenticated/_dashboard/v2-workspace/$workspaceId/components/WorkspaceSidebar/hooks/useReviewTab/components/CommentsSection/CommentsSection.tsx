@@ -28,6 +28,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuArrowUpRight, LuCheck, LuCopy } from "react-icons/lu";
 import { VscChevronRight } from "react-icons/vsc";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { getMarkdownPreviewText } from "renderer/utils/markdownPreview";
 import type { CommentPaneData, DiffFocusSide } from "../../../../../../types";
@@ -117,7 +118,7 @@ export function CommentsSection({
 					markCopied(`comment:${comment.id}`);
 				})
 				.catch((err) => {
-					console.warn("Failed to copy comment", err);
+					logger.warn("Failed to copy comment", err);
 				});
 		},
 		[copyToClipboard, markCopied],
@@ -131,7 +132,7 @@ export function CommentsSection({
 					markCopied(actionKey);
 				})
 				.catch((err) => {
-					console.warn("Failed to copy comments", err);
+					logger.warn("Failed to copy comments", err);
 				});
 		},
 		[copyToClipboard, markCopied],
