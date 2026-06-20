@@ -48,8 +48,7 @@ const listenerMap = new WeakMap<
  * with a runtime-chosen channel name.
  */
 const ipcRendererAPI = {
-	// biome-ignore lint/suspicious/noExplicitAny: generic escape hatch — channel is a runtime value supplied by third-party persistence adapters, not a literal
-	invoke: (channel: string, ...args: any[]): Promise<any> =>
+	invoke: (channel: string, ...args: unknown[]): Promise<unknown> =>
 		ipcRenderer.invoke(channel, ...args),
 
 	send: <K extends IpcEventChannel>(

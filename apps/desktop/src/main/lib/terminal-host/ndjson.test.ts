@@ -53,6 +53,17 @@ describe("NdjsonParser", () => {
 		]);
 	});
 
+	test("strips a trailing CR so CRLF-framed lines parse", () => {
+		const parser = new NdjsonParser();
+		const messages = parser.parse(
+			'{"id":"a","ok":true,"payload":1}\r\n{"id":"b","ok":true,"payload":2}\r\n',
+		);
+		expect(messages).toEqual([
+			{ id: "a", ok: true, payload: 1 },
+			{ id: "b", ok: true, payload: 2 },
+		]);
+	});
+
 	test("ignores empty and whitespace-only lines", () => {
 		const parser = new NdjsonParser();
 		const messages = parser.parse(
