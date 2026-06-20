@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { navItems } from "./navItems";
 
 describe("agents header navItems", () => {
-	it("exposes every cabinet destination (404 fix: Workspaces + Pipelines reachable; + Inbox)", () => {
-		expect(navItems).toHaveLength(5);
+	it("exposes every cabinet destination (Workspaces + Pipelines + Inbox + Drive)", () => {
+		expect(navItems).toHaveLength(6);
 		const hrefs = navItems.map((item) => item.href);
 		expect(hrefs).toEqual([
 			"/agents",
@@ -11,6 +11,7 @@ describe("agents header navItems", () => {
 			"/agents/pipelines",
 			"/inbox",
 			"/integrations",
+			"/drive",
 		]);
 	});
 

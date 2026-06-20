@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import type { S3Client } from "@aws-sdk/client-s3";
-import type { MinioConfig } from "./config.ts";
-import { createMinioClient, MinioProvider } from "./minio-provider.ts";
+import type { MinioConfig } from "./config";
+import { createMinioClient, MinioProvider } from "./minio-provider";
 
 const config: MinioConfig = {
 	kind: "minio",

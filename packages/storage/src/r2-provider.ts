@@ -1,10 +1,10 @@
 import { S3Client } from "@aws-sdk/client-s3";
-import type { R2Config } from "./config.ts";
+import type { R2Config } from "./config";
 import {
 	type PresignerFn,
 	S3BaseProvider,
 	type S3BaseProviderOptions,
-} from "./s3-base.ts";
+} from "./s3-base";
 
 /** Default R2 region label. R2 ignores region but the SDK requires one. */
 const R2_DEFAULT_REGION = "auto";

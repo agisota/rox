@@ -1,4 +1,4 @@
-import type { StorageProviderKind } from "./types.ts";
+import type { StorageProviderKind } from "./types";
 
 /** Credentials shared by all S3-compatible backends. */
 export interface S3Credentials {
