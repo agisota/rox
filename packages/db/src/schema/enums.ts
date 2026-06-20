@@ -617,6 +617,10 @@ export const identityKindValues = [
 	"selector",
 	"phone",
 	"domain",
+	// D4 XMPP federation: a remote JID (`bob@external.org`) resolves to a contact
+	// node via the existing `identity_links` mechanism. APPEND-ONLY: added at the
+	// end so the pgEnum ordinal mapping of the existing values is unchanged.
+	"xmpp",
 ] as const;
 export const identityKindEnum = z.enum(identityKindValues);
 export type IdentityKind = z.infer<typeof identityKindEnum>;
@@ -878,3 +882,47 @@ export type MailStatus = z.infer<typeof mailStatusEnum>;
 export const mailProviderValues = ["cloudflare", "resend"] as const;
 export const mailProviderEnum = z.enum(mailProviderValues);
 export type MailProvider = z.infer<typeof mailProviderEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D4 XMPP / Jabber Federation (comms-suite epic, P0).
+// Makes the locked rox identity (`user_profiles.handle`, ROX-522) reachable on
+// the global XMPP network as `<handle>@xmpp.rox.one`. A self-hosted ejabberd
+// (deploy wave) owns the XMPP domain + s2s federation; an XEP-0114 component
+// bridges stanzas into the D1 unified inbox (transport = `xmpp`). The `xmpp_*`
+// Drizzle tables here describe ONLY the Rox↔XMPP mapping (JID bindings, roster
+// links, offline relay buffer, federation policy) — never ejabberd internals,
+// which live in a separate ejabberd-owned database. Append-only string unions
+// backing Postgres pgEnums (declared in schema/xmpp.ts); NEVER reorder/remove.
+// ---------------------------------------------------------------------------
+
+/** Lifecycle of a provisioned JID binding (DQ4: reserved/grace on rename). */
+export const xmppAccountStatusValues = [
+	"active",
+	"suspended",
+	"reserved",
+	"deleted",
+] as const;
+export const xmppAccountStatusEnum = z.enum(xmppAccountStatusValues);
+export type XmppAccountStatus = z.infer<typeof xmppAccountStatusEnum>;
+
+/** RFC 6121 roster subscription state for a remote JID contact. */
+export const xmppSubscriptionValues = [
+	"none",
+	"to",
+	"from",
+	"both",
+	"pending_out",
+	"pending_in",
+] as const;
+export const xmppSubscriptionEnum = z.enum(xmppSubscriptionValues);
+export type XmppSubscription = z.infer<typeof xmppSubscriptionEnum>;
+
+/** Direction of a buffered stanza relative to the bridged rox user. */
+export const xmppDirectionValues = ["inbound", "outbound"] as const;
+export const xmppDirectionEnum = z.enum(xmppDirectionValues);
+export type XmppDirection = z.infer<typeof xmppDirectionEnum>;
+
+/** Per-remote-domain federation posture (allow / deny / rate-throttle). */
+export const xmppFedPolicyValues = ["allow", "deny", "throttle"] as const;
+export const xmppFedPolicyEnum = z.enum(xmppFedPolicyValues);
+export type XmppFedPolicy = z.infer<typeof xmppFedPolicyEnum>;

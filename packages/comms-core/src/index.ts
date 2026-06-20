@@ -22,6 +22,11 @@ export {
 	type SendContext,
 	type SendResult,
 	type TransportAdapter,
+	XmppAdapter,
+	type XmppAdapterOptions,
+	type XmppOutboundPayload,
+	type XmppRawInbound,
+	type XmppSendFn,
 } from "./adapter";
 export {
 	type AuthVerdict,
@@ -33,9 +38,16 @@ export {
 	scoreInboundSpam,
 } from "./email";
 export {
+	bareJid,
 	deriveAddresses,
+	deriveJid,
 	normalizeHandle,
+	normalizeJidLocalpart,
+	type ParsedJid,
+	parseJid,
+	RESERVED_JID_LOCALPARTS,
 	ROX_ADDRESS_DOMAIN,
+	ROX_XMPP_DOMAIN,
 } from "./identity";
 export type {
 	AddressStore,

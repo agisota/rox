@@ -51,6 +51,7 @@ import { v2WorkspaceRouter } from "./router/v2-workspace";
 import { voiceRouter } from "./router/voice";
 import { workflowRouter } from "./router/workflow";
 import { workspaceRouter } from "./router/workspace";
+import { xmppRouter } from "./router/xmpp";
 import { createCallerFactory, createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
@@ -105,6 +106,7 @@ export const appRouter = createTRPCRouter({
 	voice: voiceRouter,
 	workflow: workflowRouter,
 	workspace: workspaceRouter,
+	xmpp: xmppRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -35,4 +35,5 @@ export * from "./schema";
 export * from "./types";
 export * from "./voice";
 export * from "./workflow";
+export * from "./xmpp";
 export * from "./zod";
