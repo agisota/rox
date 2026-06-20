@@ -1,6 +1,7 @@
 import { projects } from "@rox/local-db";
 import { eq } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../../..";
 import { generateBranchNameFromPrompt } from "../utils/ai-branch-name";
@@ -38,7 +39,7 @@ export const createGenerateBranchNameProcedures = () => {
 					const { local, remote } = await listBranches(project.mainRepoPath);
 					existingBranches = local.concat(remote);
 				} catch (error) {
-					console.warn(
+					logger.warn(
 						"[generateBranchName] Failed to list branches, proceeding without conflict checking:",
 						error,
 					);
@@ -51,7 +52,7 @@ export const createGenerateBranchNameProcedures = () => {
 				try {
 					branchPrefix = await resolveBranchPrefix(project, existingBranches);
 				} catch (error) {
-					console.warn(
+					logger.warn(
 						"[generateBranchName] Failed to resolve branch prefix:",
 						error,
 					);

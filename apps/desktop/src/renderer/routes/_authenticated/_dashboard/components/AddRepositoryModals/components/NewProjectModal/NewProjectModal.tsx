@@ -17,6 +17,7 @@ import { LuCheck, LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
+import { logger } from "renderer/lib/logger";
 import {
 	type ProjectSetupResult,
 	useFinalizeProjectSetup,
@@ -164,7 +165,7 @@ export function NewProjectModal({
 			// which is useless to a user. Hide that envelope in favor of a
 			// short generic message; details land in the console for devs.
 			const isLeakedSql = raw.startsWith("Failed query:");
-			if (isLeakedSql) console.error("[NewProjectModal] create failed", err);
+			if (isLeakedSql) logger.error("[NewProjectModal] create failed", err);
 			const message = isLeakedSql
 				? "Could not create project. Please try a different name or check the logs."
 				: raw;

@@ -1,0 +1,98 @@
+import { describe, expect, mock, test } from "bun:test";
+import { dashboardRoomId } from "@rox/collab";
+
+import { authorizeRoomForMember } from "./collab";
+
+const userInfo = { name: "Ada", avatarUrl: null };
+
+/**
+ * A fake LiveBlocks node client mirroring `packages/collab/src/auth.test.ts`,
+ * so this router test never touches the LiveBlocks cloud.
+ */
+function fakeLiveblocks() {
+	const granted: Array<{ room: string; perms: readonly string[] }> = [];
+	const authorize = mock(async () => ({
+		status: 200,
+		body: JSON.stringify({ token: "lb_session_token" }),
+	}));
+	const session = {
+		FULL_ACCESS: ["room:write"] as const,
+		allow(room: string, perms: readonly string[]) {
+			granted.push({ room, perms });
+			return session;
+		},
+		authorize,
+	};
+	const prepareSession = mock(() => session);
+	return { client: { prepareSession }, granted, prepareSession, authorize };
+}
+
+describe("authorizeRoomForMember (collab.authRoom core)", () => {
+	test("mints a token for a member of the room's org", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = dashboardRoomId("org_1", "dash_42");
+		const requireMembership = mock(async () => "org_1");
+
+		const result = await authorizeRoomForMember({
+			userId: "user_1",
+			roomId,
+			userInfo,
+			ports: { requireMembership, liveblocks: lb.client },
+		});
+
+		expect(result.token).toBe("lb_session_token");
+		expect(requireMembership).toHaveBeenCalledTimes(1);
+		expect(lb.granted).toEqual([{ room: roomId, perms: ["room:write"] }]);
+	});
+
+	test("rejects a non-org-scoped room before any membership/cloud work", async () => {
+		const lb = fakeLiveblocks();
+		const requireMembership = mock(async () => "org_1");
+
+		await expect(
+			authorizeRoomForMember({
+				userId: "user_1",
+				roomId: "freeform-room",
+				userInfo,
+				ports: { requireMembership, liveblocks: lb.client },
+			}),
+		).rejects.toThrow(/not org-scoped/);
+		expect(requireMembership).not.toHaveBeenCalled();
+		expect(lb.prepareSession).not.toHaveBeenCalled();
+	});
+
+	test("denies when the caller is not a member of the room's org", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = dashboardRoomId("org_1", "dash_42");
+		// Membership check authorizes a DIFFERENT org than the room carries.
+		const requireMembership = mock(async () => "org_2");
+
+		await expect(
+			authorizeRoomForMember({
+				userId: "user_1",
+				roomId,
+				userInfo,
+				ports: { requireMembership, liveblocks: lb.client },
+			}),
+		).rejects.toThrow(/belongs to org org_1, not org_2/);
+		expect(lb.prepareSession).not.toHaveBeenCalled();
+	});
+
+	test("propagates a membership-check rejection (e.g. not a member)", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = dashboardRoomId("org_1", "dash_42");
+		const requireMembership = mock(async () => {
+			throw new Error("FORBIDDEN: not a member");
+		});
+
+		await expect(
+			authorizeRoomForMember({
+				userId: "user_1",
+				roomId,
+				userInfo,
+				ports: { requireMembership, liveblocks: lb.client },
+			}),
+		).rejects.toThrow(/not a member/);
+		expect(lb.prepareSession).not.toHaveBeenCalled();
+	});
+});

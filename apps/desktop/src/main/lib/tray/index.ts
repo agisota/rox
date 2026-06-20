@@ -15,6 +15,7 @@ import {
 	getHostServiceCoordinator,
 	type HostServiceStatusEvent,
 } from "main/lib/host-service-coordinator";
+import { logger } from "main/lib/logger";
 import { menuEmitter } from "main/lib/menu-events";
 
 /** Must have "Template" suffix for macOS dark/light mode support */
@@ -45,7 +46,7 @@ function getTrayIconPath(): string | null {
 		return devPath;
 	}
 
-	console.warn("[Tray] Icon not found at:", previewPath, "or", devPath);
+	logger.warn("[Tray] Icon not found at:", previewPath, "or", devPath);
 	return null;
 }
 
@@ -54,7 +55,7 @@ let tray: Tray | null = null;
 function createTrayIcon(): Electron.NativeImage | null {
 	const iconPath = getTrayIconPath();
 	if (!iconPath) {
-		console.warn("[Tray] Icon not found");
+		logger.warn("[Tray] Icon not found");
 		return null;
 	}
 
@@ -63,7 +64,7 @@ function createTrayIcon(): Electron.NativeImage | null {
 		const size = image.getSize();
 
 		if (image.isEmpty() || size.width === 0 || size.height === 0) {
-			console.warn("[Tray] Icon loaded with zero size from:", iconPath);
+			logger.warn("[Tray] Icon loaded with zero size from:", iconPath);
 			return null;
 		}
 
@@ -74,7 +75,7 @@ function createTrayIcon(): Electron.NativeImage | null {
 		image.setTemplateImage(true);
 		return image;
 	} catch (error) {
-		console.warn("[Tray] Failed to load icon:", error);
+		logger.warn("[Tray] Failed to load icon:", error);
 		return null;
 	}
 }
@@ -100,7 +101,7 @@ async function confirmAndQuitCompletely(): Promise<void> {
 			quitAppCompletely();
 		}
 	} catch (error) {
-		console.error("[Tray] Quit-completely confirmation failed:", error);
+		logger.error("[Tray] Quit-completely confirmation failed:", error);
 	}
 }
 
@@ -184,7 +185,7 @@ function buildHostServiceSubmenu(
 							cloudApiUrl: env.NEXT_PUBLIC_API_URL,
 						});
 					} catch (error) {
-						console.error(
+						logger.error(
 							`[Tray] Failed to restart host-service for ${orgId}:`,
 							error,
 						);
@@ -271,7 +272,7 @@ async function updateTrayMenu(): Promise<void> {
 /** Call once after app.whenReady() */
 export function initTray(): void {
 	if (tray) {
-		console.warn("[Tray] Already initialized");
+		logger.warn("[Tray] Already initialized");
 		return;
 	}
 
@@ -282,7 +283,7 @@ export function initTray(): void {
 	try {
 		const icon = createTrayIcon();
 		if (!icon) {
-			console.warn("[Tray] Skipping initialization - no icon available");
+			logger.warn("[Tray] Skipping initialization - no icon available");
 			return;
 		}
 
@@ -300,9 +301,9 @@ export function initTray(): void {
 			void updateTrayMenu();
 		});
 
-		console.log("[Tray] Initialized successfully");
+		logger.info("[Tray] Initialized successfully");
 	} catch (error) {
-		console.error("[Tray] Failed to initialize:", error);
+		logger.error("[Tray] Failed to initialize:", error);
 	}
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { animate, scrambleText } from "animejs";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { useEffect, useRef } from "react";
 import {
 	HERO_BRAND_WORDMARK,
@@ -40,8 +41,32 @@ import { Term } from "./components/Term";
  * restores it. Hovering any line re-scrambles it. Everything is scoped to the
  * container ref and skipped entirely under `prefers-reduced-motion`.
  */
+/**
+ * Staggered scroll-reveal for the 4 numbered hero features (01–04). Adapted from
+ * the ravikatiyar / 21st.dev "feature-highlight" reference: the container fades
+ * its children in one-by-one (staggerChildren); each line fades + slides up with
+ * a spring. Reduced-motion users get the static rendering (see `reduced` below).
+ */
+const hintsContainerVariants: Variants = {
+	hidden: { opacity: 0 },
+	visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
+};
+
+const hintItemVariants: Variants = {
+	hidden: { opacity: 0, y: 20 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		transition: { type: "spring", stiffness: 100, damping: 15 },
+	},
+};
+
 export function ScrambleLanding() {
 	const containerRef = useRef<HTMLElement>(null);
+	const prefersReducedMotion = useReducedMotion();
+	// Reduced motion: render hints fully visible, no stagger/slide.
+	const hintsInitial = prefersReducedMotion ? "visible" : "hidden";
+	const hintItemVariant = prefersReducedMotion ? undefined : hintItemVariants;
 	const animationsRef = useRef<
 		Array<{ cancel?: () => void; revert?: () => void }>
 	>([]);
@@ -168,15 +193,22 @@ export function ScrambleLanding() {
 						</span>
 					</div>
 
-					<ul className="rox-hero__hints" aria-label="Фишки Rox">
-						<li className="rox-hero__hint">
+					<motion.ul
+						className="rox-hero__hints"
+						aria-label="Фишки Rox"
+						variants={hintsContainerVariants}
+						initial={hintsInitial}
+						whileInView="visible"
+						viewport={{ once: true, amount: 0.35 }}
+					>
+						<motion.li className="rox-hero__hint" variants={hintItemVariant}>
 							<span className="rox-hero__hint-body">
 								{FIELD_HINT_LEAD}
 								<span className="rox-hero__line-break">{FIELD_HINT_TAIL}</span>
 							</span>
-						</li>
+						</motion.li>
 
-						<li className="rox-hero__hint">
+						<motion.li className="rox-hero__hint" variants={hintItemVariant}>
 							<span className="rox-hero__hint-body">
 								Агенты не мешают друг другу: каждый решает вопросики в своей{" "}
 								<Term {...HERO_WORKTREE_TERM} /> —
@@ -184,22 +216,22 @@ export function ScrambleLanding() {
 									без ошибок, пересечений и конфликтов
 								</span>
 							</span>
-						</li>
+						</motion.li>
 
-						<li className="rox-hero__hint">
+						<motion.li className="rox-hero__hint" variants={hintItemVariant}>
 							<span className="rox-hero__hint-body">
 								Выдаем под твоего агента <Term {...HERO_RUNTIME_TERM} /> 24/7 с
 								безлимитным доступом к <Term {...HERO_LLM_TERM} /> — всем,
 								бесплатно, навсегда
 							</span>
-						</li>
+						</motion.li>
 
-						<li className="rox-hero__hint">
+						<motion.li className="rox-hero__hint" variants={hintItemVariant}>
 							<span className="rox-hero__hint-body">
 								<HeroStackLine />
 							</span>
-						</li>
-					</ul>
+						</motion.li>
+					</motion.ul>
 
 					<HeroDownloadCta />
 				</div>

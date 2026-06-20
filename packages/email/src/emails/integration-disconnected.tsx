@@ -30,27 +30,27 @@ export function IntegrationDisconnectedEmail({
 	const first = connections[0];
 
 	return (
-		<StandardLayout preview="A Rox integration was disconnected">
+		<StandardLayout preview="Интеграция Rox была отключена">
 			<Heading className="text-lg font-normal leading-7 mb-8 text-foreground text-center">
-				A Rox integration was disconnected
+				Интеграция Rox была отключена
 			</Heading>
 
 			<Text className="text-base leading-[26px] mb-4 text-foreground">
-				Hi {recipientName ?? "there"},
+				{recipientName ? `Здравствуйте, ${recipientName}!` : "Здравствуйте!"}
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				We found that multiple Rox organizations were connected to the same{" "}
-				{isSingle ? first?.provider : "external"} workspace, which caused
-				webhook syncs to route non-deterministically between them. To fix it, we
-				kept the most recently active org's connection and disconnected the
-				rest.
+				Мы обнаружили, что несколько организаций Rox были подключены к одному и
+				тому же {isSingle ? first?.provider : "внешнему"} рабочему пространству,
+				из-за чего синхронизация вебхуков маршрутизировалась между ними
+				недетерминированно. Чтобы это исправить, мы оставили подключение
+				наиболее недавно активной организации, а остальные отключили.
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
 				{connections.length > 1
-					? "Your following connections were disconnected:"
-					: "Your following connection was disconnected:"}
+					? "Следующие подключения были отключены:"
+					: "Следующее подключение было отключено:"}
 			</Text>
 
 			<Section className="mb-6">
@@ -59,27 +59,27 @@ export function IntegrationDisconnectedEmail({
 						key={`${c.orgName}-${c.provider}-${c.workspaceName}`}
 						className="text-base leading-[26px] text-foreground mb-2"
 					>
-						• <strong>{c.orgName}</strong> → {c.provider} workspace{" "}
-						<strong>{c.workspaceName}</strong> — now owned by{" "}
+						• <strong>{c.orgName}</strong> → рабочее пространство {c.provider}{" "}
+						<strong>{c.workspaceName}</strong> — теперь принадлежит{" "}
 						<a href={`mailto:${c.winnerEmail}`}>{c.winnerEmail}</a>
 					</Text>
 				))}
 			</Section>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				If your org should be the one connected, ask the listed owner to
-				disconnect from their Rox Integrations page first, then reconnect from
-				yours.
+				Если подключённой должна быть именно ваша организация, попросите
+				указанного владельца сначала отключиться на своей странице интеграций
+				Rox, а затем подключитесь со своей.
 			</Text>
 
 			<Section className="mt-6 mb-6">
 				<Button href="https://app.rox.one/integrations">
-					Open Integrations
+					Открыть интеграции
 				</Button>
 			</Section>
 
 			<Text className="text-xs leading-5 text-muted">
-				Reply to this email if you have questions.
+				Ответьте на это письмо, если есть вопросы.
 			</Text>
 		</StandardLayout>
 	);

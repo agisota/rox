@@ -15,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Zap } from "lucide-react";
 import { useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { logger } from "renderer/lib/logger";
 
 /**
  * User-facing pipeline trigger kinds. Each maps to the canonical `trigger_kind`
@@ -77,7 +78,7 @@ export function TriggerConfigPanel({
 				toast.success("Триггер добавлен");
 			},
 			onError: (error) => {
-				console.error("[TriggerConfigPanel] create failed", error);
+				logger.error("[TriggerConfigPanel] create failed", error);
 				toast.error("Не удалось добавить триггер");
 			},
 		}),
@@ -87,7 +88,7 @@ export function TriggerConfigPanel({
 		trpc.pipelineTrigger.setEnabled.mutationOptions({
 			onSuccess: invalidate,
 			onError: (error) => {
-				console.error("[TriggerConfigPanel] setEnabled failed", error);
+				logger.error("[TriggerConfigPanel] setEnabled failed", error);
 				toast.error("Не удалось изменить триггер");
 			},
 		}),
@@ -100,7 +101,7 @@ export function TriggerConfigPanel({
 				toast.success("Триггер удалён");
 			},
 			onError: (error) => {
-				console.error("[TriggerConfigPanel] delete failed", error);
+				logger.error("[TriggerConfigPanel] delete failed", error);
 				toast.error("Не удалось удалить триггер");
 			},
 		}),

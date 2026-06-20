@@ -9,12 +9,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { repoLabel } from "@/screens/(authenticated)/(home)/workspaces/utils/projectMeta";
 import { useProjectDetail } from "./hooks/useProjectDetail";
+import { useProjectWorkspaces } from "./hooks/useProjectWorkspaces";
 
 export function WorkspaceDetailScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
 	const { project, isReady } = useProjectDetail(id);
+	const { workspaces } = useProjectWorkspaces(id);
 
 	const repo = project ? repoLabel(project) : null;
 
@@ -67,6 +69,47 @@ export function WorkspaceDetailScreen() {
 										{project.defaultBranch}
 									</Text>
 								</View>
+							</CardContent>
+						</Card>
+
+						<Card>
+							<CardHeader>
+								<CardTitle>Workspaces</CardTitle>
+							</CardHeader>
+							<CardContent className="gap-3">
+								{workspaces.length === 0 ? (
+									<Text className="text-muted-foreground">
+										No workspaces yet for this project.
+									</Text>
+								) : (
+									workspaces.map((workspace) => (
+										<View
+											key={workspace.id}
+											className="flex-row items-center justify-between gap-2"
+										>
+											<View className="flex-1 gap-0.5">
+												<Text numberOfLines={1} className="font-medium">
+													{workspace.name}
+												</Text>
+												<View className="flex-row items-center gap-1.5">
+													<Icon
+														as={GitBranch}
+														className="size-3.5 text-muted-foreground"
+													/>
+													<Text
+														numberOfLines={1}
+														className="text-sm text-muted-foreground"
+													>
+														{workspace.branch}
+													</Text>
+												</View>
+											</View>
+											<Badge variant="outline">
+												<Text>{workspace.type}</Text>
+											</Badge>
+										</View>
+									))
+								)}
 							</CardContent>
 						</Card>
 

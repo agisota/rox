@@ -32,6 +32,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LuImagePlus, LuTrash2 } from "react-icons/lu";
 import { ColorSelector } from "renderer/components/ColorSelector";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import {
 	useImportAllWorktrees,
 	useOpenExternalWorktree,
@@ -127,7 +128,7 @@ export function ProjectSettings({
 
 	const updateProject = electronTrpc.projects.update.useMutation({
 		onError: (err) => {
-			console.error("[project-settings/update] Failed to update:", err);
+			logger.error("[project-settings/update] Failed to update:", err);
 		},
 		onSettled: () => {
 			utils.projects.get.invalidate({ id: projectId });
@@ -137,7 +138,7 @@ export function ProjectSettings({
 
 	const setProjectIcon = electronTrpc.projects.setProjectIcon.useMutation({
 		onError: (err) => {
-			console.error("[project-settings/setProjectIcon] Failed:", err);
+			logger.error("[project-settings/setProjectIcon] Failed:", err);
 			toast.error(err.message || "Не удалось обновить иконку проекта");
 		},
 		onSettled: () => {

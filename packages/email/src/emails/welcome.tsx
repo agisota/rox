@@ -7,34 +7,37 @@ interface WelcomeEmailProps {
 
 export function WelcomeEmail({ userName = "there" }: WelcomeEmailProps) {
 	return (
-		<StandardLayout preview="Welcome to Rox! Let's get you started.">
-			<Heading style={heading}>Welcome to Rox, {userName}!</Heading>
+		<StandardLayout preview="Добро пожаловать в Rox! Давайте начнём.">
+			<Heading style={heading}>Добро пожаловать в Rox, {userName}!</Heading>
 
 			<Text style={paragraph}>
-				Thanks for joining Rox. We're excited to help you automate your
-				workflows and boost your productivity with AI-powered task management.
+				Спасибо, что присоединились к Rox. Мы рады помочь вам автоматизировать
+				рабочие процессы и повысить продуктивность с управлением задачами на
+				базе ИИ.
 			</Text>
 
-			<Text style={paragraph}>Here's what you can do next:</Text>
+			<Text style={paragraph}>Вот что можно сделать дальше:</Text>
 
 			<Text style={listItem}>
-				✓ Create your first workspace and invite your team
+				✓ Создайте первое рабочее пространство и пригласите команду
 			</Text>
 			<Text style={listItem}>
-				✓ Connect your favorite tools and integrations
+				✓ Подключите любимые инструменты и интеграции
 			</Text>
-			<Text style={listItem}>✓ Set up your first automated workflow</Text>
+			<Text style={listItem}>
+				✓ Настройте первый автоматизированный процесс
+			</Text>
 
-			<Button href="https://app.rox.one/onboarding">Get Started</Button>
+			<Button href="https://app.rox.one/onboarding">Начать</Button>
 
 			<Text style={footer}>
-				Need help getting started? Check out our{" "}
+				Нужна помощь? Загляните в{" "}
 				<a href="https://rox.one/docs" style={link}>
-					documentation
+					документацию
 				</a>{" "}
-				or reach out to our{" "}
+				или напишите в{" "}
 				<a href="https://rox.one/support" style={link}>
-					support team
+					службу поддержки
 				</a>
 				.
 			</Text>

@@ -5,6 +5,7 @@ import { projects, type SelectProject } from "@rox/local-db";
 import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
 import { eq } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
+import { logger } from "shared/logger";
 import type { SetupAction, SetupDetectionResult } from "shared/types/config";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
@@ -498,7 +499,7 @@ export const createConfigRouter = () => {
 					writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
 					return { success: true };
 				} catch (error) {
-					console.error("[config/updateConfig] Failed to write config:", error);
+					logger.error("[config/updateConfig] Failed to write config:", error);
 					throw new Error("Failed to save config");
 				}
 			}),

@@ -6,6 +6,7 @@ import { and, asc, eq } from "drizzle-orm";
 import chunk from "lodash.chunk";
 import { z } from "zod";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 import { type FiberyCommand, runCommands } from "../../fibery-client";
 import { type FiberyEntity, mapFiberyEntities } from "../../sync";
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
 	const statusId = await resolveDefaultStatusId(organizationId);
 
 	if (!creatorUserId || !statusId || mappedTasks.length === 0) {
-		console.info(
+		logger.info(
 			`[fibery:sync] mapped ${mappedTasks.length} task(s) for org ${organizationId}; upsert skipped`,
 			{
 				hasCreator: Boolean(creatorUserId),

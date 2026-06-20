@@ -1,6 +1,7 @@
 import type { RendererContext } from "@rox/panes";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
+import { logger } from "renderer/lib/logger";
 import "@xterm/xterm/css/xterm.css";
 import {
 	ease,
@@ -303,7 +304,7 @@ export function TerminalPane({
 					event.preventDefault();
 					if (action === "external") {
 						electronTrpcClient.external.openUrl.mutate(url).catch((error) => {
-							console.error("[v2 Terminal] Failed to open URL:", url, error);
+							logger.error("[v2 Terminal] Failed to open URL:", url, error);
 						});
 					} else {
 						openUrlInV2Workspace({

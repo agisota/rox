@@ -3,6 +3,7 @@ import { workspaceTrpc } from "@rox/workspace-client";
 import type { FsWatchEvent } from "@rox/workspace-fs/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWorkspaceEvent } from "renderer/hooks/host-service/useWorkspaceEvent";
+import { logger } from "renderer/lib/logger";
 import {
 	asDirectoryHandle,
 	stripTrailingSlash,
@@ -119,7 +120,7 @@ export function useFilesTabBridge({
 					loadedDirsRef.current.add(relDir);
 				} catch (error) {
 					if (versionRef.current !== startVersion) return;
-					console.error("[v2 FilesTab] listDirectory failed", {
+					logger.error("[v2 FilesTab] listDirectory failed", {
 						relDir,
 						error,
 					});
@@ -166,7 +167,7 @@ export function useFilesTabBridge({
 					}
 					loadedDirsRef.current.add(dir);
 				} catch (error) {
-					console.error("[v2 FilesTab] refresh listDirectory failed", {
+					logger.error("[v2 FilesTab] refresh listDirectory failed", {
 						dir,
 						error,
 					});

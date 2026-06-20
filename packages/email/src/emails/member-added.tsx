@@ -17,35 +17,39 @@ export function MemberAddedEmail({
 	dashboardLink = "https://app.rox.one",
 }: MemberAddedEmailProps) {
 	const roleDisplay =
-		role === "member" ? "Member" : role === "admin" ? "Admin" : "Owner";
+		role === "member"
+			? "Участник"
+			: role === "admin"
+				? "Администратор"
+				: "Владелец";
 
 	return (
-		<StandardLayout preview={`You've been added to ${organizationName}`}>
+		<StandardLayout preview={`Вас добавили в ${organizationName}`}>
 			<Heading className="text-lg font-normal leading-7 mb-8 text-foreground text-center">
-				You're now part of <strong>{organizationName}</strong>
+				Теперь вы участник <strong>{organizationName}</strong>
 			</Heading>
 
 			<Text className="text-base leading-[26px] mb-4 text-foreground">
-				Hi {memberName ?? "there"},
+				{memberName ? `Здравствуйте, ${memberName}!` : "Здравствуйте!"}
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				{addedByName} has added you to <strong>{organizationName}</strong> on
-				Rox as a <strong>{roleDisplay}</strong>.
+				{addedByName} добавил вас в <strong>{organizationName}</strong> в Rox в
+				роли <strong>{roleDisplay}</strong>.
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				You now have access to the team's workspaces, tasks, and workflows. Head
-				over to your dashboard to get started.
+				Теперь у вас есть доступ к рабочим пространствам, задачам и процессам
+				команды. Перейдите в панель, чтобы начать.
 			</Text>
 
 			<Section className="mt-6 mb-6">
-				<Button href={dashboardLink}>Go to Dashboard</Button>
+				<Button href={dashboardLink}>Перейти в панель</Button>
 			</Section>
 
 			<Text className="text-xs leading-5 text-muted">
-				If you have any questions, reach out to {addedByName} or your team
-				administrator.
+				Если у вас есть вопросы, обратитесь к {addedByName} или администратору
+				команды.
 			</Text>
 		</StandardLayout>
 	);

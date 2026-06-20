@@ -1,4 +1,5 @@
 import type { MutableRefObject } from "react";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import {
 	getPaneWorkspaceRun,
@@ -101,7 +102,7 @@ export async function recoverWorkspaceRunPane({
 		} catch (error) {
 			if (shouldAbort()) return true;
 
-			console.warn(
+			logger.warn(
 				`[workspace-run] Failed to inspect session for pane ${paneId}:`,
 				error,
 			);
@@ -131,7 +132,7 @@ export async function recoverWorkspaceRunPane({
 	} catch (error) {
 		if (shouldAbort()) return true;
 
-		console.warn(
+		logger.warn(
 			`[workspace-run] Failed to inspect session for pane ${paneId}:`,
 			error,
 		);

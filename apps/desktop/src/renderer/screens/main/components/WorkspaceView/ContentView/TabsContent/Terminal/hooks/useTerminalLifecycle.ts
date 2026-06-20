@@ -3,6 +3,7 @@ import type { SearchAddon } from "@xterm/addon-search";
 import type { IDisposable, ITheme, Terminal as XTerm } from "@xterm/xterm";
 import type { MutableRefObject, RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { logger } from "renderer/lib/logger";
 import { writeCommandInPane } from "renderer/lib/terminal/launch-command";
 import type { DetectedLink } from "renderer/lib/terminal/links";
 import {
@@ -217,7 +218,7 @@ export function useTerminalLifecycle({
 		if (!container) return;
 
 		if (DEBUG_TERMINAL) {
-			console.log(`[Terminal] Mount: ${paneId}`);
+			logger.info(`[Terminal] Mount: ${paneId}`);
 		}
 
 		// Cancel pending detach from previous unmount
@@ -245,7 +246,7 @@ export function useTerminalLifecycle({
 		const cachedBeforeCreate = v1TerminalCache.get(paneId);
 		const isReattach = cachedBeforeCreate?.streamReady === true;
 		if (DEBUG_TERMINAL) {
-			console.log(`[Terminal] isReattach=${isReattach} paneId=${paneId}`);
+			logger.info(`[Terminal] isReattach=${isReattach} paneId=${paneId}`);
 		}
 		const cached = v1TerminalCache.getOrCreate(paneId, {
 			workspaceId,
@@ -401,7 +402,7 @@ export function useTerminalLifecycle({
 								void writeWorkspaceRunCommand(command)
 									.then(resolve)
 									.catch((error) => {
-										console.error(
+										logger.error(
 											"[Terminal] Failed to write workspace run command:",
 											error,
 										);
@@ -427,7 +428,7 @@ export function useTerminalLifecycle({
 									resolve();
 									return;
 								}
-								console.error("[Terminal] Failed to restart:", error);
+								logger.error("[Terminal] Failed to restart:", error);
 								if (workspaceRun) {
 									setPaneWorkspaceRunState(paneId, "stopped-by-exit");
 								}
@@ -451,7 +452,7 @@ export function useTerminalLifecycle({
 					void electronTrpcClient.terminal.kill
 						.mutate({ paneId })
 						.catch((err) => {
-							console.warn("[Terminal] Kill failed before restart:", err);
+							logger.warn("[Terminal] Kill failed before restart:", err);
 						})
 						.finally(attach);
 					return;
@@ -576,7 +577,7 @@ export function useTerminalLifecycle({
 						};
 
 						if (DEBUG_TERMINAL) {
-							console.log(`[Terminal] createOrAttach start: ${paneId}`);
+							logger.info(`[Terminal] createOrAttach start: ${paneId}`);
 						}
 						createOrAttachRef.current(
 							{
@@ -646,7 +647,7 @@ export function useTerminalLifecycle({
 
 									void writeWorkspaceRunCommand(commandToRunAfterAttach).catch(
 										(error) => {
-											console.error(
+											logger.error(
 												"[Terminal] Failed to write workspace run command after attach:",
 												error,
 											);
@@ -685,7 +686,7 @@ export function useTerminalLifecycle({
 										setConnectionError(null);
 										return;
 									}
-									console.error("[Terminal] Failed to create/attach:", error);
+									logger.error("[Terminal] Failed to create/attach:", error);
 									rejectTerminalSessionReady(
 										paneId,
 										new Error(error.message || "Failed to connect to terminal"),
@@ -790,7 +791,7 @@ export function useTerminalLifecycle({
 		return () => {
 			const paneDestroyed = isPaneDestroyedInStore();
 			if (DEBUG_TERMINAL) {
-				console.log(
+				logger.info(
 					`[Terminal] Unmount: ${paneId}, paneDestroyed=${paneDestroyed}`,
 				);
 			}

@@ -7,6 +7,7 @@
  * - Rehydration sequence generation for mode restoration
  */
 
+import { logger } from "main/lib/logger";
 import "../../terminal-host/xterm-env-polyfill";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { Terminal } from "@xterm/headless";
@@ -143,7 +144,7 @@ export class HeadlessEmulator {
 		const terminalTime = performance.now() - terminalStart;
 
 		if (parseTime > 2 || terminalTime > 2) {
-			console.warn(
+			logger.warn(
 				`[HeadlessEmulator] write(${data.length}b): parse=${parseTime.toFixed(1)}ms, terminal=${terminalTime.toFixed(1)}ms`,
 			);
 		}

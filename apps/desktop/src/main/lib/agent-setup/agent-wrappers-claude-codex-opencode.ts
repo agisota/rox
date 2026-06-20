@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import {
 	buildWrapperScript,
 	createWrapper,
@@ -106,14 +107,14 @@ function readExistingClaudeSettings(
 	try {
 		const parsed = JSON.parse(fs.readFileSync(globalPath, "utf-8"));
 		if (!isPlainObject(parsed)) {
-			console.warn(
+			logger.warn(
 				"[agent-setup] Expected ~/.claude/settings.json to contain a JSON object; skipping Claude hook merge",
 			);
 			return null;
 		}
 		return parsed;
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[agent-setup] Could not parse existing ~/.claude/settings.json; skipping Claude hook merge:",
 			error,
 		);
@@ -257,7 +258,7 @@ export function createClaudeSettingsJson(): void {
 	const dir = path.dirname(globalPath);
 	fs.mkdirSync(dir, { recursive: true });
 	const changed = writeFileIfChanged(globalPath, content, 0o644);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} Claude settings.json`,
 	);
 }
@@ -330,14 +331,14 @@ function readExistingCodexHooks(globalPath: string): CodexHooksJson | null {
 	try {
 		const parsed = JSON.parse(fs.readFileSync(globalPath, "utf-8"));
 		if (!isPlainObject(parsed)) {
-			console.warn(
+			logger.warn(
 				"[agent-setup] Expected ~/.codex/hooks.json to contain a JSON object; skipping Codex hook merge",
 			);
 			return null;
 		}
 		return parsed;
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[agent-setup] Could not parse existing ~/.codex/hooks.json; skipping Codex hook merge:",
 			error,
 		);
@@ -452,7 +453,7 @@ export function createCodexHooksJson(): void {
 	const dir = path.dirname(globalPath);
 	fs.mkdirSync(dir, { recursive: true });
 	const changed = writeFileIfChanged(globalPath, content, 0o644);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} Codex hooks.json`,
 	);
 }
@@ -466,7 +467,7 @@ export function createOpenCodePlugin(): void {
 	const notifyPath = getNotifyScriptPath();
 	const content = getOpenCodePluginContent(notifyPath);
 	const changed = writeFileIfChanged(pluginPath, content, 0o644);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} OpenCode plugin`,
 	);
 }
@@ -483,12 +484,12 @@ export function cleanupGlobalOpenCodePlugin(): void {
 		const content = fs.readFileSync(globalPluginPath, "utf-8");
 		if (content.includes(OPENCODE_PLUGIN_SIGNATURE)) {
 			fs.unlinkSync(globalPluginPath);
-			console.log(
+			logger.info(
 				"[agent-setup] Removed stale global OpenCode plugin to prevent dev/prod conflicts",
 			);
 		}
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[agent-setup] Failed to cleanup global OpenCode plugin:",
 			error,
 		);

@@ -1,5 +1,6 @@
 import { getHostId, getHostName } from "@rox/shared/host-info";
 import { buildHostRoutingKey } from "@rox/shared/host-routing";
+import { logger } from "../lib/logger";
 import type { JwtApiAuthProvider } from "../providers/auth/JwtAuthProvider/JwtAuthProvider";
 import type { ApiClient } from "../types";
 import { TunnelClient } from "./tunnel-client";
@@ -30,7 +31,7 @@ export async function connectRelay(
 			machineId,
 			name: getHostName(),
 		});
-		console.log(`[host-service] registered as host ${host.machineId}`);
+		logger.info(`[host-service] registered as host ${host.machineId}`);
 
 		const tunnel = new TunnelClient({
 			relayUrl: options.relayUrl,
@@ -42,7 +43,7 @@ export async function connectRelay(
 		void tunnel.connect();
 		return tunnel;
 	} catch (error) {
-		console.error("[host-service] failed to register/connect relay:", error);
+		logger.error("[host-service] failed to register/connect relay:", error);
 		return null;
 	}
 }

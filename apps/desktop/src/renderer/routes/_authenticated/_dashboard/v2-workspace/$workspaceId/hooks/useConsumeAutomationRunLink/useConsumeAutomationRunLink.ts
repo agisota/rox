@@ -3,6 +3,7 @@ import { workspaceTrpc } from "@rox/workspace-client";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useRef } from "react";
+import { logger } from "renderer/lib/logger";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import type { StoreApi } from "zustand/vanilla";
 import type { ChatPaneData, PaneViewerData } from "../../types";
@@ -64,7 +65,7 @@ export function useConsumeAutomationRunLink({
 				workspaceId,
 			})
 		) {
-			console.warn(
+			logger.warn(
 				"[automation-run-link] Ignoring terminal link for another workspace",
 				{ terminalId, workspaceId },
 			);
@@ -92,7 +93,7 @@ export function useConsumeAutomationRunLink({
 		if (consumedRef.current.has(key)) return;
 		consumedRef.current.add(key);
 		if (!chatSessionBelongsToWorkspace({ chatSession, workspaceId })) {
-			console.warn(
+			logger.warn(
 				"[automation-run-link] Ignoring chat link for another workspace",
 				{ chatSessionId, workspaceId },
 			);

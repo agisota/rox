@@ -65,6 +65,18 @@ export interface DvNetInvoiceRequest {
 	order_id: string;
 }
 
+/**
+ * Result of creating a dv.net invoice: the provider's charge id (the value the
+ * later webhook echoes back, used to reconcile the pending top-up) plus the
+ * hosted checkout URL the user is redirected to in order to pay.
+ */
+export interface DvNetInvoiceResult {
+	/** Provider charge id — matches the `id` the webhook reports. */
+	invoiceId: string;
+	/** Hosted checkout URL the user pays at. */
+	checkoutUrl: string;
+}
+
 /** Thrown when DVNET_API_KEY / DVNET_API_URL is missing or invalid. */
 export class DvNetConfigError extends Error {
 	constructor(message: string) {
@@ -307,4 +319,75 @@ export class DvNetHttpClient implements DvNetClient {
 		const data = (await response.json()) as unknown;
 		return normalizeDvNetWebhook(data);
 	}
+
+	/**
+	 * Create a hosted invoice/charge at dv.net and return its id + checkout URL.
+	 *
+	 * The `request` is built by the pure {@link buildInvoiceRequest} (validated,
+	 * no secrets); this method only attaches the Bearer key and POSTs it. The
+	 * response is parsed leniently — dv.net returns the charge id under `id` and
+	 * the hosted-pay URL under `checkout_url`/`url`/`payment_url`. A missing id or
+	 * URL is a hard error so a caller never persists a half-created top-up.
+	 */
+	async createInvoice(
+		request: DvNetInvoiceRequest,
+	): Promise<DvNetInvoiceResult> {
+		const url = `${this.baseUrl}/charges`;
+		let response: Response;
+		try {
+			response = await fetch(url, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${this.getApiKey()}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(request),
+				signal: AbortSignal.timeout(DVNET_REQUEST_TIMEOUT_MS),
+			});
+		} catch (error) {
+			if (isTimeoutError(error)) {
+				throw new Error(
+					`dv.net POST /charges timed out after ${DVNET_REQUEST_TIMEOUT_MS}ms`,
+					{ cause: error },
+				);
+			}
+			throw error;
+		}
+
+		if (!response.ok) {
+			throw new Error(
+				`dv.net POST /charges failed with status ${response.status}`,
+			);
+		}
+
+		const data = (await response.json()) as Record<string, unknown>;
+		const invoiceId = data.id;
+		const checkoutUrl =
+			data.checkout_url ?? data.url ?? data.payment_url ?? data.pay_url;
+
+		if (typeof invoiceId !== "string" || invoiceId.trim() === "") {
+			throw new DvNetInvoiceError(
+				"dv.net create-invoice response missing a charge id",
+			);
+		}
+		if (typeof checkoutUrl !== "string" || checkoutUrl.trim() === "") {
+			throw new DvNetInvoiceError(
+				"dv.net create-invoice response missing a checkout URL",
+			);
+		}
+
+		return { invoiceId: invoiceId.trim(), checkoutUrl: checkoutUrl.trim() };
+	}
+}
+
+/**
+ * Lazily construct the default {@link DvNetHttpClient} from `process.env`.
+ *
+ * Kept as a factory (not a module-level singleton) so the secret is only read
+ * when a top-up is actually requested — modules that merely import the router
+ * never trigger the {@link DvNetConfigError} at load time, and tests can mock
+ * this function without a live key.
+ */
+export function createDvNetClient(): DvNetHttpClient {
+	return new DvNetHttpClient();
 }

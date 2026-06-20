@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 import { processTelegramMessage } from "../../process-message";
 
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/telegram/jobs/process-message`,
 		onError: "respond",
 		logError: (error) =>
-			console.warn(
+			logger.warn(
 				"[telegram/process-message-job] Signature verification failed:",
 				error,
 			),
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
 
 	const parsed = payloadSchema.safeParse(json);
 	if (!parsed.success) {
-		console.error(
+		logger.error(
 			"[telegram/process-message-job] Invalid payload:",
 			parsed.error,
 		);

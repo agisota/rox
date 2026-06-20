@@ -63,6 +63,7 @@ import {
 	setJwt,
 } from "renderer/lib/auth-client";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
 import superjson from "superjson";
 import { z } from "zod";
 import {
@@ -271,10 +272,10 @@ const handleElectricSyncError: ElectricSyncErrorHandler = async (error) => {
 				setJwt(result.data.token);
 			}
 		} catch (refreshError) {
-			console.error("[collections] JWT refresh after 401 failed", refreshError);
+			logger.error("[collections] JWT refresh after 401 failed", refreshError);
 		}
 	} else {
-		console.error("[collections] Electric sync error", error);
+		logger.error("[collections] Electric sync error", error);
 	}
 	return {};
 };
@@ -798,7 +799,7 @@ function createOrgCollections(
 						lastTxid = result.txid;
 					} catch (error) {
 						if (!isTrpcNotFoundError(error)) throw error;
-						console.warn("[collections] Ignoring stale memory approve", {
+						logger.warn("[collections] Ignoring stale memory approve", {
 							id: original.id,
 						});
 					}
@@ -810,7 +811,7 @@ function createOrgCollections(
 						lastTxid = result.txid;
 					} catch (error) {
 						if (!isTrpcNotFoundError(error)) throw error;
-						console.warn("[collections] Ignoring stale memory decline", {
+						logger.warn("[collections] Ignoring stale memory decline", {
 							id: original.id,
 						});
 					}
@@ -829,7 +830,7 @@ function createOrgCollections(
 					(field) => !handledFields.has(field),
 				);
 				if (unsupportedFields.length > 0) {
-					console.warn("[collections] Ignoring memory_items update fields", {
+					logger.warn("[collections] Ignoring memory_items update fields", {
 						fields: unsupportedFields,
 					});
 				}

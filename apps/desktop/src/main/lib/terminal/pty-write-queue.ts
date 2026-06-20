@@ -1,3 +1,4 @@
+import { logger } from "main/lib/logger";
 import type { IPty } from "node-pty";
 
 /**
@@ -64,7 +65,7 @@ export class PtyWriteQueue {
 		}
 
 		if (this.queuedBytes + data.length > this.MAX_QUEUE_BYTES) {
-			console.warn(
+			logger.warn(
 				`[PtyWriteQueue] Queue full (${this.queuedBytes} bytes), rejecting write of ${data.length} bytes`,
 			);
 			return false;
@@ -117,7 +118,7 @@ export class PtyWriteQueue {
 			this.pty.write(chunk);
 		} catch (error) {
 			// PTY might be closed - clear queue and stop
-			console.warn("[PtyWriteQueue] Write failed, clearing queue:", error);
+			logger.warn("[PtyWriteQueue] Write failed, clearing queue:", error);
 			this.clear();
 			this.flushing = false;
 			return;

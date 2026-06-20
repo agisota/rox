@@ -1,5 +1,6 @@
 import { generateTitleFromMessage } from "@rox/chat/server/desktop";
 import { getSmallModel } from "@rox/chat/server/shared";
+import { logger } from "../../../../lib/logger";
 import { deduplicateBranchName } from "./sanitize-branch";
 
 const BRANCH_NAME_INSTRUCTIONS =
@@ -53,7 +54,7 @@ export async function generateBranchNameFromPrompt(
 			),
 		]);
 	} catch (error) {
-		console.warn("[generateBranchNameFromPrompt] generation failed:", error);
+		logger.warn("[generateBranchNameFromPrompt] generation failed:", error);
 		return null;
 	}
 

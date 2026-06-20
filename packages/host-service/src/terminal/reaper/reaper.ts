@@ -1,5 +1,6 @@
 import type { HostDb } from "../../db/index.ts";
 import { terminalSessions } from "../../db/schema.ts";
+import { logger } from "../../lib/logger";
 import { getDaemonClient } from "../daemon-client-singleton.ts";
 import { disposeSessionAndWait } from "../terminal.ts";
 
@@ -86,13 +87,13 @@ export function startTerminalReaper(db: HostDb): () => void {
 		void reapOrphanedSessions(db, rowlessPendingSecondPass)
 			.then((result) => {
 				if (result.reaped > 0 || result.failed > 0) {
-					console.log(
+					logger.info(
 						`[host-service] terminal reaper: ${result.reaped} reaped, ${result.failed} failed`,
 					);
 				}
 			})
 			.catch((err) => {
-				console.warn("[host-service] terminal reaper failed:", err);
+				logger.warn("[host-service] terminal reaper failed:", err);
 			})
 			.finally(() => {
 				running = false;

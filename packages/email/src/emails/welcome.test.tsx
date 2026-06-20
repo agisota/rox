@@ -16,20 +16,22 @@ async function renderWelcome(props?: { userName?: string }) {
 }
 
 describe("WelcomeEmail", () => {
-	it("greets the provided user name", async () => {
+	it("greets the provided user name in Russian", async () => {
 		const html = await renderWelcome({ userName: "Mark" });
-		expect(html).toContain("Welcome to Rox, Mark!");
+		expect(html).toContain("Добро пожаловать в Rox, Mark!");
+		expect(html).not.toContain("Welcome to Rox");
 	});
 
 	it("falls back to the default greeting when no name is given", async () => {
 		const html = await renderWelcome();
-		expect(html).toContain("Welcome to Rox, there!");
+		expect(html).toContain("Добро пожаловать в Rox");
 	});
 
-	it("includes the Get Started CTA link", async () => {
+	it("includes the Russian Get Started CTA link", async () => {
 		const html = await renderWelcome({ userName: "Sam" });
 		expect(html).toContain("https://app.rox.one/onboarding");
-		expect(html).toContain("Get Started");
+		expect(html).toContain("Начать");
+		expect(html).not.toContain("Get Started");
 	});
 
 	it("links to documentation and support", async () => {

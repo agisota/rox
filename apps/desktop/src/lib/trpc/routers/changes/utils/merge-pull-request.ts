@@ -1,3 +1,4 @@
+import { logger } from "shared/logger";
 import {
 	getCurrentBranch,
 	isUnbornHeadError,
@@ -57,7 +58,7 @@ export async function mergePullRequest({
 
 		pr = await getPRForBranch(worktreePath, localBranch, repoContext, headSha);
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[git/mergePR] Explicit PR resolution failed; falling back to branch merge.",
 			{
 				worktreePath,

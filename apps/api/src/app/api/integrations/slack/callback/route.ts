@@ -7,6 +7,7 @@ import { and, eq, isNull, ne } from "drizzle-orm";
 
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 import { verifySignedState } from "@/lib/oauth-state";
 
 const UNIQUE_VIOLATION = "23505";
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
 	});
 
 	if (!membership) {
-		console.error("[slack/callback] Membership verification failed:", {
+		logger.error("[slack/callback] Membership verification failed:", {
 			organizationId,
 			userId,
 		});
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
 		});
 
 		if (!tokenData.ok || !tokenData.access_token || !tokenData.team?.id) {
-			console.error("[slack/callback] Slack API error:", tokenData.error);
+			logger.error("[slack/callback] Slack API error:", tokenData.error);
 			return Response.redirect(
 				`${env.NEXT_PUBLIC_WEB_URL}/integrations/slack?error=slack_api_error`,
 			);
@@ -131,7 +132,7 @@ export async function GET(request: Request) {
 				},
 			});
 
-		console.log("[slack/callback] Connected workspace:", {
+		logger.info("[slack/callback] Connected workspace:", {
 			organizationId,
 			teamId: tokenData.team.id,
 			teamName: tokenData.team.name,
@@ -155,7 +156,7 @@ export async function GET(request: Request) {
 				`${env.NEXT_PUBLIC_WEB_URL}/integrations/slack?error=workspace_already_linked`,
 			);
 		}
-		console.error("[slack/callback] Token exchange failed:", error);
+		logger.error("[slack/callback] Token exchange failed:", error);
 		return Response.redirect(
 			`${env.NEXT_PUBLIC_WEB_URL}/integrations/slack?error=token_exchange_failed`,
 		);

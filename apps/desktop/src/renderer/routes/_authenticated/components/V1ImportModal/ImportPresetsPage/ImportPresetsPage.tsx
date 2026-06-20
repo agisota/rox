@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { LuTerminal } from "react-icons/lu";
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import type { V2TerminalPresetRow } from "renderer/routes/_authenticated/providers/CollectionsProvider/dashboardSidebarLocal";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
@@ -152,7 +153,7 @@ function PresetRow({
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			setErrorMessage(message);
-			console.error("[v1-import] preset import failed", {
+			logger.error("[v1-import] preset import failed", {
 				v1PresetId: preset.id,
 				organizationId,
 				err,

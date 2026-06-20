@@ -3,6 +3,7 @@ import type {
 	AgentLifecyclePayload,
 	TerminalLifecyclePayload,
 } from "@rox/workspace-client";
+import { logger } from "renderer/lib/logger";
 import { playRingtone } from "renderer/lib/ringtones/play";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type { PaneViewerData } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/types";
@@ -207,10 +208,7 @@ function showNativeNotification({
 			},
 		})
 		.catch((error) => {
-			console.warn(
-				"[notifications] failed to show native notification:",
-				error,
-			);
+			logger.warn("[notifications] failed to show native notification:", error);
 		});
 }
 

@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { logger } from "@/lib/logger";
 
 /**
  * Shared Anthropic tool-loop orchestration for chat integrations (Slack,
@@ -271,7 +272,7 @@ export async function runMcpAgentLoop(
 					content: JSON.stringify(result.content),
 				});
 			} catch (error) {
-				console.error(`[${logTag}] Tool execution error:`, toolUse.name, error);
+				logger.error(`[${logTag}] Tool execution error:`, toolUse.name, error);
 				toolResults.push({
 					type: "tool_result",
 					tool_use_id: toolUse.id,

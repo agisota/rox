@@ -8,6 +8,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@/env";
 import { buildLinearRedirectUri } from "@/lib/integrations/linear-oauth";
+import { logger } from "@/lib/logger";
 import { verifySignedState } from "@/lib/oauth-state";
 
 const qstash = new Client({ token: env.QSTASH_TOKEN });
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
 	});
 
 	if (!membership) {
-		console.error("[linear/callback] Membership verification failed:", {
+		logger.error("[linear/callback] Membership verification failed:", {
 			organizationId,
 			userId,
 		});
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
 		// Surface the real reason (e.g. redirect_uri mismatch, invalid client) so
 		// the failure is diagnosable instead of an opaque "token_exchange_failed".
 		const body = await tokenResponse.text().catch(() => "");
-		console.error("[linear/callback] Token exchange failed:", {
+		logger.error("[linear/callback] Token exchange failed:", {
 			status: tokenResponse.status,
 			redirectUri,
 			body: body.slice(0, 500),
@@ -156,7 +157,7 @@ export async function GET(request: Request) {
 			code?: string;
 			constraint?: string;
 		};
-		console.error("[linear/callback] Failed to finalize Linear connection:", {
+		logger.error("[linear/callback] Failed to finalize Linear connection:", {
 			name: e?.name,
 			message: e?.message,
 			code: e?.code,
@@ -174,7 +175,7 @@ export async function GET(request: Request) {
 			retries: 3,
 		});
 	} catch (error) {
-		console.error("Failed to queue initial sync job:", error);
+		logger.error("Failed to queue initial sync job:", error);
 		return Response.redirect(
 			`${env.NEXT_PUBLIC_WEB_URL}/integrations/linear?warning=sync_queued_failed`,
 		);

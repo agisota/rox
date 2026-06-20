@@ -2,6 +2,7 @@ import { db } from "@rox/db/client";
 import { integrationConnections } from "@rox/db/schema";
 import { decodeSecret } from "@rox/trpc/integration-secret";
 import { and, eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 import type { ParsedTelegramMessage } from "./parse-update";
 import {
 	formatActionsForTelegram,
@@ -72,7 +73,7 @@ export async function processTelegramMessage(
 	try {
 		botToken = decodeSecret(connection.accessToken);
 	} catch {
-		console.warn(
+		logger.warn(
 			`[telegram/process-message] failed to decode bot token for connection ${connection.id}`,
 		);
 		return {
@@ -106,7 +107,7 @@ export async function processTelegramMessage(
 
 		return { success: true, replied: true, messagesSent };
 	} catch (error) {
-		console.error("[telegram/process-message] Agent failed:", error);
+		logger.error("[telegram/process-message] Agent failed:", error);
 		try {
 			const text = await formatErrorForTelegram(error);
 			const messagesSent = await sendTelegramText({
@@ -116,7 +117,7 @@ export async function processTelegramMessage(
 			});
 			return { success: true, replied: false, messagesSent };
 		} catch (fallbackError) {
-			console.error(
+			logger.error(
 				"[telegram/process-message] Failed to send fallback error reply:",
 				fallbackError,
 			);

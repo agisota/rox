@@ -7,6 +7,7 @@ import { Client } from "@upstash/qstash";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { env } from "@/env";
 import { apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 import { parseTelegramUpdate } from "../parse-update";
 
 /**
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 	);
 
 	if (!connection) {
-		console.error("[telegram/webhook] No connection matched secret token");
+		logger.error("[telegram/webhook] No connection matched secret token");
 		return apiError("Unknown secret token", 401);
 	}
 
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
 		body = await request.json();
 	} catch {
 		// Malformed JSON: ack so Telegram stops retrying this delivery.
-		console.error("[telegram/webhook] Failed to parse update payload");
+		logger.error("[telegram/webhook] Failed to parse update payload");
 		return new Response("ok", { status: 200 });
 	}
 
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
 		return new Response("ok", { status: 200 });
 	}
 
-	console.info("[telegram/webhook] Inbound message", {
+	logger.info("[telegram/webhook] Inbound message", {
 		connectionId: connection.id,
 		organizationId: connection.organizationId,
 		chatId: update.chatId,
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
 		.returning({ id: integrationInboundEvents.id });
 
 	if (!inserted) {
-		console.info("[telegram/webhook] Duplicate update ignored", {
+		logger.info("[telegram/webhook] Duplicate update ignored", {
 			updateId: update.updateId,
 			dedupEventId,
 			connectionId: connection.id,
@@ -109,7 +110,7 @@ export async function POST(request: Request) {
 			retries: 3,
 		});
 	} catch (error) {
-		console.error(
+		logger.error(
 			"[telegram/webhook] Failed to queue process-message job:",
 			error,
 		);
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
 				.delete(integrationInboundEvents)
 				.where(eq(integrationInboundEvents.id, inserted.id));
 		} catch (deleteError) {
-			console.error(
+			logger.error(
 				"[telegram/webhook] Failed to roll back inbound event after queue failure:",
 				deleteError,
 			);

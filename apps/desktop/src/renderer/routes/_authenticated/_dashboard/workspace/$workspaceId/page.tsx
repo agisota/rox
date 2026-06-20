@@ -5,6 +5,7 @@ import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { useFileOpenMode } from "renderer/hooks/useFileOpenMode";
 import { useHotkey } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient as trpcClient } from "renderer/lib/trpc-client";
 import { usePresets } from "renderer/react-query/presets";
 import type { WorkspaceSearchParams } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
@@ -491,7 +492,7 @@ function WorkspacePage() {
 				}}
 				onSave={() => {
 					void saveAndClosePendingTab(workspaceId).catch((error) => {
-						console.error(
+						logger.error(
 							"[WorkspacePage] Failed to save dirty files before closing tab",
 							{
 								workspaceId,

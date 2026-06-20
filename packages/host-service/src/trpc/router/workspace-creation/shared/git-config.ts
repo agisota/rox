@@ -1,3 +1,4 @@
+import { logger } from "../../../../lib/logger";
 import type { GitClient } from "./types";
 
 export async function enablePushAutoSetupRemote(
@@ -15,6 +16,6 @@ export async function enablePushAutoSetupRemote(
 			"true",
 		])
 		.catch((err) => {
-			console.warn(`${logPrefix} failed to set push.autoSetupRemote:`, err);
+			logger.warn(`${logPrefix} failed to set push.autoSetupRemote:`, err);
 		});
 }

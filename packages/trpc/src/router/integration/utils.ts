@@ -1,7 +1,4 @@
-import {
-	findOrgMembership,
-	findOrgMembershipWithSubscription,
-} from "@rox/db/utils";
+import { findOrgMembership } from "@rox/db/utils";
 import { TRPCError } from "@trpc/server";
 
 export async function verifyOrgMembership(
@@ -44,28 +41,4 @@ export async function verifyOrgOwner(userId: string, organizationId: string) {
 	}
 
 	return { membership };
-}
-
-/**
- * Like `verifyOrgMembership` but also returns the org's currently-paying
- * subscription, joined into the same DB statement (no extra round-trip).
- * Use when a procedure needs to gate on plan.
- */
-export async function verifyOrgMembershipWithSubscription(
-	userId: string,
-	organizationId: string,
-) {
-	const result = await findOrgMembershipWithSubscription({
-		userId,
-		organizationId,
-	});
-
-	if (!result) {
-		throw new TRPCError({
-			code: "FORBIDDEN",
-			message: "Not a member of this organization",
-		});
-	}
-
-	return result;
 }

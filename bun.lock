@@ -586,6 +586,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rox/auth": "workspace:*",
+        "@rox/collab": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/shared": "workspace:*",
         "@rox/trpc": "workspace:*",
@@ -859,6 +860,7 @@
         "@mastra/memory": "1.18.0",
         "@octokit/rest": "22.0.1",
         "@rox/agent-bridge": "workspace:*",
+        "@rox/agent-state": "workspace:*",
         "@rox/chat": "workspace:*",
         "@rox/port-scanner": "workspace:*",
         "@rox/pty-daemon": "workspace:*",
@@ -1040,6 +1042,19 @@
         "typescript": "6.0.3",
       },
     },
+    "packages/scripts": {
+      "name": "@rox/scripts",
+      "version": "0.1.0",
+      "dependencies": {
+        "@rox/db": "workspace:*",
+        "@rox/shared": "workspace:*",
+      },
+      "devDependencies": {
+        "@rox/typescript": "workspace:*",
+        "bun-types": "1.3.11",
+        "typescript": "6.0.3",
+      },
+    },
     "packages/sdk": {
       "name": "@rox/sdk",
       "version": "0.0.1-alpha.12",
@@ -1074,8 +1089,10 @@
         "@linear/sdk": "68.1.1",
         "@rox/analytics": "workspace:*",
         "@rox/auth": "workspace:*",
+        "@rox/collab": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/host-provisioner": "workspace:*",
+        "@rox/rtc": "workspace:*",
         "@rox/runtime-clients": "workspace:*",
         "@rox/shared": "workspace:*",
         "@rox/workflow-core": "workspace:*",
@@ -2726,6 +2743,8 @@
     "@rox/rtc": ["@rox/rtc@workspace:packages/rtc"],
 
     "@rox/runtime-clients": ["@rox/runtime-clients@workspace:packages/runtime-clients"],
+
+    "@rox/scripts": ["@rox/scripts@workspace:packages/scripts"],
 
     "@rox/sdk": ["@rox/sdk@workspace:packages/sdk"],
 

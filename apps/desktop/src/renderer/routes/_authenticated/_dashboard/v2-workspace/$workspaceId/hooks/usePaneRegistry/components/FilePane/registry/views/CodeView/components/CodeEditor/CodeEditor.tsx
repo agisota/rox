@@ -27,6 +27,7 @@ import { colorPicker } from "@replit/codemirror-css-color-picker";
 import { cn } from "@rox/ui/utils";
 import { useQuery } from "@tanstack/react-query";
 import { type MutableRefObject, useEffect, useRef } from "react";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { useResolvedTheme } from "renderer/stores/theme";
 import {
@@ -244,7 +245,7 @@ export function CodeEditor({
 				const view = viewRef.current;
 				if (!view) return;
 
-				console.error("[CodeEditor] Failed to load language support:", {
+				logger.error("[CodeEditor] Failed to load language support:", {
 					error,
 					language,
 				});

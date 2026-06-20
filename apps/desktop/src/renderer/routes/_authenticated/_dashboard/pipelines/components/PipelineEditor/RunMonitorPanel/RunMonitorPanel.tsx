@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleDot, Loader2, Play } from "lucide-react";
 import { useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { logger } from "renderer/lib/logger";
 
 /** A run is "live" while queued/running/waiting — poll those for step updates. */
 const LIVE_RUN_STATUSES = new Set(["queued", "running", "waiting_approval"]);
@@ -76,7 +77,7 @@ export function RunMonitorPanel({ pipelineId }: RunMonitorPanelProps) {
 				}
 			},
 			onError: (error) => {
-				console.error("[RunMonitorPanel] runOnce failed", error);
+				logger.error("[RunMonitorPanel] runOnce failed", error);
 				toast.error("Не удалось запустить пайплайн");
 			},
 		}),

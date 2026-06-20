@@ -1,6 +1,7 @@
 import { COMPANY } from "@rox/shared/constants";
 import { app, BrowserWindow, Menu, shell } from "electron";
 import { env } from "main/env.main";
+import { logger } from "main/lib/logger";
 import { resetTerminalStateDev } from "main/lib/terminal/dev-reset";
 import {
 	checkForUpdatesInteractive,
@@ -122,7 +123,7 @@ export function createApplicationMenu() {
 								}
 							})
 							.catch((error) => {
-								console.error("[menu] Failed to reset terminal state:", error);
+								logger.error("[menu] Failed to reset terminal state:", error);
 							});
 					},
 				},

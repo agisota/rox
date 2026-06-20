@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { env } from "renderer/env.renderer";
+import { logger } from "renderer/lib/logger";
 
 interface RenderStressOptions {
 	windowMs?: number;
@@ -34,7 +35,7 @@ export function useRenderStressInstrumentation(
 
 		if (!state.warned && state.count >= warnAt) {
 			state.warned = true;
-			console.warn(
+			logger.warn(
 				"[stress] high renderer commit rate",
 				JSON.stringify({
 					name,
@@ -52,5 +53,5 @@ export function logStressEvent(
 	details?: Record<string, unknown>,
 ): void {
 	if (env.NODE_ENV !== "development") return;
-	console.debug("[stress]", name, JSON.stringify(details ?? {}));
+	logger.debug("[stress]", name, JSON.stringify(details ?? {}));
 }

@@ -1,5 +1,6 @@
 import { AlertCircleIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { logger } from "renderer/lib/logger";
 import { GENERIC_FAMILIES, parsePrimaryFamily } from "../../../../font-utils";
 
 /**
@@ -31,7 +32,7 @@ function isFontInstalled(family: string): boolean {
 		}
 		return false;
 	} catch (err) {
-		console.warn(
+		logger.warn(
 			`[FontNotFoundBanner] Failed to check availability for "${family}":`,
 			err,
 		);

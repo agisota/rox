@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import {
 	getWorkspaceFocusTargetAfterRemoval,
@@ -41,7 +42,7 @@ export function useDeleteWorkspace(
 				utils.workspaces.getAllGrouped.getData() ??
 				(wasViewingDeleted
 					? await utils.workspaces.getAllGrouped.fetch().catch((error) => {
-							console.warn(
+							logger.warn(
 								"Failed to fetch grouped workspaces during delete",
 								error,
 							);

@@ -12,6 +12,7 @@ import {
 	resolveDesktopChatOrganizationId,
 } from "renderer/lib/dev-chat";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useTabsStore } from "renderer/stores/tabs/store";
@@ -101,7 +102,7 @@ async function createSessionRecord(input: {
 
 	if (!response.ok) {
 		const detail = await getHttpErrorDetail(response);
-		console.warn("[chat-sessions] create session failed", {
+		logger.warn("[chat-sessions] create session failed", {
 			sessionId: input.sessionId,
 			organizationId: input.organizationId,
 			workspaceId: input.workspaceId,

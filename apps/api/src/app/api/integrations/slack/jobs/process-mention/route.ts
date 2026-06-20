@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 import { processSlackMention } from "../../events/process-mention";
 
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
 
 	const parsed = payloadSchema.safeParse(JSON.parse(body));
 	if (!parsed.success) {
-		console.error("[slack/process-mention] Invalid payload:", parsed.error);
+		logger.error("[slack/process-mention] Invalid payload:", parsed.error);
 		return Response.json({ error: "Invalid payload" }, { status: 400 });
 	}
 

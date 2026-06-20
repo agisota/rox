@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { app, nativeImage } from "electron";
 import { env } from "main/env.main";
+import { logger } from "main/lib/logger";
 import { prerelease } from "semver";
 import { getWorkspaceName } from "shared/env.shared";
 
@@ -215,7 +216,7 @@ export function setWorkspaceDockIcon(): void {
 		const iconPath = getIconPath();
 		const icon = nativeImage.createFromPath(iconPath);
 		if (icon.isEmpty()) {
-			console.warn("[dock-icon] Failed to load icon from:", iconPath);
+			logger.warn("[dock-icon] Failed to load icon from:", iconPath);
 			return;
 		}
 
@@ -224,7 +225,7 @@ export function setWorkspaceDockIcon(): void {
 
 		if (!workspaceName) {
 			app.dock?.setIcon(icon);
-			console.log(`[dock-icon] Set dock icon from: ${iconPath}`);
+			logger.info(`[dock-icon] Set dock icon from: ${iconPath}`);
 			return;
 		}
 
@@ -249,10 +250,10 @@ export function setWorkspaceDockIcon(): void {
 		});
 
 		app.dock?.setIcon(newIcon);
-		console.log(
+		logger.info(
 			`[dock-icon] Set workspace dock icon corner fold rgb(${rgb.join(",")}) for "${workspaceName}" from ${iconPath}`,
 		);
 	} catch (error) {
-		console.error("[dock-icon] Failed to set dock icon:", error);
+		logger.error("[dock-icon] Failed to set dock icon:", error);
 	}
 }

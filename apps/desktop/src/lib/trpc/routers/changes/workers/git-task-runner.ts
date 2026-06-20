@@ -1,5 +1,6 @@
 import { cpus } from "node:os";
 import { join } from "node:path";
+import { logger } from "shared/logger";
 import {
 	type WorkerTaskOptions,
 	WorkerTaskRunner,
@@ -45,7 +46,7 @@ function getRunner(): WorkerTaskRunner {
 				});
 				didRegisterDisposeHook = true;
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[changes-git] failed to register before-quit dispose hook",
 					error,
 				);

@@ -19,6 +19,7 @@ import {
 } from "react-icons/lu";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { FileIcon } from "renderer/lib/fileIcons";
+import { logger } from "renderer/lib/logger";
 import { getBaseName } from "renderer/lib/pathBasename";
 import { consumeTerminalBackgroundIntent } from "renderer/lib/terminal/terminal-background-intents";
 import { terminalRuntimeRegistry } from "renderer/lib/terminal/terminal-runtime-registry";
@@ -145,7 +146,7 @@ export function usePaneRegistry({
 				});
 			},
 			onError: (error) => {
-				console.warn("Failed to kill removed terminal session", {
+				logger.warn("Failed to kill removed terminal session", {
 					workspaceId,
 					error,
 				});

@@ -1,5 +1,6 @@
 import { animateThemeChange } from "@rox/ui/motion";
 import type { ITheme } from "@xterm/xterm";
+import { logger } from "renderer/lib/logger";
 import {
 	builtInThemes,
 	DEFAULT_THEME_ID,
@@ -194,7 +195,7 @@ export const useThemeStore = create<ThemeState>()(
 					const theme = findTheme(resolvedId, state.customThemes);
 
 					if (!theme) {
-						console.error(`Theme not found: ${resolvedId}`);
+						logger.error(`Theme not found: ${resolvedId}`);
 						return;
 					}
 

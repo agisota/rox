@@ -9,6 +9,7 @@ import {
 } from "react";
 import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 import { MOCK_ORG_ID } from "shared/constants";
 import { getCollections, preloadCollections } from "./collections";
 
@@ -25,7 +26,7 @@ export function preloadActiveOrganizationCollections(
 ): void {
 	if (!activeOrganizationId || !activeUserId) return;
 	void preloadCollections(activeOrganizationId, activeUserId).catch((error) => {
-		console.error(
+		logger.error(
 			"[collections-provider] Failed to preload active org collections:",
 			error,
 		);

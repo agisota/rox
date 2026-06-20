@@ -15,6 +15,7 @@ import {
 	signalProcessTargets,
 	signalProcessTreeAndGroups,
 } from "@rox/pty-daemon/process-tree";
+import { logger } from "main/lib/logger";
 import type { IPty } from "node-pty";
 import * as pty from "node-pty";
 import treeKill from "tree-kill";
@@ -128,7 +129,7 @@ function flushOutput(): void {
 	const payload = Buffer.from(data, "utf8");
 
 	if (DEBUG_OUTPUT_BATCHING) {
-		console.error(
+		logger.error(
 			`[pty-subprocess] Flushing ${payload.length} bytes (${chunkCount} chunks batched)`,
 		);
 	}
@@ -196,7 +197,7 @@ function flush(): void {
 						DEBUG_OUTPUT_BATCHING &&
 						writeBackoffMs === MIN_WRITE_BACKOFF_MS
 					) {
-						console.error("[pty-subprocess] PTY input backpressured (EAGAIN)");
+						logger.error("[pty-subprocess] PTY input backpressured (EAGAIN)");
 					}
 					setTimeout(flush, writeBackoffMs);
 					return;
@@ -277,7 +278,7 @@ function logProcessSignalError(event: ProcessSignalError): void {
 	if ((event.error as NodeJS.ErrnoException).code === "ESRCH") return;
 
 	const label = event.target === "pgid" ? "process group" : "pid";
-	console.error(
+	logger.error(
 		`[pty-subprocess] Failed to ${event.signal} ${label} ${event.id}:`,
 		event.error,
 	);
@@ -304,7 +305,7 @@ function handleSpawn(payload: Buffer): void {
 	}
 
 	if (DEBUG_OUTPUT_BATCHING) {
-		console.error("[pty-subprocess] Spawning PTY:", {
+		logger.error("[pty-subprocess] Spawning PTY:", {
 			shell: msg.shell,
 			args: msg.args,
 			cwd: msg.cwd,
@@ -327,7 +328,7 @@ function handleSpawn(payload: Buffer): void {
 
 		ptyFd = (ptyProcess as unknown as { fd?: number }).fd ?? null;
 		if (DEBUG_OUTPUT_BATCHING) {
-			console.error(
+			logger.error(
 				`[pty-subprocess] PTY fd ${ptyFd ?? "unknown"} (${typeof ptyFd === "number" ? "async fs.write enabled" : "falling back to pty.write"})`,
 			);
 		}
@@ -400,7 +401,7 @@ function handleKill(payload: Buffer): void {
 	// PPID traversal behavior for direct children.
 	treeKill(pid, signal, (err) => {
 		if (err) {
-			console.error("[pty-subprocess] Failed to kill process tree:", err);
+			logger.error("[pty-subprocess] Failed to kill process tree:", err);
 		}
 	});
 
@@ -412,7 +413,7 @@ function handleKill(payload: Buffer): void {
 		signalProcessTargets(escalationTargets, "SIGKILL", logProcessSignalError);
 		treeKill(pid, "SIGKILL", (err) => {
 			if (err) {
-				console.error("[pty-subprocess] Failed to SIGKILL process tree:", err);
+				logger.error("[pty-subprocess] Failed to SIGKILL process tree:", err);
 			}
 		});
 
@@ -421,7 +422,7 @@ function handleKill(payload: Buffer): void {
 		const forceExitTimer = setTimeout(() => {
 			if (!ptyProcess) return; // Finally exited via onExit
 
-			console.error(
+			logger.error(
 				`[pty-subprocess] Force exit: onExit never fired for pid ${pid}`,
 			);
 
@@ -479,7 +480,7 @@ function handleDispose(): void {
 		// so we must wait for the callback before exiting.
 		treeKill(pid, "SIGKILL", (err) => {
 			if (err) {
-				console.error("[pty-subprocess] Failed to kill process tree:", err);
+				logger.error("[pty-subprocess] Failed to kill process tree:", err);
 			}
 			process.exit(0);
 		});

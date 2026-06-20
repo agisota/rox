@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from "../../../../lib/logger";
 import { protectedProcedure } from "../../../index";
 import { normalizeGitHubQuery } from "../normalize-github-query";
 import { githubSearchInputSchema } from "../schemas";
@@ -192,7 +193,7 @@ export const searchPullRequests = protectedProcedure
 				page,
 			};
 		} catch (ghErr) {
-			console.warn(
+			logger.warn(
 				"[workspaceCreation.searchPullRequests] gh path failed; falling back to Octokit",
 				ghErr,
 			);
@@ -262,7 +263,7 @@ export const searchPullRequests = protectedProcedure
 		} catch (err) {
 			// Both gh and Octokit failed — rethrow so the renderer's toast
 			// fires instead of the dropdown silently rendering "no results".
-			console.warn(
+			logger.warn(
 				"[workspaceCreation.searchPullRequests] octokit fallback failed",
 				err,
 			);

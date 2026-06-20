@@ -21,44 +21,45 @@ export function OrganizationInvitationEmail({
 	inviterEmail = "john@acme.com",
 	expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
 }: OrganizationInvitationEmailProps) {
-	const roleDisplay = role === "member" ? "Member" : "Admin";
+	const roleDisplay = role === "member" ? "Участник" : "Администратор";
 
 	// Calculate days until expiration
 	const daysUntilExpiration = differenceInDays(expiresAt, new Date());
 	const expirationText =
-		daysUntilExpiration === 1 ? "1 day" : `${daysUntilExpiration} days`;
+		daysUntilExpiration === 1 ? "1 день" : `${daysUntilExpiration} дн.`;
 
 	return (
 		<StandardLayout
-			preview={`${inviterName} invited you to join ${organizationName}`}
+			preview={`${inviterName} приглашает вас в ${organizationName}`}
 		>
 			<Heading className="text-lg font-normal leading-7 mb-8 text-foreground text-center">
-				Join <strong>{organizationName}</strong> on <strong>Rox</strong>
+				Присоединяйтесь к <strong>{organizationName}</strong> в{" "}
+				<strong>Rox</strong>
 			</Heading>
 
 			{inviteeName && (
 				<Text className="text-base leading-[26px] mb-4 text-foreground">
-					Hi {inviteeName},
+					Здравствуйте, {inviteeName}!
 				</Text>
 			)}
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				{inviterName} ({inviterEmail}) has invited you to join{" "}
-				<strong>{organizationName}</strong> on Rox as a{" "}
+				{inviterName} ({inviterEmail}) приглашает вас присоединиться к{" "}
+				<strong>{organizationName}</strong> в Rox в роли{" "}
 				<strong>{roleDisplay}</strong>.
 			</Text>
 
 			<Text className="text-base leading-[26px] text-foreground mb-4">
-				Rox helps teams automate workflows, manage tasks, and collaborate
-				effectively. Accept this invitation to get started.
+				Rox помогает командам автоматизировать процессы, управлять задачами и
+				эффективно работать вместе. Примите приглашение, чтобы начать.
 			</Text>
 
 			<Section className="mt-6 mb-6">
-				<Button href={inviteLink}>Accept Invitation</Button>
+				<Button href={inviteLink}>Принять приглашение</Button>
 			</Section>
 
 			<Text className="text-xs leading-5 text-muted mt-4 mb-2">
-				Or copy and paste this URL into your browser:
+				Или скопируйте и вставьте эту ссылку в браузер:
 			</Text>
 			<Link
 				href={inviteLink}
@@ -68,8 +69,8 @@ export function OrganizationInvitationEmail({
 			</Link>
 
 			<Text className="text-xs leading-5 text-muted">
-				This invitation expires in {expirationText}. If you didn't expect this
-				invitation, you can safely ignore this email.
+				Приглашение истекает через {expirationText}. Если вы не ожидали это
+				приглашение, можно просто проигнорировать это письмо.
 			</Text>
 		</StandardLayout>
 	);

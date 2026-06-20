@@ -7,6 +7,7 @@ import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
 import { workspaceInitManager } from "main/lib/workspace-init-manager";
 import { getWorkspaceRuntimeRegistry } from "main/lib/workspace-runtime";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../../..";
 import {
@@ -175,7 +176,7 @@ export const createDeleteProcedures = () => {
 					return { success: false, error: "Workspace not found" };
 				}
 
-				console.log(
+				logger.info(
 					`[workspace/delete] Starting deletion of "${workspace.name}" (${input.id})`,
 				);
 
@@ -183,14 +184,14 @@ export const createDeleteProcedures = () => {
 				updateActiveWorkspaceIfRemoved(input.id);
 
 				if (workspaceInitManager.isInitializing(input.id)) {
-					console.log(
+					logger.info(
 						`[workspace/delete] Cancelling init for ${input.id}, waiting for completion...`,
 					);
 					workspaceInitManager.cancel(input.id);
 					try {
 						await workspaceInitManager.waitForInit(input.id, 30000);
 					} catch (error) {
-						console.error(
+						logger.error(
 							`[workspace/delete] Failed to wait for init cancellation:`,
 							error,
 						);
@@ -225,12 +226,12 @@ export const createDeleteProcedures = () => {
 							projectId: project.id,
 						});
 					} else {
-						console.warn(
+						logger.warn(
 							`[workspace/delete] Skipping teardown: worktree=${!!worktree}, project=${!!project}, pathExists=${worktree ? existsSync(worktree.path) : "N/A"}`,
 						);
 					}
 				} else {
-					console.log(
+					logger.info(
 						`[workspace/delete] No teardown needed: type=${workspace.type}, worktreeId=${workspace.worktreeId ?? "null"}`,
 					);
 				}
@@ -242,12 +243,12 @@ export const createDeleteProcedures = () => {
 
 				if (teardownResult && !teardownResult.success) {
 					if (input.force) {
-						console.warn(
+						logger.warn(
 							`[workspace/delete] Teardown failed but force=true, continuing deletion:`,
 							teardownResult.error,
 						);
 					} else {
-						console.error(
+						logger.error(
 							`[workspace/delete] Teardown failed:`,
 							teardownResult.error,
 						);
@@ -286,7 +287,7 @@ export const createDeleteProcedures = () => {
 							existsInGit && !trackedPaths.has(worktreePathNorm);
 
 						if (isActuallyExternal) {
-							console.warn(
+							logger.warn(
 								`[workspace/delete] Worktree at ${worktree.path} exists in git but not tracked in database - preserving as safety measure`,
 							);
 							track("worktree_delete_safety_trigger", {
@@ -316,7 +317,7 @@ export const createDeleteProcedures = () => {
 								branch: workspace.branch,
 							});
 						} catch (error) {
-							console.error(
+							logger.error(
 								`[workspace/delete] Branch cleanup failed (non-blocking):`,
 								error instanceof Error ? error.message : String(error),
 							);
@@ -503,7 +504,7 @@ export const createDeleteProcedures = () => {
 						existsInGit && !trackedPaths.has(worktreePathNorm);
 
 					if (isActuallyExternal) {
-						console.warn(
+						logger.warn(
 							`[worktree/delete] Worktree at ${worktree.path} exists in git but not tracked in database - preserving as safety measure`,
 						);
 						track("worktree_delete_safety_trigger", {
@@ -521,7 +522,7 @@ export const createDeleteProcedures = () => {
 							});
 							if (!teardownResult.success) {
 								if (input.force) {
-									console.warn(
+									logger.warn(
 										`[worktree/delete] Teardown failed but force=true, continuing deletion:`,
 										teardownResult.error,
 									);
@@ -544,7 +545,7 @@ export const createDeleteProcedures = () => {
 								return removeResult;
 							}
 						} else {
-							console.warn(
+							logger.warn(
 								`Worktree ${worktree.path} not found in git, skipping removal`,
 							);
 						}

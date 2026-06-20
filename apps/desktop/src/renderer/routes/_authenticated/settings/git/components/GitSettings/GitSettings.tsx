@@ -19,6 +19,7 @@ import {
 import { Switch } from "@rox/ui/switch";
 import { useEffect, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import {
 	isItemVisible,
 	SETTING_ITEM_ID,
@@ -99,7 +100,7 @@ export function GitSettings({ visibleItems }: GitSettingsProps) {
 
 	const setBranchPrefix = electronTrpc.settings.setBranchPrefix.useMutation({
 		onError: (err) => {
-			console.error("[settings/branch-prefix] Failed to update:", err);
+			logger.error("[settings/branch-prefix] Failed to update:", err);
 		},
 		onSettled: () => {
 			utils.settings.getBranchPrefix.invalidate();

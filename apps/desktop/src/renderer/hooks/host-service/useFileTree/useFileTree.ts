@@ -1,6 +1,7 @@
 import { workspaceTrpc } from "@rox/workspace-client";
 import type { FsEntry, FsEntryKind } from "@rox/workspace-fs/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { logger } from "renderer/lib/logger";
 import { useWorkspaceEvent } from "../useWorkspaceEvent";
 
 export interface FileTreeNode {
@@ -265,7 +266,7 @@ export function useFileTree({
 					applyDirectoryEntries(current, absolutePath, result.entries),
 				);
 			} catch (error) {
-				console.error(
+				logger.error(
 					"[workspace-client/useFileTree] Failed to load directory:",
 					{ absolutePath, error },
 				);

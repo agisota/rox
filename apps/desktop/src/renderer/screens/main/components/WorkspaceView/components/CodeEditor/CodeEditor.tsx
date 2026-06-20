@@ -25,6 +25,7 @@ import {
 import { cn } from "@rox/ui/utils";
 import { useQuery } from "@tanstack/react-query";
 import { type MutableRefObject, useEffect, useRef } from "react";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type { CodeEditorAdapter } from "renderer/screens/main/components/WorkspaceView/ContentView/components";
 import { getCodeSyntaxHighlighting } from "renderer/screens/main/components/WorkspaceView/utils/code-theme";
@@ -112,7 +113,7 @@ function createCodeMirrorAdapter(view: EditorView): CodeEditorAdapter {
 					});
 				})
 				.catch((error) => {
-					console.error("[CodeEditor] Failed to cut selection:", error);
+					logger.error("[CodeEditor] Failed to cut selection:", error);
 				});
 		},
 		copy() {
@@ -125,7 +126,7 @@ function createCodeMirrorAdapter(view: EditorView): CodeEditorAdapter {
 			void clipboard
 				.writeText(view.state.sliceDoc(selection.from, selection.to))
 				.catch((error) => {
-					console.error("[CodeEditor] Failed to copy selection:", error);
+					logger.error("[CodeEditor] Failed to copy selection:", error);
 				});
 		},
 		paste() {
@@ -147,7 +148,7 @@ function createCodeMirrorAdapter(view: EditorView): CodeEditorAdapter {
 					});
 				})
 				.catch((error) => {
-					console.error("[CodeEditor] Failed to paste from clipboard:", error);
+					logger.error("[CodeEditor] Failed to paste from clipboard:", error);
 				});
 		},
 		openFind() {
@@ -355,7 +356,7 @@ export function CodeEditor({
 				const view = viewRef.current;
 				if (!view) return;
 
-				console.error("[CodeEditor] Failed to load language support:", {
+				logger.error("[CodeEditor] Failed to load language support:", {
 					error,
 					language,
 				});

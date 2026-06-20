@@ -1,4 +1,5 @@
 import treeKill from "tree-kill";
+import { logger } from "../lib/logger";
 
 const DEFAULT_ESCALATION_TIMEOUT_MS = 2000;
 const POLL_INTERVAL_MS = 50;
@@ -47,7 +48,7 @@ export function treeKillWithEscalation({
 					doResolve({ success: true });
 					return;
 				}
-				console.error(
+				logger.error(
 					`[treeKillWithEscalation] Failed to ${signal} pid ${pid}:`,
 					err,
 				);
@@ -75,7 +76,7 @@ export function treeKillWithEscalation({
 				return;
 			}
 
-			console.log(
+			logger.info(
 				`[treeKillWithEscalation] Process ${pid} still alive after ${signal}, escalating to SIGKILL`,
 			);
 
@@ -87,7 +88,7 @@ export function treeKillWithEscalation({
 						doResolve({ success: true });
 						return;
 					}
-					console.error(
+					logger.error(
 						`[treeKillWithEscalation] Failed to SIGKILL pid ${pid}:`,
 						err,
 					);

@@ -1,4 +1,5 @@
 import type { GitHubStatus, PullRequestComment } from "@rox/local-db";
+import { logger } from "shared/logger";
 import {
 	branchExistsOnRemote,
 	getCurrentBranch,
@@ -278,7 +279,7 @@ export async function fetchGitHubPRComments({
 		} catch (error) {
 			const cached = getCachedPullRequestCommentsState(cacheKey);
 			if (cached) {
-				console.warn(
+				logger.warn(
 					"[GitHub] Failed to refresh pull request comments; using cached value:",
 					error,
 				);

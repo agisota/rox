@@ -13,21 +13,58 @@ const state: {
 	ledgerInserted: AnyRow[];
 	balanceUpdated: AnyRow[];
 	insertedBalanceForUser: string[];
+	topupInserted: AnyRow[];
 } = {
 	balanceRow: undefined,
 	nextSelect: [],
 	ledgerInserted: [],
 	balanceUpdated: [],
 	insertedBalanceForUser: [],
+	topupInserted: [],
 };
 
-// A chainable select builder returning whichever rows the test queued.
+// --- dv.net seam ------------------------------------------------------------
+// The createInvoice procedure constructs a dv.net client; mock it so the suite
+// never reads DVNET_API_KEY or hits the network. `createInvoiceMock` records the
+// request the procedure built and returns a deterministic invoice id + URL.
+const createInvoiceMock = mock(async () => ({
+	invoiceId: "dvnet-inv-1",
+	checkoutUrl: "https://pay.dv.net/checkout/dvnet-inv-1",
+}));
+
+mock.module("@rox/shared/dvnet-client", () => ({
+	createDvNetClient: () => ({ createInvoice: createInvoiceMock }),
+	buildInvoiceRequest: (
+		usdtAmount: number,
+		orderId: string,
+		callbackUrl: string,
+	) => {
+		if (!Number.isFinite(usdtAmount) || !(usdtAmount > 0)) {
+			throw new Error("usdtAmount must be a finite positive number");
+		}
+		return {
+			amount: usdtAmount.toFixed(6),
+			currency: "USDT",
+			callback_url: callbackUrl,
+			order_id: orderId,
+		};
+	},
+}));
+
+// A chainable select builder returning whichever rows the test queued. Queries
+// that end at `.orderBy(...)` (e.g. models.list) await its result directly;
+// paginated reads chain `.limit(...)`. `orderBy` therefore returns a Promise
+// for the rows that ALSO carries a `.limit()` method, so both call shapes work
+// without a hand-rolled thenable object.
 function selectBuilder(rows: AnyRow[]) {
+	const terminal = Promise.resolve(rows) as Promise<AnyRow[]> & {
+		limit: () => Promise<AnyRow[]>;
+	};
+	terminal.limit = () => Promise.resolve(rows);
 	const chain = {
 		from: () => chain,
 		where: () => chain,
-		orderBy: () => chain,
-		limit: () => Promise.resolve(rows),
+		orderBy: () => terminal,
 	};
 	return chain;
 }
@@ -42,6 +79,11 @@ const fakeDb = {
 				return Promise.resolve();
 			},
 			returning: () => {
+				// A topup row carries `usdtAmount`; a ledger row carries `kind`.
+				if ("usdtAmount" in vals) {
+					state.topupInserted.push(vals);
+					return Promise.resolve([{ id: "topup-id-1" }]);
+				}
 				state.ledgerInserted.push(vals);
 				return Promise.resolve([{ id: "ledger-id-1" }]);
 			},
@@ -93,6 +135,12 @@ beforeEach(() => {
 	state.ledgerInserted = [];
 	state.balanceUpdated = [];
 	state.insertedBalanceForUser = [];
+	state.topupInserted = [];
+	createInvoiceMock.mockClear();
+	createInvoiceMock.mockImplementation(async () => ({
+		invoiceId: "dvnet-inv-1",
+		checkoutUrl: "https://pay.dv.net/checkout/dvnet-inv-1",
+	}));
 });
 
 describe("economy.balance (T3)", () => {
@@ -181,5 +229,69 @@ describe("economy.admin.grant (T6)", () => {
 		await expect(
 			caller.economy.admin.grant({ userId: "user-2", rox: -5 }),
 		).rejects.toThrow();
+	});
+});
+
+describe("economy.topup.quote (T4)", () => {
+	test("previews the Rox a USDT amount buys (1 USDT = 100 Rox)", async () => {
+		const caller = callerFor("dev@rox.one");
+		const res = await caller.economy.topup.quote({ usdtAmount: 5 });
+		expect(res).toEqual({ usdt: 5, rox: 500 });
+	});
+
+	test("rejects a non-positive USDT amount", async () => {
+		const caller = callerFor("dev@rox.one");
+		await expect(
+			caller.economy.topup.quote({ usdtAmount: 0 }),
+		).rejects.toThrow();
+	});
+});
+
+describe("economy.topup.createInvoice (T4)", () => {
+	test("inserts a pending topup row and returns the checkout URL", async () => {
+		const caller = callerFor("dev@rox.one");
+		const res = await caller.economy.topup.createInvoice({ usdtAmount: 5 });
+
+		expect(state.topupInserted).toHaveLength(1);
+		const row = state.topupInserted[0];
+		expect(row?.userId).toBe("user-1");
+		expect(row?.usdtAmount).toBe("5");
+		expect(row?.roxAmount).toBe("500");
+		expect(row?.status).toBe("pending");
+		// The provider invoice id is reconciled back onto the row.
+		expect(state.balanceUpdated.length).toBeGreaterThanOrEqual(0);
+
+		expect(createInvoiceMock).toHaveBeenCalledTimes(1);
+		expect(res.checkoutUrl).toBe("https://pay.dv.net/checkout/dvnet-inv-1");
+		expect(res.topupId).toBe("topup-id-1");
+	});
+
+	test("rejects a non-positive USDT amount before touching the DB", async () => {
+		const caller = callerFor("dev@rox.one");
+		await expect(
+			caller.economy.topup.createInvoice({ usdtAmount: 0 }),
+		).rejects.toThrow();
+		expect(state.topupInserted).toHaveLength(0);
+		expect(createInvoiceMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("economy.models.list (T7)", () => {
+	test("returns the catalog rows the DB yields", async () => {
+		state.nextSelect = [
+			{
+				id: "m1",
+				provider: "rox",
+				modelId: "rox-r1",
+				publicUsdPerMIn: "0",
+				publicUsdPerMOut: "0",
+				pricingFamily: "other",
+				isFree: true,
+			},
+		];
+		const caller = callerFor("dev@rox.one");
+		const res = await caller.economy.models.list();
+		expect(res).toHaveLength(1);
+		expect(res[0]?.modelId).toBe("rox-r1");
 	});
 });

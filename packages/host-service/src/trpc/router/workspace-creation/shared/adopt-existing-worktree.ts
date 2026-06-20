@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq, ne, or } from "drizzle-orm";
 import { workspaces } from "../../../../db/schema";
+import { logger } from "../../../../lib/logger";
 import type { HostServiceContext } from "../../../../types";
 import { gitConfigWrite } from "../../git/utils/config-write";
 import type { GitClient } from "./types";
@@ -204,7 +205,7 @@ export async function adoptExistingWorktree(
 		await ctx.api.v2Workspace.delete
 			.mutate({ id: cloudRow.id })
 			.catch((cleanupErr) => {
-				console.warn(
+				logger.warn(
 					"[adoptExistingWorktree] failed to rollback cloud workspace",
 					{ workspaceId: cloudRow.id, err: cleanupErr },
 				);
@@ -301,7 +302,7 @@ async function recordBaseBranch(
 		`branch.${branch}.base`,
 		baseBranch,
 	]).catch((err) => {
-		console.warn(
+		logger.warn(
 			`[adoptExistingWorktree] failed to record base branch ${baseBranch}:`,
 			err,
 		);

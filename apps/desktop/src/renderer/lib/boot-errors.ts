@@ -1,3 +1,5 @@
+import { logger } from "renderer/lib/logger";
+
 let bootErrorReported = false;
 let hasMounted = false;
 let rootElement: Element | null = null;
@@ -62,7 +64,7 @@ const renderBootError = (message: string, error?: unknown) => {
 };
 
 export const reportBootError = (message: string, error?: unknown) => {
-	console.error("[renderer] Boot error:", message, error);
+	logger.error("[renderer] Boot error:", message, error);
 	if (hasMounted) return;
 	renderBootError(message, error);
 };

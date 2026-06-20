@@ -2,6 +2,7 @@ import type { TaskPriority, V2UsersHostRole } from "@rox/db/enums";
 import { toast } from "@rox/ui/sonner";
 import { useCallback, useMemo } from "react";
 import { isDesktopChatDevMode } from "renderer/lib/dev-chat";
+import { logger } from "renderer/lib/logger";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	type TrackableWorkspaceTransactionState,
@@ -48,7 +49,7 @@ function getErrorMessage(error: unknown): string {
 function useOptimisticMutationRunner() {
 	const reportFailure = useCallback(
 		(scope: string, title: string, error: unknown) => {
-			console.error(`[${scope}] ${title}:`, error);
+			logger.error(`[${scope}] ${title}:`, error);
 			toast.error(title, {
 				description: getErrorMessage(error),
 			});

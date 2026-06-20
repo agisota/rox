@@ -1,9 +1,11 @@
-import type { SelectUser } from "@rox/db/schema";
+import type { TaskPriority } from "@rox/db/enums";
+import type { SelectTaskStatus, SelectUser } from "@rox/db/schema";
 import { eq, isNull } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useMemo } from "react";
 import type { TaskWithStatus } from "@/screens/(authenticated)/(tasks)/tasks/utils/groupByStatus";
 import { useCollections } from "@/screens/(authenticated)/providers/CollectionsProvider";
+import { applyPriorityChange, applyStatusChange } from "./applyTaskEdit";
 import { firstCompletedStatusId, selectTaskById } from "./selectTaskById";
 
 interface UseTaskDetailResult {
@@ -11,6 +13,9 @@ interface UseTaskDetailResult {
 	isReady: boolean;
 	canComplete: boolean;
 	markComplete: () => void;
+	statuses: SelectTaskStatus[];
+	setStatus: (statusId: string) => void;
+	setPriority: (priority: TaskPriority) => void;
 }
 
 /**
@@ -76,5 +81,35 @@ export function useTaskDetail(id: string): UseTaskDetailResult {
 		});
 	}, [collections, task, completedStatusId]);
 
-	return { task, isReady, canComplete, markComplete };
+	const setStatus = useCallback(
+		(statusId: string) => {
+			if (!task) return;
+			collections.tasks.update(task.id, (draft) => {
+				applyStatusChange(draft, statusId);
+			});
+		},
+		[collections, task],
+	);
+
+	const setPriority = useCallback(
+		(priority: TaskPriority) => {
+			if (!task) return;
+			collections.tasks.update(task.id, (draft) => {
+				applyPriorityChange(draft, priority);
+			});
+		},
+		[collections, task],
+	);
+
+	const statuses = useMemo(() => statusData ?? [], [statusData]);
+
+	return {
+		task,
+		isReady,
+		canComplete,
+		markComplete,
+		statuses,
+		setStatus,
+		setPriority,
+	};
 }

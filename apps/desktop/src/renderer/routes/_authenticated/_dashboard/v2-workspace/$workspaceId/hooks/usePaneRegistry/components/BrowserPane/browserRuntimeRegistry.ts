@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type { BrowserLoadError } from "shared/tabs-types";
 import { sanitizeUrl } from "./sanitizeUrl";
@@ -229,7 +230,7 @@ class BrowserRuntimeRegistryImpl {
 				electronTrpcClient.browser.register
 					.mutate({ paneId, webContentsId })
 					.catch((err) => {
-						console.error("[browserRuntimeRegistry] register failed:", err);
+						logger.error("[browserRuntimeRegistry] register failed:", err);
 					});
 			}
 		};
@@ -255,7 +256,7 @@ class BrowserRuntimeRegistryImpl {
 				electronTrpcClient.browserHistory.upsert
 					.mutate({ url, title, faviconUrl: entry.state.faviconUrl })
 					.catch((err) => {
-						console.error("[browserRuntimeRegistry] upsert history:", err);
+						logger.error("[browserRuntimeRegistry] upsert history:", err);
 					});
 			}
 			firePersist();
@@ -292,7 +293,7 @@ class BrowserRuntimeRegistryImpl {
 				electronTrpcClient.browserHistory.upsert
 					.mutate({ url: currentUrl, title: pageTitle, faviconUrl: favicon })
 					.catch((err) => {
-						console.error("[browserRuntimeRegistry] upsert favicon:", err);
+						logger.error("[browserRuntimeRegistry] upsert favicon:", err);
 					});
 			}
 			firePersist();
@@ -420,7 +421,7 @@ class BrowserRuntimeRegistryImpl {
 		const entry = this.entries.get(paneId);
 		if (!entry) return;
 		entry.webview.loadURL(sanitizeUrl(url)).catch((err) => {
-			console.error("[browserRuntimeRegistry] loadURL failed:", err);
+			logger.error("[browserRuntimeRegistry] loadURL failed:", err);
 		});
 	}
 

@@ -24,6 +24,7 @@ import {
 import { createServer, type Server, Socket } from "node:net";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { logger } from "main/lib/logger";
 import { ROX_DIR_NAME } from "shared/constants";
 import {
 	type CancelCreateOrAttachRequest,
@@ -76,9 +77,9 @@ function log(
 	const timestamp = new Date().toISOString();
 	const prefix = `[${timestamp}] [terminal-host] [${level.toUpperCase()}]`;
 	if (data !== undefined) {
-		console.log(`${prefix} ${message}`, data);
+		logger.info(`${prefix} ${message}`, data);
 	} else {
-		console.log(`${prefix} ${message}`);
+		logger.info(`${prefix} ${message}`);
 	}
 }
 

@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { SimpleGit } from "simple-git";
+import { logger } from "../../../../lib/logger";
 import { resolveUpstream } from "../../../../runtime/git/refs";
 import { createUserSimpleGit } from "../../../../runtime/git/simple-git";
 import type { Branch, ChangedFile, FileStatus } from "../types";
@@ -368,7 +369,7 @@ export async function detectUnstagedRenames(
 		return [];
 	} finally {
 		await rm(tempDir, { recursive: true, force: true }).catch((error) => {
-			console.warn("[git-helpers] failed to remove rename-detection tempdir", {
+			logger.warn("[git-helpers] failed to remove rename-detection tempdir", {
 				tempDir,
 				error,
 			});

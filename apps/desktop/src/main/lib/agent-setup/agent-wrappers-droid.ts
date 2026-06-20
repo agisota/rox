@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import {
 	buildWrapperScript,
 	createWrapper,
@@ -51,14 +52,14 @@ function readExistingDroidSettings(
 	try {
 		const parsed = JSON.parse(fs.readFileSync(globalPath, "utf-8"));
 		if (!isPlainObject(parsed)) {
-			console.warn(
+			logger.warn(
 				"[agent-setup] Expected ~/.factory/settings.json to contain a JSON object; skipping Droid hook merge",
 			);
 			return null;
 		}
 		return parsed;
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[agent-setup] Could not parse existing ~/.factory/settings.json; skipping Droid hook merge:",
 			error,
 		);
@@ -202,7 +203,7 @@ export function createDroidSettingsJson(): void {
 	const dir = path.dirname(globalPath);
 	fs.mkdirSync(dir, { recursive: true });
 	const changed = writeFileIfChanged(globalPath, content, 0o644);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} Droid settings.json`,
 	);
 }

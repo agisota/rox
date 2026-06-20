@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import type { HostDb } from "../../../db";
 import { hostAgentConfigs } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import { createTerminalSessionInternal } from "../../../terminal/terminal";
 import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
@@ -224,7 +225,7 @@ async function runChatAgent(
 			},
 		})
 		.catch((error) => {
-			console.error(
+			logger.error(
 				`[runChatAgent] sendMessage failed for ${sessionId}:`,
 				error,
 			);
