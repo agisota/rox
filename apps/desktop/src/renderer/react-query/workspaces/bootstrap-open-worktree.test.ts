@@ -121,4 +121,54 @@ describe("bootstrapOpenWorktree", () => {
 		expect(createOrAttach).not.toHaveBeenCalled();
 		expect(writeToTerminal).not.toHaveBeenCalled();
 	});
+
+	it("defaults to the chat surface when no preference is provided", async () => {
+		const addChatTab = mock(() => ({
+			tabId: "chat-1",
+			paneId: "chat-pane-1",
+		}));
+		const addTab = mock(() => ({ tabId: "term-1", paneId: "term-pane-1" }));
+
+		const error = await bootstrapOpenWorktree({
+			data: {
+				workspace: { id: "ws-1" },
+				initialCommands: ["echo setup"],
+			},
+			addChatTab,
+			addTab,
+			setTabAutoTitle: mock(() => {}),
+			createOrAttach: mock(async () => ({})),
+			writeToTerminal: mock(async () => ({})),
+		});
+
+		expect(error).toBeNull();
+		// Chat is the active/visible surface by default.
+		expect(addChatTab).toHaveBeenCalledWith("ws-1");
+	});
+
+	it("with defaultSurface=terminal: keeps the terminal active and skips the chat tab", async () => {
+		const addChatTab = mock(() => ({
+			tabId: "chat-1",
+			paneId: "chat-pane-1",
+		}));
+		const addTab = mock(() => ({ tabId: "term-1", paneId: "term-pane-1" }));
+
+		const error = await bootstrapOpenWorktree({
+			data: {
+				workspace: { id: "ws-1" },
+				initialCommands: ["echo setup"],
+			},
+			defaultSurface: "terminal",
+			addChatTab,
+			addTab,
+			setTabAutoTitle: mock(() => {}),
+			createOrAttach: mock(async () => ({})),
+			writeToTerminal: mock(async () => ({})),
+		});
+
+		expect(error).toBeNull();
+		// Setup terminal still created, but no chat tab is forced.
+		expect(addTab).toHaveBeenCalledWith("ws-1");
+		expect(addChatTab).not.toHaveBeenCalled();
+	});
 });
