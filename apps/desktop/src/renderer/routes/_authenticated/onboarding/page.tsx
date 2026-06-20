@@ -76,20 +76,48 @@ function OnboardingDashboardPage() {
 
 	const installGitTools = electronTrpc.system.installGitTools.useMutation({
 		onSuccess: async (result) => {
+			// Steps that can't be auto-installed (e.g. gh via apt on Linux) carry
+			// their own manual link; prefer it so we route to the right page.
+			const manualStep = result.steps.find(
+				(step) => step.status === "manual" && step.manualInstallUrl,
+			);
+			const failed = result.steps.find((step) => step.status === "failed");
 			if (result.packageManagerMissing) {
 				toast.error(
 					"Не найден менеджер пакетов для автоустановки. Откройте инструкцию по ручной установке.",
 				);
 				window.open(result.manualInstallUrl, "_blank", "noopener,noreferrer");
+			} else if (result.sudoUnavailable) {
+				toast.error(
+					"Нет прав sudo без пароля. Откройте инструкцию по ручной установке.",
+				);
+				window.open(result.manualInstallUrl, "_blank", "noopener,noreferrer");
 			} else if (!result.ok) {
-				const failed = result.steps.find((step) => step.status === "failed");
 				toast.error(
 					failed?.error
-						? `Установка не удалась: ${failed.error}`
-						: "Не удалось установить git/gh. Попробуйте ещё раз.",
+						? `Установка не удалась: ${failed.error}. Откройте инструкцию по ручной установке.`
+						: "Не удалось установить git/gh. Откройте инструкцию по ручной установке.",
+				);
+				// A failed install must never be a dead end — always offer the link.
+				window.open(
+					manualStep?.manualInstallUrl ?? result.manualInstallUrl,
+					"_blank",
+					"noopener,noreferrer",
 				);
 			} else {
-				toast.success("git и GitHub CLI установлены.");
+				if (manualStep) {
+					// git installed, but gh needs a manual step (Linux apt has no gh).
+					toast.info(
+						"git установлен. GitHub CLI установите по инструкции вручную.",
+					);
+					window.open(
+						manualStep.manualInstallUrl,
+						"_blank",
+						"noopener,noreferrer",
+					);
+				} else {
+					toast.success("git и GitHub CLI установлены.");
+				}
 			}
 			await Promise.all([refetchGit(), refetchGh()]);
 		},
