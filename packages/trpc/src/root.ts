@@ -8,6 +8,7 @@ import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
 import { chatRouter } from "./router/chat";
 import { deviceRouter } from "./router/device";
+import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
 import { graphRouter } from "./router/graph";
 import { hostRouter } from "./router/host";
@@ -52,6 +53,7 @@ export const appRouter = createTRPCRouter({
 	automation: automationRouter,
 	chat: chatRouter,
 	device: deviceRouter,
+	economy: economyRouter,
 	executionCircuit: executionCircuitRouter,
 	graph: graphRouter,
 	host: hostRouter,

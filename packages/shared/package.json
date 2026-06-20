@@ -56,6 +56,10 @@
 			"types": "./src/rox-ledger.ts",
 			"default": "./src/rox-ledger.ts"
 		},
+		"./rox-ledger-kind": {
+			"types": "./src/rox-ledger-kind.ts",
+			"default": "./src/rox-ledger-kind.ts"
+		},
 		"./rox-perks": {
 			"types": "./src/rox-perks.ts",
 			"default": "./src/rox-perks.ts"
