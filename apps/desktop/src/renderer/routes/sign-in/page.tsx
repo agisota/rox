@@ -4,7 +4,7 @@ import { Button } from "@rox/ui/button";
 import { Spinner } from "@rox/ui/spinner";
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { FaGithub } from "react-icons/fa";
+import { FaGithub, FaTelegram } from "react-icons/fa";
 import { env } from "renderer/env.renderer";
 import { track } from "renderer/lib/analytics";
 import { setAuthToken } from "renderer/lib/auth-client";
@@ -165,6 +165,31 @@ function SignInPage() {
 						>
 							<FaGithub className="size-5" />
 							Продолжить с GitHub
+						</Button>
+						<Button
+							variant="outline"
+							size="lg"
+							onClick={() => signIn("yandex")}
+							className="w-full gap-3"
+							disabled={signInMutation.isPending}
+						>
+							<span
+								aria-hidden
+								className="flex size-5 items-center justify-center rounded-full bg-[#FC3F1D] text-[11px] font-bold text-white"
+							>
+								Я
+							</span>
+							Войти через Яндекс
+						</Button>
+						<Button
+							variant="outline"
+							size="lg"
+							onClick={() => signIn("telegram")}
+							className="w-full gap-3"
+							disabled={signInMutation.isPending}
+						>
+							<FaTelegram className="size-5 text-[#229ED9]" />
+							Войти через Telegram
 						</Button>
 					</div>
 

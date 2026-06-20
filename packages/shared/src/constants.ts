@@ -1,5 +1,10 @@
 // Auth
-export const AUTH_PROVIDERS = ["github", "google"] as const;
+export const AUTH_PROVIDERS = [
+	"github",
+	"google",
+	"yandex",
+	"telegram",
+] as const;
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
 export const ORGANIZATION_HEADER = "x-rox-organization-id";
