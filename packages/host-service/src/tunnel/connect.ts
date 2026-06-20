@@ -12,15 +12,23 @@ export interface ConnectRelayOptions {
 	organizationId: string;
 	authProvider: JwtApiAuthProvider;
 	hostServiceSecret: string;
+	/**
+	 * Pre-assigned host id for managed sandboxes (C5/D7). When set, it overrides
+	 * the locally-derived machine id so the relay routing key matches the host
+	 * row the provisioner created. Self-managed hosts leave this undefined and
+	 * fall back to `getHostId()`.
+	 */
+	machineIdOverride?: string;
 }
 
 export async function connectRelay(
 	options: ConnectRelayOptions,
 ): Promise<TunnelClient | null> {
 	try {
+		const machineId = options.machineIdOverride ?? getHostId();
 		const host = await options.api.host.ensure.mutate({
 			organizationId: options.organizationId,
-			machineId: getHostId(),
+			machineId,
 			name: getHostName(),
 		});
 		logger.info(`[host-service] registered as host ${host.machineId}`);

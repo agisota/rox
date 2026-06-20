@@ -41,4 +41,11 @@ describe("host-service env", () => {
 	test("ORGANIZATION_ID accepts non-UUID organization slugs", () => {
 		expect(env.ORGANIZATION_ID).toBe("org_local_admin");
 	});
+
+	test("RELAY_BOOTSTRAP_TOKEN and HOST_ID are optional (C5/D7)", () => {
+		// Not set in this test process — both surface as undefined rather than
+		// failing validation, so self-managed hosts need not configure them.
+		expect(env.RELAY_BOOTSTRAP_TOKEN).toBeUndefined();
+		expect(env.HOST_ID).toBeUndefined();
+	});
 });
