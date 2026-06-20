@@ -205,7 +205,13 @@ export async function buildBranch(
 			const [behind, ahead] = counts.split("\t").map(Number);
 			aheadCount = ahead ?? 0;
 			behindCount = behind ?? 0;
-		} catch {}
+		} catch (error) {
+			logger.warn("[git-helpers.buildBranch] ahead/behind count failed", {
+				name,
+				compareRef,
+				error,
+			});
+		}
 	}
 
 	try {
@@ -213,7 +219,13 @@ export async function buildBranch(
 		const [hash, date] = log.split("\t");
 		lastCommitHash = hash ?? "";
 		lastCommitDate = date ?? "";
-	} catch {}
+	} catch (error) {
+		logger.warn("[git-helpers.buildBranch] last-commit lookup failed", {
+			name,
+			compareRef,
+			error,
+		});
+	}
 
 	return {
 		name,
