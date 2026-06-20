@@ -3,11 +3,9 @@
 import { authClient } from "@rox/auth/client";
 import { DEV_EMAIL, DEV_NAME, DEV_PASSWORD } from "@rox/shared/dev-credentials";
 import { Button } from "@rox/ui/button";
-import { Input } from "@rox/ui/input";
-import { Label } from "@rox/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { env } from "@/env";
 import { TelegramLoginButton } from "../../components/TelegramLoginButton";
@@ -24,35 +22,16 @@ export default function SignInPage() {
 			? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
 			: env.NEXT_PUBLIC_WEB_URL;
 
+	// ROX-522 Phase 3: registration/login is social-only. The public
+	// email/password form was removed; only the dev-gated "Local Admin (dev)"
+	// shortcut below still uses email/password (against the dev-only backend
+	// `emailAndPassword.enabled` flag).
 	const isDev = process.env.NODE_ENV === "development";
 
-	const [email, setEmail] = useState(isDev ? DEV_EMAIL : "");
-	const [password, setPassword] = useState(isDev ? DEV_PASSWORD : "");
-	const [isLoadingEmail, setIsLoadingEmail] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 	const [isLoadingYandex, setIsLoadingYandex] = useState(false);
 	const [isLoadingDev, setIsLoadingDev] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	const signInWithEmail = async (e: FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		setIsLoadingEmail(true);
-		setError(null);
-
-		try {
-			const res = await authClient.signIn.email({ email, password });
-			if (res.error) throw new Error(res.error.message);
-			window.location.href = callbackURL;
-		} catch (err) {
-			console.error("Email sign in failed:", err);
-			setError(
-				err instanceof Error
-					? err.message
-					: "Не удалось войти. Проверьте email и пароль.",
-			);
-			setIsLoadingEmail(false);
-		}
-	};
 
 	const signInWithGithub = async () => {
 		setIsLoadingGithub(true);
@@ -118,8 +97,7 @@ export default function SignInPage() {
 		}
 	};
 
-	const isLoading =
-		isLoadingEmail || isLoadingGithub || isLoadingYandex || isLoadingDev;
+	const isLoading = isLoadingGithub || isLoadingYandex || isLoadingDev;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -135,46 +113,6 @@ export default function SignInPage() {
 				{error && (
 					<p className="text-destructive text-center text-sm">{error}</p>
 				)}
-				<form onSubmit={signInWithEmail} className="grid gap-3">
-					<div className="grid gap-2">
-						<Label htmlFor="email">Email</Label>
-						<Input
-							id="email"
-							type="email"
-							autoComplete="email"
-							placeholder="you@example.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							disabled={isLoading}
-							required
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="password">Пароль</Label>
-						<Input
-							id="password"
-							type="password"
-							autoComplete="current-password"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							disabled={isLoading}
-							required
-						/>
-					</div>
-					<Button type="submit" disabled={isLoading} className="w-full">
-						{isLoadingEmail ? "Выполняется вход..." : "Войти"}
-					</Button>
-				</form>
-				<div className="relative">
-					<div className="absolute inset-0 flex items-center">
-						<span className="w-full border-t" />
-					</div>
-					<div className="relative flex justify-center text-xs uppercase">
-						<span className="bg-background text-muted-foreground px-2">
-							или
-						</span>
-					</div>
-				</div>
 				{isDev && (
 					<Button
 						variant="outline"
@@ -187,6 +125,9 @@ export default function SignInPage() {
 							: "Войти как локальный администратор (dev)"}
 					</Button>
 				)}
+				{/* TODO(ROX-522): GitHub stays as a full social login for now.
+				    Demoting GitHub to a link-only ("connect account") option is a
+				    separate follow-up and is intentionally not implemented here. */}
 				<Button
 					variant="outline"
 					disabled={isLoading}

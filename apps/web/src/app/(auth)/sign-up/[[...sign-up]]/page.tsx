@@ -2,42 +2,18 @@
 
 import { authClient } from "@rox/auth/client";
 import { Button } from "@rox/ui/button";
-import { Input } from "@rox/ui/input";
-import { Label } from "@rox/ui/label";
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { env } from "@/env";
 import { TelegramLoginButton } from "../../components/TelegramLoginButton";
 
 export default function SignUpPage() {
-	const [name, setName] = useState("");
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [isLoadingEmail, setIsLoadingEmail] = useState(false);
+	// ROX-522 Phase 3: registration is social-only. The public name/email/password
+	// form was removed; users sign up via Telegram, Yandex, or GitHub.
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 	const [isLoadingYandex, setIsLoadingYandex] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	const signUpWithEmail = async (e: FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		setIsLoadingEmail(true);
-		setError(null);
-
-		try {
-			const res = await authClient.signUp.email({ name, email, password });
-			if (res.error) throw new Error(res.error.message);
-			window.location.href = env.NEXT_PUBLIC_WEB_URL;
-		} catch (err) {
-			console.error("Email sign up failed:", err);
-			setError(
-				err instanceof Error
-					? err.message
-					: "Не удалось зарегистрироваться. Попробуйте еще раз.",
-			);
-			setIsLoadingEmail(false);
-		}
-	};
 
 	const signUpWithGithub = async () => {
 		setIsLoadingGithub(true);
@@ -73,7 +49,7 @@ export default function SignUpPage() {
 		}
 	};
 
-	const isLoading = isLoadingEmail || isLoadingGithub || isLoadingYandex;
+	const isLoading = isLoadingGithub || isLoadingYandex;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -89,59 +65,9 @@ export default function SignUpPage() {
 				{error && (
 					<p className="text-destructive text-center text-sm">{error}</p>
 				)}
-				<form onSubmit={signUpWithEmail} className="grid gap-3">
-					<div className="grid gap-2">
-						<Label htmlFor="name">Имя</Label>
-						<Input
-							id="name"
-							type="text"
-							autoComplete="name"
-							placeholder="Иван Иванов"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							disabled={isLoading}
-							required
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="email">Email</Label>
-						<Input
-							id="email"
-							type="email"
-							autoComplete="email"
-							placeholder="you@example.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							disabled={isLoading}
-							required
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="password">Пароль</Label>
-						<Input
-							id="password"
-							type="password"
-							autoComplete="new-password"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							disabled={isLoading}
-							required
-						/>
-					</div>
-					<Button type="submit" disabled={isLoading} className="w-full">
-						{isLoadingEmail ? "Создание аккаунта..." : "Зарегистрироваться"}
-					</Button>
-				</form>
-				<div className="relative">
-					<div className="absolute inset-0 flex items-center">
-						<span className="w-full border-t" />
-					</div>
-					<div className="relative flex justify-center text-xs uppercase">
-						<span className="bg-background text-muted-foreground px-2">
-							или
-						</span>
-					</div>
-				</div>
+				{/* TODO(ROX-522): GitHub stays as a full social login for now.
+				    Demoting GitHub to a link-only ("connect account") option is a
+				    separate follow-up and is intentionally not implemented here. */}
 				<Button
 					variant="outline"
 					disabled={isLoading}
