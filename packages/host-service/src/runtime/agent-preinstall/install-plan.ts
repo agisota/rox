@@ -9,8 +9,40 @@ import {
 import {
 	AGENT_HARNESS_PRESETS,
 	type HarnessAuditReceipt,
+	type HarnessInstallPlatform,
+	type HarnessInstallStep,
 } from "@rox/shared/agent-harness-presets";
 import type { AgentInstallStatus } from "../../db/schema";
+
+/**
+ * Coerce a Node `process.platform` value to the three desktop targets Rox
+ * ships installers for. Anything outside the trio (e.g. `freebsd`) maps to
+ * `linux`, which is the closest install path (apt/distro shells).
+ */
+function toHarnessPlatform(platform: NodeJS.Platform): HarnessInstallPlatform {
+	if (platform === "darwin") return "darwin";
+	if (platform === "win32") return "win32";
+	return "linux";
+}
+
+/**
+ * Keep only the install steps that apply to the current OS. A step with no
+ * `platforms` list runs everywhere; a scoped step runs only when the current
+ * platform is listed. This is what makes a per-OS install command table (e.g.
+ * `brew` on darwin vs `winget` on win32) collapse to the single command that
+ * is valid on the running machine.
+ */
+function filterStepsForPlatform(
+	steps: readonly HarnessInstallStep[],
+	platform: HarnessInstallPlatform,
+): string[] {
+	return steps
+		.filter(
+			(step) =>
+				step.platforms === undefined || step.platforms.includes(platform),
+		)
+		.map((step) => step.command);
+}
 
 export type PreinstallItemKind = "agent" | "harness";
 
@@ -59,9 +91,15 @@ export interface PreinstallCatalogItem {
 
 /**
  * Build the full preinstall catalog from the shared agent + harness presets.
- * Pure and deterministic so it can be unit-tested without a DB.
+ * Pure and deterministic so it can be unit-tested without a DB. `platform`
+ * defaults to the running OS and scopes per-OS harness install steps (so only
+ * the current-platform command survives into `installCommands`); pass it
+ * explicitly to test the other targets.
  */
-export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
+export function buildPreinstallCatalog(
+	platform: NodeJS.Platform = process.platform,
+): PreinstallCatalogItem[] {
+	const harnessPlatform = toHarnessPlatform(platform);
 	const agents: PreinstallCatalogItem[] = BUILTIN_AGENT_DEFINITIONS.filter(
 		isTerminalAgentDefinition,
 	)
@@ -84,20 +122,29 @@ export function buildPreinstallCatalog(): PreinstallCatalogItem[] {
 		});
 
 	const harnesses: PreinstallCatalogItem[] = AGENT_HARNESS_PRESETS.map(
-		(harness) => ({
-			presetId: harness.id,
-			kind: "harness" as const,
-			label: harness.label,
-			installCommands: harness.install.map((step) => step.command),
-			configFiles: harness.configFiles.map((file) => ({
-				path: file.path,
-				templateRef: file.templateRef,
-				overwrite: file.overwrite,
-			})),
-			optional: harness.optional ?? harness.install.length === 0,
-			updateStrategy: "latest" as const,
-			audit: harness.audit,
-		}),
+		(harness) => {
+			const installCommands = filterStepsForPlatform(
+				harness.install,
+				harnessPlatform,
+			);
+			return {
+				presetId: harness.id,
+				kind: "harness" as const,
+				label: harness.label,
+				installCommands,
+				configFiles: harness.configFiles.map((file) => ({
+					path: file.path,
+					templateRef: file.templateRef,
+					overwrite: file.overwrite,
+				})),
+				// Optional when explicitly flagged or when no install command applies
+				// on the current OS (after platform filtering), so a harness with only
+				// other-platform steps is never auto-installed here.
+				optional: harness.optional ?? installCommands.length === 0,
+				updateStrategy: "latest" as const,
+				audit: harness.audit,
+			};
+		},
 	);
 
 	return [...agents, ...harnesses];

@@ -2,6 +2,7 @@ import { chatServiceTrpc } from "@rox/chat/client";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
 import { DrawnCheck, motionDuration, useShouldAnimate } from "@rox/ui/motion";
+import { toast } from "@rox/ui/sonner";
 import { Spinner } from "@rox/ui/spinner";
 import { cn } from "@rox/ui/utils";
 import { createFileRoute } from "@tanstack/react-router";
@@ -42,6 +43,11 @@ function OnboardingDashboardPage() {
 		isFetching: isFetchingGh,
 	} = electronTrpc.system.detectGhCli.useQuery();
 	const {
+		data: gitStatus,
+		refetch: refetchGit,
+		isFetching: isFetchingGit,
+	} = electronTrpc.system.detectGit.useQuery();
+	const {
 		data: anthropicStatus,
 		refetch: refetchAnthropic,
 		isFetching: isFetchingAnthropic,
@@ -53,14 +59,49 @@ function OnboardingDashboardPage() {
 	} = chatServiceTrpc.auth.getOpenAIStatus.useQuery();
 
 	const ghInstalled = ghStatus?.installed === true;
-	const ghReady = ghInstalled && ghStatus?.authenticated === true;
+	const gitInstalled = gitStatus?.installed === true;
+	const ghAuthenticated = ghInstalled && ghStatus?.authenticated === true;
+	// The CLI row is "ready" only once both binaries exist and gh is logged in.
+	const ghReady = ghAuthenticated && gitInstalled;
+	const toolsInstalled = ghInstalled && gitInstalled;
 	const claudeConnected =
 		!!anthropicStatus?.authenticated && !anthropicStatus.issue;
 	const codexConnected = !!openAIStatus?.authenticated && !openAIStatus.issue;
 
-	const openGitHubInstall = () => {
-		window.open("https://cli.github.com/", "_blank", "noopener,noreferrer");
-	};
+	// Auto-pull the connected GitHub account once gh is authenticated.
+	const { data: githubUsername } =
+		electronTrpc.system.getGitHubUsername.useQuery(undefined, {
+			enabled: ghAuthenticated,
+		});
+
+	const installGitTools = electronTrpc.system.installGitTools.useMutation({
+		onSuccess: async (result) => {
+			if (result.packageManagerMissing) {
+				toast.error(
+					"Не найден менеджер пакетов для автоустановки. Откройте инструкцию по ручной установке.",
+				);
+				window.open(result.manualInstallUrl, "_blank", "noopener,noreferrer");
+			} else if (!result.ok) {
+				const failed = result.steps.find((step) => step.status === "failed");
+				toast.error(
+					failed?.error
+						? `Установка не удалась: ${failed.error}`
+						: "Не удалось установить git/gh. Попробуйте ещё раз.",
+				);
+			} else {
+				toast.success("git и GitHub CLI установлены.");
+			}
+			await Promise.all([refetchGit(), refetchGh()]);
+		},
+		onError: (error) => {
+			toast.error(error.message || "Не удалось запустить установку git/gh.");
+		},
+	});
+
+	const ghDescription =
+		ghAuthenticated && githubUsername
+			? `Аккаунт: @${githubUsername}`
+			: "Клонируйте, отправляйте изменения и создавайте PR.";
 
 	return (
 		<>
@@ -74,17 +115,23 @@ function OnboardingDashboardPage() {
 						icon={<SiGithub className="size-4.5" />}
 						chipClassName="bg-foreground text-background"
 						name="GitHub CLI"
-						description="Клонируйте, отправляйте изменения и создавайте PR."
-						status={rowStatus(isFetchingGh, ghReady)}
+						description={ghDescription}
+						status={rowStatus(
+							isFetchingGh || isFetchingGit || installGitTools.isPending,
+							ghReady,
+						)}
 						recommended
-						actionLabel={ghInstalled ? "Войти" : "Установить"}
-						actionIcon={
-							ghInstalled ? undefined : <HiArrowUpRight className="size-3.5" />
-						}
+						actionLabel={toolsInstalled ? "Войти" : "Установить"}
+						actionPending={installGitTools.isPending}
 						onAction={
-							ghInstalled ? () => setGhAuthOpen(true) : openGitHubInstall
+							toolsInstalled
+								? () => setGhAuthOpen(true)
+								: () => installGitTools.mutate()
 						}
-						onRecheck={() => void refetchGh()}
+						onRecheck={() => {
+							void refetchGh();
+							void refetchGit();
+						}}
 					/>
 				</motion.div>
 				<motion.div custom={1} variants={rowVariants}>
@@ -163,6 +210,8 @@ interface OnboardingRowProps {
 	recommended?: boolean;
 	actionLabel: string;
 	actionIcon?: ReactNode;
+	/** When true the action button is disabled and shows a spinner. */
+	actionPending?: boolean;
 	onAction: () => void;
 	onRecheck?: () => void;
 }
@@ -176,6 +225,7 @@ function OnboardingRow({
 	recommended,
 	actionLabel,
 	actionIcon,
+	actionPending,
 	onAction,
 	onRecheck,
 }: OnboardingRowProps) {
@@ -256,9 +306,15 @@ function OnboardingRow({
 							transition={{ duration: motionDuration.fast }}
 						>
 							{recommended && <Badge variant="outline">Рекомендуется</Badge>}
-							<Button type="button" size="sm" onClick={onAction}>
+							<Button
+								type="button"
+								size="sm"
+								onClick={onAction}
+								disabled={actionPending}
+							>
+								{actionPending && <Spinner className="size-3.5" />}
 								{actionLabel}
-								{actionIcon}
+								{!actionPending && actionIcon}
 							</Button>
 						</motion.div>
 					)}
