@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 
 import { activityEvents } from "./activity";
 import { agentSources } from "./agent";
+import { userAmbientSettings } from "./ambient";
 import { paymentAttributions, userAttribution } from "./attribution";
 import {
 	accounts,
@@ -983,3 +984,17 @@ export const journalEventsRelations = relations(journalEvents, ({ one }) => ({
 		references: [automationRuns.id],
 	}),
 }));
+
+export const userAmbientSettingsRelations = relations(
+	userAmbientSettings,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [userAmbientSettings.organizationId],
+			references: [organizations.id],
+		}),
+		createdByUser: one(users, {
+			fields: [userAmbientSettings.createdBy],
+			references: [users.id],
+		}),
+	}),
+);

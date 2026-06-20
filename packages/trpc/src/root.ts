@@ -3,6 +3,7 @@ import { achievementsRouter } from "./router/achievements";
 import { adminRouter } from "./router/admin";
 import { agentRouter } from "./router/agent";
 import { agentSourceRouter } from "./router/agent-source";
+import { ambientRouter } from "./router/ambient";
 import { analyticsRouter } from "./router/analytics";
 import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
@@ -53,6 +54,7 @@ export const appRouter = createTRPCRouter({
 	agent: agentRouter,
 	agentRole: agentRoleRouter,
 	agentSource: agentSourceRouter,
+	ambient: ambientRouter,
 	apiKey: apiKeyRouter,
 	analytics: analyticsRouter,
 	automation: automationRouter,
