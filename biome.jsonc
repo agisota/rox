@@ -70,6 +70,14 @@
 					}
 				}
 			}
+		},
+		{
+			// package.json is machine-managed (release version-bump tool runs jq,
+			// bun rewrites deps) and is serialized with 2-space indent, which
+			// conflicts with the repo-wide tab formatter and intermittently breaks
+			// `bun run lint` on main after a release. Don't format-enforce it.
+			"includes": ["**/package.json"],
+			"formatter": { "enabled": false }
 		}
 	]
 }
