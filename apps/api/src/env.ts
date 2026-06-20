@@ -8,14 +8,14 @@ export const env = createEnv({
 			.default("development"),
 	},
 	server: {
-		DATABASE_URL: z.string(),
-		DATABASE_URL_UNPOOLED: z.string(),
-		BLOB_READ_WRITE_TOKEN: z.string(),
+		DATABASE_URL: z.string().url(),
+		DATABASE_URL_UNPOOLED: z.string().url(),
+		BLOB_READ_WRITE_TOKEN: z.string().min(1),
 		GOOGLE_CLIENT_ID: z.string().min(1),
 		GOOGLE_CLIENT_SECRET: z.string().min(1),
 		GH_CLIENT_ID: z.string().min(1),
 		GH_CLIENT_SECRET: z.string().min(1),
-		BETTER_AUTH_SECRET: z.string(),
+		BETTER_AUTH_SECRET: z.string().min(1),
 		LINEAR_CLIENT_ID: z.string().min(1),
 		LINEAR_CLIENT_SECRET: z.string().min(1),
 		LINEAR_WEBHOOK_SECRET: z.string().min(1),
@@ -28,7 +28,7 @@ export const env = createEnv({
 		GH_APP_SLUG: z.string().min(1).default("rox-app"),
 		SLACK_CLIENT_ID: z.string().min(1),
 		SLACK_CLIENT_SECRET: z.string().min(1),
-		SLACK_SIGNING_SECRET: z.string(),
+		SLACK_SIGNING_SECRET: z.string().min(1),
 		// Integrations epic — new provider verticals. Optional until each
 		// provider is provisioned in a given environment.
 		TELEGRAM_BOT_TOKEN: z.string().optional(),
@@ -44,7 +44,7 @@ export const env = createEnv({
 		LARK_APP_ID: z.string().optional(),
 		LARK_APP_SECRET: z.string().optional(),
 		LARK_ENCRYPT_KEY: z.string().optional(),
-		ANTHROPIC_API_KEY: z.string(),
+		ANTHROPIC_API_KEY: z.string().min(1),
 		// Rox R1 server-side generation (journal-memory epic). The ROX gateway
 		// (ROX_AI_API_KEY → api.zed.md, free house model) is preferred; GROQ_API_KEY
 		// is the direct groq-compound fallback. All optional so non-AI envs boot.
@@ -56,9 +56,9 @@ export const env = createEnv({
 		QSTASH_URL: z.string().url(),
 		QSTASH_CURRENT_SIGNING_KEY: z.string().min(1),
 		QSTASH_NEXT_SIGNING_KEY: z.string().min(1),
-		RESEND_API_KEY: z.string(),
-		KV_REST_API_URL: z.string(),
-		KV_REST_API_TOKEN: z.string(),
+		RESEND_API_KEY: z.string().min(1),
+		KV_REST_API_URL: z.string().url(),
+		KV_REST_API_TOKEN: z.string().min(1),
 		KV_URL: z.string().url(),
 		SECRETS_ENCRYPTION_KEY: z.string().min(1),
 		SENTRY_AUTH_TOKEN: z.string().optional(),
