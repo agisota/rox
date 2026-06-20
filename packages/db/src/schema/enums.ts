@@ -926,3 +926,41 @@ export type XmppDirection = z.infer<typeof xmppDirectionEnum>;
 export const xmppFedPolicyValues = ["allow", "deny", "throttle"] as const;
 export const xmppFedPolicyEnum = z.enum(xmppFedPolicyValues);
 export type XmppFedPolicy = z.infer<typeof xmppFedPolicyEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D5 Mesh / Decentralized Transport (comms-suite epic).
+// A bitchat-borrowed decentralized fallback: the rox identity maps to a
+// per-device Nostr/Noise keypair so DMs still flow over federated Nostr relays
+// (NIP-17 gift-wrapped) when the rox backbone is unreachable. The `mesh_*`
+// Drizzle tables describe ONLY the server-side mapping (device key bindings,
+// relay subscription config, a delivered-event dedup ledger) — private keys
+// NEVER reach the server (they live in expo-secure-store / Electron safeStorage
+// on the client). BLE local mesh is client-side and DEFERRED. Append-only
+// string unions backing Postgres pgEnums (declared in schema/mesh.ts); NEVER
+// reorder/remove values. The `mesh` transport itself reuses commsTransport.
+// ---------------------------------------------------------------------------
+
+/** Lifecycle of a provisioned mesh device key (DQ4: reserved/grace on rotate). */
+export const meshDeviceStatusValues = [
+	"active",
+	"revoked",
+	"reserved",
+] as const;
+export const meshDeviceStatusEnum = z.enum(meshDeviceStatusValues);
+export type MeshDeviceStatus = z.infer<typeof meshDeviceStatusEnum>;
+
+/** Direction of a mesh-delivered event relative to the bridged rox user. */
+export const meshDirectionValues = ["inbound", "outbound"] as const;
+export const meshDirectionEnum = z.enum(meshDirectionValues);
+export type MeshDirection = z.infer<typeof meshDirectionEnum>;
+
+/** Delivery lifecycle of a fallback-delivered mesh event (audit + dedup). */
+export const meshDeliveryStatusValues = [
+	"queued",
+	"sent",
+	"delivered",
+	"reconciled",
+	"failed",
+] as const;
+export const meshDeliveryStatusEnum = z.enum(meshDeliveryStatusValues);
+export type MeshDeliveryStatus = z.infer<typeof meshDeliveryStatusEnum>;

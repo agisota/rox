@@ -12,3 +12,8 @@ export {
 	RESERVED_JID_LOCALPARTS,
 	ROX_XMPP_DOMAIN,
 } from "./jid";
+export {
+	isNostrPubkey,
+	normalizeBase64Key,
+	normalizeNostrPubkey,
+} from "./mesh";
