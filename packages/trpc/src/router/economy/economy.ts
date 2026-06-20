@@ -16,15 +16,45 @@
  */
 
 import { db } from "@rox/db/client";
-import { roxBalances, roxLedger, usageRequests } from "@rox/db/schema";
+import {
+	modelCatalog,
+	roxBalances,
+	roxLedger,
+	roxTopups,
+	usageRequests,
+} from "@rox/db/schema";
+import {
+	buildInvoiceRequest,
+	createDvNetClient,
+} from "@rox/shared/dvnet-client";
 import { applyGrant } from "@rox/shared/rox-ledger";
 import { toLedgerKind } from "@rox/shared/rox-ledger-kind";
+import { quoteTopUp } from "@rox/shared/rox-topup";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, asc, desc, eq, lt } from "drizzle-orm";
 import { z } from "zod";
 
-import { adminProcedure, protectedProcedure } from "../../trpc";
+import {
+	adminProcedure,
+	protectedProcedure,
+	publicProcedure,
+} from "../../trpc";
 import { ensureBalance, STARTING_BALANCE_ROX } from "./economy.service";
+
+/**
+ * Resolve the public API origin the dv.net webhook should call back. dv.net
+ * POSTs the confirmed payment to `${origin}/api/economy/dvnet/webhook`; the
+ * route reconciles `order_id` → the pending `rox_topups` row. The origin is the
+ * API app's own base URL (where the route lives), read at call time so the
+ * router module imports without an env dependency (tests never hit this).
+ */
+function resolveTopupCallbackUrl(): string {
+	const origin =
+		process.env.NEXT_PUBLIC_API_URL ??
+		process.env.NEXT_PUBLIC_WEB_URL ??
+		"https://app.rox.one";
+	return `${origin.replace(/\/$/, "")}/api/economy/dvnet/webhook`;
+}
 
 /** Shared cursor-pagination input: a `createdAt` ISO cursor + page limit. */
 const pageInput = z
@@ -122,6 +152,110 @@ export const economyRouter = {
 
 		return { items, nextCursor };
 	}),
+
+	topup: {
+		/**
+		 * Preview the Rox a USDT amount buys (T4). Pure — no DB, no provider call.
+		 * Rejects a non-positive amount so the UI never shows a 0/negative quote.
+		 */
+		quote: protectedProcedure
+			.input(z.object({ usdtAmount: z.number().positive() }))
+			.query(({ input }) => quoteTopUp(input.usdtAmount)),
+
+		/**
+		 * Create a dv.net top-up invoice (T4): insert a `pending` `rox_topups`
+		 * row, ask dv.net for a hosted checkout, reconcile the provider invoice id
+		 * back onto the row, and return the checkout URL for the client to open.
+		 *
+		 * The dv.net API key is read ONLY inside the client (`createDvNetClient`);
+		 * this procedure never sees it. On a provider failure the pending row is
+		 * left in place (status `pending`) so the reconciliation poll (P2) can
+		 * still settle it if the charge actually went through.
+		 */
+		createInvoice: protectedProcedure
+			.input(z.object({ usdtAmount: z.number().positive() }))
+			.mutation(async ({ ctx, input }) => {
+				const userId = ctx.session.user.id;
+				const quote = quoteTopUp(input.usdtAmount);
+
+				// Insert the pending row first so we have a stable order_id (our row
+				// id) to hand dv.net and to reconcile the webhook against. The
+				// dvnetInvoiceId is filled in once the provider returns it.
+				const [topup] = await db
+					.insert(roxTopups)
+					.values({
+						userId,
+						usdtAmount: String(quote.usdt),
+						roxAmount: String(quote.rox),
+						dvnetInvoiceId: "",
+						status: "pending",
+					})
+					.returning({ id: roxTopups.id });
+
+				if (!topup) {
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Failed to create top-up invoice row.",
+					});
+				}
+
+				const request = buildInvoiceRequest(
+					quote.usdt,
+					topup.id,
+					resolveTopupCallbackUrl(),
+				);
+
+				let invoice: { invoiceId: string; checkoutUrl: string };
+				try {
+					invoice = await createDvNetClient().createInvoice(request);
+				} catch (error) {
+					console.error("[economy/topup] dv.net createInvoice failed:", error);
+					throw new TRPCError({
+						code: "BAD_GATEWAY",
+						message: "Payment provider could not create the invoice.",
+					});
+				}
+
+				await db
+					.update(roxTopups)
+					.set({ dvnetInvoiceId: invoice.invoiceId })
+					.where(eq(roxTopups.id, topup.id));
+
+				return {
+					topupId: topup.id,
+					checkoutUrl: invoice.checkoutUrl,
+					usdt: quote.usdt,
+					rox: quote.rox,
+				};
+			}),
+	},
+
+	models: {
+		/**
+		 * Read the model catalog for the agents cabinet / model picker (T7).
+		 * Public — the catalog is non-sensitive pricing/capability metadata. The
+		 * catalog is populated by the offline sync job (`sync-model-catalog.ts`);
+		 * an empty result means the sync has not run yet.
+		 */
+		list: publicProcedure.query(async () => {
+			return db
+				.select({
+					id: modelCatalog.id,
+					provider: modelCatalog.provider,
+					modelId: modelCatalog.modelId,
+					publicUsdPerMIn: modelCatalog.publicUsdPerMIn,
+					publicUsdPerMOut: modelCatalog.publicUsdPerMOut,
+					pricingFamily: modelCatalog.pricingFamily,
+					isFree: modelCatalog.isFree,
+					params: modelCatalog.params,
+					specs: modelCatalog.specs,
+					tools: modelCatalog.tools,
+					limits: modelCatalog.limits,
+				})
+				.from(modelCatalog)
+				.orderBy(asc(modelCatalog.provider), asc(modelCatalog.modelId));
+		}),
+	},
 
 	admin: {
 		/**

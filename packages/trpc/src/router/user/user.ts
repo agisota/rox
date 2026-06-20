@@ -12,6 +12,7 @@ import { z } from "zod";
 
 import { generateImagePathname, uploadImage } from "../../lib/upload";
 import { protectedProcedure } from "../../trpc";
+import { ensureBalance } from "../economy/economy.service";
 
 export const userRouter = {
 	me: protectedProcedure.query(({ ctx }) => ctx.session.user),
@@ -51,24 +52,18 @@ export const userRouter = {
 		const userId = ctx.session.user.id;
 		const organizationId = ctx.activeOrganizationId;
 
-		const [createdBalance] = await db
-			.insert(roxBalances)
-			.values({ userId })
-			.onConflictDoNothing()
-			.returning({
-				balanceRox: roxBalances.balanceRox,
-				updatedAt: roxBalances.updatedAt,
-			});
+		// T8: single-source the seed-on-first-read via the economy service so the
+		// 500-Rox starting grant logic lives in exactly one place. The read shape
+		// below is unchanged so the desktop AccountUsagePanel keeps compiling.
+		await ensureBalance(userId);
 
-		const balance =
-			createdBalance ??
-			(await db.query.roxBalances.findFirst({
-				where: eq(roxBalances.userId, userId),
-				columns: {
-					balanceRox: true,
-					updatedAt: true,
-				},
-			}));
+		const balance = await db.query.roxBalances.findFirst({
+			where: eq(roxBalances.userId, userId),
+			columns: {
+				balanceRox: true,
+				updatedAt: true,
+			},
+		});
 
 		const ledgerRows = await db
 			.select({
