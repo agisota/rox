@@ -30,6 +30,16 @@ export interface EventOccurrence {
 	end: Date;
 }
 
+export interface ExpansionResult {
+	occurrences: EventOccurrence[];
+	/**
+	 * True when expansion stopped at {@link MAX_OCCURRENCES} for at least one
+	 * event before the recurrence was exhausted — i.e. results may be incomplete
+	 * for the requested window (sub-daily cadences are the usual cause).
+	 */
+	truncated: boolean;
+}
+
 /** Safety cap so a pathological infinite rule can't run away. */
 const MAX_OCCURRENCES = 1000;
 
@@ -54,7 +64,7 @@ export function expandEvent(
 	event: ExpandableEvent,
 	rangeStart: Date,
 	rangeEnd: Date,
-): EventOccurrence[] {
+): ExpansionResult {
 	const durationMs = event.dtend.getTime() - event.dtstart.getTime();
 	const overlaps = (start: Date): boolean => {
 		const end = new Date(start.getTime() + durationMs);
@@ -71,7 +81,10 @@ export function expandEvent(
 
 	// One-off event: a single instance if it overlaps the window.
 	if (!event.rrule) {
-		return overlaps(event.dtstart) ? [toOccurrence(event.dtstart)] : [];
+		return {
+			occurrences: overlaps(event.dtstart) ? [toOccurrence(event.dtstart)] : [],
+			truncated: false,
+		};
 	}
 
 	const skip = exdateKeys(event.exdates);
@@ -84,34 +97,61 @@ export function expandEvent(
 		Math.max(event.dtstart.getTime(), rangeStart.getTime() - durationMs) - 1,
 	);
 	let cursor = walkFloor;
+	let truncated = false;
+	let exhausted = false;
 
 	for (let i = 0; i < MAX_OCCURRENCES; i++) {
-		const next = nextOccurrenceAfter({
-			rrule: event.rrule,
-			dtstart: event.dtstart,
-			timezone: event.timezone,
-			after: cursor,
-		});
-		if (!next) break; // recurrence exhausted (COUNT/UNTIL)
-		if (next.getTime() >= rangeEnd.getTime()) break; // past the window
+		let next: Date | null;
+		try {
+			next = nextOccurrenceAfter({
+				rrule: event.rrule,
+				dtstart: event.dtstart,
+				timezone: event.timezone,
+				after: cursor,
+			});
+		} catch {
+			// A poisoned RRULE row (e.g. a legacy `FREQ=BOGUS` that predates write
+			// validation) must not throw the whole org's month/agenda query — skip
+			// this event and let the rest of the batch expand.
+			return { occurrences: out, truncated };
+		}
+		if (!next) {
+			exhausted = true;
+			break; // recurrence exhausted (COUNT/UNTIL)
+		}
+		if (next.getTime() >= rangeEnd.getTime()) {
+			exhausted = true;
+			break; // past the window
+		}
 		cursor = next;
 		if (skip.has(next.getTime())) continue; // EXDATE
 		if (overlaps(next)) out.push(toOccurrence(next));
 	}
 
-	return out;
+	// Hit the cap without exhausting the rule or leaving the window → the window
+	// may be missing later instances; signal it so the UI can warn.
+	if (!exhausted) truncated = true;
+
+	return { occurrences: out, truncated };
 }
 
 /**
  * Expand a set of events into a flat, chronologically-sorted occurrence list
- * for a date-range query (month/agenda views).
+ * for a date-range query (month/agenda views). `truncated` is true when any
+ * single event hit the per-event occurrence cap.
  */
 export function expandEvents(
 	events: ExpandableEvent[],
 	rangeStart: Date,
 	rangeEnd: Date,
-): EventOccurrence[] {
-	const all = events.flatMap((e) => expandEvent(e, rangeStart, rangeEnd));
+): ExpansionResult {
+	const all: EventOccurrence[] = [];
+	let truncated = false;
+	for (const e of events) {
+		const result = expandEvent(e, rangeStart, rangeEnd);
+		all.push(...result.occurrences);
+		if (result.truncated) truncated = true;
+	}
 	all.sort((a, b) => a.start.getTime() - b.start.getTime());
-	return all;
+	return { occurrences: all, truncated };
 }

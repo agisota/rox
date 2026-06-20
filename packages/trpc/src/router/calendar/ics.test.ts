@@ -35,12 +35,14 @@ describe("exportIcs", () => {
 		expect(ics).toContain("DESCRIPTION:Line one\\nLine two");
 	});
 
-	it("emits VALUE=DATE form for all-day events", () => {
+	it("emits VALUE=DATE form for all-day events with an exclusive DTEND", () => {
 		const ics = exportIcs([
 			{ ...baseEvent, allDay: true, rrule: null, exdates: [] },
 		]);
 		expect(ics).toContain("DTSTART;VALUE=DATE:20260620");
-		expect(ics).toContain("DTEND;VALUE=DATE:20260620");
+		// RFC 5545: all-day DTEND is EXCLUSIVE (the day after the last day), so a
+		// single-day all-day event spans 20260620 → 20260621, not a zero-length span.
+		expect(ics).toContain("DTEND;VALUE=DATE:20260621");
 	});
 });
 

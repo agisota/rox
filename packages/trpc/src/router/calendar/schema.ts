@@ -12,8 +12,58 @@ import { z } from "zod";
 
 const isoDate = z.coerce.date();
 const timezone = z.string().min(1).max(64);
-// A bare RRULE body (no `RRULE:` prefix); the engine validates semantics.
-const rruleBody = z.string().min(3).max(1024);
+
+/**
+ * Read a bare RRULE body's parts case-insensitively (`FREQ=…;INTERVAL=…`). The
+ * router still does the authoritative `RRule.fromString` parse once dtstart and
+ * timezone are known; this only enforces the cadence policy that doesn't depend
+ * on either.
+ */
+function rruleParts(body: string): Record<string, string> {
+	const parts: Record<string, string> = {};
+	for (const segment of body.split(";")) {
+		const eq = segment.indexOf("=");
+		if (eq <= 0) continue;
+		const key = segment.slice(0, eq).trim().toUpperCase();
+		const value = segment
+			.slice(eq + 1)
+			.trim()
+			.toUpperCase();
+		if (key) parts[key] = value;
+	}
+	return parts;
+}
+
+/**
+ * Cadence guardrail shared by every write that accepts an RRULE. Sub-daily
+ * recurrences expand to thousands of instances and would silently truncate at
+ * the occurrence cap, so:
+ *   - `SECONDLY`/`MINUTELY` are rejected outright (too fine to ever expand), and
+ *   - `HOURLY`-and-finer must be bounded by `UNTIL` or `COUNT`.
+ * Engine validity (`FREQ=BOGUS`, malformed `UNTIL`, …) is checked in the router
+ * via `isValidRrule`, where the row's dtstart + timezone are available.
+ */
+export function isAllowedCadence(body: string): boolean {
+	const parts = rruleParts(body);
+	const freq = parts.FREQ;
+	if (!freq) return true; // engine parse in the router rejects a missing FREQ.
+	if (freq === "SECONDLY" || freq === "MINUTELY") return false;
+	if (freq === "HOURLY")
+		return parts.UNTIL !== undefined || parts.COUNT !== undefined;
+	return true;
+}
+
+/** RU message used for both the zod refinement and the import-path guard. */
+export const RRULE_CADENCE_MESSAGE =
+	"Слишком частое повторение: SECONDLY/MINUTELY запрещены, а HOURLY требует UNTIL или COUNT";
+
+// A bare RRULE body (no `RRULE:` prefix); the engine validates full semantics in
+// the router, this only length-bounds the string and caps sub-daily cadence.
+const rruleBody = z
+	.string()
+	.min(3)
+	.max(1024)
+	.refine(isAllowedCadence, { message: RRULE_CADENCE_MESSAGE });
 
 // ---- calendars ------------------------------------------------------------
 
@@ -141,3 +191,16 @@ export const importIcsSchema = z.object({
 	calendarId: z.string().uuid(),
 	ics: z.string().min(1).max(2_000_000),
 });
+
+/**
+ * Hard cap on VEVENTs accepted from a single .ics import. A 2M-char file can
+ * still encode thousands of events; the router rejects past this and chunks the
+ * insert so one upload can't issue an unbounded statement.
+ */
+export const MAX_IMPORT_EVENTS = 500;
+
+/** Insert batch size for chunked .ics imports. */
+export const IMPORT_INSERT_CHUNK = 100;
+
+/** Per-event EXDATE cap mirrored from `createEventSchema` for .ics imports. */
+export const MAX_IMPORT_EXDATES = 500;
