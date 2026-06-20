@@ -1,3 +1,12 @@
+import {
+	createHostClient,
+	type HostAgentConfig,
+	type HostClient,
+	type HostKind,
+	type HostTarget,
+	type HostTerminalSession,
+	type HostTransport,
+} from "@rox/shared/host-client";
 import SuperJSON from "superjson";
 import { getAuthToken } from "./auth-token";
 import { getRelayUrl } from "./relay-url";
@@ -7,28 +16,35 @@ import { getRelayUrl } from "./relay-url";
 // the host AppRouter: importing `@rox/host-service` drags host-only
 // modules into the web's type-check, which is the reason the cloud's
 // `relay-client.ts` also hand-types its host calls.
+//
+// WS-B T2: this module now implements the shared `HostTransport` over the
+// relay and builds a unified `HostClient` (`@rox/shared/host-client`). The
+// legacy free functions below are kept as thin wrappers so the existing
+// `apps/web/src/app/workspaces/**` screens (read-only for WS-B) keep working.
 
-export interface HostTerminalSession {
-	terminalId: string;
-	workspaceId: string;
-	exited: boolean;
-	title: string | null;
-}
-
-export interface HostAgentConfig {
-	id: string;
-	presetId: string;
-	label: string;
-	command: string;
-	args: string[];
-	promptTransport: "argv" | "stdin";
-	promptArgs: string[];
-	env: Record<string, string>;
-	order: number;
-}
+export type { HostAgentConfig, HostClient, HostTerminalSession };
 
 interface CreateHostTerminalOptions {
 	initialCommand?: string;
+}
+
+/**
+ * Build the relay tRPC URL for a host procedure. Pure + exported so it can be
+ * unit-tested without the browser `fetch`/SuperJSON globals. GET inputs are
+ * SuperJSON-encoded into the `?input=` query param; POST inputs go in the body.
+ */
+export function buildHostCallUrl(
+	relayBase: string,
+	routingKey: string,
+	procedure: string,
+	encodedInput: ReturnType<typeof SuperJSON.serialize> | undefined,
+	method: "GET" | "POST",
+): string {
+	const base = `${relayBase}/hosts/${routingKey}/trpc/${procedure}`;
+	if (method === "GET" && encodedInput !== undefined) {
+		return `${base}?input=${encodeURIComponent(JSON.stringify(encodedInput))}`;
+	}
+	return base;
 }
 
 async function hostCall<TOutput>(
@@ -38,12 +54,14 @@ async function hostCall<TOutput>(
 	method: "GET" | "POST",
 ): Promise<TOutput> {
 	const token = await getAuthToken();
-	const base = `${getRelayUrl()}/hosts/${routingKey}/trpc/${procedure}`;
 	const encoded = input === undefined ? undefined : SuperJSON.serialize(input);
-	const url =
-		method === "GET" && encoded !== undefined
-			? `${base}?input=${encodeURIComponent(JSON.stringify(encoded))}`
-			: base;
+	const url = buildHostCallUrl(
+		getRelayUrl(),
+		routingKey,
+		procedure,
+		encoded,
+		method,
+	);
 
 	const response = await fetch(url, {
 		method,
@@ -67,13 +85,35 @@ async function hostCall<TOutput>(
 	return SuperJSON.deserialize(parsed.result.data as never) as TOutput;
 }
 
-export function listHostTerminals(routingKey: string, workspaceId: string) {
-	return hostCall<{ sessions: HostTerminalSession[] }>(
-		routingKey,
-		"terminal.listSessions",
-		{ workspaceId },
-		"GET",
+/**
+ * Relay implementation of the shared {@link HostTransport}. Web (and the React
+ * Native bundle via the same fetch/WS boundary — D5) dial a host through the
+ * Fly relay tunnel with this transport.
+ */
+export function createRelayTransport(target: HostTarget): HostTransport {
+	return {
+		kind: "relay",
+		target,
+		call: (procedure, input, method) =>
+			hostCall(target.routingKey, procedure, input, method),
+	};
+}
+
+/**
+ * Build a unified {@link HostClient} that talks to `routingKey` over the relay.
+ * This is the convergence entry point every web `(agents)` screen should use.
+ */
+export function createRelayHostClient(
+	routingKey: string,
+	kind: HostKind = "local",
+): HostClient {
+	return createHostClient(
+		createRelayTransport({ routingKey, transport: "relay", kind }),
 	);
+}
+
+export function listHostTerminals(routingKey: string, workspaceId: string) {
+	return createRelayHostClient(routingKey).terminal.listSessions(workspaceId);
 }
 
 export function createHostTerminal(
@@ -81,25 +121,14 @@ export function createHostTerminal(
 	workspaceId: string,
 	options: CreateHostTerminalOptions = {},
 ) {
-	const input =
-		options.initialCommand === undefined
-			? { workspaceId }
-			: { workspaceId, initialCommand: options.initialCommand };
-	return hostCall<{ terminalId: string; status: string }>(
-		routingKey,
-		"terminal.createSession",
-		input,
-		"POST",
+	return createRelayHostClient(routingKey).terminal.createSession(
+		workspaceId,
+		options,
 	);
 }
 
 export function listHostAgentConfigs(routingKey: string) {
-	return hostCall<HostAgentConfig[]>(
-		routingKey,
-		"settings.agentConfigs.list",
-		undefined,
-		"GET",
-	);
+	return createRelayHostClient(routingKey).agentConfigs.list();
 }
 
 function quoteSingleShell(value: string): string {

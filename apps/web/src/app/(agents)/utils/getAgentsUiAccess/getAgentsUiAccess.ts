@@ -6,6 +6,7 @@ import { PostHog } from "posthog-node";
 import { cache } from "react";
 
 import { env } from "@/env";
+import { resolveAgentsUiAccess } from "./resolveAgentsUiAccess";
 
 const posthog = new PostHog(env.NEXT_PUBLIC_POSTHOG_KEY, {
 	host: env.NEXT_PUBLIC_POSTHOG_HOST,
@@ -22,24 +23,30 @@ export const getAgentsUiAccess = cache(async () => {
 		redirect("/sign-in");
 	}
 
-	let hasAgentsUiAccess = false;
+	let flagValue: string | boolean | undefined;
+	let evaluationFailed = false;
 
 	try {
-		hasAgentsUiAccess = Boolean(
-			await posthog.getFeatureFlag(
-				FEATURE_FLAGS.WEB_AGENTS_UI_ACCESS,
-				session.user.id,
-			),
+		flagValue = await posthog.getFeatureFlag(
+			FEATURE_FLAGS.WEB_AGENTS_UI_ACCESS,
+			session.user.id,
 		);
 	} catch (error) {
+		evaluationFailed = true;
 		console.error(
 			"[getAgentsUiAccess] Failed to load the agents UI feature flag",
 			error,
 		);
 	}
 
+	const { hasAgentsUiAccess, degraded } = resolveAgentsUiAccess(
+		flagValue,
+		evaluationFailed,
+	);
+
 	return {
 		hasAgentsUiAccess,
+		degraded,
 		session,
 	};
 });
