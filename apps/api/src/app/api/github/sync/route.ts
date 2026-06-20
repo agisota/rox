@@ -3,6 +3,7 @@ import { githubInstallations } from "@rox/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
+import { apiError } from "@/lib/api-response";
 import { syncInstallationRepos } from "../sync-core";
 
 const bodySchema = z.object({
@@ -11,22 +12,19 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
 	if (env.NODE_ENV !== "development") {
-		return Response.json(
-			{ error: "This endpoint is only available in development" },
-			{ status: 403 },
-		);
+		return apiError("This endpoint is only available in development", 403);
 	}
 
 	let body: unknown;
 	try {
 		body = await request.json();
 	} catch {
-		return Response.json({ error: "Invalid JSON" }, { status: 400 });
+		return apiError("Invalid JSON", 400);
 	}
 
 	const parsed = bodySchema.safeParse(body);
 	if (!parsed.success) {
-		return Response.json({ error: "Invalid payload" }, { status: 400 });
+		return apiError("Invalid payload", 400);
 	}
 
 	const { organizationId } = parsed.data;
@@ -38,7 +36,7 @@ export async function POST(request: Request) {
 		.limit(1);
 
 	if (!installation) {
-		return Response.json({ error: "Installation not found" }, { status: 404 });
+		return apiError("Installation not found", 404);
 	}
 
 	try {
@@ -55,9 +53,9 @@ export async function POST(request: Request) {
 		});
 	} catch (error) {
 		console.error("[github/sync] Sync failed:", error);
-		return Response.json(
-			{ error: error instanceof Error ? error.message : "Sync failed" },
-			{ status: 500 },
+		return apiError(
+			error instanceof Error ? error.message : "Sync failed",
+			500,
 		);
 	}
 }

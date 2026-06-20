@@ -1,4 +1,3 @@
-import type { EntityWebhookPayloadWithIssueData } from "@linear/sdk/webhooks";
 import {
 	LINEAR_WEBHOOK_SIGNATURE_HEADER,
 	LinearWebhookClient,
@@ -15,19 +14,62 @@ import {
 } from "@rox/db/schema";
 import { mapPriorityFromLinear } from "@rox/trpc/integrations/linear";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
 import { env } from "@/env";
+import { apiError } from "@/lib/api-response";
 
 const webhookClient = new LinearWebhookClient(env.LINEAR_WEBHOOK_SECRET);
+
+/**
+ * Shape of an Issue webhook's `data` field that `processIssueEvent` actually
+ * reads. Linear adds fields freely and many are optional/nullable, so the
+ * schema is intentionally permissive (`.passthrough()`, generous optionals) and
+ * only asserts the fields we depend on before writing to the DB. This replaces
+ * the previous unchecked `as EntityWebhookPayloadWithIssueData` cast.
+ */
+const linearIssueDataSchema = z
+	.object({
+		id: z.string(),
+		identifier: z.string(),
+		title: z.string(),
+		description: z.string().nullish(),
+		url: z.string(),
+		createdAt: z.union([z.string(), z.date()]),
+		priority: z.number(),
+		estimate: z.number().nullish(),
+		dueDate: z.union([z.string(), z.date()]).nullish(),
+		startedAt: z.union([z.string(), z.date()]).nullish(),
+		completedAt: z.union([z.string(), z.date()]).nullish(),
+		state: z.object({ id: z.string() }).passthrough(),
+		assignee: z
+			.object({
+				id: z.string(),
+				email: z.string().nullish(),
+				name: z.string().nullish(),
+				avatarUrl: z.string().nullish(),
+			})
+			.passthrough()
+			.nullish(),
+		labels: z.array(z.object({ name: z.string() }).passthrough()).default([]),
+	})
+	.passthrough();
+
+type LinearIssueData = z.infer<typeof linearIssueDataSchema>;
 
 export async function POST(request: Request) {
 	const body = await request.text();
 	const signature = request.headers.get(LINEAR_WEBHOOK_SIGNATURE_HEADER);
 
 	if (!signature) {
-		return Response.json({ error: "Missing signature" }, { status: 401 });
+		return apiError("Missing signature", 401);
 	}
 
 	const payload = webhookClient.parseData(Buffer.from(body), signature);
+
+	if (!payload.type) {
+		console.error("[linear/webhook] Missing event type");
+		return apiError("Missing event type", 400);
+	}
 
 	const connections = await db.query.integrationConnections.findMany({
 		where: and(
@@ -124,10 +166,20 @@ async function processForConnection(
 		let outcome: "processed" | "skipped" = "processed";
 
 		if (payload.type === "Issue") {
-			outcome = await processIssueEvent(
-				payload as EntityWebhookPayloadWithIssueData,
-				connection,
-			);
+			const parsedIssue = linearIssueDataSchema.safeParse(payload.data);
+			if (!parsedIssue.success) {
+				console.error(
+					"[linear/webhook] Malformed Issue payload, skipping",
+					parsedIssue.error.issues,
+				);
+				outcome = "skipped";
+			} else {
+				outcome = await processIssueEvent(
+					payload.action,
+					parsedIssue.data,
+					connection,
+				);
+			}
 		}
 
 		await db
@@ -152,12 +204,11 @@ async function processForConnection(
 }
 
 async function processIssueEvent(
-	payload: EntityWebhookPayloadWithIssueData,
+	action: string,
+	issue: LinearIssueData,
 	connection: SelectIntegrationConnection,
 ): Promise<"processed" | "skipped"> {
-	const issue = payload.data;
-
-	if (payload.action === "create" || payload.action === "update") {
+	if (action === "create" || action === "update") {
 		const taskStatus = await db.query.taskStatuses.findFirst({
 			where: and(
 				eq(taskStatuses.organizationId, connection.organizationId),
@@ -241,7 +292,7 @@ async function processIssueEvent(
 				],
 				set: { ...taskData, syncError: null },
 			});
-	} else if (payload.action === "remove") {
+	} else if (action === "remove") {
 		await db
 			.update(tasks)
 			.set({ deletedAt: new Date() })

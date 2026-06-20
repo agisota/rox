@@ -3,6 +3,7 @@ import { githubInstallations } from "@rox/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
+import { apiError } from "@/lib/api-response";
 import { verifyQstash } from "@/lib/qstash-verify";
 import { syncInstallationRepos } from "../../sync-core";
 
@@ -31,12 +32,12 @@ export async function POST(request: Request) {
 	try {
 		bodyData = JSON.parse(body);
 	} catch {
-		return Response.json({ error: "Invalid JSON" }, { status: 400 });
+		return apiError("Invalid JSON", 400);
 	}
 
 	const parsed = payloadSchema.safeParse(bodyData);
 	if (!parsed.success) {
-		return Response.json({ error: "Invalid payload" }, { status: 400 });
+		return apiError("Invalid payload", 400);
 	}
 
 	const { installationDbId, organizationId } = parsed.data;
@@ -65,9 +66,9 @@ export async function POST(request: Request) {
 		return Response.json({ success: true });
 	} catch (error) {
 		console.error("[github/initial-sync] Sync failed:", error);
-		return Response.json(
-			{ error: error instanceof Error ? error.message : "Sync failed" },
-			{ status: 500 },
+		return apiError(
+			error instanceof Error ? error.message : "Sync failed",
+			500,
 		);
 	}
 }
