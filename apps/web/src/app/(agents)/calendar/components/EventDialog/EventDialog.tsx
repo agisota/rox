@@ -1,5 +1,7 @@
 "use client";
 
+import type { CalAttendeeStatus } from "@rox/db/schema";
+import type { RouterOutputs } from "@rox/trpc";
 import { Button } from "@rox/ui/button";
 import {
 	Dialog,
@@ -20,6 +22,7 @@ import {
 } from "@rox/ui/select";
 import { Switch } from "@rox/ui/switch";
 import { Textarea } from "@rox/ui/textarea";
+import { cn } from "@rox/ui/utils";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCalendarActions } from "../../hooks/useCalendarActions";
@@ -44,6 +47,8 @@ export interface EventDialogValue {
 	rrule: string | null;
 }
 
+type EventAttendee = RouterOutputs["calendar"]["getEvent"]["attendees"][number];
+
 interface CalendarOption {
 	id: string;
 	name: string;
@@ -55,21 +60,85 @@ interface EventDialogProps {
 	calendars: CalendarOption[];
 	/** When set, the dialog edits this event; otherwise it creates a new one. */
 	initial: EventDialogValue;
+	/** Persisted attendees for the event under edit (empty while creating). */
+	attendees?: EventAttendee[];
+	/** Signed-in user id, used to surface "you" and the current RSVP. */
+	currentUserId?: string | null;
+	/** The signed-in user's RSVP on this event, when they are an attendee. */
+	currentUserRsvp?: CalAttendeeStatus | null;
+	/** True while the `getEvent` detail (attendees) is still loading. */
+	attendeesLoading?: boolean;
+}
+
+/** RU labels + tone for each RSVP status badge. */
+const ATTENDEE_STATUS: Record<
+	CalAttendeeStatus,
+	{ label: string; className: string }
+> = {
+	accepted: {
+		label: "Принял",
+		className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+	},
+	declined: {
+		label: "Отклонил",
+		className: "bg-red-500/15 text-red-700 dark:text-red-400",
+	},
+	tentative: {
+		label: "Возможно",
+		className: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+	},
+	needs_action: {
+		label: "Ожидает",
+		className: "bg-muted text-muted-foreground",
+	},
+};
+
+const RSVP_OPTIONS: { value: CalAttendeeStatus; label: string }[] = [
+	{ value: "accepted", label: "Приду" },
+	{ value: "tentative", label: "Возможно" },
+	{ value: "declined", label: "Не приду" },
+];
+
+/** Display name for an attendee row (rox user "you" hint or raw email). */
+function attendeeLabel(
+	attendee: EventAttendee,
+	currentUserId?: string | null,
+): string {
+	if (attendee.userId) {
+		return attendee.userId === currentUserId
+			? "Вы"
+			: (attendee.email ?? "Участник");
+	}
+	return attendee.email ?? "Участник";
 }
 
 /**
  * Create/edit dialog for a calendar event. Recurrence is chosen as a preset
- * (mapped to RRULE via the shared builder) with a raw-RRULE escape hatch;
- * attendees are added as emails before save (the in-app/.ics invite path — email
- * delivery is deferred to P3). On submit it calls the create or update mutation.
+ * (mapped to RRULE via the shared builder) with a raw-RRULE escape hatch. In
+ * create mode attendees are staged as emails and persisted with the event; in
+ * edit mode the dialog manages the live attendee list (add/remove + the caller's
+ * RSVP) against the existing event and can delete it outright. Email delivery is
+ * deferred to P3 — this is the in-app/.ics invite path.
  */
 export function EventDialog({
 	open,
 	onOpenChange,
 	calendars,
 	initial,
+	attendees = [],
+	currentUserId,
+	currentUserRsvp,
+	attendeesLoading = false,
 }: EventDialogProps) {
-	const { createEvent, updateEvent } = useCalendarActions();
+	const {
+		createEvent,
+		updateEvent,
+		deleteEvent,
+		addAttendee,
+		removeAttendee,
+		rsvp,
+		invalidateEvent,
+	} = useCalendarActions();
 	const isEdit = Boolean(initial.eventId);
 
 	const [calendarId, setCalendarId] = useState(initial.calendarId);
@@ -85,7 +154,7 @@ export function EventDialog({
 	);
 	const [customRrule, setCustomRrule] = useState(initial.rrule ?? "");
 	const [attendeeEmail, setAttendeeEmail] = useState("");
-	const [attendees, setAttendees] = useState<string[]>([]);
+	const [stagedAttendees, setStagedAttendees] = useState<string[]>([]);
 
 	// Re-seed when the dialog is opened for a different event.
 	useEffect(() => {
@@ -101,15 +170,50 @@ export function EventDialog({
 		setPreset(rruleToPreset(initial.rrule));
 		setCustomRrule(initial.rrule ?? "");
 		setAttendeeEmail("");
-		setAttendees([]);
+		setStagedAttendees([]);
 	}, [open, initial]);
 
-	const addAttendee = () => {
+	/** Stage an email locally to persist alongside a brand-new event. */
+	const stageAttendee = () => {
 		const value = attendeeEmail.trim().toLowerCase();
-		if (value && !attendees.includes(value)) {
-			setAttendees((prev) => [...prev, value]);
+		if (value && !stagedAttendees.includes(value)) {
+			setStagedAttendees((prev) => [...prev, value]);
 		}
 		setAttendeeEmail("");
+	};
+
+	/** Add an attendee to the persisted event (edit mode). */
+	const addLiveAttendee = () => {
+		const value = attendeeEmail.trim().toLowerCase();
+		if (!value || !initial.eventId) return;
+		if (attendees.some((a) => a.email === value)) {
+			setAttendeeEmail("");
+			return;
+		}
+		addAttendee.mutate({
+			eventId: initial.eventId,
+			attendee: { kind: "email", email: value },
+		});
+		setAttendeeEmail("");
+	};
+
+	/** Remove a persisted attendee, then refresh the event detail. */
+	const removeLiveAttendee = (attendeeId: string) => {
+		if (!initial.eventId) return;
+		const eventId = initial.eventId;
+		removeAttendee.mutate(
+			{ attendeeId },
+			{ onSuccess: () => void invalidateEvent(eventId) },
+		);
+	};
+
+	const handleDelete = () => {
+		if (!initial.eventId) return;
+		if (!window.confirm("Удалить это событие? Действие необратимо.")) return;
+		deleteEvent.mutate(
+			{ eventId: initial.eventId },
+			{ onSuccess: () => onOpenChange(false) },
+		);
 	};
 
 	const submit = () => {
@@ -147,7 +251,7 @@ export function EventDialog({
 				allDay,
 				timezone,
 				rrule,
-				attendees: attendees.map((email) => ({
+				attendees: stagedAttendees.map((email) => ({
 					kind: "email" as const,
 					email,
 				})),
@@ -156,7 +260,9 @@ export function EventDialog({
 		);
 	};
 
-	const pending = createEvent.isPending || updateEvent.isPending;
+	const saving = createEvent.isPending || updateEvent.isPending;
+	const deleting = deleteEvent.isPending;
+	const attendeeBusy = addAttendee.isPending || removeAttendee.isPending;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -286,7 +392,25 @@ export function EventDialog({
 						/>
 					</div>
 
-					{!isEdit && (
+					{isEdit ? (
+						<EditAttendees
+							attendees={attendees}
+							loading={attendeesLoading}
+							busy={attendeeBusy}
+							currentUserId={currentUserId}
+							currentUserRsvp={currentUserRsvp ?? null}
+							email={attendeeEmail}
+							onEmailChange={setAttendeeEmail}
+							onAdd={addLiveAttendee}
+							onRemove={removeLiveAttendee}
+							onRsvp={(status) => {
+								if (initial.eventId) {
+									rsvp.mutate({ eventId: initial.eventId, status });
+								}
+							}}
+							rsvpPending={rsvp.isPending}
+						/>
+					) : (
 						<div className="space-y-1.5">
 							<Label htmlFor="cal-event-attendee">Участники (email)</Label>
 							<div className="flex gap-2">
@@ -298,18 +422,22 @@ export function EventDialog({
 									onKeyDown={(e) => {
 										if (e.key === "Enter") {
 											e.preventDefault();
-											addAttendee();
+											stageAttendee();
 										}
 									}}
 									placeholder="guest@example.com"
 								/>
-								<Button type="button" variant="secondary" onClick={addAttendee}>
+								<Button
+									type="button"
+									variant="secondary"
+									onClick={stageAttendee}
+								>
 									Добавить
 								</Button>
 							</div>
-							{attendees.length > 0 && (
+							{stagedAttendees.length > 0 && (
 								<ul className="flex flex-wrap gap-2 pt-1">
-									{attendees.map((email) => (
+									{stagedAttendees.map((email) => (
 										<li
 											key={email}
 											className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
@@ -319,7 +447,7 @@ export function EventDialog({
 												type="button"
 												aria-label={`Убрать ${email}`}
 												onClick={() =>
-													setAttendees((prev) =>
+													setStagedAttendees((prev) =>
 														prev.filter((x) => x !== email),
 													)
 												}
@@ -334,15 +462,158 @@ export function EventDialog({
 					)}
 				</div>
 
-				<DialogFooter>
-					<Button variant="ghost" onClick={() => onOpenChange(false)}>
-						Отмена
-					</Button>
-					<Button onClick={submit} disabled={pending || !title.trim()}>
-						{isEdit ? "Сохранить" : "Создать"}
-					</Button>
+				<DialogFooter className="sm:justify-between">
+					{isEdit ? (
+						<Button
+							variant="destructive"
+							onClick={handleDelete}
+							disabled={deleting || saving}
+						>
+							Удалить
+						</Button>
+					) : (
+						<span />
+					)}
+					<div className="flex gap-2">
+						<Button variant="ghost" onClick={() => onOpenChange(false)}>
+							Отмена
+						</Button>
+						<Button onClick={submit} disabled={saving || !title.trim()}>
+							{isEdit ? "Сохранить" : "Создать"}
+						</Button>
+					</div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+interface EditAttendeesProps {
+	attendees: EventAttendee[];
+	loading: boolean;
+	busy: boolean;
+	currentUserId?: string | null;
+	currentUserRsvp: CalAttendeeStatus | null;
+	email: string;
+	onEmailChange: (value: string) => void;
+	onAdd: () => void;
+	onRemove: (attendeeId: string) => void;
+	onRsvp: (status: CalAttendeeStatus) => void;
+	rsvpPending: boolean;
+}
+
+/** Edit-mode attendee management: live list, add/remove, and the caller's RSVP. */
+function EditAttendees({
+	attendees,
+	loading,
+	busy,
+	currentUserId,
+	currentUserRsvp,
+	email,
+	onEmailChange,
+	onAdd,
+	onRemove,
+	onRsvp,
+	rsvpPending,
+}: EditAttendeesProps) {
+	const isAttendee = attendees.some((a) => a.userId === currentUserId);
+
+	return (
+		<div className="space-y-2 border-t pt-4">
+			<Label htmlFor="cal-event-attendee">Участники</Label>
+
+			{isAttendee && (
+				<div className="flex flex-wrap items-center gap-1.5 pb-1">
+					<span className="text-muted-foreground text-xs">Ваш ответ:</span>
+					{RSVP_OPTIONS.map((o) => (
+						<Button
+							key={o.value}
+							type="button"
+							size="sm"
+							variant={currentUserRsvp === o.value ? "default" : "outline"}
+							className="h-7 px-2 text-xs"
+							disabled={rsvpPending}
+							onClick={() => onRsvp(o.value)}
+						>
+							{o.label}
+						</Button>
+					))}
+				</div>
+			)}
+
+			{loading && attendees.length === 0 ? (
+				<p className="text-muted-foreground text-xs">Загрузка участников…</p>
+			) : attendees.length === 0 ? (
+				<p className="text-muted-foreground text-xs">Участников пока нет.</p>
+			) : (
+				<ul className="space-y-1">
+					{attendees.map((attendee) => {
+						const status = ATTENDEE_STATUS[attendee.status];
+						return (
+							<li
+								key={attendee.id}
+								className="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-sm"
+							>
+								<span className="flex min-w-0 items-center gap-2">
+									<span className="truncate">
+										{attendeeLabel(attendee, currentUserId)}
+									</span>
+									{attendee.isOrganizer && (
+										<span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+											Организатор
+										</span>
+									)}
+								</span>
+								<span className="flex shrink-0 items-center gap-2">
+									<span
+										className={cn(
+											"rounded-full px-2 py-0.5 text-[10px]",
+											status.className,
+										)}
+									>
+										{status.label}
+									</span>
+									{!attendee.isOrganizer && (
+										<button
+											type="button"
+											aria-label={`Убрать ${attendeeLabel(attendee, currentUserId)}`}
+											className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+											disabled={busy}
+											onClick={() => onRemove(attendee.id)}
+										>
+											<X className="size-3.5" />
+										</button>
+									)}
+								</span>
+							</li>
+						);
+					})}
+				</ul>
+			)}
+
+			<div className="flex gap-2 pt-1">
+				<Input
+					id="cal-event-attendee"
+					type="email"
+					value={email}
+					onChange={(e) => onEmailChange(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter") {
+							e.preventDefault();
+							onAdd();
+						}
+					}}
+					placeholder="guest@example.com"
+				/>
+				<Button
+					type="button"
+					variant="secondary"
+					onClick={onAdd}
+					disabled={busy || !email.trim()}
+				>
+					Добавить
+				</Button>
+			</div>
+		</div>
 	);
 }
