@@ -1,0 +1,80 @@
+---
+title: Запуск через Docker Compose
+description: Пошаговый запуск Rox локально или на своём сервере
+---
+
+## Быстрый старт (одна команда)
+
+Самый простой путь — скрипт локальной настройки. Он поднимает весь стек данных в Docker и не требует аккаунта Neon, ключей или сторонних учётных данных.
+
+```bash
+git clone https://github.com/agisota/set.git
+cd rox
+./.rox/setup.local.sh
+bun run dev
+```
+
+<Callout type="info">
+`.env.local.example` поставляется с безопасными плейсхолдерами, которые проходят валидацию env, а `setup.local.sh` запускает всё против локального Docker-стека. Реальные ключи Neon/сторонних сервисов не нужны для локального запуска.
+</Callout>
+
+### Что делает `setup.local.sh`
+
+1. Копирует `.env.local.example` → `.env`.
+2. Выделяет окно портов под этот воркспейс, чтобы несколько worktree не конфликтовали.
+3. Поднимает Postgres + neon-proxy + Electric через `docker compose` (с привязкой проекта к этому worktree).
+4. Запускает `bun install` и `bun run db:migrate`.
+5. Засеивает dev-аккаунт `Local Admin` через `bun run db:seed-dev`.
+6. Пишет gitignore-оверлей `.rox/config.local.json`, чтобы следующие worktree автоматически использовали эту настройку.
+
+Скрипт идемпотентен — перезапускайте его в любой момент, чтобы обновить воркспейс.
+
+## Стек данных (docker-compose.yml)
+
+`docker-compose.yml` определяет сервисы данных:
+
+| Сервис | Образ | Порт (env) |
+| --- | --- | --- |
+| `postgres` | `postgres:17` (`wal_level=logical`) | `LOCAL_PG_PORT` → 5432 |
+| `neon-proxy` | `ghcr.io/timowilhelm/local-neon-http-proxy:main` | `LOCAL_NEON_PROXY_PORT` → 4444 |
+| `electric` | `electricsql/electric:1.4.13` | `LOCAL_ELECTRIC_PORT` → 3000 |
+| `minio` | `minio/minio` (объектное хранилище) | `LOCAL_MINIO_PORT` → 9000 / `…CONSOLE_PORT` → 9001 |
+| `qdrant` | `qdrant/qdrant` (векторный стор) | `LOCAL_QDRANT_PORT` → 6333 |
+
+Postgres запускается с логической репликацией (`wal_level=logical`, `max_wal_senders`, `max_replication_slots`), что нужно ElectricSQL для живой синхронизации.
+
+## Запуск dev-серверов
+
+На обычной машине:
+
+```bash
+bun run dev
+```
+
+На **headless** облачной VM не используйте `bun run dev` напрямую — он включает `--filter=@rox/desktop`, и при падении Electron turbo сносит и все остальные dev-серверы. Запускайте набор без десктопа:
+
+```bash
+bunx turbo run dev dev:caddy \
+  --filter=@rox/api --filter=@rox/web \
+  --filter=electric-proxy --filter=//
+```
+
+## Вход для разработки
+
+После `bun run dev` откройте веб-приложение и нажмите **«Sign in as dev»**, либо используйте:
+
+- Email: `admin@local.test`
+- Пароль: `roxdev`
+
+Dev-вход и аутентификация по email/паролю включены только при `NODE_ENV=development` и не попадают в продакшен.
+
+## Остановка стека
+
+```bash
+./.rox/teardown.local.sh
+```
+
+## Дальше
+
+- [Переменные окружения](/self-host/env-reference) — полная матрица env.
+- [База данных](/self-host/database) — Neon vs self-host Postgres и миграции.

@@ -1,0 +1,59 @@
+---
+title: Самостоятельный хостинг
+description: Архитектура сервисов Rox и карта компонентов для self-host
+---
+
+## Обзор
+
+Rox — это монорепозиторий на Bun + Turborepo. Самостоятельный хостинг означает запуск бэкенда (`apps/api`) и нужных вам клиентских поверхностей (`apps/web`, опционально `admin`, `marketing`, `docs`) поверх Postgres и слоя живой синхронизации.
+
+<Callout type="info">
+macOS — основная поддерживаемая платформа для локальной разработки. Linux-VM поддерживаются для веба и API; десктоп Electron на headless-серверах работает по принципу best-effort.
+</Callout>
+
+## Карта сервисов
+
+| Сервис | Что это | Источник |
+| --- | --- | --- |
+| **api** | Бэкенд: tRPC + better-auth, REST/well-known эндпоинты | `apps/api` |
+| **web** | Основное веб-приложение (app.rox.one) | `apps/web` |
+| **admin** | Админ-панель | `apps/admin` |
+| **marketing** | Маркетинговый сайт (rox.one) | `apps/marketing` |
+| **docs** | Документация | `apps/docs` |
+| **Postgres** | База данных (Postgres 17, `wal_level=logical`) | `docker-compose.yml` |
+| **neon-proxy** | HTTP SQL-прокси для Drizzle (эмулирует Neon локально) | `docker-compose.yml` |
+| **electric** | ElectricSQL — живая синхронизация (v1.4.13) | `docker-compose.yml` |
+| **caddy** | HTTPS reverse-proxy для потоков Electric | `Caddyfile.example` |
+| **relay** | Маршрутизация трафика к удалённым хостам | `apps/relay` |
+| **minio / qdrant** | Объектное хранилище и векторный стор (опционально) | `docker-compose.yml` |
+
+## Порты по умолчанию
+
+`.rox/setup.local.sh` выделяет окно портов на каждую копию воркспейса от базового значения, чтобы несколько worktree не конфликтовали.
+
+| Сервис | Источник порта | Примечание |
+| --- | --- | --- |
+| Web | `WEB_PORT` (база 3000) | Основной UI |
+| API | `API_PORT` (+1) | Auth + tRPC |
+| Postgres | `LOCAL_PG_PORT` (+14) | Docker |
+| neon-proxy | `LOCAL_NEON_PROXY_PORT` (+15) | HTTP SQL-прокси |
+| Electric | `ELECTRIC_PORT` (+9) | Живая синхронизация |
+| Caddy + Wrangler | `CADDY_ELECTRIC_PORT`, `WRANGLER_PORT` | HTTPS Electric SSE |
+
+## Предпосылки
+
+| Инструмент | Установка |
+| --- | --- |
+| Bun (v1.0+) | `curl -fsSL https://bun.sh/install \| bash` |
+| Docker | Docker Desktop или OrbStack |
+| `jq` | `brew install jq` |
+| Caddy | `brew install caddy && caddy trust` |
+| Git 2.20+ и `gh` | `brew install gh` |
+
+## Дальше
+
+- [Запуск через Docker Compose](/self-host/docker-compose) — пошаговый локальный/self-host старт.
+- [Переменные окружения](/self-host/env-reference) — полная матрица env.
+- [База данных](/self-host/database) — Neon vs self-host Postgres, Electric, миграции.
+- [Render](/self-host/render) — справка по продакшен-деплою на Render.
+- [Обновления](/self-host/upgrades) — runbook обновлений и миграций.
