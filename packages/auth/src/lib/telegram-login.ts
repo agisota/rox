@@ -39,15 +39,17 @@ export type TelegramVerifyResult =
 	| { ok: false; reason: "missing_fields" | "bad_hash" | "expired" };
 
 /**
- * Default freshness window for a login payload: 60 seconds.
+ * Default freshness window for a login payload: 300 seconds.
  *
  * Telegram signs the widget payload at login time; a legitimate browser posts
- * it to our callback within a second or two. A tight 60s window keeps the
- * replay surface minimal (ROX-522 security review). The callback additionally
- * enforces single-use via KV so a payload can't be replayed even inside this
- * window.
+ * it to our callback within a second or two, but slow networks, OAuth redirects,
+ * and clock skew between Telegram and our servers can push a legitimate payload
+ * past a tight 60s window and cause spurious login failures. A 300s window keeps
+ * the replay surface small while tolerating real-world latency. The callback
+ * additionally enforces single-use via KV so a payload can't be replayed even
+ * inside this window.
  */
-export const TELEGRAM_DEFAULT_MAX_AGE_SECONDS = 60;
+export const TELEGRAM_DEFAULT_MAX_AGE_SECONDS = 300;
 
 const TELEGRAM_FIELDS = [
 	"id",

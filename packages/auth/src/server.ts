@@ -68,6 +68,18 @@ const desktopDevOrigins =
 export const auth = betterAuth({
 	baseURL: env.NEXT_PUBLIC_API_URL,
 	secret: env.BETTER_AUTH_SECRET,
+	// Encrypt OAuth access/refresh/id tokens at rest in `auth.accounts`.
+	// better-auth's native at-rest encryption (keyed by `secret` above) wraps
+	// tokens on write via `setTokenUtil` and decrypts on every INTERNAL read via
+	// `decryptOAuthToken`. Crucially these tokens are only ever read back by
+	// better-auth's own engine (token refresh / get-access-token), never by Rox
+	// application code, so the native flag is the only mechanism that sits on the
+	// real read path. Backward-compatible + lazy: `decryptOAuthToken` guards with
+	// `isLikelyEncrypted`, so pre-existing plaintext rows pass through untouched
+	// and re-encrypt on their next write. No data migration required.
+	account: {
+		encryptOAuthTokens: true,
+	},
 	disabledPaths: [],
 	database: drizzleAdapter(db, {
 		provider: "pg",
