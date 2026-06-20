@@ -586,6 +586,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rox/auth": "workspace:*",
+        "@rox/collab": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/shared": "workspace:*",
         "@rox/trpc": "workspace:*",
@@ -1088,8 +1089,10 @@
         "@linear/sdk": "68.1.1",
         "@rox/analytics": "workspace:*",
         "@rox/auth": "workspace:*",
+        "@rox/collab": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/host-provisioner": "workspace:*",
+        "@rox/rtc": "workspace:*",
         "@rox/runtime-clients": "workspace:*",
         "@rox/shared": "workspace:*",
         "@rox/workflow-core": "workspace:*",

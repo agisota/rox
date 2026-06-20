@@ -19,6 +19,12 @@ export const env = createEnv({
 		KV_REST_API_TOKEN: z.string(),
 		SENTRY_AUTH_TOKEN: z.string().optional(),
 		ANTHROPIC_API_KEY: z.string(),
+		// WS-L: realtime collab/voice server secrets. Optional during rollout so
+		// missing keys never break existing builds/preview (D3 — LiveBlocks +
+		// LiveKit P1). Reuses the existing experimental-features key names.
+		LIVEBLOCKS_SECRET_KEY: z.string().optional(),
+		LIVEKIT_API_KEY: z.string().optional(),
+		LIVEKIT_API_SECRET: z.string().optional(),
 	},
 
 	client: {
@@ -41,6 +47,11 @@ export const env = createEnv({
 		// widget's `data-telegram-login`). Optional so the button is hidden when
 		// Telegram login isn't configured.
 		NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: z.string().optional(),
+		// WS-L: public keys for realtime collab/voice. Optional during rollout so
+		// the features stay inert (behind the experimental-features gate) until
+		// keys are set.
+		NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY: z.string().optional(),
+		NEXT_PUBLIC_LIVEKIT_URL: z.string().url().optional(),
 	},
 
 	experimental__runtimeEnv: {
@@ -58,6 +69,9 @@ export const env = createEnv({
 		NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
 		NEXT_PUBLIC_TELEGRAM_BOT_USERNAME:
 			process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME,
+		NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY:
+			process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY,
+		NEXT_PUBLIC_LIVEKIT_URL: process.env.NEXT_PUBLIC_LIVEKIT_URL,
 	},
 
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,

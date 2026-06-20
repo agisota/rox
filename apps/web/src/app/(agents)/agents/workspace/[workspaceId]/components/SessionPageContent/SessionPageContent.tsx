@@ -39,6 +39,8 @@ type SessionPageContentProps = {
 	diffFiles: MockDiffFile[];
 	messages: MockMessage[];
 	session: MockSession;
+	/** Workspace id used to scope the live presence room (WS-L T10). */
+	workspaceId: string;
 	liveHost?: LiveHostBinding;
 };
 
@@ -49,6 +51,7 @@ export function SessionPageContent({
 	diffFiles,
 	messages,
 	session,
+	workspaceId,
 	liveHost,
 }: SessionPageContentProps) {
 	const [activeView, setActiveView] = useState<SessionView>("chat");
@@ -77,7 +80,11 @@ export function SessionPageContent({
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
-			<SessionHeader backHref="/agents" session={session} />
+			<SessionHeader
+				backHref="/agents"
+				dashboardId={workspaceId}
+				session={session}
+			/>
 			{liveHost && (
 				<div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
 					<span className="text-xs text-muted-foreground">

@@ -7,6 +7,7 @@ import { analyticsRouter } from "./router/analytics";
 import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
 import { chatRouter } from "./router/chat";
+import { collabRouter } from "./router/collab";
 import { dashboardRouter } from "./router/dashboard";
 import { deviceRouter } from "./router/device";
 import { economyRouter } from "./router/economy";
@@ -28,6 +29,7 @@ import {
 import { identityRouter, profileRouter } from "./router/profile";
 import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
+import { rtcRouter } from "./router/rtc";
 import { runtimeRouter } from "./router/runtime";
 import { shareRouter } from "./router/share";
 import { skillRouter } from "./router/skill";
@@ -55,6 +57,7 @@ export const appRouter = createTRPCRouter({
 	analytics: analyticsRouter,
 	automation: automationRouter,
 	chat: chatRouter,
+	collab: collabRouter,
 	device: deviceRouter,
 	economy: economyRouter,
 	skillLibrary: skillLibraryRouter,
@@ -75,6 +78,7 @@ export const appRouter = createTRPCRouter({
 	profile: profileRouter,
 	project: projectRouter,
 	ranking: rankingRouter,
+	rtc: rtcRouter,
 	runtime: runtimeRouter,
 	share: shareRouter,
 	skill: skillRouter,

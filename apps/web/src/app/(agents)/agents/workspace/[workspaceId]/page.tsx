@@ -62,6 +62,7 @@ export default async function WorkspaceDetailPage({
 				}
 				messages={mockSession ? getMockMessagesForSession(mockSession.id) : []}
 				session={seedSession}
+				workspaceId={workspaceId}
 				liveHost={{
 					routingKey: view.routingKey,
 					workspaceId,
@@ -81,6 +82,7 @@ export default async function WorkspaceDetailPage({
 			diffFiles={getMockDiffFilesForSession(mockSession.id)}
 			messages={getMockMessagesForSession(mockSession.id)}
 			session={mockSession}
+			workspaceId={workspaceId}
 		/>
 	);
 }
