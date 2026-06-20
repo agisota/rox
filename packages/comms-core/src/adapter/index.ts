@@ -1,4 +1,14 @@
 export { AdapterRegistry } from "./AdapterRegistry";
+export {
+	EmailAdapter,
+	type EmailAdapterOptions,
+	type EmailAuthResult,
+	type EmailInboundAttachment,
+	type EmailOutboundPayload,
+	type EmailRawInbound,
+	normalizeSubject,
+	type ResendSendFn,
+} from "./EmailAdapter";
 export { InAppAdapter, type InAppRawMessage } from "./InAppAdapter";
 export type {
 	SendContext,

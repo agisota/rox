@@ -835,3 +835,46 @@ export const calEventStatusValues = [
 ] as const;
 export const calEventStatusEnum = z.enum(calEventStatusValues);
 export type CalEventStatus = z.infer<typeof calEventStatusEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D3 Per-User Email (comms-suite epic, P3).
+// Every user owns one routable `<handle>@rox.one` mailbox derived 1:1 from their
+// rox handle (ROX-522). Inbound mail is ingested via a Cloudflare Email Worker →
+// `/api/mail/inbound`; outbound is sent through Resend. Bodies/attachments live
+// in Drive (D8/R2); the `mail_*` tables store only metadata + object pointers.
+// Append-only string unions backing Postgres pgEnums (declared in
+// schema/mail.ts); NEVER reorder/remove values.
+// ---------------------------------------------------------------------------
+
+/** Whether an address is the primary handle mailbox or a renamed-handle alias. */
+export const mailAddressKindValues = ["primary", "alias"] as const;
+export const mailAddressKindEnum = z.enum(mailAddressKindValues);
+export type MailAddressKind = z.infer<typeof mailAddressKindEnum>;
+
+/** Lifecycle of a routable address (grace = alias inside the 90-day window). */
+export const mailAddressStatusValues = ["active", "grace", "disabled"] as const;
+export const mailAddressStatusEnum = z.enum(mailAddressStatusValues);
+export type MailAddressStatus = z.infer<typeof mailAddressStatusEnum>;
+
+/** Direction of a mail message relative to the rox mailbox owner. */
+export const mailDirectionValues = ["inbound", "outbound"] as const;
+export const mailDirectionEnum = z.enum(mailDirectionValues);
+export type MailDirection = z.infer<typeof mailDirectionEnum>;
+
+/** Delivery/ingest lifecycle of a single mail message. */
+export const mailStatusValues = [
+	"received",
+	"quarantined",
+	"sending",
+	"sent",
+	"delivered",
+	"bounced",
+	"failed",
+] as const;
+export const mailStatusEnum = z.enum(mailStatusValues);
+export type MailStatus = z.infer<typeof mailStatusEnum>;
+
+/** Which provider handled a mail message (inbound CF Worker vs outbound Resend). */
+export const mailProviderValues = ["cloudflare", "resend"] as const;
+export const mailProviderEnum = z.enum(mailProviderValues);
+export type MailProvider = z.infer<typeof mailProviderEnum>;

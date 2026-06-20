@@ -1,0 +1,35 @@
+# Cloudflare Email Worker — D3 per-user email inbound ingest.
+#
+# Catch-all `*@rox.one` → this Worker → R2 (raw .eml + attachments) → signed
+# POST to the Rox API `/api/mail/inbound`. STANDALONE: deploy manually with
+# `wrangler deploy` from this directory. DO NOT auto-deploy from CI.
+#
+# Prereqs (ops, not code):
+#   - Cloudflare Email Routing enabled on the rox.one zone with a catch-all rule
+#     routing to this Worker.
+#   - An R2 bucket bound as MAIL_BUCKET.
+#   - Secrets set via `wrangler secret put`:
+#       MAIL_INBOUND_SECRET  (HMAC key — MUST match the API's MAIL_INBOUND_SECRET)
+#   - Vars: ROX_API_URL (the API origin, e.g. https://api.rox.one)
+
+name = "rox-email-inbound"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+# Workers Paid is required: the free tier's 10 ms CPU cap is too small to parse
+# MIME + stream to R2; the paid tier gives 30 s.
+workers_dev = false
+
+[vars]
+ROX_API_URL = "https://api.rox.one"
+MAIL_DOMAIN = "rox.one"
+# Max inbound size in bytes (Cloudflare hard cap is 25 MiB).
+MAX_INBOUND_BYTES = "26214400"
+
+# R2 bucket the raw .eml + attachments are streamed into.
+[[r2_buckets]]
+binding = "MAIL_BUCKET"
+bucket_name = "rox-mail"
+
+# Email Routing catch-all binding (configured in the dashboard / via API).
+# [[email]]  is configured on the zone, not here; the email() handler below is
+# invoked for every message routed to this Worker.

@@ -27,6 +27,10 @@
 		"./identity": {
 			"types": "./src/identity/index.ts",
 			"default": "./src/identity/index.ts"
+		},
+		"./email": {
+			"types": "./src/email/index.ts",
+			"default": "./src/email/index.ts"
 		}
 	},
 	"scripts": {

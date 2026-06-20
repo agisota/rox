@@ -20,6 +20,7 @@
 		"@octokit/rest": "22.0.1",
 		"@octokit/webhooks": "14.2.0",
 		"@rox/auth": "workspace:*",
+		"@rox/comms-core": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/mcp": "workspace:*",
 		"@rox/mcp-v2": "workspace:*",
