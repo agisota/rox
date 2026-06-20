@@ -38,8 +38,16 @@ export type TelegramVerifyResult =
 	| { ok: true; user: VerifiedTelegramUser }
 	| { ok: false; reason: "missing_fields" | "bad_hash" | "expired" };
 
-/** Default freshness window for a login payload: 1 day. */
-export const TELEGRAM_DEFAULT_MAX_AGE_SECONDS = 60 * 60 * 24;
+/**
+ * Default freshness window for a login payload: 60 seconds.
+ *
+ * Telegram signs the widget payload at login time; a legitimate browser posts
+ * it to our callback within a second or two. A tight 60s window keeps the
+ * replay surface minimal (ROX-522 security review). The callback additionally
+ * enforces single-use via KV so a payload can't be replayed even inside this
+ * window.
+ */
+export const TELEGRAM_DEFAULT_MAX_AGE_SECONDS = 60;
 
 const TELEGRAM_FIELDS = [
 	"id",

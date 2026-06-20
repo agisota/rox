@@ -1,4 +1,5 @@
 import { env } from "../env";
+import { kv } from "./kv";
 
 /**
  * Yandex ID OAuth2 (ROX-522).
@@ -13,14 +14,25 @@ import { env } from "../env";
  * The cached provider identity for `user_profiles` (registration_provider,
  * provider_account_id, display_username, provider_avatar_url) can't be written
  * from `mapProfileToUser` (it may only return `Partial<User>`), so we stash it
- * in a short-lived in-memory map keyed by the Yandex account id and drain it
- * from the `account.create.after` database hook in `server.ts`.
+ * in durable KV keyed by the Yandex account id and drain it (read-and-delete)
+ * from the `account.create.after` database hook in `server.ts`. KV — not a
+ * process-local Map — because the OAuth callback that runs `mapProfileToUser`
+ * and the `account.create.after` hook may execute in different serverless
+ * instances, where an in-memory handoff would silently lose the profile.
  *
  * @see https://yandex.ru/dev/id/doc/en/codes/code-url
  * @see https://yandex.ru/dev/id/doc/en/user-information
  */
 
 export const YANDEX_PROVIDER_ID = "yandex";
+
+/** KV key for the transient profile handoff, keyed by Yandex account id. */
+function yandexPendingKey(accountId: string): string {
+	return `yandex:pending:${accountId}`;
+}
+
+/** TTL for the pending-profile handoff (seconds). Drained on the account insert. */
+const YANDEX_PENDING_TTL_SECONDS = 300;
 
 /** Yandex `userinfo` response (the fields we consume). */
 interface YandexUserInfo {
@@ -38,35 +50,26 @@ interface YandexUserInfo {
 export interface PendingYandexProfile {
 	displayUsername: string | null;
 	providerAvatarUrl: string | null;
-	capturedAt: number;
+}
+
+/** Stash the pending Yandex profile in KV with a short TTL (read-and-delete on insert). */
+async function putPendingYandexProfile(
+	accountId: string,
+	profile: PendingYandexProfile,
+): Promise<void> {
+	await kv.set(yandexPendingKey(accountId), profile, {
+		ex: YANDEX_PENDING_TTL_SECONDS,
+	});
 }
 
 /**
- * Transient handoff between `mapProfileToUser` and the `account.create.after`
- * hook, keyed by Yandex account id. Entries are short-lived (drained on the
- * immediately-following account insert) and self-expire to avoid unbounded
- * growth if a flow is abandoned mid-handshake.
+ * Drain (read-and-delete) the pending Yandex profile for an account id from KV.
+ * Uses GETDEL so the handoff is consumed atomically and never re-read.
  */
-const PENDING_TTL_MS = 5 * 60 * 1000;
-const pendingProfiles = new Map<string, PendingYandexProfile>();
-
-function prunePending(now: number): void {
-	for (const [key, value] of pendingProfiles) {
-		if (now - value.capturedAt > PENDING_TTL_MS) {
-			pendingProfiles.delete(key);
-		}
-	}
-}
-
-/** Drain (read-and-delete) the pending Yandex profile for an account id. */
-export function takePendingYandexProfile(
+export async function takePendingYandexProfile(
 	accountId: string,
-): PendingYandexProfile | undefined {
-	const entry = pendingProfiles.get(accountId);
-	if (entry) {
-		pendingProfiles.delete(accountId);
-	}
-	return entry;
+): Promise<PendingYandexProfile | null> {
+	return kv.getdel<PendingYandexProfile>(yandexPendingKey(accountId));
 }
 
 /**
@@ -83,14 +86,29 @@ function yandexAvatarUrl(
 }
 
 /**
- * Map a Yandex `userinfo` payload onto better-auth user fields and stash the
- * provider identity for the `account.create.after` hook.
+ * Yandex never guarantees an email (the `login:email` scope can be declined, or
+ * a phone-only account has none). Minting a user with `email=""` would collide
+ * on the unique email index and let unrelated email-less Yandex accounts merge.
+ * Synthesize a stable, unique placeholder per Yandex id instead — mirroring the
+ * Telegram synthetic-email pattern — so the account is still resilient and
+ * uniquely keyed. The user can attach a real email later.
  */
-function mapYandexProfileToUser(profile: Record<string, unknown>): {
+function yandexSyntheticEmail(yandexId: string): string {
+	return `yandex_${yandexId}@yandex.rox.local`;
+}
+
+/**
+ * Map a Yandex `userinfo` payload onto better-auth user fields and stash the
+ * provider identity in KV for the `account.create.after` hook. Async because the
+ * KV write must complete before the account row (and its hook) is created.
+ */
+async function mapYandexProfileToUser(
+	profile: Record<string, unknown>,
+): Promise<{
 	name: string;
 	email: string;
 	image?: string;
-} {
+}> {
 	const info = profile as unknown as YandexUserInfo;
 	const avatarUrl = yandexAvatarUrl(
 		info.default_avatar_id,
@@ -98,19 +116,18 @@ function mapYandexProfileToUser(profile: Record<string, unknown>): {
 	);
 	const login = info.login ?? null;
 
-	pendingProfiles.set(info.id, {
+	await putPendingYandexProfile(info.id, {
 		displayUsername: login,
 		providerAvatarUrl: avatarUrl,
-		capturedAt: Date.now(),
 	});
-	prunePending(Date.now());
 
 	const name =
 		info.display_name?.trim() ||
 		info.real_name?.trim() ||
 		info.login ||
 		"Yandex User";
-	const email = info.default_email ?? info.emails?.[0] ?? "";
+	const email =
+		info.default_email ?? info.emails?.[0] ?? yandexSyntheticEmail(info.id);
 
 	return {
 		name,

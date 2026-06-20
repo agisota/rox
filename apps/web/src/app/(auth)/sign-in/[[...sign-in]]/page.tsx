@@ -15,9 +15,14 @@ import { TelegramLoginButton } from "../../components/TelegramLoginButton";
 export default function SignInPage() {
 	const searchParams = useSearchParams();
 	const redirect = searchParams.get("redirect");
-	const callbackURL = redirect
-		? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
-		: env.NEXT_PUBLIC_WEB_URL;
+	// Treat `redirect` as a PATH only: it must start with a single "/" (not "//",
+	// which browsers resolve as a protocol-relative foreign host). This blocks
+	// open-redirect payloads like `redirect=@evil.com` or `redirect=//evil.com`
+	// from producing a callback URL on a host other than our own web app.
+	const callbackURL =
+		redirect?.startsWith("/") && !redirect.startsWith("//")
+			? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
+			: env.NEXT_PUBLIC_WEB_URL;
 
 	const isDev = process.env.NODE_ENV === "development";
 

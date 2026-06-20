@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { createAuthEndpoint } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
 import { env } from "../env";
+import { kv } from "./kv";
 import { upsertSocialProfile } from "./social-profile";
 import {
 	TELEGRAM_DEFAULT_MAX_AGE_SECONDS,
@@ -28,6 +30,17 @@ import {
  */
 
 export const TELEGRAM_PROVIDER_ID = "telegram";
+
+/**
+ * KV key for the single-use replay guard. Keyed by the SHA-256 of the payload
+ * `hash` (the per-login HMAC signature) so a verified payload can be redeemed
+ * exactly once. We hash the signature again rather than store it raw to avoid
+ * persisting the credential material verbatim.
+ */
+function telegramUsedKey(payloadHash: string): string {
+	const digest = createHash("sha256").update(payloadHash).digest("hex");
+	return `tg:used:${digest}`;
+}
 
 /** Telegram never supplies an email; mint a stable synthetic one per tg id. */
 function telegramSyntheticEmail(telegramId: string): string {
@@ -83,9 +96,17 @@ export function telegramLogin() {
 					const botToken = env.TELEGRAM_BOT_TOKEN;
 					const webUrl = env.NEXT_PUBLIC_WEB_URL;
 					const signInUrl = `${webUrl}/sign-in`;
+					// Single generic error for all client-visible failures: don't leak
+					// whether a payload was malformed, stale, or had a bad signature
+					// (would otherwise be a verification oracle). The specific reason is
+					// logged server-side only.
+					const failureRedirect = `${signInUrl}?error=telegram_failed`;
 
 					if (!botToken) {
-						throw ctx.redirect(`${signInUrl}?error=telegram_not_configured`);
+						ctx.context.logger.error(
+							"[telegram-login] TELEGRAM_BOT_TOKEN is not configured",
+						);
+						throw ctx.redirect(failureRedirect);
 					}
 
 					const verification = verifyTelegramLogin(
@@ -94,13 +115,45 @@ export function telegramLogin() {
 						TELEGRAM_DEFAULT_MAX_AGE_SECONDS,
 					);
 					if (!verification.ok) {
-						throw ctx.redirect(
-							`${signInUrl}?error=telegram_${verification.reason}`,
+						ctx.context.logger.warn(
+							`[telegram-login] payload rejected: ${verification.reason}`,
 						);
+						throw ctx.redirect(failureRedirect);
 					}
 
 					const tg = verification.user;
 					const adapter = ctx.context.internalAdapter;
+
+					// Single-use replay guard: a verified payload may be redeemed exactly
+					// once, even within the freshness window. Atomically claim the key
+					// (SET NX) with a TTL equal to the freshness window — once the payload
+					// can no longer be fresh, the guard key is irrelevant and self-expires.
+					// `set(..., { nx: true })` returns null when the key already exists.
+					const usedKey = telegramUsedKey(ctx.query.hash);
+					try {
+						const claimed = await kv.set(usedKey, "1", {
+							nx: true,
+							ex: TELEGRAM_DEFAULT_MAX_AGE_SECONDS,
+						});
+						if (claimed === null) {
+							ctx.context.logger.warn(
+								"[telegram-login] payload rejected: replay (already used)",
+							);
+							throw ctx.redirect(failureRedirect);
+						}
+					} catch (error) {
+						// A redirect surfaces as a thrown APIError — re-throw so it isn't
+						// swallowed as a KV failure.
+						if (error instanceof Error && error.name === "APIError")
+							throw error;
+						// KV is the replay backstop; if it's unreachable, fail closed rather
+						// than allow an unguarded (replayable) sign-in.
+						ctx.context.logger.error(
+							"[telegram-login] replay-guard KV write failed",
+							error,
+						);
+						throw ctx.redirect(failureRedirect);
+					}
 
 					// Resolve the post-login redirect. Only honor a same-origin web URL
 					// to avoid open-redirect; default to the web app root.

@@ -31,6 +31,12 @@ function freshAuthDate(): string {
 	return String(Math.floor(Date.now() / 1000));
 }
 
+describe("TELEGRAM_DEFAULT_MAX_AGE_SECONDS", () => {
+	it("is a tight 60-second replay window (ROX-522 hardening)", () => {
+		expect(TELEGRAM_DEFAULT_MAX_AGE_SECONDS).toBe(60);
+	});
+});
+
 describe("verifyTelegramLogin", () => {
 	it("accepts a correctly-signed, fresh payload", () => {
 		const payload = signPayload({
@@ -83,6 +89,25 @@ describe("verifyTelegramLogin", () => {
 		const result = verifyTelegramLogin(payload, BOT_TOKEN);
 		expect(result.ok).toBe(false);
 		if (!result.ok) expect(result.reason).toBe("expired");
+	});
+
+	it("rejects a payload just past the 60s window", () => {
+		// 61s old: outside the hardened default window, must be expired.
+		const stale = String(Math.floor(Date.now() / 1000) - 61);
+		const payload = signPayload({ id: "42", auth_date: stale });
+
+		const result = verifyTelegramLogin(payload, BOT_TOKEN);
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.reason).toBe("expired");
+	});
+
+	it("accepts a payload within the 60s window", () => {
+		// 30s old: comfortably inside the window, must verify.
+		const recent = String(Math.floor(Date.now() / 1000) - 30);
+		const payload = signPayload({ id: "42", auth_date: recent });
+
+		const result = verifyTelegramLogin(payload, BOT_TOKEN);
+		expect(result.ok).toBe(true);
 	});
 
 	it("rejects a payload missing required fields", () => {

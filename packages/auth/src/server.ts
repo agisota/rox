@@ -121,6 +121,15 @@ export const auth = betterAuth({
 			clientSecret: env.GH_CLIENT_SECRET,
 		},
 	},
+	rateLimit: {
+		// ROX-522 security review: explicitly throttle the Telegram Login Widget
+		// callback. Each request carries a fresh signed payload, so a tight window
+		// blunts brute-force/replay attempts against the verification endpoint on
+		// top of the HMAC + single-use KV guard. Path is relative to basePath.
+		customRules: {
+			"/telegram/callback": { window: 60, max: 10 },
+		},
+	},
 	databaseHooks: {
 		user: {
 			create: {
@@ -260,7 +269,7 @@ export const auth = betterAuth({
 				}) => {
 					if (account.providerId !== YANDEX_PROVIDER_ID) return;
 					try {
-						const pending = takePendingYandexProfile(account.accountId);
+						const pending = await takePendingYandexProfile(account.accountId);
 						await upsertSocialProfile({
 							userId: account.userId,
 							registrationProvider: "yandex",
