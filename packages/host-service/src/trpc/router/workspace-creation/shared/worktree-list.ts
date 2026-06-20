@@ -1,5 +1,6 @@
 import { realpathSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
+import { logger } from "../../../../lib/logger";
 import type { GitClient } from "./types";
 
 // Single source of truth for parsing `git worktree list --porcelain`.
@@ -77,7 +78,7 @@ export async function listGitWorktrees(
 		const raw = await git.raw(["worktree", "list", "--porcelain"]);
 		return parseWorktreeList(raw);
 	} catch (err) {
-		console.warn("[workspace-creation] git worktree list failed:", err);
+		logger.warn("[workspace-creation] git worktree list failed:", err);
 		return [];
 	}
 }

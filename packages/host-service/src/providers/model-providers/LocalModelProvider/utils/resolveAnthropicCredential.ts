@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import { createAuthStorage } from "mastracode";
+import { logger } from "../../../../lib/logger";
 import type { LocalResolvedCredential } from "./credentials";
 import { isObjectRecord } from "./credentials";
 
@@ -123,7 +124,7 @@ async function getAnthropicCredentialFromAuthStorage(): Promise<LocalResolvedCre
 					// fall back rather than proxying an expired credential.
 					return null;
 				} catch (error) {
-					console.warn(
+					logger.warn(
 						"[LocalModelProvider] Anthropic OAuth refresh failed:",
 						error,
 					);

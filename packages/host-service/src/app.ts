@@ -10,6 +10,7 @@ import { AgentBridgeRegistry } from "./agent-bridge";
 import { createApiClient } from "./api";
 import { createDb, type HostDb } from "./db";
 import { EventBus, GitWatcher, registerEventBusRoute } from "./events";
+import { logger } from "./lib/logger";
 import type { ApiAuthProvider } from "./providers/auth";
 import type { HostAuthProvider } from "./providers/host-auth";
 import type { ModelProviderRuntimeResolver } from "./providers/model-providers";
@@ -168,7 +169,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		git,
 		organizationId: config.organizationId,
 	}).catch((err) => {
-		console.warn("[host-service] main-workspace sweep failed:", err);
+		logger.warn("[host-service] main-workspace sweep failed:", err);
 	});
 
 	// Preinstall bundled agents/harnesses and ensure the default worktrees
@@ -179,7 +180,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		await mkdir(defaultWorktreesRoot(), { recursive: true });
 		await preinstall.runAuto({ signal: bootstrapAbort.signal });
 	})().catch((err) => {
-		console.warn("[host-service] agent preinstall bootstrap failed:", err);
+		logger.warn("[host-service] agent preinstall bootstrap failed:", err);
 	});
 
 	const wsAuth: MiddlewareHandler = async (c, next) => {
@@ -245,22 +246,22 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		try {
 			pullRequestRuntime.stop();
 		} catch (err) {
-			console.warn("[host-service] pullRequestRuntime.stop failed:", err);
+			logger.warn("[host-service] pullRequestRuntime.stop failed:", err);
 		}
 		try {
 			eventBus.close();
 		} catch (err) {
-			console.warn("[host-service] eventBus.close failed:", err);
+			logger.warn("[host-service] eventBus.close failed:", err);
 		}
 		try {
 			agentBridge.close();
 		} catch (err) {
-			console.warn("[host-service] agentBridge.close failed:", err);
+			logger.warn("[host-service] agentBridge.close failed:", err);
 		}
 		try {
 			gitWatcher.close();
 		} catch (err) {
-			console.warn("[host-service] gitWatcher.close failed:", err);
+			logger.warn("[host-service] gitWatcher.close failed:", err);
 		}
 		if (ownsDb) {
 			try {
