@@ -21,6 +21,7 @@ import {
 	tasks,
 	teamMembers,
 	teams,
+	userAmbientSettings,
 	v2Clients,
 	v2Hosts,
 	v2Projects,
@@ -150,6 +151,10 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 	memory_items: {
 		orgColumn: memoryItems.organizationId,
 		userColumn: memoryItems.createdBy,
+	},
+	user_ambient_settings: {
+		orgColumn: userAmbientSettings.organizationId,
+		userColumn: userAmbientSettings.createdBy,
 	},
 
 	github_repositories: { orgColumn: githubRepositories.organizationId },
