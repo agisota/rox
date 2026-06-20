@@ -8,7 +8,7 @@ import type {
 	PresignPutParams,
 	PresignResult,
 	StorageProviderKind,
-} from "./types.ts";
+} from "./types";
 
 /**
  * Backend-agnostic object-storage contract.

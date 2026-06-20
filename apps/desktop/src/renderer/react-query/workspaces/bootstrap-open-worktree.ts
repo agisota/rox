@@ -16,6 +16,9 @@ export type BootstrapOpenWorktreeError =
 
 interface BootstrapOpenWorktreeOptions {
 	data: OpenWorkspaceData;
+	/** Creates the chat tab that the user lands on (primary surface). */
+	addChatTab: (workspaceId: string) => { tabId: string; paneId: string };
+	/** Creates a terminal tab/pane used only to run the setup command. */
 	addTab: (workspaceId: string) => { tabId: string; paneId: string };
 	setTabAutoTitle: (tabId: string, title: string) => void;
 	createOrAttach: (input: {
@@ -34,18 +37,29 @@ interface BootstrapOpenWorktreeOptions {
 export async function bootstrapOpenWorktree(
 	options: BootstrapOpenWorktreeOptions,
 ): Promise<BootstrapOpenWorktreeError | null> {
+	const workspaceId = options.data.workspace.id;
 	const setupCommand = buildTerminalCommand(options.data.initialCommands);
 
-	const { tabId, paneId } = options.addTab(options.data.workspace.id);
-	if (setupCommand) {
-		options.setTabAutoTitle(tabId, "Workspace Setup");
+	// No setup command: chat is the only surface. Create the chat tab and stop —
+	// a chat pane cannot run shell commands, so there is nothing to attach.
+	if (!setupCommand) {
+		options.addChatTab(workspaceId);
+		return null;
 	}
+
+	// Setup command path: create the terminal tab first (it runs the command),
+	// then create the chat tab last so it becomes the active/visible tab. The
+	// setup command still runs in the real terminal pane in the background.
+	const { tabId: terminalTabId, paneId: terminalPaneId } =
+		options.addTab(workspaceId);
+	options.setTabAutoTitle(terminalTabId, "Workspace Setup");
+	options.addChatTab(workspaceId);
 
 	try {
 		await ensureTerminalAttached({
-			paneId,
-			tabId,
-			workspaceId: options.data.workspace.id,
+			paneId: terminalPaneId,
+			tabId: terminalTabId,
+			workspaceId,
 			createOrAttach: options.createOrAttach,
 		});
 	} catch (error) {
@@ -53,13 +67,9 @@ export async function bootstrapOpenWorktree(
 		return "create_or_attach_failed";
 	}
 
-	if (!setupCommand) {
-		return null;
-	}
-
 	try {
 		await writeCommandInPane({
-			paneId,
+			paneId: terminalPaneId,
 			command: setupCommand,
 			write: options.writeToTerminal,
 		});
