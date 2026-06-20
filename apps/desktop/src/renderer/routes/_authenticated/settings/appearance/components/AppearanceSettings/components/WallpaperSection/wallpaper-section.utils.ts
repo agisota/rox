@@ -28,6 +28,11 @@ export function previewBackground(source: WallpaperSource): string {
 			return `center / cover no-repeat url("${source.path}")`;
 		case "remote":
 			return `center / cover no-repeat url("${source.url}")`;
+		case "video":
+			// Thumbnails are static: preview the poster still, or a neutral fill.
+			return source.poster
+				? `center / cover no-repeat url("${source.poster}")`
+				: "#0b1026";
 	}
 }
 

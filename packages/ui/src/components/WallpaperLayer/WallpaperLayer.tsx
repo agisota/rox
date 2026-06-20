@@ -33,11 +33,19 @@ function sourceKey(source: WallpaperSource): string {
 			return `remote:${source.url}`;
 		case "gradient":
 			return `gradient:${source.colors.join(",")}`;
+		case "video":
+			return `video:${source.src}`;
 	}
 }
 
-/** Render a wallpaper's visual fill: a cinematic gradient scene or a cover image. */
-function WallpaperFill({ wallpaper }: { wallpaper: Wallpaper }) {
+/** Render a wallpaper's visual fill: a cinematic gradient scene, looping video, or a cover image. */
+function WallpaperFill({
+	wallpaper,
+	reduceMotion,
+}: {
+	wallpaper: Wallpaper;
+	reduceMotion: boolean;
+}) {
 	const { source } = wallpaper;
 	if (source.kind === "gradient") {
 		return (
@@ -46,6 +54,32 @@ function WallpaperFill({ wallpaper }: { wallpaper: Wallpaper }) {
 				scene={wallpaper.scene}
 				tone={wallpaper.tone}
 				className="h-full w-full"
+			/>
+		);
+	}
+	if (source.kind === "video") {
+		// Reduced-motion users get a still (poster) instead of the moving loop.
+		if (reduceMotion && source.poster) {
+			return (
+				<div
+					className="h-full w-full bg-center bg-cover"
+					style={{ backgroundImage: `url("${encodeURI(source.poster)}")` }}
+					role="img"
+					aria-label={wallpaper.name}
+				/>
+			);
+		}
+		return (
+			<video
+				className="h-full w-full object-cover"
+				src={source.src}
+				poster={source.poster}
+				autoPlay={!reduceMotion}
+				loop
+				muted
+				playsInline
+				preload="auto"
+				aria-label={wallpaper.name}
 			/>
 		);
 	}
@@ -90,7 +124,7 @@ export function WallpaperLayer({
 						exit={{ opacity: 0 }}
 						transition={{ duration }}
 					>
-						<WallpaperFill wallpaper={wallpaper} />
+						<WallpaperFill wallpaper={wallpaper} reduceMotion={reduceMotion} />
 					</motion.div>
 				) : null}
 			</AnimatePresence>
