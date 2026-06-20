@@ -8,7 +8,7 @@ import {
 	PutObjectCommand,
 	type S3Client,
 } from "@aws-sdk/client-s3";
-import { S3BaseProvider } from "./s3-base.ts";
+import { S3BaseProvider } from "./s3-base";
 
 /** A mock S3Client that records sent commands and returns canned responses. */
 function mockClient(response: unknown = {}) {

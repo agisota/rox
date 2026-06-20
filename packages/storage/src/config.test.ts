@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveStorageConfig, type StorageEnv } from "./config.ts";
+import { resolveStorageConfig, type StorageEnv } from "./config";
 
 const baseCreds: StorageEnv = {
 	STORAGE_ACCESS_KEY_ID: "ak",

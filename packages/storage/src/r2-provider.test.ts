@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { PutObjectCommand, type S3Client } from "@aws-sdk/client-s3";
-import type { R2Config } from "./config.ts";
-import { createR2Client, R2Provider, r2Endpoint } from "./r2-provider.ts";
+import type { R2Config } from "./config";
+import { createR2Client, R2Provider, r2Endpoint } from "./r2-provider";
 
 const config: R2Config = {
 	kind: "r2",
