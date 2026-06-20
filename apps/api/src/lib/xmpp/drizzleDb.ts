@@ -19,7 +19,7 @@ import {
 	xmppJidAliases,
 	xmppOfflineQueue,
 } from "@rox/db/schema";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import type { XmppIngestDb } from "./ingest";
 
 /** Build the production {@link XmppIngestDb} bound to the live Drizzle client. */
@@ -98,6 +98,10 @@ export function createXmppIngestDb(): XmppIngestDb {
 		async emitToUnifiedInbox(args) {
 			// Find-or-create the D1 thread keyed by the conversation thread / reply id
 			// (so a later reply threads into the same row).
+			// NOTE: this find-or-create has a known thin write-write race (two
+			// concurrent inbound stanzas for a brand-new dedupKey could both insert a
+			// thread). It is shared D1 schema used by every transport, so the fix
+			// belongs to D1, not this D4 PR — left intentionally out of scope here.
 			const dedupKey =
 				args.thread ??
 				args.replyToStanzaId ??
@@ -175,9 +179,18 @@ export function createXmppIngestDb(): XmppIngestDb {
 					originId: args.originId,
 					expiresAt: args.expiresAt,
 				})
-				// Idempotent enqueue on (account, origin_id) where present.
+				// Idempotent enqueue on (account, origin_id) where present. The
+				// backing unique index `xmpp_offline_queue_account_origin_uniq` is
+				// PARTIAL (`... WHERE origin_id IS NOT NULL`). Postgres only matches a
+				// partial unique index as an ON CONFLICT arbiter when the conflict
+				// target carries the same predicate, so without this `where` (the
+				// arbiter predicate on onConflictDoNothing) the insert throws 42P10
+				// ("no unique or exclusion constraint matching the
+				// ON CONFLICT specification") and the inbound ingest 500s on any stanza
+				// carrying an origin id.
 				.onConflictDoNothing({
 					target: [xmppOfflineQueue.accountId, xmppOfflineQueue.originId],
+					where: sql`${xmppOfflineQueue.originId} IS NOT NULL`,
 				});
 		},
 	};
