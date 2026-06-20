@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 interface AnimatedTextCycleProps {
@@ -10,14 +11,27 @@ interface AnimatedTextCycleProps {
 	fast?: boolean;
 }
 
+/**
+ * Cycling word that animates its wrapper WIDTH (spring) to the CURRENT word's
+ * width — so the surrounding copy always sits tight against it instead of being
+ * padded out to the widest word. Each word enters with a blur+slide-down and
+ * exits with a blur+slide-up (AnimatePresence, mode="wait").
+ *
+ * Adapted from the thimows / 21st.dev "animated-text-cycle" reference into this
+ * repo's named export + existing props (`words`, `interval`, `className`,
+ * `fast`). Honours `prefers-reduced-motion` by rendering a static word.
+ */
 export function AnimatedTextCycle({
 	words,
 	interval = 5000,
 	className = "",
 }: AnimatedTextCycleProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
-	const [box, setBox] = useState({ height: "1em", width: "auto" });
+	const [width, setWidth] = useState<number | "auto">("auto");
 	const measureRef = useRef<HTMLDivElement>(null);
+	const prefersReducedMotion = useReducedMotion();
+
+	// Stable React keys for duplicate words (avoids index keys).
 	const measuredWords = useMemo(() => {
 		const seen = new Map<string, number>();
 		return words.map((word) => {
@@ -27,40 +41,22 @@ export function AnimatedTextCycle({
 		});
 	}, [words]);
 
+	// Measure the CURRENT word and animate the wrapper to that width.
 	useLayoutEffect(() => {
 		if (words.length === 0) return;
-		if (currentIndex >= words.length) {
-			setCurrentIndex(0);
-			return;
-		}
-		if (measureRef.current) {
-			let maxWidth = 0;
-			let maxHeight = 0;
-
-			for (const element of Array.from(measureRef.current.children)) {
-				if (element instanceof HTMLElement) {
-					const rect = element.getBoundingClientRect();
-					maxWidth = Math.max(maxWidth, rect.width);
-					maxHeight = Math.max(maxHeight, rect.height);
-				}
-			}
-
-			if (maxWidth > 0 && maxHeight > 0) {
-				setBox({
-					height: `${Math.ceil(maxHeight)}px`,
-					width: `${Math.ceil(maxWidth)}px`,
-				});
-			}
+		const node = measureRef.current;
+		if (!node) return;
+		const child = node.children[currentIndex];
+		if (child instanceof HTMLElement) {
+			setWidth(child.getBoundingClientRect().width);
 		}
 	}, [currentIndex, words.length]);
 
 	useEffect(() => {
 		if (words.length <= 1) return;
-
 		const timer = setInterval(() => {
-			setCurrentIndex((prevIndex) => (prevIndex + 1) % words.length);
+			setCurrentIndex((prev) => (prev + 1) % words.length);
 		}, interval);
-
 		return () => clearInterval(timer);
 	}, [interval, words.length]);
 
@@ -68,37 +64,74 @@ export function AnimatedTextCycle({
 
 	const activeWord = words[currentIndex] ?? words[0];
 
+	// Reduced motion: no width spring, no blur/slide — just swap the text.
+	if (prefersReducedMotion) {
+		return (
+			<span
+				className={`inline-block ${className}`}
+				style={{ whiteSpace: "nowrap" }}
+			>
+				{activeWord}
+			</span>
+		);
+	}
+
 	return (
 		<>
+			{/* Hidden measurement layer: one span per word, same class so the
+			    measured width matches the rendered word exactly. */}
 			<div
 				ref={measureRef}
-				className="pointer-events-none absolute opacity-0"
 				aria-hidden="true"
+				className="pointer-events-none absolute opacity-0"
+				style={{ visibility: "hidden" }}
 			>
 				{measuredWords.map((entry) => (
-					<span key={entry.key} className={`inline-block ${className}`}>
+					<span
+						key={entry.key}
+						className={`inline-block ${className}`}
+						style={{ whiteSpace: "nowrap" }}
+					>
 						{entry.word}
 					</span>
 				))}
 			</div>
 
-			<span
-				className="relative inline-grid align-baseline"
-				style={{
-					height: box.height,
-					lineHeight: "inherit",
-					minWidth: box.width,
-					width: box.width,
+			<motion.span
+				className="relative inline-block align-baseline"
+				animate={{
+					width,
+					transition: {
+						type: "spring",
+						stiffness: 150,
+						damping: 15,
+						mass: 1.2,
+					},
 				}}
 			>
-				<span
-					key={currentIndex}
-					className={`inline-block ${className}`}
-					style={{ gridArea: "1 / 1", whiteSpace: "nowrap" }}
-				>
-					{activeWord}
-				</span>
-			</span>
+				<AnimatePresence mode="wait" initial={false}>
+					<motion.span
+						key={currentIndex}
+						className={`inline-block ${className}`}
+						initial={{ y: -16, opacity: 0, filter: "blur(8px)" }}
+						animate={{
+							y: 0,
+							opacity: 1,
+							filter: "blur(0px)",
+							transition: { duration: 0.4, ease: "easeOut" },
+						}}
+						exit={{
+							y: 16,
+							opacity: 0,
+							filter: "blur(8px)",
+							transition: { duration: 0.3, ease: "easeIn" },
+						}}
+						style={{ whiteSpace: "nowrap" }}
+					>
+						{activeWord}
+					</motion.span>
+				</AnimatePresence>
+			</motion.span>
 		</>
 	);
 }

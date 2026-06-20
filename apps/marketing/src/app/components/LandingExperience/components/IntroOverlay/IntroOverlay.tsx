@@ -3,7 +3,7 @@
 import { animate, createTimeline, scrambleText, stagger } from "animejs";
 import Image from "next/image";
 import type { CSSProperties } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	INTRO_BRAND,
 	INTRO_FEATURE_TAGS,
@@ -11,6 +11,10 @@ import {
 	INTRO_LEAD_WORD,
 } from "../../constants";
 import { CpuArchitecture } from "../CpuArchitecture";
+import {
+	type FeatureCloudPlacement,
+	layoutFeatureCloud,
+} from "./featureCloudLayout";
 
 interface IntroOverlayProps {
 	onComplete: () => void;
@@ -46,6 +50,7 @@ const GRID_ROWS = SLIDE_ONE_GRID.length;
 const INTRO_FEATURES = INTRO_FEATURE_TAGS.map((tag, index) => ({
 	...tag,
 	id: `intro-feature-${index}`,
+	index,
 }));
 
 type FeatureCloudStyle = CSSProperties &
@@ -54,25 +59,33 @@ type FeatureCloudStyle = CSSProperties &
 		string
 	>;
 
-function getFeatureCloudStyle(index: number, color: number): FeatureCloudStyle {
-	const goldenAngle = 137.50776405;
-	const angle = (index * goldenAngle * Math.PI) / 180;
-	const ring = index % 6;
-	const spread = [13, 24, 34, 42, 18, 38][ring] ?? 28;
-	const wobble = ((index * 23) % 17) - 8;
-	const x = 50 + Math.cos(angle) * spread * 1.05 + wobble * 0.58;
-	const y =
-		50 + Math.sin(angle) * spread * 0.74 + (((index * 37) % 19) - 9) * 0.72;
-	const rotation = (((index * 29) % 31) - 15) * (index % 4 === 0 ? 1.35 : 0.7);
-	const scale = [0.9, 1.08, 0.78, 1.24, 0.96, 1.16, 0.84][index % 7] ?? 1;
-
+function placementToStyle(
+	placement: FeatureCloudPlacement,
+	color: number,
+): FeatureCloudStyle {
 	return {
-		"--rox-tag-x": `${Math.max(5, Math.min(95, x)).toFixed(2)}%`,
-		"--rox-tag-y": `${Math.max(7, Math.min(93, y)).toFixed(2)}%`,
-		"--rox-tag-rot": `${rotation.toFixed(2)}deg`,
-		"--rox-tag-scale": scale.toString(),
+		"--rox-tag-x": `${placement.xPct.toFixed(2)}%`,
+		"--rox-tag-y": `${placement.yPct.toFixed(2)}%`,
+		"--rox-tag-rot": `${placement.rotationDeg.toFixed(2)}deg`,
+		"--rox-tag-scale": placement.scale.toFixed(3),
 		color: `var(--rox-c-${color})`,
 	};
+}
+
+/**
+ * Pick a responsive footprint + tag cap for the feature cloud from the live
+ * container width. Narrow screens get a smaller font, more breathing room and a
+ * lower cap so the scatter stays readable instead of cramming every tag in.
+ */
+function getCloudSizing(width: number): {
+	fontPx: number;
+	gapPx: number;
+	maxTags: number;
+} {
+	if (width < 480) return { fontPx: 11, gapPx: 12, maxTags: 16 };
+	if (width < 760) return { fontPx: 12, gapPx: 14, maxTags: 24 };
+	if (width < 1100) return { fontPx: 13, gapPx: 16, maxTags: 34 };
+	return { fontPx: 14, gapPx: 18, maxTags: INTRO_FEATURE_TAGS.length };
 }
 
 /** Scramble cursor glyphs reused from the original anime.js demo. */
@@ -95,8 +108,71 @@ const LOGO_FLOAT_DELAY_MS = 2_200;
  */
 export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
+	const cloudRef = useRef<HTMLDivElement>(null);
 	const onCompleteRef = useRef(onComplete);
 	onCompleteRef.current = onComplete;
+
+	// Live container box for the feature cloud. Seed from the viewport so a
+	// collision-free layout exists on the very first render (the anime.js
+	// timeline queries `.rox-intro__feature` at mount).
+	const [cloudBox, setCloudBox] = useState(() => {
+		if (typeof window === "undefined") return { width: 1200, height: 620 };
+		const insetX = Math.min(176, window.innerWidth * 0.1);
+		const insetY = Math.min(176, window.innerHeight * 0.16);
+		return {
+			width: Math.max(280, window.innerWidth - insetX),
+			height: Math.max(320, window.innerHeight - insetY),
+		};
+	});
+
+	// Recompute the box on resize so the scatter stays inside the viewport.
+	useEffect(() => {
+		const measure = () => {
+			const node = cloudRef.current;
+			if (node) {
+				const rect = node.getBoundingClientRect();
+				if (rect.width > 0 && rect.height > 0) {
+					setCloudBox({ width: rect.width, height: rect.height });
+					return;
+				}
+			}
+			const insetX = Math.min(176, window.innerWidth * 0.1);
+			const insetY = Math.min(176, window.innerHeight * 0.16);
+			setCloudBox({
+				width: Math.max(280, window.innerWidth - insetX),
+				height: Math.max(320, window.innerHeight - insetY),
+			});
+		};
+		measure();
+		window.addEventListener("resize", measure);
+		return () => window.removeEventListener("resize", measure);
+	}, []);
+
+	// Collision-free placements for the feature tags, capped by viewport size.
+	const placedFeatures = useMemo(() => {
+		const { fontPx, gapPx, maxTags } = getCloudSizing(cloudBox.width);
+		const placements = layoutFeatureCloud(INTRO_FEATURES, {
+			width: cloudBox.width,
+			height: cloudBox.height,
+			fontPx,
+			gapPx,
+			maxTags,
+		});
+		return placements
+			.map((placement) => {
+				const tag = INTRO_FEATURES[placement.index];
+				if (!tag) return null;
+				return { tag, placement };
+			})
+			.filter(
+				(
+					entry,
+				): entry is {
+					tag: (typeof INTRO_FEATURES)[number];
+					placement: FeatureCloudPlacement;
+				} => entry !== null,
+			);
+	}, [cloudBox.width, cloudBox.height]);
 
 	useEffect(() => {
 		const root = rootRef.current;
@@ -162,6 +238,17 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			loop: false,
 			onComplete: finishOnce,
 		});
+		// When the tag cloud (beat 4) is revealed, the girl logo + CPU chip
+		// (beat 3) MUST be gone so the two beats never overlap on screen.
+		const hideLogoAndCpu = () => {
+			if (logo[0]) logo[0].style.opacity = "0";
+			if (cpuMark[0]) cpuMark[0].style.opacity = "0";
+		};
+		const showTagCloud = () => {
+			hideLogoAndCpu();
+			if (slide1[0]) slide1[0].style.opacity = "0";
+			if (slide2[0]) slide2[0].style.opacity = "1";
+		};
 		const startTimelineFallback = (showTagsImmediately = false) => {
 			if (finished || fallbackStarted) {
 				return;
@@ -173,16 +260,14 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			if (slide2[0]) slide2[0].style.opacity = "0";
 
 			if (showTagsImmediately) {
-				if (slide1[0]) slide1[0].style.opacity = "0";
-				if (slide2[0]) slide2[0].style.opacity = "1";
+				showTagCloud();
 				queueFallbackTimer(finishOnce, 4000);
 				return;
 			}
 
 			queueFallbackTimer(() => {
 				if (finished) return;
-				if (slide1[0]) slide1[0].style.opacity = "0";
-				if (slide2[0]) slide2[0].style.opacity = "1";
+				showTagCloud();
 			}, 2200);
 			queueFallbackTimer(finishOnce, 6200);
 		};
@@ -457,12 +542,12 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				</div>
 
 				<div className="rox-intro__slide rox-intro__slide--two rox-intro__features">
-					<div className="rox-intro__features-cloud">
-						{INTRO_FEATURES.map((tag, index) => (
+					<div ref={cloudRef} className="rox-intro__features-cloud">
+						{placedFeatures.map(({ tag, placement }) => (
 							<p
 								key={tag.id}
 								className="rox-intro__feature"
-								style={getFeatureCloudStyle(index, tag.color)}
+								style={placementToStyle(placement, tag.color)}
 							>
 								{tag.text}
 							</p>
