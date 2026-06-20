@@ -164,6 +164,14 @@
 			"types": "./src/task-slug.ts",
 			"default": "./src/task-slug.ts"
 		},
+		"./username": {
+			"types": "./src/username.ts",
+			"default": "./src/username.ts"
+		},
+		"./share-link": {
+			"types": "./src/share-link.ts",
+			"default": "./src/share-link.ts"
+		},
 		"./claude-command": {
 			"types": "./src/claude-command.ts",
 			"default": "./src/claude-command.ts"

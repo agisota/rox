@@ -547,6 +547,13 @@
       "when": 1781726675099,
       "tag": "0077_superapp_graph_runtime",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1781924776035,
+      "tag": "0078_add_user_handle_and_provider_identity",
+      "breakpoints": true
     }
   ]
 }

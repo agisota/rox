@@ -370,6 +370,22 @@ export const accessRoleValues = ["viewer", "editor", "admin"] as const;
 export const accessRoleEnum = z.enum(accessRoleValues);
 export type AccessRole = z.infer<typeof accessRoleEnum>;
 
+// Public identity / handle (ROX-522) ------------------------------------------
+// Which provider a user originally registered through. Drives the cached
+// provider-identity fields on `user_profiles` (provider username / avatar) and
+// is sourced from better-auth's `auth.accounts.provider_id`. Append-only string
+// union backing a Postgres pgEnum; never reorder/remove values.
+
+export const registrationProviderValues = [
+	"telegram",
+	"yandex",
+	"x",
+	"github",
+	"email",
+] as const;
+export const registrationProviderEnum = z.enum(registrationProviderValues);
+export type RegistrationProvider = z.infer<typeof registrationProviderEnum>;
+
 // Knowledge / notebook layer (fumadocs epic) ----------------------------------
 // Document "type" is the editorial kind shown in the notebook; "source kind" is
 // how the document was produced (manual authoring, distilled from a chat, an
