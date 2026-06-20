@@ -75,6 +75,14 @@ export const env = createEnv({
 		// signature verification, so it must stay off until dv.net's signing scheme
 		// is wired up. Set to "true" ONLY together with that verification.
 		DVNET_ENABLED: z.string().optional(),
+		// D3 Per-User Email (comms-suite P3). All OPTIONAL so non-mail envs boot.
+		// `MAIL_INBOUND_SECRET` is the HMAC key the Cloudflare Email Worker signs
+		// `/api/mail/inbound` with; ABSENT ⇒ the route fails closed (503) and never
+		// accepts unauthenticated mail. `MAIL_OUTBOUND_ENABLED` + `RESEND_API_KEY`
+		// gate outbound send (inert otherwise). `MAIL_DOMAIN` overrides `rox.one`.
+		MAIL_INBOUND_SECRET: z.string().optional(),
+		MAIL_OUTBOUND_ENABLED: z.string().optional(),
+		MAIL_DOMAIN: z.string().optional(),
 	},
 	client: {
 		NEXT_PUBLIC_API_URL: z.string().url(),

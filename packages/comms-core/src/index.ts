@@ -8,12 +8,30 @@
 
 export {
 	AdapterRegistry,
+	EmailAdapter,
+	type EmailAdapterOptions,
+	type EmailAuthResult,
+	type EmailAuthVerdict,
+	type EmailInboundAttachment,
+	type EmailOutboundPayload,
+	type EmailRawInbound,
 	InAppAdapter,
 	type InAppRawMessage,
+	normalizeSubject,
+	type ResendSendFn,
 	type SendContext,
 	type SendResult,
 	type TransportAdapter,
 } from "./adapter";
+export {
+	type AuthVerdict,
+	DEFAULT_SPAM_THRESHOLD,
+	type SpamAuthSignals,
+	type SpamContentSignals,
+	type SpamScoreInput,
+	type SpamScoreResult,
+	scoreInboundSpam,
+} from "./email";
 export {
 	deriveAddresses,
 	normalizeHandle,

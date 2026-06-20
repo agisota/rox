@@ -23,6 +23,7 @@ export * from "./identity";
 export * from "./ingest";
 export * from "./journal";
 export * from "./knowledge";
+export * from "./mail";
 export * from "./memory";
 export * from "./note";
 export * from "./org-library";
