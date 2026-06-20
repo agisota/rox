@@ -5,6 +5,7 @@ import {
 } from "@rox/shared/share-link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ProfileEmptyState } from "../components/ProfileEmptyState";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { getPublicProfile } from "../lib/profile-data";
 import { resolveHandleParam } from "../lib/resolve-handle";
@@ -27,9 +28,13 @@ const SECTION_TITLES: Record<ShareSection, string> = {
 
 /**
  * Resolve `/@<handle>/<section>` via the shared `parseSharePath` resolver and
- * the profile lookup. Section content is a stub/empty-state for now — this PR
- * wires the routing + handle resolution + profile header; the per-section data
- * is a follow-up.
+ * the profile lookup.
+ *
+ * These sections (agents/subagents/hooks/drive/feed/projects/stats) have no
+ * per-user public data model yet — there is no owner-scoped, public-by-flag
+ * collection to read from without exposing private/tenant data. They render a
+ * clear "Пока пусто" empty-state until a public model lands. SKILLS and SHARED
+ * sessions/artifacts (which DO have public models) are wired in their own routes.
  */
 function resolveSection(segment: string, section: string): ShareSection | null {
 	const parsed = parseSharePath(`/${segment}/${section}`);
@@ -64,12 +69,7 @@ export default async function ProfileSectionPage({ params }: SectionPageProps) {
 		<main className="min-h-screen bg-background">
 			<div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
 				<ProfileHeader profile={profile} activeSection={resolved} />
-				<section className="rounded-xl border bg-card p-6">
-					<h2 className="text-lg font-medium">{SECTION_TITLES[resolved]}</h2>
-					<p className="mt-2 text-sm text-muted-foreground">
-						Раздел «{SECTION_TITLES[resolved]}» скоро появится.
-					</p>
-				</section>
+				<ProfileEmptyState title={SECTION_TITLES[resolved]} />
 			</div>
 		</main>
 	);

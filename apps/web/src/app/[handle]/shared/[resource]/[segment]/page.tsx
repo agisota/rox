@@ -5,7 +5,9 @@ import {
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProfileHeader } from "../../../components/ProfileHeader";
+import { SharedResourceContent } from "../../../components/SharedResourceContent";
 import { getPublicProfile } from "../../../lib/profile-data";
+import { getPublicSharedResource } from "../../../lib/profile-shared";
 import { resolveHandleParam } from "../../../lib/resolve-handle";
 
 type SharedResourcePageProps = {
@@ -21,9 +23,9 @@ const RESOURCE_LABELS: Record<ParsedSharedResource["resource"], string> = {
 
 /**
  * `/@<handle>/shared/<resource>/<id>-<slug>-<DD>-<MM>-<YYYY>` — resolve the
- * handle + shared-resource descriptor via the shared `parseSharePath` resolver.
- * The actual session/artifact content wiring is a follow-up; this PR delivers
- * the public routing + handle resolution + an empty-state placeholder.
+ * handle + shared-resource descriptor via the shared `parseSharePath` resolver,
+ * then look up the owner's matching non-revoked `public_shares` snapshot and
+ * render its immutable public payload (read-only).
  */
 function resolveShared(
 	handleSegment: string,
@@ -62,21 +64,43 @@ export default async function SharedResourcePage({
 	const profile = await getPublicProfile(handle);
 	if (!profile) notFound();
 
+	const shared = await getPublicSharedResource({
+		ownerUserId: profile.userId,
+		resource: parsed.resource,
+		id: parsed.id,
+	});
+
+	const publishedAt = shared
+		? new Intl.DateTimeFormat("ru", {
+				dateStyle: "medium",
+				timeStyle: "short",
+			}).format(shared.createdAt)
+		: null;
+
 	return (
 		<main className="min-h-screen bg-background">
 			<div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
 				<ProfileHeader profile={profile} />
 				<section className="rounded-xl border bg-card p-6">
-					<h2 className="text-lg font-medium">
-						{RESOURCE_LABELS[parsed.resource]}
-					</h2>
-					<p className="mt-2 break-all font-mono text-sm text-muted-foreground">
-						{parsed.id}
-						{parsed.slug ? `-${parsed.slug}` : ""}
-					</p>
-					<p className="mt-2 text-sm text-muted-foreground">
-						Содержимое публикации скоро появится.
-					</p>
+					<div className="flex flex-wrap items-baseline gap-3">
+						<h2 className="text-lg font-medium">
+							{shared?.title ?? RESOURCE_LABELS[parsed.resource]}
+						</h2>
+						{publishedAt ? (
+							<span className="text-xs text-muted-foreground">
+								{publishedAt}
+							</span>
+						) : null}
+					</div>
+					<div className="mt-4">
+						{shared ? (
+							<SharedResourceContent resource={shared} />
+						) : (
+							<p className="text-sm text-muted-foreground">
+								Эта публикация недоступна или была отозвана.
+							</p>
+						)}
+					</div>
 				</section>
 			</div>
 		</main>
