@@ -1,6 +1,7 @@
 export * from "./_shared";
 export * from "./activity";
 export * from "./agent";
+export * from "./ambient";
 export * from "./attribution";
 export * from "./auth";
 export * from "./browser-history";

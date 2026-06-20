@@ -3,6 +3,7 @@ import { cn } from "@rox/ui/utils";
 
 const KIND_LABELS: Record<string, string> = {
 	automation_run: "Автоматизация",
+	ambient_nudge: "Подсказка",
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -10,11 +11,21 @@ const STATUS_DOT: Record<string, string> = {
 	skipped_offline: "bg-muted-foreground",
 	dispatch_failed: "bg-red-500",
 	conflict: "bg-muted-foreground",
+	// Proactive ambient nudges aren't pass/fail — give them a distinct accent dot.
+	ambient: "bg-sky-500",
 };
 
 function eventStatus(event: SelectJournalEvent): string | undefined {
-	const status = (event.payload as { status?: unknown } | null)?.status;
-	return typeof status === "string" ? status : undefined;
+	// Ambient nudges carry `payload.source = 'ambient'` (no automation status);
+	// fall back to that so they still get a coloured dot in the feed.
+	const payload = event.payload as {
+		status?: unknown;
+		source?: unknown;
+	} | null;
+	const status = payload?.status;
+	if (typeof status === "string") return status;
+	const source = payload?.source;
+	return typeof source === "string" ? source : undefined;
 }
 
 function formatTimestamp(value: Date | string): string {
