@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import {
 	CUSTOM_RINGTONE_ID,
 	DEFAULT_RINGTONE_ID,
@@ -63,7 +64,7 @@ export async function playRingtone(opts: PlayRingtoneOptions): Promise<void> {
 				volume: volumePercent,
 			});
 		} catch (error) {
-			console.warn("[ringtone] custom playback failed:", error);
+			logger.warn("[ringtone] custom playback failed:", error);
 		}
 		return;
 	}
@@ -79,7 +80,7 @@ export async function playRingtone(opts: PlayRingtoneOptions): Promise<void> {
 		await audio.play();
 	} catch (error) {
 		if (!isUserGesturePlaybackError(error)) {
-			console.warn("[ringtone] playback failed:", error);
+			logger.warn("[ringtone] playback failed:", error);
 		}
 	}
 }

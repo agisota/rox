@@ -15,6 +15,7 @@ import { track } from "renderer/lib/analytics";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
 import { OnboardingNavigation } from "./components/OnboardingNavigation";
 
@@ -93,7 +94,7 @@ function OnboardingFlowLayout() {
 			// before we navigate — otherwise the _authenticated guard bounces us back.
 			await refetchSession({ query: { disableCookieCache: true } });
 		} catch (error) {
-			console.error("[onboarding] skip failed", error);
+			logger.error("[onboarding] skip failed", error);
 			toast.error("Не удалось пропустить запуск. Попробуйте ещё раз.");
 			setSkipping(false);
 			return;

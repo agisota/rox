@@ -29,6 +29,7 @@ import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	getImageExtensionFromMimeType,
@@ -197,7 +198,7 @@ export function OrganizationSettings({
 			setLogoPreview(uploadResult.url);
 			toast.success("Логотип обновлён");
 		} catch (error) {
-			console.error("[organization-settings] Logo upload failed:", error);
+			logger.error("[organization-settings] Logo upload failed:", error);
 			toast.error("Не удалось обновить логотип");
 		}
 	}
@@ -217,7 +218,7 @@ export function OrganizationSettings({
 			});
 			toast.success("Название организации обновлено");
 		} catch (error) {
-			console.error("[organization-settings] Name update failed:", error);
+			logger.error("[organization-settings] Name update failed:", error);
 			toast.error("Не удалось обновить название");
 			setNameValue(organization.name);
 		}

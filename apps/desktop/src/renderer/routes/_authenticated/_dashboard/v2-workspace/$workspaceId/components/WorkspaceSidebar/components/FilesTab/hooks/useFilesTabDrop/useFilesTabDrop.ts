@@ -3,6 +3,7 @@ import { alert } from "@rox/ui/atoms/Alert";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useCallback, useEffect, useState } from "react";
+import { logger } from "renderer/lib/logger";
 import {
 	asDirectoryHandle,
 	basename,
@@ -343,7 +344,7 @@ export function useFilesTabDrop({
 					createdDirs += 1;
 				} catch (error) {
 					failedDirs += 1;
-					console.error("[v2 FilesTab] createDirectory failed", {
+					logger.error("[v2 FilesTab] createDirectory failed", {
 						relDir,
 						error,
 					});
@@ -390,7 +391,7 @@ export function useFilesTabDrop({
 					}
 				} catch (error) {
 					failed += 1;
-					console.error("[v2 FilesTab] upload failed", { relPath, error });
+					logger.error("[v2 FilesTab] upload failed", { relPath, error });
 				}
 			}
 
@@ -465,7 +466,7 @@ export function useFilesTabDrop({
 									replaced += 1;
 								} catch (error) {
 									replaceFailed += 1;
-									console.error("[v2 FilesTab] replace failed", {
+									logger.error("[v2 FilesTab] replace failed", {
 										relPath,
 										error,
 									});

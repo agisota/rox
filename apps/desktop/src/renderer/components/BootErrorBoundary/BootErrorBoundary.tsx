@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Component } from "react";
+import { logger } from "renderer/lib/logger";
 
 export interface BootErrorBoundaryProps {
 	children: ReactNode;
@@ -22,7 +23,7 @@ export class BootErrorBoundary extends Component<
 	}
 
 	componentDidCatch(error: Error): void {
-		console.error("[renderer] Boot error boundary caught:", error);
+		logger.error("[renderer] Boot error boundary caught:", error);
 		this.props.onError?.(error);
 	}
 

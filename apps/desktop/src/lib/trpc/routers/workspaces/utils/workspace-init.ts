@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
 import { workspaceInitManager } from "main/lib/workspace-init-manager";
+import { logger } from "shared/logger";
 import type { WorkspaceInitStep } from "shared/types/workspace-init";
 import { attemptWorkspaceAutoRenameFromPrompt } from "./ai-name";
 import { resolveWorkspaceBaseBranch } from "./base-branch";
@@ -63,7 +64,7 @@ export async function initializeWorkspaceWorktree({
 			});
 			warning = autoRenameResult.warning;
 		} catch (error) {
-			console.warn("[workspace-init] Auto naming failed", {
+			logger.warn("[workspace-init] Auto naming failed", {
 				workspaceId,
 				error: error instanceof Error ? error.message : String(error),
 			});
@@ -130,7 +131,7 @@ export async function initializeWorkspaceWorktree({
 				try {
 					await removeWorktree(mainRepoPath, worktreePath);
 				} catch (e) {
-					console.error(
+					logger.error(
 						"[workspace-init] Failed to cleanup worktree after cancel:",
 						e,
 					);
@@ -149,7 +150,7 @@ export async function initializeWorkspaceWorktree({
 				try {
 					await removeWorktree(mainRepoPath, worktreePath);
 				} catch (e) {
-					console.error(
+					logger.error(
 						"[workspace-init] Failed to cleanup worktree after cancel:",
 						e,
 					);
@@ -221,7 +222,7 @@ export async function initializeWorkspaceWorktree({
 			if (checkOriginRefs) {
 				const originRef = `origin/${effectiveStartPoint}`;
 				if (await refExistsLocally(mainRepoPath, originRef)) {
-					console.log(
+					logger.info(
 						`[workspace-init] ${reason}. Using local tracking ref: ${originRef}`,
 					);
 					return { ref: originRef };
@@ -229,21 +230,21 @@ export async function initializeWorkspaceWorktree({
 			}
 
 			if (await refExistsLocally(mainRepoPath, effectiveStartPoint)) {
-				console.log(
+				logger.info(
 					`[workspace-init] ${reason}. Using local branch: ${effectiveStartPoint}`,
 				);
 				return { ref: effectiveStartPoint };
 			}
 
 			if (requestedStartPoint) {
-				console.log(
+				logger.info(
 					`[workspace-init] ${reason}. Start point "${effectiveStartPoint}" was explicitly provided, not using fallback.`,
 				);
 				return null;
 			}
 
 			if (compareBaseBranchWasExplicit) {
-				console.log(
+				logger.info(
 					`[workspace-init] ${reason}. Compare base "${effectiveCompareBaseBranch}" was explicitly set, not using fallback.`,
 				);
 				return null;
@@ -255,14 +256,14 @@ export async function initializeWorkspaceWorktree({
 				if (checkOriginRefs) {
 					const fallbackOriginRef = `origin/${branch}`;
 					if (await refExistsLocally(mainRepoPath, fallbackOriginRef)) {
-						console.log(
+						logger.info(
 							`[workspace-init] ${reason}. Using fallback tracking ref: ${fallbackOriginRef}`,
 						);
 						return { ref: fallbackOriginRef, fallbackBranch: branch };
 					}
 				}
 				if (await refExistsLocally(mainRepoPath, branch)) {
-					console.log(
+					logger.info(
 						`[workspace-init] ${reason}. Using fallback local branch: ${branch}`,
 					);
 					return { ref: branch, fallbackBranch: branch };
@@ -286,7 +287,7 @@ export async function initializeWorkspaceWorktree({
 
 			if (result.fallbackBranch) {
 				const originalBranch = effectiveCompareBaseBranch;
-				console.log(
+				logger.info(
 					`[workspace-init] Updating compare base from "${originalBranch}" to "${result.fallbackBranch}" for workspace ${workspaceId}`,
 				);
 				effectiveCompareBaseBranch = result.fallbackBranch;
@@ -327,7 +328,7 @@ export async function initializeWorkspaceWorktree({
 				if (await refExistsLocally(mainRepoPath, originRef)) {
 					startPoint = originRef;
 				} else {
-					console.warn(
+					logger.warn(
 						`[workspace-init] Remote branch "${effectiveStartPoint}" exists but local tracking ref "${originRef}" not found. Falling back to local ref.`,
 					);
 					manager.updateProgress(
@@ -362,7 +363,7 @@ export async function initializeWorkspaceWorktree({
 					? sanitizeGitError(branchCheck.message)
 					: `Branch "${effectiveStartPoint}" not found on remote`;
 
-				console.warn(
+				logger.warn(
 					`[workspace-init] ${fallbackReason}. Falling back to local ref.`,
 				);
 				manager.updateProgress(
@@ -430,7 +431,7 @@ export async function initializeWorkspaceWorktree({
 			} catch (fetchError) {
 				const originRef = `origin/${effectiveStartPoint}`;
 				if (!(await refExistsLocally(mainRepoPath, originRef))) {
-					console.warn(
+					logger.warn(
 						`[workspace-init] Fetch failed and local ref "${originRef}" doesn't exist. Attempting local fallback.`,
 					);
 					const ref = await resolveLocalRef({
@@ -475,7 +476,7 @@ export async function initializeWorkspaceWorktree({
 			try {
 				await removeWorktree(mainRepoPath, worktreePath);
 			} catch (e) {
-				console.error(
+				logger.error(
 					"[workspace-init] Failed to cleanup worktree after cancel:",
 					e,
 				);
@@ -494,7 +495,7 @@ export async function initializeWorkspaceWorktree({
 			try {
 				await removeWorktree(mainRepoPath, worktreePath);
 			} catch (e) {
-				console.error(
+				logger.error(
 					"[workspace-init] Failed to cleanup worktree after cancel:",
 					e,
 				);
@@ -528,7 +529,7 @@ export async function initializeWorkspaceWorktree({
 		});
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.error(
+		logger.error(
 			`[workspace-init] Failed to initialize ${workspaceId}:`,
 			errorMessage,
 		);
@@ -536,11 +537,11 @@ export async function initializeWorkspaceWorktree({
 		if (manager.wasWorktreeCreated(workspaceId)) {
 			try {
 				await removeWorktree(mainRepoPath, worktreePath);
-				console.log(
+				logger.info(
 					`[workspace-init] Cleaned up partial worktree at ${worktreePath}`,
 				);
 			} catch (cleanupError) {
-				console.error(
+				logger.error(
 					"[workspace-init] Failed to cleanup partial worktree:",
 					cleanupError,
 				);

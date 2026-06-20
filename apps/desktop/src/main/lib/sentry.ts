@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/electron/main";
 import { IPCMode } from "@sentry/electron/main";
 import { session } from "electron";
+import { logger } from "main/lib/logger";
 import { env } from "../env.main";
 
 let sentryInitialized = false;
@@ -26,8 +27,8 @@ export function initSentry(): void {
 		});
 
 		sentryInitialized = true;
-		console.log("[sentry] Initialized in main process");
+		logger.info("[sentry] Initialized in main process");
 	} catch (error) {
-		console.error("[sentry] Failed to initialize in main:", error);
+		logger.error("[sentry] Failed to initialize in main:", error);
 	}
 }

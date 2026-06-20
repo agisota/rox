@@ -1,3 +1,4 @@
+import { logger } from "main/lib/logger";
 import { getTerminalHostClient } from "main/lib/terminal-host/client";
 import type { ListSessionsResponse } from "main/lib/terminal-host/types";
 import { DaemonTerminalManager, getDaemonTerminalManager } from "./daemon";
@@ -25,7 +26,7 @@ export async function reconcileDaemonSessions(): Promise<void> {
 		const manager = getDaemonTerminalManager();
 		await manager.reconcileOnStartup();
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[TerminalManager] Failed to reconcile daemon sessions:",
 			error,
 		);
@@ -37,7 +38,7 @@ export async function reconcileDaemonSessions(): Promise<void> {
  * and resets the manager so a fresh daemon spawns on next use.
  */
 export async function restartDaemon(): Promise<{ success: boolean }> {
-	console.log("[restartDaemon] Starting daemon restart...");
+	logger.info("[restartDaemon] Starting daemon restart...");
 
 	const client = getTerminalHostClient();
 
@@ -47,23 +48,23 @@ export async function restartDaemon(): Promise<{ success: boolean }> {
 		if (existingSessions) {
 			const { sessions } = existingSessions;
 			const aliveCount = sessions.filter((s) => s.isAlive).length;
-			console.log(
+			logger.info(
 				`[restartDaemon] Shutting down daemon with ${aliveCount} alive sessions`,
 			);
 
 			await client.shutdownIfRunning({ killSessions: true });
 		} else {
-			console.log("[restartDaemon] Daemon was not running");
+			logger.info("[restartDaemon] Daemon was not running");
 		}
 	} catch (error) {
-		console.warn("[restartDaemon] Failed to restart daemon:", error);
+		logger.warn("[restartDaemon] Failed to restart daemon:", error);
 		throw error;
 	}
 
 	const manager = getDaemonTerminalManager();
 	manager.reset();
 
-	console.log("[restartDaemon] Complete");
+	logger.info("[restartDaemon] Complete");
 
 	return { success: true };
 }
@@ -79,12 +80,12 @@ export async function tryListExistingDaemonSessions(): Promise<{
 		}
 		return { sessions: result.sessions };
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[TerminalManager] Failed to list existing daemon sessions (getTerminalHostClient/client.listSessionsIfRunning):",
 			error,
 		);
 		if (DEBUG_TERMINAL) {
-			console.log(
+			logger.info(
 				"[TerminalManager] Failed to list existing daemon sessions:",
 				error,
 			);
@@ -107,10 +108,7 @@ export function prewarmTerminalRuntime(): void {
 			prewarmTerminalEnv();
 		} catch (error) {
 			if (DEBUG_TERMINAL) {
-				console.warn(
-					"[TerminalManager] Failed to prewarm terminal env:",
-					error,
-				);
+				logger.warn("[TerminalManager] Failed to prewarm terminal env:", error);
 			}
 		}
 
@@ -118,7 +116,7 @@ export function prewarmTerminalRuntime(): void {
 			await getTerminalHostClient().ensureConnected();
 		} catch (error) {
 			if (DEBUG_TERMINAL) {
-				console.warn(
+				logger.warn(
 					"[TerminalManager] Failed to prewarm terminal daemon connection:",
 					error,
 				);

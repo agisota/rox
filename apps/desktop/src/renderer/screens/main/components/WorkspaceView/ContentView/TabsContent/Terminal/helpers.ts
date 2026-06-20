@@ -8,6 +8,7 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebglAddon } from "@xterm/addon-webgl";
 import type { ITheme } from "@xterm/xterm";
 import { Terminal as XTerm } from "@xterm/xterm";
+import { logger } from "renderer/lib/logger";
 import { applyTerminalFontFamilyCssVariable } from "renderer/lib/terminal/appearance";
 import { Utf8Base64 } from "renderer/lib/terminal/clipboard-base64";
 import type { DetectedLink } from "renderer/lib/terminal/links";
@@ -176,7 +177,7 @@ export function createTerminalInWrapper(options: CreateTerminalOptions = {}): {
 					column: link.col,
 				})
 				.catch((error) => {
-					console.error(
+					logger.error(
 						"[Terminal] Failed to open file in editor:",
 						link.resolvedPath,
 						error,
@@ -192,7 +193,7 @@ export function createTerminalInWrapper(options: CreateTerminalOptions = {}): {
 				return;
 			}
 			trpcClient.external.openUrl.mutate(uri).catch((error) => {
-				console.error("[Terminal] Failed to open URL:", uri, error);
+				logger.error("[Terminal] Failed to open URL:", uri, error);
 				toast.error("Failed to open URL", {
 					description:
 						error instanceof Error

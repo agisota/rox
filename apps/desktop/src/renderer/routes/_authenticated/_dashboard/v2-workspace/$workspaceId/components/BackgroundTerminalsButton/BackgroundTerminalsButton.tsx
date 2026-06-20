@@ -23,6 +23,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
+import { logger } from "renderer/lib/logger";
 import {
 	logStressEvent,
 	useRenderStressInstrumentation,
@@ -218,7 +219,7 @@ export const BackgroundTerminalsButton = memo(
 				await killSession.mutateAsync({ terminalId, workspaceId });
 				clearTerminalBackgroundMarker(workspaceId, terminalId);
 			} catch (error) {
-				console.error(
+				logger.error(
 					"[BackgroundTerminalsButton] Failed to kill session:",
 					error,
 				);

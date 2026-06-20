@@ -3,7 +3,9 @@
 // backing `git.getPullRequest` + `pullRequests.getByWorkspaces`). Everything
 // under `renderer/screens/main/` + `routes/_authenticated/_dashboard/workspace/`
 // gets deleted together; no port needed.
+
 import type { CheckItem, GitHubStatus } from "@rox/local-db";
+import { logger } from "shared/logger";
 import { execGitWithShellPath } from "../git-client";
 import { execWithShellEnv } from "../shell-env";
 import { getPullRequestRepoArgs } from "./repo-context";
@@ -323,7 +325,7 @@ function parsePRResponse(stdout: string): GHPRResponse | null {
 	try {
 		raw = JSON.parse(trimmed);
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[GitHub] Failed to parse PR response JSON:",
 			error instanceof Error ? error.message : String(error),
 		);
@@ -331,8 +333,8 @@ function parsePRResponse(stdout: string): GHPRResponse | null {
 	}
 	const result = GHPRResponseSchema.safeParse(raw);
 	if (!result.success) {
-		console.error("[GitHub] PR schema validation failed:", result.error);
-		console.error("[GitHub] Raw data:", JSON.stringify(raw, null, 2));
+		logger.error("[GitHub] PR schema validation failed:", result.error);
+		logger.error("[GitHub] Raw data:", JSON.stringify(raw, null, 2));
 		return null;
 	}
 	return result.data;
@@ -348,7 +350,7 @@ function parsePRListResponse(stdout: string): GHPRResponse[] {
 	try {
 		raw = JSON.parse(trimmed);
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[GitHub] Failed to parse PR list response JSON:",
 			error instanceof Error ? error.message : String(error),
 		);

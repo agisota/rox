@@ -6,6 +6,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import { logger } from "main/lib/logger";
 import { WINDOW_STATE_PATH } from "../app-environment";
 
 export interface WindowState {
@@ -55,7 +56,7 @@ export function saveWindowState(state: WindowState): void {
 		try {
 			unlinkSync(tempPath);
 		} catch {}
-		console.error("[window-state] Failed to save:", error);
+		logger.error("[window-state] Failed to save:", error);
 	}
 }
 

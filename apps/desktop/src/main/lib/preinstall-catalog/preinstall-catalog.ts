@@ -17,6 +17,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { promisify } from "node:util";
+import { logger } from "main/lib/logger";
 import { ROX_DIR_NAME } from "shared/constants";
 
 const execFileAsync = promisify(execFile);
@@ -190,7 +191,7 @@ async function tarExtract(
 		for (const top of readdirSync(stage)) {
 			const srcTop = join(stage, top);
 			if (!statSync(srcTop).isDirectory()) {
-				console.warn(
+				logger.warn(
 					`[preinstall-catalog] skipping unexpected top-level entry: ${top}`,
 				);
 				continue;

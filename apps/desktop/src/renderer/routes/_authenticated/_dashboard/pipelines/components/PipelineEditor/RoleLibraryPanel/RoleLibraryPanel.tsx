@@ -5,6 +5,7 @@ import { toast } from "@rox/ui/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, Plus, Sparkles } from "lucide-react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { logger } from "renderer/lib/logger";
 import { ROLE_TEMPLATES } from "../../templates";
 
 type RoleLibraryPanelProps = {
@@ -42,7 +43,7 @@ export function RoleLibraryPanel({
 				toast.success("Базовые роли добавлены");
 			},
 			onError: (error) => {
-				console.error("[RoleLibraryPanel] seedBuiltins failed", error);
+				logger.error("[RoleLibraryPanel] seedBuiltins failed", error);
 				toast.error("Не удалось добавить базовые роли");
 			},
 		}),

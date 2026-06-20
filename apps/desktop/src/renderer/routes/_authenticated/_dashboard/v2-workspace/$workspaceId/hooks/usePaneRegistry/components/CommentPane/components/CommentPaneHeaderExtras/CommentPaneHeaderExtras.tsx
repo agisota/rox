@@ -3,6 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { LuCheck, LuCopy } from "react-icons/lu";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import type { CommentPaneData, PaneViewerData } from "../../../../../../types";
 
@@ -39,7 +40,7 @@ export function CommentPaneHeaderExtras({
 				}, 1500);
 			})
 			.catch((err) => {
-				console.warn("Failed to copy comment text", err);
+				logger.warn("Failed to copy comment text", err);
 			});
 	}, [data.body]);
 

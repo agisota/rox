@@ -15,6 +15,7 @@ import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LuFile, LuFolder } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useWorkspaceFileEvents } from "renderer/screens/main/components/WorkspaceView/hooks/useWorkspaceFileEvents";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import {
@@ -227,7 +228,7 @@ export function FilesView() {
 					}
 					return nextEntries.map((entry) => entry.path);
 				} catch (error) {
-					console.error("[FilesView] Failed to load children:", error);
+					logger.error("[FilesView] Failed to load children:", error);
 					return [];
 				}
 			},

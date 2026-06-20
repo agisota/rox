@@ -1,4 +1,5 @@
 import os from "node:os";
+import { logger } from "main/lib/logger";
 import "../../terminal-host/xterm-env-polyfill";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { Terminal as HeadlessTerminal } from "@xterm/headless";
@@ -101,7 +102,7 @@ export async function createSession(
 	const terminalRows = rows || DEFAULT_ROWS;
 
 	if (DEBUG_TERMINAL) {
-		console.log("[Terminal Session] Creating session:", {
+		logger.info("[Terminal Session] Creating session:", {
 			paneId,
 			shell,
 			workingDir,

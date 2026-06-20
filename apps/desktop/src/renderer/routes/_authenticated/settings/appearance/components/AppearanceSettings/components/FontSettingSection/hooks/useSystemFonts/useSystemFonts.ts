@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { logger } from "renderer/lib/logger";
 
 export type FontCategory = "nerd" | "mono" | "other";
 
@@ -172,7 +173,7 @@ export function useSystemFonts() {
 						result.push({ family: fd.family, category });
 					}
 				} catch (err) {
-					console.warn("[useSystemFonts] queryLocalFonts failed:", err);
+					logger.warn("[useSystemFonts] queryLocalFonts failed:", err);
 				}
 			}
 
@@ -186,7 +187,7 @@ export function useSystemFonts() {
 		}
 
 		loadFonts().catch((err) => {
-			console.warn("[useSystemFonts] Font loading failed:", err);
+			logger.warn("[useSystemFonts] Font loading failed:", err);
 		});
 		return () => {
 			cancelled = true;

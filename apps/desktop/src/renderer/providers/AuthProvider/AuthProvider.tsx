@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { authClient, setAuthToken, setJwt } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 import { RoxLogo } from "renderer/routes/sign-in/components/RoxLogo/RoxLogo";
 import { electronTrpc } from "../../lib/electron-trpc";
 
@@ -26,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					try {
 						await refetchSession();
 					} catch (err) {
-						console.warn(
+						logger.warn(
 							"[AuthProvider] session refetch failed during hydration",
 							err,
 						);
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 							setJwt(res.data.token);
 						}
 					} catch (err) {
-						console.warn(
+						logger.warn(
 							"[AuthProvider] JWT fetch failed during hydration",
 							err,
 						);
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				try {
 					await refetchSession();
 				} catch (err) {
-					console.warn(
+					logger.warn(
 						"[AuthProvider] session refetch failed after token change",
 						err,
 					);
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				try {
 					await refetchSession();
 				} catch (err) {
-					console.warn(
+					logger.warn(
 						"[AuthProvider] session refetch failed after token cleared",
 						err,
 					);
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					}
 				})
 				.catch((err: unknown) => {
-					console.warn("[AuthProvider] JWT refresh failed", err);
+					logger.warn("[AuthProvider] JWT refresh failed", err);
 				});
 
 		refreshJwt();

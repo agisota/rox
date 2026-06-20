@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import {
 	buildWrapperScript,
 	createWrapper,
@@ -52,7 +53,7 @@ export function createAmpPlugin(): void {
 	const pluginPath = getAmpGlobalPluginPath();
 	fs.mkdirSync(path.dirname(pluginPath), { recursive: true });
 	const changed = writeFileIfChanged(pluginPath, getAmpPluginContent(), 0o644);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} Amp lifecycle plugin`,
 	);
 }

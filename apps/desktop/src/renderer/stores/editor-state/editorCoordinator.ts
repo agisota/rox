@@ -1,4 +1,5 @@
 import { invalidateFileSaveQueries } from "renderer/lib/invalidate-file-save-queries";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { AddFileViewerPaneOptions } from "renderer/stores/tabs/types";
@@ -453,7 +454,7 @@ export async function saveDocumentForPane(
 					currentContent: (currentFile.content as string) ?? null,
 				};
 			} catch (error) {
-				console.error(
+				logger.error(
 					"[editorCoordinator] Failed to read disk content after save conflict",
 					{
 						documentKey: document.documentKey,
@@ -684,7 +685,7 @@ export async function saveAndClosePendingTab(
 			}
 		}
 	} catch (error) {
-		console.error("[editorCoordinator] Failed to save before closing tab", {
+		logger.error("[editorCoordinator] Failed to save before closing tab", {
 			tabId: pending.tabId,
 			workspaceId,
 			error,

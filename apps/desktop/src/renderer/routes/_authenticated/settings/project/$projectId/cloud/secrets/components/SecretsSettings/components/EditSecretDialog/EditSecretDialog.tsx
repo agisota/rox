@@ -11,6 +11,7 @@ import { Input } from "@rox/ui/input";
 import { toast } from "@rox/ui/sonner";
 import { useEffect, useState } from "react";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { logger } from "renderer/lib/logger";
 
 interface EditSecretDialogProps {
 	open: boolean;
@@ -60,7 +61,7 @@ export function EditSecretDialog({
 			onSaved();
 			onOpenChange(false);
 		} catch (err) {
-			console.error("[secrets/edit] Failed to update:", err);
+			logger.error("[secrets/edit] Failed to update:", err);
 			toast.error("Не удалось обновить переменную окружения");
 		} finally {
 			setIsSaving(false);

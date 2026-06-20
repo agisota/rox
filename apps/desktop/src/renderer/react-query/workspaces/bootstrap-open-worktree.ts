@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import {
 	buildTerminalCommand,
 	ensureTerminalAttached,
@@ -48,7 +49,7 @@ export async function bootstrapOpenWorktree(
 			createOrAttach: options.createOrAttach,
 		});
 	} catch (error) {
-		console.error("[bootstrapOpenWorktree] Failed to create or attach:", error);
+		logger.error("[bootstrapOpenWorktree] Failed to create or attach:", error);
 		return "create_or_attach_failed";
 	}
 
@@ -64,7 +65,7 @@ export async function bootstrapOpenWorktree(
 		});
 		return null;
 	} catch (error) {
-		console.error(
+		logger.error(
 			"[bootstrapOpenWorktree] Failed to write initial commands:",
 			error,
 		);

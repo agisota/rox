@@ -32,6 +32,7 @@ import {
 	getHostServiceHeaders,
 	getHostServiceWsToken,
 } from "renderer/lib/host-service-auth";
+import { logger } from "renderer/lib/logger";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 
 const REFETCH_WHILE_OPEN_MS = 5_000;
@@ -87,13 +88,13 @@ function V2SessionsSectionInner() {
 	// Surface query errors so they're visible in renderer logs even when
 	// the section's UI gracefully degrades to "Daemon unavailable".
 	if (updateStatusQuery.error) {
-		console.error(
+		logger.error(
 			"[V2SessionsSection] getUpdateStatus error:",
 			updateStatusQuery.error,
 		);
 	}
 	if (sessionsQuery.error) {
-		console.error(
+		logger.error(
 			"[V2SessionsSection] listSessions error:",
 			sessionsQuery.error,
 		);

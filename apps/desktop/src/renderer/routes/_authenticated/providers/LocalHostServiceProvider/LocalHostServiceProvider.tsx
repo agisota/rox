@@ -16,6 +16,7 @@ import {
 	setHostServiceSecret,
 } from "renderer/lib/host-service-auth";
 import type { HostServiceAvailabilityStatus } from "renderer/lib/host-service-unavailable";
+import { logger } from "renderer/lib/logger";
 import { MOCK_ORG_ID } from "shared/constants";
 import { useCollections } from "../CollectionsProvider";
 
@@ -112,10 +113,7 @@ export function LocalHostServiceProvider({
 				// create, so a transient failure here must not block the app. Allow a
 				// retry on a later render.
 				didEagerEnsureRef.current = false;
-				console.warn(
-					"[LocalHostServiceProvider] eager host.ensure failed",
-					err,
-				);
+				logger.warn("[LocalHostServiceProvider] eager host.ensure failed", err);
 			});
 	}, [activeOrganizationId, activeConnection?.port, machineIdData]);
 

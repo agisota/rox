@@ -15,6 +15,7 @@ import {
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { getHostServiceUnavailableMessage } from "renderer/lib/host-service-unavailable";
+import { logger } from "renderer/lib/logger";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { AgentDetail } from "./components/AgentDetail";
 import { AgentsSettingsSidebar } from "./components/AgentsSettingsSidebar";
@@ -84,7 +85,7 @@ export function V2AgentsSettings({
 				{ agentId: preset.presetId },
 				{
 					onError: (err) =>
-						console.warn(
+						logger.warn(
 							`[agents] setupAgent failed for ${preset.presetId}`,
 							err,
 						),

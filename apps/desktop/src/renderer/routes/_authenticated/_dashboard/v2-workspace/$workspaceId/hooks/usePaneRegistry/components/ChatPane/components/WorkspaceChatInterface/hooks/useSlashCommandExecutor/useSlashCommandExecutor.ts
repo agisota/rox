@@ -5,6 +5,7 @@ import type {
 	McpOverviewPayload,
 	ModelOption,
 } from "renderer/components/Chat/ChatInterface/types";
+import { logger } from "renderer/lib/logger";
 import {
 	findModelByQuery,
 	normalizeModelQueryFromActionArgument,
@@ -138,7 +139,7 @@ export function useSlashCommandExecutor({
 							onClearError();
 							onShowMcpOverview(overview);
 						} catch (error) {
-							console.warn(
+							logger.warn(
 								"[chat] Failed to load MCP overview from settings",
 								error,
 							);
@@ -189,7 +190,7 @@ export function useSlashCommandExecutor({
 					}
 				}
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[chat] Failed to resolve slash command, sending raw input",
 					error,
 				);

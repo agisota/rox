@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { LuLayoutGrid } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { ImportPageShell } from "../components/ImportPageShell";
 import { ImportRow, type RowAction } from "../components/ImportRow";
@@ -253,7 +254,7 @@ export function ImportWorkspacesPage({
 			} catch (err) {
 				const message = err instanceof Error ? err.message : String(err);
 				updateAdoptStatus(workspace.id, { kind: "error", message });
-				console.error("[v1-import] workspace adopt failed", {
+				logger.error("[v1-import] workspace adopt failed", {
 					v1WorkspaceId: workspace.id,
 					v2ProjectId,
 					branch: workspace.branch,

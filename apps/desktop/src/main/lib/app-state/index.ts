@@ -1,4 +1,5 @@
 import { JSONFilePreset } from "lowdb/node";
+import { logger } from "main/lib/logger";
 import { APP_STATE_PATH } from "../app-environment";
 import type { AppState } from "./schemas";
 import { defaultAppState } from "./schemas";
@@ -45,7 +46,7 @@ export async function initAppState(): Promise<void> {
 	// Reshape data to ensure it has the correct structure (handles legacy formats)
 	_appState.data = ensureValidShape(_appState.data);
 
-	console.log(`App state initialized at: ${APP_STATE_PATH}`);
+	logger.info(`App state initialized at: ${APP_STATE_PATH}`);
 }
 
 export const appState = new Proxy({} as AppStateDB, {

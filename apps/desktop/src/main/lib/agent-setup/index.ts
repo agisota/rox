@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { logger } from "main/lib/logger";
 import {
 	setupDesktopAgentCapabilities,
 	setupSingleAgent,
@@ -19,7 +20,7 @@ import {
 } from "./shell-wrappers";
 
 export function setupAgentHooks(): void {
-	console.log("[agent-setup] Initializing agent hooks...");
+	logger.info("[agent-setup] Initializing agent hooks...");
 
 	fs.mkdirSync(BIN_DIR, { recursive: true });
 	fs.mkdirSync(HOOKS_DIR, { recursive: true });
@@ -32,7 +33,7 @@ export function setupAgentHooks(): void {
 	createZshWrapper();
 	createBashWrapper();
 
-	console.log("[agent-setup] Agent hooks initialized");
+	logger.info("[agent-setup] Agent hooks initialized");
 }
 
 export function getRoxBinDir(): string {

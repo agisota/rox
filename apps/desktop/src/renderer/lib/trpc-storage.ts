@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import { createJSONStorage, type StateStorage } from "zustand/middleware";
 import { electronTrpcClient } from "./trpc-client";
 
@@ -44,7 +45,7 @@ function createTrpcStorageAdapter(config: TrpcStorageConfig): StateStorage {
 			localStorage.removeItem(pendingKey);
 			localStorage.removeItem(getPendingSnapshotUpdatedAtKey(name));
 		} catch (error) {
-			console.error("[trpc-storage] Failed to clear pending snapshot:", error);
+			logger.error("[trpc-storage] Failed to clear pending snapshot:", error);
 		}
 	};
 
@@ -72,7 +73,7 @@ function createTrpcStorageAdapter(config: TrpcStorageConfig): StateStorage {
 					String(Date.now()),
 				);
 			} catch (error) {
-				console.error(
+				logger.error(
 					"[trpc-storage] Failed to cache pending snapshot in localStorage:",
 					error,
 				);
@@ -121,7 +122,7 @@ function createTrpcStorageAdapter(config: TrpcStorageConfig): StateStorage {
 			}
 			clearPendingSnapshot(name, valueToFlush);
 		} catch (error) {
-			console.error("[trpc-storage] Failed to set state:", error);
+			logger.error("[trpc-storage] Failed to set state:", error);
 		} finally {
 			isFlushing = false;
 			if (pendingValue !== null) {
@@ -190,7 +191,7 @@ function createTrpcStorageAdapter(config: TrpcStorageConfig): StateStorage {
 
 				return canonicalSnapshot;
 			} catch (error) {
-				console.error("[trpc-storage] Failed to get state:", error);
+				logger.error("[trpc-storage] Failed to get state:", error);
 				return null;
 			}
 		},

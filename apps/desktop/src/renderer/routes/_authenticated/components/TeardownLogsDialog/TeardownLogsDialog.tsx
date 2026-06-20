@@ -9,6 +9,7 @@ import {
 } from "@rox/ui/dialog";
 import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
+import { logger } from "renderer/lib/logger";
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: matching ANSI escape sequences
 const ANSI_REGEX = /\x1b\[[0-9;]*[a-zA-Z]/g;
@@ -26,7 +27,7 @@ export const showTeardownLogs = (
 	options?: { onDeleteAnyway?: () => void },
 ) => {
 	if (!showLogsFn) {
-		console.error(
+		logger.error(
 			"[teardown-logs] TeardownLogsDialog not mounted. Make sure to render <TeardownLogsDialog /> in your app",
 		);
 		return;

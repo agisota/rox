@@ -23,6 +23,7 @@ import {
 } from "main/lib/project-icons";
 import { getWorkspaceRuntimeRegistry } from "main/lib/workspace-runtime";
 import { PROJECT_COLOR_VALUES } from "shared/constants/project-colors";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import { resolveDefaultEditor } from "../external";
@@ -114,7 +115,7 @@ async function initGitRepo(path: string): Promise<{ defaultBranch: string }> {
 	try {
 		await git.init(["--initial-branch=main"]);
 	} catch (err) {
-		console.warn("Git init with --initial-branch failed, using fallback:", err);
+		logger.warn("Git init with --initial-branch failed, using fallback:", err);
 		await git.init();
 	}
 
@@ -186,7 +187,7 @@ async function ensureMainWorkspace(project: Project): Promise<void> {
 
 	const branch = await getCurrentBranch(project.mainRepoPath);
 	if (!branch) {
-		console.warn(
+		logger.warn(
 			`[ensureMainWorkspace] Could not determine current branch for project ${project.id}`,
 		);
 		return;
@@ -234,7 +235,7 @@ async function ensureMainWorkspace(project: Project): Promise<void> {
 	const workspace = insertResult[0] ?? getBranchWorkspace(project.id);
 
 	if (!workspace) {
-		console.warn(
+		logger.warn(
 			`[ensureMainWorkspace] Failed to create or find branch workspace for project ${project.id}`,
 		);
 		return;
@@ -373,7 +374,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					const raw: unknown = JSON.parse(stdout.trim() || "[]");
 					return parsePullRequests(raw);
 				} catch (err) {
-					console.warn("[listPullRequests] Failed to list PRs:", err);
+					logger.warn("[listPullRequests] Failed to list PRs:", err);
 					return [];
 				}
 			}),
@@ -414,7 +415,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					const raw: unknown = JSON.parse(stdout.trim() || "[]");
 					return parsePullRequests(raw);
 				} catch (err) {
-					console.warn("[searchPullRequests] Failed to search PRs:", err);
+					logger.warn("[searchPullRequests] Failed to search PRs:", err);
 					return [];
 				}
 			}),
@@ -462,7 +463,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 
 					const issuesArray = z.array(IssueListItemSchema).safeParse(raw);
 					if (!issuesArray.success) {
-						console.warn(
+						logger.warn(
 							"[listIssues] Invalid response format:",
 							issuesArray.error,
 						);
@@ -476,7 +477,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						state: issue.state === "OPEN" ? "open" : issue.state.toLowerCase(),
 					}));
 				} catch (err) {
-					console.warn("[listIssues] Failed to list issues:", err);
+					logger.warn("[listIssues] Failed to list issues:", err);
 					return [];
 				}
 			}),
@@ -540,7 +541,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						updatedAt: issue.updatedAt,
 					};
 				} catch (err) {
-					console.warn(
+					logger.warn(
 						`[getIssueContent] Failed to fetch issue #${input.issueNumber}:`,
 						err,
 					);
@@ -780,7 +781,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					} else {
 						const msg =
 							gitError instanceof Error ? gitError.message : String(gitError);
-						console.error(
+						logger.error(
 							"[projects/openNew] Failed to open project:",
 							selectedPath,
 							gitError,
@@ -1328,12 +1329,12 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					.get();
 
 				if (!project) {
-					console.log("[getGitHubAvatar] Project not found:", input.id);
+					logger.info("[getGitHubAvatar] Project not found:", input.id);
 					return null;
 				}
 
 				if (project.githubOwner) {
-					console.log(
+					logger.info(
 						"[getGitHubAvatar] Using cached owner:",
 						project.githubOwner,
 					);
@@ -1343,18 +1344,18 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 					};
 				}
 
-				console.log(
+				logger.info(
 					"[getGitHubAvatar] Fetching owner for:",
 					project.mainRepoPath,
 				);
 				const owner = await fetchGitHubOwner(project.mainRepoPath);
 
 				if (!owner) {
-					console.log("[getGitHubAvatar] Failed to fetch owner");
+					logger.info("[getGitHubAvatar] Failed to fetch owner");
 					return null;
 				}
 
-				console.log("[getGitHubAvatar] Fetched owner:", owner);
+				logger.info("[getGitHubAvatar] Fetched owner:", owner);
 
 				localDb
 					.update(projects)

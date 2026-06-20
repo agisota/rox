@@ -1,3 +1,4 @@
+import { logger } from "main/lib/logger";
 import treeKill from "tree-kill";
 
 const DEFAULT_ESCALATION_TIMEOUT_MS = 2000;
@@ -7,7 +8,7 @@ export function treeKillAsync(pid: number, signal: string): Promise<void> {
 	return new Promise<void>((resolve) => {
 		treeKill(pid, signal, (err) => {
 			if (err) {
-				console.warn(
+				logger.warn(
 					`[treeKillAsync] Failed to ${signal} pid ${pid}:`,
 					err.message,
 				);
@@ -61,7 +62,7 @@ export function treeKillWithEscalation({
 					doResolve({ success: true });
 					return;
 				}
-				console.error(
+				logger.error(
 					`[treeKillWithEscalation] Failed to ${signal} pid ${pid}:`,
 					err,
 				);
@@ -89,7 +90,7 @@ export function treeKillWithEscalation({
 				return;
 			}
 
-			console.log(
+			logger.info(
 				`[treeKillWithEscalation] Process ${pid} still alive after ${signal}, escalating to SIGKILL`,
 			);
 
@@ -101,7 +102,7 @@ export function treeKillWithEscalation({
 						doResolve({ success: true });
 						return;
 					}
-					console.error(
+					logger.error(
 						`[treeKillWithEscalation] Failed to SIGKILL pid ${pid}:`,
 						err,
 					);

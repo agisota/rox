@@ -23,6 +23,7 @@ import {
 	LuLoaderCircle,
 } from "react-icons/lu";
 import { CommentMarkdown } from "renderer/components/CommentMarkdown";
+import { logger } from "renderer/lib/logger";
 import "./comment-thread.css";
 
 interface Comment {
@@ -74,7 +75,7 @@ export function CommentThread({
 			.writeText(text)
 			.then(() => setIsCopied(true))
 			.catch((err) => {
-				console.error("[CommentThread/copy] Failed to copy:", err);
+				logger.error("[CommentThread/copy] Failed to copy:", err);
 				toast.error("Couldn't copy comment");
 			});
 	};

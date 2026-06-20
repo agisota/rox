@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { app } from "electron";
+import { logger } from "main/lib/logger";
 import { BIN_DIR } from "./agent-setup/paths";
 
 export const BUNDLED_CLI_SHIM_MARKER = "# Rox bundled CLI shim v1";
@@ -109,14 +110,14 @@ export function installBundledCliShim(
 		options.bundledCliPath ?? resolveBundledCliPath(platform);
 
 	if (!bundledCliPath || !existsSync(bundledCliPath)) {
-		console.debug("[bundled-cli] No bundled CLI binary found");
+		logger.debug("[bundled-cli] No bundled CLI binary found");
 		return "missing";
 	}
 
 	const binDir = options.binDir ?? BIN_DIR;
 	const shimPath = path.join(binDir, getBundledCliShimName(platform));
 	if (!shouldReplaceShim(shimPath)) {
-		console.warn(
+		logger.warn(
 			`[bundled-cli] Skipping ${shimPath}; an unmanaged file already exists`,
 		);
 		return "skipped";
@@ -130,6 +131,6 @@ export function installBundledCliShim(
 		mode: platform === "win32" ? 0o644 : 0o755,
 	});
 
-	console.log(`[bundled-cli] Installed Rox CLI shim at ${shimPath}`);
+	logger.info(`[bundled-cli] Installed Rox CLI shim at ${shimPath}`);
 	return "installed";
 }

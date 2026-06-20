@@ -7,6 +7,7 @@ import {
 } from "main/lib/agent-setup/shell-wrappers";
 import { buildSafeEnv, sanitizeEnv } from "main/lib/terminal/env";
 import { ROX_DIR_NAME } from "shared/constants";
+import { logger } from "shared/logger";
 import { removeWorktree } from "./git";
 import { loadSetupConfig } from "./setup";
 
@@ -32,14 +33,14 @@ export async function runTeardown({
 	const config = loadSetupConfig({ mainRepoPath, worktreePath, projectId });
 
 	if (!config?.teardown || config.teardown.length === 0) {
-		console.log(
+		logger.info(
 			`[teardown] No teardown commands found for "${workspaceName}" (config: ${config ? "found, no teardown field" : "not found"}, mainRepoPath: ${mainRepoPath})`,
 		);
 		return { success: true };
 	}
 
 	const command = config.teardown.join(" && ");
-	console.log(`[teardown] Running for "${workspaceName}": ${command}`);
+	logger.info(`[teardown] Running for "${workspaceName}": ${command}`);
 
 	try {
 		const shell =
@@ -75,14 +76,14 @@ export async function runTeardown({
 				const text = chunk.toString();
 				combined += text;
 				for (const line of text.trimEnd().split("\n")) {
-					console.log(`[teardown/stdout] ${line}`);
+					logger.info(`[teardown/stdout] ${line}`);
 				}
 			});
 			child.stderr?.on("data", (chunk: Buffer) => {
 				const text = chunk.toString();
 				combined += text;
 				for (const line of text.trimEnd().split("\n")) {
-					console.log(`[teardown/stderr] ${line}`);
+					logger.info(`[teardown/stderr] ${line}`);
 				}
 			});
 
@@ -104,13 +105,13 @@ export async function runTeardown({
 			});
 
 			child.on("error", (err) => {
-				console.error(`[teardown] Process error:`, err.message);
+				logger.error(`[teardown] Process error:`, err.message);
 				settle(() => reject(err));
 			});
 
 			const timer = setTimeout(() => {
 				settle(() => {
-					console.error(
+					logger.error(
 						`[teardown] Timed out after ${TEARDOWN_TIMEOUT_MS}ms, killing process group`,
 					);
 					try {
@@ -127,7 +128,7 @@ export async function runTeardown({
 		return { success: true, output: output || undefined };
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.error(
+		logger.error(
 			`Teardown failed for workspace ${workspaceName}:`,
 			errorMessage,
 		);
@@ -155,12 +156,12 @@ export async function removeWorktreeFromDisk({
 			msg.includes("is not a working tree") ||
 			msg.includes("No such file or directory")
 		) {
-			console.warn(
+			logger.warn(
 				`Worktree ${worktreePath} not found in git, skipping removal`,
 			);
 			return { success: true };
 		}
-		console.error("Failed to remove worktree:", msg);
+		logger.error("Failed to remove worktree:", msg);
 		return { success: false, error: `Failed to remove worktree: ${msg}` };
 	}
 }

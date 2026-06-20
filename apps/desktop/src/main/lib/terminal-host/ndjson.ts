@@ -10,6 +10,7 @@
  * in isolation.
  */
 
+import { logger } from "main/lib/logger";
 import type { IpcEvent, IpcResponse } from "./types";
 
 /**
@@ -41,7 +42,7 @@ export class NdjsonParser {
 				try {
 					messages.push(JSON.parse(line));
 				} catch {
-					console.warn("[TerminalHostClient] Failed to parse NDJSON line");
+					logger.warn("[TerminalHostClient] Failed to parse NDJSON line");
 				}
 			}
 

@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 
 /** Rotate per-org host-service.log once it exceeds this size. */
 export const MAX_HOST_LOG_BYTES = 5 * 1024 * 1024;
@@ -32,13 +33,13 @@ export function openRotatingLogFd(logPath: string, maxBytes: number): number {
 		try {
 			fs.chmodSync(logPath, 0o600);
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				`[host-service] Failed to chmod log file ${logPath}: ${error}`,
 			);
 		}
 		return fd;
 	} catch (error) {
-		console.warn(`[host-service] Failed to open log file ${logPath}: ${error}`);
+		logger.warn(`[host-service] Failed to open log file ${logPath}: ${error}`);
 		return -1;
 	}
 }

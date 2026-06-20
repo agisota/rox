@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as schema from "@rox/local-db";
-
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { app } from "electron";
+import { logger } from "main/lib/logger";
 import { validate as uuidValidate, version as uuidVersion } from "uuid";
 import { env } from "../../env.main";
 import {
@@ -69,7 +69,7 @@ function getMigrationsDirectory(): string {
 		}
 	}
 
-	console.warn(`[local-db] Migrations directory not found at: ${previewPath}`);
+	logger.warn(`[local-db] Migrations directory not found at: ${previewPath}`);
 	return previewPath;
 }
 
@@ -90,8 +90,8 @@ sqlite.function("uuid_is_valid_v4", (value: unknown) => {
 	return uuidVersion(value) === 4 ? 1 : 0;
 });
 
-console.log(`[local-db] Database initialized at: ${DB_PATH}`);
-console.log(`[local-db] Running migrations from: ${migrationsFolder}`);
+logger.info(`[local-db] Database initialized at: ${DB_PATH}`);
+logger.info(`[local-db] Running migrations from: ${migrationsFolder}`);
 
 export const localDb = drizzle(sqlite, { schema });
 
@@ -109,18 +109,18 @@ function ensureExperimentalFeatureOverridesTable() {
 try {
 	migrate(localDb, { migrationsFolder });
 } catch (error) {
-	console.error("[local-db] Migration failed:", error);
+	logger.error("[local-db] Migration failed:", error);
 }
 
 try {
 	ensureExperimentalFeatureOverridesTable();
 } catch (error) {
-	console.error(
+	logger.error(
 		"[local-db] Failed to ensure experimental feature overrides:",
 		error,
 	);
 }
 
-console.log("[local-db] Migrations complete");
+logger.info("[local-db] Migrations complete");
 
 export type LocalDb = typeof localDb;

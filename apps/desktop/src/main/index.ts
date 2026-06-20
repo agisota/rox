@@ -1,5 +1,6 @@
 // Import first: computing ROX_HOME_DIR runs the one-time ~/.rox -> ~/rox
 // migration as a module-load side effect, before any other module reads it.
+import { logger } from "main/lib/logger";
 import "./lib/app-environment";
 import { once } from "node:events";
 import path from "node:path";
@@ -57,11 +58,11 @@ import { disposeTray, initTray } from "./lib/tray";
 import { startNetworkLogger, stopNetworkLogger } from "./network-logger";
 import { MainWindow } from "./windows/main";
 
-console.log("[main] Local database ready:", !!localDb);
+logger.info("[main] Local database ready:", !!localDb);
 const IS_DEV = process.env.NODE_ENV === "development";
 
 void applyShellEnvToProcess().catch((error) => {
-	console.error("[main] Failed to apply shell environment:", error);
+	logger.error("[main] Failed to apply shell environment:", error);
 });
 
 // Dev mode: label the app with the workspace name so multiple worktrees are distinguishable
@@ -84,7 +85,7 @@ if (process.defaultApp) {
 }
 
 async function processDeepLink(url: string): Promise<void> {
-	console.log("[main] Processing deep link:", url);
+	logger.info("[main] Processing deep link:", url);
 
 	const authParams = parseAuthDeepLink(url);
 	if (authParams) {
@@ -92,7 +93,7 @@ async function processDeepLink(url: string): Promise<void> {
 		if (result.success) {
 			focusMainWindow();
 		} else {
-			console.error("[main] Auth deep link failed:", result.error);
+			logger.error("[main] Auth deep link failed:", result.error);
 		}
 		return;
 	}
@@ -110,7 +111,7 @@ async function processDeepLink(url: string): Promise<void> {
 			path = path.replace(/\/+$/, "");
 		}
 	} catch {
-		console.error("[main] Ignoring malformed deep link:", url);
+		logger.error("[main] Ignoring malformed deep link:", url);
 		return;
 	}
 	const window = await resolveLoadedMainWindow();
@@ -199,7 +200,7 @@ function registerWithMacOSNotificationCenter() {
 
 	registrationNotification.on("show", () => {
 		cleanup();
-		console.log("[notifications] Registered with Notification Center");
+		logger.info("[notifications] Registered with Notification Center");
 	});
 
 	// Fallback timeout in case macOS doesn't fire events
@@ -277,7 +278,7 @@ app.on("before-quit", async (event) => {
 				return;
 			}
 		} catch (error) {
-			console.error("[main] Quit confirmation dialog failed:", error);
+			logger.error("[main] Quit confirmation dialog failed:", error);
 		}
 	}
 
@@ -292,7 +293,7 @@ app.on("before-quit", async (event) => {
 		shutdownTanstackDbPersistence();
 		disposeTray();
 	} catch (error) {
-		console.error("[main] Cleanup during quit failed:", error);
+		logger.error("[main] Cleanup during quit failed:", error);
 	} finally {
 		await stopNetworkLogger();
 	}
@@ -308,19 +309,19 @@ async function teardownTerminalHost(): Promise<void> {
 	try {
 		await getTerminalHostClient().shutdownIfRunning({ killSessions: true });
 	} catch (err) {
-		console.warn("[main] terminal-host dev shutdown failed:", err);
+		logger.warn("[main] terminal-host dev shutdown failed:", err);
 	}
 	disposeTerminalHostClient();
 }
 
 process.on("uncaughtException", (error) => {
 	if (isQuitting) return;
-	console.error("[main] Uncaught exception:", error);
+	logger.error("[main] Uncaught exception:", error);
 });
 
 process.on("unhandledRejection", (reason) => {
 	if (isQuitting) return;
-	console.error("[main] Unhandled rejection:", reason);
+	logger.error("[main] Unhandled rejection:", reason);
 });
 
 // Without these handlers, Electron may not quit when electron-vite sends SIGTERM
@@ -329,7 +330,7 @@ if (process.env.NODE_ENV === "development") {
 	const handleTerminationSignal = (signal: string) => {
 		if (signalHandled) return;
 		signalHandled = true;
-		console.log(`[main] Received ${signal}, quitting...`);
+		logger.info(`[main] Received ${signal}, quitting...`);
 		getHostServiceCoordinator().stopAll();
 		void Promise.allSettled([
 			teardownTerminalHost(),
@@ -353,7 +354,7 @@ if (process.env.NODE_ENV === "development") {
 
 	const parentCheckInterval = setInterval(() => {
 		if (!isParentAlive()) {
-			console.log("[main] Parent process exited, quitting...");
+			logger.info("[main] Parent process exited, quitting...");
 			clearInterval(parentCheckInterval);
 			handleTerminationSignal("parent-exit");
 		}
@@ -456,7 +457,7 @@ if (!gotTheLock) {
 		try {
 			await startNetworkLogger();
 		} catch (error) {
-			console.error("[main] Failed to start network logger:", error);
+			logger.error("[main] Failed to start network logger:", error);
 		}
 
 		await loadWebviewBrowserExtension();
@@ -468,12 +469,12 @@ if (!gotTheLock) {
 		try {
 			setupAgentHooks();
 		} catch (error) {
-			console.error("[main] Failed to set up agent hooks:", error);
+			logger.error("[main] Failed to set up agent hooks:", error);
 		}
 		try {
 			installBundledCliShim();
 		} catch (error) {
-			console.error("[main] Failed to install bundled CLI shim:", error);
+			logger.error("[main] Failed to install bundled CLI shim:", error);
 		}
 
 		if (IS_DEV) {
@@ -498,15 +499,15 @@ if (!gotTheLock) {
 		})
 			.then((result) => {
 				if (result.status === "installed") {
-					console.info(
+					logger.info(
 						`[main] preinstalled catalog ${result.version}: ${result.skills} skills, ${result.agents} subagents`,
 					);
 				} else if (result.status === "error") {
-					console.error("[main] catalog preinstall failed:", result.error);
+					logger.error("[main] catalog preinstall failed:", result.error);
 				}
 			})
 			.catch((error) => {
-				console.error("[main] catalog preinstall error:", error);
+				logger.error("[main] catalog preinstall error:", error);
 			});
 
 		const coldStartUrl = findDeepLinkInArgv(process.argv);

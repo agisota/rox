@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { logger } from "renderer/lib/logger";
 import {
 	flowToState,
 	type PipelineFlowEdge,
@@ -110,7 +111,7 @@ export function PipelineEditor({
 			},
 			onError: (error) => {
 				saveInFlight.current = false;
-				console.error("[PipelineEditor] updateGraph failed", error);
+				logger.error("[PipelineEditor] updateGraph failed", error);
 				if (pendingSave.current) {
 					flushPendingSaveRef.current();
 					return;
