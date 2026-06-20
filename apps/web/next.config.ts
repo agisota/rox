@@ -55,9 +55,18 @@ const contentSecurityPolicy = [
 	"font-src 'self' data: https://fonts.gstatic.com",
 	"form-action 'self'",
 	"frame-ancestors 'none'",
+	// The Telegram Login widget renders its button inside an iframe served from
+	// oauth.telegram.org; without an explicit frame-src it falls back to
+	// default-src 'self' and the button never appears.
+	"frame-src 'self' https://oauth.telegram.org",
 	"img-src 'self' data: blob: https:",
 	"object-src 'none'",
-	["script-src 'self' 'unsafe-inline'", !isProduction && "'unsafe-eval'"]
+	// telegram.org hosts telegram-widget.js, the script that injects the login
+	// widget. It must be whitelisted or the browser blocks it under script-src.
+	[
+		"script-src 'self' 'unsafe-inline' https://telegram.org",
+		!isProduction && "'unsafe-eval'",
+	]
 		.filter(Boolean)
 		.join(" "),
 	"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
