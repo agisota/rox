@@ -56,17 +56,41 @@ function emitReadyOnly(child: FakeChildProcess): void {
 	child.stdout.emit("data", createFrameHeader(PtySubprocessIpcType.Ready, 0));
 }
 
-function emitReadyThenError(child: FakeChildProcess, errorMsg: string): void {
-	// Ready frame
-	child.stdout.emit("data", createFrameHeader(PtySubprocessIpcType.Ready, 0));
-
-	// Error frame
+function emitError(child: FakeChildProcess, errorMsg: string): void {
 	const errorPayload = Buffer.from(errorMsg, "utf8");
 	const header = createFrameHeader(
 		PtySubprocessIpcType.Error,
 		errorPayload.length,
 	);
 	child.stdout.emit("data", Buffer.concat([header, errorPayload]));
+}
+
+/**
+ * Drive the `Ready` then `Error` sequence explicitly, one frame at a time.
+ *
+ * The `Session` frame handler is fully synchronous: emitting on the fake
+ * child's stdout runs `handleSubprocessFrame` inline. Splitting the helper so
+ * each frame is emitted by name (rather than concatenated and "hopefully"
+ * processed in order) makes the intended ordering explicit and removes any
+ * reliance on incidental timing.
+ */
+function emitReadyThenError(child: FakeChildProcess, errorMsg: string): void {
+	emitReadyOnly(child);
+	emitError(child, errorMsg);
+}
+
+/**
+ * Resolve once the session reports an exit, driven by the source's own
+ * `onExit` callback. Used instead of a fixed `setTimeout` sleep so the
+ * assertions run exactly when the state transition has happened, not after an
+ * arbitrary delay that races the event loop.
+ */
+function onceExit(session: {
+	onExit: (cb: (sessionId: string, exitCode: number) => void) => void;
+}): Promise<number> {
+	return new Promise((resolve) => {
+		session.onExit((_sessionId, exitCode) => resolve(exitCode));
+	});
 }
 
 // =============================================================================
@@ -139,9 +163,13 @@ describe("TerminalHost — PTY spawn failure handling", () => {
 
 		// Spawn fails, then the subprocess exits.
 		emitReadyThenError(fakeChild, "Spawn failed: posix_spawnp failed.");
-		fakeChild.emit("exit", 1);
 
-		await new Promise((resolve) => setTimeout(resolve, 10));
+		// Await the session's own exit signal rather than sleeping a fixed
+		// number of milliseconds. The exit handler is synchronous, so this
+		// resolves deterministically the moment the process exit is processed.
+		const exitCode = onceExit(session);
+		fakeChild.emit("exit", 1);
+		expect(await exitCode).toBe(1);
 
 		expect(session.isAlive).toBe(false);
 		expect(session.pid).toBeNull();
@@ -169,15 +197,24 @@ describe("TerminalHost — PTY spawn failure handling", () => {
 			env: { PATH: "/usr/bin" },
 		});
 
-		// Ready arrives, but PTY spawn never completes.
+		// Ready arrives, but the PTY `Spawned` frame never comes — so the PTY
+		// spawn never completes.
 		emitReadyOnly(fakeChild);
 
-		const readyPromise = session.waitForReady();
-		const timeoutPromise = new Promise<void>((resolve) =>
-			setTimeout(resolve, 100),
-		);
-		await Promise.race([readyPromise, timeoutPromise]);
+		// `waitForReady()` must NOT resolve in this broken state. Rather than
+		// racing it against an arbitrary timeout (flaky), assert that it stays
+		// pending: race it against an already-resolved sentinel and confirm the
+		// sentinel wins. This is deterministic — it does not depend on wall
+		// clock timing.
+		const PENDING = Symbol("pending");
+		const settled = await Promise.race([
+			session.waitForReady().then(() => "ready" as const),
+			Promise.resolve(PENDING),
+		]);
+		expect(settled).toBe(PENDING);
 
+		// The session is in the broken state from issue #2960: the subprocess
+		// is alive, but no PTY PID was ever assigned.
 		expect(session.isAlive).toBe(true);
 		expect(session.pid).toBeNull();
 
