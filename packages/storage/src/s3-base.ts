@@ -8,7 +8,7 @@ import {
 	type S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import type { StorageDriver } from "./driver.ts";
+import type { StorageDriver } from "./driver";
 import {
 	type CopyParams,
 	DEFAULT_PRESIGN_EXPIRES_IN,
@@ -20,7 +20,7 @@ import {
 	type PresignPutParams,
 	type PresignResult,
 	type StorageProviderKind,
-} from "./types.ts";
+} from "./types";
 
 /**
  * Minimal signer seam so {@link S3BaseProvider} can be unit-tested without the

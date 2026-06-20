@@ -4,29 +4,29 @@ export type {
 	S3Credentials,
 	StorageConfig,
 	StorageEnv,
-} from "./config.ts";
-export { resolveStorageConfig } from "./config.ts";
-export type { StorageDriver, StorageProvider } from "./driver.ts";
+} from "./config";
+export { resolveStorageConfig } from "./config";
+export type { StorageDriver, StorageProvider } from "./driver";
 export {
 	createStorageProvider,
 	createStorageProviderFromEnv,
-} from "./factory.ts";
+} from "./factory";
 export {
 	createMinioClient,
 	MinioProvider,
 	type MinioProviderOptions,
-} from "./minio-provider.ts";
+} from "./minio-provider";
 export {
 	createR2Client,
 	R2Provider,
 	type R2ProviderOptions,
 	r2Endpoint,
-} from "./r2-provider.ts";
+} from "./r2-provider";
 export {
 	type PresignerFn,
 	S3BaseProvider,
 	type S3BaseProviderOptions,
-} from "./s3-base.ts";
+} from "./s3-base";
 export {
 	type CopyParams,
 	DEFAULT_PRESIGN_EXPIRES_IN,
@@ -40,4 +40,4 @@ export {
 	type PresignPutParams,
 	type PresignResult,
 	type StorageProviderKind,
-} from "./types.ts";
+} from "./types";

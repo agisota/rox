@@ -1,10 +1,10 @@
 import { S3Client } from "@aws-sdk/client-s3";
-import type { MinioConfig } from "./config.ts";
+import type { MinioConfig } from "./config";
 import {
 	type PresignerFn,
 	S3BaseProvider,
 	type S3BaseProviderOptions,
-} from "./s3-base.ts";
+} from "./s3-base";
 
 /** Default region label used when a MinIO config omits one. */
 const MINIO_DEFAULT_REGION = "us-east-1";

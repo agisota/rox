@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import {
-	createStorageProvider,
-	createStorageProviderFromEnv,
-} from "./factory.ts";
-import { MinioProvider } from "./minio-provider.ts";
-import { R2Provider } from "./r2-provider.ts";
+import { createStorageProvider, createStorageProviderFromEnv } from "./factory";
+import { MinioProvider } from "./minio-provider";
+import { R2Provider } from "./r2-provider";
 
 describe("createStorageProvider", () => {
 	test("builds an R2Provider for an r2 config", () => {

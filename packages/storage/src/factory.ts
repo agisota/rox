@@ -1,8 +1,8 @@
-import type { StorageConfig } from "./config.ts";
-import { resolveStorageConfig, type StorageEnv } from "./config.ts";
-import type { StorageProvider } from "./driver.ts";
-import { MinioProvider } from "./minio-provider.ts";
-import { R2Provider } from "./r2-provider.ts";
+import type { StorageConfig } from "./config";
+import { resolveStorageConfig, type StorageEnv } from "./config";
+import type { StorageProvider } from "./driver";
+import { MinioProvider } from "./minio-provider";
+import { R2Provider } from "./r2-provider";
 
 /**
  * Construct the concrete {@link StorageProvider} for a resolved
