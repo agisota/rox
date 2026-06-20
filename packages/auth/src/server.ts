@@ -96,6 +96,10 @@ export const auth = betterAuth({
 		},
 	},
 	emailAndPassword: {
+		// NOTE (ROX-519): kept dev-gated on purpose. Flipping this to always-on
+		// (enabling email/password sign-in in production) is a pending
+		// product/security decision and must NOT be flipped here without that
+		// sign-off — production needs email verification + rate limiting first.
 		enabled: process.env.NODE_ENV === "development",
 		autoSignIn: true,
 	},
@@ -109,110 +113,121 @@ export const auth = betterAuth({
 		user: {
 			create: {
 				after: async (user, context?: unknown) => {
-					const domain = user.email.split("@")[1]?.toLowerCase();
-					let enrolledOrgId: string | null = null;
+					// ROX-519: post-signup enrollment is best-effort. Wrap the entire
+					// body so any failure (org enrollment, personal-team creation,
+					// attribution) is logged and non-fatal — it must never block or
+					// roll back account creation.
+					try {
+						const domain = user.email.split("@")[1]?.toLowerCase();
+						let enrolledOrgId: string | null = null;
 
-					if (domain) {
-						const matchingOrgs = await db.query.organizations.findMany({
-							where: sql`${authSchema.organizations.allowedDomains} @> ARRAY[${domain}]::text[]`,
-						});
+						if (domain) {
+							const matchingOrgs = await db.query.organizations.findMany({
+								where: sql`${authSchema.organizations.allowedDomains} @> ARRAY[${domain}]::text[]`,
+							});
 
-						for (const org of matchingOrgs) {
-							try {
-								await auth.api.addMember({
-									body: {
-										organizationId: org.id,
-										userId: user.id,
-										role: "member",
-									},
-								});
-								if (!enrolledOrgId) {
-									enrolledOrgId = org.id;
-								}
-							} catch (error) {
-								console.error(
-									`[auto-enroll] Failed to add user ${user.id} to org ${org.id}:`,
-									error,
-								);
-								// addMember may have created the DB record before a downstream
-								// hook (email, team-seeding) threw — check before falling back.
-								const memberExists = await db.query.members.findFirst({
-									where: and(
-										eq(authSchema.members.organizationId, org.id),
-										eq(authSchema.members.userId, user.id),
-									),
-								});
-								if (memberExists && !enrolledOrgId) {
-									enrolledOrgId = org.id;
+							for (const org of matchingOrgs) {
+								try {
+									await auth.api.addMember({
+										body: {
+											organizationId: org.id,
+											userId: user.id,
+											role: "member",
+										},
+									});
+									if (!enrolledOrgId) {
+										enrolledOrgId = org.id;
+									}
+								} catch (error) {
+									console.error(
+										`[auto-enroll] Failed to add user ${user.id} to org ${org.id}:`,
+										error,
+									);
+									// addMember may have created the DB record before a downstream
+									// hook (email, team-seeding) threw — check before falling back.
+									const memberExists = await db.query.members.findFirst({
+										where: and(
+											eq(authSchema.members.organizationId, org.id),
+											eq(authSchema.members.userId, user.id),
+										),
+									});
+									if (memberExists && !enrolledOrgId) {
+										enrolledOrgId = org.id;
+									}
 								}
 							}
 						}
-					}
 
-					if (!enrolledOrgId) {
-						const personalOrg = await auth.api.createOrganization({
-							body: {
-								name: `${user.name}'s Team`,
-								slug: `${user.id.slice(0, 8)}-team`,
-								userId: user.id,
-							},
-						});
-						enrolledOrgId = personalOrg?.id ?? null;
-					}
-
-					if (enrolledOrgId) {
-						await db
-							.update(authSchema.sessions)
-							.set({ activeOrganizationId: enrolledOrgId })
-							.where(eq(authSchema.sessions.userId, user.id));
-					}
-
-					// First-touch attribution: persist the landing UTM/referrer captured
-					// in the `rox_attribution` cookie. Best-effort — wrapped so a failure
-					// here can never block account creation. Idempotent via the unique
-					// user_id index (first-touch is never overwritten).
-					try {
-						const ctx = (context ?? {}) as {
-							headers?: Headers;
-							request?: { headers?: Headers };
-						};
-						const cookieHeader =
-							ctx.headers?.get("cookie") ??
-							ctx.request?.headers?.get("cookie") ??
-							null;
-						const attribution = parseAttributionCookieValue(
-							parseCookieHeader(cookieHeader, ATTRIBUTION_COOKIE_NAME),
-						);
-						captureAuthEvent(ANALYTICS_EVENTS.ACCOUNT_CREATED, user.id, {
-							...(attribution?.utm.utmSource
-								? { utm_source: attribution.utm.utmSource }
-								: {}),
-							...(attribution?.utm.utmMedium
-								? { utm_medium: attribution.utm.utmMedium }
-								: {}),
-							...(attribution?.utm.utmCampaign
-								? { utm_campaign: attribution.utm.utmCampaign }
-								: {}),
-						});
-						if (attribution) {
-							await db
-								.insert(userAttribution)
-								.values({
+						if (!enrolledOrgId) {
+							const personalOrg = await auth.api.createOrganization({
+								body: {
+									name: `${user.name}'s Team`,
+									slug: `${user.id.slice(0, 8)}-team`,
 									userId: user.id,
-									utmSource: attribution.utm.utmSource,
-									utmMedium: attribution.utm.utmMedium,
-									utmCampaign: attribution.utm.utmCampaign,
-									utmTerm: attribution.utm.utmTerm,
-									utmContent: attribution.utm.utmContent,
-									landingPage: attribution.landingPage,
-									referrer: attribution.referrer,
-								})
-								.onConflictDoNothing();
+								},
+							});
+							enrolledOrgId = personalOrg?.id ?? null;
 						}
-					} catch (error) {
+
+						if (enrolledOrgId) {
+							await db
+								.update(authSchema.sessions)
+								.set({ activeOrganizationId: enrolledOrgId })
+								.where(eq(authSchema.sessions.userId, user.id));
+						}
+
+						// First-touch attribution: persist the landing UTM/referrer captured
+						// in the `rox_attribution` cookie. Best-effort — wrapped so a failure
+						// here can never block account creation. Idempotent via the unique
+						// user_id index (first-touch is never overwritten).
+						try {
+							const ctx = (context ?? {}) as {
+								headers?: Headers;
+								request?: { headers?: Headers };
+							};
+							const cookieHeader =
+								ctx.headers?.get("cookie") ??
+								ctx.request?.headers?.get("cookie") ??
+								null;
+							const attribution = parseAttributionCookieValue(
+								parseCookieHeader(cookieHeader, ATTRIBUTION_COOKIE_NAME),
+							);
+							captureAuthEvent(ANALYTICS_EVENTS.ACCOUNT_CREATED, user.id, {
+								...(attribution?.utm.utmSource
+									? { utm_source: attribution.utm.utmSource }
+									: {}),
+								...(attribution?.utm.utmMedium
+									? { utm_medium: attribution.utm.utmMedium }
+									: {}),
+								...(attribution?.utm.utmCampaign
+									? { utm_campaign: attribution.utm.utmCampaign }
+									: {}),
+							});
+							if (attribution) {
+								await db
+									.insert(userAttribution)
+									.values({
+										userId: user.id,
+										utmSource: attribution.utm.utmSource,
+										utmMedium: attribution.utm.utmMedium,
+										utmCampaign: attribution.utm.utmCampaign,
+										utmTerm: attribution.utm.utmTerm,
+										utmContent: attribution.utm.utmContent,
+										landingPage: attribution.landingPage,
+										referrer: attribution.referrer,
+									})
+									.onConflictDoNothing();
+							}
+						} catch (error) {
+							console.error(
+								`[attribution] Failed to persist first-touch for ${user.id}:`,
+								error,
+							);
+						}
+					} catch (err) {
 						console.error(
-							`[attribution] Failed to persist first-touch for ${user.id}:`,
-							error,
+							`[user.create.after] post-signup enrollment failed (non-fatal) for ${user.id}:`,
+							err,
 						);
 					}
 				},
