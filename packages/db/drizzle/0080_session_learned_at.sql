@@ -1,0 +1,2 @@
+ALTER TABLE "chat_sessions" ADD COLUMN "learned_at" timestamp;--> statement-breakpoint
+CREATE INDEX "chat_sessions_learned_at_last_active_idx" ON "chat_sessions" USING btree ("learned_at","last_active_at");
