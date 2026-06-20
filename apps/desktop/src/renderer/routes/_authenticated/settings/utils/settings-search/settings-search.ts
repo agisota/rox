@@ -2,6 +2,7 @@ import type { SettingsSection } from "renderer/stores/settings-state";
 
 export const SETTING_ITEM_ID = {
 	ACCOUNT_PROFILE: "account-profile",
+	ACCOUNT_IDENTITY: "account-identity",
 	ACCOUNT_USAGE: "account-usage",
 	ACCOUNT_SIGNOUT: "account-signout",
 
@@ -125,6 +126,7 @@ export type SettingVariant = "v1" | "v2" | "shared";
 
 export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.ACCOUNT_PROFILE]: "shared",
+	[SETTING_ITEM_ID.ACCOUNT_IDENTITY]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_USAGE]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_SIGNOUT]: "shared",
 
@@ -259,6 +261,34 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"фото",
 			"пользователь",
 			"я",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.ACCOUNT_IDENTITY,
+		section: "account",
+		title: "Идентичность",
+		description: "Привязанные аккаунты и имя пользователя",
+		keywords: [
+			"identity",
+			"username",
+			"handle",
+			"nickname",
+			"connected accounts",
+			"linked accounts",
+			"github",
+			"telegram",
+			"twitter",
+			"x",
+			"oauth",
+			"provider",
+			"идентичность",
+			"имя пользователя",
+			"никнейм",
+			"привязанные аккаунты",
+			"связанные аккаунты",
+			"гитхаб",
+			"телеграм",
+			"провайдер",
 		],
 	},
 	{
