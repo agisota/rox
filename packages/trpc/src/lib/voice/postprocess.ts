@@ -43,12 +43,32 @@ export function parseJsonObject<T>(raw: string): T {
 }
 
 /**
+ * Build the system prompt, optionally appending the user's pre-supplied context
+ * so the model can resolve names, jargon and intent it would otherwise miss.
+ * The context is reference-only — it must never be echoed or invented into the
+ * output, only used to disambiguate the transcript.
+ */
+export function buildSystemPrompt(userContext?: string): string {
+	const context = userContext?.trim();
+	if (!context) return SYSTEM_PROMPT;
+	return `${SYSTEM_PROMPT}
+
+Контекст от пользователя (задан заранее, используй для понимания терминов, имён и намерений; НЕ копируй его в ответ и ничего не выдумывай на его основе):
+${context}`;
+}
+
+/**
  * Post-process a transcript into formatted RU + EN prompts. Returns null when no
  * Groq key is configured, the input is empty, or the model fails — callers fall
  * back to the raw transcript so dictation never hard-fails on post-processing.
+ *
+ * `userContext` is optional free-text the user supplied in advance (Settings →
+ * Voice → "Контекст для агента"); when present it is appended to the system
+ * prompt so the model has the user's context.
  */
 export async function postprocessPrompt(
 	rawText: string,
+	userContext?: string,
 ): Promise<ProcessedPrompt | null> {
 	const key = resolveGroqKey();
 	if (!key || rawText.trim().length === 0) return null;
@@ -64,7 +84,7 @@ export async function postprocessPrompt(
 			body: JSON.stringify({
 				model: CHAT_MODEL,
 				messages: [
-					{ role: "system", content: SYSTEM_PROMPT },
+					{ role: "system", content: buildSystemPrompt(userContext) },
 					{ role: "user", content: rawText },
 				],
 				temperature: 0.3,

@@ -2,6 +2,7 @@ import { mintUserJwt } from "@rox/auth/server";
 import { dbWs } from "@rox/db/client";
 import {
 	automationRuns,
+	journalEvents,
 	type SelectAutomation,
 	users,
 	v2Hosts,
@@ -38,10 +39,25 @@ export interface DispatchOptions {
  * NOT touch automations.next_run_at — that advancement is the caller's
  * concern (the cron advances on every tick; runNow intentionally leaves
  * the regular cadence alone).
+ *
+ * Also appends one row to the continuous journal event lane (`journal_events`)
+ * for every dispatch outcome, so the journal fills 24/7 from the existing
+ * `* * * * *` automations dispatcher with no extra cron. The journal write is
+ * strictly best-effort and never alters the dispatch outcome.
  */
 export async function dispatchAutomation(
 	opts: DispatchOptions,
 ): Promise<DispatchOutcome> {
+	const outcome = await runDispatch(opts);
+	await recordJournalEvent({
+		automation: opts.automation,
+		outcome,
+		scheduledFor: opts.scheduledFor,
+	});
+	return outcome;
+}
+
+async function runDispatch(opts: DispatchOptions): Promise<DispatchOutcome> {
 	const { automation, scheduledFor, relayUrl } = opts;
 
 	const resolved = await resolveTargetHost(automation);
@@ -149,6 +165,58 @@ export async function dispatchAutomation(
 	}
 
 	return { status: "dispatched", runId: run.id };
+}
+
+/**
+ * Append one row to the continuous journal event lane for a dispatch outcome.
+ * Strictly best-effort: a journal write must never break (or change the result
+ * of) an automation run, so all failures are swallowed with a log.
+ */
+async function recordJournalEvent(args: {
+	automation: SelectAutomation;
+	outcome: DispatchOutcome;
+	scheduledFor: Date;
+}): Promise<void> {
+	const { automation, outcome, scheduledFor } = args;
+	const runId = "runId" in outcome ? outcome.runId : null;
+	const error = "error" in outcome ? outcome.error : undefined;
+	try {
+		await dbWs.insert(journalEvents).values({
+			organizationId: automation.organizationId,
+			createdBy: automation.ownerUserId,
+			automationId: automation.id,
+			automationRunId: runId,
+			kind: "automation_run",
+			title: automation.name,
+			summary: summarizeOutcome(outcome),
+			payload: {
+				automationId: automation.id,
+				runId,
+				status: outcome.status,
+				agent: automation.agent,
+				scheduledFor: scheduledFor.toISOString(),
+				...(error ? { error } : {}),
+			},
+		});
+	} catch (err) {
+		console.error(
+			"[automations/dispatch] journal event write failed",
+			describeError(err, "journal"),
+		);
+	}
+}
+
+function summarizeOutcome(outcome: DispatchOutcome): string {
+	switch (outcome.status) {
+		case "dispatched":
+			return "Автоматизация запущена";
+		case "skipped_offline":
+			return `Пропущено: ${outcome.error}`;
+		case "dispatch_failed":
+			return `Ошибка запуска: ${outcome.error}`;
+		case "conflict":
+			return "Пропущено: дубликат запуска";
+	}
 }
 
 async function resolveTargetHost(

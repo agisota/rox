@@ -1,5 +1,23 @@
 import { describe, expect, test } from "bun:test";
-import { parseJsonObject } from "./postprocess";
+import { buildSystemPrompt, parseJsonObject } from "./postprocess";
+
+describe("buildSystemPrompt (voice post-process context)", () => {
+	test("returns the base prompt when no context is supplied", () => {
+		const base = buildSystemPrompt();
+		expect(base).toContain("улучшаешь промпт");
+		expect(base).not.toContain("Контекст от пользователя");
+	});
+
+	test("ignores empty/whitespace context", () => {
+		expect(buildSystemPrompt("   ")).toBe(buildSystemPrompt());
+	});
+
+	test("appends the user context when present", () => {
+		const prompt = buildSystemPrompt("Проект Set, отвечай по-русски");
+		expect(prompt).toContain("Контекст от пользователя");
+		expect(prompt).toContain("Проект Set, отвечай по-русски");
+	});
+});
 
 describe("parseJsonObject (voice post-process)", () => {
 	test("parses a ru/en object", () => {

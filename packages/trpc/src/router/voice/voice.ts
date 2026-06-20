@@ -26,6 +26,12 @@ export const voiceRouter = {
 				mimeType: z.string().default("audio/webm"),
 				durationMs: z.number().int().nonnegative().optional(),
 				postprocess: z.boolean().default(true),
+				/**
+				 * Free-text context the user supplied in advance (Settings → Voice →
+				 * "Контекст для агента"). Appended to the post-process system prompt
+				 * so the model can resolve names/jargon/intent. Optional.
+				 */
+				voiceAgentContext: z.string().max(10_000).optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -34,7 +40,7 @@ export const voiceRouter = {
 
 			const transcription = await transcribeAudio(buffer, input.mimeType);
 			const processed = input.postprocess
-				? await postprocessPrompt(transcription.text)
+				? await postprocessPrompt(transcription.text, input.voiceAgentContext)
 				: null;
 
 			const [row] = await db

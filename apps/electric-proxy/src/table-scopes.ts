@@ -10,6 +10,7 @@ import {
 	integrationConnections,
 	invitations,
 	journalEntries,
+	journalEvents,
 	members,
 	memoryImportJobs,
 	memoryItems,
@@ -137,6 +138,10 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 	journal_entries: {
 		orgColumn: journalEntries.organizationId,
 		userColumn: journalEntries.createdBy,
+	},
+	journal_events: {
+		orgColumn: journalEvents.organizationId,
+		userColumn: journalEvents.createdBy,
 	},
 	memory_import_jobs: {
 		orgColumn: memoryImportJobs.organizationId,
