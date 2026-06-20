@@ -74,6 +74,11 @@ export async function GET(request: Request): Promise<Response> {
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 		},
+		// The host allowlist only validates the INITIAL url. Default fetch follows
+		// 3xx redirects, which could forward the Authorization token to an attacker
+		// host. uploads.linear.app serves image bytes directly (200, no redirect),
+		// so rejecting redirects is safe for the legitimate path.
+		redirect: "error",
 	});
 
 	if (!linearResponse.ok) {

@@ -7,6 +7,7 @@ import { ambientRouter } from "./router/ambient";
 import { analyticsRouter } from "./router/analytics";
 import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
+import { calendarRouter } from "./router/calendar";
 import { chatRouter } from "./router/chat";
 import { collabRouter } from "./router/collab";
 import { commsRouter } from "./router/comms";
@@ -22,6 +23,7 @@ import { journalRouter } from "./router/journal";
 import { knowledgeRouter } from "./router/knowledge";
 import { mcpAdminRouter } from "./router/mcp-admin";
 import { memoryRouter } from "./router/memory";
+import { notebooksRouter } from "./router/notebooks";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
 import {
@@ -60,6 +62,7 @@ export const appRouter = createTRPCRouter({
 	apiKey: apiKeyRouter,
 	analytics: analyticsRouter,
 	automation: automationRouter,
+	calendar: calendarRouter,
 	chat: chatRouter,
 	collab: collabRouter,
 	comms: commsRouter,
@@ -77,6 +80,7 @@ export const appRouter = createTRPCRouter({
 	journal: journalRouter,
 	knowledge: knowledgeRouter,
 	memory: memoryRouter,
+	notebooks: notebooksRouter,
 	notes: notesRouter,
 	organization: organizationRouter,
 	pipeline: pipelineRouter,

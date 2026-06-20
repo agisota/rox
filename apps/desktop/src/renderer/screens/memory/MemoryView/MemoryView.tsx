@@ -14,7 +14,7 @@ export function MemoryView() {
 	const { data: session } = authClient.useSession();
 	const userId = session?.user?.id ?? "";
 
-	const { data: items = [] } = useLiveQuery(
+	const { data: items = [], isReady } = useLiveQuery(
 		(q) =>
 			q
 				.from({ memoryItems: collections.memoryItems })
@@ -69,6 +69,7 @@ export function MemoryView() {
 							label={group.label}
 							hint={group.hint}
 							items={approvedByCategory.get(group.category) ?? []}
+							isReady={isReady}
 						/>
 					))}
 				</div>

@@ -571,7 +571,7 @@ export const EXPERIMENTAL_FEATURES = [
 			longDescription:
 				"Adds the user-facing control for real-time voice rooms attached to workspaces, tasks, and projects.",
 			maturity: "alpha",
-			implementationStatus: "planned",
+			implementationStatus: "ready",
 			dependencies: [LIVEKIT_PROVIDER],
 			affectedSurfaces: ["Rooms", "Workspace header", "Meeting notes"],
 		},

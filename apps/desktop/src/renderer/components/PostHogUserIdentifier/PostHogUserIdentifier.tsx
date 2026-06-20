@@ -14,6 +14,11 @@ export function PostHogUserIdentifier() {
 	const { mutate: setUserId } = electronTrpc.analytics.setUserId.useMutation();
 
 	useEffect(() => {
+		// Only identify on sign-in. Do NOT reactively reset the PostHog
+		// identity on a signed-out/empty session — that fires on initial
+		// anonymous load and on token rotation, which breaks anon→identified
+		// stitching (#5207). The identity reset now happens exactly once, on
+		// user-initiated sign-out, inside useSignOut().
 		if (user) {
 			posthog.identify(user.id, {
 				email: user.email,
@@ -34,14 +39,8 @@ export function PostHogUserIdentifier() {
 				track("auth_completed");
 				localStorage.setItem(AUTH_COMPLETED_KEY, user.id);
 			}
-		} else if (session !== undefined && !user) {
-			// Session loaded but no user - user is signed out
-			posthog.reset();
-			setUserId({ userId: null });
-			localStorage.removeItem(AUTH_COMPLETED_KEY);
-			localStorage.removeItem(ACTIVE_ORG_ID_KEY);
 		}
-	}, [user, session, setUserId]);
+	}, [user, setUserId]);
 
 	useEffect(() => {
 		if (session === undefined) return;

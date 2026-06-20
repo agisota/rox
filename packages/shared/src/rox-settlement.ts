@@ -66,8 +66,14 @@ export function planRequestSettlement(args: {
 		decision,
 		usage: {
 			modelId,
-			tokensIn: Math.max(0, usage.inputTokens),
-			tokensOut: Math.max(0, usage.outputTokens),
+			// A non-finite token count (NaN/±Infinity from a malformed provider
+			// payload) collapses to 0 — never write NaN into a numeric column.
+			tokensIn: Number.isFinite(usage.inputTokens)
+				? Math.max(0, usage.inputTokens)
+				: 0,
+			tokensOut: Number.isFinite(usage.outputTokens)
+				? Math.max(0, usage.outputTokens)
+				: 0,
 			roxCost: decision.cost,
 		},
 		// Only a real debit (charged/postpaid → entry present) moves money.
