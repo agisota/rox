@@ -14,6 +14,9 @@ const DB_LEDGER_KIND_VALUES: readonly RoxLedgerKind[] = [
 	"request_charge",
 	"adjustment",
 	"seed",
+	// Rox Workspace Suite D8/D9 — written directly by the Drive overage cron;
+	// has no shared reason mapping (so `toLedgerKind` never returns it).
+	"drive_overage",
 ];
 
 describe("toLedgerKind", () => {

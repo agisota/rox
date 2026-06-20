@@ -439,6 +439,10 @@ export const roxLedgerKindValues = [
 	"request_charge",
 	"adjustment",
 	"seed",
+	// Rox Workspace Suite — Drive (D8/D9) overage billing. Daily overage cron
+	// debits the balance with this kind. APPEND-ONLY: added at the end so the
+	// pgEnum ordinal mapping of the existing four values is unchanged.
+	"drive_overage",
 ] as const;
 export const roxLedgerKindEnum = z.enum(roxLedgerKindValues);
 export type RoxLedgerKind = z.infer<typeof roxLedgerKindEnum>;
@@ -703,3 +707,99 @@ export const runtimeServiceStateValues = [
 ] as const;
 export const runtimeServiceStateEnum = z.enum(runtimeServiceStateValues);
 export type RuntimeServiceState = z.infer<typeof runtimeServiceStateEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D1 Identity & Comms Hub (comms-suite epic, P0).
+// The identity spine: one rox handle derives every transport address, and the
+// unified inbox threads messages from any transport. Append-only string unions
+// backing Postgres pgEnums (declared in schema/comms.ts); NEVER reorder/remove.
+// ---------------------------------------------------------------------------
+
+/** Transport address kind a rox user owns, all derived from the handle. */
+export const commsAddressKindValues = [
+	"email",
+	"xmpp",
+	"mesh",
+	"inapp",
+] as const;
+export const commsAddressKindEnum = z.enum(commsAddressKindValues);
+export type CommsAddressKind = z.infer<typeof commsAddressKindEnum>;
+
+/** Which transport a message arrived/left over. */
+export const commsTransportValues = ["inapp", "email", "xmpp", "mesh"] as const;
+export const commsTransportEnum = z.enum(commsTransportValues);
+export type CommsTransport = z.infer<typeof commsTransportEnum>;
+
+/** Direction of a message relative to the rox user (inbound = received). */
+export const commsDirectionValues = ["inbound", "outbound"] as const;
+export const commsDirectionEnum = z.enum(commsDirectionValues);
+export type CommsDirection = z.infer<typeof commsDirectionEnum>;
+
+/** Role of a participant within a unified thread. */
+export const commsParticipantRoleValues = ["owner", "member"] as const;
+export const commsParticipantRoleEnum = z.enum(commsParticipantRoleValues);
+export type CommsParticipantRole = z.infer<typeof commsParticipantRoleEnum>;
+
+/** Outbound delivery lifecycle per recipient/transport. */
+export const commsDeliveryStatusValues = [
+	"queued",
+	"sent",
+	"delivered",
+	"failed",
+	"bounced",
+] as const;
+export const commsDeliveryStatusEnum = z.enum(commsDeliveryStatusValues);
+export type CommsDeliveryStatus = z.infer<typeof commsDeliveryStatusEnum>;
+
+/** Merged presence state aggregated across a user's transports. */
+export const commsPresenceStateValues = [
+	"online",
+	"away",
+	"dnd",
+	"offline",
+] as const;
+export const commsPresenceStateEnum = z.enum(commsPresenceStateValues);
+export type CommsPresenceState = z.infer<typeof commsPresenceStateEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D8/D9 Drive (comms-suite epic, P0).
+// Per-user file storage with a shared 10 GiB free quota across Drive + chat +
+// email attachments (DQ2), soft-metered into the WS-E ledger on overage.
+// Append-only string unions backing Postgres pgEnums (declared in
+// schema/drive.ts); NEVER reorder/remove values.
+// ---------------------------------------------------------------------------
+
+/** Lifecycle of a Drive file (scan gate before a file is downloadable). */
+export const driveFileStatusValues = [
+	"pending",
+	"clean",
+	"scanning",
+	"quarantined",
+	"trashed",
+] as const;
+export const driveFileStatusEnum = z.enum(driveFileStatusValues);
+export type DriveFileStatus = z.infer<typeof driveFileStatusEnum>;
+
+/** Permission a public share grants on its target file/folder. */
+export const driveSharePermValues = ["view", "download"] as const;
+export const driveSharePermEnum = z.enum(driveSharePermValues);
+export type DriveSharePerm = z.infer<typeof driveSharePermEnum>;
+
+/** Domain that references a Drive file via the drive_file_refs bridge. */
+export const driveRefSourceValues = [
+	"chat_message",
+	"email_message",
+	"canvas",
+	"other",
+] as const;
+export const driveRefSourceEnum = z.enum(driveRefSourceValues);
+export type DriveRefSource = z.infer<typeof driveRefSourceEnum>;
+
+/** Policy for what happens when a user crosses their quota (DQ2 soft-meter). */
+export const driveOveragePolicyValues = [
+	"block_new",
+	"soft_meter",
+	"hard_cap",
+] as const;
+export const driveOveragePolicyEnum = z.enum(driveOveragePolicyValues);
+export type DriveOveragePolicy = z.infer<typeof driveOveragePolicyEnum>;
