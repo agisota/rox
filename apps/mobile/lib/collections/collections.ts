@@ -7,6 +7,7 @@ import type {
 	SelectTask,
 	SelectTaskStatus,
 	SelectUser,
+	SelectV2Workspace,
 } from "@rox/db/schema";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import type { Collection } from "@tanstack/react-db";
@@ -14,6 +15,7 @@ import { createCollection } from "@tanstack/react-db";
 import { authClient } from "../auth/client";
 import { env } from "../env";
 import { apiClient } from "../trpc/client";
+import { orgCollectionId } from "./collectionId";
 
 const columnMapper = snakeCamelMapper();
 const electricUrl = `${env.EXPO_PUBLIC_API_URL}/api/electric/v1/shape`;
@@ -25,6 +27,7 @@ interface OrgCollections {
 	members: Collection<SelectMember>;
 	users: Collection<SelectUser>;
 	invitations: Collection<SelectInvitation>;
+	v2Workspaces: Collection<SelectV2Workspace>;
 }
 
 const collectionsCache = new Map<string, OrgCollections>();
@@ -141,7 +144,28 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
-	return { tasks, taskStatuses, projects, members, users, invitations };
+	const v2Workspaces = createCollection(
+		electricCollectionOptions<SelectV2Workspace>({
+			id: orgCollectionId("v2_workspaces", organizationId),
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "v2_workspaces", organizationId },
+				headers,
+				columnMapper,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
+	return {
+		tasks,
+		taskStatuses,
+		projects,
+		members,
+		users,
+		invitations,
+		v2Workspaces,
+	};
 }
 
 export function getCollections(organizationId: string) {

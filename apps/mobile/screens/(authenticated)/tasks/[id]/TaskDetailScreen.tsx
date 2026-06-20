@@ -1,3 +1,4 @@
+import type { TaskPriority } from "@rox/db/enums";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { CheckCircle2, ChevronLeft, ExternalLink } from "lucide-react-native";
 import { Linking, Pressable, ScrollView, View } from "react-native";
@@ -16,6 +17,14 @@ import {
 } from "@/screens/(authenticated)/(tasks)/tasks/utils/taskMeta";
 import { useTaskDetail } from "./hooks/useTaskDetail";
 
+const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
+	{ value: "none", label: "None" },
+	{ value: "low", label: "Low" },
+	{ value: "medium", label: "Medium" },
+	{ value: "high", label: "High" },
+	{ value: "urgent", label: "Urgent" },
+];
+
 function formatDate(value: Date | string | null): string | null {
 	if (!value) return null;
 	const date = value instanceof Date ? value : new Date(value);
@@ -27,7 +36,15 @@ export function TaskDetailScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
-	const { task, isReady, canComplete, markComplete } = useTaskDetail(id);
+	const {
+		task,
+		isReady,
+		canComplete,
+		markComplete,
+		statuses,
+		setStatus,
+		setPriority,
+	} = useTaskDetail(id);
 
 	const ref = task ? taskRef(task) : null;
 	const priority = task ? priorityLabel(task.priority) : null;
@@ -138,6 +155,79 @@ export function TaskDetailScreen() {
 										</Text>
 									</View>
 								) : null}
+							</CardContent>
+						</Card>
+
+						<Card>
+							<CardHeader>
+								<CardTitle>Edit</CardTitle>
+							</CardHeader>
+							<CardContent className="gap-4">
+								<View className="gap-1.5">
+									<Text className="text-sm text-muted-foreground">Status</Text>
+									<View className="flex-row flex-wrap gap-2">
+										{statuses.map((status) => {
+											const selected = status.id === task.statusId;
+											return (
+												<Pressable
+													key={status.id}
+													onPress={() => setStatus(status.id)}
+													className={
+														selected
+															? "flex-row items-center gap-1.5 rounded-full border border-primary bg-primary px-3 py-1"
+															: "flex-row items-center gap-1.5 rounded-full border border-border px-3 py-1"
+													}
+												>
+													<View
+														className="size-2 rounded-full"
+														style={{ backgroundColor: status.color }}
+													/>
+													<Text
+														className={
+															selected
+																? "text-sm text-primary-foreground"
+																: "text-sm text-foreground"
+														}
+													>
+														{status.name}
+													</Text>
+												</Pressable>
+											);
+										})}
+									</View>
+								</View>
+
+								<View className="gap-1.5">
+									<Text className="text-sm text-muted-foreground">
+										Priority
+									</Text>
+									<View className="flex-row flex-wrap gap-2">
+										{PRIORITY_OPTIONS.map((option) => {
+											const selected = option.value === task.priority;
+											return (
+												<Pressable
+													key={option.value}
+													onPress={() => setPriority(option.value)}
+													className={
+														selected
+															? "rounded-full border border-primary bg-primary px-3 py-1"
+															: "rounded-full border border-border px-3 py-1"
+													}
+												>
+													<Text
+														className={
+															selected
+																? "text-sm text-primary-foreground"
+																: "text-sm text-foreground"
+														}
+													>
+														{option.label}
+													</Text>
+												</Pressable>
+											);
+										})}
+									</View>
+								</View>
 							</CardContent>
 						</Card>
 
