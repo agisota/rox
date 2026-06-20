@@ -1,0 +1,13 @@
+{
+	"name": "rox-mesh-relay-watcher",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Mesh relay-watcher (D5): subscribes to the Nostr relay pool, unwraps NIP-17 gift-wrapped DMs addressed to rox device keys, and relays each as a signed POST to /api/mesh/inbound. STANDALONE — not part of the Rox bun/turbo workspace; the live deploy + real Nostr subscription are DEFERRED. This package is a CONTRACT STUB only (no live relay connections, no key signing). DO NOT auto-deploy.",
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"typescript": "5.9.2"
+	}
+}

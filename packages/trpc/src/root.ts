@@ -24,6 +24,7 @@ import { knowledgeRouter } from "./router/knowledge";
 import { mailRouter } from "./router/mail";
 import { mcpAdminRouter } from "./router/mcp-admin";
 import { memoryRouter } from "./router/memory";
+import { meshRouter } from "./router/mesh";
 import { notebooksRouter } from "./router/notebooks";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
@@ -83,6 +84,7 @@ export const appRouter = createTRPCRouter({
 	knowledge: knowledgeRouter,
 	mail: mailRouter,
 	memory: memoryRouter,
+	mesh: meshRouter,
 	notebooks: notebooksRouter,
 	notes: notesRouter,
 	organization: organizationRouter,
