@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	createStorageProvider,
-	createStorageProviderFromEnv,
-} from "./factory";
+import { createStorageProvider, createStorageProviderFromEnv } from "./factory";
 import { MinioProvider } from "./minio-provider";
 import { R2Provider } from "./r2-provider";
 
