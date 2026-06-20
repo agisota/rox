@@ -1,0 +1,61 @@
+---
+title: Домены SDK
+description: Домены API, отражённые в публичном TypeScript SDK, и подкрепляющие их tRPC-роутеры
+---
+
+## Обзор
+
+[TypeScript SDK](/sdk/getting-started) (`@rox_sh/sdk`) предоставляет стабильное подмножество [поверхности API](/api/overview). Каждый ресурс SDK — это тонкая, типобезопасная обёртка над одним или несколькими доменами tRPC; вызов SDK маршрутизируется либо в облако (`api.rox.one`), либо через relay к конкретному хосту.
+
+<Callout type="warn">
+SDK находится на стадии раннего альфа-тестирования. Оставайтесь на последней версии (`@rox_sh/sdk@latest`), пока поверхность дорабатывается.
+</Callout>
+
+## Отражённые домены
+
+Клиент SDK (`packages/sdk/src/client.ts`) предоставляет восемь ресурсов. Реализации лежат в `packages/sdk/src/resources/`.
+
+| Ресурс SDK | Подкрепляющие домены | Маршрут | Источник |
+| --- | --- | --- | --- |
+| `client.tasks` (+ `tasks.statuses`) | `task` | Облако | `resources/tasks.ts` |
+| `client.workspaces` | `workspace` / `v2Workspace` | Облако + relay | `resources/workspaces.ts` |
+| `client.projects` | `project` / `v2Project` | Облако | `resources/projects.ts` |
+| `client.hosts` | `host` / `v2Host` | Облако | `resources/hosts.ts` |
+| `client.agents` | `agent` | Relay → хост | `resources/agents.ts` |
+| `client.terminals` | `workspace` (PTY на хосте) | Relay → хост | `resources/terminals.ts` |
+| `client.automations` | `automation` | Облако + relay | `resources/automations.ts` |
+| `client.organization` (+ `organization.members`) | `organization` | Облако | `resources/organization.ts` |
+
+## Облачные vs хостовые операции
+
+- **Облачные операции** (`tasks`, `projects`, `organization`) читают и пишут данные организации напрямую через `api.rox.one`.
+- **Хостовые операции** (`agents`, `terminals`, создание/удаление `workspaces`) проходят через relay к нужной машине разработчика: `${relayURL}/hosts/<routingKey>/trpc/<procedure>`. Целевой хост должен быть в сети.
+
+```ts
+import Rox from '@rox_sh/sdk';
+
+const client = new Rox({
+  apiKey: 'sk_live_…',
+  organizationId: '…',
+});
+
+// Облако: список задач организации
+const tasks = await client.tasks.list({ assigneeMe: true });
+
+// Relay → хост: запуск агента в рабочем пространстве на конкретной машине
+const { sessionId } = await client.agents.create({
+  workspaceId: '<uuid>',
+  agent: 'claude',
+  prompt: 'Audit the login flow for race conditions.',
+});
+```
+
+## Что не отражено
+
+Домены, обслуживающие внутренние нужды клиентских приложений (например, `chat`, `journal`, `memory`, `knowledge`, `runtime`, `admin`, `economy`), в публичном SDK не предоставляются. Они остаются частью внутреннего контракта tRPC и могут меняться без уведомления. Для программного доступа используйте отражённые в SDK домены выше.
+
+## Дальше
+
+- [Справочник по SDK](/sdk/reference) — пошаговый справочник по методам каждого ресурса.
+- [Обзор API](/api/overview) — полная карта доменов tRPC.
+- [Продвинутое использование SDK](/sdk/advanced) — повторные попытки, таймауты, обработка ошибок.
