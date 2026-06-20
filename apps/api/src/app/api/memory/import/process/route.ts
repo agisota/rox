@@ -9,41 +9,29 @@
 
 import { db } from "@rox/db/client";
 import { memoryImportJobs, memoryItems } from "@rox/db/schema";
-import { Receiver } from "@upstash/qstash";
 import { del } from "@vercel/blob";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
 import { classifyConversation } from "@/lib/memory/archive-classify";
 import { parseArchiveExport } from "@/lib/memory/archive-parse";
+import { verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
-
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
-});
 
 const inputSchema = z.object({ jobId: z.string().uuid() });
 const MAX_CONVERSATIONS = 30;
 
 export async function POST(request: Request): Promise<Response> {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-	if (!signature) {
-		return Response.json({ error: "Missing signature" }, { status: 401 });
+	const verified = await verifyQstash(request, {
+		url: `${env.NEXT_PUBLIC_API_URL}/api/memory/import/process`,
+		onError: "false",
+	});
+	if (!verified.ok) {
+		return verified.response;
 	}
-	const valid = await receiver
-		.verify({
-			body,
-			signature,
-			url: `${env.NEXT_PUBLIC_API_URL}/api/memory/import/process`,
-		})
-		.catch(() => false);
-	if (!valid) {
-		return Response.json({ error: "Invalid signature" }, { status: 401 });
-	}
+	const { body } = verified;
 
 	const parsed = inputSchema.safeParse(JSON.parse(body));
 	if (!parsed.success) {

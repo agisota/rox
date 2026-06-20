@@ -1,16 +1,11 @@
 import { db } from "@rox/db/client";
-import { Receiver } from "@upstash/qstash";
 import { Redis } from "@upstash/redis";
 import { sql } from "drizzle-orm";
 
 import { env } from "@/env";
+import { verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
-
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
-});
 
 const redis = new Redis({
 	url: env.KV_REST_API_URL,
@@ -21,27 +16,15 @@ const redis = new Redis({
 const RELAY_TTL_KEY = "relay:tunnel-ttl";
 
 export async function POST(request: Request): Promise<Response> {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-	const isDev = env.NODE_ENV === "development";
-
-	if (!isDev) {
-		if (!signature) {
-			return Response.json({ error: "Missing signature" }, { status: 401 });
-		}
-		const valid = await receiver
-			.verify({
-				body,
-				signature,
-				url: `${env.NEXT_PUBLIC_API_URL}/api/hosts/jobs/sync-presence`,
-			})
-			.catch((error) => {
-				console.error("[sync-presence] signature verify failed:", error);
-				return false;
-			});
-		if (!valid) {
-			return Response.json({ error: "Invalid signature" }, { status: 401 });
-		}
+	const verified = await verifyQstash(request, {
+		url: `${env.NEXT_PUBLIC_API_URL}/api/hosts/jobs/sync-presence`,
+		devBypass: env.NODE_ENV === "development",
+		onError: "false",
+		logError: (error) =>
+			console.error("[sync-presence] signature verify failed:", error),
+	});
+	if (!verified.ok) {
+		return verified.response;
 	}
 
 	let connected: string[];

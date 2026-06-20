@@ -1,20 +1,17 @@
 import { dbWs } from "@rox/db/client";
 import { automations } from "@rox/db/schema";
 import { nextOccurrenceAfter } from "@rox/shared/rrule";
-import { Client, Receiver } from "@upstash/qstash";
+import { Client } from "@upstash/qstash";
 import { and, eq, lte } from "drizzle-orm";
 
 import { env } from "@/env";
+import { verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
 
 const qstash = new Client({
 	token: env.QSTASH_TOKEN,
 	baseUrl: env.QSTASH_URL,
-});
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
 });
 
 const BATCH_SIZE = 2000;
@@ -26,19 +23,11 @@ function bucketToMinute(d: Date): Date {
 }
 
 export async function POST(request: Request): Promise<Response> {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-	if (!signature) {
-		return Response.json({ error: "Missing signature" }, { status: 401 });
-	}
-
-	const valid = await receiver.verify({
-		body,
-		signature,
+	const verified = await verifyQstash(request, {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/automations/evaluate`,
 	});
-	if (!valid) {
-		return Response.json({ error: "Invalid signature" }, { status: 401 });
+	if (!verified.ok) {
+		return verified.response;
 	}
 
 	const now = new Date();

@@ -15,11 +15,11 @@
 import { buildConflictUpdateColumns, db } from "@rox/db";
 import { integrationConnections, knowledgeDocuments } from "@rox/db/schema";
 import { decodeSecret } from "@rox/trpc/integration-secret";
-import { Receiver } from "@upstash/qstash";
 import { and, eq, isNull } from "drizzle-orm";
 import chunk from "lodash.chunk";
 import { z } from "zod";
 import { env } from "@/env";
+import { verifyQstash } from "@/lib/qstash-verify";
 import {
 	listBlockChildren,
 	type NotionBlock,
@@ -42,11 +42,6 @@ const BLOCK_FETCH_CONCURRENCY = 5;
 const MAX_NOTION_ATTEMPTS = 3;
 const NOTION_RETRY_BASE_MS = 250;
 
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
-});
-
 const payloadSchema = z.object({
 	organizationId: z.string().min(1),
 	/** Optional per-workspace connection scope; omit for the org-level row. */
@@ -56,33 +51,18 @@ const payloadSchema = z.object({
 });
 
 export async function POST(request: Request) {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-
 	// Skip signature verification in development (QStash can't reach localhost).
-	const isDev = env.NODE_ENV === "development";
-
-	if (!isDev) {
-		if (!signature) {
-			return Response.json({ error: "Missing signature" }, { status: 401 });
-		}
-
-		let isValid = false;
-		try {
-			isValid = await receiver.verify({
-				body,
-				signature,
-				url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/notion/jobs/sync`,
-			});
-		} catch (error) {
-			console.warn("[notion-sync] signature verification failed", error);
-			return Response.json({ error: "Invalid signature" }, { status: 401 });
-		}
-
-		if (!isValid) {
-			return Response.json({ error: "Invalid signature" }, { status: 401 });
-		}
+	const verified = await verifyQstash(request, {
+		url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/notion/jobs/sync`,
+		devBypass: env.NODE_ENV === "development",
+		onError: "respond",
+		logError: (error) =>
+			console.warn("[notion-sync] signature verification failed", error),
+	});
+	if (!verified.ok) {
+		return verified.response;
 	}
+	const { body } = verified;
 
 	let json: unknown;
 	try {
