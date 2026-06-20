@@ -1,12 +1,19 @@
 "use client";
 
+import { authClient } from "@rox/auth/client";
 import { Button } from "@rox/ui/button";
 import { Skeleton } from "@rox/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import { cn } from "@rox/ui/utils";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	ChevronLeft,
+	ChevronRight,
+	Download,
+	Plus,
+	Upload,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/trpc/react";
 import { useCalendarActions } from "../../hooks/useCalendarActions";
 import { buildMonthGrid, shiftMonth } from "../../utils/monthGrid";
@@ -48,20 +55,39 @@ function defaultEventValue(calendarId: string, day: Date): EventDialogValue {
 	};
 }
 
+/** Trigger a browser download for an in-memory .ics document. */
+function downloadIcs(filename: string, ics: string) {
+	const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+	const url = URL.createObjectURL(blob);
+	const anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = filename;
+	document.body.append(anchor);
+	anchor.click();
+	anchor.remove();
+	URL.revokeObjectURL(url);
+}
+
 /**
  * The calendar surface. Cache-first (AGENTS.md #9): renders the last known
  * occurrence set immediately; the skeleton only shows when there is genuinely
  * no data yet. The month view drives a `[rangeStart, rangeEnd)` occurrence
  * query that the server expands from RRULEs; the agenda view reuses the same
- * data sorted chronologically.
+ * data sorted chronologically. Opening an existing event additionally pulls the
+ * full event (with attendees) via `getEvent` so the edit dialog can manage RSVP.
  */
 export function CalendarScreen() {
 	const trpc = useTRPC();
-	const { createCalendar } = useCalendarActions();
+	const queryClient = useQueryClient();
+	const { createCalendar, importIcs } = useCalendarActions();
+	const { data: session } = authClient.useSession();
+	const currentUserId = session?.user?.id ?? null;
+
 	const [anchor, setAnchor] = useState(() => new Date());
 	const [view, setView] = useState<"month" | "agenda">("month");
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [dialogValue, setDialogValue] = useState<EventDialogValue | null>(null);
+	const importInputRef = useRef<HTMLInputElement>(null);
 
 	const grid = useMemo(() => buildMonthGrid(anchor), [anchor]);
 
@@ -74,6 +100,24 @@ export function CalendarScreen() {
 			rangeEnd: grid.rangeEnd,
 		}),
 	);
+
+	// The event currently open for edit drives the detailed getEvent query.
+	const editingEventId = dialogValue?.eventId ?? null;
+	const eventDetail = useQuery(
+		trpc.calendar.getEvent.queryOptions(
+			{ eventId: editingEventId ?? "" },
+			{ enabled: dialogOpen && Boolean(editingEventId) },
+		),
+	);
+
+	// Cache-first: surface persisted attendees immediately; isLoading only gates
+	// the empty/loading hint inside the dialog, never the rows themselves.
+	const attendees = eventDetail.data?.attendees ?? [];
+	const currentUserRsvp = useMemo(() => {
+		if (!currentUserId) return null;
+		const mine = attendees.find((a) => a.userId === currentUserId);
+		return mine?.status ?? null;
+	}, [attendees, currentUserId]);
 
 	const eventsById = useMemo(() => {
 		const map = new Map<
@@ -113,6 +157,25 @@ export function CalendarScreen() {
 			rrule: event.rrule,
 		});
 		setDialogOpen(true);
+	};
+
+	const handleExport = async () => {
+		if (!firstCalendarId) return;
+		try {
+			const { ics, filename } = await queryClient.fetchQuery(
+				trpc.calendar.exportIcs.queryOptions({ calendarId: firstCalendarId }),
+			);
+			downloadIcs(filename, ics);
+		} catch {
+			// fetchQuery rethrows the tRPC error; a failed export simply leaves the
+			// calendar untouched (no toast bundle owns read queries).
+		}
+	};
+
+	const handleImportFile = async (file: File) => {
+		if (!firstCalendarId) return;
+		const ics = await file.text();
+		importIcs.mutate({ calendarId: firstCalendarId, ics });
 	};
 
 	return (
@@ -158,6 +221,37 @@ export function CalendarScreen() {
 						</TabsList>
 					</Tabs>
 					<Button
+						variant="outline"
+						size="icon"
+						aria-label="Экспорт в .ics"
+						title="Экспорт в .ics"
+						onClick={handleExport}
+						disabled={!firstCalendarId}
+					>
+						<Download className="size-4" />
+					</Button>
+					<Button
+						variant="outline"
+						size="icon"
+						aria-label="Импорт из .ics"
+						title="Импорт из .ics"
+						onClick={() => importInputRef.current?.click()}
+						disabled={!firstCalendarId || importIcs.isPending}
+					>
+						<Upload className="size-4" />
+					</Button>
+					<input
+						ref={importInputRef}
+						type="file"
+						accept=".ics,text/calendar"
+						className="hidden"
+						onChange={(e) => {
+							const file = e.target.files?.[0];
+							if (file) void handleImportFile(file);
+							e.target.value = "";
+						}}
+					/>
+					<Button
 						onClick={() => openCreate(new Date())}
 						disabled={!firstCalendarId}
 					>
@@ -202,6 +296,10 @@ export function CalendarScreen() {
 						name: c.name,
 					}))}
 					initial={dialogValue}
+					attendees={attendees}
+					currentUserId={currentUserId}
+					currentUserRsvp={currentUserRsvp}
+					attendeesLoading={eventDetail.isLoading}
 				/>
 			)}
 		</div>
