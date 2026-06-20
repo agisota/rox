@@ -1,5 +1,5 @@
 import type { ThemeState } from "main/lib/app-state/schemas";
-import { builtInThemes, DEFAULT_THEME_ID } from "shared/themes";
+import { builtInThemes } from "shared/themes";
 
 type ThemeType = "dark" | "light";
 
@@ -28,10 +28,12 @@ export function resolveTerminalThemeType(params: {
 		return systemPrefersDark ? "dark" : "light";
 	}
 
+	// Resolve the active theme by id; an unknown/stale id is not silently
+	// promoted to the default theme — it falls through to the safe "dark"
+	// terminal fallback (matching the renderer-side resolver).
 	const matchingTheme =
 		customThemes.find((theme) => theme.id === activeThemeId) ||
-		builtInThemes.find((theme) => theme.id === activeThemeId) ||
-		builtInThemes.find((theme) => theme.id === DEFAULT_THEME_ID);
+		builtInThemes.find((theme) => theme.id === activeThemeId);
 
 	return matchingTheme?.type ?? "dark";
 }
