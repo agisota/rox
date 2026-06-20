@@ -1,6 +1,6 @@
 import { getErrorMessage } from "@rox/shared/error";
-import { forwardResponse } from "./stream-response";
 import { logger } from "../lib/logger";
+import { forwardResponse } from "./stream-response";
 import type {
 	TunnelHttpRequest,
 	TunnelRequest,
