@@ -39,6 +39,7 @@
 		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
 		"@rox/collab": "workspace:*",
+		"@rox/comms-core": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/host-provisioner": "workspace:*",
 		"@rox/rtc": "workspace:*",
