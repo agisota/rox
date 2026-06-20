@@ -5,6 +5,7 @@ import { buildWhereClause } from "./where";
 describe("buildWhereClause", () => {
 	for (const tableName of [
 		"journal_entries",
+		"journal_events",
 		"memory_import_jobs",
 		"memory_items",
 	] as const) {

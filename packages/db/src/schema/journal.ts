@@ -26,6 +26,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { organizations, users } from "./auth";
 import { journalEntryStatusValues, type MemoryCategory } from "./enums";
+import { automationRuns, automations } from "./schema";
 
 export const journalEntryStatus = pgEnum(
 	"journal_entry_status",
@@ -104,3 +105,69 @@ export const journalEntries = pgTable(
 
 export type InsertJournalEntry = typeof journalEntries.$inferInsert;
 export type SelectJournalEntry = typeof journalEntries.$inferSelect;
+
+/**
+ * `journal_events` is the continuous (24/7) event lane of the journal — the
+ * complement to the once-daily `journal_entries` reflection. Where
+ * `journal_entries` is one curated row per (organization, user, day),
+ * `journal_events` is an append-only stream that fills minute-by-minute from
+ * automations (and, in future, other producers): every automation run emits one
+ * event row, so the journal grows continuously instead of only at the daily R1
+ * digest.
+ *
+ * The link to the Automation Fabric is a real data-model edge: `automation_id`
+ * and `automation_run_id` are nullable FKs that `set null` on delete, so an
+ * event survives (as a historical record) even after its source automation or
+ * run is removed. `payload` carries producer-specific structured context.
+ *
+ * Personal + org scoped exactly like `journal_entries` (org cascade FK + user
+ * FK), so it rides the same Electric per-user shape. NEVER hand-edit migrations
+ * — change this file then run `bunx drizzle-kit generate --name="..."`.
+ */
+export const journalEvents = pgTable(
+	"journal_events",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		createdBy: uuid("created_by")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+
+		// Source automation + run. Nullable so an event outlives its producer:
+		// deleting the automation/run preserves the journal record.
+		automationId: uuid("automation_id").references(() => automations.id, {
+			onDelete: "set null",
+		}),
+		automationRunId: uuid("automation_run_id").references(
+			() => automationRuns.id,
+			{ onDelete: "set null" },
+		),
+
+		// Discriminator for the event producer / shape (e.g. 'automation_run').
+		kind: text().notNull(),
+		// Human-readable headline for the event (e.g. the automation name).
+		title: text().notNull(),
+		// Optional one-line human summary (status, outcome, …).
+		summary: text(),
+		// Producer-specific structured context.
+		payload: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [
+		index("journal_events_org_user_created_idx").on(
+			t.organizationId,
+			t.createdBy,
+			t.createdAt.desc(),
+		),
+		index("journal_events_automation_idx").on(t.automationId),
+		index("journal_events_automation_run_idx").on(t.automationRunId),
+	],
+);
+
+export type InsertJournalEvent = typeof journalEvents.$inferInsert;
+export type SelectJournalEvent = typeof journalEvents.$inferSelect;
