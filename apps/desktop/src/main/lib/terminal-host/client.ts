@@ -35,6 +35,12 @@ import { logger } from "main/lib/logger";
 import { ROX_DIR_NAME } from "shared/constants";
 import { throwIfAborted } from "../terminal/abort";
 import { TerminalAttachCanceledError } from "../terminal/errors";
+import {
+	getCreateOrAttachKey,
+	isProtocolMismatchError,
+	normalizeCreateOrAttachResponse,
+	normalizeListSessionsResponse,
+} from "./client-helpers";
 import { NdjsonParser, serializeMessage } from "./ndjson";
 import {
 	type CancelCreateOrAttachRequest,
@@ -273,12 +279,7 @@ export class TerminalHostClient extends EventEmitter {
 			"listSessions",
 			undefined,
 		);
-		return {
-			sessions: response.sessions.map((session) => ({
-				...session,
-				pid: session.pid ?? null,
-			})),
-		};
+		return normalizeListSessionsResponse(response);
 	}
 
 	private async waitForExistingDaemonProbe(): Promise<boolean> {
@@ -367,7 +368,7 @@ export class TerminalHostClient extends EventEmitter {
 				try {
 					await this.authenticateControl({ token });
 				} catch (error) {
-					if (attempt === 0 && this.isProtocolMismatchError(error)) {
+					if (attempt === 0 && isProtocolMismatchError(error)) {
 						if (DEBUG_CLIENT) {
 							logger.info(
 								"[TerminalHostClient] Protocol mismatch detected, shutting down legacy daemon...",
@@ -778,12 +779,6 @@ export class TerminalHostClient extends EventEmitter {
 		}
 
 		return readFileSync(TOKEN_PATH, "utf-8").trim();
-	}
-
-	private isProtocolMismatchError(error: unknown): boolean {
-		return (
-			error instanceof Error && error.message.startsWith("PROTOCOL_MISMATCH:")
-		);
 	}
 
 	private async authenticateControl({
@@ -1384,16 +1379,6 @@ export class TerminalHostClient extends EventEmitter {
 		}
 	}
 
-	private getCreateOrAttachKey({
-		sessionId,
-		requestId,
-	}: {
-		sessionId: string;
-		requestId: string;
-	}): string {
-		return `${sessionId}:${requestId}`;
-	}
-
 	// ===========================================================================
 	// Public API
 	// ===========================================================================
@@ -1411,7 +1396,7 @@ export class TerminalHostClient extends EventEmitter {
 		if (
 			request.requestId &&
 			this.canceledCreateOrAttachKeys.delete(
-				this.getCreateOrAttachKey({
+				getCreateOrAttachKey({
 					sessionId: request.sessionId,
 					requestId: request.requestId,
 				}),
@@ -1424,7 +1409,7 @@ export class TerminalHostClient extends EventEmitter {
 			request,
 		);
 		// Version skew: older daemons may not return pid - normalize undefined → null
-		return { ...response, pid: response.pid ?? null };
+		return normalizeCreateOrAttachResponse(response);
 	}
 
 	/**
@@ -1435,7 +1420,7 @@ export class TerminalHostClient extends EventEmitter {
 		request: CancelCreateOrAttachRequest,
 	): Promise<EmptyResponse> {
 		if (this.connectionState === ConnectionState.CONNECTING) {
-			this.canceledCreateOrAttachKeys.add(this.getCreateOrAttachKey(request));
+			this.canceledCreateOrAttachKeys.add(getCreateOrAttachKey(request));
 		}
 		if (
 			this.connectionState !== ConnectionState.CONNECTED ||
@@ -1532,12 +1517,7 @@ export class TerminalHostClient extends EventEmitter {
 			"listSessions",
 			undefined,
 		);
-		return {
-			sessions: response.sessions.map((session) => ({
-				...session,
-				pid: session.pid ?? null,
-			})),
-		};
+		return normalizeListSessionsResponse(response);
 	}
 
 	/**
@@ -1583,7 +1563,7 @@ export class TerminalHostClient extends EventEmitter {
 				try {
 					await this.authenticateControl({ token });
 				} catch (error) {
-					if (this.isProtocolMismatchError(error)) {
+					if (isProtocolMismatchError(error)) {
 						this.resetConnectionState({ emitDisconnected: false });
 						await this.shutdownLegacyDaemon({
 							killSessions: request.killSessions ?? false,
