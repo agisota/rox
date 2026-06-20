@@ -7,6 +7,7 @@ import { analyticsRouter } from "./router/analytics";
 import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
 import { chatRouter } from "./router/chat";
+import { dashboardRouter } from "./router/dashboard";
 import { deviceRouter } from "./router/device";
 import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
@@ -15,6 +16,7 @@ import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
 import { journalRouter } from "./router/journal";
 import { knowledgeRouter } from "./router/knowledge";
+import { mcpAdminRouter } from "./router/mcp-admin";
 import { memoryRouter } from "./router/memory";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
@@ -29,6 +31,7 @@ import { rankingRouter } from "./router/ranking";
 import { runtimeRouter } from "./router/runtime";
 import { shareRouter } from "./router/share";
 import { skillRouter } from "./router/skill";
+import { skillLibraryRouter } from "./router/skill-library";
 import { supportRouter } from "./router/support/support";
 import { taskRouter } from "./router/task";
 import { teamRouter } from "./router/team";
@@ -54,6 +57,9 @@ export const appRouter = createTRPCRouter({
 	chat: chatRouter,
 	device: deviceRouter,
 	economy: economyRouter,
+	skillLibrary: skillLibraryRouter,
+	dashboard: dashboardRouter,
+	mcpAdmin: mcpAdminRouter,
 	executionCircuit: executionCircuitRouter,
 	graph: graphRouter,
 	host: hostRouter,
