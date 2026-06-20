@@ -35,6 +35,7 @@ import {
 } from "renderer/stores/workspace-sidebar-state";
 import { AddRepositoryModals } from "./components/AddRepositoryModals";
 import { CrossVersionMismatchState } from "./components/CrossVersionMismatchState";
+import { GithubConnectBanner } from "./components/GithubConnectBanner";
 import { TopBar } from "./components/TopBar";
 
 export const Route = createFileRoute("/_authenticated/_dashboard")({
@@ -231,6 +232,7 @@ function DashboardLayout() {
 			</motion.div>
 			<div id="workspace-right-sidebar-slot" className="flex h-full shrink-0" />
 			<AddRepositoryModals />
+			<GithubConnectBanner />
 			{deleteTarget?.version === "v1" && (
 				<DeleteWorkspaceDialog
 					workspaceId={deleteTarget.workspaceId}
