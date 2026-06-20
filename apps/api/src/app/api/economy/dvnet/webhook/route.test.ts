@@ -86,6 +86,13 @@ mock.module("@rox/db/schema", () => ({
 	roxLedger: { __name: "rox_ledger" },
 }));
 
+// The route is gated behind env.DVNET_ENABLED (dv.net is disabled by default).
+// Existing behavior tests run with it enabled; the disabled path is its own test.
+const envState: { DVNET_ENABLED: string | undefined } = {
+	DVNET_ENABLED: "true",
+};
+mock.module("@/env", () => ({ env: envState }));
+
 const { POST } = await import("./route");
 
 function buildRequest(body: unknown) {
@@ -122,6 +129,16 @@ describe("dv.net webhook route (T5)", () => {
 		state.balanceUpdated = [];
 		state.ledgerInserted = [];
 		state.balanceSeededFor = [];
+		envState.DVNET_ENABLED = "true";
+	});
+
+	test("returns 503 and credits nothing when dv.net is disabled", async () => {
+		envState.DVNET_ENABLED = undefined;
+		const res = await POST(buildRequest(confirmedWebhook()));
+		expect(res.status).toBe(503);
+		expect(state.topupUpdated).toHaveLength(0);
+		expect(state.ledgerInserted).toHaveLength(0);
+		expect(state.balanceUpdated).toHaveLength(0);
 	});
 
 	test("credits a confirmed payment once: marks topup confirmed + ledger + balance", async () => {

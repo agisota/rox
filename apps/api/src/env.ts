@@ -71,6 +71,10 @@ export const env = createEnv({
 		DURABLE_STREAMS_SECRET: z.string().min(1),
 		TAVILY_API_KEY: z.string().optional(),
 		RELAY_URL: z.string().url(),
+		// dv.net crypto top-up. Disabled by default: the inbound webhook has no
+		// signature verification, so it must stay off until dv.net's signing scheme
+		// is wired up. Set to "true" ONLY together with that verification.
+		DVNET_ENABLED: z.string().optional(),
 	},
 	client: {
 		NEXT_PUBLIC_API_URL: z.string().url(),
