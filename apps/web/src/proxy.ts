@@ -39,9 +39,8 @@ const publicRoutes = [
 	// share page without being bounced to /sign-in. The page itself is a public
 	// DB read (app/s/[slug]/page.tsx). Do NOT remove without breaking sharing.
 	"/s",
-	// Public user profiles (/u/<handle>) — anonymous viewers reach a public
-	// profile here (e.g. redirected from rox.one/@<handle>). The page gates on
-	// `isPublic` and calls notFound() for private/unknown handles
+	// Legacy public user profiles (/u/<handle>) — kept public because it now
+	// permanently redirects to the canonical `/@<handle>` form.
 	// (app/u/[handle]/page.tsx). Do NOT remove without breaking public profiles.
 	"/u",
 ];
@@ -50,8 +49,22 @@ function matchesRoute(pathname: string, route: string): boolean {
 	return pathname === route || pathname.startsWith(`${route}/`);
 }
 
+/**
+ * The public `@<handle>` namespace (ROX-522): profiles, sections, skills and
+ * shared resources at `/@<handle>/…`. Anonymous viewers must reach these
+ * without being bounced to /sign-in (the pages themselves gate on `isPublic`
+ * and `notFound()` for unknown/private/reserved handles). Marketing redirects
+ * `rox.one/@<handle>` here.
+ */
+function isPublicHandleRoute(pathname: string): boolean {
+	return pathname.startsWith("/@");
+}
+
 function isPublicRoute(pathname: string): boolean {
-	return publicRoutes.some((route) => matchesRoute(pathname, route));
+	return (
+		isPublicHandleRoute(pathname) ||
+		publicRoutes.some((route) => matchesRoute(pathname, route))
+	);
 }
 
 export default async function proxy(req: NextRequest) {

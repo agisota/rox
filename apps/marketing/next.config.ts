@@ -56,12 +56,15 @@ const config: NextConfig = {
 		const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://app.rox.one";
 		return [
 			{
-				// Public profiles live on the web app at `/u/<handle>`, but users
-				// share/visit the @-handle form on the marketing domain
-				// (`rox.one/@<handle>`). Redirect it to the canonical renderer.
-				// `@` is matched literally; `:handle` captures the nickname.
-				source: "/@:handle",
-				destination: `${webUrl}/u/:handle`,
+				// Public profiles + share links live on the web app (app.rox.one),
+				// which is the only app with DB access. Users share/visit the
+				// `@<handle>` form on the marketing domain (`rox.one/@<handle>/…`).
+				// Redirect the whole `@<handle>` namespace to the canonical renderer,
+				// preserving the `@` and any sub-path (sections / skills / shared).
+				// `@` is matched literally; `:handle*` captures the nickname plus the
+				// rest of the path.
+				source: "/@:handle*",
+				destination: `${webUrl}/@:handle*`,
 				permanent: false,
 			},
 			{
