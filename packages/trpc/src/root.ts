@@ -12,6 +12,7 @@ import { collabRouter } from "./router/collab";
 import { commsRouter } from "./router/comms";
 import { dashboardRouter } from "./router/dashboard";
 import { deviceRouter } from "./router/device";
+import { driveRouter } from "./router/drive";
 import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
 import { graphRouter } from "./router/graph";
@@ -63,6 +64,7 @@ export const appRouter = createTRPCRouter({
 	collab: collabRouter,
 	comms: commsRouter,
 	device: deviceRouter,
+	drive: driveRouter,
 	economy: economyRouter,
 	skillLibrary: skillLibraryRouter,
 	dashboard: dashboardRouter,

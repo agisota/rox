@@ -45,6 +45,7 @@
 		"@rox/rtc": "workspace:*",
 		"@rox/runtime-clients": "workspace:*",
 		"@rox/shared": "workspace:*",
+		"@rox/storage": "workspace:*",
 		"@rox/workflow-core": "workspace:*",
 		"@rox/workflow-runtime": "workspace:*",
 		"@t3-oss/env-core": "0.13.11",
