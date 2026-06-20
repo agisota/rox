@@ -34,6 +34,7 @@ import { app } from "electron";
 import { ROX_DIR_NAME } from "shared/constants";
 import { throwIfAborted } from "../terminal/abort";
 import { TerminalAttachCanceledError } from "../terminal/errors";
+import { NdjsonParser, serializeMessage } from "./ndjson";
 import {
 	type CancelCreateOrAttachRequest,
 	type ClearScrollbackRequest,
@@ -91,47 +92,6 @@ const SPAWN_LOCK_TIMEOUT_MS = 10000; // Max time to hold spawn lock
 // Queue limits
 const MAX_NOTIFY_QUEUE_BYTES = 2_000_000; // 2MB cap to prevent OOM
 const MAX_DAEMON_LOG_BYTES = 5 * 1024 * 1024; // 5MB cap for daemon.log
-
-// =============================================================================
-// NDJSON Parser
-// =============================================================================
-
-class NdjsonParser {
-	private remainder = "";
-
-	parse(chunk: string): Array<IpcResponse | IpcEvent> {
-		const messages: Array<IpcResponse | IpcEvent> = [];
-
-		// Prepend any remainder from previous parse
-		const data = this.remainder + chunk;
-		this.remainder = "";
-
-		let startIndex = 0;
-		let newlineIndex = data.indexOf("\n");
-
-		while (newlineIndex !== -1) {
-			const line = data.slice(startIndex, newlineIndex);
-
-			if (line.trim()) {
-				try {
-					messages.push(JSON.parse(line));
-				} catch {
-					console.warn("[TerminalHostClient] Failed to parse NDJSON line");
-				}
-			}
-
-			startIndex = newlineIndex + 1;
-			newlineIndex = data.indexOf("\n", startIndex);
-		}
-
-		// Save any remaining data after the last newline
-		if (startIndex < data.length) {
-			this.remainder = data.slice(startIndex);
-		}
-
-		return messages;
-	}
-}
 
 // =============================================================================
 // Pending Request Tracker
@@ -942,7 +902,7 @@ export class TerminalHostClient extends EventEmitter {
 
 			this.streamSocket.on("data", onData);
 
-			const message = `${JSON.stringify({ id, type, payload })}\n`;
+			const message = serializeMessage({ id, type, payload });
 			this.streamSocket.write(message);
 		});
 	}
@@ -991,7 +951,7 @@ export class TerminalHostClient extends EventEmitter {
 							}
 						};
 						socket.on("data", onData);
-						socket.write(`${JSON.stringify(request)}\n`);
+						socket.write(serializeMessage(request));
 					});
 
 				(async () => {
@@ -1362,7 +1322,7 @@ export class TerminalHostClient extends EventEmitter {
 				timeoutId,
 			});
 
-			const message = `${JSON.stringify({ id, type, payload })}\n`;
+			const message = serializeMessage({ id, type, payload });
 			this.controlSocket.write(message);
 		});
 	}
@@ -1380,7 +1340,7 @@ export class TerminalHostClient extends EventEmitter {
 		if (!this.controlSocket) return false;
 
 		const id = `notify_${++this.requestCounter}`;
-		const message = `${JSON.stringify({ id, type, payload })}\n`;
+		const message = serializeMessage({ id, type, payload });
 		const messageBytes = Buffer.byteLength(message, "utf8");
 
 		// Check queue limit to prevent OOM under backpressure
