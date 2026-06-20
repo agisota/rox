@@ -16,6 +16,7 @@
 		"./cinematic-gradient": "./src/components/CinematicGradient/index.ts",
 		"./quote-screen": "./src/components/QuoteScreen/index.ts",
 		"./wallpaper-layer": "./src/components/WallpaperLayer/index.ts",
+		"./presence-stack": "./src/components/PresenceStack/index.ts",
 		"./icons/preset-icons": "./src/assets/icons/preset-icons/index.ts",
 		"./icons/preset-icons/*": "./src/assets/icons/preset-icons/*.svg",
 		"./atoms/*": "./src/atoms/*/index.ts",
