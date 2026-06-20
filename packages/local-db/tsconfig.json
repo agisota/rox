@@ -1,6 +1,7 @@
 {
 	"extends": "@rox/typescript/internal-package.json",
 	"compilerOptions": {
+		"types": ["bun-types"],
 		"paths": {
 			"@/*": ["./src/*"]
 		}

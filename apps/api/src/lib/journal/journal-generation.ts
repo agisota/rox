@@ -9,31 +9,23 @@
  *
  * Server-side only (the desktop may be closed). Writes go through the normal db
  * client; Electric replicates them to the desktop collection. Pure stream
- * transforms live in `journal-streams.ts` (db-free, unit-tested).
+ * transforms live in `journal-streams.ts` (db-free, unit-tested); the shared
+ * transactional persistence lives in `journal-repo.ts`; the GitHub profile
+ * summary + seed sentinel live in `journal-github.ts`.
  */
 
-import { db } from "@rox/db/client";
-import {
-	chatSessions,
-	githubInstallations,
-	githubPullRequests,
-	githubRepositories,
-	type JournalMemorySuggestion,
-	journalEntries,
-	memoryItems,
-} from "@rox/db/schema";
-import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { db, dbWs } from "@rox/db/client";
+import { chatSessions, journalEntries } from "@rox/db/schema";
+import { and, eq, gte, lt } from "drizzle-orm";
 import { callR1Json, isR1Configured, type R1Message } from "../r1";
 import { readSessionTranscript } from "../session-transcript";
 import {
-	buildSeedMessages,
-	type GithubProfilePr,
-	type GithubProfileRepo,
-	type GithubProfileSummary,
-	MAX_SEED_PRS,
-	MAX_SEED_REPOS,
-	shapeSeedStreams,
-} from "./journal-seed";
+	buildGithubProfileSummary,
+	isSeedEntry,
+	SEED_SOURCE_MARKER,
+} from "./journal-github";
+import { persistJournalEntry } from "./journal-repo";
+import { buildSeedMessages, shapeSeedStreams } from "./journal-seed";
 import {
 	dayBounds,
 	JOURNAL_SYSTEM_PROMPT,
@@ -42,6 +34,10 @@ import {
 	MAX_TRANSCRIPT_CHARS_PER_SESSION,
 	sanitizeStreams,
 } from "./journal-streams";
+
+// Re-exported here to keep this module's public surface stable: the seed
+// sentinel + predicate are defined in `journal-github.ts`.
+export { isSeedEntry, SEED_SOURCE_MARKER };
 
 export interface GenerateJournalInput {
 	organizationId: string;
@@ -121,100 +117,27 @@ export async function generateJournalForUserDay(
 	});
 	const streams = sanitizeStreams(rawStreams);
 
-	const [entry] = await db
-		.insert(journalEntries)
-		.values({
+	const { entryId, memoryCount } = await dbWs.transaction(async (tx) => {
+		const written = await persistJournalEntry(tx, {
 			organizationId,
-			createdBy: userId,
+			userId,
 			day,
-			reflection: streams.reflection || null,
-			learnings: streams.learnings,
-			memorySuggestions: streams.memorySuggestions,
-			tips: streams.tips,
-			status: "generated",
-			modelId: "rox-r1",
+			streams,
 			sourceSessionIds: usedSessionIds,
-			generatedAt: new Date(),
-		})
-		.onConflictDoUpdate({
-			target: [
-				journalEntries.organizationId,
-				journalEntries.createdBy,
-				journalEntries.day,
-			],
-			set: {
-				reflection: streams.reflection || null,
-				learnings: streams.learnings,
-				memorySuggestions: streams.memorySuggestions,
-				tips: streams.tips,
-				status: "generated",
-				modelId: "rox-r1",
-				sourceSessionIds: usedSessionIds,
-				generatedAt: new Date(),
-				updatedAt: new Date(),
-			},
-		})
-		.returning({ id: journalEntries.id });
-
-	const memoryCount = await materializeMemorySuggestions({
-		organizationId,
-		userId,
-		day,
-		suggestions: streams.memorySuggestions,
+			conflict: "update",
+		});
+		return {
+			entryId: written?.entryId ?? "",
+			memoryCount: written?.memoryCount ?? 0,
+		};
 	});
 
 	return {
 		status: "generated",
-		entryId: entry?.id ?? "",
+		entryId,
 		sessionCount: usedSessionIds.length,
 		memoryCount,
 	};
-}
-
-/**
- * Insert journal memory suggestions as `memory_items` (source=agent,
- * status=suggested), skipping bodies the user already has in the same category
- * (any status) so re-generation doesn't pile up duplicates.
- */
-async function materializeMemorySuggestions(args: {
-	organizationId: string;
-	userId: string;
-	day: string;
-	suggestions: JournalMemorySuggestion[];
-}): Promise<number> {
-	const { organizationId, userId, day, suggestions } = args;
-	if (suggestions.length === 0) return 0;
-
-	const existing = await db
-		.select({ body: memoryItems.body, category: memoryItems.category })
-		.from(memoryItems)
-		.where(
-			and(
-				eq(memoryItems.organizationId, organizationId),
-				eq(memoryItems.createdBy, userId),
-			),
-		);
-	const seen = new Set(
-		existing.map((e) => `${e.category}::${e.body.trim().toLowerCase()}`),
-	);
-
-	const fresh = suggestions.filter(
-		(s) => !seen.has(`${s.category}::${s.body.trim().toLowerCase()}`),
-	);
-	if (fresh.length === 0) return 0;
-
-	await db.insert(memoryItems).values(
-		fresh.map((s) => ({
-			organizationId,
-			createdBy: userId,
-			category: s.category,
-			body: s.body,
-			source: "agent" as const,
-			status: "suggested" as const,
-			sourceRef: { day },
-		})),
-	);
-	return fresh.length;
 }
 
 // ---------------------------------------------------------------------------
@@ -225,19 +148,6 @@ async function materializeMemorySuggestions(args: {
 // isn't empty on day one. The seed is marked via `SEED_SOURCE_MARKER` so a
 // later real daily digest still regenerates the same (org, user, day) row.
 // ---------------------------------------------------------------------------
-
-/** Sentinel stored in `sourceSessionIds` to mark a GitHub-seed entry. */
-export const SEED_SOURCE_MARKER = "seed:github";
-
-/** True when a journal entry was produced by the GitHub seed (not real sessions). */
-export function isSeedEntry(
-	sourceSessionIds: readonly string[] | null | undefined,
-): boolean {
-	return (
-		Array.isArray(sourceSessionIds) &&
-		sourceSessionIds.includes(SEED_SOURCE_MARKER)
-	);
-}
 
 export type GenerateJournalSeedResult =
 	| {
@@ -256,65 +166,6 @@ export type GenerateJournalSeedResult =
 				| "already-seeded"
 				| "has-sessions";
 	  };
-
-/**
- * Build a compact GitHub profile summary for an org from already-synced data
- * (the GitHub App keeps `github_repositories` / `github_pull_requests` fresh),
- * so the seed needs no live Octokit call. Returns `null` when the org has no
- * GitHub installation.
- */
-async function buildGithubProfileSummary(
-	organizationId: string,
-): Promise<GithubProfileSummary | null> {
-	const [installation] = await db
-		.select({
-			accountLogin: githubInstallations.accountLogin,
-			accountType: githubInstallations.accountType,
-		})
-		.from(githubInstallations)
-		.where(eq(githubInstallations.organizationId, organizationId))
-		.limit(1);
-	if (!installation) return null;
-
-	const repoRows = await db
-		.select({
-			fullName: githubRepositories.fullName,
-			isPrivate: githubRepositories.isPrivate,
-			defaultBranch: githubRepositories.defaultBranch,
-		})
-		.from(githubRepositories)
-		.where(eq(githubRepositories.organizationId, organizationId))
-		.limit(MAX_SEED_REPOS);
-
-	const prRows = await db
-		.select({
-			title: githubPullRequests.title,
-			state: githubPullRequests.state,
-			headBranch: githubPullRequests.headBranch,
-		})
-		.from(githubPullRequests)
-		.where(eq(githubPullRequests.organizationId, organizationId))
-		.orderBy(desc(githubPullRequests.updatedAt))
-		.limit(MAX_SEED_PRS);
-
-	const repos: GithubProfileRepo[] = repoRows.map((r) => ({
-		fullName: r.fullName,
-		isPrivate: r.isPrivate,
-		defaultBranch: r.defaultBranch,
-	}));
-	const recentPrs: GithubProfilePr[] = prRows.map((p) => ({
-		title: p.title,
-		state: p.state,
-		headBranch: p.headBranch,
-	}));
-
-	return {
-		login: installation.accountLogin,
-		accountType: installation.accountType,
-		repos,
-		recentPrs,
-	};
-}
 
 /**
  * Seed a first journal entry for `(organization, user, day)` from the org's
@@ -375,45 +226,23 @@ export async function generateJournalSeedForUser(
 	);
 	const streams = shapeSeedStreams(rawStreams);
 
-	const [entry] = await db
-		.insert(journalEntries)
-		.values({
+	const written = await dbWs.transaction(async (tx) =>
+		persistJournalEntry(tx, {
 			organizationId,
-			createdBy: userId,
+			userId,
 			day,
-			reflection: streams.reflection || null,
-			learnings: streams.learnings,
-			memorySuggestions: streams.memorySuggestions,
-			tips: streams.tips,
-			status: "generated",
-			modelId: "rox-r1",
+			streams,
 			sourceSessionIds: [SEED_SOURCE_MARKER],
-			generatedAt: new Date(),
-		})
-		// Do NOT clobber a concurrently-created entry — a race means the digest
-		// (or another seed) won the day; treat it as an existing entry.
-		.onConflictDoNothing({
-			target: [
-				journalEntries.organizationId,
-				journalEntries.createdBy,
-				journalEntries.day,
-			],
-		})
-		.returning({ id: journalEntries.id });
-	if (!entry) return { status: "skipped", reason: "has-entry" };
-
-	const memoryCount = await materializeMemorySuggestions({
-		organizationId,
-		userId,
-		day,
-		suggestions: streams.memorySuggestions,
-	});
+			conflict: "ignore",
+		}),
+	);
+	if (!written) return { status: "skipped", reason: "has-entry" };
 
 	return {
 		status: "seeded",
-		entryId: entry.id,
+		entryId: written.entryId,
 		repoCount: summary.repos.length,
 		prCount: summary.recentPrs.length,
-		memoryCount,
+		memoryCount: written.memoryCount,
 	};
 }

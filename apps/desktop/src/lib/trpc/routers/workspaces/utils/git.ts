@@ -579,6 +579,52 @@ export function generateBranchName({
 	return addPrefix(`${baseWord}-${Date.now()}`);
 }
 
+/**
+ * Maps a raw git/worktree error to a user-facing Error. Centralizes the
+ * lock-file and "already checked out" detection that the worktree creators
+ * previously duplicated verbatim. Always throws (never returns).
+ */
+function mapWorktreeError(
+	error: unknown,
+	opts: {
+		genericPrefix: string;
+		checkLock?: boolean;
+		alreadyCheckedOutMessage?: string;
+	},
+): never {
+	const errorMessage = error instanceof Error ? error.message : String(error);
+	const lowerError = errorMessage.toLowerCase();
+
+	if (opts.checkLock) {
+		const isLockError =
+			lowerError.includes("could not lock") ||
+			lowerError.includes("unable to lock") ||
+			(lowerError.includes(".lock") && lowerError.includes("file exists"));
+		if (isLockError) {
+			console.error(
+				`Git lock file error during worktree creation: ${errorMessage}`,
+			);
+			throw new Error(
+				`Failed to create worktree: The git repository is locked by another process. ` +
+					`This usually happens when another git operation is in progress, or a previous operation crashed. ` +
+					`Please wait for the other operation to complete, or manually remove the lock file ` +
+					`(e.g., .git/config.lock or .git/index.lock) if you're sure no git operations are running.`,
+			);
+		}
+	}
+
+	if (
+		opts.alreadyCheckedOutMessage &&
+		(lowerError.includes("already checked out") ||
+			lowerError.includes("is already used by worktree"))
+	) {
+		throw new Error(opts.alreadyCheckedOutMessage);
+	}
+
+	console.error(`${opts.genericPrefix}: ${errorMessage}`);
+	throw new Error(`${opts.genericPrefix}: ${errorMessage}`);
+}
+
 export async function createWorktree(
 	mainRepoPath: string,
 	branch: string,
@@ -618,28 +664,10 @@ export async function createWorktree(
 			`Created worktree at ${worktreePath} with branch ${branch} from ${startPoint}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		const lowerError = errorMessage.toLowerCase();
-
-		const isLockError =
-			lowerError.includes("could not lock") ||
-			lowerError.includes("unable to lock") ||
-			(lowerError.includes(".lock") && lowerError.includes("file exists"));
-
-		if (isLockError) {
-			console.error(
-				`Git lock file error during worktree creation: ${errorMessage}`,
-			);
-			throw new Error(
-				`Failed to create worktree: The git repository is locked by another process. ` +
-					`This usually happens when another git operation is in progress, or a previous operation crashed. ` +
-					`Please wait for the other operation to complete, or manually remove the lock file ` +
-					`(e.g., .git/config.lock or .git/index.lock) if you're sure no git operations are running.`,
-			);
-		}
-
-		console.error(`Failed to create worktree: ${errorMessage}`);
-		throw new Error(`Failed to create worktree: ${errorMessage}`);
+		mapWorktreeError(error, {
+			checkLock: true,
+			genericPrefix: "Failed to create worktree",
+		});
 	}
 }
 
@@ -707,39 +735,13 @@ export async function createWorktreeFromExistingBranch({
 			`Created worktree at ${worktreePath} using existing branch ${branch}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		const lowerError = errorMessage.toLowerCase();
-
-		const isLockError =
-			lowerError.includes("could not lock") ||
-			lowerError.includes("unable to lock") ||
-			(lowerError.includes(".lock") && lowerError.includes("file exists"));
-
-		if (isLockError) {
-			console.error(
-				`Git lock file error during worktree creation: ${errorMessage}`,
-			);
-			throw new Error(
-				`Failed to create worktree: The git repository is locked by another process. ` +
-					`This usually happens when another git operation is in progress, or a previous operation crashed. ` +
-					`Please wait for the other operation to complete, or manually remove the lock file ` +
-					`(e.g., .git/config.lock or .git/index.lock) if you're sure no git operations are running.`,
-			);
-		}
-
-		// Check if the branch is already checked out in another worktree
-		if (
-			lowerError.includes("already checked out") ||
-			lowerError.includes("is already used by worktree")
-		) {
-			throw new Error(
+		mapWorktreeError(error, {
+			checkLock: true,
+			genericPrefix: "Failed to create worktree",
+			alreadyCheckedOutMessage:
 				`Branch "${branch}" is already checked out in another worktree. ` +
-					`Each branch can only be checked out in one worktree at a time.`,
-			);
-		}
-
-		console.error(`Failed to create worktree: ${errorMessage}`);
-		throw new Error(`Failed to create worktree: ${errorMessage}`);
+				`Each branch can only be checked out in one worktree at a time.`,
+		});
 	}
 }
 
@@ -1069,19 +1071,6 @@ export async function refreshDefaultBranch(
 	}
 
 	return null;
-}
-
-export async function checkNeedsRebase(
-	worktreePath: string,
-	defaultBranch: string,
-): Promise<boolean> {
-	const git = await getSimpleGitWithShellPath(worktreePath);
-	const behindCount = await git.raw([
-		"rev-list",
-		"--count",
-		`HEAD..origin/${defaultBranch}`,
-	]);
-	return Number.parseInt(behindCount.trim(), 10) > 0;
 }
 
 export async function getAheadBehindCount({
@@ -1425,6 +1414,163 @@ export async function listBranches(
 		.map((b) => b.replace("origin/", ""));
 
 	return { local, remote };
+}
+
+/** A branch entry with its last-commit timestamp and local/remote presence. */
+export interface BranchWithDate {
+	name: string;
+	/** Last commit time in milliseconds since epoch (0 when unknown). */
+	lastCommitDate: number;
+	isLocal: boolean;
+	isRemote: boolean;
+}
+
+/**
+ * Parses `git for-each-ref --format="%(refname:short) %(committerdate:unix)"`
+ * output into [branch, timestampMs] pairs, normalizing `origin/` remote names
+ * and skipping blank lines plus the symbolic `HEAD` ref.
+ */
+function parseForEachRefLines(
+	output: string,
+): Array<{ branch: string; lastCommitDate: number }> {
+	const result: Array<{ branch: string; lastCommitDate: number }> = [];
+	for (const line of output.trim().split("\n")) {
+		if (!line) continue;
+		const lastSpaceIdx = line.lastIndexOf(" ");
+		if (lastSpaceIdx <= 0) continue;
+		let branch = line.substring(0, lastSpaceIdx);
+		const timestamp = Number.parseInt(line.substring(lastSpaceIdx + 1), 10);
+
+		if (branch.startsWith("origin/")) {
+			branch = branch.replace("origin/", "");
+		}
+
+		if (!branch || branch === "HEAD") continue;
+
+		result.push({ branch, lastCommitDate: timestamp * 1000 });
+	}
+	return result;
+}
+
+/**
+ * Lists every local and cached remote branch with its last-commit timestamp,
+ * merging refs so each branch appears once with accurate `isLocal`/`isRemote`
+ * flags. Remote refs win on `lastCommitDate`; the local pass only upgrades the
+ * `isLocal` flag for branches that already came from the remote pass.
+ *
+ * This is the shared core behind the branch-listing tRPC procedures. Callers
+ * remain responsible for fetching policy decisions, default-branch
+ * reconciliation, filtering, sorting, and pagination.
+ *
+ * @param repoPath - Path to the repository
+ * @param opts.fetch - When true, runs a best-effort `git fetch --prune` first
+ *   to refresh cached remote refs (errors are ignored, e.g. offline)
+ */
+export async function listBranchesWithDates(
+	repoPath: string,
+	opts?: { fetch?: boolean },
+): Promise<BranchWithDate[]> {
+	const git = await getSimpleGitWithShellPath(repoPath);
+
+	if (opts?.fetch) {
+		try {
+			await git.fetch(["--prune"]);
+		} catch {
+			// Best effort: continue with locally available refs when offline.
+		}
+	}
+
+	// Build local/remote presence sets from the full branch listing so we can
+	// tag each ref and fall back gracefully if `for-each-ref` fails.
+	const branchSummary = await git.branch(["-a"]);
+	const localBranchSet = new Set<string>();
+	const remoteBranchSet = new Set<string>();
+
+	for (const name of Object.keys(branchSummary.branches)) {
+		if (name.startsWith("remotes/origin/")) {
+			if (name === "remotes/origin/HEAD") continue;
+			remoteBranchSet.add(name.replace("remotes/origin/", ""));
+		} else {
+			localBranchSet.add(name);
+		}
+	}
+
+	const branchMap = new Map<
+		string,
+		{ lastCommitDate: number; isLocal: boolean; isRemote: boolean }
+	>();
+
+	// Cached remote refs (no network needed once fetched above).
+	if (remoteBranchSet.size > 0) {
+		try {
+			const remoteBranchInfo = await git.raw([
+				"for-each-ref",
+				"--sort=-committerdate",
+				"--format=%(refname:short) %(committerdate:unix)",
+				"refs/remotes/origin/",
+			]);
+
+			for (const { branch, lastCommitDate } of parseForEachRefLines(
+				remoteBranchInfo,
+			)) {
+				branchMap.set(branch, {
+					lastCommitDate,
+					isLocal: localBranchSet.has(branch),
+					isRemote: true,
+				});
+			}
+		} catch {
+			for (const name of remoteBranchSet) {
+				branchMap.set(name, {
+					lastCommitDate: 0,
+					isLocal: localBranchSet.has(name),
+					isRemote: true,
+				});
+			}
+		}
+	}
+
+	try {
+		const localBranchInfo = await git.raw([
+			"for-each-ref",
+			"--sort=-committerdate",
+			"--format=%(refname:short) %(committerdate:unix)",
+			"refs/heads/",
+		]);
+
+		for (const { branch, lastCommitDate } of parseForEachRefLines(
+			localBranchInfo,
+		)) {
+			// Remote takes precedence for date; only upgrade isLocal otherwise.
+			if (!branchMap.has(branch)) {
+				branchMap.set(branch, {
+					lastCommitDate,
+					isLocal: true,
+					isRemote: remoteBranchSet.has(branch),
+				});
+			} else {
+				const existing = branchMap.get(branch);
+				if (existing) {
+					existing.isLocal = true;
+				}
+			}
+		}
+	} catch {
+		for (const name of localBranchSet) {
+			if (!branchMap.has(name)) {
+				branchMap.set(name, {
+					lastCommitDate: 0,
+					isLocal: true,
+					isRemote: remoteBranchSet.has(name),
+				});
+			}
+		}
+	}
+
+	return Array.from(branchMap.entries()).map(([name, data]) => ({
+		name,
+		...data,
+	}));
 }
 
 /**
@@ -1866,17 +2012,10 @@ export async function createWorktreeFromPr({
 			`[git] Created worktree at ${worktreePath} for PR #${prInfo.number}`,
 		);
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		const lowerError = errorMessage.toLowerCase();
-
-		if (
-			lowerError.includes("already checked out") ||
-			lowerError.includes("is already used by worktree")
-		) {
-			throw new Error(
-				`This PR's branch is already checked out in another worktree.`,
-			);
-		}
-		throw new Error(`Failed to create worktree from PR: ${errorMessage}`);
+		mapWorktreeError(error, {
+			genericPrefix: "Failed to create worktree from PR",
+			alreadyCheckedOutMessage:
+				"This PR's branch is already checked out in another worktree.",
+		});
 	}
 }

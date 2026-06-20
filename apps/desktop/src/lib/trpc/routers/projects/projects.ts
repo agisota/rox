@@ -39,6 +39,7 @@ import {
 	getDefaultBranch,
 	getGitAuthorName,
 	getGitRoot,
+	listBranchesWithDates,
 	NotGitRepoError,
 	refreshDefaultBranch,
 	sanitizeAuthorPrefix,
@@ -596,123 +597,8 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						throw new Error(`Project ${input.projectId} not found`);
 					}
 
-					const git = await getSimpleGitWithShellPath(project.mainRepoPath);
-
 					// No fetch — use only locally available refs
-					const branchSummary = await git.branch(["-a"]);
-
-					const localBranchSet = new Set<string>();
-					const remoteBranchSet = new Set<string>();
-
-					for (const name of Object.keys(branchSummary.branches)) {
-						if (name.startsWith("remotes/origin/")) {
-							if (name === "remotes/origin/HEAD") continue;
-							const remoteName = name.replace("remotes/origin/", "");
-							remoteBranchSet.add(remoteName);
-						} else {
-							localBranchSet.add(name);
-						}
-					}
-
-					const branchMap = new Map<
-						string,
-						{ lastCommitDate: number; isLocal: boolean; isRemote: boolean }
-					>();
-
-					// Include cached remote refs (no network needed)
-					if (remoteBranchSet.size > 0) {
-						try {
-							const remoteBranchInfo = await git.raw([
-								"for-each-ref",
-								"--sort=-committerdate",
-								"--format=%(refname:short) %(committerdate:unix)",
-								"refs/remotes/origin/",
-							]);
-
-							for (const line of remoteBranchInfo.trim().split("\n")) {
-								if (!line) continue;
-								const lastSpaceIdx = line.lastIndexOf(" ");
-								if (lastSpaceIdx <= 0) continue;
-								let branch = line.substring(0, lastSpaceIdx);
-								const timestamp = Number.parseInt(
-									line.substring(lastSpaceIdx + 1),
-									10,
-								);
-
-								if (branch.startsWith("origin/")) {
-									branch = branch.replace("origin/", "");
-								}
-
-								if (!branch || branch === "HEAD") continue;
-
-								branchMap.set(branch, {
-									lastCommitDate: timestamp * 1000,
-									isLocal: localBranchSet.has(branch),
-									isRemote: true,
-								});
-							}
-						} catch {
-							for (const name of remoteBranchSet) {
-								branchMap.set(name, {
-									lastCommitDate: 0,
-									isLocal: localBranchSet.has(name),
-									isRemote: true,
-								});
-							}
-						}
-					}
-
-					try {
-						const localBranchInfo = await git.raw([
-							"for-each-ref",
-							"--sort=-committerdate",
-							"--format=%(refname:short) %(committerdate:unix)",
-							"refs/heads/",
-						]);
-
-						for (const line of localBranchInfo.trim().split("\n")) {
-							if (!line) continue;
-							const lastSpaceIdx = line.lastIndexOf(" ");
-							if (lastSpaceIdx <= 0) continue;
-							const branch = line.substring(0, lastSpaceIdx);
-							const timestamp = Number.parseInt(
-								line.substring(lastSpaceIdx + 1),
-								10,
-							);
-
-							if (!branch || branch === "HEAD") continue;
-
-							if (!branchMap.has(branch)) {
-								branchMap.set(branch, {
-									lastCommitDate: timestamp * 1000,
-									isLocal: true,
-									isRemote: remoteBranchSet.has(branch),
-								});
-							} else {
-								const existing = branchMap.get(branch);
-								if (existing) {
-									existing.isLocal = true;
-								}
-							}
-						}
-					} catch {
-						for (const name of localBranchSet) {
-							if (!branchMap.has(name)) {
-								branchMap.set(name, {
-									lastCommitDate: 0,
-									isLocal: true,
-									isRemote: remoteBranchSet.has(name),
-								});
-							}
-						}
-					}
-
-					const branches = Array.from(branchMap.entries()).map(
-						([name, data]) => ({
-							name,
-							...data,
-						}),
-					);
+					const branches = await listBranchesWithDates(project.mainRepoPath);
 
 					const defaultBranch =
 						project.defaultBranch ||
@@ -752,137 +638,10 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						throw new Error(`Project ${input.projectId} not found`);
 					}
 
-					const git = await getSimpleGitWithShellPath(project.mainRepoPath);
-
-					try {
-						await git.fetch(["--prune"]);
-					} catch {
-						// Best effort: continue with locally available refs when offline.
-					}
-
-					let hasOrigin = false;
-					try {
-						const remotes = await git.getRemotes();
-						hasOrigin = remotes.some((r) => r.name === "origin");
-					} catch {}
-
-					const branchSummary = await git.branch(["-a"]);
-
-					const localBranchSet = new Set<string>();
-					const remoteBranchSet = new Set<string>();
-
-					for (const name of Object.keys(branchSummary.branches)) {
-						if (name.startsWith("remotes/origin/")) {
-							if (name === "remotes/origin/HEAD") continue;
-							const remoteName = name.replace("remotes/origin/", "");
-							remoteBranchSet.add(remoteName);
-						} else {
-							localBranchSet.add(name);
-						}
-					}
-
-					const branchMap = new Map<
-						string,
-						{ lastCommitDate: number; isLocal: boolean; isRemote: boolean }
-					>();
-
-					if (hasOrigin) {
-						try {
-							const remoteBranchInfo = await git.raw([
-								"for-each-ref",
-								"--sort=-committerdate",
-								"--format=%(refname:short) %(committerdate:unix)",
-								"refs/remotes/origin/",
-							]);
-
-							for (const line of remoteBranchInfo.trim().split("\n")) {
-								if (!line) continue;
-								const lastSpaceIdx = line.lastIndexOf(" ");
-								if (lastSpaceIdx <= 0) continue;
-								let branch = line.substring(0, lastSpaceIdx);
-								const timestamp = Number.parseInt(
-									line.substring(lastSpaceIdx + 1),
-									10,
-								);
-
-								// Normalize remote branch names
-								if (branch.startsWith("origin/")) {
-									branch = branch.replace("origin/", "");
-								}
-
-								if (!branch || branch === "HEAD") continue;
-
-								branchMap.set(branch, {
-									lastCommitDate: timestamp * 1000,
-									isLocal: localBranchSet.has(branch),
-									isRemote: true,
-								});
-							}
-						} catch {
-							for (const name of remoteBranchSet) {
-								branchMap.set(name, {
-									lastCommitDate: 0,
-									isLocal: localBranchSet.has(name),
-									isRemote: true,
-								});
-							}
-						}
-					}
-
-					try {
-						const localBranchInfo = await git.raw([
-							"for-each-ref",
-							"--sort=-committerdate",
-							"--format=%(refname:short) %(committerdate:unix)",
-							"refs/heads/",
-						]);
-
-						for (const line of localBranchInfo.trim().split("\n")) {
-							if (!line) continue;
-							const lastSpaceIdx = line.lastIndexOf(" ");
-							if (lastSpaceIdx <= 0) continue;
-							const branch = line.substring(0, lastSpaceIdx);
-							const timestamp = Number.parseInt(
-								line.substring(lastSpaceIdx + 1),
-								10,
-							);
-
-							if (!branch || branch === "HEAD") continue;
-
-							// Only add if not already in map (remote takes precedence for date)
-							if (!branchMap.has(branch)) {
-								branchMap.set(branch, {
-									lastCommitDate: timestamp * 1000,
-									isLocal: true,
-									isRemote: remoteBranchSet.has(branch),
-								});
-							} else {
-								// Update isLocal flag for branches that exist both locally and remotely
-								const existing = branchMap.get(branch);
-								if (existing) {
-									existing.isLocal = true;
-								}
-							}
-						}
-					} catch {
-						// Fallback for local branches
-						for (const name of localBranchSet) {
-							if (!branchMap.has(name)) {
-								branchMap.set(name, {
-									lastCommitDate: 0,
-									isLocal: true,
-									isRemote: remoteBranchSet.has(name),
-								});
-							}
-						}
-					}
-
-					const branches = Array.from(branchMap.entries()).map(
-						([name, data]) => ({
-							name,
-							...data,
-						}),
-					);
+					// Fetch + prune, then list local + cached remote refs.
+					const branches = await listBranchesWithDates(project.mainRepoPath, {
+						fetch: true,
+					});
 
 					// Sync with remote in case the default branch changed (e.g. master -> main)
 					const remoteDefaultBranch = await refreshDefaultBranch(
@@ -946,99 +705,23 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 						throw new Error(`Project ${input.projectId} not found`);
 					}
 
-					const git = await getSimpleGitWithShellPath(project.mainRepoPath);
 					const search = input.search.trim();
 					const searchLower = search.toLowerCase();
 
-					// Always list all refs — git glob `*` doesn't cross `/` and is
+					// List all refs — git glob `*` doesn't cross `/` and is
 					// case-sensitive, so we filter in JS for reliable substring search.
-					const localPattern = "refs/heads/";
-					const remotePattern = "refs/remotes/origin/";
-
-					const branchMap = new Map<
-						string,
-						{ lastCommitDate: number; isLocal: boolean; isRemote: boolean }
-					>();
-
-					// Fetch remote refs
-					try {
-						const remoteOutput = await git.raw([
-							"for-each-ref",
-							"--sort=-committerdate",
-							"--format=%(refname:short) %(committerdate:unix)",
-							remotePattern,
-						]);
-
-						for (const line of remoteOutput.trim().split("\n")) {
-							if (!line) continue;
-							const lastSpaceIdx = line.lastIndexOf(" ");
-							let branch = line.substring(0, lastSpaceIdx);
-							const timestamp = Number.parseInt(
-								line.substring(lastSpaceIdx + 1),
-								10,
-							);
-
-							if (branch.startsWith("origin/")) {
-								branch = branch.replace("origin/", "");
-							}
-							if (branch === "HEAD") continue;
-
-							branchMap.set(branch, {
-								lastCommitDate: timestamp * 1000,
-								isLocal: false,
-								isRemote: true,
-							});
-						}
-					} catch (err) {
-						console.warn("[searchBranches] Failed to list remote refs:", err);
-					}
-
-					// Fetch local refs
-					try {
-						const localOutput = await git.raw([
-							"for-each-ref",
-							"--sort=-committerdate",
-							"--format=%(refname:short) %(committerdate:unix)",
-							localPattern,
-						]);
-
-						for (const line of localOutput.trim().split("\n")) {
-							if (!line) continue;
-							const lastSpaceIdx = line.lastIndexOf(" ");
-							const branch = line.substring(0, lastSpaceIdx);
-							const timestamp = Number.parseInt(
-								line.substring(lastSpaceIdx + 1),
-								10,
-							);
-
-							if (branch === "HEAD") continue;
-
-							const existing = branchMap.get(branch);
-							if (existing) {
-								existing.isLocal = true;
-							} else {
-								branchMap.set(branch, {
-									lastCommitDate: timestamp * 1000,
-									isLocal: true,
-									isRemote: false,
-								});
-							}
-						}
-					} catch (err) {
-						console.warn("[searchBranches] Failed to list local refs:", err);
-					}
+					const branchList = await listBranchesWithDates(project.mainRepoPath);
 
 					const defaultBranch =
 						project.defaultBranch ||
 						(await getDefaultBranch(project.mainRepoPath));
 
 					// Sort: default branch first, then local before remote, then by date
-					const allBranches = Array.from(branchMap.entries())
+					const allBranches = branchList
 						.filter(
-							([name]) =>
+							({ name }) =>
 								!searchLower || name.toLowerCase().includes(searchLower),
 						)
-						.map(([name, data]) => ({ name, ...data }))
 						.sort((a, b) => {
 							if (a.name === defaultBranch) return -1;
 							if (b.name === defaultBranch) return 1;
@@ -1479,9 +1162,8 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 				const activeProjects = localDb
 					.select()
 					.from(projects)
-					.where(eq(projects.tabOrder, projects.tabOrder)) // Just get all with non-null tabOrder
+					.where(isNotNull(projects.tabOrder))
 					.all()
-					.filter((p) => p.tabOrder !== null)
 					.sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0));
 
 				if (

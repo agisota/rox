@@ -4,13 +4,12 @@ import type { McpContext } from "@rox/mcp/auth";
 import { createInMemoryMcpClient } from "@rox/mcp/in-memory";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
+import {
+	getErrorMessage,
+	mcpToolToAnthropicTool,
+	runMcpAgentLoop,
+} from "../_shared/mcp-agent-loop";
 import { DEFAULT_TELEGRAM_MODEL } from "./constants";
-
-interface McpTool {
-	name: string;
-	description?: string;
-	inputSchema: unknown;
-}
 
 export interface TelegramAgentAction {
 	type: string;
@@ -48,10 +47,6 @@ const TOOL_PROGRESS_STATUS: Record<string, string> = {
 	list_projects: "Fetching projects...",
 };
 
-const MAX_ANTHROPIC_ATTEMPTS = 3;
-const ANTHROPIC_RETRY_BASE_MS = 250;
-const MAX_TOOL_ITERATIONS = 10;
-
 const SYSTEM_PROMPT = `You are a helpful assistant in Telegram for Rox, a platform for managing tasks and running coding agents in workspaces.
 
 You can:
@@ -65,55 +60,6 @@ Guidelines:
 - If an action fails, explain what went wrong and suggest the next concrete step
 - Use plain Markdown-friendly text, not Slack-specific formatting
 - Cite sources when sharing information from web search results`;
-
-function delay(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function getErrorStatus(error: unknown): number | undefined {
-	if (typeof error !== "object" || error === null) return undefined;
-	const status = (error as { status?: unknown }).status;
-	return typeof status === "number" ? status : undefined;
-}
-
-function getErrorMessage(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
-}
-
-function isRetryableAnthropicError(error: unknown): boolean {
-	const status = getErrorStatus(error);
-	if (
-		status === 408 ||
-		status === 409 ||
-		status === 429 ||
-		(status !== undefined && status >= 500 && status < 600)
-	) {
-		return true;
-	}
-	return /timeout|network|econnreset|econnrefused|temporarily|overload|rate limit/i.test(
-		getErrorMessage(error),
-	);
-}
-
-async function createAnthropicMessage(
-	anthropic: Anthropic,
-	params: Anthropic.MessageCreateParamsNonStreaming,
-): Promise<Anthropic.Message> {
-	for (let attempt = 1; attempt <= MAX_ANTHROPIC_ATTEMPTS; attempt++) {
-		try {
-			return await anthropic.messages.create(params);
-		} catch (error) {
-			if (
-				attempt >= MAX_ANTHROPIC_ATTEMPTS ||
-				!isRetryableAnthropicError(error)
-			) {
-				throw error;
-			}
-			await delay(ANTHROPIC_RETRY_BASE_MS * 2 ** (attempt - 1));
-		}
-	}
-	throw new Error("Anthropic request failed after retries");
-}
 
 async function createTelegramMcpClient({
 	organizationId,
@@ -138,37 +84,6 @@ async function createTelegramMcpClient({
 			});
 		},
 	});
-}
-
-function mcpToolToAnthropicTool(tool: McpTool, prefix: string): Anthropic.Tool {
-	return {
-		name: `${prefix}_${tool.name}`,
-		description: tool.description ?? "",
-		input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
-	};
-}
-
-function parseToolName(prefixedName: string): {
-	prefix: string;
-	toolName: string;
-} {
-	const underscoreIndex = prefixedName.indexOf("_");
-	if (underscoreIndex === -1) {
-		return { prefix: prefixedName, toolName: "" };
-	}
-	const prefix = prefixedName.slice(0, underscoreIndex);
-	const toolName = prefixedName.slice(underscoreIndex + 1);
-	return { prefix, toolName };
-}
-
-function stripServerToolBlocks(
-	content: Anthropic.ContentBlock[],
-): Anthropic.ContentBlockParam[] {
-	return content.filter(
-		(block) =>
-			block.type !== "web_search_tool_result" &&
-			block.type !== "server_tool_use",
-	) as unknown as Anthropic.ContentBlockParam[];
 }
 
 async function fetchAgentContext({
@@ -294,127 +209,28 @@ ${agentContext}`;
 			{ role: "user", content: params.prompt },
 		];
 
-		let response = await createAnthropicMessage(anthropic, {
+		const text = await runMcpAgentLoop({
+			anthropic,
+			roxMcp,
 			model: params.model ?? DEFAULT_TELEGRAM_MODEL,
-			max_tokens: 2048,
 			system,
 			tools,
 			messages,
+			progressStatus: TOOL_PROGRESS_STATUS,
+			logTag: "telegram-agent",
+			onProgress: params.onProgress,
+			onRoxToolResult: (toolName) => {
+				actions.push({ type: toolName });
+			},
+			onToolLimit: (lastText) => {
+				const prefix = lastText?.trim();
+				const limitMessage =
+					"I stopped after reaching the Telegram agent tool limit. Please narrow the request or ask me to continue with a smaller step.";
+				return prefix ? `${prefix}\n\n${limitMessage}` : limitMessage;
+			},
 		});
 
-		let iterations = 0;
-
-		while (
-			(response.stop_reason === "tool_use" ||
-				response.stop_reason === "pause_turn") &&
-			iterations < MAX_TOOL_ITERATIONS
-		) {
-			iterations++;
-
-			if (response.stop_reason === "pause_turn") {
-				await params.onProgress?.("Searching the web...");
-				messages.push({ role: "assistant", content: response.content });
-				response = await createAnthropicMessage(anthropic, {
-					model: params.model ?? DEFAULT_TELEGRAM_MODEL,
-					max_tokens: 2048,
-					system,
-					tools,
-					messages,
-				});
-				continue;
-			}
-
-			const toolUseBlocks = response.content.filter(
-				(b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
-			);
-			const toolResults: Anthropic.ToolResultBlockParam[] = [];
-
-			for (const toolUse of toolUseBlocks) {
-				try {
-					const { prefix, toolName } = parseToolName(toolUse.name);
-					const progressStatus =
-						TOOL_PROGRESS_STATUS[toolUse.name] ??
-						TOOL_PROGRESS_STATUS[toolName] ??
-						"Working...";
-					await params.onProgress?.(progressStatus);
-
-					if (prefix !== "rox" || !roxMcp) {
-						toolResults.push({
-							type: "tool_result",
-							tool_use_id: toolUse.id,
-							content: JSON.stringify({
-								error: `Unknown tool: ${toolUse.name}`,
-							}),
-							is_error: true,
-						});
-						continue;
-					}
-
-					const result = await roxMcp.callTool({
-						name: toolName,
-						arguments: toolUse.input as Record<string, unknown>,
-					});
-
-					actions.push({ type: toolName });
-					toolResults.push({
-						type: "tool_result",
-						tool_use_id: toolUse.id,
-						content: JSON.stringify(result.content),
-					});
-				} catch (error) {
-					console.error("[telegram-agent] Tool execution error:", error);
-					toolResults.push({
-						type: "tool_result",
-						tool_use_id: toolUse.id,
-						content: JSON.stringify({
-							error:
-								error instanceof Error
-									? error.message
-									: "Tool execution failed",
-						}),
-						is_error: true,
-					});
-				}
-			}
-
-			messages.push({
-				role: "assistant",
-				content: stripServerToolBlocks(response.content),
-			});
-			messages.push({ role: "user", content: toolResults });
-
-			response = await createAnthropicMessage(anthropic, {
-				model: params.model ?? DEFAULT_TELEGRAM_MODEL,
-				max_tokens: 2048,
-				system,
-				tools,
-				messages,
-			});
-		}
-
-		const textBlocks = response.content.filter(
-			(b): b is Anthropic.TextBlock => b.type === "text",
-		);
-		const textBlock = textBlocks.at(-1);
-		const stoppedAtToolLimit =
-			(response.stop_reason === "tool_use" ||
-				response.stop_reason === "pause_turn") &&
-			iterations >= MAX_TOOL_ITERATIONS;
-
-		if (stoppedAtToolLimit) {
-			const prefix = textBlock?.text?.trim();
-			const limitMessage =
-				"I stopped after reaching the Telegram agent tool limit. Please narrow the request or ask me to continue with a smaller step.";
-			return {
-				text: prefix ? `${prefix}\n\n${limitMessage}` : limitMessage,
-				actions,
-			};
-		}
-
-		return {
-			text: textBlock?.text ?? "Done!",
-			actions,
-		};
+		return { text, actions };
 	} finally {
 		if (cleanupRox) {
 			try {

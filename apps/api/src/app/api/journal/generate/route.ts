@@ -8,17 +8,14 @@
 
 import { db } from "@rox/db/client";
 import { chatSessions } from "@rox/db/schema";
-import { Client, Receiver } from "@upstash/qstash";
+import { Client } from "@upstash/qstash";
 import { and, gte, lt } from "drizzle-orm";
 import { env } from "@/env";
+import { verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
 
 const qstash = new Client({ token: env.QSTASH_TOKEN, baseUrl: env.QSTASH_URL });
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
-});
 
 function yesterdayUtc(): string {
 	const now = new Date();
@@ -29,21 +26,14 @@ function yesterdayUtc(): string {
 }
 
 export async function POST(request: Request): Promise<Response> {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-	if (!signature) {
-		return Response.json({ error: "Missing signature" }, { status: 401 });
+	const verified = await verifyQstash(request, {
+		url: `${env.NEXT_PUBLIC_API_URL}/api/journal/generate`,
+		onError: "false",
+	});
+	if (!verified.ok) {
+		return verified.response;
 	}
-	const valid = await receiver
-		.verify({
-			body,
-			signature,
-			url: `${env.NEXT_PUBLIC_API_URL}/api/journal/generate`,
-		})
-		.catch(() => false);
-	if (!valid) {
-		return Response.json({ error: "Invalid signature" }, { status: 401 });
-	}
+	const { body } = verified;
 
 	const parsed = body ? (JSON.parse(body) as { day?: string }) : {};
 	const day =

@@ -6,6 +6,7 @@ import {
 import { Client } from "@upstash/qstash";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { env } from "@/env";
+import { apiError } from "@/lib/api-response";
 import { parseTelegramUpdate } from "../parse-update";
 
 /**
@@ -19,7 +20,7 @@ const qstash = new Client({ token: env.QSTASH_TOKEN });
 export async function POST(request: Request) {
 	const secret = request.headers.get(SECRET_HEADER);
 	if (!secret) {
-		return Response.json({ error: "Missing secret token" }, { status: 401 });
+		return apiError("Missing secret token", 401);
 	}
 
 	// Resolve the org by matching the echoed secret against a stored
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 
 	if (!connection) {
 		console.error("[telegram/webhook] No connection matched secret token");
-		return Response.json({ error: "Unknown secret token" }, { status: 401 });
+		return apiError("Unknown secret token", 401);
 	}
 
 	let body: unknown;
@@ -122,10 +123,7 @@ export async function POST(request: Request) {
 				deleteError,
 			);
 		}
-		return Response.json(
-			{ error: "Failed to queue Telegram update" },
-			{ status: 503 },
-		);
+		return apiError("Failed to queue Telegram update", 503);
 	}
 
 	// Telegram retries on any non-200, so always ack quickly for valid updates.
