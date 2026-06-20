@@ -31,6 +31,7 @@ export default async function WorkspaceDetailPage({
 			diffFiles={getMockDiffFilesForSession(session.id)}
 			messages={getMockMessagesForSession(session.id)}
 			session={session}
+			workspaceId={workspace.id}
 		/>
 	);
 }
