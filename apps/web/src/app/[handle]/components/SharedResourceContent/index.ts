@@ -1,0 +1,1 @@
+export { SharedResourceContent } from "./SharedResourceContent";
