@@ -14,6 +14,7 @@ import type { ApiAuthProvider } from "./providers/auth";
 import type { HostAuthProvider } from "./providers/host-auth";
 import type { ModelProviderRuntimeResolver } from "./providers/model-providers";
 import { AgentPreinstaller } from "./runtime/agent-preinstall";
+import { startAgentStateRuntime } from "./runtime/agent-state/runtime";
 import { ChatRuntimeManager } from "./runtime/chat";
 import { WorkspaceFilesystemManager } from "./runtime/filesystem";
 import type { GitCredentialProvider } from "./runtime/git";
@@ -125,12 +126,20 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 
 	const preinstall = options.agentPreinstaller ?? new AgentPreinstaller({ db });
 
+	// Cross-host agent-state coordination (@rox/agent-state, WS-D). Opt-in via
+	// env: with no AGENT_STATE_DB_PATH this is a disabled no-op (service=null),
+	// so unset env means zero behavior change. Construction is synchronous; the
+	// libSQL replica opens in the background, mirroring the other fire-and-forget
+	// bootstraps above. Disposed in `dispose()` below.
+	const agentState = startAgentStateRuntime({ env: process.env });
+
 	const runtime = {
 		auth: chatService,
 		chat: chatRuntime,
 		filesystem,
 		pullRequests: pullRequestRuntime,
 		preinstall,
+		agentState,
 	};
 	const app = new Hono();
 	const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -261,6 +270,11 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 			gitWatcher.close();
 		} catch (err) {
 			console.warn("[host-service] gitWatcher.close failed:", err);
+		}
+		try {
+			await agentState.dispose();
+		} catch (err) {
+			console.warn("[host-service] agentState.dispose failed:", err);
 		}
 		if (ownsDb) {
 			try {
