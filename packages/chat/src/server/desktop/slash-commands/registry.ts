@@ -144,6 +144,14 @@ function getCommandDirectoryEntries(options: ResolvedRegistryOptions): Array<{
 			source: "project",
 		},
 		{
+			directory: join(options.projectDirectory, ".codex", "commands"),
+			source: "project",
+		},
+		{
+			directory: join(options.projectDirectory, ".codex", "command"),
+			source: "project",
+		},
+		{
 			directory: join(options.homeDirectory, ".claude", "commands"),
 			source: "global",
 		},
@@ -157,6 +165,14 @@ function getCommandDirectoryEntries(options: ResolvedRegistryOptions): Array<{
 		},
 		{
 			directory: join(options.homeDirectory, ".agents", "command"),
+			source: "global",
+		},
+		{
+			directory: join(options.homeDirectory, ".codex", "commands"),
+			source: "global",
+		},
+		{
+			directory: join(options.homeDirectory, ".codex", "command"),
 			source: "global",
 		},
 	];
