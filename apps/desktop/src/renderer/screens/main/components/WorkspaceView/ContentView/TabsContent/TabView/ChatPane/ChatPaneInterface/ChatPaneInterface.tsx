@@ -912,6 +912,9 @@ export function ChatPaneInterface({
 		},
 		[restartFromUserMessage],
 	);
+	const handleCancelEditUserMessage = useCallback(() => {
+		setEditingUserMessageId(null);
+	}, []);
 	const handleApprovalResponse = useCallback(
 		async (decision: "approve" | "decline" | "always_allow_category") => {
 			if (!pendingApproval?.toolCallId) return;
@@ -1015,7 +1018,7 @@ export function ChatPaneInterface({
 					editingUserMessageId={editingUserMessageId}
 					isEditSubmitting={isAwaitingAssistant}
 					onStartEditUserMessage={setEditingUserMessageId}
-					onCancelEditUserMessage={() => setEditingUserMessageId(null)}
+					onCancelEditUserMessage={handleCancelEditUserMessage}
 					onSubmitEditedUserMessage={handleSubmitEditedUserMessage}
 					onRestartUserMessage={handleResendUserMessage}
 					pendingQuestion={pendingQuestion}
