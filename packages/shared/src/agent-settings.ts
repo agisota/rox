@@ -33,6 +33,7 @@ import {
 	LEGACY_FALLBACK_TERMINAL_AGENT_TYPE,
 } from "./builtin-terminal-agents";
 
+export { DEFAULT_CHAT_AGENT_TYPE } from "./agent-catalog";
 export {
 	DEFAULT_TERMINAL_AGENT_TYPE,
 	LEGACY_FALLBACK_TERMINAL_AGENT_TYPE,
