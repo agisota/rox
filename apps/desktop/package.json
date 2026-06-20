@@ -95,6 +95,7 @@
     "@rox/panes": "workspace:*",
     "@rox/port-scanner": "workspace:*",
     "@rox/pty-daemon": "workspace:*",
+    "@rox/rtc": "workspace:*",
     "@rox/shared": "workspace:*",
     "@rox/trpc": "workspace:*",
     "@rox/ui": "workspace:*",
