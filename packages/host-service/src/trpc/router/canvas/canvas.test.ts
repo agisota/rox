@@ -1200,6 +1200,80 @@ describe("canvasRouter", () => {
 		}
 	});
 
+	it("routes agent-backed capabilities to the agent runtime, with a guarded fallback", async () => {
+		const { root, worktreePath, caller } = createCanvasTestContext();
+		try {
+			await caller.create({
+				workspaceId: "workspace-1",
+				canvasId: "canvas-1",
+				title: "Agent Canvas",
+			});
+
+			// No agent runtime on the default test context -> guarded fallback.
+			const unavailable = await caller.runCapability({
+				workspaceId: "workspace-1",
+				canvasId: "canvas-1",
+				capabilityId: "canvas.summarizeSelection",
+			});
+			expect("status" in unavailable ? unavailable.status : null).toBe(
+				"unavailable",
+			);
+			expect("reason" in unavailable ? unavailable.reason : "").toContain(
+				"agent runtime",
+			);
+
+			// With a wired runtime, the capability routes through runAgentInWorkspace.
+			let capturedPrompt = "";
+			const runtimeCaller = canvasRouter.createCaller({
+				db: {
+					query: {
+						workspaces: {
+							findFirst: () => ({
+								sync: () => ({
+									id: "workspace-1",
+									projectId: "project-1",
+									worktreePath,
+								}),
+							}),
+						},
+						canvasDocuments: {
+							findFirst: () => ({ sync: () => null }),
+							findMany: () => ({ sync: () => [] }),
+						},
+					},
+					insert: () => ({
+						values: () => ({ onConflictDoUpdate: () => ({ run: () => {} }) }),
+					}),
+				},
+				isAuthenticated: true,
+				organizationId: "org-1",
+				api: {
+					chat: { createSession: { mutate: async () => undefined } },
+				},
+				runtime: {
+					chat: {
+						sendMessage: async (args: { payload: { content: string } }) => {
+							capturedPrompt = args.payload.content;
+						},
+					},
+				},
+			} as unknown as HostServiceContext);
+
+			const started = await runtimeCaller.runCapability({
+				workspaceId: "workspace-1",
+				canvasId: "canvas-1",
+				capabilityId: "canvas.summarizeSelection",
+			});
+			expect("status" in started ? started.status : null).toBe("started");
+			expect("run" in started && started.run ? started.run.kind : null).toBe(
+				"chat",
+			);
+			expect(capturedPrompt).toContain("Summarize the selected canvas nodes");
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
 	it("resolves file, session, project, url refs and falls back for unbacked types", async () => {
 		const { root, worktreePath, terminalSessionRows, caller } =
 			createCanvasTestContext();

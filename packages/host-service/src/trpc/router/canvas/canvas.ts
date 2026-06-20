@@ -28,6 +28,7 @@ import {
 	workspaces,
 } from "../../../db/schema";
 import { protectedProcedure, router } from "../../index";
+import { runAgentInWorkspace } from "../agents/agents";
 import {
 	applyAndPersistCanvasMutationBatch,
 	type CanvasIndexSummary,
@@ -362,6 +363,84 @@ function resolveCanvasNodeRef(
 		preview: ref.preview ?? null,
 		reason: `unsupported-ref-type:${ref.type}`,
 	};
+}
+
+/**
+ * Canvas capabilities that delegate work to a real agent run. Each maps to a
+ * prompt template; the canvas selection/document context is appended before the
+ * prompt is handed to the host-service agent runtime (`runAgentInWorkspace`).
+ */
+const AGENT_BACKED_CANVAS_CAPABILITIES: Record<string, string> = {
+	"canvas.runAgentOnSelection":
+		"Use the selected canvas nodes below as working context. Continue the user's task using that context.",
+	"canvas.summarizeSelection":
+		"Summarize the selected canvas nodes below into a concise overview.",
+	"canvas.extractTasks":
+		"Extract a concrete, actionable task list from the selected canvas nodes below.",
+	"canvas.createPlanFromCluster":
+		"Produce an execution plan from the selected canvas node cluster below.",
+	"canvas.compareSelectedSessions":
+		"Compare the selected canvas sessions below and report key differences and overlaps.",
+	"canvas.generatePromptFromSelection":
+		"Synthesize a reusable prompt that captures the intent of the selected canvas nodes below.",
+	"canvas.generateSuggestedEdges":
+		"Suggest meaningful edges (relationships) between the selected canvas nodes below.",
+	"canvas.searchSemantic":
+		"Find canvas nodes below that are semantically relevant to the query.",
+	"canvas.explainGraph":
+		"Explain the structure and meaning of the canvas graph described below.",
+	"canvas.detectContradictions":
+		"Identify contradictions or tensions among the selected canvas nodes below.",
+	"canvas.captureSelectionAsNote":
+		"Turn the selected canvas nodes below into a single coherent note.",
+};
+
+/**
+ * The default in-workspace agent identity. `runAgentInWorkspace` routes the
+ * reserved `rox` id to the chat runtime; any other id resolves a configured
+ * host agent. We use the chat agent so canvas-triggered runs surface in the
+ * workspace chat the same way a manual agent run does.
+ */
+const CANVAS_AGENT_ID = "rox";
+
+function isCanvasAgentRuntimeAvailable(ctx: {
+	api?: unknown;
+	runtime?: unknown;
+}): boolean {
+	return Boolean(ctx.api) && Boolean(ctx.runtime);
+}
+
+function buildCanvasAgentPrompt(args: {
+	template: string;
+	document: CanvasDocument;
+	query?: string;
+	selection?: { nodeIds?: string[] };
+}): string {
+	const { template, document, query, selection } = args;
+	const selectedIds = new Set(selection?.nodeIds ?? []);
+	const contextNodes =
+		selectedIds.size > 0
+			? document.nodes.filter((node) => selectedIds.has(node.id))
+			: document.nodes;
+
+	const nodeLines = contextNodes.map((node) => {
+		const title = node.title ?? node.ref?.preview ?? node.id;
+		const refPart = node.ref
+			? ` [ref:${node.ref.type}:${node.ref.path ?? node.ref.url ?? node.ref.id}]`
+			: "";
+		const textPart = node.text ? ` — ${node.text.slice(0, 280)}` : "";
+		return `- (${node.type}) ${title}${refPart}${textPart}`;
+	});
+
+	const sections = [
+		template,
+		query ? `\n## Query\n${query}` : "",
+		`\n## Canvas: ${document.title} (${document.id})`,
+		nodeLines.length > 0
+			? `\n## Selected nodes\n${nodeLines.join("\n")}`
+			: "\n## Selected nodes\n(none)",
+	];
+	return sections.filter(Boolean).join("\n");
 }
 
 function validateCanvasMutationBatchSecurityScope(
@@ -1815,7 +1894,7 @@ export const canvasRouter = router({
 					.optional(),
 			}),
 		)
-		.mutation(({ ctx, input }) => {
+		.mutation(async ({ ctx, input }) => {
 			const workspace = requireWorkspace(ctx, input.workspaceId);
 			const document = ensureCanvasBelongsToWorkspace(
 				readCanvasDocument(workspace.worktreePath, input.canvasId),
@@ -2460,6 +2539,47 @@ export const canvasRouter = router({
 				].filter(Boolean);
 				return { ok: issues.length === 0, issues };
 			}
+			const agentPromptTemplate =
+				AGENT_BACKED_CANVAS_CAPABILITIES[input.capabilityId];
+			if (agentPromptTemplate) {
+				const registeredAgentCapability = builtInCanvasCapabilities.find(
+					(capability) => capability.id === input.capabilityId,
+				);
+				// The agent bridge needs the full host-service runtime (chat runtime +
+				// api client). When it isn't wired (e.g. a thin/test context), flag a
+				// guarded fallback instead of crashing.
+				if (!isCanvasAgentRuntimeAvailable(ctx)) {
+					return {
+						ok: false,
+						status: "unavailable",
+						capabilityId: input.capabilityId,
+						risks: registeredAgentCapability?.risks,
+						requiresSelection: registeredAgentCapability?.requiresSelection,
+						emitsMutation: registeredAgentCapability?.emitsMutation,
+						reason:
+							"Canvas agent capability requires the host-service agent runtime, which is not available in this context.",
+					};
+				}
+				const prompt = buildCanvasAgentPrompt({
+					template: agentPromptTemplate,
+					document,
+					query: input.query,
+					selection: input.selection,
+				});
+				const run = await runAgentInWorkspace(ctx, {
+					workspaceId: input.workspaceId,
+					agent: CANVAS_AGENT_ID,
+					prompt,
+				});
+				return {
+					ok: true,
+					status: "started",
+					capabilityId: input.capabilityId,
+					agent: CANVAS_AGENT_ID,
+					run,
+				};
+			}
+
 			const registeredCapability = builtInCanvasCapabilities.find(
 				(capability) => capability.id === input.capabilityId,
 			);
