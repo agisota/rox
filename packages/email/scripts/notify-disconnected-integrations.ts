@@ -170,7 +170,7 @@ async function main() {
 			from: FROM,
 			to: testEmail,
 			replyTo: REPLY_TO,
-			subject: `[TEST] Your Rox integration was disconnected`,
+			subject: `[ТЕСТ] Интеграция Rox была отключена`,
 			react: IntegrationDisconnectedEmail({
 				recipientName: name,
 				connections,
@@ -192,7 +192,7 @@ async function main() {
 				from: FROM,
 				to: email,
 				replyTo: REPLY_TO,
-				subject: "Your Rox integration was disconnected",
+				subject: "Интеграция Rox была отключена",
 				react: IntegrationDisconnectedEmail({
 					recipientName: name,
 					connections,

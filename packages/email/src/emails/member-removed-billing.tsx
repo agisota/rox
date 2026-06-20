@@ -11,6 +11,11 @@ interface MemberRemovedBillingEmailProps {
 	newMonthlyTotal: string;
 }
 
+/**
+ * @deprecated Stripe seat-billing was retired in favor of the prepaid Rox token
+ * economy (packages/db/src/schema/economy.ts). Seat-count credit is gone, so
+ * this template is unwired and kept only for reference; do not send it.
+ */
 export function MemberRemovedBillingEmail({
 	ownerName = "there",
 	organizationName = "Acme Inc",

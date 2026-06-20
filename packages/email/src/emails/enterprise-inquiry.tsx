@@ -30,25 +30,25 @@ export function EnterpriseInquiryEmail({
 		<Html>
 			<Head />
 			<Preview>
-				Enterprise inquiry from {name} ({email})
+				Запрос Enterprise от {name} ({email})
 			</Preview>
 			<Body style={body}>
 				<Container style={container}>
-					<Heading style={heading}>New Enterprise Inquiry</Heading>
+					<Heading style={heading}>Новый запрос Enterprise</Heading>
 
 					<Text style={paragraph}>
-						A new enterprise inquiry was submitted from the marketing site.
+						С маркетингового сайта поступил новый запрос Enterprise.
 					</Text>
 
 					<Hr style={hr} />
 
-					<Text style={label}>Name</Text>
+					<Text style={label}>Имя</Text>
 					<Text style={value}>{name}</Text>
 
-					<Text style={label}>Role</Text>
+					<Text style={label}>Роль</Text>
 					<Text style={value}>{role}</Text>
 
-					<Text style={label}>Company</Text>
+					<Text style={label}>Компания</Text>
 					<Text style={value}>{company}</Text>
 
 					<Text style={label}>Email</Text>
@@ -56,14 +56,14 @@ export function EnterpriseInquiryEmail({
 
 					{phone && (
 						<>
-							<Text style={label}>Phone</Text>
+							<Text style={label}>Телефон</Text>
 							<Text style={value}>{phone}</Text>
 						</>
 					)}
 
 					{message && (
 						<>
-							<Text style={label}>What problem are they trying to solve?</Text>
+							<Text style={label}>Какую задачу они хотят решить?</Text>
 							<Text style={value}>{message}</Text>
 						</>
 					)}

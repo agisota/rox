@@ -10,6 +10,12 @@ interface SubscriptionStartedEmailProps {
 	seatCount: number;
 }
 
+/**
+ * @deprecated Stripe seat-billing was retired in favor of the prepaid Rox token
+ * economy (packages/db/src/schema/economy.ts). This template is unwired (no
+ * consumer) and is kept only for reference; do not send it. Any future
+ * token-economy email (e.g. top-up confirmation) belongs in `packages/email/**`.
+ */
 export function SubscriptionStartedEmail({
 	ownerName = "there",
 	organizationName = "Acme Inc",

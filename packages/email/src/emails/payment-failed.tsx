@@ -10,6 +10,13 @@ interface PaymentFailedEmailProps {
 	billingPortalUrl?: string;
 }
 
+/**
+ * @deprecated Stripe seat-billing was retired in favor of the prepaid Rox token
+ * economy (packages/db/src/schema/economy.ts). Card-decline payment failures no
+ * longer apply (top-ups go through dv.net USDT). This template is unwired and
+ * kept only for reference; do not send it. A future `topup-failed` email belongs
+ * in `packages/email/**`.
+ */
 export function PaymentFailedEmail({
 	ownerName = "there",
 	organizationName = "Acme Inc",
