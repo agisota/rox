@@ -15,6 +15,7 @@ import type {
 	SelectIntegrationConnection,
 	SelectInvitation,
 	SelectJournalEntry,
+	SelectJournalEvent,
 	SelectMember,
 	SelectMemoryImportJob,
 	SelectMemoryItem,
@@ -188,6 +189,7 @@ export interface OrgCollections {
 	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
 	journalEntries: Collection<SelectJournalEntry>;
+	journalEvents: Collection<SelectJournalEvent>;
 	memoryItems: Collection<SelectMemoryItem>;
 	memoryImportJobs: Collection<SelectMemoryImportJob>;
 	artifacts: Collection<SelectArtifact>;
@@ -775,6 +777,26 @@ function createOrgCollections(
 		}),
 	);
 
+	// Read-only on the client: journal events are appended server-side by the
+	// automations dispatcher (continuous 24/7 lane). No onInsert/Update/Delete.
+	const journalEvents = createPersistedElectricCollection(
+		electricCollectionOptions<SelectJournalEvent>({
+			id: `journal_events-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "journal_events",
+					organizationId,
+					userId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const memoryItems = createPersistedElectricCollection(
 		electricCollectionOptions<SelectMemoryItem>({
 			id: `memory_items-${organizationId}-${userId}`,
@@ -1109,6 +1131,7 @@ function createOrgCollections(
 		apiKeys,
 		chatSessions,
 		journalEntries,
+		journalEvents,
 		memoryItems,
 		memoryImportJobs,
 		artifacts,

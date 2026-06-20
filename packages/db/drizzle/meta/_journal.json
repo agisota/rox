@@ -568,6 +568,13 @@
       "when": 1781972566675,
       "tag": "0080_session_learned_at",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1781973467802,
+      "tag": "0081_journal_events",
+      "breakpoints": true
     }
   ]
 }
