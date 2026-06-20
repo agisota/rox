@@ -316,6 +316,13 @@
       "when": 1782000000000,
       "tag": "0044_browser_data_pipeline",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "6",
+      "when": 1782500000000,
+      "tag": "0045_voice_ambient_settings",
+      "breakpoints": true
     }
   ]
 }

@@ -69,6 +69,12 @@ export const DEFAULT_SHOW_RESOURCE_MONITOR = true;
 export const DEFAULT_OPEN_LINKS_IN_APP = false;
 export const DEFAULT_EXPOSE_HOST_SERVICE_VIA_RELAY = false;
 
+// Voice / ambient defaults (Phase 4a). Plain dictation is on by default; the
+// always-on ambient capture is opt-in (off) per the locked privacy decision.
+export const DEFAULT_DICTATION_ENABLED = true;
+export const DEFAULT_AMBIENT_CAPTURE_ENABLED = false;
+export const DEFAULT_VOICE_AGENT_CONTEXT = "";
+
 // External links (documentation, help resources, etc.)
 export const EXTERNAL_LINKS = {
 	SETUP_TEARDOWN_SCRIPTS: `${process.env.NEXT_PUBLIC_DOCS_URL}/setup-teardown-scripts`,

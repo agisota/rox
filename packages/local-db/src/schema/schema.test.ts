@@ -123,7 +123,10 @@ CREATE TABLE settings (
   worktree_base_dir TEXT,
   open_links_in_app INTEGER,
   default_editor TEXT,
-  expose_host_service_via_relay INTEGER
+  expose_host_service_via_relay INTEGER,
+  dictation_enabled INTEGER DEFAULT 1,
+  ambient_capture_enabled INTEGER DEFAULT 0,
+  voice_agent_context TEXT DEFAULT ''
 );
 CREATE TABLE browser_history (
   id TEXT PRIMARY KEY,
@@ -379,6 +382,10 @@ describe("settings round-trip", () => {
 		expect(row.terminalFontFamily).toBe("Geist Mono");
 		expect(row.editorFontFamily).toBe("SF UI Display Pro");
 		expect(row.terminalPresets?.[0]?.commands).toEqual(["bun dev"]);
+		// Voice / ambient defaults (Phase 4a): dictation on, ambient opt-out, empty context.
+		expect(row.dictationEnabled).toBe(true);
+		expect(row.ambientCaptureEnabled).toBe(false);
+		expect(row.voiceAgentContext).toBe("");
 	});
 });
 

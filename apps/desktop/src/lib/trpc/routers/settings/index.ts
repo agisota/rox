@@ -57,8 +57,10 @@ import { hasCustomRingtone } from "main/lib/custom-ringtones";
 import { getHostServiceCoordinator } from "main/lib/host-service-coordinator";
 import { localDb } from "main/lib/local-db";
 import {
+	DEFAULT_AMBIENT_CAPTURE_ENABLED,
 	DEFAULT_AUTO_APPLY_DEFAULT_PRESET,
 	DEFAULT_CONFIRM_ON_QUIT,
+	DEFAULT_DICTATION_ENABLED,
 	DEFAULT_EXPOSE_HOST_SERVICE_VIA_RELAY,
 	DEFAULT_FILE_OPEN_MODE,
 	DEFAULT_OPEN_LINKS_IN_APP,
@@ -66,6 +68,7 @@ import {
 	DEFAULT_SHOW_RESOURCE_MONITOR,
 	DEFAULT_TERMINAL_LINK_BEHAVIOR,
 	DEFAULT_USE_COMPACT_TERMINAL_ADD_BUTTON,
+	DEFAULT_VOICE_AGENT_CONTEXT,
 } from "shared/constants";
 import { logger } from "shared/logger";
 import { normalizePresetProjectIds } from "shared/preset-project-targeting";
@@ -1159,6 +1162,77 @@ export const createSettingsRouter = () => {
 					.onConflictDoUpdate({
 						target: settings.id,
 						set: { defaultEditor: input.editor },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		// --- Voice / ambient settings (Phase 4a) -----------------------------
+		// Plain dictation toggle (defaults on). When off, the renderer hides the
+		// mic button and disables the DICTATE hotkey.
+		getDictationEnabled: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.dictationEnabled ?? DEFAULT_DICTATION_ENABLED;
+		}),
+
+		setDictationEnabled: publicProcedure
+			.input(z.object({ enabled: z.boolean() }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, dictationEnabled: input.enabled })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { dictationEnabled: input.enabled },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		// Always-on ambient capture. Opt-in (defaults OFF) per the locked
+		// privacy decision; surfaced here for the future ambient runtime.
+		// TODO(ambient-runtime): the always-on agent runtime (later phase, gated
+		// on memory injection) must read `ambientCaptureEnabled` before capturing
+		// and feed `voiceAgentContext` into its prompt — see getVoiceAgentContext.
+		getAmbientCaptureEnabled: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.ambientCaptureEnabled ?? DEFAULT_AMBIENT_CAPTURE_ENABLED;
+		}),
+
+		setAmbientCaptureEnabled: publicProcedure
+			.input(z.object({ enabled: z.boolean() }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, ambientCaptureEnabled: input.enabled })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { ambientCaptureEnabled: input.enabled },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		// Free-text context the user supplies in advance. Threaded into the
+		// dictation post-process today (voice.transcribe input) and consumed by
+		// the future ambient runtime.
+		getVoiceAgentContext: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.voiceAgentContext ?? DEFAULT_VOICE_AGENT_CONTEXT;
+		}),
+
+		setVoiceAgentContext: publicProcedure
+			.input(z.object({ context: z.string().max(10_000) }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, voiceAgentContext: input.context })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { voiceAgentContext: input.context },
 					})
 					.run();
 
