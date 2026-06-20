@@ -24,8 +24,18 @@ import type { RoxLedgerReason } from "./rox-ledger";
  * The persisted `rox_ledger.kind` enum values. Mirrors `roxLedgerKindValues`
  * in `@rox/db/enums` — kept inline so `@rox/shared` stays db-free. The trpc
  * layer asserts this matches the real enum at compile time.
+ *
+ * `drive_overage` (Rox Workspace Suite D8/D9) is written DIRECTLY by the Drive
+ * overage cron — it has no shared {@link RoxLedgerReason} counterpart (like
+ * `seed`), so it appears in this mirror for the db-parity guard but is NOT in
+ * the reason→kind map below.
  */
-export type RoxLedgerKind = "topup" | "request_charge" | "adjustment" | "seed";
+export type RoxLedgerKind =
+	| "topup"
+	| "request_charge"
+	| "adjustment"
+	| "seed"
+	| "drive_overage";
 
 /**
  * Every reason the persistence layer can be asked to write: the shared
