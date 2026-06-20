@@ -38,6 +38,8 @@ const publicRoutes = [
 	// Public chat/artifact shares (/s/<slug>) — anonymous viewers must reach the
 	// share page without being bounced to /sign-in. The page itself is a public
 	// DB read (app/s/[slug]/page.tsx). Do NOT remove without breaking sharing.
+	// `matchesRoute` is prefix-based, so this also covers the dedicated published-
+	// note namespace `/s/note/<slug>` (app/s/note/[slug]/page.tsx).
 	"/s",
 	// Legacy public user profiles (/u/<handle>) — kept public because it now
 	// permanently redirects to the canonical `/@<handle>` form.

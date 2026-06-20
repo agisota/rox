@@ -252,7 +252,7 @@ describe("notebooks.getPublic", () => {
 		const caller = callerFor("org-1");
 		const res = await caller.notebooks.getPublic({ slug: "public-slug" });
 		expect(res.title).toBe("Public");
-		expect(res.url).toContain("/s/public-slug");
+		expect(res.url).toContain("/s/note/public-slug");
 	});
 });
 

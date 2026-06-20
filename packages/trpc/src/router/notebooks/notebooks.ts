@@ -43,7 +43,10 @@ export function getPublicNoteUrl(slug: string): string {
 		process.env.NEXT_PUBLIC_SHARE_ORIGIN ??
 		DEFAULT_SHARE_ORIGIN
 	).replace(/\/+$/, "");
-	return `${origin}/s/${slug}`;
+	// Dedicated `/s/note/<slug>` namespace, kept separate from the `publicShares`
+	// slugs served at `/s/<slug>` (the two slug spaces are minted independently and
+	// could otherwise collide on the same path).
+	return `${origin}/s/note/${slug}`;
 }
 
 function createNoteSlug(): string {
@@ -194,11 +197,27 @@ export const notebooksRouter = {
 			if (input.notebookId) {
 				conditions.push(eq(noteNotes.notebookId, input.notebookId));
 			}
+			// Explicit projection that EXCLUDES the (up to 500k) `markdown` column:
+			// the list view never renders note bodies, and shipping every note's full
+			// markdown to the client cache on each notebook switch/refetch is wasteful.
+			// `updatedAt` ties are broken by `id` so same-batch notes keep a stable
+			// order (avoids list flicker); capped at 200 rows per list.
 			const rows = await db
-				.select()
+				.select({
+					id: noteNotes.id,
+					notebookId: noteNotes.notebookId,
+					title: noteNotes.title,
+					tags: noteNotes.tags,
+					isPublished: noteNotes.isPublished,
+					publicSlug: noteNotes.publicSlug,
+					knowledgeDocumentId: noteNotes.knowledgeDocumentId,
+					createdAt: noteNotes.createdAt,
+					updatedAt: noteNotes.updatedAt,
+				})
 				.from(noteNotes)
 				.where(and(...conditions))
-				.orderBy(desc(noteNotes.updatedAt));
+				.orderBy(desc(noteNotes.updatedAt), desc(noteNotes.id))
+				.limit(200);
 
 			// Tag filter is applied in-memory: tags are a jsonb array and the lists
 			// are per-user (small), so a portable client-side `every` match keeps the
