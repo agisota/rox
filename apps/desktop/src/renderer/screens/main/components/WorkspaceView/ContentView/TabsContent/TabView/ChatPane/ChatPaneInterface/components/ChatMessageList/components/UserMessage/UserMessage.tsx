@@ -1,6 +1,6 @@
 import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { logger } from "renderer/lib/logger";
 import { useTabsStore } from "renderer/stores/tabs/store";
@@ -17,7 +17,13 @@ import { getUserMessageDraft } from "./utils/getUserMessageDraft";
 
 interface UserMessageProps {
 	message: ChatMessage;
-	prefixMessages: ChatMessage[];
+	/**
+	 * Full ordered list of rendered messages. The prefix used for restart/edit
+	 * requests is sliced lazily via `messageIndex` so this prop stays
+	 * referentially stable across renders (avoids breaking `React.memo`).
+	 */
+	allMessages: ChatMessage[];
+	messageIndex: number;
 	workspaceId: string;
 	workspaceCwd?: string;
 	isEditing: boolean;
@@ -29,9 +35,10 @@ interface UserMessageProps {
 	actionDisabled?: boolean;
 }
 
-export function UserMessage({
+function UserMessageImpl({
 	message,
-	prefixMessages,
+	allMessages,
+	messageIndex,
 	workspaceId,
 	workspaceCwd,
 	isEditing,
@@ -42,6 +49,10 @@ export function UserMessage({
 	onRestart,
 	actionDisabled = false,
 }: UserMessageProps) {
+	const prefixMessages = useMemo(
+		() => allMessages.slice(0, messageIndex),
+		[allMessages, messageIndex],
+	);
 	const addFileViewerPane = useTabsStore((store) => store.addFileViewerPane);
 	const animate = useShouldAnimate("essential");
 	const draft = getUserMessageDraft(message);
@@ -186,3 +197,10 @@ export function UserMessage({
 		</div>
 	);
 }
+
+/**
+ * Memoized so user rows do not re-render on every streaming token tick.
+ * Relies on referentially stable props from the parent list (a shared
+ * `allMessages` array reference plus a per-row index, and memoized handlers).
+ */
+export const UserMessage = memo(UserMessageImpl);

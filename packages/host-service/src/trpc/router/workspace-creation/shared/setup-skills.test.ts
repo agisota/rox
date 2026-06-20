@@ -1,8 +1,12 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdtemp, readFile, readlink, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
 	buildSkillsManifest,
 	DEFAULT_SKILLS,
 	mergeSkillsReadme,
+	writeWorkspaceSkillsConfig,
 } from "./setup-skills";
 
 const DEFAULT_NAMES: readonly string[] = DEFAULT_SKILLS.map(
@@ -116,5 +120,56 @@ describe("mergeSkillsReadme", () => {
 		const first = mergeSkillsReadme(existing) as string;
 		expect(first.startsWith(existing)).toBe(true);
 		expect(mergeSkillsReadme(first)).toBeNull();
+	});
+});
+
+describe("writeWorkspaceSkillsConfig (async loader)", () => {
+	let worktreePath: string;
+
+	beforeEach(async () => {
+		worktreePath = await mkdtemp(join(tmpdir(), "rox-skills-"));
+	});
+
+	afterEach(async () => {
+		await rm(worktreePath, { recursive: true, force: true });
+	});
+
+	it("seeds the manifest and README into .agents/skills matching the pure builders", async () => {
+		await writeWorkspaceSkillsConfig(worktreePath);
+
+		const skillsDir = join(worktreePath, ".agents", "skills");
+		const manifest = await readFile(
+			join(skillsDir, "rox-preinstalled-skills.json"),
+			"utf-8",
+		);
+		const readme = await readFile(join(skillsDir, "README.md"), "utf-8");
+
+		expect(manifest).toBe(buildSkillsManifest(null) as string);
+		expect(readme).toBe(mergeSkillsReadme(null) as string);
+		for (const skill of DEFAULT_SKILLS) {
+			expect(manifest).toContain(skill.name);
+			expect(readme).toContain(skill.name);
+		}
+	});
+
+	it("links .claude/skills to ../.agents/skills", async () => {
+		await writeWorkspaceSkillsConfig(worktreePath);
+
+		const target = await readlink(join(worktreePath, ".claude", "skills"));
+		expect(target).toBe("../.agents/skills");
+	});
+
+	it("is idempotent on rerun (stable manifest + README output)", async () => {
+		await writeWorkspaceSkillsConfig(worktreePath);
+		const skillsDir = join(worktreePath, ".agents", "skills");
+		const manifestPath = join(skillsDir, "rox-preinstalled-skills.json");
+		const readmePath = join(skillsDir, "README.md");
+		const firstManifest = await readFile(manifestPath, "utf-8");
+		const firstReadme = await readFile(readmePath, "utf-8");
+
+		await writeWorkspaceSkillsConfig(worktreePath);
+
+		expect(await readFile(manifestPath, "utf-8")).toBe(firstManifest);
+		expect(await readFile(readmePath, "utf-8")).toBe(firstReadme);
 	});
 });

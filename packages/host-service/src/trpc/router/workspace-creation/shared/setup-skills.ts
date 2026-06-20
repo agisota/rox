@@ -1,11 +1,11 @@
 import {
-	existsSync,
-	lstatSync,
-	mkdirSync,
-	readFileSync,
-	symlinkSync,
-	writeFileSync,
-} from "node:fs";
+	lstat,
+	mkdir,
+	readFile,
+	stat,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { workspaces } from "../../../../db/schema";
@@ -160,61 +160,103 @@ export function mergeSkillsReadme(existing: string | null): string | null {
 	return `${base}${separator}${block}\n`;
 }
 
-function writeSkillsDirectory(skillsPath: string): void {
-	mkdirSync(skillsPath, { recursive: true });
+/**
+ * Run async tasks with a bounded number in flight at once, preserving input
+ * order in the returned results. Keeps the event loop responsive when the
+ * skills fan-out grows beyond the current two directories.
+ */
+async function mapWithConcurrency<T, R>(
+	items: readonly T[],
+	limit: number,
+	task: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+	const results = new Array<R>(items.length);
+	let cursor = 0;
+	const workerCount = Math.max(1, Math.min(limit, items.length));
+	const workers = Array.from({ length: workerCount }, async () => {
+		while (true) {
+			const index = cursor++;
+			if (index >= items.length) {
+				return;
+			}
+			results[index] = await task(items[index] as T, index);
+		}
+	});
+	await Promise.all(workers);
+	return results;
+}
+
+const SKILLS_DIRECTORY_CONCURRENCY = 4;
+
+async function readOptionalFile(path: string): Promise<string | null> {
+	try {
+		return await readFile(path, "utf-8");
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+			return null;
+		}
+		throw error;
+	}
+}
+
+async function writeSkillsDirectory(skillsPath: string): Promise<void> {
+	await mkdir(skillsPath, { recursive: true });
 
 	const manifestPath = join(skillsPath, SKILLS_MANIFEST_FILE);
-	const existingManifest = existsSync(manifestPath)
-		? readFileSync(manifestPath, "utf-8")
-		: null;
+	const existingManifest = await readOptionalFile(manifestPath);
 	const nextManifest = buildSkillsManifest(existingManifest);
 	if (nextManifest !== null) {
-		writeFileSync(manifestPath, nextManifest, "utf-8");
+		await writeFile(manifestPath, nextManifest, "utf-8");
 	}
 
 	const readmePath = join(skillsPath, SKILLS_README_FILE);
-	const existingReadme = existsSync(readmePath)
-		? readFileSync(readmePath, "utf-8")
-		: null;
+	const existingReadme = await readOptionalFile(readmePath);
 	const nextReadme = mergeSkillsReadme(existingReadme);
 	if (nextReadme !== null) {
-		writeFileSync(readmePath, nextReadme, "utf-8");
+		await writeFile(readmePath, nextReadme, "utf-8");
 	}
 }
 
-function pathExistsIncludingSymlink(path: string): boolean {
-	try {
-		lstatSync(path);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-function ensureClaudeSkillsPath(worktreePath: string): string | null {
+async function ensureClaudeSkillsPath(
+	worktreePath: string,
+): Promise<string | null> {
 	const claudePath = join(worktreePath, ".claude");
 	const claudeSkillsPath = join(claudePath, "skills");
-	if (pathExistsIncludingSymlink(claudeSkillsPath)) {
-		const stat = lstatSync(claudeSkillsPath);
-		if (stat.isDirectory() && !stat.isSymbolicLink()) {
+	let linkStat: Awaited<ReturnType<typeof lstat>> | null = null;
+	try {
+		linkStat = await lstat(claudeSkillsPath);
+	} catch {
+		linkStat = null;
+	}
+
+	if (linkStat) {
+		if (linkStat.isDirectory() && !linkStat.isSymbolicLink()) {
 			return claudeSkillsPath;
 		}
 		return null;
 	}
 
-	mkdirSync(claudePath, { recursive: true });
-	symlinkSync("../.agents/skills", claudeSkillsPath, "dir");
+	await mkdir(claudePath, { recursive: true });
+	await symlink("../.agents/skills", claudeSkillsPath, "dir");
 	return null;
 }
 
-function writeWorkspaceSkillsConfig(worktreePath: string): void {
+export async function writeWorkspaceSkillsConfig(
+	worktreePath: string,
+): Promise<void> {
 	const agentsSkillsPath = join(worktreePath, ".agents", "skills");
-	writeSkillsDirectory(agentsSkillsPath);
+	const claudeSkillsPath = await ensureClaudeSkillsPath(worktreePath);
 
-	const claudeSkillsPath = ensureClaudeSkillsPath(worktreePath);
+	const skillDirectories = [agentsSkillsPath];
 	if (claudeSkillsPath) {
-		writeSkillsDirectory(claudeSkillsPath);
+		skillDirectories.push(claudeSkillsPath);
 	}
+
+	await mapWithConcurrency(
+		skillDirectories,
+		SKILLS_DIRECTORY_CONCURRENCY,
+		(directory) => writeSkillsDirectory(directory),
+	);
 }
 
 /**
@@ -236,12 +278,14 @@ export async function seedWorkspaceSkills(
 	}
 
 	const worktreePath = row.worktreePath;
-	if (!existsSync(worktreePath)) {
+	try {
+		await stat(worktreePath);
+	} catch {
 		return { warning: null };
 	}
 
 	try {
-		writeWorkspaceSkillsConfig(worktreePath);
+		await writeWorkspaceSkillsConfig(worktreePath);
 		return { warning: null };
 	} catch (error) {
 		return {
