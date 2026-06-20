@@ -9,12 +9,12 @@ describe("defaultAppState", () => {
 		expect(defaultAppState.themeState.systemLightThemeId).toBe("light");
 	});
 
-	it("starts with glass enabled at 30 percent opacity and wallpaper off", () => {
+	it("starts with glass enabled, 60 percent opacity, and the dawn-mist wallpaper", () => {
 		expect(defaultAppState.appearanceState).toEqual({
 			glassEnabled: true,
-			windowOpacity: 0.3,
-			wallpaperId: null,
-			wallpaperAutoRotate: true,
+			windowOpacity: 0.6,
+			wallpaperId: "dawn-mist",
+			wallpaperAutoRotate: false,
 			wallpaperRotateSeconds: 120,
 			quoteLoaderEnabled: true,
 		});
