@@ -12,7 +12,7 @@
  * transforms live in `journal-streams.ts` (db-free, unit-tested).
  */
 
-import { db } from "@rox/db/client";
+import { db, dbWs } from "@rox/db/client";
 import {
 	chatSessions,
 	githubInstallations,
@@ -121,28 +121,13 @@ export async function generateJournalForUserDay(
 	});
 	const streams = sanitizeStreams(rawStreams);
 
-	const [entry] = await db
-		.insert(journalEntries)
-		.values({
-			organizationId,
-			createdBy: userId,
-			day,
-			reflection: streams.reflection || null,
-			learnings: streams.learnings,
-			memorySuggestions: streams.memorySuggestions,
-			tips: streams.tips,
-			status: "generated",
-			modelId: "rox-r1",
-			sourceSessionIds: usedSessionIds,
-			generatedAt: new Date(),
-		})
-		.onConflictDoUpdate({
-			target: [
-				journalEntries.organizationId,
-				journalEntries.createdBy,
-				journalEntries.day,
-			],
-			set: {
+	const { entryId, memoryCount } = await dbWs.transaction(async (tx) => {
+		const [entry] = await tx
+			.insert(journalEntries)
+			.values({
+				organizationId,
+				createdBy: userId,
+				day,
 				reflection: streams.reflection || null,
 				learnings: streams.learnings,
 				memorySuggestions: streams.memorySuggestions,
@@ -151,21 +136,40 @@ export async function generateJournalForUserDay(
 				modelId: "rox-r1",
 				sourceSessionIds: usedSessionIds,
 				generatedAt: new Date(),
-				updatedAt: new Date(),
-			},
-		})
-		.returning({ id: journalEntries.id });
+			})
+			.onConflictDoUpdate({
+				target: [
+					journalEntries.organizationId,
+					journalEntries.createdBy,
+					journalEntries.day,
+				],
+				set: {
+					reflection: streams.reflection || null,
+					learnings: streams.learnings,
+					memorySuggestions: streams.memorySuggestions,
+					tips: streams.tips,
+					status: "generated",
+					modelId: "rox-r1",
+					sourceSessionIds: usedSessionIds,
+					generatedAt: new Date(),
+					updatedAt: new Date(),
+				},
+			})
+			.returning({ id: journalEntries.id });
 
-	const memoryCount = await materializeMemorySuggestions({
-		organizationId,
-		userId,
-		day,
-		suggestions: streams.memorySuggestions,
+		const memoryCount = await materializeMemorySuggestions(tx, {
+			organizationId,
+			userId,
+			day,
+			suggestions: streams.memorySuggestions,
+		});
+
+		return { entryId: entry?.id ?? "", memoryCount };
 	});
 
 	return {
 		status: "generated",
-		entryId: entry?.id ?? "",
+		entryId,
 		sessionCount: usedSessionIds.length,
 		memoryCount,
 	};
@@ -176,16 +180,21 @@ export async function generateJournalForUserDay(
  * status=suggested), skipping bodies the user already has in the same category
  * (any status) so re-generation doesn't pile up duplicates.
  */
-async function materializeMemorySuggestions(args: {
-	organizationId: string;
-	userId: string;
-	day: string;
-	suggestions: JournalMemorySuggestion[];
-}): Promise<number> {
+type JournalTx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
+
+async function materializeMemorySuggestions(
+	tx: JournalTx,
+	args: {
+		organizationId: string;
+		userId: string;
+		day: string;
+		suggestions: JournalMemorySuggestion[];
+	},
+): Promise<number> {
 	const { organizationId, userId, day, suggestions } = args;
 	if (suggestions.length === 0) return 0;
 
-	const existing = await db
+	const existing = await tx
 		.select({ body: memoryItems.body, category: memoryItems.category })
 		.from(memoryItems)
 		.where(
@@ -203,7 +212,7 @@ async function materializeMemorySuggestions(args: {
 	);
 	if (fresh.length === 0) return 0;
 
-	await db.insert(memoryItems).values(
+	await tx.insert(memoryItems).values(
 		fresh.map((s) => ({
 			organizationId,
 			createdBy: userId,
@@ -375,45 +384,50 @@ export async function generateJournalSeedForUser(
 	);
 	const streams = shapeSeedStreams(rawStreams);
 
-	const [entry] = await db
-		.insert(journalEntries)
-		.values({
-			organizationId,
-			createdBy: userId,
-			day,
-			reflection: streams.reflection || null,
-			learnings: streams.learnings,
-			memorySuggestions: streams.memorySuggestions,
-			tips: streams.tips,
-			status: "generated",
-			modelId: "rox-r1",
-			sourceSessionIds: [SEED_SOURCE_MARKER],
-			generatedAt: new Date(),
-		})
-		// Do NOT clobber a concurrently-created entry — a race means the digest
-		// (or another seed) won the day; treat it as an existing entry.
-		.onConflictDoNothing({
-			target: [
-				journalEntries.organizationId,
-				journalEntries.createdBy,
-				journalEntries.day,
-			],
-		})
-		.returning({ id: journalEntries.id });
-	if (!entry) return { status: "skipped", reason: "has-entry" };
+	const written = await dbWs.transaction(async (tx) => {
+		const [entry] = await tx
+			.insert(journalEntries)
+			.values({
+				organizationId,
+				createdBy: userId,
+				day,
+				reflection: streams.reflection || null,
+				learnings: streams.learnings,
+				memorySuggestions: streams.memorySuggestions,
+				tips: streams.tips,
+				status: "generated",
+				modelId: "rox-r1",
+				sourceSessionIds: [SEED_SOURCE_MARKER],
+				generatedAt: new Date(),
+			})
+			// Do NOT clobber a concurrently-created entry — a race means the digest
+			// (or another seed) won the day; treat it as an existing entry.
+			.onConflictDoNothing({
+				target: [
+					journalEntries.organizationId,
+					journalEntries.createdBy,
+					journalEntries.day,
+				],
+			})
+			.returning({ id: journalEntries.id });
+		if (!entry) return null;
 
-	const memoryCount = await materializeMemorySuggestions({
-		organizationId,
-		userId,
-		day,
-		suggestions: streams.memorySuggestions,
+		const memoryCount = await materializeMemorySuggestions(tx, {
+			organizationId,
+			userId,
+			day,
+			suggestions: streams.memorySuggestions,
+		});
+
+		return { entryId: entry.id, memoryCount };
 	});
+	if (!written) return { status: "skipped", reason: "has-entry" };
 
 	return {
 		status: "seeded",
-		entryId: entry.id,
+		entryId: written.entryId,
 		repoCount: summary.repos.length,
 		prCount: summary.recentPrs.length,
-		memoryCount,
+		memoryCount: written.memoryCount,
 	};
 }

@@ -1479,9 +1479,8 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 				const activeProjects = localDb
 					.select()
 					.from(projects)
-					.where(eq(projects.tabOrder, projects.tabOrder)) // Just get all with non-null tabOrder
+					.where(isNotNull(projects.tabOrder))
 					.all()
-					.filter((p) => p.tabOrder !== null)
 					.sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0));
 
 				if (

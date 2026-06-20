@@ -1,3 +1,5 @@
+import { db } from "@rox/db/client";
+import { integrationInboundEvents } from "@rox/db/schema";
 import type { LinkSharedEvent, SlackEvent } from "@slack/types";
 import { Client } from "@upstash/qstash";
 
@@ -75,6 +77,33 @@ export async function POST(request: Request) {
 		) {
 			console.error("[slack/events] Invalid event payload shape");
 			return Response.json({ error: "Invalid payload shape" }, { status: 400 });
+		}
+
+		// Idempotency: Slack redelivers events (and QStash retries below run 3x),
+		// while app_mention/message can create tasks, spawn workspaces and launch
+		// coding agents. Dedup on the Slack-unique event_id (scoped by team) so a
+		// redelivery never double-runs the agent. Mirrors the Telegram webhook.
+		const dedupEventId = `${team_id}:${event_id}`;
+		const [inserted] = await db
+			.insert(integrationInboundEvents)
+			.values({
+				provider: "slack",
+				externalEventId: dedupEventId,
+			})
+			.onConflictDoNothing({
+				target: [
+					integrationInboundEvents.provider,
+					integrationInboundEvents.externalEventId,
+				],
+			})
+			.returning({ id: integrationInboundEvents.id });
+
+		if (!inserted) {
+			console.info("[slack/events] Duplicate event ignored", {
+				eventId: event_id,
+				teamId: team_id,
+			});
+			return new Response("ok", { status: 200 });
 		}
 
 		if (event.type === "app_mention") {
