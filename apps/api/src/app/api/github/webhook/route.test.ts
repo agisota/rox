@@ -77,6 +77,15 @@ mock.module("@rox/db/schema", () => ({
 	},
 	members: { userId: "userId", organizationId: "organizationId" },
 	users: { id: "id", email: "email" },
+	// bun's mock.module registry is process-global and first-registration-wins per
+	// specifier, so whichever github suite links `@rox/db/schema` first locks this
+	// stub for ALL siblings in the run. The sibling `callback/route.test.ts` route
+	// imports `githubInstallations`; include it here so that suite's named import
+	// resolves regardless of which file links the schema mock first.
+	githubInstallations: {
+		installationId: "installationId",
+		organizationId: "organizationId",
+	},
 }));
 
 const { POST } = await import("./route");
