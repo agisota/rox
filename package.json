@@ -55,8 +55,7 @@
 		"hono": "4.12.25",
 		"kysely": "0.28.17",
 		"protobufjs": "7.6.4",
-		"shell-quote": "1.8.4",
-		"undici": "6.27.0"
+		"shell-quote": "1.8.4"
 	},
 	"trustedDependencies": [
 		"better-sqlite3",
