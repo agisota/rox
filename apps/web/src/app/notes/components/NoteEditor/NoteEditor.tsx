@@ -35,6 +35,9 @@ export function NoteEditor({ noteId, notebookId }: NoteEditorProps) {
 	const [markdown, setMarkdown] = useState("");
 	const lastSyncedId = useRef<string | null>(null);
 	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	// Buffer the most recent unsaved edit so the unmount cleanup can flush it
+	// (the debounce would otherwise drop a pending change when the editor closes).
+	const pendingRef = useRef<{ title?: string; markdown?: string } | null>(null);
 
 	// Hydrate local editor state from the loaded note (once per note id), so
 	// typing does not get clobbered by background refetches of the same note.
@@ -47,17 +50,44 @@ export function NoteEditor({ noteId, notebookId }: NoteEditorProps) {
 	}, [note.data]);
 
 	const scheduleSave = (next: { title?: string; markdown?: string }) => {
+		pendingRef.current = { ...pendingRef.current, ...next };
 		if (saveTimer.current) clearTimeout(saveTimer.current);
 		saveTimer.current = setTimeout(() => {
-			actions.updateNote.mutate({ noteId, ...next });
+			const payload = pendingRef.current;
+			pendingRef.current = null;
+			if (payload) actions.updateNote.mutate({ noteId, ...payload });
 		}, AUTOSAVE_DELAY_MS);
+	};
+
+	// Keep the latest mutate fn/noteId for the unmount flush without re-arming the
+	// effect (which would fire the cleanup on every keystroke).
+	const flushRef = useRef<() => void>(() => {});
+	flushRef.current = () => {
+		if (saveTimer.current) clearTimeout(saveTimer.current);
+		const payload = pendingRef.current;
+		pendingRef.current = null;
+		if (payload) actions.updateNote.mutate({ noteId, ...payload });
 	};
 
 	useEffect(() => {
 		return () => {
-			if (saveTimer.current) clearTimeout(saveTimer.current);
+			flushRef.current();
 		};
 	}, []);
+
+	// Surface a brief "Сохранено" pill once a save lands, then fade it. Tracking
+	// the previous pending state avoids showing it on the initial mount.
+	const [justSaved, setJustSaved] = useState(false);
+	const wasSaving = useRef(false);
+	const isSaving = actions.updateNote.isPending;
+	useEffect(() => {
+		if (wasSaving.current && !isSaving && actions.updateNote.isSuccess) {
+			setJustSaved(true);
+			const timer = setTimeout(() => setJustSaved(false), 2000);
+			return () => clearTimeout(timer);
+		}
+		wasSaving.current = isSaving;
+	}, [isSaving, actions.updateNote.isSuccess]);
 
 	const data = note.data;
 	const tags = (data?.tags ?? []) as string[];
@@ -84,7 +114,14 @@ export function NoteEditor({ noteId, notebookId }: NoteEditorProps) {
 	return (
 		<div className="flex h-full flex-col gap-4">
 			<div className="flex items-center justify-between gap-3">
-				<NotePresence noteId={noteId} />
+				<div className="flex items-center gap-2">
+					<NotePresence noteId={noteId} />
+					{isSaving ? (
+						<span className="text-muted-foreground text-xs">Сохранение…</span>
+					) : justSaved ? (
+						<span className="text-muted-foreground text-xs">Сохранено</span>
+					) : null}
+				</div>
 				<div className="flex items-center gap-2">
 					<Label
 						htmlFor="note-publish"

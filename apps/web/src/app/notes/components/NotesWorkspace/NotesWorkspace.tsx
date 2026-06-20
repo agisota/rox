@@ -16,7 +16,7 @@ export function NotesWorkspace() {
 	const [noteId, setNoteId] = useState<string | null>(null);
 
 	return (
-		<div className="flex h-[calc(100dvh-7rem)] gap-4">
+		<div className="flex h-[calc(100dvh-7rem)] flex-col gap-4 md:flex-row">
 			<NotebookSidebar
 				selectedNotebookId={notebookId}
 				onSelect={(id) => {
