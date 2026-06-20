@@ -1,6 +1,6 @@
 import {
 	type AgentDefinitionId,
-	DEFAULT_TERMINAL_AGENT_TYPE,
+	DEFAULT_CHAT_AGENT_TYPE,
 	getEnabledAgentConfigs,
 	indexResolvedAgentConfigs,
 } from "@rox/shared/agent-settings";
@@ -554,7 +554,7 @@ function PromptGroupInner({
 	const { selectedAgent, setSelectedAgent } =
 		useAgentLaunchPreferences<WorkspaceCreateAgent>({
 			agentStorageKey: AGENT_STORAGE_KEY,
-			defaultAgent: DEFAULT_TERMINAL_AGENT_TYPE,
+			defaultAgent: DEFAULT_CHAT_AGENT_TYPE,
 			fallbackAgent: "none",
 			validAgents: ["none", ...selectableAgentIds],
 			agentsReady: agentPresetsQuery.isFetched,

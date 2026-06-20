@@ -23,6 +23,10 @@ export const BUILTIN_AGENT_IDS = [
 export type BuiltinAgentId = (typeof BUILTIN_AGENT_IDS)[number];
 export type AgentDefinitionId = BuiltinAgentId | `custom:${string}`;
 
+// Built-in chat agent id. Used as the default "create workspace" agent so a
+// freshly created project opens the chat view first (not a terminal).
+export const DEFAULT_CHAT_AGENT_TYPE = "rox" satisfies BuiltinAgentId;
+
 export type {
 	AgentDefinition,
 	AgentDefinitionSource,
