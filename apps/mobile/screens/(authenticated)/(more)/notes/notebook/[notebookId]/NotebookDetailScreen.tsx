@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FileText, Plus } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
+import { collectTags, toggleTag } from "../../utils/parseTags";
 import { useNotes } from "./hooks/useNotes";
 
 function formatDate(value: Date | string | null): string | null {
@@ -37,6 +38,21 @@ export function NotebookDetailScreen() {
 	const [refreshing, setRefreshing] = useState(false);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [title, setTitle] = useState("");
+	const [activeTags, setActiveTags] = useState<string[]>([]);
+
+	const availableTags = useMemo(
+		() => collectTags(notes.map((n) => n.tags)),
+		[notes],
+	);
+
+	const visibleNotes = useMemo(() => {
+		if (activeTags.length === 0) return notes;
+		const wanted = activeTags.map((t) => t.toLowerCase());
+		return notes.filter((note) => {
+			const noteTags = (note.tags ?? []).map((t) => t.toLowerCase());
+			return wanted.every((t) => noteTags.includes(t));
+		});
+	}, [notes, activeTags]);
 
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true);
@@ -64,6 +80,7 @@ export function NotebookDetailScreen() {
 	}, [title, createNote, handleOpen]);
 
 	const hasData = notes.length > 0;
+	const hasVisible = visibleNotes.length > 0;
 
 	let content: React.ReactNode;
 	if (error) {
@@ -87,10 +104,18 @@ export function NotebookDetailScreen() {
 				</Text>
 			</View>
 		);
+	} else if (!hasVisible) {
+		content = (
+			<View className="items-center justify-center py-20">
+				<Text className="text-center text-muted-foreground">
+					No notes match the selected tags.
+				</Text>
+			</View>
+		);
 	} else {
 		content = (
 			<View>
-				{notes.map((note, index) => {
+				{visibleNotes.map((note, index) => {
 					const updated = formatDate(note.updatedAt);
 					return (
 						<View key={note.id}>
@@ -128,6 +153,36 @@ export function NotebookDetailScreen() {
 					<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
 				}
 			>
+				{availableTags.length > 0 ? (
+					<View className="flex-row flex-wrap gap-2 px-4 pb-1 pt-3">
+						{availableTags.map((tag) => {
+							const active = activeTags.some(
+								(t) => t.toLowerCase() === tag.toLowerCase(),
+							);
+							return (
+								<Pressable
+									key={tag}
+									onPress={() => setActiveTags((prev) => toggleTag(prev, tag))}
+									className={`rounded-full border px-3 py-1 active:opacity-70 ${
+										active
+											? "border-primary bg-primary"
+											: "border-border bg-background"
+									}`}
+								>
+									<Text
+										className={
+											active
+												? "text-xs font-medium text-primary-foreground"
+												: "text-xs text-muted-foreground"
+										}
+									>
+										{tag}
+									</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+				) : null}
 				{content}
 			</ScrollView>
 

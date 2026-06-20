@@ -9,9 +9,18 @@ export default function MoreLayout() {
 			<Stack.Screen name="drive/folder" options={{ title: "Folder" }} />
 			<Stack.Screen name="calendar/index" options={{ title: "Calendar" }} />
 			<Stack.Screen name="calendar/event" options={{ title: "Event" }} />
+			<Stack.Screen
+				name="calendar/event-new"
+				options={{ title: "New event" }}
+			/>
+			<Stack.Screen
+				name="calendar/event-edit"
+				options={{ title: "Edit event" }}
+			/>
 			<Stack.Screen name="notes/index" options={{ title: "Notes" }} />
 			<Stack.Screen name="notes/notebook" options={{ title: "Notebook" }} />
 			<Stack.Screen name="notes/note" options={{ title: "Note" }} />
+			<Stack.Screen name="notes/note-edit" options={{ title: "Edit note" }} />
 		</Stack>
 	);
 }
