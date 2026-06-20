@@ -3,6 +3,7 @@ import { Loader2Icon, MicIcon } from "lucide-react";
 import type React from "react";
 import { useRef } from "react";
 import { useHotkey } from "renderer/hotkeys";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { type Recording, useDictation } from "renderer/lib/voice/useDictation";
 import { WaveformOverlay } from "./WaveformOverlay";
 
@@ -29,10 +30,18 @@ export function MicButton({
 	const dictation = useDictation({ onComplete });
 	const pointerStartY = useRef<number | null>(null);
 
+	// Plain dictation can be turned off in Settings → Voice. Cache-first: only
+	// hide once we've explicitly read `false` (undefined = loading → keep the
+	// default-on button so it doesn't flicker out on mount).
+	const dictationEnabled =
+		electronTrpc.settings.getDictationEnabled.useQuery().data;
+	const dictationOff = dictationEnabled === false;
+
 	// Keyboard shortcut toggles dictation in locked mode — press to start, press
-	// again to stop + insert. Modifiable in Settings → Keyboard.
+	// again to stop + insert. Modifiable in Settings → Keyboard. Disabled when
+	// the user has turned dictation off.
 	useHotkey("DICTATE", () => {
-		if (disabled || transcribing) return;
+		if (dictationOff || disabled || transcribing) return;
 		if (dictation.isActive) {
 			dictation.stop();
 		} else {
@@ -67,6 +76,9 @@ export function MicButton({
 		// PTT release stops + sends; a locked recording keeps going until tapped.
 		if (dictation.state === "recording") dictation.stop();
 	};
+
+	// Hidden entirely when dictation is turned off in Settings → Voice.
+	if (dictationOff) return null;
 
 	return (
 		<>

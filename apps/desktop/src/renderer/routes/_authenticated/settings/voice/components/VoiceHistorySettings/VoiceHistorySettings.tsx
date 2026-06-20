@@ -31,11 +31,11 @@ export function VoiceHistorySettings() {
 	}, []);
 
 	return (
-		<div className="mx-auto max-w-3xl px-6 py-8">
+		<div>
 			<header className="mb-6">
-				<h1 className="font-semibold text-2xl text-foreground">Голос</h1>
+				<h2 className="font-semibold text-foreground text-lg">История</h2>
 				<p className="mt-1 text-muted-foreground text-sm">
-					История надиктованных промптов и их расшифровок.
+					Надиктованные промпты и их расшифровки.
 				</p>
 			</header>
 

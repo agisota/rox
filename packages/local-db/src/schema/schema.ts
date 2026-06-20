@@ -257,6 +257,18 @@ export const settings = sqliteTable("settings", {
 	exposeHostServiceViaRelay: integer("expose_host_service_via_relay", {
 		mode: "boolean",
 	}),
+	// Voice / ambient settings (Phase 4a). Plain dictation defaults ON; the
+	// always-on ambient capture is opt-in (defaults OFF) and shows a recording
+	// indicator. `voiceAgentContext` is free-text the user supplies in advance so
+	// the agent has context — threaded into the dictation post-process today and
+	// consumed by the future ambient runtime.
+	dictationEnabled: integer("dictation_enabled", { mode: "boolean" }).default(
+		true,
+	),
+	ambientCaptureEnabled: integer("ambient_capture_enabled", {
+		mode: "boolean",
+	}).default(false),
+	voiceAgentContext: text("voice_agent_context").default(""),
 });
 
 export type InsertSettings = typeof settings.$inferInsert;
