@@ -2,6 +2,39 @@
 
 Email templates for Rox, built with [React Email](https://react.email).
 
+## Localization (RU-primary)
+
+Russian is the primary product locale for Rox, so all customer-facing
+transactional templates ship with **inline Russian copy** (no runtime i18n
+layer). This matches the established repo convention (`plans/ru-localization-inventory.md`,
+desktop Phase-1) and the reality that email render call sites (`packages/auth`,
+marketing actions) thread no per-user `locale`. Proper nouns stay as-is: `Rox`,
+`GitHub`, `Linear`, `Slack`, `PR`.
+
+A future English-fallback / bilingual layer is a separate epic and is out of
+scope for the email package today.
+
+> **Subject lines are NOT owned here.** The subject strings for the wired auth
+> emails are built at the call site (`packages/auth/src/server.ts`) and for the
+> marketing emails in `apps/marketing/src/app/{contact,enterprise}/actions.ts`.
+> Translating those belongs to the auth / marketing owners, not `@rox/email`.
+
+### Deprecated billing templates
+
+The five Stripe seat-billing templates are **`@deprecated` and unwired** — the
+Rox economy replaced Stripe seat billing with a prepaid token economy
+(`packages/db/src/schema/economy.ts`). They are kept for reference only (no
+deletion) and intentionally left untranslated; do not send them:
+
+- `subscription-started.tsx`
+- `subscription-cancelled.tsx`
+- `payment-failed.tsx`
+- `member-added-billing.tsx`
+- `member-removed-billing.tsx`
+
+Any future token-economy email (e.g. a top-up confirmation/failure) belongs in
+this package (`packages/email/**`).
+
 ## Images in Email
 
 **Critical:** Email clients require absolute URLs for images. All images must be hosted on your production domain.
@@ -207,6 +240,23 @@ Common transactional emails to add:
    - Account deleted confirmation
 
 ## Testing
+
+Render-smoke tests live next to each template (`*.test.tsx`) plus a consolidated
+harness at `src/emails/__tests__/render.test.tsx`. Each test renders a template
+to HTML via `@react-email/render` (re-exported from `@react-email/components`,
+no extra dependency) and asserts it returns a non-empty string and contains the
+expected RU copy (deprecated billing templates assert render-without-throw only).
+This is the regression guard for translation completeness.
+
+> Tests set `process.env.NEXT_PUBLIC_MARKETING_URL` **before** importing any
+> `StandardLayout` template — `Footer` reads it through `lib/env` at module-eval
+> time and throws if it is unset.
+
+Run them from the repo root:
+
+```bash
+bun test packages/email
+```
 
 To preview email templates during development:
 

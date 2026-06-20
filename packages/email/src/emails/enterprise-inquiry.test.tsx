@@ -20,7 +20,8 @@ describe("EnterpriseInquiryEmail", () => {
 			/>,
 		);
 
-		expect(html).toContain("New Enterprise Inquiry");
+		expect(html).toContain("Новый запрос Enterprise");
+		expect(html).not.toContain("New Enterprise Inquiry");
 		expect(html).toContain("Katherine Johnson");
 		expect(html).toContain("VP Engineering");
 		expect(html).toContain("Orbital Corp");
@@ -41,8 +42,8 @@ describe("EnterpriseInquiryEmail", () => {
 			/>,
 		);
 
-		expect(html).not.toContain("Phone");
-		expect(html).not.toContain("What problem are they trying to solve?");
+		expect(html).not.toContain("Телефон");
+		expect(html).not.toContain("Какую задачу они хотят решить?");
 	});
 
 	it("includes the optional phone and message blocks when provided", async () => {
@@ -59,13 +60,13 @@ describe("EnterpriseInquiryEmail", () => {
 			/>,
 		);
 
-		expect(html).toContain("Phone");
+		expect(html).toContain("Телефон");
 		expect(html).toContain("+1-555-0100");
-		expect(html).toContain("What problem are they trying to solve?");
+		expect(html).toContain("Какую задачу они хотят решить?");
 		expect(html).toContain("We need SSO and audit logs.");
 	});
 
-	it("renders the static heading and intro copy", async () => {
+	it("renders the static heading and intro copy in Russian", async () => {
 		const html = await render(
 			<EnterpriseInquiryEmail
 				{...{
@@ -77,9 +78,9 @@ describe("EnterpriseInquiryEmail", () => {
 			/>,
 		);
 
-		expect(html).toContain("New Enterprise Inquiry");
+		expect(html).toContain("Новый запрос Enterprise");
 		expect(html).toContain(
-			"A new enterprise inquiry was submitted from the marketing site.",
+			"С маркетингового сайта поступил новый запрос Enterprise.",
 		);
 		expect(html).toContain("Acme Inc.");
 	});

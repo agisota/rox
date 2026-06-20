@@ -38,27 +38,33 @@ describe("OrganizationInvitationEmail", () => {
 		);
 	});
 
-	it("maps the member role to the Member display label", async () => {
+	it("maps the member role to the Russian Member display label", async () => {
 		const html = await renderInvitation({ ...base, role: "member" });
-		expect(html).toContain("Member");
+		expect(html).toContain("Участник");
 	});
 
-	it("maps a non-member role to the Admin display label", async () => {
+	it("maps a non-member role to the Russian Admin display label", async () => {
 		const html = await renderInvitation({ ...base, role: "admin" });
-		expect(html).toContain("Admin");
+		expect(html).toContain("Администратор");
 	});
 
-	it("greets the invitee by name when provided", async () => {
+	it("greets the invitee by name in Russian when provided", async () => {
 		const html = await renderInvitation({ ...base, inviteeName: "Marge" });
-		expect(html).toContain("Hi Marge,");
+		expect(html).toContain("Здравствуйте, Marge!");
 	});
 
-	it("pluralizes the expiration window for multiple days", async () => {
+	it("renders the Russian Accept Invitation CTA", async () => {
+		const html = await renderInvitation(base);
+		expect(html).toContain("Принять приглашение");
+		expect(html).not.toContain("Accept Invitation");
+	});
+
+	it("pluralizes the expiration window for multiple days in Russian", async () => {
 		const html = await renderInvitation({
 			...base,
 			expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 60_000),
 		});
-		expect(html).toContain("expires in 5 days");
+		expect(html).toContain("истекает через 5 дн.");
 	});
 
 	it("uses the singular day form when exactly one day remains", async () => {
@@ -66,7 +72,7 @@ describe("OrganizationInvitationEmail", () => {
 			...base,
 			expiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 60_000),
 		});
-		expect(html).toContain("expires in 1 day");
-		expect(html).not.toContain("expires in 1 days");
+		expect(html).toContain("истекает через 1 день");
+		expect(html).not.toContain("истекает через 1 дн.");
 	});
 });
