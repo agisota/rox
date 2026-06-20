@@ -22,7 +22,7 @@ import {
 	pipelineRouter,
 	triggerRouter,
 } from "./router/pipeline";
-import { profileRouter } from "./router/profile";
+import { identityRouter, profileRouter } from "./router/profile";
 import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
 import { runtimeRouter } from "./router/runtime";
@@ -55,6 +55,7 @@ export const appRouter = createTRPCRouter({
 	executionCircuit: executionCircuitRouter,
 	graph: graphRouter,
 	host: hostRouter,
+	identity: identityRouter,
 	integration: integrationRouter,
 	journal: journalRouter,
 	knowledge: knowledgeRouter,
