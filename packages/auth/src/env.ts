@@ -13,6 +13,16 @@ export const env = createEnv({
 		RESEND_API_KEY: z.string(),
 		KV_REST_API_URL: z.string(),
 		KV_REST_API_TOKEN: z.string(),
+		// ROX-522: Yandex ID (OAuth2) via better-auth genericOAuth. Optional so
+		// non-RU/local environments without Yandex creds still boot; the provider
+		// is registered only when both values are present.
+		YANDEX_CLIENT_ID: z.string().optional(),
+		YANDEX_CLIENT_SECRET: z.string().optional(),
+		// ROX-522: Telegram Login Widget. The bot token is the HMAC secret source
+		// (secret_key = SHA256(token)); the username backs the widget's
+		// `data-telegram-login`. Optional so the plugin registers only when set.
+		TELEGRAM_BOT_TOKEN: z.string().optional(),
+		TELEGRAM_BOT_USERNAME: z.string().optional(),
 	},
 	clientPrefix: "NEXT_PUBLIC_",
 	client: {

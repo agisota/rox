@@ -19,7 +19,12 @@ import { ANALYTICS_EVENTS } from "@rox/shared/constants";
 import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { bearer, customSession, organization } from "better-auth/plugins";
+import {
+	bearer,
+	customSession,
+	genericOAuth,
+	organization,
+} from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { captureAuthEvent } from "./analytics";
@@ -32,6 +37,13 @@ import {
 	resolveSessionOrganizationState,
 	type SessionOrganizationContext,
 } from "./lib/resolve-session-organization-state";
+import { upsertSocialProfile } from "./lib/social-profile";
+import { telegramLogin } from "./lib/telegram-plugin";
+import {
+	buildYandexProvider,
+	takePendingYandexProfile,
+	YANDEX_PROVIDER_ID,
+} from "./lib/yandex-oauth";
 
 const userOptions = {
 	additionalFields: {
@@ -233,6 +245,38 @@ export const auth = betterAuth({
 				},
 			},
 		},
+		account: {
+			create: {
+				// ROX-522: populate `user_profiles` for Yandex (genericOAuth) sign-ups.
+				// genericOAuth's `mapProfileToUser` can only return Partial<User>, so
+				// the cached provider identity (display username / avatar) is stashed
+				// transiently in `yandex-oauth.ts` keyed by the Yandex account id and
+				// drained here once the account row exists. Best-effort: a profile
+				// write must never block authentication.
+				after: async (account: {
+					userId: string;
+					providerId: string;
+					accountId: string;
+				}) => {
+					if (account.providerId !== YANDEX_PROVIDER_ID) return;
+					try {
+						const pending = takePendingYandexProfile(account.accountId);
+						await upsertSocialProfile({
+							userId: account.userId,
+							registrationProvider: "yandex",
+							providerAccountId: account.accountId,
+							displayUsername: pending?.displayUsername ?? null,
+							providerAvatarUrl: pending?.providerAvatarUrl ?? null,
+						});
+					} catch (error) {
+						console.error(
+							`[yandex] failed to write user_profiles for ${account.userId}:`,
+							error,
+						);
+					}
+				},
+			},
+		},
 		session: {
 			create: {
 				after: async (session: { userId: string }) => {
@@ -333,6 +377,19 @@ export const auth = betterAuth({
 			},
 		}),
 		expo(),
+		// ROX-522: Yandex ID via genericOAuth. The provider list is empty when
+		// Yandex credentials are absent, so the plugin is inert in environments
+		// without RU social login (the callback path stays registered but no
+		// provider matches).
+		genericOAuth({
+			config: [buildYandexProvider()].filter(
+				(provider): provider is NonNullable<typeof provider> =>
+					provider !== null,
+			),
+		}),
+		// ROX-522: Telegram Login Widget (custom, not OAuth). Mounts
+		// `GET /api/auth/telegram/callback`.
+		telegramLogin(),
 		organization({
 			creatorRole: "owner",
 			invitationExpiresIn: 60 * 60 * 24 * 7,

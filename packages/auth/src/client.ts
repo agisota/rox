@@ -5,6 +5,7 @@ import { oauthProviderClient } from "@better-auth/oauth-provider/client";
 import type { auth } from "@rox/auth/server";
 import {
 	customSessionClient,
+	genericOAuthClient,
 	organizationClient,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
@@ -25,5 +26,7 @@ export const authClient = createAuthClient({
 		customSessionClient<typeof auth>(),
 		apiKeyClient(),
 		oauthProviderClient(),
+		// ROX-522: enables authClient.signIn.oauth2({ providerId: "yandex" }).
+		genericOAuthClient(),
 	],
 });
