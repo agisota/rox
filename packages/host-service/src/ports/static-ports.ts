@@ -2,6 +2,7 @@ import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parseStaticPortsConfig } from "@rox/port-scanner";
 import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
+import { logger } from "../lib/logger";
 
 const PORTS_FILE_NAME = "ports.json";
 
@@ -34,7 +35,7 @@ function safeGetPortsFileSignature(worktreePath: string): string | null {
 	try {
 		return getPortsFileSignature(worktreePath);
 	} catch (error) {
-		console.warn("[ports] Failed to stat static port labels:", {
+		logger.warn("[ports] Failed to stat static port labels:", {
 			worktreePath,
 			error,
 		});
@@ -55,7 +56,7 @@ function safeLoadLabels(worktreePath: string): Map<number, string> | null {
 	try {
 		return loadLabels(worktreePath);
 	} catch (error) {
-		console.warn("[ports] Failed to load static port labels:", {
+		logger.warn("[ports] Failed to load static port labels:", {
 			worktreePath,
 			error,
 		});

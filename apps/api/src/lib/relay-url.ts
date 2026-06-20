@@ -1,6 +1,7 @@
 import { FEATURE_FLAGS } from "@rox/shared/constants";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 
 interface RelayUrlPayload {
 	url?: string;
@@ -23,7 +24,7 @@ export async function getRelayUrl(userId: string): Promise<string> {
 		const override = payload?.url;
 		if (typeof override === "string" && override.length > 0) return override;
 	} catch (error) {
-		console.warn("[relay-url] PostHog payload fetch failed:", error);
+		logger.warn("[relay-url] PostHog payload fetch failed:", error);
 	}
 	return fallback;
 }

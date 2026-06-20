@@ -1,9 +1,10 @@
+import { logger } from "../lib/logger";
 // Lazy singleton DaemonClient for host-service. The DaemonSupervisor
 // (host-service-internal) owns the daemon's process lifecycle; this
 // singleton just connects to the supervisor's socket path on first use
 // and reuses the connection for all sessions.
 //
-// On disconnect we surface via console.error, notify subscribers (terminal.ts
+// On disconnect we surface via logger.error, notify subscribers (terminal.ts
 // uses this to close WS sockets so the renderer reconnects against the
 // respawned daemon), and let the next caller's getDaemonClient() rebuild
 // the client. There's no in-band reconnect here — see DaemonClient's "dumb"
@@ -68,19 +69,13 @@ export async function getDaemonClient(): Promise<DaemonClient> {
 	const sockPath = await ptyDaemonSocketPath();
 	const client = new DaemonClient({ socketPath: sockPath });
 	client.onDisconnect((err) => {
-		console.error(
-			"[host-service] pty-daemon disconnected:",
-			err?.message ?? "",
-		);
+		logger.error("[host-service] pty-daemon disconnected:", err?.message ?? "");
 		if (cached === client) cached = null;
 		for (const listener of disconnectListeners) {
 			try {
 				listener(err);
 			} catch (cbErr) {
-				console.error(
-					"[host-service] daemon-disconnect listener threw:",
-					cbErr,
-				);
+				logger.error("[host-service] daemon-disconnect listener threw:", cbErr);
 			}
 		}
 	});

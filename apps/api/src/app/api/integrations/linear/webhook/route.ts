@@ -17,6 +17,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
 import { apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
 
 const webhookClient = new LinearWebhookClient(env.LINEAR_WEBHOOK_SECRET);
 
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
 	const payload = webhookClient.parseData(Buffer.from(body), signature);
 
 	if (!payload.type) {
-		console.error("[linear/webhook] Missing event type");
+		logger.error("[linear/webhook] Missing event type");
 		return apiError("Missing event type", 400);
 	}
 
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
 	});
 
 	if (connections.length === 0) {
-		console.log(
+		logger.info(
 			"[linear/webhook] No active connections for Linear org:",
 			payload.organizationId,
 		);
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
 	const anyFailed = results.some((r) => r.outcome === "failed");
 	const allFailed = results.every((r) => r.outcome === "failed");
 	if (anyFailed) {
-		console.error("[linear/webhook] processing failures:", results);
+		logger.error("[linear/webhook] processing failures:", results);
 	}
 	return Response.json(
 		{
@@ -168,7 +169,7 @@ async function processForConnection(
 		if (payload.type === "Issue") {
 			const parsedIssue = linearIssueDataSchema.safeParse(payload.data);
 			if (!parsedIssue.success) {
-				console.error(
+				logger.error(
 					"[linear/webhook] Malformed Issue payload, skipping",
 					parsedIssue.error.issues,
 				);
@@ -221,7 +222,7 @@ async function processIssueEvent(
 			// TODO(SUPER-237): Handle new workflow states in webhooks by triggering syncWorkflowStates
 			// Currently webhooks silently fail when Linear has new statuses that aren't synced yet.
 			// Should either: (1) trigger workflow state sync and retry, (2) queue for retry, or (3) keep periodic sync only
-			console.warn(
+			logger.warn(
 				`[webhook] Status not found for state ${issue.state.id}, skipping update`,
 			);
 			return "skipped";

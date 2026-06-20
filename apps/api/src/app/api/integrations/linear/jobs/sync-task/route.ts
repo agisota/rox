@@ -15,6 +15,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 
 const payloadSchema = z.object({
@@ -244,7 +245,7 @@ export async function POST(request: Request) {
 		onError: "respond",
 		verifyErrorMessage: "Signature verification failed",
 		logError: (verifyError) =>
-			console.error("[sync-task] Signature verification failed:", verifyError),
+			logger.error("[sync-task] Signature verification failed:", verifyError),
 	});
 	if (!verified.ok) {
 		return verified.response;

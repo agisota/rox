@@ -1,3 +1,5 @@
+import { logger } from "./lib/logger";
+
 /**
  * Host-service crash isolation.
  *
@@ -20,13 +22,13 @@ export function installProcessSafetyNet(): void {
 	safetyNetInstalled = true;
 
 	process.on("uncaughtException", (error, origin) => {
-		console.error("[host-service] uncaughtException — staying up", {
+		logger.error("[host-service] uncaughtException — staying up", {
 			origin,
 			error,
 		});
 	});
 
 	process.on("unhandledRejection", (reason) => {
-		console.error("[host-service] unhandledRejection — staying up", { reason });
+		logger.error("[host-service] unhandledRejection — staying up", { reason });
 	});
 }

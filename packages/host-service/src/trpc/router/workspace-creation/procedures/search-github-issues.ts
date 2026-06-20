@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from "../../../../lib/logger";
 import { protectedProcedure } from "../../../index";
 import { normalizeGitHubQuery } from "../normalize-github-query";
 import { githubSearchInputSchema } from "../schemas";
@@ -181,7 +182,7 @@ export const searchGitHubIssues = protectedProcedure
 				page,
 			};
 		} catch (ghErr) {
-			console.warn(
+			logger.warn(
 				"[workspaceCreation.searchGitHubIssues] gh path failed; falling back to Octokit",
 				ghErr,
 			);
@@ -248,7 +249,7 @@ export const searchGitHubIssues = protectedProcedure
 				page,
 			};
 		} catch (err) {
-			console.warn(
+			logger.warn(
 				"[workspaceCreation.searchGitHubIssues] octokit fallback failed",
 				err,
 			);

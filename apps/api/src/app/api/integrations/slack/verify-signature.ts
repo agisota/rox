@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 export function verifySlackSignature({
 	body,
@@ -14,7 +15,7 @@ export function verifySlackSignature({
 	const timestampSec = Number.parseInt(timestamp, 10);
 	const now = Math.floor(Date.now() / 1000);
 	if (Math.abs(now - timestampSec) > 60 * 5) {
-		console.error("[slack/verify-signature] Timestamp too old or in future");
+		logger.error("[slack/verify-signature] Timestamp too old or in future");
 		return false;
 	}
 

@@ -3,6 +3,7 @@ import { integrationConnections, tasks } from "@rox/db/schema";
 import { isIntegrationSecretDecodeError } from "@rox/trpc/integration-secret";
 import type { SlackEvent } from "@slack/types";
 import { and, desc, eq, isNull } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 import { createSlackClient } from "../utils/slack-client";
 import {
 	createTaskFlexpaneObject,
@@ -26,7 +27,7 @@ export async function processEntityDetails({
 	teamId,
 	eventId,
 }: ProcessEntityDetailsParams): Promise<void> {
-	console.log("[slack/process-entity-details] Processing entity details:", {
+	logger.info("[slack/process-entity-details] Processing entity details:", {
 		eventId,
 		teamId,
 		entityUrl: event.entity_url,
@@ -46,7 +47,7 @@ export async function processEntityDetails({
 	});
 
 	if (!connection) {
-		console.error(
+		logger.error(
 			"[slack/process-entity-details] No connection found for team:",
 			teamId,
 		);
@@ -58,7 +59,7 @@ export async function processEntityDetails({
 		slack = createSlackClient(connection.accessToken);
 	} catch (error) {
 		if (isIntegrationSecretDecodeError(error)) {
-			console.error(
+			logger.error(
 				"[slack/process-entity-details] Stored Slack token is unreadable",
 				{
 					connectionId: connection.id,
@@ -73,7 +74,7 @@ export async function processEntityDetails({
 	const taskSlug = parseTaskSlugFromUrl(event.entity_url);
 
 	if (!taskSlug) {
-		console.error(
+		logger.error(
 			"[slack/process-entity-details] Could not parse task slug from URL:",
 			event.entity_url,
 		);
@@ -87,7 +88,7 @@ export async function processEntityDetails({
 				},
 			});
 		} catch (err) {
-			console.error(
+			logger.error(
 				"[slack/process-entity-details] Failed to send error response:",
 				err,
 			);
@@ -109,7 +110,7 @@ export async function processEntityDetails({
 	});
 
 	if (!task) {
-		console.error("[slack/process-entity-details] Task not found:", taskSlug);
+		logger.error("[slack/process-entity-details] Task not found:", taskSlug);
 
 		try {
 			await slack.entity.presentDetails({
@@ -120,7 +121,7 @@ export async function processEntityDetails({
 				},
 			});
 		} catch (err) {
-			console.error(
+			logger.error(
 				"[slack/process-entity-details] Failed to send error response:",
 				err,
 			);
@@ -136,7 +137,7 @@ export async function processEntityDetails({
 			metadata: entity,
 		});
 	} catch (err) {
-		console.error(
+		logger.error(
 			"[slack/process-entity-details] Failed to present details:",
 			err,
 		);

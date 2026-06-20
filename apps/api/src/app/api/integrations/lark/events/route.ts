@@ -2,6 +2,7 @@ import { db } from "@rox/db/client";
 import type { LarkConfig } from "@rox/db/schema";
 import { integrationConnections } from "@rox/db/schema";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 import { LARK_EVENT_TYPE } from "../constants";
 import { parseLarkEnvelope } from "../parse-event";
 
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
 	try {
 		parsedBody = JSON.parse(body);
 	} catch {
-		console.error("[lark/events] Failed to parse JSON payload");
+		logger.error("[lark/events] Failed to parse JSON payload");
 		return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
 	}
 
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
 		});
 
 		if (!matched) {
-			console.error("[lark/events] URL verification token mismatch");
+			logger.error("[lark/events] URL verification token mismatch");
 			return Response.json({ error: "Invalid token" }, { status: 401 });
 		}
 
@@ -102,10 +103,7 @@ export async function POST(request: Request) {
 		typeof config?.verificationToken !== "string" ||
 		config.verificationToken !== envelope.token
 	) {
-		console.error(
-			"[lark/events] Event token mismatch for app:",
-			envelope.appId,
-		);
+		logger.error("[lark/events] Event token mismatch for app:", envelope.appId);
 		return Response.json({ error: "Invalid token" }, { status: 401 });
 	}
 
@@ -117,7 +115,7 @@ export async function POST(request: Request) {
 		return new Response("ok", { status: 200 });
 	}
 
-	console.info("[lark/events] message received", {
+	logger.info("[lark/events] message received", {
 		connectionId: connection.id,
 		organizationId: connection.organizationId,
 		appId: envelope.appId,

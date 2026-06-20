@@ -3,6 +3,7 @@ import {
 	resolveBranchPrefix,
 } from "@rox/shared/workspace-launch";
 import type { SimpleGit } from "simple-git";
+import { logger } from "../../../../lib/logger";
 import type { HostServiceContext } from "../../../../types";
 import { ensureHostSettingsRow } from "../../settings/host-settings";
 import type { LocalProject } from "../shared/local-project";
@@ -14,7 +15,7 @@ export async function getGitAuthorName(git: SimpleGit): Promise<string | null> {
 		const name = await git.getConfig("user.name");
 		return name.value?.trim() || null;
 	} catch (error) {
-		console.warn("[branch-prefix] failed to read git user.name:", error);
+		logger.warn("[branch-prefix] failed to read git user.name:", error);
 		return null;
 	}
 }
@@ -27,7 +28,7 @@ export async function getGitHubUsername(
 		const result = await execGh(["api", "user", "--jq", ".login"]);
 		return typeof result === "string" && result.trim() ? result.trim() : null;
 	} catch (error) {
-		console.warn("[branch-prefix] failed to read GitHub username:", error);
+		logger.warn("[branch-prefix] failed to read GitHub username:", error);
 		return null;
 	}
 }

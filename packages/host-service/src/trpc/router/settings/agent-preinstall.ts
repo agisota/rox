@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from "../../../lib/logger";
 import type { PreinstallStatusEntry } from "../../../runtime/agent-preinstall";
 import { protectedProcedure, router } from "../../index";
 
@@ -18,7 +19,7 @@ export const agentPreinstallRouter = router({
 	/** Fire-and-forget auto-install of every pending, non-optional item. */
 	run: protectedProcedure.mutation(({ ctx }) => {
 		void ctx.runtime.preinstall.runAuto().catch((error) => {
-			console.warn("[host-service] agent preinstall run failed:", error);
+			logger.warn("[host-service] agent preinstall run failed:", error);
 		});
 		return { started: true as const };
 	}),
@@ -28,7 +29,7 @@ export const agentPreinstallRouter = router({
 		.input(z.object({ presetId: z.string().min(1) }))
 		.mutation(({ ctx, input }) => {
 			void ctx.runtime.preinstall.runOne(input.presetId).catch((error) => {
-				console.warn(
+				logger.warn(
 					`[host-service] agent preinstall retry failed for ${input.presetId}:`,
 					error,
 				);

@@ -3,6 +3,7 @@ import { integrationConnections } from "@rox/db/schema";
 import { refreshLinearToken } from "@rox/trpc/integrations/linear";
 import { and, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifyQstash } from "@/lib/qstash-verify";
 
 export async function POST(request: Request) {
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
 		onError: "respond",
 		verifyErrorMessage: "Signature verification failed",
 		logError: (verifyError) =>
-			console.error(
+			logger.error(
 				"[linear-refresh-cron] Signature verification failed:",
 				verifyError,
 			),
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
 				await refreshLinearToken(connection.id);
 				return { id: connection.id, ok: true };
 			} catch (error) {
-				console.error(
+				logger.error(
 					`[linear-refresh-cron] failed for ${connection.id}:`,
 					error,
 				);

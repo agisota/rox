@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { workspaces } from "../../../../db/schema";
+import { logger } from "../../../../lib/logger";
 import { resolveDefaultBranchName } from "../../../../runtime/git/refs";
 import { protectedProcedure } from "../../../index";
 import { searchBranchesInputSchema } from "../schemas";
@@ -111,7 +112,7 @@ export const searchBranches = protectedProcedure
 				});
 			}
 		} catch (err) {
-			console.warn(
+			logger.warn(
 				"[workspaceCreation.searchBranches] git for-each-ref failed:",
 				err,
 			);

@@ -6,6 +6,7 @@ import {
 } from "@rox/trpc/integration-secret";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { posthog } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
 import { generateConnectUrl } from "../utils/generate-connect-url";
 import {
 	formatErrorForSlack,
@@ -52,7 +53,7 @@ export async function processAssistantMessage({
 	teamId,
 	eventId,
 }: ProcessAssistantMessageParams): Promise<void> {
-	console.log("[slack/process-assistant-message] Processing message:", {
+	logger.info("[slack/process-assistant-message] Processing message:", {
 		eventId,
 		teamId,
 		channel: event.channel,
@@ -72,7 +73,7 @@ export async function processAssistantMessage({
 	});
 
 	if (!connection) {
-		console.error(
+		logger.error(
 			"[slack/process-assistant-message] No connection found for team:",
 			teamId,
 		);
@@ -84,7 +85,7 @@ export async function processAssistantMessage({
 		slackToken = decodeSecret(connection.accessToken);
 	} catch (error) {
 		if (isIntegrationSecretDecodeError(error)) {
-			console.error(
+			logger.error(
 				"[slack/process-assistant-message] Stored Slack token is unreadable",
 				{
 					connectionId: connection.id,
@@ -167,7 +168,7 @@ export async function processAssistantMessage({
 		});
 		messageTs = initialMsg.ts;
 	} catch (err) {
-		console.error(
+		logger.error(
 			"[slack/process-assistant-message] Failed to post initial message:",
 			err,
 		);
@@ -244,14 +245,14 @@ export async function processAssistantMessage({
 					text: formatSideEffectsMessage(result.actions),
 				});
 			} catch (err) {
-				console.error(
+				logger.error(
 					"[slack/process-assistant-message] Failed to post side effects:",
 					err,
 				);
 			}
 		}
 	} catch (err) {
-		console.error("[slack/process-assistant-message] Agent error:", err);
+		logger.error("[slack/process-assistant-message] Agent error:", err);
 
 		const errorText =
 			err instanceof SlackImageAssetError

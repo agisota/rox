@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger";
+
 /**
  * V2 terminal environment contract.
  *
@@ -70,7 +72,7 @@ export async function resolveTerminalBaseEnv(): Promise<
 		return await getStrictShellEnvironment();
 	} catch (error) {
 		const message = getErrorMessage(error);
-		console.warn(
+		logger.warn(
 			`[host-service] Shell env snapshot failed, falling back to process.env: ${message}`,
 		);
 		const fallback = snapshotStringEnv(process.env);

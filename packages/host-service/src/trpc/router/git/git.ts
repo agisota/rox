@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { pullRequests, workspaces } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import { protectedProcedure, queryProcedure, router } from "../../index";
 import { resolveGithubRepo } from "../workspace-creation/shared/project-helpers";
 import type {
@@ -494,7 +495,7 @@ export const gitRouter = router({
 				const status = await git.status();
 				hasUncommitted = status.files.length > 0;
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[git/getBranchSyncStatus] git.status() failed; treating working tree as clean for this read",
 					error,
 				);
@@ -626,7 +627,7 @@ export const gitRouter = router({
 				);
 				reviewThreads = parseGraphQLThreads(result);
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[git.getPullRequestThreads] Failed to fetch review threads:",
 					error,
 				);
@@ -662,7 +663,7 @@ export const gitRouter = router({
 					page++;
 				}
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[git.getPullRequestThreads] Failed to fetch conversation comments:",
 					error,
 				);

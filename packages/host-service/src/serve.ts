@@ -1,3 +1,4 @@
+import { logger } from "./lib/logger";
 // Import first: disables mastra's gateway type-generation sync before the
 // harness import graph (`./app` → `mastracode` → `@mastra/*`) loads, so the
 // packaged runtime never tries to mkdir/write inside the read-only app.asar.
@@ -20,7 +21,7 @@ import { startTerminalReaper } from "./terminal/reaper";
 import { connectRelay } from "./tunnel";
 
 async function main(): Promise<void> {
-	console.log(
+	logger.info(
 		`[host-service] starting (org=${env.ORGANIZATION_ID}, port=${env.PORT}, NODE_ENV=${process.env.NODE_ENV ?? "unset"})`,
 	);
 
@@ -81,13 +82,13 @@ async function main(): Promise<void> {
 		const devShutdown = async (signal: NodeJS.Signals) => {
 			if (shuttingDown) return;
 			shuttingDown = true;
-			console.log(
+			logger.info(
 				`[host-service] dev-mode ${signal} — stopping pty-daemon for clean iteration`,
 			);
 			try {
 				await getSupervisor().stop(env.ORGANIZATION_ID);
 			} catch (err) {
-				console.error(
+				logger.error(
 					"[host-service] dev shutdown: supervisor.stop failed:",
 					err,
 				);
@@ -103,7 +104,7 @@ async function main(): Promise<void> {
 		// Install only after the server is listening so startup throws still
 		// reach `main().catch(...)` and exit with a non-zero code.
 		installProcessSafetyNet();
-		console.log(`[host-service] listening on http://localhost:${info.port}`);
+		logger.info(`[host-service] listening on http://localhost:${info.port}`);
 
 		startTerminalReaper(db);
 
@@ -126,18 +127,18 @@ async function main(): Promise<void> {
 	// backstop independent of the provider's own TTL enforcement.
 	if (env.SANDBOX_EXPIRES_AT) {
 		const expiresAt = new Date(env.SANDBOX_EXPIRES_AT);
-		console.log(
+		logger.info(
 			`[host-service] ephemeral sandbox — expires at ${expiresAt.toISOString()}`,
 		);
 		let expiring = false;
 		const shutdownForExpiry = async () => {
 			if (expiring) return;
 			expiring = true;
-			console.log("[host-service] sandbox TTL reached — shutting down");
+			logger.info("[host-service] sandbox TTL reached — shutting down");
 			try {
 				await getSupervisor().stop(env.ORGANIZATION_ID);
 			} catch (err) {
-				console.error(
+				logger.error(
 					"[host-service] sandbox expiry: supervisor.stop failed:",
 					err,
 				);
@@ -153,6 +154,6 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-	console.error("[host-service] Failed to start:", error);
+	logger.error("[host-service] Failed to start:", error);
 	process.exit(1);
 });

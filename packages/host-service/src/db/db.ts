@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { logger } from "../lib/logger";
 import * as schema from "./schema.ts";
 
 export type HostDb = ReturnType<typeof createDb>;
@@ -16,14 +17,14 @@ export function createDb(dbPath: string, migrationsFolder: string) {
 
 	const db = drizzle(sqlite, { schema });
 
-	console.error(
+	logger.error(
 		`[host-service:db] Initialized at ${dbPath}, migrations from ${migrationsFolder}`,
 	);
 
 	try {
 		migrate(db, { migrationsFolder });
 	} catch (error) {
-		console.error("[host-service:db] Migration failed:", error);
+		logger.error("[host-service:db] Migration failed:", error);
 		throw new Error(
 			`Failed to migrate host-service database at ${dbPath} using migrations from ${migrationsFolder}`,
 			{ cause: error },

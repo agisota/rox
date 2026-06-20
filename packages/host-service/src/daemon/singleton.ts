@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 // Singleton DaemonSupervisor for the host-service process. One supervisor
 // per host-service instance; it manages exactly one daemon (per the org
 // host-service was started with). Lazy bootstrap so tests can construct
@@ -63,17 +64,17 @@ export function getSupervisor(scriptPath?: string): DaemonSupervisor {
 export function startDaemonBootstrap(organizationId: string): void {
 	if (bootstrapPromise) return;
 	const sup = getSupervisor();
-	console.log(`[supervisor] kicking off bootstrap for org=${organizationId}`);
+	logger.info(`[supervisor] kicking off bootstrap for org=${organizationId}`);
 	bootstrapPromise = sup
 		.ensure(organizationId)
 		.then((inst) => {
-			console.log(
+			logger.info(
 				`[supervisor] bootstrap OK for org=${organizationId} pid=${inst.pid} version=${inst.runningVersion}${inst.updatePending ? " (update pending)" : ""}`,
 			);
 			return inst;
 		})
 		.catch((err) => {
-			console.error(
+			logger.error(
 				`[supervisor] bootstrap failed for org=${organizationId}:`,
 				err,
 			);
