@@ -184,6 +184,19 @@ export const WALLPAPERS: readonly Wallpaper[] = [
 		tone: "dark",
 		scene: "aurora",
 	},
+	// ── Looping video background (Apple-TV-aerial style) ──────────────────────
+	// Demo entry proving the `video` source works end-to-end. Replace `src` with
+	// a licensed/self-hosted seamless aerial loop (see appearance/README.md).
+	// Reduced-motion users get the paused first frame (or `poster` if provided).
+	{
+		id: "aerial-demo-loop",
+		name: "Видео-петля · демо",
+		source: {
+			kind: "video",
+			src: "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_2MB.mp4",
+		},
+		tone: "dark",
+	},
 ];
 
 /** Look up a wallpaper by id, or undefined if it is not in the pack. */

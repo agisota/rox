@@ -16,7 +16,13 @@
 export type WallpaperSource =
 	| { kind: "bundled"; path: string }
 	| { kind: "remote"; url: string }
-	| { kind: "gradient"; colors: readonly [string, string, string, string] };
+	| { kind: "gradient"; colors: readonly [string, string, string, string] }
+	/**
+	 * Looping background video (Apple-TV-aerial style). `src` is a bundled path or
+	 * remote URL to a muted, seamless loop (mp4/webm). `poster` is a still shown
+	 * before the video loads and as the reduced-motion fallback.
+	 */
+	| { kind: "video"; src: string; poster?: string };
 
 /**
  * Atmosphere applied on top of a `gradient` source to make it read as a
