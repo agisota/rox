@@ -24,10 +24,8 @@ function SignInPage() {
 	const [devError, setDevError] = useState<string | null>(null);
 	const { hasLocalToken, isPending, session } = useSessionRecovery();
 
-	// LOCAL_ONLY_AUTH (ROX-518): offline mode skips sign-in entirely and goes
-	// straight to the mock-org workspace. Covers dev (SKIP_ENV_VALIDATION) and the
-	// offline SKU; never true in a cloud production build (see env.renderer.ts).
-	if (env.isLocalOnlyAuth) {
+	// Dev bypass: skip sign-in entirely
+	if (env.SKIP_ENV_VALIDATION) {
 		return <Navigate to="/workspace" replace />;
 	}
 
