@@ -21,6 +21,7 @@ import {
 	mkdirSync,
 	readdirSync,
 	readFileSync,
+	readlinkSync,
 	realpathSync,
 	rmSync,
 } from "node:fs";
@@ -50,6 +51,182 @@ function getBunStoreDir(nodeModulesDir: string): string {
 	return join(getWorkspaceRootNodeModulesDir(nodeModulesDir), ".bun");
 }
 
+/**
+ * Resolve bun's global package cache directory. `bun pm cache` prints the
+ * absolute path; honor BUN_INSTALL_CACHE_DIR when present for hermetic CI.
+ */
+let cachedBunCacheDir: string | null | undefined;
+function getBunCacheDir(): string | null {
+	if (cachedBunCacheDir !== undefined) return cachedBunCacheDir;
+	if (process.env.BUN_INSTALL_CACHE_DIR) {
+		cachedBunCacheDir = process.env.BUN_INSTALL_CACHE_DIR;
+		return cachedBunCacheDir;
+	}
+	try {
+		const out = execSync("bun pm cache", {
+			stdio: ["ignore", "pipe", "ignore"],
+		})
+			.toString()
+			.trim();
+		cachedBunCacheDir = out.length > 0 ? out : null;
+	} catch {
+		cachedBunCacheDir = null;
+	}
+	return cachedBunCacheDir;
+}
+
+/**
+ * Find the extracted-package folder for a module in bun's cache. Cache entries
+ * are named `<name>@<version>@@@<n>` (scoped packages live under `@scope/`).
+ * Prefer an exact version match, otherwise fall back to any cached version.
+ */
+function findBunCacheFolder(
+	moduleName: string,
+	version: string,
+): string | null {
+	const cacheDir = getBunCacheDir();
+	if (!cacheDir || !existsSync(cacheDir)) return null;
+
+	const isScoped = moduleName.startsWith("@");
+	const searchDir = isScoped
+		? join(cacheDir, moduleName.split("/")[0])
+		: cacheDir;
+	if (!existsSync(searchDir)) return null;
+
+	const bareName = isScoped ? moduleName.split("/")[1] : moduleName;
+	const entries = readdirSync(searchDir);
+	const exactPrefix = `${bareName}@${version}@@@`;
+	const exactMatch = entries.find((entry) => entry.startsWith(exactPrefix));
+	if (exactMatch) return join(searchDir, exactMatch);
+
+	const looseMatch = entries.find((entry) => entry.startsWith(`${bareName}@`));
+	return looseMatch ? join(searchDir, looseMatch) : null;
+}
+
+/**
+ * Infer a module's version from the (possibly dangling) bun symlink target,
+ * which encodes it as `.../.bun/<name>@<version>/node_modules/<name>`.
+ */
+function readVersionFromSymlinkTarget(symlinkPath: string): string | null {
+	try {
+		const target = readlinkSync(symlinkPath);
+		const match = target.match(/\.bun\/[^/]*?@([0-9][^/]*)\//);
+		return match ? match[1] : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Resolve the exact installed version for a workspace dependency from the
+ * desktop package.json. Used when the bun symlink is missing entirely (so the
+ * version can't be inferred from a link target).
+ */
+let cachedDesktopPackageJson:
+	| Record<string, Record<string, string>>
+	| null
+	| undefined;
+function readVersionFromDesktopPackageJson(moduleName: string): string | null {
+	if (cachedDesktopPackageJson === undefined) {
+		const pkgJsonPath = join(dirname(import.meta.dirname), "package.json");
+		try {
+			cachedDesktopPackageJson = JSON.parse(
+				readFileSync(pkgJsonPath, "utf8"),
+			) as Record<string, Record<string, string>>;
+		} catch {
+			cachedDesktopPackageJson = null;
+		}
+	}
+	const pkg = cachedDesktopPackageJson;
+	if (!pkg) return null;
+	const ranges = {
+		...(pkg.dependencies ?? {}),
+		...(pkg.devDependencies ?? {}),
+		...(pkg.optionalDependencies ?? {}),
+	};
+	const range = ranges[moduleName];
+	if (!range) return null;
+	// Only return a clean, pinned version. Ranged specs (^, ~, etc.) can't be
+	// mapped to a single cache folder reliably, so let the caller fall back.
+	return /^[0-9][0-9A-Za-z.+-]*$/.test(range) ? range : null;
+}
+
+/**
+ * Heal a required native module whose bun store slot was never populated
+ * (dangling/missing payload) by materializing the package payload from the bun
+ * cache into the store slot. Runs before `electron-builder install-app-deps`
+ * so @electron/rebuild can find and compile the native binary. No-op when the
+ * store slot already holds the real payload.
+ */
+function healBunStoreSlot(nodeModulesDir: string, moduleName: string): void {
+	const modulePath = join(nodeModulesDir, moduleName);
+	const bunFlatModulePath = join(
+		getBunFlatNodeModulesDir(nodeModulesDir),
+		moduleName,
+	);
+
+	// Already resolvable -> store slot is populated, nothing to do.
+	if (existsSync(modulePath) || existsSync(bunFlatModulePath)) return;
+
+	const version =
+		readVersionFromSymlinkTarget(modulePath) ??
+		readVersionFromSymlinkTarget(bunFlatModulePath) ??
+		readVersionFromDesktopPackageJson(moduleName);
+	if (!version) {
+		console.warn(
+			`  ${moduleName}: cannot determine version to heal Bun store slot`,
+		);
+		return;
+	}
+
+	const storeSlot = join(
+		getBunStoreDir(nodeModulesDir),
+		`${moduleName.replace("/", "+")}@${version}`,
+		"node_modules",
+		moduleName,
+	);
+	if (existsSync(join(storeSlot, "package.json"))) return;
+
+	if (materializeFromBunCacheOrNpm(moduleName, version, storeSlot)) {
+		console.log(`  ${moduleName}: healed Bun store slot at ${storeSlot}`);
+	} else {
+		console.warn(
+			`  ${moduleName}: could not heal Bun store slot (cache/npm miss)`,
+		);
+	}
+}
+
+/**
+ * Self-heal a missing native module payload. Bun occasionally creates the
+ * directory-junction/symlink for a package but fails to extract the package's
+ * own payload into its `.bun/<name>@<ver>/node_modules/<name>` store slot,
+ * leaving a dangling link. Materialize the payload from the bun cache (which
+ * holds the extracted tarball), then fall back to fetching from npm.
+ *
+ * Returns true when the payload was materialized at `destPath`.
+ */
+function materializeFromBunCacheOrNpm(
+	moduleName: string,
+	version: string | null,
+	destPath: string,
+): boolean {
+	if (version) {
+		const cacheFolder = findBunCacheFolder(moduleName, version);
+		if (cacheFolder && existsSync(join(cacheFolder, "package.json"))) {
+			console.log(`  ${moduleName}: materializing from Bun cache`);
+			rmSync(destPath, { recursive: true, force: true });
+			mkdirSync(dirname(destPath), { recursive: true });
+			cpSync(cacheFolder, destPath, { recursive: true });
+			console.log(`    Copied from cache to: ${destPath}`);
+			return true;
+		}
+		if (fetchNpmPackage(moduleName, version, destPath)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 function findBunStoreFolderName(
 	bunStoreDir: string,
 	moduleName: string,
@@ -76,11 +253,57 @@ function copyModuleIfSymlink(
 	if (!existsSync(modulePath)) {
 		if (existsSync(bunFlatModulePath)) {
 			console.log(`  ${moduleName}: materializing from Bun store index`);
+			rmSync(modulePath, { recursive: true, force: true });
 			mkdirSync(dirname(modulePath), { recursive: true });
 			cpSync(realpathSync(bunFlatModulePath), modulePath, { recursive: true });
 			console.log(`    Copied to: ${modulePath}`);
 			return true;
 		}
+
+		// Bun sometimes creates the workspace symlink (and the matching
+		// `.bun/<name>@<ver>` store slot) but never extracts the package's own
+		// payload, leaving both links dangling. `existsSync` follows the link, so
+		// we land here. Recover the payload from the bun cache / npm and write it
+		// straight into the store slot so the existing symlinks resolve again.
+		const version =
+			readVersionFromSymlinkTarget(modulePath) ??
+			readVersionFromSymlinkTarget(bunFlatModulePath);
+		const storeSlot =
+			version &&
+			join(
+				getBunStoreDir(nodeModulesDir),
+				`${moduleName.replace("/", "+")}@${version}`,
+				"node_modules",
+				moduleName,
+			);
+		if (
+			storeSlot &&
+			materializeFromBunCacheOrNpm(moduleName, version, storeSlot) &&
+			existsSync(modulePath)
+		) {
+			console.log(
+				`  ${moduleName}: recovered dangling symlink via Bun cache/npm`,
+			);
+			// Now that the store slot is populated, replace the symlink with real
+			// files for electron-builder asar packaging.
+			if (lstatSync(modulePath).isSymbolicLink()) {
+				const realPath = realpathSync(modulePath);
+				rmSync(modulePath, { recursive: true, force: true });
+				cpSync(realPath, modulePath, { recursive: true });
+				console.log(`    Copied to: ${modulePath}`);
+			}
+			return true;
+		}
+
+		// Last resort: materialize the payload directly at the workspace path.
+		if (
+			version &&
+			materializeFromBunCacheOrNpm(moduleName, version, modulePath)
+		) {
+			console.log(`  ${moduleName}: materialized payload at ${modulePath}`);
+			return true;
+		}
+
 		if (required) {
 			console.error(`  [ERROR] ${moduleName} not found at ${modulePath}`);
 			process.exit(1);
@@ -517,6 +740,22 @@ function copyDuckdbPlatformPackages(nodeModulesDir: string): void {
 	);
 }
 
+/**
+ * Heal-only pass: populate any missing/dangling Bun store slots for required
+ * native modules from the Bun cache. Intended to run *before*
+ * `electron-builder install-app-deps` so @electron/rebuild can find and compile
+ * the native binaries (e.g. better-sqlite3) that Bun's isolated install
+ * occasionally fails to extract. Does not replace workspace symlinks.
+ */
+function healNativeModuleStoreSlots() {
+	console.log("Healing Bun store slots for native runtime modules...");
+	const nodeModulesDir = join(dirname(import.meta.dirname), "node_modules");
+	for (const moduleName of requiredMaterializedNodeModules) {
+		healBunStoreSlot(nodeModulesDir, moduleName);
+	}
+	console.log("Done healing Bun store slots.");
+}
+
 function prepareNativeModules() {
 	console.log("Preparing external runtime modules for electron-builder...");
 	console.log(
@@ -540,4 +779,8 @@ function prepareNativeModules() {
 	console.log("\nDone!");
 }
 
-prepareNativeModules();
+if (process.argv.includes("--heal-store-only")) {
+	healNativeModuleStoreSlots();
+} else {
+	prepareNativeModules();
+}

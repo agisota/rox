@@ -19,5 +19,10 @@ if [ -n "$CI" ]; then
   exit 0
 fi
 
+# Heal any Bun store slots whose payload Bun's isolated install left dangling
+# (observed for better-sqlite3) so @electron/rebuild below can find and compile
+# the native binary. Best-effort; install:deps still runs regardless.
+bun run --filter=@rox/desktop heal:native-store || true
+
 # Install native dependencies for desktop app
 bun run --filter=@rox/desktop install:deps
