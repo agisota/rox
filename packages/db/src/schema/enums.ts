@@ -803,3 +803,35 @@ export const driveOveragePolicyValues = [
 ] as const;
 export const driveOveragePolicyEnum = z.enum(driveOveragePolicyValues);
 export type DriveOveragePolicy = z.infer<typeof driveOveragePolicyEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D6 Calendar (comms-suite epic, P2).
+// Org-scoped calendars, RRULE-recurring events, attendees (rox user OR raw
+// email), and per-calendar ACL shares. Append-only string unions backing
+// Postgres pgEnums (declared in schema/calendar.ts); NEVER reorder/remove
+// values.
+// ---------------------------------------------------------------------------
+
+/** RSVP state of an event attendee. */
+export const calAttendeeStatusValues = [
+	"needs_action",
+	"accepted",
+	"declined",
+	"tentative",
+] as const;
+export const calAttendeeStatusEnum = z.enum(calAttendeeStatusValues);
+export type CalAttendeeStatus = z.infer<typeof calAttendeeStatusEnum>;
+
+/** Access level a calendar ACL share grants to a member. */
+export const calShareRoleValues = ["reader", "writer", "owner"] as const;
+export const calShareRoleEnum = z.enum(calShareRoleValues);
+export type CalShareRole = z.infer<typeof calShareRoleEnum>;
+
+/** Lifecycle of a single event (cancelled events stay for tombstone sync). */
+export const calEventStatusValues = [
+	"confirmed",
+	"tentative",
+	"cancelled",
+] as const;
+export const calEventStatusEnum = z.enum(calEventStatusValues);
+export type CalEventStatus = z.infer<typeof calEventStatusEnum>;

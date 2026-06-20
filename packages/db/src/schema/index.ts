@@ -5,6 +5,7 @@ export * from "./ambient";
 export * from "./attribution";
 export * from "./auth";
 export * from "./browser-history";
+export * from "./calendar";
 export * from "./chat";
 export * from "./circuit";
 export * from "./comms";
