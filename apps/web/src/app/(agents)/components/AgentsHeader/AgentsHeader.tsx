@@ -23,11 +23,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useTRPC } from "@/trpc/react";
-
-const navItems = [
-	{ label: "Агенты", href: "/agents" },
-	{ label: "Интеграции", href: "/integrations" },
-];
+import { navItems } from "./navItems";
 
 export function AgentsHeader() {
 	const { data: session } = authClient.useSession();

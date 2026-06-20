@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
+import { GoGitBranch } from "react-icons/go";
 import { HiChevronRight, HiMiniPlus } from "react-icons/hi2";
 import {
 	LuFolderOpen,
@@ -32,6 +33,7 @@ import { useProjectRename } from "renderer/screens/main/hooks/useProjectRename";
 import { STROKE_WIDTH } from "../constants";
 import { RenameInput } from "../RenameInput";
 import { CloseProjectDialog } from "./CloseProjectDialog";
+import { BranchBrowser } from "./components/BranchBrowser";
 import { ProjectThumbnail } from "./ProjectThumbnail";
 
 interface ProjectHeaderProps {
@@ -69,6 +71,7 @@ export function ProjectHeader({
 	const navigate = useNavigate();
 	const params = useParams({ strict: false }) as { workspaceId?: string };
 	const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+	const [isBranchBrowserOpen, setIsBranchBrowserOpen] = useState(false);
 	const rename = useProjectRename(projectId, projectName);
 
 	const closeProject = electronTrpc.projects.close.useMutation({
@@ -227,6 +230,10 @@ export function ProjectHeader({
 							Project Settings
 						</ContextMenuItem>
 						{colorPickerSubmenu}
+						<ContextMenuItem onSelect={() => setIsBranchBrowserOpen(true)}>
+							<GoGitBranch className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
+							Browse Branches
+						</ContextMenuItem>
 						<ContextMenuItem onSelect={handleNewSection}>
 							<LuListPlus className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
 							New Section
@@ -245,6 +252,12 @@ export function ProjectHeader({
 						</ContextMenuItem>
 					</ContextMenuContent>
 				</ContextMenu>
+
+				<BranchBrowser
+					projectId={projectId}
+					open={isBranchBrowserOpen}
+					onOpenChange={setIsBranchBrowserOpen}
+				/>
 
 				<CloseProjectDialog
 					projectName={projectName}
@@ -307,6 +320,8 @@ export function ProjectHeader({
 							</button>
 						)}
 
+						<BranchBrowser projectId={projectId} />
+
 						<Tooltip delayDuration={500}>
 							<TooltipTrigger asChild>
 								<button
@@ -365,6 +380,10 @@ export function ProjectHeader({
 						)}
 						{hideImage ? "Show Image" : "Hide Image"}
 					</ContextMenuItem>
+					<ContextMenuItem onSelect={() => setIsBranchBrowserOpen(true)}>
+						<GoGitBranch className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
+						Browse Branches
+					</ContextMenuItem>
 					<ContextMenuItem onSelect={handleNewSection}>
 						<LuListPlus className="size-4 mr-2" strokeWidth={STROKE_WIDTH} />
 						New Section
@@ -383,6 +402,12 @@ export function ProjectHeader({
 					</ContextMenuItem>
 				</ContextMenuContent>
 			</ContextMenu>
+
+			<BranchBrowser
+				projectId={projectId}
+				open={isBranchBrowserOpen}
+				onOpenChange={setIsBranchBrowserOpen}
+			/>
 
 			<CloseProjectDialog
 				projectName={projectName}

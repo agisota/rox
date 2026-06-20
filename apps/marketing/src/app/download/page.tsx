@@ -7,6 +7,13 @@ export const metadata: Metadata = {
 	robots: { index: false, follow: true },
 };
 
-export default function DownloadPage() {
-	return <DownloadInterstitial />;
+interface DownloadPageProps {
+	searchParams: Promise<{ os?: string | string[] }>;
+}
+
+export default async function DownloadPage({
+	searchParams,
+}: DownloadPageProps) {
+	const { os } = await searchParams;
+	return <DownloadInterstitial os={typeof os === "string" ? os : undefined} />;
 }

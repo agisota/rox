@@ -89,8 +89,8 @@
 .rox-intro__stage {
 	position: relative;
 	width: 100%;
-	max-width: min(1500px, 94vw);
-	aspect-ratio: 16 / 9;
+	height: 100%;
+	max-width: none;
 	backface-visibility: hidden;
 }
 
@@ -102,6 +102,62 @@
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
+}
+
+.rox-intro[data-intro-fallback="pending"] {
+	animation: rox-intro-fallback-exit 8s linear forwards;
+}
+
+.rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
+	.rox-intro__slide--one {
+	opacity: 1;
+	animation: rox-intro-fallback-slide-one 8s linear forwards;
+}
+
+.rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
+	.rox-intro__slide--two {
+	opacity: 0;
+	animation: rox-intro-fallback-slide-two 8s linear forwards;
+}
+
+@keyframes rox-intro-fallback-slide-one {
+	0%,
+	32% {
+		opacity: 1;
+	}
+	40%,
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes rox-intro-fallback-slide-two {
+	0%,
+	34% {
+		opacity: 0;
+	}
+	44%,
+	78% {
+		opacity: 1;
+	}
+	88%,
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes rox-intro-fallback-exit {
+	0%,
+	88% {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+	}
+	100% {
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+	}
 }
 
 .rox-intro__row {
@@ -139,20 +195,21 @@
 
 .rox-intro__features-cloud {
 	position: absolute;
-	inset: 9% 2.5% 7%;
-	display: flex;
-	flex-wrap: wrap;
-	align-content: space-between;
-	justify-content: space-between;
-	column-gap: clamp(0.5rem, 2vw, 1.6rem);
-	row-gap: clamp(0.35rem, 1.2vh, 0.75rem);
+	inset: clamp(34px, 8vh, 88px) clamp(20px, 5vw, 88px);
 }
 
-.rox-intro__feature {
-	font-size: clamp(0.48rem, 0.95vw, 0.68rem);
+.rox-intro__slide .rox-intro__feature {
+	position: absolute;
+	top: var(--rox-tag-y);
+	left: var(--rox-tag-x);
+	transform: translate(-50%, -50%) rotate(var(--rox-tag-rot))
+		scale(var(--rox-tag-scale));
+	transform-origin: center;
+	font-size: clamp(0.58rem, 1.08vw, 0.84rem);
 	margin: 0;
-	letter-spacing: 0.02em;
+	letter-spacing: 0.03em;
 	white-space: nowrap;
+	text-shadow: 0 0 14px currentColor;
 }
 
 .rox-intro__skip {
@@ -285,6 +342,7 @@
 	/* Animated by anime.js for a slow breathing glow (see ScrambleLanding). */
 	--rox-glow-a: 0.12;
 	--rox-glow-y: -8%;
+	--rox-feature-gap: clamp(36px, 4.4vh, 48px);
 
 	position: relative;
 	display: flex;
@@ -341,6 +399,68 @@
 	);
 }
 
+.rox-field--fallback {
+	overflow: hidden;
+	background:
+		radial-gradient(
+			70% 58% at 50% 38%,
+			rgba(255, 128, 46, 0.16),
+			transparent 62%
+		),
+		radial-gradient(
+			80% 72% at 50% 42%,
+			rgba(255, 231, 202, 0.07),
+			transparent 70%
+		),
+		#080604;
+}
+
+.rox-field__fallback-particles,
+.rox-field__portrait {
+	position: absolute;
+	inset: 0;
+}
+
+.rox-field__fallback-particle {
+	position: absolute;
+	left: var(--x);
+	top: var(--y);
+	width: var(--size);
+	height: var(--size);
+	border-radius: 999px;
+	background: rgba(255, 192, 137, var(--opacity));
+	box-shadow:
+		0 0 10px rgba(255, 136, 52, 0.62),
+		0 0 26px rgba(255, 93, 20, 0.24);
+	animation: rox-fallback-particle-drift 3.8s ease-in-out var(--delay) infinite
+		alternate;
+}
+
+.rox-field__portrait {
+	width: min(34vw, 390px);
+	height: min(56vh, 560px);
+	top: 11vh;
+	left: 50%;
+	transform: translateX(-50%);
+	opacity: 0.76;
+	background:
+		radial-gradient(
+			circle at 48% 30%,
+			rgba(255, 231, 202, 0.98),
+			transparent 8%
+		),
+		linear-gradient(180deg, rgba(255, 154, 75, 0.86), rgba(255, 94, 22, 0.14));
+	filter: drop-shadow(0 0 28px rgba(255, 113, 36, 0.34));
+	mask-image: url("/rox-logo-light.png");
+	mask-position: center;
+	mask-repeat: no-repeat;
+	mask-size: contain;
+	-webkit-mask-image: url("/rox-logo-light.png");
+	-webkit-mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-size: contain;
+}
+
 /* The first viewport: centered brand, headline, subhead, command bar + CTA. */
 .rox-hero {
 	position: relative;
@@ -351,7 +471,7 @@
 	align-items: center;
 	justify-content: center;
 	text-align: center;
-	padding: 96px 24px 72px;
+	padding: clamp(42px, 6vh, 86px) 24px clamp(130px, 16vh, 172px);
 }
 
 .rox-hero__inner {
@@ -370,13 +490,14 @@
 	content: "";
 	position: absolute;
 	z-index: -1;
-	inset: -20% -14%;
+	inset: -22% -18% -18%;
 	pointer-events: none;
 	background: radial-gradient(
-		50% 46% at 50% 44%,
-		rgba(8, 5, 3, 0.62),
-		rgba(8, 5, 3, 0.3) 56%,
-		transparent 84%
+		60% 54% at 50% 50%,
+		rgba(8, 5, 3, 0.84),
+		rgba(8, 5, 3, 0.58) 48%,
+		rgba(8, 5, 3, 0.28) 72%,
+		transparent 94%
 	);
 }
 
@@ -385,6 +506,7 @@
 	margin-top: clamp(-22px, -2.8vh, -14px);
 	margin-bottom: 0;
 	color: rgba(255, 236, 220, 0.55);
+	transform: translateY(clamp(-40px, -4.3vh, -28px));
 }
 
 .rox-hero .rox-landing__brand .rox-scramble {
@@ -392,19 +514,20 @@
 }
 
 .rox-hero .rox-hero__headline {
-	font-size: clamp(2.6rem, 8vw, 4.6rem);
+	font-size: clamp(2.75rem, 8.4vw, 4.85rem);
 	line-height: 1.04;
 	margin: 4px 0 2px;
 	max-width: 15ch;
 	color: #ffffff;
 	text-shadow: 0 2px 28px rgba(0, 0, 0, 0.65);
+	transform: translateY(clamp(-40px, -4.3vh, -28px));
 }
 
 /* Variant B: warm accent only on the agent name cycle. */
 .rox-hero__sub-cycle {
 	color: var(--rox-orange-1);
-	font-weight: 400;
-	text-shadow: 0 0 22px rgba(255, 154, 77, 0.5);
+	font-weight: 650;
+	text-shadow: 0 0 10px rgba(255, 154, 77, 0.28);
 }
 
 .rox-hero .rox-hero__sub {
@@ -412,41 +535,68 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 0.4rem;
-	font-size: clamp(0.86rem, 1.85vw, 1.02rem);
+	font-size: clamp(0.98rem, 1.9vw, 1.15rem);
 	line-height: 1.45;
 	color: var(--rox-fg-1);
 	max-width: min(100%, 52rem);
-	margin: clamp(22px, 4vh, 38px) 0 0;
+	margin: clamp(24px, 4.2vh, 40px) 0 0;
 	text-align: center;
 }
 
 .rox-hero__sub-line {
 	display: block;
+	min-height: 1.45em;
 }
 
-/* Feature hints — hairline dividers only (no card / scrim). */
+/* Feature hints — centered, scan-friendly list. No card or frame. */
 .rox-hero__hints {
 	width: 100%;
-	max-width: min(100%, 44rem);
-	margin: clamp(22px, 3.6vh, 34px) 0 0;
-	padding: clamp(18px, 2.8vh, 26px) 0;
+	max-width: min(100%, 48rem);
+	margin: var(--rox-feature-gap) 0 0;
+	padding: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	border-top: 1px solid rgba(255, 255, 255, 0.1);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	align-items: stretch;
+	gap: 9px;
+	list-style: none;
+	counter-reset: rox-hero-hint;
 }
 
 .rox-hero .rox-hero__hints .rox-hero__hint {
+	position: relative;
+	display: grid;
+	grid-template-columns: 2.8rem minmax(0, 1fr);
+	align-items: baseline;
+	column-gap: 12px;
 	margin: 0;
-	font-size: 0.78rem;
-	letter-spacing: 0.03em;
-	color: rgba(255, 255, 255, 0.56);
-	text-shadow: none;
+	font-size: clamp(0.9rem, 1.46vw, 1rem);
+	letter-spacing: 0.01em;
+	line-height: 1.55;
+	color: rgba(255, 255, 255, 0.7);
+	text-shadow: 0 1px 16px rgba(0, 0, 0, 0.88);
+	text-align: left;
+}
+
+.rox-hero .rox-hero__hints .rox-hero__hint::before {
+	counter-increment: rox-hero-hint;
+	content: counter(rox-hero-hint, decimal-leading-zero);
+	font-size: 0.62rem;
+	font-weight: 400;
+	letter-spacing: 0.18em;
+	color: rgba(255, 154, 77, 0.74);
+	text-align: right;
 }
 
 .rox-hero .rox-hero__hints .rox-hero__hint:first-of-type {
-	color: rgba(255, 255, 255, 0.68);
+	color: rgba(255, 255, 255, 0.74);
+}
+
+.rox-hero .rox-hero__hints .rox-hero__hint-body {
+	min-width: 0;
+}
+
+.rox-hero__line-break {
+	display: block;
 }
 
 .rox-hero .rox-hero__hints .rox-hero__hint .rox-term {
@@ -461,10 +611,6 @@
 }
 
 .rox-hero .rox-hero__hint {
-	margin: 4px 0 0;
-	font-size: 0.8rem;
-	letter-spacing: 0.03em;
-	color: rgba(255, 255, 255, 0.56);
 	opacity: 1;
 }
 
@@ -618,9 +764,38 @@
 	}
 }
 
+@keyframes rox-fallback-particle-drift {
+	from {
+		opacity: calc(var(--opacity) * 0.72);
+		transform: translate3d(
+			calc(var(--drift-x) * -1),
+			calc(var(--drift-y) * -1),
+			0
+		);
+	}
+	to {
+		opacity: var(--opacity);
+		transform: translate3d(var(--drift-x), var(--drift-y), 0);
+	}
+}
+
 @media (max-width: 720px) {
+	.rox-landing {
+		--rox-feature-gap: clamp(28px, 4.5vh, 38px);
+	}
 	.rox-hero {
-		padding: 80px 20px 64px;
+		padding: 56px 20px 128px;
+	}
+	.rox-field__portrait {
+		width: min(58vw, 300px);
+		height: min(50vh, 430px);
+		top: 13vh;
+	}
+	.rox-intro__features-cloud {
+		inset: clamp(44px, 9vh, 72px) clamp(16px, 4vw, 30px);
+	}
+	.rox-intro__slide .rox-intro__feature {
+		font-size: clamp(0.48rem, 2.45vw, 0.72rem);
 	}
 	.rox-cmd__log-role {
 		min-width: 100px;
@@ -628,6 +803,16 @@
 }
 
 @media (max-width: 500px) {
+	.rox-hero .rox-hero__headline {
+		transform: translateY(-22px);
+	}
+	.rox-hero .rox-landing__brand {
+		transform: translateY(-22px);
+	}
+	.rox-hero .rox-hero__sub {
+		font-size: 0.86rem;
+		margin-top: 16px;
+	}
 	.rox-cmd {
 		gap: 10px;
 	}
@@ -641,8 +826,15 @@
 	.rox-cmd__send {
 		padding: 8px 12px;
 	}
-	.rox-hero .rox-hero__hint {
-		display: none;
+	.rox-hero .rox-hero__hints {
+		gap: 7px;
+		margin-top: var(--rox-feature-gap);
+	}
+	.rox-hero .rox-hero__hints .rox-hero__hint {
+		grid-template-columns: 2.2rem minmax(0, 1fr);
+		column-gap: 9px;
+		font-size: 0.75rem;
+		line-height: 1.42;
 	}
 }
 
@@ -664,7 +856,7 @@
 	gap: 12px;
 	margin-bottom: 8px;
 	color: var(--rox-orange-1);
-	font-size: calc(0.85rem - 1pt);
+	font-size: 0.95rem;
 	letter-spacing: normal;
 	text-transform: uppercase;
 	white-space: pre;
@@ -672,7 +864,7 @@
 
 .rox-landing h1 {
 	font-family: var(--rox-font-display);
-	font-size: clamp(2.2rem, 6.8vw, 3.5rem);
+	font-size: clamp(2.35rem, 7vw, 3.65rem);
 	font-weight: 300;
 	line-height: 1.06;
 	letter-spacing: -0.02em;
@@ -682,7 +874,7 @@
 }
 
 .rox-landing p {
-	font-size: 0.98rem;
+	font-size: 1.105rem;
 	line-height: 1.75;
 	max-width: 58ch;
 	color: var(--rox-fg-2);
@@ -756,6 +948,10 @@
 }
 
 /* Above-the-fold primary CTA — slim glass pill, thin SF Pro, refined arrow. */
+.rox-landing__hero-downloads {
+	margin-top: clamp(22px, 3.6vh, 34px);
+}
+
 .rox-landing__hero-cta {
 	position: relative;
 	z-index: 0;
@@ -764,7 +960,7 @@
 	justify-content: center;
 	gap: 9px;
 	width: fit-content;
-	margin-top: clamp(22px, 3.6vh, 34px);
+	margin-top: var(--rox-feature-gap);
 	padding: 11px 24px 11px 26px;
 	border-radius: 999px;
 	border: 1px solid rgba(255, 178, 108, 0.36);
@@ -774,7 +970,7 @@
 	color: rgba(255, 238, 220, 0.94);
 	font-family: var(--rox-font-display);
 	font-weight: 300;
-	font-size: 0.86rem;
+	font-size: 0.985rem;
 	letter-spacing: 0.09em;
 	text-decoration: none;
 	box-shadow:
@@ -849,8 +1045,8 @@
 
 .rox-landing__hero-cta__arrow-icon {
 	display: block;
-	width: 10px;
-	height: 12px;
+	width: 11px;
+	height: 13px;
 }
 
 .rox-landing__hero-cta:hover .rox-landing__hero-cta__arrow {

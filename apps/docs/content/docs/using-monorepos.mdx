@@ -1,13 +1,13 @@
 ---
-title: Monorepos
-description: Working with monorepos
+title: Монорепозитории
+description: Работа с монорепозиториями
 ---
 
-## Overview
+## Обзор
 
-Rox works with monorepos. Workspaces are created at the repo root with access to all packages.
+Rox работает с монорепозиториями. Рабочие пространства создаются в корне репозитория с доступом ко всем пакетам.
 
-## Setup Script
+## Скрипт настройки
 
 ```json
 {
@@ -18,9 +18,9 @@ Rox works with monorepos. Workspaces are created at the repo root with access to
 }
 ```
 
-## Running Services
+## Запуск сервисов
 
-Run multiple services from terminal:
+Запускайте несколько сервисов из терминала:
 
 ```bash
 bun run dev                          # All services
@@ -30,7 +30,7 @@ bun run --filter @myapp/api dev
 
 ## Git Submodules
 
-Add to setup script:
+Добавьте в скрипт настройки:
 
 ```json
 {

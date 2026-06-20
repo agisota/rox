@@ -370,6 +370,22 @@ export const accessRoleValues = ["viewer", "editor", "admin"] as const;
 export const accessRoleEnum = z.enum(accessRoleValues);
 export type AccessRole = z.infer<typeof accessRoleEnum>;
 
+// Public identity / handle (ROX-522) ------------------------------------------
+// Which provider a user originally registered through. Drives the cached
+// provider-identity fields on `user_profiles` (provider username / avatar) and
+// is sourced from better-auth's `auth.accounts.provider_id`. Append-only string
+// union backing a Postgres pgEnum; never reorder/remove values.
+
+export const registrationProviderValues = [
+	"telegram",
+	"yandex",
+	"x",
+	"github",
+	"email",
+] as const;
+export const registrationProviderEnum = z.enum(registrationProviderValues);
+export type RegistrationProvider = z.infer<typeof registrationProviderEnum>;
+
 // Knowledge / notebook layer (fumadocs epic) ----------------------------------
 // Document "type" is the editorial kind shown in the notebook; "source kind" is
 // how the document was produced (manual authoring, distilled from a chat, an
@@ -395,6 +411,24 @@ export const knowledgeSourceKindValues = [
 ] as const;
 export const knowledgeSourceKindEnum = z.enum(knowledgeSourceKindValues);
 export type KnowledgeSourceKind = z.infer<typeof knowledgeSourceKindEnum>;
+
+// Collaborative org dashboard (WS-O §2.1 / WS-J §2.2) -------------------------
+// `kind` typed bucket for a dashboard section so the board can group entries
+// (config blocks, recommendations, notes, priorities, artifacts, product specs,
+// references, run logs). Append-only string union backing a Postgres pgEnum
+// (declared in schema/dashboard.ts); NEVER reorder/remove values.
+export const dashboardSectionKindValues = [
+	"config",
+	"recommendation",
+	"note",
+	"priority",
+	"artifact",
+	"product",
+	"reference",
+	"log",
+] as const;
+export const dashboardSectionKindEnum = z.enum(dashboardSectionKindValues);
+export type DashboardSectionKind = z.infer<typeof dashboardSectionKindEnum>;
 
 // Billing & Economy (billing-economy epic) ------------------------------------
 // Append-only Rox ledger entries and dv.net top-up lifecycle. Backing Postgres

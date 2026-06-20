@@ -16,7 +16,13 @@
 export type WallpaperSource =
 	| { kind: "bundled"; path: string }
 	| { kind: "remote"; url: string }
-	| { kind: "gradient"; colors: readonly [string, string, string, string] };
+	| { kind: "gradient"; colors: readonly [string, string, string, string] }
+	/**
+	 * Looping background video (Apple-TV-aerial style). `src` is a bundled path or
+	 * remote URL to a muted, seamless loop (mp4/webm). `poster` is a still shown
+	 * before the video loads and as the reduced-motion fallback.
+	 */
+	| { kind: "video"; src: string; poster?: string };
 
 /**
  * Atmosphere applied on top of a `gradient` source to make it read as a
@@ -79,12 +85,12 @@ export interface AppearanceSettings {
 	quoteLoaderEnabled: boolean;
 }
 
-/** Default appearance — matches the desktop glass defaults, wallpaper off. */
+/** Default appearance — soft light look: 60% opacity, dawn-mist, no auto-rotate. */
 export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
 	glassEnabled: false,
-	windowOpacity: 0.3,
-	wallpaperId: null,
-	wallpaperAutoRotate: true,
+	windowOpacity: 0.6,
+	wallpaperId: "dawn-mist",
+	wallpaperAutoRotate: false,
 	wallpaperRotateSeconds: 120,
 	quoteLoaderEnabled: true,
 };

@@ -11,6 +11,7 @@ import {
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
+	readFileSync,
 	realpathSync,
 	rmSync,
 	writeFileSync,
@@ -288,6 +289,58 @@ describe("initLocalRepoInPlace", () => {
 		expect(eqRealpath(resolved.repoPath, repo)).toBe(true);
 		// No standalone repo created inside the subdir.
 		expect(existsSync(join(inner, ".git"))).toBe(false);
+	});
+
+	test("seeds the Rox fallback identity when git refuses to auto-derive one", async () => {
+		// `user.useConfigOnly = true` makes git refuse to guess an identity from
+		// username/hostname, so the initial commit hits the real "empty ident"
+		// failure a freshly-onboarded user with no git identity would. The
+		// fallback committer (`-c user.name/email`) seeded by init must rescue the
+		// commit so onboarding never dead-ends with PRECONDITION_FAILED — and it
+		// must NOT leak into the user's global config.
+		const cfgHome = join(workRoot, "config-only-home");
+		mkdirSync(cfgHome);
+		const globalCfg = join(cfgHome, ".gitconfig");
+		writeFileSync(globalCfg, "[user]\n\tuseConfigOnly = true\n");
+		const saved: Record<string, string | undefined> = {};
+		const overrides: Record<string, string | undefined> = {
+			HOME: cfgHome,
+			XDG_CONFIG_HOME: cfgHome,
+			GIT_CONFIG_GLOBAL: globalCfg,
+			GIT_CONFIG_SYSTEM: "/dev/null",
+			GIT_AUTHOR_NAME: undefined,
+			GIT_AUTHOR_EMAIL: undefined,
+			GIT_COMMITTER_NAME: undefined,
+			GIT_COMMITTER_EMAIL: undefined,
+		};
+		for (const key of Object.keys(overrides)) {
+			saved[key] = process.env[key];
+			const value = overrides[key];
+			if (value === undefined) delete process.env[key];
+			else process.env[key] = value;
+		}
+
+		try {
+			const dir = join(workRoot, "no-identity");
+			mkdirSync(dir);
+
+			const resolved = await initLocalRepoInPlace(dir);
+
+			expect(eqRealpath(resolved.repoPath, dir)).toBe(true);
+			expect(await commitCount(dir)).toBe(1);
+			const committer = (
+				await simpleGit(dir).raw(["log", "-1", "--format=%cn <%ce>"])
+			).trim();
+			expect(committer).toBe("Rox <rox@localhost>");
+			// The fallback must be commit-scoped, never written to global config.
+			expect(readFileSync(globalCfg, "utf8")).not.toContain("rox@localhost");
+		} finally {
+			for (const key of Object.keys(saved)) {
+				const value = saved[key];
+				if (value === undefined) delete process.env[key];
+				else process.env[key] = value;
+			}
+		}
 	});
 
 	test("rejects a path that does not exist", async () => {

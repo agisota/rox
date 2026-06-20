@@ -25,12 +25,10 @@ import {
 	rankEnrichedModels,
 } from "./utils/modelCapabilities";
 import {
-	buildCustomProviderModel,
 	CUSTOM_PROVIDER_DISPLAY_NAME,
 	filterModelsByActivation,
 	getActivatedProviderIds,
 	type ProviderAuthStatuses,
-	withCustomProviderModel,
 } from "./utils/providerActivation";
 import {
 	ANTHROPIC_LOGO_PROVIDER,
@@ -95,13 +93,12 @@ export function ModelPicker({
 		chatServiceTrpc.auth.getApiKeyProviderStatus.useQuery({
 			providerId: "deepseek",
 		});
-	const { data: customProviderConfig, refetch: refetchCustomProviderConfig } =
-		chatServiceTrpc.auth.getCustomProviderConfig.useQuery();
-
 	const animate = useShouldAnimate("decorative");
 
 	// Refresh every provider's status when the picker opens so a key added in
-	// Settings since last open is reflected immediately.
+	// Settings since last open is reflected immediately. The custom provider's
+	// model list (persisted + live `/v1/models` refresh) is resolved by the
+	// container into `models`, so the picker no longer fetches it itself.
 	useEffect(() => {
 		if (!open) return;
 		void Promise.all([
@@ -110,7 +107,6 @@ export function ModelPicker({
 			refetchGroqStatus(),
 			refetchGoogleStatus(),
 			refetchDeepseekStatus(),
-			refetchCustomProviderConfig(),
 		]);
 	}, [
 		open,
@@ -119,7 +115,6 @@ export function ModelPicker({
 		refetchGroqStatus,
 		refetchGoogleStatus,
 		refetchDeepseekStatus,
-		refetchCustomProviderConfig,
 	]);
 
 	const groupedModels = useMemo(() => {
@@ -131,13 +126,12 @@ export function ModelPicker({
 			deepseek: deepseekStatus,
 		};
 		const activatedProviderIds = getActivatedProviderIds(authStatuses);
-		const customModel = buildCustomProviderModel(customProviderConfig);
-
-		// Merge the user's custom model, hide models from providers they have not
-		// activated, then enrich + rank within each provider group.
-		const withCustom = withCustomProviderModel({ models, customModel });
+		// `models` already includes the user's custom-provider models (persisted +
+		// live-refetched) — the container resolves that superset so the picker and
+		// the sent turn read the same source of truth. Hide models from providers
+		// the user has not activated, then enrich + rank within each group.
 		const visible = filterModelsByActivation({
-			models: withCustom,
+			models,
 			activatedProviderIds,
 		});
 		const enriched = visible.map(enrichModelOption);
@@ -157,7 +151,6 @@ export function ModelPicker({
 		groqStatus,
 		googleStatus,
 		deepseekStatus,
-		customProviderConfig,
 	]);
 
 	const openModelsSettings = () => {

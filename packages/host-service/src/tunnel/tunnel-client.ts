@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@rox/shared/error";
 import type {
 	TunnelHttpRequest,
 	TunnelRequest,
@@ -161,7 +162,7 @@ export class TunnelClient {
 		} catch (error) {
 			clearTimeout(deadline);
 			if (timedOut) return;
-			const message = error instanceof Error ? error.message : String(error);
+			const message = getErrorMessage(error);
 			console.error(`[host-service:tunnel] connect failed: ${message}`);
 			this.socket = null;
 			this.connecting = false;

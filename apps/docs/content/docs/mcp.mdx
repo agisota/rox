@@ -1,29 +1,29 @@
 ---
-title: MCP Server
-description: Connect AI agents directly to Rox via MCP
+title: MCP-сервер
+description: Подключайте AI-агентов напрямую к Rox через MCP
 ---
 
 <Callout type="info">
-This document covers **MCP v2**. The v1 server is deprecated but still available at `https://api.rox.one/api/agent/mcp` for existing integrations.
+Этот документ описывает **MCP v2**. Сервер v1 устарел, но по-прежнему доступен по адресу `https://api.rox.one/api/agent/mcp` для существующих интеграций.
 </Callout>
 
-## Overview
+## Обзор
 
-Rox provides an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI agents interact with your tasks, workspaces, and devices programmatically.
+Rox предоставляет [MCP-сервер (Model Context Protocol)](https://modelcontextprotocol.io), который позволяет AI-агентам программно взаимодействовать с вашими задачами, рабочими пространствами и устройствами.
 
-## Capabilities
+## Возможности
 
-| Category | Operations |
+| Категория | Операции |
 |----------|------------|
-| **Tasks** | list, get (by id or slug), create, update, delete |
-| **Workspaces** | list (filterable by host), create on a host, delete |
-| **Automations** | list, get metadata, get/set prompt body, create, update metadata, pause, resume, run on demand, list runs, delete |
-| **Projects** | list projects, create from a Git URL or local repo path |
-| **Hosts** | list hosts (registered machines) you have access to |
+| **Задачи** | список, получение (по id или slug), создание, обновление, удаление |
+| **Рабочие пространства** | список (с фильтрацией по хосту), создание на хосте, удаление |
+| **Автоматизации** | список, получение метаданных, чтение/запись тела промпта, создание, обновление метаданных, пауза, возобновление, запуск по требованию, список запусков, удаление |
+| **Проекты** | список проектов, создание из Git URL или пути к локальному репозиторию |
+| **Хосты** | список хостов (зарегистрированных машин), к которым у вас есть доступ |
 
-## Setup
+## Настройка
 
-### CLI Options
+### Опции CLI
 
 <Tabs items={["Claude Code", "Codex", "Gemini CLI", "Open Code", "Amp CLI"]}>
 <Tab value="Claude Code">
@@ -42,7 +42,7 @@ gemini mcp add --transport http rox https://api.rox.one/api/v2/agent/mcp
 ```
 </Tab>
 <Tab value="Open Code">
-Run `opencode mcp add` and follow the interactive prompts:
+Запустите `opencode mcp add` и следуйте интерактивным подсказкам:
 
 ```ansi title="terminal"
 opencode mcp add
@@ -77,13 +77,13 @@ amp mcp add --workspace rox https://api.rox.one/api/v2/agent/mcp
 </Tab>
 </Tabs>
 
-### Manual Configuration
+### Ручная настройка
 
-Alternatively, you can manually configure the MCP server for each client:
+Кроме того, вы можете вручную настроить MCP-сервер для каждого клиента:
 
 <Tabs items={["Claude Code", "Claude Desktop", "Cursor", "Codex", "Gemini CLI", "Open Code", "Amp CLI"]}>
 <Tab value="Claude Code">
-Add a `.mcp.json` to your project root. Claude Code auto-discovers this file and handles OAuth authentication.
+Добавьте файл `.mcp.json` в корень проекта. Claude Code автоматически находит этот файл и обрабатывает OAuth-аутентификацию.
 
 ```json title=".mcp.json"
 {
@@ -97,7 +97,7 @@ Add a `.mcp.json` to your project root. Claude Code auto-discovers this file and
 ```
 </Tab>
 <Tab value="Claude Desktop">
-Add to your `claude_desktop_config.json`:
+Добавьте в `claude_desktop_config.json`:
 
 ```json title="claude_desktop_config.json"
 {
@@ -111,7 +111,7 @@ Add to your `claude_desktop_config.json`:
 ```
 </Tab>
 <Tab value="Cursor">
-Add to `.cursor/mcp.json` in your project root:
+Добавьте в `.cursor/mcp.json` в корне проекта:
 
 ```json title=".cursor/mcp.json"
 {
@@ -124,7 +124,7 @@ Add to `.cursor/mcp.json` in your project root:
 ```
 </Tab>
 <Tab value="Codex">
-Add to your `~/.codex/config.toml`:
+Добавьте в `~/.codex/config.toml`:
 
 ```toml title="config.toml"
 [mcp_servers.rox]
@@ -132,7 +132,7 @@ url = "https://api.rox.one/api/v2/agent/mcp"
 ```
 </Tab>
 <Tab value="Gemini CLI">
-Add to your `.gemini/settings.json`:
+Добавьте в `.gemini/settings.json`:
 
 ```json title="settings.json"
 {
@@ -145,7 +145,7 @@ Add to your `.gemini/settings.json`:
 ```
 </Tab>
 <Tab value="Open Code">
-Add to your `opencode.json`:
+Добавьте в `opencode.json`:
 
 ```json title="opencode.json"
 {
@@ -160,7 +160,7 @@ Add to your `opencode.json`:
 ```
 </Tab>
 <Tab value="Amp CLI">
-Add to `.amp/settings.json` in your project root:
+Добавьте в `.amp/settings.json` в корне проекта:
 
 ```json title=".amp/settings.json"
 {
@@ -174,30 +174,30 @@ Add to `.amp/settings.json` in your project root:
 </Tab>
 </Tabs>
 
-## Authentication
+## Аутентификация
 
-The MCP server uses OAuth 2.1. When you first connect, you'll be prompted to authorize the connection in your browser. The token is scoped to your active organization.
+MCP-сервер использует OAuth 2.1. При первом подключении вам будет предложено авторизовать соединение в браузере. Токен ограничен областью вашей активной организации.
 
-### API Key Authentication
+### Аутентификация по API-ключу
 
-For headless environments, CI/CD pipelines, or scripts where browser-based OAuth isn't practical, you can authenticate with an API key instead.
+Для headless-окружений, CI/CD-конвейеров или скриптов, где аутентификация через браузерный OAuth непрактична, вы можете использовать аутентификацию по API-ключу.
 
-**Generating an API key:**
+**Создание API-ключа:**
 
-1. Open the Rox desktop app
-2. Go to **Settings > API Keys**
-3. Click **Create API Key**
-4. Copy the key (it starts with `sk_live_`)—you won't be able to see it again
+1. Откройте десктоп-приложение Rox
+2. Перейдите в **Settings > API Keys**
+3. Нажмите **Create API Key**
+4. Скопируйте ключ (он начинается с `sk_live_`) — увидеть его снова будет невозможно
 
-**Using the API key:**
+**Использование API-ключа:**
 
-Pass the API key as a Bearer token in the `Authorization` header:
+Передайте API-ключ как Bearer-токен в заголовке `Authorization`:
 
 ```
 Authorization: Bearer sk_live_your_api_key_here
 ```
 
-MCP clients that support custom headers can use this directly. For Claude Code, set the header in your `.mcp.json`:
+MCP-клиенты, поддерживающие пользовательские заголовки, могут использовать это напрямую. Для Claude Code задайте заголовок в файле `.mcp.json`:
 
 ```json
 {
@@ -214,88 +214,88 @@ MCP clients that support custom headers can use this directly. For Claude Code, 
 ```
 
 <Callout type="warn">
-API keys grant full access to your organization. Keep them secret and never commit them to version control. Use environment variables or secrets managers for CI/CD.
+API-ключи дают полный доступ к вашей организации. Храните их в секрете и никогда не коммитьте в систему контроля версий. Используйте переменные окружения или менеджеры секретов для CI/CD.
 </Callout>
 
-**When to use which method:**
+**Когда какой метод использовать:**
 
-| Method | Best for |
+| Метод | Подходит для |
 |--------|----------|
-| OAuth 2.1 | Interactive use — Claude Desktop, Claude Code, Cursor |
-| API Key | Headless/CI — scripts, automation, pipelines |
+| OAuth 2.1 | Интерактивное использование — Claude Desktop, Claude Code, Cursor |
+| API-ключ | Headless/CI — скрипты, автоматизация, конвейеры |
 
-## Available Tools
+## Доступные инструменты
 
-### Tasks
+### Задачи
 
-| Tool | Description |
+| Инструмент | Описание |
 |------|-------------|
-| `tasks_list` | List tasks with optional filters (status, priority, assignee, free-text search) |
-| `tasks_get` | Get one task by UUID or slug |
-| `tasks_create` | Create a task in the active organization |
-| `tasks_update` | Update fields on an existing task |
-| `tasks_delete` | Hard-delete a task by UUID |
+| `tasks_list` | Список задач с опциональными фильтрами (статус, приоритет, исполнитель, полнотекстовый поиск) |
+| `tasks_get` | Получить одну задачу по UUID или slug |
+| `tasks_create` | Создать задачу в активной организации |
+| `tasks_update` | Обновить поля существующей задачи |
+| `tasks_delete` | Жёстко удалить задачу по UUID |
 
-### Workspaces
+### Рабочие пространства
 
-| Tool | Description |
+| Инструмент | Описание |
 |------|-------------|
-| `workspaces_list` | List workspaces, optionally filtered by host |
-| `workspaces_create` | Create a workspace on a host (branch-scoped git worktree) |
-| `workspaces_delete` | Delete a workspace by UUID; idempotent |
+| `workspaces_list` | Список рабочих пространств, опционально с фильтрацией по хосту |
+| `workspaces_create` | Создать рабочее пространство на хосте (git worktree, ограниченный веткой) |
+| `workspaces_delete` | Удалить рабочее пространство по UUID; идемпотентно |
 
-### Agents
+### Агенты
 
-| Tool | Description |
+| Инструмент | Описание |
 |------|-------------|
-| `agents_list` | List agents configured on a host |
-| `agents_create` | Create (launch) an agent session in an existing workspace |
+| `agents_list` | Список агентов, настроенных на хосте |
+| `agents_create` | Создать (запустить) сессию агента в существующем рабочем пространстве |
 
-### Terminals
+### Терминалы
 
-| Tool | Description |
+| Инструмент | Описание |
 |------|-------------|
-| `terminals_create` | Create a terminal session in a workspace, optionally running a command |
+| `terminals_create` | Создать сессию терминала в рабочем пространстве, опционально с запуском команды |
 
-### Automations
+### Автоматизации
 
-| Tool | Description |
+| Инструмент | Описание |
 |------|-------------|
-| `automations_list` | List automations the calling user owns |
-| `automations_get` | Get one automation's metadata (prompt body omitted) |
-| `automations_get_prompt` | Fetch the full markdown prompt for one automation |
-| `automations_create` | Schedule a recurring agent run with an RFC 5545 RRULE |
-| `automations_update` | Update metadata (name, schedule, agent, host); use `automations_set_prompt` to change the prompt |
-| `automations_set_prompt` | Replace the full markdown prompt body |
-| `automations_pause` | Pause an automation (schedule stops firing) |
-| `automations_resume` | Resume a paused automation |
-| `automations_run` | Dispatch an automation immediately, outside its schedule |
-| `automations_logs` | List recent runs for an automation |
-| `automations_delete` | Delete an automation |
+| `automations_list` | Список автоматизаций, принадлежащих вызывающему пользователю |
+| `automations_get` | Получить метаданные одной автоматизации (тело промпта опускается) |
+| `automations_get_prompt` | Получить полный markdown-промпт одной автоматизации |
+| `automations_create` | Запланировать повторяющийся запуск агента с RRULE по RFC 5545 |
+| `automations_update` | Обновить метаданные (имя, расписание, агент, хост); используйте `automations_set_prompt` для изменения промпта |
+| `automations_set_prompt` | Полностью заменить тело markdown-промпта |
+| `automations_pause` | Приостановить автоматизацию (расписание перестаёт срабатывать) |
+| `automations_resume` | Возобновить приостановленную автоматизацию |
+| `automations_run` | Запустить автоматизацию немедленно, вне расписания |
+| `automations_logs` | Список последних запусков автоматизации |
+| `automations_delete` | Удалить автоматизацию |
 
-### Projects
+### Проекты
 
-| Tool | Description |
+| Инструмент | Описание |
 |------|-------------|
-| `projects_list` | List projects (checked-out repos) in the active organization |
+| `projects_list` | Список проектов (склонированных репозиториев) в активной организации |
 
-### Hosts
+### Хосты
 
-| Tool | Description |
+| Инструмент | Описание |
 |------|-------------|
-| `hosts_list` | List the hosts (registered machines) you have access to |
+| `hosts_list` | Список хостов (зарегистрированных машин), к которым у вас есть доступ |
 
-## Chat Integration
+## Интеграция с чатом
 
-In the built-in chat panel, use the `/mcp` slash command to see your workspace's configured MCP servers — their names, transport type (local/remote), and current state (enabled/disabled/invalid). This reads from your workspace MCP config (`.mastracode/mcp.json`, `.amp/settings.json`, or `.mcp.json`).
+Во встроенной панели чата используйте slash-команду `/mcp`, чтобы увидеть MCP-серверы, настроенные для вашего рабочего пространства, — их имена, тип транспорта (local/remote) и текущее состояние (enabled/disabled/invalid). Это считывается из MCP-конфигурации вашего рабочего пространства (`.mastracode/mcp.json`, `.amp/settings.json` или `.mcp.json`).
 
-## Example Usage
+## Пример использования
 
-Once connected, you can ask your AI agent to:
+После подключения вы можете попросить вашего AI-агента:
 
-- "Create a task for fixing the login bug"
-- "List all my assigned tasks"
-- "Create a workspace for the auth feature on my MacBook"
-- "Schedule a daily automation that triages new Linear issues at 9am"
-- "Pause the nightly cleanup automation"
-- "Show me the last 10 runs of my Linear triage automation"
+- «Создай задачу для исправления бага со входом»
+- «Покажи все назначенные мне задачи»
+- «Создай рабочее пространство для функции аутентификации на моём MacBook»
+- «Запланируй ежедневную автоматизацию, которая сортирует новые задачи Linear в 9 утра»
+- «Приостанови ночную автоматизацию очистки»
+- «Покажи последние 10 запусков моей автоматизации сортировки Linear»

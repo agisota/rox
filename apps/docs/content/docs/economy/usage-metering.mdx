@@ -1,0 +1,77 @@
+---
+title: Учёт потребления
+description: Как Rox считает стоимость каждого запроса — каталог моделей и формула цены
+---
+
+## Один запрос — одна строка
+
+Каждый оплачиваемый запрос к модели записывается отдельной строкой в `usage_requests`: какая модель, сколько токенов на входе и выходе, итоговая стоимость в USD и в Rox, плюс трассировка (`trace`) для аудита.
+
+<DatabaseTable
+	tableName="usage_requests"
+	fields={[
+		{ name: "id", type: "uuid", description: "Идентификатор запроса.", isPrimaryKey: true },
+		{ name: "user_id", type: "uuid", description: "Пользователь, инициировавший запрос.", isForeignKey: true, isRequired: true, references: { model: "users", field: "id" } },
+		{ name: "organization_id", type: "uuid", description: "Организация (если есть). Обнуляется при удалении организации.", isForeignKey: true, isOptional: true, references: { model: "organizations", field: "id" } },
+		{ name: "chat_session_id", type: "uuid", description: "Сессия чата, к которой относится запрос (если есть).", isForeignKey: true, isOptional: true, references: { model: "chat_sessions", field: "id" } },
+		{ name: "model_id", type: "text", description: "Идентификатор использованной модели.", isRequired: true },
+		{ name: "tokens_in", type: "integer", description: "Токены на входе.", isRequired: true },
+		{ name: "tokens_out", type: "integer", description: "Токены на выходе.", isRequired: true },
+		{ name: "usd_cost", type: "numeric(20, 6)", description: "Стоимость запроса в USD.", isRequired: true },
+		{ name: "rox_cost", type: "numeric(20, 6)", description: "Стоимость запроса в Rox.", isRequired: true },
+		{ name: "trace", type: "jsonb", description: "Произвольная трассировка запроса для аудита.", isOptional: true },
+		{ name: "created_at", type: "timestamptz", description: "Когда запрос был учтён.", isRequired: true },
+	]}
+/>
+
+## Каталог моделей
+
+Цены берутся из каталога моделей, синхронизируемого с публичными прайсами (источник — models.dev). Каждая модель хранит публичную цену за миллион входных и выходных токенов и относится к ценовому семейству.
+
+<DatabaseTable
+	tableName="model_catalog"
+	fields={[
+		{ name: "id", type: "uuid", description: "Идентификатор записи каталога.", isPrimaryKey: true },
+		{ name: "provider", type: "text", description: "Провайдер модели.", isRequired: true },
+		{ name: "model_id", type: "text", description: "Идентификатор модели. Уникален в каталоге.", isRequired: true, isUnique: true },
+		{ name: "public_usd_per_m_in", type: "numeric(20, 6)", description: "Публичная цена за миллион входных токенов, USD.", isRequired: true },
+		{ name: "public_usd_per_m_out", type: "numeric(20, 6)", description: "Публичная цена за миллион выходных токенов, USD.", isRequired: true },
+		{ name: "pricing_family", type: "text", description: "Ценовое семейство (xai / openai / anthropic / google / other).", isRequired: true },
+		{ name: "is_free", type: "boolean", description: "Бесплатна ли модель.", isRequired: true },
+		{ name: "params / specs / tools / limits", type: "jsonb", description: "Возможности и ограничения модели.", isOptional: true },
+	]}
+/>
+
+## Как считается стоимость
+
+Цена продажи Rox выводится из публичной цены модели, а не задаётся вручную:
+
+1. Берётся **публичная цена за миллион токенов** (USD) из каталога.
+2. Она делится на **делитель ценового семейства** — это рычаг маржи, не вычисляемая ставка.
+3. Результат (USD за миллион) переводится в Rox по курсу **1 USDT = 100 Rox**.
+4. Итоговая стоимость пропорциональна числу токенов запроса.
+
+Текущие делители по семействам:
+
+| Семейство | Примеры моделей | Делитель |
+| --- | --- | --- |
+| `xai` | Grok | ÷ 7.5 |
+| `openai` | GPT, o-серия | ÷ 7.5 |
+| `anthropic` | Claude (Opus / Sonnet) | ÷ 5.25 |
+| `google` | Gemini | ÷ 12.25 |
+| `other` | deepseek, cohere, kimi, mistral, minimax, … | ÷ 25 |
+
+<Callout type="info">
+Делители — это настраиваемый параметр маржи (issue #34), а не привязанная к измеренной себестоимости величина. Они пересматриваются по заданной периодичности и могут меняться; всегда сверяйтесь с актуальным каталогом, а не с этой таблицей.
+</Callout>
+
+Все суммы Rox квантуются до 6 знаков после запятой, чтобы расчёт в коде совпадал с тем, что хранит Postgres, и журнал сходился бит в бит.
+
+## API чтения потребления
+
+Сводку по потреблению (итоги, разбивка по инструментам, дневная динамика за 30 дней) отдаёт публичная процедура `usage.summary` (профиль должен быть публичным или это ваш собственный профиль). Клиенты (CLI, агенты) отправляют пакеты строк потребления через защищённую процедуру `usage.recordBatch`.
+
+## Дальше
+
+- [Обзор экономики](/economy/overview) — стартовый баланс и поведение при нуле.
+- [Пополнения](/economy/top-ups) — инвойсы dv.net и журнал транзакций.

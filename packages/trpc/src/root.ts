@@ -8,6 +8,7 @@ import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
 import { chatRouter } from "./router/chat";
 import { deviceRouter } from "./router/device";
+import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
 import { graphRouter } from "./router/graph";
 import { hostRouter } from "./router/host";
@@ -22,7 +23,7 @@ import {
 	pipelineRouter,
 	triggerRouter,
 } from "./router/pipeline";
-import { profileRouter } from "./router/profile";
+import { identityRouter, profileRouter } from "./router/profile";
 import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
 import { runtimeRouter } from "./router/runtime";
@@ -52,9 +53,11 @@ export const appRouter = createTRPCRouter({
 	automation: automationRouter,
 	chat: chatRouter,
 	device: deviceRouter,
+	economy: economyRouter,
 	executionCircuit: executionCircuitRouter,
 	graph: graphRouter,
 	host: hostRouter,
+	identity: identityRouter,
 	integration: integrationRouter,
 	journal: journalRouter,
 	knowledge: knowledgeRouter,

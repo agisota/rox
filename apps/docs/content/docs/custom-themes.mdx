@@ -1,25 +1,25 @@
 ---
-title: Custom Themes
-description: Build, edit, and import your own Rox theme files
+title: Пользовательские темы
+description: Создание, редактирование и импорт собственных файлов тем Rox
 ---
 
 import { COMPANY } from "@rox/shared/constants";
 
-You can import a theme file from the Marketplace or create your own from a base file in desktop settings.
+Вы можете импортировать файл темы из Marketplace или создать свой на основе базового файла в настройках десктопного приложения.
 
-## Quick Workflow
+## Быстрый процесс
 
-1. Open `Settings → Appearance → Theme`.
-2. Either click `Marketplace` to download a shared theme, or click `Download Base File` to start from your current theme.
-3. If you downloaded a base file, edit the JSON manually or ask an agent to customize it.
-4. Click `Import Theme` and select the file.
-5. Pick the imported theme from the theme grid.
+1. Откройте `Settings → Appearance → Theme`.
+2. Либо нажмите `Marketplace`, чтобы скачать опубликованную тему, либо нажмите `Download Base File`, чтобы начать с вашей текущей темы.
+3. Если вы скачали базовый файл, отредактируйте JSON вручную или попросите агента настроить его.
+4. Нажмите `Import Theme` и выберите файл.
+5. Выберите импортированную тему из сетки тем.
 
-Marketplace themes are available from the <a href={`${COMPANY.MARKETING_URL}/marketplace/themes`}>Marketplace</a> page or the `Marketplace` link in `Settings → Appearance → Theme`.
+Темы из Marketplace доступны на странице <a href={`${COMPANY.MARKETING_URL}/marketplace/themes`}>Marketplace</a> или по ссылке `Marketplace` в `Settings → Appearance → Theme`.
 
-## Ask An Agent To Customize It
+## Попросите агента настроить тему
 
-After downloading the base file, you can prompt an agent with something like:
+После загрузки базового файла вы можете дать агенту запрос вроде такого:
 
 ```text
 Customize this Rox theme JSON to feel like a neon cyberpunk arcade.
@@ -27,26 +27,26 @@ Keep the schema valid. Preserve all required ui and terminal keys.
 Return the full JSON file contents only.
 ```
 
-Then save the returned JSON and import it in Rox.
+Затем сохраните полученный JSON и импортируйте его в Rox.
 
-## Theme File Format
+## Формат файла темы
 
-Rox accepts:
+Rox принимает:
 
-- A single theme object
-- An array of theme objects
-- An object with `themes: [...]`
+- Один объект темы
+- Массив объектов тем
+- Объект с `themes: [...]`
 
-The importer supports:
+Импортёр поддерживает:
 
-- `id`, `name`, `type` (`dark` or `light`)
-- `ui` color overrides
-- `terminal` color overrides
-- `colors` as an alias for `terminal`
+- `id`, `name`, `type` (`dark` или `light`)
+- переопределения цветов `ui`
+- переопределения цветов `terminal`
+- `colors` как псевдоним для `terminal`
 
-Missing values fall back to Rox defaults for the selected theme type.
+Отсутствующие значения заменяются значениями по умолчанию Rox для выбранного типа темы.
 
-## Example: Single Theme
+## Пример: одна тема
 
 ```json
 {
@@ -86,7 +86,7 @@ Missing values fall back to Rox defaults for the selected theme type.
 }
 ```
 
-## Notes
+## Примечания
 
-- Theme IDs must be unique and not reserved (`system`, built-in theme IDs like `dark`/`light`).
-- Very large files are rejected in the desktop importer.
+- Идентификаторы тем должны быть уникальными и не зарезервированными (`system`, встроенные ID тем вроде `dark`/`light`).
+- Очень большие файлы отклоняются импортёром десктопного приложения.

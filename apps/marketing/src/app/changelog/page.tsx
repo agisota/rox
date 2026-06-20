@@ -60,7 +60,7 @@ export default async function ChangelogPage() {
 					<p className="text-muted-foreground mt-3 max-w-lg">
 						<GlossaryText text="Последние обновления, улучшения и новые возможности Rox. Обновляем каждую неделю. Подробные заметки к релизам смотрите в " />
 						<a
-							href="https://github.com/agisota/set/releases"
+							href="https://github.com/agisota/rox/releases"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-1 hover:text-foreground transition-colors"

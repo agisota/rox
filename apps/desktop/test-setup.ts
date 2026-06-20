@@ -81,6 +81,33 @@ if (typeof globalThis.window !== "undefined") {
 }
 
 // =============================================================================
+// localStorage Shim (zustand `persist` defaults to window.localStorage)
+// =============================================================================
+
+// Bun's test runtime has no DOM Storage, so persisted zustand stores throw
+// `undefined is not an object (evaluating 'storage.setItem')` at module load.
+// Provide a minimal in-memory implementation matching the Web Storage API.
+if (typeof globalThis.localStorage === "undefined") {
+	const store = new Map<string, string>();
+	const localStorageShim: Storage = {
+		get length() {
+			return store.size;
+		},
+		clear: () => store.clear(),
+		getItem: (key: string) => store.get(key) ?? null,
+		key: (index: number) => Array.from(store.keys())[index] ?? null,
+		removeItem: (key: string) => {
+			store.delete(key);
+		},
+		setItem: (key: string, value: string) => {
+			store.set(key, String(value));
+		},
+	};
+	// biome-ignore lint/suspicious/noExplicitAny: Test setup requires extending globalThis
+	(globalThis as any).localStorage = localStorageShim;
+}
+
+// =============================================================================
 // Electron Preload Mocks (exposed via contextBridge in real app)
 // =============================================================================
 

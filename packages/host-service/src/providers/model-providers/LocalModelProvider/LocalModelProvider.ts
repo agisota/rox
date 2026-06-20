@@ -70,17 +70,19 @@ export class LocalModelProvider implements ModelProviderRuntimeResolver {
 				? { ...context, userScope: this.roxUserScope }
 				: context;
 		const rox = await resolveRoxRuntimeEnv(roxContext, this.roxKeyProvisioner);
-		// A custom OpenAI-compatible provider routes through the same OPENAI_*
-		// keys as Rox, so it can only apply when the Rox house model is NOT the
-		// selected model (the two model ids never collide).
+		// A custom OpenAI-compatible provider is registered with mastracode (via its
+		// settings.json) and routed by the wire id `rox-custom/<model>` — it injects
+		// NO OPENAI_* env. We still flag a custom turn so the cleanup below treats it
+		// correctly. It can only apply when the Rox house model is NOT selected (the
+		// two model ids never collide).
 		const custom: CustomProviderRuntimeEnvResult = rox.isRoxModel
 			? { env: {}, isCustomModel: false }
 			: resolveCustomProviderRuntimeEnv(context);
 
-		// When the Rox house model OR a custom OpenAI-compatible model is selected,
-		// the OpenAI-compatible client must point at that endpoint. Keep
-		// OPENAI_BASE_URL/OPENAI_API_KEY out of the cleanup list so the values we
-		// just set are not stripped before the harness reads them.
+		// Only the Rox house model needs OPENAI_* kept out of the cleanup list (it
+		// points the OpenAI-compatible client at the Rox gateway). A custom provider
+		// injects no OPENAI_* env (it routes via mastracode settings.json), so
+		// CUSTOM_OPENAI_ENV_KEYS is empty and any stray OPENAI_* are cleaned normally.
 		const keepOpenAIKeys = rox.isRoxModel || custom.isCustomModel;
 		const protectedKeys = rox.isRoxModel
 			? ROX_OPENAI_ENV_KEYS

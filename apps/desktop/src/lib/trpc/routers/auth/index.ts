@@ -6,7 +6,7 @@ import { observable } from "@trpc/server/observable";
 import { shell } from "electron";
 import { env } from "main/env.main";
 import { getHostServiceCoordinator } from "main/lib/host-service-coordinator";
-import { PLATFORM, PROTOCOL_SCHEME } from "shared/constants";
+import { PROTOCOL_SCHEME } from "shared/constants";
 import { env as sharedEnv } from "shared/env.shared";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
@@ -90,13 +90,16 @@ export const createAuthRouter = () => {
 					connectUrl.searchParams.set("provider", input.provider);
 					connectUrl.searchParams.set("state", state);
 					connectUrl.searchParams.set("protocol", PROTOCOL_SCHEME);
-					// Only send local_callback on Linux where deep links are unreliable
-					if (PLATFORM.IS_LINUX) {
-						connectUrl.searchParams.set(
-							"local_callback",
-							`http://127.0.0.1:${sharedEnv.DESKTOP_NOTIFICATIONS_PORT}/auth/callback`,
-						);
-					}
+					// Always offer the localhost callback. Custom-scheme deep links
+					// (rox://) are blocked by browsers without a user gesture on EVERY
+					// desktop OS (Chrome/Safari/etc.), which left macOS/Windows users
+					// stuck on "Redirecting…". The browser navigates to 127.0.0.1
+					// freely and the local server completes sign-in reliably; the
+					// rox:// deep link stays as the secondary fallback in the page.
+					connectUrl.searchParams.set(
+						"local_callback",
+						`http://127.0.0.1:${sharedEnv.DESKTOP_NOTIFICATIONS_PORT}/auth/callback`,
+					);
 					await shell.openExternal(connectUrl.toString());
 					return { success: true };
 				} catch (err) {

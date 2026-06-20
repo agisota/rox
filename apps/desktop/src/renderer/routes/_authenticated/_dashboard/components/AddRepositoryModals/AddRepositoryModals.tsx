@@ -5,13 +5,16 @@ import {
 	useCloseAddRepositoryModal,
 	useResolveNewProjectModal,
 } from "renderer/stores/add-repository-modal";
+import { GitHubPublishDialog } from "./components/GitHubPublishDialog";
 import { GitInitConfirmDialog } from "./components/GitInitConfirmDialog";
 import { NewProjectModal } from "./components/NewProjectModal";
+import { useOfferGitHubPublish } from "./hooks/useOfferGitHubPublish";
 
 export function AddRepositoryModals() {
 	const active = useAddRepositoryModalActive();
 	const close = useCloseAddRepositoryModal();
 	const resolveNewProject = useResolveNewProjectModal();
+	const offerGitHubPublish = useOfferGitHubPublish();
 
 	return (
 		<>
@@ -34,10 +37,14 @@ export function AddRepositoryModals() {
 				onCreated={(result) => {
 					toast.success("Project created.");
 					resolveNewProject({ projectId: result.projectId });
+					// Template projects are local-only (no remote). Offer an optional
+					// GitHub publish — no-op unless gh is installed && authenticated.
+					offerGitHubPublish({ projectId: result.projectId });
 				}}
 				onError={(message) => toast.error(`Create failed: ${message}`)}
 			/>
 			<GitInitConfirmDialog />
+			<GitHubPublishDialog />
 		</>
 	);
 }

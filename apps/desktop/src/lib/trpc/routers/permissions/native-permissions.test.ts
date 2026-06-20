@@ -24,12 +24,34 @@ mock.module("electron", () => ({
 	},
 }));
 
+// Stub the automation service so tests never spawn a real `osascript` (which on
+// macOS would fire real Apple Events / consent dialogs).
+const requestAllMock = mock(async () => [
+	{ bundleId: "com.apple.finder", granted: true },
+]);
+const requestOneMock = mock(async (bundleId: string) => ({
+	bundleId,
+	granted: true,
+}));
+const assertKnownMock = mock((_bundleId: string) => {});
+
+mock.module("../../../../main/lib/automation-permission", () => ({
+	requestAllAutomationTargets: requestAllMock,
+	requestAutomationForTarget: requestOneMock,
+	assertKnownAutomationTarget: assertKnownMock,
+}));
+
 const {
 	checkAccessibility,
 	checkMicrophone,
+	checkScreenRecording,
+	getAutomationTargets,
+	isAutomationEnabled,
+	openAutomationSettings,
 	PERMISSION_SETTINGS_URLS,
 	requestAccessibility,
 	requestAppleEvents,
+	requestAutomation,
 	requestFullDiskAccess,
 	requestLocalNetwork,
 	requestMicrophone,
@@ -73,6 +95,19 @@ describe("native permissions", () => {
 				systemPreferencesApi: {
 					getMediaAccessStatus: () => "denied",
 				},
+			}),
+		).toBe(false);
+	});
+
+	it("checks Screen Recording granted status", () => {
+		expect(
+			checkScreenRecording({
+				systemPreferencesApi: { getMediaAccessStatus: () => "granted" },
+			}),
+		).toBe(true);
+		expect(
+			checkScreenRecording({
+				systemPreferencesApi: { getMediaAccessStatus: () => "denied" },
 			}),
 		).toBe(false);
 	});
@@ -154,12 +189,64 @@ describe("native permissions", () => {
 		expect(openedUrls).toEqual([PERMISSION_SETTINGS_URLS.microphone]);
 	});
 
-	it("opens Automation settings", async () => {
+	it("opens the Automation settings pane via openAutomationSettings", async () => {
 		const { openedUrls, shellApi } = createShellRecorder();
 
-		await requestAppleEvents({ shellApi });
+		await openAutomationSettings({ shellApi });
 
 		expect(openedUrls).toEqual([PERMISSION_SETTINGS_URLS.appleEvents]);
+	});
+
+	it("is disabled by default (Developer ID gate)", () => {
+		expect(isAutomationEnabled()).toBe(false);
+	});
+
+	it("requestAppleEvents is a no-op when automation is disabled", async () => {
+		requestAllMock.mockClear();
+		const result = await requestAppleEvents({ enabled: false });
+		expect(requestAllMock).not.toHaveBeenCalled();
+		expect(result).toEqual([]);
+	});
+
+	it("requestAppleEvents requests all targets when enabled", async () => {
+		requestAllMock.mockClear();
+		const result = await requestAppleEvents({ enabled: true });
+		expect(requestAllMock).toHaveBeenCalledTimes(1);
+		expect(result).toEqual([{ bundleId: "com.apple.finder", granted: true }]);
+	});
+
+	it("requestAutomation is a no-op when automation is disabled", async () => {
+		assertKnownMock.mockClear();
+		requestOneMock.mockClear();
+		const result = await requestAutomation("com.apple.finder", {
+			enabled: false,
+		});
+		expect(assertKnownMock).not.toHaveBeenCalled();
+		expect(requestOneMock).not.toHaveBeenCalled();
+		expect(result).toEqual({
+			bundleId: "com.apple.finder",
+			granted: false,
+			error: "automation-disabled",
+		});
+	});
+
+	it("requestAutomation validates then requests the target when enabled", async () => {
+		assertKnownMock.mockClear();
+		requestOneMock.mockClear();
+		const result = await requestAutomation("com.apple.finder", {
+			enabled: true,
+		});
+		expect(assertKnownMock).toHaveBeenCalledWith("com.apple.finder");
+		expect(requestOneMock).toHaveBeenCalledWith("com.apple.finder");
+		expect(result).toEqual({ bundleId: "com.apple.finder", granted: true });
+	});
+
+	it("exposes the automation targets registry (no bash, real Shortcuts host)", () => {
+		const targets = getAutomationTargets();
+		const bundleIds = targets.map((t) => t.bundleId);
+		expect(bundleIds).toContain("com.apple.systemevents");
+		expect(bundleIds).toContain("com.apple.shortcuts.events");
+		expect(bundleIds.some((id) => id.includes("bash"))).toBe(false);
 	});
 
 	it("opens Local Network settings", async () => {

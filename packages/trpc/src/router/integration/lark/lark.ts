@@ -5,6 +5,14 @@ import { protectedProcedure } from "../../../trpc";
 import { createProviderConnectionRouter } from "../shared/provider-router";
 import { verifyOrgMembership } from "../utils";
 
+/**
+ * PARKED (WS-O §1.1): half-wired. The events route verifies the signature and
+ * 200-ACKs, but the agent dispatch + AES-encrypted event mode are
+ * `TODO(lark PR-2)` (`apps/api/.../integrations/lark/events/route.ts`,
+ * `lark/parse-event.ts`). Follow-up: PR-2 enqueues the run-agent job and adds the
+ * AES event mode. Do NOT remove the `lark` provider enum value — provider removal
+ * is out of scope.
+ */
 export const larkRouter = {
 	// Baseline getConnection / testConnection / connect / disconnect.
 	...createProviderConnectionRouter("lark"),

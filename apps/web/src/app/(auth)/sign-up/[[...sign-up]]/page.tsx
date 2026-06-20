@@ -6,9 +6,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { env } from "@/env";
+import { TelegramLoginButton } from "../../components/TelegramLoginButton";
 
 export default function SignUpPage() {
+	// ROX-522 Phase 3: registration is social-only. The public name/email/password
+	// form was removed; users sign up via Telegram, Yandex, or GitHub.
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+	const [isLoadingYandex, setIsLoadingYandex] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const signUpWithGithub = async () => {
@@ -27,7 +31,25 @@ export default function SignUpPage() {
 		}
 	};
 
-	const isLoading = isLoadingGithub;
+	const signUpWithYandex = async () => {
+		setIsLoadingYandex(true);
+		setError(null);
+
+		try {
+			await authClient.signIn.oauth2({
+				providerId: "yandex",
+				callbackURL: env.NEXT_PUBLIC_WEB_URL,
+			});
+		} catch (err) {
+			console.error("Yandex sign up failed:", err);
+			setError(
+				"Не удалось зарегистрироваться через Яндекс. Попробуйте еще раз.",
+			);
+			setIsLoadingYandex(false);
+		}
+	};
+
+	const isLoading = isLoadingGithub || isLoadingYandex;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -43,6 +65,9 @@ export default function SignUpPage() {
 				{error && (
 					<p className="text-destructive text-center text-sm">{error}</p>
 				)}
+				{/* TODO(ROX-522): GitHub stays as a full social login for now.
+				    Demoting GitHub to a link-only ("connect account") option is a
+				    separate follow-up and is intentionally not implemented here. */}
 				<Button
 					variant="outline"
 					disabled={isLoading}
@@ -52,6 +77,21 @@ export default function SignUpPage() {
 					<FaGithub className="mr-2 size-4" />
 					{isLoadingGithub ? "Загрузка..." : "Зарегистрироваться через GitHub"}
 				</Button>
+				<Button
+					variant="outline"
+					disabled={isLoading}
+					onClick={signUpWithYandex}
+					className="w-full"
+				>
+					<span
+						aria-hidden
+						className="mr-2 flex size-4 items-center justify-center rounded-full bg-[#FC3F1D] text-[10px] font-bold text-white"
+					>
+						Я
+					</span>
+					{isLoadingYandex ? "Загрузка..." : "Зарегистрироваться через Яндекс"}
+				</Button>
+				<TelegramLoginButton callbackURL={env.NEXT_PUBLIC_WEB_URL} />
 				<p className="text-muted-foreground px-8 text-center text-sm">
 					Нажимая «Продолжить», вы соглашаетесь с нашими{" "}
 					<a

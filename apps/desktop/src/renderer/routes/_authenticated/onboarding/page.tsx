@@ -76,7 +76,7 @@ function OnboardingDashboardPage() {
 						name="GitHub CLI"
 						description="Клонируйте, отправляйте изменения и создавайте PR."
 						status={rowStatus(isFetchingGh, ghReady)}
-						required
+						recommended
 						actionLabel={ghInstalled ? "Войти" : "Установить"}
 						actionIcon={
 							ghInstalled ? undefined : <HiArrowUpRight className="size-3.5" />
@@ -160,7 +160,7 @@ interface OnboardingRowProps {
 	name: string;
 	description: string;
 	status: RowStatus;
-	required?: boolean;
+	recommended?: boolean;
 	actionLabel: string;
 	actionIcon?: ReactNode;
 	onAction: () => void;
@@ -173,7 +173,7 @@ function OnboardingRow({
 	name,
 	description,
 	status,
-	required,
+	recommended,
 	actionLabel,
 	actionIcon,
 	onAction,
@@ -255,7 +255,7 @@ function OnboardingRow({
 							exit={shouldAnimateEssential ? { opacity: 0, y: -4 } : undefined}
 							transition={{ duration: motionDuration.fast }}
 						>
-							{required && <Badge variant="outline">Обязательно</Badge>}
+							{recommended && <Badge variant="outline">Рекомендуется</Badge>}
 							<Button type="button" size="sm" onClick={onAction}>
 								{actionLabel}
 								{actionIcon}

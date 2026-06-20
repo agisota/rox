@@ -1,22 +1,22 @@
 ---
-title: Environment variables
-description: Complete reference for environment variables that control Rox CLI behavior.
+title: Переменные окружения
+description: Полный справочник по переменным окружения, управляющим поведением Rox CLI.
 ---
 
-The Rox CLI supports the following environment variables to control
-its behavior. Set them in your shell before running `rox`, or
-export them from your shell profile (`~/.zshrc`, `~/.bashrc`) or your
-CI environment to apply them across every session.
+Rox CLI поддерживает следующие переменные окружения для управления
+своим поведением. Задайте их в оболочке перед запуском `rox` или
+экспортируйте из профиля оболочки (`~/.zshrc`, `~/.bashrc`) либо из
+окружения CI, чтобы применить их ко всем сессиям.
 
-| Variable | Description |
+| Переменная | Описание |
 | --- | --- |
-| `ROX_API_KEY` | API key (`sk_live_…` / `sk_test_…`) used in place of stored OAuth login. Equivalent to `--api-key`. |
-| `ROX_HOME_DIR` | Directory the CLI uses for `config.json` and the host server tree. Default: `~/.rox`. Shared with the desktop app. |
-| `GH_TOKEN` / `GITHUB_TOKEN` | Read by the `gh` CLI the host server shells out to for PR checkout and metadata. Set this for sandboxes or CI instead of running `gh auth login` interactively. |
+| `ROX_API_KEY` | Ключ API (`sk_live_…` / `sk_test_…`), используемый вместо сохранённого входа через OAuth. Эквивалент `--api-key`. |
+| `ROX_HOME_DIR` | Каталог, который CLI использует для `config.json` и дерева хост-сервера. По умолчанию: `~/.rox`. Общий с десктоп-приложением. |
+| `GH_TOKEN` / `GITHUB_TOKEN` | Читается через `gh` CLI, к которому хост-сервер обращается для checkout PR и метаданных. Задайте эту переменную для песочниц или CI вместо интерактивного запуска `gh auth login`. |
 
-The standalone install script also reads:
+Скрипт автономной установки также читает:
 
-| Variable | Description |
+| Переменная | Описание |
 | --- | --- |
-| `ROX_HOME` | Install root for the standalone CLI and host binary. Default: `~/rox`. |
-| `ROX_VERSION` | Release tag to install. Default: `latest`, which resolves through the rolling `cli-latest` release. |
+| `ROX_HOME` | Корневой каталог установки автономного CLI и бинарного файла хоста. По умолчанию: `~/rox`. |
+| `ROX_VERSION` | Тег релиза для установки. По умолчанию: `latest`, который разрешается через скользящий релиз `cli-latest`. |

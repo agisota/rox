@@ -37,7 +37,10 @@ export async function checkHostAccess(
 	try {
 		const client = createApiClient(token);
 		const result = await client.host.checkAccess.query({ hostId });
-		// #34.1: access is granted by org membership alone — no paid-plan gate.
+		// #34.1: there is no paid-plan gate. Access still requires a per-host
+		// `v2_users_hosts` row — `host.checkAccess` ANDs userId+organizationId+hostId
+		// (see host.ts) — so org membership alone is NOT sufficient; the org check
+		// above is only a cheap local short-circuit before this DB-backed check.
 		const ok = result.allowed;
 		if (ok) {
 			allowedCache.set(key, true);

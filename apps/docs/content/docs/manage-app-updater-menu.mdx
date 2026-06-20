@@ -1,45 +1,45 @@
 ---
-title: The "Manage App" updater menu
-description: What the "Manage <App> X.Y.Z" menu and its items do
+title: Меню обновления «Manage App»
+description: Что делают меню «Manage <App> X.Y.Z» и его пункты
 ---
 
-## Overview
+## Обзор
 
-The **Manage \<App\> X.Y.Z** entry you see in the app menu (where `\<App\>` is the
-product/codename and `X.Y.Z` is the installed version, e.g. *Manage Rox 0.2.4*)
-is surfaced by the **auto-updater**. It groups everything related to keeping the
-desktop app up to date in one place. The version number is the build you are
-currently running.
+Пункт **Manage \<App\> X.Y.Z**, который вы видите в меню приложения (где `\<App\>` —
+это название продукта/кодовое имя, а `X.Y.Z` — установленная версия, например *Manage Rox 0.2.4*),
+отображается **системой авто-обновления**. Он объединяет в одном месте всё, что связано с поддержанием
+десктопного приложения в актуальном состоянии. Номер версии — это сборка, которую вы
+запускаете в данный момент.
 
-## Menu items
+## Пункты меню
 
-- **Check for Updates…** — Manually asks the update server whether a newer
-  release exists. If one is found it begins downloading in the background; if you
-  are already current, you'll get a "You're up to date" confirmation. The app
-  also checks periodically on its own, so you rarely need this.
+- **Check for Updates…** — вручную запрашивает у сервера обновлений, существует ли более новый
+  релиз. Если он найден, начинается фоновая загрузка; если у вас уже актуальная версия,
+  вы получите подтверждение «You're up to date». Приложение
+  также проверяет обновления периодически самостоятельно, поэтому этот пункт нужен редко.
 
-- **Release Channel** — Chooses which stream of builds you receive:
-  - **Stable** — Production releases. Recommended for everyday use.
-  - **Beta / Preview** — Earlier access to upcoming features; may be less stable.
-  Switching channels changes which updates are offered the next time the app
-  checks.
+- **Release Channel** — выбирает поток сборок, который вы получаете:
+  - **Stable** — production-релизы. Рекомендуется для повседневного использования.
+  - **Beta / Preview** — ранний доступ к будущим функциям; может быть менее стабильным.
+  Переключение каналов меняет, какие обновления будут предложены при следующей
+  проверке приложения.
 
-- **Restart to Update** — Appears once an update has finished downloading.
-  Selecting it relaunches the app and applies the pending update. Until you
-  restart, you keep running the current version.
+- **Restart to Update** — появляется после завершения загрузки обновления.
+  Выбор этого пункта перезапускает приложение и применяет ожидающее обновление. Пока вы
+  не перезапустите, вы продолжаете работать с текущей версией.
 
-- **About \<App\>** — Shows the exact version, build/commit, and license
-  information. Useful when filing a bug report.
+- **About \<App\>** — показывает точную версию, сборку/коммит и информацию о
+  лицензии. Полезно при подаче отчёта об ошибке.
 
-## How updates are delivered
+## Как доставляются обновления
 
-Updates download in the background. The app never interrupts your work to install
-one — it waits until you explicitly choose **Restart to Update** (or until the
-next launch). This means an available update is safe to ignore until a convenient
-moment.
+Обновления загружаются в фоне. Приложение никогда не прерывает вашу работу, чтобы установить
+обновление — оно ждёт, пока вы явно выберете **Restart to Update** (или до
+следующего запуска). Это значит, что доступное обновление можно безопасно игнорировать до удобного
+момента.
 
 <Callout type="info">
-  The exact label depends on your build. The product name and version shown in
-  the menu always match the running app, so "Manage Rox 0.2.4" and
-  "Manage \<App\> X.Y.Z" refer to the same menu.
+  Точная подпись зависит от вашей сборки. Название продукта и версия, показанные в
+  меню, всегда соответствуют запущенному приложению, поэтому «Manage Rox 0.2.4» и
+  «Manage \<App\> X.Y.Z» относятся к одному и тому же меню.
 </Callout>

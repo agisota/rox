@@ -1,17 +1,17 @@
 ---
-title: Advanced Usage
-description: Real-world recipes that combine the SDK's primitives — webhooks, triage scripts, and on-demand agents.
+title: Продвинутое использование
+description: Практические рецепты, объединяющие примитивы SDK — вебхуки, скрипты сортировки и агенты по запросу.
 ---
 
 <Callout type="warn">
-The SDK is in early alpha — it is not meant for production use and may be removed in the future. Stay on the latest version (`@rox_sh/sdk@latest`) while we iterate.
+SDK находится на стадии раннего альфа-тестирования — он не предназначен для использования в продакшене и может быть удалён в будущем. Оставайтесь на последней версии (`@rox_sh/sdk@latest`), пока мы дорабатываем его.
 </Callout>
 
-The SDK's individual methods are simple. The interesting part is what you compose them into. These are end-to-end recipes you can copy as starting points.
+Отдельные методы SDK просты. Самое интересное — то, во что вы их объединяете. Это сквозные рецепты, которые вы можете скопировать как отправные точки.
 
-## Sentry webhook → agent on the bug
+## Вебхук Sentry → агент по багу
 
-When Sentry fires an alert, file a task and spawn an agent to investigate — all in two SDK calls. (In production, verify the Sentry signature header before trusting any payload — that part is omitted here for clarity.)
+Когда Sentry вызывает оповещение, заводите задачу и запускайте агента для расследования — всё в два вызова SDK. (В продакшене проверяйте заголовок с подписью Sentry, прежде чем доверять любому payload — эта часть здесь опущена для ясности.)
 
 ```ts title="sentry-webhook.ts"
 import { Hono } from 'hono';
@@ -72,13 +72,13 @@ app.post('/webhooks/sentry', async (c) => {
 export default app;
 ```
 
-What just happened, end-to-end:
+Что произошло, от начала до конца:
 
-- The task lives in the cloud and shows up in the dashboard for everyone.
-- The workspace is a real `git worktree` on the target machine, ready for a human to take over if the agent gets stuck.
-- The agent runs inside the new workspace, with the prompt above and access to the codebase + whatever MCP servers the host has configured.
+- Задача находится в облаке и появляется в панели управления у всех.
+- Рабочее пространство — это реальный `git worktree` на целевой машине, готовый к тому, чтобы человек подхватил работу, если агент застрянет.
+- Агент работает внутри нового рабочего пространства, с приведённым выше промптом и доступом к кодовой базе + всем MCP-серверам, настроенным на хосте.
 
-You can spawn multiple agents in parallel by adding more entries to `agents`:
+Вы можете запустить несколько агентов параллельно, добавив больше элементов в `agents`:
 
 ```ts
 agents: [
@@ -87,9 +87,9 @@ agents: [
 ],
 ```
 
-## Burn down the P0 backlog overnight
+## Разгрести бэклог P0 за ночь
 
-Pick up every urgent task in the queue and spawn an agent on each one in parallel. Comes back the next morning with a branch and a comment per task.
+Подхватите каждую срочную задачу в очереди и запустите агента на каждой из них параллельно. Утром вы получаете ветку и комментарий по каждой задаче.
 
 ```ts title="burn-p0s.ts"
 import Rox from '@rox_sh/sdk';
@@ -129,11 +129,11 @@ const dispatched = await Promise.all(
 console.log(`dispatched ${dispatched.length} agents across the P0 backlog`);
 ```
 
-Run it from a daily cron on a beefy host and you wake up to a branch per bug. Ones the agent could fix have a PR-ready branch; ones it couldn't have a comment explaining why so a human picks up where the agent stopped.
+Запустите это из ежедневного cron на мощном хосте, и вы проснётесь с веткой на каждый баг. Те, что агент смог исправить, имеют готовую к PR ветку; те, что не смог, — комментарий с объяснением причины, чтобы человек продолжил с того места, где агент остановился.
 
-## Sweep a refactor across every repo
+## Прокатить рефакторинг по каждому репозиторию
 
-Internal API rename, dependency bump, lint rule rollout — anything that has to land identically in dozens of repos is a one-loop, fan-out problem:
+Переименование внутреннего API, обновление зависимости, развёртывание правила линтинга — всё, что должно одинаково попасть в десятки репозиториев, — это задача с одним циклом и веерным распределением:
 
 ```ts title="sweep-rename-getUser.ts"
 import Rox from '@rox_sh/sdk';
@@ -172,15 +172,15 @@ const totalAgents = wave.reduce((n, ws) => n + ws.agentRuns.length, 0);
 console.log(`fanned out ${totalAgents} agents across ${projects.length} repos`);
 ```
 
-Same loop works for "bump TypeScript to 5.7", "swap Sentry SDK for the new one", "add a `lint:strict` script to every package.json". Anything you'd otherwise farm out to a long Slack thread.
+Тот же цикл работает для «обновить TypeScript до 5.7», «заменить Sentry SDK на новый», «добавить скрипт `lint:strict` в каждый package.json». Всё, что иначе вы бы отдали в длинный тред Slack.
 
-## On-demand agent dispatch from your tools
+## Запуск агента по запросу из ваших инструментов
 
-If you've already created a recurring automation in the dashboard, the SDK can fire it off-schedule from anywhere — a Slack slash command, a CI job, an internal admin panel:
+Если вы уже создали регулярную автоматизацию в панели управления, SDK может запустить её вне расписания откуда угодно — slash-команда Slack, CI-задача, внутренняя админ-панель:
 
 ```ts
 const run = await client.automations.run('<automation-id>');
 console.log(`dispatched run ${run.id} to host ${run.hostId}`);
 ```
 
-The automation's pinned host has to be online and tunneling. The SDK will surface a `503 Host not connected` error if it isn't, so you can retry later or page someone.
+Закреплённый хост автоматизации должен быть в сети и туннелировать. SDK выдаст ошибку `503 Host not connected`, если это не так, чтобы вы могли повторить попытку позже или вызвать кого-нибудь.

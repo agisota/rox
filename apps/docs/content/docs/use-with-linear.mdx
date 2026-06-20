@@ -1,43 +1,43 @@
 ---
-title: Linear Integration
-description: Open Linear issues as Rox workspaces with a custom script
+title: Интеграция с Linear
+description: Открывайте issues из Linear как рабочие пространства Rox с помощью пользовательского скрипта
 ---
 
-Linear's [custom coding tool](https://linear.app/docs/open-issues-with-custom-scripts)
-feature can hand an issue off to any local command. With a small wrapper script,
-**Work on issue → Custom script** creates a Rox workspace for the issue —
-checked out on the issue's branch, with an agent already working on it — and
-opens it in the desktop app.
+Функция [пользовательского инструмента для написания кода](https://linear.app/docs/open-issues-with-custom-scripts)
+в Linear может передать issue любой локальной команде. С помощью небольшого скрипта-обёртки
+**Work on issue → Custom script** создаёт рабочее пространство Rox для issue —
+с переключением на ветку issue, с уже работающим над ней агентом — и
+открывает его в десктопном приложении.
 
-## How it works
+## Как это работает
 
-Linear doesn't use a URL scheme here. It runs a local executable defined in
-`~/.linear/coding-tools.json` and passes issue context through `LINEAR_*`
-environment variables (`LINEAR_ISSUE_IDENTIFIER`, `LINEAR_ISSUE_BRANCH_NAME`,
-`LINEAR_PROMPT`, and others). The wrapper script chains two CLI calls:
+Linear здесь не использует схему URL. Он запускает локальный исполняемый файл, определённый в
+`~/.linear/coding-tools.json`, и передаёт контекст issue через переменные окружения `LINEAR_*`
+(`LINEAR_ISSUE_IDENTIFIER`, `LINEAR_ISSUE_BRANCH_NAME`,
+`LINEAR_PROMPT` и другие). Скрипт-обёртка объединяет два вызова CLI:
 
-1. `rox workspaces create` — creates a local workspace on the issue's
-   branch and launches an agent with the issue as its prompt.
-2. `rox workspaces open` — opens that workspace in the desktop app via its
+1. `rox workspaces create` — создаёт локальное рабочее пространство на ветке
+   issue и запускает агента с issue в качестве его промпта.
+2. `rox workspaces open` — открывает это рабочее пространство в десктопном приложении через его
    deep link.
 
-## Prerequisites
+## Предварительные требования
 
-- The [Rox CLI](/docs/cli/getting-started) installed and signed in
+- Установленный и авторизованный [Rox CLI](/docs/cli/getting-started)
   (`rox auth login`).
-- The Rox desktop app installed (the script opens workspaces in it).
-- A project that's set up locally. Find its ID with:
+- Установленное десктопное приложение Rox (скрипт открывает рабочие пространства в нём).
+- Проект, настроенный локально. Найдите его ID с помощью:
 
 ```bash
 rox projects list
 ```
 
-Copy the `id` of the project you want issues to open against.
+Скопируйте `id` проекта, для которого вы хотите открывать issues.
 
-## 1. Create the wrapper script
+## 1. Создайте скрипт-обёртку
 
-Save this as `~/.linear/open-in-rox.sh` and replace `PROJECT` with the ID
-from above:
+Сохраните это как `~/.linear/open-in-rox.sh` и замените `PROJECT` на ID
+из предыдущего шага:
 
 ```bash
 #!/usr/bin/env bash
@@ -69,25 +69,25 @@ id="$(printf '%s' "$result" | jq -r '.workspace.id')"
 rox workspaces open "$id"
 ```
 
-Make it executable:
+Сделайте его исполняемым:
 
 ```bash
 chmod +x ~/.linear/open-in-rox.sh
 ```
 
 <Callout type="info">
-The script depends on `rox` being on your `PATH` and `jq` being installed.
-If `rox` isn't on your `PATH`, use its full path (the desktop app installs a
-shim at `~/.rox/bin/rox`).
+Скрипт зависит от наличия `rox` в вашем `PATH` и установленного `jq`.
+Если `rox` отсутствует в вашем `PATH`, используйте его полный путь (десктопное приложение устанавливает
+shim в `~/.rox/bin/rox`).
 </Callout>
 
-The branch named by the issue won't exist yet — `workspaces create` forks it
-from the project's default branch automatically. Re-running on the same issue
-reuses the existing workspace instead of creating a duplicate.
+Ветка, названная по issue, ещё не будет существовать — `workspaces create` ответвляет её
+от ветки проекта по умолчанию автоматически. Повторный запуск для того же issue
+переиспользует существующее рабочее пространство вместо создания дубликата.
 
-## 2. Point Linear at the script
+## 2. Укажите Linear на скрипт
 
-Create `~/.linear/coding-tools.json`:
+Создайте `~/.linear/coding-tools.json`:
 
 ```json
 {
@@ -102,40 +102,40 @@ Create `~/.linear/coding-tools.json`:
 }
 ```
 
-Use the absolute path to your script (`~` is not expanded here).
+Используйте абсолютный путь к вашему скрипту (`~` здесь не раскрывается).
 
 <Callout type="info">
-If Linear regenerates this file with a starter config when you enable the
-feature, merge the `openIssue` block back in rather than letting it overwrite
-your version.
+Если Linear перегенерирует этот файл со стартовой конфигурацией при включении
+функции, верните блок `openIssue` обратно слиянием, а не позволяйте ему перезаписать
+вашу версию.
 </Callout>
 
-## 3. Enable and run
+## 3. Включите и запустите
 
-1. In Linear, open **Settings → Code & reviews → Configure coding tools** and
-   enable **Custom script**.
-2. On any issue, choose **Work on issue → Custom script**. The first time,
-   Linear asks you to **Choose a directory** — this is the working directory
-   passed to the script, so pick your repo. (The script above doesn't read it,
-   but Linear requires one.)
+1. В Linear откройте **Settings → Code & reviews → Configure coding tools** и
+   включите **Custom script**.
+2. На любом issue выберите **Work on issue → Custom script**. В первый раз
+   Linear попросит вас **Choose a directory** — это рабочий каталог,
+   передаваемый скрипту, поэтому выберите ваш репозиторий. (Приведённый выше скрипт его не читает,
+   но Linear требует указать его.)
 
-Linear runs the script, and the workspace opens in Rox with the agent
-running on the issue.
+Linear запускает скрипт, и рабочее пространство открывается в Rox с агентом,
+работающим над issue.
 
 <Callout type="info">
-In any macOS file dialog, press **⌘⇧.** to reveal hidden dot-folders, or
-**⌘⇧G** to type a path directly.
+В любом диалоге выбора файлов в macOS нажмите **⌘⇧.**, чтобы показать скрытые папки с точкой, или
+**⌘⇧G**, чтобы ввести путь напрямую.
 </Callout>
 
-## Customizing
+## Настройка
 
-- **No agent.** To open an empty workspace on the branch without starting an
-  agent, drop the `--agent` and `--prompt` flags (they're required together).
-- **A different agent.** Replace `claude` with any agent preset id (`codex`,
+- **Без агента.** Чтобы открыть пустое рабочее пространство на ветке без запуска
+  агента, уберите флаги `--agent` и `--prompt` (они требуются вместе).
+- **Другой агент.** Замените `claude` на любой id пресета агента (`codex`,
   `opencode`, …).
-- **Multiple repos.** The project ID is fixed in the script. To route different
-  Linear teams or projects to different Rox projects, branch on a
-  `LINEAR_*` variable (for example `LINEAR_PROJECT_NAME`) and set `PROJECT`
-  accordingly. The `env` array in `coding-tools.json` is an allowlist — any
-  `LINEAR_*` variable you read in the script must also be added there, or it
-  won't be present in the script's environment.
+- **Несколько репозиториев.** ID проекта зафиксирован в скрипте. Чтобы направлять разные
+  команды или проекты Linear к разным проектам Rox, ветвитесь по
+  переменной `LINEAR_*` (например, `LINEAR_PROJECT_NAME`) и устанавливайте `PROJECT`
+  соответственно. Массив `env` в `coding-tools.json` — это allowlist: любая
+  переменная `LINEAR_*`, которую вы читаете в скрипте, должна быть также добавлена туда, иначе она
+  не будет присутствовать в окружении скрипта.

@@ -22,6 +22,7 @@ import { getGitHubRemotes } from "./utils/git-remote";
 import { persistLocalProject } from "./utils/persist-project";
 import {
 	cloneRepoInto,
+	getOriginUrl,
 	type ResolvedRepo,
 	resolveLocalRepo,
 	resolveMatchingSlug,
@@ -617,6 +618,129 @@ export const projectRouter = router({
 					};
 				}
 			}
+		}),
+
+	/**
+	 * Optional, post-create GitHub publish. The local-first onboarding path
+	 * creates a fully working local project with no remote; this lets a user
+	 * who has `gh` installed + authenticated push it to a brand-new GitHub repo
+	 * in one click. Wraps `gh repo create` (which creates the remote, wires
+	 * `origin`, and pushes) and then links the resulting clone URL back to the
+	 * cloud project so the rest of Rox sees it as a GitHub-backed project.
+	 *
+	 * Never on the critical create path — purely additive. The UI only offers
+	 * it when `system.detectGhCli` reports installed && authenticated.
+	 */
+	createGitHubRepo: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string().uuid(),
+				visibility: z.enum(["private", "public"]),
+				// Optional override; defaults to the on-disk repo folder name.
+				name: z.string().min(1).optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const project = ctx.db
+				.select({ repoPath: projects.repoPath, repoUrl: projects.repoUrl })
+				.from(projects)
+				.where(eq(projects.id, input.projectId))
+				.get();
+			if (!project) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Project not found on this device.",
+				});
+			}
+			if (project.repoUrl) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "Project already has a GitHub remote.",
+				});
+			}
+
+			const repoName = (input.name ?? basename(project.repoPath)).trim();
+			if (!repoName) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Could not derive a repository name.",
+				});
+			}
+			// Reject names `gh` would parse as a flag (leading `-`) or that GitHub
+			// rejects — the name is passed as the positional repo arg to `gh`.
+			if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repoName)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"Имя репозитория может содержать только буквы, цифры, «.», «_», «-» и не может начинаться с «-».",
+				});
+			}
+
+			// `gh repo create <name> --source <path> --remote origin --push`
+			// creates the remote, wires origin, and pushes the initial commit.
+			try {
+				await ctx.execGh(
+					[
+						"repo",
+						"create",
+						repoName,
+						input.visibility === "private" ? "--private" : "--public",
+						"--source",
+						project.repoPath,
+						"--remote",
+						"origin",
+						"--push",
+					],
+					{ cwd: project.repoPath, timeout: 60_000 },
+				);
+			} catch (err) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: `Failed to create GitHub repository: ${
+						err instanceof Error ? err.message : String(err)
+					}`,
+				});
+			}
+
+			// Re-resolve so we pick up the freshly-added origin remote, then mirror
+			// the clone URL into local DB + cloud so the project is GitHub-backed.
+			const resolved = await resolveLocalRepo(project.repoPath);
+			// Raw origin URL as a fallback when the URL doesn't parse into GitHub
+			// owner/name — gh has already created + pushed the remote.
+			const originUrl =
+				resolved.parsed?.url ?? (await getOriginUrl(project.repoPath));
+			if (resolved.parsed) {
+				persistLocalProject(ctx, input.projectId, resolved);
+				try {
+					await ctx.api.v2Project.linkRepoCloneUrl.mutate({
+						organizationId: ctx.organizationId,
+						id: input.projectId,
+						repoCloneUrl: resolved.parsed.url,
+					});
+				} catch (err) {
+					// Non-fatal: the GitHub repo exists and is pushed; cloud linking
+					// can be retried later. Surface nothing destructive to the user.
+					console.warn("[project.createGitHubRepo] cloud link failed", {
+						projectId: input.projectId,
+						err,
+					});
+				}
+			} else if (originUrl) {
+				// Record the remote locally even without a parse so a retry hits the
+				// "already has a GitHub remote" guard instead of re-running gh create
+				// (which would fail with "name already exists").
+				ctx.db
+					.update(projects)
+					.set({ repoUrl: originUrl })
+					.where(eq(projects.id, input.projectId))
+					.run();
+			}
+
+			return {
+				repoUrl: resolved.parsed?.url ?? originUrl ?? null,
+				owner: resolved.parsed?.owner ?? null,
+				name: resolved.parsed?.name ?? null,
+			};
 		}),
 
 	/**

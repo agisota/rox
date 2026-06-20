@@ -1,70 +1,70 @@
 ---
-title: CLI Reference
-description: Complete reference for Rox command-line interface, including commands and flags.
+title: Справочник CLI
+description: Полный справочник по интерфейсу командной строки Rox, включая команды и флаги.
 ---
 
 <Callout type="warn">
-The CLI is currently in Beta — commands and flags are still evolving. Make sure you're on the latest version of the CLI if you run into issues.
+CLI сейчас находится в стадии Beta — команды и флаги ещё развиваются. Убедитесь, что у вас установлена последняя версия CLI, если столкнётесь с проблемами.
 </Callout>
 
-## Synopsis
+## Краткий обзор
 
 ```text
 rox <command> [subcommand] [options]
 ```
 
-Run `rox --help` for the top-level command list, or
-`rox <command> --help` for any group.
+Запустите `rox --help` для списка команд верхнего уровня или
+`rox <command> --help` для любой группы.
 
-## Global options
+## Глобальные опции
 
-These flags are accepted by every command:
+Эти флаги принимаются каждой командой:
 
-| Flag | Env | Description |
+| Флаг | Env | Описание |
 | --- | --- | --- |
-| `--json` | | Print the data payload as formatted JSON. |
-| `--quiet` | | One ID per line for arrays; the ID for single objects; JSON fallback otherwise. |
-| `--api-key <key>` | `ROX_API_KEY` | Use an API key instead of stored OAuth login. |
-| `--help`, `-h` | | Show help for the current command. |
-| `--version`, `-v` | | Print `rox v<version>` and exit. |
+| `--json` | | Вывести полезную нагрузку данных в виде форматированного JSON. |
+| `--quiet` | | По одному ID на строку для массивов; ID для одиночных объектов; иначе откат к JSON. |
+| `--api-key <key>` | `ROX_API_KEY` | Использовать API-ключ вместо сохранённого OAuth-входа. |
+| `--help`, `-h` | | Показать справку для текущей команды. |
+| `--version`, `-v` | | Вывести `rox v<version>` и выйти. |
 
 ---
 
-## Commands
+## Команды
 
 ### auth
 
-Authentication and session inspection.
+Аутентификация и просмотр сессии.
 
 <Command
 	name="rox auth login"
 	options={[
 		{
 			flag: "--organization <idOrSlug>",
-			description: "Selects the active organization without prompting. Required for non-TTY logins when you belong to multiple orgs.",
+			description: "Выбирает активную организацию без запроса. Требуется для входов без TTY, когда вы состоите в нескольких организациях.",
 		},
 		{
 			flag: "--api-key <key>",
-			description: "Store a Rox API key (`sk_live_…`) at `~/.rox/config.json` instead of running the OAuth flow.",
+			description: "Сохранить API-ключ Rox (`sk_live_…`) в `~/.rox/config.json` вместо запуска OAuth-потока.",
 		},
 	]}
 >
-Authenticate via browser OAuth and store a session token at
+Аутентификация через браузерный OAuth и сохранение токена сессии в
 `~/.rox/config.json`.
 
-Single-org accounts are selected automatically. With multiple orgs and a
-TTY, the CLI prompts; with multiple orgs and no TTY, you must pass
-`--organization` or the command exits 1 listing the available slugs.
+Аккаунты с одной организацией выбираются автоматически. При нескольких организациях и наличии
+TTY CLI выводит запрос; при нескольких организациях и отсутствии TTY вы должны передать
+`--organization`, иначе команда завершается с кодом 1, выведя список доступных slug.
 
 ```bash
 rox auth login
 rox auth login --organization acme
 ```
 
-To sign in with an API key — useful for CI or any environment where the
-OAuth browser flow isn't an option — pass `--api-key`. The CLI validates
-the key, stores it at `~/.rox/config.json`, and clears any prior
-OAuth session.
+Чтобы войти с API-ключом — полезно для CI или любого окружения, где
+браузерный OAuth-поток недоступен — передайте `--api-key`. CLI проверяет
+ключ, сохраняет его в `~/.rox/config.json` и очищает любую предыдущую
+OAuth-сессию.
 
 ```bash
 rox auth login --api-key sk_live_…
@@ -72,7 +72,7 @@ rox auth login --api-key sk_live_… --organization acme
 ```
 
 <CommandReturns>
-The newly authenticated user and active organization.
+Только что аутентифицированный пользователь и активная организация.
 
 <HumanOutput>
 ```text
@@ -96,16 +96,16 @@ The newly authenticated user and active organization.
 </Command>
 
 <Command name="rox auth logout">
-Clear stored credentials — both an OAuth session and a stored API key.
-Does not call the API and does not clear the active organization (your
-preferred org persists across re-logins).
+Очистить сохранённые учётные данные — как OAuth-сессию, так и сохранённый API-ключ.
+Не вызывает API и не очищает активную организацию (ваша
+предпочитаемая организация сохраняется между повторными входами).
 
 ```bash
 rox auth logout
 ```
 
 <CommandReturns>
-A confirmation message.
+Сообщение с подтверждением.
 
 <HumanOutput>
 ```text
@@ -122,14 +122,14 @@ Logged out.
 </Command>
 
 <Command name="rox auth whoami">
-Show the current user, active organization, and auth source.
+Показать текущего пользователя, активную организацию и источник аутентификации.
 
 ```bash
 rox auth whoami
 ```
 
 <CommandReturns>
-The current user and organization context.
+Текущий пользователь и контекст организации.
 
 <HumanOutput>
 ```text
@@ -158,27 +158,27 @@ Auth: Session (expires in 32 min)
 
 ### start
 
-Start the local host server — the daemon the CLI and desktop app both
-talk to when targeting this machine.
+Запустить локальный хост-сервер — демон (daemon), с которым взаимодействуют
+и CLI, и десктоп-приложение при работе с этой машиной.
 
 <Command
 	name="rox start"
 	options={[
-		{ flag: "--daemon", description: "Run detached." },
-		{ flag: "--port <n>", description: "Specific port. Default: a free loopback port." },
+		{ flag: "--daemon", description: "Запустить в отсоединённом режиме." },
+		{ flag: "--port <n>", description: "Конкретный порт. По умолчанию: свободный loopback-порт." },
 	]}
 >
-If a manifest exists and the PID is alive, returns the existing
-instance's details. Otherwise spawns the host server binary, polls
-`/trpc/health.check` for up to 10 seconds, and writes the manifest.
-Binds to `127.0.0.1` only.
+Если манифест существует и PID жив, возвращает данные существующего
+экземпляра. Иначе запускает бинарник хост-сервера, опрашивает
+`/trpc/health.check` до 10 секунд и записывает манифест.
+Привязывается только к `127.0.0.1`.
 
 ```bash
 rox start --daemon
 ```
 
 <CommandReturns>
-The running host server.
+Работающий хост-сервер.
 
 <JsonOutput>
 ```ts
@@ -194,18 +194,18 @@ The running host server.
 
 ### stop
 
-Stop the local host server.
+Остановить локальный хост-сервер.
 
 <Command name="rox stop">
-Sends SIGTERM, waits up to 10 seconds, sends SIGKILL if still alive. The
-manifest is removed in all cases — including when SIGTERM itself throws.
+Отправляет SIGTERM, ждёт до 10 секунд, отправляет SIGKILL, если процесс всё ещё жив.
+Манифест удаляется во всех случаях — в том числе когда сам SIGTERM выбрасывает ошибку.
 
 ```bash
 rox stop
 ```
 
 <CommandReturns>
-The stopped host server, if one was running.
+Остановленный хост-сервер, если он был запущен.
 
 <JsonOutput>
 ```ts
@@ -221,17 +221,17 @@ The stopped host server, if one was running.
 
 ### status
 
-Inspect the local host server.
+Проверить состояние локального хост-сервера.
 
 <Command name="rox status">
-`healthy` reflects a live `health.check` request (2-second timeout).
+`healthy` отражает живой запрос `health.check` (таймаут 2 секунды).
 
 ```bash
 rox status
 ```
 
 <CommandReturns>
-The host server state. Three shapes depending on what's running.
+Состояние хост-сервера. Три формы в зависимости от того, что запущено.
 
 <JsonOutput>
 ```ts
@@ -263,19 +263,19 @@ The host server state. Three shapes depending on what's running.
 
 ### update
 
-Update the Rox CLI and host server binary.
+Обновить Rox CLI и бинарник хост-сервера.
 
 <Command
 	name="rox update"
 	options={[
-		{ flag: "--check", description: "Only check for updates; don't install." },
-		{ flag: "--force", description: "Re-install even if already on that version." },
-		{ flag: "--version <version>", description: "Install a specific version (e.g. `0.1.2`) instead of the rolling latest. Accepts upgrade or downgrade." },
+		{ flag: "--check", description: "Только проверить наличие обновлений; не устанавливать." },
+		{ flag: "--force", description: "Переустановить, даже если эта версия уже установлена." },
+		{ flag: "--version <version>", description: "Установить конкретную версию (например, `0.1.2`) вместо последней по принципу rolling. Допускает обновление или откат." },
 	]}
 >
-Downloads the matching `rox-<platform>.tar.gz` from GitHub Releases
-and atomically replaces the install root. Only available in built
-binaries; running from `bun run dev` errors out.
+Загружает подходящий `rox-<platform>.tar.gz` из GitHub Releases
+и атомарно заменяет корень установки. Доступно только в собранных
+бинарниках; запуск из `bun run dev` завершается ошибкой.
 
 ```bash
 rox update                     # upgrade to the latest release
@@ -284,7 +284,7 @@ rox update --version 0.1.2     # install a specific version (up or down)
 ```
 
 <CommandReturns>
-The current and target version, plus whether anything changed.
+Текущая и целевая версия, а также информация о том, изменилось ли что-либо.
 
 <HumanOutput>
 ```text
@@ -318,7 +318,7 @@ Updated 0.1.4 → 0.1.5 (/Users/you/.local/share/rox)
 
 ### organization (alias: `org`)
 
-Manage which organization the CLI targets.
+Управление тем, на какую организацию нацелен CLI.
 
 <Command
 	name="rox organization list"
@@ -331,18 +331,18 @@ Manage which organization the CLI targets.
 	humanColumns={["NAME", "SLUG", "ACTIVE"]}
 	quiet="organization IDs"
 >
-List organizations available to the current auth context. Marks the
-active one.
+Список организаций, доступных текущему контексту аутентификации. Помечает
+активную.
 </Command>
 
 <Command
 	name="rox organization switch <idOrSlug>"
 	args={[
-		{ name: "idOrSlug", required: true, description: "Organization ID or slug." },
+		{ name: "idOrSlug", required: true, description: "ID или slug организации." },
 	]}
 	output={`{ id: string; name: string; slug: string }`}
 >
-Set the active organization in `~/.rox/config.json`.
+Установить активную организацию в `~/.rox/config.json`.
 
 ```bash
 rox organization switch acme
@@ -353,8 +353,8 @@ rox org switch org_…
 <Command
 	name="rox organization members list"
 	options={[
-		{ flag: "--search <query>, -s", description: "Search by name or email." },
-		{ flag: "--limit <n>", description: "Default 50." },
+		{ flag: "--search <query>, -s", description: "Поиск по имени или email." },
+		{ flag: "--limit <n>", description: "По умолчанию 50." },
 	]}
 	output={`Array<{
   id: string;
@@ -365,7 +365,7 @@ rox org switch org_…
 	humanColumns={["NAME", "EMAIL", "ROLE", "ID"]}
 	quiet="member IDs"
 >
-List members in the active organization.
+Список участников активной организации.
 
 ```bash
 rox organization members list
@@ -377,9 +377,9 @@ rox org members list -s satya
 
 ### projects
 
-A project is a repository registered with your organization. It carries
-a cloud record (one per repo, shared across the org) and one or more
-host-side checkouts. Workspaces branch off a host's checkout.
+Проект — это репозиторий, зарегистрированный в вашей организации. Он содержит
+облачную запись (одну на репозиторий, общую для организации) и одну или несколько
+host-side копий. Рабочие пространства ответвляются от копии на хосте.
 
 <Command
 	name="rox projects list"
@@ -393,18 +393,18 @@ host-side checkouts. Workspaces branch off a host's checkout.
 	humanColumns={["NAME", "SLUG", "REPO", "ID"]}
 	quiet="project IDs"
 >
-List projects in the active organization. Org-wide; not host-scoped.
+Список проектов в активной организации. В рамках всей организации; не ограничен хостом.
 </Command>
 
 <Command
 	name="rox projects create"
 	options={[
-		{ flag: "--name <name>", required: true, description: "Display name for the project." },
-		{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
-		{ flag: "--local", description: "Target this machine. Mutually exclusive with `--host`; one is required." },
-		{ flag: "--clone <url>", description: "Clone from a Git URL. Mutually exclusive with `--import`." },
-		{ flag: "--parent-dir <path>", description: "Parent directory the cloned repo lands in. Required with `--clone`." },
-		{ flag: "--import <path>", description: "Existing repo path on the target host. Mutually exclusive with `--clone`." },
+		{ flag: "--name <name>", required: true, description: "Отображаемое имя проекта." },
+		{ flag: "--host <id>", description: "Целевой machineId хоста. Взаимоисключающий с `--local`; один из них обязателен." },
+		{ flag: "--local", description: "Целевая — эта машина. Взаимоисключающий с `--host`; один из них обязателен." },
+		{ flag: "--clone <url>", description: "Клонировать из Git URL. Взаимоисключающий с `--import`." },
+		{ flag: "--parent-dir <path>", description: "Родительский каталог, в который попадёт склонированный репозиторий. Обязателен с `--clone`." },
+		{ flag: "--import <path>", description: "Путь к существующему репозиторию на целевом хосте. Взаимоисключающий с `--clone`." },
 	]}
 	output={`{
   projectId: string;
@@ -412,19 +412,19 @@ List projects in the active organization. Org-wide; not host-scoped.
   mainWorkspaceId: string;
 }`}
 >
-Create a fresh project on a host. Two modes:
+Создать новый проект на хосте. Два режима:
 
-- **Clone** — pass `--clone <url>` and `--parent-dir`. The host clones the
-  repo into `<parent-dir>/<derived-name>/`.
-- **Import** — pass `--import <path>` to register a repo that already exists
-  on disk.
+- **Clone** — передайте `--clone <url>` и `--parent-dir`. Хост клонирует
+  репозиторий в `<parent-dir>/<derived-name>/`.
+- **Import** — передайте `--import <path>`, чтобы зарегистрировать репозиторий, который уже существует
+  на диске.
 
-Either way, a new cloud project record is created and the host's main
-workspace is ensured.
+В любом случае создаётся новая облачная запись проекта и обеспечивается наличие основного
+рабочего пространства хоста.
 
-`create` always creates a new cloud project, even if your org already has
-one for the same Git URL. Use [`projects setup`](#rox-projects-setup-id)
-when adopting an existing project on a fresh machine.
+`create` всегда создаёт новый облачный проект, даже если в вашей организации уже есть
+проект для того же Git URL. Используйте [`projects setup`](#rox-projects-setup-id),
+когда подключаете существующий проект на новой машине.
 
 ```bash
 rox projects create --name "my-app" --local --clone https://github.com/org/my-app.git --parent-dir ~/code
@@ -435,28 +435,28 @@ rox projects create --name "my-app" --local --import ~/code/my-app
 <Command
 	name="rox projects setup <id>"
 	args={[
-		{ name: "id", required: true, description: "Project UUID to adopt." },
+		{ name: "id", required: true, description: "UUID проекта для подключения." },
 	]}
 	options={[
-		{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
-		{ flag: "--local", description: "Target this machine. Mutually exclusive with `--host`; one is required." },
-		{ flag: "--parent-dir <path>", description: "Parent directory to clone the project's repo into (clone mode). The URL comes from the cloud project, so no `--clone <url>` is needed." },
-		{ flag: "--import <path>", description: "Existing repo path on the target host (import mode)." },
-		{ flag: "--allow-relocate", description: "Permit re-importing at a different path if the project is already set up here. `--import` only." },
+		{ flag: "--host <id>", description: "Целевой machineId хоста. Взаимоисключающий с `--local`; один из них обязателен." },
+		{ flag: "--local", description: "Целевая — эта машина. Взаимоисключающий с `--host`; один из них обязателен." },
+		{ flag: "--parent-dir <path>", description: "Родительский каталог для клонирования репозитория проекта (режим clone). URL берётся из облачного проекта, поэтому `--clone <url>` не нужен." },
+		{ flag: "--import <path>", description: "Путь к существующему репозиторию на целевом хосте (режим import)." },
+		{ flag: "--allow-relocate", description: "Разрешить повторный импорт по другому пути, если проект уже настроен здесь. Только для `--import`." },
 	]}
 	output={`{
   repoPath: string;
   mainWorkspaceId: string | null;
 }`}
 >
-Adopt an existing project onto a host without creating a duplicate cloud
-record. Counterpart to [`create`](#rox-projects-create) for the
-"new machine, repo already in the org" case.
+Подключить существующий проект к хосту без создания дублирующей облачной
+записи. Аналог [`create`](#rox-projects-create) для случая
+«новая машина, репозиторий уже в организации».
 
-Find the project ID via [`projects list`](#rox-projects-list).
+Найдите ID проекта через [`projects list`](#rox-projects-list).
 
-Idempotent: re-running against a project that's already set up at the same
-path is a no-op that returns the existing `mainWorkspaceId`.
+Идемпотентно: повторный запуск для проекта, который уже настроен по тому же
+пути, не выполняет никаких действий и возвращает существующий `mainWorkspaceId`.
 
 ```bash
 # Pick an ID from `rox projects list`, then clone it onto this machine
@@ -471,9 +471,9 @@ rox projects setup 47c31b04-… --local --import ~/code/my-app
 
 ### hosts
 
-Discover hosts registered to the active organization. To control the
-host server running on this machine, use [`start`](#start),
-[`stop`](#stop), and [`status`](#status).
+Обнаружение хостов, зарегистрированных в активной организации. Чтобы управлять
+хост-сервером, работающим на этой машине, используйте [`start`](#start),
+[`stop`](#stop) и [`status`](#status).
 
 <Command
 	name="rox hosts list"
@@ -485,9 +485,9 @@ host server running on this machine, use [`start`](#start),
 	humanColumns={["ID", "NAME", "ONLINE"]}
 	quiet="host IDs"
 >
-List hosts registered to the active organization. Host registration
-happens via `rox start` on each machine — there is no
-separate registration command.
+Список хостов, зарегистрированных в активной организации. Регистрация хоста
+происходит через `rox start` на каждой машине — отдельной
+команды регистрации нет.
 
 ```bash
 rox hosts list
@@ -498,21 +498,21 @@ rox hosts list
 
 ### workspaces (alias: `ws`)
 
-Workspaces are branch-scoped working copies on a host.
+Рабочие пространства — это рабочие копии на хосте, ограниченные веткой.
 
-**Routing:** when `--host` resolves to the local machine, the CLI calls
-the host server directly over loopback HTTP — no cloud roundtrip, works
-offline. Otherwise it routes through the cloud API and the relay.
+**Маршрутизация:** когда `--host` разрешается в локальную машину, CLI обращается к
+хост-серверу напрямую через loopback HTTP — без обращения к облаку, работает
+офлайн. Иначе запрос маршрутизируется через облачный API и реле.
 
-If the resolved host is the local machine but the host server isn't
-responding, the CLI errors out and points you at `rox start` rather
-than silently falling through to the cloud.
+Если разрешённый хост — локальная машина, но хост-сервер не
+отвечает, CLI завершается с ошибкой и указывает на `rox start`, а не
+молча обращается к облаку.
 
 <Command
 	name="rox workspaces list"
 	options={[
-		{ flag: "--host <id>", description: "Filter to a specific host machineId." },
-		{ flag: "--local", description: "Filter to this machine." },
+		{ flag: "--host <id>", description: "Фильтровать по конкретному machineId хоста." },
+		{ flag: "--local", description: "Фильтровать по этой машине." },
 	]}
 	output={`Array<{
   id: string;
@@ -526,31 +526,31 @@ than silently falling through to the cloud.
 	humanColumns={["NAME", "BRANCH", "PROJECT", "HOST"]}
 	quiet="workspace IDs"
 >
-List workspaces accessible to the active organization. With neither
-`--host` nor `--local`, the list is organization-wide.
+Список рабочих пространств, доступных активной организации. Без указания
+`--host` или `--local` список действует в рамках всей организации.
 </Command>
 
 <Command
 	name="rox workspaces create"
 	options={[
-		{ flag: "--project <projectId>", required: true, description: "Project ID." },
-		{ flag: "--name <name>", required: true, description: "Workspace name." },
-		{ flag: "--branch <branch>", description: "Workspace branch. Required unless `--pr` is set." },
-		{ flag: "--pr <number>", description: "Pull request number. Checks out the verified PR head." },
-		{ flag: "--base-branch <branch>", description: "Branch to fork from when `--branch` does not exist. Defaults to the project default branch." },
-		{ flag: "--host <id>", description: "Target host machineId. Mutually exclusive with `--local`; one is required." },
-		{ flag: "--local", description: "Target this machine. Mutually exclusive with `--host`; one is required." },
-		{ flag: "--agent <preset|uuid|rox>", description: "Agent to spawn after creation." },
-		{ flag: "--prompt <text>", description: "Initial prompt. Required when `--agent` is set." },
-		{ flag: "--command <cmd>", description: "Shell command to run in the new workspace after creation." },
-		{ flag: "--attachment <path>", description: "Local file to upload for the spawned agent. Repeatable." },
+		{ flag: "--project <projectId>", required: true, description: "ID проекта." },
+		{ flag: "--name <name>", required: true, description: "Имя рабочего пространства." },
+		{ flag: "--branch <branch>", description: "Ветка рабочего пространства. Обязательна, если не задан `--pr`." },
+		{ flag: "--pr <number>", description: "Номер pull request. Извлекает проверенный head PR." },
+		{ flag: "--base-branch <branch>", description: "Ветка, от которой ответвляться, когда `--branch` не существует. По умолчанию — ветка проекта по умолчанию." },
+		{ flag: "--host <id>", description: "Целевой machineId хоста. Взаимоисключающий с `--local`; один из них обязателен." },
+		{ flag: "--local", description: "Целевая — эта машина. Взаимоисключающий с `--host`; один из них обязателен." },
+		{ flag: "--agent <preset|uuid|rox>", description: "Агент для запуска после создания." },
+		{ flag: "--prompt <text>", description: "Начальный промпт. Обязателен, когда задан `--agent`." },
+		{ flag: "--command <cmd>", description: "Shell-команда для запуска в новом рабочем пространстве после создания." },
+		{ flag: "--attachment <path>", description: "Локальный файл для загрузки для запущенного агента. Повторяемый." },
 	]}
 	output="Workspace"
 >
-Create a workspace on the target host. Specify exactly one of `--branch`
-or `--pr`. If you pass `--agent`, you must also pass `--prompt`. `--command`
-runs a one-off shell command in the worktree and is independent of
-`--agent`/`--prompt` — pass either or both.
+Создать рабочее пространство на целевом хосте. Укажите ровно один из `--branch`
+или `--pr`. Если вы передаёте `--agent`, вы также должны передать `--prompt`. `--command`
+выполняет одноразовую shell-команду в worktree и не зависит от
+`--agent`/`--prompt` — передайте любой из них или оба.
 
 ```bash
 rox workspaces create \
@@ -570,15 +570,15 @@ rox workspaces create \
 <Command
 	name="rox workspaces delete <id...>"
 	args={[
-		{ name: "id", required: true, variadic: true, description: "Workspace IDs to delete." },
+		{ name: "id", required: true, variadic: true, description: "ID рабочих пространств для удаления." },
 	]}
 	options={[
-		{ flag: "--host <id>", description: "Skip cloud lookup and target this host directly." },
-		{ flag: "--local", description: "Skip cloud lookup and target this machine." },
+		{ flag: "--host <id>", description: "Пропустить облачный поиск и обратиться к этому хосту напрямую." },
+		{ flag: "--local", description: "Пропустить облачный поиск и обратиться к этой машине." },
 	]}
 	output={`{ deleted: string[] }`}
 >
-Delete one or more workspaces on the target host.
+Удалить одно или несколько рабочих пространств на целевом хосте.
 
 ```bash
 rox workspaces delete ws_a ws_b ws_c
@@ -588,16 +588,16 @@ rox workspaces delete ws_a ws_b ws_c
 <Command
 	name="rox workspaces update <id>"
 	args={[
-		{ name: "id", required: true, description: "Workspace UUID." },
+		{ name: "id", required: true, description: "UUID рабочего пространства." },
 	]}
 	options={[
-		{ flag: "--name <name>", description: "New workspace name." },
-		{ flag: "--task-id <id>", description: "Link the workspace to a task by id." },
-		{ flag: "--clear-task", description: "Unlink the workspace from its current task. Mutually exclusive with --task-id." },
+		{ flag: "--name <name>", description: "Новое имя рабочего пространства." },
+		{ flag: "--task-id <id>", description: "Связать рабочее пространство с задачей по id." },
+		{ flag: "--clear-task", description: "Отвязать рабочее пространство от текущей задачи. Взаимоисключающий с --task-id." },
 	]}
 	output="Workspace"
 >
-Update a workspace.
+Обновить рабочее пространство.
 
 ```bash
 rox workspaces update ws_… --name "better-name"
@@ -609,10 +609,10 @@ rox workspaces update ws_… --clear-task
 <Command
 	name="rox workspaces open <id>"
 	args={[
-		{ name: "id", required: true, description: "Workspace ID." },
+		{ name: "id", required: true, description: "ID рабочего пространства." },
 	]}
 	options={[
-		{ flag: "--print", description: "Print the deep link instead of opening the desktop app." },
+		{ flag: "--print", description: "Вывести deep link вместо открытия десктоп-приложения." },
 	]}
 	output={`{
   id: string;
@@ -620,7 +620,7 @@ rox workspaces update ws_… --clear-task
   url: string;
 }`}
 >
-Open a workspace in the Rox desktop app.
+Открыть рабочее пространство в десктоп-приложении Rox.
 
 ```bash
 rox workspaces open ws_…
@@ -632,16 +632,16 @@ rox workspaces open ws_… --print
 
 ### agents
 
-Agents are terminal-agent rows configured on a host (the same rows shown in
-Settings → Agents on that machine). Each row stores a `command`, `args`,
-prompt-transport mode, and environment used to launch the agent in a fresh
-terminal session inside a workspace.
+Агенты — это записи терминальных агентов, настроенные на хосте (те же записи, что показаны в
+Settings → Agents на этой машине). Каждая запись хранит `command`, `args`,
+режим транспорта промпта и окружение, используемые для запуска агента в новой
+сессии терминала внутри рабочего пространства.
 
 <Command
 	name="rox agents list"
 	options={[
-		{ flag: "--host <id>", description: "Target host machineId." },
-		{ flag: "--local", description: "Target this machine. Mutually exclusive with --host; exactly one is required." },
+		{ flag: "--host <id>", description: "Целевой machineId хоста." },
+		{ flag: "--local", description: "Целевая — эта машина. Взаимоисключающий с --host; ровно один обязателен." },
 	]}
 	output={`Array<{
   id: string;
@@ -657,8 +657,8 @@ terminal session inside a workspace.
 	humanColumns={["LABEL", "PRESET", "COMMAND", "ID"]}
 	quiet="agent instance IDs"
 >
-List agents configured on a host. First call on a fresh host seeds the
-bundled defaults.
+Список агентов, настроенных на хосте. Первый вызов на новом хосте создаёт
+встроенные значения по умолчанию.
 
 ```bash
 rox agents list --local
@@ -669,11 +669,11 @@ rox agents list --host host_…
 <Command
 	name="rox agents create"
 	options={[
-		{ flag: "--workspace <id>", required: true, description: "Workspace UUID to create the agent session in." },
-		{ flag: "--agent <preset|uuid|rox>", required: true, description: "Agent preset id (e.g. `claude`, `codex`), HostAgentConfig instance UUID, or `rox`." },
-		{ flag: "--prompt <text>", required: true, description: "Prompt sent to the agent." },
-		{ flag: "--attachment-id <uuid>", description: "Pre-uploaded attachment UUID; pass repeatedly for multiple attachments." },
-		{ flag: "--attachment <path>", description: "Local file path to upload as an attachment. Repeatable." },
+		{ flag: "--workspace <id>", required: true, description: "UUID рабочего пространства, в котором создать сессию агента." },
+		{ flag: "--agent <preset|uuid|rox>", required: true, description: "ID пресета агента (например, `claude`, `codex`), UUID экземпляра HostAgentConfig или `rox`." },
+		{ flag: "--prompt <text>", required: true, description: "Промпт, отправляемый агенту." },
+		{ flag: "--attachment-id <uuid>", description: "UUID предзагруженного вложения; передавайте повторно для нескольких вложений." },
+		{ flag: "--attachment <path>", description: "Путь к локальному файлу для загрузки в качестве вложения. Повторяемый." },
 	]}
 	output={`{
   kind: "terminal" | "chat";
@@ -681,9 +681,9 @@ rox agents list --host host_…
   label: string;
 }`}
 >
-Create an agent session in an existing workspace. Resolves the host that owns
-the workspace and starts the named preset (or HostAgentConfig instance) in a
-fresh terminal session on that host.
+Создать сессию агента в существующем рабочем пространстве. Определяет хост, которому принадлежит
+рабочее пространство, и запускает указанный пресет (или экземпляр HostAgentConfig) в
+новой сессии терминала на этом хосте.
 
 ```bash
 rox agents create --workspace ws_… --agent claude --prompt "Audit the login flow"
@@ -695,24 +695,24 @@ rox agents create --workspace ws_… --agent codex --prompt "Review this diff" -
 
 ### terminals (alias: `term`)
 
-Terminals are PTY sessions on a host, scoped to a workspace. Create one to run
-a one-off command in a worktree or to open an interactive shell.
+Терминалы — это PTY-сессии на хосте, ограниченные рабочим пространством. Создайте такую сессию, чтобы выполнить
+одноразовую команду в worktree или открыть интерактивную оболочку.
 
 <Command
 	name="rox terminals create"
 	options={[
-		{ flag: "--workspace <id>", required: true, description: "Workspace UUID to create the terminal in." },
-		{ flag: "--command <cmd>", description: "Shell command to run in the terminal. Omit to open an interactive shell." },
-		{ flag: "--cwd <path>", description: "Working directory for the terminal. Defaults to the worktree." },
+		{ flag: "--workspace <id>", required: true, description: "UUID рабочего пространства, в котором создать терминал." },
+		{ flag: "--command <cmd>", description: "Shell-команда для запуска в терминале. Опустите, чтобы открыть интерактивную оболочку." },
+		{ flag: "--cwd <path>", description: "Рабочий каталог для терминала. По умолчанию — worktree." },
 	]}
 	output={`{
   terminalId: string;
   status: string;
 }`}
 >
-Create a terminal session in an existing workspace. Resolves the host that
-owns the workspace and opens a fresh PTY in the worktree, optionally running
-a command.
+Создать сессию терминала в существующем рабочем пространстве. Определяет хост, которому
+принадлежит рабочее пространство, и открывает новый PTY в worktree, опционально запуская
+команду.
 
 ```bash
 rox terminals create --workspace ws_… --command "bun install && bun test"
@@ -724,25 +724,25 @@ rox terminals create --workspace ws_…
 
 ### tasks (alias: `t`)
 
-Tasks are units of work in your organization's task tracker.
+Задачи — это единицы работы в трекере задач вашей организации.
 
 <Command
 	name="rox tasks list"
 	options={[
-		{ flag: "--status <id>", description: "Filter by status ID." },
-		{ flag: "--priority <urgent|high|medium|low|none>", description: "Filter by priority." },
-		{ flag: "--assignee <userId>", description: "Filter by assignee user ID." },
-		{ flag: "--assignee-me, -m", description: "Tasks assigned to the current user." },
-		{ flag: "--creator-me", description: "Tasks created by the current user." },
-		{ flag: "--search <query>, -s", description: "Substring search on title." },
-		{ flag: "--limit <n>", description: "Default 50." },
-		{ flag: "--offset <n>", description: "Default 0." },
+		{ flag: "--status <id>", description: "Фильтровать по ID статуса." },
+		{ flag: "--priority <urgent|high|medium|low|none>", description: "Фильтровать по приоритету." },
+		{ flag: "--assignee <userId>", description: "Фильтровать по ID пользователя-исполнителя." },
+		{ flag: "--assignee-me, -m", description: "Задачи, назначенные текущему пользователю." },
+		{ flag: "--creator-me", description: "Задачи, созданные текущим пользователем." },
+		{ flag: "--search <query>, -s", description: "Поиск по подстроке в заголовке." },
+		{ flag: "--limit <n>", description: "По умолчанию 50." },
+		{ flag: "--offset <n>", description: "По умолчанию 0." },
 	]}
 	output="Array<Task>"
 	humanColumns={["SLUG", "TITLE", "PRIORITY", "ASSIGNEE"]}
 	quiet="task IDs"
 >
-List tasks in the active organization.
+Список задач в активной организации.
 
 ```bash
 rox tasks list --assignee-me
@@ -753,11 +753,11 @@ rox t list -s "auth" --json
 <Command
 	name="rox tasks get <idOrSlug>"
 	args={[
-		{ name: "idOrSlug", required: true, description: "Task ID or slug." },
+		{ name: "idOrSlug", required: true, description: "ID или slug задачи." },
 	]}
 	output="Task"
 >
-Get a task by ID or slug.
+Получить задачу по ID или slug.
 
 ```bash
 rox tasks get tsk_…
@@ -768,18 +768,18 @@ rox tasks get fix-login-bug
 <Command
 	name="rox tasks create"
 	options={[
-		{ flag: "--title <title>", required: true, description: "Task title." },
-		{ flag: "--description <text>", description: "Task description." },
-		{ flag: "--priority <urgent|high|medium|low|none>", description: "Priority." },
-		{ flag: "--assignee <userId>", description: "Assignee user ID." },
-		{ flag: "--status-id <id>", description: "Initial status ID." },
-		{ flag: "--estimate <n>", description: "Story-point estimate." },
-		{ flag: "--due-date <iso8601>", description: "Due date." },
-		{ flag: "--labels <a,b,c>", description: "Comma-separated labels." },
+		{ flag: "--title <title>", required: true, description: "Заголовок задачи." },
+		{ flag: "--description <text>", description: "Описание задачи." },
+		{ flag: "--priority <urgent|high|medium|low|none>", description: "Приоритет." },
+		{ flag: "--assignee <userId>", description: "ID пользователя-исполнителя." },
+		{ flag: "--status-id <id>", description: "ID начального статуса." },
+		{ flag: "--estimate <n>", description: "Оценка в story-points." },
+		{ flag: "--due-date <iso8601>", description: "Срок выполнения." },
+		{ flag: "--labels <a,b,c>", description: "Метки через запятую." },
 	]}
 	output="Task"
 >
-Create a task.
+Создать задачу.
 
 ```bash
 rox tasks create --title "Audit auth flow" --priority high
@@ -789,22 +789,22 @@ rox tasks create --title "Audit auth flow" --priority high
 <Command
 	name="rox tasks update <idOrSlug>"
 	args={[
-		{ name: "idOrSlug", required: true, description: "Task ID or slug." },
+		{ name: "idOrSlug", required: true, description: "ID или slug задачи." },
 	]}
 	options={[
-		{ flag: "--title <title>", description: "New title." },
-		{ flag: "--description <text>", description: "New description." },
-		{ flag: "--priority <urgent|high|medium|low|none>", description: "New priority." },
-		{ flag: "--assignee <userId>", description: "New assignee." },
-		{ flag: "--status-id <id>", description: "New status ID." },
-		{ flag: "--pr-url <url>", description: "Linked pull request URL." },
-		{ flag: "--estimate <n>", description: "Story-point estimate." },
-		{ flag: "--due-date <iso8601>", description: "Due date." },
-		{ flag: "--labels <a,b,c>", description: "Replace labels with a comma-separated list." },
+		{ flag: "--title <title>", description: "Новый заголовок." },
+		{ flag: "--description <text>", description: "Новое описание." },
+		{ flag: "--priority <urgent|high|medium|low|none>", description: "Новый приоритет." },
+		{ flag: "--assignee <userId>", description: "Новый исполнитель." },
+		{ flag: "--status-id <id>", description: "Новый ID статуса." },
+		{ flag: "--pr-url <url>", description: "URL связанного pull request." },
+		{ flag: "--estimate <n>", description: "Оценка в story-points." },
+		{ flag: "--due-date <iso8601>", description: "Срок выполнения." },
+		{ flag: "--labels <a,b,c>", description: "Заменить метки списком через запятую." },
 	]}
 	output="Task"
 >
-Update a task. Same fields as `create`, all optional.
+Обновить задачу. Те же поля, что и у `create`, все опциональны.
 
 ```bash
 rox tasks update fix-login-bug --priority urgent
@@ -814,11 +814,11 @@ rox tasks update fix-login-bug --priority urgent
 <Command
 	name="rox tasks delete <idOrSlug...>"
 	args={[
-		{ name: "idOrSlug", required: true, variadic: true, description: "Task IDs or slugs to delete." },
+		{ name: "idOrSlug", required: true, variadic: true, description: "ID или slug задач для удаления." },
 	]}
 	output={`{ deleted: string[]; failed: string[] }`}
 >
-Delete one or more tasks.
+Удалить одну или несколько задач.
 
 ```bash
 rox tasks delete tsk_a tsk_b
@@ -836,8 +836,8 @@ rox tasks delete tsk_a tsk_b
 	humanColumns={["NAME", "TYPE", "POS", "ID"]}
 	quiet="status IDs"
 >
-List task statuses in the active organization. Use the returned IDs with
-`tasks list --status`, `tasks create --status-id`, or
+Список статусов задач в активной организации. Используйте возвращённые ID с
+`tasks list --status`, `tasks create --status-id` или
 `tasks update --status-id`.
 
 ```bash
@@ -849,7 +849,7 @@ rox tasks statuses list
 
 ### automations (alias: `auto`)
 
-Scheduled agent runs. Schedules use RFC 5545 RRULE bodies, e.g.
+Запланированные запуски агентов. Расписания используют тела RRULE по RFC 5545, например
 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0`.
 
 <Command
@@ -858,40 +858,40 @@ Scheduled agent runs. Schedules use RFC 5545 RRULE bodies, e.g.
 	humanColumns={["ID", "NAME", "AGENT", "SCHEDULE", "ENABLED", "NEXT RUN"]}
 	quiet="automation IDs"
 >
-List automations in the active organization.
+Список автоматизаций в активной организации.
 </Command>
 
 <Command
 	name="rox automations get <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	output="Automation"
 >
-Get an automation's metadata. The prompt body is omitted — use
-[`automations prompt get`](#rox-automations-prompt-get-id) to read it.
-Use [`automations logs`](#rox-automations-logs-id) for run history.
+Получить метаданные автоматизации. Тело промпта опускается — используйте
+[`automations prompt get`](#rox-automations-prompt-get-id), чтобы прочитать его.
+Используйте [`automations logs`](#rox-automations-logs-id) для истории запусков.
 </Command>
 
 <Command
 	name="rox automations create"
 	options={[
-		{ flag: "--name <name>", required: true, description: "Automation name." },
-		{ flag: "--prompt <text>", description: "Inline prompt." },
-		{ flag: "--prompt-file <path>", description: "Read prompt from file, verbatim." },
-		{ flag: "--rrule <rrule>", required: true, description: "RFC 5545 RRULE schedule." },
-		{ flag: "--timezone <iana>", description: "Default: host TZ, then UTC." },
-		{ flag: "--dtstart <iso8601>", description: "Default: now." },
-		{ flag: "--workspace <workspaceId>", description: "Reuse an existing workspace." },
-		{ flag: "--project <projectId>", description: "Project ID for new-workspace-per-run mode." },
-		{ flag: "--host <hostId>", description: "Default: owner's online host." },
-		{ flag: "--agent <agent>", description: "Host agent presetId, instance UUID, or 'rox' for built-in chat. Default: claude." },
+		{ flag: "--name <name>", required: true, description: "Имя автоматизации." },
+		{ flag: "--prompt <text>", description: "Встроенный промпт." },
+		{ flag: "--prompt-file <path>", description: "Прочитать промпт из файла, дословно." },
+		{ flag: "--rrule <rrule>", required: true, description: "Расписание RRULE по RFC 5545." },
+		{ flag: "--timezone <iana>", description: "По умолчанию: TZ хоста, затем UTC." },
+		{ flag: "--dtstart <iso8601>", description: "По умолчанию: сейчас." },
+		{ flag: "--workspace <workspaceId>", description: "Повторно использовать существующее рабочее пространство." },
+		{ flag: "--project <projectId>", description: "ID проекта для режима «новое рабочее пространство на каждый запуск»." },
+		{ flag: "--host <hostId>", description: "По умолчанию: онлайн-хост владельца." },
+		{ flag: "--agent <agent>", description: "presetId агента хоста, UUID экземпляра или 'rox' для встроенного чата. По умолчанию: claude." },
 	]}
 	output="Automation"
 >
-Create an automation. Provide `--prompt` or `--prompt-file`; if both are
-present, the inline `--prompt` value is used. At least one of `--project`
-or `--workspace` must be provided.
+Создать автоматизацию. Укажите `--prompt` или `--prompt-file`; если присутствуют
+оба, используется встроенное значение `--prompt`. Должен быть указан хотя бы один из `--project`
+или `--workspace`.
 
 ```bash
 rox automations create \
@@ -906,39 +906,39 @@ rox automations create \
 <Command
 	name="rox automations update <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	options={[
-		{ flag: "--name <name>", description: "New name." },
-		{ flag: "--rrule <rrule>", description: "New schedule." },
-		{ flag: "--timezone <iana>", description: "New timezone." },
-		{ flag: "--dtstart <iso8601>", description: "New start time." },
-		{ flag: "--host <hostId>", description: "New target host." },
-		{ flag: "--project <projectId>", description: "New v2 project ID." },
-		{ flag: "--workspace <workspaceId>", description: "New v2 workspace ID." },
-		{ flag: "--agent <agent>", description: "New host agent presetId, instance UUID, or 'rox'." },
-		{ flag: "--mcp-scope <a,b,c>", description: "Comma-separated MCP scope strings." },
-		{ flag: "--enabled / --no-enabled", description: "Calls automation.setEnabled first." },
+		{ flag: "--name <name>", description: "Новое имя." },
+		{ flag: "--rrule <rrule>", description: "Новое расписание." },
+		{ flag: "--timezone <iana>", description: "Новый часовой пояс." },
+		{ flag: "--dtstart <iso8601>", description: "Новое время начала." },
+		{ flag: "--host <hostId>", description: "Новый целевой хост." },
+		{ flag: "--project <projectId>", description: "Новый v2 ID проекта." },
+		{ flag: "--workspace <workspaceId>", description: "Новый v2 ID рабочего пространства." },
+		{ flag: "--agent <agent>", description: "Новый presetId агента хоста, UUID экземпляра или 'rox'." },
+		{ flag: "--mcp-scope <a,b,c>", description: "Строки MCP-scope через запятую." },
+		{ flag: "--enabled / --no-enabled", description: "Сначала вызывает automation.setEnabled." },
 	]}
 	output="Automation"
 >
-Update an automation's metadata (name, schedule, agent, host). All flags
-optional. Omitting a flag preserves the existing value — `undefined` means
-"no change", not "clear". Use [`automations prompt get`](#rox-automations-prompt-get-id)
-or [`automations prompt set`](#rox-automations-prompt-set-id) to read or
-replace the prompt body.
+Обновить метаданные автоматизации (имя, расписание, агент, хост). Все флаги
+опциональны. Опущенный флаг сохраняет существующее значение — `undefined` означает
+«без изменений», а не «очистить». Используйте [`automations prompt get`](#rox-automations-prompt-get-id)
+или [`automations prompt set`](#rox-automations-prompt-set-id), чтобы прочитать или
+заменить тело промпта.
 </Command>
 
 <Command
 	name="rox automations prompt get <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	output="Markdown"
 >
-Print an automation's prompt body to stdout. The output is the raw prompt
-with no trailing newline added, so `prompt get` and `prompt set` round-trip
-byte-exactly.
+Вывести тело промпта автоматизации в stdout. Вывод — это сырой промпт
+без добавления завершающего перевода строки, поэтому `prompt get` и `prompt set`
+выполняют round-trip побайтово точно.
 
 ```bash
 # Read to a file
@@ -952,15 +952,15 @@ rox automations prompt get aut_… | diff - ./prompt.md
 <Command
 	name="rox automations prompt set <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	options={[
-		{ flag: "--from-file <path>", required: true, description: "Read the new prompt from a file. Use `-` for stdin." },
+		{ flag: "--from-file <path>", required: true, description: "Прочитать новый промпт из файла. Используйте `-` для stdin." },
 	]}
 	output="Automation"
 >
-Replace an automation's prompt body. The new prompt fully overwrites the
-old one.
+Заменить тело промпта автоматизации. Новый промпт полностью перезаписывает
+старый.
 
 ```bash
 # Write from file
@@ -974,11 +974,11 @@ cat ./prompt.md | rox automations prompt set aut_… --from-file -
 <Command
 	name="rox automations delete <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	output={`{ deleted: string }`}
 >
-Delete an automation.
+Удалить автоматизацию.
 
 ```bash
 rox automations delete aut_…
@@ -988,11 +988,11 @@ rox automations delete aut_…
 <Command
 	name="rox automations pause <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	output="Automation"
 >
-Pause an automation (sets `enabled: false`).
+Приостановить автоматизацию (устанавливает `enabled: false`).
 
 ```bash
 rox automations pause aut_…
@@ -1002,12 +1002,12 @@ rox automations pause aut_…
 <Command
 	name="rox automations resume <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	output="Automation"
 >
-Resume an automation (sets `enabled: true`). The API recomputes
-`nextRunAt` on resume.
+Возобновить автоматизацию (устанавливает `enabled: true`). API пересчитывает
+`nextRunAt` при возобновлении.
 
 ```bash
 rox automations resume aut_…
@@ -1017,14 +1017,14 @@ rox automations resume aut_…
 <Command
 	name="rox automations run <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	output={`{
   automationId: string;
   runId: string;
 }`}
 >
-Dispatch an automation immediately. Does not wait for completion.
+Запустить автоматизацию немедленно. Не ожидает завершения.
 
 ```bash
 rox automations run aut_…
@@ -1034,16 +1034,16 @@ rox automations run aut_…
 <Command
 	name="rox automations logs <id>"
 	args={[
-		{ name: "id", required: true, description: "Automation ID." },
+		{ name: "id", required: true, description: "ID автоматизации." },
 	]}
 	options={[
-		{ flag: "--limit <n>", description: "Default 20, max 100." },
+		{ flag: "--limit <n>", description: "По умолчанию 20, максимум 100." },
 	]}
 	output="Array<AutomationRun>"
 	humanColumns={["RUN ID", "STATUS", "SCHEDULED", "DISPATCHED", "HOST"]}
 	quiet="run IDs"
 >
-List recent runs for an automation.
+Список последних запусков автоматизации.
 
 ```bash
 rox automations logs aut_…
@@ -1052,16 +1052,16 @@ rox automations logs aut_…
 
 ---
 
-## Output modes
+## Режимы вывода
 
-**JSON mode** (`--json`): raw payloads. Lists print arrays, get/create/update
-print objects, delete prints summary objects. No `{ "data": ... }` wrapper.
-Empty results print `null`.
+**Режим JSON** (`--json`): сырые полезные нагрузки. Списки выводят массивы, get/create/update
+выводят объекты, delete выводит объекты-сводки. Без обёртки `{ "data": ... }`.
+Пустые результаты выводят `null`.
 
-**Quiet mode** (`--quiet`): IDs only. Arrays of objects with an `id` field
-print one ID per line; single objects print their `id`; everything else
-falls back to JSON.
+**Тихий режим** (`--quiet`): только ID. Массивы объектов с полем `id`
+выводят по одному ID на строку; одиночные объекты выводят свой `id`; всё остальное
+откатывается к JSON.
 
-When `CLAUDE_CODE`, `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_CLI`,
-`GEMINI_CLI`, `ROX_AGENT`, or `CI` is set to a non-empty value, output
-defaults to JSON unless `--quiet` is provided.
+Когда `CLAUDE_CODE`, `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_CLI`,
+`GEMINI_CLI`, `ROX_AGENT` или `CI` установлены в непустое значение, вывод
+по умолчанию — JSON, если только не передан `--quiet`.

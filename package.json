@@ -7,6 +7,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.4.2",
 		"dotenv-cli": "11.0.0",
+		"playwright": "1.59.1",
 		"sherif": "1.11.0",
 		"turbo": "2.9.14"
 	},
@@ -29,6 +30,7 @@
 		"lint:fix": "bunx @biomejs/biome@2.4.2 migrate --write && bunx @biomejs/biome@2.4.2 check --write --unsafe .",
 		"format": "bunx @biomejs/biome@2.4.2 format --write .",
 		"format:check": "bunx @biomejs/biome@2.4.2 format .",
+		"smoke:marketing:landing": "node scripts/smoke-marketing-landing.mjs",
 		"typecheck": "turbo typecheck",
 		"ui-add": "turbo run ui-add",
 		"postinstall": "./scripts/postinstall.sh",

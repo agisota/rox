@@ -68,9 +68,13 @@ export const customProviderDiscoverInput = z.object({
 export const customProviderConfigInput = z.object({
 	baseUrl: z.string().min(1),
 	// Optional: when omitted the service keeps the previously saved key, so a
-	// model/base-URL-only edit persists without re-entering the secret.
+	// base-URL/model-list-only edit persists without re-entering the secret.
 	apiKey: z.string().optional(),
-	modelId: z.string().min(1),
+	// The full discovered model list to persist (bare ids). The picker surfaces
+	// every entry; Settings no longer asks the user to pick a single one.
+	models: z.array(z.string()).default([]),
+	// Optional preferred default model id (bare).
+	defaultModelId: z.string().nullish(),
 });
 
 function resolveWorkspaceSlashCommand(input: { cwd: string; text: string }) {
@@ -222,7 +226,8 @@ export function createChatServiceRouter(service: ChatService) {
 					return service.setCustomProviderConfig({
 						baseUrl: input.baseUrl,
 						apiKey: input.apiKey,
-						modelId: input.modelId,
+						models: input.models,
+						defaultModelId: input.defaultModelId ?? null,
 					});
 				}),
 			clearCustomProviderConfig: t.procedure.mutation(() => {

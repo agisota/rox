@@ -22,18 +22,24 @@ function SignInPage() {
 	const navigate = useNavigate();
 	const [isLoadingDev, setIsLoadingDev] = useState(false);
 	const [devError, setDevError] = useState<string | null>(null);
-	const { hasLocalToken, isPending, session } = useSessionRecovery();
+	const { isPending, session } = useSessionRecovery();
 
 	// Dev bypass: skip sign-in entirely
 	if (env.SKIP_ENV_VALIDATION) {
 		return <Navigate to="/workspace" replace />;
 	}
 
-	// Show loading while session is being fetched
+	// Genuine session-restore state: animated so it's clear work is happening.
 	if (isPending) {
 		return (
-			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<Spinner className="size-8" />
+			<div className="flex h-screen w-screen flex-col items-center justify-center gap-6 bg-background">
+				<RoxLogo className="h-20 w-auto" gradient />
+				<div className="flex flex-col items-center gap-3">
+					<Spinner className="size-5 text-muted-foreground" />
+					<p className="text-sm text-muted-foreground">
+						Восстанавливаем сессию…
+					</p>
+				</div>
 			</div>
 		);
 	}
@@ -124,12 +130,10 @@ function SignInPage() {
 
 					<div className="text-center mb-8">
 						<h1 className="text-xl font-semibold text-foreground mb-2">
-							Добро пожаловать в Rox
+							Войдите в Rox
 						</h1>
 						<p className="text-sm text-muted-foreground">
-							{hasLocalToken
-								? "Восстанавливаем вашу сессию"
-								: "Войдите, чтобы начать"}
+							Продолжите, чтобы начать работу
 						</p>
 					</div>
 

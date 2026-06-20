@@ -19,7 +19,12 @@ import { ANALYTICS_EVENTS } from "@rox/shared/constants";
 import { getTrustedVercelPreviewOrigins } from "@rox/shared/vercel-preview-origins";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { bearer, customSession, organization } from "better-auth/plugins";
+import {
+	bearer,
+	customSession,
+	genericOAuth,
+	organization,
+} from "better-auth/plugins";
 import { jwt } from "better-auth/plugins/jwt";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { captureAuthEvent } from "./analytics";
@@ -32,6 +37,13 @@ import {
 	resolveSessionOrganizationState,
 	type SessionOrganizationContext,
 } from "./lib/resolve-session-organization-state";
+import { upsertSocialProfile } from "./lib/social-profile";
+import { telegramLogin } from "./lib/telegram-plugin";
+import {
+	buildYandexProvider,
+	takePendingYandexProfile,
+	YANDEX_PROVIDER_ID,
+} from "./lib/yandex-oauth";
 
 const userOptions = {
 	additionalFields: {
@@ -96,6 +108,14 @@ export const auth = betterAuth({
 		},
 	},
 	emailAndPassword: {
+		// NOTE (ROX-519 / ROX-522 Phase 3): kept dev-gated on purpose.
+		// Production is social-only (Telegram / Yandex / GitHub); the public
+		// email/password sign-in & sign-up forms were removed from the web app.
+		// This flag stays enabled in development only because dev login and the
+		// dev seed flow ("Local Admin (dev)") rely on it. Flipping this to
+		// always-on (enabling email/password sign-in in production) is a pending
+		// product/security decision and must NOT be flipped here without that
+		// sign-off — production needs email verification + rate limiting first.
 		enabled: process.env.NODE_ENV === "development",
 		autoSignIn: true,
 	},
@@ -105,113 +125,165 @@ export const auth = betterAuth({
 			clientSecret: env.GH_CLIENT_SECRET,
 		},
 	},
+	rateLimit: {
+		// ROX-522 security review: explicitly throttle the Telegram Login Widget
+		// callback. Each request carries a fresh signed payload, so a tight window
+		// blunts brute-force/replay attempts against the verification endpoint on
+		// top of the HMAC + single-use KV guard. Path is relative to basePath.
+		customRules: {
+			"/telegram/callback": { window: 60, max: 10 },
+		},
+	},
 	databaseHooks: {
 		user: {
 			create: {
 				after: async (user, context?: unknown) => {
-					const domain = user.email.split("@")[1]?.toLowerCase();
-					let enrolledOrgId: string | null = null;
+					// ROX-519: post-signup enrollment is best-effort. Wrap the entire
+					// body so any failure (org enrollment, personal-team creation,
+					// attribution) is logged and non-fatal — it must never block or
+					// roll back account creation.
+					try {
+						const domain = user.email.split("@")[1]?.toLowerCase();
+						let enrolledOrgId: string | null = null;
 
-					if (domain) {
-						const matchingOrgs = await db.query.organizations.findMany({
-							where: sql`${authSchema.organizations.allowedDomains} @> ARRAY[${domain}]::text[]`,
-						});
+						if (domain) {
+							const matchingOrgs = await db.query.organizations.findMany({
+								where: sql`${authSchema.organizations.allowedDomains} @> ARRAY[${domain}]::text[]`,
+							});
 
-						for (const org of matchingOrgs) {
-							try {
-								await auth.api.addMember({
-									body: {
-										organizationId: org.id,
-										userId: user.id,
-										role: "member",
-									},
-								});
-								if (!enrolledOrgId) {
-									enrolledOrgId = org.id;
-								}
-							} catch (error) {
-								console.error(
-									`[auto-enroll] Failed to add user ${user.id} to org ${org.id}:`,
-									error,
-								);
-								// addMember may have created the DB record before a downstream
-								// hook (email, team-seeding) threw — check before falling back.
-								const memberExists = await db.query.members.findFirst({
-									where: and(
-										eq(authSchema.members.organizationId, org.id),
-										eq(authSchema.members.userId, user.id),
-									),
-								});
-								if (memberExists && !enrolledOrgId) {
-									enrolledOrgId = org.id;
+							for (const org of matchingOrgs) {
+								try {
+									await auth.api.addMember({
+										body: {
+											organizationId: org.id,
+											userId: user.id,
+											role: "member",
+										},
+									});
+									if (!enrolledOrgId) {
+										enrolledOrgId = org.id;
+									}
+								} catch (error) {
+									console.error(
+										`[auto-enroll] Failed to add user ${user.id} to org ${org.id}:`,
+										error,
+									);
+									// addMember may have created the DB record before a downstream
+									// hook (email, team-seeding) threw — check before falling back.
+									const memberExists = await db.query.members.findFirst({
+										where: and(
+											eq(authSchema.members.organizationId, org.id),
+											eq(authSchema.members.userId, user.id),
+										),
+									});
+									if (memberExists && !enrolledOrgId) {
+										enrolledOrgId = org.id;
+									}
 								}
 							}
 						}
-					}
 
-					if (!enrolledOrgId) {
-						const personalOrg = await auth.api.createOrganization({
-							body: {
-								name: `${user.name}'s Team`,
-								slug: `${user.id.slice(0, 8)}-team`,
-								userId: user.id,
-							},
-						});
-						enrolledOrgId = personalOrg?.id ?? null;
-					}
-
-					if (enrolledOrgId) {
-						await db
-							.update(authSchema.sessions)
-							.set({ activeOrganizationId: enrolledOrgId })
-							.where(eq(authSchema.sessions.userId, user.id));
-					}
-
-					// First-touch attribution: persist the landing UTM/referrer captured
-					// in the `rox_attribution` cookie. Best-effort — wrapped so a failure
-					// here can never block account creation. Idempotent via the unique
-					// user_id index (first-touch is never overwritten).
-					try {
-						const ctx = (context ?? {}) as {
-							headers?: Headers;
-							request?: { headers?: Headers };
-						};
-						const cookieHeader =
-							ctx.headers?.get("cookie") ??
-							ctx.request?.headers?.get("cookie") ??
-							null;
-						const attribution = parseAttributionCookieValue(
-							parseCookieHeader(cookieHeader, ATTRIBUTION_COOKIE_NAME),
-						);
-						captureAuthEvent(ANALYTICS_EVENTS.ACCOUNT_CREATED, user.id, {
-							...(attribution?.utm.utmSource
-								? { utm_source: attribution.utm.utmSource }
-								: {}),
-							...(attribution?.utm.utmMedium
-								? { utm_medium: attribution.utm.utmMedium }
-								: {}),
-							...(attribution?.utm.utmCampaign
-								? { utm_campaign: attribution.utm.utmCampaign }
-								: {}),
-						});
-						if (attribution) {
-							await db
-								.insert(userAttribution)
-								.values({
+						if (!enrolledOrgId) {
+							const personalOrg = await auth.api.createOrganization({
+								body: {
+									name: `${user.name}'s Team`,
+									slug: `${user.id.slice(0, 8)}-team`,
 									userId: user.id,
-									utmSource: attribution.utm.utmSource,
-									utmMedium: attribution.utm.utmMedium,
-									utmCampaign: attribution.utm.utmCampaign,
-									utmTerm: attribution.utm.utmTerm,
-									utmContent: attribution.utm.utmContent,
-									landingPage: attribution.landingPage,
-									referrer: attribution.referrer,
-								})
-								.onConflictDoNothing();
+								},
+							});
+							enrolledOrgId = personalOrg?.id ?? null;
 						}
+
+						if (enrolledOrgId) {
+							await db
+								.update(authSchema.sessions)
+								.set({ activeOrganizationId: enrolledOrgId })
+								.where(eq(authSchema.sessions.userId, user.id));
+						}
+
+						// First-touch attribution: persist the landing UTM/referrer captured
+						// in the `rox_attribution` cookie. Best-effort — wrapped so a failure
+						// here can never block account creation. Idempotent via the unique
+						// user_id index (first-touch is never overwritten).
+						try {
+							const ctx = (context ?? {}) as {
+								headers?: Headers;
+								request?: { headers?: Headers };
+							};
+							const cookieHeader =
+								ctx.headers?.get("cookie") ??
+								ctx.request?.headers?.get("cookie") ??
+								null;
+							const attribution = parseAttributionCookieValue(
+								parseCookieHeader(cookieHeader, ATTRIBUTION_COOKIE_NAME),
+							);
+							captureAuthEvent(ANALYTICS_EVENTS.ACCOUNT_CREATED, user.id, {
+								...(attribution?.utm.utmSource
+									? { utm_source: attribution.utm.utmSource }
+									: {}),
+								...(attribution?.utm.utmMedium
+									? { utm_medium: attribution.utm.utmMedium }
+									: {}),
+								...(attribution?.utm.utmCampaign
+									? { utm_campaign: attribution.utm.utmCampaign }
+									: {}),
+							});
+							if (attribution) {
+								await db
+									.insert(userAttribution)
+									.values({
+										userId: user.id,
+										utmSource: attribution.utm.utmSource,
+										utmMedium: attribution.utm.utmMedium,
+										utmCampaign: attribution.utm.utmCampaign,
+										utmTerm: attribution.utm.utmTerm,
+										utmContent: attribution.utm.utmContent,
+										landingPage: attribution.landingPage,
+										referrer: attribution.referrer,
+									})
+									.onConflictDoNothing();
+							}
+						} catch (error) {
+							console.error(
+								`[attribution] Failed to persist first-touch for ${user.id}:`,
+								error,
+							);
+						}
+					} catch (err) {
+						console.error(
+							`[user.create.after] post-signup enrollment failed (non-fatal) for ${user.id}:`,
+							err,
+						);
+					}
+				},
+			},
+		},
+		account: {
+			create: {
+				// ROX-522: populate `user_profiles` for Yandex (genericOAuth) sign-ups.
+				// genericOAuth's `mapProfileToUser` can only return Partial<User>, so
+				// the cached provider identity (display username / avatar) is stashed
+				// transiently in `yandex-oauth.ts` keyed by the Yandex account id and
+				// drained here once the account row exists. Best-effort: a profile
+				// write must never block authentication.
+				after: async (account: {
+					userId: string;
+					providerId: string;
+					accountId: string;
+				}) => {
+					if (account.providerId !== YANDEX_PROVIDER_ID) return;
+					try {
+						const pending = await takePendingYandexProfile(account.accountId);
+						await upsertSocialProfile({
+							userId: account.userId,
+							registrationProvider: "yandex",
+							providerAccountId: account.accountId,
+							displayUsername: pending?.displayUsername ?? null,
+							providerAvatarUrl: pending?.providerAvatarUrl ?? null,
+						});
 					} catch (error) {
 						console.error(
-							`[attribution] Failed to persist first-touch for ${user.id}:`,
+							`[yandex] failed to write user_profiles for ${account.userId}:`,
 							error,
 						);
 					}
@@ -318,6 +390,19 @@ export const auth = betterAuth({
 			},
 		}),
 		expo(),
+		// ROX-522: Yandex ID via genericOAuth. The provider list is empty when
+		// Yandex credentials are absent, so the plugin is inert in environments
+		// without RU social login (the callback path stays registered but no
+		// provider matches).
+		genericOAuth({
+			config: [buildYandexProvider()].filter(
+				(provider): provider is NonNullable<typeof provider> =>
+					provider !== null,
+			),
+		}),
+		// ROX-522: Telegram Login Widget (custom, not OAuth). Mounts
+		// `GET /api/auth/telegram/callback`.
+		telegramLogin(),
 		organization({
 			creatorRole: "owner",
 			invitationExpiresIn: 60 * 60 * 24 * 7,

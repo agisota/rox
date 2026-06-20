@@ -37,6 +37,10 @@ export const env = createEnv({
 		NEXT_PUBLIC_SENTRY_ENVIRONMENT: z
 			.enum(["development", "preview", "production"])
 			.optional(),
+		// ROX-522: Telegram Login Widget bot username (public — drives the
+		// widget's `data-telegram-login`). Optional so the button is hidden when
+		// Telegram login isn't configured.
+		NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: z.string().optional(),
 	},
 
 	experimental__runtimeEnv: {
@@ -52,6 +56,8 @@ export const env = createEnv({
 			process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY,
 		NEXT_PUBLIC_SENTRY_DSN_WEB: process.env.NEXT_PUBLIC_SENTRY_DSN_WEB,
 		NEXT_PUBLIC_SENTRY_ENVIRONMENT: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
+		NEXT_PUBLIC_TELEGRAM_BOT_USERNAME:
+			process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME,
 	},
 
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,
