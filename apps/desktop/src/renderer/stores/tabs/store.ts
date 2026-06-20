@@ -1,4 +1,4 @@
-import type { MosaicNode } from "react-mosaic-component";
+import type { MosaicBranch, MosaicNode } from "react-mosaic-component";
 import { updateTree } from "react-mosaic-component";
 import { getFileOpenMode } from "renderer/hooks/useFileOpenMode";
 import { posthog } from "renderer/lib/posthog";
@@ -19,6 +19,7 @@ import {
 	findNextTab,
 	withDerivedTabNames,
 } from "./actions/close-tab";
+import { pushActiveToHistory } from "./actions/history";
 import {
 	mergeTabIntoTab,
 	movePaneToNewTab,
@@ -28,6 +29,7 @@ import type {
 	AddFileViewerPaneOptions,
 	AddTabWithMultiplePanesOptions,
 	CommentPaneData,
+	SplitPaneOptions,
 	TabsState,
 	TabsStore,
 } from "./types";
@@ -103,6 +105,94 @@ const cleanupEditorPaneState = (paneId: string): void => {
 	deleteDocumentBuffer(session.documentKey);
 };
 
+type SplitPaneUpdate = {
+	patch: Pick<TabsState, "tabs" | "panes" | "focusedPaneIds">;
+	panelType: "terminal" | "chat" | "browser";
+	workspaceId: string;
+	paneId: string;
+};
+
+/**
+ * Pure computation shared by splitPaneVertical (direction "row") and
+ * splitPaneHorizontal (direction "column"). The two public actions were
+ * ~95% identical, differing only by the mosaic split direction. Returns the
+ * state patch plus the metadata needed for the `panel_opened` analytics event,
+ * or `null` when the split is a no-op (missing tab or source pane).
+ */
+const computeSplitPaneUpdate = (
+	state: TabsState,
+	direction: "row" | "column",
+	tabId: string,
+	sourcePaneId: string,
+	path?: MosaicBranch[],
+	options?: SplitPaneOptions,
+): SplitPaneUpdate | null => {
+	const tab = state.tabs.find((t) => t.id === tabId);
+	if (!tab) return null;
+
+	const sourcePane = state.panes[sourcePaneId];
+	if (!sourcePane || sourcePane.tabId !== tabId) return null;
+
+	const paneType = options?.paneType ?? "terminal";
+	const newPane =
+		paneType === "chat"
+			? createChatPane(tabId)
+			: paneType === "webview"
+				? createBrowserPane(tabId)
+				: createPane(tabId, "terminal", options);
+	const panelType =
+		paneType === "chat"
+			? "chat"
+			: paneType === "webview"
+				? "browser"
+				: "terminal";
+
+	let newLayout: MosaicNode<string>;
+	if (path && path.length > 0) {
+		// Split at a specific path in the layout
+		newLayout = updateTree(tab.layout, [
+			{
+				path,
+				spec: {
+					$set: {
+						direction,
+						first: sourcePaneId,
+						second: newPane.id,
+						splitPercentage: 50,
+					},
+				},
+			},
+		]);
+	} else {
+		// Split the pane directly
+		newLayout = {
+			direction,
+			first: tab.layout,
+			second: newPane.id,
+			splitPercentage: 50,
+		};
+	}
+
+	const newPanes = { ...state.panes, [newPane.id]: newPane };
+	const tabName = deriveTabName(newPanes, tabId);
+
+	return {
+		patch: {
+			tabs: state.tabs.map((t) =>
+				t.id === tabId ? { ...t, layout: newLayout, name: tabName } : t,
+			),
+			panes: newPanes,
+			focusedPaneIds: {
+				...state.focusedPaneIds,
+				[tabId]: newPane.id,
+			},
+		},
+		panelType,
+		workspaceId: tab.workspaceId,
+		paneId: newPane.id,
+	};
+};
+
 export const useTabsStore = create<TabsStore>()(
 	devtools(
 		persist(
@@ -126,12 +216,10 @@ export const useTabsStore = create<TabsStore>()(
 
 					const currentActiveId = state.activeTabIds[workspaceId];
 					const historyStack = state.tabHistoryStacks[workspaceId] || [];
-					const newHistoryStack = currentActiveId
-						? [
-								currentActiveId,
-								...historyStack.filter((id) => id !== currentActiveId),
-							]
-						: historyStack;
+					const newHistoryStack = pushActiveToHistory(
+						historyStack,
+						currentActiveId,
+					);
 
 					set({
 						tabs: [...state.tabs, tab],
@@ -166,12 +254,10 @@ export const useTabsStore = create<TabsStore>()(
 
 					const currentActiveId = state.activeTabIds[workspaceId];
 					const historyStack = state.tabHistoryStacks[workspaceId] || [];
-					const newHistoryStack = currentActiveId
-						? [
-								currentActiveId,
-								...historyStack.filter((id) => id !== currentActiveId),
-							]
-						: historyStack;
+					const newHistoryStack = pushActiveToHistory(
+						historyStack,
+						currentActiveId,
+					);
 
 					set({
 						tabs: [...state.tabs, tab],
@@ -233,12 +319,10 @@ export const useTabsStore = create<TabsStore>()(
 
 					const currentActiveId = state.activeTabIds[workspaceId];
 					const historyStack = state.tabHistoryStacks[workspaceId] || [];
-					const newHistoryStack = currentActiveId
-						? [
-								currentActiveId,
-								...historyStack.filter((id) => id !== currentActiveId),
-							]
-						: historyStack;
+					const newHistoryStack = pushActiveToHistory(
+						historyStack,
+						currentActiveId,
+					);
 
 					set({
 						tabs: [...state.tabs, tab],
@@ -885,12 +969,10 @@ export const useTabsStore = create<TabsStore>()(
 
 						const currentActiveId = state.activeTabIds[workspaceId];
 						const historyStack = state.tabHistoryStacks[workspaceId] || [];
-						const newHistoryStack = currentActiveId
-							? [
-									currentActiveId,
-									...historyStack.filter((id) => id !== currentActiveId),
-								]
-							: historyStack;
+						const newHistoryStack = pushActiveToHistory(
+							historyStack,
+							currentActiveId,
+						);
 
 						set({
 							tabs: [...state.tabs, newTab],
@@ -1321,140 +1403,42 @@ export const useTabsStore = create<TabsStore>()(
 
 				// Split operations
 				splitPaneVertical: (tabId, sourcePaneId, path, options) => {
-					const state = get();
-					const tab = state.tabs.find((t) => t.id === tabId);
-					if (!tab) return;
+					const update = computeSplitPaneUpdate(
+						get(),
+						"row",
+						tabId,
+						sourcePaneId,
+						path,
+						options,
+					);
+					if (!update) return;
 
-					const sourcePane = state.panes[sourcePaneId];
-					if (!sourcePane || sourcePane.tabId !== tabId) return;
-
-					const paneType = options?.paneType ?? "terminal";
-					const newPane =
-						paneType === "chat"
-							? createChatPane(tabId)
-							: paneType === "webview"
-								? createBrowserPane(tabId)
-								: createPane(tabId, "terminal", options);
-					const panelType =
-						paneType === "chat"
-							? "chat"
-							: paneType === "webview"
-								? "browser"
-								: "terminal";
-
-					let newLayout: MosaicNode<string>;
-					if (path && path.length > 0) {
-						// Split at a specific path in the layout
-						newLayout = updateTree(tab.layout, [
-							{
-								path,
-								spec: {
-									$set: {
-										direction: "row",
-										first: sourcePaneId,
-										second: newPane.id,
-										splitPercentage: 50,
-									},
-								},
-							},
-						]);
-					} else {
-						// Split the pane directly
-						newLayout = {
-							direction: "row",
-							first: tab.layout,
-							second: newPane.id,
-							splitPercentage: 50,
-						};
-					}
-
-					const newPanes = { ...state.panes, [newPane.id]: newPane };
-					const tabName = deriveTabName(newPanes, tabId);
-
-					set({
-						tabs: state.tabs.map((t) =>
-							t.id === tabId ? { ...t, layout: newLayout, name: tabName } : t,
-						),
-						panes: newPanes,
-						focusedPaneIds: {
-							...state.focusedPaneIds,
-							[tabId]: newPane.id,
-						},
-					});
+					set(update.patch);
 
 					posthog.capture("panel_opened", {
-						panel_type: panelType,
-						workspace_id: tab.workspaceId,
-						pane_id: newPane.id,
+						panel_type: update.panelType,
+						workspace_id: update.workspaceId,
+						pane_id: update.paneId,
 					});
 				},
 
 				splitPaneHorizontal: (tabId, sourcePaneId, path, options) => {
-					const state = get();
-					const tab = state.tabs.find((t) => t.id === tabId);
-					if (!tab) return;
+					const update = computeSplitPaneUpdate(
+						get(),
+						"column",
+						tabId,
+						sourcePaneId,
+						path,
+						options,
+					);
+					if (!update) return;
 
-					const sourcePane = state.panes[sourcePaneId];
-					if (!sourcePane || sourcePane.tabId !== tabId) return;
-
-					const paneType = options?.paneType ?? "terminal";
-					const newPane =
-						paneType === "chat"
-							? createChatPane(tabId)
-							: paneType === "webview"
-								? createBrowserPane(tabId)
-								: createPane(tabId, "terminal", options);
-					const panelType =
-						paneType === "chat"
-							? "chat"
-							: paneType === "webview"
-								? "browser"
-								: "terminal";
-
-					let newLayout: MosaicNode<string>;
-					if (path && path.length > 0) {
-						// Split at a specific path in the layout
-						newLayout = updateTree(tab.layout, [
-							{
-								path,
-								spec: {
-									$set: {
-										direction: "column",
-										first: sourcePaneId,
-										second: newPane.id,
-										splitPercentage: 50,
-									},
-								},
-							},
-						]);
-					} else {
-						// Split the pane directly
-						newLayout = {
-							direction: "column",
-							first: tab.layout,
-							second: newPane.id,
-							splitPercentage: 50,
-						};
-					}
-
-					const newPanes = { ...state.panes, [newPane.id]: newPane };
-					const tabName = deriveTabName(newPanes, tabId);
-
-					set({
-						tabs: state.tabs.map((t) =>
-							t.id === tabId ? { ...t, layout: newLayout, name: tabName } : t,
-						),
-						panes: newPanes,
-						focusedPaneIds: {
-							...state.focusedPaneIds,
-							[tabId]: newPane.id,
-						},
-					});
+					set(update.patch);
 
 					posthog.capture("panel_opened", {
-						panel_type: panelType,
-						workspace_id: tab.workspaceId,
-						pane_id: newPane.id,
+						panel_type: update.panelType,
+						workspace_id: update.workspaceId,
+						pane_id: update.paneId,
 					});
 				},
 
@@ -1567,12 +1551,10 @@ export const useTabsStore = create<TabsStore>()(
 
 					const currentActiveId = state.activeTabIds[workspaceId];
 					const historyStack = state.tabHistoryStacks[workspaceId] || [];
-					const newHistoryStack = currentActiveId
-						? [
-								currentActiveId,
-								...historyStack.filter((id) => id !== currentActiveId),
-							]
-						: historyStack;
+					const newHistoryStack = pushActiveToHistory(
+						historyStack,
+						currentActiveId,
+					);
 
 					set({
 						tabs: [...state.tabs, tab],
@@ -1612,12 +1594,10 @@ export const useTabsStore = create<TabsStore>()(
 
 					const currentActiveId = state.activeTabIds[workspaceId];
 					const historyStack = state.tabHistoryStacks[workspaceId] || [];
-					const newHistoryStack = currentActiveId
-						? [
-								currentActiveId,
-								...historyStack.filter((id) => id !== currentActiveId),
-							]
-						: historyStack;
+					const newHistoryStack = pushActiveToHistory(
+						historyStack,
+						currentActiveId,
+					);
 
 					set({
 						tabs: [...state.tabs, tab],
@@ -2046,12 +2026,10 @@ export const useTabsStore = create<TabsStore>()(
 
 					const currentActiveId = state.activeTabIds[workspaceId];
 					const historyStack = state.tabHistoryStacks[workspaceId] || [];
-					const newHistoryStack = currentActiveId
-						? [
-								currentActiveId,
-								...historyStack.filter((id) => id !== currentActiveId),
-							]
-						: historyStack;
+					const newHistoryStack = pushActiveToHistory(
+						historyStack,
+						currentActiveId,
+					);
 
 					const firstPaneId = getFirstPaneId(restoredTab.layout);
 
