@@ -20,7 +20,9 @@ import { Area, AreaChart, XAxis, YAxis } from "recharts";
 interface RevenueData {
 	date: string;
 	revenue: number;
-	mrr: number;
+	// Prepaid Rox economy: there is no recurring revenue, so MRR is undefined
+	// (the server returns null). Kept for shape-compat; the chart plots revenue.
+	mrr: number | null;
 }
 
 interface RevenueTrendChartProps {
@@ -31,8 +33,8 @@ interface RevenueTrendChartProps {
 }
 
 const chartConfig = {
-	mrr: {
-		label: "MRR",
+	revenue: {
+		label: "Revenue",
 		color: "var(--chart-4)",
 	},
 } satisfies ChartConfig;
@@ -52,7 +54,7 @@ export function RevenueTrendChart({
 	error,
 	headerAction,
 }: RevenueTrendChartProps) {
-	const currentMrr = data?.[data.length - 1]?.mrr ?? 0;
+	const totalRevenue = data?.reduce((sum, d) => sum + d.revenue, 0) ?? 0;
 
 	// Show ~7 ticks evenly distributed
 	const tickInterval = data ? Math.max(0, Math.floor(data.length / 7) - 1) : 0;
@@ -63,7 +65,9 @@ export function RevenueTrendChart({
 				<div className="flex items-center justify-between">
 					<div>
 						<CardTitle>Revenue</CardTitle>
-						<CardDescription>{formatCurrency(currentMrr)} MRR</CardDescription>
+						<CardDescription>
+							{formatCurrency(totalRevenue)} from confirmed top-ups
+						</CardDescription>
 					</div>
 					{headerAction}
 				</div>
@@ -108,9 +112,9 @@ export function RevenueTrendChart({
 							/>
 							<Area
 								type="monotone"
-								dataKey="mrr"
-								stroke="var(--color-mrr)"
-								fill="var(--color-mrr)"
+								dataKey="revenue"
+								stroke="var(--color-revenue)"
+								fill="var(--color-revenue)"
 								fillOpacity={0.2}
 							/>
 						</AreaChart>
