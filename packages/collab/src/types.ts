@@ -74,6 +74,17 @@ export function dashboardRoomId(
 }
 
 /**
+ * Room-id factory for collaborative note editing (Suite P2 D7).
+ *
+ * Notes rooms stay org-scoped (`org:{organizationId}:note:{noteId}`) so the
+ * existing id-derived `authorizeRoom` check works unchanged — only the room
+ * segment differs from the dashboard convention.
+ */
+export function noteRoomId(organizationId: string, noteId: string): string {
+	return `org:${organizationId}:note:${noteId}`;
+}
+
+/**
  * Parse the organization id back out of a room id. Returns `null` for ids that
  * do not match the `org:{orgId}:...` shape. The server uses this to verify the
  * caller's org membership matches the room they are requesting.
