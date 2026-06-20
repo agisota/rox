@@ -22,6 +22,7 @@ import { journalRouter } from "./router/journal";
 import { knowledgeRouter } from "./router/knowledge";
 import { mcpAdminRouter } from "./router/mcp-admin";
 import { memoryRouter } from "./router/memory";
+import { notebooksRouter } from "./router/notebooks";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
 import {
@@ -77,6 +78,7 @@ export const appRouter = createTRPCRouter({
 	journal: journalRouter,
 	knowledge: knowledgeRouter,
 	memory: memoryRouter,
+	notebooks: notebooksRouter,
 	notes: notesRouter,
 	organization: organizationRouter,
 	pipeline: pipelineRouter,
