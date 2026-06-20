@@ -65,8 +65,48 @@ export interface TunnelPong {
 	type: "pong";
 }
 
+// ── Streaming HTTP response (C6) ─────────────────────────────────────
+//
+// The buffered `TunnelHttpResponse` above carries the entire body in one
+// frame — fine for ordinary JSON tRPC calls, but it stalls Server-Sent
+// Events / chunked responses (agent run streams, chat completions) until
+// the upstream finishes, defeating the point of streaming. The three
+// frames below let the host forward an upstream body incrementally:
+//
+//   http:response:head   — status + headers, sent once when the upstream
+//                          response begins; no body.
+//   http:response:chunk  — one slice of the body; many per response.
+//   http:response:end    — terminates the stream (optionally with an
+//                          error if the upstream/proxy failed mid-stream).
+//
+// All three correlate to the originating request by `id`, exactly like the
+// buffered path. The buffered `http:response` is still used for non-stream
+// responses, so this is purely additive and backward compatible.
+export interface TunnelHttpResponseHead {
+	type: "http:response:head";
+	id: string;
+	status: number;
+	headers: Record<string, string>;
+}
+
+export interface TunnelHttpResponseChunk {
+	type: "http:response:chunk";
+	id: string;
+	data: string;
+	encoding?: "base64";
+}
+
+export interface TunnelHttpResponseEnd {
+	type: "http:response:end";
+	id: string;
+	error?: string;
+}
+
 export type TunnelResponse =
 	| TunnelHttpResponse
+	| TunnelHttpResponseHead
+	| TunnelHttpResponseChunk
+	| TunnelHttpResponseEnd
 	| TunnelWsFrame
 	| TunnelWsClose
 	| TunnelPong;
