@@ -129,4 +129,19 @@ export const FEATURE_FLAGS = {
 	 * defaults for other users.
 	 */
 	RELAY_URL_OVERRIDE: "relay-url-override",
+	/**
+	 * Gates the Network Filter / Managed DNS settings surface (WS-N). The actual
+	 * NextDNS wiring lands separately (`plans/2026-06-18-managed-nextdns-profile.md`);
+	 * this flag exposes the gated shell. Resolved override-first via the
+	 * `user_feature_flags` table (WS-O), falling back to a PostHog rollout cohort —
+	 * so "developer-id gating" = an admin force-on row for the owner's user id.
+	 */
+	NETWORK_FILTER: "network-filter",
+	/**
+	 * Explicit per-user gate for the remote-agent / automation surface (WS-N).
+	 * Complements `DISABLE_REMOTE_AGENT` (the kill-switch) by letting the owner
+	 * promote the automation watcher from cohort-only to an explicit opt-in key.
+	 * Same override-first resolution as the other keys; no schema change needed.
+	 */
+	AUTOMATION_ACCESS: "automation-access",
 } as const;

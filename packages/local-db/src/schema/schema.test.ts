@@ -5,7 +5,9 @@ import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 
 import * as schema from "./schema";
 import {
+	browserDataConsent,
 	browserHistory,
+	browserHistoryEntries,
 	projects,
 	savedPrompts,
 	settings,
@@ -137,6 +139,27 @@ CREATE TABLE saved_prompts (
   body TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
+);
+CREATE TABLE browser_history_entries (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  favicon_url TEXT,
+  source TEXT NOT NULL DEFAULT 'native',
+  visited_at INTEGER NOT NULL,
+  imported_at INTEGER,
+  uploaded_at INTEGER
+);
+CREATE UNIQUE INDEX browser_history_entries_workspace_url_visited_unq
+  ON browser_history_entries (workspace_id, url, visited_at);
+CREATE TABLE browser_data_consent (
+  id TEXT PRIMARY KEY,
+  accepted INTEGER NOT NULL DEFAULT 0,
+  accepted_at INTEGER,
+  revoked_at INTEGER,
+  last_uploaded_at INTEGER,
+  sources TEXT NOT NULL DEFAULT '[]'
 );
 `;
 
@@ -386,5 +409,109 @@ describe("browser history + saved prompts round-trip", () => {
 
 		const all = db.select().from(savedPrompts).all();
 		expect(all).toHaveLength(1);
+	});
+});
+
+describe("browser_history_entries (per-workspace, D4) round-trip", () => {
+	test("applies source/title defaults and generates id + visited_at", () => {
+		const row = single(
+			db
+				.insert(browserHistoryEntries)
+				.values({ workspaceId: "ws-1", url: "https://example.test" })
+				.returning()
+				.all(),
+		);
+		expect(row.id).toBeTypeOf("string");
+		expect(row.source).toBe("native");
+		expect(row.title).toBe("");
+		expect(row.visitedAt).toBeTypeOf("number");
+		expect(row.importedAt).toBeNull();
+		expect(row.uploadedAt).toBeNull();
+	});
+
+	test("the same URL coexists across different workspaces (composite unique)", () => {
+		db.insert(browserHistoryEntries)
+			.values({
+				workspaceId: "ws-a",
+				url: "https://shared.test",
+				visitedAt: 100,
+			})
+			.run();
+		db.insert(browserHistoryEntries)
+			.values({
+				workspaceId: "ws-b",
+				url: "https://shared.test",
+				visitedAt: 100,
+			})
+			.run();
+
+		const all = db.select().from(browserHistoryEntries).all();
+		expect(all).toHaveLength(2);
+	});
+
+	test("rejects an exact (workspace, url, visited_at) duplicate", () => {
+		db.insert(browserHistoryEntries)
+			.values({ workspaceId: "ws-a", url: "https://dup.test", visitedAt: 200 })
+			.run();
+
+		expect(() =>
+			db
+				.insert(browserHistoryEntries)
+				.values({
+					workspaceId: "ws-a",
+					url: "https://dup.test",
+					visitedAt: 200,
+				})
+				.run(),
+		).toThrow();
+	});
+
+	test("retains an imported row with its imported_at + upload watermark", () => {
+		const row = single(
+			db
+				.insert(browserHistoryEntries)
+				.values({
+					workspaceId: "ws-1",
+					url: "https://imported.test",
+					source: "import",
+					visitedAt: 300,
+					importedAt: 350,
+					uploadedAt: 400,
+				})
+				.returning()
+				.all(),
+		);
+		expect(row.source).toBe("import");
+		expect(row.importedAt).toBe(350);
+		expect(row.uploadedAt).toBe(400);
+	});
+});
+
+describe("browser_data_consent (D4) round-trip", () => {
+	test("defaults to not-accepted with an empty sources array", () => {
+		const row = single(
+			db.insert(browserDataConsent).values({}).returning().all(),
+		);
+		expect(row.accepted).toBe(false);
+		expect(row.sources).toEqual([]);
+		expect(row.acceptedAt).toBeNull();
+		expect(row.revokedAt).toBeNull();
+	});
+
+	test("round-trips an accepted record with chosen sources", () => {
+		const row = single(
+			db
+				.insert(browserDataConsent)
+				.values({
+					accepted: true,
+					acceptedAt: 1000,
+					sources: ["chrome", "arc"],
+				})
+				.returning()
+				.all(),
+		);
+		expect(row.accepted).toBe(true);
+		expect(row.sources).toEqual(["chrome", "arc"]);
+		expect(row.acceptedAt).toBe(1000);
 	});
 });

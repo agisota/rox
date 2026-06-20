@@ -4,6 +4,7 @@ import { createAnalyticsRouter } from "./analytics";
 import { createAuthRouter } from "./auth";
 import { createAutoUpdateRouter } from "./auto-update";
 import { createBrowserRouter } from "./browser/browser";
+import { createBrowserDataRouter } from "./browser-data";
 import { createBrowserHistoryRouter } from "./browser-history";
 import { createCacheRouter } from "./cache";
 import { createChangesRouter } from "./changes";
@@ -39,6 +40,7 @@ export const createAppRouter = (getWindow: () => BrowserWindow | null) => {
 		analytics: createAnalyticsRouter(),
 		browser: createBrowserRouter(),
 		browserHistory: createBrowserHistoryRouter(),
+		browserData: createBrowserDataRouter(),
 		auth: createAuthRouter(),
 		autoUpdate: createAutoUpdateRouter(),
 		cache: createCacheRouter(),
