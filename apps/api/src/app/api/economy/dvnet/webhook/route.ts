@@ -7,6 +7,7 @@ import {
 import { toLedgerKind } from "@rox/shared/rox-ledger-kind";
 import { creditConfirmedPayment } from "@rox/shared/rox-topup";
 import { eq } from "drizzle-orm";
+import { env } from "@/env";
 import { apiError } from "@/lib/api-response";
 
 /**
@@ -23,6 +24,14 @@ import { apiError } from "@/lib/api-response";
  * spoofed/corrupt body is rejected rather than silently credited.
  */
 export async function POST(request: Request) {
+	// dv.net is temporarily disabled (not in use). This webhook has NO inbound
+	// signature verification, so while disabled we reject every call instead of
+	// crediting Rox balance on unauthenticated requests. Re-enabling requires
+	// DVNET_ENABLED="true" AND adding signature verification first.
+	if (env.DVNET_ENABLED !== "true") {
+		return apiError("dv.net integration disabled", 503);
+	}
+
 	let rawBody: unknown;
 	try {
 		rawBody = await request.json();
