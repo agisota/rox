@@ -1,6 +1,7 @@
 import { chatServiceTrpc } from "@rox/chat/client";
 import { toast } from "@rox/ui/sonner";
 import { useCallback } from "react";
+import { logger } from "renderer/lib/logger";
 import type {
 	McpOverviewPayload,
 	ModelOption,
@@ -144,7 +145,7 @@ export function useSlashCommandExecutor({
 								onClearError();
 								onShowMcpOverview(overview);
 							} catch (error) {
-								console.warn(
+								logger.warn(
 									"[chat] Failed to load MCP overview from settings",
 									error,
 								);
@@ -163,7 +164,7 @@ export function useSlashCommandExecutor({
 								(resolvedCommand.action as { type: unknown }).type,
 							);
 							const errorMessage = `Unsupported slash command action: ${unknownActionType}`;
-							console.warn("[chat] Unsupported slash command action", {
+							logger.warn("[chat] Unsupported slash command action", {
 								action: unknownActionType,
 							});
 							onSetErrorMessage(errorMessage);
@@ -200,7 +201,7 @@ export function useSlashCommandExecutor({
 					nextText: promptResolution.nextText,
 				};
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[chat] Failed to resolve slash command, sending raw input",
 					error,
 				);

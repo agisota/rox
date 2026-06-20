@@ -1,6 +1,7 @@
 import type { ChildProcess } from "node:child_process";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
+import { logger } from "main/lib/logger";
 
 interface PlaySoundCallbacks {
 	onComplete?: () => void;
@@ -21,7 +22,7 @@ export function playSoundFile(
 	callbacks?: PlaySoundCallbacks,
 ): ChildProcess | null {
 	if (!existsSync(soundPath)) {
-		console.warn(`[play-sound] Sound file not found: ${soundPath}`);
+		logger.warn(`[play-sound] Sound file not found: ${soundPath}`);
 		return null;
 	}
 

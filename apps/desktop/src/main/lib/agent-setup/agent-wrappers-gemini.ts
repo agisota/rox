@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import { env } from "shared/env.shared";
 import {
 	buildWrapperScript,
@@ -72,7 +73,7 @@ export function getGeminiSettingsJsonContent(hookScriptPath: string): string {
 			existing = JSON.parse(fs.readFileSync(globalPath, "utf-8"));
 		}
 	} catch {
-		console.warn(
+		logger.warn(
 			"[agent-setup] Could not parse existing ~/.gemini/settings.json, merging carefully",
 		);
 	}
@@ -126,7 +127,7 @@ export function createGeminiHookScript(): void {
 	const scriptPath = getGeminiHookScriptPath();
 	const content = getGeminiHookScriptContent();
 	const changed = writeFileIfChanged(scriptPath, content, 0o755);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} Gemini hook script`,
 	);
 }
@@ -146,7 +147,7 @@ export function createGeminiSettingsJson(): void {
 	const dir = path.dirname(globalPath);
 	fs.mkdirSync(dir, { recursive: true });
 	const changed = writeFileIfChanged(globalPath, content, 0o644);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} Gemini settings.json`,
 	);
 }

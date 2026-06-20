@@ -12,6 +12,7 @@ import {
 	PROJECTS_DIR_NAME,
 	ROX_DIR_NAME,
 } from "shared/constants";
+import { logger } from "shared/logger";
 import type { LocalSetupConfig, SetupConfig } from "shared/types";
 
 /**
@@ -31,7 +32,7 @@ export function copyRoxConfigToWorktree(
 		try {
 			cpSync(mainRoxDir, worktreeRoxDir, { recursive: true });
 		} catch (error) {
-			console.error(
+			logger.error(
 				`Failed to copy ${PROJECT_ROX_DIR_NAME} to worktree: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
@@ -68,7 +69,7 @@ function readConfigFile(configPath: string): SetupConfig | null {
 
 		return parsed;
 	} catch (error) {
-		console.error(
+		logger.error(
 			`Failed to read setup config at ${configPath}: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		return null;
@@ -111,7 +112,7 @@ function readLocalConfigFile(filePath: string): LocalSetupConfig | null {
 
 		return parsed;
 	} catch (error) {
-		console.error(
+		logger.error(
 			`Failed to read local config at ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		return null;

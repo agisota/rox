@@ -1,3 +1,4 @@
+import { logger } from "shared/logger";
 import { execGitWithShellPath } from "../git-client";
 import { execWithShellEnv } from "../shell-env";
 import { getCachedRepoContextState, readCachedRepoContext } from "./cache";
@@ -15,8 +16,8 @@ async function refreshRepoContext(
 		const raw: unknown = JSON.parse(stdout);
 		const result = GHRepoResponseSchema.safeParse(raw);
 		if (!result.success) {
-			console.error("[GitHub] Repo schema validation failed:", result.error);
-			console.error("[GitHub] Raw data:", JSON.stringify(raw, null, 2));
+			logger.error("[GitHub] Repo schema validation failed:", result.error);
+			logger.error("[GitHub] Raw data:", JSON.stringify(raw, null, 2));
 			return null;
 		}
 
@@ -54,7 +55,7 @@ async function refreshRepoContext(
 
 		return context;
 	} catch (error) {
-		console.warn("[GitHub] Failed to refresh repo context:", error);
+		logger.warn("[GitHub] Failed to refresh repo context:", error);
 		return null;
 	}
 }

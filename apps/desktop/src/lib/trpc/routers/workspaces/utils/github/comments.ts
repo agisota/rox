@@ -1,4 +1,5 @@
 import type { PullRequestComment } from "@rox/local-db";
+import { logger } from "shared/logger";
 import type { z } from "zod";
 import { execWithShellEnv } from "../shell-env";
 import {
@@ -156,7 +157,7 @@ export function parsePaginatedApiArray(stdout: string): unknown[] {
 
 		return raw.flatMap((page) => (Array.isArray(page) ? page : [page]));
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[GitHub] Failed to parse paginated API array response:",
 			error instanceof Error ? error.message : String(error),
 		);
@@ -336,7 +337,7 @@ function parseJsonOrNull({
 	try {
 		return JSON.parse(stdout.trim());
 	} catch (error) {
-		console.warn(errorLabel, {
+		logger.warn(errorLabel, {
 			error,
 			stdout,
 			...context,
@@ -378,7 +379,7 @@ async function fetchAdditionalReviewThreadCommentsForThread({
 			);
 			stdout = result.stdout;
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				"[GitHub] Failed to fetch additional pull request review thread comments:",
 				{
 					error,
@@ -401,7 +402,7 @@ async function fetchAdditionalReviewThreadCommentsForThread({
 
 		const parsed = GHReviewThreadCommentsResponseSchema.safeParse(raw);
 		if (!parsed.success) {
-			console.warn(
+			logger.warn(
 				"[GitHub] Failed to parse pull request review thread comments response:",
 				parsed.error.message,
 			);
@@ -466,7 +467,7 @@ async function fetchReviewThreadCommentsForPullRequest(
 			});
 			stdout = result.stdout;
 		} catch (error) {
-			console.warn("[GitHub] Failed to fetch pull request review threads:", {
+			logger.warn("[GitHub] Failed to fetch pull request review threads:", {
 				error,
 				owner,
 				name,
@@ -488,7 +489,7 @@ async function fetchReviewThreadCommentsForPullRequest(
 
 		const parsed = GHReviewThreadsResponseSchema.safeParse(raw);
 		if (!parsed.success) {
-			console.warn(
+			logger.warn(
 				"[GitHub] Failed to parse pull request review threads response:",
 				parsed.error.message,
 			);
@@ -583,14 +584,14 @@ export async function fetchPullRequestComments({
 		conversationResult.status === "fulfilled" ? conversationResult.value : [];
 
 	if (reviewThreadsResult.status === "rejected") {
-		console.warn(
+		logger.warn(
 			"[GitHub] Failed to fetch pull request review threads:",
 			reviewThreadsResult.reason,
 		);
 	}
 
 	if (conversationResult.status === "rejected") {
-		console.warn(
+		logger.warn(
 			"[GitHub] Failed to fetch pull request conversation comments:",
 			conversationResult.reason,
 		);

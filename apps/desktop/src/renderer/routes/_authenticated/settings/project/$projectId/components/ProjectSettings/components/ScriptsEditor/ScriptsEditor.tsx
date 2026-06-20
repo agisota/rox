@@ -8,6 +8,7 @@ import {
 	HiDocumentArrowUp,
 } from "react-icons/hi2";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { invalidateProjectScriptQueries } from "renderer/lib/project-scripts";
 import { EXTERNAL_LINKS } from "shared/constants";
 
@@ -68,7 +69,7 @@ function ScriptTextarea({
 				const content = await scriptFile.text();
 				onChange(content);
 			} catch (error) {
-				console.error("[scripts/import] Failed to read file:", error);
+				logger.error("[scripts/import] Failed to read file:", error);
 			}
 		},
 		[onChange],
@@ -265,7 +266,7 @@ export function ScriptsEditor({ projectId, className }: ScriptsEditorProps) {
 			// Reset to idle after showing "saved" for 2 seconds
 			savedTimerRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
 		} catch (error) {
-			console.error("[scripts/save] Failed to save:", error);
+			logger.error("[scripts/save] Failed to save:", error);
 			// Clear saved timer on error
 			if (savedTimerRef.current) {
 				clearTimeout(savedTimerRef.current);

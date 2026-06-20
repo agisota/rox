@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import { env } from "shared/env.shared";
 import { HOOKS_DIR } from "./paths";
 
@@ -48,5 +49,5 @@ export function createNotifyScript(): void {
 	const notifyPath = getNotifyScriptPath();
 	const script = getNotifyScriptContent();
 	const changed = writeFileIfChanged(notifyPath, script, 0o755);
-	console.log(`[agent-setup] ${changed ? "Updated" : "Verified"} notify hook`);
+	logger.info(`[agent-setup] ${changed ? "Updated" : "Verified"} notify hook`);
 }

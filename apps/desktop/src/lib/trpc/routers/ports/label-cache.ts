@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
 import { loadStaticPorts } from "main/lib/static-ports";
 import { PORTS_FILE_NAME, PROJECT_ROX_DIR_NAME } from "shared/constants";
+import { logger } from "shared/logger";
 import { getWorkspacePath } from "../workspaces/utils/worktree";
 
 interface LabelCacheEntry {
@@ -34,7 +35,7 @@ function safeGetPortsFileSignature(worktreePath: string): string | null {
 	try {
 		return getPortsFileSignature(worktreePath);
 	} catch (error) {
-		console.warn("[ports] Failed to stat static port labels:", {
+		logger.warn("[ports] Failed to stat static port labels:", {
 			worktreePath,
 			error,
 		});
@@ -48,7 +49,7 @@ function safeLoadLabelsForWorktree(
 	try {
 		return loadLabelsForWorktree(worktreePath);
 	} catch (error) {
-		console.warn("[ports] Failed to load static port labels:", {
+		logger.warn("[ports] Failed to load static port labels:", {
 			worktreePath,
 			error,
 		});

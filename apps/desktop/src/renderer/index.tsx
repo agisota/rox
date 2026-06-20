@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import { initSentry } from "./lib/sentry";
 
 initSentry();
@@ -67,11 +68,11 @@ void electronTrpcClient.window.getAppearance
 		}
 	})
 	.catch((error) => {
-		console.warn("[glass] Failed to apply persisted glass settings:", error);
+		logger.warn("[glass] Failed to apply persisted glass settings:", error);
 	});
 
 const handleDeepLink = (path: string) => {
-	console.log("[deep-link] Navigating to:", path);
+	logger.info("[deep-link] Navigating to:", path);
 	router.navigate({ to: path });
 };
 const ipcRenderer = window.ipcRenderer as typeof window.ipcRenderer | undefined;

@@ -27,6 +27,7 @@ import {
 } from "react-icons/lu";
 import { ColorSelector } from "renderer/components/ColorSelector";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useUpdateProject } from "renderer/react-query/projects/useUpdateProject";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { useProjectRename } from "renderer/screens/main/hooks/useProjectRename";
@@ -85,7 +86,7 @@ export function ProjectHeader({
 					});
 					shouldNavigate = currentWorkspace?.projectId === id;
 				} catch (error) {
-					console.warn(
+					logger.warn(
 						"[ProjectHeader] Failed to resolve current workspace before closing project",
 						error,
 					);

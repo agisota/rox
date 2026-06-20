@@ -15,6 +15,7 @@ import { Switch } from "@rox/ui/switch";
 import { Textarea } from "@rox/ui/textarea";
 import { motion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
+import { logger } from "renderer/lib/logger";
 
 type PendingPlanApproval = UseChatDisplayReturn["pendingPlanApproval"];
 
@@ -83,7 +84,7 @@ export function PendingPlanApprovalMessage({
 			});
 			setResolvedPlanId(planId);
 		} catch (error) {
-			console.error("Failed to submit plan approval response", error);
+			logger.error("Failed to submit plan approval response", error);
 			setSelectedAction(null);
 		} finally {
 			inFlightResponseRef.current = false;

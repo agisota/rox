@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { ROX_HOME_DIR_NAME } from "@rox/shared/rox-dirs";
 import { migrateRoxDir } from "@rox/shared/rox-dirs-node";
+import { logger } from "main/lib/logger";
 import { ROX_DIR_NAME } from "shared/constants";
 
 const ROX_HOME_DIR_ENV = "ROX_HOME_DIR";
@@ -22,7 +23,7 @@ if (!process.env[ROX_HOME_DIR_ENV] && ROX_DIR_NAME === ROX_HOME_DIR_NAME) {
 		join(homedir(), ROX_DIR_NAME),
 	);
 	if (migrated) {
-		console.info(
+		logger.info(
 			`[app-environment] Migrated legacy ~/.rox to ~/${ROX_DIR_NAME}`,
 		);
 	}
@@ -47,7 +48,7 @@ export function ensureRoxHomeDirExists(): void {
 	try {
 		chmodSync(ROX_HOME_DIR, ROX_HOME_DIR_MODE);
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[app-environment] Failed to chmod Rox home dir (best-effort):",
 			ROX_HOME_DIR,
 			error,

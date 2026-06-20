@@ -3,6 +3,7 @@ import {
 	execFile,
 } from "node:child_process";
 import { promisify } from "node:util";
+import { logger } from "shared/logger";
 import { shellEnv } from "shell-env";
 
 const execFileAsync = promisify(execFile);
@@ -94,7 +95,7 @@ export async function getShellEnvironment(
 		return { ...cachedEnv };
 	} catch (error) {
 		const isTimeout = error instanceof ShellEnvTimeoutError;
-		console.warn(
+		logger.warn(
 			`[shell-env] Failed to get shell environment${isTimeout ? " (timed out)" : ""}: ${error}. Falling back to process.env`,
 		);
 		const fallback: Record<string, string> = {};
@@ -252,7 +253,7 @@ export async function execWithShellEnv(
 		}
 
 		pathFixAttempted = true;
-		console.log("[shell-env] Command not found, deriving shell environment");
+		logger.info("[shell-env] Command not found, deriving shell environment");
 
 		try {
 			const shellEnvResult = await getShellEnvironment({ forceRefresh: true });
@@ -276,7 +277,7 @@ export async function execWithShellEnv(
 			if (shellEnvResult.PATH) {
 				process.env.PATH = shellEnvResult.PATH;
 				pathFixSucceeded = true;
-				console.log("[shell-env] Fixed process.env.PATH for GUI app");
+				logger.info("[shell-env] Fixed process.env.PATH for GUI app");
 			}
 			pathFixAttempted = false;
 			return result;
@@ -284,7 +285,7 @@ export async function execWithShellEnv(
 			// Shell env derivation or retry failed - allow future retries
 			pathFixAttempted = false;
 			pathFixSucceeded = false;
-			console.error("[shell-env] Retry failed:", retryError);
+			logger.error("[shell-env] Retry failed:", retryError);
 			throw retryError;
 		}
 	}

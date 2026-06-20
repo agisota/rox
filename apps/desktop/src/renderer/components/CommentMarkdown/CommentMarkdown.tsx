@@ -12,6 +12,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import { SafeImage } from "renderer/components/MarkdownRenderer/components";
+import { logger } from "renderer/lib/logger";
 import { CommentCodeBlock } from "./components/CommentCodeBlock";
 
 type ReactMarkdownComponents = ComponentProps<
@@ -42,7 +43,7 @@ function CopyableDetails({
 			.writeText((clone.textContent ?? "").trim())
 			.then(() => setIsCopied(true))
 			.catch((err) => {
-				console.error("[CommentMarkdown/copyDetails] Failed to copy:", err);
+				logger.error("[CommentMarkdown/copyDetails] Failed to copy:", err);
 			});
 	};
 	return (

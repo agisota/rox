@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import {
 	ROX_MANAGED_BINARIES,
 	type RoxManagedBinary,
@@ -49,7 +50,7 @@ function logModeDiagnostics(shellName: string): void {
 	const key = `${shellName}:native`;
 	if (modeDiagnosticsLogged.has(key)) return;
 	modeDiagnosticsLogged.add(key);
-	console.debug(
+	logger.debug(
 		`[agent-setup] shell integration mode=native shell=${shellName}`,
 	);
 }
@@ -234,7 +235,7 @@ export ZDOTDIR="$_rox_home"
 `;
 	const wroteZlogin = writeFileIfChanged(zloginPath, zloginScript, 0o644);
 	const changed = wroteZshenv || wroteZprofile || wroteZshrc || wroteZlogin;
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} zsh wrapper files`,
 	);
 }
@@ -291,7 +292,7 @@ else
 fi
 `;
 	const changed = writeFileIfChanged(rcfilePath, script, 0o644);
-	console.log(`[agent-setup] ${changed ? "Updated" : "Verified"} bash wrapper`);
+	logger.info(`[agent-setup] ${changed ? "Updated" : "Verified"} bash wrapper`);
 }
 
 export function getShellEnv(

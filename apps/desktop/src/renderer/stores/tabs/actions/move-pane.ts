@@ -4,6 +4,7 @@ import {
 	type MosaicNode,
 	updateTree,
 } from "react-mosaic-component";
+import { logger } from "renderer/lib/logger";
 import type { MosaicDropPosition, Pane, Tab, TabsState } from "../types";
 import {
 	addPaneToLayout,
@@ -47,7 +48,7 @@ export function movePaneToTab(
 	// Defense in depth: Check for duplicate pane in target tab
 	const targetPaneIds = extractPaneIdsFromLayout(targetTab.layout);
 	if (targetPaneIds.includes(paneId)) {
-		console.warn("[move-pane] Attempted to add duplicate pane:", paneId);
+		logger.warn("[move-pane] Attempted to add duplicate pane:", paneId);
 		return null;
 	}
 
@@ -125,7 +126,7 @@ export function mergeTabIntoTab(
 	// If not, there's a bug elsewhere — abort rather than inventing cleanup.
 	const sourcePaneIds = extractPaneIdsFromLayout(cleanedSourceLayout);
 	if (sourcePaneIds.length !== sourceValidIds.size) {
-		console.warn(
+		logger.warn(
 			"[mergeTabIntoTab] Source tab has orphaned panes — aborting merge",
 		);
 		return null;

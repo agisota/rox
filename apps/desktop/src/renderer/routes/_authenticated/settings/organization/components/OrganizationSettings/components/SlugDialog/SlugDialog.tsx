@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 import { z } from "zod";
 
 const slugSchema = z.object({
@@ -92,7 +93,7 @@ export function SlugDialog({
 
 				setSlugAvailable(result.data?.status ?? null);
 			} catch (error) {
-				console.error("[slug-dialog] Slug check failed:", error);
+				logger.error("[slug-dialog] Slug check failed:", error);
 				setSlugAvailable(null);
 			} finally {
 				setIsCheckingSlug(false);

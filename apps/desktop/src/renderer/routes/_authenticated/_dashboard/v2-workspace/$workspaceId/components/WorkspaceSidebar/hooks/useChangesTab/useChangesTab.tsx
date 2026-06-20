@@ -5,6 +5,7 @@ import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { RefreshCw } from "lucide-react";
 import { useCallback, useState } from "react";
+import { logger } from "renderer/lib/logger";
 import { useChangeset } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useChangeset";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import { useSidebarDiffRef } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useSidebarDiffRef";
@@ -158,7 +159,7 @@ export function useChangesTab({
 				utils.git.getBaseBranch.invalidate({ workspaceId }),
 			]);
 		} catch (error) {
-			console.warn("Failed to refresh changes tab", error);
+			logger.warn("Failed to refresh changes tab", error);
 			toast.error(
 				error instanceof Error ? error.message : "Failed to refresh changes",
 			);

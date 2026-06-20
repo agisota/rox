@@ -20,6 +20,7 @@ import {
 	LuLoaderCircle,
 	LuSparkles,
 } from "react-icons/lu";
+import { logger } from "renderer/lib/logger";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
 import {
@@ -127,7 +128,7 @@ export function QuickChatView() {
 				appendAssistant(NOT_CONFIGURED_NOTICE);
 			}
 		} catch (error) {
-			console.error("[quick-chat] completion failed", error);
+			logger.error("[quick-chat] completion failed", error);
 			appendAssistant(GENERIC_ERROR_NOTICE);
 		} finally {
 			setIsSending(false);

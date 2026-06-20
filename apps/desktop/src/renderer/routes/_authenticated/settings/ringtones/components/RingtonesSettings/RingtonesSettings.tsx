@@ -5,6 +5,7 @@ import { cn } from "@rox/ui/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HiArrowPath, HiCheck, HiPlay, HiPlus, HiStop } from "react-icons/hi2";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import {
 	AVAILABLE_RINGTONES,
@@ -159,7 +160,7 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 	);
 	const importCustomRingtone = electronTrpc.ringtone.importCustom.useMutation({
 		onError: (error) => {
-			console.error("Failed to import custom ringtone:", error);
+			logger.error("Failed to import custom ringtone:", error);
 		},
 		onSuccess: async (result) => {
 			if (result.canceled) {
@@ -204,7 +205,7 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 				try {
 					await electronTrpcClient.ringtone.stop.mutate();
 				} catch (error) {
-					console.error("Failed to stop ringtone:", error);
+					logger.error("Failed to stop ringtone:", error);
 				}
 				setPlayingId(null);
 				return;
@@ -214,7 +215,7 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 			try {
 				await electronTrpcClient.ringtone.stop.mutate();
 			} catch (error) {
-				console.error("Failed to stop ringtone:", error);
+				logger.error("Failed to stop ringtone:", error);
 			}
 
 			// Play the new sound
@@ -226,7 +227,7 @@ export function RingtonesSettings({ visibleItems }: RingtonesSettingsProps) {
 					volume,
 				});
 			} catch (error) {
-				console.error("Failed to play ringtone:", error);
+				logger.error("Failed to play ringtone:", error);
 				setPlayingId(null);
 			}
 

@@ -25,6 +25,7 @@ import {
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	isItemVisible,
@@ -73,7 +74,7 @@ export function ApiKeysSettings({ visibleItems }: ApiKeysSettingsProps) {
 				setNewKeyName("");
 			}
 		} catch (error) {
-			console.error("[api-keys] Failed to generate API key:", error);
+			logger.error("[api-keys] Failed to generate API key:", error);
 		} finally {
 			setIsGenerating(false);
 		}

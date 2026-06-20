@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { useWorkspaceInitStore } from "renderer/stores/workspace-init";
 import type { WorkspaceInitProgress } from "shared/types/workspace-init";
@@ -28,7 +29,7 @@ export function useOpenMainRepoWorkspace(
 						workspaceId: data.workspace.id,
 					});
 				} catch (error) {
-					console.error(
+					logger.error(
 						"[useOpenMainRepoWorkspace] Failed to fetch setup commands:",
 						error,
 					);

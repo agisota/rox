@@ -7,6 +7,7 @@ import log from "electron-log/main";
 import { createWindow } from "lib/electron-app/factories/windows/create";
 import { createAppRouter } from "lib/trpc/routers";
 import { localDb } from "main/lib/local-db";
+import { logger } from "main/lib/logger";
 import { NOTIFICATION_EVENTS, PLATFORM } from "shared/constants";
 import {
 	env,
@@ -57,7 +58,7 @@ function getWorkspaceNameFromDb(workspaceId: string | undefined): string {
 			: undefined;
 		return getWorkspaceName({ workspace, worktree });
 	} catch (error) {
-		console.error("[notifications] Failed to get workspace name:", error);
+		logger.error("[notifications] Failed to get workspace name:", error);
 		return "Workspace";
 	}
 }
@@ -83,7 +84,7 @@ const forceRepaint = (win: BrowserWindow) => {
 // GPU process restarts don't repaint existing compositor layers automatically.
 app.on("child-process-gone", (_event, details) => {
 	if (details.type === "GPU") {
-		console.warn("[main-window] GPU process gone:", details.reason);
+		logger.warn("[main-window] GPU process gone:", details.reason);
 		const win = getWindow();
 		if (win) forceRepaint(win);
 	}
@@ -195,7 +196,7 @@ export async function MainWindow() {
 		env.DESKTOP_NOTIFICATIONS_PORT,
 		"127.0.0.1",
 		() => {
-			console.log(
+			logger.info(
 				`[notifications] Listening on http://127.0.0.1:${env.DESKTOP_NOTIFICATIONS_PORT}`,
 			);
 		},
@@ -316,7 +317,7 @@ export async function MainWindow() {
 	});
 
 	window.webContents.on("did-finish-load", () => {
-		console.log("[main-window] Renderer loaded successfully");
+		logger.info("[main-window] Renderer loaded successfully");
 
 		if (persistedZoomLevel !== undefined) {
 			window.webContents.setZoomLevel(persistedZoomLevel);
@@ -335,24 +336,24 @@ export async function MainWindow() {
 	window.webContents.on(
 		"did-fail-load",
 		(_event, errorCode, errorDescription, validatedURL) => {
-			console.error("[main-window] Failed to load renderer:");
-			console.error(`  Error code: ${errorCode}`);
-			console.error(`  Description: ${errorDescription}`);
-			console.error(`  URL: ${validatedURL}`);
+			logger.error("[main-window] Failed to load renderer:");
+			logger.error(`  Error code: ${errorCode}`);
+			logger.error(`  Description: ${errorDescription}`);
+			logger.error(`  URL: ${validatedURL}`);
 			// Show the window anyway so user can see something is wrong
 			window.show();
 		},
 	);
 
 	window.webContents.on("render-process-gone", (_event, details) => {
-		console.error("[main-window] Renderer process gone:", details);
+		logger.error("[main-window] Renderer process gone:", details);
 		log.error("[main-window] Renderer process gone", details);
 	});
 
 	window.webContents.on("preload-error", (_event, preloadPath, error) => {
-		console.error("[main-window] Preload script error:");
-		console.error(`  Path: ${preloadPath}`);
-		console.error(`  Error:`, error);
+		logger.error("[main-window] Preload script error:");
+		logger.error(`  Path: ${preloadPath}`);
+		logger.error(`  Error:`, error);
 	});
 
 	window.on("close", () => {

@@ -1,3 +1,4 @@
+import { logger } from "main/lib/logger";
 import {
 	containsClearScrollbackSequence,
 	extractContentAfterClear,
@@ -36,7 +37,7 @@ export class HistoryManager {
 		let safeScrollback = initialScrollback;
 		if (initialScrollback !== undefined) {
 			if (typeof initialScrollback !== "string") {
-				console.warn(
+				logger.warn(
 					`[HistoryManager] initialScrollback for ${paneId} is not a string, ignoring`,
 				);
 				safeScrollback = undefined;
@@ -46,7 +47,7 @@ export class HistoryManager {
 					"utf8",
 				);
 				if (initialScrollbackBytes > MAX_HISTORY_SCROLLBACK_BYTES) {
-					console.warn(
+					logger.warn(
 						`[HistoryManager] initialScrollback for ${paneId} too large (${initialScrollbackBytes} bytes), truncating to ${MAX_HISTORY_SCROLLBACK_BYTES}`,
 					);
 					safeScrollback = truncateUtf8ToLastBytes(
@@ -69,7 +70,7 @@ export class HistoryManager {
 				writer.write(data);
 			}
 		} catch (error) {
-			console.error(
+			logger.error(
 				`[HistoryManager] Failed to init history writer for ${paneId}:`,
 				error,
 			);
@@ -101,7 +102,7 @@ export class HistoryManager {
 			const session = getSession();
 			if (session) {
 				writer.close().catch((error) => {
-					console.warn(
+					logger.warn(
 						`[HistoryManager] Failed to close history writer for ${paneId}:`,
 						error,
 					);
@@ -117,7 +118,7 @@ export class HistoryManager {
 					rows: session.rows,
 					initialScrollback: contentAfterClear || undefined,
 				}).catch((error) => {
-					console.warn(
+					logger.warn(
 						`[HistoryManager] Failed to reinitialize history writer for ${paneId}:`,
 						error,
 					);
@@ -133,7 +134,7 @@ export class HistoryManager {
 		const writer = this.historyWriters.get(paneId);
 		if (writer) {
 			writer.close(exitCode).catch((error) => {
-				console.error(
+				logger.error(
 					`[HistoryManager] Failed to close history writer for ${paneId}:`,
 					error,
 				);
@@ -152,7 +153,7 @@ export class HistoryManager {
 			const reader = new HistoryReader(workspaceId, paneId);
 			await reader.cleanup();
 		} catch (error) {
-			console.error(
+			logger.error(
 				`[HistoryManager] Failed to cleanup history for ${paneId}:`,
 				error,
 			);
@@ -168,7 +169,7 @@ export class HistoryManager {
 		for (const [paneId, writer] of this.historyWriters.entries()) {
 			closePromises.push(
 				writer.close().catch((error) => {
-					console.warn(
+					logger.warn(
 						`[HistoryManager] Failed to close history for ${paneId}:`,
 						error,
 					);
@@ -192,7 +193,7 @@ export class HistoryManager {
 					rows: session.rows,
 					initialScrollback: undefined,
 				}).catch((error) => {
-					console.warn(
+					logger.warn(
 						`[HistoryManager] Failed to reinitialize history for ${paneId}:`,
 						error,
 					);
@@ -207,7 +208,7 @@ export class HistoryManager {
 		for (const [paneId, writer] of this.historyWriters.entries()) {
 			closePromises.push(
 				writer.close().catch((error) => {
-					console.error(
+					logger.error(
 						`[HistoryManager] Failed to close history for ${paneId}:`,
 						error,
 					);
@@ -223,7 +224,7 @@ export class HistoryManager {
 	async forceCloseAll(): Promise<void> {
 		for (const writer of this.historyWriters.values()) {
 			await writer.close().catch((error) => {
-				console.warn(
+				logger.warn(
 					"[HistoryManager] Failed to close history writer during forceKillAll:",
 					error,
 				);

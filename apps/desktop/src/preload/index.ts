@@ -1,3 +1,4 @@
+import { logger } from "shared/logger";
 import "@sentry/electron/preload";
 
 import { contextBridge, ipcRenderer, webUtils } from "electron";
@@ -16,7 +17,7 @@ declare global {
 }
 
 const API = {
-	sayHelloFromBridge: () => console.log("\nHello from bridgeAPI! 👋\n\n"),
+	sayHelloFromBridge: () => logger.info("\nHello from bridgeAPI! 👋\n\n"),
 	username: process.env.USER,
 	appVersion: __APP_VERSION__,
 };

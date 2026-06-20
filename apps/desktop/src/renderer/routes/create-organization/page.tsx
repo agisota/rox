@@ -19,6 +19,7 @@ import { useForm } from "react-hook-form";
 import { useSignOut } from "renderer/hooks/useSignOut";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 import { z } from "zod";
 
 export const Route = createFileRoute("/create-organization/")({
@@ -88,7 +89,7 @@ export function CreateOrganization() {
 
 				setSlugAvailable(result.data?.status ?? null);
 			} catch (error) {
-				console.error("[create-org] Slug check failed:", error);
+				logger.error("[create-org] Slug check failed:", error);
 				setSlugAvailable(null);
 			} finally {
 				setIsCheckingSlug(false);

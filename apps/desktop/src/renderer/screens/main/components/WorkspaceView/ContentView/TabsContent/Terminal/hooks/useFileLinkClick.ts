@@ -1,6 +1,7 @@
 import { toast } from "@rox/ui/sonner";
 import { useCallback } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import type { DetectedLink } from "renderer/lib/terminal/links";
 import { electronTrpcClient as trpcClient } from "renderer/lib/trpc-client";
 import { useTabsStore } from "renderer/stores/tabs/store";
@@ -32,7 +33,7 @@ export function useFileLinkClick({
 				trpcClient.external.openFileInEditor
 					.mutate({ path: resolvedPath, line, column, projectId })
 					.catch((error) => {
-						console.error(
+						logger.error(
 							"[Terminal] Failed to open file in editor:",
 							resolvedPath,
 							error,

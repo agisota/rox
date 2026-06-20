@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useCreateOrAttachWithTheme } from "renderer/hooks/useCreateOrAttachWithTheme";
 import { launchAgentSession } from "renderer/lib/agent-session-orchestrator";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { writeCommandsInPane } from "renderer/lib/terminal/launch-command";
 import { isTerminalAttachCanceledMessage } from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/Terminal/attach-cancel";
 import { useTabsStore } from "renderer/stores/tabs/store";
@@ -91,7 +92,7 @@ export function WorkspaceInitEffects() {
 							}
 						: resolved;
 			} catch (error) {
-				console.error(
+				logger.error(
 					"[WorkspaceInitEffects] Invalid launch request in pending setup:",
 					error,
 				);
@@ -170,7 +171,7 @@ export function WorkspaceInitEffects() {
 								setup.initialCommands ?? null,
 							)
 								.catch((error) => {
-									console.error(
+									logger.error(
 										"[WorkspaceInitEffects] Failed to run setup commands:",
 										error,
 									);
@@ -188,7 +189,7 @@ export function WorkspaceInitEffects() {
 								onComplete();
 								return;
 							}
-							console.error(
+							logger.error(
 								"[WorkspaceInitEffects] Failed to create terminal:",
 								error,
 							);
@@ -222,7 +223,7 @@ export function WorkspaceInitEffects() {
 						onSuccess: () => {
 							void runSetupCommandsInPane(paneId, setup.initialCommands ?? null)
 								.catch((error) => {
-									console.error(
+									logger.error(
 										"[WorkspaceInitEffects] Failed to run setup commands:",
 										error,
 									);
@@ -240,7 +241,7 @@ export function WorkspaceInitEffects() {
 								onComplete();
 								return;
 							}
-							console.error(
+							logger.error(
 								"[WorkspaceInitEffects] Failed to create terminal:",
 								error,
 							);
@@ -266,7 +267,7 @@ export function WorkspaceInitEffects() {
 														newPaneId,
 														setup.initialCommands ?? null,
 													).catch((runError) => {
-														console.error(
+														logger.error(
 															"[WorkspaceInitEffects] Failed to run setup commands:",
 															runError,
 														);
@@ -358,7 +359,7 @@ export function WorkspaceInitEffects() {
 							});
 						})
 						.catch((error) => {
-							console.error(
+							logger.error(
 								"[WorkspaceInitEffects] Failed to fetch setup commands:",
 								error,
 							);
@@ -418,7 +419,7 @@ export function WorkspaceInitEffects() {
 					});
 				})
 				.catch((error) => {
-					console.error(
+					logger.error(
 						"[WorkspaceInitEffects] Failed to fetch setup commands:",
 						error,
 					);

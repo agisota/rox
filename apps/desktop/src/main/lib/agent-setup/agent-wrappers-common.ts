@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import { ROX_MANAGED_BINARIES } from "./desktop-agent-capabilities";
 import { BIN_DIR } from "./paths";
 
@@ -146,7 +147,7 @@ ${exportAgentId}${execLine}
 
 export function createWrapper(binaryName: string, script: string): void {
 	const changed = writeFileIfChanged(getWrapperPath(binaryName), script, 0o755);
-	console.log(
+	logger.info(
 		`[agent-setup] ${changed ? "Updated" : "Verified"} ${binaryName} wrapper`,
 	);
 }

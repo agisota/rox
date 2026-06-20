@@ -4,6 +4,7 @@ import { workspaces } from "@rox/local-db";
 import { deriveWorkspaceTitleFromPrompt } from "@rox/shared/workspace-launch";
 import { and, eq, isNull } from "drizzle-orm";
 import { localDb } from "main/lib/local-db";
+import { logger } from "shared/logger";
 import { getWorkspaceAutoRenameDecision } from "./workspace-auto-rename";
 
 export type WorkspaceAutoRenameResult =
@@ -50,7 +51,7 @@ export async function generateWorkspaceNameFromPrompt(prompt: string): Promise<{
 				return { name: generated, usedPromptFallback: false };
 			}
 		} catch (error) {
-			console.error("[workspace-ai-name] title generation failed", error);
+			logger.error("[workspace-ai-name] title generation failed", error);
 		}
 	}
 

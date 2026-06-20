@@ -2,6 +2,7 @@ import { PostHogProvider as PHProvider } from "posthog-js/react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { initOpenPanel, track } from "renderer/lib/analytics";
+import { logger } from "renderer/lib/logger";
 import { initPostHog, posthog } from "renderer/lib/posthog";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 
@@ -21,7 +22,7 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
 				deviceId = (await electronTrpcClient.device.getMachineId.query())
 					.machineId;
 			} catch (error) {
-				console.error("[posthog] Failed to resolve device id:", error);
+				logger.error("[posthog] Failed to resolve device id:", error);
 			}
 
 			if (cancelled) return;
@@ -31,7 +32,7 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
 				initOpenPanel();
 				track("desktop_opened");
 			} catch (error) {
-				console.error("[posthog] Failed to initialize:", error);
+				logger.error("[posthog] Failed to initialize:", error);
 			} finally {
 				setIsInitialized(true);
 			}

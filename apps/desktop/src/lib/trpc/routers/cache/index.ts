@@ -1,5 +1,6 @@
 import { session } from "electron";
 import { env } from "main/env.main";
+import { logger } from "shared/logger";
 import { publicProcedure, router } from "../..";
 
 export const createCacheRouter = () => {
@@ -12,14 +13,14 @@ export const createCacheRouter = () => {
 					origin: env.NEXT_PUBLIC_API_URL,
 				});
 
-				console.log(
+				logger.info(
 					"[cache] Cleared Electric cache for origin:",
 					env.NEXT_PUBLIC_API_URL,
 				);
 
 				return { success: true };
 			} catch (error) {
-				console.error("[cache] Failed to clear Electric cache:", error);
+				logger.error("[cache] Failed to clear Electric cache:", error);
 				return {
 					success: false,
 					error:

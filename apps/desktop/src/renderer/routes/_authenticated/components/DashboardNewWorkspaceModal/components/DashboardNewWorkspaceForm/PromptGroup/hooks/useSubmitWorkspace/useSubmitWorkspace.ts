@@ -2,6 +2,7 @@ import { toast } from "@rox/ui/sonner";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { authClient } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import type { NewWorkspacePromptContextApi } from "renderer/stores/new-workspace-prompt-context";
 import { useWorkspaceCreates } from "renderer/stores/workspace-creates";
@@ -124,7 +125,7 @@ export function useSubmitWorkspace(
 			to: "/v2-workspace/$workspaceId",
 			params: { workspaceId },
 		}).catch((error) => {
-			console.error("[useSubmitWorkspace] failed to open workspace", error);
+			logger.error("[useSubmitWorkspace] failed to open workspace", error);
 		});
 
 		const isViewingOptimisticWorkspace = () => {
@@ -145,7 +146,7 @@ export function useSubmitWorkspace(
 				params: { workspaceId: outcome.workspaceId },
 				replace: true,
 			}).catch((error) => {
-				console.error(
+				logger.error(
 					"[useSubmitWorkspace] failed to redirect workspace",
 					error,
 				);

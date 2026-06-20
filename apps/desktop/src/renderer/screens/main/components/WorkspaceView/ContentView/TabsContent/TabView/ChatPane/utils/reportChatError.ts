@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
 
 interface ReportChatErrorInput {
@@ -22,7 +23,7 @@ function errorDetails(error: unknown): { name: string; message: string } {
 
 export function reportChatError(input: ReportChatErrorInput): void {
 	const details = errorDetails(input.error);
-	console.error(`[chat] ${input.operation}`, input.error);
+	logger.error(`[chat] ${input.operation}`, input.error);
 	posthog.capture("chat_error", {
 		operation: input.operation,
 		error_name: details.name,

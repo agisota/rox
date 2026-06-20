@@ -10,6 +10,7 @@ import {
 import { useEventBus, workspaceTrpc } from "@rox/workspace-client";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useEffectEvent } from "react";
+import { logger } from "renderer/lib/logger";
 
 const SELECTION_DEBOUNCE_MS = 300;
 
@@ -37,7 +38,7 @@ export function useAgentBridge({ workspaceId }: { workspaceId: string }) {
 			{ envelope: createContextEnvelope(packet) },
 			{
 				onError: (error) => {
-					console.warn("[agent-bridge] failed to publish context:", error);
+					logger.warn("[agent-bridge] failed to publish context:", error);
 				},
 			},
 		);
@@ -64,7 +65,7 @@ export function useAgentBridge({ workspaceId }: { workspaceId: string }) {
 	const handleCommandEnvelope = useEffectEvent((envelope: unknown) => {
 		const parsed = parseUiCommandEnvelope(envelope);
 		if (!parsed.ok) {
-			console.warn("[agent-bridge] dropping invalid ui command:", parsed.error);
+			logger.warn("[agent-bridge] dropping invalid ui command:", parsed.error);
 			return;
 		}
 		const ack = (result: UiCommandResult) => {
@@ -72,7 +73,7 @@ export function useAgentBridge({ workspaceId }: { workspaceId: string }) {
 				{ envelope: createUiCommandAckEnvelope(parsed.requestId, result) },
 				{
 					onError: (error) => {
-						console.warn("[agent-bridge] failed to ack ui command:", error);
+						logger.warn("[agent-bridge] failed to ack ui command:", error);
 					},
 				},
 			);

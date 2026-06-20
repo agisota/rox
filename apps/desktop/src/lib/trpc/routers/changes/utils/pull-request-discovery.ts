@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { logger } from "shared/logger";
 import type { SimpleGit } from "simple-git";
 import { z } from "zod";
 import { execGitWithShellPath } from "../../workspaces/utils/git-client";
@@ -52,7 +53,7 @@ async function findOpenPRByHeadCommit(
 		return match?.url?.trim() || null;
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		console.warn(
+		logger.warn(
 			"[git/findExistingOpenPRUrl] Failed commit-based PR lookup:",
 			message,
 		);
@@ -87,7 +88,7 @@ export async function findExistingOpenPRUrl(
 			.toLowerCase()
 			.includes("no pull requests found");
 		if (!isNoPROpenError) {
-			console.warn(
+			logger.warn(
 				"[git/findExistingOpenPRUrl] Failed tracking-branch PR lookup:",
 				message,
 			);

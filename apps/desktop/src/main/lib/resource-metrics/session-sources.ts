@@ -2,6 +2,7 @@ import { projects, workspaces } from "@rox/local-db";
 import { eq } from "drizzle-orm";
 import { getHostServiceCoordinator } from "main/lib/host-service-coordinator";
 import { localDb } from "main/lib/local-db";
+import { logger } from "main/lib/logger";
 import { getWorkspaceRuntimeRegistry } from "main/lib/workspace-runtime/registry";
 import {
 	parseV2ResourceSessions,
@@ -97,7 +98,7 @@ async function collectV2WorkspaceSessionMap(
 					},
 				);
 				if (!response.ok) {
-					console.warn(
+					logger.warn(
 						`[resource-metrics] Failed to list v2 terminal resource sessions for org ${id}: ${response.status}`,
 					);
 					return;
@@ -108,12 +109,12 @@ async function collectV2WorkspaceSessionMap(
 				);
 			} catch (error) {
 				if (isAbortError(error)) {
-					console.warn(
+					logger.warn(
 						`[resource-metrics] Timed out listing v2 terminal resource sessions for org ${id}`,
 					);
 					return;
 				}
-				console.warn(
+				logger.warn(
 					`[resource-metrics] Failed to list v2 terminal resource sessions for org ${id}`,
 					error,
 				);

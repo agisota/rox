@@ -10,6 +10,7 @@ import { isEnterSubmit } from "@rox/ui/lib/keyboard";
 import { toast } from "@rox/ui/sonner";
 import { useCallback, useEffect, useRef } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import {
 	useClearPendingWorkspace,
 	useSetPendingWorkspace,
@@ -185,7 +186,7 @@ export function useWorkspaceCreate({
 						const errorMessage =
 							error instanceof Error ? error.message : String(error);
 						if (errorMessage.includes("timeout")) {
-							console.warn("[PromptGroup] AI generation timeout");
+							logger.warn("[PromptGroup] AI generation timeout");
 							toast.info(
 								"Используется случайное имя ветки (истекло время генерации ИИ)",
 							);
@@ -194,14 +195,14 @@ export function useWorkspaceCreate({
 							errorMessage.includes("401") ||
 							errorMessage.includes("403")
 						) {
-							console.error("[PromptGroup] AI auth error:", error);
+							logger.error("[PromptGroup] AI auth error:", error);
 							toast.error(
 								"Не удалось пройти аутентификацию ИИ. Проверьте настройки ИИ.",
 							);
 							clearPendingWorkspace(pendingWorkspaceId);
 							return;
 						} else {
-							console.warn("[PromptGroup] AI generation failed:", error);
+							logger.warn("[PromptGroup] AI generation failed:", error);
 							toast.info(
 								"Используется случайное имя ветки (генерация ИИ недоступна)",
 							);
@@ -325,7 +326,7 @@ ${sanitizeText(truncatedBody)}`;
 										filename: `github-issue-${content.number}.md`,
 									};
 								} catch (err) {
-									console.warn(
+									logger.warn(
 										`Failed to fetch GitHub issue #${issue.number}:`,
 										err,
 									);
@@ -340,7 +341,7 @@ ${sanitizeText(truncatedBody)}`;
 						) as ConvertedFile[];
 						convertedFiles = [...convertedFiles, ...validIssueFiles];
 					} catch (err) {
-						console.warn("Failed to fetch GitHub issue contents:", err);
+						logger.warn("Failed to fetch GitHub issue contents:", err);
 						// Don't block workspace creation if issue fetching fails
 					}
 				}

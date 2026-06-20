@@ -3,6 +3,7 @@ import { projects, workspaces, worktrees } from "@rox/local-db";
 import { and, eq, isNull } from "drizzle-orm";
 import { track } from "main/lib/analytics";
 import { localDb } from "main/lib/local-db";
+import { logger } from "shared/logger";
 import { resolveWorkspaceBaseBranch } from "./base-branch";
 import { setBranchBaseConfig } from "./base-branch-config";
 import {
@@ -57,7 +58,7 @@ async function getKnownBranchesSafe(
 		const { local, remote } = await listBranches(repoPath);
 		return [...local, ...remote];
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			`[workspace-creation] Failed to list branches for ${repoPath}:`,
 			error,
 		);
@@ -138,7 +139,7 @@ export async function createWorkspaceFromExternalWorktree({
 		return undefined; // No external worktree found
 	}
 
-	console.log(
+	logger.info(
 		`[workspace-creation] Found external worktree for branch "${branch}", importing automatically`,
 	);
 
@@ -275,7 +276,7 @@ export async function createWorkspaceFromExternalWorktree({
 				localDb.delete(workspaces).where(eq(workspaces.id, workspaceId)).run();
 				updateActiveWorkspaceIfRemoved(workspaceId);
 			} catch (cleanupError) {
-				console.error(
+				logger.error(
 					"[workspace-creation] Failed to clean up workspace record:",
 					cleanupError,
 				);
@@ -288,7 +289,7 @@ export async function createWorkspaceFromExternalWorktree({
 			try {
 				localDb.delete(worktrees).where(eq(worktrees.id, worktreeId)).run();
 			} catch (cleanupError) {
-				console.error(
+				logger.error(
 					"[workspace-creation] Failed to clean up worktree record:",
 					cleanupError,
 				);
