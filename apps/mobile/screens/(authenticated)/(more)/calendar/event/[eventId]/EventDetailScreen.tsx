@@ -1,6 +1,7 @@
 import type { CalAttendeeStatus } from "@rox/db/enums";
-import { useLocalSearchParams } from "expo-router";
-import { Clock, MapPin, Users } from "lucide-react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Clock, MapPin, Pencil, Users } from "lucide-react-native";
+import { useCallback } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Badge } from "@/components/ui/badge";
@@ -36,11 +37,20 @@ function formatDay(value: Date | string): string {
 
 export function EventDetailScreen() {
 	const { eventId } = useLocalSearchParams<{ eventId: string }>();
+	const router = useRouter();
 	const insets = useSafeAreaInsets();
 	const { detail, isLoading, error, rsvping, rsvp } = useEventDetail(eventId);
 
 	const event = detail?.event ?? null;
 	const attendees = detail?.attendees ?? [];
+
+	const handleEdit = useCallback(() => {
+		if (!eventId) return;
+		router.push({
+			pathname: "/(authenticated)/(more)/calendar/event-edit",
+			params: { eventId },
+		});
+	}, [eventId, router]);
 
 	return (
 		<ScrollView
@@ -68,7 +78,17 @@ export function EventDetailScreen() {
 					)
 				) : (
 					<>
-						<Text className="text-2xl font-bold">{event.title}</Text>
+						<View className="flex-row items-start justify-between gap-3">
+							<Text className="flex-1 text-2xl font-bold">{event.title}</Text>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel="Edit event"
+								onPress={handleEdit}
+								className="size-10 items-center justify-center rounded-full border border-border active:opacity-70"
+							>
+								<Icon as={Pencil} className="size-5 text-foreground" />
+							</Pressable>
+						</View>
 
 						<Card>
 							<CardContent className="gap-3 pt-6">

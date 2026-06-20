@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { FolderPlus } from "lucide-react-native";
+import { FolderPlus, Upload } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
+	ActivityIndicator,
 	Alert,
 	Pressable,
 	RefreshControl,
@@ -20,12 +21,15 @@ import {
 } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { apiClient } from "@/lib/trpc/client";
 import { FileRow, FolderRow } from "./components/DriveRow";
 import { useDriveFolder } from "./hooks/useDriveFolder";
+import { useDriveUpload } from "./hooks/useDriveUpload";
 import { driveShareUrl } from "./utils/shareUrl";
+import { isUploadActive, uploadPhaseLabel } from "./utils/uploadState";
 
 export function DriveScreen() {
 	const router = useRouter();
@@ -37,6 +41,7 @@ export function DriveScreen() {
 	const folderId = folderIdParam ?? null;
 
 	const { listing, isLoading, error, refresh } = useDriveFolder(folderId);
+	const { state: upload, pickAndUpload, reset: resetUpload } = useDriveUpload();
 	const [refreshing, setRefreshing] = useState(false);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [newName, setNewName] = useState("");
@@ -47,6 +52,16 @@ export function DriveScreen() {
 		await refresh();
 		setRefreshing(false);
 	}, [refresh]);
+
+	const uploadActive = isUploadActive(upload.phase);
+
+	const handleUpload = useCallback(async () => {
+		const uploaded = await pickAndUpload(folderId);
+		if (uploaded) {
+			await refresh();
+			resetUpload();
+		}
+	}, [pickAndUpload, folderId, refresh, resetUpload]);
 
 	const handleOpenFolder = useCallback(
 		(id: string, folderName: string) => {
@@ -165,8 +180,64 @@ export function DriveScreen() {
 						{name}
 					</Text>
 				) : null}
+				{upload.phase !== "idle" ? (
+					<View className="mx-4 mt-4 gap-2 rounded-lg border border-border bg-muted/30 p-3">
+						<View className="flex-row items-center justify-between gap-2">
+							<Text className="flex-1 text-sm font-medium" numberOfLines={1}>
+								{upload.filename ?? "Upload"}
+							</Text>
+							<Text
+								className={
+									upload.phase === "error"
+										? "text-xs text-destructive"
+										: "text-xs text-muted-foreground"
+								}
+							>
+								{uploadPhaseLabel(upload.phase)}
+							</Text>
+						</View>
+						{uploadActive ? (
+							<Progress value={upload.progress} className="h-1.5" />
+						) : null}
+						{upload.phase === "error" ? (
+							<View className="flex-row gap-2">
+								<Button
+									size="sm"
+									variant="outline"
+									onPress={handleUpload}
+									className="flex-1"
+								>
+									<Text>Retry</Text>
+								</Button>
+								<Button
+									size="sm"
+									variant="ghost"
+									onPress={resetUpload}
+									className="flex-1"
+								>
+									<Text>Dismiss</Text>
+								</Button>
+							</View>
+						) : null}
+					</View>
+				) : null}
 				{content}
 			</ScrollView>
+
+			<Pressable
+				accessibilityRole="button"
+				accessibilityLabel="Upload file"
+				onPress={handleUpload}
+				disabled={uploadActive}
+				style={{ bottom: insets.bottom + 24 + 68 }}
+				className="absolute right-6 size-14 items-center justify-center rounded-full bg-secondary shadow-lg shadow-black/20 disabled:opacity-60"
+			>
+				{uploadActive ? (
+					<ActivityIndicator />
+				) : (
+					<Icon as={Upload} className="size-7 text-secondary-foreground" />
+				)}
+			</Pressable>
 
 			<Pressable
 				accessibilityRole="button"
