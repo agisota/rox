@@ -65,8 +65,12 @@ function AuthenticatedLayout() {
 	const shownWorkspaceInitWarningsRef = useRef(new Set<string>());
 	const isV2CloudEnabled = useIsV2CloudEnabled();
 
-	const isSignedIn = env.SKIP_ENV_VALIDATION || !!session?.user;
-	const activeOrganizationId = env.SKIP_ENV_VALIDATION
+	// LOCAL_ONLY_AUTH (ROX-518): in offline mode, force an always-signed-in
+	// mock-org session and skip the cloud OAuth round-trip. env.isLocalOnlyAuth is
+	// SKIP_ENV_VALIDATION (dev) || LOCAL_ONLY_AUTH (offline SKU). It can never be
+	// true in a cloud production build — see renderer env.renderer.ts.
+	const isSignedIn = env.isLocalOnlyAuth || !!session?.user;
+	const activeOrganizationId = env.isLocalOnlyAuth
 		? MOCK_ORG_ID
 		: session?.session?.activeOrganizationId;
 
@@ -162,12 +166,12 @@ function AuthenticatedLayout() {
 		},
 	});
 
-	if (isPending && !hasLocalToken && !env.SKIP_ENV_VALIDATION) {
+	if (isPending && !hasLocalToken && !env.isLocalOnlyAuth) {
 		return <Navigate to="/sign-in" replace />;
 	}
 	if (
 		(isPending || (isRefetching && !session?.user && hasLocalToken)) &&
-		!env.SKIP_ENV_VALIDATION
+		!env.isLocalOnlyAuth
 	) {
 		return (
 			<div className="flex h-screen w-screen items-center justify-center bg-background">
