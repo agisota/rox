@@ -144,3 +144,60 @@ export async function registerProxyTools(
 	}
 	return { registered, failures };
 }
+
+/**
+ * Name of the synthetic, informational tool registered when one or more
+ * downstream sources fail to connect/list. It carries NO credentials — only
+ * the source `slug` and the connection error message — so a client can SEE a
+ * degraded source instead of silently missing its tools.
+ */
+export const DEGRADED_SOURCES_TOOL_NAME = "mcp__proxy_degraded";
+
+/** Public shape of a single degraded-source entry surfaced to the client. */
+export interface DegradedSourceInfo {
+	/** The org-configured source slug whose tools could not be exposed. */
+	slug: string;
+	/** Human-readable connection/list error (never includes credentials). */
+	message: string;
+}
+
+/**
+ * T7 — graceful, observable degradation. When `failures` is non-empty, register
+ * ONE synthetic informational tool ({@link DEGRADED_SOURCES_TOOL_NAME}) so a
+ * client's `tools/list` reveals which downstream sources are unavailable rather
+ * than silently omitting their tools. This is purely additive: when there are
+ * no failures nothing is registered and healthy paths are completely unchanged.
+ *
+ * The marker leaks no secrets — only the source slug + the (already
+ * client-safe) connection error message, mirroring `result.failures`. Returns
+ * `true` when the notice was registered, `false` when there was nothing to note.
+ */
+export function registerDegradedSourcesNotice(
+	server: McpServer,
+	failures: Map<string, Error>,
+): boolean {
+	if (failures.size === 0) {
+		return false;
+	}
+
+	const degraded: DegradedSourceInfo[] = [...failures.entries()].map(
+		([slug, error]) => ({ slug, message: error.message }),
+	);
+	const slugList = degraded.map((d) => d.slug).join(", ");
+
+	defineTool(server, {
+		name: DEGRADED_SOURCES_TOOL_NAME,
+		description:
+			`Informational: ${degraded.length} downstream MCP source(s) are ` +
+			`currently unavailable and their tools are NOT exposed: ${slugList}. ` +
+			"Call this tool for the per-source connection error details. No action " +
+			"is performed; healthy sources and native tools are unaffected.",
+		rawInputSchema: passthroughInputSchema,
+		handler: async () => ({
+			degraded,
+			count: degraded.length,
+		}),
+	});
+
+	return true;
+}
