@@ -1,4 +1,5 @@
 import type { SettingsSection } from "renderer/stores/settings-state";
+import { matchSettings } from "./matcher";
 
 export const SETTING_ITEM_ID = {
 	ACCOUNT_PROFILE: "account-profile",
@@ -2268,15 +2269,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 ];
 
 export function searchSettings(query: string): SettingsItem[] {
-	if (!query.trim()) return SETTINGS_ITEMS;
-
-	const q = query.toLowerCase();
-	return SETTINGS_ITEMS.filter(
-		(item) =>
-			item.title.toLowerCase().includes(q) ||
-			item.description.toLowerCase().includes(q) ||
-			item.keywords.some((kw) => kw.toLowerCase().includes(q)),
-	);
+	return matchSettings(query, SETTINGS_ITEMS);
 }
 
 export function getMatchCountBySection(
