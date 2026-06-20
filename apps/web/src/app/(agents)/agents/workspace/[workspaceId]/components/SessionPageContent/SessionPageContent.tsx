@@ -19,6 +19,8 @@ type SessionPageContentProps = {
 	diffFiles: MockDiffFile[];
 	messages: MockMessage[];
 	session: MockSession;
+	/** Workspace id used to scope the live presence room (WS-L T10). */
+	workspaceId: string;
 };
 
 /** Views that are part of the conversation and keep the follow-up input. */
@@ -28,12 +30,17 @@ export function SessionPageContent({
 	diffFiles,
 	messages,
 	session,
+	workspaceId,
 }: SessionPageContentProps) {
 	const [activeView, setActiveView] = useState<SessionView>("chat");
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
-			<SessionHeader backHref="/agents" session={session} />
+			<SessionHeader
+				backHref="/agents"
+				dashboardId={workspaceId}
+				session={session}
+			/>
 			<SessionTabs activeView={activeView} onViewChange={setActiveView} />
 			<div
 				role="tabpanel"

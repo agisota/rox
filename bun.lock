@@ -586,6 +586,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rox/auth": "workspace:*",
+        "@rox/collab": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/shared": "workspace:*",
         "@rox/trpc": "workspace:*",
