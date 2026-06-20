@@ -1,0 +1,1 @@
+export { SharesPanel } from "./SharesPanel";
