@@ -70,8 +70,13 @@ const {
 	loadRuntimeAgentSourceCredentials,
 	validateExternalEndpointUrl,
 } = await import("./agent-source-pool");
-const { namespacedToolName, registerProxyTools, stripToolNamePrefix } =
-	await import("./proxy-tools");
+const {
+	DEGRADED_SOURCES_TOOL_NAME,
+	namespacedToolName,
+	registerDegradedSourcesNotice,
+	registerProxyTools,
+	stripToolNamePrefix,
+} = await import("./proxy-tools");
 
 import type { Client as McpSdkClient } from "@modelcontextprotocol/sdk/client/index.js";
 import type { McpServer as McpServerType } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -402,6 +407,100 @@ describe("registerProxyTools — error isolation", () => {
 		const { client: sdkClient, cleanup } = await connectServerToClient(server);
 		cleanups.push(cleanup);
 		await expect(sdkClient.listTools()).rejects.toThrow(/Method not found/);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// (e) graceful degradation — a failing source surfaces a visible note in
+// tools/list rather than being silently omitted (T7).
+// ---------------------------------------------------------------------------
+
+describe("registerDegradedSourcesNotice", () => {
+	it("registers no synthetic tool when there are no failures", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const healthy = mockClient([{ name: "list_issues" }]);
+		const { failures } = await registerProxyTools(server, [
+			pooled(resolvedSource("github"), healthy),
+		]);
+
+		const registered = registerDegradedSourcesNotice(server, failures);
+		expect(registered).toBe(false);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+		const names = (await sdkClient.listTools()).tools.map((t) => t.name);
+		expect(names).toContain("mcp__github__list_issues");
+		expect(names).not.toContain(DEGRADED_SOURCES_TOOL_NAME);
+	});
+
+	it("exposes a failure marker tool when a source failed, alongside healthy tools", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const broken = mockClient([], {
+			listToolsImpl: async () => {
+				throw new Error("downstream unavailable");
+			},
+		});
+		const healthy = mockClient([{ name: "list_issues" }]);
+
+		const { registered, failures } = await registerProxyTools(server, [
+			pooled(resolvedSource("broken"), broken),
+			pooled(resolvedSource("github"), healthy),
+		]);
+
+		// Healthy path unchanged: healthy tool still registered.
+		expect(registered).toEqual(["mcp__github__list_issues"]);
+
+		const noted = registerDegradedSourcesNotice(server, failures);
+		expect(noted).toBe(true);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+
+		const listed = await sdkClient.listTools();
+		const names = listed.tools.map((t) => t.name);
+		// Both the healthy tool AND the degradation marker are visible.
+		expect(names).toContain("mcp__github__list_issues");
+		expect(names).toContain(DEGRADED_SOURCES_TOOL_NAME);
+
+		// The marker names the failed slug so the client can see WHICH source is down.
+		const marker = listed.tools.find(
+			(t) => t.name === DEGRADED_SOURCES_TOOL_NAME,
+		);
+		expect(marker?.description).toContain("broken");
+	});
+
+	it("the marker tool reports the failed sources + messages when called", async () => {
+		const server = new McpServer(
+			{ name: "rox-v2-test", version: "0.0.0" },
+			{ capabilities: { tools: {} } },
+		);
+		const broken = mockClient([], {
+			listToolsImpl: async () => {
+				throw new Error("downstream unavailable");
+			},
+		});
+
+		const { failures } = await registerProxyTools(server, [
+			pooled(resolvedSource("broken"), broken),
+		]);
+		registerDegradedSourcesNotice(server, failures);
+
+		const { client: sdkClient, cleanup } = await connectServerToClient(server);
+		cleanups.push(cleanup);
+
+		const result = await sdkClient.callTool({
+			name: DEGRADED_SOURCES_TOOL_NAME,
+			arguments: {},
+		});
+		const text = JSON.stringify(result);
+		expect(text).toContain("broken");
+		expect(text).toContain("downstream unavailable");
 	});
 });
 
