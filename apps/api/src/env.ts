@@ -56,6 +56,11 @@ export const env = createEnv({
 		QSTASH_URL: z.string().url(),
 		QSTASH_CURRENT_SIGNING_KEY: z.string().min(1),
 		QSTASH_NEXT_SIGNING_KEY: z.string().min(1),
+		// Explicit, opt-in escape hatch for local development where QStash can't
+		// reach localhost to sign requests. When `"true"` AND no signing keys are
+		// present, queue-job routes accept unsigned bodies. Absent/any other value
+		// fails closed (signature is always required). Never set this in prod.
+		ALLOW_UNSIGNED_QSTASH: z.string().optional(),
 		RESEND_API_KEY: z.string().min(1),
 		KV_REST_API_URL: z.string().url(),
 		KV_REST_API_TOKEN: z.string().min(1),

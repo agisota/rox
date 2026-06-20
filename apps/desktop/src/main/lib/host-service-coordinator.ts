@@ -87,6 +87,17 @@ function isValidPort(port: number | null | undefined): port is number {
 }
 
 /**
+ * True when an error from `process.kill` means the target process no longer
+ * exists (`ESRCH`). For a stop operation that is the desired end state, so it
+ * should not be reported as a failure.
+ */
+function isNoSuchProcessError(error: unknown): boolean {
+	return (
+		error instanceof Error && (error as NodeJS.ErrnoException).code === "ESRCH"
+	);
+}
+
+/**
  * Coupled to Electron: each child is spawned attached and SIGTERMed on
  * before-quit. PTYs survive across Electron restarts via the pty-daemon
  * layer host-service supervises, not via host-service itself. Manifests
@@ -171,7 +182,18 @@ export class HostServiceCoordinator extends EventEmitter {
 
 		try {
 			killProcess(instance.pid, "SIGTERM");
-		} catch {}
+		} catch (error) {
+			// ESRCH ("no such process") means the process is already gone, which
+			// is the desired post-state — treat it as a successful stop. Any
+			// other failure (e.g. EPERM) means we may have left a live process
+			// behind, so surface it instead of silently asserting "stopped".
+			if (!isNoSuchProcessError(error)) {
+				log.error(
+					`[host-service] Failed to stop host-service (org=${organizationId}, pid=${instance.pid})`,
+					error,
+				);
+			}
+		}
 
 		this.instances.delete(organizationId);
 		removeManifest(organizationId);

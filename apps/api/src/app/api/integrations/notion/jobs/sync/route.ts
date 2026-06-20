@@ -20,7 +20,7 @@ import chunk from "lodash.chunk";
 import { z } from "zod";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
-import { verifyQstash } from "@/lib/qstash-verify";
+import { isQstashDevBypassAllowed, verifyQstash } from "@/lib/qstash-verify";
 import {
 	listBlockChildren,
 	type NotionBlock,
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 	// Skip signature verification in development (QStash can't reach localhost).
 	const verified = await verifyQstash(request, {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/notion/jobs/sync`,
-		devBypass: env.NODE_ENV === "development",
+		devBypass: isQstashDevBypassAllowed(),
 		onError: "respond",
 		logError: (error) =>
 			logger.warn("[notion-sync] signature verification failed", error),

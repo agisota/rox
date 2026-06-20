@@ -39,6 +39,7 @@ import { BasicIndex } from "@tanstack/db";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import {
 	createElectronSQLitePersistence,
+	type ElectronSQLitePersistenceOptions,
 	persistedCollectionOptions,
 } from "@tanstack/electron-db-sqlite-persistence";
 import type {
@@ -112,8 +113,17 @@ export interface WorkspaceCreateMutationMetadata {
 	[key: string]: unknown;
 }
 
+// `window.ipcRenderer.invoke` is intentionally typed `Promise<unknown>` (the
+// channel is a runtime value, so the response can't be statically known). The
+// persistence adapter's request/response envelope is its own internal type, so
+// cast through the adapter's `invoke` option type to satisfy it without an
+// unsound `any` at the IPC boundary.
+type PersistenceInvoke = NonNullable<
+	ElectronSQLitePersistenceOptions["invoke"]
+>;
 const persistence = createElectronSQLitePersistence({
-	invoke: (channel, request) => window.ipcRenderer.invoke(channel, request),
+	invoke: ((channel, request) =>
+		window.ipcRenderer.invoke(channel, request)) as PersistenceInvoke,
 });
 
 const indexDefaults = {

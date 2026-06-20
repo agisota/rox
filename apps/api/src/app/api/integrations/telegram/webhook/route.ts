@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { db } from "@rox/db/client";
 import {
 	integrationConnections,
@@ -9,6 +10,18 @@ import { env } from "@/env";
 import { apiError } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
 import { parseTelegramUpdate } from "../parse-update";
+
+/**
+ * Constant-time secret comparison. Length-guarded because `timingSafeEqual`
+ * throws on unequal-length buffers; the early length check leaks only the
+ * length, not the content, which is acceptable for these echoed tokens.
+ */
+function safeEqual(a: string, b: string): boolean {
+	const aBuf = Buffer.from(a);
+	const bBuf = Buffer.from(b);
+	if (aBuf.length !== bBuf.length) return false;
+	return timingSafeEqual(aBuf, bBuf);
+}
 
 /**
  * Header Telegram echoes on every update, carrying the per-connection secret we
@@ -40,7 +53,7 @@ export async function POST(request: Request) {
 		(row) =>
 			row.config?.provider === "telegram" &&
 			typeof row.config.webhookSecret === "string" &&
-			row.config.webhookSecret === secret,
+			safeEqual(row.config.webhookSecret, secret),
 	);
 
 	if (!connection) {

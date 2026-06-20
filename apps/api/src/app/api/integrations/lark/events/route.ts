@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { db } from "@rox/db/client";
 import type { LarkConfig } from "@rox/db/schema";
 import { integrationConnections } from "@rox/db/schema";
@@ -5,6 +6,18 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { LARK_EVENT_TYPE } from "../constants";
 import { parseLarkEnvelope } from "../parse-event";
+
+/**
+ * Constant-time secret comparison. Length-guarded because `timingSafeEqual`
+ * throws on unequal-length buffers; the early length check leaks only the
+ * length, not the content, which is acceptable for these echoed tokens.
+ */
+function safeEqual(a: string, b: string): boolean {
+	const aBuf = Buffer.from(a);
+	const bBuf = Buffer.from(b);
+	if (aBuf.length !== bBuf.length) return false;
+	return timingSafeEqual(aBuf, bBuf);
+}
 
 // Inbound endpoint for Lark/Feishu event subscriptions (plaintext mode).
 //
@@ -62,7 +75,7 @@ export async function POST(request: Request) {
 			const config = asLarkConfig(connection.config);
 			return (
 				typeof config?.verificationToken === "string" &&
-				config.verificationToken === envelope.token
+				safeEqual(config.verificationToken, envelope.token)
 			);
 		});
 
@@ -101,7 +114,8 @@ export async function POST(request: Request) {
 	const config = asLarkConfig(connection.config);
 	if (
 		typeof config?.verificationToken !== "string" ||
-		config.verificationToken !== envelope.token
+		typeof envelope.token !== "string" ||
+		!safeEqual(config.verificationToken, envelope.token)
 	) {
 		logger.error("[lark/events] Event token mismatch for app:", envelope.appId);
 		return Response.json({ error: "Invalid token" }, { status: 401 });

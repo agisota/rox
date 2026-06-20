@@ -36,7 +36,13 @@ export class NdjsonParser {
 		let newlineIndex = data.indexOf("\n");
 
 		while (newlineIndex !== -1) {
-			const line = data.slice(startIndex, newlineIndex);
+			// Strip a trailing CR so CRLF-framed lines from the daemon parse
+			// cleanly (a lone "\r" left on the line breaks JSON.parse).
+			let lineEnd = newlineIndex;
+			if (lineEnd > startIndex && data.charCodeAt(lineEnd - 1) === 13) {
+				lineEnd -= 1;
+			}
+			const line = data.slice(startIndex, lineEnd);
 
 			if (line.trim()) {
 				try {

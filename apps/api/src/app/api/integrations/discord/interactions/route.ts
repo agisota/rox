@@ -28,6 +28,19 @@ export async function POST(request: Request) {
 		);
 	}
 
+	// Replay guard: Discord signs `timestamp + body`, so a captured request stays
+	// valid forever without a freshness window. Reject timestamps more than 5 min
+	// from now (past or future), mirroring the Slack verify path.
+	const timestampSec = Number.parseInt(timestamp, 10);
+	const nowSec = Math.floor(Date.now() / 1000);
+	if (
+		!Number.isFinite(timestampSec) ||
+		Math.abs(nowSec - timestampSec) > 60 * 5
+	) {
+		logger.error("[discord/interactions] Timestamp too old or in future");
+		return Response.json({ error: "Stale request" }, { status: 401 });
+	}
+
 	// Optional until the Discord app is provisioned in this environment.
 	const publicKeyHex = env.DISCORD_PUBLIC_KEY;
 	if (!publicKeyHex) {
