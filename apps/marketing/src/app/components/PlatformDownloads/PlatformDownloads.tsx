@@ -19,7 +19,7 @@ const TILES: readonly PlatformTile[] = [
 	{
 		os: "mac",
 		label: "macOS",
-		sub: "Apple Silicon · Intel",
+		sub: "Apple Silicon",
 		icon: <AppleGlyph />,
 	},
 	{ os: "windows", label: "Windows", sub: "x64", icon: <WindowsGlyph /> },
@@ -67,10 +67,7 @@ export function PlatformDownloads({
 						<span className={styles.icon}>{tile.icon}</span>
 						<span className={styles.body}>
 							<span className={styles.label}>{tile.label}</span>
-							<span className={styles.sub}>
-								{isRecommended ? "Рекомендуется · " : ""}
-								{tile.sub}
-							</span>
+							<span className={styles.sub}>{tile.sub}</span>
 						</span>
 						<span className={styles.arrow} aria-hidden="true">
 							<svg viewBox="0 0 12 14" fill="none" aria-hidden="true">
