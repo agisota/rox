@@ -15,7 +15,11 @@ export function CommandItemRow({ command, onSelect }: CommandItemRowProps) {
 	return (
 		<CommandItem
 			value={`${command.id} ${command.title} ${(command.keywords ?? []).join(" ")}`}
-			onSelect={() => onSelect(command)}
+			disabled={command.disabled}
+			onSelect={() => {
+				if (command.disabled) return;
+				onSelect(command);
+			}}
 		>
 			{command.iconUrl ? (
 				<img
@@ -26,7 +30,14 @@ export function CommandItemRow({ command, onSelect }: CommandItemRowProps) {
 			) : Icon ? (
 				<Icon />
 			) : null}
-			<span>{command.title}</span>
+			<span className="min-w-0 flex-1">
+				<span className="block truncate">{command.title}</span>
+				{command.disabled && command.disabledReason ? (
+					<span className="block truncate text-muted-foreground text-xs">
+						{command.disabledReason}
+					</span>
+				) : null}
+			</span>
 			{hasShortcut ? <CommandShortcut>{display.text}</CommandShortcut> : null}
 		</CommandItem>
 	);

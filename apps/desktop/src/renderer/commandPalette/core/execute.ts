@@ -7,6 +7,10 @@ export async function executeCommand(
 	context: CommandContext,
 ): Promise<void> {
 	track("command_run", { commandId: command.id, section: command.section });
+	if (command.disabled) {
+		if (command.disabledReason) toast.info(command.disabledReason);
+		return;
+	}
 	if (!command.run) return;
 	try {
 		await command.run(context);

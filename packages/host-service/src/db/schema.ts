@@ -202,3 +202,34 @@ export const workspaces = sqliteTable(
 		index("workspaces_pull_request_id_idx").on(table.pullRequestId),
 	],
 );
+
+export const canvasDocuments = sqliteTable(
+	"canvas_documents",
+	{
+		id: text().primaryKey(),
+		workspaceId: text("workspace_id")
+			.notNull()
+			.references(() => workspaces.id, { onDelete: "cascade" }),
+		projectId: text("project_id").references(() => projects.id, {
+			onDelete: "set null",
+		}),
+		title: text().notNull(),
+		revision: integer().notNull().default(0),
+		path: text().notNull(),
+		nodeCount: integer("node_count").notNull().default(0),
+		edgeCount: integer("edge_count").notNull().default(0),
+		groupCount: integer("group_count").notNull().default(0),
+		nodeTypesJson: text("node_types_json").notNull().default("{}"),
+		refsJson: text("refs_json").notNull().default("[]"),
+		createdAt: integer("created_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		updatedAt: integer("updated_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+	},
+	(table) => [
+		index("canvas_documents_workspace_id_idx").on(table.workspaceId),
+		index("canvas_documents_updated_at_idx").on(table.updatedAt),
+	],
+);
