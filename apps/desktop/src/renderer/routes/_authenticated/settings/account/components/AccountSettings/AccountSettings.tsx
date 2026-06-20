@@ -191,9 +191,13 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 						>
 							<Button
 								variant="outline"
-								onClick={() => {
-									void signOut();
-									toast.success("Вы вышли из аккаунта");
+								onClick={async () => {
+									try {
+										await signOut();
+										toast.success("Вы вышли из аккаунта");
+									} catch {
+										toast.error("Не удалось выйти из аккаунта");
+									}
 								}}
 							>
 								Выйти
