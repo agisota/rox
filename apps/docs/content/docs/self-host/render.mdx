@@ -1,0 +1,64 @@
+---
+title: Деплой на Render
+description: Справка по продакшен-деплою сервисов Rox на Render
+---
+
+## Обзор
+
+Продакшен-сервисы Rox разворачиваются на **Render**. Каждое приложение монорепозитория — отдельный сервис Render с автодеплоем из ветки `main`.
+
+<Callout type="info">
+Это справочное описание текущей продакшен-конфигурации владельца. Для собственного self-host можно использовать любую платформу — Render не обязателен. Альтернатива без платформы — [Docker Compose](/self-host/docker-compose).
+</Callout>
+
+## Сервисы
+
+| Сервис | Источник | Автодеплой |
+| --- | --- | --- |
+| `rox-api` | `agisota/rox`, `main` | да |
+| `rox-api-runtime` | image-backed | да |
+| `rox-web` | `agisota/rox`, `main` | да |
+| `rox-marketing` | `agisota/rox`, `main` | да |
+| `rox-admin` | `agisota/rox`, `main` | да |
+| `rox-docs` | `agisota/rox`, `main` | да |
+
+## Ручной деплой
+
+Когда нужно задеплоить конкретный сервис на известный коммит, используется вспомогательный скрипт:
+
+```bash
+scripts/render-deploy.sh marketing
+scripts/render-deploy.sh marketing <commit-sha>
+```
+
+Под капотом он выполняет:
+
+```bash
+render deploys create <service-id> [--commit <sha>] --wait --confirm
+```
+
+## Проверка
+
+Используйте Render CLI как источник истины по сервисам:
+
+```bash
+render services --output json
+render deploys list <service-id> --output json
+```
+
+Публичный smoke-тест продакшена — проверка реального публичного хоста:
+
+```bash
+curl -I https://rox.one
+```
+
+## Миграции базы данных
+
+<Callout type="warn">
+Старый продакшен-workflow запускал миграции БД перед деплоем — он отключён. Запускайте миграции только через явный процесс миграции целевого окружения; не возвращайте неявные продакшен-миграции в деплой-workflow.
+</Callout>
+
+## Дальше
+
+- [Обновления](/self-host/upgrades) — runbook обновления версий.
+- [База данных](/self-host/database) — политика миграций.

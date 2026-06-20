@@ -1,0 +1,68 @@
+---
+title: Пополнения
+description: Оплата USDT через dv.net, статусы инвойсов и журнал транзакций Rox
+---
+
+## Пополнение через dv.net
+
+Баланс пополняется криптовалютой USDT через платёжный сервис **dv.net**. Каждое пополнение создаёт инвойс, который проходит свой жизненный цикл, и при подтверждении начисляет Rox по курсу **1 USDT = 100 Rox**.
+
+<DatabaseTable
+	tableName="rox_topups"
+	fields={[
+		{ name: "id", type: "uuid", description: "Идентификатор пополнения.", isPrimaryKey: true },
+		{ name: "user_id", type: "uuid", description: "Пользователь, который пополняет баланс.", isForeignKey: true, isRequired: true, references: { model: "users", field: "id" } },
+		{ name: "usdt_amount", type: "numeric(20, 6)", description: "Сумма к оплате в USDT.", isRequired: true },
+		{ name: "rox_amount", type: "numeric(20, 6)", description: "Сколько Rox будет начислено при подтверждении.", isRequired: true },
+		{ name: "dvnet_invoice_id", type: "text", description: "Идентификатор инвойса dv.net. Уникален.", isRequired: true, isUnique: true },
+		{ name: "status", type: "rox_topup_status", description: "Статус инвойса (см. ниже).", isRequired: true },
+		{ name: "confirmed_at", type: "timestamptz", description: "Когда оплата была подтверждена.", isOptional: true },
+		{ name: "created_at", type: "timestamptz", description: "Когда инвойс был создан.", isRequired: true },
+	]}
+/>
+
+### Статусы инвойса
+
+| Статус | Значение |
+| --- | --- |
+| `pending` | Инвойс создан, оплата ещё не подтверждена. Стартовый статус. |
+| `confirmed` | Оплата подтверждена; Rox начислены, в журнал добавлена запись пополнения. |
+| `failed` | Оплата не прошла. |
+| `expired` | Срок инвойса истёк без оплаты. |
+
+Rox начисляются только при переходе в `confirmed`.
+
+## Журнал транзакций
+
+`rox_ledger` — **append-only** история каждого изменения баланса. Записи никогда не редактируются и не удаляются; любая корректировка — это новая строка. Это даёт полную прозрачность: сумма всех дельт всегда равна текущему балансу.
+
+<DatabaseTable
+	tableName="rox_ledger"
+	fields={[
+		{ name: "id", type: "uuid", description: "Идентификатор записи журнала.", isPrimaryKey: true },
+		{ name: "user_id", type: "uuid", description: "Чей баланс изменился.", isForeignKey: true, isRequired: true, references: { model: "users", field: "id" } },
+		{ name: "delta_rox", type: "numeric(20, 6)", description: "Изменение баланса в Rox (может быть отрицательным).", isRequired: true },
+		{ name: "kind", type: "rox_ledger_kind", description: "Тип операции (см. ниже).", isRequired: true },
+		{ name: "usage_request_id", type: "uuid", description: "Связанный оплачиваемый запрос (для списаний).", isForeignKey: true, isOptional: true, references: { model: "usage_requests", field: "id" } },
+		{ name: "topup_id", type: "uuid", description: "Связанное пополнение (для начислений).", isForeignKey: true, isOptional: true, references: { model: "rox_topups", field: "id" } },
+		{ name: "created_at", type: "timestamptz", description: "Когда операция произошла.", isRequired: true },
+	]}
+/>
+
+### Типы записей журнала
+
+| Тип | Значение |
+| --- | --- |
+| `seed` | Стартовое начисление 500 Rox при создании баланса. |
+| `topup` | Начисление от подтверждённого пополнения dv.net. |
+| `request_charge` | Списание за оплачиваемый запрос к модели. |
+| `adjustment` | Ручная корректировка. |
+
+<Callout type="info">
+Поскольку журнал только дополняется, история транзакций всегда воспроизводима. Текущий баланс (`rox_balances.balance_rox`) — это кэш суммы всех дельт; при расхождении источником истины считается журнал.
+</Callout>
+
+## Дальше
+
+- [Обзор экономики](/economy/overview) — стартовый баланс и модель баланса.
+- [Учёт потребления](/economy/usage-metering) — как считается стоимость запросов.
