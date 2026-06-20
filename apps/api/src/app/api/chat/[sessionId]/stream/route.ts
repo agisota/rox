@@ -11,6 +11,7 @@ import {
 	STRIP_HEADERS,
 	streamUrl,
 } from "../../lib";
+import { upstreamDeleteSucceeded } from "./upstream-delete";
 
 // ---------------------------------------------------------------------------
 // GET — SSE proxy (read from durable stream)
@@ -156,14 +157,21 @@ export async function DELETE(
 		},
 	});
 
-	await db
-		.delete(chatSessions)
-		.where(
-			and(
-				eq(chatSessions.id, sessionId),
-				eq(chatSessions.createdBy, session.user.id),
-			),
-		);
+	// Only remove the local row once the upstream stream is gone, so the DB and
+	// the durable stream cannot drift apart. A 404 means the stream was already
+	// deleted (idempotent retry), which we treat as success; any other non-OK
+	// status leaves the row intact and propagates the upstream error so the
+	// caller can retry.
+	if (upstreamDeleteSucceeded(response.status)) {
+		await db
+			.delete(chatSessions)
+			.where(
+				and(
+					eq(chatSessions.id, sessionId),
+					eq(chatSessions.createdBy, session.user.id),
+				),
+			);
+	}
 
 	const headers = new Headers();
 	for (const [key, value] of response.headers.entries()) {

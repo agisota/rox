@@ -9,21 +9,7 @@ import type { BetterAuthPlugin } from "better-auth";
 import { createAuthEndpoint } from "better-auth/api";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-
-function verificationMatchesInvitation({
-	verificationIdentifier,
-	invitationId,
-	invitationEmail,
-}: {
-	verificationIdentifier: string;
-	invitationId: string;
-	invitationEmail: string;
-}) {
-	return (
-		verificationIdentifier === invitationId ||
-		verificationIdentifier.toLowerCase() === invitationEmail.toLowerCase()
-	);
-}
+import { classifyVerificationScope } from "./verification-scope";
 
 function getInvitationAcceptError(error: unknown) {
 	if (!(error instanceof Error)) {
@@ -105,13 +91,13 @@ export const acceptInvitationEndpoint = {
 					);
 				}
 
-				if (
-					!verificationMatchesInvitation({
-						verificationIdentifier: verification.identifier,
-						invitationId: invitation.id,
-						invitationEmail: invitation.email,
-					})
-				) {
+				const verificationScope = classifyVerificationScope({
+					verificationIdentifier: verification.identifier,
+					invitationId: invitation.id,
+					invitationEmail: invitation.email,
+				});
+
+				if (verificationScope === "mismatch") {
 					console.log(
 						"[invitation/accept] ERROR - Token does not match invitation",
 					);
@@ -119,6 +105,35 @@ export const acceptInvitationEndpoint = {
 						{ error: "This invitation link is invalid or has expired." },
 						{ status: 400 },
 					);
+				}
+
+				// Legacy email-keyed tokens are not bound to a specific invitation.
+				// Only honor them when the email maps to exactly one pending
+				// invitation and it is the one being accepted, so a legacy token
+				// cannot be replayed against a different pending invitation that
+				// shares the invitee email.
+				if (verificationScope === "legacy-email") {
+					const pendingForEmail = await db.query.invitations.findMany({
+						where: and(
+							eq(invitations.email, invitation.email),
+							eq(invitations.status, "pending"),
+						),
+						columns: { id: true },
+					});
+
+					const isUnambiguousLegacyLink =
+						pendingForEmail.length === 1 &&
+						pendingForEmail[0]?.id === invitationId;
+
+					if (!isUnambiguousLegacyLink) {
+						console.log(
+							"[invitation/accept] ERROR - Ambiguous legacy token; cannot scope to invitation",
+						);
+						return ctx.json(
+							{ error: "This invitation link is invalid or has expired." },
+							{ status: 400 },
+						);
+					}
 				}
 
 				if (invitation.status !== "pending") {
