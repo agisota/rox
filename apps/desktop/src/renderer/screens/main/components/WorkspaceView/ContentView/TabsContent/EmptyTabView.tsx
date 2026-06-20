@@ -77,18 +77,18 @@ export function EmptyTabView({
 	const actions = useMemo<EmptyTabAction[]>(() => {
 		const baseActions: EmptyTabAction[] = [
 			{
-				id: "terminal",
-				label: "Открыть терминал",
-				display: newGroupDisplay,
-				icon: BsTerminalPlus,
-				onClick: handleShowTerminal,
-			},
-			{
 				id: "new-agent",
 				label: "Открыть чат",
 				display: newChatDisplay,
 				icon: TbMessageCirclePlus,
 				onClick: handleNewAgent,
+			},
+			{
+				id: "terminal",
+				label: "Открыть терминал",
+				display: newGroupDisplay,
+				icon: BsTerminalPlus,
+				onClick: handleShowTerminal,
 			},
 		];
 

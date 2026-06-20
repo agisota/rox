@@ -6,7 +6,7 @@ import {
 } from "@rox/shared/dvnet-client";
 import { toLedgerKind } from "@rox/shared/rox-ledger-kind";
 import { creditConfirmedPayment } from "@rox/shared/rox-topup";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { env } from "@/env";
 import { apiError } from "@/lib/api-response";
 
@@ -80,6 +80,21 @@ export async function POST(request: Request) {
 	}
 
 	await db.transaction(async (tx) => {
+		// Concurrency guard: claim the pending row atomically. The status update is
+		// conditional on `status='pending'`, so if two confirmed deliveries for the
+		// same order_id race past the pre-transaction read, exactly one wins this
+		// update and the loser sees zero affected rows. `.returning()` lets us read
+		// whether THIS delivery made the transition before crediting anything.
+		const claimed = await tx
+			.update(roxTopups)
+			.set({ status: "confirmed", confirmedAt: new Date() })
+			.where(and(eq(roxTopups.id, topup.id), eq(roxTopups.status, "pending")))
+			.returning();
+		if (claimed.length === 0) {
+			// Another delivery already settled this topup. Ack 200 without crediting.
+			return;
+		}
+
 		// Re-seed defensively in case the balance row never existed; the column
 		// default (500) means a brand-new row would already hold the starting
 		// grant, so read the current balance and add the credited Rox to it.
@@ -95,11 +110,6 @@ export async function POST(request: Request) {
 		const current = balanceRow ? Number(balanceRow.balanceRox) : 0;
 		const credited = creditConfirmedPayment(current, payment, new Set());
 		if (!credited.credited) return;
-
-		await tx
-			.update(roxTopups)
-			.set({ status: "confirmed", confirmedAt: new Date() })
-			.where(eq(roxTopups.id, topup.id));
 
 		await tx.insert(roxLedger).values({
 			userId: topup.userId,
