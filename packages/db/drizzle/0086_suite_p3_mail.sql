@@ -77,6 +77,12 @@ CREATE TABLE "mail_messages" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "mail_nonces" (
+	"nonce" text PRIMARY KEY NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "mail_threads" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"organization_id" uuid NOT NULL,
@@ -112,5 +118,6 @@ CREATE INDEX "mail_messages_owner_received_idx" ON "mail_messages" USING btree (
 CREATE INDEX "mail_messages_thread_idx" ON "mail_messages" USING btree ("thread_id");--> statement-breakpoint
 CREATE INDEX "mail_messages_status_idx" ON "mail_messages" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "mail_messages_org_idx" ON "mail_messages" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX "mail_nonces_expires_idx" ON "mail_nonces" USING btree ("expires_at");--> statement-breakpoint
 CREATE INDEX "mail_threads_owner_last_idx" ON "mail_threads" USING btree ("owner_user_id","last_message_at");--> statement-breakpoint
 CREATE INDEX "mail_threads_org_idx" ON "mail_threads" USING btree ("organization_id");

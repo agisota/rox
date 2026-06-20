@@ -52,8 +52,9 @@ export async function POST(request: Request) {
 		return apiError(`Rejected: ${verification.reason}`, status);
 	}
 
-	// Single-use nonce replay guard (inside the timestamp skew window).
-	if (!sharedNonceStore.checkAndRecord(verification.nonce)) {
+	// Single-use nonce replay guard (inside the timestamp skew window). DB-backed
+	// so replay protection holds across horizontally-scaled API instances.
+	if (!(await sharedNonceStore.checkAndRecord(verification.nonce))) {
 		return apiError("Replay detected", 401);
 	}
 

@@ -31,11 +31,25 @@ import type {
 // Inbound envelope (Cloudflare Email Worker → /api/mail/inbound body)
 // ---------------------------------------------------------------------------
 
-/** SPF/DKIM/DMARC verdicts the edge Worker reports from the inbound SMTP auth. */
+/** Tri-state per-check verdict (`pass`/`fail`/`unknown`). */
+export type EmailAuthVerdict = "pass" | "fail" | "unknown";
+
+/**
+ * SPF/DKIM/DMARC verdicts the edge Worker reports from the inbound SMTP auth.
+ *
+ * SECURITY (PR #335 review): a verdict is only safe to trust when it was stamped
+ * by an allowlisted receiver identity (Cloudflare's own Authentication-Results
+ * authserv-id). A sender can forge `Authentication-Results: ...; dmarc=pass` on
+ * their own message, so the Worker reports `trusted: false` when it could not
+ * find an allowlisted authserv-id, and downstream scoring treats every untrusted
+ * "pass" as unverified. `unknown` means the check was absent / not evaluated.
+ */
 export interface EmailAuthResult {
-	spf: boolean;
-	dkim: boolean;
-	dmarc: boolean;
+	spf: EmailAuthVerdict;
+	dkim: EmailAuthVerdict;
+	dmarc: EmailAuthVerdict;
+	/** True only when the verdicts came from an allowlisted authserv-id. */
+	trusted: boolean;
 }
 
 /** Per-attachment pointer the Worker streamed to R2 before POSTing. */

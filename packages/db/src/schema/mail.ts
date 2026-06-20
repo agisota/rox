@@ -315,3 +315,36 @@ export const mailEvents = pgTable(
 
 export type InsertMailEvent = typeof mailEvents.$inferInsert;
 export type SelectMailEvent = typeof mailEvents.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// mail_nonces — single-use replay guard for the inbound webhook (D3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Each signed Cloudflare Email Worker POST to `/api/mail/inbound` carries a
+ * one-time nonce inside the timestamp-skew window. The per-process in-memory set
+ * does not hold across horizontally-scaled API instances, so the DB is the
+ * source of truth: a nonce is consumed by INSERT, and a unique-constraint
+ * violation on the primary key means the nonce was already seen ⇒ replay.
+ *
+ * `expires_at` bounds retention to the skew window so a periodic/opportunistic
+ * prune keeps the table tiny. Additive, infra-only — no FK, no org scoping
+ * (the nonce is global to the webhook, not tenant data).
+ */
+export const mailNonces = pgTable(
+	"mail_nonces",
+	{
+		nonce: text().primaryKey(),
+		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [
+		// Prune sweep: delete rows past their expiry cheaply.
+		index("mail_nonces_expires_idx").on(t.expiresAt),
+	],
+);
+
+export type InsertMailNonce = typeof mailNonces.$inferInsert;
+export type SelectMailNonce = typeof mailNonces.$inferSelect;

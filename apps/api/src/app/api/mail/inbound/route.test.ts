@@ -18,6 +18,20 @@ mock.module("@/lib/mail/ingest", () => ({
 	ingestInboundMail: () => Promise.resolve(nextResult),
 }));
 
+// The shared nonce store is DB-backed in production (it imports `@rox/db/client`).
+// Swap it for a pure in-memory store so the route test exercises the replay
+// branch without touching a database.
+const seenNonces = new Set<string>();
+mock.module("@/lib/mail/nonceStore", () => ({
+	sharedNonceStore: {
+		checkAndRecord: async (nonce: string) => {
+			if (seenNonces.has(nonce)) return false;
+			seenNonces.add(nonce);
+			return true;
+		},
+	},
+}));
+
 const { POST } = await import("./route");
 
 const SECRET = "route-test-secret";
@@ -28,7 +42,7 @@ const ENVELOPE = {
 	to: ["mark@rox.one"],
 	rawSize: 100,
 	rawBlobKey: "mail/raw/user-1/m1.eml",
-	auth: { spf: true, dkim: true, dmarc: true },
+	auth: { spf: "pass", dkim: "pass", dmarc: "pass", trusted: true },
 };
 
 async function signedRequest(

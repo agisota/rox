@@ -6,8 +6,20 @@
  * loud 400 for a malformed body instead of a downstream crash.
  */
 
-import type { EmailRawInbound } from "@rox/comms-core";
+import type { EmailAuthVerdict, EmailRawInbound } from "@rox/comms-core";
 import { z } from "zod";
+
+/**
+ * A per-check verdict on the wire: the tri-state `pass`/`fail`/`unknown`, or a
+ * back-compat boolean (`true`→pass, `false`→fail). Normalized to the verdict.
+ */
+const authVerdictSchema = z
+	.union([z.enum(["pass", "fail", "unknown"]), z.boolean()])
+	.transform((v): EmailAuthVerdict => {
+		if (v === true) return "pass";
+		if (v === false) return "fail";
+		return v;
+	});
 
 const attachmentSchema = z.object({
 	filename: z.string().min(1).max(998),
@@ -35,10 +47,15 @@ export const inboundEnvelopeSchema = z.object({
 	bodyTextKey: z.string().max(1024).nullish(),
 	bodyHtmlKey: z.string().max(1024).nullish(),
 	snippet: z.string().max(2000).nullish(),
+	// SECURITY (PR #335 review): the Worker reports tri-state verdicts + a
+	// `trusted` flag (set only when an allowlisted Authentication-Results
+	// authserv-id stamped them). Booleans are accepted for back-compat and
+	// normalized to verdicts; a missing `trusted` defaults to false (fail-closed).
 	auth: z.object({
-		spf: z.boolean(),
-		dkim: z.boolean(),
-		dmarc: z.boolean(),
+		spf: authVerdictSchema,
+		dkim: authVerdictSchema,
+		dmarc: authVerdictSchema,
+		trusted: z.boolean().optional().default(false),
 	}),
 	attachments: z.array(attachmentSchema).max(100).optional(),
 	hasCalendarInvite: z.boolean().optional(),

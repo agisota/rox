@@ -24,6 +24,11 @@ ROX_API_URL = "https://api.rox.one"
 MAIL_DOMAIN = "rox.one"
 # Max inbound size in bytes (Cloudflare hard cap is 25 MiB).
 MAX_INBOUND_BYTES = "26214400"
+# Allowlisted `Authentication-Results` authserv-id(s) (comma-separated). Only a
+# header stamped by one of these is trusted for SPF/DKIM/DMARC; sender-supplied
+# Authentication-Results headers are ignored. Defaults to MAIL_DOMAIN. Set this
+# to whatever authserv-id Cloudflare Email Routing actually stamps on the zone.
+CF_AUTHSERV_ID = "rox.one"
 
 # R2 bucket the raw .eml + attachments are streamed into.
 [[r2_buckets]]

@@ -36,7 +36,7 @@ const RAW: EmailRawInbound = {
 	bodyTextKey: "mail/body/user-1/abc.txt",
 	bodyHtmlKey: null,
 	snippet: "Hello there, thanks for...",
-	auth: { spf: true, dkim: true, dmarc: true },
+	auth: { spf: "pass", dkim: "pass", dmarc: "pass", trusted: true },
 	attachments: [
 		{
 			filename: "a.pdf",
@@ -91,9 +91,14 @@ describe("EmailAdapter.normalizeInbound", () => {
 		const adapter = makeAdapter([]);
 		const n = adapter.normalizeInbound({
 			...RAW,
-			auth: { spf: false, dkim: false, dmarc: false },
+			auth: { spf: "fail", dkim: "fail", dmarc: "fail", trusted: true },
 		});
-		expect(n.metadata.auth).toEqual({ spf: false, dkim: false, dmarc: false });
+		expect(n.metadata.auth).toEqual({
+			spf: "fail",
+			dkim: "fail",
+			dmarc: "fail",
+			trusted: true,
+		});
 	});
 });
 

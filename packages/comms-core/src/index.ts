@@ -11,6 +11,7 @@ export {
 	EmailAdapter,
 	type EmailAdapterOptions,
 	type EmailAuthResult,
+	type EmailAuthVerdict,
 	type EmailInboundAttachment,
 	type EmailOutboundPayload,
 	type EmailRawInbound,
@@ -23,6 +24,7 @@ export {
 	type TransportAdapter,
 } from "./adapter";
 export {
+	type AuthVerdict,
 	DEFAULT_SPAM_THRESHOLD,
 	type SpamAuthSignals,
 	type SpamContentSignals,

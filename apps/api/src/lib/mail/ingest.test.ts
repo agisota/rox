@@ -87,7 +87,7 @@ const CLEAN: EmailRawInbound = {
 	bodyTextKey: "mail/body/user-1/m1.txt",
 	bodyHtmlKey: null,
 	snippet: "Hello there",
-	auth: { spf: true, dkim: true, dmarc: true },
+	auth: { spf: "pass", dkim: "pass", dmarc: "pass", trusted: true },
 	attachments: [
 		{
 			filename: "a.pdf",
@@ -165,11 +165,31 @@ describe("ingestInboundMail", () => {
 		const state = freshState();
 		const res = await ingestInboundMail(makeDb(state), {
 			...CLEAN,
-			auth: { spf: false, dkim: false, dmarc: false },
+			auth: { spf: "fail", dkim: "fail", dmarc: "fail", trusted: true },
 		});
 		expect(res.kind).toBe("quarantined");
 		expect(state.insertedMessages[0]?.status).toBe("quarantined");
 		// Quarantined mail is persisted but never surfaced to the unified inbox.
+		expect(state.emitted).toHaveLength(0);
+	});
+
+	test("forged untrusted pass is quarantined (untrusted ⇒ scored, not clean)", async () => {
+		// A sender stamps `Authentication-Results: ...; dmarc=pass` on their own
+		// message; without a trusted authserv-id the ingest must NOT treat it as
+		// clean. The unknown penalties (15+10+10=35) + spammy (15) + bulk (10)
+		// cross the quarantine threshold.
+		const state = freshState();
+		const res = await ingestInboundMail(makeDb(state), {
+			...CLEAN,
+			subject: "Free money click here now",
+			to: Array.from({ length: 30 }, (_, i) => `user${i}@rox.one`),
+			auth: { spf: "pass", dkim: "pass", dmarc: "pass", trusted: false },
+		});
+		expect(res.kind).toBe("quarantined");
+		// The persisted verdict columns must NOT record an untrusted pass as true.
+		expect(state.insertedMessages[0]?.spfPass).toBeNull();
+		expect(state.insertedMessages[0]?.dkimPass).toBeNull();
+		expect(state.insertedMessages[0]?.dmarcPass).toBeNull();
 		expect(state.emitted).toHaveLength(0);
 	});
 

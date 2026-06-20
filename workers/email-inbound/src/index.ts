@@ -24,6 +24,13 @@ interface Env {
 	MAIL_DOMAIN: string;
 	MAX_INBOUND_BYTES: string;
 	MAIL_INBOUND_SECRET: string;
+	/**
+	 * Comma-separated allowlist of trusted `Authentication-Results` authserv-ids
+	 * (the token before the first `;`). Only a header stamped by one of these is
+	 * trusted; sender-supplied Authentication-Results are ignored. Defaults to
+	 * `MAIL_DOMAIN` (the rox.one receiving identity Cloudflare stamps).
+	 */
+	CF_AUTHSERV_ID?: string;
 }
 
 /** The compact envelope the API expects (mirrors EmailRawInbound). */
@@ -44,7 +51,13 @@ interface InboundEnvelope {
 	bodyTextKey: string | null;
 	bodyHtmlKey: string | null;
 	snippet: string | null;
-	auth: { spf: boolean; dkim: boolean; dmarc: boolean };
+	auth: {
+		spf: AuthVerdict;
+		dkim: AuthVerdict;
+		dmarc: AuthVerdict;
+		/** True only when a trusted (allowlisted authserv-id) header was found. */
+		trusted: boolean;
+	};
 	attachments: Array<{
 		filename: string;
 		contentType: string;
@@ -79,20 +92,96 @@ async function hmacSign(secret: string, body: string): Promise<string> {
 	return toHex(sig);
 }
 
-/** Read the SPF/DKIM/DMARC verdicts Cloudflare attaches to the message. */
-function readAuth(message: ForwardableEmailMessage): InboundEnvelope["auth"] {
-	const get = (name: string): boolean => {
-		const value = message.headers.get(name)?.toLowerCase() ?? "";
-		// `Authentication-Results` style or per-result headers: treat an explicit
-		// "pass" as pass, everything else (fail/none/absent) as not-pass.
-		return value.includes("pass");
-	};
-	const authResults =
-		message.headers.get("authentication-results")?.toLowerCase() ?? "";
+/** Tri-state SPF/DKIM/DMARC verdict. */
+type AuthVerdict = "pass" | "fail" | "unknown";
+
+/**
+ * Split a possibly comma-joined `Authentication-Results` header value into its
+ * individual header instances.
+ *
+ * The Fetch `Headers` API concatenates repeated headers with `", "`, but an
+ * Authentication-Results value legitimately contains commas (between methods).
+ * Cloudflare prepends its own freshly-stamped header, so we split on the
+ * boundary that starts a new authserv-id: a comma/newline immediately followed
+ * by `authserv-id;` (a token then a semicolon) at the start of a result.
+ * Conservative — when in doubt we keep the chunk intact (it just won't match the
+ * allowlist and is ignored).
+ */
+function splitAuthResults(raw: string): string[] {
+	return raw
+		.split(/\r?\n/)
+		.flatMap((line) => line.split(/,(?=\s*[^;,\s]+\s*;)/))
+		.map((s) => s.trim())
+		.filter(Boolean);
+}
+
+/** The authserv-id is the token before the first `;`. */
+function authServId(headerValue: string): string {
+	const semi = headerValue.indexOf(";");
+	const head = (semi === -1 ? headerValue : headerValue.slice(0, semi)).trim();
+	// Strip any trailing `1` version token (`authserv-id 1; ...`).
+	return head.split(/\s+/)[0]?.toLowerCase() ?? "";
+}
+
+/** Extract a method verdict (`spf=pass` → "pass") from a result header. */
+function methodVerdict(headerValue: string, method: string): AuthVerdict {
+	const m = new RegExp(`\\b${method}\\s*=\\s*([a-z]+)`, "i").exec(headerValue);
+	if (!m) return "unknown";
+	const v = m[1]?.toLowerCase();
+	if (v === "pass") return "pass";
+	if (
+		v === "fail" ||
+		v === "softfail" ||
+		v === "permerror" ||
+		v === "temperror"
+	)
+		return "fail";
+	return "unknown";
+}
+
+/**
+ * Read the SPF/DKIM/DMARC verdicts from the Authentication-Results header
+ * Cloudflare stamps with ITS OWN authserv-id.
+ *
+ * SECURITY (PR #335 review): a sender can forge their own
+ * `Authentication-Results: evil.example; spf=pass; dkim=pass; dmarc=pass` inside
+ * the message. We therefore parse ALL Authentication-Results headers and only
+ * trust the one whose authserv-id is in the configured allowlist
+ * (`CF_AUTHSERV_ID`, default `MAIL_DOMAIN`). Every other header is ignored. If no
+ * trusted header is present we report `unknown`/`trusted:false` — NEVER a pass
+ * derived from a sender-supplied header.
+ */
+function readAuth(
+	message: ForwardableEmailMessage,
+	env: Env,
+): InboundEnvelope["auth"] {
+	const allowed = new Set(
+		(env.CF_AUTHSERV_ID ?? env.MAIL_DOMAIN ?? "rox.one")
+			.split(",")
+			.map((s) => s.trim().toLowerCase())
+			.filter(Boolean),
+	);
+
+	const rawHeader = message.headers.get("authentication-results") ?? "";
+	const candidates = splitAuthResults(rawHeader);
+	const trustedHeader = candidates.find((c) => allowed.has(authServId(c)));
+
+	if (!trustedHeader) {
+		// No allowlisted authserv-id stamped the message — treat everything as
+		// unknown and untrusted. Sender-supplied headers are never trusted.
+		return {
+			spf: "unknown",
+			dkim: "unknown",
+			dmarc: "unknown",
+			trusted: false,
+		};
+	}
+
 	return {
-		spf: authResults.includes("spf=pass") || get("received-spf"),
-		dkim: authResults.includes("dkim=pass"),
-		dmarc: authResults.includes("dmarc=pass"),
+		spf: methodVerdict(trustedHeader, "spf"),
+		dkim: methodVerdict(trustedHeader, "dkim"),
+		dmarc: methodVerdict(trustedHeader, "dmarc"),
+		trusted: true,
 	};
 }
 
@@ -197,7 +286,7 @@ export default {
 			bodyTextKey,
 			bodyHtmlKey,
 			snippet,
-			auth: readAuth(message),
+			auth: readAuth(message, env),
 			attachments,
 			hasCalendarInvite: (parsed.attachments ?? []).some(
 				(a) => a.mimeType === "text/calendar",

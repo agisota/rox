@@ -21,10 +21,27 @@
  */
 
 import {
+	type EmailAuthVerdict,
 	type EmailRawInbound,
 	normalizeSubject,
 	scoreInboundSpam,
 } from "@rox/comms-core";
+
+/**
+ * Map a tri-state auth verdict to the nullable boolean stored on
+ * `mail_messages` (`spf_pass`/`dkim_pass`/`dmarc_pass`):
+ *   - a `pass` only counts as `true` when the verdict block is `trusted`
+ *     (an untrusted/forgeable pass is recorded as `null`/unknown);
+ *   - `fail` → `false`; `unknown` → `null`.
+ */
+function verdictToColumn(
+	verdict: EmailAuthVerdict,
+	trusted: boolean,
+): boolean | null {
+	if (verdict === "fail") return false;
+	if (verdict === "pass") return trusted ? true : null;
+	return null;
+}
 
 /** Outcome the route maps onto an HTTP status. */
 export type IngestResult =
@@ -141,6 +158,9 @@ export async function ingestInboundMail(
 	}
 
 	// 3. Spam score from the edge auth verdicts + light heuristics.
+	//    SECURITY (PR #335 review): pass through the tri-state verdicts AND the
+	//    `trusted` flag so an untrusted (sender-forgeable) "pass" never grants
+	//    negative weight — see `scoreInboundSpam`.
 	const subject = raw.subject ?? null;
 	const snippet = raw.snippet ?? "";
 	const spam = scoreInboundSpam(
@@ -149,6 +169,7 @@ export async function ingestInboundMail(
 				spf: raw.auth.spf,
 				dkim: raw.auth.dkim,
 				dmarc: raw.auth.dmarc,
+				trusted: raw.auth.trusted,
 			},
 			subject,
 			snippet,
@@ -209,9 +230,12 @@ export async function ingestInboundMail(
 		hasAttachments: attachments.length > 0,
 		hasCalendarInvite: raw.hasCalendarInvite ?? false,
 		spamScore: spam.score,
-		spfPass: raw.auth.spf,
-		dkimPass: raw.auth.dkim,
-		dmarcPass: raw.auth.dmarc,
+		// Persist the verdict as a tri-state boolean column (pass=true, fail=false,
+		// unknown=null). An untrusted verdict block is recorded as unknown so the
+		// stored signal can't masquerade as a verified pass.
+		spfPass: verdictToColumn(raw.auth.spf, raw.auth.trusted),
+		dkimPass: verdictToColumn(raw.auth.dkim, raw.auth.trusted),
+		dmarcPass: verdictToColumn(raw.auth.dmarc, raw.auth.trusted),
 		provider: "cloudflare",
 		receivedAt,
 	});

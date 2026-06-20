@@ -7,15 +7,39 @@
  * into a 0..100 score. At or above {@link DEFAULT_SPAM_THRESHOLD} the message is
  * `quarantined` (persisted but NOT emitted into the D1 unified inbox).
  *
+ * SECURITY (PR #335 review, Fix #2): a verdict is only allowed to LOWER the
+ * score when it is `pass` AND `trusted` (i.e. derived from an allowlisted
+ * Authentication-Results authserv-id — see the inbound Worker's `readAuth`). A
+ * sender can trivially forge `Authentication-Results: ...; dmarc=pass` on their
+ * own message, so an UNTRUSTED pass is treated exactly like `unknown`: it never
+ * grants the negative weight and is itself mildly suspicious. A single trusted
+ * `dmarc=pass` never zeroes the score while SPF/DKIM are failing/unknown.
+ *
  * Pure + dependency-free so it unit-tests trivially and runs on any server
  * target (API route, future Worker, cron).
  */
 
-/** Auth verdicts the edge Worker reports (null = unknown / not evaluated). */
+/** Tri-state per-check verdict (`pass`/`fail`/`unknown`). */
+export type AuthVerdict = "pass" | "fail" | "unknown";
+
+/**
+ * Auth verdicts the edge Worker reports. `trusted` is true only when the
+ * verdicts came from an allowlisted receiver identity (Cloudflare's own
+ * Authentication-Results authserv-id); when false, every "pass" is unverified
+ * and MUST NOT be rewarded.
+ *
+ * Booleans / null are accepted for back-compat (`true`→pass, `false`→fail,
+ * `null`→unknown) and normalized internally.
+ */
 export interface SpamAuthSignals {
-	spf: boolean | null;
-	dkim: boolean | null;
-	dmarc: boolean | null;
+	spf: AuthVerdict | boolean | null;
+	dkim: AuthVerdict | boolean | null;
+	dmarc: AuthVerdict | boolean | null;
+	/**
+	 * Whether these verdicts came from a trusted receiver identity. Defaults to
+	 * `false` (fail-closed): without proof of trust, a "pass" is unverified.
+	 */
+	trusted?: boolean;
 }
 
 /** Light content signals the ingest extracts from the envelope. */
@@ -51,9 +75,25 @@ const SPAMMY_PATTERNS: ReadonlyArray<RegExp> = [
 	/\bclick\s+here\s+now\b/i,
 ];
 
+/** Normalize the back-compat boolean/null inputs into a tri-state verdict. */
+function toVerdict(
+	value: AuthVerdict | boolean | null | undefined,
+): AuthVerdict {
+	if (value === true) return "pass";
+	if (value === false) return "fail";
+	if (value === "pass" || value === "fail") return value;
+	return "unknown";
+}
+
 /**
- * Score an inbound message. Failed/absent auth dominates; content heuristics
- * nudge. Clamped to 0..100.
+ * Score an inbound message. Failed/unverified auth dominates; a verdict only
+ * lowers risk when it is a TRUSTED pass. Content heuristics nudge. Clamped to
+ * 0..100.
+ *
+ * Per-check weights (positive = more suspicious):
+ *   - fail:                strongest signal
+ *   - unknown / untrusted: moderately suspicious (cannot be vouched for)
+ *   - trusted pass:        no penalty (the only "clean" state)
  */
 export function scoreInboundSpam(
 	input: SpamScoreInput,
@@ -62,23 +102,52 @@ export function scoreInboundSpam(
 	let score = 0;
 	const reasons: string[] = [];
 
-	const { spf, dkim, dmarc } = input.auth;
+	const trusted = input.auth.trusted === true;
+	const spf = toVerdict(input.auth.spf);
+	const dkim = toVerdict(input.auth.dkim);
+	const dmarc = toVerdict(input.auth.dmarc);
 
-	// Hard auth failures are the strongest signal.
-	if (dmarc === false) {
+	// A "pass" only counts as clean when it is backed by a trusted verdict.
+	// Otherwise it is unverified (sender-forgeable) and treated like unknown.
+	const effective = (v: AuthVerdict): AuthVerdict => {
+		if (v === "pass" && !trusted) return "unknown";
+		return v;
+	};
+	const spfEff = effective(spf);
+	const dkimEff = effective(dkim);
+	const dmarcEff = effective(dmarc);
+
+	if (!trusted) {
+		// No allowlisted authserv-id stamped these — the whole verdict block is
+		// unverified. Flag it once so audits can see why a "pass" earned no credit.
+		reasons.push("auth_untrusted");
+	}
+
+	// DMARC is the alignment gate: fail dominates; unverified/unknown is still
+	// suspicious. A trusted pass earns NO negative weight on its own — it simply
+	// avoids the penalty (SPF/DKIM below still stand on their own).
+	if (dmarcEff === "fail") {
 		score += 45;
 		reasons.push("dmarc_fail");
-	} else if (dmarc === null) {
-		score += 10;
+	} else if (dmarcEff === "unknown") {
+		score += 15;
 		reasons.push("dmarc_unknown");
 	}
-	if (spf === false) {
+
+	if (spfEff === "fail") {
 		score += 20;
 		reasons.push("spf_fail");
+	} else if (spfEff === "unknown") {
+		score += 10;
+		reasons.push("spf_unknown");
 	}
-	if (dkim === false) {
+
+	if (dkimEff === "fail") {
 		score += 20;
 		reasons.push("dkim_fail");
+	} else if (dkimEff === "unknown") {
+		score += 10;
+		reasons.push("dkim_unknown");
 	}
 
 	// Content heuristics (cheap, conservative).
