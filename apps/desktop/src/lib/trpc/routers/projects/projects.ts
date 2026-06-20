@@ -45,7 +45,11 @@ import {
 	refreshDefaultBranch,
 	sanitizeAuthorPrefix,
 } from "../workspaces/utils/git";
-import { getSimpleGitWithShellPath } from "../workspaces/utils/git-client";
+import {
+	assertGitAvailable,
+	getSimpleGitWithShellPath,
+} from "../workspaces/utils/git-client";
+import { commitInitialWithIdentityFallback } from "../workspaces/utils/initial-commit";
 import { execWithShellEnv } from "../workspaces/utils/shell-env";
 import { getDefaultProjectColor } from "./utils/colors";
 import { discoverAndSaveProjectIcon } from "./utils/favicon-discovery";
@@ -119,23 +123,10 @@ async function initGitRepo(path: string): Promise<{ defaultBranch: string }> {
 		await git.init();
 	}
 
-	try {
-		await git.raw(["commit", "--allow-empty", "-m", "Initial commit"]);
-	} catch (err) {
-		const errorMessage = err instanceof Error ? err.message : String(err);
-		if (
-			errorMessage.includes("empty ident") ||
-			errorMessage.includes("user.email") ||
-			errorMessage.includes("user.name")
-		) {
-			throw new Error(
-				"Git user not configured. Please run:\n" +
-					'  git config --global user.name "Your Name"\n' +
-					'  git config --global user.email "you@example.com"',
-			);
-		}
-		throw new Error(`Failed to create initial commit: ${errorMessage}`);
-	}
+	// Initial commit retries with a commit-scoped Rox identity when the user
+	// has no global git identity, and passes `--no-verify` so inherited hooks
+	// can't block a fresh user. Keeps no-git-identity onboarding from dead-ending.
+	await commitInitialWithIdentityFallback(git);
 
 	const defaultBranch = (await getCurrentBranch(path)) || "main";
 	return { defaultBranch };
@@ -855,6 +846,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 		initGitAndOpen: publicProcedure
 			.input(z.object({ path: z.string() }))
 			.mutation(async ({ input }) => {
+				await assertGitAvailable();
 				const { defaultBranch } = await initGitRepo(input.path);
 
 				const project = upsertProject(input.path, defaultBranch);
@@ -895,6 +887,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 			)
 			.mutation(async ({ input }) => {
 				try {
+					await assertGitAvailable();
 					let targetDir = input.targetDirectory;
 
 					if (!targetDir) {
@@ -1042,6 +1035,7 @@ export const createProjectsRouter = (getWindow: () => BrowserWindow | null) => {
 			)
 			.mutation(async ({ input }) => {
 				try {
+					await assertGitAvailable();
 					const repoPath = join(input.parentDir, input.name);
 
 					if (existsSync(repoPath)) {
