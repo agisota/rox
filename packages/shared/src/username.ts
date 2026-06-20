@@ -86,6 +86,38 @@ export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
 	"me",
 ]);
 
+/**
+ * OAuth providers a user must have linked (better-auth `auth.accounts.provider_id`)
+ * before they're allowed to claim a custom `handle` (ROX-522 gating rule).
+ *
+ * The product intent is GitHub + Twitter(X) + Telegram, but X is DEFERRED (paid),
+ * so the live gate is the currently-reachable set. Add `"x"` here once the X
+ * provider ships — never hardcode an unreachable gate. Values match
+ * `auth.accounts.provider_id` (see telegram-plugin `TELEGRAM_PROVIDER_ID` and the
+ * `github` social provider), NOT the `registration_provider` enum.
+ */
+export const REQUIRED_HANDLE_PROVIDERS = ["github", "telegram"] as const;
+
+export type RequiredHandleProvider = (typeof REQUIRED_HANDLE_PROVIDERS)[number];
+
+/**
+ * Given the provider ids a user has linked, return the subset of
+ * {@link REQUIRED_HANDLE_PROVIDERS} they're still missing. Empty array means the
+ * handle-claim gate is satisfied. Pure — gating is enforced server-side; this is
+ * shared so the client can render the same locked state without guessing.
+ */
+export function missingHandleProviders(
+	linkedProviderIds: readonly string[],
+): RequiredHandleProvider[] {
+	const linked = new Set(linkedProviderIds);
+	return REQUIRED_HANDLE_PROVIDERS.filter((provider) => !linked.has(provider));
+}
+
+/** True when the linked providers satisfy the handle-claim gate. */
+export function canClaimHandle(linkedProviderIds: readonly string[]): boolean {
+	return missingHandleProviders(linkedProviderIds).length === 0;
+}
+
 export type HandleErrorCode =
 	| "empty"
 	| "too_short"

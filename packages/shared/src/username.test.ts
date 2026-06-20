@@ -1,8 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
+	canClaimHandle,
 	HANDLE_MAX_LENGTH,
 	HANDLE_MIN_LENGTH,
 	isValidHandle,
+	missingHandleProviders,
+	REQUIRED_HANDLE_PROVIDERS,
 	RESERVED_HANDLES,
 	validateHandle,
 } from "./username";
@@ -101,5 +104,37 @@ describe("RESERVED_HANDLES", () => {
 		]) {
 			expect(RESERVED_HANDLES.has(section)).toBe(true);
 		}
+	});
+});
+
+describe("handle-claim provider gate", () => {
+	it("requires github + telegram (X deferred)", () => {
+		expect([...REQUIRED_HANDLE_PROVIDERS]).toEqual(["github", "telegram"]);
+	});
+
+	it("reports every required provider as missing when none are linked", () => {
+		expect(missingHandleProviders([])).toEqual(["github", "telegram"]);
+		expect(canClaimHandle([])).toBe(false);
+	});
+
+	it("reports the remaining provider when only one is linked", () => {
+		expect(missingHandleProviders(["github"])).toEqual(["telegram"]);
+		expect(canClaimHandle(["github"])).toBe(false);
+		expect(missingHandleProviders(["telegram"])).toEqual(["github"]);
+	});
+
+	it("opens the gate when all required providers are linked", () => {
+		expect(missingHandleProviders(["github", "telegram"])).toEqual([]);
+		expect(canClaimHandle(["github", "telegram"])).toBe(true);
+	});
+
+	it("ignores unrelated linked providers", () => {
+		expect(canClaimHandle(["github", "telegram", "yandex", "email"])).toBe(
+			true,
+		);
+		expect(missingHandleProviders(["yandex", "email"])).toEqual([
+			"github",
+			"telegram",
+		]);
 	});
 });
