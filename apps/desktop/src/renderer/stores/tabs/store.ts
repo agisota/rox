@@ -25,6 +25,7 @@ import {
 	movePaneToNewTab,
 	movePaneToTab,
 } from "./actions/move-pane";
+import { remapLayout } from "./actions/remap-layout";
 import type {
 	AddFileViewerPaneOptions,
 	AddTabWithMultiplePanesOptions,
@@ -2010,19 +2011,7 @@ export const useTabsStore = create<TabsStore>()(
 					}
 
 					// Remap layout leaf IDs
-					const remapLayout = (
-						node: MosaicNode<string>,
-					): MosaicNode<string> => {
-						if (typeof node === "string") {
-							return idMap.get(node) ?? node;
-						}
-						return {
-							...node,
-							first: remapLayout(node.first),
-							second: remapLayout(node.second),
-						};
-					};
-					restoredTab.layout = remapLayout(restoredTab.layout);
+					restoredTab.layout = remapLayout(restoredTab.layout, idMap);
 
 					const currentActiveId = state.activeTabIds[workspaceId];
 					const historyStack = state.tabHistoryStacks[workspaceId] || [];
@@ -2125,6 +2114,20 @@ export const useTabsStore = create<TabsStore>()(
 				name: "tabs-storage",
 				version: 9,
 				storage: trpcTabsStorage,
+				// Persist only the data slice of the store. The action functions on
+				// `TabsStore` were never meaningfully persisted (JSON.stringify drops
+				// functions, and `merge` spreads the live `currentState` first), so
+				// whitelisting the state keys is behavior-preserving: the persisted
+				// shape becomes a strict subset that `merge` still rehydrates the same
+				// way. Mirrors the `partialize` convention used by the other stores.
+				partialize: (state): TabsState => ({
+					tabs: state.tabs,
+					panes: state.panes,
+					activeTabIds: state.activeTabIds,
+					focusedPaneIds: state.focusedPaneIds,
+					tabHistoryStacks: state.tabHistoryStacks,
+					closedTabsStack: state.closedTabsStack,
+				}),
 				migrate: (persistedState, version) => {
 					const state = persistedState as TabsState;
 					if (version < 2 && state.panes) {
