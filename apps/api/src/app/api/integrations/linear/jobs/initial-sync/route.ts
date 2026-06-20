@@ -6,7 +6,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import chunk from "lodash.chunk";
 import { z } from "zod";
 import { env } from "@/env";
-import { verifyQstash } from "@/lib/qstash-verify";
+import { isQstashDevBypassAllowed, verifyQstash } from "@/lib/qstash-verify";
 import { syncWorkflowStates } from "./syncWorkflowStates";
 import { fetchAllIssues, mapIssueToTask } from "./utils";
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 	// Skip signature verification in development (QStash can't reach localhost)
 	const verified = await verifyQstash(request, {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/linear/jobs/initial-sync`,
-		devBypass: env.NODE_ENV === "development",
+		devBypass: isQstashDevBypassAllowed(),
 	});
 	if (!verified.ok) {
 		return verified.response;

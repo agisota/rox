@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
 import { apiError } from "@/lib/api-response";
-import { verifyQstash } from "@/lib/qstash-verify";
+import { isQstashDevBypassAllowed, verifyQstash } from "@/lib/qstash-verify";
 import { syncInstallationRepos } from "../../sync-core";
 
 const payloadSchema = z.object({
@@ -15,7 +15,7 @@ const payloadSchema = z.object({
 export async function POST(request: Request) {
 	const verified = await verifyQstash(request, {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/github/jobs/initial-sync`,
-		devBypass: env.NODE_ENV === "development",
+		devBypass: isQstashDevBypassAllowed(),
 		onError: "false",
 		logError: (error) =>
 			console.error(

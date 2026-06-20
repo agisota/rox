@@ -19,6 +19,32 @@ const receiver = new Receiver({
 });
 
 /**
+ * Whether unsigned QStash bodies may be accepted (local-dev escape hatch).
+ *
+ * Fail-closed by default. Bypass is allowed ONLY when BOTH hold:
+ *   1. `ALLOW_UNSIGNED_QSTASH === "true"` — an explicit, intentional opt-in.
+ *      The previous `NODE_ENV === "development"` check defaulted to `true`
+ *      (env.ts defaults NODE_ENV to "development"), so an unconfigured prod
+ *      deploy silently skipped verification. This requires a deliberate flag.
+ *   2. No QStash signing keys are configured. If signing keys exist we can —
+ *      and therefore must — verify, so the bypass can never weaken an
+ *      environment that is actually capable of verifying signatures.
+ *
+ * Read from `process.env` (not the parsed `env`) for the signing keys so a dev
+ * who intentionally clears them to simulate the no-key path is honored even
+ * though the zod schema marks them required.
+ */
+export function isQstashDevBypassAllowed(
+	source: Record<string, string | undefined> = process.env,
+): boolean {
+	if (source.ALLOW_UNSIGNED_QSTASH !== "true") return false;
+	const hasSigningKeys = Boolean(
+		source.QSTASH_CURRENT_SIGNING_KEY || source.QSTASH_NEXT_SIGNING_KEY,
+	);
+	return !hasSigningKeys;
+}
+
+/**
  * How a thrown/rejected `receiver.verify` should be handled:
  * - `"throw"`: let the rejection propagate (route had a bare `await verify`).
  * - `"false"`: swallow it and treat the request as unverified (route used

@@ -3,7 +3,7 @@ import { Redis } from "@upstash/redis";
 import { sql } from "drizzle-orm";
 
 import { env } from "@/env";
-import { verifyQstash } from "@/lib/qstash-verify";
+import { isQstashDevBypassAllowed, verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ const RELAY_TTL_KEY = "relay:tunnel-ttl";
 export async function POST(request: Request): Promise<Response> {
 	const verified = await verifyQstash(request, {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/hosts/jobs/sync-presence`,
-		devBypass: env.NODE_ENV === "development",
+		devBypass: isQstashDevBypassAllowed(),
 		onError: "false",
 		logError: (error) =>
 			console.error("[sync-presence] signature verify failed:", error),

@@ -4,12 +4,12 @@ import { refreshLinearToken } from "@rox/trpc/integrations/linear";
 import { and, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
-import { verifyQstash } from "@/lib/qstash-verify";
+import { isQstashDevBypassAllowed, verifyQstash } from "@/lib/qstash-verify";
 
 export async function POST(request: Request) {
 	const verified = await verifyQstash(request, {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/linear/jobs/refresh-tokens`,
-		devBypass: env.NODE_ENV === "development",
+		devBypass: isQstashDevBypassAllowed(),
 		onError: "respond",
 		verifyErrorMessage: "Signature verification failed",
 		logError: (verifyError) =>

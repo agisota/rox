@@ -53,7 +53,10 @@ mock.module("@rox/db/schema", () => ({
 
 const { POST } = await import("./route");
 
-const TIMESTAMP = "1700000000";
+// A current timestamp so the route's replay/freshness guard (rejects requests
+// whose `x-signature-timestamp` is >5 min from now) accepts these requests; the
+// signature itself is still verified end-to-end against the real keypair.
+const TIMESTAMP = String(Math.floor(Date.now() / 1000));
 
 function makeRequest(body: string, headers: Record<string, string>): Request {
 	return new Request("http://localhost/api/integrations/discord/interactions", {
@@ -114,6 +117,18 @@ describe("discord interactions route", () => {
 		expect(response.status).toBe(401);
 		const json = (await response.json()) as { error: string };
 		expect(json.error).toBe("Invalid signature");
+	});
+
+	test("returns 401 for a stale timestamp (replay guard)", async () => {
+		const staleTimestamp = String(Math.floor(Date.now() / 1000) - 60 * 10);
+		const body = JSON.stringify({ type: 1 });
+		const response = await POST(
+			makeRequest(body, signedHeaders(staleTimestamp, body)),
+		);
+
+		expect(response.status).toBe(401);
+		const json = (await response.json()) as { error: string };
+		expect(json.error).toBe("Stale request");
 	});
 
 	test("returns 400 for malformed JSON", async () => {
