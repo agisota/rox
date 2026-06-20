@@ -106,7 +106,6 @@ const securityHeaders: Array<{ key: string; value: string }> = [
 
 const config: NextConfig = {
 	reactCompiler: true,
-	typescript: { ignoreBuildErrors: true },
 
 	images: {
 		remotePatterns: [
