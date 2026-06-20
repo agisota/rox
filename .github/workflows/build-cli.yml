@@ -54,14 +54,35 @@ jobs:
           # install script intermittently truncates the prebuild download or
           # leaves partial state that breaks the gyp fallback on linux-x64.
           set -euo pipefail
-          bun install --frozen --ignore-scripts
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
           PTY_DIR=$(ls -d node_modules/.bun/node-pty@*/node_modules/node-pty)
           (cd "$PTY_DIR" && npx --yes node-gyp rebuild)
           npm rebuild @parcel/watcher
 
       - name: Install dependencies (macOS)
         if: startsWith(matrix.target, 'darwin-')
-        run: bun install --frozen
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Build distribution
         working-directory: packages/cli

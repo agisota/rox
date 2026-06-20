@@ -59,7 +59,18 @@ jobs:
             ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Install desktop native dependencies
         working-directory: apps/desktop
@@ -229,7 +240,18 @@ jobs:
             ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Install Linux native build deps
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxkbfile-dev
@@ -368,7 +390,18 @@ jobs:
             ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       # electron-builder install-app-deps rebuilds native modules (e.g. @parcel/watcher)
       # via node-gyp, which fails on the runner with "Could not find any Visual Studio
