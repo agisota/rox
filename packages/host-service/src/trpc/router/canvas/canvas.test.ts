@@ -1,5 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { canvasDocuments } from "../../../db/schema";
@@ -27,6 +33,21 @@ async function expectCanvasWatchEvent<T>(
 	return event.value;
 }
 
+type TerminalSessionRow = {
+	id: string;
+	originWorkspaceId: string | null;
+	status: string;
+	createdAt: number;
+	lastAttachedAt: number | null;
+	endedAt: number | null;
+};
+
+type ProjectRow = {
+	id: string;
+	repoName: string | null;
+	repoOwner: string | null;
+};
+
 function createCanvasTestContext() {
 	const root = mkdtempSync(join(tmpdir(), "rox-canvas-router-"));
 	const worktreePath = join(root, "worktree");
@@ -44,11 +65,25 @@ function createCanvasTestContext() {
 		createdAt: Date.now(),
 	};
 	const canvasRows: (typeof canvasDocuments.$inferSelect)[] = [];
+	const terminalSessionRows: TerminalSessionRow[] = [];
+	const projectRows: ProjectRow[] = [
+		{ id: "project-1", repoName: "rox", repoOwner: "agisota" },
+	];
 	const db = {
 		query: {
 			workspaces: {
 				findFirst: () => ({
 					sync: () => workspace,
+				}),
+			},
+			terminalSessions: {
+				findFirst: () => ({
+					sync: () => terminalSessionRows[0] ?? null,
+				}),
+			},
+			projects: {
+				findFirst: () => ({
+					sync: () => projectRows[0] ?? null,
 				}),
 			},
 			canvasDocuments: {
@@ -93,6 +128,8 @@ function createCanvasTestContext() {
 	return {
 		root,
 		worktreePath,
+		terminalSessionRows,
+		projectRows,
 		caller: canvasRouter.createCaller(ctx),
 		unauthorizedCaller: canvasRouter.createCaller({
 			...ctx,
@@ -1158,6 +1195,91 @@ describe("canvasRouter", () => {
 					},
 				}),
 			).rejects.toThrow("Canvas ref URL protocol is not supported");
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("resolves file, session, project, url refs and falls back for unbacked types", async () => {
+		const { root, worktreePath, terminalSessionRows, caller } =
+			createCanvasTestContext();
+		try {
+			// File ref -> real file inside the workspace worktree.
+			mkdirSync(join(worktreePath, "notes"), { recursive: true });
+			writeFileSync(join(worktreePath, "notes", "plan.md"), "# Plan\nhello");
+			const fileResolution = await caller.resolveNodeRef({
+				workspaceId: "workspace-1",
+				ref: { type: "file", id: "file-1", path: "notes/plan.md" },
+			});
+			expect(fileResolution.resolved).toBe(true);
+			expect(fileResolution.source).toBe("file");
+			expect(fileResolution.preview).toContain("# Plan");
+
+			// Missing file -> resolved false (not a thrown error).
+			const missingFile = await caller.resolveNodeRef({
+				workspaceId: "workspace-1",
+				ref: { type: "file", id: "file-2", path: "notes/missing.md" },
+			});
+			expect(missingFile.resolved).toBe(false);
+			expect(missingFile.reason).toBe("file-not-found");
+
+			// Session ref -> real terminal_sessions row, workspace-scoped.
+			terminalSessionRows.push({
+				id: "session-1",
+				originWorkspaceId: "workspace-1",
+				status: "active",
+				createdAt: 1,
+				lastAttachedAt: null,
+				endedAt: null,
+			});
+			const sessionResolution = await caller.resolveNodeRef({
+				workspaceId: "workspace-1",
+				ref: { type: "session", id: "session-1" },
+			});
+			expect(sessionResolution.resolved).toBe(true);
+			expect(sessionResolution.source).toBe("session");
+			expect(sessionResolution.entity?.status).toBe("active");
+
+			// Cross-workspace session ref -> forbidden.
+			terminalSessionRows[0] = {
+				id: "session-1",
+				originWorkspaceId: "workspace-2",
+				status: "active",
+				createdAt: 1,
+				lastAttachedAt: null,
+				endedAt: null,
+			};
+			await expect(
+				caller.resolveNodeRef({
+					workspaceId: "workspace-1",
+					ref: { type: "session", id: "session-1" },
+				}),
+			).rejects.toThrow("Canvas session ref belongs to another workspace");
+
+			// Project ref -> real host-service project row.
+			const projectResolution = await caller.resolveNodeRef({
+				workspaceId: "workspace-1",
+				ref: { type: "project", id: "project-1" },
+			});
+			expect(projectResolution.resolved).toBe(true);
+			expect(projectResolution.source).toBe("project");
+
+			// URL ref -> validated external reference (no fetch).
+			const urlResolution = await caller.resolveNodeRef({
+				workspaceId: "workspace-1",
+				ref: { type: "url", id: "url-1", url: "https://example.com/doc" },
+			});
+			expect(urlResolution.resolved).toBe(true);
+			expect(urlResolution.source).toBe("url");
+
+			// Unbacked ref type -> typed fallback, not a fabricated preview.
+			const artifactResolution = await caller.resolveNodeRef({
+				workspaceId: "workspace-1",
+				ref: { type: "artifact", id: "artifact-1" },
+			});
+			expect(artifactResolution.resolved).toBe(false);
+			expect(artifactResolution.source).toBe("unsupported");
+			expect(artifactResolution.reason).toBe("unsupported-ref-type:artifact");
 		} finally {
 			rmSync(root, { recursive: true, force: true });
 		}

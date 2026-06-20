@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import {
 	builtInCanvasCapabilities,
 	type CanvasColor,
@@ -20,7 +21,12 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, like } from "drizzle-orm";
 import { z } from "zod";
 import type { HostDb } from "../../../db";
-import { canvasDocuments, workspaces } from "../../../db/schema";
+import {
+	canvasDocuments,
+	projects,
+	terminalSessions,
+	workspaces,
+} from "../../../db/schema";
 import { protectedProcedure, router } from "../../index";
 import {
 	applyAndPersistCanvasMutationBatch,
@@ -167,6 +173,195 @@ function validateCanvasNodeRefAccess(
 			});
 		}
 	}
+}
+
+type CanvasRefResolution = {
+	ref: CanvasNodeRef;
+	resolved: boolean;
+	source: "file" | "session" | "workspace" | "project" | "url" | "unsupported";
+	preview: string | null;
+	entity?: Record<string, unknown>;
+	reason?: string;
+};
+
+const CANVAS_REF_PREVIEW_MAX_BYTES = 4096;
+
+/**
+ * Resolve a Canvas node ref against the real host-service data surfaces,
+ * reusing the same auth/workspace scope the rest of this router enforces.
+ *
+ * Access is gated by the caller via `validateCanvasNodeRefAccess` before this
+ * runs, so here we only fetch the backing entity:
+ * - `file`/`note`: the file inside the workspace worktree (path-scoped, the
+ *   security validator already rejects absolute/`..`/cross-workspace paths).
+ * - `session`: the `terminal_sessions` row, scoped to the workspace.
+ * - `workspace`/`project`: the corresponding host-service row.
+ * - `url`: an already-validated external http(s) reference (no fetch).
+ *
+ * Ref types with no backing data source on the current host-service schema
+ * (`artifact`, `message`, `task`, `prompt`, `tool-call`, `canvas`) return a
+ * typed, clearly-logged fallback instead of a fake preview.
+ */
+function resolveCanvasNodeRef(
+	ctx: { db: HostDb },
+	workspace: CanvasStorageWorkspace,
+	workspaceId: string,
+	ref: CanvasNodeRef,
+): CanvasRefResolution {
+	if (ref.url) {
+		return {
+			ref,
+			resolved: true,
+			source: "url",
+			preview: ref.url,
+			entity: { url: ref.url },
+		};
+	}
+
+	if ((ref.type === "file" || ref.type === "note") && ref.path) {
+		const absolutePath = resolve(join(workspace.worktreePath, ref.path));
+		if (!existsSync(absolutePath)) {
+			return {
+				ref,
+				resolved: false,
+				source: "file",
+				preview: null,
+				reason: "file-not-found",
+			};
+		}
+		const stats = statSync(absolutePath);
+		if (!stats.isFile()) {
+			return {
+				ref,
+				resolved: false,
+				source: "file",
+				preview: null,
+				reason: "ref-path-is-not-a-file",
+			};
+		}
+		let preview: string | null = null;
+		try {
+			const buffer = readFileSync(absolutePath);
+			preview = buffer
+				.subarray(0, CANVAS_REF_PREVIEW_MAX_BYTES)
+				.toString("utf8");
+		} catch {
+			preview = null;
+		}
+		return {
+			ref,
+			resolved: true,
+			source: "file",
+			preview,
+			entity: {
+				path: ref.path,
+				sizeBytes: stats.size,
+				modifiedAt: new Date(stats.mtimeMs).toISOString(),
+			},
+		};
+	}
+
+	if (ref.type === "session") {
+		const session = ctx.db.query.terminalSessions
+			.findFirst({ where: eq(terminalSessions.id, ref.id) })
+			.sync();
+		if (!session) {
+			return {
+				ref,
+				resolved: false,
+				source: "session",
+				preview: null,
+				reason: "session-not-found",
+			};
+		}
+		if (
+			session.originWorkspaceId &&
+			session.originWorkspaceId !== workspaceId
+		) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Canvas session ref belongs to another workspace",
+			});
+		}
+		return {
+			ref,
+			resolved: true,
+			source: "session",
+			preview: `Session ${session.id} (${session.status})`,
+			entity: {
+				id: session.id,
+				status: session.status,
+				originWorkspaceId: session.originWorkspaceId,
+				createdAt: session.createdAt,
+				lastAttachedAt: session.lastAttachedAt,
+				endedAt: session.endedAt,
+			},
+		};
+	}
+
+	if (ref.type === "workspace") {
+		const target = ctx.db.query.workspaces
+			.findFirst({ where: eq(workspaces.id, ref.id) })
+			.sync();
+		if (!target || target.id !== workspaceId) {
+			return {
+				ref,
+				resolved: false,
+				source: "workspace",
+				preview: null,
+				reason: "workspace-not-found-or-out-of-scope",
+			};
+		}
+		return {
+			ref,
+			resolved: true,
+			source: "workspace",
+			preview: `Workspace ${target.id}`,
+			entity: { id: target.id, projectId: target.projectId },
+		};
+	}
+
+	if (ref.type === "project") {
+		const project = ctx.db.query.projects
+			.findFirst({ where: eq(projects.id, ref.id) })
+			.sync();
+		if (!project || project.id !== workspace.projectId) {
+			return {
+				ref,
+				resolved: false,
+				source: "project",
+				preview: null,
+				reason: "project-not-found-or-out-of-scope",
+			};
+		}
+		return {
+			ref,
+			resolved: true,
+			source: "project",
+			preview: project.repoName
+				? `Project ${project.repoName}`
+				: `Project ${project.id}`,
+			entity: {
+				id: project.id,
+				repoName: project.repoName,
+				repoOwner: project.repoOwner,
+			},
+		};
+	}
+
+	// No backing data source on the current host-service schema. Return a typed
+	// fallback instead of a fabricated preview so callers can distinguish
+	// "resolved to real entity" from "ref type not backed yet".
+	console.warn(
+		`[canvas] resolveNodeRef: no backing data source for ref type "${ref.type}" (id=${ref.id}); returning unresolved fallback`,
+	);
+	return {
+		ref,
+		resolved: false,
+		source: "unsupported",
+		preview: ref.preview ?? null,
+		reason: `unsupported-ref-type:${ref.type}`,
+	};
 }
 
 function validateCanvasMutationBatchSecurityScope(
@@ -2307,19 +2502,23 @@ export const canvasRouter = router({
 					type: z.string().min(1),
 					id: z.string().min(1),
 					workspaceId: z.string().optional(),
+					projectId: z.string().optional(),
 					path: z.string().optional(),
 					url: z.string().optional(),
+					version: z.string().optional(),
+					preview: z.string().optional(),
 				}),
 			}),
 		)
 		.query(({ ctx, input }) => {
-			requireWorkspace(ctx, input.workspaceId);
+			const workspace = requireWorkspace(ctx, input.workspaceId);
 			validateCanvasNodeRefAccess(input.ref, input.workspaceId);
-			return {
-				ref: input.ref,
-				resolved: true,
-				preview: input.ref.path ?? input.ref.url ?? input.ref.id,
-			};
+			return resolveCanvasNodeRef(
+				ctx,
+				workspace,
+				input.workspaceId,
+				input.ref as CanvasNodeRef,
+			);
 		}),
 
 	getHistory: protectedProcedure
