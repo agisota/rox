@@ -29,6 +29,31 @@ export async function getSimpleGitWithShellPath(
 	return git;
 }
 
+/**
+ * Friendly preflight for any flow that shells out to git (project create,
+ * git init, clone). A freshly-set-up non-developer machine may not have git
+ * installed at all; without this check the failure surfaces as a raw
+ * `spawn git ENOENT`, which is meaningless to a user. Translate it into an
+ * actionable message that points at the bootstrap installer.
+ *
+ * Throws on any non-ENOENT failure too — if `git --version` can't run we have
+ * no business attempting the operation that follows.
+ */
+export async function assertGitAvailable(): Promise<void> {
+	try {
+		await execGitWithShellPath(["--version"]);
+	} catch (error) {
+		const code = (error as NodeJS.ErrnoException | undefined)?.code;
+		if (code === "ENOENT") {
+			throw new Error(
+				"Git is not installed or could not be found in your PATH. Install Git, then try again.",
+			);
+		}
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Git is not available: ${message}`);
+	}
+}
+
 export async function execGitWithShellPath(
 	args: string[],
 	options?: Omit<ExecFileOptionsWithStringEncoding, "encoding">,
