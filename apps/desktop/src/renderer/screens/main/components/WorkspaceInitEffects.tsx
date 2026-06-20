@@ -9,6 +9,7 @@ import { launchAgentSession } from "renderer/lib/agent-session-orchestrator";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { logger } from "renderer/lib/logger";
 import { writeCommandsInPane } from "renderer/lib/terminal/launch-command";
+import { resolveDefaultWorkspaceSurface } from "renderer/lib/workspace-surface";
 import { isTerminalAttachCanceledMessage } from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/Terminal/attach-cancel";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { useTabsWithPresets } from "renderer/stores/tabs/useTabsWithPresets";
@@ -37,6 +38,7 @@ export function WorkspaceInitEffects() {
 	const processingRef = useRef<Set<string>>(new Set());
 
 	const addTab = useTabsStore((state) => state.addTab);
+	const addChatTab = useTabsStore((state) => state.addChatTab);
 	const setTabAutoTitle = useTabsStore((state) => state.setTabAutoTitle);
 	const { openPreset } = useTabsWithPresets();
 	const createOrAttach = useCreateOrAttachWithTheme();
@@ -135,6 +137,21 @@ export function WorkspaceInitEffects() {
 		[terminalWrite],
 	);
 
+	/**
+	 * Chat-first default: open a chat tab so it becomes the active/visible
+	 * surface, leaving any setup terminal / preset / agent tab running in the
+	 * background. Honors the user's stored preference and otherwise lands on
+	 * chat. Mirrors bootstrap-open-worktree's dual-tab approach so every
+	 * workspace entry point behaves consistently.
+	 */
+	const landOnChatSurfaceIfDefault = useCallback(
+		(workspaceId: string) => {
+			if (resolveDefaultWorkspaceSurface() !== "chat") return;
+			addChatTab(workspaceId);
+		},
+		[addChatTab],
+	);
+
 	const handleTerminalSetup = useCallback(
 		(setup: PendingTerminalSetup, onComplete: () => void) => {
 			const hasSetupScript =
@@ -156,6 +173,9 @@ export function WorkspaceInitEffects() {
 				if (agentLaunchRequest || agentCommand) {
 					launchAgentViaOrchestrator(setup, setupPaneId);
 				}
+
+				// Chat-first: land on chat, keep setup terminal/presets in background.
+				landOnChatSurfaceIfDefault(setup.workspaceId);
 
 				createOrAttach.mutate(
 					{
@@ -211,6 +231,9 @@ export function WorkspaceInitEffects() {
 				if (agentLaunchRequest || agentCommand) {
 					launchAgentViaOrchestrator(setup, paneId);
 				}
+
+				// Chat-first: land on chat, keep setup terminal in background.
+				landOnChatSurfaceIfDefault(setup.workspaceId);
 
 				createOrAttach.mutate(
 					{
@@ -299,16 +322,22 @@ export function WorkspaceInitEffects() {
 				if (agentLaunchRequest || agentCommand) {
 					launchAgentViaOrchestrator(setup);
 				}
+				// Chat-first: land on chat, keep presets/agent in background.
+				landOnChatSurfaceIfDefault(setup.workspaceId);
 				onComplete();
 				return;
 			}
 
 			if (agentLaunchRequest || agentCommand) {
 				launchAgentViaOrchestrator(setup);
+				// Chat-first: land on chat, keep the agent terminal in background.
+				landOnChatSurfaceIfDefault(setup.workspaceId);
 				onComplete();
 				return;
 			}
 
+			// No setup script / preset / agent: chat is the only surface to seed.
+			landOnChatSurfaceIfDefault(setup.workspaceId);
 			onComplete();
 		},
 		[
@@ -318,6 +347,7 @@ export function WorkspaceInitEffects() {
 			launchAgentViaOrchestrator,
 			runSetupCommandsInPane,
 			openPresetsInActiveTab,
+			landOnChatSurfaceIfDefault,
 			shouldApplyPreset,
 		],
 	);

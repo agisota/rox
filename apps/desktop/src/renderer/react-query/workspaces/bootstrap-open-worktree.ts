@@ -16,6 +16,11 @@ export type BootstrapOpenWorktreeError =
 
 interface BootstrapOpenWorktreeOptions {
 	data: OpenWorkspaceData;
+	/**
+	 * Surface the workspace should land on by default. Defaults to "chat" so the
+	 * user lands on the chat surface; "terminal" lands on the setup terminal.
+	 */
+	defaultSurface?: "chat" | "terminal";
 	/** Creates the chat tab that the user lands on (primary surface). */
 	addChatTab: (workspaceId: string) => { tabId: string; paneId: string };
 	/** Creates a terminal tab/pane used only to run the setup command. */
@@ -39,6 +44,7 @@ export async function bootstrapOpenWorktree(
 ): Promise<BootstrapOpenWorktreeError | null> {
 	const workspaceId = options.data.workspace.id;
 	const setupCommand = buildTerminalCommand(options.data.initialCommands);
+	const landOnChat = (options.defaultSurface ?? "chat") === "chat";
 
 	// No setup command: chat is the only surface. Create the chat tab and stop —
 	// a chat pane cannot run shell commands, so there is nothing to attach.
@@ -48,12 +54,16 @@ export async function bootstrapOpenWorktree(
 	}
 
 	// Setup command path: create the terminal tab first (it runs the command),
-	// then create the chat tab last so it becomes the active/visible tab. The
-	// setup command still runs in the real terminal pane in the background.
+	// then, when chat is the default surface, create the chat tab last so it
+	// becomes the active/visible tab. The setup command still runs in the real
+	// terminal pane in the background. When the user prefers the terminal
+	// surface, the terminal tab stays active and no chat tab is forced.
 	const { tabId: terminalTabId, paneId: terminalPaneId } =
 		options.addTab(workspaceId);
 	options.setTabAutoTitle(terminalTabId, "Workspace Setup");
-	options.addChatTab(workspaceId);
+	if (landOnChat) {
+		options.addChatTab(workspaceId);
+	}
 
 	try {
 		await ensureTerminalAttached({
