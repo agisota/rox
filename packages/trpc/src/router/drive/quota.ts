@@ -1,0 +1,198 @@
+/**
+ * Drive quota engine (D8 §2.4) — DB-backed atomic accounting on top of the pure
+ * `@rox/shared/drive-quota` math.
+ *
+ * Responsibilities:
+ *  - {@link ensureQuota} — read-or-seed a user's `storage_quota` row (10 GiB
+ *    default via the column default, mirroring `economy.service.ensureBalance`).
+ *  - {@link commitUpload} — atomic `UPDATE ... WHERE bytes_used + :size <= cap`
+ *    for the hard path; when the user opted into overage (DQ2 soft-meter) the
+ *    add is unconditional so the upload still lands and accrues overage.
+ *  - {@link releaseBytes} — clamped decrement on hard-delete (never below 0).
+ *  - {@link accrueDailyOverage} — daily helper: compute over-quota GB-month →
+ *    write a `rox_ledger` row kind `drive_overage` debiting the balance. Reuses
+ *    the WS-E ledger table; does NOT add a new ledger kind (already in the enum).
+ *
+ * Existing files always stay readable when a user is over quota — only NEW
+ * uploads are gated, and only when overage is off.
+ */
+
+import { db } from "@rox/db/client";
+import { roxBalances, roxLedger, storageQuota } from "@rox/db/schema";
+import {
+	clampDecrement,
+	computeUploadDecision,
+	DEFAULT_DRIVE_OVERAGE_ROX_PER_GB_MONTH,
+	DRIVE_FREE_QUOTA_BYTES,
+	dailyOverageRox,
+	overQuotaBytes,
+	type UploadDecision,
+} from "@rox/shared/drive-quota";
+import { and, eq, sql } from "drizzle-orm";
+
+export {
+	DEFAULT_DRIVE_OVERAGE_ROX_PER_GB_MONTH,
+	DRIVE_FREE_QUOTA_BYTES,
+} from "@rox/shared/drive-quota";
+
+/** Snapshot of a user's accounting row. */
+export interface QuotaRow {
+	bytesUsed: number;
+	quotaBytes: number;
+	overageOptIn: boolean;
+}
+
+/**
+ * Ensure a `storage_quota` row exists for the user and return its current
+ * snapshot. Seeds the 10 GiB default via the column default on first read
+ * (insert-on-conflict-do-nothing), exactly like `rox_balances` seeding.
+ */
+export async function ensureQuota(userId: string): Promise<QuotaRow> {
+	await db
+		.insert(storageQuota)
+		.values({ userId })
+		.onConflictDoNothing({ target: storageQuota.userId });
+
+	const row = await db.query.storageQuota.findFirst({
+		where: eq(storageQuota.userId, userId),
+		columns: { bytesUsed: true, quotaBytes: true, overageOptIn: true },
+	});
+
+	return {
+		bytesUsed: row ? Number(row.bytesUsed) : 0,
+		quotaBytes: row ? Number(row.quotaBytes) : DRIVE_FREE_QUOTA_BYTES,
+		overageOptIn: row?.overageOptIn ?? false,
+	};
+}
+
+/** Result of attempting to commit an upload's bytes to the quota counter. */
+export interface CommitUploadResult extends UploadDecision {
+	/** Whether the conditional UPDATE actually applied (false = lost the race). */
+	committed: boolean;
+}
+
+/**
+ * Atomically add `sizeBytes` to a user's `bytes_used`, enforcing the cap.
+ *
+ * Hard path (overage OFF): a conditional `UPDATE ... WHERE bytes_used + size <=
+ * quota_bytes` so two parallel uploads cannot both pass the cap — exactly one
+ * wins; the loser gets `committed: false`.
+ *
+ * Soft path (overage ON, DQ2): the add is unconditional so the upload always
+ * lands; the bytes past the cap are reported via `overageBytes` for the daily
+ * overage job to bill.
+ *
+ * `ensureQuota` must have seeded the row first (the router does this in
+ * `requestUpload`'s pre-flight). Returns the decision plus whether it committed.
+ */
+export async function commitUpload(
+	userId: string,
+	sizeBytes: number,
+): Promise<CommitUploadResult> {
+	const snapshot = await ensureQuota(userId);
+	const decision = computeUploadDecision(snapshot, sizeBytes);
+
+	if (!decision.allowed) {
+		return { ...decision, committed: false };
+	}
+
+	const size = Math.max(0, Math.trunc(sizeBytes));
+	if (size === 0) {
+		return { ...decision, committed: true };
+	}
+
+	if (decision.reason === "overage_accrued") {
+		// Soft-meter: unconditional add (already over or going over with opt-in).
+		await db
+			.update(storageQuota)
+			.set({ bytesUsed: sql`${storageQuota.bytesUsed} + ${size}` })
+			.where(eq(storageQuota.userId, userId));
+		return { ...decision, committed: true };
+	}
+
+	// Hard path: conditional add guarded by the cap (race-safe).
+	const updated = await db
+		.update(storageQuota)
+		.set({ bytesUsed: sql`${storageQuota.bytesUsed} + ${size}` })
+		.where(
+			and(
+				eq(storageQuota.userId, userId),
+				sql`${storageQuota.bytesUsed} + ${size} <= ${storageQuota.quotaBytes}`,
+			),
+		)
+		.returning({ bytesUsed: storageQuota.bytesUsed });
+
+	const committed = updated.length > 0;
+	return {
+		...decision,
+		committed,
+		...(committed ? {} : { allowed: false, reason: "over_quota_blocked" }),
+	};
+}
+
+/**
+ * Decrement `bytes_used` by a hard-deleted file's size, clamped so the counter
+ * never goes negative (mirrors the DB CHECK `bytes_used >= 0`). Idempotent-ish:
+ * a too-large size collapses to whatever is left.
+ */
+export async function releaseBytes(
+	userId: string,
+	sizeBytes: number,
+): Promise<void> {
+	const snapshot = await ensureQuota(userId);
+	const dec = clampDecrement(snapshot.bytesUsed, sizeBytes);
+	if (dec === 0) return;
+	await db
+		.update(storageQuota)
+		.set({ bytesUsed: sql`${storageQuota.bytesUsed} - ${dec}` })
+		.where(eq(storageQuota.userId, userId));
+}
+
+/** Outcome of a daily overage accrual for one user. */
+export interface OverageAccrual {
+	overBytes: number;
+	roxDebited: number;
+	ledgerWritten: boolean;
+}
+
+/**
+ * Daily overage accrual (D8 §2.4, DQ2). Computes the user's current over-quota
+ * bytes, converts the GB-month rate to a single day's Rox cost, and — when
+ * non-zero — writes a `rox_ledger` row (kind `drive_overage`, negative delta)
+ * and debits `rox_balances`. No-op (no ledger row) when the user is within
+ * quota or the cost rounds to zero.
+ *
+ * Reuses the existing WS-E balance/ledger machinery verbatim; the `drive_overage`
+ * kind already exists in `roxLedgerKindValues` (no new kind added).
+ */
+export async function accrueDailyOverage(
+	userId: string,
+	roxPerGbMonth: number = DEFAULT_DRIVE_OVERAGE_ROX_PER_GB_MONTH,
+	daysInMonth = 30,
+): Promise<OverageAccrual> {
+	const snapshot = await ensureQuota(userId);
+	const overBytes = overQuotaBytes(snapshot);
+	const rox = dailyOverageRox(overBytes, roxPerGbMonth, daysInMonth);
+
+	if (rox <= 0) {
+		return { overBytes, roxDebited: 0, ledgerWritten: false };
+	}
+
+	await db.transaction(async (tx) => {
+		await tx
+			.insert(roxBalances)
+			.values({ userId })
+			.onConflictDoNothing({ target: roxBalances.userId });
+		await tx.insert(roxLedger).values({
+			userId,
+			deltaRox: String(-rox),
+			kind: "drive_overage",
+		});
+		await tx
+			.update(roxBalances)
+			.set({ balanceRox: sql`${roxBalances.balanceRox} - ${rox}` })
+			.where(eq(roxBalances.userId, userId));
+	});
+
+	return { overBytes, roxDebited: rox, ledgerWritten: true };
+}
