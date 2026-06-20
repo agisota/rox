@@ -23,10 +23,12 @@ import {
 import { logger } from "renderer/lib/logger";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
+import { DEFAULT_SAVED_PROMPTS } from "../../../saved-prompts/components/SavedPromptsView/default-prompts";
 import {
 	DEFAULT_REASONING_LEVEL,
 	REASONING_LEVELS,
 	type ReasoningLevel,
+	STARTER_PROMPT_IDS,
 } from "./constants";
 
 interface QuickChatMessage {
@@ -43,6 +45,16 @@ const NOT_CONFIGURED_NOTICE =
 const GENERIC_ERROR_NOTICE =
 	"Не удалось получить ответ. Проверьте соединение и попробуйте снова.";
 
+/**
+ * Starter chips for the empty state — a curated subset of the shared
+ * `DEFAULT_SAVED_PROMPTS`, kept in the saved-prompts list so both surfaces share
+ * one source. Order follows `STARTER_PROMPT_IDS`; unknown ids are dropped.
+ */
+const STARTER_PROMPTS = STARTER_PROMPT_IDS.flatMap((id) => {
+	const prompt = DEFAULT_SAVED_PROMPTS.find((entry) => entry.id === id);
+	return prompt ? [prompt] : [];
+});
+
 export function QuickChatView() {
 	const consumePrompt = useQuickChatDraftStore((state) => state.consumePrompt);
 
@@ -58,6 +70,19 @@ export function QuickChatView() {
 	// lands in a single session the Журнал can summarize.
 	const sessionIdRef = useRef<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	// Fill the composer from a starter chip and focus it so the user can edit or
+	// send. Reuses the same `setInput` path as the saved-prompts draft handoff.
+	const applyStarterPrompt = useCallback((body: string) => {
+		setInput(body);
+		const textarea = textareaRef.current;
+		if (textarea) {
+			textarea.focus();
+			const caret = body.length;
+			textarea.setSelectionRange(caret, caret);
+		}
+	}, []);
 
 	// Pick up a prompt staged from the "Сохранённые промпты" view, if any.
 	useEffect(() => {
@@ -162,6 +187,22 @@ export function QuickChatView() {
 								Задайте вопрос модели {ROX_CHAT_MODEL.name}. Это обычный чат —
 								проект создавать не нужно.
 							</p>
+							{input.trim().length === 0 ? (
+								<div className="mt-4 flex flex-wrap justify-center gap-2">
+									{STARTER_PROMPTS.map((prompt) => (
+										<Button
+											key={prompt.id}
+											type="button"
+											variant="outline"
+											size="sm"
+											className="h-7 rounded-full px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
+											onClick={() => applyStarterPrompt(prompt.body)}
+										>
+											{prompt.title}
+										</Button>
+									))}
+								</div>
+							) : null}
 						</div>
 					) : (
 						messages.map((message) => (
@@ -199,6 +240,7 @@ export function QuickChatView() {
 			<div className="border-t border-border px-6 py-4">
 				<div className="mx-auto flex max-w-2xl flex-col gap-2 rounded-xl border border-border bg-card p-2">
 					<Textarea
+						ref={textareaRef}
 						value={input}
 						onChange={(event) => setInput(event.target.value)}
 						onKeyDown={(event) => {
