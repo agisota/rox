@@ -412,6 +412,24 @@ export const knowledgeSourceKindValues = [
 export const knowledgeSourceKindEnum = z.enum(knowledgeSourceKindValues);
 export type KnowledgeSourceKind = z.infer<typeof knowledgeSourceKindEnum>;
 
+// Collaborative org dashboard (WS-O §2.1 / WS-J §2.2) -------------------------
+// `kind` typed bucket for a dashboard section so the board can group entries
+// (config blocks, recommendations, notes, priorities, artifacts, product specs,
+// references, run logs). Append-only string union backing a Postgres pgEnum
+// (declared in schema/dashboard.ts); NEVER reorder/remove values.
+export const dashboardSectionKindValues = [
+	"config",
+	"recommendation",
+	"note",
+	"priority",
+	"artifact",
+	"product",
+	"reference",
+	"log",
+] as const;
+export const dashboardSectionKindEnum = z.enum(dashboardSectionKindValues);
+export type DashboardSectionKind = z.infer<typeof dashboardSectionKindEnum>;
+
 // Billing & Economy (billing-economy epic) ------------------------------------
 // Append-only Rox ledger entries and dv.net top-up lifecycle. Backing Postgres
 // pgEnums; never reorder/remove values.
