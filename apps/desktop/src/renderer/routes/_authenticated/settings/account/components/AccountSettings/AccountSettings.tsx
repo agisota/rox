@@ -18,6 +18,7 @@ import {
 	type SettingItemId,
 } from "../../../utils/settings-search";
 import { AccountUsagePanel } from "./components/AccountUsagePanel";
+import { IdentitySettings } from "./components/IdentitySettings";
 import { ProfilePublicSettings } from "./components/ProfilePublicSettings";
 import { ProfileSkeleton } from "./components/ProfileSkeleton";
 
@@ -28,6 +29,10 @@ interface AccountSettingsProps {
 export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 	const showProfile = isItemVisible(
 		SETTING_ITEM_ID.ACCOUNT_PROFILE,
+		visibleItems,
+	);
+	const showIdentity = isItemVisible(
+		SETTING_ITEM_ID.ACCOUNT_IDENTITY,
 		visibleItems,
 	);
 	const showSignOut = isItemVisible(
@@ -129,6 +134,8 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 
 			<div className="space-y-3">
 				{showProfile && <ProfilePublicSettings />}
+
+				{showIdentity && <IdentitySettings />}
 
 				{showProfile &&
 					(!isReady && !user && !session ? (
