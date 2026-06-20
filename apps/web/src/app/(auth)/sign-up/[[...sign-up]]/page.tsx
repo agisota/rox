@@ -8,6 +8,7 @@ import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { env } from "@/env";
+import { TelegramLoginButton } from "../../components/TelegramLoginButton";
 
 export default function SignUpPage() {
 	const [name, setName] = useState("");
@@ -15,6 +16,7 @@ export default function SignUpPage() {
 	const [password, setPassword] = useState("");
 	const [isLoadingEmail, setIsLoadingEmail] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+	const [isLoadingYandex, setIsLoadingYandex] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const signUpWithEmail = async (e: FormEvent<HTMLFormElement>) => {
@@ -53,7 +55,25 @@ export default function SignUpPage() {
 		}
 	};
 
-	const isLoading = isLoadingEmail || isLoadingGithub;
+	const signUpWithYandex = async () => {
+		setIsLoadingYandex(true);
+		setError(null);
+
+		try {
+			await authClient.signIn.oauth2({
+				providerId: "yandex",
+				callbackURL: env.NEXT_PUBLIC_WEB_URL,
+			});
+		} catch (err) {
+			console.error("Yandex sign up failed:", err);
+			setError(
+				"Не удалось зарегистрироваться через Яндекс. Попробуйте еще раз.",
+			);
+			setIsLoadingYandex(false);
+		}
+	};
+
+	const isLoading = isLoadingEmail || isLoadingGithub || isLoadingYandex;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -131,6 +151,21 @@ export default function SignUpPage() {
 					<FaGithub className="mr-2 size-4" />
 					{isLoadingGithub ? "Загрузка..." : "Зарегистрироваться через GitHub"}
 				</Button>
+				<Button
+					variant="outline"
+					disabled={isLoading}
+					onClick={signUpWithYandex}
+					className="w-full"
+				>
+					<span
+						aria-hidden
+						className="mr-2 flex size-4 items-center justify-center rounded-full bg-[#FC3F1D] text-[10px] font-bold text-white"
+					>
+						Я
+					</span>
+					{isLoadingYandex ? "Загрузка..." : "Зарегистрироваться через Яндекс"}
+				</Button>
+				<TelegramLoginButton callbackURL={env.NEXT_PUBLIC_WEB_URL} />
 				<p className="text-muted-foreground px-8 text-center text-sm">
 					Нажимая «Продолжить», вы соглашаетесь с нашими{" "}
 					<a

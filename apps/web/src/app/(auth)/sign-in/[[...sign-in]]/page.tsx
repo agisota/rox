@@ -10,13 +10,19 @@ import { useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { env } from "@/env";
+import { TelegramLoginButton } from "../../components/TelegramLoginButton";
 
 export default function SignInPage() {
 	const searchParams = useSearchParams();
 	const redirect = searchParams.get("redirect");
-	const callbackURL = redirect
-		? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
-		: env.NEXT_PUBLIC_WEB_URL;
+	// Treat `redirect` as a PATH only: it must start with a single "/" (not "//",
+	// which browsers resolve as a protocol-relative foreign host). This blocks
+	// open-redirect payloads like `redirect=@evil.com` or `redirect=//evil.com`
+	// from producing a callback URL on a host other than our own web app.
+	const callbackURL =
+		redirect?.startsWith("/") && !redirect.startsWith("//")
+			? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
+			: env.NEXT_PUBLIC_WEB_URL;
 
 	const isDev = process.env.NODE_ENV === "development";
 
@@ -24,6 +30,7 @@ export default function SignInPage() {
 	const [password, setPassword] = useState(isDev ? DEV_PASSWORD : "");
 	const [isLoadingEmail, setIsLoadingEmail] = useState(false);
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+	const [isLoadingYandex, setIsLoadingYandex] = useState(false);
 	const [isLoadingDev, setIsLoadingDev] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +70,22 @@ export default function SignInPage() {
 		}
 	};
 
+	const signInWithYandex = async () => {
+		setIsLoadingYandex(true);
+		setError(null);
+
+		try {
+			await authClient.signIn.oauth2({
+				providerId: "yandex",
+				callbackURL,
+			});
+		} catch (err) {
+			console.error("Yandex sign in failed:", err);
+			setError("Не удалось войти через Яндекс. Попробуйте еще раз.");
+			setIsLoadingYandex(false);
+		}
+	};
+
 	const signInAsDev = async () => {
 		setIsLoadingDev(true);
 		setError(null);
@@ -95,7 +118,8 @@ export default function SignInPage() {
 		}
 	};
 
-	const isLoading = isLoadingEmail || isLoadingGithub || isLoadingDev;
+	const isLoading =
+		isLoadingEmail || isLoadingGithub || isLoadingYandex || isLoadingDev;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -172,6 +196,21 @@ export default function SignInPage() {
 					<FaGithub className="mr-2 size-4" />
 					{isLoadingGithub ? "Загрузка..." : "Войти через GitHub"}
 				</Button>
+				<Button
+					variant="outline"
+					disabled={isLoading}
+					onClick={signInWithYandex}
+					className="w-full"
+				>
+					<span
+						aria-hidden
+						className="mr-2 flex size-4 items-center justify-center rounded-full bg-[#FC3F1D] text-[10px] font-bold text-white"
+					>
+						Я
+					</span>
+					{isLoadingYandex ? "Загрузка..." : "Войти через Яндекс"}
+				</Button>
+				<TelegramLoginButton callbackURL={callbackURL} />
 				<p className="text-muted-foreground px-8 text-center text-sm">
 					Нажимая «Продолжить», вы соглашаетесь с нашими{" "}
 					<a
