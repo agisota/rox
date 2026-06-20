@@ -1,222 +1,81 @@
-import {
-	accessGrants,
-	agentCommands,
-	automationRuns,
-	automations,
-	chatSessions,
-	devicePresence,
-	githubPullRequests,
-	githubRepositories,
-	integrationConnections,
-	invitations,
-	journalEntries,
-	members,
-	memoryImportJobs,
-	memoryItems,
-	organizations,
-	projects,
-	subscriptions,
-	taskStatuses,
-	tasks,
-	teamMembers,
-	teams,
-	v2Clients,
-	v2Hosts,
-	v2Projects,
-	v2UsersHosts,
-	v2Workspaces,
-	workspaces,
-} from "@rox/db/schema";
-import { and, eq, inArray, sql } from "drizzle-orm";
-import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
+import { and, eq, sql } from "drizzle-orm";
+import type { PgColumn } from "drizzle-orm/pg-core";
 import { QueryBuilder } from "drizzle-orm/pg-core";
 import type { WhereClause } from "./auth";
+import { getTableScope } from "./table-scopes";
 
-function build(table: PgTable, column: PgColumn, id: string): WhereClause {
-	const whereExpr = eq(sql`${sql.identifier(column.name)}`, id);
-	const qb = new QueryBuilder();
+const qb = new QueryBuilder();
+
+/** Render a drizzle where-expression to a bare SQL fragment + ordered params,
+ *  matching the `$1..$n` placeholder shape `buildUpstreamUrl` expects. */
+function renderFragment(
+	whereExpr: ReturnType<typeof eq> | ReturnType<typeof and>,
+): WhereClause {
 	const { sql: query, params } = qb
 		.select()
-		.from(table)
+		.from(sql`t`)
 		.where(whereExpr)
 		.toSQL();
 	const fragment = query.replace(/^select .* from .* where\s+/i, "");
 	return { fragment, params };
 }
 
+function buildOrgScoped(column: PgColumn, organizationId: string): WhereClause {
+	return renderFragment(
+		eq(sql`${sql.identifier(column.name)}`, organizationId),
+	);
+}
+
 function buildUserScoped(
-	table: PgTable,
 	organizationColumn: PgColumn,
 	userColumn: PgColumn,
 	organizationId: string,
 	userId: string,
 ): WhereClause {
-	const whereExpr = and(
-		eq(sql`${sql.identifier(organizationColumn.name)}`, organizationId),
-		eq(sql`${sql.identifier(userColumn.name)}`, userId),
+	return renderFragment(
+		and(
+			eq(sql`${sql.identifier(organizationColumn.name)}`, organizationId),
+			eq(sql`${sql.identifier(userColumn.name)}`, userId),
+		),
 	);
-	const qb = new QueryBuilder();
-	const { sql: query, params } = qb
-		.select()
-		.from(table)
-		.where(whereExpr)
-		.toSQL();
-	const fragment = query.replace(/^select .* from .* where\s+/i, "");
-	return { fragment, params };
 }
 
+/**
+ * Build the server-side row-level `where` clause for a synced table, derived
+ * entirely from the declarative `TABLE_SCOPES` registry (single source of
+ * truth shared with the index.ts membership/user-scope guards and the
+ * electric.ts column restrictions). Returns `null` for unknown tables
+ * (fail-closed → 400 upstream).
+ */
 export function buildWhereClause(
 	tableName: string,
 	organizationId: string,
 	organizationIds: string[],
 	userId: string,
 ): WhereClause | null {
-	switch (tableName) {
-		case "tasks":
-			return build(tasks, tasks.organizationId, organizationId);
-
-		case "task_statuses":
-			return build(taskStatuses, taskStatuses.organizationId, organizationId);
-
-		case "projects":
-			return build(projects, projects.organizationId, organizationId);
-
-		case "v2_projects":
-			return build(v2Projects, v2Projects.organizationId, organizationId);
-
-		case "v2_hosts":
-			return build(v2Hosts, v2Hosts.organizationId, organizationId);
-
-		case "v2_clients":
-			return build(v2Clients, v2Clients.organizationId, organizationId);
-
-		case "v2_users_hosts":
-			return build(v2UsersHosts, v2UsersHosts.organizationId, organizationId);
-
-		case "v2_workspaces":
-			return build(v2Workspaces, v2Workspaces.organizationId, organizationId);
-
-		case "auth.members":
-			return build(members, members.organizationId, organizationId);
-
-		case "auth.invitations":
-			return build(invitations, invitations.organizationId, organizationId);
-
-		case "auth.teams":
-			return build(teams, teams.organizationId, organizationId);
-
-		case "auth.team_members":
-			return build(teamMembers, teamMembers.organizationId, organizationId);
-
-		case "auth.organizations": {
-			if (organizationIds.length === 0) {
-				return { fragment: "1 = 0", params: [] };
-			}
-			const whereExpr = inArray(
-				sql`${sql.identifier(organizations.id.name)}`,
-				organizationIds,
-			);
-			const qb = new QueryBuilder();
-			const { sql: query, params } = qb
-				.select()
-				.from(organizations)
-				.where(whereExpr)
-				.toSQL();
-			const fragment = query.replace(/^select .* from .* where\s+/i, "");
-			return { fragment, params };
-		}
-
-		case "auth.users": {
-			const fragment = `"organization_ids" @> ARRAY[$1::uuid]`;
-			return { fragment, params: [organizationId] };
-		}
-
-		case "device_presence":
-			return build(
-				devicePresence,
-				devicePresence.organizationId,
-				organizationId,
-			);
-
-		case "agent_commands":
-			return build(agentCommands, agentCommands.organizationId, organizationId);
-
-		case "access_grants":
-			return build(accessGrants, accessGrants.organizationId, organizationId);
-
-		case "auth.apikeys": {
-			const fragment = `"organization_id" = $1`;
-			return { fragment, params: [organizationId] };
-		}
-
-		case "integration_connections":
-			return build(
-				integrationConnections,
-				integrationConnections.organizationId,
-				organizationId,
-			);
-
-		case "subscriptions":
-			return build(subscriptions, subscriptions.referenceId, organizationId);
-
-		case "workspaces":
-			return build(workspaces, workspaces.organizationId, organizationId);
-
-		case "chat_sessions":
-			return build(chatSessions, chatSessions.organizationId, organizationId);
-
-		case "journal_entries":
-			return buildUserScoped(
-				journalEntries,
-				journalEntries.organizationId,
-				journalEntries.createdBy,
-				organizationId,
-				userId,
-			);
-
-		case "memory_import_jobs":
-			return buildUserScoped(
-				memoryImportJobs,
-				memoryImportJobs.organizationId,
-				memoryImportJobs.createdBy,
-				organizationId,
-				userId,
-			);
-
-		case "memory_items":
-			return buildUserScoped(
-				memoryItems,
-				memoryItems.organizationId,
-				memoryItems.createdBy,
-				organizationId,
-				userId,
-			);
-
-		case "github_repositories":
-			return build(
-				githubRepositories,
-				githubRepositories.organizationId,
-				organizationId,
-			);
-
-		case "github_pull_requests":
-			return build(
-				githubPullRequests,
-				githubPullRequests.organizationId,
-				organizationId,
-			);
-
-		case "automations":
-			return build(automations, automations.organizationId, organizationId);
-
-		case "automation_runs":
-			return build(
-				automationRuns,
-				automationRuns.organizationId,
-				organizationId,
-			);
-
-		default:
-			return null;
+	const scope = getTableScope(tableName);
+	if (!scope) {
+		return null;
 	}
+
+	if (scope.custom) {
+		return scope.custom({ organizationId, organizationIds, userId });
+	}
+
+	if (scope.orgColumn && scope.userColumn) {
+		return buildUserScoped(
+			scope.orgColumn,
+			scope.userColumn,
+			organizationId,
+			userId,
+		);
+	}
+
+	if (scope.orgColumn) {
+		return buildOrgScoped(scope.orgColumn, organizationId);
+	}
+
+	// A registry entry with neither a column scope nor a custom builder is a
+	// misconfiguration; fail closed rather than sync everything.
+	return null;
 }

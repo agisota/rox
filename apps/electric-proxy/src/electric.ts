@@ -1,14 +1,9 @@
 import { ELECTRIC_PROTOCOL_QUERY_PARAMS } from "@electric-sql/client";
 import type { WhereClause } from "./auth";
+import { getColumnRestriction } from "./table-scopes";
 import type { Env } from "./types";
 
 const PROTOCOL_PARAMS = new Set(ELECTRIC_PROTOCOL_QUERY_PARAMS);
-
-const COLUMN_RESTRICTIONS: Record<string, string> = {
-	"auth.apikeys": "id,name,start,created_at,last_request",
-	integration_connections:
-		"id,organization_id,connected_by_user_id,provider,token_expires_at,external_org_id,external_org_name,config,created_at,updated_at",
-};
 
 export function buildUpstreamUrl(
 	clientUrl: URL,
@@ -43,7 +38,7 @@ export function buildUpstreamUrl(
 		);
 	}
 
-	const columns = COLUMN_RESTRICTIONS[tableName];
+	const columns = getColumnRestriction(tableName);
 	if (columns) {
 		upstream.searchParams.set("columns", columns);
 	}

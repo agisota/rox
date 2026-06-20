@@ -239,6 +239,10 @@
 		"./retry": {
 			"types": "./src/retry/index.ts",
 			"default": "./src/retry/index.ts"
+		},
+		"./jwt-verify": {
+			"types": "./src/jwt-verify.ts",
+			"default": "./src/jwt-verify.ts"
 		}
 	},
 	"scripts": {
@@ -250,6 +254,7 @@
 		"@date-fns/tz": "1.4.1",
 		"@zap-studio/retry": "0.3.0",
 		"friendly-words": "1.3.1",
+		"jose": "6.2.2",
 		"rrule": "2.8.1",
 		"zod": "4.3.6"
 	},
