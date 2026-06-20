@@ -16,3 +16,10 @@ export type {
 	SendResult,
 	TransportAdapter,
 } from "./TransportAdapter";
+export {
+	XmppAdapter,
+	type XmppAdapterOptions,
+	type XmppOutboundPayload,
+	type XmppRawInbound,
+	type XmppSendFn,
+} from "./XmppAdapter";
