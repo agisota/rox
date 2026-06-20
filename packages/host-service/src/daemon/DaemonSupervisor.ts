@@ -11,22 +11,30 @@
 import * as childProcess from "node:child_process";
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
-import * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
-import {
-	isPositiveInteger,
-	signalProcessTreeAndGroups,
-} from "@rox/pty-daemon/process-tree";
+import { isPositiveInteger } from "@rox/pty-daemon/process-tree";
 import {
 	CURRENT_PROTOCOL_VERSION,
-	encodeFrame,
-	FrameDecoder,
-	type ServerMessage,
 	type SessionInfo,
 } from "@rox/pty-daemon/protocol";
 import semver from "semver";
 import { DaemonClient } from "../terminal/DaemonClient/index.ts";
+import {
+	isSocketConnectable,
+	listDaemonSessions,
+	probeDaemonHelloWithRetry,
+	probeDaemonVersionWithRetry,
+	waitForSocket,
+} from "./daemon-probe.ts";
+import {
+	countAliveSessions,
+	DAEMON_TERMINATE_TIMEOUT_MS,
+	pipeWithPrefix,
+	terminatePidOnly,
+	terminateProcessTreeAndGroups,
+	waitForPidExit,
+} from "./daemon-process.ts";
 import { EXPECTED_DAEMON_VERSION } from "./expected-version.ts";
 import { MAX_DAEMON_LOG_BYTES, openRotatingLogFd } from "./log-fd.ts";
 import {
@@ -52,11 +60,6 @@ interface DaemonInstance {
 	autoUpdateFailure?: DaemonAutoUpdateFailure;
 }
 
-interface DaemonProbeResult {
-	daemonVersion: string;
-	daemonPid?: number;
-}
-
 export interface DaemonAutoUpdateFailure {
 	id: string;
 	reason: string;
@@ -71,10 +74,8 @@ export interface DaemonUpdateStatus {
 }
 
 const SOCKET_READY_TIMEOUT_MS = 5_000;
-const VERSION_PROBE_TIMEOUT_MS = 1_500;
 const HANDOFF_PREDECESSOR_EXIT_TIMEOUT_MS = 3_000;
 const HANDOFF_PROBE_TOTAL_TIMEOUT_MS = 3_000;
-const DAEMON_TERMINATE_TIMEOUT_MS = 1_000;
 const AUTO_UPDATE_SESSION_LIST_TIMEOUT_MS = 1_500;
 const ADOPTION_PROBE_TOTAL_TIMEOUT_MS = 3_000;
 
@@ -1094,319 +1095,8 @@ export class DaemonSupervisor {
 	}
 }
 
-/**
- * Forward child stdout/stderr to a parent stream with a per-line prefix.
- * Plain `chunk => parent.write(`${tag} ${chunk}`)` only prefixes the first
- * line in a chunk; bursts of multi-line output lose the prefix on
- * subsequent lines.
- */
-function pipeWithPrefix(
-	source: NodeJS.ReadableStream,
-	target: NodeJS.WritableStream,
-	tag: string,
-): void {
-	let pending = "";
-	source.on("data", (chunk: Buffer) => {
-		const text = pending + chunk.toString("utf8");
-		const lines = text.split("\n");
-		pending = lines.pop() ?? "";
-		for (const line of lines) {
-			target.write(`${tag} ${line}\n`);
-		}
-	});
-	source.on("end", () => {
-		if (pending) target.write(`${tag} ${pending}\n`);
-		pending = "";
-	});
-}
-
-function countAliveSessions(sessions: SessionInfo[]): number {
-	return sessions.filter((session) => session.alive).length;
-}
-
-async function waitForSocket(
-	socketPath: string,
-	timeoutMs: number,
-): Promise<boolean> {
-	const deadline = Date.now() + timeoutMs;
-	while (Date.now() < deadline) {
-		if (fs.existsSync(socketPath)) {
-			if (await isSocketConnectable(socketPath, 200)) return true;
-		}
-		await new Promise((r) => setTimeout(r, 50));
-	}
-	return false;
-}
-
-/**
- * One-shot session list: connect, do handshake, send `list`, return the
- * sessions array. Returns null on any failure.
- *
- * Owns its socket lifecycle on every exit path.
- */
-export async function listDaemonSessions(
-	socketPath: string,
-	timeoutMs: number,
-): Promise<SessionInfo[] | null> {
-	return new Promise<SessionInfo[] | null>((resolve) => {
-		const sock = net.createConnection({ path: socketPath });
-		const decoder = new FrameDecoder();
-		let helloAcked = false;
-		let settled = false;
-
-		const cleanup = (value: SessionInfo[] | null) => {
-			if (settled) return;
-			settled = true;
-			clearTimeout(timer);
-			sock.removeAllListeners();
-			try {
-				sock.end();
-			} catch {
-				// best-effort
-			}
-			try {
-				sock.destroy();
-			} catch {
-				// best-effort
-			}
-			resolve(value);
-		};
-
-		const timer = setTimeout(() => cleanup(null), timeoutMs);
-
-		sock.once("error", () => cleanup(null));
-		sock.once("close", () => cleanup(null));
-
-		sock.once("connect", () => {
-			try {
-				sock.write(
-					encodeFrame({
-						type: "hello",
-						protocols: [CURRENT_PROTOCOL_VERSION],
-						clientVersion: "supervisor-list",
-					}),
-				);
-			} catch {
-				cleanup(null);
-			}
-		});
-
-		sock.on("data", (chunk: Buffer) => {
-			try {
-				decoder.push(chunk);
-				for (const decoded of decoder.drain()) {
-					const msg = decoded.message as ServerMessage;
-					if (!helloAcked) {
-						if (msg.type !== "hello-ack") {
-							cleanup(null);
-							return;
-						}
-						helloAcked = true;
-						sock.write(encodeFrame({ type: "list" }));
-						continue;
-					}
-					if (msg.type === "list-reply") {
-						cleanup(msg.sessions);
-						return;
-					}
-					if (msg.type === "error") {
-						cleanup(null);
-						return;
-					}
-				}
-			} catch {
-				cleanup(null);
-			}
-		});
-	});
-}
-
-/**
- * Retry probeDaemonVersion through the post-handoff bind window. The
- * successor calls `listenWithRetry` only after the predecessor's IPC
- * channel disconnects (= predecessor exited), so there's a brief gap
- * between predecessor death and successor bind where any probe sees
- * ECONNREFUSED. A single probe with a long timeout still fails because
- * `probeDaemonVersion` resolves to null on the first connect-error;
- * we have to actively retry.
- */
-async function probeDaemonHelloWithRetry(
-	socketPath: string,
-	totalTimeoutMs: number,
-): Promise<DaemonProbeResult | null> {
-	const deadline = Date.now() + totalTimeoutMs;
-	while (Date.now() < deadline) {
-		const remaining = deadline - Date.now();
-		const perAttempt = Math.min(remaining, VERSION_PROBE_TIMEOUT_MS);
-		const probe = await probeDaemonHello(socketPath, perAttempt);
-		if (probe !== null) return probe;
-		await new Promise((r) => setTimeout(r, 50));
-	}
-	return null;
-}
-
-async function probeDaemonVersionWithRetry(
-	socketPath: string,
-	totalTimeoutMs: number,
-): Promise<string | null> {
-	return (
-		(await probeDaemonHelloWithRetry(socketPath, totalTimeoutMs))
-			?.daemonVersion ?? null
-	);
-}
-
-function terminatePidOnly(pid: number, signal: NodeJS.Signals): void {
-	if (!isPositiveInteger(pid)) return;
-	try {
-		process.kill(pid, signal);
-	} catch {
-		// Already dead or not ours.
-	}
-}
-
-async function terminateProcessTreeAndGroups(
-	pid: number,
-	signal: NodeJS.Signals,
-): Promise<void> {
-	if (!isPositiveInteger(pid)) return;
-	signalProcessTreeAndGroups(pid, signal);
-	if (await waitForPidExit(pid, DAEMON_TERMINATE_TIMEOUT_MS)) return;
-	signalProcessTreeAndGroups(pid, "SIGKILL");
-	await waitForPidExit(pid, DAEMON_TERMINATE_TIMEOUT_MS);
-}
-
-/**
- * Poll `kill(pid, 0)` until the process is gone or the deadline hits.
- * Returns `true` if we observed exit, `false` on timeout. Used to gate
- * a post-handoff version probe on predecessor exit — without this gate,
- * the probe can connect to the still-alive predecessor and record its
- * (old) version as the successor's, leaving updatePending true.
- *
- * On timeout the caller should treat the update as failed: the predecessor
- * is wedged, we can't reliably tell whether the successor bound, and
- * pretending to succeed would silently corrupt the supervisor's view.
- */
-async function waitForPidExit(
-	pid: number,
-	timeoutMs: number,
-): Promise<boolean> {
-	const deadline = Date.now() + timeoutMs;
-	while (Date.now() < deadline) {
-		try {
-			process.kill(pid, 0);
-		} catch (err) {
-			if ((err as NodeJS.ErrnoException).code === "ESRCH") return true;
-			// EPERM: process exists but isn't ours — keep waiting.
-		}
-		await new Promise((r) => setTimeout(r, 25));
-	}
-	return false;
-}
-
-/**
- * One-shot version probe: connect, send `hello`, read framed `hello-ack`,
- * close, return `daemonVersion`. Returns null on any failure.
- *
- * Owns its socket lifecycle on every exit path.
- */
-export async function probeDaemonVersion(
-	socketPath: string,
-	timeoutMs: number,
-): Promise<string | null> {
-	return (await probeDaemonHello(socketPath, timeoutMs))?.daemonVersion ?? null;
-}
-
-function probeDaemonHello(
-	socketPath: string,
-	timeoutMs: number,
-): Promise<DaemonProbeResult | null> {
-	return new Promise<DaemonProbeResult | null>((resolve) => {
-		const sock = net.createConnection({ path: socketPath });
-		const decoder = new FrameDecoder();
-		let settled = false;
-
-		const cleanup = (value: DaemonProbeResult | null) => {
-			if (settled) return;
-			settled = true;
-			clearTimeout(timer);
-			sock.removeAllListeners();
-			try {
-				sock.end();
-			} catch {
-				// best-effort
-			}
-			try {
-				sock.destroy();
-			} catch {
-				// best-effort
-			}
-			resolve(value);
-		};
-
-		const timer = setTimeout(() => cleanup(null), timeoutMs);
-
-		sock.once("error", () => cleanup(null));
-		sock.once("close", () => cleanup(null));
-
-		sock.once("connect", () => {
-			try {
-				sock.write(
-					encodeFrame({
-						type: "hello",
-						protocols: [CURRENT_PROTOCOL_VERSION],
-						clientVersion: "supervisor-probe",
-					}),
-				);
-			} catch {
-				cleanup(null);
-			}
-		});
-
-		sock.on("data", (chunk: Buffer) => {
-			try {
-				decoder.push(chunk);
-				for (const decoded of decoder.drain()) {
-					const msg = decoded.message as ServerMessage;
-					if (msg.type === "hello-ack") {
-						const daemonVersion = msg.daemonVersion;
-						if (!daemonVersion) {
-							cleanup(null);
-							return;
-						}
-						cleanup({
-							daemonVersion,
-							daemonPid: msg.daemonPid,
-						});
-						return;
-					}
-					cleanup(null);
-					return;
-				}
-			} catch {
-				cleanup(null);
-			}
-		});
-	});
-}
-
-function isSocketConnectable(
-	socketPath: string,
-	timeoutMs: number,
-): Promise<boolean> {
-	return new Promise<boolean>((resolve) => {
-		const sock = net.createConnection({ path: socketPath });
-		const timer = setTimeout(() => {
-			sock.destroy();
-			resolve(false);
-		}, timeoutMs);
-		sock.once("connect", () => {
-			clearTimeout(timer);
-			sock.end();
-			resolve(true);
-		});
-		sock.once("error", () => {
-			clearTimeout(timer);
-			resolve(false);
-		});
-	});
-}
+// `listDaemonSessions` and `probeDaemonVersion` were extracted into
+// `daemon-probe.ts`. Re-export them here so the public surface of this
+// module (and the `./index.ts` barrel that re-exports from it) stays
+// identical for existing importers.
+export { listDaemonSessions, probeDaemonVersion } from "./daemon-probe.ts";
