@@ -22,6 +22,7 @@ import {
 	calEventAttendees,
 	calEvents,
 } from "@rox/db/schema";
+import { isValidRrule } from "@rox/shared/rrule";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
@@ -36,8 +37,13 @@ import {
 	deleteEventSchema,
 	exportIcsSchema,
 	getEventSchema,
+	IMPORT_INSERT_CHUNK,
 	importIcsSchema,
+	isAllowedCadence,
 	listOccurrencesSchema,
+	MAX_IMPORT_EVENTS,
+	MAX_IMPORT_EXDATES,
+	RRULE_CADENCE_MESSAGE,
 	removeAttendeeSchema,
 	rsvpSchema,
 	shareCalendarSchema,
@@ -45,6 +51,32 @@ import {
 	updateCalendarSchema,
 	updateEventSchema,
 } from "./schema";
+
+/**
+ * Reject an RRULE body that the occurrence engine can't safely expand: enforce
+ * the same sub-daily cadence policy as the zod refinement (the .ics path skips
+ * it), then engine-validate against the row's own dtstart + timezone so a
+ * malformed body (`FREQ=BOGUS`, bad `UNTIL`, …) never reaches the DB and poisons
+ * later reads. Throws `BAD_REQUEST` on rejection.
+ */
+function assertValidRrule(
+	rrule: string,
+	dtstart: Date,
+	timezone: string,
+): void {
+	if (!isAllowedCadence(rrule)) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: RRULE_CADENCE_MESSAGE,
+		});
+	}
+	if (!isValidRrule(rrule, dtstart, timezone)) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: "Некорректное правило повторения (RRULE)",
+		});
+	}
+}
 
 type CalRole = "reader" | "writer" | "owner";
 
@@ -339,6 +371,12 @@ export const calendarRouter = {
 				"writer",
 			);
 
+			// Engine-validate the rule against this row's own anchor before it can
+			// reach the DB (the zod layer only bounds length + cadence).
+			if (input.rrule) {
+				assertValidRrule(input.rrule, input.dtstart, input.timezone ?? "UTC");
+			}
+
 			return dbWs.transaction(async (tx) => {
 				const [event] = await tx
 					.insert(calEvents)
@@ -406,12 +444,22 @@ export const calendarRouter = {
 		.input(updateEventSchema)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
-			await getEventWithAccess(
+			const existing = await getEventWithAccess(
 				organizationId,
 				ctx.session.user.id,
 				input.eventId,
 				"writer",
 			);
+
+			// When the caller sets a non-null rule, validate it against the row's
+			// effective anchor (the incoming dtstart/timezone, else the stored one).
+			if (input.rrule) {
+				assertValidRrule(
+					input.rrule,
+					input.dtstart ?? existing.dtstart,
+					input.timezone ?? existing.timezone,
+				);
+			}
 			const [row] = await db
 				.update(calEvents)
 				.set({
@@ -566,7 +614,9 @@ export const calendarRouter = {
 				const requested = new Set(input.calendarIds);
 				calendarIds = calendarIds.filter((id) => requested.has(id));
 			}
-			if (calendarIds.length === 0) return { occurrences: [], events: [] };
+			if (calendarIds.length === 0) {
+				return { occurrences: [], events: [], truncated: false };
+			}
 
 			const events = await db
 				.select()
@@ -579,17 +629,21 @@ export const calendarRouter = {
 				);
 
 			const active = events.filter((e) => e.status !== "cancelled");
-			const occurrences = expandEvents(
+			const expansion = expandEvents(
 				active.map(toExpandable),
 				input.rangeStart,
 				input.rangeEnd,
-			).map((o) => ({
+			);
+			const occurrences = expansion.occurrences.map((o) => ({
 				eventId: o.eventId,
 				start: o.start.toISOString(),
 				end: o.end.toISOString(),
 			}));
 
-			return { occurrences, events: active };
+			// `truncated` is additive: existing consumers keep reading
+			// `occurrences`/`events`; a true flag means a sub-daily rule hit the
+			// per-event cap and the window may be missing later instances.
+			return { occurrences, events: active, truncated: expansion.truncated };
 		}),
 
 	// ---- ICS import / export ---------------------------------------------
@@ -645,25 +699,47 @@ export const calendarRouter = {
 
 			const parsed = importIcs(input.ics);
 			if (parsed.length === 0) return { imported: 0 };
+			if (parsed.length > MAX_IMPORT_EVENTS) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Слишком много событий в файле .ics (максимум ${MAX_IMPORT_EVENTS})`,
+				});
+			}
 
-			const values = parsed.map((e) => ({
-				organizationId,
-				calendarId: calendar.id,
-				createdByUserId: userId,
-				title: e.title,
-				description: e.description ?? null,
-				location: e.location ?? null,
-				dtstart: e.dtstart,
-				dtend: e.dtend,
-				allDay: e.allDay ?? false,
-				timezone: calendar.timezone,
-				rrule: e.rrule ?? null,
-				exdates: e.exdates ?? [],
-			}));
-			const rows = await db
-				.insert(calEvents)
-				.values(values)
-				.returning({ id: calEvents.id });
-			return { imported: rows.length };
+			const values = parsed.map((e) => {
+				// The .ics path bypasses the zod RRULE refinement, so a malformed or
+				// too-frequent rule from an untrusted file would otherwise be stored
+				// verbatim and poison every later read for this calendar's viewers.
+				if (e.rrule) {
+					assertValidRrule(e.rrule, e.dtstart, calendar.timezone);
+				}
+				return {
+					organizationId,
+					calendarId: calendar.id,
+					createdByUserId: userId,
+					title: e.title,
+					description: e.description ?? null,
+					location: e.location ?? null,
+					dtstart: e.dtstart,
+					dtend: e.dtend,
+					allDay: e.allDay ?? false,
+					timezone: calendar.timezone,
+					rrule: e.rrule ?? null,
+					exdates: (e.exdates ?? []).slice(0, MAX_IMPORT_EXDATES),
+				};
+			});
+
+			// Chunk the insert so one upload can't issue a single unbounded
+			// statement; sum the returned row counts across batches.
+			let imported = 0;
+			for (let i = 0; i < values.length; i += IMPORT_INSERT_CHUNK) {
+				const batch = values.slice(i, i + IMPORT_INSERT_CHUNK);
+				const rows = await db
+					.insert(calEvents)
+					.values(batch)
+					.returning({ id: calEvents.id });
+				imported += rows.length;
+			}
+			return { imported };
 		}),
 } satisfies TRPCRouterRecord;

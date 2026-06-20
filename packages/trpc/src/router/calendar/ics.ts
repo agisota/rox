@@ -37,6 +37,11 @@ function toIcsDate(date: Date): string {
 	return date.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
+/** A date exactly one calendar day later (UTC), for exclusive all-day DTEND. */
+function addDay(date: Date): Date {
+	return new Date(date.getTime() + 24 * 60 * 60 * 1000);
+}
+
 /** RFC 5545 §3.1: escape `\ ; , \n` in TEXT values. */
 function escapeText(value: string): string {
 	return value
@@ -59,8 +64,16 @@ function serializeEvent(event: IcsEvent): string[] {
 	lines.push(`UID:${event.uid ?? crypto.randomUUID()}`);
 	lines.push(`DTSTAMP:${toIcsUtc(new Date())}`);
 	if (event.allDay) {
+		// RFC 5545 §3.8.2.2: an all-day DTEND (VALUE=DATE) is EXCLUSIVE — the day
+		// after the last day. A single-day event therefore ends on dtstart+1, and
+		// a zero/negative-length [dtstart, dtend] must still emit a ≥1-day span.
+		const exclusiveEnd = addDay(
+			event.dtend.getTime() > event.dtstart.getTime()
+				? event.dtend
+				: event.dtstart,
+		);
 		lines.push(`DTSTART;VALUE=DATE:${toIcsDate(event.dtstart)}`);
-		lines.push(`DTEND;VALUE=DATE:${toIcsDate(event.dtend)}`);
+		lines.push(`DTEND;VALUE=DATE:${toIcsDate(exclusiveEnd)}`);
 	} else {
 		lines.push(`DTSTART:${toIcsUtc(event.dtstart)}`);
 		lines.push(`DTEND:${toIcsUtc(event.dtend)}`);

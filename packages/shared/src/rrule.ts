@@ -353,6 +353,26 @@ function buildRuleString(
 }
 
 /**
+ * Engine-validate an RRULE body the way the occurrence math will consume it:
+ * compose the same `DTSTART:…\nRRULE:…` string `nextOccurrenceAfter` builds and
+ * ask rrule.js to parse it. Returns `false` instead of throwing so callers can
+ * reject a malformed body (`FREQ=BOGUS`, bad `UNTIL`, …) at the write boundary
+ * rather than letting it poison every later read.
+ */
+export function isValidRrule(
+	rrule: string,
+	dtstart: Date,
+	timezone: string,
+): boolean {
+	try {
+		RRule.fromString(buildRuleString(rrule, dtstart, timezone));
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * The next real-UTC occurrence strictly after `after`, or null when the
  * recurrence is exhausted (UNTIL/COUNT).
  */
