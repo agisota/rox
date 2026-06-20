@@ -220,7 +220,7 @@ export function PipelineEditor({
 	const validation = validateQuery.data;
 
 	return (
-		<div className="flex h-[calc(100dvh-3rem)] min-w-0 flex-col">
+		<div className="flex h-[calc(100dvh-3rem)] w-full min-w-0 flex-1 flex-col">
 			{/* Toolbar */}
 			<div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
 				<Button asChild size="icon" variant="ghost" className="size-8">
