@@ -68,7 +68,10 @@ async function getPublicProfile(handle: string): Promise<PublicProfile | null> {
 
 	return {
 		userId: profile.userId,
-		handle: profile.handle,
+		// The query matches on `eq(userProfiles.handle, handle)`, so the matched
+		// row's handle is provably this non-null route param (handle is
+		// nullable-until-claimed in the schema, but a match here can't be null).
+		handle,
 		displayName: profile.displayName ?? profile.user.name,
 		bio: profile.bio,
 		avatarUrl: profile.avatarUrl ?? profile.user.image,

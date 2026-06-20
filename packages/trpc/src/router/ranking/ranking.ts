@@ -67,6 +67,10 @@ async function getRankings(period: z.infer<typeof rankingPeriodSchema>) {
 	>();
 
 	for (const row of rows) {
+		// Rankings are keyed on the public handle, so skip profiles that haven't
+		// claimed one yet (handle is nullable-until-claimed in the schema).
+		if (row.handle === null) continue;
+
 		const entry = byUser.get(row.userId) ?? {
 			userId: row.userId,
 			handle: row.handle,
