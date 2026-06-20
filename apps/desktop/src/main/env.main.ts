@@ -26,15 +26,6 @@ export const env = createEnv({
 		SENTRY_DSN_DESKTOP: z.string().optional(),
 		STREAMS_URL: z.url().default("https://rox-stream.fly.dev"),
 		RELAY_URL: z.url().default("https://relay.rox.one"),
-		// LOCAL_ONLY_AUTH (ROX-518): offline auth mode, production-readable (NOT
-		// gated to NODE_ENV=development like SKIP_ENV_VALIDATION). Coerced to a
-		// boolean. Can be baked into a packaged offline-SKU build via
-		// LOCAL_ONLY_AUTH=1/true. SECURITY: never set this in the cloud/production
-		// release build env — see renderer env.renderer.ts for the boundary.
-		LOCAL_ONLY_AUTH: z
-			.string()
-			.optional()
-			.transform((v) => v === "1" || v === "true"),
 	},
 
 	runtimeEnv: {
@@ -52,7 +43,6 @@ export const env = createEnv({
 		SENTRY_DSN_DESKTOP: process.env.SENTRY_DSN_DESKTOP,
 		STREAMS_URL: process.env.STREAMS_URL,
 		RELAY_URL: process.env.RELAY_URL,
-		LOCAL_ONLY_AUTH: process.env.LOCAL_ONLY_AUTH,
 	},
 	emptyStringAsUndefined: true,
 	// Only allow skipping validation in development (never in production)

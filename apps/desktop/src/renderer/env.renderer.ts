@@ -59,35 +59,9 @@ const rawEnv = {
 const SKIP_ENV_VALIDATION =
 	process.env.NODE_ENV === "development" && !!process.env.SKIP_ENV_VALIDATION;
 
-// LOCAL_ONLY_AUTH (ROX-518): offline auth mode. Unlike SKIP_ENV_VALIDATION —
-// which is a dev-only shorthand gated on NODE_ENV=development — LOCAL_ONLY_AUTH
-// is production-readable and can be baked into a PACKAGED build at compile time
-// via LOCAL_ONLY_AUTH=1/true (the offline desktop SKU). When set it produces an
-// always-signed-in mock-org session with no cloud OAuth round-trip. Dev's
-// SKIP_ENV_VALIDATION implies it so existing dev flows are unchanged.
-//
-// ⚠️ SECURITY BOUNDARY — offline SKU only:
-// This value is INLINED at build time by Vite's `define` (see electron.vite.config.ts).
-// A cloud production build is produced WITHOUT LOCAL_ONLY_AUTH in the build env,
-// so the literal compiles to `false` and the auth gates below fall back to the
-// real session. The flag can therefore never be flipped on at runtime in a cloud
-// build — it must be deliberately opted into when building the offline SKU. Never
-// set LOCAL_ONLY_AUTH in the cloud/production release build environment.
-const LOCAL_ONLY_AUTH =
-	SKIP_ENV_VALIDATION ||
-	process.env.LOCAL_ONLY_AUTH === "1" ||
-	process.env.LOCAL_ONLY_AUTH === "true";
-
 export const env = {
 	...(SKIP_ENV_VALIDATION
 		? (rawEnv as z.infer<typeof envSchema>)
 		: envSchema.parse(rawEnv)),
 	SKIP_ENV_VALIDATION,
-	/**
-	 * Single shared predicate for offline / local-only auth mode (ROX-518).
-	 * True when the build opted into LOCAL_ONLY_AUTH (offline SKU) or in dev via
-	 * SKIP_ENV_VALIDATION. Consumers gate the always-signed-in mock-org session on
-	 * this instead of SKIP_ENV_VALIDATION directly.
-	 */
-	isLocalOnlyAuth: LOCAL_ONLY_AUTH,
 };
