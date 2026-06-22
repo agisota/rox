@@ -26,7 +26,11 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
 	HiOutlineBookOpen,
+	HiOutlineCalendarDays,
 	HiOutlineCog6Tooth,
+	HiOutlineDocumentText,
+	HiOutlineEnvelope,
+	HiOutlineFolder,
 	HiOutlineRectangleGroup,
 	HiOutlineSparkles,
 } from "react-icons/hi2";
@@ -36,6 +40,7 @@ import { useLocalHostService } from "renderer/routes/_authenticated/providers/Lo
 import { DashboardSidebarHeader } from "./components/DashboardSidebarHeader";
 import { DashboardSidebarHelpMenu } from "./components/DashboardSidebarHelpMenu";
 import { DashboardSidebarHoverCardOverlay } from "./components/DashboardSidebarHoverCardOverlay";
+import { DashboardSidebarNavButton } from "./components/DashboardSidebarNavButton";
 import { DashboardSidebarPortsList } from "./components/DashboardSidebarPortsList";
 import { DashboardSidebarProjectSection } from "./components/DashboardSidebarProjectSection";
 import { DashboardSidebarSectionRenameProvider } from "./components/DashboardSidebarSectionRenameContext";
@@ -112,6 +117,10 @@ export function DashboardSidebar({
 	const isCanvasOpen = !!matchRoute({ to: "/canvas", fuzzy: true });
 	const isJournalOpen = !!matchRoute({ to: "/journal", fuzzy: true });
 	const isMemoryOpen = !!matchRoute({ to: "/memory", fuzzy: true });
+	const isDriveOpen = !!matchRoute({ to: "/drive", fuzzy: true });
+	const isCalendarOpen = !!matchRoute({ to: "/calendar", fuzzy: true });
+	const isNotesOpen = !!matchRoute({ to: "/notes", fuzzy: true });
+	const isEmailOpen = !!matchRoute({ to: "/email", fuzzy: true });
 	const { activeHostUrl } = useLocalHostService();
 	const v2RouteMatch = matchRoute({ to: "/v2-workspace/$workspaceId" });
 	const activeV2WorkspaceId = v2RouteMatch ? v2RouteMatch.workspaceId : null;
@@ -277,7 +286,7 @@ export function DashboardSidebar({
 								projectName={activeV2Project.name}
 							/>
 						)}
-						{/* Canvas / Journal / Memory navigation */}
+						{/* Canvas / Journal / Memory + Workspace Suite navigation */}
 						<div
 							className={cn(
 								"border-t border-border",
@@ -286,124 +295,55 @@ export function DashboardSidebar({
 									: "flex flex-col gap-0.5 px-2 py-1",
 							)}
 						>
-							{isCollapsed ? (
-								<Tooltip delayDuration={300}>
-									<TooltipTrigger asChild>
-										<button
-											type="button"
-											aria-label="Canvas"
-											onClick={() => navigate({ to: "/canvas" })}
-											className={cn(
-												"flex size-8 items-center justify-center rounded-md transition-colors",
-												isCanvasOpen
-													? "bg-accent text-foreground"
-													: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-											)}
-										>
-											<HiOutlineRectangleGroup className="size-4" />
-										</button>
-									</TooltipTrigger>
-									<TooltipContent side="right">Canvas</TooltipContent>
-								</Tooltip>
-							) : (
-								<button
-									type="button"
-									onClick={() => navigate({ to: "/canvas" })}
-									className={cn(
-										"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",
-										isCanvasOpen
-											? "bg-accent text-foreground"
-											: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-									)}
-								>
-									<HiOutlineRectangleGroup className="size-4 shrink-0" />
-									<CollapseLabel
-										show={!isCollapsed}
-										className="flex-1 text-left"
-									>
-										Canvas
-									</CollapseLabel>
-								</button>
-							)}
-							{isCollapsed ? (
-								<Tooltip delayDuration={300}>
-									<TooltipTrigger asChild>
-										<button
-											type="button"
-											aria-label="Журнал"
-											onClick={() => navigate({ to: "/journal" })}
-											className={cn(
-												"flex size-8 items-center justify-center rounded-md transition-colors",
-												isJournalOpen
-													? "bg-accent text-foreground"
-													: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-											)}
-										>
-											<HiOutlineBookOpen className="size-4" />
-										</button>
-									</TooltipTrigger>
-									<TooltipContent side="right">Журнал</TooltipContent>
-								</Tooltip>
-							) : (
-								<button
-									type="button"
-									onClick={() => navigate({ to: "/journal" })}
-									className={cn(
-										"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",
-										isJournalOpen
-											? "bg-accent text-foreground"
-											: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-									)}
-								>
-									<HiOutlineBookOpen className="size-4 shrink-0" />
-									<CollapseLabel
-										show={!isCollapsed}
-										className="flex-1 text-left"
-									>
-										Журнал
-									</CollapseLabel>
-								</button>
-							)}
-
-							{isCollapsed ? (
-								<Tooltip delayDuration={300}>
-									<TooltipTrigger asChild>
-										<button
-											type="button"
-											aria-label="Память"
-											onClick={() => navigate({ to: "/memory" })}
-											className={cn(
-												"flex size-8 items-center justify-center rounded-md transition-colors",
-												isMemoryOpen
-													? "bg-accent text-foreground"
-													: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-											)}
-										>
-											<HiOutlineSparkles className="size-4" />
-										</button>
-									</TooltipTrigger>
-									<TooltipContent side="right">Память</TooltipContent>
-								</Tooltip>
-							) : (
-								<button
-									type="button"
-									onClick={() => navigate({ to: "/memory" })}
-									className={cn(
-										"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",
-										isMemoryOpen
-											? "bg-accent text-foreground"
-											: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-									)}
-								>
-									<HiOutlineSparkles className="size-4 shrink-0" />
-									<CollapseLabel
-										show={!isCollapsed}
-										className="flex-1 text-left"
-									>
-										Память
-									</CollapseLabel>
-								</button>
-							)}
+							<DashboardSidebarNavButton
+								label="Canvas"
+								icon={HiOutlineRectangleGroup}
+								isActive={isCanvasOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/canvas" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Журнал"
+								icon={HiOutlineBookOpen}
+								isActive={isJournalOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/journal" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Память"
+								icon={HiOutlineSparkles}
+								isActive={isMemoryOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/memory" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Drive"
+								icon={HiOutlineFolder}
+								isActive={isDriveOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/drive" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Календарь"
+								icon={HiOutlineCalendarDays}
+								isActive={isCalendarOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/calendar" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Заметки"
+								icon={HiOutlineDocumentText}
+								isActive={isNotesOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/notes" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Почта"
+								icon={HiOutlineEnvelope}
+								isActive={isEmailOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/email" })}
+							/>
 						</div>
 
 						<div
