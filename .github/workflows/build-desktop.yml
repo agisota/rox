@@ -59,6 +59,7 @@ jobs:
             ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-
 
       - name: Install dependencies
+        shell: bash
         run: |
           # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
           attempts=3
@@ -240,6 +241,7 @@ jobs:
             ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-
 
       - name: Install dependencies
+        shell: bash
         run: |
           # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
           attempts=3
@@ -390,6 +392,7 @@ jobs:
             ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-
 
       - name: Install dependencies
+        shell: bash
         run: |
           # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
           attempts=3
