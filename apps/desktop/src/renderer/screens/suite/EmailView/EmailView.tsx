@@ -1,0 +1,343 @@
+import { Badge } from "@rox/ui/badge";
+import { Button } from "@rox/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { Skeleton } from "@rox/ui/skeleton";
+import { toast } from "@rox/ui/sonner";
+import { Textarea } from "@rox/ui/textarea";
+import { cn } from "@rox/ui/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	ArrowDownLeft,
+	ArrowUpRight,
+	Mail,
+	PenSquare,
+	Send,
+} from "lucide-react";
+import { useState } from "react";
+import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { logger } from "renderer/lib/logger";
+import { SuiteQueryError } from "../components/SuiteQueryError";
+import { SuiteScreen } from "../components/SuiteScreen";
+
+function formatDateTime(value: Date | string | null | undefined): string {
+	if (!value) return "";
+	const date = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(date.getTime())) return "";
+	return date.toLocaleString([], {
+		day: "2-digit",
+		month: "short",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+}
+
+/**
+ * Email inbox (Suite P3 surfaced in P0), mirroring the web inbox: a thread list
+ * on the left (`mail.listThreads`), the selected thread's messages on the right
+ * (`mail.getThread`), compose/reply via `mail.send`, and read-state via
+ * `mail.markRead`.
+ *
+ * Bodies live in R2 — the router returns metadata + a server-trimmed `snippet`,
+ * never inline HTML. The snippet is rendered as PLAIN TEXT (React escapes text
+ * children; there is no `dangerouslySetInnerHTML`), so no client-side
+ * sanitisation is required and rendered email content cannot inject markup.
+ *
+ * Cache-first (AGENTS.md rule 9): cached threads render while a refetch runs.
+ */
+export function EmailView() {
+	const trpc = useTRPC();
+	const queryClient = useQueryClient();
+
+	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+	const [composeOpen, setComposeOpen] = useState(false);
+	const [to, setTo] = useState("");
+	const [subject, setSubject] = useState("");
+	const [body, setBody] = useState("");
+
+	const threadsQuery = useQuery(
+		trpc.mail.listThreads.queryOptions({ limit: 50 }),
+	);
+	const threads = threadsQuery.data ?? [];
+
+	const threadQuery = useQuery({
+		...trpc.mail.getThread.queryOptions({ threadId: activeThreadId ?? "" }),
+		enabled: activeThreadId !== null,
+	});
+
+	const markRead = useMutation(
+		trpc.mail.markRead.mutationOptions({
+			onSuccess: async () => {
+				if (activeThreadId) {
+					await queryClient.invalidateQueries({
+						queryKey: trpc.mail.getThread.queryKey({
+							threadId: activeThreadId,
+						}),
+					});
+				}
+			},
+			onError: (error) => {
+				logger.error("[EmailView] markRead failed", error);
+			},
+		}),
+	);
+
+	const send = useMutation(
+		trpc.mail.send.mutationOptions({
+			onSuccess: async () => {
+				await queryClient.invalidateQueries({
+					queryKey: trpc.mail.listThreads.queryKey({ limit: 50 }),
+				});
+				setComposeOpen(false);
+				setTo("");
+				setSubject("");
+				setBody("");
+				toast.success("Письмо отправлено");
+			},
+			onError: (error) => {
+				logger.error("[EmailView] send failed", error);
+				toast.error(error.message || "Не удалось отправить письмо");
+			},
+		}),
+	);
+
+	const messages = threadQuery.data?.messages ?? [];
+
+	const handleSend = () => {
+		const recipients = to
+			.split(/[,;\s]+/)
+			.map((value) => value.trim())
+			.filter(Boolean);
+		if (recipients.length === 0 || !body.trim()) return;
+		send.mutate({
+			to: recipients,
+			subject: subject.trim() || undefined,
+			body,
+		});
+	};
+
+	return (
+		<SuiteScreen
+			title="Почта"
+			description="Входящие, чтение и отправка"
+			icon={Mail}
+			className="max-w-6xl"
+			actions={
+				<Button onClick={() => setComposeOpen(true)}>
+					<PenSquare className="size-4" /> Написать
+				</Button>
+			}
+		>
+			{threadsQuery.isError && (
+				<SuiteQueryError
+					message={threadsQuery.error.message}
+					onRetry={() => threadsQuery.refetch()}
+				/>
+			)}
+
+			{threads.length === 0 && threadsQuery.isLoading && (
+				<div className="space-y-2">
+					{[0, 1, 2, 3].map((i) => (
+						<Skeleton key={i} className="h-14 w-full" />
+					))}
+				</div>
+			)}
+
+			{threads.length === 0 && threadsQuery.isSuccess && (
+				<div className="flex flex-col items-center justify-center rounded-lg border border-border border-dashed py-20 text-center">
+					<Mail className="mb-3 size-8 text-muted-foreground" />
+					<span className="text-foreground text-sm">Входящих нет</span>
+					<span className="mt-1 max-w-sm text-muted-foreground text-xs">
+						Когда придут письма, они появятся здесь.
+					</span>
+				</div>
+			)}
+
+			{threads.length > 0 && (
+				<div className="grid h-[calc(100vh-220px)] min-h-96 grid-cols-[280px_1fr] gap-3">
+					{/* Thread list */}
+					<div className="overflow-y-auto rounded-lg border border-border">
+						{threads.map((thread) => (
+							<button
+								key={thread.id}
+								type="button"
+								onClick={() => setActiveThreadId(thread.id)}
+								className={cn(
+									"flex w-full flex-col gap-0.5 border-border border-b px-3 py-2.5 text-left last:border-b-0 transition-colors hover:bg-accent/40",
+									thread.id === activeThreadId && "bg-accent",
+								)}
+							>
+								<div className="flex items-center justify-between gap-2">
+									<span className="truncate text-sm font-medium">
+										{thread.subjectNorm?.trim() || "(без темы)"}
+									</span>
+									<span className="shrink-0 text-[10px] text-muted-foreground">
+										{formatDateTime(thread.lastMessageAt)}
+									</span>
+								</div>
+								<span className="text-muted-foreground text-xs">
+									{thread.messageCount} сообщ.
+								</span>
+							</button>
+						))}
+					</div>
+
+					{/* Thread reader */}
+					<div className="overflow-hidden rounded-lg border border-border">
+						{activeThreadId === null ? (
+							<div className="flex h-full flex-col items-center justify-center text-center">
+								<Mail className="mb-3 size-8 text-muted-foreground" />
+								<span className="text-muted-foreground text-sm">
+									Выберите переписку
+								</span>
+							</div>
+						) : threadQuery.isError ? (
+							<p className="cursor-text select-text p-4 text-destructive text-sm">
+								{threadQuery.error.message}
+							</p>
+						) : threadQuery.isLoading && messages.length === 0 ? (
+							<div className="space-y-3 p-4">
+								<Skeleton className="h-6 w-1/2" />
+								<Skeleton className="h-20 w-full" />
+							</div>
+						) : (
+							<div className="h-full overflow-y-auto p-4">
+								<div className="space-y-3">
+									{messages.map((message) => {
+										const isOutbound = message.direction === "outbound";
+										const timestamp =
+											message.receivedAt ??
+											message.sentAt ??
+											message.createdAt ??
+											null;
+										return (
+											<div
+												key={message.id}
+												className="rounded-lg border border-border bg-card"
+											>
+												<div className="flex items-start justify-between gap-2 border-border border-b px-3 py-2">
+													<div className="flex min-w-0 flex-col">
+														<span className="flex items-center gap-2">
+															<span className="truncate text-sm font-medium">
+																{isOutbound
+																	? "Вы"
+																	: (message.fromName ?? message.fromAddr)}
+															</span>
+															<Badge
+																variant="outline"
+																className="shrink-0 gap-1 px-1.5 py-0 text-[10px]"
+															>
+																{isOutbound ? (
+																	<ArrowUpRight className="size-2.5" />
+																) : (
+																	<ArrowDownLeft className="size-2.5" />
+																)}
+																{isOutbound ? "Исходящее" : "Входящее"}
+															</Badge>
+															{!message.isRead && !isOutbound && (
+																<span className="size-1.5 shrink-0 rounded-full bg-primary" />
+															)}
+														</span>
+														<span className="truncate text-[11px] text-muted-foreground">
+															{message.subject?.trim() || "(без темы)"}
+														</span>
+													</div>
+													<div className="flex shrink-0 items-center gap-2">
+														<span className="text-[10px] text-muted-foreground">
+															{formatDateTime(timestamp)}
+														</span>
+														{!message.isRead && !isOutbound && (
+															<Button
+																size="sm"
+																variant="ghost"
+																className="h-6 px-2 text-[10px]"
+																disabled={markRead.isPending}
+																onClick={() =>
+																	markRead.mutate({
+																		messageId: message.id,
+																		isRead: true,
+																	})
+																}
+															>
+																Прочитано
+															</Button>
+														)}
+													</div>
+												</div>
+												{/* Body lives in R2 — render the safe plaintext snippet
+												    (no raw HTML, React escapes text children). */}
+												<p className="cursor-text select-text whitespace-pre-wrap break-words px-3 py-3 text-sm">
+													{message.snippet?.trim() ||
+														"Текст письма недоступен в предпросмотре."}
+												</p>
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+			)}
+
+			{/* Compose dialog */}
+			<Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+				<DialogContent className="max-h-[min(720px,calc(100dvh-2rem))] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Новое письмо</DialogTitle>
+						<DialogDescription>
+							Отправка с вашего адреса @rox.one.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex flex-col gap-3">
+						<div className="flex flex-col gap-1.5">
+							<Label htmlFor="mail-to">Кому</Label>
+							<Input
+								id="mail-to"
+								value={to}
+								onChange={(e) => setTo(e.target.value)}
+								placeholder="name@example.com, …"
+								type="email"
+							/>
+						</div>
+						<div className="flex flex-col gap-1.5">
+							<Label htmlFor="mail-subject">Тема</Label>
+							<Input
+								id="mail-subject"
+								value={subject}
+								onChange={(e) => setSubject(e.target.value)}
+								placeholder="Тема письма"
+							/>
+						</div>
+						<div className="flex flex-col gap-1.5">
+							<Label htmlFor="mail-body">Текст</Label>
+							<Textarea
+								id="mail-body"
+								value={body}
+								onChange={(e) => setBody(e.target.value)}
+								placeholder="Текст письма…"
+								rows={8}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							disabled={!to.trim() || !body.trim() || send.isPending}
+							onClick={handleSend}
+						>
+							<Send className="size-4" /> Отправить
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</SuiteScreen>
+	);
+}
