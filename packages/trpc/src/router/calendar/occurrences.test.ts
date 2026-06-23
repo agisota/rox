@@ -52,6 +52,47 @@ describe("expandEvent — one-off", () => {
 	});
 });
 
+describe("expandEvent — all-day (C2)", () => {
+	it("renders a zero-duration all-day event across its whole day", () => {
+		// dtend == dtstart (zero-length) but allDay: the event must still appear on
+		// the day grid, spanning to end-of-day rather than collapsing to nothing.
+		const out = expandEvent(
+			event({
+				allDay: true,
+				dtstart: new Date("2026-06-01T00:00:00.000Z"),
+				dtend: new Date("2026-06-01T00:00:00.000Z"),
+				rrule: null,
+			}),
+			new Date("2026-06-01T00:00:00.000Z"),
+			new Date("2026-06-02T00:00:00.000Z"),
+		);
+		expect(out.occurrences).toHaveLength(1);
+		expect(out.occurrences[0]?.start.toISOString()).toBe(
+			"2026-06-01T00:00:00.000Z",
+		);
+		// End spans to the next midnight (end-of-day) so the grid cell is covered.
+		expect(out.occurrences[0]?.end.toISOString()).toBe(
+			"2026-06-02T00:00:00.000Z",
+		);
+	});
+
+	it("does not inflate a timed zero-duration event to a full day", () => {
+		// A non-all-day zero-duration instant keeps the old half-open behaviour and
+		// does NOT render at the very start of the window.
+		const out = expandEvent(
+			event({
+				allDay: false,
+				dtstart: new Date("2026-06-01T00:00:00.000Z"),
+				dtend: new Date("2026-06-01T00:00:00.000Z"),
+				rrule: null,
+			}),
+			new Date("2026-06-01T00:00:00.000Z"),
+			new Date("2026-06-02T00:00:00.000Z"),
+		);
+		expect(out.occurrences).toHaveLength(0);
+	});
+});
+
 describe("expandEvent — recurring", () => {
 	it("expands a daily rule across a 3-day window", () => {
 		const out = expandEvent(
@@ -87,6 +128,38 @@ describe("expandEvent — recurring", () => {
 		expect(out.occurrences.map((o) => o.start.toISOString())).toEqual([
 			"2026-06-01T09:00:00.000Z",
 			"2026-06-03T09:00:00.000Z",
+		]);
+	});
+
+	it("cancels a timed instance from a DATE-only (midnight-UTC) EXDATE (C3)", () => {
+		// An imported all-day EXDATE lands at midnight UTC and never millisecond-
+		// matches the 09:00 instance; it must still cancel that calendar day.
+		const out = expandEvent(
+			event({
+				rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+				exdates: ["2026-06-02T00:00:00.000Z"],
+			}),
+			new Date("2026-06-01T00:00:00.000Z"),
+			new Date("2026-06-04T00:00:00.000Z"),
+		);
+		expect(out.occurrences.map((o) => o.start.toISOString())).toEqual([
+			"2026-06-01T09:00:00.000Z",
+			"2026-06-03T09:00:00.000Z",
+		]);
+	});
+
+	it("a midnight EXDATE only cancels its own calendar day", () => {
+		const out = expandEvent(
+			event({
+				rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+				exdates: ["2026-06-02T00:00:00.000Z"],
+			}),
+			new Date("2026-06-01T00:00:00.000Z"),
+			new Date("2026-06-03T00:00:00.000Z"),
+		);
+		// Jun 1 survives; Jun 2 is cancelled.
+		expect(out.occurrences.map((o) => o.start.toISOString())).toEqual([
+			"2026-06-01T09:00:00.000Z",
 		]);
 	});
 });

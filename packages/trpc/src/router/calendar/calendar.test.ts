@@ -216,6 +216,41 @@ describe("calendar.createEvent", () => {
 		);
 	});
 
+	test("resolves an @handle attendee to its userId (C8)", async () => {
+		state.selectQueue = [
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+			[{ userId: OTHER_USER, handle: "alice" }], // resolveAttendees handle lookup
+		];
+		state.insertReturning = [{ id: EVENT_ID, title: "Sync" }];
+		const caller = callerFor("org-1");
+		await caller.calendar.createEvent({
+			calendarId: CAL_ID,
+			title: "Sync",
+			dtstart: new Date("2026-06-20T09:00:00Z"),
+			dtend: new Date("2026-06-20T10:00:00Z"),
+			attendees: [{ kind: "handle", handle: "@Alice" }],
+		});
+		const attendeeRows = state.inserted[1]?.values ?? [];
+		expect(attendeeRows.some((r) => r.userId === OTHER_USER)).toBe(true);
+	});
+
+	test("rejects an unknown @handle attendee (C8)", async () => {
+		state.selectQueue = [
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar
+			[], // handle lookup → none
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.createEvent({
+				calendarId: CAL_ID,
+				title: "Sync",
+				dtstart: new Date("2026-06-20T09:00:00Z"),
+				dtend: new Date("2026-06-20T10:00:00Z"),
+				attendees: [{ kind: "handle", handle: "ghost" }],
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+
 	test("rejects dtend before dtstart", async () => {
 		const caller = callerFor("org-1");
 		await expect(

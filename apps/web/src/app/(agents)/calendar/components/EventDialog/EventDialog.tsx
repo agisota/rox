@@ -99,6 +99,24 @@ const RSVP_OPTIONS: { value: CalAttendeeStatus; label: string }[] = [
 	{ value: "declined", label: "Не приду" },
 ];
 
+/** A staged attendee request the calendar router accepts (email or @handle). */
+type AttendeeInput =
+	| { kind: "email"; email: string }
+	| { kind: "handle"; handle: string };
+
+/**
+ * Map a free-text attendee token to the router's attendee input. A value that
+ * looks like an email is sent as `email`; anything else (with or without a
+ * leading `@`) is treated as a rox `@handle` the server resolves to a userId.
+ */
+function toAttendeeInput(value: string): AttendeeInput {
+	const v = value.trim();
+	if (v.includes("@") && !v.startsWith("@")) {
+		return { kind: "email", email: v.toLowerCase() };
+	}
+	return { kind: "handle", handle: v.replace(/^@/, "").toLowerCase() };
+}
+
 /** Display name for an attendee row (rox user "you" hint or raw email). */
 function attendeeLabel(
 	attendee: EventAttendee,
@@ -148,7 +166,6 @@ export function EventDialog({
 	const [start, setStart] = useState(toDatetimeLocal(initial.dtstart));
 	const [end, setEnd] = useState(toDatetimeLocal(initial.dtend));
 	const [allDay, setAllDay] = useState(initial.allDay);
-	const [timezone, setTimezone] = useState(initial.timezone);
 	const [preset, setPreset] = useState<RecurrencePreset>(
 		rruleToPreset(initial.rrule),
 	);
@@ -166,14 +183,13 @@ export function EventDialog({
 		setStart(toDatetimeLocal(initial.dtstart));
 		setEnd(toDatetimeLocal(initial.dtend));
 		setAllDay(initial.allDay);
-		setTimezone(initial.timezone);
 		setPreset(rruleToPreset(initial.rrule));
 		setCustomRrule(initial.rrule ?? "");
 		setAttendeeEmail("");
 		setStagedAttendees([]);
 	}, [open, initial]);
 
-	/** Stage an email locally to persist alongside a brand-new event. */
+	/** Stage an email or @handle locally to persist alongside a brand-new event. */
 	const stageAttendee = () => {
 		const value = attendeeEmail.trim().toLowerCase();
 		if (value && !stagedAttendees.includes(value)) {
@@ -182,18 +198,19 @@ export function EventDialog({
 		setAttendeeEmail("");
 	};
 
-	/** Add an attendee to the persisted event (edit mode). */
+	/** Add an email or @handle attendee to the persisted event (edit mode). */
 	const addLiveAttendee = () => {
 		const value = attendeeEmail.trim().toLowerCase();
 		if (!value || !initial.eventId) return;
-		if (attendees.some((a) => a.email === value)) {
+		const attendee = toAttendeeInput(value);
+		if (
+			attendee.kind === "email" &&
+			attendees.some((a) => a.email === attendee.email)
+		) {
 			setAttendeeEmail("");
 			return;
 		}
-		addAttendee.mutate({
-			eventId: initial.eventId,
-			attendee: { kind: "email", email: value },
-		});
+		addAttendee.mutate({ eventId: initial.eventId, attendee });
 		setAttendeeEmail("");
 	};
 
@@ -232,7 +249,6 @@ export function EventDialog({
 					dtstart,
 					dtend,
 					allDay,
-					timezone,
 					rrule,
 				},
 				{ onSuccess: () => onOpenChange(false) },
@@ -249,12 +265,8 @@ export function EventDialog({
 				dtstart,
 				dtend,
 				allDay,
-				timezone,
 				rrule,
-				attendees: stagedAttendees.map((email) => ({
-					kind: "email" as const,
-					email,
-				})),
+				attendees: stagedAttendees.map(toAttendeeInput),
 			},
 			{ onSuccess: () => onOpenChange(false) },
 		);
@@ -336,16 +348,6 @@ export function EventDialog({
 					</div>
 
 					<div className="space-y-1.5">
-						<Label htmlFor="cal-event-tz">Часовой пояс</Label>
-						<Input
-							id="cal-event-tz"
-							value={timezone}
-							onChange={(e) => setTimezone(e.target.value)}
-							placeholder="UTC"
-						/>
-					</div>
-
-					<div className="space-y-1.5">
 						<Label>Повтор</Label>
 						<Select
 							value={preset}
@@ -412,11 +414,13 @@ export function EventDialog({
 						/>
 					) : (
 						<div className="space-y-1.5">
-							<Label htmlFor="cal-event-attendee">Участники (email)</Label>
+							<Label htmlFor="cal-event-attendee">
+								Участники (email или @handle)
+							</Label>
 							<div className="flex gap-2">
 								<Input
 									id="cal-event-attendee"
-									type="email"
+									type="text"
 									value={attendeeEmail}
 									onChange={(e) => setAttendeeEmail(e.target.value)}
 									onKeyDown={(e) => {
@@ -425,7 +429,7 @@ export function EventDialog({
 											stageAttendee();
 										}
 									}}
-									placeholder="guest@example.com"
+									placeholder="guest@example.com или @alice"
 								/>
 								<Button
 									type="button"
@@ -594,7 +598,7 @@ function EditAttendees({
 			<div className="flex gap-2 pt-1">
 				<Input
 					id="cal-event-attendee"
-					type="email"
+					type="text"
 					value={email}
 					onChange={(e) => onEmailChange(e.target.value)}
 					onKeyDown={(e) => {
@@ -603,7 +607,7 @@ function EditAttendees({
 							onAdd();
 						}
 					}}
-					placeholder="guest@example.com"
+					placeholder="guest@example.com или @alice"
 				/>
 				<Button
 					type="button"

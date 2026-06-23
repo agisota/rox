@@ -21,6 +21,7 @@ import {
 	calCalendars,
 	calEventAttendees,
 	calEvents,
+	userProfiles,
 } from "@rox/db/schema";
 import { isValidRrule } from "@rox/shared/rrule";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
@@ -188,9 +189,57 @@ function toExpandable(event: typeof calEvents.$inferSelect): ExpandableEvent {
 		dtstart: event.dtstart,
 		dtend: event.dtend,
 		timezone: event.timezone,
+		allDay: event.allDay,
 		rrule: event.rrule,
 		exdates: event.exdates,
 	};
+}
+
+/** An attendee request after handle-resolution: only userId/email kinds remain. */
+type ResolvedAttendee =
+	| { kind: "userId"; userId: string }
+	| { kind: "email"; email: string };
+
+/** Any attendee request accepted by the schema (userId | email | handle). */
+type AttendeeRequest =
+	| { kind: "userId"; userId: string }
+	| { kind: "email"; email: string }
+	| { kind: "handle"; handle: string };
+
+/**
+ * C8: resolve `@handle` attendees to their owning userId via
+ * `user_profiles.handle`, leaving userId/email kinds untouched. The handle has
+ * already been normalized (no `@`, lower-cased) by the zod transform. An unknown
+ * handle is a `BAD_REQUEST` so the caller learns the typo instead of silently
+ * dropping the invitee.
+ */
+async function resolveAttendees(
+	attendees: AttendeeRequest[],
+): Promise<ResolvedAttendee[]> {
+	const handles = Array.from(
+		new Set(attendees.flatMap((a) => (a.kind === "handle" ? [a.handle] : []))),
+	);
+	const byHandle = new Map<string, string>();
+	if (handles.length > 0) {
+		const rows = await db
+			.select({ userId: userProfiles.userId, handle: userProfiles.handle })
+			.from(userProfiles)
+			.where(inArray(userProfiles.handle, handles));
+		for (const row of rows) {
+			if (row.handle) byHandle.set(row.handle, row.userId);
+		}
+	}
+	return attendees.map((a) => {
+		if (a.kind !== "handle") return a;
+		const userId = byHandle.get(a.handle);
+		if (!userId) {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: `Пользователь @${a.handle} не найден`,
+			});
+		}
+		return { kind: "userId", userId };
+	});
 }
 
 export const calendarRouter = {
@@ -380,11 +429,14 @@ export const calendarRouter = {
 				assertValidRrule(input.rrule, input.dtstart, input.timezone ?? "UTC");
 			}
 
+			// C8: resolve `@handle` attendees to userIds before the membership guard.
+			const resolvedAttendees = await resolveAttendees(input.attendees ?? []);
+
 			// C1/S3: every in-app attendee MUST be a member of the caller's org.
 			// Email-kind attendees are external invitees and exempt.
 			await assertOrgMembers(
 				organizationId,
-				(input.attendees ?? []).flatMap((a) =>
+				resolvedAttendees.flatMap((a) =>
 					a.kind === "userId" ? [a.userId] : [],
 				),
 			);
@@ -424,7 +476,7 @@ export const calendarRouter = {
 						status: "accepted" as const,
 						isOrganizer: true,
 					},
-					...(input.attendees ?? [])
+					...resolvedAttendees
 						.filter((a) => !(a.kind === "userId" && a.userId === userId))
 						.map((a) =>
 							a.kind === "userId"
@@ -531,19 +583,27 @@ export const calendarRouter = {
 				input.eventId,
 				"writer",
 			);
+			// C8: resolve an `@handle` attendee to its userId first.
+			const [attendee] = await resolveAttendees([input.attendee]);
+			if (!attendee) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Некорректный участник",
+				});
+			}
 			// C1/S3: an in-app attendee MUST be a member of the caller's org.
 			// Email-kind attendees are external invitees and exempt.
-			if (input.attendee.kind === "userId") {
-				await assertOrgMembers(organizationId, [input.attendee.userId]);
+			if (attendee.kind === "userId") {
+				await assertOrgMembers(organizationId, [attendee.userId]);
 			}
 			const [row] = await db
 				.insert(calEventAttendees)
 				.values(
-					input.attendee.kind === "userId"
+					attendee.kind === "userId"
 						? {
 								organizationId,
 								eventId: event.id,
-								userId: input.attendee.userId,
+								userId: attendee.userId,
 								email: null,
 								status: "needs_action" as const,
 							}
@@ -551,7 +611,7 @@ export const calendarRouter = {
 								organizationId,
 								eventId: event.id,
 								userId: null,
-								email: input.attendee.email,
+								email: attendee.email,
 								status: "needs_action" as const,
 							},
 				)
