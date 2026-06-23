@@ -8,7 +8,9 @@ import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import type { HostDb } from "../../db";
 import * as schema from "../../db/schema";
 import {
+	DEMO_PROJECT_COLOR,
 	DEMO_PROJECT_DIR_NAME,
+	DEMO_PROJECT_ICON_PATH,
 	getDemoProjectPath,
 	seedDemoProject,
 } from "./demo-project";
@@ -124,5 +126,30 @@ describe("seedDemoProject", () => {
 		expect(rows).toHaveLength(1);
 		expect(rows[0]?.id).toBe("22222222-2222-2222-2222-222222222222");
 		expect(rows[0]?.repoPath).toBe(nextRepoPath);
+	});
+});
+
+describe("demo project visual metadata (issue #26)", () => {
+	it("is yellow", () => {
+		// #facc15 is Tailwind yellow-400 — the demo project's display color the
+		// renderer applies when it first surfaces the demo project.
+		expect(DEMO_PROJECT_COLOR).toBe("#facc15");
+	});
+
+	it("uses the bundled pizdariki icon asset", () => {
+		// Issue #26 names the asset `pizdariki.svg`; it ships in the desktop app's
+		// resources dir (no external absolute path).
+		expect(DEMO_PROJECT_ICON_PATH).toBe("icons/pizdariki.svg");
+	});
+
+	it("ships the pizdariki icon asset in the desktop resources dir", () => {
+		// Guard against the constant pointing at a missing file. Resolve the asset
+		// relative to the repo's desktop resources dir.
+		const assetPath = resolve(
+			import.meta.dir,
+			"../../../../../apps/desktop/resources",
+			DEMO_PROJECT_ICON_PATH,
+		);
+		expect(existsSync(assetPath)).toBe(true);
 	});
 });

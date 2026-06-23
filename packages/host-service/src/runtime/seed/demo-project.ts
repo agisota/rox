@@ -31,8 +31,12 @@ export const DEMO_PROJECT_DIR_NAME = "001_demo_project";
 /** Display color for the demo project (yellow), applied by the renderer. */
 export const DEMO_PROJECT_COLOR = "#facc15";
 
-/** Bundled icon, relative to the desktop app's `resources` dir. */
-export const DEMO_PROJECT_ICON_PATH = "icons/demo-project.svg";
+/**
+ * Bundled icon for the demo project, relative to the desktop app's `resources`
+ * dir. Named `pizdariki.svg` per issue #26; a yellow pizza-slice glyph shipped
+ * as a repo asset so no external absolute path is required.
+ */
+export const DEMO_PROJECT_ICON_PATH = "icons/pizdariki.svg";
 
 const DEMO_PROJECT_README = `# Demo Project
 

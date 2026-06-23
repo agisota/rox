@@ -6,6 +6,7 @@ import { members, userAttribution } from "@rox/db/schema";
 import type { sessions } from "@rox/db/schema/auth";
 import * as authSchema from "@rox/db/schema/auth";
 import { seedDefaultStatuses } from "@rox/db/seed-default-statuses";
+import { seedDemoProject } from "@rox/db/seed-demo-project";
 import { MemberAddedEmail } from "@rox/email/emails/member-added";
 import { MemberRemovedEmail } from "@rox/email/emails/member-removed";
 import { OrganizationInvitationEmail } from "@rox/email/emails/organization-invitation";
@@ -518,6 +519,19 @@ export const auth = betterAuth({
 
 				afterCreateOrganization: async ({ organization }) => {
 					await seedDefaultStatuses(organization.id);
+					// Seed the demo project so a freshly-created org lands in a usable
+					// workspace instead of an empty project list (issue #26). Unlike
+					// default statuses (the task system depends on them), the demo
+					// project is non-essential onboarding UX, so its failure must never
+					// block or roll back org creation — keep it best-effort.
+					try {
+						await seedDemoProject(organization.id);
+					} catch (error) {
+						console.error(
+							`afterCreateOrganization: failed to seed demo project for org ${organization.id}`,
+							error,
+						);
+					}
 				},
 
 				beforeRemoveMember: async ({ member, organization }) => {
