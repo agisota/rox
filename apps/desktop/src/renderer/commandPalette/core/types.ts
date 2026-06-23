@@ -26,6 +26,14 @@ export interface CommandContext {
 	notificationSoundsMuted: boolean;
 	navigate: (path: string) => void;
 	focusedView?: "editor" | "terminal" | "git" | "issues" | "files" | "chat";
+	/**
+	 * Whether the `agentNative.commandPalette` experimental feature is usable
+	 * (enabled AND resolves `available`). Providers gated on Agent-Native
+	 * actions read this instead of calling the `useExperimentalFeature` hook,
+	 * because `CommandProvider.provide` is a plain function evaluated outside a
+	 * React render. Defaults to `false` (treat as off) when not supplied.
+	 */
+	experimentalAgentCommandPalette?: boolean;
 }
 
 export interface Command {

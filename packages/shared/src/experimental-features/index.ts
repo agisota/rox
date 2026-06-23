@@ -336,7 +336,24 @@ export const EXPERIMENTAL_FEATURES = [
 			longDescription:
 				"Adds discoverable command palette entries for source attachment, run replay, delegation, and permission review.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
+			// "ready" is justified by a REAL gated surface: the desktop command
+			// palette's `agentNativeProvider`
+			// (renderer/commandPalette/modules/agentNative/commands.tsx) contributes
+			// reachable entries ONLY when this feature is enabled+available — the
+			// gate state is resolved in CommandContextProvider via
+			// `useExperimentalFeature` and carried on
+			// `CommandContext.experimentalAgentCommandPalette`. Two commands route
+			// to surfaces that ship today ("Проверить разрешения агента" ->
+			// /settings/agents; "Повторить запуск агента" -> /automations); the two
+			// not-yet-backed actions ("Подключить источник агента",
+			// "Делегировать задачу агенту") are contributed DISABLED with a clear
+			// `disabledReason` instead of a faked run, per the experimental
+			// anti-slop rule. Its only dependency is the desktop runtime (a
+			// `runtime` dep, always "configured"), so the resolver returns
+			// `available` with no external provider — same clean-flip precedent as
+			// `templates.marketplace` / `projectOs.workspaceShell`; no provider
+			// demotion is required (unlike `agentNative.sourceMarketplace`).
+			implementationStatus: "ready",
 			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: [
 				"Command palette",

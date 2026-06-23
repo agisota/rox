@@ -13,6 +13,7 @@ import {
 	useContext,
 	useMemo,
 } from "react";
+import { useExperimentalFeature } from "renderer/hooks/useExperimentalFeature";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
@@ -75,6 +76,13 @@ export function CommandContextProvider({ children }: { children: ReactNode }) {
 	const { data: notificationSoundsMuted = false } =
 		electronTrpc.settings.getNotificationSoundsMuted.useQuery();
 
+	const { state: agentCommandPaletteState } = useExperimentalFeature(
+		"agentNative.commandPalette",
+	);
+	const experimentalAgentCommandPalette =
+		agentCommandPaletteState.enabled &&
+		agentCommandPaletteState.availability === "available";
+
 	const context = useMemo<CommandContext>(
 		() => ({
 			route: { pathname: location.pathname, params: {} },
@@ -95,6 +103,7 @@ export function CommandContextProvider({ children }: { children: ReactNode }) {
 			localMachineId: machineId ?? null,
 			notificationSoundsMuted,
 			navigate: navigateTo,
+			experimentalAgentCommandPalette,
 		}),
 		[
 			location.pathname,
@@ -107,6 +116,7 @@ export function CommandContextProvider({ children }: { children: ReactNode }) {
 			machineId,
 			notificationSoundsMuted,
 			navigateTo,
+			experimentalAgentCommandPalette,
 		],
 	);
 

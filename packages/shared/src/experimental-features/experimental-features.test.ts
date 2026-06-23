@@ -255,6 +255,45 @@ describe("experimental features registry", () => {
 		expect(state.reason).toBeUndefined();
 	});
 
+	test("agentNative.commandPalette ships a ready, locally-backed surface", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"agentNative.commandPalette",
+		);
+		expect(definition).toBeDefined();
+		expect(definition?.implementationStatus).toBe("ready");
+		// Backed by the desktop command palette's agentNativeProvider — gated only
+		// on the desktop runtime, with no external Agent-Native provider dependency
+		// (clean flip, no provider demotion required).
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders).toHaveLength(0);
+	});
+
+	test("agentNative.commandPalette resolves available with the desktop runtime", () => {
+		const state = resolveExperimentalFeatureState(
+			"agentNative.commandPalette",
+			{ dependencies: { "desktop-runtime": "configured" } },
+		);
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
+
+	test("agentNative.commandPalette stays hidden when disabled by the user", () => {
+		const state = resolveExperimentalFeatureState(
+			"agentNative.commandPalette",
+			{
+				dependencies: { "desktop-runtime": "configured" },
+				overrides: { "agentNative.commandPalette": false },
+			},
+		);
+		// The provider gate is `enabled && available`; a user opt-out closes it
+		// even though the surface itself is available.
+		expect(state.enabled).toBe(false);
+		expect(state.availability).toBe("available");
+	});
+
 	test("projectOs.hulyImport stays planned but is no longer needs_configuration", () => {
 		// The optional Huly import connector is still 'planned' (no surface yet),
 		// but with no Huly env it now reports not_implemented (planned) rather than
