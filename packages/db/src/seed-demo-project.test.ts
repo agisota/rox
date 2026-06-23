@@ -8,111 +8,199 @@ mock.module("./client", () => ({ db: {}, dbWs: {} }));
 const { seedDemoProject } = await import("./seed-demo-project");
 
 const ORG_ID = "11111111-1111-4111-8111-111111111111";
-const DEMO_PROJECT_ID = "22222222-2222-4222-8222-222222222222";
+const V1_DEMO_PROJECT_ID = "22222222-2222-4222-8222-222222222222";
+const V2_DEMO_PROJECT_ID = "33333333-3333-4333-8333-333333333333";
 
 /**
  * Build a fake drizzle `Executor` for `seedDemoProject`.
  *
- * - `select().from().where().limit()` resolves to the next array from
- *   `selectResults` (one entry consumed per call, so we can model the
- *   first-empty-then-found race path).
- * - `insert().values(row).onConflictDoNothing().returning()` resolves to
- *   `insertResult`, and the inserted `row` is captured for assertions.
+ * `seedDemoProject(orgId, executor)` (the injected-executor branch) seeds BOTH
+ * the V1 `projects` table and the V2 `v2_projects` table on the passed executor,
+ * V1 first then V2. So a single call issues two select→(maybe insert) cycles.
+ *
+ * - `select().from(table).where().limit()` resolves to the next array from
+ *   `selectResults` (one entry consumed per `.limit()` call, so we can model the
+ *   first-empty-then-found race path on either table).
+ * - `insert(table).values(row).onConflictDoNothing().returning()` resolves to the
+ *   next array from `insertResults`; the inserted `row` and the target table name
+ *   are captured for assertions.
+ *
+ * The fake records which table each select/insert targeted via the first arg
+ * passed to `.from(table)` / `.insert(table)`, comparing against the real table
+ * objects' inferred `Symbol`-less identity using the drizzle table name.
  */
+function tableName(table: unknown): string {
+	// drizzle pg tables expose their SQL name via a well-known symbol; fall back
+	// to a stringify so the fake never throws on an unexpected shape.
+	const sym = Object.getOwnPropertySymbols(table as object).find((s) =>
+		s.toString().includes("Name"),
+	);
+	if (sym) {
+		const value = (table as Record<symbol, unknown>)[sym];
+		if (typeof value === "string") return value;
+	}
+	return String(table);
+}
+
 function createExecutor(opts: {
 	selectResults: Array<Array<{ id: string }>>;
-	insertResult: Array<{ id: string }>;
+	insertResults: Array<Array<{ id: string }>>;
 }) {
-	const insertedRows: Array<Record<string, unknown>> = [];
+	const insertedRows: Array<{ table: string; row: Record<string, unknown> }> =
+		[];
+	const selectedTables: string[] = [];
 
-	const insertChain = {
-		onConflictDoNothing: mock(() => insertChain),
-		returning: mock(async () => opts.insertResult),
+	let insertIdx = 0;
+	const makeInsert = (table: unknown) => {
+		const captured = tableName(table);
+		const insertChain = {
+			onConflictDoNothing: mock(() => insertChain),
+			returning: mock(async () => {
+				const result = opts.insertResults[insertIdx] ?? [];
+				insertIdx += 1;
+				return result;
+			}),
+		};
+		const values = mock((row: Record<string, unknown>) => {
+			insertedRows.push({ table: captured, row });
+			return insertChain;
+		});
+		return { values };
 	};
-	const values = mock((row: Record<string, unknown>) => {
-		insertedRows.push(row);
-		return insertChain;
-	});
-	const insert = mock(() => ({ values }));
+	const insert = mock((table: unknown) => makeInsert(table));
 
 	let selectIdx = 0;
-	const limit = mock(async () => {
-		const result = opts.selectResults[selectIdx] ?? [];
-		selectIdx += 1;
-		return result;
-	});
-	const selectChain = {
-		from: mock(() => selectChain),
-		where: mock(() => selectChain),
-		limit,
+	const makeSelectChain = () => {
+		const chain = {
+			from: mock((table: unknown) => {
+				selectedTables.push(tableName(table));
+				return chain;
+			}),
+			where: mock(() => chain),
+			limit: mock(async () => {
+				const result = opts.selectResults[selectIdx] ?? [];
+				selectIdx += 1;
+				return result;
+			}),
+		};
+		return chain;
 	};
-	const select = mock(() => selectChain);
+	const select = mock(() => makeSelectChain());
 
 	return {
 		executor: { select, insert } as never,
 		select,
 		insert,
-		values,
 		insertedRows,
+		selectedTables,
 		selectCalls: () => selectIdx,
+		insertCalls: () => insertIdx,
 	};
 }
 
 describe("seedDemoProject (@rox/db — org-level demo project seed, issue #26)", () => {
-	it("inserts the demo project when none exists and returns its id", async () => {
+	it("seeds BOTH the V1 projects and V2 v2_projects rows on first run and returns the V2 id", async () => {
+		// V1 select empty -> V1 insert; V2 select empty -> V2 insert.
 		const fake = createExecutor({
-			selectResults: [[]], // no existing demo project
-			insertResult: [{ id: DEMO_PROJECT_ID }],
+			selectResults: [[], []],
+			insertResults: [
+				[{ id: V1_DEMO_PROJECT_ID }],
+				[{ id: V2_DEMO_PROJECT_ID }],
+			],
 		});
 
+		// Returns the V2 id — the row the live desktop projects list reads.
 		const id = await seedDemoProject(ORG_ID, fake.executor);
+		expect(id).toBe(V2_DEMO_PROJECT_ID);
 
-		expect(id).toBe(DEMO_PROJECT_ID);
-		expect(fake.insert).toHaveBeenCalledTimes(1);
-		expect(fake.values).toHaveBeenCalledTimes(1);
+		// Both surfaces were written, exactly once each, in order (V1 then V2).
+		expect(fake.insertedRows).toHaveLength(2);
+		expect(fake.insertedRows[0]?.table).toBe("projects");
+		expect(fake.insertedRows[1]?.table).toBe("v2_projects");
 
-		// The inserted row carries the demo project's identifying metadata, scoped
-		// to the org so the (organizationId, slug) unique constraint makes the seed
-		// idempotent. NOTE: color/icon are intentionally NOT asserted here — the
-		// @rox/db `projects` table (cloud/org repo metadata) has no color/icon
-		// columns. The yellow color + `pizdariki.svg` icon live in the host-service
-		// demo constants (asserted in host-service/.../demo-project.test.ts).
-		const row = fake.insertedRows[0];
-		expect(row).toMatchObject({
+		// V1 row carries the legacy repo metadata, org-scoped + idempotent slug.
+		expect(fake.insertedRows[0]?.row).toMatchObject({
 			organizationId: ORG_ID,
 			name: "Demo Project",
 			slug: "demo-project",
 		});
-		expect(typeof row?.repoOwner).toBe("string");
-		expect(typeof row?.repoUrl).toBe("string");
+		expect(typeof fake.insertedRows[0]?.row.repoOwner).toBe("string");
+		expect(typeof fake.insertedRows[0]?.row.repoUrl).toBe("string");
+
+		// V2 row (the VISIBLE surface) is org-scoped with the same demo slug so
+		// the (organizationId, slug) unique constraint makes it idempotent.
+		expect(fake.insertedRows[1]?.row).toMatchObject({
+			organizationId: ORG_ID,
+			name: "Demo Project",
+			slug: "demo-project",
+		});
 	});
 
-	it("is idempotent: returns the existing id without inserting", async () => {
+	it("is idempotent: returns the existing V2 id without inserting either surface", async () => {
+		// V1 select finds the row; V2 select finds the row. No inserts.
 		const fake = createExecutor({
-			selectResults: [[{ id: DEMO_PROJECT_ID }]], // demo project already present
-			insertResult: [],
+			selectResults: [
+				[{ id: V1_DEMO_PROJECT_ID }],
+				[{ id: V2_DEMO_PROJECT_ID }],
+			],
+			insertResults: [],
 		});
 
 		const id = await seedDemoProject(ORG_ID, fake.executor);
 
-		expect(id).toBe(DEMO_PROJECT_ID);
+		expect(id).toBe(V2_DEMO_PROJECT_ID);
 		expect(fake.insert).not.toHaveBeenCalled();
-		expect(fake.selectCalls()).toBe(1);
+		// One select per surface (V1, V2), each short-circuiting on the found row.
+		expect(fake.selectCalls()).toBe(2);
 	});
 
-	it("falls back to a re-read when a concurrent insert wins the race", async () => {
-		// First select: empty (decide to insert). Insert returns nothing
-		// (onConflictDoNothing — another writer committed the row). Second select
-		// returns the row the racing writer committed.
+	it("is idempotent for V2 even when only the V1 row pre-exists (partial prior run)", async () => {
+		// V1 select finds the row (no V1 insert). V2 select empty -> V2 insert.
 		const fake = createExecutor({
-			selectResults: [[], [{ id: DEMO_PROJECT_ID }]],
-			insertResult: [],
+			selectResults: [[{ id: V1_DEMO_PROJECT_ID }], []],
+			insertResults: [[{ id: V2_DEMO_PROJECT_ID }]],
 		});
 
 		const id = await seedDemoProject(ORG_ID, fake.executor);
 
-		expect(id).toBe(DEMO_PROJECT_ID);
-		expect(fake.insert).toHaveBeenCalledTimes(1);
-		expect(fake.selectCalls()).toBe(2);
+		expect(id).toBe(V2_DEMO_PROJECT_ID);
+		// Only the V2 surface was inserted; V1 was already present.
+		expect(fake.insertedRows).toHaveLength(1);
+		expect(fake.insertedRows[0]?.table).toBe("v2_projects");
+	});
+
+	it("falls back to a re-read when a concurrent insert wins the V2 race", async () => {
+		// V1: select empty -> insert returns the row.
+		// V2: select empty -> insert returns nothing (onConflictDoNothing — another
+		//     writer committed) -> re-read returns the racing writer's row.
+		const fake = createExecutor({
+			selectResults: [[], [], [{ id: V2_DEMO_PROJECT_ID }]],
+			insertResults: [[{ id: V1_DEMO_PROJECT_ID }], []],
+		});
+
+		const id = await seedDemoProject(ORG_ID, fake.executor);
+
+		expect(id).toBe(V2_DEMO_PROJECT_ID);
+		// V1 insert (1) + V2 insert (1) attempted.
+		expect(fake.insertCalls()).toBe(2);
+		// V1 select (1) + V2 select (1) + V2 race re-read (1).
+		expect(fake.selectCalls()).toBe(3);
+		expect(fake.selectedTables).toEqual([
+			"projects",
+			"v2_projects",
+			"v2_projects",
+		]);
+	});
+
+	it("throws if the V2 row can neither be inserted nor re-read", async () => {
+		// V1 ok. V2: select empty -> insert empty -> re-read still empty => throw.
+		const fake = createExecutor({
+			selectResults: [[], [], []],
+			insertResults: [[{ id: V1_DEMO_PROJECT_ID }], []],
+		});
+
+		await expect(seedDemoProject(ORG_ID, fake.executor)).rejects.toThrow(
+			"Failed to seed demo v2 project",
+		);
 	});
 });
