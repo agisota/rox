@@ -322,6 +322,223 @@ describe("comms.sendMessage", () => {
 	});
 });
 
+describe("comms.editMessage", () => {
+	// Queue the selects loadAuthoredMessageForOrg + the mutation drive, in order:
+	//   1. message row (id, org)         — authorship probe
+	//   2. thread row (getThreadForOrg)  — org/participant scoping
+	//   3. participants (caller in)      — participant probe
+	//   4. participants (publish fan-out)— SSE recipient set
+	function queueEditSelects(message: AnyRow, participantUserId = "user-1") {
+		state.selectQueue = [
+			[message],
+			[{ id: THREAD_ID, organizationId: "org-1" }],
+			[{ id: "p-1", userId: participantUserId }],
+			[{ userId: participantUserId }],
+		];
+	}
+
+	test("requires an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.comms.editMessage({ messageId: MSG_ID, body: "new" }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+	});
+
+	test("by author sets body + editedAt and publishes one in-app event", async () => {
+		queueEditSelects({
+			id: MSG_ID,
+			organizationId: "org-1",
+			threadId: THREAD_ID,
+			authorUserId: "user-1",
+			deletedAt: null,
+		});
+		const caller = callerFor("org-1");
+		const res = await caller.comms.editMessage({
+			messageId: MSG_ID,
+			body: "new",
+		});
+
+		expect(res.messageId).toBe(MSG_ID);
+		expect(res.threadId).toBe(THREAD_ID);
+		expect(res.editedAt).toBeInstanceOf(Date);
+		expect(state.updated[0]?.body).toBe("new");
+		expect(state.updated[0]?.editedAt).toBeInstanceOf(Date);
+
+		expect(publishCommsMessageMock).toHaveBeenCalledTimes(1);
+		expect(publishCommsMessageMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				organizationId: "org-1",
+				threadId: THREAD_ID,
+				transport: "inapp",
+			}),
+		);
+	});
+
+	test("by a non-author => FORBIDDEN (no update, no publish)", async () => {
+		queueEditSelects({
+			id: MSG_ID,
+			organizationId: "org-1",
+			threadId: THREAD_ID,
+			authorUserId: OTHER_USER,
+			deletedAt: null,
+		});
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.editMessage({ messageId: MSG_ID, body: "new" }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+		expect(state.updated).toHaveLength(0);
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+	});
+
+	test("a null external author can never match the caller => FORBIDDEN", async () => {
+		queueEditSelects({
+			id: MSG_ID,
+			organizationId: "org-1",
+			threadId: THREAD_ID,
+			authorUserId: null,
+			deletedAt: null,
+		});
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.editMessage({ messageId: MSG_ID, body: "new" }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("404s when the message/org row is empty", async () => {
+		state.selectQueue = [[]]; // message select → empty
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.editMessage({ messageId: MSG_ID, body: "new" }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+	});
+
+	test("refuses to edit an already-deleted message", async () => {
+		queueEditSelects({
+			id: MSG_ID,
+			organizationId: "org-1",
+			threadId: THREAD_ID,
+			authorUserId: "user-1",
+			deletedAt: new Date(),
+		});
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.editMessage({ messageId: MSG_ID, body: "new" }),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(state.updated).toHaveLength(0);
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("comms.deleteMessage", () => {
+	function queueDeleteSelects(message: AnyRow, participantUserId = "user-1") {
+		state.selectQueue = [
+			[message],
+			[{ id: THREAD_ID, organizationId: "org-1" }],
+			[{ id: "p-1", userId: participantUserId }],
+			[{ userId: participantUserId }],
+		];
+	}
+
+	test("requires an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.comms.deleteMessage({ messageId: MSG_ID }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("by author sets deletedAt (tombstone) and publishes one event", async () => {
+		queueDeleteSelects({
+			id: MSG_ID,
+			organizationId: "org-1",
+			threadId: THREAD_ID,
+			authorUserId: "user-1",
+			body: "secret",
+			deletedAt: null,
+		});
+		const caller = callerFor("org-1");
+		const res = await caller.comms.deleteMessage({ messageId: MSG_ID });
+
+		expect(res.messageId).toBe(MSG_ID);
+		expect(res.threadId).toBe(THREAD_ID);
+		expect(res.deletedAt).toBeInstanceOf(Date);
+		// Tombstone keeps the row: only deletedAt is written, body untouched.
+		expect(state.updated[0]?.deletedAt).toBeInstanceOf(Date);
+		expect(state.updated[0]).not.toHaveProperty("body");
+
+		expect(publishCommsMessageMock).toHaveBeenCalledTimes(1);
+		expect(publishCommsMessageMock).toHaveBeenCalledWith(
+			expect.objectContaining({ organizationId: "org-1", transport: "inapp" }),
+		);
+	});
+
+	test("by a non-author => FORBIDDEN (no update, no publish)", async () => {
+		queueDeleteSelects({
+			id: MSG_ID,
+			organizationId: "org-1",
+			threadId: THREAD_ID,
+			authorUserId: OTHER_USER,
+			deletedAt: null,
+		});
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.deleteMessage({ messageId: MSG_ID }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+		expect(state.updated).toHaveLength(0);
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+	});
+
+	test("404s when the message/org row is empty", async () => {
+		state.selectQueue = [[]];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.deleteMessage({ messageId: MSG_ID }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+});
+
+describe("comms.getThread (edit/delete read-path)", () => {
+	test("withholds a deleted message's body/attachments on read", async () => {
+		state.selectQueue = [
+			[{ id: THREAD_ID, organizationId: "org-1" }], // thread
+			[{ id: "p-1", userId: "user-1" }], // participants (caller in)
+			[
+				{
+					id: MSG_ID,
+					body: "secret",
+					bodyHtml: "<p>secret</p>",
+					attachments: [{ name: "f", url: "u" }],
+					authorUserId: "user-1",
+					deletedAt: new Date(),
+					editedAt: null,
+				},
+			],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.getThread({ threadId: THREAD_ID });
+		expect(res.messages).toHaveLength(1);
+		expect(res.messages[0]?.body).toBe("");
+		expect(res.messages[0]?.bodyHtml).toBeNull();
+		expect(res.messages[0]?.attachments).toHaveLength(0);
+		// The tombstone metadata is still surfaced so the UI can render it.
+		expect(res.messages[0]?.deletedAt).toBeInstanceOf(Date);
+	});
+
+	test("surfaces editedAt and keeps the body for a non-deleted edit", async () => {
+		const edited = new Date();
+		state.selectQueue = [
+			[{ id: THREAD_ID, organizationId: "org-1" }], // thread
+			[{ id: "p-1", userId: "user-1" }], // participants (caller in)
+			[{ id: MSG_ID, body: "updated", deletedAt: null, editedAt: edited }],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.getThread({ threadId: THREAD_ID });
+		expect(res.messages[0]?.body).toBe("updated");
+		expect(res.messages[0]?.editedAt).toBe(edited);
+	});
+});
+
 describe("comms.markRead", () => {
 	test("404s when the thread is not in the org", async () => {
 		state.selectQueue = [[]]; // getThreadForOrg → empty

@@ -3,9 +3,12 @@
 import { authClient } from "@rox/auth/client";
 import { ScrollArea } from "@rox/ui/scroll-area";
 import { Skeleton } from "@rox/ui/skeleton";
+import { toast } from "@rox/ui/sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessagesSquare } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
+import { useTRPC } from "@/trpc/react";
 import { useThread } from "../../hooks/useThread";
 import { formatThreadTitle } from "../../utils/formatThreadTitle";
 import { Composer } from "../Composer";
@@ -23,11 +26,61 @@ export interface ThreadViewProps {
  * the skeleton only shows on the empty first load of a freshly selected thread.
  */
 export function ThreadView({ threadId }: ThreadViewProps) {
+	const trpc = useTRPC();
+	const queryClient = useQueryClient();
 	const session = authClient.useSession();
 	const currentUserId = session.data?.user?.id;
 
 	const { thread, messages, participants, isInitialLoading, isError } =
 		useThread(threadId);
+
+	// Edit/delete (T8/M): both invalidate the open thread so the edited body /
+	// tombstone appears after the authoritative refetch (cache-first — existing
+	// rows stay rendered until then; SSE also fires the same invalidation).
+	const invalidateThread = useCallback(() => {
+		if (!threadId) return Promise.resolve();
+		return queryClient.invalidateQueries({
+			queryKey: trpc.comms.getThread.queryKey({ threadId }),
+		});
+	}, [queryClient, trpc, threadId]);
+
+	const editMessage = useMutation(
+		trpc.comms.editMessage.mutationOptions({
+			onSuccess: () => void invalidateThread(),
+			onError: (err) => {
+				console.error("[ThreadView] editMessage failed", err);
+				toast.error("Не удалось изменить сообщение");
+			},
+		}),
+	);
+	const deleteMessage = useMutation(
+		trpc.comms.deleteMessage.mutationOptions({
+			onSuccess: () => void invalidateThread(),
+			onError: (err) => {
+				console.error("[ThreadView] deleteMessage failed", err);
+				toast.error("Не удалось удалить сообщение");
+			},
+		}),
+	);
+
+	const handleEdit = useCallback(
+		(id: string) => {
+			const current = messages.find((m) => m.id === id);
+			const next = window.prompt("Изменить сообщение", current?.body ?? "");
+			if (next === null) return; // cancelled
+			const trimmed = next.trim();
+			if (trimmed.length === 0 || trimmed === current?.body) return;
+			editMessage.mutate({ messageId: id, body: trimmed });
+		},
+		[messages, editMessage],
+	);
+	const handleDelete = useCallback(
+		(id: string) => {
+			if (!window.confirm("Удалить это сообщение?")) return;
+			deleteMessage.mutate({ messageId: id });
+		},
+		[deleteMessage],
+	);
 
 	// Typing broadcaster wired from ThreadPresence → Composer.
 	const setTypingRef = useRef<(typing: boolean) => void>(() => {});
@@ -98,24 +151,33 @@ export function ThreadView({ threadId }: ThreadViewProps) {
 								: "Сообщений пока нет — напишите первое."}
 						</p>
 					) : (
-						messages.map((message) => (
-							<MessageBubble
-								key={message.id}
-								currentUserId={currentUserId}
-								authorName={
-									message.authorUserId
-										? (nameByUserId.get(message.authorUserId) ?? "Участник")
-										: "Внешний контакт"
-								}
-								message={{
-									id: message.id,
-									body: message.body,
-									authorUserId: message.authorUserId,
-									createdAt: message.createdAt,
-									attachments: message.attachments,
-								}}
-							/>
-						))
+						messages.map((message) => {
+							const isOwn =
+								Boolean(currentUserId) &&
+								message.authorUserId === currentUserId;
+							return (
+								<MessageBubble
+									key={message.id}
+									currentUserId={currentUserId}
+									authorName={
+										message.authorUserId
+											? (nameByUserId.get(message.authorUserId) ?? "Участник")
+											: "Внешний контакт"
+									}
+									message={{
+										id: message.id,
+										body: message.body,
+										authorUserId: message.authorUserId,
+										createdAt: message.createdAt,
+										editedAt: message.editedAt,
+										deletedAt: message.deletedAt,
+										attachments: message.attachments,
+									}}
+									onEdit={isOwn ? handleEdit : undefined}
+									onDelete={isOwn ? handleDelete : undefined}
+								/>
+							);
+						})
 					)}
 					<div ref={bottomRef} />
 				</div>

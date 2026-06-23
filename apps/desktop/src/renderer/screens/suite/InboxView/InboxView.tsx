@@ -6,7 +6,14 @@ import { Tabs, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inbox, Mail, MessagesSquare, Send } from "lucide-react";
+import {
+	Inbox,
+	Mail,
+	MessagesSquare,
+	Pencil,
+	Send,
+	Trash2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
@@ -67,20 +74,24 @@ function ChatTab() {
 		.map((p) => p.userId)
 		.filter((id): id is string => Boolean(id) && id !== currentUserId);
 
+	const invalidateThreadAndList = async () => {
+		await Promise.all([
+			queryClient.invalidateQueries({
+				queryKey: trpc.comms.getThread.queryKey({
+					threadId: activeThreadId ?? "",
+				}),
+			}),
+			queryClient.invalidateQueries({
+				queryKey: trpc.comms.listThreads.queryKey({ limit: 50 }),
+			}),
+		]);
+	};
+
 	const send = useMutation(
 		trpc.comms.sendMessage.mutationOptions({
 			onSuccess: async () => {
 				setBody("");
-				await Promise.all([
-					queryClient.invalidateQueries({
-						queryKey: trpc.comms.getThread.queryKey({
-							threadId: activeThreadId ?? "",
-						}),
-					}),
-					queryClient.invalidateQueries({
-						queryKey: trpc.comms.listThreads.queryKey({ limit: 50 }),
-					}),
-				]);
+				await invalidateThreadAndList();
 			},
 			onError: (error) => {
 				logger.error("[InboxView] sendMessage failed", error);
@@ -88,6 +99,40 @@ function ChatTab() {
 			},
 		}),
 	);
+
+	// Edit/delete (T8/M): cache-first — invalidate getThread + listThreads so the
+	// edited body / tombstone appears after the authoritative refetch (existing
+	// rows stay rendered until then). Author-only is enforced server-side.
+	const editMessage = useMutation(
+		trpc.comms.editMessage.mutationOptions({
+			onSuccess: () => invalidateThreadAndList(),
+			onError: (error) => {
+				logger.error("[InboxView] editMessage failed", error);
+				toast.error("Не удалось изменить сообщение");
+			},
+		}),
+	);
+	const deleteMessage = useMutation(
+		trpc.comms.deleteMessage.mutationOptions({
+			onSuccess: () => invalidateThreadAndList(),
+			onError: (error) => {
+				logger.error("[InboxView] deleteMessage failed", error);
+				toast.error("Не удалось удалить сообщение");
+			},
+		}),
+	);
+
+	const handleEditMessage = (id: string, currentBody: string) => {
+		const next = window.prompt("Изменить сообщение", currentBody);
+		if (next === null) return;
+		const trimmed = next.trim();
+		if (trimmed.length === 0 || trimmed === currentBody) return;
+		editMessage.mutate({ messageId: id, body: trimmed });
+	};
+	const handleDeleteMessage = (id: string) => {
+		if (!window.confirm("Удалить это сообщение?")) return;
+		deleteMessage.mutate({ messageId: id });
+	};
 
 	// Auto-scroll to the newest message when the thread or count changes.
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -208,28 +253,66 @@ function ChatTab() {
 									{messages.map((message) => {
 										const isOwn =
 											!!currentUserId && message.authorUserId === currentUserId;
+										const isDeleted = Boolean(message.deletedAt);
+										const isEdited = Boolean(message.editedAt);
+										const showActions = isOwn && !isDeleted;
 										return (
 											<div
 												key={message.id}
 												className={cn(
-													"flex flex-col",
+													"group flex flex-col",
 													isOwn ? "items-end" : "items-start",
 												)}
 											>
-												<div
-													className={cn(
-														"max-w-[80%] rounded-2xl px-3 py-2 text-sm",
-														isOwn
-															? "bg-primary text-primary-foreground"
-															: "bg-muted text-foreground",
+												<div className="flex items-center gap-1">
+													{showActions && (
+														<div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+															<Button
+																type="button"
+																size="icon"
+																variant="ghost"
+																className="size-6"
+																aria-label="Изменить"
+																onClick={() =>
+																	handleEditMessage(message.id, message.body)
+																}
+															>
+																<Pencil className="size-3.5" />
+															</Button>
+															<Button
+																type="button"
+																size="icon"
+																variant="ghost"
+																className="size-6"
+																aria-label="Удалить"
+																onClick={() => handleDeleteMessage(message.id)}
+															>
+																<Trash2 className="size-3.5" />
+															</Button>
+														</div>
 													)}
-												>
-													<p className="cursor-text select-text whitespace-pre-wrap break-words">
-														{message.body}
-													</p>
+													<div
+														className={cn(
+															"max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+															isOwn
+																? "bg-primary text-primary-foreground"
+																: "bg-muted text-foreground",
+														)}
+													>
+														{isDeleted ? (
+															<p className="cursor-text select-text italic text-muted-foreground">
+																Сообщение удалено
+															</p>
+														) : (
+															<p className="cursor-text select-text whitespace-pre-wrap break-words">
+																{message.body}
+															</p>
+														)}
+													</div>
 												</div>
 												<span className="mt-0.5 text-[10px] text-muted-foreground">
 													{formatTime(message.createdAt)}
+													{!isDeleted && isEdited && " · изменено"}
 												</span>
 											</div>
 										);
