@@ -470,7 +470,9 @@ export function createCommsPorts(
 
 		members: {
 			async assertMember({ organizationId: org, userId }) {
-				const { assertOrgMembers } = await import("../integration/utils");
+				const { assertOrgMembers } = await import(
+					"../integration/assertOrgMembers"
+				);
 				await assertOrgMembers(org, [userId]);
 			},
 		},

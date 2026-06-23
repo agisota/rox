@@ -11,7 +11,7 @@ import { commsMessages, commsParticipants, commsThreads } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
-import { assertOrgMembers } from "../integration/utils";
+import { assertOrgMembers } from "../integration/assertOrgMembers";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { type CommsDb, createCommsPorts } from "./ports";
 import {
