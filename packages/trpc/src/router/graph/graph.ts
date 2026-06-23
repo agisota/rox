@@ -16,6 +16,7 @@ import {
 	createGraphSearchService,
 	graphService,
 	listComments,
+	loadContacts,
 	loadProjectGraph,
 } from "../../lib/graph";
 import { protectedProcedure } from "../../trpc";
@@ -29,6 +30,7 @@ import {
 	graphGetSchema,
 	graphLinkSchema,
 	graphListByKindSchema,
+	graphListContactsSchema,
 	graphNeighborsSchema,
 	graphProjectGraphSchema,
 	graphPromoteSchema,
@@ -139,6 +141,25 @@ export const graphRouter = {
 				})),
 				nextCursor,
 			};
+		}),
+
+	// Project OS (#01, Phase-1): the org's CRM contacts — `kind=contact` nodes
+	// joined to their 1:1 `contacts` detail (display name / primary email / avatar
+	// / fields), newest-first and keyset-paginated. Read-only; reuses the shipped
+	// `contact` entity_kind + `contacts` table via `loadContacts` (no migration).
+	// Backs the `projectOs.crmContacts` web surface; each contact's links read back
+	// through the existing `graph.neighbors`.
+	listContacts: protectedProcedure
+		.input(graphListContactsSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const { items, nextCursor } = await loadContacts(db, {
+				orgId: organizationId,
+				status: input.status,
+				cursor: input.cursor,
+				limit: input.limit,
+			});
+			return { items, nextCursor };
 		}),
 
 	link: protectedProcedure

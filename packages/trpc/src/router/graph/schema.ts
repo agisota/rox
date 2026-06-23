@@ -82,6 +82,14 @@ export const graphListByKindSchema = z.object({
 	limit: z.number().int().min(1).max(100).default(50),
 });
 
+// Project OS (#01, Phase-1): list the org's `kind=contact` nodes joined to their
+// 1:1 `contacts` detail (CRM contacts surface). Keyset-paginated like listByKind.
+export const graphListContactsSchema = z.object({
+	status: entityStatusEnum.default("active"),
+	cursor: uuid.optional(),
+	limit: z.number().int().min(1).max(100).default(50),
+});
+
 export const graphLinkSchema = z
 	.object({
 		idempotencyKey: uuid,

@@ -8,6 +8,7 @@
  */
 
 export * from "./comments";
+export * from "./contacts";
 export * from "./embed";
 export * from "./graph-service";
 export * from "./idempotency";
