@@ -9,7 +9,12 @@ import {
 describe("deriveQuickChatReply", () => {
 	it("returns the model reply verbatim on status ok", () => {
 		expect(
-			deriveQuickChatReply({ status: "ok", sessionId: "s", reply: "Привет!" }),
+			deriveQuickChatReply({
+				status: "ok",
+				sessionId: "s",
+				reply: "Привет!",
+				persisted: true,
+			}),
 		).toBe("Привет!");
 	});
 
