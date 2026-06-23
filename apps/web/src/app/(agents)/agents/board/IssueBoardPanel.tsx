@@ -2,16 +2,9 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import { Badge } from "@rox/ui/badge";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@rox/ui/select";
 import { Skeleton } from "@rox/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { useTRPC } from "@/trpc/react";
 import {
@@ -19,73 +12,36 @@ import {
 	type BoardCardRow,
 	type BoardColumn,
 	countBoardCards,
-	filterCardsToProjectSlugs,
 	groupTasksByStatus,
-	selectProjectTaskSlugs,
 } from "./issueBoard";
-
-/** Sentinel for the "all tasks" (no project filter) picker option. */
-const ALL_PROJECTS = "__all__";
 
 /**
  * Native issue board (`projectOs.issueBoard`). Groups the org's REAL tasks into
  * their REAL status columns over two shipped queries — `task.statuses.list`
  * (columns) and `task.list` (cards) — with the pure {@link groupTasksByStatus}.
- * A project picker scopes the board to one `v2_project` by intersecting the org
- * cards with the project's task-kind nodes from the shipped `graph.projectGraph`
- * walk ({@link selectProjectTaskSlugs} + {@link filterCardsToProjectSlugs}). No
- * new query and no migration — tasks stay org-scoped; the project intersection is
- * derived from the existing object graph.
+ * This is an ORG-WIDE status board: project scoping is intentionally absent
+ * because `tasks` are org-scoped (no `v2_project_id`) and are not mirrored into
+ * the entities graph, so there is no real task→project link to filter on. A
+ * project-scoped board is a documented follow-up that needs that linkage first.
  *
  * Mounted only once {@link resolveIssueBoardGate} opens (active org + the
  * experimental feature resolves `available`), so the org scope on the routers
  * (`requireActiveOrgMembership`) always has a caller. Read-first: moving/editing a
  * card is a documented follow-up.
  */
-export function IssueBoardPanel({
-	organizationId,
-}: {
-	organizationId: string;
-}) {
+export function IssueBoardPanel(_props: { organizationId: string }) {
 	const trpc = useTRPC();
-	const [projectId, setProjectId] = useState<string>(ALL_PROJECTS);
-	const hasProject = projectId !== ALL_PROJECTS;
 
-	const projectsQuery = useQuery(
-		trpc.v2Project.list.queryOptions({ organizationId }),
-	);
 	const statusesQuery = useQuery(trpc.task.statuses.list.queryOptions());
 	const tasksQuery = useQuery(trpc.task.list.queryOptions({ limit: 500 }));
-	const projectGraphQuery = useQuery({
-		...trpc.graph.projectGraph.queryOptions({
-			v2ProjectId: hasProject ? projectId : "",
-		}),
-		enabled: hasProject,
-	});
 
 	const columns: BoardColumn[] = useMemo(() => {
 		const statuses = statusesQuery.data ?? [];
 		const allCards = (tasksQuery.data ?? []) as BoardCardRow[];
-		if (!hasProject) {
-			return groupTasksByStatus(statuses, allCards);
-		}
-		// Project selected: intersect the org cards with the project's task-kind
-		// graph nodes. While the graph is still loading, render no cards (columns
-		// stay, so the board frame is stable) rather than the full org set.
-		if (!projectGraphQuery.data) {
-			return groupTasksByStatus(statuses, []);
-		}
-		const projectSlugs = selectProjectTaskSlugs(projectGraphQuery.data);
-		return groupTasksByStatus(
-			statuses,
-			filterCardsToProjectSlugs(allCards, projectSlugs),
-		);
-	}, [statusesQuery.data, tasksQuery.data, projectGraphQuery.data, hasProject]);
+		return groupTasksByStatus(statuses, allCards);
+	}, [statusesQuery.data, tasksQuery.data]);
 
-	const isLoading =
-		statusesQuery.isLoading ||
-		tasksQuery.isLoading ||
-		(hasProject && projectGraphQuery.isLoading);
+	const isLoading = statusesQuery.isLoading || tasksQuery.isLoading;
 	const isError = statusesQuery.isError || tasksQuery.isError;
 	const totalCards = countBoardCards(columns);
 
@@ -95,32 +51,12 @@ export function IssueBoardPanel({
 				<div>
 					<h2 className="font-semibold text-lg">Доска задач</h2>
 					<p className="text-muted-foreground text-sm">
-						Задачи проекта по колонкам статусов. Выберите проект, чтобы
-						ограничить доску его задачами.
+						Задачи организации по колонкам статусов.
 					</p>
 				</div>
-				<div className="flex items-center gap-2">
-					{!isLoading && !isError ? (
-						<Badge variant="secondary">{totalCards} задач</Badge>
-					) : null}
-					<Select value={projectId} onValueChange={setProjectId}>
-						<SelectTrigger
-							className="w-56"
-							aria-label="Проект"
-							disabled={projectsQuery.isLoading}
-						>
-							<SelectValue placeholder="Все задачи" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value={ALL_PROJECTS}>Все задачи</SelectItem>
-							{(projectsQuery.data ?? []).map((project) => (
-								<SelectItem key={project.id} value={project.id}>
-									{project.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+				{!isLoading && !isError ? (
+					<Badge variant="secondary">{totalCards} задач</Badge>
+				) : null}
 			</div>
 
 			<BoardBody
@@ -130,7 +66,6 @@ export function IssueBoardPanel({
 				onRetry={() => {
 					void statusesQuery.refetch();
 					void tasksQuery.refetch();
-					if (hasProject) void projectGraphQuery.refetch();
 				}}
 			/>
 		</div>

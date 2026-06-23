@@ -794,15 +794,17 @@ export const EXPERIMENTAL_FEATURES = [
 			title: "Issue Board",
 			shortDescription: "Group a project's tasks into a status board.",
 			longDescription:
-				"A native issue/task board over the shipped Rox tasks: columns are the org's task statuses (task.statuses.list, position-ordered) and cards are the org's real tasks (task.list), grouped by status. A project picker scopes the board to one v2_project by intersecting the org tasks with the project's task-kind graph nodes via the shipped graph.projectGraph edge-walk (a task graph node and its tasks row share the (org, kind, slug) natural key). Read-first; Huly objects and agent-generated work fold in later as their kinds land.",
+				"A native, org-wide issue/task board over the shipped Rox tasks: columns are the org's task statuses (task.statuses.list, position-ordered) and cards are the org's real tasks (task.list), grouped by status. Read-first. Project scoping is a documented follow-up: tasks are org-scoped (no v2_project_id) and are not mirrored into the entities graph, so there is no real task→project link to filter on yet — that linkage must land first. Huly objects and agent-generated work fold in later as their kinds land.",
 			maturity: "preview",
 			// Backed by a REAL gated surface: the `(agents)` web shell renders an
 			// IssueBoardPanel (behind `resolveIssueBoardGate`) that groups the org's
 			// real tasks into status columns using two SHIPPED queries —
 			// `task.statuses.list` (columns) × `task.list` (cards) — via the pure
-			// `groupTasksByStatus`, and optionally scopes to one `v2_project` by
-			// intersecting with the project's task-kind nodes from the shipped
-			// `graph.projectGraph` (`selectProjectTaskSlugs` + `filterCardsToProjectSlugs`).
+			// `groupTasksByStatus`. This is an ORG-WIDE status board; project scoping
+			// is intentionally absent because `tasks` are org-scoped (no
+			// `v2_project_id`) and are not mirrored into the entities graph, so there
+			// is no real task→project link to filter on (a project-scoped board is a
+			// documented follow-up that needs that linkage first).
 			// The active org is the provider-configured signal; the only declared
 			// dependency (`desktop-runtime`) is a `runtime` dep, so the resolver never
 			// gates this web surface (same clean-flip precedent as
@@ -810,8 +812,9 @@ export const EXPERIMENTAL_FEATURES = [
 			// dropped here — Project OS is native on the Rox object graph and Huly is an
 			// optional import connector, never a gate (same demote as
 			// `projectOs.workspaceShell`). No new query and no migration — tasks stay
-			// org-scoped, statuses already exist, and the project intersection reuses the
-			// shipped graph walk; combining Huly-imported issues is a later additive step.
+			// org-scoped and statuses already exist; combining Huly-imported issues and
+			// real project scoping are later additive steps. implementationStatus stays
+			// `ready`: the org-wide board is real and works end-to-end today.
 			implementationStatus: "ready",
 			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Task board", "Project OS", "Search"],
