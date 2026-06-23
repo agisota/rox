@@ -19,6 +19,7 @@ import {
 	stateToEdges,
 	stateToNodes,
 } from "./graph-adapter";
+import { NodeInspector, useNodePatch } from "./NodeInspector";
 import { PipelineCanvas } from "./PipelineCanvas";
 import { RoleLibraryPanel } from "./RoleLibraryPanel";
 import { RunMonitorPanel } from "./RunMonitorPanel";
@@ -164,6 +165,9 @@ export function PipelineEditor({
 		[persist],
 	);
 
+	// Per-node inspector edits fold into the same authoritative graph + save loop.
+	const nodePatch = useNodePatch(graphRef, applyGraphChange);
+
 	// Canvas → state: fold node/edge edits back into the working graph + persist.
 	const handleGraphChange = useCallback(
 		(nextNodes: PipelineFlowNode[], nextEdges: PipelineFlowEdge[]) => {
@@ -201,6 +205,8 @@ export function PipelineEditor({
 				},
 			};
 			applyGraphChange(next);
+			// Open the inspector on the freshly-added node so it's ready to edit.
+			setSelectedNodeId(id);
 		},
 		[applyGraphChange],
 	);
@@ -258,35 +264,45 @@ export function PipelineEditor({
 				</div>
 
 				<aside className="flex w-80 shrink-0 flex-col border-l">
-					<Tabs defaultValue="roles" className="flex min-h-0 flex-1 flex-col">
-						<TabsList className="mx-2 mt-2 grid grid-cols-3">
-							<TabsTrigger value="roles" className="text-xs">
-								Роли
-							</TabsTrigger>
-							<TabsTrigger value="triggers" className="text-xs">
-								Триггеры
-							</TabsTrigger>
-							<TabsTrigger value="runs" className="text-xs">
-								Запуски
-							</TabsTrigger>
-						</TabsList>
-						<TabsContent value="roles" className="min-h-0 flex-1">
-							<RoleLibraryPanel
-								v2ProjectId={v2ProjectId}
-								onAddRole={addRoleNode}
-							/>
-						</TabsContent>
-						<TabsContent value="triggers" className="min-h-0 flex-1">
-							<TriggerConfigPanel
-								pipelineId={pipelineId}
-								selectedNodeId={selectedNodeId}
-								selectedNodeLabel={selectedNode?.data.label ?? null}
-							/>
-						</TabsContent>
-						<TabsContent value="runs" className="min-h-0 flex-1">
-							<RunMonitorPanel pipelineId={pipelineId} />
-						</TabsContent>
-					</Tabs>
+					{selectedNode ? (
+						<NodeInspector
+							selectedNode={selectedNode}
+							patch={nodePatch}
+							issues={validation?.issues}
+							onClose={() => setSelectedNodeId(null)}
+							onDeleted={() => setSelectedNodeId(null)}
+						/>
+					) : (
+						<Tabs defaultValue="roles" className="flex min-h-0 flex-1 flex-col">
+							<TabsList className="mx-2 mt-2 grid grid-cols-3">
+								<TabsTrigger value="roles" className="text-xs">
+									Роли
+								</TabsTrigger>
+								<TabsTrigger value="triggers" className="text-xs">
+									Триггеры
+								</TabsTrigger>
+								<TabsTrigger value="runs" className="text-xs">
+									Запуски
+								</TabsTrigger>
+							</TabsList>
+							<TabsContent value="roles" className="min-h-0 flex-1">
+								<RoleLibraryPanel
+									v2ProjectId={v2ProjectId}
+									onAddRole={addRoleNode}
+								/>
+							</TabsContent>
+							<TabsContent value="triggers" className="min-h-0 flex-1">
+								<TriggerConfigPanel
+									pipelineId={pipelineId}
+									selectedNodeId={selectedNodeId}
+									selectedNodeLabel={null}
+								/>
+							</TabsContent>
+							<TabsContent value="runs" className="min-h-0 flex-1">
+								<RunMonitorPanel pipelineId={pipelineId} />
+							</TabsContent>
+						</Tabs>
+					)}
 				</aside>
 			</div>
 		</div>
