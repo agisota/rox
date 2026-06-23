@@ -7,6 +7,14 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@rox/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@rox/ui/dropdown-menu";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { Skeleton } from "@rox/ui/skeleton";
@@ -14,7 +22,15 @@ import { toast } from "@rox/ui/sonner";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookText, FileText, Notebook, Plus } from "lucide-react";
+import {
+	BookText,
+	ChevronDown,
+	ChevronUp,
+	FileText,
+	FolderInput,
+	Notebook,
+	Plus,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
@@ -110,6 +126,93 @@ export function NotesView() {
 		}),
 	);
 
+	// --- notebook membership (G): add / remove / reorder ---------------------
+	// Edges (note_book_items) are keyed by the note's backing
+	// knowledge_documents.id, so we pass `documentId = note.knowledgeDocumentId`.
+	const invalidateNotesList = async () => {
+		if (activeNotebookId) {
+			await queryClient.invalidateQueries({
+				queryKey: trpc.notes.listNotes.queryKey({
+					notebookId: activeNotebookId,
+				}),
+			});
+		}
+		await queryClient.invalidateQueries({
+			queryKey: trpc.notes.listNotebooks.queryKey(undefined),
+		});
+	};
+
+	const addNoteToNotebook = useMutation(
+		trpc.notes.addNoteToNotebook.mutationOptions({
+			onSuccess: invalidateNotesList,
+			onError: (error) => {
+				logger.error("[NotesView] addNoteToNotebook failed", error);
+				toast.error("Не удалось добавить заметку в блокнот");
+			},
+		}),
+	);
+
+	const removeNoteFromNotebook = useMutation(
+		trpc.notes.removeNoteFromNotebook.mutationOptions({
+			onSuccess: invalidateNotesList,
+			onError: (error) => {
+				logger.error("[NotesView] removeNoteFromNotebook failed", error);
+				toast.error("Не удалось убрать заметку из блокнота");
+			},
+		}),
+	);
+
+	const reorderNotebookItems = useMutation(
+		trpc.notes.reorderNotebookItems.mutationOptions({
+			onSuccess: invalidateNotesList,
+			onError: (error) => {
+				logger.error("[NotesView] reorderNotebookItems failed", error);
+				toast.error("Не удалось изменить порядок заметок");
+			},
+		}),
+	);
+
+	const handleMoveNote = (documentId: string, targetNoteBookId: string) => {
+		if (!activeNotebookId) return;
+		addNoteToNotebook.mutate({ noteBookId: targetNoteBookId, documentId });
+		removeNoteFromNotebook.mutate({ noteBookId: activeNotebookId, documentId });
+	};
+
+	const handleRemoveNote = (documentId: string) => {
+		if (!activeNotebookId) return;
+		removeNoteFromNotebook.mutate({ noteBookId: activeNotebookId, documentId });
+	};
+
+	// Swap a row with its neighbour, then persist the FULL set of backing-doc ids
+	// in the new order. Cache-first: optimistically apply before mutating.
+	const handleReorderNote = (index: number, direction: -1 | 1) => {
+		if (!activeNotebookId) return;
+		const target = index + direction;
+		if (target < 0 || target >= notes.length) return;
+		const next = [...notes];
+		const a = next[index];
+		const b = next[target];
+		if (!a || !b) return;
+		next[index] = b;
+		next[target] = a;
+
+		const orderedDocumentIds = next
+			.map((n) => n.knowledgeDocumentId)
+			.filter((id): id is string => id != null);
+		if (orderedDocumentIds.length !== next.length) return;
+
+		queryClient.setQueryData(
+			trpc.notes.listNotes.queryKey({ notebookId: activeNotebookId }),
+			next,
+		);
+		reorderNotebookItems.mutate({
+			noteBookId: activeNotebookId,
+			orderedDocumentIds,
+		});
+	};
+
+	const otherNotebooks = notebooks.filter((nb) => nb.id !== activeNotebookId);
+
 	return (
 		<SuiteScreen
 			title="Заметки"
@@ -196,20 +299,100 @@ export function NotesView() {
 									Нет заметок
 								</p>
 							)}
-							{notes.map((note) => (
-								<button
-									key={note.id}
-									type="button"
-									onClick={() => setActiveNoteId(note.id)}
-									className={cn(
-										"flex w-full items-center gap-2 border-border border-b px-3 py-2 text-left text-sm last:border-b-0 transition-colors hover:bg-accent/40",
-										note.id === activeNoteId && "bg-accent",
-									)}
-								>
-									<FileText className="size-3.5 shrink-0 text-muted-foreground" />
-									<span className="truncate">{note.title}</span>
-								</button>
-							))}
+							{notes.map((note, index) => {
+								const documentId = note.knowledgeDocumentId;
+								const canManage = documentId != null;
+								return (
+									<div
+										key={note.id}
+										className={cn(
+											"group relative flex items-center border-border border-b last:border-b-0 transition-colors hover:bg-accent/40",
+											note.id === activeNoteId && "bg-accent",
+										)}
+									>
+										<button
+											type="button"
+											onClick={() => setActiveNoteId(note.id)}
+											className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm"
+										>
+											<FileText className="size-3.5 shrink-0 text-muted-foreground" />
+											<span className="truncate">{note.title}</span>
+										</button>
+										<div className="flex shrink-0 items-center pr-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="size-6 text-muted-foreground disabled:opacity-30"
+												aria-label="Выше"
+												disabled={!canManage || index === 0}
+												onClick={() => handleReorderNote(index, -1)}
+											>
+												<ChevronUp className="size-3.5" />
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="size-6 text-muted-foreground disabled:opacity-30"
+												aria-label="Ниже"
+												disabled={!canManage || index === notes.length - 1}
+												onClick={() => handleReorderNote(index, 1)}
+											>
+												<ChevronDown className="size-3.5" />
+											</Button>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="size-6 text-muted-foreground disabled:opacity-30"
+														aria-label="Переместить в блокнот"
+														disabled={!canManage}
+													>
+														<FolderInput className="size-3.5" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													<DropdownMenuLabel>
+														Переместить в блокнот
+													</DropdownMenuLabel>
+													{otherNotebooks.length === 0 ? (
+														<DropdownMenuItem disabled>
+															Других блокнотов нет
+														</DropdownMenuItem>
+													) : (
+														otherNotebooks.map((nb) => (
+															<DropdownMenuItem
+																key={nb.id}
+																onSelect={() =>
+																	documentId &&
+																	handleMoveNote(documentId, nb.id)
+																}
+															>
+																<span className="truncate">
+																	{nb.icon ? `${nb.icon} ` : ""}
+																	{nb.name}
+																</span>
+															</DropdownMenuItem>
+														))
+													)}
+													<DropdownMenuSeparator />
+													<DropdownMenuItem
+														variant="destructive"
+														onSelect={() =>
+															documentId && handleRemoveNote(documentId)
+														}
+													>
+														Убрать из этого блокнота
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+									</div>
+								);
+							})}
 						</div>
 					</div>
 

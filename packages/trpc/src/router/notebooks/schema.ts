@@ -73,3 +73,24 @@ export const setNotePublishedSchema = z.object({
 export const getPublicNoteSchema = z.object({
 	slug: z.string().min(6).max(80).regex(PUBLIC_SLUG_RE),
 });
+
+// --- notebook membership (G) -------------------------------------------------
+// Membership edges (note_book_items) are keyed by the note's backing
+// `knowledge_documents.id` (the system of record since N2), NOT the note id.
+// Callers therefore pass `documentId = note.knowledgeDocumentId`.
+
+export const addNoteToNotebookSchema = z.object({
+	noteBookId: z.string().uuid(),
+	documentId: z.string().uuid(),
+});
+
+export const removeNoteFromNotebookSchema = z.object({
+	noteBookId: z.string().uuid(),
+	documentId: z.string().uuid(),
+});
+
+export const reorderNotebookItemsSchema = z.object({
+	noteBookId: z.string().uuid(),
+	// The FULL set of the notebook's edge document ids in their new order.
+	orderedDocumentIds: z.array(z.string().uuid()).min(1).max(500),
+});

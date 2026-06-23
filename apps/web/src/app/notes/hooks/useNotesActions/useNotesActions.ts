@@ -107,6 +107,42 @@ export function useNotesActions(notebookId: string | null) {
 		}),
 	);
 
+	// --- notebook membership (G): add / remove / reorder ---------------------
+	// Membership edges live in note_book_items keyed by the note's backing
+	// knowledge_documents.id, so callers pass `documentId = note.knowledgeDocumentId`.
+	// Adding/removing changes which notebook a note belongs to; both lists and the
+	// per-notebook count can shift, so we refresh listNotes + listNotebooks.
+
+	const addNoteToNotebook = useMutation(
+		trpc.notes.addNoteToNotebook.mutationOptions({
+			onSuccess: async () => {
+				await invalidateNotes();
+				await invalidateNotebooks();
+			},
+			onError: onError("Не удалось добавить заметку в блокнот"),
+		}),
+	);
+
+	const removeNoteFromNotebook = useMutation(
+		trpc.notes.removeNoteFromNotebook.mutationOptions({
+			onSuccess: async () => {
+				await invalidateNotes();
+				await invalidateNotebooks();
+			},
+			onError: onError("Не удалось убрать заметку из блокнота"),
+		}),
+	);
+
+	const reorderNotebookItems = useMutation(
+		trpc.notes.reorderNotebookItems.mutationOptions({
+			// Cache-first (AGENTS.md rule 9): the caller applies an optimistic order
+			// via setQueryData before mutating so existing rows never blank; we
+			// reconcile against the server here.
+			onSuccess: invalidateNotes,
+			onError: onError("Не удалось изменить порядок заметок"),
+		}),
+	);
+
 	return {
 		createNotebook,
 		deleteNotebook,
@@ -114,5 +150,8 @@ export function useNotesActions(notebookId: string | null) {
 		updateNote,
 		deleteNote,
 		setPublished,
+		addNoteToNotebook,
+		removeNoteFromNotebook,
+		reorderNotebookItems,
 	};
 }
