@@ -25,6 +25,24 @@ mock.module("@rox/shared/comms-events", () => ({
 	publishCommsMessage: publishCommsMessageMock,
 }));
 
+// M1 (external-contact resolution): the inbound worker path resolves an external
+// (non-rox) sender to a D6 contact node via the SAME `graphService.resolveIdentity`
+// the comms-core `resolveContact` port uses — find-or-create on (org, kind, value).
+// We stub `@rox/trpc/graph` (the resolver boundary drizzleDb imports) so the suite
+// needs no live graph/db: the stub records each call and replays a stable contact
+// id, letting us assert the external message/participant gets `contactEntityId`
+// and that the same (org, email) resolves once per emit (idempotent reuse).
+const resolveIdentityMock = mock(
+	(_tx: unknown, p: { orgId: string; kind: string; value: string }) =>
+		Promise.resolve({
+			contact: { id: `contact-for:${p.value}` },
+			created: true,
+		}),
+);
+mock.module("@rox/trpc/graph", () => ({
+	graphService: { resolveIdentity: resolveIdentityMock },
+}));
+
 const state: {
 	// Rows the next select() should return, in FIFO order.
 	selectQueue: AnyRow[][];
@@ -121,6 +139,9 @@ const fakeDb = {
 	select: () => nextSelect(),
 	insert: () => insertChain(),
 	update: () => updateChain(),
+	// `resolveContact` runs `graphService.resolveIdentity` inside dbWs.transaction;
+	// the resolver itself is stubbed, so the tx body is just `fn(fakeDb)`.
+	transaction: <T>(fn: (tx: typeof fakeDb) => Promise<T>) => fn(fakeDb),
 };
 
 mock.module("@rox/db/client", () => ({ db: fakeDb, dbWs: fakeDb }));
@@ -148,6 +169,7 @@ beforeEach(() => {
 	state.messageReturning = [{ id: "comms-msg-new" }];
 	state.conflictHits = 0;
 	publishCommsMessageMock.mockClear();
+	resolveIdentityMock.mockClear();
 });
 
 describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
@@ -167,13 +189,38 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		// dedup key is a participant-set key, NOT the raw Message-ID.
 		expect(state.insertedThreads[0]?.dedupKey).toContain("parts:");
 
+		// M1: an external (non-rox) sender resolves-or-creates a D6 contact node and
+		// the message is attributed to it (authorContactEntityId), not left unauthored.
+		expect(state.insertedMessages[0]?.authorUserId).toBeNull();
+		expect(state.insertedMessages[0]?.authorContactEntityId).toBe(
+			`contact-for:${baseArgs.fromAddr}`,
+		);
+		expect(resolveIdentityMock).toHaveBeenCalledTimes(1);
+		expect(resolveIdentityMock).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({
+				orgId: "org-1",
+				kind: "email",
+				value: baseArgs.fromAddr,
+			}),
+		);
+
 		// FIX 1: the mailbox OWNER is inserted as a comms_participant so the SSE
 		// leak-gate forwards + comms.listThreads/getThread surface the email thread.
-		// An external sender is NOT a participant (no resolvable rox user).
-		expect(state.insertedParticipants).toHaveLength(1);
-		expect(state.insertedParticipants[0]?.userId).toBe("user-1");
-		expect(state.insertedParticipants[0]?.threadId).toBe("thread-1");
-		expect(state.insertedParticipants[0]?.role).toBe("member");
+		// M1: the external sender is ALSO a participant now — as a contact node
+		// (contactEntityId), so the thread shows its external counterpart.
+		expect(state.insertedParticipants).toHaveLength(2);
+		const ownerParticipant = state.insertedParticipants.find(
+			(p) => p.userId === "user-1",
+		);
+		expect(ownerParticipant?.threadId).toBe("thread-1");
+		expect(ownerParticipant?.role).toBe("member");
+		const contactParticipant = state.insertedParticipants.find(
+			(p) => p.contactEntityId === `contact-for:${baseArgs.fromAddr}`,
+		);
+		// A contact participant carries no userId (it's an external counterpart).
+		expect(contactParticipant?.userId).toBeUndefined();
+		expect(contactParticipant?.threadId).toBe("thread-1");
 
 		// Live delivery: a new comms_messages row publishes exactly one SSE event,
 		// scoped to the recipient owner with transport=email.
@@ -243,6 +290,11 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		await db.emitToUnifiedInbox({ ...baseArgs, fromAddr: "bob@rox.one" });
 		expect(state.insertedMessages[0]?.authorUserId).toBe("user-bob");
 
+		// M1: an INTERNAL rox sender is attributed to its user — contact resolution
+		// is the EXTERNAL-only path and must NOT run (no contact node, no FK attr).
+		expect(state.insertedMessages[0]?.authorContactEntityId).toBeNull();
+		expect(resolveIdentityMock).not.toHaveBeenCalled();
+
 		// FIX 1: an internal rox→rox email makes BOTH the owner AND the resolved
 		// sender participants, so the thread surfaces for both parties.
 		const participantUserIds = state.insertedParticipants.map((p) => p.userId);
@@ -264,9 +316,76 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		state.threadReturning = [];
 		await db.emitToUnifiedInbox(baseArgs);
 
-		// The message + participant were attached to the re-selected winner thread,
+		// The message + participants were attached to the re-selected winner thread,
 		// NOT a forked duplicate (no thread id was minted locally).
 		expect(state.insertedMessages[0]?.threadId).toBe("thread-winner");
-		expect(state.insertedParticipants[0]?.threadId).toBe("thread-winner");
+		for (const p of state.insertedParticipants) {
+			expect(p.threadId).toBe("thread-winner");
+		}
+	});
+
+	test("M1: same external sender in same org resolves to the SAME contact (idempotent, no duplicate)", async () => {
+		const db = createMailIngestDb();
+
+		// First inbound email from alice@external.com.
+		state.selectQueue = [
+			[], // dup check → none
+			[], // sender @rox.one lookup → external
+			[], // thread by dedup → none → create
+		];
+		await db.emitToUnifiedInbox(baseArgs);
+		const firstContactId = state.insertedMessages[0]?.authorContactEntityId;
+
+		// Reset captured inserts, then a SECOND, distinct email (new Message-ID) from
+		// the SAME external sender in the SAME org. graphService.resolveIdentity is
+		// find-or-create on (org, kind, value), so it returns the SAME contact id —
+		// no duplicate contact node is forked for the repeat sender.
+		state.insertedMessages = [];
+		state.insertedParticipants = [];
+		state.insertedThreads = [];
+		state.selectQueue = [
+			[], // dup check → none (different Message-ID)
+			[], // sender lookup → external
+			[{ id: "thread-existing" }], // thread by dedup → found (same parties)
+		];
+		await db.emitToUnifiedInbox({
+			...baseArgs,
+			rfcMessageId: "<second-msg@external.com>",
+		});
+		const secondContactId = state.insertedMessages[0]?.authorContactEntityId;
+
+		expect(secondContactId).toBe(`contact-for:${baseArgs.fromAddr}`);
+		expect(secondContactId).toBe(firstContactId);
+
+		// The contact participant add is idempotent on the (thread, contact) — the
+		// emit uses onConflictDoNothing so a repeat sender never duplicates the row.
+		const contactParticipant = state.insertedParticipants.find(
+			(p) => p.contactEntityId === `contact-for:${baseArgs.fromAddr}`,
+		);
+		expect(contactParticipant?.contactEntityId).toBe(
+			`contact-for:${baseArgs.fromAddr}`,
+		);
+	});
+
+	test("M1: contact resolution failure never breaks ingest (best-effort attribution)", async () => {
+		const db = createMailIngestDb();
+		// The graph resolver throws (e.g. transient db blip). Ingest must still
+		// persist the email into the unified inbox — attribution is best-effort, an
+		// unresolved sender simply stays unauthored rather than 500-ing the worker.
+		resolveIdentityMock.mockImplementationOnce(() => {
+			throw new Error("graph unavailable");
+		});
+		state.selectQueue = [
+			[], // dup check → none
+			[], // sender lookup → external
+			[], // thread by dedup → none → create
+		];
+		await db.emitToUnifiedInbox(baseArgs);
+
+		expect(state.insertedMessages).toHaveLength(1);
+		expect(state.insertedMessages[0]?.authorContactEntityId).toBeNull();
+		// Only the mailbox owner remains a participant when the contact didn't resolve.
+		expect(state.insertedParticipants).toHaveLength(1);
+		expect(state.insertedParticipants[0]?.userId).toBe("user-1");
 	});
 });

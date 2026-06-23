@@ -10,10 +10,16 @@
  * the same cross-transport inbox the in-app DMs use — D3 feeds D1 without owning
  * its thread spine. `comms_messages` carries `organization_id` + a NOT-NULL
  * `thread_id`; we use a lightweight thread keyed by the message dedup string.
+ *
+ * M1: an EXTERNAL (non-rox) sender is attributed to a D6 contact node — the emit
+ * reuses the SAME `graphService.resolveIdentity` find-or-create the comms-core
+ * `resolveContact` port wraps, so the message + thread gain a stable, org-scoped
+ * `author_contact_entity_id` instead of staying unauthored. An internal rox→rox
+ * email keeps its `author_user_id` attribution unchanged.
  */
 
 import { deriveDedupKey } from "@rox/comms-core";
-import { db } from "@rox/db/client";
+import { db, dbWs } from "@rox/db/client";
 import {
 	commsAddresses,
 	commsMessages,
@@ -25,6 +31,7 @@ import {
 	mailThreads,
 } from "@rox/db/schema";
 import { publishCommsMessage } from "@rox/shared/comms-events";
+import { graphService } from "@rox/trpc/graph";
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import type { MailIngestDb } from "./ingest";
 
@@ -117,6 +124,58 @@ async function ensureCommsParticipants(
 				role: "member" as const,
 			})),
 		)
+		.onConflictDoNothing();
+}
+
+/**
+ * M1: resolve an EXTERNAL (non-rox) email sender to a D6 contact node, reusing the
+ * SAME `graphService.resolveIdentity` find-or-create the comms-core `resolveContact`
+ * port wraps (`packages/trpc/src/router/comms/ports.ts`). Identity is keyed on
+ * `(org, kind, value)` via `identity_links`, so the same external address in the
+ * same org always resolves to the SAME contact — no duplicate node for a repeat
+ * sender. Mirrors the port's kind mapping (`email` → `email`) and its
+ * `dbWs.transaction` wrapper (the graph service is the only writer of contacts).
+ *
+ * Best-effort: a resolver failure returns `null` so the email still lands in the
+ * unified inbox (unauthored) instead of 500-ing the inbound worker — the previous
+ * behavior for every external sender.
+ */
+async function resolveExternalContact(args: {
+	organizationId: string;
+	emailAddress: string;
+}): Promise<string | null> {
+	try {
+		const { contact } = await dbWs.transaction((tx) =>
+			graphService.resolveIdentity(tx, {
+				orgId: args.organizationId,
+				kind: "email",
+				value: args.emailAddress,
+			}),
+		);
+		return contact.id;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * M1: attach an external contact node as a `comms_participants` row (FK-less
+ * `contact_entity_id`, no `user_id`) so a pure-email thread surfaces its external
+ * counterpart alongside the mailbox owner. Idempotent: a repeat sender's add is a
+ * no-op (`onConflictDoNothing`) rather than a duplicate participant.
+ */
+async function ensureCommsContactParticipant(
+	db: typeof import("@rox/db/client").db,
+	args: { organizationId: string; threadId: string; contactEntityId: string },
+): Promise<void> {
+	await db
+		.insert(commsParticipants)
+		.values({
+			organizationId: args.organizationId,
+			threadId: args.threadId,
+			contactEntityId: args.contactEntityId,
+			role: "member" as const,
+		})
 		.onConflictDoNothing();
 }
 
@@ -253,8 +312,7 @@ export function createMailIngestDb(): MailIngestDb {
 			}
 
 			// M1: resolve a known rox sender (an internal email between rox users)
-			// to its author user id so the message is attributed; an external
-			// sender stays unauthored (no FK contact resolution in this worker path).
+			// to its author user id so the message is attributed.
 			const [senderAddr] = await db
 				.select({ userId: commsAddresses.userId })
 				.from(commsAddresses)
@@ -267,6 +325,17 @@ export function createMailIngestDb(): MailIngestDb {
 				)
 				.limit(1);
 			const authorUserId = senderAddr?.userId ?? null;
+
+			// M1: an EXTERNAL sender (no rox address) resolves-or-creates a D6 contact
+			// node — the same find-or-create the comms-core `resolveContact` port uses
+			// — so the email is attributed to that contact instead of staying
+			// unauthored. Internal rox→rox mail skips this (it's already authored).
+			const authorContactEntityId = authorUserId
+				? null
+				: await resolveExternalContact({
+						organizationId: args.organizationId,
+						emailAddress: args.fromAddr.trim().toLowerCase(),
+					});
 
 			const threadId = await findOrCreateCommsThread(db, {
 				organizationId: args.organizationId,
@@ -286,6 +355,17 @@ export function createMailIngestDb(): MailIngestDb {
 				userIds: [args.ownerUserId, authorUserId],
 			});
 
+			// M1: an external sender joins the thread as a contact-node participant
+			// (FK-less `contact_entity_id`) so the pure-email thread shows its external
+			// counterpart. Skipped for internal mail (no contact was resolved).
+			if (authorContactEntityId) {
+				await ensureCommsContactParticipant(db, {
+					organizationId: args.organizationId,
+					threadId,
+					contactEntityId: authorContactEntityId,
+				});
+			}
+
 			// M1: guard the GLOBAL (transport, external_id) unique — a concurrent
 			// second-recipient emit that slipped past the read-check above becomes a
 			// no-op instead of a 500.
@@ -297,6 +377,7 @@ export function createMailIngestDb(): MailIngestDb {
 					transport: "email",
 					direction: "inbound",
 					authorUserId,
+					authorContactEntityId,
 					externalId: args.rfcMessageId,
 					inReplyToExternalId: args.inReplyTo,
 					body: args.snippet,
