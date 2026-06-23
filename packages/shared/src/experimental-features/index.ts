@@ -448,10 +448,22 @@ export const EXPERIMENTAL_FEATURES = [
 			title: "Permissions Manifest",
 			shortDescription: "Review template-required permissions before install.",
 			longDescription:
-				"Surfaces a permissions manifest so users can approve tools, sources, and scopes before creating a workspace.",
+				"Inserts a pre-install confirm step into the Template Gallery create flow: before a project is created, it shows a permissions manifest listing exactly what the selected template will apply — the repository scope (clone a remote vs initialise an empty git workspace), the starter presets it bundles (resolved to their names/descriptions), the files it will write, and the setup commands it will run — and requires an explicit Confirm to proceed (Cancel returns to the gallery).",
 			maturity: "preview",
-			implementationStatus: "stubbed",
-			dependencies: [AGENT_NATIVE_TEMPLATES_PROVIDER],
+			// Backed by a REAL gated surface: the Template Gallery renders a
+			// TemplatePermissionsManifestPanel (a pure manifest derived by
+			// `deriveTemplatePermissionsManifest` from the PROJECT_TEMPLATES spec +
+			// the workspace starter-preset catalog) as the FINAL confirm gate BEFORE
+			// the existing apply path runs `client.project.create`. Like
+			// `templates.previewSandbox`, the manifest is computed locally from the
+			// in-app template definitions, so the only required dependency is the
+			// desktop runtime — no external Agent-Native templates endpoint. The
+			// non-required AGENT_NATIVE_TEMPLATES_PROVIDER is intentionally dropped
+			// here so the gate opens locally (the presets are local; same demote
+			// precedent as `templates.previewSandbox`); importing external template
+			// definitions remains a separate feature (`templates.importWizard`).
+			implementationStatus: "ready",
+			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: [
 				"Template install",
 				"Permissions",

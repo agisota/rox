@@ -1,4 +1,8 @@
 import {
+	deriveTemplatePermissionsManifest,
+	type TemplatePermissionsManifest,
+} from "@rox/shared/template-permissions-manifest";
+import {
 	deriveTemplatePreview,
 	type TemplatePreviewPlan,
 } from "@rox/shared/template-preview-sandbox";
@@ -24,7 +28,9 @@ import {
 } from "renderer/react-query/projects";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { TemplateCard } from "./components/TemplateCard";
+import { TemplatePermissionsManifestPanel } from "./components/TemplatePermissionsManifestPanel";
 import { TemplatePreviewSandboxPanel } from "./components/TemplatePreviewSandboxPanel";
+import { getTemplateInstallAction } from "./permissions-manifest-action";
 import { getTemplateSelectAction } from "./preview-sandbox-action";
 import { PROJECT_TEMPLATES, type ProjectTemplate } from "./templates";
 
@@ -85,6 +91,23 @@ export function TemplateGalleryModal({
 		template: ProjectTemplate;
 		plan: TemplatePreviewPlan;
 	} | null>(null);
+	// Permissions Manifest (experiment): when enabled+available, the FINAL step
+	// before creating a project is a pre-install confirm panel that lists exactly
+	// what the selected template will apply (repository scope, starter presets,
+	// files, and setup commands) and requires an explicit Confirm. When the gate
+	// is closed, the create flow runs exactly as before (no regression).
+	const { state: permissionsManifestState } = useExperimentalFeature(
+		"templates.permissionsManifest",
+	);
+	const permissionsManifestEnabled =
+		permissionsManifestState.enabled &&
+		permissionsManifestState.availability === "available";
+	const [manifest, setManifest] = useState<{
+		template: ProjectTemplate;
+		data: TemplatePermissionsManifest;
+		/** Where Cancel should return: the gallery grid or the preview panel. */
+		returnTo: "gallery" | "preview";
+	} | null>(null);
 
 	const applyTemplate = async (template: ProjectTemplate) => {
 		if (!isTemplateAvailable(template) || cloningId) return;
@@ -138,11 +161,37 @@ export function TemplateGalleryModal({
 		}
 		if (createdProjectId) {
 			setPreview(null);
+			setManifest(null);
 			onCreated({
 				projectId: createdProjectId,
 				mainWorkspaceId: createdMainWorkspaceId,
 			});
 		}
+	};
+
+	// Final pre-create router: with the Permissions Manifest enabled, an
+	// installable template opens its confirm panel BEFORE `applyTemplate` runs;
+	// otherwise it applies immediately, preserving the original behaviour. The
+	// decision lives in `getTemplateInstallAction` so it is unit-testable without
+	// the renderer/tRPC stack. `returnTo` records where Cancel should go back to
+	// (the gallery, or the preview panel when the manifest was reached from it).
+	const requestApply = (
+		template: ProjectTemplate,
+		returnTo: "gallery" | "preview",
+	) => {
+		if (cloningId) return;
+		if (
+			getTemplateInstallAction(template, permissionsManifestEnabled) ===
+			"manifest"
+		) {
+			setManifest({
+				template,
+				data: deriveTemplatePermissionsManifest(template),
+				returnTo,
+			});
+			return;
+		}
+		void applyTemplate(template);
 	};
 
 	// Card click router: with the preview sandbox enabled, a previewable template
@@ -158,7 +207,9 @@ export function TemplateGalleryModal({
 			setPreview({ template, plan: deriveTemplatePreview(template) });
 			return;
 		}
-		void applyTemplate(template);
+		// No preview step: go straight to the create router, which inserts the
+		// permissions-manifest confirm when that experiment is enabled.
+		requestApply(template, "gallery");
 	};
 
 	const closePreview = () => {
@@ -166,9 +217,21 @@ export function TemplateGalleryModal({
 		setPreview(null);
 	};
 
+	const closeManifest = () => {
+		if (cloningId) return;
+		// Cancel returns to wherever the manifest was opened from: the preview
+		// panel (if the user reached it via the dry-run) or the gallery grid.
+		const returnTo = manifest?.returnTo ?? "gallery";
+		setManifest(null);
+		if (returnTo === "gallery") setPreview(null);
+	};
+
 	const handleOpenChange = (next: boolean) => {
 		if (!next && cloningId) return;
-		if (!next) setPreview(null);
+		if (!next) {
+			setPreview(null);
+			setManifest(null);
+		}
 		onOpenChange(next);
 	};
 
@@ -197,16 +260,39 @@ export function TemplateGalleryModal({
 			>
 				<DialogHeader>
 					<DialogTitle>
-						{preview ? "Предпросмотр шаблона" : "Начать с шаблона"}
+						{manifest
+							? "Разрешения шаблона"
+							: preview
+								? "Предпросмотр шаблона"
+								: "Начать с шаблона"}
 					</DialogTitle>
 					<DialogDescription>
-						{preview
-							? "Сухой прогон: что создаст шаблон, прежде чем вы примените его."
-							: "Создайте проект из репозитория или пустой git-workspace с готовыми пресетами."}
+						{manifest
+							? "Проверьте, что применит шаблон, и подтвердите создание проекта."
+							: preview
+								? "Сухой прогон: что создаст шаблон, прежде чем вы примените его."
+								: "Создайте проект из репозитория или пустой git-workspace с готовыми пресетами."}
 					</DialogDescription>
 				</DialogHeader>
 				{isV2CloudEnabled && <HostStatusInline />}
-				{preview ? (
+				{manifest ? (
+					// The permissions manifest is the FINAL confirm gate before creating
+					// the project. Defense-in-depth: it only opens while the experiment is
+					// enabled+available (requestApply gates on the same state); wrapping it
+					// in the gate makes the contract explicit and falls back to the grid if
+					// the experiment is turned off mid-flow.
+					<ExperimentalFeatureGate
+						featureId="templates.permissionsManifest"
+						fallback={templateGrid}
+					>
+						<TemplatePermissionsManifestPanel
+							manifest={manifest.data}
+							confirming={cloningId === manifest.template.id}
+							onCancel={closeManifest}
+							onConfirm={() => void applyTemplate(manifest.template)}
+						/>
+					</ExperimentalFeatureGate>
+				) : preview ? (
 					// Defense-in-depth: the preview step only opens while the experiment
 					// is enabled+available (handleCardSelect gates on the same state),
 					// but wrapping the surface in the gate makes the contract explicit
@@ -219,7 +305,7 @@ export function TemplateGalleryModal({
 							plan={preview.plan}
 							applying={cloningId === preview.template.id}
 							onBack={closePreview}
-							onApply={() => void applyTemplate(preview.template)}
+							onApply={() => requestApply(preview.template, "preview")}
 						/>
 					</ExperimentalFeatureGate>
 				) : (
