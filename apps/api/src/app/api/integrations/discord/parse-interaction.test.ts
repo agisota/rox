@@ -5,7 +5,10 @@ describe("parseDiscordInteraction", () => {
 	test("parses a PING interaction", () => {
 		const result = parseDiscordInteraction({ type: 1 });
 		expect(result).toEqual({
+			id: null,
 			type: 1,
+			token: null,
+			applicationId: null,
 			guildId: null,
 			channelId: null,
 			userId: null,
@@ -16,7 +19,10 @@ describe("parseDiscordInteraction", () => {
 
 	test("parses a slash command with options and member.user", () => {
 		const result = parseDiscordInteraction({
+			id: "interaction-1",
 			type: 2,
+			token: "interaction-token",
+			application_id: "app-1",
 			guild_id: "guild-123",
 			channel_id: "channel-456",
 			member: { user: { id: "user-789" } },
@@ -27,13 +33,30 @@ describe("parseDiscordInteraction", () => {
 		});
 
 		expect(result).toEqual({
+			id: "interaction-1",
 			type: 2,
+			token: "interaction-token",
+			applicationId: "app-1",
 			guildId: "guild-123",
 			channelId: "channel-456",
 			userId: "user-789",
 			commandName: "ask",
 			text: "what is rox?",
 		});
+	});
+
+	test("captures id, token, and application_id for the follow-up edit", () => {
+		const result = parseDiscordInteraction({
+			id: "987654321",
+			type: 2,
+			token: "aW50ZXJhY3Rpb24tdG9rZW4",
+			application_id: "123456789",
+			data: { name: "ask" },
+		});
+
+		expect(result?.id).toBe("987654321");
+		expect(result?.token).toBe("aW50ZXJhY3Rpb24tdG9rZW4");
+		expect(result?.applicationId).toBe("123456789");
 	});
 
 	test("reads userId from top-level user in DM context", () => {
@@ -67,7 +90,10 @@ describe("parseDiscordInteraction", () => {
 	test("returns nulls for missing fields", () => {
 		const result = parseDiscordInteraction({ type: 3 });
 		expect(result).toEqual({
+			id: null,
 			type: 3,
+			token: null,
+			applicationId: null,
 			guildId: null,
 			channelId: null,
 			userId: null,

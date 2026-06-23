@@ -1,11 +1,30 @@
 import { db } from "@rox/db/client";
-import { integrationConnections } from "@rox/db/schema";
+import {
+	integrationConnections,
+	integrationInboundEvents,
+} from "@rox/db/schema";
+import { Client } from "@upstash/qstash";
 import { and, eq, isNull } from "drizzle-orm";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
 import { InteractionResponseType, InteractionType } from "../constants";
 import { parseDiscordInteraction } from "../parse-interaction";
 import { verifyDiscordSignature } from "../verify-signature";
+
+const qstash = new Client({ token: env.QSTASH_TOKEN });
+
+/**
+ * Deferred ack telling Discord to show the bot's "thinking…" state. The real
+ * answer is delivered later by editing this same response from the worker.
+ *
+ * Built fresh per call: a `Response` body is single-use, so a shared instance
+ * could not be returned by more than one request.
+ */
+function deferredAck(): Response {
+	return Response.json({
+		type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+	});
+}
 
 /**
  * Discord interactions webhook. Single Rox Discord app, many guilds (mirrors the
@@ -114,10 +133,102 @@ export async function POST(request: Request) {
 			commandName: interaction.commandName,
 		});
 
-		// TODO(discord PR-2): enqueue job -> runDiscordAgent -> edit deferred reply
-		return Response.json({
-			type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-		});
+		// Discord normally sends `application_id`; fall back to the stored config
+		// so the worker can still address the follow-up edit if it is omitted.
+		const applicationId =
+			interaction.applicationId ??
+			(connection.config?.provider === "discord"
+				? connection.config.applicationId
+				: undefined);
+
+		// Without these we cannot dispatch or edit the deferred reply later. Still
+		// defer (Discord shows one "thinking…" ack); the empty prompt simply leaves
+		// it unanswered rather than erroring the user-visible interaction.
+		if (
+			!interaction.id ||
+			!interaction.token ||
+			!applicationId ||
+			!interaction.text
+		) {
+			logger.warn(
+				"[discord/interactions] Command missing dispatch fields; deferring without enqueue",
+				{
+					connectionId: connection.id,
+					hasId: Boolean(interaction.id),
+					hasToken: Boolean(interaction.token),
+					hasApplicationId: Boolean(applicationId),
+					hasText: Boolean(interaction.text),
+				},
+			);
+			return deferredAck();
+		}
+
+		// Idempotency: Discord retries deliveries, and the interaction id is
+		// globally unique. Scope it by connection so two connections cannot drop
+		// each other's interaction sharing a provider-local id (mirrors Telegram).
+		const dedupEventId = `${connection.id}:${interaction.id}`;
+		const [inserted] = await db
+			.insert(integrationInboundEvents)
+			.values({
+				connectionId: connection.id,
+				provider: "discord",
+				externalEventId: dedupEventId,
+			})
+			.onConflictDoNothing({
+				target: [
+					integrationInboundEvents.provider,
+					integrationInboundEvents.externalEventId,
+				],
+			})
+			.returning({ id: integrationInboundEvents.id });
+
+		// Duplicate redelivery: the first delivery already enqueued the job. Defer
+		// again so Discord stops retrying, but do not double-dispatch the agent.
+		if (!inserted) {
+			logger.info("[discord/interactions] Duplicate interaction ignored", {
+				dedupEventId,
+				connectionId: connection.id,
+			});
+			return deferredAck();
+		}
+
+		try {
+			await qstash.publishJSON({
+				url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/discord/jobs/process-interaction`,
+				body: {
+					connectionId: connection.id,
+					interaction: {
+						id: interaction.id,
+						token: interaction.token,
+						applicationId,
+						text: interaction.text,
+					},
+				},
+				retries: 3,
+			});
+		} catch (error) {
+			logger.error(
+				"[discord/interactions] Failed to queue process-interaction job:",
+				error,
+			);
+			// Roll back the dedup row so a Discord retry can re-enqueue instead of
+			// being silently dropped as a duplicate.
+			try {
+				await db
+					.delete(integrationInboundEvents)
+					.where(eq(integrationInboundEvents.id, inserted.id));
+			} catch (deleteError) {
+				logger.error(
+					"[discord/interactions] Failed to roll back inbound event after queue failure:",
+					deleteError,
+				);
+			}
+		}
+
+		// Always defer: the 3s ack must succeed regardless of enqueue outcome so
+		// the user never sees an interaction failure; a missing follow-up is the
+		// worst case, not a hard error.
+		return deferredAck();
 	}
 
 	// MESSAGE_COMPONENT and any future types: ack until handled in a later PR.
