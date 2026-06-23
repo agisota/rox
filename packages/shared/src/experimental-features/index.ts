@@ -364,10 +364,21 @@ export const EXPERIMENTAL_FEATURES = [
 			shortDescription:
 				"Preview template behavior before creating a workspace.",
 			longDescription:
-				"Creates a safe preview mode for generated files, agents, tasks, and settings before a template is applied.",
-			maturity: "alpha",
-			implementationStatus: "planned",
-			dependencies: [AGENT_NATIVE_TEMPLATES_PROVIDER, LOCAL_DESKTOP_RUNTIME],
+				"Adds a dry-run preview step to the Template Gallery: before a template is applied, it shows exactly what the local project-creation engine would create — the derived project name, whether it clones a repo or initializes an empty git workspace, the starter presets it bundles, and the files and setup commands those presets scaffold — computed purely from the template spec without creating the project.",
+			maturity: "preview",
+			// Backed by a REAL gated surface: the Template Gallery renders a
+			// TemplatePreviewSandboxPanel (a pure dry-run derived by
+			// `deriveTemplatePreview` from the PROJECT_TEMPLATES spec + the
+			// workspace starter-preset catalog) BEFORE the existing apply path runs
+			// `client.project.create`. Like `templates.marketplace`, the preview is
+			// computed locally from the in-app template definitions, so the only
+			// required dependency is the desktop runtime — no external Agent-Native
+			// templates endpoint. The non-required AGENT_NATIVE_TEMPLATES_PROVIDER is
+			// intentionally dropped here so the gate opens locally; importing
+			// external template definitions is a separate feature
+			// (`templates.importWizard`).
+			implementationStatus: "ready",
+			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: [
 				"Template gallery",
 				"Workspace setup",

@@ -252,6 +252,10 @@
 			"types": "./src/workspace-starter-presets.ts",
 			"default": "./src/workspace-starter-presets.ts"
 		},
+		"./template-preview-sandbox": {
+			"types": "./src/template-preview-sandbox.ts",
+			"default": "./src/template-preview-sandbox.ts"
+		},
 		"./retry": {
 			"types": "./src/retry/index.ts",
 			"default": "./src/retry/index.ts"

@@ -123,6 +123,46 @@ describe("experimental features registry", () => {
 		expect(state.availability).toBe("available");
 	});
 
+	test("templates.previewSandbox ships a ready, locally-derived dry-run surface", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"templates.previewSandbox",
+		);
+		expect(definition).toBeDefined();
+		// The preview is a pure dry-run derived from the local template spec +
+		// starter-preset catalog, so — like templates.marketplace — the only
+		// required provider is the desktop runtime (no external catalog endpoint).
+		expect(definition?.implementationStatus).toBe("ready");
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders).toHaveLength(0);
+		// The Agent-Native templates endpoint must NOT be a dependency of the local
+		// dry-run preview (importing external templates is a separate feature).
+		expect(
+			(definition?.dependencies ?? []).some(
+				(dependency) => dependency.id === "agent-native-templates",
+			),
+		).toBe(false);
+	});
+
+	test("templates.previewSandbox resolves available with the desktop runtime", () => {
+		const state = resolveExperimentalFeatureState("templates.previewSandbox", {
+			dependencies: { "desktop-runtime": "configured" },
+		});
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
+
+	test("templates.previewSandbox stays hidden when disabled by the user", () => {
+		const state = resolveExperimentalFeatureState("templates.previewSandbox", {
+			dependencies: { "desktop-runtime": "configured" },
+			overrides: { "templates.previewSandbox": false },
+		});
+		expect(state.enabled).toBe(false);
+		expect(state.availability).toBe("available");
+	});
+
 	test("live.pushToTalkDesktop ships a ready desktop-runtime surface gated on LiveKit", () => {
 		const definition = getExperimentalFeatureDefinition(
 			"live.pushToTalkDesktop",
