@@ -105,7 +105,9 @@ export function CreateTaskSheet({ open, onOpenChange }: CreateTaskSheetProps) {
 							onChangeText={setDescription}
 						/>
 						{transcribing ? (
-							<Text className="text-xs text-muted-foreground">Расшифровка…</Text>
+							<Text className="text-xs text-muted-foreground">
+								Расшифровка…
+							</Text>
 						) : null}
 					</View>
 

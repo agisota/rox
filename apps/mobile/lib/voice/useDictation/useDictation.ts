@@ -116,7 +116,13 @@ export function useMobileDictation(
 			setState("error");
 			setError("Не удалось обработать запись");
 		}
-	}, [recorder, recorderState.durationMillis, state, minDurationMs, onComplete]);
+	}, [
+		recorder,
+		recorderState.durationMillis,
+		state,
+		minDurationMs,
+		onComplete,
+	]);
 
 	return {
 		state,
