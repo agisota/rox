@@ -92,6 +92,20 @@ export interface AgentRunRequest {
 	input: Record<string, unknown>;
 	/** The message + accumulating context the node receives (see design §5). */
 	context: AccumulatedContext;
+	/**
+	 * Optional per-node overrides read from the `agent_run` block's `subBlocks`
+	 * (NodeInspector #407). The resolver merges them OVER the role preset within
+	 * bounds via `resolveAgentRunNodeConfig` (@rox/workflow-core). All additive:
+	 * when a node omits a field the preset value stands (current behavior).
+	 *
+	 * Note on transport: `maxTurns` reaches the host today; `modelOverride` and
+	 * `temperature` are merged + carried here but are NOT yet transported to the
+	 * host runtime (`agents.runAndCapture` accepts neither), so they currently
+	 * affect only the resolved config, not the live agent. See agent-run-service.
+	 */
+	modelOverride?: string;
+	maxTurns?: number;
+	temperature?: number;
 }
 
 /** Result returned by the agent-run resolver for an `agent_run` block. */
@@ -207,6 +221,13 @@ export interface RunResult {
 		blockId: string;
 		title?: string;
 		payload?: Record<string, unknown>;
+		/**
+		 * The approver-facing instruction from the `human_approval` block's
+		 * `subBlocks.approvalMessage` (NodeInspector #407), when the author set one.
+		 * The run-service threads it onto the `approval_requests` row so the inbox
+		 * shows "what to confirm". Omitted when no message was configured.
+		 */
+		approvalMessage?: string;
 	};
 }
 

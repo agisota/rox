@@ -241,6 +241,13 @@ export class WorkflowExecutor {
 					status: "waiting_approval",
 					input,
 				});
+				// The author-set approver instruction (NodeInspector #407) rides
+				// alongside the block name so the run-service can stamp it on the
+				// approval_requests row. Omitted when no message was configured.
+				const approvalMessage =
+					typeof block.subBlocks?.approvalMessage === "string"
+						? block.subBlocks.approvalMessage
+						: undefined;
 				return withContext({
 					status: "waiting_approval",
 					steps,
@@ -249,6 +256,7 @@ export class WorkflowExecutor {
 						blockId,
 						title: block.name,
 						payload: input,
+						...(approvalMessage != null ? { approvalMessage } : {}),
 					},
 				});
 			}
@@ -326,15 +334,31 @@ export class WorkflowExecutor {
 					});
 					return withContext({ status: "failed", steps, error });
 				}
+				// The NodeInspector + templates persist the bound role under
+				// `roleSlug`; older fixtures/seeds used `roleSkillSlug`. Read the
+				// editor key first, then fall back so legacy graphs still resolve.
+				const sub = block.subBlocks;
 				const req: AgentRunRequest = {
 					blockId,
-					roleSkillSlug: String(block.subBlocks?.roleSkillSlug ?? ""),
+					roleSkillSlug: String(sub?.roleSlug ?? sub?.roleSkillSlug ?? ""),
 					promptTemplate:
-						typeof block.subBlocks?.promptTemplate === "string"
-							? block.subBlocks.promptTemplate
+						typeof sub?.promptTemplate === "string"
+							? sub.promptTemplate
 							: undefined,
 					input,
 					context: runContext,
+					// Per-node overrides (NodeInspector #407) forwarded additively: a
+					// field is only set when the node persisted it, so a node with no
+					// overrides yields the exact pre-existing request shape.
+					...(typeof sub?.modelOverride === "string"
+						? { modelOverride: sub.modelOverride }
+						: {}),
+					...(typeof sub?.maxTurns === "number"
+						? { maxTurns: sub.maxTurns }
+						: {}),
+					...(typeof sub?.temperature === "number"
+						? { temperature: sub.temperature }
+						: {}),
 				};
 				const res = await options.resolveAgentRun(req);
 				if (res.error) {
@@ -458,10 +482,18 @@ export class WorkflowExecutor {
 		// plan order). The cap from `resolveLoopIterationCap` guarantees the walk
 		// terminates, so a feedback loop can never append context forever.
 		for (const loop of loops) {
+			// Cap precedence: an explicit `state.loops[].maxIterations` (the value the
+			// executor has always honored) wins; otherwise fall back to a loop-type
+			// body block's `subBlocks.maxIterations` (what the NodeInspector persists —
+			// flowToState never copies it into state.loops). Neither present ⇒ default.
+			const declaredCap = state.loops[loop.loopId]?.maxIterations;
+			const cap = resolveLoopIterationCap(
+				declaredCap ?? loopBlockMaxIterations(state, loop.bodyNodeIds),
+			);
 			const loopResult = await this.walkLoop({
 				loop,
 				state,
-				cap: resolveLoopIterationCap(state.loops[loop.loopId]?.maxIterations),
+				cap,
 				executionPlan,
 				edgeFires,
 				outputs,
@@ -549,6 +581,27 @@ export class WorkflowExecutor {
 function firstStart(state: RoxWorkflowState): string | undefined {
 	for (const [id, block] of Object.entries(state.blocks)) {
 		if (block.type === "start") return id;
+	}
+	return undefined;
+}
+
+/**
+ * The `subBlocks.maxIterations` declared on a `loop`-type block within this
+ * loop's body, if any. The NodeInspector writes the per-node loop cap there
+ * (LoopNodeForm), but `flowToState` only copies block subBlocks — it never folds
+ * the value into `state.loops[].maxIterations`. This bridges that gap so the
+ * editor-set cap is honored when `state.loops` carries none. Returns the first
+ * numeric value found (body order); undefined when no loop block declares one.
+ */
+function loopBlockMaxIterations(
+	state: RoxWorkflowState,
+	bodyNodeIds: string[],
+): number | undefined {
+	for (const nodeId of bodyNodeIds) {
+		const block = state.blocks[nodeId];
+		if (block?.type !== "loop") continue;
+		const raw = block.subBlocks?.maxIterations;
+		if (typeof raw === "number") return raw;
 	}
 	return undefined;
 }

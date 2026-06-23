@@ -22,7 +22,7 @@ import {
 	type ContextEntry,
 	renderContextForPrompt,
 } from "../context/accumulatedContext";
-import type { AgentRolePreset } from "./agentRolePreset";
+import type { AgentRoleKind, AgentRolePreset } from "./agentRolePreset";
 
 /** Stable error codes surfaced by the `agent_run` resolver. */
 export type AgentRunErrorCode =
@@ -63,6 +63,31 @@ export const DEFAULT_AGENT_MAX_TURNS = 8;
 
 /** Hard upper bound for agent pipeline turns before dispatch crosses process boundaries. */
 export const MAX_AGENT_MAX_TURNS = 200;
+
+/** Inclusive sampling-temperature bounds (mirrors the NodeInspector clamp). */
+export const MIN_AGENT_TEMPERATURE = 0;
+export const MAX_AGENT_TEMPERATURE = 2;
+
+/**
+ * The fully resolved per-node agent execution config: the role preset merged
+ * with the `agent_run` node's `subBlocks` overrides, within bounds. Produced by
+ * {@link resolveAgentRunNodeConfig} so the resolver can dispatch with one shape
+ * regardless of whether the node overrode the preset.
+ */
+export interface ResolvedAgentRunConfig {
+	/** chat (rox in-process) vs terminal (CLI in a worktree). */
+	agentKind: AgentRoleKind;
+	/** ROX_AGENT_ID for chat, or a CLI id ("claude" / "codex" / …) for terminal. */
+	agentId: string;
+	/** Effective turn budget: node override → preset → default, clamped. */
+	maxTurns: number;
+	/** Effective model: node `modelOverride` (trimmed) → preset `model`. */
+	model?: string;
+	/** Effective sampling temperature: node override (clamped) → preset. */
+	temperature?: number;
+	/** Branch-name prefix for CLI agents' git worktrees (terminal only). */
+	worktreeBranchPrefix?: string;
+}
 
 /**
  * Build the prompt fed to the agent for an `agent_run` node. Deterministic
@@ -124,11 +149,19 @@ export function agentOutputToContextEntry(args: {
  * only reads the preset — the resolver performs the actual host call. A missing
  * `agentKind` defaults to chat (the safe in-process path); `maxTurns` is clamped
  * to a positive integer and capped at {@link MAX_AGENT_MAX_TURNS}.
+ *
+ * `overrides.maxTurns`, when supplied (e.g. from an `agent_run` node's
+ * `subBlocks.maxTurns`), takes precedence over the preset's `settings.maxTurns`
+ * and is clamped through the same bounds. Omitting `overrides` reproduces the
+ * original preset-only behavior exactly (backward-compatible additive param).
  */
 export function resolveAgentDispatchTarget(
 	preset: AgentRolePreset,
+	overrides?: { maxTurns?: number },
 ): AgentDispatchTarget {
-	const maxTurns = normalizeMaxTurns(preset.settings?.maxTurns);
+	const maxTurns = normalizeMaxTurns(
+		overrides?.maxTurns ?? preset.settings?.maxTurns,
+	);
 	if (preset.agentKind === "terminal") {
 		return {
 			kind: "terminal",
@@ -146,11 +179,79 @@ export function resolveAgentDispatchTarget(
 	};
 }
 
+/**
+ * Merge an `agent_run` node's persisted `subBlocks` overrides OVER its role
+ * preset, within bounds — the pure core the resolver dispatches from. Each field
+ * follows the same rule: a valid node override wins, otherwise the preset/default
+ * applies, so a node with NO config reproduces {@link resolveAgentDispatchTarget}
+ * exactly (missing config => current behavior).
+ *
+ *   - `maxTurns`   — `subBlocks.maxTurns` (number) → preset → {@link DEFAULT_AGENT_MAX_TURNS},
+ *                    clamped to `[1, MAX_AGENT_MAX_TURNS]`.
+ *   - `temperature`— `subBlocks.temperature` (number) clamped to `[0, 2]` → preset.
+ *   - `model`      — `subBlocks.modelOverride` (trimmed non-empty string) → preset.model.
+ *
+ * The NodeInspector clamps these on the way in; re-clamping here keeps the
+ * runtime authoritative against hand-edited graphs and seeded templates.
+ */
+export function resolveAgentRunNodeConfig(args: {
+	preset: AgentRolePreset;
+	subBlocks?: Record<string, unknown> | undefined;
+}): ResolvedAgentRunConfig {
+	const { preset, subBlocks } = args;
+	// A numeric override (even an out-of-range / NaN one) is routed through
+	// normalizeMaxTurns so it degrades to the default/cap; a non-number subBlock
+	// value is ignored entirely so the preset's maxTurns stands.
+	const target = resolveAgentDispatchTarget(preset, {
+		maxTurns:
+			typeof subBlocks?.maxTurns === "number" ? subBlocks.maxTurns : undefined,
+	});
+
+	const model = trimmedNonEmpty(subBlocks?.modelOverride) ?? preset.model;
+	const overrideTemp = numberOrUndefined(subBlocks?.temperature);
+	const temperature =
+		overrideTemp != null
+			? clampTemperature(overrideTemp)
+			: preset.settings?.temperature;
+
+	return {
+		agentKind: preset.agentKind === "terminal" ? "terminal" : "chat",
+		agentId: target.agentId,
+		maxTurns: target.maxTurns,
+		...(model != null ? { model } : {}),
+		...(temperature != null ? { temperature } : {}),
+		...(target.kind === "terminal" && target.worktreeBranchPrefix
+			? { worktreeBranchPrefix: target.worktreeBranchPrefix }
+			: {}),
+	};
+}
+
 function normalizeMaxTurns(value: number | undefined): number {
 	if (value == null || !Number.isFinite(value)) return DEFAULT_AGENT_MAX_TURNS;
 	const floored = Math.floor(value);
 	if (floored < 1) return DEFAULT_AGENT_MAX_TURNS;
 	return Math.min(floored, MAX_AGENT_MAX_TURNS);
+}
+
+/** Clamp a sampling temperature into the supported `[0, 2]` range. */
+function clampTemperature(value: number): number {
+	if (value < MIN_AGENT_TEMPERATURE) return MIN_AGENT_TEMPERATURE;
+	if (value > MAX_AGENT_TEMPERATURE) return MAX_AGENT_TEMPERATURE;
+	return value;
+}
+
+/** A finite number, else undefined (string/NaN/null subBlock values are ignored). */
+function numberOrUndefined(value: unknown): number | undefined {
+	return typeof value === "number" && Number.isFinite(value)
+		? value
+		: undefined;
+}
+
+/** A trimmed non-empty string, else undefined (so empty overrides fall back). */
+function trimmedNonEmpty(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
 }
 
 /**
