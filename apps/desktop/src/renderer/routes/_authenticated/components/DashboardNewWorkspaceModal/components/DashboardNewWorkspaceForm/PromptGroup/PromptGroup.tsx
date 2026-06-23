@@ -10,7 +10,6 @@ import {
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { isEnterSubmit } from "@rox/ui/lib/keyboard";
-import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
@@ -23,6 +22,7 @@ import { AgentHarnessStatusBadge } from "renderer/components/AgentHarnessStatusB
 import { AgentSelect } from "renderer/components/AgentSelect";
 import { LinkedIssuePill } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter/components/LinkedIssuePill";
 import { IssueLinkCommand } from "renderer/components/Chat/ChatInterface/components/IssueLinkCommand";
+import { HostStatusInline } from "renderer/components/HostStatusInline";
 import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { resolveHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useAgentLaunchPreferences } from "renderer/hooks/useAgentLaunchPreferences";
@@ -38,7 +38,6 @@ import {
 } from "renderer/hooks/useV2AgentChoices";
 import { PLATFORM } from "renderer/hotkeys";
 import { authClient } from "renderer/lib/auth-client";
-import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { useNewWorkspaceModalOpen } from "renderer/stores/new-workspace-modal";
 import { useNewWorkspacePromptContext } from "renderer/stores/new-workspace-prompt-context";
@@ -87,8 +86,7 @@ export function PromptGroup({
 		useDashboardNewWorkspaceDraft();
 	const navigate = useNavigate();
 	const attachments = useProviderAttachments();
-	const hostService = useLocalHostService();
-	const { activeHostUrl, machineId } = hostService;
+	const { activeHostUrl, machineId } = useLocalHostService();
 	const relayUrl = useRelayUrl();
 	const { data: session } = authClient.useSession();
 	const activeOrganizationId = session?.session?.activeOrganizationId;
@@ -261,6 +259,11 @@ export function PromptGroup({
 	// instead of letting all three submit paths (button, Enter, Cmd+Enter)
 	// fall into a toast.
 	const { otherHosts } = useWorkspaceHostOptions();
+	// The local host is the active device with no live url yet. We pre-gate this
+	// case with the inline host-status affordance (which silently raises the host
+	// + offers connect) instead of a "Host service is not running" blocker label.
+	const localHostNotReady =
+		(draft.hostId ?? machineId) === machineId && !activeHostUrl;
 	const submitBlocker = useMemo<string | null>(() => {
 		if (!projectId) return "Select a project";
 		const selectedHostId = draft.hostId ?? machineId;
@@ -273,6 +276,10 @@ export function PromptGroup({
 		}
 		return null;
 	}, [projectId, draft.hostId, machineId, activeHostUrl, otherHosts]);
+	// Remote-offline (and other non-local) blockers keep their inline text label;
+	// the local host case is covered by `HostStatusInline` instead.
+	const inlineBlockerText =
+		submitBlocker && !localHostNotReady ? submitBlocker : null;
 
 	// ── Linked-context prefetch ──────────────────────────────────────
 	const promptContext = useNewWorkspacePromptContext({
@@ -294,27 +301,13 @@ export function PromptGroup({
 			handleGoToSetup();
 			return;
 		}
-		if (submitBlocker) {
-			if ((draft.hostId ?? machineId) === machineId && !activeHostUrl) {
-				showHostServiceUnavailableToast(hostService, {
-					action: "создать рабочее пространство",
-				});
-			} else {
-				toast.error(submitBlocker);
-			}
-			return;
-		}
+		// Pre-gated: the submit button is disabled while `submitBlocker` is set and
+		// the precondition is surfaced inline (host status for the local host, the
+		// blocker label otherwise). Enter / Cmd+Enter therefore no-op here instead
+		// of firing a postfacto toast.
+		if (submitBlocker) return;
 		void createWorkspace();
-	}, [
-		activeHostUrl,
-		createWorkspace,
-		draft.hostId,
-		handleGoToSetup,
-		hostService,
-		machineId,
-		needsSetup,
-		submitBlocker,
-	]);
+	}, [createWorkspace, handleGoToSetup, needsSetup, submitBlocker]);
 
 	useEffect(() => {
 		if (!isNewWorkspaceModalOpen) return;
@@ -538,7 +531,7 @@ export function PromptGroup({
 						/>
 						<PromptInputSubmit
 							className="size-[22px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
-							disabled={needsSetup}
+							disabled={needsSetup || submitBlocker !== null}
 							onClick={(e) => {
 								e.preventDefault();
 								handleSubmit();
@@ -603,6 +596,12 @@ export function PromptGroup({
 						>
 							Set up project…
 						</Button>
+					) : localHostNotReady ? (
+						<HostStatusInline />
+					) : inlineBlockerText ? (
+						<span className="select-text text-[11px] text-muted-foreground">
+							{inlineBlockerText}
+						</span>
 					) : (
 						<span className="text-[11px] text-muted-foreground/50">
 							{modKey}↵

@@ -5,6 +5,7 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 } from "react";
 import { env } from "renderer/env.renderer";
 import { authClient } from "renderer/lib/auth-client";
@@ -16,6 +17,11 @@ import {
 import type { HostServiceAvailabilityStatus } from "renderer/lib/host-service-unavailable";
 import { MOCK_ORG_ID } from "shared/constants";
 import { useCollections } from "../CollectionsProvider";
+import {
+	computeHostStartRetry,
+	type HostStartRetryState,
+	MAX_HOST_START_ATTEMPTS,
+} from "./computeHostStartRetry";
 
 interface LocalHostServiceContextValue {
 	machineId: string;
@@ -36,11 +42,24 @@ export function LocalHostServiceProvider({
 	const { data: session } = authClient.useSession();
 	const collections = useCollections();
 	const { mutate: startHostService } =
-		electronTrpc.hostServiceCoordinator.start.useMutation();
+		electronTrpc.hostServiceCoordinator.start.useMutation({
+			onError: (error) => {
+				// Don't swallow: a failed auto-start is the root cause behind the
+				// "host unavailable" toast users hit later. Surface it for diagnosis;
+				// the backoff retry below handles recovery.
+				console.error("[LocalHostService] startHostService failed", error);
+			},
+		});
 
 	const activeOrganizationId = env.SKIP_ENV_VALIDATION
 		? MOCK_ORG_ID
 		: (session?.session?.activeOrganizationId ?? null);
+
+	// The coordinator's `start` reads the auth token from the main process, which
+	// is only populated once AuthProvider has hydrated the session. Gate auto-start
+	// on a present session so we don't fire (and fail) before the token is written
+	// — the race that left a freshly-installed app stuck on "host stopped".
+	const hasSession = env.SKIP_ENV_VALIDATION ? true : session != null;
 
 	const { data: organizations } = useLiveQuery(
 		(q) => q.from({ organizations: collections.organizations }),
@@ -53,10 +72,11 @@ export function LocalHostServiceProvider({
 	);
 
 	useEffect(() => {
+		if (!hasSession) return;
 		for (const organizationId of organizationIds) {
 			startHostService({ organizationId });
 		}
-	}, [organizationIds, startHostService]);
+	}, [hasSession, organizationIds, startHostService]);
 
 	const { data: machineIdData } = electronTrpc.device.getMachineId.useQuery(
 		undefined,
@@ -84,6 +104,66 @@ export function LocalHostServiceProvider({
 			},
 		);
 
+	// Auto-retry the host start with exponential backoff while the active org's
+	// host stays down. A self-rescheduling timer drives re-evaluation so the
+	// backoff windows actually elapse — a status-derived effect alone wouldn't
+	// re-run while the status string stays a constant "stopped", capping recovery
+	// at a single attempt. Closes the "token written late after install" and
+	// "host crashed on first start" gaps without a postfacto toast. The loop stops
+	// once the host is ready or the attempt budget is spent; manual recovery then
+	// falls to HostStatusInline's connect.
+	const hostReady = activeConnection?.port != null;
+	const activeHostStatus: HostServiceAvailabilityStatus = hostReady
+		? "running"
+		: (processStatus?.status ?? "unknown");
+	const startRetryRef = useRef<HostStartRetryState>({
+		attempts: 0,
+		lastAttemptAt: null,
+	});
+	useEffect(() => {
+		if (!activeOrganizationId) return;
+		// Host is up — reset the budget so a future crash gets fresh retries.
+		if (hostReady) {
+			startRetryRef.current = { attempts: 0, lastAttemptAt: null };
+			return;
+		}
+
+		let cancelled = false;
+		let timer: ReturnType<typeof setTimeout> | null = null;
+
+		const evaluate = () => {
+			if (cancelled) return;
+			const decision = computeHostStartRetry({
+				canStart: hasSession,
+				hostReady,
+				status: activeHostStatus,
+				state: startRetryRef.current,
+				now: Date.now(),
+			});
+			startRetryRef.current = decision.nextState;
+			if (decision.shouldStart) {
+				startHostService({ organizationId: activeOrganizationId });
+			}
+			// Keep re-evaluating (so backoff windows elapse) until the budget is
+			// spent; a status change also re-runs the whole effect with fresh values.
+			if (hasSession && decision.nextState.attempts < MAX_HOST_START_ATTEMPTS) {
+				timer = setTimeout(evaluate, 1_000);
+			}
+		};
+		evaluate();
+
+		return () => {
+			cancelled = true;
+			if (timer) clearTimeout(timer);
+		};
+	}, [
+		activeOrganizationId,
+		hasSession,
+		hostReady,
+		activeHostStatus,
+		startHostService,
+	]);
+
 	const activeOrganizationName = useMemo(
 		() =>
 			organizations?.find(
@@ -95,10 +175,7 @@ export function LocalHostServiceProvider({
 	const value = useMemo<LocalHostServiceContextValue | null>(() => {
 		if (!machineIdData) return null;
 		const machineId = machineIdData.machineId;
-		const hostServiceStatus: HostServiceAvailabilityStatus =
-			activeConnection?.port != null
-				? "running"
-				: (processStatus?.status ?? "unknown");
+		const hostServiceStatus = activeHostStatus;
 
 		if (!activeConnection?.port) {
 			return {
@@ -127,7 +204,7 @@ export function LocalHostServiceProvider({
 		activeConnection,
 		activeOrganizationId,
 		activeOrganizationName,
-		processStatus?.status,
+		activeHostStatus,
 	]);
 
 	if (!value) return null;
