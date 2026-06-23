@@ -7,7 +7,8 @@ import type { OccurrenceItem } from "./MonthView";
 interface AgendaViewProps {
 	occurrences: OccurrenceItem[];
 	eventsById: Map<string, { id: string; title: string; allDay: boolean }>;
-	onSelectEvent: (eventId: string) => void;
+	/** `occurrenceStart` is the instance's RECURRENCE-ID (occ.start), threaded for "this event only" edits. */
+	onSelectEvent: (eventId: string, occurrenceStart: string) => void;
 }
 
 function formatDay(iso: string): string {
@@ -71,7 +72,9 @@ export function AgendaView({
 								>
 									<button
 										type="button"
-										onClick={() => onSelectEvent(occ.eventId)}
+										onClick={() =>
+											onSelectEvent(occ.eventId, occ.originalStart ?? occ.start)
+										}
 										className="min-w-0 flex-1 text-left"
 									>
 										<p className="truncate font-medium text-sm">

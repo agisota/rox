@@ -1,5 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { type ExpandableEvent, expandEvent, expandEvents } from "./occurrences";
+import {
+	applyOverride,
+	type EventOccurrence,
+	type ExpandableEvent,
+	expandEvent,
+	expandEvents,
+	type OccurrenceOverride,
+} from "./occurrences";
 
 function event(over: Partial<ExpandableEvent>): ExpandableEvent {
 	return {
@@ -9,6 +16,20 @@ function event(over: Partial<ExpandableEvent>): ExpandableEvent {
 		timezone: "UTC",
 		rrule: null,
 		exdates: [],
+		...over,
+	};
+}
+
+function override(over: Partial<OccurrenceOverride>): OccurrenceOverride {
+	return {
+		originalStart: new Date("2026-06-02T09:00:00.000Z"),
+		cancelled: false,
+		dtstart: null,
+		dtend: null,
+		title: null,
+		description: null,
+		location: null,
+		allDay: null,
 		...over,
 	};
 }
@@ -241,5 +262,222 @@ describe("expandEvents", () => {
 			new Date("2026-06-02T00:00:00.000Z"),
 		);
 		expect(out.occurrences.map((o) => o.eventId)).toEqual(["b", "a"]);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Per-occurrence overrides (RECURRENCE-ID) — TDD target for this feature.
+// ---------------------------------------------------------------------------
+
+describe("applyOverride (unit)", () => {
+	const occ = (start: string, end: string): EventOccurrence => ({
+		eventId: "e1",
+		start: new Date(start),
+		end: new Date(end),
+	});
+
+	it("returns the occurrence unchanged when no override matches", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		expect(applyOverride(o, undefined)).toBe(o);
+	});
+
+	it("drops (returns null) a cancelled override", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		expect(applyOverride(o, override({ cancelled: true }))).toBeNull();
+	});
+
+	it("moves both start and end when both are set, preserving originalStart", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		const patched = applyOverride(
+			o,
+			override({
+				dtstart: new Date("2026-06-02T14:00:00.000Z"),
+				dtend: new Date("2026-06-02T15:30:00.000Z"),
+			}),
+		);
+		expect(patched?.start.toISOString()).toBe("2026-06-02T14:00:00.000Z");
+		expect(patched?.end.toISOString()).toBe("2026-06-02T15:30:00.000Z");
+		expect(patched?.originalStart?.toISOString()).toBe(
+			"2026-06-02T09:00:00.000Z",
+		);
+		expect(patched?.overridden).toBe(true);
+	});
+
+	it("preserves the series duration when only the start moves", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		const patched = applyOverride(
+			o,
+			override({ dtstart: new Date("2026-06-02T14:00:00.000Z") }),
+		);
+		// 1h duration carried from the original occurrence.
+		expect(patched?.start.toISOString()).toBe("2026-06-02T14:00:00.000Z");
+		expect(patched?.end.toISOString()).toBe("2026-06-02T15:00:00.000Z");
+	});
+
+	it("preserves the series start when only the end moves", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		const patched = applyOverride(
+			o,
+			override({ dtend: new Date("2026-06-02T11:30:00.000Z") }),
+		);
+		expect(patched?.start.toISOString()).toBe("2026-06-02T09:00:00.000Z");
+		expect(patched?.end.toISOString()).toBe("2026-06-02T11:30:00.000Z");
+	});
+
+	it("flags overridden + keeps the time for a field-only override", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		const patched = applyOverride(o, override({ title: "Moved sync" }));
+		expect(patched?.start.toISOString()).toBe("2026-06-02T09:00:00.000Z");
+		expect(patched?.end.toISOString()).toBe("2026-06-02T10:00:00.000Z");
+		expect(patched?.overridden).toBe(true);
+	});
+});
+
+describe("expandEvent — overrides", () => {
+	const daily = () => event({ rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0" });
+	const RANGE_START = new Date("2026-06-01T00:00:00.000Z");
+	const RANGE_END = new Date("2026-06-04T00:00:00.000Z");
+
+	it("a cancelled override hides exactly that instance", () => {
+		const out = expandEvent(daily(), RANGE_START, RANGE_END, [
+			override({
+				originalStart: new Date("2026-06-02T09:00:00.000Z"),
+				cancelled: true,
+			}),
+		]);
+		expect(out.occurrences.map((o) => o.start.toISOString())).toEqual([
+			"2026-06-01T09:00:00.000Z",
+			"2026-06-03T09:00:00.000Z",
+		]);
+	});
+
+	it("a moved-time override shifts start+end, preserves originalStart, sets overridden", () => {
+		const out = expandEvent(daily(), RANGE_START, RANGE_END, [
+			override({
+				originalStart: new Date("2026-06-02T09:00:00.000Z"),
+				dtstart: new Date("2026-06-02T14:00:00.000Z"),
+				dtend: new Date("2026-06-02T15:00:00.000Z"),
+			}),
+		]);
+		// Chronological order is preserved after the move (still within the day).
+		const starts = out.occurrences.map((o) => o.start.toISOString());
+		expect(starts).toEqual([
+			"2026-06-01T09:00:00.000Z",
+			"2026-06-02T14:00:00.000Z",
+			"2026-06-03T09:00:00.000Z",
+		]);
+		const moved = out.occurrences.find(
+			(o) => o.start.toISOString() === "2026-06-02T14:00:00.000Z",
+		);
+		expect(moved?.end.toISOString()).toBe("2026-06-02T15:00:00.000Z");
+		expect(moved?.originalStart?.toISOString()).toBe(
+			"2026-06-02T09:00:00.000Z",
+		);
+		expect(moved?.overridden).toBe(true);
+	});
+
+	it("a field-only override keeps the time and sets overridden", () => {
+		const out = expandEvent(daily(), RANGE_START, RANGE_END, [
+			override({
+				originalStart: new Date("2026-06-02T09:00:00.000Z"),
+				title: "Renamed",
+				location: "Room 2",
+			}),
+		]);
+		const target = out.occurrences.find(
+			(o) => o.originalStart?.toISOString() === "2026-06-02T09:00:00.000Z",
+		);
+		expect(target?.start.toISOString()).toBe("2026-06-02T09:00:00.000Z");
+		expect(target?.overridden).toBe(true);
+	});
+
+	it("ignores an off-by-one-millisecond override (exact-ms keying, not day)", () => {
+		const out = expandEvent(daily(), RANGE_START, RANGE_END, [
+			override({
+				// 1ms after the real 09:00 instant — must NOT match.
+				originalStart: new Date("2026-06-02T09:00:00.001Z"),
+				cancelled: true,
+			}),
+		]);
+		// All three instances survive: the override key never matched.
+		expect(out.occurrences.map((o) => o.start.toISOString())).toEqual([
+			"2026-06-01T09:00:00.000Z",
+			"2026-06-02T09:00:00.000Z",
+			"2026-06-03T09:00:00.000Z",
+		]);
+	});
+
+	it("a one-off event (rrule null) ignores overrides", () => {
+		const out = expandEvent(
+			event({ rrule: null }),
+			new Date("2026-06-01T00:00:00.000Z"),
+			new Date("2026-06-02T00:00:00.000Z"),
+			[
+				override({
+					originalStart: new Date("2026-06-01T09:00:00.000Z"),
+					cancelled: true,
+				}),
+			],
+		);
+		// The single instance is still emitted despite the cancel override.
+		expect(out.occurrences).toHaveLength(1);
+		expect(out.occurrences[0]?.start.toISOString()).toBe(
+			"2026-06-01T09:00:00.000Z",
+		);
+	});
+
+	it("applies per-event overrides through expandEvents via overridesByEventId", () => {
+		const a = event({ id: "a", rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0" });
+		const b = event({
+			id: "b",
+			dtstart: new Date("2026-06-01T15:00:00.000Z"),
+			dtend: new Date("2026-06-01T16:00:00.000Z"),
+			rrule: "FREQ=DAILY;BYHOUR=15;BYMINUTE=0",
+		});
+		const out = expandEvents([a, b], RANGE_START, RANGE_END, {
+			get: (id: string) =>
+				id === "a"
+					? [
+							override({
+								originalStart: new Date("2026-06-02T09:00:00.000Z"),
+								cancelled: true,
+							}),
+						]
+					: undefined,
+			has: (id: string) => id === "a",
+		} as unknown as Map<string, OccurrenceOverride[]>);
+		// a's Jun 2 instance is cancelled; b is untouched.
+		const aStarts = out.occurrences
+			.filter((o) => o.eventId === "a")
+			.map((o) => o.start.toISOString());
+		expect(aStarts).toEqual([
+			"2026-06-01T09:00:00.000Z",
+			"2026-06-03T09:00:00.000Z",
+		]);
+		const bCount = out.occurrences.filter((o) => o.eventId === "b").length;
+		expect(bCount).toBe(3);
+	});
+
+	it("a non-cancelled override on an EXDATE slot does not resurrect the instance", () => {
+		// Jun 2 is EXDATE-skipped; an override row for that slot must stay hidden
+		// (the slot left the generated set, so there is nothing to patch).
+		const out = expandEvent(
+			event({
+				rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+				exdates: ["2026-06-02T09:00:00.000Z"],
+			}),
+			RANGE_START,
+			RANGE_END,
+			[
+				override({
+					originalStart: new Date("2026-06-02T09:00:00.000Z"),
+					title: "Should not appear",
+				}),
+			],
+		);
+		expect(out.occurrences.map((o) => o.start.toISOString())).toEqual([
+			"2026-06-01T09:00:00.000Z",
+			"2026-06-03T09:00:00.000Z",
+		]);
 	});
 });

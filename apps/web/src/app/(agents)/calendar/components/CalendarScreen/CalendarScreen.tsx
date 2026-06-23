@@ -141,7 +141,7 @@ export function CalendarScreen() {
 		setDialogOpen(true);
 	};
 
-	const openEdit = (eventId: string) => {
+	const openEdit = (eventId: string, occurrenceStart: string) => {
 		const event = occurrencesQuery.data?.events.find((e) => e.id === eventId);
 		if (!event) return;
 		setDialogValue({
@@ -155,6 +155,9 @@ export function CalendarScreen() {
 			allDay: event.allDay,
 			timezone: event.timezone,
 			rrule: event.rrule,
+			// Carry the clicked instance's RECURRENCE-ID so the dialog can offer
+			// "this event only" — only meaningful for a recurring series.
+			occurrenceStart: event.rrule ? new Date(occurrenceStart) : undefined,
 		});
 		setDialogOpen(true);
 	};

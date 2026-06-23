@@ -47,7 +47,16 @@ export interface EventDialogValue {
 	allDay: boolean;
 	timezone: string;
 	rrule: string | null;
+	/**
+	 * The clicked instance's RECURRENCE-ID (set only when editing a recurring
+	 * event). Threaded to `updateOccurrence`/`cancelOccurrence` for "this event
+	 * only" edits; undefined for one-off events or create mode.
+	 */
+	occurrenceStart?: Date;
 }
+
+/** Scope of a recurring-event edit: this single instance vs the whole series. */
+type EditScope = "this" | "all";
 
 type EventAttendee = RouterOutputs["calendar"]["getEvent"]["attendees"][number];
 type EventReminder = RouterOutputs["calendar"]["listReminders"][number];
@@ -186,12 +195,19 @@ export function EventDialog({
 		createEvent,
 		updateEvent,
 		deleteEvent,
+		updateOccurrence,
+		cancelOccurrence,
 		addAttendee,
 		removeAttendee,
 		rsvp,
 		invalidateEvent,
 	} = useCalendarActions();
 	const isEdit = Boolean(initial.eventId);
+	// "This event only" is offered when editing a recurring instance (we have its
+	// RECURRENCE-ID). Default to the whole series, matching common calendar UX.
+	const isRecurringInstance =
+		isEdit && Boolean(initial.rrule) && Boolean(initial.occurrenceStart);
+	const [editScope, setEditScope] = useState<EditScope>("all");
 
 	const [calendarId, setCalendarId] = useState(initial.calendarId);
 	const [title, setTitle] = useState(initial.title);
@@ -221,6 +237,7 @@ export function EventDialog({
 		setCustomRrule(initial.rrule ?? "");
 		setAttendeeEmail("");
 		setStagedAttendees([]);
+		setEditScope("all");
 	}, [open, initial]);
 
 	/** Stage an email or @handle locally to persist alongside a brand-new event. */
@@ -260,6 +277,22 @@ export function EventDialog({
 
 	const handleDelete = () => {
 		if (!initial.eventId) return;
+		// Recurring + "this event only": cancel just this instance (reversible).
+		if (
+			isRecurringInstance &&
+			editScope === "this" &&
+			initial.occurrenceStart
+		) {
+			if (!window.confirm("Удалить только это событие из серии?")) return;
+			cancelOccurrence.mutate(
+				{
+					eventId: initial.eventId,
+					originalStart: initial.occurrenceStart,
+				},
+				{ onSuccess: () => onOpenChange(false) },
+			);
+			return;
+		}
 		if (!window.confirm("Удалить это событие? Действие необратимо.")) return;
 		deleteEvent.mutate(
 			{ eventId: initial.eventId },
@@ -274,6 +307,28 @@ export function EventDialog({
 		const rrule = presetToRrule(preset, dtstart, customRrule);
 
 		if (isEdit && initial.eventId) {
+			// Recurring + "this event only": patch just this instance via an
+			// override (RECURRENCE-ID). No rrule/attendees — the series is untouched.
+			if (
+				isRecurringInstance &&
+				editScope === "this" &&
+				initial.occurrenceStart
+			) {
+				updateOccurrence.mutate(
+					{
+						eventId: initial.eventId,
+						originalStart: initial.occurrenceStart,
+						title: title.trim(),
+						description: description.trim() || null,
+						location: location.trim() || null,
+						dtstart,
+						dtend,
+						allDay,
+					},
+					{ onSuccess: () => onOpenChange(false) },
+				);
+				return;
+			}
 			updateEvent.mutate(
 				{
 					eventId: initial.eventId,
@@ -306,8 +361,11 @@ export function EventDialog({
 		);
 	};
 
-	const saving = createEvent.isPending || updateEvent.isPending;
-	const deleting = deleteEvent.isPending;
+	const saving =
+		createEvent.isPending ||
+		updateEvent.isPending ||
+		updateOccurrence.isPending;
+	const deleting = deleteEvent.isPending || cancelOccurrence.isPending;
 	const attendeeBusy = addAttendee.isPending || removeAttendee.isPending;
 
 	return (
@@ -407,6 +465,30 @@ export function EventDialog({
 							/>
 						)}
 					</div>
+
+					{isRecurringInstance && (
+						<div className="space-y-1.5">
+							<Label>Область изменений</Label>
+							<Select
+								value={editScope}
+								onValueChange={(v) => setEditScope(v as EditScope)}
+							>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="this">Только это событие</SelectItem>
+									<SelectItem value="all">Вся серия</SelectItem>
+								</SelectContent>
+							</Select>
+							{editScope === "this" && (
+								<p className="text-muted-foreground text-xs">
+									Повтор и участники относятся ко всей серии и здесь не
+									меняются.
+								</p>
+							)}
+						</div>
+					)}
 
 					<div className="space-y-1.5">
 						<Label htmlFor="cal-event-location">Место</Label>

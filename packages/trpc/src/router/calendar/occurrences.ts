@@ -30,6 +30,72 @@ export interface EventOccurrence {
 	start: Date;
 	/** Occurrence end instant (real UTC), preserving the event's duration. */
 	end: Date;
+	/**
+	 * The real-UTC instant the expander emitted for this instance BEFORE any
+	 * override (the RFC 5545 RECURRENCE-ID). Present on every recurring instance;
+	 * undefined for a one-off event. This is the key a per-occurrence override is
+	 * stored under, so the UI must thread it back to `updateOccurrence`/
+	 * `cancelOccurrence` rather than recomputing a (possibly DST-skewed) time.
+	 */
+	originalStart?: Date;
+	/** True when a per-occurrence override patched this instance's fields. */
+	overridden?: boolean;
+}
+
+/**
+ * A per-occurrence override (RECURRENCE-ID) resolved for the expander. Keyed by
+ * {@link originalStart} (the exact instant the rule emits before the override).
+ * A `cancelled` override drops the instance; otherwise the non-null fields patch
+ * it (a moved `dtstart`/`dtend` preserves the series duration if only one side
+ * moves). NULL means inherit the series value.
+ */
+export interface OccurrenceOverride {
+	originalStart: Date;
+	cancelled: boolean;
+	dtstart: Date | null;
+	dtend: Date | null;
+	title: string | null;
+	description: string | null;
+	location: string | null;
+	allDay: boolean | null;
+}
+
+/**
+ * Apply a per-occurrence override to an expanded instance.
+ *   - no override → the instance is returned unchanged,
+ *   - a cancelled override → `null` (the caller drops it),
+ *   - a modified override → start/end patched (preserving the original duration
+ *     when only one side moves), `originalStart` preserved, `overridden` set.
+ *
+ * Field patches (title/description/location/allDay) do not change the timeline
+ * here — the router surfaces them by reading the override row alongside the
+ * series event — but `overridden` is flagged so a consumer can distinguish a
+ * patched instance from a plain one.
+ */
+export function applyOverride(
+	occ: EventOccurrence,
+	override?: OccurrenceOverride,
+): EventOccurrence | null {
+	if (!override) return occ;
+	if (override.cancelled) return null;
+
+	const durationMs = occ.end.getTime() - occ.start.getTime();
+	// If only one side of the move is set, carry the original duration from the
+	// other so a half-set move can't invert or collapse the instance.
+	const start = override.dtstart ?? occ.start;
+	const end =
+		override.dtend ??
+		(override.dtstart
+			? new Date(override.dtstart.getTime() + durationMs)
+			: occ.end);
+
+	return {
+		eventId: occ.eventId,
+		start,
+		end,
+		originalStart: occ.originalStart ?? occ.start,
+		overridden: true,
+	};
 }
 
 export interface ExpansionResult {
@@ -88,6 +154,7 @@ export function expandEvent(
 	event: ExpandableEvent,
 	rangeStart: Date,
 	rangeEnd: Date,
+	overrides?: OccurrenceOverride[],
 ): ExpansionResult {
 	const rawDurationMs = event.dtend.getTime() - event.dtstart.getTime();
 	// C2: an all-day event whose dtend == dtstart (zero duration) must still
@@ -110,12 +177,24 @@ export function expandEvent(
 		end: new Date(start.getTime() + durationMs),
 	});
 
-	// One-off event: a single instance if it overlaps the window.
+	// One-off event: a single instance if it overlaps the window. Overrides are a
+	// RECURRENCE-ID mechanism and apply only to recurring events; a one-off
+	// ignores them entirely.
 	if (!event.rrule) {
 		return {
 			occurrences: overlaps(event.dtstart) ? [toOccurrence(event.dtstart)] : [],
 			truncated: false,
 		};
+	}
+
+	// Index overrides by their `original_start` milliseconds — the exact instant
+	// the rule emits before any override (DST-correct). Exact-ms keying (never a
+	// day key) so an off-by-one or recomputed client time silently no-ops.
+	const overrideByMs = new Map<number, OccurrenceOverride>();
+	if (overrides) {
+		for (const ov of overrides) {
+			overrideByMs.set(ov.originalStart.getTime(), ov);
+		}
 	}
 
 	const isExcluded = buildExdateMatcher(event.exdates);
@@ -156,7 +235,13 @@ export function expandEvent(
 		}
 		cursor = next;
 		if (isExcluded(next)) continue; // EXDATE (exact instant or DATE-only day)
-		if (overlaps(next)) out.push(toOccurrence(next));
+		if (!overlaps(next)) continue;
+
+		// Stamp the RECURRENCE-ID, then apply any per-occurrence override: a
+		// cancelled override drops the instance, a modified one patches it.
+		const occ: EventOccurrence = { ...toOccurrence(next), originalStart: next };
+		const patched = applyOverride(occ, overrideByMs.get(next.getTime()));
+		if (patched) out.push(patched);
 	}
 
 	// Hit the cap without exhausting the rule or leaving the window → the window
@@ -175,11 +260,17 @@ export function expandEvents(
 	events: ExpandableEvent[],
 	rangeStart: Date,
 	rangeEnd: Date,
+	overridesByEventId?: Map<string, OccurrenceOverride[]>,
 ): ExpansionResult {
 	const all: EventOccurrence[] = [];
 	let truncated = false;
 	for (const e of events) {
-		const result = expandEvent(e, rangeStart, rangeEnd);
+		const result = expandEvent(
+			e,
+			rangeStart,
+			rangeEnd,
+			overridesByEventId?.get(e.id),
+		);
 		all.push(...result.occurrences);
 		if (result.truncated) truncated = true;
 	}
