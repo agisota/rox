@@ -78,9 +78,13 @@ mock.module("main/lib/local-db", () => ({
 	},
 }));
 
-mock.module("@rox/local-db", () => ({
-	settings: { id: "id" },
-}));
+// NOTE: do NOT mock "@rox/local-db" here. The global test-setup.ts preload
+// already registers a COMPLETE @rox/local-db mock (settings + every table).
+// Overriding it with a partial { settings } object leaks across files (bun's
+// shared module registry) and makes a later file importing e.g. { workspaces }
+// throw "Export named 'workspaces' not found". push-to-talk only needs the
+// `settings` table handle, which the global mock provides; our own
+// "main/lib/local-db" mock below drives the actual query assertions.
 
 mock.module("lib/trpc/routers/settings/experimental-feature-state", () => ({
 	isExperimentalFeatureUsable: () => featureUsable,
