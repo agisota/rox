@@ -98,8 +98,42 @@ describe("S3BaseProvider", () => {
 			const input = (call?.command as GetObjectCommand).input;
 			expect(input.Key).toBe("docs/report.pdf");
 			expect(input.ResponseContentDisposition).toBe(
-				'attachment; filename="report.pdf"',
+				`attachment; filename="report.pdf"; filename*=UTF-8''report.pdf`,
 			);
+		});
+
+		test("RFC 5987-encodes a unicode download filename", async () => {
+			const { provider, calls } = makeProvider();
+			await provider.presignGet({
+				key: "docs/x",
+				downloadFilename: "отчёт.pdf",
+			});
+			const input = (calls[0]?.command as GetObjectCommand).input;
+			// ASCII fallback folds non-ASCII to `_`; the canonical token carries the
+			// percent-encoded UTF-8 bytes.
+			expect(input.ResponseContentDisposition).toBe(
+				`attachment; filename="_____.pdf"; filename*=UTF-8''%D0%BE%D1%82%D1%87%D1%91%D1%82.pdf`,
+			);
+		});
+
+		test("neutralizes a header-injection attempt in the filename", async () => {
+			const { provider, calls } = makeProvider();
+			await provider.presignGet({
+				key: "docs/x",
+				// quote + CRLF + extra directive would, with raw interpolation, break
+				// out of the quoted-string and inject a second header line.
+				downloadFilename: 'evil".pdf\r\nSet-Cookie: x=1',
+			});
+			const value = (calls[0]?.command as GetObjectCommand).input
+				.ResponseContentDisposition as string;
+			// No raw CR/LF or unescaped double-quote survives in the ASCII fallback.
+			expect(value).not.toContain("\r");
+			expect(value).not.toContain("\n");
+			expect(value).toContain('filename="evil.pdf__Set-Cookie: x=1"');
+			// The canonical token percent-encodes the quote and CRLF.
+			expect(value).toContain("filename*=UTF-8''");
+			expect(value).toContain("%22");
+			expect(value).toContain("%0D%0A");
 		});
 	});
 

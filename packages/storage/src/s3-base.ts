@@ -28,6 +28,33 @@ import {
  */
 export type PresignerFn = typeof getSignedUrl;
 
+/**
+ * Build a safe `Content-Disposition` value for a download filename.
+ *
+ * A raw `filename="…"` interpolation lets an attacker-controlled name break out
+ * of the quoted string (via `"`, CR/LF or `;`) and inject extra response
+ * headers/directives. We emit two tokens per RFC 6266/5987:
+ *   - `filename="<ascii>"` — a quote/control-stripped ASCII fallback. We strip
+ *     `"`/`\\` first, then fold every non-printable-ASCII byte (incl. CR/LF and
+ *     other controls) to `_`, so nothing can inject a new header or directive.
+ *   - `filename*=UTF-8''<pct-encoded>` — the canonical, percent-encoded value
+ *     that modern browsers prefer, preserving Unicode names exactly.
+ */
+function contentDispositionAttachment(filename: string): string {
+	const asciiFallback = filename
+		.replace(/["\\]/g, "")
+		.replace(/[^\x20-\x7e]/g, "_");
+	const encoded = encodeURIComponent(filename)
+		// RFC 5987 reserves a few attr-chars that encodeURIComponent leaves raw;
+		// percent-encode them too. Everything else (CR/LF, `"`, `;`) is already
+		// escaped by encodeURIComponent.
+		.replace(
+			/['()*]/g,
+			(c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+		);
+	return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
+}
+
 /** Construction options shared by every S3-compatible provider. */
 export interface S3BaseProviderOptions {
 	/** Pre-built S3 client. Injectable so tests can mock `send`. */
@@ -96,7 +123,9 @@ export class S3BaseProvider implements StorageDriver {
 			Key: params.key,
 			...(params.downloadFilename
 				? {
-						ResponseContentDisposition: `attachment; filename="${params.downloadFilename}"`,
+						ResponseContentDisposition: contentDispositionAttachment(
+							params.downloadFilename,
+						),
 					}
 				: {}),
 		});

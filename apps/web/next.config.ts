@@ -139,6 +139,29 @@ const config: NextConfig = {
 				source: "/(.*)",
 				headers: securityHeaders,
 			},
+			{
+				// Public share snapshots (`/s/*` chat/artifact/note, `/d/*` Drive)
+				// must never be cached by browsers or shared/CDN caches: once a share
+				// is revoked the page returns notFound(), but a cached copy would keep
+				// leaking the content. `no-store` guarantees every view re-resolves the
+				// share against the live DB (which filters out `revokedAt`).
+				source: "/s/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "no-store, max-age=0, must-revalidate",
+					},
+				],
+			},
+			{
+				source: "/d/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "no-store, max-age=0, must-revalidate",
+					},
+				],
+			},
 		];
 	},
 
