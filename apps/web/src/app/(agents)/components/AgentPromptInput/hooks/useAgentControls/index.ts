@@ -1,3 +1,7 @@
+export {
+	type AgentLaunchInput,
+	buildAgentLaunchInput,
+} from "./buildAgentLaunchInput";
 export type {
 	AgentControlsData,
 	AgentSourceOption,

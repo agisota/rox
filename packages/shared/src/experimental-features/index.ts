@@ -211,7 +211,24 @@ export const EXPERIMENTAL_FEATURES = [
 			longDescription:
 				"Adds a controlled marketplace entry point for source packs, connectors, and reusable agent inputs.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
+			// "ready" is justified by the MANAGEMENT surface, which is real and
+			// usable today: org-admin-gated create/edit + a management list
+			// (setStatus lifecycle) over the `agentSource` CRUD, with HTTPS-only
+			// endpoints and a credential-free projection (`encryptedConfig` never
+			// leaves the server). The org context is the agent-native provider's
+			// configured signal (see `resolveSourcesGate`); `desktop-runtime` is a
+			// `runtime` dep and never gates this web surface.
+			//
+			// Run-attach is WIRED AT THE RUNTIME but not yet driven by a live
+			// caller: the cloud proxy (`createProxyMcpServer`) consumes a per-run
+			// `sourceId` via `AgentSourcePool.connectSelected` to attach exactly the
+			// selected source instead of the org-wide set — consumed only WHEN a
+			// caller supplies `sourceId` on the agent's MCP request. The web prompt
+			// composer that owns `selectedSource` is preview-only and the seeded MCP
+			// URL is static, so no production run emits `sourceId` yet. This flag does
+			// NOT claim live per-run source scoping; it claims a live management
+			// surface plus runtime-ready attach.
+			implementationStatus: "ready",
 			dependencies: [AGENT_NATIVE_PROVIDER, LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Agent launcher", "Prompt composer", "Source picker"],
 		},

@@ -24,6 +24,10 @@
 			"types": "./src/lib/crypto.ts",
 			"default": "./src/lib/crypto.ts"
 		},
+		"./agent-source-schema": {
+			"types": "./src/router/agent-source/schema.ts",
+			"default": "./src/router/agent-source/schema.ts"
+		},
 		"./integration-secret": {
 			"types": "./src/lib/integrations/secret-store.ts",
 			"default": "./src/lib/integrations/secret-store.ts"
