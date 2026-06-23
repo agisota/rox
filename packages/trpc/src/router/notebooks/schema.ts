@@ -45,6 +45,18 @@ export const listNotesSchema = z.object({
 	tags: z.array(tagSchema).max(20).optional(),
 });
 
+// Full-text search over the caller's notes (D7 FTS). Mirrors listNotes' optional
+// notebookId/tags filters but requires a non-empty query. Capped at 50 ranked
+// results (the snippet/headline is the expensive part — keep the page small).
+export const searchNotesSchema = z.object({
+	query: z.string().trim().min(1).max(200),
+	notebookId: z.string().uuid().optional(),
+	tags: z.array(tagSchema).max(20).optional(),
+	limit: z.number().int().min(1).max(50).default(20),
+});
+
+export type SearchNotesInput = z.infer<typeof searchNotesSchema>;
+
 export const noteIdSchema = z.object({
 	noteId: z.string().uuid(),
 });

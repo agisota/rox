@@ -1,3 +1,4 @@
+import { splitHighlightedSnippet } from "@rox/shared/knowledge/notes-search";
 import { Button } from "@rox/ui/button";
 import {
 	Dialog,
@@ -30,13 +31,44 @@ import {
 	FolderInput,
 	Notebook,
 	Plus,
+	Search,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
+import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
+
+/**
+ * Render a `ts_headline` snippet with matched terms emphasized, splitting on the
+ * safe sentinels. Text is ESCAPED React children (never `dangerouslySetInnerHTML`)
+ * because the snippet is raw note markdown.
+ */
+function SnippetText({ snippet }: { snippet: string }) {
+	const segments = splitHighlightedSnippet(snippet);
+	if (segments.length === 0) return null;
+	return (
+		<span className="line-clamp-2 cursor-text select-text text-muted-foreground text-xs">
+			{segments.map((seg, i) => {
+				// Stable key: snippet segments are deterministic per render, so position
+				// + content uniquely identifies a run.
+				const key = `${i}:${seg.text}`;
+				return seg.highlight ? (
+					<mark
+						key={key}
+						className="bg-transparent font-medium text-foreground"
+					>
+						{seg.text}
+					</mark>
+				) : (
+					<span key={key}>{seg.text}</span>
+				);
+			})}
+		</span>
+	);
+}
 
 /**
  * Notes (Suite P2 surfaced in P0): a three-pane reader — notebooks on the left,
@@ -81,6 +113,21 @@ export function NotesView() {
 		enabled: activeNotebookId !== null,
 	});
 	const notes = notesQuery.data ?? [];
+
+	// Server full-text search (D7 FTS), scoped to the active notebook to match the
+	// list. Debounced so each keystroke doesn't fire a round-trip; cache-first so
+	// prior results stay visible while a new query loads.
+	const [searchInput, setSearchInput] = useState("");
+	const debouncedQuery = useDebouncedValue(searchInput.trim(), 280);
+	const isSearching = debouncedQuery.length > 0;
+	const searchQuery = useQuery({
+		...trpc.notes.searchNotes.queryOptions({
+			query: debouncedQuery,
+			notebookId: activeNotebookId ?? undefined,
+		}),
+		enabled: isSearching && activeNotebookId !== null,
+	});
+	const searchResults = searchQuery.data ?? [];
 
 	const noteQuery = useQuery({
 		...trpc.notes.getNote.queryOptions({ noteId: activeNoteId ?? "" }),
@@ -288,111 +335,164 @@ export function NotesView() {
 								<Plus className="size-3.5" />
 							</Button>
 						</div>
+						<div className="border-border border-b p-1.5">
+							<div className="relative">
+								<Search className="-translate-y-1/2 absolute top-1/2 left-2 size-3.5 text-muted-foreground" />
+								<Input
+									value={searchInput}
+									onChange={(e) => setSearchInput(e.target.value)}
+									placeholder="Поиск по заметкам"
+									aria-label="Поиск по заметкам"
+									disabled={!activeNotebookId}
+									className="h-7 pl-7 text-sm"
+								/>
+							</div>
+						</div>
 						<div className="flex-1 overflow-y-auto">
-							{notesQuery.isError && (
-								<p className="cursor-text select-text px-3 py-3 text-destructive text-xs">
-									{notesQuery.error.message}
-								</p>
-							)}
-							{notes.length === 0 && notesQuery.isSuccess && (
-								<p className="px-3 py-4 text-center text-muted-foreground text-xs">
-									Нет заметок
-								</p>
-							)}
-							{notes.map((note, index) => {
-								const documentId = note.knowledgeDocumentId;
-								const canManage = documentId != null;
-								return (
-									<div
-										key={note.id}
-										className={cn(
-											"group relative flex items-center border-border border-b last:border-b-0 transition-colors hover:bg-accent/40",
-											note.id === activeNoteId && "bg-accent",
-										)}
-									>
+							{isSearching ? (
+								// Server FTS results. Cache-first (AGENTS.md rule 9): keep prior
+								// results while loading; never blank to a spinner.
+								searchQuery.isError ? (
+									<p className="cursor-text select-text px-3 py-3 text-destructive text-xs">
+										{searchQuery.error.message}
+									</p>
+								) : !searchQuery.data && searchQuery.isLoading ? (
+									<p className="px-3 py-4 text-center text-muted-foreground text-xs">
+										Поиск…
+									</p>
+								) : searchResults.length === 0 ? (
+									<p className="px-3 py-4 text-center text-muted-foreground text-xs">
+										Ничего не найдено
+									</p>
+								) : (
+									searchResults.map((note) => (
 										<button
+											key={note.id}
 											type="button"
 											onClick={() => setActiveNoteId(note.id)}
-											className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm"
+											className={cn(
+												"flex w-full flex-col gap-0.5 border-border border-b px-3 py-2 text-left last:border-b-0 transition-colors hover:bg-accent/40",
+												note.id === activeNoteId && "bg-accent",
+											)}
 										>
-											<FileText className="size-3.5 shrink-0 text-muted-foreground" />
-											<span className="truncate">{note.title}</span>
+											<span className="flex items-center gap-2 truncate text-sm">
+												<FileText className="size-3.5 shrink-0 text-muted-foreground" />
+												<span className="truncate">{note.title}</span>
+											</span>
+											{note.snippet ? (
+												<SnippetText snippet={note.snippet} />
+											) : null}
 										</button>
-										<div className="flex shrink-0 items-center pr-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												className="size-6 text-muted-foreground disabled:opacity-30"
-												aria-label="Выше"
-												disabled={!canManage || index === 0}
-												onClick={() => handleReorderNote(index, -1)}
+									))
+								)
+							) : (
+								<>
+									{notesQuery.isError && (
+										<p className="cursor-text select-text px-3 py-3 text-destructive text-xs">
+											{notesQuery.error.message}
+										</p>
+									)}
+									{notes.length === 0 && notesQuery.isSuccess && (
+										<p className="px-3 py-4 text-center text-muted-foreground text-xs">
+											Нет заметок
+										</p>
+									)}
+									{notes.map((note, index) => {
+										const documentId = note.knowledgeDocumentId;
+										const canManage = documentId != null;
+										return (
+											<div
+												key={note.id}
+												className={cn(
+													"group relative flex items-center border-border border-b last:border-b-0 transition-colors hover:bg-accent/40",
+													note.id === activeNoteId && "bg-accent",
+												)}
 											>
-												<ChevronUp className="size-3.5" />
-											</Button>
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												className="size-6 text-muted-foreground disabled:opacity-30"
-												aria-label="Ниже"
-												disabled={!canManage || index === notes.length - 1}
-												onClick={() => handleReorderNote(index, 1)}
-											>
-												<ChevronDown className="size-3.5" />
-											</Button>
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
+												<button
+													type="button"
+													onClick={() => setActiveNoteId(note.id)}
+													className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm"
+												>
+													<FileText className="size-3.5 shrink-0 text-muted-foreground" />
+													<span className="truncate">{note.title}</span>
+												</button>
+												<div className="flex shrink-0 items-center pr-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
 													<Button
 														type="button"
 														variant="ghost"
 														size="icon"
 														className="size-6 text-muted-foreground disabled:opacity-30"
-														aria-label="Переместить в блокнот"
-														disabled={!canManage}
+														aria-label="Выше"
+														disabled={!canManage || index === 0}
+														onClick={() => handleReorderNote(index, -1)}
 													>
-														<FolderInput className="size-3.5" />
+														<ChevronUp className="size-3.5" />
 													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end">
-													<DropdownMenuLabel>
-														Переместить в блокнот
-													</DropdownMenuLabel>
-													{otherNotebooks.length === 0 ? (
-														<DropdownMenuItem disabled>
-															Других блокнотов нет
-														</DropdownMenuItem>
-													) : (
-														otherNotebooks.map((nb) => (
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="size-6 text-muted-foreground disabled:opacity-30"
+														aria-label="Ниже"
+														disabled={!canManage || index === notes.length - 1}
+														onClick={() => handleReorderNote(index, 1)}
+													>
+														<ChevronDown className="size-3.5" />
+													</Button>
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																type="button"
+																variant="ghost"
+																size="icon"
+																className="size-6 text-muted-foreground disabled:opacity-30"
+																aria-label="Переместить в блокнот"
+																disabled={!canManage}
+															>
+																<FolderInput className="size-3.5" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuLabel>
+																Переместить в блокнот
+															</DropdownMenuLabel>
+															{otherNotebooks.length === 0 ? (
+																<DropdownMenuItem disabled>
+																	Других блокнотов нет
+																</DropdownMenuItem>
+															) : (
+																otherNotebooks.map((nb) => (
+																	<DropdownMenuItem
+																		key={nb.id}
+																		onSelect={() =>
+																			documentId &&
+																			handleMoveNote(documentId, nb.id)
+																		}
+																	>
+																		<span className="truncate">
+																			{nb.icon ? `${nb.icon} ` : ""}
+																			{nb.name}
+																		</span>
+																	</DropdownMenuItem>
+																))
+															)}
+															<DropdownMenuSeparator />
 															<DropdownMenuItem
-																key={nb.id}
+																variant="destructive"
 																onSelect={() =>
-																	documentId &&
-																	handleMoveNote(documentId, nb.id)
+																	documentId && handleRemoveNote(documentId)
 																}
 															>
-																<span className="truncate">
-																	{nb.icon ? `${nb.icon} ` : ""}
-																	{nb.name}
-																</span>
+																Убрать из этого блокнота
 															</DropdownMenuItem>
-														))
-													)}
-													<DropdownMenuSeparator />
-													<DropdownMenuItem
-														variant="destructive"
-														onSelect={() =>
-															documentId && handleRemoveNote(documentId)
-														}
-													>
-														Убрать из этого блокнота
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
-										</div>
-									</div>
-								);
-							})}
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
+											</div>
+										);
+									})}
+								</>
+							)}
 						</div>
 					</div>
 

@@ -15,6 +15,8 @@
  * file then run `bunx drizzle-kit generate --name="..."` (see AGENTS.md).
  */
 
+import type { AnyColumn, SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
 	boolean,
 	index,
@@ -56,6 +58,38 @@ export type KnowledgeSourceRef = {
 	importBatchId?: string;
 	filePath?: string;
 } & Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
+// Full-text search vector (D7 notes FTS)
+// ---------------------------------------------------------------------------
+
+/**
+ * Postgres text-search configuration for note FTS. A STRING LITERAL (never a
+ * column) so the derived `to_tsvector(...)` expression is IMMUTABLE and therefore
+ * indexable — `to_tsvector('simple', text)` is immutable whereas
+ * `to_tsvector(<column>, text)` is not and the CREATE INDEX would fail.
+ *
+ * `'simple'` (no stemming, language-agnostic) is the safe default for the app's
+ * mixed Russian/English note content; `'english'`/`'russian'` would bias one
+ * language and mangle the other.
+ */
+export const NOTES_FTS_CONFIG = "simple" as const;
+
+/**
+ * The shared `to_tsvector(...)` document vector over a doc's title + markdown.
+ *
+ * SINGLE SOURCE OF TRUTH for the FTS expression: the GIN index below and the
+ * runtime query (packages/trpc .../notebooks/search-notes.ts re-exports this)
+ * both call this helper, so the indexed expression and the query expression can
+ * never drift. Any drift would make Postgres silently fall back to a seq scan.
+ * Markdown is nullable; `coalesce(..,'')` keeps the expression total.
+ */
+export function notesSearchVectorSql(columns: {
+	titleCol: AnyColumn;
+	markdownCol: AnyColumn;
+}): SQL {
+	return sql`to_tsvector('${sql.raw(NOTES_FTS_CONFIG)}', coalesce(${columns.titleCol}, '') || ' ' || coalesce(${columns.markdownCol}, ''))`;
+}
 
 // ---------------------------------------------------------------------------
 // knowledge_documents — MDX notebook documents
@@ -103,6 +137,14 @@ export const knowledgeDocuments = pgTable(
 		uniqueIndex("knowledge_documents_org_slug_unique").on(
 			t.organizationId,
 			t.slug,
+		),
+		// Expression GIN index backing the notes FTS (D7). Built from the SAME
+		// `notesSearchVectorSql` the query uses, so the indexed expression and the
+		// query expression cannot drift (a drift would force a seq scan). Mirrors the
+		// expression-GIN precedent at auth.ts (`apikeys_metadata_trgm_idx`).
+		index("knowledge_documents_fts_idx").using(
+			"gin",
+			notesSearchVectorSql({ titleCol: t.title, markdownCol: t.markdown }),
 		),
 	],
 );

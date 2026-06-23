@@ -1,0 +1,1 @@
+CREATE INDEX "knowledge_documents_fts_idx" ON "knowledge_documents" USING gin (to_tsvector('simple', coalesce("title", '') || ' ' || coalesce("markdown", '')));
