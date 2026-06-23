@@ -1,6 +1,11 @@
 import { randomBytes } from "node:crypto";
-import { db } from "@rox/db/client";
-import { noteNotebooks, noteNotes } from "@rox/db/schema";
+import { db, dbWs } from "@rox/db/client";
+import {
+	knowledgeDocuments,
+	noteBookItems,
+	noteNotebooks,
+	noteNotes,
+} from "@rox/db/schema";
 import { assertMdxSafe, MdxSecurityError } from "@rox/shared/knowledge";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { Ratelimit } from "@upstash/ratelimit";
@@ -9,6 +14,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { env } from "../../env";
 import { protectedProcedure, publicProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
+import { createNoteDocument, updateNoteDocument } from "./notes-storage";
 import {
 	createNotebookSchema,
 	createNoteSchema,
@@ -170,6 +176,47 @@ async function getNoteForUser(
 	return row;
 }
 
+/**
+ * Resolve the authoritative content (title/markdown/tags) for a note row.
+ *
+ * Since N2 the system of record is the backing `knowledge_documents` row, so
+ * doc-linked notes read their content from there. Legacy / not-yet-backfilled
+ * notes (null `knowledge_document_id`, or a doc that was detached) transparently
+ * fall back to the inline `note_notes` columns, keeping every existing note
+ * readable through the unchanged public API.
+ */
+async function resolveNoteContent(
+	note: typeof noteNotes.$inferSelect,
+): Promise<{
+	title: string;
+	markdown: string;
+	tags: string[];
+}> {
+	if (note.knowledgeDocumentId) {
+		const [doc] = await db
+			.select({
+				title: knowledgeDocuments.title,
+				markdown: knowledgeDocuments.markdown,
+				tags: knowledgeDocuments.tags,
+			})
+			.from(knowledgeDocuments)
+			.where(eq(knowledgeDocuments.id, note.knowledgeDocumentId))
+			.limit(1);
+		if (doc) {
+			return {
+				title: doc.title,
+				markdown: doc.markdown ?? "",
+				tags: (doc.tags ?? []) as string[],
+			};
+		}
+	}
+	return {
+		title: note.title,
+		markdown: note.markdown ?? "",
+		tags: (note.tags ?? []) as string[],
+	};
+}
+
 export const notebooksRouter = {
 	// --- notebooks -----------------------------------------------------------
 
@@ -312,8 +359,12 @@ export const notebooksRouter = {
 				ctx.session.user.id,
 				input.noteId,
 			);
+			// Content reads from the backing doc (system of record), so an edit made
+			// through the knowledge router is reflected here too.
+			const content = await resolveNoteContent(note);
 			return {
 				...note,
+				...content,
 				publicUrl: note.publicSlug ? getPublicNoteUrl(note.publicSlug) : null,
 			};
 		}),
@@ -329,62 +380,136 @@ export const notebooksRouter = {
 				ctx.session.user.id,
 				input.notebookId,
 			);
-			const [row] = await db
-				.insert(noteNotes)
-				.values({
-					notebookId: notebook.id,
+
+			// N2: a note's content is a knowledge_documents row (type='note'). The
+			// backing doc, the note INDEX row, and the notebook membership edge all
+			// commit atomically so a partial failure never leaves a dangling note.
+			const markdown = input.markdown ?? "";
+			const tags = input.tags ?? [];
+			return dbWs.transaction(async (tx) => {
+				const doc = await createNoteDocument(tx, {
 					organizationId: notebook.organizationId,
-					ownerUserId: notebook.ownerUserId,
+					createdByUserId: notebook.ownerUserId,
 					title: input.title,
-					markdown: input.markdown ?? "",
-					tags: input.tags ?? [],
-					knowledgeDocumentId: input.knowledgeDocumentId ?? null,
-				})
-				.returning();
-			return row;
+					markdown,
+					tags,
+					v2ProjectId: notebook.v2ProjectId,
+				});
+				const [row] = await tx
+					.insert(noteNotes)
+					.values({
+						notebookId: notebook.id,
+						organizationId: notebook.organizationId,
+						ownerUserId: notebook.ownerUserId,
+						title: input.title,
+						markdown,
+						tags,
+						// Always carry the backing doc; an explicit input id (used to
+						// adopt an existing doc) takes precedence over the freshly minted one.
+						knowledgeDocumentId: input.knowledgeDocumentId ?? doc.id,
+					})
+					.returning();
+				if (!row) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+				await tx.insert(noteBookItems).values({
+					organizationId: notebook.organizationId,
+					noteBookId: notebook.id,
+					documentId: row.knowledgeDocumentId ?? doc.id,
+					addedBy: notebook.ownerUserId,
+				});
+				return row;
+			});
 		}),
 
 	updateNote: protectedProcedure
 		.input(updateNoteSchema)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
-			await getNoteForUser(organizationId, ctx.session.user.id, input.noteId);
+			const note = await getNoteForUser(
+				organizationId,
+				ctx.session.user.id,
+				input.noteId,
+			);
 			if (input.markdown !== undefined) assertNoteMarkdownSafe(input.markdown);
-			const [row] = await db
-				.update(noteNotes)
-				.set({
-					...(input.title !== undefined ? { title: input.title } : {}),
-					...(input.markdown !== undefined ? { markdown: input.markdown } : {}),
-					...(input.tags !== undefined ? { tags: input.tags } : {}),
-					...(input.knowledgeDocumentId !== undefined
-						? { knowledgeDocumentId: input.knowledgeDocumentId }
-						: {}),
-				})
-				.where(
-					and(
-						eq(noteNotes.id, input.noteId),
-						eq(noteNotes.organizationId, organizationId),
-						eq(noteNotes.ownerUserId, ctx.session.user.id),
-					),
-				)
-				.returning();
-			return row;
+
+			// N2: content lands in the backing knowledge_documents row (which also
+			// re-syncs backlinks via the knowledge engine). The note INDEX row keeps
+			// a mirror of title/markdown/tags so the lightweight list path and legacy
+			// readers stay correct without a join.
+			const targetDocId = input.knowledgeDocumentId ?? note.knowledgeDocumentId;
+			return dbWs.transaction(async (tx) => {
+				if (
+					targetDocId &&
+					(input.title !== undefined ||
+						input.markdown !== undefined ||
+						input.tags !== undefined)
+				) {
+					await updateNoteDocument(tx, {
+						organizationId,
+						documentId: targetDocId,
+						title: input.title,
+						markdown: input.markdown,
+						tags: input.tags,
+					});
+				}
+
+				const [row] = await tx
+					.update(noteNotes)
+					.set({
+						...(input.title !== undefined ? { title: input.title } : {}),
+						...(input.markdown !== undefined
+							? { markdown: input.markdown }
+							: {}),
+						...(input.tags !== undefined ? { tags: input.tags } : {}),
+						...(input.knowledgeDocumentId !== undefined
+							? { knowledgeDocumentId: input.knowledgeDocumentId }
+							: {}),
+					})
+					.where(
+						and(
+							eq(noteNotes.id, input.noteId),
+							eq(noteNotes.organizationId, organizationId),
+							eq(noteNotes.ownerUserId, ctx.session.user.id),
+						),
+					)
+					.returning();
+				return row;
+			});
 		}),
 
 	deleteNote: protectedProcedure
 		.input(noteIdSchema)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
-			await getNoteForUser(organizationId, ctx.session.user.id, input.noteId);
-			await db
-				.delete(noteNotes)
-				.where(
-					and(
-						eq(noteNotes.id, input.noteId),
-						eq(noteNotes.organizationId, organizationId),
-						eq(noteNotes.ownerUserId, ctx.session.user.id),
-					),
-				);
+			const note = await getNoteForUser(
+				organizationId,
+				ctx.session.user.id,
+				input.noteId,
+			);
+			await dbWs.transaction(async (tx) => {
+				await tx
+					.delete(noteNotes)
+					.where(
+						and(
+							eq(noteNotes.id, input.noteId),
+							eq(noteNotes.organizationId, organizationId),
+							eq(noteNotes.ownerUserId, ctx.session.user.id),
+						),
+					);
+				// Delete the backing doc too; its FK cascade removes the note_book_items
+				// edge + knowledge_links. Only an explicitly-adopted external doc is left
+				// (none today: input never detaches), so this is safe for owned notes.
+				if (note.knowledgeDocumentId) {
+					await tx
+						.delete(knowledgeDocuments)
+						.where(
+							and(
+								eq(knowledgeDocuments.id, note.knowledgeDocumentId),
+								eq(knowledgeDocuments.organizationId, organizationId),
+							),
+						);
+				}
+			});
 			return { ok: true as const };
 		}),
 
@@ -406,8 +531,13 @@ export const notebooksRouter = {
 
 			// Re-validate the body at the publish trust boundary: this is the moment
 			// content becomes anonymously reachable, and the note may predate the
-			// write-time guard (N5).
-			if (input.isPublished) assertNoteMarkdownSafe(note.markdown);
+			// write-time guard (N5). Validate the AUTHORITATIVE (doc-backed) content,
+			// not just the index mirror, so a doc-router edit can't smuggle unsafe MDX
+			// onto the public page.
+			if (input.isPublished) {
+				const content = await resolveNoteContent(note);
+				assertNoteMarkdownSafe(content.markdown);
+			}
 
 			const slug =
 				note.publicSlug ?? (input.isPublished ? createNoteSlug() : null);
@@ -450,6 +580,8 @@ export const notebooksRouter = {
 					title: noteNotes.title,
 					markdown: noteNotes.markdown,
 					tags: noteNotes.tags,
+					knowledgeDocumentId: noteNotes.knowledgeDocumentId,
+					ownerUserId: noteNotes.ownerUserId,
 					createdAt: noteNotes.createdAt,
 					updatedAt: noteNotes.updatedAt,
 				})
@@ -469,6 +601,20 @@ export const notebooksRouter = {
 				});
 			}
 
-			return { ...note, url: getPublicNoteUrl(input.slug) };
+			// Read the authoritative content from the backing doc (system of record),
+			// falling back to the inline mirror for legacy rows. Never leak internal
+			// ids beyond what the presentation needs.
+			const content = await resolveNoteContent(
+				note as typeof noteNotes.$inferSelect,
+			);
+			return {
+				id: note.id,
+				title: content.title,
+				markdown: content.markdown,
+				tags: content.tags,
+				createdAt: note.createdAt,
+				updatedAt: note.updatedAt,
+				url: getPublicNoteUrl(input.slug),
+			};
 		}),
 } satisfies TRPCRouterRecord;
