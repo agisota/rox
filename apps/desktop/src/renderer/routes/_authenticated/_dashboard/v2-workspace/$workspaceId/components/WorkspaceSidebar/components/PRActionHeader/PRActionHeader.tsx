@@ -7,6 +7,7 @@ import { PRStatusGroup } from "./components/PRStatusGroup";
 import {
 	type PRFlowState,
 	selectActionButton,
+	selectCreatePRAffordance,
 	type UnavailableReason,
 } from "./utils/getPRFlowState";
 
@@ -110,8 +111,9 @@ function ActionSlot({
 		case "disabled-tooltip":
 			return <UnavailableIcon reason={variant.reasonKind} animate={animate} />;
 
-		case "create-pr-dropdown":
-			if (!createPREnabled) {
+		case "create-pr-dropdown": {
+			const affordance = selectCreatePRAffordance(createPREnabled);
+			if (affordance.kind === "coming-soon") {
 				return (
 					<UnavailableIcon
 						reason="create-disabled"
@@ -127,6 +129,7 @@ function ActionSlot({
 					animate={animate}
 				/>
 			);
+		}
 
 		case "cancel-busy":
 			return (

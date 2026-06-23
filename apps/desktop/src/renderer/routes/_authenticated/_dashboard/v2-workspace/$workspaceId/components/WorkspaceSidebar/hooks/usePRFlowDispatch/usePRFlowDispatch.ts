@@ -28,16 +28,34 @@ export function usePRFlowDispatch({
 }: UsePRFlowDispatchOptions): PRFlowDispatch {
 	return useCallback(
 		({ state, draft }: PRFlowDispatchArgs) => {
-			const plan = planDispatch(state, { draft: draft === true });
-			if (!plan) return;
-
-			onOpenChat({
-				initialPrompt: plan.prompt,
-				initialFiles: [plan.attachment],
-			});
+			const launch = buildCreatePRLaunch(state, { draft: draft === true });
+			if (!launch) return;
+			onOpenChat(launch);
 		},
 		[onOpenChat],
 	);
+}
+
+/**
+ * Pure create-PR handler: maps a flow state into the chat launch config the
+ * `onOpenChat` callback expects (an initial `/pr/create-pr` prompt plus the
+ * synthesized `pr-context.md` attachment), or `null` when the state can't
+ * dispatch. Extracted from the hook so the create handler is unit-testable
+ * without rendering — the hook is a thin `onOpenChat` wrapper around it.
+ */
+export function buildCreatePRLaunch(
+	state: PRFlowState,
+	options: { draft: boolean },
+): {
+	initialPrompt: string;
+	initialFiles: DispatchPlan["attachment"][];
+} | null {
+	const plan = planDispatch(state, options);
+	if (!plan) return null;
+	return {
+		initialPrompt: plan.prompt,
+		initialFiles: [plan.attachment],
+	};
 }
 
 interface DispatchPlan {
