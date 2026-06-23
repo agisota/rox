@@ -31,6 +31,7 @@ import {
 	HiOutlineDocumentText,
 	HiOutlineEnvelope,
 	HiOutlineFolder,
+	HiOutlineInbox,
 	HiOutlineRectangleGroup,
 	HiOutlineSparkles,
 } from "react-icons/hi2";
@@ -121,6 +122,7 @@ export function DashboardSidebar({
 	const isCalendarOpen = !!matchRoute({ to: "/calendar", fuzzy: true });
 	const isNotesOpen = !!matchRoute({ to: "/notes", fuzzy: true });
 	const isEmailOpen = !!matchRoute({ to: "/email", fuzzy: true });
+	const isInboxOpen = !!matchRoute({ to: "/inbox", fuzzy: true });
 	const { activeHostUrl } = useLocalHostService();
 	const v2RouteMatch = matchRoute({ to: "/v2-workspace/$workspaceId" });
 	const activeV2WorkspaceId = v2RouteMatch ? v2RouteMatch.workspaceId : null;
@@ -315,6 +317,13 @@ export function DashboardSidebar({
 								isActive={isMemoryOpen}
 								isCollapsed={isCollapsed}
 								onClick={() => navigate({ to: "/memory" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Входящие"
+								icon={HiOutlineInbox}
+								isActive={isInboxOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/inbox" })}
 							/>
 							<DashboardSidebarNavButton
 								label="Drive"
