@@ -10,6 +10,7 @@ import {
 	app,
 	BrowserWindow,
 	dialog,
+	globalShortcut,
 	Notification,
 	net,
 	protocol,
@@ -58,6 +59,15 @@ import {
 import { disposeTray, initTray } from "./lib/tray";
 import { startNetworkLogger, stopNetworkLogger } from "./network-logger";
 import { MainWindow } from "./windows/main";
+import {
+	registerSpectreShortcut,
+	unregisterSpectreShortcut,
+} from "./lib/spectre-shortcut/spectreShortcut";
+import {
+	createSpectreWindow,
+	loadSpectre,
+	SpectreWindowManager,
+} from "./windows/spectre";
 
 logger.info("[main] Local database ready:", !!localDb);
 const IS_DEV = process.env.NODE_ENV === "development";
@@ -227,6 +237,8 @@ app.on("open-url", async (event, url) => {
 let isQuitting = false;
 let skipQuitConfirmation = false;
 let forceFullCleanup = false;
+// Spectre overlay assistant — created in whenReady, torn down on before-quit.
+let spectreManager: SpectreWindowManager | null = null;
 
 export function setSkipQuitConfirmation(): void {
 	skipQuitConfirmation = true;
@@ -293,6 +305,8 @@ app.on("before-quit", async (event) => {
 		}
 		shutdownTanstackDbPersistence();
 		disposeTray();
+		unregisterSpectreShortcut(globalShortcut);
+		spectreManager?.destroy();
 		disposePushToTalkShortcut();
 	} catch (error) {
 		logger.error("[main] Cleanup during quit failed:", error);
@@ -490,6 +504,26 @@ if (!gotTheLock) {
 		await makeAppSetup(() => MainWindow());
 		setupAutoUpdater();
 		initTray();
+
+		// Spectre overlay assistant (Pluely-class). Created lazily on first summon;
+		// the global shortcut (Cmd/Ctrl+\) works app-wide. Stealth (content
+		// protection) is applied inside the manager.
+		spectreManager = new SpectreWindowManager({
+			createWindow: createSpectreWindow,
+			isMac: PLATFORM.IS_MAC,
+			loadSpectre,
+		});
+		const spectreShortcutOk = registerSpectreShortcut({
+			globalShortcut,
+			onToggle: () => {
+				void spectreManager?.toggle();
+			},
+		});
+		if (!spectreShortcutOk) {
+			logger.warn(
+				"[spectre] summon shortcut already in use; configure an alternative in Settings",
+			);
+		}
 
 		// Preinstall the bundled skill + subagent catalog into ~/.claude so every
 		// workspace's agents have the full set out-of-the-box. Fire-and-forget,
