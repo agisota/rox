@@ -5,8 +5,9 @@
  * Every procedure is org-scoped via `requireActiveOrgMembership` (the comms /
  * calendar / xmpp pattern) and operates on the CALLER's own user only — a mesh
  * identity is GLOBAL per user (DQ3), so there is no cross-user read here.
- * `provisionDevice` binds a PUBLIC device key (private keys never leave the
- * client) inside one `dbWs.transaction` so a rotation can't half-apply, and
+ * `provisionDevice` binds a PUBLIC device key (the client uploads only the public
+ * half of its DEVICE keypair; that device private key stays on the client) inside
+ * one `dbWs.transaction` so a rotation can't half-apply, and
  * honors DQ4 (permanent reservation + 90-day grace). `listDevices` / `status`
  * surface the caller's bound devices.
  *

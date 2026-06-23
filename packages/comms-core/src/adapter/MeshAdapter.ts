@@ -6,10 +6,14 @@
  * with a real key inline. The two transport side-effects it needs are INJECTED
  * as plain functions:
  *
- *   - `sign`    — turn an unsigned event into a signed, publishable payload. The
- *                 real implementation (NIP-17 gift-wrap + secp256k1 Schnorr) is a
- *                 client/worker concern using a key that NEVER reaches the
- *                 server; the adapter only shapes the event and hands it off.
+ *   - `sign`    — turn an unsigned event into a signed, publishable payload. For
+ *                 OUTBOUND DMs the real implementation (NIP-17 gift-wrap +
+ *                 secp256k1 Schnorr) is a client/worker concern using the user's
+ *                 device key; the adapter only shapes the event and hands it off.
+ *                 (INBOUND is different: mesh is a transport-fallback bridge, so
+ *                 the relay-watcher holds a SERVER-HELD escrow key to decrypt
+ *                 inbound gift-wraps — see workers/mesh-relay-watcher. This adapter
+ *                 still never does inline crypto.)
  *   - `publish` — emit the signed event onto the relay pool, returning the event
  *                 id the relays accepted (the provider/dedup id).
  *
@@ -103,9 +107,10 @@ export interface MeshSignedEvent {
 }
 
 /**
- * Injected signer: turn an unsigned event into a signed payload. The real
- * implementation lives client/worker-side and uses a private key that NEVER
- * reaches the server — the adapter only shapes + delegates.
+ * Injected signer: turn an unsigned event into a signed payload. For outbound the
+ * real implementation lives client/worker-side and uses the user's device key;
+ * the adapter only shapes + delegates and never does inline crypto. (Inbound mesh
+ * decryption is handled separately by the server-escrow relay-watcher, not here.)
  */
 export type MeshSignFn = (
 	event: MeshUnsignedEvent,

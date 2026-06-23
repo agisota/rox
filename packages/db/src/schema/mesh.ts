@@ -21,9 +21,20 @@
  *   mesh_delivery_log→ audit + idempotent dedup ledger of fallback-delivered
  *                      events (the relay-redelivery dedup contract).
  *
- * CRITICAL: private keys NEVER reach the server. Only PUBLIC keys live here; the
- * secret material lives in expo-secure-store (mobile) / Electron safeStorage
- * (desktop) on the client. There is no column for a private key anywhere.
+ * TRUST MODEL (server-escrow, transport-fallback bridge — NOT zero-knowledge):
+ * This mesh transport is a best-effort FALLBACK BRIDGE — a peer of the mail/XMPP
+ * bridges — so an inbound Nostr DM still lands in the rox inbox when the rox
+ * backbone is unreachable. To decrypt those inbound NIP-17 gift-wraps server-side,
+ * the relay-watcher holds a SERVER-HELD ESCROW KEYPAIR: the server CAN read mesh
+ * DMs addressed to the escrow identity. This is deliberately NOT an E2E-private
+ * product. The DB stores only PUBLIC key material — every per-DEVICE column here
+ * (`nostr_pubkey`, `noise_static_pub`, `ed25519_pub`) is a public key, and the
+ * `mesh_escrow_keys` table below stores the escrow PUBLIC key (so the watcher
+ * knows which pubkey to subscribe gift-wraps for and the binding is auditable /
+ * rotatable). The escrow PRIVATE key is NEVER stored in this database or this
+ * repo — it is loaded from Infisical/env at the relay-watcher process only. Device
+ * private keys live in expo-secure-store (mobile) / Electron safeStorage (desktop)
+ * on the client; only their PUBLIC halves are bound here.
  *
  * Owner decisions (plans/rox-comms-suite/DECISIONS.md):
  *   DQ3 — identity is GLOBAL per user; the mesh identity belongs to the person,
@@ -196,6 +207,65 @@ export const meshRelays = pgTable(
 
 export type InsertMeshRelay = typeof meshRelays.$inferInsert;
 export type SelectMeshRelay = typeof meshRelays.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// mesh_escrow_keys — the SERVER-HELD escrow identity (PUBLIC key only)
+// ---------------------------------------------------------------------------
+
+/**
+ * The server-escrow Nostr identity the relay-watcher subscribes inbound
+ * gift-wraps (kind 1059) for. Inbound mesh DMs are NIP-17 sealed to this escrow
+ * pubkey; the watcher unwraps them server-side with the matching escrow PRIVATE
+ * key — which is loaded from Infisical/env at the watcher process and is NEVER
+ * stored in this table, this database, or this repo. This row exists so the
+ * watcher's subscription filter (`#p = nostr_pubkey`) and the trust boundary are
+ * auditable + rotatable from the control plane (DQ4-style rotation: flip the old
+ * row `active=false`, insert the new active escrow key).
+ *
+ * Org scoping mirrors `mesh_relays`: a null-org row is the GLOBAL default escrow
+ * identity every org's inbound mesh uses; a non-null org row is that org's
+ * dedicated escrow override. Only PUBLIC key material lives here.
+ */
+export const meshEscrowKeys = pgTable(
+	"mesh_escrow_keys",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		// null-org row = the global default escrow identity inbound mesh resolves
+		// to. A non-null org row is that org's dedicated escrow override.
+		organizationId: uuid("organization_id").references(() => organizations.id, {
+			onDelete: "cascade",
+		}),
+
+		// The PUBLIC escrow Nostr pubkey (bech32 npub OR 32-byte hex), normalized.
+		// The watcher subscribes `kind:1059 #p=<this>` and unwraps with the private
+		// key held in env. NO private key column exists — by design.
+		nostrPubkey: text("nostr_pubkey").notNull(),
+		// Human label for the escrow identity / key version ("relay-watcher v1").
+		label: text(),
+		// Exactly one escrow key per scope is active at a time; a rotation flips the
+		// prior row inactive and inserts a new active one (audit trail preserved).
+		active: jsonb()
+			.$type<{ active: boolean }>()
+			.notNull()
+			.default({ active: true }),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(t) => [
+		// Global pubkey uniqueness so one escrow identity binds once across orgs.
+		uniqueIndex("mesh_escrow_keys_pubkey_uniq").on(t.nostrPubkey),
+		index("mesh_escrow_keys_org_idx").on(t.organizationId),
+	],
+);
+
+export type InsertMeshEscrowKey = typeof meshEscrowKeys.$inferInsert;
+export type SelectMeshEscrowKey = typeof meshEscrowKeys.$inferSelect;
 
 // ---------------------------------------------------------------------------
 // mesh_delivery_log — audit + idempotent dedup ledger of delivered events

@@ -1,24 +1,25 @@
 /**
- * Mesh relay-watcher CONTRACT (D5) — stub only, live deploy DEFERRED.
+ * Mesh relay-watcher CONTRACT (D5) — the wire envelope shared with the API.
  *
  * This standalone process (NOT part of the bun/turbo workspace) is the trusted
- * bridge between the public Nostr relay pool and the rox D1 comms hub. When the
- * deploy wave lands it will:
+ * SERVER-ESCROW bridge between the public Nostr relay pool and the rox D1 comms
+ * hub. The runnable implementation lives in `./index.ts` + `./unwrap.ts` +
+ * `./post.ts`; it:
  *
- *   1. subscribe to the org-curated relay set (`mesh_relays`) over websockets;
- *   2. filter for NIP-17 gift-wrapped DMs (kind 1059) addressed to a rox device
- *      pubkey present in `mesh_devices`;
- *   3. unwrap the gift-wrap + decrypt with the recipient's key material (which
- *      the relay-watcher holds via the deploy-wave key-escrow design — NOT this
- *      PR), yielding the inner plaintext DM;
- *   4. POST each as a {@link RelayWatcherOutboundEvent} to `/api/mesh/inbound`,
+ *   1. subscribes the org-curated relay set (`mesh_relays`) over websockets;
+ *   2. filters NIP-17 gift-wrapped DMs (kind 1059) addressed to the SERVER-HELD
+ *      escrow pubkey (`mesh_escrow_keys`);
+ *   3. unwraps the gift-wrap + decrypts with the escrow PRIVATE key — held by the
+ *      watcher (loaded from Infisical/env), because mesh is a transport-fallback
+ *      bridge, NOT an E2E-private product — yielding the inner plaintext DM;
+ *   4. POSTs each as a {@link RelayWatcherOutboundEvent} to `/api/mesh/inbound`,
  *      signed with `MESH_INBOUND_SECRET` (HMAC + timestamp + nonce) exactly like
  *      the D4 XMPP bridge.
  *
- * NO live relay connections and NO key signing are implemented here — those are
- * the deferred deploy-wave work. This file freezes the wire CONTRACT so the API
- * ingress (`apps/api/src/lib/mesh/parse.ts`) and a future watcher implementation
- * agree on the envelope shape.
+ * This file freezes the wire CONTRACT so the API ingress
+ * (`apps/api/src/lib/mesh/parse.ts`) and the watcher implementation agree on the
+ * envelope shape. A LIVE end-to-end receive still needs this process DEPLOYED +
+ * an escrow key PROVISIONED on an always-on host (deploy follow-up, outside CI).
  */
 
 /**

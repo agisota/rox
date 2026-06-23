@@ -2,12 +2,20 @@
 	"name": "rox-mesh-relay-watcher",
 	"version": "0.1.0",
 	"private": true,
-	"description": "Mesh relay-watcher (D5): subscribes to the Nostr relay pool, unwraps NIP-17 gift-wrapped DMs addressed to rox device keys, and relays each as a signed POST to /api/mesh/inbound. STANDALONE — not part of the Rox bun/turbo workspace; the live deploy + real Nostr subscription are DEFERRED. This package is a CONTRACT STUB only (no live relay connections, no key signing). DO NOT auto-deploy.",
+	"description": "Mesh relay-watcher (D5): the SERVER-ESCROW inbound bridge. Subscribes the Nostr relay pool, receives NIP-17 gift-wrapped DMs (kind 1059) addressed to the server-held escrow pubkey, unwraps them server-side with the escrow private key (loaded from Infisical/env — mesh is a transport-fallback bridge, NOT E2E-private), and relays each plaintext as a signed POST to /api/mesh/inbound. STANDALONE — not part of the Rox bun/turbo workspace. The runnable code ships here; a LIVE end-to-end receive needs this process DEPLOYED + an escrow key PROVISIONED on an always-on host (deploy follow-up, outside CI). DO NOT auto-deploy.",
 	"type": "module",
 	"scripts": {
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"start": "node --experimental-strip-types src/index.ts"
 	},
 	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"@types/ws": "^8.5.13",
+		"bun-types": "^1.3.14",
 		"typescript": "5.9.2"
+	},
+	"dependencies": {
+		"nostr-tools": "^2.23.8",
+		"ws": "^8.21.0"
 	}
 }
