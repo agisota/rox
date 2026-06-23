@@ -3,7 +3,9 @@ import {
 	agentCommands,
 	automationRuns,
 	automations,
+	calCalendars,
 	chatSessions,
+	commsParticipants,
 	devicePresence,
 	githubPullRequests,
 	githubRepositories,
@@ -11,6 +13,9 @@ import {
 	invitations,
 	journalEntries,
 	journalEvents,
+	knowledgeDocuments,
+	mailMessages,
+	mailThreads,
 	members,
 	memoryImportJobs,
 	memoryItems,
@@ -165,6 +170,56 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 	// C2: sandbox_images is per-project sandbox build config, org-scoped so the
 	// client can read its org's recipes; now syncable through electric-proxy.
 	sandbox_images: { orgColumn: sandboxImages.organizationId },
+
+	// -------------------------------------------------------------------------
+	// Comms suite live shapes (AD-2 migration; HARDENING-AUDIT I7/T5/N7).
+	//
+	// SECURITY GATE — Electric `where` is evaluated against a SINGLE row of the
+	// shape's own table; it supports NO subqueries / joins / EXISTS. Therefore a
+	// table can only be safely registered here when its row carries a column that
+	// directly identifies the authorized user (owner_user_id / created_by_user_id
+	// / user_id) AND organization_id. Any table whose authorization is a
+	// cross-table membership (participant join, calendar share, owner-via-parent)
+	// CANNOT be expressed by this predicate model and is intentionally NOT
+	// registered — a bare org filter on those tables would leak every org
+	// member's DMs / mail / events (the MASTER-PLAN #1 risk). Deferred tables and
+	// the reason are recorded in plans/rox-comms-suite/HARDENING-AUDIT.md (AD-2).
+	// -------------------------------------------------------------------------
+
+	// comms_participants: a user receives ONLY their own participant rows
+	// (user_id = caller) within the org. This is leak-free: it never exposes
+	// another participant's membership. (Co-participant rows for a thread are a
+	// cross-table concern resolved via tRPC, not this shape.)
+	comms_participants: {
+		orgColumn: commsParticipants.organizationId,
+		userColumn: commsParticipants.userId,
+	},
+
+	// mail_threads / mail_messages: the mailbox is strictly per-user, keyed by
+	// owner_user_id (+ organization_id). Direct column ⇒ safe.
+	mail_threads: {
+		orgColumn: mailThreads.organizationId,
+		userColumn: mailThreads.ownerUserId,
+	},
+	mail_messages: {
+		orgColumn: mailMessages.organizationId,
+		userColumn: mailMessages.ownerUserId,
+	},
+
+	// cal_calendars: OWNED calendars only (owner_user_id + organization_id).
+	// Shared-calendar access lives in cal_calendar_shares (a subquery this model
+	// can't express) ⇒ shares are deferred, owned calendars are leak-free.
+	cal_calendars: {
+		orgColumn: calCalendars.organizationId,
+		userColumn: calCalendars.ownerUserId,
+	},
+
+	// knowledge_documents (notes, type='note' and others): authored docs scoped
+	// by created_by_user_id + organization_id. Direct column ⇒ safe.
+	knowledge_documents: {
+		orgColumn: knowledgeDocuments.organizationId,
+		userColumn: knowledgeDocuments.createdByUserId,
+	},
 };
 
 export function getTableScope(tableName: string): TableScope | null {
