@@ -1,0 +1,1 @@
+export { canStartDictation } from "./canStartDictation";

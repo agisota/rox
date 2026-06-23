@@ -22,6 +22,7 @@
 		"./atoms/*": "./src/atoms/*/index.ts",
 		"./motion-frame": "./src/motion-frame/index.ts",
 		"./motion": "./src/motion/index.ts",
+		"./voice": "./src/voice/index.ts",
 		"./*": "./src/components/ui/*.tsx"
 	},
 	"scripts": {
