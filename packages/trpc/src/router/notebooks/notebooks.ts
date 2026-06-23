@@ -1,8 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { db } from "@rox/db/client";
 import { noteNotebooks, noteNotes } from "@rox/db/schema";
+import { assertMdxSafe, MdxSecurityError } from "@rox/shared/knowledge";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { env } from "../../env";
 import { protectedProcedure, publicProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import {
@@ -51,6 +55,62 @@ export function getPublicNoteUrl(slug: string): string {
 
 function createNoteSlug(): string {
 	return randomBytes(9).toString("base64url");
+}
+
+/**
+ * Reject unsafe MDX before it can ever be persisted + served on the anonymous
+ * `/s/note/<slug>` page (N5). Reuses the shared knowledge guard (the same one the
+ * knowledge router applies at its trust boundary) and surfaces a clean
+ * `BAD_REQUEST` to the client instead of an opaque 500.
+ */
+function assertNoteMarkdownSafe(markdown: string | null | undefined): void {
+	if (!markdown) return;
+	try {
+		assertMdxSafe(markdown);
+	} catch (error) {
+		if (error instanceof MdxSecurityError) {
+			throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+		}
+		throw error;
+	}
+}
+
+// Per-user publish rate limit (N5): publishing exposes content on an anonymous
+// URL, so cap how fast a single user can mint/flip public notes to blunt abuse.
+// Mirrors the support router's house pattern (KV-backed, no-op-with-warning in
+// non-prod when KV is unconfigured, hard-fail in prod).
+const setPublishedRateLimit =
+	env.KV_REST_API_URL && env.KV_REST_API_TOKEN
+		? new Ratelimit({
+				redis: new Redis({
+					url: env.KV_REST_API_URL,
+					token: env.KV_REST_API_TOKEN,
+				}),
+				limiter: Ratelimit.slidingWindow(20, "1 h"),
+				prefix: "ratelimit:notes:set-published",
+			})
+		: null;
+
+async function assertSetPublishedRateLimit(userId: string): Promise<void> {
+	if (!setPublishedRateLimit) {
+		if (env.NODE_ENV === "production") {
+			throw new TRPCError({
+				code: "INTERNAL_SERVER_ERROR",
+				message: "Note publish rate limiting is not configured",
+			});
+		}
+		console.warn(
+			"[notebooks/setPublished] rate limit skipped because KV is not configured",
+		);
+		return;
+	}
+	const { success } = await setPublishedRateLimit.limit(userId);
+	if (!success) {
+		throw new TRPCError({
+			code: "TOO_MANY_REQUESTS",
+			message: "Too many note publish changes. Try again later.",
+		});
+	}
 }
 
 async function getNotebookForUser(
@@ -249,6 +309,7 @@ export const notebooksRouter = {
 		.input(createNoteSchema)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
+			assertNoteMarkdownSafe(input.markdown);
 			// Resolve org + owner from the verified parent notebook, not raw input.
 			const notebook = await getNotebookForUser(
 				organizationId,
@@ -275,6 +336,7 @@ export const notebooksRouter = {
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
 			await getNoteForUser(organizationId, ctx.session.user.id, input.noteId);
+			if (input.markdown !== undefined) assertNoteMarkdownSafe(input.markdown);
 			const [row] = await db
 				.update(noteNotes)
 				.set({
@@ -322,11 +384,17 @@ export const notebooksRouter = {
 		.input(setNotePublishedSchema)
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
+			await assertSetPublishedRateLimit(ctx.session.user.id);
 			const note = await getNoteForUser(
 				organizationId,
 				ctx.session.user.id,
 				input.noteId,
 			);
+
+			// Re-validate the body at the publish trust boundary: this is the moment
+			// content becomes anonymously reachable, and the note may predate the
+			// write-time guard (N5).
+			if (input.isPublished) assertNoteMarkdownSafe(note.markdown);
 
 			const slug =
 				note.publicSlug ?? (input.isPublished ? createNoteSlug() : null);

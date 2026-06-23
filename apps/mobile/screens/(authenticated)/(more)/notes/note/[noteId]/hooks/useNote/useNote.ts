@@ -2,7 +2,7 @@ import type { RouterOutputs } from "@rox/trpc";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/trpc/client";
 
-export type NoteDetail = RouterOutputs["notebooks"]["getNote"];
+export type NoteDetail = RouterOutputs["notes"]["getNote"];
 
 interface UseNoteResult {
 	note: NoteDetail | null;
@@ -23,7 +23,7 @@ export function useNote(noteId: string | undefined): UseNoteResult {
 		}
 		setError(null);
 		try {
-			const result = await apiClient.notebooks.getNote.query({ noteId });
+			const result = await apiClient.notes.getNote.query({ noteId });
 			setNote(result);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to load note");

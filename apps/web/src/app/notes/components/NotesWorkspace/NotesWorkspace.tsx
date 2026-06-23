@@ -31,7 +31,11 @@ export function NotesWorkspace() {
 			/>
 			<section className="flex-1 overflow-y-auto">
 				{noteId ? (
-					<NoteEditor noteId={noteId} notebookId={notebookId} />
+					// `key={noteId}` remounts the editor on note switch. The unmounting
+					// editor's cleanup flushes its own pending autosave (bound to the OLD
+					// noteId) before the fresh editor mounts, so a debounced edit can never
+					// be written onto the newly-selected note (N3).
+					<NoteEditor key={noteId} noteId={noteId} notebookId={notebookId} />
 				) : (
 					<div className="flex h-full items-center justify-center text-muted-foreground text-sm">
 						Выберите заметку или создайте новую.

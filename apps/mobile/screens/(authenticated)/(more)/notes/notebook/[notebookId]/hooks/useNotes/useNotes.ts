@@ -2,7 +2,7 @@ import type { RouterOutputs } from "@rox/trpc";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/trpc/client";
 
-export type Note = RouterOutputs["notebooks"]["listNotes"][number];
+export type Note = RouterOutputs["notes"]["listNotes"][number];
 
 interface UseNotesResult {
 	notes: Note[];
@@ -27,7 +27,7 @@ export function useNotes(notebookId: string | undefined): UseNotesResult {
 		}
 		setError(null);
 		try {
-			const result = await apiClient.notebooks.listNotes.query({ notebookId });
+			const result = await apiClient.notes.listNotes.query({ notebookId });
 			setNotes(result);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to load notes");
@@ -52,7 +52,7 @@ export function useNotes(notebookId: string | undefined): UseNotesResult {
 			if (trimmed.length === 0) return null;
 			setCreating(true);
 			try {
-				const created = await apiClient.notebooks.createNote.mutate({
+				const created = await apiClient.notes.createNote.mutate({
 					notebookId,
 					title: trimmed,
 				});

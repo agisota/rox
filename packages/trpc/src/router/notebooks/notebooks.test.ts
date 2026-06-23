@@ -202,6 +202,94 @@ describe("notebooks.getNote", () => {
 	});
 });
 
+describe("notebooks MDX safety (N5)", () => {
+	test("createNote rejects unsafe MDX with BAD_REQUEST", async () => {
+		fakeDb.select = () =>
+			selectBuilder([
+				{ id: "nb-1", organizationId: "org-1", ownerUserId: "user-1" },
+			]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.createNote({
+				notebookId: NOTEBOOK_ID,
+				title: "x",
+				markdown: "<script>alert(1)</script>",
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		// Nothing should have been inserted when the guard rejects.
+		expect(state.inserted).toHaveLength(0);
+	});
+
+	test("createNote allows whitelisted markdown", async () => {
+		fakeDb.select = () =>
+			selectBuilder([
+				{ id: "nb-1", organizationId: "org-1", ownerUserId: "user-1" },
+			]);
+		state.insertReturning = [{ id: "note-ok" }];
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.createNote({
+			notebookId: NOTEBOOK_ID,
+			title: "ok",
+			markdown: "# Title\n\nplain text",
+		});
+		expect(res?.id).toBe("note-ok");
+	});
+
+	test("updateNote rejects unsafe MDX with BAD_REQUEST", async () => {
+		fakeDb.select = () =>
+			selectBuilder([
+				{ id: "note-1", organizationId: "org-1", ownerUserId: "user-1" },
+			]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.updateNote({
+				noteId: NOTE_ID,
+				markdown: "import x from 'fs'",
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(state.updated).toHaveLength(0);
+	});
+
+	test("setPublished rejects publishing a note whose body is unsafe", async () => {
+		fakeDb.select = () =>
+			selectBuilder([
+				{
+					id: "note-1",
+					organizationId: "org-1",
+					ownerUserId: "user-1",
+					publicSlug: null,
+					markdown: "<EvilWidget />",
+				},
+			]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.setPublished({ noteId: NOTE_ID, isPublished: true }),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		// Must not flip the publish flag when the body is rejected.
+		expect(state.updated).toHaveLength(0);
+	});
+
+	test("setPublished allows unpublishing even if body is unsafe", async () => {
+		fakeDb.select = () =>
+			selectBuilder([
+				{
+					id: "note-1",
+					organizationId: "org-1",
+					ownerUserId: "user-1",
+					publicSlug: "keepme01",
+					markdown: "<EvilWidget />",
+				},
+			]);
+		state.insertReturning = [{ id: "note-1", publicSlug: "keepme01" }];
+		const caller = callerFor("org-1");
+		await caller.notebooks.setPublished({
+			noteId: NOTE_ID,
+			isPublished: false,
+		});
+		expect(state.updated[0]?.isPublished).toBe(false);
+	});
+});
+
 describe("notebooks.setPublished", () => {
 	test("mints a public slug + url on first publish", async () => {
 		fakeDb.select = () =>

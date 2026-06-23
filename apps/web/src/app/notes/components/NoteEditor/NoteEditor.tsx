@@ -28,7 +28,7 @@ export interface NoteEditorProps {
  */
 export function NoteEditor({ noteId, notebookId }: NoteEditorProps) {
 	const trpc = useTRPC();
-	const note = useQuery(trpc.notebooks.getNote.queryOptions({ noteId }));
+	const note = useQuery(trpc.notes.getNote.queryOptions({ noteId }));
 	const actions = useNotesActions(notebookId);
 
 	const [title, setTitle] = useState("");
@@ -52,10 +52,15 @@ export function NoteEditor({ noteId, notebookId }: NoteEditorProps) {
 	const scheduleSave = (next: { title?: string; markdown?: string }) => {
 		pendingRef.current = { ...pendingRef.current, ...next };
 		if (saveTimer.current) clearTimeout(saveTimer.current);
+		// Capture `noteId` at schedule time so a debounced save always targets the
+		// note that was being edited, never whichever note is active when the timer
+		// fires (defense-in-depth alongside the `key={noteId}` remount in N3).
+		const targetNoteId = noteId;
 		saveTimer.current = setTimeout(() => {
 			const payload = pendingRef.current;
 			pendingRef.current = null;
-			if (payload) actions.updateNote.mutate({ noteId, ...payload });
+			if (payload)
+				actions.updateNote.mutate({ noteId: targetNoteId, ...payload });
 		}, AUTOSAVE_DELAY_MS);
 	};
 
