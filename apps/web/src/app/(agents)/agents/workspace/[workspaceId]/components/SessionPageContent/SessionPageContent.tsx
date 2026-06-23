@@ -130,7 +130,18 @@ export function SessionPageContent({
 				)}
 			</div>
 			{conversationalViews.includes(activeView) && (
-				<FollowUpInput modelName={session.modelName} />
+				<FollowUpInput
+					modelName={session.modelName}
+					liveSend={
+						liveHost
+							? {
+									routingKey: liveHost.routingKey,
+									workspaceId: liveHost.workspaceId,
+									sessionId: liveHost.sessionId,
+								}
+							: undefined
+					}
+				/>
 			)}
 		</div>
 	);
