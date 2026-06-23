@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import type { HostServiceAvailabilityStatus } from "renderer/lib/host-service-unavailable";
+import type { HostReadiness } from "./useHostReadiness";
 
 const startMutateMock = mock(
 	(
@@ -20,11 +23,10 @@ let hostState: {
 };
 let mutationPending = false;
 
-mock.module("react", () => ({
-	useCallback: <T extends (...args: never[]) => unknown>(callback: T) =>
-		callback,
-}));
-
+// NOTE: do NOT mock the "react" module here. A `mock.module("react", …)` leaks
+// across files in bun's single test VM and would null out forwardRef/createContext
+// for every later desktop test. Instead we invoke the hook inside a real render
+// pass (renderToStaticMarkup of a probe component) so the real useCallback runs.
 mock.module("@rox/ui/sonner", () => ({
 	toast: { error: toastErrorMock },
 }));
@@ -51,6 +53,18 @@ mock.module(
 
 const { useHostReadiness } = await import("./useHostReadiness");
 
+/** Run the hook inside a one-shot render and capture its return value. */
+function capture(): HostReadiness {
+	let captured: HostReadiness | undefined;
+	function Probe() {
+		captured = useHostReadiness();
+		return null;
+	}
+	renderToStaticMarkup(createElement(Probe));
+	if (!captured) throw new Error("useHostReadiness did not produce a value");
+	return captured;
+}
+
 describe("useHostReadiness", () => {
 	beforeEach(() => {
 		startMutateMock.mockClear();
@@ -64,7 +78,7 @@ describe("useHostReadiness", () => {
 	});
 
 	it("is not ready and not connecting while no host url exists", () => {
-		const readiness = useHostReadiness();
+		const readiness = capture();
 		expect(readiness.hostReady).toBe(false);
 		expect(readiness.status).toBe("stopped");
 		expect(readiness.connecting).toBe(false);
@@ -73,19 +87,19 @@ describe("useHostReadiness", () => {
 	it("is ready once a host url is present", () => {
 		hostState.activeHostUrl = "http://127.0.0.1:51000";
 		hostState.hostServiceStatus = "running";
-		const readiness = useHostReadiness();
+		const readiness = capture();
 		expect(readiness.hostReady).toBe(true);
 		expect(readiness.status).toBe("running");
 	});
 
 	it("reflects a pending mutation through connecting", () => {
 		mutationPending = true;
-		const readiness = useHostReadiness();
+		const readiness = capture();
 		expect(readiness.connecting).toBe(true);
 	});
 
 	it("connect starts the coordinator for the active organization", () => {
-		const readiness = useHostReadiness();
+		const readiness = capture();
 		readiness.connect();
 		expect(startMutateMock).toHaveBeenCalledTimes(1);
 		expect(startMutateMock.mock.calls[0]?.[0]).toEqual({
@@ -95,14 +109,14 @@ describe("useHostReadiness", () => {
 
 	it("connect surfaces a toast and skips the mutation without an active org", () => {
 		hostState.activeOrganizationId = null;
-		const readiness = useHostReadiness();
+		const readiness = capture();
 		readiness.connect();
 		expect(startMutateMock).not.toHaveBeenCalled();
 		expect(toastErrorMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("connect surfaces the error message when the start mutation fails", () => {
-		const readiness = useHostReadiness();
+		const readiness = capture();
 		readiness.connect();
 		const opts = startMutateMock.mock.calls[0]?.[1];
 		opts?.onError?.(new Error("boom"));
