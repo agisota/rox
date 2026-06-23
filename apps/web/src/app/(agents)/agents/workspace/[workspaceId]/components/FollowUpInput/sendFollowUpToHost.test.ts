@@ -66,6 +66,41 @@ describe("sendFollowUpToHost", () => {
 		});
 	});
 
+	it("forwards the live session model as metadata.model when the binding carries one", async () => {
+		mockRelayOk({ ok: true });
+		const { sendFollowUpToHost } = await import("./FollowUpInput");
+
+		await sendFollowUpToHost(
+			{
+				routingKey: "org:machine",
+				workspaceId: "w1",
+				sessionId: "s1",
+				model: "claude-sonnet-4-5",
+			},
+			textMessage("ship it"),
+		);
+
+		const decoded = SuperJSON.deserialize(
+			JSON.parse(fetchCalls[0]?.init?.body as string),
+		) as { metadata?: { model?: string } };
+		expect(decoded.metadata).toEqual({ model: "claude-sonnet-4-5" });
+	});
+
+	it("omits metadata when the live binding has no model", async () => {
+		mockRelayOk({ ok: true });
+		const { sendFollowUpToHost } = await import("./FollowUpInput");
+
+		await sendFollowUpToHost(
+			{ routingKey: "org:machine", workspaceId: "w1", sessionId: "s1" },
+			textMessage("ship it"),
+		);
+
+		const decoded = SuperJSON.deserialize(
+			JSON.parse(fetchCalls[0]?.init?.body as string),
+		) as Record<string, unknown>;
+		expect("metadata" in decoded && decoded.metadata !== undefined).toBe(false);
+	});
+
 	it("maps composer file attachments into the host payload", async () => {
 		mockRelayOk({ ok: true });
 		const { sendFollowUpToHost } = await import("./FollowUpInput");

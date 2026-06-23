@@ -21,6 +21,13 @@ export type FollowUpLiveSend = {
 	workspaceId: string;
 	/** Host chat/session id the message is appended to. */
 	sessionId: string;
+	/**
+	 * Live session model id, forwarded as `chat.sendMessage` `metadata.model` so
+	 * the host continues the conversation on the SAME model the session is bound
+	 * to instead of falling back to its own default. Optional: only set when the
+	 * live binding actually carries a real model id (not a display label).
+	 */
+	model?: string;
 };
 
 type FollowUpInputProps = {
@@ -57,6 +64,7 @@ export async function sendFollowUpToHost(
 		workspaceId: target.workspaceId,
 		content: message.text,
 		...(files.length > 0 ? { files } : {}),
+		...(target.model ? { metadata: { model: target.model } } : {}),
 	});
 }
 
