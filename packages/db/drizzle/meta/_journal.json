@@ -631,6 +631,13 @@
       "when": 1782180173311,
       "tag": "0089_identity_isolation_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1782192437442,
+      "tag": "0090_mail_lifecycle_m3_m4",
+      "breakpoints": true
     }
   ]
 }

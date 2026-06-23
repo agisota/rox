@@ -99,7 +99,17 @@ mock.module("../integration/utils", () => ({
 }));
 
 const { mailRouter, setMailSendFnForTest } = await import("./index");
+const { setDriveStorageForTest } = await import("../drive/storage");
 const { createTRPCRouter, createCallerFactory } = await import("../../trpc");
+
+// Minimal storage provider stub for the M5 presign procedures.
+const fakeStorage = {
+	presignGet: async (p: { key: string }) => ({
+		url: `https://r2.test/${p.key}?sig=x`,
+		expiresAt: new Date(Date.now() + 300_000),
+	}),
+	// biome-ignore lint/suspicious/noExplicitAny: only presignGet is exercised
+} as any;
 
 const appRouter = createTRPCRouter({ mail: mailRouter });
 const createCaller = createCallerFactory(appRouter);
@@ -128,6 +138,7 @@ beforeEach(() => {
 		balanceRox: "500",
 	};
 	setMailSendFnForTest(undefined);
+	setDriveStorageForTest(undefined);
 });
 
 describe("mail.provisionAddress", () => {
@@ -197,9 +208,21 @@ describe("mail.send", () => {
 		).rejects.toMatchObject({ code: "FORBIDDEN" });
 	});
 
+	test("rejects with TOO_MANY_REQUESTS when the per-user send rate is exceeded", async () => {
+		setMailSendFnForTest(async () => ({ id: "evt" }));
+		state.selectQueue = [
+			[{ n: 999 }], // rate-cap count → over the cap
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.mail.send({ to: ["a@example.com"], body: "hi" }),
+		).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+	});
+
 	test("fails with PRECONDITION_FAILED when the mailbox is not provisioned", async () => {
 		setMailSendFnForTest(async () => ({ id: "evt" }));
 		state.selectQueue = [
+			[{ n: 0 }], // rate-cap count
 			[], // getPrimaryAddress → none
 		];
 		const caller = callerFor("org-1");
@@ -208,10 +231,23 @@ describe("mail.send", () => {
 		).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
 	});
 
+	test("blocks a disabled (suppressed) mailbox from sending", async () => {
+		setMailSendFnForTest(async () => ({ id: "evt" }));
+		state.selectQueue = [
+			[{ n: 0 }], // rate-cap count
+			[{ id: "addr-1", address: "mark@rox.one", status: "disabled" }],
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.mail.send({ to: ["a@example.com"], body: "hi" }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
 	test("fails with PRECONDITION_FAILED when outbound is not configured", async () => {
 		setMailSendFnForTest(null); // simulate no MAIL_OUTBOUND_ENABLED / key
 		state.selectQueue = [
-			[{ id: "addr-1", address: "mark@rox.one" }], // getPrimaryAddress
+			[{ n: 0 }], // rate-cap count
+			[{ id: "addr-1", address: "mark@rox.one", status: "active" }],
 		];
 		const caller = callerFor("org-1");
 		await expect(
@@ -219,14 +255,15 @@ describe("mail.send", () => {
 		).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
 	});
 
-	test("happy path: sends From <handle>@rox.one and persists an outbound row", async () => {
+	test("happy path: sends From <handle>@rox.one, persists an outbound row, and debits the ledger", async () => {
 		const sent: { from: string; to: string[] }[] = [];
 		setMailSendFnForTest(async (payload) => {
 			sent.push({ from: payload.from, to: payload.to });
 			return { id: "resend-evt-1" };
 		});
 		state.selectQueue = [
-			[{ id: "addr-1", address: "mark@rox.one" }], // getPrimaryAddress
+			[{ n: 0 }], // rate-cap count
+			[{ id: "addr-1", address: "mark@rox.one", status: "active" }],
 		];
 		state.insertReturning = [{ id: "out-msg-1" }];
 		const caller = callerFor("org-1");
@@ -239,11 +276,54 @@ describe("mail.send", () => {
 		expect(res.providerId).toBe("resend-evt-1");
 		expect(sent[0]?.from).toBe("mark@rox.one");
 		expect(sent[0]?.to).toEqual(["alice@example.com"]);
-		// An outbound mail_messages row was inserted.
-		expect(state.inserted.length).toBeGreaterThanOrEqual(1);
-		const outbound = state.inserted.at(-1)?.values[0];
+		// An outbound mail_messages row + a mail_send ledger debit were written.
+		const outbound = state.inserted.find(
+			(i) => i.values[0]?.direction === "outbound",
+		)?.values[0];
 		expect(outbound?.direction).toBe("outbound");
 		expect(outbound?.provider).toBe("resend");
+		const ledger = state.inserted.find((i) => i.values[0]?.kind === "mail_send")
+			?.values[0];
+		expect(ledger?.kind).toBe("mail_send");
+		expect(ledger?.deltaRox).toBe("-1");
+		// The balance was decremented (the gate is no longer a no-op).
+		expect(state.updated.some((u) => "balanceRox" in u)).toBe(true);
+	});
+
+	test("reply derives References server-side from the parent and bumps message_count", async () => {
+		setMailSendFnForTest(async () => ({ id: "resend-evt-2" }));
+		const THREAD = "33333333-3333-4333-8333-333333333333";
+		state.selectQueue = [
+			[{ n: 0 }], // rate-cap count
+			[{ id: "addr-1", address: "mark@rox.one", status: "active" }], // primary
+			[{ id: THREAD, organizationId: "org-1", ownerUserId: "user-1" }], // getOwnedThread
+			[
+				{
+					rfcMessageId: "<parent@rox.one>",
+					inReplyTo: null,
+					referencesIds: ["<root@rox.one>"],
+				},
+			], // parent message
+		];
+		state.insertReturning = [{ id: "reply-msg-1" }];
+		const caller = callerFor("org-1");
+		await caller.mail.send({
+			to: ["alice@example.com"],
+			body: "reply",
+			threadId: THREAD,
+			// Client lies about references — server must ignore and derive its own.
+			references: ["<spoofed@evil.test>"],
+		});
+		const outbound = state.inserted.find(
+			(i) => i.values[0]?.direction === "outbound",
+		)?.values[0];
+		expect(outbound?.referencesIds).toEqual([
+			"<root@rox.one>",
+			"<parent@rox.one>",
+		]);
+		expect(outbound?.inReplyTo).toBe("<parent@rox.one>");
+		// message_count bump used a SQL expression on the thread update.
+		expect(state.updated.some((u) => "messageCount" in u)).toBe(true);
 	});
 });
 
@@ -262,5 +342,69 @@ describe("mail.markRead", () => {
 		const res = await caller.mail.markRead({ messageId: MSG_ID });
 		expect(res.ok).toBe(true);
 		expect(state.updated[0]?.isRead).toBe(true);
+	});
+});
+
+describe("mail.getAttachmentUrl (M5)", () => {
+	const ATT_ID = "44444444-4444-4444-8444-444444444444";
+
+	test("PRECONDITION_FAILED when storage is unconfigured", async () => {
+		setDriveStorageForTest(null);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.mail.getAttachmentUrl({ attachmentId: ATT_ID }),
+		).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+	});
+
+	test("404s when the attachment is not owned by the caller", async () => {
+		setDriveStorageForTest(fakeStorage);
+		state.selectQueue = [[]]; // owner-scoped join → none
+		const caller = callerFor("org-1");
+		await expect(
+			caller.mail.getAttachmentUrl({ attachmentId: ATT_ID }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("returns a short-TTL presigned URL for an owned attachment", async () => {
+		setDriveStorageForTest(fakeStorage);
+		state.selectQueue = [[{ blobKey: "u/user-1/abc", filename: "a.pdf" }]];
+		const caller = callerFor("org-1");
+		const res = await caller.mail.getAttachmentUrl({ attachmentId: ATT_ID });
+		expect(res.url).toContain("u/user-1/abc");
+		expect(res.expiresAt).toBeInstanceOf(Date);
+	});
+});
+
+describe("mail.getBodyUrl (M5)", () => {
+	test("404s when the message has no stored body for the variant", async () => {
+		setDriveStorageForTest(fakeStorage);
+		state.selectQueue = [[{ bodyTextKey: null, bodyHtmlKey: null }]];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.mail.getBodyUrl({ messageId: MSG_ID }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("returns a presigned URL for the text body by default", async () => {
+		setDriveStorageForTest(fakeStorage);
+		state.selectQueue = [
+			[{ bodyTextKey: "u/user-1/body.txt", bodyHtmlKey: "u/user-1/body.html" }],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.mail.getBodyUrl({ messageId: MSG_ID });
+		expect(res.url).toContain("body.txt");
+	});
+
+	test("returns the html body when variant=html", async () => {
+		setDriveStorageForTest(fakeStorage);
+		state.selectQueue = [
+			[{ bodyTextKey: "u/user-1/body.txt", bodyHtmlKey: "u/user-1/body.html" }],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.mail.getBodyUrl({
+			messageId: MSG_ID,
+			variant: "html",
+		});
+		expect(res.url).toContain("body.html");
 	});
 });

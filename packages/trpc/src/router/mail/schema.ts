@@ -53,3 +53,15 @@ export const markReadSchema = z.object({
 	messageId: z.string().uuid(),
 	isRead: z.boolean().optional(),
 });
+
+/** Resolve a short-TTL presigned R2 URL for one attachment the caller owns. */
+export const getAttachmentUrlSchema = z.object({
+	attachmentId: z.string().uuid(),
+});
+
+/** Resolve a short-TTL presigned R2 URL for a message body (text or html). */
+export const getBodyUrlSchema = z.object({
+	messageId: z.string().uuid(),
+	/** Which stored body variant to fetch (default plaintext). */
+	variant: z.enum(["text", "html"]).optional(),
+});
