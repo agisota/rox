@@ -1,1 +1,1 @@
-export { EmailView } from "./EmailView";
+export { EmailView, type EmailViewProps } from "./EmailView";
