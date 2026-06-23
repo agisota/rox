@@ -8,7 +8,7 @@ const fakeDb = {
 	}),
 };
 mock.module("@rox/db/client", () => ({ db: fakeDb, dbWs: fakeDb }));
-const { assertOrgMembers } = await import("./utils");
+const { assertOrgMembers } = await import("./assertOrgMembers");
 
 const ORG = "22222222-2222-4222-8222-222222222222";
 const A = "a0000000-0000-4000-8000-000000000000";
