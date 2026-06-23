@@ -91,6 +91,16 @@ export interface HostAgentWriteNamespace {
 		agent: string;
 		prompt: string;
 		attachmentIds?: string[];
+		/**
+		 * Optional Agent-Native source the run is scoped to — the composer's
+		 * `selectedSourceId` (an `agent_sources.id`). Threaded verbatim to the host
+		 * `agents.run` mutation so the runtime's `AgentSourcePool` can resolve +
+		 * attach exactly this source to the run instead of the org's whole active
+		 * set. Purely additive: omitting it preserves the prior (sourceless / all
+		 * active) behaviour, so the frozen READ contract and existing launch callers
+		 * are untouched.
+		 */
+		sourceId?: string;
 	}): Promise<HostAgentRunResult>;
 }
 
@@ -156,6 +166,9 @@ export function createHostWriteClient(
 						agent: input.agent,
 						prompt: input.prompt,
 						attachmentIds: input.attachmentIds,
+						// Additive run-scoping field: forwarded only when set so the host
+						// input stays byte-identical for existing sourceless callers.
+						...(input.sourceId ? { sourceId: input.sourceId } : {}),
 					},
 					"POST",
 				);

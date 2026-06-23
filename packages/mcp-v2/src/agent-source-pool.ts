@@ -94,6 +94,29 @@ export async function resolveActiveAgentSources(
 		}));
 }
 
+/**
+ * Resolve ONE active agent source for the context org by its `sourceId`. This is
+ * the run-scoping counterpart of {@link resolveActiveAgentSources}: a run that
+ * the composer scoped to a single chosen source (the composer's
+ * `selectedSourceId`) attaches exactly that source instead of the whole org's
+ * active set. Returns `null` when the id is unknown, belongs to another org, or
+ * is not currently `active` — the caller treats that as "nothing to attach"
+ * rather than an error, so a stale/archived selection silently degrades to a
+ * sourceless run instead of failing the launch.
+ *
+ * Like {@link resolveActiveAgentSources} this rides the credential-free
+ * `agentSource.list` projection (no `encryptedConfig`); credentials are still
+ * loaded later, server-side only, through {@link loadRuntimeAgentSourceCredentials}
+ * when a real downstream transport connects.
+ */
+export async function resolveSelectedAgentSource(
+	ctx: McpContext,
+	sourceId: string,
+): Promise<ResolvedAgentSource | null> {
+	const active = await resolveActiveAgentSources(ctx);
+	return active.find((source) => source.id === sourceId) ?? null;
+}
+
 /** Local/rox-native source kinds served by the in-memory `rox-v2` server. */
 const IN_MEMORY_KINDS = new Set<string>(["rox", "rox_v2"]);
 const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
@@ -491,41 +514,77 @@ export class AgentSourcePool {
 	async connectAll(ctx: McpContext): Promise<PooledAgentSource[]> {
 		const sources = await this.resolveSources(ctx);
 		for (const source of sources) {
-			if (this.clients.has(source.slug)) continue;
-			try {
-				let client: McpDownstreamClient | undefined;
-				let lastError: Error | undefined;
-				for (let attempt = 1; attempt <= this.connectMaxAttempts; attempt++) {
-					try {
-						client = await withTimeout(
-							(signal) => this.connector(source, ctx, signal),
-							this.connectTimeoutMs,
-							`Agent source "${source.slug}" connection timed out after ${this.connectTimeoutMs}ms`,
-						);
-						break;
-					} catch (error) {
-						lastError = toError(error);
-						if (
-							attempt < this.connectMaxAttempts &&
-							isRetriableConnectionError(lastError)
-						) {
-							await delay(
-								this.connectRetryBaseDelayMs * 2 ** Math.max(0, attempt - 1),
-							);
-							continue;
-						}
-						break;
-					}
-				}
-				if (!client)
-					throw lastError ?? new Error("Agent source connect failed");
-				this.clients.set(source.slug, { source, client });
-				this.failures.delete(source.slug);
-			} catch (error) {
-				this.failures.set(source.slug, toError(error));
-			}
+			await this.connectSource(source, ctx);
 		}
 		return this.getConnected();
+	}
+
+	/**
+	 * Run-scoping connect: resolve the ONE active source the run selected (by
+	 * `sourceId`) and connect only it. This closes the composer→runtime seam —
+	 * the composer's `selectedSourceId` is threaded to the launch, and here it is
+	 * resolved + attached so a scoped run gets exactly that source's tools rather
+	 * than the whole org's active set ({@link connectAll}).
+	 *
+	 * Reuses the same per-source connect/retry/isolation path as `connectAll`
+	 * (via {@link connectSource}). When the id resolves to nothing active
+	 * (unknown / cross-org / not `active`), nothing is connected and the caller
+	 * proceeds sourcelessly — a stale selection never fails the launch. A
+	 * downstream connection failure is isolated into `getFailures()` exactly like
+	 * `connectAll`. Idempotent: an already-connected slug is reused.
+	 */
+	async connectSelected(
+		ctx: McpContext,
+		sourceId: string,
+	): Promise<PooledAgentSource | null> {
+		const source = await resolveSelectedAgentSource(ctx, sourceId);
+		if (!source) return null;
+		await this.connectSource(source, ctx);
+		return this.clients.get(source.slug) ?? null;
+	}
+
+	/**
+	 * Connect a single resolved source into the pool with bounded retries and
+	 * per-source failure isolation. Shared by {@link connectAll} and
+	 * {@link connectSelected} so the retry/timeout/isolation policy lives in one
+	 * place. Idempotent: an already-connected slug short-circuits.
+	 */
+	private async connectSource(
+		source: ResolvedAgentSource,
+		ctx: McpContext,
+	): Promise<void> {
+		if (this.clients.has(source.slug)) return;
+		try {
+			let client: McpDownstreamClient | undefined;
+			let lastError: Error | undefined;
+			for (let attempt = 1; attempt <= this.connectMaxAttempts; attempt++) {
+				try {
+					client = await withTimeout(
+						(signal) => this.connector(source, ctx, signal),
+						this.connectTimeoutMs,
+						`Agent source "${source.slug}" connection timed out after ${this.connectTimeoutMs}ms`,
+					);
+					break;
+				} catch (error) {
+					lastError = toError(error);
+					if (
+						attempt < this.connectMaxAttempts &&
+						isRetriableConnectionError(lastError)
+					) {
+						await delay(
+							this.connectRetryBaseDelayMs * 2 ** Math.max(0, attempt - 1),
+						);
+						continue;
+					}
+					break;
+				}
+			}
+			if (!client) throw lastError ?? new Error("Agent source connect failed");
+			this.clients.set(source.slug, { source, client });
+			this.failures.delete(source.slug);
+		} catch (error) {
+			this.failures.set(source.slug, toError(error));
+		}
 	}
 
 	/** All successfully connected sources. */

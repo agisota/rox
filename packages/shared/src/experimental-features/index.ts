@@ -211,7 +211,14 @@ export const EXPERIMENTAL_FEATURES = [
 			longDescription:
 				"Adds a controlled marketplace entry point for source packs, connectors, and reusable agent inputs.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
+			// Connect-a-source MVP: a real web-reachable surface now exists —
+			// org-scoped create/edit + a management list (setStatus lifecycle) over
+			// the `agentSource` CRUD, plus run-scoping wiring (`AgentSourcePool
+			// .connectSelected` threads the composer's selected source id into a run).
+			// The org context is the agent-native provider's configured signal (see
+			// `resolveSourcesGate`); the `desktop-runtime` dependency is a `runtime`
+			// dep and never gates this web surface.
+			implementationStatus: "ready",
 			dependencies: [AGENT_NATIVE_PROVIDER, LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Agent launcher", "Prompt composer", "Source picker"],
 		},
