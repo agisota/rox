@@ -52,6 +52,17 @@ export const markReadSchema = z.object({
 	lastReadMessageId: z.string().uuid(),
 });
 
+/** Edit an in-app message's body (T8/M). Author-only; body bounds mirror send. */
+export const editMessageSchema = z.object({
+	messageId: z.string().uuid(),
+	body: z.string().min(1).max(50_000),
+});
+
+/** Soft-delete (tombstone) an in-app message (T8/M). Author-only. */
+export const deleteMessageSchema = z.object({
+	messageId: z.string().uuid(),
+});
+
 /** Transports a client can heartbeat presence on (I4). */
 export const presenceTransportSchema = z.enum([
 	"inapp",

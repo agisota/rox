@@ -16,6 +16,8 @@ import { assertOrgMembers } from "../integration/assertOrgMembers";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { type CommsDb, createCommsPorts } from "./ports";
 import {
+	deleteMessageSchema,
+	editMessageSchema,
 	getPresenceSchema,
 	getThreadSchema,
 	listThreadsSchema,
@@ -97,6 +99,68 @@ async function getThreadForOrg(organizationId: string, threadId: string) {
 	return row;
 }
 
+/**
+ * Load a message the caller is allowed to mutate (edit/delete, T8/M). Enforces
+ * THREE gates, in order:
+ *   1. the row exists in the caller's org (`NOT_FOUND` otherwise);
+ *   2. the caller participates in the message's thread (org + participation, via
+ *      `getThreadForOrg` + the participant probe) — a stranger gets `NOT_FOUND`
+ *      on the thread / `FORBIDDEN` if they can't reach it;
+ *   3. AUTHOR-ONLY: `authorUserId === callerUserId`. `authorUserId` is nullable
+ *      (external authors) so a null author can never match a caller — an external
+ *      message correctly yields `FORBIDDEN`. A thread participant who is NOT the
+ *      author also gets `FORBIDDEN` (participation alone is insufficient).
+ */
+async function loadAuthoredMessageForOrg(
+	organizationId: string,
+	messageId: string,
+	callerUserId: string,
+): Promise<typeof commsMessages.$inferSelect> {
+	const [message] = await db
+		.select()
+		.from(commsMessages)
+		.where(
+			and(
+				eq(commsMessages.id, messageId),
+				eq(commsMessages.organizationId, organizationId),
+			),
+		)
+		.limit(1);
+	if (!message) {
+		throw new TRPCError({ code: "NOT_FOUND", message: "Message not found" });
+	}
+
+	// Org + participation scoping (reuses the sendMessage participant probe).
+	const thread = await getThreadForOrg(organizationId, message.threadId);
+	const [membership] = await db
+		.select({ id: commsParticipants.id })
+		.from(commsParticipants)
+		.where(
+			and(
+				eq(commsParticipants.organizationId, organizationId),
+				eq(commsParticipants.threadId, thread.id),
+				eq(commsParticipants.userId, callerUserId),
+			),
+		)
+		.limit(1);
+	if (!membership) {
+		throw new TRPCError({
+			code: "FORBIDDEN",
+			message: "Not a participant of this thread",
+		});
+	}
+
+	// AUTHOR-ONLY: participation is necessary but not sufficient.
+	if (message.authorUserId !== callerUserId) {
+		throw new TRPCError({
+			code: "FORBIDDEN",
+			message: "Only the author can modify this message",
+		});
+	}
+
+	return message;
+}
+
 export const commsRouter = {
 	/**
 	 * Unified inbox: the org's threads the caller participates in, newest-first.
@@ -173,7 +237,16 @@ export const commsRouter = {
 				.orderBy(asc(commsMessages.createdAt))
 				.limit(input.limit ?? 200);
 
-			return { thread, participants, messages };
+			// TOMBSTONE read-path (T8/M): a deleted message keeps its row (audit/
+			// restore) but its content is withheld here — blank the body/bodyHtml/
+			// attachments while preserving id/author/createdAt/editedAt/deletedAt so
+			// the client can render an "(deleted)" tombstone. This is explicit, not
+			// automatic: getThread returns raw `$inferSelect` rows.
+			const safeMessages = messages.map((m) =>
+				m.deletedAt ? { ...m, body: "", bodyHtml: null, attachments: [] } : m,
+			);
+
+			return { thread, participants, messages: safeMessages };
 		}),
 
 	/**
@@ -260,6 +333,88 @@ export const commsRouter = {
 					error: d.error ?? null,
 				})),
 			};
+		}),
+
+	/**
+	 * Edit an in-app message's body (T8/M). AUTHOR-ONLY (plus org + thread
+	 * participation, enforced by {@link loadAuthoredMessageForOrg}). Stamps
+	 * `edited_at`; the read path surfaces it so the UI shows an "(edited)" marker.
+	 * Refuses to edit a tombstoned message (a deleted body must not resurrect).
+	 * Publishes a generic in-app SSE event so other clients refetch the row.
+	 */
+	editMessage: protectedProcedure
+		.input(editMessageSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const callerUserId = ctx.session.user.id;
+			const message = await loadAuthoredMessageForOrg(
+				organizationId,
+				input.messageId,
+				callerUserId,
+			);
+
+			if (message.deletedAt) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Cannot edit a deleted message",
+				});
+			}
+
+			const editedAt = new Date();
+			await db
+				.update(commsMessages)
+				.set({ body: input.body, editedAt })
+				.where(
+					and(
+						eq(commsMessages.id, input.messageId),
+						eq(commsMessages.organizationId, organizationId),
+					),
+				);
+
+			// Live delivery (comms SSE): the body-less event makes clients refetch the
+			// authoritative (edited) row. Best-effort; the write already committed.
+			await publishInAppMessage(organizationId, message.threadId, {
+				messageId: message.id,
+				authorUserId: callerUserId,
+			});
+
+			return { messageId: message.id, threadId: message.threadId, editedAt };
+		}),
+
+	/**
+	 * Soft-delete (tombstone) an in-app message (T8/M). AUTHOR-ONLY. Sets
+	 * `deleted_at` only — the row is KEPT (audit/restore) and its stored body is
+	 * left intact; the read path withholds the body so clients show a tombstone.
+	 * Publishes a generic in-app SSE event so other clients refetch.
+	 */
+	deleteMessage: protectedProcedure
+		.input(deleteMessageSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const callerUserId = ctx.session.user.id;
+			const message = await loadAuthoredMessageForOrg(
+				organizationId,
+				input.messageId,
+				callerUserId,
+			);
+
+			const deletedAt = new Date();
+			await db
+				.update(commsMessages)
+				.set({ deletedAt })
+				.where(
+					and(
+						eq(commsMessages.id, input.messageId),
+						eq(commsMessages.organizationId, organizationId),
+					),
+				);
+
+			await publishInAppMessage(organizationId, message.threadId, {
+				messageId: message.id,
+				authorUserId: callerUserId,
+			});
+
+			return { messageId: message.id, threadId: message.threadId, deletedAt };
 		}),
 
 	/** Set the caller's read watermark on a thread they participate in. */

@@ -288,6 +288,10 @@ export type SelectCommsParticipant = typeof commsParticipants.$inferSelect;
 
 // ---------------------------------------------------------------------------
 // comms_messages — one row per message, regardless of transport
+//
+// Edit/tombstone semantics (T8/M): `edited_at` stamps the last in-app edit
+// (null = never edited); `deleted_at` is a soft-delete tombstone (null = live).
+// A deleted row is KEPT (audit/restore) — the read procs withhold its body.
 // ---------------------------------------------------------------------------
 
 export const commsMessages = pgTable(
@@ -328,6 +332,13 @@ export const commsMessages = pgTable(
 		receivedAt: timestamp("received_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
+
+		// Last in-app edit time (T8/M). Null = never edited; the UI shows an
+		// "(edited)" marker when set. Additive nullable — backward compatible.
+		editedAt: timestamp("edited_at", { withTimezone: true }),
+		// Soft-delete tombstone (T8/M). Null = live; set = deleted. The row is kept
+		// (audit/restore) and the read procs withhold its body. Additive nullable.
+		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 	},
 	(t) => [
 		// Thread read: a thread's messages in order, org-leading.
