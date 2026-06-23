@@ -10,6 +10,12 @@ import { posthog } from "@/lib/analytics";
 import { getOAuthProtectedResourceMetadataUrl } from "@/lib/oauth-metadata";
 import { getRelayUrl } from "@/lib/relay-url";
 
+// Matches the `agent_sources.id` UUID shape (same constraint the host
+// `agents.run` zod input applies to `sourceId`). A non-UUID query value is
+// ignored so a scoped run silently degrades to the org-wide default.
+const UUID_PATTERN =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function unauthorizedResponse(req: Request, message: string): Response {
 	return new Response(
 		JSON.stringify({ error: { code: "UNAUTHORIZED", message } }),
@@ -38,6 +44,18 @@ async function handle(req: Request): Promise<Response> {
 	}
 
 	ctx.relayUrl = await getRelayUrl(ctx.userId);
+
+	// Run-scoping: an agent may reach the proxy with `?sourceId=<uuid>` to attach
+	// ONLY that one active source instead of the org's whole active set. The MCP
+	// JSON-RPC payload rides the request BODY, so reading the query string here is
+	// orthogonal to `transport.handleRequest` below. A malformed/absent value is
+	// ignored (left undefined) so the org-wide default and existing sourceless
+	// callers are untouched; `createProxyMcpServer` consumes `ctx.sourceId` via
+	// `AgentSourcePool.connectSelected`.
+	const sourceIdParam = new URL(req.url).searchParams.get("sourceId");
+	if (sourceIdParam && UUID_PATTERN.test(sourceIdParam)) {
+		ctx.sourceId = sourceIdParam;
+	}
 
 	const { server, cleanup } = await createProxyMcpServer(ctx, {
 		onToolCall: (event) => {

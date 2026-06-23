@@ -521,10 +521,13 @@ export class AgentSourcePool {
 
 	/**
 	 * Run-scoping connect: resolve the ONE active source the run selected (by
-	 * `sourceId`) and connect only it. This closes the composer→runtime seam —
-	 * the composer's `selectedSourceId` is threaded to the launch, and here it is
-	 * resolved + attached so a scoped run gets exactly that source's tools rather
-	 * than the whole org's active set ({@link connectAll}).
+	 * `sourceId`) and connect only it, so a scoped run gets exactly that source's
+	 * tools rather than the whole org's active set ({@link connectAll}).
+	 *
+	 * The production consumer is {@link import("./server").createProxyMcpServer},
+	 * which calls this (instead of `connectAll`) when `ctx.sourceId` is set — i.e.
+	 * when the agent's MCP request to the cloud rox-v2 proxy carries `?sourceId=`.
+	 * See `server.run-scoping.test.ts` for the consumer-level proof.
 	 *
 	 * Reuses the same per-source connect/retry/isolation path as `connectAll`
 	 * (via {@link connectSource}). When the id resolves to nothing active

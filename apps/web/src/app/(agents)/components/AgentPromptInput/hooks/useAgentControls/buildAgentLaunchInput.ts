@@ -14,16 +14,20 @@ export interface AgentLaunchInput {
 }
 
 /**
- * Thread the composer's selected source into an agent launch. THIS is the
- * run-wiring seam on the composer side: `useAgentControls` owns `selectedSource`
- * (a `SourceSelector` choice) but, before this, nothing carried it into a run.
- * `buildAgentLaunchInput` maps that selection onto the `agents.run` launch input
- * as `sourceId`, so the host forwards it and the runtime's `AgentSourcePool
- * .connectSelected` resolves + attaches exactly that source to the run.
+ * Map the composer's selected source onto an agent launch input. This is the
+ * composer-side mapping for the run-scoping forward-channel: `useAgentControls`
+ * owns `selectedSource` (a `SourceSelector` choice), and `buildAgentLaunchInput`
+ * places it on the `agents.run` launch input as `sourceId`. The host forwards it
+ * verbatim; the value is ultimately consumed at the cloud rox-v2 proxy
+ * (`AgentSourcePool.connectSelected`) only when the agent's MCP request carries
+ * the id.
  *
- * Pure + dependency-free so the seam is unit-testable without a relay/host. When
- * no source is selected the `sourceId` field is omitted entirely, preserving the
- * prior sourceless launch shape (the host input stays byte-identical for the
+ * NOTE: this helper is not yet wired into a live launch — the mounted prompt
+ * composer is preview-only (the active follow-up input uses `chat.sendMessage`),
+ * so no production run emits `sourceId` through this path today. It is kept pure
+ * + dependency-free and unit-tested so the seam is ready when a live caller
+ * adopts it. When no source is selected the `sourceId` field is omitted entirely,
+ * preserving the prior sourceless launch shape (host input byte-identical for the
  * no-source path).
  */
 export function buildAgentLaunchInput(args: {

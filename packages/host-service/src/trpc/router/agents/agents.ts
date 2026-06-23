@@ -163,9 +163,14 @@ export interface AgentRunInput {
 	/**
 	 * Optional Agent-Native source (`agent_sources.id`) the run is scoped to,
 	 * forwarded from the composer's `selectedSourceId` through the host write
-	 * seam. Carried so the cloud runtime's `AgentSourcePool` can resolve + attach
-	 * exactly this source to the run. Additive: undefined preserves the prior
-	 * sourceless behaviour.
+	 * seam. NOTE: the host run path does NOT consume this — chat runs disable MCP
+	 * and terminal runs reach the rox-v2 proxy over a SEPARATE stateless HTTP
+	 * request (auth = bearer only). The source-attach consumer is the cloud proxy
+	 * (`createProxyMcpServer` -> `AgentSourcePool.connectSelected`), which scopes a
+	 * run to this source only when the agent's MCP request carries `?sourceId=`.
+	 * This field is accepted for forward-compat plumbing; it is validated and
+	 * passed through but otherwise inert here. Additive: undefined preserves the
+	 * prior sourceless behaviour.
 	 */
 	sourceId?: string;
 }
@@ -312,9 +317,10 @@ export const agentsRouter = router({
 				agent: z.string().min(1),
 				prompt: z.string().min(1),
 				attachmentIds: z.array(z.string().uuid()).optional(),
-				// Additive run-scoping: the composer-selected Agent-Native source id
-				// (see AgentRunInput.sourceId). Optional UUID so existing sourceless
-				// callers are unaffected.
+				// Additive forward-channel for the composer-selected Agent-Native
+				// source id (see AgentRunInput.sourceId — validated + passed through,
+				// not consumed by the host run path). Optional UUID so existing
+				// sourceless callers are unaffected.
 				sourceId: z.string().uuid().optional(),
 			}),
 		)

@@ -14,6 +14,16 @@ export interface McpContext {
 	requestId: string;
 	bearerToken: string;
 	relayUrl: string;
+	/**
+	 * Optional run-scoping selector (`agent_sources.id`). When the agent reaches
+	 * the proxy with a `?sourceId=` on its MCP request URL, the transport route
+	 * parses + validates it and stashes it here. `createProxyMcpServer` then
+	 * attaches ONLY that one active source (via `AgentSourcePool.connectSelected`)
+	 * instead of the org's whole active set (`connectAll`). Additive: when absent,
+	 * the org-wide behaviour is unchanged. `resolveMcpContext` never sets it — auth
+	 * is bearer-only; the route layer owns this field.
+	 */
+	sourceId?: string;
 }
 
 const MCP_UNAUTHORIZED = Symbol("MCP_UNAUTHORIZED");

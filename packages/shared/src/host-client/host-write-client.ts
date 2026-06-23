@@ -94,9 +94,12 @@ export interface HostAgentWriteNamespace {
 		/**
 		 * Optional Agent-Native source the run is scoped to — the composer's
 		 * `selectedSourceId` (an `agent_sources.id`). Threaded verbatim to the host
-		 * `agents.run` mutation so the runtime's `AgentSourcePool` can resolve +
-		 * attach exactly this source to the run instead of the org's whole active
-		 * set. Purely additive: omitting it preserves the prior (sourceless / all
+		 * `agents.run` mutation as a forward-channel. The actual source-attach
+		 * consumer is the cloud rox-v2 proxy (`createProxyMcpServer` ->
+		 * `AgentSourcePool.connectSelected`), which scopes a run to exactly this
+		 * source — instead of the org's whole active set — when the agent's MCP
+		 * request carries the id; the host `agents.run` path itself does not consume
+		 * it. Purely additive: omitting it preserves the prior (sourceless / all
 		 * active) behaviour, so the frozen READ contract and existing launch callers
 		 * are untouched.
 		 */
