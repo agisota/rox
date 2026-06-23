@@ -62,6 +62,16 @@ const STABLE_PORT_BASE = 48_000;
 const STABLE_PORT_COUNT = 1_000;
 const STARTUP_OUTPUT_TAIL_BYTES = 8 * 1024;
 
+// Auto-respawn watchdog: when a running host-service child exits unexpectedly
+// (crash / self-exit — NOT an explicit stop()), the coordinator restarts it
+// with exponential backoff so a transient failure (e.g. the post-upgrade
+// clean-exit that left the org wedged in "stopped") can't strand the user until
+// they manually restart from the tray. Gives up after MAX_RESPAWN_ATTEMPTS so a
+// permanently-broken binary surfaces as "stopped" instead of looping forever.
+const MAX_RESPAWN_ATTEMPTS = 5;
+const RESPAWN_BASE_DELAY_MS = 1_000;
+const RESPAWN_MAX_DELAY_MS = 30_000;
+
 type StartupResult =
 	| { kind: "healthy" }
 	| { kind: "timeout" }
@@ -99,6 +109,10 @@ export class HostServiceCoordinator extends EventEmitter {
 	private scriptPath = path.join(__dirname, "host-service.js");
 	private machineId = getHostId();
 	private devReloadWatcher: fs.FSWatcher | null = null;
+	// Watchdog state for auto-respawn on unexpected child exit.
+	private lastConfigs = new Map<string, SpawnConfig>();
+	private respawnAttempts = new Map<string, number>();
+	private respawnTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 	async start(
 		organizationId: string,
@@ -161,7 +175,77 @@ export class HostServiceCoordinator extends EventEmitter {
 		this.lastKnownPorts.set(organizationId, port);
 	}
 
+	private clearRespawnTimer(organizationId: string): void {
+		const timer = this.respawnTimers.get(organizationId);
+		if (timer) {
+			clearTimeout(timer);
+			this.respawnTimers.delete(organizationId);
+		}
+	}
+
+	/**
+	 * Auto-restart a host-service that died unexpectedly (crash / self-exit).
+	 * Explicit stop()/stopAll() never reaches here — they cancel pending timers
+	 * and reset attempts first. Uses exponential backoff and gives up after
+	 * MAX_RESPAWN_ATTEMPTS so a permanently-broken child surfaces as "stopped"
+	 * (the UI host-readiness gate then shows "host not ready") rather than
+	 * looping forever.
+	 */
+	private scheduleRespawn(
+		organizationId: string,
+		previousStatus: HostServiceStatus,
+	): void {
+		// Only an unexpected death of a service that was up (or coming up).
+		if (previousStatus === "stopped") return;
+		const config = this.lastConfigs.get(organizationId);
+		if (!config) return;
+		// A newer start may already be in flight (e.g. manual restart) — don't pile on.
+		if (this.pendingStarts.has(organizationId)) return;
+
+		const attempts = this.respawnAttempts.get(organizationId) ?? 0;
+		if (attempts >= MAX_RESPAWN_ATTEMPTS) {
+			log.error(
+				`[host-service:${organizationId}] exited ${attempts} times; giving up auto-respawn`,
+			);
+			return;
+		}
+
+		const delay = Math.min(
+			RESPAWN_BASE_DELAY_MS * 2 ** attempts,
+			RESPAWN_MAX_DELAY_MS,
+		);
+		this.respawnAttempts.set(organizationId, attempts + 1);
+		log.info(
+			`[host-service:${organizationId}] scheduling auto-respawn #${attempts + 1} in ${delay}ms`,
+		);
+
+		this.clearRespawnTimer(organizationId);
+		const timer = setTimeout(() => {
+			this.respawnTimers.delete(organizationId);
+			// Bail if it was stopped or already restarted while we waited.
+			if (this.pendingStarts.has(organizationId)) return;
+			if (this.instances.get(organizationId)?.status === "running") return;
+			const latestConfig = this.lastConfigs.get(organizationId);
+			if (!latestConfig) return;
+			log.info(`[host-service:${organizationId}] auto-respawning now`);
+			this.start(organizationId, latestConfig).catch((error) => {
+				log.error(
+					`[host-service:${organizationId}] auto-respawn failed:`,
+					error,
+				);
+			});
+		}, delay);
+		// Don't keep the event loop alive solely for a respawn.
+		timer.unref?.();
+		this.respawnTimers.set(organizationId, timer);
+	}
+
 	stop(organizationId: string): void {
+		// An explicit stop cancels any pending auto-respawn — even if the instance
+		// was already removed by an unexpected exit that scheduled a restart.
+		this.clearRespawnTimer(organizationId);
+		this.respawnAttempts.delete(organizationId);
+
 		const instance = this.instances.get(organizationId);
 		if (!instance) return;
 
@@ -179,6 +263,9 @@ export class HostServiceCoordinator extends EventEmitter {
 	}
 
 	stopAll(): void {
+		for (const timer of this.respawnTimers.values()) clearTimeout(timer);
+		this.respawnTimers.clear();
+		this.respawnAttempts.clear();
 		for (const [id] of this.instances) {
 			this.stop(id);
 		}
@@ -362,6 +449,8 @@ export class HostServiceCoordinator extends EventEmitter {
 			secret,
 			status: "starting",
 		};
+		this.clearRespawnTimer(organizationId);
+		this.lastConfigs.set(organizationId, config);
 		this.instances.set(organizationId, instance);
 		this.emitStatus(organizationId, "starting", null);
 
@@ -421,6 +510,7 @@ export class HostServiceCoordinator extends EventEmitter {
 			this.instances.delete(organizationId);
 			removeManifest(organizationId);
 			this.emitStatus(organizationId, "stopped", previousStatus);
+			this.scheduleRespawn(organizationId, previousStatus);
 		});
 		// Don't let the child block Electron's exit — stopAll() handles teardown.
 		child.unref();
@@ -444,6 +534,7 @@ export class HostServiceCoordinator extends EventEmitter {
 		}
 
 		instance.status = "running";
+		this.respawnAttempts.delete(organizationId);
 
 		log.info(`[host-service:${organizationId}] listening on port ${port}`);
 		this.emitStatus(organizationId, "running", "starting");
