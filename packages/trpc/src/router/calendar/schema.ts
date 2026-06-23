@@ -100,6 +100,16 @@ export const unshareCalendarSchema = z.object({
 const attendeeInput = z.union([
 	z.object({ kind: z.literal("userId"), userId: z.string().uuid() }),
 	z.object({ kind: z.literal("email"), email: z.string().email() }),
+	// C8: a rox `@handle` resolved server-side to the owning userId via
+	// `user_profiles.handle`. The optional leading `@` is stripped before lookup.
+	z.object({
+		kind: z.literal("handle"),
+		handle: z
+			.string()
+			.min(1)
+			.max(64)
+			.transform((h) => h.trim().replace(/^@/, "").toLowerCase()),
+	}),
 ]);
 
 export const createEventSchema = z

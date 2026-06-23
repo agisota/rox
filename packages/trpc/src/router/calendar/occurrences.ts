@@ -16,6 +16,8 @@ export interface ExpandableEvent {
 	dtstart: Date;
 	dtend: Date;
 	timezone: string;
+	/** All-day event: a zero/short duration still spans its whole calendar day. */
+	allDay?: boolean;
 	/** RFC 5545 RRULE body without the `RRULE:` prefix, or null for one-off. */
 	rrule: string | null;
 	/** UTC ISO instants to skip (RFC 5545 EXDATE). */
@@ -43,14 +45,36 @@ export interface ExpansionResult {
 /** Safety cap so a pathological infinite rule can't run away. */
 const MAX_OCCURRENCES = 1000;
 
-/** Normalize an instant to its millisecond key for EXDATE comparison. */
-function exdateKeys(exdates: string[]): Set<number> {
-	const keys = new Set<number>();
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** `YYYY-MM-DD` UTC calendar-day key for an instant. */
+function utcDayKey(t: number): string {
+	return new Date(t).toISOString().slice(0, 10);
+}
+
+/**
+ * EXDATE matcher. RFC 5545 lets EXDATE be either an exact DATE-TIME instant or a
+ * DATE-only value; an imported all-day EXDATE lands at midnight UTC and would
+ * never millisecond-match a timed instance. We therefore match two ways (C3):
+ *   - exact millisecond (timed EXDATE vs timed instance), and
+ *   - by UTC calendar day for EXDATEs that fall exactly on UTC midnight (the
+ *     DATE-only form), so a date-only EXDATE cancels that day's instance.
+ */
+function buildExdateMatcher(exdates: string[]): (start: Date) => boolean {
+	const exactMs = new Set<number>();
+	const dayKeys = new Set<string>();
 	for (const raw of exdates) {
 		const t = new Date(raw).getTime();
-		if (Number.isFinite(t)) keys.add(t);
+		if (!Number.isFinite(t)) continue;
+		exactMs.add(t);
+		// A midnight-UTC EXDATE is the DATE-only form: match by calendar day.
+		if (t % DAY_MS === 0) dayKeys.add(utcDayKey(t));
 	}
-	return keys;
+	return (start: Date): boolean => {
+		const ms = start.getTime();
+		if (exactMs.has(ms)) return true;
+		return dayKeys.size > 0 && dayKeys.has(utcDayKey(ms));
+	};
 }
 
 /**
@@ -65,7 +89,14 @@ export function expandEvent(
 	rangeStart: Date,
 	rangeEnd: Date,
 ): ExpansionResult {
-	const durationMs = event.dtend.getTime() - event.dtstart.getTime();
+	const rawDurationMs = event.dtend.getTime() - event.dtstart.getTime();
+	// C2: an all-day event whose dtend == dtstart (zero duration) must still
+	// render across its whole calendar day. Treat any non-positive all-day
+	// duration as spanning to end-of-day so the half-open overlap test and the
+	// emitted occurrence end both cover the grid cell. Timed events keep their
+	// real duration unchanged.
+	const durationMs =
+		event.allDay && rawDurationMs <= 0 ? DAY_MS : rawDurationMs;
 	const overlaps = (start: Date): boolean => {
 		const end = new Date(start.getTime() + durationMs);
 		return (
@@ -87,7 +118,7 @@ export function expandEvent(
 		};
 	}
 
-	const skip = exdateKeys(event.exdates);
+	const isExcluded = buildExdateMatcher(event.exdates);
 	const out: EventOccurrence[] = [];
 
 	// Walk from just before whichever is later: the window start or the anchor.
@@ -124,7 +155,7 @@ export function expandEvent(
 			break; // past the window
 		}
 		cursor = next;
-		if (skip.has(next.getTime())) continue; // EXDATE
+		if (isExcluded(next)) continue; // EXDATE (exact instant or DATE-only day)
 		if (overlaps(next)) out.push(toOccurrence(next));
 	}
 

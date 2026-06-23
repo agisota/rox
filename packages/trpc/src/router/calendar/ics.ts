@@ -184,6 +184,20 @@ export function importIcs(ics: string): IcsEvent[] {
 		}
 		if (name === "END" && value === "VEVENT") {
 			if (inEvent && current._hasStart && current.dtstart && current.dtend) {
+				// C4: an all-day DTEND (VALUE=DATE) is EXCLUSIVE per RFC 5545 — it is
+				// the day AFTER the last day. Convert it back to an inclusive dtend on
+				// import so export→import→export doesn't drift +1 day each round.
+				// A 1-day event (DTEND = DTSTART+1) collapses to dtend == dtstart; an
+				// already-degenerate DTEND <= DTSTART is left as-is.
+				if (
+					current.allDay &&
+					current.dtend.getTime() - current.dtstart.getTime() >=
+						24 * 60 * 60 * 1000
+				) {
+					current.dtend = new Date(
+						current.dtend.getTime() - 24 * 60 * 60 * 1000,
+					);
+				}
 				events.push({
 					uid: current.uid,
 					title: current.title ?? "(untitled)",

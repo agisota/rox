@@ -68,6 +68,60 @@ describe("importIcs", () => {
 		expect(parsed?.rrule).toBe(baseEvent.rrule);
 	});
 
+	it("converts an exclusive all-day DTEND back to inclusive on import (C4)", () => {
+		// A single-day all-day VEVENT serializes with DTEND = DTSTART+1 (exclusive).
+		// On import that must collapse back to dtend == dtstart so a subsequent
+		// export does not drift +1 day each round.
+		const ics = [
+			"BEGIN:VCALENDAR",
+			"BEGIN:VEVENT",
+			"UID:ad1",
+			"SUMMARY:Holiday",
+			"DTSTART;VALUE=DATE:20261225",
+			"DTEND;VALUE=DATE:20261226",
+			"END:VEVENT",
+			"END:VCALENDAR",
+		].join("\r\n");
+		const [parsed] = importIcs(ics);
+		expect(parsed?.dtstart.toISOString()).toBe("2026-12-25T00:00:00.000Z");
+		expect(parsed?.dtend.toISOString()).toBe("2026-12-25T00:00:00.000Z");
+	});
+
+	it("does not drift all-day DTEND across export→import→export (C4)", () => {
+		const allDay: IcsEvent = {
+			...baseEvent,
+			allDay: true,
+			rrule: null,
+			exdates: [],
+			dtstart: new Date("2026-06-20T00:00:00.000Z"),
+			dtend: new Date("2026-06-20T00:00:00.000Z"),
+		};
+		const round1 = exportIcs([allDay]);
+		const [imported] = importIcs(round1);
+		const round2 = exportIcs([
+			{ ...allDay, dtend: imported?.dtend ?? allDay.dtend },
+		]);
+		// Both exports emit the same exclusive span — no +1/round drift.
+		expect(round1).toContain("DTEND;VALUE=DATE:20260621");
+		expect(round2).toContain("DTEND;VALUE=DATE:20260621");
+	});
+
+	it("preserves a multi-day all-day span across round-trip (C4)", () => {
+		// Jun 20–22 inclusive → DTEND exclusive 20260623; import → inclusive Jun 22.
+		const span: IcsEvent = {
+			...baseEvent,
+			allDay: true,
+			rrule: null,
+			exdates: [],
+			dtstart: new Date("2026-06-20T00:00:00.000Z"),
+			dtend: new Date("2026-06-22T00:00:00.000Z"),
+		};
+		const ics = exportIcs([span]);
+		expect(ics).toContain("DTEND;VALUE=DATE:20260623");
+		const [imported] = importIcs(ics);
+		expect(imported?.dtend.toISOString()).toBe("2026-06-22T00:00:00.000Z");
+	});
+
 	it("parses all-day VALUE=DATE events", () => {
 		const ics = [
 			"BEGIN:VCALENDAR",
