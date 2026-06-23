@@ -9,6 +9,7 @@ import {
 	FolderOpen,
 	LogOut,
 	Mail,
+	MessagesSquare,
 	NotebookText,
 	Settings,
 } from "lucide-react-native";
@@ -49,6 +50,11 @@ const SUITE_ITEMS: SuiteItem[] = [
 		label: "Mail",
 		icon: Mail,
 		href: "/(authenticated)/(more)/mail",
+	},
+	{
+		label: "Chat",
+		icon: MessagesSquare,
+		href: "/(authenticated)/(more)/chat",
 	},
 ];
 
