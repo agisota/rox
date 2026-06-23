@@ -293,3 +293,70 @@ export const syncCursors = pgTable(
 
 export type InsertSyncCursor = typeof syncCursors.$inferInsert;
 export type SelectSyncCursor = typeof syncCursors.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// agent_state_claims — strict single-writer claim leases (CAS-arbitrated)
+// ---------------------------------------------------------------------------
+
+/**
+ * Postgres-arbitrated lease registry for strict single-writer claims
+ * (`@rox/agent-state`'s claim path, WS-D). libSQL embedded replicas are
+ * last-writer-wins and so CANNOT arbitrate mutual exclusion — the few
+ * operations that need real serialization ("only host A may run preinstall X",
+ * "claim workspace W") are resolved here via an atomic compare-and-swap (CAS)
+ * lease, never by libSQL LWW.
+ *
+ * The claim is keyed by `(organization_id, scope, scope_id, key)` and carries a
+ * holder (`owner_device`) plus a `lease_expires_at` deadline. A claim is granted
+ * when the row is unowned, when the existing lease has expired, or when the same
+ * device re-claims (idempotent renewal) — enforced atomically by a single
+ * conditional `INSERT ... ON CONFLICT DO UPDATE ... WHERE` in
+ * `runtime.claim` (see `packages/trpc/src/router/runtime/runtime.ts`). A live
+ * lease held by a different device is rejected.
+ */
+export const agentStateClaims = pgTable(
+	"agent_state_claims",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		// Coordination scope the claim is keyed under: workspace | run | host.
+		scope: text().notNull(),
+		scopeId: text("scope_id").notNull(),
+		// Claim discriminator within the scope (e.g. "preinstall", "owner").
+		key: text().notNull(),
+		// Device currently holding the lease.
+		ownerDevice: text("owner_device").notNull(),
+		// Lease deadline: at/after this instant the claim is reclaimable by anyone.
+		leaseExpiresAt: timestamp("lease_expires_at", {
+			withTimezone: true,
+		}).notNull(),
+		// When the current holder acquired/last renewed the lease.
+		claimedAt: timestamp("claimed_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(t) => [
+		index("agent_state_claims_org_idx").on(t.organizationId),
+		index("agent_state_claims_lease_idx").on(t.leaseExpiresAt),
+		// The natural key: one lease row per (org, scope, scope_id, key). The CAS
+		// upsert conflict-targets this index.
+		uniqueIndex("agent_state_claims_org_scope_key_uniq").on(
+			t.organizationId,
+			t.scope,
+			t.scopeId,
+			t.key,
+		),
+	],
+);
+
+export type InsertAgentStateClaim = typeof agentStateClaims.$inferInsert;
+export type SelectAgentStateClaim = typeof agentStateClaims.$inferSelect;

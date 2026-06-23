@@ -234,6 +234,29 @@ export const reportHealthInput = orgScoped
 	});
 export const reportHealthOutput = z.object({ ok: z.literal(true) });
 
+// --- 12b) runtime.claim (serviceProcedure) — strict single-writer CAS lease.
+// Field names mirror `@rox/agent-state` `ClaimRequest` so the host claim
+// transport can forward its request object verbatim. The claim is arbitrated by
+// an atomic compare-and-swap on `agent_state_claims` (Postgres), NEVER libSQL.
+export const agentStateScopeEnum = z.enum(["workspace", "run", "host"]);
+export const claimInput = z.object({
+	orgId: z.string().uuid(),
+	deviceId: z.string().min(1).max(128),
+	scope: agentStateScopeEnum,
+	scopeId: z.string().min(1).max(256),
+	key: z.string().min(1).max(256),
+	// Lease duration; the claim auto-expires this many seconds after acquisition
+	// so a crashed holder never deadlocks the resource. Default 120s, matching
+	// `embedding.claimBatch`.
+	leaseSec: z.number().int().min(30).max(3600).default(120),
+});
+// Mirrors `@rox/agent-state` `ClaimResult`.
+export const claimOutput = z.object({
+	ok: z.boolean(),
+	ownerDevice: z.string().optional(),
+	reason: z.string().optional(),
+});
+
 // --- 13) sync.electricToken
 export const electricTokenInput = orgScoped.extend({
 	shapes: z
