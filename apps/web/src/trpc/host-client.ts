@@ -1,11 +1,13 @@
 import {
 	createHostClient,
+	createHostWriteClient,
 	type HostAgentConfig,
 	type HostClient,
 	type HostKind,
 	type HostTarget,
 	type HostTerminalSession,
 	type HostTransport,
+	type HostWriteClient,
 } from "@rox/shared/host-client";
 import SuperJSON from "superjson";
 import { getAuthToken } from "./auth-token";
@@ -108,6 +110,21 @@ export function createRelayHostClient(
 	kind: HostKind = "local",
 ): HostClient {
 	return createHostClient(
+		createRelayTransport({ routingKey, transport: "relay", kind }),
+	);
+}
+
+/**
+ * Build the additive {@link HostWriteClient} (WS-A — Option A) over the relay,
+ * mirroring {@link createRelayHostClient}. Same relay transport as the read
+ * client — write-capable web screens opt in here; read-only screens keep using
+ * {@link createRelayHostClient}.
+ */
+export function createRelayHostWriteClient(
+	routingKey: string,
+	kind: HostKind = "local",
+): HostWriteClient {
+	return createHostWriteClient(
 		createRelayTransport({ routingKey, transport: "relay", kind }),
 	);
 }
