@@ -75,6 +75,7 @@ const RESTORABLE_STATIC_ROUTES = [
 	"/cli",
 	"/drive",
 	"/email",
+	"/inbox",
 	"/journal",
 	"/memory",
 	"/notes",
