@@ -3,8 +3,8 @@ import { Button } from "@rox/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@rox/ui/card";
 import { ArrowLeft, Folder, Hash, Route, Terminal } from "lucide-react";
 import Link from "next/link";
-
 import type { SessionDashboardDetail } from "../../agents/session-dashboard";
+import { SessionObjectLinkGateClient } from "../../agents/sessions/components/SessionObjectLink";
 import { SessionActivityFeed } from "../SessionActivityFeed";
 
 export function SessionDetailDashboard({
@@ -192,6 +192,11 @@ export function SessionDetailDashboard({
 			</section>
 
 			<SessionActivityFeed items={session.activity} />
+
+			<SessionObjectLinkGateClient
+				sessionId={session.id}
+				sessionTitle={session.title}
+			/>
 
 			<details className="rounded-lg border bg-card" open>
 				<summary className="cursor-pointer border-b px-4 py-3 text-sm font-semibold">

@@ -817,9 +817,21 @@ export const EXPERIMENTAL_FEATURES = [
 			shortDescription:
 				"Attach chat sessions to tasks, issues, and roadmap items.",
 			longDescription:
-				"Controls object-linked chat relationships so conversations become reusable project context.",
+				"Links a chat session to Project-OS objects over the native Rox object graph. The session's `agent_session` graph node is ensured on demand via `graph.create` (idempotent on a deterministic key → true get-or-create, no migration), then related to a picked object with `graph.link` (relation `about`/`references`); the session's existing links read back through `graph.neighbors`. Surfaced on the web agents session-detail page behind this gate. Backed entirely by the shipped graph router — no Huly, no new procedure.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
+			// Backed by a REAL gated surface: the `(agents)` session-detail page
+			// renders a SessionObjectLinkPanel (behind `resolveObjectLinkedChatGate`)
+			// that ensures the session's `agent_session` node (`graph.create`,
+			// deterministic idempotency key → get-or-create), finds a target with the
+			// shipped `graph.search`, links session→object via `graph.link`
+			// (`about`/`references`), and lists the session's outgoing links via
+			// `graph.neighbors` (`mapSessionLinks`). The active org is the
+			// provider-configured signal; the only declared dependency
+			// (`desktop-runtime`) is a `runtime` dep, so the resolver never gates this
+			// web surface (same clean-flip precedent as `projectOs.workspaceShell` /
+			// `projectOs.unifiedSearch`). No new query and no migration — the graph
+			// link/search/neighbors procedures already exist end-to-end.
+			implementationStatus: "ready",
 			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Chat", "Object details", "Task sidebar"],
 		},
