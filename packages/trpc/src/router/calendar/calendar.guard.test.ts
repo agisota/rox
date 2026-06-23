@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { TRPCError } from "@trpc/server";
 
 // --- Cross-org attendee/share guard (C1/S3) ---------------------------------
-// A sibling of calendar.test.ts with its own harness. `assertOrgMembers` throws
-// for any non-empty userId set, and `verifyOrgMembership` throws only for the
-// OUTSIDER (the caller `user-1` always resolves, since the active-org middleware
-// itself calls verifyOrgMembership for the caller). So createEvent/addAttendee/
-// shareCalendar reject a non-member userId, while an email-kind attendee (empty
-// userId set) still passes.
+// A sibling of calendar.test.ts with its own harness. We DON'T mock the
+// assertOrgMembers module (bun's mock.module is process-global and would bleed
+// into assertOrgMembers.test.ts). Instead the fakeDb's `members` select returns
+// [] so the REAL guard throws FORBIDDEN for any non-empty userId set; an
+// email-kind attendee flat-maps to [] userIds → the guard returns early (no
+// select) and stays exempt. `verifyOrgMembership` throws only for the OUTSIDER
+// (the caller `user-1` always resolves, since the active-org middleware itself
+// calls verifyOrgMembership for the caller). So createEvent/addAttendee/
+// shareCalendar reject a non-member userId, while an email-kind attendee passes.
 
 type AnyRow = Record<string, unknown>;
 
@@ -81,17 +84,6 @@ mock.module("../integration/utils", () => ({
 			});
 		}
 		return Promise.resolve({ membership: {} });
-	},
-	// Throws only for a non-empty userId set, so email-only attendees (which
-	// flat-map to []) stay exempt — exactly the router's contract.
-	assertOrgMembers: (_org: string, userIds: string[]) => {
-		if (userIds.length > 0) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "One or more recipients are not members of this organization",
-			});
-		}
-		return Promise.resolve();
 	},
 }));
 
