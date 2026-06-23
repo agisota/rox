@@ -300,6 +300,30 @@ describe("experimental features registry", () => {
 		expect(state.reason).toBeUndefined();
 	});
 
+	test("projectOs.crmContacts ships a ready, natively-backed contacts surface", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"projectOs.crmContacts",
+		);
+		expect(definition).toBeDefined();
+		expect(definition?.implementationStatus).toBe("ready");
+		// Backed by CrmContactsPanel over `graph.listContacts` + `graph.neighbors` —
+		// Huly is demoted to an optional import connector, so there is no required
+		// provider dependency (the contact objects are canonical on the Rox graph).
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders).toHaveLength(0);
+	});
+
+	test("projectOs.crmContacts resolves available with the desktop runtime", () => {
+		const state = resolveExperimentalFeatureState("projectOs.crmContacts", {
+			dependencies: { "desktop-runtime": "configured" },
+		});
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
+
 	test("agentNative.commandPalette ships a ready, locally-backed surface", () => {
 		const definition = getExperimentalFeatureDefinition(
 			"agentNative.commandPalette",

@@ -871,10 +871,23 @@ export const EXPERIMENTAL_FEATURES = [
 			title: "CRM Contacts",
 			shortDescription: "Track customer and stakeholder contacts as objects.",
 			longDescription:
-				"Prepares contact records that connect calls, evidence, product requests, and roadmap objects.",
-			maturity: "alpha",
-			implementationStatus: "planned",
-			dependencies: [HULY_PROVIDER],
+				"A CRM contacts surface over the native Rox object graph: the org's `kind=contact` nodes joined to their 1:1 `contacts` detail (display name, primary email, avatar, structured fields) are listed via `graph.listContacts`, and selecting a contact shows the objects it links to (calls, notes, tasks, projects) read back through `graph.neighbors`. Surfaced on the web agents app behind this gate. Backed entirely by the shipped graph router + `contacts` table — no Huly, no migration.",
+			maturity: "preview",
+			// Backed by a REAL gated surface: the `(agents)` web app renders a
+			// CrmContactsPanel (behind `resolveCrmContactsGate`) that lists the org's
+			// contact objects with the new read-only `graph.listContacts`
+			// (`entities` kind=contact LEFT JOIN the shipped `contacts` detail table,
+			// keyset-paginated like `graph.listByKind`) and opens a contact detail
+			// that reads its linked objects via the shipped `graph.neighbors`
+			// (`mapContactLinks`). The active org is the provider-configured signal;
+			// the only declared dependency (`desktop-runtime`) is a `runtime` dep, so
+			// the resolver never gates this web surface (same clean-flip precedent as
+			// `projectOs.unifiedSearch` / `projectOs.objectLinkedChat`). Huly is
+			// demoted to an optional import connector (never a gate) — the contact
+			// objects are canonical on the Rox graph. No new entity_kind and no
+			// migration: the `contact` kind + `contacts` table already ship.
+			implementationStatus: "ready",
+			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Customer evidence", "Project OS", "Search"],
 		},
 		{
