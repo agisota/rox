@@ -31,7 +31,7 @@ export function NoteList({
 	const actions = useNotesActions(notebookId);
 
 	const notes = useQuery(
-		trpc.notebooks.listNotes.queryOptions({
+		trpc.notes.listNotes.queryOptions({
 			notebookId: notebookId ?? undefined,
 		}),
 	);

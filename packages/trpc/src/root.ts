@@ -85,8 +85,11 @@ export const appRouter = createTRPCRouter({
 	mail: mailRouter,
 	memory: memoryRouter,
 	mesh: meshRouter,
-	notebooks: notebooksRouter,
-	notes: notesRouter,
+	// D7 Notes (notebooks → notes, org+user-scoped) is the canonical `notes`
+	// surface. The legacy unscoped per-profile notes router is bound under
+	// `profileNotes` to remove the wrong-router footgun (N4).
+	notes: notebooksRouter,
+	profileNotes: notesRouter,
 	organization: organizationRouter,
 	pipeline: pipelineRouter,
 	pipelineTrigger: triggerRouter,

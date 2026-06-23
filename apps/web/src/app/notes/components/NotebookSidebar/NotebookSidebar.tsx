@@ -21,7 +21,7 @@ export function NotebookSidebar({
 	onSelect,
 }: NotebookSidebarProps) {
 	const trpc = useTRPC();
-	const notebooks = useQuery(trpc.notebooks.listNotebooks.queryOptions());
+	const notebooks = useQuery(trpc.notes.listNotebooks.queryOptions());
 	const actions = useNotesActions(selectedNotebookId);
 
 	const handleCreate = () => {

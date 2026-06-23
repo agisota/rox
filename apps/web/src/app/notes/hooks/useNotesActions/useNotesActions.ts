@@ -17,13 +17,13 @@ export function useNotesActions(notebookId: string | null) {
 
 	const invalidateNotebooks = useCallback(async () => {
 		await queryClient.invalidateQueries({
-			queryKey: trpc.notebooks.listNotebooks.queryKey(),
+			queryKey: trpc.notes.listNotebooks.queryKey(),
 		});
 	}, [queryClient, trpc]);
 
 	const invalidateNotes = useCallback(async () => {
 		await queryClient.invalidateQueries({
-			queryKey: trpc.notebooks.listNotes.queryKey({
+			queryKey: trpc.notes.listNotes.queryKey({
 				notebookId: notebookId ?? undefined,
 			}),
 		});
@@ -35,7 +35,7 @@ export function useNotesActions(notebookId: string | null) {
 	const invalidateNote = useCallback(
 		async (noteId: string) => {
 			await queryClient.invalidateQueries({
-				queryKey: trpc.notebooks.getNote.queryKey({ noteId }),
+				queryKey: trpc.notes.getNote.queryKey({ noteId }),
 			});
 		},
 		[queryClient, trpc],
@@ -46,14 +46,14 @@ export function useNotesActions(notebookId: string | null) {
 	};
 
 	const createNotebook = useMutation(
-		trpc.notebooks.createNotebook.mutationOptions({
+		trpc.notes.createNotebook.mutationOptions({
 			onSuccess: invalidateNotebooks,
 			onError: onError("Не удалось создать блокнот"),
 		}),
 	);
 
 	const deleteNotebook = useMutation(
-		trpc.notebooks.deleteNotebook.mutationOptions({
+		trpc.notes.deleteNotebook.mutationOptions({
 			onSuccess: async () => {
 				await invalidateNotebooks();
 				await invalidateNotes();
@@ -63,14 +63,14 @@ export function useNotesActions(notebookId: string | null) {
 	);
 
 	const createNote = useMutation(
-		trpc.notebooks.createNote.mutationOptions({
+		trpc.notes.createNote.mutationOptions({
 			onSuccess: invalidateNotes,
 			onError: onError("Не удалось создать заметку"),
 		}),
 	);
 
 	const updateNote = useMutation(
-		trpc.notebooks.updateNote.mutationOptions({
+		trpc.notes.updateNote.mutationOptions({
 			// `updateNote` returns the row WITHOUT `publicUrl`, so we refetch
 			// `getNote` (and the lists) rather than seeding the cache with a row
 			// that would blank the editor's public-link block.
@@ -83,21 +83,21 @@ export function useNotesActions(notebookId: string | null) {
 	);
 
 	const deleteNote = useMutation(
-		trpc.notebooks.deleteNote.mutationOptions({
+		trpc.notes.deleteNote.mutationOptions({
 			onSuccess: invalidateNotes,
 			onError: onError("Не удалось удалить заметку"),
 		}),
 	);
 
 	const setPublished = useMutation(
-		trpc.notebooks.setPublished.mutationOptions({
+		trpc.notes.setPublished.mutationOptions({
 			// The returned row carries the freshly-minted `publicUrl`, so we seed
 			// the `getNote` cache directly (exact, no refetch flicker) before
 			// refreshing the list so the published dot updates too.
 			onSuccess: async (row) => {
 				if (row?.id) {
 					queryClient.setQueryData(
-						trpc.notebooks.getNote.queryKey({ noteId: row.id }),
+						trpc.notes.getNote.queryKey({ noteId: row.id }),
 						row,
 					);
 				}

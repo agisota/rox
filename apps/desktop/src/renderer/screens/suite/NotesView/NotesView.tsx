@@ -47,7 +47,7 @@ export function NotesView() {
 	const [noteMarkdown, setNoteMarkdown] = useState("");
 
 	const notebooksQuery = useQuery(
-		trpc.notebooks.listNotebooks.queryOptions(undefined),
+		trpc.notes.listNotebooks.queryOptions(undefined),
 	);
 	const notebooks = notebooksQuery.data ?? [];
 
@@ -59,7 +59,7 @@ export function NotesView() {
 	}, [activeNotebookId, notebooks]);
 
 	const notesQuery = useQuery({
-		...trpc.notebooks.listNotes.queryOptions({
+		...trpc.notes.listNotes.queryOptions({
 			notebookId: activeNotebookId ?? undefined,
 		}),
 		enabled: activeNotebookId !== null,
@@ -67,15 +67,15 @@ export function NotesView() {
 	const notes = notesQuery.data ?? [];
 
 	const noteQuery = useQuery({
-		...trpc.notebooks.getNote.queryOptions({ noteId: activeNoteId ?? "" }),
+		...trpc.notes.getNote.queryOptions({ noteId: activeNoteId ?? "" }),
 		enabled: activeNoteId !== null,
 	});
 
 	const createNotebook = useMutation(
-		trpc.notebooks.createNotebook.mutationOptions({
+		trpc.notes.createNotebook.mutationOptions({
 			onSuccess: async (row) => {
 				await queryClient.invalidateQueries({
-					queryKey: trpc.notebooks.listNotebooks.queryKey(undefined),
+					queryKey: trpc.notes.listNotebooks.queryKey(undefined),
 				});
 				setNotebookDialogOpen(false);
 				setNotebookName("");
@@ -89,11 +89,11 @@ export function NotesView() {
 	);
 
 	const createNote = useMutation(
-		trpc.notebooks.createNote.mutationOptions({
+		trpc.notes.createNote.mutationOptions({
 			onSuccess: async (row) => {
 				if (activeNotebookId) {
 					await queryClient.invalidateQueries({
-						queryKey: trpc.notebooks.listNotes.queryKey({
+						queryKey: trpc.notes.listNotes.queryKey({
 							notebookId: activeNotebookId,
 						}),
 					});

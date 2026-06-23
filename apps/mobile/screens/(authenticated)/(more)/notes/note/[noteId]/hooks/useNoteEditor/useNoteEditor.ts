@@ -2,7 +2,7 @@ import type { RouterOutputs } from "@rox/trpc";
 import { useCallback, useState } from "react";
 import { apiClient } from "@/lib/trpc/client";
 
-export type NoteDetail = RouterOutputs["notebooks"]["getNote"];
+export type NoteDetail = RouterOutputs["notes"]["getNote"];
 
 interface SaveInput {
 	title: string;
@@ -42,7 +42,7 @@ export function useNoteEditor(noteId: string | undefined): UseNoteEditorResult {
 			setSaving(true);
 			setError(null);
 			try {
-				await apiClient.notebooks.updateNote.mutate({
+				await apiClient.notes.updateNote.mutate({
 					noteId,
 					title: trimmed,
 					markdown,
@@ -65,12 +65,12 @@ export function useNoteEditor(noteId: string | undefined): UseNoteEditorResult {
 			setPublishing(true);
 			setError(null);
 			try {
-				await apiClient.notebooks.setPublished.mutate({
+				await apiClient.notes.setPublished.mutate({
 					noteId,
 					isPublished,
 				});
 				// Re-read to pick up the server-assigned slug + publicUrl.
-				return await apiClient.notebooks.getNote.query({ noteId });
+				return await apiClient.notes.getNote.query({ noteId });
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : "Failed to update publish state",
