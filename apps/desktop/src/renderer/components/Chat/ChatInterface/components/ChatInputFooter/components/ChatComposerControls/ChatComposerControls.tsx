@@ -105,12 +105,17 @@ export function ChatComposerControls({
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />
-				<MicButton
-					onComplete={onDictationComplete}
-					transcribing={dictationTranscribing}
-					disabled={!dictationConfigured || dictationOff}
-					onReady={handleMicReady}
-				/>
+				{/* Hidden (not merely disabled) when the user turns dictation off in
+				    Settings → Voice — matches the prior desktop behavior. The
+				    voice.isConfigured gate stays on `disabled`. */}
+				{!dictationOff && (
+					<MicButton
+						onComplete={onDictationComplete}
+						transcribing={dictationTranscribing}
+						disabled={!dictationConfigured}
+						onReady={handleMicReady}
+					/>
+				)}
 				<PromptInputSubmit
 					className="size-[23px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
 					status={submitStatus}
