@@ -1,9 +1,11 @@
 import { RoxRoomAudioRenderer } from "@rox/rtc/client";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
+import { LiveRoomActivityPanel } from "@rox/ui/live-room-activity-panel";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
-import { Loader2, Mic, MicOff, PhoneOff, Radio } from "lucide-react";
+import { Activity, Loader2, Mic, MicOff, PhoneOff, Radio } from "lucide-react";
 import { useCallback } from "react";
 import { ExperimentalFeatureGate } from "renderer/components/ExperimentalFeatureGate";
 import { authClient } from "renderer/lib/auth-client";
@@ -63,6 +65,7 @@ function VoiceRoomControls({
 		state,
 		isMuted,
 		participantCount,
+		roomActivity,
 		connect,
 		disconnect,
 		toggleMute,
@@ -137,6 +140,36 @@ function VoiceRoomControls({
 					{participantCount}
 				</span>
 			</Badge>
+			<ExperimentalFeatureGate featureId="live.transcript">
+				<Popover>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<PopoverTrigger asChild>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-xs"
+									aria-label="Активность комнаты"
+									className="text-muted-foreground hover:text-foreground"
+								>
+									<Activity className="size-3.5" />
+								</Button>
+							</PopoverTrigger>
+						</TooltipTrigger>
+						<TooltipContent side="bottom" sideOffset={4}>
+							Активность комнаты
+						</TooltipContent>
+					</Tooltip>
+					<PopoverContent
+						side="bottom"
+						align="end"
+						sideOffset={6}
+						className="w-auto"
+					>
+						<LiveRoomActivityPanel activity={roomActivity} />
+					</PopoverContent>
+				</Popover>
+			</ExperimentalFeatureGate>
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<Button
