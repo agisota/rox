@@ -41,18 +41,17 @@ import type { HostChatMessage, HostTarget, HostTransport } from "./types";
 type _ChatContractAnchor = HostChatMessage;
 
 /**
- * Outcome of an {@link HostAgentWriteNamespace.launch} call. Mirrors the value
- * shape of `agentLaunchResultSchema` (`@rox/shared/agent-launch`:104-113) /
- * `AGENT_LAUNCH_STATUS`:21-26 — the four launch states a host can report. Kept
- * as a hand-typed value (not `z.infer`) so the boundary stays decoupled from the
- * host's zod modules.
+ * Outcome of an {@link HostAgentWriteNamespace.launch} call. Hand-typed mirror
+ * of the host's `AgentRunResult` discriminated union — the value the
+ * `agents.run` mutation actually returns (host
+ * `trpc/router/agents/agents.ts`:165-175). A `terminal` launch carries the
+ * queued shell `command`; a `chat` launch does not. Kept as a boundary copy (no
+ * import of `@rox/host-service`) for the same reason as the other hand-typed
+ * host outputs: host-only modules must not leak into a web/mobile type-check.
  */
-export interface HostAgentLaunchResult {
-	sessionId?: string;
-	paneId?: string;
-	tabId?: string;
-	status: "queued" | "launching" | "running" | "failed";
-}
+export type HostAgentRunResult =
+	| { kind: "terminal"; sessionId: string; label: string; command: string }
+	| { kind: "chat"; sessionId: string; label: string };
 
 /**
  * Result of {@link HostChatWriteNamespace.sendMessage}. The host's
@@ -92,7 +91,7 @@ export interface HostAgentWriteNamespace {
 		agent: string;
 		prompt: string;
 		attachmentIds?: string[];
-	}): Promise<HostAgentLaunchResult>;
+	}): Promise<HostAgentRunResult>;
 }
 
 /**
@@ -150,7 +149,7 @@ export function createHostWriteClient(
 		},
 		agent: {
 			launch(input) {
-				return transport.call<HostAgentLaunchResult>(
+				return transport.call<HostAgentRunResult>(
 					"agents.run",
 					{
 						workspaceId: input.workspaceId,

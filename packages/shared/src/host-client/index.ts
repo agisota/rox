@@ -8,7 +8,7 @@
 
 export { createHostClient } from "./create-host-client";
 export type {
-	HostAgentLaunchResult,
+	HostAgentRunResult,
 	HostAgentWriteNamespace,
 	HostChatSendResult,
 	HostChatWriteNamespace,

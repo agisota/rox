@@ -126,7 +126,12 @@ describe("createHostWriteClient", () => {
 
 	it("routes agent.launch to the host `agents.run` mutation as POST", async () => {
 		const { transport, calls } = makeRecordingTransport({
-			"agents.run": { status: "running", sessionId: "sess-1" },
+			"agents.run": {
+				kind: "terminal",
+				sessionId: "sess-1",
+				label: "Rox",
+				command: "rox run",
+			},
 		});
 		const client = createHostWriteClient(transport);
 		const result = await client.agent.launch({
@@ -135,7 +140,15 @@ describe("createHostWriteClient", () => {
 			prompt: "do it",
 			attachmentIds: ["a1", "a2"],
 		});
-		expect(result.status).toBe("running");
+		// VERIFIED against host agents.ts:165-175 — `agents.run` returns the
+		// `AgentRunResult` union; a `terminal` launch carries kind/sessionId/label
+		// /command (NOT a `status` field).
+		expect(result).toEqual({
+			kind: "terminal",
+			sessionId: "sess-1",
+			label: "Rox",
+			command: "rox run",
+		});
 		// VERIFIED against host agents.ts:299-309.
 		expect(calls).toEqual([
 			{
@@ -155,7 +168,7 @@ describe("createHostWriteClient", () => {
 		const { transport, calls } = makeRecordingTransport({
 			"chat.sendMessage": {},
 			"terminal.writeInput": { success: true },
-			"agents.run": { status: "queued" },
+			"agents.run": { kind: "chat", sessionId: "sess-1", label: "Rox" },
 		});
 		const client = createHostWriteClient(transport);
 		await client.chat.sendMessage({
