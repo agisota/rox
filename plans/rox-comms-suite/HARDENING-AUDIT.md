@@ -21,6 +21,70 @@ addresses, so the identity spine the whole suite derives from is not wired. Comb
 
 ---
 
+## Accepted architecture decisions (reconciled 2026-06-23)
+
+These convert two "silent spec drift" findings into explicit, accepted decisions. They are
+**docs-only reconciliations** — no code/schema changed in this pass; downstream code work is
+deferred and owner-gated.
+
+### AD-1 — Team chat data model = `comms_*` spine, not D2 `tc_*` (closes T2)
+
+**Decision:** the as-built team-chat / inbox surface is the **`comms_*` unified-comms spine**
+(`comms_threads`, `comms_messages`, `comms_participants`, `comms_addresses`, `comms_presence` in
+`packages/db/src/schema/comms.ts`, served by `commsRouter` = `comms` in `packages/trpc/src/root.ts`).
+The D2 `tc_*` model (separate `tc_conversations`/`tc_messages`/…) is **NOT built and will not be
+built as-is** (verified: 0 `tc_*` matches in `packages/db/src/schema/`; no `teamChat` in `root.ts`).
+
+**Rationale:** one spine unifies in-app chat with email + (future) XMPP threading — D1's headline
+value prop — instead of a parallel chat-only store that would duplicate threading/participant/
+read-state and require bespoke cross-transport merge logic.
+
+**Consequence / future deltas (owner-gated):** D2's `tc_*`-only features become **additive deltas on
+`comms_threads`/`comms_*`**, not a new table family — channels (`kind`/`slug`/`name`/`team_id`),
+`visibility` (org-public channels), canonical DM-dedup key (relates to T6), channel `role`/`muted`
+on participants, and edit/delete tombstones (`deleted_at`/`edited_at`/`kind`, relates to T8). The D2
+spec is annotated (not deleted) with a "SUPERSEDED / as-built reconciliation" section
+(`plans/rox-comms-suite/D2-team-chat-spec.md §0`).
+
+### AD-2 — Realtime model = tRPC request/response + invalidation (closes the drift in I7/T5/N7/N8)
+
+**Decision:** the as-built realtime model across the suite (comms/mail/calendar/notes) is
+**tRPC request/response + cache invalidation** (React Query `useQuery` + manual invalidate on
+mutation), **not** ElectricSQL live shapes. This means no server-push live delivery today; freshness
+comes from refetch/invalidation, not live-sync. See "Realtime model (as-built)" below.
+
+**Rationale:** the suite tables were never added to the Electric proxy shape allow-list
+(`apps/electric-proxy/src/table-scopes.ts` — verified 2026-06-23: 0 `comms_`/`mail_`/`cal_`/`note_`
+scopes), and the tRPC path was the shipped reality. Documenting it makes the gap an accepted
+decision rather than a silent contradiction of the schema-header "live-sync" promises.
+
+**Consequence / deferred owner decision:** migrating the comms spine (and the rest of the suite) to
+**ElectricSQL live shapes** is a deferred owner decision. It requires (a) adding `comms_*`/`mail_*`/
+`cal_*`/`note_*` shapes to `table-scopes.ts` scoped by `user_id + organization_id`, (b) a **re-audit
+of shape isolation** (the MASTER-PLAN's #1 risk — other-org/other-conversation leakage), and (c)
+swapping client `useQuery` → `useLiveQuery` with cache-first rendering (AGENTS.md #9). Until then,
+optimistic updates + tighter invalidation/polling are the lighter-weight interim option.
+
+---
+
+## Realtime model (as-built)
+
+**Model:** tRPC request/response + invalidation. Clients read via React Query `useQuery` against
+`commsRouter`/mail/calendar/notes procedures (e.g. `apps/web/.../inbox/hooks/useThreadList`,
+`.../useThread`); writes go through tRPC mutations that invalidate the relevant query keys. There is
+**no ElectricSQL live shape** for any suite table — none are registered in
+`apps/electric-proxy/src/table-scopes.ts`.
+
+**Implication:** delivery is pull-based (no live push). A second client does not see a new message/
+event/note until it refetches (navigation, focus, manual invalidation, or any polling interval the
+hook sets). The schema-header references to live-sync describe the **future** Electric option, not
+current behavior.
+
+**ElectricSQL live shapes — documented future option (deferred owner decision):** see AD-2 above for
+the migration shape and the mandatory shape-isolation re-audit gate.
+
+---
+
 ## TIER 0 — Foundation not actually wired (the suite's premise)
 
 | ID | Sev | Title | Evidence | Fix | Eff |
@@ -71,7 +135,7 @@ addresses, so the identity spine the whole suite derives from is not wired. Comb
 
 | ID | Sev | Title | Evidence | Notes |
 |----|-----|-------|----------|-------|
-| **T2** | HIGH (arch) | Entire D2 `tc_*` team-chat model (channels, DM `dm_key`, visibility, threads, reads, attachments, edit/delete tombstones) never built — shipped `comms_*` spine instead; spec & code describe two systems | no `tc_*` anywhere (grep 0); `root.ts:67-99` no `teamChat` | Reconcile: supersede D2 spec with comms-spine approach OR build `tc_*`. Don't leave divergence undocumented |
+| **T2** | HIGH (arch) | Entire D2 `tc_*` team-chat model (channels, DM `dm_key`, visibility, threads, reads, attachments, edit/delete tombstones) never built — shipped `comms_*` spine instead; spec & code describe two systems | no `tc_*` anywhere (grep 0); `root.ts:67-99` no `teamChat` | **RESOLVED (docs) 2026-06-23:** decision recorded — comms-spine is the as-built approach; `tc_*` is NOT built. D2 spec annotated with a "SUPERSEDED / as-built reconciliation" section (`D2-team-chat-spec.md §0`); channels/visibility/DM-dedup/edit-delete become additive deltas on `comms_threads`/`comms_*` (future, owner-gated). See "Accepted architecture decisions" below. Code work deferred. |
 | **C5** | MED | Per-occurrence overrides ("this event only") + EXDATE-from-UI missing (`cal_event_occurrences` absent) | grep 0 `recurrence_id`; EventDialog edits whole series only | Additive table + `updateOccurrence`/`cancelOccurrence` + UI choice |
 | **C6** | MED | Reminders fully unimplemented (no `cal_reminders`, no scheduler, no `next_fire_at`) | grep 0 across schema/router/api | Land Phase 4 + hook automation scheduler |
 | **C7** | MED | No public feed / ICS subscribe URL / `public_token` / visibility model / free-busy | schema lacks fields; only client Blob download `CalendarScreen.tsx:60` | Additive `public_token`/`visibility`/`cal_ics_feeds` + visibility-gated `text/calendar` route + `freebusy` |
@@ -84,7 +148,7 @@ addresses, so the identity spine the whole suite derives from is not wired. Comb
 | **I6 / T4** | MED | Unread count never surfaced — watermark written, never read back; no badge despite UI comments | `comms.ts:62-92` raw rows; `ThreadListItem.tsx:5-11` no badge | `listThreads` returns unread count (messages after `lastReadMessageId`) |
 | **I5** | MED | Nested transaction: `resolveContact` opens `dbWs.transaction` inside outer `sendMessage` tx → pool contention/partial-failure hole | `comms/ports.ts:185` inside `comms.ts:190-192` | Reuse injected `db`/`tx` handle |
 | **T3** | MED | Call metering to WS-E not wired — `CallButton` mints token only, no `rox_ledger` debit, no `kind=call` message | `CallButton.tsx:19-48`; no comms ledger consumer (grep) | Debit minutes over allotment on call end; persist call system-message |
-| **I7/T5/N7/N8** | MED | Real-time/Electric drift: comms/mail/calendar/notes are tRPC `useQuery` polling, NOT Electric `useLiveQuery` → no live delivery anywhere (chat isn't realtime); schema headers promise live-sync | `useThread.ts:25`, `useThreadList.ts:17`, mobile `useNote.ts:14-41`; suite tables absent from `electric-proxy/src/table-scopes.ts:77-168` | Decide: add Electric shapes (re-audit isolation) OR document tRPC model + add polling/optimistic |
+| **I7/T5/N7/N8** | MED | Real-time/Electric drift: comms/mail/calendar/notes are tRPC `useQuery` polling, NOT Electric `useLiveQuery` → no live delivery anywhere (chat isn't realtime); schema headers promise live-sync | `useThread.ts:25`, `useThreadList.ts:17`, mobile `useNote.ts:14-41`; suite tables absent from `electric-proxy/src/table-scopes.ts` (verified 2026-06-23: 0 `comms_`/`mail_`/`cal_`/`note_` scopes) | **DOCUMENTED (decision) 2026-06-23:** as-built realtime model = tRPC request/response + cache invalidation; ElectricSQL live shapes are a documented future option. See "Realtime model (as-built)" below. Full Electric-shapes migration (re-audit shape isolation) is a deferred owner decision; code work deferred. |
 | **T6** | LOW | DM dedupe inconsistent (userId-ref vs address-ref) → same pair forks into two threads | `MessageRouter.ts:367-370,497-500` | Normalize counterpart to stable key before `deriveDedupKey` |
 | **T7/I... markRead** | LOW | `markRead` accepts any `lastReadMessageId` (not validated to thread/org) | `comms.ts:208-233`; loose ref `:251` | Verify message ∈ thread+org before persisting |
 | **T8** | LOW | No edit/delete + no tombstone/`kind` on `comms_messages` | `schema/comms.ts:274-329` only `created_at`/`received_at` | Additive `deleted_at`/`edited_at`/`kind` + procs |
