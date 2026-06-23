@@ -192,16 +192,18 @@ import {
 // unions backing Postgres pgEnums; pin membership/order so an accidental edit
 // fails loudly offline (no DB needed), matching the existing enum guards above.
 describe("comms-suite enum value lists (D1 + D8/D9)", () => {
-	it("roxLedgerKindValues appends drive_overage at the END (ordinal-safe)", () => {
-		// DECISIONS.md DQ2: overage debits rox_ledger with kind 'drive_overage'.
-		// The first four values must keep their order so the pgEnum ordinals of
-		// existing rows are unchanged.
+	it("roxLedgerKindValues appends drive_overage + mail_send at the END (ordinal-safe)", () => {
+		// DECISIONS.md DQ2: overage debits rox_ledger with kind 'drive_overage';
+		// M3 debits per outbound send with kind 'mail_send'. The original four
+		// values must keep their order so the pgEnum ordinals of existing rows are
+		// unchanged; new kinds are appended.
 		expect(roxLedgerKindValues).toEqual([
 			"topup",
 			"request_charge",
 			"adjustment",
 			"seed",
 			"drive_overage",
+			"mail_send",
 		]);
 	});
 

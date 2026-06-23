@@ -26,16 +26,18 @@ import type { RoxLedgerReason } from "./rox-ledger";
  * layer asserts this matches the real enum at compile time.
  *
  * `drive_overage` (Rox Workspace Suite D8/D9) is written DIRECTLY by the Drive
- * overage cron — it has no shared {@link RoxLedgerReason} counterpart (like
- * `seed`), so it appears in this mirror for the db-parity guard but is NOT in
- * the reason→kind map below.
+ * overage cron, and `mail_send` (D3/M3) DIRECTLY by the mail send path — neither
+ * has a shared {@link RoxLedgerReason} counterpart (like `seed`), so they appear
+ * in this mirror for the db-parity guard but are NOT in the reason→kind map
+ * below.
  */
 export type RoxLedgerKind =
 	| "topup"
 	| "request_charge"
 	| "adjustment"
 	| "seed"
-	| "drive_overage";
+	| "drive_overage"
+	| "mail_send";
 
 /**
  * Every reason the persistence layer can be asked to write: the shared

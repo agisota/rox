@@ -113,6 +113,11 @@ export const mailAddresses = pgTable(
 		// For renamed-handle aliases (DQ4: 90-day grace). Null for a primary.
 		graceUntil: timestamp("grace_until", { withTimezone: true }),
 
+		// M4 suppression/reputation feedback: incremented by the Resend webhook
+		// when a recipient files a spam complaint against this address. A
+		// service-layer threshold can flip `status` to 'disabled' (kill-switch).
+		complaintCount: integer("complaint_count").notNull().default(0),
+
 		// Join key to the reservation registry (DQ4); nullable, lazily backfilled.
 		handleId: uuid("handle_id").references(() => identityHandles.id, {
 			onDelete: "set null",
@@ -242,6 +247,9 @@ export const mailMessages = pgTable(
 		index("mail_messages_thread_idx").on(t.threadId),
 		index("mail_messages_status_idx").on(t.status),
 		index("mail_messages_org_idx").on(t.organizationId),
+		// M4: the Resend delivery/bounce/complaint webhook resolves the outbound
+		// message by its provider email_id (`provider_event_id`).
+		index("mail_messages_provider_evt_idx").on(t.providerEventId),
 	],
 );
 

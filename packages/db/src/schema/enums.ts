@@ -450,6 +450,10 @@ export const roxLedgerKindValues = [
 	// debits the balance with this kind. APPEND-ONLY: added at the end so the
 	// pgEnum ordinal mapping of the existing four values is unchanged.
 	"drive_overage",
+	// Rox Workspace Suite — Mail (D3/M3) outbound send cost. Each outbound send
+	// debits the balance with this kind inside the send transaction (spam-cannon
+	// gate). APPEND-ONLY: added at the end so existing ordinals are unchanged.
+	"mail_send",
 ] as const;
 export const roxLedgerKindEnum = z.enum(roxLedgerKindValues);
 export type RoxLedgerKind = z.infer<typeof roxLedgerKindEnum>;
@@ -881,6 +885,10 @@ export const mailStatusValues = [
 	"delivered",
 	"bounced",
 	"failed",
+	// Rox Workspace Suite — Mail (D3/M4) Resend webhook feedback. A recipient
+	// marked the message as spam. APPEND-ONLY: added at the end so existing
+	// pgEnum ordinals are unchanged.
+	"complained",
 ] as const;
 export const mailStatusEnum = z.enum(mailStatusValues);
 export type MailStatus = z.infer<typeof mailStatusEnum>;

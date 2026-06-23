@@ -24,14 +24,25 @@ import {
 	mailMessages,
 	mailThreads,
 	ROX_MAIL_DOMAIN,
+	roxBalances,
+	roxLedger,
 	userProfiles,
 } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, sql } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
+import { getDriveStorage } from "../drive/storage";
 import { ensureBalance } from "../economy";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import {
+	MAIL_PRESIGN_TTL_SECONDS,
+	MAIL_SEND_COST_ROX,
+	MAIL_SEND_RATE_MAX,
+	MAIL_SEND_RATE_WINDOW_MS,
+} from "./config";
+import {
+	getAttachmentUrlSchema,
+	getBodyUrlSchema,
 	getMessageSchema,
 	getThreadSchema,
 	listThreadsSchema,
@@ -64,7 +75,12 @@ async function getOwnedThread(
 	return row;
 }
 
-/** Resolve the caller's primary `<handle>@rox.one` address row, if provisioned. */
+/**
+ * Resolve the caller's primary `<handle>@rox.one` address row, if provisioned.
+ * Returns the row regardless of status (active|grace|disabled) so the send path
+ * can short-circuit explicitly on `disabled` (M3 kill-switch) rather than
+ * silently treating a disabled address as "not provisioned".
+ */
 async function getPrimaryAddress(ownerUserId: string) {
 	const [row] = await db
 		.select()
@@ -73,11 +89,26 @@ async function getPrimaryAddress(ownerUserId: string) {
 			and(
 				eq(mailAddresses.userId, ownerUserId),
 				eq(mailAddresses.kind, "primary"),
-				eq(mailAddresses.status, "active"),
 			),
 		)
 		.limit(1);
 	return row ?? null;
+}
+
+/**
+ * Resolve the object-storage provider (R2) or throw a clean error when storage
+ * is unconfigured (CI/dev). Mail bodies + attachments share the Drive R2 store
+ * (DECISIONS.md DQ1), so the Drive seam is reused rather than duplicated.
+ */
+function requireStorage() {
+	const storage = getDriveStorage();
+	if (!storage) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message: "Object storage is not configured (missing R2 credentials).",
+		});
+	}
+	return storage;
 }
 
 export const mailRouter = {
@@ -230,13 +261,34 @@ export const mailRouter = {
 			const organizationId = await requireActiveOrgMembership(ctx);
 			const userId = ctx.session.user.id;
 
-			// Per-user quota/rate gate (WS-E): a non-positive balance blocks sending.
-			// Reuses the economy helper; no new ledger kind is introduced.
+			// Per-user balance gate (WS-E): the send must be affordable. The actual
+			// debit happens atomically inside the persist transaction below; here we
+			// only pre-flight so we can fail fast before touching the transport.
 			const balance = await ensureBalance(userId);
-			if (balance <= 0) {
+			if (balance < MAIL_SEND_COST_ROX) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Insufficient Rox balance to send mail.",
+				});
+			}
+
+			// Per-user rate cap (M3): count this user's outbound sends inside the
+			// rolling window. Reuses `created_at` — no extra table.
+			const windowStart = new Date(Date.now() - MAIL_SEND_RATE_WINDOW_MS);
+			const [recent] = await db
+				.select({ n: count() })
+				.from(mailMessages)
+				.where(
+					and(
+						eq(mailMessages.ownerUserId, userId),
+						eq(mailMessages.direction, "outbound"),
+						gt(mailMessages.createdAt, windowStart),
+					),
+				);
+			if ((recent?.n ?? 0) >= MAIL_SEND_RATE_MAX) {
+				throw new TRPCError({
+					code: "TOO_MANY_REQUESTS",
+					message: "Send rate limit exceeded. Try again shortly.",
 				});
 			}
 
@@ -245,6 +297,14 @@ export const mailRouter = {
 				throw new TRPCError({
 					code: "PRECONDITION_FAILED",
 					message: "Provision your mailbox before sending.",
+				});
+			}
+
+			// Kill-switch (M3): a suppressed/disabled address may never send.
+			if (address.status === "disabled") {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "This mailbox is disabled and cannot send mail.",
 				});
 			}
 
@@ -257,9 +317,45 @@ export const mailRouter = {
 				});
 			}
 
-			// Confirm thread ownership when replying.
+			// Confirm thread ownership when replying, and derive the RFC References
+			// chain server-side from the parent thread rather than trusting the
+			// client (M7). The newest message in the thread is the reply parent.
+			let parentThread: Awaited<ReturnType<typeof getOwnedThread>> | undefined;
+			let derivedInReplyTo: string | null = input.inReplyTo ?? null;
+			let derivedReferences: string[] = input.references ?? [];
 			if (input.threadId) {
-				await getOwnedThread(organizationId, userId, input.threadId);
+				parentThread = await getOwnedThread(
+					organizationId,
+					userId,
+					input.threadId,
+				);
+
+				const [parent] = await db
+					.select({
+						rfcMessageId: mailMessages.rfcMessageId,
+						inReplyTo: mailMessages.inReplyTo,
+						referencesIds: mailMessages.referencesIds,
+					})
+					.from(mailMessages)
+					.where(
+						and(
+							eq(mailMessages.threadId, parentThread.id),
+							eq(mailMessages.ownerUserId, userId),
+						),
+					)
+					.orderBy(desc(mailMessages.createdAt))
+					.limit(1);
+
+				if (parent) {
+					// References = parent's References chain + the parent's Message-ID;
+					// In-Reply-To = the parent's Message-ID. Both derived, not trusted.
+					const chain = [
+						...(parent.referencesIds ?? []),
+						...(parent.rfcMessageId ? [parent.rfcMessageId] : []),
+					];
+					derivedReferences = chain;
+					derivedInReplyTo = parent.rfcMessageId ?? derivedInReplyTo;
+				}
 			}
 
 			const adapter = new EmailAdapter({
@@ -279,8 +375,8 @@ export const mailRouter = {
 					body: input.body,
 					bodyHtml: input.bodyHtml ?? null,
 					metadata: {
-						inReplyTo: input.inReplyTo ?? undefined,
-						references: input.references ?? [],
+						inReplyTo: derivedInReplyTo ?? undefined,
+						references: derivedReferences,
 						cc: input.cc ?? [],
 						bcc: input.bcc ?? [],
 					},
@@ -295,43 +391,66 @@ export const mailRouter = {
 				},
 			);
 
-			// Persist the outbound envelope (body lives in the provider/R2, not here).
-			const [row] = await db
-				.insert(mailMessages)
-				.values({
-					organizationId,
-					ownerUserId: userId,
-					addressId: address.id,
-					threadId: input.threadId ?? null,
-					direction: "outbound",
-					status: "sent",
-					inReplyTo: input.inReplyTo ?? null,
-					referencesIds: input.references ?? null,
-					fromAddr: address.address,
-					toAddrs: input.to,
-					ccAddrs: input.cc ?? [],
-					bccAddrs: input.bcc ?? [],
-					subject: input.subject ?? null,
-					snippet: input.body.slice(0, 200),
-					hasAttachments: false,
-					provider: "resend",
-					providerEventId: result.providerId,
-					sentAt: new Date(),
-				})
-				.returning();
+			// Persist + debit atomically (M3): the send cost decrements the WS-E
+			// ledger/balance in the SAME transaction as the outbound row, so the
+			// spam-cannon gate is no longer a no-op. The thread's `message_count`
+			// + `last_message_at` are bumped on replies (M7).
+			const row = await db.transaction(async (tx) => {
+				const [inserted] = await tx
+					.insert(mailMessages)
+					.values({
+						organizationId,
+						ownerUserId: userId,
+						addressId: address.id,
+						threadId: input.threadId ?? null,
+						direction: "outbound",
+						status: "sent",
+						inReplyTo: derivedInReplyTo,
+						referencesIds: derivedReferences.length ? derivedReferences : null,
+						fromAddr: address.address,
+						toAddrs: input.to,
+						ccAddrs: input.cc ?? [],
+						bccAddrs: input.bcc ?? [],
+						subject: input.subject ?? null,
+						snippet: input.body.slice(0, 200),
+						hasAttachments: false,
+						provider: "resend",
+						providerEventId: result.providerId,
+						sentAt: new Date(),
+					})
+					.returning();
 
-			// Bump the thread's last-activity timestamp on replies.
-			if (input.threadId) {
-				await db
-					.update(mailThreads)
-					.set({ lastMessageAt: new Date() })
-					.where(
-						and(
-							eq(mailThreads.id, input.threadId),
-							eq(mailThreads.ownerUserId, userId),
-						),
-					);
-			}
+				// Debit the WS-E ledger + balance for this send (M3).
+				await tx.insert(roxLedger).values({
+					userId,
+					deltaRox: String(-MAIL_SEND_COST_ROX),
+					kind: "mail_send",
+				});
+				await tx
+					.update(roxBalances)
+					.set({
+						balanceRox: sql`${roxBalances.balanceRox} - ${MAIL_SEND_COST_ROX}`,
+					})
+					.where(eq(roxBalances.userId, userId));
+
+				// Bump the thread's activity + message_count on replies (M7).
+				if (input.threadId) {
+					await tx
+						.update(mailThreads)
+						.set({
+							lastMessageAt: new Date(),
+							messageCount: sql`${mailThreads.messageCount} + 1`,
+						})
+						.where(
+							and(
+								eq(mailThreads.id, input.threadId),
+								eq(mailThreads.ownerUserId, userId),
+							),
+						);
+				}
+
+				return inserted;
+			});
 
 			return {
 				messageId: row?.id ?? "",
@@ -366,5 +485,98 @@ export const mailRouter = {
 				});
 			}
 			return { ok: true as const };
+		}),
+
+	/**
+	 * Short-TTL presigned R2 GET for one attachment the caller owns (M5). The
+	 * attachment is owner-scoped via its parent message: a join confirms the
+	 * message belongs to the caller before any URL is minted.
+	 */
+	getAttachmentUrl: protectedProcedure
+		.input(getAttachmentUrlSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			const storage = requireStorage();
+
+			const [att] = await db
+				.select({
+					blobKey: mailAttachments.blobKey,
+					filename: mailAttachments.filename,
+				})
+				.from(mailAttachments)
+				.innerJoin(mailMessages, eq(mailAttachments.messageId, mailMessages.id))
+				.where(
+					and(
+						eq(mailAttachments.id, input.attachmentId),
+						eq(mailMessages.ownerUserId, userId),
+						eq(mailMessages.organizationId, organizationId),
+					),
+				)
+				.limit(1);
+			if (!att) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Attachment not found",
+				});
+			}
+
+			const presigned = await storage.presignGet({
+				key: att.blobKey,
+				downloadFilename: att.filename,
+				expiresIn: MAIL_PRESIGN_TTL_SECONDS,
+			});
+			return { url: presigned.url, expiresAt: presigned.expiresAt };
+		}),
+
+	/**
+	 * Short-TTL presigned R2 GET for a message body (M5). Defaults to the
+	 * extracted text/plain variant; `variant: "html"` returns the sanitized
+	 * text/html object. NOTE: the HTML object stored at `body_html_key` MUST be
+	 * server-side sanitized before render (the ingest/sanitize step owns that);
+	 * this procedure only mints a download URL, it does not render.
+	 */
+	getBodyUrl: protectedProcedure
+		.input(getBodyUrlSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			const storage = requireStorage();
+
+			const [message] = await db
+				.select({
+					bodyTextKey: mailMessages.bodyTextKey,
+					bodyHtmlKey: mailMessages.bodyHtmlKey,
+				})
+				.from(mailMessages)
+				.where(
+					and(
+						eq(mailMessages.id, input.messageId),
+						eq(mailMessages.ownerUserId, userId),
+						eq(mailMessages.organizationId, organizationId),
+					),
+				)
+				.limit(1);
+			if (!message) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Message not found",
+				});
+			}
+
+			const key =
+				input.variant === "html" ? message.bodyHtmlKey : message.bodyTextKey;
+			if (!key) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Body is not available for this message.",
+				});
+			}
+
+			const presigned = await storage.presignGet({
+				key,
+				expiresIn: MAIL_PRESIGN_TTL_SECONDS,
+			});
+			return { url: presigned.url, expiresAt: presigned.expiresAt };
 		}),
 } satisfies TRPCRouterRecord;
