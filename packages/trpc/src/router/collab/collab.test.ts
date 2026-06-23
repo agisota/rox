@@ -1,7 +1,12 @@
 import { describe, expect, mock, test } from "bun:test";
 import { dashboardRoomId, noteRoomId } from "@rox/collab";
 
-import { authorizeRoomForMember } from "./collab";
+// collab.ts imports `db` from @rox/db/client (the note-room ACL resolver), which
+// inits the real neon() client at module load. Stub it BEFORE importing the
+// router so these tests (which inject ports directly) never touch a live DB.
+mock.module("@rox/db/client", () => ({ db: {}, dbWs: {} }));
+
+const { authorizeRoomForMember } = await import("./collab");
 
 const userInfo = { name: "Ada", avatarUrl: null };
 
