@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `push_to_talk_accelerator` text;

@@ -36,6 +36,7 @@ import {
 	useKeyboardPreferencesStore,
 	useRecordHotkeys,
 } from "renderer/hotkeys";
+import { PushToTalkSettingsSection } from "./PushToTalkSettingsSection";
 
 const CATEGORY_ORDER: HotkeyCategory[] = [
 	"Navigation",
@@ -548,6 +549,12 @@ function KeyboardShortcutsPage() {
 						Не найдено горячих клавиш по запросу "{searchQuery}"
 					</div>
 				)}
+
+				{/* Push-to-talk (global shortcut). Self-gated behind the
+				    live.pushToTalkDesktop experiment — hidden until enabled. */}
+				<motion.div variants={staggerItem}>
+					<PushToTalkSettingsSection />
+				</motion.div>
 			</motion.div>
 
 			{/* Conflict dialog */}

@@ -122,4 +122,39 @@ describe("experimental features registry", () => {
 		expect(state.enabled).toBe(false);
 		expect(state.availability).toBe("available");
 	});
+
+	test("live.pushToTalkDesktop ships a ready desktop-runtime surface gated on LiveKit", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"live.pushToTalkDesktop",
+		);
+		expect(definition).toBeDefined();
+		expect(definition?.implementationStatus).toBe("ready");
+		// The global-shortcut surface only needs LiveKit (for the voice room); the
+		// desktop runtime is a runtime dependency, not a blocking provider.
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders.map((dependency) => dependency.id)).toEqual([
+			"livekit",
+		]);
+	});
+
+	test("live.pushToTalkDesktop resolves available once LiveKit is configured", () => {
+		const state = resolveExperimentalFeatureState("live.pushToTalkDesktop", {
+			dependencies: { "desktop-runtime": "configured", livekit: "configured" },
+		});
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
+
+	test("live.pushToTalkDesktop needs configuration when LiveKit is missing", () => {
+		const state = resolveExperimentalFeatureState("live.pushToTalkDesktop", {
+			dependencies: { "desktop-runtime": "configured", livekit: "missing" },
+		});
+		// Enabled by default, but not usable until the provider is configured —
+		// so the gate (enabled && available) stays closed.
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("needs_configuration");
+	});
 });
