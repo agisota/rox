@@ -42,8 +42,6 @@ import {
 	upsertCustomAgentDefinition,
 } from "@rox/shared/agent-settings";
 import {
-	EXPERIMENTAL_FEATURES,
-	type ExperimentalFeatureDependencyStatus,
 	isExperimentalFeatureId,
 	resolveExperimentalFeatureState,
 } from "@rox/shared/experimental-features";
@@ -90,6 +88,11 @@ import {
 	updateCustomAgentInputSchema,
 } from "./agent-preset-router.utils";
 import {
+	readExperimentalDependencyStates,
+	readExperimentalFeatureOverrides,
+	resolveExperimentalFeatureStates,
+} from "./experimental-feature-state";
+import {
 	setFontSettingsSchema,
 	transformFontSettings,
 } from "./font-settings.utils";
@@ -135,55 +138,10 @@ function getSettings() {
 	return row;
 }
 
-const EXPERIMENTAL_PROVIDER_ENV_KEYS = {
-	"agent-native": [["AGENT_NATIVE_API_KEY", "AGENT_NATIVE_URL"]],
-	"agent-native-templates": [
-		["AGENT_NATIVE_TEMPLATES_URL", "AGENT_NATIVE_TEMPLATES_TOKEN"],
-	],
-	github: [["GITHUB_TOKEN"], ["GH_TOKEN"]],
-	huly: [["HULY_API_TOKEN", "HULY_URL"]],
-	liveblocks: [["LIVEBLOCKS_SECRET_KEY", "NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY"]],
-	livekit: [
-		["LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "NEXT_PUBLIC_LIVEKIT_URL"],
-	],
-} as const;
-
-function hasConfiguredEnvKeyGroup(groups: readonly (readonly string[])[]) {
-	return groups.some((group) =>
-		group.every((key) => Boolean(process.env[key]?.trim())),
-	);
-}
-
-function readExperimentalDependencyStates(): Record<
-	string,
-	ExperimentalFeatureDependencyStatus
-> {
-	return {
-		"desktop-runtime": "configured",
-		...Object.fromEntries(
-			Object.entries(EXPERIMENTAL_PROVIDER_ENV_KEYS).map(([id, groups]) => [
-				id,
-				hasConfiguredEnvKeyGroup(groups) ? "configured" : "missing",
-			]),
-		),
-	};
-}
-
-function readExperimentalFeatureOverrides(): Record<string, boolean> {
-	const rows = localDb.select().from(experimentalFeatureOverrides).all();
-	return Object.fromEntries(rows.map((row) => [row.featureId, row.enabled]));
-}
-
-function resolveExperimentalFeatureStates() {
-	const dependencies = readExperimentalDependencyStates();
-	const overrides = readExperimentalFeatureOverrides();
-	return EXPERIMENTAL_FEATURES.map((feature) =>
-		resolveExperimentalFeatureState(feature, {
-			dependencies,
-			overrides,
-		}),
-	);
-}
+// Experimental-feature resolution (env-derived dependency states + DB
+// overrides) lives in a shared module so main-process native surfaces — e.g.
+// the push-to-talk global shortcut — gate on exactly the same predicate the
+// renderer does.
 
 function assertExperimentalFeatureId(id: string) {
 	if (!isExperimentalFeatureId(id)) {

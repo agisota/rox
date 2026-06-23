@@ -641,9 +641,9 @@ export const EXPERIMENTAL_FEATURES = [
 			title: "Push-to-Talk Desktop",
 			shortDescription: "Use desktop push-to-talk controls for live rooms.",
 			longDescription:
-				"Prepares desktop-level push-to-talk state and shortcuts for LiveKit room participation.",
+				"Registers a configurable desktop global shortcut that toggles the active voice room's microphone (toggle-to-talk; Electron global accelerators are press-only). The shortcut is armed only while a room is connected and is rebindable in Settings → Keyboard.",
 			maturity: "alpha",
-			implementationStatus: "planned",
+			implementationStatus: "ready",
 			dependencies: [LIVEKIT_PROVIDER, LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Global shortcuts", "Voice rooms", "Settings"],
 		},

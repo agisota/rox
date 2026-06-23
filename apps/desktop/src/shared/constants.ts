@@ -75,6 +75,15 @@ export const DEFAULT_DICTATION_ENABLED = true;
 export const DEFAULT_AMBIENT_CAPTURE_ENABLED = false;
 export const DEFAULT_VOICE_AGENT_CONTEXT = "";
 
+// Push-to-talk (live.pushToTalkDesktop). The global shortcut is an Electron
+// `globalShortcut` accelerator (press-only, no key-up), so this is a
+// TOGGLE-to-talk binding: pressing it flips the active voice room's mic mute.
+// Stored verbatim in the settings table as a native Electron accelerator string
+// so the main process can register it without translating renderer chords.
+// `Shift` is included so the global binding does not collide with the
+// window-focused ⌘M / system minimize.
+export const DEFAULT_PUSH_TO_TALK_ACCELERATOR = "CommandOrControl+Shift+M";
+
 // External links (documentation, help resources, etc.)
 export const EXTERNAL_LINKS = {
 	SETUP_TEARDOWN_SCRIPTS: `${process.env.NEXT_PUBLIC_DOCS_URL}/setup-teardown-scripts`,

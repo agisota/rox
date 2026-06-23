@@ -45,6 +45,7 @@ import {
 } from "./lib/persistence/persistence";
 import { ensureCatalogInstalled } from "./lib/preinstall-catalog";
 import { ensureProjectIconsDir, getProjectIconPath } from "./lib/project-icons";
+import { disposePushToTalkShortcut } from "./lib/push-to-talk";
 import { initSentry } from "./lib/sentry";
 import {
 	prewarmTerminalRuntime,
@@ -292,6 +293,7 @@ app.on("before-quit", async (event) => {
 		}
 		shutdownTanstackDbPersistence();
 		disposeTray();
+		disposePushToTalkShortcut();
 	} catch (error) {
 		logger.error("[main] Cleanup during quit failed:", error);
 	} finally {

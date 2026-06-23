@@ -126,7 +126,8 @@ CREATE TABLE settings (
   expose_host_service_via_relay INTEGER,
   dictation_enabled INTEGER DEFAULT 1,
   ambient_capture_enabled INTEGER DEFAULT 0,
-  voice_agent_context TEXT DEFAULT ''
+  voice_agent_context TEXT DEFAULT '',
+  push_to_talk_accelerator TEXT
 );
 CREATE TABLE browser_history (
   id TEXT PRIMARY KEY,

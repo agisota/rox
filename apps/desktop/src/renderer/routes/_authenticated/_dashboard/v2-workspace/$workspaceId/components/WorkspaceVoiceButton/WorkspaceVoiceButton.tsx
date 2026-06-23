@@ -10,6 +10,7 @@ import { useCallback } from "react";
 import { ExperimentalFeatureGate } from "renderer/components/ExperimentalFeatureGate";
 import { authClient } from "renderer/lib/auth-client";
 import { logger } from "renderer/lib/logger";
+import { usePushToTalkGlobalShortcut } from "./usePushToTalkGlobalShortcut";
 import { useWorkspaceVoiceRoom } from "./useWorkspaceVoiceRoom";
 
 interface WorkspaceVoiceButtonProps {
@@ -130,6 +131,9 @@ function VoiceRoomControls({
 	return (
 		<div className="flex items-center gap-1">
 			<RoxRoomAudioRenderer room={room} />
+			<ExperimentalFeatureGate featureId="live.pushToTalkDesktop">
+				<PushToTalkShortcut state={state} toggleMute={toggleMute} />
+			</ExperimentalFeatureGate>
 			<Badge
 				variant="outline"
 				className="gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
@@ -211,4 +215,20 @@ function VoiceRoomControls({
 			</Tooltip>
 		</div>
 	);
+}
+
+interface PushToTalkShortcutProps {
+	state: ReturnType<typeof useWorkspaceVoiceRoom>["state"];
+	toggleMute: ReturnType<typeof useWorkspaceVoiceRoom>["toggleMute"];
+}
+
+/**
+ * Headless mount for the desktop push-to-talk global shortcut. Rendering it
+ * only inside the `live.pushToTalkDesktop` gate is what scopes the OS-level
+ * `globalShortcut` to "feature enabled + room connected" — the hook reports
+ * connection state and toggles the mic on each global press.
+ */
+function PushToTalkShortcut({ state, toggleMute }: PushToTalkShortcutProps) {
+	usePushToTalkGlobalShortcut({ state, toggleMute });
+	return null;
 }

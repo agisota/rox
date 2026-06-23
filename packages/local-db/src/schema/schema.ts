@@ -269,6 +269,11 @@ export const settings = sqliteTable("settings", {
 		mode: "boolean",
 	}).default(false),
 	voiceAgentContext: text("voice_agent_context").default(""),
+	// Push-to-talk (live.pushToTalkDesktop): the global TOGGLE-to-talk shortcut,
+	// stored as a native Electron `globalShortcut` accelerator string (e.g.
+	// "CommandOrControl+Shift+M") so the main process can register it directly.
+	// Null = fall back to DEFAULT_PUSH_TO_TALK_ACCELERATOR.
+	pushToTalkAccelerator: text("push_to_talk_accelerator"),
 });
 
 export type InsertSettings = typeof settings.$inferInsert;
