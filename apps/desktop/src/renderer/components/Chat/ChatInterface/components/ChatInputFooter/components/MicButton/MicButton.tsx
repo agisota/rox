@@ -4,6 +4,7 @@ import type React from "react";
 import { useRef } from "react";
 import { useHotkey } from "renderer/hotkeys";
 import { type Recording, useDictation } from "renderer/lib/voice/useDictation";
+import { canStartDictation } from "./canStartDictation";
 import { WaveformOverlay } from "./WaveformOverlay";
 
 /** Upward drag (px) past which a held recording locks into toggle mode. */
@@ -32,7 +33,7 @@ export function MicButton({
 	// Keyboard shortcut toggles dictation in locked mode — press to start, press
 	// again to stop + insert. Modifiable in Settings → Keyboard.
 	useHotkey("DICTATE", () => {
-		if (disabled || transcribing) return;
+		if (!canStartDictation(disabled, transcribing)) return;
 		if (dictation.isActive) {
 			dictation.stop();
 		} else {
@@ -41,7 +42,7 @@ export function MicButton({
 	});
 
 	const handlePointerDown = (e: React.PointerEvent) => {
-		if (disabled || transcribing) return;
+		if (!canStartDictation(disabled, transcribing)) return;
 		e.preventDefault();
 		// A tap while locked stops + sends.
 		if (dictation.isLocked) {
