@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
 
 export const hostProjectListQueryKey = (hostUrl: string | null) =>
 	["project", "list", hostUrl] as const;
@@ -19,7 +20,7 @@ export function useHostProjectIds(hostUrl: string | null): Set<string> | null {
 				const rows = await client.project.list.query();
 				return new Set(rows.map((row) => row.id));
 			} catch (err) {
-				console.warn("useHostProjectIds: failed to list projects", {
+				logger.warn("useHostProjectIds: failed to list projects", {
 					hostUrl,
 					err,
 				});

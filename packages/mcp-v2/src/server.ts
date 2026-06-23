@@ -8,6 +8,7 @@ import type { McpContext } from "./auth";
 import type { McpToolCallEmitter } from "./define-tool";
 import {
 	type ProxyRegistrationResult,
+	registerDegradedSourcesNotice,
 	registerProxyTools,
 } from "./proxy-tools";
 import { registerTools } from "./tools/register";
@@ -55,6 +56,9 @@ export async function createProxyMcpServer(
 	const pool = options.pool ?? new AgentSourcePool(options.poolOptions);
 	const connected = await pool.connectAll(ctx);
 	const result = await registerProxyTools(server, connected);
+	// T7: surface failed downstream sources as a visible note in tools/list
+	// instead of silently omitting them (no-op when every source is healthy).
+	registerDegradedSourcesNotice(server, result.failures);
 
 	return {
 		server,

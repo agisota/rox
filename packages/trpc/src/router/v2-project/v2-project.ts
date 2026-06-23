@@ -2,6 +2,7 @@ import { dbWs } from "@rox/db/client";
 import { githubRepositories, organizations, v2Projects } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
 import { parseGitHubRemote } from "@rox/shared/github-remote";
+import { publishPipelineEvent } from "@rox/workflow-core";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { del } from "@vercel/blob";
@@ -279,6 +280,16 @@ export const v2ProjectRouter = {
 					method: input.repoCloneUrl ? "github" : "empty",
 					surface: "v2",
 				},
+			});
+
+			// Agent Pipelines: fire the `project_initialized` event so any enabled
+			// pipeline trigger bound to this org/project starts (design §4.3).
+			// Fire-and-forget — never blocks or fails project creation.
+			publishPipelineEvent({
+				kind: "project_initialized",
+				organizationId: project.organizationId,
+				v2ProjectId: project.id,
+				payload: { projectId: project.id, slug: project.slug },
 			});
 
 			if (githubOwner) {

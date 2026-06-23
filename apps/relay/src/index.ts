@@ -293,7 +293,10 @@ app.all("/hosts/:hostId/trpc/*", async (c) => {
 			headers,
 			body,
 		});
-		return new Response(res.body ?? null, {
+		// Streaming responses (SSE / chunked) pass the ReadableStream straight
+		// through so chunks reach the client as the host produces them; buffered
+		// responses use the single body string as before.
+		return new Response(res.stream ?? res.body ?? null, {
 			status: res.status,
 			headers: res.headers,
 		});

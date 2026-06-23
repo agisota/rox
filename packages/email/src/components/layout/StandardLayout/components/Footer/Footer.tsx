@@ -66,7 +66,7 @@ export function Footer({ showSocial = true }: FooterProps) {
 
 			{/* Tagline */}
 			<Text className="text-muted text-sm leading-snug m-0 mb-6">
-				Run dozens of Claude Code, Codex, or any other in parallel.
+				Запускайте десятки агентов Claude Code, Codex и других параллельно.
 			</Text>
 
 			{/* Legal Links */}
@@ -75,27 +75,27 @@ export function Footer({ showSocial = true }: FooterProps) {
 					href={`${env.NEXT_PUBLIC_MARKETING_URL}/privacy`}
 					className="text-muted no-underline"
 				>
-					Privacy
+					Конфиденциальность
 				</Link>
 				{" • "}
 				<Link
 					href={`${env.NEXT_PUBLIC_MARKETING_URL}/terms`}
 					className="text-muted no-underline"
 				>
-					Terms
+					Условия
 				</Link>
 				{" • "}
 				<Link
 					href={`${env.NEXT_PUBLIC_MARKETING_URL}/contact`}
 					className="text-muted no-underline"
 				>
-					Contact
+					Контакты
 				</Link>
 			</Text>
 
 			{/* Company Info */}
 			<Text className="text-muted text-xs leading-none m-0">
-				© {currentYear} Rox. All rights reserved.
+				© {currentYear} Rox. Все права защищены.
 			</Text>
 		</Section>
 	);

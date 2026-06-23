@@ -2,6 +2,7 @@ import type { UseChatDisplayReturn } from "@rox/chat/client";
 import { Message, MessageContent } from "@rox/ui/ai-elements/message";
 import { Button } from "@rox/ui/button";
 import { useEffect, useRef, useState } from "react";
+import { logger } from "renderer/lib/logger";
 
 type ApprovalDecision = "approve" | "decline" | "always_allow_category";
 type PendingApproval = UseChatDisplayReturn["pendingApproval"];
@@ -62,7 +63,7 @@ export function PendingApprovalMessage({
 		try {
 			await onRespond(decision);
 		} catch (error) {
-			console.error("Failed to submit approval response", error);
+			logger.error("Failed to submit approval response", error);
 			setSelectedDecision(null);
 		} finally {
 			inFlightResponseRef.current = false;

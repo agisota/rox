@@ -1,4 +1,5 @@
 import type { KeyboardLayoutData } from "main/lib/keyboardLayout";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { create } from "zustand";
 
@@ -50,7 +51,7 @@ function startKeyboardLayoutSync(): void {
 			applySnapshot(data);
 		},
 		onError: (err) => {
-			console.error("[keyboardLayoutStore] subscription error:", err);
+			logger.error("[keyboardLayoutStore] subscription error:", err);
 			const idx = Math.min(retryAttempt, RETRY_BACKOFF_MS.length - 1);
 			const delay = RETRY_BACKOFF_MS[idx] ?? 10_000;
 			retryAttempt++;

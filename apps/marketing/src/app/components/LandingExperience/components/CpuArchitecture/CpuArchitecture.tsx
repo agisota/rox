@@ -167,7 +167,8 @@ function CpuArchitecture({
 				/>
 			</g>
 
-			{/* Centered, enlarged wordmark */}
+			{/* Centered wordmark — knockout plate keeps traces off the letters. */}
+			<rect x="68" y="36" width="64" height="26" rx="5" fill="#000000" />
 			<text
 				x="100"
 				y="52"

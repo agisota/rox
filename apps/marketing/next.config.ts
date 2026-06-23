@@ -17,6 +17,10 @@ const config: NextConfig = {
 	reactCompiler: true,
 	typescript: { ignoreBuildErrors: true },
 
+	// Local preview only (not committed): allow the Cloudflare quick-tunnel host
+	// to load Next dev resources so the page renders when shared externally.
+	allowedDevOrigins: ["*.trycloudflare.com"],
+
 	images: {
 		remotePatterns: [
 			{
@@ -52,12 +56,24 @@ const config: NextConfig = {
 		const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://app.rox.one";
 		return [
 			{
-				// Public profiles live on the web app at `/u/<handle>`, but users
-				// share/visit the @-handle form on the marketing domain
-				// (`rox.one/@<handle>`). Redirect it to the canonical renderer.
-				// `@` is matched literally; `:handle` captures the nickname.
+				// Public profiles + share links live on the web app (app.rox.one),
+				// which is the only app with DB access. Users share/visit the
+				// `@<handle>` form on the marketing domain (`rox.one/@<handle>`).
+				// Redirect the profile ROOT to the canonical renderer. `@` is
+				// matched literally; `:handle` captures the nickname.
+				// NOTE: must be a single, non-repeated param — Next 16's
+				// path-to-regexp rejects `/@:handle*` ("Can not repeat 'handle'
+				// without a prefix and suffix"), so the sub-path case is a
+				// separate rule below.
 				source: "/@:handle",
-				destination: `${webUrl}/u/:handle`,
+				destination: `${webUrl}/@:handle`,
+				permanent: false,
+			},
+			{
+				// Sub-paths (sections / skills / shared). The `/` before `:path*`
+				// gives the repeated param its required delimiter.
+				source: "/@:handle/:path*",
+				destination: `${webUrl}/@:handle/:path*`,
 				permanent: false,
 			},
 			{

@@ -2,6 +2,7 @@ import type { Unsubscribable } from "@trpc/server/observable";
 import type { FitAddon } from "@xterm/addon-fit";
 import type { SearchAddon } from "@xterm/addon-search";
 import type { Terminal as XTerm } from "@xterm/xterm";
+import { logger } from "renderer/lib/logger";
 import { applyTerminalFontFamilyCssVariable } from "renderer/lib/terminal/appearance";
 import { scheduleFontSettleRefit } from "renderer/lib/terminal/font-settle";
 import { getTerminalParkingContainer } from "renderer/lib/terminal/terminal-parking";
@@ -111,7 +112,7 @@ export function getOrCreate(
 	if (existing) return existing;
 
 	if (DEBUG_TERMINAL) {
-		console.log(`[v1-terminal-cache] Creating new terminal: ${paneId}`);
+		logger.info(`[v1-terminal-cache] Creating new terminal: ${paneId}`);
 	}
 
 	const { xterm, fitAddon, searchAddon, wrapper, cleanup } =
@@ -182,7 +183,7 @@ export function detachFromContainer(paneId: string): void {
 	if (!entry) return;
 
 	if (DEBUG_TERMINAL) {
-		console.log(`[v1-terminal-cache] detachFromContainer: ${paneId}`);
+		logger.info(`[v1-terminal-cache] detachFromContainer: ${paneId}`);
 	}
 	entry.resizeObserver?.disconnect();
 	entry.resizeObserver = null;
@@ -272,7 +273,7 @@ export function startStream(paneId: string): void {
 	if (!entry || entry.subscription) return;
 
 	if (DEBUG_TERMINAL) {
-		console.log(`[v1-terminal-cache] Starting stream: ${paneId}`);
+		logger.info(`[v1-terminal-cache] Starting stream: ${paneId}`);
 	}
 
 	entry.subscription = electronTrpcClient.terminal.stream.subscribe(paneId, {
@@ -287,7 +288,7 @@ export function startStream(paneId: string): void {
 			if (entry.subscriptionErrorHandler) {
 				entry.subscriptionErrorHandler(error);
 			} else if (DEBUG_TERMINAL) {
-				console.error(
+				logger.error(
 					`[v1-terminal-cache] Stream error (no handler): ${paneId}`,
 					error,
 				);
@@ -305,7 +306,7 @@ export function setStreamReady(paneId: string): void {
 	if (!entry || entry.streamReady) return;
 
 	if (DEBUG_TERMINAL) {
-		console.log(
+		logger.info(
 			`[v1-terminal-cache] Stream ready: ${paneId}, flushing ${entry.pendingStreamEvents.length} queued events`,
 		);
 	}
@@ -358,7 +359,7 @@ export function dispose(paneId: string): void {
 	if (!entry) return;
 
 	if (DEBUG_TERMINAL) {
-		console.log(`[v1-terminal-cache] Disposing: ${paneId}`);
+		logger.info(`[v1-terminal-cache] Disposing: ${paneId}`);
 	}
 
 	entry.resizeObserver?.disconnect();

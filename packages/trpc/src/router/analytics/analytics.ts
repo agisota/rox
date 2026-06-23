@@ -15,6 +15,7 @@ import {
 	type RetentionCohort,
 } from "../../lib/posthog-client";
 import { adminProcedure, protectedProcedure } from "../../trpc";
+import { getRevenueTrend as buildRevenueTrend } from "../admin/revenue";
 
 export interface FunnelStepData {
 	name: string;
@@ -412,21 +413,9 @@ export const analyticsRouter = {
 				.optional(),
 		)
 		.query(async ({ input }) => {
-			const days = input?.days ?? 30;
-			const filledData: { date: string; revenue: number; mrr: number }[] = [];
-			const now = new Date();
-
-			for (let i = days - 1; i >= 0; i--) {
-				const date = new Date(now);
-				date.setDate(date.getDate() - i);
-				const dateStr = date.toISOString().split("T")[0] as string;
-				filledData.push({
-					date: dateStr,
-					revenue: 0,
-					mrr: 0,
-				});
-			}
-
-			return filledData;
+			// Real revenue from confirmed rox_topups (WS-F T9). The aggregation
+			// lives in the WS-F-owned `../admin/revenue` helper so this file's only
+			// change is this single call (merge-safety contract).
+			return buildRevenueTrend(input?.days ?? 30);
 		}),
 } satisfies TRPCRouterRecord;

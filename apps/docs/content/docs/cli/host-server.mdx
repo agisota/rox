@@ -1,129 +1,129 @@
 ---
-title: Host Server
-description: Set up the daemon the CLI and desktop app talk to when targeting the local machine.
+title: Хост-сервер
+description: Настройте демон (daemon), с которым CLI и десктоп-приложение взаимодействуют при работе с локальной машиной.
 ---
 
-The `rox start` command runs a headless HTTP server that any Rox desktop app or CLI can communicate with.
+Команда `rox start` запускает headless HTTP-сервер, с которым может взаимодействовать любое десктоп-приложение Rox или CLI.
 
-It manages workspaces, ports, and agent runs on the machine it's running on. The desktop app starts it automatically; on a CLI-only or headless machine you start it yourself.
+Он управляет рабочими пространствами, портами и запусками агентов на машине, где работает. Десктоп-приложение запускает его автоматически; на машине только с CLI или headless-машине вы запускаете его сами.
 
-If you installed the desktop app, it already includes the CLI and installs a
-`~/.rox/bin/rox` shim on app launch. Rox terminals prepend
-that directory to `PATH` automatically. On a headless machine, use the
-standalone installer from [Getting Started](/cli/getting-started).
+Если вы установили десктоп-приложение, оно уже включает CLI и устанавливает
+shim `~/.rox/bin/rox` при запуске приложения. Терминалы Rox автоматически
+добавляют этот каталог в начало `PATH`. На headless-машине используйте
+автономный установщик из раздела [Начало работы](/cli/getting-started).
 
-## Prerequisites
+## Предварительные требования
 
-`git` and `gh` need to be on your `PATH`. `git` handles clone, worktree, and branch ops; `gh` handles PR checkout and metadata.
+`git` и `gh` должны быть в вашем `PATH`. `git` обрабатывает операции clone, worktree и работу с ветками; `gh` обрабатывает checkout PR и метаданные.
 
 ```bash
 gh auth login
 ```
 
-The host server reuses your existing `gh` auth. For sandboxes or CI, set `GH_TOKEN` (or `GITHUB_TOKEN`) instead of running `gh auth login` — `gh` picks it up automatically.
+Хост-сервер повторно использует вашу существующую аутентификацию `gh`. Для песочниц или CI задайте `GH_TOKEN` (или `GITHUB_TOKEN`) вместо запуска `gh auth login` — `gh` подхватит его автоматически.
 
-### Agent CLIs (optional)
+### Агентские CLI (опционально)
 
-If you plan to run AI agents inside workspaces, install whichever agent CLIs you want available. The host server launches them based on which are on your `PATH`:
+Если вы планируете запускать AI-агентов внутри рабочих пространств, установите те агентские CLI, которые хотите иметь доступными. Хост-сервер запускает их в зависимости от того, какие из них находятся в вашем `PATH`:
 
-| Agent | Install |
+| Агент | Установка |
 |-------|---------|
 | Claude Code | `npm install -g @anthropic-ai/claude-code` |
 | Codex | `npm install -g @openai/codex` |
-| Cursor Agent | install via Cursor's website |
+| Cursor Agent | установка через сайт Cursor |
 | Amp | `npm install -g @sourcegraph/amp` |
 | Gemini CLI | `npm install -g @google/gemini-cli` |
-| OpenCode | see [opencode.ai/docs](https://opencode.ai/docs) |
+| OpenCode | см. [opencode.ai/docs](https://opencode.ai/docs) |
 
-None are required to start the host server or create workspaces — install only what you plan to run.
+Ни один из них не требуется для запуска хост-сервера или создания рабочих пространств — устанавливайте только то, что планируете запускать.
 
-## Authenticate the Rox CLI
+## Аутентификация Rox CLI
 
-The host server starts under your Rox session. If you haven't already:
+Хост-сервер запускается под вашей сессией Rox. Если вы ещё не вошли:
 
 ```bash
 rox auth login
 ```
 
-See [Getting Started](/cli/getting-started) for the full sign-in flow,
-including API-key auth for CI.
+См. [Начало работы](/cli/getting-started) для полного процесса входа,
+включая аутентификацию по API-ключу для CI.
 
-## Start the host server
+## Запуск хост-сервера
 
 ```bash
 rox start --daemon
 ```
 
-Spawns the daemon in the background and writes a manifest at
-`~/.rox/host/<organizationId>/manifest.json` so other clients can find
-it. Binds to `127.0.0.1` only.
+Запускает демон (daemon) в фоне и записывает манифест по пути
+`~/.rox/host/<organizationId>/manifest.json`, чтобы другие клиенты могли его найти.
+Привязывается только к `127.0.0.1`.
 
-Verify it's healthy:
+Проверьте, что он работает корректно:
 
 ```bash
 rox status
 ```
 
-## Getting started
+## Начало работы
 
-### Create or adopt a project
+### Создание или подключение проекта
 
-A workspace branches off a project — a repo registered with Rox.
+Рабочее пространство ответвляется от проекта — репозитория, зарегистрированного в Rox.
 
-Each repo gets one cloud project record, shared across the organization.
-The first machine to register the repo runs `projects create`; every
-machine after that uses `projects setup` to attach to the existing
-project instead of creating a duplicate.
+Каждый репозиторий получает одну облачную запись проекта, общую для всей организации.
+Первая машина, регистрирующая репозиторий, запускает `projects create`; каждая
+машина после этого использует `projects setup`, чтобы подключиться к существующему
+проекту вместо создания дубликата.
 
-Start by checking what's already in your org:
+Начните с проверки того, что уже есть в вашей организации:
 
 ```bash
 rox projects list
 ```
 
-#### First machine — `projects create`
+#### Первая машина — `projects create`
 
-If the project doesn't exist yet, clone a remote repo or import an
-existing local one:
+Если проект ещё не существует, склонируйте удалённый репозиторий или импортируйте
+существующий локальный:
 
 ```bash
-# Clone from a Git URL
+# Клонировать из Git URL
 rox projects create \
   --name "My Project" \
   --local \
   --clone https://github.com/org/repo.git \
   --parent-dir ~/code
 
-# Or import a repo that's already on disk
+# Или импортировать репозиторий, который уже есть на диске
 rox projects create \
   --name "My Project" \
   --local \
   --import ~/code/existing-repo
 ```
 
-The host server clones (or registers) the repo, creates the cloud project
-record, and ensures the main workspace.
+Хост-сервер клонирует (или регистрирует) репозиторий, создаёт облачную запись
+проекта и обеспечивает наличие основного рабочего пространства.
 
-#### Subsequent machines — `projects setup <id>`
+#### Последующие машины — `projects setup <id>`
 
-If a teammate (or a previous machine of yours) already created the project,
-adopt it instead of running `create` again — `create` would make a duplicate
-cloud project pointing at the same repo. Pick the ID from `projects list`,
-then:
+Если коллега (или ваша предыдущая машина) уже создал проект,
+подключитесь к нему вместо повторного запуска `create` — `create` создал бы дубликат
+облачного проекта, указывающего на тот же репозиторий. Выберите ID из `projects list`,
+затем:
 
 ```bash
-# Clone the project's repo onto this machine
+# Клонировать репозиторий проекта на эту машину
 rox projects setup 47c31b04-… --local --parent-dir ~/code
 
-# Or attach to an existing local checkout
+# Или подключиться к существующей локальной копии
 rox projects setup 47c31b04-… --local --import ~/code/repo
 ```
 
-The URL for clone mode comes from the cloud project record, so `setup`
-doesn't need `--clone <url>`. `setup` is idempotent: re-running against a
-project that's already set up here is a no-op.
+URL для режима клонирования берётся из облачной записи проекта, поэтому `setup`
+не требует `--clone <url>`. `setup` идемпотентен: повторный запуск для
+проекта, который уже настроен здесь, не выполняет никаких действий.
 
-### Create your first workspace
+### Создание первого рабочего пространства
 
 ```bash
 rox projects list
@@ -133,10 +133,10 @@ rox workspaces create \
   --branch fix/login-bug
 ```
 
-The host server clones the project (if it isn't already on disk), creates
-a git worktree at the chosen branch, and registers the workspace.
+Хост-сервер клонирует проект (если его ещё нет на диске), создаёт
+git worktree на выбранной ветке и регистрирует рабочее пространство.
 
-You can also create a workspace from a pull request number:
+Вы также можете создать рабочее пространство по номеру pull request:
 
 ```bash
 rox workspaces create \
@@ -146,27 +146,27 @@ rox workspaces create \
   --local
 ```
 
-## Stop the host server
+## Остановка хост-сервера
 
 ```bash
 rox stop
 ```
 
-## Shared state
+## Общее состояние
 
-State lives under `~/.rox/host/<organizationId>/`:
+Состояние хранится в `~/.rox/host/<organizationId>/`:
 
 ```text
 ~/.rox/host/<organizationId>/manifest.json    # endpoint + auth token
 ~/.rox/host/<organizationId>/host.db          # local host server DB
 ```
 
-A host server started by the desktop app is visible to the CLI and
-vice-versa. `ROX_HOME_DIR` relocates the whole tree.
+Хост-сервер, запущенный десктоп-приложением, виден для CLI и
+наоборот. `ROX_HOME_DIR` перемещает всё дерево целиком.
 
-## Command details
+## Подробности команд
 
-For full flags, exit codes, and output shapes:
+Полные флаги, коды выхода и формы вывода:
 
 - [`rox start`](/cli/cli-reference#rox-start)
 - [`rox status`](/cli/cli-reference#rox-status)

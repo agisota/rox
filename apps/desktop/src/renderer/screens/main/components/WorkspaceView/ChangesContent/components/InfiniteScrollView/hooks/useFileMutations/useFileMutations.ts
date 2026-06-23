@@ -1,6 +1,7 @@
 import { toast } from "@rox/ui/sonner";
 import { useCallback } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import type { ChangedFile } from "shared/changes-types";
 
 export function useFileMutations({
@@ -21,7 +22,7 @@ export function useFileMutations({
 	const stageFileMutation = electronTrpc.changes.stageFile.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
-			console.error(
+			logger.error(
 				`[useFileMutations] Failed to stage file ${variables.filePath}:`,
 				error,
 			);
@@ -32,7 +33,7 @@ export function useFileMutations({
 	const unstageFileMutation = electronTrpc.changes.unstageFile.useMutation({
 		onSuccess: () => refetch(),
 		onError: (error, variables) => {
-			console.error(
+			logger.error(
 				`[useFileMutations] Failed to unstage file ${variables.filePath}:`,
 				error,
 			);
@@ -44,7 +45,7 @@ export function useFileMutations({
 		electronTrpc.changes.discardChanges.useMutation({
 			onSuccess: () => refetch(),
 			onError: (error, variables) => {
-				console.error(
+				logger.error(
 					`[useFileMutations] Failed to discard changes for ${variables.filePath}:`,
 					error,
 				);
@@ -56,7 +57,7 @@ export function useFileMutations({
 		electronTrpc.changes.deleteUntracked.useMutation({
 			onSuccess: () => refetch(),
 			onError: (error, variables) => {
-				console.error(
+				logger.error(
 					`[useFileMutations] Failed to delete ${variables.filePath}:`,
 					error,
 				);

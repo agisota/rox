@@ -5,6 +5,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@rox/ui/dialog";
+import {
+	AnimatedDialogContent,
+	motionSpring,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { ArrowLeftIcon } from "lucide-react";
 import {
@@ -14,11 +19,6 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import {
-	AnimatedDialogContent,
-	motionSpring,
-	useShouldAnimate,
-} from "renderer/motion";
 import { useCommandContext } from "../../core/ContextProvider";
 import { executeCommand } from "../../core/execute";
 import { useFrameStackStore } from "../../core/frames";

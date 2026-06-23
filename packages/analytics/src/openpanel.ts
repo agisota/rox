@@ -32,6 +32,13 @@ type IngestBody =
 	| { type: "track"; payload: Record<string, unknown> }
 	| { type: "identify"; payload: Record<string, unknown> };
 
+/**
+ * Per-request ceiling for ingest calls. Even though `send` is fire-and-forget,
+ * an unbounded `fetch` against a stalled ingest endpoint can pile up sockets;
+ * `AbortSignal.timeout` caps each attempt and the failure is swallowed below.
+ */
+const OPENPANEL_REQUEST_TIMEOUT_MS = 10_000;
+
 /** A no-op client used when OpenPanel is not configured. */
 const NOOP_CLIENT: OpenPanelClient = {
 	enabled: false,
@@ -64,7 +71,7 @@ export function createOpenPanelServerClient(
 					"openpanel-client-secret": clientSecret,
 				},
 				body: JSON.stringify(body),
-				keepalive: true,
+				signal: AbortSignal.timeout(OPENPANEL_REQUEST_TIMEOUT_MS),
 			});
 		} catch {
 			// Fire-and-forget: analytics must never throw into product code.

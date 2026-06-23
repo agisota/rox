@@ -34,6 +34,11 @@ const ALLOWLIST = new Set([
 	// `repoName` to the renderer. Either drop from the response shape or
 	// derive via `resolveGithubRepo` per render.
 	"trpc/router/git/git.ts",
+
+	// Canvas node-ref resolution reads cached `project.repoName`/`repoOwner`
+	// only to build a display-only preview label + metadata for a canvas node;
+	// it makes no live GitHub query, so the live-remote rule does not apply.
+	"trpc/router/canvas/canvas.ts",
 ]);
 
 // Member-access reads only — `cloudProject.repoCloneUrl` and

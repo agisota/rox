@@ -1,6 +1,7 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { ChangedFile, GitChangesStatus } from "shared/changes-types";
+import { logger } from "shared/logger";
 import type { SimpleGit, StatusResult } from "simple-git";
 import { getStatusNoLock } from "../../workspaces/utils/git";
 import { getSimpleGitWithShellPath } from "../../workspaces/utils/git-client";
@@ -33,7 +34,7 @@ const MAX_LINE_COUNT_SIZE = 1 * 1024 * 1024;
 const WORKER_DEBUG = process.env.ROX_WORKER_DEBUG === "1";
 
 function logWorkerWarning(message: string, error: unknown): void {
-	console.warn(`[changes-git-worker] ${message}`, error);
+	logger.warn(`[changes-git-worker] ${message}`, error);
 }
 
 function logWorkerDebug(message: string, error: unknown): void {

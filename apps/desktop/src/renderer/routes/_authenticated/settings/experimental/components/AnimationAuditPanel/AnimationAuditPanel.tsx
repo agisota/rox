@@ -1,5 +1,5 @@
+import { MotionList } from "@rox/ui/motion";
 import { useMemo } from "react";
-import { MotionList } from "renderer/motion";
 import {
 	AuditFindingRow,
 	type Finding,

@@ -4,6 +4,14 @@
 	"private": true,
 	"type": "module",
 	"exports": {
+		"./async": {
+			"types": "./src/async.ts",
+			"default": "./src/async.ts"
+		},
+		"./error": {
+			"types": "./src/error.ts",
+			"default": "./src/error.ts"
+		},
 		"./constants": {
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
@@ -48,6 +56,14 @@
 			"types": "./src/rox-ledger.ts",
 			"default": "./src/rox-ledger.ts"
 		},
+		"./drive-quota": {
+			"types": "./src/drive-quota.ts",
+			"default": "./src/drive-quota.ts"
+		},
+		"./rox-ledger-kind": {
+			"types": "./src/rox-ledger-kind.ts",
+			"default": "./src/rox-ledger-kind.ts"
+		},
 		"./rox-perks": {
 			"types": "./src/rox-perks.ts",
 			"default": "./src/rox-perks.ts"
@@ -83,6 +99,10 @@
 		"./appearance": {
 			"types": "./src/appearance/index.ts",
 			"default": "./src/appearance/index.ts"
+		},
+		"./canvas": {
+			"types": "./src/canvas/index.ts",
+			"default": "./src/canvas/index.ts"
 		},
 		"./terminal-link-parsing": {
 			"types": "./src/terminal-link-parsing/index.ts",
@@ -156,6 +176,14 @@
 			"types": "./src/task-slug.ts",
 			"default": "./src/task-slug.ts"
 		},
+		"./username": {
+			"types": "./src/username.ts",
+			"default": "./src/username.ts"
+		},
+		"./share-link": {
+			"types": "./src/share-link.ts",
+			"default": "./src/share-link.ts"
+		},
 		"./claude-command": {
 			"types": "./src/claude-command.ts",
 			"default": "./src/claude-command.ts"
@@ -179,6 +207,10 @@
 		"./host-version": {
 			"types": "./src/host-version.ts",
 			"default": "./src/host-version.ts"
+		},
+		"./host-client": {
+			"types": "./src/host-client/index.ts",
+			"default": "./src/host-client/index.ts"
 		},
 		"./github-remote": {
 			"types": "./src/github-remote.ts",
@@ -208,6 +240,10 @@
 			"types": "./src/integrations/index.ts",
 			"default": "./src/integrations/index.ts"
 		},
+		"./experimental-features": {
+			"types": "./src/experimental-features/index.ts",
+			"default": "./src/experimental-features/index.ts"
+		},
 		"./workspace-setup-presets": {
 			"types": "./src/workspace-setup-presets.ts",
 			"default": "./src/workspace-setup-presets.ts"
@@ -219,6 +255,14 @@
 		"./retry": {
 			"types": "./src/retry/index.ts",
 			"default": "./src/retry/index.ts"
+		},
+		"./jwt-verify": {
+			"types": "./src/jwt-verify.ts",
+			"default": "./src/jwt-verify.ts"
+		},
+		"./comms-events": {
+			"types": "./src/comms-events.ts",
+			"default": "./src/comms-events.ts"
 		}
 	},
 	"scripts": {
@@ -230,6 +274,7 @@
 		"@date-fns/tz": "1.4.1",
 		"@zap-studio/retry": "0.3.0",
 		"friendly-words": "1.3.1",
+		"jose": "6.2.2",
 		"rrule": "2.8.1",
 		"zod": "4.3.6"
 	},

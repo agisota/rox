@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 import { env } from "main/env.main";
+import { logger } from "main/lib/logger";
 
 /**
  * Gets the path to a ringtone sound file.
@@ -47,13 +48,13 @@ export function getSoundsDirectory(): string {
 	// Fallback: try source directory (in case sounds weren't copied to dist)
 	const srcPath = join(app.getAppPath(), "src/resources/sounds");
 	if (existsSync(srcPath)) {
-		console.warn(
+		logger.warn(
 			"[sound-paths] Using src/resources/sounds as fallback - sounds may not have been copied to dist",
 		);
 		return srcPath;
 	}
 
 	// Return the expected preview path even if missing (will fail gracefully in playback)
-	console.warn(`[sound-paths] Sounds directory not found at: ${previewPath}`);
+	logger.warn(`[sound-paths] Sounds directory not found at: ${previewPath}`);
 	return previewPath;
 }

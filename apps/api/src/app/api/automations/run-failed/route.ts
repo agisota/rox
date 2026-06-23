@@ -1,18 +1,13 @@
 import { dbWs } from "@rox/db/client";
 import { automationRuns, automations } from "@rox/db/schema";
 import * as Sentry from "@sentry/nextjs";
-import { Receiver } from "@upstash/qstash";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { env } from "@/env";
+import { verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
-
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
-});
 
 const failurePayloadSchema = z.object({
 	sourceMessageId: z.string(),
@@ -28,20 +23,13 @@ const sourceBodySchema = z.object({
 });
 
 export async function POST(request: Request): Promise<Response> {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-	if (!signature) {
-		return Response.json({ error: "Missing signature" }, { status: 401 });
-	}
-
-	const valid = await receiver.verify({
-		body,
-		signature,
+	const verified = await verifyQstash(request, {
 		url: `${env.NEXT_PUBLIC_API_URL}/api/automations/run-failed`,
 	});
-	if (!valid) {
-		return Response.json({ error: "Invalid signature" }, { status: 401 });
+	if (!verified.ok) {
+		return verified.response;
 	}
+	const { body } = verified;
 
 	let rawBody: unknown;
 	try {

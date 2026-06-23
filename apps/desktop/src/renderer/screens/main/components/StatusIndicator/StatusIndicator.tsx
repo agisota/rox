@@ -1,6 +1,6 @@
+import { CompletionBurst } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { useEffect, useRef, useState } from "react";
-import { CompletionBurst } from "renderer/motion/CompletionBurst";
 import type { ActivePaneStatus } from "shared/tabs-types";
 
 // Re-export for consumers

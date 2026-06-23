@@ -15,6 +15,7 @@ import type {
 	SelectIntegrationConnection,
 	SelectInvitation,
 	SelectJournalEntry,
+	SelectJournalEvent,
 	SelectMember,
 	SelectMemoryImportJob,
 	SelectMemoryItem,
@@ -39,6 +40,7 @@ import { BasicIndex } from "@tanstack/db";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import {
 	createElectronSQLitePersistence,
+	type ElectronSQLitePersistenceOptions,
 	persistedCollectionOptions,
 } from "@tanstack/electron-db-sqlite-persistence";
 import type {
@@ -63,6 +65,7 @@ import {
 	setJwt,
 } from "renderer/lib/auth-client";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
 import superjson from "superjson";
 import { z } from "zod";
 import {
@@ -111,8 +114,17 @@ export interface WorkspaceCreateMutationMetadata {
 	[key: string]: unknown;
 }
 
+// `window.ipcRenderer.invoke` is intentionally typed `Promise<unknown>` (the
+// channel is a runtime value, so the response can't be statically known). The
+// persistence adapter's request/response envelope is its own internal type, so
+// cast through the adapter's `invoke` option type to satisfy it without an
+// unsound `any` at the IPC boundary.
+type PersistenceInvoke = NonNullable<
+	ElectronSQLitePersistenceOptions["invoke"]
+>;
 const persistence = createElectronSQLitePersistence({
-	invoke: (channel, request) => window.ipcRenderer.invoke(channel, request),
+	invoke: ((channel, request) =>
+		window.ipcRenderer.invoke(channel, request)) as PersistenceInvoke,
 });
 
 const indexDefaults = {
@@ -177,6 +189,7 @@ export interface OrgCollections {
 	apiKeys: Collection<ApiKeyDisplay>;
 	chatSessions: Collection<SelectChatSession>;
 	journalEntries: Collection<SelectJournalEntry>;
+	journalEvents: Collection<SelectJournalEvent>;
 	memoryItems: Collection<SelectMemoryItem>;
 	memoryImportJobs: Collection<SelectMemoryImportJob>;
 	artifacts: Collection<SelectArtifact>;
@@ -271,10 +284,10 @@ const handleElectricSyncError: ElectricSyncErrorHandler = async (error) => {
 				setJwt(result.data.token);
 			}
 		} catch (refreshError) {
-			console.error("[collections] JWT refresh after 401 failed", refreshError);
+			logger.error("[collections] JWT refresh after 401 failed", refreshError);
 		}
 	} else {
-		console.error("[collections] Electric sync error", error);
+		logger.error("[collections] Electric sync error", error);
 	}
 	return {};
 };
@@ -764,6 +777,26 @@ function createOrgCollections(
 		}),
 	);
 
+	// Read-only on the client: journal events are appended server-side by the
+	// automations dispatcher (continuous 24/7 lane). No onInsert/Update/Delete.
+	const journalEvents = createPersistedElectricCollection(
+		electricCollectionOptions<SelectJournalEvent>({
+			id: `journal_events-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "journal_events",
+					organizationId,
+					userId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	const memoryItems = createPersistedElectricCollection(
 		electricCollectionOptions<SelectMemoryItem>({
 			id: `memory_items-${organizationId}-${userId}`,
@@ -798,7 +831,7 @@ function createOrgCollections(
 						lastTxid = result.txid;
 					} catch (error) {
 						if (!isTrpcNotFoundError(error)) throw error;
-						console.warn("[collections] Ignoring stale memory approve", {
+						logger.warn("[collections] Ignoring stale memory approve", {
 							id: original.id,
 						});
 					}
@@ -810,7 +843,7 @@ function createOrgCollections(
 						lastTxid = result.txid;
 					} catch (error) {
 						if (!isTrpcNotFoundError(error)) throw error;
-						console.warn("[collections] Ignoring stale memory decline", {
+						logger.warn("[collections] Ignoring stale memory decline", {
 							id: original.id,
 						});
 					}
@@ -829,7 +862,7 @@ function createOrgCollections(
 					(field) => !handledFields.has(field),
 				);
 				if (unsupportedFields.length > 0) {
-					console.warn("[collections] Ignoring memory_items update fields", {
+					logger.warn("[collections] Ignoring memory_items update fields", {
 						fields: unsupportedFields,
 					});
 				}
@@ -1098,6 +1131,7 @@ function createOrgCollections(
 		apiKeys,
 		chatSessions,
 		journalEntries,
+		journalEvents,
 		memoryItems,
 		memoryImportJobs,
 		artifacts,

@@ -13,30 +13,30 @@ const inter = Inter({
 export const metadata: Metadata = {
 	metadataBase: new URL(COMPANY.DOCS_URL),
 	title: {
-		default: `${COMPANY.NAME} Documentation`,
-		template: `%s | ${COMPANY.NAME} Docs`,
+		default: `Документация ${COMPANY.NAME}`,
+		template: `%s | Документация ${COMPANY.NAME}`,
 	},
-	description: `Official documentation for ${COMPANY.NAME} - the terminal for coding agents. Learn how to run parallel coding agents on your machine.`,
+	description: `Официальная документация ${COMPANY.NAME} — терминал для кодинг-агентов. Узнайте, как запускать параллельных кодинг-агентов на своей машине.`,
 	keywords: [
-		`${COMPANY.NAME} documentation`,
-		"coding agents docs",
-		"parallel execution guide",
-		"developer tools",
+		`документация ${COMPANY.NAME}`,
+		"документация кодинг-агентов",
+		"руководство по параллельному запуску",
+		"инструменты разработчика",
 	],
-	authors: [{ name: `${COMPANY.NAME} Team` }],
+	authors: [{ name: `Команда ${COMPANY.NAME}` }],
 	creator: COMPANY.NAME,
 	openGraph: {
 		type: "website",
-		locale: "en_US",
+		locale: "ru_RU",
 		url: COMPANY.DOCS_URL,
-		siteName: `${COMPANY.NAME} Docs`,
-		title: `${COMPANY.NAME} Documentation`,
-		description: `Official documentation for ${COMPANY.NAME} - the terminal for coding agents.`,
+		siteName: `Документация ${COMPANY.NAME}`,
+		title: `Документация ${COMPANY.NAME}`,
+		description: `Официальная документация ${COMPANY.NAME} — терминал для кодинг-агентов.`,
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: `${COMPANY.NAME} Documentation`,
-		description: `Official documentation for ${COMPANY.NAME} - the terminal for coding agents.`,
+		title: `Документация ${COMPANY.NAME}`,
+		description: `Официальная документация ${COMPANY.NAME} — терминал для кодинг-агентов.`,
 		creator: "@rox_sh",
 	},
 	robots: {
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
 export default function Layout({ children }: LayoutProps<"/">) {
 	return (
 		<html
-			lang="en"
+			lang="ru"
 			className={`${inter.className} overscroll-none`}
 			suppressHydrationWarning
 		>

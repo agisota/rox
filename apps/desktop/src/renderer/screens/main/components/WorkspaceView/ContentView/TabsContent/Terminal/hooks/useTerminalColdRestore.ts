@@ -1,5 +1,6 @@
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { useCallback, useRef, useState } from "react";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient as trpcClient } from "renderer/lib/trpc-client";
 import { isTerminalAttachCanceledMessage } from "../attach-cancel";
 import { coldRestoreState } from "../state";
@@ -174,7 +175,7 @@ export function useTerminalColdRestore({
 
 		// Acknowledge cold restore to main process
 		trpcClient.terminal.ackColdRestore.mutate({ paneId }).catch((error) => {
-			console.warn("[Terminal] Failed to acknowledge cold restore:", {
+			logger.warn("[Terminal] Failed to acknowledge cold restore:", {
 				paneId,
 				error: error instanceof Error ? error.message : String(error),
 			});
@@ -222,7 +223,7 @@ export function useTerminalColdRestore({
 					if (isTerminalAttachCanceledMessage(error.message)) {
 						return;
 					}
-					console.error("[Terminal] Failed to start shell:", error);
+					logger.error("[Terminal] Failed to start shell:", error);
 					setConnectionError(error.message || "Failed to start shell");
 					setIsRestoredMode(false);
 					coldRestoreState.delete(paneId);

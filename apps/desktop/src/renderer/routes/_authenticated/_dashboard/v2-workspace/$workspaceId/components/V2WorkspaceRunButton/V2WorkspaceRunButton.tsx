@@ -5,13 +5,13 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import { SpinnerRing, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Play, Settings, Square, X } from "lucide-react";
 import { useCallback } from "react";
 import { useHotkeyDisplay } from "renderer/hotkeys";
-import { SpinnerRing, useShouldAnimate } from "renderer/motion";
 import { useSetSettingsSearchQuery } from "renderer/stores/settings-state";
 import type { WorkspaceRunDefinition } from "shared/workspace-run-definition";
 

@@ -11,6 +11,7 @@ import {
 } from "react-icons/lu";
 import { HotkeyLabel } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import {
 	RightSidebarTab,
 	SidebarMode,
@@ -116,7 +117,7 @@ export function RightSidebar() {
 				);
 			}
 			Promise.all(invalidations).catch((error) => {
-				console.error(
+				logger.error(
 					"[RightSidebar/invalidateFileContent] Failed to invalidate file content queries:",
 					{ absolutePath, error },
 				);

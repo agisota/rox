@@ -71,6 +71,72 @@ function claimEmptyTargetDir(targetPath: string): void {
 }
 
 /**
+ * Per-repo fallback committer identity used ONLY for the very first commit when
+ * the user has no global `user.name`/`user.email` configured. Passed as
+ * `-c key=value` overrides so it applies to this one `git commit` invocation
+ * and never touches the user's global git config. This keeps zero-GitHub,
+ * zero-config onboarding from dead-ending on a `PRECONDITION_FAILED`; once the
+ * user configures a real identity, all subsequent commits use it.
+ */
+const FALLBACK_COMMIT_IDENTITY_ARGS = [
+	"-c",
+	"user.name=Rox",
+	"-c",
+	"user.email=rox@localhost",
+] as const;
+
+/**
+ * Create the initial (empty) commit, falling back to a local Rox committer
+ * identity if git rejects the commit because no `user.name`/`user.email` is
+ * configured. The identity is scoped to this invocation via `-c` overrides, so
+ * the user's global config is never mutated.
+ */
+async function commitInitialAllowEmpty(repoPath: string): Promise<void> {
+	const git = createUserSimpleGit(repoPath);
+	// `--no-verify` so an inherited commit hook (e.g. from a global core.hooksPath)
+	// can't block a freshly-onboarded user's very first commit.
+	const args = [
+		"commit",
+		"--allow-empty",
+		"--no-verify",
+		"-m",
+		"Initial commit",
+	];
+	try {
+		await git.raw(args);
+	} catch (err) {
+		if (!isMissingGitIdentityError(err)) throw asInitialCommitTrpcError(err);
+		await git.raw([...FALLBACK_COMMIT_IDENTITY_ARGS, ...args]);
+	}
+}
+
+/**
+ * Create the initial commit of staged content (template snapshot), with the
+ * same local-identity fallback as `commitInitialAllowEmpty`.
+ */
+async function commitInitialStaged(repoPath: string): Promise<void> {
+	const git = createUserSimpleGit(repoPath);
+	// `--no-verify`: see commitInitialAllowEmpty.
+	const args = ["commit", "--no-verify", "-m", "Initial commit"];
+	try {
+		await git.raw(args);
+	} catch (err) {
+		if (!isMissingGitIdentityError(err)) throw asInitialCommitTrpcError(err);
+		await git.raw([...FALLBACK_COMMIT_IDENTITY_ARGS, ...args]);
+	}
+}
+
+/** True when a failed commit is due to an unconfigured git identity. */
+function isMissingGitIdentityError(err: unknown): boolean {
+	const message = err instanceof Error ? err.message : String(err);
+	return (
+		message.includes("empty ident") ||
+		message.includes("user.email") ||
+		message.includes("user.name")
+	);
+}
+
+/**
  * Translates git's "empty ident"/`user.email`/`user.name` errors from a
  * failed initial commit into a `PRECONDITION_FAILED` TRPCError with setup
  * instructions. Falls through to `INTERNAL_SERVER_ERROR` for unknown
@@ -78,11 +144,7 @@ function claimEmptyTargetDir(targetPath: string): void {
  */
 function asInitialCommitTrpcError(err: unknown): TRPCError {
 	const message = err instanceof Error ? err.message : String(err);
-	if (
-		message.includes("empty ident") ||
-		message.includes("user.email") ||
-		message.includes("user.name")
-	) {
+	if (isMissingGitIdentityError(err)) {
 		return new TRPCError({
 			code: "PRECONDITION_FAILED",
 			message:
@@ -115,6 +177,24 @@ export async function tryRevParseGitRoot(path: string): Promise<string | null> {
 		return (
 			await createUserSimpleGit(path).revparse(["--show-toplevel"])
 		).trim();
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Best-effort raw URL of the `origin` remote, or null when it is absent or the
+ * command fails. Used to record a remote locally even when the URL doesn't
+ * parse into GitHub owner/name, so a retry won't re-run `gh repo create`.
+ */
+export async function getOriginUrl(repoPath: string): Promise<string | null> {
+	try {
+		const url = await createUserSimpleGit(repoPath).remote([
+			"get-url",
+			"origin",
+		]);
+		const trimmed = typeof url === "string" ? url.trim() : "";
+		return trimmed.length > 0 ? trimmed : null;
 	} catch {
 		return null;
 	}
@@ -176,16 +256,7 @@ export async function initLocalRepoInPlace(
 	if (existingRoot) return resolveLocalRepo(existingRoot);
 
 	await gitInitMainBranch(repoPath);
-	try {
-		await createUserSimpleGit(repoPath).raw([
-			"commit",
-			"--allow-empty",
-			"-m",
-			"Initial commit",
-		]);
-	} catch (err) {
-		throw asInitialCommitTrpcError(err);
-	}
+	await commitInitialAllowEmpty(repoPath);
 	return resolveLocalRepo(repoPath);
 }
 
@@ -252,16 +323,7 @@ export async function initEmptyRepo(
 
 	try {
 		await gitInitMainBranch(targetPath);
-		try {
-			await createUserSimpleGit(targetPath).raw([
-				"commit",
-				"--allow-empty",
-				"-m",
-				"Initial commit",
-			]);
-		} catch (err) {
-			throw asInitialCommitTrpcError(err);
-		}
+		await commitInitialAllowEmpty(targetPath);
 		return { repoPath: targetPath, remoteName: null, parsed: null };
 	} catch (err) {
 		rmSync(targetPath, { recursive: true, force: true });
@@ -303,13 +365,8 @@ export async function cloneTemplateInto(
 		rmSync(join(targetPath, ".git"), { recursive: true, force: true });
 
 		await gitInitMainBranch(targetPath);
-		const git = createUserSimpleGit(targetPath);
-		await git.add(".");
-		try {
-			await git.raw(["commit", "-m", "Initial commit"]);
-		} catch (err) {
-			throw asInitialCommitTrpcError(err);
-		}
+		await createUserSimpleGit(targetPath).add(".");
+		await commitInitialStaged(targetPath);
 		return { repoPath: targetPath, remoteName: null, parsed: null };
 	} catch (err) {
 		rmSync(targetPath, { recursive: true, force: true });

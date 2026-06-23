@@ -8,20 +8,15 @@
  * Журнал isn't empty on day one. Returns the generation result for QStash logging.
  */
 
-import { Receiver } from "@upstash/qstash";
 import { z } from "zod";
 import { env } from "@/env";
 import {
 	generateJournalForUserDay,
 	generateJournalSeedForUser,
 } from "@/lib/journal/journal-generation";
+import { verifyQstash } from "@/lib/qstash-verify";
 
 export const dynamic = "force-dynamic";
-
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
-});
 
 const inputSchema = z.object({
 	organizationId: z.string().uuid(),
@@ -30,21 +25,14 @@ const inputSchema = z.object({
 });
 
 export async function POST(request: Request): Promise<Response> {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-	if (!signature) {
-		return Response.json({ error: "Missing signature" }, { status: 401 });
+	const verified = await verifyQstash(request, {
+		url: `${env.NEXT_PUBLIC_API_URL}/api/journal/generate/user`,
+		onError: "false",
+	});
+	if (!verified.ok) {
+		return verified.response;
 	}
-	const valid = await receiver
-		.verify({
-			body,
-			signature,
-			url: `${env.NEXT_PUBLIC_API_URL}/api/journal/generate/user`,
-		})
-		.catch(() => false);
-	if (!valid) {
-		return Response.json({ error: "Invalid signature" }, { status: 401 });
-	}
+	const { body } = verified;
 
 	let parsedBody: unknown;
 	try {

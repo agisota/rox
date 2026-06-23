@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 mock.module("@/env", () => ({
 	env: {
@@ -8,9 +8,25 @@ mock.module("@/env", () => ({
 	},
 }));
 
+const publishJSON = mock(async () => ({}));
 mock.module("@upstash/qstash", () => ({
 	Client: class {
-		publishJSON = mock(async () => ({}));
+		publishJSON = publishJSON;
+	},
+}));
+
+// Idempotency dedup insert: returning() yields a row when the event is fresh,
+// [] when it is a duplicate (onConflictDoNothing inserted nothing).
+let dedupReturning: Array<{ id: string }> = [{ id: "evt-1" }];
+mock.module("@rox/db/client", () => ({
+	db: {
+		insert: () => ({
+			values: () => ({
+				onConflictDoNothing: () => ({
+					returning: async () => dedupReturning,
+				}),
+			}),
+		}),
 	},
 }));
 
@@ -38,6 +54,11 @@ const VALID_HEADERS = {
 };
 
 describe("slack events route", () => {
+	beforeEach(() => {
+		publishJSON.mockClear();
+		dedupReturning = [{ id: "evt-1" }];
+	});
+
 	test("returns 400 (not 500) when body is malformed JSON", async () => {
 		const request = new Request(
 			"http://localhost/api/integrations/slack/events",
@@ -145,5 +166,49 @@ describe("slack events route", () => {
 		expect(response.status).toBe(200);
 		const json = (await response.json()) as { challenge: string };
 		expect(json.challenge).toBe("abc");
+	});
+
+	test("enqueues a mention job for a fresh app_mention event", async () => {
+		const request = new Request(
+			"http://localhost/api/integrations/slack/events",
+			{
+				method: "POST",
+				headers: VALID_HEADERS,
+				body: JSON.stringify({
+					type: "event_callback",
+					team_id: "T123",
+					event_id: "E_fresh",
+					event: { type: "app_mention", user: "U1", text: "hi" },
+				}),
+			},
+		);
+
+		const response = await POST(request);
+
+		expect(response.status).toBe(200);
+		expect(publishJSON).toHaveBeenCalledTimes(1);
+	});
+
+	test("ignores a duplicate app_mention event (idempotency)", async () => {
+		dedupReturning = []; // onConflictDoNothing inserted nothing -> duplicate delivery
+		const request = new Request(
+			"http://localhost/api/integrations/slack/events",
+			{
+				method: "POST",
+				headers: VALID_HEADERS,
+				body: JSON.stringify({
+					type: "event_callback",
+					team_id: "T123",
+					event_id: "E_dup",
+					event: { type: "app_mention", user: "U1", text: "hi" },
+				}),
+			},
+		);
+
+		const response = await POST(request);
+
+		expect(response.status).toBe(200);
+		expect(await response.text()).toBe("ok");
+		expect(publishJSON).not.toHaveBeenCalled();
 	});
 });

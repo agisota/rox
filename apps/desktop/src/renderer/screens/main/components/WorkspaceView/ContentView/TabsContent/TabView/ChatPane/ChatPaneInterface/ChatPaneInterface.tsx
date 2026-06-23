@@ -25,6 +25,7 @@ import {
 	getDesktopChatModelOptions,
 	isDesktopChatDevMode,
 } from "renderer/lib/dev-chat";
+import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
 import { useTabsStore } from "renderer/stores/tabs/store";
@@ -772,7 +773,7 @@ export function ChatPaneInterface({
 				const sendErrorMessage = toSendFailureMessage(error);
 				setSubmitStatus(undefined);
 				setRuntimeErrorMessage(sendErrorMessage);
-				console.debug("[chat] auto launch send failed", error);
+				logger.debug("[chat] auto launch send failed", error);
 
 				const currentAttempts =
 					autoLaunchAttemptsRef.current[launchConfigKey] ??
@@ -911,6 +912,9 @@ export function ChatPaneInterface({
 		},
 		[restartFromUserMessage],
 	);
+	const handleCancelEditUserMessage = useCallback(() => {
+		setEditingUserMessageId(null);
+	}, []);
 	const handleApprovalResponse = useCallback(
 		async (decision: "approve" | "decline" | "always_allow_category") => {
 			if (!pendingApproval?.toolCallId) return;
@@ -1014,7 +1018,7 @@ export function ChatPaneInterface({
 					editingUserMessageId={editingUserMessageId}
 					isEditSubmitting={isAwaitingAssistant}
 					onStartEditUserMessage={setEditingUserMessageId}
-					onCancelEditUserMessage={() => setEditingUserMessageId(null)}
+					onCancelEditUserMessage={handleCancelEditUserMessage}
 					onSubmitEditedUserMessage={handleSubmitEditedUserMessage}
 					onRestartUserMessage={handleResendUserMessage}
 					pendingQuestion={pendingQuestion}

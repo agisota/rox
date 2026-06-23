@@ -1,0 +1,140 @@
+.grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.75rem;
+	/* Never exceed the width of the hero text block above (the numbered hints
+	   use max-width: min(100%, 48rem)). Keep the row inside that same content
+	   column so the buttons never overflow past the copy. */
+	width: 100%;
+	max-width: min(100%, 48rem);
+}
+
+.grid[data-variant="page"] {
+	gap: 0.875rem;
+}
+
+.tile {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.7rem 1rem;
+	border-radius: 0.85rem;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.03);
+	color: inherit;
+	text-decoration: none;
+	/* Equal-width columns (3 × 1fr) + a shared min-height keep all three
+	   buttons exactly the same size regardless of caption length. */
+	min-width: 0;
+	min-height: 3.25rem;
+	transition:
+		border-color 0.2s ease,
+		background-color 0.2s ease,
+		transform 0.2s ease;
+}
+
+.grid[data-variant="page"] .tile {
+	padding: 0.9rem 1.15rem;
+	min-height: 3.6rem;
+}
+
+/* On narrow viewports the three equal columns get too cramped — stack them. */
+@media (max-width: 540px) {
+	.grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.tile:hover {
+	border-color: rgba(255, 140, 58, 0.55);
+	background: rgba(255, 140, 58, 0.08);
+	transform: translateY(-1px);
+}
+
+.tile[data-recommended] {
+	border-color: rgba(255, 140, 58, 0.45);
+	background: rgba(255, 140, 58, 0.06);
+}
+
+.icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.6rem;
+	height: 1.6rem;
+	flex-shrink: 0;
+	/* Muted by default (50% opacity/saturation), raised to full strength on
+	   hover AND active/press — the "logo lights up" effect. */
+	opacity: 0.5;
+	filter: saturate(0.5);
+	transition:
+		opacity 0.2s ease,
+		filter 0.2s ease;
+}
+
+.icon svg {
+	width: 100%;
+	height: 100%;
+}
+
+.tile:hover .icon,
+.tile:active .icon {
+	opacity: 1;
+	filter: saturate(1);
+}
+
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	line-height: 1.15;
+}
+
+.label {
+	font-size: 0.95rem;
+	font-weight: 500;
+}
+
+.sub {
+	font-size: 0.72rem;
+	opacity: 0.55;
+	letter-spacing: 0.01em;
+}
+
+.arrow {
+	display: inline-flex;
+	align-items: center;
+	margin-left: auto;
+	width: 0.8rem;
+	height: 0.95rem;
+	/* Default white; recolors to the brand orange on hover/active. */
+	color: #ffffff;
+	opacity: 0.55;
+	transition:
+		color 0.2s ease,
+		opacity 0.2s ease,
+		transform 0.2s ease;
+}
+
+.arrow svg {
+	width: 100%;
+	height: 100%;
+}
+
+.tile:hover .arrow,
+.tile:active .arrow {
+	color: var(--rox-orange-1, #ff9a4d);
+	opacity: 1;
+	transform: translateY(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tile,
+	.icon,
+	.arrow {
+		transition: none;
+	}
+	.tile:hover {
+		transform: none;
+	}
+}

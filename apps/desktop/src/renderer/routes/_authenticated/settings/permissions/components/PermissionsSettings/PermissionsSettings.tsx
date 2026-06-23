@@ -67,6 +67,92 @@ function PermissionRowSkeleton() {
 	);
 }
 
+/**
+ * Automation is request-only: macOS exposes no reliable read API for per-target
+ * Apple Events authorization, so instead of status badges we offer a per-target
+ * "Запросить доступ" button (which raises the "Rox wants to control X" dialog and
+ * registers the row in System Settings ▸ Automation), plus a "request all" and a
+ * deep link to the Automation pane.
+ */
+function AutomationSection() {
+	const { data: enabled } =
+		electronTrpc.permissions.getAutomationEnabled.useQuery();
+	const { data: targets } =
+		electronTrpc.permissions.getAutomationTargets.useQuery();
+	const requestAll = electronTrpc.permissions.requestAppleEvents.useMutation();
+	const requestOne = electronTrpc.permissions.requestAutomation.useMutation();
+	const openSettings =
+		electronTrpc.permissions.openAutomationSettings.useMutation();
+
+	// Developer ID gate: until a signed build is configured, surface the row but
+	// keep it inert (no Apple Events are sent on unsigned builds anyway).
+	if (enabled === false) {
+		return (
+			<div className="flex items-center justify-between gap-6">
+				<div className="min-w-0 flex-1 space-y-0.5">
+					<Label className="text-sm font-medium">Автоматизация</Label>
+					<p className="text-xs text-muted-foreground">
+						Управление другими приложениями (Apple Events) станет доступно в
+						подписанной сборке Rox. Временно отключено.
+					</p>
+				</div>
+				<Badge variant="outline">Скоро</Badge>
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-3">
+			<div className="flex items-center justify-between gap-6">
+				<div className="min-w-0 flex-1 space-y-0.5">
+					<Label className="text-sm font-medium">Автоматизация</Label>
+					<p className="text-xs text-muted-foreground">
+						Разрешите Rox управлять другими приложениями (Apple Events). Каждое
+						приложение запрашивается отдельно и появляется в разделе
+						«Автоматизация» системных настроек.
+					</p>
+				</div>
+				<div className="flex items-center gap-3 shrink-0">
+					<Button
+						variant="default"
+						size="sm"
+						onClick={() => requestAll.mutate()}
+						disabled={requestAll.isPending}
+					>
+						Запросить для всех
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => openSettings.mutate()}
+					>
+						<LuExternalLink className="h-3.5 w-3.5 mr-1.5" />
+						Открыть настройки
+					</Button>
+				</div>
+			</div>
+
+			<div className="rounded-md border divide-y">
+				{(targets ?? []).map((target) => (
+					<div
+						key={target.id}
+						className="flex items-center justify-between gap-4 px-3 py-2"
+					>
+						<span className="text-sm">{target.label}</span>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => requestOne.mutate({ bundleId: target.bundleId })}
+						>
+							Запросить доступ
+						</Button>
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
 export function PermissionsSettings({
 	visibleItems,
 }: PermissionsSettingsProps) {
@@ -81,8 +167,8 @@ export function PermissionsSettings({
 		electronTrpc.permissions.requestAccessibility.useMutation();
 	const requestMicrophone =
 		electronTrpc.permissions.requestMicrophone.useMutation();
-	const requestAppleEvents =
-		electronTrpc.permissions.requestAppleEvents.useMutation();
+	const requestScreenRecording =
+		electronTrpc.permissions.requestScreenRecording.useMutation();
 	const requestLocalNetwork =
 		electronTrpc.permissions.requestLocalNetwork.useMutation();
 
@@ -140,17 +226,20 @@ export function PermissionsSettings({
 							/>
 						)}
 
+						{/* Screen Recording: detectable via Electron; request-only nudge. */}
+						{visibleItems == null && (
+							<PermissionRow
+								label="Запись экрана"
+								description="Снимки экрана и запись для агентских и QA-сценариев."
+								granted={status?.screenRecording}
+								onRequest={() => requestScreenRecording.mutate()}
+							/>
+						)}
+
 						{isItemVisible(
 							SETTING_ITEM_ID.PERMISSIONS_APPLE_EVENTS,
 							visibleItems,
-						) && (
-							<PermissionRow
-								label="Автоматизация"
-								description="Запуск команд в терминале и взаимодействие с другими приложениями."
-								granted={undefined}
-								onRequest={() => requestAppleEvents.mutate()}
-							/>
-						)}
+						) && <AutomationSection />}
 
 						{isItemVisible(
 							SETTING_ITEM_ID.PERMISSIONS_LOCAL_NETWORK,

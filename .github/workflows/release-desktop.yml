@@ -144,6 +144,27 @@ jobs:
 
           # Write to file to preserve formatting
           echo "$NOTES" > release_notes.md
+
+          # Append the unsigned-macOS-build install note. The macOS .dmg is
+          # ad-hoc signed (not notarized), so a downloaded build is
+          # Gatekeeper-quarantined. Use a quoted heredoc so nothing inside is
+          # shell-expanded — the block is emitted verbatim into the notes.
+          cat >> release_notes.md << 'QUARANTINE_NOTE'
+
+          ---
+
+          ### Installing the macOS build (unsigned)
+
+          This macOS build is **ad-hoc signed but not notarized**, so macOS
+          marks the downloaded `.dmg` as quarantined and Gatekeeper may refuse
+          to open it ("Rox.app is damaged" / "developer cannot be verified").
+          The app is not actually damaged. After installing, remove the
+          quarantine attribute once:
+
+          ```bash
+          xattr -dr com.apple.quarantine /Applications/Rox.app
+          ```
+          QUARANTINE_NOTE
           echo "Release notes generated"
 
       - name: Create Release

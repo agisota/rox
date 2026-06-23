@@ -7,10 +7,12 @@ import { resolveCustomProviderRuntimeEnv } from "./custom-runtime-env";
 
 let tempDir: string;
 let configPath: string;
+let mastracodeSettingsPath: string;
 
 beforeEach(() => {
 	tempDir = mkdtempSync(join(tmpdir(), "rox-custom-runtime-"));
 	configPath = join(tempDir, "chat-custom-provider.json");
+	mastracodeSettingsPath = join(tempDir, "mastracode-settings.json");
 });
 
 afterEach(() => {
@@ -26,27 +28,28 @@ describe("resolveCustomProviderRuntimeEnv", () => {
 		expect(result).toEqual({ env: {}, isCustomModel: false });
 	});
 
-	it("injects OPENAI_* env when the selected model matches the saved model", () => {
+	it("flags a custom model without injecting any env", () => {
 		setCustomProviderConfig(
 			{
 				baseUrl: "https://api.example.com/v1",
 				apiKey: "sk-custom",
-				modelId: "llama-3.3-70b",
+				models: ["llama-3.3-70b", "gpt-oss"],
 			},
-			{ configPath },
+			{ configPath, mastracodeSettingsPath },
 		);
 
-		// Accept both the bare id and the openai/-prefixed wire id.
-		for (const selectedModelId of ["llama-3.3-70b", "openai/llama-3.3-70b"]) {
+		// Accept the bare id, the rox-custom/ wire id, and a stray legacy openai/ id.
+		for (const selectedModelId of [
+			"llama-3.3-70b",
+			"rox-custom/llama-3.3-70b",
+			"openai/gpt-oss",
+		]) {
 			const result = resolveCustomProviderRuntimeEnv(
 				{ selectedModelId },
 				{ configPath },
 			);
 			expect(result.isCustomModel).toBe(true);
-			expect(result.env).toEqual({
-				OPENAI_API_KEY: "sk-custom",
-				OPENAI_BASE_URL: "https://api.example.com/v1",
-			});
+			expect(result.env).toEqual({});
 		}
 	});
 
@@ -55,9 +58,9 @@ describe("resolveCustomProviderRuntimeEnv", () => {
 			{
 				baseUrl: "https://api.example.com/v1",
 				apiKey: "sk-custom",
-				modelId: "llama-3.3-70b",
+				models: ["llama-3.3-70b"],
 			},
-			{ configPath },
+			{ configPath, mastracodeSettingsPath },
 		);
 
 		const result = resolveCustomProviderRuntimeEnv(

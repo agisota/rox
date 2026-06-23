@@ -1,8 +1,7 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gauge } from "lucide-react";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 
 interface DiffPerformanceMeterProps {
 	totalChanged: number;

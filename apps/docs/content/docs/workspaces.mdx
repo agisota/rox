@@ -1,55 +1,55 @@
 ---
-title: Workspaces
-description: Isolated environments for each git branch
+title: Рабочие пространства
+description: Изолированные окружения для каждой ветки git
 ---
 
-## Core Concept
+## Основная концепция
 
-Each workspace = one git branch. Workspaces are isolated git worktrees with their own directory, terminal, and ports.
+Каждое рабочее пространство = одна ветка git. Рабочие пространства — это изолированные git worktrees с собственными директорией, терминалом и портами.
 
 <YouTubeVideo id="8PuptrsyNvM" title="Rox Workspaces" thumbnail="/images/branches.png" />
 
-## Create Workspaces
+## Создание рабочих пространств
 
-Press **⌘N** or click "New Workspace". Create from:
+Нажмите **⌘N** или кликните «New Workspace». Создавайте из:
 
-- **New branch** - Fresh branch from main
-- **Existing branch** - Continue work on a branch
-- **Pull request** - Review or continue a PR
+- **New branch** — новая ветка от main
+- **Existing branch** — продолжение работы над веткой
+- **Pull request** — просмотр или продолжение PR
 
-In the prompt-first workspace flow, **Link pull request** lets you search by title or PR number, or paste the full PR URL to match it directly.
+В сценарии создания рабочего пространства «сначала промпт» опция **Link pull request** позволяет искать по заголовку или номеру PR либо вставить полный URL PR для прямого сопоставления.
 
-Each workspace gets:
-- Own git branch
-- Own working directory
-- Own terminal sessions
-- Workspace-scoped port detection and controls
+Каждое рабочее пространство получает:
+- Собственную ветку git
+- Собственную рабочую директорию
+- Собственные сессии терминала
+- Обнаружение и управление портами в пределах рабочего пространства
 
-## Import Worktrees
+## Импорт worktrees
 
-If you have existing git worktrees on disk, use the **Import** tab in the New Workspace modal to bring them into Rox. Click **Import all** to bulk-import all discovered worktrees at once.
+Если у вас уже есть git worktrees на диске, используйте вкладку **Import** в модальном окне New Workspace, чтобы добавить их в Rox. Нажмите **Import all**, чтобы массово импортировать все обнаруженные worktrees сразу.
 
-## Ahead/Behind Status
+## Статус Ahead/Behind
 
-For **local (branch-based) workspaces**, the sidebar shows how far the active branch is ahead or behind its remote branch:
+Для **локальных рабочих пространств (на основе веток)** боковая панель показывает, насколько активная ветка опережает или отстаёт от своей удалённой ветки:
 
-- **↑N** - N commits ahead of remote (unpushed)
-- **↓N** - N commits behind remote (needs pull/rebase)
+- **↑N** — на N коммитов впереди удалённой ветки (не отправлены)
+- **↓N** — на N коммитов позади удалённой ветки (требуется pull/rebase)
 
-## PR Status
+## Статус PR
 
-PR-based workspaces show pull request state in the sidebar.
+Рабочие пространства на основе PR показывают состояние pull request в боковой панели.
 
-Hover a workspace to see review status, CI checks, and GitHub links. If the branch has a deployment preview, you'll also see an **Open Preview** button.
+Наведите курсор на рабочее пространство, чтобы увидеть статус ревью, проверки CI и ссылки GitHub. Если у ветки есть деплой-превью, вы также увидите кнопку **Open Preview**.
 
-## Use Cases
+## Сценарии использования
 
-- **Parallel features** - Work on multiple features simultaneously
-- **AI agents** - Run Claude Code in separate workspaces
-- **Code review** - Review PRs while continuing your work
+- **Параллельные фичи** — работа над несколькими функциями одновременно
+- **AI-агенты** — запуск Claude Code в отдельных рабочих пространствах
+- **Код-ревью** — просмотр PR без остановки текущей работы
 
-## Best Practices
+## Рекомендации
 
-- Use descriptive branch names: `feature/auth`, `fix/login-bug`
-- Don't work directly on `main`
-- Delete workspaces after merging
+- Используйте описательные имена веток: `feature/auth`, `fix/login-bug`
+- Не работайте напрямую в `main`
+- Удаляйте рабочие пространства после мержа

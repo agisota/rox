@@ -6,6 +6,7 @@ import {
 	ROX_HOME_DIR_NAME,
 } from "@rox/shared/rox-dirs";
 import { resolveProjectRoxDir } from "@rox/shared/rox-dirs-node";
+import { logger } from "../../lib/logger";
 
 const CONFIG_FILE_NAME = "config.json";
 const LOCAL_CONFIG_FILE_NAME = "config.local.json";
@@ -44,7 +45,7 @@ function readJson<T>(filePath: string): T | null {
 	try {
 		return JSON.parse(readFileSync(filePath, "utf-8")) as T;
 	} catch (error) {
-		console.error(
+		logger.error(
 			`Failed to read JSON at ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
 		);
 		return null;
@@ -62,7 +63,7 @@ function validateSetupConfig(
 	const result: SetupConfig = {};
 	if (obj.cwd !== undefined) {
 		if (typeof obj.cwd !== "string" || obj.cwd.trim().length === 0) {
-			console.error(
+			logger.error(
 				`Invalid setup config at ${source}: 'cwd' must be a non-empty string`,
 			);
 			return null;
@@ -73,7 +74,7 @@ function validateSetupConfig(
 		const value = obj[key];
 		if (value === undefined) continue;
 		if (!isStringArray(value)) {
-			console.error(
+			logger.error(
 				`Invalid setup config at ${source}: '${key}' must be an array of strings`,
 			);
 			return null;
@@ -107,13 +108,13 @@ function readLocalConfigAt(filePath: string): LocalSetupConfig | null {
 		if (value && typeof value === "object" && !Array.isArray(value)) {
 			const merge = value as Record<string, unknown>;
 			if (merge.before !== undefined && !isStringArray(merge.before)) {
-				console.error(
+				logger.error(
 					`Invalid local config at ${filePath}: '${key}.before' must be an array of strings`,
 				);
 				return null;
 			}
 			if (merge.after !== undefined && !isStringArray(merge.after)) {
-				console.error(
+				logger.error(
 					`Invalid local config at ${filePath}: '${key}.after' must be an array of strings`,
 				);
 				return null;
@@ -124,7 +125,7 @@ function readLocalConfigAt(filePath: string): LocalSetupConfig | null {
 			};
 			continue;
 		}
-		console.error(
+		logger.error(
 			`Invalid local config at ${filePath}: '${key}' must be an array or {before,after}`,
 		);
 		return null;

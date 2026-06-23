@@ -1,3 +1,9 @@
+import {
+	BrowserLoadingBar,
+	ease,
+	motionDuration,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { motion } from "framer-motion";
 import { GlobeIcon } from "lucide-react";
@@ -5,12 +11,6 @@ import { useCallback } from "react";
 import { TbDeviceDesktop } from "react-icons/tb";
 import type { MosaicBranch } from "react-mosaic-component";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import {
-	BrowserLoadingBar,
-	ease,
-	motionDuration,
-	useShouldAnimate,
-} from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { BasePaneWindow, PaneToolbarActions } from "../components";
 import { BrowserErrorOverlay } from "./components/BrowserErrorOverlay";

@@ -41,8 +41,18 @@ export const NOTIFICATION_EVENTS = {
 	TERMINAL_EXIT: "terminal-exit",
 } as const;
 
-// Development/testing mock values (used when SKIP_ENV_VALIDATION is set)
-export const MOCK_ORG_ID = "mock-org-id";
+// Development/testing mock values (used when SKIP_ENV_VALIDATION is set).
+// UUID-shaped so it satisfies the same `z.string().uuid()` validators the real
+// organization id flows through (e.g. canvas fixtures, agents.run).
+export const MOCK_ORG_ID = "00000000-0000-4000-8000-000000000001";
+
+// Canvas E2E/smoke fixture identifiers. UUID-shaped so packaged smoke paths can
+// exercise production tRPC validators without weakening them.
+export const E2E_CANVAS_FIXTURE = {
+	organizationId: MOCK_ORG_ID,
+	projectId: "00000000-0000-4000-8000-000000000002",
+	workspaceId: "00000000-0000-4000-8000-000000000003",
+} as const;
 
 // Terminal defaults
 export const DEFAULT_TERMINAL_SCROLLBACK = 5000;
@@ -58,6 +68,12 @@ export const DEFAULT_TELEMETRY_ENABLED = true;
 export const DEFAULT_SHOW_RESOURCE_MONITOR = true;
 export const DEFAULT_OPEN_LINKS_IN_APP = false;
 export const DEFAULT_EXPOSE_HOST_SERVICE_VIA_RELAY = false;
+
+// Voice / ambient defaults (Phase 4a). Plain dictation is on by default; the
+// always-on ambient capture is opt-in (off) per the locked privacy decision.
+export const DEFAULT_DICTATION_ENABLED = true;
+export const DEFAULT_AMBIENT_CAPTURE_ENABLED = false;
+export const DEFAULT_VOICE_AGENT_CONTEXT = "";
 
 // External links (documentation, help resources, etc.)
 export const EXTERNAL_LINKS = {

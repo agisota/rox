@@ -1,13 +1,14 @@
 import posthogFull from "posthog-js/dist/module.full.no-external";
 import type { PostHog } from "posthog-js/react";
+import { logger } from "renderer/lib/logger";
 import { env } from "../env.renderer";
 
 // Cast to standard PostHog type for compatibility with posthog-js/react
 export const posthog = posthogFull as unknown as PostHog;
 
-export function initPostHog(deviceId?: string) {
+export function initPostHog() {
 	if (!env.NEXT_PUBLIC_POSTHOG_KEY) {
-		console.log("[posthog] No key configured, skipping");
+		logger.info("[posthog] No key configured, skipping");
 		return;
 	}
 
@@ -20,15 +21,10 @@ export function initPostHog(deviceId?: string) {
 		person_profiles: "identified_only",
 		persistence: "localStorage",
 		debug: false,
-		...(deviceId && {
-			bootstrap: { distinctID: deviceId, isIdentifiedID: false },
-		}),
 		loaded: (ph) => {
 			ph.register({
 				app_name: "desktop",
 				platform: window.navigator.platform,
-				desktop_version: window.App.appVersion,
-				...(deviceId && { device_id: deviceId }),
 			});
 		},
 	});

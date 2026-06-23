@@ -1,7 +1,7 @@
+import { useShouldAnimate } from "@rox/ui/motion";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { FilePlusIcon } from "lucide-react";
-import { useShouldAnimate } from "renderer/motion";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { getArgs, getResult } from "../../../../utils/tool-helpers";
 import {

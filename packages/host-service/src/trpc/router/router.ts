@@ -1,8 +1,10 @@
 import { router } from "../index";
 import { agentBridgeRouter } from "./agent-bridge";
+import { agentStateRouter } from "./agent-state";
 import { agentsRouter } from "./agents";
 import { attachmentsRouter } from "./attachments";
 import { authRouter } from "./auth";
+import { canvasRouter } from "./canvas";
 import { chatRouter } from "./chat";
 import { cloudRouter } from "./cloud";
 import { configRouter } from "./config";
@@ -26,9 +28,11 @@ import { workspacesRouter } from "./workspaces";
 
 export const appRouter = router({
 	agentBridge: agentBridgeRouter,
+	agentState: agentStateRouter,
 	agents: agentsRouter,
 	attachments: attachmentsRouter,
 	auth: authRouter,
+	canvas: canvasRouter,
 	health: healthRouter,
 	host: hostRouter,
 	chat: chatRouter,

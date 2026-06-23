@@ -9,7 +9,7 @@
  * DO NOT mock internal code here - tests should use real implementations
  * or mock at the individual test level when necessary.
  */
-import { mock } from "bun:test";
+import { afterAll, afterEach, mock } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
@@ -20,11 +20,70 @@ process.env.SKIP_ENV_VALIDATION = "1";
 const testTmpDir = join(tmpdir(), "rox-test");
 
 // =============================================================================
+// Global Snapshot / Teardown
+// =============================================================================
+//
+// This file installs several mutable globals (`document`, `window`,
+// `localStorage`, `electronTRPC`) and keeps in-memory state maps that
+// accumulate across tests (`mockStyleMap`, `mockClassList`, the localStorage
+// store). Bun runs all test files in a single worker process and shares
+// `globalThis`, so without explicit teardown this state leaks across files and
+// makes test outcomes order-dependent (a classic flake source).
+//
+// Strategy:
+//   - Snapshot any pre-existing global we are about to overwrite, and restore
+//     the original (or delete our shim) in afterAll.
+//   - Reset the mutable accumulating state in afterEach so each test starts
+//     from a clean slate regardless of what ran before it.
+const GLOBAL_KEYS = [
+	"document",
+	"window",
+	"localStorage",
+	"electronTRPC",
+] as const;
+
+const globalSnapshot = new Map<string, { existed: boolean; value: unknown }>();
+for (const key of GLOBAL_KEYS) {
+	const existed = key in globalThis;
+	globalSnapshot.set(key, {
+		existed,
+		value: existed ? (globalThis as Record<string, unknown>)[key] : undefined,
+	});
+}
+
+// Hooks that reset / restore mutable global state. Definitions installed below
+// push their reset callbacks here so a single afterEach/afterAll drives them.
+const resetCallbacks: Array<() => void> = [];
+
+afterEach(() => {
+	for (const reset of resetCallbacks) reset();
+});
+
+afterAll(() => {
+	for (const key of GLOBAL_KEYS) {
+		const snap = globalSnapshot.get(key);
+		if (!snap) continue;
+		if (snap.existed) {
+			(globalThis as Record<string, unknown>)[key] = snap.value;
+		} else {
+			delete (globalThis as Record<string, unknown>)[key];
+		}
+	}
+});
+
+// =============================================================================
 // Browser Global Mocks (required for renderer code that touches DOM)
 // =============================================================================
 
 const mockStyleMap = new Map<string, string>();
 const mockClassList = new Set<string>();
+
+// Reset DOM-style accumulating state between tests so CSS variables / classes
+// set by one test do not bleed into the next.
+resetCallbacks.push(() => {
+	mockStyleMap.clear();
+	mockClassList.clear();
+});
 
 const mockHead = {
 	appendChild: mock(() => {}),
@@ -78,6 +137,37 @@ if (typeof globalThis.window !== "undefined") {
 		addEventListener: mock(() => {}),
 		removeEventListener: mock(() => {}),
 	};
+}
+
+// =============================================================================
+// localStorage Shim (zustand `persist` defaults to window.localStorage)
+// =============================================================================
+
+// Bun's test runtime has no DOM Storage, so persisted zustand stores throw
+// `undefined is not an object (evaluating 'storage.setItem')` at module load.
+// Provide a minimal in-memory implementation matching the Web Storage API.
+if (typeof globalThis.localStorage === "undefined") {
+	const store = new Map<string, string>();
+	const localStorageShim: Storage = {
+		get length() {
+			return store.size;
+		},
+		clear: () => store.clear(),
+		getItem: (key: string) => store.get(key) ?? null,
+		key: (index: number) => Array.from(store.keys())[index] ?? null,
+		removeItem: (key: string) => {
+			store.delete(key);
+		},
+		setItem: (key: string, value: string) => {
+			store.set(key, String(value));
+		},
+	};
+	// biome-ignore lint/suspicious/noExplicitAny: Test setup requires extending globalThis
+	(globalThis as any).localStorage = localStorageShim;
+
+	// Clear persisted entries between tests so zustand-persisted stores don't
+	// carry state from one test file into the next.
+	resetCallbacks.push(() => store.clear());
 }
 
 // =============================================================================

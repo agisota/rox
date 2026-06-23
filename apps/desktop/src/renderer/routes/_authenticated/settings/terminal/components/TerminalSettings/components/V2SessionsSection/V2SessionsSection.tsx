@@ -32,6 +32,7 @@ import {
 	getHostServiceHeaders,
 	getHostServiceWsToken,
 } from "renderer/lib/host-service-auth";
+import { logger } from "renderer/lib/logger";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 
 const REFETCH_WHILE_OPEN_MS = 5_000;
@@ -41,7 +42,7 @@ export function V2SessionsSection() {
 	if (!activeHostUrl) {
 		return (
 			<div className="space-y-1">
-				<h3 className="text-sm font-medium">Управление daemon</h3>
+				<h3 className="text-sm font-medium">Служба терминала</h3>
 				<p className="text-sm text-muted-foreground">
 					Host service запускается…
 				</p>
@@ -87,13 +88,13 @@ function V2SessionsSectionInner() {
 	// Surface query errors so they're visible in renderer logs even when
 	// the section's UI gracefully degrades to "Daemon unavailable".
 	if (updateStatusQuery.error) {
-		console.error(
+		logger.error(
 			"[V2SessionsSection] getUpdateStatus error:",
 			updateStatusQuery.error,
 		);
 	}
 	if (sessionsQuery.error) {
-		console.error(
+		logger.error(
 			"[V2SessionsSection] listSessions error:",
 			sessionsQuery.error,
 		);
@@ -175,7 +176,7 @@ function V2SessionsSectionInner() {
 				<div className="flex items-start justify-between gap-4">
 					<div>
 						<h3 className="text-sm font-medium flex items-baseline gap-2">
-							Управление daemon
+							Служба терминала
 							{versionLabel ? (
 								<span className="text-xs font-mono font-normal text-muted-foreground/80">
 									{versionLabel}

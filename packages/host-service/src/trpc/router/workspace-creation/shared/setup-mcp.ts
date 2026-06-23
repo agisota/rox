@@ -46,12 +46,26 @@ type DefaultMcpServer = DefaultStdioMcpServer | DefaultHttpMcpServer;
  *   - `filesystem` / `sequential-thinking`: official, zero-config, no secrets.
  *   - `exa`: web/code search (needs `EXA_API_KEY`).
  *   - `context7`: up-to-date library/framework docs (no key required).
- *   - `rox`: the hosted Rox MCP at api.zed.md (remote HTTP).
+ *   - `rox`: the hosted Rox MCP **v2** agent endpoint (remote HTTP) — native
+ *     host tools + the per-org downstream MCP proxy. Overridable via
+ *     `ROX_MCP_V2_URL`.
  *   - `telegram`: Telegram bridge (needs `TELEGRAM_BOT_TOKEN`).
  *
  * Stdio servers run via `bunx` (no global install). Key-gated servers use
  * `${ENV_VAR}` placeholders so seeding never fails when a key is absent.
  */
+
+/**
+ * Endpoint of the hosted Rox MCP **v2** agent server seeded into new
+ * workspaces. v2 exposes the host-native tool surface (tasks/agents/workspaces/
+ * terminals/automations/hosts/screen/projects/org-members) PLUS the per-org
+ * downstream MCP proxy (`mcp__{slug}__{tool}`), unlike the legacy v1 `/mcp`.
+ *
+ * Env-overridable (`ROX_MCP_V2_URL`) so self-hosted/staging deployments can
+ * point seeded agents at their own API; defaults to the public v2 route.
+ */
+const ROX_MCP_V2_URL =
+	process.env.ROX_MCP_V2_URL ?? "https://api.zed.md/api/v2/agent/mcp";
 export const DEFAULT_MCP_SERVERS: readonly DefaultMcpServer[] = [
 	{
 		transport: "stdio",
@@ -82,7 +96,7 @@ export const DEFAULT_MCP_SERVERS: readonly DefaultMcpServer[] = [
 	{
 		transport: "http",
 		name: "rox",
-		url: "https://api.zed.md/mcp",
+		url: ROX_MCP_V2_URL,
 	},
 	{
 		transport: "stdio",

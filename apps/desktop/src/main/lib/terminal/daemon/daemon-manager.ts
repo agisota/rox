@@ -3,6 +3,7 @@ import { workspaces } from "@rox/local-db";
 import { track } from "main/lib/analytics";
 import { appState } from "main/lib/app-state";
 import { localDb } from "main/lib/local-db";
+import { logger } from "main/lib/logger";
 import { HistoryReader, truncateUtf8ToLastBytes } from "../../terminal-history";
 import {
 	disposeTerminalHostClient,
@@ -101,7 +102,7 @@ export class DaemonTerminalManager extends EventEmitter {
 				return;
 			}
 
-			console.log(
+			logger.info(
 				`[DaemonTerminalManager] Found ${response.sessions.length} sessions from previous run`,
 			);
 
@@ -116,7 +117,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			let orphanedCount = 0;
 			for (const session of response.sessions) {
 				if (!validWorkspaceIds.has(session.workspaceId)) {
-					console.log(
+					logger.info(
 						`[DaemonTerminalManager] Killing orphaned session ${session.sessionId} (workspace deleted)`,
 					);
 					await this.client.kill({ sessionId: session.sessionId });
@@ -147,12 +148,12 @@ export class DaemonTerminalManager extends EventEmitter {
 
 			const preservedCount = response.sessions.length - orphanedCount;
 			if (preservedCount > 0) {
-				console.log(
+				logger.info(
 					`[DaemonTerminalManager] Preserving ${preservedCount} sessions for reattach`,
 				);
 			}
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				"[DaemonTerminalManager] Failed to reconcile sessions:",
 				error,
 			);
@@ -169,7 +170,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			);
 			this.daemonSessionIdsHydrated = true;
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				"[DaemonTerminalManager] Failed to list daemon sessions:",
 				error,
 			);
@@ -181,7 +182,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			const paneId = sessionId;
 			if (DEBUG_TERMINAL) {
 				const listenerCount = this.listenerCount(`data:${paneId}`);
-				console.log(
+				logger.info(
 					`[DaemonTerminalManager] Received data from daemon: paneId=${paneId}, bytes=${data.length}, listeners=${listenerCount}`,
 				);
 			}
@@ -231,7 +232,7 @@ export class DaemonTerminalManager extends EventEmitter {
 		);
 
 		this.client.on("disconnected", () => {
-			console.warn("[DaemonTerminalManager] Disconnected from daemon");
+			logger.warn("[DaemonTerminalManager] Disconnected from daemon");
 			const activeSessionCount = Array.from(this.sessions.values()).filter(
 				(s) => s.isAlive,
 			).length;
@@ -251,7 +252,7 @@ export class DaemonTerminalManager extends EventEmitter {
 		});
 
 		this.client.on("error", (error: Error) => {
-			console.error("[DaemonTerminalManager] Client error:", error.message);
+			logger.error("[DaemonTerminalManager] Client error:", error.message);
 			this.daemonAliveSessionIds.clear();
 			this.daemonSessionIdsHydrated = false;
 			for (const [paneId, session] of this.sessions.entries()) {
@@ -265,7 +266,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			"terminalError",
 			(sessionId: string, error: string, code?: string) => {
 				const paneId = sessionId;
-				console.error(
+				logger.error(
 					`[DaemonTerminalManager] Terminal error for ${paneId}: ${code ?? "UNKNOWN"}: ${error}`,
 				);
 
@@ -275,7 +276,7 @@ export class DaemonTerminalManager extends EventEmitter {
 					if (session) {
 						session.isAlive = false;
 					}
-					console.log(
+					logger.info(
 						`[DaemonTerminalManager] Session ${paneId} lost - will trigger cold restore on next attach`,
 					);
 				}
@@ -440,7 +441,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			});
 
 			if (DEBUG_TERMINAL) {
-				console.log("[DaemonTerminalManager] Calling daemon createOrAttach:", {
+				logger.info("[DaemonTerminalManager] Calling daemon createOrAttach:", {
 					paneId,
 					shell,
 					cwd,
@@ -457,7 +458,7 @@ export class DaemonTerminalManager extends EventEmitter {
 						requestId: params.requestId,
 					})
 					.catch((error) => {
-						console.warn(
+						logger.warn(
 							`[DaemonTerminalManager] Failed to cancel createOrAttach for ${paneId}:`,
 							error,
 						);
@@ -531,13 +532,13 @@ export class DaemonTerminalManager extends EventEmitter {
 						initialScrollback,
 					})
 					.catch((error) => {
-						console.error(
+						logger.error(
 							`[DaemonTerminalManager] Failed to init history for ${paneId}:`,
 							error,
 						);
 					});
 			} else {
-				console.warn(
+				logger.warn(
 					`[DaemonTerminalManager] Skipping history init for ${paneId}: invalid dimensions ${effectiveCols}x${effectiveRows}`,
 				);
 			}
@@ -657,7 +658,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			cols <= 0 ||
 			rows <= 0
 		) {
-			console.warn(
+			logger.warn(
 				`[DaemonTerminalManager] Invalid resize geometry for ${paneId}: cols=${cols}, rows=${rows}`,
 			);
 			return;
@@ -666,7 +667,7 @@ export class DaemonTerminalManager extends EventEmitter {
 		this.client.resize({ sessionId: paneId, cols, rows }).catch((error) => {
 			const errorMsg = error instanceof Error ? error.message : String(error);
 			if (!errorMsg.includes("not found")) {
-				console.error(
+				logger.error(
 					`[DaemonTerminalManager] Resize failed for ${paneId}:`,
 					error,
 				);
@@ -686,14 +687,14 @@ export class DaemonTerminalManager extends EventEmitter {
 		const session = this.sessions.get(paneId);
 
 		if (!session || !session.isAlive) {
-			console.warn(
+			logger.warn(
 				`Cannot signal terminal ${paneId}: session not found or not alive`,
 			);
 			return;
 		}
 
 		this.client.signal({ sessionId: paneId, signal }).catch((error) => {
-			console.warn(
+			logger.warn(
 				`[DaemonTerminalManager] Failed to send signal ${signal} to ${paneId}:`,
 				error,
 			);
@@ -739,7 +740,7 @@ export class DaemonTerminalManager extends EventEmitter {
 		const session = this.sessions.get(paneId);
 
 		this.client.detach({ sessionId: paneId }).catch((error) => {
-			console.error(
+			logger.error(
 				`[DaemonTerminalManager] Detach failed for ${paneId}:`,
 				error,
 			);
@@ -762,7 +763,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			const writer = this.historyManager.getHistoryWriter(paneId);
 			if (writer) {
 				await writer.close().catch((error) => {
-					console.warn(
+					logger.warn(
 						`[DaemonTerminalManager] Failed to close history writer for ${paneId}:`,
 						error,
 					);
@@ -777,7 +778,7 @@ export class DaemonTerminalManager extends EventEmitter {
 						initialScrollback: undefined,
 					});
 				} catch (error) {
-					console.warn(
+					logger.warn(
 						`[DaemonTerminalManager] Failed to reinitialize history writer for ${paneId}:`,
 						error,
 					);
@@ -818,7 +819,7 @@ export class DaemonTerminalManager extends EventEmitter {
 				}
 			}
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				"[DaemonTerminalManager] Failed to query daemon for sessions:",
 				error,
 			);
@@ -833,7 +834,7 @@ export class DaemonTerminalManager extends EventEmitter {
 			return { killed: 0, failed: 0 };
 		}
 
-		console.log(
+		logger.info(
 			`[DaemonTerminalManager] Killing ${paneIdsToKill.size} sessions for workspace ${workspaceId}`,
 		);
 
@@ -857,7 +858,7 @@ export class DaemonTerminalManager extends EventEmitter {
 		const failed = results.filter((r) => r.status === "rejected").length;
 
 		if (failed > 0) {
-			console.warn(
+			logger.warn(
 				`[DaemonTerminalManager] killByWorkspaceId: killed=${killed}, failed=${failed}`,
 			);
 		}
@@ -872,7 +873,7 @@ export class DaemonTerminalManager extends EventEmitter {
 				(s) => s.workspaceId === workspaceId && s.isAlive,
 			).length;
 		} catch (error) {
-			console.warn(
+			logger.warn(
 				"[DaemonTerminalManager] Failed to query daemon for session count:",
 				error,
 			);
@@ -975,7 +976,7 @@ export class DaemonTerminalManager extends EventEmitter {
 	}
 
 	reset(): void {
-		console.log("[DaemonTerminalManager] Resetting...");
+		logger.info("[DaemonTerminalManager] Resetting...");
 
 		this.abortPendingSessions();
 		for (const timeout of this.cleanupTimeouts.values()) {
@@ -996,6 +997,6 @@ export class DaemonTerminalManager extends EventEmitter {
 		disposeTerminalHostClient();
 		this.initializeClient();
 
-		console.log("[DaemonTerminalManager] Reset complete");
+		logger.info("[DaemonTerminalManager] Reset complete");
 	}
 }

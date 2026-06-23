@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { logger } from "main/lib/logger";
 import {
 	base64ByteSize,
 	buildSelectorHints,
@@ -103,7 +104,19 @@ class DesignModeCaptureService extends EventEmitter {
 				if (!current) return;
 				browserManager
 					.evaluateJS(paneId, buildEnablePickerScript(current))
-					.catch(() => {});
+					.catch((error) => {
+						// Re-injection is what keeps Design Mode alive across
+						// navigations; swallowing this would silently break the
+						// overlay (the exact failure this block exists to prevent).
+						logger.error(
+							`[DesignMode] Failed to re-inject picker after navigation (pane=${paneId})`,
+							error,
+						);
+						this.emit(`design-event:${paneId}`, {
+							type: "error",
+							message: "Design Mode stopped working after navigation",
+						} satisfies DesignModeEvent);
+					});
 			};
 			wc.on("did-navigate", onNavigate);
 			wc.on("did-navigate-in-page", onNavigate);
@@ -288,7 +301,7 @@ class DesignModeCaptureService extends EventEmitter {
 		};
 
 		this.store(capture);
-		console.log(
+		logger.info(
 			`[design-mode] capture ${captureId} pane=${paneId} html=${Buffer.byteLength(
 				outerHTML,
 			)}B css=${Object.keys(computed).length} shot=${screenshotBytes}B${

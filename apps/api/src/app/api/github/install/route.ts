@@ -2,23 +2,21 @@ import { auth } from "@rox/auth/server";
 import { findOrgMembership } from "@rox/db/utils";
 
 import { env } from "@/env";
+import { apiError } from "@/lib/api-response";
 import { createSignedState } from "@/lib/oauth-state";
 
 export async function GET(request: Request) {
 	const session = await auth.api.getSession({ headers: request.headers });
 
 	if (!session?.user) {
-		return Response.json({ error: "Unauthorized" }, { status: 401 });
+		return apiError("Unauthorized", 401);
 	}
 
 	const url = new URL(request.url);
 	const organizationId = url.searchParams.get("organizationId");
 
 	if (!organizationId) {
-		return Response.json(
-			{ error: "Missing organizationId parameter" },
-			{ status: 400 },
-		);
+		return apiError("Missing organizationId parameter", 400);
 	}
 
 	const membership = await findOrgMembership({
@@ -27,17 +25,11 @@ export async function GET(request: Request) {
 	});
 
 	if (!membership) {
-		return Response.json(
-			{ error: "User is not a member of this organization" },
-			{ status: 403 },
-		);
+		return apiError("User is not a member of this organization", 403);
 	}
 
 	if (!env.GH_APP_ID) {
-		return Response.json(
-			{ error: "GitHub App not configured" },
-			{ status: 500 },
-		);
+		return apiError("GitHub App not configured", 500);
 	}
 
 	const state = createSignedState({

@@ -1,0 +1,85 @@
+---
+title: Переменные окружения
+description: Полная матрица переменных окружения для self-host Rox
+---
+
+## Обзор
+
+Переменные окружения для бэкенда и клиентских поверхностей задаются в `.env`. Для локального запуска `.env.local.example` уже содержит рабочие плейсхолдеры; для продакшена и подключения к реальным сервисам заполните значения из `.env.example`.
+
+<Callout type="warn">
+Никогда не коммитьте реальные секреты. Храните их в менеджере секретов или в переменных окружения платформы (Render, CI). `.env` — gitignored.
+</Callout>
+
+## База данных
+
+| Переменная | Назначение |
+| --- | --- |
+| `DATABASE_URL` | Строка подключения к Postgres (пулинговая). |
+| `DATABASE_URL_UNPOOLED` | Непулинговая строка (для миграций/долгих операций). |
+| `NEON_ORG_ID`, `NEON_PROJECT_ID`, `NEON_API_KEY` | Учётные данные Neon для инструментов ветвления БД. |
+
+## Кросс-сервисные URL
+
+| Переменная | Назначение |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | URL API (например, `https://api.rox.one`). |
+| `NEXT_PUBLIC_WEB_URL` | URL веб-приложения. |
+| `NEXT_PUBLIC_ADMIN_URL` | URL админ-панели. |
+| `NEXT_PUBLIC_MARKETING_URL` | URL маркетингового сайта. |
+| `NEXT_PUBLIC_DOCS_URL` | URL документации. |
+
+## Аутентификация и секреты
+
+| Переменная | Назначение |
+| --- | --- |
+| `BETTER_AUTH_SECRET` | Главный секрет better-auth. |
+| `NEXT_PUBLIC_COOKIE_DOMAIN` | Домен cookie для общих сессий между поддоменами. |
+| `SECRETS_ENCRYPTION_KEY` | AES-256-GCM ключ (base64 ровно 32 байта) для шифрования секретов проектов. |
+| `GH_CLIENT_ID`, `GH_CLIENT_SECRET` | GitHub OAuth для входа. |
+| `GH_APP_ID`, `GH_APP_PRIVATE_KEY`, `GH_WEBHOOK_SECRET` | GitHub App для интеграций. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth. |
+
+## Живая синхронизация и relay
+
+| Переменная | Назначение |
+| --- | --- |
+| `RELAY_URL`, `NEXT_PUBLIC_RELAY_URL` | URL сервиса Rox Relay для удалённых хостов. |
+| `DURABLE_STREAMS_URL`, `DURABLE_STREAMS_SECRET` | Durable-стримы (живые потоки данных). |
+
+Для локального Electric порты задаются через `LOCAL_ELECTRIC_PORT`, `CADDY_ELECTRIC_PORT`, `WRANGLER_PORT` (см. [Docker Compose](/self-host/docker-compose)).
+
+## Интеграции
+
+| Переменная | Назначение |
+| --- | --- |
+| `LINEAR_CLIENT_ID`, `LINEAR_CLIENT_SECRET`, `LINEAR_WEBHOOK_SECRET` | Интеграция с Linear. |
+| `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`, `SLACK_SIGNING_SECRET` | Интеграция со Slack. |
+| `ANTHROPIC_API_KEY` | Доступ к моделям Anthropic. |
+| `ROX_MCP_API_KEY` | Ключ для MCP-сервера. |
+| `RESEND_API_KEY` | Отправка писем (приглашения, уведомления) через Resend. |
+
+## Хранилище и очереди
+
+| Переменная | Назначение |
+| --- | --- |
+| `BLOB_READ_WRITE_TOKEN` | Токен blob-хранилища. |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_URL` | KV-хранилище. |
+| `QSTASH_TOKEN`, `QSTASH_URL`, `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY` | Очереди задач QStash. |
+
+## Аналитика и наблюдаемость
+
+| Переменная | Назначение |
+| --- | --- |
+| `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `POSTHOG_API_KEY`, `POSTHOG_PROJECT_ID` | PostHog. |
+| `NEXT_PUBLIC_SENTRY_DSN_*`, `SENTRY_DSN_DESKTOP`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | Sentry (по одному DSN на поверхность). |
+| `NEXT_PUBLIC_OPENPANEL_CLIENT_ID`, `OPENPANEL_CLIENT_SECRET`, `OPENPANEL_API_URL` | OpenPanel. |
+
+## CLI
+
+Переменные окружения, влияющие на поведение CLI (`ROX_API_KEY`, `ROX_HOME_DIR`, `GH_TOKEN` и т.д.), описаны на странице [CLI → Переменные окружения](/cli/env-vars).
+
+## Дальше
+
+- [Запуск через Docker Compose](/self-host/docker-compose)
+- [База данных](/self-host/database)

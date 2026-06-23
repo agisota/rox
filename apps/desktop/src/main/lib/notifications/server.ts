@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import { BrowserWindow } from "electron";
 import express from "express";
 import { handleAuthCallback } from "lib/trpc/routers/auth/utils/auth-functions";
+import { logger } from "main/lib/logger";
 import { NOTIFICATION_EVENTS } from "shared/constants";
 import { env } from "shared/env.shared";
 import type { AgentLifecycleEvent } from "shared/notification-types";
@@ -66,7 +67,7 @@ app.get("/hook/complete", (req, res) => {
 	// Environment validation: detect dev/prod cross-talk
 	// We still return success to not block the agent, but log a warning
 	if (clientEnv && clientEnv !== SERVER_ENV) {
-		console.warn(
+		logger.warn(
 			`[notifications] Environment mismatch: received ${clientEnv} request on ${SERVER_ENV} server. ` +
 				`This may indicate a stale hook or misconfigured terminal. Ignoring request.`,
 		);
@@ -75,7 +76,7 @@ app.get("/hook/complete", (req, res) => {
 
 	// Log version for debugging (helpful when troubleshooting hook issues)
 	if (version && version !== HOOK_PROTOCOL_VERSION) {
-		console.log(
+		logger.info(
 			`[notifications] Received hook v${version} request (server expects v${HOOK_PROTOCOL_VERSION})`,
 		);
 	}
@@ -86,7 +87,7 @@ app.get("/hook/complete", (req, res) => {
 	// This ensures forward compatibility and doesn't block the agent
 	if (!mappedEventType) {
 		if (eventType) {
-			console.log("[notifications] Ignoring unknown eventType:", eventType);
+			logger.info("[notifications] Ignoring unknown eventType:", eventType);
 		}
 		return res.json({ success: true, ignored: true });
 	}
@@ -107,7 +108,7 @@ app.get("/hook/complete", (req, res) => {
 	};
 
 	if (DEBUG_HOOKS_ENABLED) {
-		console.log("[notifications] hook event received", {
+		logger.info("[notifications] hook event received", {
 			eventType,
 			mappedEventType,
 			paneId: paneId as string | undefined,

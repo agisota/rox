@@ -5,9 +5,10 @@ import {
 } from "@rox/ui/ai-elements/message";
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
+import { useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
+import { logger } from "renderer/lib/logger";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 
 type PendingQuestion = UseChatDisplayReturn["pendingQuestion"];
@@ -109,7 +110,7 @@ export function PendingQuestionMessage({
 		try {
 			await onRespond(questionId, optionLabel);
 		} catch (error) {
-			console.error("Failed to submit question option response", error);
+			logger.error("Failed to submit question option response", error);
 			setOptimisticAnswer(null);
 			setSelectedOptionLabel(previousSelection);
 		} finally {
@@ -131,7 +132,7 @@ export function PendingQuestionMessage({
 		try {
 			await onRespond(questionId, answerText);
 		} catch (error) {
-			console.error("Failed to submit question free-text response", error);
+			logger.error("Failed to submit question free-text response", error);
 			setOptimisticAnswer(null);
 		} finally {
 			inFlightResponseRef.current = false;

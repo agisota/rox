@@ -1,0 +1,49 @@
+{
+	"name": "@rox/comms-core",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./types": {
+			"types": "./src/types.ts",
+			"default": "./src/types.ts"
+		},
+		"./ports": {
+			"types": "./src/ports.ts",
+			"default": "./src/ports.ts"
+		},
+		"./adapter": {
+			"types": "./src/adapter/index.ts",
+			"default": "./src/adapter/index.ts"
+		},
+		"./router": {
+			"types": "./src/router/index.ts",
+			"default": "./src/router/index.ts"
+		},
+		"./identity": {
+			"types": "./src/identity/index.ts",
+			"default": "./src/identity/index.ts"
+		},
+		"./email": {
+			"types": "./src/email/index.ts",
+			"default": "./src/email/index.ts"
+		}
+	},
+	"scripts": {
+		"clean": "git clean -xdf .cache .turbo dist node_modules",
+		"typecheck": "tsc --noEmit --emitDeclarationOnly false",
+		"test": "bun test"
+	},
+	"dependencies": {
+		"@rox/db": "workspace:*"
+	},
+	"devDependencies": {
+		"@rox/typescript": "workspace:*",
+		"bun-types": "1.3.11",
+		"typescript": "6.0.3"
+	}
+}

@@ -4,6 +4,7 @@ import {
 	date,
 	index,
 	integer,
+	pgEnum,
 	pgTable,
 	text,
 	timestamp,
@@ -11,6 +12,14 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { users } from "./auth";
+import { registrationProviderValues } from "./enums";
+
+// Which provider a user originally registered through (ROX-522). Backed by
+// `enums.ts` so the Zod enum and pgEnum stay in lockstep.
+export const registrationProvider = pgEnum(
+	"registration_provider",
+	registrationProviderValues,
+);
 
 export const userProfiles = pgTable(
 	"user_profiles",
@@ -18,9 +27,22 @@ export const userProfiles = pgTable(
 		userId: uuid("user_id")
 			.primaryKey()
 			.references(() => users.id, { onDelete: "cascade" }),
-		// `handle` is the canonical slug-safe, unique public nickname.
-		// The public profile is served at rox.one/@<handle> (route /u/<handle>).
-		handle: text("handle").notNull().unique(),
+		// `handle` is the canonical slug-safe, unique public nickname and the
+		// `@<handle>` route namespace (rox.one/@<handle>). Nullable until the user
+		// claims one — provider sign-ups (telegram/x/github/…) land without a
+		// handle and pick it later. Validated via `validateHandle` from
+		// `@rox/shared/username` before write.
+		handle: text("handle").unique(),
+		// Provider the user originally registered through. Sourced from
+		// better-auth's `auth.accounts.provider_id`; nullable for legacy rows.
+		registrationProvider: registrationProvider("registration_provider"),
+		// Cached provider identity, denormalized from `auth.accounts` so the
+		// public profile can render without re-joining the OAuth account row.
+		// `providerAccountId` is the upstream account id (accounts.account_id);
+		// `displayUsername` / `providerAvatarUrl` are the provider's handle/avatar.
+		providerAccountId: text("provider_account_id"),
+		displayUsername: text("display_username"),
+		providerAvatarUrl: text("provider_avatar_url"),
 		displayName: text("display_name"),
 		bio: text("bio"),
 		avatarUrl: text("avatar_url"),

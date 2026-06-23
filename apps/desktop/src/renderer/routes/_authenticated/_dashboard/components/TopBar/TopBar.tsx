@@ -1,3 +1,4 @@
+import { motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { useMatchRoute, useParams } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineWifi } from "react-icons/hi2";
@@ -5,7 +6,6 @@ import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { useOnlineStatus } from "renderer/hooks/useOnlineStatus";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getWorkspaceDisplayName } from "renderer/lib/getWorkspaceDisplayName";
-import { motionDuration, useShouldAnimate } from "renderer/motion";
 import { useWorkspaceSidebarStore } from "renderer/stores/workspace-sidebar-state";
 import { NavigationControls } from "../NavigationControls";
 import { SidebarToggle } from "../SidebarToggle";

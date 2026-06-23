@@ -1,3 +1,4 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import {
 	createFileRoute,
 	Outlet,
@@ -8,7 +9,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import {
 	type SettingsSection,
 	useSetSettingsSearchQuery,

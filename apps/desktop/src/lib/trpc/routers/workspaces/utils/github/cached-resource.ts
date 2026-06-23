@@ -1,3 +1,5 @@
+import { logger } from "shared/logger";
+
 interface CacheEntry<T> {
 	value: T;
 	expiresAt: number;
@@ -147,7 +149,7 @@ export function createCachedResource<T>({
 		if (cached) {
 			if (!currentInFlight) {
 				startLoad(cacheKey, load, shouldCache).catch((error) => {
-					console.warn("[GitHub] Background cache refresh failed:", error);
+					logger.warn("[GitHub] Background cache refresh failed:", error);
 				});
 			}
 

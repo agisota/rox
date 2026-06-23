@@ -2,6 +2,7 @@ import { selectAll } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
+import { logger } from "renderer/lib/logger";
 
 export interface EditorSelectionLines {
 	startLine: number;
@@ -92,7 +93,7 @@ export function createCodeMirrorAdapter(view: EditorView): CodeEditorAdapter {
 					});
 				})
 				.catch((error) => {
-					console.error("[CodeEditor] Failed to cut selection:", error);
+					logger.error("[CodeEditor] Failed to cut selection:", error);
 				});
 		},
 		copy() {
@@ -105,7 +106,7 @@ export function createCodeMirrorAdapter(view: EditorView): CodeEditorAdapter {
 			void clipboard
 				.writeText(view.state.sliceDoc(selection.from, selection.to))
 				.catch((error) => {
-					console.error("[CodeEditor] Failed to copy selection:", error);
+					logger.error("[CodeEditor] Failed to copy selection:", error);
 				});
 		},
 		paste() {
@@ -128,7 +129,7 @@ export function createCodeMirrorAdapter(view: EditorView): CodeEditorAdapter {
 					});
 				})
 				.catch((error) => {
-					console.error("[CodeEditor] Failed to paste from clipboard:", error);
+					logger.error("[CodeEditor] Failed to paste from clipboard:", error);
 				});
 		},
 		openFind() {

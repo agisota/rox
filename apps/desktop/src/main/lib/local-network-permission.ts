@@ -1,4 +1,5 @@
 import dgram from "node:dgram";
+import { logger } from "main/lib/logger";
 
 const MDNS_MULTICAST_ADDRESS = "224.0.0.251";
 const MDNS_PORT = 5353;
@@ -18,7 +19,7 @@ export function requestLocalNetworkAccess(): void {
 	const socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
 
 	socket.on("error", (err) => {
-		console.log(
+		logger.info(
 			"[local-network] Socket error (expected if permission denied):",
 			err.message,
 		);
@@ -38,18 +39,18 @@ export function requestLocalNetworkAccess(): void {
 				MDNS_MULTICAST_ADDRESS,
 				(err) => {
 					if (err) {
-						console.log(
+						logger.info(
 							"[local-network] Send error (expected if permission denied):",
 							err.message,
 						);
 					} else {
-						console.log("[local-network] Local network access requested");
+						logger.info("[local-network] Local network access requested");
 					}
 					socket.close();
 				},
 			);
 		} catch (err) {
-			console.log("[local-network] Failed to send multicast:", err);
+			logger.info("[local-network] Failed to send multicast:", err);
 			socket.close();
 		}
 	});

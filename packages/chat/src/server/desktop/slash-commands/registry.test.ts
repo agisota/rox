@@ -21,7 +21,7 @@ function writeCommandFile(
 	name: string,
 	body: string,
 	container: "commands" | "command" = "commands",
-	commandRoot: ".claude" | ".agents" = ".claude",
+	commandRoot: ".claude" | ".agents" | ".codex" = ".claude",
 ): void {
 	const commandFilePath = join(root, commandRoot, container, `${name}.md`);
 	mkdirSync(dirname(commandFilePath), { recursive: true });
@@ -187,6 +187,113 @@ Body`,
 		expect(registry.map((command) => command.name)).toEqual(["sync"]);
 		expect(registry[0]?.description).toBe("sync from agents singular");
 		expect(registry[0]?.source).toBe("project");
+	});
+
+	it("loads commands from .codex/commands when only .codex is present", () => {
+		const cwd = makeTempDirectory("slash-cwd-");
+		const home = makeTempDirectory("slash-home-");
+
+		writeCommandFile(
+			cwd,
+			"codex-only",
+			"---\ndescription: codex only\n---",
+			"commands",
+			".codex",
+		);
+
+		const registry = buildSlashCommandRegistry(cwd, {
+			homeDirectory: home,
+			includeBuiltIns: false,
+			useCache: false,
+		});
+
+		expect(registry.map((command) => command.name)).toEqual(["codex-only"]);
+		expect(registry[0]?.description).toBe("codex only");
+		expect(registry[0]?.source).toBe("project");
+	});
+
+	it("loads commands from .codex/command (singular) too", () => {
+		const cwd = makeTempDirectory("slash-cwd-");
+		const home = makeTempDirectory("slash-home-");
+
+		writeCommandFile(
+			cwd,
+			"codex-singular",
+			"---\ndescription: codex singular\n---",
+			"command",
+			".codex",
+		);
+
+		const registry = buildSlashCommandRegistry(cwd, {
+			homeDirectory: home,
+			includeBuiltIns: false,
+			useCache: false,
+		});
+
+		expect(registry.map((command) => command.name)).toEqual(["codex-singular"]);
+		expect(registry[0]?.description).toBe("codex singular");
+		expect(registry[0]?.source).toBe("project");
+	});
+
+	it("loads global ~/.codex/commands", () => {
+		const cwd = makeTempDirectory("slash-cwd-");
+		const home = makeTempDirectory("slash-home-");
+
+		writeCommandFile(
+			home,
+			"home-codex",
+			"---\ndescription: home codex\n---",
+			"commands",
+			".codex",
+		);
+
+		const registry = buildSlashCommandRegistry(cwd, {
+			homeDirectory: home,
+			includeBuiltIns: false,
+			useCache: false,
+		});
+
+		expect(registry.map((command) => command.name)).toEqual(["home-codex"]);
+		expect(registry[0]?.description).toBe("home codex");
+		expect(registry[0]?.source).toBe("global");
+	});
+
+	it("respects precedence: .claude and .agents win over .codex for same name", () => {
+		const cwd = makeTempDirectory("slash-cwd-");
+		const home = makeTempDirectory("slash-home-");
+
+		writeCommandFile(
+			cwd,
+			"dup",
+			"---\ndescription: from claude\n---",
+			"commands",
+			".claude",
+		);
+		writeCommandFile(
+			cwd,
+			"dup",
+			"---\ndescription: from agents\n---",
+			"commands",
+			".agents",
+		);
+		writeCommandFile(
+			cwd,
+			"dup",
+			"---\ndescription: from codex\n---",
+			"commands",
+			".codex",
+		);
+
+		const registry = buildSlashCommandRegistry(cwd, {
+			homeDirectory: home,
+			includeBuiltIns: false,
+			useCache: false,
+		});
+
+		const dup = registry.find((command) => command.name === "dup");
+		expect(registry.map((command) => command.name)).toEqual(["dup"]);
+		expect(dup?.description).toBe("from claude");
+		expect(dup?.source).toBe("project");
 	});
 
 	it("loads aliases from frontmatter and normalizes them", () => {

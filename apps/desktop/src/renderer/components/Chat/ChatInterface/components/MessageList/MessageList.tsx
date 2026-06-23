@@ -6,6 +6,7 @@ import {
 } from "@rox/ui/ai-elements/conversation";
 import { Message, MessageContent } from "@rox/ui/ai-elements/message";
 import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
+import { StatusPulse, useShouldAnimate } from "@rox/ui/motion";
 import type { ChatStatus, UIMessage } from "ai";
 import { isToolUIPart } from "ai";
 import { FileIcon, FileTextIcon, ImageIcon } from "lucide-react";
@@ -14,7 +15,6 @@ import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 import { FileMentionChip } from "renderer/components/Chat/components/FileMentionChip";
 import { LinkedTaskChip } from "renderer/components/Chat/components/LinkedTaskChip";
 import { parseUserMentions } from "renderer/components/Chat/utils/parseUserMentions";
-import { StatusPulse, useShouldAnimate } from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { InterruptedMessagePreview } from "../../types";
 import { normalizeWorkspaceFilePath } from "../../utils/file-paths";

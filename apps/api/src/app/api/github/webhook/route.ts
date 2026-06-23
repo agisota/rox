@@ -1,8 +1,19 @@
+import type { EmitterWebhookEvent } from "@octokit/webhooks";
 import { db } from "@rox/db/client";
 import { webhookEvents } from "@rox/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { z } from "zod";
 
+import { apiError } from "@/lib/api-response";
 import { webhooks } from "./webhooks";
+
+/**
+ * Inbound GitHub webhook envelope. GitHub payloads are large, event-specific
+ * unions, so we only assert that the body is a JSON object and let every other
+ * field pass through untouched — `webhooks.receive` performs the real per-event
+ * typing downstream.
+ */
+const githubWebhookPayloadSchema = z.looseObject({});
 
 export async function POST(request: Request) {
 	const body = await request.text();
@@ -10,20 +21,32 @@ export async function POST(request: Request) {
 	const eventType = request.headers.get("x-github-event");
 	const deliveryId = request.headers.get("x-github-delivery");
 
-	let payload: unknown;
+	if (!eventType) {
+		console.error("[github/webhook] Missing x-github-event header");
+		return apiError("Missing event type", 400);
+	}
+
+	let rawPayload: unknown;
 	try {
-		payload = JSON.parse(body);
+		rawPayload = JSON.parse(body);
 	} catch {
 		console.error("[github/webhook] Invalid JSON payload");
-		return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
+		return apiError("Invalid JSON payload", 400);
 	}
+
+	const parsedPayload = githubWebhookPayloadSchema.safeParse(rawPayload);
+	if (!parsedPayload.success) {
+		console.error("[github/webhook] Malformed webhook payload");
+		return apiError("Invalid payload", 400);
+	}
+	const payload = parsedPayload.data;
 
 	// Verify signature BEFORE storing to prevent spam from unverified requests
 	try {
 		await webhooks.verify(body, signature ?? "");
 	} catch (error) {
 		console.error("[github/webhook] Signature verification failed:", error);
-		return Response.json({ error: "Invalid signature" }, { status: 401 });
+		return apiError("Invalid signature", 401);
 	}
 
 	// Store verified event with idempotent handling
@@ -34,7 +57,7 @@ export async function POST(request: Request) {
 		.values({
 			provider: "github",
 			eventId,
-			eventType: eventType ?? "unknown",
+			eventType,
 			payload,
 			status: "pending",
 		})
@@ -50,7 +73,7 @@ export async function POST(request: Request) {
 		.returning();
 
 	if (!webhookEvent) {
-		return Response.json({ error: "Failed to store event" }, { status: 500 });
+		return apiError("Failed to store event", 500);
 	}
 
 	// Idempotent: skip if already processed or not ready for processing
@@ -72,8 +95,9 @@ export async function POST(request: Request) {
 			id: deliveryId ?? "",
 			name: eventType,
 			payload,
-			// biome-ignore lint/suspicious/noExplicitAny: GitHub webhook event types are complex unions
-		} as any);
+			// The validated payload is an opaque JSON object; cast to the SDK's own
+			// event union so `receive` can dispatch to the right typed handler.
+		} as EmitterWebhookEvent);
 
 		await db
 			.update(webhookEvents)
@@ -93,9 +117,6 @@ export async function POST(request: Request) {
 			})
 			.where(eq(webhookEvents.id, webhookEvent.id));
 
-		return Response.json(
-			{ error: "Webhook processing failed" },
-			{ status: 500 },
-		);
+		return apiError("Webhook processing failed", 500);
 	}
 }

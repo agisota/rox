@@ -6,6 +6,11 @@ import {
 	PromptInputProvider,
 	useProviderAttachments,
 } from "@rox/ui/ai-elements/prompt-input";
+import {
+	AnimatedPresence,
+	motionSpring,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useQuery } from "@tanstack/react-query";
@@ -24,10 +29,8 @@ import {
 	getDesktopChatModelOptions,
 	isDesktopChatDevMode,
 } from "renderer/lib/dev-chat";
+import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
-import { AnimatedPresence } from "renderer/motion/AnimatedPresence";
-import { motionSpring } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
 import {
 	type UseChatDisplayReturn,
@@ -293,15 +296,55 @@ export function ChatPaneInterface({
 	const { models: catalogModels, defaultModel } = useAvailableModels();
 	const { data: customProviderConfig } =
 		chatServiceTrpc.auth.getCustomProviderConfig.useQuery();
+	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+	// Live-refetch the custom provider's `/v1/models` when the picker opens so a
+	// model added provider-side appears without re-saving in Settings. The refresh
+	// is owned HERE (not inside the picker) so the SAME superset feeds the picker
+	// display, the active-model lookup, and the sent turn — otherwise a freshly
+	// discovered selection (id `rox-custom/<modelId>`) would miss the lookup and
+	// the composer would silently snap back to the default house model ("ROX R1").
+	const discoverCustomModels =
+		chatServiceTrpc.auth.discoverCustomProviderModels.useMutation();
+	const [liveCustomModelIds, setLiveCustomModelIds] = useState<string[]>([]);
+	const customProviderBaseUrl = customProviderConfig?.baseUrl;
+	const customProviderHasApiKey = customProviderConfig?.hasApiKey ?? false;
+	const runDiscoverCustomModels = discoverCustomModels.mutateAsync;
+	useEffect(() => {
+		if (!modelSelectorOpen) return;
+		if (!customProviderBaseUrl || !customProviderHasApiKey) {
+			setLiveCustomModelIds([]);
+			return;
+		}
+		let cancelled = false;
+		void runDiscoverCustomModels({ baseUrl: customProviderBaseUrl })
+			.then((result) => {
+				if (cancelled) return;
+				setLiveCustomModelIds(result.models.map((model) => model.id));
+			})
+			.catch(() => {
+				// Discovery is best-effort; keep the persisted list on failure.
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		modelSelectorOpen,
+		customProviderBaseUrl,
+		customProviderHasApiKey,
+		runDiscoverCustomModels,
+	]);
 	// The picker offers the catalog plus the user's configured custom
-	// OpenAI-compatible model, so the active-model lookup has to resolve against
-	// that same superset. Resolving against the catalog alone made a custom
-	// selection (id `openai/<modelId>`) miss, silently snapping the composer back
-	// to the default house model ("ROX R1").
+	// OpenAI-compatible models (persisted + live-refetched), so the active-model
+	// lookup resolves against that same superset (cache-first: persisted renders
+	// immediately, live ids merge on top).
 	const availableModels = useMemo(
 		() =>
-			resolveSelectableModels({ models: catalogModels, customProviderConfig }),
-		[catalogModels, customProviderConfig],
+			resolveSelectableModels({
+				models: catalogModels,
+				customProviderConfig,
+				discoveredModelIds: liveCustomModelIds,
+			}),
+		[catalogModels, customProviderConfig, liveCustomModelIds],
 	);
 	const selectedModelId = useChatPreferencesStore(
 		(state) => state.selectedModelId,
@@ -312,7 +355,6 @@ export function ChatPaneInterface({
 	const selectedModel =
 		availableModels.find((model) => model.id === selectedModelId) ?? null;
 	const activeModel = selectedModel ?? defaultModel;
-	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
 	const thinkingLevel = useChatPreferencesStore((state) => state.thinkingLevel);
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
@@ -895,7 +937,7 @@ export function ChatPaneInterface({
 				const sendErrorMessage = toSendFailureMessage(error);
 				setSubmitStatus(undefined);
 				setRuntimeErrorMessage(sendErrorMessage);
-				console.debug("[chat] auto launch send failed", error);
+				logger.debug("[chat] auto launch send failed", error);
 
 				const currentAttempts =
 					autoLaunchAttemptsRef.current[launchConfigKey] ??

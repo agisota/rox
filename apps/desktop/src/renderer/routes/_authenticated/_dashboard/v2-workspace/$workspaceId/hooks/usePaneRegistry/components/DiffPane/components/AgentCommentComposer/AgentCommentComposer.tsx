@@ -1,4 +1,5 @@
 import { Button } from "@rox/ui/button";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -6,7 +7,7 @@ import { LuCornerDownLeft, LuLoaderCircle } from "react-icons/lu";
 import { useTerminalAgentBindings } from "renderer/hooks/host-service/useTerminalAgentBindings";
 import { useWorkspaceHostUrl } from "renderer/hooks/host-service/useWorkspaceHostUrl";
 import { useV2AgentConfigs } from "renderer/hooks/useV2AgentConfigs";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
+import { logger } from "renderer/lib/logger";
 import { AgentPickerSelect } from "./components/AgentPickerSelect";
 import { AgentPlacementToggle } from "./components/AgentPlacementToggle";
 import {
@@ -87,7 +88,7 @@ export function AgentCommentComposer({
 			// User-facing errors are the caller's responsibility (we toast in
 			// DiffPane's submit path). Catch here so a rejection doesn't leak
 			// as an unhandled promise out of the form's synchronous handlers.
-			console.error("[AgentCommentComposer] submit failed", error);
+			logger.error("[AgentCommentComposer] submit failed", error);
 		} finally {
 			setSubmitting(false);
 		}

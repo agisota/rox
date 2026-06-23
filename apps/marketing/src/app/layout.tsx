@@ -10,11 +10,9 @@ import {
 	SoftwareApplicationJsonLd,
 	WebsiteJsonLd,
 } from "@/components/JsonLd";
-import { REDDIT_PIXEL_ID } from "@/lib/constants";
+import { env } from "@/env";
 
-import { CTAButtons } from "./components/CTAButtons";
 import { Footer } from "./components/Footer";
-import { GitHubStarCounter } from "./components/GitHubStarCounter";
 import { Header } from "./components/Header";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -142,24 +140,13 @@ export default function RootLayout({
 						gtag('config', 'AW-18209336001');
 					`}
 				</Script>
-				{/* Reddit Pixel */}
-				<Script id="reddit-pixel" strategy="afterInteractive">
-					{`
-						!function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js?pixel_id=${REDDIT_PIXEL_ID}",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);
-						rdt('init','${REDDIT_PIXEL_ID}');
-						rdt('track','PageVisit');
-					`}
-				</Script>
 			</head>
 			<body className="overscroll-none font-sans">
 				<Providers>
-					<Header
-						ctaButtons={<CTAButtons />}
-						starCounter={<GitHubStarCounter />}
-					/>
-					{/* Clear the fixed floating-pill navbar so page content isn't tucked
-					    under it (the landing's fixed intro overlay is unaffected). */}
-					<div className="pt-[4.5rem]">{children}</div>
+					<Header dashboardUrl={env.NEXT_PUBLIC_WEB_URL} />
+					{/* Clear the fixed floating-pill navbar on inner pages. Landing removes
+					    this offset because its chrome is bottom-locked. */}
+					<div className="marketing-page-shell pt-[4.5rem]">{children}</div>
 					<Footer />
 					<CookieConsent />
 				</Providers>

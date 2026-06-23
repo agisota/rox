@@ -1,6 +1,7 @@
 import { getHostId, getHostName } from "@rox/shared/host-info";
 import { TRPCError } from "@trpc/server";
 import { workspaces } from "../../../../db/schema";
+import { logger } from "../../../../lib/logger";
 import type { HostServiceContext } from "../../../../types";
 
 export type EnsureMainWorkspaceContext = Pick<
@@ -40,7 +41,7 @@ export async function ensureMainWorkspace(
 	try {
 		return await ensureMainWorkspaceStrict(ctx, projectId, repoPath);
 	} catch (err) {
-		console.warn(
+		logger.warn(
 			`[ensureMainWorkspace] failed for ${projectId} at ${repoPath}; will retry via startup sweep`,
 			err,
 		);

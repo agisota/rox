@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import { logger } from "main/lib/logger";
 
 // Wraps native-keymap for the renderer (mirrors VSCode's
 // keyboardLayoutMainService). Lazy-loads on first read so the native module
@@ -36,7 +37,7 @@ function loadNative(): NativeKeymapModule | null {
 		nativeKeymap = require("native-keymap") as NativeKeymapModule;
 		return nativeKeymap;
 	} catch (err) {
-		console.error("[keyboardLayout] failed to load native-keymap:", err);
+		logger.error("[keyboardLayout] failed to load native-keymap:", err);
 		return null;
 	}
 }
@@ -62,7 +63,7 @@ function read(): KeyboardLayoutData {
 			unshifted,
 		};
 	} catch (err) {
-		console.error("[keyboardLayout] read failed:", err);
+		logger.error("[keyboardLayout] read failed:", err);
 		return EMPTY;
 	}
 }
@@ -79,7 +80,7 @@ function ensureInitialized(): void {
 			emitter.emit("change", cached);
 		});
 	} catch (err) {
-		console.error("[keyboardLayout] failed to register listener:", err);
+		logger.error("[keyboardLayout] failed to register listener:", err);
 	}
 }
 

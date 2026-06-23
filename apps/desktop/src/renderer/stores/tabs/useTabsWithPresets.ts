@@ -6,6 +6,7 @@ import { useCallback, useMemo } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
 import { useCreateOrAttachWithTheme } from "renderer/hooks/useCreateOrAttachWithTheme";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import {
 	buildTerminalCommand,
 	launchCommandInPane,
@@ -137,7 +138,7 @@ export function useTabsWithPresets(projectId?: string | null) {
 				createOrAttach: (input) => createOrAttach.mutateAsync(input),
 				write: (input) => writeToTerminal.mutateAsync(input),
 			}).catch((error) => {
-				console.error("[useTabsWithPresets] Failed to launch preset command:", {
+				logger.error("[useTabsWithPresets] Failed to launch preset command:", {
 					paneId,
 					tabId,
 					workspaceId,
@@ -343,7 +344,7 @@ export function useTabsWithPresets(projectId?: string | null) {
 						commands: [command],
 						write: (input) => writeToTerminal.mutateAsync(input),
 					}).catch((error) => {
-						console.error(
+						logger.error(
 							"[useTabsWithPresets] Failed to send sequential preset to current terminal:",
 							{
 								workspaceId,
@@ -453,7 +454,7 @@ export function useTabsWithPresets(projectId?: string | null) {
 					commands: [command],
 					write: (input) => writeToTerminal.mutateAsync(input),
 				}).catch((error) => {
-					console.error(
+					logger.error(
 						"[useTabsWithPresets] Failed to send preset commands to current terminal:",
 						{
 							workspaceId,

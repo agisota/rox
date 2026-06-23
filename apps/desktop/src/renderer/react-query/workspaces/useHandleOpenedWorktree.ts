@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { useCreateOrAttachWithTheme } from "renderer/hooks/useCreateOrAttachWithTheme";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { resolveDefaultWorkspaceSurface } from "renderer/lib/workspace-surface";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { bootstrapOpenWorktree } from "./bootstrap-open-worktree";
@@ -16,6 +17,7 @@ export function useHandleOpenedWorktree() {
 	const navigate = useNavigate();
 	const utils = electronTrpc.useUtils();
 	const addTab = useTabsStore((state) => state.addTab);
+	const addChatTab = useTabsStore((state) => state.addChatTab);
 	const setTabAutoTitle = useTabsStore((state) => state.setTabAutoTitle);
 	const createOrAttach = useCreateOrAttachWithTheme();
 	const writeToTerminal = electronTrpc.terminal.write.useMutation();
@@ -27,6 +29,8 @@ export function useHandleOpenedWorktree() {
 
 			const bootstrapError = await bootstrapOpenWorktree({
 				data,
+				defaultSurface: resolveDefaultWorkspaceSurface(),
+				addChatTab,
 				addTab,
 				setTabAutoTitle,
 				createOrAttach: (input) => createOrAttach.mutateAsync(input),
@@ -42,6 +46,7 @@ export function useHandleOpenedWorktree() {
 			navigateToWorkspace(data.workspace.id, navigate);
 		},
 		[
+			addChatTab,
 			addTab,
 			createOrAttach,
 			navigate,

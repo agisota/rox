@@ -1,11 +1,7 @@
+import { motionDuration, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef } from "react";
-import {
-	motionDuration,
-	motionSpring,
-	useShouldAnimate,
-} from "renderer/motion";
 
 interface ResizablePanelProps {
 	/** The content to render inside the panel */

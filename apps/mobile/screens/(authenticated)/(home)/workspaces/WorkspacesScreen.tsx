@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
 	RefreshControl,
@@ -5,12 +6,16 @@ import {
 	useWindowDimensions,
 	View,
 } from "react-native";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { useOrganizations } from "@/screens/(authenticated)/hooks/useOrganizations";
 import { OrganizationHeaderButton } from "./components/OrganizationHeaderButton";
 import { OrganizationSwitcherSheet } from "./components/OrganizationSwitcherSheet";
+import { ProjectCard } from "./components/ProjectCard";
+import { useProjectsData } from "./hooks/useProjectsData";
 
 export function WorkspacesScreen() {
+	const router = useRouter();
 	const [refreshing, setRefreshing] = useState(false);
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const { width } = useWindowDimensions();
@@ -20,6 +25,7 @@ export function WorkspacesScreen() {
 		activeOrganizationId,
 		switchOrganization,
 	} = useOrganizations();
+	const { projects, isReady } = useProjectsData();
 
 	const handleSwitchOrganization = (organizationId: string) => {
 		setSheetOpen(false);
@@ -27,9 +33,20 @@ export function WorkspacesScreen() {
 	};
 
 	const onRefresh = useCallback(async () => {
+		// Electric streams updates; keep a brief spinner for the pull affordance.
 		setRefreshing(true);
+		await new Promise((resolve) => setTimeout(resolve, 300));
 		setRefreshing(false);
 	}, []);
+
+	const handleProjectPress = useCallback(
+		(projectId: string) => {
+			router.push(`/(home)/workspaces/${projectId}`);
+		},
+		[router],
+	);
+
+	const hasProjects = projects.length > 0;
 
 	return (
 		<>
@@ -45,12 +62,28 @@ export function WorkspacesScreen() {
 					<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
 				}
 			>
-				<View className="p-6">
-					<View className="items-center justify-center py-20">
-						<Text className="text-center text-muted-foreground">
-							Workspaces grouped by project will appear here
-						</Text>
-					</View>
+				<View className="gap-3 p-6">
+					{hasProjects ? (
+						projects.map((project) => (
+							<ProjectCard
+								key={project.id}
+								project={project}
+								onPress={handleProjectPress}
+							/>
+						))
+					) : isReady ? (
+						<View className="items-center justify-center py-20">
+							<Text className="text-center text-muted-foreground">
+								No projects yet. Create a project on web or desktop to see it
+								here.
+							</Text>
+						</View>
+					) : (
+						<>
+							<Skeleton className="h-28 w-full" />
+							<Skeleton className="h-28 w-full" />
+						</>
+					)}
 				</View>
 			</ScrollView>
 			<OrganizationSwitcherSheet

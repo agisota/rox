@@ -10,12 +10,13 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@rox/ui/hover-card";
+import { DangerShake, MenuItemReveal } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { useMemo } from "react";
 import { VscChevronDown, VscGitMerge, VscLoading } from "react-icons/vsc";
-import { DangerShake, MenuItemReveal } from "renderer/motion/StaggeredMenuItem";
+import { logger } from "renderer/lib/logger";
 import { PRIcon, type PRState } from "renderer/screens/main/components/PRIcon";
 import { computeChecksRollup } from "../../utils/computeChecksStatus";
 import type { PRFlowState } from "../../utils/getPRFlowState";
@@ -68,7 +69,7 @@ export function PRStatusGroup({
 			try {
 				await refreshPRMutation.mutateAsync({ workspaceIds: [workspaceId] });
 			} catch (error) {
-				console.warn("Failed to refresh PR state after merge", error);
+				logger.warn("Failed to refresh PR state after merge", error);
 				toast.warning(
 					"Merged, but couldn't refresh PR state — try again in a moment",
 				);

@@ -1,6 +1,9 @@
 /** Base URL for the Telegram Bot API. */
 export const TELEGRAM_API_BASE = "https://api.telegram.org";
 
+/** Default model for Telegram assistant replies. */
+export const DEFAULT_TELEGRAM_MODEL = "claude-sonnet-4-6";
+
 /**
  * Builds a Bot API method URL. Telegram embeds the bot token in the path
  * (`/bot<token>/<method>`), so the token must never be logged with the URL.

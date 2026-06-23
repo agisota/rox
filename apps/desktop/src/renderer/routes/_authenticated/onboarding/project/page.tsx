@@ -2,6 +2,7 @@ import { ANALYTICS_EVENTS } from "@rox/shared/constants";
 import { Button } from "@rox/ui/button";
 import { Card } from "@rox/ui/card";
 import { Input } from "@rox/ui/input";
+import { motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -12,7 +13,7 @@ import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
-import { motionDuration, useShouldAnimate } from "renderer/motion";
+import { logger } from "renderer/lib/logger";
 import { useFinalizeProjectSetup } from "renderer/react-query/projects";
 import { useFolderFirstImport } from "renderer/routes/_authenticated/_dashboard/components/AddRepositoryModals/hooks/useFolderFirstImport";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
@@ -62,7 +63,7 @@ function OnboardingProjectPage() {
 			// _authenticated guard bounces /v2-workspaces back to /onboarding.
 			await refetchSession({ query: { disableCookieCache: true } });
 		} catch (error) {
-			console.error("[onboarding] completeOnboarding failed", error);
+			logger.error("[onboarding] completeOnboarding failed", error);
 			toast.error("Не удалось завершить запуск. Попробуйте ещё раз.");
 			return;
 		}

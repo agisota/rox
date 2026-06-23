@@ -9,6 +9,7 @@ import {
 	workflowVersions,
 } from "@rox/db/schema";
 import {
+	type AccumulatedContext,
 	evaluateGraphPolicy,
 	hasDenial,
 	type JsonSchema,
@@ -17,6 +18,7 @@ import {
 	type WorkflowPolicy,
 } from "@rox/workflow-core";
 import {
+	type AgentRunResolver,
 	type RunRecorder,
 	type RunStatus,
 	type StepRecord,
@@ -24,23 +26,39 @@ import {
 } from "@rox/workflow-runtime";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
+import { emitAgentRunFinished } from "../pipeline/agent-run-events";
 import { assertRunModeAllowed } from "./helpers";
 
 const MAX_SKILL_CALL_DEPTH = 5;
+
+/**
+ * How a run was triggered. Manual/command/schedule/webhook/api/mcp/chat are the
+ * classic skill triggers; the remaining values are Agent Pipelines event
+ * triggers (design spec §1.2 / §2.4) — all members of the `trigger_kind` pgEnum
+ * in `@rox/db`. `all_prior_agents_finished` is a graph JOIN, not a trigger kind.
+ */
+export type RunSkillTriggerKind =
+	| "manual"
+	| "command"
+	| "chat"
+	| "schedule"
+	| "webhook"
+	| "api"
+	| "mcp"
+	| "repo_connected"
+	| "file_uploaded"
+	| "agent_run_finished"
+	| "project_initialized"
+	| "service_connected";
 
 export interface RunSkillArgs {
 	organizationId: string;
 	userId: string;
 	skillId: string;
 	runMode: string;
-	triggerKind:
-		| "manual"
-		| "command"
-		| "chat"
-		| "schedule"
-		| "webhook"
-		| "api"
-		| "mcp";
+	triggerKind: RunSkillTriggerKind;
+	/** Event-specific provenance persisted to `workflow_runs.triggerRef`. */
+	triggerRef?: Record<string, unknown>;
 	input: Record<string, unknown>;
 	/** Resolved approvals for resume. */
 	approvals?: Record<string, "approved" | "rejected">;
@@ -48,6 +66,16 @@ export interface RunSkillArgs {
 	existingRunId?: string;
 	secrets?: Record<string, string>;
 	v2ProjectId?: string | null;
+	/**
+	 * Resolves `agent_run` blocks to agent executions (chat in-process or CLI in a
+	 * worktree). Injected by the pipeline layer; plain skills omit it.
+	 */
+	resolveAgentRun?: AgentRunResolver;
+	/**
+	 * Seeds the run's accumulating context (message + transcript) threaded into
+	 * `agent_run` nodes. The pipeline layer supplies it; plain skills omit it.
+	 */
+	initialContext?: AccumulatedContext;
 	depth?: number;
 }
 
@@ -197,8 +225,10 @@ export async function runSkill(args: RunSkillArgs): Promise<RunSkillResult> {
 				skillId: skill.id,
 				skillVersionId: version.id,
 				triggerKind: args.triggerKind,
+				triggerRef: args.triggerRef ?? null,
 				status: "running",
 				input: args.input,
+				accumulatedContext: args.initialContext ?? null,
 				createdByUserId: args.userId,
 				startedAt: new Date(),
 			})
@@ -213,6 +243,22 @@ export async function runSkill(args: RunSkillArgs): Promise<RunSkillResult> {
 		outputSchema: version.outputSchema as JsonSchema,
 		secrets: args.secrets,
 		approvals: args.approvals,
+		// Pipeline layer: thread the accumulating context + agent_run resolver
+		// (chat in-proc | CLI via relay). Plain skills leave both undefined.
+		initialContext: args.initialContext,
+		resolveAgentRun: args.resolveAgentRun,
+		// Cross-run emit seam (design §4.3): a published skill graph may also
+		// contain agent_run nodes; fire agent_run_finished (+ artifact events)
+		// when one completes so pipelines can trigger off it.
+		onAgentRunFinished: (info) =>
+			emitAgentRunFinished(
+				{
+					organizationId: args.organizationId,
+					v2ProjectId: args.v2ProjectId ?? null,
+					runId,
+				},
+				info,
+			),
 		resolveSkillCall: async (slug, childInput) => {
 			if (depth + 1 > MAX_SKILL_CALL_DEPTH) {
 				return {
@@ -242,6 +288,12 @@ export async function runSkill(args: RunSkillArgs): Promise<RunSkillResult> {
 				runMode: "workflow_node",
 				existingRunId: undefined,
 				approvals: undefined,
+				// A nested skill_call is its own workflow run, not part of the
+				// parent pipeline's accumulating transcript: don't inherit
+				// pipeline context/provenance or the agent_run resolver.
+				triggerRef: undefined,
+				initialContext: undefined,
+				resolveAgentRun: undefined,
 				depth: depth + 1,
 			});
 			// Link parent <- child.
@@ -262,13 +314,15 @@ export async function runSkill(args: RunSkillArgs): Promise<RunSkillResult> {
 		},
 	});
 
-	// Persist terminal state.
+	// Persist terminal state (+ the final accumulating context for pipelines).
 	await db
 		.update(workflowRuns)
 		.set({
 			status: result.status,
 			output: result.output ?? null,
 			error: result.error ?? null,
+			accumulatedContext:
+				result.accumulatedContext ?? args.initialContext ?? null,
 			endedAt: result.status === "waiting_approval" ? null : new Date(),
 		})
 		.where(eq(workflowRuns.id, runId));

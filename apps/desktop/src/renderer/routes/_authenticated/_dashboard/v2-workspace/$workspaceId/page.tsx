@@ -1,4 +1,5 @@
 import { Workspace } from "@rox/panes";
+import { AnimatedHeight, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
@@ -7,11 +8,6 @@ import { createPortal } from "react-dom";
 import { useQuickOpenStore } from "renderer/commandPalette/ui/QuickOpen/quickOpenStore";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { useHotkey } from "renderer/hotkeys";
-import {
-	AnimatedHeight,
-	motionSpring,
-	useShouldAnimate,
-} from "renderer/motion";
 import { CommandPalette } from "renderer/screens/main/components/CommandPalette";
 import { ResizablePanel } from "renderer/screens/main/components/ResizablePanel";
 import { getV2NotificationSourcesForTab } from "renderer/stores/v2-notifications";
@@ -23,7 +19,9 @@ import { V2PresetsBar } from "./components/V2PresetsBar";
 import { V2WorkspaceRunButton } from "./components/V2WorkspaceRunButton";
 import { WorkspaceEmptyState } from "./components/WorkspaceEmptyState";
 import { WorkspaceMissingWorktreeState } from "./components/WorkspaceMissingWorktreeState";
+import { WorkspacePresence } from "./components/WorkspacePresence";
 import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
+import { WorkspaceVoiceButton } from "./components/WorkspaceVoiceButton";
 import { useAgentBridge } from "./hooks/useAgentBridge";
 import { useBrowserShellInteractionPassthrough } from "./hooks/useBrowserShellInteractionPassthrough";
 import { useClearActivePaneAttention } from "./hooks/useClearActivePaneAttention";
@@ -324,7 +322,9 @@ function V2WorkspaceContent() {
 												onToggleShowPresetsBar={setShowPresetsBar}
 											/>
 										</AnimatedHeight>
-										<div className="flex h-8 min-w-0 shrink-0 items-center justify-end border-b border-border bg-background px-2">
+										<div className="flex h-8 min-w-0 shrink-0 items-center justify-end gap-2 border-b border-border bg-background px-2">
+											<WorkspacePresence workspaceId={workspaceId} />
+											<WorkspaceVoiceButton workspaceId={workspaceId} />
 											{workspaceRunButton}
 										</div>
 									</div>
@@ -392,6 +392,7 @@ function V2WorkspaceContent() {
 												onSelectFile={openFilePaneFromTreeClick}
 												onSelectDiffFile={openDiffPane}
 												onOpenComment={openCommentPane}
+												onOpenChat={addChatTab}
 												onSearch={handleQuickOpen}
 												selectedFilePath={selectedFilePath}
 												pendingReveal={pendingReveal}

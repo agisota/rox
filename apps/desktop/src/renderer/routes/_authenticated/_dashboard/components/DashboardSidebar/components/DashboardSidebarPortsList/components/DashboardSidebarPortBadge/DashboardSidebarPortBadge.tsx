@@ -1,10 +1,3 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
-import { cn } from "@rox/ui/utils";
-import { useNavigate } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import type { MouseEvent } from "react";
-import { LuExternalLink, LuLoaderCircle, LuX } from "react-icons/lu";
-import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
 	motionDuration,
 	openButtonPulse,
@@ -12,7 +5,14 @@ import {
 	portNumberSpring,
 	StatusPulse,
 	useShouldAnimate,
-} from "renderer/motion";
+} from "@rox/ui/motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
+import { useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import type { MouseEvent } from "react";
+import { LuExternalLink, LuLoaderCircle, LuX } from "react-icons/lu";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { navigateToV2Workspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import { STROKE_WIDTH } from "renderer/screens/main/components/WorkspaceSidebar/constants";
 import { useDashboardSidebarPortKill } from "../../hooks/useDashboardSidebarPortKill";

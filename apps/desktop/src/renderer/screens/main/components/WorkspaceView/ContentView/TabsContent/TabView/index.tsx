@@ -1,3 +1,4 @@
+import { logger } from "renderer/lib/logger";
 import "react-mosaic-component/react-mosaic-component.css";
 import "./mosaic-theme.css";
 
@@ -123,7 +124,7 @@ export function TabView({ tab }: TabViewProps) {
 				process.env.NODE_ENV === "development" &&
 				sanitizedLayout !== newLayout
 			) {
-				console.warn(
+				logger.warn(
 					"[TabView] Sanitized foreign panes from layout:",
 					extractPaneIdsFromLayout(newLayout).filter(
 						(id) => !ownPaneIds.has(id),

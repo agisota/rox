@@ -4,15 +4,15 @@ import { FEATURE_FLAGS } from "@rox/shared/constants";
 import { WebClient } from "@slack/web-api";
 import { env } from "@/env";
 import { posthog } from "@/lib/analytics";
+import { logger } from "@/lib/logger";
+import {
+	mcpToolToAnthropicTool,
+	runMcpAgentLoop,
+} from "../../../../_shared/mcp-agent-loop";
 import { DEFAULT_SLACK_MODEL } from "../../../constants";
 import type { AgentAction } from "../slack-blocks";
 import type { SlackImageAsset } from "../slack-image-assets";
-import {
-	createRoxMcpClient,
-	createRoxMcpV2Client,
-	mcpToolToAnthropicTool,
-	parseToolName,
-} from "./mcp-clients";
+import { createRoxMcpClient, createRoxMcpV2Client } from "./mcp-clients";
 
 /**
  * Collect unique Slack user IDs from `<@U...>` mentions in text,
@@ -46,7 +46,7 @@ export async function resolveUserMentions({
 					userMap.set(id, name);
 				}
 			} catch (error) {
-				console.warn(`[slack-agent] Failed to resolve user ${id}:`, error);
+				logger.warn(`[slack-agent] Failed to resolve user ${id}:`, error);
 			}
 		}),
 	);
@@ -104,7 +104,7 @@ async function fetchThreadContext({
 
 		return `--- Thread Context (${messages.length} previous messages) ---\n${formatted}\n--- End Thread Context ---`;
 	} catch (error) {
-		console.warn("[slack-agent] Failed to fetch thread context:", error);
+		logger.warn("[slack-agent] Failed to fetch thread context:", error);
 		return "";
 	}
 }
@@ -279,22 +279,6 @@ function parseTextContent(content: any): Record<string, unknown> | null {
 	} catch {
 		return null;
 	}
-}
-
-/**
- * Strip server-side web search content blocks (search results + tool invocations)
- * from assistant messages to prevent context bloat in subsequent API calls.
- * The text blocks already contain the synthesized answer with citations,
- * so the raw search results aren't needed for tool execution.
- */
-function stripServerToolBlocks(
-	content: Anthropic.ContentBlock[],
-): Anthropic.ContentBlockParam[] {
-	return content.filter(
-		(block) =>
-			block.type !== "web_search_tool_result" &&
-			block.type !== "server_tool_use",
-	) as unknown as Anthropic.ContentBlockParam[];
 }
 
 const TOOL_PROGRESS_STATUS: Record<string, string> = {
@@ -558,7 +542,7 @@ export async function runSlackAgent(
 			await posthog.getFeatureFlag(FEATURE_FLAGS.SLACK_MCP_V2, params.userId),
 		);
 	} catch (error) {
-		console.warn("[slack-agent] Failed to load mcp-v2 flag:", error);
+		logger.warn("[slack-agent] Failed to load mcp-v2 flag:", error);
 	}
 
 	let roxMcp: Client | null = null;
@@ -631,151 +615,35 @@ ${agentContext}`;
 			},
 		];
 
-		let response = await anthropic.messages.create({
+		const text = await runMcpAgentLoop({
+			anthropic,
+			roxMcp,
 			model: params.model ?? DEFAULT_SLACK_MODEL,
-			max_tokens: 2048,
 			system: contextualSystem,
 			tools,
 			messages,
+			progressStatus: TOOL_PROGRESS_STATUS,
+			logTag: "slack-agent",
+			onProgress: params.onProgress,
+			executeClientTool: async (toolUse) => {
+				if (toolUse.name !== "slack_get_channel_history") return null;
+				const input = toolUse.input as { limit?: number };
+				const content = await handleGetChannelHistory({
+					token: params.slackToken,
+					channelId: params.channelId,
+					limit: input.limit,
+				});
+				return { content };
+			},
+			onRoxToolResult: (toolName, result) => {
+				const action = getActionFromToolResult(toolName, result);
+				if (action) {
+					actions.push(action);
+				}
+			},
 		});
 
-		const MAX_TOOL_ITERATIONS = 10;
-		let iterations = 0;
-
-		while (
-			(response.stop_reason === "tool_use" ||
-				response.stop_reason === "pause_turn") &&
-			iterations < MAX_TOOL_ITERATIONS
-		) {
-			iterations++;
-
-			// pause_turn: server-side tool (web search) paused a long-running turn
-			if (response.stop_reason === "pause_turn") {
-				try {
-					await params.onProgress?.("Searching the web...");
-				} catch {
-					// Non-critical
-				}
-				messages.push({ role: "assistant", content: response.content });
-				response = await anthropic.messages.create({
-					model: params.model ?? DEFAULT_SLACK_MODEL,
-					max_tokens: 2048,
-					system: contextualSystem,
-					tools,
-					messages,
-				});
-				continue;
-			}
-
-			// tool_use: handle client-side tools (MCP + slack_get_channel_history)
-			const toolUseBlocks = response.content.filter(
-				(b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
-			);
-
-			const toolResults: Anthropic.ToolResultBlockParam[] = [];
-
-			for (const toolUse of toolUseBlocks) {
-				try {
-					const { toolName: rawToolName } = parseToolName(toolUse.name);
-					const progressStatus =
-						TOOL_PROGRESS_STATUS[toolUse.name] ??
-						TOOL_PROGRESS_STATUS[rawToolName] ??
-						"Working...";
-
-					try {
-						await params.onProgress?.(progressStatus);
-					} catch {
-						// Non-critical: don't fail the agent if progress update fails
-					}
-
-					let resultContent: string;
-
-					if (toolUse.name === "slack_get_channel_history") {
-						const input = toolUse.input as { limit?: number };
-						resultContent = await handleGetChannelHistory({
-							token: params.slackToken,
-							channelId: params.channelId,
-							limit: input.limit,
-						});
-					} else {
-						const { prefix, toolName } = parseToolName(toolUse.name);
-
-						if (prefix !== "rox" || !roxMcp) {
-							toolResults.push({
-								type: "tool_result",
-								tool_use_id: toolUse.id,
-								content: JSON.stringify({
-									error: `Unknown tool: ${toolUse.name}`,
-								}),
-								is_error: true,
-							});
-							continue;
-						}
-
-						const result = await roxMcp.callTool({
-							name: toolName,
-							arguments: toolUse.input as Record<string, unknown>,
-						});
-
-						resultContent = JSON.stringify(result.content);
-
-						const action = getActionFromToolResult(toolName, result);
-						if (action) {
-							actions.push(action);
-						}
-					}
-
-					toolResults.push({
-						type: "tool_result",
-						tool_use_id: toolUse.id,
-						content: resultContent,
-					});
-				} catch (error) {
-					console.error(
-						"[slack-agent] Tool execution error:",
-						toolUse.name,
-						error,
-					);
-					toolResults.push({
-						type: "tool_result",
-						tool_use_id: toolUse.id,
-						content: JSON.stringify({
-							error:
-								error instanceof Error
-									? error.message
-									: "Tool execution failed",
-						}),
-						is_error: true,
-					});
-				}
-			}
-
-			messages.push({
-				role: "assistant",
-				content: stripServerToolBlocks(response.content),
-			});
-			messages.push({ role: "user", content: toolResults });
-
-			response = await anthropic.messages.create({
-				model: params.model ?? DEFAULT_SLACK_MODEL,
-				max_tokens: 2048,
-				system: contextualSystem,
-				tools,
-				messages,
-			});
-		}
-
-		// Use the last text block — server-side tools like web_search produce
-		// multiple text blocks (preamble + synthesis) and we want the final one.
-		const textBlocks = response.content.filter(
-			(b): b is Anthropic.TextBlock => b.type === "text",
-		);
-		const textBlock = textBlocks.at(-1);
-
-		return {
-			text: textBlock?.text ?? "Done!",
-			actions,
-		};
+		return { text, actions };
 	} finally {
 		if (cleanupRox) {
 			try {

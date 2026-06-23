@@ -1,6 +1,7 @@
 import { chatServiceTrpc } from "@rox/chat/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -69,7 +70,7 @@ export function useOpenAIOAuth({
 		try {
 			await electronTrpcClient.external.openUrl.mutate(url);
 		} catch (ipcError) {
-			console.error("[model-picker] external.openUrl failed:", ipcError);
+			logger.error("[model-picker] external.openUrl failed:", ipcError);
 			throw ipcError;
 		}
 	}, []);
@@ -114,7 +115,7 @@ export function useOpenAIOAuth({
 				await refetchOpenAIStatus();
 				await onAuthStateChange?.();
 			} catch (error) {
-				console.error(
+				logger.error(
 					`[model-picker] OpenAI OAuth ${action} follow-up refresh failed:`,
 					error,
 				);
@@ -212,7 +213,7 @@ export function useOpenAIOAuth({
 						setHasPendingOAuthSession(false);
 					})
 					.catch((error) => {
-						console.error(
+						logger.error(
 							"[model-picker] Failed to cancel OpenAI OAuth:",
 							error,
 						);

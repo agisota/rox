@@ -5,6 +5,7 @@ import { useFeatureFlagEnabled } from "posthog-js/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useCreateWorkspace } from "renderer/react-query/workspaces/useCreateWorkspace";
 import { useDeleteWorkspace } from "renderer/react-query/workspaces/useDeleteWorkspace";
 import { useUpdateWorkspace } from "renderer/react-query/workspaces/useUpdateWorkspace";
@@ -142,7 +143,7 @@ export function useCommandWatcher() {
 				await tx.isPersisted.promise;
 				pendingPersistenceRef.current.delete(commandId);
 			} catch (error) {
-				console.error(
+				logger.error(
 					`[command-watcher] Failed to persist ${resolved.status}: ${commandId}`,
 					error,
 				);
@@ -191,7 +192,7 @@ export function useCommandWatcher() {
 			}
 
 			processingCommandsRef.current.add(commandId);
-			console.log(`[command-watcher] Processing: ${commandId} (${tool})`);
+			logger.info(`[command-watcher] Processing: ${commandId} (${tool})`);
 
 			let resolvedState: ResolvedCommandState;
 			try {
@@ -218,14 +219,14 @@ export function useCommandWatcher() {
 						error: fullError,
 						executedAt: new Date(),
 					};
-					console.error(
+					logger.error(
 						`[command-watcher] Failed: ${commandId}`,
 						fullError,
 						result.data,
 					);
 				}
 			} catch (error) {
-				console.error(`[command-watcher] Error: ${commandId}`, error);
+				logger.error(`[command-watcher] Error: ${commandId}`, error);
 				const errorMsg =
 					error instanceof Error ? error.message : "Execution error";
 				resolvedState = {
@@ -291,7 +292,7 @@ export function useCommandWatcher() {
 
 			// Security: verify org matches (don't trust Electric filtering alone)
 			if (cmd.organizationId !== organizationId) {
-				console.warn(`[command-watcher] Org mismatch for ${cmd.id}`);
+				logger.warn(`[command-watcher] Org mismatch for ${cmd.id}`);
 				return false;
 			}
 

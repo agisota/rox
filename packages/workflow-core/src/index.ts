@@ -15,8 +15,11 @@
 
 export const WORKFLOW_CORE_VERSION = "0.1.0";
 
+export * from "./agents/agentRolePreset";
+export * from "./agents/agentRunBridge";
 export * from "./blocks";
 export * from "./circuit";
+export * from "./context/accumulatedContext";
 export * from "./errors";
 export * from "./evals";
 export * from "./graph";
@@ -24,4 +27,7 @@ export * from "./policies";
 export * from "./prompt";
 export * from "./schema";
 export * from "./skills";
+export * from "./triggers/pipelineEventBus";
+export * from "./triggers/pipelineEventSources";
+export * from "./triggers/triggerMatch";
 export * from "./types";

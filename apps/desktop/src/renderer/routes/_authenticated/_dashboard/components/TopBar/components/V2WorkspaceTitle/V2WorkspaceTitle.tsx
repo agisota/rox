@@ -1,9 +1,9 @@
+import { motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { OverflowFadeText } from "@rox/ui/overflow-fade-text";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, GitBranch } from "lucide-react";
-import { motionDuration, useShouldAnimate } from "renderer/motion";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 
 interface V2WorkspaceTitleProps {

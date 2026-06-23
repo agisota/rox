@@ -1,5 +1,6 @@
 import { COMPANY } from "@rox/shared/constants";
 import { Button } from "@rox/ui/button";
+import { AnimatedHeight } from "@rox/ui/motion";
 import {
 	Select,
 	SelectContent,
@@ -18,7 +19,6 @@ import {
 	HiOutlineArrowUpTray,
 } from "react-icons/hi2";
 import { ThemeSwatch } from "renderer/components/ThemeSwatch";
-import { AnimatedHeight } from "renderer/motion";
 import {
 	SYSTEM_THEME_ID,
 	useSetSystemThemePreference,

@@ -1,69 +1,69 @@
 ---
-title: Automations
-description: Schedule agent sessions to run on a recurring basis
+title: Автоматизации
+description: Запускайте сессии агентов по расписанию на регулярной основе
 ---
 
-## Overview
+## Обзор
 
-Automations run an agent session against a project on a schedule — like a cron job, but the output is a live workspace you (or a teammate) can open, review, and continue interactively.
+Автоматизации запускают сессию агента для проекта по расписанию — как cron-задача, но результатом становится живое рабочее пространство, которое вы (или коллега) можете открыть, просмотреть и продолжить интерактивно.
 
-Typical uses:
+Типичные сценарии:
 
-- **Standups** — a nightly summary of PRs, issues, and activity
-- **Release notes** — generate a draft from merged commits
-- **Audits** — scan for security issues or deprecated APIs each morning
-- **Dependency sweeps** — check for outdated packages weekly
+- **Standup'ы** — ночная сводка по PR, задачам и активности
+- **Release notes** — генерация черновика из смерженных коммитов
+- **Аудиты** — ежеутренний поиск проблем безопасности или устаревших API
+- **Проверки зависимостей** — еженедельная проверка устаревших пакетов
 
-## Requirements
+## Требования
 
-- **A v2 project** — Automations run against a project that's already linked to a GitHub repo.
-- **A target device** — The run fires on the device you pick when creating the automation.
+- **Проект v2** — автоматизации запускаются для проекта, уже связанного с репозиторием GitHub.
+- **Целевое устройство** — запуск происходит на устройстве, которое вы выбираете при создании автоматизации.
 
-## Create an Automation
+## Создание автоматизации
 
-Click **Automations → New automation** and fill in:
+Нажмите **Automations → New automation** и заполните:
 
-- **Title** — how the automation appears in the list
-- **Prompt** — the instructions the agent will receive at dispatch time. Supports markdown, `@file/path` mentions (scoped to the selected project), `:emoji:` shortcodes, and `/` slash commands.
-- **Device** — which host runs the session. Defaults to this device.
-- **Project** — the v2 project the session runs against.
-- **Schedule** — pick a preset or enter a custom RRule. All times are in your local timezone.
-- **Agent** — Claude, Codex, Amp, etc. — anything you've set up under **Settings → Agents**.
+- **Title** — как автоматизация отображается в списке
+- **Prompt** — инструкции, которые агент получит в момент запуска. Поддерживает markdown, упоминания `@file/path` (в пределах выбранного проекта), коды `:emoji:` и slash-команды `/`.
+- **Device** — какой хост запускает сессию. По умолчанию это устройство.
+- **Project** — проект v2, для которого запускается сессия.
+- **Schedule** — выберите пресет или введите собственный RRule. Все времена указываются в вашем местном часовом поясе.
+- **Agent** — Claude, Codex, Amp и т. д. — всё, что вы настроили в **Settings → Agents**.
 
-## Schedules
+## Расписания
 
-Schedules are stored as [RFC 5545 RRules](https://datatracker.ietf.org/doc/html/rfc5545#section-3.8.5). The schedule picker has presets for common cadences; use **Custom RRule…** for anything else.
+Расписания хранятся в формате [RFC 5545 RRules](https://datatracker.ietf.org/doc/html/rfc5545#section-3.8.5). В выборе расписания есть пресеты для распространённых периодичностей; для всего остального используйте **Custom RRule…**.
 
-Examples:
+Примеры:
 
-- `FREQ=DAILY;BYHOUR=9;BYMINUTE=0` — every day at 9:00 AM
-- `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0` — weekdays at 9:00 AM
-- `FREQ=WEEKLY;BYDAY=FR;BYHOUR=17;BYMINUTE=0` — every Friday at 5:00 PM
+- `FREQ=DAILY;BYHOUR=9;BYMINUTE=0` — каждый день в 9:00
+- `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0` — по будням в 9:00
+- `FREQ=WEEKLY;BYDAY=FR;BYHOUR=17;BYMINUTE=0` — каждую пятницу в 17:00
 
-## Runs
+## Запуски
 
-Each time an automation fires, a **run** is recorded. Runs show up on the automation's detail page with status:
+Каждый раз, когда срабатывает автоматизация, записывается **запуск**. Запуски отображаются на странице автоматизации со статусом:
 
-- **dispatched** — the session was successfully handed off to the target device
-- **skipped (offline)** — the target device wasn't online at fire time; the run was skipped and the schedule advanced
-- **dispatch failed** — something broke during handoff; check the error message
+- **dispatched** — сессия успешно передана целевому устройству
+- **skipped (offline)** — целевое устройство не было в сети в момент срабатывания; запуск пропущен, а расписание сдвинулось дальше
+- **dispatch failed** — что-то сломалось при передаче; проверьте сообщение об ошибке
 
-When a run dispatches in "new workspace" mode, a fresh workspace is created from the project's repo for that run. Open it from the run row to see the agent's work.
+Когда запуск происходит в режиме «новое рабочее пространство», для этого запуска создаётся свежее рабочее пространство из репозитория проекта. Откройте его из строки запуска, чтобы увидеть работу агента.
 
-## Pause, Run Now, Delete
+## Пауза, запуск сейчас, удаление
 
-From the automation's detail page:
+На странице автоматизации:
 
-- **Pause** — stops scheduling until you resume. Existing runs are kept.
-- **Run now** — dispatches immediately. The run appears in **Previous runs** within seconds.
-- **Delete** — removes the automation and its run history.
+- **Pause** — останавливает планирование, пока вы не возобновите. Существующие запуски сохраняются.
+- **Run now** — запускает немедленно. Запуск появляется в **Previous runs** в течение нескольких секунд.
+- **Delete** — удаляет автоматизацию и историю её запусков.
 
-## Limits
+## Ограничения
 
-- **At-least-once delivery** — Automations may dispatch more than once in rare cases (e.g. dispatcher retries). Design prompts that are safe to re-run.
-- **No completion tracking (v1)** — Runs land at `dispatched`; the detail page doesn't show success/failure of the agent itself. Open the workspace to see what happened.
-- **Offline hosts skip silently** — If your device is offline at fire time, the run is marked `skipped_offline` and the next occurrence is scheduled normally.
-- **One prompt per automation** — Each automation has one prompt. To run multiple prompts on a schedule, create multiple automations.
+- **Доставка не менее одного раза** — в редких случаях автоматизации могут запуститься более одного раза (например, при повторных попытках диспетчера). Проектируйте промпты так, чтобы их повторный запуск был безопасным.
+- **Нет отслеживания завершения (v1)** — запуски доходят до статуса `dispatched`; страница автоматизации не показывает успех или неудачу самого агента. Откройте рабочее пространство, чтобы увидеть, что произошло.
+- **Офлайн-хосты пропускаются молча** — если ваше устройство офлайн в момент срабатывания, запуск помечается как `skipped_offline`, и следующее срабатывание планируется как обычно.
+- **Один промпт на автоматизацию** — у каждой автоматизации один промпт. Чтобы запускать несколько промптов по расписанию, создайте несколько автоматизаций.
 
 ## CLI
 

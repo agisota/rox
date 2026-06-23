@@ -19,6 +19,7 @@ import { isProcessAlive, readPtyDaemonManifest } from "../daemon/manifest.ts";
 import type { HostDb } from "../db/index.ts";
 import { projects, terminalSessions, workspaces } from "../db/schema.ts";
 import type { EventBus } from "../events/index.ts";
+import { logger } from "../lib/logger";
 import { portManager } from "../ports/port-manager.ts";
 import {
 	DaemonClient,
@@ -267,7 +268,7 @@ const sessions = new Map<string, TerminalSession>();
 onDaemonDisconnect((err) => {
 	const sessionCount = sessions.size;
 	if (sessionCount === 0) return;
-	console.warn(
+	logger.warn(
 		`[terminal] pty-daemon disconnected (${err?.message ?? "no message"}); closing ${sessionCount} terminal WS socket(s) to trigger renderer reconnect`,
 	);
 	for (const session of sessions.values()) {
@@ -369,6 +370,33 @@ export function listTerminalSessions(
 			attached: pruneAndCountOpenSockets(session) > 0,
 			title: session.title,
 		}));
+}
+
+/**
+ * Read the raw PTY scrollback ring buffer for a session as its byte chunks.
+ *
+ * Returns the session's retained output chunks (`Uint8Array[]` — the same bytes
+ * broadcast to renderers, bounded by `MAX_BUFFER_BYTES`) when the terminal
+ * exists and matches `workspaceId`, or `null` when no such session is known to
+ * this process (unknown id, or a workspace mismatch). The returned array is a
+ * shallow copy so callers can't mutate the live session buffer.
+ *
+ * This is the read-back the Agent Pipelines capture path uses: once a CLI
+ * agent's pty exits (the `terminal:lifecycle` exit edge flips `session.exited`),
+ * `agent-run-capture.ts` reads these bytes and feeds them through the pure
+ * `extractTerminalOutputTail` pipeline to thread the agent's output into the
+ * run's accumulating context. Kept byte-aligned (no decode here) so multi-byte
+ * codepoints straddling chunk boundaries decode correctly downstream.
+ */
+export function readTerminalBufferBytes(options: {
+	terminalId: string;
+	workspaceId: string;
+}): Uint8Array[] | null {
+	const session = sessions.get(options.terminalId);
+	if (!session || session.workspaceId !== options.workspaceId) return null;
+	// Shallow copy: the chunks themselves are immutable on the wire, but the
+	// array is the live ring buffer — don't hand callers a reference to it.
+	return [...session.buffer];
 }
 
 export function countTerminalSessions(
@@ -667,13 +695,13 @@ export function disposeSession(terminalId: string, db: HostDb) {
 	void disposeSessionAndWait(terminalId, db)
 		.then((result) => {
 			if (!result.daemonCloseSucceeded) {
-				console.warn("[terminal] disposeSession daemon close failed", {
+				logger.warn("[terminal] disposeSession daemon close failed", {
 					terminalId,
 				});
 			}
 		})
 		.catch((error) => {
-			console.warn("[terminal] disposeSession failed", { terminalId, error });
+			logger.warn("[terminal] disposeSession failed", { terminalId, error });
 		});
 }
 
@@ -953,7 +981,7 @@ export async function createTerminalSessionInternal({
 			}
 			openResult = { pid: found.pid };
 			isAdopted = true;
-			console.log(
+			logger.info(
 				`[terminal] adopted existing daemon session ${terminalId} pid=${found.pid}`,
 			);
 		} else {
@@ -979,7 +1007,7 @@ export async function createTerminalSessionInternal({
 					if (!found) throw err;
 					openResult = { pid: found.pid };
 					isAdopted = true;
-					console.log(
+					logger.info(
 						`[terminal] adopted existing daemon session ${terminalId} pid=${found.pid}`,
 					);
 				} else {
@@ -1236,7 +1264,7 @@ export function registerWorkspaceTerminalRoute({
 				),
 			});
 		} catch (error) {
-			console.warn("[terminal] Failed to list resource sessions", error);
+			logger.warn("[terminal] Failed to list resource sessions", error);
 			return c.json({ sessions: [] });
 		}
 	});
@@ -1333,7 +1361,7 @@ export function registerWorkspaceTerminalRoute({
 				// Active row but daemon no longer owns the PTY (laptop sleep,
 				// daemon restart, machine reboot). Respawn rather than dead-end
 				// the pane — the renderer's xterm scrollback stays painted above.
-				console.log(`[terminal] respawning lost session ${terminalId}`);
+				logger.info(`[terminal] respawning lost session ${terminalId}`);
 				return createTerminalSessionInternal({
 					terminalId,
 					workspaceId: record.originWorkspaceId,
@@ -1360,7 +1388,7 @@ export function registerWorkspaceTerminalRoute({
 						if (ws.readyState !== SOCKET_OPEN) return;
 						attachSocketToSession(session, ws);
 					})().catch((error) => {
-						console.error("[terminal] unexpected error during attach", error);
+						logger.error("[terminal] unexpected error during attach", error);
 						if (ws.readyState !== SOCKET_OPEN) return;
 						sendMessage(ws, {
 							type: "error",

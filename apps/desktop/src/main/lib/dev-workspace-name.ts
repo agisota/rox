@@ -4,6 +4,7 @@ import path from "node:path";
 import { workspaces, worktrees } from "@rox/local-db";
 import BetterSqlite3 from "better-sqlite3";
 import { and, desc, eq, isNull } from "drizzle-orm";
+import { logger } from "main/lib/logger";
 import { getWorkspaceName as getEnvWorkspaceName } from "shared/env.shared";
 import { deriveWorkspaceNameFromWorktreeSegments } from "shared/worktree-id";
 import { localDb } from "./local-db";
@@ -53,7 +54,7 @@ function getWorkspaceNameForPathFromCurrentDb(
 		const name = rows[0]?.name?.trim();
 		return name ? name : undefined;
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[dev-workspace-name] Failed to resolve workspace name from current DB:",
 			error,
 		);
@@ -89,7 +90,7 @@ function getWorkspaceNameForPathFromProdDb(
 			prodDb.close();
 		}
 	} catch (error) {
-		console.warn(
+		logger.warn(
 			"[dev-workspace-name] Failed to resolve workspace name from prod DB:",
 			error,
 		);

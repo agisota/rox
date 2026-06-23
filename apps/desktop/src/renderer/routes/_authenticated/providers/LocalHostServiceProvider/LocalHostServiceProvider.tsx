@@ -8,6 +8,7 @@ import {
 	useRef,
 } from "react";
 import { env } from "renderer/env.renderer";
+import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
@@ -15,6 +16,7 @@ import {
 	setHostServiceSecret,
 } from "renderer/lib/host-service-auth";
 import type { HostServiceAvailabilityStatus } from "renderer/lib/host-service-unavailable";
+import { logger } from "renderer/lib/logger";
 import { MOCK_ORG_ID } from "shared/constants";
 import { useCollections } from "../CollectionsProvider";
 import {
@@ -163,6 +165,36 @@ export function LocalHostServiceProvider({
 		activeHostStatus,
 		startHostService,
 	]);
+
+	// Eagerly register this Mac as a host the moment the local host-service is
+	// reachable (active connection port), rather than lazily on first workspace
+	// create. Reuses the idempotent cloud `host.ensure` mutation (same procedure
+	// the server-side `startHostEnsure` calls). Guarded by a ref so it fires at
+	// most once per session, and best-effort so a failure never blocks launch.
+	const didEagerEnsureRef = useRef(false);
+	useEffect(() => {
+		if (didEagerEnsureRef.current) return;
+		if (!activeOrganizationId) return;
+		if (!activeConnection?.port) return;
+		const machineId = machineIdData?.machineId;
+		const hostName = machineIdData?.hostName;
+		if (!machineId || !hostName) return;
+
+		didEagerEnsureRef.current = true;
+		apiTrpcClient.host.ensure
+			.mutate({
+				organizationId: activeOrganizationId,
+				machineId,
+				name: hostName,
+			})
+			.catch((err) => {
+				// Best-effort: registration is also performed lazily on workspace
+				// create, so a transient failure here must not block the app. Allow a
+				// retry on a later render.
+				didEagerEnsureRef.current = false;
+				logger.warn("[LocalHostServiceProvider] eager host.ensure failed", err);
+			});
+	}, [activeOrganizationId, activeConnection?.port, machineIdData]);
 
 	const activeOrganizationName = useMemo(
 		() =>

@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef } from "react";
 import { useOnlineStatus } from "renderer/hooks/useOnlineStatus";
 import { authClient, getAuthToken } from "renderer/lib/auth-client";
+import { logger } from "renderer/lib/logger";
 
 const SESSION_RECOVERY_INTERVAL_MS = 15_000;
 
@@ -25,7 +26,7 @@ export function useSessionRecovery() {
 		try {
 			await refetch();
 		} catch (error) {
-			console.warn("[sign-in] session recovery refetch failed", error);
+			logger.warn("[sign-in] session recovery refetch failed", error);
 		} finally {
 			recoveryInFlightRef.current = false;
 		}

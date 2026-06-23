@@ -4,6 +4,7 @@ import {
 	primaryKey,
 	sqliteTable,
 	text,
+	unique,
 } from "drizzle-orm/sqlite-core";
 import { v4 as uuidv4 } from "uuid";
 
@@ -256,10 +257,41 @@ export const settings = sqliteTable("settings", {
 	exposeHostServiceViaRelay: integer("expose_host_service_via_relay", {
 		mode: "boolean",
 	}),
+	// Voice / ambient settings (Phase 4a). Plain dictation defaults ON; the
+	// always-on ambient capture is opt-in (defaults OFF) and shows a recording
+	// indicator. `voiceAgentContext` is free-text the user supplies in advance so
+	// the agent has context — threaded into the dictation post-process today and
+	// consumed by the future ambient runtime.
+	dictationEnabled: integer("dictation_enabled", { mode: "boolean" }).default(
+		true,
+	),
+	ambientCaptureEnabled: integer("ambient_capture_enabled", {
+		mode: "boolean",
+	}).default(false),
+	voiceAgentContext: text("voice_agent_context").default(""),
 });
 
 export type InsertSettings = typeof settings.$inferInsert;
 export type SelectSettings = typeof settings.$inferSelect;
+
+export type ExperimentalFeatureOverrideSource = "migration" | "reset" | "user";
+
+export const experimentalFeatureOverrides = sqliteTable(
+	"experimental_feature_overrides",
+	{
+		featureId: text("feature_id").primaryKey(),
+		enabled: integer("enabled", { mode: "boolean" }).notNull(),
+		updatedAt: integer("updated_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		source: text("source").$type<ExperimentalFeatureOverrideSource>(),
+	},
+);
+
+export type InsertExperimentalFeatureOverride =
+	typeof experimentalFeatureOverrides.$inferInsert;
+export type SelectExperimentalFeatureOverride =
+	typeof experimentalFeatureOverrides.$inferSelect;
 
 export type V1MigrationKind = "project" | "workspace" | "preset";
 export type V1MigrationStatus = "success" | "linked" | "error" | "skipped";
@@ -448,6 +480,95 @@ export const browserHistory = sqliteTable(
 
 export type InsertBrowserHistory = typeof browserHistory.$inferInsert;
 export type SelectBrowserHistory = typeof browserHistory.$inferSelect;
+
+// ===========================================================================
+// Browser-data pipeline (WS-N / D4) — per-workspace history + consent.
+//
+// The legacy global `browser_history` table above stays for autocomplete
+// back-compat. These NEW tables back the D4 pipeline: import real OS-browser
+// history + capture in-app visits PER WORKSPACE (branch), keep a trailing
+// ~7-day local window, upload to our server every 3–7 days, then purge locally.
+// Nothing here is captured/imported/uploaded until the user opts in via
+// `browser_data_consent`. Local SQLite only (NOT the Neon `packages/db` rule).
+// ===========================================================================
+
+/**
+ * Per-workspace browser history (WS-N / D4).
+ *
+ * Unlike the global `browser_history` table (one `url` unique row), this is
+ * scoped per workspace/branch and distinguishes in-app `native` visits from
+ * imported `import` rows. The dedup key is a COMPOSITE
+ * `(workspace_id, url, visited_at)` unique — the same URL can legitimately
+ * recur across branches and across distinct visits, so a bare `url` unique
+ * would collapse cross-branch history onto one row. `uploaded_at` is the
+ * server-upload watermark: null = not yet uploaded; set after the server ACK,
+ * after which the row is eligible for local purge.
+ */
+export const browserHistoryEntries = sqliteTable(
+	"browser_history_entries",
+	{
+		id: text("id")
+			.primaryKey()
+			.$defaultFn(() => uuidv4()),
+		/** Workspace (git worktree/branch) this visit belongs to. */
+		workspaceId: text("workspace_id").notNull(),
+		url: text("url").notNull(),
+		title: text("title").notNull().default(""),
+		faviconUrl: text("favicon_url"),
+		/** "native" = in-app webview visit; "import" = read from an OS browser. */
+		source: text("source").notNull().default("native"),
+		/** Visit timestamp (epoch ms). */
+		visitedAt: integer("visited_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		/** When this row was imported from an OS browser; null for native rows. */
+		importedAt: integer("imported_at"),
+		/** Server-upload watermark; null until the server ACKs the upload. */
+		uploadedAt: integer("uploaded_at"),
+	},
+	(table) => [
+		unique("browser_history_entries_workspace_url_visited_unq").on(
+			table.workspaceId,
+			table.url,
+			table.visitedAt,
+		),
+		index("browser_history_entries_workspace_idx").on(table.workspaceId),
+		index("browser_history_entries_visited_at_idx").on(table.visitedAt),
+		index("browser_history_entries_uploaded_at_idx").on(table.uploadedAt),
+	],
+);
+
+export type InsertBrowserHistoryEntry =
+	typeof browserHistoryEntries.$inferInsert;
+export type SelectBrowserHistoryEntry =
+	typeof browserHistoryEntries.$inferSelect;
+
+/**
+ * Browser-data import/sync consent (WS-N / D4).
+ *
+ * A single-row consent record gating the whole pipeline. No import, capture, or
+ * upload happens unless `accepted` is true. Consent is revocable: on revoke we
+ * stop the scheduler and purge all local browser-data rows. `sources` is a JSON
+ * array of the OS browsers the user allowed importing (e.g. ["chrome","arc"]).
+ */
+export const browserDataConsent = sqliteTable("browser_data_consent", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => uuidv4()),
+	accepted: integer("accepted", { mode: "boolean" }).notNull().default(false),
+	acceptedAt: integer("accepted_at"),
+	revokedAt: integer("revoked_at"),
+	/** Last successful upload timestamp (epoch ms); null until first upload. */
+	lastUploadedAt: integer("last_uploaded_at"),
+	/** JSON string array of allowed OS-browser source keys. */
+	sources: text("sources", { mode: "json" })
+		.$type<string[]>()
+		.notNull()
+		.default([]),
+});
+
+export type InsertBrowserDataConsent = typeof browserDataConsent.$inferInsert;
+export type SelectBrowserDataConsent = typeof browserDataConsent.$inferSelect;
 
 /**
  * Saved prompts table - reusable prompt snippets the user authors locally and

@@ -3,10 +3,10 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@rox/ui/hover-card";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 
 interface ImageHoverPreviewProps {
 	src: string;

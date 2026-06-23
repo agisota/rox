@@ -2,15 +2,19 @@
 
 import { animate, createTimeline, scrambleText, stagger } from "animejs";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	INTRO_BRAND,
 	INTRO_FEATURE_TAGS,
 	INTRO_LANGS,
 	INTRO_LEAD_WORD,
-	INTRO_TAGLINE,
 } from "../../constants";
 import { CpuArchitecture } from "../CpuArchitecture";
+import {
+	type FeatureCloudPlacement,
+	layoutFeatureCloud,
+} from "./featureCloudLayout";
 
 interface IntroOverlayProps {
 	onComplete: () => void;
@@ -43,8 +47,46 @@ const SLIDE_ONE_ROWS = SLIDE_ONE_GRID.map((count, rowIndex) => ({
 const GRID_COLS = Math.max(...SLIDE_ONE_GRID);
 const GRID_ROWS = SLIDE_ONE_GRID.length;
 
-/** Row distribution for the feature scramble grid on slide 2 (sums to 11). */
-const FEATURE_ROW_SIZES = [2, 3, 3, 3] as const;
+const INTRO_FEATURES = INTRO_FEATURE_TAGS.map((tag, index) => ({
+	...tag,
+	id: `intro-feature-${index}`,
+	index,
+}));
+
+type FeatureCloudStyle = CSSProperties &
+	Record<
+		"--rox-tag-x" | "--rox-tag-y" | "--rox-tag-rot" | "--rox-tag-scale",
+		string
+	>;
+
+function placementToStyle(
+	placement: FeatureCloudPlacement,
+	color: number,
+): FeatureCloudStyle {
+	return {
+		"--rox-tag-x": `${placement.xPct.toFixed(2)}%`,
+		"--rox-tag-y": `${placement.yPct.toFixed(2)}%`,
+		"--rox-tag-rot": `${placement.rotationDeg.toFixed(2)}deg`,
+		"--rox-tag-scale": placement.scale.toFixed(3),
+		color: `var(--rox-c-${color})`,
+	};
+}
+
+/**
+ * Pick a responsive footprint + tag cap for the feature cloud from the live
+ * container width. Narrow screens get a smaller font, more breathing room and a
+ * lower cap so the scatter stays readable instead of cramming every tag in.
+ */
+function getCloudSizing(width: number): {
+	fontPx: number;
+	gapPx: number;
+	maxTags: number;
+} {
+	if (width < 480) return { fontPx: 11, gapPx: 12, maxTags: 16 };
+	if (width < 760) return { fontPx: 12, gapPx: 14, maxTags: 24 };
+	if (width < 1100) return { fontPx: 13, gapPx: 16, maxTags: 34 };
+	return { fontPx: 14, gapPx: 18, maxTags: INTRO_FEATURE_TAGS.length };
+}
 
 /** Scramble cursor glyphs reused from the original anime.js demo. */
 const CURSOR_HEAVY = "░▒▓█";
@@ -52,52 +94,126 @@ const CURSOR_LIGHT = "░▒▓";
 
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
 const SAFETY_TIMEOUT_MS = 18_000;
+const MIN_INTRO_DURATION_MS = 7_600;
 
 /** Delay the independent logo float until the one-shot reveal tween has landed. */
 const LOGO_FLOAT_DELAY_MS = 2_200;
 
-/** Split the flat feature list into the grid rows rendered on slide 2. */
-function chunkFeatures(): ReadonlyArray<
-	ReadonlyArray<{ text: string; color: number }>
-> {
-	const rows: Array<Array<{ text: string; color: number }>> = [];
-	let cursor = 0;
-	for (const size of FEATURE_ROW_SIZES) {
-		rows.push(INTRO_FEATURE_TAGS.slice(cursor, cursor + size).slice());
-		cursor += size;
-	}
-	const rest = INTRO_FEATURE_TAGS.slice(cursor);
-	if (rest.length > 0) {
-		rows.push(rest.slice());
-	}
-	return rows;
-}
-
 /**
  * Fullscreen one-shot intro that fills the screen with «Introducing» in many
  * languages, collapses it into the ROX wordmark (with the logo revealed beside
- * it), fans out the feature tags, then resolves to the tagline before
- * signalling completion. Ports Julian Garnier's "Scramble Text timeline"
- * CodePen onto the Rox palette.
+ * it), fans out the feature tags across the viewport width, then hands off to
+ * the hero. Ports Julian Garnier's "Scramble Text timeline" CodePen onto the
+ * Rox palette.
  */
 export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
+	const cloudRef = useRef<HTMLDivElement>(null);
 	const onCompleteRef = useRef(onComplete);
 	onCompleteRef.current = onComplete;
+
+	// Live container box for the feature cloud. Seed from the viewport so a
+	// collision-free layout exists on the very first render (the anime.js
+	// timeline queries `.rox-intro__feature` at mount).
+	const [cloudBox, setCloudBox] = useState(() => {
+		if (typeof window === "undefined") return { width: 1200, height: 620 };
+		const insetX = Math.min(176, window.innerWidth * 0.1);
+		const insetY = Math.min(176, window.innerHeight * 0.16);
+		return {
+			width: Math.max(280, window.innerWidth - insetX),
+			height: Math.max(320, window.innerHeight - insetY),
+		};
+	});
+
+	// Recompute the box on resize so the scatter stays inside the viewport.
+	useEffect(() => {
+		const measure = () => {
+			const node = cloudRef.current;
+			if (node) {
+				const rect = node.getBoundingClientRect();
+				if (rect.width > 0 && rect.height > 0) {
+					setCloudBox({ width: rect.width, height: rect.height });
+					return;
+				}
+			}
+			const insetX = Math.min(176, window.innerWidth * 0.1);
+			const insetY = Math.min(176, window.innerHeight * 0.16);
+			setCloudBox({
+				width: Math.max(280, window.innerWidth - insetX),
+				height: Math.max(320, window.innerHeight - insetY),
+			});
+		};
+		measure();
+		window.addEventListener("resize", measure);
+		return () => window.removeEventListener("resize", measure);
+	}, []);
+
+	// Collision-free placements for the feature tags, capped by viewport size.
+	const placedFeatures = useMemo(() => {
+		const { fontPx, gapPx, maxTags } = getCloudSizing(cloudBox.width);
+		const placements = layoutFeatureCloud(INTRO_FEATURES, {
+			width: cloudBox.width,
+			height: cloudBox.height,
+			fontPx,
+			gapPx,
+			maxTags,
+		});
+		return placements
+			.map((placement) => {
+				const tag = INTRO_FEATURES[placement.index];
+				if (!tag) return null;
+				return { tag, placement };
+			})
+			.filter(
+				(
+					entry,
+				): entry is {
+					tag: (typeof INTRO_FEATURES)[number];
+					placement: FeatureCloudPlacement;
+				} => entry !== null,
+			);
+	}, [cloudBox.width, cloudBox.height]);
 
 	useEffect(() => {
 		const root = rootRef.current;
 		if (!root) {
 			return;
 		}
+		root.setAttribute("data-intro-js", "enhanced");
 
+		const introStartedAt = window.performance.now();
 		let finished = false;
-		const finishOnce = () => {
+		let fallbackStarted = false;
+		let finishQueued = false;
+		const fallbackTimers: number[] = [];
+		const queueFallbackTimer = (callback: () => void, delay: number) => {
+			const timer = window.setTimeout(callback, delay);
+			fallbackTimers.push(timer);
+		};
+		const completeNow = () => {
 			if (finished) {
 				return;
 			}
 			finished = true;
+			root.style.pointerEvents = "none";
+			root.style.visibility = "hidden";
 			onCompleteRef.current();
+		};
+		const finishOnce = () => {
+			if (finished || finishQueued) {
+				return;
+			}
+			const remainingIntroTime =
+				MIN_INTRO_DURATION_MS - (window.performance.now() - introStartedAt);
+			if (remainingIntroTime > 0) {
+				finishQueued = true;
+				queueFallbackTimer(() => {
+					finishQueued = false;
+					finishOnce();
+				}, remainingIntroTime);
+				return;
+			}
+			completeNow();
 		};
 
 		const select = <T extends Element>(selector: string): T[] =>
@@ -117,15 +233,44 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		const slide2Words = select<HTMLElement>(
 			".rox-intro__slide--two .rox-intro__feature",
 		);
-		const slide3 = select<HTMLElement>(".rox-intro__slide--three");
-		const slide3Center = select<HTMLElement>(
-			".rox-intro__slide--three .rox-intro__center",
-		);
 
 		const timeline = createTimeline({
 			loop: false,
 			onComplete: finishOnce,
 		});
+		// When the tag cloud (beat 4) is revealed, the girl logo + CPU chip
+		// (beat 3) MUST be gone so the two beats never overlap on screen.
+		const hideLogoAndCpu = () => {
+			if (logo[0]) logo[0].style.opacity = "0";
+			if (cpuMark[0]) cpuMark[0].style.opacity = "0";
+		};
+		const showTagCloud = () => {
+			hideLogoAndCpu();
+			if (slide1[0]) slide1[0].style.opacity = "0";
+			if (slide2[0]) slide2[0].style.opacity = "1";
+		};
+		const startTimelineFallback = (showTagsImmediately = false) => {
+			if (finished || fallbackStarted) {
+				return;
+			}
+			fallbackStarted = true;
+			timeline.pause();
+			root.style.backgroundColor = "#000";
+			if (slide1[0]) slide1[0].style.opacity = "1";
+			if (slide2[0]) slide2[0].style.opacity = "0";
+
+			if (showTagsImmediately) {
+				showTagCloud();
+				queueFallbackTimer(finishOnce, 4000);
+				return;
+			}
+
+			queueFallbackTimer(() => {
+				if (finished) return;
+				showTagCloud();
+			}, 2200);
+			queueFallbackTimer(finishOnce, 6200);
+		};
 
 		// ── Slide 1: multilingual word grid collapses into the ROX wordmark ──
 		timeline
@@ -193,10 +338,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					start: "<+=200",
 				}),
 			)
-			// Collapse the multilingual lead word inward and dissolve it to nothing:
-			// the centered word is NOT resolved into a plain "ROX" wordmark. The
-			// animated CPU-architecture mark below becomes the sole ROX brand-lock,
-			// so only ONE ROX is ever on screen.
 			.add(
 				slide1Center,
 				{
@@ -215,8 +356,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Reveal the brand logo just above where the wordmark lands, with a
-			// brief blur-clear and a brand-glow halo that pulses up as it lands.
 			.add(logo, { opacity: { to: 1 }, ease: "out(2)", duration: 700 }, "<<")
 			.add(
 				logoImg,
@@ -227,10 +366,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Blur-clear + glow-halo land pulse on the logo wrapper (the wrapper owns
-			// the `--rox-logo-*` custom props that `filter` and the `::before` halo
-			// read). The standalone breathing loop below is delayed so it never
-			// clobbers this one-shot pulse.
 			.add(
 				logo,
 				{
@@ -242,9 +377,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			// Brand lock: the animated CPU-architecture mark IS the ROX wordmark.
-			// It resolves into the spot the lead-word collapsed into — circuit
-			// traces draw in and light beams travel around the "ROX" the SVG holds.
 			.add(
 				cpuMark,
 				{
@@ -254,80 +386,110 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<+=200",
 			)
-			// Hold the CPU brand lock-up on screen for a beat.
 			.add(cpuMark, { opacity: 1, duration: 900 }, "<+=200");
 
-		// ── Slide 2: feature tags scramble in across the grid (held ~2× longer)
+		// ── Slide 2: feature tags scattered across the viewport width ───────
+		// The logo + CPU mark ("screen 2") must FULLY fade out before the
+		// feature cloud ("screen 3") is revealed — otherwise the two screens
+		// overlap and visually collapse into one. Hold the logo a beat longer,
+		// fade it over LOGO_FADE_MS, then swap slides and scramble in the
+		// features only once the fade has landed.
+		const LOGO_FADE_MS = 450;
 		timeline
-			.add(root, { backgroundColor: "#000" }, "<+=300")
-			.add(logo, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
-			.add(cpuMark, { opacity: { to: 0 }, ease: "out(2)", duration: 400 }, "<<")
-			.set(slide1, { opacity: 0 }, "<<")
+			.add(root, { backgroundColor: "#000" }, "<+=600")
+			.add(
+				logo,
+				{ opacity: { to: 0 }, ease: "out(2)", duration: LOGO_FADE_MS },
+				"<<",
+			)
+			.add(
+				cpuMark,
+				{ opacity: { to: 0 }, ease: "out(2)", duration: LOGO_FADE_MS },
+				"<<",
+			)
+			// Swap slides only once the logo/CPU fade has completed.
+			.set(slide1, { opacity: 0 }, `<+=${LOGO_FADE_MS}`)
 			.set(slide2, { opacity: 1 }, "<<")
+			// Seed the cloud words in the same "pre-reveal" state the hero's flank
+			// words use: invisible and scaled up large, ready to scramble/scale in.
+			// `scale` here is a standalone CSS property and composes on top of each
+			// tag's resting transform (translate + rotate + --rox-tag-scale), so the
+			// per-word positions/rotations/colors from featureCloudLayout survive.
+			.set(
+				slide2Words,
+				{
+					opacity: 0,
+					scale: 1.85,
+				},
+				"<<",
+			)
+			// Beat 4 entrance — mirror the hero reveal (slide1Flank, ≈282-318):
+			// scale-from-large + center-origin scrambleText with the same cursor
+			// glyphs and easing, instead of the old opacity/translateY drift.
+			// Unlike the hero flank (which blanks text via override:" "), the cloud
+			// words are tiny + scattered, so each word scrambles straight into its
+			// REAL label — staying legible through the reveal while keeping the
+			// hero's scale-from-large + center-origin stagger character.
 			.add(
 				slide2Words,
 				{
+					opacity: { to: 1, duration: 360, ease: "out(2)" },
+					scale: { to: 1, duration: 900, ease: "out(3)" },
 					innerHTML: scrambleText({
-						override: " ",
+						override: false,
 						from: "center",
-						duration: 600,
-						revealDelay: 250,
+						duration: 640,
+						settleDuration: 360,
 						cursor: CURSOR_LIGHT,
-						perturbation: 0.5,
+						perturbation: 0.25,
 					}),
 				},
-				stagger([0, 1400], {
-					grid: [Math.max(...FEATURE_ROW_SIZES), FEATURE_ROW_SIZES.length],
+				stagger([60, 1500], {
 					from: "center",
 					ease: "out(3)",
-					start: "<<+=250",
-					reversed: true,
+					start: "<<+=120",
 				}),
 			)
-			// Re-scramble the tags in place once, to keep the screen alive longer.
+			// Second scramble pass — a brief heavier-cursor shimmer that re-settles
+			// each word, echoing the hero center's resolve beat.
 			.add(
 				slide2Words,
 				{
 					innerHTML: scrambleText({
 						override: false,
-						from: "random",
-						duration: 700,
-						settleDuration: 400,
-						cursor: CURSOR_LIGHT,
-						perturbation: 0.4,
+						from: "center",
+						duration: 520,
+						settleDuration: 320,
+						cursor: CURSOR_HEAVY,
+						perturbation: 0.3,
 					}),
 				},
-				stagger([0, 900], { from: "center", start: "<+=1600" }),
-			);
-
-		// ── Slide 3: closing tagline ───────────────────────────────────────
-		timeline
-			.add(root, { backgroundColor: "#000" }, "<+=1700")
-			.set(slide2, { opacity: 0 }, "<<")
-			.set(slide3, { opacity: 1 }, "<<")
-			.add(
-				slide3Center,
-				{
-					color: { to: "var(--rox-orange-1)", duration: 750 },
-					ease: "inOutExpo",
-					duration: 1250,
-					innerHTML: scrambleText({
-						text: INTRO_TAGLINE,
-						override: false,
-						from: "right",
-						cursor: CURSOR_LIGHT,
-						duration: 750,
-						ease: "inOut",
-					}),
-				},
-				"<+=250",
-			);
+				stagger([30, 900], { from: "center", start: "<+=1200" }),
+			)
+			.add(root, { opacity: 1, duration: 1800 }, "<+=1100");
 
 		timeline.init();
+		timeline.restart();
+		timeline.play();
 
-		// Subtle "alive" float once the logo has landed: the mark drifts ±4px and
-		// the halo breathes. Tracked separately so we can revert it on cleanup
-		// (the timeline's own revert() won't touch these standalone loops).
+		queueFallbackTimer(completeNow, MIN_INTRO_DURATION_MS);
+		queueFallbackTimer(() => {
+			const slideOneOpacity = Number.parseFloat(
+				slide1[0] ? getComputedStyle(slide1[0]).opacity : "0",
+			);
+			if (slideOneOpacity < 0.05) {
+				startTimelineFallback();
+			}
+		}, 900);
+		queueFallbackTimer(() => {
+			const slideTwoOpacity = Number.parseFloat(
+				slide2[0] ? getComputedStyle(slide2[0]).opacity : "0",
+			);
+			if (slideTwoOpacity < 0.05) {
+				startTimelineFallback(true);
+			}
+		}, 4200);
+
 		const prefersReducedMotion = window.matchMedia(
 			"(prefers-reduced-motion: reduce)",
 		).matches;
@@ -344,11 +506,13 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					});
 				}, LOGO_FLOAT_DELAY_MS);
 
-		// Belt-and-braces: guarantee completion even if a tween never settles.
 		const safety = window.setTimeout(finishOnce, SAFETY_TIMEOUT_MS);
 
 		return () => {
 			window.clearTimeout(safety);
+			for (const timer of fallbackTimers) {
+				window.clearTimeout(timer);
+			}
 			if (logoFloatDelay !== undefined) {
 				window.clearTimeout(logoFloatDelay);
 			}
@@ -358,10 +522,12 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		};
 	}, []);
 
-	const featureRows = chunkFeatures();
-
 	return (
-		<div ref={rootRef} className="rox-anime rox-intro">
+		<div
+			ref={rootRef}
+			className="rox-anime rox-intro"
+			data-intro-fallback="pending"
+		>
 			<div className="rox-intro__logo">
 				<Image
 					src="/rox-logo-light.png"
@@ -370,11 +536,8 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 					height={213}
 					priority
 				/>
-				<span className="rox-intro__tie" aria-hidden="true" />
 			</div>
 
-			{/* Animated CPU-architecture wordmark: the sole ROX brand-lock, revealed
-			    under the logo where the lead-word collapsed (replaces a text "ROX"). */}
 			<div className="rox-intro__cpu" aria-hidden="true">
 				<CpuArchitecture text={INTRO_BRAND} />
 			</div>
@@ -399,38 +562,27 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				</div>
 
 				<div className="rox-intro__slide rox-intro__slide--two rox-intro__features">
-					{featureRows.map((row) => (
-						<div
-							key={`feature-row-${row[0]?.text ?? "empty"}`}
-							className="rox-intro__row"
-						>
-							{row.map((tag) => (
-								<p
-									key={tag.text}
-									className="rox-intro__feature"
-									style={{ color: `var(--rox-c-${tag.color})` }}
-								>
-									{tag.text}
-								</p>
-							))}
-						</div>
-					))}
-				</div>
-
-				<div className="rox-intro__slide rox-intro__slide--three">
-					<div className="rox-intro__row">
-						<p className="rox-intro__center">{INTRO_TAGLINE}</p>
+					<div ref={cloudRef} className="rox-intro__features-cloud">
+						{placedFeatures.map(({ tag, placement }) => (
+							<p
+								key={tag.id}
+								className="rox-intro__feature"
+								style={placementToStyle(placement, tag.color)}
+							>
+								{tag.text}
+							</p>
+						))}
 					</div>
 				</div>
 			</div>
 
-			<button
-				type="button"
+			<a
 				className="rox-intro__skip"
+				href="/?intro=skip"
 				onClick={() => onCompleteRef.current()}
 			>
 				Пропустить
-			</button>
+			</a>
 		</div>
 	);
 }

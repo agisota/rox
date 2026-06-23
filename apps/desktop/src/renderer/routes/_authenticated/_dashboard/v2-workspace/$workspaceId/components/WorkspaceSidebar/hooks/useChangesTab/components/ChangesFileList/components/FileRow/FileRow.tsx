@@ -13,6 +13,12 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
+import {
+	AnimatedNumber,
+	ease,
+	motionDuration,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { workspaceTrpc } from "@rox/workspace-client";
@@ -32,12 +38,6 @@ import {
 	useChangesSidebarFilePolicy,
 } from "renderer/lib/clickPolicy";
 import { FileIcon } from "renderer/lib/fileIcons";
-import {
-	AnimatedNumber,
-	ease,
-	motionDuration,
-	useShouldAnimate,
-} from "renderer/motion";
 import { DiscardConfirmDialog } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/DiscardConfirmDialog";
 import { StatusIndicator } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/StatusIndicator";
 import { PathActionsMenuItems } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/components/PathActionsMenuItems";

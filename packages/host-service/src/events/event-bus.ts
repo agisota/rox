@@ -3,6 +3,7 @@ import type { DetectedPort } from "@rox/port-scanner";
 import type { FsWatchEvent } from "@rox/workspace-fs/host";
 import type { Hono } from "hono";
 import type { HostDb } from "../db/index.ts";
+import { logger } from "../lib/logger";
 import { portManager } from "../ports/port-manager.ts";
 import { getLabelsForWorkspace } from "../ports/static-ports.ts";
 import type { WorkspaceFilesystemManager } from "../runtime/filesystem/index.ts";
@@ -44,7 +45,7 @@ function parseClientMessage(data: unknown): ClientMessage | null {
 			}
 		}
 	} catch (error) {
-		console.warn("[event-bus] malformed client message — ignored", { error });
+		logger.warn("[event-bus] malformed client message — ignored", { error });
 	}
 	return null;
 }
@@ -145,7 +146,7 @@ export class EventBus {
 			try {
 				sendMessage(socket, message);
 			} catch (error) {
-				console.error("[event-bus:send] socket failed — dropping", { error });
+				logger.error("[event-bus:send] socket failed — dropping", { error });
 				dead.push(socket);
 			}
 		}
@@ -273,7 +274,7 @@ export class EventBus {
 		const dispose = () => {
 			disposed = true;
 			void iterator?.return?.().catch((error: unknown) => {
-				console.error("[event-bus] fs watcher cleanup failed:", {
+				logger.error("[event-bus] fs watcher cleanup failed:", {
 					workspaceId,
 					error,
 				});
@@ -298,7 +299,7 @@ export class EventBus {
 				}
 			} catch (error) {
 				if (disposed) return;
-				console.error("[event-bus] fs stream failed:", {
+				logger.error("[event-bus] fs stream failed:", {
 					workspaceId,
 					error,
 				});

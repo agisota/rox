@@ -1,5 +1,6 @@
 import os from "node:os";
 import { app } from "electron";
+import { logger } from "main/lib/logger";
 import pidusage from "pidusage";
 import {
 	captureProcessSnapshot,
@@ -216,7 +217,7 @@ export async function collectResourceMetrics(
 		organizationId: options.organizationId,
 	})
 		.catch((error) => {
-			console.warn(
+			logger.warn(
 				"[resource-metrics] Failed to collect resource metrics; returning a safe fallback snapshot",
 				error,
 			);

@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -42,7 +43,7 @@ export function verifySignedState(
 ): { organizationId: string; userId: string } | null {
 	const [payloadB64, providedSig] = state.split(".");
 	if (!payloadB64 || !providedSig) {
-		console.error("[oauth-state] Invalid state format");
+		logger.error("[oauth-state] Invalid state format");
 		return null;
 	}
 
@@ -57,7 +58,7 @@ export function verifySignedState(
 		providedBuf.length !== expectedBuf.length ||
 		!timingSafeEqual(providedBuf, expectedBuf)
 	) {
-		console.error("[oauth-state] Signature verification failed");
+		logger.error("[oauth-state] Signature verification failed");
 		return null;
 	}
 
@@ -66,20 +67,20 @@ export function verifySignedState(
 	try {
 		payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
 	} catch {
-		console.error("[oauth-state] Failed to parse payload");
+		logger.error("[oauth-state] Failed to parse payload");
 		return null;
 	}
 
 	const parsed = statePayloadSchema.safeParse(payload);
 	if (!parsed.success) {
-		console.error("[oauth-state] Invalid payload schema");
+		logger.error("[oauth-state] Invalid payload schema");
 		return null;
 	}
 
 	// Check timestamp (replay protection)
 	const age = Date.now() - parsed.data.timestamp;
 	if (age < 0 || age > STATE_TTL_MS) {
-		console.error("[oauth-state] State expired");
+		logger.error("[oauth-state] State expired");
 		return null;
 	}
 

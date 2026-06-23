@@ -1,0 +1,20 @@
+{
+	"name": "rox-email-inbound-worker",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Cloudflare Email Worker (D3): catch-all *@rox.one ingest → R2 + signed POST to /api/mail/inbound. STANDALONE — not part of the Rox bun/turbo workspace; deploy manually with wrangler. DO NOT auto-deploy.",
+	"type": "module",
+	"scripts": {
+		"dev": "wrangler dev",
+		"deploy": "wrangler deploy",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"postal-mime": "2.4.4"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "4.20250620.0",
+		"typescript": "5.9.2",
+		"wrangler": "4.20.0"
+	}
+}

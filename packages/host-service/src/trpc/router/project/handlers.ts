@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
+import { getErrorMessage } from "@rox/shared/error";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { projects } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import type { HostServiceContext } from "../../../types";
 import { ensureMainWorkspaceStrict } from "./utils/ensure-main-workspace";
 import { persistLocalProject } from "./utils/persist-project";
@@ -59,7 +61,7 @@ interface CreateResult {
 const SLUG_CONFLICT_MESSAGE = "Project slug already exists";
 
 function isSlugConflict(err: unknown): boolean {
-	const message = err instanceof Error ? err.message : String(err);
+	const message = getErrorMessage(err);
 	return message === SLUG_CONFLICT_MESSAGE;
 }
 
@@ -83,7 +85,7 @@ async function createCloudProjectWithSlugRetry(
 		} catch (err) {
 			if (!isSlugConflict(err)) throw err;
 			lastError = err;
-			console.warn("[project.create] slug conflict, retrying", {
+			logger.warn("[project.create] slug conflict, retrying", {
 				organizationId: ctx.organizationId,
 				name: args.name,
 				slug,
@@ -158,7 +160,7 @@ async function persistFromResolved(
 					id: projectId,
 				});
 			} catch (cleanupErr) {
-				console.warn(
+				logger.warn(
 					"[project.create] cloud rollback failed; orphan cloud row may remain",
 					{ projectId, cleanupErr },
 				);
@@ -168,7 +170,7 @@ async function persistFromResolved(
 			try {
 				ctx.db.delete(projects).where(eq(projects.id, projectId)).run();
 			} catch (cleanupErr) {
-				console.warn("[project.create] local rollback failed", {
+				logger.warn("[project.create] local rollback failed", {
 					projectId,
 					cleanupErr,
 				});
@@ -178,7 +180,7 @@ async function persistFromResolved(
 			try {
 				rmSync(args.resolved.repoPath, { recursive: true, force: true });
 			} catch (cleanupErr) {
-				console.warn("[project.create] repo dir cleanup failed", {
+				logger.warn("[project.create] repo dir cleanup failed", {
 					repoPath: args.resolved.repoPath,
 					cleanupErr,
 				});

@@ -1,4 +1,5 @@
 import type { RendererContext } from "@rox/panes";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import {
 	type ReactNode,
@@ -9,9 +10,8 @@ import {
 } from "react";
 import { LuCheck } from "react-icons/lu";
 import { CommentMarkdown } from "renderer/components/CommentMarkdown";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
-import { ease, motionDuration } from "renderer/motion/tokens";
-import { useShouldAnimate } from "renderer/motion/useMotionPreference";
 import type { CommentPaneData, PaneViewerData } from "../../../../types";
 import "./comment-pane.css";
 
@@ -105,7 +105,7 @@ function CopyableTable({ children }: { children?: ReactNode }) {
 				}, 1500);
 			})
 			.catch((err) => {
-				console.warn("Failed to copy table text", err);
+				logger.warn("Failed to copy table text", err);
 			});
 	}, []);
 

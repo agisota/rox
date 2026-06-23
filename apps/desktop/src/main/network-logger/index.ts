@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { app, session } from "electron";
+import { logger } from "main/lib/logger";
 
 const PARTITION = "persist:rox";
 const CURRENT_FILE = "current.json";
@@ -87,7 +88,7 @@ export async function startNetworkLogger(): Promise<void> {
 		maxFileSize: MAX_FILE_BYTES,
 	});
 	started = true;
-	console.log("[network-logger] recording to", logPath);
+	logger.info("[network-logger] recording to", logPath);
 }
 
 export async function stopNetworkLogger(): Promise<void> {
@@ -96,6 +97,6 @@ export async function stopNetworkLogger(): Promise<void> {
 		await session.fromPartition(PARTITION).netLog.stopLogging();
 		started = false;
 	} catch (error) {
-		console.warn("[network-logger] stopLogging failed:", error);
+		logger.warn("[network-logger] stopLogging failed:", error);
 	}
 }

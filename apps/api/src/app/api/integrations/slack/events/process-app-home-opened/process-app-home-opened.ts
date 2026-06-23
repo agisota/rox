@@ -2,6 +2,7 @@ import { db } from "@rox/db/client";
 import { integrationConnections, usersSlackUsers } from "@rox/db/schema";
 import { isIntegrationSecretDecodeError } from "@rox/trpc/integration-secret";
 import { and, desc, eq, isNull } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 import { generateConnectUrl } from "../utils/generate-connect-url";
 import { createSlackClient } from "../utils/slack-client";
 import { buildHomeView } from "./build-home-view";
@@ -29,7 +30,7 @@ export async function processAppHomeOpened({
 	});
 
 	if (!connection) {
-		console.error(
+		logger.error(
 			"[slack/process-app-home-opened] No connection found for team:",
 			teamId,
 		);
@@ -56,7 +57,7 @@ export async function processAppHomeOpened({
 		slack = createSlackClient(connection.accessToken);
 	} catch (error) {
 		if (isIntegrationSecretDecodeError(error)) {
-			console.error(
+			logger.error(
 				"[slack/process-app-home-opened] Stored Slack token is unreadable",
 				{
 					connectionId: connection.id,

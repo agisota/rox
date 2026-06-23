@@ -1,10 +1,11 @@
 export {
-	buildCustomProviderModel,
+	buildCustomProviderModels,
 	CUSTOM_PROVIDER_DISPLAY_NAME,
+	CUSTOM_PROVIDER_WIRE_PREFIX,
 	filterModelsByActivation,
 	getActivatedProviderIds,
 	isCustomProviderModel,
 	type ProviderAuthStatuses,
 	providerDisplayNameToId,
-	withCustomProviderModel,
+	withCustomProviderModels,
 } from "./providerActivation";

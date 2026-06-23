@@ -4,10 +4,12 @@ import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import type { HostDb } from "../../../db";
 import { hostAgentConfigs } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import { createTerminalSessionInternal } from "../../../terminal/terminal";
 import type { HostServiceContext } from "../../../types";
 import { protectedProcedure, router } from "../../index";
 import { resolveAttachmentPath } from "../attachments/storage";
+import { runAgentAndCapture } from "./agent-run-capture";
 
 interface ResolvedHostAgentConfig {
 	id: string;
@@ -156,11 +158,20 @@ export interface AgentRunInput {
 	workspaceId: string;
 	agent: string;
 	prompt: string;
+	maxTurns?: number;
 	attachmentIds?: string[];
 }
 
 export type AgentRunResult =
-	| { kind: "terminal"; sessionId: string; label: string }
+	| {
+			kind: "terminal";
+			sessionId: string;
+			label: string;
+			/** The exact shell command queued into the pty (incl. env overlay). The
+			 * shell echoes this back before running it; the capture path strips that
+			 * echoed line so it doesn't leak into the threaded output. */
+			command: string;
+	  }
 	| { kind: "chat"; sessionId: string; label: string };
 
 const ROX_AGENT_ID = "rox";
@@ -214,7 +225,7 @@ async function runChatAgent(
 			},
 		})
 		.catch((error) => {
-			console.error(
+			logger.error(
 				`[runChatAgent] sendMessage failed for ${sessionId}:`,
 				error,
 			);
@@ -271,6 +282,7 @@ async function runTerminalAgent(
 		kind: "terminal",
 		sessionId: result.terminalId,
 		label: config.label,
+		command: fullCommand,
 	};
 }
 
@@ -295,4 +307,22 @@ export const agentsRouter = router({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => runAgentInWorkspace(ctx, input)),
+
+	/**
+	 * Blocking variant of {@link agentsRouter.run} for Agent Pipelines: start the
+	 * agent, wait for it to settle, and return its captured output so the cloud
+	 * pipeline executor can thread it into the run's accumulating context. See
+	 * `./agent-run-capture` (host side) and `agent-run-host-bridge` (cloud side).
+	 */
+	runAndCapture: protectedProcedure
+		.input(
+			z.object({
+				workspaceId: z.string().uuid(),
+				agent: z.string().min(1),
+				prompt: z.string().min(1),
+				maxTurns: z.number().int().positive().max(200).default(8),
+				attachmentIds: z.array(z.string().uuid()).optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => runAgentAndCapture(ctx, input)),
 });

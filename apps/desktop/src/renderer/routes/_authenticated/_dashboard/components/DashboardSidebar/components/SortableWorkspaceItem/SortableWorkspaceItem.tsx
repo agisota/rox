@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
-import { useShouldAnimate } from "renderer/motion";
 import type { DashboardSidebarWorkspace } from "../../types";
 import { DashboardSidebarWorkspaceItem } from "../DashboardSidebarWorkspaceItem";
 

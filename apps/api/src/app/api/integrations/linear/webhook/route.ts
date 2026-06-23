@@ -1,4 +1,3 @@
-import type { EntityWebhookPayloadWithIssueData } from "@linear/sdk/webhooks";
 import {
 	LINEAR_WEBHOOK_SIGNATURE_HEADER,
 	LinearWebhookClient,
@@ -13,21 +12,182 @@ import {
 	users,
 	webhookEvents,
 } from "@rox/db/schema";
-import { mapPriorityFromLinear } from "@rox/trpc/integrations/linear";
+import {
+	getLinearClient,
+	mapPriorityFromLinear,
+} from "@rox/trpc/integrations/linear";
+import { Client as QstashClient } from "@upstash/qstash";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
 import { env } from "@/env";
+import { apiError } from "@/lib/api-response";
+import { logger } from "@/lib/logger";
+import { syncWorkflowStates } from "../jobs/initial-sync/syncWorkflowStates";
 
 const webhookClient = new LinearWebhookClient(env.LINEAR_WEBHOOK_SECRET);
+const qstash = new QstashClient({ token: env.QSTASH_TOKEN });
+
+/**
+ * Raised when an Issue webhook references a Linear workflow state that is not in
+ * `task_statuses` even after an on-demand `syncWorkflowStates` pass. Throwing
+ * (instead of returning "skipped") routes the event into the `webhookEvents`
+ * failure path: the row is marked `failed` + retryable and the request returns
+ * a non-2xx so the drop is observable and redelivered, never silent (SUPER-237).
+ */
+class UnresolvedWorkflowStateError extends Error {
+	constructor(stateId: string) {
+		super(`Linear workflow state ${stateId} unresolved after sync`);
+		this.name = "UnresolvedWorkflowStateError";
+	}
+}
+
+/**
+ * Look up the local task-status row for a Linear workflow state. Returns the row
+ * id (the only field the caller needs) or `null` when the state is not synced.
+ */
+async function findTaskStatusId(
+	organizationId: string,
+	stateId: string,
+): Promise<string | null> {
+	const taskStatus = await db.query.taskStatuses.findFirst({
+		where: and(
+			eq(taskStatuses.organizationId, organizationId),
+			eq(taskStatuses.externalProvider, "linear"),
+			eq(taskStatuses.externalId, stateId),
+		),
+	});
+	return taskStatus?.id ?? null;
+}
+
+/**
+ * Resolve a Linear workflow state to a local task-status id, self-healing when
+ * the state is unknown.
+ *
+ * SUPER-237: a brand-new Linear workflow state arrives via webhook before the
+ * periodic sync has imported it. Previously the handler logged a warning and
+ * returned "skipped", silently dropping the status update until the next sync.
+ * Now we run the existing `syncWorkflowStates` upsert on demand and retry the
+ * lookup so the update is applied in-band. The upsert is idempotent, so this is
+ * safe under webhook retries / concurrent deliveries. If the state is still
+ * unresolved (or there is no live Linear connection to sync with), we enqueue an
+ * initial-sync job as a durable fallback and throw so the failure is logged and
+ * retried instead of dropped.
+ */
+async function resolveTaskStatusId(
+	organizationId: string,
+	stateId: string,
+): Promise<string> {
+	const existing = await findTaskStatusId(organizationId, stateId);
+	if (existing) {
+		return existing;
+	}
+
+	logger.warn(
+		`[linear/webhook] Unknown workflow state ${stateId} for org ${organizationId}; running on-demand syncWorkflowStates`,
+	);
+
+	const client = await getLinearClient(organizationId);
+	if (client) {
+		await syncWorkflowStates({ client, organizationId });
+		const afterSync = await findTaskStatusId(organizationId, stateId);
+		if (afterSync) {
+			return afterSync;
+		}
+	}
+
+	// Still unresolved: fail loud + enqueue a durable sync so the state is
+	// eventually imported and the redelivered webhook can succeed.
+	await enqueueInitialSync(organizationId);
+	logger.error(
+		`[linear/webhook] Workflow state ${stateId} unresolved after sync for org ${organizationId} (client=${client ? "present" : "missing"}); enqueued initial-sync and failing for retry`,
+	);
+	throw new UnresolvedWorkflowStateError(stateId);
+}
+
+/**
+ * Best-effort enqueue of the initial-sync job (which itself runs
+ * `syncWorkflowStates`). Failures here must not mask the original
+ * unresolved-state failure, so they are logged and swallowed.
+ */
+async function enqueueInitialSync(organizationId: string): Promise<void> {
+	const connection = await db.query.integrationConnections.findFirst({
+		where: and(
+			eq(integrationConnections.organizationId, organizationId),
+			eq(integrationConnections.provider, "linear"),
+			isNull(integrationConnections.disconnectedAt),
+		),
+	});
+	if (!connection) {
+		return;
+	}
+	try {
+		await qstash.publishJSON({
+			url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/linear/jobs/initial-sync`,
+			body: {
+				organizationId,
+				creatorUserId: connection.connectedByUserId,
+			},
+			retries: 3,
+			deduplicationId: `linear-initial-sync-${organizationId}`,
+		});
+	} catch (error) {
+		logger.error(
+			"[linear/webhook] Failed to enqueue fallback initial-sync job:",
+			error,
+		);
+	}
+}
+
+/**
+ * Shape of an Issue webhook's `data` field that `processIssueEvent` actually
+ * reads. Linear adds fields freely and many are optional/nullable, so the
+ * schema is intentionally permissive (`.passthrough()`, generous optionals) and
+ * only asserts the fields we depend on before writing to the DB. This replaces
+ * the previous unchecked `as EntityWebhookPayloadWithIssueData` cast.
+ */
+const linearIssueDataSchema = z
+	.object({
+		id: z.string(),
+		identifier: z.string(),
+		title: z.string(),
+		description: z.string().nullish(),
+		url: z.string(),
+		createdAt: z.union([z.string(), z.date()]),
+		priority: z.number(),
+		estimate: z.number().nullish(),
+		dueDate: z.union([z.string(), z.date()]).nullish(),
+		startedAt: z.union([z.string(), z.date()]).nullish(),
+		completedAt: z.union([z.string(), z.date()]).nullish(),
+		state: z.object({ id: z.string() }).passthrough(),
+		assignee: z
+			.object({
+				id: z.string(),
+				email: z.string().nullish(),
+				name: z.string().nullish(),
+				avatarUrl: z.string().nullish(),
+			})
+			.passthrough()
+			.nullish(),
+		labels: z.array(z.object({ name: z.string() }).passthrough()).default([]),
+	})
+	.passthrough();
+
+type LinearIssueData = z.infer<typeof linearIssueDataSchema>;
 
 export async function POST(request: Request) {
 	const body = await request.text();
 	const signature = request.headers.get(LINEAR_WEBHOOK_SIGNATURE_HEADER);
 
 	if (!signature) {
-		return Response.json({ error: "Missing signature" }, { status: 401 });
+		return apiError("Missing signature", 401);
 	}
 
 	const payload = webhookClient.parseData(Buffer.from(body), signature);
+
+	if (!payload.type) {
+		logger.error("[linear/webhook] Missing event type");
+		return apiError("Missing event type", 400);
+	}
 
 	const connections = await db.query.integrationConnections.findMany({
 		where: and(
@@ -39,7 +199,7 @@ export async function POST(request: Request) {
 	});
 
 	if (connections.length === 0) {
-		console.log(
+		logger.info(
 			"[linear/webhook] No active connections for Linear org:",
 			payload.organizationId,
 		);
@@ -59,7 +219,7 @@ export async function POST(request: Request) {
 	const anyFailed = results.some((r) => r.outcome === "failed");
 	const allFailed = results.every((r) => r.outcome === "failed");
 	if (anyFailed) {
-		console.error("[linear/webhook] processing failures:", results);
+		logger.error("[linear/webhook] processing failures:", results);
 	}
 	return Response.json(
 		{
@@ -124,10 +284,20 @@ async function processForConnection(
 		let outcome: "processed" | "skipped" = "processed";
 
 		if (payload.type === "Issue") {
-			outcome = await processIssueEvent(
-				payload as EntityWebhookPayloadWithIssueData,
-				connection,
-			);
+			const parsedIssue = linearIssueDataSchema.safeParse(payload.data);
+			if (!parsedIssue.success) {
+				logger.error(
+					"[linear/webhook] Malformed Issue payload, skipping",
+					parsedIssue.error.issues,
+				);
+				outcome = "skipped";
+			} else {
+				outcome = await processIssueEvent(
+					payload.action,
+					parsedIssue.data,
+					connection,
+				);
+			}
 		}
 
 		await db
@@ -152,29 +322,18 @@ async function processForConnection(
 }
 
 async function processIssueEvent(
-	payload: EntityWebhookPayloadWithIssueData,
+	action: string,
+	issue: LinearIssueData,
 	connection: SelectIntegrationConnection,
-): Promise<"processed" | "skipped"> {
-	const issue = payload.data;
-
-	if (payload.action === "create" || payload.action === "update") {
-		const taskStatus = await db.query.taskStatuses.findFirst({
-			where: and(
-				eq(taskStatuses.organizationId, connection.organizationId),
-				eq(taskStatuses.externalProvider, "linear"),
-				eq(taskStatuses.externalId, issue.state.id),
-			),
-		});
-
-		if (!taskStatus) {
-			// TODO(SUPER-237): Handle new workflow states in webhooks by triggering syncWorkflowStates
-			// Currently webhooks silently fail when Linear has new statuses that aren't synced yet.
-			// Should either: (1) trigger workflow state sync and retry, (2) queue for retry, or (3) keep periodic sync only
-			console.warn(
-				`[webhook] Status not found for state ${issue.state.id}, skipping update`,
-			);
-			return "skipped";
-		}
+): Promise<"processed"> {
+	if (action === "create" || action === "update") {
+		// SUPER-237: resolve the local status, self-healing via syncWorkflowStates
+		// when Linear sends a state we have not imported yet. Throws (handled by
+		// the caller's failure path) instead of silently dropping the update.
+		const statusId = await resolveTaskStatusId(
+			connection.organizationId,
+			issue.state.id,
+		);
 
 		let assigneeId: string | null = null;
 		if (issue.assignee?.email) {
@@ -207,7 +366,7 @@ async function processIssueEvent(
 			slug: issue.identifier,
 			title: issue.title,
 			description: issue.description ?? null,
-			statusId: taskStatus.id,
+			statusId,
 			priority: mapPriorityFromLinear(issue.priority),
 			assigneeId,
 			assigneeExternalId,
@@ -241,7 +400,7 @@ async function processIssueEvent(
 				],
 				set: { ...taskData, syncError: null },
 			});
-	} else if (payload.action === "remove") {
+	} else if (action === "remove") {
 		await db
 			.update(tasks)
 			.set({ deletedAt: new Date() })

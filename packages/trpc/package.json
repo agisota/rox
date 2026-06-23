@@ -27,20 +27,29 @@
 		"./integration-secret": {
 			"types": "./src/lib/integrations/secret-store.ts",
 			"default": "./src/lib/integrations/secret-store.ts"
+		},
+		"./drive-economy": {
+			"types": "./src/router/drive/quota.ts",
+			"default": "./src/router/drive/quota.ts"
 		}
 	},
 	"scripts": {
 		"clean": "git clean -xdf .cache .turbo dist node_modules",
-		"test": "bun test",
+		"test": "bun test --isolate",
 		"typecheck": "tsc --noEmit --emitDeclarationOnly false"
 	},
 	"dependencies": {
 		"@linear/sdk": "68.1.1",
 		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
+		"@rox/collab": "workspace:*",
+		"@rox/comms-core": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/host-provisioner": "workspace:*",
+		"@rox/rtc": "workspace:*",
+		"@rox/runtime-clients": "workspace:*",
 		"@rox/shared": "workspace:*",
+		"@rox/storage": "workspace:*",
 		"@rox/workflow-core": "workspace:*",
 		"@rox/workflow-runtime": "workspace:*",
 		"@t3-oss/env-core": "0.13.11",
@@ -51,7 +60,7 @@
 		"@vercel/blob": "2.3.2",
 		"@vercel/kv": "3.0.0",
 		"drizzle-orm": "0.45.2",
-		"posthog-node": "5.28.8",
+		"posthog-node": "5.38.0",
 		"resend": "4.8.0",
 		"superjson": "2.2.6",
 		"zod": "4.3.6"

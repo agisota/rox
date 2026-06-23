@@ -1,7 +1,15 @@
 import type { RendererContext } from "@rox/panes";
 import { cn } from "@rox/ui/utils";
 import { workspaceTrpc } from "@rox/workspace-client";
+import { logger } from "renderer/lib/logger";
 import "@xterm/xterm/css/xterm.css";
+import {
+	ease,
+	motionDuration,
+	ShellReadyPulse,
+	SweepIndicator,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import {
 	useCallback,
@@ -25,13 +33,6 @@ import {
 	terminalRuntimeRegistry,
 } from "renderer/lib/terminal/terminal-runtime-registry";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
-import {
-	ease,
-	motionDuration,
-	ShellReadyPulse,
-	SweepIndicator,
-	useShouldAnimate,
-} from "renderer/motion";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import type {
 	PaneViewerData,
@@ -303,7 +304,7 @@ export function TerminalPane({
 					event.preventDefault();
 					if (action === "external") {
 						electronTrpcClient.external.openUrl.mutate(url).catch((error) => {
-							console.error("[v2 Terminal] Failed to open URL:", url, error);
+							logger.error("[v2 Terminal] Failed to open URL:", url, error);
 						});
 					} else {
 						openUrlInV2Workspace({

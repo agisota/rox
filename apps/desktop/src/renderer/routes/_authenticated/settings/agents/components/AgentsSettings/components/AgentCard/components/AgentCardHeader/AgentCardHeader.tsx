@@ -1,5 +1,6 @@
 import type { ResolvedAgentConfig } from "@rox/shared/agent-settings";
 import { CardDescription, CardHeader, CardTitle } from "@rox/ui/card";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { Switch } from "@rox/ui/switch";
 import { motion } from "framer-motion";
 import { ChevronDownIcon } from "lucide-react";
@@ -7,7 +8,6 @@ import {
 	getPresetIcon,
 	useIsDarkTheme,
 } from "renderer/assets/app-icons/preset-icons";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 
 interface AgentCardHeaderProps {
 	preset: ResolvedAgentConfig;

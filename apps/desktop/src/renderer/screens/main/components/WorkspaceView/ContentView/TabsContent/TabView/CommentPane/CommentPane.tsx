@@ -24,6 +24,7 @@ import {
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
+import { logger } from "renderer/lib/logger";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { useTheme } from "renderer/stores/theme";
@@ -82,7 +83,7 @@ export function CommentPane({
 				}, 1500);
 			})
 			.catch((err) => {
-				console.warn("Failed to copy comment text", err);
+				logger.warn("Failed to copy comment text", err);
 			});
 	}, [comment]);
 
@@ -328,7 +329,7 @@ function CopyableTable({ children }: { children?: ReactNode }) {
 				}, 1500);
 			})
 			.catch((err) => {
-				console.warn("Failed to copy table text", err);
+				logger.warn("Failed to copy table text", err);
 			});
 	}, []);
 

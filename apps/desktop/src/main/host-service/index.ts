@@ -21,6 +21,7 @@ import {
 import { connectRelay } from "@rox/host-service/tunnel";
 import { loadToken } from "lib/trpc/routers/auth/utils/auth-functions";
 import { writeManifest } from "main/lib/host-service-manifest";
+import { logger } from "main/lib/logger";
 import { env } from "./env";
 
 const SHUTDOWN_GRACE_MS = 3_000;
@@ -37,7 +38,7 @@ async function main(): Promise<void> {
 	const shutdown = (reason: string) => {
 		if (shuttingDown) return;
 		shuttingDown = true;
-		console.log(`[host-service] shutdown (${reason}), draining connections`);
+		logger.info(`[host-service] shutdown (${reason}), draining connections`);
 		const server = serverRef.current;
 		if (!server) {
 			process.exit(0);
@@ -124,7 +125,7 @@ async function main(): Promise<void> {
 						organizationId: env.ORGANIZATION_ID,
 					});
 				} catch (error) {
-					console.error("[host-service] Failed to write manifest:", error);
+					logger.error("[host-service] Failed to write manifest:", error);
 				}
 			}
 
@@ -154,6 +155,6 @@ function isParentAlive(parentPid: number): boolean {
 }
 
 void main().catch((error) => {
-	console.error("[host-service] Failed to start:", error);
+	logger.error("[host-service] Failed to start:", error);
 	process.exit(1);
 });

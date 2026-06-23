@@ -1,12 +1,13 @@
 import type { FitAddon } from "@xterm/addon-fit";
 import type { SearchAddon } from "@xterm/addon-search";
 import type { Terminal as XTerm } from "@xterm/xterm";
+import { logger } from "renderer/lib/logger";
 import "@xterm/xterm/css/xterm.css";
+import { RunCelebration } from "@rox/ui/motion";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { sanitizeTerminalFontFamily } from "renderer/lib/terminal/appearance";
 import { buildTerminalCommand } from "renderer/lib/terminal/launch-command";
-import { RunCelebration } from "renderer/motion";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { useTerminalTheme } from "renderer/stores/theme";
 import { SessionKilledOverlay } from "./components";
@@ -374,7 +375,7 @@ export const Terminal = memo(function Terminal({
 				handleStreamData(event);
 			},
 			onError: (error) => {
-				console.error("[Terminal] Stream subscription error:", {
+				logger.error("[Terminal] Stream subscription error:", {
 					paneId,
 					error: error instanceof Error ? error.message : String(error),
 				});

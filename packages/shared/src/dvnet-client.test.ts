@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import {
 	buildInvoiceRequest,
 	DvNetConfigError,
@@ -90,6 +90,28 @@ describe("buildInvoiceRequest", () => {
 		expect(() => buildInvoiceRequest(5, "ord-1", "")).toThrow(
 			DvNetInvoiceError,
 		);
+	});
+
+	it("rejects whitespace-only orderId", () => {
+		expect(() =>
+			buildInvoiceRequest(5, "   ", "https://example.com/cb"),
+		).toThrow(DvNetInvoiceError);
+	});
+
+	it("rejects whitespace-only callbackUrl", () => {
+		expect(() => buildInvoiceRequest(5, "ord-1", "  \t ")).toThrow(
+			DvNetInvoiceError,
+		);
+	});
+
+	it("trims surrounding whitespace from orderId and callbackUrl", () => {
+		const req = buildInvoiceRequest(
+			5,
+			"  order-abc-123  ",
+			"  https://example.com/cb  ",
+		);
+		expect(req.order_id).toBe("order-abc-123");
+		expect(req.callback_url).toBe("https://example.com/cb");
 	});
 });
 
@@ -284,6 +306,12 @@ describe("normalizeDvNetWebhook → creditConfirmedPayment integration", () => {
 // ---------------------------------------------------------------------------
 
 describe("DvNetHttpClient", () => {
+	const originalFetch = globalThis.fetch;
+
+	afterEach(() => {
+		globalThis.fetch = originalFetch;
+	});
+
 	it("throws DvNetConfigError when DVNET_API_KEY is absent", () => {
 		expect(() => new DvNetHttpClient({})).toThrow(DvNetConfigError);
 	});
@@ -304,5 +332,92 @@ describe("DvNetHttpClient", () => {
 		expect(
 			() => new DvNetHttpClient({ DVNET_API_KEY: "test-key-12345" }),
 		).not.toThrow();
+	});
+
+	it("wraps timeout failures with dv.net request context", async () => {
+		globalThis.fetch = (async () => {
+			throw new DOMException("request timed out", "TimeoutError");
+		}) as unknown as typeof fetch;
+
+		const client = new DvNetHttpClient({ DVNET_API_KEY: "test-key-12345" });
+		await expect(client.getPayment("chg_timeout")).rejects.toThrow(
+			"dv.net GET /charges/chg_timeout timed out after 10000ms",
+		);
+	});
+
+	it("createInvoice POSTs and returns the charge id + checkout URL", async () => {
+		let captured: { url: string; init: RequestInit } | undefined;
+		globalThis.fetch = (async (url: string, init: RequestInit) => {
+			captured = { url, init };
+			return new Response(
+				JSON.stringify({ id: "chg_new", checkout_url: "https://pay.dv.net/x" }),
+				{ status: 200, headers: { "content-type": "application/json" } },
+			);
+		}) as unknown as typeof fetch;
+
+		const client = new DvNetHttpClient({
+			DVNET_API_KEY: "test-key-12345",
+			DVNET_API_URL: "https://api.dv.net/v1",
+		});
+		const result = await client.createInvoice(
+			buildInvoiceRequest(5, "order-1", "https://example.com/cb"),
+		);
+
+		expect(result).toEqual({
+			invoiceId: "chg_new",
+			checkoutUrl: "https://pay.dv.net/x",
+		});
+		expect(captured?.url).toBe("https://api.dv.net/v1/charges");
+		expect(captured?.init.method).toBe("POST");
+	});
+
+	it("createInvoice falls back to `url` when `checkout_url` is absent", async () => {
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({ id: "chg_2", url: "https://pay/y" }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			})) as unknown as typeof fetch;
+
+		const client = new DvNetHttpClient({ DVNET_API_KEY: "k" });
+		const result = await client.createInvoice(
+			buildInvoiceRequest(1, "o", "https://cb"),
+		);
+		expect(result.checkoutUrl).toBe("https://pay/y");
+	});
+
+	it("createInvoice throws when the response has no charge id", async () => {
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({ checkout_url: "https://pay/z" }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			})) as unknown as typeof fetch;
+
+		const client = new DvNetHttpClient({ DVNET_API_KEY: "k" });
+		await expect(
+			client.createInvoice(buildInvoiceRequest(1, "o", "https://cb")),
+		).rejects.toThrow(DvNetInvoiceError);
+	});
+
+	it("createInvoice throws when the response has no checkout URL", async () => {
+		globalThis.fetch = (async () =>
+			new Response(JSON.stringify({ id: "chg_3" }), {
+				status: 200,
+				headers: { "content-type": "application/json" },
+			})) as unknown as typeof fetch;
+
+		const client = new DvNetHttpClient({ DVNET_API_KEY: "k" });
+		await expect(
+			client.createInvoice(buildInvoiceRequest(1, "o", "https://cb")),
+		).rejects.toThrow(DvNetInvoiceError);
+	});
+
+	it("createInvoice throws with context on a non-OK status", async () => {
+		globalThis.fetch = (async () =>
+			new Response("nope", { status: 500 })) as unknown as typeof fetch;
+
+		const client = new DvNetHttpClient({ DVNET_API_KEY: "k" });
+		await expect(
+			client.createInvoice(buildInvoiceRequest(1, "o", "https://cb")),
+		).rejects.toThrow("dv.net POST /charges failed with status 500");
 	});
 });

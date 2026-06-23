@@ -807,6 +807,12 @@ export const chatSessions = pgTable(
 		status: chatSessionStatus().notNull().default("active"),
 		labels: jsonb().$type<string[]>().default([]),
 		lastActiveAt: timestamp("last_active_at").notNull().defaultNow(),
+		// Per-session skill-learning marker (journal-memory epic, phase 2). NULL
+		// until the */5 reconcile (`/api/memory/learn`) has extracted durable
+		// memories from this session's transcript; set to the run timestamp once
+		// learned so a session is never double-extracted. Distinct from
+		// `lastActiveAt` (activity) and `status` (active|archived lifecycle).
+		learnedAt: timestamp("learned_at"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
 			.notNull()
@@ -820,6 +826,12 @@ export const chatSessions = pgTable(
 		index("chat_sessions_org_status_idx").on(
 			table.organizationId,
 			table.status,
+		),
+		// Drives the per-session-learning reconcile: scan unlearned sessions that
+		// recently went idle (`learned_at IS NULL AND last_active_at BETWEEN ...`).
+		index("chat_sessions_learned_at_last_active_idx").on(
+			table.learnedAt,
+			table.lastActiveAt,
 		),
 	],
 );

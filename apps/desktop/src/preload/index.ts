@@ -1,7 +1,14 @@
+import { logger } from "shared/logger";
 import "@sentry/electron/preload";
 
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { shouldBypassAuthForE2E } from "shared/e2e-auth-bypass";
 import { exposeElectronTRPC } from "trpc-electron/main";
+import type {
+	IpcEventChannel,
+	IpcEventChannels,
+	IpcEventListener,
+} from "./ipc-channels";
 
 declare const __APP_VERSION__: string;
 
@@ -16,44 +23,69 @@ declare global {
 }
 
 const API = {
-	sayHelloFromBridge: () => console.log("\nHello from bridgeAPI! 👋\n\n"),
+	sayHelloFromBridge: () => logger.info("\nHello from bridgeAPI! 👋\n\n"),
 	username: process.env.USER,
 	appVersion: __APP_VERSION__,
+	e2eAuthBypass: shouldBypassAuthForE2E({
+		nodeEnv: process.env.NODE_ENV,
+		flag: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS,
+		scope: process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS_SCOPE,
+	}),
 };
 
 // Store mapping of user listeners to wrapped listeners for proper cleanup
-type IpcListener = (...args: unknown[]) => void;
-const listenerMap = new WeakMap<IpcListener, IpcListener>();
+type WrappedIpcListener = (
+	event: Electron.IpcRendererEvent,
+	...args: unknown[]
+) => void;
+const listenerMap = new WeakMap<
+	IpcEventListener<IpcEventChannel>,
+	WrappedIpcListener
+>();
 
 /**
  * IPC renderer API
  * Note: Primary IPC communication uses tRPC. This API is for low-level IPC needs.
+ *
+ * `on`/`off`/`send` are typed over the enumerable {@link IpcEventChannels} map so
+ * call sites get checked channel names and payloads. `invoke` stays generic
+ * (`channel: string`) because its sole consumer is a third-party persistence
+ * adapter whose callback contract is `(channel: string, request) => Promise<...>`
+ * with a runtime-chosen channel name.
  */
 const ipcRendererAPI = {
-	// biome-ignore lint/suspicious/noExplicitAny: IPC invoke requires any for dynamic channel types
-	invoke: (channel: string, ...args: any[]) =>
+	invoke: (channel: string, ...args: unknown[]): Promise<unknown> =>
 		ipcRenderer.invoke(channel, ...args),
 
-	// biome-ignore lint/suspicious/noExplicitAny: IPC send requires any for dynamic channel types
-	send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
+	send: <K extends IpcEventChannel>(
+		channel: K,
+		...args: IpcEventChannels[K]
+	): void => ipcRenderer.send(channel, ...args),
 
-	// biome-ignore lint/suspicious/noExplicitAny: IPC listener requires any for dynamic event types
-	on: (channel: string, listener: (...args: any[]) => void) => {
-		// biome-ignore lint/suspicious/noExplicitAny: IPC event wrapper requires any
-		const wrappedListener = (_event: any, ...args: any[]) => {
-			listener(...args);
+	on: <K extends IpcEventChannel>(
+		channel: K,
+		listener: IpcEventListener<K>,
+	): void => {
+		const wrappedListener: WrappedIpcListener = (_event, ...args) => {
+			listener(...(args as IpcEventChannels[K]));
 		};
-		listenerMap.set(listener, wrappedListener);
+		listenerMap.set(
+			listener as IpcEventListener<IpcEventChannel>,
+			wrappedListener,
+		);
 		ipcRenderer.on(channel, wrappedListener);
 	},
 
-	// biome-ignore lint/suspicious/noExplicitAny: IPC listener requires any for dynamic event types
-	off: (channel: string, listener: (...args: any[]) => void) => {
-		const wrappedListener = listenerMap.get(listener as IpcListener);
+	off: <K extends IpcEventChannel>(
+		channel: K,
+		listener: IpcEventListener<K>,
+	): void => {
+		const wrappedListener = listenerMap.get(
+			listener as IpcEventListener<IpcEventChannel>,
+		);
 		if (wrappedListener) {
-			// biome-ignore lint/suspicious/noExplicitAny: Electron IPC API requires this cast
-			ipcRenderer.removeListener(channel, wrappedListener as any);
-			listenerMap.delete(listener as IpcListener);
+			ipcRenderer.removeListener(channel, wrappedListener);
+			listenerMap.delete(listener as IpcEventListener<IpcEventChannel>);
 		}
 	},
 };

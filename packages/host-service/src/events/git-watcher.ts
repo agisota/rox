@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import type { FsWatchEvent } from "@rox/workspace-fs/host";
 import type { HostDb } from "../db/index.ts";
 import { workspaces } from "../db/schema.ts";
+import { logger } from "../lib/logger";
 import type { WorkspaceFilesystemManager } from "../runtime/filesystem/index.ts";
 
 const execFileAsync = promisify(execFile);
@@ -153,7 +154,7 @@ export class GitWatcher {
 					try {
 						listener(event);
 					} catch (error) {
-						console.error("[git-watcher:listener] threw — contained", {
+						logger.error("[git-watcher:listener] threw — contained", {
 							error,
 						});
 					}
@@ -278,7 +279,7 @@ export class GitWatcher {
 			});
 			iterator = stream[Symbol.asyncIterator]();
 		} catch (error) {
-			console.error("[git-watcher] failed to start worktree watch:", {
+			logger.error("[git-watcher] failed to start worktree watch:", {
 				workspaceId,
 				error,
 			});
@@ -325,7 +326,7 @@ export class GitWatcher {
 				}
 			} catch (error) {
 				if (!disposed) {
-					console.error("[git-watcher] worktree watch stream failed:", {
+					logger.error("[git-watcher] worktree watch stream failed:", {
 						workspaceId,
 						error,
 					});

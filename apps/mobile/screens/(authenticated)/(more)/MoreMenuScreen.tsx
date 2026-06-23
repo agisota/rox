@@ -1,9 +1,15 @@
 import { useLiveQuery } from "@tanstack/react-db";
+import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
+import type { LucideIcon } from "lucide-react-native";
 import {
 	ArrowLeftRight,
+	CalendarDays,
 	ChevronRight,
+	FolderOpen,
 	LogOut,
+	Mail,
+	NotebookText,
 	Settings,
 } from "lucide-react-native";
 import { useState } from "react";
@@ -16,6 +22,35 @@ import { Text } from "@/components/ui/text";
 import { useSignOut } from "@/hooks/useSignOut";
 import { authClient } from "@/lib/auth/client";
 import { useCollections } from "@/screens/(authenticated)/providers/CollectionsProvider";
+
+interface SuiteItem {
+	label: string;
+	icon: LucideIcon;
+	href: Href;
+}
+
+const SUITE_ITEMS: SuiteItem[] = [
+	{
+		label: "Drive",
+		icon: FolderOpen,
+		href: "/(authenticated)/(more)/drive",
+	},
+	{
+		label: "Calendar",
+		icon: CalendarDays,
+		href: "/(authenticated)/(more)/calendar",
+	},
+	{
+		label: "Notes",
+		icon: NotebookText,
+		href: "/(authenticated)/(more)/notes",
+	},
+	{
+		label: "Mail",
+		icon: Mail,
+		href: "/(authenticated)/(more)/mail",
+	},
+];
 
 export function MoreMenuScreen() {
 	const router = useRouter();
@@ -98,6 +133,31 @@ export function MoreMenuScreen() {
 								))}
 							</>
 						)}
+					</View>
+				</View>
+
+				{/* Workspace suite */}
+				<View className="gap-2">
+					<Text className="text-xs font-medium text-muted-foreground uppercase px-2">
+						Workspace
+					</Text>
+					<View className="rounded-xl bg-card">
+						{SUITE_ITEMS.map((item, index) => (
+							<View key={item.label}>
+								{index > 0 ? <Separator /> : null}
+								<Pressable
+									onPress={() => router.push(item.href)}
+									className="flex-row items-center gap-3 px-4 py-3"
+								>
+									<Icon as={item.icon} className="text-foreground size-5" />
+									<Text className="text-base flex-1">{item.label}</Text>
+									<Icon
+										as={ChevronRight}
+										className="text-muted-foreground size-5"
+									/>
+								</Pressable>
+							</View>
+						))}
 					</View>
 				</View>
 

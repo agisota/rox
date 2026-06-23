@@ -1,7 +1,9 @@
 import type { SettingsSection } from "renderer/stores/settings-state";
+import { matchSettings } from "./matcher";
 
 export const SETTING_ITEM_ID = {
 	ACCOUNT_PROFILE: "account-profile",
+	ACCOUNT_IDENTITY: "account-identity",
 	ACCOUNT_USAGE: "account-usage",
 	ACCOUNT_SIGNOUT: "account-signout",
 
@@ -63,6 +65,7 @@ export const SETTING_ITEM_ID = {
 
 	EXPERIMENTAL_V1_MIGRATION: "experimental-v1-migration",
 	EXPERIMENTAL_RERUN_ONBOARDING: "experimental-rerun-onboarding",
+	EXPERIMENTAL_TEAM_OS: "experimental-team-os",
 
 	INTEGRATIONS_LINEAR: "integrations-linear",
 	INTEGRATIONS_GITHUB: "integrations-github",
@@ -124,6 +127,7 @@ export type SettingVariant = "v1" | "v2" | "shared";
 
 export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.ACCOUNT_PROFILE]: "shared",
+	[SETTING_ITEM_ID.ACCOUNT_IDENTITY]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_USAGE]: "shared",
 	[SETTING_ITEM_ID.ACCOUNT_SIGNOUT]: "shared",
 
@@ -186,6 +190,7 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 
 	[SETTING_ITEM_ID.EXPERIMENTAL_V1_MIGRATION]: "v2",
 	[SETTING_ITEM_ID.EXPERIMENTAL_RERUN_ONBOARDING]: "v2",
+	[SETTING_ITEM_ID.EXPERIMENTAL_TEAM_OS]: "shared",
 
 	[SETTING_ITEM_ID.INTEGRATIONS_LINEAR]: "shared",
 	[SETTING_ITEM_ID.INTEGRATIONS_GITHUB]: "shared",
@@ -257,6 +262,34 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"фото",
 			"пользователь",
 			"я",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.ACCOUNT_IDENTITY,
+		section: "account",
+		title: "Идентичность",
+		description: "Привязанные аккаунты и имя пользователя",
+		keywords: [
+			"identity",
+			"username",
+			"handle",
+			"nickname",
+			"connected accounts",
+			"linked accounts",
+			"github",
+			"telegram",
+			"twitter",
+			"x",
+			"oauth",
+			"provider",
+			"идентичность",
+			"имя пользователя",
+			"никнейм",
+			"привязанные аккаунты",
+			"связанные аккаунты",
+			"гитхаб",
+			"телеграм",
+			"провайдер",
 		],
 	},
 	{
@@ -1137,8 +1170,8 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	{
 		id: SETTING_ITEM_ID.TERMINAL_SESSIONS,
 		section: "terminal",
-		title: "Активные сеансы",
-		description: "Просмотр и управление активными сеансами терминала",
+		title: "Служба терминала",
+		description: "Управление службой терминала и активными сеансами",
 		keywords: [
 			"terminal",
 			"sessions",
@@ -1150,6 +1183,12 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"stop",
 			"manage",
 			"pty",
+			"daemon",
+			"pty daemon",
+			"supervisor",
+			"restart daemon",
+			"update daemon",
+			"background",
 			"терминал",
 			"сеансы",
 			"активные",
@@ -1158,6 +1197,11 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"процесс",
 			"остановить",
 			"управление",
+			"служба",
+			"демон",
+			"супервизор",
+			"перезапуск службы",
+			"фоновый процесс",
 		],
 	},
 	{
@@ -1463,6 +1507,44 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"модели",
 			"ключ api",
 			"подключить",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.EXPERIMENTAL_TEAM_OS,
+		section: "experimental",
+		title: "Agent-Native Team OS",
+		description:
+			"Тоглы экспериментальных функций Agent-Native, templates, Liveblocks, LiveKit, Huly и комбинированных workflow",
+		keywords: [
+			"experimental",
+			"experiments",
+			"feature flags",
+			"toggles",
+			"agent-native",
+			"agent native",
+			"templates",
+			"liveblocks",
+			"livekit",
+			"huly",
+			"collaboration",
+			"rooms",
+			"voice",
+			"project os",
+			"customer call",
+			"roadmap",
+			"source marketplace",
+			"agent participant",
+			"экспериментальное",
+			"эксперименты",
+			"флаги",
+			"тоглы",
+			"агенты",
+			"шаблоны",
+			"коллаборация",
+			"комнаты",
+			"голос",
+			"проект",
+			"роадмап",
 		],
 	},
 	{
@@ -2198,15 +2280,7 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 ];
 
 export function searchSettings(query: string): SettingsItem[] {
-	if (!query.trim()) return SETTINGS_ITEMS;
-
-	const q = query.toLowerCase();
-	return SETTINGS_ITEMS.filter(
-		(item) =>
-			item.title.toLowerCase().includes(q) ||
-			item.description.toLowerCase().includes(q) ||
-			item.keywords.some((kw) => kw.toLowerCase().includes(q)),
-	);
+	return matchSettings(query, SETTINGS_ITEMS);
 }
 
 export function getMatchCountBySection(

@@ -1,3 +1,4 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import type { Variants } from "framer-motion";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
@@ -6,7 +7,6 @@ import { BsTerminalPlus } from "react-icons/bs";
 import { LuSearch } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { useHotkeyDisplay } from "renderer/hotkeys";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import { RoxLogo } from "renderer/routes/sign-in/components/RoxLogo";
 import { EmptyTabActionButton } from "renderer/screens/main/components/WorkspaceView/ContentView/TabsContent/components/EmptyTabActionButton";
 
@@ -68,18 +68,18 @@ export function WorkspaceEmptyState({
 	const actions = useMemo<Array<WorkspaceEmptyStateAction>>(
 		() => [
 			{
-				id: "terminal",
-				label: "Открыть терминал",
-				display: newGroupDisplay,
-				icon: BsTerminalPlus,
-				onClick: onOpenTerminal,
-			},
-			{
 				id: "chat",
 				label: "Открыть чат",
 				display: newChatDisplay,
 				icon: TbMessageCirclePlus,
 				onClick: onOpenChat,
+			},
+			{
+				id: "terminal",
+				label: "Открыть терминал",
+				display: newGroupDisplay,
+				icon: BsTerminalPlus,
+				onClick: onOpenTerminal,
 			},
 			{
 				id: "browser",

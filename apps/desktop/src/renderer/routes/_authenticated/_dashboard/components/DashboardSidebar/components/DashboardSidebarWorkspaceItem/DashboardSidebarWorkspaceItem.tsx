@@ -1,12 +1,12 @@
-import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDiffStats } from "renderer/hooks/host-service/useDiffStats";
 import {
 	AnimatedHeight,
 	motionDuration,
 	motionSpring,
 	useShouldAnimate,
-} from "renderer/motion";
+} from "@rox/ui/motion";
+import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDiffStats } from "renderer/hooks/host-service/useDiffStats";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useOptimisticCollectionActions } from "renderer/routes/_authenticated/hooks/useOptimisticCollectionActions";
 import { useDeletingWorkspaces } from "renderer/routes/_authenticated/providers/DeletingWorkspacesProvider";

@@ -4,6 +4,7 @@ import {
 	BRANCH_PREFIX_MODES,
 	EXECUTION_MODES,
 	EXTERNAL_APPS,
+	experimentalFeatureOverrides,
 	FILE_OPEN_MODES,
 	NON_EDITOR_APPS,
 	settings,
@@ -40,7 +41,14 @@ import {
 	resolveAgentConfigs,
 	upsertCustomAgentDefinition,
 } from "@rox/shared/agent-settings";
+import {
+	EXPERIMENTAL_FEATURES,
+	type ExperimentalFeatureDependencyStatus,
+	isExperimentalFeatureId,
+	resolveExperimentalFeatureState,
+} from "@rox/shared/experimental-features";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { app } from "electron";
 import { env } from "main/env.main";
 import { exitImmediately } from "main/index";
@@ -49,8 +57,10 @@ import { hasCustomRingtone } from "main/lib/custom-ringtones";
 import { getHostServiceCoordinator } from "main/lib/host-service-coordinator";
 import { localDb } from "main/lib/local-db";
 import {
+	DEFAULT_AMBIENT_CAPTURE_ENABLED,
 	DEFAULT_AUTO_APPLY_DEFAULT_PRESET,
 	DEFAULT_CONFIRM_ON_QUIT,
+	DEFAULT_DICTATION_ENABLED,
 	DEFAULT_EXPOSE_HOST_SERVICE_VIA_RELAY,
 	DEFAULT_FILE_OPEN_MODE,
 	DEFAULT_OPEN_LINKS_IN_APP,
@@ -58,7 +68,9 @@ import {
 	DEFAULT_SHOW_RESOURCE_MONITOR,
 	DEFAULT_TERMINAL_LINK_BEHAVIOR,
 	DEFAULT_USE_COMPACT_TERMINAL_ADD_BUTTON,
+	DEFAULT_VOICE_AGENT_CONTEXT,
 } from "shared/constants";
+import { logger } from "shared/logger";
 import { normalizePresetProjectIds } from "shared/preset-project-targeting";
 import {
 	CUSTOM_RINGTONE_ID,
@@ -121,6 +133,66 @@ function getSettings() {
 			.get();
 	}
 	return row;
+}
+
+const EXPERIMENTAL_PROVIDER_ENV_KEYS = {
+	"agent-native": [["AGENT_NATIVE_API_KEY", "AGENT_NATIVE_URL"]],
+	"agent-native-templates": [
+		["AGENT_NATIVE_TEMPLATES_URL", "AGENT_NATIVE_TEMPLATES_TOKEN"],
+	],
+	github: [["GITHUB_TOKEN"], ["GH_TOKEN"]],
+	huly: [["HULY_API_TOKEN", "HULY_URL"]],
+	liveblocks: [["LIVEBLOCKS_SECRET_KEY", "NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY"]],
+	livekit: [
+		["LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "NEXT_PUBLIC_LIVEKIT_URL"],
+	],
+} as const;
+
+function hasConfiguredEnvKeyGroup(groups: readonly (readonly string[])[]) {
+	return groups.some((group) =>
+		group.every((key) => Boolean(process.env[key]?.trim())),
+	);
+}
+
+function readExperimentalDependencyStates(): Record<
+	string,
+	ExperimentalFeatureDependencyStatus
+> {
+	return {
+		"desktop-runtime": "configured",
+		...Object.fromEntries(
+			Object.entries(EXPERIMENTAL_PROVIDER_ENV_KEYS).map(([id, groups]) => [
+				id,
+				hasConfiguredEnvKeyGroup(groups) ? "configured" : "missing",
+			]),
+		),
+	};
+}
+
+function readExperimentalFeatureOverrides(): Record<string, boolean> {
+	const rows = localDb.select().from(experimentalFeatureOverrides).all();
+	return Object.fromEntries(rows.map((row) => [row.featureId, row.enabled]));
+}
+
+function resolveExperimentalFeatureStates() {
+	const dependencies = readExperimentalDependencyStates();
+	const overrides = readExperimentalFeatureOverrides();
+	return EXPERIMENTAL_FEATURES.map((feature) =>
+		resolveExperimentalFeatureState(feature, {
+			dependencies,
+			overrides,
+		}),
+	);
+}
+
+function assertExperimentalFeatureId(id: string) {
+	if (!isExperimentalFeatureId(id)) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `Unknown experimental feature: ${id}`,
+		});
+	}
+	return id;
 }
 
 function readRawTerminalPresets(): PresetWithUnknownMode[] {
@@ -285,6 +357,69 @@ export function getPresetsForTrigger(
 
 export const createSettingsRouter = () => {
 	return router({
+		experimentalFeatures: router({
+			list: publicProcedure.query(() => resolveExperimentalFeatureStates()),
+			get: publicProcedure
+				.input(z.object({ id: z.string() }))
+				.query(({ input }) => {
+					const id = assertExperimentalFeatureId(input.id);
+					return resolveExperimentalFeatureStates().find(
+						(state) => state.id === id,
+					);
+				}),
+			setOverride: publicProcedure
+				.input(
+					z.object({
+						id: z.string(),
+						enabled: z.boolean(),
+					}),
+				)
+				.mutation(({ input }) => {
+					const featureId = assertExperimentalFeatureId(input.id);
+					const now = Date.now();
+
+					localDb
+						.insert(experimentalFeatureOverrides)
+						.values({
+							featureId,
+							enabled: input.enabled,
+							updatedAt: now,
+							source: "user",
+						})
+						.onConflictDoUpdate({
+							target: experimentalFeatureOverrides.featureId,
+							set: {
+								enabled: input.enabled,
+								updatedAt: now,
+								source: "user",
+							},
+						})
+						.run();
+
+					return resolveExperimentalFeatureState(featureId, {
+						dependencies: readExperimentalDependencyStates(),
+						overrides: readExperimentalFeatureOverrides(),
+					});
+				}),
+			resetOverride: publicProcedure
+				.input(z.object({ id: z.string() }))
+				.mutation(({ input }) => {
+					const featureId = assertExperimentalFeatureId(input.id);
+					localDb
+						.delete(experimentalFeatureOverrides)
+						.where(eq(experimentalFeatureOverrides.featureId, featureId))
+						.run();
+
+					return resolveExperimentalFeatureState(featureId, {
+						dependencies: readExperimentalDependencyStates(),
+						overrides: readExperimentalFeatureOverrides(),
+					});
+				}),
+			resetAll: publicProcedure.mutation(() => {
+				localDb.delete(experimentalFeatureOverrides).run();
+				return resolveExperimentalFeatureStates();
+			}),
+		}),
 		getTerminalPresets: publicProcedure.query(() => {
 			const row = getSettings();
 			if (!row.terminalPresetsInitialized) {
@@ -606,7 +741,7 @@ export const createSettingsRouter = () => {
 				return storedId;
 			}
 
-			console.warn(
+			logger.warn(
 				`[settings] Invalid ringtone ID "${storedId}" found, resetting to default`,
 			);
 			localDb
@@ -1027,6 +1162,77 @@ export const createSettingsRouter = () => {
 					.onConflictDoUpdate({
 						target: settings.id,
 						set: { defaultEditor: input.editor },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		// --- Voice / ambient settings (Phase 4a) -----------------------------
+		// Plain dictation toggle (defaults on). When off, the renderer hides the
+		// mic button and disables the DICTATE hotkey.
+		getDictationEnabled: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.dictationEnabled ?? DEFAULT_DICTATION_ENABLED;
+		}),
+
+		setDictationEnabled: publicProcedure
+			.input(z.object({ enabled: z.boolean() }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, dictationEnabled: input.enabled })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { dictationEnabled: input.enabled },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		// Always-on ambient capture. Opt-in (defaults OFF) per the locked
+		// privacy decision; surfaced here for the future ambient runtime.
+		// TODO(ambient-runtime): the always-on agent runtime (later phase, gated
+		// on memory injection) must read `ambientCaptureEnabled` before capturing
+		// and feed `voiceAgentContext` into its prompt — see getVoiceAgentContext.
+		getAmbientCaptureEnabled: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.ambientCaptureEnabled ?? DEFAULT_AMBIENT_CAPTURE_ENABLED;
+		}),
+
+		setAmbientCaptureEnabled: publicProcedure
+			.input(z.object({ enabled: z.boolean() }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, ambientCaptureEnabled: input.enabled })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { ambientCaptureEnabled: input.enabled },
+					})
+					.run();
+
+				return { success: true };
+			}),
+
+		// Free-text context the user supplies in advance. Threaded into the
+		// dictation post-process today (voice.transcribe input) and consumed by
+		// the future ambient runtime.
+		getVoiceAgentContext: publicProcedure.query(() => {
+			const row = getSettings();
+			return row.voiceAgentContext ?? DEFAULT_VOICE_AGENT_CONTEXT;
+		}),
+
+		setVoiceAgentContext: publicProcedure
+			.input(z.object({ context: z.string().max(10_000) }))
+			.mutation(({ input }) => {
+				localDb
+					.insert(settings)
+					.values({ id: 1, voiceAgentContext: input.context })
+					.onConflictDoUpdate({
+						target: settings.id,
+						set: { voiceAgentContext: input.context },
 					})
 					.run();
 

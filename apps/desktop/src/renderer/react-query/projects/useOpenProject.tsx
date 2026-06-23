@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import type { ElectronRouterOutputs } from "renderer/lib/electron-trpc";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { useGitInitDialogStore } from "renderer/stores/git-init-dialog";
 import { processOpenNewResults } from "./processOpenNewResults";
 import { useOpenFromPath } from "./useOpenFromPath";
@@ -42,7 +43,7 @@ export function useOpenProject() {
 								const result = await initGitAndOpen.mutateAsync({ path });
 								projects.push(result.project);
 							} catch (error) {
-								console.error(
+								logger.error(
 									"[useOpenProject] Failed to init git:",
 									path,
 									error,

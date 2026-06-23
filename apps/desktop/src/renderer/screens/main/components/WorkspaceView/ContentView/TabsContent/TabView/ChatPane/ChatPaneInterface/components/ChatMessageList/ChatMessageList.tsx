@@ -6,10 +6,10 @@ import {
 	ConversationScrollButton,
 	useConversationContext,
 } from "@rox/ui/ai-elements/conversation";
+import { MessageRow } from "@rox/ui/motion";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef } from "react";
 import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
-import { MessageRow } from "renderer/motion";
 import type {
 	ChatMessage,
 	ChatMessageListProps,
@@ -32,6 +32,10 @@ import {
 	removeInterruptedSourceMessage,
 	resolvePendingPlanToolCallId,
 } from "./utils/messageListHelpers";
+
+// Stable empty array so memoized finalized assistant rows are not invalidated
+// by a fresh `[]` literal on every streaming render.
+const EMPTY_TOOL_PARTS: never[] = [];
 
 function ScrollAnchor({
 	questionId,
@@ -218,7 +222,8 @@ export function ChatMessageList({
 										<MessageRow key={message.id} messageId={message.id}>
 											<UserMessage
 												message={message}
-												prefixMessages={renderedMessages.slice(0, messageIndex)}
+												allMessages={renderedMessages}
+												messageIndex={messageIndex}
 												workspaceId={workspaceId}
 												workspaceCwd={workspaceCwd}
 												isEditing={editingUserMessageId === message.id}
@@ -242,7 +247,7 @@ export function ChatMessageList({
 											organizationId={organizationId}
 											workspaceCwd={workspaceCwd}
 											isStreaming={false}
-											previewToolParts={[]}
+											previewToolParts={EMPTY_TOOL_PARTS}
 											{...inlineToolStateProps}
 										/>
 									</MessageRow>
@@ -261,7 +266,7 @@ export function ChatMessageList({
 										workspaceCwd={workspaceCwd}
 										isStreaming={false}
 										isInterrupted
-										previewToolParts={[]}
+										previewToolParts={EMPTY_TOOL_PARTS}
 										{...inlineToolStateProps}
 										footer={<InterruptedFooter />}
 									/>

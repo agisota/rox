@@ -2,20 +2,15 @@ import type { LinearClient } from "@linear/sdk";
 import { buildConflictUpdateColumns, db } from "@rox/db";
 import { members, taskStatuses, tasks, users } from "@rox/db/schema";
 import { getLinearClient } from "@rox/trpc/integrations/linear";
-import { Receiver } from "@upstash/qstash";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import chunk from "lodash.chunk";
 import { z } from "zod";
 import { env } from "@/env";
+import { isQstashDevBypassAllowed, verifyQstash } from "@/lib/qstash-verify";
 import { syncWorkflowStates } from "./syncWorkflowStates";
 import { fetchAllIssues, mapIssueToTask } from "./utils";
 
 const BATCH_SIZE = 100;
-
-const receiver = new Receiver({
-	currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
-	nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
-});
 
 const payloadSchema = z.object({
 	organizationId: z.string().min(1),
@@ -23,27 +18,15 @@ const payloadSchema = z.object({
 });
 
 export async function POST(request: Request) {
-	const body = await request.text();
-	const signature = request.headers.get("upstash-signature");
-
 	// Skip signature verification in development (QStash can't reach localhost)
-	const isDev = env.NODE_ENV === "development";
-
-	if (!isDev) {
-		if (!signature) {
-			return Response.json({ error: "Missing signature" }, { status: 401 });
-		}
-
-		const isValid = await receiver.verify({
-			body,
-			signature,
-			url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/linear/jobs/initial-sync`,
-		});
-
-		if (!isValid) {
-			return Response.json({ error: "Invalid signature" }, { status: 401 });
-		}
+	const verified = await verifyQstash(request, {
+		url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/linear/jobs/initial-sync`,
+		devBypass: isQstashDevBypassAllowed(),
+	});
+	if (!verified.ok) {
+		return verified.response;
 	}
+	const { body } = verified;
 
 	const parsed = payloadSchema.safeParse(JSON.parse(body));
 	if (!parsed.success) {

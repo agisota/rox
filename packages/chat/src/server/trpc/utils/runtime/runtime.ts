@@ -3,6 +3,10 @@ import type { createTRPCClient } from "@trpc/client";
 import type { createMastraCode } from "mastracode";
 import { generateTitleFromMessage } from "../../../desktop";
 import type { ThinkingLevel } from "../../zod";
+import {
+	resolveCustomProviderRuntimeModelId,
+	withCustomProviderRuntimeEnv,
+} from "./custom-provider-runtime-env";
 
 export type RuntimeHarness = Awaited<
 	ReturnType<typeof createMastraCode>
@@ -391,6 +395,12 @@ function extractProviderMessage(error: unknown): string | null {
 export async function restartRuntimeFromUserMessage(
 	runtime: RuntimeSession,
 	input: RuntimeRestartPayload,
+	/**
+	 * Optional hook run after the (cloned) thread is active but before the edited
+	 * message is sent. Used to inject per-thread context (e.g. user memory) onto a
+	 * freshly-cloned thread that may start empty when the first message is edited.
+	 */
+	beforeSend?: () => Promise<void>,
 ): Promise<void> {
 	const threadId = runtime.harness.getCurrentThreadId();
 	if (!threadId) {
@@ -438,9 +448,13 @@ export async function restartRuntimeFromUserMessage(
 
 	const selectedModel = input.metadata?.model?.trim();
 	if (selectedModel) {
-		await runtime.harness.switchModel({
-			modelId: selectedModel,
-			scope: "thread",
+		await withCustomProviderRuntimeEnv(selectedModel, async (prepared) => {
+			const runtimeModelId =
+				prepared.modelId ?? resolveCustomProviderRuntimeModelId(selectedModel);
+			await runtime.harness.switchModel({
+				modelId: runtimeModelId ?? selectedModel,
+				scope: "thread",
+			});
 		});
 	}
 
@@ -450,6 +464,7 @@ export async function restartRuntimeFromUserMessage(
 	}
 
 	runtime.lastErrorMessage = null;
+	if (beforeSend) await beforeSend();
 	await runtime.harness.sendMessage(input.payload);
 }
 

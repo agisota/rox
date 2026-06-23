@@ -1,4 +1,5 @@
 import { MessageAction, MessageActions } from "@rox/ui/ai-elements/message";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import {
 	CheckIcon,
@@ -7,7 +8,6 @@ import {
 	RotateCcwIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 
 interface UserMessageActionsProps {
 	actionDisabled: boolean;

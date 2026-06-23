@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import { getCurrentBranch } from "../workspaces/utils/git";
@@ -303,7 +304,7 @@ export const createGitOperationsRouter = () => {
 					} catch (error) {
 						const message =
 							error instanceof Error ? error.message : String(error);
-						console.error("[git/mergePR] Failed to merge PR:", message);
+						logger.error("[git/mergePR] Failed to merge PR:", message);
 
 						if (isNoPullRequestFoundMessage(message)) {
 							throw new TRPCError({

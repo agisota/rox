@@ -436,14 +436,16 @@ export function PromptGroup({
 						))}
 					</div>
 				)}
-				{/* Markdown prompt editor. Submit stays on draft.prompt (now markdown):
-				    the editor swallows Cmd/Ctrl+Enter (no newline) and the window-level
-				    listener does the single submit, so onModEnter is intentionally unset
-				    to avoid a double-fire. resetKey remounts a clean editor on reset. */}
+				{/* Markdown prompt editor. Enter submits (launches the workspace),
+				    Shift+Enter inserts a newline. Cmd/Ctrl+Enter also submits via the
+				    window-level listener. onModEnter stays unset so Cmd+Enter doesn't
+				    double-fire; onEnter handles plain Enter inside the editor.
+				    resetKey remounts a clean editor on reset. */}
 				<MarkdownEditor
 					key={resetKey}
 					content={prompt}
 					onChange={(markdown) => updateDraft({ prompt: markdown })}
+					onEnter={handleSubmit}
 					autoFocus="start"
 					placeholder="Что нужно сделать?"
 					className="flex flex-col min-h-[100px] max-h-[200px] px-3 pt-3"

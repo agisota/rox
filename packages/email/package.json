@@ -7,6 +7,7 @@
 		"@types/node": "24.12.0",
 		"@types/react": "19.2.14",
 		"@types/tailwindcss": "3.1.0",
+		"bun-types": "1.3.11",
 		"react-email": "5.0.7",
 		"typescript": "6.0.3"
 	},
@@ -18,6 +19,7 @@
 		"dev": "NEXT_PUBLIC_MARKETING_URL=$(grep NEXT_PUBLIC_MARKETING_URL ../../.env | cut -d '=' -f2) email dev --dir src/emails",
 		"export": "email export --dir src/emails",
 		"clean": "git clean -xdf .cache .turbo dist node_modules",
+		"test": "bun test",
 		"typecheck": "tsc --noEmit"
 	},
 	"type": "module",

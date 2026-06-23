@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { SimpleGit } from "simple-git";
+import { logger } from "../../../../lib/logger";
 import { resolveUpstream } from "../../../../runtime/git/refs";
 import { createUserSimpleGit } from "../../../../runtime/git/simple-git";
 import type { Branch, ChangedFile, FileStatus } from "../types";
@@ -204,7 +205,13 @@ export async function buildBranch(
 			const [behind, ahead] = counts.split("\t").map(Number);
 			aheadCount = ahead ?? 0;
 			behindCount = behind ?? 0;
-		} catch {}
+		} catch (error) {
+			logger.warn("[git-helpers.buildBranch] ahead/behind count failed", {
+				name,
+				compareRef,
+				error,
+			});
+		}
 	}
 
 	try {
@@ -212,7 +219,13 @@ export async function buildBranch(
 		const [hash, date] = log.split("\t");
 		lastCommitHash = hash ?? "";
 		lastCommitDate = date ?? "";
-	} catch {}
+	} catch (error) {
+		logger.warn("[git-helpers.buildBranch] last-commit lookup failed", {
+			name,
+			compareRef,
+			error,
+		});
+	}
 
 	return {
 		name,
@@ -368,7 +381,7 @@ export async function detectUnstagedRenames(
 		return [];
 	} finally {
 		await rm(tempDir, { recursive: true, force: true }).catch((error) => {
-			console.warn("[git-helpers] failed to remove rename-detection tempdir", {
+			logger.warn("[git-helpers] failed to remove rename-detection tempdir", {
 				tempDir,
 				error,
 			});

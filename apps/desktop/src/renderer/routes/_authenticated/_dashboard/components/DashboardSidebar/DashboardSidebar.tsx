@@ -18,6 +18,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { CollapseLabel } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { useMatchRoute, useNavigate } from "@tanstack/react-router";
@@ -25,16 +26,22 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
 	HiOutlineBookOpen,
+	HiOutlineCalendarDays,
 	HiOutlineCog6Tooth,
+	HiOutlineDocumentText,
+	HiOutlineEnvelope,
+	HiOutlineFolder,
+	HiOutlineInbox,
+	HiOutlineRectangleGroup,
 	HiOutlineSparkles,
 } from "react-icons/hi2";
 import { useHotkeyDisplay } from "renderer/hotkeys";
-import { CollapseLabel } from "renderer/motion";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { DashboardSidebarHeader } from "./components/DashboardSidebarHeader";
 import { DashboardSidebarHelpMenu } from "./components/DashboardSidebarHelpMenu";
 import { DashboardSidebarHoverCardOverlay } from "./components/DashboardSidebarHoverCardOverlay";
+import { DashboardSidebarNavButton } from "./components/DashboardSidebarNavButton";
 import { DashboardSidebarPortsList } from "./components/DashboardSidebarPortsList";
 import { DashboardSidebarProjectSection } from "./components/DashboardSidebarProjectSection";
 import { DashboardSidebarSectionRenameProvider } from "./components/DashboardSidebarSectionRenameContext";
@@ -108,8 +115,14 @@ export function DashboardSidebar({
 	const matchRoute = useMatchRoute();
 	const settingsHotkey = useHotkeyDisplay("OPEN_SETTINGS").text;
 	const isSettingsOpen = !!matchRoute({ to: "/settings", fuzzy: true });
+	const isCanvasOpen = !!matchRoute({ to: "/canvas", fuzzy: true });
 	const isJournalOpen = !!matchRoute({ to: "/journal", fuzzy: true });
 	const isMemoryOpen = !!matchRoute({ to: "/memory", fuzzy: true });
+	const isDriveOpen = !!matchRoute({ to: "/drive", fuzzy: true });
+	const isCalendarOpen = !!matchRoute({ to: "/calendar", fuzzy: true });
+	const isNotesOpen = !!matchRoute({ to: "/notes", fuzzy: true });
+	const isEmailOpen = !!matchRoute({ to: "/email", fuzzy: true });
+	const isInboxOpen = !!matchRoute({ to: "/inbox", fuzzy: true });
 	const { activeHostUrl } = useLocalHostService();
 	const v2RouteMatch = matchRoute({ to: "/v2-workspace/$workspaceId" });
 	const activeV2WorkspaceId = v2RouteMatch ? v2RouteMatch.workspaceId : null;
@@ -195,7 +208,9 @@ export function DashboardSidebar({
 		<DashboardSidebarSectionRenameProvider>
 			<DashboardSidebarHoverProvider>
 				<DashboardSidebarHoverCardOverlay>
-					<div className="flex h-full flex-col border-r border-border bg-muted/45 dark:bg-muted/35">
+					{/* No own border-r: the wrapping ResizablePanel already draws the
+					    single 1px divider — a second border here stacked into 2px. */}
+					<div className="flex h-full flex-col bg-muted/45 dark:bg-muted/35">
 						<DashboardSidebarHeader isCollapsed={isCollapsed} />
 
 						{!isCollapsed && (
@@ -273,7 +288,7 @@ export function DashboardSidebar({
 								projectName={activeV2Project.name}
 							/>
 						)}
-						{/* Journal / Memory navigation */}
+						{/* Canvas / Journal / Memory + Workspace Suite navigation */}
 						<div
 							className={cn(
 								"border-t border-border",
@@ -282,85 +297,62 @@ export function DashboardSidebar({
 									: "flex flex-col gap-0.5 px-2 py-1",
 							)}
 						>
-							{isCollapsed ? (
-								<Tooltip delayDuration={300}>
-									<TooltipTrigger asChild>
-										<button
-											type="button"
-											aria-label="Журнал"
-											onClick={() => navigate({ to: "/journal" })}
-											className={cn(
-												"flex size-8 items-center justify-center rounded-md transition-colors",
-												isJournalOpen
-													? "bg-accent text-foreground"
-													: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-											)}
-										>
-											<HiOutlineBookOpen className="size-4" />
-										</button>
-									</TooltipTrigger>
-									<TooltipContent side="right">Журнал</TooltipContent>
-								</Tooltip>
-							) : (
-								<button
-									type="button"
-									onClick={() => navigate({ to: "/journal" })}
-									className={cn(
-										"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",
-										isJournalOpen
-											? "bg-accent text-foreground"
-											: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-									)}
-								>
-									<HiOutlineBookOpen className="size-4 shrink-0" />
-									<CollapseLabel
-										show={!isCollapsed}
-										className="flex-1 text-left"
-									>
-										Журнал
-									</CollapseLabel>
-								</button>
-							)}
-
-							{isCollapsed ? (
-								<Tooltip delayDuration={300}>
-									<TooltipTrigger asChild>
-										<button
-											type="button"
-											aria-label="Память"
-											onClick={() => navigate({ to: "/memory" })}
-											className={cn(
-												"flex size-8 items-center justify-center rounded-md transition-colors",
-												isMemoryOpen
-													? "bg-accent text-foreground"
-													: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-											)}
-										>
-											<HiOutlineSparkles className="size-4" />
-										</button>
-									</TooltipTrigger>
-									<TooltipContent side="right">Память</TooltipContent>
-								</Tooltip>
-							) : (
-								<button
-									type="button"
-									onClick={() => navigate({ to: "/memory" })}
-									className={cn(
-										"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",
-										isMemoryOpen
-											? "bg-accent text-foreground"
-											: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-									)}
-								>
-									<HiOutlineSparkles className="size-4 shrink-0" />
-									<CollapseLabel
-										show={!isCollapsed}
-										className="flex-1 text-left"
-									>
-										Память
-									</CollapseLabel>
-								</button>
-							)}
+							<DashboardSidebarNavButton
+								label="Canvas"
+								icon={HiOutlineRectangleGroup}
+								isActive={isCanvasOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/canvas" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Журнал"
+								icon={HiOutlineBookOpen}
+								isActive={isJournalOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/journal" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Память"
+								icon={HiOutlineSparkles}
+								isActive={isMemoryOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/memory" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Входящие"
+								icon={HiOutlineInbox}
+								isActive={isInboxOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/inbox" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Drive"
+								icon={HiOutlineFolder}
+								isActive={isDriveOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/drive" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Календарь"
+								icon={HiOutlineCalendarDays}
+								isActive={isCalendarOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/calendar" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Заметки"
+								icon={HiOutlineDocumentText}
+								isActive={isNotesOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/notes" })}
+							/>
+							<DashboardSidebarNavButton
+								label="Почта"
+								icon={HiOutlineEnvelope}
+								isActive={isEmailOpen}
+								isCollapsed={isCollapsed}
+								onClick={() => navigate({ to: "/email" })}
+							/>
 						</div>
 
 						<div

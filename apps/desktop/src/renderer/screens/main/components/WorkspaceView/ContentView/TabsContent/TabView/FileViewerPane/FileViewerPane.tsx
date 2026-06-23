@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
 import type { MarkdownEditorAdapter } from "renderer/components/MarkdownRenderer";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { logger } from "renderer/lib/logger";
 import { FileSaveConflictDialog } from "renderer/screens/main/components/WorkspaceView/components/FileSaveConflictDialog";
 import { useWorkspaceFileEvents } from "renderer/screens/main/components/WorkspaceView/hooks/useWorkspaceFileEvents";
 import { useChangesStore } from "renderer/stores/changes";
@@ -292,7 +293,7 @@ export function FileViewerPane({
 				}
 				return result;
 			} catch (error) {
-				console.error("[FileViewerPane] Save failed:", error);
+				logger.error("[FileViewerPane] Save failed:", error);
 				return undefined;
 			}
 		},
@@ -367,7 +368,7 @@ export function FileViewerPane({
 		}
 
 		Promise.all(invalidations).catch((error) => {
-			console.error("[FileViewerPane] Failed to invalidate file queries:", {
+			logger.error("[FileViewerPane] Failed to invalidate file queries:", {
 				absolutePath: absoluteFilePath,
 				error,
 			});

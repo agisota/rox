@@ -1,7 +1,7 @@
 import { CommandPrimitive } from "@rox/ui/command";
+import { fileRowOpeningAnimation, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { FileIcon } from "renderer/lib/fileIcons";
-import { fileRowOpeningAnimation, useShouldAnimate } from "renderer/motion";
 
 interface FileResultItemProps {
 	value: string;

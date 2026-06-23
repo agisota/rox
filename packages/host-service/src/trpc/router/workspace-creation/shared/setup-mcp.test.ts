@@ -41,6 +41,19 @@ describe("DEFAULT_MCP_SERVERS", () => {
 		}
 	});
 
+	it("points the rox endpoint at the v2 agent MCP route (not the v1 /mcp)", () => {
+		// T1 convergence cutover: seeded agents must call the v2 endpoint
+		// (native host tools + per-org proxy), NOT the legacy v1 `/mcp`.
+		const rox = DEFAULT_MCP_SERVERS.find((s) => s.name === "rox");
+		expect(rox?.transport).toBe("http");
+		if (rox?.transport === "http") {
+			expect(rox.url).toBe("https://api.zed.md/api/v2/agent/mcp");
+			// Must not regress to the legacy v1 endpoint (`<host>/mcp`).
+			expect(rox.url).not.toBe("https://api.zed.md/mcp");
+			expect(rox.url).toContain("/api/v2/agent/mcp");
+		}
+	});
+
 	it("scopes the filesystem server to the worktree path", () => {
 		const fs = DEFAULT_MCP_SERVERS.find((s) => s.name === "filesystem");
 		expect(fs?.transport).toBe("stdio");
@@ -68,6 +81,15 @@ describe("buildMcpJson", () => {
 		});
 		// Trailing newline for POSIX-friendly files.
 		expect((out as string).endsWith("}\n")).toBe(true);
+	});
+
+	it("writes the rox v2 endpoint into .mcp.json (Claude http entry)", () => {
+		const out = buildMcpJson(null, WORKTREE);
+		const parsed = JSON.parse(out as string);
+		expect(parsed.mcpServers.rox).toEqual({
+			type: "http",
+			url: "https://api.zed.md/api/v2/agent/mcp",
+		});
 	});
 
 	it("merge preserves existing user entries and other top-level keys", () => {
@@ -143,6 +165,16 @@ describe("mergeCodexMcp", () => {
 		};
 		expect(Object.keys(parsed.mcp_servers).sort()).toEqual(
 			[...DEFAULT_NAMES].sort(),
+		);
+	});
+
+	it("writes the rox v2 endpoint into config.toml (Codex http table)", () => {
+		const out = mergeCodexMcp(null, WORKTREE);
+		const parsed = Bun.TOML.parse(out as string) as {
+			mcp_servers: Record<string, { url?: string }>;
+		};
+		expect(parsed.mcp_servers.rox?.url).toBe(
+			"https://api.zed.md/api/v2/agent/mcp",
 		);
 	});
 

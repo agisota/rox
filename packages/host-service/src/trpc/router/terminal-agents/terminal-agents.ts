@@ -5,6 +5,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import { observable } from "@trpc/server/observable";
 import { z } from "zod";
+import { logger } from "../../../lib/logger";
 import {
 	createTerminalSessionInternal,
 	disposeSessionAndWait,
@@ -143,7 +144,7 @@ export const terminalAgentsRouter = router({
 					// don't pile up zombies.
 					await disposeSessionAndWait(created.terminalId, ctx.db).catch(
 						(cleanupError) => {
-							console.warn(
+							logger.warn(
 								"[terminal-agents] failed to dispose timed-out terminal",
 								{ terminalId: created.terminalId, cleanupError },
 							);

@@ -7,8 +7,8 @@ import {
 	ModelSelectorItem,
 	ModelSelectorList,
 } from "@rox/ui/ai-elements/model-selector";
+import { AnimatedHeight, StatusPulse, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
-import { AnimatedHeight, StatusPulse, useShouldAnimate } from "renderer/motion";
 import type { McpOverviewPayload, McpServerOverviewItem } from "../../types";
 
 interface McpOverviewPickerProps {

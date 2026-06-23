@@ -11,8 +11,8 @@
 	"dependencies": {
 		"@electric-sql/client": "1.5.15",
 		"@rox/db": "workspace:*",
-		"drizzle-orm": "0.45.2",
-		"jose": "6.2.2"
+		"@rox/shared": "workspace:*",
+		"drizzle-orm": "0.45.2"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "4.20260329.1",

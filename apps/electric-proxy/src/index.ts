@@ -1,5 +1,6 @@
 import { verifyJWT } from "./auth";
 import { buildUpstreamUrl } from "./electric";
+import { getTableScope, isUserScoped } from "./table-scopes";
 import type { Env } from "./types";
 import { buildWhereClause } from "./where";
 
@@ -11,17 +12,11 @@ const CORS_HEADERS: Record<string, string> = {
 		"electric-handle, electric-offset, electric-schema, electric-up-to-date, electric-cursor",
 };
 
-const USER_SCOPED_TABLES = new Set([
-	"journal_entries",
-	"memory_import_jobs",
-	"memory_items",
-]);
-
 function corsResponse(status: number, body: string): Response {
 	return new Response(body, { status, headers: CORS_HEADERS });
 }
 
-function addCorsHeaders(response: Response): Response {
+export function addCorsHeaders(response: Response): Response {
 	const headers = new Headers(response.headers);
 	if (headers.get("content-encoding")) {
 		headers.delete("content-encoding");
@@ -69,7 +64,16 @@ export default {
 		const organizationId = url.searchParams.get("organizationId");
 		const userId = url.searchParams.get("userId");
 
-		if (tableName !== "auth.organizations") {
+		// Tenancy guards are derived from the declarative TABLE_SCOPES registry
+		// (single source of truth), so a new synced table can't be added to the
+		// where-rewrite while forgetting its membership/user-scope guard.
+		const scope = getTableScope(tableName);
+		if (!scope) {
+			return corsResponse(400, `Unknown table: ${tableName}`);
+		}
+
+		const requiresOrgMembership = scope.requiresOrgMembership !== false;
+		if (requiresOrgMembership) {
 			if (!organizationId) {
 				return corsResponse(400, "Missing organizationId parameter");
 			}
@@ -77,7 +81,7 @@ export default {
 				return corsResponse(403, "Not a member of this organization");
 			}
 		}
-		if (USER_SCOPED_TABLES.has(tableName)) {
+		if (isUserScoped(tableName)) {
 			if (!userId) {
 				return corsResponse(400, "Missing userId parameter");
 			}

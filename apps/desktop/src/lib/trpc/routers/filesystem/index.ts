@@ -1,5 +1,6 @@
 import { toErrorMessage } from "@rox/workspace-fs/host";
 import { observable } from "@trpc/server/observable";
+import { logger } from "shared/logger";
 import { z } from "zod";
 import { publicProcedure, router } from "../..";
 import { getServiceForWorkspace } from "../workspace-fs-service";
@@ -262,7 +263,7 @@ export const createFilesystemRouter = () => {
 					const runCleanup = () => {
 						isDisposed = true;
 						void iterator.return?.().catch((error) => {
-							console.error("[filesystem/watchPath] Cleanup failed:", {
+							logger.error("[filesystem/watchPath] Cleanup failed:", {
 								workspaceId: input.workspaceId,
 								error,
 							});
@@ -296,7 +297,7 @@ export const createFilesystemRouter = () => {
 								}
 							}
 						} catch (error) {
-							console.error("[filesystem/watchPath] Failed:", {
+							logger.error("[filesystem/watchPath] Failed:", {
 								workspaceId: input.workspaceId,
 								error: toErrorMessage(error),
 							});

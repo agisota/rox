@@ -1,12 +1,12 @@
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
+import { MotionList, MotionListItem } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { LuSearch, LuX } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { MotionList, MotionListItem } from "renderer/motion";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
 import type { FilterMode, ProjectGroup, WorkspaceItem } from "./types";
 import { WorkspaceRow } from "./WorkspaceRow";

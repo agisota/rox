@@ -1,0 +1,57 @@
+import { describe, expect, it } from "bun:test";
+
+import {
+	ease,
+	motionDuration,
+	motionShake,
+	motionSpring,
+	shakeVariants,
+	shellBootVariants,
+} from "./tokens";
+
+/**
+ * Regression guard for the FROZEN, append-only motion-token lane
+ * (`packages/ui/src/motion/tokens.ts:6-9`). New cases may APPEND tokens, but the
+ * keys asserted here must never be removed or repurposed — every animated case
+ * and the `@rox/collab`/`@rox/rtc` presence UI depend on them by name. If a key
+ * below disappears, this test fails before the change can merge.
+ */
+describe("motion token contract (append-only lane)", () => {
+	it("keeps the duration tokens", () => {
+		expect(motionDuration.fast).toBe(0.12);
+		expect(motionDuration.base).toBe(0.2);
+		expect(motionDuration.slow).toBe(0.32);
+	});
+
+	it("keeps every named spring preset", () => {
+		const required = [
+			"soft",
+			"snappy",
+			"panel",
+			"pop",
+			"sidebarCollapse",
+			"layout",
+			"gentle",
+			"badge",
+			"bouncy",
+		] as const;
+		for (const key of required) {
+			expect(motionSpring[key]).toBeDefined();
+			expect(motionSpring[key].type).toBe("spring");
+		}
+	});
+
+	it("keeps the easing curves as cubic-bezier tuples", () => {
+		expect(ease.standard).toEqual([0.2, 0, 0, 1]);
+		expect(ease.emphasized).toEqual([0.3, 0, 0, 1]);
+	});
+
+	it("keeps the shared variant sets", () => {
+		expect(shellBootVariants.container).toBeDefined();
+		expect(shellBootVariants.column).toBeDefined();
+		expect(shellBootVariants.sidebar).toBeDefined();
+		expect(shakeVariants.rest).toBeDefined();
+		expect(shakeVariants.shake).toBeDefined();
+		expect(Array.isArray(motionShake.x)).toBe(true);
+	});
+});

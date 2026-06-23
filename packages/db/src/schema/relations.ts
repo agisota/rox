@@ -1,6 +1,8 @@
 import { relations } from "drizzle-orm";
 
+import { activityEvents } from "./activity";
 import { agentSources } from "./agent";
+import { userAmbientSettings } from "./ambient";
 import { paymentAttributions, userAttribution } from "./attribution";
 import {
 	accounts,
@@ -15,16 +17,23 @@ import {
 	experienceTraceEvents,
 	transitionRuns,
 } from "./circuit";
+import { contacts } from "./contact";
 import { roxBalances, roxLedger, roxTopups, usageRequests } from "./economy";
+import { edges } from "./edges";
+import { entities } from "./entity";
 import {
 	githubInstallations,
 	githubPullRequests,
 	githubRepositories,
 } from "./github";
+import { identityLinks } from "./identity";
+import { journalEntries, journalEvents } from "./journal";
 import { knowledgeDocuments, knowledgeLinks } from "./knowledge";
 import {
 	accessGrants,
 	agentCommands,
+	automationRuns,
+	automations,
 	chatSessions,
 	devicePresence,
 	integrationConnections,
@@ -124,6 +133,11 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
 	publicShares: many(publicShares),
 	knowledgeDocuments: many(knowledgeDocuments),
 	agentSources: many(agentSources),
+	entities: many(entities),
+	edges: many(edges),
+	identityLinks: many(identityLinks),
+	activityEvents: many(activityEvents),
+	contacts: many(contacts),
 }));
 
 export const accessGrantsRelations = relations(accessGrants, ({ one }) => ({
@@ -358,6 +372,7 @@ export const v2ProjectsRelations = relations(v2Projects, ({ one, many }) => ({
 	}),
 	workspaces: many(v2Workspaces),
 	knowledgeDocuments: many(knowledgeDocuments),
+	entities: many(entities),
 }));
 
 export const v2HostsRelations = relations(v2Hosts, ({ one, many }) => ({
@@ -778,6 +793,86 @@ export const knowledgeLinksRelations = relations(knowledgeLinks, ({ one }) => ({
 	}),
 }));
 
+// Core graph (#01) — entities / edges / identity_links / activity_events ------
+
+export const entitiesRelations = relations(entities, ({ one, many }) => ({
+	organization: one(organizations, {
+		fields: [entities.organizationId],
+		references: [organizations.id],
+	}),
+	v2Project: one(v2Projects, {
+		fields: [entities.v2ProjectId],
+		references: [v2Projects.id],
+	}),
+	createdByUser: one(users, {
+		fields: [entities.createdByUserId],
+		references: [users.id],
+	}),
+	outgoingEdges: many(edges, { relationName: "edgeSource" }),
+	incomingEdges: many(edges, { relationName: "edgeTarget" }),
+	contact: one(contacts),
+	activityEvents: many(activityEvents),
+}));
+
+export const edgesRelations = relations(edges, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [edges.organizationId],
+		references: [organizations.id],
+	}),
+	sourceEntity: one(entities, {
+		fields: [edges.sourceEntityId],
+		references: [entities.id],
+		relationName: "edgeSource",
+	}),
+	targetEntity: one(entities, {
+		fields: [edges.targetEntityId],
+		references: [entities.id],
+		relationName: "edgeTarget",
+	}),
+}));
+
+export const identityLinksRelations = relations(identityLinks, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [identityLinks.organizationId],
+		references: [organizations.id],
+	}),
+	contact: one(contacts, {
+		fields: [identityLinks.contactEntityId],
+		references: [contacts.entityId],
+	}),
+}));
+
+export const activityEventsRelations = relations(activityEvents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [activityEvents.organizationId],
+		references: [organizations.id],
+	}),
+	user: one(users, {
+		fields: [activityEvents.userId],
+		references: [users.id],
+	}),
+	sourceEntity: one(entities, {
+		fields: [activityEvents.sourceEntityId],
+		references: [entities.id],
+	}),
+}));
+
+export const contactsRelations = relations(contacts, ({ one, many }) => ({
+	organization: one(organizations, {
+		fields: [contacts.organizationId],
+		references: [organizations.id],
+	}),
+	entity: one(entities, {
+		fields: [contacts.entityId],
+		references: [entities.id],
+	}),
+	linkedUser: one(users, {
+		fields: [contacts.linkedUserId],
+		references: [users.id],
+	}),
+	identityLinks: many(identityLinks),
+}));
+
 // Marketing attribution (openpanel epic) --------------------------------------
 
 export const userAttributionRelations = relations(
@@ -853,5 +948,53 @@ export const usageRequestsRelations = relations(
 			references: [chatSessions.id],
 		}),
 		ledgerEntries: many(roxLedger),
+	}),
+);
+
+// Journal (journal-memory epic) -----------------------------------------------
+// Two lanes share these relations: the once-daily `journal_entries` reflection
+// and the continuous `journal_events` stream that fills from automations.
+
+export const journalEntriesRelations = relations(journalEntries, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [journalEntries.organizationId],
+		references: [organizations.id],
+	}),
+	createdByUser: one(users, {
+		fields: [journalEntries.createdBy],
+		references: [users.id],
+	}),
+}));
+
+export const journalEventsRelations = relations(journalEvents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [journalEvents.organizationId],
+		references: [organizations.id],
+	}),
+	createdByUser: one(users, {
+		fields: [journalEvents.createdBy],
+		references: [users.id],
+	}),
+	automation: one(automations, {
+		fields: [journalEvents.automationId],
+		references: [automations.id],
+	}),
+	automationRun: one(automationRuns, {
+		fields: [journalEvents.automationRunId],
+		references: [automationRuns.id],
+	}),
+}));
+
+export const userAmbientSettingsRelations = relations(
+	userAmbientSettings,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [userAmbientSettings.organizationId],
+			references: [organizations.id],
+		}),
+		createdByUser: one(users, {
+			fields: [userAmbientSettings.createdBy],
+			references: [users.id],
+		}),
 	}),
 );

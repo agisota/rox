@@ -1,3 +1,6 @@
+import { getErrorMessage } from "@rox/shared/error";
+import { logger } from "../lib/logger";
+import { forwardResponse } from "./stream-response";
 import type {
 	TunnelHttpRequest,
 	TunnelRequest,
@@ -67,7 +70,7 @@ export class TunnelClient {
 		const deadline = setTimeout(() => {
 			if (this.closed) return;
 			timedOut = true;
-			console.warn(
+			logger.warn(
 				`[host-service:tunnel] connect did not complete within ${CONNECT_TIMEOUT_MS}ms, forcing retry`,
 			);
 			try {
@@ -89,7 +92,7 @@ export class TunnelClient {
 			}
 			if (!token) {
 				clearTimeout(deadline);
-				console.warn("[host-service:tunnel] no auth token available, retrying");
+				logger.warn("[host-service:tunnel] no auth token available, retrying");
 				this.connecting = false;
 				this.scheduleReconnect();
 				return;
@@ -110,7 +113,7 @@ export class TunnelClient {
 				this.connecting = false;
 				this.lastInboundAt = Date.now();
 				this.startWatchdog();
-				console.log(
+				logger.info(
 					`[host-service:tunnel] connected to relay for host ${this.hostId}`,
 				);
 			};
@@ -129,7 +132,7 @@ export class TunnelClient {
 					this.stopWatchdog();
 					this.cleanupChannels();
 					if (event.code === 1008) {
-						console.warn(
+						logger.warn(
 							`[host-service:tunnel] relay rejected connection (code=${event.code}, reason=${event.reason ?? ""}); retrying`,
 						);
 					}
@@ -141,12 +144,12 @@ export class TunnelClient {
 					// the base delay instead of the 5s ceiling.
 					if (event.code === 4001) {
 						this.reconnectAttempts = 0;
-						console.log(
+						logger.info(
 							"[host-service:tunnel] relay draining; reconnecting immediately",
 						);
 					}
 				} catch (err) {
-					console.warn(
+					logger.warn(
 						"[host-service:tunnel] error during onclose cleanup",
 						err,
 					);
@@ -156,13 +159,13 @@ export class TunnelClient {
 			};
 
 			socket.onerror = (event) => {
-				console.error("[host-service:tunnel] socket error:", event);
+				logger.error("[host-service:tunnel] socket error:", event);
 			};
 		} catch (error) {
 			clearTimeout(deadline);
 			if (timedOut) return;
-			const message = error instanceof Error ? error.message : String(error);
-			console.error(`[host-service:tunnel] connect failed: ${message}`);
+			const message = getErrorMessage(error);
+			logger.error(`[host-service:tunnel] connect failed: ${message}`);
 			this.socket = null;
 			this.connecting = false;
 			this.scheduleReconnect();
@@ -212,7 +215,7 @@ export class TunnelClient {
 				// the WS close frame to arrive (which game-day testing
 				// showed sometimes doesn't, leaving the host idle until
 				// its 75s inactivity watchdog).
-				console.log(
+				logger.info(
 					`[host-service:tunnel] relay drain notice received${message.reason ? ` (${message.reason})` : ""}; reconnecting immediately`,
 				);
 				this.reconnectAttempts = 0;
@@ -249,21 +252,15 @@ export class TunnelClient {
 				body: request.body ?? undefined,
 			});
 
-			const body = await response.text();
-			const headers: Record<string, string> = {};
-			for (const [key, value] of response.headers.entries()) {
-				headers[key] = value;
-			}
-
-			this.send({
-				type: "http:response",
-				id: request.id,
-				status: response.status,
-				headers,
-				body,
-			});
+			// Buffer ordinary responses into one frame; stream SSE/chunked
+			// responses (agent runs, chat completions) as head/chunk*/end so the
+			// relay can forward them to the client incrementally instead of
+			// stalling on `await response.text()`.
+			await forwardResponse(request.id, response, (message) =>
+				this.send(message),
+			);
 		} catch (error) {
-			console.error(
+			logger.error(
 				`[host-service:tunnel] HTTP proxy failed ${request.method} ${request.path}:`,
 				error,
 			);
@@ -327,7 +324,7 @@ export class TunnelClient {
 
 		localWs.onerror = (event) => {
 			// onclose always follows onerror; ws:close is sent from onclose
-			console.error(
+			logger.error(
 				`[host-service:tunnel] local WS error on ${request.path}`,
 				event,
 			);
@@ -363,7 +360,7 @@ export class TunnelClient {
 			try {
 				channel.ws.close(1000, "Tunnel disconnected");
 			} catch (err) {
-				console.warn(
+				logger.warn(
 					"[host-service:tunnel] error closing local channel ws",
 					err,
 				);
@@ -378,7 +375,7 @@ export class TunnelClient {
 			if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
 			const silentFor = Date.now() - this.lastInboundAt;
 			if (silentFor > INBOUND_SILENCE_TIMEOUT_MS) {
-				console.warn(
+				logger.warn(
 					`[host-service:tunnel] no inbound traffic for ${silentFor}ms, forcing reconnect`,
 				);
 				try {
@@ -407,7 +404,7 @@ export class TunnelClient {
 		const delay = Math.floor(baseDelay * (0.5 + Math.random() * 0.5));
 		this.reconnectAttempts++;
 
-		console.log(
+		logger.info(
 			`[host-service:tunnel] reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`,
 		);
 

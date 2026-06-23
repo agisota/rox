@@ -8,15 +8,29 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { env } from "@/env";
+import { TelegramLoginButton } from "../../components/TelegramLoginButton";
 
 export default function SignInPage() {
 	const searchParams = useSearchParams();
 	const redirect = searchParams.get("redirect");
-	const callbackURL = redirect
-		? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
-		: env.NEXT_PUBLIC_WEB_URL;
+	// Treat `redirect` as a PATH only: it must start with a single "/" (not "//",
+	// which browsers resolve as a protocol-relative foreign host). This blocks
+	// open-redirect payloads like `redirect=@evil.com` or `redirect=//evil.com`
+	// from producing a callback URL on a host other than our own web app.
+	const callbackURL =
+		redirect?.startsWith("/") && !redirect.startsWith("//")
+			? `${env.NEXT_PUBLIC_WEB_URL}${redirect}`
+			: env.NEXT_PUBLIC_WEB_URL;
+
+	// ROX-522 Phase 3: registration/login is social-only. The public
+	// email/password form was removed; only the dev-gated "Local Admin (dev)"
+	// shortcut below still uses email/password (against the dev-only backend
+	// `emailAndPassword.enabled` flag).
+	const isDev = process.env.NODE_ENV === "development";
 
 	const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+	const [isLoadingYandex, setIsLoadingYandex] = useState(false);
+	const [isLoadingDev, setIsLoadingDev] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const signInWithGithub = async () => {
@@ -35,7 +49,21 @@ export default function SignInPage() {
 		}
 	};
 
-	const [isLoadingDev, setIsLoadingDev] = useState(false);
+	const signInWithYandex = async () => {
+		setIsLoadingYandex(true);
+		setError(null);
+
+		try {
+			await authClient.signIn.oauth2({
+				providerId: "yandex",
+				callbackURL,
+			});
+		} catch (err) {
+			console.error("Yandex sign in failed:", err);
+			setError("Не удалось войти через Яндекс. Попробуйте еще раз.");
+			setIsLoadingYandex(false);
+		}
+	};
 
 	const signInAsDev = async () => {
 		setIsLoadingDev(true);
@@ -69,7 +97,7 @@ export default function SignInPage() {
 		}
 	};
 
-	const isLoading = isLoadingGithub || isLoadingDev;
+	const isLoading = isLoadingGithub || isLoadingYandex || isLoadingDev;
 
 	return (
 		<div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -85,7 +113,7 @@ export default function SignInPage() {
 				{error && (
 					<p className="text-destructive text-center text-sm">{error}</p>
 				)}
-				{process.env.NODE_ENV === "development" && (
+				{isDev && (
 					<Button
 						variant="outline"
 						disabled={isLoading}
@@ -97,6 +125,9 @@ export default function SignInPage() {
 							: "Войти как локальный администратор (dev)"}
 					</Button>
 				)}
+				{/* TODO(ROX-522): GitHub stays as a full social login for now.
+				    Demoting GitHub to a link-only ("connect account") option is a
+				    separate follow-up and is intentionally not implemented here. */}
 				<Button
 					variant="outline"
 					disabled={isLoading}
@@ -106,6 +137,21 @@ export default function SignInPage() {
 					<FaGithub className="mr-2 size-4" />
 					{isLoadingGithub ? "Загрузка..." : "Войти через GitHub"}
 				</Button>
+				<Button
+					variant="outline"
+					disabled={isLoading}
+					onClick={signInWithYandex}
+					className="w-full"
+				>
+					<span
+						aria-hidden
+						className="mr-2 flex size-4 items-center justify-center rounded-full bg-[#FC3F1D] text-[10px] font-bold text-white"
+					>
+						Я
+					</span>
+					{isLoadingYandex ? "Загрузка..." : "Войти через Яндекс"}
+				</Button>
+				<TelegramLoginButton callbackURL={callbackURL} />
 				<p className="text-muted-foreground px-8 text-center text-sm">
 					Нажимая «Продолжить», вы соглашаетесь с нашими{" "}
 					<a

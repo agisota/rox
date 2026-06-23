@@ -8,6 +8,7 @@
  */
 
 export type ParsedTelegramMessage = {
+	updateId: number;
 	chatId: number;
 	text: string;
 	fromUserId: number;
@@ -22,6 +23,8 @@ export function parseTelegramUpdate(
 	raw: unknown,
 ): ParsedTelegramMessage | null {
 	if (!isRecord(raw)) return null;
+	const updateId = raw.update_id;
+	if (typeof updateId !== "number") return null;
 
 	// Only top-level `message` updates are supported. `edited_message`,
 	// `callback_query`, `channel_post`, etc. are intentionally ignored.
@@ -38,6 +41,7 @@ export function parseTelegramUpdate(
 	if (!isRecord(from) || typeof from.id !== "number") return null;
 
 	return {
+		updateId,
 		chatId: chat.id,
 		text,
 		fromUserId: from.id,

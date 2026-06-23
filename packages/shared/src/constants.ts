@@ -1,5 +1,10 @@
 // Auth
-export const AUTH_PROVIDERS = ["github", "google"] as const;
+export const AUTH_PROVIDERS = [
+	"github",
+	"google",
+	"yandex",
+	"telegram",
+] as const;
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
 export const ORGANIZATION_HEADER = "x-rox-organization-id";
@@ -35,9 +40,11 @@ export const COMPANY = {
 // Theme
 export const THEME_STORAGE_KEY = "rox-theme";
 
-// Download URLs
+// Download URLs — stable-named assets attached to the latest desktop release.
 export const DOWNLOAD_URL_MAC_ARM64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-arm64.dmg`;
 export const DOWNLOAD_URL_MAC_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-x64.dmg`;
+export const DOWNLOAD_URL_WIN_X64 = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-x64.exe`;
+export const DOWNLOAD_URL_LINUX = `${COMPANY.GITHUB_URL}/releases/latest/download/Rox-x86_64.AppImage`;
 
 // Auth token configuration
 export const TOKEN_CONFIG = {
@@ -127,4 +134,19 @@ export const FEATURE_FLAGS = {
 	 * defaults for other users.
 	 */
 	RELAY_URL_OVERRIDE: "relay-url-override",
+	/**
+	 * Gates the Network Filter / Managed DNS settings surface (WS-N). The actual
+	 * NextDNS wiring lands separately (`plans/2026-06-18-managed-nextdns-profile.md`);
+	 * this flag exposes the gated shell. Resolved override-first via the
+	 * `user_feature_flags` table (WS-O), falling back to a PostHog rollout cohort —
+	 * so "developer-id gating" = an admin force-on row for the owner's user id.
+	 */
+	NETWORK_FILTER: "network-filter",
+	/**
+	 * Explicit per-user gate for the remote-agent / automation surface (WS-N).
+	 * Complements `DISABLE_REMOTE_AGENT` (the kill-switch) by letting the owner
+	 * promote the automation watcher from cohort-only to an explicit opt-in key.
+	 * Same override-first resolution as the other keys; no schema change needed.
+	 */
+	AUTOMATION_ACCESS: "automation-access",
 } as const;

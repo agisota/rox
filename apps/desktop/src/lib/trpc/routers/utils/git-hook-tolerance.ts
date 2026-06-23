@@ -1,3 +1,5 @@
+import { logger } from "shared/logger";
+
 interface GitCommandException extends Error {
 	stdout?: string;
 	stderr?: string;
@@ -60,7 +62,7 @@ export async function runWithPostCheckoutHookTolerance({
 		}
 
 		const message = getErrorText(error);
-		console.warn(
+		logger.warn(
 			`[git] ${context} but post-checkout hook failed (non-fatal): ${message}`,
 		);
 	}

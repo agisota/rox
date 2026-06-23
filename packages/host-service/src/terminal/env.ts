@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger";
+
 /**
  * V2 terminal environment contract.
  *
@@ -19,6 +21,7 @@ export {
 
 import fs from "node:fs";
 import os from "node:os";
+import { getErrorMessage } from "@rox/shared/error";
 import {
 	augmentPathForMacOS,
 	clearStrictShellEnvCache,
@@ -68,8 +71,8 @@ export async function resolveTerminalBaseEnv(): Promise<
 	try {
 		return await getStrictShellEnvironment();
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		console.warn(
+		const message = getErrorMessage(error);
+		logger.warn(
 			`[host-service] Shell env snapshot failed, falling back to process.env: ${message}`,
 		);
 		const fallback = snapshotStringEnv(process.env);

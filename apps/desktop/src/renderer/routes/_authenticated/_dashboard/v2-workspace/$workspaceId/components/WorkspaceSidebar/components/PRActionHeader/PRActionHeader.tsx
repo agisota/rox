@@ -1,12 +1,13 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@rox/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
 import { VscGitPullRequest, VscLoading } from "react-icons/vsc";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import type { PRFlowDispatch } from "../../hooks/usePRFlowDispatch";
 import { PRStatusGroup } from "./components/PRStatusGroup";
 import {
 	type PRFlowState,
 	selectActionButton,
+	selectCreatePRAffordance,
 	type UnavailableReason,
 } from "./utils/getPRFlowState";
 
@@ -110,8 +111,9 @@ function ActionSlot({
 		case "disabled-tooltip":
 			return <UnavailableIcon reason={variant.reasonKind} animate={animate} />;
 
-		case "create-pr-dropdown":
-			if (!createPREnabled) {
+		case "create-pr-dropdown": {
+			const affordance = selectCreatePRAffordance(createPREnabled);
+			if (affordance.kind === "coming-soon") {
 				return (
 					<UnavailableIcon
 						reason="create-disabled"
@@ -127,6 +129,7 @@ function ActionSlot({
 					animate={animate}
 				/>
 			);
+		}
 
 		case "cancel-busy":
 			return (

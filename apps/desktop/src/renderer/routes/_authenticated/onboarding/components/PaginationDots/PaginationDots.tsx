@@ -1,6 +1,6 @@
+import { useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { motion } from "framer-motion";
-import { useShouldAnimate } from "renderer/motion";
 
 interface PaginationDotsProps {
 	current: number;

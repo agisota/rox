@@ -36,6 +36,8 @@ export interface Command {
 	iconUrl?: string;
 	keywords?: string[];
 	hotkeyId?: HotkeyId;
+	disabled?: boolean;
+	disabledReason?: string;
 	when?: (context: CommandContext) => boolean;
 	run?: (context: CommandContext) => void | Promise<void>;
 	children?: Command[] | ((context: CommandContext) => Command[]);

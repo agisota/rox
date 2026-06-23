@@ -1,8 +1,8 @@
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { useCallback } from "react";
 import { FileIcon } from "renderer/lib/fileIcons";
-import { ease, motionDuration, useShouldAnimate } from "renderer/motion";
 import type { ChangesetFile } from "../../../../../useChangeset";
 
 interface DiffHeaderPrefixProps {

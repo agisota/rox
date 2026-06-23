@@ -5,6 +5,7 @@ import {
 	saveProjectIconFromBuffer,
 	saveProjectIconFromFile,
 } from "main/lib/project-icons";
+import { logger } from "shared/logger";
 
 /** Common favicon file names to search for in project roots */
 const FAVICON_PATTERNS = [
@@ -60,7 +61,7 @@ export async function discoverAndSaveProjectIcon({
 		// Check file size
 		const fileStat = await stat(iconPath);
 		if (fileStat.size > MAX_FAVICON_SIZE) {
-			console.log(
+			logger.info(
 				`[favicon-discovery] Icon too large (${Math.round(fileStat.size / 1024)}KB): ${iconPath}`,
 			);
 			return null;
@@ -80,7 +81,7 @@ export async function discoverAndSaveProjectIcon({
 
 		return await saveProjectIconFromFile({ projectId, sourcePath: iconPath });
 	} catch (error) {
-		console.error("[favicon-discovery] Error discovering icon:", error);
+		logger.error("[favicon-discovery] Error discovering icon:", error);
 		return null;
 	}
 }

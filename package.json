@@ -7,13 +7,14 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.4.2",
 		"dotenv-cli": "11.0.0",
+		"playwright": "1.59.1",
 		"sherif": "1.11.0",
 		"turbo": "2.9.14"
 	},
 	"description": "Rox Monorepo",
 	"homepage": "https://rox.one",
 	"license": "MIT",
-	"packageManager": "bun@1.3.11",
+	"packageManager": "bun@1.3.14",
 	"private": true,
 	"scripts": {
 		"dev": "turbo run dev dev:caddy --filter=@rox/api --filter=@rox/web --filter=@rox/desktop --filter=electric-proxy --filter=//",
@@ -29,6 +30,7 @@
 		"lint:fix": "bunx @biomejs/biome@2.4.2 migrate --write && bunx @biomejs/biome@2.4.2 check --write --unsafe .",
 		"format": "bunx @biomejs/biome@2.4.2 format --write .",
 		"format:check": "bunx @biomejs/biome@2.4.2 format .",
+		"smoke:marketing:landing": "node scripts/smoke-marketing-landing.mjs",
 		"typecheck": "turbo typecheck",
 		"ui-add": "turbo run ui-add",
 		"postinstall": "./scripts/postinstall.sh",
@@ -48,9 +50,14 @@
 		"tooling/*"
 	],
 	"overrides": {
+		"@hono/node-server": "1.19.13",
+		"@xmldom/xmldom": "0.8.13",
 		"axios": "1.14.0",
-		"hono": "4.12.23",
+		"dompurify": "3.4.11",
+		"follow-redirects": "1.16.0",
+		"hono": "4.12.25",
 		"kysely": "0.28.17",
+		"protobufjs": "7.6.4",
 		"shell-quote": "1.8.4"
 	},
 	"trustedDependencies": [

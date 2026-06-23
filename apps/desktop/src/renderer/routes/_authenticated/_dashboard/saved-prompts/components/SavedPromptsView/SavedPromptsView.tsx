@@ -8,13 +8,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@rox/ui/dialog";
-import {
-	Empty,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyTitle,
-} from "@rox/ui/empty";
 import { Input } from "@rox/ui/input";
 import { toast } from "@rox/ui/sonner";
 import { Textarea } from "@rox/ui/textarea";
@@ -22,6 +15,7 @@ import { cn } from "@rox/ui/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
+	LuBookmarkPlus,
 	LuCopy,
 	LuMessageSquarePlus,
 	LuPencil,
@@ -31,6 +25,7 @@ import {
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
+import { DEFAULT_SAVED_PROMPTS } from "./default-prompts";
 
 type DialogState =
 	| { mode: "closed" }
@@ -136,22 +131,75 @@ export function SavedPromptsView() {
 			<div className="flex-1 overflow-y-auto px-6 py-4">
 				{prompts.length === 0 ? (
 					isLoading ? null : (
-						<Empty className="mt-12">
-							<EmptyHeader>
-								<EmptyMedia variant="icon">
-									<LuMessageSquarePlus className="size-6" />
-								</EmptyMedia>
-								<EmptyTitle>Пока нет сохранённых промптов</EmptyTitle>
-								<EmptyDescription>
-									Сохраните часто используемые промпты, чтобы быстро вставлять
-									их в чат.
-								</EmptyDescription>
-							</EmptyHeader>
-							<Button variant="outline" onClick={openCreate}>
-								<LuPlus className="size-4" />
-								Создать первый промпт
-							</Button>
-						</Empty>
+						<div className="mx-auto flex max-w-3xl flex-col gap-3">
+							<div className="flex flex-col gap-1 pt-2">
+								<h2 className="text-sm font-medium text-foreground">
+									Примеры — сохраните себе
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									Готовые промпты для старта. Сохраните понравившиеся или
+									создайте свой.
+								</p>
+							</div>
+							<ul className="flex flex-col gap-2">
+								{DEFAULT_SAVED_PROMPTS.map((example) => (
+									<li
+										key={example.id}
+										className={cn(
+											"group flex flex-col gap-2 rounded-lg border border-dashed border-border bg-card/50 p-4",
+											"transition-colors hover:border-border/80",
+										)}
+									>
+										<div className="flex items-start justify-between gap-3">
+											<h3 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+												{example.title}
+											</h3>
+											<div className="flex shrink-0 items-center gap-1">
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() =>
+														createMutation.mutate({
+															title: example.title,
+															body: example.body,
+														})
+													}
+													disabled={createMutation.isPending}
+												>
+													<LuBookmarkPlus className="size-4" />
+													Сохранить
+												</Button>
+												<Button
+													size="icon"
+													variant="ghost"
+													aria-label="Вставить в чат"
+													onClick={() => {
+														stagePrompt(example.body);
+														navigate({ to: "/quick-chat" });
+													}}
+												>
+													<LuMessageSquarePlus className="size-4" />
+												</Button>
+												<Button
+													size="icon"
+													variant="ghost"
+													aria-label="Скопировать"
+													onClick={() => {
+														void copyToClipboard(example.body);
+														toast.success("Скопировано в буфер обмена");
+													}}
+												>
+													<LuCopy className="size-4" />
+												</Button>
+											</div>
+										</div>
+										<p className="line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground select-text">
+											{example.body}
+										</p>
+									</li>
+								))}
+							</ul>
+						</div>
 					)
 				) : (
 					<ul className="mx-auto flex max-w-3xl flex-col gap-2">

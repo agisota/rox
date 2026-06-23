@@ -1,8 +1,8 @@
 import { Button } from "@rox/ui/button";
 import { Kbd, KbdGroup } from "@rox/ui/kbd";
+import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { motion } from "framer-motion";
 import type { IconType } from "react-icons";
-import { motionSpring, useShouldAnimate } from "renderer/motion";
 
 interface EmptyTabActionButtonProps {
 	label: string;

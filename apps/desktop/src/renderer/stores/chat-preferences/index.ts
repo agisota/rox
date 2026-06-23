@@ -1,1 +1,4 @@
-export { useChatPreferencesStore } from "./store";
+export {
+	type DefaultWorkspaceSurface,
+	useChatPreferencesStore,
+} from "./store";

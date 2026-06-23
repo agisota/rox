@@ -83,6 +83,120 @@ export const WALLPAPERS: readonly Wallpaper[] = [
 		tone: "light",
 		scene: "dunes",
 	},
+	// ── Expanded gradient pack: brighter, more saturated "flying" scenes ──
+	{
+		id: "rose-quartz",
+		name: "Rose Quartz",
+		source: {
+			kind: "gradient",
+			colors: ["#fdeef2", "#fbd5e0", "#f3a8c4", "#fdeef2"],
+		},
+		tone: "light",
+		scene: "horizon",
+	},
+	{
+		id: "spring-meadow",
+		name: "Spring Meadow",
+		source: {
+			kind: "gradient",
+			colors: ["#f0fbf2", "#cdeedd", "#9fdcc0", "#f0fbf2"],
+		},
+		tone: "light",
+		scene: "aurora",
+	},
+	{
+		id: "peach-sorbet",
+		name: "Peach Sorbet",
+		source: {
+			kind: "gradient",
+			colors: ["#fff4ec", "#ffe0cc", "#ffc09f", "#fff4ec"],
+		},
+		tone: "light",
+		scene: "dunes",
+	},
+	{
+		id: "lavender-sky",
+		name: "Lavender Sky",
+		source: {
+			kind: "gradient",
+			colors: ["#f4f0ff", "#e3d9ff", "#c4b0f7", "#f4f0ff"],
+		},
+		tone: "light",
+		scene: "nebula",
+	},
+	{
+		id: "arctic-mint",
+		name: "Arctic Mint",
+		source: {
+			kind: "gradient",
+			colors: ["#eefbfb", "#cdeef0", "#9fdde2", "#eefbfb"],
+		},
+		tone: "light",
+		scene: "calm",
+	},
+	{
+		id: "citrus-haze",
+		name: "Citrus Haze",
+		source: {
+			kind: "gradient",
+			colors: ["#fffbe8", "#fdf0b8", "#f6d35a", "#fffbe8"],
+		},
+		tone: "light",
+		scene: "horizon",
+	},
+	{
+		id: "cosmic-magenta",
+		name: "Cosmic Magenta",
+		source: {
+			kind: "gradient",
+			colors: ["#1a0820", "#4a0f57", "#c026a3", "#1a0820"],
+		},
+		tone: "dark",
+		scene: "nebula",
+	},
+	{
+		id: "electric-tide",
+		name: "Electric Tide",
+		source: {
+			kind: "gradient",
+			colors: ["#04121f", "#0a2f57", "#1f8fd6", "#04121f"],
+		},
+		tone: "dark",
+		scene: "aurora",
+	},
+	{
+		id: "sunset-coral",
+		name: "Sunset Coral",
+		source: {
+			kind: "gradient",
+			colors: ["#1c0a10", "#5a142a", "#ff5c5c", "#1c0a10"],
+		},
+		tone: "dark",
+		scene: "horizon",
+	},
+	{
+		id: "emerald-night",
+		name: "Emerald Night",
+		source: {
+			kind: "gradient",
+			colors: ["#04140f", "#0a3a2a", "#15c08a", "#04140f"],
+		},
+		tone: "dark",
+		scene: "aurora",
+	},
+	// ── Looping video background (Apple-TV-aerial style) ──────────────────────
+	// Demo entry proving the `video` source works end-to-end. Replace `src` with
+	// a licensed/self-hosted seamless aerial loop (see appearance/README.md).
+	// Reduced-motion users get the paused first frame (or `poster` if provided).
+	{
+		id: "aerial-demo-loop",
+		name: "Видео-петля · демо",
+		source: {
+			kind: "video",
+			src: "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_2MB.mp4",
+		},
+		tone: "dark",
+	},
 ];
 
 /** Look up a wallpaper by id, or undefined if it is not in the pack. */

@@ -533,6 +533,139 @@
       "when": 1781678201560,
       "tag": "0075_chat_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1781682982897,
+      "tag": "0076_agent_pipelines",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1781726675099,
+      "tag": "0077_superapp_graph_runtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1781924776035,
+      "tag": "0078_add_user_handle_and_provider_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1781928932085,
+      "tag": "0079_org_libraries_dashboards_feature_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1781972566675,
+      "tag": "0080_session_learned_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1781973467802,
+      "tag": "0081_journal_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1781975351670,
+      "tag": "0082_suite_p0_comms_drive",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1781976159080,
+      "tag": "0083_user_ambient_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1781982164280,
+      "tag": "0084_suite_p2_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1781984797764,
+      "tag": "0085_cal_calendar_d6",
+      "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1781990477265,
+      "tag": "0086_suite_p3_mail",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1781992571120,
+      "tag": "0087_suite_p4_xmpp",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1781995377178,
+      "tag": "0088_suite_p5_mesh",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1782180173311,
+      "tag": "0089_identity_isolation_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1782192437442,
+      "tag": "0090_mail_lifecycle_m3_m4",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1782200541603,
+      "tag": "0091_add_note_book_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1782206617447,
+      "tag": "0092_agent_state_claims_cas_lease",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1782213722917,
+      "tag": "0093_comms_threads_org_dedup_uniq",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1782215647343,
+      "tag": "0094_rox_ledger_overage_idempotency",
+      "breakpoints": true
     }
   ]
 }

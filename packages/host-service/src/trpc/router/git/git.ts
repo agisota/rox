@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { pullRequests, workspaces } from "../../../db/schema";
+import { logger } from "../../../lib/logger";
 import { protectedProcedure, queryProcedure, router } from "../../index";
 import { resolveGithubRepo } from "../workspace-creation/shared/project-helpers";
 import type {
@@ -31,6 +32,33 @@ import {
 	REVIEW_THREADS_QUERY,
 } from "./utils/graphql";
 import { resolveWorktreePath } from "./utils/resolve-worktree";
+
+/**
+ * `git show <ref>:<path>` fails with a fatal error when the path simply
+ * doesn't exist at that ref — the legitimate "this side of the diff has
+ * no such file" case (added/deleted files). Git phrases this two ways:
+ *
+ *   fatal: path 'x' does not exist in 'HEAD'
+ *   fatal: path 'x' exists on disk, but not in 'HEAD'
+ *
+ * The index-side phrasings for `:0:<path>` (staged/unstaged diffs of a
+ * file that isn't staged) are the same legitimate "empty side" case:
+ *
+ *   fatal: path 'x' exists on disk, but not in the index
+ *   fatal: path 'x' does not exist (neither on disk nor in the index)
+ *
+ * Only those are safe to swallow into an empty side of the diff. Any
+ * other failure (bad ref, corrupt object, repo lock, permissions) means
+ * the diff we'd render is wrong, so it must surface instead.
+ */
+function isPathNotInTreeError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error);
+	return (
+		/does not exist in /.test(message) ||
+		/exists on disk, but not in /.test(message) ||
+		/does not exist \(neither on disk nor in the index\)/.test(message)
+	);
+}
 
 function assertSafeRelativePath(filePath: string): void {
 	if (isAbsolute(filePath)) {
@@ -85,7 +113,12 @@ export const gitRouter = router({
 							name: line.slice(tab + 1),
 						};
 					});
-			} catch {}
+			} catch (error) {
+				logger.warn("[git.listBranches] failed to list branches", {
+					workspaceId: input.workspaceId,
+					error,
+				});
+			}
 
 			return { branches };
 		}),
@@ -152,7 +185,12 @@ export const gitRouter = router({
 						date: date ?? "",
 					});
 				}
-			} catch {}
+			} catch (error) {
+				logger.warn("[git.listCommits] failed to list commits", {
+					workspaceId: input.workspaceId,
+					error,
+				});
+			}
 
 			return { commits };
 		}),
@@ -382,6 +420,28 @@ export const gitRouter = router({
 			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
 			const git = await ctx.git(worktreePath);
 
+			// `git show <ref>:<path>` for a path missing at that ref is the
+			// normal "empty side of the diff" case (added/deleted file) — swallow
+			// it to "". Anything else (bad ref, corrupt object, lock) would make
+			// the rendered diff silently wrong, so log + fail loudly instead.
+			const showOrEmpty = async (ref: string): Promise<string> => {
+				try {
+					return await git.show([`${ref}:${input.path}`]);
+				} catch (error) {
+					if (isPathNotInTreeError(error)) return "";
+					logger.warn("[git.getDiff] git show failed", {
+						workspaceId: input.workspaceId,
+						ref,
+						path: input.path,
+						error,
+					});
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: `Failed to read ${input.path} at ${ref}`,
+					});
+				}
+			};
+
 			let originalContent = "";
 			let modifiedContent = "";
 
@@ -395,19 +455,11 @@ export const gitRouter = router({
 					.raw(["merge-base", baseRef, "HEAD"])
 					.then((s) => s.trim())
 					.catch(() => baseRef);
-				try {
-					originalContent = await git.show([`${originRef}:${input.path}`]);
-				} catch {}
-				try {
-					modifiedContent = await git.show([`HEAD:${input.path}`]);
-				} catch {}
+				originalContent = await showOrEmpty(originRef);
+				modifiedContent = await showOrEmpty("HEAD");
 			} else if (input.category === "staged") {
-				try {
-					originalContent = await git.show([`HEAD:${input.path}`]);
-				} catch {}
-				try {
-					modifiedContent = await git.show([`:0:${input.path}`]);
-				} catch {}
+				originalContent = await showOrEmpty("HEAD");
+				modifiedContent = await showOrEmpty(":0");
 			} else if (input.category === "commit") {
 				if (!input.commitHash) {
 					throw new TRPCError({
@@ -416,20 +468,14 @@ export const gitRouter = router({
 					});
 				}
 				const from = input.fromHash ?? `${input.commitHash}^`;
-				try {
-					originalContent = await git.show([`${from}:${input.path}`]);
-				} catch {}
-				try {
-					modifiedContent = await git.show([
-						`${input.commitHash}:${input.path}`,
-					]);
-				} catch {}
+				originalContent = await showOrEmpty(from);
+				modifiedContent = await showOrEmpty(input.commitHash);
 			} else {
 				// Unstaged: compare index (staged version) against working tree
 				// If file isn't in index (untracked), originalContent stays empty = "new file"
-				try {
-					originalContent = await git.show([`:0:${input.path}`]);
-				} catch {}
+				originalContent = await showOrEmpty(":0");
+				// Working-tree read: a missing file legitimately means the file was
+				// deleted in the working tree, so an empty modified side is correct.
 				try {
 					modifiedContent = await readFile(
 						`${worktreePath}/${input.path}`,
@@ -494,7 +540,7 @@ export const gitRouter = router({
 				const status = await git.status();
 				hasUncommitted = status.files.length > 0;
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[git/getBranchSyncStatus] git.status() failed; treating working tree as clean for this read",
 					error,
 				);
@@ -552,7 +598,12 @@ export const gitRouter = router({
 						}),
 					);
 				}
-			} catch {}
+			} catch (error) {
+				logger.warn("[git.getPullRequest] malformed checksJson", {
+					prNumber: pr.prNumber,
+					error,
+				});
+			}
 
 			return {
 				number: pr.prNumber,
@@ -626,7 +677,7 @@ export const gitRouter = router({
 				);
 				reviewThreads = parseGraphQLThreads(result);
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[git.getPullRequestThreads] Failed to fetch review threads:",
 					error,
 				);
@@ -662,7 +713,7 @@ export const gitRouter = router({
 					page++;
 				}
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					"[git.getPullRequestThreads] Failed to fetch conversation comments:",
 					error,
 				);

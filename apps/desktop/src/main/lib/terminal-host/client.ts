@@ -31,9 +31,17 @@ import {
 	signalProcessTreeAndGroups,
 } from "@rox/pty-daemon/process-tree";
 import { app } from "electron";
+import { logger } from "main/lib/logger";
 import { ROX_DIR_NAME } from "shared/constants";
 import { throwIfAborted } from "../terminal/abort";
 import { TerminalAttachCanceledError } from "../terminal/errors";
+import {
+	getCreateOrAttachKey,
+	isProtocolMismatchError,
+	normalizeCreateOrAttachResponse,
+	normalizeListSessionsResponse,
+} from "./client-helpers";
+import { NdjsonParser, serializeMessage } from "./ndjson";
 import {
 	type CancelCreateOrAttachRequest,
 	type ClearScrollbackRequest,
@@ -93,47 +101,6 @@ const MAX_NOTIFY_QUEUE_BYTES = 2_000_000; // 2MB cap to prevent OOM
 const MAX_DAEMON_LOG_BYTES = 5 * 1024 * 1024; // 5MB cap for daemon.log
 
 // =============================================================================
-// NDJSON Parser
-// =============================================================================
-
-class NdjsonParser {
-	private remainder = "";
-
-	parse(chunk: string): Array<IpcResponse | IpcEvent> {
-		const messages: Array<IpcResponse | IpcEvent> = [];
-
-		// Prepend any remainder from previous parse
-		const data = this.remainder + chunk;
-		this.remainder = "";
-
-		let startIndex = 0;
-		let newlineIndex = data.indexOf("\n");
-
-		while (newlineIndex !== -1) {
-			const line = data.slice(startIndex, newlineIndex);
-
-			if (line.trim()) {
-				try {
-					messages.push(JSON.parse(line));
-				} catch {
-					console.warn("[TerminalHostClient] Failed to parse NDJSON line");
-				}
-			}
-
-			startIndex = newlineIndex + 1;
-			newlineIndex = data.indexOf("\n", startIndex);
-		}
-
-		// Save any remaining data after the last newline
-		if (startIndex < data.length) {
-			this.remainder = data.slice(startIndex);
-		}
-
-		return messages;
-	}
-}
-
-// =============================================================================
 // Pending Request Tracker
 // =============================================================================
 
@@ -182,7 +149,7 @@ export class TerminalHostClient extends EventEmitter {
 	constructor() {
 		super();
 		if (DEBUG_CLIENT) {
-			console.log("[TerminalHostClient] Initialized with paths:", {
+			logger.info("[TerminalHostClient] Initialized with paths:", {
 				ROX_DIR_NAME,
 				ROX_HOME_DIR,
 				SOCKET_PATH,
@@ -214,7 +181,7 @@ export class TerminalHostClient extends EventEmitter {
 		// Another connection in progress - wait with timeout
 		if (this.connectionState === ConnectionState.CONNECTING) {
 			if (DEBUG_CLIENT) {
-				console.log(
+				logger.info(
 					"[TerminalHostClient] Connection already in progress, waiting...",
 				);
 			}
@@ -250,7 +217,7 @@ export class TerminalHostClient extends EventEmitter {
 		this.connectionState = ConnectionState.CONNECTING;
 		this.disconnectArmed = false;
 		if (DEBUG_CLIENT) {
-			console.log("[TerminalHostClient] Connecting to daemon...");
+			logger.info("[TerminalHostClient] Connecting to daemon...");
 		}
 
 		try {
@@ -312,12 +279,7 @@ export class TerminalHostClient extends EventEmitter {
 			"listSessions",
 			undefined,
 		);
-		return {
-			sessions: response.sessions.map((session) => ({
-				...session,
-				pid: session.pid ?? null,
-			})),
-		};
+		return normalizeListSessionsResponse(response);
 	}
 
 	private async waitForExistingDaemonProbe(): Promise<boolean> {
@@ -363,7 +325,7 @@ export class TerminalHostClient extends EventEmitter {
 				this.isDaemonScriptStale()
 			) {
 				if (DEBUG_CLIENT) {
-					console.log(
+					logger.info(
 						"[TerminalHostClient] Daemon script rebuilt, restarting...",
 					);
 				}
@@ -389,7 +351,7 @@ export class TerminalHostClient extends EventEmitter {
 			} catch (error) {
 				if (attempt === 0) {
 					if (DEBUG_CLIENT) {
-						console.log(
+						logger.info(
 							"[TerminalHostClient] Auth token missing, restarting daemon...",
 						);
 					}
@@ -406,9 +368,9 @@ export class TerminalHostClient extends EventEmitter {
 				try {
 					await this.authenticateControl({ token });
 				} catch (error) {
-					if (attempt === 0 && this.isProtocolMismatchError(error)) {
+					if (attempt === 0 && isProtocolMismatchError(error)) {
 						if (DEBUG_CLIENT) {
-							console.log(
+							logger.info(
 								"[TerminalHostClient] Protocol mismatch detected, shutting down legacy daemon...",
 							);
 						}
@@ -416,7 +378,7 @@ export class TerminalHostClient extends EventEmitter {
 						try {
 							await this.shutdownLegacyDaemon();
 						} catch (shutdownError) {
-							console.warn(
+							logger.warn(
 								"[TerminalHostClient] Legacy daemon shutdown failed, falling back to PID kill:",
 								shutdownError,
 							);
@@ -819,12 +781,6 @@ export class TerminalHostClient extends EventEmitter {
 		return readFileSync(TOKEN_PATH, "utf-8").trim();
 	}
 
-	private isProtocolMismatchError(error: unknown): boolean {
-		return (
-			error instanceof Error && error.message.startsWith("PROTOCOL_MISMATCH:")
-		);
-	}
-
 	private async authenticateControl({
 		token,
 	}: {
@@ -942,7 +898,7 @@ export class TerminalHostClient extends EventEmitter {
 
 			this.streamSocket.on("data", onData);
 
-			const message = `${JSON.stringify({ id, type, payload })}\n`;
+			const message = serializeMessage({ id, type, payload });
 			this.streamSocket.write(message);
 		});
 	}
@@ -991,7 +947,7 @@ export class TerminalHostClient extends EventEmitter {
 							}
 						};
 						socket.on("data", onData);
-						socket.write(`${JSON.stringify(request)}\n`);
+						socket.write(serializeMessage(request));
 					});
 
 				(async () => {
@@ -1150,14 +1106,14 @@ export class TerminalHostClient extends EventEmitter {
 			const isLive = await this.isSocketLive();
 			if (isLive) {
 				if (DEBUG_CLIENT) {
-					console.log("[TerminalHostClient] Socket is live, daemon is running");
+					logger.info("[TerminalHostClient] Socket is live, daemon is running");
 				}
 				return;
 			}
 
 			// Socket exists but not responsive - safe to remove
 			if (DEBUG_CLIENT) {
-				console.log("[TerminalHostClient] Removing stale socket file");
+				logger.info("[TerminalHostClient] Removing stale socket file");
 			}
 			try {
 				unlinkSync(SOCKET_PATH);
@@ -1170,11 +1126,11 @@ export class TerminalHostClient extends EventEmitter {
 		// This handles the case where daemon crashed and PID was reused
 		if (existsSync(PID_PATH)) {
 			if (DEBUG_CLIENT) {
-				console.log("[TerminalHostClient] Killing daemon from stale PID file");
+				logger.info("[TerminalHostClient] Killing daemon from stale PID file");
 			}
 			await this.killDaemonFromPidFile();
 			if (DEBUG_CLIENT) {
-				console.log("[TerminalHostClient] Removing stale PID file");
+				logger.info("[TerminalHostClient] Removing stale PID file");
 			}
 			try {
 				unlinkSync(PID_PATH);
@@ -1186,7 +1142,7 @@ export class TerminalHostClient extends EventEmitter {
 		// Acquire spawn lock to prevent concurrent spawns
 		if (!this.acquireSpawnLock()) {
 			if (DEBUG_CLIENT) {
-				console.log(
+				logger.info(
 					"[TerminalHostClient] Another spawn in progress, waiting...",
 				);
 			}
@@ -1199,8 +1155,8 @@ export class TerminalHostClient extends EventEmitter {
 			// Get path to daemon script
 			const daemonScript = this.getDaemonScriptPath();
 			if (DEBUG_CLIENT) {
-				console.log(`[TerminalHostClient] Daemon script path: ${daemonScript}`);
-				console.log(
+				logger.info(`[TerminalHostClient] Daemon script path: ${daemonScript}`);
+				logger.info(
 					`[TerminalHostClient] Script exists: ${existsSync(daemonScript)}`,
 				);
 			}
@@ -1210,7 +1166,7 @@ export class TerminalHostClient extends EventEmitter {
 			}
 
 			if (DEBUG_CLIENT) {
-				console.log(
+				logger.info(
 					`[TerminalHostClient] Spawning daemon with execPath: ${process.execPath}`,
 				);
 			}
@@ -1236,7 +1192,7 @@ export class TerminalHostClient extends EventEmitter {
 					// Best-effort.
 				}
 			} catch (error) {
-				console.warn(
+				logger.warn(
 					`[TerminalHostClient] Failed to open daemon log file: ${error}`,
 				);
 				// Fall back to ignoring output if we can't open log file
@@ -1272,7 +1228,7 @@ export class TerminalHostClient extends EventEmitter {
 			}
 
 			if (DEBUG_CLIENT) {
-				console.log(
+				logger.info(
 					`[TerminalHostClient] Daemon spawned with PID: ${child.pid}`,
 				);
 			}
@@ -1281,7 +1237,7 @@ export class TerminalHostClient extends EventEmitter {
 
 			// Wait for daemon to start
 			if (DEBUG_CLIENT) {
-				console.log("[TerminalHostClient] Waiting for daemon to start...");
+				logger.info("[TerminalHostClient] Waiting for daemon to start...");
 			}
 			await this.waitForDaemon();
 
@@ -1291,7 +1247,7 @@ export class TerminalHostClient extends EventEmitter {
 			}
 
 			if (DEBUG_CLIENT) {
-				console.log("[TerminalHostClient] Daemon started successfully");
+				logger.info("[TerminalHostClient] Daemon started successfully");
 			}
 		} finally {
 			this.releaseSpawnLock();
@@ -1362,7 +1318,7 @@ export class TerminalHostClient extends EventEmitter {
 				timeoutId,
 			});
 
-			const message = `${JSON.stringify({ id, type, payload })}\n`;
+			const message = serializeMessage({ id, type, payload });
 			this.controlSocket.write(message);
 		});
 	}
@@ -1380,7 +1336,7 @@ export class TerminalHostClient extends EventEmitter {
 		if (!this.controlSocket) return false;
 
 		const id = `notify_${++this.requestCounter}`;
-		const message = `${JSON.stringify({ id, type, payload })}\n`;
+		const message = serializeMessage({ id, type, payload });
 		const messageBytes = Buffer.byteLength(message, "utf8");
 
 		// Check queue limit to prevent OOM under backpressure
@@ -1423,16 +1379,6 @@ export class TerminalHostClient extends EventEmitter {
 		}
 	}
 
-	private getCreateOrAttachKey({
-		sessionId,
-		requestId,
-	}: {
-		sessionId: string;
-		requestId: string;
-	}): string {
-		return `${sessionId}:${requestId}`;
-	}
-
 	// ===========================================================================
 	// Public API
 	// ===========================================================================
@@ -1450,7 +1396,7 @@ export class TerminalHostClient extends EventEmitter {
 		if (
 			request.requestId &&
 			this.canceledCreateOrAttachKeys.delete(
-				this.getCreateOrAttachKey({
+				getCreateOrAttachKey({
 					sessionId: request.sessionId,
 					requestId: request.requestId,
 				}),
@@ -1463,7 +1409,7 @@ export class TerminalHostClient extends EventEmitter {
 			request,
 		);
 		// Version skew: older daemons may not return pid - normalize undefined → null
-		return { ...response, pid: response.pid ?? null };
+		return normalizeCreateOrAttachResponse(response);
 	}
 
 	/**
@@ -1474,7 +1420,7 @@ export class TerminalHostClient extends EventEmitter {
 		request: CancelCreateOrAttachRequest,
 	): Promise<EmptyResponse> {
 		if (this.connectionState === ConnectionState.CONNECTING) {
-			this.canceledCreateOrAttachKeys.add(this.getCreateOrAttachKey(request));
+			this.canceledCreateOrAttachKeys.add(getCreateOrAttachKey(request));
 		}
 		if (
 			this.connectionState !== ConnectionState.CONNECTED ||
@@ -1571,12 +1517,7 @@ export class TerminalHostClient extends EventEmitter {
 			"listSessions",
 			undefined,
 		);
-		return {
-			sessions: response.sessions.map((session) => ({
-				...session,
-				pid: session.pid ?? null,
-			})),
-		};
+		return normalizeListSessionsResponse(response);
 	}
 
 	/**
@@ -1622,7 +1563,7 @@ export class TerminalHostClient extends EventEmitter {
 				try {
 					await this.authenticateControl({ token });
 				} catch (error) {
-					if (this.isProtocolMismatchError(error)) {
+					if (isProtocolMismatchError(error)) {
 						this.resetConnectionState({ emitDisconnected: false });
 						await this.shutdownLegacyDaemon({
 							killSessions: request.killSessions ?? false,

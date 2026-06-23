@@ -1,7 +1,10 @@
+import { db } from "@rox/db/client";
+import { integrationInboundEvents } from "@rox/db/schema";
 import type { LinkSharedEvent, SlackEvent } from "@slack/types";
 import { Client } from "@upstash/qstash";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { verifySlackSignature } from "../verify-signature";
 import { processAppHomeOpened } from "./process-app-home-opened";
 import { processEntityDetails } from "./process-entity-details";
@@ -43,7 +46,7 @@ export async function POST(request: Request) {
 	}
 
 	if (!verifySlackSignature({ body, signature, timestamp })) {
-		console.error("[slack/events] Signature verification failed");
+		logger.error("[slack/events] Signature verification failed");
 		return Response.json({ error: "Invalid signature" }, { status: 401 });
 	}
 
@@ -51,12 +54,12 @@ export async function POST(request: Request) {
 	try {
 		const parsed = JSON.parse(body);
 		if (parsed === null || typeof parsed !== "object") {
-			console.error("[slack/events] Invalid JSON payload");
+			logger.error("[slack/events] Invalid JSON payload");
 			return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
 		}
 		payload = parsed as SlackEventEnvelope;
 	} catch {
-		console.error("[slack/events] Failed to parse JSON payload");
+		logger.error("[slack/events] Failed to parse JSON payload");
 		return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
 	}
 
@@ -73,8 +76,35 @@ export async function POST(request: Request) {
 			typeof team_id !== "string" ||
 			typeof event_id !== "string"
 		) {
-			console.error("[slack/events] Invalid event payload shape");
+			logger.error("[slack/events] Invalid event payload shape");
 			return Response.json({ error: "Invalid payload shape" }, { status: 400 });
+		}
+
+		// Idempotency: Slack redelivers events (and QStash retries below run 3x),
+		// while app_mention/message can create tasks, spawn workspaces and launch
+		// coding agents. Dedup on the Slack-unique event_id (scoped by team) so a
+		// redelivery never double-runs the agent. Mirrors the Telegram webhook.
+		const dedupEventId = `${team_id}:${event_id}`;
+		const [inserted] = await db
+			.insert(integrationInboundEvents)
+			.values({
+				provider: "slack",
+				externalEventId: dedupEventId,
+			})
+			.onConflictDoNothing({
+				target: [
+					integrationInboundEvents.provider,
+					integrationInboundEvents.externalEventId,
+				],
+			})
+			.returning({ id: integrationInboundEvents.id });
+
+		if (!inserted) {
+			logger.info("[slack/events] Duplicate event ignored", {
+				eventId: event_id,
+				teamId: team_id,
+			});
+			return new Response("ok", { status: 200 });
 		}
 
 		if (event.type === "app_mention") {
@@ -89,7 +119,7 @@ export async function POST(request: Request) {
 					retries: 3,
 				});
 			} catch (error) {
-				console.error("[slack/events] Failed to queue mention job:", error);
+				logger.error("[slack/events] Failed to queue mention job:", error);
 			}
 		}
 
@@ -119,7 +149,7 @@ export async function POST(request: Request) {
 					retries: 3,
 				});
 			} catch (error) {
-				console.error(
+				logger.error(
 					"[slack/events] Failed to queue assistant message job:",
 					error,
 				);
@@ -132,7 +162,7 @@ export async function POST(request: Request) {
 				teamId: team_id,
 				eventId: event_id,
 			}).catch((err: unknown) => {
-				console.error("[slack/events] Process link shared error:", err);
+				logger.error("[slack/events] Process link shared error:", err);
 			});
 		}
 
@@ -142,7 +172,7 @@ export async function POST(request: Request) {
 				teamId: team_id,
 				eventId: event_id,
 			}).catch((err: unknown) => {
-				console.error("[slack/events] Process entity details error:", err);
+				logger.error("[slack/events] Process entity details error:", err);
 			});
 		}
 
@@ -152,7 +182,7 @@ export async function POST(request: Request) {
 				typeof appHomeEvent.user !== "string" ||
 				typeof appHomeEvent.tab !== "string"
 			) {
-				console.error("[slack/events] Invalid app home opened payload shape");
+				logger.error("[slack/events] Invalid app home opened payload shape");
 				return new Response("ok", { status: 200 });
 			}
 
@@ -161,7 +191,7 @@ export async function POST(request: Request) {
 				teamId: team_id,
 				eventId: event_id,
 			}).catch((err: unknown) => {
-				console.error("[slack/events] Process app home opened error:", err);
+				logger.error("[slack/events] Process app home opened error:", err);
 			});
 		}
 	}

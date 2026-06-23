@@ -5,6 +5,7 @@ import { initTRPC } from "@trpc/server";
 import { createMastraCode } from "mastracode";
 import superjson from "superjson";
 import { searchFiles } from "./utils/file-search";
+import { injectMemoryContext } from "./utils/memory-context";
 import {
 	authenticateRuntimeMcpServer,
 	destroyRuntime,
@@ -20,6 +21,7 @@ import {
 	subscribeToSessionEvents,
 	syncRuntimeHookSessionId,
 } from "./utils/runtime";
+import { withCustomProviderRuntimeEnv } from "./utils/runtime/custom-provider-runtime-env";
 import { getRoxMcpTools } from "./utils/runtime/rox-mcp";
 import {
 	approvalRespondInput,
@@ -117,6 +119,7 @@ export class ChatRuntimeService {
 	private async getOrCreateRuntime(
 		sessionId: string,
 		cwd?: string,
+		selectedModelId?: string,
 	): Promise<RuntimeSession> {
 		const runtimeCwd = cwd ?? process.cwd();
 		const runtimeKey = `${sessionId}:${runtimeCwd}`;
@@ -144,14 +147,20 @@ export class ChatRuntimeService {
 					this.opts.apiUrl,
 				);
 
-				const runtime = await createMastraCode({
-					cwd: runtimeCwd,
-					extraTools,
-					disableMcp: !ENABLE_MASTRA_MCP_SERVERS,
-					memory: new Memory({ options: { observationalMemory: false } }),
-				});
+				const runtime = await withCustomProviderRuntimeEnv(
+					selectedModelId,
+					async () => {
+						const createdRuntime = await createMastraCode({
+							cwd: runtimeCwd,
+							extraTools,
+							disableMcp: !ENABLE_MASTRA_MCP_SERVERS,
+							memory: new Memory({ options: { observationalMemory: false } }),
+						});
+						await createdRuntime.harness.init();
+						return createdRuntime;
+					},
+				);
 				runtime.hookManager?.setSessionId(sessionId);
-				await runtime.harness.init();
 				runtime.harness.setResourceId({ resourceId: sessionId });
 				await runtime.harness.selectOrCreateThread();
 
@@ -179,6 +188,28 @@ export class ChatRuntimeService {
 
 		this.runtimeCreations.set(runtimeKey, creationPromise);
 		return creationPromise;
+	}
+
+	/**
+	 * Relay a `user_sent_message` pipeline event to the main API (Agent Pipelines,
+	 * design §4.3 "emit seams"). The host runs on local SQLite and cannot reach the
+	 * Neon-backed pipeline dispatcher, so the main API resolves org/project from the
+	 * chat session and fans the event out to matching pipeline triggers.
+	 *
+	 * Fire-and-forget: the relay is dispatched without awaiting and never throws
+	 * into the chat send path. A missing/older API (no `pipeline.ingestEvent`) or a
+	 * transport failure is swallowed — a chat message must always send regardless of
+	 * whether any pipeline is listening.
+	 */
+	private emitUserSentMessagePipelineEvent(
+		chatSessionId: string,
+		message: string,
+	): void {
+		void this.apiClient.pipeline.ingestEvent
+			.mutate({ kind: "user_sent_message", chatSessionId, message })
+			.catch(() => {
+				// Best-effort signal — never break the user's chat send.
+			});
 	}
 
 	createRouter() {
@@ -290,21 +321,49 @@ export class ChatRuntimeService {
 				sendMessage: t.procedure
 					.input(sendMessageInput)
 					.mutation(async ({ input }) => {
+						const selectedModel = input.metadata?.model?.trim();
 						const runtime = await this.getOrCreateRuntime(
 							input.sessionId,
 							input.cwd,
+							selectedModel,
 						);
 						runtime.lastErrorMessage = null;
 						const userMessage =
 							input.payload.content.trim() || "[non-text message]";
 						await onUserPromptSubmit(runtime, userMessage);
+						// Inject the user's approved memory_items as a one-time per-thread
+						// system block so this (and every later) agent run is memory-aware.
+						// Closes the "memories are write-only" dead loop. Best-effort: no-ops
+						// on an existing thread or when the user has no approved memories, and
+						// never throws into the send path.
+						await injectMemoryContext(runtime.harness, this.apiClient);
+						// Emit the `user_sent_message` pipeline event (Agent Pipelines,
+						// design §4.3). This ChatService runs in the host-service process
+						// (apps/desktop host) on local SQLite, where the DB-backed pipeline
+						// dispatcher CANNOT run — `pipeline_triggers` lives in the Neon main
+						// DB. So we relay to the main API over the host's authenticated api
+						// client; `pipeline.ingestEvent` resolves org/project from
+						// chatSessions.id server-side and fans out through
+						// `publishPipelineEvent` → `dispatchPipelineEvent`. Fire-and-forget:
+						// a failing relay must never break the user's chat send (mirrors the
+						// `void generateAndSetTitle` pattern below).
 						const submittedUserMessage = input.payload.content.trim();
-						const selectedModel = input.metadata?.model?.trim();
+						this.emitUserSentMessagePipelineEvent(
+							input.sessionId,
+							submittedUserMessage.length > 0
+								? submittedUserMessage
+								: userMessage,
+						);
 						if (selectedModel) {
-							await runtime.harness.switchModel({
-								modelId: selectedModel,
-								scope: "thread",
-							});
+							await withCustomProviderRuntimeEnv(
+								selectedModel,
+								async (prepared) => {
+									await runtime.harness.switchModel({
+										modelId: prepared.modelId ?? selectedModel,
+										scope: "thread",
+									});
+								},
+							);
 						}
 						const thinkingLevel = input.metadata?.thinkingLevel;
 						if (thinkingLevel) {
@@ -322,20 +381,30 @@ export class ChatRuntimeService {
 				restartFromMessage: t.procedure
 					.input(restartFromMessageInput)
 					.mutation(async ({ input }) => {
+						const selectedModel = input.metadata?.model?.trim();
 						const runtime = await this.getOrCreateRuntime(
 							input.sessionId,
 							input.cwd,
+							selectedModel,
 						);
 						runtime.lastErrorMessage = null;
 						const userMessage =
 							input.payload.content.trim() || "[non-text message]";
 						await onUserPromptSubmit(runtime, userMessage);
 						const submittedUserMessage = input.payload.content.trim();
-						await restartRuntimeFromUserMessage(runtime, {
-							messageId: input.messageId,
-							payload: input.payload,
-							metadata: input.metadata,
-						});
+						await restartRuntimeFromUserMessage(
+							runtime,
+							{
+								messageId: input.messageId,
+								payload: input.payload,
+								metadata: input.metadata,
+							},
+							// Re-inject memory onto the cloned thread before resending, so an
+							// edited first message (which clones into an empty thread) still
+							// gets the approved-memory block. No-ops when the clone already has
+							// messages.
+							() => injectMemoryContext(runtime.harness, this.apiClient),
+						);
 						void generateAndSetTitle(runtime, this.apiClient, {
 							submittedUserMessage:
 								submittedUserMessage.length > 0

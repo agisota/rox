@@ -12,10 +12,13 @@ interface ReasoningBlockProps {
 export function ReasoningBlock({ reasoning }: ReasoningBlockProps) {
 	return (
 		<Collapsible className="not-prose my-2">
-			<CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+			<CollapsibleTrigger
+				aria-label="Размышление"
+				title="Размышление"
+				className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+			>
 				<ChevronRightIcon className="size-3 transition-transform group-data-[state=open]:rotate-90" />
-				<BrainIcon className="size-3" />
-				<span>Размышление</span>
+				<BrainIcon className="size-3.5" />
 			</CollapsibleTrigger>
 			<CollapsibleContent className="mt-1 ml-5 text-xs text-muted-foreground whitespace-pre-wrap border-l border-border/40 pl-3">
 				{reasoning}

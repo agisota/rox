@@ -2,8 +2,8 @@ import {
 	MessageResponse,
 	type MessageResponseProps,
 } from "@rox/ui/ai-elements/message";
+import { StreamingShimmer } from "@rox/ui/motion";
 import { useEffect, useState } from "react";
-import { StreamingShimmer } from "renderer/motion/StreamingShimmer";
 
 const STREAM_TEXT_TICK_MS = 16;
 const STREAM_TEXT_CHARS_PER_TICK = 2;

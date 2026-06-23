@@ -141,6 +141,35 @@ describe("buildPreinstallCatalog", () => {
 		expect(plan.some((item) => item.presetId === "codex")).toBe(false);
 	});
 
+	it("scopes per-OS harness install steps to the requested platform", () => {
+		// `oh-my-claudecode` ships a single unscoped step, so every platform sees
+		// the same command — proving an unscoped step survives filtering on all OSes.
+		const darwin = buildPreinstallCatalog("darwin").find(
+			(item) => item.presetId === "oh-my-claudecode",
+		);
+		const win32 = buildPreinstallCatalog("win32").find(
+			(item) => item.presetId === "oh-my-claudecode",
+		);
+		const linux = buildPreinstallCatalog("linux").find(
+			(item) => item.presetId === "oh-my-claudecode",
+		);
+		expect(darwin?.installCommands).toEqual([
+			"npx -y oh-my-claudecode@latest install --global",
+		]);
+		expect(win32?.installCommands).toEqual(darwin?.installCommands);
+		expect(linux?.installCommands).toEqual(darwin?.installCommands);
+	});
+
+	it("maps non-trio platforms (e.g. freebsd) to the linux install path", () => {
+		const freebsd = buildPreinstallCatalog("freebsd").find(
+			(item) => item.presetId === "oh-my-claudecode",
+		);
+		const linux = buildPreinstallCatalog("linux").find(
+			(item) => item.presetId === "oh-my-claudecode",
+		);
+		expect(freebsd?.installCommands).toEqual(linux?.installCommands);
+	});
+
 	it("never auto-installs an optional item regardless of status", () => {
 		const optional = catalog.find((item) => item.optional);
 		expect(optional).toBeDefined();

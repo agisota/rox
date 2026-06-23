@@ -1,0 +1,33 @@
+{
+	"name": "@rox/scripts",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./sync-model-catalog": {
+			"types": "./src/sync-model-catalog.ts",
+			"default": "./src/sync-model-catalog.ts"
+		},
+		"./backfill-notes-to-knowledge": {
+			"types": "./src/backfill-notes-to-knowledge.ts",
+			"default": "./src/backfill-notes-to-knowledge.ts"
+		}
+	},
+	"scripts": {
+		"clean": "git clean -xdf .cache .turbo dist node_modules",
+		"typecheck": "tsc --noEmit --emitDeclarationOnly false",
+		"test": "bun test",
+		"sync-model-catalog": "bun run src/sync-model-catalog.ts",
+		"backfill-notes-to-knowledge": "bun run src/backfill-notes-to-knowledge.ts"
+	},
+	"dependencies": {
+		"@rox/db": "workspace:*",
+		"@rox/shared": "workspace:*",
+		"drizzle-orm": "0.45.2"
+	},
+	"devDependencies": {
+		"@rox/typescript": "workspace:*",
+		"bun-types": "1.3.11",
+		"typescript": "6.0.3"
+	}
+}

@@ -15,10 +15,14 @@ export {
 } from "./auth/openai";
 export { ChatService } from "./chat-service";
 export {
+	CUSTOM_PROVIDER_PREFIX,
+	CUSTOM_PROVIDER_SLUG,
 	type CustomProviderConfig,
+	clearCustomProviderConfig,
 	getCustomProviderConfig,
 	setCustomProviderConfig,
-	stripOpenAIProviderPrefix,
+	stripCustomProviderPrefix,
+	syncMastracodeCustomProviderSettings,
 	toCustomProviderWireModelId,
 } from "./chat-service/custom-provider-config";
 export type { ChatServiceRouter } from "./router";
