@@ -7,10 +7,11 @@ import {
 } from "@rox/ui/dialog";
 import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
+import { HostStatusInline } from "renderer/components/HostStatusInline";
+import { useHostReadiness } from "renderer/hooks/useHostReadiness";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
-import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
 import {
 	useCreateV1Project,
 	useFinalizeProjectSetup,
@@ -55,8 +56,8 @@ export function TemplateGalleryModal({
 	onError,
 }: TemplateGalleryModalProps) {
 	const isV2CloudEnabled = useIsV2CloudEnabled();
-	const hostService = useLocalHostService();
-	const { activeHostUrl } = hostService;
+	const { activeHostUrl } = useLocalHostService();
+	const { hostReady } = useHostReadiness();
 	const finalizeSetup = useFinalizeProjectSetup();
 	const createV1Project = useCreateV1Project();
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
@@ -83,12 +84,10 @@ export function TemplateGalleryModal({
 		let createdMainWorkspaceId: string | null = null;
 		try {
 			if (isV2CloudEnabled) {
-				if (!activeHostUrl) {
-					showHostServiceUnavailableToast(hostService, {
-						action: "create the project",
-					});
-					return;
-				}
+				// Pre-gated: the template cards are disabled until `hostReady`, and the
+				// inline status drives recovery — so a missing host here is just a
+				// defensive no-op, not a postfacto toast.
+				if (!activeHostUrl) return;
 				const client = getHostServiceClientByUrl(activeHostUrl);
 				const result = await client.project.create.mutate({
 					name: deriveProjectNameFromTemplate(template),
@@ -140,13 +139,18 @@ export function TemplateGalleryModal({
 						пресетами.
 					</DialogDescription>
 				</DialogHeader>
+				{isV2CloudEnabled && <HostStatusInline />}
 				<div className="grid grid-cols-3 gap-3">
 					{PROJECT_TEMPLATES.map((template) => (
 						<TemplateCard
 							key={template.id}
 							template={template}
 							cloning={cloningId === template.id}
-							disabled={cloningId !== null || !parentDir}
+							disabled={
+								cloningId !== null ||
+								!parentDir ||
+								(isV2CloudEnabled && !hostReady)
+							}
 							presetOnlyEnabled={isV2CloudEnabled}
 							onSelect={handleSelect}
 						/>

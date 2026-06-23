@@ -14,9 +14,10 @@ import { toast } from "@rox/ui/sonner";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { LuCheck, LuFolderOpen, LuLoaderCircle } from "react-icons/lu";
+import { HostStatusInline } from "renderer/components/HostStatusInline";
+import { useHostReadiness } from "renderer/hooks/useHostReadiness";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
-import { showHostServiceUnavailableToast } from "renderer/lib/host-service-unavailable";
 import { logger } from "renderer/lib/logger";
 import {
 	type ProjectSetupResult,
@@ -48,8 +49,8 @@ export function NewProjectModal({
 	onSuccess,
 	onError,
 }: NewProjectModalProps) {
-	const hostService = useLocalHostService();
-	const { activeHostUrl } = hostService;
+	const { activeHostUrl } = useLocalHostService();
+	const { hostReady } = useHostReadiness();
 	const finalizeSetup = useFinalizeProjectSetup();
 	const selectDirectory = electronTrpc.window.selectDirectory.useMutation();
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
@@ -156,12 +157,9 @@ export function NewProjectModal({
 	};
 
 	const createFromBlank = async () => {
-		if (!activeHostUrl) {
-			showHostServiceUnavailableToast(hostService, {
-				action: "создать проект",
-			});
-			return;
-		}
+		// Pre-gated: submit/Enter are disabled until `hostReady`, with the inline
+		// status handling recovery — a missing host here is a defensive no-op.
+		if (!activeHostUrl) return;
 		const trimmedParent = parentDir.trim();
 		if (!trimmedParent) {
 			toast.error("Please select a project location");
@@ -190,12 +188,10 @@ export function NewProjectModal({
 	};
 
 	const createFromClone = async () => {
-		if (!activeHostUrl) {
-			showHostServiceUnavailableToast(hostService, {
-				action: "клонировать репозиторий",
-			});
-			return;
-		}
+		// Pre-gated: the submit/Enter paths are disabled until `hostReady`, with the
+		// inline status handling recovery — so a missing host here is a defensive
+		// no-op rather than a postfacto toast.
+		if (!activeHostUrl) return;
 		const trimmedUrl = url.trim();
 		const trimmedParent = parentDir.trim();
 		if (!trimmedUrl) {
@@ -297,7 +293,7 @@ export function NewProjectModal({
 								placeholder="https://github.com/owner/repo.git or /path/to/repo"
 								disabled={working}
 								onKeyDown={(e) => {
-									if (e.key === "Enter" && !working) {
+									if (e.key === "Enter" && !working && hostReady) {
 										void submit();
 									}
 								}}
@@ -321,7 +317,7 @@ export function NewProjectModal({
 							placeholder="my-project"
 							disabled={working}
 							onKeyDown={(e) => {
-								if (e.key === "Enter" && !working) {
+								if (e.key === "Enter" && !working && hostReady) {
 									void submit();
 								}
 							}}
@@ -365,6 +361,8 @@ export function NewProjectModal({
 					</div>
 				</Shake>
 
+				<HostStatusInline />
+
 				<DialogFooter>
 					<Button
 						type="button"
@@ -374,10 +372,23 @@ export function NewProjectModal({
 					>
 						Cancel
 					</Button>
-					<Button onClick={() => void submit()} disabled={working}>
-						{/* Crossfaded label: idle ↔ working… ↔ done ✓ */}
+					<Button
+						onClick={() => void submit()}
+						disabled={working || !hostReady}
+					>
+						{/* Crossfaded label: Подключение… ↔ Create/Clone ↔ working… ↔ done ✓ */}
 						<AnimatePresence mode="wait" initial={false}>
-							{working ? (
+							{!hostReady && !working ? (
+								<motion.span
+									key="connecting"
+									initial={{ opacity: 0, y: 4 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -4 }}
+									transition={{ duration: 0.12 }}
+								>
+									Подключение…
+								</motion.span>
+							) : working ? (
 								<motion.span
 									key="working"
 									className="flex items-center gap-1.5"
