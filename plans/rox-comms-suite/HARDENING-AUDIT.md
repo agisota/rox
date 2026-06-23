@@ -58,12 +58,13 @@ comes from refetch/invalidation, not live-sync. See "Realtime model (as-built)" 
 scopes), and the tRPC path was the shipped reality. Documenting it makes the gap an accepted
 decision rather than a silent contradiction of the schema-header "live-sync" promises.
 
-**Consequence / deferred owner decision:** migrating the comms spine (and the rest of the suite) to
-**ElectricSQL live shapes** is a deferred owner decision. It requires (a) adding `comms_*`/`mail_*`/
-`cal_*`/`note_*` shapes to `table-scopes.ts` scoped by `user_id + organization_id`, (b) a **re-audit
-of shape isolation** (the MASTER-PLAN's #1 risk — other-org/other-conversation leakage), and (c)
-swapping client `useQuery` → `useLiveQuery` with cache-first rendering (AGENTS.md #9). Until then,
-optimistic updates + tighter invalidation/polling are the lighter-weight interim option.
+**Owner decision (2026-06-23): MIGRATE to ElectricSQL live shapes** (future wave; tRPC is the interim
+as-built state). The migration requires (a) adding `comms_*`/`mail_*`/`cal_*`/`note_*` shapes to
+`table-scopes.ts` scoped by `user_id + organization_id`, (b) a **mandatory re-audit of shape
+isolation** (the MASTER-PLAN's #1 risk — other-org/other-conversation leakage) as a release gate, and
+(c) swapping client `useQuery` → `useLiveQuery` with cache-first rendering (AGENTS.md #9). tRPC
+request/response remains the shipped behavior until that wave lands; optimistic updates + tighter
+invalidation are the lighter-weight bridge in the meantime.
 
 ---
 
@@ -80,8 +81,9 @@ event/note until it refetches (navigation, focus, manual invalidation, or any po
 hook sets). The schema-header references to live-sync describe the **future** Electric option, not
 current behavior.
 
-**ElectricSQL live shapes — documented future option (deferred owner decision):** see AD-2 above for
-the migration shape and the mandatory shape-isolation re-audit gate.
+**ElectricSQL live shapes — DECIDED migration target (owner, 2026-06-23):** see AD-2 above for the
+migration shape and the mandatory shape-isolation re-audit gate. tRPC remains the interim until that
+wave ships.
 
 ---
 
