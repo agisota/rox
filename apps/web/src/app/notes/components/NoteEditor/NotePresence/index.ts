@@ -1,0 +1,1 @@
+export { NotePresence } from "./NotePresence";

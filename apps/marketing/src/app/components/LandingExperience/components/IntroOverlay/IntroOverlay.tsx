@@ -410,43 +410,63 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			// Swap slides only once the logo/CPU fade has completed.
 			.set(slide1, { opacity: 0 }, `<+=${LOGO_FADE_MS}`)
 			.set(slide2, { opacity: 1 }, "<<")
+			// Seed the cloud words in the same "pre-reveal" state the hero's flank
+			// words use: invisible and scaled up large, ready to scramble/scale in.
+			// `scale` here is a standalone CSS property and composes on top of each
+			// tag's resting transform (translate + rotate + --rox-tag-scale), so the
+			// per-word positions/rotations/colors from featureCloudLayout survive.
 			.set(
 				slide2Words,
 				{
 					opacity: 0,
-					scale: 0.82,
-					translateY: 12,
+					scale: 1.85,
 				},
 				"<<",
 			)
+			// Beat 4 entrance — mirror the hero reveal (slide1Flank, ≈282-318):
+			// scale-from-large + center-origin scrambleText with the same cursor
+			// glyphs and easing, instead of the old opacity/translateY drift.
+			// Unlike the hero flank (which blanks text via override:" "), the cloud
+			// words are tiny + scattered, so each word scrambles straight into its
+			// REAL label — staying legible through the reveal while keeping the
+			// hero's scale-from-large + center-origin stagger character.
 			.add(
 				slide2Words,
 				{
-					opacity: { to: 1, duration: 520, ease: "out(2)" },
-					scale: { to: 1, duration: 720, ease: "out(3)" },
-					translateY: { to: 0, duration: 720, ease: "out(3)" },
+					opacity: { to: 1, duration: 360, ease: "out(2)" },
+					scale: { to: 1, duration: 900, ease: "out(3)" },
+					innerHTML: scrambleText({
+						override: false,
+						from: "center",
+						duration: 640,
+						settleDuration: 360,
+						cursor: CURSOR_LIGHT,
+						perturbation: 0.25,
+					}),
 				},
-				stagger([40, 1800], {
-					from: "random",
+				stagger([60, 1500], {
+					from: "center",
 					ease: "out(3)",
 					start: "<<+=120",
 				}),
 			)
+			// Second scramble pass — a brief heavier-cursor shimmer that re-settles
+			// each word, echoing the hero center's resolve beat.
 			.add(
 				slide2Words,
 				{
 					innerHTML: scrambleText({
 						override: false,
-						from: "random",
-						duration: 700,
-						settleDuration: 400,
-						cursor: CURSOR_LIGHT,
-						perturbation: 0.4,
+						from: "center",
+						duration: 520,
+						settleDuration: 320,
+						cursor: CURSOR_HEAVY,
+						perturbation: 0.3,
 					}),
 				},
-				stagger([30, 1200], { from: "random", start: "<+=1600" }),
+				stagger([30, 900], { from: "center", start: "<+=1200" }),
 			)
-			.add(root, { opacity: 1, duration: 1800 }, "<+=1200");
+			.add(root, { opacity: 1, duration: 1800 }, "<+=1100");
 
 		timeline.init();
 		timeline.restart();

@@ -17,6 +17,8 @@ import { useMemo, useState } from "react";
 import { HiOutlineArrowPath, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { track } from "renderer/lib/analytics";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { TemplateGalleryModal } from "renderer/routes/_authenticated/components/TemplateGalleryModal";
+import { getLaunchpadAction } from "./launchpad-action";
 
 const AVAILABILITY_LABEL: Record<ExperimentalFeatureAvailability, string> = {
 	available: "Available",
@@ -99,6 +101,7 @@ function featureCardId(id: ExperimentalFeatureId): string {
 
 export function ExperimentalFeatureCatalog() {
 	const [searchQuery, setSearchQuery] = useState("");
+	const [templateGalleryOpen, setTemplateGalleryOpen] = useState(false);
 	const utils = electronTrpc.useUtils();
 	const statesQuery =
 		electronTrpc.settings.experimentalFeatures.list.useQuery();
@@ -174,6 +177,10 @@ export function ExperimentalFeatureCatalog() {
 		: EXPERIMENTAL_FEATURES.length;
 
 	function openLaunchpadFeature(id: ExperimentalFeatureId) {
+		if (getLaunchpadAction(id) === "open-template-gallery") {
+			setTemplateGalleryOpen(true);
+			return;
+		}
 		const card = document.getElementById(featureCardId(id));
 		card?.scrollIntoView({ block: "center", behavior: "smooth" });
 		card?.focus({ preventScroll: true });
@@ -397,6 +404,20 @@ export function ExperimentalFeatureCatalog() {
 					);
 				})}
 			</div>
+
+			<TemplateGalleryModal
+				open={templateGalleryOpen}
+				onOpenChange={setTemplateGalleryOpen}
+				onCreated={({ projectId }) => {
+					setTemplateGalleryOpen(false);
+					toast.success("Проект создан из шаблона", {
+						description: `ID проекта: ${projectId}`,
+					});
+				}}
+				onError={(message) =>
+					toast.error("Не удалось создать проект", { description: message })
+				}
+			/>
 		</section>
 	);
 }

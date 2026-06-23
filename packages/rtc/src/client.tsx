@@ -1,11 +1,16 @@
 "use client";
 
 import { RoomAudioRenderer, RoomContext } from "@livekit/components-react";
-import { Room } from "livekit-client";
+import { Room, RoomEvent } from "livekit-client";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 
 import { resolveLivekitEnv } from "./env";
 import type { VoiceConnectionState } from "./types";
+
+// Re-exported so app consumers can subscribe to room lifecycle events (e.g. a
+// live participant count) without taking a direct dependency on `livekit-client`.
+export { RoomEvent };
+export type { Room };
 
 export interface UseVoiceRoomArgs {
 	/** Org-scoped room name (`org:{organizationId}:voice:{channelId}`). */

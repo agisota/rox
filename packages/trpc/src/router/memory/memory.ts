@@ -7,7 +7,7 @@ import {
 import { getCurrentTxid } from "@rox/db/utils";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { Client } from "@upstash/qstash";
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "../../env";
@@ -250,11 +250,29 @@ export const memoryRouter = {
 				.set({ blobUrl: blob.url })
 				.where(eq(memoryImportJobs.id, job.id));
 
-			await qstash.publishJSON({
-				url: `${env.NEXT_PUBLIC_API_URL}/api/memory/import/process`,
-				body: { jobId: job.id },
-				retries: 1,
-			});
+			try {
+				await qstash.publishJSON({
+					url: `${env.NEXT_PUBLIC_API_URL}/api/memory/import/process`,
+					body: { jobId: job.id },
+					retries: 1,
+				});
+			} catch (_enqueueError) {
+				// The blob holds the user's private chat export and is publicly
+				// readable; if we never enqueued a processor, nothing will delete it.
+				// Reap it now and fail the job instead of leaking it indefinitely.
+				await del(blob.url).catch(() => {});
+				await db
+					.update(memoryImportJobs)
+					.set({
+						status: "failed",
+						error: "Failed to enqueue import processor",
+					})
+					.where(eq(memoryImportJobs.id, job.id));
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Не удалось запустить импорт.",
+				});
+			}
 			return { jobId: job.id };
 		}),
 } satisfies TRPCRouterRecord;

@@ -15,6 +15,7 @@ import type { ApiAuthProvider } from "./providers/auth";
 import type { HostAuthProvider } from "./providers/host-auth";
 import type { ModelProviderRuntimeResolver } from "./providers/model-providers";
 import { AgentPreinstaller } from "./runtime/agent-preinstall";
+import { createServiceTokenClaimTransport } from "./runtime/agent-state/claim-client";
 import { startAgentStateRuntime } from "./runtime/agent-state/runtime";
 import { ChatRuntimeManager } from "./runtime/chat";
 import { WorkspaceFilesystemManager } from "./runtime/filesystem";
@@ -132,7 +133,22 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 	// so unset env means zero behavior change. Construction is synchronous; the
 	// libSQL replica opens in the background, mirroring the other fire-and-forget
 	// bootstraps above. Disposed in `dispose()` below.
-	const agentState = startAgentStateRuntime({ env: process.env });
+	//
+	// Strict single-writer claims are NEVER resolved by libSQL LWW — they go
+	// through the cloud `runtime.claim` CAS lease via a service-token transport.
+	// Wiring is opt-in on RUNTIME_SERVICE_TOKEN: without it the claim path stays
+	// unwired and claims degrade to `{ ok: false, reason: "claims-not-wired" }`
+	// (graceful refusal, never an incorrect grant).
+	const claimTransport = createServiceTokenClaimTransport({
+		cloudApiUrl: config.cloudApiUrl,
+		serviceToken: process.env.RUNTIME_SERVICE_TOKEN ?? "",
+		onError: (error) =>
+			logger.warn("[host-service] agent-state claim transport failed:", error),
+	});
+	const agentState = startAgentStateRuntime({
+		env: process.env,
+		claimTransport,
+	});
 
 	const runtime = {
 		auth: chatService,

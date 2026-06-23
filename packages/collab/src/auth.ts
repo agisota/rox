@@ -6,6 +6,8 @@ import { organizationIdFromRoomId, type RoxUserMeta } from "./types";
 /** A LiveBlocks session, structurally — the subset `authorizeRoom` uses. */
 interface LiveblocksSession {
 	readonly FULL_ACCESS: readonly string[];
+	/** Read + presence scope (`["room:read","room:presence:write","comments:read"]`). */
+	readonly READ_ACCESS: readonly string[];
 	allow(roomIdOrPattern: string, perms: readonly string[]): LiveblocksSession;
 	authorize(): Promise<{ status: number; body: string }>;
 }
@@ -36,6 +38,8 @@ export interface AuthorizeRoomArgs {
 	 * hit the LiveBlocks cloud. Defaults to a real client built from the secret.
 	 */
 	liveblocks?: LiveblocksRoomClient;
+	/** Permission to grant. Defaults to full access (dashboard rooms). */
+	access?: "full" | "read";
 }
 
 export interface AuthorizeRoomResult {
@@ -58,6 +62,7 @@ export async function authorizeRoom({
 	roomId,
 	userInfo,
 	liveblocks,
+	access,
 }: AuthorizeRoomArgs): Promise<AuthorizeRoomResult> {
 	const roomOrg = organizationIdFromRoomId(roomId);
 	if (!roomOrg) {
@@ -75,7 +80,11 @@ export async function authorizeRoom({
 	const session = client.prepareSession(userId, {
 		userInfo: { ...userInfo, organizationId },
 	});
-	session.allow(roomId, session.FULL_ACCESS);
+	// `read` → LiveBlocks' documented read+presence scope (`READ_ACCESS`);
+	// everything else (incl. dashboard rooms) keeps full access.
+	const perms =
+		(access ?? "full") === "read" ? session.READ_ACCESS : session.FULL_ACCESS;
+	session.allow(roomId, perms);
 
 	const { body, status } = await session.authorize();
 	if (status !== 200) {

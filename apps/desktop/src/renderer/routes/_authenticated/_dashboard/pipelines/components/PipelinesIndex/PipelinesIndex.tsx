@@ -19,7 +19,8 @@ import { Network, Plus, Workflow } from "lucide-react";
 import { useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
-import { PIPELINE_TEMPLATES } from "../templates";
+import { PipelinesEmptyState } from "../PipelinesEmptyState";
+import { PIPELINE_TEMPLATES, type PipelineTemplate } from "../templates";
 
 /** Kebab-case a free-text name into a slug seed. */
 function slugify(input: string): string {
@@ -71,19 +72,26 @@ export function PipelinesIndex() {
 
 	const pipelines = pipelinesQuery.data ?? [];
 
-	const handleCreate = () => {
-		const template =
+	/**
+	 * Create a pipeline from a template. When `template` is passed (e.g. an
+	 * empty-state gallery card), it creates from that template directly with its
+	 * default name — skipping the dialog. Otherwise it falls back to the dialog's
+	 * selected template + typed name.
+	 */
+	const handleCreate = (template?: PipelineTemplate) => {
+		const chosen =
+			template ??
 			PIPELINE_TEMPLATES.find((t) => t.id === templateId) ??
 			PIPELINE_TEMPLATES[0];
-		if (!template) return;
-		const finalName = name.trim() || template.name;
-		const slug = `${slugify(finalName) || template.slugSeed}-${Date.now()
+		if (!chosen) return;
+		const finalName = (template ? "" : name.trim()) || chosen.name;
+		const slug = `${slugify(finalName) || chosen.slugSeed}-${Date.now()
 			.toString(36)
 			.slice(-4)}`;
 		createMutation.mutate({
 			name: finalName,
 			slug,
-			draftState: template.build(),
+			draftState: chosen.build(),
 		});
 	};
 
@@ -152,7 +160,7 @@ export function PipelinesIndex() {
 						<DialogFooter>
 							<Button
 								disabled={createMutation.isPending}
-								onClick={handleCreate}
+								onClick={() => handleCreate()}
 							>
 								Создать
 							</Button>
@@ -178,12 +186,10 @@ export function PipelinesIndex() {
 			)}
 
 			{pipelinesQuery.isSuccess && pipelines.length === 0 && (
-				<div className="rounded-lg border border-dashed p-10 text-center">
-					<Workflow className="mx-auto mb-3 size-8 text-muted-foreground" />
-					<p className="text-sm text-muted-foreground">
-						Пока нет пайплайнов. Создайте первый из шаблона.
-					</p>
-				</div>
+				<PipelinesEmptyState
+					onSelectTemplate={handleCreate}
+					isCreating={createMutation.isPending}
+				/>
 			)}
 
 			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

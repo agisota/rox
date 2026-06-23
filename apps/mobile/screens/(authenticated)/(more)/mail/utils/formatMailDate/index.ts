@@ -1,0 +1,1 @@
+export { formatMailDate } from "./formatMailDate";

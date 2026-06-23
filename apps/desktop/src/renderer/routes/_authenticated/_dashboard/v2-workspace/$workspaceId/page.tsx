@@ -19,7 +19,9 @@ import { V2PresetsBar } from "./components/V2PresetsBar";
 import { V2WorkspaceRunButton } from "./components/V2WorkspaceRunButton";
 import { WorkspaceEmptyState } from "./components/WorkspaceEmptyState";
 import { WorkspaceMissingWorktreeState } from "./components/WorkspaceMissingWorktreeState";
+import { WorkspacePresence } from "./components/WorkspacePresence";
 import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
+import { WorkspaceVoiceButton } from "./components/WorkspaceVoiceButton";
 import { useAgentBridge } from "./hooks/useAgentBridge";
 import { useBrowserShellInteractionPassthrough } from "./hooks/useBrowserShellInteractionPassthrough";
 import { useClearActivePaneAttention } from "./hooks/useClearActivePaneAttention";
@@ -344,7 +346,9 @@ function V2WorkspaceContent() {
 												onToggleShowPresetsBar={setShowPresetsBar}
 											/>
 										</AnimatedHeight>
-										<div className="flex h-8 min-w-0 shrink-0 items-center justify-end border-b border-border bg-background px-2">
+										<div className="flex h-8 min-w-0 shrink-0 items-center justify-end gap-2 border-b border-border bg-background px-2">
+											<WorkspacePresence workspaceId={workspaceId} />
+											<WorkspaceVoiceButton workspaceId={workspaceId} />
 											{workspaceRunButton}
 										</div>
 									</div>
@@ -412,6 +416,7 @@ function V2WorkspaceContent() {
 												onSelectFile={openFilePaneFromTreeClick}
 												onSelectDiffFile={openDiffPane}
 												onOpenComment={openCommentPane}
+												onOpenChat={addChatTab}
 												onSearch={handleQuickOpen}
 												selectedFilePath={selectedFilePath}
 												pendingReveal={pendingReveal}

@@ -102,4 +102,28 @@ describe("planRequestSettlement", () => {
 		expect(plan.usage.tokensIn).toBe(0);
 		expect(plan.usage.tokensOut).toBe(0);
 	});
+
+	it("clamps non-finite token counts to zero in the usage row", () => {
+		for (const bad of [
+			{ inputTokens: Number.NaN, outputTokens: Number.NaN },
+			{
+				inputTokens: Number.POSITIVE_INFINITY,
+				outputTokens: Number.NEGATIVE_INFINITY,
+			},
+			// Derives to non-finite (e.g. 0/0) rather than a literal NaN.
+			{ inputTokens: 0 / 0, outputTokens: 1 / 0 },
+		] satisfies RequestUsage[]) {
+			const plan = planRequestSettlement({
+				balance: 0,
+				usage: bad,
+				entry: free,
+				tier: "free",
+				modelId: "rox-r1",
+			});
+			expect(plan.usage.tokensIn).toBe(0);
+			expect(plan.usage.tokensOut).toBe(0);
+			expect(Number.isFinite(plan.usage.tokensIn)).toBe(true);
+			expect(Number.isFinite(plan.usage.tokensOut)).toBe(true);
+		}
+	});
 });

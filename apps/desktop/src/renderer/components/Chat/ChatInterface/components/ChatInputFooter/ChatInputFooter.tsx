@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusPromptOnPane } from "renderer/components/Chat/ChatInterface/hooks/useFocusPromptOnPane";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import type { SlashCommand } from "../../hooks/useSlashCommands";
 import type { ModelOption, PermissionMode } from "../../types";
@@ -127,6 +128,7 @@ export function ChatInputFooter({
 	const dictationConfigured = voiceConfig?.configured ?? false;
 
 	const trpcUtils = chatServiceTrpc.useUtils();
+	const electronUtils = electronTrpc.useUtils();
 	const searchFiles = useCallback(
 		async (query: string) => {
 			const results = await trpcUtils.workspace.searchFiles.fetch({
@@ -177,10 +179,18 @@ export function ChatInputFooter({
 			setTranscribing(true);
 			try {
 				const audioBase64 = await blobToBase64(recording.blob);
+				// Pre-supplied context (Settings → Voice) so the post-process model
+				// can resolve names/jargon/intent. Fetched fresh per dictation;
+				// empty/missing is fine and simply omitted.
+				const voiceAgentContext =
+					await electronUtils.settings.getVoiceAgentContext
+						.fetch()
+						.catch(() => "");
 				const result = await apiClient.voice.transcribe.mutate({
 					audioBase64,
 					mimeType: recording.mimeType,
 					durationMs: recording.durationMs,
+					voiceAgentContext: voiceAgentContext?.trim() || undefined,
 				});
 				const text = (result.processed?.ru || result.rawText || "").trim();
 				if (!text) {
@@ -202,7 +212,7 @@ export function ChatInputFooter({
 				setTranscribing(false);
 			}
 		},
-		[textInput, handleSend],
+		[textInput, handleSend, electronUtils],
 	);
 
 	return (

@@ -10,6 +10,7 @@ import {
 	integrationConnections,
 	invitations,
 	journalEntries,
+	journalEvents,
 	members,
 	memoryImportJobs,
 	memoryItems,
@@ -20,6 +21,7 @@ import {
 	tasks,
 	teamMembers,
 	teams,
+	userAmbientSettings,
 	v2Clients,
 	v2Hosts,
 	v2Projects,
@@ -138,6 +140,10 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 		orgColumn: journalEntries.organizationId,
 		userColumn: journalEntries.createdBy,
 	},
+	journal_events: {
+		orgColumn: journalEvents.organizationId,
+		userColumn: journalEvents.createdBy,
+	},
 	memory_import_jobs: {
 		orgColumn: memoryImportJobs.organizationId,
 		userColumn: memoryImportJobs.createdBy,
@@ -145,6 +151,10 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 	memory_items: {
 		orgColumn: memoryItems.organizationId,
 		userColumn: memoryItems.createdBy,
+	},
+	user_ambient_settings: {
+		orgColumn: userAmbientSettings.organizationId,
+		userColumn: userAmbientSettings.createdBy,
 	},
 
 	github_repositories: { orgColumn: githubRepositories.organizationId },

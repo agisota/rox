@@ -54,13 +54,13 @@ export function Footer() {
 		>
 			<div
 				className={`pointer-events-auto mx-auto max-w-7xl px-5 sm:px-8 ${
-					isHome ? "pb-10 pt-3 sm:pb-11" : "pb-8 pt-5 sm:pb-10"
+					isHome ? "pb-6 pt-3 sm:pb-7" : "pb-8 pt-5 sm:pb-10"
 				}`}
 			>
 				<nav
 					className={
 						isHome
-							? "grid w-full grid-cols-[1fr_auto_1fr] items-start gap-x-5 overflow-visible whitespace-nowrap sm:gap-x-20 md:gap-x-32"
+							? "mx-auto grid w-full max-w-xl grid-cols-[1fr_auto_1fr] items-start gap-x-4 overflow-visible whitespace-nowrap sm:max-w-2xl sm:gap-x-12 md:gap-x-16"
 							: "flex flex-wrap items-center justify-center gap-x-7 gap-y-2 sm:gap-x-9"
 					}
 					aria-label="Нижняя навигация"
@@ -73,7 +73,7 @@ export function Footer() {
 					<Link
 						href="/"
 						aria-label="Rox"
-						className="mx-auto mt-16 flex w-fit items-center justify-center text-white/70 opacity-40 saturate-[0.4] transition-[color,filter,opacity] hover:text-white hover:opacity-80 hover:saturate-[0.8] sm:mt-28 [&_img]:h-[54px] [&_img]:w-auto"
+						className="mx-auto mt-9 flex w-fit items-center justify-center text-white/70 opacity-40 saturate-[0.4] transition-[color,filter,opacity] hover:text-white hover:opacity-80 hover:saturate-[0.8] sm:mt-14 [&_img]:h-[54px] [&_img]:w-auto"
 					>
 						<RoxLogo />
 					</Link>

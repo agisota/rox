@@ -6,6 +6,7 @@ import { members, userAttribution } from "@rox/db/schema";
 import type { sessions } from "@rox/db/schema/auth";
 import * as authSchema from "@rox/db/schema/auth";
 import { seedDefaultStatuses } from "@rox/db/seed-default-statuses";
+import { seedDemoProject } from "@rox/db/seed-demo-project";
 import { MemberAddedEmail } from "@rox/email/emails/member-added";
 import { MemberRemovedEmail } from "@rox/email/emails/member-removed";
 import { OrganizationInvitationEmail } from "@rox/email/emails/organization-invitation";
@@ -68,6 +69,18 @@ const desktopDevOrigins =
 export const auth = betterAuth({
 	baseURL: env.NEXT_PUBLIC_API_URL,
 	secret: env.BETTER_AUTH_SECRET,
+	// Encrypt OAuth access/refresh/id tokens at rest in `auth.accounts`.
+	// better-auth's native at-rest encryption (keyed by `secret` above) wraps
+	// tokens on write via `setTokenUtil` and decrypts on every INTERNAL read via
+	// `decryptOAuthToken`. Crucially these tokens are only ever read back by
+	// better-auth's own engine (token refresh / get-access-token), never by Rox
+	// application code, so the native flag is the only mechanism that sits on the
+	// real read path. Backward-compatible + lazy: `decryptOAuthToken` guards with
+	// `isLikelyEncrypted`, so pre-existing plaintext rows pass through untouched
+	// and re-encrypt on their next write. No data migration required.
+	account: {
+		encryptOAuthTokens: true,
+	},
 	disabledPaths: [],
 	database: drizzleAdapter(db, {
 		provider: "pg",
@@ -506,6 +519,19 @@ export const auth = betterAuth({
 
 				afterCreateOrganization: async ({ organization }) => {
 					await seedDefaultStatuses(organization.id);
+					// Seed the demo project so a freshly-created org lands in a usable
+					// workspace instead of an empty project list (issue #26). Unlike
+					// default statuses (the task system depends on them), the demo
+					// project is non-essential onboarding UX, so its failure must never
+					// block or roll back org creation — keep it best-effort.
+					try {
+						await seedDemoProject(organization.id);
+					} catch (error) {
+						console.error(
+							`afterCreateOrganization: failed to seed demo project for org ${organization.id}`,
+							error,
+						);
+					}
 				},
 
 				beforeRemoveMember: async ({ member, organization }) => {

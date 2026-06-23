@@ -30,7 +30,18 @@ jobs:
           key: ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-${{ hashFiles('bun.lock') }}
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Sherif
         run: bunx sherif
@@ -58,7 +69,18 @@ jobs:
           key: ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-${{ hashFiles('bun.lock') }}
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Lint
         run: bun run lint
@@ -86,7 +108,18 @@ jobs:
           key: ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-${{ hashFiles('bun.lock') }}
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Install Linux native build deps
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxkbfile-dev
@@ -123,7 +156,18 @@ jobs:
           key: ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-${{ hashFiles('bun.lock') }}
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Typecheck
         run: bun run typecheck
@@ -154,7 +198,18 @@ jobs:
           key: ${{ runner.os }}-bun-${{ steps.setup-bun.outputs.bun-revision }}-${{ hashFiles('bun.lock') }}
 
       - name: Install dependencies
-        run: bun install --frozen --ignore-scripts
+        run: |
+          # Retry to absorb transient registry/network flakes (e.g. tarball download failures).
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            if bun install --frozen --ignore-scripts; then break; fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::bun install failed after $attempts attempts"
+              exit 1
+            fi
+            echo "::warning::bun install failed (attempt $attempt); retrying in $((attempt*10))s"
+            sleep $((attempt*10))
+          done
 
       - name: Install Linux native build deps
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxkbfile-dev

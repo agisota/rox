@@ -4,6 +4,7 @@ import { Input } from "@rox/ui/input";
 import { toast } from "@rox/ui/sonner";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useState } from "react";
+import { useSignOut } from "renderer/hooks/useSignOut";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -71,9 +72,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 				}
 			: undefined);
 
-	const signOutMutation = electronTrpc.auth.signOut.useMutation({
-		onSuccess: () => toast.success("Вы вышли из аккаунта"),
-	});
+	const signOut = useSignOut();
 
 	const selectImageMutation = electronTrpc.window.selectImageFile.useMutation();
 
@@ -192,7 +191,14 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 						>
 							<Button
 								variant="outline"
-								onClick={() => signOutMutation.mutate()}
+								onClick={async () => {
+									try {
+										await signOut();
+										toast.success("Вы вышли из аккаунта");
+									} catch {
+										toast.error("Не удалось выйти из аккаунта");
+									}
+								}}
 							>
 								Выйти
 							</Button>

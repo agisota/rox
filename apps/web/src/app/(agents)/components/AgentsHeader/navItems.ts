@@ -13,5 +13,9 @@ export const navItems: AgentsNavItem[] = [
 	{ label: "Агенты", href: "/agents" },
 	{ label: "Рабочие области", href: "/agents/workspaces" },
 	{ label: "Пайплайны", href: "/agents/pipelines" },
+	{ label: "Входящие", href: "/inbox" },
+	{ label: "Календарь", href: "/calendar" },
 	{ label: "Интеграции", href: "/integrations" },
+	{ label: "Диск", href: "/drive" },
+	{ label: "Заметки", href: "/notes" },
 ];

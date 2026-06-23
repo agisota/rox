@@ -10,6 +10,11 @@ type AnyRow = Record<string, unknown>;
 
 const state: {
 	topupRow: AnyRow | undefined;
+	// Set once a delivery wins the in-tx conditional claim. Distinct from the
+	// pre-transaction read (`topupRow`) so a second delivery can pass the
+	// non-transactional pre-check yet still lose the atomic claim — modelling the
+	// real double-delivery race.
+	topupClaimed: boolean;
 	balanceRow: AnyRow | undefined;
 	topupUpdated: AnyRow[];
 	balanceUpdated: AnyRow[];
@@ -17,6 +22,7 @@ const state: {
 	balanceSeededFor: string[];
 } = {
 	topupRow: undefined,
+	topupClaimed: false,
 	balanceRow: undefined,
 	topupUpdated: [],
 	balanceUpdated: [],
@@ -26,13 +32,38 @@ const state: {
 
 const fakeTx = {
 	update: (table: { __name?: string }) => ({
-		set: (vals: AnyRow) => ({
-			where: () => {
-				if (table.__name === "rox_topups") state.topupUpdated.push(vals);
-				else state.balanceUpdated.push(vals);
-				return Promise.resolve();
-			},
-		}),
+		set: (vals: AnyRow) => {
+			// The conditional topup claim flips a still-`pending` row to `confirmed`
+			// and records it; a racing delivery (row already `confirmed`) affects 0
+			// rows. Balance updates are unconditional. `apply()` returns the affected
+			// rows so the route's `.returning()` can detect a lost race (empty array).
+			const apply = (): AnyRow[] => {
+				if (table.__name === "rox_topups") {
+					// Atomic claim of a pending row: first caller wins, later racing
+					// callers see 0 affected rows.
+					if (state.topupRow?.status !== "pending" || state.topupClaimed)
+						return [];
+					state.topupClaimed = true;
+					state.topupUpdated.push(vals);
+					return [{ id: state.topupRow.id ?? "topup-1" }];
+				}
+				state.balanceUpdated.push(vals);
+				return [];
+			};
+			// `.where()` resolves to a Promise (for the unconditional balance update,
+			// which is awaited directly) that ALSO exposes `.returning()` for the
+			// conditional topup claim, which reads the affected rows.
+			return {
+				where: () => {
+					const rows = apply();
+					const builder = Promise.resolve() as Promise<void> & {
+						returning: () => Promise<AnyRow[]>;
+					};
+					builder.returning = () => Promise.resolve(rows);
+					return builder;
+				},
+			};
+		},
 	}),
 	insert: () => ({
 		values: (vals: AnyRow) => {
@@ -86,6 +117,13 @@ mock.module("@rox/db/schema", () => ({
 	roxLedger: { __name: "rox_ledger" },
 }));
 
+// The route is gated behind env.DVNET_ENABLED (dv.net is disabled by default).
+// Existing behavior tests run with it enabled; the disabled path is its own test.
+const envState: { DVNET_ENABLED: string | undefined } = {
+	DVNET_ENABLED: "true",
+};
+mock.module("@/env", () => ({ env: envState }));
+
 const { POST } = await import("./route");
 
 function buildRequest(body: unknown) {
@@ -117,11 +155,22 @@ function confirmedWebhook(overrides: AnyRow = {}) {
 describe("dv.net webhook route (T5)", () => {
 	beforeEach(() => {
 		state.topupRow = { ...PENDING_TOPUP };
+		state.topupClaimed = false;
 		state.balanceRow = { balanceRox: "0" };
 		state.topupUpdated = [];
 		state.balanceUpdated = [];
 		state.ledgerInserted = [];
 		state.balanceSeededFor = [];
+		envState.DVNET_ENABLED = "true";
+	});
+
+	test("returns 503 and credits nothing when dv.net is disabled", async () => {
+		envState.DVNET_ENABLED = undefined;
+		const res = await POST(buildRequest(confirmedWebhook()));
+		expect(res.status).toBe(503);
+		expect(state.topupUpdated).toHaveLength(0);
+		expect(state.ledgerInserted).toHaveLength(0);
+		expect(state.balanceUpdated).toHaveLength(0);
 	});
 
 	test("credits a confirmed payment once: marks topup confirmed + ledger + balance", async () => {
@@ -149,6 +198,24 @@ describe("dv.net webhook route (T5)", () => {
 		expect(state.ledgerInserted).toHaveLength(0);
 		expect(state.balanceUpdated).toHaveLength(0);
 		expect(state.topupUpdated).toHaveLength(0);
+	});
+
+	test("two confirmed deliveries for the same order_id credit exactly once", async () => {
+		// Both deliveries pass the pre-transaction `status === "confirmed"` check
+		// (the row is still pending when each reads it). The conditional in-tx claim
+		// (`status='pending'`) settles the race: the first delivery flips the row and
+		// credits; the second finds 0 affected rows and acks without crediting.
+		const first = await POST(buildRequest(confirmedWebhook()));
+		const second = await POST(buildRequest(confirmedWebhook()));
+
+		expect(first.status).toBe(200);
+		expect(second.status).toBe(200);
+
+		// Exactly one settlement: one topup claim, one ledger insert, one credit.
+		expect(state.topupUpdated).toHaveLength(1);
+		expect(state.ledgerInserted).toHaveLength(1);
+		expect(state.balanceUpdated).toHaveLength(1);
+		expect(state.balanceUpdated[0]?.balanceRox).toBe("500");
 	});
 
 	test("returns 400 on a malformed body", async () => {

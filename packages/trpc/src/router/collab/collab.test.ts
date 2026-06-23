@@ -1,7 +1,12 @@
 import { describe, expect, mock, test } from "bun:test";
-import { dashboardRoomId } from "@rox/collab";
+import { dashboardRoomId, noteRoomId } from "@rox/collab";
 
-import { authorizeRoomForMember } from "./collab";
+// collab.ts imports `db` from @rox/db/client (the note-room ACL resolver), which
+// inits the real neon() client at module load. Stub it BEFORE importing the
+// router so these tests (which inject ports directly) never touch a live DB.
+mock.module("@rox/db/client", () => ({ db: {}, dbWs: {} }));
+
+const { authorizeRoomForMember } = await import("./collab");
 
 const userInfo = { name: "Ada", avatarUrl: null };
 
@@ -17,6 +22,7 @@ function fakeLiveblocks() {
 	}));
 	const session = {
 		FULL_ACCESS: ["room:write"] as const,
+		READ_ACCESS: ["room:read", "room:presence:write", "comments:read"] as const,
 		allow(room: string, perms: readonly string[]) {
 			granted.push({ room, perms });
 			return session;
@@ -94,5 +100,76 @@ describe("authorizeRoomForMember (collab.authRoom core)", () => {
 			}),
 		).rejects.toThrow(/not a member/);
 		expect(lb.prepareSession).not.toHaveBeenCalled();
+	});
+
+	test("denies a note room when resolveRoomAccess returns 'deny' (N1)", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = noteRoomId("org_1", "note_42");
+		const requireMembership = mock(async () => "org_1");
+		const resolveRoomAccess = mock(async () => "deny" as const);
+
+		await expect(
+			authorizeRoomForMember({
+				userId: "user_1",
+				roomId,
+				userInfo,
+				ports: { requireMembership, liveblocks: lb.client, resolveRoomAccess },
+			}),
+		).rejects.toThrow(/Access denied to room/);
+		expect(resolveRoomAccess).toHaveBeenCalledWith(roomId, "org_1");
+		expect(lb.prepareSession).not.toHaveBeenCalled();
+	});
+
+	test("grants read perms when resolveRoomAccess returns 'read' (N1 viewer)", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = noteRoomId("org_1", "note_42");
+		const requireMembership = mock(async () => "org_1");
+		const resolveRoomAccess = mock(async () => "read" as const);
+
+		const result = await authorizeRoomForMember({
+			userId: "user_1",
+			roomId,
+			userInfo,
+			ports: { requireMembership, liveblocks: lb.client, resolveRoomAccess },
+		});
+
+		expect(result.token).toBe("lb_session_token");
+		expect(lb.granted).toEqual([
+			{
+				room: roomId,
+				perms: ["room:read", "room:presence:write", "comments:read"],
+			},
+		]);
+	});
+
+	test("grants full perms when resolveRoomAccess returns 'full' (N1 owner/editor)", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = noteRoomId("org_1", "note_42");
+		const requireMembership = mock(async () => "org_1");
+		const resolveRoomAccess = mock(async () => "full" as const);
+
+		await authorizeRoomForMember({
+			userId: "user_1",
+			roomId,
+			userInfo,
+			ports: { requireMembership, liveblocks: lb.client, resolveRoomAccess },
+		});
+
+		expect(lb.granted).toEqual([{ room: roomId, perms: ["room:write"] }]);
+	});
+
+	test("non-note rooms keep full access without resolveRoomAccess", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = dashboardRoomId("org_1", "dash_42");
+		const requireMembership = mock(async () => "org_1");
+
+		await authorizeRoomForMember({
+			userId: "user_1",
+			roomId,
+			userInfo,
+			ports: { requireMembership, liveblocks: lb.client },
+		});
+
+		expect(lb.granted).toEqual([{ room: roomId, perms: ["room:write"] }]);
 	});
 });

@@ -56,6 +56,10 @@
 			"types": "./src/rox-ledger.ts",
 			"default": "./src/rox-ledger.ts"
 		},
+		"./drive-quota": {
+			"types": "./src/drive-quota.ts",
+			"default": "./src/drive-quota.ts"
+		},
 		"./rox-ledger-kind": {
 			"types": "./src/rox-ledger-kind.ts",
 			"default": "./src/rox-ledger-kind.ts"
@@ -255,6 +259,10 @@
 		"./jwt-verify": {
 			"types": "./src/jwt-verify.ts",
 			"default": "./src/jwt-verify.ts"
+		},
+		"./comms-events": {
+			"types": "./src/comms-events.ts",
+			"default": "./src/comms-events.ts"
 		}
 	},
 	"scripts": {

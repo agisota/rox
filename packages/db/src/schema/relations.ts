@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 
 import { activityEvents } from "./activity";
 import { agentSources } from "./agent";
+import { userAmbientSettings } from "./ambient";
 import { paymentAttributions, userAttribution } from "./attribution";
 import {
 	accounts,
@@ -26,10 +27,13 @@ import {
 	githubRepositories,
 } from "./github";
 import { identityLinks } from "./identity";
+import { journalEntries, journalEvents } from "./journal";
 import { knowledgeDocuments, knowledgeLinks } from "./knowledge";
 import {
 	accessGrants,
 	agentCommands,
+	automationRuns,
+	automations,
 	chatSessions,
 	devicePresence,
 	integrationConnections,
@@ -944,5 +948,53 @@ export const usageRequestsRelations = relations(
 			references: [chatSessions.id],
 		}),
 		ledgerEntries: many(roxLedger),
+	}),
+);
+
+// Journal (journal-memory epic) -----------------------------------------------
+// Two lanes share these relations: the once-daily `journal_entries` reflection
+// and the continuous `journal_events` stream that fills from automations.
+
+export const journalEntriesRelations = relations(journalEntries, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [journalEntries.organizationId],
+		references: [organizations.id],
+	}),
+	createdByUser: one(users, {
+		fields: [journalEntries.createdBy],
+		references: [users.id],
+	}),
+}));
+
+export const journalEventsRelations = relations(journalEvents, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [journalEvents.organizationId],
+		references: [organizations.id],
+	}),
+	createdByUser: one(users, {
+		fields: [journalEvents.createdBy],
+		references: [users.id],
+	}),
+	automation: one(automations, {
+		fields: [journalEvents.automationId],
+		references: [automations.id],
+	}),
+	automationRun: one(automationRuns, {
+		fields: [journalEvents.automationRunId],
+		references: [automationRuns.id],
+	}),
+}));
+
+export const userAmbientSettingsRelations = relations(
+	userAmbientSettings,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [userAmbientSettings.organizationId],
+			references: [organizations.id],
+		}),
+		createdByUser: one(users, {
+			fields: [userAmbientSettings.createdBy],
+			references: [users.id],
+		}),
 	}),
 );

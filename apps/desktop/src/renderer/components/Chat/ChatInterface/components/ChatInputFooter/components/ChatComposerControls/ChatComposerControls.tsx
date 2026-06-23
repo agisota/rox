@@ -15,6 +15,7 @@ import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useRef } from "react";
 import { useHotkey } from "renderer/hotkeys";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { PILL_BUTTON_CLASS } from "../../../../styles";
 import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";
@@ -59,15 +60,26 @@ export function ChatComposerControls({
 	dictationTranscribing,
 	dictationConfigured,
 }: ChatComposerControlsProps) {
+	// Plain dictation can be turned off in Settings → Voice. Cache-first: only
+	// treat as off once we've explicitly read `false` (undefined = loading → keep
+	// the default-on mic so it doesn't flicker out on mount). The shared MicButton
+	// stays IPC-free, so the toggle is read here at the desktop edge and folded
+	// into `disabled` (and the hotkey gate) below.
+	const dictationEnabled =
+		electronTrpc.settings.getDictationEnabled.useQuery().data;
+	const dictationOff = dictationEnabled === false;
+
 	// Desktop keyboard shortcut for dictation. The shared MicButton is hotkey-free;
 	// it hands us a stable toggle via onReady and we bind DICTATE (Ctrl+Shift+D) to
 	// it here, where the renderer hotkey system lives. Web mounts MicButton with no
-	// onReady, so it has no shortcut — by design.
+	// onReady, so it has no shortcut — by design. Gated off when the user disabled
+	// dictation in Settings → Voice.
 	const micControlsRef = useRef<MicButtonControls | null>(null);
 	const handleMicReady = useCallback((controls: MicButtonControls | null) => {
 		micControlsRef.current = controls;
 	}, []);
 	useHotkey("DICTATE", () => {
+		if (dictationOff) return;
 		micControlsRef.current?.toggle();
 	});
 
@@ -96,7 +108,7 @@ export function ChatComposerControls({
 				<MicButton
 					onComplete={onDictationComplete}
 					transcribing={dictationTranscribing}
-					disabled={!dictationConfigured}
+					disabled={!dictationConfigured || dictationOff}
 					onReady={handleMicReady}
 				/>
 				<PromptInputSubmit

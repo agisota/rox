@@ -172,3 +172,117 @@ describe("dashboardSectionKindValues (WS-O T1)", () => {
 		expect(dashboardSectionKindValues.length).toBe(8);
 	});
 });
+
+import {
+	commsAddressKindEnum,
+	commsAddressKindValues,
+	commsDeliveryStatusValues,
+	commsDirectionValues,
+	commsParticipantRoleValues,
+	commsPresenceStateValues,
+	commsTransportValues,
+	driveFileStatusEnum,
+	driveFileStatusValues,
+	driveOveragePolicyValues,
+	driveRefSourceValues,
+	driveSharePermValues,
+} from "./enums";
+
+// Rox Workspace Suite — D1 comms + D8/D9 drive enums (P0). Append-only string
+// unions backing Postgres pgEnums; pin membership/order so an accidental edit
+// fails loudly offline (no DB needed), matching the existing enum guards above.
+describe("comms-suite enum value lists (D1 + D8/D9)", () => {
+	it("roxLedgerKindValues appends drive_overage + mail_send at the END (ordinal-safe)", () => {
+		// DECISIONS.md DQ2: overage debits rox_ledger with kind 'drive_overage';
+		// M3 debits per outbound send with kind 'mail_send'. The original four
+		// values must keep their order so the pgEnum ordinals of existing rows are
+		// unchanged; new kinds are appended.
+		expect(roxLedgerKindValues).toEqual([
+			"topup",
+			"request_charge",
+			"adjustment",
+			"seed",
+			"drive_overage",
+			"mail_send",
+		]);
+	});
+
+	it("comms_address_kind covers the four transports a handle derives", () => {
+		expect(commsAddressKindValues).toEqual(["email", "xmpp", "mesh", "inapp"]);
+	});
+
+	it("comms_transport / direction / participant_role hold the expected sets", () => {
+		expect(commsTransportValues).toEqual(["inapp", "email", "xmpp", "mesh"]);
+		expect(commsDirectionValues).toEqual(["inbound", "outbound"]);
+		expect(commsParticipantRoleValues).toEqual(["owner", "member"]);
+	});
+
+	it("comms_delivery_status + comms_presence_state lifecycles", () => {
+		expect(commsDeliveryStatusValues).toEqual([
+			"queued",
+			"sent",
+			"delivered",
+			"failed",
+			"bounced",
+		]);
+		expect(commsPresenceStateValues).toEqual([
+			"online",
+			"away",
+			"dnd",
+			"offline",
+		]);
+	});
+
+	it("drive_file_status / share_perm / ref_source / overage_policy sets", () => {
+		expect(driveFileStatusValues).toEqual([
+			"pending",
+			"clean",
+			"scanning",
+			"quarantined",
+			"trashed",
+		]);
+		expect(driveSharePermValues).toEqual(["view", "download"]);
+		expect(driveRefSourceValues).toEqual([
+			"chat_message",
+			"email_message",
+			"canvas",
+			"other",
+		]);
+		expect(driveOveragePolicyValues).toEqual([
+			"block_new",
+			"soft_meter",
+			"hard_cap",
+		]);
+	});
+
+	it("derived z.enums round-trip + reject unknowns", () => {
+		for (const value of commsAddressKindValues) {
+			expect(commsAddressKindEnum.parse(value)).toBe(value);
+		}
+		expect(commsAddressKindEnum.safeParse("sms").success).toBe(false);
+		for (const value of driveFileStatusValues) {
+			expect(driveFileStatusEnum.parse(value)).toBe(value);
+		}
+		expect(driveFileStatusEnum.safeParse("deleted").success).toBe(false);
+	});
+
+	it("all comms-suite enum lists are free of duplicates", () => {
+		const lists = {
+			commsAddressKindValues,
+			commsTransportValues,
+			commsDirectionValues,
+			commsParticipantRoleValues,
+			commsDeliveryStatusValues,
+			commsPresenceStateValues,
+			driveFileStatusValues,
+			driveSharePermValues,
+			driveRefSourceValues,
+			driveOveragePolicyValues,
+		};
+		for (const [name, values] of Object.entries(lists)) {
+			expect(new Set(values).size, `${name} has duplicate values`).toBe(
+				values.length,
+			);
+		}
+	});
+});

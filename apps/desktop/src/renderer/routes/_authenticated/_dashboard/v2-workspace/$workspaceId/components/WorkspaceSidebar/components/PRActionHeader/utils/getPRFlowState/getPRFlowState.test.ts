@@ -4,6 +4,7 @@ import {
 	getPRFlowState,
 	type PullRequest,
 	selectActionButton,
+	selectCreatePRAffordance,
 	selectPRLink,
 	selectStatusBadge,
 } from "./getPRFlowState";
@@ -242,5 +243,14 @@ describe("selectStatusBadge (no-pr variants)", () => {
 	});
 	test("'Ready' when clean and in-sync", () => {
 		expect(selectStatusBadge({ kind: "no-pr", sync: sync() })).toBe("Ready");
+	});
+});
+
+describe("selectCreatePRAffordance", () => {
+	test("enabled flag → clickable create affordance", () => {
+		expect(selectCreatePRAffordance(true)).toEqual({ kind: "enabled" });
+	});
+	test("disabled flag → coming-soon affordance", () => {
+		expect(selectCreatePRAffordance(false)).toEqual({ kind: "coming-soon" });
 	});
 });

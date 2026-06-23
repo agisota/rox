@@ -5,6 +5,7 @@ import { initTRPC } from "@trpc/server";
 import { createMastraCode } from "mastracode";
 import superjson from "superjson";
 import { searchFiles } from "./utils/file-search";
+import { injectMemoryContext } from "./utils/memory-context";
 import {
 	authenticateRuntimeMcpServer,
 	destroyRuntime,
@@ -330,6 +331,12 @@ export class ChatRuntimeService {
 						const userMessage =
 							input.payload.content.trim() || "[non-text message]";
 						await onUserPromptSubmit(runtime, userMessage);
+						// Inject the user's approved memory_items as a one-time per-thread
+						// system block so this (and every later) agent run is memory-aware.
+						// Closes the "memories are write-only" dead loop. Best-effort: no-ops
+						// on an existing thread or when the user has no approved memories, and
+						// never throws into the send path.
+						await injectMemoryContext(runtime.harness, this.apiClient);
 						// Emit the `user_sent_message` pipeline event (Agent Pipelines,
 						// design §4.3). This ChatService runs in the host-service process
 						// (apps/desktop host) on local SQLite, where the DB-backed pipeline
@@ -385,11 +392,19 @@ export class ChatRuntimeService {
 							input.payload.content.trim() || "[non-text message]";
 						await onUserPromptSubmit(runtime, userMessage);
 						const submittedUserMessage = input.payload.content.trim();
-						await restartRuntimeFromUserMessage(runtime, {
-							messageId: input.messageId,
-							payload: input.payload,
-							metadata: input.metadata,
-						});
+						await restartRuntimeFromUserMessage(
+							runtime,
+							{
+								messageId: input.messageId,
+								payload: input.payload,
+								metadata: input.metadata,
+							},
+							// Re-inject memory onto the cloned thread before resending, so an
+							// edited first message (which clones into an empty thread) still
+							// gets the approved-memory block. No-ops when the clone already has
+							// messages.
+							() => injectMemoryContext(runtime.harness, this.apiClient),
+						);
 						void generateAndSetTitle(runtime, this.apiClient, {
 							submittedUserMessage:
 								submittedUserMessage.length > 0

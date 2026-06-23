@@ -1,11 +1,18 @@
 import { timingSafeEqual } from "node:crypto";
 import { db } from "@rox/db/client";
 import type { LarkConfig } from "@rox/db/schema";
-import { integrationConnections } from "@rox/db/schema";
+import {
+	integrationConnections,
+	integrationInboundEvents,
+} from "@rox/db/schema";
+import { Client } from "@upstash/qstash";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { env } from "@/env";
 import { logger } from "@/lib/logger";
 import { LARK_EVENT_TYPE } from "../constants";
 import { parseLarkEnvelope } from "../parse-event";
+
+const qstash = new Client({ token: env.QSTASH_TOKEN });
 
 /**
  * Constant-time secret comparison. Length-guarded because `timingSafeEqual`
@@ -137,7 +144,76 @@ export async function POST(request: Request) {
 		senderOpenId: envelope.senderOpenId,
 	});
 
-	// TODO(lark PR-2): enqueue job -> runLarkAgent; AES-encrypted event mode.
+	// We reply into the originating chat; without a chat id there is nothing to
+	// dispatch. Ack so Lark stops retrying.
+	if (envelope.chatId === null) {
+		return new Response("ok", { status: 200 });
+	}
+
+	// Idempotency: dedup on the Lark-supplied delivery id (`header.event_id`),
+	// scoped by connection so two app connections can't drop each other's events.
+	// Lark redelivers events that aren't 200-ACKed within 3s, so this guards
+	// against double-dispatch. Fall back to the message id if event_id is absent.
+	const externalDeliveryId = envelope.eventId ?? envelope.messageId;
+	if (externalDeliveryId === null) {
+		// Nothing stable to dedup on; ack without dispatching rather than risk a
+		// reply storm under redelivery.
+		return new Response("ok", { status: 200 });
+	}
+
+	const dedupEventId = `${connection.id}:${externalDeliveryId}`;
+	const [inserted] = await db
+		.insert(integrationInboundEvents)
+		.values({
+			connectionId: connection.id,
+			provider: "lark",
+			externalEventId: dedupEventId,
+		})
+		.onConflictDoNothing({
+			target: [
+				integrationInboundEvents.provider,
+				integrationInboundEvents.externalEventId,
+			],
+		})
+		.returning({ id: integrationInboundEvents.id });
+
+	if (!inserted) {
+		logger.info("[lark/events] Duplicate event ignored", {
+			dedupEventId,
+			connectionId: connection.id,
+		});
+		return new Response("ok", { status: 200 });
+	}
+
+	try {
+		await qstash.publishJSON({
+			url: `${env.NEXT_PUBLIC_API_URL}/api/integrations/lark/jobs/process-message`,
+			body: {
+				connectionId: connection.id,
+				chatId: envelope.chatId,
+				messageId: envelope.messageId,
+				eventId: envelope.eventId,
+				text: envelope.text,
+			},
+			retries: 3,
+		});
+	} catch (error) {
+		logger.error("[lark/events] Failed to queue process-message job:", error);
+		try {
+			await db
+				.delete(integrationInboundEvents)
+				.where(eq(integrationInboundEvents.id, inserted.id));
+		} catch (deleteError) {
+			logger.error(
+				"[lark/events] Failed to roll back inbound event after queue failure:",
+				deleteError,
+			);
+		}
+		return Response.json(
+			{ error: "Failed to queue Lark event" },
+			{ status: 503 },
+		);
+	}
 
 	// Lark expects a fast 200 for accepted events.
 	return new Response("ok", { status: 200 });

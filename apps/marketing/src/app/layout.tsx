@@ -11,7 +11,6 @@ import {
 	WebsiteJsonLd,
 } from "@/components/JsonLd";
 import { env } from "@/env";
-import { REDDIT_PIXEL_ID } from "@/lib/constants";
 
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
@@ -139,14 +138,6 @@ export default function RootLayout({
 						function gtag(){dataLayer.push(arguments);}
 						gtag('js', new Date());
 						gtag('config', 'AW-18209336001');
-					`}
-				</Script>
-				{/* Reddit Pixel */}
-				<Script id="reddit-pixel" strategy="afterInteractive">
-					{`
-						!function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js?pixel_id=${REDDIT_PIXEL_ID}",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);
-						rdt('init','${REDDIT_PIXEL_ID}');
-						rdt('track','PageVisit');
 					`}
 				</Script>
 			</head>

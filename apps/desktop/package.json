@@ -2,7 +2,7 @@
 	"name": "@rox/desktop",
 	"productName": "Rox",
 	"description": "The last developer tool you'll ever need",
-	"version": "2.0.34",
+	"version": "2.0.39",
 	"main": "./dist/main/index.js",
 	"resources": "src/resources",
 	"repository": {
@@ -88,6 +88,7 @@
 		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
 		"@rox/chat": "workspace:*",
+		"@rox/collab": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/host-service": "workspace:*",
 		"@rox/local-db": "workspace:*",
@@ -95,6 +96,7 @@
 		"@rox/panes": "workspace:*",
 		"@rox/port-scanner": "workspace:*",
 		"@rox/pty-daemon": "workspace:*",
+		"@rox/rtc": "workspace:*",
 		"@rox/shared": "workspace:*",
 		"@rox/trpc": "workspace:*",
 		"@rox/ui": "workspace:*",
@@ -210,8 +212,8 @@
 		"os-locale": "6.0.2",
 		"pidtree": "0.6.0",
 		"pidusage": "4.0.1",
-		"posthog-js": "1.310.1",
-		"posthog-node": "5.28.8",
+		"posthog-js": "1.387.0",
+		"posthog-node": "5.38.0",
 		"prebuild-install": "7.1.3",
 		"react": "19.2.3",
 		"react-dnd": "16.0.1",
@@ -278,7 +280,7 @@
 		"tailwindcss": "4.2.2",
 		"tsx": "4.21.0",
 		"typescript": "6.0.3",
-		"vite": "7.3.2",
+		"vite": "7.3.5",
 		"vite-tsconfig-paths": "5.1.4"
 	}
 }

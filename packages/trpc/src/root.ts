@@ -3,13 +3,17 @@ import { achievementsRouter } from "./router/achievements";
 import { adminRouter } from "./router/admin";
 import { agentRouter } from "./router/agent";
 import { agentSourceRouter } from "./router/agent-source";
+import { ambientRouter } from "./router/ambient";
 import { analyticsRouter } from "./router/analytics";
 import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
+import { calendarRouter } from "./router/calendar";
 import { chatRouter } from "./router/chat";
 import { collabRouter } from "./router/collab";
+import { commsRouter } from "./router/comms";
 import { dashboardRouter } from "./router/dashboard";
 import { deviceRouter } from "./router/device";
+import { driveRouter } from "./router/drive";
 import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
 import { graphRouter } from "./router/graph";
@@ -17,8 +21,11 @@ import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
 import { journalRouter } from "./router/journal";
 import { knowledgeRouter } from "./router/knowledge";
+import { mailRouter } from "./router/mail";
 import { mcpAdminRouter } from "./router/mcp-admin";
 import { memoryRouter } from "./router/memory";
+import { meshRouter } from "./router/mesh";
+import { notebooksRouter } from "./router/notebooks";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
 import {
@@ -45,6 +52,7 @@ import { v2WorkspaceRouter } from "./router/v2-workspace";
 import { voiceRouter } from "./router/voice";
 import { workflowRouter } from "./router/workflow";
 import { workspaceRouter } from "./router/workspace";
+import { xmppRouter } from "./router/xmpp";
 import { createCallerFactory, createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
@@ -53,12 +61,16 @@ export const appRouter = createTRPCRouter({
 	agent: agentRouter,
 	agentRole: agentRoleRouter,
 	agentSource: agentSourceRouter,
+	ambient: ambientRouter,
 	apiKey: apiKeyRouter,
 	analytics: analyticsRouter,
 	automation: automationRouter,
+	calendar: calendarRouter,
 	chat: chatRouter,
 	collab: collabRouter,
+	comms: commsRouter,
 	device: deviceRouter,
+	drive: driveRouter,
 	economy: economyRouter,
 	skillLibrary: skillLibraryRouter,
 	dashboard: dashboardRouter,
@@ -70,8 +82,14 @@ export const appRouter = createTRPCRouter({
 	integration: integrationRouter,
 	journal: journalRouter,
 	knowledge: knowledgeRouter,
+	mail: mailRouter,
 	memory: memoryRouter,
-	notes: notesRouter,
+	mesh: meshRouter,
+	// D7 Notes (notebooks → notes, org+user-scoped) is the canonical `notes`
+	// surface. The legacy unscoped per-profile notes router is bound under
+	// `profileNotes` to remove the wrong-router footgun (N4).
+	notes: notebooksRouter,
+	profileNotes: notesRouter,
 	organization: organizationRouter,
 	pipeline: pipelineRouter,
 	pipelineTrigger: triggerRouter,
@@ -93,6 +111,7 @@ export const appRouter = createTRPCRouter({
 	voice: voiceRouter,
 	workflow: workflowRouter,
 	workspace: workspaceRouter,
+	xmpp: xmppRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -90,4 +90,36 @@ describe("experimental features registry", () => {
 		expect(isExperimentalFeatureId("missing.feature")).toBe(false);
 		expect(getExperimentalFeatureDefinition("missing.feature")).toBeUndefined();
 	});
+
+	test("templates.marketplace ships a ready, locally-backed surface", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"templates.marketplace",
+		);
+		expect(definition).toBeDefined();
+		// The slice is powered by the local project-creation engine, so the only
+		// required provider is the desktop runtime (no external catalog endpoint).
+		expect(definition?.implementationStatus).toBe("ready");
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders).toHaveLength(0);
+	});
+
+	test("templates.marketplace resolves available with the desktop runtime", () => {
+		const state = resolveExperimentalFeatureState("templates.marketplace", {
+			dependencies: { "desktop-runtime": "configured" },
+		});
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
+
+	test("templates.marketplace stays hidden when disabled by the user", () => {
+		const state = resolveExperimentalFeatureState("templates.marketplace", {
+			dependencies: { "desktop-runtime": "configured" },
+			overrides: { "templates.marketplace": false },
+		});
+		expect(state.enabled).toBe(false);
+		expect(state.availability).toBe("available");
+	});
 });
