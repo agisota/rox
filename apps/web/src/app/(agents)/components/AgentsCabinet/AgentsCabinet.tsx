@@ -8,6 +8,7 @@ import {
 	Clock3,
 	Database,
 	Hash,
+	MessageSquarePlus,
 	Terminal,
 } from "lucide-react";
 import Link from "next/link";
@@ -42,14 +43,22 @@ export function AgentsCabinet({ userName, data }: AgentsCabinetProps) {
 							текущего пользователя в активной организации.
 						</p>
 					</div>
-					{topSession && (
-						<Button asChild variant="outline">
-							<Link href={topSession.href}>
-								Открыть последнюю сессию
-								<ArrowRight className="size-4" />
+					<div className="flex flex-wrap items-center gap-2">
+						<Button asChild>
+							<Link href="/agents/chat">
+								<MessageSquarePlus className="size-4" />
+								Новый чат
 							</Link>
 						</Button>
-					)}
+						{topSession && (
+							<Button asChild variant="outline">
+								<Link href={topSession.href}>
+									Открыть последнюю сессию
+									<ArrowRight className="size-4" />
+								</Link>
+							</Button>
+						)}
+					</div>
 				</div>
 			</section>
 
