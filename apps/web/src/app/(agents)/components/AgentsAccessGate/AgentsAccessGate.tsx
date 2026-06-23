@@ -8,9 +8,11 @@ import Link from "next/link";
  * as a 404. Now a single layout-level decision renders THIS view whenever the
  * agents-UI flag is off, so every `(agents)` route behaves the same.
  *
- * When `degraded` is set the access check itself could not run (PostHog
- * outage). We deny by default but say so explicitly rather than silently
- * downgrading the user.
+ * `degraded` means the access check itself could not run (PostHog outage). The
+ * gate now FAILS OPEN on outage (`resolveAgentsUiAccess`), so this degraded copy
+ * is only reached on the defensive path where access is still denied while the
+ * check is degraded; it explains the unavailable check rather than implying a
+ * genuine deny.
  */
 export function AgentsAccessGate({ degraded }: { degraded: boolean }) {
 	return (
