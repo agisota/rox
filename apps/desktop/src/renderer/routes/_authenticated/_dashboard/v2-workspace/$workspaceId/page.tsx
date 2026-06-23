@@ -19,6 +19,7 @@ import { V2PresetsBar } from "./components/V2PresetsBar";
 import { V2WorkspaceRunButton } from "./components/V2WorkspaceRunButton";
 import { WorkspaceEmptyState } from "./components/WorkspaceEmptyState";
 import { WorkspaceMissingWorktreeState } from "./components/WorkspaceMissingWorktreeState";
+import { WorkspacePresence } from "./components/WorkspacePresence";
 import { WorkspaceSidebar } from "./components/WorkspaceSidebar";
 import { WorkspaceVoiceButton } from "./components/WorkspaceVoiceButton";
 import { useAgentBridge } from "./hooks/useAgentBridge";
@@ -322,6 +323,7 @@ function V2WorkspaceContent() {
 											/>
 										</AnimatedHeight>
 										<div className="flex h-8 min-w-0 shrink-0 items-center justify-end gap-2 border-b border-border bg-background px-2">
+											<WorkspacePresence workspaceId={workspaceId} />
 											<WorkspaceVoiceButton workspaceId={workspaceId} />
 											{workspaceRunButton}
 										</div>
