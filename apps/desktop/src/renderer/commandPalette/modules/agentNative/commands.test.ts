@@ -1,11 +1,24 @@
 import { describe, expect, it, mock } from "bun:test";
-import { executeCommand } from "../../core/execute";
-import type { CommandContext } from "../../core/types";
-import {
+
+// `executeCommand` imports `toast` from "@rox/ui/sonner" at module load, and the
+// disabled-command branch calls `toast.info(...)`. The real sonner toast is not
+// wired in the Bun test environment, so we provide a faithful, callable stub
+// BEFORE importing `executeCommand`. The stub exposes the same methods
+// `execute.ts` uses (`info`, `error`) so it stays compatible even if Bun's
+// single-VM module registry shares this mock with other desktop tests.
+const toastInfoSpy = mock();
+const toastErrorSpy = mock();
+mock.module("@rox/ui/sonner", () => ({
+	toast: { info: toastInfoSpy, error: toastErrorSpy },
+}));
+
+const { executeCommand } = await import("../../core/execute");
+const {
 	AGENT_NATIVE_BACKED_COMMAND_IDS,
 	AGENT_NATIVE_DISABLED_COMMAND_IDS,
 	agentNativeProvider,
-} from "./commands";
+} = await import("./commands");
+type CommandContext = import("../../core/types").CommandContext;
 
 function createContext(
 	overrides: Partial<CommandContext> = {},
@@ -89,6 +102,7 @@ describe("agentNativeProvider", () => {
 	});
 
 	it("marks not-yet-backed actions disabled with a clear disabledReason and never fakes a run", async () => {
+		toastInfoSpy.mockClear();
 		const navigate = mock();
 		const context = createContext({ navigate });
 		const commands = agentNativeProvider.provide(context);
@@ -100,9 +114,11 @@ describe("agentNativeProvider", () => {
 			expect(command?.disabledReason).toBeTruthy();
 			expect((command?.disabledReason ?? "").length).toBeGreaterThan(0);
 
-			// Routing a disabled command through executeCommand must short-circuit
-			// (no navigation, no thrown error) — the action is honestly not wired.
+			// Routing a disabled command through executeCommand must short-circuit:
+			// it surfaces the disabledReason (toast.info) and never runs/navigates,
+			// because the action is honestly not wired yet.
 			await executeCommand(command as NonNullable<typeof command>, context);
+			expect(toastInfoSpy).toHaveBeenCalledWith(command?.disabledReason);
 		}
 		expect(navigate).not.toHaveBeenCalled();
 	});
