@@ -1,0 +1,42 @@
+import { describe, expect, test } from "bun:test";
+import { formatMailDate } from "./formatMailDate";
+
+const NOW = new Date("2026-06-23T15:00:00Z");
+
+describe("formatMailDate", () => {
+	test("returns null for missing input", () => {
+		expect(formatMailDate(null, NOW)).toBeNull();
+		expect(formatMailDate(undefined, NOW)).toBeNull();
+		expect(formatMailDate("", NOW)).toBeNull();
+	});
+
+	test("returns null for an invalid date string", () => {
+		expect(formatMailDate("not-a-date", NOW)).toBeNull();
+	});
+
+	test("same-day timestamp renders a time, not a date", () => {
+		const out = formatMailDate(new Date("2026-06-23T09:30:00Z"), NOW);
+		expect(out).not.toBeNull();
+		// Time format contains a colon; short-date format would not.
+		expect(out).toContain(":");
+	});
+
+	test("same-year earlier day renders a date without the year", () => {
+		const out = formatMailDate(new Date("2026-01-05T09:30:00Z"), NOW);
+		expect(out).not.toBeNull();
+		expect(out).not.toContain("2026");
+		expect(out).not.toContain(":");
+	});
+
+	test("prior-year timestamp includes the year", () => {
+		const out = formatMailDate(new Date("2024-12-31T09:30:00Z"), NOW);
+		expect(out).not.toBeNull();
+		expect(out).toContain("2024");
+	});
+
+	test("accepts an ISO string the same way as a Date", () => {
+		const a = formatMailDate("2026-06-23T09:30:00Z", NOW);
+		const b = formatMailDate(new Date("2026-06-23T09:30:00Z"), NOW);
+		expect(a).toBe(b);
+	});
+});

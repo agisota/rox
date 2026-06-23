@@ -8,6 +8,7 @@ import {
 	ChevronRight,
 	FolderOpen,
 	LogOut,
+	Mail,
 	NotebookText,
 	Settings,
 } from "lucide-react-native";
@@ -43,6 +44,11 @@ const SUITE_ITEMS: SuiteItem[] = [
 		label: "Notes",
 		icon: NotebookText,
 		href: "/(authenticated)/(more)/notes",
+	},
+	{
+		label: "Mail",
+		icon: Mail,
+		href: "/(authenticated)/(more)/mail",
 	},
 ];
 
