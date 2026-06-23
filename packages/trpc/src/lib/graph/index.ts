@@ -11,5 +11,6 @@ export * from "./embed";
 export * from "./graph-service";
 export * from "./idempotency";
 export * from "./links";
+export * from "./project-graph";
 export * from "./search";
 export * from "./types";

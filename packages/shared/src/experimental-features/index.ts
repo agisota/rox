@@ -127,12 +127,18 @@ const LIVEKIT_PROVIDER: ExperimentalFeatureDependency = {
 	configurationHint: "Configure LiveKit URL, API key, and API secret.",
 };
 
+// Project OS is native on the Rox object graph (entities/edges), so Huly is an
+// OPTIONAL import connector — never a gate. `required: false` keeps project-os.*
+// features resolvable (`available` once their own surface is `ready`) without
+// any Huly env. See plans/agent-native-team-os-integrations-design.md ("the
+// object graph is canonical; do not replace Rox with Huly").
 const HULY_PROVIDER: ExperimentalFeatureDependency = {
 	id: "huly",
 	label: "Huly",
 	kind: "provider",
-	required: true,
-	configurationHint: "Configure Huly workspace URL and API token.",
+	required: false,
+	configurationHint:
+		"Optional: configure Huly workspace URL and API token to enable Huly import.",
 };
 
 const GITHUB_PROVIDER: ExperimentalFeatureDependency = {
@@ -685,9 +691,10 @@ export const EXPERIMENTAL_FEATURES = [
 		{
 			id: "projectOs.hulyImport",
 			title: "Huly Import",
-			shortDescription: "Import Huly objects into Rox project space.",
+			shortDescription:
+				"Optionally import Huly objects into the Rox object graph.",
 			longDescription:
-				"Adds a gated import path for issues, projects, customers, documents, and relationships from Huly.",
+				"Optional import connector that maps issues, projects, customers, documents, and relationships from Huly into the native Rox entities/edges graph. Huly is not required for Project OS; this connector only activates when Huly is configured.",
 			maturity: "preview",
 			implementationStatus: "planned",
 			dependencies: [HULY_PROVIDER],
@@ -696,11 +703,17 @@ export const EXPERIMENTAL_FEATURES = [
 		{
 			id: "projectOs.workspaceShell",
 			title: "Workspace Shell",
-			shortDescription: "Expose a unified project operating shell.",
+			shortDescription:
+				"Operate a project's native object graph (objects, links, search).",
 			longDescription:
-				"Creates a control plane for project objects, rooms, live sessions, tasks, and agent runs in one shell.",
+				"A unified project operating shell over the native Rox object graph (entities/edges): lists the project's objects, opens an object-details panel with its incoming/outgoing linked objects, links any two objects, and runs an edge-walking search scoped to the project. Backed by the cloud graph router (graph.projectGraph / graph.link / graph.search) and surfaced on the desktop via ProjectObjectGraphLaunchpad behind this gate — no Huly required.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
+			// Backed by a REAL gated surface: ProjectObjectGraphLaunchpad renders the
+			// project object graph (graph.projectGraph), an ObjectDetailsPanel with
+			// linked objects, a LinkPicker (graph.link), and project-scoped search
+			// (graph.search). Depends only on the desktop runtime (always
+			// "configured"), so it resolves `available` with no external provider.
+			implementationStatus: "ready",
 			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Workspace shell", "Project dashboard", "Navigation"],
 		},
@@ -775,9 +788,10 @@ export const EXPERIMENTAL_FEATURES = [
 		{
 			id: "projectOs.selfHostBridge",
 			title: "Self-Host Bridge",
-			shortDescription: "Connect Rox project workflows to self-hosted Huly.",
+			shortDescription:
+				"Optionally connect Rox project workflows to self-hosted Huly.",
 			longDescription:
-				"Controls the bridge for self-hosted Huly instances, including endpoint configuration and object sync status.",
+				"Optional connector for self-hosted Huly instances (endpoint configuration and object sync status). Project OS runs natively on the Rox object graph without it; this bridge only engages when self-hosted Huly is configured.",
 			maturity: "alpha",
 			implementationStatus: "planned",
 			dependencies: [HULY_PROVIDER],
