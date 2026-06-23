@@ -15,13 +15,20 @@ import {
 	Send,
 	Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
 import { EmailView } from "../EmailView";
+import { ThreadPresence } from "./components/ThreadPresence";
 import { formatThreadTitle } from "./utils/formatThreadTitle";
+
+/**
+ * Idle window after the last keystroke before typing presence is auto-cleared
+ * (matches the web inbox composer's `TYPING_IDLE_MS`).
+ */
+const TYPING_IDLE_MS = 2500;
 
 type InboxTransport = "chat" | "mail";
 
@@ -55,6 +62,46 @@ function ChatTab() {
 
 	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 	const [body, setBody] = useState("");
+
+	// Typing presence: `ThreadPresence` hands us a `setTyping` once its room is
+	// live (a no-op when the presence layer is inert), which we drive from the
+	// composer — throttled so the LiveBlocks indicator is not spammed. Mirrors
+	// the web inbox (`ThreadView` + `Composer`) without sharing app-local code.
+	const setTypingRef = useRef<(typing: boolean) => void>(() => {});
+	const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const isTypingRef = useRef(false);
+
+	const handleTypingControl = useCallback(
+		(setter: (typing: boolean) => void) => {
+			setTypingRef.current = setter;
+		},
+		[],
+	);
+
+	const stopTyping = useCallback(() => {
+		if (typingTimer.current) clearTimeout(typingTimer.current);
+		if (isTypingRef.current) {
+			isTypingRef.current = false;
+			setTypingRef.current(false);
+		}
+	}, []);
+
+	const handleComposerChange = useCallback(
+		(value: string) => {
+			setBody(value);
+			if (!isTypingRef.current && value.length > 0) {
+				isTypingRef.current = true;
+				setTypingRef.current(true);
+			}
+			if (typingTimer.current) clearTimeout(typingTimer.current);
+			typingTimer.current = setTimeout(stopTyping, TYPING_IDLE_MS);
+		},
+		[stopTyping],
+	);
+
+	// Stop typing on thread switch / unmount.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: must also re-run when the active thread changes, not only on unmount.
+	useEffect(() => stopTyping, [stopTyping, activeThreadId]);
 
 	const threadsQuery = useQuery(
 		trpc.comms.listThreads.queryOptions({ limit: 50 }),
@@ -92,6 +139,7 @@ function ChatTab() {
 		trpc.comms.sendMessage.mutationOptions({
 			onSuccess: async () => {
 				setBody("");
+				stopTyping();
 				await invalidateThreadAndList();
 			},
 			onError: (error) => {
@@ -248,6 +296,10 @@ function ChatTab() {
 										})
 									: "Переписка"}
 							</h2>
+							<ThreadPresence
+								threadId={activeThreadId}
+								onTypingControl={handleTypingControl}
+							/>
 						</header>
 
 						<div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -343,7 +395,7 @@ function ChatTab() {
 							<div className="flex items-end gap-2">
 								<Textarea
 									value={body}
-									onChange={(e) => setBody(e.target.value)}
+									onChange={(e) => handleComposerChange(e.target.value)}
 									onKeyDown={(e) => {
 										if (e.key === "Enter" && !e.shiftKey) {
 											e.preventDefault();
