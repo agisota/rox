@@ -20,6 +20,8 @@ describe("resolveNewProjectIntent", () => {
 	});
 
 	it("does nothing for return-id with no id", () => {
-		expect(resolveNewProjectIntent("return-id", null)).toEqual({ kind: "none" });
+		expect(resolveNewProjectIntent("return-id", null)).toEqual({
+			kind: "none",
+		});
 	});
 });
