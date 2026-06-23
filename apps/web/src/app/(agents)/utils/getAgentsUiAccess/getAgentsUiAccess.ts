@@ -39,6 +39,9 @@ export const getAgentsUiAccess = cache(async () => {
 		);
 	}
 
+	// Resilient policy: a PostHog outage FAILS OPEN (access granted, `degraded`)
+	// rather than locking everyone out. Genuine deny (flag explicitly off) is
+	// preserved. See `resolveAgentsUiAccess`.
 	const { hasAgentsUiAccess, degraded } = resolveAgentsUiAccess(
 		flagValue,
 		evaluationFailed,
