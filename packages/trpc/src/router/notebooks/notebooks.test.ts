@@ -338,6 +338,66 @@ describe("notebooks.listNotes", () => {
 	});
 });
 
+describe("notebooks.searchNotes", () => {
+	test("FORBIDDEN without an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.notebooks.searchNotes({ query: "hello" }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("returns ranked rows carrying rank + snippet (no markdown)", async () => {
+		// The fake select resolves whatever rows we hand it; the proc projects
+		// id/title/rank/snippet (NOT markdown) and returns them.
+		fakeDb.select = () =>
+			selectBuilder([
+				{
+					id: "n1",
+					notebookId: "nb-1",
+					title: "Matched Note",
+					tags: ["work"],
+					rank: 0.42,
+					snippet: "…the <b>matched</b> term…",
+				},
+			]);
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.searchNotes({ query: "matched" });
+		expect(res).toHaveLength(1);
+		expect(res[0]?.id).toBe("n1");
+		expect(res[0]?.rank).toBe(0.42);
+		expect(res[0]?.snippet).toContain("matched");
+		// The list path never selects/returns the full markdown body.
+		expect("markdown" in (res[0] ?? {})).toBe(false);
+	});
+
+	test("applies the in-memory tag filter over resolved (doc) tags", async () => {
+		fakeDb.select = () =>
+			selectBuilder([
+				{
+					id: "n1",
+					title: "a",
+					tags: ["work", "idea"],
+					rank: 0.5,
+					snippet: "",
+				},
+				{ id: "n2", title: "b", tags: ["work"], rank: 0.4, snippet: "" },
+			]);
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.searchNotes({
+			query: "x",
+			tags: ["work", "idea"],
+		});
+		expect(res.map((n) => n.id)).toEqual(["n1"]);
+	});
+
+	test("returns [] cleanly when nothing matches", async () => {
+		fakeDb.select = () => selectBuilder([]);
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.searchNotes({ query: "zzz" });
+		expect(res).toEqual([]);
+	});
+});
+
 describe("notebooks.getNote", () => {
 	test("returns the note with a null publicUrl when unpublished", async () => {
 		fakeDb.select = () =>
