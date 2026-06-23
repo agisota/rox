@@ -3,6 +3,10 @@ import {
 	type HistoryLocation,
 	type RouterHistory,
 } from "@tanstack/react-router";
+// Type-only: erased at compile time (isolatedModules), so the route tree is NOT
+// pulled into this import-time singleton. Used purely to derive — and keep in
+// sync — the set of static (non-id-scoped) routes that are safe to cold-restore.
+import type { FileRouteTypes } from "../../routeTree.gen";
 
 const STORAGE_KEY = "router-history";
 const MAX_ENTRIES = 100;
@@ -17,6 +21,123 @@ interface PersistedState {
 export interface HistoryEntry {
 	path: string;
 	timestamp: number;
+}
+
+/**
+ * The route a fresh launch should land on when the restored location is not
+ * safely resolvable. `/` renders the index route, which redirects to the
+ * authenticated home (`/workspace`).
+ */
+const HOME_PATH = "/";
+
+/**
+ * Every navigable route whose `to` path has no dynamic (`$`) segment.
+ *
+ * The persisted history can point at an id-scoped resource route (e.g.
+ * `/project/<id>`, `/tasks/<id>`) captured in a previous session. On a fresh
+ * launch that resource may not exist, so the route's loader `throw notFound()`s
+ * and the app dead-ends on "404 — Страница не найдена" before any data loads.
+ * Rather than deny-list the (open, ever-growing) set of id-scoped routes, we
+ * *allow-list* the closed, statically-known safe set: any restored location not
+ * in this set — every dynamic route, plus any stale/typo path — collapses to
+ * {@link HOME_PATH}. A FUTURE id-scoped route is excluded automatically by the
+ * `$` filter below (zero maintenance); a future *static* route trips the
+ * compile-time exhaustiveness check and must be registered here.
+ */
+type StaticRoutePath = {
+	[K in FileRouteTypes["to"]]: K extends `${string}$${string}` ? never : K;
+}[FileRouteTypes["to"]];
+
+const RESTORABLE_STATIC_ROUTES = [
+	"/",
+	"/create-organization",
+	"/sign-in",
+	"/onboarding",
+	"/onboarding/project",
+	"/settings",
+	"/automations",
+	"/calendar",
+	"/canvas",
+	"/cli",
+	"/drive",
+	"/email",
+	"/journal",
+	"/memory",
+	"/notes",
+	"/pipelines",
+	"/quick-chat",
+	"/saved-prompts",
+	"/skills-library",
+	"/tasks",
+	"/v2-workspace",
+	"/v2-workspaces",
+	"/workspace",
+	"/workspaces",
+	"/new-project",
+	"/settings/account",
+	"/settings/agents",
+	"/settings/api-keys",
+	"/settings/appearance",
+	"/settings/behavior",
+	"/settings/experimental",
+	"/settings/git",
+	"/settings/hosts",
+	"/settings/integrations",
+	"/settings/keyboard",
+	"/settings/links",
+	"/settings/models",
+	"/settings/network-filter",
+	"/settings/organization",
+	"/settings/permissions",
+	"/settings/presets",
+	"/settings/projects",
+	"/settings/ringtones",
+	"/settings/security",
+	"/settings/shares",
+	"/settings/teams",
+	"/settings/terminal",
+	"/settings/voice",
+] as const satisfies readonly StaticRoutePath[];
+
+// Compile-time exhaustiveness guard (no runtime cost). `satisfies` above proves
+// every listed path is a real static route (catches typos / removed routes).
+// This pair proves the converse — every static route is listed: if a new static
+// route is added to the generated `to` union but not registered above,
+// `_MissingStaticRoute` becomes that path (not `never`), the conditional below
+// resolves to `never`, and `const _exhaustive: never = true` fails typecheck.
+type _MissingStaticRoute = Exclude<
+	StaticRoutePath,
+	(typeof RESTORABLE_STATIC_ROUTES)[number]
+>;
+const _exhaustive: _MissingStaticRoute extends never ? true : never = true;
+void _exhaustive;
+
+const RESTORABLE_STATIC_ROUTE_SET: ReadonlySet<string> = new Set(
+	RESTORABLE_STATIC_ROUTES,
+);
+
+/**
+ * Decide whether a restored history path is safe to reopen on a cold launch.
+ *
+ * Returns `true` only for paths in {@link RESTORABLE_STATIC_ROUTE_SET}; every
+ * id-scoped route (e.g. `/project/<id>`) and any unknown/stale path returns
+ * `false` so the caller can fall back to {@link HOME_PATH}. Pure and
+ * layout-independent (operates on the normalized pathname only): the
+ * generated-tree dependency is a compile-time *type*, so this stays unit
+ * testable without the runtime route tree.
+ */
+export function isRestorableLocation(path: string): boolean {
+	if (typeof path !== "string" || path.length === 0) return false;
+	// Strip query/hash before inspecting the pathname.
+	const pathname = path.split(/[?#]/, 1)[0] ?? path;
+	if (!pathname.startsWith("/")) return false;
+	// Normalize a trailing slash (except root) so `/settings/` matches the
+	// slash-free `to` entry `/settings`; the router uses slash-free `to` paths.
+	const normalized =
+		pathname.length > 1 && pathname.endsWith("/")
+			? pathname.slice(0, -1)
+			: pathname;
+	return RESTORABLE_STATIC_ROUTE_SET.has(normalized);
 }
 
 function loadPersistedState(): PersistedState {
@@ -34,11 +155,19 @@ function loadPersistedState(): PersistedState {
 					Math.max(parsed.index, 0),
 					parsed.entries.length - 1,
 				);
+				// Guard the *restored current location* against cold-launch 404s: if
+				// the entry we'd reopen points at an id-scoped resource route that may
+				// not resolve this session, collapse the whole stack back to home so a
+				// fresh launch lands on the index instead of "404 — Страница не
+				// найдена". Static routes (incl. section indexes) restore unchanged.
+				if (!isRestorableLocation(parsed.entries[index] ?? "")) {
+					return { entries: [HOME_PATH], index: 0 };
+				}
 				return { entries: parsed.entries, index };
 			}
 		}
 	} catch {}
-	return { entries: ["/"], index: 0 };
+	return { entries: [HOME_PATH], index: 0 };
 }
 
 function persistState(entries: string[], index: number) {
