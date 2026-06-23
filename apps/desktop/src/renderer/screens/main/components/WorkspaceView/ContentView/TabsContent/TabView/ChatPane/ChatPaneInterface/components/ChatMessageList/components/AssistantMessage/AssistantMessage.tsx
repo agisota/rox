@@ -123,6 +123,16 @@ function AssistantMessageImpl({
 	const nodes: ReactNode[] = [];
 	const renderedToolCallIds = new Set<string>();
 	let didRenderPendingPlanApproval = false;
+	// Per-type ordinal so non-tool parts (text/thinking/image/file) get keys that
+	// stay stable as the message streams. Keying by the raw loop index instead
+	// shifts whenever an inline tool_result is consumed (partIndex++ below),
+	// remounting later rows and replaying their entrance animation — the jitter.
+	const partTypeCounts = new Map<string, number>();
+	const nextPartKey = (type: string): string => {
+		const ordinal = partTypeCounts.get(type) ?? 0;
+		partTypeCounts.set(type, ordinal + 1);
+		return `${message.id}-${type}-${ordinal}`;
+	};
 	const handleAttachmentClick = useCallback(
 		(url: string, filename?: string) => {
 			addFileViewerPane(workspaceId, {
@@ -163,7 +173,7 @@ function AssistantMessageImpl({
 		if (part.type === "text") {
 			nodes.push(
 				<StreamingMessageText
-					key={`${message.id}-${partIndex}`}
+					key={nextPartKey("text")}
 					text={part.text}
 					isAnimating={isStreaming}
 					mermaid={{
@@ -184,7 +194,7 @@ function AssistantMessageImpl({
 		if (part.type === "thinking") {
 			nodes.push(
 				<ReasoningBlock
-					key={`${message.id}-${partIndex}`}
+					key={nextPartKey("thinking")}
 					reasoning={part.thinking}
 				/>,
 			);
@@ -206,10 +216,11 @@ function AssistantMessageImpl({
 			if (!data) {
 				continue;
 			}
+			const mediaKey = nextPartKey("media");
 
 			if (part.type === "image" && "mimeType" in part && !rawPart.mediaType) {
 				nodes.push(
-					<div key={`${message.id}-${partIndex}`} className="max-w-[85%]">
+					<div key={mediaKey} className="max-w-[85%]">
 						<ImagePart data={part.data} mimeType={part.mimeType} />
 					</div>,
 				);
@@ -220,7 +231,7 @@ function AssistantMessageImpl({
 				nodes.push(
 					<button
 						type="button"
-						key={`${message.id}-${partIndex}`}
+						key={mediaKey}
 						className="max-w-[85%] cursor-pointer"
 						aria-label={
 							rawPart.filename
@@ -239,7 +250,7 @@ function AssistantMessageImpl({
 			} else {
 				nodes.push(
 					<AttachmentChip
-						key={`${message.id}-${partIndex}`}
+						key={mediaKey}
 						data={data}
 						filename={rawPart.filename}
 						mediaType={mediaType}
@@ -309,7 +320,7 @@ function AssistantMessageImpl({
 		if (part.type.startsWith("om_")) {
 			nodes.push(
 				<div
-					key={`${message.id}-${partIndex}`}
+					key={nextPartKey(part.type)}
 					className="flex items-center gap-2 text-xs text-muted-foreground"
 				>
 					<FileSearchIcon className="size-3.5" />
