@@ -14,6 +14,7 @@
 import { mintUserJwt } from "@rox/auth/server";
 import { db, dbWs } from "@rox/db/client";
 import {
+	agentStateClaims,
 	type EntityKind,
 	embeddingJobs,
 	entities,
@@ -43,6 +44,8 @@ import { requireActiveOrgMembership } from "../utils/active-org";
 import {
 	claimBatchInput,
 	claimBatchOutput,
+	claimInput,
+	claimOutput,
 	completeInput,
 	completeOutput,
 	confirmUploadInput,
@@ -797,6 +800,97 @@ export const runtimeRouter = {
 				return { enqueued, embeddingVersion: version };
 			}),
 	},
+
+	// -------------------------------------------------------------------------
+	// runtime.claim — strict single-writer claim via an atomic CAS lease.
+	// -------------------------------------------------------------------------
+	// Backs `@rox/agent-state`'s Postgres-arbitrated claim path. libSQL is
+	// last-writer-wins and CANNOT arbitrate mutual exclusion, so the lease is
+	// resolved here by a SINGLE conditional upsert against `agent_state_claims`:
+	//
+	//   INSERT ... ON CONFLICT (org, scope, scope_id, key) DO UPDATE
+	//     SET owner_device = excluded.owner_device, lease_expires_at = ...
+	//     WHERE existing.lease_expires_at <= now()         -- expired → takeover
+	//        OR existing.owner_device     = excluded.owner_device  -- same owner → renew
+	//   RETURNING owner_device
+	//
+	// Postgres evaluates the conflict + WHERE atomically under the row lock, so
+	// the grant decision is race-free even with concurrent claimers:
+	//   • no existing row            → INSERT wins  → granted
+	//   • expired lease              → UPDATE wins  → granted (takeover)
+	//   • same owner (live or not)   → UPDATE wins  → granted (idempotent renew)
+	//   • live lease, other owner    → WHERE fails  → 0 rows → refused (held)
+	// A refusal re-reads the live holder so callers learn who owns it. The op
+	// is idempotent and safe under retries (a retry by the same owner renews).
+	claim: serviceProcedure
+		.input(claimInput)
+		.output(claimOutput)
+		.mutation(async ({ input }) => {
+			const now = new Date();
+			const leaseExpiresAt = new Date(now.getTime() + input.leaseSec * 1000);
+
+			return dbWs.transaction(async (tx) => {
+				const granted = await tx
+					.insert(agentStateClaims)
+					.values({
+						organizationId: input.orgId,
+						scope: input.scope,
+						scopeId: input.scopeId,
+						key: input.key,
+						ownerDevice: input.deviceId,
+						leaseExpiresAt,
+						claimedAt: now,
+					})
+					.onConflictDoUpdate({
+						target: [
+							agentStateClaims.organizationId,
+							agentStateClaims.scope,
+							agentStateClaims.scopeId,
+							agentStateClaims.key,
+						],
+						set: {
+							ownerDevice: sql`excluded.owner_device`,
+							leaseExpiresAt: sql`excluded.lease_expires_at`,
+							claimedAt: sql`excluded.claimed_at`,
+							updatedAt: now,
+						},
+						// Grant only when the current lease is reclaimable: expired, or
+						// already held by this same device (idempotent renewal).
+						setWhere: or(
+							lte(agentStateClaims.leaseExpiresAt, now),
+							eq(agentStateClaims.ownerDevice, input.deviceId),
+						),
+					})
+					.returning({ ownerDevice: agentStateClaims.ownerDevice });
+
+				const owner = granted[0]?.ownerDevice;
+				if (owner === input.deviceId) {
+					return { ok: true, ownerDevice: owner };
+				}
+
+				// CAS refused: a live lease is held by another device. Re-read the
+				// current holder so the caller can surface contention. (Empty only
+				// under a concurrent delete — treat as transient contention.)
+				const [held] = await tx
+					.select({ ownerDevice: agentStateClaims.ownerDevice })
+					.from(agentStateClaims)
+					.where(
+						and(
+							eq(agentStateClaims.organizationId, input.orgId),
+							eq(agentStateClaims.scope, input.scope),
+							eq(agentStateClaims.scopeId, input.scopeId),
+							eq(agentStateClaims.key, input.key),
+						),
+					)
+					.limit(1);
+
+				return {
+					ok: false,
+					reason: "held",
+					...(held?.ownerDevice ? { ownerDevice: held.ownerDevice } : {}),
+				};
+			});
+		}),
 
 	// -------------------------------------------------------------------------
 	// runtime.*
