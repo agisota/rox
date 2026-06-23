@@ -49,6 +49,10 @@ import { ensureProjectIconsDir, getProjectIconPath } from "./lib/project-icons";
 import { disposePushToTalkShortcut } from "./lib/push-to-talk";
 import { initSentry } from "./lib/sentry";
 import {
+	registerSpectreShortcut,
+	unregisterSpectreShortcut,
+} from "./lib/spectre-shortcut/spectreShortcut";
+import {
 	prewarmTerminalRuntime,
 	reconcileDaemonSessions,
 } from "./lib/terminal";
@@ -59,10 +63,6 @@ import {
 import { disposeTray, initTray } from "./lib/tray";
 import { startNetworkLogger, stopNetworkLogger } from "./network-logger";
 import { MainWindow } from "./windows/main";
-import {
-	registerSpectreShortcut,
-	unregisterSpectreShortcut,
-} from "./lib/spectre-shortcut/spectreShortcut";
 import {
 	createSpectreWindow,
 	loadSpectre,
