@@ -31,6 +31,7 @@ import { protectedProcedure } from "../../trpc";
 import { assertOrgMembers } from "../integration/assertOrgMembers";
 import { verifyOrgMembership } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
+import { generateFeedToken } from "./feed-token";
 import { exportIcs, type IcsEvent, importIcs } from "./ics";
 import { type ExpandableEvent, expandEvents } from "./occurrences";
 import { computeNextFireAt } from "./reminders";
@@ -42,6 +43,8 @@ import {
 	deleteCalendarSchema,
 	deleteEventSchema,
 	deleteReminderSchema,
+	disableCalendarFeedSchema,
+	enableCalendarFeedSchema,
 	exportIcsSchema,
 	getEventSchema,
 	IMPORT_INSERT_CHUNK,
@@ -54,6 +57,7 @@ import {
 	MAX_REMINDERS_PER_EVENT,
 	RRULE_CADENCE_MESSAGE,
 	removeAttendeeSchema,
+	rotateCalendarFeedSchema,
 	rsvpSchema,
 	shareCalendarSchema,
 	unshareCalendarSchema,
@@ -61,6 +65,18 @@ import {
 	updateEventSchema,
 	updateReminderSchema,
 } from "./schema";
+
+/**
+ * Build the public subscribe URL for a feed token. The public route lives in
+ * apps/api at `/calendar/feed/<token>` (outside `/api/`, no auth); mirror
+ * {@link getPublicShareUrl} by reading `NEXT_PUBLIC_API_URL` (the externally
+ * reachable api origin in prod). Exported so callers display the server-built
+ * URL rather than reconstructing the origin client-side.
+ */
+export function getCalendarFeedUrl(token: string): string {
+	const origin = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
+	return `${origin}/calendar/feed/${token}`;
+}
 
 /**
  * Reject an RRULE body that the occurrence engine can't safely expand: enforce
@@ -257,7 +273,7 @@ export const calendarRouter = {
 		const userId = ctx.session.user.id;
 		const ids = await readableCalendarIds(organizationId, userId);
 		if (ids.length === 0) return [];
-		return db
+		const rows = await db
 			.select()
 			.from(calCalendars)
 			.where(
@@ -267,6 +283,14 @@ export const calendarRouter = {
 				),
 			)
 			.orderBy(asc(calCalendars.name));
+		// SECURITY: the public feed token is a secret capability — never ship it to
+		// the client (a share-reader would otherwise receive the owner's token in
+		// the full row). Project it to a derived `feedEnabled` boolean instead; the
+		// owner only ever receives the raw token from the enable/rotate mutations.
+		return rows.map(({ feedToken, ...rest }) => ({
+			...rest,
+			feedEnabled: feedToken !== null,
+		}));
 	}),
 
 	createCalendar: protectedProcedure
@@ -399,6 +423,104 @@ export const calendarRouter = {
 				.select()
 				.from(calCalendarShares)
 				.where(eq(calCalendarShares.calendarId, input.calendarId));
+		}),
+
+	// ---- public ICS subscribe feed (owner-managed) ------------------------
+	// Only the OWNER manages the public feed (`resolveCalendarAccess(..,'owner')`
+	// throws NOT_FOUND for a wrong-org calendar and FORBIDDEN for a non-owner
+	// member). The token is a secret capability returned ONLY here; it is stripped
+	// from `listCalendars`. Every statement stays org-scoped.
+
+	/**
+	 * Enable (or re-configure) the public subscribe feed. Generates a token on
+	 * first enable and keeps the existing one on a re-enable (so an already-shared
+	 * URL keeps working); `busyOnly` updates the variant. Returns the live token,
+	 * its public URL, and the variant.
+	 */
+	enableCalendarFeed: protectedProcedure
+		.input(enableCalendarFeedSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const { calendar } = await resolveCalendarAccess(
+				organizationId,
+				ctx.session.user.id,
+				input.calendarId,
+				"owner",
+			);
+			// Reuse an existing token so a published URL survives a re-enable; mint a
+			// fresh one only when the feed was disabled.
+			const token = calendar.feedToken ?? generateFeedToken();
+			const busyOnly = input.busyOnly ?? calendar.feedBusyOnly;
+			const [row] = await db
+				.update(calCalendars)
+				.set({
+					feedToken: token,
+					feedBusyOnly: busyOnly,
+					feedTokenCreatedAt: calendar.feedTokenCreatedAt ?? new Date(),
+				})
+				.where(
+					and(
+						eq(calCalendars.id, input.calendarId),
+						eq(calCalendars.organizationId, organizationId),
+					),
+				)
+				.returning({ feedToken: calCalendars.feedToken });
+			const liveToken = row?.feedToken ?? token;
+			return {
+				token: liveToken,
+				url: getCalendarFeedUrl(liveToken),
+				busyOnly,
+			};
+		}),
+
+	/** Disable (revoke) the public feed: NULL the token so the route 404s. */
+	disableCalendarFeed: protectedProcedure
+		.input(disableCalendarFeedSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			await resolveCalendarAccess(
+				organizationId,
+				ctx.session.user.id,
+				input.calendarId,
+				"owner",
+			);
+			await db
+				.update(calCalendars)
+				.set({ feedToken: null, feedTokenCreatedAt: null })
+				.where(
+					and(
+						eq(calCalendars.id, input.calendarId),
+						eq(calCalendars.organizationId, organizationId),
+					),
+				);
+			return { ok: true as const };
+		}),
+
+	/**
+	 * Rotate the feed token: overwrite with a fresh one so a previously-shared
+	 * (possibly leaked) URL immediately 404s. The old token is never resurrected.
+	 */
+	rotateCalendarFeed: protectedProcedure
+		.input(rotateCalendarFeedSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			await resolveCalendarAccess(
+				organizationId,
+				ctx.session.user.id,
+				input.calendarId,
+				"owner",
+			);
+			const token = generateFeedToken();
+			await db
+				.update(calCalendars)
+				.set({ feedToken: token, feedTokenCreatedAt: new Date() })
+				.where(
+					and(
+						eq(calCalendars.id, input.calendarId),
+						eq(calCalendars.organizationId, organizationId),
+					),
+				);
+			return { token, url: getCalendarFeedUrl(token) };
 		}),
 
 	// ---- events -----------------------------------------------------------

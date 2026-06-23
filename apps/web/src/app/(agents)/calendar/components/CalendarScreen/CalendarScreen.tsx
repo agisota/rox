@@ -19,6 +19,7 @@ import { useCalendarActions } from "../../hooks/useCalendarActions";
 import { buildMonthGrid, shiftMonth } from "../../utils/monthGrid";
 import { EventDialog, type EventDialogValue } from "../EventDialog";
 import { AgendaView } from "./AgendaView";
+import { SubscribeFeedButton } from "./components/SubscribeFeedButton";
 import { MonthView } from "./MonthView";
 
 const MONTHS_RU = [
@@ -92,7 +93,13 @@ export function CalendarScreen() {
 	const grid = useMemo(() => buildMonthGrid(anchor), [anchor]);
 
 	const calendars = useQuery(trpc.calendar.listCalendars.queryOptions());
-	const firstCalendarId = calendars.data?.[0]?.id ?? "";
+	const firstCalendar = calendars.data?.[0] ?? null;
+	const firstCalendarId = firstCalendar?.id ?? "";
+	// Only the owner manages the public subscribe feed.
+	const ownsFirstCalendar =
+		firstCalendar !== null &&
+		currentUserId !== null &&
+		firstCalendar.ownerUserId === currentUserId;
 
 	const occurrencesQuery = useQuery(
 		trpc.calendar.listOccurrences.queryOptions({
@@ -251,6 +258,13 @@ export function CalendarScreen() {
 							e.target.value = "";
 						}}
 					/>
+					{ownsFirstCalendar && firstCalendar && (
+						<SubscribeFeedButton
+							calendarId={firstCalendar.id}
+							feedEnabled={firstCalendar.feedEnabled}
+							feedBusyOnly={firstCalendar.feedBusyOnly}
+						/>
+					)}
 					<Button
 						onClick={() => openCreate(new Date())}
 						disabled={!firstCalendarId}

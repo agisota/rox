@@ -126,6 +126,43 @@ export function useCalendarActions() {
 		}),
 	);
 
+	/** Refresh the calendar list so the feed-enabled state re-renders. */
+	const invalidateCalendars = useCallback(async () => {
+		await queryClient.invalidateQueries({
+			queryKey: trpc.calendar.listCalendars.queryKey(),
+		});
+	}, [queryClient, trpc]);
+
+	const enableCalendarFeed = useMutation(
+		trpc.calendar.enableCalendarFeed.mutationOptions({
+			onSuccess: async () => {
+				await invalidateCalendars();
+				toast.success("Публичная подписка включена");
+			},
+			onError: onError("Не удалось включить подписку"),
+		}),
+	);
+
+	const disableCalendarFeed = useMutation(
+		trpc.calendar.disableCalendarFeed.mutationOptions({
+			onSuccess: async () => {
+				await invalidateCalendars();
+				toast.success("Публичная подписка отключена");
+			},
+			onError: onError("Не удалось отключить подписку"),
+		}),
+	);
+
+	const rotateCalendarFeed = useMutation(
+		trpc.calendar.rotateCalendarFeed.mutationOptions({
+			onSuccess: async () => {
+				await invalidateCalendars();
+				toast.success("Ссылка подписки обновлена");
+			},
+			onError: onError("Не удалось обновить ссылку"),
+		}),
+	);
+
 	/** Refresh the caller's reminder list for an event after a write. */
 	const invalidateReminders = useCallback(
 		async (eventId: string) => {
@@ -181,6 +218,9 @@ export function useCalendarActions() {
 		removeAttendee,
 		rsvp,
 		importIcs,
+		enableCalendarFeed,
+		disableCalendarFeed,
+		rotateCalendarFeed,
 		createReminder,
 		updateReminder,
 		deleteReminder,

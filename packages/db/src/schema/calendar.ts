@@ -22,6 +22,9 @@
  *     with the email-send path deferred to P3.
  *   - Calendar access is the owner plus anyone in `cal_calendar_shares`; the
  *     router resolves the effective role before any read/write.
+ *   - A calendar may expose a public, unauthenticated ICS subscribe feed via an
+ *     owner-managed `feed_token` (revocable, optionally free-busy-only); the
+ *     token is the capability for the public `/calendar/feed/<token>` route.
  *
  * Additive only — NEVER hand-edit migrations; change this file then run
  * `bunx drizzle-kit generate --name="..."` (see AGENTS.md).
@@ -100,6 +103,21 @@ export const calCalendars = pgTable(
 		// The user's primary calendar (auto-provisioned); not user-deletable.
 		isDefault: boolean("is_default").notNull().default(false),
 
+		// Public, unauthenticated ICS subscribe feed (owner-managed, revocable).
+		// `feed_token` IS the capability: a non-null, unguessable url-safe token
+		// gates the public `/calendar/feed/<token>` route; NULL = feed disabled (a
+		// revoked token resolves to the same 404 as an unknown one). `feed_busy_only`
+		// selects the detail-free free-busy variant over the full-detail feed. The
+		// token is NEVER returned to share-readers (it is omitted from the
+		// `listCalendars` projection); only the owner receives it from the
+		// enable/rotate mutations. cal_calendars is not Electric-replicated, so the
+		// secret never syncs to any client.
+		feedToken: text("feed_token"),
+		feedTokenCreatedAt: timestamp("feed_token_created_at", {
+			withTimezone: true,
+		}),
+		feedBusyOnly: boolean("feed_busy_only").notNull().default(false),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
@@ -110,6 +128,12 @@ export const calCalendars = pgTable(
 	},
 	(t) => [
 		index("cal_calendars_org_owner_idx").on(t.organizationId, t.ownerUserId),
+		// The public feed lookup is by token alone (the token is the capability):
+		// a partial unique index keeps every disabled calendar's NULL token off the
+		// uniqueness constraint while guaranteeing an active token maps to one row.
+		uniqueIndex("cal_calendars_feed_token_uniq")
+			.on(t.feedToken)
+			.where(sql`${t.feedToken} IS NOT NULL`),
 	],
 );
 

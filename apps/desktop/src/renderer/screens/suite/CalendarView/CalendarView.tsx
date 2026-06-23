@@ -20,10 +20,12 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { authClient } from "renderer/lib/auth-client";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
 import { addMonths, dayKey, monthRange } from "../utils/monthRange";
+import { SubscribeFeedDialog } from "./components/SubscribeFeedDialog";
 
 type RsvpStatus = "needs_action" | "accepted" | "declined" | "tentative";
 
@@ -81,9 +83,20 @@ function formatDayHeading(date: Date): string {
 export function CalendarView() {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
+	const { data: session } = authClient.useSession();
+	const currentUserId = session?.user?.id ?? null;
 
 	const [anchor, setAnchor] = useState(() => new Date());
 	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+	// The public subscribe feed is owner-managed; load the calendar list to gate
+	// the control on ownership and read the feed state.
+	const calendarsQuery = useQuery(trpc.calendar.listCalendars.queryOptions());
+	const firstCalendar = calendarsQuery.data?.[0] ?? null;
+	const ownsFirstCalendar =
+		firstCalendar !== null &&
+		currentUserId !== null &&
+		firstCalendar.ownerUserId === currentUserId;
 
 	const range = useMemo(() => monthRange(anchor), [anchor]);
 	const queryInput = useMemo(
@@ -152,6 +165,13 @@ export function CalendarView() {
 			icon={CalendarDays}
 			actions={
 				<div className="flex items-center gap-1">
+					{ownsFirstCalendar && firstCalendar && (
+						<SubscribeFeedDialog
+							calendarId={firstCalendar.id}
+							feedEnabled={firstCalendar.feedEnabled}
+							feedBusyOnly={firstCalendar.feedBusyOnly}
+						/>
+					)}
 					<Button
 						size="icon"
 						variant="ghost"

@@ -99,6 +99,27 @@ export const unshareCalendarSchema = z.object({
 	userId: z.string().uuid(),
 });
 
+// ---- public ICS subscribe feed (owner-managed) ----------------------------
+
+/**
+ * Enable (or re-configure) a calendar's public subscribe feed. `busyOnly`
+ * selects the detail-free free-busy variant; omitting it keeps the current
+ * choice (defaults to full-detail on first enable). The token itself is
+ * generated server-side and never accepted as input.
+ */
+export const enableCalendarFeedSchema = z.object({
+	calendarId: z.string().uuid(),
+	busyOnly: z.boolean().optional(),
+});
+
+export const disableCalendarFeedSchema = z.object({
+	calendarId: z.string().uuid(),
+});
+
+export const rotateCalendarFeedSchema = z.object({
+	calendarId: z.string().uuid(),
+});
+
 // ---- events ---------------------------------------------------------------
 
 const attendeeInput = z.union([

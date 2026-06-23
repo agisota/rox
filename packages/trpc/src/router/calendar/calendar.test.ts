@@ -690,3 +690,142 @@ describe("calendar.shareCalendar", () => {
 		).rejects.toMatchObject({ code: "FORBIDDEN" });
 	});
 });
+
+describe("calendar.enableCalendarFeed", () => {
+	test("owner enables → returns a token + public URL", async () => {
+		state.selectQueue = [
+			[
+				{
+					id: CAL_ID,
+					ownerUserId: "user-1",
+					organizationId: "org-1",
+					feedToken: null,
+					feedTokenCreatedAt: null,
+					feedBusyOnly: false,
+				},
+			], // calendar (owner, feed disabled)
+		];
+		// enableCalendarFeed returns the persisted token.
+		state.updateReturning = [{ feedToken: "tok_generated" }];
+		const caller = callerFor("org-1");
+		const res = await caller.calendar.enableCalendarFeed({
+			calendarId: CAL_ID,
+			busyOnly: true,
+		});
+		expect(typeof res.token).toBe("string");
+		expect(res.token.length).toBeGreaterThan(0);
+		expect(res.url).toContain(`/calendar/feed/${res.token}`);
+		expect(res.busyOnly).toBe(true);
+		// The update sets a non-null token + the busy-only flag.
+		expect(state.updated[0]?.feedToken).toBeTruthy();
+		expect(state.updated[0]?.feedBusyOnly).toBe(true);
+	});
+
+	test("re-enable keeps the existing token (published URL survives)", async () => {
+		state.selectQueue = [
+			[
+				{
+					id: CAL_ID,
+					ownerUserId: "user-1",
+					organizationId: "org-1",
+					feedToken: "existing_tok",
+					feedTokenCreatedAt: new Date("2026-06-01T00:00:00Z"),
+					feedBusyOnly: false,
+				},
+			], // calendar (owner, feed already enabled)
+		];
+		state.updateReturning = [{ feedToken: "existing_tok" }];
+		const caller = callerFor("org-1");
+		const res = await caller.calendar.enableCalendarFeed({
+			calendarId: CAL_ID,
+		});
+		expect(res.token).toBe("existing_tok");
+		expect(state.updated[0]?.feedToken).toBe("existing_tok");
+	});
+
+	test("404s when the calendar is not in the org", async () => {
+		state.selectQueue = [[]]; // resolveCalendarAccess → empty
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.enableCalendarFeed({ calendarId: CAL_ID }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("forbids a non-owner member (reader/writer)", async () => {
+		state.selectQueue = [
+			[{ id: CAL_ID, ownerUserId: OTHER_USER, organizationId: "org-1" }], // calendar
+			[{ role: "writer" }], // caller has writer (not owner)
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.enableCalendarFeed({ calendarId: CAL_ID }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+});
+
+describe("calendar.rotateCalendarFeed", () => {
+	test("owner rotate replaces the token", async () => {
+		state.selectQueue = [
+			[
+				{
+					id: CAL_ID,
+					ownerUserId: "user-1",
+					organizationId: "org-1",
+					feedToken: "old_tok",
+					feedTokenCreatedAt: new Date("2026-06-01T00:00:00Z"),
+					feedBusyOnly: false,
+				},
+			], // calendar (owner)
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.calendar.rotateCalendarFeed({
+			calendarId: CAL_ID,
+		});
+		expect(typeof res.token).toBe("string");
+		expect(res.token).not.toBe("old_tok");
+		expect(res.url).toContain(`/calendar/feed/${res.token}`);
+		expect(state.updated[0]?.feedToken).toBe(res.token);
+	});
+
+	test("forbids a non-owner", async () => {
+		state.selectQueue = [
+			[{ id: CAL_ID, ownerUserId: OTHER_USER, organizationId: "org-1" }], // calendar
+			[], // no share grant → forbidden
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.rotateCalendarFeed({ calendarId: CAL_ID }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+});
+
+describe("calendar.disableCalendarFeed", () => {
+	test("owner disable NULLs the token", async () => {
+		state.selectQueue = [
+			[
+				{
+					id: CAL_ID,
+					ownerUserId: "user-1",
+					organizationId: "org-1",
+					feedToken: "live_tok",
+					feedTokenCreatedAt: new Date("2026-06-01T00:00:00Z"),
+					feedBusyOnly: false,
+				},
+			], // calendar (owner)
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.calendar.disableCalendarFeed({
+			calendarId: CAL_ID,
+		});
+		expect(res.ok).toBe(true);
+		expect(state.updated[0]?.feedToken).toBeNull();
+	});
+
+	test("404s when the calendar is not in the org", async () => {
+		state.selectQueue = [[]];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.disableCalendarFeed({ calendarId: CAL_ID }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+});

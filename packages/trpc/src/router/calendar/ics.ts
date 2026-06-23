@@ -108,6 +108,51 @@ export function exportIcs(events: IcsEvent[], calendarName = "Rox"): string {
 	return `${lines.join("\r\n")}\r\n`;
 }
 
+// ---- free-busy export -----------------------------------------------------
+
+/** A merged busy span [start, end) for the public free-busy feed. */
+export interface BusyInterval {
+	start: Date;
+	end: Date;
+}
+
+/**
+ * Serialize busy intervals into a detail-free VCALENDAR (the public free-busy
+ * feed variant). Each interval becomes a `VEVENT` carrying ONLY DTSTART/DTEND, a
+ * stable opaque UID, and `SUMMARY:Busy` — by construction it can never leak the
+ * source event's title/description/location/rrule/attendees. A deterministic UID
+ * (derived from the instants) keeps a subscribing client's dedup stable across
+ * polls without exposing the underlying event id. CRLF endings, dependency-free.
+ */
+export function exportFreeBusyIcs(
+	intervals: BusyInterval[],
+	calendarName = "Rox",
+): string {
+	const lines = [
+		"BEGIN:VCALENDAR",
+		"VERSION:2.0",
+		"PRODID:-//Rox//Calendar D6//EN",
+		"CALSCALE:GREGORIAN",
+		"METHOD:PUBLISH",
+		`X-WR-CALNAME:${escapeText(calendarName)}`,
+	];
+	const stamp = toIcsUtc(new Date());
+	for (const interval of intervals) {
+		const start = toIcsUtc(interval.start);
+		const end = toIcsUtc(interval.end);
+		lines.push("BEGIN:VEVENT");
+		lines.push(`UID:busy-${start}-${end}@rox.one`);
+		lines.push(`DTSTAMP:${stamp}`);
+		lines.push(`DTSTART:${start}`);
+		lines.push(`DTEND:${end}`);
+		lines.push("SUMMARY:Busy");
+		lines.push("TRANSP:OPAQUE");
+		lines.push("END:VEVENT");
+	}
+	lines.push("END:VCALENDAR");
+	return `${lines.join("\r\n")}\r\n`;
+}
+
 // ---- import ---------------------------------------------------------------
 
 /** Parse an iCalendar instant (`...Z`, floating, or `VALUE=DATE`) to a Date. */

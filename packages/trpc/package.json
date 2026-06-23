@@ -43,6 +43,10 @@
 		"./calendar-reminders": {
 			"types": "./src/router/calendar/reminders.ts",
 			"default": "./src/router/calendar/reminders.ts"
+		},
+		"./calendar-feed": {
+			"types": "./src/router/calendar/feed.ts",
+			"default": "./src/router/calendar/feed.ts"
 		}
 	},
 	"scripts": {
