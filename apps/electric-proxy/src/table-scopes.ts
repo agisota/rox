@@ -4,6 +4,8 @@ import {
 	automationRuns,
 	automations,
 	chatSessions,
+	comments,
+	commentThreads,
 	devicePresence,
 	githubPullRequests,
 	githubRepositories,
@@ -135,6 +137,11 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 
 	workspaces: { orgColumn: workspaces.organizationId },
 	chat_sessions: { orgColumn: chatSessions.organizationId },
+
+	// #11 Collaboration — durable comment threads on objects sync org-scoped so
+	// every org member sees the same discussion on a shared object (not per-user).
+	comment_threads: { orgColumn: commentThreads.organizationId },
+	comments: { orgColumn: comments.organizationId },
 
 	journal_entries: {
 		orgColumn: journalEntries.organizationId,

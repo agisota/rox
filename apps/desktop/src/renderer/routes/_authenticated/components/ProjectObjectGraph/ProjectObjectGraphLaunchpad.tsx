@@ -152,6 +152,7 @@ function ProjectObjectGraphShell({ v2ProjectId }: { v2ProjectId: string }) {
 					edges={allEdges}
 					onOpenObject={setSelectedId}
 					onStartLink={setLinkSourceId}
+					v2ProjectId={v2ProjectId}
 				/>
 			) : (
 				<section

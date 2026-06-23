@@ -8,6 +8,7 @@ export * from "./browser-history";
 export * from "./calendar";
 export * from "./chat";
 export * from "./circuit";
+export * from "./collaboration";
 export * from "./comms";
 export * from "./contact";
 export * from "./dashboard";
