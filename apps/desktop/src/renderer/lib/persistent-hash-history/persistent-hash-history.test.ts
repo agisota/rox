@@ -367,15 +367,40 @@ describe("createPersistentHashHistory", () => {
 		});
 
 		it("rejects id-scoped resource routes that can dead-end cold", () => {
+			// Every dynamic (`$`-param) route in the generated tree: a stale id can
+			// `throw notFound()` on a fresh launch. None are in the static allowlist.
 			expect(isRestorableLocation("/workspace/abc123")).toBe(false);
 			expect(isRestorableLocation("/v2-workspace/xyz")).toBe(false);
+			expect(isRestorableLocation("/project/abc123")).toBe(false);
+			expect(isRestorableLocation("/tasks/task-42")).toBe(false);
+			expect(isRestorableLocation("/automations/auto-1")).toBe(false);
+			expect(isRestorableLocation("/pipelines/pipe-1")).toBe(false);
+			expect(isRestorableLocation("/tasks/issue/123")).toBe(false);
+			expect(isRestorableLocation("/tasks/pr/77")).toBe(false);
+			expect(isRestorableLocation("/settings/hosts/host-1")).toBe(false);
+			expect(isRestorableLocation("/settings/projects/p-1")).toBe(false);
+			expect(isRestorableLocation("/settings/teams/t-1")).toBe(false);
+			expect(isRestorableLocation("/settings/project/p-1/cloud")).toBe(false);
+		});
+
+		it("rejects unknown / stale routes not in the static allowlist", () => {
+			// A typo or a removed route also collapses to home rather than
+			// dead-ending on the 404 screen.
+			expect(isRestorableLocation("/setting/models")).toBe(false);
 			expect(isRestorableLocation("/hosts/some-host-id")).toBe(false);
+			expect(isRestorableLocation("/totally-unknown")).toBe(false);
 		});
 
 		it("ignores query/hash when classifying the pathname", () => {
 			expect(isRestorableLocation("/workspace?tab=files")).toBe(true);
 			expect(isRestorableLocation("/workspace/abc?focus=1")).toBe(false);
 			expect(isRestorableLocation("/settings/models#section")).toBe(true);
+		});
+
+		it("normalizes a trailing slash before matching", () => {
+			expect(isRestorableLocation("/settings/")).toBe(true);
+			expect(isRestorableLocation("/tasks/")).toBe(true);
+			expect(isRestorableLocation("/")).toBe(true);
 		});
 
 		it("rejects empty and non-absolute paths", () => {
@@ -401,6 +426,48 @@ describe("createPersistentHashHistory", () => {
 			expect(history.location.pathname).toBe("/");
 		});
 
+		it("collapses to home when the restored current entry is a /project/<id> route", () => {
+			// Regression for the original 404: /project/$projectId's loader does
+			// `throw notFound()` for a missing project, but the deny-list-by-segment
+			// guard never covered it. The allowlist collapses it to home.
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/tasks", "/project/missing-project"],
+					index: 2,
+				}),
+			);
+
+			const history = createPersistentHashHistory();
+			expect(history.length).toBe(1);
+			expect(history.location.pathname).toBe("/");
+		});
+
+		it("collapses to home for other id-scoped routes (/tasks/<id>, /automations/<id>)", () => {
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/tasks", "/tasks/task-99"],
+					index: 2,
+				}),
+			);
+			const tasksHistory = createPersistentHashHistory();
+			expect(tasksHistory.length).toBe(1);
+			expect(tasksHistory.location.pathname).toBe("/");
+
+			storage.clear();
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/automations", "/automations/auto-7"],
+					index: 2,
+				}),
+			);
+			const automationsHistory = createPersistentHashHistory();
+			expect(automationsHistory.length).toBe(1);
+			expect(automationsHistory.location.pathname).toBe("/");
+		});
+
 		it("keeps a valid static restore intact (no false collapse)", () => {
 			storage.set(
 				"router-history",
@@ -415,13 +482,11 @@ describe("createPersistentHashHistory", () => {
 			expect(history.location.pathname).toBe("/settings/models");
 		});
 
-		it("does not collapse when the resource route is in the back-stack but not current", () => {
-			// Current entry is a safe static route; the id-scoped entry is only
-			// reachable via Back, where the user explicitly opted in.
+		it("keeps valid static restores for /tasks and /workspace section indexes", () => {
 			storage.set(
 				"router-history",
 				JSON.stringify({
-					entries: ["/", "/workspace/abc", "/tasks"],
+					entries: ["/", "/workspace", "/tasks"],
 					index: 2,
 				}),
 			);
@@ -429,6 +494,29 @@ describe("createPersistentHashHistory", () => {
 			const history = createPersistentHashHistory();
 			expect(history.length).toBe(3);
 			expect(history.location.pathname).toBe("/tasks");
+		});
+
+		it("does not collapse when the resource route is in the back-stack but not current", () => {
+			// Current entry is a safe static route; the id-scoped entry is only
+			// reachable via Back, where the user explicitly opted in. The full
+			// back-stack (including the dynamic entry) is preserved unchanged.
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/project/abc", "/tasks"],
+					index: 2,
+				}),
+			);
+
+			const history = createPersistentHashHistory();
+			expect(history.length).toBe(3);
+			expect(history.location.pathname).toBe("/tasks");
+			// Back-stack entries preserved verbatim, including the id-scoped one.
+			expect(history.getEntries().map((e) => e.path)).toEqual([
+				"/",
+				"/project/abc",
+				"/tasks",
+			]);
 		});
 	});
 

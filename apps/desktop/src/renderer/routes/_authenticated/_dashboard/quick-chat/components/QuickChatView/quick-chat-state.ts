@@ -29,6 +29,10 @@ export type QuickChatOutcome = "reply" | "notice" | "configure";
  * assistant bubble — it returns `"configure"` so the caller shows an actionable
  * banner the user can act on. `"needs-user-key"` stays an informational notice
  * bubble (it already tells the user how to proceed), and `"ok"` is a real reply.
+ *
+ * An unknown status (e.g. a new value the server starts returning before this
+ * client is updated) degrades to `"configure"`: the actionable banner path is
+ * the safe default — never a dead bubble and never `undefined`.
  */
 export function resolveQuickChatOutcome(
 	status: QuickChatCompletionStatus,
@@ -39,6 +43,8 @@ export function resolveQuickChatOutcome(
 		case "needs-user-key":
 			return "notice";
 		case "not-configured":
+			return "configure";
+		default:
 			return "configure";
 	}
 }

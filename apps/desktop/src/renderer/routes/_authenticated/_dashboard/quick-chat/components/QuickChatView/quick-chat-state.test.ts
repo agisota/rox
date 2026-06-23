@@ -20,6 +20,16 @@ describe("resolveQuickChatOutcome", () => {
 		expect(resolveQuickChatOutcome("not-configured")).not.toBe("notice");
 		expect(resolveQuickChatOutcome("not-configured")).not.toBe("reply");
 	});
+
+	it("degrades an unknown status to the configure banner (never undefined)", () => {
+		// Simulate a status the server may add before this client is updated; the
+		// `default` branch must fall back to the actionable banner, not a dead
+		// bubble or `undefined`.
+		const unknownStatus = "some-future-status" as Parameters<
+			typeof resolveQuickChatOutcome
+		>[0];
+		expect(resolveQuickChatOutcome(unknownStatus)).toBe("configure");
+	});
 });
 
 describe("shouldBlockSend", () => {
