@@ -4,6 +4,8 @@ import { Button } from "@rox/ui/button";
 import { Separator } from "@rox/ui/separator";
 import { cn } from "@rox/ui/utils";
 import { LuArrowLeft, LuArrowRight, LuLink, LuShare2 } from "react-icons/lu";
+import { ExperimentalFeatureGate } from "renderer/components/ExperimentalFeatureGate";
+import { CommentsSection } from "./CommentsSection";
 import { entityKindLabel, relationLabel } from "./relations";
 
 /** A node in the project object graph (mirror of graph.projectGraph output). */
@@ -123,6 +125,8 @@ export interface ObjectDetailsPanelProps {
 	onOpenObject?: (entityId: string) => void;
 	/** Start linking this object to another (opens the Link Picker). */
 	onStartLink?: (sourceEntityId: string) => void;
+	/** Project scope passed to a freshly-created comment thread (optional). */
+	v2ProjectId?: string;
 }
 
 /**
@@ -137,6 +141,7 @@ export function ObjectDetailsPanel({
 	edges,
 	onOpenObject,
 	onStartLink,
+	v2ProjectId,
 }: ObjectDetailsPanelProps) {
 	const { outgoing, incoming } = splitLinkedObjects(
 		focus.entityId,
@@ -221,6 +226,20 @@ export function ObjectDetailsPanel({
 					</ul>
 				)}
 			</div>
+
+			{/*
+			 * Durable comment thread on this object (#11). Behind the
+			 * `collaboration.threadsAsObjects` gate; `key={focus.entityId}` remounts
+			 * the thread when the panel navigates to another object.
+			 */}
+			<ExperimentalFeatureGate featureId="collaboration.threadsAsObjects">
+				<Separator />
+				<CommentsSection
+					key={focus.entityId}
+					entityId={focus.entityId}
+					v2ProjectId={v2ProjectId}
+				/>
+			</ExperimentalFeatureGate>
 		</section>
 	);
 }

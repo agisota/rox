@@ -264,4 +264,31 @@ describe("experimental features registry", () => {
 		});
 		expect(state.availability).toBe("not_implemented");
 	});
+
+	test("collaboration.threadsAsObjects ships a ready, Postgres/Electric-backed surface", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"collaboration.threadsAsObjects",
+		);
+		expect(definition).toBeDefined();
+		expect(definition?.implementationStatus).toBe("ready");
+		// Durable on the native object graph (comment_threads/comments + Electric),
+		// so Liveblocks is OPTIONAL — there is no required provider gate.
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders).toHaveLength(0);
+	});
+
+	test("collaboration.threadsAsObjects resolves available with the desktop runtime (no Liveblocks)", () => {
+		// The comment surface opens with only the desktop runtime; missing Liveblocks
+		// must NOT push it to needs_configuration (Liveblocks is an optional
+		// accelerator), so the gate (enabled && available) opens.
+		const state = resolveExperimentalFeatureState(
+			"collaboration.threadsAsObjects",
+			{ dependencies: { "desktop-runtime": "configured" } },
+		);
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
 });

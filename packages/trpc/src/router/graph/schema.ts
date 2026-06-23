@@ -148,6 +148,19 @@ export const graphRecordActivitySchema = z.object({
 	payload: activityPayloadSchema.optional(),
 });
 
+// Collaboration (#11): durable comments anchored to a graph object.
+export const graphCommentsListSchema = z.object({
+	entityId: uuid,
+	limit: z.number().int().min(1).max(200).default(100),
+});
+
+export const graphCommentsCreateSchema = z.object({
+	entityId: uuid,
+	body: z.string().trim().min(1).max(10_000),
+	// Optional project scope to denormalize onto a freshly-created thread.
+	v2ProjectId: uuid.optional(),
+});
+
 // --- outputs ---------------------------------------------------------------
 
 export const entitySchema = z.object({
@@ -239,3 +252,12 @@ export const searchResultSchema = z.object({
 	hits: z.array(searchHitSchema),
 	degraded: z.boolean(),
 });
+
+export const commentSchema = z.object({
+	id: uuid,
+	threadId: uuid,
+	authorUserId: uuid.nullable(),
+	body: z.string(),
+	createdAt: z.date(),
+});
+export type CommentOutput = z.infer<typeof commentSchema>;

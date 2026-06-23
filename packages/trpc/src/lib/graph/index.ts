@@ -7,6 +7,7 @@
  * #02 indexer.
  */
 
+export * from "./comments";
 export * from "./embed";
 export * from "./graph-service";
 export * from "./idempotency";

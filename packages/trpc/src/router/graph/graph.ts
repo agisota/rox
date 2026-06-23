@@ -12,8 +12,10 @@ import { edges, entities, v2Projects } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
 import {
+	createComment,
 	createGraphSearchService,
 	graphService,
+	listComments,
 	loadProjectGraph,
 } from "../../lib/graph";
 import { protectedProcedure } from "../../trpc";
@@ -21,6 +23,8 @@ import { requireActiveOrgMembership } from "../utils/active-org";
 import {
 	graphArchiveSchema,
 	graphBacklinksSchema,
+	graphCommentsCreateSchema,
+	graphCommentsListSchema,
 	graphCreateSchema,
 	graphGetSchema,
 	graphLinkSchema,
@@ -413,4 +417,38 @@ export const graphRouter = {
 			);
 			return { id: event.id };
 		}),
+
+	// Collaboration (#11): durable comment threads on objects
+	// (`collaboration.threadsAsObjects`). Comments anchor to a graph node
+	// (`entities.id`); membership is gated via `requireActiveOrgMembership` and
+	// the anchored object is validated to belong to the caller's org inside the
+	// lib (cross-org reads/writes raise NOT_FOUND). The author is always the
+	// caller — never client-supplied.
+	comments: {
+		list: protectedProcedure
+			.input(graphCommentsListSchema)
+			.query(async ({ ctx, input }) => {
+				const organizationId = await requireActiveOrgMembership(ctx);
+				return listComments(db, {
+					orgId: organizationId,
+					entityId: input.entityId,
+					limit: input.limit,
+				});
+			}),
+
+		create: protectedProcedure
+			.input(graphCommentsCreateSchema)
+			.mutation(async ({ ctx, input }) => {
+				const organizationId = await requireActiveOrgMembership(ctx);
+				return dbWs.transaction((tx) =>
+					createComment(tx, {
+						orgId: organizationId,
+						entityId: input.entityId,
+						v2ProjectId: input.v2ProjectId ?? null,
+						authorUserId: ctx.session.user.id,
+						body: input.body,
+					}),
+				);
+			}),
+	},
 } satisfies TRPCRouterRecord;

@@ -119,6 +119,21 @@ const LIVEBLOCKS_PROVIDER: ExperimentalFeatureDependency = {
 	configurationHint: "Configure Liveblocks public and secret keys.",
 };
 
+// `collaboration.threadsAsObjects` is durable on the native Rox object graph
+// (comment_threads/comments in Postgres, synced via electric-proxy), NOT on
+// Liveblocks — so Liveblocks is an OPTIONAL realtime accelerator here, never a
+// gate. `required: false` keeps the feature resolvable (`available` once its own
+// surface is `ready`) without any Liveblocks env. Same demote pattern as
+// HULY_PROVIDER for project-os (canonical store is Rox; the provider is additive).
+const LIVEBLOCKS_PROVIDER_OPTIONAL: ExperimentalFeatureDependency = {
+	id: "liveblocks",
+	label: "Liveblocks",
+	kind: "provider",
+	required: false,
+	configurationHint:
+		"Optional: configure Liveblocks keys to add realtime presence to threads.",
+};
+
 const LIVEKIT_PROVIDER: ExperimentalFeatureDependency = {
 	id: "livekit",
 	label: "LiveKit",
@@ -515,10 +530,10 @@ export const EXPERIMENTAL_FEATURES = [
 			title: "Threads as Objects",
 			shortDescription: "Persist collaboration threads as first-class objects.",
 			longDescription:
-				"Normalizes comments and discussion threads into objects that can link to tasks, files, rooms, and agent runs.",
+				"Durable comment threads anchored to Project-OS objects: comments live in Postgres (comment_threads/comments), sync to clients via Electric, and surface in the object-details panel. Liveblocks is an optional realtime accelerator, not a dependency.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
-			dependencies: [LIVEBLOCKS_PROVIDER, LOCAL_DESKTOP_RUNTIME],
+			implementationStatus: "ready",
+			dependencies: [LIVEBLOCKS_PROVIDER_OPTIONAL, LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Comments", "Tasks", "Object details"],
 		},
 		{

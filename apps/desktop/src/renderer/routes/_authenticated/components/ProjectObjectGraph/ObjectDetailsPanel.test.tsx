@@ -1,9 +1,28 @@
-import { describe, expect, it } from "bun:test";
-import {
-	type ObjectGraphEdge,
-	type ObjectGraphNode,
-	splitLinkedObjects,
-} from "./ObjectDetailsPanel";
+import { describe, expect, it, mock } from "bun:test";
+import type { ObjectGraphEdge, ObjectGraphNode } from "./ObjectDetailsPanel";
+
+// `ObjectDetailsPanel` now mounts the gated `CommentsSection`, whose static
+// import of `renderer/lib/api-trpc-react` eagerly builds the trpc-electron
+// client at module load (and throws without an `electronTRPC` global). Stubbing
+// just that module keeps importing the panel here (for the pure
+// `splitLinkedObjects` test) transport-free; react-query stays real (the hooks
+// are never called without a render). Type-only imports above are erased, so
+// they do not trigger the eager client.
+mock.module("renderer/lib/api-trpc-react", () => ({
+	useCloudTrpc: () => ({
+		graph: {
+			comments: {
+				list: {
+					queryOptions: (input: unknown) => ({ queryKey: ["comments", input] }),
+					queryKey: (input: unknown) => ["comments", input],
+				},
+				create: { mutationOptions: (opts: unknown) => opts },
+			},
+		},
+	}),
+}));
+
+const { splitLinkedObjects } = await import("./ObjectDetailsPanel");
 
 const focus: ObjectGraphNode = {
 	entityId: "f1",
