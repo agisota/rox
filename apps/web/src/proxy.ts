@@ -28,6 +28,35 @@ function siteGate(req: NextRequest): NextResponse | null {
 	});
 }
 
+/**
+ * Brand-reserved handles (see RESERVED_HANDLES in @rox/shared) that have no
+ * claimable in-product profile, so `/@<handle>` would `notFound()`. STOPGAP:
+ * until a real in-product `@rox` profile exists, point these at the founder's
+ * GitHub so the marketing/QR links resolve instead of 404ing. Lowercase keys;
+ * lookups normalize case. Remove the matching entry once a profile ships.
+ */
+const BRAND_HANDLE_REDIRECTS: ReadonlyMap<string, string> = new Map([
+	["rox", "https://github.com/agisota"],
+	["rox_one", "https://github.com/agisota"],
+	["roxone", "https://github.com/agisota"],
+]);
+
+/**
+ * If `pathname` is a brand-reserved handle route (`/@rox`, `/@rox_one`,
+ * `/@roxone`, bare or with a sub-path like `/@rox/skills`), return a 307
+ * redirect to its external target; otherwise `null`. Matches only the handle
+ * segment (case-insensitive) so unrelated handles like `/@roxfoo` fall through.
+ */
+function brandHandleRedirect(pathname: string): NextResponse | null {
+	if (!pathname.startsWith("/@")) return null;
+	// Strip the leading "/@", then take the first path segment as the handle.
+	const handle = pathname.slice(2).split("/", 1)[0]?.toLowerCase();
+	if (!handle) return null;
+	const target = BRAND_HANDLE_REDIRECTS.get(handle);
+	if (!target) return null;
+	return NextResponse.redirect(new URL(target), 307);
+}
+
 const publicRoutes = [
 	"/sign-in",
 	"/sign-up",
@@ -72,6 +101,11 @@ function isPublicRoute(pathname: string): boolean {
 export default async function proxy(req: NextRequest) {
 	const gate = siteGate(req);
 	if (gate) return gate;
+
+	// EARLY brand-handle redirect: must run before the public-handle/auth logic
+	// below so it intercepts before the `[handle]` route's `notFound()`.
+	const brandRedirect = brandHandleRedirect(req.nextUrl.pathname);
+	if (brandRedirect) return brandRedirect;
 
 	const session = await auth.api.getSession({
 		headers: await headers(),
