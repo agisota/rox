@@ -322,12 +322,17 @@ export const EXPERIMENTAL_FEATURES = [
 		{
 			id: "templates.marketplace",
 			title: "Template Marketplace",
-			shortDescription: "Browse Agent-Native templates from inside Rox.",
+			shortDescription:
+				"Browse and apply Rox project templates from inside Rox.",
 			longDescription:
-				"Adds a gated template marketplace for prebuilt agent teams, project setups, and workflow blueprints.",
+				"Adds a gated template marketplace that lists Rox's built-in project templates and creates a project from the chosen template using the local project-creation engine.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
-			dependencies: [AGENT_NATIVE_TEMPLATES_PROVIDER],
+			// Backed by the local project-creation engine (PROJECT_TEMPLATES +
+			// host-service/clone) surfaced through TemplateGalleryModal. The only
+			// required dependency is the desktop runtime, so the gate opens locally
+			// without an external Agent-Native templates endpoint.
+			implementationStatus: "ready",
+			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Template gallery", "New workspace", "Onboarding"],
 		},
 		{
