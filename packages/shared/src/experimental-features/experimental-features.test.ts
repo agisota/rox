@@ -163,6 +163,51 @@ describe("experimental features registry", () => {
 		expect(state.availability).toBe("available");
 	});
 
+	test("templates.permissionsManifest ships a ready, locally-derived confirm surface", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"templates.permissionsManifest",
+		);
+		expect(definition).toBeDefined();
+		// The manifest is derived purely from the local template spec +
+		// starter-preset catalog (the pre-install confirm step), so — like
+		// templates.previewSandbox — the only required provider is the desktop
+		// runtime (no external catalog endpoint).
+		expect(definition?.implementationStatus).toBe("ready");
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders).toHaveLength(0);
+		// The Agent-Native templates endpoint must NOT gate the local confirm step
+		// (importing external templates is a separate feature).
+		expect(
+			(definition?.dependencies ?? []).some(
+				(dependency) => dependency.id === "agent-native-templates",
+			),
+		).toBe(false);
+	});
+
+	test("templates.permissionsManifest resolves available with the desktop runtime", () => {
+		const state = resolveExperimentalFeatureState(
+			"templates.permissionsManifest",
+			{ dependencies: { "desktop-runtime": "configured" } },
+		);
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
+
+	test("templates.permissionsManifest stays hidden when disabled by the user", () => {
+		const state = resolveExperimentalFeatureState(
+			"templates.permissionsManifest",
+			{
+				dependencies: { "desktop-runtime": "configured" },
+				overrides: { "templates.permissionsManifest": false },
+			},
+		);
+		expect(state.enabled).toBe(false);
+		expect(state.availability).toBe("available");
+	});
+
 	test("live.pushToTalkDesktop ships a ready desktop-runtime surface gated on LiveKit", () => {
 		const definition = getExperimentalFeatureDefinition(
 			"live.pushToTalkDesktop",

@@ -256,6 +256,10 @@
 			"types": "./src/template-preview-sandbox.ts",
 			"default": "./src/template-preview-sandbox.ts"
 		},
+		"./template-permissions-manifest": {
+			"types": "./src/template-permissions-manifest.ts",
+			"default": "./src/template-permissions-manifest.ts"
+		},
 		"./retry": {
 			"types": "./src/retry/index.ts",
 			"default": "./src/retry/index.ts"
