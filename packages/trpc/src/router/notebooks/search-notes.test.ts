@@ -85,7 +85,7 @@ describe("notesSearchVectorSql (index <-> query drift guard)", () => {
 		const queryExpr = stripQualifier(render(notesSearchVectorSql(cols)));
 
 		const migrationDir = join(import.meta.dir, "../../../../db/drizzle");
-		const migrationFile = join(migrationDir, "0099_notes_fts_index.sql");
+		const migrationFile = join(migrationDir, "0100_notes_fts_index.sql");
 		const migrationSql = readFileSync(migrationFile, "utf8");
 		const indexMatch = migrationSql.match(/USING gin \((.+)\)\s*;?\s*$/);
 		expect(indexMatch).not.toBeNull();
