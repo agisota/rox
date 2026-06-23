@@ -5,10 +5,11 @@ import { toast } from "@rox/ui/sonner";
 import { Textarea } from "@rox/ui/textarea";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Paperclip, Send } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { useTRPC } from "@/trpc/react";
 import { useComposerAttachments } from "../../hooks/useComposerAttachments";
+import { useThreadTyping } from "../../hooks/useThreadTyping";
 import { AttachmentChip } from "../AttachmentChip";
 
 export interface ComposerProps {
@@ -25,8 +26,6 @@ export interface ComposerProps {
 	 */
 	onTypingChange?: (typing: boolean) => void;
 }
-
-const TYPING_IDLE_MS = 2500;
 
 /**
  * The message composer: a growable textarea, Drive-backed attachments, and a
@@ -46,8 +45,8 @@ export function Composer({
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const [body, setBody] = useState("");
-	const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const isTypingRef = useRef(false);
+	const { onChange: onTyping, stop: stopTyping } =
+		useThreadTyping(onTypingChange);
 
 	const {
 		attachments,
@@ -60,17 +59,6 @@ export function Composer({
 	} = useComposerAttachments();
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
-
-	const stopTyping = useCallback(() => {
-		if (typingTimer.current) clearTimeout(typingTimer.current);
-		if (isTypingRef.current) {
-			isTypingRef.current = false;
-			onTypingChange?.(false);
-		}
-	}, [onTypingChange]);
-
-	// Clear any pending typing timer on unmount / thread switch.
-	useEffect(() => stopTyping, [stopTyping]);
 
 	const sendMutation = useMutation(
 		trpc.comms.sendMessage.mutationOptions({
@@ -96,12 +84,7 @@ export function Composer({
 
 	const handleTyping = (value: string) => {
 		setBody(value);
-		if (!isTypingRef.current && value.length > 0) {
-			isTypingRef.current = true;
-			onTypingChange?.(true);
-		}
-		if (typingTimer.current) clearTimeout(typingTimer.current);
-		typingTimer.current = setTimeout(stopTyping, TYPING_IDLE_MS);
+		onTyping(value);
 	};
 
 	const canSend =
