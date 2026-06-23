@@ -800,9 +800,17 @@ export const EXPERIMENTAL_FEATURES = [
 			shortDescription:
 				"Search across objects, rooms, transcripts, and agents.",
 			longDescription:
-				"Prepares a unified search entry point spanning Rox objects, Huly imports, collaboration threads, and live transcripts.",
+				"A unified entity-search entry point over the native Rox object graph: a debounced query runs the cloud `graph.search` (semantic with keyword auto-degrade) across the addressable object kinds (note/task/project/contact/feed/file) and renders the hits (title, kind badge, snippet), deep-linking each to its object. Backed by the shipped graph search router; Huly imports and live transcripts fold in later as their kinds land.",
 			maturity: "preview",
-			implementationStatus: "stubbed",
+			// Backed by a REAL gated surface: the `(agents)` web shell renders a
+			// UnifiedSearchPanel (behind `resolveUnifiedSearchGate`) that calls the
+			// shipped `graph.search` over the addressable object kinds and opens each
+			// hit via its `rox://` deep link. The active org is the provider-configured
+			// signal; the only declared dependency (`desktop-runtime`) is a `runtime`
+			// dep, so the resolver never gates this web surface (same pattern as
+			// `projectOs.workspaceShell`). No new query and no migration — `graph.search`
+			// already exists end-to-end.
+			implementationStatus: "ready",
 			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Search", "Command palette", "Project OS"],
 		},
