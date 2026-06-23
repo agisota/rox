@@ -24,6 +24,7 @@ import { ReadOnlyToolCall } from "../ReadOnlyToolCall";
 import { ReasoningBlock } from "../ReasoningBlock";
 import { ToolCallBlock } from "../ToolCallBlock";
 import { StreamingMessageText } from "./components/StreamingMessageText";
+import { computeStablePartKeys } from "./utils/stablePartKeys";
 
 interface MessagePartsRendererProps {
 	parts: UIMessage["parts"];
@@ -113,6 +114,10 @@ export function MessagePartsRenderer({
 		isLastAssistant: boolean;
 	}): React.ReactNode[] => {
 		const nodes: React.ReactNode[] = [];
+		// Position-independent keys so the streaming read-only-tool grouping does
+		// not remount existing rows (which would replay the entrance animation and
+		// make the transcript jump). See computeStablePartKeys.
+		const partKeys = computeStablePartKeys(parts);
 		let i = 0;
 
 		while (i < parts.length) {
@@ -121,7 +126,7 @@ export function MessagePartsRenderer({
 			if (part.type === "text") {
 				nodes.push(
 					<StreamingMessageText
-						key={i}
+						key={partKeys[i]}
 						text={part.text}
 						isAnimating={isLastAssistant && isStreaming}
 						mermaid={mermaidConfig}
@@ -136,7 +141,7 @@ export function MessagePartsRenderer({
 				const errorPart = part as unknown as { type: "error"; text: string };
 				nodes.push(
 					<div
-						key={i}
+						key={partKeys[i]}
 						className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-4 py-2 text-sm text-destructive"
 					>
 						<AlertCircleIcon className="mt-0.5 h-4 w-4 shrink-0" />
@@ -148,7 +153,7 @@ export function MessagePartsRenderer({
 			}
 
 			if (part.type === "reasoning") {
-				nodes.push(<ReasoningBlock key={i} reasoning={part.text} />);
+				nodes.push(<ReasoningBlock key={partKeys[i]} reasoning={part.text} />);
 				i++;
 				continue;
 			}
@@ -301,7 +306,10 @@ export function MessagePartsRenderer({
 
 					nodes.push(
 						<ExploringGroup
-							key={`explore-${groupStart}`}
+							// Key off the run's first read-only tool. Its id is stable as
+							// the streaming run grows, so the group keeps one identity
+							// instead of remounting (and re-animating) on every new card.
+							key={`explore-${partKeys[groupStart]}`}
 							items={exploringItems}
 							isStreaming={anyPending && isLastAssistant && isStreaming}
 						/>,

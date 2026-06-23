@@ -9,6 +9,7 @@ import {
 import { useMemo } from "react";
 import type { ToolPart } from "../../../../utils/tool-helpers";
 import { ToolStatusBadge } from "../ToolStatusBadge";
+import { deriveQuestionDisplayState } from "./deriveQuestionDisplayState";
 
 interface QuestionToolOption {
 	label: string;
@@ -195,17 +196,20 @@ export function AskUserQuestionToolCall({
 		return undefined;
 	}, [isResultError, result.text, result.answer, result.content]);
 
-	const isCancelledByStop =
-		!!isInterrupted &&
-		part.state !== "output-available" &&
-		part.state !== "output-error";
-	const isPending =
-		!isCancelledByStop &&
-		part.state !== "output-available" &&
-		part.state !== "output-error";
-	const isCancelledByError = part.state === "output-error" || isResultError;
 	const hasAnswers =
 		Object.keys(answers).length > 0 || answerFallbackText !== undefined;
+
+	// Single source of truth for the terminal state. `superseded` (user kept the
+	// conversation going, so mastracode aborted the pending question) renders
+	// quietly instead of as a loud cancelled card — that confusing clutter is the
+	// bug we are fixing. A real Stop (`interrupted`) keeps its honest treatment.
+	const display = deriveQuestionDisplayState({
+		partState: part.state,
+		isResultError,
+		isInterrupted: !!isInterrupted,
+		hasAnswers,
+	});
+	const { isPending, isAnswered, isCancelled } = display;
 
 	const answeredQAs = useMemo(
 		() =>
@@ -222,13 +226,7 @@ export function AskUserQuestionToolCall({
 	);
 
 	// No args available (tool_result-only path with input: {}) — nothing useful to show
-	if (questions.length === 0 && !isCancelledByError && !isCancelledByStop)
-		return null;
-
-	const isAnswered =
-		!isPending && !isCancelledByError && !isCancelledByStop && hasAnswers;
-	const isCancelled =
-		!isPending && !isCancelledByError && !isCancelledByStop && !hasAnswers;
+	if (questions.length === 0 && !isCancelled) return null;
 
 	// Fallback for plain-string result when questions array has one entry
 	const fallbackQA =
@@ -250,31 +248,36 @@ export function AskUserQuestionToolCall({
 					<ToolStatusBadge icon={ClockIcon} label="Ожидание ответа" />
 				) : isAnswered ? (
 					<ToolStatusBadge icon={CheckIcon} label="Отвечено" />
-				) : isCancelled || isCancelledByError || isCancelledByStop ? (
+				) : isCancelled ? (
 					<ToolStatusBadge icon={XIcon} label="Отменено" />
 				) : undefined
 			}
 		>
-			{isAnswered && qasToShow.length > 0
-				? qasToShow.map((qa) => (
-						<div key={qa.question} className="space-y-1 px-3 py-2">
-							<div className="text-xs text-muted-foreground">{qa.question}</div>
-							<div className="text-sm text-foreground">{qa.answer}</div>
+			{isAnswered && qasToShow.length > 0 ? (
+				qasToShow.map((qa) => (
+					<div key={qa.question} className="space-y-1 px-3 py-2">
+						<div className="text-xs text-muted-foreground">{qa.question}</div>
+						<div className="text-sm text-foreground">{qa.answer}</div>
+					</div>
+				))
+			) : display.showAbortedRows && questions.length > 0 ? (
+				// Only an explicit Stop shows the loud per-question destructive rows.
+				questions.map((q) => (
+					<div key={q.question} className="space-y-1 px-3 py-2">
+						<div className="text-xs text-muted-foreground">{q.question}</div>
+						<div className="flex items-center gap-1 text-sm text-destructive">
+							<CircleXIcon className="h-3 w-3 shrink-0" />
+							Aborted by the user
 						</div>
-					))
-				: (isCancelledByError || isCancelledByStop) && questions.length > 0
-					? questions.map((q) => (
-							<div key={q.question} className="space-y-1 px-3 py-2">
-								<div className="text-xs text-muted-foreground">
-									{q.question}
-								</div>
-								<div className="flex items-center gap-1 text-sm text-destructive">
-									<CircleXIcon className="h-3 w-3 shrink-0" />
-									Aborted by the user
-								</div>
-							</div>
-						))
-					: undefined}
+					</div>
+				))
+			) : display.status === "superseded" && questions.length > 0 ? (
+				// Auto-aborted because the conversation moved on: a single quiet,
+				// muted line. No destructive styling, no "Aborted by the user" trail.
+				<div className="px-3 py-2 text-xs text-muted-foreground">
+					{questions[0].question}
+				</div>
+			) : undefined}
 		</ToolCallRow>
 	);
 }
