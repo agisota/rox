@@ -15,10 +15,17 @@
  *     (counted as `skipped`) when the seam is inert (CI/dev without
  *     `MAIL_OUTBOUND_ENABLED` + `RESEND_API_KEY`).
  *
- * After delivery a recurring relative reminder re-advances `next_fire_at` and
- * stays `scheduled`; a one-off (or absolute) flips to `fired` with
- * `last_fired_at`. This makes a re-tick idempotent: the row either advanced past
- * `now()` or is no longer `scheduled`, so a duplicate run is a no-op. Cancelled
+ * Each due row is CLAIMED before any delivery (claim-first / settle-before-
+ * deliver): a conditional UPDATE guarded by the exact state the tick observed
+ * (`id=? AND status='scheduled' AND next_fire_at=<observed>`) advances a
+ * recurring relative reminder's `next_fire_at` (staying `scheduled`), or flips a
+ * one-off/absolute/exhausted reminder to `fired` with `last_fired_at`. The claim
+ * `RETURNING`s the row only if it won the race, so exactly ONE overlapping tick
+ * proceeds to deliver — the others see 0 rows and skip. This makes concurrent /
+ * retried ticks idempotent (no duplicate `journal_events` row, no duplicate
+ * email): the race is removed entirely, not absorbed by a unique constraint.
+ * Delivery is therefore at-most-once — a rare post-claim delivery throw is
+ * logged (and the in_app row flipped to `failed`), never re-delivered. Cancelled
  * events are skipped (their reminders flip to `cancelled`). Partial failures are
  * isolated with `Promise.allSettled` + `logger.error`, mirroring the
  * drive/accrue-overage fan-out.
@@ -128,16 +135,24 @@ async function deliverEmail(row: DueReminderRow): Promise<boolean> {
 }
 
 /**
- * Re-arm or close a reminder after a successful delivery. A recurring relative
- * reminder advances `next_fire_at` to the next occurrence and stays
- * `scheduled`; otherwise (one-off relative, absolute, or an exhausted
- * recurrence) it flips to `fired`. Returns whether it advanced (vs fired).
+ * Atomically CLAIM a due reminder BEFORE any delivery (settle-before-deliver).
+ * The UPDATE is guarded by the exact state the tick observed
+ * (`status='scheduled' AND next_fire_at=<observed>`), so under overlapping /
+ * retried ticks exactly one claim wins: a recurring relative reminder advances
+ * `next_fire_at` to its next occurrence (staying `scheduled`); a one-off /
+ * absolute / exhausted reminder flips to `fired`. Both carry `last_fired_at`.
+ *
+ * Returns the claim outcome — `"advanced"` / `"fired"` when this tick won the
+ * row (1 row updated → safe to deliver), or `null` when another tick already
+ * claimed it (0 rows → skip delivery entirely, no duplicate).
  */
-async function settleAfterFire(
+async function claimReminder(
 	row: DueReminderRow,
 	now: Date,
-): Promise<"advanced" | "fired"> {
+): Promise<"advanced" | "fired" | null> {
 	const { reminder, event } = row;
+	// The instant this tick observed; the claim only wins if it is unchanged.
+	const observed = reminder.nextFireAt;
 	const nextFireAt =
 		reminder.triggerKind === "relative"
 			? advanceAfterFire({
@@ -147,24 +162,49 @@ async function settleAfterFire(
 						timezone: event.timezone,
 					},
 					offsetMinutes: reminder.offsetMinutes,
-					firedFor: reminder.nextFireAt,
+					firedFor: observed,
 					now,
 				})
 			: null;
 
-	if (nextFireAt) {
+	// Recurring with a next occurrence → advance + stay scheduled; otherwise
+	// (one-off / absolute / exhausted recurrence) → flip to fired.
+	const claimSet = nextFireAt
+		? { nextFireAt, lastFiredAt: now, status: "scheduled" as const }
+		: { lastFiredAt: now, status: "fired" as const };
+
+	const claimed = await dbWs
+		.update(calReminders)
+		.set(claimSet)
+		.where(
+			and(
+				eq(calReminders.id, reminder.id),
+				eq(calReminders.status, "scheduled"),
+				eq(calReminders.nextFireAt, observed),
+			),
+		)
+		.returning({ id: calReminders.id });
+
+	// 0 rows ⇒ another overlapping tick already claimed this exact instant.
+	if (claimed.length === 0) return null;
+	return nextFireAt ? "advanced" : "fired";
+}
+
+/**
+ * Mark a reminder `failed` after its in_app delivery threw post-claim. The claim
+ * already consumed the fire instant (at-most-once), so this only makes the
+ * failure observable — it never re-delivers. Best-effort: a throw here is
+ * swallowed so it can't mask the original delivery error.
+ */
+async function markFailed(reminderId: string): Promise<void> {
+	try {
 		await dbWs
 			.update(calReminders)
-			.set({ nextFireAt, lastFiredAt: now, status: "scheduled" })
-			.where(eq(calReminders.id, reminder.id));
-		return "advanced";
+			.set({ status: "failed" })
+			.where(eq(calReminders.id, reminderId));
+	} catch {
+		// Observability-only flip; ignore so the delivery error stays primary.
 	}
-
-	await dbWs
-		.update(calReminders)
-		.set({ lastFiredAt: now, status: "fired" })
-		.where(eq(calReminders.id, reminder.id));
-	return "fired";
 }
 
 /** Close a reminder whose event was cancelled (never deliver for it). */
@@ -178,7 +218,7 @@ async function cancelForCancelledEvent(row: DueReminderRow): Promise<void> {
 /** Outcome of processing a single due reminder. */
 type DeliveryOutcome = "fired" | "advanced" | "skipped";
 
-/** Deliver + settle one due reminder; returns its outcome bucket. */
+/** Claim (settle) one due reminder, then deliver only if the claim won. */
 async function processReminder(
 	row: DueReminderRow,
 	now: Date,
@@ -189,14 +229,38 @@ async function processReminder(
 		return "skipped";
 	}
 
+	// Email seam inert / no recipient ⇒ a clean skip that must NOT consume the
+	// fire instant, so probe it before claiming (claiming would flip the row and
+	// silently swallow the reminder while outbound is disabled).
 	if (row.reminder.channel === "email") {
-		const sent = await deliverEmail(row);
-		if (!sent) return "skipped"; // seam inert / no recipient address.
-	} else {
-		await deliverInApp(row);
+		const sendFn = getMailSendFn();
+		if (!sendFn) return "skipped";
 	}
 
-	return settleAfterFire(row, now);
+	// CLAIM FIRST: atomically settle under the observed state. 0 rows ⇒ another
+	// overlapping tick already owns this instant ⇒ skip with no delivery.
+	const claim = await claimReminder(row, now);
+	if (claim === null) return "skipped";
+
+	// We won the claim — deliver exactly once. A post-claim delivery throw is
+	// logged by the caller's allSettled (at-most-once: never re-delivered).
+	if (row.reminder.channel === "email") {
+		const sent = await deliverEmail(row);
+		// Recipient vanished between probe and claim: nothing to send, but the
+		// instant is already consumed (fired/advanced) — do not re-deliver.
+		if (!sent) return claim;
+	} else {
+		try {
+			await deliverInApp(row);
+		} catch (err) {
+			// Claim already consumed the instant; flag the row failed for
+			// observability and rethrow so the tick logs it (no retry).
+			await markFailed(row.reminder.id);
+			throw err;
+		}
+	}
+
+	return claim;
 }
 
 /**
