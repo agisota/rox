@@ -8,6 +8,18 @@
 
 export { createHostClient } from "./create-host-client";
 export type {
+	HostAgentLaunchResult,
+	HostAgentWriteNamespace,
+	HostChatSendResult,
+	HostChatWriteNamespace,
+	HostTerminalWriteNamespace,
+	HostWriteClient,
+} from "./host-write-client";
+// Additive host WRITE plane (WS-A — Option A): a separate client + factory so the
+// frozen read contract (`./types`, `./create-host-client`) stays byte-stable.
+// See `./host-write-client.ts` for the verified host procedure mapping.
+export { createHostWriteClient } from "./host-write-client";
+export type {
 	CreateHostTerminalOptions,
 	HostAgentConfig,
 	HostAgentConfigsNamespace,

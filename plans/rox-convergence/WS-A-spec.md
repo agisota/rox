@@ -245,3 +245,21 @@ WS-A Phase-2 ownership is **docs-only**: `plans/rox-convergence/WS-A-spec.md` + 
 | OAuth "mirror at auth:100" framing | Medium→Low | Verified incorrect: model OAuth uses `external.openUrl`, not the auth-router connect flow (two separate paths) |
 | Cross-screen link targets (v1 vs v2 workspace) | Low | Navigation targets stated but generation not verified |
 | Quick Chat `chat_sessions` lazy-write location | Low | Asserted, not traced in code |
+
+---
+
+## Addendum — Additive Host WRITE Plane (Option A)
+
+The frozen `@rox/shared/host-client` boundary (`types.ts` + `create-host-client.ts`) is **READ-only**. To let web/mobile/desktop *act* on a host (send chat, write terminal input, launch agents) without touching that frozen contract, WS-A adds a **separate, purely additive** `HostWriteClient` + `createHostWriteClient` factory in a NEW file `packages/shared/src/host-client/host-write-client.ts`, exported append-only from the barrel. The read contract files end with an **empty git diff**.
+
+**Decision (Option A):** keep WRITE in its own client + factory rather than widening `HostClient`. Reads and writes converge at the shared `HostTransport` seam (each write method is exactly one `transport.call(procedure, input, "POST")`), not at the type. No new HTTP verb and no `HostTransport` signature change — the relay/ipc transports already satisfy writes because they already satisfy reads. Web opts in via `createRelayHostWriteClient` (additive, mirrors `createRelayHostClient`).
+
+**Verified procedure mapping** (checked against the host-service tRPC routers in this checkout; each is a `.mutation` = POST):
+
+| Write method | Host procedure | Host input shape | Router source |
+| --- | --- | --- | --- |
+| `chat.sendMessage` | `chat.sendMessage` | `{ sessionId, workspaceId, payload: { content, files? }, metadata? }` | `packages/host-service/src/trpc/router/chat/chat.ts:57-73` |
+| `terminal.write` | `terminal.writeInput` | `{ terminalId, workspaceId, data }` | `packages/host-service/src/trpc/router/terminal/terminal.ts:137-154` |
+| `agent.launch` | `agents.run` | `{ workspaceId, agent, prompt, attachmentIds? }` | `packages/host-service/src/trpc/router/agents/agents.ts:299-309` |
+
+Note: the terminal namespace method is `write`, but the host procedure is `terminal.writeInput` (NOT `terminal.write`). `HostAgentLaunchResult` mirrors the value shape of `agentLaunchResultSchema` / `AGENT_LAUNCH_STATUS` (`packages/shared/src/agent-launch.ts:21-26,104-113`); `HostChatSendResult` is kept boundary-opaque (host returns `RuntimeHarness.sendMessage`'s opaque result, `runtime/chat/chat.ts:786-822`).
