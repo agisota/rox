@@ -22,8 +22,12 @@ export type LarkEventEnvelope = {
 	kind: "event";
 	appId: string | null;
 	token: string | null;
+	/** Stable per-delivery id from `header.event_id`; used for inbound dedup. */
+	eventId: string | null;
 	eventType: string | null;
 	chatId: string | null;
+	/** Originating message id (`event.message.message_id`); the reply target. */
+	messageId: string | null;
 	text: string | null;
 	senderOpenId: string | null;
 	senderIsBot: boolean;
@@ -88,9 +92,11 @@ export function parseLarkEnvelope(raw: unknown): ParsedLarkEnvelope | null {
 
 	const appId = readString(header, "app_id");
 	const token = readString(header, "token");
+	const eventId = readString(header, "event_id");
 	const eventType = readString(header, "event_type");
 
 	let chatId: string | null = null;
+	let messageId: string | null = null;
 	let text: string | null = null;
 	let senderOpenId: string | null = null;
 	let senderIsBot = false;
@@ -99,6 +105,7 @@ export function parseLarkEnvelope(raw: unknown): ParsedLarkEnvelope | null {
 		const message = isRecord(event.message) ? event.message : null;
 		if (message !== null) {
 			chatId = readString(message, "chat_id");
+			messageId = readString(message, "message_id");
 			// `content` is a JSON string; only text messages carry `{ "text": ... }`.
 			text = parseMessageText(readString(message, "content"));
 		}
@@ -119,8 +126,10 @@ export function parseLarkEnvelope(raw: unknown): ParsedLarkEnvelope | null {
 		kind: "event",
 		appId,
 		token,
+		eventId,
 		eventType,
 		chatId,
+		messageId,
 		text,
 		senderOpenId,
 		senderIsBot,
