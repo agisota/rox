@@ -39,9 +39,10 @@ import {
 	DRIVE_FREE_QUOTA_BYTES,
 	storageQuota,
 } from "@rox/db/schema";
+import { sql } from "drizzle-orm";
 
 /** A transaction handle compatible with `dbWs.transaction((tx) => …)`. */
-type Tx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
 
 export interface ProvisionIdentityInput {
 	/** `auth.users.id` — the stable owner key (survives handle renames). */
@@ -83,14 +84,24 @@ export async function provisionIdentity(
 	const run = async (db: Tx): Promise<boolean> => {
 		let created = false;
 
+		// 0. Reserve the handle in the global registry FIRST (S1). This is the
+		//    permanent reservation authority; it throws CONFLICT if another user
+		//    owns the handle, so addresses are never minted for a stolen handle.
+		const { reserveHandle } = await import("./reserveHandle");
+		const { handleId } = await reserveHandle(db, {
+			normalizedHandle: addresses.handle,
+			userId: input.userId,
+		});
+
 		// 1. Email + XMPP addresses (primary, derived from the current handle).
-		//    DQ4: the unique index (org, kind, value) guards live duplicates; a
-		//    re-run is a no-op. Both transports share the same `username@rox.one`
-		//    value (JID localpart === handle).
+		//    S2: the GLOBAL partial-unique (kind, value) WHERE !is_alias guards
+		//    live duplicates across orgs; a re-run is a no-op. Both transports
+		//    share the same `username@rox.one` value (JID localpart === handle).
 		const addressRows = [
 			{
 				organizationId: input.organizationId,
 				userId: input.userId,
+				handleId,
 				kind: "email" as const,
 				value: addresses.email,
 				isPrimary: true,
@@ -100,6 +111,7 @@ export async function provisionIdentity(
 			{
 				organizationId: input.organizationId,
 				userId: input.userId,
+				handleId,
 				kind: "xmpp" as const,
 				value: addresses.xmpp,
 				isPrimary: true,
@@ -110,12 +122,13 @@ export async function provisionIdentity(
 		const insertedAddresses = await db
 			.insert(commsAddresses)
 			.values(addressRows)
+			// drizzle-orm 0.45.2 `onConflictDoNothing` takes `{ target, where }`
+			// (NOT `targetWhere`); `where` IS the partial-index predicate, emitting
+			// `ON CONFLICT (kind, value) WHERE is_alias = false DO NOTHING` to hit
+			// the global `comms_addresses_kind_value_primary_uniq` index (S2).
 			.onConflictDoNothing({
-				target: [
-					commsAddresses.organizationId,
-					commsAddresses.kind,
-					commsAddresses.value,
-				],
+				target: [commsAddresses.kind, commsAddresses.value],
+				where: sql`${commsAddresses.isAlias} = false`,
 			})
 			.returning({ id: commsAddresses.id });
 		if (insertedAddresses.length > 0) created = true;

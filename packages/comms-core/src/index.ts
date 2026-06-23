@@ -64,6 +64,7 @@ export type {
 	CommsPorts,
 	ContactResolver,
 	DeliveryStore,
+	MembersStore,
 	MessageStore,
 	PresenceStore,
 	ResolvedRecipient,

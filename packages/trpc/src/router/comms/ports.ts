@@ -16,7 +16,6 @@
  */
 
 import type {
-	CommsAddress,
 	CommsAttachment,
 	CommsDelivery,
 	CommsDeliveryStatus,
@@ -30,7 +29,7 @@ import type {
 } from "@rox/comms-core";
 import { dbWs } from "@rox/db/client";
 import {
-	commsAddresses,
+	type CommsAddressKind,
 	commsDeliveries,
 	commsMessages,
 	commsParticipants,
@@ -40,6 +39,7 @@ import {
 } from "@rox/db/schema";
 import { and, eq } from "drizzle-orm";
 import { graphService } from "../../lib/graph";
+import { resolveAddress } from "../../lib/identity/resolveAddress";
 
 /** A transaction handle compatible with `dbWs.transaction((tx) => …)`. */
 export type CommsTx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
@@ -60,19 +60,6 @@ function toAttachment(a: DbCommsAttachment): CommsAttachment {
 // ---------------------------------------------------------------------------
 // row → domain mappers (Drizzle select shape → comms-core port shape)
 // ---------------------------------------------------------------------------
-
-function toAddress(r: typeof commsAddresses.$inferSelect): CommsAddress {
-	return {
-		id: r.id,
-		organizationId: r.organizationId,
-		userId: r.userId,
-		kind: r.kind,
-		value: r.value,
-		isPrimary: r.isPrimary,
-		isAlias: r.isAlias,
-		verified: r.verified,
-	};
-}
 
 function toThread(r: typeof commsThreads.$inferSelect): CommsThread {
 	return {
@@ -162,17 +149,27 @@ export function createCommsPorts(
 	return {
 		addresses: {
 			async findByValue({ value, kind }) {
-				const conds = [
-					eq(commsAddresses.organizationId, organizationId),
-					eq(commsAddresses.value, value),
-				];
-				if (kind) conds.push(eq(commsAddresses.kind, kind));
-				const [row] = await db
-					.select()
-					.from(commsAddresses)
-					.where(and(...conds))
-					.limit(1);
-				return row ? toAddress(row) : null;
+				// GLOBAL + alias-expiry-aware (S2). The org filter is intentionally
+				// dropped: identity is global per user (DQ3); an expired alias must
+				// NOT resolve to its old owner. `kind` defaults to "email" as a
+				// safety net (resolveCounterpart calls without one); Task 9 passes an
+				// explicit kind. The downstream user branch consumes only `userId`.
+				const resolvedKind = (kind ?? "email") as CommsAddressKind;
+				const resolved = await resolveAddress({
+					kind: resolvedKind,
+					value,
+				});
+				if (!resolved) return null;
+				return {
+					id: "",
+					organizationId,
+					userId: resolved.userId,
+					kind: resolvedKind,
+					value: value.trim().toLowerCase(),
+					isPrimary: !resolved.isAlias,
+					isAlias: resolved.isAlias,
+					verified: false,
+				};
 			},
 		},
 
@@ -369,6 +366,13 @@ export function createCommsPorts(
 					)
 					.limit(1);
 				return row ? toPresence(row) : null;
+			},
+		},
+
+		members: {
+			async assertMember({ organizationId: org, userId }) {
+				const { assertOrgMembers } = await import("../integration/utils");
+				await assertOrgMembers(org, [userId]);
 			},
 		},
 	} satisfies CommsPorts;

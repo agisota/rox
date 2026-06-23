@@ -10,6 +10,7 @@ import { commsMessages, commsParticipants, commsThreads } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
+import { assertOrgMembers } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { type CommsDb, createCommsPorts } from "./ports";
 import {
@@ -173,6 +174,12 @@ export const commsRouter = {
 				r.kind === "userId"
 					? { kind: "userId", userId: r.userId }
 					: { kind: "address", address: r.address },
+			);
+
+			// T1/S4: every userId recipient MUST be a member of the caller's org.
+			await assertOrgMembers(
+				organizationId,
+				recipients.flatMap((r) => (r.kind === "userId" ? [r.userId] : [])),
 			);
 
 			const draft: OutboundDraft = {

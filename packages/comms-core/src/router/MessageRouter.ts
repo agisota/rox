@@ -93,6 +93,10 @@ export class MessageRouter {
 		ref: RecipientRef,
 	): Promise<Counterpart> {
 		if (ref.kind === "userId") {
+			await this.ports.members?.assertMember({
+				organizationId,
+				userId: ref.userId,
+			});
 			return { type: "user", organizationId, userId: ref.userId };
 		}
 

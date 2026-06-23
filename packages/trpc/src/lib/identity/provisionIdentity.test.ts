@@ -57,6 +57,7 @@ const schema = await import("@rox/db/schema");
 TABLES.set(schema.commsAddresses, "comms_addresses");
 TABLES.set(schema.commsKeypairs, "comms_keypairs");
 TABLES.set(schema.storageQuota, "storage_quota");
+TABLES.set(schema.identityHandles, "identity_handles");
 
 const { provisionIdentity } = await import("./provisionIdentity");
 
@@ -137,6 +138,18 @@ describe("provisionIdentity", () => {
 		// The shape never carries a private key.
 		expect(kp?.values[0]).not.toHaveProperty("privateKey");
 		expect(kp?.values[0]).not.toHaveProperty("secretKey");
+	});
+
+	test("reserves the handle before writing addresses (S1)", async () => {
+		await provisionIdentity({
+			userId: USER_ID,
+			handle: "Mark",
+			organizationId: ORG_ID,
+		});
+		const handle = state.inserts.find((i) => i.table === "identity_handles");
+		expect(handle).toBeDefined();
+		expect(handle?.values[0]?.normalizedHandle).toBe("mark");
+		expect(handle?.values[0]?.currentOwnerUserId).toBe(USER_ID);
 	});
 
 	test("reports created=true on first provision", async () => {

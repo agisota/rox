@@ -93,3 +93,12 @@ export function organizationIdFromRoomId(roomId: string): string | null {
 	const match = /^org:([^:]+):/.exec(roomId);
 	return match ? (match[1] ?? null) : null;
 }
+
+/**
+ * Parse the note id out of a note room id (`org:{orgId}:note:{noteId}`).
+ * Returns null for any non-note room.
+ */
+export function noteIdFromRoomId(roomId: string): string | null {
+	const match = /^org:[^:]+:note:(.+)$/.exec(roomId);
+	return match ? (match[1] ?? null) : null;
+}

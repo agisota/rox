@@ -82,9 +82,13 @@ const fakeDb = {
 
 mock.module("@rox/db/client", () => ({ db: fakeDb, dbWs: fakeDb }));
 mock.module("../integration/utils", () => ({
-	verifyOrgMembership: () => Promise.resolve(),
+	verifyOrgMembership: () => Promise.resolve({ membership: {} }),
 	verifyOrgMembershipWithSubscription: () =>
 		Promise.resolve({ subscription: null }),
+	verifyOrgAdmin: () => Promise.resolve({ membership: {} }),
+	verifyOrgOwner: () => Promise.resolve({ membership: {} }),
+	// Pass-through guard: cross-org rejection is covered in calendar.guard.test.ts.
+	assertOrgMembers: () => Promise.resolve(),
 }));
 
 const { calendarRouter } = await import("./calendar");

@@ -57,6 +57,7 @@ import {
 	commsPresenceStateValues,
 	commsTransportValues,
 } from "./enums";
+import { identityHandles } from "./handles";
 
 // ---------------------------------------------------------------------------
 // pgEnums
@@ -129,6 +130,11 @@ export const commsAddresses = pgTable(
 		aliasExpiresAt: timestamp("alias_expires_at", { withTimezone: true }),
 		verified: boolean().notNull().default(false),
 
+		// Join key to the reservation registry (DQ4); nullable, lazily backfilled.
+		handleId: uuid("handle_id").references(() => identityHandles.id, {
+			onDelete: "set null",
+		}),
+
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
@@ -145,6 +151,12 @@ export const commsAddresses = pgTable(
 			t.kind,
 			t.value,
 		),
+		// GLOBAL: exactly one LIVE primary per (kind, value) across all orgs (S2;
+		// mirrors mail_addresses_address_uniq). Aliases excluded so a renamed
+		// owner's old value coexists as an alias alongside the new primary.
+		uniqueIndex("comms_addresses_kind_value_primary_uniq")
+			.on(t.kind, t.value)
+			.where(sql`${t.isAlias} = false`),
 		index("comms_addresses_user_idx").on(t.userId),
 		// Fast inbound lookup: given a (kind, value), find the owner.
 		index("comms_addresses_kind_value_idx").on(t.kind, t.value),

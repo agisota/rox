@@ -143,6 +143,11 @@ export interface PresenceStore {
 	}): Promise<CommsPresence | null>;
 }
 
+/** Optional org-membership guard (defense-in-depth for non-tRPC callers). */
+export interface MembersStore {
+	assertMember(args: { organizationId: string; userId: string }): Promise<void>;
+}
+
 /** The full set of ports the {@link MessageRouter} depends on. */
 export interface CommsPorts {
 	addresses: AddressStore;
@@ -151,6 +156,8 @@ export interface CommsPorts {
 	messages: MessageStore;
 	deliveries: DeliveryStore;
 	presence: PresenceStore;
+	/** Optional: when present, resolveCounterpart verifies userId recipients. */
+	members?: MembersStore;
 }
 
 /** A resolved recipient ready for delivery. */

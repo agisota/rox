@@ -26,6 +26,7 @@ import { isValidRrule } from "@rox/shared/rrule";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
+import { assertOrgMembers, verifyOrgMembership } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { exportIcs, type IcsEvent, importIcs } from "./ics";
 import { type ExpandableEvent, expandEvents } from "./occurrences";
@@ -288,6 +289,8 @@ export const calendarRouter = {
 				input.calendarId,
 				"owner",
 			);
+			// C1/S3: a calendar can only be shared with a member of the same org.
+			await verifyOrgMembership(input.userId, organizationId);
 			const [row] = await db
 				.insert(calCalendarShares)
 				.values({
@@ -376,6 +379,15 @@ export const calendarRouter = {
 			if (input.rrule) {
 				assertValidRrule(input.rrule, input.dtstart, input.timezone ?? "UTC");
 			}
+
+			// C1/S3: every in-app attendee MUST be a member of the caller's org.
+			// Email-kind attendees are external invitees and exempt.
+			await assertOrgMembers(
+				organizationId,
+				(input.attendees ?? []).flatMap((a) =>
+					a.kind === "userId" ? [a.userId] : [],
+				),
+			);
 
 			return dbWs.transaction(async (tx) => {
 				const [event] = await tx
@@ -519,6 +531,11 @@ export const calendarRouter = {
 				input.eventId,
 				"writer",
 			);
+			// C1/S3: an in-app attendee MUST be a member of the caller's org.
+			// Email-kind attendees are external invitees and exempt.
+			if (input.attendee.kind === "userId") {
+				await assertOrgMembers(organizationId, [input.attendee.userId]);
+			}
 			const [row] = await db
 				.insert(calEventAttendees)
 				.values(

@@ -59,6 +59,7 @@ import {
 	mailProviderValues,
 	mailStatusValues,
 } from "./enums";
+import { identityHandles } from "./handles";
 
 /** The canonical sending/receiving domain for derived rox mailboxes. */
 export const ROX_MAIL_DOMAIN = "rox.one";
@@ -111,6 +112,11 @@ export const mailAddresses = pgTable(
 		status: mailAddressStatus().notNull().default("active"),
 		// For renamed-handle aliases (DQ4: 90-day grace). Null for a primary.
 		graceUntil: timestamp("grace_until", { withTimezone: true }),
+
+		// Join key to the reservation registry (DQ4); nullable, lazily backfilled.
+		handleId: uuid("handle_id").references(() => identityHandles.id, {
+			onDelete: "set null",
+		}),
 
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
