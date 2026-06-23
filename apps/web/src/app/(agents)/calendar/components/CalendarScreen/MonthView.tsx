@@ -9,6 +9,10 @@ export interface OccurrenceItem {
 	eventId: string;
 	start: string;
 	end: string;
+	/** RECURRENCE-ID for this instance (additive; the per-occurrence override key). */
+	originalStart?: string;
+	/** True when a per-occurrence override patched this instance. */
+	overridden?: boolean;
 }
 
 interface MonthViewProps {
@@ -16,7 +20,8 @@ interface MonthViewProps {
 	occurrences: OccurrenceItem[];
 	eventsById: Map<string, { id: string; title: string; allDay: boolean }>;
 	onSelectDay: (day: Date) => void;
-	onSelectEvent: (eventId: string) => void;
+	/** `occurrenceStart` is the instance's RECURRENCE-ID (occ.start), threaded for "this event only" edits. */
+	onSelectEvent: (eventId: string, occurrenceStart: string) => void;
 }
 
 const todayKey = () => isoDateKey(new Date());
@@ -90,7 +95,10 @@ export function MonthView({
 												type="button"
 												onClick={(e) => {
 													e.stopPropagation();
-													onSelectEvent(occ.eventId);
+													onSelectEvent(
+														occ.eventId,
+														occ.originalStart ?? occ.start,
+													);
 												}}
 												className="block w-full truncate rounded bg-primary/10 px-1 py-0.5 text-left text-[11px] text-primary hover:bg-primary/20"
 											>

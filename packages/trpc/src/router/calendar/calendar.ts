@@ -20,6 +20,7 @@ import {
 	calCalendarShares,
 	calCalendars,
 	calEventAttendees,
+	calEventOccurrences,
 	calEvents,
 	calReminders,
 	userProfiles,
@@ -32,10 +33,15 @@ import { assertOrgMembers } from "../integration/assertOrgMembers";
 import { verifyOrgMembership } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { exportIcs, type IcsEvent, importIcs } from "./ics";
-import { type ExpandableEvent, expandEvents } from "./occurrences";
+import {
+	type ExpandableEvent,
+	expandEvents,
+	type OccurrenceOverride,
+} from "./occurrences";
 import { computeNextFireAt } from "./reminders";
 import {
 	addAttendeeSchema,
+	cancelOccurrenceSchema,
 	createCalendarSchema,
 	createEventSchema,
 	createReminderSchema,
@@ -54,11 +60,13 @@ import {
 	MAX_REMINDERS_PER_EVENT,
 	RRULE_CADENCE_MESSAGE,
 	removeAttendeeSchema,
+	restoreOccurrenceSchema,
 	rsvpSchema,
 	shareCalendarSchema,
 	unshareCalendarSchema,
 	updateCalendarSchema,
 	updateEventSchema,
+	updateOccurrenceSchema,
 	updateReminderSchema,
 } from "./schema";
 
@@ -201,6 +209,47 @@ function toExpandable(event: typeof calEvents.$inferSelect): ExpandableEvent {
 		rrule: event.rrule,
 		exdates: event.exdates,
 	};
+}
+
+/** Map a persisted override row to the expander's {@link OccurrenceOverride}. */
+function toOccurrenceOverride(
+	row: typeof calEventOccurrences.$inferSelect,
+): OccurrenceOverride {
+	return {
+		originalStart: row.originalStart,
+		cancelled: row.cancelled,
+		dtstart: row.overrideDtstart,
+		dtend: row.overrideDtend,
+		title: row.overrideTitle,
+		description: row.overrideDescription,
+		location: row.overrideLocation,
+		allDay: row.overrideAllDay,
+	};
+}
+
+/**
+ * A per-occurrence override (RECURRENCE-ID) targets ONE instance of a recurring
+ * series. Resolve the event with writer access, then hard-require a non-null
+ * rrule — a one-off event has no instances to override, so this is `BAD_REQUEST`.
+ */
+async function getRecurringEventForOverride(
+	organizationId: string,
+	userId: string,
+	eventId: string,
+) {
+	const event = await getEventWithAccess(
+		organizationId,
+		userId,
+		eventId,
+		"writer",
+	);
+	if (!event.rrule) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: "Переопределить можно только повторяющееся событие",
+		});
+	}
+	return event;
 }
 
 /** An attendee request after handle-resolution: only userId/email kinds remain. */
@@ -901,21 +950,159 @@ export const calendarRouter = {
 				);
 
 			const active = events.filter((e) => e.status !== "cancelled");
+
+			// Per-occurrence overrides (RECURRENCE-ID) apply only to recurring
+			// events; fetch them for the active recurring ids in one org-scoped
+			// query and group by eventId so the expander can drop a cancelled
+			// instance or patch a moved one. One-off events skip this entirely.
+			const recurringIds = active
+				.filter((e) => e.rrule !== null)
+				.map((e) => e.id);
+			const overridesByEventId = new Map<string, OccurrenceOverride[]>();
+			if (recurringIds.length > 0) {
+				const overrideRows = await db
+					.select()
+					.from(calEventOccurrences)
+					.where(
+						and(
+							eq(calEventOccurrences.organizationId, organizationId),
+							inArray(calEventOccurrences.eventId, recurringIds),
+						),
+					);
+				for (const row of overrideRows) {
+					const list = overridesByEventId.get(row.eventId) ?? [];
+					list.push(toOccurrenceOverride(row));
+					overridesByEventId.set(row.eventId, list);
+				}
+			}
+
 			const expansion = expandEvents(
 				active.map(toExpandable),
 				input.rangeStart,
 				input.rangeEnd,
+				overridesByEventId,
 			);
 			const occurrences = expansion.occurrences.map((o) => ({
 				eventId: o.eventId,
 				start: o.start.toISOString(),
 				end: o.end.toISOString(),
+				// Additive: the RECURRENCE-ID the client threads back to the
+				// per-occurrence procedures, and whether an override patched it.
+				originalStart: (o.originalStart ?? o.start).toISOString(),
+				overridden: o.overridden ?? false,
 			}));
 
 			// `truncated` is additive: existing consumers keep reading
 			// `occurrences`/`events`; a true flag means a sub-daily rule hit the
 			// per-event cap and the window may be missing later instances.
 			return { occurrences, events: active, truncated: expansion.truncated };
+		}),
+
+	// ---- per-occurrence overrides (RECURRENCE-ID, "this event only") ------
+	// An override targets ONE instance of a recurring series, keyed by the
+	// event + its `original_start` (the instant the expander emits BEFORE any
+	// override). update/cancel UPSERT on that unique key; delete reverts to the
+	// series default. Every statement is org-scoped and forces ownerUserId to
+	// the caller. EXDATE stays the whole-series skip; this is the reversible
+	// per-instance mechanism.
+
+	/** Patch a single instance of a recurring event ("this event only"). */
+	updateOccurrence: protectedProcedure
+		.input(updateOccurrenceSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			await getRecurringEventForOverride(organizationId, userId, input.eventId);
+
+			const [row] = await db
+				.insert(calEventOccurrences)
+				.values({
+					organizationId,
+					eventId: input.eventId,
+					ownerUserId: userId,
+					originalStart: input.originalStart,
+					cancelled: false,
+					// nullish → null clears the field back to "inherit the series".
+					overrideTitle: input.title ?? null,
+					overrideDescription: input.description ?? null,
+					overrideLocation: input.location ?? null,
+					overrideDtstart: input.dtstart ?? null,
+					overrideDtend: input.dtend ?? null,
+					overrideAllDay: input.allDay ?? null,
+				})
+				.onConflictDoUpdate({
+					target: [
+						calEventOccurrences.eventId,
+						calEventOccurrences.originalStart,
+					],
+					// Set EVERY override column so re-saving an edit that cleared a
+					// field doesn't leave a stale value, and un-cancel on re-edit.
+					set: {
+						ownerUserId: userId,
+						cancelled: false,
+						overrideTitle: input.title ?? null,
+						overrideDescription: input.description ?? null,
+						overrideLocation: input.location ?? null,
+						overrideDtstart: input.dtstart ?? null,
+						overrideDtend: input.dtend ?? null,
+						overrideAllDay: input.allDay ?? null,
+					},
+				})
+				.returning();
+			if (!row) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Failed to save occurrence override",
+				});
+			}
+			return row;
+		}),
+
+	/** Cancel a single instance of a recurring event (reversible). */
+	cancelOccurrence: protectedProcedure
+		.input(cancelOccurrenceSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			await getRecurringEventForOverride(organizationId, userId, input.eventId);
+
+			await db
+				.insert(calEventOccurrences)
+				.values({
+					organizationId,
+					eventId: input.eventId,
+					ownerUserId: userId,
+					originalStart: input.originalStart,
+					cancelled: true,
+				})
+				.onConflictDoUpdate({
+					target: [
+						calEventOccurrences.eventId,
+						calEventOccurrences.originalStart,
+					],
+					set: { cancelled: true, ownerUserId: userId },
+				});
+			return { ok: true as const };
+		}),
+
+	/** Delete a per-occurrence override row, reverting to the series default. */
+	deleteOccurrenceOverride: protectedProcedure
+		.input(restoreOccurrenceSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			await getRecurringEventForOverride(organizationId, userId, input.eventId);
+
+			await db
+				.delete(calEventOccurrences)
+				.where(
+					and(
+						eq(calEventOccurrences.organizationId, organizationId),
+						eq(calEventOccurrences.eventId, input.eventId),
+						eq(calEventOccurrences.originalStart, input.originalStart),
+					),
+				);
+			return { ok: true as const };
 		}),
 
 	// ---- ICS import / export ---------------------------------------------

@@ -52,6 +52,8 @@ function reminderOffsetLabel(offsetMinutes: number | null): string {
 interface AgendaItem {
 	key: string;
 	eventId: string;
+	/** RECURRENCE-ID (occ.start ISO) for "this event only" actions. */
+	originalStart: string;
 	start: Date;
 	end: Date;
 }
@@ -83,7 +85,12 @@ export function CalendarView() {
 	const queryClient = useQueryClient();
 
 	const [anchor, setAnchor] = useState(() => new Date());
-	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	// Selection carries the clicked instance's RECURRENCE-ID (originalStart) so a
+	// recurring event can be cancelled "this event only"; null = nothing open.
+	const [selected, setSelected] = useState<{
+		eventId: string;
+		originalStart: string;
+	} | null>(null);
 
 	const range = useMemo(() => monthRange(anchor), [anchor]);
 	const queryInput = useMemo(
@@ -102,11 +109,27 @@ export function CalendarView() {
 					queryKey: trpc.calendar.listOccurrences.queryKey(queryInput),
 				});
 				toast.success("Ответ сохранён");
-				setSelectedEventId(null);
+				setSelected(null);
 			},
 			onError: (error) => {
 				logger.error("[CalendarView] rsvp failed", error);
 				toast.error("Не удалось сохранить ответ");
+			},
+		}),
+	);
+
+	const cancelOccurrence = useMutation(
+		trpc.calendar.cancelOccurrence.mutationOptions({
+			onSuccess: async () => {
+				await queryClient.invalidateQueries({
+					queryKey: trpc.calendar.listOccurrences.queryKey(queryInput),
+				});
+				toast.success("Событие удалено (только это)");
+				setSelected(null);
+			},
+			onError: (error) => {
+				logger.error("[CalendarView] cancelOccurrence failed", error);
+				toast.error("Не удалось удалить событие");
 			},
 		}),
 	);
@@ -125,6 +148,7 @@ export function CalendarView() {
 			const item: AgendaItem = {
 				key: `${occ.eventId}-${occ.start}`,
 				eventId: occ.eventId,
+				originalStart: occ.originalStart ?? occ.start,
 				start,
 				end: new Date(occ.end),
 			};
@@ -136,8 +160,8 @@ export function CalendarView() {
 		return [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
 	}, [occurrences]);
 
-	const selectedEvent = selectedEventId
-		? (eventsById.get(selectedEventId) ?? null)
+	const selectedEvent = selected
+		? (eventsById.get(selected.eventId) ?? null)
 		: null;
 	const monthLabel = anchor.toLocaleDateString([], {
 		month: "long",
@@ -223,7 +247,12 @@ export function CalendarView() {
 										<button
 											key={item.key}
 											type="button"
-											onClick={() => setSelectedEventId(item.eventId)}
+											onClick={() =>
+												setSelected({
+													eventId: item.eventId,
+													originalStart: item.originalStart,
+												})
+											}
 											className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/50"
 										>
 											<span className="shrink-0 text-muted-foreground text-xs tabular-nums">
@@ -253,7 +282,7 @@ export function CalendarView() {
 			<Dialog
 				open={selectedEvent !== null}
 				onOpenChange={(open) => {
-					if (!open) setSelectedEventId(null);
+					if (!open) setSelected(null);
 				}}
 			>
 				<DialogContent>
@@ -322,6 +351,26 @@ export function CalendarView() {
 									</Button>
 								))}
 							</div>
+
+							{/* Recurring: cancel just this instance ("this event only"). */}
+							{selectedEvent.rrule && selected && (
+								<div className="border-t pt-3">
+									<Button
+										size="sm"
+										variant="outline"
+										disabled={cancelOccurrence.isPending}
+										className="text-destructive hover:text-destructive"
+										onClick={() =>
+											cancelOccurrence.mutate({
+												eventId: selected.eventId,
+												originalStart: new Date(selected.originalStart),
+											})
+										}
+									>
+										Удалить только это событие
+									</Button>
+								</div>
+							)}
 
 							<EventReminders eventId={selectedEvent.id} />
 						</>

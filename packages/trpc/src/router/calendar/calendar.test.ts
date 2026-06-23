@@ -381,6 +381,7 @@ describe("calendar.listOccurrences", () => {
 					status: "confirmed",
 				},
 			], // events
+			[], // per-occurrence overrides for recurring events (none)
 		];
 		const caller = callerFor("org-1");
 		const res = await caller.calendar.listOccurrences({
@@ -389,6 +390,71 @@ describe("calendar.listOccurrences", () => {
 		});
 		expect(res.occurrences).toHaveLength(3);
 		expect(res.occurrences[0]?.start).toBe("2026-06-01T09:00:00.000Z");
+		// Additive RECURRENCE-ID + override flag surfaced on every instance.
+		expect(res.occurrences[0]?.originalStart).toBe("2026-06-01T09:00:00.000Z");
+		expect(res.occurrences[0]?.overridden).toBe(false);
+	});
+
+	test("applies per-occurrence overrides: cancels one instance and patches another", async () => {
+		state.selectQueue = [
+			[{ id: CAL_ID }], // owned
+			[], // shared
+			[
+				{
+					id: EVENT_ID,
+					calendarId: CAL_ID,
+					organizationId: "org-1",
+					dtstart: new Date("2026-06-01T09:00:00Z"),
+					dtend: new Date("2026-06-01T10:00:00Z"),
+					timezone: "UTC",
+					rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+					exdates: [],
+					status: "confirmed",
+				},
+			], // events
+			[
+				// Jun 2 cancelled.
+				{
+					eventId: EVENT_ID,
+					originalStart: new Date("2026-06-02T09:00:00Z"),
+					cancelled: true,
+					overrideDtstart: null,
+					overrideDtend: null,
+					overrideTitle: null,
+					overrideDescription: null,
+					overrideLocation: null,
+					overrideAllDay: null,
+				},
+				// Jun 3 moved to 14:00.
+				{
+					eventId: EVENT_ID,
+					originalStart: new Date("2026-06-03T09:00:00Z"),
+					cancelled: false,
+					overrideDtstart: new Date("2026-06-03T14:00:00Z"),
+					overrideDtend: new Date("2026-06-03T15:00:00Z"),
+					overrideTitle: null,
+					overrideDescription: null,
+					overrideLocation: null,
+					overrideAllDay: null,
+				},
+			], // overrides
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.calendar.listOccurrences({
+			rangeStart: new Date("2026-06-01T00:00:00Z"),
+			rangeEnd: new Date("2026-06-04T00:00:00Z"),
+		});
+		const starts = res.occurrences.map((o) => o.start);
+		// Jun 2 absent (cancelled); Jun 3 patched to 14:00.
+		expect(starts).toEqual([
+			"2026-06-01T09:00:00.000Z",
+			"2026-06-03T14:00:00.000Z",
+		]);
+		const moved = res.occurrences.find(
+			(o) => o.start === "2026-06-03T14:00:00.000Z",
+		);
+		expect(moved?.originalStart).toBe("2026-06-03T09:00:00.000Z");
+		expect(moved?.overridden).toBe(true);
 	});
 
 	test("returns empty when the caller can read no calendars", async () => {
@@ -399,6 +465,183 @@ describe("calendar.listOccurrences", () => {
 			rangeEnd: new Date("2026-06-04T00:00:00Z"),
 		});
 		expect(res.occurrences).toEqual([]);
+	});
+});
+
+describe("calendar.updateOccurrence", () => {
+	const RECURRING_EVENT = {
+		id: EVENT_ID,
+		calendarId: CAL_ID,
+		organizationId: "org-1",
+		dtstart: new Date("2026-06-01T09:00:00Z"),
+		dtend: new Date("2026-06-01T10:00:00Z"),
+		timezone: "UTC",
+		rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+		exdates: [],
+		status: "confirmed",
+	};
+	const ORIGINAL_START = new Date("2026-06-02T09:00:00Z");
+
+	test("404s when the event is not in the org", async () => {
+		state.selectQueue = [[]]; // getEventWithAccess → event lookup empty
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.updateOccurrence({
+				eventId: EVENT_ID,
+				originalStart: ORIGINAL_START,
+				title: "Moved",
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("forbids a member with no access grant", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: OTHER_USER, organizationId: "org-1" }], // calendar (not owner)
+			[], // share lookup → none
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.updateOccurrence({
+				eventId: EVENT_ID,
+				originalStart: ORIGINAL_START,
+				title: "Moved",
+			}),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("BAD_REQUEST when the event is not recurring (rrule null)", async () => {
+		state.selectQueue = [
+			[{ ...RECURRING_EVENT, rrule: null }], // one-off event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.updateOccurrence({
+				eventId: EVENT_ID,
+				originalStart: ORIGINAL_START,
+				title: "Moved",
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+
+	test("upserts an override row forcing ownerUserId to the caller", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+		];
+		state.insertReturning = [{ id: "override-1", eventId: EVENT_ID }];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateOccurrence({
+			eventId: EVENT_ID,
+			originalStart: ORIGINAL_START,
+			title: "Moved sync",
+			dtstart: new Date("2026-06-02T14:00:00Z"),
+			dtend: new Date("2026-06-02T15:00:00Z"),
+		});
+		const values = state.inserted[0]?.values[0];
+		expect(values).toMatchObject({
+			organizationId: "org-1",
+			eventId: EVENT_ID,
+			ownerUserId: "user-1",
+			cancelled: false,
+			overrideTitle: "Moved sync",
+		});
+		expect((values?.originalStart as Date).toISOString()).toBe(
+			"2026-06-02T09:00:00.000Z",
+		);
+		expect((values?.overrideDtstart as Date).toISOString()).toBe(
+			"2026-06-02T14:00:00.000Z",
+		);
+	});
+});
+
+describe("calendar.cancelOccurrence", () => {
+	const RECURRING_EVENT = {
+		id: EVENT_ID,
+		calendarId: CAL_ID,
+		organizationId: "org-1",
+		dtstart: new Date("2026-06-01T09:00:00Z"),
+		dtend: new Date("2026-06-01T10:00:00Z"),
+		timezone: "UTC",
+		rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+		exdates: [],
+		status: "confirmed",
+	};
+	const ORIGINAL_START = new Date("2026-06-02T09:00:00Z");
+
+	test("forbids a reader (writer access required)", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: OTHER_USER, organizationId: "org-1" }], // calendar
+			[{ role: "reader" }], // share → reader only
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.cancelOccurrence({
+				eventId: EVENT_ID,
+				originalStart: ORIGINAL_START,
+			}),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("404s for a non-org user", async () => {
+		state.selectQueue = [[]]; // event lookup empty
+		const caller = callerFor("org-1", OTHER_USER);
+		await expect(
+			caller.calendar.cancelOccurrence({
+				eventId: EVENT_ID,
+				originalStart: ORIGINAL_START,
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("upserts a cancelled override row", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+		];
+		state.insertReturning = [{ id: "override-1" }];
+		const caller = callerFor("org-1", "user-1");
+		const res = await caller.calendar.cancelOccurrence({
+			eventId: EVENT_ID,
+			originalStart: ORIGINAL_START,
+		});
+		expect(res.ok).toBe(true);
+		const values = state.inserted[0]?.values[0];
+		expect(values).toMatchObject({
+			organizationId: "org-1",
+			eventId: EVENT_ID,
+			ownerUserId: "user-1",
+			cancelled: true,
+		});
+	});
+});
+
+describe("calendar.deleteOccurrenceOverride", () => {
+	const RECURRING_EVENT = {
+		id: EVENT_ID,
+		calendarId: CAL_ID,
+		organizationId: "org-1",
+		dtstart: new Date("2026-06-01T09:00:00Z"),
+		dtend: new Date("2026-06-01T10:00:00Z"),
+		timezone: "UTC",
+		rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+		exdates: [],
+		status: "confirmed",
+	};
+
+	test("deletes the override row and returns ok", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+		];
+		const caller = callerFor("org-1", "user-1");
+		const res = await caller.calendar.deleteOccurrenceOverride({
+			eventId: EVENT_ID,
+			originalStart: new Date("2026-06-02T09:00:00Z"),
+		});
+		expect(res.ok).toBe(true);
 	});
 });
 
