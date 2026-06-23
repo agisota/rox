@@ -14,10 +14,18 @@ const state: {
 	dueRows: AnyRow[];
 	inserted: { table: string; values: AnyRow[] }[];
 	updated: { id: string; set: AnyRow }[];
+	/**
+	 * Row counts the next claim `UPDATE ... RETURNING` calls resolve to, consumed
+	 * FIFO. Models the single-claimer race: the first tick over a due row wins
+	 * (1 row) and a later overlapping tick loses (0 rows). Empty ⇒ default 1 (the
+	 * uncontended single-tick case the existing dispatch tests exercise).
+	 */
+	claimReturns: number[];
 } = {
 	dueRows: [],
 	inserted: [],
 	updated: [],
+	claimReturns: [],
 };
 
 function tableName(table: unknown): string {
@@ -96,7 +104,20 @@ const fakeDb = {
 				return {
 					where(clause: unknown) {
 						state.updated.push({ id: firstParamValue(clause) ?? "?", set });
-						return Promise.resolve();
+						// The claim path awaits `.returning()`; the cancel / failed
+						// flips await `.where()` directly. Support both: a thenable
+						// (resolves void) that also carries `.returning()`.
+						const rows = () => {
+							const n = state.claimReturns.length
+								? (state.claimReturns.shift() as number)
+								: 1; // uncontended default: the claim wins.
+							return Array.from({ length: n }, () => ({ id: "claimed" }));
+						};
+						const result = Promise.resolve() as Promise<void> & {
+							returning: () => Promise<AnyRow[]>;
+						};
+						result.returning = () => Promise.resolve(rows());
+						return result;
 					},
 				};
 			},
@@ -154,6 +175,7 @@ beforeEach(() => {
 	state.dueRows = [];
 	state.inserted = [];
 	state.updated = [];
+	state.claimReturns = [];
 	selectMode = "due";
 });
 
@@ -299,5 +321,50 @@ describe("runDueReminders — idempotent re-tick", () => {
 		});
 		expect(state.inserted).toHaveLength(0);
 		expect(state.updated).toHaveLength(0);
+	});
+
+	test("two overlapping ticks over the SAME due row deliver EXACTLY ONCE (claim-first)", async () => {
+		// Both ticks observe the same un-settled scheduled row (QStash retry, or a
+		// run straddling the 5-min cadence). The claim `UPDATE ... RETURNING` is a
+		// single-claimer: the first tick's claim wins (1 row) and delivers; the
+		// second tick's identical claim loses (0 rows) and must NOT deliver — no
+		// duplicate journal_events row, no duplicate email.
+		const due = oneOffReminder();
+		const now = new Date("2026-06-20T08:55:00.000Z");
+
+		// First claim wins, second loses (FIFO over both runDueReminders calls).
+		state.claimReturns = [1, 0];
+
+		state.dueRows = [due];
+		const first = await runDueReminders(now);
+
+		state.dueRows = [due]; // same un-settled row re-selected by the overlap.
+		const second = await runDueReminders(now);
+
+		// Tick 1 claimed + delivered; tick 2 saw 0 rows and skipped delivery.
+		expect(first.fired).toBe(1);
+		expect(second.fired).toBe(0);
+		expect(second.skipped).toBe(1);
+
+		// THE INVARIANT: the in-app delivery (journal_events insert) happened once.
+		const journalInserts = state.inserted.filter(
+			(i) => i.table === "journal_events",
+		);
+		expect(journalInserts).toHaveLength(1);
+	});
+
+	test("the losing claim skips delivery even when it ran first in the fan-out", async () => {
+		// Guard against ordering luck: if the very first claim a tick issues loses
+		// (another worker already settled the row), there is still zero delivery.
+		state.claimReturns = [0];
+		state.dueRows = [oneOffReminder()];
+		const res = await runDueReminders(new Date("2026-06-20T08:55:00.000Z"));
+
+		expect(res.skipped).toBe(1);
+		expect(res.fired).toBe(0);
+		expect(res.advanced).toBe(0);
+		expect(
+			state.inserted.filter((i) => i.table === "journal_events"),
+		).toHaveLength(0);
 	});
 });
