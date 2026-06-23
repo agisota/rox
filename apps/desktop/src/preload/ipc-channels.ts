@@ -17,6 +17,12 @@ export interface IpcEventChannels {
 	 * Sent in `src/main/index.ts` via `webContents.send("deep-link-navigate", path)`.
 	 */
 	"deep-link-navigate": [path: string];
+	/**
+	 * Fired by `SpectreWindowManager.show()` so the standalone `/spectre` overlay
+	 * route focuses its input on summon. Sent via
+	 * `webContents.send("spectre:summoned")`.
+	 */
+	"spectre:summoned": [];
 }
 
 /** Union of all event channel names known to the bridge. */

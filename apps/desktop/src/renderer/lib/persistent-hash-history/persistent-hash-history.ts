@@ -58,9 +58,14 @@ const HOME_PATH = "/";
  * `$` filter below (zero maintenance); a future *static* route trips the
  * compile-time exhaustiveness check and must be registered here.
  */
+// `/spectre` is the standalone Spectre overlay-assistant surface. It is rendered
+// only in the dedicated, transparent Spectre window (loaded at `#/spectre`) and
+// is never navigated to in the main window, so it must NOT participate in the
+// main-window cold-restore allow-list / exhaustiveness guard below.
+type RestorableRouteCandidate = Exclude<FileRouteTypes["to"], "/spectre">;
 type StaticRoutePath = {
-	[K in FileRouteTypes["to"]]: K extends `${string}$${string}` ? never : K;
-}[FileRouteTypes["to"]];
+	[K in RestorableRouteCandidate]: K extends `${string}$${string}` ? never : K;
+}[RestorableRouteCandidate];
 
 const RESTORABLE_STATIC_ROUTES = [
 	"/",
