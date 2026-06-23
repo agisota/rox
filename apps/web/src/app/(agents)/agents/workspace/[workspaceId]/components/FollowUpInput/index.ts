@@ -1,1 +1,5 @@
-export { FollowUpInput } from "./FollowUpInput";
+export {
+	FollowUpInput,
+	type FollowUpLiveSend,
+	sendFollowUpToHost,
+} from "./FollowUpInput";

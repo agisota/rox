@@ -33,6 +33,13 @@ export type LiveHostBinding = {
 	sessionId: string;
 	/** Live PTY session id to mount, if one already exists on the host. */
 	terminalId: string | null;
+	/**
+	 * Model id of the live session, forwarded to the follow-up send so the host
+	 * continues on the SAME model instead of its default. Only a real model id
+	 * belongs here — `session.modelName` is a human display label, not an id, so
+	 * the page leaves this unset until the live binding carries a true id.
+	 */
+	model?: string;
 };
 
 type SessionPageContentProps = {
@@ -130,7 +137,21 @@ export function SessionPageContent({
 				)}
 			</div>
 			{conversationalViews.includes(activeView) && (
-				<FollowUpInput modelName={session.modelName} />
+				<FollowUpInput
+					modelName={session.modelName}
+					liveSend={
+						liveHost
+							? {
+									routingKey: liveHost.routingKey,
+									workspaceId: liveHost.workspaceId,
+									sessionId: liveHost.sessionId,
+									// Forward the live model id when the binding carries one so
+									// the host stays on the session's model (not its default).
+									...(liveHost.model ? { model: liveHost.model } : {}),
+								}
+							: undefined
+					}
+				/>
 			)}
 		</div>
 	);
