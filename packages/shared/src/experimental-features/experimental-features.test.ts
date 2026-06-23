@@ -157,4 +157,71 @@ describe("experimental features registry", () => {
 		expect(state.enabled).toBe(true);
 		expect(state.availability).toBe("needs_configuration");
 	});
+
+	// --- Project OS Phase-1: native object graph, Huly demoted ---------------
+
+	test("Huly is an OPTIONAL provider (not a required gate)", () => {
+		// Every project-os.* feature that lists Huly must treat it as optional, so
+		// the resolver never marks them needs_configuration purely for missing Huly.
+		const huly = EXPERIMENTAL_FEATURES.flatMap((f) => f.dependencies).find(
+			(dep) => dep.id === "huly",
+		);
+		expect(huly).toBeDefined();
+		expect(huly?.required).toBe(false);
+	});
+
+	test("Huly is never the reason a projectOs.* feature is gated", () => {
+		// Only the desktop runtime is configured — no huly provider at all.
+		const deps = { "desktop-runtime": "configured" } as const;
+		for (const feature of listExperimentalFeatures("project-os")) {
+			const state = resolveExperimentalFeatureState(feature, {
+				dependencies: deps,
+			});
+			// Missing Huly env must never appear in the gating reason after demote.
+			expect(state.reason ?? "").not.toContain("Huly");
+
+			// A feature whose ONLY provider dependency is Huly must NOT be
+			// needs_configuration once Huly is optional (it resolves on its own
+			// implementationStatus instead). Features with a different required
+			// provider (e.g. meetingNotes → LiveKit) may still need configuration.
+			const otherRequiredProviders = feature.dependencies.filter(
+				(dep) => dep.kind === "provider" && dep.required && dep.id !== "huly",
+			);
+			if (otherRequiredProviders.length === 0) {
+				expect(state.availability).not.toBe("needs_configuration");
+			}
+		}
+	});
+
+	test("projectOs.workspaceShell ships a ready, locally-backed surface", () => {
+		const definition = getExperimentalFeatureDefinition(
+			"projectOs.workspaceShell",
+		);
+		expect(definition).toBeDefined();
+		expect(definition?.implementationStatus).toBe("ready");
+		// Backed by ProjectObjectGraphLaunchpad — no required provider dependency.
+		const requiredProviders = (definition?.dependencies ?? []).filter(
+			(dependency) => dependency.kind === "provider" && dependency.required,
+		);
+		expect(requiredProviders).toHaveLength(0);
+	});
+
+	test("projectOs.workspaceShell resolves available with the desktop runtime", () => {
+		const state = resolveExperimentalFeatureState("projectOs.workspaceShell", {
+			dependencies: { "desktop-runtime": "configured" },
+		});
+		expect(state.enabled).toBe(true);
+		expect(state.availability).toBe("available");
+		expect(state.reason).toBeUndefined();
+	});
+
+	test("projectOs.hulyImport stays planned but is no longer needs_configuration", () => {
+		// The optional Huly import connector is still 'planned' (no surface yet),
+		// but with no Huly env it now reports not_implemented (planned) rather than
+		// needs_configuration — Huly is optional.
+		const state = resolveExperimentalFeatureState("projectOs.hulyImport", {
+			dependencies: { "desktop-runtime": "configured" },
+		});
+		expect(state.availability).toBe("not_implemented");
+	});
 });

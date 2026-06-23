@@ -116,6 +116,13 @@ export const graphBacklinksSchema = z.object({
 	relation: edgeRelationEnum.default("links_to"),
 });
 
+// Project OS (#01, Phase-1): walk one v2_project's object graph.
+export const graphProjectGraphSchema = z.object({
+	v2ProjectId: uuid,
+	status: entityStatusEnum.default("active"),
+	limit: z.number().int().min(1).max(500).default(200),
+});
+
 export const graphResolveIdentitySchema = z.object({
 	idempotencyKey: uuid,
 	kind: identityKindEnum,
@@ -202,6 +209,18 @@ export const neighborsResultSchema = z.object({
 	edges: z.array(graphEdgeSchema),
 	truncated: z.boolean(),
 });
+
+export const projectGraphNodeSchema = graphNodeSchema.extend({
+	// True when the node is itself scoped to the project (v2_project_id = P).
+	inProject: z.boolean(),
+});
+
+export const projectGraphResultSchema = z.object({
+	nodes: z.array(projectGraphNodeSchema),
+	edges: z.array(graphEdgeSchema),
+	truncated: z.boolean(),
+});
+export type ProjectGraphResultOutput = z.infer<typeof projectGraphResultSchema>;
 
 export const backlinkSchema = z.object({
 	sourceEntityId: uuid,

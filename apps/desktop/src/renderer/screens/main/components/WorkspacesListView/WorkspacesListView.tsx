@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { LuSearch, LuX } from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { navigateToWorkspace } from "renderer/routes/_authenticated/_dashboard/utils/workspace-navigation";
+import { ProjectObjectGraphSection } from "renderer/routes/_authenticated/components/ProjectObjectGraph";
 import type { FilterMode, ProjectGroup, WorkspaceItem } from "./types";
 import { WorkspaceRow } from "./WorkspaceRow";
 
@@ -248,6 +249,10 @@ export function WorkspacesListView() {
 								{group.workspaces.length}
 							</span>
 						</div>
+
+						{/* Project OS — native object-graph shell (gated; renders nothing
+						    unless projectOs.workspaceShell is enabled + available). */}
+						<ProjectObjectGraphSection v2ProjectId={group.projectId} />
 
 						{/* Workspaces in this project — stagger-in on each new result set.
 						    The composite key remounts the container when the filter or
