@@ -52,11 +52,15 @@ const fakeDb = {
 			bucket.push(vals);
 			state.insertedByTable[name] = bucket;
 			// `.values()` is itself awaitable (no-returning inserts) and also exposes
-			// `.returning()`; both resolve the configured rows.
+			// `.returning()`; both resolve the configured rows. `.onConflictDoNothing()`
+			// (G — idempotent edge insert) returns the same awaitable so re-adding an
+			// existing edge resolves instead of throwing (mirrors mesh.test.ts).
 			const p = Promise.resolve(state.insertReturning) as Promise<AnyRow[]> & {
 				returning: () => Promise<AnyRow[]>;
+				onConflictDoNothing: () => typeof p;
 			};
 			p.returning = () => Promise.resolve(state.insertReturning);
+			p.onConflictDoNothing = () => p;
 			return p;
 		},
 	}),
@@ -133,6 +137,9 @@ function callerFor(activeOrganizationId: string | null) {
 
 const NOTEBOOK_ID = "11111111-1111-4111-8111-111111111111";
 const NOTE_ID = "22222222-2222-4222-8222-222222222222";
+const DOC_ID = "33333333-3333-4333-8333-333333333333";
+const DOC_ID_2 = "44444444-4444-4444-8444-444444444444";
+const DOC_ID_3 = "55555555-5555-4555-8555-555555555555";
 
 beforeEach(() => {
 	state.selectRows = [];
@@ -596,5 +603,246 @@ describe("notebooks.getNote (N2 doc-backed)", () => {
 		expect(res.title).toBe("Fresh Doc");
 		expect(res.markdown).toBe("fresh body");
 		expect(res.tags).toEqual(["x"]);
+	});
+});
+
+// --- notebook membership (G): add / remove / reorder -------------------------
+
+describe("notebooks.addNoteToNotebook", () => {
+	// select #1 = getNotebookForUser, #2 = assertDocInOrg, #3 = max(sortOrder).
+	function stubAddSelects(opts: {
+		notebook?: AnyRow | null;
+		doc?: AnyRow | null;
+		maxRow?: AnyRow | null;
+	}) {
+		let call = 0;
+		fakeDb.select = () => {
+			call += 1;
+			if (call === 1) {
+				return selectBuilder(
+					opts.notebook === null
+						? []
+						: [
+								opts.notebook ?? {
+									id: "nb-1",
+									organizationId: "org-1",
+									ownerUserId: "user-1",
+								},
+							],
+				);
+			}
+			if (call === 2) {
+				return selectBuilder(
+					opts.doc === null
+						? []
+						: [opts.doc ?? { id: DOC_ID, organizationId: "org-1" }],
+				);
+			}
+			return selectBuilder(opts.maxRow == null ? [] : [opts.maxRow]);
+		};
+	}
+
+	test("inserts an org/owner-scoped edge appended after the max sortOrder", async () => {
+		stubAddSelects({ maxRow: { max: 4 } });
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.addNoteToNotebook({
+			noteBookId: NOTEBOOK_ID,
+			documentId: DOC_ID,
+		});
+		expect(res).toEqual({ ok: true });
+		const edge = state.insertedByTable.note_book_items?.[0];
+		expect(edge?.noteBookId).toBe("nb-1");
+		expect(edge?.organizationId).toBe("org-1");
+		expect(edge?.documentId).toBe(DOC_ID);
+		expect(edge?.addedBy).toBe("user-1");
+		// Appended at max(sortOrder) + 1.
+		expect(edge?.sortOrder).toBe(5);
+	});
+
+	test("appends at sortOrder 0 for an empty notebook", async () => {
+		stubAddSelects({ maxRow: null });
+		const caller = callerFor("org-1");
+		await caller.notebooks.addNoteToNotebook({
+			noteBookId: NOTEBOOK_ID,
+			documentId: DOC_ID,
+		});
+		const edge = state.insertedByTable.note_book_items?.[0];
+		expect(edge?.sortOrder).toBe(0);
+	});
+
+	test("is idempotent: re-adding an existing edge resolves to { ok: true }", async () => {
+		// onConflictDoNothing makes the duplicate insert a no-op rather than a throw.
+		stubAddSelects({ maxRow: { max: 0 } });
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.addNoteToNotebook({
+			noteBookId: NOTEBOOK_ID,
+			documentId: DOC_ID,
+		});
+		expect(res).toEqual({ ok: true });
+	});
+
+	test("FORBIDDEN without an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.notebooks.addNoteToNotebook({
+				noteBookId: NOTEBOOK_ID,
+				documentId: DOC_ID,
+			}),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("NOT_FOUND when the notebook is not the caller's", async () => {
+		stubAddSelects({ notebook: null });
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.addNoteToNotebook({
+				noteBookId: NOTEBOOK_ID,
+				documentId: DOC_ID,
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(state.insertedByTable.note_book_items).toBeUndefined();
+	});
+
+	test("NOT_FOUND when the document belongs to another org", async () => {
+		stubAddSelects({ doc: null });
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.addNoteToNotebook({
+				noteBookId: NOTEBOOK_ID,
+				documentId: DOC_ID,
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(state.insertedByTable.note_book_items).toBeUndefined();
+	});
+});
+
+describe("notebooks.removeNoteFromNotebook", () => {
+	test("deletes ONLY the note_book_items edge (note/doc untouched)", async () => {
+		fakeDb.select = () =>
+			selectBuilder([
+				{ id: "nb-1", organizationId: "org-1", ownerUserId: "user-1" },
+			]);
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.removeNoteFromNotebook({
+			noteBookId: NOTEBOOK_ID,
+			documentId: DOC_ID,
+		});
+		expect(res).toEqual({ ok: true });
+		expect(state.deletedTables).toContain("note_book_items");
+		expect(state.deletedTables).not.toContain("note_notes");
+		expect(state.deletedTables).not.toContain("knowledge_documents");
+	});
+
+	test("FORBIDDEN without an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.notebooks.removeNoteFromNotebook({
+				noteBookId: NOTEBOOK_ID,
+				documentId: DOC_ID,
+			}),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+		expect(state.deleteCalls).toBe(0);
+	});
+
+	test("NOT_FOUND when the notebook is not the caller's", async () => {
+		fakeDb.select = () => selectBuilder([]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.removeNoteFromNotebook({
+				noteBookId: NOTEBOOK_ID,
+				documentId: DOC_ID,
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(state.deleteCalls).toBe(0);
+	});
+});
+
+describe("notebooks.reorderNotebookItems", () => {
+	// select #1 = getNotebookForUser, #2 = existing edge documentIds.
+	function stubReorderSelects(existingDocIds: string[]) {
+		let call = 0;
+		fakeDb.select = () => {
+			call += 1;
+			return call === 1
+				? selectBuilder([
+						{ id: "nb-1", organizationId: "org-1", ownerUserId: "user-1" },
+					])
+				: selectBuilder(existingDocIds.map((documentId) => ({ documentId })));
+		};
+	}
+
+	test("persists sortOrder per index in the given order", async () => {
+		stubReorderSelects([DOC_ID, DOC_ID_2, DOC_ID_3]);
+		const caller = callerFor("org-1");
+		// New order: d3, d1, d2 -> sortOrder 0, 1, 2 respectively.
+		const res = await caller.notebooks.reorderNotebookItems({
+			noteBookId: NOTEBOOK_ID,
+			orderedDocumentIds: [DOC_ID_3, DOC_ID, DOC_ID_2],
+		});
+		expect(res).toEqual({ ok: true });
+		// The proc iterates orderedDocumentIds in order, so the Nth update sets
+		// sortOrder N for the Nth document id.
+		expect(state.updated).toHaveLength(3);
+		expect(state.updated[0]?.sortOrder).toBe(0); // d3
+		expect(state.updated[1]?.sortOrder).toBe(1); // d1
+		expect(state.updated[2]?.sortOrder).toBe(2); // d2
+	});
+
+	test("BAD_REQUEST when an id is not an edge of the notebook (no writes)", async () => {
+		stubReorderSelects([DOC_ID, DOC_ID_2]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.reorderNotebookItems({
+				noteBookId: NOTEBOOK_ID,
+				orderedDocumentIds: [DOC_ID, DOC_ID_2, DOC_ID_3],
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(state.updated).toHaveLength(0);
+	});
+
+	test("BAD_REQUEST when ids are a partial subset of the notebook's edges", async () => {
+		stubReorderSelects([DOC_ID, DOC_ID_2, DOC_ID_3]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.reorderNotebookItems({
+				noteBookId: NOTEBOOK_ID,
+				orderedDocumentIds: [DOC_ID, DOC_ID_2],
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(state.updated).toHaveLength(0);
+	});
+
+	test("BAD_REQUEST on duplicate ids in the input (no writes)", async () => {
+		stubReorderSelects([DOC_ID, DOC_ID_2]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.reorderNotebookItems({
+				noteBookId: NOTEBOOK_ID,
+				orderedDocumentIds: [DOC_ID, DOC_ID],
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(state.updated).toHaveLength(0);
+	});
+
+	test("FORBIDDEN without an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.notebooks.reorderNotebookItems({
+				noteBookId: NOTEBOOK_ID,
+				orderedDocumentIds: [DOC_ID],
+			}),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("NOT_FOUND when the notebook is not the caller's", async () => {
+		fakeDb.select = () => selectBuilder([]);
+		const caller = callerFor("org-1");
+		await expect(
+			caller.notebooks.reorderNotebookItems({
+				noteBookId: NOTEBOOK_ID,
+				orderedDocumentIds: [DOC_ID],
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(state.updated).toHaveLength(0);
 	});
 });

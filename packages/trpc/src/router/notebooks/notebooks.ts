@@ -10,12 +10,13 @@ import { assertMdxSafe, MdxSecurityError } from "@rox/shared/knowledge";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, max } from "drizzle-orm";
 import { env } from "../../env";
 import { protectedProcedure, publicProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { createNoteDocument, updateNoteDocument } from "./notes-storage";
 import {
+	addNoteToNotebookSchema,
 	createNotebookSchema,
 	createNoteSchema,
 	getPublicNoteSchema,
@@ -23,6 +24,8 @@ import {
 	listNotesSchema,
 	notebookIdSchema,
 	noteIdSchema,
+	removeNoteFromNotebookSchema,
+	reorderNotebookItemsSchema,
 	setNotePublishedSchema,
 	updateNotebookSchema,
 	updateNoteSchema,
@@ -152,6 +155,33 @@ async function getNotebookForUser(
 		throw new TRPCError({ code: "NOT_FOUND", message: "Notebook not found" });
 	}
 	return row;
+}
+
+/**
+ * Membership edges (note_book_items) address the note by its backing
+ * `knowledge_documents.id`. The edge table carries `organization_id` but no
+ * per-user owner, so the org boundary is the right scope for the document
+ * itself: confirm the doc exists AND lives in the caller's active org before an
+ * edge is created (cross-org docs must never be silently linked). Throws
+ * NOT_FOUND when the doc is missing or belongs to another org.
+ */
+async function assertDocInOrg(
+	organizationId: string,
+	documentId: string,
+): Promise<void> {
+	const [row] = await db
+		.select({ id: knowledgeDocuments.id })
+		.from(knowledgeDocuments)
+		.where(
+			and(
+				eq(knowledgeDocuments.id, documentId),
+				eq(knowledgeDocuments.organizationId, organizationId),
+			),
+		)
+		.limit(1);
+	if (!row) {
+		throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+	}
 }
 
 async function getNoteForUser(
@@ -653,5 +683,150 @@ export const notebooksRouter = {
 				updatedAt: note.updatedAt,
 				url: getPublicNoteUrl(input.slug),
 			};
+		}),
+
+	// --- notebook membership (G): add / remove / reorder ---------------------
+	// Edges (note_book_items) are a many-to-many membership keyed by the note's
+	// backing knowledge_documents.id, independent of the note's single "home"
+	// notebook (note_notes.notebookId, which listNotes reads). These procs manage
+	// the EDGE table only; they never touch note_notes or knowledge_documents
+	// content. Ownership is enforced via the parent notebook (getNotebookForUser:
+	// org + ownerUserId); the document is additionally org-scoped (assertDocInOrg).
+
+	/**
+	 * Add a note (by its backing document id) to a notebook, appended at the end.
+	 * Idempotent: re-adding an existing edge is a no-op via onConflictDoNothing on
+	 * the (note_book_id, document_id) unique index. The append position is
+	 * max(sortOrder)+1; a separate select+insert is not atomic under concurrency,
+	 * but ties only yield an unstable order (harmless — reads break ties by
+	 * createdAt/id) and duplicates are still blocked by the unique index.
+	 */
+	addNoteToNotebook: protectedProcedure
+		.input(addNoteToNotebookSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const notebook = await getNotebookForUser(
+				organizationId,
+				ctx.session.user.id,
+				input.noteBookId,
+			);
+			await assertDocInOrg(organizationId, input.documentId);
+
+			const [agg] = await db
+				.select({ max: max(noteBookItems.sortOrder) })
+				.from(noteBookItems)
+				.where(eq(noteBookItems.noteBookId, notebook.id));
+			const nextSortOrder = (agg?.max ?? -1) + 1;
+
+			await db
+				.insert(noteBookItems)
+				.values({
+					organizationId: notebook.organizationId,
+					noteBookId: notebook.id,
+					documentId: input.documentId,
+					sortOrder: nextSortOrder,
+					addedBy: ctx.session.user.id,
+				})
+				.onConflictDoNothing({
+					target: [noteBookItems.noteBookId, noteBookItems.documentId],
+				});
+
+			return { ok: true as const };
+		}),
+
+	/**
+	 * Remove a note from a notebook by deleting ONLY the membership edge. The note
+	 * (note_notes) and its backing document (knowledge_documents) are left intact.
+	 */
+	removeNoteFromNotebook: protectedProcedure
+		.input(removeNoteFromNotebookSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const notebook = await getNotebookForUser(
+				organizationId,
+				ctx.session.user.id,
+				input.noteBookId,
+			);
+			await db
+				.delete(noteBookItems)
+				.where(
+					and(
+						eq(noteBookItems.noteBookId, notebook.id),
+						eq(noteBookItems.documentId, input.documentId),
+						eq(noteBookItems.organizationId, organizationId),
+					),
+				);
+			return { ok: true as const };
+		}),
+
+	/**
+	 * Persist a new order for a notebook's edges. The input must be the EXACT full
+	 * set of the notebook's current edge document ids (no extras, no duplicates,
+	 * no missing ids) — a partial list would leave the omitted edges with stale
+	 * sortOrder, so it is rejected with BAD_REQUEST. Each edge's sortOrder is set
+	 * to its index in `orderedDocumentIds`, all inside one transaction.
+	 */
+	reorderNotebookItems: protectedProcedure
+		.input(reorderNotebookItemsSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const notebook = await getNotebookForUser(
+				organizationId,
+				ctx.session.user.id,
+				input.noteBookId,
+			);
+
+			// Reject duplicate ids up front (a duplicate could never be a valid full
+			// permutation of the edge set).
+			const ordered = input.orderedDocumentIds;
+			const orderedSet = new Set(ordered);
+			if (orderedSet.size !== ordered.length) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "orderedDocumentIds contains duplicate ids",
+				});
+			}
+
+			const existing = await db
+				.select({ documentId: noteBookItems.documentId })
+				.from(noteBookItems)
+				.where(
+					and(
+						eq(noteBookItems.noteBookId, notebook.id),
+						eq(noteBookItems.organizationId, organizationId),
+					),
+				);
+			const existingIds = new Set(existing.map((e) => e.documentId));
+
+			// Require an exact match between the input set and the notebook's edges:
+			// same size AND every input id is an existing edge (with no dupes + equal
+			// size, this also guarantees no edge is omitted).
+			const sameSize = existingIds.size === orderedSet.size;
+			const allBelong = ordered.every((id) => existingIds.has(id));
+			if (!sameSize || !allBelong) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"orderedDocumentIds must be the exact set of the notebook's items",
+				});
+			}
+
+			await dbWs.transaction(async (tx) => {
+				for (let i = 0; i < ordered.length; i++) {
+					await tx
+						.update(noteBookItems)
+						.set({ sortOrder: i })
+						.where(
+							and(
+								eq(noteBookItems.noteBookId, notebook.id),
+								// biome-ignore lint/style/noNonNullAssertion: index is in-bounds
+								eq(noteBookItems.documentId, ordered[i]!),
+								eq(noteBookItems.organizationId, organizationId),
+							),
+						);
+				}
+			});
+
+			return { ok: true as const };
 		}),
 } satisfies TRPCRouterRecord;
