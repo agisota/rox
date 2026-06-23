@@ -7,7 +7,21 @@ import {
 const STORAGE_KEY = "router-history";
 const MAX_ENTRIES = 100;
 
-type LocationState = HistoryLocation["state"];
+// Define the concrete history-state shape locally instead of deriving it from
+// `HistoryLocation["state"]`. That derived type depends on the
+// `declare module "@tanstack/history" { interface HistoryState }` augmentation,
+// which is re-declared by several bundled @tanstack/* copies (react-router,
+// router-core, router-plugin, router-generator, router-cli). Under some
+// dependency-graph resolutions tsc merges those augmentations into a shape where
+// a property collapses to `never`, surfacing as
+// `TS2322: Type 'true' is not assignable to type 'never'` in this file. Pinning
+// the state shape to exactly the keys we read/write keeps full type safety while
+// making the module immune to that augmentation-ordering fragility.
+type LocationState = {
+	key?: string;
+	__TSR_key?: string;
+	__TSR_index: number;
+} & Record<string, unknown>;
 
 interface PersistedState {
 	entries: string[];
