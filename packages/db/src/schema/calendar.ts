@@ -353,3 +353,86 @@ export const calReminders = pgTable(
 
 export type InsertCalReminder = typeof calReminders.$inferInsert;
 export type SelectCalReminder = typeof calReminders.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// cal_event_occurrences — per-occurrence overrides (RFC 5545 RECURRENCE-ID)
+// ---------------------------------------------------------------------------
+//
+// A recurring event stays a single `cal_events` row (rrule + dtstart anchor +
+// exdates). This sibling table overrides ONE generated instance of that series,
+// keyed by `event_id` + `original_start`, where `original_start` is the exact
+// real-UTC start the expander would emit for that instance BEFORE any override
+// (the RECURRENCE-ID). A row either CANCELS the instance (`cancelled = true`) or
+// PATCHES it (override_title/description/location/dtstart/dtend/all_day; NULL =
+// inherit from the series). Deleting the row reverts to the series default.
+//
+// Orthogonal to EXDATE: an EXDATE is a whole-series skip baked into `cal_events`;
+// a per-occurrence cancel is this reversible override row. They are kept separate
+// — cancel never writes an EXDATE, and removing this row un-cancels the instance.
+
+export const calEventOccurrences = pgTable(
+	"cal_event_occurrences",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		// The parent recurring series this override belongs to.
+		eventId: uuid("event_id")
+			.notNull()
+			.references(() => calEvents.id, { onDelete: "cascade" }),
+		// The user who authored the override (audit only; access is via the event's
+		// calendar ACL, not this column).
+		ownerUserId: uuid("owner_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+
+		// RECURRENCE-ID: the real-UTC instant the expander emits for this instance
+		// BEFORE any override. This is the override's identity, not where it renders.
+		originalStart: timestamp("original_start", {
+			withTimezone: true,
+		}).notNull(),
+
+		// Cancel this single instance (reversible — delete the row to un-cancel).
+		cancelled: boolean().notNull().default(false),
+
+		// Patch fields; NULL means inherit the series value at expand time.
+		overrideTitle: text("override_title"),
+		overrideDescription: text("override_description"),
+		overrideLocation: text("override_location"),
+		// Moved start/end for this instance; if only one side is set the expander
+		// preserves the series duration from the other.
+		overrideDtstart: timestamp("override_dtstart", { withTimezone: true }),
+		overrideDtend: timestamp("override_dtend", { withTimezone: true }),
+		overrideAllDay: boolean("override_all_day"),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(t) => [
+		// At most one override per (event, original instant) — the upsert key.
+		uniqueIndex("cal_event_occurrences_event_original_uniq").on(
+			t.eventId,
+			t.originalStart,
+		),
+		// A series' overrides, org-leading (multi-tenant isolation convention).
+		index("cal_event_occurrences_org_event_idx").on(
+			t.organizationId,
+			t.eventId,
+		),
+		// A moved instance must not end before it starts (only fires when both set;
+		// a half-set move inherits the other side from the series at expand time).
+		check(
+			"cal_event_occurrences_end_after_start",
+			sql`${t.overrideDtend} IS NULL OR ${t.overrideDtstart} IS NULL OR ${t.overrideDtend} >= ${t.overrideDtstart}`,
+		),
+	],
+);
+
+export type InsertCalEventOccurrence = typeof calEventOccurrences.$inferInsert;
+export type SelectCalEventOccurrence = typeof calEventOccurrences.$inferSelect;

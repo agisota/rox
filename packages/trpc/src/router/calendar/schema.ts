@@ -195,6 +195,48 @@ export const listOccurrencesSchema = z
 		path: ["rangeEnd"],
 	});
 
+// ---- per-occurrence overrides (RECURRENCE-ID) -----------------------------
+
+/**
+ * Edit ONE instance of a recurring event ("this event only"). `originalStart` is
+ * the RECURRENCE-ID — the exact real-UTC instant the expander emits for the
+ * instance BEFORE any override (the server returns it as `occurrence.originalStart`,
+ * which the client must pass back verbatim). An override carries no rrule/exdates/
+ * attendees: it patches a single instance, never the series shape. A moved
+ * `dtstart`/`dtend` preserves the series duration when only one side is set, so
+ * the end-≥-start refine only fires when BOTH are present.
+ */
+export const updateOccurrenceSchema = z
+	.object({
+		eventId: z.string().uuid(),
+		originalStart: isoDate,
+		title: z.string().min(1).max(500).nullish(),
+		description: z.string().max(20_000).nullish(),
+		location: z.string().max(500).nullish(),
+		dtstart: isoDate.optional(),
+		dtend: isoDate.optional(),
+		allDay: z.boolean().optional(),
+	})
+	.refine(
+		(v) =>
+			v.dtstart === undefined ||
+			v.dtend === undefined ||
+			v.dtend.getTime() >= v.dtstart.getTime(),
+		{ message: "dtend must not be before dtstart", path: ["dtend"] },
+	);
+
+/** Cancel ONE instance of a recurring event (reversible via the restore proc). */
+export const cancelOccurrenceSchema = z.object({
+	eventId: z.string().uuid(),
+	originalStart: isoDate,
+});
+
+/** Delete a per-occurrence override row, reverting to the series default. */
+export const restoreOccurrenceSchema = z.object({
+	eventId: z.string().uuid(),
+	originalStart: isoDate,
+});
+
 // ---- ICS ------------------------------------------------------------------
 
 export const exportIcsSchema = z.object({

@@ -88,6 +88,37 @@ export function useCalendarActions() {
 		}),
 	);
 
+	// ---- per-occurrence overrides ("this event only") --------------------
+	const updateOccurrence = useMutation(
+		trpc.calendar.updateOccurrence.mutationOptions({
+			onSuccess: async () => {
+				await invalidate();
+				toast.success("Событие обновлено (только это)");
+			},
+			onError: onError("Не удалось обновить событие"),
+		}),
+	);
+
+	const cancelOccurrence = useMutation(
+		trpc.calendar.cancelOccurrence.mutationOptions({
+			onSuccess: async () => {
+				await invalidate();
+				toast.success("Событие удалено (только это)");
+			},
+			onError: onError("Не удалось удалить событие"),
+		}),
+	);
+
+	const deleteOccurrenceOverride = useMutation(
+		trpc.calendar.deleteOccurrenceOverride.mutationOptions({
+			onSuccess: async () => {
+				await invalidate();
+				toast.success("Изменение этого события отменено");
+			},
+			onError: onError("Не удалось отменить изменение"),
+		}),
+	);
+
 	const addAttendee = useMutation(
 		trpc.calendar.addAttendee.mutationOptions({
 			onSuccess: async (_data, variables) => {
@@ -177,6 +208,9 @@ export function useCalendarActions() {
 		createEvent,
 		updateEvent,
 		deleteEvent,
+		updateOccurrence,
+		cancelOccurrence,
+		deleteOccurrenceOverride,
 		addAttendee,
 		removeAttendee,
 		rsvp,
