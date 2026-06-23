@@ -39,10 +39,20 @@ mock.module("electron", () => ({
 		isRegistered: (accelerator: string) =>
 			registered.some((r) => r.accelerator === accelerator),
 	},
-}));
-
-mock.module("main/lib/logger", () => ({
-	logger: { info: () => {}, warn: () => {}, error: () => {} },
+	// bun runs all desktop tests in one process and mock.module("electron")
+	// leaks across files; include app/dialog so a later file linking against
+	// this mock (e.g. modules importing { app, dialog }) doesn't throw
+	// "Export named 'app' not found". Mirrors native-permissions.test.ts.
+	app: {
+		getPath: () => "",
+		getName: () => "test-app",
+		getVersion: () => "1.0.0",
+		getAppPath: () => "",
+		isPackaged: false,
+	},
+	dialog: {
+		showMessageBox: () => Promise.resolve({ response: 0 }),
+	},
 }));
 
 // Settings table row carrying the (possibly null) accelerator.
