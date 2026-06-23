@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/lib/auth/client";
+import { useCommsRealtime } from "../../hooks/useCommsRealtime";
 import { useCommsThread } from "../../hooks/useCommsThread";
 import { buildSendRecipients } from "../../utils/buildSendRecipients";
 import { formatThreadTitle } from "../../utils/formatThreadTitle";
@@ -47,6 +48,14 @@ export function ChatThreadScreen() {
 	} = useCommsThread(threadId);
 	const [refreshing, setRefreshing] = useState(false);
 	const [draft, setDraft] = useState("");
+
+	// Live updates while the thread is open: poll the open thread's messages on a
+	// tighter interval (foregrounded + active-org gated; pauses on background).
+	// `refresh()` is cache-first — it never blanks existing messages mid-poll.
+	useCommsRealtime({
+		openThreadId: threadId ?? null,
+		onRefreshOpenThread: refresh,
+	});
 
 	const scrollRef = useRef<ScrollView>(null);
 	const messageCount = messages.length;

@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
+import { useCommsRealtime } from "./hooks/useCommsRealtime";
 import { useCommsThreads } from "./hooks/useCommsThreads";
 import { formatChatDate } from "./utils/formatChatDate";
 import { formatThreadTitle } from "./utils/formatThreadTitle";
@@ -25,6 +26,10 @@ export function ChatScreen() {
 	const insets = useSafeAreaInsets();
 	const { threads, isLoading, error, refresh } = useCommsThreads();
 	const [refreshing, setRefreshing] = useState(false);
+
+	// Live updates: the list screen has no open thread, so realtime only refreshes
+	// the thread list (foregrounded + active-org gated; pauses on background).
+	useCommsRealtime({ openThreadId: null, onRefreshThreads: refresh });
 
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true);
