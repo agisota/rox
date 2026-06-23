@@ -23,6 +23,8 @@ export default function MoreLayout() {
 			<Stack.Screen name="notes/note-edit" options={{ title: "Edit note" }} />
 			<Stack.Screen name="mail/index" options={{ title: "Mail" }} />
 			<Stack.Screen name="mail/thread" options={{ title: "Thread" }} />
+			<Stack.Screen name="chat/index" options={{ title: "Chat" }} />
+			<Stack.Screen name="chat/thread" options={{ title: "Thread" }} />
 		</Stack>
 	);
 }
