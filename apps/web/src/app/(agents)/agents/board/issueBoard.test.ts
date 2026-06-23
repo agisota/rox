@@ -4,19 +4,17 @@ import {
 	type BoardCardRow,
 	type BoardStatus,
 	countBoardCards,
-	filterCardsToProjectSlugs,
 	groupTasksByStatus,
-	type ProjectGraphSlice,
 	priorityLabel,
-	selectProjectTaskSlugs,
 	UNGROUPED_COLUMN_ID,
 } from "./issueBoard";
 
 /**
  * The issue board groups REAL tasks (`task.list`) into REAL status columns
- * (`task.statuses.list`). These tests pin the pure grouping/scoping contract the
- * panel depends on — no React, no DB, no migration. Project scoping is derived
- * from the shipped `graph.projectGraph` walk (task-kind nodes → slugs).
+ * (`task.statuses.list`). These tests pin the pure grouping contract the panel
+ * depends on — no React, no DB, no migration. This is an org-wide status board;
+ * project scoping is intentionally absent (tasks carry no `v2_project_id` and are
+ * not mirrored into the entities graph, so there is no real link to filter on).
  */
 
 function status(over: Partial<BoardStatus> & { id: string }): BoardStatus {
@@ -152,79 +150,5 @@ describe("priorityLabel", () => {
 	});
 	test("unknown priority passes through", () => {
 		expect(priorityLabel("weird")).toBe("weird");
-	});
-});
-
-describe("selectProjectTaskSlugs", () => {
-	const graph: ProjectGraphSlice = {
-		nodes: [
-			{
-				entityId: "e1",
-				kind: "task",
-				title: "A",
-				slug: "task-a",
-				inProject: true,
-			},
-			{
-				entityId: "e2",
-				kind: "task",
-				title: "B",
-				slug: "task-b",
-				inProject: true,
-			},
-			// task linked from outside the project — excluded (not inProject).
-			{
-				entityId: "e3",
-				kind: "task",
-				title: "C",
-				slug: "task-c",
-				inProject: false,
-			},
-			// non-task node — excluded.
-			{
-				entityId: "e4",
-				kind: "note",
-				title: "N",
-				slug: "note-1",
-				inProject: true,
-			},
-			// task with no slug — excluded (cannot join to a tasks row).
-			{
-				entityId: "e5",
-				kind: "task",
-				title: "D",
-				slug: null,
-				inProject: true,
-			},
-		],
-	};
-
-	test("returns only in-project task slugs", () => {
-		const slugs = selectProjectTaskSlugs(graph);
-		expect([...slugs].sort()).toEqual(["task-a", "task-b"]);
-	});
-
-	test("empty graph yields an empty set", () => {
-		expect(selectProjectTaskSlugs({ nodes: [] }).size).toBe(0);
-	});
-});
-
-describe("filterCardsToProjectSlugs", () => {
-	test("keeps only cards whose task slug is in the project set", () => {
-		const cards = [
-			card({ id: "t1", slug: "task-a", statusId: "s" }),
-			card({ id: "t2", slug: "task-b", statusId: "s" }),
-			card({ id: "t3", slug: "task-other", statusId: "s" }),
-		];
-		const filtered = filterCardsToProjectSlugs(
-			cards,
-			new Set(["task-a", "task-b"]),
-		);
-		expect(filtered.map((r) => r.task.slug)).toEqual(["task-a", "task-b"]);
-	});
-
-	test("empty project set yields no cards", () => {
-		const cards = [card({ id: "t1", slug: "task-a", statusId: "s" })];
-		expect(filterCardsToProjectSlugs(cards, new Set()).length).toBe(0);
 	});
 });

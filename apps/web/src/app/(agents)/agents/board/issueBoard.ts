@@ -1,5 +1,3 @@
-import type { EntityKind } from "@rox/db/enums";
-
 /**
  * Pure data + presentation helpers for the issue-board surface
  * (`projectOs.issueBoard`). Dependency-free (no React, no tRPC) so the panel
@@ -9,13 +7,11 @@ import type { EntityKind } from "@rox/db/enums";
  *   - columns ← `task.statuses.list` (the org's `task_statuses`, position-ordered),
  *   - cards   ← `task.list` (the org's real `tasks` with status/assignee joins).
  *
- * Project scoping reuses the SHIPPED `graph.projectGraph` edge-walk: a project's
- * `task`-kind graph nodes carry the same `slug` as the task row (the natural key
- * is `(org, kind, slug)`), so {@link selectProjectTaskSlugs} extracts the project's
- * task slugs and {@link filterCardsToProjectSlugs} narrows the org card set to that
- * project. With no project selected the full org board renders. No `tasks` column
- * change, no FK, no migration — tasks stay org-scoped and the project intersection
- * is derived from the existing object graph.
+ * This is an ORG-WIDE status board: every column is one org task status and the
+ * cards are the org's real tasks grouped by status. Project scoping is NOT done
+ * here — `tasks` are org-scoped only (no `v2_project_id`) and are not mirrored
+ * into the entities graph, so there is no real task→project link to filter on. A
+ * project-scoped board is a documented follow-up that needs that linkage first.
  */
 
 // ---------------------------------------------------------------------------
@@ -158,52 +154,4 @@ export function countBoardCards(columns: readonly BoardColumn[]): number {
 	let total = 0;
 	for (const column of columns) total += column.cards.length;
 	return total;
-}
-
-// ---------------------------------------------------------------------------
-// Project scoping — derive a project's task slugs from the shipped graph walk.
-// ---------------------------------------------------------------------------
-
-/** The slice of a `graph.projectGraph` node this surface consumes. */
-export interface ProjectGraphNodeSlice {
-	entityId: string;
-	kind: EntityKind;
-	title: string;
-	slug: string | null;
-	inProject: boolean;
-}
-
-/** The slice of a `graph.projectGraph` result this surface consumes. */
-export interface ProjectGraphSlice {
-	nodes: readonly ProjectGraphNodeSlice[];
-}
-
-/**
- * Extract the set of task slugs that belong to the project, from its object
- * graph. Only `task`-kind nodes that are themselves scoped to the project
- * (`inProject`) and carry a `slug` count — a slug is the join key back to a
- * `tasks` row (`(org, kind, slug)` natural key). Returns an empty set when the
- * project has no task nodes (the caller then shows an empty-but-real board).
- */
-export function selectProjectTaskSlugs(graph: ProjectGraphSlice): Set<string> {
-	const slugs = new Set<string>();
-	for (const node of graph.nodes) {
-		if (node.kind !== "task") continue;
-		if (!node.inProject) continue;
-		if (!node.slug) continue;
-		slugs.add(node.slug);
-	}
-	return slugs;
-}
-
-/**
- * Narrow the org-wide card rows to only those whose task slug is in the given
- * project slug set. Used when a project is selected; with no project selected
- * the caller passes the full org card set straight through (no filter).
- */
-export function filterCardsToProjectSlugs(
-	cards: readonly BoardCardRow[],
-	projectSlugs: ReadonlySet<string>,
-): BoardCardRow[] {
-	return cards.filter((row) => projectSlugs.has(row.task.slug));
 }

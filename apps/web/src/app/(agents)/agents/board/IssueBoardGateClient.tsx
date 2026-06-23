@@ -9,9 +9,8 @@ import { resolveIssueBoardGate } from "./resolveIssueBoardGate";
  * session and applies the pure {@link resolveIssueBoardGate} (which reuses the
  * `projectOs.issueBoard` experimental feature). When the gate is closed — no org,
  * kill switch, or a future demote of the feature — the surface stays inert and
- * explains why rather than issuing org-less `task.list` / `graph.projectGraph`
- * calls. The org id is handed to the panel so its `v2Project.list` (a jwt
- * procedure needing the org id) and the org-scoped task reads always have a scope.
+ * explains why rather than issuing org-less `task.list` calls. The org id is
+ * handed to the panel so the org-scoped task reads always have a scope.
  */
 export function IssueBoardGateClient() {
 	const { data: session } = authClient.useSession();
