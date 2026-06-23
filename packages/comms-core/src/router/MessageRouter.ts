@@ -40,6 +40,13 @@ const DEFAULT_TRANSPORT_PREFERENCE: ReadonlyArray<CommsTransport> = [
 /** Presence states that count as "reachable in-app right now". */
 const ONLINE_STATES = new Set(["online", "away", "dnd"]);
 
+/**
+ * How long a presence row stays "fresh". A heartbeat older than this is treated
+ * as offline (I4): a crashed/disconnected client can't keep a user falsely
+ * reachable in-app forever. Mirrors the writer-side TTL in the presence proc.
+ */
+export const PRESENCE_TTL_MS = 60_000;
+
 export interface MessageRouterOptions {
 	ports: CommsPorts;
 	adapters: AdapterRegistry;
@@ -97,7 +104,20 @@ export class MessageRouter {
 				organizationId,
 				userId: ref.userId,
 			});
-			return { type: "user", organizationId, userId: ref.userId };
+			// Normalize to the user's canonical `@rox.one` address so an in-app DM
+			// and its email reply land on the SAME participant-set dedup key (I2).
+			// Falls back to the bare userId when the user has no address yet.
+			const address =
+				(await this.ports.addresses.findRoxAddressByUser?.({
+					organizationId,
+					userId: ref.userId,
+				})) ?? undefined;
+			return {
+				type: "user",
+				organizationId,
+				userId: ref.userId,
+				...(address ? { address } : {}),
+			};
 		}
 
 		const address = ref.address.trim().toLowerCase();
@@ -146,10 +166,11 @@ export class MessageRouter {
 			userId: counterpart.userId,
 		});
 
-		const inAppReachable =
-			this.adapters.has("inapp") &&
+		const fresh =
 			presence !== null &&
-			ONLINE_STATES.has(presence.state);
+			Date.now() - presence.updatedAt.getTime() <= PRESENCE_TTL_MS;
+		const inAppReachable =
+			this.adapters.has("inapp") && fresh && ONLINE_STATES.has(presence.state);
 
 		if (inAppReachable) return "inapp";
 
@@ -362,15 +383,26 @@ export class MessageRouter {
 			});
 		}
 
-		// 2. Resolve / create the thread.
+		// 2. Resolve / create the thread. Normalize the author to its canonical
+		// `@rox.one` address so the participant-set dedup key matches the inbound
+		// email side (I2), and feed the author into the key alongside recipients.
+		const authorAddress =
+			(await this.ports.addresses.findRoxAddressByUser?.({
+				organizationId,
+				userId: draft.authorUserId,
+			})) ?? undefined;
 		const author: Counterpart = {
 			type: "user",
 			organizationId,
 			userId: draft.authorUserId,
+			...(authorAddress ? { address: authorAddress } : {}),
 		};
 		const dedupKey = deriveDedupKey({
 			rootExternalId: null,
-			participantAddresses: resolved.map((r) => r.toAddress),
+			participantAddresses: [
+				counterpartAddress(author),
+				...resolved.map((r) => r.toAddress),
+			],
 		});
 		const participants = dedupeParticipants([
 			author,

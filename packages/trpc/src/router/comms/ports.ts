@@ -27,9 +27,11 @@ import type {
 	CommsPresence,
 	CommsThread,
 } from "@rox/comms-core";
+import { PRESENCE_TTL_MS } from "@rox/comms-core";
 import { dbWs } from "@rox/db/client";
 import {
 	type CommsAddressKind,
+	commsAddresses,
 	commsDeliveries,
 	commsMessages,
 	commsParticipants,
@@ -37,7 +39,7 @@ import {
 	commsThreads,
 	type CommsAttachment as DbCommsAttachment,
 } from "@rox/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { graphService } from "../../lib/graph";
 import { resolveAddress } from "../../lib/identity/resolveAddress";
 
@@ -46,6 +48,35 @@ export type CommsTx = Parameters<Parameters<typeof dbWs.transaction>[0]>[0];
 
 /** The db surface the ports need — the WS client OR an open transaction. */
 export type CommsDb = typeof dbWs | CommsTx;
+
+/**
+ * Aggregate the per-transport presence map into a single user state (I4). Picks
+ * the most-available FRESH transport state (online > away > dnd > offline); a
+ * heartbeat older than the TTL is ignored so a crashed client decays to offline.
+ */
+type PresenceAggregate = "online" | "away" | "dnd" | "offline";
+
+function aggregatePresenceState(
+	perTransport: Record<string, { state?: string; at?: string }>,
+	now: Date = new Date(),
+): PresenceAggregate {
+	const rank: Record<PresenceAggregate, number> = {
+		online: 3,
+		away: 2,
+		dnd: 1,
+		offline: 0,
+	};
+	const isAggregate = (s: string): s is PresenceAggregate => s in rank;
+	let best: PresenceAggregate = "offline";
+	for (const entry of Object.values(perTransport)) {
+		if (!entry?.state || !isAggregate(entry.state)) continue;
+		const at = entry.at ? Date.parse(entry.at) : Number.NaN;
+		const fresh = !Number.isNaN(at) && now.getTime() - at <= PRESENCE_TTL_MS;
+		if (!fresh) continue;
+		if (rank[entry.state] > rank[best]) best = entry.state;
+	}
+	return best;
+}
 
 /** Normalize a db attachment (optional fields) to the strict domain shape. */
 function toAttachment(a: DbCommsAttachment): CommsAttachment {
@@ -171,6 +202,26 @@ export function createCommsPorts(
 					verified: false,
 				};
 			},
+
+			async findRoxAddressByUser({ userId }) {
+				// I2: resolve a userId recipient to its canonical `@rox.one` email so
+				// an in-app DM and its email reply share a participant-set dedup key.
+				// GLOBAL (identity is per-user, DQ3) — not org-scoped. Prefer the live
+				// primary email address.
+				const [row] = await db
+					.select({ value: commsAddresses.value })
+					.from(commsAddresses)
+					.where(
+						and(
+							eq(commsAddresses.userId, userId),
+							eq(commsAddresses.kind, "email"),
+							eq(commsAddresses.isAlias, false),
+						),
+					)
+					.orderBy(desc(commsAddresses.isPrimary))
+					.limit(1);
+				return row?.value ?? null;
+			},
 		},
 
 		contacts: {
@@ -205,7 +256,12 @@ export function createCommsPorts(
 				return row ? toThread(row) : null;
 			},
 
-			async findThreadByMessageExternalId({ transport, externalId }) {
+			async findThreadByMessageExternalId({ externalId }) {
+				// I2: the transport filter is intentionally DROPPED. A reply-root
+				// external id (RFC In-Reply-To / XMPP thread id) must match the
+				// message that opened the thread REGARDLESS of which transport it
+				// arrived on — otherwise an email reply spawns an orphan thread
+				// instead of joining the in-app DM it answers. Still org-scoped.
 				const [row] = await db
 					.select({ thread: commsThreads })
 					.from(commsMessages)
@@ -213,7 +269,6 @@ export function createCommsPorts(
 					.where(
 						and(
 							eq(commsMessages.organizationId, organizationId),
-							eq(commsMessages.transport, transport),
 							eq(commsMessages.externalId, externalId),
 						),
 					)
@@ -366,6 +421,50 @@ export function createCommsPorts(
 					)
 					.limit(1);
 				return row ? toPresence(row) : null;
+			},
+
+			async upsert({ userId, transport, state, statusText, at }) {
+				// I4: merge this transport's heartbeat into per_transport, recompute
+				// the aggregate state, and stamp updated_at. The primary key is
+				// user_id (global presence, DQ3); org is carried for the Electric
+				// shape filter. One round-trip read-modify-write inside the caller's
+				// tx — presence is low-contention (one writer per user/transport).
+				const now = at ?? new Date();
+				const [current] = await db
+					.select()
+					.from(commsPresence)
+					.where(eq(commsPresence.userId, userId))
+					.limit(1);
+
+				const perTransport = {
+					...(current?.perTransport ?? {}),
+					[transport]: { state, at: now.toISOString() },
+				};
+				const aggregate = aggregatePresenceState(perTransport);
+
+				const [row] = await db
+					.insert(commsPresence)
+					.values({
+						userId,
+						organizationId,
+						state: aggregate,
+						perTransport,
+						statusText: statusText ?? null,
+						updatedAt: now,
+					})
+					.onConflictDoUpdate({
+						target: commsPresence.userId,
+						set: {
+							organizationId,
+							state: aggregate,
+							perTransport,
+							...(statusText !== undefined ? { statusText } : {}),
+							updatedAt: now,
+						},
+					})
+					.returning();
+				if (!row) throw new Error("Failed to upsert comms presence");
+				return toPresence(row);
 			},
 		},
 

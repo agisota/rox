@@ -74,6 +74,7 @@ export {
 	deriveDedupKey,
 	MessageRouter,
 	type MessageRouterOptions,
+	PRESENCE_TTL_MS,
 	type RouteInboundResult,
 	type RouteOutboundResult,
 } from "./router";

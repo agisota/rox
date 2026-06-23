@@ -288,6 +288,17 @@ describe("mail.send", () => {
 		expect(ledger?.deltaRox).toBe("-1");
 		// The balance was decremented (the gate is no longer a no-op).
 		expect(state.updated.some((u) => "balanceRox" in u)).toBe(true);
+		// M6: the outbound mail was emitted into the D1 unified inbox.
+		const commsEmit = state.inserted.find(
+			(i) =>
+				i.values[0]?.transport === "email" &&
+				i.values[0]?.direction === "outbound",
+		)?.values[0];
+		expect(commsEmit).toBeDefined();
+		expect(commsEmit?.authorUserId).toBe("user-1");
+		// Outbound comms rows carry NO external_id (so they never collide with an
+		// inbound RFC Message-ID on the global unique).
+		expect(commsEmit?.externalId).toBeNull();
 	});
 
 	test("reply derives References server-side from the parent and bumps message_count", async () => {

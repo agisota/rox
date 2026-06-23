@@ -47,6 +47,7 @@ function insertChain() {
 			state.inserted.push({ values: arr });
 			const chain = {
 				onConflictDoNothing: () => chain,
+				onConflictDoUpdate: () => chain,
 				returning: () => Promise.resolve(state.insertReturning),
 			};
 			return chain;
@@ -261,5 +262,90 @@ describe("comms.markRead", () => {
 		await expect(
 			caller.comms.markRead({ threadId: THREAD_ID, lastReadMessageId: MSG_ID }),
 		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+});
+
+describe("comms.updatePresence (I4)", () => {
+	test("requires an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.comms.updatePresence({ state: "online" }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("upserts presence and returns the merged state", async () => {
+		state.selectQueue = [
+			[], // upsert reads current presence → none yet
+		];
+		state.insertReturning = [
+			{
+				userId: "user-1",
+				organizationId: "org-1",
+				state: "online",
+				perTransport: {
+					inapp: { state: "online", at: new Date().toISOString() },
+				},
+				statusText: null,
+				updatedAt: new Date(),
+			},
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.updatePresence({ state: "online" });
+		expect(res.userId).toBe("user-1");
+		expect(res.state).toBe("online");
+		// The presence row was written.
+		const presenceInsert = state.inserted.find(
+			(i) => i.values[0]?.state !== undefined && "perTransport" in i.values[0],
+		);
+		expect(presenceInsert).toBeDefined();
+	});
+});
+
+describe("comms.presence (I4)", () => {
+	test("returns offline + stale when no presence row exists", async () => {
+		state.selectQueue = [[]]; // presence.get → none
+		const caller = callerFor("org-1");
+		const res = await caller.comms.presence({});
+		expect(res.state).toBe("offline");
+		expect(res.stale).toBe(true);
+		expect(res.updatedAt).toBeNull();
+	});
+
+	test("returns the live state for a fresh heartbeat", async () => {
+		state.selectQueue = [
+			[
+				{
+					userId: "user-1",
+					organizationId: "org-1",
+					state: "online",
+					perTransport: {},
+					statusText: "around",
+					updatedAt: new Date(),
+				},
+			],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.presence({});
+		expect(res.state).toBe("online");
+		expect(res.stale).toBe(false);
+	});
+
+	test("decays a STALE online row to offline", async () => {
+		state.selectQueue = [
+			[
+				{
+					userId: "user-1",
+					organizationId: "org-1",
+					state: "online",
+					perTransport: {},
+					statusText: null,
+					updatedAt: new Date(Date.now() - 10 * 60_000), // past TTL
+				},
+			],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.presence({});
+		expect(res.state).toBe("offline");
+		expect(res.stale).toBe(true);
 	});
 });

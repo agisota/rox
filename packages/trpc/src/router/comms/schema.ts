@@ -51,3 +51,26 @@ export const markReadSchema = z.object({
 	/** The last message the caller has read (sets their participant watermark). */
 	lastReadMessageId: z.string().uuid(),
 });
+
+/** Transports a client can heartbeat presence on (I4). */
+export const presenceTransportSchema = z.enum([
+	"inapp",
+	"xmpp",
+	"email",
+	"mesh",
+]);
+
+/** Aggregate/per-transport presence states (I4). */
+export const presenceStateSchema = z.enum(["online", "away", "dnd", "offline"]);
+
+export const updatePresenceSchema = z.object({
+	/** The transport the caller is heartbeating from (defaults to in-app). */
+	transport: presenceTransportSchema.optional(),
+	state: presenceStateSchema,
+	statusText: z.string().max(140).nullish(),
+});
+
+export const getPresenceSchema = z.object({
+	/** Whose presence to read (defaults to the caller). */
+	userId: z.string().uuid().optional(),
+});
