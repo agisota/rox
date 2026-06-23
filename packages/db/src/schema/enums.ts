@@ -946,11 +946,16 @@ export type XmppFedPolicy = z.infer<typeof xmppFedPolicyEnum>;
 // Rox Workspace Suite — D5 Mesh / Decentralized Transport (comms-suite epic).
 // A bitchat-borrowed decentralized fallback: the rox identity maps to a
 // per-device Nostr/Noise keypair so DMs still flow over federated Nostr relays
-// (NIP-17 gift-wrapped) when the rox backbone is unreachable. The `mesh_*`
-// Drizzle tables describe ONLY the server-side mapping (device key bindings,
-// relay subscription config, a delivered-event dedup ledger) — private keys
-// NEVER reach the server (they live in expo-secure-store / Electron safeStorage
-// on the client). BLE local mesh is client-side and DEFERRED. Append-only
+// (NIP-17 gift-wrapped) when the rox backbone is unreachable. This is a
+// best-effort transport-fallback BRIDGE (peer of the mail/XMPP bridges), NOT an
+// E2E-private product: a SERVER-HELD escrow keypair lets the relay-watcher
+// decrypt inbound mesh DMs server-side, so the server CAN read them. The `mesh_*`
+// Drizzle tables describe ONLY the server-side mapping (device PUBLIC key
+// bindings, the escrow PUBLIC key, relay config, a delivered-event dedup ledger).
+// Device private keys live in expo-secure-store / Electron safeStorage on the
+// client; the escrow PRIVATE key is loaded from Infisical/env at the watcher and
+// is never stored in this database. BLE local mesh is client-side and DEFERRED.
+// Append-only
 // string unions backing Postgres pgEnums (declared in schema/mesh.ts); NEVER
 // reorder/remove values. The `mesh` transport itself reuses commsTransport.
 // ---------------------------------------------------------------------------
