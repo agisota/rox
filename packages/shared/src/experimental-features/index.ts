@@ -792,12 +792,28 @@ export const EXPERIMENTAL_FEATURES = [
 		{
 			id: "projectOs.issueBoard",
 			title: "Issue Board",
-			shortDescription: "Manage imported and native issues in one board.",
+			shortDescription: "Group a project's tasks into a status board.",
 			longDescription:
-				"Prepares a unified issue board that can combine Huly objects, Rox tasks, and agent-generated work.",
-			maturity: "alpha",
-			implementationStatus: "planned",
-			dependencies: [HULY_PROVIDER, LOCAL_DESKTOP_RUNTIME],
+				"A native issue/task board over the shipped Rox tasks: columns are the org's task statuses (task.statuses.list, position-ordered) and cards are the org's real tasks (task.list), grouped by status. A project picker scopes the board to one v2_project by intersecting the org tasks with the project's task-kind graph nodes via the shipped graph.projectGraph edge-walk (a task graph node and its tasks row share the (org, kind, slug) natural key). Read-first; Huly objects and agent-generated work fold in later as their kinds land.",
+			maturity: "preview",
+			// Backed by a REAL gated surface: the `(agents)` web shell renders an
+			// IssueBoardPanel (behind `resolveIssueBoardGate`) that groups the org's
+			// real tasks into status columns using two SHIPPED queries —
+			// `task.statuses.list` (columns) × `task.list` (cards) — via the pure
+			// `groupTasksByStatus`, and optionally scopes to one `v2_project` by
+			// intersecting with the project's task-kind nodes from the shipped
+			// `graph.projectGraph` (`selectProjectTaskSlugs` + `filterCardsToProjectSlugs`).
+			// The active org is the provider-configured signal; the only declared
+			// dependency (`desktop-runtime`) is a `runtime` dep, so the resolver never
+			// gates this web surface (same clean-flip precedent as
+			// `projectOs.unifiedSearch` / `projectOs.objectLinkedChat`). HULY_PROVIDER is
+			// dropped here — Project OS is native on the Rox object graph and Huly is an
+			// optional import connector, never a gate (same demote as
+			// `projectOs.workspaceShell`). No new query and no migration — tasks stay
+			// org-scoped, statuses already exist, and the project intersection reuses the
+			// shipped graph walk; combining Huly-imported issues is a later additive step.
+			implementationStatus: "ready",
+			dependencies: [LOCAL_DESKTOP_RUNTIME],
 			affectedSurfaces: ["Task board", "Project OS", "Search"],
 		},
 		{
