@@ -104,7 +104,20 @@ async function assertSetPublishedRateLimit(userId: string): Promise<void> {
 		);
 		return;
 	}
-	const { success } = await setPublishedRateLimit.limit(userId);
+	let success = true;
+	try {
+		({ success } = await setPublishedRateLimit.limit(userId));
+	} catch (error) {
+		// A KV outage / misconfiguration (e.g. the placeholder REST URL that passes
+		// env validation in CI) must not block publishing: fail OPEN in non-prod,
+		// surface it in prod.
+		if (env.NODE_ENV === "production") throw error;
+		console.warn(
+			"[notebooks/setPublished] rate limit skipped — KV unavailable:",
+			error instanceof Error ? error.message : error,
+		);
+		return;
+	}
 	if (!success) {
 		throw new TRPCError({
 			code: "TOO_MANY_REQUESTS",
