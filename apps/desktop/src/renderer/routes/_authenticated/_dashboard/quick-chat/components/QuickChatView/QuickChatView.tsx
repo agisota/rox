@@ -13,11 +13,13 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	LuArrowUp,
 	LuChevronDown,
 	LuLoaderCircle,
+	LuSettings,
 	LuSparkles,
 } from "react-icons/lu";
 import { logger } from "renderer/lib/logger";
@@ -30,6 +32,7 @@ import {
 	type ReasoningLevel,
 	STARTER_PROMPT_IDS,
 } from "./constants";
+import { resolveQuickChatOutcome, shouldBlockSend } from "./quick-chat-state";
 
 interface QuickChatMessage {
 	id: string;
@@ -39,9 +42,17 @@ interface QuickChatMessage {
 
 /** RU notice shown when a non-Rox model is picked but no user key is configured. */
 const NEEDS_USER_KEY_NOTICE = `Для этой модели нужен ваш ключ провайдера. Откройте «Настройки → Модели», чтобы добавить ключ, либо выберите ${ROX_CHAT_MODEL_NAME} — она работает без настройки.`;
-/** RU notice shown when the Rox house model itself is not configured server-side. */
-const NOT_CONFIGURED_NOTICE =
-	"Модель пока недоступна. Попробуйте позже или обратитесь к администратору.";
+/**
+ * RU banner shown when the Rox house model itself is not configured server-side.
+ * Rendered as an inline actionable affordance (with a CTA to «Настройки →
+ * Модели») rather than a dead assistant bubble, and send is disabled while it is
+ * active so the user can't keep hitting the same dead end.
+ */
+const NOT_CONFIGURED_BANNER =
+	`${ROX_CHAT_MODEL_NAME} сейчас недоступна — серверный ключ не настроен. ` +
+	"Добавьте ключ модели в настройках или выберите другую модель со своим ключом.";
+/** CTA label on the not-configured banner. */
+const NOT_CONFIGURED_CTA = "Открыть «Настройки → Модели»";
 const GENERIC_ERROR_NOTICE =
 	"Не удалось получить ответ. Проверьте соединение и попробуйте снова.";
 
@@ -57,6 +68,7 @@ const STARTER_PROMPTS = STARTER_PROMPT_IDS.flatMap((id) => {
 
 export function QuickChatView() {
 	const consumePrompt = useQuickChatDraftStore((state) => state.consumePrompt);
+	const navigate = useNavigate();
 
 	const [model, setModel] = useState(ROX_CHAT_MODEL);
 	const [reasoning, setReasoning] = useState<ReasoningLevel>(
@@ -65,6 +77,10 @@ export function QuickChatView() {
 	const [input, setInput] = useState("");
 	const [messages, setMessages] = useState<QuickChatMessage[]>([]);
 	const [isSending, setIsSending] = useState(false);
+	// Set when the house model reports `not-configured`: instead of a dead
+	// assistant bubble we surface an inline actionable banner and disable send so
+	// the user can fix it (add a key / switch model) rather than dead-end.
+	const [notConfigured, setNotConfigured] = useState(false);
 	// One persisted chat_sessions row per QuickChat conversation. Generated lazily
 	// on first send and reused for the rest of the conversation so the whole thread
 	// lands in a single session the Журнал can summarize.
@@ -105,7 +121,15 @@ export function QuickChatView() {
 
 	const send = useCallback(async () => {
 		const text = input.trim();
-		if (text.length === 0 || isSending) return;
+		if (
+			shouldBlockSend({
+				trimmedInputLength: text.length,
+				isSending,
+				notConfigured,
+			})
+		) {
+			return;
+		}
 
 		if (!sessionIdRef.current) {
 			sessionIdRef.current = crypto.randomUUID();
@@ -145,12 +169,20 @@ export function QuickChatView() {
 				reasoning,
 			});
 
-			if (result.status === "ok") {
+			const outcome = resolveQuickChatOutcome(result.status);
+			if (outcome === "reply" && result.status === "ok") {
 				appendAssistant(result.reply);
-			} else if (result.status === "needs-user-key") {
+			} else if (outcome === "notice") {
 				appendAssistant(NEEDS_USER_KEY_NOTICE);
 			} else {
-				appendAssistant(NOT_CONFIGURED_NOTICE);
+				// House model has no server key: don't append a dead assistant
+				// bubble. Surface the inline actionable banner instead and keep the
+				// user's text in the composer so they can retry after fixing it.
+				setNotConfigured(true);
+				setInput(text);
+				setMessages((prev) =>
+					prev.filter((message) => message.id !== userMessage.id),
+				);
 			}
 		} catch (error) {
 			logger.error("[quick-chat] completion failed", error);
@@ -158,7 +190,19 @@ export function QuickChatView() {
 		} finally {
 			setIsSending(false);
 		}
-	}, [input, isSending, messages, model.id, reasoning, scrollToBottom]);
+	}, [
+		input,
+		isSending,
+		notConfigured,
+		messages,
+		model.id,
+		reasoning,
+		scrollToBottom,
+	]);
+
+	const openModelSettings = useCallback(() => {
+		void navigate({ to: "/settings/models" });
+	}, [navigate]);
 
 	const isEmpty = messages.length === 0;
 	const isHouseModel = isRoxHouseModel(model.id);
@@ -238,11 +282,34 @@ export function QuickChatView() {
 			</div>
 
 			<div className="border-t border-border px-6 py-4">
+				{notConfigured ? (
+					<div
+						role="alert"
+						className="mx-auto mb-2 flex max-w-2xl flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+					>
+						<p className="text-xs text-muted-foreground">
+							{NOT_CONFIGURED_BANNER}
+						</p>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="h-7 shrink-0 gap-1.5 rounded-full px-3 text-xs"
+							onClick={openModelSettings}
+						>
+							<LuSettings className="size-3.5" />
+							{NOT_CONFIGURED_CTA}
+						</Button>
+					</div>
+				) : null}
 				<div className="mx-auto flex max-w-2xl flex-col gap-2 rounded-xl border border-border bg-card p-2">
 					<Textarea
 						ref={textareaRef}
 						value={input}
-						onChange={(event) => setInput(event.target.value)}
+						onChange={(event) => {
+							setInput(event.target.value);
+							if (notConfigured) setNotConfigured(false);
+						}}
 						onKeyDown={(event) => {
 							if (event.key === "Enter" && !event.shiftKey) {
 								event.preventDefault();
@@ -271,7 +338,10 @@ export function QuickChatView() {
 								{AVAILABLE_CHAT_MODELS.map((option) => (
 									<DropdownMenuItem
 										key={option.id}
-										onSelect={() => setModel(option)}
+										onSelect={() => {
+											setModel(option);
+											setNotConfigured(false);
+										}}
 										className={cn(option.id === model.id && "font-medium")}
 									>
 										{option.name}
@@ -301,7 +371,7 @@ export function QuickChatView() {
 						<Button
 							size="icon"
 							className="ml-auto size-8 rounded-full"
-							disabled={input.trim().length === 0 || isSending}
+							disabled={input.trim().length === 0 || isSending || notConfigured}
 							onClick={() => void send()}
 							aria-label="Отправить"
 						>

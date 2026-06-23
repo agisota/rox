@@ -19,6 +19,59 @@ export interface HistoryEntry {
 	timestamp: number;
 }
 
+/**
+ * Top-level route segments that take a runtime resource id (`/<segment>/<id>`)
+ * and therefore can dead-end on a cold start: the id references a workspace /
+ * project / host that may not exist for the current session, so restoring it
+ * resolves to the router's `notFoundComponent` ("404 — Страница не найдена")
+ * before any data is loaded. We keep the *static* index of these sections
+ * (e.g. `/workspace`, `/v2-workspace`) restorable — only the id-scoped child is
+ * collapsed back to the home route.
+ */
+const RESOURCE_SCOPED_SEGMENTS: ReadonlySet<string> = new Set([
+	"workspace",
+	"v2-workspace",
+	"hosts",
+]);
+
+/**
+ * The route a fresh launch should land on when the restored location is not
+ * safely resolvable. `/` renders the index route, which redirects to the
+ * authenticated home (`/workspace`).
+ */
+const HOME_PATH = "/";
+
+/**
+ * Decide whether a restored history path is safe to reopen on a cold launch.
+ *
+ * The persisted history can point at a deep resource route (e.g.
+ * `/workspace/<id>`) captured in a previous session. On a fresh launch that
+ * resource may not be present yet, so the router falls through to its
+ * `notFoundComponent` and the app dead-ends on the 404 screen instead of the
+ * home view. This guard returns `false` for those id-scoped routes so the
+ * caller can fall back to {@link HOME_PATH}; every static route — including the
+ * section index (`/workspace`) and settings pages — stays restorable.
+ *
+ * Pure and layout-independent (operates on the pathname only), so it is unit
+ * testable without the generated route tree.
+ */
+export function isRestorableLocation(path: string): boolean {
+	if (typeof path !== "string" || path.length === 0) return false;
+	// Strip query/hash before inspecting the pathname.
+	const pathname = path.split(/[?#]/, 1)[0] ?? path;
+	if (!pathname.startsWith("/")) return false;
+	if (pathname === HOME_PATH) return true;
+
+	const segments = pathname.split("/").filter((segment) => segment.length > 0);
+	const [head, child] = segments;
+	// `/workspace`, `/v2-workspace`, `/hosts` (section index) — safe to restore.
+	// `/workspace/<id>` and deeper — a runtime id that can dead-end cold.
+	if (head && RESOURCE_SCOPED_SEGMENTS.has(head) && child !== undefined) {
+		return false;
+	}
+	return true;
+}
+
 function loadPersistedState(): PersistedState {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
@@ -34,11 +87,19 @@ function loadPersistedState(): PersistedState {
 					Math.max(parsed.index, 0),
 					parsed.entries.length - 1,
 				);
+				// Guard the *restored current location* against cold-launch 404s: if
+				// the entry we'd reopen points at an id-scoped resource route that may
+				// not resolve this session, collapse the whole stack back to home so a
+				// fresh launch lands on the index instead of "404 — Страница не
+				// найдена". Static routes (incl. section indexes) restore unchanged.
+				if (!isRestorableLocation(parsed.entries[index] ?? "")) {
+					return { entries: [HOME_PATH], index: 0 };
+				}
 				return { entries: parsed.entries, index };
 			}
 		}
 	} catch {}
-	return { entries: ["/"], index: 0 };
+	return { entries: [HOME_PATH], index: 0 };
 }
 
 function persistState(entries: string[], index: number) {

@@ -73,7 +73,7 @@ afterAll(() => {
 });
 
 // Now safe to import — the module-level singleton will find window/localStorage
-const { createPersistentHashHistory } = await import(
+const { createPersistentHashHistory, isRestorableLocation } = await import(
 	"./persistent-hash-history"
 );
 
@@ -336,17 +336,99 @@ describe("createPersistentHashHistory", () => {
 		});
 
 		it("accepts entries that are all valid non-empty strings", () => {
+			// Current entry is a static route so the cold-launch 404 guard leaves
+			// the restore intact — this test only asserts the string-type validation
+			// path, not the resource-route collapse (covered separately below).
 			storage.set(
 				"router-history",
 				JSON.stringify({
-					entries: ["/", "/tasks", "/workspace/abc"],
+					entries: ["/", "/workspace", "/tasks"],
 					index: 2,
 				}),
 			);
 
 			const history = createPersistentHashHistory();
 			expect(history.length).toBe(3);
-			expect(history.location.pathname).toBe("/workspace/abc");
+			expect(history.location.pathname).toBe("/tasks");
+		});
+	});
+
+	describe("isRestorableLocation", () => {
+		it("restores the home route", () => {
+			expect(isRestorableLocation("/")).toBe(true);
+		});
+
+		it("restores static section index routes", () => {
+			expect(isRestorableLocation("/workspace")).toBe(true);
+			expect(isRestorableLocation("/v2-workspace")).toBe(true);
+			expect(isRestorableLocation("/tasks")).toBe(true);
+			expect(isRestorableLocation("/settings/models")).toBe(true);
+			expect(isRestorableLocation("/settings/projects")).toBe(true);
+		});
+
+		it("rejects id-scoped resource routes that can dead-end cold", () => {
+			expect(isRestorableLocation("/workspace/abc123")).toBe(false);
+			expect(isRestorableLocation("/v2-workspace/xyz")).toBe(false);
+			expect(isRestorableLocation("/hosts/some-host-id")).toBe(false);
+		});
+
+		it("ignores query/hash when classifying the pathname", () => {
+			expect(isRestorableLocation("/workspace?tab=files")).toBe(true);
+			expect(isRestorableLocation("/workspace/abc?focus=1")).toBe(false);
+			expect(isRestorableLocation("/settings/models#section")).toBe(true);
+		});
+
+		it("rejects empty and non-absolute paths", () => {
+			expect(isRestorableLocation("")).toBe(false);
+			expect(isRestorableLocation("workspace/abc")).toBe(false);
+		});
+	});
+
+	describe("cold-launch 404 fallback", () => {
+		it("collapses to home when the restored current entry is an id-scoped resource route", () => {
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/tasks", "/workspace/missing-id"],
+					index: 2,
+				}),
+			);
+
+			const history = createPersistentHashHistory();
+			// Whole stack collapses to a single clean home entry so the fresh
+			// launch lands on the index instead of the 404 screen.
+			expect(history.length).toBe(1);
+			expect(history.location.pathname).toBe("/");
+		});
+
+		it("keeps a valid static restore intact (no false collapse)", () => {
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/tasks", "/settings/models"],
+					index: 2,
+				}),
+			);
+
+			const history = createPersistentHashHistory();
+			expect(history.length).toBe(3);
+			expect(history.location.pathname).toBe("/settings/models");
+		});
+
+		it("does not collapse when the resource route is in the back-stack but not current", () => {
+			// Current entry is a safe static route; the id-scoped entry is only
+			// reachable via Back, where the user explicitly opted in.
+			storage.set(
+				"router-history",
+				JSON.stringify({
+					entries: ["/", "/workspace/abc", "/tasks"],
+					index: 2,
+				}),
+			);
+
+			const history = createPersistentHashHistory();
+			expect(history.length).toBe(3);
+			expect(history.location.pathname).toBe("/tasks");
 		});
 	});
 
