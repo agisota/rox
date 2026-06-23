@@ -456,7 +456,7 @@ export const EXPERIMENTAL_FEATURES = [
 			longDescription:
 				"Uses Liveblocks-ready state to expose collaborators, cursor presence, and active agent participants.",
 			maturity: "preview",
-			implementationStatus: "planned",
+			implementationStatus: "ready",
 			dependencies: [LIVEBLOCKS_PROVIDER],
 			affectedSurfaces: ["Workspace header", "Rooms", "Editor surfaces"],
 		},

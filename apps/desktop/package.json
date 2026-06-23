@@ -88,6 +88,7 @@
 		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
 		"@rox/chat": "workspace:*",
+		"@rox/collab": "workspace:*",
 		"@rox/db": "workspace:*",
 		"@rox/host-service": "workspace:*",
 		"@rox/local-db": "workspace:*",
