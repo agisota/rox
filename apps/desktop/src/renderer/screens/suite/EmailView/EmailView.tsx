@@ -57,12 +57,32 @@ function formatDateTime(value: Date | string | null | undefined): string {
  * Attachments are downloadable via short-TTL presigned `mail.getAttachmentUrl`.
  *
  * Cache-first (AGENTS.md rule 9): cached threads render while a refetch runs.
+ *
+ * Selection is OPTIONALLY controllable: when `InboxView` mounts EmailView inside
+ * the unified inbox it lifts the open thread up (so live SSE can invalidate the
+ * open mail thread's `mail.getThread`). The standalone `/email` route mounts it
+ * with no props and keeps its own internal selection — backward compatible.
  */
-export function EmailView() {
+export interface EmailViewProps {
+	/** Controlled open thread id; omit to use EmailView's internal selection. */
+	activeThreadId?: string | null;
+	/** Called when the open thread changes (only meaningful when controlled). */
+	onSelectThread?: (id: string | null) => void;
+}
+
+export function EmailView(props: EmailViewProps = {}) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+	const [internalThreadId, setInternalThreadId] = useState<string | null>(null);
+	const isControlled = props.activeThreadId !== undefined;
+	const activeThreadId = isControlled
+		? (props.activeThreadId ?? null)
+		: internalThreadId;
+	const setActiveThreadId = (id: string | null) => {
+		if (!isControlled) setInternalThreadId(id);
+		props.onSelectThread?.(id);
+	};
 	const [composeOpen, setComposeOpen] = useState(false);
 	const [to, setTo] = useState("");
 	const [subject, setSubject] = useState("");
