@@ -18,9 +18,9 @@ describe("buildSpectreWindowConfig", () => {
 	});
 
 	it("uses panel type on macOS so it floats over fullscreen apps", () => {
-		expect(buildSpectreWindowConfig({ isMac: true, preloadPath: "p" }).type).toBe(
-			"panel",
-		);
+		expect(
+			buildSpectreWindowConfig({ isMac: true, preloadPath: "p" }).type,
+		).toBe("panel");
 		expect(
 			buildSpectreWindowConfig({ isMac: false, preloadPath: "p" }).type,
 		).toBeUndefined();

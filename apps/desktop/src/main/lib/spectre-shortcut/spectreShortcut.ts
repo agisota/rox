@@ -16,6 +16,8 @@ export function registerSpectreShortcut(
 	return globalShortcut.register(SPECTRE_SUMMON_ACCELERATOR, onToggle);
 }
 
-export function unregisterSpectreShortcut(globalShortcut: GlobalShortcut): void {
+export function unregisterSpectreShortcut(
+	globalShortcut: GlobalShortcut,
+): void {
 	globalShortcut.unregister(SPECTRE_SUMMON_ACCELERATOR);
 }
