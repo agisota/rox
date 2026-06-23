@@ -2,9 +2,14 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 type AnyRow = Record<string, unknown>;
 const TABLES = new Map<unknown, string>();
-const state: { existing: AnyRow | undefined; inserted: AnyRow[] } = {
+const state: {
+	existing: AnyRow | undefined;
+	inserted: AnyRow[];
+	updates: { table: string; set: AnyRow }[];
+} = {
 	existing: undefined,
 	inserted: [],
+	updates: [],
 };
 
 function insertBuilder(table: unknown) {
@@ -26,6 +31,12 @@ function insertBuilder(table: unknown) {
 
 const fakeTx = {
 	insert: (t: unknown) => insertBuilder(t),
+	update: (t: unknown) => ({
+		set(s: AnyRow) {
+			state.updates.push({ table: TABLES.get(t) ?? "unknown", set: s });
+			return { where: () => Promise.resolve() };
+		},
+	}),
 	select: () => ({
 		from: () => ({
 			where: () => ({
@@ -46,6 +57,7 @@ const OTHER = "99999999-9999-4999-8999-999999999999";
 beforeEach(() => {
 	state.existing = undefined;
 	state.inserted = [];
+	state.updates = [];
 });
 
 describe("reserveHandle", () => {
@@ -68,6 +80,21 @@ describe("reserveHandle", () => {
 		});
 		expect(res.outcome).toBe("owned");
 		expect(res.handleId).toBe("h1");
+	});
+
+	test("reactivates a self-owned handle on re-claim (rename A→B→A)", async () => {
+		// A's row sits in `grace` from a prior rename away; re-claiming it must flip
+		// it back to active so the handle is live again.
+		state.existing = { id: "h1", currentOwnerUserId: USER, status: "grace" };
+		const res = await reserveHandle(fakeTx as never, {
+			normalizedHandle: "mark",
+			userId: USER,
+		});
+		expect(res.outcome).toBe("owned");
+		const reactivate = state.updates.find(
+			(u) => u.table === "identity_handles",
+		);
+		expect(reactivate?.set.status).toBe("active");
 	});
 
 	test("throws CONFLICT when another user owns it (S1 takeover block)", async () => {

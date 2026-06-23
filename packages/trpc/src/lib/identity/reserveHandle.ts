@@ -60,5 +60,12 @@ export async function reserveHandle(
 			message: "Это имя пользователя уже занято.",
 		});
 	}
+	// Re-owning a self-owned handle reactivates it. On a rename A→B→A within the
+	// grace window the previous step left A's row in `grace`; flip it back to
+	// `active` so the re-claimed handle is live again (not stuck in grace).
+	await tx
+		.update(identityHandles)
+		.set({ status: "active" })
+		.where(eq(identityHandles.id, existing.id));
 	return { handleId: existing.id, outcome: "owned" };
 }

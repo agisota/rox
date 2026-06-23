@@ -1,0 +1,2 @@
+ALTER TABLE "rox_ledger" ADD COLUMN "utc_day" date GENERATED ALWAYS AS (((created_at AT TIME ZONE 'UTC')::date)) STORED NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "rox_ledger_overage_user_day_uniq" ON "rox_ledger" USING btree ("user_id","utc_day") WHERE "rox_ledger"."kind" = 'drive_overage';

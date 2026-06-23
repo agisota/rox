@@ -10,7 +10,7 @@ import { assertMdxSafe, MdxSecurityError } from "@rox/shared/knowledge";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { env } from "../../env";
 import { protectedProcedure, publicProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
@@ -339,12 +339,49 @@ export const notebooksRouter = {
 				.orderBy(desc(noteNotes.updatedAt), desc(noteNotes.id))
 				.limit(200);
 
+			// N2: the backing `knowledge_documents` row is the system of record for a
+			// note's title/tags, but this list path reads the thin `note_notes` mirror,
+			// which a knowledge-router edit does NOT keep in sync. Overlay the
+			// authoritative title/tags from the backing docs in a SINGLE batched fetch
+			// keyed by `knowledge_document_id`, so the list shows the current values
+			// without going stale. `markdown` is deliberately still EXCLUDED — the list
+			// path must stay lightweight. Legacy / detached rows (null doc id, or a doc
+			// that was removed) transparently keep their inline mirror values.
+			const docIds = [
+				...new Set(
+					rows
+						.map((r) => r.knowledgeDocumentId)
+						.filter((id): id is string => id != null),
+				),
+			];
+			let resolved = rows;
+			if (docIds.length > 0) {
+				const docs = await db
+					.select({
+						id: knowledgeDocuments.id,
+						title: knowledgeDocuments.title,
+						tags: knowledgeDocuments.tags,
+					})
+					.from(knowledgeDocuments)
+					.where(inArray(knowledgeDocuments.id, docIds));
+				const byId = new Map(docs.map((d) => [d.id, d]));
+				resolved = rows.map((r) => {
+					const doc = r.knowledgeDocumentId
+						? byId.get(r.knowledgeDocumentId)
+						: undefined;
+					return doc
+						? { ...r, title: doc.title, tags: (doc.tags ?? []) as string[] }
+						: r;
+				});
+			}
+
 			// Tag filter is applied in-memory: tags are a jsonb array and the lists
 			// are per-user (small), so a portable client-side `every` match keeps the
-			// query simple and avoids a dialect-specific containment operator.
+			// query simple and avoids a dialect-specific containment operator. Filter
+			// the RESOLVED tags so a doc-router tag edit is reflected in the filter too.
 			const wanted = input.tags;
-			if (!wanted || wanted.length === 0) return rows;
-			return rows.filter((note) => {
+			if (!wanted || wanted.length === 0) return resolved;
+			return resolved.filter((note) => {
 				const tags = (note.tags ?? []) as string[];
 				return wanted.every((tag) => tags.includes(tag));
 			});
