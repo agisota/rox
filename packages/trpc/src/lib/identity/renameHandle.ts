@@ -66,7 +66,9 @@ export async function renameHandle(
 			)
 			.returning({ id: commsAddresses.id });
 
-		// 4. Alias the OLD mail address.
+		// 4. Alias the OLD mail address. Scope to the live PRIMARY (mirrors the
+		//    comms alias guard in step 3, `is_alias = false`): only the active
+		//    primary is demoted to a grace alias, never an already-aliased row.
 		await db
 			.update(mailAddresses)
 			.set({ kind: "alias", status: "grace", graceUntil })
@@ -74,6 +76,7 @@ export async function renameHandle(
 				and(
 					eq(mailAddresses.userId, args.userId),
 					eq(mailAddresses.address, from.email),
+					eq(mailAddresses.kind, "primary"),
 				),
 			);
 

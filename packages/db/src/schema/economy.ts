@@ -22,8 +22,10 @@ import type {
 	ModelTools,
 } from "@rox/shared/rox-models";
 import type { ModelProviderFamily } from "@rox/shared/rox-pricing";
+import { sql } from "drizzle-orm";
 import {
 	boolean,
+	date,
 	index,
 	integer,
 	jsonb,
@@ -232,10 +234,26 @@ export const roxLedger = pgTable(
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
+
+		// The UTC calendar day of `created_at`, derived deterministically so the
+		// daily-accrual idempotency guard below can be a plain column-based partial
+		// unique index (a STORED generated expression, mirroring the apikeys
+		// `organization_id` pattern in ./auth.ts). Timestamp is normalized to UTC
+		// first so the day boundary is timezone-stable regardless of server TZ.
+		utcDay: date("utc_day")
+			.notNull()
+			.generatedAlwaysAs(sql`((created_at AT TIME ZONE 'UTC')::date)`),
 	},
 	(t) => [
 		index("rox_ledger_user_created_idx").on(t.userId, t.createdAt),
 		index("rox_ledger_kind_idx").on(t.kind),
+		// One overage accrual per user per UTC day (finding D2 hardening): a partial
+		// unique index lets `accrueDailyOverage` insert with ON CONFLICT DO NOTHING
+		// so overlapping ticks/retries debit exactly once. Scoped to the overage
+		// kind so it never constrains the high-volume usage/topup ledger rows.
+		uniqueIndex("rox_ledger_overage_user_day_uniq")
+			.on(t.userId, t.utcDay)
+			.where(sql`${t.kind} = 'drive_overage'`),
 	],
 );
 

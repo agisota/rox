@@ -56,17 +56,38 @@ export function isBlockedMediaType(mediaType: string): boolean {
 /** Terminal scan verdict for a confirmed upload. */
 export type ScanVerdict = "clean" | "quarantined";
 
+/** Input/output contract for the scan engine (so a real scanner can drop in). */
+export interface ScanInput {
+	storageKey: string;
+	sizeBytes: number;
+	mediaType: string;
+}
+export interface ScanOutcome {
+	verdict: ScanVerdict;
+	result: DriveScanResult;
+}
+
+// Test seam (mirrors storage.ts's `setDriveStorageForTest`): a unit test can
+// inject a verdict to exercise the quarantine/clean branches of `confirmUpload`
+// WITHOUT a process-global `mock.module("./scan")` that would leak into sibling
+// test files. `undefined` = use the real engine.
+let scanOverride: ((input: ScanInput) => Promise<ScanOutcome>) | undefined;
+
+/** Inject a scan engine for unit tests; pass `undefined` to clear. */
+export function setScanObjectForTest(
+	fn: ((input: ScanInput) => Promise<ScanOutcome>) | undefined,
+): void {
+	scanOverride = fn;
+}
+
 /**
  * Scan a just-confirmed object and return its verdict + the audit record to
  * persist on the file row. STUB engine: always `clean`. The real value is the
  * gate it powers — callers flip the file to this verdict and downstream reads
  * require `clean`. Replace the body with a real scanner without touching callers.
  */
-export async function scanObject(input: {
-	storageKey: string;
-	sizeBytes: number;
-	mediaType: string;
-}): Promise<{ verdict: ScanVerdict; result: DriveScanResult }> {
+export async function scanObject(input: ScanInput): Promise<ScanOutcome> {
+	if (scanOverride) return scanOverride(input);
 	void input;
 	return {
 		verdict: "clean",

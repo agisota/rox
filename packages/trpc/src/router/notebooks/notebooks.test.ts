@@ -266,6 +266,69 @@ describe("notebooks.listNotes", () => {
 		const res = await caller.notebooks.listNotes({});
 		expect(res).toHaveLength(2);
 	});
+
+	test("FIX 1: overlays fresh title/tags from the backing doc (mirror is stale)", async () => {
+		// A knowledge.update edited the backing doc's title/tags directly, leaving
+		// the note_notes mirror stale. listNotes must reflect the DOC's values.
+		let call = 0;
+		fakeDb.select = () => {
+			call += 1;
+			// 1st select: note_notes index rows (stale mirror); 2nd select: the
+			// batched knowledge_documents fetch keyed by knowledge_document_id.
+			return call === 1
+				? selectBuilder([
+						{
+							id: "n1",
+							title: "Stale Title",
+							tags: ["old"],
+							knowledgeDocumentId: "doc-1",
+						},
+						// A legacy/detached note (null doc id) keeps its inline mirror.
+						{
+							id: "n2",
+							title: "Legacy",
+							tags: ["keep"],
+							knowledgeDocumentId: null,
+						},
+					])
+				: selectBuilder([{ id: "doc-1", title: "Fresh Title", tags: ["new"] }]);
+		};
+		const caller = callerFor("org-1");
+		const res = await caller.notebooks.listNotes({});
+		const n1 = res.find((n) => n.id === "n1");
+		const n2 = res.find((n) => n.id === "n2");
+		// Doc-backed note shows the doc's fresh title/tags, not the stale mirror.
+		expect(n1?.title).toBe("Fresh Title");
+		expect(n1?.tags).toEqual(["new"]);
+		// markdown is NEVER selected/returned by the list path (stays lightweight).
+		expect("markdown" in (n1 ?? {})).toBe(false);
+		// Detached/legacy note falls back to its inline mirror.
+		expect(n2?.title).toBe("Legacy");
+		expect(n2?.tags).toEqual(["keep"]);
+	});
+
+	test("FIX 1: tag filter matches the RESOLVED (doc) tags, not the stale mirror", async () => {
+		let call = 0;
+		fakeDb.select = () => {
+			call += 1;
+			return call === 1
+				? selectBuilder([
+						// Mirror tags are stale ["old"]; the doc now has ["work"].
+						{
+							id: "n1",
+							title: "t",
+							tags: ["old"],
+							knowledgeDocumentId: "doc-1",
+						},
+					])
+				: selectBuilder([{ id: "doc-1", title: "t", tags: ["work"] }]);
+		};
+		const caller = callerFor("org-1");
+		// Filtering by the doc's current tag returns the note; the stale mirror tag
+		// would have excluded it.
+		const res = await caller.notebooks.listNotes({ tags: ["work"] });
+		expect(res.map((n) => n.id)).toEqual(["n1"]);
+	});
 });
 
 describe("notebooks.getNote", () => {

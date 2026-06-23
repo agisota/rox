@@ -22,6 +22,8 @@ const state: {
 	conditionalUpdateRows: AnyRow[];
 	updated: AnyRow[];
 	ledgerInserted: AnyRow[];
+	/** Rows the ledger insert's `.returning()` yields; [] simulates a conflict. */
+	ledgerInsertReturning: AnyRow[];
 	balanceUpdated: AnyRow[];
 	transactionRan: number;
 	selectQueue: AnyRow[][];
@@ -30,6 +32,7 @@ const state: {
 	conditionalUpdateRows: [{ bytesUsed: 1 }],
 	updated: [],
 	ledgerInserted: [],
+	ledgerInsertReturning: [{ id: "ledger-1" }],
 	balanceUpdated: [],
 	transactionRan: 0,
 	selectQueue: [],
@@ -61,13 +64,27 @@ function makeDb() {
 		selectDistinct: () => selectBuilder(),
 		insert: (table: unknown) => ({
 			values: (vals: AnyRow) => {
-				if (tableName(table).includes("ledger"))
-					state.ledgerInserted.push(vals);
-				return {
-					onConflictDoNothing: () => Promise.resolve(),
-					onConflictDoUpdate: () => Promise.resolve(),
-					returning: () => Promise.resolve([{ id: "x" }]),
+				const isLedger = tableName(table).includes("ledger");
+				if (isLedger) state.ledgerInserted.push(vals);
+				// `.onConflictDoNothing(...)` is itself awaitable (the roxBalances seed
+				// awaits it directly) AND exposes `.returning()` (the ledger insert
+				// chains it). The ledger's returned rows are configurable so a conflict
+				// (zero rows) can simulate the constraint-based idempotency branch (D2
+				// hardening): see `makeAwaitable`, mirroring the `update` stub below.
+				const rows = isLedger ? state.ledgerInsertReturning : [{ id: "x" }];
+				const makeAwaitable = () => {
+					const p = Promise.resolve(rows) as Promise<AnyRow[]> & {
+						returning: () => Promise<AnyRow[]>;
+					};
+					p.returning = () => Promise.resolve(rows);
+					return p;
 				};
+				const chain: AnyRow = {
+					onConflictDoNothing: () => makeAwaitable(),
+					onConflictDoUpdate: () => makeAwaitable(),
+					returning: () => Promise.resolve(rows),
+				};
+				return chain;
 			},
 		}),
 		update: (table: unknown) => ({
@@ -115,6 +132,7 @@ beforeEach(() => {
 	state.conditionalUpdateRows = [{ bytesUsed: 1 }];
 	state.updated = [];
 	state.ledgerInserted = [];
+	state.ledgerInsertReturning = [{ id: "ledger-1" }];
 	state.balanceUpdated = [];
 	state.transactionRan = 0;
 	state.selectQueue = [];
@@ -224,6 +242,36 @@ describe("accrueDailyOverage", () => {
 		expect(r.ledgerWritten).toBe(false);
 		expect(state.ledgerInserted).toHaveLength(0);
 		expect(state.balanceUpdated).toHaveLength(0);
+	});
+
+	test("constraint catches a racing tick — back-to-back accrue debits exactly once (FIX 3)", async () => {
+		state.quotaRow = {
+			bytesUsed: CAP + 30 * GB,
+			quotaBytes: CAP,
+			overageOptIn: true,
+		};
+		// Both ticks observe an EMPTY hasAccruedToday (the fast-path pre-check races
+		// and misses), so both open a transaction and attempt the ledger insert. The
+		// per-day partial unique index is what makes this safe: the first insert
+		// returns a row (debits), the second conflicts (zero rows) and must skip the
+		// debit, returning alreadyAccrued.
+		state.selectQueue = [[], []]; // hasAccruedToday → none for BOTH calls
+
+		// Tick 1: insert lands → one ledger row + one balance debit.
+		state.ledgerInsertReturning = [{ id: "ledger-day1" }];
+		const first = await accrueDailyOverage("u1", 30, 30);
+		expect(first.ledgerWritten).toBe(true);
+		expect(first.roxDebited).toBeGreaterThan(0);
+		expect(state.balanceUpdated).toHaveLength(1);
+
+		// Tick 2: ON CONFLICT DO NOTHING → zero rows returned → no second debit.
+		state.ledgerInsertReturning = [];
+		const second = await accrueDailyOverage("u1", 30, 30);
+		expect(second.alreadyAccrued).toBe(true);
+		expect(second.ledgerWritten).toBe(false);
+		expect(second.roxDebited).toBe(0);
+		// Balance was debited exactly once across both ticks.
+		expect(state.balanceUpdated).toHaveLength(1);
 	});
 });
 

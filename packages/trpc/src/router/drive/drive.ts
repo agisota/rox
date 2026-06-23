@@ -565,6 +565,15 @@ export const driveRouter = {
 				.set({ status: scan.verdict, scanResult: scan.result })
 				.where(and(eq(driveFiles.id, file.id), eq(driveFiles.userId, userId)))
 				.returning();
+
+			// Quarantine releases the just-committed bytes (finding): commitUpload
+			// already added them to bytes_used, but a quarantined file is never
+			// downloadable/shareable and must not consume quota until the nightly
+			// reconcile. Return them now so the counter stays honest immediately.
+			if (scan.verdict === "quarantined") {
+				await releaseBytes(userId, Number(file.sizeBytes));
+			}
+
 			return {
 				ok: true as const,
 				alreadyConfirmed: false as const,

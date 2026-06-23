@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { PgDialect } from "drizzle-orm/pg-core";
 
 type AnyRow = Record<string, unknown>;
 const TABLES = new Map<unknown, string>();
 const state: {
-	updates: { table: string; set: AnyRow }[];
+	updates: { table: string; set: AnyRow; where: unknown }[];
 	inserts: { table: string; values: AnyRow[] }[];
 	handleRow: AnyRow | undefined;
 } = { updates: [], inserts: [], handleRow: undefined };
@@ -29,9 +30,24 @@ function chainFor(table: unknown) {
 		}),
 		update: () => ({
 			set(s: AnyRow) {
-				state.updates.push({ table: name, set: s });
+				const entry: { table: string; set: AnyRow; where: unknown } = {
+					table: name,
+					set: s,
+					where: undefined,
+				};
+				state.updates.push(entry);
+				// `.where()` may be awaited directly (reserveHandle reactivation) or
+				// chained with `.returning()` (the alias/mint updates). Capture the
+				// predicate so FIX 5's primary-scoped mail alias can be asserted.
+				const result = Promise.resolve([{ id: "x" }]) as Promise<AnyRow[]> & {
+					returning?: () => Promise<AnyRow[]>;
+				};
+				result.returning = () => Promise.resolve([{ id: "x" }]);
 				return {
-					where: () => ({ returning: () => Promise.resolve([{ id: "x" }]) }),
+					where: (where: unknown) => {
+						entry.where = where;
+						return result;
+					},
 				};
 			},
 		}),
@@ -109,5 +125,42 @@ describe("renameHandle", () => {
 				organizationId: ORG,
 			}),
 		).rejects.toThrow(/занято|taken|reserved/i);
+	});
+
+	test("reactivates a re-claimed grace handle (A→B→A leaves A active)", async () => {
+		// Renaming back to a handle the user still owns but which sits in `grace`
+		// from the previous step: reserveHandle's owned branch must flip it back to
+		// active so the re-claimed handle is live again, not stuck in grace.
+		state.handleRow = { id: "h-a", currentOwnerUserId: USER, status: "grace" };
+		await renameHandle({
+			userId: USER,
+			fromHandle: "b",
+			toHandle: "a",
+			organizationId: ORG,
+		});
+		const reactivate = state.updates.find(
+			(u) => u.table === "identity_handles" && u.set.status === "active",
+		);
+		expect(reactivate).toBeDefined();
+	});
+
+	test("scopes the mail alias update to the primary address (FIX 5)", async () => {
+		const dialect = new PgDialect();
+		await renameHandle({
+			userId: USER,
+			fromHandle: "old",
+			toHandle: "new",
+			organizationId: ORG,
+		});
+		const mailAlias = state.updates.find(
+			(u) => u.table === "mail_addresses" && u.set.kind === "alias",
+		);
+		expect(mailAlias).toBeDefined();
+		// The WHERE must guard `kind = 'primary'` so an already-aliased row is never
+		// re-aliased (mirrors the comms `is_alias = false` guard).
+		// biome-ignore lint/suspicious/noExplicitAny: opaque drizzle SQL node
+		const q = dialect.sqlToQuery(mailAlias?.where as any);
+		expect(q.sql).toContain('"kind"');
+		expect(q.params).toContain("primary");
 	});
 });

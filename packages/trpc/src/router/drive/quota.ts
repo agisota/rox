@@ -216,6 +216,15 @@ async function hasAccruedToday(userId: string): Promise<boolean> {
  * and debits `rox_balances`. No-op (no ledger row) when the user is within
  * quota or the cost rounds to zero.
  *
+ * Idempotent per UTC day (finding D2 hardening): the whole accrual runs inside a
+ * single transaction and the ledger insert relies on the partial unique index
+ * `rox_ledger_overage_user_day_uniq` (one `drive_overage` row per user per UTC
+ * day). The insert uses ON CONFLICT DO NOTHING and treats zero rows returned as
+ * "already accrued today" — so overlapping/back-to-back ticks (QStash retry,
+ * double schedule) debit EXACTLY once even when their pre-checks race. The
+ * pre-tx {@link hasAccruedToday} fast-path still short-circuits the common
+ * already-billed case without opening a transaction.
+ *
  * Reuses the existing WS-E balance/ledger machinery verbatim; the `drive_overage`
  * kind already exists in `roxLedgerKindValues` (no new kind added).
  */
@@ -232,8 +241,9 @@ export async function accrueDailyOverage(
 		return { overBytes, roxDebited: 0, ledgerWritten: false };
 	}
 
-	// Idempotent per UTC day (finding D2): a QStash retry or duplicate tick must
-	// not double-bill. If an overage row already landed today, no-op.
+	// Fast-path no-op: if an overage row already landed today, skip the tx. This
+	// is an optimization, NOT the correctness guarantee — the DB constraint below
+	// is what makes concurrent ticks safe.
 	if (await hasAccruedToday(userId)) {
 		return {
 			overBytes,
@@ -243,21 +253,45 @@ export async function accrueDailyOverage(
 		};
 	}
 
-	await db.transaction(async (tx) => {
+	const accrued = await db.transaction(async (tx) => {
 		await tx
 			.insert(roxBalances)
 			.values({ userId })
 			.onConflictDoNothing({ target: roxBalances.userId });
-		await tx.insert(roxLedger).values({
-			userId,
-			deltaRox: String(-rox),
-			kind: "drive_overage",
-		});
+
+		// Atomic idempotency: the partial unique index guarantees one accrual per
+		// user/UTC-day. ON CONFLICT DO NOTHING + RETURNING means a racing tick that
+		// lost the insert gets NO row, so we skip the debit entirely.
+		const inserted = await tx
+			.insert(roxLedger)
+			.values({
+				userId,
+				deltaRox: String(-rox),
+				kind: "drive_overage",
+			})
+			.onConflictDoNothing({
+				target: [roxLedger.userId, roxLedger.utcDay],
+				where: sql`${roxLedger.kind} = 'drive_overage'`,
+			})
+			.returning({ id: roxLedger.id });
+
+		if (inserted.length === 0) return false;
+
 		await tx
 			.update(roxBalances)
 			.set({ balanceRox: sql`${roxBalances.balanceRox} - ${rox}` })
 			.where(eq(roxBalances.userId, userId));
+		return true;
 	});
+
+	if (!accrued) {
+		return {
+			overBytes,
+			roxDebited: 0,
+			ledgerWritten: false,
+			alreadyAccrued: true,
+		};
+	}
 
 	return { overBytes, roxDebited: rox, ledgerWritten: true };
 }
