@@ -1,0 +1,1 @@
+export { WebQuickChatView } from "./WebQuickChatView";
