@@ -1,4 +1,8 @@
-import { calAttendeeStatusValues, calShareRoleValues } from "@rox/db/schema";
+import {
+	calAttendeeStatusValues,
+	calReminderChannelValues,
+	calShareRoleValues,
+} from "@rox/db/schema";
 import { z } from "zod";
 
 /**
@@ -214,3 +218,98 @@ export const IMPORT_INSERT_CHUNK = 100;
 
 /** Per-event EXDATE cap mirrored from `createEventSchema` for .ics imports. */
 export const MAX_IMPORT_EXDATES = 500;
+
+// ---- reminders (C6) -------------------------------------------------------
+
+/** Max lead time for a relative reminder: 28 days (40320 minutes). */
+export const MAX_REMINDER_OFFSET_MINUTES = 40_320;
+
+/** Max reminders a single user may set on one event (anti-spam guard). */
+export const MAX_REMINDERS_PER_EVENT = 10;
+
+const reminderOffset = z
+	.number()
+	.int()
+	.min(0)
+	.max(MAX_REMINDER_OFFSET_MINUTES)
+	.nullish();
+const reminderChannel = z.enum(calReminderChannelValues);
+const reminderTrigger = z.enum(["relative", "absolute"]);
+
+/**
+ * A reminder is relative (fires `offsetMinutes` before the occurrence) XOR
+ * absolute (fires at `absoluteFireAt`). The superRefine enforces that exactly
+ * the field matching `trigger` is set, with RU messages matching the file tone.
+ */
+function refineReminderTrigger(
+	v: {
+		trigger?: "relative" | "absolute";
+		offsetMinutes?: number | null;
+		absoluteFireAt?: Date | null;
+	},
+	ctx: z.RefinementCtx,
+): void {
+	if (v.trigger === undefined) return; // update with no trigger change.
+	if (v.trigger === "relative") {
+		if (v.offsetMinutes === null || v.offsetMinutes === undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"Для относительного напоминания укажите offsetMinutes (минуты до начала)",
+				path: ["offsetMinutes"],
+			});
+		}
+		if (v.absoluteFireAt !== null && v.absoluteFireAt !== undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"Относительное напоминание не может иметь absoluteFireAt — задайте только offsetMinutes",
+				path: ["absoluteFireAt"],
+			});
+		}
+	} else {
+		if (v.absoluteFireAt === null || v.absoluteFireAt === undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Для абсолютного напоминания укажите absoluteFireAt",
+				path: ["absoluteFireAt"],
+			});
+		}
+		if (v.offsetMinutes !== null && v.offsetMinutes !== undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"Абсолютное напоминание не может иметь offsetMinutes — задайте только absoluteFireAt",
+				path: ["offsetMinutes"],
+			});
+		}
+	}
+}
+
+export const createReminderSchema = z
+	.object({
+		eventId: z.string().uuid(),
+		channel: reminderChannel.default("in_app"),
+		trigger: reminderTrigger,
+		offsetMinutes: reminderOffset,
+		absoluteFireAt: z.coerce.date().nullish(),
+	})
+	.superRefine(refineReminderTrigger);
+
+export const updateReminderSchema = z
+	.object({
+		reminderId: z.string().uuid(),
+		channel: reminderChannel.optional(),
+		trigger: reminderTrigger.optional(),
+		offsetMinutes: reminderOffset,
+		absoluteFireAt: z.coerce.date().nullish(),
+	})
+	.superRefine(refineReminderTrigger);
+
+export const deleteReminderSchema = z.object({
+	reminderId: z.string().uuid(),
+});
+
+export const listRemindersSchema = z.object({
+	eventId: z.string().uuid(),
+});

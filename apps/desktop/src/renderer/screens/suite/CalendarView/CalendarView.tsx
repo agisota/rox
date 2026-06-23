@@ -33,6 +33,22 @@ const RSVP_OPTIONS: { status: RsvpStatus; label: string }[] = [
 	{ status: "declined", label: "Отклонить" },
 ];
 
+/** Reminder presets → minutes BEFORE the occurrence start (C6). */
+const REMINDER_PRESETS: { label: string; offsetMinutes: number }[] = [
+	{ label: "В момент", offsetMinutes: 0 },
+	{ label: "За 10 мин", offsetMinutes: 10 },
+	{ label: "За 1 час", offsetMinutes: 60 },
+	{ label: "За 1 день", offsetMinutes: 1440 },
+];
+
+function reminderOffsetLabel(offsetMinutes: number | null): string {
+	const offset = offsetMinutes ?? 0;
+	return (
+		REMINDER_PRESETS.find((p) => p.offsetMinutes === offset)?.label ??
+		`За ${offset} мин`
+	);
+}
+
 interface AgendaItem {
 	key: string;
 	eventId: string;
@@ -306,10 +322,127 @@ export function CalendarView() {
 									</Button>
 								))}
 							</div>
+
+							<EventReminders eventId={selectedEvent.id} />
 						</>
 					)}
 				</DialogContent>
 			</Dialog>
 		</SuiteScreen>
+	);
+}
+
+interface EventRemindersProps {
+	eventId: string;
+}
+
+/**
+ * C6 reminders surface for the desktop event detail (read + RSVP screen has no
+ * full editor). Shows the caller's own reminders for the event with add-preset +
+ * delete via `calendar.createReminder`/`deleteReminder`. Cache-first (AGENTS.md
+ * rule 9): persisted rows render immediately; loading only gates the empty
+ * branch.
+ */
+function EventReminders({ eventId }: EventRemindersProps) {
+	const trpc = useTRPC();
+	const queryClient = useQueryClient();
+	const remindersQuery = useQuery(
+		trpc.calendar.listReminders.queryOptions({ eventId }),
+	);
+	const reminders = remindersQuery.data ?? [];
+
+	const refresh = async () => {
+		await queryClient.invalidateQueries({
+			queryKey: trpc.calendar.listReminders.queryKey({ eventId }),
+		});
+	};
+
+	const createReminder = useMutation(
+		trpc.calendar.createReminder.mutationOptions({
+			onSuccess: async () => {
+				await refresh();
+				toast.success("Напоминание добавлено");
+			},
+			onError: (error) => {
+				logger.error("[CalendarView] createReminder failed", error);
+				toast.error("Не удалось добавить напоминание");
+			},
+		}),
+	);
+
+	const deleteReminder = useMutation(
+		trpc.calendar.deleteReminder.mutationOptions({
+			onSuccess: async () => {
+				await refresh();
+				toast.success("Напоминание удалено");
+			},
+			onError: (error) => {
+				logger.error("[CalendarView] deleteReminder failed", error);
+				toast.error("Не удалось удалить напоминание");
+			},
+		}),
+	);
+
+	return (
+		<div className="space-y-2 border-t pt-3">
+			<span className="font-medium text-muted-foreground text-xs">
+				Напоминания
+			</span>
+
+			{reminders.length > 0 ? (
+				<ul className="space-y-1">
+					{reminders.map((reminder) => (
+						<li
+							key={reminder.id}
+							className="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-sm"
+						>
+							<span className="cursor-text select-text truncate">
+								{reminderOffsetLabel(reminder.offsetMinutes)}
+								{reminder.channel === "email" ? " · Email" : " · В приложении"}
+							</span>
+							<Button
+								size="sm"
+								variant="ghost"
+								className="h-7 px-2 text-destructive text-xs hover:text-destructive"
+								disabled={deleteReminder.isPending}
+								onClick={() =>
+									deleteReminder.mutate({ reminderId: reminder.id })
+								}
+							>
+								Удалить
+							</Button>
+						</li>
+					))}
+				</ul>
+			) : remindersQuery.isLoading ? (
+				<span className="text-muted-foreground text-xs">Загрузка…</span>
+			) : (
+				<span className="text-muted-foreground text-xs">
+					Напоминаний пока нет.
+				</span>
+			)}
+
+			<div className="flex flex-wrap gap-1.5 pt-1">
+				{REMINDER_PRESETS.map((preset) => (
+					<Button
+						key={preset.offsetMinutes}
+						size="sm"
+						variant="outline"
+						className="h-7 px-2 text-xs"
+						disabled={createReminder.isPending}
+						onClick={() =>
+							createReminder.mutate({
+								eventId,
+								channel: "in_app",
+								trigger: "relative",
+								offsetMinutes: preset.offsetMinutes,
+							})
+						}
+					>
+						+ {preset.label}
+					</Button>
+				))}
+			</div>
+		</div>
 	);
 }

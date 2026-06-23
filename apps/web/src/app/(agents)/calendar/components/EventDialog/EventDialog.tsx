@@ -23,8 +23,10 @@ import {
 import { Switch } from "@rox/ui/switch";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
+import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTRPC } from "@/trpc/react";
 import { useCalendarActions } from "../../hooks/useCalendarActions";
 import { fromDatetimeLocal, toDatetimeLocal } from "../../utils/datetimeLocal";
 import {
@@ -48,6 +50,38 @@ export interface EventDialogValue {
 }
 
 type EventAttendee = RouterOutputs["calendar"]["getEvent"]["attendees"][number];
+type EventReminder = RouterOutputs["calendar"]["listReminders"][number];
+
+/** Reminder preset presets → offsetMinutes BEFORE the occurrence start. */
+const REMINDER_PRESETS: {
+	value: string;
+	label: string;
+	offsetMinutes: number;
+}[] = [
+	{ value: "at-time", label: "В момент начала", offsetMinutes: 0 },
+	{ value: "10m", label: "За 10 минут", offsetMinutes: 10 },
+	{ value: "1h", label: "За 1 час", offsetMinutes: 60 },
+	{ value: "1d", label: "За 1 день", offsetMinutes: 1440 },
+];
+
+type ReminderChannel = "in_app" | "email";
+
+const REMINDER_CHANNEL_LABEL: Record<ReminderChannel, string> = {
+	in_app: "В приложении",
+	email: "Email",
+};
+
+/** Short RU description of a reminder row for the list. */
+function reminderLabel(reminder: EventReminder): string {
+	const channel = REMINDER_CHANNEL_LABEL[reminder.channel as ReminderChannel];
+	if (reminder.triggerKind === "absolute" && reminder.absoluteFireAt) {
+		return `${new Date(reminder.absoluteFireAt).toLocaleString()} · ${channel}`;
+	}
+	const offset = reminder.offsetMinutes ?? 0;
+	const preset = REMINDER_PRESETS.find((p) => p.offsetMinutes === offset);
+	const when = preset?.label ?? `За ${offset} мин`;
+	return `${when} · ${channel}`;
+}
 
 interface CalendarOption {
 	id: string;
@@ -395,23 +429,26 @@ export function EventDialog({
 					</div>
 
 					{isEdit ? (
-						<EditAttendees
-							attendees={attendees}
-							loading={attendeesLoading}
-							busy={attendeeBusy}
-							currentUserId={currentUserId}
-							currentUserRsvp={currentUserRsvp ?? null}
-							email={attendeeEmail}
-							onEmailChange={setAttendeeEmail}
-							onAdd={addLiveAttendee}
-							onRemove={removeLiveAttendee}
-							onRsvp={(status) => {
-								if (initial.eventId) {
-									rsvp.mutate({ eventId: initial.eventId, status });
-								}
-							}}
-							rsvpPending={rsvp.isPending}
-						/>
+						<>
+							<EditAttendees
+								attendees={attendees}
+								loading={attendeesLoading}
+								busy={attendeeBusy}
+								currentUserId={currentUserId}
+								currentUserRsvp={currentUserRsvp ?? null}
+								email={attendeeEmail}
+								onEmailChange={setAttendeeEmail}
+								onAdd={addLiveAttendee}
+								onRemove={removeLiveAttendee}
+								onRsvp={(status) => {
+									if (initial.eventId) {
+										rsvp.mutate({ eventId: initial.eventId, status });
+									}
+								}}
+								rsvpPending={rsvp.isPending}
+							/>
+							{initial.eventId && <EventReminders eventId={initial.eventId} />}
+						</>
 					) : (
 						<div className="space-y-1.5">
 							<Label htmlFor="cal-event-attendee">
@@ -614,6 +651,113 @@ function EditAttendees({
 					variant="secondary"
 					onClick={onAdd}
 					disabled={busy || !email.trim()}
+				>
+					Добавить
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+interface EventRemindersProps {
+	eventId: string;
+}
+
+/**
+ * Edit-mode reminders block: the caller's own reminders for the event, plus a
+ * preset + channel add row and per-row delete. Cache-first (AGENTS.md rule 9):
+ * persisted rows in `data` render immediately; `isLoading`/`isReady` only gate
+ * the empty/loading branch when there is no data yet.
+ */
+function EventReminders({ eventId }: EventRemindersProps) {
+	const trpc = useTRPC();
+	const { createReminder, deleteReminder } = useCalendarActions();
+	const remindersQuery = useQuery(
+		trpc.calendar.listReminders.queryOptions({ eventId }),
+	);
+	const reminders = remindersQuery.data ?? [];
+
+	const [preset, setPreset] = useState(REMINDER_PRESETS[1]?.value ?? "10m");
+	const [channel, setChannel] = useState<ReminderChannel>("in_app");
+
+	const addReminder = () => {
+		const match = REMINDER_PRESETS.find((p) => p.value === preset);
+		if (!match) return;
+		createReminder.mutate({
+			eventId,
+			channel,
+			trigger: "relative",
+			offsetMinutes: match.offsetMinutes,
+		});
+	};
+
+	const onDelete = (reminderId: string) => {
+		deleteReminder.mutate(
+			{ reminderId },
+			{ onSuccess: () => void remindersQuery.refetch() },
+		);
+	};
+
+	return (
+		<div className="space-y-2 border-t pt-4">
+			<Label>Напоминания</Label>
+
+			{reminders.length > 0 ? (
+				<ul className="space-y-1">
+					{reminders.map((reminder) => (
+						<li
+							key={reminder.id}
+							className="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-sm"
+						>
+							<span className="truncate">{reminderLabel(reminder)}</span>
+							<button
+								type="button"
+								aria-label="Удалить напоминание"
+								className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+								disabled={deleteReminder.isPending}
+								onClick={() => onDelete(reminder.id)}
+							>
+								<X className="size-3.5" />
+							</button>
+						</li>
+					))}
+				</ul>
+			) : remindersQuery.isLoading ? (
+				<p className="text-muted-foreground text-xs">Загрузка напоминаний…</p>
+			) : (
+				<p className="text-muted-foreground text-xs">Напоминаний пока нет.</p>
+			)}
+
+			<div className="flex gap-2 pt-1">
+				<Select value={preset} onValueChange={setPreset}>
+					<SelectTrigger className="flex-1">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{REMINDER_PRESETS.map((p) => (
+							<SelectItem key={p.value} value={p.value}>
+								{p.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				<Select
+					value={channel}
+					onValueChange={(v) => setChannel(v as ReminderChannel)}
+				>
+					<SelectTrigger className="w-36">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="in_app">В приложении</SelectItem>
+						<SelectItem value="email">Email</SelectItem>
+					</SelectContent>
+				</Select>
+				<Button
+					type="button"
+					variant="secondary"
+					onClick={addReminder}
+					disabled={createReminder.isPending}
 				>
 					Добавить
 				</Button>

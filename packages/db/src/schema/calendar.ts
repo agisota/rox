@@ -32,6 +32,7 @@ import {
 	boolean,
 	check,
 	index,
+	integer,
 	jsonb,
 	pgEnum,
 	pgTable,
@@ -44,6 +45,9 @@ import { organizations, users } from "./auth";
 import {
 	calAttendeeStatusValues,
 	calEventStatusValues,
+	calReminderChannelValues,
+	calReminderStatusValues,
+	calReminderTriggerValues,
 	calShareRoleValues,
 } from "./enums";
 
@@ -57,6 +61,18 @@ export const calAttendeeStatus = pgEnum(
 );
 export const calShareRole = pgEnum("cal_share_role", calShareRoleValues);
 export const calEventStatus = pgEnum("cal_event_status", calEventStatusValues);
+export const calReminderChannel = pgEnum(
+	"cal_reminder_channel",
+	calReminderChannelValues,
+);
+export const calReminderTrigger = pgEnum(
+	"cal_reminder_trigger",
+	calReminderTriggerValues,
+);
+export const calReminderStatus = pgEnum(
+	"cal_reminder_status",
+	calReminderStatusValues,
+);
 
 /** Free-form per-event metadata (conferencing links, source ICS UID, extras). */
 export type CalEventMetadata = Record<string, unknown>;
@@ -261,3 +277,79 @@ export const calCalendarShares = pgTable(
 
 export type InsertCalCalendarShare = typeof calCalendarShares.$inferInsert;
 export type SelectCalCalendarShare = typeof calCalendarShares.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// cal_reminders — C6 personal event reminders fired by the QStash scheduler
+// ---------------------------------------------------------------------------
+//
+// A reminder is PERSONAL (`owner_user_id` is the recipient), exactly like an
+// attendee RSVP — reader access to the event is enough to manage your own. A
+// reminder is `relative` (fires `offset_minutes` before an occurrence start) or
+// `absolute` (fires at `absolute_fire_at`). `next_fire_at` is the materialized
+// next un-fired instant and is the scheduler's ONLY scan key: the due-scan reads
+// `status='scheduled' AND next_fire_at <= now()`, delivers, then either advances
+// `next_fire_at` (recurring relative) or flips to `fired` (one-off). Cascades on
+// org/event/user delete so it never outlives its event.
+
+export const calReminders = pgTable(
+	"cal_reminders",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		eventId: uuid("event_id")
+			.notNull()
+			.references(() => calEvents.id, { onDelete: "cascade" }),
+		// The recipient — reminders are personal, like an attendee RSVP.
+		ownerUserId: uuid("owner_user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+
+		channel: calReminderChannel().notNull().default("in_app"),
+		triggerKind: calReminderTrigger("trigger_kind")
+			.notNull()
+			.default("relative"),
+		// Minutes BEFORE the occurrence start; set iff trigger_kind='relative'.
+		offsetMinutes: integer("offset_minutes"),
+		// Fixed fire instant; set iff trigger_kind='absolute'.
+		absoluteFireAt: timestamp("absolute_fire_at", { withTimezone: true }),
+
+		// The next un-fired instant — the scheduler's scan key.
+		nextFireAt: timestamp("next_fire_at", { withTimezone: true }).notNull(),
+		lastFiredAt: timestamp("last_fired_at", { withTimezone: true }),
+
+		status: calReminderStatus().notNull().default("scheduled"),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(t) => [
+		// A reminder's siblings on an event, org-leading.
+		index("cal_reminders_org_event_idx").on(t.organizationId, t.eventId),
+		// The due-scan: scheduled rows ordered by their next fire instant.
+		index("cal_reminders_due_idx").on(t.status, t.nextFireAt),
+		// Dedup relative reminders: one per (event, owner, channel, offset).
+		uniqueIndex("cal_reminders_event_owner_channel_offset_uniq")
+			.on(t.eventId, t.ownerUserId, t.channel, t.offsetMinutes)
+			.where(sql`${t.offsetMinutes} IS NOT NULL`),
+		// Exactly one of offset_minutes / absolute_fire_at is set, matching the
+		// trigger kind (relative ⇒ offset, absolute ⇒ fixed instant).
+		check(
+			"cal_reminders_trigger_xor",
+			sql`(
+				(${t.triggerKind} = 'relative' AND ${t.offsetMinutes} IS NOT NULL AND ${t.absoluteFireAt} IS NULL)
+				OR
+				(${t.triggerKind} = 'absolute' AND ${t.absoluteFireAt} IS NOT NULL AND ${t.offsetMinutes} IS NULL)
+			)`,
+		),
+	],
+);
+
+export type InsertCalReminder = typeof calReminders.$inferInsert;
+export type SelectCalReminder = typeof calReminders.$inferSelect;
