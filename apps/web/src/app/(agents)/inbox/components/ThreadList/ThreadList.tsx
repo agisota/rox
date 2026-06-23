@@ -56,6 +56,7 @@ export function ThreadList({ activeThreadId, onSelect }: ThreadListProps) {
 							lastMessageAt={thread.lastMessageAt}
 							isActive={thread.id === activeThreadId}
 							onSelect={onSelect}
+							unreadCount={thread.unreadCount}
 						/>
 					))
 				)}

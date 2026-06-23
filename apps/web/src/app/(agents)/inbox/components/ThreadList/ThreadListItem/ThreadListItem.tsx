@@ -1,5 +1,7 @@
 "use client";
 
+import { Badge } from "@rox/ui/badge";
+
 import { formatThreadTitle } from "../../../utils/formatThreadTitle";
 
 export interface ThreadListItemProps {
@@ -8,6 +10,8 @@ export interface ThreadListItemProps {
 	lastMessageAt: Date | string | null;
 	isActive: boolean;
 	onSelect: (threadId: string) => void;
+	/** Unread messages for the caller; renders a count badge when > 0. */
+	unreadCount?: number;
 }
 
 /** Relative-ish short timestamp for the inbox row. */
@@ -29,7 +33,9 @@ export function ThreadListItem({
 	lastMessageAt,
 	isActive,
 	onSelect,
+	unreadCount = 0,
 }: ThreadListItemProps) {
+	const hasUnread = unreadCount > 0;
 	return (
 		<button
 			type="button"
@@ -40,9 +46,21 @@ export function ThreadListItem({
 			}`}
 		>
 			<div className="flex w-full items-center gap-2">
-				<span className="flex-1 truncate text-sm font-medium">
+				<span
+					className={`flex-1 truncate text-sm ${
+						hasUnread ? "font-semibold" : "font-medium"
+					}`}
+				>
 					{formatThreadTitle({ subject, id })}
 				</span>
+				{hasUnread && (
+					<Badge
+						aria-label={`${unreadCount} непрочитанных`}
+						className="h-5 min-w-5 shrink-0 justify-center rounded-full px-1.5 text-[10px] tabular-nums"
+					>
+						{unreadCount > 99 ? "99+" : unreadCount}
+					</Badge>
+				)}
 				<span className="shrink-0 text-[10px] text-muted-foreground">
 					{formatStamp(lastMessageAt)}
 				</span>

@@ -1,4 +1,5 @@
 import { authClient } from "@rox/auth/client";
+import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
 import { Skeleton } from "@rox/ui/skeleton";
 import { toast } from "@rox/ui/sonner";
@@ -157,9 +158,24 @@ function ChatTab() {
 							t.id === activeThreadId && "bg-accent",
 						)}
 					>
-						<span className="truncate text-sm font-medium">
-							{formatThreadTitle({ subject: t.subject, id: t.id })}
-						</span>
+						<div className="flex w-full items-center gap-2">
+							<span
+								className={cn(
+									"flex-1 truncate text-sm",
+									t.unreadCount > 0 ? "font-semibold" : "font-medium",
+								)}
+							>
+								{formatThreadTitle({ subject: t.subject, id: t.id })}
+							</span>
+							{t.unreadCount > 0 && (
+								<Badge
+									aria-label={`${t.unreadCount} непрочитанных`}
+									className="h-5 min-w-5 shrink-0 justify-center rounded-full px-1.5 text-[10px] tabular-nums"
+								>
+									{t.unreadCount > 99 ? "99+" : t.unreadCount}
+								</Badge>
+							)}
+						</div>
 						<span className="text-[10px] text-muted-foreground">
 							{formatTime(t.lastMessageAt)}
 						</span>
