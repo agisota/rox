@@ -23,7 +23,9 @@ import {
 } from "@rox/comms-core";
 import { db } from "@rox/db/client";
 import {
+	commsAddresses,
 	commsMessages,
+	commsParticipants,
 	commsThreads,
 	mailAddresses,
 	mailAttachments,
@@ -35,7 +37,7 @@ import {
 	userProfiles,
 } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, asc, count, desc, eq, gt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
 import { getDriveStorage } from "../drive/storage";
 import { ensureBalance } from "../economy";
@@ -149,6 +151,9 @@ async function emitOutboundToUnifiedInbox(
 			participantAddresses: [args.fromAddr, ...args.toAddrs],
 		}) ?? `mail:${args.mailMessageId}`;
 
+	// FIX 2: find-or-create with the (org, dedup_key) partial unique as a backstop.
+	// A SELECT-then-INSERT race (a concurrent inbound emit for the same reply root)
+	// collapses on the conflict + re-select, so both halves share ONE thread.
 	const [existing] = await tx
 		.select({ id: commsThreads.id })
 		.from(commsThreads)
@@ -176,10 +181,48 @@ async function emitOutboundToUnifiedInbox(
 				dedupKey,
 				lastMessageAt: new Date(),
 			})
+			.onConflictDoNothing({
+				target: [commsThreads.organizationId, commsThreads.dedupKey],
+			})
 			.returning({ id: commsThreads.id });
-		if (!thread) throw new Error("Failed to create comms thread");
-		threadId = thread.id;
+		if (thread) {
+			threadId = thread.id;
+		} else {
+			// Lost the insert race — re-select the concurrent winner's thread.
+			const [winner] = await tx
+				.select({ id: commsThreads.id })
+				.from(commsThreads)
+				.where(
+					and(
+						eq(commsThreads.organizationId, args.organizationId),
+						eq(commsThreads.dedupKey, dedupKey),
+					),
+				)
+				.limit(1);
+			if (!winner) throw new Error("Failed to create comms thread");
+			threadId = winner.id;
+		}
 	}
+
+	// FIX 1: the SENDER (mailbox owner) is always a participant; any recipient that
+	// is an internal rox `@rox.one` user becomes one too, so an in-app reply to an
+	// outbound email surfaces for both via the participant-scoped comms.* + the SSE
+	// leak-gate forwards it. External recipients are NOT rox participants here.
+	const recipientUserIds = await resolveRoxRecipientUserIds(tx, args.toAddrs);
+	const participantUserIds = [
+		...new Set([args.authorUserId, ...recipientUserIds]),
+	];
+	await tx
+		.insert(commsParticipants)
+		.values(
+			participantUserIds.map((userId) => ({
+				organizationId: args.organizationId,
+				threadId,
+				userId,
+				role: "member" as const,
+			})),
+		)
+		.onConflictDoNothing();
 
 	await tx
 		.insert(commsMessages)
@@ -199,6 +242,33 @@ async function emitOutboundToUnifiedInbox(
 			},
 		})
 		.onConflictDoNothing();
+}
+
+/**
+ * Resolve which of the given email addresses belong to internal rox users (a
+ * live, non-alias `comms_addresses` email row). Used to add the rox counterpart
+ * of an internal `@rox.one`→`@rox.one` send as a thread participant. Returns the
+ * distinct user ids; an empty input or all-external recipients yields `[]`.
+ */
+async function resolveRoxRecipientUserIds(
+	tx: MailTx,
+	toAddrs: string[],
+): Promise<string[]> {
+	const normalized = [
+		...new Set(toAddrs.map((a) => a.trim().toLowerCase()).filter(Boolean)),
+	];
+	if (normalized.length === 0) return [];
+	const rows = await tx
+		.select({ userId: commsAddresses.userId })
+		.from(commsAddresses)
+		.where(
+			and(
+				eq(commsAddresses.kind, "email"),
+				eq(commsAddresses.isAlias, false),
+				inArray(commsAddresses.value, normalized),
+			),
+		);
+	return [...new Set(rows.map((r) => r.userId))];
 }
 
 export const mailRouter = {

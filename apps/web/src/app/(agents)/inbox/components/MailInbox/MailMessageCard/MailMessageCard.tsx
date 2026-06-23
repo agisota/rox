@@ -1,8 +1,9 @@
 "use client";
 
 import { Badge } from "@rox/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowDownLeft, ArrowUpRight, Paperclip } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowDownLeft, ArrowUpRight, Download, Paperclip } from "lucide-react";
+import { useMemo } from "react";
 
 import { useTRPC } from "@/trpc/react";
 import {
@@ -10,6 +11,8 @@ import {
 	mailParticipantInitial,
 } from "../../../utils/formatMailParticipant";
 import type { MailThreadMessage } from "../../../utils/mailReplyContext";
+import { sanitizeMailHtml } from "../../../utils/sanitizeMailHtml";
+import { useMailBody } from "./useMailBody";
 
 export interface MailMessageCardProps {
 	message: MailThreadMessage;
@@ -40,12 +43,13 @@ function formatDateTime(value: Date | string | null | undefined): string {
 /**
  * A single email message in the thread view.
  *
- * Bodies live in R2 (the router returns pointers, not inline content), so the
- * card renders the server-trimmed `snippet` as PLAIN TEXT — never injected HTML —
- * which is inherently XSS-safe (React escapes text children; no
- * `dangerouslySetInnerHTML`). When expanded, attachment metadata is loaded via
- * `mail.getMessage`; the underlying file objects are R2-backed and not yet
- * presigned by this router, so each attachment is shown as inert metadata.
+ * When expanded, the FULL body is fetched from R2 via `mail.getBodyUrl` (FEATURE
+ * A): an HTML body is sanitized with DOMPurify (`sanitizeMailHtml`) and rendered
+ * inside an isolated, overflow-clipped container — never raw
+ * `dangerouslySetInnerHTML` without sanitize; a text body renders as escaped
+ * plain text. The server-trimmed `snippet` is the collapsed preview + the
+ * loading/error fallback. Attachment metadata loads via `mail.getMessage`, and
+ * each attachment is downloadable through a short-TTL presigned `getAttachmentUrl`.
  */
 export function MailMessageCard({
 	message,
@@ -66,6 +70,22 @@ export function MailMessageCard({
 		enabled: expanded && message.hasAttachments,
 	});
 	const attachments = detail.data?.attachments ?? [];
+
+	// Full body (FEATURE A): fetched only when the card is expanded; cache-first.
+	const bodyQuery = useMailBody(message.id, expanded);
+	const sanitizedHtml = useMemo(() => {
+		if (bodyQuery.data?.kind !== "html") return null;
+		return sanitizeMailHtml(bodyQuery.data.content);
+	}, [bodyQuery.data]);
+
+	// Presign + open an attachment in a new tab on click (download).
+	const attachmentUrl = useMutation(
+		trpc.mail.getAttachmentUrl.mutationOptions({
+			onSuccess: ({ url }) => {
+				window.open(url, "_blank", "noopener,noreferrer");
+			},
+		}),
+	);
 
 	const timestamp =
 		message.receivedAt ?? message.sentAt ?? message.createdAt ?? null;
@@ -121,11 +141,27 @@ export function MailMessageCard({
 						<dd className="truncate">{message.toAddrs?.join(", ") || "—"}</dd>
 					</dl>
 
-					{/* Body lives in R2 — render the safe plaintext snippet (no raw HTML). */}
-					<p className="whitespace-pre-wrap break-words text-sm">
-						{message.snippet?.trim() ||
-							"Текст письма недоступен в предпросмотре."}
-					</p>
+					{/* Full body from R2 (FEATURE A): sanitized HTML or escaped text.
+					    Falls back to the snippet while loading / on a presign error. */}
+					{bodyQuery.isLoading ? (
+						<p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+							Загрузка письма…
+						</p>
+					) : sanitizedHtml !== null ? (
+						<div
+							className="mail-html-body max-h-[60vh] overflow-auto break-words text-sm [&_a]:underline [&_img]:max-w-full"
+							// Sanitized via DOMPurify in sanitizeMailHtml; rendered in an
+							// isolated, clipped container so even valid markup stays bounded.
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: content is DOMPurify-sanitized
+							dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+						/>
+					) : (
+						<p className="whitespace-pre-wrap break-words text-sm">
+							{bodyQuery.data?.content?.trim() ||
+								message.snippet?.trim() ||
+								"Текст письма недоступен в предпросмотре."}
+						</p>
+					)}
 
 					{message.hasAttachments && (
 						<div className="mt-3 flex flex-col gap-1.5">
@@ -142,10 +178,15 @@ export function MailMessageCard({
 								</span>
 							) : (
 								attachments.map((att) => (
-									<span
+									<button
 										key={att.id}
-										className="inline-flex max-w-full items-center gap-1.5 rounded-md border bg-muted/40 px-2 py-1"
-										title={`${att.contentType} · хранится в Drive`}
+										type="button"
+										disabled={attachmentUrl.isPending}
+										onClick={() =>
+											attachmentUrl.mutate({ attachmentId: att.id })
+										}
+										className="inline-flex max-w-full items-center gap-1.5 rounded-md border bg-muted/40 px-2 py-1 text-left transition-colors hover:bg-muted disabled:opacity-60"
+										title={`${att.contentType} · скачать`}
 									>
 										<Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
 										<span className="truncate text-xs font-medium">
@@ -154,7 +195,8 @@ export function MailMessageCard({
 										<span className="shrink-0 text-[10px] text-muted-foreground">
 											{formatSize(att.sizeBytes)}
 										</span>
-									</span>
+										<Download className="size-3 shrink-0 text-muted-foreground" />
+									</button>
 								))
 							)}
 						</div>

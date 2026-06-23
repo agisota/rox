@@ -299,6 +299,39 @@ describe("mail.send", () => {
 		// Outbound comms rows carry NO external_id (so they never collide with an
 		// inbound RFC Message-ID on the global unique).
 		expect(commsEmit?.externalId).toBeNull();
+
+		// FIX 1: the SENDER (mailbox owner) is inserted as a comms_participant so the
+		// outbound thread is participant-scoped visible + SSE-forwardable. Identified
+		// by a row carrying `role` + the author's userId (no transport column).
+		const participantInsert = state.inserted.find(
+			(i) =>
+				i.values[0]?.role === "member" &&
+				i.values[0]?.userId === "user-1" &&
+				!("transport" in (i.values[0] ?? {})),
+		)?.values;
+		expect(participantInsert).toBeDefined();
+		expect(participantInsert?.[0]?.userId).toBe("user-1");
+	});
+
+	test("FIX 1: an internal rox recipient is added as a thread participant", async () => {
+		setMailSendFnForTest(async () => ({ id: "resend-evt-x" }));
+		state.selectQueue = [
+			[{ n: 0 }], // rate-cap count
+			[{ id: "addr-1", address: "mark@rox.one", status: "active" }], // primary
+			[], // emitOutbound: thread by dedup → none → create
+			[{ userId: "user-bob" }], // resolveRoxRecipientUserIds → internal rox user
+		];
+		state.insertReturning = [{ id: "out-msg-1" }];
+		const caller = callerFor("org-1");
+		await caller.mail.send({ to: ["bob@rox.one"], body: "hi bob" });
+
+		// Both the sender (user-1) and the resolved internal recipient (user-bob)
+		// become participants, so the conversation surfaces for both parties.
+		const participantRows = state.inserted
+			.filter((i) => i.values[0]?.role === "member")
+			.flatMap((i) => i.values.map((v) => v.userId));
+		expect(participantRows).toContain("user-1");
+		expect(participantRows).toContain("user-bob");
 	});
 
 	test("reply derives References server-side from the parent and bumps message_count", async () => {

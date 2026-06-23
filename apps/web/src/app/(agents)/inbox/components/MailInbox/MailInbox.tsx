@@ -12,15 +12,25 @@ import { MailComposer } from "./MailComposer";
 import { MailThreadList } from "./MailThreadList";
 import { MailThreadView } from "./MailThreadView";
 
+export interface MailInboxProps {
+	/** The open mail thread id (controlled by the parent inbox). */
+	activeThreadId: string | null;
+	/** Open/close a mail thread. */
+	onSelect: (threadId: string | null) => void;
+}
+
 /**
  * The email surface inside the unified inbox: a left thread list + a right thread
  * view over the caller's `<handle>@rox.one` mailbox, plus a modal composer for a
  * brand-new email. Mirrors the chat `InboxScreen` split-pane so the two
  * transports feel like one inbox. On mobile the list collapses when a thread is
  * open (single-column drill-in).
+ *
+ * The open-thread selection is lifted to the parent `InboxScreen` so the live
+ * SSE stream can refresh the open mail thread (`mail.getThread`) on an
+ * email-transport event (FIX 3).
  */
-export function MailInbox() {
-	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+export function MailInbox({ activeThreadId, onSelect }: MailInboxProps) {
 	const [composeOpen, setComposeOpen] = useState(false);
 
 	return (
@@ -32,7 +42,7 @@ export function MailInbox() {
 			>
 				<MailThreadList
 					activeThreadId={activeThreadId}
-					onSelect={setActiveThreadId}
+					onSelect={onSelect}
 					onCompose={() => setComposeOpen(true)}
 				/>
 			</aside>
@@ -45,7 +55,7 @@ export function MailInbox() {
 				{activeThreadId && (
 					<button
 						type="button"
-						onClick={() => setActiveThreadId(null)}
+						onClick={() => onSelect(null)}
 						className="border-b px-4 py-2 text-left text-xs text-muted-foreground md:hidden"
 					>
 						← Все письма

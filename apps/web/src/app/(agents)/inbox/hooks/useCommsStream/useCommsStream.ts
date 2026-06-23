@@ -5,21 +5,29 @@ import { useEffect, useRef } from "react";
 
 import { env } from "@/env";
 import { useTRPC } from "@/trpc/react";
+import {
+	applyCommsStreamEvent,
+	type CommsStreamEvent,
+	type InboxTransport,
+} from "./applyCommsStreamEvent";
 
 /**
  * Live unified-inbox delivery over SSE (comms realtime, hardening epic).
  *
  * Opens an `EventSource` against the api's `/api/comms/stream` and, on each
- * server-pushed `message` event, refreshes the relevant tRPC caches:
- *   - always invalidate `comms.listThreads` so the inbox reorders + the unread
- *     badge updates;
- *   - if the event targets the currently-open thread, invalidate
- *     `comms.getThread` so the new message appears in the open conversation.
+ * server-pushed `message` event, refreshes the relevant tRPC caches by transport
+ * (see {@link applyCommsStreamEvent}):
+ *   - ALWAYS invalidate `comms.listThreads` for an in-app event (chat inbox order
+ *     + unread badge); an in-app event on the open chat thread also invalidates
+ *     `comms.getThread`;
+ *   - an `email`-transport event invalidates `mail.listThreads` (and
+ *     `mail.getThread` for the open mail thread) — the Mail tab reads `mail.*`,
+ *     NOT `comms.*`, so without this it would never live-update (FIX 3).
  *
- * Cache-first (AGENTS.md #9): we INVALIDATE (which refetches in the background
- * while existing rows stay rendered) rather than writing optimistic rows — the
- * SSE payload is intentionally body-less, so the authoritative message comes from
- * the refetch. Existing data is never blanked.
+ * Cache-first (AGENTS.md #9): we INVALIDATE (refetch in the background while
+ * existing rows stay rendered) rather than writing optimistic rows — the SSE
+ * payload is intentionally body-less, so the authoritative message comes from the
+ * refetch. Existing data is never blanked.
  *
  * The server gate (`/api/comms/stream`) only forwards events for threads the
  * caller participates in, so a pushed event is already known to be in-scope; the
@@ -33,26 +41,30 @@ import { useTRPC } from "@/trpc/react";
  * existing refetch/poll path for now — this slice wires web only.
  */
 
-interface CommsStreamEvent {
-	organizationId: string;
-	threadId: string;
-	messageId: string;
-	transport: string;
-	authorUserId: string | null;
-	at: number;
+export interface UseCommsStreamArgs {
+	/** The open thread id for the active tab, or `null` when none is open. */
+	openThreadId: string | null;
+	/** The active inbox tab. */
+	transport: InboxTransport;
 }
 
 const MAX_BACKOFF_MS = 30_000;
 const BASE_BACKOFF_MS = 1_000;
 
-export function useCommsStream(openThreadId: string | null): void {
+export function useCommsStream({
+	openThreadId,
+	transport,
+}: UseCommsStreamArgs): void {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-	// Keep the latest open thread id readable inside the long-lived SSE handler
-	// without re-opening the stream every time the selection changes.
-	const openThreadIdRef = useRef<string | null>(openThreadId);
-	openThreadIdRef.current = openThreadId;
+	// Keep the latest open thread id + active tab readable inside the long-lived
+	// SSE handler without re-opening the stream every time the selection changes.
+	const ctxRef = useRef<{
+		openThreadId: string | null;
+		transport: InboxTransport;
+	}>({ openThreadId, transport });
+	ctxRef.current = { openThreadId, transport };
 
 	useEffect(() => {
 		let source: EventSource | null = null;
@@ -71,19 +83,19 @@ export function useCommsStream(openThreadId: string | null): void {
 				return;
 			}
 
-			// Inbox list always refreshes (ordering + unread badge).
-			void queryClient.invalidateQueries({
-				queryKey: trpc.comms.listThreads.queryKey({}),
-			});
-
-			// The open conversation refreshes only when the event targets it.
-			if (event.threadId && event.threadId === openThreadIdRef.current) {
-				void queryClient.invalidateQueries({
-					queryKey: trpc.comms.getThread.queryKey({
-						threadId: event.threadId,
-					}),
-				});
-			}
+			applyCommsStreamEvent(
+				queryClient,
+				{
+					commsListThreads: () => trpc.comms.listThreads.queryKey({}),
+					commsGetThread: ({ threadId }) =>
+						trpc.comms.getThread.queryKey({ threadId }),
+					mailListThreads: () => trpc.mail.listThreads.queryKey({}),
+					mailGetThread: ({ threadId }) =>
+						trpc.mail.getThread.queryKey({ threadId }),
+				},
+				event,
+				ctxRef.current,
+			);
 		};
 
 		const connect = () => {

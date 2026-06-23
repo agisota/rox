@@ -277,23 +277,56 @@ export function createCommsPorts(
 			},
 
 			async createThread({ subject, dedupKey, participants }) {
-				const [thread] = await db
+				// FIX 2: the SELECT-then-INSERT find-or-create the router runs has no
+				// unique backstop without this. The `comms_threads_org_dedup_uniq`
+				// partial unique lets a concurrent caller racing the same dedup key
+				// collapse on conflict; we then re-select the winner instead of
+				// throwing / forking a duplicate thread. A null dedup key is never
+				// constrained (partial index) so it always inserts fresh.
+				const [inserted] = await db
 					.insert(commsThreads)
 					.values({ organizationId, subject, dedupKey })
+					.onConflictDoNothing({
+						target: [commsThreads.organizationId, commsThreads.dedupKey],
+					})
 					.returning();
+
+				let thread = inserted;
 				if (!thread) {
-					throw new Error("Failed to create comms thread");
+					if (!dedupKey) {
+						throw new Error("Failed to create comms thread");
+					}
+					const [winner] = await db
+						.select()
+						.from(commsThreads)
+						.where(
+							and(
+								eq(commsThreads.organizationId, organizationId),
+								eq(commsThreads.dedupKey, dedupKey),
+							),
+						)
+						.limit(1);
+					if (!winner) {
+						throw new Error("Failed to create comms thread");
+					}
+					thread = winner;
 				}
+
 				if (participants.length > 0) {
-					await db.insert(commsParticipants).values(
-						participants.map((p) => ({
-							organizationId,
-							threadId: thread.id,
-							userId: p.userId,
-							contactEntityId: p.contactEntityId,
-							role: p.role,
-						})),
-					);
+					await db
+						.insert(commsParticipants)
+						.values(
+							participants.map((p) => ({
+								organizationId,
+								threadId: thread.id,
+								userId: p.userId,
+								contactEntityId: p.contactEntityId,
+								role: p.role,
+							})),
+						)
+						// On a lost create race the participants may already exist; keep
+						// the add idempotent on the (thread, user) partial unique.
+						.onConflictDoNothing();
 				}
 				return toThread(thread);
 			},

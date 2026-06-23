@@ -28,11 +28,12 @@ export function InboxScreen() {
 	const [transport, setTransport] = useState<InboxTransport>("chat");
 	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
-	// Live in-app delivery: keep one SSE connection open for the comms inbox and
-	// refresh the open thread when it receives a new message. Passing `null` while
-	// on the mail tab still streams (list invalidation is cheap) but only the chat
-	// thread view reacts to the open-thread refresh.
-	useCommsStream(transport === "chat" ? activeThreadId : null);
+	// Live delivery: keep one SSE connection open for the unified inbox. A chat
+	// (transport=inapp) event refreshes comms.*; an email event refreshes mail.*
+	// (FIX 3) — the Mail tab reads mail.listThreads/getThread, not comms.*, so it
+	// would never live-update otherwise. The open-thread id is the active thread
+	// for whichever transport tab is showing.
+	useCommsStream({ openThreadId: activeThreadId, transport });
 
 	return (
 		<div className="mx-auto flex h-[calc(100dvh-3rem)] w-full max-w-6xl flex-col">
@@ -56,7 +57,10 @@ export function InboxScreen() {
 
 			{transport === "mail" ? (
 				<div className="min-h-0 flex-1">
-					<MailInbox />
+					<MailInbox
+						activeThreadId={activeThreadId}
+						onSelect={setActiveThreadId}
+					/>
 				</div>
 			) : (
 				<div className="flex min-h-0 flex-1">

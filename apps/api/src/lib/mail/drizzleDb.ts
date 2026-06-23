@@ -17,6 +17,7 @@ import { db } from "@rox/db/client";
 import {
 	commsAddresses,
 	commsMessages,
+	commsParticipants,
 	commsThreads,
 	mailAddresses,
 	mailAttachments,
@@ -28,6 +29,96 @@ import { and, desc, eq, or, sql } from "drizzle-orm";
 import type { MailIngestDb } from "./ingest";
 
 type AnyRow = Record<string, unknown>;
+
+/**
+ * Find-or-create the D1 thread for a mail dedup key (FIX 2). The
+ * `comms_threads_org_dedup_uniq` partial unique index is the backstop: a
+ * concurrent emit that slips past the SELECT collapses on the INSERT
+ * (`onConflictDoNothing`) and a re-SELECT then resolves the winner's id — so two
+ * recipients racing the same conversation share ONE thread instead of forking.
+ * Mirrors the message-insert dedup pattern already used below.
+ */
+async function findOrCreateCommsThread(
+	db: typeof import("@rox/db/client").db,
+	args: { organizationId: string; dedupKey: string; subject: string | null },
+): Promise<string> {
+	const [existing] = await db
+		.select({ id: commsThreads.id })
+		.from(commsThreads)
+		.where(
+			and(
+				eq(commsThreads.organizationId, args.organizationId),
+				eq(commsThreads.dedupKey, args.dedupKey),
+			),
+		)
+		.limit(1);
+	if (existing) {
+		await db
+			.update(commsThreads)
+			.set({ lastMessageAt: new Date() })
+			.where(eq(commsThreads.id, existing.id));
+		return existing.id;
+	}
+
+	const [thread] = await db
+		.insert(commsThreads)
+		.values({
+			organizationId: args.organizationId,
+			subject: args.subject,
+			dedupKey: args.dedupKey,
+			lastMessageAt: new Date(),
+		})
+		.onConflictDoNothing({
+			target: [commsThreads.organizationId, commsThreads.dedupKey],
+		})
+		.returning({ id: commsThreads.id });
+	if (thread) return thread.id;
+
+	// Lost the insert race — the concurrent winner's row now exists; re-select it.
+	const [winner] = await db
+		.select({ id: commsThreads.id })
+		.from(commsThreads)
+		.where(
+			and(
+				eq(commsThreads.organizationId, args.organizationId),
+				eq(commsThreads.dedupKey, args.dedupKey),
+			),
+		)
+		.limit(1);
+	if (!winner) throw new Error("Failed to find-or-create comms thread");
+	return winner.id;
+}
+
+/**
+ * Insert `comms_participants` rows for the given rox users (FIX 1), de-duped and
+ * idempotent on the `(thread_id, user_id)` partial unique. Null/blank ids are
+ * skipped (an external sender is NOT a rox participant — it resolves to a contact
+ * node elsewhere). No-op when there are no resolvable users.
+ */
+async function ensureCommsParticipants(
+	db: typeof import("@rox/db/client").db,
+	args: {
+		organizationId: string;
+		threadId: string;
+		userIds: ReadonlyArray<string | null | undefined>;
+	},
+): Promise<void> {
+	const userIds = [
+		...new Set(args.userIds.filter((id): id is string => Boolean(id))),
+	];
+	if (userIds.length === 0) return;
+	await db
+		.insert(commsParticipants)
+		.values(
+			userIds.map((userId) => ({
+				organizationId: args.organizationId,
+				threadId: args.threadId,
+				userId,
+				role: "member" as const,
+			})),
+		)
+		.onConflictDoNothing();
+}
 
 /** Build the production {@link MailIngestDb} bound to the live Drizzle client. */
 export function createMailIngestDb(): MailIngestDb {
@@ -177,37 +268,23 @@ export function createMailIngestDb(): MailIngestDb {
 				.limit(1);
 			const authorUserId = senderAddr?.userId ?? null;
 
-			const [existing] = await db
-				.select({ id: commsThreads.id })
-				.from(commsThreads)
-				.where(
-					and(
-						eq(commsThreads.organizationId, args.organizationId),
-						eq(commsThreads.dedupKey, dedupKey),
-					),
-				)
-				.limit(1);
+			const threadId = await findOrCreateCommsThread(db, {
+				organizationId: args.organizationId,
+				dedupKey,
+				subject: args.subject,
+			});
 
-			let threadId: string;
-			if (existing) {
-				threadId = existing.id;
-				await db
-					.update(commsThreads)
-					.set({ lastMessageAt: new Date() })
-					.where(eq(commsThreads.id, threadId));
-			} else {
-				const [thread] = await db
-					.insert(commsThreads)
-					.values({
-						organizationId: args.organizationId,
-						subject: args.subject,
-						dedupKey,
-						lastMessageAt: new Date(),
-					})
-					.returning({ id: commsThreads.id });
-				if (!thread) throw new Error("Failed to create comms thread");
-				threadId = thread.id;
-			}
+			// FIX 1: a pure-email thread (external sender, no pre-existing in-app DM)
+			// must have its mailbox OWNER as a comms_participant — otherwise the SSE
+			// leak-gate (`isThreadParticipant`) drops every email event and the
+			// participant-scoped comms.listThreads/getThread never surface it. The
+			// resolvable rox counterpart (an internal `@rox.one` sender) is added too
+			// so an internal email shows for BOTH parties. Idempotent on (thread,user).
+			await ensureCommsParticipants(db, {
+				organizationId: args.organizationId,
+				threadId,
+				userIds: [args.ownerUserId, authorUserId],
+			});
 
 			// M1: guard the GLOBAL (transport, external_id) unique — a concurrent
 			// second-recipient emit that slipped past the read-check above becomes a
@@ -239,7 +316,13 @@ export function createMailIngestDb(): MailIngestDb {
 					messageId: inserted.id,
 					transport: "email",
 					authorUserId,
-					participantUserIds: [args.ownerUserId],
+					participantUserIds: [
+						...new Set(
+							[args.ownerUserId, authorUserId].filter((id): id is string =>
+								Boolean(id),
+							),
+						),
+					],
 				});
 			}
 		},
