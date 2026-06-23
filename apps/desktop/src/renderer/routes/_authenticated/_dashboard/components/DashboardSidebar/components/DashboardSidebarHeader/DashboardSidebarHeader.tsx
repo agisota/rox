@@ -300,7 +300,9 @@ export function DashboardSidebarHeader({
 						align="start"
 						onCloseAutoFocus={(event) => event.preventDefault()}
 					>
-						<DropdownMenuItem onSelect={() => openNewProject()}>
+						<DropdownMenuItem
+							onSelect={() => openNewProject({ intent: "open" })}
+						>
 							<HiMiniPlus className="size-4" />
 							Клонировать из URL
 						</DropdownMenuItem>
@@ -308,7 +310,9 @@ export function DashboardSidebarHeader({
 							<LuFolderInput className="size-4" />
 							Открыть из папки
 						</DropdownMenuItem>
-						<DropdownMenuItem onSelect={() => openTemplateGallery()}>
+						<DropdownMenuItem
+							onSelect={() => openTemplateGallery({ intent: "open" })}
+						>
 							<LuLayoutTemplate className="size-4" />
 							Начать с шаблона
 						</DropdownMenuItem>
@@ -472,7 +476,9 @@ export function DashboardSidebarHeader({
 						align="end"
 						onCloseAutoFocus={(event) => event.preventDefault()}
 					>
-						<DropdownMenuItem onSelect={() => openNewProject()}>
+						<DropdownMenuItem
+							onSelect={() => openNewProject({ intent: "open" })}
+						>
 							<HiMiniPlus className="size-4" />
 							Клонировать из URL
 						</DropdownMenuItem>
@@ -480,7 +486,9 @@ export function DashboardSidebarHeader({
 							<LuFolderInput className="size-4" />
 							Открыть из папки
 						</DropdownMenuItem>
-						<DropdownMenuItem onSelect={() => openTemplateGallery()}>
+						<DropdownMenuItem
+							onSelect={() => openTemplateGallery({ intent: "open" })}
+						>
 							<LuLayoutTemplate className="size-4" />
 							Начать с шаблона
 						</DropdownMenuItem>

@@ -28,6 +28,8 @@ export default ({ config }: ConfigContext) => ({
 		bundleIdentifier: "sh.rox.mobile",
 		infoPlist: {
 			ITSAppUsesNonExemptEncryption: false,
+			NSMicrophoneUsageDescription:
+				"Rox uses the microphone to dictate task titles and descriptions.",
 		},
 	},
 	android: {
@@ -37,12 +39,23 @@ export default ({ config }: ConfigContext) => ({
 		},
 		package: "sh.rox.mobile",
 		predictiveBackGestureEnabled: false,
+		permissions: ["android.permission.RECORD_AUDIO"],
 	},
 	web: {
 		favicon: "./assets/favicon.png",
 		bundler: "metro",
 	},
-	plugins: ["expo-router", "expo-localization"],
+	plugins: [
+		"expo-router",
+		"expo-localization",
+		[
+			"expo-audio",
+			{
+				microphonePermission:
+					"Rox uses the microphone to dictate task titles and descriptions.",
+			},
+		],
+	],
 	extra: {
 		router: {},
 		eas: {

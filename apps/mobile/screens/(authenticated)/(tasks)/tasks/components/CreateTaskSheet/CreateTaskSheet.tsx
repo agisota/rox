@@ -12,6 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
+import { MicButton } from "@/components/voice/MicButton";
+import { apiClient } from "@/lib/trpc/client";
+import type { MobileRecording } from "@/lib/voice/useDictation";
 import { useCreateTask } from "./useCreateTask";
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
@@ -32,6 +35,7 @@ export function CreateTaskSheet({ open, onOpenChange }: CreateTaskSheetProps) {
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [priority, setPriority] = useState<TaskPriority>("none");
+	const [transcribing, setTranscribing] = useState(false);
 
 	const reset = () => {
 		setTitle("");
@@ -52,6 +56,25 @@ export function CreateTaskSheet({ open, onOpenChange }: CreateTaskSheetProps) {
 		}
 	};
 
+	const handleDictation = async (recording: MobileRecording) => {
+		setTranscribing(true);
+		try {
+			const result = await apiClient.voice.transcribe.mutate({
+				audioBase64: recording.audioBase64,
+				mimeType: recording.mimeType,
+				durationMs: recording.durationMs,
+			});
+			const text = result.processed?.ru || result.rawText;
+			if (text) {
+				setDescription((prev) => (prev ? `${prev} ${text}` : text));
+			}
+		} catch {
+			// Keep the sheet usable on failure; the user can retry or type.
+		} finally {
+			setTranscribing(false);
+		}
+	};
+
 	const canCreate = title.trim().length > 0 && !isSubmitting;
 
 	return (
@@ -68,11 +91,25 @@ export function CreateTaskSheet({ open, onOpenChange }: CreateTaskSheetProps) {
 						onChangeText={setTitle}
 						autoFocus
 					/>
-					<Textarea
-						placeholder="Description (optional)"
-						value={description}
-						onChangeText={setDescription}
-					/>
+					<View className="gap-1.5">
+						<View className="flex-row items-center justify-between">
+							<Text className="text-sm text-muted-foreground">Description</Text>
+							<MicButton
+								onComplete={handleDictation}
+								transcribing={transcribing}
+							/>
+						</View>
+						<Textarea
+							placeholder="Description (optional)"
+							value={description}
+							onChangeText={setDescription}
+						/>
+						{transcribing ? (
+							<Text className="text-xs text-muted-foreground">
+								Расшифровка…
+							</Text>
+						) : null}
+					</View>
 
 					<View className="gap-1.5">
 						<Text className="text-sm text-muted-foreground">Priority</Text>

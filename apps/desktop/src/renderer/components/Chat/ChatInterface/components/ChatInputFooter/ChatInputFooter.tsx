@@ -8,6 +8,8 @@ import {
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 import { toast } from "@rox/ui/sonner";
+import { blobToBase64, type Recording } from "@rox/ui/voice";
+import { useQuery } from "@tanstack/react-query";
 import type { ChatStatus, FileUIPart } from "ai";
 import type React from "react";
 import type { ReactNode } from "react";
@@ -15,8 +17,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusPromptOnPane } from "renderer/components/Chat/ChatInterface/hooks/useFocusPromptOnPane";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { blobToBase64 } from "renderer/lib/voice/audioToBase64";
-import type { Recording } from "renderer/lib/voice/useDictation";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import type { SlashCommand } from "../../hooks/useSlashCommands";
 import type { ModelOption, PermissionMode } from "../../types";
@@ -115,6 +115,17 @@ export function ChatInputFooter({
 	const removeLinkedIssue = useCallback((slug: string) => {
 		setLinkedIssues((prev) => prev.filter((issue) => issue.slug !== slug));
 	}, []);
+
+	// Server-side Whisper availability. With a shared server GROQ_API_KEY this is
+	// always true; the gate just keeps a dead mic button from appearing usable
+	// if the key is ever absent. apiClient (cloud AppRouter) is the same client
+	// already used for voice.transcribe.
+	const { data: voiceConfig } = useQuery({
+		queryKey: ["voice", "isConfigured"],
+		queryFn: () => apiClient.voice.isConfigured.query(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const dictationConfigured = voiceConfig?.configured ?? false;
 
 	const trpcUtils = chatServiceTrpc.useUtils();
 	const electronUtils = electronTrpc.useUtils();
@@ -279,6 +290,7 @@ export function ChatInputFooter({
 									onStop={onStop}
 									onDictationComplete={handleDictationComplete}
 									dictationTranscribing={transcribing}
+									dictationConfigured={dictationConfigured}
 								/>
 							</PromptInput>
 						</div>

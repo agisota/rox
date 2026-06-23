@@ -6,6 +6,7 @@ import {
 	PromptInputAttachments,
 	PromptInputFooter,
 	PromptInputHeader,
+	type PromptInputMessage,
 	PromptInputSubmit,
 	PromptInputTextarea,
 	PromptInputTools,
@@ -26,6 +27,16 @@ type PreviewPromptComposerProps = {
 	header?: ReactNode;
 	message?: string;
 	messageClassName?: string;
+	/**
+	 * When provided, the composer is interactive: textarea + submit are enabled
+	 * and submitting calls this. When omitted, the composer stays a read-only
+	 * preview (the default for the agent-session prototype).
+	 */
+	onSubmit?: (message: PromptInputMessage) => void;
+	/** Extra footer controls rendered left of submit (e.g. a mic button). */
+	footerExtras?: ReactNode;
+	/** Submit busy/disabled state for the interactive mode. */
+	submitDisabled?: boolean;
 };
 
 export function PreviewPromptComposer({
@@ -38,13 +49,17 @@ export function PreviewPromptComposer({
 	header,
 	message = "Веб-интерфейс агентов пока доступен только для просмотра.",
 	messageClassName,
+	onSubmit,
+	footerExtras,
+	submitDisabled,
 }: PreviewPromptComposerProps) {
-	const handleSubmit = useCallback(() => {}, []);
+	const interactive = typeof onSubmit === "function";
+	const noop = useCallback(() => {}, []);
 
 	return (
 		<div className={cn(containerClassName)}>
 			<PromptInput
-				onSubmit={handleSubmit}
+				onSubmit={onSubmit ?? noop}
 				className={promptInputClassName}
 				multiple
 				maxFiles={MAX_FILES}
@@ -55,7 +70,7 @@ export function PreviewPromptComposer({
 				</PromptInputAttachments>
 				{header ? <PromptInputHeader>{header}</PromptInputHeader> : null}
 				<PromptInputTextarea
-					disabled
+					disabled={!interactive}
 					placeholder={placeholder}
 					className="min-h-10"
 				/>
@@ -64,9 +79,10 @@ export function PreviewPromptComposer({
 						{footerTools}
 					</PromptInputTools>
 					<div className="flex items-center gap-2">
-						<PlusMenu disabled />
+						<PlusMenu disabled={!interactive} />
+						{footerExtras}
 						<PromptInputSubmit
-							disabled
+							disabled={!interactive || submitDisabled}
 							className="size-[23px] rounded-full border border-transparent bg-foreground/10 p-[5px] shadow-none hover:bg-foreground/20"
 						>
 							<ArrowUpIcon className="size-3.5 text-muted-foreground" />
@@ -75,7 +91,7 @@ export function PreviewPromptComposer({
 				</PromptInputFooter>
 			</PromptInput>
 			{afterComposer}
-			<p className={messageClassName}>{message}</p>
+			{message ? <p className={messageClassName}>{message}</p> : null}
 		</div>
 	);
 }

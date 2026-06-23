@@ -22,7 +22,10 @@ import { PROJECT_TEMPLATES, type ProjectTemplate } from "./templates";
 interface TemplateGalleryModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onCreated: (result: { projectId: string }) => void;
+	onCreated: (result: {
+		projectId: string;
+		mainWorkspaceId: string | null;
+	}) => void;
 	onError?: (message: string) => void;
 }
 
@@ -77,6 +80,7 @@ export function TemplateGalleryModal({
 		}
 		setCloningId(template.id);
 		let createdProjectId: string | null = null;
+		let createdMainWorkspaceId: string | null = null;
 		try {
 			if (isV2CloudEnabled) {
 				if (!activeHostUrl) {
@@ -97,6 +101,7 @@ export function TemplateGalleryModal({
 				});
 				finalizeSetup(activeHostUrl, result);
 				createdProjectId = result.projectId;
+				createdMainWorkspaceId = result.mainWorkspaceId;
 			} else if (template.repo) {
 				createdProjectId = await createV1Project.createFromTemplate({
 					repoUrl: template.repo,
@@ -110,7 +115,11 @@ export function TemplateGalleryModal({
 		} finally {
 			setCloningId(null);
 		}
-		if (createdProjectId) onCreated({ projectId: createdProjectId });
+		if (createdProjectId)
+			onCreated({
+				projectId: createdProjectId,
+				mainWorkspaceId: createdMainWorkspaceId,
+			});
 	};
 
 	const handleOpenChange = (next: boolean) => {

@@ -5,16 +5,22 @@ import {
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 import { ReasoningLevelSlider } from "@rox/ui/motion";
+import {
+	MicButton,
+	type MicButtonControls,
+	type Recording,
+} from "@rox/ui/voice";
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";
-import type { Recording } from "renderer/lib/voice/useDictation";
+import { useCallback, useRef } from "react";
+import { useHotkey } from "renderer/hotkeys";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { PILL_BUTTON_CLASS } from "../../../../styles";
 import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";
 import { PermissionModePicker } from "../../../PermissionModePicker";
 import { PlusMenu } from "../../../PlusMenu";
-import { MicButton } from "../MicButton";
 
 interface ChatComposerControlsProps {
 	availableModels: ModelOption[];
@@ -32,6 +38,8 @@ interface ChatComposerControlsProps {
 	onStop: (event: React.MouseEvent) => void;
 	onDictationComplete?: (recording: Recording, locked: boolean) => void;
 	dictationTranscribing?: boolean;
+	/** Server-side Whisper availability (voice.isConfigured). Off → mic disabled. */
+	dictationConfigured?: boolean;
 }
 
 export function ChatComposerControls({
@@ -50,7 +58,31 @@ export function ChatComposerControls({
 	onStop,
 	onDictationComplete,
 	dictationTranscribing,
+	dictationConfigured,
 }: ChatComposerControlsProps) {
+	// Plain dictation can be turned off in Settings → Voice. Cache-first: only
+	// treat as off once we've explicitly read `false` (undefined = loading → keep
+	// the default-on mic so it doesn't flicker out on mount). The shared MicButton
+	// stays IPC-free, so the toggle is read here at the desktop edge and folded
+	// into `disabled` (and the hotkey gate) below.
+	const dictationEnabled =
+		electronTrpc.settings.getDictationEnabled.useQuery().data;
+	const dictationOff = dictationEnabled === false;
+
+	// Desktop keyboard shortcut for dictation. The shared MicButton is hotkey-free;
+	// it hands us a stable toggle via onReady and we bind DICTATE (Ctrl+Shift+D) to
+	// it here, where the renderer hotkey system lives. Web mounts MicButton with no
+	// onReady, so it has no shortcut — by design. Gated off when the user disabled
+	// dictation in Settings → Voice.
+	const micControlsRef = useRef<MicButtonControls | null>(null);
+	const handleMicReady = useCallback((controls: MicButtonControls | null) => {
+		micControlsRef.current = controls;
+	}, []);
+	useHotkey("DICTATE", () => {
+		if (dictationOff) return;
+		micControlsRef.current?.toggle();
+	});
+
 	return (
 		<PromptInputFooter>
 			<PromptInputTools className="gap-1.5">
@@ -73,10 +105,17 @@ export function ChatComposerControls({
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />
-				<MicButton
-					onComplete={onDictationComplete}
-					transcribing={dictationTranscribing}
-				/>
+				{/* Hidden (not merely disabled) when the user turns dictation off in
+				    Settings → Voice — matches the prior desktop behavior. The
+				    voice.isConfigured gate stays on `disabled`. */}
+				{!dictationOff && (
+					<MicButton
+						onComplete={onDictationComplete}
+						transcribing={dictationTranscribing}
+						disabled={!dictationConfigured}
+						onReady={handleMicReady}
+					/>
+				)}
 				<PromptInputSubmit
 					className="size-[23px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
 					status={submitStatus}

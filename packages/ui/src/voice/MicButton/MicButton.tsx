@@ -1,19 +1,33 @@
 import { cn } from "@rox/ui/utils";
 import { Loader2Icon, MicIcon } from "lucide-react";
 import type React from "react";
-import { useRef } from "react";
-import { useHotkey } from "renderer/hotkeys";
-import { electronTrpc } from "renderer/lib/electron-trpc";
-import { type Recording, useDictation } from "renderer/lib/voice/useDictation";
+import { useEffect, useRef } from "react";
+import { canStartDictation } from "../canStartDictation";
+import { type Recording, useDictation } from "../useDictation";
 import { WaveformOverlay } from "./WaveformOverlay";
 
 /** Upward drag (px) past which a held recording locks into toggle mode. */
 const LOCK_DRAG_THRESHOLD = 44;
 
-interface MicButtonProps {
+/**
+ * Imperative controls a host (e.g. a desktop hotkey) can drive. `toggle` mirrors
+ * the keyboard behavior the desktop used to own internally: start+lock when idle,
+ * stop when active — but only if dictation may currently start.
+ */
+export interface MicButtonControls {
+	toggle: () => void;
+}
+
+export interface MicButtonProps {
 	onComplete?: (recording: Recording, locked: boolean) => void;
 	transcribing?: boolean;
 	disabled?: boolean;
+	/**
+	 * Receives imperative controls once mounted (and `null` on unmount). The
+	 * desktop edge uses this to bind `useHotkey("DICTATE", controls.toggle)`
+	 * outside this package so @rox/ui stays free of renderer/hotkeys. Web omits it.
+	 */
+	onReady?: (controls: MicButtonControls | null) => void;
 }
 
 /**
@@ -21,36 +35,53 @@ interface MicButtonProps {
  *   - **push-to-talk**: press and hold to record, release to stop + send.
  *   - **toggle-lock**: press, drag up past a threshold to lock; release keeps
  *     recording; a later tap stops + sends.
+ *
+ * Platform-neutral: no hotkey/IPC imports. A keyboard shortcut is wired by the
+ * host via `onReady` (see desktop ChatComposerControls).
  */
 export function MicButton({
 	onComplete,
 	transcribing,
 	disabled,
+	onReady,
 }: MicButtonProps) {
 	const dictation = useDictation({ onComplete });
 	const pointerStartY = useRef<number | null>(null);
 
-	// Plain dictation can be turned off in Settings → Voice. Cache-first: only
-	// hide once we've explicitly read `false` (undefined = loading → keep the
-	// default-on button so it doesn't flicker out on mount).
-	const dictationEnabled =
-		electronTrpc.settings.getDictationEnabled.useQuery().data;
-	const dictationOff = dictationEnabled === false;
+	// Expose a stable toggle to the host (desktop binds it to the DICTATE hotkey:
+	// press to start+lock, press again to stop + insert). Kept in a ref so the
+	// identity handed to the host never changes while still seeing live state.
+	const dictationRef = useRef(dictation);
+	dictationRef.current = dictation;
+	const disabledRef = useRef(disabled);
+	disabledRef.current = disabled;
+	const transcribingRef = useRef(transcribing);
+	transcribingRef.current = transcribing;
 
-	// Keyboard shortcut toggles dictation in locked mode — press to start, press
-	// again to stop + insert. Modifiable in Settings → Keyboard. Disabled when
-	// the user has turned dictation off.
-	useHotkey("DICTATE", () => {
-		if (dictationOff || disabled || transcribing) return;
-		if (dictation.isActive) {
-			dictation.stop();
-		} else {
-			void dictation.start().then(() => dictation.lock());
-		}
+	const controlsRef = useRef<MicButtonControls>({
+		toggle: () => {
+			if (!canStartDictation(disabledRef.current, transcribingRef.current)) {
+				// Still allow stopping an in-progress (e.g. locked) recording.
+				if (dictationRef.current.isActive) dictationRef.current.stop();
+				return;
+			}
+			if (dictationRef.current.isActive) {
+				dictationRef.current.stop();
+			} else {
+				void dictationRef.current
+					.start()
+					.then(() => dictationRef.current.lock());
+			}
+		},
 	});
 
+	useEffect(() => {
+		onReady?.(controlsRef.current);
+		return () => onReady?.(null);
+	}, [onReady]);
+
 	const handlePointerDown = (e: React.PointerEvent) => {
-		if (disabled || transcribing) return;
+		if (!canStartDictation(disabled, transcribing)) return;
 		e.preventDefault();
 		// A tap while locked stops + sends.
 		if (dictation.isLocked) {
@@ -76,9 +107,6 @@ export function MicButton({
 		// PTT release stops + sends; a locked recording keeps going until tapped.
 		if (dictation.state === "recording") dictation.stop();
 	};
-
-	// Hidden entirely when dictation is turned off in Settings → Voice.
-	if (dictationOff) return null;
 
 	return (
 		<>

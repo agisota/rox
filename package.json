@@ -70,5 +70,6 @@
 		"sharp",
 		"utf-8-validate",
 		"workerd"
-	]
+	],
+	"dependencies": {}
 }
