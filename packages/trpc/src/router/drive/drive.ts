@@ -20,6 +20,7 @@
 
 import { db } from "@rox/db/client";
 import {
+	driveFileRefs,
 	driveFiles,
 	driveFolders,
 	driveShares,
@@ -30,13 +31,21 @@ import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { protectedProcedure, publicProcedure } from "../../trpc";
 import { hashSharePassword, verifySharePassword } from "./password";
-import { commitUpload, ensureQuota, releaseBytes } from "./quota";
 import {
+	commitUpload,
+	ensureQuota,
+	releaseBytes,
+	setOverageOptIn,
+} from "./quota";
+import { isBlockedMediaType, scanObject } from "./scan";
+import {
+	attachToMessageSchema,
 	confirmUploadSchema,
 	createFolderSchema,
 	createShareSchema,
 	deleteFileSchema,
 	deleteFolderSchema,
+	detachFromMessageSchema,
 	listFolderSchema,
 	moveFileSchema,
 	moveFolderSchema,
@@ -46,6 +55,7 @@ import {
 	requestUploadSchema,
 	resolveShareSchema,
 	revokeShareSchema,
+	setOverageOptInSchema,
 } from "./schema";
 import { driveStorageKey, getDriveStorage } from "./storage";
 import { generateShareToken } from "./token";
@@ -98,6 +108,17 @@ export const driveRouter = {
 	quota: protectedProcedure.query(async ({ ctx }) => {
 		return ensureQuota(ctx.session.user.id);
 	}),
+
+	/**
+	 * Opt in/out of billed overage (DQ2 soft-meter, finding D1). The ONLY writer
+	 * of `overage_opt_in`; without it the flag was stuck false and uploads
+	 * hard-blocked at the cap, violating the locked soft-meter decision.
+	 */
+	setOverageOptIn: protectedProcedure
+		.input(setOverageOptInSchema)
+		.mutation(async ({ ctx, input }) => {
+			return setOverageOptIn(ctx.session.user.id, input.optIn);
+		}),
 
 	// ---- folders ----------------------------------------------------------
 	listFolder: protectedProcedure
@@ -252,9 +273,33 @@ export const driveRouter = {
 			const userId = ctx.session.user.id;
 			const file = await getOwnedFile(userId, input.fileId);
 
-			// Hard delete the row. Only reclaim quota + delete the object when this
-			// was the last reference to that content (per-user dedup, DQ1): another
-			// non-trashed row with the same sha256 means the bytes are still used.
+			// Ref-aware delete (finding D4): if a chat/email/canvas attachment still
+			// points at this file via drive_file_refs, a hard object-delete would
+			// orphan a live attachment. Soft-trash instead — the row is hidden from
+			// the browser but the bytes + object survive until the ref is gone.
+			const [ref] = await db
+				.select({ id: driveFileRefs.id })
+				.from(driveFileRefs)
+				.where(eq(driveFileRefs.fileId, input.fileId))
+				.limit(1);
+
+			if (ref) {
+				if (file.trashedAt) {
+					return { ok: true as const, softTrashed: true as const };
+				}
+				await db
+					.update(driveFiles)
+					.set({ trashedAt: new Date() })
+					.where(
+						and(eq(driveFiles.id, input.fileId), eq(driveFiles.userId, userId)),
+					);
+				return { ok: true as const, softTrashed: true as const };
+			}
+
+			// No refs: hard delete the row. Only reclaim quota + delete the object
+			// when this was the last reference to that content (per-user dedup, DQ1):
+			// another non-trashed row with the same sha256 means the bytes are still
+			// used.
 			await db
 				.delete(driveFiles)
 				.where(
@@ -279,6 +324,57 @@ export const driveRouter = {
 					await storage.delete({ key: file.storageKey });
 				}
 			}
+			return { ok: true as const, softTrashed: false as const };
+		}),
+
+	// ---- attachment bridge (drive_file_refs, finding D4) ------------------
+	/**
+	 * Record that a Drive file is now referenced by a chat/email/canvas message.
+	 * Idempotent (unique on (source_kind, source_id, file_id)); a duplicate ref
+	 * is a no-op. Owning the file is required. Once a ref exists, `deleteFile`
+	 * soft-trashes rather than hard-deleting so the attachment never dangles.
+	 */
+	attachToMessage: protectedProcedure
+		.input(attachToMessageSchema)
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.session.user.id;
+			await getOwnedFile(userId, input.fileId);
+			await db
+				.insert(driveFileRefs)
+				.values({
+					fileId: input.fileId,
+					sourceKind: input.sourceKind,
+					sourceId: input.sourceId,
+					organizationId: input.organizationId ?? null,
+				})
+				.onConflictDoNothing({
+					target: [
+						driveFileRefs.sourceKind,
+						driveFileRefs.sourceId,
+						driveFileRefs.fileId,
+					],
+				});
+			return { ok: true as const };
+		}),
+
+	/**
+	 * Drop a ref when its source message is deleted. Owning the file is required.
+	 * After the last ref is gone a subsequent `deleteFile` hard-deletes normally.
+	 */
+	detachFromMessage: protectedProcedure
+		.input(detachFromMessageSchema)
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.session.user.id;
+			await getOwnedFile(userId, input.fileId);
+			await db
+				.delete(driveFileRefs)
+				.where(
+					and(
+						eq(driveFileRefs.fileId, input.fileId),
+						eq(driveFileRefs.sourceKind, input.sourceKind),
+						eq(driveFileRefs.sourceId, input.sourceId),
+					),
+				);
 			return { ok: true as const };
 		}),
 
@@ -288,6 +384,15 @@ export const driveRouter = {
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
 			const storage = requireStorage();
+
+			// MIME allow-list (finding D5): refuse the obvious executable/script
+			// payloads before any presigned PUT is issued.
+			if (isBlockedMediaType(input.mediaType)) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `File type "${input.mediaType}" is not allowed.`,
+				});
+			}
 
 			if (input.folderId) {
 				await getOwnedFolder(userId, input.folderId);
@@ -329,7 +434,12 @@ export const driveRouter = {
 				};
 			}
 
-			const [row] = await db
+			// Race-safe insert (finding D7): two concurrent identical uploads would
+			// both pass the dedup check above, then collide on the
+			// (user_id, sha256, version) unique index → a 500. ON CONFLICT DO NOTHING
+			// RETURNING makes the loser return no row; we then fall back to the
+			// existing row so both callers get a valid fileId.
+			const [inserted] = await db
 				.insert(driveFiles)
 				.values({
 					userId,
@@ -341,7 +451,25 @@ export const driveRouter = {
 					storageKey,
 					status: "pending",
 				})
+				.onConflictDoNothing({
+					target: [driveFiles.userId, driveFiles.sha256, driveFiles.version],
+				})
 				.returning();
+
+			let row = inserted;
+			if (!row) {
+				const [conflicting] = await db
+					.select()
+					.from(driveFiles)
+					.where(
+						and(
+							eq(driveFiles.userId, userId),
+							eq(driveFiles.sha256, input.sha256),
+						),
+					)
+					.limit(1);
+				row = conflicting;
+			}
 
 			const presigned = await storage.presignPut({
 				key: storageKey,
@@ -379,24 +507,69 @@ export const driveRouter = {
 				});
 			}
 
+			// Atomic confirm gate (finding D3): exactly one concurrent/retried
+			// confirm may transition pending→scanning. The conditional UPDATE returns
+			// the row only to the winner; the loser gets no row and commits nothing,
+			// so quota is never double-counted.
+			const [claimed] = await db
+				.update(driveFiles)
+				.set({ status: "scanning" })
+				.where(
+					and(
+						eq(driveFiles.id, file.id),
+						eq(driveFiles.userId, userId),
+						eq(driveFiles.status, "pending"),
+					),
+				)
+				.returning();
+
+			if (!claimed) {
+				// Lost the race: another confirm already claimed this file. Report the
+				// current state without committing quota a second time.
+				const current = await getOwnedFile(userId, file.id);
+				return {
+					ok: true as const,
+					alreadyConfirmed: true as const,
+					file: current,
+				};
+			}
+
 			// Atomic quota commit (race-safe / soft-meter per DQ2).
 			const commit = await commitUpload(userId, Number(file.sizeBytes));
 			if (!commit.committed) {
+				// Roll the claim back so the bytes can be retried after freeing space.
+				await db
+					.update(driveFiles)
+					.set({ status: "pending" })
+					.where(
+						and(eq(driveFiles.id, file.id), eq(driveFiles.userId, userId)),
+					);
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Upload would exceed your storage quota.",
 				});
 			}
 
+			// Async safety scan (finding D5). The file is `scanning` until a verdict
+			// lands; only `clean` makes it downloadable/shareable (the gates in
+			// requestDownload/resolveShare enforce this). A quarantined file stays
+			// undownloadable. The stub scanner returns clean; the gate is real.
+			const scan = await scanObject({
+				storageKey: file.storageKey,
+				sizeBytes: Number(file.sizeBytes),
+				mediaType: file.mediaType,
+			});
+
 			const [row] = await db
 				.update(driveFiles)
-				.set({ status: "clean" })
+				.set({ status: scan.verdict, scanResult: scan.result })
 				.where(and(eq(driveFiles.id, file.id), eq(driveFiles.userId, userId)))
 				.returning();
 			return {
 				ok: true as const,
 				alreadyConfirmed: false as const,
 				file: row,
+				status: scan.verdict,
 				overageBytes: commit.overageBytes,
 			};
 		}),
@@ -407,6 +580,17 @@ export const driveRouter = {
 			const userId = ctx.session.user.id;
 			const storage = requireStorage();
 			const file = await getOwnedFile(userId, input.fileId);
+			// Scan gate (finding D5): only a clean file is downloadable. A pending /
+			// scanning / quarantined file is withheld.
+			if (file.status !== "clean") {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						file.status === "quarantined"
+							? "This file failed a safety scan and cannot be downloaded."
+							: "This file is still being processed.",
+				});
+			}
 			const presigned = await storage.presignGet({
 				key: file.storageKey,
 				downloadFilename: file.name,
@@ -562,5 +746,5 @@ export const driveRouter = {
 
 // Re-export so a host/cron caller can settle daily overage without reaching into
 // the file directly (keeps the engine the single write path).
-export { accrueDailyOverage } from "./quota";
+export { accrueDailyOverage, reconcileUserQuota } from "./quota";
 export { storageQuota };

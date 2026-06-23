@@ -1,4 +1,4 @@
-import { driveSharePermValues } from "@rox/db/enums";
+import { driveRefSourceValues, driveSharePermValues } from "@rox/db/enums";
 import { z } from "zod";
 
 /**
@@ -71,6 +71,27 @@ export const requestUploadSchema = z.object({
 export const confirmUploadSchema = z.object({ fileId: uuid });
 
 export const requestDownloadSchema = z.object({ fileId: uuid });
+
+// ---- quota / overage -------------------------------------------------------
+
+export const setOverageOptInSchema = z.object({ optIn: z.boolean() });
+
+// ---- attachment bridge (drive_file_refs) -----------------------------------
+
+export const sourceKindSchema = z.enum(driveRefSourceValues);
+
+export const attachToMessageSchema = z.object({
+	fileId: uuid,
+	sourceKind: sourceKindSchema,
+	sourceId: uuid,
+	organizationId: uuid.nullable().optional(),
+});
+
+export const detachFromMessageSchema = z.object({
+	fileId: uuid,
+	sourceKind: sourceKindSchema,
+	sourceId: uuid,
+});
 
 // ---- public shares ---------------------------------------------------------
 

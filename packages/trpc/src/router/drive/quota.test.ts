@@ -24,6 +24,7 @@ const state: {
 	ledgerInserted: AnyRow[];
 	balanceUpdated: AnyRow[];
 	transactionRan: number;
+	selectQueue: AnyRow[][];
 } = {
 	quotaRow: undefined,
 	conditionalUpdateRows: [{ bytesUsed: 1 }],
@@ -31,16 +32,40 @@ const state: {
 	ledgerInserted: [],
 	balanceUpdated: [],
 	transactionRan: 0,
+	selectQueue: [],
 };
+
+function nextSelect(): AnyRow[] {
+	return state.selectQueue.shift() ?? [];
+}
+
+// Chainable select builder resolving to the next queued rows. Supports
+// `.from().where().limit()` and `selectDistinct(...).from().where()`.
+function selectBuilder() {
+	const rows = nextSelect();
+	const step = (): Promise<AnyRow[]> & Record<string, () => unknown> => {
+		const p = Promise.resolve(rows) as Promise<AnyRow[]> &
+			Record<string, () => unknown>;
+		p.from = step;
+		p.where = step;
+		p.orderBy = step;
+		p.limit = step;
+		return p;
+	};
+	return step();
+}
 
 function makeDb() {
 	const dbObj: AnyRow = {
+		select: () => selectBuilder(),
+		selectDistinct: () => selectBuilder(),
 		insert: (table: unknown) => ({
 			values: (vals: AnyRow) => {
 				if (tableName(table).includes("ledger"))
 					state.ledgerInserted.push(vals);
 				return {
 					onConflictDoNothing: () => Promise.resolve(),
+					onConflictDoUpdate: () => Promise.resolve(),
 					returning: () => Promise.resolve([{ id: "x" }]),
 				};
 			},
@@ -73,8 +98,14 @@ function makeDb() {
 const fakeDb = makeDb();
 mock.module("@rox/db/client", () => ({ db: fakeDb, dbWs: fakeDb }));
 
-const { ensureQuota, commitUpload, releaseBytes, accrueDailyOverage } =
-	await import("./quota");
+const {
+	ensureQuota,
+	commitUpload,
+	releaseBytes,
+	accrueDailyOverage,
+	setOverageOptIn,
+	reconcileUserQuota,
+} = await import("./quota");
 
 const CAP = 10_737_418_240;
 const GB = 1_000_000_000;
@@ -86,6 +117,7 @@ beforeEach(() => {
 	state.ledgerInserted = [];
 	state.balanceUpdated = [];
 	state.transactionRan = 0;
+	state.selectQueue = [];
 });
 
 describe("ensureQuota", () => {
@@ -166,6 +198,7 @@ describe("accrueDailyOverage", () => {
 			quotaBytes: CAP,
 			overageOptIn: true,
 		};
+		state.selectQueue = [[]]; // hasAccruedToday → none
 		const r = await accrueDailyOverage("u1", 30, 30);
 		expect(r.ledgerWritten).toBe(true);
 		expect(r.roxDebited).toBeGreaterThan(0);
@@ -177,5 +210,61 @@ describe("accrueDailyOverage", () => {
 			true,
 		);
 		expect(state.balanceUpdated).toHaveLength(1);
+	});
+
+	test("is idempotent per day — a second run does not double-bill (D2)", async () => {
+		state.quotaRow = {
+			bytesUsed: CAP + 30 * GB,
+			quotaBytes: CAP,
+			overageOptIn: true,
+		};
+		state.selectQueue = [[{ id: "todays-row" }]]; // hasAccruedToday → exists
+		const r = await accrueDailyOverage("u1", 30, 30);
+		expect(r.alreadyAccrued).toBe(true);
+		expect(r.ledgerWritten).toBe(false);
+		expect(state.ledgerInserted).toHaveLength(0);
+		expect(state.balanceUpdated).toHaveLength(0);
+	});
+});
+
+describe("setOverageOptIn (D1)", () => {
+	test("upserts the flag and returns the snapshot", async () => {
+		state.quotaRow = { bytesUsed: 0, quotaBytes: CAP, overageOptIn: true };
+		const r = await setOverageOptIn("u1", true);
+		expect(r.overageOptIn).toBe(true);
+	});
+});
+
+describe("reconcileUserQuota (D6)", () => {
+	test("recomputes bytes_used from distinct clean sizes and corrects drift", async () => {
+		state.quotaRow = { bytesUsed: 999, quotaBytes: CAP, overageOptIn: false };
+		// selectDistinct → two distinct clean files of 100 + 50
+		state.selectQueue = [
+			[
+				{ sha256: "a", sizeBytes: 100 },
+				{ sha256: "b", sizeBytes: 50 },
+			],
+		];
+		const r = await reconcileUserQuota("u1");
+		expect(r.before).toBe(999);
+		expect(r.after).toBe(150);
+		expect(r.drift).toBe(150 - 999);
+		// drift present → wrote the corrected total
+		expect(state.updated).toHaveLength(1);
+		expect(state.updated[0]?.bytesUsed).toBe(150);
+	});
+
+	test("no write when already aligned (idempotent)", async () => {
+		state.quotaRow = { bytesUsed: 150, quotaBytes: CAP, overageOptIn: false };
+		state.selectQueue = [
+			[
+				{ sha256: "a", sizeBytes: 100 },
+				{ sha256: "b", sizeBytes: 50 },
+			],
+		];
+		const r = await reconcileUserQuota("u1");
+		expect(r.after).toBe(150);
+		expect(r.drift).toBe(0);
+		expect(state.updated).toHaveLength(0);
 	});
 });
