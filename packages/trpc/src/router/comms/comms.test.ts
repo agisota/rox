@@ -72,6 +72,7 @@ function selectBuilder(rows: AnyRow[]) {
 		p.orderBy = step;
 		p.innerJoin = step;
 		p.leftJoin = step;
+		p.groupBy = step;
 		p.limit = step;
 		return p;
 	};
@@ -99,6 +100,7 @@ function tableAwareSelect() {
 				p.orderBy = make;
 				p.innerJoin = make;
 				p.leftJoin = make;
+				p.groupBy = make;
 				p.limit = make;
 				return p;
 			};
@@ -225,11 +227,64 @@ describe("comms.listThreads", () => {
 		state.selectQueue = [
 			[{ threadId: "t-1" }], // participant lookup
 			[{ id: "t-1", subject: "Hi" }], // thread fetch
+			[], // grouped unread count (no unread rows)
 		];
 		const caller = callerFor("org-1");
 		const res = await caller.comms.listThreads();
 		expect(res).toHaveLength(1);
 		expect(res[0]?.id).toBe("t-1");
+		expect(res[0]?.unreadCount).toBe(0);
+	});
+
+	test("counts unread = messages after watermark excluding own", async () => {
+		state.selectQueue = [
+			[{ threadId: "t-1" }], // participant lookup
+			[{ id: "t-1", subject: "Hi" }], // thread fetch
+			[{ threadId: "t-1", unread: 2 }], // grouped count
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.listThreads();
+		expect(res[0]?.unreadCount).toBe(2);
+	});
+
+	test("null watermark counts all not-own", async () => {
+		// With a null lastReadMessageId the WHERE short-circuits to "all not-own"
+		// (last_read_message_id is null OR created_at > subselect); the grouped
+		// count therefore returns the full not-own total for the thread.
+		state.selectQueue = [
+			[{ threadId: "t-1" }], // participant lookup
+			[{ id: "t-1", subject: "Hi" }], // thread fetch
+			[{ threadId: "t-1", unread: 5 }], // grouped count (all not-own)
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.listThreads();
+		expect(res[0]?.unreadCount).toBe(5);
+	});
+
+	test("zero when caller is sole author", async () => {
+		// No group row for t-1 (every message is the caller's own) → ?? 0 fallback.
+		state.selectQueue = [
+			[{ threadId: "t-1" }], // participant lookup
+			[{ id: "t-1", subject: "Hi" }], // thread fetch
+			[], // grouped count → no row for t-1
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.listThreads();
+		expect(res[0]?.unreadCount).toBe(0);
+	});
+
+	test("coerces a string count to a JS number", async () => {
+		// count() returns bigint-ish (string in some drivers) → Number() coercion
+		// keeps the wire type a JS number so the frontend `> 0` / `> 99` are safe.
+		state.selectQueue = [
+			[{ threadId: "t-1" }], // participant lookup
+			[{ id: "t-1", subject: "Hi" }], // thread fetch
+			[{ threadId: "t-1", unread: "3" }], // grouped count as string
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.listThreads();
+		expect(res[0]?.unreadCount).toBe(3);
+		expect(typeof res[0]?.unreadCount).toBe("number");
 	});
 });
 
@@ -258,12 +313,27 @@ describe("comms.getThread", () => {
 			[{ id: THREAD_ID, organizationId: "org-1" }], // thread
 			[{ id: "p-1", userId: "user-1" }], // participants (caller in)
 			[{ id: MSG_ID, body: "hello" }], // messages
+			[{ threadId: THREAD_ID, unread: 1 }], // single-thread unread count
 		];
 		const caller = callerFor("org-1");
 		const res = await caller.comms.getThread({ threadId: THREAD_ID });
 		expect(res.thread.id).toBe(THREAD_ID);
 		expect(res.participants).toHaveLength(1);
 		expect(res.messages).toHaveLength(1);
+		expect(res.unreadCount).toBe(1);
+	});
+
+	test("returns unreadCount 0 (additive field) when nothing is unread", async () => {
+		state.selectQueue = [
+			[{ id: THREAD_ID, organizationId: "org-1" }], // thread
+			[{ id: "p-1", userId: "user-1" }], // participants (caller in)
+			[{ id: MSG_ID, body: "hello" }], // messages
+			[], // single-thread unread count → none
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.getThread({ threadId: THREAD_ID });
+		expect(res.unreadCount).toBe(0);
+		expect(typeof res.unreadCount).toBe("number");
 	});
 });
 

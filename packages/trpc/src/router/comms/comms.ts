@@ -10,7 +10,7 @@ import { db, dbWs } from "@rox/db/client";
 import { commsMessages, commsParticipants, commsThreads } from "@rox/db/schema";
 import { publishCommsMessage } from "@rox/shared/comms-events";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
 import { assertOrgMembers } from "../integration/assertOrgMembers";
 import { requireActiveOrgMembership } from "../utils/active-org";
@@ -79,6 +79,55 @@ async function publishInAppMessage(
 	} catch {
 		// Live delivery is non-durable; swallow so the send still succeeds.
 	}
+}
+
+/**
+ * Per-thread unread counts for one caller (I6/E). Returns a `Map<threadId,
+ * count>` over the given page of thread ids: the number of `comms_messages` in
+ * each thread created strictly after the caller's `comms_participants`
+ * watermark AND not authored by the caller. One grouped round-trip (not N+1).
+ *
+ * - Caller scoping: the inner join binds the caller's participant row, so the
+ *   watermark is the caller's own (`last_read_message_id`), never another
+ *   participant's.
+ * - "Not own": `author_user_id is distinct from <userId>` (NOT `<>`) so
+ *   NULL-authored inbound/external messages still count as unread.
+ * - Watermark: `last_read_message_id` is a message id; convert to a time
+ *   boundary via a scalar subselect and compare with `>` (the watermarked
+ *   message itself is already read). NULL watermark short-circuits → all
+ *   not-own messages count.
+ *
+ * The caller must restrict `threadIds` to threads the caller participates in
+ * (the inArray is the scope gate). Threads with zero unread are simply absent
+ * from the map (callers default to 0).
+ */
+async function countUnreadByThread(
+	organizationId: string,
+	userId: string,
+	threadIds: string[],
+): Promise<Map<string, number>> {
+	if (threadIds.length === 0) return new Map();
+	const rows = await db
+		.select({ threadId: commsMessages.threadId, unread: count() })
+		.from(commsMessages)
+		.innerJoin(
+			commsParticipants,
+			and(
+				eq(commsParticipants.threadId, commsMessages.threadId),
+				eq(commsParticipants.organizationId, commsMessages.organizationId),
+				eq(commsParticipants.userId, userId),
+			),
+		)
+		.where(
+			and(
+				eq(commsMessages.organizationId, organizationId),
+				inArray(commsMessages.threadId, threadIds),
+				sql`${commsMessages.authorUserId} is distinct from ${userId}`,
+				sql`(${commsParticipants.lastReadMessageId} is null or ${commsMessages.createdAt} > (select m2.created_at from ${commsMessages} m2 where m2.id = ${commsParticipants.lastReadMessageId}))`,
+			),
+		)
+		.groupBy(commsMessages.threadId);
+	return new Map(rows.map((r) => [r.threadId, Number(r.unread)]));
 }
 
 /** Confirm a thread belongs to the org (and the caller participates). */
@@ -184,7 +233,7 @@ export const commsRouter = {
 			const threadIds = memberThreads.map((r) => r.threadId);
 			if (threadIds.length === 0) return [];
 
-			return db
+			const threadRows = await db
 				.select()
 				.from(commsThreads)
 				.where(
@@ -195,6 +244,20 @@ export const commsRouter = {
 				)
 				.orderBy(desc(commsThreads.lastMessageAt))
 				.limit(input?.limit ?? 50);
+
+			// One grouped round-trip over the visible page → per-thread unread.
+			const pageIds = threadRows.map((t) => t.id);
+			const unreadByThread = await countUnreadByThread(
+				organizationId,
+				userId,
+				pageIds,
+			);
+
+			// Additive: spread every existing thread column, append unreadCount.
+			return threadRows.map((t) => ({
+				...t,
+				unreadCount: unreadByThread.get(t.id) ?? 0,
+			}));
 		}),
 
 	/** A thread plus its messages (chronological) and participants. */
@@ -246,7 +309,16 @@ export const commsRouter = {
 				m.deletedAt ? { ...m, body: "", bodyHtml: null, attachments: [] } : m,
 			);
 
-			return { thread, participants, messages: safeMessages };
+			// Additive sibling field (NOT nested in `thread`): the caller's unread
+			// count for this thread, computed the same way as listThreads.
+			const unreadByThread = await countUnreadByThread(
+				organizationId,
+				ctx.session.user.id,
+				[thread.id],
+			);
+			const unreadCount = unreadByThread.get(thread.id) ?? 0;
+
+			return { thread, participants, messages: safeMessages, unreadCount };
 		}),
 
 	/**
