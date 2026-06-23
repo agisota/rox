@@ -26,10 +26,12 @@ import {
 	noteIdSchema,
 	removeNoteFromNotebookSchema,
 	reorderNotebookItemsSchema,
+	searchNotesSchema,
 	setNotePublishedSchema,
 	updateNotebookSchema,
 	updateNoteSchema,
 } from "./schema";
+import { buildNotesSearchSql, normalizeNotesSearchQuery } from "./search-notes";
 
 /**
  * Notes (D7) router — Workspace Suite P2.
@@ -413,6 +415,85 @@ export const notebooksRouter = {
 			if (!wanted || wanted.length === 0) return resolved;
 			return resolved.filter((note) => {
 				const tags = (note.tags ?? []) as string[];
+				return wanted.every((tag) => tags.includes(tag));
+			});
+		}),
+
+	/**
+	 * Full-text search over the caller's notes (D7 FTS).
+	 *
+	 * ACCESS: the search runs FROM `note_notes` (org + owner scoped, exactly like
+	 * listNotes) and INNER JOINs the backing `knowledge_documents` row to apply the
+	 * FTS match. This is deliberate: `knowledge_documents` has NO owner/visibility
+	 * column and is a SHARED substrate (also holds PRDs/specs/Obsidian/Notion docs),
+	 * so querying it directly would leak other users' and non-note documents. The
+	 * owner/org predicates therefore stay on `note_notes`.
+	 *
+	 * The Postgres FTS expression is built by the pure `search-notes` module from
+	 * the SAME `to_tsvector(...)` the GIN index uses (drift-guarded), so the scan
+	 * uses the index. Results are ranked and carry a `ts_headline` snippet;
+	 * `markdown` is deliberately EXCLUDED from the projection (mirrors listNotes —
+	 * the list view never ships full bodies). Notes with a null
+	 * `knowledge_document_id` (legacy/detached) are out of scope of the INNER JOIN
+	 * and therefore not searchable; all live notes are doc-backed since N2.
+	 */
+	searchNotes: protectedProcedure
+		.input(searchNotesSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			// Normalize first so a query that collapses to empty short-circuits to []
+			// without ever building a tsquery against an empty term.
+			const query = normalizeNotesSearchQuery(input.query);
+			if (!query) return [];
+
+			const { match, rank, headline } = buildNotesSearchSql({
+				query,
+				titleCol: knowledgeDocuments.title,
+				markdownCol: knowledgeDocuments.markdown,
+			});
+
+			const conditions = [
+				eq(noteNotes.organizationId, organizationId),
+				eq(noteNotes.ownerUserId, ctx.session.user.id),
+				match,
+			];
+			if (input.notebookId) {
+				conditions.push(eq(noteNotes.notebookId, input.notebookId));
+			}
+
+			// Thin projection: title/tags come from the JOINED doc (the system of
+			// record, like listNotes' overlay), plus rank + snippet. NO markdown.
+			// `updatedAt`/`id` break rank ties so the order is stable.
+			const rows = await db
+				.select({
+					id: noteNotes.id,
+					notebookId: noteNotes.notebookId,
+					title: knowledgeDocuments.title,
+					tags: knowledgeDocuments.tags,
+					isPublished: noteNotes.isPublished,
+					publicSlug: noteNotes.publicSlug,
+					knowledgeDocumentId: noteNotes.knowledgeDocumentId,
+					createdAt: noteNotes.createdAt,
+					updatedAt: noteNotes.updatedAt,
+					rank: rank,
+					snippet: headline,
+				})
+				.from(noteNotes)
+				.innerJoin(
+					knowledgeDocuments,
+					eq(noteNotes.knowledgeDocumentId, knowledgeDocuments.id),
+				)
+				.where(and(...conditions))
+				.orderBy(desc(rank), desc(noteNotes.updatedAt), desc(noteNotes.id))
+				.limit(input.limit);
+
+			// Tag filter is applied in-memory over the RESOLVED (doc) tags — same
+			// portable `every` match as listNotes (avoids a dialect-specific jsonb
+			// containment operator); the page is already capped by LIMIT.
+			const wanted = input.tags;
+			if (!wanted || wanted.length === 0) return rows;
+			return rows.filter((row) => {
+				const tags = (row.tags ?? []) as string[];
 				return wanted.every((tag) => tags.includes(tag));
 			});
 		}),

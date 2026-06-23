@@ -1,5 +1,6 @@
 "use client";
 
+import { splitHighlightedSnippet } from "@rox/shared/knowledge";
 import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
@@ -20,9 +21,38 @@ import {
 	Plus,
 	Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTRPC } from "@/trpc/react";
 import { useNotesActions } from "../../hooks/useNotesActions";
+
+/**
+ * Render a `ts_headline` snippet with matched terms in a `<mark>`, splitting on
+ * the safe sentinels. The text is rendered as ESCAPED React children (never
+ * `dangerouslySetInnerHTML`) because the snippet is raw note markdown.
+ */
+function SnippetText({ snippet }: { snippet: string }) {
+	const segments = splitHighlightedSnippet(snippet);
+	if (segments.length === 0) return null;
+	return (
+		<span className="truncate text-muted-foreground text-xs">
+			{segments.map((seg, i) => {
+				// Stable key: snippet segments are deterministic per render, so position
+				// + content uniquely identifies a run.
+				const key = `${i}:${seg.text}`;
+				return seg.highlight ? (
+					<mark
+						key={key}
+						className="rounded-sm bg-transparent font-medium text-foreground"
+					>
+						{seg.text}
+					</mark>
+				) : (
+					<span key={key}>{seg.text}</span>
+				);
+			})}
+		</span>
+	);
+}
 
 export interface NoteListProps {
 	notebookId: string | null;
@@ -50,33 +80,41 @@ export function NoteList({
 	const [filter, setFilter] = useState("");
 	const actions = useNotesActions(notebookId);
 
+	// Debounce the box so each keystroke doesn't fire a server FTS round-trip.
+	const [debouncedQuery, setDebouncedQuery] = useState("");
+	useEffect(() => {
+		const id = setTimeout(() => setDebouncedQuery(filter.trim()), 280);
+		return () => clearTimeout(id);
+	}, [filter]);
+	const isSearching = debouncedQuery.length > 0;
+
 	const notes = useQuery(
 		trpc.notes.listNotes.queryOptions({
 			notebookId: notebookId ?? undefined,
 		}),
 	);
 
+	// Server full-text search (D7 FTS) — only runs when the box is non-empty. The
+	// current notebook scopes the search to match the list view.
+	const search = useQuery({
+		...trpc.notes.searchNotes.queryOptions({
+			query: debouncedQuery,
+			notebookId: notebookId ?? undefined,
+		}),
+		enabled: isSearching,
+	});
+
 	// Notebooks power the "move to" menu. Cache-first: render whatever is cached.
 	const notebooks = useQuery(trpc.notes.listNotebooks.queryOptions());
 
-	const data = notes.data ?? [];
-
-	const filtered = useMemo(() => {
-		const q = filter.trim().toLowerCase();
-		if (!q) return data;
-		return data.filter((note) => {
-			const tags = (note.tags ?? []) as string[];
-			return (
-				note.title.toLowerCase().includes(q) ||
-				tags.some((tag) => tag.toLowerCase().includes(q))
-			);
-		});
-	}, [data, filter]);
+	// The non-search list shows every note (server FTS replaced the old in-memory
+	// title/tag filter); `filtered` is kept as the name the list rendering uses.
+	const filtered = notes.data ?? [];
 
 	// Whether reorder is meaningful: only when showing the full (unfiltered) list
-	// of a concrete notebook with 2+ rows. Reordering a filtered view would send a
-	// partial set and be rejected server-side.
-	const canReorder = notebookId != null && filter.trim() === "";
+	// of a concrete notebook with 2+ rows. Reordering a filtered/search view would
+	// send a partial set and be rejected server-side.
+	const canReorder = notebookId != null && !isSearching;
 
 	const handleCreate = () => {
 		if (!notebookId) return;
@@ -161,7 +199,7 @@ export function NoteList({
 				<Input
 					value={filter}
 					onChange={(e) => setFilter(e.target.value)}
-					placeholder="Поиск по названию или тегу"
+					placeholder="Поиск по заметкам"
 					className="h-8"
 				/>
 				<Button
@@ -177,7 +215,55 @@ export function NoteList({
 				</Button>
 			</div>
 
-			{!notes.data && notes.isLoading ? (
+			{isSearching ? (
+				// Server FTS results. Cache-first (AGENTS.md rule 9): keep the previous
+				// results visible while a new query is loading — never blank to a
+				// spinner. Only show the loading hint when there is genuinely no data.
+				(() => {
+					const results = search.data ?? [];
+					if (!search.data && search.isLoading) {
+						return (
+							<p className="px-1 py-3 text-muted-foreground text-xs">Поиск…</p>
+						);
+					}
+					if (results.length === 0) {
+						return (
+							<p className="px-1 py-3 text-muted-foreground text-xs">
+								Ничего не найдено по «{debouncedQuery}».
+							</p>
+						);
+					}
+					return (
+						<ul className="flex flex-col gap-0.5">
+							{results.map((note) => (
+								<li key={note.id}>
+									<button
+										type="button"
+										onClick={() => onSelect(note.id)}
+										className={cn(
+											"flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-muted",
+											selectedNoteId === note.id && "bg-muted",
+										)}
+									>
+										<span className="flex items-center gap-1.5 truncate font-medium text-sm">
+											{note.isPublished ? (
+												<span
+													className="size-1.5 rounded-full bg-emerald-500"
+													title="Опубликована"
+												/>
+											) : null}
+											{note.title}
+										</span>
+										{note.snippet ? (
+											<SnippetText snippet={note.snippet} />
+										) : null}
+									</button>
+								</li>
+							))}
+						</ul>
+					);
+				})()
+			) : !notes.data && notes.isLoading ? (
 				<div className="space-y-2 pt-1">
 					<Skeleton className="h-12 w-full" />
 					<Skeleton className="h-12 w-full" />
