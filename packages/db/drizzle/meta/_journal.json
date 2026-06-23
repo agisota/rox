@@ -680,6 +680,13 @@
       "when": 1782229793262,
       "tag": "0096_mesh_escrow_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1782232181632,
+      "tag": "0097_slippery_malice",
+      "breakpoints": true
     }
   ]
 }

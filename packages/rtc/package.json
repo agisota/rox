@@ -16,6 +16,10 @@
 			"types": "./src/activity.ts",
 			"default": "./src/activity.ts"
 		},
+		"./transcript": {
+			"types": "./src/transcript.ts",
+			"default": "./src/transcript.ts"
+		},
 		"./token": {
 			"types": "./src/token.ts",
 			"default": "./src/token.ts"
