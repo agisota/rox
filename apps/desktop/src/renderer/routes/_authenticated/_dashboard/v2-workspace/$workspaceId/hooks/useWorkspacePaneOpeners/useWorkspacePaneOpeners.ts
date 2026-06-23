@@ -13,6 +13,37 @@ import type {
 } from "../../types";
 import type { TerminalLauncher } from "../useV2TerminalLauncher";
 
+/**
+ * Builds the data payload for a fresh chat pane. A `launchConfig` (carrying an
+ * initial prompt + attachments, e.g. the chat-driven Create PR flow) is only
+ * attached when it's a real config object. React `onClick` handlers wire
+ * `addChatTab` directly (`onClick={onAddChat}`), so the first argument can be a
+ * `MouseEvent` rather than a config — in that case we fall back to a blank pane.
+ */
+export function buildChatPaneData(
+	launchConfig?: ChatPaneData["launchConfig"],
+): ChatPaneData {
+	if (isChatLaunchConfig(launchConfig)) {
+		return { sessionId: null, launchConfig };
+	}
+	return { sessionId: null };
+}
+
+function isChatLaunchConfig(
+	value: unknown,
+): value is NonNullable<ChatPaneData["launchConfig"]> {
+	if (value == null || typeof value !== "object") return false;
+	// Reject React synthetic events / DOM events that leak in via onClick.
+	if ("nativeEvent" in value || "preventDefault" in value) return false;
+	const config = value as Record<string, unknown>;
+	return (
+		"initialPrompt" in config ||
+		"initialFiles" in config ||
+		"model" in config ||
+		"taskSlug" in config
+	);
+}
+
 export function useWorkspacePaneOpeners({
 	store,
 	launcher,
@@ -34,7 +65,7 @@ export function useWorkspacePaneOpeners({
 		side?: DiffFocusSide,
 	) => void;
 	addTerminalTab: () => Promise<void>;
-	addChatTab: () => void;
+	addChatTab: (launchConfig?: ChatPaneData["launchConfig"]) => void;
 	addBrowserTab: () => void;
 	openCommentPane: (comment: CommentPaneData) => void;
 } {
@@ -131,16 +162,19 @@ export function useWorkspacePaneOpeners({
 		}
 	}, [addBlankTerminalTab, executePreset, newTabPresets]);
 
-	const addChatTab = useCallback(() => {
-		store.getState().addTab({
-			panes: [
-				{
-					kind: "chat",
-					data: { sessionId: null } as ChatPaneData,
-				},
-			],
-		});
-	}, [store]);
+	const addChatTab = useCallback(
+		(launchConfig?: ChatPaneData["launchConfig"]) => {
+			store.getState().addTab({
+				panes: [
+					{
+						kind: "chat",
+						data: buildChatPaneData(launchConfig) as PaneViewerData,
+					},
+				],
+			});
+		},
+		[store],
+	);
 
 	const addBrowserTab = useCallback(() => {
 		store.getState().addTab({

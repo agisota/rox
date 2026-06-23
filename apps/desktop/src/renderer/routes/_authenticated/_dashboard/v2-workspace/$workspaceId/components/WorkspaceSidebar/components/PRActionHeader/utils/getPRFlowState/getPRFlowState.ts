@@ -87,6 +87,20 @@ export function selectActionButton(state: PRFlowState): ActionButtonVariant {
 	}
 }
 
+/**
+ * Resolves the Create PR affordance once we've reached the `create-pr-dropdown`
+ * action variant (i.e. a feature branch with a diff and no open PR). The
+ * `enabled` flag is the v2 feature gate; the genuinely-invalid conditions
+ * (no repo, default branch, detached HEAD) never reach here — they resolve to
+ * `disabled-tooltip` in `selectActionButton` instead. Pure + exported so the
+ * enable logic is unit-testable without rendering.
+ */
+export type CreatePRAffordance = { kind: "enabled" } | { kind: "coming-soon" };
+
+export function selectCreatePRAffordance(enabled: boolean): CreatePRAffordance {
+	return enabled ? { kind: "enabled" } : { kind: "coming-soon" };
+}
+
 export type PRLinkVariant =
 	| { kind: "none" }
 	| {

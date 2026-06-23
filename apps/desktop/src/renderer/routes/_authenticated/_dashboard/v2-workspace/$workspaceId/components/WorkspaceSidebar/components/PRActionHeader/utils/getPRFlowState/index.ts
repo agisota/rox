@@ -1,6 +1,7 @@
 export type {
 	ActionButtonVariant,
 	BranchSyncStatus,
+	CreatePRAffordance,
 	GetPRFlowStateInput,
 	PRFlowState,
 	PRLinkVariant,
@@ -10,6 +11,7 @@ export type {
 export {
 	getPRFlowState,
 	selectActionButton,
+	selectCreatePRAffordance,
 	selectPRLink,
 	selectStatusBadge,
 } from "./getPRFlowState";
