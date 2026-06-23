@@ -8,7 +8,19 @@ import {
 	snapshotRoom,
 	toRoomActivity,
 } from "@rox/rtc/activity";
-import { RoomEvent, type UseVoiceRoom, useVoiceRoom } from "@rox/rtc/client";
+import {
+	RoomEvent,
+	type UseVoiceRoom,
+	useLiveTranscript,
+	useVoiceRoom,
+} from "@rox/rtc/client";
+import {
+	createGroqChunkedTranscriptSource,
+	type LiveTranscript,
+	type TranscriptSegment,
+	type TranscriptSource,
+} from "@rox/rtc/transcript";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 
@@ -30,6 +42,13 @@ export interface UseWorkspaceVoiceRoom extends UseVoiceRoom {
 	 * disconnected. No STT — this is the `live.transcript` shell.
 	 */
 	roomActivity: RoomActivity;
+	/**
+	 * Live transcript (Streaming-STT Phase-1): finalized speech segments captured
+	 * from the local mic in N-second chunks via Groq Whisper and persisted to
+	 * `live_transcript_segments`. Empty while disconnected or when server-side STT
+	 * (GROQ_API_KEY) is not configured.
+	 */
+	transcript: LiveTranscript;
 }
 
 /**
@@ -63,6 +82,60 @@ export function useWorkspaceVoiceRoom({
 
 	const voice = useVoiceRoom({ roomName, getToken });
 	const { room } = voice;
+
+	// Server-side Whisper availability — with a shared GROQ_API_KEY this is true;
+	// when absent, the transcript source stays null so we never record a mic the
+	// server cannot transcribe.
+	const { data: voiceConfig } = useQuery({
+		queryKey: ["voice", "isConfigured"],
+		queryFn: () => apiTrpcClient.voice.isConfigured.query(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const sttConfigured = voiceConfig?.configured ?? false;
+
+	// THE SWAP SEAM: Phase-1 binds the Groq chunked source to the cloud
+	// `voice.transcribeChunk` mutation (which transcribes + persists each chunk).
+	// Swapping to LiveKit Agents later is a different `TranscriptSource` here only.
+	const transcriptSource = useMemo<TranscriptSource | null>(() => {
+		if (!sttConfigured) return null;
+		return createGroqChunkedTranscriptSource((payload) =>
+			apiTrpcClient.voice.transcribeChunk.mutate(payload),
+		);
+	}, [sttConfigured]);
+
+	const localIdentity = room?.localParticipant.identity ?? "";
+	const localName = room?.localParticipant.name ?? localIdentity;
+
+	// Late-joiner backfill: replay the room's prior finals from durable storage so
+	// a participant who joins mid-conversation sees the transcript so far. Gated on
+	// STT being configured (same signal as capture) to avoid a pointless query.
+	// `captured_at` arrives as a `Date` (superjson) → normalize to epoch ms so the
+	// rows fold through the same reducer as live + remote segments.
+	const listSegments = useMemo(() => {
+		if (!sttConfigured) return undefined;
+		return async (name: string): Promise<TranscriptSegment[]> => {
+			const rows = await apiTrpcClient.voice.listSegments.query({
+				roomName: name,
+			});
+			return rows.map((row) => ({
+				id: row.id,
+				roomName: row.roomName,
+				speakerIdentity: row.speakerIdentity,
+				speakerName: row.speakerName,
+				text: row.text,
+				language: row.language,
+				capturedAt: new Date(row.capturedAt).getTime(),
+			}));
+		};
+	}, [sttConfigured]);
+
+	const transcript = useLiveTranscript({
+		room,
+		source: transcriptSource,
+		speakerIdentity: localIdentity,
+		speakerName: localName,
+		listSegments,
+	});
 
 	const [participantCount, setParticipantCount] = useState(0);
 	const [roomActivity, setRoomActivity] =
@@ -121,5 +194,5 @@ export function useWorkspaceVoiceRoom({
 		};
 	}, [room]);
 
-	return { ...voice, roomName, participantCount, roomActivity };
+	return { ...voice, roomName, participantCount, roomActivity, transcript };
 }

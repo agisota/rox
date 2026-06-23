@@ -22,9 +22,13 @@ interface WorkspaceVoiceButtonProps {
  *
  * Gated behind the `live.voiceRooms` experiment, which only resolves to
  * `available` when the LiveKit env (incl. `NEXT_PUBLIC_LIVEKIT_URL`) is
- * configured — so this stays hidden when voice is not set up. Behaviour comes
- * from the shared `useVoiceRoom` hook; the UI is built from `@rox/ui` + theme
- * tokens (no LiveKit prebuilt styling).
+ * configured — so this stays hidden when voice is not set up. Because the entire
+ * control tree (incl. the activity + transcript panel) mounts inside this gate,
+ * `live.voiceRooms` is the EFFECTIVE gate for the live transcript surface; the
+ * nested `live.transcript` gate below only refines whether the activity/transcript
+ * popover affordance shows once a room is connected. Behaviour comes from the
+ * shared `useVoiceRoom` hook; the UI is built from `@rox/ui` + theme tokens (no
+ * LiveKit prebuilt styling).
  */
 export function WorkspaceVoiceButton({
 	workspaceId,
@@ -67,6 +71,7 @@ function VoiceRoomControls({
 		isMuted,
 		participantCount,
 		roomActivity,
+		transcript,
 		connect,
 		disconnect,
 		toggleMute,
@@ -144,6 +149,11 @@ function VoiceRoomControls({
 					{participantCount}
 				</span>
 			</Badge>
+			{/*
+			 * Nested under the outer `live.voiceRooms` gate (see WorkspaceVoiceButton
+			 * above): this refines the activity + transcript popover, which only
+			 * renders when BOTH gates are enabled and a room is connected.
+			 */}
 			<ExperimentalFeatureGate featureId="live.transcript">
 				<Popover>
 					<Tooltip>
@@ -170,7 +180,10 @@ function VoiceRoomControls({
 						sideOffset={6}
 						className="w-auto"
 					>
-						<LiveRoomActivityPanel activity={roomActivity} />
+						<LiveRoomActivityPanel
+							activity={roomActivity}
+							transcript={transcript}
+						/>
 					</PopoverContent>
 				</Popover>
 			</ExperimentalFeatureGate>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, MicOff, Radio, Volume2 } from "lucide-react";
+import { Captions, Mic, MicOff, Radio, Volume2 } from "lucide-react";
 import type * as React from "react";
 
 import { cn } from "../../lib/utils";
@@ -41,10 +41,34 @@ export interface LiveRoomActivity {
 	log: LiveRoomActivityEvent[];
 }
 
+/**
+ * One finalized transcript segment. Structural copy of `@rox/rtc`'s
+ * `TranscriptSegment` (kept in lockstep) so this panel renders live words without
+ * importing `@rox/rtc`. Streaming-STT Phase-1.
+ */
+export interface LiveRoomTranscriptSegment {
+	id: string;
+	speakerIdentity: string;
+	speakerName: string;
+	text: string;
+	capturedAt: number;
+}
+
+/** Render-ready live transcript: finalized segments, oldest → newest. */
+export interface LiveRoomTranscript {
+	segments: LiveRoomTranscriptSegment[];
+}
+
 export interface LiveRoomActivityPanelProps
 	extends React.ComponentProps<"div"> {
 	/** Derived presence/speaking model (roster + speaking set + timeline). */
 	activity: LiveRoomActivity;
+	/**
+	 * Optional live transcript (Streaming-STT Phase-1). When provided, a transcript
+	 * log section renders below the activity journal. Omitted on surfaces that have
+	 * no STT wired yet (e.g. the web stub), where the panel stays presence-only.
+	 */
+	transcript?: LiveRoomTranscript;
 	/**
 	 * Shown when the roster is empty (e.g. web media-join not wired yet). Lets the
 	 * same component render an honest empty state instead of a blank box.
@@ -86,6 +110,7 @@ function formatTime(at: number): string {
  */
 export function LiveRoomActivityPanel({
 	activity,
+	transcript,
 	emptyHint = "Пока никого нет в комнате",
 	className,
 	...props
@@ -95,6 +120,7 @@ export function LiveRoomActivityPanel({
 		.filter((p) => speakingSet.has(p.identity))
 		.map((p) => p.name);
 	const reversedLog = [...activity.log].reverse();
+	const transcriptSegments = transcript?.segments ?? [];
 
 	return (
 		<div
@@ -218,6 +244,43 @@ export function LiveRoomActivityPanel({
 					</ScrollArea>
 				)}
 			</div>
+
+			{transcript && (
+				<>
+					<Separator />
+					<div className="flex flex-col gap-1">
+						<span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+							<Captions className="size-3.5 shrink-0" aria-hidden />
+							Транскрипт
+						</span>
+						{transcriptSegments.length === 0 ? (
+							<p className="py-1 text-xs text-muted-foreground">
+								Пока ничего не сказано
+							</p>
+						) : (
+							<ScrollArea className="h-40">
+								<ul className="flex flex-col gap-1.5 pr-2">
+									{transcriptSegments.map((segment) => (
+										<li key={segment.id} className="flex flex-col gap-0.5">
+											<span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
+												<span className="font-medium text-muted-foreground">
+													{segment.speakerName}
+												</span>
+												<span className="tabular-nums">
+													{formatTime(segment.capturedAt)}
+												</span>
+											</span>
+											<span className="text-xs text-foreground">
+												{segment.text}
+											</span>
+										</li>
+									))}
+								</ul>
+							</ScrollArea>
+						)}
+					</div>
+				</>
+			)}
 		</div>
 	);
 }
