@@ -27,6 +27,7 @@ import {
 import { HiMiniAtSymbol } from "react-icons/hi2";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { FileIcon } from "renderer/lib/fileIcons";
+import { useWorkspaceFileSearch } from "./hooks/useWorkspaceFileSearch";
 
 function findAtTriggerIndex(value: string, prevValue: string): number {
 	if (value.length !== prevValue.length + 1) return -1;
@@ -61,10 +62,10 @@ interface MentionContextValue {
 const MentionContext = createContext<MentionContextValue | null>(null);
 
 export function MentionProvider({
-	cwd,
+	workspaceId,
 	children,
 }: {
-	cwd: string;
+	workspaceId: string;
 	children: ReactNode;
 }) {
 	const [open, setOpen] = useState(false);
@@ -85,11 +86,11 @@ export function MentionProvider({
 	}, [textInput.value]);
 	const immediateSearchQuery = searchQuery.trim();
 	const debouncedSearchQuery = useDebouncedValue(immediateSearchQuery, 120);
-	const files: Array<{ id: string; name: string; relativePath: string }> = [];
+	const { results: files, isFetching: isSearchFetching } =
+		useWorkspaceFileSearch(workspaceId, open ? debouncedSearchQuery : "");
 	const isSearchPending =
-		!!cwd &&
 		immediateSearchQuery.length > 0 &&
-		immediateSearchQuery !== debouncedSearchQuery;
+		(immediateSearchQuery !== debouncedSearchQuery || isSearchFetching);
 
 	const handleSelectFile = (relativePath: string) => {
 		const current = textInput.value;
@@ -129,7 +130,7 @@ export function MentionProvider({
 										? "Type to search files..."
 										: isSearchPending
 											? "Searching files..."
-											: "File search is not available yet."}
+											: "No files found."}
 								</CommandEmpty>
 							)}
 							{files.length > 0 && (
