@@ -32,6 +32,8 @@ interface ChatComposerControlsProps {
 	onStop: (event: React.MouseEvent) => void;
 	onDictationComplete?: (recording: Recording, locked: boolean) => void;
 	dictationTranscribing?: boolean;
+	/** Server-side Whisper availability (voice.isConfigured). Off → mic disabled. */
+	dictationConfigured?: boolean;
 }
 
 export function ChatComposerControls({
@@ -50,6 +52,7 @@ export function ChatComposerControls({
 	onStop,
 	onDictationComplete,
 	dictationTranscribing,
+	dictationConfigured,
 }: ChatComposerControlsProps) {
 	return (
 		<PromptInputFooter>
@@ -76,6 +79,7 @@ export function ChatComposerControls({
 				<MicButton
 					onComplete={onDictationComplete}
 					transcribing={dictationTranscribing}
+					disabled={!dictationConfigured}
 				/>
 				<PromptInputSubmit
 					className="size-[23px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"

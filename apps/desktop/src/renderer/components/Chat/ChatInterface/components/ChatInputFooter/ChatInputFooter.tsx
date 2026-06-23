@@ -8,6 +8,7 @@ import {
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 import { toast } from "@rox/ui/sonner";
+import { useQuery } from "@tanstack/react-query";
 import type { ChatStatus, FileUIPart } from "ai";
 import type React from "react";
 import type { ReactNode } from "react";
@@ -114,6 +115,17 @@ export function ChatInputFooter({
 	const removeLinkedIssue = useCallback((slug: string) => {
 		setLinkedIssues((prev) => prev.filter((issue) => issue.slug !== slug));
 	}, []);
+
+	// Server-side Whisper availability. With a shared server GROQ_API_KEY this is
+	// always true; the gate just keeps a dead mic button from appearing usable
+	// if the key is ever absent. apiClient (cloud AppRouter) is the same client
+	// already used for voice.transcribe.
+	const { data: voiceConfig } = useQuery({
+		queryKey: ["voice", "isConfigured"],
+		queryFn: () => apiClient.voice.isConfigured.query(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const dictationConfigured = voiceConfig?.configured ?? false;
 
 	const trpcUtils = chatServiceTrpc.useUtils();
 	const searchFiles = useCallback(
@@ -269,6 +281,7 @@ export function ChatInputFooter({
 									onStop={onStop}
 									onDictationComplete={handleDictationComplete}
 									dictationTranscribing={transcribing}
+									dictationConfigured={dictationConfigured}
 								/>
 							</PromptInput>
 						</div>
