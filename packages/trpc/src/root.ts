@@ -24,6 +24,7 @@ import { knowledgeRouter } from "./router/knowledge";
 import { mailRouter } from "./router/mail";
 import { mcpAdminRouter } from "./router/mcp-admin";
 import { memoryRouter } from "./router/memory";
+import { meshRouter } from "./router/mesh";
 import { notebooksRouter } from "./router/notebooks";
 import { notesRouter } from "./router/notes";
 import { organizationRouter } from "./router/organization";
@@ -51,6 +52,7 @@ import { v2WorkspaceRouter } from "./router/v2-workspace";
 import { voiceRouter } from "./router/voice";
 import { workflowRouter } from "./router/workflow";
 import { workspaceRouter } from "./router/workspace";
+import { xmppRouter } from "./router/xmpp";
 import { createCallerFactory, createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
@@ -82,6 +84,7 @@ export const appRouter = createTRPCRouter({
 	knowledge: knowledgeRouter,
 	mail: mailRouter,
 	memory: memoryRouter,
+	mesh: meshRouter,
 	notebooks: notebooksRouter,
 	notes: notesRouter,
 	organization: organizationRouter,
@@ -105,6 +108,7 @@ export const appRouter = createTRPCRouter({
 	voice: voiceRouter,
 	workflow: workflowRouter,
 	workspace: workspaceRouter,
+	xmpp: xmppRouter,
 });
 
 export type AppRouter = typeof appRouter;

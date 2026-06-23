@@ -624,6 +624,10 @@ export const identityKindValues = [
 	"selector",
 	"phone",
 	"domain",
+	// D4 XMPP federation: a remote JID (`bob@external.org`) resolves to a contact
+	// node via the existing `identity_links` mechanism. APPEND-ONLY: added at the
+	// end so the pgEnum ordinal mapping of the existing values is unchanged.
+	"xmpp",
 ] as const;
 export const identityKindEnum = z.enum(identityKindValues);
 export type IdentityKind = z.infer<typeof identityKindEnum>;
@@ -885,3 +889,85 @@ export type MailStatus = z.infer<typeof mailStatusEnum>;
 export const mailProviderValues = ["cloudflare", "resend"] as const;
 export const mailProviderEnum = z.enum(mailProviderValues);
 export type MailProvider = z.infer<typeof mailProviderEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D4 XMPP / Jabber Federation (comms-suite epic, P0).
+// Makes the locked rox identity (`user_profiles.handle`, ROX-522) reachable on
+// the global XMPP network as `<handle>@xmpp.rox.one`. A self-hosted ejabberd
+// (deploy wave) owns the XMPP domain + s2s federation; an XEP-0114 component
+// bridges stanzas into the D1 unified inbox (transport = `xmpp`). The `xmpp_*`
+// Drizzle tables here describe ONLY the Rox↔XMPP mapping (JID bindings, roster
+// links, offline relay buffer, federation policy) — never ejabberd internals,
+// which live in a separate ejabberd-owned database. Append-only string unions
+// backing Postgres pgEnums (declared in schema/xmpp.ts); NEVER reorder/remove.
+// ---------------------------------------------------------------------------
+
+/** Lifecycle of a provisioned JID binding (DQ4: reserved/grace on rename). */
+export const xmppAccountStatusValues = [
+	"active",
+	"suspended",
+	"reserved",
+	"deleted",
+] as const;
+export const xmppAccountStatusEnum = z.enum(xmppAccountStatusValues);
+export type XmppAccountStatus = z.infer<typeof xmppAccountStatusEnum>;
+
+/** RFC 6121 roster subscription state for a remote JID contact. */
+export const xmppSubscriptionValues = [
+	"none",
+	"to",
+	"from",
+	"both",
+	"pending_out",
+	"pending_in",
+] as const;
+export const xmppSubscriptionEnum = z.enum(xmppSubscriptionValues);
+export type XmppSubscription = z.infer<typeof xmppSubscriptionEnum>;
+
+/** Direction of a buffered stanza relative to the bridged rox user. */
+export const xmppDirectionValues = ["inbound", "outbound"] as const;
+export const xmppDirectionEnum = z.enum(xmppDirectionValues);
+export type XmppDirection = z.infer<typeof xmppDirectionEnum>;
+
+/** Per-remote-domain federation posture (allow / deny / rate-throttle). */
+export const xmppFedPolicyValues = ["allow", "deny", "throttle"] as const;
+export const xmppFedPolicyEnum = z.enum(xmppFedPolicyValues);
+export type XmppFedPolicy = z.infer<typeof xmppFedPolicyEnum>;
+
+// ---------------------------------------------------------------------------
+// Rox Workspace Suite — D5 Mesh / Decentralized Transport (comms-suite epic).
+// A bitchat-borrowed decentralized fallback: the rox identity maps to a
+// per-device Nostr/Noise keypair so DMs still flow over federated Nostr relays
+// (NIP-17 gift-wrapped) when the rox backbone is unreachable. The `mesh_*`
+// Drizzle tables describe ONLY the server-side mapping (device key bindings,
+// relay subscription config, a delivered-event dedup ledger) — private keys
+// NEVER reach the server (they live in expo-secure-store / Electron safeStorage
+// on the client). BLE local mesh is client-side and DEFERRED. Append-only
+// string unions backing Postgres pgEnums (declared in schema/mesh.ts); NEVER
+// reorder/remove values. The `mesh` transport itself reuses commsTransport.
+// ---------------------------------------------------------------------------
+
+/** Lifecycle of a provisioned mesh device key (DQ4: reserved/grace on rotate). */
+export const meshDeviceStatusValues = [
+	"active",
+	"revoked",
+	"reserved",
+] as const;
+export const meshDeviceStatusEnum = z.enum(meshDeviceStatusValues);
+export type MeshDeviceStatus = z.infer<typeof meshDeviceStatusEnum>;
+
+/** Direction of a mesh-delivered event relative to the bridged rox user. */
+export const meshDirectionValues = ["inbound", "outbound"] as const;
+export const meshDirectionEnum = z.enum(meshDirectionValues);
+export type MeshDirection = z.infer<typeof meshDirectionEnum>;
+
+/** Delivery lifecycle of a fallback-delivered mesh event (audit + dedup). */
+export const meshDeliveryStatusValues = [
+	"queued",
+	"sent",
+	"delivered",
+	"reconciled",
+	"failed",
+] as const;
+export const meshDeliveryStatusEnum = z.enum(meshDeliveryStatusValues);
+export type MeshDeliveryStatus = z.infer<typeof meshDeliveryStatusEnum>;

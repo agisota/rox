@@ -1,0 +1,1 @@
+export { xmppRouter } from "./xmpp";

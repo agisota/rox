@@ -11,8 +11,24 @@ export {
 	type ResendSendFn,
 } from "./EmailAdapter";
 export { InAppAdapter, type InAppRawMessage } from "./InAppAdapter";
+export {
+	MeshAdapter,
+	type MeshAdapterOptions,
+	type MeshPublishFn,
+	type MeshRawInbound,
+	type MeshSignedEvent,
+	type MeshSignFn,
+	type MeshUnsignedEvent,
+} from "./MeshAdapter";
 export type {
 	SendContext,
 	SendResult,
 	TransportAdapter,
 } from "./TransportAdapter";
+export {
+	XmppAdapter,
+	type XmppAdapterOptions,
+	type XmppOutboundPayload,
+	type XmppRawInbound,
+	type XmppSendFn,
+} from "./XmppAdapter";
