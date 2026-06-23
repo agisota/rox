@@ -155,6 +155,12 @@ const fakeDb = {
 };
 
 mock.module("@rox/db/client", () => ({ db: fakeDb, dbWs: fakeDb }));
+// Live delivery (comms SSE): capture publishes so we can assert sendMessage emits
+// onto the bus after the write commits.
+const publishCommsMessageMock = mock((_event: unknown) => {});
+mock.module("@rox/shared/comms-events", () => ({
+	publishCommsMessage: publishCommsMessageMock,
+}));
 mock.module("../integration/utils", () => ({
 	verifyOrgMembership: () => Promise.resolve({ membership: {} }),
 	verifyOrgMembershipWithSubscription: () =>
@@ -197,6 +203,7 @@ beforeEach(() => {
 	state.insertReturning = [{ id: "new-id" }];
 	state.updated = [];
 	state.updateReturning = [{ id: "participant-1" }];
+	publishCommsMessageMock.mockClear();
 });
 
 describe("comms.listThreads", () => {
@@ -301,6 +308,17 @@ describe("comms.sendMessage", () => {
 		// A message row and a delivery row were inserted.
 		const insertedKinds = state.inserted.length;
 		expect(insertedKinds).toBeGreaterThanOrEqual(2);
+
+		// Live delivery: the committed send publishes exactly one in-app SSE event.
+		expect(publishCommsMessageMock).toHaveBeenCalledTimes(1);
+		expect(publishCommsMessageMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				organizationId: "org-1",
+				messageId: res.messageId,
+				threadId: res.threadId,
+				transport: "inapp",
+			}),
+		);
 	});
 });
 

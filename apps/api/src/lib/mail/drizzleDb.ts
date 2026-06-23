@@ -23,6 +23,7 @@ import {
 	mailMessages,
 	mailThreads,
 } from "@rox/db/schema";
+import { publishCommsMessage } from "@rox/shared/comms-events";
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import type { MailIngestDb } from "./ingest";
 
@@ -211,7 +212,7 @@ export function createMailIngestDb(): MailIngestDb {
 			// M1: guard the GLOBAL (transport, external_id) unique — a concurrent
 			// second-recipient emit that slipped past the read-check above becomes a
 			// no-op instead of a 500.
-			await db
+			const [inserted] = await db
 				.insert(commsMessages)
 				.values({
 					organizationId: args.organizationId,
@@ -224,7 +225,23 @@ export function createMailIngestDb(): MailIngestDb {
 					body: args.snippet,
 					metadata: { mailMessageId: args.mailMessageId, source: "d3-email" },
 				})
-				.onConflictDoNothing();
+				.onConflictDoNothing()
+				.returning({ id: commsMessages.id });
+
+			// Live delivery (comms SSE): publish ONLY when a NEW row was inserted — a
+			// dedup no-op (second recipient / redelivery) must not re-push. The SSE
+			// route re-checks participation, so the advisory set is just the recipient
+			// owner. Best-effort: never let a publish failure break ingest.
+			if (inserted) {
+				publishCommsMessage({
+					organizationId: args.organizationId,
+					threadId,
+					messageId: inserted.id,
+					transport: "email",
+					authorUserId,
+					participantUserIds: [args.ownerUserId],
+				});
+			}
 		},
 	};
 }

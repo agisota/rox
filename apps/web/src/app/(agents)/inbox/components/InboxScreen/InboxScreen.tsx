@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import { Mail, MessagesSquare } from "lucide-react";
 import { useState } from "react";
 
+import { useCommsStream } from "../../hooks/useCommsStream";
 import { MailInbox } from "../MailInbox";
 import { ThreadList } from "../ThreadList";
 import { ThreadView } from "../ThreadView";
@@ -26,6 +27,12 @@ type InboxTransport = "chat" | "mail";
 export function InboxScreen() {
 	const [transport, setTransport] = useState<InboxTransport>("chat");
 	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+
+	// Live in-app delivery: keep one SSE connection open for the comms inbox and
+	// refresh the open thread when it receives a new message. Passing `null` while
+	// on the mail tab still streams (list invalidation is cheap) but only the chat
+	// thread view reacts to the open-thread refresh.
+	useCommsStream(transport === "chat" ? activeThreadId : null);
 
 	return (
 		<div className="mx-auto flex h-[calc(100dvh-3rem)] w-full max-w-6xl flex-col">
