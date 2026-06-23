@@ -8,10 +8,14 @@
  */
 
 import { db, dbWs } from "@rox/db/client";
-import { edges, entities } from "@rox/db/schema";
+import { edges, entities, v2Projects } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
-import { createGraphSearchService, graphService } from "../../lib/graph";
+import {
+	createGraphSearchService,
+	graphService,
+	loadProjectGraph,
+} from "../../lib/graph";
 import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import {
@@ -22,6 +26,7 @@ import {
 	graphLinkSchema,
 	graphListByKindSchema,
 	graphNeighborsSchema,
+	graphProjectGraphSchema,
 	graphPromoteSchema,
 	graphRecordActivitySchema,
 	graphResolveIdentitySchema,
@@ -281,6 +286,40 @@ export const graphRouter = {
 				})),
 				truncated,
 			};
+		}),
+
+	// Project OS (#01, Phase-1): the object graph of one v2_project — its nodes
+	// (entities with v2_project_id = P) plus the resolved edges incident to them.
+	// Read-only; reuses entities/edges directly via `loadProjectGraph`.
+	projectGraph: protectedProcedure
+		.input(graphProjectGraphSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			// Validate the project belongs to this org before walking its graph.
+			const [project] = await db
+				.select({ id: v2Projects.id })
+				.from(v2Projects)
+				.where(
+					and(
+						eq(v2Projects.organizationId, organizationId),
+						eq(v2Projects.id, input.v2ProjectId),
+					),
+				)
+				.limit(1);
+			if (!project) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Project not found",
+				});
+			}
+
+			const result = await loadProjectGraph(db, {
+				orgId: organizationId,
+				v2ProjectId: input.v2ProjectId,
+				status: input.status,
+				limit: input.limit,
+			});
+			return result;
 		}),
 
 	backlinks: protectedProcedure
