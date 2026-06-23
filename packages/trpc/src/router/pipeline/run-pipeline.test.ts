@@ -47,11 +47,18 @@ mock.module("./agent-run-service", () => ({
 }));
 
 let executeCalls: unknown[] = [];
+// Mutable so a test can make the (mocked) executor pause for approval and assert
+// the run-service threads pendingApproval.approvalMessage through to its result.
+let executeResult: Record<string, unknown> = {
+	status: "succeeded",
+	steps: [],
+	output: { ok: true },
+};
 mock.module("@rox/workflow-runtime", () => ({
 	WorkflowExecutor: class {
 		async execute(...args: unknown[]) {
 			executeCalls.push(args);
-			return { status: "succeeded", steps: [], output: { ok: true } };
+			return executeResult;
 		}
 	},
 }));
@@ -61,7 +68,9 @@ const { runPipeline } = await import("./run-pipeline");
 const draftState: RoxWorkflowState = {
 	blocks: {
 		start: { type: "start" },
-		target: { type: "agent_run", subBlocks: { roleSkillSlug: "critic" } },
+		// Editor key is `roleSlug` (NodeInspector + templates); the executor reads it
+		// with `roleSkillSlug` as a legacy fallback (see WorkflowExecutor RUN-AR-01B).
+		target: { type: "agent_run", subBlocks: { roleSlug: "critic" } },
 	},
 	edges: [{ source: "start", target: "target" }],
 };
@@ -69,6 +78,7 @@ const draftState: RoxWorkflowState = {
 beforeEach(() => {
 	dbWrites = [];
 	executeCalls = [];
+	executeResult = { status: "succeeded", steps: [], output: { ok: true } };
 });
 
 describe("runPipeline node-entry dispatch", () => {
@@ -95,5 +105,36 @@ describe("runPipeline node-entry dispatch", () => {
 		];
 		expect(runInput).toEqual({ message: "trigger payload" });
 		expect(options.entryNodeId).toBe("target");
+	});
+
+	test("RUNPIPE-APPROVAL-01: surfaces pendingApproval.approvalMessage on the result", async () => {
+		// The executor pauses for approval and carries the author's approvalMessage;
+		// runPipeline must thread both the block id and the message to its caller so
+		// pipeline.runOnce can stamp them on the approval_requests row.
+		executeResult = {
+			status: "waiting_approval",
+			steps: [],
+			pendingApproval: {
+				blockId: "gate",
+				title: "Подтверждение",
+				approvalMessage: "Проверьте бюджет перед запуском",
+			},
+		};
+		const result = await runPipeline({
+			organizationId: "org-1",
+			userId: "user-1",
+			pipeline: {
+				id: "pipe-1",
+				v2ProjectId: "proj-1",
+				draftState,
+			},
+			triggerKind: "manual",
+			input: {},
+			initialContext: { seedMessage: "", entries: [] },
+		} as Parameters<typeof runPipeline>[0]);
+
+		expect(result.status).toBe("waiting_approval");
+		expect(result.approvalBlockId).toBe("gate");
+		expect(result.approvalMessage).toBe("Проверьте бюджет перед запуском");
 	});
 });

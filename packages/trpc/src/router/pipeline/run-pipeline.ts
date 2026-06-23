@@ -49,6 +49,13 @@ export interface RunPipelineResult {
 	output?: Record<string, unknown>;
 	error?: { code: string; message: string };
 	approvalBlockId?: string;
+	/**
+	 * The approver-facing instruction from the paused `human_approval` node's
+	 * `subBlocks.approvalMessage` (NodeInspector #407), when set. The caller
+	 * (pipeline.runOnce) stamps it onto the `approval_requests` row so the inbox
+	 * surfaces "what to confirm". Undefined when no message was configured.
+	 */
+	approvalMessage?: string;
 }
 
 /** Persists each executor step to workflow_run_steps (payloads already redacted). */
@@ -170,5 +177,6 @@ export async function runPipeline(
 			? { code: result.error.code, message: result.error.message }
 			: undefined,
 		approvalBlockId: result.pendingApproval?.blockId,
+		approvalMessage: result.pendingApproval?.approvalMessage,
 	};
 }

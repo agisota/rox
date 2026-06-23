@@ -202,6 +202,48 @@ describe("WorkflowExecutor", () => {
 		expect(r.steps.find((s) => s.blockId === "task")).toBeUndefined();
 	});
 
+	test("RUN-07B: human_approval surfaces subBlocks.approvalMessage on pendingApproval", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				approve: {
+					type: "human_approval",
+					name: "Approve plan",
+					subBlocks: { approvalMessage: "Проверьте бюджет перед запуском" },
+				},
+				task: { type: "create_task" },
+			},
+			[
+				{ source: "start", target: "approve" },
+				{ source: "approve", target: "task" },
+			],
+		);
+		const r = await exec.execute(wf, {}, {});
+		expect(r.status).toBe("waiting_approval");
+		expect(r.pendingApproval?.blockId).toBe("approve");
+		// The node title is still the block name; the approval message rides alongside.
+		expect(r.pendingApproval?.title).toBe("Approve plan");
+		expect(r.pendingApproval?.approvalMessage).toBe(
+			"Проверьте бюджет перед запуском",
+		);
+	});
+
+	test("RUN-07C: no approvalMessage → pendingApproval omits it (current behavior)", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				approve: { type: "human_approval", name: "Approve" },
+				task: { type: "create_task" },
+			},
+			[
+				{ source: "start", target: "approve" },
+				{ source: "approve", target: "task" },
+			],
+		);
+		const r = await exec.execute(wf, {}, {});
+		expect(r.pendingApproval?.approvalMessage).toBeUndefined();
+	});
+
 	test("RUN-13: secrets are redacted from recorded step payloads", async () => {
 		const wf = state({ start: { type: "start" }, resp: { type: "response" } }, [
 			{ source: "start", target: "resp" },
@@ -336,6 +378,149 @@ describe("WorkflowExecutor", () => {
 		expect(step?.childRunId).toBe("sess_1");
 		expect(r.accumulatedContext?.entries).toHaveLength(1);
 		expect(r.accumulatedContext?.entries[0]?.message).toBe("improved");
+	});
+
+	test("RUN-AR-01B: agent_run resolves the role from subBlocks.roleSlug (editor key)", async () => {
+		// The NodeInspector + templates persist `roleSlug`; the executor must read it
+		// (legacy fixtures use `roleSkillSlug`, kept as a fallback in RUN-AR-01).
+		const wf = state(
+			{
+				start: { type: "start" },
+				improve: {
+					type: "agent_run",
+					subBlocks: { roleSlug: "prompt-improver" },
+				},
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "improve" },
+				{ source: "improve", target: "resp" },
+			],
+		);
+		let seenSlug = "";
+		const r = await exec.execute(
+			wf,
+			{ task: "ship it" },
+			{
+				resolveAgentRun: async (req) => {
+					seenSlug = req.roleSkillSlug;
+					return { output: { message: "improved" } };
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		// roleSlug (editor key) resolved onto the request's roleSkillSlug.
+		expect(seenSlug).toBe("prompt-improver");
+	});
+
+	test("RUN-AR-01C: roleSlug wins over a legacy roleSkillSlug when both present", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				improve: {
+					type: "agent_run",
+					subBlocks: { roleSlug: "new-slug", roleSkillSlug: "legacy-slug" },
+				},
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "improve" },
+				{ source: "improve", target: "resp" },
+			],
+		);
+		let seenSlug = "";
+		await exec.execute(
+			wf,
+			{},
+			{
+				resolveAgentRun: async (req) => {
+					seenSlug = req.roleSkillSlug;
+					return { output: { message: "ok" } };
+				},
+			},
+		);
+		expect(seenSlug).toBe("new-slug");
+	});
+
+	test("RUN-AR-01D: per-node maxTurns/modelOverride/temperature forward onto the request", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				improve: {
+					type: "agent_run",
+					subBlocks: {
+						roleSlug: "critic",
+						maxTurns: 17,
+						modelOverride: "gpt-5",
+						temperature: 0.4,
+					},
+				},
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "improve" },
+				{ source: "improve", target: "resp" },
+			],
+		);
+		let captured: {
+			maxTurns?: number;
+			modelOverride?: string;
+			temperature?: number;
+		} = {};
+		await exec.execute(
+			wf,
+			{},
+			{
+				resolveAgentRun: async (req) => {
+					captured = {
+						maxTurns: req.maxTurns,
+						modelOverride: req.modelOverride,
+						temperature: req.temperature,
+					};
+					return { output: { message: "ok" } };
+				},
+			},
+		);
+		expect(captured).toEqual({
+			maxTurns: 17,
+			modelOverride: "gpt-5",
+			temperature: 0.4,
+		});
+	});
+
+	test("RUN-AR-01E: no overrides → request omits the override fields (current behavior)", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				improve: {
+					type: "agent_run",
+					subBlocks: { roleSlug: "critic" },
+				},
+				resp: { type: "response" },
+			},
+			[
+				{ source: "start", target: "improve" },
+				{ source: "improve", target: "resp" },
+			],
+		);
+		let captured: Record<string, unknown> = {};
+		await exec.execute(
+			wf,
+			{},
+			{
+				resolveAgentRun: async (req) => {
+					captured = {
+						maxTurns: req.maxTurns,
+						modelOverride: req.modelOverride,
+						temperature: req.temperature,
+					};
+					return { output: { message: "ok" } };
+				},
+			},
+		);
+		expect(captured.maxTurns).toBeUndefined();
+		expect(captured.modelOverride).toBeUndefined();
+		expect(captured.temperature).toBeUndefined();
 	});
 
 	test("RUN-AR-02: context accumulates across two agent_run nodes", async () => {
@@ -640,6 +825,112 @@ describe("WorkflowExecutor", () => {
 		expect(improverRuns).toBe(2);
 		expect(criticRuns).toBe(2);
 		expect(r.accumulatedContext?.entries).toHaveLength(2);
+	});
+
+	/**
+	 * Variant where the iteration cap is NOT declared on `state.loops` (the cap the
+	 * executor historically honors) but on a `loop`-type body block's
+	 * `subBlocks.maxIterations` — the value the NodeInspector persists. The executor
+	 * must bridge that gap and honor the block-level cap when the loops[] cap is
+	 * absent (flowToState never copies the subBlock into state.loops).
+	 */
+	function loopWithBlockCap(blockMaxIterations?: number): RoxWorkflowState {
+		return {
+			blocks: {
+				start: { type: "start" },
+				improver: {
+					type: "agent_run",
+					subBlocks: { roleSlug: "improver" },
+				},
+				critic: {
+					type: "loop",
+					subBlocks:
+						blockMaxIterations != null
+							? { maxIterations: blockMaxIterations }
+							: undefined,
+				},
+				resp: { type: "response" },
+			},
+			edges: [
+				{ id: "e1", source: "start", target: "improver" },
+				{ id: "e2", source: "improver", target: "critic" },
+				{
+					id: "e_back",
+					source: "critic",
+					target: "improver",
+					sourceHandle: "revise",
+				},
+				{ id: "e3", source: "critic", target: "resp", sourceHandle: "accept" },
+			],
+			variables: {},
+			// No maxIterations here on purpose — the cap lives on the loop block.
+			loops: { loop1: { nodes: ["improver", "critic"] } },
+			parallels: {},
+			metadata: { name: "block-cap" },
+		};
+	}
+
+	test("RUN-LOOP-BLK-01: loop honors a loop block's subBlocks.maxIterations cap", async () => {
+		let improverRuns = 0;
+		const r = await exec.execute(
+			loopWithBlockCap(2), // cap on the block, not on state.loops
+			{ seed: "draft" },
+			{
+				initialContext: { seedMessage: "draft", entries: [] },
+				handlers: {
+					loop: () => ({ handle: "revise", output: { verdict: "revise" } }),
+				},
+				resolveAgentRun: async () => {
+					improverRuns += 1;
+					return { output: { message: `improved-${improverRuns}` } };
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		// Block cap=2 ⇒ initial pass + 1 re-entry ⇒ improver runs exactly twice.
+		expect(improverRuns).toBe(2);
+	});
+
+	test("RUN-LOOP-BLK-02: no block cap + no loops cap → default (5)", async () => {
+		let improverRuns = 0;
+		const r = await exec.execute(
+			loopWithBlockCap(), // neither source set → DEFAULT_MAX_LOOP_ITERATIONS
+			{ seed: "draft" },
+			{
+				initialContext: { seedMessage: "draft", entries: [] },
+				handlers: {
+					loop: () => ({ handle: "revise" }),
+				},
+				resolveAgentRun: async () => {
+					improverRuns += 1;
+					return { output: { message: "x" } };
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		expect(improverRuns).toBe(5);
+	});
+
+	test("RUN-LOOP-BLK-03: explicit loops[] cap wins over a loop block cap", async () => {
+		// Both sources present: the explicit state.loops cap is authoritative.
+		const wf = loopWithBlockCap(2);
+		wf.loops.loop1 = { nodes: ["improver", "critic"], maxIterations: 4 };
+		let improverRuns = 0;
+		const r = await exec.execute(
+			wf,
+			{ seed: "draft" },
+			{
+				initialContext: { seedMessage: "draft", entries: [] },
+				handlers: { loop: () => ({ handle: "revise" }) },
+				resolveAgentRun: async () => {
+					improverRuns += 1;
+					return { output: { message: "x" } };
+				},
+			},
+		);
+		expect(r.status).toBe("succeeded");
+		// loops[] cap (4) wins over the block cap (2).
+		expect(improverRuns).toBe(4);
 	});
 
 	test("RUN-LOOP-03: default cap bounds a runaway loop (no maxIterations)", async () => {

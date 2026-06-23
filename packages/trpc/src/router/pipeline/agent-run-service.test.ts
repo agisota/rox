@@ -161,6 +161,43 @@ describe("makeAgentRunResolver composition", () => {
 		expect(res.appendedContext).toBeUndefined();
 	});
 
+	test("ARS-08: per-node maxTurns override reaches runOnHost (not just the preset)", async () => {
+		let seenMaxTurns = -1;
+		const resolve = makeResolver({
+			loadRolePreset: async () => ({ preset: CHAT_PRESET }), // preset maxTurns: 2
+			runOnHost: async (a) => {
+				seenMaxTurns = a.maxTurns;
+				return {
+					kind: "chat",
+					sessionId: "sess",
+					message: "ok",
+					workspaceId: "ws-1",
+				};
+			},
+		});
+		// The node overrides maxTurns; the resolver must merge it over the preset.
+		await resolve(req({ maxTurns: 25 }));
+		expect(seenMaxTurns).toBe(25);
+	});
+
+	test("ARS-09: no maxTurns override → preset value reaches runOnHost (regression)", async () => {
+		let seenMaxTurns = -1;
+		const resolve = makeResolver({
+			loadRolePreset: async () => ({ preset: CHAT_PRESET }), // preset maxTurns: 2
+			runOnHost: async (a) => {
+				seenMaxTurns = a.maxTurns;
+				return {
+					kind: "chat",
+					sessionId: "sess",
+					message: "ok",
+					workspaceId: "ws-1",
+				};
+			},
+		});
+		await resolve(req());
+		expect(seenMaxTurns).toBe(2);
+	});
+
 	test("ARS-07: terminal preset dispatches as terminal and carries artifacts", async () => {
 		const resolve = makeResolver({
 			loadRolePreset: async () => ({

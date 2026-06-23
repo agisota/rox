@@ -6,7 +6,7 @@ import {
 	buildAgentRunPrompt,
 	type ContextEntry,
 	classifyAgentRunError,
-	resolveAgentDispatchTarget,
+	resolveAgentRunNodeConfig,
 } from "@rox/workflow-core";
 import type {
 	AgentRunRequest,
@@ -130,7 +130,22 @@ export function makeAgentRunResolver(
 			promptTemplate: req.promptTemplate,
 			context: req.context,
 		});
-		const target = resolveAgentDispatchTarget(preset);
+		// Merge the node's per-node overrides (NodeInspector #407 — forwarded on the
+		// request by the executor) OVER the role preset, within bounds. The pure
+		// merge lives in @rox/workflow-core; here we feed it the request fields.
+		// NOTE: only `maxTurns` is transported to the host today (`agents.runAndCapture`
+		// accepts no model/temperature); `config.model` / `config.temperature` are
+		// resolved here but not yet sent across the relay (see agent-run-host-bridge).
+		const config = resolveAgentRunNodeConfig({
+			preset,
+			subBlocks: {
+				...(req.maxTurns != null ? { maxTurns: req.maxTurns } : {}),
+				...(req.temperature != null ? { temperature: req.temperature } : {}),
+				...(req.modelOverride != null
+					? { modelOverride: req.modelOverride }
+					: {}),
+			},
+		});
 
 		try {
 			// Cross-process host bridge: resolve host + workspace, relay the run, and
@@ -144,10 +159,11 @@ export function makeAgentRunResolver(
 				runId: args.runId,
 				v2ProjectId: args.v2ProjectId,
 				workspaceId: runWorkspaceId,
-				agentKind: target.kind,
-				agentId: target.agentId,
+				agentKind: config.agentKind,
+				agentId: config.agentId,
 				prompt,
-				maxTurns: target.maxTurns,
+				// Per-node maxTurns override (when set) already merged over the preset.
+				maxTurns: config.maxTurns,
 				label: req.roleSkillSlug,
 			});
 
@@ -170,7 +186,7 @@ export function makeAgentRunResolver(
 			const entry: ContextEntry = agentOutputToContextEntry({
 				blockId: req.blockId,
 				roleSkillSlug: req.roleSkillSlug,
-				agentId: target.agentId,
+				agentId: config.agentId,
 				message: result.message,
 				artifacts: result.artifacts,
 			});

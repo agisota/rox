@@ -200,6 +200,10 @@ export const pipelineRouter = {
 					blockId: result.approvalBlockId,
 					status: "pending",
 					requestedByUserId: ctx.session.user.id,
+					// Surface the human_approval node's approvalMessage (NodeInspector
+					// #407) as the row title so the inbox shows "what to confirm".
+					// Null when the author configured no message (column is nullable).
+					title: result.approvalMessage ?? null,
 				});
 			}
 			return result;
