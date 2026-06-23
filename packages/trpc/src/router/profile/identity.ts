@@ -1,4 +1,4 @@
-import { db } from "@rox/db/client";
+import { db, dbWs } from "@rox/db/client";
 import { accounts, userProfiles } from "@rox/db/schema";
 import {
 	canClaimHandle,
@@ -10,7 +10,10 @@ import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { provisionIdentity } from "../../lib/identity/provisionIdentity";
+import { renameHandle } from "../../lib/identity/renameHandle";
 import { protectedProcedure } from "../../trpc";
+import { requireActiveOrgId } from "../utils/active-org";
 
 /**
  * Human-readable copy for each `validateHandle` failure code, returned to the
@@ -162,27 +165,49 @@ export const identityRouter = {
 				});
 			}
 
-			try {
-				const [profile] = await db
-					.insert(userProfiles)
-					.values({ userId, handle })
-					.onConflictDoUpdate({
-						target: userProfiles.userId,
-						set: { handle },
-					})
-					.returning();
+			// 4. Identity is org-stamped (DQ3) for Electric shapes; the active org is
+			// the stamp. Require one so provisioning has an org to write under.
+			const organizationId = requireActiveOrgId(ctx);
 
-				if (!profile) {
-					throw new TRPCError({
-						code: "INTERNAL_SERVER_ERROR",
-						message: "Не удалось сохранить имя пользователя.",
+			// Read the CURRENT handle to decide provision (first claim) vs rename.
+			const current = await db.query.userProfiles.findFirst({
+				where: eq(userProfiles.userId, userId),
+				columns: { handle: true },
+			});
+
+			try {
+				if (current?.handle && current.handle !== handle) {
+					// Handle CHANGE → atomic rename + 90-day alias (DQ4).
+					await renameHandle({
+						userId,
+						fromHandle: current.handle,
+						toHandle: handle,
+						organizationId,
+					});
+				} else if (!current?.handle) {
+					// FIRST claim → provision identity (I1: the first real caller).
+					await dbWs.transaction(async (tx) => {
+						await tx
+							.insert(userProfiles)
+							.values({ userId, handle })
+							.onConflictDoUpdate({
+								target: userProfiles.userId,
+								set: { handle },
+							});
+						await provisionIdentity({ userId, handle, organizationId }, tx);
 					});
 				}
+				// else: same handle re-submitted → no-op.
 
-				return { handle: profile.handle };
+				return { handle };
 			} catch (error) {
-				// Unique-index violation lost a race between the pre-check and write.
-				if (error instanceof Error && /unique|duplicate/i.test(error.message)) {
+				// Dual-index trap: a same-org dup hits comms_addresses_org_kind_value_uniq;
+				// a cross-org dup hits comms_addresses_kind_value_primary_uniq; the handle
+				// table hits identity_handles_normalized_uniq. Map ALL to CONFLICT.
+				if (
+					error instanceof Error &&
+					/unique|duplicate|занято|reserved/i.test(error.message)
+				) {
 					throw new TRPCError({
 						code: "CONFLICT",
 						message: "Это имя пользователя уже занято.",

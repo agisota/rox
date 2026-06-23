@@ -1,8 +1,11 @@
 import { organizationIdFromRoomId, type RoxUserMeta } from "@rox/collab";
 import { authorizeRoom, type LiveblocksRoomClient } from "@rox/collab/auth";
+import { noteIdFromRoomId } from "@rox/collab/types";
+import { db } from "@rox/db/client";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
+import { assertNoteAccess } from "../../lib/notes/assertNoteAccess";
 import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 
@@ -31,6 +34,11 @@ export interface AuthorizeRoomForMemberArgs {
 		requireMembership: () => Promise<string>;
 		/** Injected LiveBlocks node client (tests pass a fake). */
 		liveblocks?: LiveblocksRoomClient;
+		/** Resolve the caller's access for a resource-scoped room (e.g. notes). */
+		resolveRoomAccess?: (
+			roomId: string,
+			organizationId: string,
+		) => Promise<"full" | "read" | "deny">;
 	};
 }
 
@@ -56,12 +64,22 @@ export async function authorizeRoomForMember({
 
 	const organizationId = await ports.requireMembership();
 
+	let access: "full" | "read" = "full";
+	if (ports.resolveRoomAccess) {
+		const decision = await ports.resolveRoomAccess(roomId, organizationId);
+		if (decision === "deny") {
+			throw new Error(`Access denied to room ${roomId}`);
+		}
+		access = decision;
+	}
+
 	return authorizeRoom({
 		userId,
 		organizationId,
 		roomId,
 		userInfo: { ...userInfo, organizationId },
 		liveblocks: ports.liveblocks,
+		access,
 	});
 }
 
@@ -87,6 +105,21 @@ export const collabRouter = {
 				},
 				ports: {
 					requireMembership: () => requireActiveOrgMembership(ctx),
+					resolveRoomAccess: async (roomId, organizationId) => {
+						const noteId = noteIdFromRoomId(roomId);
+						if (!noteId) return "full"; // non-note rooms keep org-only behavior
+						try {
+							const { role } = await assertNoteAccess(db, {
+								noteId,
+								organizationId,
+								userId: ctx.session.user.id,
+								min: "viewer",
+							});
+							return role === "viewer" ? "read" : "full";
+						} catch {
+							return "deny";
+						}
+					},
 				},
 			});
 		}),

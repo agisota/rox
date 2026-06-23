@@ -49,7 +49,6 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { organizations, users } from "./auth";
-import { identityHandles } from "./handles";
 import {
 	commsAddressKindValues,
 	commsDeliveryStatusValues,
@@ -58,6 +57,7 @@ import {
 	commsPresenceStateValues,
 	commsTransportValues,
 } from "./enums";
+import { identityHandles } from "./handles";
 
 // ---------------------------------------------------------------------------
 // pgEnums

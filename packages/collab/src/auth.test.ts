@@ -17,6 +17,7 @@ function fakeLiveblocks() {
 	}));
 	const session = {
 		FULL_ACCESS: ["room:write"] as const,
+		READ_ACCESS: ["room:read", "room:presence:write", "comments:read"] as const,
 		allow(room: string, perms: readonly string[]) {
 			granted.push({ room, perms });
 			return session;
@@ -41,6 +42,41 @@ describe("authorizeRoom", () => {
 
 		expect(result.token).toBe("lb_session_token");
 		expect(lb.prepareSession).toHaveBeenCalledTimes(1);
+		expect(lb.granted).toEqual([{ room: roomId, perms: ["room:write"] }]);
+	});
+
+	test("grants READ_ACCESS when access is 'read'", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = dashboardRoomId("org_1", "dash_42");
+		await authorizeRoom({
+			userId: "user_1",
+			organizationId: "org_1",
+			roomId,
+			userInfo,
+			liveblocks: lb.client,
+			access: "read",
+		});
+
+		expect(lb.granted).toEqual([
+			{
+				room: roomId,
+				perms: ["room:read", "room:presence:write", "comments:read"],
+			},
+		]);
+	});
+
+	test("grants FULL_ACCESS when access is 'full'", async () => {
+		const lb = fakeLiveblocks();
+		const roomId = dashboardRoomId("org_1", "dash_42");
+		await authorizeRoom({
+			userId: "user_1",
+			organizationId: "org_1",
+			roomId,
+			userInfo,
+			liveblocks: lb.client,
+			access: "full",
+		});
+
 		expect(lb.granted).toEqual([{ room: roomId, perms: ["room:write"] }]);
 	});
 

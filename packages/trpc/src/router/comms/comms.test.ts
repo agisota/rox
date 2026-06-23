@@ -83,9 +83,13 @@ const fakeDb = {
 
 mock.module("@rox/db/client", () => ({ db: fakeDb, dbWs: fakeDb }));
 mock.module("../integration/utils", () => ({
-	verifyOrgMembership: () => Promise.resolve(),
+	verifyOrgMembership: () => Promise.resolve({ membership: {} }),
 	verifyOrgMembershipWithSubscription: () =>
 		Promise.resolve({ subscription: null }),
+	verifyOrgAdmin: () => Promise.resolve({ membership: {} }),
+	verifyOrgOwner: () => Promise.resolve({ membership: {} }),
+	// Pass-through guard: cross-org rejection is covered in comms.guard.test.ts.
+	assertOrgMembers: () => Promise.resolve(),
 }));
 // Contact resolver bridge — the router never hits the real graph-service.
 mock.module("../../lib/graph", () => ({
