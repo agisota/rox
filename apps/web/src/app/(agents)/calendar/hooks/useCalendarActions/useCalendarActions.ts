@@ -126,6 +126,52 @@ export function useCalendarActions() {
 		}),
 	);
 
+	/** Refresh the caller's reminder list for an event after a write. */
+	const invalidateReminders = useCallback(
+		async (eventId: string) => {
+			await Promise.all([
+				queryClient.invalidateQueries({
+					queryKey: trpc.calendar.listReminders.queryKey({ eventId }),
+				}),
+				queryClient.invalidateQueries({
+					queryKey: trpc.calendar.getEvent.queryKey({ eventId }),
+				}),
+				queryClient.invalidateQueries({
+					queryKey: trpc.calendar.listOccurrences.queryKey(),
+				}),
+			]);
+		},
+		[queryClient, trpc],
+	);
+
+	const createReminder = useMutation(
+		trpc.calendar.createReminder.mutationOptions({
+			onSuccess: async (_data, variables) => {
+				await invalidateReminders(variables.eventId);
+				toast.success("Напоминание добавлено");
+			},
+			onError: onError("Не удалось добавить напоминание"),
+		}),
+	);
+
+	const updateReminder = useMutation(
+		trpc.calendar.updateReminder.mutationOptions({
+			onSuccess: async () => {
+				toast.success("Напоминание обновлено");
+			},
+			onError: onError("Не удалось обновить напоминание"),
+		}),
+	);
+
+	const deleteReminder = useMutation(
+		trpc.calendar.deleteReminder.mutationOptions({
+			onSuccess: async () => {
+				toast.success("Напоминание удалено");
+			},
+			onError: onError("Не удалось удалить напоминание"),
+		}),
+	);
+
 	return {
 		createCalendar,
 		createEvent,
@@ -135,6 +181,10 @@ export function useCalendarActions() {
 		removeAttendee,
 		rsvp,
 		importIcs,
+		createReminder,
+		updateReminder,
+		deleteReminder,
 		invalidateEvent,
+		invalidateReminders,
 	};
 }

@@ -851,6 +851,38 @@ export const calEventStatusValues = [
 export const calEventStatusEnum = z.enum(calEventStatusValues);
 export type CalEventStatus = z.infer<typeof calEventStatusEnum>;
 
+/**
+ * C6 reminders — how a fired reminder is delivered. `in_app` writes a
+ * `journal_events` row (replicated to web+desktop via Electric); `email` goes
+ * through the gated Resend seam (inert without MAIL_OUTBOUND_ENABLED + key).
+ */
+export const calReminderChannelValues = ["in_app", "email"] as const;
+export const calReminderChannelEnum = z.enum(calReminderChannelValues);
+export type CalReminderChannel = z.infer<typeof calReminderChannelEnum>;
+
+/**
+ * C6 reminders — how the fire instant is derived. `relative` fires
+ * `offset_minutes` before an occurrence start; `absolute` fires at a fixed
+ * `absolute_fire_at`.
+ */
+export const calReminderTriggerValues = ["relative", "absolute"] as const;
+export const calReminderTriggerEnum = z.enum(calReminderTriggerValues);
+export type CalReminderTrigger = z.infer<typeof calReminderTriggerEnum>;
+
+/**
+ * C6 reminders — scheduler lifecycle. `scheduled` is the only state the
+ * due-scan acts on; a recurring relative reminder stays `scheduled` and
+ * re-advances after each fire, a one-off flips to `fired`.
+ */
+export const calReminderStatusValues = [
+	"scheduled",
+	"fired",
+	"cancelled",
+	"failed",
+] as const;
+export const calReminderStatusEnum = z.enum(calReminderStatusValues);
+export type CalReminderStatus = z.infer<typeof calReminderStatusEnum>;
+
 // ---------------------------------------------------------------------------
 // Rox Workspace Suite — D3 Per-User Email (comms-suite epic, P3).
 // Every user owns one routable `<handle>@rox.one` mailbox derived 1:1 from their

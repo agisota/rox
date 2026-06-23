@@ -35,6 +35,14 @@
 		"./drive-economy": {
 			"types": "./src/router/drive/quota.ts",
 			"default": "./src/router/drive/quota.ts"
+		},
+		"./mail-transport": {
+			"types": "./src/router/mail/transport.ts",
+			"default": "./src/router/mail/transport.ts"
+		},
+		"./calendar-reminders": {
+			"types": "./src/router/calendar/reminders.ts",
+			"default": "./src/router/calendar/reminders.ts"
 		}
 	},
 	"scripts": {

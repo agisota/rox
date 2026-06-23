@@ -435,6 +435,231 @@ describe("calendar.exportIcs", () => {
 	});
 });
 
+describe("calendar.createReminder", () => {
+	// Far-future anchor so computeNextFireAt always yields a future fire instant.
+	const FUTURE_EVENT = {
+		id: EVENT_ID,
+		calendarId: CAL_ID,
+		organizationId: "org-1",
+		dtstart: new Date("2999-06-20T09:00:00Z"),
+		dtend: new Date("2999-06-20T10:00:00Z"),
+		timezone: "UTC",
+		rrule: null,
+		exdates: [],
+		status: "confirmed",
+	};
+
+	test("404s when the event is not readable", async () => {
+		state.selectQueue = [[]]; // getEventWithAccess → event lookup empty
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.createReminder({
+				eventId: EVENT_ID,
+				channel: "in_app",
+				trigger: "relative",
+				offsetMinutes: 10,
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("forces owner_user_id to the caller and persists next_fire_at", async () => {
+		state.selectQueue = [
+			[FUTURE_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[{ value: 0 }], // per-event reminder count
+		];
+		state.insertReturning = [{ id: "reminder-1" }];
+		const caller = callerFor("org-1", "user-1");
+		const res = await caller.calendar.createReminder({
+			eventId: EVENT_ID,
+			channel: "in_app",
+			trigger: "relative",
+			offsetMinutes: 10,
+		});
+		expect(res?.id).toBe("reminder-1");
+		const values = state.inserted[0]?.values[0];
+		expect(values).toMatchObject({
+			organizationId: "org-1",
+			eventId: EVENT_ID,
+			ownerUserId: "user-1",
+			channel: "in_app",
+			triggerKind: "relative",
+			offsetMinutes: 10,
+			status: "scheduled",
+		});
+		// next_fire_at = dtstart - 10min, materialized by computeNextFireAt.
+		expect((values?.nextFireAt as Date).toISOString()).toBe(
+			"2999-06-20T08:50:00.000Z",
+		);
+		expect(values?.absoluteFireAt).toBeNull();
+	});
+
+	test("rejects when the per-event reminder cap is reached", async () => {
+		state.selectQueue = [
+			[FUTURE_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[{ value: 10 }], // already at the cap
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.createReminder({
+				eventId: EVENT_ID,
+				channel: "in_app",
+				trigger: "relative",
+				offsetMinutes: 10,
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+
+	test("rejects a relative reminder with no offsetMinutes (XOR)", async () => {
+		const caller = callerFor("org-1");
+		await expect(
+			// @ts-expect-error deliberately omit offsetMinutes to hit the refine
+			caller.calendar.createReminder({
+				eventId: EVENT_ID,
+				channel: "in_app",
+				trigger: "relative",
+			}),
+		).rejects.toThrow();
+	});
+
+	test("rejects a relative reminder that also sets absoluteFireAt (XOR)", async () => {
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.createReminder({
+				eventId: EVENT_ID,
+				channel: "in_app",
+				trigger: "relative",
+				offsetMinutes: 10,
+				absoluteFireAt: new Date("2999-06-20T08:00:00Z"),
+			}),
+		).rejects.toThrow();
+	});
+
+	test("rejects an absolute reminder with no absoluteFireAt (XOR)", async () => {
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.createReminder({
+				eventId: EVENT_ID,
+				channel: "in_app",
+				trigger: "absolute",
+			}),
+		).rejects.toThrow();
+	});
+
+	test("rejects when the computed fire instant is already in the past", async () => {
+		state.selectQueue = [
+			[
+				{
+					...FUTURE_EVENT,
+					dtstart: new Date("2000-01-01T09:00:00Z"),
+					dtend: new Date("2000-01-01T10:00:00Z"),
+				},
+			], // event in the past
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[{ value: 0 }], // count
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.calendar.createReminder({
+				eventId: EVENT_ID,
+				channel: "in_app",
+				trigger: "relative",
+				offsetMinutes: 10,
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+});
+
+describe("calendar.listReminders", () => {
+	test("returns the caller's own reminders for a readable event", async () => {
+		state.selectQueue = [
+			[{ id: EVENT_ID, calendarId: CAL_ID, organizationId: "org-1" }], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+			[{ id: "reminder-1", ownerUserId: "user-1", eventId: EVENT_ID }], // reminders
+		];
+		const caller = callerFor("org-1", "user-1");
+		const res = await caller.calendar.listReminders({ eventId: EVENT_ID });
+		expect(res).toHaveLength(1);
+		expect(res[0]?.ownerUserId).toBe("user-1");
+	});
+
+	test("404s when the event is not readable (cannot peek another user's reminders)", async () => {
+		state.selectQueue = [[]]; // event lookup empty → NOT_FOUND
+		const caller = callerFor("org-1", OTHER_USER);
+		await expect(
+			caller.calendar.listReminders({ eventId: EVENT_ID }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+});
+
+describe("calendar.updateReminder", () => {
+	test("404s when the reminder is not the caller's own", async () => {
+		state.selectQueue = [[]]; // reminder lookup (org + owner scoped) empty
+		const caller = callerFor("org-1", OTHER_USER);
+		await expect(
+			caller.calendar.updateReminder({
+				reminderId: "55555555-5555-4555-8555-555555555555",
+				trigger: "relative",
+				offsetMinutes: 30,
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("recomputes next_fire_at from the new offset", async () => {
+		state.selectQueue = [
+			[
+				{
+					id: "55555555-5555-4555-8555-555555555555",
+					organizationId: "org-1",
+					ownerUserId: "user-1",
+					eventId: EVENT_ID,
+					triggerKind: "relative",
+					offsetMinutes: 10,
+					absoluteFireAt: null,
+				},
+			], // reminder
+			[
+				{
+					id: EVENT_ID,
+					calendarId: CAL_ID,
+					organizationId: "org-1",
+					dtstart: new Date("2999-06-20T09:00:00Z"),
+					dtend: new Date("2999-06-20T10:00:00Z"),
+					timezone: "UTC",
+					rrule: null,
+					exdates: [],
+					status: "confirmed",
+				},
+			], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar access
+		];
+		state.updateReturning = [{ id: "55555555-5555-4555-8555-555555555555" }];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateReminder({
+			reminderId: "55555555-5555-4555-8555-555555555555",
+			trigger: "relative",
+			offsetMinutes: 60,
+		});
+		// next_fire_at = dtstart - 60min.
+		expect((state.updated[0]?.nextFireAt as Date).toISOString()).toBe(
+			"2999-06-20T08:00:00.000Z",
+		);
+		expect(state.updated[0]?.offsetMinutes).toBe(60);
+		expect(state.updated[0]?.status).toBe("scheduled");
+	});
+});
+
+describe("calendar.deleteReminder", () => {
+	test("deletes scoped by org + owner and returns ok", async () => {
+		const caller = callerFor("org-1", "user-1");
+		const res = await caller.calendar.deleteReminder({
+			reminderId: "55555555-5555-4555-8555-555555555555",
+		});
+		expect(res.ok).toBe(true);
+	});
+});
+
 describe("calendar.shareCalendar", () => {
 	test("owner grants a role to a member", async () => {
 		state.selectQueue = [

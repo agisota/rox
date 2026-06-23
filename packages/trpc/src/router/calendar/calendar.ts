@@ -21,31 +21,37 @@ import {
 	calCalendars,
 	calEventAttendees,
 	calEvents,
+	calReminders,
 	userProfiles,
 } from "@rox/db/schema";
 import { isValidRrule } from "@rox/shared/rrule";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
 import { assertOrgMembers } from "../integration/assertOrgMembers";
 import { verifyOrgMembership } from "../integration/utils";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { exportIcs, type IcsEvent, importIcs } from "./ics";
 import { type ExpandableEvent, expandEvents } from "./occurrences";
+import { computeNextFireAt } from "./reminders";
 import {
 	addAttendeeSchema,
 	createCalendarSchema,
 	createEventSchema,
+	createReminderSchema,
 	deleteCalendarSchema,
 	deleteEventSchema,
+	deleteReminderSchema,
 	exportIcsSchema,
 	getEventSchema,
 	IMPORT_INSERT_CHUNK,
 	importIcsSchema,
 	isAllowedCadence,
 	listOccurrencesSchema,
+	listRemindersSchema,
 	MAX_IMPORT_EVENTS,
 	MAX_IMPORT_EXDATES,
+	MAX_REMINDERS_PER_EVENT,
 	RRULE_CADENCE_MESSAGE,
 	removeAttendeeSchema,
 	rsvpSchema,
@@ -53,6 +59,7 @@ import {
 	unshareCalendarSchema,
 	updateCalendarSchema,
 	updateEventSchema,
+	updateReminderSchema,
 } from "./schema";
 
 /**
@@ -677,6 +684,193 @@ export const calendarRouter = {
 					message: "You are not an attendee of this event",
 				});
 			}
+			return { ok: true as const };
+		}),
+
+	// ---- reminders (C6) ---------------------------------------------------
+	// A reminder is PERSONAL: `owner_user_id` is forced to the caller, and
+	// reader access to the event is enough (mirrors `rsvp`). `next_fire_at` is
+	// materialized from the event's anchor via the pure `reminders.ts` helper.
+
+	/** The caller's own reminders for an event they can read. */
+	listReminders: protectedProcedure
+		.input(listRemindersSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			await getEventWithAccess(organizationId, userId, input.eventId, "reader");
+			return db
+				.select()
+				.from(calReminders)
+				.where(
+					and(
+						eq(calReminders.organizationId, organizationId),
+						eq(calReminders.eventId, input.eventId),
+						eq(calReminders.ownerUserId, userId),
+					),
+				)
+				.orderBy(asc(calReminders.nextFireAt));
+		}),
+
+	/** Create a personal reminder on an event the caller can read. */
+	createReminder: protectedProcedure
+		.input(createReminderSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			// Reader access is enough — a reminder is personal, like an RSVP.
+			const event = await getEventWithAccess(
+				organizationId,
+				userId,
+				input.eventId,
+				"reader",
+			);
+
+			// Anti-spam: cap reminders per (event, owner).
+			const [existing] = await db
+				.select({ value: count() })
+				.from(calReminders)
+				.where(
+					and(
+						eq(calReminders.organizationId, organizationId),
+						eq(calReminders.eventId, input.eventId),
+						eq(calReminders.ownerUserId, userId),
+					),
+				);
+			if ((existing?.value ?? 0) >= MAX_REMINDERS_PER_EVENT) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Слишком много напоминаний на событие (максимум ${MAX_REMINDERS_PER_EVENT})`,
+				});
+			}
+
+			const offsetMinutes =
+				input.trigger === "relative" ? (input.offsetMinutes ?? null) : null;
+			const absoluteFireAt =
+				input.trigger === "absolute" ? (input.absoluteFireAt ?? null) : null;
+
+			const nextFireAt = computeNextFireAt({
+				event,
+				offsetMinutes,
+				absoluteFireAt,
+				now: new Date(),
+			});
+			if (!nextFireAt) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Напоминание не имеет будущего момента срабатывания",
+				});
+			}
+
+			const [row] = await db
+				.insert(calReminders)
+				.values({
+					organizationId,
+					eventId: input.eventId,
+					ownerUserId: userId,
+					channel: input.channel,
+					triggerKind: input.trigger,
+					offsetMinutes,
+					absoluteFireAt,
+					nextFireAt,
+					status: "scheduled",
+				})
+				.returning();
+			return row;
+		}),
+
+	/** Update one of the caller's own reminders (recomputes next_fire_at). */
+	updateReminder: protectedProcedure
+		.input(updateReminderSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+
+			const [reminder] = await db
+				.select()
+				.from(calReminders)
+				.where(
+					and(
+						eq(calReminders.id, input.reminderId),
+						eq(calReminders.organizationId, organizationId),
+						eq(calReminders.ownerUserId, userId),
+					),
+				)
+				.limit(1);
+			if (!reminder) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Reminder not found",
+				});
+			}
+			const event = await getEventWithAccess(
+				organizationId,
+				userId,
+				reminder.eventId,
+				"reader",
+			);
+
+			// Effective trigger after this update (falls back to the stored kind).
+			const trigger = input.trigger ?? reminder.triggerKind;
+			const offsetMinutes =
+				trigger === "relative"
+					? (input.offsetMinutes ?? reminder.offsetMinutes ?? null)
+					: null;
+			const absoluteFireAt =
+				trigger === "absolute"
+					? (input.absoluteFireAt ?? reminder.absoluteFireAt ?? null)
+					: null;
+
+			const nextFireAt = computeNextFireAt({
+				event,
+				offsetMinutes,
+				absoluteFireAt,
+				now: new Date(),
+			});
+			if (!nextFireAt) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Напоминание не имеет будущего момента срабатывания",
+				});
+			}
+
+			const [row] = await db
+				.update(calReminders)
+				.set({
+					...(input.channel !== undefined ? { channel: input.channel } : {}),
+					triggerKind: trigger,
+					offsetMinutes,
+					absoluteFireAt,
+					nextFireAt,
+					// Re-arm a reminder that had already fired/failed.
+					status: "scheduled",
+				})
+				.where(
+					and(
+						eq(calReminders.id, input.reminderId),
+						eq(calReminders.organizationId, organizationId),
+						eq(calReminders.ownerUserId, userId),
+					),
+				)
+				.returning();
+			return row;
+		}),
+
+	/** Delete one of the caller's own reminders. */
+	deleteReminder: protectedProcedure
+		.input(deleteReminderSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			await db
+				.delete(calReminders)
+				.where(
+					and(
+						eq(calReminders.id, input.reminderId),
+						eq(calReminders.organizationId, organizationId),
+						eq(calReminders.ownerUserId, userId),
+					),
+				);
 			return { ok: true as const };
 		}),
 
