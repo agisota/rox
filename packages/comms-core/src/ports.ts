@@ -18,6 +18,7 @@ import type {
 	CommsParticipant,
 	CommsParticipantRole,
 	CommsPresence,
+	CommsPresenceState,
 	CommsThread,
 	CommsTransport,
 	Counterpart,
@@ -34,6 +35,18 @@ export interface AddressStore {
 		value: string;
 		kind?: CommsTransport;
 	}): Promise<CommsAddress | null>;
+
+	/**
+	 * Resolve a rox user's canonical `@rox.one` email address (its primary mail
+	 * address). Used to normalize a `userId` recipient to the SAME stable address
+	 * the email transport keys on, so an in-app DM and its email reply collide on
+	 * the same participant-set dedup key (I2). Returns `null` when the user has no
+	 * provisioned address yet (the router then falls back to the userId).
+	 */
+	findRoxAddressByUser?(args: {
+		organizationId: string;
+		userId: string;
+	}): Promise<string | null>;
 }
 
 /**
@@ -135,12 +148,27 @@ export interface DeliveryStore {
 	}): Promise<void>;
 }
 
-/** Read merged presence for transport selection. */
+/** Read/write merged presence for transport selection. */
 export interface PresenceStore {
 	get(args: {
 		organizationId: string;
 		userId: string;
 	}): Promise<CommsPresence | null>;
+
+	/**
+	 * Upsert a user's presence for one transport (I4). Merges into the existing
+	 * `per_transport` map, recomputes the aggregate `state`, and stamps a fresh
+	 * `updated_at` heartbeat. Optional so domain unit-tests that only read
+	 * presence need not implement it.
+	 */
+	upsert?(args: {
+		organizationId: string;
+		userId: string;
+		transport: CommsTransport;
+		state: CommsPresenceState;
+		statusText?: string | null;
+		at?: Date;
+	}): Promise<CommsPresence>;
 }
 
 /** Optional org-membership guard (defense-in-depth for non-tRPC callers). */

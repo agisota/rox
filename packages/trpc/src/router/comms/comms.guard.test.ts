@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { TRPCError } from "@trpc/server";
 
 // --- Cross-org recipient guard (T1/S4) --------------------------------------
-// A sibling of comms.test.ts with its own harness: here the `../integration
-// /utils` mock makes `assertOrgMembers` THROW, so we can assert sendMessage
-// rejects a non-member recipient without writing any message — without
-// disturbing the pass-through mock in comms.test.ts.
+// A sibling of comms.test.ts with its own harness. We DON'T mock the
+// assertOrgMembers module (bun's mock.module is process-global and would bleed
+// into assertOrgMembers.test.ts). Instead the fakeDb's `members` select returns
+// [] so the REAL guard finds no member and throws FORBIDDEN — letting us assert
+// sendMessage rejects a non-member recipient without writing any message.
 
 type AnyRow = Record<string, unknown>;
 
@@ -69,12 +69,6 @@ mock.module("../integration/utils", () => ({
 	// sibling suite that imports the other guards.
 	verifyOrgAdmin: () => Promise.resolve({ membership: {} }),
 	verifyOrgOwner: () => Promise.resolve({ membership: {} }),
-	assertOrgMembers: () => {
-		throw new TRPCError({
-			code: "FORBIDDEN",
-			message: "One or more recipients are not members of this organization",
-		});
-	},
 }));
 mock.module("../../lib/graph", () => ({
 	graphService: {

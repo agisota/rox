@@ -62,6 +62,16 @@ function makeFakes(seed?: {
 			async findByValue({ organizationId, value }) {
 				return addresses.get(`${organizationId}:${value}`) ?? null;
 			},
+			async findRoxAddressByUser({ userId }) {
+				// I2: resolve a userId → its primary @rox.one email so an in-app DM
+				// and its email reply share a participant-set dedup key.
+				for (const a of addresses.values()) {
+					if (a.userId === userId && a.kind === "email" && !a.isAlias) {
+						return a.value;
+					}
+				}
+				return null;
+			},
 		},
 		contacts: {
 			async resolveContact({ value }) {
@@ -78,8 +88,10 @@ function makeFakes(seed?: {
 				}
 				return null;
 			},
-			async findThreadByMessageExternalId({ transport, externalId }) {
-				const threadId = messageToThread.get(`${transport}:${externalId}`);
+			async findThreadByMessageExternalId({ externalId }) {
+				// I2: transport-agnostic — mirrors the production port which dropped
+				// the transport filter so a reply on any transport matches.
+				const threadId = messageToThread.get(externalId);
 				return threadId ? (threads.get(threadId) ?? null) : null;
 			},
 			async createThread({
@@ -163,9 +175,13 @@ function makeFakes(seed?: {
 				};
 				messages.set(message.id, message);
 				if (args.externalId) {
-					const key = `${args.transport}:${args.externalId}`;
-					messageExternalIndex.set(key, message.id);
-					messageToThread.set(key, args.threadId);
+					// (transport, external_id) is the per-transport idempotency key,
+					// but thread lookup by external id is transport-agnostic (I2).
+					messageExternalIndex.set(
+						`${args.transport}:${args.externalId}`,
+						message.id,
+					);
+					messageToThread.set(args.externalId, args.threadId);
 				}
 				return message;
 			},
@@ -339,6 +355,24 @@ describe("selectTransport", () => {
 		expect(t).toBe("inapp");
 	});
 
+	it("treats a STALE online presence as offline → not in-app reachable (I4 TTL)", async () => {
+		const stale: CommsPresence = {
+			...presenceRow("user-mark", "online"),
+			updatedAt: new Date(Date.now() - 10 * 60_000), // 10 min ago, past TTL
+		};
+		const fakes = makeFakes({ presence: [stale] });
+		const router = new MessageRouter({
+			ports: fakes.ports,
+			adapters: new AdapterRegistry([new InAppAdapter()]),
+		});
+		const t = await router.selectTransport({
+			type: "user",
+			organizationId: ORG,
+			userId: "user-mark",
+		});
+		expect(t).toBe("email");
+	});
+
 	it("falls back to email for an offline rox user (no other adapters)", async () => {
 		const fakes = makeFakes({
 			presence: [presenceRow("user-mark", "offline")],
@@ -467,6 +501,87 @@ describe("routeInbound", () => {
 		expect(reply.thread.id).toBe(root.thread.id);
 		expect(fakes.threads.size).toBe(1);
 		expect(fakes.messages.size).toBe(2);
+	});
+
+	it("merges an email reply into the thread an in-app DM opened (I2, transport-agnostic reply root)", async () => {
+		// Two rox users with @rox.one addresses.
+		const fakes = makeFakes({
+			addresses: [
+				userAddress("user-mark", "mark@rox.one"),
+				userAddress("user-bob", "bob@rox.one"),
+				userAddress("user-alice", "alice@external.com"), // not used
+			].slice(0, 2),
+		});
+		const router = new MessageRouter({
+			ports: fakes.ports,
+			adapters: new AdapterRegistry([new InAppAdapter()]),
+		});
+
+		// 1. mark opens an in-app DM to bob; the in-app message carries an external
+		//    id (client/stanza id) so a reply can root off it.
+		const dm = await router.routeInbound(
+			ORG,
+			inbound({
+				transport: "inapp",
+				externalId: "inapp-msg-1",
+				from: "mark@rox.one",
+				to: ["bob@rox.one"],
+			}),
+		);
+
+		// 2. bob replies BY EMAIL, referencing the in-app message's external id.
+		//    The transport-agnostic reply-root lookup must merge it (not fork).
+		const reply = await router.routeInbound(
+			ORG,
+			inbound({
+				transport: "email",
+				externalId: "email-reply-1",
+				inReplyToExternalId: "inapp-msg-1",
+				from: "bob@rox.one",
+				to: ["mark@rox.one"],
+			}),
+		);
+
+		expect(reply.thread.id).toBe(dm.thread.id);
+		expect(fakes.threads.size).toBe(1);
+		expect(fakes.messages.size).toBe(2);
+	});
+
+	it("merges an in-app DM (userId send) with its email reply by participant-set key (I2 dedup alignment)", async () => {
+		const fakes = makeFakes({
+			addresses: [
+				userAddress("user-mark", "mark@rox.one"),
+				userAddress("user-bob", "bob@rox.one"),
+			],
+		});
+		const router = new MessageRouter({
+			ports: fakes.ports,
+			adapters: new AdapterRegistry([new InAppAdapter()]),
+		});
+
+		// 1. mark sends an in-app DM to bob BY USERID (no address ref). The author +
+		//    recipient must normalize to their @rox.one addresses for the dedup key.
+		const outbound = await router.routeOutbound({
+			organizationId: ORG,
+			authorUserId: "user-mark",
+			recipients: [{ kind: "userId", userId: "user-bob" }],
+			body: "hi bob",
+		});
+
+		// 2. An inbound email between the same two @rox.one parties (no reply root)
+		//    must land in the SAME thread via the participant-set dedup key.
+		const email = await router.routeInbound(
+			ORG,
+			inbound({
+				transport: "email",
+				externalId: "em-reply-1",
+				from: "bob@rox.one",
+				to: ["mark@rox.one"],
+			}),
+		);
+
+		expect(email.thread.id).toBe(outbound.thread.id);
+		expect(fakes.threads.size).toBe(1);
 	});
 
 	it("merges by participant-set dedup key across transports", async () => {

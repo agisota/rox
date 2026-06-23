@@ -16,9 +16,15 @@
  * Bodies/attachments live in R2 (D8); these rows hold only metadata + pointers.
  */
 
-import { EmailAdapter, normalizeSubject } from "@rox/comms-core";
+import {
+	deriveDedupKey,
+	EmailAdapter,
+	normalizeSubject,
+} from "@rox/comms-core";
 import { db } from "@rox/db/client";
 import {
+	commsMessages,
+	commsThreads,
 	mailAddresses,
 	mailAttachments,
 	mailMessages,
@@ -109,6 +115,90 @@ function requireStorage() {
 		});
 	}
 	return storage;
+}
+
+/** A db/tx handle compatible with the outbound D1 emit (root client OR a tx). */
+type MailTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Emit an outbound sent mail into the D1 unified inbox (M6). Finds-or-creates a
+ * `comms_threads` row keyed by the cross-transport dedup key (reply root, else
+ * the sorted participant set) and inserts a `comms_messages` row with
+ * `transport='email'`, `direction='outbound'`. The (transport, external_id)
+ * global unique is guarded with `onConflictDoNothing`, and `external_id` is
+ * `null` for outbound (the provider id is carried in metadata) so it never
+ * collides with an inbound RFC Message-ID.
+ */
+async function emitOutboundToUnifiedInbox(
+	tx: MailTx,
+	args: {
+		organizationId: string;
+		authorUserId: string;
+		fromAddr: string;
+		toAddrs: string[];
+		subject: string | null;
+		snippet: string;
+		providerId: string;
+		inReplyTo: string | null;
+		mailMessageId: string;
+	},
+): Promise<void> {
+	const dedupKey =
+		deriveDedupKey({
+			rootExternalId: args.inReplyTo ?? null,
+			participantAddresses: [args.fromAddr, ...args.toAddrs],
+		}) ?? `mail:${args.mailMessageId}`;
+
+	const [existing] = await tx
+		.select({ id: commsThreads.id })
+		.from(commsThreads)
+		.where(
+			and(
+				eq(commsThreads.organizationId, args.organizationId),
+				eq(commsThreads.dedupKey, dedupKey),
+			),
+		)
+		.limit(1);
+
+	let threadId: string;
+	if (existing) {
+		threadId = existing.id;
+		await tx
+			.update(commsThreads)
+			.set({ lastMessageAt: new Date() })
+			.where(eq(commsThreads.id, threadId));
+	} else {
+		const [thread] = await tx
+			.insert(commsThreads)
+			.values({
+				organizationId: args.organizationId,
+				subject: args.subject,
+				dedupKey,
+				lastMessageAt: new Date(),
+			})
+			.returning({ id: commsThreads.id });
+		if (!thread) throw new Error("Failed to create comms thread");
+		threadId = thread.id;
+	}
+
+	await tx
+		.insert(commsMessages)
+		.values({
+			organizationId: args.organizationId,
+			threadId,
+			transport: "email",
+			direction: "outbound",
+			authorUserId: args.authorUserId,
+			externalId: null,
+			inReplyToExternalId: args.inReplyTo,
+			body: args.snippet,
+			metadata: {
+				mailMessageId: args.mailMessageId,
+				providerId: args.providerId,
+				source: "d3-email",
+			},
+		})
+		.onConflictDoNothing();
 }
 
 export const mailRouter = {
@@ -448,6 +538,23 @@ export const mailRouter = {
 							),
 						);
 				}
+
+				// M6: emit the outbound mail into the D1 unified inbox so it shows
+				// alongside inbound and a reply threads into the same conversation.
+				// Keyed on the SAME participant-set dedup key the inbound emit uses
+				// (sender `@rox.one` + recipients), or the reply root when present —
+				// so the inbox shows BOTH halves of the conversation, not just inbound.
+				await emitOutboundToUnifiedInbox(tx, {
+					organizationId,
+					authorUserId: userId,
+					fromAddr: address.address,
+					toAddrs: input.to,
+					subject: input.subject ?? null,
+					snippet: input.body.slice(0, 200),
+					providerId: result.providerId,
+					inReplyTo: derivedInReplyTo,
+					mailMessageId: inserted?.id ?? "",
+				});
 
 				return inserted;
 			});

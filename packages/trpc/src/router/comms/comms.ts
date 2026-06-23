@@ -3,6 +3,7 @@ import {
 	InAppAdapter,
 	MessageRouter,
 	type OutboundDraft,
+	PRESENCE_TTL_MS,
 	type RecipientRef,
 } from "@rox/comms-core";
 import { db, dbWs } from "@rox/db/client";
@@ -10,14 +11,16 @@ import { commsMessages, commsParticipants, commsThreads } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
-import { assertOrgMembers } from "../integration/utils";
+import { assertOrgMembers } from "../integration/assertOrgMembers";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { type CommsDb, createCommsPorts } from "./ports";
 import {
+	getPresenceSchema,
 	getThreadSchema,
 	listThreadsSchema,
 	markReadSchema,
 	sendMessageSchema,
+	updatePresenceSchema,
 } from "./schema";
 
 /**
@@ -237,5 +240,73 @@ export const commsRouter = {
 				});
 			}
 			return { ok: true as const };
+		}),
+
+	/**
+	 * Heartbeat the caller's presence for one transport (I4). Writes/merges the
+	 * `comms_presence` row so `selectTransport` can see a reachable in-app user
+	 * and auto-pick the in-app transport instead of always falling to email. The
+	 * heartbeat stamps `updated_at`; a client must re-call within the TTL or its
+	 * presence decays to offline.
+	 */
+	updatePresence: protectedProcedure
+		.input(updatePresenceSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			const ports = createCommsPorts(organizationId);
+			if (!ports.presence.upsert) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Presence writer is unavailable.",
+				});
+			}
+			const presence = await ports.presence.upsert({
+				organizationId,
+				userId,
+				transport: input.transport ?? "inapp",
+				state: input.state,
+				statusText: input.statusText ?? null,
+			});
+			return {
+				userId: presence.userId,
+				state: presence.state,
+				updatedAt: presence.updatedAt,
+			};
+		}),
+
+	/**
+	 * Read a user's merged presence (I4). Applies the TTL: a heartbeat older than
+	 * `PRESENCE_TTL_MS` is reported as `offline` (and `stale: true`) so a crashed
+	 * client never shows reachable. Defaults to the caller; reading another user
+	 * is org-scoped (the row is fetched within the caller's active org).
+	 */
+	presence: protectedProcedure
+		.input(getPresenceSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const targetUserId = input?.userId ?? ctx.session.user.id;
+			const ports = createCommsPorts(organizationId);
+			const row = await ports.presence.get({
+				organizationId,
+				userId: targetUserId,
+			});
+			if (!row) {
+				return {
+					userId: targetUserId,
+					state: "offline" as const,
+					statusText: null,
+					stale: true as const,
+					updatedAt: null,
+				};
+			}
+			const stale = Date.now() - row.updatedAt.getTime() > PRESENCE_TTL_MS;
+			return {
+				userId: row.userId,
+				state: stale ? ("offline" as const) : row.state,
+				statusText: row.statusText,
+				stale,
+				updatedAt: row.updatedAt,
+			};
 		}),
 } satisfies TRPCRouterRecord;

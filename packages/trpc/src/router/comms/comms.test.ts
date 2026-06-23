@@ -21,6 +21,48 @@ const state: {
 	updateReturning: [{ id: "participant-1" }],
 };
 
+// Read a drizzle pgTable's name off its `Symbol(drizzle:Name)` so the stub can
+// special-case the `members` table the REAL assertOrgMembers guard queries (the
+// quota.test.ts pattern). Routing `members` by name keeps it OFF the positional
+// `selectQueue` so the membership probe never shifts a result-set meant for a
+// later router select.
+function tableName(table: unknown): string {
+	if (!table || typeof table !== "object") return "";
+	const sym = Object.getOwnPropertySymbols(table).find(
+		(s) => s.description === "drizzle:Name",
+	);
+	return sym ? String((table as Record<symbol, unknown>)[sym]) : "";
+}
+
+// assertOrgMembers runs `WHERE org=$1 AND user_id = ANY($userIds)`. Pull the
+// bound param values out of the drizzle where-clause (each is a `Param` with a
+// `value`/`encoder`); the first is the org id, the rest are the queried userIds.
+function whereParamValues(clause: unknown): unknown[] {
+	const out: unknown[] = [];
+	const seen = new Set<unknown>();
+	const walk = (o: unknown, depth = 0): void => {
+		if (depth > 8 || !o || typeof o !== "object" || seen.has(o)) return;
+		seen.add(o);
+		const rec = o as Record<string, unknown>;
+		if ("value" in rec && "encoder" in rec) out.push(rec.value);
+		for (const v of Object.values(rec)) {
+			if (Array.isArray(v)) for (const it of v) walk(it, depth + 1);
+			else if (v && typeof v === "object") walk(v, depth + 1);
+		}
+	};
+	walk(clause);
+	return out;
+}
+
+// Echo back a `{ userId }` row for every userId in the `members` where-clause so
+// the real guard sees every requested recipient as a member (happy path).
+function membersFromWhere(clause: unknown): AnyRow[] {
+	return whereParamValues(clause)
+		.filter((v) => typeof v === "string")
+		.slice(1) // drop the org id; the remainder are the queried userIds
+		.map((userId) => ({ userId }));
+}
+
 function selectBuilder(rows: AnyRow[]) {
 	const step = (): Promise<AnyRow[]> & Record<string, () => unknown> => {
 		const p = Promise.resolve(rows) as Promise<AnyRow[]> &
@@ -36,8 +78,38 @@ function selectBuilder(rows: AnyRow[]) {
 	return step();
 }
 
+// Table-aware builder: the `members` membership probe resolves from its own
+// where-clause (never the positional queue); every other table drains the queue.
+function tableAwareSelect() {
+	let queued: AnyRow[] | null = null;
+	const resolveFor = (table: unknown): AnyRow[] => {
+		if (tableName(table) === "members") return [];
+		if (queued === null) queued = state.selectQueue.shift() ?? [];
+		return queued;
+	};
+	const builder = {
+		from(table: unknown) {
+			const isMembers = tableName(table) === "members";
+			const rows = resolveFor(table);
+			const make = (): Promise<AnyRow[]> & Record<string, () => unknown> => {
+				const p = Promise.resolve(rows) as Promise<AnyRow[]> &
+					Record<string, () => unknown>;
+				p.where = (clause?: unknown) =>
+					isMembers ? selectBuilder(membersFromWhere(clause)) : make();
+				p.orderBy = make;
+				p.innerJoin = make;
+				p.leftJoin = make;
+				p.limit = make;
+				return p;
+			};
+			return make();
+		},
+	};
+	return builder;
+}
+
 function nextSelect() {
-	return selectBuilder(state.selectQueue.shift() ?? []);
+	return tableAwareSelect();
 }
 
 function insertChain() {
@@ -47,6 +119,7 @@ function insertChain() {
 			state.inserted.push({ values: arr });
 			const chain = {
 				onConflictDoNothing: () => chain,
+				onConflictDoUpdate: () => chain,
 				returning: () => Promise.resolve(state.insertReturning),
 			};
 			return chain;
@@ -88,8 +161,6 @@ mock.module("../integration/utils", () => ({
 		Promise.resolve({ subscription: null }),
 	verifyOrgAdmin: () => Promise.resolve({ membership: {} }),
 	verifyOrgOwner: () => Promise.resolve({ membership: {} }),
-	// Pass-through guard: cross-org rejection is covered in comms.guard.test.ts.
-	assertOrgMembers: () => Promise.resolve(),
 }));
 // Contact resolver bridge — the router never hits the real graph-service.
 mock.module("../../lib/graph", () => ({
@@ -261,5 +332,90 @@ describe("comms.markRead", () => {
 		await expect(
 			caller.comms.markRead({ threadId: THREAD_ID, lastReadMessageId: MSG_ID }),
 		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+});
+
+describe("comms.updatePresence (I4)", () => {
+	test("requires an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(
+			caller.comms.updatePresence({ state: "online" }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+
+	test("upserts presence and returns the merged state", async () => {
+		state.selectQueue = [
+			[], // upsert reads current presence → none yet
+		];
+		state.insertReturning = [
+			{
+				userId: "user-1",
+				organizationId: "org-1",
+				state: "online",
+				perTransport: {
+					inapp: { state: "online", at: new Date().toISOString() },
+				},
+				statusText: null,
+				updatedAt: new Date(),
+			},
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.updatePresence({ state: "online" });
+		expect(res.userId).toBe("user-1");
+		expect(res.state).toBe("online");
+		// The presence row was written.
+		const presenceInsert = state.inserted.find(
+			(i) => i.values[0]?.state !== undefined && "perTransport" in i.values[0],
+		);
+		expect(presenceInsert).toBeDefined();
+	});
+});
+
+describe("comms.presence (I4)", () => {
+	test("returns offline + stale when no presence row exists", async () => {
+		state.selectQueue = [[]]; // presence.get → none
+		const caller = callerFor("org-1");
+		const res = await caller.comms.presence({});
+		expect(res.state).toBe("offline");
+		expect(res.stale).toBe(true);
+		expect(res.updatedAt).toBeNull();
+	});
+
+	test("returns the live state for a fresh heartbeat", async () => {
+		state.selectQueue = [
+			[
+				{
+					userId: "user-1",
+					organizationId: "org-1",
+					state: "online",
+					perTransport: {},
+					statusText: "around",
+					updatedAt: new Date(),
+				},
+			],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.presence({});
+		expect(res.state).toBe("online");
+		expect(res.stale).toBe(false);
+	});
+
+	test("decays a STALE online row to offline", async () => {
+		state.selectQueue = [
+			[
+				{
+					userId: "user-1",
+					organizationId: "org-1",
+					state: "online",
+					perTransport: {},
+					statusText: null,
+					updatedAt: new Date(Date.now() - 10 * 60_000), // past TTL
+				},
+			],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.presence({});
+		expect(res.state).toBe("offline");
+		expect(res.stale).toBe(true);
 	});
 });

@@ -12,8 +12,10 @@
  * `thread_id`; we use a lightweight thread keyed by the message dedup string.
  */
 
+import { deriveDedupKey } from "@rox/comms-core";
 import { db } from "@rox/db/client";
 import {
+	commsAddresses,
 	commsMessages,
 	commsThreads,
 	mailAddresses,
@@ -126,11 +128,54 @@ export function createMailIngestDb(): MailIngestDb {
 		},
 
 		async emitToUnifiedInbox(args) {
-			// Find-or-create the D1 thread keyed by the email Message-ID (so a reply
-			// later threads into the same row). `comms_threads.dedup_key` is the
-			// natural key for cross-transport matching.
+			// M1: derive the SAME cross-transport dedup key the comms-core router
+			// uses — a reply-root id when present, else the sorted participant set —
+			// so an inbound email merges with the in-app DM between the same parties
+			// instead of forking. The old key (raw Message-ID) never matched the
+			// in-app side and forked every email into its own orphan thread.
 			const dedupKey =
-				args.inReplyTo ?? args.rfcMessageId ?? args.mailMessageId;
+				deriveDedupKey({
+					rootExternalId: args.inReplyTo ?? null,
+					participantAddresses: [args.fromAddr, ...args.toAddrs],
+				}) ??
+				args.rfcMessageId ??
+				args.mailMessageId;
+
+			// M1: a redelivered Message-ID hitting a SECOND rox recipient must not
+			// 500 on the GLOBAL (transport, external_id) unique. Short-circuit when
+			// this external id already exists anywhere (the first recipient's emit
+			// already created the shared row); the per-owner mail tables still hold
+			// each recipient's own copy.
+			if (args.rfcMessageId) {
+				const [dup] = await db
+					.select({ id: commsMessages.id })
+					.from(commsMessages)
+					.where(
+						and(
+							eq(commsMessages.transport, "email"),
+							eq(commsMessages.externalId, args.rfcMessageId),
+						),
+					)
+					.limit(1);
+				if (dup) return;
+			}
+
+			// M1: resolve a known rox sender (an internal email between rox users)
+			// to its author user id so the message is attributed; an external
+			// sender stays unauthored (no FK contact resolution in this worker path).
+			const [senderAddr] = await db
+				.select({ userId: commsAddresses.userId })
+				.from(commsAddresses)
+				.where(
+					and(
+						eq(commsAddresses.kind, "email"),
+						eq(commsAddresses.value, args.fromAddr.trim().toLowerCase()),
+						eq(commsAddresses.isAlias, false),
+					),
+				)
+				.limit(1);
+			const authorUserId = senderAddr?.userId ?? null;
+
 			const [existing] = await db
 				.select({ id: commsThreads.id })
 				.from(commsThreads)
@@ -163,17 +208,23 @@ export function createMailIngestDb(): MailIngestDb {
 				threadId = thread.id;
 			}
 
-			await db.insert(commsMessages).values({
-				organizationId: args.organizationId,
-				threadId,
-				transport: "email",
-				direction: "inbound",
-				authorUserId: null,
-				externalId: args.rfcMessageId,
-				inReplyToExternalId: args.inReplyTo,
-				body: args.snippet,
-				metadata: { mailMessageId: args.mailMessageId, source: "d3-email" },
-			});
+			// M1: guard the GLOBAL (transport, external_id) unique — a concurrent
+			// second-recipient emit that slipped past the read-check above becomes a
+			// no-op instead of a 500.
+			await db
+				.insert(commsMessages)
+				.values({
+					organizationId: args.organizationId,
+					threadId,
+					transport: "email",
+					direction: "inbound",
+					authorUserId,
+					externalId: args.rfcMessageId,
+					inReplyToExternalId: args.inReplyTo,
+					body: args.snippet,
+					metadata: { mailMessageId: args.mailMessageId, source: "d3-email" },
+				})
+				.onConflictDoNothing();
 		},
 	};
 }
