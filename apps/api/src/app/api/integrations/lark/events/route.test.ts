@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 type LarkConnectionRow = {
 	id: string;
@@ -9,6 +9,29 @@ type LarkConnectionRow = {
 // Mutable fixture the mocked db reads from; each test sets it before calling POST.
 let connections: LarkConnectionRow[] = [];
 
+// Inbound-event dedup state: tests mutate `insertReturningResult` to simulate a
+// fresh insert (`[{ id }]`) vs. an `onConflictDoNothing` no-op (`[]`).
+let inboundInsertValues: unknown[] = [];
+let deleteWhereCalls: unknown[] = [];
+let insertReturningResult: Array<Record<string, unknown>> = [{ id: "event-1" }];
+const publishJSONMock = mock(async () => ({}));
+
+mock.module("@/env", () => ({
+	env: {
+		QSTASH_TOKEN: "test-qstash-token",
+		NEXT_PUBLIC_API_URL: "http://localhost",
+	},
+}));
+
+mock.module("@upstash/qstash", () => ({
+	Client: class {
+		publishJSON = publishJSONMock;
+	},
+	Receiver: class {
+		verify = mock(async () => true);
+	},
+}));
+
 mock.module("@rox/db/client", () => ({
 	db: {
 		query: {
@@ -16,6 +39,21 @@ mock.module("@rox/db/client", () => ({
 				findMany: mock(async () => connections),
 			},
 		},
+		insert: mock(() => ({
+			values: mock((values: unknown) => {
+				inboundInsertValues.push(values);
+				return {
+					onConflictDoNothing: mock(() => ({
+						returning: mock(async () => insertReturningResult),
+					})),
+				};
+			}),
+		})),
+		delete: mock(() => ({
+			where: mock(async (where: unknown) => {
+				deleteWhereCalls.push(where);
+			}),
+		})),
 	},
 }));
 
@@ -26,6 +64,12 @@ mock.module("@rox/db/schema", () => ({
 		provider: "provider",
 		disconnectedAt: "disconnectedAt",
 		id: "id",
+	},
+	integrationInboundEvents: {
+		id: "id",
+		connectionId: "connectionId",
+		provider: "provider",
+		externalEventId: "externalEventId",
 	},
 }));
 
@@ -63,6 +107,14 @@ function post(body: unknown) {
 }
 
 describe("lark events route", () => {
+	beforeEach(() => {
+		inboundInsertValues = [];
+		deleteWhereCalls = [];
+		insertReturningResult = [{ id: "event-1" }];
+		publishJSONMock.mockClear();
+		publishJSONMock.mockImplementation(async () => ({}));
+	});
+
 	test("url_verification with matching token echoes the challenge", async () => {
 		setConnections([larkConnection()]);
 
@@ -136,12 +188,11 @@ describe("lark events route", () => {
 		expect(response.status).toBe(401);
 	});
 
-	test("valid message event returns 200", async () => {
-		setConnections([larkConnection()]);
-
-		const response = await post({
+	function validMessageEvent() {
+		return {
 			schema: "2.0",
 			header: {
+				event_id: "evt-1",
 				app_id: APP_ID,
 				token: VERIFICATION_TOKEN,
 				event_type: "im.message.receive_v1",
@@ -154,10 +205,63 @@ describe("lark events route", () => {
 				},
 				sender: { sender_id: { open_id: "ou_1" }, sender_type: "user" },
 			},
-		});
+		};
+	}
+
+	test("valid message event dedups, enqueues the job, and acks 200", async () => {
+		setConnections([larkConnection()]);
+
+		const response = await post(validMessageEvent());
 
 		expect(response.status).toBe(200);
 		expect(await response.text()).toBe("ok");
+
+		// Dedup row scoped by connection + Lark event_id.
+		expect(inboundInsertValues).toEqual([
+			{
+				connectionId: "conn-1",
+				provider: "lark",
+				externalEventId: "conn-1:evt-1",
+			},
+		]);
+
+		// Job dispatched with everything the worker needs to run + reply back.
+		expect(publishJSONMock).toHaveBeenCalledTimes(1);
+		expect(publishJSONMock.mock.calls[0]?.[0]).toEqual({
+			url: "http://localhost/api/integrations/lark/jobs/process-message",
+			body: {
+				connectionId: "conn-1",
+				chatId: "oc_1",
+				messageId: "om_1",
+				eventId: "evt-1",
+				text: "hello rox",
+			},
+			retries: 3,
+		});
+	});
+
+	test("duplicate event (onConflictDoNothing no-op) is not re-enqueued", async () => {
+		setConnections([larkConnection()]);
+		insertReturningResult = [];
+
+		const response = await post(validMessageEvent());
+
+		expect(response.status).toBe(200);
+		expect(await response.text()).toBe("ok");
+		expect(publishJSONMock).not.toHaveBeenCalled();
+	});
+
+	test("rolls back the inbound event and returns 503 when queueing fails", async () => {
+		setConnections([larkConnection()]);
+		publishJSONMock.mockImplementation(async () => {
+			throw new Error("qstash unavailable");
+		});
+
+		const response = await post(validMessageEvent());
+
+		expect(response.status).toBe(503);
+		expect(inboundInsertValues).toHaveLength(1);
+		expect(deleteWhereCalls).toHaveLength(1);
 	});
 
 	test("bot sender is acked (200) without action", async () => {
@@ -182,6 +286,7 @@ describe("lark events route", () => {
 
 		expect(response.status).toBe(200);
 		expect(await response.text()).toBe("ok");
+		expect(publishJSONMock).not.toHaveBeenCalled();
 	});
 
 	test("malformed JSON returns 400", async () => {
