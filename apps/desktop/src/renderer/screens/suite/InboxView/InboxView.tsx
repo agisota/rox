@@ -22,6 +22,7 @@ import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
 import { EmailView } from "../EmailView";
 import { ThreadPresence } from "./components/ThreadPresence";
+import { useCommsStream } from "./useCommsStream";
 import { formatThreadTitle } from "./utils/formatThreadTitle";
 
 /**
@@ -53,14 +54,22 @@ function formatTime(value: Date | string | null | undefined): string {
  * Cache-first (AGENTS.md #9): persisted threads/messages render immediately; the
  * skeleton only shows on the empty first load, and the empty state only after a
  * query resolves with zero rows.
+ *
+ * Selection is lifted to {@link InboxView} so the shared live SSE hook can scope
+ * an open-thread `comms.getThread` invalidation to the thread actually on screen.
  */
-function ChatTab() {
+function ChatTab({
+	activeThreadId,
+	setActiveThreadId,
+}: {
+	activeThreadId: string | null;
+	setActiveThreadId: (id: string | null) => void;
+}) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const session = authClient.useSession();
 	const currentUserId = session.data?.user?.id;
 
-	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 	const [body, setBody] = useState("");
 
 	// Typing presence: `ThreadPresence` hands us a `setTyping` once its room is
@@ -440,13 +449,31 @@ function ChatTab() {
 export function InboxView() {
 	const [transport, setTransport] = useState<InboxTransport>("chat");
 
+	// Open-thread selection is lifted here (out of ChatTab / EmailView) so the one
+	// shared SSE hook can refresh the open thread's `*.getThread` cache only when
+	// the event targets the thread on screen AND the open tab matches its
+	// transport (mirrors web's open-thread gating).
+	const [chatThreadId, setChatThreadId] = useState<string | null>(null);
+	const [mailThreadId, setMailThreadId] = useState<string | null>(null);
+
+	// Live unified-inbox delivery (B-desktop): refetch the right tRPC caches when
+	// a new message/email lands. Invalidate-only (cache-first, AGENTS.md #9) — no
+	// row blanking; existing threads/messages stay rendered during the refetch.
+	useCommsStream({
+		openThreadId: transport === "chat" ? chatThreadId : mailThreadId,
+		transport,
+	});
+
 	// The mail tab reuses EmailView, which brings its own SuiteScreen header.
 	if (transport === "mail") {
 		return (
 			<div className="flex h-full flex-col">
 				<TransportTabs value={transport} onChange={setTransport} />
 				<div className="min-h-0 flex-1">
-					<EmailView />
+					<EmailView
+						activeThreadId={mailThreadId}
+						onSelectThread={setMailThreadId}
+					/>
 				</div>
 			</div>
 		);
@@ -461,7 +488,10 @@ export function InboxView() {
 		>
 			<TransportTabs value={transport} onChange={setTransport} />
 			<div className="mt-4">
-				<ChatTab />
+				<ChatTab
+					activeThreadId={chatThreadId}
+					setActiveThreadId={setChatThreadId}
+				/>
 			</div>
 		</SuiteScreen>
 	);
