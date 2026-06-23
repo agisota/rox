@@ -8,6 +8,7 @@ import {
 } from "@rox/comms-core";
 import { db, dbWs } from "@rox/db/client";
 import { commsMessages, commsParticipants, commsThreads } from "@rox/db/schema";
+import { publishCommsMessage } from "@rox/shared/comms-events";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { protectedProcedure } from "../../trpc";
@@ -39,6 +40,43 @@ function buildMessageRouter(organizationId: string, txDb: CommsDb = dbWs) {
 	const adapters = new AdapterRegistry([new InAppAdapter()]);
 	const ports = createCommsPorts(organizationId, txDb);
 	return new MessageRouter({ ports, adapters });
+}
+
+/**
+ * Publish a committed in-app message onto the comms event bus for live SSE
+ * delivery. Best-effort: a lookup/publish failure never fails the send (the row
+ * is already committed; the client refetch is the backstop).
+ */
+async function publishInAppMessage(
+	organizationId: string,
+	threadId: string,
+	message: { messageId: string; authorUserId: string | null },
+): Promise<void> {
+	try {
+		const rows = await db
+			.select({ userId: commsParticipants.userId })
+			.from(commsParticipants)
+			.where(
+				and(
+					eq(commsParticipants.organizationId, organizationId),
+					eq(commsParticipants.threadId, threadId),
+				),
+			);
+		const participantUserIds = rows
+			.map((r) => r.userId)
+			.filter((id): id is string => id !== null);
+
+		publishCommsMessage({
+			organizationId,
+			threadId,
+			messageId: message.messageId,
+			transport: "inapp",
+			authorUserId: message.authorUserId,
+			participantUserIds,
+		});
+	} catch {
+		// Live delivery is non-durable; swallow so the send still succeeds.
+	}
 }
 
 /** Confirm a thread belongs to the org (and the caller participates). */
@@ -197,21 +235,31 @@ export const commsRouter = {
 				metadata: input.clientId ? { clientId: input.clientId } : {},
 			};
 
-			return dbWs.transaction(async (tx) => {
+			const result = await dbWs.transaction(async (tx) => {
 				const router = buildMessageRouter(organizationId, tx);
-				const result = await router.routeOutbound(draft);
-				return {
-					messageId: result.message.id,
-					threadId: result.thread.id,
-					deliveries: result.deliveries.map((d) => ({
-						deliveryId: d.deliveryId,
-						transport: d.recipient.transport,
-						status: d.status,
-						providerId: d.providerId,
-						error: d.error ?? null,
-					})),
-				};
+				return router.routeOutbound(draft);
 			});
+
+			// Live delivery (comms SSE): publish ONLY after the write commits, so an
+			// SSE client never sees a message a rolled-back tx never persisted. The
+			// route re-checks thread participation before forwarding, so the advisory
+			// participant set here is a best-effort optimization, not the auth gate.
+			await publishInAppMessage(organizationId, result.thread.id, {
+				messageId: result.message.id,
+				authorUserId,
+			});
+
+			return {
+				messageId: result.message.id,
+				threadId: result.thread.id,
+				deliveries: result.deliveries.map((d) => ({
+					deliveryId: d.deliveryId,
+					transport: d.recipient.transport,
+					status: d.status,
+					providerId: d.providerId,
+					error: d.error ?? null,
+				})),
+			};
 		}),
 
 	/** Set the caller's read watermark on a thread they participate in. */

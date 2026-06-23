@@ -18,6 +18,7 @@ import {
 	meshDeliveryLog,
 	meshDevices,
 } from "@rox/db/schema";
+import { publishCommsMessage } from "@rox/shared/comms-events";
 import { and, eq, gt, or } from "drizzle-orm";
 import type { MeshIngestDb } from "./ingest";
 
@@ -137,6 +138,18 @@ export function createMeshIngestDb(): MeshIngestDb {
 				})
 				.returning({ id: commsMessages.id });
 			if (!message) throw new Error("Failed to insert comms message");
+
+			// Live delivery (comms SSE): publish the committed inbound mesh message.
+			// The SSE route re-checks participation, so the advisory set is just the
+			// recipient rox user. Best-effort — never break ingest on a publish error.
+			publishCommsMessage({
+				organizationId: args.organizationId,
+				threadId,
+				messageId: message.id,
+				transport: "mesh",
+				authorUserId: null,
+				participantUserIds: args.toUserId ? [args.toUserId] : [],
+			});
 
 			return { messageId: message.id, threadId };
 		},

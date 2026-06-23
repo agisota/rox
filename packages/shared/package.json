@@ -259,6 +259,10 @@
 		"./jwt-verify": {
 			"types": "./src/jwt-verify.ts",
 			"default": "./src/jwt-verify.ts"
+		},
+		"./comms-events": {
+			"types": "./src/comms-events.ts",
+			"default": "./src/comms-events.ts"
 		}
 	},
 	"scripts": {

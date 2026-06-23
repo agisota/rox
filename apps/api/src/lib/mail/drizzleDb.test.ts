@@ -10,9 +10,20 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
  * `@rox/db/client` is stubbed so the suite needs no live database (mirrors the
  * trpc comms/mail harness). The fake tracks inserted comms_messages and replays
  * a duplicate row for the second same-Message-ID emit.
+ *
+ * Also asserts the live-delivery wiring (comms SSE, hardening epic): a NEW
+ * comms_messages insert publishes exactly one event onto the comms bus, while a
+ * dedup short-circuit / conflict no-op publishes nothing.
  */
 
 type AnyRow = Record<string, unknown>;
+
+// Capture comms-bus publishes so we can assert publish-on-persist without a real
+// EventEmitter subscription. Mocked at the module boundary the drizzleDb imports.
+const publishCommsMessageMock = mock((_event: unknown) => {});
+mock.module("@rox/shared/comms-events", () => ({
+	publishCommsMessage: publishCommsMessageMock,
+}));
 
 const state: {
 	// Rows the next select() should return, in FIFO order.
@@ -20,12 +31,16 @@ const state: {
 	insertedThreads: AnyRow[];
 	insertedMessages: AnyRow[];
 	threadReturning: AnyRow[];
+	// Row(s) the message insert's `.onConflictDoNothing().returning()` replays.
+	// `[]` models a conflict no-op (no new row → no publish).
+	messageReturning: AnyRow[];
 	conflictHits: number;
 } = {
 	selectQueue: [],
 	insertedThreads: [],
 	insertedMessages: [],
 	threadReturning: [{ id: "thread-1" }],
+	messageReturning: [{ id: "comms-msg-new" }],
 	conflictHits: 0,
 };
 
@@ -63,7 +78,11 @@ function insertChain() {
 			const chain = {
 				onConflictDoNothing: () => {
 					state.conflictHits += 1;
-					return Promise.resolve([]);
+					// The message insert chains `.returning()` after the conflict guard;
+					// replay the configured message rows (`[]` = conflict no-op).
+					return {
+						returning: () => Promise.resolve(state.messageReturning),
+					};
 				},
 				returning: () => Promise.resolve(state.threadReturning),
 			};
@@ -107,7 +126,9 @@ beforeEach(() => {
 	state.insertedThreads = [];
 	state.insertedMessages = [];
 	state.threadReturning = [{ id: "thread-1" }];
+	state.messageReturning = [{ id: "comms-msg-new" }];
 	state.conflictHits = 0;
+	publishCommsMessageMock.mockClear();
 });
 
 describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
@@ -126,6 +147,19 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		expect(state.insertedMessages[0]?.externalId).toBe(baseArgs.rfcMessageId);
 		// dedup key is a participant-set key, NOT the raw Message-ID.
 		expect(state.insertedThreads[0]?.dedupKey).toContain("parts:");
+
+		// Live delivery: a new comms_messages row publishes exactly one SSE event,
+		// scoped to the recipient owner with transport=email.
+		expect(publishCommsMessageMock).toHaveBeenCalledTimes(1);
+		expect(publishCommsMessageMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				organizationId: "org-1",
+				threadId: "thread-1",
+				messageId: "comms-msg-new",
+				transport: "email",
+				participantUserIds: ["user-1"],
+			}),
+		);
 	});
 
 	test("second recipient, same Message-ID: short-circuits, no second message insert (no 500)", async () => {
@@ -139,6 +173,24 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		// No thread or message insert attempted on the duplicate path.
 		expect(state.insertedThreads).toHaveLength(0);
 		expect(state.insertedMessages).toHaveLength(0);
+		// …and no live event re-pushed for the dedup short-circuit.
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+	});
+
+	test("conflict no-op (concurrent insert lost the race): no live event published", async () => {
+		const db = createMailIngestDb();
+		state.selectQueue = [
+			[], // dup check → none (lost the race)
+			[], // sender lookup → external
+			[{ id: "thread-existing" }], // thread by dedup → found
+		];
+		// The message insert hits the unique and `.returning()` yields no row.
+		state.messageReturning = [];
+		await db.emitToUnifiedInbox(baseArgs);
+
+		expect(state.conflictHits).toBe(1);
+		// No NEW row → no SSE event (the other recipient's emit already pushed it).
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
 	});
 
 	test("guards the insert with onConflictDoNothing (concurrent race)", async () => {
