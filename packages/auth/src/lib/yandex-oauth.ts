@@ -116,10 +116,24 @@ async function mapYandexProfileToUser(
 	);
 	const login = info.login ?? null;
 
-	await putPendingYandexProfile(info.id, {
-		displayUsername: login,
-		providerAvatarUrl: avatarUrl,
-	});
+	// Best-effort: the pending-profile handoff only denormalizes the display
+	// name / avatar onto `user_profiles` later — it is NOT required to
+	// authenticate. A throw here (e.g. KV unreachable / bad KV_REST_API_*) would
+	// abort the whole OAuth callback and break Yandex sign-in entirely, even
+	// though the account + session can be created without it. Swallow it (mirrors
+	// the Telegram `upsertSocialProfile` best-effort pattern); the profile just
+	// won't be denormalized and the `account.create.after` drain becomes a no-op.
+	try {
+		await putPendingYandexProfile(info.id, {
+			displayUsername: login,
+			providerAvatarUrl: avatarUrl,
+		});
+	} catch (error) {
+		console.error(
+			"[yandex] pending-profile KV write failed (non-fatal, sign-in continues):",
+			error,
+		);
+	}
 
 	const name =
 		info.display_name?.trim() ||
