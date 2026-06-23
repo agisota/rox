@@ -21,17 +21,38 @@ export const dynamic = "force-dynamic";
  * note can never inject markup. Only presentation fields are read.
  */
 async function getPublishedNote(slug: string) {
-	return db.query.noteNotes.findFirst({
+	const note = await db.query.noteNotes.findFirst({
 		where: (noteNotes, { and, eq }) =>
 			and(eq(noteNotes.publicSlug, slug), eq(noteNotes.isPublished, true)),
 		columns: {
 			id: true,
 			title: true,
 			markdown: true,
+			knowledgeDocumentId: true,
 			createdAt: true,
 			updatedAt: true,
 		},
 	});
+	if (!note) return undefined;
+
+	// N2: content lives in the backing knowledge_documents row (system of record).
+	// Read it directly so a doc-router edit is reflected here; fall back to the
+	// inline mirror for legacy / not-yet-backfilled notes.
+	if (note.knowledgeDocumentId) {
+		const doc = await db.query.knowledgeDocuments.findFirst({
+			where: (knowledgeDocuments, { eq }) =>
+				eq(knowledgeDocuments.id, note.knowledgeDocumentId as string),
+			columns: { title: true, markdown: true },
+		});
+		if (doc) {
+			return {
+				...note,
+				title: doc.title,
+				markdown: doc.markdown ?? "",
+			};
+		}
+	}
+	return note;
 }
 
 function toDateLabel(value: unknown): string | null {

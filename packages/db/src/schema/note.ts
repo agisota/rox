@@ -9,11 +9,17 @@
  * storage. The dashboard router uses the same reuse rule (WS-J §1.6).
  *
  *   note_notebooks  → org-scoped, per-owner buckets that group notes
- *   note_notes      → markdown notes (tags[], optional publish slug, optional
- *                     knowledge_documents ref)
- *   note_backlinks  → materialized note→note links (for a lightweight backlink
- *                     panel); a link may be unresolved while its target slug does
- *                     not yet exist
+ *   note_notes      → thin per-note INDEX row (tags[], optional publish slug,
+ *                     stable id). Since the knowledge-documents migration (N2)
+ *                     a note's CONTENT lives in a `knowledge_documents` row of
+ *                     `type='note'` referenced by `knowledge_document_id`; the
+ *                     `markdown` column here is kept readable only for legacy /
+ *                     not-yet-backfilled rows and is no longer the system of
+ *                     record. New notes always carry a backing knowledge doc.
+ *   note_book_items → ordered membership edge (note ∈ notebook), keyed by the
+ *                     backing `knowledge_documents.id`, per the D7 spec §2 ERD.
+ *   note_backlinks  → DEAD (N2): superseded by `knowledge_links`. Retained as an
+ *                     empty table for additive-migration safety; never written.
  *
  * Org scoping mirrors the dashboard tables: notebooks own `organization_id`;
  * notes denormalize `organization_id` (and `notebook_id`) so a shape-filter by
@@ -143,7 +149,48 @@ export type InsertNoteNote = typeof noteNotes.$inferInsert;
 export type SelectNoteNote = typeof noteNotes.$inferSelect;
 
 // ---------------------------------------------------------------------------
-// note_backlinks — materialized note→note links for a backlink panel
+// note_book_items — ordered membership edge (note ∈ notebook), per D7 spec §2.
+// The note is addressed by its backing `knowledge_documents.id` (the system of
+// record since N2). Many-to-many: a note may live in 0..N notebooks.
+// ---------------------------------------------------------------------------
+
+export const noteBookItems = pgTable(
+	"note_book_items",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		// Denormalized for Electric per-user shape filtering.
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		noteBookId: uuid("note_book_id")
+			.notNull()
+			.references(() => noteNotebooks.id, { onDelete: "cascade" }),
+		// The note's backing knowledge document (the REUSED content row).
+		documentId: uuid("document_id")
+			.notNull()
+			.references(() => knowledgeDocuments.id, { onDelete: "cascade" }),
+		sortOrder: integer("sort_order").notNull().default(0),
+		addedBy: uuid("added_by").references(() => users.id, {
+			onDelete: "set null",
+		}),
+
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(t) => [
+		index("note_book_items_org_idx").on(t.organizationId),
+		index("note_book_items_book_idx").on(t.noteBookId, t.sortOrder),
+		index("note_book_items_doc_idx").on(t.documentId),
+		uniqueIndex("note_book_items_book_doc_uniq").on(t.noteBookId, t.documentId),
+	],
+);
+
+export type InsertNoteBookItem = typeof noteBookItems.$inferInsert;
+export type SelectNoteBookItem = typeof noteBookItems.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// note_backlinks — DEAD (N2): superseded by knowledge_links. Never written.
 // ---------------------------------------------------------------------------
 
 export const noteBacklinks = pgTable(
