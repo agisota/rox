@@ -3,7 +3,7 @@ import { AnimatedHeight, motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuickOpenStore } from "renderer/commandPalette/ui/QuickOpen/quickOpenStore";
 import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
@@ -41,6 +41,7 @@ import { WorkspaceGitStatusProvider } from "./providers/WorkspaceGitStatusProvid
 import { FileDocumentStoreProvider } from "./state/fileDocumentStore";
 import type { PaneViewerData } from "./types";
 import type { V2WorkspaceUrlOpenTarget } from "./utils/openUrlInV2Workspace";
+import { shouldSeedChat } from "./utils/shouldSeedChat";
 
 interface WorkspaceSearch {
 	terminalId?: string;
@@ -126,7 +127,8 @@ function V2WorkspaceContent() {
 	} = useV2UserPreferences();
 	const showPresetsBar = v2UserPreferences.showPresetsBar;
 	const sidebarOpen = v2UserPreferences.rightSidebarOpen;
-	const { store } = useV2WorkspacePaneLayout();
+	const { store, isLayoutHydrated, persistedPaneLayout } =
+		useV2WorkspacePaneLayout();
 	useClearActivePaneAttention({ store });
 	const launcher = useV2TerminalLauncher();
 	const {
@@ -194,6 +196,28 @@ function V2WorkspaceContent() {
 		newTabPresets,
 		executePreset,
 	});
+
+	// After creating a project the user lands in an empty main-workspace.
+	// Open one empty chat tab instead of the chooser — once per workspace, only
+	// after the persisted layout has hydrated and is genuinely empty.
+	const seededWorkspaceIdRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!isLayoutHydrated) return; // wait for strict readiness (no cache-first)
+		if (seededWorkspaceIdRef.current === workspaceId) return; // idempotent
+		if (!shouldSeedChat(persistedPaneLayout)) {
+			// Not empty (or already has tabs): mark handled so later layout edits
+			// don't re-trigger the seed.
+			seededWorkspaceIdRef.current = workspaceId;
+			return;
+		}
+		// Double-guard against a race: re-check the live store before writing.
+		if (store.getState().tabs.length > 0) {
+			seededWorkspaceIdRef.current = workspaceId;
+			return;
+		}
+		seededWorkspaceIdRef.current = workspaceId;
+		addChatTab();
+	}, [isLayoutHydrated, persistedPaneLayout, workspaceId, store, addChatTab]);
 
 	const quickOpenOpen = useQuickOpenStore(
 		(s) => s.open && s.target?.workspaceId === workspaceId,
