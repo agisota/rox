@@ -5,16 +5,21 @@ import {
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 import { ReasoningLevelSlider } from "@rox/ui/motion";
+import {
+	MicButton,
+	type MicButtonControls,
+	type Recording,
+} from "@rox/ui/voice";
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from "lucide-react";
 import type React from "react";
-import type { Recording } from "renderer/lib/voice/useDictation";
+import { useCallback, useRef } from "react";
+import { useHotkey } from "renderer/hotkeys";
 import { PILL_BUTTON_CLASS } from "../../../../styles";
 import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";
 import { PermissionModePicker } from "../../../PermissionModePicker";
 import { PlusMenu } from "../../../PlusMenu";
-import { MicButton } from "../MicButton";
 
 interface ChatComposerControlsProps {
 	availableModels: ModelOption[];
@@ -54,6 +59,18 @@ export function ChatComposerControls({
 	dictationTranscribing,
 	dictationConfigured,
 }: ChatComposerControlsProps) {
+	// Desktop keyboard shortcut for dictation. The shared MicButton is hotkey-free;
+	// it hands us a stable toggle via onReady and we bind DICTATE (Ctrl+Shift+D) to
+	// it here, where the renderer hotkey system lives. Web mounts MicButton with no
+	// onReady, so it has no shortcut — by design.
+	const micControlsRef = useRef<MicButtonControls | null>(null);
+	const handleMicReady = useCallback((controls: MicButtonControls | null) => {
+		micControlsRef.current = controls;
+	}, []);
+	useHotkey("DICTATE", () => {
+		micControlsRef.current?.toggle();
+	});
+
 	return (
 		<PromptInputFooter>
 			<PromptInputTools className="gap-1.5">
@@ -80,6 +97,7 @@ export function ChatComposerControls({
 					onComplete={onDictationComplete}
 					transcribing={dictationTranscribing}
 					disabled={!dictationConfigured}
+					onReady={handleMicReady}
 				/>
 				<PromptInputSubmit
 					className="size-[23px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"

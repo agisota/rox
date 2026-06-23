@@ -8,6 +8,7 @@ import {
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 import { toast } from "@rox/ui/sonner";
+import { blobToBase64, type Recording } from "@rox/ui/voice";
 import { useQuery } from "@tanstack/react-query";
 import type { ChatStatus, FileUIPart } from "ai";
 import type React from "react";
@@ -15,8 +16,6 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusPromptOnPane } from "renderer/components/Chat/ChatInterface/hooks/useFocusPromptOnPane";
 import { useHotkeyDisplay } from "renderer/hotkeys";
-import { blobToBase64 } from "renderer/lib/voice/audioToBase64";
-import type { Recording } from "renderer/lib/voice/useDictation";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import type { SlashCommand } from "../../hooks/useSlashCommands";
 import type { ModelOption, PermissionMode } from "../../types";
