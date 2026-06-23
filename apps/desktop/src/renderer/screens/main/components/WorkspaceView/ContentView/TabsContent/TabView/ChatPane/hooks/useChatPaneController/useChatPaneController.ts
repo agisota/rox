@@ -11,6 +11,7 @@ import {
 	isDesktopChatSessionReady,
 	resolveDesktopChatOrganizationId,
 } from "renderer/lib/dev-chat";
+import { DevChatSessionStore } from "renderer/lib/dev-chat-store";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
@@ -81,12 +82,24 @@ async function getHttpErrorDetail(response: Response): Promise<string> {
 	return `${response.status}${statusText}${detail}`;
 }
 
+// Durable index for dev-chat sessions; persists them in renderer localStorage so
+// they survive an app quit+relaunch. In dev-chat mode there is no org/auth and
+// thus no cloud write, so without this the chat lived only as in-memory state
+// and was lost on quit (chat data-loss-on-quit fix). Production is unaffected.
+const devChatSessionStore = new DevChatSessionStore();
+
 async function createSessionRecord(input: {
 	sessionId: string;
 	organizationId: string;
 	workspaceId: string;
 }): Promise<void> {
-	if (isDesktopChatDevMode()) return;
+	if (isDesktopChatDevMode()) {
+		devChatSessionStore.upsert({
+			sessionId: input.sessionId,
+			v2WorkspaceId: input.workspaceId,
+		});
+		return;
+	}
 	const token = getAuthToken();
 	const response = await fetch(`${apiUrl}/api/chat/${input.sessionId}`, {
 		method: "PUT",
@@ -113,7 +126,11 @@ async function createSessionRecord(input: {
 }
 
 async function deleteSessionRecord(sessionId: string): Promise<void> {
-	if (isDesktopChatDevMode()) return;
+	if (isDesktopChatDevMode()) {
+		// Drop the durable dev record so a deleted chat stays deleted on relaunch.
+		devChatSessionStore.remove(sessionId);
+		return;
+	}
 	const token = getAuthToken();
 	const response = await fetch(`${apiUrl}/api/chat/${sessionId}/stream`, {
 		method: "DELETE",
@@ -445,22 +462,36 @@ export function useChatPaneController({
 
 	const sessionItems = useMemo(() => {
 		const nextItems = sessions.map((item) => toSessionSelectorItem(item));
-		if (
-			!isDesktopChatDevMode() ||
-			!sessionId ||
-			nextItems.some((item) => item.sessionId === sessionId)
-		) {
+		if (!isDesktopChatDevMode()) {
 			return nextItems;
 		}
-		return [
-			{
+
+		// Dev-chat mode: rebuild the list from the durable local store so chats
+		// from a previous app run reappear after quit+relaunch (data-loss-on-quit
+		// fix). The Electric-backed `sessions` list is empty without org/auth.
+		const byId = new Map<string, SessionSelectorItem>();
+		for (const item of nextItems) {
+			byId.set(item.sessionId, item);
+		}
+		for (const record of devChatSessionStore.listByWorkspace(workspaceId)) {
+			if (byId.has(record.sessionId)) continue;
+			byId.set(record.sessionId, {
+				sessionId: record.sessionId,
+				title: record.title,
+				updatedAt: new Date(record.lastActiveAt),
+			});
+		}
+		if (sessionId && !byId.has(sessionId)) {
+			byId.set(sessionId, {
 				sessionId,
 				title: "",
 				updatedAt: new Date(),
-			},
-			...nextItems,
-		];
-	}, [sessionId, sessions]);
+			});
+		}
+		return [...byId.values()].sort(
+			(a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+		);
+	}, [sessionId, sessions, workspaceId]);
 
 	const consumeLaunchConfig = useCallback(() => {
 		setChatLaunchConfig(paneId, null);
