@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "comms_threads_org_dedup_uniq" ON "comms_threads" USING btree ("organization_id","dedup_key") WHERE "comms_threads"."dedup_key" IS NOT NULL;

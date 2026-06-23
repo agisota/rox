@@ -18,15 +18,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowDownLeft,
 	ArrowUpRight,
+	Download,
 	Mail,
+	Paperclip,
 	PenSquare,
 	Send,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
+import { sanitizeMailHtml } from "./sanitizeMailHtml";
+import { useMailBody } from "./useMailBody";
 
 function formatDateTime(value: Date | string | null | undefined): string {
 	if (!value) return "";
@@ -46,10 +50,11 @@ function formatDateTime(value: Date | string | null | undefined): string {
  * (`mail.getThread`), compose/reply via `mail.send`, and read-state via
  * `mail.markRead`.
  *
- * Bodies live in R2 — the router returns metadata + a server-trimmed `snippet`,
- * never inline HTML. The snippet is rendered as PLAIN TEXT (React escapes text
- * children; there is no `dangerouslySetInnerHTML`), so no client-side
- * sanitisation is required and rendered email content cannot inject markup.
+ * Bodies live in R2: the FULL body is fetched per message via `mail.getBodyUrl`
+ * (FEATURE A). An HTML body is sanitized with DOMPurify (`sanitizeMailHtml`) and
+ * rendered in an isolated, clipped container; a text body renders as escaped
+ * plain text. The server-trimmed `snippet` is the loading/error fallback.
+ * Attachments are downloadable via short-TTL presigned `mail.getAttachmentUrl`.
  *
  * Cache-first (AGENTS.md rule 9): cached threads render while a refetch runs.
  */
@@ -272,12 +277,12 @@ export function EmailView() {
 														)}
 													</div>
 												</div>
-												{/* Body lives in R2 — render the safe plaintext snippet
-												    (no raw HTML, React escapes text children). */}
-												<p className="cursor-text select-text whitespace-pre-wrap break-words px-3 py-3 text-sm">
-													{message.snippet?.trim() ||
-														"Текст письма недоступен в предпросмотре."}
-												</p>
+												{/* Full body from R2 (FEATURE A): sanitized HTML or text. */}
+												<MailMessageBody
+													messageId={message.id}
+													snippet={message.snippet ?? null}
+													hasAttachments={message.hasAttachments ?? false}
+												/>
 											</div>
 										);
 									})}
@@ -339,5 +344,106 @@ export function EmailView() {
 				</DialogContent>
 			</Dialog>
 		</SuiteScreen>
+	);
+}
+
+/** Human-readable byte size for an attachment row. */
+function formatSize(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+interface MailMessageBodyProps {
+	messageId: string;
+	snippet: string | null;
+	hasAttachments: boolean;
+}
+
+/**
+ * The full body + attachments of one email message (FEATURE A). Fetches the body
+ * from R2 via `useMailBody`: HTML is sanitized with DOMPurify then injected into
+ * an isolated clipped container; text renders as escaped plain text. Attachment
+ * metadata loads via `mail.getMessage`; each is downloaded through a presigned
+ * `mail.getAttachmentUrl`, opened in the default browser.
+ */
+function MailMessageBody({
+	messageId,
+	snippet,
+	hasAttachments,
+}: MailMessageBodyProps) {
+	const trpc = useTRPC();
+	const bodyQuery = useMailBody(messageId, true);
+	const sanitizedHtml = useMemo(() => {
+		if (bodyQuery.data?.kind !== "html") return null;
+		return sanitizeMailHtml(bodyQuery.data.content);
+	}, [bodyQuery.data]);
+
+	const detail = useQuery({
+		...trpc.mail.getMessage.queryOptions({ messageId }),
+		enabled: hasAttachments,
+	});
+	const attachments = detail.data?.attachments ?? [];
+
+	const attachmentUrl = useMutation(
+		trpc.mail.getAttachmentUrl.mutationOptions({
+			onSuccess: ({ url }) => {
+				window.open(url, "_blank", "noopener,noreferrer");
+			},
+			onError: (error) => {
+				logger.error("[EmailView] attachment presign failed", error);
+			},
+		}),
+	);
+
+	return (
+		<div className="px-3 py-3">
+			{bodyQuery.isLoading ? (
+				<p className="cursor-text select-text whitespace-pre-wrap break-words text-muted-foreground text-sm">
+					Загрузка письма…
+				</p>
+			) : sanitizedHtml !== null ? (
+				<div
+					className="mail-html-body max-h-[60vh] cursor-text select-text overflow-auto break-words text-sm [&_a]:underline [&_img]:max-w-full"
+					// Sanitized via DOMPurify in sanitizeMailHtml; rendered in an isolated,
+					// clipped container so even valid markup stays bounded.
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: content is DOMPurify-sanitized
+					dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+				/>
+			) : (
+				<p className="cursor-text select-text whitespace-pre-wrap break-words text-sm">
+					{bodyQuery.data?.content?.trim() ||
+						snippet?.trim() ||
+						"Текст письма недоступен в предпросмотре."}
+				</p>
+			)}
+
+			{hasAttachments && attachments.length > 0 && (
+				<div className="mt-3 flex flex-col gap-1.5">
+					<span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+						<Paperclip className="size-3" /> Вложения
+					</span>
+					{attachments.map((att) => (
+						<button
+							key={att.id}
+							type="button"
+							disabled={attachmentUrl.isPending}
+							onClick={() => attachmentUrl.mutate({ attachmentId: att.id })}
+							className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-left transition-colors hover:bg-muted disabled:opacity-60"
+							title={`${att.contentType} · скачать`}
+						>
+							<Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
+							<span className="truncate text-xs font-medium">
+								{att.filename}
+							</span>
+							<span className="shrink-0 text-[10px] text-muted-foreground">
+								{formatSize(att.sizeBytes)}
+							</span>
+							<Download className="size-3 shrink-0 text-muted-foreground" />
+						</button>
+					))}
+				</div>
+			)}
+		</div>
 	);
 }

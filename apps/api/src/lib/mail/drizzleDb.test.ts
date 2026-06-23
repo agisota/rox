@@ -30,6 +30,7 @@ const state: {
 	selectQueue: AnyRow[][];
 	insertedThreads: AnyRow[];
 	insertedMessages: AnyRow[];
+	insertedParticipants: AnyRow[];
 	threadReturning: AnyRow[];
 	// Row(s) the message insert's `.onConflictDoNothing().returning()` replays.
 	// `[]` models a conflict no-op (no new row → no publish).
@@ -39,6 +40,7 @@ const state: {
 	selectQueue: [],
 	insertedThreads: [],
 	insertedMessages: [],
+	insertedParticipants: [],
 	threadReturning: [{ id: "thread-1" }],
 	messageReturning: [{ id: "comms-msg-new" }],
 	conflictHits: 0,
@@ -63,28 +65,44 @@ function nextSelect() {
 	return selectBuilder(state.selectQueue.shift() ?? []);
 }
 
-// The fake distinguishes thread vs message inserts by the columns present.
+// The fake distinguishes message / participant / thread inserts by columns:
+//   message     → has `transport`
+//   participant → has `role` (+ userId), no transport
+//   thread      → everything else (subject/dedupKey/lastMessageAt)
+type InsertKind = "message" | "participant" | "thread";
+
+function classifyInsert(row: AnyRow): InsertKind {
+	if ("transport" in row) return "message";
+	if ("role" in row) return "participant";
+	return "thread";
+}
+
 function insertChain() {
 	return {
 		values(vals: AnyRow | AnyRow[]) {
 			const arr = Array.isArray(vals) ? vals : [vals];
 			const row = arr[0] ?? {};
-			const isMessage = "transport" in row;
-			if (isMessage) {
+			const kind = classifyInsert(row);
+			if (kind === "message") {
 				state.insertedMessages.push(row);
+			} else if (kind === "participant") {
+				for (const r of arr) state.insertedParticipants.push(r);
 			} else {
 				state.insertedThreads.push(row);
 			}
+			// `.returning()` rows depend on the insert: a message replays
+			// messageReturning (so `[]` models a conflict no-op → no publish); a
+			// thread replays threadReturning.
+			const returningRows =
+				kind === "message" ? state.messageReturning : state.threadReturning;
 			const chain = {
 				onConflictDoNothing: () => {
-					state.conflictHits += 1;
-					// The message insert chains `.returning()` after the conflict guard;
-					// replay the configured message rows (`[]` = conflict no-op).
+					if (kind === "message") state.conflictHits += 1;
 					return {
-						returning: () => Promise.resolve(state.messageReturning),
+						returning: () => Promise.resolve(returningRows),
 					};
 				},
-				returning: () => Promise.resolve(state.threadReturning),
+				returning: () => Promise.resolve(returningRows),
 			};
 			return chain;
 		},
@@ -125,6 +143,7 @@ beforeEach(() => {
 	state.selectQueue = [];
 	state.insertedThreads = [];
 	state.insertedMessages = [];
+	state.insertedParticipants = [];
 	state.threadReturning = [{ id: "thread-1" }];
 	state.messageReturning = [{ id: "comms-msg-new" }];
 	state.conflictHits = 0;
@@ -147,6 +166,14 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		expect(state.insertedMessages[0]?.externalId).toBe(baseArgs.rfcMessageId);
 		// dedup key is a participant-set key, NOT the raw Message-ID.
 		expect(state.insertedThreads[0]?.dedupKey).toContain("parts:");
+
+		// FIX 1: the mailbox OWNER is inserted as a comms_participant so the SSE
+		// leak-gate forwards + comms.listThreads/getThread surface the email thread.
+		// An external sender is NOT a participant (no resolvable rox user).
+		expect(state.insertedParticipants).toHaveLength(1);
+		expect(state.insertedParticipants[0]?.userId).toBe("user-1");
+		expect(state.insertedParticipants[0]?.threadId).toBe("thread-1");
+		expect(state.insertedParticipants[0]?.role).toBe("member");
 
 		// Live delivery: a new comms_messages row publishes exactly one SSE event,
 		// scoped to the recipient owner with transport=email.
@@ -215,5 +242,31 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		];
 		await db.emitToUnifiedInbox({ ...baseArgs, fromAddr: "bob@rox.one" });
 		expect(state.insertedMessages[0]?.authorUserId).toBe("user-bob");
+
+		// FIX 1: an internal rox→rox email makes BOTH the owner AND the resolved
+		// sender participants, so the thread surfaces for both parties.
+		const participantUserIds = state.insertedParticipants.map((p) => p.userId);
+		expect(participantUserIds).toContain("user-1");
+		expect(participantUserIds).toContain("user-bob");
+	});
+
+	test("FIX 2: thread find-or-create re-selects the winner on insert conflict", async () => {
+		const db = createMailIngestDb();
+		// dup→none, sender→external, thread-by-dedup→none (so we attempt an INSERT)…
+		state.selectQueue = [
+			[], // dup check → none
+			[], // sender lookup → external
+			[], // thread by dedup → none → attempt insert
+			[{ id: "thread-winner" }], // re-select after the insert lost the race
+		];
+		// …but the thread INSERT's onConflictDoNothing yields no row (a concurrent
+		// emit won the (org, dedup_key) unique), forcing the re-select branch.
+		state.threadReturning = [];
+		await db.emitToUnifiedInbox(baseArgs);
+
+		// The message + participant were attached to the re-selected winner thread,
+		// NOT a forked duplicate (no thread id was minted locally).
+		expect(state.insertedMessages[0]?.threadId).toBe("thread-winner");
+		expect(state.insertedParticipants[0]?.threadId).toBe("thread-winner");
 	});
 });

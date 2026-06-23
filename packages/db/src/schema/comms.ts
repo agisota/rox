@@ -230,6 +230,13 @@ export const commsThreads = pgTable(
 			t.lastMessageAt,
 		),
 		index("comms_threads_org_dedup_idx").on(t.organizationId, t.dedupKey),
+		// Find-or-create backstop: at most ONE thread per (org, dedup_key) so two
+		// concurrent emit paths (mail/mesh/xmpp/in-app) racing the SELECT-then-INSERT
+		// collapse onto a single thread instead of forking duplicates. Partial so
+		// dedup-less threads (NULL key) are never constrained.
+		uniqueIndex("comms_threads_org_dedup_uniq")
+			.on(t.organizationId, t.dedupKey)
+			.where(sql`${t.dedupKey} IS NOT NULL`),
 	],
 );
 

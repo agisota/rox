@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
 import { useMailThread } from "../../hooks/useMailThread";
-import { formatMailDate } from "../../utils/formatMailDate";
+import { MailMessageItem } from "./MailMessageItem";
 
 export function MailThreadScreen() {
 	const insets = useSafeAreaInsets();
@@ -74,43 +74,9 @@ export function MailThreadScreen() {
 	} else {
 		body = (
 			<View className="gap-3 p-4">
-				{messages.map((message) => {
-					const outbound = message.direction === "outbound";
-					const who = outbound
-						? "You"
-						: message.fromName?.trim() || message.fromAddr;
-					const when = formatMailDate(
-						message.sentAt ?? message.receivedAt ?? message.createdAt,
-					);
-					return (
-						<View
-							key={message.id}
-							className={`rounded-xl border border-border p-3 ${
-								outbound ? "bg-primary/5" : "bg-card"
-							}`}
-						>
-							<View className="flex-row items-center justify-between gap-2">
-								<Text className="flex-1 text-sm font-medium" numberOfLines={1}>
-									{who}
-								</Text>
-								{when ? (
-									<Text className="text-xs text-muted-foreground">{when}</Text>
-								) : null}
-							</View>
-							{message.subject ? (
-								<Text
-									className="mt-1 text-xs text-muted-foreground"
-									numberOfLines={1}
-								>
-									{message.subject}
-								</Text>
-							) : null}
-							<Text className="mt-2 text-sm text-foreground">
-								{message.snippet?.trim() || "(no preview)"}
-							</Text>
-						</View>
-					);
-				})}
+				{messages.map((message) => (
+					<MailMessageItem key={message.id} message={message} />
+				))}
 			</View>
 		);
 	}
