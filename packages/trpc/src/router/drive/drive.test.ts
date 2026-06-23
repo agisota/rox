@@ -87,10 +87,12 @@ function makeDb() {
 		insert: (table: unknown) => ({
 			values: (vals: AnyRow) => {
 				state.inserted.push({ table: tableName(table), values: vals });
-				return {
+				const chain: AnyRow = {
 					returning: () => Promise.resolve(state.insertReturning),
-					onConflictDoNothing: () => Promise.resolve(),
+					onConflictDoNothing: () => chain,
+					onConflictDoUpdate: () => chain,
 				};
+				return chain;
 			},
 		}),
 		update: () => ({
@@ -347,11 +349,48 @@ describe("drive.confirmUpload", () => {
 		];
 		state.quotaRow = { bytesUsed: 0, quotaBytes: CAP, overageOptIn: false };
 		state.conditionalUpdateRows = [{ bytesUsed: 100 }]; // commit applied
+		// claim (pending→scanning) + final flip both read updateReturning; the
+		// final flip carries the scan verdict (D3 + D5).
 		state.updateReturning = [{ id: FILE_ID, status: "clean" }];
 		const res = await authedCaller().drive.confirmUpload({ fileId: FILE_ID });
 		expect(res.ok).toBe(true);
 		expect(res.alreadyConfirmed).toBe(false);
 		expect(res.file?.status).toBe("clean");
+		expect(res.status).toBe("clean");
+	});
+
+	test("a confirm that loses the atomic claim race commits nothing (D3)", async () => {
+		const s = mockStorage();
+		setDriveStorageForTest(s.provider);
+		state.selectQueue = [
+			// getOwnedFile (initial read)
+			[
+				{
+					id: FILE_ID,
+					userId: "user-1",
+					status: "pending",
+					sizeBytes: 100,
+					storageKey: "k",
+				},
+			],
+			// getOwnedFile re-read after losing the claim
+			[
+				{
+					id: FILE_ID,
+					userId: "user-1",
+					status: "clean",
+					sizeBytes: 100,
+					storageKey: "k",
+				},
+			],
+		];
+		state.quotaRow = { bytesUsed: 0, quotaBytes: CAP, overageOptIn: false };
+		state.updateReturning = []; // claim UPDATE matched 0 rows → lost the race
+		const res = await authedCaller().drive.confirmUpload({ fileId: FILE_ID });
+		expect(res.alreadyConfirmed).toBe(true);
+		expect(res.file?.status).toBe("clean");
+		// only the claim attempt ran a set(); no commit/flip → no double count
+		expect(state.updated).toHaveLength(1);
 	});
 
 	test("blocks confirm when the conditional quota UPDATE loses (cap exceeded)", async () => {
@@ -385,11 +424,37 @@ describe("drive.requestDownload", () => {
 		const s = mockStorage();
 		setDriveStorageForTest(s.provider);
 		state.selectQueue = [
-			[{ id: FILE_ID, userId: "user-1", name: "a.bin", storageKey: "k" }],
+			[
+				{
+					id: FILE_ID,
+					userId: "user-1",
+					name: "a.bin",
+					storageKey: "k",
+					status: "clean",
+				},
+			],
 		];
 		const res = await authedCaller().drive.requestDownload({ fileId: FILE_ID });
 		expect(res.url).toBe("https://r2/get");
 		expect(s.calls.some((c) => c.method === "presignGet")).toBe(true);
+	});
+
+	test("withholds a non-clean (quarantined) file (D5)", async () => {
+		setDriveStorageForTest(mockStorage().provider);
+		state.selectQueue = [
+			[
+				{
+					id: FILE_ID,
+					userId: "user-1",
+					name: "bad.bin",
+					storageKey: "k",
+					status: "quarantined",
+				},
+			],
+		];
+		await expect(
+			authedCaller().drive.requestDownload({ fileId: FILE_ID }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
 	});
 
 	test("404s for a file the user does not own", async () => {
@@ -417,12 +482,15 @@ describe("drive.deleteFile", () => {
 					storageKey: "k",
 				},
 			],
+			// drive_file_refs lookup → none (D4: no attachment ref)
+			[],
 			// remaining-refs lookup → none
 			[],
 		];
 		state.quotaRow = { bytesUsed: 100, quotaBytes: CAP, overageOptIn: false };
 		const res = await authedCaller().drive.deleteFile({ fileId: FILE_ID });
 		expect(res.ok).toBe(true);
+		expect(res.softTrashed).toBe(false);
 		expect(state.deleteCalls).toBe(1);
 		expect(s.calls.some((c) => c.method === "delete")).toBe(true);
 	});
@@ -441,11 +509,120 @@ describe("drive.deleteFile", () => {
 					storageKey: "k",
 				},
 			],
+			[], // drive_file_refs lookup → none
 			[{ id: "other-file" }], // remaining ref exists
 		];
 		const res = await authedCaller().drive.deleteFile({ fileId: FILE_ID });
 		expect(res.ok).toBe(true);
 		expect(s.calls.some((c) => c.method === "delete")).toBe(false);
+	});
+
+	test("soft-trashes (no hard delete) when an attachment ref exists (D4)", async () => {
+		const s = mockStorage();
+		setDriveStorageForTest(s.provider);
+		state.selectQueue = [
+			// getOwnedFile
+			[
+				{
+					id: FILE_ID,
+					userId: "user-1",
+					sha256: SHA,
+					status: "clean",
+					sizeBytes: 100,
+					storageKey: "k",
+					trashedAt: null,
+				},
+			],
+			// drive_file_refs lookup → a live ref
+			[{ id: "ref-1" }],
+		];
+		const res = await authedCaller().drive.deleteFile({ fileId: FILE_ID });
+		expect(res.ok).toBe(true);
+		expect(res.softTrashed).toBe(true);
+		// no hard delete, no object delete, no quota reclaim
+		expect(state.deleteCalls).toBe(0);
+		expect(s.calls.some((c) => c.method === "delete")).toBe(false);
+		// the soft-trash UPDATE set trashedAt
+		expect(state.updated.some((u) => u.trashedAt instanceof Date)).toBe(true);
+	});
+});
+
+describe("drive.attachToMessage / detachFromMessage (D4)", () => {
+	test("attachToMessage records a ref for an owned file", async () => {
+		state.selectQueue = [[{ id: FILE_ID, userId: "user-1" }]]; // getOwnedFile
+		const res = await authedCaller().drive.attachToMessage({
+			fileId: FILE_ID,
+			sourceKind: "chat_message",
+			sourceId: "44444444-4444-4444-8444-444444444444",
+		});
+		expect(res.ok).toBe(true);
+		const ref = lastInsertInto("drive_file_refs");
+		expect(ref?.fileId).toBe(FILE_ID);
+		expect(ref?.sourceKind).toBe("chat_message");
+	});
+
+	test("attachToMessage 404s for a file the user does not own", async () => {
+		state.selectQueue = [[]]; // getOwnedFile → none
+		await expect(
+			authedCaller().drive.attachToMessage({
+				fileId: FILE_ID,
+				sourceKind: "email_message",
+				sourceId: "44444444-4444-4444-8444-444444444444",
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("detachFromMessage drops the ref for an owned file", async () => {
+		state.selectQueue = [[{ id: FILE_ID, userId: "user-1" }]]; // getOwnedFile
+		const res = await authedCaller().drive.detachFromMessage({
+			fileId: FILE_ID,
+			sourceKind: "chat_message",
+			sourceId: "44444444-4444-4444-8444-444444444444",
+		});
+		expect(res.ok).toBe(true);
+		expect(state.deleteCalls).toBe(1);
+	});
+});
+
+describe("drive.setOverageOptIn (D1)", () => {
+	test("flips the overage flag and returns the snapshot", async () => {
+		state.quotaRow = { bytesUsed: 0, quotaBytes: CAP, overageOptIn: true };
+		const res = await authedCaller().drive.setOverageOptIn({ optIn: true });
+		expect(res.overageOptIn).toBe(true);
+	});
+});
+
+describe("drive.requestUpload MIME allow-list (D5)", () => {
+	test("rejects a blocked executable media type", async () => {
+		setDriveStorageForTest(mockStorage().provider);
+		await expect(
+			authedCaller().drive.requestUpload({
+				filename: "evil.exe",
+				mediaType: "application/x-msdownload",
+				sizeBytes: 10,
+				sha256: SHA,
+			}),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+});
+
+describe("drive.requestUpload conflict fallback (D7)", () => {
+	test("falls back to the existing row when the insert conflicts", async () => {
+		const s = mockStorage();
+		setDriveStorageForTest(s.provider);
+		state.selectQueue = [
+			[], // dedup lookup → none (status clean)
+			[{ id: "conflicting-row" }], // post-conflict fallback select
+		];
+		state.insertReturning = []; // ON CONFLICT DO NOTHING → no row
+		const res = await authedCaller().drive.requestUpload({
+			filename: "race.bin",
+			mediaType: "application/octet-stream",
+			sizeBytes: 10,
+			sha256: SHA,
+		});
+		expect(res.dedup).toBe(false);
+		expect(res.fileId).toBe("conflicting-row");
 	});
 });
 

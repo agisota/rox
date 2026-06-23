@@ -27,6 +27,10 @@
 		"./integration-secret": {
 			"types": "./src/lib/integrations/secret-store.ts",
 			"default": "./src/lib/integrations/secret-store.ts"
+		},
+		"./drive-economy": {
+			"types": "./src/router/drive/quota.ts",
+			"default": "./src/router/drive/quota.ts"
 		}
 	},
 	"scripts": {
