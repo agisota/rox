@@ -354,6 +354,7 @@ export const accessResourceTypeValues = [
 	"project",
 	"workspace",
 	"host",
+	"note",
 ] as const;
 export const accessResourceTypeEnum = z.enum(accessResourceTypeValues);
 export type AccessResourceType = z.infer<typeof accessResourceTypeEnum>;
@@ -369,6 +370,12 @@ export type AccessGranteeType = z.infer<typeof accessGranteeTypeEnum>;
 export const accessRoleValues = ["viewer", "editor", "admin"] as const;
 export const accessRoleEnum = z.enum(accessRoleValues);
 export type AccessRole = z.infer<typeof accessRoleEnum>;
+
+// Handle reservation lifecycle (DQ4). `active` = the handle's live owner;
+// `grace` = renamed away, old addresses alias to the owner until they expire.
+export const handleStatusValues = ["active", "grace"] as const;
+export const handleStatusEnum = z.enum(handleStatusValues);
+export type HandleStatus = z.infer<typeof handleStatusEnum>;
 
 // Public identity / handle (ROX-522) ------------------------------------------
 // Which provider a user originally registered through. Drives the cached

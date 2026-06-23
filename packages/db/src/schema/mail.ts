@@ -52,6 +52,7 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { organizations, users } from "./auth";
+import { identityHandles } from "./handles";
 import {
 	mailAddressKindValues,
 	mailAddressStatusValues,
@@ -111,6 +112,11 @@ export const mailAddresses = pgTable(
 		status: mailAddressStatus().notNull().default("active"),
 		// For renamed-handle aliases (DQ4: 90-day grace). Null for a primary.
 		graceUntil: timestamp("grace_until", { withTimezone: true }),
+
+		// Join key to the reservation registry (DQ4); nullable, lazily backfilled.
+		handleId: uuid("handle_id").references(() => identityHandles.id, {
+			onDelete: "set null",
+		}),
 
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()

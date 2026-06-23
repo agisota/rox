@@ -18,6 +18,7 @@ export * from "./entity";
 export * from "./enums";
 export * from "./feature-flags";
 export * from "./github";
+export * from "./handles";
 export * from "./idempotency";
 export * from "./identity";
 export * from "./ingest";

@@ -610,6 +610,13 @@
       "when": 1781990477265,
       "tag": "0086_suite_p3_mail",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1782176485445,
+      "tag": "0087_identity_isolation_foundation",
+      "breakpoints": true
     }
   ]
 }
