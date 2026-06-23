@@ -5,7 +5,12 @@ import { describe, expect, it, mock } from "bun:test";
 // through an injected fake executor and never touch the real default `dbWs`.
 mock.module("./client", () => ({ db: {}, dbWs: {} }));
 
-const { seedDemoProject } = await import("./seed-demo-project");
+const {
+	seedDemoProject,
+	DEMO_PROJECT_COLOR,
+	DEMO_PROJECT_ICON_SVG,
+	DEMO_PROJECT_ICON_DATA_URL,
+} = await import("./seed-demo-project");
 
 const ORG_ID = "11111111-1111-4111-8111-111111111111";
 const V1_DEMO_PROJECT_ID = "22222222-2222-4222-8222-222222222222";
@@ -128,11 +133,14 @@ describe("seedDemoProject (@rox/db — org-level demo project seed, issue #26)",
 		expect(typeof fake.insertedRows[0]?.row.repoUrl).toBe("string");
 
 		// V2 row (the VISIBLE surface) is org-scoped with the same demo slug so
-		// the (organizationId, slug) unique constraint makes it idempotent.
+		// the (organizationId, slug) unique constraint makes it idempotent, and
+		// carries the self-contained pizdariki `data:` icon URL the renderer
+		// renders as the demo project's yellow accent (issue #26 follow-up).
 		expect(fake.insertedRows[1]?.row).toMatchObject({
 			organizationId: ORG_ID,
 			name: "Demo Project",
 			slug: "demo-project",
+			iconUrl: DEMO_PROJECT_ICON_DATA_URL,
 		});
 	});
 
@@ -202,5 +210,33 @@ describe("seedDemoProject (@rox/db — org-level demo project seed, issue #26)",
 		await expect(seedDemoProject(ORG_ID, fake.executor)).rejects.toThrow(
 			"Failed to seed demo v2 project",
 		);
+	});
+});
+
+describe("demo-project icon constants (#26 renderer follow-up)", () => {
+	it("keeps the inline SVG a yellow #facc15 pizzaslice (matches the bundled asset)", () => {
+		// The yellow accent is delivered by the icon fill itself (the live
+		// dashboard ProjectThumbnail has no separate color prop), so the SVG MUST
+		// be filled with DEMO_PROJECT_COLOR.
+		expect(DEMO_PROJECT_COLOR).toBe("#facc15");
+		expect(DEMO_PROJECT_ICON_SVG).toContain(`fill="${DEMO_PROJECT_COLOR}"`);
+		expect(DEMO_PROJECT_ICON_SVG.startsWith("<svg")).toBe(true);
+		expect(DEMO_PROJECT_ICON_SVG.trimEnd().endsWith("</svg>")).toBe(true);
+	});
+
+	it("derives a renderer-resolvable data: URL that round-trips to the SVG", () => {
+		// Must be a data:image/svg+xml URL so the renderer's <img src> resolves it
+		// with no bundled asset / custom protocol (renderer CSP allows img-src data:).
+		expect(
+			DEMO_PROJECT_ICON_DATA_URL.startsWith("data:image/svg+xml;base64,"),
+		).toBe(true);
+
+		const base64 = DEMO_PROJECT_ICON_DATA_URL.slice(
+			"data:image/svg+xml;base64,".length,
+		);
+		const decoded = Buffer.from(base64, "base64").toString("utf8");
+		expect(decoded).toBe(DEMO_PROJECT_ICON_SVG);
+		// The decoded payload still carries the yellow fill end-to-end.
+		expect(decoded).toContain("#facc15");
 	});
 });
