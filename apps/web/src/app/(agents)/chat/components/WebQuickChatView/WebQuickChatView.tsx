@@ -1,12 +1,19 @@
 "use client";
 
 import { ROX_CHAT_MODEL, ROX_CHAT_MODEL_NAME } from "@rox/shared/chat-models";
-import { Button } from "@rox/ui/button";
-import { Textarea } from "@rox/ui/textarea";
+import {
+	type PromptInputMessage,
+	PromptInputProvider,
+	usePromptInputController,
+} from "@rox/ui/ai-elements/prompt-input";
+import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
+import { blobToBase64, MicButton, type Recording } from "@rox/ui/voice";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
-import { LuArrowUp, LuLoaderCircle, LuSparkles } from "react-icons/lu";
+import { LuLoaderCircle, LuSparkles } from "react-icons/lu";
 import { trpcClient } from "@/trpc/client";
+import { PreviewPromptComposer } from "../../../components/PreviewPromptComposer";
 import { deriveQuickChatReply } from "../../utils/deriveQuickChatReply";
 
 interface QuickChatMessage {
@@ -16,13 +23,22 @@ interface QuickChatMessage {
 }
 
 export function WebQuickChatView() {
-	const [input, setInput] = useState("");
 	const [messages, setMessages] = useState<QuickChatMessage[]>([]);
 	const [isSending, setIsSending] = useState(false);
 	// One persisted chat_sessions row per conversation: generated lazily on the
 	// first send and reused so the whole thread lands in one session.
 	const sessionIdRef = useRef<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+
+	// Gate the mic on the server-side dictation config, exactly like desktop's
+	// ChatInputFooter (apiClient.voice.isConfigured). With the shared server
+	// GROQ_API_KEY this is always true; the gate just hides a broken-looking mic
+	// when the voice service is down/unconfigured.
+	const { data: voiceConfig } = useQuery({
+		queryKey: ["voice", "isConfigured"],
+		queryFn: () => trpcClient.voice.isConfigured.query(),
+	});
+	const dictationConfigured = voiceConfig?.configured ?? false;
 
 	const scrollToBottom = useCallback(() => {
 		requestAnimationFrame(() => {
@@ -33,52 +49,54 @@ export function WebQuickChatView() {
 		});
 	}, []);
 
-	const send = useCallback(async () => {
-		const text = input.trim();
-		if (text.length === 0 || isSending) return;
+	const send = useCallback(
+		async (rawText: string) => {
+			const text = rawText.trim();
+			if (text.length === 0 || isSending) return;
 
-		if (!sessionIdRef.current) {
-			sessionIdRef.current = crypto.randomUUID();
-		}
-		const sessionId = sessionIdRef.current;
+			if (!sessionIdRef.current) {
+				sessionIdRef.current = crypto.randomUUID();
+			}
+			const sessionId = sessionIdRef.current;
 
-		const now = Date.now();
-		const userMessage: QuickChatMessage = {
-			id: `u-${now}`,
-			role: "user",
-			text,
-		};
-		const history = [...messages, userMessage].map((message) => ({
-			role: message.role,
-			content: message.text,
-		}));
+			const now = Date.now();
+			const userMessage: QuickChatMessage = {
+				id: `u-${now}`,
+				role: "user",
+				text,
+			};
+			const history = [...messages, userMessage].map((message) => ({
+				role: message.role,
+				content: message.text,
+			}));
 
-		setMessages((prev) => [...prev, userMessage]);
-		setInput("");
-		setIsSending(true);
-		scrollToBottom();
-
-		const appendAssistant = (assistantText: string) => {
-			setMessages((prev) => [
-				...prev,
-				{ id: `a-${now}`, role: "assistant", text: assistantText },
-			]);
+			setMessages((prev) => [...prev, userMessage]);
+			setIsSending(true);
 			scrollToBottom();
-		};
 
-		try {
-			const result = await trpcClient.chat.complete.mutate({
-				sessionId,
-				messages: history,
-				modelId: ROX_CHAT_MODEL.id,
-			});
-			appendAssistant(deriveQuickChatReply(result));
-		} catch {
-			appendAssistant(deriveQuickChatReply(null));
-		} finally {
-			setIsSending(false);
-		}
-	}, [input, isSending, messages, scrollToBottom]);
+			const appendAssistant = (assistantText: string) => {
+				setMessages((prev) => [
+					...prev,
+					{ id: `a-${now}`, role: "assistant", text: assistantText },
+				]);
+				scrollToBottom();
+			};
+
+			try {
+				const result = await trpcClient.chat.complete.mutate({
+					sessionId,
+					messages: history,
+					modelId: ROX_CHAT_MODEL.id,
+				});
+				appendAssistant(deriveQuickChatReply(result));
+			} catch {
+				appendAssistant(deriveQuickChatReply(null));
+			} finally {
+				setIsSending(false);
+			}
+		},
+		[isSending, messages, scrollToBottom],
+	);
 
 	const isEmpty = messages.length === 0;
 
@@ -141,36 +159,86 @@ export function WebQuickChatView() {
 			</div>
 
 			<div className="border-t border-border px-6 py-4">
-				<div className="mx-auto flex max-w-2xl flex-col gap-2 rounded-xl border border-border bg-card p-2">
-					<Textarea
-						value={input}
-						onChange={(event) => setInput(event.target.value)}
-						onKeyDown={(event) => {
-							if (event.key === "Enter" && !event.shiftKey) {
-								event.preventDefault();
-								void send();
+				<div className="mx-auto w-full max-w-2xl">
+					{/*
+					 * PromptInputProvider lifts the composer's text-input state out so
+					 * the mic (WebMicButton) can read/write it via usePromptInputController.
+					 * PreviewPromptComposer's inner <PromptInput> detects this provider and
+					 * runs in controlled mode (clears itself on submit). Mirrors how the
+					 * desktop ChatPaneInterface wraps its ChatInputFooter.
+					 */}
+					<PromptInputProvider>
+						<PreviewPromptComposer
+							containerClassName="rounded-xl border border-border bg-card p-1"
+							promptInputClassName="[&>[data-slot=input-group]]:rounded-[13px] [&>[data-slot=input-group]]:border-none [&>[data-slot=input-group]]:shadow-none [&>[data-slot=input-group]]:bg-transparent"
+							placeholder="Напишите сообщение…"
+							footerTools={
+								<span className="text-xs text-muted-foreground">
+									{ROX_CHAT_MODEL_NAME}
+								</span>
 							}
-						}}
-						placeholder="Напишите сообщение…"
-						className="min-h-16 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
-					/>
-					<div className="flex items-center gap-2">
-						<Button
-							size="icon"
-							className="ml-auto size-8 rounded-full"
-							disabled={input.trim().length === 0 || isSending}
-							onClick={() => void send()}
-							aria-label="Отправить"
-						>
-							{isSending ? (
-								<LuLoaderCircle className="size-4 animate-spin" />
-							) : (
-								<LuArrowUp className="size-4" />
-							)}
-						</Button>
-					</div>
+							message=""
+							submitDisabled={isSending}
+							onSubmit={(submitted: PromptInputMessage) => {
+								void send(submitted.text ?? "");
+							}}
+							footerExtras={
+								<WebMicButton disabled={isSending || !dictationConfigured} />
+							}
+						/>
+					</PromptInputProvider>
 				</div>
 			</div>
 		</div>
+	);
+}
+
+/**
+ * Mic button for the web quick chat. Lives inside the composer's
+ * PromptInputProvider so it can insert the recognized text straight into the
+ * shared text-input controller. Transcription goes through the web tRPC client
+ * (voice.transcribe → Groq Whisper, server-side key). No keyboard shortcut on
+ * web (we pass no onReady), per spec.
+ */
+function WebMicButton({ disabled }: { disabled?: boolean }) {
+	const { textInput } = usePromptInputController();
+	const [transcribing, setTranscribing] = useState(false);
+
+	const handleComplete = useCallback(
+		async (recording: Recording, locked: boolean) => {
+			setTranscribing(true);
+			try {
+				const audioBase64 = await blobToBase64(recording.blob);
+				const result = await trpcClient.voice.transcribe.mutate({
+					audioBase64,
+					mimeType: recording.mimeType,
+					durationMs: recording.durationMs,
+				});
+				const text = (result.processed?.ru || result.rawText || "").trim();
+				if (!text) {
+					toast.info("Не удалось распознать речь");
+					return;
+				}
+				// Web has no push-to-talk auto-send: always insert for review.
+				// `locked` is ignored here (kept in the signature for parity).
+				void locked;
+				const prev = textInput.value;
+				textInput.setInput(prev ? `${prev} ${text}` : text);
+				textInput.focus();
+			} catch {
+				toast.error("Ошибка расшифровки — запись сохранена для повтора");
+			} finally {
+				setTranscribing(false);
+			}
+		},
+		[textInput],
+	);
+
+	return (
+		<MicButton
+			onComplete={handleComplete}
+			transcribing={transcribing}
+			disabled={disabled}
+		/>
 	);
 }
