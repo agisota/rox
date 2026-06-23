@@ -3,12 +3,22 @@ import { devtools } from "zustand/middleware";
 
 export interface NewProjectResult {
 	projectId: string;
+	/** main-workspace of the created project; null if it could not be created. */
+	mainWorkspaceId: string | null;
 }
+
+/**
+ * What the caller wants after a successful create.
+ *  - "open": the modal wiring should navigate into the main-workspace.
+ *  - "return-id": no navigation; caller uses projectId itself (e.g. the
+ *    ProjectPickerPill selecting the project inside the new-workspace form).
+ */
+export type NewProjectIntent = "open" | "return-id";
 
 type ActiveModal =
 	| { kind: "none" }
-	| { kind: "new-project" }
-	| { kind: "template-gallery" };
+	| { kind: "new-project"; intent: NewProjectIntent }
+	| { kind: "template-gallery"; intent: NewProjectIntent };
 
 interface AddRepositoryModalState {
 	active: ActiveModal;
@@ -19,8 +29,12 @@ interface AddRepositoryModalState {
 	 * `null` before opening fresh. Safe today because there is only one global
 	 * `NewProjectModal` instance.
 	 */
-	openNewProject: () => Promise<NewProjectResult | null>;
-	openTemplateGallery: () => Promise<NewProjectResult | null>;
+	openNewProject: (opts?: {
+		intent?: NewProjectIntent;
+	}) => Promise<NewProjectResult | null>;
+	openTemplateGallery: (opts?: {
+		intent?: NewProjectIntent;
+	}) => Promise<NewProjectResult | null>;
 	resolveNewProject: (result: NewProjectResult | null) => void;
 	close: () => void;
 }
@@ -34,18 +48,18 @@ export const useAddRepositoryModalStore = create<AddRepositoryModalState>()(
 	devtools(
 		(set) => ({
 			active: { kind: "none" },
-			openNewProject: () => {
+			openNewProject: ({ intent = "return-id" } = {}) => {
 				pendingResolve?.(null);
 				return new Promise<NewProjectResult | null>((resolve) => {
 					pendingResolve = resolve;
-					set({ active: { kind: "new-project" } });
+					set({ active: { kind: "new-project", intent } });
 				});
 			},
-			openTemplateGallery: () => {
+			openTemplateGallery: ({ intent = "return-id" } = {}) => {
 				pendingResolve?.(null);
 				return new Promise<NewProjectResult | null>((resolve) => {
 					pendingResolve = resolve;
-					set({ active: { kind: "template-gallery" } });
+					set({ active: { kind: "template-gallery", intent } });
 				});
 			},
 			resolveNewProject: (result) => {
