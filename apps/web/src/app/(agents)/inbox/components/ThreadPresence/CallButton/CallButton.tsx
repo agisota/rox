@@ -1,12 +1,28 @@
 "use client";
 
 import { Button } from "@rox/ui/button";
+import {
+	type LiveRoomActivity,
+	LiveRoomActivityPanel,
+} from "@rox/ui/live-room-activity-panel";
+import { Popover, PopoverContent, PopoverTrigger } from "@rox/ui/popover";
 import { toast } from "@rox/ui/sonner";
-import { Phone } from "lucide-react";
+import { Activity, Phone } from "lucide-react";
 import { useState } from "react";
 
 import { env } from "@/env";
 import { trpcClient } from "@/trpc/client";
+import { resolveLiveRoomActivityGate } from "./resolveLiveRoomActivityGate";
+
+/**
+ * Web has no live LiveKit room yet (media-join is a later wave), so the activity
+ * panel renders from an empty model — it surfaces readiness, not live data.
+ */
+const EMPTY_WEB_ACTIVITY: LiveRoomActivity = {
+	roster: [],
+	speaking: [],
+	log: [],
+};
 
 export interface CallButtonProps {
 	/** Active organization id (the voice room is org-scoped). */
@@ -31,6 +47,14 @@ export function CallButton({ organizationId, threadId }: CallButtonProps) {
 	const livekitConfigured = Boolean(env.NEXT_PUBLIC_LIVEKIT_URL);
 	if (!livekitConfigured || !organizationId) return null;
 
+	// The activity panel reuses the same room-name convention the call button
+	// mints a token for; it stays inert until `live.transcript` is ready.
+	const activityGate = resolveLiveRoomActivityGate({
+		livekitUrl: env.NEXT_PUBLIC_LIVEKIT_URL,
+		organizationId,
+		threadId,
+	});
+
 	const handleCall = async () => {
 		setPending(true);
 		try {
@@ -48,18 +72,46 @@ export function CallButton({ organizationId, threadId }: CallButtonProps) {
 	};
 
 	return (
-		<Button
-			type="button"
-			variant="ghost"
-			size="icon"
-			className="size-7"
-			aria-label="Позвонить в этот тред"
-			disabled={pending}
-			onClick={() => {
-				void handleCall();
-			}}
-		>
-			<Phone className="size-4" />
-		</Button>
+		<div className="flex items-center gap-1">
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon"
+				className="size-7"
+				aria-label="Позвонить в этот тред"
+				disabled={pending}
+				onClick={() => {
+					void handleCall();
+				}}
+			>
+				<Phone className="size-4" />
+			</Button>
+			{activityGate.enabled && (
+				<Popover>
+					<PopoverTrigger asChild>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="size-7"
+							aria-label="Активность комнаты"
+						>
+							<Activity className="size-4" />
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent
+						side="bottom"
+						align="end"
+						sideOffset={6}
+						className="w-auto"
+					>
+						<LiveRoomActivityPanel
+							activity={EMPTY_WEB_ACTIVITY}
+							emptyHint="Голосовой звонок в вебе ещё не запущен"
+						/>
+					</PopoverContent>
+				</Popover>
+			)}
+		</div>
 	);
 }

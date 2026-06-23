@@ -596,9 +596,9 @@ export const EXPERIMENTAL_FEATURES = [
 			title: "Live Transcript",
 			shortDescription: "Capture transcripts from live voice sessions.",
 			longDescription:
-				"Prepares transcript capture, chunking, and room-object linking for meetings and live operations.",
+				"Live Room Activity shell: a presence + speaking-activity panel for an active voice room (roster, who is speaking now, and a timestamped join/leave/speak log). No STT yet — transcript capture, chunking, and room-object linking land on top of this surface.",
 			maturity: "alpha",
-			implementationStatus: "planned",
+			implementationStatus: "ready",
 			dependencies: [LIVEKIT_PROVIDER],
 			affectedSurfaces: ["Voice rooms", "Meeting notes", "Search"],
 		},

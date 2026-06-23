@@ -12,6 +12,10 @@
 			"types": "./src/client.tsx",
 			"default": "./src/client.tsx"
 		},
+		"./activity": {
+			"types": "./src/activity.ts",
+			"default": "./src/activity.ts"
+		},
 		"./token": {
 			"types": "./src/token.ts",
 			"default": "./src/token.ts"

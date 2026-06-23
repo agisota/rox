@@ -113,7 +113,7 @@
     },
     "apps/desktop": {
       "name": "@rox/desktop",
-      "version": "2.0.39",
+      "version": "2.0.40",
       "dependencies": {
         "@ai-sdk/anthropic": "3.0.64",
         "@ai-sdk/openai": "3.0.36",
@@ -866,7 +866,7 @@
     },
     "packages/host-service": {
       "name": "@rox/host-service",
-      "version": "0.8.37",
+      "version": "0.8.38",
       "dependencies": {
         "@hono/node-server": "1.19.13",
         "@hono/node-ws": "1.3.0",
