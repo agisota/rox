@@ -1,6 +1,6 @@
 "use client";
 
-import { splitHighlightedSnippet } from "@rox/shared/knowledge";
+import { splitHighlightedSnippet } from "@rox/shared/knowledge/notes-search";
 import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,

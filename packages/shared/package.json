@@ -236,6 +236,10 @@
 			"types": "./src/knowledge/index.ts",
 			"default": "./src/knowledge/index.ts"
 		},
+		"./knowledge/notes-search": {
+			"types": "./src/knowledge/notes-search.ts",
+			"default": "./src/knowledge/notes-search.ts"
+		},
 		"./integrations": {
 			"types": "./src/integrations/index.ts",
 			"default": "./src/integrations/index.ts"
