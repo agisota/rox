@@ -20,14 +20,48 @@ export const DEMO_PROJECT_COLOR = "#facc15";
  * Bundled demo-project icon asset name (yellow pizza-slice glyph), per issue
  * #26. Shipped as a repo asset at `apps/desktop/resources/icons/pizdariki.svg`.
  *
- * NOTE: `v2_projects.icon_url` is consumed by the renderer as a plain
- * `<img src>` (ProjectThumbnail) and must therefore be a resolvable URL. A
- * bundled relative asset path is NOT a valid `<img src>` in the renderer, so we
- * intentionally leave `v2_projects.icon_url` null on seed (graceful first-letter
- * fallback) and surface the bundled icon name here for the renderer follow-up to
- * resolve via the app-resource protocol.
+ * Retained as the canonical asset reference. The renderer does NOT load this
+ * relative path directly (a bundled path is not a valid `<img src>`); instead
+ * the seed writes a self-contained `data:` URL — see
+ * `DEMO_PROJECT_ICON_SVG` / `DEMO_PROJECT_ICON_DATA_URL` below — into
+ * `v2_projects.icon_url`, which the renderer renders as-is.
  */
 export const DEMO_PROJECT_ICON_ASSET = "icons/pizdariki.svg";
+
+/**
+ * Inline source of the demo-project icon — the single source of truth for the
+ * pizdariki glyph, kept identical (modulo inter-tag whitespace) to the bundled
+ * repo asset at `apps/desktop/resources/icons/pizdariki.svg` (a yellow `#facc15`
+ * pizza slice).
+ *
+ * Inlining the markup here (rather than reading the file at runtime, which the
+ * cloud DB package cannot do, or shipping an opaque base64 blob) keeps the icon
+ * human-reviewable in this seed and lets us derive a self-contained `data:` URL
+ * with zero filesystem or custom-protocol dependency.
+ */
+export const DEMO_PROJECT_ICON_SVG =
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Demo project (pizdariki)">' +
+	`<rect width="64" height="64" rx="14" fill="${DEMO_PROJECT_COLOR}" />` +
+	'<path d="M20 42 L32 18 L44 42 Z" fill="#1f2937" opacity="0.85" />' +
+	'<circle cx="32" cy="34" r="3" fill="#fde68a" />' +
+	'<circle cx="27" cy="38" r="2.4" fill="#fde68a" />' +
+	'<circle cx="37" cy="38" r="2.4" fill="#fde68a" />' +
+	'<circle cx="32" cy="27" r="2.2" fill="#fde68a" />' +
+	"</svg>";
+
+/**
+ * Self-contained, renderer-resolvable icon URL for the demo project.
+ *
+ * `v2_projects.icon_url` is consumed by the renderer as a plain `<img src>`
+ * (see apps/desktop ProjectThumbnail). A `data:image/svg+xml` URL is a valid
+ * `<img src>` (renderer CSP allows `img-src ... data:`) and needs no bundled
+ * asset, custom protocol, or network — so the pizdariki icon renders in dev,
+ * packaged, and tests identically. The seed writes this into the V2 demo row.
+ */
+export const DEMO_PROJECT_ICON_DATA_URL = `data:image/svg+xml;base64,${Buffer.from(
+	DEMO_PROJECT_ICON_SVG,
+	"utf8",
+).toString("base64")}`;
 
 /**
  * The demo project seeded into every new organization so a freshly-onboarded
@@ -55,13 +89,15 @@ const DEMO_PROJECT: Pick<
  * slug so the `(organizationId, slug)` unique constraint makes the V2 seed
  * idempotent, exactly like the V1 seed.
  *
- * `iconUrl` is intentionally omitted (null): the renderer renders it as a plain
- * `<img src>` and a bundled relative path would 404. The pizdariki icon +
- * yellow color are surfaced as constants for the renderer follow-up.
+ * `iconUrl` is the self-contained pizdariki `data:` URL (see
+ * `DEMO_PROJECT_ICON_DATA_URL`) so the renderer's `<img src>` resolves it with
+ * no bundled asset / custom protocol — surfacing the yellow `#facc15` pizza
+ * glyph as the demo project's accent in the live desktop projects list.
  */
-const DEMO_V2_PROJECT: Pick<InsertV2Project, "name" | "slug"> = {
+const DEMO_V2_PROJECT: Pick<InsertV2Project, "name" | "slug" | "iconUrl"> = {
 	name: DEMO_PROJECT.name,
 	slug: DEMO_PROJECT.slug,
+	iconUrl: DEMO_PROJECT_ICON_DATA_URL,
 };
 
 /**
