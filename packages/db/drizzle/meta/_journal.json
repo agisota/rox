@@ -708,6 +708,13 @@
       "when": 1782253426986,
       "tag": "0100_notes_fts_index",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1782254230809,
+      "tag": "0101_cal_event_occurrences",
+      "breakpoints": true
     }
   ]
 }
