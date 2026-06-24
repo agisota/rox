@@ -21,7 +21,11 @@ type RouterOutputs = inferRouterOutputs<AppRouter>;
 type ChatInputs = RouterInputs["chat"];
 type ChatOutputs = RouterOutputs["chat"];
 type SnapshotOutput = ChatOutputs["getSnapshot"];
-type DisplayStateOutput = SnapshotOutput["displayState"];
+// getSnapshot returns `displayState: null` for a cold session whose runtime is
+// still booting in the background (the loading-spinner fix). Null is handled at
+// the value level via `snapshot?.displayState ?? null`; this alias names the
+// non-null shape for the helpers that index into concrete display-state fields.
+type DisplayStateOutput = NonNullable<SnapshotOutput["displayState"]>;
 type ListMessagesOutput = SnapshotOutput["messages"];
 type HistoryMessage = ListMessagesOutput[number];
 type HistoryMessagePart = HistoryMessage["content"][number];
