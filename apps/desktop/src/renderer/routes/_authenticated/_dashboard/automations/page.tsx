@@ -56,7 +56,9 @@ import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { ProjectThumbnail } from "renderer/routes/_authenticated/components/ProjectThumbnail";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
+import { useAutomationGroupCollapseStore } from "renderer/stores/automation-group-collapse";
 import { AgentCell } from "./components/AgentCell";
+import { AutomationGroupHeader } from "./components/AutomationGroupHeader";
 import { AutomationsEmptyState } from "./components/AutomationsEmptyState";
 import { CellWithIcon } from "./components/CellWithIcon";
 import { CreateAutomationDialog } from "./components/CreateAutomationDialog";
@@ -71,6 +73,9 @@ export const Route = createFileRoute("/_authenticated/_dashboard/automations/")(
 );
 
 type Scope = "mine" | "team";
+
+/** Sentinel group key for automations whose project is unknown/unset. */
+const NO_PROJECT_GROUP_KEY = "__no_project__";
 
 const ROW_GRID_MINE =
 	"grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_2rem] items-center gap-4";
@@ -246,6 +251,42 @@ function AutomationsPage() {
 			: automations.filter((a) => a.ownerUserId !== currentUserId);
 	}, [automations, scope, currentUserId]);
 
+	// Group the visible automations by project so many automations under one
+	// project can be folded. Groups keep the project order they first appear in
+	// (rows are already sorted by createdAt desc). Automations without a known
+	// project fall into a stable trailing bucket.
+	const groups = useMemo(() => {
+		const order: string[] = [];
+		const byKey = new Map<string, SelectAutomation[]>();
+		for (const automation of visible) {
+			const key = automation.v2ProjectId || NO_PROJECT_GROUP_KEY;
+			let bucket = byKey.get(key);
+			if (!bucket) {
+				bucket = [];
+				byKey.set(key, bucket);
+				order.push(key);
+			}
+			bucket.push(automation);
+		}
+		return order.map((key) => {
+			const project =
+				key === NO_PROJECT_GROUP_KEY ? null : projectsById.get(key);
+			return {
+				key,
+				project,
+				label: project?.name ?? "Без проекта",
+				items: byKey.get(key) ?? [],
+			};
+		});
+	}, [visible, projectsById]);
+
+	const isGroupCollapsed = useAutomationGroupCollapseStore(
+		(state) => state.isCollapsed,
+	);
+	const toggleGroupCollapsed = useAutomationGroupCollapseStore(
+		(state) => state.toggle,
+	);
+
 	const handleSelectTemplate = (template: AutomationTemplate) => {
 		setInitialTemplate(template);
 		setCreateOpen(true);
@@ -262,6 +303,232 @@ function AutomationsPage() {
 		automationsReady && visible.length === 0 && scope === "mine";
 	const showTeamEmptyState =
 		automationsReady && visible.length === 0 && scope === "team";
+
+	const renderAutomationRow = (automation: SelectAutomation) => {
+		const owner = usersById.get(automation.ownerUserId);
+		const project = projectsById.get(automation.v2ProjectId);
+		const workspace = automation.v2WorkspaceId
+			? workspacesById.get(automation.v2WorkspaceId)
+			: null;
+		const workspaceLabel = !automation.v2WorkspaceId
+			? "Новое рабочее пространство"
+			: (workspace?.name ?? "Удалено");
+		const host = automation.targetHostId
+			? hostsById.get(automation.targetHostId)
+			: null;
+		const isOwner = automation.ownerUserId === currentUserId;
+
+		return (
+			// biome-ignore lint/a11y/useSemanticElements: row needs nested interactive elements
+			<div
+				key={automation.id}
+				role="button"
+				tabIndex={0}
+				onClick={() =>
+					navigate({
+						to: "/automations/$automationId",
+						params: { automationId: automation.id },
+					})
+				}
+				onKeyDown={(event) => {
+					if (event.target !== event.currentTarget) return;
+					if (event.key === "Enter" || event.key === " ") {
+						event.preventDefault();
+						navigate({
+							to: "/automations/$automationId",
+							params: { automationId: automation.id },
+						});
+					}
+				}}
+				className={cn(
+					rowGrid,
+					"group/row h-10 min-w-0 cursor-pointer border-b border-border/50 px-4 text-sm outline-none transition-colors hover:bg-accent/50 focus-visible:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
+				)}
+			>
+				<span className="flex min-w-0 items-center gap-2">
+					<span
+						className={cn(
+							"inline-block size-2 shrink-0 rounded-full",
+							automation.enabled
+								? "bg-emerald-500"
+								: "border border-muted-foreground/60",
+						)}
+					/>
+					<span
+						className={cn(
+							"min-w-0 truncate font-medium",
+							!automation.enabled && "text-muted-foreground",
+						)}
+						title={automation.name}
+					>
+						{automation.name}
+					</span>
+					{!automation.enabled && (
+						<Badge variant="secondary" className="shrink-0 text-[10px]">
+							на паузе
+						</Badge>
+					)}
+				</span>
+
+				{scope === "team" && (
+					<span
+						className="min-w-0 truncate text-xs text-muted-foreground"
+						title={owner?.email ?? undefined}
+					>
+						{owner?.name ?? owner?.email ?? "—"}
+					</span>
+				)}
+
+				<span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+					{project ? (
+						<ProjectThumbnail
+							projectName={project.name}
+							iconUrl={project.iconUrl}
+							className="!size-3.5 shrink-0"
+						/>
+					) : null}
+					<span className="min-w-0 truncate">{project?.name ?? "—"}</span>
+				</span>
+
+				<span className="min-w-0 text-xs text-muted-foreground">
+					<CellWithIcon
+						icon={
+							automation.v2WorkspaceId ? (
+								<LuGitBranch className="size-3 shrink-0" />
+							) : (
+								<LuSparkles className="size-3 shrink-0" />
+							)
+						}
+						label={workspaceLabel}
+					/>
+				</span>
+
+				<span className="min-w-0 text-xs text-muted-foreground">
+					<CellWithIcon
+						icon={<HiOutlineComputerDesktop className="size-3 shrink-0" />}
+						label={host?.name ?? "Авто"}
+					/>
+				</span>
+
+				<span className="min-w-0 text-xs text-muted-foreground">
+					<AgentCell
+						agentId={automation.agent}
+						hostId={automation.targetHostId ?? null}
+					/>
+				</span>
+
+				<span
+					className="flex min-w-0 flex-col leading-tight"
+					title={describeScheduleRu(automation.rrule)}
+				>
+					<span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
+						{describeScheduleRu(automation.rrule)}
+					</span>
+					{automation.enabled && automation.nextRunAt
+						? (() => {
+								const rel = nextRunRelativeRu(automation.nextRunAt, now);
+								return rel ? (
+									<span className="min-w-0 truncate text-[10px] text-muted-foreground/70">
+										{rel}
+									</span>
+								) : null;
+							})()
+						: null}
+				</span>
+
+				<span className="flex items-center justify-end">
+					{isOwner && (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									onClick={(e) => e.stopPropagation()}
+									aria-label="Действия со строкой"
+									className="opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100 focus-visible:opacity-100"
+								>
+									<LuEllipsis className="size-4" />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								align="end"
+								onClick={(e) => e.stopPropagation()}
+							>
+								<DropdownMenuItem
+									onSelect={() =>
+										navigate({
+											to: "/automations/$automationId",
+											params: { automationId: automation.id },
+										})
+									}
+								>
+									<LuPencil className="size-4" />
+									Редактировать
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onSelect={() =>
+										runNowMutation.mutate({
+											id: automation.id,
+											name: automation.name,
+										})
+									}
+								>
+									<LuPlay className="size-4" />
+									Запустить сейчас
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onSelect={() =>
+										setEnabledMutation.mutate({
+											id: automation.id,
+											enabled: !automation.enabled,
+										})
+									}
+								>
+									{automation.enabled ? (
+										<>
+											<LuPause className="size-4" />
+											На паузу
+										</>
+									) : (
+										<>
+											<LuPlay className="size-4" />
+											Включить
+										</>
+									)}
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									disabled={duplicateMutation.isPending}
+									onSelect={() => duplicateMutation.mutate(automation)}
+								>
+									<LuCopy className="size-4" />
+									Дублировать
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onSelect={() =>
+										navigate({
+											to: "/automations/$automationId",
+											params: { automationId: automation.id },
+											search: { history: true },
+										})
+									}
+								>
+									<LuClock className="size-4" />
+									История версий
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									variant="destructive"
+									onSelect={() => setPendingDelete(automation)}
+								>
+									<LuTrash2 className="size-4" />
+									Удалить
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					)}
+				</span>
+			</div>
+		);
+	};
 
 	return (
 		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
@@ -367,242 +634,26 @@ function AutomationsPage() {
 						</div>
 
 						<div className="min-h-0 flex-1 overflow-y-auto">
-							{visible.map((automation) => {
-								const owner = usersById.get(automation.ownerUserId);
-								const project = projectsById.get(automation.v2ProjectId);
-								const workspace = automation.v2WorkspaceId
-									? workspacesById.get(automation.v2WorkspaceId)
-									: null;
-								const workspaceLabel = !automation.v2WorkspaceId
-									? "Новое рабочее пространство"
-									: (workspace?.name ?? "Удалено");
-								const host = automation.targetHostId
-									? hostsById.get(automation.targetHostId)
-									: null;
-								const isOwner = automation.ownerUserId === currentUserId;
-
+							{groups.map((group) => {
+								const collapsed = isGroupCollapsed(group.key);
 								return (
-									// biome-ignore lint/a11y/useSemanticElements: row needs nested interactive elements
-									<div
-										key={automation.id}
-										role="button"
-										tabIndex={0}
-										onClick={() =>
-											navigate({
-												to: "/automations/$automationId",
-												params: { automationId: automation.id },
-											})
-										}
-										onKeyDown={(event) => {
-											if (event.target !== event.currentTarget) return;
-											if (event.key === "Enter" || event.key === " ") {
-												event.preventDefault();
-												navigate({
-													to: "/automations/$automationId",
-													params: { automationId: automation.id },
-												});
+									<div key={group.key}>
+										<AutomationGroupHeader
+											label={group.label}
+											count={group.items.length}
+											isCollapsed={collapsed}
+											onToggle={() => toggleGroupCollapsed(group.key)}
+											icon={
+												group.project ? (
+													<ProjectThumbnail
+														projectName={group.project.name}
+														iconUrl={group.project.iconUrl}
+														className="!size-4 shrink-0"
+													/>
+												) : null
 											}
-										}}
-										className={cn(
-											rowGrid,
-											"group/row h-10 min-w-0 cursor-pointer border-b border-border/50 px-4 text-sm outline-none transition-colors hover:bg-accent/50 focus-visible:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
-										)}
-									>
-										<span className="flex min-w-0 items-center gap-2">
-											<span
-												className={cn(
-													"inline-block size-2 shrink-0 rounded-full",
-													automation.enabled
-														? "bg-emerald-500"
-														: "border border-muted-foreground/60",
-												)}
-											/>
-											<span
-												className={cn(
-													"min-w-0 truncate font-medium",
-													!automation.enabled && "text-muted-foreground",
-												)}
-												title={automation.name}
-											>
-												{automation.name}
-											</span>
-											{!automation.enabled && (
-												<Badge
-													variant="secondary"
-													className="shrink-0 text-[10px]"
-												>
-													на паузе
-												</Badge>
-											)}
-										</span>
-
-										{scope === "team" && (
-											<span
-												className="min-w-0 truncate text-xs text-muted-foreground"
-												title={owner?.email ?? undefined}
-											>
-												{owner?.name ?? owner?.email ?? "—"}
-											</span>
-										)}
-
-										<span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-											{project ? (
-												<ProjectThumbnail
-													projectName={project.name}
-													iconUrl={project.iconUrl}
-													className="!size-3.5 shrink-0"
-												/>
-											) : null}
-											<span className="min-w-0 truncate">
-												{project?.name ?? "—"}
-											</span>
-										</span>
-
-										<span className="min-w-0 text-xs text-muted-foreground">
-											<CellWithIcon
-												icon={
-													automation.v2WorkspaceId ? (
-														<LuGitBranch className="size-3 shrink-0" />
-													) : (
-														<LuSparkles className="size-3 shrink-0" />
-													)
-												}
-												label={workspaceLabel}
-											/>
-										</span>
-
-										<span className="min-w-0 text-xs text-muted-foreground">
-											<CellWithIcon
-												icon={
-													<HiOutlineComputerDesktop className="size-3 shrink-0" />
-												}
-												label={host?.name ?? "Авто"}
-											/>
-										</span>
-
-										<span className="min-w-0 text-xs text-muted-foreground">
-											<AgentCell
-												agentId={automation.agent}
-												hostId={automation.targetHostId ?? null}
-											/>
-										</span>
-
-										<span
-											className="flex min-w-0 flex-col leading-tight"
-											title={describeScheduleRu(automation.rrule)}
-										>
-											<span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
-												{describeScheduleRu(automation.rrule)}
-											</span>
-											{automation.enabled && automation.nextRunAt
-												? (() => {
-														const rel = nextRunRelativeRu(
-															automation.nextRunAt,
-															now,
-														);
-														return rel ? (
-															<span className="min-w-0 truncate text-[10px] text-muted-foreground/70">
-																{rel}
-															</span>
-														) : null;
-													})()
-												: null}
-										</span>
-
-										<span className="flex items-center justify-end">
-											{isOwner && (
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon-sm"
-															onClick={(e) => e.stopPropagation()}
-															aria-label="Действия со строкой"
-															className="opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100 focus-visible:opacity-100"
-														>
-															<LuEllipsis className="size-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent
-														align="end"
-														onClick={(e) => e.stopPropagation()}
-													>
-														<DropdownMenuItem
-															onSelect={() =>
-																navigate({
-																	to: "/automations/$automationId",
-																	params: {
-																		automationId: automation.id,
-																	},
-																})
-															}
-														>
-															<LuPencil className="size-4" />
-															Редактировать
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onSelect={() =>
-																runNowMutation.mutate({
-																	id: automation.id,
-																	name: automation.name,
-																})
-															}
-														>
-															<LuPlay className="size-4" />
-															Запустить сейчас
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onSelect={() =>
-																setEnabledMutation.mutate({
-																	id: automation.id,
-																	enabled: !automation.enabled,
-																})
-															}
-														>
-															{automation.enabled ? (
-																<>
-																	<LuPause className="size-4" />
-																	На паузу
-																</>
-															) : (
-																<>
-																	<LuPlay className="size-4" />
-																	Включить
-																</>
-															)}
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															disabled={duplicateMutation.isPending}
-															onSelect={() =>
-																duplicateMutation.mutate(automation)
-															}
-														>
-															<LuCopy className="size-4" />
-															Дублировать
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															onSelect={() =>
-																navigate({
-																	to: "/automations/$automationId",
-																	params: { automationId: automation.id },
-																	search: { history: true },
-																})
-															}
-														>
-															<LuClock className="size-4" />
-															История версий
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															variant="destructive"
-															onSelect={() => setPendingDelete(automation)}
-														>
-															<LuTrash2 className="size-4" />
-															Удалить
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											)}
-										</span>
+										/>
+										{!collapsed && group.items.map(renderAutomationRow)}
 									</div>
 								);
 							})}

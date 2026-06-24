@@ -1,19 +1,44 @@
+import { AVAILABLE_CHAT_MODELS } from "@rox/shared/chat-models";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@rox/ui/select";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import type { NodeFormProps } from "./types";
 
 /** Sentinel Select value for "no role bound" (Radix Select forbids empty value). */
 const NO_ROLE = "__none__";
+/**
+ * Sentinel for "inherit the role's model" (no per-node override). Radix Select
+ * forbids an empty value, so we use a non-id token and map it to "delete the
+ * modelOverride subBlock".
+ */
+const MODEL_INHERIT = "__inherit__";
+
+/**
+ * Group the canonical chat-model catalog by provider so the node model dropdown
+ * mirrors the chat ModelPicker's grouped layout (dify parity). Same source list
+ * (`AVAILABLE_CHAT_MODELS`) the chat composer feeds its picker, so a node runs a
+ * real, resolvable model id — not a free-text guess.
+ */
+function groupModelsByProvider() {
+	const groups = new Map<string, (typeof AVAILABLE_CHAT_MODELS)[number][]>();
+	for (const model of AVAILABLE_CHAT_MODELS) {
+		const list = groups.get(model.provider) ?? [];
+		list.push(model);
+		groups.set(model.provider, list);
+	}
+	return [...groups.entries()];
+}
 
 function readString(sub: Record<string, unknown> | undefined, key: string) {
 	const raw = sub?.[key];
@@ -40,9 +65,16 @@ export function AgentNodeForm({ node, patch }: NodeFormProps) {
 
 	const sub = node.data.subBlocks;
 	const boundSlug = node.data.roleSlug ?? "";
-	const [modelOverride, setModelOverride] = useState(() =>
-		readString(sub, "modelOverride"),
-	);
+	// Per-node model override id (persisted in subBlocks.modelOverride). Seeds from
+	// node data; the dropdown writes a real catalog id from AVAILABLE_CHAT_MODELS.
+	const modelOverride = readString(sub, "modelOverride");
+	const modelGroups = useMemo(groupModelsByProvider, []);
+	// A persisted id that is not in the current catalog (e.g. a legacy free-text
+	// value typed before the dropdown existed) is surfaced as a warning + a
+	// recoverable extra option so it neither vanishes silently nor blocks editing.
+	const modelKnown =
+		modelOverride.length === 0 ||
+		AVAILABLE_CHAT_MODELS.some((m) => m.id === modelOverride);
 	const [maxTurns, setMaxTurns] = useState(() => readNumber(sub, "maxTurns"));
 	const [temperature, setTemperature] = useState(() =>
 		readNumber(sub, "temperature"),
@@ -64,19 +96,16 @@ export function AgentNodeForm({ node, patch }: NodeFormProps) {
 		patch.patchNode(node.data.blockId, { subBlocksPatch: { roleSlug: value } });
 	};
 
-	const commitModel = () => {
-		const trimmed = modelOverride.trim().slice(0, 200);
-		if (trimmed.length === 0) {
+	const onModelChange = (value: string) => {
+		if (value === MODEL_INHERIT) {
 			patch.patchNode(node.data.blockId, {
 				deleteSubBlockKeys: ["modelOverride"],
 			});
-			setModelOverride("");
 			return;
 		}
 		patch.patchNode(node.data.blockId, {
-			subBlocksPatch: { modelOverride: trimmed },
+			subBlocksPatch: { modelOverride: value },
 		});
-		setModelOverride(trimmed);
 	};
 
 	const commitMaxTurns = () => {
@@ -146,21 +175,49 @@ export function AgentNodeForm({ node, patch }: NodeFormProps) {
 			</div>
 
 			<div className="flex flex-col gap-1.5">
-				<Label htmlFor="agent-model-override" className="text-xs">
-					Модель (переопределение)
-				</Label>
-				<Input
-					id="agent-model-override"
-					className="h-8 text-xs"
-					placeholder="напр. gpt-5 (необязательно)"
-					value={modelOverride}
-					maxLength={200}
-					onChange={(e) => setModelOverride(e.target.value)}
-					onBlur={commitModel}
-					onKeyDown={(e) => {
-						if (e.key === "Enter") e.currentTarget.blur();
-					}}
-				/>
+				<Label className="text-xs">Модель (переопределение)</Label>
+				<Select
+					value={modelOverride || MODEL_INHERIT}
+					onValueChange={onModelChange}
+				>
+					<SelectTrigger className="h-8 text-xs" aria-label="Модель узла">
+						<SelectValue placeholder="Модель роли" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value={MODEL_INHERIT}>Как у роли</SelectItem>
+						{/* Recover a persisted id that is no longer in the catalog (legacy
+						    free-text) so selecting it stays possible and it is not dropped. */}
+						{!modelKnown && (
+							<SelectGroup>
+								<SelectLabel className="text-amber-500">
+									Неизвестная модель
+								</SelectLabel>
+								<SelectItem value={modelOverride}>{modelOverride}</SelectItem>
+							</SelectGroup>
+						)}
+						{modelGroups.map(([provider, models]) => (
+							<SelectGroup key={provider}>
+								<SelectLabel>{provider}</SelectLabel>
+								{models.map((model) => (
+									<SelectItem key={model.id} value={model.id}>
+										{model.name}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						))}
+					</SelectContent>
+				</Select>
+				{!modelKnown && (
+					<p className="text-[11px] text-amber-500">
+						Модель не из каталога:{" "}
+						<span className="font-mono">{modelOverride}</span>
+					</p>
+				)}
+				{modelKnown && modelOverride.length === 0 && (
+					<p className="text-[11px] text-muted-foreground">
+						Узел запустится на модели, заданной ролью.
+					</p>
+				)}
 			</div>
 
 			<div className="grid grid-cols-2 gap-2">

@@ -1,0 +1,1 @@
+export { useGovernanceTab } from "./useGovernanceTab";

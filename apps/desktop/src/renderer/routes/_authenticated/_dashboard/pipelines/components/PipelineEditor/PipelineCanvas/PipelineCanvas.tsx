@@ -253,6 +253,34 @@ export function PipelineCanvas({
 		onSelectNode(null);
 	}, [onSelectNode]);
 
+	// Click a node in the minimap: select it (opens the inspector) and recentre the
+	// main viewport on the node's centre at the current zoom so it is navigation,
+	// not an inert thumbnail. xyflow gives the full node here; we centre on its
+	// measured box (falling back to its position when dimensions aren't measured).
+	const handleMiniMapNodeClick = useCallback(
+		(_event: React.MouseEvent, node: Node) => {
+			onSelectNode(node.id);
+			const width = node.measured?.width ?? node.width ?? 0;
+			const height = node.measured?.height ?? node.height ?? 0;
+			const cx = node.position.x + width / 2;
+			const cy = node.position.y + height / 2;
+			flow.setCenter(cx, cy, { zoom: flow.getZoom(), duration: 300 });
+		},
+		[flow, onSelectNode],
+	);
+
+	// Click empty minimap space: recentre the main viewport on that flow coordinate
+	// (xyflow passes flow-space {x,y} as the 2nd arg), keeping the current zoom.
+	const handleMiniMapClick = useCallback(
+		(_event: React.MouseEvent, position: { x: number; y: number }) => {
+			flow.setCenter(position.x, position.y, {
+				zoom: flow.getZoom(),
+				duration: 300,
+			});
+		},
+		[flow],
+	);
+
 	// --- Drag-from-palette (native HTML DnD; @xyflow official pattern) ---------
 	const handleDragOver = useCallback((event: React.DragEvent) => {
 		if (!isNodeDrag(event)) return;
@@ -321,6 +349,12 @@ export function PipelineCanvas({
 					maskColor="rgba(10,10,10,0.6)"
 					className="!bg-card/80 rounded-md border backdrop-blur"
 					aria-label="Миникарта пайплайна"
+					// Click a node on the minimap -> select it + open the inspector AND
+					// recentre the main viewport on it (navigate, not inert).
+					onNodeClick={handleMiniMapNodeClick}
+					// Click empty minimap space -> recentre the main viewport on that
+					// flow coordinate (pan-to-location), keeping the current zoom.
+					onClick={handleMiniMapClick}
 				/>
 				<Panel
 					position="top-left"

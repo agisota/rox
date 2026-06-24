@@ -35,6 +35,12 @@ type NodeKindMeta = {
 	iconClass: string;
 	/** Resolved CSS colour used by the MiniMap (no tailwind there). */
 	miniMapColor: string;
+	/**
+	 * Extra search terms for the cmdk palette so a node is findable by its RU
+	 * label, its raw kind id, and common synonyms (dify parity: searching
+	 * "approval"/"loop"/"final" or "цикл"/"подтверждение" all resolve).
+	 */
+	keywords: string;
 };
 
 /**
@@ -49,6 +55,7 @@ export const NODE_KIND_META: Record<PipelineNodeKind, NodeKindMeta> = {
 		icon: Play,
 		iconClass: "text-emerald-500",
 		miniMapColor: "#10b981",
+		keywords: "start старт начало вход entry",
 	},
 	agent_run: {
 		label: "Агент",
@@ -56,6 +63,7 @@ export const NODE_KIND_META: Record<PipelineNodeKind, NodeKindMeta> = {
 		icon: Bot,
 		iconClass: "text-primary",
 		miniMapColor: "#c4704f",
+		keywords: "agent agent_run агент роль role llm модель",
 	},
 	loop: {
 		label: "Цикл",
@@ -63,6 +71,7 @@ export const NODE_KIND_META: Record<PipelineNodeKind, NodeKindMeta> = {
 		icon: Repeat,
 		iconClass: "text-sky-500",
 		miniMapColor: "#0ea5e9",
+		keywords: "loop цикл повтор iterate итерация repeat",
 	},
 	human_approval: {
 		label: "Подтверждение",
@@ -70,6 +79,7 @@ export const NODE_KIND_META: Record<PipelineNodeKind, NodeKindMeta> = {
 		icon: ShieldCheck,
 		iconClass: "text-amber-500",
 		miniMapColor: "#f59e0b",
+		keywords: "human_approval approval подтверждение гейт review одобрение",
 	},
 	response: {
 		label: "Финал",
@@ -77,6 +87,7 @@ export const NODE_KIND_META: Record<PipelineNodeKind, NodeKindMeta> = {
 		icon: Flag,
 		iconClass: "text-rose-500",
 		miniMapColor: "#f43f5e",
+		keywords: "response финал результат output ответ конец",
 	},
 };
 

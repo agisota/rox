@@ -65,7 +65,7 @@ export function NodePalette({
 						return (
 							<CommandItem
 								key={kind}
-								value={`узел ${meta.label} ${meta.description}`}
+								value={`узел ${meta.label} ${meta.description} ${meta.keywords}`}
 								onSelect={() => pick(kind)}
 							>
 								<Icon className={`size-4 ${meta.iconClass}`} />
