@@ -3,12 +3,16 @@ import {
 	buildDisplayState,
 	buildHostToolDefinitions,
 	buildHostToolErrorResult,
+	composeMessageWithReminders,
 	mapAgentMessage,
 	mapAgentMessages,
 	mapHostToolResult,
 	mapToolToHostDefinition,
 	type OmpAgentMessage,
+	partitionPromptAttachments,
+	type RoxFileAttachment,
 	type RoxHostTool,
+	summarizeUnsupportedAttachments,
 	toHostToolParameters,
 } from "./omp-mapping";
 import { resolveOmpModelRouting } from "./omp-models";
@@ -350,5 +354,96 @@ describe("buildHostToolErrorResult", () => {
 			content: [{ type: "text", text: "boom" }],
 			details: {},
 		});
+	});
+});
+
+/**
+ * Prompt attachment partitioning (Rox `files` → omp `prompt.images`). Pinned
+ * against the live `omp/15.11.0` `prompt` frame: `images` elements are
+ * `{data, mimeType}` and omp accepts images only — a valid PNG round-tripped to
+ * the model ("Blue."), while non-image attachments have no omp channel.
+ */
+describe("partitionPromptAttachments", () => {
+	it("maps image files to omp {data, mimeType} and keeps order", () => {
+		const files: RoxFileAttachment[] = [
+			{ data: "AAAA", mediaType: "image/png", filename: "a.png" },
+			{ data: "BBBB", mediaType: "image/jpeg" },
+		];
+		const { images, unsupported } = partitionPromptAttachments(files);
+		expect(images).toEqual([
+			{ data: "AAAA", mimeType: "image/png" },
+			{ data: "BBBB", mimeType: "image/jpeg" },
+		]);
+		expect(unsupported).toEqual([]);
+	});
+
+	it("routes non-image files to unsupported (omp prompt takes images only)", () => {
+		const files: RoxFileAttachment[] = [
+			{ data: "AAAA", mediaType: "image/png" },
+			{ data: "PDF==", mediaType: "application/pdf", filename: "report.pdf" },
+			{ data: "TXT==", mediaType: "text/plain" },
+		];
+		const { images, unsupported } = partitionPromptAttachments(files);
+		expect(images).toEqual([{ data: "AAAA", mimeType: "image/png" }]);
+		expect(unsupported.map((f) => f.mediaType)).toEqual([
+			"application/pdf",
+			"text/plain",
+		]);
+	});
+
+	it("returns empty partitions for no files", () => {
+		expect(partitionPromptAttachments([])).toEqual({
+			images: [],
+			unsupported: [],
+		});
+	});
+});
+
+describe("summarizeUnsupportedAttachments", () => {
+	it("names unsupported attachments by filename when present", () => {
+		const note = summarizeUnsupportedAttachments([
+			{ data: "x", mediaType: "application/pdf", filename: "report.pdf" },
+		]);
+		expect(note).toContain("1 non-image attachment");
+		expect(note).toContain("report.pdf");
+	});
+
+	it("falls back to media type + index when no filename", () => {
+		const note = summarizeUnsupportedAttachments([
+			{ data: "x", mediaType: "text/plain" },
+		]);
+		expect(note).toContain("text/plain #1");
+	});
+
+	it("returns an empty string when there is nothing unsupported", () => {
+		expect(summarizeUnsupportedAttachments([])).toBe("");
+	});
+});
+
+/**
+ * System-reminder injection (no omp inject-message frame). Reminders are
+ * prepended to the next prompt as `<system-reminder>` blocks — verified that
+ * omp's full RPC command set has no append/inject command.
+ */
+describe("composeMessageWithReminders", () => {
+	it("prepends reminders as <system-reminder> blocks above the user text", () => {
+		const out = composeMessageWithReminders("do the thing", [
+			"remember: the user prefers RU",
+		]);
+		expect(out).toBe(
+			"<system-reminder>\nremember: the user prefers RU\n</system-reminder>\n\ndo the thing",
+		);
+	});
+
+	it("stacks multiple reminders and drops blank ones", () => {
+		const out = composeMessageWithReminders("go", ["  ", "first", "second"]);
+		expect(out).toBe(
+			"<system-reminder>\nfirst\n</system-reminder>\n" +
+				"<system-reminder>\nsecond\n</system-reminder>\n\ngo",
+		);
+	});
+
+	it("returns the content unchanged when there are no reminders", () => {
+		expect(composeMessageWithReminders("hello", [])).toBe("hello");
 	});
 });

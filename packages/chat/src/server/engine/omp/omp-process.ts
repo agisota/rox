@@ -221,9 +221,31 @@ export class OmpProcess {
 	/**
 	 * Answer a blocking `extension_ui_request` by correlated `id`. Fire-and-forget:
 	 * omp resumes the suspended turn; it does not send a `response` envelope.
+	 *
+	 * The reply shape is FLAT (verified live + against omp's embedded `rpc.md`
+	 * `RpcExtensionUIResponse`): the answer field sits at the top level, never
+	 * nested under `value`:
+	 *   - `select`/`input` → `{type:"extension_ui_response", id, value}`
+	 *   - `confirm`        → `{type:"extension_ui_response", id, confirmed}`
+	 *   - cancel/timeout   → `{type:"extension_ui_response", id, cancelled:true}`
+	 *
+	 * Pass a primitive (string/number) to use the `value` field, or a record to
+	 * spread the exact answer fields (e.g. `{confirmed:true}`) at the top level.
 	 */
-	respondToExtensionUi(id: string, value: unknown): void {
-		this.writeFrame({ type: "extension_ui_response", id, value });
+	respondToExtensionUi(
+		id: string,
+		answer: string | number | boolean | Record<string, unknown>,
+	): void {
+		const frame: Record<string, unknown> = {
+			type: "extension_ui_response",
+			id,
+		};
+		if (answer !== null && typeof answer === "object") {
+			Object.assign(frame, answer);
+		} else {
+			frame.value = answer;
+		}
+		this.writeFrame(frame);
 	}
 
 	/**
@@ -247,6 +269,67 @@ export class OmpProcess {
 	 */
 	sendHostToolUpdate(id: string, partialResult: unknown): void {
 		this.writeFrame({ type: "host_tool_update", id, partialResult });
+	}
+
+	// ── Session continuity (verified `omp/15.11.0 --mode rpc`) ────────────────
+	//
+	// omp persists each session to a `.jsonl` under `--session-dir`; the path is
+	// surfaced as `get_state().sessionFile`. These commands move the live session
+	// between those files (so omp's conversation history follows the active Rox
+	// thread) and provide the branch primitive used for edit-and-resend.
+
+	/**
+	 * Start a fresh omp session (clears the live conversation). Returns whether
+	 * the change was cancelled (an extension/hook may veto via
+	 * `session_before_switch`). After a non-cancelled call `get_state` reports a
+	 * new `sessionId`/`sessionFile` with `messageCount:0`.
+	 */
+	async newSession(parentSession?: string): Promise<{ cancelled: boolean }> {
+		const data = await this.request<{ cancelled?: boolean }>(
+			"new_session",
+			parentSession ? { parentSession } : {},
+		);
+		return { cancelled: Boolean(data?.cancelled) };
+	}
+
+	/**
+	 * Switch the live session to an existing session `.jsonl` path (the value of
+	 * a prior `get_state().sessionFile`). On success omp restores that session's
+	 * full message history. Returns whether the change was cancelled.
+	 */
+	async switchSession(sessionPath: string): Promise<{ cancelled: boolean }> {
+		const data = await this.request<{ cancelled?: boolean }>("switch_session", {
+			sessionPath,
+		});
+		return { cancelled: Boolean(data?.cancelled) };
+	}
+
+	/**
+	 * Branch (fork) the current session at a message entry id, creating a new
+	 * session truncated to just before that entry — the primitive behind
+	 * edit-and-resend. Returns the branched-from text and whether it was
+	 * cancelled. Entry ids come from {@link getBranchMessages}.
+	 */
+	async branch(entryId: string): Promise<{
+		text?: string;
+		cancelled: boolean;
+	}> {
+		const data = await this.request<{ text?: string; cancelled?: boolean }>(
+			"branch",
+			{ entryId },
+		);
+		return { text: data?.text, cancelled: Boolean(data?.cancelled) };
+	}
+
+	/**
+	 * List the branchable user-turn entries of the current session, oldest-first,
+	 * as `{entryId, text}` pairs. Each `entryId` can be passed to {@link branch}.
+	 */
+	async getBranchMessages(): Promise<Array<{ entryId: string; text: string }>> {
+		const data = await this.request<{
+			messages?: Array<{ entryId: string; text: string }>;
+		}>("get_branch_messages");
+		return data?.messages ?? [];
 	}
 
 	/** Terminate the child and reject any in-flight requests. */

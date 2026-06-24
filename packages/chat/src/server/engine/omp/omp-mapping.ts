@@ -377,3 +377,107 @@ export function buildHostToolErrorResult(error: unknown): OmpHostToolResult {
 			: String(error ?? "host tool failed");
 	return { content: [{ type: "text", text: message }], details: {} };
 }
+
+// ── Prompt attachments (Rox `files` ↔ omp `prompt.images`) ──────────────────
+//
+// Verified against `omp/15.11.0 --mode rpc`: the `prompt`/`steer`/`follow_up`
+// commands accept `images: ImageContent[]`, where each element is
+// `{ data: <base64>, mimeType: <string> }` (omp's `zImageContent`; a `uri?` is
+// also allowed but unused here). omp spreads these into the user message as
+// `{type:"image"}` content parts and forwards them to the provider — a valid
+// PNG round-trips and the model sees it (live: an 8×8 blue PNG → "Blue.").
+//
+// omp's `prompt` has NO arbitrary-file channel — only images. Non-image Rox
+// attachments (PDFs, text files, …) cannot be forwarded as native attachments,
+// so they are surfaced to the model as a text note instead of being silently
+// dropped (the caller inlines {@link summarizeUnsupportedAttachments}).
+
+/** A Rox attachment as carried on `sendMessage({files})`. */
+export interface RoxFileAttachment {
+	/** Base64-encoded file bytes (no `data:` URI prefix). */
+	data: string;
+	/** The IANA media type, e.g. `image/png`. */
+	mediaType: string;
+	/** Optional original file name. */
+	filename?: string;
+}
+
+/** An omp `ImageContent` element for the `prompt.images` field. */
+export interface OmpPromptImage {
+	data: string;
+	mimeType: string;
+}
+
+/** True for a media type omp can forward as a native image attachment. */
+function isImageMediaType(mediaType: string | undefined): boolean {
+	return typeof mediaType === "string" && mediaType.startsWith("image/");
+}
+
+/**
+ * Partition Rox `files` into the omp-native image attachments omp's `prompt`
+ * accepts (`{data, mimeType}`) and the rest it cannot carry. Pure: the engine
+ * sends `images` on the `prompt` frame and inlines a note for `unsupported`.
+ */
+export function partitionPromptAttachments(files: RoxFileAttachment[]): {
+	images: OmpPromptImage[];
+	unsupported: RoxFileAttachment[];
+} {
+	const images: OmpPromptImage[] = [];
+	const unsupported: RoxFileAttachment[] = [];
+	for (const file of files) {
+		if (
+			file &&
+			typeof file.data === "string" &&
+			isImageMediaType(file.mediaType)
+		) {
+			images.push({ data: file.data, mimeType: file.mediaType });
+		} else if (file) {
+			unsupported.push(file);
+		}
+	}
+	return { images, unsupported };
+}
+
+/**
+ * Build a short text note describing attachments omp's `prompt` cannot carry
+ * natively (anything that is not an image), so the model is at least aware of
+ * them. Returns `""` when there are none. Pure.
+ */
+export function summarizeUnsupportedAttachments(
+	unsupported: RoxFileAttachment[],
+): string {
+	if (unsupported.length === 0) return "";
+	const names = unsupported
+		.map(
+			(file, index) =>
+				file.filename?.trim() || `${file.mediaType || "file"} #${index + 1}`,
+		)
+		.join(", ");
+	return `[${unsupported.length} non-image attachment(s) not forwarded to omp (omp rpc prompt accepts images only): ${names}]`;
+}
+
+// ── System-reminder injection (no omp inject-message frame) ─────────────────
+//
+// omp's RPC command set (verified: the full `handleCommand` dispatcher) has no
+// "append/inject message" command — a system reminder cannot be persisted as
+// its own omp turn over rpc. Instead the engine buffers pending reminders and
+// prepends them to the next `prompt.message` as a `<system-reminder>` block,
+// which is how Rox surfaces memory-context to the model anyway.
+
+/**
+ * Compose the next prompt message body from any buffered system reminders and
+ * the user's content. Reminders are emitted as `<system-reminder>` blocks above
+ * the user text (matching Rox's reminder convention). Returns `content`
+ * unchanged when there are no reminders. Pure.
+ */
+export function composeMessageWithReminders(
+	content: string,
+	reminders: string[],
+): string {
+	const blocks = reminders
+		.map((reminder) => reminder.trim())
+		.filter((reminder) => reminder.length > 0)
+		.map((reminder) => `<system-reminder>\n${reminder}\n</system-reminder>`);
+	if (blocks.length === 0) return content;
+	return `${blocks.join("\n")}\n\n${content}`;
+}

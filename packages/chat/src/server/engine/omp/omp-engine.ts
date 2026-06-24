@@ -13,10 +13,14 @@
  * {@link EngineBundle} must surface — is provided by a mastracode `Harness`
  * built via `createMastraCode`. So {@link OmpEngine} wraps both:
  *
- *   - `harness`     → init, threads, state, mode (title agent), memory store,
- *                     getFullModelId, saveSystemReminderMessage.
- *   - `ompProcess`  → sendMessage, listMessages, getDisplayState, subscribe,
- *                     abort, respondToToolApproval, switchModel (respawn).
+ *   - `harness`     → init, threads (identity + memory-store clone), state,
+ *                     mode (title agent), memory store, getFullModelId, and the
+ *                     persistence side of saveSystemReminderMessage.
+ *   - `ompProcess`  → sendMessage (+ image attachments + reminder injection),
+ *                     listMessages, getDisplayState, subscribe, abort,
+ *                     respondToToolApproval, respondToQuestion (input/confirm),
+ *                     switchModel (respawn), and session continuity for
+ *                     switchThread (switch_session / new_session).
  *
  * This keeps every type honest (real `HarnessMessage`/`HarnessMode`/state) while
  * the actual model turns go to omp.
@@ -26,12 +30,31 @@
  *   spawn: `omp --mode rpc --approval-mode always-ask --model <id>
  *           --session-dir <dir>` (+ provider key in env). Wait for
  *           `{"type":"ready"}` before sending.
- *   stdin (JSONL, each `{id,type,...}`): `prompt{message}`, `steer{message}`,
- *           `follow_up{message}`, `abort`, `abort_and_prompt{message}`,
- *           `get_state`, `get_messages`, `extension_ui_response{id,value}`.
+ *   stdin (JSONL, each `{id,type,...}`): `prompt{message,images?}`,
+ *           `steer{message}`, `follow_up{message}`, `abort`,
+ *           `abort_and_prompt{message}`, `get_state`, `get_messages`,
+ *           `extension_ui_response{id,value|confirmed}`.
  *   pull replies: `{id,type:"response",command,success,data}` — result under
- *           `.data`. `get_state.data.{isStreaming,messageCount,sessionId,…}`;
- *           `get_messages.data.messages[]`.
+ *           `.data`. `get_state.data.{isStreaming,messageCount,sessionId,
+ *           sessionFile,…}`; `get_messages.data.messages[]`.
+ *   attachments: `prompt.images:[{data:<base64>, mimeType}]` (omp's
+ *           `ImageContent`; images only — no arbitrary-file channel). omp spreads
+ *           them into the user message and forwards to the provider (live: a PNG
+ *           round-trips and the model sees it).
+ *   session continuity: each session persists to a `.jsonl` under `--session-dir`
+ *           surfaced as `get_state.data.sessionFile`. `new_session{}` → fresh
+ *           session (history cleared); `switch_session{sessionPath}` → restore a
+ *           saved session's full history; `branch{entryId}` → fork the current
+ *           session truncated before that entry (the edit-resend primitive), with
+ *           `get_branch_messages` → `{messages:[{entryId,text}]}` (one per user
+ *           turn). All return `data.{cancelled,…}`.
+ *   questions: `extension_ui_request{id,method:"input",title,placeholder}` /
+ *           `{method:"confirm",title,message}` → FLAT reply
+ *           `extension_ui_response{id,value}` (input) / `{id,confirmed}` (confirm).
+ *   no plan/inject: the full RPC command set has NO plan-approval command and NO
+ *           append/inject-message command — system reminders are prepended to the
+ *           next `prompt` as `<system-reminder>` blocks; plan approval is
+ *           best-effort (harness-forward + optional steer).
  *   push: `agent_start` … (1+ `turn_start`/`message_*`/`turn_end`) … `agent_end`.
  *           NB: `agent_end` = run finished (NOT turn_end); one prompt may span
  *           several turns. `message_update.assistantMessageEvent` carries a full
@@ -83,13 +106,18 @@ import {
 	buildDisplayState,
 	buildHostToolDefinitions,
 	buildHostToolErrorResult,
+	composeMessageWithReminders,
 	mapAgentMessage,
 	mapAgentMessages,
 	mapHostToolResult,
 	type OmpAgentMessage,
 	type OmpHostToolDefinition,
+	type OmpPromptImage,
 	type OmpStateData,
+	partitionPromptAttachments,
+	type RoxFileAttachment,
 	type RoxHostTool,
+	summarizeUnsupportedAttachments,
 } from "./omp-mapping";
 import { resolveOmpModelRouting } from "./omp-models";
 import { OmpProcess, type OmpPushEvent } from "./omp-process";
@@ -168,6 +196,23 @@ export class OmpEngine implements Engine<MastraEngineState> {
 	>();
 
 	/**
+	 * Maps a Rox thread id → the omp session `.jsonl` path that holds that
+	 * thread's omp conversation. Lets {@link switchThread} restore omp's live
+	 * history (via `switch_session`) when returning to a previously-seen thread,
+	 * so omp's session follows the active Rox thread instead of starting empty.
+	 * Populated after each turn from `get_state().sessionFile`.
+	 */
+	private readonly threadSessionFiles = new Map<string, string>();
+
+	/**
+	 * System reminders buffered for injection on the next `prompt`. omp's RPC
+	 * command set has no inject-message frame, so reminders are prepended to the
+	 * next user message as `<system-reminder>` blocks (see
+	 * {@link saveSystemReminderMessage}).
+	 */
+	private pendingReminders: string[] = [];
+
+	/**
 	 * Extra args appended to every omp spawn (after the base flags). Lets the host
 	 * constrain the headless child — e.g. `--tools none` / `--system-prompt` for
 	 * provider/model combos whose budget can't fit omp's full default tool schema.
@@ -244,14 +289,80 @@ export class OmpEngine implements Engine<MastraEngineState> {
 		return this.harness.getCurrentThreadId();
 	}
 
-	switchThread(args: { threadId: string }): Promise<void> {
-		// TODO(omp): bridge thread switching to omp `switch_session`/`branch` so the
-		// child's conversation follows the active Rox thread. Today the mastra
-		// harness tracks thread identity (used by memory-store edit/resend) while
-		// omp keeps its own ephemeral session; respawn drops omp's history, matching
-		// a fresh thread. Cross-thread omp history continuity is not yet wired.
+	async switchThread(args: { threadId: string }): Promise<void> {
+		// The mastra harness still owns thread identity (memory-store edit/resend
+		// clones a thread, then drives this method — see runtime.ts), so forward
+		// first. Then move omp's *live* session to follow the active Rox thread:
+		// switch to the session file we recorded for that thread, or start a fresh
+		// omp session when the thread is new to omp. This makes omp's conversation
+		// history track the thread instead of starting empty on every switch.
 		this.currentMessage = null;
-		return this.harness.switchThread(args);
+		this.pendingReminders = [];
+		this.clearPendingInteractions();
+		await this.harness.switchThread(args);
+		await this.followThreadInOmpSession(args.threadId);
+	}
+
+	/**
+	 * Move omp's live session to the one recorded for `threadId`. When the child
+	 * isn't running there is nothing to do — {@link ensureOmpStarted} will spawn
+	 * fresh on the next turn and {@link recordThreadSessionFile} will bind the new
+	 * session to whatever thread is active then. Best-effort: a failed switch
+	 * leaves omp on its current session (logged under OMP_ENGINE_DEBUG) rather
+	 * than blocking the thread change.
+	 */
+	private async followThreadInOmpSession(threadId: string): Promise<void> {
+		const omp = this.ompProcess;
+		if (!omp?.isReady) return;
+		try {
+			const mapped = this.threadSessionFiles.get(threadId);
+			if (mapped) {
+				const current = await this.readOmpSessionFile(omp);
+				if (current === mapped) return; // already on this thread's session
+				await omp.switchSession(mapped);
+			} else {
+				// Unknown thread → fresh omp session so its history starts clean.
+				// TODO(omp): edit-resend loses prior context here. runtime.ts clones the
+				// mastra thread (history before the edited message) and drives
+				// switchThread({threadId}) → sendMessage(editedPayload). But the Engine
+				// contract (engine.ts switchThread) carries only the threadId, NOT the
+				// edited messageId, so we cannot map it onto omp's native branch{entryId}
+				// edit primitive (omp.branch + omp.getBranchMessages ARE wired and tested,
+				// just undrivable from this signal). The mastra path needs no id (its
+				// thread IS its history); omp's live session is a separate state machine.
+				// True parity needs an optional fromMessageId on switchThread (mastra
+				// ignores it, omp branches on it) OR replaying the cloned thread's prior
+				// user turns as omp --system-prompt priming on the next spawn (passive
+				// context, no extra agent runs). Until then the edited prompt runs against
+				// an empty omp session — answered, but without prior conversational context.
+				await omp.newSession();
+			}
+			this.lastStateData = { ...this.lastStateData, isStreaming: false };
+			await this.recordThreadSessionFile(threadId, omp);
+		} catch (error) {
+			if (process.env.OMP_ENGINE_DEBUG) {
+				console.error("[omp] followThreadInOmpSession failed", error);
+			}
+		}
+	}
+
+	/** Read the current omp session `.jsonl` path from `get_state`, or null. */
+	private async readOmpSessionFile(omp: OmpProcess): Promise<string | null> {
+		try {
+			const data = await omp.request<OmpStateData>("get_state");
+			return typeof data?.sessionFile === "string" ? data.sessionFile : null;
+		} catch {
+			return null;
+		}
+	}
+
+	/** Record the omp session file currently backing `threadId` (best-effort). */
+	private async recordThreadSessionFile(
+		threadId: string,
+		omp: OmpProcess,
+	): Promise<void> {
+		const sessionFile = await this.readOmpSessionFile(omp);
+		if (sessionFile) this.threadSessionFiles.set(threadId, sessionFile);
 	}
 
 	// ── Model / state ────────────────────────────────────────────────────────
@@ -305,15 +416,28 @@ export class OmpEngine implements Engine<MastraEngineState> {
 		this.currentMessage = null;
 		this.clearPendingInteractions();
 
-		// omp's `prompt` does not currently accept file attachments over rpc; inline
-		// a note so the model is aware. TODO(omp): forward files once omp rpc
-		// supports a typed attachment field on `prompt`.
-		const message =
-			args.files && args.files.length > 0
-				? `${args.content}\n\n[${args.files.length} attached file(s) omitted: omp rpc file passthrough not yet wired]`
-				: args.content;
+		// Image attachments map to omp's native `prompt.images` ({data, mimeType});
+		// non-image files have no omp rpc channel, so summarize them as a note so
+		// the model is at least aware (verified: omp's `prompt` accepts images
+		// only). Then drain any buffered system reminders into the message body.
+		const files = (args.files ?? []) as RoxFileAttachment[];
+		const { images, unsupported } = partitionPromptAttachments(files);
+		const note = summarizeUnsupportedAttachments(unsupported);
+		const baseContent = note ? `${args.content}\n\n${note}` : args.content;
+		const message = composeMessageWithReminders(
+			baseContent,
+			this.pendingReminders,
+		);
+		this.pendingReminders = [];
 
-		await omp.request("prompt", { message });
+		const payload: { message: string; images?: OmpPromptImage[] } = { message };
+		if (images.length > 0) payload.images = images;
+		await omp.request("prompt", payload);
+
+		// Bind this turn's omp session file to the active thread so a later
+		// switchThread can return to it (best-effort; never blocks the prompt).
+		const threadId = this.harness.getCurrentThreadId();
+		if (threadId) void this.recordThreadSessionFile(threadId, omp);
 	}
 
 	async listMessages(_options?: { limit?: number }): Promise<HarnessMessage[]> {
@@ -331,10 +455,13 @@ export class OmpEngine implements Engine<MastraEngineState> {
 		role?: "user" | "assistant" | "system";
 		metadata?: Record<string, unknown>;
 	}): Promise<HarnessMessage | null> {
-		// TODO(omp): persist a system-reminder turn into omp's session. omp rpc has
-		// no verified "inject message" frame, so fall back to the mastra harness's
-		// own reminder persistence (keeps memory-context injection working at the
-		// store level even though omp's live session won't show the reminder).
+		// omp's RPC command set has no inject-message frame (verified against the
+		// full handleCommand dispatcher), so a reminder cannot be persisted as its
+		// own omp turn. Buffer it for injection as a `<system-reminder>` block on
+		// the next `prompt` (see sendMessage) — that is how the reminder reaches
+		// omp's live model context. Still forward to the mastra harness so the
+		// memory store stays the source of truth for reminder persistence/history.
+		if (args.message.trim()) this.pendingReminders.push(args.message);
 		const harnessWithReminder = this.harness as MastraHarness & {
 			saveSystemReminderMessage?: (
 				a: typeof args,
@@ -384,16 +511,19 @@ export class OmpEngine implements Engine<MastraEngineState> {
 		if (!this.ompProcess || this.pendingQuestionUiId !== args.questionId) {
 			return;
 		}
-		// omp `input` expects {value}; `confirm` expects {confirmed}. We stored the
-		// method alongside the id; answer in the matching shape.
+		// Answer omp's blocking dialog in its method's FLAT shape (verified live +
+		// against omp's `RpcExtensionUIResponse`): `input` → `{id, value}`,
+		// `confirm` → `{id, confirmed}` (respondToExtensionUi spreads the object at
+		// the top level — never nested under `value`). We stored the method
+		// alongside the id when the request arrived.
 		const answerText = Array.isArray(args.answer)
 			? args.answer.join(", ")
-			: args.answer;
-		const value =
+			: String(args.answer ?? "");
+		const answer =
 			this.pendingQuestionMethod === "confirm"
 				? { confirmed: /^(y|yes|true|approve|confirm)/i.test(answerText) }
 				: { value: answerText };
-		this.ompProcess.respondToExtensionUi(this.pendingQuestionUiId, value);
+		this.ompProcess.respondToExtensionUi(this.pendingQuestionUiId, answer);
 		this.pendingQuestion = null;
 		this.pendingQuestionUiId = null;
 		this.pendingQuestionMethod = null;
@@ -403,13 +533,33 @@ export class OmpEngine implements Engine<MastraEngineState> {
 		planId: string;
 		response: { action: "approved" | "rejected"; feedback?: string };
 	}): Promise<void> {
-		// TODO(omp): omp surfaces plan approval through its own `submit_plan` /
-		// extension-ui flow rather than a typed plan-approval frame. No verified
-		// mapping yet — forward to the mastra harness so the seam stays intact.
+		// TODO(omp): omp's RPC surface has NO plan-approval concept — the full
+		// `handleCommand` dispatcher (verified against omp/15.11.0) exposes no
+		// plan/approve_plan/submit_plan command and no plan-mode extension-ui
+		// method, so there is genuinely nothing to map a Rox plan decision onto.
+		// Best-effort: forward to the mastra harness (which owns plan state for the
+		// non-omp path) so the seam stays intact; when an omp turn is mid-flight we
+		// additionally steer the decision in as text so the running agent sees it.
 		const harnessWithPlan = this.harness as MastraHarness & {
 			respondToPlanApproval?: (a: typeof args) => Promise<void>;
 		};
 		await harnessWithPlan.respondToPlanApproval?.(args);
+
+		if (this.ompProcess?.isReady && this.lastStateData.isStreaming) {
+			const verdict =
+				args.response.action === "approved"
+					? "The plan is approved. Proceed."
+					: "The plan is rejected. Do not proceed.";
+			const feedback = args.response.feedback?.trim();
+			const steer = feedback ? `${verdict} ${feedback}` : verdict;
+			try {
+				this.ompProcess.notify("steer", { message: steer });
+			} catch (error) {
+				if (process.env.OMP_ENGINE_DEBUG) {
+					console.error("[omp] plan-approval steer failed", error);
+				}
+			}
+		}
 	}
 
 	// ── Events ───────────────────────────────────────────────────────────────
