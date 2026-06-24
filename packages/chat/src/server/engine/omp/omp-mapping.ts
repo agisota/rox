@@ -178,3 +178,202 @@ export function buildDisplayState(args: {
 		bufferingMessages: Boolean(args.state.isCompacting),
 	};
 }
+
+// ── Host-tool bridge mappers (Rox tools ↔ omp `set_host_tools` / `host_tool_*`) ──
+//
+// Verified against the live `omp/15.11.0 --mode rpc` host-tool sub-protocol
+// (embedded `rpc.md` + the runtime `normalizeHostToolDefinitions` / RpcClient
+// reference):
+//
+//   host→omp registration: `set_host_tools{tools: RpcHostToolDefinition[]}`,
+//     each `{name, label?, description, parameters: JSONSchema, hidden?}`.
+//     omp REJECTS a tool with an empty `name` or empty `description`, or a
+//     `parameters` that is not a plain JSON-Schema object — so the whole
+//     `set_host_tools` fails. These mappers guarantee those invariants.
+//   omp→host call: `host_tool_call{id, toolCallId, toolName, arguments}`.
+//   host→omp reply: success `host_tool_result{id, result:{content:[{type,text}]}}`;
+//     error same shape + top-level `isError:true`. omp also accepts a bare
+//     string `result` (auto-wrapped), but we always emit the explicit
+//     content-array form for predictability.
+
+/** An omp `RpcHostToolDefinition` (the `set_host_tools` tool entry shape). */
+export interface OmpHostToolDefinition {
+	name: string;
+	label?: string;
+	description: string;
+	parameters: Record<string, unknown>;
+	hidden?: boolean;
+}
+
+/** The `result` body of a `host_tool_result` frame (omp tool-result content). */
+export interface OmpHostToolResult {
+	content: Array<{ type: "text"; text: string }>;
+	details?: Record<string, unknown>;
+}
+
+/**
+ * A Rox host tool as surfaced by mastracode's MCP client (`listTools()`), kept
+ * structural so the mapper does not depend on the mastra `Tool` class. Carries a
+ * `description`, an `inputSchema` (a Standard-Schema instance exposing a JSON
+ * Schema via `~standard`, or a raw JSON Schema object), and an `execute`.
+ */
+export interface RoxHostTool {
+	id?: string;
+	description?: string;
+	inputSchema?: unknown;
+	parameters?: unknown;
+	execute?: (input: unknown, context?: unknown) => Promise<unknown> | unknown;
+	[key: string]: unknown;
+}
+
+/** A minimal, valid JSON Schema object accepting any args (omp requires an object). */
+const EMPTY_OBJECT_SCHEMA: Record<string, unknown> = {
+	type: "object",
+	properties: {},
+	additionalProperties: true,
+};
+
+/** True for a non-array plain object — the shape omp's `parameters` must be. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Coerce a Rox tool's `inputSchema`/`parameters` into a JSON-Schema object for
+ * omp's `parameters`. Handles three shapes, in order:
+ *   1. a Standard-Schema instance (Zod et al.) exposing `~standard.jsonSchema` —
+ *      the form mastra `createTool`/MCP tools use; converted via the standard
+ *      `input({target:"draft-07"})` converter.
+ *   2. an already-plain JSON-Schema object — returned as-is.
+ *   3. anything else / conversion failure → a permissive empty-object schema, so
+ *      a single odd tool never fails the whole `set_host_tools` registration.
+ */
+export function toHostToolParameters(schema: unknown): Record<string, unknown> {
+	if (schema == null) return { ...EMPTY_OBJECT_SCHEMA };
+
+	// (1) Standard-Schema instance: read the JSON Schema off `~standard`. When a
+	// `~standard` marker is present this is a schema instance (Zod et al.), NOT a
+	// raw JSON Schema, so it must be converted — and if conversion is unavailable
+	// or throws, fall back to the permissive default rather than leaking the
+	// wrapper object as the tool's parameters.
+	const standard = (schema as { "~standard"?: unknown })["~standard"];
+	if (isPlainObject(standard)) {
+		const converter = (standard as { jsonSchema?: unknown }).jsonSchema;
+		const toInput =
+			isPlainObject(converter) &&
+			typeof (converter as { input?: unknown }).input === "function"
+				? (converter as { input: (o: { target: string }) => unknown }).input
+				: null;
+		if (toInput) {
+			try {
+				const json = toInput({ target: "draft-07" });
+				if (isPlainObject(json)) return json;
+			} catch {
+				// fall through to the permissive default
+			}
+		}
+		return { ...EMPTY_OBJECT_SCHEMA };
+	}
+
+	// (2) Already a raw JSON-Schema object (type:"object", or any object schema).
+	if (isPlainObject(schema)) return schema;
+
+	// (3) Unconvertible — accept-any so registration still succeeds.
+	return { ...EMPTY_OBJECT_SCHEMA };
+}
+
+/**
+ * Translate one Rox host tool into an omp {@link OmpHostToolDefinition}. The
+ * `name` is supplied by the caller (the `listTools()` record key, omp's tool
+ * id). Guarantees omp's invariants: non-empty `name`/`description` and an object
+ * `parameters` (a missing description is back-filled so the tool still
+ * registers rather than failing the whole batch).
+ */
+export function mapToolToHostDefinition(
+	name: string,
+	tool: RoxHostTool,
+): OmpHostToolDefinition {
+	const trimmedName = name.trim();
+	const rawDescription =
+		typeof tool.description === "string" ? tool.description.trim() : "";
+	const description = rawDescription || `Host-provided tool "${trimmedName}".`;
+	return {
+		name: trimmedName,
+		label: trimmedName,
+		description,
+		parameters: toHostToolParameters(tool.inputSchema ?? tool.parameters),
+	};
+}
+
+/**
+ * Build the `set_host_tools` `tools` array from a Rox host-tool record. Skips
+ * entries without an `execute` (nothing for the host to run) and entries whose
+ * name is empty after trimming, so the registration omp receives is always
+ * valid and every registered tool is actually invocable.
+ */
+export function buildHostToolDefinitions(
+	tools: Record<string, RoxHostTool>,
+): OmpHostToolDefinition[] {
+	const definitions: OmpHostToolDefinition[] = [];
+	for (const [name, tool] of Object.entries(tools)) {
+		if (!name.trim()) continue;
+		if (typeof tool?.execute !== "function") continue;
+		definitions.push(mapToolToHostDefinition(name, tool));
+	}
+	return definitions;
+}
+
+/** Flatten an arbitrary Rox tool-execute result into omp's text content array. */
+function resultToContent(
+	result: unknown,
+): Array<{ type: "text"; text: string }> {
+	if (typeof result === "string") {
+		return [{ type: "text", text: result }];
+	}
+	// Mastra MCP tools commonly return `{ content: [{ type:"text", text }] }`
+	// already; pass through any text parts verbatim.
+	if (isPlainObject(result) && Array.isArray(result.content)) {
+		const parts = (result.content as unknown[])
+			.map((part) => {
+				if (isPlainObject(part) && typeof part.text === "string") {
+					return { type: "text" as const, text: part.text };
+				}
+				return null;
+			})
+			.filter((part): part is { type: "text"; text: string } => part !== null);
+		if (parts.length > 0) return parts;
+	}
+	// Fallback: serialize the whole result so the model still sees the output.
+	return [
+		{
+			type: "text",
+			text:
+				result === undefined
+					? ""
+					: typeof result === "object"
+						? JSON.stringify(result)
+						: String(result),
+		},
+	];
+}
+
+/**
+ * Map a successful Rox tool-execute result to a `host_tool_result.result` body.
+ * Pure: the engine wraps this in `{type:"host_tool_result", id, result}`.
+ */
+export function mapHostToolResult(result: unknown): OmpHostToolResult {
+	return { content: resultToContent(result) };
+}
+
+/**
+ * Build the `host_tool_result.result` body for a failed Rox tool execution.
+ * The engine sets top-level `isError:true` alongside this; omp surfaces the
+ * text content to the model as a tool error (verified live).
+ */
+export function buildHostToolErrorResult(error: unknown): OmpHostToolResult {
+	const message =
+		error instanceof Error
+			? error.message
+			: String(error ?? "host tool failed");
+	return { content: [{ type: "text", text: message }], details: {} };
+}

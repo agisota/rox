@@ -226,6 +226,29 @@ export class OmpProcess {
 		this.writeFrame({ type: "extension_ui_response", id, value });
 	}
 
+	/**
+	 * Complete a `host_tool_call` by correlated `id` with a result. Fire-and-forget:
+	 * omp resumes the suspended tool turn; no `response` envelope is sent. Set
+	 * `isError` to surface the result content to the model as a tool error.
+	 */
+	sendHostToolResult(id: string, result: unknown, isError = false): void {
+		const frame: Record<string, unknown> = {
+			type: "host_tool_result",
+			id,
+			result,
+		};
+		if (isError) frame.isError = true;
+		this.writeFrame(frame);
+	}
+
+	/**
+	 * Stream optional progress for an in-flight `host_tool_call` by correlated
+	 * `id`. Fire-and-forget; omp forwards `partialResult` to the tool renderer.
+	 */
+	sendHostToolUpdate(id: string, partialResult: unknown): void {
+		this.writeFrame({ type: "host_tool_update", id, partialResult });
+	}
+
 	/** Terminate the child and reject any in-flight requests. */
 	destroy(): void {
 		const child = this.child;

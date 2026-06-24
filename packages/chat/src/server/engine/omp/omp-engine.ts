@@ -41,6 +41,24 @@
  *           `extension_ui_response{id,value:"Approve"|"Deny"}` (blocking,
  *           default-deny). Side-channel `method` values (`setWidget`,
  *           `setStatus`, `notify`) are ignored.
+ *   host tools: the Rox `extraTools` are exposed to the omp agent via the
+ *           host-tool sub-protocol (verified against `omp/15.11.0`):
+ *             register (host→omp): `set_host_tools{tools:[{name,label?,
+ *               description,parameters:JSONSchema,hidden?}]}` → response
+ *               `{toolNames:[…]}`. Sent once the child is ready; survives
+ *               `--no-extensions`. omp rejects a tool with an empty
+ *               name/description or non-object `parameters`.
+ *             call (omp→host): `host_tool_call{id,toolCallId,toolName,arguments}`.
+ *             result (host→omp): `host_tool_result{id,result:{content:[{type:
+ *               "text",text}]}}`; on failure add top-level `isError:true`.
+ *               Optional progress: `host_tool_update{id,partialResult}`.
+ *             cancel (omp→host): `host_tool_cancel{id,targetId}` aborts the
+ *               in-flight call `targetId`.
+ *   budget: omp inlines discovered skills/rules into its system prompt; with a
+ *           large global setup this overflows tight provider budgets (groq
+ *           small/mid models → HTTP 400 "reduce the length of the messages",
+ *           NOT the tool schema). `--no-skills --no-rules` is the default trim
+ *           (see ROX_OMP_KEEP_SKILLS).
  */
 
 import { mkdtempSync } from "node:fs";
@@ -63,10 +81,15 @@ import type {
 } from "../engine";
 import {
 	buildDisplayState,
+	buildHostToolDefinitions,
+	buildHostToolErrorResult,
 	mapAgentMessage,
 	mapAgentMessages,
+	mapHostToolResult,
 	type OmpAgentMessage,
+	type OmpHostToolDefinition,
 	type OmpStateData,
+	type RoxHostTool,
 } from "./omp-mapping";
 import { resolveOmpModelRouting } from "./omp-models";
 import { OmpProcess, type OmpPushEvent } from "./omp-process";
@@ -91,6 +114,27 @@ interface OmpExtensionUiRequest {
 	title?: string;
 	options?: string[];
 	[key: string]: unknown;
+}
+
+/** omp `host_tool_call` frame: a request for the host to run a registered tool. */
+interface OmpHostToolCall {
+	type: "host_tool_call";
+	/** Correlation id for the host_tool_result reply. */
+	id: string;
+	/** The agent-side tool-call id (for the host's execution context). */
+	toolCallId: string;
+	/** The registered host-tool name to execute. */
+	toolName: string;
+	/** Parsed tool arguments. */
+	arguments: Record<string, unknown>;
+}
+
+/** omp `host_tool_cancel` frame: a previously-issued host_tool_call was aborted. */
+interface OmpHostToolCancel {
+	type: "host_tool_cancel";
+	id: string;
+	/** The `id` of the host_tool_call being cancelled. */
+	targetId: string;
 }
 
 /** omp side-channel UI methods that are NOT user-blocking — ignore them. */
@@ -131,13 +175,31 @@ export class OmpEngine implements Engine<MastraEngineState> {
 	 */
 	private readonly ompExtraArgs: string[];
 
+	/**
+	 * The Rox host tools (mastra MCP `listTools()` record) to expose to omp over
+	 * the host-tool sub-protocol. Registered via `set_host_tools` once the child
+	 * is ready; invoked on each `host_tool_call`. Keyed by tool name (= omp tool
+	 * id). Empty when the host runs no extra tools (e.g. the host-service path).
+	 */
+	private readonly extraTools: Record<string, RoxHostTool>;
+	/** Pre-translated omp host-tool definitions (computed once from extraTools). */
+	private readonly hostToolDefinitions: OmpHostToolDefinition[];
+	/** Abort controllers for in-flight host_tool_call executions, keyed by call id. */
+	private readonly hostToolControllers = new Map<string, AbortController>();
+
 	constructor(
 		private readonly harness: MastraHarness,
 		private readonly authStorage: EngineBundle["authStorage"],
-		options: { cwd: string; ompExtraArgs?: string[] },
+		options: {
+			cwd: string;
+			ompExtraArgs?: string[];
+			extraTools?: Record<string, RoxHostTool>;
+		},
 	) {
 		this.cwd = options.cwd;
 		this.ompExtraArgs = options.ompExtraArgs ?? [];
+		this.extraTools = options.extraTools ?? {};
+		this.hostToolDefinitions = buildHostToolDefinitions(this.extraTools);
 		this.sessionDir = mkdtempSync(join(tmpdir(), "rox-omp-"));
 	}
 
@@ -155,12 +217,21 @@ export class OmpEngine implements Engine<MastraEngineState> {
 	}
 
 	async destroy(): Promise<void> {
+		this.abortHostToolCalls();
 		this.ompProcess?.destroy();
 		this.ompProcess = null;
 		const harnessWithDestroy = this.harness as MastraHarness & {
 			destroy?: () => Promise<void>;
 		};
 		await harnessWithDestroy.destroy?.();
+	}
+
+	/** Abort and drop any in-flight host_tool_call executions (teardown/respawn). */
+	private abortHostToolCalls(): void {
+		for (const controller of this.hostToolControllers.values()) {
+			controller.abort();
+		}
+		this.hostToolControllers.clear();
 	}
 
 	// ── Identity / threads ───────────────────────────────────────────────────
@@ -193,8 +264,9 @@ export class OmpEngine implements Engine<MastraEngineState> {
 		await this.harness.switchModel(args);
 		// omp has no verified runtime model-switch frame, so respawn the child with
 		// the new --model on next turn. Tear the current one down; ensureOmpStarted
-		// re-reads getFullModelId().
+		// re-reads getFullModelId() and re-registers host tools.
 		if (this.ompProcess) {
+			this.abortHostToolCalls();
 			this.ompProcess.destroy();
 			this.ompProcess = null;
 			this.currentMessage = null;
@@ -388,14 +460,51 @@ export class OmpEngine implements Engine<MastraEngineState> {
 			cwd: this.cwd,
 			env,
 			sessionDir: this.sessionDir,
-			// No extensions over rpc: the autoresearch/setWidget side channel adds
-			// noise and the host owns its own tools. Host-supplied extras follow.
-			extraArgs: ["--no-extensions", ...this.ompExtraArgs],
+			extraArgs: this.buildOmpExtraArgs(),
 		});
 		omp.subscribe((event) => this.onOmpEvent(event));
 		this.ompProcess = omp;
 		await omp.start();
+		// Register host-owned tools (the Rox `extraTools`) before the first turn so
+		// they are in omp's session tool registry when the model is prompted. omp's
+		// host-tool sub-protocol is independent of `--no-extensions`, verified live.
+		await this.registerHostTools(omp);
 		return omp;
+	}
+
+	/**
+	 * Compose the extra args appended to every omp spawn. Disables extension and
+	 * (by default) skill/rule discovery: those inline a large skills/rules corpus
+	 * into omp's system prompt, which is what overflows tight provider request
+	 * budgets (e.g. groq's HTTP 400 "reduce the length of the messages" — NOT the
+	 * tool schema). Host-supplied {@link ompExtraArgs} follow and can re-enable.
+	 */
+	private buildOmpExtraArgs(): string[] {
+		// `--no-extensions`: the autoresearch/setWidget side channel adds noise and
+		// the host owns its own tools (registered via set_host_tools).
+		const base = ["--no-extensions"];
+		if (OMP_BUDGET_TRIM_DEFAULT) base.push("--no-skills", "--no-rules");
+		return [...base, ...this.ompExtraArgs];
+	}
+
+	/**
+	 * Register the Rox host tools with the omp child via `set_host_tools`. No-op
+	 * when there are no tools. Re-sending replaces omp's host-owned set, so this
+	 * is also safe to call again after a respawn. Failure is non-fatal: the turn
+	 * proceeds without host tools (logged under OMP_ENGINE_DEBUG) rather than
+	 * blocking the conversation.
+	 */
+	private async registerHostTools(omp: OmpProcess): Promise<void> {
+		if (this.hostToolDefinitions.length === 0) return;
+		try {
+			await omp.request("set_host_tools", {
+				tools: this.hostToolDefinitions,
+			});
+		} catch (error) {
+			if (process.env.OMP_ENGINE_DEBUG) {
+				console.error("[omp] set_host_tools failed", error);
+			}
+		}
 	}
 
 	/**
@@ -474,11 +583,70 @@ export class OmpEngine implements Engine<MastraEngineState> {
 				this.handleExtensionUiRequest(event as OmpExtensionUiRequest);
 				return;
 
+			case "host_tool_call":
+				// Fire-and-forget: the async executor replies host_tool_result by id.
+				void this.handleHostToolCall(event as unknown as OmpHostToolCall);
+				return;
+
+			case "host_tool_cancel":
+				this.handleHostToolCancel(event as unknown as OmpHostToolCancel);
+				return;
+
 			default:
 				// turn_start/turn_end/tool_execution_*/auto_compaction_*/response are
 				// not individually surfaced; the message_* + agent_* stream is enough
 				// for Rox's polling-based UI.
 				return;
+		}
+	}
+
+	/**
+	 * Execute a Rox host tool requested by omp and reply with `host_tool_result`,
+	 * correlating by the call `id`. Resolves the tool by `toolName` from the
+	 * registered {@link extraTools}; runs its `execute(arguments, {toolCallId,
+	 * signal})`; maps the result to omp's content shape on success, or replies
+	 * with `isError:true` on a missing tool or a thrown error. Never throws into
+	 * the event loop.
+	 */
+	private async handleHostToolCall(call: OmpHostToolCall): Promise<void> {
+		const omp = this.ompProcess;
+		if (!omp) return;
+
+		const tool = this.extraTools[call.toolName];
+		if (!tool || typeof tool.execute !== "function") {
+			omp.sendHostToolResult(
+				call.id,
+				buildHostToolErrorResult(
+					new Error(`Host tool "${call.toolName}" is not registered`),
+				),
+				true,
+			);
+			return;
+		}
+
+		const controller = new AbortController();
+		this.hostToolControllers.set(call.id, controller);
+		try {
+			const result = await tool.execute(call.arguments, {
+				toolCallId: call.toolCallId,
+				signal: controller.signal,
+			});
+			if (controller.signal.aborted) return;
+			omp.sendHostToolResult(call.id, mapHostToolResult(result));
+		} catch (error) {
+			if (controller.signal.aborted) return;
+			omp.sendHostToolResult(call.id, buildHostToolErrorResult(error), true);
+		} finally {
+			this.hostToolControllers.delete(call.id);
+		}
+	}
+
+	/** Abort an in-flight host_tool_call when omp reports it was cancelled. */
+	private handleHostToolCancel(cancel: OmpHostToolCancel): void {
+		const controller = this.hostToolControllers.get(cancel.targetId);
+		if (controller) {
+			controller.abort();
+			this.hostToolControllers.delete(cancel.targetId);
 		}
 	}
 
@@ -563,11 +731,45 @@ export class OmpEngine implements Engine<MastraEngineState> {
 /** Env var: extra args appended to every omp spawn (space-separated). */
 export const ROX_OMP_EXTRA_ARGS_ENV = "ROX_OMP_EXTRA_ARGS";
 
+/**
+ * Env var to control omp's skill/rule budget trim. The omp child auto-discovers
+ * the machine's global skills/rules and inlines them into its system prompt;
+ * with a large global setup this can be multiple MB, overflowing tight provider
+ * request budgets (groq small/mid models return HTTP 400 "reduce the length of
+ * the messages"). Defaulting `--no-skills --no-rules` keeps headless runs small.
+ * Set `ROX_OMP_KEEP_SKILLS=1` (or `=true`) to opt back in.
+ */
+export const ROX_OMP_KEEP_SKILLS_ENV = "ROX_OMP_KEEP_SKILLS";
+
+/** True unless the host opts skills/rules back in via {@link ROX_OMP_KEEP_SKILLS_ENV}. */
+const OMP_BUDGET_TRIM_DEFAULT = !/^(1|true|yes)$/i.test(
+	process.env[ROX_OMP_KEEP_SKILLS_ENV]?.trim() ?? "",
+);
+
 /** Parse {@link ROX_OMP_EXTRA_ARGS_ENV} into an arg list (simple space split). */
 function readOmpExtraArgs(): string[] {
 	const raw = process.env[ROX_OMP_EXTRA_ARGS_ENV]?.trim();
 	if (!raw) return [];
 	return raw.split(/\s+/).filter(Boolean);
+}
+
+/** The `extraTools` field of {@link EngineConfig}, with `undefined` stripped. */
+type EngineExtraTools = NonNullable<EngineConfig>["extraTools"];
+
+/**
+ * Resolve `config.extraTools` to the static host-tool record. mastracode also
+ * accepts a `(ctx) => record` function form, but omp's `set_host_tools` is a
+ * one-shot registration with no per-request-context resolution, so only the
+ * static record is bridged; the function form is skipped (host tools stay off
+ * for that session). The tRPC service path always supplies the static record.
+ */
+function resolveExtraTools(
+	extraTools: EngineExtraTools,
+): Record<string, RoxHostTool> {
+	if (extraTools && typeof extraTools === "object") {
+		return extraTools as Record<string, RoxHostTool>;
+	}
+	return {};
 }
 
 /**
@@ -576,8 +778,11 @@ function readOmpExtraArgs(): string[] {
  * its harness as an {@link OmpEngine}. The returned {@link EngineBundle} mirrors
  * the mastra one exactly, so `createEngine` can return either interchangeably.
  *
+ * The host's `extraTools` (the Rox MCP/tool record) are bridged to omp over the
+ * host-tool sub-protocol, so the omp agent can call back into Rox's tools.
  * Host-tunable headless flags come from {@link ROX_OMP_EXTRA_ARGS_ENV} (e.g.
- * `--tools none` for provider/model combos with tight token budgets).
+ * `--tools none` for provider/model combos with tight token budgets); skill/rule
+ * inlining is trimmed by default (see {@link ROX_OMP_KEEP_SKILLS_ENV}).
  */
 export async function createOmpEngine(
 	config?: EngineConfig,
@@ -588,6 +793,7 @@ export async function createOmpEngine(
 		engine: new OmpEngine(bundle.harness, bundle.authStorage, {
 			cwd,
 			ompExtraArgs: readOmpExtraArgs(),
+			extraTools: resolveExtraTools(config?.extraTools),
 		}),
 		mcpManager: bundle.mcpManager,
 		hookManager: bundle.hookManager,
