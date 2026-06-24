@@ -22,6 +22,7 @@ import { WorkspaceFilesystemManager } from "./runtime/filesystem";
 import type { GitCredentialProvider } from "./runtime/git";
 import { createGitFactory } from "./runtime/git";
 import { runMainWorkspaceSweep } from "./runtime/main-workspace-sweep";
+import { OutboxSyncManager } from "./runtime/outbox-sync";
 import { PullRequestRuntimeManager } from "./runtime/pull-requests";
 import { registerWorkspaceTerminalRoute } from "./terminal/terminal";
 import { TerminalAgentStore } from "./terminal-agents";
@@ -197,6 +198,18 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		logger.warn("[host-service] main-workspace sweep failed:", err);
 	});
 
+	// Local-first create background sync. Drains the `sync_outbox` (deferred
+	// cloud project/workspace creates) when the cloud is reachable and links the
+	// cloud id back. Inert when nothing is enqueued — the `localFirstCreate`
+	// host setting governs whether create ever enqueues — so it's always safe to
+	// run. Stopped in `dispose()` before the db closes.
+	const outboxSync = new OutboxSyncManager({
+		api,
+		db,
+		organizationId: config.organizationId,
+	});
+	outboxSync.start();
+
 	// Preinstall bundled agents/harnesses and ensure the default worktrees
 	// root exists. Idempotent and fire-and-forget so it never blocks startup;
 	// the renderer polls `settings.agentPreinstall.status` for progress.
@@ -265,6 +278,14 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		// The sweep is short and also touches `db`; await just that one so the
 		// close below can't race its final write. (Already self-catching.)
 		await mainWorkspaceSweepTask;
+		// Stop the outbox poller before closing the db, so a scheduled drain
+		// can't fire against a closed handle. `stop()` clears the interval and
+		// flips a guard the in-flight drain checks between rows.
+		try {
+			outboxSync.stop();
+		} catch (err) {
+			logger.warn("[host-service] outboxSync.stop failed:", err);
+		}
 		// Each step is best-effort and isolated: a throw in one cleanup must
 		// not skip the others, otherwise a flaky `.stop()` could leak the
 		// open SQLite handle for the rest of the process lifetime.

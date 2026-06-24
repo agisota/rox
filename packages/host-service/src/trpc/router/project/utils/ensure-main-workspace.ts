@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { getHostId, getHostName } from "@rox/shared/host-info";
 import { TRPCError } from "@trpc/server";
 import { workspaces } from "../../../../db/schema";
@@ -105,4 +106,50 @@ export async function ensureMainWorkspaceStrict(
 		.run();
 
 	return { id: cloudRow.id };
+}
+
+export interface LocalMainWorkspace {
+	/** Local workspace id (later linked to a cloud id by the outbox worker). */
+	id: string;
+	/** Branch the workspace points at (synthesized when HEAD is detached). */
+	branch: string;
+}
+
+/**
+ * Local-first sibling of `ensureMainWorkspaceStrict`: inserts ONLY the local
+ * `workspaces` row with a fresh LOCAL id and returns it, making ZERO cloud
+ * calls (no `host.ensure`, no `v2Workspace.create`). The cloud mirror is
+ * enqueued in `sync_outbox` and linked later by `OutboxSyncManager`.
+ *
+ * Relaxes the strict detached-HEAD throw to non-blocking: a local-only project
+ * must open instantly even if `git init` left an unusual HEAD, so a detached or
+ * unresolvable HEAD synthesizes a stable `main` label rather than failing the
+ * create. The real branch is recovered on the next git operation; the cloud
+ * workspace create (enqueued) re-reads the branch when it drains.
+ */
+export async function ensureMainWorkspaceLocal(
+	ctx: Pick<EnsureMainWorkspaceContext, "db" | "git">,
+	projectId: string,
+	repoPath: string,
+): Promise<LocalMainWorkspace> {
+	const git = await ctx.git(repoPath);
+	const branch = (await getCurrentBranchName(git)) ?? "main";
+	const id = randomUUID();
+
+	ctx.db
+		.insert(workspaces)
+		.values({
+			id,
+			projectId,
+			worktreePath: repoPath,
+			branch,
+			syncState: "pending",
+		})
+		.onConflictDoUpdate({
+			target: workspaces.id,
+			set: { projectId, worktreePath: repoPath, branch },
+		})
+		.run();
+
+	return { id, branch };
 }
