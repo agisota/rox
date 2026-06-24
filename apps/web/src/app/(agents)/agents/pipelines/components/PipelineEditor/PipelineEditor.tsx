@@ -177,7 +177,14 @@ export function PipelineEditor({
 	);
 
 	const addNode = useCallback(
-		(type: string, roleSlug?: string, label?: string) => {
+		(
+			type: string,
+			opts?: {
+				roleSlug?: string;
+				label?: string;
+				position?: { x: number; y: number };
+			},
+		) => {
 			const prev = graphRef.current;
 			const id = newBlockId(type);
 			const count = Object.keys(prev.blocks).length;
@@ -187,12 +194,12 @@ export function PipelineEditor({
 					...prev.blocks,
 					[id]: {
 						type,
-						name: label ?? defaultLabelForType(type),
-						position: {
+						name: opts?.label ?? defaultLabelForType(type),
+						position: opts?.position ?? {
 							x: 180 + (count % 4) * 280,
 							y: 360 + Math.floor(count / 4) * 180,
 						},
-						subBlocks: roleSlug ? { roleSlug } : undefined,
+						subBlocks: opts?.roleSlug ? { roleSlug: opts.roleSlug } : undefined,
 					},
 				},
 			};
@@ -204,8 +211,18 @@ export function PipelineEditor({
 	);
 
 	const addRoleNode = useCallback(
-		(roleSlug: string, label: string) => addNode("agent_run", roleSlug, label),
+		(roleSlug: string, label: string) =>
+			addNode("agent_run", { roleSlug, label }),
 		[addNode],
+	);
+
+	// Replace the whole working graph (used by the templates gallery insert).
+	const applyTemplate = useCallback(
+		(next: RoxWorkflowState) => {
+			setSelectedNodeId(null);
+			applyGraphChange({ ...next, id: graphRef.current.id });
+		},
+		[applyGraphChange],
 	);
 
 	const validation = validateQuery.data;
@@ -248,9 +265,11 @@ export function PipelineEditor({
 							nodes={nodes}
 							edges={edges}
 							selectedNodeId={selectedNodeId}
+							v2ProjectId={v2ProjectId}
 							onSelectNode={setSelectedNodeId}
 							onGraphChange={handleGraphChange}
 							onAddNode={addNode}
+							onApplyTemplate={applyTemplate}
 						/>
 					</ReactFlowProvider>
 				</div>

@@ -96,6 +96,7 @@ for (const def of BUILTIN_NODE_TYPES) registerNodeType(def);
 for (const def of CATALOG_NODE_TYPES) registerNodeType(def);
 
 export * from "./nodeCategory";
+export * from "./nodePresentation";
 export * from "./nodeTypeDefinition";
 export * from "./nodeTypeRegistry";
 export * from "./validateNodeConfig";
