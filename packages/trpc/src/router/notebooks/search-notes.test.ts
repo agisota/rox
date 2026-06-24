@@ -122,6 +122,29 @@ describe("buildNotesSearchSql", () => {
 		expect(rankExpr).toContain(render(notesSearchVectorSql(cols)));
 	});
 
+	test("headline highlights over the SAME field set the match vector indexes (title-only matches are covered)", () => {
+		// REGRESSION: ts_headline must run over the same `title || ' ' || markdown`
+		// text the match/rank vector indexes. The old expression highlighted
+		// `coalesce(markdown, title)` = markdown whenever markdown was non-null, so a
+		// TITLE-ONLY match produced an empty/misleading snippet. The document text
+		// passed to ts_headline must therefore be the title+markdown concat (NOT a
+		// single-field coalesce), so the matched term is always inside the snippet
+		// source regardless of which field it lived in.
+		const out = render(parts.headline);
+		// The concat the vector indexes (sans to_tsvector) — see the vector drift guard.
+		expect(out).toContain(
+			`coalesce("knowledge_documents"."title", '') || ' ' || coalesce("knowledge_documents"."markdown", '')`,
+		);
+		// Must NOT be the old single-field coalesce that dropped title-only matches.
+		expect(out).not.toContain(
+			`coalesce("knowledge_documents"."markdown", "knowledge_documents"."title")`,
+		);
+		// The headline config must match the match/rank config ('simple'), same as
+		// the vector — a mismatched config would tokenize the snippet differently
+		// from the match and could fail to wrap the term.
+		expect(out).toContain(`ts_headline('${NOTES_FTS_CONFIG}'`);
+	});
+
 	test("headline wraps ts_headline with safe-sentinel fragment options", () => {
 		const out = render(parts.headline);
 		expect(out).toContain("ts_headline(");
