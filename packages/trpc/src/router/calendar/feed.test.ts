@@ -2,6 +2,25 @@ import { describe, expect, it } from "bun:test";
 import type { SelectCalEvent } from "@rox/db/schema";
 import { buildPublicCalendarFeed, mergeBusyIntervals } from "./feed";
 import { exportFreeBusyIcs } from "./ics";
+import type { OccurrenceOverride } from "./occurrences";
+
+/** Minimal per-occurrence override factory (RECURRENCE-ID), all-null by default. */
+function override(
+	originalStart: Date,
+	patch: Partial<OccurrenceOverride> = {},
+): OccurrenceOverride {
+	return {
+		originalStart,
+		cancelled: false,
+		dtstart: null,
+		dtend: null,
+		title: null,
+		description: null,
+		location: null,
+		allDay: null,
+		...patch,
+	};
+}
 
 /**
  * Public calendar feed unit tests (DB-free). Covers the two serialization paths
@@ -232,5 +251,193 @@ describe("buildPublicCalendarFeed — busyOnly mode", () => {
 		});
 		expect(ics).toContain("DTSTART:20260620T000000Z");
 		expect(ics).toContain("DTEND:20260621T000000Z");
+	});
+
+	it("omits a per-occurrence CANCELLED instance from the busy intervals", () => {
+		const recurringId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+		const ics = buildPublicCalendarFeed({
+			calendar: { name: "Work", timezone: "UTC" },
+			events: [
+				event({
+					id: recurringId,
+					dtstart: new Date("2026-06-01T09:00:00.000Z"),
+					dtend: new Date("2026-06-01T10:00:00.000Z"),
+					rrule: "FREQ=WEEKLY;BYDAY=MO",
+				}),
+			],
+			busyOnly: true,
+			window,
+			overridesByEventId: new Map([
+				[
+					recurringId,
+					// Cancel the 2026-06-15 instance only.
+					[
+						override(new Date("2026-06-15T09:00:00.000Z"), {
+							cancelled: true,
+						}),
+					],
+				],
+			]),
+		});
+		// Mondays in June 2026: 1, 8, 15, 22, 29 → 5 normally; minus the cancelled
+		// 15th → 4 busy VEVENTs, and the 15th's slot is absent.
+		const matches = ics.match(/SUMMARY:Busy/g) ?? [];
+		expect(matches.length).toBe(4);
+		expect(ics).not.toContain("DTSTART:20260615T090000Z");
+		expect(ics).toContain("DTSTART:20260608T090000Z");
+		expect(ics).toContain("DTSTART:20260622T090000Z");
+	});
+
+	it("emits a per-occurrence RESCHEDULED instance at its NEW time only", () => {
+		const recurringId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+		const ics = buildPublicCalendarFeed({
+			calendar: { name: "Work", timezone: "UTC" },
+			events: [
+				event({
+					id: recurringId,
+					dtstart: new Date("2026-06-01T09:00:00.000Z"),
+					dtend: new Date("2026-06-01T10:00:00.000Z"),
+					rrule: "FREQ=WEEKLY;BYDAY=MO",
+				}),
+			],
+			busyOnly: true,
+			window,
+			overridesByEventId: new Map([
+				[
+					recurringId,
+					// Move the 2026-06-15 09:00 instance to 14:00 the same day.
+					[
+						override(new Date("2026-06-15T09:00:00.000Z"), {
+							dtstart: new Date("2026-06-15T14:00:00.000Z"),
+							dtend: new Date("2026-06-15T15:00:00.000Z"),
+						}),
+					],
+				],
+			]),
+		});
+		// New time present, old time gone; still 5 distinct busy intervals.
+		expect(ics).toContain("DTSTART:20260615T140000Z");
+		expect(ics).toContain("DTEND:20260615T150000Z");
+		expect(ics).not.toContain("DTSTART:20260615T090000Z");
+		const matches = ics.match(/SUMMARY:Busy/g) ?? [];
+		expect(matches.length).toBe(5);
+	});
+
+	it("never leaks event detail even when overrides patch fields", () => {
+		const recurringId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+		const ics = buildPublicCalendarFeed({
+			calendar: { name: "Work", timezone: "UTC" },
+			events: [
+				event({
+					id: recurringId,
+					dtstart: new Date("2026-06-01T09:00:00.000Z"),
+					dtend: new Date("2026-06-01T10:00:00.000Z"),
+					rrule: "FREQ=WEEKLY;BYDAY=MO",
+				}),
+			],
+			busyOnly: true,
+			window,
+			overridesByEventId: new Map([
+				[
+					recurringId,
+					[
+						override(new Date("2026-06-15T09:00:00.000Z"), {
+							title: "Override secret",
+							location: "Override room",
+						}),
+					],
+				],
+			]),
+		});
+		expect(ics).not.toContain("Override secret");
+		expect(ics).not.toContain("Override room");
+		expect(ics).not.toContain("DESCRIPTION:");
+		expect(ics).not.toContain("LOCATION:");
+	});
+});
+
+describe("buildPublicCalendarFeed — full mode per-occurrence overrides", () => {
+	const recurringId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+	function recurring(): SelectCalEvent {
+		return event({
+			id: recurringId,
+			title: "Weekly sync",
+			description: null,
+			location: null,
+			dtstart: new Date("2026-06-01T09:00:00.000Z"),
+			dtend: new Date("2026-06-01T10:00:00.000Z"),
+			rrule: "FREQ=WEEKLY;BYDAY=MO",
+		});
+	}
+
+	it("excludes a cancelled occurrence via EXDATE so a client drops that instance", () => {
+		const ics = buildPublicCalendarFeed({
+			calendar: { name: "Work", timezone: "UTC" },
+			events: [recurring()],
+			busyOnly: false,
+			overridesByEventId: new Map([
+				[
+					recurringId,
+					[
+						override(new Date("2026-06-15T09:00:00.000Z"), {
+							cancelled: true,
+						}),
+					],
+				],
+			]),
+		});
+		// The series VEVENT stays (RRULE), but the cancelled instant is in EXDATE.
+		expect(ics).toContain("RRULE:FREQ=WEEKLY;BYDAY=MO");
+		expect(ics).toContain("EXDATE:20260615T090000Z");
+	});
+
+	it("emits a RECURRENCE-ID override VEVENT at the new time for a rescheduled occurrence", () => {
+		const ics = buildPublicCalendarFeed({
+			calendar: { name: "Work", timezone: "UTC" },
+			events: [recurring()],
+			busyOnly: false,
+			overridesByEventId: new Map([
+				[
+					recurringId,
+					[
+						override(new Date("2026-06-15T09:00:00.000Z"), {
+							dtstart: new Date("2026-06-15T14:00:00.000Z"),
+							dtend: new Date("2026-06-15T15:00:00.000Z"),
+						}),
+					],
+				],
+			]),
+		});
+		// A second VEVENT (same UID) carries the RECURRENCE-ID of the original
+		// instant and the moved DTSTART/DTEND; the series RRULE VEVENT remains.
+		expect(ics).toContain("RRULE:FREQ=WEEKLY;BYDAY=MO");
+		expect(ics).toContain("RECURRENCE-ID:20260615T090000Z");
+		expect(ics).toContain("DTSTART:20260615T140000Z");
+		expect(ics).toContain("DTEND:20260615T150000Z");
+		// The override VEVENT shares the series UID so clients replace the instance.
+		const uidMatches = ics.match(new RegExp(`UID:${recurringId}@rox.one`, "g"));
+		expect((uidMatches ?? []).length).toBe(2);
+	});
+
+	it("carries a 'this event only' field edit onto the override VEVENT", () => {
+		const ics = buildPublicCalendarFeed({
+			calendar: { name: "Work", timezone: "UTC" },
+			events: [recurring()],
+			busyOnly: false,
+			overridesByEventId: new Map([
+				[
+					recurringId,
+					[
+						override(new Date("2026-06-15T09:00:00.000Z"), {
+							title: "Special sync",
+						}),
+					],
+				],
+			]),
+		});
+		expect(ics).toContain("RECURRENCE-ID:20260615T090000Z");
+		expect(ics).toContain("SUMMARY:Special sync");
+		// The series occurrence keeps its own SUMMARY too.
+		expect(ics).toContain("SUMMARY:Weekly sync");
 	});
 });
