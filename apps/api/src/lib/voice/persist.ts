@@ -25,10 +25,26 @@ import { db } from "@rox/db/client";
 import {
 	type InsertLiveTranscriptSegment,
 	liveTranscriptSegments,
+	members,
 } from "@rox/db/schema";
+import { and, eq } from "drizzle-orm";
 
 /** The narrow DB surface the segment ingest needs (injectable for tests). */
 export interface SegmentIngestDb {
+	/**
+	 * Defense-in-depth: is `userId` an active member of `organizationId`?
+	 *
+	 * The HMAC secret is the primary boundary, but the route derives `createdBy`
+	 * from the speaker's LiveKit identity, whose `users.id` FK is independent of
+	 * the org's `members` table — a valid-but-FOREIGN user id would otherwise
+	 * satisfy `live_transcript_segments`' FKs and land a row attributed to a user
+	 * who never belonged to that org. This gate mirrors Phase-1's
+	 * `findOrgMembership` (`@rox/db/utils`): membership is presence of a `members`
+	 * row for the `(organizationId, userId)` pair (there is no `status`/`active`
+	 * column — a row IS the active membership). Returns `false` (fail closed) when
+	 * no such row exists.
+	 */
+	isActiveOrgMember(userId: string, organizationId: string): Promise<boolean>;
 	/** Insert one finalized segment; resolves the durable row id. */
 	insertSegment(row: InsertLiveTranscriptSegment): Promise<{ id: string }>;
 }
@@ -36,6 +52,22 @@ export interface SegmentIngestDb {
 /** Build the production {@link SegmentIngestDb} bound to the live Drizzle client. */
 export function createSegmentIngestDb(): SegmentIngestDb {
 	return {
+		async isActiveOrgMember(userId, organizationId) {
+			// Mirrors Phase-1 `findOrgMembership`: an `auth.members` row for the
+			// (org, user) pair IS the membership. Presence ⇒ active; absence ⇒ reject.
+			const [row] = await db
+				.select({ id: members.id })
+				.from(members)
+				.where(
+					and(
+						eq(members.organizationId, organizationId),
+						eq(members.userId, userId),
+					),
+				)
+				.limit(1);
+			return Boolean(row);
+		},
+
 		async insertSegment(row) {
 			const [inserted] = await db
 				.insert(liveTranscriptSegments)

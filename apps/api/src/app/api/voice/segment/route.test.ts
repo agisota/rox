@@ -9,8 +9,18 @@ import { computeSegmentSignature } from "@/lib/voice/verify";
 // test stubs `@/lib/mesh/drizzleDb`.
 let lastInsert: InsertLiveTranscriptSegment | null = null;
 let nextId = "row-1";
+// Defense-in-depth membership gate: the fake echoes whatever the test arms here
+// (default: the speaker IS an active member). We also record the (userId, org)
+// the route checked, so a test can prove the gate ran with the right arguments.
+let memberAllowed = true;
+let lastMembershipCheck: { userId: string; organizationId: string } | null =
+	null;
 mock.module("@/lib/voice/persist", () => ({
 	createSegmentIngestDb: () => ({
+		isActiveOrgMember: async (userId: string, organizationId: string) => {
+			lastMembershipCheck = { userId, organizationId };
+			return memberAllowed;
+		},
 		insertSegment: async (row: InsertLiveTranscriptSegment) => {
 			lastInsert = row;
 			return { id: nextId };
@@ -64,6 +74,8 @@ beforeEach(() => {
 	process.env.TRANSCRIBE_INGEST_SECRET = SECRET;
 	lastInsert = null;
 	nextId = "row-1";
+	memberAllowed = true;
+	lastMembershipCheck = null;
 });
 
 afterEach(() => {
@@ -77,13 +89,16 @@ describe("POST /api/voice/segment", () => {
 		expect(res.status).toBe(503);
 	});
 
-	test("200 inserts the segment and echoes the durable row id", async () => {
+	test("200 inserts the segment and echoes the durable row id (active member)", async () => {
 		nextId = "row-77";
 		const res = await POST(await signedRequest(bodyFor()));
 		expect(res.status).toBe(200);
 		const json = (await res.json()) as { accepted: boolean; id: string };
 		expect(json.accepted).toBe(true);
 		expect(json.id).toBe("row-77");
+		// Defense-in-depth: the route gated on (speakerIdentity, org-from-room)
+		// BEFORE persisting — the speaker was checked as a member of the derived org.
+		expect(lastMembershipCheck).toEqual({ userId: USER, organizationId: ORG });
 		// The route mapped the body → the persisted row: org derived from the room
 		// name, created_by = the speaker's LiveKit identity (=== user id).
 		expect(lastInsert).toMatchObject({
@@ -97,6 +112,18 @@ describe("POST /api/voice/segment", () => {
 		});
 		expect(lastInsert?.capturedAt).toBeInstanceOf(Date);
 		expect((lastInsert?.capturedAt as Date).getTime()).toBe(1_700_000_000_000);
+	});
+
+	test("403 when the speaker is NOT an active member of the org (no insert)", async () => {
+		// HMAC + body + nonce all valid, but the speaker's user id has no
+		// membership in the room's org → defense-in-depth rejects, nothing persists.
+		memberAllowed = false;
+		const res = await POST(await signedRequest(bodyFor()));
+		expect(res.status).toBe(403);
+		// The gate was consulted with the speaker identity + org derived from the room.
+		expect(lastMembershipCheck).toEqual({ userId: USER, organizationId: ORG });
+		// Critically: NO row was written for the foreign speaker.
+		expect(lastInsert).toBeNull();
 	});
 
 	test("falls back to the identity when the speaker name is blank", async () => {
