@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	type ContactCardViewModel,
 	type ContactListItemInput,
@@ -10,10 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import { Badge } from "@rox/ui/badge";
 import { Skeleton } from "@rox/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import { useTRPC } from "@/trpc/react";
+import { LuMail, LuUsers } from "react-icons/lu";
+import { ExperimentalFeatureGate } from "renderer/components/ExperimentalFeatureGate";
+import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 
 /** Relations that connect a contact to the objects around it (depth-1 neighbors). */
 const CONTACT_LINK_RELATIONS = [
@@ -26,21 +24,40 @@ const CONTACT_LINK_RELATIONS = [
 
 const PAGE_LIMIT = 50;
 
+export interface CrmContactsPanelProps {
+	/** Optional fallback rendered when the gate is closed (OFF = absent). */
+	fallback?: React.ReactNode;
+}
+
 /**
- * CRM contacts surface (`projectOs.crmContacts`). Lists the org's contact
- * objects over the native Rox object graph and opens a detail view of the
- * selected contact's linked objects — entirely over the shipped graph router,
- * no migration:
- *   - lists `kind=contact` nodes joined to their `contacts` detail via the
- *     read-only `graph.listContacts` (`mapContactCards`),
- *   - on selecting a contact, reads its linked objects via the shipped
- *     `graph.neighbors` (`mapContactLinks`).
+ * Desktop parity for `projectOs.crmContacts` — a gated CRM contacts surface over
+ * the native Rox object graph. Lists the org's `kind=contact` nodes joined to
+ * their 1:1 `contacts` detail via the shipped read-only `graph.listContacts`
+ * (rendered through the REUSED `mapContactCards`), and on selecting a contact
+ * shows the objects it links to read back through the shipped `graph.neighbors`
+ * (rendered through the REUSED `mapContactLinks`).
  *
- * Org-membership gated server-side (`requireActiveOrgMembership`); this surface
- * only mounts once {@link resolveCrmContactsGate} opens, so the org scope always
- * has a caller.
+ * Ports `apps/web/.../(agents)/agents/contacts/CrmContactsPanel.tsx` and reuses
+ * the same pure mappers (`@rox/shared/crm-contacts`) + the same shipped graph
+ * queries the desktop ProjectObjectGraph shell already calls. No new query, no
+ * migration, no flag flip — this is the gated desktop surface.
+ *
+ * Mounted only when {@link ExperimentalFeatureGate} opens for
+ * `projectOs.crmContacts`; OFF means the surface is absent (no regression).
  */
-export function CrmContactsPanel() {
+export function CrmContactsPanel({ fallback = null }: CrmContactsPanelProps) {
+	return (
+		<ExperimentalFeatureGate
+			featureId="projectOs.crmContacts"
+			fallback={fallback}
+		>
+			<CrmContactsSurface />
+		</ExperimentalFeatureGate>
+	);
+}
+
+/** The live surface, mounted only once the gate resolves `available`. */
+function CrmContactsSurface() {
 	const trpc = useTRPC();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -65,9 +82,9 @@ export function CrmContactsPanel() {
 	);
 
 	return (
-		<div className="space-y-4">
+		<section className="space-y-4" aria-label="Контакты">
 			<div className="flex items-center gap-2">
-				<Users className="size-5 text-muted-foreground" />
+				<LuUsers className="size-5 text-muted-foreground" />
 				<div>
 					<h2 className="font-semibold text-lg">Контакты</h2>
 					<p className="text-muted-foreground text-sm">
@@ -88,7 +105,7 @@ export function CrmContactsPanel() {
 				/>
 				<ContactDetail contact={selected} relations={CONTACT_LINK_RELATIONS} />
 			</div>
-		</div>
+		</section>
 	);
 }
 
@@ -213,7 +230,7 @@ function ContactDetail({
 							href={contact.mailtoHref ?? undefined}
 							className="mt-0.5 flex items-center gap-1 text-muted-foreground text-sm hover:text-foreground"
 						>
-							<Mail className="size-3.5" />
+							<LuMail className="size-3.5" />
 							<span className="truncate">{contact.email}</span>
 						</a>
 					) : null}
