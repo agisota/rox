@@ -28,7 +28,7 @@ export function SuiteScreen({
 }: SuiteScreenProps) {
 	return (
 		<div className="h-full overflow-y-auto">
-			<div className={cn("mx-auto w-full max-w-5xl px-6 py-6", className)}>
+			<div className={cn("mx-auto w-full max-w-content px-6 py-6", className)}>
 				<header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="min-w-0">
 						<h1 className="flex min-w-0 items-center gap-2 font-semibold text-2xl text-foreground">

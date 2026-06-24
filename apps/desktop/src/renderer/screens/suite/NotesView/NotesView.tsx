@@ -34,12 +34,12 @@ import {
 	Search,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
-import { CollaborativeNoteEditor } from "./components/CollaborativeNoteEditor";
 
 /**
  * Render a `ts_headline` snippet with matched terms emphasized, splitting on the
@@ -330,7 +330,6 @@ export function NotesView() {
 			title="Заметки"
 			description="Блокноты и markdown-заметки"
 			icon={BookText}
-			className="max-w-6xl"
 			actions={
 				<Button onClick={() => setNotebookDialogOpen(true)}>
 					<Plus className="size-4" /> Новый блокнот
@@ -586,12 +585,15 @@ export function NotesView() {
 										</span>
 									) : null}
 								</div>
-								<div className="flex min-h-0 flex-1 flex-col px-4 py-3">
-									<CollaborativeNoteEditor
+								<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
+									<MarkdownEditor
 										key={noteQuery.data.id}
-										noteId={noteQuery.data.id}
-										value={editorMarkdown}
+										content={editorMarkdown}
 										onChange={handleEditorChange}
+										placeholder="Пишите в Markdown…"
+										features={{ fileMention: false }}
+										className="flex min-h-0 flex-1 flex-col"
+										editorClassName="min-h-[55vh]"
 									/>
 								</div>
 							</div>
