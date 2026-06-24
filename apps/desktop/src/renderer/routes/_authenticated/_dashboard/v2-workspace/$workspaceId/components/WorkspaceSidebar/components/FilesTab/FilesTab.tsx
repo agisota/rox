@@ -44,7 +44,9 @@ import {
 import { useFilesTabActions } from "./hooks/useFilesTabActions";
 import { useFilesTabBridge } from "./hooks/useFilesTabBridge";
 import { useFilesTabDrop } from "./hooks/useFilesTabDrop";
+import { useFileTreeSizes } from "./hooks/useFileTreeSizes";
 import { buildPierreGitStatus } from "./utils/buildPierreGitStatus";
+import { formatFileSize } from "./utils/formatFileSize";
 import { stripTrailingSlash, toAbs, toRel } from "./utils/treePath";
 
 const TREE_STYLE = createPierreTreeStyle({
@@ -52,6 +54,17 @@ const TREE_STYLE = createPierreTreeStyle({
 	levelIndent: FILE_EXPLORER_INDENT,
 	withSearchChrome: true,
 });
+
+// The size column (F31) renders through Pierre's decoration lane, which is
+// already right-aligned and muted; tabular figures keep the digits from
+// shifting as rows scroll. Pierre's decoration text variant has no className
+// hook, so we reach the shadow-DOM span via `unsafeCSS` (same escape hatch the
+// diff viewer uses).
+const TREE_UNSAFE_CSS = `
+	[data-item-section='decoration'] > span {
+		font-variant-numeric: tabular-nums;
+	}
+`;
 
 type GitStatusData = inferRouterOutputs<AppRouter>["git"]["getStatus"];
 
@@ -124,6 +137,7 @@ export function FilesTab({
 		itemHeight: FILE_EXPLORER_ROW_HEIGHT,
 		overscan: FILE_EXPLORER_OVERSCAN,
 		stickyFolders: true,
+		unsafeCSS: TREE_UNSAFE_CSS,
 		onSelectionChange: (paths) => {
 			const last = paths[paths.length - 1];
 			if (!last) return;
@@ -136,6 +150,30 @@ export function FilesTab({
 	});
 
 	const bridge = useFilesTabBridge({ model, workspaceId, rootPath });
+
+	// Re-apply the current git status to force Pierre to re-render its rows
+	// (and thus re-run `renderRowDecoration`). Read the entries from a ref so the
+	// callback identity stays stable for the size hook while still painting the
+	// latest status. Mirrors how `useFallthroughIcons` repaints via `setIcons`.
+	const gitStatusEntriesRef = useRef(initialGitStatusEntriesRef.current);
+	gitStatusEntriesRef.current = buildPierreGitStatus(
+		fileStatusByPath,
+		folderStatusByPath,
+		ignoredPaths,
+	);
+	const repaintTree = useCallback(() => {
+		model.setGitStatus(gitStatusEntriesRef.current);
+	}, [model]);
+
+	// Resolve per-file sizes for the tree (F31); repaint when a batch lands so
+	// the freshly-loaded sizes paint into Pierre's decoration lane.
+	const sizes = useFileTreeSizes({
+		model,
+		knownPaths: bridge.knownPaths,
+		workspaceId,
+		rootPath,
+		onSizesLoaded: repaintTree,
+	});
 	const { reveal, startCreating, handleRename, handleDelete, collapseAll } =
 		useFilesTabActions({
 			model,
@@ -190,11 +228,17 @@ export function FilesTab({
 		lastSelectedFromUserRef.current = abs;
 		onSelectFile(abs);
 	};
-	// No-op: Pierre's setGitStatus already renders its own per-row status
-	// indicator (and tints the row text), so a custom decoration here would
-	// duplicate it. Kept the wiring in place in case we want to layer
-	// something Pierre doesn't show (e.g. lock icons, debug markers).
-	handlersRef.current.renderRowDecoration = () => null;
+	// Surface the file size (F31) in Pierre's right-aligned decoration lane.
+	// Folders show no size; files show a human-readable size once `getMetadata`
+	// has resolved it (the lane stays empty until then). The git-status row tint
+	// is independent — Pierre paints it via `setGitStatus`, not this lane.
+	handlersRef.current.renderRowDecoration = (ctx) => {
+		if (ctx.item.kind === "directory") return null;
+		const size = sizes.getSize(ctx.item.path);
+		if (size == null) return null;
+		const text = formatFileSize(size);
+		return { text, title: `${size.toLocaleString()} B` };
+	};
 
 	// Hint tooltip uses ShadowClickHint to anchor a single shadcn Tooltip
 	// over the hovered row's bounding rect — Pierre owns the row DOM inside
