@@ -468,10 +468,24 @@
  * These rules are intentionally UNLAYERED: a rule inside `@layer base` would
  * lose the cascade to Tailwind's `bg-*` utilities (utilities layer outranks the
  * base layer). Unlayered normal declarations outrank ALL layered declarations,
- * so they win cleanly without `!important`. Pop-ups that need full legibility
- * (Radix dialog/menu/popover) use the --popover token and are unaffected.
+ * so they win cleanly without `!important`.
+ *
+ * EXCLUSIONS (legibility): Radix overlay CONTENT surfaces — dialog,
+ * alert-dialog, sheet, drawer — use `bg-background` (NOT `--popover`) and float
+ * over only a dim scrim, so making them translucent would render text-heavy /
+ * high-stakes modals (delete confirmations, API-key entry, conflict resolution)
+ * hard to read. They are excluded by `data-slot` and stay opaque. Popovers /
+ * menus / selects / command use `--popover` and are already unaffected. The
+ * `:not([class*="…/"])` guards keep authored opacity-modifier utilities (e.g.
+ * `bg-card/95`, `bg-background/50`) at their designed alpha rather than
+ * collapsing them onto the global slider.
  */
-:root.glass .bg-background {
+:root.glass
+	.bg-background:not([class*="bg-background/"]):not(
+		[data-slot="dialog-content"]
+	):not([data-slot="alert-dialog-content"]):not(
+		[data-slot="sheet-content"]
+	):not([data-slot="drawer-content"]) {
 	background-color: color-mix(
 		in srgb,
 		var(--background) calc(var(--surface-opacity) * 100%),
@@ -479,7 +493,7 @@
 	);
 }
 
-:root.glass .bg-sidebar {
+:root.glass .bg-sidebar:not([class*="bg-sidebar/"]) {
 	background-color: color-mix(
 		in srgb,
 		var(--sidebar) calc(var(--surface-opacity) * 100%),
@@ -487,7 +501,7 @@
 	);
 }
 
-:root.glass .bg-card {
+:root.glass .bg-card:not([class*="bg-card/"]) {
 	background-color: color-mix(
 		in srgb,
 		var(--card) calc(var(--surface-opacity) * 100%),
