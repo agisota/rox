@@ -216,6 +216,10 @@
 			"types": "./src/host-info.ts",
 			"default": "./src/host-info.ts"
 		},
+		"./skills/curated-default-skills": {
+			"types": "./src/skills/curated-default-skills.ts",
+			"default": "./src/skills/curated-default-skills.ts"
+		},
 		"./host-routing": {
 			"types": "./src/host-routing.ts",
 			"default": "./src/host-routing.ts"

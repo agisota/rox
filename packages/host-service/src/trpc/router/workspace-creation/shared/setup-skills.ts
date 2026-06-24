@@ -7,33 +7,29 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { CURATED_DEFAULT_SKILL_PACKS } from "@rox/shared/skills/curated-default-skills";
 import { eq } from "drizzle-orm";
 import { workspaces } from "../../../../db/schema";
 import type { HostServiceContext } from "../../../../types";
 
 type DefaultWorkspaceSkill = {
 	name: string;
-	repo: `github.com/plannotator/${string}`;
+	repo: `github.com/${string}/${string}`;
 	description: string;
 };
 
-export const DEFAULT_SKILLS = [
-	{
-		name: "dev-skills",
-		repo: "github.com/plannotator/dev-skills",
-		description: "Набор инженерных навыков для повседневной разработки.",
-	},
-	{
-		name: "effective-html",
-		repo: "github.com/plannotator/effective-html",
-		description: "Навык для чистой, доступной и эффективной HTML-разметки.",
-	},
-	{
-		name: "markdown-editor",
-		repo: "github.com/plannotator/markdown-editor",
-		description: "Навык редактирования и форматирования Markdown.",
-	},
-] as const satisfies readonly DefaultWorkspaceSkill[];
+/**
+ * Reference-only rows for the curated default skill set, derived from the
+ * single shared multiplatform source of truth. These surface in the Навыки tab
+ * before the bundled archives are installed; the actual skill files come from
+ * the desktop bundled catalog (Pipeline A). One source of truth — no literals.
+ */
+export const DEFAULT_SKILLS: readonly DefaultWorkspaceSkill[] =
+	CURATED_DEFAULT_SKILL_PACKS.map((pack) => ({
+		name: pack.name,
+		repo: pack.repo,
+		description: pack.description,
+	}));
 
 const SKILLS_MANIFEST_FILE = "rox-preinstalled-skills.json";
 const SKILLS_README_FILE = "README.md";
