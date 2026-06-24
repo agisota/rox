@@ -10,7 +10,9 @@
 		"start": "node --experimental-strip-types src/index.ts"
 	},
 	"dependencies": {
-		"@deepgram/sdk": "5.4.0"
+		"@deepgram/sdk": "5.4.0",
+		"@livekit/rtc-node": "0.13.29",
+		"livekit-server-sdk": "2.15.5"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.0",
