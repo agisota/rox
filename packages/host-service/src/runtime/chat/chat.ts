@@ -422,6 +422,11 @@ export class ChatRuntimeManager {
 		string,
 		InflightRuntimeCreation
 	>();
+	// Boot failures from a backgrounded (lazy) getSnapshot runtime creation,
+	// keyed by sessionId. Surfaced on the next getSnapshot poll so a failed
+	// cold boot still reaches the error UI instead of being swallowed, then
+	// cleared so the following poll retries rather than throwing on stale state.
+	private readonly backgroundBootErrors = new Map<string, string>();
 
 	constructor(options: ChatRuntimeManagerOptions) {
 		this.db = options.db;
@@ -767,15 +772,44 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		sessionId: string;
 		workspaceId: string;
 	}): Promise<{
-		displayState: ChatDisplayState;
+		displayState: ChatDisplayState | null;
 		messages: RuntimeMessages;
 	}> {
-		const runtime = await this.getOrCreateRuntime(
-			input.sessionId,
-			input.workspaceId,
-		);
-		const displayState = this.buildDisplayState(runtime);
-		const messages = await runtime.harness.listMessages();
+		// Fast path for a cold session: a first-time runtime boot
+		// (createMastraCode + harness.init + selectOrCreateThread) takes seconds,
+		// and awaiting it here is what pins the renderer's getSnapshot poll on
+		// `undefined` — rendering a multi-second center loading spinner on every
+		// workspace entry. Instead, kick the boot off in the background and return
+		// an empty snapshot immediately so the chat shell paints right away; the
+		// renderer polls getSnapshot (~4fps), so a later poll picks up the real
+		// display state + history the moment the runtime is ready.
+		const existing = this.runtimes.get(input.sessionId);
+		if (!existing) {
+			const bootError = this.backgroundBootErrors.get(input.sessionId);
+			if (bootError) {
+				// Re-surface a failed background boot the same way a synchronous boot
+				// would (the error UI / host-readiness gate depends on this throwing),
+				// then clear it so the next poll retries rather than throwing forever.
+				this.backgroundBootErrors.delete(input.sessionId);
+				throw new Error(bootError);
+			}
+			// getOrCreateRuntime de-dupes in-flight creations, so concurrent polls
+			// share a single boot rather than spawning one per poll.
+			void this.getOrCreateRuntime(input.sessionId, input.workspaceId)
+				.then(() => {
+					this.backgroundBootErrors.delete(input.sessionId);
+				})
+				.catch((error: unknown) => {
+					this.backgroundBootErrors.set(
+						input.sessionId,
+						error instanceof Error ? error.message : String(error),
+					);
+				});
+			return { displayState: null, messages: [] };
+		}
+
+		const displayState = this.buildDisplayState(existing);
+		const messages = await existing.harness.listMessages();
 		// Intentionally no observedAt: when the harness state hasn't changed,
 		// the response object is structurally identical to the previous poll's
 		// response, so React Query's structuralSharing preserves the object

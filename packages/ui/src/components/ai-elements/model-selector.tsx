@@ -40,7 +40,17 @@ export const ModelSelectorContent = ({
 	title = "Model Selector",
 	...props
 }: ModelSelectorContentProps) => (
-	<DialogContent className={cn("p-0", className)} {...props}>
+	<DialogContent
+		blur
+		className={cn(
+			// Glass surface: translucent popover + backdrop blur instead of the
+			// opaque `bg-background` default, so the picker reads as a floating
+			// panel consistent with the rest of the app's vibrancy.
+			"bg-popover/80 p-0 backdrop-blur-xl",
+			className,
+		)}
+		{...props}
+	>
 		<DialogTitle className="sr-only">{title}</DialogTitle>
 		<Command className="**:data-[slot=command-input-wrapper]:h-auto">
 			{children}
