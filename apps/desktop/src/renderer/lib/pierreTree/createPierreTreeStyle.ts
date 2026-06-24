@@ -43,7 +43,8 @@ export function createPierreTreeStyle({
 		"--trees-border-radius-override": "0",
 
 		// Surface
-		"--trees-bg-override": "var(--background)",
+		"--trees-bg-override":
+			"color-mix(in srgb, var(--background) calc(var(--surface-opacity) * 100%), transparent)",
 		"--trees-fg-override": "var(--foreground)",
 		"--trees-fg-muted-override": "var(--muted-foreground)",
 		// Match v2 FileRow's `hover:bg-accent/50` — translucent accent, not solid muted.

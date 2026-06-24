@@ -16,13 +16,14 @@ const SEGMENTS: { value: ThinkingLevel; label: string }[] = [
 ];
 
 /**
- * Labelled reasoning-effort control for the chat composer. A single pill that
- * names what it does — a brain glyph + "Размышление" caption — followed by an
- * inline segmented slider (Выкл → Макс) for the five reasoning levels. The
- * active segment is tracked by a shared-layout marker (essential tier, so it
- * still moves under the "essential" motion preference and snaps instantly when
- * motion is off). The caption dims when reasoning is off so the active/idle
- * state reads at a glance, matching the dark premium composer styling.
+ * Reasoning-effort control for the chat composer. An icon-only, focusable brain
+ * glyph (with an `aria-label` + tooltip explaining it regulates reasoning
+ * effort) followed by an inline segmented slider (Выкл → Макс) for the five
+ * reasoning levels. The active segment is tracked by a shared-layout marker
+ * (essential tier, so it still moves under the "essential" motion preference and
+ * snaps instantly when motion is off). The glyph dims when reasoning is off so
+ * the active/idle state reads at a glance, matching the dark premium composer
+ * styling.
  */
 export function ReasoningLevelSlider({
 	level,
@@ -47,17 +48,18 @@ export function ReasoningLevelSlider({
 			>
 				<Tooltip>
 					<TooltipTrigger asChild>
-						<span
+						<button
+							type="button"
+							aria-label="Уровень рассуждения"
 							className={cn(
-								"inline-flex shrink-0 items-center gap-1 transition-colors",
+								"inline-flex shrink-0 cursor-default items-center transition-colors",
 								isActive ? "text-foreground" : "text-muted-foreground",
 							)}
 						>
 							<BrainIcon className="size-3.5 opacity-60" />
-							<span className="font-medium">Размышление</span>
-						</span>
+						</button>
 					</TooltipTrigger>
-					<TooltipContent>Уровень размышления модели</TooltipContent>
+					<TooltipContent>Регулирование усилия рассуждения</TooltipContent>
 				</Tooltip>
 				<div
 					role="radiogroup"

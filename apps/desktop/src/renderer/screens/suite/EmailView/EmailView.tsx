@@ -154,7 +154,6 @@ export function EmailView(props: EmailViewProps = {}) {
 			title="Почта"
 			description="Входящие, чтение и отправка"
 			icon={Mail}
-			className="max-w-6xl"
 			actions={
 				<Button onClick={() => setComposeOpen(true)}>
 					<PenSquare className="size-4" /> Написать

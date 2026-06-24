@@ -3,8 +3,13 @@ import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
 import { toast } from "@rox/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
-import type { RoxWorkflowState } from "@rox/workflow-core";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	type RoxEdge,
+	type RoxWorkflowState,
+	reachableFrom,
+	validateGraph,
+} from "@rox/workflow-core";
+import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
 	ArrowLeft,
@@ -51,17 +56,69 @@ function newBlockId(kind: PipelineNodeKind): string {
 	return `${kind}_${stamp}`;
 }
 
+/** Whether a block is enabled (mirrors validateGraph's reachability predicate). */
+function isBlockEnabled(state: RoxWorkflowState, id: string): boolean {
+	return state.blocks[id]?.enabled !== false;
+}
+
+/**
+ * Pick the block a freshly-added node should be wired *from* so it lands on the
+ * reachable frontier instead of being instantly flagged "unreachable from
+ * start". Returns the deepest enabled block reachable from the single start
+ * (the natural tail of the current chain), falling back to the start itself.
+ * Returns null when there is no single start block to anchor on — in that case
+ * the caller leaves the node unconnected (the graph already has a start-block
+ * validity problem with nothing sensible to connect from).
+ */
+function pickAnchorBlockId(state: RoxWorkflowState): string | null {
+	const startIds = Object.keys(state.blocks).filter(
+		(id) => state.blocks[id]?.type === "start",
+	);
+	const start = startIds.length === 1 ? startIds[0] : undefined;
+	if (start === undefined) return null;
+
+	// BFS over enabled, reachable blocks; track depth to find the chain tail.
+	const reachable = reachableFrom(state, start, (id) =>
+		isBlockEnabled(state, id),
+	);
+	const adjacency = new Map<string, string[]>();
+	for (const edge of state.edges) {
+		const list = adjacency.get(edge.source) ?? [];
+		list.push(edge.target);
+		adjacency.set(edge.source, list);
+	}
+	const depth = new Map<string, number>([[start, 0]]);
+	const queue: string[] = [start];
+	let anchor = start;
+	let bestDepth = 0;
+	while (queue.length > 0) {
+		const u = queue.shift();
+		if (u === undefined) break;
+		const d = depth.get(u) ?? 0;
+		if (d > bestDepth) {
+			bestDepth = d;
+			anchor = u;
+		}
+		for (const v of adjacency.get(u) ?? []) {
+			if (!reachable.has(v) || depth.has(v)) continue;
+			depth.set(v, d + 1);
+			queue.push(v);
+		}
+	}
+	return anchor;
+}
+
 /**
  * The pipeline editor shell: a draggable/connectable canvas plus the role
  * library, trigger config, and run monitor panels. Owns the working
  * `RoxWorkflowState`, debounce-saves graph edits via `pipeline.updateGraph`,
- * validates via `pipeline.validate`, and adds role/loop/approval nodes.
+ * validates the live graph synchronously via `validateGraph`, and adds
+ * role/loop/approval nodes.
  */
 export function PipelineEditor({
 	pipeline: initialPipeline,
 }: PipelineEditorProps) {
 	const trpc = useTRPC();
-	const queryClient = useQueryClient();
 
 	// Authoritative working graph. Seeded from the server row, then mutated
 	// locally and pushed back (debounced).
@@ -78,10 +135,15 @@ export function PipelineEditor({
 
 	const pipelineId = initialPipeline.id;
 	const v2ProjectId = initialPipeline.v2ProjectId ?? undefined;
-	const validateInput = useMemo(() => ({ pipelineId }), [pipelineId]);
 
 	const nodes = useMemo(() => stateToNodes(graph), [graph]);
 	const edges = useMemo(() => stateToEdges(graph), [graph]);
+
+	// Synchronous, client-side validation of the LIVE in-memory graph. This makes
+	// the toolbar badge + per-node inspector issues update instantly on every edit,
+	// instead of lagging behind the 800ms debounced updateGraph round-trip. Reuses
+	// the same `validateGraph` the server runs, so the result shape is identical.
+	const validation = useMemo(() => validateGraph(graph), [graph]);
 
 	const selectedNode = useMemo(
 		() => nodes.find((n) => n.id === selectedNodeId) ?? null,
@@ -100,9 +162,6 @@ export function PipelineEditor({
 	const updateGraphMutation = useMutation(
 		trpc.pipeline.updateGraph.mutationOptions({
 			onSuccess: () => {
-				void queryClient.invalidateQueries({
-					queryKey: trpc.pipeline.validate.queryKey(validateInput),
-				});
 				saveInFlight.current = false;
 				if (pendingSave.current) {
 					flushPendingSaveRef.current();
@@ -121,10 +180,6 @@ export function PipelineEditor({
 				toast.error("Не удалось сохранить граф");
 			},
 		}),
-	);
-
-	const validateQuery = useQuery(
-		trpc.pipeline.validate.queryOptions(validateInput),
 	);
 
 	const updateGraphMutationRef = useRef(updateGraphMutation);
@@ -188,6 +243,11 @@ export function PipelineEditor({
 			const prev = graphRef.current;
 			const id = newBlockId(kind);
 			const count = Object.keys(prev.blocks).length;
+			// Auto-connect the new node onto the reachable frontier so it isn't
+			// instantly flagged "unreachable from start". Anchor is computed on the
+			// pre-insertion graph (the new node can't pick itself); null when there
+			// is no single start to wire from, in which case we add no edge.
+			const anchor = pickAnchorBlockId(prev);
 			const next: RoxWorkflowState = {
 				...prev,
 				blocks: {
@@ -210,6 +270,17 @@ export function PipelineEditor({
 						subBlocks: roleSlug ? { roleSlug } : undefined,
 					},
 				},
+				edges:
+					anchor !== null
+						? [
+								...prev.edges,
+								{
+									id: `${anchor}->${id}`,
+									source: anchor,
+									target: id,
+								} satisfies RoxEdge,
+							]
+						: prev.edges,
 			};
 			applyGraphChange(next);
 			// Open the inspector on the freshly-added node so it's ready to edit.
@@ -222,8 +293,6 @@ export function PipelineEditor({
 		(roleSlug: string, label: string) => addNode("agent_run", roleSlug, label),
 		[addNode],
 	);
-
-	const validation = validateQuery.data;
 
 	return (
 		<div className="flex h-[calc(100dvh-3rem)] w-full min-w-0 flex-1 flex-col">

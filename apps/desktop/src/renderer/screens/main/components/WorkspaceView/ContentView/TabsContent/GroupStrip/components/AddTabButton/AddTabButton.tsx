@@ -67,18 +67,18 @@ export function AddTabButton({
 							<Button
 								variant="ghost"
 								className="h-7 rounded-r-none pl-2 pr-1.5 gap-1 text-xs border border-border/60 bg-muted/30 text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-								onClick={onAddTerminal}
-							>
-								<BsTerminalPlus className="size-3.5" />
-								Terminal
-							</Button>
-							<Button
-								variant="ghost"
-								className="h-7 rounded-none border border-l-0 border-border/60 bg-muted/30 px-1.5 gap-1 text-xs text-muted-foreground hover:bg-accent/60 hover:text-foreground"
 								onClick={onAddChat}
 							>
 								<TbMessageCirclePlus className="size-3.5" />
 								Chat
+							</Button>
+							<Button
+								variant="ghost"
+								className="h-7 rounded-none border border-l-0 border-border/60 bg-muted/30 px-1.5 gap-1 text-xs text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+								onClick={onAddTerminal}
+							>
+								<BsTerminalPlus className="size-3.5" />
+								Terminal
 							</Button>
 							<Button
 								variant="ghost"
@@ -141,15 +141,15 @@ export function AddTabButton({
 					>
 						{!showBigAddButton && (
 							<>
-								<DropdownMenuItem onClick={onAddTerminal} className="gap-2">
-									<BsTerminalPlus className="size-4" />
-									<span>Терминал</span>
-									<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
-								</DropdownMenuItem>
 								<DropdownMenuItem onClick={onAddChat} className="gap-2">
 									<TbMessageCirclePlus className="size-4" />
 									<span>Чат</span>
 									<HotkeyMenuShortcut hotkeyId="NEW_CHAT" />
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={onAddTerminal} className="gap-2">
+									<BsTerminalPlus className="size-4" />
+									<span>Терминал</span>
+									<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={onAddBrowser} className="gap-2">
 									<TbWorld className="size-4" />

@@ -484,7 +484,6 @@ export function InboxView() {
 			title="Входящие"
 			description="Чат и почта в одном месте"
 			icon={Inbox}
-			className="max-w-6xl"
 		>
 			<TransportTabs value={transport} onChange={setTransport} />
 			<div className="mt-4">

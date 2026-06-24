@@ -486,7 +486,7 @@ export function WorkspaceListItem({
 						</div>
 
 						{(showBranchSubtitle || pr) && (
-							<div className="flex items-center gap-2 text-[11px] w-full">
+							<div className="flex items-center gap-2 text-[12px] w-full">
 								{showBranchSubtitle && (
 									<span className="text-muted-foreground/60 truncate font-mono leading-tight">
 										{branch}
