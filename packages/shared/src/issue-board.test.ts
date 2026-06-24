@@ -7,7 +7,7 @@ import {
 	groupTasksByStatus,
 	priorityLabel,
 	UNGROUPED_COLUMN_ID,
-} from "./issueBoard";
+} from "./issue-board";
 
 /**
  * The issue board groups REAL tasks (`task.list`) into REAL status columns
