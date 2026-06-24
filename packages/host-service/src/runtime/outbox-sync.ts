@@ -160,7 +160,7 @@ export class OutboxSyncManager {
 			await createCloudProjectWithSlugRetry(this.ctx, {
 				id: payload.localProjectId,
 				name: payload.name,
-				repoCloneUrl: payload.repoCloneUrl,
+				repoCloneUrlForCloud: payload.repoCloneUrlForCloud,
 			});
 		} catch (err) {
 			// A prior drain already created the cloud row with our id; only the

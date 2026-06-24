@@ -109,7 +109,7 @@ async function persistSynchronousCloud(
 		await createCloudProjectWithSlugRetry(ctx, {
 			id: projectId,
 			name: args.name,
-			repoCloneUrl: args.repoCloneUrlForCloud,
+			repoCloneUrlForCloud: args.repoCloneUrlForCloud,
 		});
 		cloudProjectCreated = true;
 
@@ -199,7 +199,7 @@ async function persistLocalFirst(
 	enqueueProjectCreate(ctx.db, {
 		localProjectId: projectId,
 		name: args.name,
-		repoCloneUrl: args.repoCloneUrlForCloud,
+		repoCloneUrlForCloud: args.repoCloneUrlForCloud,
 	});
 	enqueueWorkspaceCreate(ctx.db, {
 		localWorkspaceId: mainWorkspace.id,

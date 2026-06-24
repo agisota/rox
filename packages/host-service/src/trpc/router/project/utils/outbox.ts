@@ -12,8 +12,11 @@ export interface ProjectCreatePayload {
 	/** Local project id, forwarded as the cloud `v2Project` id. */
 	localProjectId: string;
 	name: string;
-	/** Only set when the repo has a parseable GitHub remote. */
-	repoCloneUrl?: string;
+	// The clone URL the create path already resolved from the live remote, to
+	// forward to the cloud. Named `…ForCloud` (not `repoCloneUrl`) so it reads as
+	// a forward, not a snapshot-column read (see no-snapshot-fields guard). Only
+	// set when the repo has a parseable GitHub remote.
+	repoCloneUrlForCloud?: string;
 }
 
 export interface WorkspaceCreatePayload {

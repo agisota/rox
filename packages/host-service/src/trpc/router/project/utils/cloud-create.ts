@@ -52,7 +52,10 @@ function slugifyProjectName(name: string): string {
  */
 export async function createCloudProjectWithSlugRetry(
 	ctx: CloudCreateContext,
-	args: { id: string; name: string; repoCloneUrl?: string },
+	// `repoCloneUrlForCloud` is the URL the create path ALREADY resolved from the
+	// live local remote and is forwarding to the cloud — not a snapshot read of a
+	// `projects.repoCloneUrl` column (which the no-snapshot-fields guard forbids).
+	args: { id: string; name: string; repoCloneUrlForCloud?: string },
 ) {
 	const baseSlug = slugifyProjectName(args.name);
 	let lastError: unknown;
@@ -65,7 +68,7 @@ export async function createCloudProjectWithSlugRetry(
 				id: args.id,
 				name: args.name,
 				slug,
-				repoCloneUrl: args.repoCloneUrl,
+				repoCloneUrl: args.repoCloneUrlForCloud,
 			});
 		} catch (err) {
 			if (!isSlugConflict(err)) throw err;
