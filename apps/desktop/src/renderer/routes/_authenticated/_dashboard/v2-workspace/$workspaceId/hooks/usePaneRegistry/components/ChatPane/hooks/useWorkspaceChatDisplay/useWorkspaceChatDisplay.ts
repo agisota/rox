@@ -144,6 +144,19 @@ export function useChatDisplay(options: UseChatDisplayOptions) {
 
 	const snapshot = snapshotQuery.data ?? null;
 	const displayState = snapshot?.displayState ?? null;
+	// Cold-boot discriminator: the server returns boot.status while a session's
+	// runtime is still loading (booting) or has deterministically failed (failed),
+	// instead of overloading a null displayState. We treat booting as loading so
+	// the message area shows a loader rather than the misleading empty-conversation
+	// state, and surface a failed boot as a stable error.
+	const bootState = snapshot?.boot ?? null;
+	const isBooting = bootState?.status === "booting";
+	const bootErrorMessage =
+		bootState?.status === "failed" &&
+		typeof bootState.error === "string" &&
+		bootState.error.trim()
+			? bootState.error
+			: null;
 	const runtimeErrorMessage =
 		typeof displayState?.errorMessage === "string" &&
 		displayState.errorMessage.trim()
@@ -153,8 +166,9 @@ export function useChatDisplay(options: UseChatDisplayOptions) {
 	const isRunning = displayState?.isRunning ?? false;
 	const isConversationLoading =
 		isQueryEnabled &&
-		snapshotQuery.data === undefined &&
-		(snapshotQuery.isLoading || snapshotQuery.isFetching);
+		(isBooting ||
+			(snapshotQuery.data === undefined &&
+				(snapshotQuery.isLoading || snapshotQuery.isFetching)));
 	const historicalMessages = snapshot?.messages ?? [];
 	const latestAssistantErrorMessage = isRunning
 		? null
@@ -359,6 +373,7 @@ export function useChatDisplay(options: UseChatDisplayOptions) {
 		isConversationLoading,
 		error:
 			runtimeErrorMessage ??
+			bootErrorMessage ??
 			latestAssistantErrorMessage ??
 			snapshotQuery.error ??
 			commandError ??

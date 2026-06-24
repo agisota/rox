@@ -180,7 +180,7 @@ export function ModelPicker({
 						<ChevronDownIcon className="size-2.5 opacity-50" />
 					</PromptInputButton>
 				</ModelSelectorTrigger>
-				<ModelSelectorContent title="Выбор модели">
+				<ModelSelectorContent glass title="Выбор модели">
 					<motion.div
 						initial={animate ? { opacity: 0, scale: 0.96, y: -4 } : false}
 						animate={{ opacity: 1, scale: 1, y: 0 }}

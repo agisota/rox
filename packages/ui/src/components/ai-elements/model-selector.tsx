@@ -32,27 +32,45 @@ export const ModelSelectorTrigger = (props: ModelSelectorTriggerProps) => (
 
 export type ModelSelectorContentProps = ComponentProps<typeof DialogContent> & {
 	title?: ReactNode;
+	/**
+	 * Opt-in translucent "glass" surface (blurred backdrop + translucent panel).
+	 * Off by default so text-heavy reusers of this shared primitive (e.g. the MCP
+	 * servers overview) keep an opaque, legible surface per the design rule in
+	 * globals.css. When on, the inner Command is also made transparent so the
+	 * backdrop blur is actually visible instead of being masked by Command's
+	 * opaque `bg-popover`.
+	 */
+	glass?: boolean;
 };
 
 export const ModelSelectorContent = ({
 	className,
 	children,
 	title = "Model Selector",
+	glass = false,
 	...props
 }: ModelSelectorContentProps) => (
 	<DialogContent
-		blur
+		blur={glass}
 		className={cn(
+			"p-0",
 			// Glass surface: translucent popover + backdrop blur instead of the
 			// opaque `bg-background` default, so the picker reads as a floating
-			// panel consistent with the rest of the app's vibrancy.
-			"bg-popover/80 p-0 backdrop-blur-xl",
+			// panel consistent with the rest of the app's vibrancy. Opt-in only.
+			glass && "bg-popover/80 backdrop-blur-xl",
 			className,
 		)}
 		{...props}
 	>
 		<DialogTitle className="sr-only">{title}</DialogTitle>
-		<Command className="**:data-[slot=command-input-wrapper]:h-auto">
+		<Command
+			className={cn(
+				"**:data-[slot=command-input-wrapper]:h-auto",
+				// Let the dialog's translucency show through instead of Command's
+				// opaque bg-popover masking it (which made the glass a near no-op).
+				glass && "bg-transparent",
+			)}
+		>
 			{children}
 		</Command>
 	</DialogContent>
