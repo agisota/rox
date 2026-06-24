@@ -75,8 +75,10 @@ export interface BuildNotesSearchSqlArgs extends NotesSearchVectorColumns {
  * The query text is bound as a parameter (no string interpolation), and the same
  * `notesSearchVectorSql` vector is reused by both `match` and `rank` so the GIN
  * index is actually used for the scan AND the ranking reads the indexed shape.
- * `ts_headline` reads `coalesce(markdown, title)` so a snippet is produced even
- * for body-less notes; with the proc's LIMIT it is only computed for the page.
+ * `ts_headline` highlights over the SAME `title || ' ' || markdown` text the match
+ * vector indexes, so a TITLE-ONLY match still yields a highlighted snippet (and
+ * body-less notes still get one from the title); with the proc's LIMIT it is only
+ * computed for the page.
  */
 export function buildNotesSearchSql({
 	query,
@@ -85,9 +87,15 @@ export function buildNotesSearchSql({
 }: BuildNotesSearchSqlArgs): NotesSearchSqlParts {
 	const config = sql.raw(NOTES_FTS_CONFIG);
 	const vector = notesSearchVectorSql({ titleCol, markdownCol });
+	// The plain document TEXT the search vector is built from, mirroring the inner
+	// expression of `notesSearchVectorSql` exactly (same coalesce/concat order).
+	// `ts_headline` highlights over this raw text — NOT a tsvector — so it must
+	// cover BOTH fields the match vector indexes; otherwise a title-only match
+	// (markdown present but term-free) renders an empty/misleading snippet.
+	const headlineDocument = sql`coalesce(${titleCol}, '') || ' ' || coalesce(${markdownCol}, '')`;
 	const tsquery = sql`websearch_to_tsquery('${config}', ${query})`;
 	const match = sql`${vector} @@ ${tsquery}`;
 	const rank = sql<number>`ts_rank(${vector}, ${tsquery})`;
-	const headline = sql<string>`ts_headline('${config}', coalesce(${markdownCol}, ${titleCol}), ${tsquery}, ${`StartSel=${NOTES_HEADLINE_START},StopSel=${NOTES_HEADLINE_STOP},MaxFragments=2,MinWords=5,MaxWords=18`})`;
+	const headline = sql<string>`ts_headline('${config}', ${headlineDocument}, ${tsquery}, ${`StartSel=${NOTES_HEADLINE_START},StopSel=${NOTES_HEADLINE_STOP},MaxFragments=2,MinWords=5,MaxWords=18`})`;
 	return { tsquery, match, rank, headline };
 }
