@@ -367,6 +367,50 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		);
 	});
 
+	test("M1: a repeat external sender on the same thread yields exactly ONE contact participant (find-or-create dedup, no migration)", async () => {
+		const db = createMailIngestDb();
+
+		// First inbound email from alice@external.com on a new thread: the contact
+		// participant does not exist yet, so it is inserted.
+		state.selectQueue = [
+			[], // dup check → none
+			[], // sender @rox.one lookup → external
+			[], // thread by dedup → none → create
+			[], // contact-participant find-or-create → none → insert
+		];
+		await db.emitToUnifiedInbox(baseArgs);
+		const firstContactInserts = state.insertedParticipants.filter(
+			(p) => p.contactEntityId === `contact-for:${baseArgs.fromAddr}`,
+		);
+		expect(firstContactInserts).toHaveLength(1);
+
+		// Reset captured inserts, then a SECOND email (new Message-ID) from the SAME
+		// external sender threading into the SAME existing thread. The contact
+		// participant already exists, so the find-or-create SELECT returns it and the
+		// insert is skipped — NO duplicate contact participant row. This is the bug:
+		// onConflictDoNothing cannot dedup a contact row (user_id NULL ⇒ no partial
+		// unique matches), so without an app-level find-or-create the same external
+		// contact re-inserts as a new participant on every repeat email.
+		state.insertedParticipants = [];
+		state.insertedMessages = [];
+		state.insertedThreads = [];
+		state.selectQueue = [
+			[], // dup check → none (different Message-ID)
+			[], // sender lookup → external
+			[{ id: "thread-existing" }], // thread by dedup → found (same parties)
+			[{ id: "existing-contact-participant" }], // contact participant ALREADY exists
+		];
+		await db.emitToUnifiedInbox({
+			...baseArgs,
+			rfcMessageId: "<second-msg@external.com>",
+		});
+
+		const contactInsertsAfterSecond = state.insertedParticipants.filter(
+			(p) => p.contactEntityId === `contact-for:${baseArgs.fromAddr}`,
+		);
+		expect(contactInsertsAfterSecond).toHaveLength(0);
+	});
+
 	test("M1: contact resolution failure never breaks ingest (best-effort attribution)", async () => {
 		const db = createMailIngestDb();
 		// The graph resolver throws (e.g. transient db blip). Ingest must still

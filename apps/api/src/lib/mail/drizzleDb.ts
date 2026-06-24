@@ -161,13 +161,34 @@ async function resolveExternalContact(args: {
 /**
  * M1: attach an external contact node as a `comms_participants` row (FK-less
  * `contact_entity_id`, no `user_id`) so a pure-email thread surfaces its external
- * counterpart alongside the mailbox owner. Idempotent: a repeat sender's add is a
- * no-op (`onConflictDoNothing`) rather than a duplicate participant.
+ * counterpart alongside the mailbox owner.
+ *
+ * DEDUP (no migration): `onConflictDoNothing` CANNOT dedup a contact row — the
+ * only partial unique on `comms_participants` is `(thread_id, user_id) WHERE
+ * user_id IS NOT NULL`, and a contact participant has `user_id` NULL, so no
+ * constraint matches and every repeat external email would re-insert the SAME
+ * contact as a new participant. Find-or-create at the app level instead: SELECT
+ * for an existing `(thread_id, contact_entity_id)` row (org-scoped) and skip the
+ * insert when present. Avoids a schema/index migration that would break prod on
+ * pre-existing duplicate rows. Idempotent: a repeat sender's add is a no-op.
  */
 async function ensureCommsContactParticipant(
 	db: typeof import("@rox/db/client").db,
 	args: { organizationId: string; threadId: string; contactEntityId: string },
 ): Promise<void> {
+	const [existing] = await db
+		.select({ id: commsParticipants.id })
+		.from(commsParticipants)
+		.where(
+			and(
+				eq(commsParticipants.organizationId, args.organizationId),
+				eq(commsParticipants.threadId, args.threadId),
+				eq(commsParticipants.contactEntityId, args.contactEntityId),
+			),
+		)
+		.limit(1);
+	if (existing) return;
+
 	await db
 		.insert(commsParticipants)
 		.values({
