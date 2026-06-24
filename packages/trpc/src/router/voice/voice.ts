@@ -5,6 +5,10 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import {
+	isDeepgramStreamConfigured,
+	mintDeepgramStreamToken,
+} from "../../lib/voice/deepgram-token";
+import {
 	buildLiveTranscriptSegmentInsert,
 	resolveTranscriptRoomOrg,
 } from "../../lib/voice/live-transcript";
@@ -18,6 +22,45 @@ export const voiceRouter = {
 	isConfigured: protectedProcedure.query(() => ({
 		configured: isVoiceConfigured(),
 	})),
+
+	/**
+	 * Whether in-app streaming STT is available (the server holds a Deepgram key
+	 * to mint short-lived tokens). Lets the renderer choose the low-latency live
+	 * source over the Groq-chunk fallback without exposing the key.
+	 */
+	isStreamConfigured: protectedProcedure.query(() => ({
+		configured: isDeepgramStreamConfigured(),
+	})),
+
+	/**
+	 * In-app streaming STT — mint a SHORT-LIVED Deepgram token for the desktop
+	 * renderer to stream the user's OWN microphone to Deepgram's realtime API
+	 * directly (sub-second words), feeding the SAME Phase-1 fan-out + panel as a
+	 * lower-latency source.
+	 *
+	 * SECURITY: the real `DEEPGRAM_API_KEY` stays SERVER-SIDE — the server grants
+	 * a temporary JWT (Deepgram `POST /v1/auth/grant`, `usage:write` scope, TTL
+	 * ~300s) and returns ONLY `{ token, expiresAt }`; the renderer authenticates
+	 * the websocket with `Bearer <token>` and never sees the key. The procedure
+	 * is org-membership gated (a participant must be an active member) and fails
+	 * closed with a clear error when the key is unset. The key is never returned
+	 * or logged. Clients re-call this to re-mint before `expiresAt`.
+	 */
+	deepgramStreamToken: protectedProcedure.mutation(async ({ ctx }) => {
+		// Gate: authenticated (protectedProcedure) AND an active-org member.
+		await requireActiveOrgMembership(ctx);
+
+		if (!isDeepgramStreamConfigured()) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message: "In-app streaming STT is not configured on the server.",
+			});
+		}
+
+		// Mint server-side; only the short-lived token crosses the wire.
+		const { token, expiresAt } = await mintDeepgramStreamToken();
+		return { token, expiresAt };
+	}),
 
 	/**
 	 * Transcribe a dictated audio clip with Groq Whisper (auto-language), then
