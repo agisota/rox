@@ -295,6 +295,10 @@
 		"./comms-events": {
 			"types": "./src/comms-events.ts",
 			"default": "./src/comms-events.ts"
+		},
+		"./identity-glyph": {
+			"types": "./src/identity-glyph.ts",
+			"default": "./src/identity-glyph.ts"
 		}
 	},
 	"scripts": {
