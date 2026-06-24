@@ -1,44 +1,32 @@
 import {
-	AVAILABLE_CHAT_MODELS,
-	isRoxHouseModel,
+	type ChatModelOption,
 	ROX_CHAT_MODEL,
 	ROX_CHAT_MODEL_NAME,
 } from "@rox/shared/chat-models";
+import {
+	PromptInputProvider,
+	usePromptInputController,
+} from "@rox/ui/ai-elements/prompt-input";
 import { Button } from "@rox/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@rox/ui/dropdown-menu";
-import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-	LuArrowUp,
-	LuChevronDown,
-	LuLoaderCircle,
-	LuSettings,
-	LuSparkles,
-} from "react-icons/lu";
+import { LuPlus, LuSettings, LuSparkles } from "react-icons/lu";
 import { logger } from "renderer/lib/logger";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
 import { DEFAULT_SAVED_PROMPTS } from "../../../saved-prompts/components/SavedPromptsView/default-prompts";
 import {
 	DEFAULT_REASONING_LEVEL,
-	REASONING_LEVELS,
+	QUICK_CHAT_MOTION,
 	type ReasoningLevel,
 	STARTER_PROMPT_IDS,
 } from "./constants";
+import { QuickChatComposer } from "./QuickChatComposer";
+import { type QuickChatMessage, QuickChatMessages } from "./QuickChatMessages";
 import { resolveQuickChatOutcome, shouldBlockSend } from "./quick-chat-state";
-
-interface QuickChatMessage {
-	id: string;
-	role: "user" | "assistant";
-	text: string;
-}
 
 /** RU notice shown when a non-Rox model is picked but no user key is configured. */
 const NEEDS_USER_KEY_NOTICE = `Для этой модели нужен ваш ключ провайдера. Откройте «Настройки → Модели», чтобы добавить ключ, либо выберите ${ROX_CHAT_MODEL_NAME} — она работает без настройки.`;
@@ -66,15 +54,33 @@ const STARTER_PROMPTS = STARTER_PROMPT_IDS.flatMap((id) => {
 	return prompt ? [prompt] : [];
 });
 
+/**
+ * Quick Chat — zero-friction, project-less AI chat on the repo's AI-Elements
+ * design system. `QuickChatView` owns the header chrome and the shared
+ * `PromptInputProvider` (so the composer's text controller is reachable by the
+ * mic and the starter/draft handoff); `QuickChatBody` owns the conversation
+ * state and renders the messages + composer inside that provider.
+ */
 export function QuickChatView() {
-	const consumePrompt = useQuickChatDraftStore((state) => state.consumePrompt);
-	const navigate = useNavigate();
+	return (
+		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
+			<PromptInputProvider>
+				<QuickChatBody />
+			</PromptInputProvider>
+		</div>
+	);
+}
 
-	const [model, setModel] = useState(ROX_CHAT_MODEL);
+function QuickChatBody() {
+	const { textInput } = usePromptInputController();
+	const navigate = useNavigate();
+	const prefersReducedMotion = useReducedMotion();
+	const consumePrompt = useQuickChatDraftStore((state) => state.consumePrompt);
+
+	const [model, setModel] = useState<ChatModelOption>(ROX_CHAT_MODEL);
 	const [reasoning, setReasoning] = useState<ReasoningLevel>(
 		DEFAULT_REASONING_LEVEL,
 	);
-	const [input, setInput] = useState("");
 	const [messages, setMessages] = useState<QuickChatMessage[]>([]);
 	const [isSending, setIsSending] = useState(false);
 	// Set when the house model reports `not-configured`: instead of a dead
@@ -85,311 +91,255 @@ export function QuickChatView() {
 	// on first send and reused for the rest of the conversation so the whole thread
 	// lands in a single session the Журнал can summarize.
 	const sessionIdRef = useRef<string | null>(null);
-	const scrollRef = useRef<HTMLDivElement>(null);
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-	// Fill the composer from a starter chip and focus it so the user can edit or
-	// send. Reuses the same `setInput` path as the saved-prompts draft handoff.
-	const applyStarterPrompt = useCallback((body: string) => {
-		setInput(body);
-		const textarea = textareaRef.current;
-		if (textarea) {
-			textarea.focus();
-			const caret = body.length;
-			textarea.setSelectionRange(caret, caret);
-		}
-	}, []);
+	// Server-side Whisper availability (voice.isConfigured). With the shared
+	// server GROQ_API_KEY this is always true; the gate just hides a dead-looking
+	// mic when the voice service is down/unconfigured. Same client + query key as
+	// the desktop ChatInputFooter.
+	const { data: voiceConfig } = useQuery({
+		queryKey: ["voice", "isConfigured"],
+		queryFn: () => apiClient.voice.isConfigured.query(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const dictationConfigured = voiceConfig?.configured ?? false;
 
-	// Pick up a prompt staged from the "Сохранённые промпты" view, if any.
+	// Pick up a prompt staged from the "Сохранённые промпты" view, if any, and
+	// drop it straight into the shared composer controller.
 	useEffect(() => {
 		const staged = consumePrompt();
-		if (staged) setInput(staged);
-	}, [consumePrompt]);
+		if (staged) {
+			textInput.setInput(staged);
+			textInput.focus();
+		}
+	}, [consumePrompt, textInput]);
 
+	// The composer text snapshot we restored when the house model came back
+	// not-configured. We keep the user's text but disable send; the banner must
+	// clear only when they actually EDIT that text (parity with the old textarea
+	// onChange reset), not merely because text is present.
+	const notConfiguredTextRef = useRef<string | null>(null);
+	const composerValue = textInput.value;
 	useEffect(() => {
-		scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-	}, []);
-
-	const scrollToBottom = useCallback(() => {
-		requestAnimationFrame(() => {
-			scrollRef.current?.scrollTo({
-				top: scrollRef.current.scrollHeight,
-				behavior: "smooth",
-			});
-		});
-	}, []);
-
-	const send = useCallback(async () => {
-		const text = input.trim();
 		if (
-			shouldBlockSend({
-				trimmedInputLength: text.length,
-				isSending,
-				notConfigured,
-			})
+			notConfigured &&
+			notConfiguredTextRef.current !== null &&
+			composerValue !== notConfiguredTextRef.current
 		) {
-			return;
+			setNotConfigured(false);
+			notConfiguredTextRef.current = null;
 		}
+	}, [notConfigured, composerValue]);
 
-		if (!sessionIdRef.current) {
-			sessionIdRef.current = crypto.randomUUID();
-		}
-		const sessionId = sessionIdRef.current;
+	// Fill the composer from a starter chip and focus it so the user can edit or
+	// send. Reuses the same controller path as the saved-prompts draft handoff.
+	const applyStarterPrompt = useCallback(
+		(body: string) => {
+			textInput.setInput(body);
+			textInput.focus();
+		},
+		[textInput],
+	);
 
-		const now = Date.now();
-		const userMessage: QuickChatMessage = {
-			id: `u-${now}`,
-			role: "user",
-			text,
-		};
-		// History sent to the model: prior turns + this one (excludes placeholders).
-		const history = [...messages, userMessage].map((message) => ({
-			role: message.role,
-			content: message.text,
-		}));
-
-		setMessages((prev) => [...prev, userMessage]);
-		setInput("");
-		setIsSending(true);
-		scrollToBottom();
-
-		const appendAssistant = (assistantText: string) => {
-			setMessages((prev) => [
-				...prev,
-				{ id: `a-${now}`, role: "assistant", text: assistantText },
-			]);
-			scrollToBottom();
-		};
-
-		try {
-			const result = await apiClient.chat.complete.mutate({
-				sessionId,
-				messages: history,
-				modelId: model.id,
-				reasoning,
-			});
-
-			const outcome = resolveQuickChatOutcome(result.status);
-			if (outcome === "reply" && result.status === "ok") {
-				appendAssistant(result.reply);
-			} else if (outcome === "notice") {
-				appendAssistant(NEEDS_USER_KEY_NOTICE);
-			} else {
-				// House model has no server key: don't append a dead assistant
-				// bubble. Surface the inline actionable banner instead and keep the
-				// user's text in the composer so they can retry after fixing it.
-				setNotConfigured(true);
-				setInput(text);
-				setMessages((prev) =>
-					prev.filter((message) => message.id !== userMessage.id),
-				);
+	const send = useCallback(
+		async (rawText: string) => {
+			const text = rawText.trim();
+			if (
+				shouldBlockSend({
+					trimmedInputLength: text.length,
+					isSending,
+					notConfigured,
+				})
+			) {
+				return;
 			}
-		} catch (error) {
-			logger.error("[quick-chat] completion failed", error);
-			appendAssistant(GENERIC_ERROR_NOTICE);
-		} finally {
-			setIsSending(false);
-		}
-	}, [
-		input,
-		isSending,
-		notConfigured,
-		messages,
-		model.id,
-		reasoning,
-		scrollToBottom,
-	]);
+
+			if (!sessionIdRef.current) {
+				sessionIdRef.current = crypto.randomUUID();
+			}
+			const sessionId = sessionIdRef.current;
+
+			const now = Date.now();
+			const userMessage: QuickChatMessage = {
+				id: `u-${now}`,
+				role: "user",
+				text,
+			};
+			// History sent to the model: prior turns + this one (excludes placeholders).
+			const history = [...messages, userMessage].map((message) => ({
+				role: message.role,
+				content: message.text,
+			}));
+
+			setMessages((prev) => [...prev, userMessage]);
+			setIsSending(true);
+
+			const appendAssistant = (assistantText: string) => {
+				setMessages((prev) => [
+					...prev,
+					{ id: `a-${now}`, role: "assistant", text: assistantText },
+				]);
+			};
+
+			try {
+				const result = await apiClient.chat.complete.mutate({
+					sessionId,
+					messages: history,
+					modelId: model.id,
+					reasoning,
+				});
+
+				const outcome = resolveQuickChatOutcome(result.status);
+				if (outcome === "reply" && result.status === "ok") {
+					appendAssistant(result.reply);
+				} else if (outcome === "notice") {
+					appendAssistant(NEEDS_USER_KEY_NOTICE);
+				} else {
+					// House model has no server key: don't append a dead assistant
+					// bubble. Surface the inline actionable banner instead, drop the
+					// optimistic user bubble, and restore the user's text into the
+					// composer (PromptInput already cleared it on submit) so they can
+					// retry after fixing it.
+					setNotConfigured(true);
+					setMessages((prev) =>
+						prev.filter((message) => message.id !== userMessage.id),
+					);
+					notConfiguredTextRef.current = text;
+					textInput.setInput(text);
+				}
+			} catch (error) {
+				logger.error("[quick-chat] completion failed", error);
+				appendAssistant(GENERIC_ERROR_NOTICE);
+			} finally {
+				setIsSending(false);
+			}
+		},
+		[isSending, notConfigured, messages, model.id, reasoning, textInput],
+	);
+
+	const handleModelChange = useCallback((option: ChatModelOption) => {
+		setModel(option);
+		setNotConfigured(false);
+		notConfiguredTextRef.current = null;
+	}, []);
+
+	const handleReasoningChange = useCallback((level: ReasoningLevel) => {
+		setReasoning(level);
+	}, []);
+
+	// «Новый чат»: reset the ephemeral conversation. Clears messages, the session
+	// id (so the next send opens a fresh chat_sessions row), the not-configured
+	// banner, and the composer text.
+	const handleNewChat = useCallback(() => {
+		setMessages([]);
+		setNotConfigured(false);
+		notConfiguredTextRef.current = null;
+		sessionIdRef.current = null;
+		textInput.clear();
+		textInput.focus();
+	}, [textInput]);
 
 	const openModelSettings = useCallback(() => {
 		void navigate({ to: "/settings/models" });
 	}, [navigate]);
 
-	const isEmpty = messages.length === 0;
-	const isHouseModel = isRoxHouseModel(model.id);
+	const submitDisabled =
+		isSending || notConfigured || textInput.value.trim().length === 0;
+	const composerEmpty = textInput.value.trim().length === 0;
 
 	return (
-		<div className="flex h-full w-full flex-1 flex-col overflow-hidden">
-			<header className="flex items-center gap-2 border-b border-border px-6 py-4">
+		<>
+			<header className="flex items-center gap-2 border-b border-border bg-card/40 px-6 py-4 backdrop-blur-sm">
 				<LuSparkles className="size-5 text-muted-foreground" />
-				<div className="min-w-0">
-					<h1 className="text-lg font-semibold text-foreground">Быстрый чат</h1>
-					<p className="text-sm text-muted-foreground">
+				<div className="min-w-0 flex-1">
+					<h1 className="font-semibold text-foreground text-lg">Быстрый чат</h1>
+					<p className="text-muted-foreground text-sm">
 						Начните разговор сразу — без проекта и репозитория.
 					</p>
 				</div>
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					className="h-7 shrink-0 gap-1.5 rounded-full px-3 text-xs"
+					onClick={handleNewChat}
+					disabled={messages.length === 0 && composerEmpty}
+				>
+					<LuPlus className="size-3.5" />
+					Новый чат
+				</Button>
 			</header>
 
-			<div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6">
-				<div className="mx-auto flex max-w-2xl flex-col gap-4">
-					{isEmpty ? (
-						<div className="mt-12 flex flex-col items-center gap-2 text-center">
-							<LuSparkles className="size-8 text-muted-foreground/60" />
-							<p className="text-base font-medium text-foreground">
-								Чем помочь?
-							</p>
-							<p className="max-w-md text-sm text-muted-foreground">
-								Задайте вопрос модели {ROX_CHAT_MODEL.name}. Это обычный чат —
-								проект создавать не нужно.
-							</p>
-							{input.trim().length === 0 ? (
-								<div className="mt-4 flex flex-wrap justify-center gap-2">
-									{STARTER_PROMPTS.map((prompt) => (
-										<Button
-											key={prompt.id}
-											type="button"
-											variant="outline"
-											size="sm"
-											className="h-7 rounded-full px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
-											onClick={() => applyStarterPrompt(prompt.body)}
-										>
-											{prompt.title}
-										</Button>
-									))}
-								</div>
-							) : null}
-						</div>
-					) : (
-						messages.map((message) => (
+			<QuickChatMessages
+				messages={messages}
+				isSending={isSending}
+				modelName={model.name}
+				starterPrompts={STARTER_PROMPTS}
+				showStarters={composerEmpty}
+				onStarterSelect={applyStarterPrompt}
+			/>
+
+			<div className="border-border border-t px-6 py-4">
+				<AnimatePresence initial={false}>
+					{notConfigured ? (
+						<motion.div
+							key="quick-chat-not-configured"
+							role="alert"
+							initial={
+								prefersReducedMotion
+									? { opacity: 0 }
+									: { opacity: 0, height: 0 }
+							}
+							animate={
+								prefersReducedMotion
+									? { opacity: 1 }
+									: { opacity: 1, height: "auto" }
+							}
+							exit={
+								prefersReducedMotion
+									? { opacity: 0 }
+									: { opacity: 0, height: 0 }
+							}
+							transition={{
+								duration: QUICK_CHAT_MOTION.duration,
+								ease: QUICK_CHAT_MOTION.ease,
+							}}
+							className="mx-auto max-w-2xl overflow-hidden"
+						>
 							<div
-								key={message.id}
 								className={cn(
-									"flex",
-									message.role === "user" ? "justify-end" : "justify-start",
+									"mb-2 flex flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3",
+									"sm:flex-row sm:items-center sm:justify-between",
 								)}
 							>
-								<div
-									className={cn(
-										"max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm select-text",
-										message.role === "user"
-											? "bg-primary text-primary-foreground"
-											: "bg-muted text-foreground",
-									)}
-								>
-									{message.text}
-								</div>
-							</div>
-						))
-					)}
-					{isSending ? (
-						<div className="flex justify-start">
-							<div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
-								<LuLoaderCircle className="size-4 animate-spin" />
-								{model.name} печатает…
-							</div>
-						</div>
-					) : null}
-				</div>
-			</div>
-
-			<div className="border-t border-border px-6 py-4">
-				{notConfigured ? (
-					<div
-						role="alert"
-						className="mx-auto mb-2 flex max-w-2xl flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between"
-					>
-						<p className="text-xs text-muted-foreground">
-							{NOT_CONFIGURED_BANNER}
-						</p>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							className="h-7 shrink-0 gap-1.5 rounded-full px-3 text-xs"
-							onClick={openModelSettings}
-						>
-							<LuSettings className="size-3.5" />
-							{NOT_CONFIGURED_CTA}
-						</Button>
-					</div>
-				) : null}
-				<div className="mx-auto flex max-w-2xl flex-col gap-2 rounded-xl border border-border bg-card p-2">
-					<Textarea
-						ref={textareaRef}
-						value={input}
-						onChange={(event) => {
-							setInput(event.target.value);
-							if (notConfigured) setNotConfigured(false);
-						}}
-						onKeyDown={(event) => {
-							if (event.key === "Enter" && !event.shiftKey) {
-								event.preventDefault();
-								void send();
-							}
-						}}
-						placeholder="Напишите сообщение…"
-						className="min-h-16 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
-					/>
-					<div className="flex items-center gap-2">
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
+								<p className="text-muted-foreground text-xs">
+									{NOT_CONFIGURED_BANNER}
+								</p>
 								<Button
+									type="button"
 									variant="outline"
 									size="sm"
-									className="h-7 gap-1 rounded-full px-2.5 text-xs"
+									className="h-7 shrink-0 gap-1.5 rounded-full px-3 text-xs"
+									onClick={openModelSettings}
 								>
-									{model.name}
-									<LuChevronDown className="size-3" />
+									<LuSettings className="size-3.5" />
+									{NOT_CONFIGURED_CTA}
 								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								align="start"
-								className="max-h-72 overflow-y-auto"
-							>
-								{AVAILABLE_CHAT_MODELS.map((option) => (
-									<DropdownMenuItem
-										key={option.id}
-										onSelect={() => {
-											setModel(option);
-											setNotConfigured(false);
-										}}
-										className={cn(option.id === model.id && "font-medium")}
-									>
-										{option.name}
-									</DropdownMenuItem>
-								))}
-							</DropdownMenuContent>
-						</DropdownMenu>
-
-						<div className="flex items-center gap-0.5 rounded-full border border-border p-0.5">
-							{REASONING_LEVELS.map((level) => (
-								<button
-									key={level}
-									type="button"
-									onClick={() => setReasoning(level)}
-									className={cn(
-										"rounded-full px-2 py-0.5 text-[11px] transition-colors",
-										level === reasoning
-											? "bg-accent text-foreground"
-											: "text-muted-foreground hover:text-foreground",
-									)}
-								>
-									{level}
-								</button>
-							))}
-						</div>
-
-						<Button
-							size="icon"
-							className="ml-auto size-8 rounded-full"
-							disabled={input.trim().length === 0 || isSending || notConfigured}
-							onClick={() => void send()}
-							aria-label="Отправить"
-						>
-							{isSending ? (
-								<LuLoaderCircle className="size-4 animate-spin" />
-							) : (
-								<LuArrowUp className="size-4" />
-							)}
-						</Button>
-					</div>
-					{!isHouseModel ? (
-						<p className="px-1 text-[11px] text-muted-foreground">
-							{ROX_CHAT_MODEL_NAME} работает без настройки. Для {model.name}{" "}
-							нужен ваш ключ провайдера.
-						</p>
+							</div>
+						</motion.div>
 					) : null}
-				</div>
+				</AnimatePresence>
+
+				<QuickChatComposer
+					model={model}
+					onModelChange={handleModelChange}
+					reasoning={reasoning}
+					onReasoningChange={handleReasoningChange}
+					isSending={isSending}
+					submitDisabled={submitDisabled}
+					dictationConfigured={dictationConfigured}
+					onSubmit={send}
+				/>
 			</div>
-		</div>
+		</>
 	);
 }

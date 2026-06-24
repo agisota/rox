@@ -57,7 +57,7 @@ export function WorkspaceHoverCardContent({
 		>
 			<a href={previewUrl} target="_blank" rel="noopener noreferrer">
 				<LuGlobe className="size-3" strokeWidth={STROKE_WIDTH} />
-				Open Preview
+				Открыть превью
 			</a>
 		</Button>
 	) : null;
@@ -81,7 +81,7 @@ export function WorkspaceHoverCardContent({
 				{branchName && (
 					<div className="space-y-0.5">
 						<span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-							Branch
+							Ветка
 						</span>
 						<div className="flex items-center gap-1.5">
 							{onEditBranchClick ? (
@@ -136,8 +136,8 @@ export function WorkspaceHoverCardContent({
 						strokeWidth={STROKE_WIDTH}
 					/>
 					<span>
-						Behind main by {behindCount ?? "?"} commit
-						{behindCount !== 1 && "s"}, needs rebase
+						Позади main на {behindCount ?? "?"} коммит
+						{behindCount === 1 ? "" : "ов"} — нужен rebase
 					</span>
 				</div>
 			)}
@@ -192,7 +192,7 @@ export function WorkspaceHoverCardContent({
 					>
 						<a href={pr.url} target="_blank" rel="noopener noreferrer">
 							<FaGithub className="size-3" />
-							View on GitHub
+							Открыть на GitHub
 							{hasOpenPRShortcut && (
 								<KbdGroup className="ml-auto">
 									{openPRDisplay.map((key) => (
@@ -209,7 +209,7 @@ export function WorkspaceHoverCardContent({
 			) : repoUrl ? (
 				<div className="pt-2 border-t border-border space-y-2">
 					<div className="text-xs text-muted-foreground">
-						No PR for this branch
+						Для этой ветки нет PR
 					</div>
 					{previewButton}
 				</div>

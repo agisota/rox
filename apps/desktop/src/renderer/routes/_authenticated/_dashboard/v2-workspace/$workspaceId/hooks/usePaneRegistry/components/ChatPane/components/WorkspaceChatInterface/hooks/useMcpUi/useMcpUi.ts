@@ -64,7 +64,7 @@ export function useMcpUi({
 
 	const openOverview = useCallback(async () => {
 		if (!cwd) {
-			onSetErrorMessage("Workspace path is missing");
+			onSetErrorMessage("Не указан путь к воркспейсу");
 			return;
 		}
 		setIsOverviewLoading(true);
@@ -74,7 +74,7 @@ export function useMcpUi({
 			setOverview(nextOverview);
 			setOverviewOpen(true);
 		} catch {
-			onSetErrorMessage("Failed to load MCP settings");
+			onSetErrorMessage("Не удалось загрузить настройки MCP");
 		} finally {
 			setIsOverviewLoading(false);
 		}
@@ -93,7 +93,7 @@ export function useMcpUi({
 	const authenticateMcpServer = useCallback(
 		async (serverName: string) => {
 			if (!cwd) {
-				onSetErrorMessage("Workspace path is missing");
+				onSetErrorMessage("Не указан путь к воркспейсу");
 				return;
 			}
 

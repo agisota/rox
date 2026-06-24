@@ -189,11 +189,11 @@ export function ChatMessageList({
 	const shouldShowShareButton = Boolean(
 		onShareConversation && hasConversationContent,
 	);
-	let shareButtonLabel = "Share";
+	let shareButtonLabel = "Поделиться";
 	if (isSharingConversation) {
-		shareButtonLabel = "Publishing";
+		shareButtonLabel = "Публикация…";
 	} else if (lastSharedConversationUrl) {
-		shareButtonLabel = "Link copied";
+		shareButtonLabel = "Ссылка скопирована";
 	}
 
 	const inlineToolStateProps = {

@@ -6,6 +6,7 @@ import { cn } from "@rox/ui/utils";
 import { CheckIcon } from "lucide-react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useWallpaperStore } from "renderer/stores/wallpaper";
+import { SettingsCard } from "../../../../../components/SettingsCard";
 import {
 	DEFAULT_ROTATE_SECONDS,
 	formatRotateInterval,
@@ -112,107 +113,110 @@ export function WallpaperSection() {
 	};
 
 	return (
-		<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
-			<div className="flex items-center justify-between gap-6 p-4">
-				<div className="min-w-0 flex-1">
-					<Label htmlFor="wallpaper-enabled" className="text-sm font-medium">
-						Обои
-					</Label>
-					<div className="text-xs text-muted-foreground">
-						Фоновое изображение, просвечивающее сквозь стеклянные поверхности.
-					</div>
-				</div>
-				<Switch
-					id="wallpaper-enabled"
-					checked={enabled}
-					onCheckedChange={handleToggle}
-				/>
-			</div>
-
-			{enabled ? (
-				<>
-					<div className="p-4">
-						<div className="mb-3 text-sm font-medium">Выбор обоев</div>
-						<div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-							{WALLPAPERS.map((wallpaper) => {
-								const isSelected = wallpaper.id === wallpaperId;
-								return (
-									<button
-										key={wallpaper.id}
-										type="button"
-										aria-label={wallpaper.name}
-										aria-pressed={isSelected}
-										onClick={() => handleSelect(wallpaper.id)}
-										className={cn(
-											"group relative aspect-video overflow-hidden rounded-md border transition-colors",
-											isSelected
-												? "border-primary ring-2 ring-primary"
-												: "border-border hover:border-muted-foreground",
-										)}
-									>
-										<span
-											aria-hidden
-											className="absolute inset-0"
-											style={{
-												background: previewBackground(wallpaper.source),
-											}}
-										/>
-										{isSelected ? (
-											<span className="absolute right-1 top-1 rounded-full bg-primary p-0.5 text-primary-foreground">
-												<CheckIcon className="size-3" />
-											</span>
-										) : null}
-										<span className="absolute inset-x-0 bottom-0 truncate bg-black/40 px-1.5 py-0.5 text-[10px] text-white">
-											{wallpaper.name}
-										</span>
-									</button>
-								);
-							})}
+		<SettingsCard bare>
+			<div className="divide-y divide-border/60">
+				<div className="flex items-center justify-between gap-6 p-4">
+					<div className="min-w-0 flex-1">
+						<Label htmlFor="wallpaper-enabled" className="text-sm font-medium">
+							Обои
+						</Label>
+						<div className="text-xs text-muted-foreground">
+							Фоновое изображение, просвечивающее сквозь стеклянные поверхности.
 						</div>
 					</div>
+					<Switch
+						id="wallpaper-enabled"
+						checked={enabled}
+						onCheckedChange={handleToggle}
+					/>
+				</div>
 
-					<div className="flex items-center justify-between gap-6 p-4">
-						<div className="min-w-0 flex-1">
-							<Label
-								htmlFor="wallpaper-auto-rotate"
-								className="text-sm font-medium"
-							>
-								Авто-смена
-							</Label>
-							<div className="text-xs text-muted-foreground">
-								Периодически менять обои на другие из набора.
+				{enabled ? (
+					<>
+						<div className="p-4">
+							<div className="mb-3 text-sm font-medium">Выбор обоев</div>
+							<div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+								{WALLPAPERS.map((wallpaper) => {
+									const isSelected = wallpaper.id === wallpaperId;
+									return (
+										<button
+											key={wallpaper.id}
+											type="button"
+											aria-label={wallpaper.name}
+											aria-pressed={isSelected}
+											onClick={() => handleSelect(wallpaper.id)}
+											className={cn(
+												"group relative aspect-video overflow-hidden rounded-md border transition-colors",
+												isSelected
+													? "border-primary ring-2 ring-primary"
+													: "border-border hover:border-muted-foreground",
+											)}
+										>
+											<span
+												aria-hidden
+												className="absolute inset-0"
+												style={{
+													background: previewBackground(wallpaper.source),
+												}}
+											/>
+											{isSelected ? (
+												<span className="absolute right-1 top-1 rounded-full bg-primary p-0.5 text-primary-foreground">
+													<CheckIcon className="size-3" />
+												</span>
+											) : null}
+											<span className="absolute inset-x-0 bottom-0 truncate bg-black/40 px-1.5 py-0.5 text-[10px] text-white">
+												{wallpaper.name}
+											</span>
+										</button>
+									);
+								})}
 							</div>
 						</div>
-						<Switch
-							id="wallpaper-auto-rotate"
-							checked={autoRotate}
-							onCheckedChange={handleAutoRotate}
-						/>
-					</div>
 
-					{autoRotate ? (
 						<div className="flex items-center justify-between gap-6 p-4">
 							<div className="min-w-0 flex-1">
-								<div className="text-sm font-medium">Интервал смены</div>
+								<Label
+									htmlFor="wallpaper-auto-rotate"
+									className="text-sm font-medium"
+								>
+									Авто-смена
+								</Label>
 								<div className="text-xs text-muted-foreground">
-									Как часто меняются обои ({formatRotateInterval(rotateSeconds)}
-									).
+									Периодически менять обои на другие из набора.
 								</div>
 							</div>
-							<Slider
-								aria-label="Интервал смены обоев"
-								className="w-44"
-								min={MIN_ROTATE_SECONDS}
-								max={MAX_ROTATE_SECONDS}
-								step={30}
-								value={[rotateSeconds]}
-								onValueChange={handleInterval}
-								onValueCommit={handleIntervalCommit}
+							<Switch
+								id="wallpaper-auto-rotate"
+								checked={autoRotate}
+								onCheckedChange={handleAutoRotate}
 							/>
 						</div>
-					) : null}
-				</>
-			) : null}
-		</div>
+
+						{autoRotate ? (
+							<div className="flex items-center justify-between gap-6 p-4">
+								<div className="min-w-0 flex-1">
+									<div className="text-sm font-medium">Интервал смены</div>
+									<div className="text-xs text-muted-foreground">
+										Как часто меняются обои (
+										{formatRotateInterval(rotateSeconds)}
+										).
+									</div>
+								</div>
+								<Slider
+									aria-label="Интервал смены обоев"
+									className="w-44"
+									min={MIN_ROTATE_SECONDS}
+									max={MAX_ROTATE_SECONDS}
+									step={30}
+									value={[rotateSeconds]}
+									onValueChange={handleInterval}
+									onValueCommit={handleIntervalCommit}
+								/>
+							</div>
+						) : null}
+					</>
+				) : null}
+			</div>
+		</SettingsCard>
 	);
 }

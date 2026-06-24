@@ -1,8 +1,11 @@
-import { Label } from "@rox/ui/label";
 import { Slider } from "@rox/ui/slider";
 import { Switch } from "@rox/ui/switch";
 import { useEffect } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import {
+	SettingsCard,
+	SettingsRow,
+} from "../../../../../components/SettingsCard";
 import {
 	applyAppearanceGlass,
 	DEFAULT_GLASS_WINDOW_OPACITY,
@@ -69,36 +72,37 @@ export function GlassSection() {
 	};
 
 	return (
-		<div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
-			<div className="flex items-center justify-between gap-6 p-4">
-				<div className="min-w-0 flex-1">
-					<Label htmlFor="glass-enabled" className="text-sm font-medium">
-						Остекление
-					</Label>
-					<div className="text-xs text-muted-foreground">
+		<SettingsCard>
+			<SettingsRow
+				htmlFor="glass-enabled"
+				label="Остекление"
+				hint={
+					<>
 						Сделать панели полупрозрачными с размытым фоном.
 						{!isMac
 							? " Нативная прозрачность окна доступна только на macOS."
 							: null}
-					</div>
-				</div>
+					</>
+				}
+			>
 				<Switch
 					id="glass-enabled"
 					checked={glassEnabled}
 					onCheckedChange={handleToggle}
 				/>
-			</div>
+			</SettingsRow>
 
 			{glassEnabled ? (
-				<div className="flex items-center justify-between gap-6 p-4">
-					<div className="min-w-0 flex-1">
-						<div className="text-sm font-medium">Непрозрачность окна</div>
-						<div className="text-xs text-muted-foreground">
+				<SettingsRow
+					label="Непрозрачность окна"
+					hint={
+						<>
 							Насколько плотными выглядят стеклянные поверхности (
 							{formatOpacityPercent(windowOpacity)}
 							).
-						</div>
-					</div>
+						</>
+					}
+				>
 					<Slider
 						aria-label="Непрозрачность окна"
 						className="w-44"
@@ -108,8 +112,8 @@ export function GlassSection() {
 						value={[windowOpacity]}
 						onValueChange={handleOpacityChange}
 					/>
-				</div>
+				</SettingsRow>
 			) : null}
-		</div>
+		</SettingsCard>
 	);
 }

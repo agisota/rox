@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import {
+	SettingsCard,
+	SettingsCardHeader,
+} from "../../../../../components/SettingsCard";
 
 interface SettingsSectionProps {
 	title: string;
@@ -8,6 +12,15 @@ interface SettingsSectionProps {
 	children: ReactNode;
 }
 
+/**
+ * Provider section card for the Модели page.
+ *
+ * Thin wrapper over the shared {@link SettingsCard} primitive (Settings P0
+ * consolidation): keeps the exact `title/icon/description/action/children` API
+ * the page already passes, but now renders the unified glass panel + header so
+ * the Anthropic / OpenAI / custom-provider blocks match every other settings
+ * section (and inherit the liquid-glass treatment under `.glass`).
+ */
 export function SettingsSection({
 	title,
 	icon,
@@ -16,22 +29,18 @@ export function SettingsSection({
 	children,
 }: SettingsSectionProps) {
 	return (
-		<section className="space-y-3">
-			<div className="flex items-start justify-between gap-4">
-				<div className="min-w-0">
-					<h3 className="flex items-center gap-2 text-sm font-medium">
-						{icon}
-						{title}
-					</h3>
-					{description ? (
-						<p className="text-xs text-muted-foreground mt-0.5">
-							{description}
-						</p>
-					) : null}
-				</div>
-				{action ? <div className="shrink-0">{action}</div> : null}
-			</div>
-			{children}
-		</section>
+		<SettingsCard
+			divided={false}
+			header={
+				<SettingsCardHeader
+					title={title}
+					icon={icon}
+					description={description}
+					action={action}
+				/>
+			}
+		>
+			<div className="space-y-3 py-4">{children}</div>
+		</SettingsCard>
 	);
 }

@@ -5,7 +5,6 @@ import type {
 	SelectV2Workspace,
 } from "@rox/db/schema";
 import { COMPANY } from "@rox/shared/constants";
-import { describeSchedule } from "@rox/shared/rrule";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -41,8 +40,10 @@ import { useMemo, useState } from "react";
 import { HiOutlineComputerDesktop } from "react-icons/hi2";
 import {
 	LuClock,
+	LuCopy,
 	LuEllipsis,
 	LuGitBranch,
+	LuPause,
 	LuPencil,
 	LuPlay,
 	LuPlus,
@@ -50,6 +51,7 @@ import {
 	LuSparkles,
 	LuTrash2,
 } from "react-icons/lu";
+import { useNow } from "renderer/hooks/useNow";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { ProjectThumbnail } from "renderer/routes/_authenticated/components/ProjectThumbnail";
@@ -59,6 +61,7 @@ import { AutomationsEmptyState } from "./components/AutomationsEmptyState";
 import { CellWithIcon } from "./components/CellWithIcon";
 import { CreateAutomationDialog } from "./components/CreateAutomationDialog";
 import { useRecentProjects } from "./hooks/useRecentProjects";
+import { describeScheduleRu, nextRunRelativeRu } from "./lib/scheduleRu";
 import type { AutomationTemplate } from "./templates";
 
 export const Route = createFileRoute("/_authenticated/_dashboard/automations/")(
@@ -78,6 +81,7 @@ const ROW_GRID_TEAM =
 function AutomationsPage() {
 	const navigate = useNavigate();
 	const collections = useCollections();
+	const now = useNow(30_000);
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id;
 
@@ -111,6 +115,45 @@ function AutomationsPage() {
 				error instanceof Error
 					? error.message
 					: "Не удалось удалить автоматизацию",
+			),
+	});
+
+	const setEnabledMutation = useMutation({
+		mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+			apiTrpcClient.automation.setEnabled.mutate({ id, enabled }),
+		onError: (error) =>
+			toast.error(
+				error instanceof Error ? error.message : "Не удалось изменить статус",
+			),
+	});
+
+	const duplicateMutation = useMutation({
+		// Compose a fresh automation from an existing row over the same
+		// `automation.create` contract — no backend change needed.
+		mutationFn: (source: SelectAutomation) =>
+			apiTrpcClient.automation.create.mutate({
+				name: `${source.name} (копия)`,
+				prompt: source.prompt,
+				agent: source.agent,
+				targetHostId: source.targetHostId ?? null,
+				// create() requires a project when no workspace is provided; pass both
+				// so the server can reconcile them exactly as the original did.
+				v2ProjectId: source.v2ProjectId,
+				v2WorkspaceId: source.v2WorkspaceId ?? null,
+				rrule: source.rrule,
+				timezone: source.timezone,
+				mcpScope: source.mcpScope,
+			}),
+		onSuccess: (created) => {
+			toast.success(`Создана копия «${created.name}»`);
+			navigate({
+				to: "/automations/$automationId",
+				params: { automationId: created.id },
+			});
+		},
+		onError: (error) =>
+			toast.error(
+				error instanceof Error ? error.message : "Не удалось дублировать",
 			),
 	});
 
@@ -445,10 +488,25 @@ function AutomationsPage() {
 										</span>
 
 										<span
-											className="min-w-0 truncate text-xs text-muted-foreground"
-											title={describeSchedule(automation.rrule)}
+											className="flex min-w-0 flex-col leading-tight"
+											title={describeScheduleRu(automation.rrule)}
 										>
-											{describeSchedule(automation.rrule)}
+											<span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
+												{describeScheduleRu(automation.rrule)}
+											</span>
+											{automation.enabled && automation.nextRunAt
+												? (() => {
+														const rel = nextRunRelativeRu(
+															automation.nextRunAt,
+															now,
+														);
+														return rel ? (
+															<span className="min-w-0 truncate text-[10px] text-muted-foreground/70">
+																{rel}
+															</span>
+														) : null;
+													})()
+												: null}
 										</span>
 
 										<span className="flex items-center justify-end">
@@ -492,6 +550,35 @@ function AutomationsPage() {
 														>
 															<LuPlay className="size-4" />
 															Запустить сейчас
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															onSelect={() =>
+																setEnabledMutation.mutate({
+																	id: automation.id,
+																	enabled: !automation.enabled,
+																})
+															}
+														>
+															{automation.enabled ? (
+																<>
+																	<LuPause className="size-4" />
+																	На паузу
+																</>
+															) : (
+																<>
+																	<LuPlay className="size-4" />
+																	Включить
+																</>
+															)}
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															disabled={duplicateMutation.isPending}
+															onSelect={() =>
+																duplicateMutation.mutate(automation)
+															}
+														>
+															<LuCopy className="size-4" />
+															Дублировать
 														</DropdownMenuItem>
 														<DropdownMenuItem
 															onSelect={() =>

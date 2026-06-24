@@ -3,10 +3,11 @@ import { Button } from "@rox/ui/button";
 import { ScrollArea } from "@rox/ui/scroll-area";
 import { toast } from "@rox/ui/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, Plus, Sparkles } from "lucide-react";
+import { Bot, GripVertical, Plus, Sparkles } from "lucide-react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { ROLE_TEMPLATES } from "../../templates";
+import { setNodeDragData } from "../node-drag";
 
 type RoleLibraryPanelProps = {
 	/** Project scope for the role list (optional org-wide otherwise). */
@@ -65,6 +66,9 @@ export function RoleLibraryPanel({
 					<Sparkles className="size-3.5" /> Базовые
 				</Button>
 			</div>
+			<p className="-mt-1 text-[11px] text-muted-foreground">
+				Перетащите роль на холст или нажмите + чтобы добавить узел.
+			</p>
 
 			<ScrollArea className="flex-1">
 				<div className="flex flex-col gap-2 pr-2">
@@ -147,7 +151,19 @@ function RoleRow({
 	isTemplate?: boolean;
 }) {
 	return (
-		<div className="group flex items-start gap-2 rounded-md border bg-card p-2 transition-colors hover:border-primary/50">
+		// biome-ignore lint/a11y/noStaticElementInteractions: drag is a mouse-only enhancement; the explicit "Добавить на холст" button below is the keyboard-accessible path.
+		<div
+			draggable
+			onDragStart={(event) =>
+				setNodeDragData(event, {
+					kind: "agent_run",
+					roleSlug: slug,
+					label: name,
+				})
+			}
+			className="group flex cursor-grab items-start gap-1.5 rounded-md border bg-card p-2 transition-colors hover:border-primary/50 active:cursor-grabbing"
+		>
+			<GripVertical className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60 opacity-0 transition-opacity group-hover:opacity-100" />
 			<Bot className="mt-0.5 size-4 shrink-0 text-primary" />
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-1.5">

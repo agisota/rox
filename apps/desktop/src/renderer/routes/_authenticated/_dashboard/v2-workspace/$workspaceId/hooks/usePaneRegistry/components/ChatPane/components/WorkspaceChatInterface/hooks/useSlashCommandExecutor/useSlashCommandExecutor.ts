@@ -73,8 +73,8 @@ export function useSlashCommandExecutor({
 						await onResetSession();
 						toast.success(
 							commandName === "clear"
-								? "Context cleared in a new chat session"
-								: "Started a new chat session",
+								? "Контекст очищен — начата новая сессия"
+								: "Начата новая сессия чата",
 						);
 						onTrackEvent?.("chat_slash_command_used", {
 							command_name: commandName,
@@ -84,10 +84,10 @@ export function useSlashCommandExecutor({
 					}
 					case "stop":
 						if (canAbort) {
-							toast.success("Stopped current response");
+							toast.success("Ответ остановлен");
 							onStopActiveResponse();
 						} else {
-							toast.warning("No active response to stop");
+							toast.warning("Нет активного ответа для остановки");
 						}
 						onTrackEvent?.("chat_slash_command_used", {
 							command_name: commandName,
@@ -112,7 +112,7 @@ export function useSlashCommandExecutor({
 
 						onSelectModel(matchedModel);
 						onClearError();
-						toast.success(`Model set to ${matchedModel.name}`);
+						toast.success(`Модель: ${matchedModel.name}`);
 						onTrackEvent?.("chat_model_changed", {
 							model_id: matchedModel.id,
 							model_name: matchedModel.name,
@@ -194,7 +194,9 @@ export function useSlashCommandExecutor({
 					"[chat] Failed to resolve slash command, sending raw input",
 					error,
 				);
-				toast.warning("Slash command resolution failed; sending as plain text");
+				toast.warning(
+					"Не удалось обработать слэш-команду; отправляю как обычный текст",
+				);
 				return { handled: false, nextText: text };
 			}
 		},

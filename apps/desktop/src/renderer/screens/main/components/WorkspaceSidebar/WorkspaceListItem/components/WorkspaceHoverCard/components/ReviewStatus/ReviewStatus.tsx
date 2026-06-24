@@ -19,8 +19,8 @@ export function ReviewStatus({
 		pending: {
 			label:
 				requestedReviewers && requestedReviewers.length > 0
-					? `Awaiting ${requestedReviewers.join(", ")}`
-					: "Review pending",
+					? `Ожидает: ${requestedReviewers.join(", ")}`
+					: "Ожидает ревью",
 			className: "bg-amber-500/15 text-amber-500",
 		},
 	};

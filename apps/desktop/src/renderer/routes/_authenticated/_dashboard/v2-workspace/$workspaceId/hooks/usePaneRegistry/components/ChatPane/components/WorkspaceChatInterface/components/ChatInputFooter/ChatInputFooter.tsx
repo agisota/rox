@@ -42,7 +42,10 @@ interface ChatInputFooterProps {
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	// Value-only setter so the store-backed `usePermissionModePreference` setter
+	// (and a plain `useState` dispatcher) both satisfy this prop. The composer
+	// only ever sets a concrete mode, never a functional updater.
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	slashCommands: SlashCommand[];
@@ -180,7 +183,7 @@ export function ChatInputFooter({
 						>
 							{showFocusHint && (
 								<span className="pointer-events-none absolute top-3 right-3 z-10 text-xs text-muted-foreground/50 [:focus-within>&]:hidden">
-									{focusShortcutText} to focus
+									{focusShortcutText} — фокус
 								</span>
 							)}
 							<PromptInput

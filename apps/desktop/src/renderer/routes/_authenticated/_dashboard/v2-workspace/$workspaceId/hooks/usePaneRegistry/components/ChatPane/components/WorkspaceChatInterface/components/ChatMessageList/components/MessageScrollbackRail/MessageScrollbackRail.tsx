@@ -44,11 +44,11 @@ function buildPreview(message: ChatMessage): string {
 	).length;
 	if (attachmentCount > 0) {
 		return attachmentCount === 1
-			? "Sent 1 attachment"
-			: `Sent ${attachmentCount} attachments`;
+			? "Отправлено 1 вложение"
+			: `Отправлено вложений: ${attachmentCount}`;
 	}
 
-	return "(empty message)";
+	return "(пустое сообщение)";
 }
 
 function findUserMessageElement(

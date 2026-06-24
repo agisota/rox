@@ -8,6 +8,7 @@ import {
 } from "@rox/ui/ai-elements/node";
 import { Flag } from "lucide-react";
 import type { PipelineFlowNode } from "../../graph-adapter";
+import { runStatusClass } from "../node-run-status";
 
 /**
  * A terminal response node — the pipeline's final output. Only has a target
@@ -18,7 +19,7 @@ export function ResponseNode({ data, selected }: NodeProps<PipelineFlowNode>) {
 	return (
 		<Node
 			handles={{ target: true, source: false }}
-			className={selected ? "ring-2 ring-primary" : undefined}
+			className={runStatusClass(data, selected)}
 		>
 			<NodeHeader>
 				<div className="flex items-center gap-2">

@@ -19,10 +19,7 @@ import type { ChatStatus } from "ai";
 import { motion } from "framer-motion";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type {
-	ModelOption,
-	PermissionMode,
-} from "renderer/components/Chat/ChatInterface/types";
+import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import {
@@ -33,6 +30,7 @@ import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
 import { useWorkspaceBranchTint } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useWorkspaceBranchTint";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
+import { usePermissionModePreference } from "../../hooks/usePermissionModePreference";
 import {
 	type UseChatDisplayReturn,
 	useChatDisplay,
@@ -160,7 +158,7 @@ function toErrorMessage(error: unknown): string | null {
 	if (!error) return null;
 	if (typeof error === "string") return error;
 	if (error instanceof Error) return error.message;
-	return "Unknown chat error";
+	return "Неизвестная ошибка чата";
 }
 
 const AUTO_LAUNCH_MAX_RETRIES = 3;
@@ -361,8 +359,15 @@ export function ChatPaneInterface({
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
 	);
-	const [permissionMode, setPermissionMode] =
-		useState<PermissionMode>("bypassPermissions");
+	// Permission mode is now persisted (and defaults to the safer "default" /
+	// manual-confirm) instead of being hardwired to "bypassPermissions" in
+	// component state — closing the desktop-agent security gap noted in the
+	// surfaces spec (it previously reset every session). The composer selector
+	// already lets the user change it. Wiring the chosen mode through the turn
+	// metadata so the harness enforces it requires extending the shared
+	// host-service chat schema + runtime (out of this surface's scope — tracked
+	// as needsShared).
+	const [permissionMode, setPermissionMode] = usePermissionModePreference();
 	const [submitStatus, setSubmitStatus] = useState<ChatStatus | undefined>(
 		undefined,
 	);
@@ -552,7 +557,7 @@ export function ChatPaneInterface({
 		} catch (error) {
 			setInterruptedMessage(null);
 			setRuntimeErrorMessage(
-				toErrorMessage(error) ?? "Failed to stop response",
+				toErrorMessage(error) ?? "Не удалось остановить ответ",
 			);
 			return;
 		}
@@ -639,7 +644,7 @@ export function ChatPaneInterface({
 
 	const handleShareConversation = useCallback(async () => {
 		if (!sessionId) {
-			toast.error("Chat session is still starting.");
+			toast.error("Сессия чата ещё запускается.");
 			return;
 		}
 
@@ -648,7 +653,7 @@ export function ChatPaneInterface({
 			: visibleMessages;
 		const shareMessages = getShareMessages(sourceMessages);
 		if (shareMessages.length === 0) {
-			toast.error("There are no messages to share.");
+			toast.error("Нечего публиковать.");
 			return;
 		}
 
@@ -662,12 +667,12 @@ export function ChatPaneInterface({
 			});
 			await copyToClipboard(result.url);
 			setLastSharedConversationUrl(result.url);
-			toast.success("Share link copied");
+			toast.success("Ссылка скопирована");
 			captureChatEvent("chat_session_shared", {
 				message_count: shareMessages.length,
 			});
 		} catch (error) {
-			const message = toErrorMessage(error) ?? "Failed to share chat";
+			const message = toErrorMessage(error) ?? "Не удалось поделиться диалогом";
 			setRuntimeErrorMessage(message);
 			toast.error(message);
 		} finally {
@@ -988,7 +993,7 @@ export function ChatPaneInterface({
 			options?: { trigger?: "edit" | "resend" },
 		) => {
 			if (!sessionId) {
-				throw new Error("Chat session is still starting. Please retry.");
+				throw new Error("Сессия чата ещё запускается. Повторите попытку.");
 			}
 
 			setInterruptedMessage(null);

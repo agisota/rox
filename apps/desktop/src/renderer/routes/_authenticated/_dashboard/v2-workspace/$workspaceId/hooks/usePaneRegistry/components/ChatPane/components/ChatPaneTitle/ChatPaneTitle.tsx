@@ -39,7 +39,7 @@ export function ChatPaneTitle({ context, workspaceId }: ChatPaneTitleProps) {
 			<SessionSelector
 				currentSessionId={sessionId}
 				sessions={sessionItems}
-				fallbackTitle="New Chat"
+				fallbackTitle="Новый чат"
 				onSelectSession={handleSelectSession}
 				onNewChat={handleNewChat}
 				onDeleteSession={handleDeleteSession}

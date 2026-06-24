@@ -1,5 +1,6 @@
 import { Button } from "@rox/ui/button";
 import { ScrollArea } from "@rox/ui/scroll-area";
+import { Skeleton } from "@rox/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -8,12 +9,17 @@ import { HiArrowLeft } from "react-icons/hi2";
 import { LuExternalLink, LuPlus } from "react-icons/lu";
 import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
+import { useOnlineStatus } from "renderer/hooks/useOnlineStatus";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import {
 	type LinkedIssue,
 	useNewWorkspaceDraftStore,
 } from "renderer/stores/new-workspace-draft";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
+import {
+	classifyGithubError,
+	GithubErrorCard,
+} from "../../components/TasksView/components/shared/github";
 import { Route as TasksLayoutRoute } from "../../layout";
 
 export const Route = createFileRoute(
@@ -32,6 +38,7 @@ function IssueDetailPage() {
 	const updateDraft = useNewWorkspaceDraftStore((s) => s.updateDraft);
 	const resetDraft = useNewWorkspaceDraftStore((s) => s.resetDraft);
 	const openModal = useOpenNewWorkspaceModal();
+	const isOnline = useOnlineStatus();
 
 	const backSearch = useMemo(() => {
 		const s: Record<string, string> = {};
@@ -43,7 +50,7 @@ function IssueDetailPage() {
 		return s;
 	}, [search]);
 
-	const { data, isLoading, error } = useQuery({
+	const { data, isLoading, error, refetch } = useQuery({
 		queryKey: ["issue-detail", projectId, hostUrl, issueNumber],
 		queryFn: async () => {
 			if (!hostUrl || !projectId) return null;
@@ -91,8 +98,23 @@ function IssueDetailPage() {
 
 	if (isLoading) {
 		return (
-			<div className="flex-1 flex items-center justify-center">
-				<span className="text-muted-foreground">Загрузка Issue…</span>
+			<div className="flex-1 flex flex-col min-h-0">
+				<Header
+					issueNumber={issueNumber}
+					url={null}
+					isClosed={false}
+					onBack={handleBack}
+					onAddToWorkspace={null}
+				/>
+				<div className="px-6 py-6 max-w-4xl space-y-4">
+					<Skeleton className="h-8 w-2/3" />
+					<Skeleton className="h-3.5 w-40" />
+					<div className="space-y-2 pt-2">
+						<Skeleton className="h-3.5 w-full" />
+						<Skeleton className="h-3.5 w-11/12" />
+						<Skeleton className="h-3.5 w-4/5" />
+					</div>
+				</div>
 			</div>
 		);
 	}
@@ -107,9 +129,18 @@ function IssueDetailPage() {
 					onBack={handleBack}
 					onAddToWorkspace={null}
 				/>
-				<div className="px-6 py-6 text-sm text-destructive select-text cursor-text">
-					{error instanceof Error ? error.message : "Issue не найден."}
-				</div>
+				<GithubErrorCard
+					error={
+						error instanceof Error
+							? classifyGithubError(error, isOnline)
+							: {
+									kind: "unknown",
+									message: "Issue не найден.",
+									raw: "Issue не найден.",
+								}
+					}
+					onRetry={() => void refetch()}
+				/>
 			</div>
 		);
 	}

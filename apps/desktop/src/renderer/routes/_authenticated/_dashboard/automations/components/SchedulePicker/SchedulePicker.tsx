@@ -1,6 +1,5 @@
 import {
 	buildRrule,
-	describeSchedule,
 	matchPreset,
 	type PresetMatch,
 	type Weekday,
@@ -14,9 +13,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@rox/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
+import { useQuery } from "@tanstack/react-query";
+import cronstrue from "cronstrue/i18n";
 import { useMemo, useState } from "react";
 import { LuClock } from "react-icons/lu";
 import { PickerTrigger } from "renderer/components/PickerTrigger";
+import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { cronToRrule } from "../../lib/cronToRrule";
+import { describeScheduleRu } from "../../lib/scheduleRu";
 
 type PresetKind = PresetMatch["kind"];
 
@@ -31,6 +36,8 @@ interface SchedulePickerState {
 interface SchedulePickerProps {
 	rrule: string;
 	onRruleChange: (rrule: string) => void;
+	/** IANA timezone used to preview the cron tab's next-run instants. */
+	timezone?: string;
 	className?: string;
 }
 
@@ -123,14 +130,32 @@ function parseTimeInputValue(
 	return { hour, minute };
 }
 
+function cronPreviewRu(expr: string): string | null {
+	const trimmed = expr.trim();
+	if (!trimmed) return null;
+	try {
+		return cronstrue.toString(trimmed, {
+			locale: "ru",
+			use24HourTimeFormat: true,
+			throwExceptionOnParseError: true,
+		});
+	} catch {
+		return null;
+	}
+}
+
+const DEFAULT_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
 export function SchedulePicker({
 	rrule,
 	onRruleChange,
+	timezone,
 	className,
 }: SchedulePickerProps) {
 	const [state, setState] = useState<SchedulePickerState>(() =>
 		stateFromRrule(rrule),
 	);
+	const [cronExpr, setCronExpr] = useState("0 9 * * 1-5");
 
 	const update = (patch: Partial<SchedulePickerState>) => {
 		const next = { ...state, ...patch };
@@ -138,7 +163,26 @@ export function SchedulePicker({
 		onRruleChange(rruleFromState(next));
 	};
 
-	const triggerLabel = useMemo(() => describeSchedule(rrule), [rrule]);
+	const triggerLabel = useMemo(() => describeScheduleRu(rrule), [rrule]);
+
+	const cronPreview = useMemo(() => cronPreviewRu(cronExpr), [cronExpr]);
+	const cronAsRrule = useMemo(() => cronToRrule(cronExpr), [cronExpr]);
+
+	// Preview next 5 occurrences only when the cron maps cleanly onto an RRULE
+	// the backend understands. Reuses the existing validateRrule endpoint.
+	const { data: cronValidation } = useQuery({
+		queryKey: ["automation-cron-preview", cronAsRrule, timezone ?? DEFAULT_TZ],
+		queryFn: () =>
+			apiTrpcClient.automation.validateRrule.mutate({
+				rrule: cronAsRrule as string,
+				timezone: timezone ?? DEFAULT_TZ,
+			}),
+		enabled: !!cronAsRrule,
+	});
+
+	const applyCron = () => {
+		if (cronAsRrule) onRruleChange(cronAsRrule);
+	};
 
 	return (
 		<Popover>
@@ -149,73 +193,134 @@ export function SchedulePicker({
 					label={triggerLabel}
 				/>
 			</PopoverTrigger>
-			<PopoverContent className="w-72" align="start" side="top" sideOffset={8}>
-				<div className="flex flex-col gap-3">
-					<span className="text-xs font-medium text-muted-foreground">
-						Расписание
-					</span>
+			<PopoverContent className="w-80" align="start" side="top" sideOffset={8}>
+				<Tabs defaultValue="time" className="gap-3">
+					<TabsList className="grid w-full grid-cols-2">
+						<TabsTrigger value="time">Время</TabsTrigger>
+						<TabsTrigger value="cron">Cron</TabsTrigger>
+					</TabsList>
 
-					<Select
-						value={state.kind}
-						onValueChange={(value) => update({ kind: value as PresetKind })}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{PRESET_OPTIONS.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					{state.kind === "weekly" && (
+					<TabsContent value="time" className="flex flex-col gap-3">
 						<Select
-							value={state.day}
-							onValueChange={(value) => update({ day: value as Weekday })}
+							value={state.kind}
+							onValueChange={(value) => update({ kind: value as PresetKind })}
 						>
 							<SelectTrigger className="w-full">
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								{DAY_OPTIONS.map((option) => (
+								{PRESET_OPTIONS.map((option) => (
 									<SelectItem key={option.value} value={option.value}>
 										{option.label}
 									</SelectItem>
 								))}
 							</SelectContent>
 						</Select>
-					)}
 
-					{(state.kind === "daily" ||
-						state.kind === "weekdays" ||
-						state.kind === "weekly") && (
-						<Input
-							type="time"
-							// color-scheme tells Chromium to render native controls (the
-							// clock icon) in a theme-appropriate color — without it the icon
-							// stays a dim gray regardless of background.
-							className="dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
-							value={formatTimeInputValue(state.hour, state.minute)}
-							onChange={(event) => {
-								const parsed = parseTimeInputValue(event.target.value);
-								if (parsed) update(parsed);
-							}}
-						/>
-					)}
+						{state.kind === "weekly" && (
+							<Select
+								value={state.day}
+								onValueChange={(value) => update({ day: value as Weekday })}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{DAY_OPTIONS.map((option) => (
+										<SelectItem key={option.value} value={option.value}>
+											{option.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
 
-					{state.kind === "custom" && (
+						{(state.kind === "daily" ||
+							state.kind === "weekdays" ||
+							state.kind === "weekly") && (
+							<Input
+								type="time"
+								// color-scheme tells Chromium to render native controls (the
+								// clock icon) in a theme-appropriate color — without it the icon
+								// stays a dim gray regardless of background.
+								className="dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+								value={formatTimeInputValue(state.hour, state.minute)}
+								onChange={(event) => {
+									const parsed = parseTimeInputValue(event.target.value);
+									if (parsed) update(parsed);
+								}}
+							/>
+						)}
+
+						{state.kind === "custom" && (
+							<Input
+								autoFocus
+								placeholder="FREQ=WEEKLY;BYDAY=FR;BYHOUR=9;BYMINUTE=0"
+								className="font-mono text-xs"
+								value={state.customRrule}
+								onChange={(event) =>
+									update({ customRrule: event.target.value })
+								}
+							/>
+						)}
+					</TabsContent>
+
+					<TabsContent value="cron" className="flex flex-col gap-2">
 						<Input
-							autoFocus
-							placeholder="FREQ=WEEKLY;BYDAY=FR;BYHOUR=9;BYMINUTE=0"
+							placeholder="0 9 * * 1-5"
 							className="font-mono text-xs"
-							value={state.customRrule}
-							onChange={(event) => update({ customRrule: event.target.value })}
+							value={cronExpr}
+							onChange={(event) => setCronExpr(event.target.value)}
 						/>
-					)}
-				</div>
+
+						<div className="min-h-[1.25rem] text-xs">
+							{cronPreview ? (
+								<span className="text-foreground">{cronPreview}</span>
+							) : (
+								<span className="text-destructive">
+									Не удалось распознать cron-выражение
+								</span>
+							)}
+						</div>
+
+						{cronPreview && !cronAsRrule && (
+							<p className="text-[11px] leading-snug text-muted-foreground">
+								Это расписание нельзя сохранить как RRULE. Используйте вкладку
+								«Время» или поле RRULE для более сложных правил.
+							</p>
+						)}
+
+						{cronAsRrule && cronValidation?.nextRuns?.length ? (
+							<div className="flex flex-col gap-1 rounded-md border border-border/60 bg-card/40 p-2">
+								<span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+									Следующие 5 запусков
+								</span>
+								<ul className="flex flex-col gap-0.5 font-mono text-[11px] text-muted-foreground">
+									{cronValidation.nextRuns.slice(0, 5).map((iso) => (
+										<li key={String(iso)}>
+											{new Intl.DateTimeFormat("ru", {
+												timeZone: timezone ?? DEFAULT_TZ,
+												day: "numeric",
+												month: "short",
+												hour: "2-digit",
+												minute: "2-digit",
+											}).format(new Date(iso))}
+										</li>
+									))}
+								</ul>
+							</div>
+						) : null}
+
+						<button
+							type="button"
+							disabled={!cronAsRrule}
+							onClick={applyCron}
+							className="mt-0.5 inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							Применить расписание
+						</button>
+					</TabsContent>
+				</Tabs>
 			</PopoverContent>
 		</Popover>
 	);

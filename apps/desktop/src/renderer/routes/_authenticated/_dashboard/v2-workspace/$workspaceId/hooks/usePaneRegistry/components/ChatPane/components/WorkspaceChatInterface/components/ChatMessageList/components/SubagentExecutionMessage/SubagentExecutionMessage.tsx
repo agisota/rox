@@ -23,9 +23,9 @@ interface SubagentExecutionMessageProps {
 }
 
 function getStatusLabel(status: "running" | "completed" | "error"): string {
-	if (status === "running") return "Running";
-	if (status === "completed") return "Completed";
-	return "Failed";
+	if (status === "running") return "Выполняется";
+	if (status === "completed") return "Завершено";
+	return "Ошибка";
 }
 
 function getStatusClassName(status: "running" | "completed" | "error"): string {

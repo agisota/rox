@@ -4,10 +4,10 @@ import { useEffect, useMemo } from "react";
 import { env } from "renderer/env.renderer";
 import { getHostServiceHeaders } from "renderer/lib/host-service-auth";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
-import { CanvasWorkspaceView } from "renderer/screens/canvas/CanvasWorkspaceView";
 import { E2E_CANVAS_FIXTURE } from "shared/constants";
 import type { AccessibleV2Workspace } from "../v2-workspaces/hooks/useAccessibleV2Workspaces";
 import { useAccessibleV2Workspaces } from "../v2-workspaces/hooks/useAccessibleV2Workspaces";
+import { CanvasSurface } from "./CanvasSurface";
 import { selectDefaultCanvasWorkspace } from "./canvasWorkspaceSelection";
 
 export const Route = createFileRoute("/_authenticated/_dashboard/canvas/")({
@@ -84,13 +84,13 @@ function CanvasPage() {
 	}, [selectedWorkspace]);
 
 	if (!selectedWorkspace) {
-		return <CanvasWorkspaceView />;
+		return <CanvasSurface />;
 	}
 
 	if (!activeHostUrl) {
 		return (
-			<div className="flex h-full w-full items-center justify-center bg-background text-sm text-muted-foreground">
-				Starting local Canvas workspace...
+			<div className="flex h-full w-full items-center justify-center bg-background text-muted-foreground text-sm">
+				Запуск локального холста…
 			</div>
 		);
 	}
@@ -101,7 +101,7 @@ function CanvasPage() {
 			hostUrl={activeHostUrl}
 			headers={() => getHostServiceHeaders(activeHostUrl)}
 		>
-			<CanvasWorkspaceView workspaceId={selectedWorkspace.id} />
+			<CanvasSurface workspaceId={selectedWorkspace.id} />
 		</WorkspaceTrpcProvider>
 	);
 }

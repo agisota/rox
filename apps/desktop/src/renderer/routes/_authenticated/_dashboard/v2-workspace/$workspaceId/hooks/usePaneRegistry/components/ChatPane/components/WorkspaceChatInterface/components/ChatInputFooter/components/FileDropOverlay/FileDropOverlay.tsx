@@ -12,9 +12,11 @@ export function FileDropOverlay({ visible }: FileDropOverlayProps) {
 			<div className="flex size-8 items-center justify-center rounded-full bg-muted-foreground/20">
 				<UploadIcon className="size-4 text-muted-foreground" />
 			</div>
-			<p className="font-medium text-foreground text-sm">Drop files here</p>
+			<p className="font-medium text-foreground text-sm">
+				Перетащите файлы сюда
+			</p>
 			<p className="text-muted-foreground text-xs">
-				Images, PDFs, text files, or folders
+				Изображения, PDF, текстовые файлы или папки
 			</p>
 		</div>
 	);
