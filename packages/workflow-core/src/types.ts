@@ -24,7 +24,15 @@ export type CoreBlockType =
 	| "error_boundary";
 
 export interface RoxBlockState {
-	/** Block type. Either a {@link CoreBlockType} or a `skill_call:<slug>` id. */
+	/**
+	 * Block type. A registry-validated node-type id (see
+	 * `@rox/workflow-core/registry`): one of the built-in types (the legacy
+	 * {@link CoreBlockType} members plus any catalog node type), or a dynamic
+	 * `skill_call:<slug>` id. Kept a plain `string` (not a union) so the
+	 * data-driven registry can add node types without a type/migration change;
+	 * `subBlocks` is already `Record<string, unknown>` (jsonb), so widening is
+	 * additive and backward-compatible.
+	 */
 	type: string;
 	/** Optional human-facing name shown on the canvas. */
 	name?: string;

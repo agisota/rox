@@ -1,5 +1,7 @@
 import { isSkillCallType } from "../blocks/blockDefinition";
 import { WorkflowErrorCode, type WorkflowIssue } from "../errors";
+import type { NodeTypeDefinition } from "../registry/nodeTypeDefinition";
+import { validateNodeConfig } from "../registry/validateNodeConfig";
 import { validateSkillInputMapping } from "../schema/validateSkillInputMapping";
 import type {
 	JsonSchema,
@@ -21,6 +23,22 @@ export interface ValidateGraphOptions {
 	strictBlockTypes?: boolean;
 	/** Predicate for known block types (used only when strictBlockTypes). */
 	isKnownBlockType?: (type: string) => boolean;
+	/**
+	 * Resolve a block type to its registry definition. When provided, registered
+	 * blocks get registry-driven required-config + (basic) port checks. Unknown
+	 * types are skipped (forward-compatible). Pass `getNodeType` from
+	 * `@rox/workflow-core/registry`.
+	 *
+	 * Opt-in (default: undefined) so the legacy default behaviour — and every
+	 * existing graph/test — is unchanged.
+	 */
+	resolveNodeType?: (type: string) => NodeTypeDefinition | undefined;
+	/**
+	 * When a {@link resolveNodeType} is provided, also enforce that required input
+	 * ports are wired (an incoming edge exists). Default: true. Required-config
+	 * validation always runs when `resolveNodeType` is provided.
+	 */
+	checkPorts?: boolean;
 }
 
 function isEnabled(state: RoxWorkflowState, id: string): boolean {
@@ -118,7 +136,10 @@ export function validateGraph(
 		}
 	}
 
-	// 5. Per-block checks: unknown types + skill input mappings.
+	// Index incoming edges per target for the registry port check.
+	const incomingTargets = new Set(state.edges.map((edge) => edge.target));
+
+	// 5. Per-block checks: unknown types + skill input mappings + registry config.
 	for (const id of ids) {
 		const block = blocks[id];
 		if (!block) continue;
@@ -134,6 +155,27 @@ export function validateGraph(
 				message: `Unknown block type "${block.type}".`,
 			});
 		}
+
+		// Registry-driven required-config + basic port checks (opt-in). Only runs
+		// for registered types; unknown types are skipped (forward-compatible) and
+		// disabled blocks are never config-flagged.
+		const nodeType = options.resolveNodeType?.(block.type);
+		if (nodeType && isEnabled(state, id)) {
+			issues.push(...validateNodeConfig(nodeType, block, id));
+
+			if (options.checkPorts !== false) {
+				const requiresIncoming = nodeType.inputs.some((port) => port.required);
+				if (requiresIncoming && !incomingTargets.has(id)) {
+					issues.push({
+						code: WorkflowErrorCode.MISSING_REQUIRED_PORT,
+						severity: "error",
+						blockId: id,
+						message: `Узел "${block.name ?? id}" требует входящую связь.`,
+					});
+				}
+			}
+		}
+
 		if (isSkillCallType(block.type) && options.resolveSkillInputSchema) {
 			const inputSchema = options.resolveSkillInputSchema(block.type);
 			if (inputSchema) {

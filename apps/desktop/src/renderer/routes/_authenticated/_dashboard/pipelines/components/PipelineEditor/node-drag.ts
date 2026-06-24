@@ -8,14 +8,13 @@
  * just a typed `dataTransfer` payload.
  */
 
-import type { PipelineNodeKind } from "./graph-adapter";
-
 /** Custom MIME type so we only accept our own pipeline-node drags. */
 export const NODE_DRAG_MIME = "application/rox-pipeline-node";
 
 /** The payload carried on a palette drag. */
 export type NodeDragPayload = {
-	kind: PipelineNodeKind;
+	/** Registry node-type id to add (any registered type, not just the legacy 5). */
+	kind: string;
 	/** Role slug for an `agent_run` drag (binds the node to a role). */
 	roleSlug?: string;
 	/** Human label to seed the new node with. */
