@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 /**
- * M1 — the Drizzle-backed `emitToUnifiedInbox` must NOT 500 when two rox
- * recipients receive the same external Message-ID (the GLOBAL
- * `(transport, external_id)` unique would otherwise reject the second insert),
- * and it must thread inbound mail on the SAME participant-set dedup key the
- * comms-core router uses (so an email merges with the matching in-app DM).
+ * The Drizzle-backed `emitToUnifiedInbox` threads inbound mail on the SAME
+ * participant-set dedup key the comms-core router uses (so an email merges with
+ * the matching in-app DM), and dedups the inbound copy PER ORG: when the same
+ * RFC Message-ID is delivered to two rox recipients in DIFFERENT orgs (the
+ * worker POSTs one envelope per recipient), each org gets its OWN
+ * thread/message/participant copy — the dedup is scoped to
+ * `(organization_id, transport, external_id)`, so recipient #2 is no longer
+ * short-circuited out of their unified inbox. A same-owner/same-org redelivery
+ * still de-dupes (no duplicate message).
  *
  * `@rox/db/client` is stubbed so the suite needs no live database (mirrors the
  * trpc comms/mail harness). The fake tracks inserted comms_messages and replays
@@ -54,6 +58,15 @@ const state: {
 	// `[]` models a conflict no-op (no new row → no publish).
 	messageReturning: AnyRow[];
 	conflictHits: number;
+	// Column names extracted from each `.where(...)` call, in call order — lets a
+	// test assert a SELECT is org-scoped (the dup-check must filter on
+	// organization_id, not just transport+external_id) without parsing drizzle's
+	// SQL AST shape directly.
+	whereColsLog: string[][];
+	// The conflict target column names passed to the message insert's
+	// `.onConflictDoNothing({ target })`, so a test can assert the arbiter is the
+	// org-scoped unique (organization_id, transport, external_id).
+	messageConflictTargetCols: string[];
 } = {
 	selectQueue: [],
 	insertedThreads: [],
@@ -62,14 +75,45 @@ const state: {
 	threadReturning: [{ id: "thread-1" }],
 	messageReturning: [{ id: "comms-msg-new" }],
 	conflictHits: 0,
+	whereColsLog: [],
+	messageConflictTargetCols: [],
 };
 
+/**
+ * Pull the column names out of a drizzle `SQL`/column expression (the value
+ * passed to `.where(...)` or an `onConflict` `target`). drizzle wraps each column
+ * reference in an object carrying `{ name, table }`; SQL conditions nest them in
+ * a `queryChunks` array. Walk both so the fake can record which columns a query
+ * filters on without coupling to the cyclic SQL internals.
+ */
+function extractColumnNames(node: unknown): string[] {
+	const out: string[] = [];
+	const seen = new Set<unknown>();
+	const visit = (n: unknown): void => {
+		if (!n || typeof n !== "object" || seen.has(n)) return;
+		seen.add(n);
+		const anyN = n as Record<string, unknown>;
+		if (typeof anyN.name === "string" && "table" in anyN) {
+			out.push(anyN.name);
+		}
+		const chunks = anyN.queryChunks;
+		if (Array.isArray(chunks)) for (const c of chunks) visit(c);
+	};
+	if (Array.isArray(node)) for (const n of node) visit(n);
+	else visit(node);
+	return out;
+}
+
 function selectBuilder(rows: AnyRow[]) {
-	const step = (): Promise<AnyRow[]> & Record<string, () => unknown> => {
+	const step = (): Promise<AnyRow[]> &
+		Record<string, (...a: unknown[]) => unknown> => {
 		const p = Promise.resolve(rows) as Promise<AnyRow[]> &
-			Record<string, () => unknown>;
+			Record<string, (...a: unknown[]) => unknown>;
 		p.from = step;
-		p.where = step;
+		p.where = (cond: unknown) => {
+			state.whereColsLog.push(extractColumnNames(cond));
+			return step();
+		};
 		p.orderBy = step;
 		p.innerJoin = step;
 		p.leftJoin = step;
@@ -114,8 +158,15 @@ function insertChain() {
 			const returningRows =
 				kind === "message" ? state.messageReturning : state.threadReturning;
 			const chain = {
-				onConflictDoNothing: () => {
-					if (kind === "message") state.conflictHits += 1;
+				onConflictDoNothing: (opts?: { target?: unknown }) => {
+					if (kind === "message") {
+						state.conflictHits += 1;
+						// Record the arbiter columns so a test can assert the message
+						// dedup conflict targets the org-scoped unique.
+						if (opts?.target !== undefined) {
+							state.messageConflictTargetCols = extractColumnNames(opts.target);
+						}
+					}
 					return {
 						returning: () => Promise.resolve(returningRows),
 					};
@@ -168,9 +219,23 @@ beforeEach(() => {
 	state.threadReturning = [{ id: "thread-1" }];
 	state.messageReturning = [{ id: "comms-msg-new" }];
 	state.conflictHits = 0;
+	state.whereColsLog = [];
+	state.messageConflictTargetCols = [];
 	publishCommsMessageMock.mockClear();
 	resolveIdentityMock.mockClear();
 });
+
+/**
+ * Find the columns of the inbound dedup SELECT — the `.where(...)` that filters
+ * comms_messages by `transport` + `external_id`. Returns its full column-name
+ * set so a test can assert it is org-scoped (must also include
+ * `organization_id`).
+ */
+function dupCheckWhereCols(): string[] | undefined {
+	return state.whereColsLog.find(
+		(cols) => cols.includes("transport") && cols.includes("external_id"),
+	);
+}
 
 describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 	test("first recipient: creates a thread + inserts the comms message", async () => {
@@ -188,6 +253,17 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		expect(state.insertedMessages[0]?.externalId).toBe(baseArgs.rfcMessageId);
 		// dedup key is a participant-set key, NOT the raw Message-ID.
 		expect(state.insertedThreads[0]?.dedupKey).toContain("parts:");
+
+		// FIX (per-org dedup): the inbound dup-check SELECT must be org-scoped —
+		// it filters on organization_id alongside transport + external_id — so a
+		// row another org created for the same Message-ID never short-circuits this
+		// org's copy. Backed by the org-scoped unique index.
+		expect(dupCheckWhereCols()).toContain("organization_id");
+		// And the message insert's conflict arbiter targets the same org-scoped
+		// unique (organization_id, transport, external_id), not the old global one.
+		expect(state.messageConflictTargetCols).toContain("organization_id");
+		expect(state.messageConflictTargetCols).toContain("transport");
+		expect(state.messageConflictTargetCols).toContain("external_id");
 
 		// M1: an external (non-rox) sender resolves-or-creates a D6 contact node and
 		// the message is attributed to it (authorContactEntityId), not left unauthored.
@@ -236,19 +312,68 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		);
 	});
 
-	test("second recipient, same Message-ID: short-circuits, no second message insert (no 500)", async () => {
+	test("same owner/org redelivery, same Message-ID: short-circuits, no second message insert (idempotent)", async () => {
 		const db = createMailIngestDb();
-		// The dup-check select finds the comms message the first recipient created.
+		// The org-scoped dup-check select finds the comms message THIS owner's org
+		// already created (a provider redelivery of the same Message-ID to the same
+		// mailbox). Re-emitting must be a no-op — no duplicate thread/message/event.
 		state.selectQueue = [
-			[{ id: "comms-msg-1" }], // dup check → already exists globally
+			[{ id: "comms-msg-1" }], // org-scoped dup check → already exists for this org
 		];
-		await db.emitToUnifiedInbox({ ...baseArgs, ownerUserId: "user-2" });
+		await db.emitToUnifiedInbox(baseArgs);
 
 		// No thread or message insert attempted on the duplicate path.
 		expect(state.insertedThreads).toHaveLength(0);
 		expect(state.insertedMessages).toHaveLength(0);
 		// …and no live event re-pushed for the dedup short-circuit.
 		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+	});
+
+	test("FIX (per-org dedup): a SECOND rox recipient in a DIFFERENT org gets their own thread + participant + message (visible in their unified inbox)", async () => {
+		const db = createMailIngestDb();
+		// Recipient #1 (org-1) already created their copy. Recipient #2 lives in
+		// org-2 and the worker POSTs a separate envelope for them with the SAME
+		// RFC Message-ID. With the dedup now scoped to (organization_id, transport,
+		// external_id), the org-2 dup-check finds NOTHING (recipient #1's row is in
+		// org-1), so recipient #2 must get their OWN thread, participant row, and
+		// comms_message — otherwise the thread is invisible in their unified inbox
+		// (listThreads omits it, getThread FORBIDDEN, SSE gate drops it).
+		state.selectQueue = [
+			[], // org-scoped dup check (org-2) → none for this org
+			[], // sender @rox.one lookup → external sender
+			[], // thread by dedup key (org-2) → none → create
+		];
+		await db.emitToUnifiedInbox({
+			...baseArgs,
+			organizationId: "org-2",
+			ownerUserId: "user-2",
+		});
+
+		// Recipient #2 gets their own per-org thread + message.
+		expect(state.insertedThreads).toHaveLength(1);
+		expect(state.insertedThreads[0]?.organizationId).toBe("org-2");
+		expect(state.insertedMessages).toHaveLength(1);
+		expect(state.insertedMessages[0]?.organizationId).toBe("org-2");
+		expect(state.insertedMessages[0]?.transport).toBe("email");
+		expect(state.insertedMessages[0]?.externalId).toBe(baseArgs.rfcMessageId);
+
+		// FIX: recipient #2 (the mailbox owner) is a comms_participant in org-2, so
+		// their participant-scoped listThreads/getThread surface the email and the
+		// SSE leak-gate forwards it.
+		const ownerParticipant = state.insertedParticipants.find(
+			(p) => p.userId === "user-2",
+		);
+		expect(ownerParticipant).toBeDefined();
+		expect(ownerParticipant?.organizationId).toBe("org-2");
+
+		// A new row for recipient #2's org → exactly one live SSE event for them.
+		expect(publishCommsMessageMock).toHaveBeenCalledTimes(1);
+		expect(publishCommsMessageMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				organizationId: "org-2",
+				participantUserIds: ["user-2"],
+			}),
+		);
 	});
 
 	test("conflict no-op (concurrent insert lost the race): no live event published", async () => {
