@@ -8,7 +8,7 @@ import { analyticsRouter } from "./router/analytics";
 import { apiKeyRouter } from "./router/api-key";
 import { automationRouter } from "./router/automation";
 import { calendarRouter } from "./router/calendar";
-import { chatRouter } from "./router/chat";
+import { chatLabelsRouter, chatRouter } from "./router/chat";
 import { collabRouter } from "./router/collab";
 import { commsRouter } from "./router/comms";
 import { dashboardRouter } from "./router/dashboard";
@@ -67,6 +67,7 @@ export const appRouter = createTRPCRouter({
 	automation: automationRouter,
 	calendar: calendarRouter,
 	chat: chatRouter,
+	chatLabels: chatLabelsRouter,
 	collab: collabRouter,
 	comms: commsRouter,
 	device: deviceRouter,

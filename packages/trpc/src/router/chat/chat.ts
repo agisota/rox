@@ -13,6 +13,10 @@ import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgId } from "../utils/active-org";
 import {
+	buildLabelFilterConditions,
+	listSessionsSchema,
+} from "./labels-schema";
+import {
 	type ChatCompletionResult,
 	deriveSessionTitle,
 	persistQuickChatTurns,
@@ -37,66 +41,77 @@ export const chatRouter = {
 		return { models: [...AVAILABLE_CHAT_MODELS] };
 	}),
 
-	listSessions: protectedProcedure.query(async ({ ctx }) => {
-		const organizationId = ctx.activeOrganizationId;
+	listSessions: protectedProcedure
+		.input(listSessionsSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = ctx.activeOrganizationId;
 
-		if (!organizationId) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "No active organization selected",
+			if (!organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "No active organization selected",
+				});
+			}
+
+			// Optional label filters (F10/F17). Absent params add no conditions, so
+			// the query is identical to the previous behaviour (backward compatible).
+			const labelConditions = buildLabelFilterConditions({
+				labelsColumn: chatSessions.labels,
+				labelsAny: input?.labelsAny,
+				labelsAll: input?.labelsAll,
 			});
-		}
 
-		const sessions = await db
-			.select({
-				id: chatSessions.id,
-				title: chatSessions.title,
-				workspaceId: chatSessions.workspaceId,
-				v2WorkspaceId: chatSessions.v2WorkspaceId,
-				status: chatSessions.status,
-				labels: chatSessions.labels,
-				createdAt: chatSessions.createdAt,
-				updatedAt: chatSessions.updatedAt,
-				lastActiveAt: chatSessions.lastActiveAt,
-			})
-			.from(chatSessions)
-			.where(
-				and(
-					eq(chatSessions.createdBy, ctx.session.user.id),
-					eq(chatSessions.organizationId, organizationId),
-				),
-			)
-			.orderBy(desc(chatSessions.lastActiveAt))
-			.limit(50);
+			const sessions = await db
+				.select({
+					id: chatSessions.id,
+					title: chatSessions.title,
+					workspaceId: chatSessions.workspaceId,
+					v2WorkspaceId: chatSessions.v2WorkspaceId,
+					status: chatSessions.status,
+					labels: chatSessions.labels,
+					createdAt: chatSessions.createdAt,
+					updatedAt: chatSessions.updatedAt,
+					lastActiveAt: chatSessions.lastActiveAt,
+				})
+				.from(chatSessions)
+				.where(
+					and(
+						eq(chatSessions.createdBy, ctx.session.user.id),
+						eq(chatSessions.organizationId, organizationId),
+						...labelConditions,
+					),
+				)
+				.orderBy(desc(chatSessions.lastActiveAt))
+				.limit(50);
 
-		if (sessions.length === 0) {
-			return { sessions, usageRequests: [] };
-		}
+			if (sessions.length === 0) {
+				return { sessions, usageRequests: [] };
+			}
 
-		const sessionIds = sessions.map((session) => session.id);
-		const usageRows = await db
-			.select({
-				id: usageRequests.id,
-				chatSessionId: usageRequests.chatSessionId,
-				modelId: usageRequests.modelId,
-				tokensIn: usageRequests.tokensIn,
-				tokensOut: usageRequests.tokensOut,
-				usdCost: usageRequests.usdCost,
-				roxCost: usageRequests.roxCost,
-				trace: usageRequests.trace,
-				createdAt: usageRequests.createdAt,
-			})
-			.from(usageRequests)
-			.where(
-				and(
-					eq(usageRequests.userId, ctx.session.user.id),
-					inArray(usageRequests.chatSessionId, sessionIds),
-				),
-			)
-			.orderBy(usageRequests.createdAt);
+			const sessionIds = sessions.map((session) => session.id);
+			const usageRows = await db
+				.select({
+					id: usageRequests.id,
+					chatSessionId: usageRequests.chatSessionId,
+					modelId: usageRequests.modelId,
+					tokensIn: usageRequests.tokensIn,
+					tokensOut: usageRequests.tokensOut,
+					usdCost: usageRequests.usdCost,
+					roxCost: usageRequests.roxCost,
+					trace: usageRequests.trace,
+					createdAt: usageRequests.createdAt,
+				})
+				.from(usageRequests)
+				.where(
+					and(
+						eq(usageRequests.userId, ctx.session.user.id),
+						inArray(usageRequests.chatSessionId, sessionIds),
+					),
+				)
+				.orderBy(usageRequests.createdAt);
 
-		return { sessions, usageRequests: usageRows };
-	}),
+			return { sessions, usageRequests: usageRows };
+		}),
 
 	getSessionDetail: protectedProcedure
 		.input(z.object({ sessionId: z.uuid() }))
