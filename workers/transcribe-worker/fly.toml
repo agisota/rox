@@ -1,0 +1,47 @@
+# Fly config for the transcribe-worker DISPATCHER.
+#
+# This is a WORKER, not a public HTTP service: it polls LiveKit for active org voice
+# rooms and spawns one streaming transcription child per room. It serves NO public
+# traffic. A single always-on machine runs the dispatcher; the children are OS
+# processes inside that machine, not separate Fly machines.
+#
+# A minimal internal /health server runs because PORT is set below, so Fly can health
+# check the machine WITHOUT exposing a public service. The check is a machine-level
+# `[[services.tcp_checks]]`-style http check bound to the internal port only.
+#
+# SECRETS ARE NOT IN THIS FILE. Only non-secret config lives in [env]. Set secrets
+# with `fly secrets set ...` (see DEPLOY.md): DEEPGRAM_API_KEY, LIVEKIT_API_KEY,
+# LIVEKIT_API_SECRET, LIVEKIT_URL, ROX_API_URL, TRANSCRIBE_INGEST_SECRET.
+
+app = "rox-transcribe-worker"
+primary_region = "sjc" # co-located with apps/relay's primary region.
+kill_signal = "SIGTERM" # the dispatcher traps SIGTERM and drains its children.
+kill_timeout = "30s" # give children time to leave their LiveKit rooms cleanly.
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # Non-secret tuning only. Secrets come from `fly secrets set` (see DEPLOY.md).
+  DEEPGRAM_MODEL = "nova-3"
+  DEEPGRAM_LANGUAGE = "multi"
+  # Enables the internal /health server in the dispatcher for the Fly check below.
+  # This is the INTERNAL port only — no [http_service] block, so nothing is public.
+  PORT = "8080"
+
+# Single always-on machine. No autoscaling, no scale-to-zero: the dispatcher must
+# always be polling so a newly-opened voice room is transcribed within one poll.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
+
+# Machine-level health check against the INTERNAL /health port (not a public
+# service). Reports 200 when every required secret/url is present, 503 otherwise.
+[checks.health]
+  type = "http"
+  port = 8080
+  method = "GET"
+  path = "/health"
+  interval = "15s"
+  timeout = "2s"
+  grace_period = "20s"
