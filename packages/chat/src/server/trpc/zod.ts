@@ -1,11 +1,13 @@
-import type { createMastraCode } from "mastracode";
+import type { Engine } from "@rox/chat/server/engine";
 import { z } from "zod";
 
-type Harness = Awaited<ReturnType<typeof createMastraCode>>["harness"];
-type SendMessagePayload = Parameters<Harness["sendMessage"]>[0];
-type ApprovalPayload = Parameters<Harness["respondToToolApproval"]>[0];
-type QuestionPayload = Parameters<Harness["respondToQuestion"]>[0];
-type PlanPayload = Parameters<Harness["respondToPlanApproval"]>[0];
+// Derive the tRPC input payload types from the agent Engine surface so the zod
+// schemas below stay in lockstep with the engine's accepted shapes. The schemas
+// themselves are unchanged — `Engine`'s method params mirror the harness 1:1.
+type SendMessagePayload = Parameters<Engine["sendMessage"]>[0];
+type ApprovalPayload = Parameters<Engine["respondToToolApproval"]>[0];
+type QuestionPayload = Parameters<Engine["respondToQuestion"]>[0];
+type PlanPayload = Parameters<Engine["respondToPlanApproval"]>[0];
 
 export const searchFilesInput = z.object({
 	rootPath: z.string(),

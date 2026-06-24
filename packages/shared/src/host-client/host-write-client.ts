@@ -55,9 +55,9 @@ export type HostAgentRunResult =
 
 /**
  * Result of {@link HostChatWriteNamespace.sendMessage}. The host's
- * `chat.sendMessage` mutation returns `RuntimeHarness.sendMessage`'s opaque
- * result (`runtime/chat/chat.ts:786-822`); like other hand-typed host outputs we
- * keep it boundary-opaque rather than re-deriving the harness's internal shape.
+ * `chat.sendMessage` mutation returns the agent engine's `sendMessage` opaque
+ * result (`runtime/chat/chat.ts`); like other hand-typed host outputs we keep it
+ * boundary-opaque rather than re-deriving the engine's internal shape.
  */
 export type HostChatSendResult = unknown;
 

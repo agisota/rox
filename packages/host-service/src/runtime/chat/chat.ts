@@ -6,37 +6,30 @@ import {
 	getSlashCommands as getSlashCommandsFromCwd,
 	resolveSlashCommand as resolveSlashCommandFromCwd,
 } from "@rox/chat/server/desktop";
+import type { Engine, EngineBundle } from "@rox/chat/server/engine";
+import { createEngine } from "@rox/chat/server/engine";
 import {
 	isRoxHouseModel,
 	resolveChatWireModelId,
 	resolveRoxFallbackWireModelId,
 } from "@rox/shared/chat-models";
 import { eq } from "drizzle-orm";
-import { createMastraCode } from "mastracode";
 import type { HostDb } from "../../db";
 import { workspaces } from "../../db/schema";
 import type { ModelProviderRuntimeResolver } from "../../providers/model-providers";
 
-type RuntimeHarness = Awaited<ReturnType<typeof createMastraCode>>["harness"];
-type RuntimeMcpManager = Awaited<
-	ReturnType<typeof createMastraCode>
->["mcpManager"];
-type RuntimeHookManager = Awaited<
-	ReturnType<typeof createMastraCode>
->["hookManager"];
-type RuntimeDisplayState = ReturnType<RuntimeHarness["getDisplayState"]>;
-type RuntimeMessages = Awaited<ReturnType<RuntimeHarness["listMessages"]>>;
+type RuntimeEngine = Engine;
+type RuntimeMcpManager = EngineBundle["mcpManager"];
+type RuntimeHookManager = EngineBundle["hookManager"];
+type RuntimeDisplayState = ReturnType<RuntimeEngine["getDisplayState"]>;
+type RuntimeMessages = Awaited<ReturnType<RuntimeEngine["listMessages"]>>;
 type RuntimeSendMessageResult = Awaited<
-	ReturnType<RuntimeHarness["sendMessage"]>
+	ReturnType<RuntimeEngine["sendMessage"]>
 >;
-type RuntimeApprovalResult = Awaited<
-	ReturnType<RuntimeHarness["respondToToolApproval"]>
->;
-type RuntimeQuestionResult = Awaited<
-	ReturnType<RuntimeHarness["respondToQuestion"]>
->;
+type RuntimeApprovalResult = ReturnType<RuntimeEngine["respondToToolApproval"]>;
+type RuntimeQuestionResult = ReturnType<RuntimeEngine["respondToQuestion"]>;
 type RuntimePlanResult = Awaited<
-	ReturnType<RuntimeHarness["respondToPlanApproval"]>
+	ReturnType<RuntimeEngine["respondToPlanApproval"]>
 >;
 type ChatThinkingLevel = "off" | "low" | "medium" | "high" | "xhigh";
 
@@ -123,7 +116,7 @@ interface RuntimeSession {
 	sessionId: string;
 	workspaceId: string;
 	cwd: string;
-	harness: RuntimeHarness;
+	engine: RuntimeEngine;
 	mcpManager: RuntimeMcpManager;
 	hookManager: RuntimeHookManager;
 	lastErrorMessage: string | null;
@@ -154,7 +147,7 @@ function respondToQuestionWithOptimisticState(
 
 	let responsePromise: Promise<RuntimeQuestionResult>;
 	responsePromise = Promise.resolve()
-		.then(() => runtime.harness.respondToQuestion(payload))
+		.then(() => runtime.engine.respondToQuestion(payload))
 		.catch((error) => {
 			if (
 				runtime.pendingQuestionResponses.get(questionId) === responsePromise
@@ -177,46 +170,6 @@ function respondToQuestionWithOptimisticState(
 		});
 	runtime.pendingQuestionResponses.set(questionId, responsePromise);
 	return responsePromise;
-}
-
-interface RuntimeStoredMessage {
-	id: string;
-	role: string;
-}
-
-interface RuntimeStoredThread {
-	id: string;
-	resourceId: string;
-	title?: string;
-}
-
-interface RuntimeMemoryStore {
-	getThreadById(args: {
-		threadId: string;
-	}): Promise<RuntimeStoredThread | null>;
-	listMessages(args: {
-		threadId: string;
-		perPage: false;
-		orderBy: { field: "createdAt"; direction: "ASC" };
-	}): Promise<{ messages: RuntimeStoredMessage[] }>;
-	cloneThread(args: {
-		sourceThreadId: string;
-		resourceId?: string;
-		title?: string;
-		options?: {
-			messageFilter?: {
-				messageIds?: string[];
-			};
-		};
-	}): Promise<{ thread: RuntimeStoredThread }>;
-}
-
-interface HarnessWithConfig {
-	config?: {
-		storage?: {
-			getStore: (domain: "memory") => Promise<RuntimeMemoryStore | null>;
-		};
-	};
 }
 
 export interface ChatRuntimeManagerOptions {
@@ -320,34 +273,17 @@ function buildRoxFallbackState(
 	return { fallbackWireModelId, payload, attempted: false };
 }
 
-async function getRuntimeMemoryStore(
-	runtime: RuntimeSession,
-): Promise<RuntimeMemoryStore> {
-	const harness = runtime.harness as unknown as HarnessWithConfig;
-	const storage = harness.config?.storage;
-	if (!storage) {
-		throw new Error("Mastra storage is not configured for this session");
-	}
-
-	const memoryStore = await storage.getStore("memory");
-	if (!memoryStore) {
-		throw new Error("Mastra memory storage is unavailable for this session");
-	}
-
-	return memoryStore;
-}
-
 async function restartRuntimeFromUserMessage(
 	runtime: RuntimeSession,
 	input: RestartPayload,
 	runtimeResolver: ModelProviderRuntimeResolver,
 ): Promise<void> {
-	const threadId = runtime.harness.getCurrentThreadId();
+	const threadId = runtime.engine.getCurrentThreadId();
 	if (!threadId) {
 		throw new Error("No active Mastra thread is available for editing");
 	}
 
-	const memoryStore = await getRuntimeMemoryStore(runtime);
+	const memoryStore = await runtime.engine.getMemoryStore();
 	const sourceThread = await memoryStore.getThreadById({ threadId });
 	if (!sourceThread) {
 		throw new Error(`Mastra thread not found: ${threadId}`);
@@ -383,8 +319,8 @@ async function restartRuntimeFromUserMessage(
 		},
 	});
 
-	runtime.harness.abort();
-	await runtime.harness.switchThread({ threadId: clonedThread.thread.id });
+	runtime.engine.abort();
+	await runtime.engine.switchThread({ threadId: clonedThread.thread.id });
 
 	const selectedModel = input.metadata?.model?.trim();
 	if (selectedModel) {
@@ -392,7 +328,7 @@ async function restartRuntimeFromUserMessage(
 		// switch to/from the Rox house model points the OpenAI-compatible client
 		// at the right endpoint + key for this turn.
 		await runtimeResolver.prepareRuntimeEnv({ selectedModelId: selectedModel });
-		await runtime.harness.switchModel({
+		await runtime.engine.switchModel({
 			modelId: resolveChatWireModelId(selectedModel),
 			scope: "thread",
 		});
@@ -400,13 +336,13 @@ async function restartRuntimeFromUserMessage(
 
 	const thinkingLevel = input.metadata?.thinkingLevel;
 	if (thinkingLevel) {
-		await runtime.harness.setState({ thinkingLevel });
+		await runtime.engine.setState({ thinkingLevel });
 	}
 
 	runtime.lastErrorMessage = null;
 	// Arm ROX R1 failover for the replayed turn as well (mirror of sendMessage).
 	runtime.roxFallback = buildRoxFallbackState(selectedModel, input.payload);
-	await runtime.harness.sendMessage(input.payload);
+	await runtime.engine.sendMessage(input.payload);
 }
 
 interface InflightRuntimeCreation {
@@ -429,7 +365,7 @@ export class ChatRuntimeManager {
 	}
 
 	private subscribeToSessionEvents(runtime: RuntimeSession): void {
-		runtime.harness.subscribe((event: unknown) => {
+		runtime.engine.subscribe((event: unknown) => {
 			if (isHarnessErrorEvent(event) || isHarnessWorkspaceErrorEvent(event)) {
 				runtime.lastErrorMessage = toRuntimeErrorMessage(event.error);
 				// ROX R1 failover: a model-level error on the primary Compound model
@@ -486,12 +422,12 @@ export class ChatRuntimeManager {
 
 		void (async () => {
 			try {
-				await runtime.harness.switchModel({
+				await runtime.engine.switchModel({
 					modelId: fallback.fallbackWireModelId,
 					scope: "thread",
 				});
 				runtime.lastErrorMessage = null;
-				await runtime.harness.sendMessage(fallback.payload);
+				await runtime.engine.sendMessage(fallback.payload);
 			} catch {
 				// Keep the primary's error visible; the fallback attempt is best-effort.
 			}
@@ -567,21 +503,21 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		this.ensureGlobalAgentInstructions();
 		await this.runtimeResolver.prepareRuntimeEnv(runtimeEnvContext);
 
-		const runtime = await createMastraCode({
+		const runtime = await createEngine({
 			cwd,
 			disableMcp: true,
 			memory: new Memory({ options: { observationalMemory: false } }),
 		});
 		runtime.hookManager?.setSessionId(sessionId);
-		await runtime.harness.init();
-		runtime.harness.setResourceId({ resourceId: sessionId });
-		await runtime.harness.selectOrCreateThread();
+		await runtime.engine.init();
+		runtime.engine.setResourceId({ resourceId: sessionId });
+		await runtime.engine.selectOrCreateThread();
 
 		const sessionRuntime: RuntimeSession = {
 			sessionId,
 			workspaceId,
 			cwd,
-			harness: runtime.harness,
+			engine: runtime.engine,
 			mcpManager: runtime.mcpManager,
 			hookManager: runtime.hookManager,
 			lastErrorMessage: null,
@@ -670,7 +606,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		}
 
 		try {
-			runtime.harness.abort();
+			runtime.engine.abort();
 		} catch {
 			// best-effort — proceed with cleanup even if abort fails
 		}
@@ -689,7 +625,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 	 * cannot drift.
 	 */
 	private buildDisplayState(runtime: RuntimeSession): ChatDisplayState {
-		const displayState = runtime.harness.getDisplayState();
+		const displayState = runtime.engine.getDisplayState();
 		const currentMessage = displayState.currentMessage as {
 			role?: string;
 			errorMessage?: string;
@@ -750,7 +686,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			input.sessionId,
 			input.workspaceId,
 		);
-		return runtime.harness.listMessages();
+		return runtime.engine.listMessages();
 	}
 
 	/**
@@ -775,7 +711,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			input.workspaceId,
 		);
 		const displayState = this.buildDisplayState(runtime);
-		const messages = await runtime.harness.listMessages();
+		const messages = await runtime.engine.listMessages();
 		// Intentionally no observedAt: when the harness state hasn't changed,
 		// the response object is structurally identical to the previous poll's
 		// response, so React Query's structuralSharing preserves the object
@@ -802,7 +738,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			await this.runtimeResolver.prepareRuntimeEnv({
 				selectedModelId: selectedModel,
 			});
-			await runtime.harness.switchModel({
+			await runtime.engine.switchModel({
 				modelId: resolveChatWireModelId(selectedModel),
 				scope: "thread",
 			});
@@ -810,7 +746,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 
 		const thinkingLevel = input.metadata?.thinkingLevel;
 		if (thinkingLevel) {
-			await runtime.harness.setState({ thinkingLevel });
+			await runtime.engine.setState({ thinkingLevel });
 		}
 
 		// Arm the ROX R1 failover for this turn: if the primary Compound model
@@ -819,7 +755,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		// never triggers a replay.
 		runtime.roxFallback = buildRoxFallbackState(selectedModel, input.payload);
 
-		return runtime.harness.sendMessage(input.payload);
+		return runtime.engine.sendMessage(input.payload);
 	}
 
 	async restartFromMessage(input: RestartPayload): Promise<void> {
@@ -837,7 +773,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			input.sessionId,
 			input.workspaceId,
 		);
-		runtime.harness.abort();
+		runtime.engine.abort();
 	}
 
 	async respondToApproval(input: {
@@ -849,7 +785,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			input.sessionId,
 			input.workspaceId,
 		);
-		return runtime.harness.respondToToolApproval(input.payload);
+		return runtime.engine.respondToToolApproval(input.payload);
 	}
 
 	async respondToQuestion(input: {
@@ -874,7 +810,7 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 			input.sessionId,
 			input.workspaceId,
 		);
-		return runtime.harness.respondToPlanApproval(input.payload);
+		return runtime.engine.respondToPlanApproval(input.payload);
 	}
 
 	private resolveWorkspaceCwd(workspaceId: string): string {
