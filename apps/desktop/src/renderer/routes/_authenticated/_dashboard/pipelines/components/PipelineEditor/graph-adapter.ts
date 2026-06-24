@@ -10,13 +10,22 @@
  */
 
 import type { Edge, Node } from "@rox/ui/ai-elements/flow";
-import type {
-	RoxBlockState,
-	RoxEdge,
-	RoxWorkflowState,
+import {
+	getNodeType,
+	listNodeTypes,
+	type RoxBlockState,
+	type RoxEdge,
+	type RoxWorkflowState,
 } from "@rox/workflow-core";
 
-/** Canvas node kinds rendered by the editor (maps onto `RoxBlockState.type`). */
+/**
+ * Canvas node kinds with a dedicated (legacy) xyflow renderer — the five types
+ * that already executed before the registry landed. Every OTHER registered (or
+ * unknown/legacy) type renders through the generic, registry-driven
+ * `RegistryNode` (`pipelineRegistry`) so the whole node catalog is styled from
+ * the registry without a per-type component. The persisted `RoxBlockState.type`
+ * is preserved losslessly regardless (see `toBlockType`).
+ */
 export type PipelineNodeKind =
 	| "start"
 	| "agent_run"
@@ -56,7 +65,8 @@ export type PipelineNodeData = {
 export type PipelineFlowNode = Node<PipelineNodeData>;
 export type PipelineFlowEdge = Edge;
 
-const KNOWN_KINDS: ReadonlySet<string> = new Set([
+/** Node types with a dedicated (legacy) renderer; everything else is generic. */
+const DEDICATED_KINDS: ReadonlySet<string> = new Set<PipelineNodeKind>([
 	"start",
 	"agent_run",
 	"human_approval",
@@ -64,9 +74,28 @@ const KNOWN_KINDS: ReadonlySet<string> = new Set([
 	"response",
 ]);
 
-/** Coerce a persisted block type to a renderable canvas node kind. */
+/** Whether a persisted block type has its own dedicated xyflow renderer. */
+export function hasDedicatedRenderer(type: string): boolean {
+	return DEDICATED_KINDS.has(type);
+}
+
+/**
+ * Coerce a persisted block type to a canvas node kind for the `data.kind` hint.
+ * A dedicated type keeps its kind; everything else (catalog + legacy) is tagged
+ * `agent_run` for back-compat consumers while it actually renders through the
+ * generic `RegistryNode` (the persisted type is preserved separately).
+ */
 function toNodeKind(type: string): PipelineNodeKind {
-	return (KNOWN_KINDS.has(type) ? type : "agent_run") as PipelineNodeKind;
+	return (DEDICATED_KINDS.has(type) ? type : "agent_run") as PipelineNodeKind;
+}
+
+/**
+ * The xyflow node-type key for a persisted block: a dedicated `pipeline_*` key
+ * for the five legacy types, otherwise the generic `pipelineRegistry` renderer.
+ */
+export function nodeTypeForBlock(type: string): string {
+	if (!DEDICATED_KINDS.has(type)) return "pipelineRegistry";
+	return type === "start" ? "pipelineStart" : `pipeline_${type}`;
 }
 
 function blockLabel(block: RoxBlockState, fallbackId: string): string {
@@ -78,6 +107,42 @@ function blockLabel(block: RoxBlockState, fallbackId: string): string {
 export function readRoleSlug(block: RoxBlockState): string | undefined {
 	const raw = block.subBlocks?.roleSlug;
 	return typeof raw === "string" && raw.length > 0 ? raw : undefined;
+}
+
+/** A node type the user can add from the palette/toolbar. */
+export type AddableNodeType = {
+	/** Registry node-type id (becomes `RoxBlockState.type`). */
+	id: string;
+	/** RU label for the palette entry + default node name. */
+	label: string;
+	/** Palette category id. */
+	category: string;
+	/** Lucide icon name for the palette entry. */
+	icon: string;
+	/** Tailwind icon colour class. */
+	iconClass: string;
+};
+
+/**
+ * The node types the toolbar/palette can add, sourced from the registry (skipping
+ * singletons like `start`). Replaces the hard-coded toolbar list so adding a
+ * registry module surfaces it in the palette automatically.
+ */
+export function addableNodeTypes(): AddableNodeType[] {
+	return listNodeTypes()
+		.filter((def) => !def.singleton)
+		.map((def) => ({
+			id: def.id,
+			label: def.label,
+			category: def.category,
+			icon: def.render.icon,
+			iconClass: def.render.iconClass,
+		}));
+}
+
+/** Default node name for a freshly-added type (registry label, then the id). */
+export function defaultLabelForType(type: string): string {
+	return getNodeType(type)?.label ?? type;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +160,7 @@ export function stateToNodes(state: RoxWorkflowState): PipelineFlowNode[] {
 		};
 		return {
 			id: blockId,
-			type: kind === "start" ? "pipelineStart" : `pipeline_${kind}`,
+			type: nodeTypeForBlock(block.type),
 			position,
 			data: {
 				blockId,
@@ -110,16 +175,42 @@ export function stateToNodes(state: RoxWorkflowState): PipelineFlowNode[] {
 	});
 }
 
-/** Convert persisted edges into xyflow edges (animated when valid). */
+/**
+ * Resolve a human-facing branch label for an edge from the source block's
+ * registry out-port (e.g. `true` → «Истина»). Returns undefined for a plain
+ * `out`/unhandled port so the edge renders unlabeled.
+ */
+export function branchLabelFor(
+	state: RoxWorkflowState,
+	sourceBlockId: string,
+	sourceHandle: string | null | undefined,
+): string | undefined {
+	if (!sourceHandle || sourceHandle === "out") return undefined;
+	const sourceType = state.blocks[sourceBlockId]?.type;
+	const def = sourceType ? getNodeType(sourceType) : undefined;
+	const port = def?.outputs.find((p) => p.name === sourceHandle);
+	return port?.label ?? sourceHandle;
+}
+
+/**
+ * Convert persisted edges into xyflow `branch` edges — coloured by the source
+ * out-port tone and labelled for named branches. The branch handle id and label
+ * ride on the edge so {@link BranchEdge} can colour/label without re-deriving.
+ */
 export function stateToEdges(state: RoxWorkflowState): PipelineFlowEdge[] {
-	return state.edges.map((edge, index) => ({
-		id: edge.id ?? `${edge.source}->${edge.target}-${index}`,
-		source: edge.source,
-		target: edge.target,
-		sourceHandle: edge.sourceHandle ?? null,
-		targetHandle: edge.targetHandle ?? null,
-		type: "animated",
-	}));
+	return state.edges.map((edge, index) => {
+		const branch = edge.sourceHandle ?? "out";
+		const label = branchLabelFor(state, edge.source, edge.sourceHandle);
+		return {
+			id: edge.id ?? `${edge.source}->${edge.target}-${index}`,
+			source: edge.source,
+			target: edge.target,
+			sourceHandle: edge.sourceHandle ?? null,
+			targetHandle: edge.targetHandle ?? null,
+			type: "branch",
+			data: { branch, ...(label ? { label } : {}) },
+		};
+	});
 }
 
 // ---------------------------------------------------------------------------
