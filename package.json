@@ -8,6 +8,8 @@
 		"@biomejs/biome": "2.4.2",
 		"dotenv-cli": "11.0.0",
 		"playwright": "1.59.1",
+		"png-to-ico": "3.0.1",
+		"sharp": "0.34.5",
 		"sherif": "1.11.0",
 		"turbo": "2.9.14"
 	},
