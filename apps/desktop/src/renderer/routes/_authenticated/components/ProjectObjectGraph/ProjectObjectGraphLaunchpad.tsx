@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ExperimentalFeatureGate } from "renderer/components/ExperimentalFeatureGate";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
+import { CrmContactsPanel } from "./CrmContactsPanel";
 import { LinkPicker } from "./LinkPicker";
 import { ObjectDetailsPanel, type ObjectGraphNode } from "./ObjectDetailsPanel";
 import { ProjectObjectGraphPanel } from "./ProjectObjectGraphPanel";
@@ -139,6 +140,15 @@ function ProjectObjectGraphShell({ v2ProjectId }: { v2ProjectId: string }) {
 			 * click selects the object so its details/edges open below in place.
 			 */}
 			<UnifiedSearchPanel onOpenHit={setSelectedId} />
+
+			{/*
+			 * CRM contacts (`projectOs.crmContacts`, desktop parity). Self-gated:
+			 * renders only when that experiment is on, otherwise absent (no
+			 * regression). Lists the org's contact objects via the shipped
+			 * `graph.listContacts` and opens each contact's links via `graph.neighbors`,
+			 * both rendered through the reused `@rox/shared/crm-contacts` mappers.
+			 */}
+			<CrmContactsPanel />
 
 			<div className="grid gap-4 md:grid-cols-2">
 				<ProjectObjectGraphPanel

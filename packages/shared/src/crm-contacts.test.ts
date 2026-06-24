@@ -7,11 +7,12 @@ import {
 	type NeighborEdge,
 	type NeighborNode,
 	toContactCard,
-} from "./crmContacts";
+} from "./crm-contacts";
 
 /**
  * Pure mapping for the CRM contacts surface: contact list rows → cards, and a
  * contact's `graph.neighbors` result → its linked-object rows. No React / tRPC.
+ * Shared single source of truth reused by the web AND desktop panels.
  */
 
 function item(

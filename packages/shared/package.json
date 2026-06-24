@@ -24,6 +24,10 @@
 			"types": "./src/session-object-link.ts",
 			"default": "./src/session-object-link.ts"
 		},
+		"./crm-contacts": {
+			"types": "./src/crm-contacts.ts",
+			"default": "./src/crm-contacts.ts"
+		},
 		"./attribution": {
 			"types": "./src/attribution.ts",
 			"default": "./src/attribution.ts"

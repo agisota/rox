@@ -1,14 +1,40 @@
-import type { EntityKind } from "@rox/db/enums";
-
 /**
  * Pure presentation + navigation helpers for the CRM contacts surface
  * (`projectOs.crmContacts`). Maps a `graph.listContacts` row to a render-ready
  * contact card view model (best-effort display name, subtitle, avatar initials,
  * `mailto:` action) and maps a contact's `graph.neighbors` result to its linked
  * objects (each labelled, optionally `rox://` deep-linkable). Dependency-free (no
- * React, no tRPC) so the panel stays a thin render layer and this mapping is
- * unit-testable.
+ * React, no tRPC) so the web AND desktop panels stay thin render layers and this
+ * mapping is the single, unit-tested source of truth shared by both surfaces.
  */
+
+/**
+ * The entity kinds a contact's neighbors can be, mirrored from the db
+ * `entityKindValues` (`@rox/db/enums`). Kept inline so `@rox/shared` stays
+ * db-free — the same inline-mirror pattern as `rox-ledger-kind.ts` and
+ * `integrations/registry.ts`. Only used to type the label/deep-link lookups
+ * below; the graph router is the runtime source of truth for the kind value.
+ */
+export type EntityKind =
+	| "note"
+	| "email"
+	| "email_thread"
+	| "message"
+	| "channel"
+	| "task"
+	| "project"
+	| "area"
+	| "calendar_event"
+	| "agent_session"
+	| "activity_event"
+	| "feed"
+	| "feed_item"
+	| "file"
+	| "design_artifact"
+	| "contact"
+	| "osint_entity"
+	| "tag"
+	| "journal";
 
 /** The slice of a `graph.listContacts` item this surface renders. */
 export interface ContactListItemInput {
