@@ -166,11 +166,28 @@ describe("comms_messages (D1 — one row per message, any transport)", () => {
 		]);
 	});
 
-	it("indexes thread read + inbound-idempotency (transport, external_id)", () => {
+	it("indexes thread read + PER-ORG inbound-idempotency (organization_id, transport, external_id)", () => {
 		const names = indexNames(commsMessages);
 		expect(names).toContain("comms_messages_org_thread_created_idx");
-		expect(names).toContain("comms_messages_transport_external_uniq");
+		// PER-ORG inbound dedup: the same RFC Message-ID delivered to two rox
+		// recipients in different orgs must keep one copy PER ORG, so the unique is
+		// org-scoped (not the old global (transport, external_id)).
+		expect(names).toContain("comms_messages_org_transport_external_uniq");
+		expect(names).not.toContain("comms_messages_transport_external_uniq");
 		expect(names).toContain("comms_messages_author_idx");
+
+		const dedupIdx = cfg.indexes.find(
+			(i) =>
+				(i as unknown as { config: { name?: string } }).config?.name ===
+				"comms_messages_org_transport_external_uniq",
+		) as
+			| {
+					config: { unique?: boolean; columns?: Array<{ name?: string }> };
+			  }
+			| undefined;
+		expect(dedupIdx?.config.unique).toBe(true);
+		const dedupCols = (dedupIdx?.config.columns ?? []).map((c) => c.name);
+		expect(dedupCols).toEqual(["organization_id", "transport", "external_id"]);
 	});
 });
 

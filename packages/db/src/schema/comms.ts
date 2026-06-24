@@ -347,9 +347,15 @@ export const commsMessages = pgTable(
 			t.threadId,
 			t.createdAt,
 		),
-		// Inbound idempotency: one row per (transport, external_id) where present.
-		uniqueIndex("comms_messages_transport_external_uniq")
-			.on(t.transport, t.externalId)
+		// Inbound idempotency, PER ORG: one row per (organization_id, transport,
+		// external_id) where present. Org-scoped (not global) so the SAME RFC
+		// Message-ID delivered to two rox recipients in DIFFERENT orgs (the inbound
+		// worker POSTs one envelope per recipient) lands as a SEPARATE per-org copy
+		// in each recipient's unified inbox — a global unique here made recipient #2's
+		// emit collide with recipient #1's row and silently drop their thread. A
+		// same-owner/same-org redelivery still de-dupes onto the one row.
+		uniqueIndex("comms_messages_org_transport_external_uniq")
+			.on(t.organizationId, t.transport, t.externalId)
 			.where(sql`${t.externalId} IS NOT NULL`),
 		index("comms_messages_author_idx").on(t.authorUserId),
 	],

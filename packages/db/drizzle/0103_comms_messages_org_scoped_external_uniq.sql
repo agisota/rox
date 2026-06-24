@@ -1,0 +1,2 @@
+DROP INDEX "comms_messages_transport_external_uniq";--> statement-breakpoint
+CREATE UNIQUE INDEX "comms_messages_org_transport_external_uniq" ON "comms_messages" USING btree ("organization_id","transport","external_id") WHERE "comms_messages"."external_id" IS NOT NULL;

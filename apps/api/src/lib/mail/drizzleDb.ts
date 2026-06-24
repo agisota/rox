@@ -313,24 +313,31 @@ export function createMailIngestDb(): MailIngestDb {
 				args.rfcMessageId ??
 				args.mailMessageId;
 
-			// M1: a redelivered Message-ID hitting a SECOND rox recipient must not
-			// 500 on the GLOBAL (transport, external_id) unique. Short-circuit when
-			// this external id already exists anywhere (the first recipient's emit
-			// already created the shared row); the per-owner mail tables still hold
-			// each recipient's own copy.
-			if (args.rfcMessageId) {
-				const [dup] = await db
-					.select({ id: commsMessages.id })
-					.from(commsMessages)
-					.where(
-						and(
-							eq(commsMessages.transport, "email"),
-							eq(commsMessages.externalId, args.rfcMessageId),
-						),
-					)
-					.limit(1);
-				if (dup) return;
-			}
+			// Inbound idempotency is PER ORG. The dedup unique on comms_messages is
+			// `(organization_id, transport, external_id)`, so this short-circuit must
+			// be org-scoped too: skip the MESSAGE insert only when THIS org already
+			// has the row (a provider redelivery, OR a SECOND same-org recipient whose
+			// envelope carries the same Message-ID). A SECOND rox recipient in a
+			// DIFFERENT org has no row here and falls through to create their OWN
+			// per-org thread/participant/message copy — otherwise their unified inbox
+			// never shows the email (the old global check returned early on recipient
+			// #1's cross-org row and dropped it).
+			const [dup] = args.rfcMessageId
+				? await db
+						.select({
+							id: commsMessages.id,
+							threadId: commsMessages.threadId,
+						})
+						.from(commsMessages)
+						.where(
+							and(
+								eq(commsMessages.organizationId, args.organizationId),
+								eq(commsMessages.transport, "email"),
+								eq(commsMessages.externalId, args.rfcMessageId),
+							),
+						)
+						.limit(1)
+				: [];
 
 			// M1: resolve a known rox sender (an internal email between rox users)
 			// to its author user id so the message is attributed.
@@ -346,6 +353,28 @@ export function createMailIngestDb(): MailIngestDb {
 				)
 				.limit(1);
 			const authorUserId = senderAddr?.userId ?? null;
+
+			// PER-ORG dedup reconcile: the row already exists for THIS org, so the
+			// MESSAGE insert is skipped (idempotent). But a SECOND same-org recipient
+			// (e.g. alice@rox.one + bob@rox.one both on To:) shares ONE org + ONE
+			// Message-ID with recipient #1 — recipient #1 created the thread+message and
+			// added themselves; recipient #2's envelope lands HERE on the dup and, with a
+			// bare `return`, was NEVER attached to comms_participants, so
+			// isThreadParticipant denied bob → listThreads/getThread omitted the thread
+			// and the SSE gate dropped his live event. Fix: ALWAYS reconcile participants
+			// for the CURRENT recipient on the EXISTING thread before returning. Only the
+			// message INSERT is deduped; participant attach runs for every recipient,
+			// idempotent on the (thread_id, user_id) partial unique so a genuine
+			// same-owner redelivery adds no duplicate participant. No new comms_message and
+			// no live publish (recipient #1's emit already pushed it).
+			if (dup) {
+				await ensureCommsParticipants(db, {
+					organizationId: args.organizationId,
+					threadId: dup.threadId,
+					userIds: [args.ownerUserId, authorUserId],
+				});
+				return;
+			}
 
 			// M1: an EXTERNAL sender (no rox address) resolves-or-creates a D6 contact
 			// node — the same find-or-create the comms-core `resolveContact` port uses
@@ -387,9 +416,14 @@ export function createMailIngestDb(): MailIngestDb {
 				});
 			}
 
-			// M1: guard the GLOBAL (transport, external_id) unique — a concurrent
-			// second-recipient emit that slipped past the read-check above becomes a
-			// no-op instead of a 500.
+			// Guard the org-scoped (organization_id, transport, external_id) unique —
+			// a concurrent redelivery to the SAME org that slipped past the read-check
+			// above becomes a no-op instead of a 500. The backing index is PARTIAL
+			// (`WHERE external_id IS NOT NULL`), so the conflict arbiter must carry the
+			// SAME predicate, else Postgres throws 42P10 ("no unique or exclusion
+			// constraint matching the ON CONFLICT specification") — same lesson as the
+			// xmpp offline-queue enqueue. A different-org recipient never conflicts here
+			// (their org segments the unique), so each org keeps its own copy.
 			const [inserted] = await db
 				.insert(commsMessages)
 				.values({
@@ -404,13 +438,22 @@ export function createMailIngestDb(): MailIngestDb {
 					body: args.snippet,
 					metadata: { mailMessageId: args.mailMessageId, source: "d3-email" },
 				})
-				.onConflictDoNothing()
+				.onConflictDoNothing({
+					target: [
+						commsMessages.organizationId,
+						commsMessages.transport,
+						commsMessages.externalId,
+					],
+					where: sql`${commsMessages.externalId} IS NOT NULL`,
+				})
 				.returning({ id: commsMessages.id });
 
 			// Live delivery (comms SSE): publish ONLY when a NEW row was inserted — a
-			// dedup no-op (second recipient / redelivery) must not re-push. The SSE
-			// route re-checks participation, so the advisory set is just the recipient
-			// owner. Best-effort: never let a publish failure break ingest.
+			// same-org dedup no-op (provider redelivery / lost insert race) must not
+			// re-push. A second recipient in a DIFFERENT org DID insert their own row,
+			// so they get their own event here. The SSE route re-checks participation,
+			// so the advisory set is just the recipient owner. Best-effort: never let a
+			// publish failure break ingest.
 			if (inserted) {
 				publishCommsMessage({
 					organizationId: args.organizationId,
