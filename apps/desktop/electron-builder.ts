@@ -76,7 +76,8 @@ const config: Configuration = {
 		},
 		{
 			// Preinstall catalog (skills + subagents) unpacked into ~/.claude on
-			// first run. Fetched at build time by fetch-preinstall-catalog.ts.
+			// first run. Produced at build time by build-preinstall-catalog.ts
+			// (curated set cloned from source repos) during prebuild/prepackage.
 			from: "resources/preinstall",
 			to: "resources/preinstall",
 			filter: ["manifest.json", "*.tar.gz"],

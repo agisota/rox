@@ -5,6 +5,8 @@
  * extend. All copy is RU to match the rest of the desktop UI.
  */
 
+import { CURATED_DEFAULT_SKILL_PACKS } from "@rox/shared/skills/curated-default-skills";
+
 export interface SlashCommand {
 	/** The slash command as typed in the agent chat, e.g. "/autopilot". */
 	command: string;
@@ -182,23 +184,13 @@ export interface PreinstalledSkill {
 
 /**
  * Skills preinstalled into the user's global Claude catalog so they appear on
- * the Навыки tab. Beyond the bundled catalog, these three are registered
- * explicitly.
+ * the Навыки tab. Derived from the single shared multiplatform source of truth
+ * ({@link CURATED_DEFAULT_SKILL_PACKS}) — one source of truth, no duplicated
+ * literals. The actual skill files are installed by the bundled catalog.
  */
-export const PREINSTALLED_SKILLS: readonly PreinstalledSkill[] = [
-	{
-		name: "dev-skills",
-		repo: "github.com/plannotator/dev-skills",
-		description: "Набор инженерных навыков для повседневной разработки.",
-	},
-	{
-		name: "effective-html",
-		repo: "github.com/plannotator/effective-html",
-		description: "Навык для чистой, доступной и эффективной HTML-разметки.",
-	},
-	{
-		name: "markdown-editor",
-		repo: "github.com/plannotator/markdown-editor",
-		description: "Навык редактирования и форматирования Markdown.",
-	},
-];
+export const PREINSTALLED_SKILLS: readonly PreinstalledSkill[] =
+	CURATED_DEFAULT_SKILL_PACKS.map((pack) => ({
+		name: pack.name,
+		repo: pack.repo,
+		description: pack.description,
+	}));
