@@ -67,6 +67,10 @@ const state: {
 	// `.onConflictDoNothing({ target })`, so a test can assert the arbiter is the
 	// org-scoped unique (organization_id, transport, external_id).
 	messageConflictTargetCols: string[];
+	// How many participant inserts went through `.onConflictDoNothing(...)`, so a
+	// test can assert the (thread_id, user_id) attach is idempotency-guarded — a
+	// genuine same-owner redelivery must NOT mint a duplicate participant.
+	participantConflictGuards: number;
 } = {
 	selectQueue: [],
 	insertedThreads: [],
@@ -77,6 +81,7 @@ const state: {
 	conflictHits: 0,
 	whereColsLog: [],
 	messageConflictTargetCols: [],
+	participantConflictGuards: 0,
 };
 
 /**
@@ -166,6 +171,11 @@ function insertChain() {
 						if (opts?.target !== undefined) {
 							state.messageConflictTargetCols = extractColumnNames(opts.target);
 						}
+					} else if (kind === "participant") {
+						// A participant attach guarded by onConflictDoNothing — count it so a
+						// test can assert the (thread_id, user_id) insert is idempotent (a
+						// same-owner redelivery never mints a duplicate participant row).
+						state.participantConflictGuards += 1;
 					}
 					return {
 						returning: () => Promise.resolve(returningRows),
@@ -221,6 +231,7 @@ beforeEach(() => {
 	state.conflictHits = 0;
 	state.whereColsLog = [];
 	state.messageConflictTargetCols = [];
+	state.participantConflictGuards = 0;
 	publishCommsMessageMock.mockClear();
 	resolveIdentityMock.mockClear();
 });
@@ -312,13 +323,15 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		);
 	});
 
-	test("same owner/org redelivery, same Message-ID: short-circuits, no second message insert (idempotent)", async () => {
+	test("same owner/org redelivery, same Message-ID: short-circuits the message insert + reconciles the owner participant idempotently (no duplicate message/participant/event)", async () => {
 		const db = createMailIngestDb();
 		// The org-scoped dup-check select finds the comms message THIS owner's org
 		// already created (a provider redelivery of the same Message-ID to the same
-		// mailbox). Re-emitting must be a no-op — no duplicate thread/message/event.
+		// mailbox), and resolves its existing threadId. Re-emitting must NOT insert a
+		// second thread/message or re-push a live event.
 		state.selectQueue = [
-			[{ id: "comms-msg-1" }], // org-scoped dup check → already exists for this org
+			[{ id: "comms-msg-1", threadId: "thread-existing" }], // org-scoped dup check → exists
+			[], // sender @rox.one lookup → external (no internal author)
 		];
 		await db.emitToUnifiedInbox(baseArgs);
 
@@ -326,6 +339,61 @@ describe("createMailIngestDb.emitToUnifiedInbox (M1)", () => {
 		expect(state.insertedThreads).toHaveLength(0);
 		expect(state.insertedMessages).toHaveLength(0);
 		// …and no live event re-pushed for the dedup short-circuit.
+		expect(publishCommsMessageMock).not.toHaveBeenCalled();
+
+		// The owner participant is STILL reconciled on the existing thread (the attach
+		// always runs so every recipient is attached), but it is guarded by
+		// onConflictDoNothing on the (thread_id, user_id) partial unique — so a genuine
+		// same-owner redelivery is a no-op at the DB and never mints a duplicate
+		// participant. The reconcile targets the EXISTING thread, not a forked one.
+		const ownerParticipant = state.insertedParticipants.find(
+			(p) => p.userId === "user-1",
+		);
+		expect(ownerParticipant?.threadId).toBe("thread-existing");
+		expect(state.participantConflictGuards).toBeGreaterThan(0);
+	});
+
+	test("FIX (same-org 2nd recipient): a SECOND rox recipient in the SAME org is attached to the shared thread on the dedup path (exactly ONE comms_message; both owners present as participants)", async () => {
+		const db = createMailIngestDb();
+		// alice@rox.one + bob@rox.one are BOTH on To: in the SAME org — the most common
+		// workspace multi-recipient case. The worker POSTs two envelopes with the SAME
+		// organizationId + SAME Message-ID. Recipient #1 (alice) already created the
+		// thread+message and added herself. Recipient #2 (bob)'s envelope lands HERE:
+		// the org-scoped dup-check finds alice's existing comms_message (same org, same
+		// Message-ID) and resolves its threadId. With a bare early-return bob would
+		// never be added to comms_participants → isThreadParticipant denies him →
+		// listThreads/getThread omit the thread + the SSE gate drops his event. The fix
+		// reconciles bob onto the EXISTING shared thread before returning.
+		state.selectQueue = [
+			[{ id: "comms-msg-alice", threadId: "thread-shared" }], // org dup check → alice's row
+			[], // sender @rox.one lookup → external sender (alice is on To:, not From)
+		];
+		await db.emitToUnifiedInbox({
+			...baseArgs,
+			ownerUserId: "user-bob",
+			toAddrs: ["alice@rox.one", "bob@rox.one"],
+		});
+
+		// Dedup: NO second comms_message and NO duplicate thread — there is exactly one
+		// copy of the email in this org, shared by both recipients.
+		expect(state.insertedMessages).toHaveLength(0);
+		expect(state.insertedThreads).toHaveLength(0);
+
+		// …but bob (the current recipient owner) IS now attached to the shared thread as
+		// a comms_participant, so recipient #2 is reachable via the participant join —
+		// listThreads/getThread surface the thread for him and the SSE gate forwards it.
+		const bobParticipant = state.insertedParticipants.find(
+			(p) => p.userId === "user-bob",
+		);
+		expect(bobParticipant).toBeDefined();
+		expect(bobParticipant?.threadId).toBe("thread-shared");
+		expect(bobParticipant?.organizationId).toBe("org-1");
+		expect(bobParticipant?.role).toBe("member");
+		// The attach is idempotency-guarded on (thread_id, user_id).
+		expect(state.participantConflictGuards).toBeGreaterThan(0);
+
+		// The dedup path re-pushes NO live event (recipient #1's emit already published
+		// the message; bob's live delivery is via the shared thread's existing message).
 		expect(publishCommsMessageMock).not.toHaveBeenCalled();
 	});
 

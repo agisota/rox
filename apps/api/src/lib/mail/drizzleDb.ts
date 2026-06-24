@@ -315,26 +315,29 @@ export function createMailIngestDb(): MailIngestDb {
 
 			// Inbound idempotency is PER ORG. The dedup unique on comms_messages is
 			// `(organization_id, transport, external_id)`, so this short-circuit must
-			// be org-scoped too: skip only when THIS org already has the row (a
-			// provider redelivery of the same Message-ID to the same mailbox). A
-			// SECOND rox recipient in a DIFFERENT org has no row here and falls
-			// through to create their OWN per-org thread/participant/message copy —
-			// otherwise their unified inbox never shows the email (the old global
-			// check returned early on recipient #1's cross-org row and dropped it).
-			if (args.rfcMessageId) {
-				const [dup] = await db
-					.select({ id: commsMessages.id })
-					.from(commsMessages)
-					.where(
-						and(
-							eq(commsMessages.organizationId, args.organizationId),
-							eq(commsMessages.transport, "email"),
-							eq(commsMessages.externalId, args.rfcMessageId),
-						),
-					)
-					.limit(1);
-				if (dup) return;
-			}
+			// be org-scoped too: skip the MESSAGE insert only when THIS org already
+			// has the row (a provider redelivery, OR a SECOND same-org recipient whose
+			// envelope carries the same Message-ID). A SECOND rox recipient in a
+			// DIFFERENT org has no row here and falls through to create their OWN
+			// per-org thread/participant/message copy — otherwise their unified inbox
+			// never shows the email (the old global check returned early on recipient
+			// #1's cross-org row and dropped it).
+			const [dup] = args.rfcMessageId
+				? await db
+						.select({
+							id: commsMessages.id,
+							threadId: commsMessages.threadId,
+						})
+						.from(commsMessages)
+						.where(
+							and(
+								eq(commsMessages.organizationId, args.organizationId),
+								eq(commsMessages.transport, "email"),
+								eq(commsMessages.externalId, args.rfcMessageId),
+							),
+						)
+						.limit(1)
+				: [];
 
 			// M1: resolve a known rox sender (an internal email between rox users)
 			// to its author user id so the message is attributed.
@@ -350,6 +353,28 @@ export function createMailIngestDb(): MailIngestDb {
 				)
 				.limit(1);
 			const authorUserId = senderAddr?.userId ?? null;
+
+			// PER-ORG dedup reconcile: the row already exists for THIS org, so the
+			// MESSAGE insert is skipped (idempotent). But a SECOND same-org recipient
+			// (e.g. alice@rox.one + bob@rox.one both on To:) shares ONE org + ONE
+			// Message-ID with recipient #1 — recipient #1 created the thread+message and
+			// added themselves; recipient #2's envelope lands HERE on the dup and, with a
+			// bare `return`, was NEVER attached to comms_participants, so
+			// isThreadParticipant denied bob → listThreads/getThread omitted the thread
+			// and the SSE gate dropped his live event. Fix: ALWAYS reconcile participants
+			// for the CURRENT recipient on the EXISTING thread before returning. Only the
+			// message INSERT is deduped; participant attach runs for every recipient,
+			// idempotent on the (thread_id, user_id) partial unique so a genuine
+			// same-owner redelivery adds no duplicate participant. No new comms_message and
+			// no live publish (recipient #1's emit already pushed it).
+			if (dup) {
+				await ensureCommsParticipants(db, {
+					organizationId: args.organizationId,
+					threadId: dup.threadId,
+					userIds: [args.ownerUserId, authorUserId],
+				});
+				return;
+			}
 
 			// M1: an EXTERNAL sender (no rox address) resolves-or-creates a D6 contact
 			// node — the same find-or-create the comms-core `resolveContact` port uses
