@@ -35,7 +35,7 @@ export default ({ config }: ConfigContext) => ({
 	android: {
 		adaptiveIcon: {
 			foregroundImage: "./assets/adaptive-icon.png",
-			backgroundColor: "#ffffff",
+			backgroundColor: "#0a0a0a",
 		},
 		package: "sh.rox.mobile",
 		predictiveBackGestureEnabled: false,
