@@ -16,6 +16,10 @@
 			"types": "./src/server/desktop/index.ts",
 			"default": "./src/server/desktop/index.ts"
 		},
+		"./server/engine": {
+			"types": "./src/server/engine/index.ts",
+			"default": "./src/server/engine/index.ts"
+		},
 		"./server/trpc": {
 			"types": "./src/server/trpc/index.ts",
 			"default": "./src/server/trpc/index.ts"

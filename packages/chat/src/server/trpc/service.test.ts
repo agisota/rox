@@ -21,18 +21,18 @@ mock.module("mastracode", () => ({
 const { ChatRuntimeService } = await import("./service");
 
 function createRuntime(options?: {
-	respondToQuestion?: RuntimeSession["harness"]["respondToQuestion"];
+	respondToQuestion?: RuntimeSession["engine"]["respondToQuestion"];
 }): RuntimeSession {
 	return {
 		sessionId: SESSION_ID,
 		cwd: CWD,
-		harness: {
+		engine: {
 			abort: mock(() => {}),
 			respondToToolApproval: mock(async (payload: unknown) => payload),
 			respondToQuestion:
 				options?.respondToQuestion ?? mock(async (payload: unknown) => payload),
 			respondToPlanApproval: mock(async (payload: unknown) => payload),
-		} as unknown as RuntimeSession["harness"],
+		} as unknown as RuntimeSession["engine"],
 		mcpManager: null as RuntimeSession["mcpManager"],
 		hookManager: null as RuntimeSession["hookManager"],
 		mcpManualStatuses: new Map(),
@@ -69,14 +69,14 @@ function createServiceHarness(options?: Parameters<typeof createRuntime>[0]) {
 		caller,
 		getOrCreateRuntime,
 		runtime,
-		abort: runtime.harness.abort as ReturnType<typeof mock>,
-		respondToToolApproval: runtime.harness.respondToToolApproval as ReturnType<
+		abort: runtime.engine.abort as ReturnType<typeof mock>,
+		respondToToolApproval: runtime.engine.respondToToolApproval as ReturnType<
 			typeof mock
 		>,
-		respondToQuestion: runtime.harness.respondToQuestion as ReturnType<
+		respondToQuestion: runtime.engine.respondToQuestion as ReturnType<
 			typeof mock
 		>,
-		respondToPlanApproval: runtime.harness.respondToPlanApproval as ReturnType<
+		respondToPlanApproval: runtime.engine.respondToPlanApproval as ReturnType<
 			typeof mock
 		>,
 	};
@@ -143,7 +143,7 @@ describe("ChatRuntimeService control mutations", () => {
 	it("does not clear pending question state when question response fails", async () => {
 		const respondToQuestion = mock(async () => {
 			throw new Error("failed to answer");
-		}) as RuntimeSession["harness"]["respondToQuestion"];
+		}) as RuntimeSession["engine"]["respondToQuestion"];
 		const { caller, runtime } = createServiceHarness({ respondToQuestion });
 
 		await expect(
@@ -169,7 +169,7 @@ describe("ChatRuntimeService control mutations", () => {
 				new Promise((resolve) => {
 					resolveResponse = resolve;
 				}),
-		) as RuntimeSession["harness"]["respondToQuestion"];
+		) as RuntimeSession["engine"]["respondToQuestion"];
 		const { caller, runtime } = createServiceHarness({ respondToQuestion });
 		const payload = { questionId: "sandbox-1", answer: "Yes" };
 

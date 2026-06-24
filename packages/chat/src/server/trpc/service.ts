@@ -1,8 +1,8 @@
 import { Memory } from "@mastra/memory";
+import { createEngine } from "@rox/chat/server/engine";
 import type { AppRouter } from "@rox/trpc";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { initTRPC } from "@trpc/server";
-import { createMastraCode } from "mastracode";
 import superjson from "superjson";
 import { searchFiles } from "./utils/file-search";
 import { injectMemoryContext } from "./utils/memory-context";
@@ -40,7 +40,7 @@ import {
 const ENABLE_MASTRA_MCP_SERVERS = false;
 
 type RuntimeQuestionPayload = Parameters<
-	RuntimeSession["harness"]["respondToQuestion"]
+	RuntimeSession["engine"]["respondToQuestion"]
 >[0];
 
 function respondToQuestionWithOptimisticState(
@@ -63,7 +63,7 @@ function respondToQuestionWithOptimisticState(
 
 	let responsePromise: Promise<RuntimeQuestionResponse>;
 	responsePromise = Promise.resolve()
-		.then(() => runtime.harness.respondToQuestion(payload))
+		.then(() => runtime.engine.respondToQuestion(payload))
 		.catch((error) => {
 			if (
 				runtime.pendingQuestionResponses.get(questionId) === responsePromise
@@ -150,23 +150,23 @@ export class ChatRuntimeService {
 				const runtime = await withCustomProviderRuntimeEnv(
 					selectedModelId,
 					async () => {
-						const createdRuntime = await createMastraCode({
+						const createdRuntime = await createEngine({
 							cwd: runtimeCwd,
 							extraTools,
 							disableMcp: !ENABLE_MASTRA_MCP_SERVERS,
 							memory: new Memory({ options: { observationalMemory: false } }),
 						});
-						await createdRuntime.harness.init();
+						await createdRuntime.engine.init();
 						return createdRuntime;
 					},
 				);
 				runtime.hookManager?.setSessionId(sessionId);
-				runtime.harness.setResourceId({ resourceId: sessionId });
-				await runtime.harness.selectOrCreateThread();
+				runtime.engine.setResourceId({ resourceId: sessionId });
+				await runtime.engine.selectOrCreateThread();
 
 				const sessionRuntime: RuntimeSession = {
 					sessionId,
-					harness: runtime.harness,
+					engine: runtime.engine,
 					mcpManager: runtime.mcpManager,
 					hookManager: runtime.hookManager,
 					mcpManualStatuses: new Map(),
@@ -264,7 +264,7 @@ export class ChatRuntimeService {
 							input.sessionId,
 							input.cwd,
 						);
-						const displayState = runtime.harness.getDisplayState();
+						const displayState = runtime.engine.getDisplayState();
 						const currentMessage = displayState.currentMessage as {
 							role?: string;
 							stopReason?: string;
@@ -315,7 +315,7 @@ export class ChatRuntimeService {
 							input.sessionId,
 							input.cwd,
 						);
-						return runtime.harness.listMessages();
+						return runtime.engine.listMessages();
 					}),
 
 				sendMessage: t.procedure
@@ -336,7 +336,7 @@ export class ChatRuntimeService {
 						// Closes the "memories are write-only" dead loop. Best-effort: no-ops
 						// on an existing thread or when the user has no approved memories, and
 						// never throws into the send path.
-						await injectMemoryContext(runtime.harness, this.apiClient);
+						await injectMemoryContext(runtime.engine, this.apiClient);
 						// Emit the `user_sent_message` pipeline event (Agent Pipelines,
 						// design §4.3). This ChatService runs in the host-service process
 						// (apps/desktop host) on local SQLite, where the DB-backed pipeline
@@ -358,7 +358,7 @@ export class ChatRuntimeService {
 							await withCustomProviderRuntimeEnv(
 								selectedModel,
 								async (prepared) => {
-									await runtime.harness.switchModel({
+									await runtime.engine.switchModel({
 										modelId: prepared.modelId ?? selectedModel,
 										scope: "thread",
 									});
@@ -367,7 +367,7 @@ export class ChatRuntimeService {
 						}
 						const thinkingLevel = input.metadata?.thinkingLevel;
 						if (thinkingLevel) {
-							await runtime.harness.setState({ thinkingLevel });
+							await runtime.engine.setState({ thinkingLevel });
 						}
 						void generateAndSetTitle(runtime, this.apiClient, {
 							submittedUserMessage:
@@ -375,7 +375,7 @@ export class ChatRuntimeService {
 									? submittedUserMessage
 									: undefined,
 						});
-						return runtime.harness.sendMessage(input.payload);
+						return runtime.engine.sendMessage(input.payload);
 					}),
 
 				restartFromMessage: t.procedure
@@ -403,7 +403,7 @@ export class ChatRuntimeService {
 							// edited first message (which clones into an empty thread) still
 							// gets the approved-memory block. No-ops when the clone already has
 							// messages.
-							() => injectMemoryContext(runtime.harness, this.apiClient),
+							() => injectMemoryContext(runtime.engine, this.apiClient),
 						);
 						void generateAndSetTitle(runtime, this.apiClient, {
 							submittedUserMessage:
@@ -418,7 +418,7 @@ export class ChatRuntimeService {
 						input.sessionId,
 						input.cwd,
 					);
-					runtime.harness.abort();
+					runtime.engine.abort();
 				}),
 
 				abort: t.procedure.input(sessionIdInput).mutation(async ({ input }) => {
@@ -426,7 +426,7 @@ export class ChatRuntimeService {
 						input.sessionId,
 						input.cwd,
 					);
-					runtime.harness.abort();
+					runtime.engine.abort();
 				}),
 
 				approval: t.router({
@@ -437,7 +437,7 @@ export class ChatRuntimeService {
 								input.sessionId,
 								input.cwd,
 							);
-							return runtime.harness.respondToToolApproval(input.payload);
+							return runtime.engine.respondToToolApproval(input.payload);
 						}),
 				}),
 
@@ -464,7 +464,7 @@ export class ChatRuntimeService {
 								input.sessionId,
 								input.cwd,
 							);
-							return runtime.harness.respondToPlanApproval(input.payload);
+							return runtime.engine.respondToPlanApproval(input.payload);
 						}),
 				}),
 			}),

@@ -152,7 +152,13 @@ export function buildMemoryContextBlock(
 
 type ApiClient = ReturnType<typeof createTRPCClient<AppRouter>>;
 
-interface MemoryInjectionHarness {
+/**
+ * The minimal slice of the agent {@link import("@rox/chat/server/engine").Engine}
+ * this consumer needs. Kept as a narrow structural type (rather than the full
+ * `Engine`) so the injector stays decoupled and easy to test in isolation; any
+ * `Engine` satisfies it structurally.
+ */
+interface MemoryInjectionEngine {
 	listMessages(options?: { limit?: number }): Promise<unknown[]>;
 	saveSystemReminderMessage(args: {
 		message: string;
@@ -175,18 +181,18 @@ interface MemoryInjectionHarness {
  * for title generation and the pipeline event relay.
  */
 export async function injectMemoryContext(
-	harness: MemoryInjectionHarness,
+	engine: MemoryInjectionEngine,
 	apiClient: ApiClient,
 ): Promise<void> {
 	try {
-		const existing = await harness.listMessages({ limit: 1 });
+		const existing = await engine.listMessages({ limit: 1 });
 		if (existing.length > 0) return;
 
 		const items = await apiClient.memory.list.query({ status: "approved" });
 		const block = buildMemoryContextBlock(items as MemoryContextItem[]);
 		if (!block) return;
 
-		await harness.saveSystemReminderMessage({
+		await engine.saveSystemReminderMessage({
 			message: block,
 			reminderType: MEMORY_CONTEXT_REMINDER_TYPE,
 			role: "system",
