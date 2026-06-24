@@ -83,6 +83,13 @@ export function CommandContextProvider({ children }: { children: ReactNode }) {
 		agentCommandPaletteState.enabled &&
 		agentCommandPaletteState.availability === "available";
 
+	const { state: agentSourceMarketplaceState } = useExperimentalFeature(
+		"agentNative.sourceMarketplace",
+	);
+	const experimentalAgentSourceMarketplace =
+		agentSourceMarketplaceState.enabled &&
+		agentSourceMarketplaceState.availability === "available";
+
 	const context = useMemo<CommandContext>(
 		() => ({
 			route: { pathname: location.pathname, params: {} },
@@ -104,6 +111,7 @@ export function CommandContextProvider({ children }: { children: ReactNode }) {
 			notificationSoundsMuted,
 			navigate: navigateTo,
 			experimentalAgentCommandPalette,
+			experimentalAgentSourceMarketplace,
 		}),
 		[
 			location.pathname,
@@ -117,6 +125,7 @@ export function CommandContextProvider({ children }: { children: ReactNode }) {
 			notificationSoundsMuted,
 			navigateTo,
 			experimentalAgentCommandPalette,
+			experimentalAgentSourceMarketplace,
 		],
 	);
 

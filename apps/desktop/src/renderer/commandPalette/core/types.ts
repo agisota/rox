@@ -34,6 +34,16 @@ export interface CommandContext {
 	 * React render. Defaults to `false` (treat as off) when not supplied.
 	 */
 	experimentalAgentCommandPalette?: boolean;
+	/**
+	 * Whether the `agentNative.sourceMarketplace` experimental feature is usable
+	 * (enabled AND resolves `available`). Carried on the context for the same
+	 * reason as {@link experimentalAgentCommandPalette}: `provide` runs outside a
+	 * React render and cannot call `useExperimentalFeature`. The "Подключить
+	 * источник агента" command reads this to decide whether to navigate to the
+	 * in-desktop sources route (gate on) or stay honestly disabled (gate off).
+	 * Defaults to `false` (treat as off) when not supplied.
+	 */
+	experimentalAgentSourceMarketplace?: boolean;
 }
 
 export interface Command {
