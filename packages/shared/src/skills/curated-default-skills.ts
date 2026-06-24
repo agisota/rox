@@ -1807,6 +1807,12 @@ export const CURATED_DEFAULT_SKILLS: readonly CuratedDefaultSkill[] = [
 			"Создание новых agent skills с прогрессивным раскрытием и ресурсами.",
 	},
 	{
+		// NOTE: `engineering-team/playwright-pro` is a bundle of 10 inner skills
+		// with no top-level SKILL.md, so build-preinstall-catalog.ts fail-soft
+		// skips it (285/286 staged). TODO: to reach the full 286, pin this
+		// `subpath` to ONE concrete inner skill dir (e.g.
+		// "engineering-team/playwright-pro/<chosen-skill>") — a one-line change
+		// once we pick which of the 10 inner skills to ship.
 		name: "playwright-pro",
 		repo: "github.com/alirezarezvani/claude-skills",
 		subpath: "engineering-team/playwright-pro",

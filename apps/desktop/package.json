@@ -18,7 +18,6 @@
 		"start": "electron-vite preview",
 		"generate:icons": "bun run scripts/generate-file-icons.ts",
 		"bundle:cli": "bun run scripts/build-bundled-cli.ts",
-		"fetch:catalog": "bun run scripts/fetch-preinstall-catalog.ts",
 		"build:catalog": "bun run scripts/build-preinstall-catalog.ts",
 		"predev": "cross-env NODE_ENV=development bun run clean:dev && bun run generate:icons && bun run bundle:cli && cross-env NODE_ENV=development bun run scripts/clean-launch-services.ts && cross-env NODE_ENV=development bun run scripts/patch-dev-protocol.ts",
 		"dev": "cross-env NODE_ENV=development NODE_OPTIONS=--max-old-space-size=8192 electron-vite dev --watch",

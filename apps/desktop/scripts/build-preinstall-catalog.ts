@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
  * Build the preinstall catalog archives (skills + subagents) from the curated
- * default skill set defined in @rox/shared. Replaces the legacy
- * fetch-preinstall-catalog.ts download of the 985-skill snapshot: instead of
+ * default skill set defined in @rox/shared. Replaces the legacy (now removed)
+ * fetch-from-GitHub-release download of the 985-skill snapshot: instead of
  * pulling a giant catalog from a GitHub release, we shallow-clone exactly the
  * curated source repos and stage only the curated skills.
  *
@@ -14,7 +14,7 @@
  *   - manifest.json   — version + per-archive {count, archive, sha256, bytes}
  *
  * FAIL-SOFT: a repo that cannot be cloned (offline CI, transient network) is
- * skipped, never breaks the build — mirroring fetch-preinstall-catalog.ts. The
+ * skipped, never breaks the build — mirroring the legacy fetch path. The
  * committed manifest.json reflects the last successful local build; the big
  * *.tar.gz files stay gitignored and are rebuilt at prebuild/prepackage time.
  *
