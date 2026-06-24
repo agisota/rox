@@ -10,6 +10,13 @@ import {
 	useState,
 } from "react";
 
+import {
+	type CreateAudioPump,
+	type CreateStreamSocket,
+	createDeepgramStreamingTranscript,
+	type MintStreamToken,
+	type PersistStreamSegment,
+} from "./deepgram-stream";
 import { resolveLivekitEnv } from "./env";
 import {
 	createTranscriptCollector,
@@ -17,6 +24,7 @@ import {
 	EMPTY_LIVE_TRANSCRIPT,
 	encodeTranscriptSegment,
 	type LiveTranscript,
+	reduceTranscript,
 	TRANSCRIPT_DATA_TOPIC,
 	type TranscriptSegment,
 	type TranscriptSource,
@@ -344,6 +352,197 @@ export function useLiveTranscript({
 		chunkMs,
 		listSegments,
 		createRecorder,
+	]);
+
+	return transcript;
+}
+
+export interface UseDeepgramStreamingTranscriptArgs {
+	/** The connected `Room` (from `useVoiceRoom`); null disables streaming. */
+	room: Room | null;
+	/**
+	 * When false, the streaming source is OFF (the caller renders the Phase-1
+	 * chunked transcript instead). Lets the desktop hook flip between the
+	 * lower-latency Deepgram stream and the Groq fallback with one flag — no
+	 * regression when streaming is unavailable (no Deepgram key / token).
+	 */
+	enabled: boolean;
+	/** Local participant identity (speaker tag on every captured segment). */
+	speakerIdentity: string;
+	/** Local participant display name (falls back to identity). */
+	speakerName: string;
+	/**
+	 * Mint a short-lived Deepgram token. In the app this wraps the
+	 * `voice.deepgramStreamToken` mutation; the renderer never holds the real key.
+	 */
+	mintToken: MintStreamToken;
+	/** Persist a streaming final durably (optional; omit to skip storage). */
+	persist?: PersistStreamSegment;
+	/** Late-joiner backfill, identical to `useLiveTranscript` (optional). */
+	listSegments?: (roomName: string) => Promise<TranscriptSegment[]>;
+	/** Injected ws factory — tests pass a fake so no real socket opens. */
+	createSocket?: CreateStreamSocket;
+	/** Injected audio-pump factory — tests pass a fake so no real mic is tapped. */
+	createAudioPump?: CreateAudioPump;
+}
+
+/**
+ * In-App Streaming STT hook — the lower-latency SOURCE behind the SAME Phase-1
+ * surface. While `room` is connected and `enabled`, it tees the LOCAL mic track
+ * (reusing the EXISTING `localMicTrack` tap — no second `getUserMedia`), streams it
+ * to Deepgram realtime via {@link createDeepgramStreamingTranscript}, and on each
+ * stable FINAL routes it through the EXISTING fan-out + persist + reducer:
+ *   - fan-out: `room.localParticipant.publishData(bytes, TRANSCRIPT_DATA_TOPIC)` —
+ *     the SAME envelope Phase-1/Phase-2 use, so remotes merge with no change;
+ *   - persist: the injected `persist` callback (`voice.persistTranscriptSegment`);
+ *   - local fold: the streaming source folds via `reduceTranscript` and pushes the
+ *     new `LiveTranscript` here.
+ *
+ * It STILL subscribes to `RoomEvent.DataReceived` and merges REMOTE finals (from
+ * other participants, including any Phase-2 worker) through the SAME reducer, and
+ * backfills a late joiner via `listSegments` — so the panel shows everyone's words
+ * exactly as in Phase-1. Returns an empty transcript when streaming is not active.
+ */
+export function useDeepgramStreamingTranscript({
+	room,
+	enabled,
+	speakerIdentity,
+	speakerName,
+	mintToken,
+	persist,
+	listSegments,
+	createSocket,
+	createAudioPump,
+}: UseDeepgramStreamingTranscriptArgs): LiveTranscript {
+	const [transcript, setTranscript] = useState<LiveTranscript>(
+		EMPTY_LIVE_TRANSCRIPT,
+	);
+
+	useEffect(() => {
+		if (!room || !enabled) {
+			setTranscript(EMPTY_LIVE_TRANSCRIPT);
+			return;
+		}
+
+		let stopped = false;
+		// Local + remote finals merge into ONE displayed log. The streaming source
+		// owns the LOCAL log (its own `reduceTranscript` state, surfaced via
+		// `onChange`); remote (data-channel) + backfill finals accumulate separately.
+		// We recompute the union by folding `local` then every `remote` through the
+		// SAME reducer (dedupe by id), so a final delivered by BOTH paths logs once.
+		let localLog: LiveTranscript = EMPTY_LIVE_TRANSCRIPT;
+		const remoteSegments: TranscriptSegment[] = [];
+
+		const recompute = () => {
+			let union = localLog;
+			for (const segment of remoteSegments) {
+				union = reduceTranscript(union, segment);
+			}
+			if (!stopped) setTranscript(union);
+		};
+
+		const addRemote = (segment: TranscriptSegment | null) => {
+			if (!segment) return;
+			remoteSegments.push(segment);
+			recompute();
+		};
+
+		// Subscribe to remote participants' finals (same wiring as Phase-1).
+		const onData = (
+			payload: Uint8Array,
+			_participant?: unknown,
+			_kind?: unknown,
+			topic?: string,
+		) => {
+			if (topic && topic !== TRANSCRIPT_DATA_TOPIC) return;
+			addRemote(decodeTranscriptSegment(payload, room.name));
+		};
+		room.on(RoomEvent.DataReceived, onData);
+
+		// Late-joiner backfill from durable storage (same as Phase-1).
+		if (listSegments) {
+			void listSegments(room.name)
+				.then((segments) => {
+					for (const segment of segments) remoteSegments.push(segment);
+					recompute();
+				})
+				.catch((error) => {
+					console.error(
+						"[useDeepgramStreamingTranscript] backfill failed",
+						error,
+					);
+				});
+		}
+
+		let stream: ReturnType<typeof createDeepgramStreamingTranscript> | null =
+			null;
+
+		// The mic may publish slightly after connect; retry until the track exists.
+		const tryStart = (): boolean => {
+			const track = localMicTrack(room);
+			if (!track) return false;
+			stream = createDeepgramStreamingTranscript({
+				roomName: room.name,
+				micTrack: track,
+				speakerIdentity,
+				speakerName,
+				mintToken,
+				persist,
+				// The source emits its FULL local log on each new local final; store it
+				// and recompute the union with the accumulated remote/backfill finals.
+				onChange: (local) => {
+					localLog = local;
+					recompute();
+				},
+				onError: (error) => {
+					console.error("[useDeepgramStreamingTranscript] stream error", error);
+				},
+				publish: (bytes) => {
+					if (stopped) return;
+					void room.localParticipant
+						.publishData(bytes, {
+							reliable: true,
+							topic: TRANSCRIPT_DATA_TOPIC,
+						})
+						.catch((error) => {
+							console.error(
+								"[useDeepgramStreamingTranscript] fan-out publish failed",
+								error,
+							);
+						});
+				},
+				createSocket,
+				createAudioPump,
+			});
+			return true;
+		};
+
+		let armRetry: ReturnType<typeof setInterval> | null = null;
+		if (!tryStart()) {
+			armRetry = setInterval(() => {
+				if (tryStart() && armRetry) {
+					clearInterval(armRetry);
+					armRetry = null;
+				}
+			}, 500);
+		}
+
+		return () => {
+			stopped = true;
+			room.off(RoomEvent.DataReceived, onData);
+			if (armRetry) clearInterval(armRetry);
+			stream?.stop();
+		};
+	}, [
+		room,
+		enabled,
+		speakerIdentity,
+		speakerName,
+		mintToken,
+		persist,
+		listSegments,
+		createSocket,
+		createAudioPump,
 	]);
 
 	return transcript;
