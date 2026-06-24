@@ -1,5 +1,3 @@
-"use client";
-
 import type { EntityKind } from "@rox/db/enums";
 import {
 	mapSessionLinks,
@@ -23,17 +21,17 @@ import {
 import { Skeleton } from "@rox/ui/skeleton";
 import { toast } from "@rox/ui/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-
-import { useTRPC } from "@/trpc/react";
-import { useDebouncedValue } from "../../../search/useDebouncedValue";
+import { LuLink2, LuSearch } from "react-icons/lu";
+import { ExperimentalFeatureGate } from "renderer/components/ExperimentalFeatureGate";
+import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
+import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 
 /** Min query length before a target search fires (matches `graphSearchSchema.query.min(1)`). */
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
 
-/** The Project-OS object kinds a session can be linked to. */
+/** The Project-OS object kinds a session can be linked to (parity with the web surface). */
 const TARGET_KINDS = [
 	"note",
 	"task",
@@ -50,23 +48,61 @@ interface PickedTarget {
 	title: string;
 }
 
+export interface SessionObjectLinkPanelProps {
+	/** The chat session this control links to a Project-OS object. */
+	sessionId: string;
+	/** Optional session title used for the session graph node label. */
+	sessionTitle?: string | null;
+	/** Optional fallback rendered when the gate is closed (OFF = absent). */
+	fallback?: React.ReactNode;
+}
+
 /**
- * Object-linked-chat control (`projectOs.objectLinkedChat`). Lets the user link
+ * Desktop parity for `projectOs.objectLinkedChat` — a gated control that links
  * THIS chat session to a Project-OS object and reads back the session's existing
- * links — entirely over the shipped graph router, no new procedure and no
- * migration:
+ * links, entirely over the shipped graph router (no new procedure, no migration):
  *   - ensures the session's `agent_session` graph node on mount via
  *     `graph.create` (idempotent on a deterministic key → true get-or-create),
  *   - finds a target object with a debounced `graph.search` over the addressable
- *     kinds (the same shipped search the unified-search surface uses),
+ *     kinds (the same shipped search the desktop unified-search surface uses),
  *   - links session→target with `graph.link` (relation `about`/`references`), and
- *   - lists the session's outgoing links via `graph.neighbors` + `mapSessionLinks`.
+ *   - lists the session's outgoing links via `graph.neighbors` + the REUSED pure
+ *     `mapSessionLinks` (`@rox/shared/session-object-link`).
  *
+ * Ports `apps/web/.../(agents)/agents/sessions/components/SessionObjectLink/SessionObjectLinkPanel.tsx`
+ * and reuses the SAME pure mapper + the same shipped `graph.*` tRPC procedures the
+ * desktop ProjectObjectGraph shell already calls (via {@link useTRPC}). No new
+ * query, no migration, no flag flip — this is the gated desktop surface.
+ *
+ * Mounted only when {@link ExperimentalFeatureGate} opens for
+ * `projectOs.objectLinkedChat`; OFF means the surface is absent (no regression).
  * All write/read paths are org-membership gated server-side
- * (`requireActiveOrgMembership`); this surface only mounts once
- * {@link resolveObjectLinkedChatGate} opens, so the org scope always has a caller.
+ * (`requireActiveOrgMembership`).
  */
 export function SessionObjectLinkPanel({
+	sessionId,
+	sessionTitle,
+	fallback = null,
+}: SessionObjectLinkPanelProps) {
+	return (
+		<ExperimentalFeatureGate
+			featureId="projectOs.objectLinkedChat"
+			fallback={fallback}
+		>
+			<SessionObjectLinkSurface
+				sessionId={sessionId}
+				sessionTitle={sessionTitle}
+			/>
+		</ExperimentalFeatureGate>
+	);
+}
+
+/**
+ * The live surface, mounted only once the gate resolves `available`. Exported so
+ * a host that has ALREADY resolved the gate (e.g. {@link SessionObjectLinkLauncher}
+ * rendering it inside a dialog) can embed it without re-gating.
+ */
+export function SessionObjectLinkSurface({
 	sessionId,
 	sessionTitle,
 }: {
@@ -84,8 +120,8 @@ export function SessionObjectLinkPanel({
 	const query = useDebouncedValue(rawQuery.trim(), DEBOUNCE_MS);
 	const searchEnabled = query.length >= MIN_QUERY_LENGTH;
 
-	// Ensure the session graph node exists (get-or-create). Runs once on mount;
-	// the deterministic idempotency key makes a replay return the same node.
+	// Ensure the session graph node exists (get-or-create). Runs once per session
+	// id; the deterministic idempotency key makes a replay return the same node.
 	const ensureMutation = useMutation(
 		trpc.graph.create.mutationOptions({
 			onSuccess: (entity) => setSessionEntityId(entity.id),
@@ -93,10 +129,11 @@ export function SessionObjectLinkPanel({
 				toast.error(error.message || "Не удалось подготовить узел сессии"),
 		}),
 	);
+	const ensureMutate = ensureMutation.mutate;
 	// biome-ignore lint/correctness/useExhaustiveDependencies: ensure exactly once per session id
 	useEffect(() => {
 		setSessionEntityId(null);
-		ensureMutation.mutate(sessionEntityEnsureInput(sessionId, sessionTitle));
+		ensureMutate(sessionEntityEnsureInput(sessionId, sessionTitle));
 	}, [sessionId, sessionTitle]);
 
 	const searchQuery = useQuery({
@@ -167,9 +204,9 @@ export function SessionObjectLinkPanel({
 	const hits = searchQuery.data?.hits ?? [];
 
 	return (
-		<section className="space-y-4 rounded-lg border border-violet-500/30 bg-card p-5">
+		<section className="space-y-4" aria-label="Связать сессию с объектом">
 			<header className="flex items-center gap-2">
-				<Link2 className="size-4 text-muted-foreground" />
+				<LuLink2 className="size-4 text-muted-foreground" />
 				<div className="min-w-0">
 					<h2 className="font-semibold text-sm uppercase tracking-[0.14em] text-muted-foreground">
 						Связать с объектом
@@ -184,7 +221,7 @@ export function SessionObjectLinkPanel({
 			{/* Target picker */}
 			<div className="space-y-2">
 				<div className="relative">
-					<Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-muted-foreground" />
+					<LuSearch className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-muted-foreground" />
 					<Input
 						type="search"
 						value={picked ? picked.title : rawQuery}

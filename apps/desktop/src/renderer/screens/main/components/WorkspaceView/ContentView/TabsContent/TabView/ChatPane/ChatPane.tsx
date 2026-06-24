@@ -6,6 +6,7 @@ import { useCallback } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
+import { SessionObjectLinkLauncher } from "renderer/routes/_authenticated/components/ProjectObjectGraph";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { SplitPaneOptions, Tab } from "renderer/stores/tabs/types";
 import { TabContentContextMenu } from "../../TabContentContextMenu";
@@ -149,6 +150,10 @@ export function ChatPane({
 									onSelectSession={handleSelectSession}
 									onNewChat={handleNewChat}
 									onDeleteSession={handleDeleteSession}
+								/>
+								<SessionObjectLinkLauncher
+									sessionId={sessionId}
+									sessionTitle={paneName}
 								/>
 							</div>
 							<PaneToolbarActions

@@ -1,9 +1,11 @@
-import type { EntityKind } from "@rox/db/enums";
-
 /**
  * Pure mapping + presentation helpers for the object-linked-chat surface
- * (`projectOs.objectLinkedChat`). Three concerns, all dependency-free (no React,
- * no tRPC) so the panel stays a thin render layer and the logic is unit-testable:
+ * (`projectOs.objectLinkedChat`), shared cross-platform (web + desktop). Three
+ * concerns, all dependency-free (no React, no tRPC, and intentionally no
+ * `@rox/db` import so `@rox/shared` stays db-free — the same inline-mirror rule
+ * as `unified-search-results.ts` / `rox-ledger-kind.ts`; `@rox/db` depends on
+ * `@rox/shared`, so the reverse edge would be a cycle) so each platform's panel
+ * stays a thin render layer and the logic is unit-testable:
  *
  *  1. `sessionEntityEnsureInput` — the `graph.create` args that get-or-create the
  *     `agent_session` graph node for a chat session. The chat session lives in
@@ -17,6 +19,14 @@ import type { EntityKind } from "@rox/db/enums";
  *  3. `mapSessionLinks` — the readout: maps a `graph.neighbors` result (edges
  *     incident to the session node) into the rows the panel renders.
  */
+
+/**
+ * A graph-object kind, mirrored as a string to keep `@rox/shared` db-free (same
+ * rule as `UnifiedSearchEntityKind`). The consuming layers (`apps/web`,
+ * `apps/desktop`) pass real `EntityKind` values, which structurally satisfy
+ * `string`; unknown kinds degrade to the raw kind label.
+ */
+export type SessionLinkEntityKind = string;
 
 /** The relations this control offers — a chat session is `about` or `references` an object. */
 export const SESSION_LINK_RELATIONS = ["about", "references"] as const;
@@ -184,10 +194,17 @@ export function sessionEntityIdempotencyKey(sessionId: string): string {
 	return uuidv5(`chat-session/${sessionId}`, SESSION_ENTITY_NAMESPACE);
 }
 
-/** Args for `graph.create` matching `graphCreateSchema`. */
+/**
+ * Args for `graph.create` matching `graphCreateSchema`. `kind` is the exact
+ * literal `"agent_session"` (not the open `SessionLinkEntityKind`) so it stays
+ * assignable to the `graph.create` input's `EntityKind` union WITHOUT importing
+ * `@rox/db` here (the literal is a member of that union). Keeps `@rox/shared`
+ * db-free while letting both the web and desktop callers pass this straight to
+ * `graph.create`.
+ */
 export interface SessionEntityEnsureInput {
 	idempotencyKey: string;
-	kind: EntityKind;
+	kind: "agent_session";
 	title: string;
 	slug: string;
 	sourceRef: { conversationId: string };
@@ -263,7 +280,7 @@ export function sessionLinkInput(params: {
 export interface NeighborsResultSlice {
 	nodes: ReadonlyArray<{
 		entityId: string;
-		kind: EntityKind;
+		kind: SessionLinkEntityKind;
 		title: string;
 		slug: string | null;
 	}>;
@@ -281,12 +298,12 @@ export interface SessionLinkRow {
 	relation: string;
 	relationLabel: string;
 	targetEntityId: string;
-	targetKind: EntityKind | null;
+	targetKind: SessionLinkEntityKind | null;
 	targetTitle: string;
 	targetSlug: string | null;
 }
 
-const KIND_LABELS: Partial<Record<EntityKind, string>> = {
+const KIND_LABELS: Record<string, string> = {
 	note: "Заметка",
 	task: "Задача",
 	project: "Проект",
@@ -301,7 +318,7 @@ const KIND_LABELS: Partial<Record<EntityKind, string>> = {
 	design_artifact: "Дизайн",
 };
 
-export function sessionLinkKindLabel(kind: EntityKind): string {
+export function sessionLinkKindLabel(kind: SessionLinkEntityKind): string {
 	return KIND_LABELS[kind] ?? kind;
 }
 

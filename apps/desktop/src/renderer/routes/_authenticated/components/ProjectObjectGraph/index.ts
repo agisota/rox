@@ -24,3 +24,12 @@ export {
 	type RelationOption,
 	relationLabel,
 } from "./relations";
+export {
+	SessionObjectLinkLauncher,
+	type SessionObjectLinkLauncherProps,
+} from "./SessionObjectLinkLauncher";
+export {
+	SessionObjectLinkPanel,
+	type SessionObjectLinkPanelProps,
+	SessionObjectLinkSurface,
+} from "./SessionObjectLinkPanel";
