@@ -19,6 +19,7 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "../ui/collapsible";
+import { useToolGroupItem } from "./tool-group";
 
 /** TanStack AI native states + derived output states. */
 export type ToolDisplayState =
@@ -34,15 +35,33 @@ export type ToolDisplayState =
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
-export const Tool = ({ className, ...props }: ToolProps) => (
-	<Collapsible
-		className={cn(
-			"not-prose mb-4 w-full overflow-hidden rounded-lg border border-border bg-muted/30 font-mono",
-			className,
-		)}
-		{...props}
-	/>
-);
+export const Tool = ({
+	className,
+	open,
+	defaultOpen,
+	onOpenChange,
+	...props
+}: ToolProps) => {
+	// When the caller doesn't control open state, follow the surrounding
+	// ToolGroup so the expand-all / collapse-all toolbar can drive this card.
+	// Standalone (no group) this is plain local state seeded from defaultOpen.
+	const isControlled = open !== undefined || onOpenChange !== undefined;
+	const group = useToolGroupItem({ defaultOpen: defaultOpen ?? false });
+	const openState = isControlled ? open : group.open;
+	const handleOpenChange = isControlled ? onOpenChange : group.onOpenChange;
+
+	return (
+		<Collapsible
+			className={cn(
+				"not-prose mb-4 w-full overflow-hidden rounded-lg border border-border bg-muted/30 font-mono",
+				className,
+			)}
+			onOpenChange={handleOpenChange}
+			open={openState}
+			{...props}
+		/>
+	);
+};
 
 export type ToolHeaderProps = {
 	title?: string;
