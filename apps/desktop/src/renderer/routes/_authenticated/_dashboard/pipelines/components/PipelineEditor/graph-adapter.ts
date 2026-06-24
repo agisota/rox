@@ -44,6 +44,12 @@ export type PipelineNodeData = {
 	subBlocks?: Record<string, unknown>;
 	/** Whether the block is disabled (skipped at runtime). */
 	enabled?: boolean;
+	/**
+	 * Live run-trace status for this block during an active pipeline run
+	 * (`running`/`succeeded`/`failed`/`waiting_approval`/`pending`). Set by the
+	 * editor from polled `getRun` steps; absent when no run is active.
+	 */
+	runStatus?: string;
 	[key: string]: unknown;
 };
 

@@ -20,7 +20,7 @@ function toBaseErrorMessage(error: unknown): string {
 	if (error instanceof Error && error.message.trim().length > 0) {
 		return error.message;
 	}
-	return "Failed to send message";
+	return "Не удалось отправить сообщение";
 }
 
 function toNumericStatus(value: unknown): number | null {
@@ -63,5 +63,5 @@ export function toSendFailureMessage(error: unknown): string {
 	const baseMessage = toBaseErrorMessage(error);
 	const statusCode = getErrorStatusCode(error);
 	if (statusCode !== 401 && statusCode !== 403) return baseMessage;
-	return "Model authentication failed. Reconnect OAuth or set an API key in the model picker, then retry.";
+	return "Ошибка аутентификации модели. Переподключите OAuth или укажите API-ключ в пикере моделей и повторите.";
 }

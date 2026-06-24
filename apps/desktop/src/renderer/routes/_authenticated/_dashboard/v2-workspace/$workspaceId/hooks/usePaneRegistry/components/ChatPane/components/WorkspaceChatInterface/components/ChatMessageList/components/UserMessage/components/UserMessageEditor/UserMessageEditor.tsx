@@ -80,7 +80,7 @@ export function UserMessageEditor({
 					event.preventDefault();
 					handleSubmit();
 				}}
-				placeholder="Edit message..."
+				placeholder="Изменить сообщение…"
 				className="h-9 w-full rounded-xl border border-transparent bg-muted/45 px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-border focus:bg-background/70"
 			/>
 			<div className="flex justify-end gap-1">
@@ -92,7 +92,7 @@ export function UserMessageEditor({
 					onClick={onCancel}
 					disabled={isSubmitting}
 				>
-					Cancel
+					Отмена
 				</Button>
 				<Button
 					type="button"
@@ -105,10 +105,10 @@ export function UserMessageEditor({
 					{isSubmitting ? (
 						<>
 							<Loader2Icon className="size-4 animate-spin" />
-							Sending
+							Отправка
 						</>
 					) : (
-						"Send"
+						"Отправить"
 					)}
 				</Button>
 			</div>

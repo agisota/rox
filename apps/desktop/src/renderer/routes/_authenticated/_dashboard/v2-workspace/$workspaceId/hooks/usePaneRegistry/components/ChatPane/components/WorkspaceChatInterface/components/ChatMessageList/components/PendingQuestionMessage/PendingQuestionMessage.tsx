@@ -94,8 +94,7 @@ export function PendingQuestionMessage({
 	if (!question) return null;
 
 	const questionId = question.questionId?.trim() ?? "";
-	const questionText =
-		question.question?.trim() || "The agent asked a question.";
+	const questionText = question.question?.trim() || "Агент задал вопрос.";
 	const answerText = freeText.trim();
 	const canRespond = questionId.length > 0;
 	const hasOptimisticAnswer = optimisticAnswer !== null;
@@ -165,13 +164,13 @@ export function PendingQuestionMessage({
 					{hasOptimisticAnswer ? (
 						<div className="rounded-md border bg-muted/20 p-3">
 							<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-								Submitted answer
+								Отправленный ответ
 							</div>
 							<div className="mt-1 text-sm text-foreground">
 								{optimisticAnswer}
 							</div>
 							<div className="mt-1 text-xs text-muted-foreground">
-								Waiting for agent confirmation...
+								Ожидание подтверждения агента…
 							</div>
 						</div>
 					) : options.length > 0 ? (
@@ -218,14 +217,16 @@ export function PendingQuestionMessage({
 								ref={inputRef}
 								value={freeText}
 								onChange={(event) => setFreeText(event.target.value)}
-								placeholder="Type your answer..."
+								placeholder="Введите ответ…"
 								disabled={controlsDisabled}
 							/>
 							<Button
 								type="submit"
 								disabled={controlsDisabled || answerText.length === 0}
 							>
-								{isSubmitting || hasOptimisticAnswer ? "Sending..." : "Submit"}
+								{isSubmitting || hasOptimisticAnswer
+									? "Отправка…"
+									: "Отправить"}
 							</Button>
 						</form>
 					)}

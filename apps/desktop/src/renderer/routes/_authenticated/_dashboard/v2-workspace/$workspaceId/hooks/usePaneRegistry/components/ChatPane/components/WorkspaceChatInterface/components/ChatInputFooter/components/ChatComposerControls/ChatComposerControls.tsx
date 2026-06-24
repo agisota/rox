@@ -24,7 +24,10 @@ interface ChatComposerControlsProps {
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	// Value-only setter: the underlying PermissionModePicker.onSelectMode only
+	// ever calls it with a concrete mode, so this accepts both the store-backed
+	// `usePermissionModePreference` setter and a plain `useState` dispatcher.
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	canAbort: boolean;

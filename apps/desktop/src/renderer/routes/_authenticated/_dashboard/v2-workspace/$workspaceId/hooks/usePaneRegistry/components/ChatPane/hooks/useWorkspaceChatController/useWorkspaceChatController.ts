@@ -147,7 +147,7 @@ export function useWorkspaceChatController({
 
 	const getOrCreateSession = useCallback(async (): Promise<string> => {
 		if (!organizationId) {
-			throw new Error("No active organization selected");
+			throw new Error("Нет активной организации");
 		}
 
 		if (sessionId) {

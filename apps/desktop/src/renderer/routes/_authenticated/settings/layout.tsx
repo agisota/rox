@@ -27,84 +27,72 @@ export const Route = createFileRoute("/_authenticated/settings")({
 	component: SettingsLayout,
 });
 
-const SECTION_ORDER: SettingsSection[] = [
-	"account",
-	"appearance",
-	"ringtones",
-	"keyboard",
-	"behavior",
-	"git",
-	"terminal",
-	"links",
-	"shares",
-	"models",
-	"organization",
-	"teams",
-	"integrations",
-	"apikeys",
-	"permissions",
-	"hosts",
-	"experimental",
+/**
+ * Single source of truth for section ⇆ route mapping (Settings P0 hardening).
+ *
+ * Previously `SECTION_ORDER`, `getSectionFromPath` and `getPathFromSection`
+ * were three hand-maintained lists that drifted: ringtones, voice, shares,
+ * links, security, agents, api-keys, teams and integrations were missing from
+ * one or more of them, so search auto-navigation could not land on those
+ * sections and the path maps disagreed with the sidebar. They are now derived
+ * from this one ordered manifest, whose order + membership matches the sidebar
+ * nav groups (`GeneralSettings`) and the search registry (`SettingsSection`).
+ *
+ * `slug` is the URL segment under `/settings/`; `match` (optional) lists extra
+ * pathname fragments that should resolve to this section (e.g. the `api-keys`
+ * route maps to the `apikeys` registry section).
+ */
+interface SettingsSectionRoute {
+	section: SettingsSection;
+	slug: string;
+	match?: string[];
+}
+
+const SETTINGS_SECTION_ROUTES: SettingsSectionRoute[] = [
+	// Личное
+	{ section: "account", slug: "account" },
+	{ section: "appearance", slug: "appearance" },
+	{ section: "ringtones", slug: "ringtones" },
+	// Редактор и процесс
+	{ section: "behavior", slug: "behavior" },
+	{ section: "keyboard", slug: "keyboard" },
+	{ section: "voice", slug: "voice" },
+	{ section: "git", slug: "git" },
+	{ section: "agents", slug: "agents" },
+	{ section: "terminal", slug: "terminal" },
+	{ section: "links", slug: "links" },
+	{ section: "shares", slug: "shares" },
+	{ section: "models", slug: "models" },
+	// Организация
+	{ section: "organization", slug: "organization" },
+	{ section: "teams", slug: "teams" },
+	{ section: "project", slug: "projects", match: ["/settings/project"] },
+	{ section: "hosts", slug: "hosts" },
+	{ section: "integrations", slug: "integrations" },
+	{ section: "apikeys", slug: "api-keys" },
+	// Система
+	{ section: "security", slug: "security" },
+	{ section: "permissions", slug: "permissions" },
+	{ section: "experimental", slug: "experimental" },
 ];
 
+const SECTION_ORDER: SettingsSection[] = SETTINGS_SECTION_ROUTES.map(
+	(entry) => entry.section,
+);
+
 function getSectionFromPath(pathname: string): SettingsSection | null {
-	if (pathname.includes("/settings/account")) return "account";
-	if (pathname.includes("/settings/organization")) return "organization";
-	if (pathname.includes("/settings/teams")) return "teams";
-	if (pathname.includes("/settings/appearance")) return "appearance";
-	if (pathname.includes("/settings/ringtones")) return "ringtones";
-	if (pathname.includes("/settings/keyboard")) return "keyboard";
-	if (pathname.includes("/settings/behavior")) return "behavior";
-	if (pathname.includes("/settings/git")) return "git";
-	if (pathname.includes("/settings/terminal")) return "terminal";
-	if (pathname.includes("/settings/links")) return "links";
-	if (pathname.includes("/settings/shares")) return "shares";
-	if (pathname.includes("/settings/models")) return "models";
-	if (pathname.includes("/settings/experimental")) return "experimental";
-	if (pathname.includes("/settings/integrations")) return "integrations";
-	if (pathname.includes("/settings/permissions")) return "permissions";
-	if (pathname.includes("/settings/hosts")) return "hosts";
-	if (pathname.includes("/settings/project")) return "project";
+	for (const entry of SETTINGS_SECTION_ROUTES) {
+		if (pathname.includes(`/settings/${entry.slug}`)) return entry.section;
+		if (entry.match?.some((fragment) => pathname.includes(fragment))) {
+			return entry.section;
+		}
+	}
 	return null;
 }
 
 function getPathFromSection(section: SettingsSection): string {
-	switch (section) {
-		case "account":
-			return "/settings/account";
-		case "organization":
-			return "/settings/organization";
-		case "teams":
-			return "/settings/teams";
-		case "appearance":
-			return "/settings/appearance";
-		case "ringtones":
-			return "/settings/ringtones";
-		case "keyboard":
-			return "/settings/keyboard";
-		case "behavior":
-			return "/settings/behavior";
-		case "git":
-			return "/settings/git";
-		case "terminal":
-			return "/settings/terminal";
-		case "links":
-			return "/settings/links";
-		case "shares":
-			return "/settings/shares";
-		case "models":
-			return "/settings/models";
-		case "experimental":
-			return "/settings/experimental";
-		case "integrations":
-			return "/settings/integrations";
-		case "permissions":
-			return "/settings/permissions";
-		case "hosts":
-			return "/settings/hosts";
-		default:
-			return "/settings/account";
-	}
+	const entry = SETTINGS_SECTION_ROUTES.find((e) => e.section === section);
+	return entry ? `/settings/${entry.slug}` : "/settings/account";
 }
 
 function SettingsLayout() {

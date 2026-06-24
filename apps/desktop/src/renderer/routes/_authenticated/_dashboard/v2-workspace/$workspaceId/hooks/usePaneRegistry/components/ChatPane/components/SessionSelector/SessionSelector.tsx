@@ -32,6 +32,7 @@ interface SessionGroup {
 }
 
 const SESSION_PAGE_SIZE = 20;
+const NEW_CHAT_LABEL = "Новый чат";
 
 function toSessionGroupLabel(updatedAt: Date): string {
 	const startOfToday = new Date();
@@ -46,10 +47,10 @@ function toSessionGroupLabel(updatedAt: Date): string {
 	const startOfLastMonth = new Date(startOfToday);
 	startOfLastMonth.setDate(startOfLastMonth.getDate() - 30);
 
-	if (updatedAt >= startOfToday) return "Today";
-	if (updatedAt >= startOfYesterday) return "Yesterday";
-	if (updatedAt >= startOfLastWeek) return "Last 7 days";
-	if (updatedAt >= startOfLastMonth) return "Last 30 days";
+	if (updatedAt >= startOfToday) return "Сегодня";
+	if (updatedAt >= startOfYesterday) return "Вчера";
+	if (updatedAt >= startOfLastWeek) return "Последние 7 дней";
+	if (updatedAt >= startOfLastMonth) return "Последние 30 дней";
 	return getRelativeTime(updatedAt.getTime());
 }
 
@@ -106,9 +107,15 @@ export function SessionSelector({
 	const current = sessions.find(
 		(session) => session.sessionId === currentSessionId,
 	);
-	const resolvedFallbackTitle =
-		fallbackTitle && fallbackTitle !== "New Chat" ? fallbackTitle : null;
-	const currentTitle = current?.title || resolvedFallbackTitle || "New Chat";
+	// Treat the legacy "New Chat" sentinel (still passed by ChatPaneTitle) and
+	// its RU equivalent as "no real title yet" so the placeholder shows instead.
+	const isPlaceholderFallback =
+		!fallbackTitle ||
+		fallbackTitle === "New Chat" ||
+		fallbackTitle === NEW_CHAT_LABEL;
+	const resolvedFallbackTitle = isPlaceholderFallback ? null : fallbackTitle;
+	const currentTitle =
+		current?.title || resolvedFallbackTitle || NEW_CHAT_LABEL;
 
 	return (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -125,7 +132,7 @@ export function SessionSelector({
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-80">
-				<DropdownMenuLabel className="text-xs">Sessions</DropdownMenuLabel>
+				<DropdownMenuLabel className="text-xs">Сессии</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<div className="max-h-80 overflow-y-auto">
 					{sessions.length > 0 ? (
@@ -162,14 +169,14 @@ export function SessionSelector({
 										className="w-full rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 										onClick={loadMoreSessions}
 									>
-										Show more sessions
+										Показать ещё
 									</button>
 								</div>
 							)}
 						</>
 					) : (
 						<div className="px-2 py-1.5 text-xs text-muted-foreground">
-							No sessions yet
+							Пока нет сессий
 						</div>
 					)}
 				</div>
@@ -182,7 +189,7 @@ export function SessionSelector({
 					}}
 				>
 					<HiMiniPlus className="mr-1.5 size-3.5" />
-					<span className="text-xs">New Chat</span>
+					<span className="text-xs">{NEW_CHAT_LABEL}</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

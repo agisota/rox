@@ -46,7 +46,7 @@ function ImagePart({ data, mimeType }: { data: string; mimeType: string }) {
 	return (
 		<img
 			src={`data:${mimeType};base64,${data}`}
-			alt="Attached"
+			alt="Вложение"
 			className="max-h-48 rounded-lg object-contain"
 		/>
 	);
@@ -228,7 +228,7 @@ export function AssistantMessage({
 						src={data}
 						filename={rawPart.filename}
 						mediaType={mediaType}
-						alt={rawPart.filename ?? "Generated"}
+						alt={rawPart.filename ?? "Сгенерировано"}
 						triggerClassName="max-w-[85%]"
 					>
 						<button
@@ -236,14 +236,14 @@ export function AssistantMessage({
 							className="cursor-pointer"
 							aria-label={
 								rawPart.filename
-									? `View ${rawPart.filename}`
-									: "View generated image"
+									? `Открыть ${rawPart.filename}`
+									: "Открыть сгенерированное изображение"
 							}
 							onClick={() => handleAttachmentClick(data, rawPart.filename)}
 						>
 							<img
 								src={data}
-								alt={rawPart.filename ?? "Generated"}
+								alt={rawPart.filename ?? "Сгенерировано"}
 								className="max-h-48 rounded-lg object-contain"
 							/>
 						</button>
@@ -349,7 +349,7 @@ export function AssistantMessage({
 			<MessageContent>
 				{nodes.length === 0 && isStreaming ? (
 					<ShimmerLabel className="text-sm text-muted-foreground">
-						Thinking...
+						Думаю…
 					</ShimmerLabel>
 				) : (
 					nodes

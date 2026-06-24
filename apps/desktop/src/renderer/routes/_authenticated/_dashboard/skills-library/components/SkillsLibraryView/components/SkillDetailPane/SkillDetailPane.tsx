@@ -1,11 +1,64 @@
+/**
+ * Center pane: the skill detail editor (P0/MVP-3..8).
+ *
+ * Header with name/description/path + action row (Открыть в Finder, Удалить).
+ * Body = resizable file tree | editor area. The editor area has Tabs:
+ * "Редактор" (CodeMirror, language by extension, autosave + explicit save) and
+ * "Просмотр" (streamdown, .md only). A SKILL.md frontmatter form sits above the
+ * editor with two-way YAML sync. Binary / too-large files fall back to a
+ * non-editable plaque with "Открыть в Finder".
+ *
+ * Transport is the existing local electron-tRPC `skillsLibrary` router; no new
+ * procedures. "Удалить" requires a P1 backend procedure (skillsLibrary.remove)
+ * that would touch the shared router, so it is rendered disabled with a tooltip
+ * rather than faked.
+ */
+
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@rox/ui/alert-dialog";
+import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "@rox/ui/resizable";
 import { Skeleton } from "@rox/ui/skeleton";
-import { toast } from "@rox/ui/sonner";
-import { Textarea } from "@rox/ui/textarea";
-import { cn } from "@rox/ui/utils";
-import { useEffect, useState } from "react";
-import { LuFile, LuSave } from "react-icons/lu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@rox/ui/tabs";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@rox/ui/tooltip";
+import { useEffect, useMemo, useState } from "react";
+import {
+	LuCopy,
+	LuExternalLink,
+	LuEye,
+	LuPencil,
+	LuTrash2,
+} from "react-icons/lu";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { useExternalActions } from "../../../../hooks/useExternalActions";
+import { useSkillFileEditor } from "../../../../hooks/useSkillFileEditor";
+import { sourceLabel } from "../../../../lib/constants";
+import { isEditableTextFile, isMarkdownFile } from "../../../../lib/file-kind";
+import { SkillCodeEditor } from "./components/SkillCodeEditor";
+import { SkillEditorFallback } from "./components/SkillEditorFallback";
+import { SkillEditorFooter } from "./components/SkillEditorFooter";
+import { SkillFileTree } from "./components/SkillFileTree";
+import { SkillFrontmatterForm } from "./components/SkillFrontmatterForm";
+import { SkillMarkdownPreview } from "./components/SkillMarkdownPreview";
 
 interface SkillDetailPaneProps {
 	skillId: string;
@@ -13,16 +66,15 @@ interface SkillDetailPaneProps {
 }
 
 export function SkillDetailPane({ skillId, onSaved }: SkillDetailPaneProps) {
-	const utils = electronTrpc.useUtils();
 	const { data: detail, isLoading } = electronTrpc.skillsLibrary.get.useQuery({
 		id: skillId,
 	});
+	const { revealInFinder } = useExternalActions();
 
 	const [activePath, setActivePath] = useState<string | null>(null);
-	const [draft, setDraft] = useState("");
-	const [original, setOriginal] = useState("");
+	const [view, setView] = useState<"editor" | "preview">("editor");
 
-	// Default the active file to SKILL.md (or the first file) once detail loads.
+	// Default the active file to SKILL.md (or the first file) when detail loads.
 	useEffect(() => {
 		if (!detail) return;
 		const preferred =
@@ -31,35 +83,27 @@ export function SkillDetailPane({ skillId, onSaved }: SkillDetailPaneProps) {
 		setActivePath(preferred ? preferred.relativePath : null);
 	}, [detail]);
 
-	const { data: fileData, isFetching: isFileLoading } =
-		electronTrpc.skillsLibrary.readFile.useQuery(
-			{ id: skillId, relativePath: activePath ?? "" },
-			{ enabled: activePath !== null },
-		);
+	const activeFile = useMemo(
+		() =>
+			detail?.files.find((file) => file.relativePath === activePath) ?? null,
+		[detail, activePath],
+	);
 
-	useEffect(() => {
-		if (fileData) {
-			setDraft(fileData.content);
-			setOriginal(fileData.content);
-		}
-	}, [fileData]);
+	const editable = activePath !== null && isEditableTextFile(activePath);
+	const isMarkdown = activePath !== null && isMarkdownFile(activePath);
+	const isSkillMd = activePath === "SKILL.md";
 
-	const writeMutation = electronTrpc.skillsLibrary.writeFile.useMutation({
-		onSuccess: () => {
-			setOriginal(draft);
-			void utils.skillsLibrary.get.invalidate({ id: skillId });
-			if (activePath) {
-				void utils.skillsLibrary.readFile.invalidate({
-					id: skillId,
-					relativePath: activePath,
-				});
-			}
-			onSaved?.();
-		},
-		onError: (error) => toast.error(`Не удалось сохранить: ${error.message}`),
+	const editor = useSkillFileEditor({
+		skillId,
+		relativePath: activePath,
+		editable,
+		onSaved,
 	});
 
-	const isDirty = draft !== original;
+	// Markdown preview only makes sense for .md; force back to editor otherwise.
+	useEffect(() => {
+		if (!isMarkdown && view === "preview") setView("editor");
+	}, [isMarkdown, view]);
 
 	if (isLoading || !detail) {
 		return (
@@ -71,91 +115,226 @@ export function SkillDetailPane({ skillId, onSaved }: SkillDetailPaneProps) {
 		);
 	}
 
-	return (
-		<div className="flex h-full min-h-0 flex-col">
-			<header className="border-b border-border px-6 py-4">
-				<h2 className="text-base font-semibold text-foreground">
-					{detail.name}
-				</h2>
-				{detail.description && (
-					<p className="mt-0.5 text-sm text-muted-foreground select-text">
-						{detail.description}
-					</p>
-				)}
-				<p className="mt-1 truncate font-mono text-xs text-muted-foreground/70 select-text">
-					{detail.absolutePath}
-				</p>
-			</header>
-
-			<div className="flex min-h-0 flex-1">
-				<div className="flex w-56 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-border p-2">
-					{detail.files.length === 0 ? (
-						<p className="px-2 py-4 text-xs text-muted-foreground">
-							Файлы не найдены.
-						</p>
-					) : (
-						detail.files.map((file) => (
-							<button
-								key={file.relativePath}
-								type="button"
-								onClick={() => setActivePath(file.relativePath)}
-								className={cn(
-									"flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors",
-									file.relativePath === activePath
-										? "bg-accent text-foreground"
-										: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-								)}
-							>
-								<LuFile className="size-3.5 shrink-0" />
-								<span className="min-w-0 flex-1 truncate font-mono">
-									{file.relativePath}
-								</span>
-							</button>
-						))
-					)}
+	const renderEditorArea = () => {
+		if (activePath === null) {
+			return (
+				<div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
+					Выберите файл слева, чтобы посмотреть или отредактировать его.
 				</div>
-
-				<div className="flex min-w-0 flex-1 flex-col">
-					<div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
-						<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
-							{activePath ?? "Файл не выбран"}
-						</span>
-						<Button
-							size="sm"
-							disabled={!isDirty || !activePath || writeMutation.isPending}
-							onClick={() => {
-								if (!activePath) return;
-								writeMutation.mutate({
-									id: skillId,
-									relativePath: activePath,
-									content: draft,
-								});
-							}}
-						>
-							<LuSave className="size-4" />
-							Сохранить
-						</Button>
-					</div>
-					{activePath === null ? (
-						<div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
-							Выберите файл слева, чтобы посмотреть или отредактировать его.
-						</div>
-					) : isFileLoading && draft.length === 0 ? (
-						<div className="flex flex-col gap-2 p-4">
-							<Skeleton className="h-4 w-full" />
-							<Skeleton className="h-4 w-5/6" />
-							<Skeleton className="h-4 w-2/3" />
-						</div>
-					) : (
-						<Textarea
-							value={draft}
-							onChange={(event) => setDraft(event.target.value)}
-							spellCheck={false}
-							className="m-0 min-h-0 flex-1 resize-none rounded-none border-0 font-mono text-xs leading-relaxed focus-visible:ring-0"
-						/>
-					)}
+			);
+		}
+		if (!editable) {
+			return (
+				<SkillEditorFallback
+					kind="binary"
+					sizeBytes={activeFile?.size}
+					onReveal={() => revealInFinder(detail.absolutePath)}
+				/>
+			);
+		}
+		if (editor.readError === "too-large") {
+			return (
+				<SkillEditorFallback
+					kind="too-large"
+					sizeBytes={activeFile?.size}
+					onReveal={() => revealInFinder(detail.absolutePath)}
+				/>
+			);
+		}
+		if (editor.readError) {
+			return (
+				<SkillEditorFallback
+					kind="read-error"
+					onReveal={() => revealInFinder(detail.absolutePath)}
+				/>
+			);
+		}
+		if (editor.isLoading) {
+			return (
+				<div className="flex flex-col gap-2 p-4">
+					<Skeleton className="h-4 w-full" />
+					<Skeleton className="h-4 w-5/6" />
+					<Skeleton className="h-4 w-2/3" />
+				</div>
+			);
+		}
+		return (
+			<div className="flex min-h-0 flex-1 flex-col">
+				{isSkillMd && (
+					<SkillFrontmatterForm
+						value={editor.draft}
+						onChange={editor.setDraft}
+					/>
+				)}
+				<div className="min-h-0 flex-1 overflow-hidden">
+					<SkillCodeEditor
+						relativePath={activePath}
+						value={editor.draft}
+						onChange={editor.setDraft}
+					/>
 				</div>
 			</div>
+		);
+	};
+
+	return (
+		<div className="flex h-full min-h-0 flex-col">
+			<header className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+				<div className="min-w-0">
+					<div className="flex items-center gap-2">
+						<h2 className="truncate text-base font-semibold text-foreground">
+							{detail.name}
+						</h2>
+						<Badge variant="outline" className="font-mono text-[10px]">
+							{sourceLabel(detail.source)}
+						</Badge>
+					</div>
+					{detail.description && (
+						<p className="mt-0.5 line-clamp-2 select-text text-sm text-muted-foreground">
+							{detail.description}
+						</p>
+					)}
+					<button
+						type="button"
+						onClick={() => revealInFinder(detail.absolutePath)}
+						title="Открыть в Finder"
+						className="mt-1 max-w-full truncate select-text font-mono text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
+					>
+						{detail.absolutePath}
+					</button>
+				</div>
+				<TooltipProvider>
+					<div className="flex shrink-0 items-center gap-1.5">
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={() => revealInFinder(detail.absolutePath)}
+						>
+							<LuExternalLink className="size-4" />В Finder
+						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span tabIndex={-1}>
+									<Button size="sm" variant="ghost" disabled>
+										<LuCopy className="size-4" />
+										Дублировать
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent>
+								Доступно после расширения локального API (P1)
+							</TooltipContent>
+						</Tooltip>
+						<AlertDialog>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<span tabIndex={-1}>
+										<AlertDialogTrigger asChild>
+											<Button
+												size="sm"
+												variant="ghost"
+												disabled
+												className="text-destructive hover:text-destructive"
+											>
+												<LuTrash2 className="size-4" />
+												Удалить
+											</Button>
+										</AlertDialogTrigger>
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>
+									Доступно после расширения локального API (P1)
+								</TooltipContent>
+							</Tooltip>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>
+										Удалить скилл «{detail.name}»?
+									</AlertDialogTitle>
+									<AlertDialogDescription>
+										Действие необратимо.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel>Отмена</AlertDialogCancel>
+									<AlertDialogAction disabled>Удалить</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
+					</div>
+				</TooltipProvider>
+			</header>
+
+			<ResizablePanelGroup
+				direction="horizontal"
+				autoSaveId="rox-skill-detail"
+				className="min-h-0 flex-1"
+			>
+				<ResizablePanel
+					defaultSize={26}
+					minSize={16}
+					maxSize={40}
+					className="min-w-[10rem]"
+				>
+					<SkillFileTree
+						files={detail.files}
+						activePath={activePath}
+						onSelect={(path) => {
+							setActivePath(path);
+							setView("editor");
+						}}
+					/>
+				</ResizablePanel>
+				<ResizableHandle withHandle />
+				<ResizablePanel defaultSize={74} minSize={40}>
+					<div className="flex h-full min-h-0 flex-col">
+						<Tabs
+							value={view}
+							onValueChange={(next) => setView(next as "editor" | "preview")}
+							className="flex min-h-0 flex-1 flex-col gap-0"
+						>
+							<div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
+								<TabsList className="h-8">
+									<TabsTrigger value="editor" className="text-xs">
+										<LuPencil className="size-3.5" />
+										Редактор
+									</TabsTrigger>
+									<TabsTrigger
+										value="preview"
+										className="text-xs"
+										disabled={!isMarkdown}
+									>
+										<LuEye className="size-3.5" />
+										Просмотр
+									</TabsTrigger>
+								</TabsList>
+								<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+									{activePath ?? "Файл не выбран"}
+								</span>
+							</div>
+							<TabsContent
+								value="editor"
+								className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden"
+							>
+								{renderEditorArea()}
+							</TabsContent>
+							<TabsContent
+								value="preview"
+								className="m-0 min-h-0 flex-1 data-[state=inactive]:hidden"
+							>
+								{isMarkdown && <SkillMarkdownPreview content={editor.draft} />}
+							</TabsContent>
+						</Tabs>
+						{view === "editor" && editable && !editor.readError && (
+							<SkillEditorFooter
+								isDirty={editor.isDirty}
+								isSaving={editor.isSaving}
+								onSave={editor.save}
+							/>
+						)}
+					</div>
+				</ResizablePanel>
+			</ResizablePanelGroup>
 		</div>
 	);
 }

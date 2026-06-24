@@ -28,7 +28,7 @@ export function SessionSelectorItem({
 			<span
 				className={`min-w-0 flex-1 truncate text-xs ${isCurrent ? "font-semibold" : ""}`}
 			>
-				{title || "New Chat"}
+				{title || "Новый чат"}
 			</span>
 			{!isCurrent && (
 				<button
@@ -37,18 +37,18 @@ export function SessionSelectorItem({
 					onClick={(event) => {
 						event.stopPropagation();
 						alert({
-							title: "Delete Chat Session",
-							description: "Are you sure you want to delete this session?",
+							title: "Удалить сессию чата",
+							description: "Удалить эту сессию? Действие необратимо.",
 							actions: [
-								{ label: "Cancel", variant: "outline", onClick: () => {} },
+								{ label: "Отмена", variant: "outline", onClick: () => {} },
 								{
-									label: "Delete",
+									label: "Удалить",
 									variant: "destructive",
 									onClick: () => {
 										toast.promise(onDeleteSession(sessionId), {
-											loading: "Deleting session...",
-											success: "Session deleted",
-											error: "Failed to delete session",
+											loading: "Удаление сессии…",
+											success: "Сессия удалена",
+											error: "Не удалось удалить сессию",
 										});
 									},
 								},

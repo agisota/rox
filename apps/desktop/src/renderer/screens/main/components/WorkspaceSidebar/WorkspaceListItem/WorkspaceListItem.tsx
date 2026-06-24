@@ -29,14 +29,13 @@ import {
 	MAX_KEYBOARD_SHORTCUT_INDEX,
 } from "./constants";
 import { useWorkspaceDnD } from "./useWorkspaceDnD";
-import { WorkspaceAheadBehind } from "./WorkspaceAheadBehind";
 import { WorkspaceContextMenu } from "./WorkspaceContextMenu";
 import { WorkspaceDiffStats } from "./WorkspaceDiffStats";
 import { WorkspaceIcon } from "./WorkspaceIcon";
+import { WorkspaceRowStatus } from "./WorkspaceRowStatus";
 import {
 	WorkspaceConnectionBadge,
 	type WorkspaceConnectionState,
-	WorkspaceStatusBadge,
 } from "./WorkspaceStatusBadge";
 
 interface WorkspaceListItemProps {
@@ -379,7 +378,7 @@ export function WorkspaceListItem({
 									Локальное рабочее пространство
 								</p>
 								<p className="text-xs text-muted-foreground">
-									Changes are made directly in the main repository
+									Изменения вносятся напрямую в основной репозиторий
 								</p>
 							</>
 						) : (
@@ -388,7 +387,7 @@ export function WorkspaceListItem({
 									Рабочее пространство worktree
 								</p>
 								<p className="text-xs text-muted-foreground">
-									Isolated copy for parallel development
+									Изолированная копия для параллельной работы
 								</p>
 							</>
 						)}
@@ -429,12 +428,12 @@ export function WorkspaceListItem({
 								{isBranchWorkspace ? "local" : name || branch}
 							</span>
 
-							{isBranchWorkspace && aheadBehind && (
-								<WorkspaceAheadBehind
-									ahead={aheadBehind.ahead}
-									behind={aheadBehind.behind}
-								/>
-							)}
+							{/* Always-visible git/PR signal cluster — reads cache only */}
+							<WorkspaceRowStatus
+								pr={pr}
+								aheadBehind={isBranchWorkspace ? aheadBehind : null}
+								isActive={isActive}
+							/>
 
 							<AnimatePresence initial={false} mode="popLayout">
 								<WorkspaceConnectionBadge
@@ -485,21 +484,11 @@ export function WorkspaceListItem({
 							</div>
 						</div>
 
-						{(showBranchSubtitle || pr) && (
+						{showBranchSubtitle && (
 							<div className="flex items-center gap-2 text-[12px] w-full">
-								{showBranchSubtitle && (
-									<span className="text-muted-foreground/60 truncate font-mono leading-tight">
-										{branch}
-									</span>
-								)}
-								{pr && (
-									<WorkspaceStatusBadge
-										state={pr.state}
-										prNumber={pr.number}
-										prUrl={pr.url}
-										className="ml-auto"
-									/>
-								)}
+								<span className="text-muted-foreground/60 truncate font-mono leading-tight">
+									{branch}
+								</span>
 							</div>
 						)}
 					</div>

@@ -13,6 +13,7 @@ import {
 	getImageExtensionFromMimeType,
 	parseBase64DataUrl,
 } from "shared/file-types";
+import { SettingsCard, SettingsRow } from "../../../components/SettingsCard";
 import {
 	isItemVisible,
 	SETTING_ITEM_ID,
@@ -131,7 +132,7 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 				</p>
 			</div>
 
-			<div className="space-y-3">
+			<div className="space-y-6">
 				{showProfile && <ProfilePublicSettings />}
 
 				{showIdentity && <IdentitySettings />}
@@ -140,8 +141,8 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 					(!isReady && !user && !session ? (
 						<ProfileSkeleton />
 					) : user ? (
-						<>
-							<SettingRow label="Аватар" hint="Рекомендуемый размер 256×256.">
+						<SettingsCard>
+							<SettingsRow label="Аватар" hint="Рекомендуемый размер 256×256.">
 								<button
 									type="button"
 									onClick={handleAvatarUpload}
@@ -155,26 +156,28 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 										image={avatarPreview}
 									/>
 								</button>
-							</SettingRow>
+							</SettingsRow>
 
-							<SettingRow label="Имя">
+							<SettingsRow label="Имя" htmlFor="account-name">
 								<Input
+									id="account-name"
 									value={nameValue}
 									onChange={(e) => setNameValue(e.target.value)}
 									onBlur={handleNameBlur}
 									placeholder="Ваше имя"
 									className="w-80"
 								/>
-							</SettingRow>
+							</SettingsRow>
 
-							<SettingRow label="Электронная почта">
+							<SettingsRow label="Электронная почта" htmlFor="account-email">
 								<Input
+									id="account-email"
 									value={user.email}
 									readOnly
 									className="w-80 opacity-60"
 								/>
-							</SettingRow>
-						</>
+							</SettingsRow>
+						</SettingsCard>
 					) : (
 						<p className="text-sm text-muted-foreground">
 							Не удалось загрузить данные пользователя
@@ -184,8 +187,8 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 				{showUsage && <AccountUsagePanel />}
 
 				{showSignOut && (
-					<div className={showProfile ? "pt-5" : undefined}>
-						<SettingRow
+					<SettingsCard>
+						<SettingsRow
 							label="Выйти из аккаунта на этом устройстве"
 							hint="Чтобы пользоваться Rox на этом устройстве, нужно будет войти снова."
 						>
@@ -202,30 +205,10 @@ export function AccountSettings({ visibleItems }: AccountSettingsProps) {
 							>
 								Выйти
 							</Button>
-						</SettingRow>
-					</div>
+						</SettingsRow>
+					</SettingsCard>
 				)}
 			</div>
-		</div>
-	);
-}
-
-interface SettingRowProps {
-	label: string;
-	hint?: string;
-	children: React.ReactNode;
-}
-
-function SettingRow({ label, hint, children }: SettingRowProps) {
-	return (
-		<div className="flex items-center justify-between gap-8">
-			<div className="flex-1 min-w-0">
-				<div className="text-sm font-medium">{label}</div>
-				{hint && (
-					<div className="text-xs text-muted-foreground mt-0.5">{hint}</div>
-				)}
-			</div>
-			<div className="flex-shrink-0">{children}</div>
 		</div>
 	);
 }

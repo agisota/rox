@@ -213,6 +213,7 @@
 		"lucide-react": "0.563.0",
 		"mastracode": "0.18.1",
 		"mdast-util-to-string": "4.0.0",
+		"motion": "12.38.0",
 		"nanoid": "5.1.7",
 		"native-keymap": "3.3.9",
 		"node-addon-api": "7.1.1",

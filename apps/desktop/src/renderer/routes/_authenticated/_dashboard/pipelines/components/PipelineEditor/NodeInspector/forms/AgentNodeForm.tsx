@@ -51,6 +51,10 @@ export function AgentNodeForm({ node, patch }: NodeFormProps) {
 	const slugInList = roles.some((r) => r.skill.slug === boundSlug);
 	const boundUnknown =
 		boundSlug.length > 0 && !slugInList && !rolesQuery.isLoading;
+	// Preview of what the bound role does (dify parity: see the node's config at a
+	// glance). Cache-first: renders from the already-loaded role list.
+	const boundRole = roles.find((r) => r.skill.slug === boundSlug);
+	const rolePreview = boundRole?.skill.description ?? null;
 
 	const onRoleChange = (value: string) => {
 		if (value === NO_ROLE) {
@@ -132,6 +136,11 @@ export function AgentNodeForm({ node, patch }: NodeFormProps) {
 				{!boundSlug && (
 					<p className="text-[11px] text-muted-foreground">
 						Узел не выполнится без привязанной роли.
+					</p>
+				)}
+				{rolePreview && (
+					<p className="line-clamp-3 rounded-md border bg-muted/30 p-2 text-[11px] text-muted-foreground">
+						{rolePreview}
 					</p>
 				)}
 			</div>
