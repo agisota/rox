@@ -2,6 +2,10 @@ import { motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { useMatchRoute, useParams } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineWifi } from "react-icons/hi2";
+import {
+	NotificationBell,
+	NotificationBellController,
+} from "renderer/components/NotificationBell";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { useOnlineStatus } from "renderer/hooks/useOnlineStatus";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -87,6 +91,9 @@ export function TopBar() {
 			)}
 
 			<div className="flex items-center gap-3 h-full pr-4 shrink-0">
+				{/* Side-effect only: feeds the bell from the live comms SSE + agent
+				    lifecycle seams. Renders nothing. */}
+				<NotificationBellController />
 				{!sidebarHostsChrome && (
 					<ResourceConsumption surface={isV2CloudEnabled ? "v2" : "v1"} />
 				)}
@@ -119,6 +126,7 @@ export function TopBar() {
 						</motion.div>
 					)}
 				</AnimatePresence>
+				<NotificationBell />
 				{isV2WorkspaceRoute ? (
 					<V2WorkspaceOpenInButton workspaceId={v2WorkspaceId} />
 				) : workspace?.worktreePath ? (
