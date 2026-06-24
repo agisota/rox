@@ -350,6 +350,34 @@ interface InflightRuntimeCreation {
 	promise: Promise<RuntimeSession>;
 }
 
+/**
+ * Per-session state for the lazy cold-boot path in getSnapshot. A cold
+ * session's runtime boot (createMastraCode + harness.init + selectOrCreateThread)
+ * runs in the background; this records whether it's in-flight ("booting") or has
+ * failed ("failed") so getSnapshot can return a stable discriminator instead of
+ * overloading a null displayState. A deterministic failure (bad creds, missing
+ * workspace) re-reads the same inputs every poll, so we back off via
+ * attempts/nextRetryAt rather than re-kicking a fresh failing boot ~4×/second.
+ */
+interface ColdBootState {
+	status: "booting" | "failed";
+	error?: string;
+	/** Failed-boot attempts so far; drives exponential backoff. */
+	attempts: number;
+	/** Epoch ms after which a failed boot may be re-attempted. */
+	nextRetryAt?: number;
+}
+
+/**
+ * Discriminator returned by getSnapshot while a session's runtime is not yet
+ * resident. The renderer uses this to show a loader (booting) or a stable error
+ * (failed) instead of misreading a null displayState as an empty conversation.
+ */
+interface BootSnapshotState {
+	status: "booting" | "failed";
+	error?: string;
+}
+
 export class ChatRuntimeManager {
 	private readonly db: HostDb;
 	private readonly runtimeResolver: ModelProviderRuntimeResolver;
@@ -358,6 +386,12 @@ export class ChatRuntimeManager {
 		string,
 		InflightRuntimeCreation
 	>();
+	// Lazy cold-boot state per session for the non-blocking getSnapshot path,
+	// keyed by sessionId. Lets getSnapshot return a stable booting/failed
+	// discriminator (never throwing) and back off deterministic boot failures
+	// instead of re-kicking a fresh failing boot on every ~4fps poll. Cleared
+	// on successful boot and on disposeRuntime.
+	private readonly coldBootState = new Map<string, ColdBootState>();
 
 	constructor(options: ChatRuntimeManagerOptions) {
 		this.db = options.db;
@@ -581,6 +615,12 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 	 * delete from it (which would leak).
 	 */
 	async disposeRuntime(sessionId: string, workspaceId: string): Promise<void> {
+		// Clear any cold-boot state up front so a failed/in-flight boot can't leak
+		// a stale "failed" entry that a later getSnapshot poll would surface as a
+		// phantom error for a session that no longer exists. A boot still running
+		// will see status !== "booting" in its .catch and drop its result.
+		this.coldBootState.delete(sessionId);
+
 		const inflight = this.runtimeCreations.get(sessionId);
 		if (inflight) {
 			if (inflight.workspaceId !== workspaceId) {
@@ -703,20 +743,97 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		sessionId: string;
 		workspaceId: string;
 	}): Promise<{
-		displayState: ChatDisplayState;
+		displayState: ChatDisplayState | null;
 		messages: RuntimeMessages;
+		boot?: BootSnapshotState;
 	}> {
-		const runtime = await this.getOrCreateRuntime(
-			input.sessionId,
-			input.workspaceId,
-		);
-		const displayState = this.buildDisplayState(runtime);
-		const messages = await runtime.engine.listMessages();
+		// Non-blocking cold path. A first-time runtime boot (createMastraCode +
+		// engine.init + selectOrCreateThread) takes seconds; awaiting it here
+		// would pin the renderer's getSnapshot poll on `undefined` and render a
+		// multi-second loading state on every workspace entry. Instead we boot in
+		// the background and return immediately with a `boot` discriminator so the
+		// renderer shows a loader (booting) or a stable error (failed) WITHOUT
+		// misreading a null displayState as an empty conversation. Crucially we
+		// never throw here: a thrown boot error races React Query's auto-retry
+		// (which would re-kick a fresh boot and swallow the error). Warm sessions
+		// (runtime resident) skip all of this and return the real snapshot.
+		const existing = this.runtimes.get(input.sessionId);
+		if (!existing) {
+			const state = this.coldBootState.get(input.sessionId);
+
+			// A deterministic failure (bad creds, missing workspace) re-reads the
+			// same inputs forever, so keep the error sticky and only re-attempt
+			// after a growing backoff — never churn a fresh failing boot per poll.
+			if (state?.status === "failed") {
+				const canRetry =
+					state.nextRetryAt === undefined || Date.now() >= state.nextRetryAt;
+				if (!canRetry) {
+					return {
+						displayState: null,
+						messages: [],
+						boot: { status: "failed", error: state.error },
+					};
+				}
+				// Backoff elapsed — fall through and re-attempt the boot below.
+			}
+
+			this.kickColdBoot(
+				input.sessionId,
+				input.workspaceId,
+				state?.attempts ?? 0,
+			);
+			return { displayState: null, messages: [], boot: { status: "booting" } };
+		}
+
+		const displayState = this.buildDisplayState(existing);
+		const messages = await existing.engine.listMessages();
 		// Intentionally no observedAt: when the harness state hasn't changed,
 		// the response object is structurally identical to the previous poll's
 		// response, so React Query's structuralSharing preserves the object
 		// identity and idle polls don't trigger downstream rerenders.
 		return { displayState, messages };
+	}
+
+	/**
+	 * Start (or restart, after a backoff) a background runtime boot for a cold
+	 * session, recording booting/failed state in coldBootState. getOrCreateRuntime
+	 * de-dupes concurrent creations, so invoking this on every poll while a boot
+	 * is in flight is safe — only one boot runs. On failure the error is held
+	 * sticky with exponential backoff (1s,2s,4s,… capped at 30s) so a
+	 * deterministic failure doesn't churn a fresh failing boot ~4×/second.
+	 */
+	private kickColdBoot(
+		sessionId: string,
+		workspaceId: string,
+		priorAttempts: number,
+	): void {
+		// A boot is already in flight (possibly started by sendMessage) — don't
+		// disturb the shared creation; the existing coldBootState/booting stands.
+		if (this.runtimeCreations.has(sessionId)) return;
+
+		this.coldBootState.set(sessionId, {
+			status: "booting",
+			attempts: priorAttempts,
+		});
+		void this.getOrCreateRuntime(sessionId, workspaceId)
+			.then(() => {
+				this.coldBootState.delete(sessionId);
+			})
+			.catch((error: unknown) => {
+				// Drop the failure if this session was disposed/superseded while the
+				// boot was running (disposeRuntime clears coldBootState), so a stale
+				// error can't resurface on a later poll for a gone session.
+				if (this.coldBootState.get(sessionId)?.status !== "booting") return;
+				const attempts = priorAttempts + 1;
+				this.coldBootState.set(sessionId, {
+					status: "failed",
+					error: error instanceof Error ? error.message : String(error),
+					attempts,
+					nextRetryAt:
+						Date.now() +
+						Math.min(30_000, 1000 * 2 ** Math.min(attempts - 1, 5)),
+				});
+			});
 	}
 
 	async sendMessage(

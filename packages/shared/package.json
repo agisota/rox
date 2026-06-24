@@ -28,6 +28,10 @@
 			"types": "./src/crm-contacts.ts",
 			"default": "./src/crm-contacts.ts"
 		},
+		"./issue-board": {
+			"types": "./src/issue-board.ts",
+			"default": "./src/issue-board.ts"
+		},
 		"./attribution": {
 			"types": "./src/attribution.ts",
 			"default": "./src/attribution.ts"
@@ -211,6 +215,10 @@
 		"./host-info": {
 			"types": "./src/host-info.ts",
 			"default": "./src/host-info.ts"
+		},
+		"./skills/curated-default-skills": {
+			"types": "./src/skills/curated-default-skills.ts",
+			"default": "./src/skills/curated-default-skills.ts"
 		},
 		"./host-routing": {
 			"types": "./src/host-routing.ts",

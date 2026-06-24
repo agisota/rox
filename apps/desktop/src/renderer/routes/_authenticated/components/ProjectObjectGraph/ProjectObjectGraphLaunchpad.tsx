@@ -6,6 +6,7 @@ import { ExperimentalFeatureGate } from "renderer/components/ExperimentalFeature
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { CrmContactsPanel } from "./CrmContactsPanel";
+import { IssueBoardPanel } from "./IssueBoardPanel";
 import { LinkPicker } from "./LinkPicker";
 import { ObjectDetailsPanel, type ObjectGraphNode } from "./ObjectDetailsPanel";
 import { ProjectObjectGraphPanel } from "./ProjectObjectGraphPanel";
@@ -149,6 +150,16 @@ function ProjectObjectGraphShell({ v2ProjectId }: { v2ProjectId: string }) {
 			 * both rendered through the reused `@rox/shared/crm-contacts` mappers.
 			 */}
 			<CrmContactsPanel />
+
+			{/*
+			 * Org issue board (`projectOs.issueBoard`, desktop parity). Self-gated:
+			 * renders only when that experiment is on, otherwise absent (no
+			 * regression). Columns are the org's task statuses (`task.statuses.list`)
+			 * and cards are the org's tasks (`task.list`), grouped through the reused
+			 * `@rox/shared/issue-board` → `groupTasksByStatus` mapper (the SAME module
+			 * the web board panel consumes).
+			 */}
+			<IssueBoardPanel />
 
 			<div className="grid gap-4 md:grid-cols-2">
 				<ProjectObjectGraphPanel

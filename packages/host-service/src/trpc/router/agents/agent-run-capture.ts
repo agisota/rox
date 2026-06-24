@@ -327,9 +327,16 @@ export async function runAgentAndCapture(
 			const displayState = snapshot.displayState as {
 				isRunning?: unknown;
 				pendingQuestion?: unknown;
-			};
+			} | null;
+			// A null displayState means the session's runtime is still cold-booting
+			// (lazy getSnapshot returns boot:{status} with a null displayState until
+			// the runtime is resident). Treat that as not-yet-settled so the capture
+			// loop keeps polling until the runtime is warm and the turn has ended,
+			// instead of dereferencing null and throwing.
 			const settled =
-				displayState.isRunning !== true && displayState.pendingQuestion == null;
+				displayState != null &&
+				displayState.isRunning !== true &&
+				displayState.pendingQuestion == null;
 			return {
 				settled,
 				messages: snapshot.messages as readonly unknown[],

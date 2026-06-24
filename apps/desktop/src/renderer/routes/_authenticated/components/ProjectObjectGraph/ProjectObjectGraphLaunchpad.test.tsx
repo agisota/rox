@@ -46,6 +46,20 @@ const cloudProxy = {
 			mutationOptions: (opts: unknown) => opts,
 		},
 	},
+	// The self-gated IssueBoard panel (`projectOs.issueBoard`, desktop parity)
+	// also mounts inside the shell when the experiment resolves available, so its
+	// shipped read-only task queries must be stubbed here too — they render empty
+	// without a live transport.
+	task: {
+		statuses: {
+			list: {
+				queryOptions: () => ({ queryKey: ["task.statuses.list"] }),
+			},
+		},
+		list: {
+			queryOptions: (input: unknown) => ({ queryKey: ["task.list", input] }),
+		},
+	},
 };
 
 mock.module("renderer/lib/api-trpc-react", () => ({
