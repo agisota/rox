@@ -139,6 +139,14 @@ export function MailMessageCard({
 						<dd className="truncate font-mono">
 							{message.toAddrs?.join(", ") || "—"}
 						</dd>
+						{message.ccAddrs && message.ccAddrs.length > 0 && (
+							<>
+								<dt className="font-medium">Копия</dt>
+								<dd className="truncate font-mono">
+									{message.ccAddrs.join(", ")}
+								</dd>
+							</>
+						)}
 						{message.subject?.trim() && (
 							<>
 								<dt className="font-medium">Тема</dt>

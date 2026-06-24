@@ -96,7 +96,7 @@ export function PipelinesIndex() {
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-content px-4 py-6">
+		<div className="w-full px-4 py-6">
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0">
 					<h1 className="flex min-w-0 items-center gap-2 text-xl font-medium">

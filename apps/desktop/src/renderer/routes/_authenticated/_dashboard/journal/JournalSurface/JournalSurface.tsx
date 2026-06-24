@@ -31,8 +31,9 @@ interface JournalSurfaceProps {
  * sits alongside on wide widths and collapses to a horizontal strip below 1024px.
  *
  * Layout goes through the canonical `DashboardSurface` (bare escape hatch) so
- * width uses the shared `max-w-content` token — never a per-surface max-w-5xl —
+ * the surface frame is full-bleed (no per-surface max-w cap / centered gutter)
  * while this surface owns the bounded-height flex column the virtualizer needs.
+ * Only the reflection lane keeps a `max-w-3xl` reading column for legibility.
  */
 export function JournalSurface({
 	search,
@@ -100,7 +101,7 @@ export function JournalSurface({
 
 	return (
 		<DashboardSurface bare>
-			<div className="mx-auto flex h-full w-full max-w-content flex-col px-6 py-6">
+			<div className="flex h-full w-full flex-col px-6 py-6">
 				<header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<div className="min-w-0">
 						<h1 className="font-semibold text-2xl text-foreground">Журнал</h1>

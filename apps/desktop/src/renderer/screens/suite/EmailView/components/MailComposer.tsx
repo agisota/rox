@@ -2,8 +2,16 @@ import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { Textarea } from "@rox/ui/textarea";
-import { Send, TriangleAlert, X } from "lucide-react";
-import { useId, useState } from "react";
+import { Paperclip, Save, Send, TriangleAlert, X } from "lucide-react";
+import { useId, useRef, useState } from "react";
+import { formatSize } from "../lib/mailFormat";
+
+/** One locally-attached file pending send (name + size for the chip). */
+export interface DraftAttachment {
+	id: string;
+	name: string;
+	size: number;
+}
 
 /** The editable fields of one composed message. */
 export interface MailDraft {
@@ -12,6 +20,8 @@ export interface MailDraft {
 	bcc: string;
 	subject: string;
 	body: string;
+	/** Locally-staged attachments (UI only until the send path accepts them). */
+	attachments?: DraftAttachment[];
 }
 
 export const EMPTY_DRAFT: MailDraft = {
@@ -20,6 +30,7 @@ export const EMPTY_DRAFT: MailDraft = {
 	bcc: "",
 	subject: "",
 	body: "",
+	attachments: [],
 };
 
 export interface MailComposerProps {
@@ -27,6 +38,8 @@ export interface MailComposerProps {
 	onChange: (next: MailDraft) => void;
 	onSend: () => void;
 	onCancel?: () => void;
+	/** Persist the current draft to the local draft store ("Сохранить черновик"). */
+	onSaveDraft?: () => void;
 	sending: boolean;
 	/** Resend outbound is gated off server-side (`PRECONDITION_FAILED`). */
 	outboundDisabled: boolean;
@@ -50,17 +63,25 @@ export function parseRecipients(raw: string): string[] {
 }
 
 /**
- * Inline mail composer (P0: plaintext `Textarea`). Used both for a brand-new
+ * Inline mail composer (plaintext `Textarea` body). Used both for a brand-new
  * message and for an inline reply prefilled from `buildMailReplyContext`. Cc/Bcc
- * are collapsed behind a toggle. `⌘↵` / `Ctrl+↵` sends. When Resend is disabled
- * server-side a persistent amber banner explains why and the send button is
- * inert — the form still composes so a draft is never lost.
+ * are collapsed behind a toggle. Attachments can be staged locally and "Сохранить
+ * черновик" persists the whole draft. `⌘↵` / `Ctrl+↵` sends. When Resend is
+ * disabled server-side a persistent amber banner explains why and the send button
+ * is inert — the form still composes (and saves) so a draft is never lost.
+ *
+ * ATTACHMENTS CAVEAT: `mail.send` (sendSchema) carries no attachment field yet —
+ * staged files are shown + persisted locally but are NOT uploaded on send.
+ * TODO(server): add an attachment-upload step (presigned R2 PUT, mirroring
+ * `getAttachmentUrl`) + an `attachmentKeys` array on `sendSchema`, then upload
+ * staged files before `send.mutate`.
  */
 export function MailComposer({
 	draft,
 	onChange,
 	onSend,
 	onCancel,
+	onSaveDraft,
 	sending,
 	outboundDisabled,
 	title = "Новое письмо",
@@ -69,6 +90,8 @@ export function MailComposer({
 		() => draft.cc.length > 0 || draft.bcc.length > 0,
 	);
 	const ids = useId();
+	const fileRef = useRef<HTMLInputElement>(null);
+	const attachments = draft.attachments ?? [];
 
 	const canSend =
 		!sending &&
@@ -84,6 +107,19 @@ export function MailComposer({
 	};
 
 	const set = (patch: Partial<MailDraft>) => onChange({ ...draft, ...patch });
+
+	const addFiles = (files: FileList | null) => {
+		if (!files || files.length === 0) return;
+		const staged: DraftAttachment[] = Array.from(files).map((f) => ({
+			id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+			name: f.name,
+			size: f.size,
+		}));
+		set({ attachments: [...attachments, ...staged] });
+	};
+
+	const removeAttachment = (id: string) =>
+		set({ attachments: attachments.filter((a) => a.id !== id) });
 
 	return (
 		// A real <form> (not a static element) carries the ⌘↵ keydown so any field
@@ -113,8 +149,8 @@ export function MailComposer({
 				<div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-amber-300 text-xs">
 					<TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
 					<span>
-						Отправка почты сейчас отключена. Письмо можно подготовить, но не
-						отправить.
+						Отправка почты сейчас отключена. Письмо можно подготовить и
+						сохранить, но не отправить.
 					</span>
 				</div>
 			)}
@@ -205,13 +241,74 @@ export function MailComposer({
 				className="resize-y font-mono text-xs"
 			/>
 
-			<footer className="flex items-center justify-between">
-				<span className="text-[10px] text-muted-foreground">
-					⌘↵ — отправить
-				</span>
-				<Button type="button" size="sm" disabled={!canSend} onClick={onSend}>
-					<Send className="size-3.5" /> Отправить
-				</Button>
+			{/* Staged attachments */}
+			{attachments.length > 0 && (
+				<div className="flex flex-wrap gap-1.5">
+					{attachments.map((att) => (
+						<span
+							key={att.id}
+							className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs"
+						>
+							<Paperclip className="size-3 shrink-0 text-muted-foreground" />
+							<span className="truncate">{att.name}</span>
+							<span className="shrink-0 text-[10px] text-muted-foreground">
+								{formatSize(att.size)}
+							</span>
+							<button
+								type="button"
+								onClick={() => removeAttachment(att.id)}
+								aria-label="Убрать вложение"
+								className="shrink-0 text-muted-foreground hover:text-foreground"
+							>
+								<X className="size-3" />
+							</button>
+						</span>
+					))}
+				</div>
+			)}
+
+			<input
+				ref={fileRef}
+				type="file"
+				multiple
+				className="hidden"
+				onChange={(e) => {
+					addFiles(e.target.files);
+					e.target.value = "";
+				}}
+			/>
+
+			<footer className="flex items-center justify-between gap-2">
+				<div className="flex items-center gap-1">
+					<Button
+						type="button"
+						size="sm"
+						variant="ghost"
+						className="h-7 gap-1.5 px-2 text-[11px] text-muted-foreground"
+						onClick={() => fileRef.current?.click()}
+					>
+						<Paperclip className="size-3.5" /> Вложить
+					</Button>
+					{onSaveDraft && (
+						<Button
+							type="button"
+							size="sm"
+							variant="ghost"
+							className="h-7 gap-1.5 px-2 text-[11px] text-muted-foreground"
+							onClick={onSaveDraft}
+						>
+							<Save className="size-3.5" /> Сохранить черновик
+						</Button>
+					)}
+				</div>
+				<div className="flex items-center gap-2">
+					<span className="text-[10px] text-muted-foreground">
+						⌘↵ — отправить
+					</span>
+					<Button type="button" size="sm" disabled={!canSend} onClick={onSend}>
+						<Send className="size-3.5" /> Отправить
+					</Button>
+				</div>
 			</footer>
 		</form>
 	);

@@ -13,6 +13,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@rox/ui/tooltip";
+import { cn } from "@rox/ui/utils";
 import {
 	Archive,
 	ArrowLeft,
@@ -22,6 +23,8 @@ import {
 	MoreVertical,
 	Reply,
 	ReplyAll,
+	ShieldAlert,
+	Star,
 	Trash2,
 } from "lucide-react";
 import type { MailThread, MailThreadMessage } from "../lib/mailTypes";
@@ -42,8 +45,12 @@ export interface MailThreadReaderProps {
 	onForward: () => void;
 	onArchive: () => void;
 	onTrash: () => void;
+	onSpam: () => void;
+	onToggleStar: () => void;
 	onMarkUnread: () => void;
 	onBack: () => void;
+	/** Whether the open thread is starred (drives the ⭐ toggle). */
+	starred: boolean;
 	/** Inline composer state; when null the composer is closed. */
 	composer: MailComposerProps | null;
 }
@@ -53,12 +60,12 @@ function ToolbarButton({
 	label,
 	icon: Icon,
 	onClick,
-	disabled,
+	active,
 }: {
 	label: string;
 	icon: typeof Reply;
 	onClick: () => void;
-	disabled?: boolean;
+	active?: boolean;
 }) {
 	return (
 		<Tooltip>
@@ -68,10 +75,11 @@ function ToolbarButton({
 					variant="ghost"
 					className="size-8"
 					onClick={onClick}
-					disabled={disabled}
 					aria-label={label}
 				>
-					<Icon className="size-4" />
+					<Icon
+						className={cn("size-4", active && "fill-amber-400 text-amber-400")}
+					/>
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>{label}</TooltipContent>
@@ -81,10 +89,12 @@ function ToolbarButton({
 
 /**
  * Panel 3 — the thread reader. Shows the empty/loading/error states, then a
- * toolbar (reply / reply-all / forward / archive / trash / kebab) over a stack
- * of {@link MailMessageCard}s (latest expanded, others collapsed). The inline
- * {@link MailComposer} reveals at the bottom via `AnimatedHeight` when a
- * reply/forward/compose is in progress — never a modal.
+ * toolbar (reply / reply-all / forward / archive / trash / spam / star / kebab)
+ * over a stack of {@link MailMessageCard}s (latest expanded, others collapsed).
+ * Each card renders From/To/Cc + the full body via react-letter + lettersanitizer
+ * (untrusted HTML in a sandboxed iframe). The inline {@link MailComposer} reveals
+ * at the bottom via `AnimatedHeight` when a reply/forward/compose is in
+ * progress — never a modal.
  */
 export function MailThreadReader({
 	thread,
@@ -99,8 +109,11 @@ export function MailThreadReader({
 	onForward,
 	onArchive,
 	onTrash,
+	onSpam,
+	onToggleStar,
 	onMarkUnread,
 	onBack,
+	starred,
 	composer,
 }: MailThreadReaderProps) {
 	if (!thread && !isLoading && !error && !composer) {
@@ -147,6 +160,12 @@ export function MailThreadReader({
 								onClick={onForward}
 							/>
 							<ToolbarButton
+								label={starred ? "Снять отметку" : "В избранное"}
+								icon={Star}
+								onClick={onToggleStar}
+								active={starred}
+							/>
+							<ToolbarButton
 								label="Архивировать"
 								icon={Archive}
 								onClick={onArchive}
@@ -166,6 +185,9 @@ export function MailThreadReader({
 								<DropdownMenuContent align="end">
 									<DropdownMenuItem onClick={onMarkUnread}>
 										<MailOpen className="size-4" /> Отметить непрочитанным
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={onSpam}>
+										<ShieldAlert className="size-4" /> В спам
 									</DropdownMenuItem>
 									<DropdownMenuItem onClick={onArchive}>
 										<Archive className="size-4" /> Архивировать
