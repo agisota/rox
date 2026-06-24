@@ -45,8 +45,12 @@ function makeState(
 }
 
 describe("catalog node types (Slice 1b)", () => {
-	test("all 9 catalog types register into the shared registry", () => {
-		expect(CATALOG_NODE_TYPES).toHaveLength(9);
+	test("the Logic/Input/Output catalog types register into the shared registry", () => {
+		// The catalog grew with later categories (AI/Data/Code/Tools); these 9 are
+		// the original Slice-1b set and must stay registered.
+		expect(CATALOG_NODE_TYPES.map((d) => d.id)).toEqual(
+			expect.arrayContaining([...CATALOG_IDS]),
+		);
 		for (const id of CATALOG_IDS) {
 			expect(isRegisteredNodeType(id)).toBe(true);
 			expect(getNodeType(id)?.id).toBe(id);
@@ -300,10 +304,14 @@ function sampleForField(defId: string, key: string, kind: string): unknown {
 		if (defId === "manual_input") return { f: "string" };
 		return { k: "v" };
 	}
+	if (kind === "number") return 1;
 	if (kind === "select") {
-		if (key === "mode") return "wait_all";
+		if (key === "mode") return defId === "transform" ? "template" : "wait_all";
 		if (key === "kind") return "cron";
 		if (key === "channel") return "email";
+		if (key === "method") return "GET";
+		if (key === "format") return "json";
+		if (key === "language") return "javascript";
 		return "sample";
 	}
 	if (key === "path") return "/hooks/x";

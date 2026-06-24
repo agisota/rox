@@ -9,6 +9,17 @@
  */
 
 import { agentRunNodeType } from "./nodes/ai/agentRun";
+import { classifierNodeType } from "./nodes/ai/classifier";
+import { embeddingNodeType } from "./nodes/ai/embedding";
+import { knowledgeRetrievalNodeType } from "./nodes/ai/knowledgeRetrieval";
+import { modelNodeType } from "./nodes/ai/model";
+import { structuredExtractNodeType } from "./nodes/ai/structuredExtract";
+import { codeNodeType } from "./nodes/code/code";
+import { dbQueryNodeType } from "./nodes/data/dbQuery";
+import { httpRequestNodeType } from "./nodes/data/httpRequest";
+import { parserNodeType } from "./nodes/data/parser";
+import { transformNodeType } from "./nodes/data/transform";
+import { variableSetNodeType } from "./nodes/data/variableSet";
 import { manualInputNodeType } from "./nodes/input/manualInput";
 import { scheduleNodeType } from "./nodes/input/schedule";
 import { startNodeType } from "./nodes/input/start";
@@ -22,6 +33,9 @@ import { switchNodeType } from "./nodes/logic/switch";
 import { dbWriteNodeType } from "./nodes/output/dbWrite";
 import { notifyNodeType } from "./nodes/output/notify";
 import { responseNodeType } from "./nodes/output/response";
+import { mcpToolNodeType } from "./nodes/tools/mcpTool";
+import { toolCallNodeType } from "./nodes/tools/toolCall";
+import { webSearchNodeType } from "./nodes/tools/webSearch";
 import type { NodeTypeDefinition } from "./nodeTypeDefinition";
 import { registerNodeType } from "./nodeTypeRegistry";
 
@@ -40,23 +54,42 @@ export const BUILTIN_NODE_TYPES: NodeTypeDefinition[] = [
 ];
 
 /**
- * The catalog node types (Slice 1b) — declarative, design-time definitions for
- * Logic, Input, and Output categories. They surface in the palette / inspector /
- * validator from the shared registry; per-type execution is a later slice.
+ * The catalog node types (Slice 1b) — declarative, design-time definitions
+ * across the Input, AI, Logic, Data, Code, Output, and Tools categories. They
+ * surface in the palette / inspector / validator from the shared registry;
+ * per-type execution is a later slice.
  */
 export const CATALOG_NODE_TYPES: NodeTypeDefinition[] = [
 	// Input
 	manualInputNodeType,
 	webhookNodeType,
 	scheduleNodeType,
+	// AI
+	modelNodeType,
+	knowledgeRetrievalNodeType,
+	embeddingNodeType,
+	classifierNodeType,
+	structuredExtractNodeType,
 	// Logic
 	conditionNodeType,
 	switchNodeType,
 	mergeNodeType,
 	gateNodeType,
+	// Data
+	httpRequestNodeType,
+	dbQueryNodeType,
+	transformNodeType,
+	variableSetNodeType,
+	parserNodeType,
+	// Code
+	codeNodeType,
 	// Output
 	notifyNodeType,
 	dbWriteNodeType,
+	// Tools
+	toolCallNodeType,
+	mcpToolNodeType,
+	webSearchNodeType,
 ];
 
 for (const def of BUILTIN_NODE_TYPES) registerNodeType(def);
@@ -68,17 +101,31 @@ export * from "./nodeTypeRegistry";
 export * from "./validateNodeConfig";
 export {
 	agentRunNodeType,
+	classifierNodeType,
+	codeNodeType,
 	conditionNodeType,
+	dbQueryNodeType,
 	dbWriteNodeType,
+	embeddingNodeType,
 	gateNodeType,
+	httpRequestNodeType,
 	humanApprovalNodeType,
+	knowledgeRetrievalNodeType,
 	loopNodeType,
 	manualInputNodeType,
+	mcpToolNodeType,
 	mergeNodeType,
+	modelNodeType,
 	notifyNodeType,
+	parserNodeType,
 	responseNodeType,
 	scheduleNodeType,
 	startNodeType,
+	structuredExtractNodeType,
 	switchNodeType,
+	toolCallNodeType,
+	transformNodeType,
+	variableSetNodeType,
 	webhookNodeType,
+	webSearchNodeType,
 };
