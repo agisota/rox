@@ -23,6 +23,14 @@
 		"./env": {
 			"types": "./src/env.ts",
 			"default": "./src/env.ts"
+		},
+		"./yjs": {
+			"types": "./src/yjs.ts",
+			"default": "./src/yjs.ts"
+		},
+		"./yjs-binding": {
+			"types": "./src/yjs-binding.ts",
+			"default": "./src/yjs-binding.ts"
 		}
 	},
 	"scripts": {
@@ -34,7 +42,9 @@
 		"@liveblocks/client": "3.19.5",
 		"@liveblocks/node": "3.19.5",
 		"@liveblocks/react": "3.19.5",
-		"@rox/shared": "workspace:*"
+		"@liveblocks/yjs": "3.19.5",
+		"@rox/shared": "workspace:*",
+		"yjs": "13.6.27"
 	},
 	"devDependencies": {
 		"@rox/typescript": "workspace:*",

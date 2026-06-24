@@ -548,9 +548,9 @@ export const EXPERIMENTAL_FEATURES = [
 			title: "Collaborative Editor",
 			shortDescription: "Enable real-time collaborative editing surfaces.",
 			longDescription:
-				"Adds a control plane for Liveblocks-backed editors used in docs, prompts, specs, and shared notes.",
+				"Binds the markdown note editor to a shared Yjs document over the existing Liveblocks room (@liveblocks/yjs LiveblocksYjsProvider), so two people editing the same note converge in real time. Rides the SAME room id and token path as collaboration.presence — the note-room ACL already grants editors storage-write — so no extra secret or deploy is required beyond the Liveblocks keys presence already uses. When the gate is off the editor stays single-player.",
 			maturity: "alpha",
-			implementationStatus: "planned",
+			implementationStatus: "ready",
 			dependencies: [LIVEBLOCKS_PROVIDER],
 			affectedSurfaces: ["Markdown editor", "Docs", "Prompt editor"],
 		},

@@ -5,6 +5,7 @@ import {
 	RoomProvider,
 	useMyPresence as useMyPresenceRaw,
 	useOthers as useOthersRaw,
+	useRoom as useRoomRaw,
 	useStorage as useStorageRaw,
 } from "@liveblocks/react";
 import type { ReactNode } from "react";
@@ -73,3 +74,9 @@ export const useOthers = useOthersRaw;
 export const useMyPresence = useMyPresenceRaw;
 /** Typed re-export: a slice of the room's ephemeral CRDT storage. */
 export const useStorage = useStorageRaw;
+/**
+ * Typed re-export: the live `Room` handle for the surrounding `RoomProvider`.
+ * The collaborative editor binds a `LiveblocksYjsProvider` to this room so a
+ * shared `Y.Doc` rides the SAME room presence already opened.
+ */
+export const useRoom = useRoomRaw;
