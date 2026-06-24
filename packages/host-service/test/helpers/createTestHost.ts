@@ -42,12 +42,33 @@ export interface TestHostOptions {
 	execGh?: (args: string[], options?: unknown) => Promise<unknown>;
 	chatRuntime?: unknown;
 	chatService?: unknown;
+	/**
+	 * Override the git factory. Typed as `unknown` so a test can inject a minimal
+	 * throwing/stub factory without constructing a full `SimpleGit`. Used to force
+	 * a LOCAL git failure in the local-first create path.
+	 */
+	gitFactory?: unknown;
+	/**
+	 * Reuse an EXISTING sqlite file instead of minting a fresh tmp db. Lets a
+	 * reboot-survival test dispose one host and reopen a second host on the SAME
+	 * on-disk db (simulating app quit + relaunch). When set, migrations still run
+	 * (idempotent) so reopening an already-migrated file is a no-op.
+	 */
+	dbPath?: string;
+	/**
+	 * Skip removing the temp data dir on `dispose()`. Pair with `dbPath` so the
+	 * first host's dispose leaves the file on disk for the second host to reopen;
+	 * the final host (or the test's own cleanup) removes it.
+	 */
+	keepData?: boolean;
 }
 
 export interface TestHost {
 	app: CreateAppResult["app"];
 	api: CreateAppResult["api"];
 	db: HostDb;
+	/** Local-first outbox worker, for deterministic `drainOnce()` in tests. */
+	outboxSync: CreateAppResult["outboxSync"];
 	dispose: () => Promise<void>;
 	psk: string;
 	dbPath: string;
@@ -79,8 +100,16 @@ export async function createTestHost(
 	options: TestHostOptions = {},
 ): Promise<TestHost> {
 	const psk = options.psk ?? "test-psk-secret";
-	const dataDir = mkdtempSync(join(tmpdir(), "host-service-test-db-"));
-	const dbPath = join(dataDir, "host.db");
+	// Reuse a caller-supplied db file (reboot-survival: same file across a
+	// dispose/reopen) or mint a fresh isolated tmp db. `dataDir` is only owned
+	// (and removed on dispose) when we minted it AND the caller didn't ask to
+	// keep it.
+	const reuseDbPath = options.dbPath;
+	const dataDir = reuseDbPath
+		? join(reuseDbPath, "..")
+		: mkdtempSync(join(tmpdir(), "host-service-test-db-"));
+	const dbPath = reuseDbPath ?? join(dataDir, "host.db");
+	const ownsDataDir = !reuseDbPath && !options.keepData;
 
 	const sqlite = new BunDatabase(dbPath, { create: true, readwrite: true });
 	sqlite.exec("PRAGMA journal_mode = WAL");
@@ -107,6 +136,9 @@ export async function createTestHost(
 		},
 		db: db as unknown as HostDb,
 		api: fakeApi.client,
+		git: options.gitFactory
+			? (options.gitFactory as CreateAppOptions["git"])
+			: undefined,
 		github: options.githubFactory
 			? (options.githubFactory as CreateAppOptions["github"])
 			: undefined,
@@ -175,10 +207,15 @@ export async function createTestHost(
 			} catch {
 				// best-effort
 			}
-			try {
-				rmSync(dataDir, { recursive: true, force: true });
-			} catch {
-				// best-effort
+			// Only remove the data dir we own. A reboot-survival test passes
+			// `dbPath`/`keepData` so the file outlives this host's dispose and the
+			// next host can reopen it; that test removes the dir itself at the end.
+			if (ownsDataDir) {
+				try {
+					rmSync(dataDir, { recursive: true, force: true });
+				} catch {
+					// best-effort
+				}
 			}
 		}
 	};
@@ -187,6 +224,7 @@ export async function createTestHost(
 		app: result.app,
 		api: fakeApi.client,
 		db: db as unknown as HostDb,
+		outboxSync: result.outboxSync,
 		dispose,
 		psk,
 		dbPath,

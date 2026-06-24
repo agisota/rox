@@ -187,6 +187,20 @@ async function persistLocalFirst(
 	// the cloud mirror hasn't landed yet.
 	persistLocalProject(ctx, projectId, args.resolved, { syncState: "pending" });
 
+	// Enqueue the project-create BEFORE the local workspace step so a LOCAL
+	// failure in `ensureMainWorkspaceLocal` (git/db blip) can't orphan the
+	// project as `pending`-with-no-outbox-row (which would never drive itself to
+	// the cloud). With the project already enqueued, the project still syncs and
+	// `runMainWorkspaceSweep` reconciles the missing main workspace on the next
+	// boot. Enqueue is idempotent (dedupKey), so a later retried create is a
+	// no-op. Ordering between the two enqueues is otherwise just a hint — the
+	// worker defers the workspace row until the project syncs.
+	enqueueProjectCreate(ctx.db, {
+		localProjectId: projectId,
+		name: args.name,
+		repoCloneUrlForCloud: args.repoCloneUrlForCloud,
+	});
+
 	// Local-only main workspace (no cloud call, relaxed detached-HEAD).
 	const mainWorkspace = await ensureMainWorkspaceLocal(
 		ctx,
@@ -194,13 +208,6 @@ async function persistLocalFirst(
 		args.resolved.repoPath,
 	);
 
-	// Enqueue the cloud creates (idempotent via dedup keys). Order matters only
-	// as a hint — the worker defers the workspace row until the project syncs.
-	enqueueProjectCreate(ctx.db, {
-		localProjectId: projectId,
-		name: args.name,
-		repoCloneUrlForCloud: args.repoCloneUrlForCloud,
-	});
 	enqueueWorkspaceCreate(ctx.db, {
 		localWorkspaceId: mainWorkspace.id,
 		localProjectId: projectId,

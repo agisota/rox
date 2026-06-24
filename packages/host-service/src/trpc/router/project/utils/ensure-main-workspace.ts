@@ -124,8 +124,13 @@ export interface LocalMainWorkspace {
  * Relaxes the strict detached-HEAD throw to non-blocking: a local-only project
  * must open instantly even if `git init` left an unusual HEAD, so a detached or
  * unresolvable HEAD synthesizes a stable `main` label rather than failing the
- * create. The real branch is recovered on the next git operation; the cloud
- * workspace create (enqueued) re-reads the branch when it drains.
+ * create. This branch is captured into both the local `workspaces` row and the
+ * enqueued `workspace.create` outbox payload AT THIS POINT; the worker forwards
+ * the captured branch verbatim when it drains (it does NOT re-read git at drain
+ * time — see `createCloudMainWorkspace`). If the local repo later checks out a
+ * different branch, the cloud main workspace keeps the captured label; the
+ * server-side idempotent upsert (one main workspace per host) patches the branch
+ * on a subsequent create with the same (projectId, hostId, type='main').
  */
 export async function ensureMainWorkspaceLocal(
 	ctx: Pick<EnsureMainWorkspaceContext, "db" | "git">,
