@@ -1,12 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
-import { getErrorMessage } from "@rox/shared/error";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { projects } from "../../../db/schema";
 import { logger } from "../../../lib/logger";
 import type { HostServiceContext } from "../../../types";
-import { ensureMainWorkspaceStrict } from "./utils/ensure-main-workspace";
+import { getHostLocalFirstCreate } from "../settings/host-settings";
+import { createCloudProjectWithSlugRetry } from "./utils/cloud-create";
+import {
+	ensureMainWorkspaceLocal,
+	ensureMainWorkspaceStrict,
+} from "./utils/ensure-main-workspace";
+import { enqueueProjectCreate, enqueueWorkspaceCreate } from "./utils/outbox";
 import { persistLocalProject } from "./utils/persist-project";
 import {
 	cloneRepoInto,
@@ -18,21 +23,6 @@ import {
 	tryRevParseGitRoot,
 } from "./utils/resolve-repo";
 import { applyWorkspaceStarterPresets } from "./utils/starter-presets";
-
-function slugifyProjectName(name: string): string {
-	const slug = name
-		.toLowerCase()
-		.trim()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "");
-	if (!slug) {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Project name must contain at least one alphanumeric character",
-		});
-	}
-	return slug;
-}
 
 function dirNameForEmpty(name: string): string {
 	const slug = name
@@ -54,54 +44,42 @@ interface CreateResult {
 	mainWorkspaceId: string;
 }
 
-// Cloud v2Project.create catches v2_projects_org_slug_unique and re-throws
-// as TRPCError CONFLICT with this exact message — kept stable so the slug
-// retry below can detect it. If you change the cloud message, change this
-// too.
-const SLUG_CONFLICT_MESSAGE = "Project slug already exists";
-
-function isSlugConflict(err: unknown): boolean {
-	const message = getErrorMessage(err);
-	return message === SLUG_CONFLICT_MESSAGE;
-}
-
-async function createCloudProjectWithSlugRetry(
-	ctx: HostServiceContext,
-	args: { id: string; name: string; repoCloneUrl?: string },
-) {
-	const baseSlug = slugifyProjectName(args.name);
-	let lastError: unknown;
-	const maxAttempts = 100;
-	for (let attempt = 0; attempt < maxAttempts; attempt++) {
-		const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
-		try {
-			return await ctx.api.v2Project.create.mutate({
-				organizationId: ctx.organizationId,
-				id: args.id,
-				name: args.name,
-				slug,
-				repoCloneUrl: args.repoCloneUrl,
-			});
-		} catch (err) {
-			if (!isSlugConflict(err)) throw err;
-			lastError = err;
-			logger.warn("[project.create] slug conflict, retrying", {
-				organizationId: ctx.organizationId,
-				name: args.name,
-				slug,
-				attempt,
-			});
-		}
-	}
-	throw new TRPCError({
-		code: "CONFLICT",
-		message: `Could not allocate a unique slug for "${args.name}" after ${maxAttempts} attempts. Try a different project name.`,
-		cause: lastError,
-	});
+interface PersistArgs {
+	name: string;
+	resolved: ResolvedRepo;
+	cleanupRepoPathOnFailure: boolean;
+	repoCloneUrlForCloud?: string;
+	starterPresetIds?: readonly string[];
 }
 
 /**
- * Create-project saga. The saga as a whole is the commit unit:
+ * Create-project entry point. Dispatches on the `localFirstCreate` host setting:
+ *
+ *   OFF (default) → `persistSynchronousCloud`: today's behavior exactly — the
+ *     create saga is a single commit unit spanning the cloud, and any cloud
+ *     failure rolls everything back (local row + repo dir).
+ *
+ *   ON → `persistLocalFirst`: local ops + a local DB record return INSTANTLY
+ *     with no network; the cloud project + main workspace are enqueued in
+ *     `sync_outbox` and linked later by the background worker. A cloud failure
+ *     is non-fatal and NEVER rolls back the local project.
+ *
+ * The OFF path is the unchanged original function body, so flipping the flag
+ * off is provably byte-for-byte the prior behavior.
+ */
+async function persistFromResolved(
+	ctx: HostServiceContext,
+	args: PersistArgs,
+): Promise<CreateResult> {
+	if (getHostLocalFirstCreate(ctx.db)) {
+		return persistLocalFirst(ctx, args);
+	}
+	return persistSynchronousCloud(ctx, args);
+}
+
+/**
+ * Synchronous-cloud create saga (the historical behavior). The saga as a whole
+ * is the commit unit:
  *
  *   1. Local file ops (handled by the caller — clone / mkdir / etc.)
  *   2. Local DB project row (with client-supplied UUID)
@@ -111,15 +89,9 @@ async function createCloudProjectWithSlugRetry(
  * Any failure unwinds the prior steps in reverse, including a cloud
  * v2Project.delete to roll back step 3 if step 4 throws.
  */
-async function persistFromResolved(
+async function persistSynchronousCloud(
 	ctx: HostServiceContext,
-	args: {
-		name: string;
-		resolved: ResolvedRepo;
-		cleanupRepoPathOnFailure: boolean;
-		repoCloneUrlForCloud?: string;
-		starterPresetIds?: readonly string[];
-	},
+	args: PersistArgs,
 ): Promise<CreateResult> {
 	const projectId = randomUUID();
 	let localProjectInserted = false;
@@ -188,6 +160,59 @@ async function persistFromResolved(
 		}
 		throw err;
 	}
+}
+
+/**
+ * Local-first create. Does the local ops + a local DB record (project +
+ * main workspace), enqueues the cloud creates into `sync_outbox`, and returns
+ * immediately — ZERO network. A cloud failure later is the worker's problem
+ * (retried with backoff); it is NEVER allowed to roll back the local project,
+ * which is the whole point. Only genuine LOCAL failures (disk/db) propagate.
+ *
+ * The local project id is a fresh UUID forwarded to the cloud as the supplied
+ * id, so once the worker drains, `projects.cloudId === projects.id`.
+ */
+async function persistLocalFirst(
+	ctx: HostServiceContext,
+	args: PersistArgs,
+): Promise<CreateResult> {
+	const projectId = randomUUID();
+
+	applyWorkspaceStarterPresets({
+		repoPath: args.resolved.repoPath,
+		starterPresetIds: args.starterPresetIds,
+	});
+
+	// Local project row, marked pending so downstream/cloud-only features know
+	// the cloud mirror hasn't landed yet.
+	persistLocalProject(ctx, projectId, args.resolved, { syncState: "pending" });
+
+	// Local-only main workspace (no cloud call, relaxed detached-HEAD).
+	const mainWorkspace = await ensureMainWorkspaceLocal(
+		ctx,
+		projectId,
+		args.resolved.repoPath,
+	);
+
+	// Enqueue the cloud creates (idempotent via dedup keys). Order matters only
+	// as a hint — the worker defers the workspace row until the project syncs.
+	enqueueProjectCreate(ctx.db, {
+		localProjectId: projectId,
+		name: args.name,
+		repoCloneUrl: args.repoCloneUrlForCloud,
+	});
+	enqueueWorkspaceCreate(ctx.db, {
+		localWorkspaceId: mainWorkspace.id,
+		localProjectId: projectId,
+		repoPath: args.resolved.repoPath,
+		branch: mainWorkspace.branch,
+	});
+
+	return {
+		projectId,
+		repoPath: args.resolved.repoPath,
+		mainWorkspaceId: mainWorkspace.id,
+	};
 }
 
 export async function createFromClone(

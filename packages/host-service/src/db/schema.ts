@@ -30,6 +30,16 @@ export const terminalSessions = sqliteTable(
 	],
 );
 
+/**
+ * Sync state of a local-first entity's cloud mirror. `pending` = enqueued in
+ * `sync_outbox`, not yet acked; `synced` = cloud row linked (`cloudId` set);
+ * `error` = last drain attempt failed (transient — flips back to synced on the
+ * next successful drain). Only meaningful when the `localFirstCreate` host
+ * setting is on; the synchronous-cloud path leaves rows `synced`-by-construction
+ * (it never inserts a local row without the matching cloud row).
+ */
+export type EntitySyncState = "pending" | "synced" | "error";
+
 export const projects = sqliteTable(
 	"projects",
 	{
@@ -45,6 +55,18 @@ export const projects = sqliteTable(
 		// "fall back to the host-wide default" in `host_settings`.
 		branchPrefixMode: text("branch_prefix_mode").$type<BranchPrefixMode>(),
 		branchPrefixCustom: text("branch_prefix_custom"),
+		// Local-first cloud link. `cloudId` is the cloud `v2Project` id once the
+		// outbox worker links it (null until then; in the local-first path it
+		// equals the local `id`, which is forwarded as the cloud-supplied id).
+		// `syncState` defaults to `synced` so the existing synchronous-cloud path
+		// — which only ever inserts a project row alongside its cloud row — is
+		// correct without touching this column. The local-first path explicitly
+		// writes `pending`.
+		cloudId: text("cloud_id"),
+		syncState: text("sync_state")
+			.$type<EntitySyncState>()
+			.notNull()
+			.default("synced"),
 		createdAt: integer("created_at")
 			.notNull()
 			.$defaultFn(() => Date.now()),
@@ -63,6 +85,18 @@ export const hostSettings = sqliteTable("host_settings", {
 	worktreeBaseDir: text("worktree_base_dir"),
 	branchPrefixMode: text("branch_prefix_mode").$type<BranchPrefixMode>(),
 	branchPrefixCustom: text("branch_prefix_custom"),
+	// Root dir new projects are created under (mirrors `worktreeBaseDir`). Null
+	// resolves to the default `~/rox` at read time, so upgraders are unaffected.
+	projectsBaseDir: text("projects_base_dir"),
+	// Local-first create safety flag. Null/false = today's synchronous-cloud
+	// create with rollback-on-failure (the proven default). True = instant local
+	// create + background cloud sync via the outbox. Defaults OFF so a
+	// HIGH-blast-radius core-path change never ships enabled-by-default; the
+	// maintainer flips this one row to roll it out.
+	localFirstCreate: integer("local_first_create", { mode: "boolean" }),
+	// Whether create auto-runs `git init` for a folder that isn't a repo yet.
+	// Null resolves to true (today's behavior: empty/template always init).
+	autoInitGit: integer("auto_init_git", { mode: "boolean" }),
 });
 
 export const pullRequests = sqliteTable(
@@ -188,6 +222,15 @@ export const workspaces = sqliteTable(
 		pullRequestId: text("pull_request_id").references(() => pullRequests.id, {
 			onDelete: "set null",
 		}),
+		// Local-first cloud link (see `projects.cloudId` / `projects.syncState`).
+		// `syncState` defaults to `synced` so the existing strict path — which
+		// inserts the local workspace row with the cloud-assigned id — is correct
+		// untouched; the local-first path writes a local id + `pending`.
+		cloudId: text("cloud_id"),
+		syncState: text("sync_state")
+			.$type<EntitySyncState>()
+			.notNull()
+			.default("synced"),
 		createdAt: integer("created_at")
 			.notNull()
 			.$defaultFn(() => Date.now()),
@@ -200,6 +243,42 @@ export const workspaces = sqliteTable(
 			table.upstreamBranch,
 		),
 		index("workspaces_pull_request_id_idx").on(table.pullRequestId),
+	],
+);
+
+/**
+ * Durable local-first cloud-create outbox. When the `localFirstCreate` host
+ * setting is on, project/workspace create enqueues the cloud `v2Project.create`
+ * / `v2Workspace.create` here instead of calling them synchronously; the
+ * `OutboxSyncManager` worker drains pending rows when the cloud is reachable,
+ * links the returned cloud id onto the local row, then deletes the row.
+ *
+ * Idempotency: `dedupKey` is unique, so enqueue is `onConflictDoNothing` and a
+ * crash-and-retry re-processes the SAME row rather than double-creating in the
+ * cloud. `kind` discriminates the payload; `nextAttemptAt` gates exponential
+ * backoff; `attempts`/`lastError` carry retry diagnostics.
+ */
+export type SyncOutboxKind = "project.create" | "workspace.create";
+
+export const syncOutbox = sqliteTable(
+	"sync_outbox",
+	{
+		id: text().primaryKey(),
+		kind: text().$type<SyncOutboxKind>().notNull(),
+		dedupKey: text("dedup_key").notNull(),
+		payloadJson: text("payload_json").notNull(),
+		attempts: integer().notNull().default(0),
+		lastError: text("last_error"),
+		createdAt: integer("created_at")
+			.notNull()
+			.$defaultFn(() => Date.now()),
+		// Backoff gate: a row is eligible to drain only when `nextAttemptAt <=
+		// now`. Defaults to 0 so a freshly-enqueued row drains immediately.
+		nextAttemptAt: integer("next_attempt_at").notNull().default(0),
+	},
+	(table) => [
+		uniqueIndex("sync_outbox_dedup_key_unique").on(table.dedupKey),
+		index("sync_outbox_next_attempt_at_idx").on(table.nextAttemptAt),
 	],
 );
 
