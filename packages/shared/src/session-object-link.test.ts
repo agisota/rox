@@ -11,7 +11,7 @@ import {
 	sessionLinkInput,
 	sessionLinkRelationLabel,
 	uuidv5,
-} from "./sessionObjectLink";
+} from "./session-object-link";
 
 /**
  * Pure mapping for `projectOs.objectLinkedChat`. Covers the three concerns the
@@ -183,9 +183,11 @@ describe("mapSessionLinks (graph.neighbors -> readout rows)", () => {
 			targetTitle: "Ship feature",
 			targetSlug: "ship-feature",
 		});
-		expect(rows[1].targetEntityId).toBe("note-1");
-		expect(rows[1].targetTitle).toBe("Spec");
-		expect(rows[1].targetSlug).toBeNull();
+		const second = rows[1];
+		expect(second).toBeDefined();
+		expect(second?.targetEntityId).toBe("note-1");
+		expect(second?.targetTitle).toBe("Spec");
+		expect(second?.targetSlug).toBeNull();
 	});
 
 	test("drops self-edges and unresolved (null target) edges", () => {
@@ -229,8 +231,9 @@ describe("mapSessionLinks (graph.neighbors -> readout rows)", () => {
 			],
 		};
 		const [row] = mapSessionLinks(sessionEntityId, result);
-		expect(row.targetTitle).toBe("orphan");
-		expect(row.targetKind).toBeNull();
+		expect(row).toBeDefined();
+		expect(row?.targetTitle).toBe("orphan");
+		expect(row?.targetKind).toBeNull();
 	});
 
 	test("empty result yields no rows", () => {

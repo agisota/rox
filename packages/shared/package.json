@@ -20,6 +20,10 @@
 			"types": "./src/unified-search-results.ts",
 			"default": "./src/unified-search-results.ts"
 		},
+		"./session-object-link": {
+			"types": "./src/session-object-link.ts",
+			"default": "./src/session-object-link.ts"
+		},
 		"./attribution": {
 			"types": "./src/attribution.ts",
 			"default": "./src/attribution.ts"
