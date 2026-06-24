@@ -103,6 +103,13 @@ function isBlockEnabled(state: RoxWorkflowState, id: string): boolean {
  * (the natural tail of the current chain), falling back to the start itself.
  * Returns null when there is no single start block to anchor on.
  */
+// Only blocks with a default (id-less) source handle can anchor an auto-connect
+// edge. `start` and `agent_run` expose one; `response` is terminal and
+// `loop`/`human_approval` expose only id'd branch handles (approved/rejected,
+// body/exit), so an edge from them with no sourceHandle would render unbound
+// (the dangling-edge bug). Restrict the anchor to source-capable blocks.
+const SOURCE_CAPABLE_BLOCK_TYPES = new Set(["start", "agent_run"]);
+
 function pickAnchorBlockId(state: RoxWorkflowState): string | null {
 	const startIds = Object.keys(state.blocks).filter(
 		(id) => state.blocks[id]?.type === "start",
@@ -127,7 +134,10 @@ function pickAnchorBlockId(state: RoxWorkflowState): string | null {
 		const u = queue.shift();
 		if (u === undefined) break;
 		const d = depth.get(u) ?? 0;
-		if (d > bestDepth) {
+		if (
+			d > bestDepth &&
+			SOURCE_CAPABLE_BLOCK_TYPES.has(state.blocks[u]?.type ?? "")
+		) {
 			bestDepth = d;
 			anchor = u;
 		}
