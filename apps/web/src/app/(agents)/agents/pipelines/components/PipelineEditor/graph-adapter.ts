@@ -10,13 +10,21 @@
  */
 
 import type { Edge, Node } from "@rox/ui/ai-elements/flow";
-import type {
-	RoxBlockState,
-	RoxEdge,
-	RoxWorkflowState,
+import {
+	getNodeType,
+	listNodeTypes,
+	type RoxBlockState,
+	type RoxEdge,
+	type RoxWorkflowState,
 } from "@rox/workflow-core";
 
-/** Canvas node kinds rendered by the editor (maps onto `RoxBlockState.type`). */
+/**
+ * Canvas node kinds with a dedicated xyflow renderer in this slice. The registry
+ * may know many more node types; until each category gets its own renderer
+ * (canvas slice), any other registered (or legacy) type is rendered with the
+ * generic `agent_run` node body. The persisted `RoxBlockState.type` is preserved
+ * losslessly regardless (see `toBlockType`).
+ */
 export type PipelineNodeKind =
 	| "start"
 	| "agent_run"
@@ -50,7 +58,8 @@ export type PipelineNodeData = {
 export type PipelineFlowNode = Node<PipelineNodeData>;
 export type PipelineFlowEdge = Edge;
 
-const KNOWN_KINDS: ReadonlySet<string> = new Set([
+/** Node kinds with a dedicated renderer in this slice. */
+const RENDERABLE_KINDS: ReadonlySet<string> = new Set<PipelineNodeKind>([
 	"start",
 	"agent_run",
 	"human_approval",
@@ -58,9 +67,13 @@ const KNOWN_KINDS: ReadonlySet<string> = new Set([
 	"response",
 ]);
 
-/** Coerce a persisted block type to a renderable canvas node kind. */
+/**
+ * Coerce a persisted block type to a renderable canvas node kind. A type with a
+ * dedicated renderer keeps it; any other registered or legacy type falls back to
+ * the generic `agent_run` node body (the persisted type is preserved separately).
+ */
 function toNodeKind(type: string): PipelineNodeKind {
-	return (KNOWN_KINDS.has(type) ? type : "agent_run") as PipelineNodeKind;
+	return (RENDERABLE_KINDS.has(type) ? type : "agent_run") as PipelineNodeKind;
 }
 
 function blockLabel(block: RoxBlockState, fallbackId: string): string {
@@ -72,6 +85,42 @@ function blockLabel(block: RoxBlockState, fallbackId: string): string {
 export function readRoleSlug(block: RoxBlockState): string | undefined {
 	const raw = block.subBlocks?.roleSlug;
 	return typeof raw === "string" && raw.length > 0 ? raw : undefined;
+}
+
+/** A node type the user can add from the palette/toolbar. */
+export type AddableNodeType = {
+	/** Registry node-type id (becomes `RoxBlockState.type`). */
+	id: string;
+	/** RU label for the palette entry + default node name. */
+	label: string;
+	/** Palette category id. */
+	category: string;
+	/** Lucide icon name for the palette entry. */
+	icon: string;
+	/** Tailwind icon colour class. */
+	iconClass: string;
+};
+
+/**
+ * The node types the toolbar/palette can add, sourced from the registry (skipping
+ * singletons like `start`). Replaces the hard-coded toolbar list so adding a
+ * registry module surfaces it in the palette automatically.
+ */
+export function addableNodeTypes(): AddableNodeType[] {
+	return listNodeTypes()
+		.filter((def) => !def.singleton)
+		.map((def) => ({
+			id: def.id,
+			label: def.label,
+			category: def.category,
+			icon: def.render.icon,
+			iconClass: def.render.iconClass,
+		}));
+}
+
+/** Default node name for a freshly-added type (registry label, then the id). */
+export function defaultLabelForType(type: string): string {
+	return getNodeType(type)?.label ?? type;
 }
 
 // ---------------------------------------------------------------------------

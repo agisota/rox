@@ -12,10 +12,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/trpc/react";
 import {
+	defaultLabelForType,
 	flowToState,
 	type PipelineFlowEdge,
 	type PipelineFlowNode,
-	type PipelineNodeKind,
 	stateToEdges,
 	stateToNodes,
 } from "./graph-adapter";
@@ -40,9 +40,9 @@ type PipelineEditorProps = {
 };
 
 /** Generate a unique block id for a freshly-added node. */
-function newBlockId(kind: PipelineNodeKind): string {
+function newBlockId(type: string): string {
 	const stamp = Math.random().toString(36).slice(2, 8);
-	return `${kind}_${stamp}`;
+	return `${type}_${stamp}`;
 }
 
 /**
@@ -177,25 +177,17 @@ export function PipelineEditor({
 	);
 
 	const addNode = useCallback(
-		(kind: PipelineNodeKind, roleSlug?: string, label?: string) => {
+		(type: string, roleSlug?: string, label?: string) => {
 			const prev = graphRef.current;
-			const id = newBlockId(kind);
+			const id = newBlockId(type);
 			const count = Object.keys(prev.blocks).length;
 			const next: RoxWorkflowState = {
 				...prev,
 				blocks: {
 					...prev.blocks,
 					[id]: {
-						type: kind,
-						name:
-							label ??
-							(kind === "agent_run"
-								? "Агент"
-								: kind === "loop"
-									? "Цикл"
-									: kind === "human_approval"
-										? "Подтверждение"
-										: "Финал"),
+						type,
+						name: label ?? defaultLabelForType(type),
 						position: {
 							x: 180 + (count % 4) * 280,
 							y: 360 + Math.floor(count / 4) * 180,
@@ -258,7 +250,7 @@ export function PipelineEditor({
 							selectedNodeId={selectedNodeId}
 							onSelectNode={setSelectedNodeId}
 							onGraphChange={handleGraphChange}
-							onAddNode={(kind) => addNode(kind)}
+							onAddNode={addNode}
 						/>
 					</ReactFlowProvider>
 				</div>

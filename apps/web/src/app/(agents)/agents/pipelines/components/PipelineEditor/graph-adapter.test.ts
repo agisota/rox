@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { RoxWorkflowState } from "@rox/workflow-core";
 import {
+	addableNodeTypes,
+	defaultLabelForType,
 	flowToState,
 	readRoleSlug,
 	stateToEdges,
@@ -203,6 +205,26 @@ describe("pipeline graph adapter", () => {
 			temperature: 0.7,
 		});
 		expect(next.blocks.improve.name).toBe("Промпт-инженер");
+	});
+
+	test("addableNodeTypes lists registry types and excludes start (singleton)", () => {
+		const addable = addableNodeTypes();
+		const ids = addable.map((d) => d.id);
+		expect(ids).toContain("agent_run");
+		expect(ids).toContain("loop");
+		expect(ids).toContain("human_approval");
+		expect(ids).toContain("response");
+		expect(ids).not.toContain("start");
+		// Each entry carries palette metadata.
+		const agent = addable.find((d) => d.id === "agent_run");
+		expect(agent?.label).toBe("Агент-роль");
+		expect(agent?.icon).toBe("Bot");
+	});
+
+	test("defaultLabelForType resolves a registry label, falling back to the id", () => {
+		expect(defaultLabelForType("loop")).toBe("Цикл");
+		expect(defaultLabelForType("response")).toBe("Финал");
+		expect(defaultLabelForType("unknown_future")).toBe("unknown_future");
 	});
 
 	test("reads role slugs only from non-empty string subBlocks", () => {

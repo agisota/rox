@@ -43,6 +43,10 @@
 		"./prompt": {
 			"types": "./src/prompt/index.ts",
 			"default": "./src/prompt/index.ts"
+		},
+		"./registry": {
+			"types": "./src/registry/index.ts",
+			"default": "./src/registry/index.ts"
 		}
 	},
 	"scripts": {

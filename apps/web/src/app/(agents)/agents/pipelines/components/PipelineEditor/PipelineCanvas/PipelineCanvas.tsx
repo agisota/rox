@@ -18,14 +18,31 @@ import {
 } from "@rox/ui/ai-elements/flow";
 import { Panel } from "@rox/ui/ai-elements/panel";
 import { Button } from "@rox/ui/button";
-import { Plus } from "lucide-react";
+import {
+	Bot,
+	Box,
+	Flag,
+	type LucideIcon,
+	Plus,
+	Repeat,
+	ShieldCheck,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import type {
-	PipelineFlowEdge,
-	PipelineFlowNode,
-	PipelineNodeKind,
+import {
+	addableNodeTypes,
+	type PipelineFlowEdge,
+	type PipelineFlowNode,
 } from "../graph-adapter";
 import { PIPELINE_EDGE_TYPES, PIPELINE_NODE_TYPES } from "../nodes";
+
+/** Lucide lookup for palette icons (registry `render.icon`), with a fallback. */
+const PALETTE_ICONS: Record<string, LucideIcon> = {
+	Bot,
+	Repeat,
+	ShieldCheck,
+	Flag,
+	Box,
+};
 
 const ANIMATED_EDGE_DEFAULTS = {
 	type: "animated",
@@ -47,8 +64,8 @@ type PipelineCanvasProps = {
 	onSelectNode: (nodeId: string | null) => void;
 	/** Called (debounced by the parent) whenever nodes/edges change. */
 	onGraphChange: (nodes: PipelineFlowNode[], edges: PipelineFlowEdge[]) => void;
-	/** Add a node of the given kind at a default position. */
-	onAddNode: (kind: PipelineNodeKind) => void;
+	/** Add a node of the given registry type at a default position. */
+	onAddNode: (type: string) => void;
 };
 
 /**
@@ -158,6 +175,9 @@ export function PipelineCanvas({
 		onSelectNode(null);
 	}, [onSelectNode]);
 
+	// Toolbar entries from the registry (excludes singletons like `start`).
+	const palette = useMemo(() => addableNodeTypes(), []);
+
 	return (
 		<Canvas
 			nodes={decoratedNodes as Node[]}
@@ -174,27 +194,20 @@ export function PipelineCanvas({
 			onPaneClick={handlePaneClick}
 		>
 			<Controls showInteractive={false} />
-			<Panel position="top-left" className="flex gap-1">
-				<Button
-					size="sm"
-					variant="ghost"
-					onClick={() => onAddNode("agent_run")}
-				>
-					<Plus className="size-3.5" /> Агент
-				</Button>
-				<Button size="sm" variant="ghost" onClick={() => onAddNode("loop")}>
-					<Plus className="size-3.5" /> Цикл
-				</Button>
-				<Button
-					size="sm"
-					variant="ghost"
-					onClick={() => onAddNode("human_approval")}
-				>
-					<Plus className="size-3.5" /> Подтверждение
-				</Button>
-				<Button size="sm" variant="ghost" onClick={() => onAddNode("response")}>
-					<Plus className="size-3.5" /> Финал
-				</Button>
+			<Panel position="top-left" className="flex flex-wrap gap-1">
+				{palette.map((entry) => {
+					const Icon = PALETTE_ICONS[entry.icon] ?? Plus;
+					return (
+						<Button
+							key={entry.id}
+							size="sm"
+							variant="ghost"
+							onClick={() => onAddNode(entry.id)}
+						>
+							<Icon className={`size-3.5 ${entry.iconClass}`} /> {entry.label}
+						</Button>
+					);
+				})}
 			</Panel>
 		</Canvas>
 	);
