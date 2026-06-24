@@ -22,6 +22,7 @@ import {
 	loadToken,
 	parseAuthDeepLink,
 } from "lib/trpc/routers/auth/utils/auth-functions";
+import { setSpectreManager } from "lib/trpc/routers/spectre";
 import { applyShellEnvToProcess } from "lib/trpc/routers/workspaces/utils/shell-env";
 import { env as mainEnv } from "main/env.main";
 import {
@@ -513,6 +514,9 @@ if (!gotTheLock) {
 			isMac: PLATFORM.IS_MAC,
 			loadSpectre,
 		});
+		// Hand the manager to the spectre tRPC router so the renderer can drive
+		// stealth/hide and stream grok-4.3 answers.
+		setSpectreManager(spectreManager);
 		const spectreShortcutOk = registerSpectreShortcut({
 			globalShortcut,
 			onToggle: () => {

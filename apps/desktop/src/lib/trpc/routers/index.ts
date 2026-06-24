@@ -28,6 +28,7 @@ import { createRingtoneRouter } from "./ringtone";
 import { createSavedPromptsRouter } from "./saved-prompts";
 import { createSettingsRouter } from "./settings";
 import { createSkillsLibraryRouter } from "./skills-library";
+import { createSpectreRouter } from "./spectre";
 import { createSystemRouter } from "./system";
 import { createTerminalRouter } from "./terminal";
 import { createUiStateRouter } from "./ui-state";
@@ -69,6 +70,7 @@ export const createAppRouter = (getWindow: () => BrowserWindow | null) => {
 		migration: createMigrationRouter(),
 		savedPrompts: createSavedPromptsRouter(),
 		skillsLibrary: createSkillsLibraryRouter(),
+		spectre: createSpectreRouter(),
 	});
 };
 
