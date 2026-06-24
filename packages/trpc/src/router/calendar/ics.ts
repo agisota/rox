@@ -20,6 +20,13 @@ export interface IcsEvent {
 	rrule?: string | null;
 	/** UTC ISO instants to exclude (EXDATE). */
 	exdates?: string[];
+	/**
+	 * RFC 5545 RECURRENCE-ID: when set, this VEVENT is a per-occurrence override
+	 * of the recurring series sharing its {@link uid}, identifying the ORIGINAL
+	 * instance instant it replaces. A client merges it over the rule-generated
+	 * instance at that time. Omitted for the series master and one-off events.
+	 */
+	recurrenceId?: Date | null;
 }
 
 // ---- export ---------------------------------------------------------------
@@ -63,6 +70,16 @@ function serializeEvent(event: IcsEvent): string[] {
 	const lines: string[] = ["BEGIN:VEVENT"];
 	lines.push(`UID:${event.uid ?? crypto.randomUUID()}`);
 	lines.push(`DTSTAMP:${toIcsUtc(new Date())}`);
+	// RECURRENCE-ID marks this VEVENT as a per-occurrence override of the series
+	// (same UID). Match the DTSTART value form: all-day uses VALUE=DATE, timed
+	// uses the UTC instant so it lines up with the rule-generated instance.
+	if (event.recurrenceId) {
+		lines.push(
+			event.allDay
+				? `RECURRENCE-ID;VALUE=DATE:${toIcsDate(event.recurrenceId)}`
+				: `RECURRENCE-ID:${toIcsUtc(event.recurrenceId)}`,
+		);
+	}
 	if (event.allDay) {
 		// RFC 5545 §3.8.2.2: an all-day DTEND (VALUE=DATE) is EXCLUSIVE — the day
 		// after the last day. A single-day event therefore ends on dtstart+1, and
@@ -253,6 +270,7 @@ export function importIcs(ics: string): IcsEvent[] {
 					allDay: current.allDay ?? false,
 					rrule: current.rrule ?? null,
 					exdates: current.exdates ?? [],
+					recurrenceId: current.recurrenceId ?? null,
 				});
 			}
 			inEvent = false;
@@ -283,6 +301,11 @@ export function importIcs(ics: string): IcsEvent[] {
 			case "DTEND": {
 				const { date } = parseIcsInstant(value);
 				current.dtend = date;
+				break;
+			}
+			case "RECURRENCE-ID": {
+				const { date } = parseIcsInstant(value);
+				current.recurrenceId = date;
 				break;
 			}
 			case "RRULE":

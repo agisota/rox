@@ -18,9 +18,12 @@
  */
 
 import { db } from "@rox/db/client";
-import { calCalendars, calEvents } from "@rox/db/schema";
-import { buildPublicCalendarFeed } from "@rox/trpc/calendar-feed";
-import { and, eq } from "drizzle-orm";
+import { calCalendars, calEventOccurrences, calEvents } from "@rox/db/schema";
+import {
+	buildPublicCalendarFeed,
+	type OccurrenceOverride,
+} from "@rox/trpc/calendar-feed";
+import { and, eq, inArray } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -64,10 +67,47 @@ export async function GET(
 			),
 		);
 
+	// Per-occurrence overrides (RECURRENCE-ID) apply only to recurring, non-
+	// cancelled events; load them for those event ids in one org-scoped query and
+	// group by eventId so the feed builder can drop a cancelled instance (EXDATE /
+	// omitted busy span) or patch a moved one — mirroring `listOccurrences`. The
+	// free-busy variant still exposes only busy intervals; overrides just correct
+	// which intervals (and when) are emitted.
+	const recurringIds = events
+		.filter((e) => e.status !== "cancelled" && e.rrule !== null)
+		.map((e) => e.id);
+	const overridesByEventId = new Map<string, OccurrenceOverride[]>();
+	if (recurringIds.length > 0) {
+		const overrideRows = await db
+			.select()
+			.from(calEventOccurrences)
+			.where(
+				and(
+					eq(calEventOccurrences.organizationId, calendar.organizationId),
+					inArray(calEventOccurrences.eventId, recurringIds),
+				),
+			);
+		for (const row of overrideRows) {
+			const list = overridesByEventId.get(row.eventId) ?? [];
+			list.push({
+				originalStart: row.originalStart,
+				cancelled: row.cancelled,
+				dtstart: row.overrideDtstart,
+				dtend: row.overrideDtend,
+				title: row.overrideTitle,
+				description: row.overrideDescription,
+				location: row.overrideLocation,
+				allDay: row.overrideAllDay,
+			});
+			overridesByEventId.set(row.eventId, list);
+		}
+	}
+
 	const ics = buildPublicCalendarFeed({
 		calendar: { name: calendar.name, timezone: calendar.timezone },
 		events,
 		busyOnly: calendar.feedBusyOnly,
+		overridesByEventId,
 	});
 
 	return new Response(ics, {

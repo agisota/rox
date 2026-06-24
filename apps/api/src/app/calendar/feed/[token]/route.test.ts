@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 /**
  * Token-GATE TDD for the public ICS subscribe route. We mock ONLY `@rox/db/client`
  * (the `db` object) and drive the REAL `buildPublicCalendarFeed` + real
- * `@rox/db/schema` table objects — no shared-barrel mock. The stub routes the two
- * route selects by table name: `cal_calendars` (token lookup) returns the queued
- * calendar row, `cal_events` returns the queued events.
+ * `@rox/db/schema` table objects — no shared-barrel mock. The stub routes the
+ * route's selects by table name: `cal_calendars` (token lookup) returns the
+ * queued calendar row, `cal_events` returns the queued events, and
+ * `cal_event_occurrences` returns the queued per-occurrence override rows.
  */
 
 mock.module("@/env", () => ({
@@ -14,9 +15,14 @@ mock.module("@/env", () => ({
 
 type AnyRow = Record<string, unknown>;
 
-const state: { calendarRow: AnyRow | null; events: AnyRow[] } = {
+const state: {
+	calendarRow: AnyRow | null;
+	events: AnyRow[];
+	overrides: AnyRow[];
+} = {
 	calendarRow: null,
 	events: [],
+	overrides: [],
 };
 
 function tableName(table: unknown): string {
@@ -39,7 +45,9 @@ const fakeDb = {
 						: []
 					: name === "cal_events"
 						? state.events
-						: [];
+						: name === "cal_event_occurrences"
+							? state.overrides
+							: [];
 			const make = (): Promise<AnyRow[]> & Record<string, () => unknown> => {
 				const p = Promise.resolve(rows) as Promise<AnyRow[]> &
 					Record<string, () => unknown>;
@@ -89,9 +97,39 @@ function ctx(token = TOKEN) {
 	return { params: Promise.resolve({ token }) };
 }
 
+/** A recurring weekly-Monday series anchored 2026-06-01 09:00Z. */
+const RECURRING = {
+	...EVENT,
+	id: "33333333-3333-4333-8333-333333333333",
+	title: "Weekly sync",
+	description: null,
+	location: null,
+	dtstart: new Date("2026-06-01T09:00:00.000Z"),
+	dtend: new Date("2026-06-01T10:00:00.000Z"),
+	rrule: "FREQ=WEEKLY;BYDAY=MO",
+};
+
+/** A `cal_event_occurrences` override row factory (all override columns null). */
+function overrideRow(originalStart: Date, patch: Partial<AnyRow> = {}): AnyRow {
+	return {
+		organizationId: "org-1",
+		eventId: RECURRING.id,
+		originalStart,
+		cancelled: false,
+		overrideDtstart: null,
+		overrideDtend: null,
+		overrideTitle: null,
+		overrideDescription: null,
+		overrideLocation: null,
+		overrideAllDay: null,
+		...patch,
+	};
+}
+
 beforeEach(() => {
 	state.calendarRow = null;
 	state.events = [];
+	state.overrides = [];
 });
 
 describe("GET /calendar/feed/[token]", () => {
@@ -133,5 +171,69 @@ describe("GET /calendar/feed/[token]", () => {
 		expect(body).not.toContain("Secret standup");
 		expect(body).not.toContain("Hush hush");
 		expect(body).not.toContain("Room 42");
+	});
+
+	test("free-busy: a cancelled occurrence is absent from the public feed", async () => {
+		state.calendarRow = { ...CAL, feedBusyOnly: true };
+		state.events = [RECURRING];
+
+		// Baseline (no overrides): the 2026-06-15 09:00 instance is present and
+		// counts toward the busy total over the route's default window.
+		const baseBody = await (await GET(request(), ctx())).text();
+		const baseCount = (baseBody.match(/SUMMARY:Busy/g) ?? []).length;
+		expect(baseBody).toContain("DTSTART:20260615T090000Z");
+
+		// Cancel only the 2026-06-15 instance → it disappears and the busy total
+		// drops by exactly one (window-agnostic: the route expands ~13 months).
+		state.overrides = [
+			overrideRow(new Date("2026-06-15T09:00:00.000Z"), { cancelled: true }),
+		];
+		const res = await GET(request(), ctx());
+		expect(res.status).toBe(200);
+		const body = await res.text();
+		expect(body).not.toContain("DTSTART:20260615T090000Z");
+		expect((body.match(/SUMMARY:Busy/g) ?? []).length).toBe(baseCount - 1);
+	});
+
+	test("free-busy: a rescheduled occurrence appears at the NEW time", async () => {
+		state.calendarRow = { ...CAL, feedBusyOnly: true };
+		state.events = [RECURRING];
+		// Move the 2026-06-15 09:00 instance to 14:00 the same day.
+		state.overrides = [
+			overrideRow(new Date("2026-06-15T09:00:00.000Z"), {
+				overrideDtstart: new Date("2026-06-15T14:00:00.000Z"),
+				overrideDtend: new Date("2026-06-15T15:00:00.000Z"),
+			}),
+		];
+		const res = await GET(request(), ctx());
+		expect(res.status).toBe(200);
+		const body = await res.text();
+		expect(body).toContain("DTSTART:20260615T140000Z");
+		expect(body).toContain("DTEND:20260615T150000Z");
+		expect(body).not.toContain("DTSTART:20260615T090000Z");
+		// Still detail-free.
+		expect(body).not.toContain("Weekly sync");
+	});
+
+	test("full feed: a cancelled occurrence is EXDATE'd and a rescheduled one gets a RECURRENCE-ID VEVENT", async () => {
+		state.calendarRow = CAL; // full detail feed
+		state.events = [RECURRING];
+		state.overrides = [
+			overrideRow(new Date("2026-06-08T09:00:00.000Z"), { cancelled: true }),
+			overrideRow(new Date("2026-06-15T09:00:00.000Z"), {
+				overrideDtstart: new Date("2026-06-15T14:00:00.000Z"),
+				overrideDtend: new Date("2026-06-15T15:00:00.000Z"),
+			}),
+		];
+		const res = await GET(request(), ctx());
+		expect(res.status).toBe(200);
+		const body = await res.text();
+		// Series RRULE kept; cancelled instant EXDATE'd; moved instant emitted as a
+		// RECURRENCE-ID exception at the new time (same series UID).
+		expect(body).toContain("RRULE:FREQ=WEEKLY;BYDAY=MO");
+		expect(body).toContain("EXDATE:20260608T090000Z");
+		expect(body).toContain("RECURRENCE-ID:20260615T090000Z");
+		expect(body).toContain("DTSTART:20260615T140000Z");
+		expect(body).toContain("DTEND:20260615T150000Z");
 	});
 });
