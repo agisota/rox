@@ -28,6 +28,10 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    # Fail fast on a stalled asset upload instead of hanging until GitHub's 6h hard cap.
+    # (The v2.0.45 publish stalled mid-upload of the ~2.8GB artifact set and was only
+    # cancelled at the 6h limit, leaving a draft.) On failure, simply re-run this job.
+    timeout-minutes: 45
     if: startsWith(github.ref, 'refs/tags/desktop-v')
 
     steps:
