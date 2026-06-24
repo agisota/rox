@@ -5,11 +5,11 @@ import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
 import { Skeleton } from "@rox/ui/skeleton";
 import { Switch } from "@rox/ui/switch";
-import { Textarea } from "@rox/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTRPC } from "@/trpc/react";
 import { useNotesActions } from "../../hooks/useNotesActions";
+import { CollaborativeNoteText } from "./CollaborativeNoteText";
 import { NotePresence } from "./NotePresence";
 
 const AUTOSAVE_DELAY_MS = 800;
@@ -165,15 +165,13 @@ export function NoteEditor({ noteId, notebookId }: NoteEditorProps) {
 				</div>
 			) : null}
 
-			<Textarea
-				aria-label="Текст заметки в формате Markdown"
+			<CollaborativeNoteText
+				noteId={noteId}
 				value={markdown}
-				onChange={(e) => {
-					setMarkdown(e.target.value);
-					scheduleSave({ markdown: e.target.value });
+				onChange={(next) => {
+					setMarkdown(next);
+					scheduleSave({ markdown: next });
 				}}
-				placeholder="Пишите в Markdown…"
-				className="min-h-[55vh] flex-1 resize-none font-mono text-sm leading-relaxed"
 			/>
 
 			{isPublished && publicUrl ? (

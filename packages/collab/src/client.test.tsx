@@ -34,6 +34,7 @@ mock.module("@liveblocks/react", () => ({
 	useOthers: () => [],
 	useMyPresence: () => [{ cursor: null, selectedEntryId: null }, () => {}],
 	useStorage: () => null,
+	useRoom: () => ({}),
 }));
 
 const { RoxRoomProvider } = await import("./client");
