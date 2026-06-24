@@ -2,12 +2,19 @@ import { describe, expect, test } from "bun:test";
 
 import {
 	createGroqChunkedTranscriptSource,
+	createLivekitDeepgramServerSource,
 	createTranscriptCollector,
+	type DeepgramTranscriptResult,
 	decodeTranscriptSegment,
+	deepgramCapturedAt,
 	EMPTY_LIVE_TRANSCRIPT,
 	encodeTranscriptSegment,
 	type LiveTranscript,
+	mapDeepgramResultToWire,
 	reduceTranscript,
+	SERVER_TRANSCRIPT_DATA_TOPIC,
+	SERVER_TRANSCRIPT_SOURCE_ID,
+	type ServerTranscriptContext,
 	TRANSCRIPT_DATA_TOPIC,
 	TRANSCRIPT_LOG_LIMIT,
 	type TranscribeChunkEndpoint,
@@ -577,5 +584,220 @@ describe("data-channel fan-out (fake-room DataReceived path)", () => {
 			"rox.other.feature",
 		);
 		expect(collector.current().segments).toHaveLength(0);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Streaming-STT Phase-2 — `livekit-deepgram` server source (in-CI seam tests).
+// ---------------------------------------------------------------------------
+
+/** A Deepgram realtime `Results` envelope with sensible defaults. */
+function dgResult(
+	p: Partial<DeepgramTranscriptResult> = {},
+): DeepgramTranscriptResult {
+	return {
+		type: "Results",
+		is_final: true,
+		start: 0,
+		duration: 0,
+		channel: { alternatives: [{ transcript: "привет мир" }] },
+		...p,
+	};
+}
+
+/** Base server context with a fixed clock so ids/timestamps are deterministic. */
+function serverCtx(
+	p: Partial<ServerTranscriptContext> = {},
+): ServerTranscriptContext {
+	return {
+		roomName: "org:o1:voice:c1",
+		speakerIdentity: "user-7",
+		speakerName: "Ада",
+		now: () => 5_000,
+		...p,
+	};
+}
+
+describe("mapDeepgramResultToWire (Phase-2)", () => {
+	test("maps a FINAL result to a wire segment with trimmed text + speaker", () => {
+		const wire = mapDeepgramResultToWire(
+			dgResult({
+				channel: { alternatives: [{ transcript: "  привет команда  " }] },
+			}),
+			serverCtx(),
+		);
+		expect(wire).not.toBeNull();
+		expect(wire?.text).toBe("привет команда");
+		expect(wire?.speakerIdentity).toBe("user-7");
+		expect(wire?.speakerName).toBe("Ада");
+		// No durable Deepgram id → deterministic fallback derived from identity+ts.
+		expect(wire?.id).toBe("user-7:5000:final");
+		expect(wire?.language).toBeNull();
+	});
+
+	test("drops an INTERIM partial (is_final=false) so partials never log", () => {
+		const wire = mapDeepgramResultToWire(
+			dgResult({ is_final: false }),
+			serverCtx(),
+		);
+		expect(wire).toBeNull();
+	});
+
+	test("drops an empty/whitespace transcript (silence) like the chunked source", () => {
+		expect(
+			mapDeepgramResultToWire(
+				dgResult({ channel: { alternatives: [{ transcript: "   " }] } }),
+				serverCtx(),
+			),
+		).toBeNull();
+		expect(
+			mapDeepgramResultToWire(
+				dgResult({ channel: { alternatives: [] } }),
+				serverCtx(),
+			),
+		).toBeNull();
+	});
+
+	test("labels the dominant diarization speaker as a #N suffix", () => {
+		const wire = mapDeepgramResultToWire(
+			dgResult({
+				channel: {
+					alternatives: [
+						{
+							transcript: "две реплики",
+							words: [
+								{ word: "две", speaker: 1 },
+								{ word: "реплики", speaker: 1 },
+								{ word: "шум", speaker: 0 },
+							],
+						},
+					],
+				},
+			}),
+			serverCtx(),
+		);
+		// Speaker 1 contributed the most words → suffixed; identity stays the real
+		// LiveKit identity (used for dedupe/persistence), never the cluster index.
+		expect(wire?.speakerName).toBe("Ада #1");
+		expect(wire?.speakerIdentity).toBe("user-7");
+	});
+
+	test("prefers an explicit segmentId (persisted row id) for dedupe", () => {
+		const wire = mapDeepgramResultToWire(
+			dgResult(),
+			serverCtx({ segmentId: "row-42" }),
+		);
+		expect(wire?.id).toBe("row-42");
+	});
+
+	test("falls back to identity when speakerName is blank", () => {
+		const wire = mapDeepgramResultToWire(
+			dgResult(),
+			serverCtx({ speakerName: "   " }),
+		);
+		expect(wire?.speakerName).toBe("user-7");
+	});
+
+	test("anchors capturedAt to streamStartedAtMs + (start+duration)s", () => {
+		const at = deepgramCapturedAt(
+			{ start: 2, duration: 0.5 },
+			{ streamStartedAtMs: 1_000_000 },
+		);
+		// 1_000_000 + (2 + 0.5)*1000 = 1_002_500
+		expect(at).toBe(1_002_500);
+	});
+
+	test("capturedAt uses the injected clock when no stream anchor is given", () => {
+		const at = deepgramCapturedAt({ start: 9 }, { now: () => 777 });
+		expect(at).toBe(777);
+	});
+
+	test("threads the media-time window into capturedAt on the mapped segment", () => {
+		const wire = mapDeepgramResultToWire(
+			dgResult({ start: 1, duration: 1 }),
+			serverCtx({ streamStartedAtMs: 10_000 }),
+		);
+		// 10_000 + (1+1)*1000 = 12_000
+		expect(wire?.capturedAt).toBe(12_000);
+		expect(wire?.id).toBe("user-7:12000:final");
+	});
+});
+
+describe("createLivekitDeepgramServerSource (Phase-2 seam)", () => {
+	test("registers the stable server source id behind the Phase-1 seam", () => {
+		const source = createLivekitDeepgramServerSource();
+		expect(source.id).toBe(SERVER_TRANSCRIPT_SOURCE_ID);
+		expect(SERVER_TRANSCRIPT_SOURCE_ID).toBe("livekit-deepgram");
+		// The server source publishes under the SAME topic clients subscribe to.
+		expect(SERVER_TRANSCRIPT_DATA_TOPIC).toBe(TRANSCRIPT_DATA_TOPIC);
+	});
+
+	test("canonical encoder matches the worker's vendored golden vector (lockstep)", () => {
+		// This EXACT literal is the golden vector asserted in the standalone worker's
+		// `workers/transcribe-worker/src/wire.test.ts`. Keeping both in lockstep proves
+		// the worker (which cannot import @rox/rtc) publishes byte-identical frames to
+		// what this package's `encodeTranscriptSegment` produces — so every shipped
+		// client merges the server source's finals through its UNCHANGED decode path.
+		const golden =
+			'{"id":"seg-1","speakerIdentity":"user-7","speakerName":"Ada","text":"hello","language":"en","capturedAt":1234}';
+		const wire = {
+			id: "seg-1",
+			speakerIdentity: "user-7",
+			speakerName: "Ada",
+			text: "hello",
+			language: "en",
+			capturedAt: 1234,
+		};
+		const bytes = encodeTranscriptSegment(
+			wireToTranscriptSegment(wire, "org:o1:voice:c1"),
+		);
+		expect(new TextDecoder().decode(bytes)).toBe(golden);
+	});
+
+	test("encode() emits BYTE-IDENTICAL bytes to the Phase-1 client encoder", () => {
+		const source = createLivekitDeepgramServerSource();
+		const wire = mapDeepgramResultToWire(dgResult(), serverCtx());
+		expect(wire).not.toBeNull();
+		if (!wire) return;
+
+		const serverBytes = source.encode(wire, "org:o1:voice:c1");
+
+		// The canonical Phase-1 encoding of the SAME reconstructed segment.
+		const expected = encodeTranscriptSegment(
+			wireToTranscriptSegment(wire, "org:o1:voice:c1"),
+		);
+		expect(Array.from(serverBytes)).toEqual(Array.from(expected));
+	});
+
+	test("a worker-published final is merged by the EXISTING client decode path", () => {
+		const source = createLivekitDeepgramServerSource();
+		const roomName = "org:o1:voice:c1";
+		const wire = mapDeepgramResultToWire(
+			dgResult({
+				channel: { alternatives: [{ transcript: "сервер слышит" }] },
+			}),
+			serverCtx({ streamStartedAtMs: 0 }),
+		);
+		if (!wire) throw new Error("expected a mapped final");
+
+		// Worker side: encode exactly as the worker would publish over the channel.
+		const bytes = source.encode(wire, roomName);
+
+		// Client side (UNCHANGED Phase-1 path): decode + fold through the reducer.
+		const collector = createTranscriptCollector({
+			source: { id: "noop", transcribe: async () => null },
+			onChange: () => {},
+		});
+		const decoded = decodeTranscriptSegment(bytes, roomName);
+		expect(decoded).not.toBeNull();
+		collector.mergeRemote(decoded);
+
+		const segments = collector.current().segments;
+		expect(segments).toHaveLength(1);
+		expect(segments[0]?.text).toBe("сервер слышит");
+		expect(segments[0]?.roomName).toBe(roomName);
+		// Re-publish of the same final (idempotent fan-out) must NOT double-log.
+		collector.mergeRemote(decodeTranscriptSegment(bytes, roomName));
+		expect(collector.current().segments).toHaveLength(1);
 	});
 });
