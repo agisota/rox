@@ -96,6 +96,7 @@ const RESTORABLE_STATIC_ROUTES = [
 	"/new-project",
 	"/settings/account",
 	"/settings/agents",
+	"/settings/agents/sources",
 	"/settings/api-keys",
 	"/settings/appearance",
 	"/settings/behavior",

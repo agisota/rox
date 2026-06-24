@@ -16,6 +16,7 @@ const { executeCommand } = await import("../../core/execute");
 const {
 	AGENT_NATIVE_BACKED_COMMAND_IDS,
 	AGENT_NATIVE_DISABLED_COMMAND_IDS,
+	AGENT_SOURCES_ROUTE_PATH,
 	agentNativeProvider,
 } = await import("./commands");
 type CommandContext = import("../../core/types").CommandContext;
@@ -34,6 +35,7 @@ function createContext(
 		notificationSoundsMuted: false,
 		navigate: mock(),
 		experimentalAgentCommandPalette: true,
+		experimentalAgentSourceMarketplace: false,
 		...overrides,
 	};
 }
@@ -63,6 +65,9 @@ describe("agentNativeProvider", () => {
 		for (const disabledId of AGENT_NATIVE_DISABLED_COMMAND_IDS) {
 			expect(ids).toContain(disabledId);
 		}
+		// The conditionally-backed source action is always contributed (its
+		// enabled/disabled state depends on the sourceMarketplace gate).
+		expect(ids).toContain("agentNative.attachSource");
 		// Every contributed command is namespaced under the suite.
 		for (const id of ids) {
 			expect(id.startsWith("agentNative.")).toBe(true);
@@ -121,5 +126,62 @@ describe("agentNativeProvider", () => {
 			expect(toastInfoSpy).toHaveBeenCalledWith(command?.disabledReason);
 		}
 		expect(navigate).not.toHaveBeenCalled();
+	});
+
+	describe("agentNative.attachSource (sourceMarketplace gate)", () => {
+		it("is DISABLED (honest, no fake run) when the sources feature is OFF", async () => {
+			toastInfoSpy.mockClear();
+			const navigate = mock();
+			const context = createContext({
+				navigate,
+				experimentalAgentSourceMarketplace: false,
+			});
+			const commands = agentNativeProvider.provide(context);
+
+			const attach = commands.find(
+				(entry) => entry.id === "agentNative.attachSource",
+			);
+			expect(attach).toBeDefined();
+			expect(attach?.disabled).toBe(true);
+			expect((attach?.disabledReason ?? "").length).toBeGreaterThan(0);
+			expect(attach?.run).toBeUndefined();
+
+			// Executing it surfaces the reason and does NOT navigate.
+			await executeCommand(attach as NonNullable<typeof attach>, context);
+			expect(toastInfoSpy).toHaveBeenCalledWith(attach?.disabledReason);
+			expect(navigate).not.toHaveBeenCalled();
+		});
+
+		it("defaults to DISABLED when the sources gate flag is absent", () => {
+			const context = createContext({
+				experimentalAgentSourceMarketplace: undefined,
+			});
+			const commands = agentNativeProvider.provide(context);
+			const attach = commands.find(
+				(entry) => entry.id === "agentNative.attachSource",
+			);
+			expect(attach?.disabled).toBe(true);
+			expect(attach?.run).toBeUndefined();
+		});
+
+		it("NAVIGATES to the in-desktop sources route when the sources feature is ON", async () => {
+			const navigate = mock();
+			const context = createContext({
+				navigate,
+				experimentalAgentSourceMarketplace: true,
+			});
+			const commands = agentNativeProvider.provide(context);
+
+			const attach = commands.find(
+				(entry) => entry.id === "agentNative.attachSource",
+			);
+			expect(attach).toBeDefined();
+			expect(attach?.disabled).toBeFalsy();
+			expect(typeof attach?.run).toBe("function");
+
+			await executeCommand(attach as NonNullable<typeof attach>, context);
+			expect(navigate).toHaveBeenCalledWith(AGENT_SOURCES_ROUTE_PATH);
+			expect(AGENT_SOURCES_ROUTE_PATH).toBe("/settings/agents/sources");
+		});
 	});
 });

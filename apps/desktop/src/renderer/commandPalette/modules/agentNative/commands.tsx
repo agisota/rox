@@ -4,6 +4,7 @@ import {
 	ShieldCheckIcon,
 	UsersIcon,
 } from "lucide-react";
+import { AGENT_SOURCES_ROUTE_PATH } from "renderer/routes/_authenticated/settings/agents/sources/route-path";
 import type { Command, CommandProvider } from "../../core/types";
 
 /**
@@ -26,9 +27,11 @@ import type { Command, CommandProvider } from "../../core/types";
  *     settings surface where per-agent tools/permissions are managed).
  *   - "Replay run"               -> /automations       (REAL: the automation
  *     run-history surface, the shipped surface closest to run replay).
- *   - "Attach agent source"      -> DISABLED: the source picker/marketplace
- *     ships on the web `(agents)` surface (`agentNative.sourceMarketplace`),
- *     there is no in-desktop sources route yet.
+ *   - "Attach agent source"      -> /settings/agents/sources WHEN the
+ *     `agentNative.sourceMarketplace` feature is enabled (the in-desktop sources
+ *     management surface, parity of the web `(agents)` surface). When that
+ *     feature is OFF/unavailable the command stays DISABLED — the surface is
+ *     gated off, so navigating there would only hit the inert fallback.
  *   - "Delegate to agent"        -> DISABLED: agent-to-agent delegation
  *     (`agentNative.a2aDelegation`) is still `planned` — no surface exists.
  */
@@ -39,13 +42,72 @@ export const AGENT_NATIVE_BACKED_COMMAND_IDS = [
 	"agentNative.replayRun",
 ] as const;
 
-/** Commands whose backing surface is not yet built (disabled, not faked). */
+/**
+ * Commands whose backing surface is not yet built (disabled, not faked) — when
+ * their feature is off. `agentNative.attachSource` is intentionally NOT listed
+ * here: it is conditionally backed (real navigation) when
+ * `agentNative.sourceMarketplace` is enabled, and disabled otherwise. See
+ * {@link buildAgentNativeCommands}.
+ */
 export const AGENT_NATIVE_DISABLED_COMMAND_IDS = [
-	"agentNative.attachSource",
 	"agentNative.delegate",
 ] as const;
 
-function buildAgentNativeCommands(): Command[] {
+/** Re-exported so callers/tests can navigate to / assert the sources route. */
+export { AGENT_SOURCES_ROUTE_PATH };
+
+interface BuildAgentNativeCommandsOptions {
+	/**
+	 * Whether `agentNative.sourceMarketplace` is usable (enabled AND available).
+	 * Flips the "Подключить источник агента" command from disabled to a real
+	 * navigation into the in-desktop sources route. Defaults to off.
+	 */
+	sourceMarketplaceEnabled?: boolean;
+}
+
+function buildAgentNativeCommands({
+	sourceMarketplaceEnabled = false,
+}: BuildAgentNativeCommandsOptions = {}): Command[] {
+	// "Подключить источник агента": backed by the real in-desktop sources surface
+	// only when its feature gate is on; otherwise stays honestly disabled.
+	const attachSourceCommand: Command = sourceMarketplaceEnabled
+		? {
+				id: "agentNative.attachSource",
+				title: "Подключить источник агента",
+				section: "navigation",
+				icon: GitBranchIcon,
+				keywords: [
+					"agent",
+					"агент",
+					"source",
+					"источник",
+					"подключить",
+					"attach",
+					"marketplace",
+					"коннектор",
+				],
+				run: (ctx) => ctx.navigate(AGENT_SOURCES_ROUTE_PATH),
+			}
+		: {
+				id: "agentNative.attachSource",
+				title: "Подключить источник агента",
+				section: "navigation",
+				icon: GitBranchIcon,
+				keywords: [
+					"agent",
+					"агент",
+					"source",
+					"источник",
+					"подключить",
+					"attach",
+					"marketplace",
+					"коннектор",
+				],
+				disabled: true,
+				disabledReason:
+					"Управление источниками агентов выключено. Включите экспериментальную функцию «Source Marketplace», чтобы открыть этот экран.",
+			};
+
 	return [
 		{
 			id: "agentNative.reviewPermissions",
@@ -82,25 +144,7 @@ function buildAgentNativeCommands(): Command[] {
 			],
 			run: (ctx) => ctx.navigate("/automations"),
 		},
-		{
-			id: "agentNative.attachSource",
-			title: "Подключить источник агента",
-			section: "navigation",
-			icon: GitBranchIcon,
-			keywords: [
-				"agent",
-				"агент",
-				"source",
-				"источник",
-				"подключить",
-				"attach",
-				"marketplace",
-				"коннектор",
-			],
-			disabled: true,
-			disabledReason:
-				"Подключение источников доступно в веб-разделе агентов; в десктоп-приложении этот экран ещё не реализован.",
-		},
+		attachSourceCommand,
 		{
 			id: "agentNative.delegate",
 			title: "Делегировать задачу агенту",
@@ -128,6 +172,8 @@ export const agentNativeProvider: CommandProvider = {
 		// Gate: only contribute when `agentNative.commandPalette` is enabled AND
 		// resolves usable (carried on the context). Absent flag => treat as off.
 		if (!context.experimentalAgentCommandPalette) return [];
-		return buildAgentNativeCommands();
+		return buildAgentNativeCommands({
+			sourceMarketplaceEnabled: context.experimentalAgentSourceMarketplace,
+		});
 	},
 };
