@@ -183,6 +183,73 @@ export const voiceRouter = {
 		}),
 
 	/**
+	 * In-App Streaming STT — persist ONE already-transcribed streaming FINAL to
+	 * `live_transcript_segments`. Unlike `transcribeChunk` (which re-runs Whisper on
+	 * audio bytes), the renderer already received the final TEXT from its own
+	 * Deepgram stream, so this only validates + persists it — no second STT pass and
+	 * no audio leaves the client. Reuses the SAME `buildLiveTranscriptSegmentInsert`
+	 * persist path + the SAME room→org security seam as the Phase-1 chunk mutation,
+	 * so streaming finals land in the same durable store the late-joiner backfill
+	 * (`listSegments`) and the panel already read. Silence is rejected by the input
+	 * schema (text is required); the row id is returned so fan-out dedupe holds.
+	 */
+	persistTranscriptSegment: protectedProcedure
+		.input(
+			z.object({
+				roomName: z.string().min(1).max(512),
+				text: z.string().min(1).max(10_000),
+				language: z.string().max(16).nullable().default(null),
+				speakerIdentity: z.string().min(1).max(256),
+				speakerName: z.string().max(256).default(""),
+				/** Epoch ms when the spoken words ended (Deepgram media time). */
+				capturedAt: z.number().int().nonnegative(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+
+			// Same security seam as `transcribeChunk`: never trust the client's room
+			// name — require it to encode the caller's verified active org.
+			const roomOrg = resolveTranscriptRoomOrg(input.roomName, organizationId);
+			if (!roomOrg) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Room name does not match your active organization.",
+				});
+			}
+
+			const insert = buildLiveTranscriptSegmentInsert(
+				input.text,
+				input.language,
+				{
+					organizationId,
+					createdBy: ctx.session.user.id,
+					roomName: input.roomName,
+					speakerIdentity: input.speakerIdentity,
+					speakerName: input.speakerName,
+					capturedAt: input.capturedAt,
+				},
+			);
+
+			// Empty text is already rejected by the input schema; this guards the
+			// trimmed-to-empty edge (e.g. all-whitespace) without persisting a blank.
+			if (!insert) {
+				return { id: "", text: "", language: input.language };
+			}
+
+			const [row] = await db
+				.insert(liveTranscriptSegments)
+				.values(insert)
+				.returning({ id: liveTranscriptSegments.id });
+
+			return {
+				id: row?.id ?? "",
+				text: insert.text,
+				language: input.language,
+			};
+		}),
+
+	/**
 	 * Replay a live room's finalized transcript segments (oldest → newest). Lets a
 	 * late-joining participant backfill the panel from durable storage; capped and
 	 * scoped to the caller's active org (the room name must encode that org).

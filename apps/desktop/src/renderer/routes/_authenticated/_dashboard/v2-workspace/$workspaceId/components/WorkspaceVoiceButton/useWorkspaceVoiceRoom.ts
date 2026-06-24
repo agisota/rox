@@ -11,9 +11,14 @@ import {
 import {
 	RoomEvent,
 	type UseVoiceRoom,
+	useDeepgramStreamingTranscript,
 	useLiveTranscript,
 	useVoiceRoom,
 } from "@rox/rtc/client";
+import type {
+	MintStreamToken,
+	PersistStreamSegment,
+} from "@rox/rtc/deepgram-stream";
 import {
 	createGroqChunkedTranscriptSource,
 	type LiveTranscript,
@@ -43,12 +48,26 @@ export interface UseWorkspaceVoiceRoom extends UseVoiceRoom {
 	 */
 	roomActivity: RoomActivity;
 	/**
-	 * Live transcript (Streaming-STT Phase-1): finalized speech segments captured
-	 * from the local mic in N-second chunks via Groq Whisper and persisted to
-	 * `live_transcript_segments`. Empty while disconnected or when server-side STT
-	 * (GROQ_API_KEY) is not configured.
+	 * Live transcript: finalized speech segments shown in the room activity panel.
+	 *
+	 * Two SOURCES feed the SAME surface, chosen by availability (no UI difference):
+	 *   - In-App STREAMING (preferred): the local mic is streamed straight to
+	 *     Deepgram realtime from the renderer (sub-second words, no worker) when a
+	 *     server `DEEPGRAM_API_KEY` is configured to mint short-lived tokens;
+	 *   - Phase-1 CHUNKED (fallback): the local mic is sliced into N-second clips
+	 *     and transcribed via Groq Whisper when streaming is unavailable.
+	 *
+	 * Both fan out over the LiveKit data channel + persist to `live_transcript_segments`
+	 * + render through the same reducer/panel. Empty while disconnected or when no
+	 * STT backend is configured.
 	 */
 	transcript: LiveTranscript;
+	/**
+	 * Which source is currently driving `transcript`: the lower-latency Deepgram
+	 * `"streaming"` path or the `"chunked"` Groq fallback (`"none"` when STT is off
+	 * or disconnected). Exposed for diagnostics/telemetry; the panel is identical.
+	 */
+	transcriptSource: "streaming" | "chunked" | "none";
 }
 
 /**
@@ -93,18 +112,57 @@ export function useWorkspaceVoiceRoom({
 	});
 	const sttConfigured = voiceConfig?.configured ?? false;
 
+	// In-App STREAMING availability — true when the server has a `DEEPGRAM_API_KEY`
+	// to mint short-lived tokens. When true we prefer the lower-latency Deepgram
+	// stream; otherwise we fall back to the Phase-1 chunked Groq source below.
+	const { data: streamConfig } = useQuery({
+		queryKey: ["voice", "isStreamConfigured"],
+		queryFn: () => apiTrpcClient.voice.isStreamConfigured.query(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const streamingConfigured = streamConfig?.configured ?? false;
+
 	// THE SWAP SEAM: Phase-1 binds the Groq chunked source to the cloud
 	// `voice.transcribeChunk` mutation (which transcribes + persists each chunk).
-	// Swapping to LiveKit Agents later is a different `TranscriptSource` here only.
-	const transcriptSource = useMemo<TranscriptSource | null>(() => {
-		if (!sttConfigured) return null;
+	// Used as the FALLBACK when in-app streaming is unavailable (no Deepgram key).
+	const chunkedSource = useMemo<TranscriptSource | null>(() => {
+		if (!sttConfigured || streamingConfigured) return null;
 		return createGroqChunkedTranscriptSource((payload) =>
 			apiTrpcClient.voice.transcribeChunk.mutate(payload),
 		);
-	}, [sttConfigured]);
+	}, [sttConfigured, streamingConfigured]);
 
 	const localIdentity = room?.localParticipant.identity ?? "";
 	const localName = room?.localParticipant.name ?? localIdentity;
+
+	// Mint a short-lived Deepgram token via the backend (the renderer never holds
+	// the real key). Guarded: if the procedure is unavailable (older server) the
+	// thrown error disables streaming and the chunked fallback stays active.
+	const mintToken = useMemo<MintStreamToken>(
+		() => async () => {
+			const { token, expiresAt } =
+				await apiTrpcClient.voice.deepgramStreamToken.mutate();
+			return { token, expiresAt };
+		},
+		[],
+	);
+
+	// Persist a streaming FINAL durably (already-transcribed text — no re-STT).
+	// Reuses the same `live_transcript_segments` store as the chunked path so the
+	// late-joiner backfill + panel read both sources identically.
+	const persistSegment = useMemo<PersistStreamSegment>(
+		() => async (segment) => {
+			await apiTrpcClient.voice.persistTranscriptSegment.mutate({
+				roomName: segment.roomName,
+				text: segment.text,
+				language: segment.language,
+				speakerIdentity: segment.speakerIdentity,
+				speakerName: segment.speakerName,
+				capturedAt: segment.capturedAt,
+			});
+		},
+		[],
+	);
 
 	// Late-joiner backfill: replay the room's prior finals from durable storage so
 	// a participant who joins mid-conversation sees the transcript so far. Gated on
@@ -129,13 +187,40 @@ export function useWorkspaceVoiceRoom({
 		};
 	}, [sttConfigured]);
 
-	const transcript = useLiveTranscript({
+	// In-App STREAMING source (preferred): stream the local mic to Deepgram for
+	// sub-second words. `enabled` only when configured + connected; when off it
+	// returns an empty transcript and we render the chunked fallback instead.
+	const streamingTranscript = useDeepgramStreamingTranscript({
 		room,
-		source: transcriptSource,
+		enabled: streamingConfigured && Boolean(room),
+		speakerIdentity: localIdentity,
+		speakerName: localName,
+		mintToken,
+		persist: persistSegment,
+		listSegments,
+	});
+
+	// Phase-1 CHUNKED fallback (Groq Whisper). `chunkedSource` is null whenever
+	// streaming is configured, so only ONE source ever captures the mic at a time.
+	const chunkedTranscript = useLiveTranscript({
+		room,
+		source: chunkedSource,
 		speakerIdentity: localIdentity,
 		speakerName: localName,
 		listSegments,
 	});
+
+	// Pick the active source. Streaming wins when configured; else the chunked
+	// path; else nothing (STT not configured / disconnected). The panel is identical.
+	const transcriptSource: UseWorkspaceVoiceRoom["transcriptSource"] = room
+		? streamingConfigured
+			? "streaming"
+			: sttConfigured
+				? "chunked"
+				: "none"
+		: "none";
+	const transcript =
+		transcriptSource === "streaming" ? streamingTranscript : chunkedTranscript;
 
 	const [participantCount, setParticipantCount] = useState(0);
 	const [roomActivity, setRoomActivity] =
@@ -194,5 +279,12 @@ export function useWorkspaceVoiceRoom({
 		};
 	}, [room]);
 
-	return { ...voice, roomName, participantCount, roomActivity, transcript };
+	return {
+		...voice,
+		roomName,
+		participantCount,
+		roomActivity,
+		transcript,
+		transcriptSource,
+	};
 }

@@ -20,6 +20,10 @@
 			"types": "./src/transcript.ts",
 			"default": "./src/transcript.ts"
 		},
+		"./deepgram-stream": {
+			"types": "./src/deepgram-stream.ts",
+			"default": "./src/deepgram-stream.ts"
+		},
 		"./token": {
 			"types": "./src/token.ts",
 			"default": "./src/token.ts"
