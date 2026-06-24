@@ -24,15 +24,15 @@ export function AddTabMenu({
 }: AddTabMenuProps) {
 	return (
 		<>
-			<DropdownMenuItem className="gap-2" onClick={onAddTerminal}>
-				<BsTerminalPlus className="size-4" />
-				<span>Terminal</span>
-				<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
-			</DropdownMenuItem>
 			<DropdownMenuItem className="gap-2" onClick={onAddChat}>
 				<TbMessageCirclePlus className="size-4" />
 				<span>Chat</span>
 				<HotkeyMenuShortcut hotkeyId="NEW_CHAT" />
+			</DropdownMenuItem>
+			<DropdownMenuItem className="gap-2" onClick={onAddTerminal}>
+				<BsTerminalPlus className="size-4" />
+				<span>Terminal</span>
+				<HotkeyMenuShortcut hotkeyId="NEW_GROUP" />
 			</DropdownMenuItem>
 			<DropdownMenuItem className="gap-2" onClick={onAddBrowser}>
 				<TbWorld className="size-4" />

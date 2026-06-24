@@ -1,13 +1,12 @@
 /**
- * Center "Каталог" view: browse curated skill packs and (eventually) install.
+ * Center "Каталог" view: browse and install curated skill packs.
  *
  * Cards from `CURATED_DEFAULT_SKILL_PACKS` (the single source of truth) with an
  * install-state pill, repo link, and hover spring. Installed packs offer
- * "Открыть" (jump to the installed skill's detail). Available packs show an
- * "Установить" CTA that is disabled with a tooltip: actual installation needs a
- * new `skillsLibrary.install` procedure in the shared electron-tRPC router
- * (P1), which this surface does not own — so it browses honestly rather than
- * faking a fetch.
+ * "Открыть" (jump to the installed skill's detail). Available packs offer a
+ * working "Установить" CTA wired to `skillsLibrary.install`, which extracts the
+ * pack's skills from the app's bundled archive into `~/.claude/skills` (no
+ * network). The button shows a spinner while its own pack installs.
  */
 
 import { Badge } from "@rox/ui/badge";
@@ -26,12 +25,6 @@ import {
 	useShouldAnimate,
 } from "@rox/ui/motion";
 import { ScrollArea } from "@rox/ui/scroll-area";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@rox/ui/tooltip";
 import { cn } from "@rox/ui/utils";
 import { motion } from "motion/react";
 import {
@@ -39,6 +32,7 @@ import {
 	LuDownload,
 	LuExternalLink,
 	LuGithub,
+	LuLoaderCircle,
 } from "react-icons/lu";
 import type { CatalogItem } from "../../../../lib/catalog";
 import { repoUrl } from "../../../../lib/catalog";
@@ -48,19 +42,28 @@ interface SkillCatalogGridProps {
 	totalCount: number;
 	onOpenInstalled: (skillId: string) => void;
 	onOpenRepo: (url: string) => void;
+	onInstall: (slug: string) => void;
+	/** Slug of the pack currently installing (drives the per-card spinner). */
+	installingSlug: string | null;
 }
 
 function CatalogCard({
 	item,
 	onOpenInstalled,
 	onOpenRepo,
+	onInstall,
+	installingSlug,
 }: {
 	item: CatalogItem;
 	onOpenInstalled: (skillId: string) => void;
 	onOpenRepo: (url: string) => void;
+	onInstall: (slug: string) => void;
+	installingSlug: string | null;
 }) {
 	const shouldAnimate = useShouldAnimate("decorative");
 	const installed = item.installState === "installed";
+	const isInstalling = installingSlug === item.id;
+	const installDisabled = installingSlug !== null;
 
 	return (
 		<motion.div
@@ -105,20 +108,20 @@ function CatalogCard({
 						Открыть
 					</Button>
 				) : (
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<span className="flex-1" tabIndex={-1}>
-								<Button size="sm" variant="outline" className="w-full" disabled>
-									<LuDownload className="size-4" />
-									Установить
-								</Button>
-							</span>
-						</TooltipTrigger>
-						<TooltipContent>
-							Установка из каталога появится после расширения локального API
-							(P1)
-						</TooltipContent>
-					</Tooltip>
+					<Button
+						size="sm"
+						variant="outline"
+						className="flex-1"
+						disabled={installDisabled}
+						onClick={() => onInstall(item.id)}
+					>
+						{isInstalling ? (
+							<LuLoaderCircle className="size-4 animate-spin" />
+						) : (
+							<LuDownload className="size-4" />
+						)}
+						{isInstalling ? "Установка…" : "Установить"}
+					</Button>
 				)}
 				<Button
 					size="icon-sm"
@@ -138,6 +141,8 @@ export function SkillCatalogGrid({
 	totalCount,
 	onOpenInstalled,
 	onOpenRepo,
+	onInstall,
+	installingSlug,
 }: SkillCatalogGridProps) {
 	if (items.length === 0) {
 		return (
@@ -160,20 +165,20 @@ export function SkillCatalogGrid({
 	}
 
 	return (
-		<TooltipProvider>
-			<ScrollArea className="h-full min-h-0">
-				<MotionList className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2 lg:grid-cols-3">
-					{items.map((item) => (
-						<MotionListItem key={item.id} className="h-full">
-							<CatalogCard
-								item={item}
-								onOpenInstalled={onOpenInstalled}
-								onOpenRepo={onOpenRepo}
-							/>
-						</MotionListItem>
-					))}
-				</MotionList>
-			</ScrollArea>
-		</TooltipProvider>
+		<ScrollArea className="h-full min-h-0">
+			<MotionList className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2 lg:grid-cols-3">
+				{items.map((item) => (
+					<MotionListItem key={item.id} className="h-full">
+						<CatalogCard
+							item={item}
+							onOpenInstalled={onOpenInstalled}
+							onOpenRepo={onOpenRepo}
+							onInstall={onInstall}
+							installingSlug={installingSlug}
+						/>
+					</MotionListItem>
+				))}
+			</MotionList>
+		</ScrollArea>
 	);
 }

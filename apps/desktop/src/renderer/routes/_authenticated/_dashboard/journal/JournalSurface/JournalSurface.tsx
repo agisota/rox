@@ -116,7 +116,7 @@ export function JournalSurface({
 								onSearchChange({ tab: value as JournalTab })
 							}
 						>
-							<TabsList className="rounded-full border border-border/60 bg-card/40 backdrop-blur-sm">
+							<TabsList className="glass-panel rounded-full border border-border/60">
 								<TabsTrigger value="feed" className="rounded-full">
 									Лента
 								</TabsTrigger>
@@ -130,7 +130,7 @@ export function JournalSurface({
 							onClick={handleRefresh}
 							disabled={refreshing}
 							aria-label="Обновить"
-							className="inline-flex size-8 items-center justify-center rounded-full border border-border/60 bg-card/40 text-muted-foreground backdrop-blur-sm transition-colors hover:border-border hover:text-foreground disabled:opacity-60"
+							className="glass-panel inline-flex size-8 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:opacity-60"
 						>
 							<LuRefreshCw
 								className={cn("size-4", refreshing && "animate-spin")}

@@ -1,6 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
-import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
 
 /**
  * Custom DOM event a live chat composer can listen for to receive an inserted
@@ -19,8 +17,8 @@ import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
  *   }, []);
  *
  * If a composer marks itself active (see `markComposerActive`) the prompt is
- * delivered in place; otherwise we fall back to the proven Quick-Chat staging
- * handoff so the action is never dead.
+ * delivered in place; otherwise there is no live composer to receive it and the
+ * caller surfaces a hint to open a workspace chat.
  */
 export const INSERT_PROMPT_EVENT = "rox:insert-prompt";
 
@@ -45,37 +43,32 @@ function hasActiveComposer(): boolean {
 }
 
 export interface InsertOutcome {
-	/** "in-place" = delivered to a live composer; "staged" = Quick-Chat fallback. */
-	mode: "in-place" | "staged";
+	/**
+	 * "in-place" = delivered to a live composer; "no-target" = no composer was
+	 * mounted on the current route, so nothing received the prompt.
+	 */
+	mode: "in-place" | "no-target";
 }
 
 /**
  * Returns an `insert(text)` function that delivers a (already hydrated) prompt
- * to the focused composer when one exists, else stages it for Quick Chat and
- * navigates there. Generalizes today's Quick-Chat-only handoff to any composer
- * that adopts the `INSERT_PROMPT_EVENT` seam.
+ * to the focused composer when one exists via the `INSERT_PROMPT_EVENT` seam.
+ * When no composer is active there is no destination, so it reports
+ * `"no-target"` and the caller surfaces a hint to open a workspace chat.
  */
 export function useInsertPrompt() {
-	const navigate = useNavigate();
-	const stagePrompt = useQuickChatDraftStore((state) => state.stagePrompt);
-
-	const insert = useCallback(
-		(text: string): InsertOutcome => {
-			if (hasActiveComposer()) {
-				const detail: InsertPromptDetail = { text };
-				window.dispatchEvent(
-					new CustomEvent<InsertPromptDetail>(INSERT_PROMPT_EVENT, {
-						detail,
-					}),
-				);
-				return { mode: "in-place" };
-			}
-			stagePrompt(text);
-			void navigate({ to: "/quick-chat" });
-			return { mode: "staged" };
-		},
-		[navigate, stagePrompt],
-	);
+	const insert = useCallback((text: string): InsertOutcome => {
+		if (hasActiveComposer()) {
+			const detail: InsertPromptDetail = { text };
+			window.dispatchEvent(
+				new CustomEvent<InsertPromptDetail>(INSERT_PROMPT_EVENT, {
+					detail,
+				}),
+			);
+			return { mode: "in-place" };
+		}
+		return { mode: "no-target" };
+	}, []);
 
 	return { insert };
 }

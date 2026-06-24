@@ -98,7 +98,7 @@ export function FeedLane({
 			const group = groups[index];
 			if (!group) return null;
 			return (
-				<div className="bg-background/90 py-2 backdrop-blur-sm">
+				<div className="glass py-2">
 					<h3 className="font-mono text-[11px] text-muted-foreground uppercase tracking-[0.18em]">
 						{group.label}
 					</h3>

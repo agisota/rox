@@ -164,7 +164,7 @@ function EventDrawerBody({
 						<summary className="cursor-pointer text-muted-foreground text-xs hover:text-foreground">
 							Полезная нагрузка (JSON)
 						</summary>
-						<pre className="mt-2 max-h-64 overflow-auto rounded-md border border-border/50 bg-card/40 p-2.5 font-mono text-[11px] text-muted-foreground leading-relaxed">
+						<pre className="mt-2 max-h-64 overflow-auto rounded-md border border-border/50 bg-foreground/[0.04] p-2.5 font-mono text-[11px] text-muted-foreground leading-relaxed">
 							{JSON.stringify(payload, null, 2)}
 						</pre>
 					</details>

@@ -38,6 +38,7 @@ import {
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
+import { useSurfaceVisibilityStore } from "renderer/stores/surface-visibility";
 import { DashboardSidebarHeader } from "./components/DashboardSidebarHeader";
 import { DashboardSidebarHelpMenu } from "./components/DashboardSidebarHelpMenu";
 import { DashboardSidebarHoverCardOverlay } from "./components/DashboardSidebarHoverCardOverlay";
@@ -126,6 +127,13 @@ export function DashboardSidebar({
 	const { activeHostUrl } = useLocalHostService();
 	const v2RouteMatch = matchRoute({ to: "/v2-workspace/$workspaceId" });
 	const activeV2WorkspaceId = v2RouteMatch ? v2RouteMatch.workspaceId : null;
+
+	// Per-surface visibility (Settings → Поверхности). Hidden by default; each
+	// surface only renders in the rail once the user opts it back in.
+	const surfaceVisibility = useSurfaceVisibilityStore(
+		(state) => state.visibility,
+	);
+	const anySurfaceVisible = Object.values(surfaceVisibility).some(Boolean);
 
 	const sensors = useSensors(
 		useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -288,72 +296,92 @@ export function DashboardSidebar({
 								projectName={activeV2Project.name}
 							/>
 						)}
-						{/* Canvas / Journal / Memory + Workspace Suite navigation */}
-						<div
-							className={cn(
-								"border-t border-border",
-								isCollapsed
-									? "flex flex-col items-center gap-1 py-1"
-									: "flex flex-col gap-0.5 px-2 py-1",
-							)}
-						>
-							<DashboardSidebarNavButton
-								label="Canvas"
-								icon={HiOutlineRectangleGroup}
-								isActive={isCanvasOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/canvas" })}
-							/>
-							<DashboardSidebarNavButton
-								label="Журнал"
-								icon={HiOutlineBookOpen}
-								isActive={isJournalOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/journal" })}
-							/>
-							<DashboardSidebarNavButton
-								label="Память"
-								icon={HiOutlineSparkles}
-								isActive={isMemoryOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/memory" })}
-							/>
-							<DashboardSidebarNavButton
-								label="Входящие"
-								icon={HiOutlineInbox}
-								isActive={isInboxOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/inbox" })}
-							/>
-							<DashboardSidebarNavButton
-								label="Drive"
-								icon={HiOutlineFolder}
-								isActive={isDriveOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/drive" })}
-							/>
-							<DashboardSidebarNavButton
-								label="Календарь"
-								icon={HiOutlineCalendarDays}
-								isActive={isCalendarOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/calendar" })}
-							/>
-							<DashboardSidebarNavButton
-								label="Заметки"
-								icon={HiOutlineDocumentText}
-								isActive={isNotesOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/notes" })}
-							/>
-							<DashboardSidebarNavButton
-								label="Почта"
-								icon={HiOutlineEnvelope}
-								isActive={isEmailOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/email" })}
-							/>
-						</div>
+						{/* Secondary surfaces (Settings → Поверхности). The whole block —
+						    including its top divider — is omitted when every surface is
+						    hidden, so the rail never shows an empty separator. */}
+						{anySurfaceVisible && (
+							<div
+								className={cn(
+									"border-t border-border",
+									isCollapsed
+										? "flex flex-col items-center gap-1 py-1"
+										: "flex flex-col gap-0.5 px-2 py-1",
+								)}
+							>
+								{surfaceVisibility.canvas && (
+									<DashboardSidebarNavButton
+										label="Canvas"
+										icon={HiOutlineRectangleGroup}
+										isActive={isCanvasOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/canvas" })}
+									/>
+								)}
+								{surfaceVisibility.journal && (
+									<DashboardSidebarNavButton
+										label="Журнал"
+										icon={HiOutlineBookOpen}
+										isActive={isJournalOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/journal" })}
+									/>
+								)}
+								{surfaceVisibility.memory && (
+									<DashboardSidebarNavButton
+										label="Память"
+										icon={HiOutlineSparkles}
+										isActive={isMemoryOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/memory" })}
+									/>
+								)}
+								{surfaceVisibility.inbox && (
+									<DashboardSidebarNavButton
+										label="Входящие"
+										icon={HiOutlineInbox}
+										isActive={isInboxOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/inbox" })}
+									/>
+								)}
+								{surfaceVisibility.drive && (
+									<DashboardSidebarNavButton
+										label="Drive"
+										icon={HiOutlineFolder}
+										isActive={isDriveOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/drive" })}
+									/>
+								)}
+								{surfaceVisibility.calendar && (
+									<DashboardSidebarNavButton
+										label="Календарь"
+										icon={HiOutlineCalendarDays}
+										isActive={isCalendarOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/calendar" })}
+									/>
+								)}
+								{surfaceVisibility.notes && (
+									<DashboardSidebarNavButton
+										label="Заметки"
+										icon={HiOutlineDocumentText}
+										isActive={isNotesOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/notes" })}
+									/>
+								)}
+								{surfaceVisibility.email && (
+									<DashboardSidebarNavButton
+										label="Почта"
+										icon={HiOutlineEnvelope}
+										isActive={isEmailOpen}
+										isCollapsed={isCollapsed}
+										onClick={() => navigate({ to: "/email" })}
+									/>
+								)}
+							</div>
+						)}
 
 						<div
 							className={cn(

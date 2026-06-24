@@ -298,25 +298,27 @@ export const HOTKEYS_REGISTRY = {
 		category: "Layout",
 		description: "Split the current pane downward",
 	},
-	SPLIT_AUTO: {
+	SPLIT_WITH_CHAT: {
 		key: {
 			mac: L("meta+e"),
 			windows: L("ctrl+shift+e"),
 			linux: L("ctrl+shift+e"),
 		},
-		label: "Split Pane Auto",
+		label: "Split with New Chat",
 		category: "Layout",
-		description: "Split the current pane along its longer side",
+		description:
+			"Split the current pane and open a new chat pane (default split)",
 	},
-	SPLIT_WITH_CHAT: {
+	SPLIT_AUTO: {
 		key: {
 			mac: L("meta+shift+e"),
 			windows: L("ctrl+alt+e"),
 			linux: L("ctrl+alt+e"),
 		},
-		label: "Split with New Chat",
+		label: "Split with New Terminal",
 		category: "Layout",
-		description: "Split the current pane and open a new chat pane",
+		description:
+			"Split the current pane along its longer side and open a terminal",
 	},
 	SPLIT_WITH_BROWSER: {
 		key: {
