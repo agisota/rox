@@ -8,6 +8,7 @@ import { logger } from "renderer/lib/logger";
 import { LinkPicker } from "./LinkPicker";
 import { ObjectDetailsPanel, type ObjectGraphNode } from "./ObjectDetailsPanel";
 import { ProjectObjectGraphPanel } from "./ProjectObjectGraphPanel";
+import { UnifiedSearchPanel } from "./UnifiedSearchPanel";
 
 export interface ProjectObjectGraphLaunchpadProps {
 	/** The v2_project whose object graph this shell operates on. */
@@ -131,48 +132,54 @@ function ProjectObjectGraphShell({ v2ProjectId }: { v2ProjectId: string }) {
 		graphQuery.isLoading || (searchQuery.isLoading && !!trimmedSearch);
 
 	return (
-		<div
-			className="grid gap-4 md:grid-cols-2"
-			data-testid="project-object-graph"
-		>
-			<ProjectObjectGraphPanel
-				nodes={visibleNodes}
-				selectedId={selectedId}
-				onSelect={setSelectedId}
-				searchValue={search}
-				onSearchChange={setSearch}
-				loading={listLoading}
-				truncated={graphQuery.data?.truncated ?? false}
-			/>
+		<div className="space-y-4" data-testid="project-object-graph">
+			{/*
+			 * Unified entity search (`projectOs.unifiedSearch`, desktop parity). Self-
+			 * gated: renders only when that experiment is on, otherwise absent. A hit
+			 * click selects the object so its details/edges open below in place.
+			 */}
+			<UnifiedSearchPanel onOpenHit={setSelectedId} />
 
-			{focus ? (
-				<ObjectDetailsPanel
-					focus={focus}
-					nodes={allNodes}
-					edges={allEdges}
-					onOpenObject={setSelectedId}
-					onStartLink={setLinkSourceId}
-					v2ProjectId={v2ProjectId}
+			<div className="grid gap-4 md:grid-cols-2">
+				<ProjectObjectGraphPanel
+					nodes={visibleNodes}
+					selectedId={selectedId}
+					onSelect={setSelectedId}
+					searchValue={search}
+					onSearchChange={setSearch}
+					loading={listLoading}
+					truncated={graphQuery.data?.truncated ?? false}
 				/>
-			) : (
-				<section
-					className="flex items-center justify-center rounded-md border border-dashed border-border/50 p-6 text-center text-xs text-muted-foreground"
-					aria-label="Детали объекта"
-				>
-					Выберите объект слева, чтобы увидеть его связи.
-				</section>
-			)}
 
-			<LinkPicker
-				open={linkSourceId !== null}
-				onOpenChange={(open) => {
-					if (!open) setLinkSourceId(null);
-				}}
-				source={linkSource}
-				candidates={projectNodes}
-				onLink={handleLink}
-				pending={linkMutation.isPending}
-			/>
+				{focus ? (
+					<ObjectDetailsPanel
+						focus={focus}
+						nodes={allNodes}
+						edges={allEdges}
+						onOpenObject={setSelectedId}
+						onStartLink={setLinkSourceId}
+						v2ProjectId={v2ProjectId}
+					/>
+				) : (
+					<section
+						className="flex items-center justify-center rounded-md border border-dashed border-border/50 p-6 text-center text-xs text-muted-foreground"
+						aria-label="Детали объекта"
+					>
+						Выберите объект слева, чтобы увидеть его связи.
+					</section>
+				)}
+
+				<LinkPicker
+					open={linkSourceId !== null}
+					onOpenChange={(open) => {
+						if (!open) setLinkSourceId(null);
+					}}
+					source={linkSource}
+					candidates={projectNodes}
+					onLink={handleLink}
+					pending={linkMutation.isPending}
+				/>
+			</div>
 		</div>
 	);
 }

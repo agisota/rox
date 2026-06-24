@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import type { UnifiedSearchHit } from "./unifiedSearchResults";
+import type { UnifiedSearchHit } from "./unified-search-results";
 import {
 	mapUnifiedSearchResults,
 	toUnifiedSearchResult,
 	UNIFIED_SEARCH_DEFAULT_KINDS,
 	unifiedSearchHref,
 	unifiedSearchKindLabel,
-} from "./unifiedSearchResults";
+} from "./unified-search-results";
 
 const hit = (over: Partial<UnifiedSearchHit> = {}): UnifiedSearchHit => ({
 	id: "e1",
