@@ -1,0 +1,20 @@
+{
+	"name": "rox-transcribe-worker",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Live Transcript Phase-2: the SERVER-SIDE streaming transcription worker. Joins an org-scoped LiveKit voice room as a hidden participant, subscribes to the audio tracks, streams PCM to Deepgram realtime (@deepgram/sdk listen.v1), and on each FINAL transcript event emits a segment back to the room through the EXISTING Phase-1 fan-out (publishData under `rox.live.transcript`, the SAME envelope `reduceTranscript` already merges) and persists finals via a signed POST. STANDALONE — NOT part of the Rox bun/turbo workspace; runnable code ships here. A LIVE sub-second transcript needs this process DEPLOYED + DEEPGRAM_API_KEY provisioned + the existing LiveKit server creds (deploy follow-up, OUTSIDE CI). DO NOT auto-deploy. live.transcript stays ready via Phase-1; this is the streaming UPGRADE, not a new flag.",
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "bun test",
+		"start": "node --experimental-strip-types src/index.ts"
+	},
+	"dependencies": {
+		"@deepgram/sdk": "5.4.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"bun-types": "^1.3.14",
+		"typescript": "5.9.2"
+	}
+}

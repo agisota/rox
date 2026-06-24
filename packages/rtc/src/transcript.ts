@@ -378,3 +378,225 @@ export function createTranscriptCollector({
 		},
 	};
 }
+
+// ============================================================================
+// Streaming-STT Phase-2 — server-side `livekit-deepgram` source (THE SAME SEAM).
+// ----------------------------------------------------------------------------
+// Phase-1 transcribes the LOCAL mic in N-second CHUNKS on the client. Phase-2 is
+// the server-side STREAMING upgrade: a hidden worker participant
+// (`workers/transcribe-worker`) joins the voice room, subscribes to the audio
+// tracks, streams PCM to Deepgram realtime, and emits each transcript event back
+// to the room through the EXISTING fan-out — `encodeTranscriptSegment` under
+// `TRANSCRIPT_DATA_TOPIC`, the SAME envelope `reduceTranscript` already merges. So
+// every already-shipped client folds the worker's words via the wired
+// `DataReceived` → `decodeTranscriptSegment` → `mergeRemote` path with ZERO client
+// changes — Phase-2 swaps the STT engine behind the one `TranscriptSource` seam,
+// exactly as the seam's contract promised.
+//
+// This block is the ISOMORPHIC half that belongs in CI: the stable source id, the
+// Deepgram-result envelope shape, and the PURE mapping from a Deepgram `Results`
+// event to the existing `TranscriptWireSegment`. The heavy runtime (LiveKit room
+// join, the live Deepgram websocket, the signed persistence POST) lives in the
+// standalone deploy-gated worker, which imports this mapping so the bytes it
+// publishes are byte-identical to what the client decodes.
+// ============================================================================
+
+/**
+ * Stable telemetry/debug id for the Phase-2 server streaming source. Registered
+ * as a `TranscriptSource.id` so logs/metrics can tell the chunked Groq path
+ * (`"groq-chunked"`) apart from the streaming LiveKit+Deepgram path.
+ */
+export const SERVER_TRANSCRIPT_SOURCE_ID = "livekit-deepgram";
+
+/**
+ * Topic the worker publishes finals under — identical to the client fan-out topic
+ * so receivers do not special-case the server source. Re-exported as an explicit
+ * alias to make the worker's intent self-documenting at the call site.
+ */
+export const SERVER_TRANSCRIPT_DATA_TOPIC = TRANSCRIPT_DATA_TOPIC;
+
+/**
+ * One alternative inside a Deepgram `Results` event. Only the fields the mapping
+ * actually reads are modelled (Deepgram sends more); `words` carries per-word
+ * diarization (`speaker` is a small integer cluster index) used to label the
+ * speaker when track identity is not 1:1 with a person.
+ */
+export interface DeepgramAlternative {
+	transcript: string;
+	words?: Array<{
+		word?: string;
+		speaker?: number;
+		start?: number;
+		end?: number;
+	}>;
+}
+
+/**
+ * The subset of a Deepgram realtime `Results` message the mapping consumes.
+ * `is_final` distinguishes a stable final from an interim partial;
+ * `channel.alternatives[0]` is the best hypothesis; `start`/`duration` are the
+ * media-time window (seconds) used to derive a capture instant.
+ */
+export interface DeepgramTranscriptResult {
+	type?: string;
+	is_final?: boolean;
+	channel?: { alternatives?: DeepgramAlternative[] };
+	start?: number;
+	duration?: number;
+}
+
+/** Identity the worker attaches to every segment it derives for one audio track. */
+export interface ServerTranscriptSpeaker {
+	/** LiveKit participant identity whose track produced the audio. */
+	speakerIdentity: string;
+	/** Display name for that participant (falls back to identity if blank). */
+	speakerName: string;
+}
+
+/** Context threaded onto each mapped segment (room + when the stream started). */
+export interface ServerTranscriptContext extends ServerTranscriptSpeaker {
+	/** Org-scoped room name the worker joined (`org:{org}:voice:{channelId}`). */
+	roomName: string;
+	/**
+	 * Epoch ms of the audio stream's t=0, so a Deepgram media-relative `start`
+	 * (seconds) maps to a wall-clock `capturedAt`. Defaults to "now" per call when
+	 * omitted (used by tests / when no stream anchor is available).
+	 */
+	streamStartedAtMs?: number;
+	/**
+	 * Stable id for the mapped segment. Deepgram does not mint durable ids, so the
+	 * worker supplies one (e.g. the persisted row id, else a deterministic
+	 * `${trackSid}:${start}` key) to keep fan-out dedupe (`reduceTranscript`)
+	 * idempotent across a re-publish. When omitted a `${speaker}:${start}:final`
+	 * fallback is derived so the same final never double-logs.
+	 */
+	segmentId?: string;
+	/** Injectable clock for deterministic tests; defaults to `Date.now`. */
+	now?: () => number;
+}
+
+/** Pick the speaker cluster that contributed the most words (diarization label). */
+function dominantSpeaker(alt: DeepgramAlternative | undefined): number | null {
+	if (!alt?.words || alt.words.length === 0) return null;
+	const counts = new Map<number, number>();
+	for (const w of alt.words) {
+		if (typeof w.speaker === "number") {
+			counts.set(w.speaker, (counts.get(w.speaker) ?? 0) + 1);
+		}
+	}
+	let best: number | null = null;
+	let bestCount = -1;
+	for (const [speaker, count] of counts) {
+		if (count > bestCount) {
+			best = speaker;
+			bestCount = count;
+		}
+	}
+	return best;
+}
+
+/**
+ * Derive the wall-clock capture instant for a Deepgram result. A realtime result
+ * carries a media-relative `start` (+ `duration`) in seconds; anchoring it to the
+ * stream's `streamStartedAtMs` yields the absolute instant the spoken WORDS ended
+ * — which is what `reduceTranscript` sorts on so server + client finals interleave
+ * chronologically. Falls back to the injected clock when no anchor is available.
+ */
+export function deepgramCapturedAt(
+	result: DeepgramTranscriptResult,
+	ctx: Pick<ServerTranscriptContext, "streamStartedAtMs" | "now">,
+): number {
+	const now = ctx.now ?? Date.now;
+	if (typeof ctx.streamStartedAtMs !== "number") return now();
+	const start = typeof result.start === "number" ? result.start : 0;
+	const duration = typeof result.duration === "number" ? result.duration : 0;
+	return Math.round(ctx.streamStartedAtMs + (start + duration) * 1000);
+}
+
+/**
+ * PURE Phase-2 mapping: a Deepgram realtime `Results` event → the EXISTING
+ * `TranscriptWireSegment` (the wire `encodeTranscriptSegment` serializes and the
+ * client's `decodeTranscriptSegment` already merges). Returns `null` for an
+ * INTERIM partial or an empty/whitespace transcript, so the worker only fans out
+ * + persists stable FINALS (silence and partials never enter the log) — mirroring
+ * `createGroqChunkedTranscriptSource`, which also drops empty chunks.
+ *
+ * Speaker label: the worker subscribes one track per participant, so it passes the
+ * track's `speakerIdentity`/`speakerName`; Deepgram diarization (`words[].speaker`)
+ * is surfaced as a `#N` suffix only when a single stream carries multiple speakers,
+ * never overriding the real LiveKit identity used for dedupe + persistence.
+ */
+export function mapDeepgramResultToWire(
+	result: DeepgramTranscriptResult,
+	ctx: ServerTranscriptContext,
+): TranscriptWireSegment | null {
+	// Only stable finals are fanned out; interim partials are dropped here so the
+	// shared reducer never logs a line that later changes underneath the user.
+	if (!result.is_final) return null;
+
+	const alt = result.channel?.alternatives?.[0];
+	const text = (alt?.transcript ?? "").trim();
+	if (text.length === 0) return null;
+
+	const capturedAt = deepgramCapturedAt(result, ctx);
+	const baseName =
+		ctx.speakerName.trim().length > 0
+			? ctx.speakerName.trim()
+			: ctx.speakerIdentity;
+	const speaker = dominantSpeaker(alt);
+	const speakerName = speaker !== null ? `${baseName} #${speaker}` : baseName;
+
+	const id =
+		ctx.segmentId && ctx.segmentId.length > 0
+			? ctx.segmentId
+			: `${ctx.speakerIdentity}:${capturedAt}:final`;
+
+	return {
+		id,
+		speakerIdentity: ctx.speakerIdentity,
+		speakerName,
+		text,
+		// Deepgram realtime is single-language per connection; the worker sets the
+		// connection language (e.g. multi/ru/en) and threads it on via the source.
+		language: null,
+		capturedAt,
+	};
+}
+
+/**
+ * A Phase-2 server source: the SAME `id` contract as a `TranscriptSource`, plus a
+ * streaming `mapResult` (Deepgram event → wire segment) the worker drives per
+ * Deepgram message. It is NOT chunk-shaped (`transcribe(chunk)`) because the server
+ * path consumes a continuous PCM stream, not discrete client chunks — so it exposes
+ * the streaming mapping instead, while keeping the stable `id` so telemetry treats
+ * it uniformly with `createGroqChunkedTranscriptSource`.
+ */
+export interface ServerTranscriptSource {
+	readonly id: string;
+	/** Map one Deepgram realtime result to a wire segment (or null to drop). */
+	mapResult(
+		result: DeepgramTranscriptResult,
+		ctx: ServerTranscriptContext,
+	): TranscriptWireSegment | null;
+	/** Encode a mapped wire segment to the SAME data-channel bytes clients merge. */
+	encode(wire: TranscriptWireSegment, roomName: string): Uint8Array;
+}
+
+/**
+ * Register the Phase-2 `livekit-deepgram` source behind the Phase-1 seam. Bundles
+ * the stable id, the pure Deepgram→wire mapping, and the canonical encoder so the
+ * worker's published bytes are guaranteed byte-identical to what every shipped
+ * client already decodes (`encodeTranscriptSegment` ∘ `wireToTranscriptSegment`).
+ * No I/O, no Deepgram import — the live websocket + room join live in the worker.
+ */
+export function createLivekitDeepgramServerSource(): ServerTranscriptSource {
+	return {
+		id: SERVER_TRANSCRIPT_SOURCE_ID,
+		mapResult: mapDeepgramResultToWire,
+		encode(wire, roomName) {
+			// Reattach the room the worker joined (never trusted off the wire) and
+			// reuse the EXACT Phase-1 encoder so client merge stays a no-op upgrade.
+			return encodeTranscriptSegment(wireToTranscriptSegment(wire, roomName));
+		},
+	};
+}
