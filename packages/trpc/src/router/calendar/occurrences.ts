@@ -40,6 +40,17 @@ export interface EventOccurrence {
 	originalStart?: Date;
 	/** True when a per-occurrence override patched this instance's fields. */
 	overridden?: boolean;
+	/**
+	 * Per-occurrence field overrides surfaced onto the instance (RFC 5545
+	 * RECURRENCE-ID patch). Each is present only when the override row set that
+	 * column; `undefined` means inherit the series value. A consumer that shows
+	 * an instance's title/description/location/all-day must prefer these over the
+	 * series event so a "this event only" field edit is visible.
+	 */
+	title?: string;
+	description?: string;
+	location?: string;
+	allDay?: boolean;
 }
 
 /**
@@ -67,10 +78,11 @@ export interface OccurrenceOverride {
  *   - a modified override → start/end patched (preserving the original duration
  *     when only one side moves), `originalStart` preserved, `overridden` set.
  *
- * Field patches (title/description/location/allDay) do not change the timeline
- * here — the router surfaces them by reading the override row alongside the
- * series event — but `overridden` is flagged so a consumer can distinguish a
- * patched instance from a plain one.
+ * Field patches (title/description/location/allDay) are carried onto the
+ * instance so a consumer can render the edited instance without re-reading the
+ * override row: a non-null override column lands on the matching occurrence
+ * field; a null column is omitted (inherit the series value). `overridden` is
+ * flagged so a consumer can distinguish a patched instance from a plain one.
  */
 export function applyOverride(
 	occ: EventOccurrence,
@@ -89,13 +101,20 @@ export function applyOverride(
 			? new Date(override.dtstart.getTime() + durationMs)
 			: occ.end);
 
-	return {
+	const patched: EventOccurrence = {
 		eventId: occ.eventId,
 		start,
 		end,
 		originalStart: occ.originalStart ?? occ.start,
 		overridden: true,
 	};
+	// Surface field patches additively: only a non-null override column overrides
+	// the series; a null column is omitted so the consumer inherits the series.
+	if (override.title !== null) patched.title = override.title;
+	if (override.description !== null) patched.description = override.description;
+	if (override.location !== null) patched.location = override.location;
+	if (override.allDay !== null) patched.allDay = override.allDay;
+	return patched;
 }
 
 export interface ExpansionResult {

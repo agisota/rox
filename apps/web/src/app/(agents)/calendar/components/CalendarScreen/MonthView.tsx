@@ -13,6 +13,11 @@ export interface OccurrenceItem {
 	originalStart?: string;
 	/** True when a per-occurrence override patched this instance. */
 	overridden?: boolean;
+	/** Per-occurrence field overrides; absent = inherit the series value. */
+	title?: string;
+	description?: string;
+	location?: string;
+	allDay?: boolean;
 }
 
 interface MonthViewProps {
@@ -20,8 +25,8 @@ interface MonthViewProps {
 	occurrences: OccurrenceItem[];
 	eventsById: Map<string, { id: string; title: string; allDay: boolean }>;
 	onSelectDay: (day: Date) => void;
-	/** `occurrenceStart` is the instance's RECURRENCE-ID (occ.start), threaded for "this event only" edits. */
-	onSelectEvent: (eventId: string, occurrenceStart: string) => void;
+	/** Opens the clicked instance for edit; the occurrence carries its real start/end and any per-occurrence override. */
+	onSelectEvent: (occurrence: OccurrenceItem) => void;
 }
 
 const todayKey = () => isoDateKey(new Date());
@@ -89,25 +94,25 @@ export function MonthView({
 							<ul className="mt-1 space-y-0.5">
 								{dayOccs.slice(0, 3).map((occ, i) => {
 									const event = eventsById.get(occ.eventId);
+									// Per-occurrence override wins over the series value.
+									const allDay = occ.allDay ?? event?.allDay;
+									const title = occ.title ?? event?.title ?? "Событие";
 									return (
 										<li key={`${occ.eventId}-${occ.start}-${i}`}>
 											<button
 												type="button"
 												onClick={(e) => {
 													e.stopPropagation();
-													onSelectEvent(
-														occ.eventId,
-														occ.originalStart ?? occ.start,
-													);
+													onSelectEvent(occ);
 												}}
 												className="block w-full truncate rounded bg-primary/10 px-1 py-0.5 text-left text-[11px] text-primary hover:bg-primary/20"
 											>
-												{!event?.allDay && (
+												{!allDay && (
 													<span className="mr-1 tabular-nums">
 														{formatTime(occ.start)}
 													</span>
 												)}
-												{event?.title ?? "Событие"}
+												{title}
 											</button>
 										</li>
 									);

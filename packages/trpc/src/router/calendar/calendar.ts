@@ -268,6 +268,54 @@ async function getRecurringEventForOverride(
 	return event;
 }
 
+/**
+ * Defensive guard for the per-occurrence "teleport" bug. A buggy client that
+ * seeds the edit dialog from the SERIES anchor (`event.dtstart`/`event.dtend`)
+ * rather than the clicked instance sends the anchor as THIS instance's
+ * `dtstart`/`dtend`; the expander then moves the instance to the series start
+ * even when the user never touched the time.
+ *
+ * Two non-moves are recognised and stored as NULL (inherit the series time):
+ *   1. the instance is on its natural slot (`originalStart` + series duration) —
+ *      a redundant no-op override, and
+ *   2. a NON-first instance whose time equals the SERIES anchor — the signature
+ *      of an anchor-seeded client that never moved the instance.
+ * Either way a pure field edit still persists while the instance keeps its own
+ * date. A genuine time move (anywhere else) is stored verbatim.
+ */
+function sanitizeOccurrenceTimeOverride(
+	event: typeof calEvents.$inferSelect,
+	originalStart: Date,
+	dtstart: Date | null,
+	dtend: Date | null,
+): { overrideDtstart: Date | null; overrideDtend: Date | null } {
+	if (dtstart === null) return { overrideDtstart: null, overrideDtend: dtend };
+	const seriesDurationMs = event.dtend.getTime() - event.dtstart.getTime();
+
+	// (1) On its natural slot (originalStart + series duration): not a move, so a
+	// time override is redundant — inherit the series time.
+	const naturalStartMs = originalStart.getTime();
+	const naturalEndMs = naturalStartMs + seriesDurationMs;
+	const onNaturalSlot =
+		dtstart.getTime() === naturalStartMs &&
+		(dtend === null || dtend.getTime() === naturalEndMs);
+
+	// (2) Anchor-seeded teleport: a buggy client seeds the dialog from the SERIES
+	// anchor and sends it as a NON-first instance's time. The anchor is the first
+	// occurrence's slot, so a non-first instance "moved" onto the anchor is never
+	// a real edit — drop the time override rather than teleport the instance.
+	const isFirstInstance = naturalStartMs === event.dtstart.getTime();
+	const onSeriesAnchor =
+		dtstart.getTime() === event.dtstart.getTime() &&
+		(dtend === null || dtend.getTime() === event.dtend.getTime());
+	const anchorSeededTeleport = !isFirstInstance && onSeriesAnchor;
+
+	if (onNaturalSlot || anchorSeededTeleport) {
+		return { overrideDtstart: null, overrideDtend: null };
+	}
+	return { overrideDtstart: dtstart, overrideDtend: dtend };
+}
+
 /** An attendee request after handle-resolution: only userId/email kinds remain. */
 type ResolvedAttendee =
 	| { kind: "userId"; userId: string }
@@ -1112,6 +1160,13 @@ export const calendarRouter = {
 				// per-occurrence procedures, and whether an override patched it.
 				originalStart: (o.originalStart ?? o.start).toISOString(),
 				overridden: o.overridden ?? false,
+				// Additive per-occurrence field overrides ("this event only"): each
+				// is present only when the override row set that column, so a consumer
+				// prefers it over the series event and otherwise inherits the series.
+				title: o.title,
+				description: o.description,
+				location: o.location,
+				allDay: o.allDay,
 			}));
 
 			// `truncated` is additive: existing consumers keep reading
@@ -1134,7 +1189,25 @@ export const calendarRouter = {
 		.mutation(async ({ ctx, input }) => {
 			const organizationId = await requireActiveOrgMembership(ctx);
 			const userId = ctx.session.user.id;
-			await getRecurringEventForOverride(organizationId, userId, input.eventId);
+			const event = await getRecurringEventForOverride(
+				organizationId,
+				userId,
+				input.eventId,
+			);
+
+			// Guard the "teleport" bug: a client that seeds the edit dialog from the
+			// SERIES anchor (dtstart/dtend) instead of the clicked instance writes
+			// the anchor as this instance's override, moving it to the series start.
+			// The anchor instant is the first occurrence, so a NON-first instance
+			// (originalStart ≠ anchor) "moved" to exactly the anchor time is never a
+			// real edit — drop the time override (inherit the series) so a pure
+			// field edit still saves and the instance stays on its own date.
+			const { overrideDtstart, overrideDtend } = sanitizeOccurrenceTimeOverride(
+				event,
+				input.originalStart,
+				input.dtstart ?? null,
+				input.dtend ?? null,
+			);
 
 			const [row] = await db
 				.insert(calEventOccurrences)
@@ -1148,8 +1221,8 @@ export const calendarRouter = {
 					overrideTitle: input.title ?? null,
 					overrideDescription: input.description ?? null,
 					overrideLocation: input.location ?? null,
-					overrideDtstart: input.dtstart ?? null,
-					overrideDtend: input.dtend ?? null,
+					overrideDtstart,
+					overrideDtend,
 					overrideAllDay: input.allDay ?? null,
 				})
 				.onConflictDoUpdate({
@@ -1165,8 +1238,8 @@ export const calendarRouter = {
 						overrideTitle: input.title ?? null,
 						overrideDescription: input.description ?? null,
 						overrideLocation: input.location ?? null,
-						overrideDtstart: input.dtstart ?? null,
-						overrideDtend: input.dtend ?? null,
+						overrideDtstart,
+						overrideDtend,
 						overrideAllDay: input.allDay ?? null,
 					},
 				})

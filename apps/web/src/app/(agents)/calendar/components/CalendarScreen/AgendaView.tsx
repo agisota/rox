@@ -7,8 +7,8 @@ import type { OccurrenceItem } from "./MonthView";
 interface AgendaViewProps {
 	occurrences: OccurrenceItem[];
 	eventsById: Map<string, { id: string; title: string; allDay: boolean }>;
-	/** `occurrenceStart` is the instance's RECURRENCE-ID (occ.start), threaded for "this event only" edits. */
-	onSelectEvent: (eventId: string, occurrenceStart: string) => void;
+	/** Opens the clicked instance for edit; the occurrence carries its real start/end and any per-occurrence override. */
+	onSelectEvent: (occurrence: OccurrenceItem) => void;
 }
 
 function formatDay(iso: string): string {
@@ -65,6 +65,9 @@ export function AgendaView({
 					<ul className="divide-y rounded-lg border">
 						{items.map((occ, i) => {
 							const event = eventsById.get(occ.eventId);
+							// Per-occurrence override wins over the series value.
+							const allDay = occ.allDay ?? event?.allDay ?? false;
+							const title = occ.title ?? event?.title ?? "Событие";
 							return (
 								<li
 									key={`${occ.eventId}-${occ.start}-${i}`}
@@ -72,16 +75,12 @@ export function AgendaView({
 								>
 									<button
 										type="button"
-										onClick={() =>
-											onSelectEvent(occ.eventId, occ.originalStart ?? occ.start)
-										}
+										onClick={() => onSelectEvent(occ)}
 										className="min-w-0 flex-1 text-left"
 									>
-										<p className="truncate font-medium text-sm">
-											{event?.title ?? "Событие"}
-										</p>
+										<p className="truncate font-medium text-sm">{title}</p>
 										<p className="text-muted-foreground text-xs tabular-nums">
-											{formatRange(occ.start, occ.end, event?.allDay ?? false)}
+											{formatRange(occ.start, occ.end, allDay)}
 										</p>
 									</button>
 									<div className="flex shrink-0 gap-1">

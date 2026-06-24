@@ -457,6 +457,69 @@ describe("calendar.listOccurrences", () => {
 		expect(moved?.overridden).toBe(true);
 	});
 
+	// MED regression: a "this event only" field override (title/description/
+	// location/allDay) is persisted but was never surfaced by listOccurrences, so
+	// the edited instance looked unchanged. The override fields must now land on
+	// the matching instance ONLY; sibling instances stay on the series values.
+	test("surfaces per-occurrence field overrides on the right instance only", async () => {
+		state.selectQueue = [
+			[{ id: CAL_ID }], // owned
+			[], // shared
+			[
+				{
+					id: EVENT_ID,
+					calendarId: CAL_ID,
+					organizationId: "org-1",
+					dtstart: new Date("2026-06-01T09:00:00Z"),
+					dtend: new Date("2026-06-01T10:00:00Z"),
+					timezone: "UTC",
+					rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+					exdates: [],
+					status: "confirmed",
+				},
+			], // events
+			[
+				// Jun 2: field-only override (no time move) — title/description/
+				// location/allDay patched, dtstart/dtend null (inherit the slot).
+				{
+					eventId: EVENT_ID,
+					originalStart: new Date("2026-06-02T09:00:00Z"),
+					cancelled: false,
+					overrideDtstart: null,
+					overrideDtend: null,
+					overrideTitle: "Special standup",
+					overrideDescription: "One-off agenda",
+					overrideLocation: "Room 9",
+					overrideAllDay: true,
+				},
+			], // overrides
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.calendar.listOccurrences({
+			rangeStart: new Date("2026-06-01T00:00:00Z"),
+			rangeEnd: new Date("2026-06-04T00:00:00Z"),
+		});
+		const patched = res.occurrences.find(
+			(o) => o.originalStart === "2026-06-02T09:00:00.000Z",
+		);
+		// The edited instance reflects the override fields…
+		expect(patched?.title).toBe("Special standup");
+		expect(patched?.description).toBe("One-off agenda");
+		expect(patched?.location).toBe("Room 9");
+		expect(patched?.allDay).toBe(true);
+		expect(patched?.overridden).toBe(true);
+		// …and it stays on its own slot (no teleport).
+		expect(patched?.start).toBe("2026-06-02T09:00:00.000Z");
+		// Sibling instances are untouched: no override fields surfaced.
+		const sibling = res.occurrences.find(
+			(o) => o.originalStart === "2026-06-01T09:00:00.000Z",
+		);
+		expect(sibling?.title).toBeUndefined();
+		expect(sibling?.location).toBeUndefined();
+		expect(sibling?.allDay).toBeUndefined();
+		expect(sibling?.overridden).toBe(false);
+	});
+
 	test("returns empty when the caller can read no calendars", async () => {
 		state.selectQueue = [[], []]; // owned, shared
 		const caller = callerFor("org-1");
@@ -552,6 +615,85 @@ describe("calendar.updateOccurrence", () => {
 		);
 		expect((values?.overrideDtstart as Date).toISOString()).toBe(
 			"2026-06-02T14:00:00.000Z",
+		);
+	});
+
+	// HIGH regression: editing the 2nd instance with NO time change must not
+	// "teleport" it to the series start. A buggy client seeds the dialog from the
+	// series anchor (Jun 1 09:00) and would send that as this instance's
+	// dtstart/dtend; the server guard drops a time override that lands on the
+	// instance's own natural slot, so overrideDtstart/Dtend persist as NULL
+	// (inherit) and the instance keeps Jun 2 — never jumps to Jun 1.
+	test("a no-time-change edit of the 2nd instance does not teleport it (anchor-seeded)", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event (anchor Jun 1 09:00–10:00)
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+		];
+		state.insertReturning = [{ id: "override-1", eventId: EVENT_ID }];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateOccurrence({
+			eventId: EVENT_ID,
+			originalStart: ORIGINAL_START, // Jun 2 09:00 (the clicked instance)
+			title: "Renamed only",
+			// Buggy/anchor-seeded payload: the SERIES anchor, not the instance.
+			dtstart: new Date("2026-06-01T09:00:00Z"),
+			dtend: new Date("2026-06-01T10:00:00Z"),
+		});
+		const values = state.inserted[0]?.values[0];
+		// The field edit persists…
+		expect(values?.overrideTitle).toBe("Renamed only");
+		// …but the bogus anchor time override is dropped (inherit the series),
+		// so the expander keeps the instance on its own Jun 2 slot.
+		expect(values?.overrideDtstart).toBeNull();
+		expect(values?.overrideDtend).toBeNull();
+		expect((values?.originalStart as Date).toISOString()).toBe(
+			"2026-06-02T09:00:00.000Z",
+		);
+	});
+
+	// The instance's own natural slot (originalStart + series duration) is not a
+	// move either; an unmoved edit seeded correctly from the instance still stores
+	// no time override.
+	test("an edit on the instance's natural slot stores no time override", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event (1h series duration)
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+		];
+		state.insertReturning = [{ id: "override-1", eventId: EVENT_ID }];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateOccurrence({
+			eventId: EVENT_ID,
+			originalStart: ORIGINAL_START, // Jun 2 09:00
+			location: "Room 7",
+			dtstart: new Date("2026-06-02T09:00:00Z"), // == natural slot start
+			dtend: new Date("2026-06-02T10:00:00Z"), // == natural slot end (+1h)
+		});
+		const values = state.inserted[0]?.values[0];
+		expect(values?.overrideLocation).toBe("Room 7");
+		expect(values?.overrideDtstart).toBeNull();
+		expect(values?.overrideDtend).toBeNull();
+	});
+
+	// A genuine move of the 2nd instance to a different time is stored verbatim.
+	test("a real time move of the 2nd instance is stored verbatim", async () => {
+		state.selectQueue = [
+			[RECURRING_EVENT], // event
+			[{ id: CAL_ID, ownerUserId: "user-1", organizationId: "org-1" }], // calendar (owner)
+		];
+		state.insertReturning = [{ id: "override-1", eventId: EVENT_ID }];
+		const caller = callerFor("org-1", "user-1");
+		await caller.calendar.updateOccurrence({
+			eventId: EVENT_ID,
+			originalStart: ORIGINAL_START, // Jun 2 09:00
+			dtstart: new Date("2026-06-02T14:00:00Z"), // moved to 14:00
+			dtend: new Date("2026-06-02T15:00:00Z"),
+		});
+		const values = state.inserted[0]?.values[0];
+		expect((values?.overrideDtstart as Date).toISOString()).toBe(
+			"2026-06-02T14:00:00.000Z",
+		);
+		expect((values?.overrideDtend as Date).toISOString()).toBe(
+			"2026-06-02T15:00:00.000Z",
 		);
 	});
 });

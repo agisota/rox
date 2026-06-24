@@ -58,6 +58,11 @@ interface AgendaItem {
 	originalStart: string;
 	start: Date;
 	end: Date;
+	/** Per-occurrence field overrides; absent = inherit the series value. */
+	title?: string;
+	description?: string;
+	location?: string;
+	allDay?: boolean;
 }
 
 function formatTime(date: Date): string {
@@ -164,6 +169,12 @@ export function CalendarView() {
 				originalStart: occ.originalStart ?? occ.start,
 				start,
 				end: new Date(occ.end),
+				// Per-occurrence field overrides surfaced by listOccurrences; absent =
+				// inherit the series value.
+				title: occ.title,
+				description: occ.description,
+				location: occ.location,
+				allDay: occ.allDay,
 			};
 			const key = dayKey(start);
 			const list = byDay.get(key);
@@ -175,6 +186,15 @@ export function CalendarView() {
 
 	const selectedEvent = selected
 		? (eventsById.get(selected.eventId) ?? null)
+		: null;
+	// The clicked occurrence's per-occurrence overrides, so the detail dialog
+	// reflects a "this event only" edit rather than the series defaults.
+	const selectedOcc = selected
+		? (occurrences.find(
+				(o) =>
+					o.eventId === selected.eventId &&
+					(o.originalStart ?? o.start) === selected.originalStart,
+			) ?? null)
 		: null;
 	const monthLabel = anchor.toLocaleDateString([], {
 		month: "long",
@@ -263,6 +283,10 @@ export function CalendarView() {
 							<div className="space-y-1.5">
 								{items.map((item) => {
 									const event = eventsById.get(item.eventId);
+									// Per-occurrence override wins over the series value.
+									const allDay = item.allDay ?? event?.allDay;
+									const title = item.title ?? event?.title ?? "Событие";
+									const location = item.location ?? event?.location;
 									return (
 										<button
 											key={item.key}
@@ -276,17 +300,15 @@ export function CalendarView() {
 											className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/50"
 										>
 											<span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-												{event?.allDay ? "весь день" : formatTime(item.start)}
+												{allDay ? "весь день" : formatTime(item.start)}
 											</span>
 											<span className="min-w-0 flex-1 truncate text-sm">
-												{event?.title ?? "Событие"}
+												{title}
 											</span>
-											{event?.location && (
+											{location && (
 												<span className="hidden shrink-0 items-center gap-1 text-muted-foreground text-xs sm:flex">
 													<MapPin className="size-3" />
-													<span className="max-w-32 truncate">
-														{event.location}
-													</span>
+													<span className="max-w-32 truncate">{location}</span>
 												</span>
 											)}
 										</button>
@@ -306,95 +328,108 @@ export function CalendarView() {
 				}}
 			>
 				<DialogContent>
-					{selectedEvent && (
-						<>
-							<DialogHeader>
-								<DialogTitle className="cursor-text select-text">
-									{selectedEvent.title}
-								</DialogTitle>
-								{selectedEvent.description && (
-									<DialogDescription className="cursor-text select-text whitespace-pre-wrap">
-										{selectedEvent.description}
-									</DialogDescription>
-								)}
-							</DialogHeader>
-							<dl className="space-y-2 text-sm">
-								<div className="flex items-center gap-2 text-muted-foreground">
-									<Clock className="size-4 shrink-0" />
-									<span>
-										{new Date(selectedEvent.dtstart).toLocaleString([], {
-											dateStyle: "medium",
-											timeStyle: selectedEvent.allDay ? undefined : "short",
-										})}
-										{" — "}
-										{new Date(selectedEvent.dtend).toLocaleString([], {
-											dateStyle: "medium",
-											timeStyle: selectedEvent.allDay ? undefined : "short",
-										})}
-									</span>
-								</div>
-								{selectedEvent.location && (
-									<div className="flex items-center gap-2 text-muted-foreground">
-										<MapPin className="size-4 shrink-0" />
-										<span className="cursor-text select-text">
-											{selectedEvent.location}
-										</span>
-									</div>
-								)}
-								{selectedEvent.rrule && (
-									<Badge variant="outline" className="text-[10px]">
-										повторяющееся
-									</Badge>
-								)}
-							</dl>
-							<div className="flex flex-wrap gap-2 pt-2">
-								{RSVP_OPTIONS.map((option) => (
-									<Button
-										key={option.status}
-										size="sm"
-										variant={
-											option.status === "accepted" ? "default" : "outline"
-										}
-										disabled={rsvp.isPending}
-										onClick={() =>
-											rsvp.mutate({
-												eventId: selectedEvent.id,
-												status: option.status,
-											})
-										}
-										className={cn(
-											option.status === "declined" &&
-												"text-destructive hover:text-destructive",
+					{selectedEvent &&
+						(() => {
+							// Per-occurrence override wins over the series value; the
+							// occurrence's start/end already reflect a moved-time override.
+							const detailTitle = selectedOcc?.title ?? selectedEvent.title;
+							const detailDescription =
+								selectedOcc?.description ?? selectedEvent.description;
+							const detailLocation =
+								selectedOcc?.location ?? selectedEvent.location;
+							const detailAllDay = selectedOcc?.allDay ?? selectedEvent.allDay;
+							const detailStart = selectedOcc?.start ?? selectedEvent.dtstart;
+							const detailEnd = selectedOcc?.end ?? selectedEvent.dtend;
+							return (
+								<>
+									<DialogHeader>
+										<DialogTitle className="cursor-text select-text">
+											{detailTitle}
+										</DialogTitle>
+										{detailDescription && (
+											<DialogDescription className="cursor-text select-text whitespace-pre-wrap">
+												{detailDescription}
+											</DialogDescription>
 										)}
-									>
-										{option.label}
-									</Button>
-								))}
-							</div>
+									</DialogHeader>
+									<dl className="space-y-2 text-sm">
+										<div className="flex items-center gap-2 text-muted-foreground">
+											<Clock className="size-4 shrink-0" />
+											<span>
+												{new Date(detailStart).toLocaleString([], {
+													dateStyle: "medium",
+													timeStyle: detailAllDay ? undefined : "short",
+												})}
+												{" — "}
+												{new Date(detailEnd).toLocaleString([], {
+													dateStyle: "medium",
+													timeStyle: detailAllDay ? undefined : "short",
+												})}
+											</span>
+										</div>
+										{detailLocation && (
+											<div className="flex items-center gap-2 text-muted-foreground">
+												<MapPin className="size-4 shrink-0" />
+												<span className="cursor-text select-text">
+													{detailLocation}
+												</span>
+											</div>
+										)}
+										{selectedEvent.rrule && (
+											<Badge variant="outline" className="text-[10px]">
+												повторяющееся
+											</Badge>
+										)}
+									</dl>
+									<div className="flex flex-wrap gap-2 pt-2">
+										{RSVP_OPTIONS.map((option) => (
+											<Button
+												key={option.status}
+												size="sm"
+												variant={
+													option.status === "accepted" ? "default" : "outline"
+												}
+												disabled={rsvp.isPending}
+												onClick={() =>
+													rsvp.mutate({
+														eventId: selectedEvent.id,
+														status: option.status,
+													})
+												}
+												className={cn(
+													option.status === "declined" &&
+														"text-destructive hover:text-destructive",
+												)}
+											>
+												{option.label}
+											</Button>
+										))}
+									</div>
 
-							{/* Recurring: cancel just this instance ("this event only"). */}
-							{selectedEvent.rrule && selected && (
-								<div className="border-t pt-3">
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={cancelOccurrence.isPending}
-										className="text-destructive hover:text-destructive"
-										onClick={() =>
-											cancelOccurrence.mutate({
-												eventId: selected.eventId,
-												originalStart: new Date(selected.originalStart),
-											})
-										}
-									>
-										Удалить только это событие
-									</Button>
-								</div>
-							)}
+									{/* Recurring: cancel just this instance ("this event only"). */}
+									{selectedEvent.rrule && selected && (
+										<div className="border-t pt-3">
+											<Button
+												size="sm"
+												variant="outline"
+												disabled={cancelOccurrence.isPending}
+												className="text-destructive hover:text-destructive"
+												onClick={() =>
+													cancelOccurrence.mutate({
+														eventId: selected.eventId,
+														originalStart: new Date(selected.originalStart),
+													})
+												}
+											>
+												Удалить только это событие
+											</Button>
+										</div>
+									)}
 
-							<EventReminders eventId={selectedEvent.id} />
-						</>
-					)}
+									<EventReminders eventId={selectedEvent.id} />
+								</>
+							);
+						})()}
 				</DialogContent>
 			</Dialog>
 		</SuiteScreen>
