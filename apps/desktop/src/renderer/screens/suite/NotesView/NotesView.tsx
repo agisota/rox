@@ -33,13 +33,13 @@ import {
 	Plus,
 	Search,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
+import { useEffect, useRef, useState } from "react";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
+import { CollaborativeNoteEditor } from "./components/CollaborativeNoteEditor";
 
 /**
  * Render a `ts_headline` snippet with matched terms emphasized, splitting on the
@@ -71,12 +71,13 @@ function SnippetText({ snippet }: { snippet: string }) {
 }
 
 /**
- * Notes (Suite P2 surfaced in P0): a three-pane reader — notebooks on the left,
- * the selected notebook's notes in the middle, and the selected note's markdown
- * rendered on the right via the shared `MarkdownRenderer`. Supports creating a
- * notebook and creating a note (title + markdown body). List queries exclude the
- * (up to 500k) markdown column; the full body is fetched per-note via
- * `notebooks.getNote`.
+ * Notes (Suite P2 surfaced in P0): a three-pane workspace — notebooks on the
+ * left, the selected notebook's notes in the middle, and the selected note's
+ * markdown body edited on the right in `CollaborativeNoteEditor` (single-player
+ * Textarea + autosave by default; a real-time Yjs/Liveblocks co-editing peer when
+ * the `collaboration.editor` experiment is open). Supports creating a notebook and
+ * creating a note (title + markdown body). List queries exclude the (up to 500k)
+ * markdown column; the full body is fetched per-note via `notebooks.getNote`.
  *
  * Cache-first (AGENTS.md rule 9): existing notebooks/notes render immediately.
  */
@@ -133,6 +134,70 @@ export function NotesView() {
 		...trpc.notes.getNote.queryOptions({ noteId: activeNoteId ?? "" }),
 		enabled: activeNoteId !== null,
 	});
+
+	// --- note body editor (single-player baseline + collaborative-when-gated) ---
+	// The reader pane is an editable markdown editor whose body autosaves through
+	// `notes.updateNote` on a short debounce — the single-player baseline. When the
+	// `collaboration.editor` experiment is open it is ALSO a Yjs/Liveblocks CRDT
+	// peer (see CollaborativeNoteEditor), so two people editing the same note (web
+	// or desktop) converge in real time. Mirrors the web `NoteEditor` autosave.
+	const AUTOSAVE_DELAY_MS = 800;
+	const [editorMarkdown, setEditorMarkdown] = useState("");
+	const hydratedNoteId = useRef<string | null>(null);
+	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pendingMarkdownRef = useRef<string | null>(null);
+
+	const updateNote = useMutation(
+		trpc.notes.updateNote.mutationOptions({
+			onError: (error) => {
+				logger.error("[NotesView] updateNote failed", error);
+				toast.error("Не удалось сохранить заметку");
+			},
+		}),
+	);
+
+	// Hydrate the editor from the loaded note once per note id, so typing is never
+	// clobbered by a background refetch of the same note (cache-first, AGENTS.md #9).
+	useEffect(() => {
+		if (noteQuery.data && hydratedNoteId.current !== noteQuery.data.id) {
+			setEditorMarkdown(noteQuery.data.markdown ?? "");
+			hydratedNoteId.current = noteQuery.data.id;
+		}
+	}, [noteQuery.data]);
+
+	// Keep the freshest mutate fn / note id for the debounced + unmount flush
+	// without re-arming the effect on every keystroke.
+	const flushSaveRef = useRef<() => void>(() => {});
+	flushSaveRef.current = () => {
+		if (saveTimer.current) clearTimeout(saveTimer.current);
+		const payload = pendingMarkdownRef.current;
+		pendingMarkdownRef.current = null;
+		if (payload !== null && activeNoteId) {
+			updateNote.mutate({ noteId: activeNoteId, markdown: payload });
+		}
+	};
+
+	// Flush any pending edit when the editor unmounts (view close / note switch),
+	// so the debounce never drops the last change.
+	useEffect(() => {
+		return () => flushSaveRef.current();
+	}, []);
+
+	const handleEditorChange = (next: string) => {
+		setEditorMarkdown(next);
+		pendingMarkdownRef.current = next;
+		if (saveTimer.current) clearTimeout(saveTimer.current);
+		// Capture the note id at schedule time so a debounced save always targets the
+		// note that was being edited, never whichever note is active when it fires.
+		const targetNoteId = activeNoteId;
+		saveTimer.current = setTimeout(() => {
+			const payload = pendingMarkdownRef.current;
+			pendingMarkdownRef.current = null;
+			if (payload !== null && targetNoteId) {
+				updateNote.mutate({ noteId: targetNoteId, markdown: payload });
+			}
+		}, AUTOSAVE_DELAY_MS);
+	};
 
 	const createNotebook = useMutation(
 		trpc.notes.createNotebook.mutationOptions({
@@ -511,14 +576,22 @@ export function NotesView() {
 							</p>
 						) : noteQuery.data ? (
 							<div className="flex h-full flex-col">
-								<div className="border-border border-b px-4 py-3">
+								<div className="flex items-center justify-between border-border border-b px-4 py-3">
 									<h2 className="cursor-text select-text font-semibold text-lg">
 										{noteQuery.data.title}
 									</h2>
+									{updateNote.isPending ? (
+										<span className="text-muted-foreground text-xs">
+											Сохранение…
+										</span>
+									) : null}
 								</div>
-								<div className="min-h-0 flex-1 px-4 py-3">
-									<MarkdownRenderer
-										content={noteQuery.data.markdown || "_Пустая заметка._"}
+								<div className="flex min-h-0 flex-1 flex-col px-4 py-3">
+									<CollaborativeNoteEditor
+										key={noteQuery.data.id}
+										noteId={noteQuery.data.id}
+										value={editorMarkdown}
+										onChange={handleEditorChange}
 									/>
 								</div>
 							</div>
