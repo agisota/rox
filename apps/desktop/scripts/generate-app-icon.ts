@@ -316,9 +316,18 @@ async function packIcns(tile: Buffer, icnsPath: string): Promise<void> {
 		await writeRgba(png, resolve(iconset, name));
 	}
 
-	execFileSync("iconutil", ["-c", "icns", iconset, "-o", icnsPath], {
-		stdio: "inherit",
-	});
+	// iconutil ships only with macOS. On other platforms (e.g. Linux CI) skip the
+	// .icns pack and keep the committed RGBA .icns; the PNG ladder is already
+	// emitted cross-platform via sharp. Run this script on macOS to refresh .icns.
+	if (process.platform === "darwin") {
+		execFileSync("iconutil", ["-c", "icns", iconset, "-o", icnsPath], {
+			stdio: "inherit",
+		});
+	} else {
+		console.warn(
+			`[generate-app-icon] iconutil is macOS-only; skipping .icns pack for ${icnsPath} (keeping committed RGBA .icns).`,
+		);
+	}
 	rmSync(iconset, { recursive: true, force: true });
 }
 
