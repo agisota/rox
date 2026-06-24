@@ -9,9 +9,10 @@ export interface DashboardSurfaceProps {
 	/** Optional toolbar rendered on the right of the header (buttons, dialogs). */
 	actions?: ReactNode;
 	/**
-	 * Width strategy. "content" (default) caps at the shared `--container-content`
-	 * token (kills the half-page empty margins); "full" lets the surface own the
-	 * entire width (graph canvas, file managers, three-pane layouts).
+	 * Width strategy. "full" (default) lets the surface own the entire window
+	 * width with sane `px-6` gutters (no wasted half-page right margin). "content"
+	 * is the opt-in escape hatch that caps at the shared `--container-content`
+	 * token for reading-width surfaces that explicitly want a centred column.
 	 */
 	width?: "content" | "full";
 	/** Drop the scroll container + padding for surfaces that manage their own (canvas). */
@@ -26,16 +27,18 @@ export interface DashboardSurfaceProps {
  *
  * Single source of truth for surface width + header chrome so the per-surface
  * `max-w-5xl/6xl` hardcodes (which caused the half-page gutters) can never drift
- * back one surface at a time. `width="content"` uses the shared
- * `max-w-content` token; `width="full"` and `bare` are the escape hatches for
- * canvas / file-manager / multi-pane surfaces that own their layout.
+ * back one surface at a time. `width="full"` (default) fills the entire window
+ * with `px-6` gutters; `width="content"` is the opt-in escape hatch that caps at
+ * the shared `max-w-content` token for centred reading-width surfaces; `bare`
+ * drops the scroll container entirely for canvas / multi-pane surfaces that own
+ * their layout.
  */
 export function DashboardSurface({
 	title,
 	description,
 	icon: Icon,
 	actions,
-	width = "content",
+	width = "full",
 	bare = false,
 	children,
 	className,

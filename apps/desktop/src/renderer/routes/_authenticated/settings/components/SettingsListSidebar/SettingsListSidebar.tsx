@@ -54,7 +54,7 @@ export function SettingsListSidebar<T>({
 	const showFilter = !(hideFilterWhenEmpty && isEmpty);
 
 	return (
-		<div className="w-64 shrink-0 border-r overflow-y-auto">
+		<div className="flex h-full min-h-0 w-64 shrink-0 flex-col border-r overflow-y-auto">
 			<div className="p-3 space-y-3">
 				{showFilter && (
 					<div className="flex items-center gap-1.5">

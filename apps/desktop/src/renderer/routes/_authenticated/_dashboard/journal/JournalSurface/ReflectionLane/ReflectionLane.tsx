@@ -108,7 +108,7 @@ export function ReflectionLane({ entries, isReady }: ReflectionLaneProps) {
 /** Ready-but-empty reflection — exact RU copy preserved from the legacy surface. */
 function ReflectionEmpty() {
 	return (
-		<SpringInCard className="flex flex-col items-center justify-center rounded-lg border border-border/60 border-dashed bg-card/20 py-20 text-center">
+		<SpringInCard className="glass-panel flex flex-col items-center justify-center rounded-lg border border-border/60 border-dashed py-20 text-center">
 			<span className="text-foreground text-sm">Журнал пока пуст</span>
 			<span className="mt-1 max-w-sm text-muted-foreground text-xs">
 				Записи появляются автоматически: каждый день Rox R1 разбирает твои

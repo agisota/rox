@@ -175,7 +175,7 @@ export function V2OpenInMenuButton({
 					</button>
 				</DropdownMenuTrigger>
 
-				<DropdownMenuContent align="end" className="w-48">
+				<DropdownMenuContent align="end" className="w-56">
 					<OpenInExternalDropdownItems
 						isDark={isDark}
 						activeApp={resolvedApp}

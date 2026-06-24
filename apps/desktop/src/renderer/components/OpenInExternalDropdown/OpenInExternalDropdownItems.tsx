@@ -205,14 +205,28 @@ export function OpenInExternalDropdownItems({
 				</DropdownMenuSubContent>
 			</DropdownMenuSub>
 			<DropdownMenuSeparator />
-			<DropdownMenuItem onClick={onCopyPath} className={copyPathItemClassName}>
+			<DropdownMenuItem
+				onClick={onCopyPath}
+				className={cn("flex-nowrap", copyPathItemClassName)}
+			>
 				<div
-					className={cn("flex items-center gap-2", copyPathContentClassName)}
+					className={cn(
+						"flex min-w-0 items-center gap-2",
+						copyPathContentClassName,
+					)}
 				>
-					<LuCopy className={cn("size-4", copyPathIconClassName)} />
-					<span className={copyPathLabelClassName}>Копировать путь</span>
+					<LuCopy className={cn("size-4 shrink-0", copyPathIconClassName)} />
+					<span
+						className={cn("truncate whitespace-nowrap", copyPathLabelClassName)}
+					>
+						Копировать путь
+					</span>
 				</div>
-				{copyPathTrailing}
+				{copyPathTrailing ? (
+					<span className="ml-auto shrink-0 whitespace-nowrap [&>*]:ml-0">
+						{copyPathTrailing}
+					</span>
+				) : null}
 			</DropdownMenuItem>
 		</>
 	);

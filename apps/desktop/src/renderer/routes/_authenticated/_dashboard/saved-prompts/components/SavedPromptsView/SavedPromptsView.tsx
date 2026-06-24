@@ -168,13 +168,14 @@ export function SavedPromptsView() {
 		(prompt: PromptEntry, text: string) => {
 			const outcome = insert(text);
 			incrementUse(prompt);
-			toast.success(
-				outcome.mode === "in-place"
-					? "Промпт вставлен"
-					: "Промпт добавлен в Быстрый чат",
-			);
+			if (outcome.mode === "in-place") {
+				toast.success("Промпт вставлен");
+			} else {
+				void copyToClipboard(text);
+				toast.success("Промпт скопирован — откройте чат, чтобы вставить");
+			}
 		},
-		[insert, incrementUse],
+		[insert, incrementUse, copyToClipboard],
 	);
 
 	const finishCopy = useCallback(
@@ -397,8 +398,15 @@ export function SavedPromptsView() {
 									saving={isCreating}
 									onSave={handleSeedSave}
 									onInsert={(example) => {
-										insert(example.body);
-										toast.success("Промпт добавлен в Быстрый чат");
+										const outcome = insert(example.body);
+										if (outcome.mode === "in-place") {
+											toast.success("Промпт вставлен");
+										} else {
+											void copyToClipboard(example.body);
+											toast.success(
+												"Промпт скопирован — откройте чат, чтобы вставить",
+											);
+										}
 									}}
 									onCopy={(example) => {
 										void copyToClipboard(example.body);

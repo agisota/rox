@@ -28,7 +28,6 @@ import {
 } from "renderer/lib/dev-chat";
 import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
-import { useWorkspaceBranchTint } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useWorkspaceBranchTint";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
 import { usePermissionModePreference } from "../../hooks/usePermissionModePreference";
 import {
@@ -293,7 +292,6 @@ export function ChatPaneInterface({
 	onUserMessageSubmitted,
 }: ChatPaneInterfaceProps) {
 	const { models: catalogModels, defaultModel } = useAvailableModels();
-	const branchTint = useWorkspaceBranchTint(workspaceId);
 	const { data: customProviderConfig } =
 		chatServiceTrpc.auth.getCustomProviderConfig.useQuery();
 	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
@@ -1143,13 +1141,6 @@ export function ChatPaneInterface({
 	return (
 		<PromptInputProvider initialInput={initialLaunchConfig?.draftInput}>
 			<div className="relative flex h-full w-full flex-col bg-background">
-				{branchTint ? (
-					<div
-						aria-hidden
-						className="pointer-events-none absolute inset-0"
-						style={{ backgroundColor: branchTint }}
-					/>
-				) : null}
 				<ChatMessageList
 					messages={visibleMessages}
 					isFocused={isFocused}

@@ -38,6 +38,7 @@ import { LuLibrary } from "react-icons/lu";
 import { DashboardSurface } from "renderer/components/DashboardSurface";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useExternalActions } from "../../hooks/useExternalActions";
+import { useSkillInstall } from "../../hooks/useSkillInstall";
 import {
 	buildCatalog,
 	type InstalledSkillRef,
@@ -74,6 +75,18 @@ export function SkillsLibraryView() {
 	const [activeSources, setActiveSources] = useState<SourceFilterValue[]>([]);
 	const [installStateFilter, setInstallStateFilter] =
 		useState<InstallStateFilterValue | null>(null);
+
+	const { installPack, installingSlug } = useSkillInstall({
+		onInstalled: ({ installed: landed }) => {
+			// Jump to the first freshly-installed skill's detail so the install is
+			// immediately visible. Installed-skill ids are `claude:<name>`.
+			const first = landed[0];
+			if (first) {
+				setSelectedId(`claude:${first}`);
+				setTab("installed");
+			}
+		},
+	});
 
 	const installed = skills ?? [];
 
@@ -231,6 +244,8 @@ export function SkillsLibraryView() {
 									totalCount={catalog.length}
 									onOpenInstalled={openInstalledFromCatalog}
 									onOpenRepo={openExternalUrl}
+									onInstall={installPack}
+									installingSlug={installingSlug}
 								/>
 							) : selectedSkill ? (
 								<SkillDetailPane

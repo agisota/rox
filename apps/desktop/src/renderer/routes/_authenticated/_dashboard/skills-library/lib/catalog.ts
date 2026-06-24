@@ -10,7 +10,10 @@
  * build can render identical cards from the same data.
  */
 
-import { CURATED_DEFAULT_SKILL_PACKS } from "@rox/shared/skills/curated-default-skills";
+import {
+	CURATED_DEFAULT_SKILL_PACKS,
+	CURATED_DEFAULT_SKILLS,
+} from "@rox/shared/skills/curated-default-skills";
 
 /** Whether a curated pack is already present on disk. */
 export type CatalogInstallState = "installed" | "available";
@@ -28,6 +31,10 @@ export interface CatalogItem {
 	installState: CatalogInstallState;
 	/** When installed, the matching installed-skill id so we can jump to detail. */
 	installedSkillId: string | null;
+	/** Curated skill directories this pack lands (one per `~/.claude/skills/<n>`). */
+	skillNames: readonly string[];
+	/** How many of {@link skillNames} are currently present on disk. */
+	installedCount: number;
 }
 
 /** Minimal shape of an installed skill needed to derive install state. */
@@ -42,28 +49,62 @@ function normalize(value: string): string {
 }
 
 /**
- * Build the catalog view model. A pack counts as "installed" when an installed
- * skill shares its slug or name (case-insensitive) — the same identity
- * `seedWorkspaceSkills` uses when it lands `~/.claude/skills/<name>`.
+ * Map every curated source repo to the flattened skill directory names it
+ * installs. The bundled archive lands each curated skill as its own
+ * `~/.claude/skills/<name>` directory, so a pack's true install state is "are
+ * its constituent skills on disk?" — not "is there a directory named after the
+ * pack?" (there never is). Pure, derived from the shared source of truth.
+ */
+const SKILL_NAMES_BY_REPO: ReadonlyMap<string, readonly string[]> = (() => {
+	const map = new Map<string, string[]>();
+	for (const skill of CURATED_DEFAULT_SKILLS) {
+		const list = map.get(skill.repo) ?? [];
+		list.push(skill.name);
+		map.set(skill.repo, list);
+	}
+	return map;
+})();
+
+/**
+ * Build the catalog view model. A pack counts as "installed" when every curated
+ * skill it ships is present on disk (matched against installed slug/name,
+ * case-insensitive) — the same identity the bundled catalog uses when it lands
+ * `~/.claude/skills/<name>`. Packs whose curated skill list is unknown fall back
+ * to a direct name match so they still resolve.
  */
 export function buildCatalog(
 	installed: ReadonlyArray<InstalledSkillRef>,
 ): CatalogItem[] {
-	const bySlug = new Map<string, InstalledSkillRef>();
+	const byKey = new Map<string, InstalledSkillRef>();
 	for (const skill of installed) {
-		bySlug.set(normalize(skill.slug), skill);
-		bySlug.set(normalize(skill.name), skill);
+		byKey.set(normalize(skill.slug), skill);
+		byKey.set(normalize(skill.name), skill);
 	}
 
 	return CURATED_DEFAULT_SKILL_PACKS.map((pack) => {
-		const match = bySlug.get(normalize(pack.name));
+		const skillNames = SKILL_NAMES_BY_REPO.get(pack.repo) ?? [];
+		const presentRefs = skillNames
+			.map((name) => byKey.get(normalize(name)))
+			.filter((ref): ref is InstalledSkillRef => ref !== undefined);
+		// Fallback for packs with no flattened curated skills: direct name match.
+		const directMatch = byKey.get(normalize(pack.name)) ?? null;
+
+		const installedCount = presentRefs.length;
+		const allPresent =
+			skillNames.length > 0 && installedCount === skillNames.length;
+		const installState: CatalogInstallState =
+			allPresent || directMatch ? "installed" : "available";
+		const installedSkillId = presentRefs[0]?.id ?? directMatch?.id ?? null;
+
 		return {
 			id: pack.name,
 			name: pack.name,
 			repo: pack.repo,
 			description: pack.description,
-			installState: match ? "installed" : "available",
-			installedSkillId: match ? match.id : null,
+			installState,
+			installedSkillId,
+			skillNames,
+			installedCount,
 		} satisfies CatalogItem;
 	});
 }

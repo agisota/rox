@@ -418,6 +418,49 @@ describe("browser history + saved prompts round-trip", () => {
 		const all = db.select().from(savedPrompts).all();
 		expect(all).toHaveLength(1);
 	});
+
+	// Regression guard for the "saving one prompt wipes all others" data-loss
+	// report. Each save MUST be a single-row append/upsert keyed on the row id —
+	// never a whole-collection replace. We save two distinct prompts in sequence
+	// and assert the read-back still contains BOTH, with distinct generated ids.
+	test("saving a prompt appends and never clobbers existing prompts", () => {
+		const first = single(
+			db
+				.insert(savedPrompts)
+				.values({ title: "Первый", body: "Тело первого промпта" })
+				.returning()
+				.all(),
+		);
+
+		const second = single(
+			db
+				.insert(savedPrompts)
+				.values({ title: "Второй", body: "Тело второго промпта" })
+				.returning()
+				.all(),
+		);
+
+		expect(second.id).not.toBe(first.id);
+
+		// Read-back after the second save must still show the first prompt.
+		const all = db.select().from(savedPrompts).all();
+		expect(all).toHaveLength(2);
+		const titles = all.map((p) => p.title).sort();
+		expect(titles).toEqual(["Второй", "Первый"]);
+
+		// Editing one prompt (UPDATE WHERE id) must leave the other untouched.
+		db.update(savedPrompts)
+			.set({ title: "Первый (изм.)", updatedAt: Date.now() })
+			.where(eq(savedPrompts.id, first.id))
+			.run();
+
+		const afterEdit = db.select().from(savedPrompts).all();
+		expect(afterEdit).toHaveLength(2);
+		expect(afterEdit.find((p) => p.id === second.id)?.title).toBe("Второй");
+		expect(afterEdit.find((p) => p.id === first.id)?.title).toBe(
+			"Первый (изм.)",
+		);
+	});
 });
 
 describe("browser_history_entries (per-workspace, D4) round-trip", () => {

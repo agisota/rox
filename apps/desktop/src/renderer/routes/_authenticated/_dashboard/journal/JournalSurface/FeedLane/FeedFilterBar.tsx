@@ -46,7 +46,7 @@ export function FeedFilterBar({
 	const hasFilters = kind !== "all" || status !== "all" || query !== "";
 
 	return (
-		<div className="flex flex-col gap-2.5 border-border/40 border-b bg-background/80 pb-3 backdrop-blur-sm">
+		<div className="glass flex flex-col gap-2.5 border-border/40 border-b pb-3">
 			<div className="flex flex-wrap items-center gap-1.5">
 				<ChipGroup>
 					{KIND_FILTERS.map((f) => (
@@ -80,7 +80,7 @@ export function FeedFilterBar({
 							onQueryChange("");
 							setDraft("");
 						}}
-						className="ml-auto inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/40 px-2.5 py-1 font-medium text-[11px] text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+						className="ml-auto inline-flex items-center gap-1 rounded-full border border-border/60 bg-foreground/[0.06] px-2.5 py-1 font-medium text-[11px] text-muted-foreground backdrop-blur-sm transition-colors hover:border-border hover:text-foreground"
 					>
 						<LuX className="size-3" />
 						Сбросить
@@ -94,7 +94,7 @@ export function FeedFilterBar({
 					value={draft}
 					onChange={(e) => setDraft(e.target.value)}
 					placeholder="Поиск по событиям…"
-					className="h-8 border-border/60 bg-card/40 pl-8 text-sm backdrop-blur-sm"
+					className="h-8 border-border/60 bg-foreground/[0.06] pl-8 text-sm backdrop-blur-sm"
 				/>
 				{draft && (
 					<button
@@ -136,7 +136,7 @@ function Chip({
 				"rounded-full border px-2.5 py-1 font-medium text-[11px] transition-colors",
 				active
 					? "border-primary/40 bg-primary/15 text-foreground"
-					: "border-border/50 bg-card/30 text-muted-foreground hover:border-border hover:text-foreground",
+					: "border-border/50 bg-foreground/[0.05] text-muted-foreground backdrop-blur-sm hover:border-border hover:text-foreground",
 			)}
 		>
 			{children}

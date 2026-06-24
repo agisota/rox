@@ -52,7 +52,7 @@ export function ReflectionDay({ entry }: ReflectionDayProps) {
 
 	return (
 		<article className="space-y-5">
-			<header className="-mx-1 sticky top-0 z-10 flex items-center justify-between gap-2 bg-background/90 px-1 py-1.5 backdrop-blur-sm">
+			<header className="glass -mx-1 sticky top-0 z-10 flex items-center justify-between gap-2 px-1 py-1.5">
 				<h2 className="font-mono text-muted-foreground text-xs uppercase tracking-[0.18em]">
 					{reflectionDayLabel(entry.day)}
 				</h2>

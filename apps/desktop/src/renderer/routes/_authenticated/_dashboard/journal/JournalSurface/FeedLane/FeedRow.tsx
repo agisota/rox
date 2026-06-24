@@ -37,8 +37,8 @@ export function FeedRow({ event, pulse, onOpen }: FeedRowProps) {
 				type="button"
 				onClick={() => onOpen(event)}
 				className={cn(
-					"group/row flex w-full items-start gap-3 rounded-lg border border-border/50 bg-card/40 p-3 text-left backdrop-blur-sm transition-colors",
-					"hover:border-border hover:bg-card/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+					"glass-panel group/row flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 text-left transition-colors",
+					"hover:border-border/80 hover:brightness-110 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
 				)}
 			>
 				<div className="min-w-0 flex-1">

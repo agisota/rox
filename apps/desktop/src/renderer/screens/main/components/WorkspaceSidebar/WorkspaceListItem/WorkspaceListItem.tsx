@@ -1,3 +1,4 @@
+import { Badge } from "@rox/ui/badge";
 import { Input } from "@rox/ui/input";
 import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
@@ -28,6 +29,7 @@ import {
 	GITHUB_STATUS_STALE_TIME,
 	MAX_KEYBOARD_SHORTCUT_INDEX,
 } from "./constants";
+import { useWorkspaceBranchDecoration } from "./useWorkspaceBranchDecoration";
 import { useWorkspaceDnD } from "./useWorkspaceDnD";
 import { WorkspaceContextMenu } from "./WorkspaceContextMenu";
 import { WorkspaceDiffStats } from "./WorkspaceDiffStats";
@@ -79,6 +81,11 @@ export function WorkspaceListItem({
 	orderedWorkspaceIds = [],
 }: WorkspaceListItemProps) {
 	const isBranchWorkspace = type === "branch";
+	const {
+		tint: branchNameTint,
+		ring: branchNameRing,
+		labels: branchLabels,
+	} = useWorkspaceBranchDecoration(id);
 	const navigate = useNavigate();
 	const matchRoute = useMatchRoute();
 	const {
@@ -485,10 +492,41 @@ export function WorkspaceListItem({
 						</div>
 
 						{showBranchSubtitle && (
-							<div className="flex items-center gap-2 text-[12px] w-full">
-								<span className="text-muted-foreground/60 truncate font-mono leading-tight">
+							<div className="flex items-center gap-1.5 text-[12px] w-full min-w-0">
+								<span
+									className={cn(
+										"truncate font-mono leading-tight min-w-0",
+										branchNameTint
+											? "rounded-[5px] px-1.5 py-0.5 text-foreground/75 ring-1 ring-inset"
+											: "text-muted-foreground/60",
+									)}
+									style={
+										branchNameTint
+											? {
+													backgroundColor: branchNameTint,
+													// ring color via CSS var consumed by `ring-inset`
+													["--tw-ring-color" as string]:
+														branchNameRing ?? undefined,
+												}
+											: undefined
+									}
+								>
 									{branch}
 								</span>
+								{branchLabels.length > 0 && (
+									<div className="flex shrink-0 items-center gap-1">
+										{branchLabels.map((label) => (
+											<Badge
+												key={label}
+												variant="secondary"
+												className="h-[15px] max-w-[120px] truncate rounded-[5px] border-transparent px-1.5 py-0 text-[10px] font-medium leading-none"
+												title={label}
+											>
+												{label}
+											</Badge>
+										))}
+									</div>
+								)}
 							</div>
 						)}
 					</div>

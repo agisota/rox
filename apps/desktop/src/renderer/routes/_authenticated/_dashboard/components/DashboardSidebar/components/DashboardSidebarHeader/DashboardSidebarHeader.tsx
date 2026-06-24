@@ -17,7 +17,6 @@ import {
 	LuLayers,
 	LuLayoutTemplate,
 	LuLibrary,
-	LuMessageCircle,
 	LuPlus,
 	LuWorkflow,
 } from "react-icons/lu";
@@ -83,7 +82,6 @@ export function DashboardSidebarHeader({
 	const isTasksOpen = !!matchRoute({ to: "/tasks", fuzzy: true });
 	const isAutomationsOpen = !!matchRoute({ to: "/automations", fuzzy: true });
 	const isPipelinesOpen = !!matchRoute({ to: "/pipelines", fuzzy: true });
-	const isQuickChatOpen = !!matchRoute({ to: "/quick-chat" });
 	const isSkillsLibraryOpen = !!matchRoute({ to: "/skills-library" });
 	const isSavedPromptsOpen = !!matchRoute({ to: "/saved-prompts" });
 
@@ -120,10 +118,6 @@ export function DashboardSidebarHeader({
 				}),
 			});
 		});
-	};
-
-	const handleQuickChatClick = () => {
-		navigate({ to: "/quick-chat" });
 	};
 
 	const handleSkillsLibraryClick = () => {
@@ -209,25 +203,7 @@ export function DashboardSidebarHeader({
 							<HiOutlineClipboardDocumentList className="size-4" />
 						</button>
 					</TooltipTrigger>
-					<TooltipContent side="right">Задачи и PR</TooltipContent>
-				</Tooltip>
-
-				<Tooltip delayDuration={300}>
-					<TooltipTrigger asChild>
-						<button
-							type="button"
-							onClick={handleQuickChatClick}
-							className={cn(
-								"flex size-8 items-center justify-center rounded-md transition-colors",
-								isQuickChatOpen
-									? "bg-accent text-foreground"
-									: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-							)}
-						>
-							<LuMessageCircle className="size-4" />
-						</button>
-					</TooltipTrigger>
-					<TooltipContent side="right">Быстрый чат</TooltipContent>
+					<TooltipContent side="right">Задачи</TooltipContent>
 				</Tooltip>
 
 				<Tooltip delayDuration={300}>
@@ -390,21 +366,7 @@ export function DashboardSidebarHeader({
 				)}
 			>
 				<HiOutlineClipboardDocumentList className="size-4 shrink-0" />
-				<span className="flex-1 text-left">Задачи и PR</span>
-			</button>
-
-			<button
-				type="button"
-				onClick={handleQuickChatClick}
-				className={cn(
-					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
-					isQuickChatOpen
-						? "bg-accent text-foreground"
-						: "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-				)}
-			>
-				<LuMessageCircle className="size-4 shrink-0" />
-				<span className="flex-1 text-left">Быстрый чат</span>
+				<span className="flex-1 text-left">Задачи</span>
 			</button>
 
 			<button

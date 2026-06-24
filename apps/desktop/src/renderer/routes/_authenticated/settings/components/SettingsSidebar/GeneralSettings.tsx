@@ -21,6 +21,7 @@ import {
 	HiOutlineSparkles,
 	HiOutlineUser,
 	HiOutlineUserGroup,
+	HiOutlineViewColumns,
 } from "react-icons/hi2";
 import { LuBrain, LuGitBranch, LuKeyboard, LuMic } from "react-icons/lu";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
@@ -37,6 +38,7 @@ type SettingsRoute =
 	| "/settings/organization"
 	| "/settings/teams"
 	| "/settings/appearance"
+	| "/settings/surfaces"
 	| "/settings/ringtones"
 	| "/settings/keyboard"
 	| "/settings/voice"
@@ -83,6 +85,12 @@ const SECTION_GROUPS: SectionGroup[] = [
 				section: "appearance",
 				label: "Внешний вид",
 				icon: <HiOutlinePaintBrush className="h-4 w-4" />,
+			},
+			{
+				id: "/settings/surfaces",
+				section: "surfaces",
+				label: "Поверхности",
+				icon: <HiOutlineViewColumns className="h-4 w-4" />,
 			},
 			{
 				id: "/settings/ringtones",
