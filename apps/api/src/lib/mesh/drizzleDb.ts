@@ -13,7 +13,9 @@
 
 import { db } from "@rox/db/client";
 import {
+	commsAddresses,
 	commsMessages,
+	commsParticipants,
 	commsThreads,
 	meshDeliveryLog,
 	meshDevices,
@@ -21,6 +23,38 @@ import {
 import { publishCommsMessage } from "@rox/shared/comms-events";
 import { and, eq, gt, or } from "drizzle-orm";
 import type { MeshIngestDb } from "./ingest";
+
+/**
+ * Insert `comms_participants` rows for the given rox users, de-duped and
+ * idempotent on the `(thread_id, user_id)` partial unique
+ * (`comms_participants_thread_user_uniq`). Null/blank ids are skipped (an
+ * external mesh peer with no rox identity is NOT a participant here). No-op when
+ * no rox users are resolvable. Mirrors the mail path's `ensureCommsParticipants`.
+ */
+async function ensureCommsParticipants(
+	dbClient: typeof db,
+	args: {
+		organizationId: string;
+		threadId: string;
+		userIds: ReadonlyArray<string | null | undefined>;
+	},
+): Promise<void> {
+	const userIds = [
+		...new Set(args.userIds.filter((id): id is string => Boolean(id))),
+	];
+	if (userIds.length === 0) return;
+	await dbClient
+		.insert(commsParticipants)
+		.values(
+			userIds.map((userId) => ({
+				organizationId: args.organizationId,
+				threadId: args.threadId,
+				userId,
+				role: "member" as const,
+			})),
+		)
+		.onConflictDoNothing();
+}
 
 /** Build the production {@link MeshIngestDb} bound to the live Drizzle client. */
 export function createMeshIngestDb(): MeshIngestDb {
@@ -115,6 +149,35 @@ export function createMeshIngestDb(): MeshIngestDb {
 				threadId = thread.id;
 			}
 
+			// Resolve a known rox sender counterpart from the unified comms address
+			// book (`mesh` kind, normalized pubkey). When the inbound DM is between two
+			// rox users, both join the thread so it surfaces for BOTH parties. An
+			// external peer with no rox address simply has no counterpart here.
+			const [senderAddr] = await db
+				.select({ userId: commsAddresses.userId })
+				.from(commsAddresses)
+				.where(
+					and(
+						eq(commsAddresses.kind, "mesh"),
+						eq(commsAddresses.value, args.fromPubkey.trim().toLowerCase()),
+						eq(commsAddresses.isAlias, false),
+					),
+				)
+				.limit(1);
+			const senderUserId = senderAddr?.userId ?? null;
+
+			// FIX: write the recipient (and any resolvable rox sender) as
+			// `comms_participants` — without this the SSE leak-gate
+			// (`isThreadParticipant`, which reads comms_participants directly and
+			// ignores the advisory participantUserIds) drops every published mesh
+			// event and the thread never surfaces via comms.listThreads/getThread.
+			// Idempotent on the (thread, user) partial unique. Mirrors the mail path.
+			await ensureCommsParticipants(db, {
+				organizationId: args.organizationId,
+				threadId,
+				userIds: [args.toUserId, senderUserId],
+			});
+
 			const [message] = await db
 				.insert(commsMessages)
 				.values({
@@ -140,15 +203,22 @@ export function createMeshIngestDb(): MeshIngestDb {
 			if (!message) throw new Error("Failed to insert comms message");
 
 			// Live delivery (comms SSE): publish the committed inbound mesh message.
-			// The SSE route re-checks participation, so the advisory set is just the
-			// recipient rox user. Best-effort — never break ingest on a publish error.
+			// The SSE route re-checks participation against comms_participants, so the
+			// advisory set is just the rox participants we wrote (recipient + any
+			// resolvable sender). Best-effort — never break ingest on a publish error.
 			publishCommsMessage({
 				organizationId: args.organizationId,
 				threadId,
 				messageId: message.id,
 				transport: "mesh",
 				authorUserId: null,
-				participantUserIds: args.toUserId ? [args.toUserId] : [],
+				participantUserIds: [
+					...new Set(
+						[args.toUserId, senderUserId].filter((id): id is string =>
+							Boolean(id),
+						),
+					),
+				],
 			});
 
 			return { messageId: message.id, threadId };
