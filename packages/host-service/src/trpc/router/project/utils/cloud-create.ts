@@ -92,7 +92,18 @@ export async function createCloudProjectWithSlugRetry(
  * Create the cloud main workspace for an already-synced project. Mirrors the
  * cloud calls in `ensureMainWorkspaceStrict` (host.ensure + v2Workspace.create)
  * but takes the branch as input (the outbox worker recorded it at enqueue
- * time). Returns the cloud workspace id.
+ * time — it is NOT re-read from git here). Returns the cloud workspace id.
+ *
+ * IDEMPOTENCY CONTRACT (load-bearing for the outbox worker's crash-retry
+ * safety): `v2Workspace.create` with `type='main'` is server-side idempotent
+ * per (projectId, hostId) via the partial unique index
+ * `v2_workspaces_one_main_per_host` (packages/db/src/schema/schema.ts:689-691)
+ * plus the router's `onConflictDoNothing` + existing-row read-back
+ * (packages/trpc/src/router/v2-workspace/v2-workspace.ts:236-237,298-330). A
+ * repeated call for the same (projectId, hostId, type='main') therefore returns
+ * the SAME cloud workspace id rather than creating a second main workspace, so a
+ * crash-truncated drain that retries converges on one stable cloud row. Removing
+ * that index/upsert breaks this guarantee.
  */
 export async function createCloudMainWorkspace(
 	ctx: CloudCreateContext,

@@ -19,7 +19,7 @@ import { createServiceTokenClaimTransport } from "./runtime/agent-state/claim-cl
 import { startAgentStateRuntime } from "./runtime/agent-state/runtime";
 import { ChatRuntimeManager } from "./runtime/chat";
 import { WorkspaceFilesystemManager } from "./runtime/filesystem";
-import type { GitCredentialProvider } from "./runtime/git";
+import type { GitCredentialProvider, GitFactory } from "./runtime/git";
 import { createGitFactory } from "./runtime/git";
 import { runMainWorkspaceSweep } from "./runtime/main-workspace-sweep";
 import { OutboxSyncManager } from "./runtime/outbox-sync";
@@ -58,6 +58,13 @@ export interface CreateAppOptions {
 	 */
 	db?: HostDb;
 	api?: ApiClient;
+	/**
+	 * Injectable git factory. Production omits it (built from the credential
+	 * provider). Tests override it to force a LOCAL git failure (e.g. assert the
+	 * local-first create still enqueues the project-create when the workspace
+	 * step throws).
+	 */
+	git?: GitFactory;
 	github?: () => Promise<Octokit>;
 	execGh?: ExecGh;
 	chatRuntime?: ChatRuntimeManager;
@@ -78,6 +85,13 @@ export interface CreateAppResult {
 	injectWebSocket: ReturnType<typeof createNodeWebSocket>["injectWebSocket"];
 	api: ApiClient;
 	db: HostDb;
+	/**
+	 * The local-first outbox sync worker. Exposed so a test harness can drive a
+	 * deterministic `drainOnce()` instead of racing the 15s poll interval; the
+	 * worker is already `start()`ed and `stop()`ped by `dispose()`. Production
+	 * callers don't need to touch it.
+	 */
+	outboxSync: OutboxSyncManager;
 	dispose: () => Promise<void>;
 }
 
@@ -88,7 +102,7 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		options.api ??
 		createApiClient(config.cloudApiUrl, providers.auth, config.organizationId);
 	const db = options.db ?? createDb(config.dbPath, config.migrationsFolder);
-	const git = createGitFactory(providers.credentials);
+	const git = options.git ?? createGitFactory(providers.credentials);
 	const github =
 		options.github ??
 		(async () => {
@@ -323,5 +337,5 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		}
 	};
 
-	return { app, injectWebSocket, api, db, dispose };
+	return { app, injectWebSocket, api, db, outboxSync, dispose };
 }

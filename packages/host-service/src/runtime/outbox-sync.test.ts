@@ -250,6 +250,99 @@ describe("OutboxSyncManager", () => {
 		expect(projectOutbox?.nextAttemptAt).toBeGreaterThan(Date.now());
 	});
 
+	it("(c) workspace idempotency: draining the SAME workspace row twice converges on one stable cloudId (mimics the cloud one-main-per-host index)", async () => {
+		const db = createTestDb();
+		const { projectId, workspaceId } = seedLocalFirstCreate(db);
+
+		// Stateful fake mirroring the cloud's server-side idempotency: the partial
+		// unique index `v2_workspaces_one_main_per_host` (project_id, host_id)
+		// WHERE type='main' + the router's onConflictDoNothing + existing-row
+		// read-back mean a repeated main-workspace create for the same project
+		// returns the SAME row id instead of inserting a second main workspace.
+		const mainWorkspaceIdByProject = new Map<string, string>();
+		let workspaceCreateCalls = 0;
+		const client = {
+			v2Project: {
+				create: {
+					mutate: async (input: {
+						id: string;
+						name: string;
+						slug: string;
+					}) => ({
+						id: input.id,
+						name: input.name,
+						slug: input.slug,
+					}),
+				},
+			},
+			host: { ensure: { mutate: async () => ({ machineId: "test-machine" }) } },
+			v2Workspace: {
+				create: {
+					mutate: async (input: { projectId: string; branch: string }) => {
+						workspaceCreateCalls++;
+						// Converge: one stable id per (project, type=main).
+						const existing = mainWorkspaceIdByProject.get(input.projectId);
+						const id = existing ?? randomUUID();
+						if (!existing) mainWorkspaceIdByProject.set(input.projectId, id);
+						return {
+							id,
+							projectId: input.projectId,
+							branch: input.branch,
+							name: input.branch,
+						};
+					},
+				},
+			},
+		} as unknown as ApiClient;
+
+		const mgr = new OutboxSyncManager({ db, api: client, organizationId: ORG });
+		stops.push(() => mgr.stop());
+
+		// First full drain: project then workspace.
+		await mgr.drainOnce();
+		await mgr.drainOnce();
+
+		const firstWs = db
+			.select()
+			.from(workspaces)
+			.where(eq(workspaces.id, workspaceId))
+			.get();
+		expect(firstWs?.syncState).toBe("synced");
+		const stableCloudId = firstWs?.cloudId;
+		expect(stableCloudId).toBeTruthy();
+		expect(db.select().from(syncOutbox).all()).toHaveLength(0);
+
+		// Simulate a crash-truncated drain: the cloud workspace was created but the
+		// local link-back was lost, and the row got re-enqueued. Reset the local
+		// row to pending + re-enqueue, then drain again.
+		db.update(workspaces)
+			.set({ syncState: "pending", cloudId: null })
+			.where(eq(workspaces.id, workspaceId))
+			.run();
+		enqueueWorkspaceCreate(db, {
+			localWorkspaceId: workspaceId,
+			localProjectId: projectId,
+			repoPath: `/tmp/${projectId}`,
+			branch: "main",
+		});
+
+		await mgr.drainOnce();
+
+		// Convergence: still ONE stable cloud id, synced, no leftover outbox row,
+		// and the cloud returned the same workspace id both times (no duplicate
+		// main workspace).
+		const secondWs = db
+			.select()
+			.from(workspaces)
+			.where(eq(workspaces.id, workspaceId))
+			.get();
+		expect(secondWs?.syncState).toBe("synced");
+		expect(secondWs?.cloudId).toBe(stableCloudId);
+		expect(db.select().from(syncOutbox).all()).toHaveLength(0);
+		expect(workspaceCreateCalls).toBe(2);
+		expect(mainWorkspaceIdByProject.size).toBe(1);
+	});
+
 	it("backoffMs grows exponentially and caps at 5 minutes", () => {
 		expect(backoffMs(1)).toBe(5_000);
 		expect(backoffMs(2)).toBe(10_000);

@@ -218,6 +218,18 @@ export class OutboxSyncManager {
 			return false;
 		}
 
+		// CRASH-RETRY SAFETY DEPENDS ON A SERVER-SIDE INVARIANT: the cloud
+		// `v2Workspace.create` for `type='main'` is idempotent per (projectId,
+		// hostId) via the partial unique index `v2_workspaces_one_main_per_host`
+		// (packages/db/src/schema/schema.ts:689-691) and the matching
+		// `onConflictDoNothing` + existing-row read-back in the router
+		// (packages/trpc/src/router/v2-workspace/v2-workspace.ts:236-237,298-330).
+		// If a prior drain created the cloud workspace but crashed before the
+		// local link-back below, THIS drain's create returns the SAME existing
+		// cloud row (stable id) instead of inserting a duplicate. DO NOT remove
+		// that index or weaken the router's main-workspace upsert without
+		// reworking this worker — otherwise a retried drain double-creates the
+		// main workspace.
 		const cloud = await createCloudMainWorkspace(this.ctx, {
 			projectId: payload.localProjectId,
 			branch: payload.branch,
