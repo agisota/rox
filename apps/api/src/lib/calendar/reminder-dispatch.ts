@@ -26,17 +26,28 @@
  * email): the race is removed entirely, not absorbed by a unique constraint.
  * Delivery is therefore at-most-once — a rare post-claim delivery throw is
  * logged (and the in_app row flipped to `failed`), never re-delivered. Cancelled
- * events are skipped (their reminders flip to `cancelled`). Partial failures are
- * isolated with `Promise.allSettled` + `logger.error`, mirroring the
- * drive/accrue-overage fan-out.
+ * events are skipped (their reminders flip to `cancelled`); a per-occurrence
+ * cancelled/moved instance (a `cal_event_occurrences` override the expander
+ * honours) is skipped too but the reminder is advanced to its next fire so it
+ * keeps moving forward. Partial failures are isolated with `Promise.allSettled` +
+ * `logger.error`, mirroring the drive/accrue-overage fan-out.
  */
 
 import { db, dbWs } from "@rox/db/client";
-import { calEvents, calReminders, journalEvents, users } from "@rox/db/schema";
+import {
+	calEventOccurrences,
+	calEvents,
+	calReminders,
+	journalEvents,
+	users,
+} from "@rox/db/schema";
 import { advanceAfterFire } from "@rox/trpc/calendar-reminders";
 import { getMailDomain, getMailSendFn } from "@rox/trpc/mail-transport";
 import { and, asc, eq, lte } from "drizzle-orm";
 import { logger } from "@/lib/logger";
+
+/** Milliseconds in a minute — relative offset ⇄ occurrence-start conversion. */
+const MIN_MS = 60_000;
 
 /** Discriminator for the reminder rows written into the journal event lane. */
 export const CALENDAR_REMINDER_KIND = "calendar_reminder";
@@ -51,7 +62,10 @@ export interface RunDueRemindersResult {
 	fired: number;
 	/** Recurring relative reminders that delivered and re-armed `next_fire_at`. */
 	advanced: number;
-	/** Reminders skipped (cancelled event, or email seam inert). */
+	/**
+	 * Reminders skipped: cancelled event, per-occurrence cancelled/moved instance,
+	 * email seam inert, or a lost claim race.
+	 */
 	skipped: number;
 	/** Reminders whose delivery threw (logged, left for the next tick / failed). */
 	failed: number;
@@ -215,6 +229,38 @@ async function cancelForCancelledEvent(row: DueReminderRow): Promise<void> {
 		.where(eq(calReminders.id, row.reminder.id));
 }
 
+/**
+ * The per-occurrence override (RECURRENCE-ID) the reminder is about to fire for,
+ * or `null` when none exists / the reminder has no occurrence to map to.
+ *
+ * For a RELATIVE reminder `next_fire_at = occurrenceStart - offset`, so the
+ * instance the reminder targets is `next_fire_at + offset` — the exact
+ * `original_start` a `cal_event_occurrences` row is keyed by. Absolute reminders
+ * (no `offset_minutes`) and reminders with no override row resolve to `null`.
+ */
+async function resolveTargetOccurrence(
+	row: DueReminderRow,
+): Promise<typeof calEventOccurrences.$inferSelect | null> {
+	const { reminder } = row;
+	if (reminder.triggerKind !== "relative" || reminder.offsetMinutes === null) {
+		return null;
+	}
+	const originalStart = new Date(
+		reminder.nextFireAt.getTime() + reminder.offsetMinutes * MIN_MS,
+	);
+	const [occurrence] = await db
+		.select()
+		.from(calEventOccurrences)
+		.where(
+			and(
+				eq(calEventOccurrences.eventId, reminder.eventId),
+				eq(calEventOccurrences.originalStart, originalStart),
+			),
+		)
+		.limit(1);
+	return occurrence ?? null;
+}
+
 /** Outcome of processing a single due reminder. */
 type DeliveryOutcome = "fired" | "advanced" | "skipped";
 
@@ -226,6 +272,21 @@ async function processReminder(
 	// Never fire for a cancelled event (mirrors listOccurrences filtering).
 	if (row.event.status === "cancelled") {
 		await cancelForCancelledEvent(row);
+		return "skipped";
+	}
+
+	// Never fire for a per-occurrence CANCELLED or MOVED instance. The whole-series
+	// guard above only covers `cal_events.status`; a single instance can be
+	// cancelled/rescheduled via a `cal_event_occurrences` override that the expander
+	// (occurrences.ts) honours but the due-scan otherwise ignores. Resolve the
+	// instance this fire targets and, when it is cancelled (dropped) or moved (the
+	// fire time is now stale), SKIP delivery but still CLAIM so `next_fire_at`
+	// advances to the next occurrence — keeping the row moving forward + idempotent.
+	// A rescheduled instance is not re-armed to its NEW time here (follow-up); we
+	// only ensure it does not deliver at the stale slot.
+	const occurrence = await resolveTargetOccurrence(row);
+	if (occurrence && (occurrence.cancelled || occurrence.overrideDtstart)) {
+		await claimReminder(row, now);
 		return "skipped";
 	}
 

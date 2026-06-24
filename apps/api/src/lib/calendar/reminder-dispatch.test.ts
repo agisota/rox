@@ -12,6 +12,13 @@ type AnyRow = Record<string, unknown>;
 
 const state: {
 	dueRows: AnyRow[];
+	/**
+	 * Per-occurrence override rows the `cal_event_occurrences` lookup resolves to.
+	 * The dispatch selects at most one by (eventId, originalStart); the stub
+	 * returns the first row whose `eventId` matches the query (sufficient for the
+	 * single-reminder cases here). Empty ⇒ no override (the normal-fire path).
+	 */
+	occurrenceRows: AnyRow[];
 	inserted: { table: string; values: AnyRow[] }[];
 	updated: { id: string; set: AnyRow }[];
 	/**
@@ -23,6 +30,7 @@ const state: {
 	claimReturns: number[];
 } = {
 	dueRows: [],
+	occurrenceRows: [],
 	inserted: [],
 	updated: [],
 	claimReturns: [],
@@ -59,11 +67,17 @@ function firstParamValue(clause: unknown): string | undefined {
 	return found;
 }
 
-// The due-scan: select().from(calReminders).innerJoin(calEvents)....limit().
-function selectChain() {
-	const p = Promise.resolve(state.dueRows) as Promise<AnyRow[]> &
-		Record<string, (...a: unknown[]) => unknown>;
-	p.from = () => p;
+type ThenableChain = Promise<AnyRow[]> &
+	Record<string, (...a: unknown[]) => unknown>;
+
+/**
+ * The post-`.from()` chain: a real Promise (so `await` resolves it without a
+ * hand-rolled `then`) carrying the no-op builder methods the dispatch calls
+ * (`.where`, `.limit`, `.innerJoin`, `.orderBy`). Resolves to the rows the
+ * selected table supplies.
+ */
+function thenableChain(rows: AnyRow[]): ThenableChain {
+	const p = Promise.resolve(rows) as ThenableChain;
 	p.innerJoin = () => p;
 	p.where = () => p;
 	p.orderBy = () => p;
@@ -71,22 +85,26 @@ function selectChain() {
 	return p;
 }
 
-// users lookup for the email path (unused on the inert path, present for safety).
-function usersSelectChain() {
-	const p = Promise.resolve([]) as Promise<AnyRow[]> &
-		Record<string, (...a: unknown[]) => unknown>;
-	p.from = () => p;
-	p.where = () => p;
-	p.limit = () => p;
-	return p;
-}
-
-let selectMode: "due" | "users" = "due";
-
+/**
+ * A select stub that resolves rows by the table passed to `.from()` — supporting
+ * both the due-scan (`select().from(calReminders).innerJoin(...)`) and the
+ * per-occurrence override lookup
+ * (`select().from(calEventOccurrences).where(...).limit(1)`) off one stub. The
+ * `users` table (email path) resolves to `[]` — the email tests use the inert
+ * seam and never reach it.
+ */
 const fakeDb = {
 	select() {
-		const chain = selectMode === "users" ? usersSelectChain() : selectChain();
-		return chain;
+		return {
+			from(table: unknown) {
+				const name = tableName(table);
+				if (name === "cal_reminders") return thenableChain(state.dueRows);
+				if (name === "cal_event_occurrences") {
+					return thenableChain(state.occurrenceRows);
+				}
+				return thenableChain([]);
+			},
+		};
 	},
 	insert(table: unknown) {
 		const name = tableName(table);
@@ -173,10 +191,10 @@ function oneOffReminder(overrides: AnyRow = {}): AnyRow {
 
 beforeEach(() => {
 	state.dueRows = [];
+	state.occurrenceRows = [];
 	state.inserted = [];
 	state.updated = [];
 	state.claimReturns = [];
-	selectMode = "due";
 });
 
 describe("runDueReminders — in_app delivery", () => {
@@ -305,6 +323,150 @@ describe("runDueReminders — cancelled events", () => {
 		expect(state.inserted).toHaveLength(0);
 		const update = state.updated.find((u) => u.id === "reminder-cancel");
 		expect(update?.set.status).toBe("cancelled");
+	});
+});
+
+// A recurring relative reminder whose `next_fire_at` targets a specific instance
+// of the series. dtstart 2026-06-01T09:00Z + daily rule, 15-min offset ⇒
+// next_fire_at 2026-06-02T08:45Z targets the 2026-06-02T09:00Z occurrence.
+function recurringReminderForJun2(): AnyRow {
+	return oneOffReminder({
+		reminder: {
+			id: "reminder-rec-occ",
+			organizationId: ORG,
+			eventId: EVENT_ID,
+			ownerUserId: OWNER,
+			channel: "in_app",
+			triggerKind: "relative",
+			offsetMinutes: 15,
+			absoluteFireAt: null,
+			nextFireAt: new Date("2026-06-02T08:45:00.000Z"),
+			lastFiredAt: null,
+			status: "scheduled",
+		},
+		event: {
+			id: EVENT_ID,
+			calendarId: "cal-1",
+			organizationId: ORG,
+			title: "Daily sync",
+			location: null,
+			dtstart: new Date("2026-06-01T09:00:00.000Z"),
+			dtend: new Date("2026-06-01T09:30:00.000Z"),
+			timezone: "UTC",
+			rrule: "FREQ=DAILY;BYHOUR=9;BYMINUTE=0",
+			exdates: [],
+			status: "confirmed",
+		},
+	});
+}
+
+/** A `cal_event_occurrences` override row keyed by its RECURRENCE-ID instant. */
+function occurrenceOverride(overrides: AnyRow = {}): AnyRow {
+	return {
+		id: "occ-1",
+		organizationId: ORG,
+		eventId: EVENT_ID,
+		ownerUserId: OWNER,
+		originalStart: new Date("2026-06-02T09:00:00.000Z"),
+		cancelled: false,
+		overrideTitle: null,
+		overrideDescription: null,
+		overrideLocation: null,
+		overrideDtstart: null,
+		overrideDtend: null,
+		overrideAllDay: null,
+		...overrides,
+	};
+}
+
+describe("runDueReminders — per-occurrence cancelled/moved instance", () => {
+	test("a reminder pointing at a CANCELLED occurrence does NOT deliver and advances", async () => {
+		state.dueRows = [recurringReminderForJun2()];
+		// The exact instance this fire targets is cancelled via an override row.
+		state.occurrenceRows = [occurrenceOverride({ cancelled: true })];
+		const now = new Date("2026-06-02T08:46:00.000Z");
+
+		const res = await runDueReminders(now);
+
+		// Skipped, not fired: no journal row written for the cancelled instance.
+		expect(res.skipped).toBe(1);
+		expect(res.fired).toBe(0);
+		expect(res.advanced).toBe(0);
+		expect(
+			state.inserted.filter((i) => i.table === "journal_events"),
+		).toHaveLength(0);
+
+		// But the reminder still ADVANCES (claim path) to the next occurrence's fire
+		// (2026-06-03T09:00Z - 15min), staying scheduled — it keeps moving forward.
+		const update = state.updated.find((u) => u.id === "reminder-rec-occ");
+		expect(update?.set.status).toBe("scheduled");
+		expect((update?.set.nextFireAt as Date).toISOString()).toBe(
+			"2026-06-03T08:45:00.000Z",
+		);
+		expect(update?.set.lastFiredAt).toEqual(now);
+	});
+
+	test("a reminder pointing at a MOVED occurrence does NOT deliver at the stale time and advances", async () => {
+		state.dueRows = [recurringReminderForJun2()];
+		// The instance was rescheduled (override_dtstart set) — the reminder must not
+		// fire at its now-stale slot.
+		state.occurrenceRows = [
+			occurrenceOverride({
+				cancelled: false,
+				overrideDtstart: new Date("2026-06-02T14:00:00.000Z"),
+			}),
+		];
+		const now = new Date("2026-06-02T08:46:00.000Z");
+
+		const res = await runDueReminders(now);
+
+		expect(res.skipped).toBe(1);
+		expect(res.fired).toBe(0);
+		expect(res.advanced).toBe(0);
+		expect(
+			state.inserted.filter((i) => i.table === "journal_events"),
+		).toHaveLength(0);
+		// Advanced past the stale slot to the next occurrence's fire.
+		const update = state.updated.find((u) => u.id === "reminder-rec-occ");
+		expect(update?.set.status).toBe("scheduled");
+		expect((update?.set.nextFireAt as Date).toISOString()).toBe(
+			"2026-06-03T08:45:00.000Z",
+		);
+	});
+
+	test("a normal (non-cancelled, non-moved) occurrence still fires", async () => {
+		state.dueRows = [recurringReminderForJun2()];
+		// An override row that only patches the title leaves the time intact ⇒ fire.
+		state.occurrenceRows = [
+			occurrenceOverride({ cancelled: false, overrideTitle: "Patched title" }),
+		];
+		const now = new Date("2026-06-02T08:46:00.000Z");
+
+		const res = await runDueReminders(now);
+
+		expect(res.advanced).toBe(1);
+		expect(res.skipped).toBe(0);
+		expect(res.fired).toBe(0);
+		// The in-app delivery happened: a journal_events row was written.
+		expect(
+			state.inserted.filter((i) => i.table === "journal_events"),
+		).toHaveLength(1);
+		const update = state.updated.find((u) => u.id === "reminder-rec-occ");
+		expect(update?.set.status).toBe("scheduled");
+	});
+
+	test("a recurring reminder with NO override row for the instance fires normally", async () => {
+		state.dueRows = [recurringReminderForJun2()];
+		state.occurrenceRows = []; // no per-occurrence override at all.
+		const now = new Date("2026-06-02T08:46:00.000Z");
+
+		const res = await runDueReminders(now);
+
+		expect(res.advanced).toBe(1);
+		expect(res.skipped).toBe(0);
+		expect(
+			state.inserted.filter((i) => i.table === "journal_events"),
+		).toHaveLength(1);
 	});
 });
 
