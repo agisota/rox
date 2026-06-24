@@ -331,6 +331,40 @@ describe("applyOverride (unit)", () => {
 		expect(patched?.end.toISOString()).toBe("2026-06-02T10:00:00.000Z");
 		expect(patched?.overridden).toBe(true);
 	});
+
+	it("carries the patched fields onto the instance (title/description/location/allDay)", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		const patched = applyOverride(
+			o,
+			override({
+				title: "Special standup",
+				description: "One-off agenda",
+				location: "Room 9",
+				allDay: true,
+			}),
+		);
+		expect(patched?.title).toBe("Special standup");
+		expect(patched?.description).toBe("One-off agenda");
+		expect(patched?.location).toBe("Room 9");
+		expect(patched?.allDay).toBe(true);
+	});
+
+	it("omits a null override field so the consumer inherits the series value", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		// Only the location is patched; the rest are null (inherit).
+		const patched = applyOverride(o, override({ location: "Room 9" }));
+		expect(patched?.location).toBe("Room 9");
+		expect(patched?.title).toBeUndefined();
+		expect(patched?.description).toBeUndefined();
+		expect(patched?.allDay).toBeUndefined();
+	});
+
+	it("carries a falsy allDay=false override (not dropped as falsy)", () => {
+		const o = occ("2026-06-02T09:00:00.000Z", "2026-06-02T10:00:00.000Z");
+		const patched = applyOverride(o, override({ allDay: false }));
+		// allDay was explicitly set to false (not null) → surfaced, not inherited.
+		expect(patched?.allDay).toBe(false);
+	});
 });
 
 describe("expandEvent — overrides", () => {
@@ -376,7 +410,7 @@ describe("expandEvent — overrides", () => {
 		expect(moved?.overridden).toBe(true);
 	});
 
-	it("a field-only override keeps the time and sets overridden", () => {
+	it("a field-only override keeps the time and surfaces the patched fields", () => {
 		const out = expandEvent(daily(), RANGE_START, RANGE_END, [
 			override({
 				originalStart: new Date("2026-06-02T09:00:00.000Z"),
@@ -389,6 +423,15 @@ describe("expandEvent — overrides", () => {
 		);
 		expect(target?.start.toISOString()).toBe("2026-06-02T09:00:00.000Z");
 		expect(target?.overridden).toBe(true);
+		// The patched fields are surfaced on the matching instance only.
+		expect(target?.title).toBe("Renamed");
+		expect(target?.location).toBe("Room 2");
+		// A sibling instance carries no override fields.
+		const sibling = out.occurrences.find(
+			(o) => o.originalStart?.toISOString() === "2026-06-01T09:00:00.000Z",
+		);
+		expect(sibling?.title).toBeUndefined();
+		expect(sibling?.overridden).toBeUndefined();
 	});
 
 	it("ignores an off-by-one-millisecond override (exact-ms keying, not day)", () => {

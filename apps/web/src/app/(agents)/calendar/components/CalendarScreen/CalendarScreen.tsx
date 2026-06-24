@@ -20,7 +20,7 @@ import { buildMonthGrid, shiftMonth } from "../../utils/monthGrid";
 import { EventDialog, type EventDialogValue } from "../EventDialog";
 import { AgendaView } from "./AgendaView";
 import { SubscribeFeedButton } from "./components/SubscribeFeedButton";
-import { MonthView } from "./MonthView";
+import { MonthView, type OccurrenceItem } from "./MonthView";
 
 const MONTHS_RU = [
 	"Январь",
@@ -148,23 +148,37 @@ export function CalendarScreen() {
 		setDialogOpen(true);
 	};
 
-	const openEdit = (eventId: string, occurrenceStart: string) => {
-		const event = occurrencesQuery.data?.events.find((e) => e.id === eventId);
+	const openEdit = (occurrence: OccurrenceItem) => {
+		const event = occurrencesQuery.data?.events.find(
+			(e) => e.id === occurrence.eventId,
+		);
 		if (!event) return;
+		const isInstance = Boolean(event.rrule);
+		// HIGH fix: seed the dialog from the CLICKED instance, not the series
+		// anchor. Editing "this event only" then writes THIS instance's time as the
+		// override; seeding from the anchor would teleport the instance to the
+		// series start even when the user never touched the time. A one-off event's
+		// occurrence start/end already equal its anchor, so this is a no-op there.
 		setDialogValue({
 			eventId: event.id,
 			calendarId: event.calendarId,
-			title: event.title,
-			description: event.description,
-			location: event.location,
-			dtstart: new Date(event.dtstart),
-			dtend: new Date(event.dtend),
-			allDay: event.allDay,
+			// Per-occurrence override wins over the series value so a re-edit shows
+			// the instance's own title/description/location.
+			title: occurrence.title ?? event.title,
+			description: occurrence.description ?? event.description,
+			location: occurrence.location ?? event.location,
+			dtstart: isInstance
+				? new Date(occurrence.start)
+				: new Date(event.dtstart),
+			dtend: isInstance ? new Date(occurrence.end) : new Date(event.dtend),
+			allDay: occurrence.allDay ?? event.allDay,
 			timezone: event.timezone,
 			rrule: event.rrule,
 			// Carry the clicked instance's RECURRENCE-ID so the dialog can offer
 			// "this event only" — only meaningful for a recurring series.
-			occurrenceStart: event.rrule ? new Date(occurrenceStart) : undefined,
+			occurrenceStart: isInstance
+				? new Date(occurrence.originalStart ?? occurrence.start)
+				: undefined,
 		});
 		setDialogOpen(true);
 	};
