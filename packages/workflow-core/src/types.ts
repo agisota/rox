@@ -32,6 +32,9 @@ export type CoreBlockType =
 	| "knowledge_retrieval"
 	| "db_query"
 	| "db_write"
+	| "tool_call"
+	| "mcp_tool"
+	| "web_search"
 	| "error_boundary";
 
 export interface RoxBlockState {
