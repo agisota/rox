@@ -168,3 +168,69 @@ export function snapPxToInstant(offsetPx: number, dayStart: Date): Date {
 	instant.setUTCMinutes(instant.getUTCMinutes() + clamped);
 	return instant;
 }
+
+/** Round a minute value to the nearest `SLOT_SNAP_MINUTES` step. */
+export function snapMinutes(minutes: number): number {
+	return Math.round(minutes / SLOT_SNAP_MINUTES) * SLOT_SNAP_MINUTES;
+}
+
+/** Shift a UTC instant by `minutes` (immutable). */
+function addUtcMinutes(instant: Date, minutes: number): Date {
+	return new Date(instant.getTime() + minutes * 60_000);
+}
+
+/** Result of a drag/resize gesture: the new UTC start/end of an occurrence. */
+export interface DragResult {
+	start: Date;
+	end: Date;
+}
+
+/**
+ * Pure geometry for a drag-to-MOVE gesture (no web equivalent, cross-platform —
+ * pointer and touch adapters feed the same `deltaPx`). Translates the block by a
+ * vertical pixel delta converted to minutes, snapped to `SLOT_SNAP_MINUTES`,
+ * preserving the event duration. The block is clamped so it never leaves the
+ * 24h body: start ∈ [0, 1440 − duration]. `start`/`end` are real-UTC instants on
+ * `dayStart`; recurrence-id (`originalStart`) is threaded separately by the
+ * caller and is NEVER recomputed here (teleport/DST-safe).
+ */
+export function applyDragMove(
+	start: Date,
+	end: Date,
+	deltaPx: number,
+	dayStart: Date,
+): DragResult {
+	const durationMin = (end.getTime() - start.getTime()) / 60_000;
+	const dayStartMs = dayStart.getTime();
+	const startMin = (start.getTime() - dayStartMs) / 60_000;
+	const deltaMin = snapMinutes(deltaPx / PX_PER_MINUTE);
+	const maxStartMin = Math.max(0, 24 * 60 - durationMin);
+	const nextStartMin = Math.min(Math.max(0, startMin + deltaMin), maxStartMin);
+	const nextStart = addUtcMinutes(dayStart, nextStartMin);
+	return { start: nextStart, end: addUtcMinutes(nextStart, durationMin) };
+}
+
+/**
+ * Pure geometry for a drag-EDGE-resize gesture on the bottom edge (changes the
+ * end only). The end moves by a snapped pixel delta but is kept at least
+ * `MIN_BLOCK_HEIGHT` px below the (fixed) start so a short event stays clickable,
+ * and never spills past the 24h body end. The start is untouched.
+ */
+export function applyEdgeResize(
+	start: Date,
+	end: Date,
+	deltaPx: number,
+	dayStart: Date,
+): DragResult {
+	const dayEndMin = 24 * 60;
+	const startMin = (start.getTime() - dayStart.getTime()) / 60_000;
+	const endMin = (end.getTime() - dayStart.getTime()) / 60_000;
+	const minDurationMin = MIN_BLOCK_HEIGHT / PX_PER_MINUTE;
+	const minEndMin = startMin + minDurationMin;
+	const deltaMin = snapMinutes(deltaPx / PX_PER_MINUTE);
+	const nextEndMin = Math.min(
+		Math.max(minEndMin, endMin + deltaMin),
+		dayEndMin,
+	);
+	return { start, end: addUtcMinutes(dayStart, nextEndMin) };
+}
