@@ -20,6 +20,7 @@ import "./globals.css";
 const firstPaintScript = `${buildFirstPaintScript()}${buildBfcacheResyncScript()}`;
 
 import { Providers } from "./providers";
+import { SkinScript } from "./providers/SkinProvider";
 
 const ibmPlexMono = IBM_Plex_Mono({
 	weight: ["300", "400", "500"],
@@ -71,6 +72,8 @@ export default function RootLayout({
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: trusted, build-time-generated stamp string (no user input) that must run before hydration.
 					dangerouslySetInnerHTML={{ __html: firstPaintScript }}
 				/>
+				{/* Pre-hydration skin stamp (F06/F08) — stamps data-skin before paint. */}
+				<SkinScript />
 			</head>
 			<body
 				className={cn(

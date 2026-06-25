@@ -30,6 +30,10 @@
 		"./atoms/*": "./src/atoms/*/index.ts",
 		"./motion-frame": "./src/motion-frame/index.ts",
 		"./motion": "./src/motion/index.ts",
+		"./theme": "./src/theme/index.ts",
+		"./theme/skins": "./src/theme/skins.ts",
+		"./theme/colors": "./src/theme/colors.ts",
+		"./theme/mobile-adapter": "./src/theme/mobile-adapter.ts",
 		"./voice": "./src/voice/index.ts",
 		"./*": "./src/components/ui/*.tsx"
 	},
