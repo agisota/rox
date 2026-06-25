@@ -1,8 +1,11 @@
+import type { BlockHandler } from "@rox/workflow-runtime";
+// Import the model handler from the leaf subpath (not the package barrel) so
+// loading this module never re-enters the `@rox/workflow-runtime` barrel that
+// `run-pipeline.ts` is already evaluating (avoids "Export named … not found").
 import {
-	type BlockHandler,
 	type ModelGeneratePort,
 	makeModelHandler,
-} from "@rox/workflow-runtime";
+} from "@rox/workflow-runtime/handlers";
 import { generatePipelineText } from "./model-provider";
 
 /**

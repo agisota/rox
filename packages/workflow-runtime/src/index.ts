@@ -16,4 +16,6 @@ export * from "./context/Redactor";
 export * from "./executor/InMemoryRunRecorder";
 export * from "./executor/types";
 export * from "./executor/WorkflowExecutor";
+// Also reachable as the `@rox/workflow-runtime/handlers` subpath, which pipeline
+// consumers import directly to avoid re-entering this barrel mid-eval.
 export * from "./handlers/modelHandler";
