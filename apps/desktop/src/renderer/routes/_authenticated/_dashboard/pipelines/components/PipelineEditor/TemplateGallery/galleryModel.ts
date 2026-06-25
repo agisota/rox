@@ -32,14 +32,18 @@ function matches(t: PipelineTemplate, q: string): boolean {
 /**
  * Group the templates matching `query` by category, preserving first-seen
  * category order (so the catalog author controls section ordering). Empty
- * categories are omitted.
+ * categories are omitted. `extra` (e.g. session-local "Save as template"
+ * results) is listed FIRST so user templates surface above the built-ins.
  */
-export function buildGalleryGroups(query: string): GalleryGroup[] {
+export function buildGalleryGroups(
+	query: string,
+	extra: readonly PipelineTemplate[] = [],
+): GalleryGroup[] {
 	const q = query.trim().toLowerCase();
 	const order: string[] = [];
 	const byCategory = new Map<string, PipelineTemplate[]>();
 
-	for (const t of PIPELINE_TEMPLATES) {
+	for (const t of [...extra, ...PIPELINE_TEMPLATES]) {
 		if (!matches(t, q)) continue;
 		const category = t.category ?? UNGROUPED;
 		if (!byCategory.has(category)) {

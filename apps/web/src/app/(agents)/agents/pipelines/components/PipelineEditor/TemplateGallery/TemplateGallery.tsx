@@ -29,6 +29,8 @@ type TemplateGalleryProps = {
 	onOpenChange: (open: boolean) => void;
 	/** Insert a template's graph into the editor. */
 	onInsert: (state: RoxWorkflowState) => void;
+	/** Session-local templates (e.g. "Save as template" results), shown first. */
+	extraTemplates?: readonly PipelineTemplate[];
 };
 
 /**
@@ -41,9 +43,13 @@ export function TemplateGallery({
 	open,
 	onOpenChange,
 	onInsert,
+	extraTemplates,
 }: TemplateGalleryProps) {
 	const [query, setQuery] = useState("");
-	const groups = useMemo(() => buildGalleryGroups(query), [query]);
+	const groups = useMemo(
+		() => buildGalleryGroups(query, extraTemplates ?? []),
+		[query, extraTemplates],
+	);
 	const total = countTemplates(groups);
 
 	return (
