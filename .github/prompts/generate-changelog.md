@@ -35,28 +35,28 @@ image: /changelog/IMAGE_PLACEHOLDER.png
 
 {/* TODO: Replace header image with actual screenshot */}
 
-## Major Feature Name <PRBadge url="https://github.com/agisota/set/pull/NUMBER" />
+## Major Feature Name <PRBadge url="https://github.com/agisota/rox/pull/NUMBER" />
 
 One or two sentences describing what users can now do. Keep it brief and scannable.
 
 - Key capability one
 - Key capability two
 
-## Another Major Feature <PRBadge url="https://github.com/agisota/set/pull/NUMBER" />
+## Another Major Feature <PRBadge url="https://github.com/agisota/rox/pull/NUMBER" />
 
 Brief description of the feature and its benefit to users.
 
 ## Improvements
 
-- **Improvement name** - Brief description <PRBadge url="https://github.com/agisota/set/pull/NUMBER" />
-- **Another improvement** - Brief description <PRBadge url="https://github.com/agisota/set/pull/NUMBER" />
+- **Improvement name** - Brief description <PRBadge url="https://github.com/agisota/rox/pull/NUMBER" />
+- **Another improvement** - Brief description <PRBadge url="https://github.com/agisota/rox/pull/NUMBER" />
 
 ---
 
 **Bug fixes**
 
-- Fixed issue with X <PRBadge url="https://github.com/agisota/set/pull/NUMBER" />
-- Resolved Y problem <PRBadge url="https://github.com/agisota/set/pull/NUMBER" />
+- Fixed issue with X <PRBadge url="https://github.com/agisota/rox/pull/NUMBER" />
+- Resolved Y problem <PRBadge url="https://github.com/agisota/rox/pull/NUMBER" />
 ```
 
 6. **Important formatting rules**

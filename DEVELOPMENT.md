@@ -1,6 +1,6 @@
 # Developing Rox
 
-This guide is for contributors building Rox from source. If you just want to use Rox, [download the macOS app](https://github.com/agisota/set/releases/latest) instead.
+This guide is for contributors building Rox from source. If you just want to use Rox, [download the macOS app](https://github.com/agisota/rox/releases/latest) instead.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ macOS is the primary supported platform. Windows / Linux are untested.
 ## Run it (one command)
 
 ```bash
-git clone https://github.com/agisota/set.git
+git clone https://github.com/agisota/rox.git
 cd rox
 ./.rox/setup.local.sh
 bun run dev
