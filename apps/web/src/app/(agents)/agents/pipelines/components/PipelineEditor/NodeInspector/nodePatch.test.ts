@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import type { RoxWorkflowState } from "@rox/workflow-core";
+import { MAX_LOOP_ITERATIONS, type RoxWorkflowState } from "@rox/workflow-core";
 import {
 	buildNodeDelete,
 	buildNodePatch,
 	clampMaxIterations,
 	countStartBlocks,
 	isStartBlock,
+	MAX_ITERATIONS_MAX,
 	sanitizeName,
 } from "./nodePatch";
 
@@ -55,10 +56,15 @@ describe("clampMaxIterations", () => {
 		expect(clampMaxIterations("abc")).toBeNull();
 		expect(clampMaxIterations("  ")).toBeNull();
 	});
-	test("clamps below 1 up to 1 and above 200 down to 200", () => {
+	test("clamps below 1 up to 1 and above the runtime cap down to it", () => {
 		expect(clampMaxIterations("0")).toBe(1);
 		expect(clampMaxIterations("-5")).toBe(1);
-		expect(clampMaxIterations("999")).toBe(200);
+		// The upper clamp mirrors the runtime loop-replay cap (#527), not 200.
+		expect(MAX_ITERATIONS_MAX).toBe(MAX_LOOP_ITERATIONS);
+		expect(clampMaxIterations("999")).toBe(MAX_LOOP_ITERATIONS);
+		expect(clampMaxIterations(String(MAX_LOOP_ITERATIONS + 1))).toBe(
+			MAX_LOOP_ITERATIONS,
+		);
 	});
 	test("rounds floats to integers", () => {
 		expect(clampMaxIterations("3.7")).toBe(4);
