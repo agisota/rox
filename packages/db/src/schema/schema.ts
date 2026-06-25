@@ -806,6 +806,12 @@ export const chatSessions = pgTable(
 		title: text(),
 		status: chatSessionStatus().notNull().default("active"),
 		labels: jsonb().$type<string[]>().default([]),
+		// Pin/favorite (F19): pinned sessions render as a sticky-top group ahead of
+		// the time-grouped list. `pinnedAt` records when the pin was set so the
+		// pinned group can be ordered most-recently-pinned-first. Distinct from
+		// `status` (active|archived lifecycle) — a session can be pinned and active.
+		pinned: boolean().notNull().default(false),
+		pinnedAt: timestamp("pinned_at"),
 		lastActiveAt: timestamp("last_active_at").notNull().defaultNow(),
 		// Per-session skill-learning marker (journal-memory epic, phase 2). NULL
 		// until the */5 reconcile (`/api/memory/learn`) has extracted durable
@@ -826,6 +832,13 @@ export const chatSessions = pgTable(
 		index("chat_sessions_org_status_idx").on(
 			table.organizationId,
 			table.status,
+		),
+		// Drives the sticky-top pinned group: scan a user's pinned sessions within
+		// an org, ordered by pin recency (`organization_id, pinned, pinned_at`).
+		index("chat_sessions_org_pinned_idx").on(
+			table.organizationId,
+			table.pinned,
+			table.pinnedAt,
 		),
 		// Drives the per-session-learning reconcile: scan unlearned sessions that
 		// recently went idle (`learned_at IS NULL AND last_active_at BETWEEN ...`).

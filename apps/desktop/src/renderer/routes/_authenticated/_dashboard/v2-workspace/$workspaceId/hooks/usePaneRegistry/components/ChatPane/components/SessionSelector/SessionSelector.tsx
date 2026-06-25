@@ -10,11 +10,14 @@ import { useEffect, useMemo, useState } from "react";
 import { HiMiniChevronDown, HiMiniPlus } from "react-icons/hi2";
 import { getRelativeTime } from "renderer/screens/main/components/WorkspacesListView/utils";
 import { SessionSelectorItem } from "./components/SessionSelectorItem";
+import { selectPinnedSessions } from "./utils/selectPinnedSessions/selectPinnedSessions";
 
 interface SessionItem {
 	sessionId: string;
 	title: string;
 	updatedAt: Date;
+	pinned: boolean;
+	pinnedAt: Date | null;
 }
 
 interface SessionSelectorProps {
@@ -24,6 +27,7 @@ interface SessionSelectorProps {
 	onSelectSession: (sessionId: string) => void;
 	onNewChat: () => Promise<void>;
 	onDeleteSession: (sessionId: string) => Promise<void>;
+	onSetPinned: (sessionId: string, pinned: boolean) => Promise<void>;
 }
 
 interface SessionGroup {
@@ -32,6 +36,10 @@ interface SessionGroup {
 }
 
 const SESSION_PAGE_SIZE = 20;
+// Sticky-top pinned group is capped so a runaway pin list can't crowd out the
+// time-grouped history. Excess pinned sessions still appear in their time group.
+const PINNED_GROUP_CAP = 10;
+const PINNED_GROUP_LABEL = "★ Закреплённые";
 const NEW_CHAT_LABEL = "Новый чат";
 
 function toSessionGroupLabel(updatedAt: Date): string {
@@ -79,19 +87,27 @@ export function SessionSelector({
 	onSelectSession,
 	onNewChat,
 	onDeleteSession,
+	onSetPinned,
 }: SessionSelectorProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [visibleCount, setVisibleCount] = useState(SESSION_PAGE_SIZE);
 
+	// Sticky-top pinned group (capped) ahead of the time-grouped list; `rest`
+	// excludes whatever's shown in the pinned group so no chat renders twice.
+	const { pinned: pinnedSessions, rest: unpinnedSessions } = useMemo(
+		() => selectPinnedSessions(sessions, PINNED_GROUP_CAP),
+		[sessions],
+	);
+
 	const visibleSessions = useMemo(
-		() => sessions.slice(0, visibleCount),
-		[sessions, visibleCount],
+		() => unpinnedSessions.slice(0, visibleCount),
+		[unpinnedSessions, visibleCount],
 	);
 	const groupedSessions = useMemo(
 		() => groupSessionsByAge(visibleSessions),
 		[visibleSessions],
 	);
-	const hasMoreSessions = sessions.length > visibleCount;
+	const hasMoreSessions = unpinnedSessions.length > visibleCount;
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -137,11 +153,35 @@ export function SessionSelector({
 				<div className="max-h-80 overflow-y-auto">
 					{sessions.length > 0 ? (
 						<>
+							{pinnedSessions.length > 0 && (
+								<div>
+									<div className="px-2 py-1 text-xs text-muted-foreground">
+										{PINNED_GROUP_LABEL}
+									</div>
+									{pinnedSessions.map((session) => (
+										<SessionSelectorItem
+											key={session.sessionId}
+											sessionId={session.sessionId}
+											title={session.title}
+											isCurrent={session.sessionId === currentSessionId}
+											pinned={session.pinned}
+											onSelectSession={(sessionId) => {
+												onSelectSession(sessionId);
+												setIsOpen(false);
+											}}
+											onDeleteSession={onDeleteSession}
+											onSetPinned={onSetPinned}
+										/>
+									))}
+								</div>
+							)}
 							{groupedSessions.map((group, index) => (
 								<div
 									key={`${group.label}-${group.sessions[0]?.sessionId ?? index}`}
 									className={
-										index > 0 ? "mt-1 border-t border-border/50 pt-1" : ""
+										index > 0 || pinnedSessions.length > 0
+											? "mt-1 border-t border-border/50 pt-1"
+											: ""
 									}
 								>
 									<div className="px-2 py-1 text-xs text-muted-foreground">
@@ -153,11 +193,13 @@ export function SessionSelector({
 											sessionId={session.sessionId}
 											title={session.title}
 											isCurrent={session.sessionId === currentSessionId}
+											pinned={session.pinned}
 											onSelectSession={(sessionId) => {
 												onSelectSession(sessionId);
 												setIsOpen(false);
 											}}
 											onDeleteSession={onDeleteSession}
+											onSetPinned={onSetPinned}
 										/>
 									))}
 								</div>
