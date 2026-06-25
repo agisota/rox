@@ -9,11 +9,11 @@
  * normalize whatever the active transport returns into these types so every
  * consumer (rows, detail cross-chips, RunInWorkspace handoff) reads one shape.
  *
- * Phase-1 NOTE: `reviewDecision` / `checks` are present on the type but stay
- * `null` until the host `searchPullRequests` JSON is extended to include
- * `reviewDecision` + `statusCheckRollup` (gh already supports both). Until then
- * the row renders the structural signal it *can* derive (state + draft) and the
- * richer pills no-op. This keeps the renderer ready without a backend change.
+ * The host `searchPullRequests` / `searchGitHubIssues` JSON now returns the
+ * rich signal directly (`reviewDecision` + `statusCheckRollup` → checks summary,
+ * comment count, labels, `updatedAt`). Fields still degrade to `null` / `[]`
+ * when GitHub has no data or the transport (Octokit fallback) cannot supply
+ * them, so every consumer must treat them as optional.
  */
 
 export type PrState = "open" | "merged" | "closed" | "draft" | "queued";
@@ -41,12 +41,14 @@ export interface PrListItem {
 	state: PrState;
 	isDraft: boolean;
 	authorLogin: string | null;
-	/** Phase-1 placeholder — populated once host returns reviewDecision. */
+	/** GitHub review decision; null when GitHub has no decision yet. */
 	reviewDecision: ReviewDecision | null;
-	/** Phase-1 placeholder — populated once host returns statusCheckRollup. */
+	/** Collapsed status-check rollup; null when the PR has no checks. */
 	checks: PrChecksSummary | null;
-	/** Phase-1 placeholder — populated once host returns comment counts. */
+	/** Total comment count; null when the transport could not supply it. */
 	commentCount: number | null;
+	/** ISO timestamp of the last update, for relative-time rendering. */
+	updatedAt: string | null;
 }
 
 /** Normalized issue row, transport-agnostic. */
@@ -56,12 +58,10 @@ export interface IssueListItem {
 	url: string;
 	state: "open" | "closed";
 	authorLogin: string | null;
-	/**
-	 * Phase-1 placeholder — the host `searchGitHubIssues` procedure does not
-	 * return labels today, so this is always `[]`. Surfacing real labels as
-	 * chips needs a shared backend change (see surface summary → needsShared).
-	 */
+	/** Repo labels surfaced as colored chips; empty when GitHub has none. */
 	labels: IssueLabel[];
+	/** ISO timestamp of the last update, for relative-time rendering. */
+	updatedAt: string | null;
 }
 
 export interface IssueLabel {

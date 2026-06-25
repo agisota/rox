@@ -3,6 +3,7 @@ import { cn } from "@rox/ui/utils";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
 import { LuCheck, LuCircleDot, LuClock, LuPlus, LuX } from "react-icons/lu";
 import { PRIcon } from "renderer/screens/main/components/PRIcon";
+import { formatRelativeUpdatedAt } from "./relativeUpdatedAt";
 import type {
 	ChecksStatus,
 	PrChecksSummary,
@@ -88,6 +89,7 @@ function ChecksIndicator({ checks }: { checks: PrChecksSummary }) {
  * cleanly and lights up automatically once the backend ships the fields.
  */
 export function PrRow({ pr, onOpen, onOpenUrl, onAddToWorkspace }: PrRowProps) {
+	const relativeUpdatedAt = formatRelativeUpdatedAt(pr.updatedAt);
 	return (
 		// biome-ignore lint/a11y/useSemanticElements: row contains nested action buttons, so the outer element is a div with role/tabIndex
 		<div
@@ -130,6 +132,11 @@ export function PrRow({ pr, onOpen, onOpenUrl, onAddToWorkspace }: PrRowProps) {
 			{pr.authorLogin && (
 				<span className="hidden shrink-0 text-xs text-muted-foreground @md:inline">
 					{pr.authorLogin}
+				</span>
+			)}
+			{relativeUpdatedAt && (
+				<span className="hidden shrink-0 text-[11px] text-muted-foreground @xl:inline">
+					{relativeUpdatedAt}
 				</span>
 			)}
 

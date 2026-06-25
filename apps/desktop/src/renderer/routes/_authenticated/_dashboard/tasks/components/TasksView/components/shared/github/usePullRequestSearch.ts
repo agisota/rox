@@ -108,10 +108,12 @@ export function usePullRequestSearch(
 			state: toPrState(pr.state, pr.isDraft),
 			isDraft: pr.isDraft,
 			authorLogin: pr.authorLogin,
-			// Phase-1 placeholders — host does not return these yet.
-			reviewDecision: null,
-			checks: null,
-			commentCount: null,
+			// Host wire already speaks the renderer vocabulary for review/checks,
+			// so these pass straight through and degrade to null on no data.
+			reviewDecision: pr.reviewDecision ?? null,
+			checks: pr.checks ?? null,
+			commentCount: pr.commentCount ?? null,
+			updatedAt: pr.updatedAt ?? null,
 		}));
 	}, [query.data]);
 

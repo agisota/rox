@@ -4,6 +4,7 @@ import { cn } from "@rox/ui/utils";
 import { GoIssueClosed, GoIssueOpened } from "react-icons/go";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
 import { LuPlus } from "react-icons/lu";
+import { formatRelativeUpdatedAt } from "./relativeUpdatedAt";
 import type { IssueLabel, IssueListItem } from "./types";
 
 interface IssueRowProps {
@@ -47,6 +48,7 @@ export function IssueRow({
 }: IssueRowProps) {
 	const isClosed = issue.state === "closed";
 	const StateIcon = isClosed ? GoIssueClosed : GoIssueOpened;
+	const relativeUpdatedAt = formatRelativeUpdatedAt(issue.updatedAt);
 
 	return (
 		// biome-ignore lint/a11y/useSemanticElements: row contains nested action buttons, so the outer element is a div with role/tabIndex
@@ -90,6 +92,11 @@ export function IssueRow({
 			{issue.authorLogin && (
 				<span className="hidden shrink-0 text-xs text-muted-foreground @md:inline">
 					{issue.authorLogin}
+				</span>
+			)}
+			{relativeUpdatedAt && (
+				<span className="hidden shrink-0 text-[11px] text-muted-foreground @xl:inline">
+					{relativeUpdatedAt}
 				</span>
 			)}
 
