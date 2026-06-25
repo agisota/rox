@@ -103,6 +103,8 @@ export function ChatMessageList({
 	onCancelEditUserMessage,
 	onSubmitEditedUserMessage,
 	onRestartUserMessage,
+	recents,
+	onSelectRecent,
 }: ChatMessageListProps) {
 	const messageListRef = useRef<HTMLDivElement>(null);
 	const chatSearch = useChatMessageSearch({
@@ -334,7 +336,11 @@ export function ChatMessageList({
 				onFindPrevious={chatSearch.findPrevious}
 				onClose={chatSearch.closeSearch}
 			/>
-			<MessageScrollbackRail messages={renderedMessages} />
+			<MessageScrollbackRail
+				messages={renderedMessages}
+				recents={recents}
+				onSelectRecent={onSelectRecent}
+			/>
 			<ConversationScrollButton />
 			<ScrollAnchor
 				questionId={pendingQuestion?.questionId}

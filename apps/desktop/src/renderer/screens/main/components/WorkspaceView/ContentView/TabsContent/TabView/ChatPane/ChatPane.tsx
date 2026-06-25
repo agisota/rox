@@ -100,6 +100,22 @@ export function ChatPane({
 		return sessionItems.filter((session) => allowed.has(session.sessionId));
 	}, [sessionItems, filteredSessionIds]);
 
+	// Cross-session recents (~10) for the scrollback rail's Recents-flyout (F49).
+	// Reuses the controller's session list (already org-scoped, sorted by
+	// recency), excluding the current session so the flyout only offers jumps.
+	const railRecents = useMemo(
+		() =>
+			sessionItems
+				.filter((item) => item.sessionId !== sessionId)
+				.slice(0, 10)
+				.map((item) => ({
+					sessionId: item.sessionId,
+					title: item.title,
+					lastActiveAt: item.updatedAt,
+				})),
+		[sessionItems, sessionId],
+	);
+
 	const applySubmittedMessageFallbackTitle = useCallback(
 		(message: string) => {
 			const normalized = message.trim().replace(/\s+/g, " ");
@@ -218,6 +234,8 @@ export function ChatPane({
 								onStartFreshSession={handleStartFreshSession}
 								onConsumeLaunchConfig={consumeLaunchConfig}
 								onUserMessageSubmitted={applySubmittedMessageFallbackTitle}
+								recents={railRecents}
+								onSelectRecent={handleSelectSession}
 							/>
 						</div>
 					</TabContentContextMenu>
