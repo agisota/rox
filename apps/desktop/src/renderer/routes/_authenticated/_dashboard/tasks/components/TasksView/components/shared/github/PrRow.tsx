@@ -1,5 +1,7 @@
 import { Button } from "@rox/ui/button";
+import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
+import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
 import { LuCheck, LuCircleDot, LuClock, LuPlus, LuX } from "react-icons/lu";
 import { PRIcon } from "renderer/screens/main/components/PRIcon";
@@ -46,50 +48,113 @@ const checksConfig: Record<
 	none: { icon: LuCircleDot, className: "text-muted-foreground" },
 };
 
-function ReviewDecisionPill({ decision }: { decision: ReviewDecision }) {
+/**
+ * Layout-motion transition shared by the reviewDecision/checks pills: a quick
+ * `layout` reflow plus an opacity crossfade keyed on the status value, so the
+ * pills smoothly rebuild when enrichment flips a decision/check status. Gated by
+ * the caller's `shouldAnimate` (essential tier → `prefers-reduced-motion`
+ * snaps straight to the final state).
+ */
+const pillTransition = {
+	duration: motionDuration.fast,
+	ease: ease.standard,
+};
+
+function ReviewDecisionPill({
+	decision,
+	shouldAnimate,
+}: {
+	decision: ReviewDecision;
+	shouldAnimate: boolean;
+}) {
 	const cfg = reviewDecisionConfig[decision];
+	const className = cn(
+		"hidden shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium @lg:inline-flex",
+		cfg.className,
+	);
+	if (!shouldAnimate) {
+		return <span className={className}>{cfg.label}</span>;
+	}
 	return (
-		<span
-			className={cn(
-				"hidden shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium @lg:inline-flex",
-				cfg.className,
-			)}
-		>
-			{cfg.label}
-		</span>
+		<AnimatePresence mode="popLayout" initial={false}>
+			<motion.span
+				key={decision}
+				layout
+				className={className}
+				initial={{ opacity: 0, scale: 0.9 }}
+				animate={{ opacity: 1, scale: 1 }}
+				exit={{ opacity: 0, scale: 0.9 }}
+				transition={pillTransition}
+			>
+				{cfg.label}
+			</motion.span>
+		</AnimatePresence>
 	);
 }
 
-function ChecksIndicator({ checks }: { checks: PrChecksSummary }) {
+function ChecksIndicator({
+	checks,
+	shouldAnimate,
+}: {
+	checks: PrChecksSummary;
+	shouldAnimate: boolean;
+}) {
 	const cfg = checksConfig[checks.status];
 	const Icon = cfg.icon;
-	return (
-		<span
-			className={cn(
-				"hidden shrink-0 items-center gap-1 text-[11px] tabular-nums @md:inline-flex",
-				cfg.className,
-			)}
-			title={`Проверки: ${checks.passed}/${checks.total}`}
-		>
+	const className = cn(
+		"hidden shrink-0 items-center gap-1 text-[11px] tabular-nums @md:inline-flex",
+		cfg.className,
+	);
+	const content = (
+		<>
 			<Icon className="size-3" />
 			{checks.total > 0 && (
 				<span className="font-mono">
 					{checks.passed}/{checks.total}
 				</span>
 			)}
-		</span>
+		</>
+	);
+	const title = `Проверки: ${checks.passed}/${checks.total}`;
+	if (!shouldAnimate) {
+		return (
+			<span className={className} title={title}>
+				{content}
+			</span>
+		);
+	}
+	return (
+		<AnimatePresence mode="popLayout" initial={false}>
+			<motion.span
+				key={checks.status}
+				layout
+				className={className}
+				title={title}
+				initial={{ opacity: 0, scale: 0.9 }}
+				animate={{ opacity: 1, scale: 1 }}
+				exit={{ opacity: 0, scale: 0.9 }}
+				transition={pillTransition}
+			>
+				{content}
+			</motion.span>
+		</AnimatePresence>
 	);
 }
 
 /**
  * Dense single-line PR row (h-11) with the inline signal cluster.
  *
- * Phase-1: `reviewDecision` / `checks` are null (host doesn't return them yet),
- * so those pills render only when present — the row degrades to state + draft
- * cleanly and lights up automatically once the backend ships the fields.
+ * `reviewDecision` / `checks` come from the enriched host listing and may be
+ * null (GitHub has no data / Octokit fallback) — those pills render only when
+ * present, so the row degrades to state + draft cleanly. When the values change
+ * (enrichment lands or status flips) the pills layout-animate via framer-motion,
+ * gated on the essential motion tier (`prefers-reduced-motion` → instant final).
  */
 export function PrRow({ pr, onOpen, onOpenUrl, onAddToWorkspace }: PrRowProps) {
 	const relativeUpdatedAt = formatRelativeUpdatedAt(pr.updatedAt);
+	// Essential tier: pills convey state, so they animate under `full`/`essential`
+	// but snap to final under `prefers-reduced-motion`/`off`.
+	const shouldAnimate = useShouldAnimate("essential");
 	return (
 		// biome-ignore lint/a11y/useSemanticElements: row contains nested action buttons, so the outer element is a div with role/tabIndex
 		<div
@@ -121,8 +186,15 @@ export function PrRow({ pr, onOpen, onOpenUrl, onAddToWorkspace }: PrRowProps) {
 					Черновик
 				</span>
 			)}
-			{pr.reviewDecision && <ReviewDecisionPill decision={pr.reviewDecision} />}
-			{pr.checks && <ChecksIndicator checks={pr.checks} />}
+			{pr.reviewDecision && (
+				<ReviewDecisionPill
+					decision={pr.reviewDecision}
+					shouldAnimate={shouldAnimate}
+				/>
+			)}
+			{pr.checks && (
+				<ChecksIndicator checks={pr.checks} shouldAnimate={shouldAnimate} />
+			)}
 			{pr.commentCount != null && pr.commentCount > 0 && (
 				<span className="hidden shrink-0 text-[11px] text-muted-foreground tabular-nums @lg:inline">
 					{pr.commentCount} 💬
