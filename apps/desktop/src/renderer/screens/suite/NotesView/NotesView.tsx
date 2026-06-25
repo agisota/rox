@@ -37,6 +37,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
+import { setCanvasRefDragData } from "renderer/routes/_authenticated/_dashboard/canvas/canvasRefDrag";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
 import { NoteReader, type SaveState } from "./components/NoteReader";
@@ -614,8 +615,17 @@ export function NotesView() {
 										const documentId = note.knowledgeDocumentId;
 										const canManage = documentId != null;
 										return (
+											// biome-ignore lint/a11y/noStaticElementInteractions: native HTML5 drag source for canvas ref-drop; primary open action stays on the inner button
 											<div
 												key={note.id}
+												draggable
+												onDragStart={(event) =>
+													setCanvasRefDragData(event.dataTransfer, {
+														refType: "note",
+														refId: note.id,
+														label: note.title,
+													})
+												}
 												className={cn(
 													"group relative flex items-center border-border border-b last:border-b-0 transition-colors hover:bg-accent/40",
 													note.id === activeNoteId && "bg-accent",

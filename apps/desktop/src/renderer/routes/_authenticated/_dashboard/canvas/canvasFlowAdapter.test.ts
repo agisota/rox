@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { sampleCanvasDocument } from "@rox/shared/canvas";
 import {
+	createAddRefNodeBatch,
 	createAddTextNodeBatch,
 	createConnectNodesBatch,
 	createDeleteElementsBatch,
@@ -123,6 +124,58 @@ describe("mutation batch builders", () => {
 		if (mutation?.type === "node.add") {
 			expect(mutation.node.type).toBe("text");
 			expect(mutation.node.position).toEqual({ x: 13, y: 40 });
+		}
+	});
+
+	it("creates a ref node add batch with ref type/id and rounded position", () => {
+		const batch = createAddRefNodeBatch({
+			document: sampleCanvasDocument,
+			baseVersion,
+			actorId,
+			position: { x: 80.4, y: 19.9 },
+			payload: { refType: "note", refId: "note-42", label: "Заметка" },
+		});
+		expect(batch.mutations).toHaveLength(1);
+		const mutation = batch.mutations[0];
+		expect(mutation?.type).toBe("node.add");
+		if (mutation?.type === "node.add") {
+			expect(mutation.node.type).toBe("note");
+			expect(mutation.node.position).toEqual({ x: 80, y: 20 });
+			expect(mutation.node.title).toBe("Заметка");
+			expect(mutation.node.ref).toEqual({
+				type: "note",
+				id: "note-42",
+				preview: "Заметка",
+			});
+		}
+	});
+
+	it("maps session/file/task ref types to their node types and carries path", () => {
+		const session = createAddRefNodeBatch({
+			document: sampleCanvasDocument,
+			baseVersion,
+			actorId,
+			position: { x: 0, y: 0 },
+			payload: { refType: "session", refId: "s1", label: "Сессия" },
+		}).mutations[0];
+		if (session?.type === "node.add") {
+			expect(session.node.type).toBe("chat-session");
+		}
+		const file = createAddRefNodeBatch({
+			document: sampleCanvasDocument,
+			baseVersion,
+			actorId,
+			position: { x: 0, y: 0 },
+			payload: {
+				refType: "file",
+				refId: "f1",
+				label: "main.ts",
+				path: "src/main.ts",
+			},
+		}).mutations[0];
+		if (file?.type === "node.add") {
+			expect(file.node.type).toBe("file");
+			expect(file.node.ref?.path).toBe("src/main.ts");
 		}
 	});
 

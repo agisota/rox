@@ -9,6 +9,10 @@ import type {
 import type { Connection, Edge, Node } from "@xyflow/react";
 import { MarkerType } from "@xyflow/react";
 import { getCanvasNodeMeta } from "./canvasNodeMeta";
+import {
+	type CanvasRefDragPayload,
+	canvasNodeTypeForRef,
+} from "./canvasRefDrag";
 
 /** Terracotta accent used for directed edges + arrowheads. */
 export const CANVAS_EDGE_COLOR = "var(--sidebar-primary)";
@@ -184,6 +188,50 @@ export function createAddTextNodeBatch({
 					size: { width: DEFAULT_NODE_WIDTH, height: DEFAULT_NODE_HEIGHT },
 					title,
 					text,
+					tags: [],
+					locked: false,
+					collapsed: false,
+					metadata: {},
+				},
+			},
+		],
+	};
+}
+
+/**
+ * Build a `node.add` batch for a workspace entity dropped onto the canvas.
+ * Mirrors {@link createAddTextNodeBatch} but produces a ref-node so live
+ * content and double-click-open work immediately: `ref.type`/`ref.id` come from
+ * the {@link CanvasRefDragPayload} and the node `type` is derived via
+ * `canvasNodeTypeForRef`.
+ */
+export function createAddRefNodeBatch({
+	document,
+	baseVersion,
+	actorId,
+	position,
+	payload,
+}: BatchBaseInput & {
+	position: CanvasPoint;
+	payload: CanvasRefDragPayload;
+}): CanvasMutationBatch {
+	return {
+		...createBatchBase({ document, baseVersion, actorId }),
+		mutations: [
+			{
+				type: "node.add",
+				node: {
+					id: `node-${crypto.randomUUID()}`,
+					type: canvasNodeTypeForRef(payload.refType),
+					position: { x: Math.round(position.x), y: Math.round(position.y) },
+					size: { width: DEFAULT_NODE_WIDTH, height: DEFAULT_NODE_HEIGHT },
+					title: payload.label,
+					ref: {
+						type: payload.refType,
+						id: payload.refId,
+						preview: payload.label,
+						...(payload.path ? { path: payload.path } : {}),
+					},
 					tags: [],
 					locked: false,
 					collapsed: false,

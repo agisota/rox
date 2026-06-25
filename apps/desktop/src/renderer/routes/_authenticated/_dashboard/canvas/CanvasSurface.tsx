@@ -34,7 +34,11 @@ import {
 	getCanvasCapabilityCopy,
 	getCanvasRiskLabel,
 } from "./canvasCapabilityLabels";
-import { createAddTextNodeBatch } from "./canvasFlowAdapter";
+import {
+	createAddRefNodeBatch,
+	createAddTextNodeBatch,
+} from "./canvasFlowAdapter";
+import type { CanvasRefDragPayload } from "./canvasRefDrag";
 
 interface CanvasSurfaceProps {
 	workspaceId?: string;
@@ -338,6 +342,23 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 					position,
 				}),
 				"Текстовый узел",
+			);
+		},
+		[activeDocument, activeIndex, submitBatch, workspaceId],
+	);
+
+	const handleDropEntityAt = useCallback(
+		(position: { x: number; y: number }, payload: CanvasRefDragPayload) => {
+			if (!workspaceId || !activeDocument || !activeIndex) return;
+			submitBatch(
+				createAddRefNodeBatch({
+					document: activeDocument,
+					baseVersion: activeIndex.revision,
+					actorId: "renderer",
+					position,
+					payload,
+				}),
+				"Ссылка на холст",
 			);
 		},
 		[activeDocument, activeIndex, submitBatch, workspaceId],
@@ -827,6 +848,7 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 									patchCanvas.isPending ? "Сохранение" : "Холст · хост"
 								}
 								onCreateTextNodeAt={handleCreateTextNodeAt}
+								onDropEntityAt={handleDropEntityAt}
 								onMutationBatch={submitBatch}
 								onOpenRefNode={handleOpenRefNode}
 								onSelectionChange={setSelection}
