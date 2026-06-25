@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import type { InboxItem } from "../types";
 import { mergeInboxItems } from "../utils/normalizeInbox";
+import { sumThreadUnread } from "../utils/sumThreadUnread";
 
 /**
  * The unified "All" stream backing the inbox list. Reads both transports
@@ -44,7 +45,7 @@ export function useInboxData(): UseInboxDataResult {
 	);
 
 	const totalUnread = useMemo(
-		() => chatThreads.reduce((sum, t) => sum + (t.unreadCount ?? 0), 0),
+		() => sumThreadUnread(chatThreads),
 		[chatThreads],
 	);
 
