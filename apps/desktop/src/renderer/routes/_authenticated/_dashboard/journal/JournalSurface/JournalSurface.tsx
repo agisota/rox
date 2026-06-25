@@ -13,6 +13,7 @@ import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { DaySummaryRail } from "./DaySummaryRail";
+import { reflectionDayAnchorId } from "./datetime";
 import { FeedLane } from "./FeedLane";
 import { ReflectionLane } from "./ReflectionLane";
 import type { JournalSearch, JournalTab } from "./types";
@@ -84,6 +85,20 @@ export function JournalSurface({
 			) as SelectJournalEvent[],
 		[events],
 	);
+
+	// Heatmap → reflection lane navigation: switch to the reflection tab (if not
+	// already there) and scroll that day's anchor into view on the next frame,
+	// after the lane has rendered.
+	const handleSelectDay = (day: string) => {
+		if (tab !== "reflection") onSearchChange({ tab: "reflection" });
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				document
+					.getElementById(reflectionDayAnchorId(day))
+					?.scrollIntoView({ behavior: "smooth", block: "start" });
+			});
+		});
+	};
 
 	const handleRefresh = async () => {
 		setRefreshing(true);
@@ -173,7 +188,11 @@ export function JournalSurface({
 						</AnimatedPresence>
 					</div>
 
-					<DaySummaryRail events={sortedEvents} variant="rail" />
+					<DaySummaryRail
+						events={sortedEvents}
+						variant="rail"
+						onSelectDay={handleSelectDay}
+					/>
 				</div>
 			</div>
 		</DashboardSurface>

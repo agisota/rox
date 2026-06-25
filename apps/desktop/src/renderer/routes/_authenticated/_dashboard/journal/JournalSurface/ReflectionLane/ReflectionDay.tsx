@@ -10,9 +10,10 @@ import { StreamingShimmer } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { useMutation } from "@tanstack/react-query";
-import { LuEllipsisVertical, LuRefreshCw } from "react-icons/lu";
+import { useState } from "react";
+import { LuBrain, LuEllipsisVertical, LuRefreshCw, LuX } from "react-icons/lu";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
-import { reflectionDayLabel } from "../datetime";
+import { reflectionDayAnchorId, reflectionDayLabel } from "../datetime";
 import { CATEGORY_LABELS } from "../status";
 
 interface ReflectionDayProps {
@@ -34,6 +35,31 @@ export function ReflectionDay({ entry }: ReflectionDayProps) {
 	const memorySuggestions = entry.memorySuggestions ?? [];
 	const tips = entry.tips ?? [];
 
+	// Locally hidden / already-promoted candidates. The candidates live inside
+	// the read-only `journal_entries.memory_suggestions` JSON (the client never
+	// writes that collection), so "Скрыть" and a successful promote both just
+	// drop the card from view for this session.
+	const [hidden, setHidden] = useState<ReadonlySet<number>>(() => new Set());
+	const visibleSuggestions = memorySuggestions
+		.map((m, i) => ({ m, i }))
+		.filter(({ i }) => !hidden.has(i));
+
+	const hideCandidate = (index: number) => {
+		setHidden((prev) => {
+			const next = new Set(prev);
+			next.add(index);
+			return next;
+		});
+	};
+
+	const promote = useMutation(
+		trpc.memory.promoteFromJournal.mutationOptions({
+			onError: (error: { message?: string }) => {
+				toast.error(error.message || "Не удалось добавить в память");
+			},
+		}),
+	);
+
 	const regenerate = useMutation(
 		trpc.journal.regenerateDay.mutationOptions({
 			onSuccess: () => {
@@ -51,7 +77,10 @@ export function ReflectionDay({ entry }: ReflectionDayProps) {
 	const isPending = entry.status === "pending" || regenerate.isPending;
 
 	return (
-		<article className="space-y-5">
+		<article
+			id={reflectionDayAnchorId(entry.day)}
+			className="scroll-mt-2 space-y-5"
+		>
 			<header className="glass -mx-1 sticky top-0 z-10 flex items-center justify-between gap-2 px-1 py-1.5">
 				<h2 className="font-mono text-muted-foreground text-xs uppercase tracking-[0.18em]">
 					{reflectionDayLabel(entry.day)}
@@ -113,25 +142,69 @@ export function ReflectionDay({ entry }: ReflectionDayProps) {
 					)}
 
 					{/* Stream 3 — memory suggestions (cards + category badge) */}
-					{memorySuggestions.length > 0 && (
+					{visibleSuggestions.length > 0 && (
 						<section>
 							<h3 className="mb-2 font-semibold text-[11px] text-amber-600 uppercase tracking-wider dark:text-amber-500">
 								В память
 							</h3>
 							<div className="space-y-2">
-								{memorySuggestions.map((m, i) => (
-									<div
-										key={`${entry.id}-m-${i}`}
-										className="flex items-start gap-2 rounded-md border border-amber-500/25 bg-amber-500/5 p-2.5"
-									>
-										<span className="mt-0.5 shrink-0 rounded bg-amber-500/15 px-1.5 py-0.5 font-medium text-[10px] text-amber-700 dark:text-amber-400">
-											{CATEGORY_LABELS[m.category] ?? m.category}
-										</span>
-										<span className="text-foreground text-sm leading-snug">
-											{m.body}
-										</span>
-									</div>
-								))}
+								{visibleSuggestions.map(({ m, i }) => {
+									const isPromoting =
+										promote.isPending && promote.variables?.body === m.body;
+									return (
+										<div
+											key={`${entry.id}-m-${i}`}
+											className="group/candidate flex items-start gap-2 rounded-md border border-amber-500/25 bg-amber-500/5 p-2.5"
+										>
+											<span className="mt-0.5 shrink-0 rounded bg-amber-500/15 px-1.5 py-0.5 font-medium text-[10px] text-amber-700 dark:text-amber-400">
+												{CATEGORY_LABELS[m.category] ?? m.category}
+											</span>
+											<span className="flex-1 select-text text-foreground text-sm leading-snug">
+												{m.body}
+											</span>
+											<div className="flex shrink-0 items-center gap-0.5">
+												<Button
+													variant="ghost"
+													size="icon-xs"
+													disabled={isPromoting}
+													aria-label="Добавить в память"
+													title="Добавить в память"
+													className="text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-500 dark:hover:text-amber-400"
+													onClick={() => {
+														promote.mutate(
+															{
+																category: m.category,
+																body: m.body,
+																day: entry.day,
+															},
+															{
+																onSuccess: () => {
+																	toast.success("Добавлено в память", {
+																		description:
+																			CATEGORY_LABELS[m.category] ?? m.category,
+																	});
+																	hideCandidate(i);
+																},
+															},
+														);
+													}}
+												>
+													<LuBrain className="size-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon-xs"
+													aria-label="Скрыть"
+													title="Скрыть"
+													className="text-muted-foreground hover:text-foreground"
+													onClick={() => hideCandidate(i)}
+												>
+													<LuX className="size-4" />
+												</Button>
+											</div>
+										</div>
+									);
+								})}
 							</div>
 						</section>
 					)}
