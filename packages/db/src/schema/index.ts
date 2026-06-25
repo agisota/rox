@@ -33,6 +33,7 @@ export * from "./org-library";
 export * from "./personas";
 export * from "./pipeline";
 export * from "./preferences";
+export * from "./profile-capabilities";
 export * from "./profiles";
 export * from "./relations";
 export * from "./runtime";
