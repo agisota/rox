@@ -36,6 +36,14 @@
 			"types": "./src/crm-contacts.ts",
 			"default": "./src/crm-contacts.ts"
 		},
+		"./object-comments": {
+			"types": "./src/object-comments.ts",
+			"default": "./src/object-comments.ts"
+		},
+		"./project-templates": {
+			"types": "./src/project-templates.ts",
+			"default": "./src/project-templates.ts"
+		},
 		"./calendar-share": {
 			"types": "./src/calendar-share.ts",
 			"default": "./src/calendar-share.ts"
