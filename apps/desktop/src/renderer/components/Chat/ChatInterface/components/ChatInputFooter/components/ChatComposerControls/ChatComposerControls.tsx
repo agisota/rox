@@ -1,3 +1,4 @@
+import { ComposerContextRing } from "@rox/ui/ai-elements/composer-context-ring";
 import {
 	PromptInputFooter,
 	PromptInputSubmit,
@@ -40,6 +41,10 @@ interface ChatComposerControlsProps {
 	dictationTranscribing?: boolean;
 	/** Server-side Whisper availability (voice.isConfigured). Off → mic disabled. */
 	dictationConfigured?: boolean;
+	/** Estimated tokens currently in the conversation context window. */
+	usedTokens?: number;
+	/** Selected model's context window in tokens. */
+	maxTokens?: number;
 }
 
 export function ChatComposerControls({
@@ -59,6 +64,8 @@ export function ChatComposerControls({
 	onDictationComplete,
 	dictationTranscribing,
 	dictationConfigured,
+	usedTokens,
+	maxTokens,
 }: ChatComposerControlsProps) {
 	// Plain dictation can be turned off in Settings → Voice. Cache-first: only
 	// treat as off once we've explicitly read `false` (undefined = loading → keep
@@ -102,6 +109,14 @@ export function ChatComposerControls({
 					onLevelChange={setThinkingLevel}
 					className={PILL_BUTTON_CLASS}
 				/>
+				{maxTokens && maxTokens > 0 ? (
+					<ComposerContextRing
+						className={PILL_BUTTON_CLASS}
+						maxTokens={maxTokens}
+						modelId={selectedModel?.id}
+						usedTokens={usedTokens ?? 0}
+					/>
+				) : null}
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />

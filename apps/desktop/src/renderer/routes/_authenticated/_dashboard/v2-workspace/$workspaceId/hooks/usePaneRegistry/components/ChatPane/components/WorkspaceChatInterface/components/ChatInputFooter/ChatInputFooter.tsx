@@ -50,6 +50,10 @@ interface ChatInputFooterProps {
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	slashCommands: SlashCommand[];
 	submitDisabled?: boolean;
+	/** Estimated tokens currently in the conversation context window (F42 ring). */
+	usedTokens?: number;
+	/** Selected model's context window in tokens (F42 ring). */
+	maxTokens?: number;
 	renderAttachment?: (file: FileUIPart & { id: string }) => ReactNode;
 	onSubmitStart?: () => void;
 	onSubmitEnd?: () => void;
@@ -83,6 +87,8 @@ export function ChatInputFooter({
 	setThinkingLevel,
 	slashCommands,
 	submitDisabled,
+	usedTokens,
+	maxTokens,
 	renderAttachment,
 	onSubmitStart,
 	onSubmitEnd,
@@ -231,6 +237,8 @@ export function ChatInputFooter({
 									submitStatus={submitStatus}
 									submitDisabled={submitDisabled}
 									onStop={onStop}
+									usedTokens={usedTokens}
+									maxTokens={maxTokens}
 								/>
 							</PromptInput>
 						</div>

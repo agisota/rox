@@ -5,6 +5,10 @@ import {
 	useChatDisplay,
 } from "@rox/chat/client";
 import {
+	extractTextsFromParts,
+	selectContextUsage,
+} from "@rox/shared/context-usage";
+import {
 	PromptInputAttachment,
 	type PromptInputMessage,
 	PromptInputProvider,
@@ -508,6 +512,20 @@ export function ChatPaneInterface({
 			isAwaitingAssistant,
 		});
 	}, [isAwaitingAssistant, messages, pendingUserTurn]);
+
+	// F42: live context-usage ring. Token counts are estimated from the displayed
+	// conversation text via the shared cross-platform selector so desktop, web,
+	// and mobile all compute identically; the window comes from the active model.
+	const contextUsage = useMemo(
+		() =>
+			selectContextUsage(
+				visibleMessages.flatMap((message) =>
+					extractTextsFromParts(message.content),
+				),
+				activeModel?.id,
+			),
+		[visibleMessages, activeModel?.id],
+	);
 
 	useEffect(() => {
 		if (isRunning) {
@@ -1041,6 +1059,8 @@ export function ChatPaneInterface({
 					thinkingLevel={thinkingLevel}
 					setThinkingLevel={setThinkingLevel}
 					slashCommands={slashCommands}
+					usedTokens={contextUsage.usedTokens}
+					maxTokens={contextUsage.maxTokens}
 					sessionId={sessionId}
 					onError={setRuntimeErrorMessage}
 					onSend={handleSend}

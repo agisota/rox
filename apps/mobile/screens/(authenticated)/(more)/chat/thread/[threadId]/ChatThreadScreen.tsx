@@ -1,3 +1,5 @@
+import { ROX_CHAT_MODEL } from "@rox/shared/chat-models";
+import { selectContextUsage } from "@rox/shared/context-usage";
 import { useLocalSearchParams } from "expo-router";
 import { Send } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -14,11 +16,15 @@ import { Icon } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
+import { MicButton } from "@/components/voice/MicButton";
 import { useSession } from "@/lib/auth/client";
+import { apiClient } from "@/lib/trpc/client";
+import type { MobileRecording } from "@/lib/voice/useDictation";
 import { useCommsRealtime } from "../../hooks/useCommsRealtime";
 import { useCommsThread } from "../../hooks/useCommsThread";
 import { buildSendRecipients } from "../../utils/buildSendRecipients";
 import { formatThreadTitle } from "../../utils/formatThreadTitle";
+import { ChatContextRing } from "./ChatContextRing";
 import { ChatMessageBubble } from "./ChatMessageBubble";
 
 /**
@@ -91,6 +97,38 @@ export function ChatThreadScreen() {
 		const ok = await reply(draft);
 		if (ok) setDraft("");
 	}, [draft, reply]);
+
+	// Shared dictation (hold-to-record) into the draft, mirroring CreateTaskSheet
+	// and the desktop/web composers — one shared MicButton, transcribe via the
+	// same voice router. Honors tap-and-hold gestures (MicButton press-in/out).
+	const [transcribing, setTranscribing] = useState(false);
+	const handleDictation = useCallback(async (recording: MobileRecording) => {
+		setTranscribing(true);
+		try {
+			const result = await apiClient.voice.transcribe.mutate({
+				audioBase64: recording.audioBase64,
+				mimeType: recording.mimeType,
+				durationMs: recording.durationMs,
+			});
+			const text = result.processed?.ru || result.rawText;
+			if (text) setDraft((prev) => (prev ? `${prev} ${text}` : text));
+		} catch {
+			// Keep the composer usable on failure; the user can retry or type.
+		} finally {
+			setTranscribing(false);
+		}
+	}, []);
+
+	// F42: live context-usage ring, computed by the same shared cross-platform
+	// selector the web/desktop composers use so all surfaces agree.
+	const contextUsage = useMemo(
+		() =>
+			selectContextUsage(
+				messages.map((message) => message.body ?? ""),
+				ROX_CHAT_MODEL.id,
+			),
+		[messages],
+	);
 
 	const hasData = messages.length > 0;
 	const sendDisabled = draft.trim().length === 0 || sending || !canSend;
@@ -170,6 +208,14 @@ export function ChatThreadScreen() {
 						No recipient to reply to.
 					</Text>
 				) : null}
+				{hasData ? (
+					<View className="flex-row items-center justify-end pb-1">
+						<ChatContextRing
+							usedTokens={contextUsage.usedTokens}
+							maxTokens={contextUsage.maxTokens}
+						/>
+					</View>
+				) : null}
 				<View className="flex-row items-end gap-2">
 					<Textarea
 						className="max-h-32 flex-1"
@@ -178,6 +224,7 @@ export function ChatThreadScreen() {
 						onChangeText={setDraft}
 						editable={!sending}
 					/>
+					<MicButton onComplete={handleDictation} transcribing={transcribing} />
 					<Pressable
 						accessibilityRole="button"
 						accessibilityLabel="Send message"
