@@ -8,6 +8,7 @@ import { logger } from "../../../lib/logger";
 import { protectedProcedure, queryProcedure, router } from "../../index";
 import { resolveGithubRepo } from "../workspace-creation/shared/project-helpers";
 import type {
+	BlameAuthor,
 	CheckConclusionState,
 	CheckRun,
 	CheckStatusState,
@@ -18,6 +19,7 @@ import type {
 	PullRequestReviewThread,
 	PullRequestState,
 } from "./types";
+import { getFileBlameAuthor } from "./utils/blame";
 import { gitConfigWrite } from "./utils/config-write";
 import {
 	getChangedFilesForDiff,
@@ -489,6 +491,37 @@ export const gitRouter = router({
 				oldFile: { name: fileName, contents: originalContent },
 				newFile: { name: fileName, contents: modifiedContent },
 			};
+		}),
+
+	getBlame: queryProcedure
+		.meta({ timeoutMs: 15_000 })
+		.input(
+			z.object({
+				workspaceId: z.string(),
+				path: z.string(),
+			}),
+		)
+		.query(async ({ ctx, input }): Promise<{ blame: BlameAuthor | null }> => {
+			assertSafeRelativePath(input.path);
+			const worktreePath = resolveWorktreePath(ctx, input.workspaceId);
+			const git = await ctx.git(worktreePath);
+
+			// A path with no commit history (untracked / freshly added) makes
+			// `git log` exit 0 with empty output, which `getFileBlameAuthor`
+			// maps to `null`. Any other failure (bad object, repo lock) is a
+			// real error: log it and degrade to "no blame" rather than break
+			// the whole tree render — the decoration is non-essential.
+			try {
+				const blame = await getFileBlameAuthor(git, input.path);
+				return { blame };
+			} catch (error) {
+				logger.warn("[git.getBlame] failed to resolve blame", {
+					workspaceId: input.workspaceId,
+					path: input.path,
+					error,
+				});
+				return { blame: null };
+			}
 		}),
 
 	getBranchSyncStatus: queryProcedure
