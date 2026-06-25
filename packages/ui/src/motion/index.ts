@@ -37,6 +37,7 @@ export * from "./Pressable";
 export * from "./ProgressBar";
 export * from "./ReasoningLevelSlider";
 export * from "./RevealFlash";
+export * from "./RightPanelEdgePill";
 export * from "./RouteTransition";
 export * from "./RunCelebration";
 export * from "./Shake";

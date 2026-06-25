@@ -253,6 +253,14 @@ export const v2UserPreferencesSchema = z.object({
 	sidebarFileLinks: linkTierMapSchema.default(DEFAULT_SIDEBAR_FILE_LINKS),
 	terminalPresetsInitialized: z.boolean().default(false),
 	rightSidebarOpen: z.boolean().default(true),
+	/**
+	 * Right files panel 3-state (F03 / #616): `hidden` (width 0 + floating
+	 * edge-pill) | `peek` (narrow snap) | `expanded` (full). This is the source
+	 * of truth for the panel's resting state; the legacy `rightSidebarOpen`
+	 * boolean is kept for back-compat and healed into this column (open →
+	 * `expanded`, closed → `hidden`) for rows persisted before it existed.
+	 */
+	rightSidebarState: z.enum(["hidden", "peek", "expanded"]).default("expanded"),
 	rightSidebarTab: z.enum(["changes", "files"]).default("changes"),
 	rightSidebarWidth: z.number().default(340),
 	deleteLocalBranch: z.boolean().default(false),
@@ -270,6 +278,7 @@ export const DEFAULT_V2_USER_PREFERENCES: V2UserPreferencesRow = {
 	sidebarFileLinks: DEFAULT_SIDEBAR_FILE_LINKS,
 	terminalPresetsInitialized: false,
 	rightSidebarOpen: true,
+	rightSidebarState: "expanded",
 	rightSidebarTab: "changes",
 	rightSidebarWidth: 340,
 	deleteLocalBranch: false,
@@ -329,9 +338,17 @@ export function healV2UserPreferences(raw: unknown): V2UserPreferencesRow {
 		r.sidebarFileLinks &&
 		isCompleteLinkTierMap(r.sidebarFileLinks) &&
 		isSameLinkTierMap(r.sidebarFileLinks, LEGACY_SIDEBAR_FILE_LINKS);
+	// 3-state panel (F03 / #616): rows persisted before `rightSidebarState`
+	// existed only carry the legacy binary `rightSidebarOpen`. Derive the
+	// resting state from it (open → expanded, closed → hidden) so the new chrome
+	// reads a meaningful value instead of the unconditional default.
+	const rightSidebarState =
+		r.rightSidebarState ??
+		(r.rightSidebarOpen === false ? "hidden" : "expanded");
 	return {
 		...DEFAULT_V2_USER_PREFERENCES,
 		...r,
+		rightSidebarState,
 		fileLinks: { ...DEFAULT_V2_USER_PREFERENCES.fileLinks, ...r.fileLinks },
 		urlLinks: { ...DEFAULT_V2_USER_PREFERENCES.urlLinks, ...r.urlLinks },
 		sidebarFileLinks: shouldMigrateLegacySidebarFileLinks

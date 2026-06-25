@@ -327,6 +327,10 @@
 		"./zen-mode": {
 			"types": "./src/zen-mode.ts",
 			"default": "./src/zen-mode.ts"
+		},
+		"./right-panel-state": {
+			"types": "./src/right-panel-state.ts",
+			"default": "./src/right-panel-state.ts"
 		}
 	},
 	"scripts": {
