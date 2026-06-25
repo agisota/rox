@@ -1,6 +1,7 @@
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useMemo } from "react";
+import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import type {
 	GovernanceKind,
@@ -24,22 +25,27 @@ export interface GovernanceItemsApi {
 
 /**
  * Live-queries governance items (goals/tasks/missions) for a workspace from the
- * local `v2WorkspaceGovernance` collection and exposes typed add/remove/update
- * mutations. Cache-first: `useLiveQuery` reads the local collection
+ * org-scoped `v2WorkspaceGovernance` Electric collection and exposes typed
+ * add/remove/update mutations. Cache-first: `useLiveQuery` reads the collection
  * synchronously, so the section renders immediately with no loading flash.
  *
- * TODO(server): mutations write only to the local collection today. When a
- * backend collection lands, the collection factory in `collections.ts` gains
- * onInsert/onUpdate/onDelete and these mutations sync transparently.
+ * Persistence (#517): mutations write to the Electric collection, whose
+ * onInsert/onUpdate/onDelete round-trip through the `governance` tRPC router and
+ * sync back through the electric-proxy. The optimistic insert carries the full
+ * DB row shape; the server is the authority for `organizationId`/`createdBy`,
+ * and the synced row replaces the optimistic one.
  */
 export function useGovernanceItems(workspaceId: string): GovernanceItemsApi {
 	const collections = useCollections();
+	const { data: session } = authClient.useSession();
+	const organizationId = session?.session?.activeOrganizationId ?? "";
+	const userId = session?.user?.id ?? "";
 
 	const { data: rows = [] } = useLiveQuery(
 		(query) =>
 			query
 				.from({ item: collections.v2WorkspaceGovernance })
-				.where(({ item }) => eq(item.workspaceId, workspaceId)),
+				.where(({ item }) => eq(item.v2WorkspaceId, workspaceId)),
 		[collections, workspaceId],
 	);
 
@@ -66,20 +72,24 @@ export function useGovernanceItems(workspaceId: string): GovernanceItemsApi {
 	const addItem = useCallback(
 		(kind: GovernanceKind, text: string) => {
 			const trimmed = text.trim();
-			if (!trimmed) return;
+			if (!trimmed || !organizationId || !userId) return;
 			const existing = rows.filter((r) => r.kind === kind);
 			const nextOrder =
 				existing.reduce((max, r) => Math.max(max, r.order), -1) + 1;
+			const now = new Date();
 			collections.v2WorkspaceGovernance.insert({
 				id: makeId(),
-				workspaceId,
+				organizationId,
+				v2WorkspaceId: workspaceId,
+				createdBy: userId,
 				kind,
 				text: trimmed,
 				order: nextOrder,
-				createdAt: new Date(),
+				createdAt: now,
+				updatedAt: now,
 			});
 		},
-		[collections, workspaceId, rows],
+		[collections, workspaceId, rows, organizationId, userId],
 	);
 
 	const removeItem = useCallback(

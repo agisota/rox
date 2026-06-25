@@ -16,6 +16,7 @@ import { deviceRouter } from "./router/device";
 import { driveRouter } from "./router/drive";
 import { economyRouter } from "./router/economy";
 import { executionCircuitRouter } from "./router/executionCircuit";
+import { governanceRouter } from "./router/governance";
 import { graphRouter } from "./router/graph";
 import { hostRouter } from "./router/host";
 import { integrationRouter } from "./router/integration";
@@ -85,6 +86,7 @@ export const appRouter = createTRPCRouter({
 	dashboard: dashboardRouter,
 	mcpAdmin: mcpAdminRouter,
 	executionCircuit: executionCircuitRouter,
+	governance: governanceRouter,
 	graph: graphRouter,
 	host: hostRouter,
 	identity: identityRouter,

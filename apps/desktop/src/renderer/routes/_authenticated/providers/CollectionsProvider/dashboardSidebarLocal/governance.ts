@@ -1,40 +1,27 @@
+import type { SelectWorkspaceGovernanceItem } from "@rox/db/schema";
 import { z } from "zod";
 
 /**
  * Workspace governance items: ЦЕЛИ (goals), ЗАДАЧИ (tasks), МИССИИ (missions).
  *
  * These power the right-panel "Управление" section in the v2 workspace. Each
- * row is keyed by its own `id` and scoped to a workspace via `workspaceId`
+ * row is keyed by its own `id` and scoped to a workspace via `v2WorkspaceId`
  * (indexed) so the section can live-query just its workspace's items.
  *
- * Persistence note (TODO(server)): there is no Electric/host-service collection
- * for governance items yet, so this is a typed localStorage-backed collection
- * following the same project-native pattern as `v2TerminalPresets` /
- * `v2SidebarSections`. When a backend collection lands, swap the collection
- * factory in `collections.ts` to an `electricCollectionOptions(...)` shape and
- * keep this schema as the row contract.
+ * Persistence (#517): governance items are org-scoped Postgres rows synced
+ * through the electric-proxy (table `workspace_governance_items`) and mutated
+ * via the `governance` tRPC router — the collection factory in `collections.ts`
+ * is an `electricCollectionOptions(...)` shape with onInsert/onUpdate/onDelete.
+ * The row contract is therefore the DB-inferred `SelectWorkspaceGovernanceItem`
+ * (snake→camel via the Electric column mapper), aliased here so the panel's
+ * components keep a single stable row type name.
  */
 export const governanceKindSchema = z.enum(["goal", "task", "mission"]);
 
 export type GovernanceKind = z.infer<typeof governanceKindSchema>;
 
-const persistedDateSchema = z
-	.union([z.string(), z.date()])
-	.transform((value) => (typeof value === "string" ? new Date(value) : value));
-
-export const workspaceGovernanceItemSchema = z.object({
-	id: z.string(),
-	workspaceId: z.string().uuid(),
-	kind: governanceKindSchema,
-	text: z.string().trim().min(1),
-	/** Sort order within (workspaceId, kind); lower renders first. */
-	order: z.number().int().default(0),
-	createdAt: persistedDateSchema,
-});
-
-export type WorkspaceGovernanceItemRow = z.infer<
-	typeof workspaceGovernanceItemSchema
->;
+/** Row contract for the "Управление" panel — the Electric-synced DB row. */
+export type WorkspaceGovernanceItemRow = SelectWorkspaceGovernanceItem;
 
 export const GOVERNANCE_KINDS: readonly GovernanceKind[] = [
 	"goal",
