@@ -316,6 +316,10 @@
 			"types": "./src/identity-glyph.ts",
 			"default": "./src/identity-glyph.ts"
 		},
+		"./label-style": {
+			"types": "./src/label-style.ts",
+			"default": "./src/label-style.ts"
+		},
 		"./context-usage": {
 			"types": "./src/context-usage.ts",
 			"default": "./src/context-usage.ts"

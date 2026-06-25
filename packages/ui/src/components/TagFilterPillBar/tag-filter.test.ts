@@ -57,6 +57,16 @@ describe("deriveTagPills", () => {
 		expect(pills.find((pill) => pill.kind === "unassigned")?.active).toBe(true);
 		expect(pills.find((pill) => pill.kind === "all")?.active).toBe(false);
 	});
+
+	it("passes a label's icon token through to its pill (F11)", () => {
+		const flagged: TagLabel = { id: "c", name: "Flagged", icon: "🚩" };
+		const pills = deriveTagPills([flagged], ALL_TAGS_FILTER);
+		expect(pills.find((pill) => pill.label === "Flagged")?.icon).toBe("🚩");
+		// Labels without an icon expose `null`, never `undefined`.
+		expect(pills.find((pill) => pill.label === "Bug")).toBeUndefined();
+		const noIcon = deriveTagPills([BUG], ALL_TAGS_FILTER);
+		expect(noIcon.find((pill) => pill.kind === "label")?.icon).toBeNull();
+	});
 });
 
 describe("toggleLabel", () => {

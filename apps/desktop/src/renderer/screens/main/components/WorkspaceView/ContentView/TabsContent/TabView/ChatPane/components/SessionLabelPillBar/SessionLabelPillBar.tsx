@@ -100,6 +100,9 @@ export function SessionLabelPillBar({
 			onRecolorLabel={(label, color) =>
 				updateLabel.mutate({ labelId: label.id, color })
 			}
+			onSetLabelIcon={(label, icon) =>
+				updateLabel.mutate({ labelId: label.id, icon })
+			}
 			onDeleteLabel={(label) => deleteLabel.mutate({ labelId: label.id })}
 		/>
 	);
