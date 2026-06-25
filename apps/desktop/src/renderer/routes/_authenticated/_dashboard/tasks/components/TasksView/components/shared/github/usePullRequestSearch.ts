@@ -5,6 +5,7 @@ import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { useOnlineStatus } from "renderer/hooks/useOnlineStatus";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { classifyGithubError } from "./classifyGithubError";
+import { filterPrsByState } from "./filterPrsByState";
 import type { PrStateFilter } from "./StateFilterBar";
 import type { GithubFetchError, PrListItem, PrState } from "./types";
 
@@ -58,7 +59,9 @@ export function usePullRequestSearch(
 	const isOnline = useOnlineStatus();
 	const hostUrl = useHostUrl(null);
 	const debouncedQuery = useDebouncedValue(searchQuery, 300);
-	const includeClosed = stateFilter !== "open";
+	// `open` and `review` both work over the open set; only `merged`/`closed`
+	// need the closed pages pulled in.
+	const includeClosed = stateFilter === "merged" || stateFilter === "closed";
 
 	const enabled = !!projectFilter && !!hostUrl;
 
@@ -119,17 +122,10 @@ export function usePullRequestSearch(
 
 	// Segmented filter applied client-side over already-fetched pages. `merged`
 	// and `closed` are both fetched under includeClosed=true, then split here.
-	const filtered = useMemo<PrListItem[]>(() => {
-		if (stateFilter === "open") {
-			return normalized.filter(
-				(pr) => pr.state === "open" || pr.state === "draft",
-			);
-		}
-		if (stateFilter === "merged") {
-			return normalized.filter((pr) => pr.state === "merged");
-		}
-		return normalized.filter((pr) => pr.state === "closed");
-	}, [normalized, stateFilter]);
+	const filtered = useMemo<PrListItem[]>(
+		() => filterPrsByState(normalized, stateFilter),
+		[normalized, stateFilter],
+	);
 
 	const totalCount = query.data?.pages[0]?.totalCount ?? 0;
 	const repoMismatch = useMemo(() => {
