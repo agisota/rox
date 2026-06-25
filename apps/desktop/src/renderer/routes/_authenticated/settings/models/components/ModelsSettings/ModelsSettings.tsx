@@ -2,18 +2,10 @@ import { chatServiceTrpc } from "@rox/chat/client";
 import { ModelSelectorLogo } from "@rox/ui/ai-elements/model-selector";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@rox/ui/collapsible";
 import { claudeIcon } from "@rox/ui/icons/preset-icons";
 import { Input } from "@rox/ui/input";
-import { Label } from "@rox/ui/label";
 import { toast } from "@rox/ui/sonner";
-import { Textarea } from "@rox/ui/textarea";
 import { useEffect, useMemo, useState } from "react";
-import { HiChevronDown } from "react-icons/hi2";
 import { AnthropicOAuthDialog } from "renderer/components/Chat/ChatInterface/components/ModelPicker/components/AnthropicOAuthDialog";
 import { OpenAIOAuthDialog } from "renderer/components/Chat/ChatInterface/components/ModelPicker/components/OpenAIOAuthDialog";
 import { useAnthropicOAuth } from "renderer/components/Chat/ChatInterface/components/ModelPicker/hooks/useAnthropicOAuth";
@@ -23,17 +15,15 @@ import {
 	SETTING_ITEM_ID,
 	type SettingItemId,
 } from "../../../utils/settings-search";
+import { AnthropicAdvancedForm } from "./components/AnthropicAdvancedForm";
 import { ApiKeyProviderSection } from "./components/ApiKeyProviderSection";
 import { ConfigRow } from "./components/ConfigRow";
 import { CustomProviderSection } from "./components/CustomProviderSection";
 import { SettingsSection } from "./components/SettingsSection";
 import {
 	API_KEY_PROVIDER_CONFIGS,
-	buildAnthropicEnvText,
-	EMPTY_ANTHROPIC_FORM,
 	getProviderAction,
 	getStatusBadge,
-	parseAnthropicForm,
 	ROX_PROVIDER_DETAILS,
 	ROX_PROVIDER_STATUS,
 	resolveProviderStatus,
@@ -76,10 +66,8 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 			return false;
 		},
 	);
-	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const [openAIApiKeyInput, setOpenAIApiKeyInput] = useState("");
 	const [anthropicApiKeyInput, setAnthropicApiKeyInput] = useState("");
-	const [anthropicForm, setAnthropicForm] = useState(EMPTY_ANTHROPIC_FORM);
 
 	const { data: anthropicAuthStatus, refetch: refetchAnthropicAuthStatus } =
 		chatServiceTrpc.auth.getAnthropicStatus.useQuery();
@@ -125,8 +113,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 	const isSavingOpenAIConfig =
 		setOpenAIApiKeyMutation.isPending || clearOpenAIApiKeyMutation.isPending;
 
+	// Clear the typed API key whenever the persisted Anthropic env config changes.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on persisted env change
 	useEffect(() => {
-		setAnthropicForm(parseAnthropicForm(anthropicEnvConfig?.envText ?? ""));
 		setAnthropicApiKeyInput("");
 	}, [anthropicEnvConfig?.envText]);
 
@@ -158,14 +147,9 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 	);
 	const roxBadge = useMemo(() => getStatusBadge(ROX_PROVIDER_STATUS), []);
 
-	const saveAnthropicForm = async (nextForm = anthropicForm) => {
-		const envText = buildAnthropicEnvText(nextForm);
+	const saveAnthropicEnvText = async (envText: string): Promise<boolean> => {
 		try {
-			if (envText) {
-				await setAnthropicEnvConfigMutation.mutateAsync({ envText });
-			} else {
-				await clearAnthropicEnvConfigMutation.mutateAsync();
-			}
+			await setAnthropicEnvConfigMutation.mutateAsync({ envText });
 			await Promise.all([
 				refetchAnthropicEnvConfig(),
 				refetchAnthropicAuthStatus(),
@@ -180,28 +164,22 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 		}
 	};
 
-	const handleAnthropicFormBlur = () => {
-		const currentEnvText = anthropicEnvConfig?.envText ?? "";
-		const nextEnvText = buildAnthropicEnvText(anthropicForm);
-		if (currentEnvText.trim() === nextEnvText.trim()) return;
-		void saveAnthropicForm(anthropicForm);
+	const clearAnthropicEnvText = async (): Promise<boolean> => {
+		try {
+			await clearAnthropicEnvConfigMutation.mutateAsync();
+			await Promise.all([
+				refetchAnthropicEnvConfig(),
+				refetchAnthropicAuthStatus(),
+			]);
+			toast.success("Настройки Anthropic обновлены");
+			return true;
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Не удалось сохранить",
+			);
+			return false;
+		}
 	};
-
-	const resetAnthropicAdvanced = () => {
-		const nextForm = {
-			...anthropicForm,
-			authToken: "",
-			baseUrl: "",
-			extraEnv: "",
-		};
-		setAnthropicForm(nextForm);
-		void saveAnthropicForm(nextForm);
-	};
-
-	const hasAdvancedContent =
-		anthropicForm.authToken.trim().length > 0 ||
-		anthropicForm.baseUrl.trim().length > 0 ||
-		anthropicForm.extraEnv.trim().length > 0;
 
 	const saveAnthropicApiKey = async () => {
 		const apiKey = anthropicApiKeyInput.trim();
@@ -367,12 +345,10 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 									void saveAnthropicApiKey();
 								}}
 								onClear={() => {
-									const nextForm = { ...anthropicForm, apiKey: "" };
 									void (async () => {
 										try {
 											await clearAnthropicApiKeyMutation.mutateAsync();
 											setAnthropicApiKeyInput("");
-											setAnthropicForm(nextForm);
 											await refetchAnthropicAuthStatus();
 											toast.success("Ключ API Anthropic удалён");
 										} catch (error) {
@@ -390,105 +366,12 @@ export function ModelsSettings({ visibleItems }: ModelsSettingsProps) {
 								disableClear={isSavingAnthropicApiKey}
 							/>
 
-							<Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-								<div className="flex items-center justify-between">
-									<CollapsibleTrigger asChild>
-										<button
-											type="button"
-											className="flex items-center gap-1.5 text-left text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-										>
-											<HiChevronDown
-												className={`size-3.5 transition-transform ${advancedOpen ? "" : "-rotate-90"}`}
-											/>
-											Дополнительно
-										</button>
-									</CollapsibleTrigger>
-									{advancedOpen && hasAdvancedContent ? (
-										<button
-											type="button"
-											onClick={resetAnthropicAdvanced}
-											disabled={isSavingAnthropicConfig}
-											className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-										>
-											Сбросить
-										</button>
-									) : null}
-								</div>
-								<CollapsibleContent className="mt-3 space-y-3">
-									<div className="space-y-1.5">
-										<Label
-											htmlFor="anthropic-auth-token"
-											className="text-sm font-medium"
-										>
-											Токен авторизации
-										</Label>
-										<Input
-											id="anthropic-auth-token"
-											type="password"
-											value={anthropicForm.authToken}
-											onChange={(event) => {
-												setAnthropicForm((current) => ({
-													...current,
-													authToken: event.target.value,
-												}));
-											}}
-											onBlur={handleAnthropicFormBlur}
-											placeholder="ANTHROPIC_AUTH_TOKEN"
-											className="font-mono"
-											disabled={isSavingAnthropicConfig}
-										/>
-									</div>
-									<div className="space-y-1.5">
-										<Label
-											htmlFor="anthropic-base-url"
-											className="text-sm font-medium"
-										>
-											Base URL
-										</Label>
-										<Input
-											id="anthropic-base-url"
-											value={anthropicForm.baseUrl}
-											onChange={(event) => {
-												setAnthropicForm((current) => ({
-													...current,
-													baseUrl: event.target.value,
-												}));
-											}}
-											onBlur={handleAnthropicFormBlur}
-											placeholder="https://api.anthropic.com"
-											className="font-mono"
-											disabled={isSavingAnthropicConfig}
-										/>
-									</div>
-									<div className="space-y-1.5">
-										<Label
-											htmlFor="anthropic-extra-env"
-											className="text-sm font-medium"
-										>
-											Дополнительные переменные окружения
-										</Label>
-										<Textarea
-											id="anthropic-extra-env"
-											value={anthropicForm.extraEnv}
-											onChange={(event) => {
-												setAnthropicForm((current) => ({
-													...current,
-													extraEnv: event.target.value,
-												}));
-											}}
-											onBlur={handleAnthropicFormBlur}
-											placeholder={
-												"CLAUDE_CODE_USE_BEDROCK=1\nAWS_REGION=us-east-1"
-											}
-											className="min-h-24 font-mono text-xs"
-											disabled={isSavingAnthropicConfig}
-										/>
-									</div>
-									<p className="text-xs text-muted-foreground">
-										Сохраняется при потере фокуса.
-									</p>
-								</CollapsibleContent>
-							</Collapsible>
+							<AnthropicAdvancedForm
+								envText={anthropicEnvConfig?.envText ?? ""}
+								onSave={saveAnthropicEnvText}
+								onClear={clearAnthropicEnvText}
+								disabled={isSavingAnthropicConfig}
+							/>
 						</SettingsSection>
 					) : null}
 
