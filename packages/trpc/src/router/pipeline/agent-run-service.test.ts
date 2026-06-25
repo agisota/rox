@@ -1,15 +1,47 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import {
 	type AgentRolePreset,
 	createAccumulatedContext,
 } from "@rox/workflow-core";
 import type { AgentRunRequest } from "@rox/workflow-runtime";
+// Type-only imports are erased by bun and never trigger module loading, so they
+// are safe to keep static even though the value import below is deferred.
 import type { RunAgentOnHostResult } from "./agent-run-host-bridge";
-import {
-	type LoadRolePresetPort,
-	makeAgentRunResolver,
-	type RunAgentOnHostPort,
+import type {
+	LoadRolePresetPort,
+	RunAgentOnHostPort,
 } from "./agent-run-service";
+
+/**
+ * This suite exercises `makeAgentRunResolver` purely through injected ports
+ * (`loadRolePreset` / `runOnHost`) — it never issues a DB query, mints a JWT, or
+ * crosses the relay. But importing `./agent-run-service` transitively pulls in
+ * `./agent-run-host-bridge`, which imports `@rox/db/client` (constructs DB
+ * clients) and `@rox/auth/server` (which in turn loads `@rox/email`, validating
+ * `NEXT_PUBLIC_MARKETING_URL` at module load). In a headless run without those
+ * env vars / a DB, those eager imports throw at load time — and because
+ * `mock.module` is process-global with nondeterministic file load order across
+ * the directory, whether the throw surfaced here depended on which sibling suite
+ * loaded first (an order-dependent / flaky failure).
+ *
+ * Stubbing those heavy transitive boundaries (none of which this DI suite uses)
+ * makes the import side-effect-free and the suite deterministic. Mirrors the
+ * boundary stubs in `agent-run-host-bridge.test.ts`.
+ */
+function installBoundaryMocks() {
+	mock.module("@rox/db/client", () => ({ db: {}, dbWs: {} }));
+	mock.module("@rox/auth/server", () => ({
+		mintUserJwt: async () => "jwt-test-token",
+	}));
+	mock.module("../automation/relay-client", () => ({
+		relayMutation: async () => ({}),
+		RelayDispatchError: class extends Error {},
+	}));
+}
+
+installBoundaryMocks();
+
+const { makeAgentRunResolver } = await import("./agent-run-service");
 
 const CHAT_PRESET: AgentRolePreset = {
 	agentKind: "chat",
@@ -47,6 +79,12 @@ function makeResolver(opts: {
 		},
 	});
 }
+
+beforeEach(() => {
+	// Re-assert our boundary stubs so a sibling suite's conflicting global
+	// `mock.module(...)` cannot leak in via nondeterministic file load order.
+	installBoundaryMocks();
+});
 
 describe("makeAgentRunResolver composition", () => {
 	test("ARS-01: missing role → AGENT_ROLE_NOT_FOUND, host never called", async () => {

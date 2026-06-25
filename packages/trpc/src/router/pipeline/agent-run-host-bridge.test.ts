@@ -99,28 +99,41 @@ function chainableQuery(): unknown {
 
 const dbWsMock = { select: () => chainableQuery() };
 
-mock.module("@rox/db/client", () => ({
-	db: dbWsMock,
-	dbWs: dbWsMock,
-}));
+// `mock.module` is process-global in bun and the LAST registration wins for every
+// already-loaded importer. Sibling suites in this directory
+// (`dispatcher.test.ts`, `run-pipeline.test.ts`) register their own conflicting
+// `@rox/db/client` / `@rox/db/schema` mocks at module-eval time, and the file
+// load order across the directory run is not deterministic — so whichever suite
+// happened to evaluate last silently won, corrupting this suite's DB mock and
+// producing order-dependent (flaky) assertion failures. Re-asserting our mocks in
+// `beforeEach` makes this suite's view of `@rox/db` deterministic regardless of
+// sibling load order.
+function installDbMocks() {
+	mock.module("@rox/db/client", () => ({
+		db: dbWsMock,
+		dbWs: dbWsMock,
+	}));
 
-// Shallow column refs so `eq(...)`/`and(...)` over schema columns don't throw at
-// module load (mirrors the v2-host suite's schema mock shape).
-mock.module("@rox/db/schema", () => ({
-	...realDbSchema,
-	users: { id: "users.id", email: "users.email" },
-	v2Hosts: {
-		machineId: "v2_hosts.machine_id",
-		isOnline: "v2_hosts.is_online",
-		organizationId: "v2_hosts.organization_id",
-		updatedAt: "v2_hosts.updated_at",
-	},
-	v2UsersHosts: {
-		organizationId: "v2_users_hosts.organization_id",
-		hostId: "v2_users_hosts.host_id",
-		userId: "v2_users_hosts.user_id",
-	},
-}));
+	// Shallow column refs so `eq(...)`/`and(...)` over schema columns don't throw at
+	// module load (mirrors the v2-host suite's schema mock shape).
+	mock.module("@rox/db/schema", () => ({
+		...realDbSchema,
+		users: { id: "users.id", email: "users.email" },
+		v2Hosts: {
+			machineId: "v2_hosts.machine_id",
+			isOnline: "v2_hosts.is_online",
+			organizationId: "v2_hosts.organization_id",
+			updatedAt: "v2_hosts.updated_at",
+		},
+		v2UsersHosts: {
+			organizationId: "v2_users_hosts.organization_id",
+			hostId: "v2_users_hosts.host_id",
+			userId: "v2_users_hosts.user_id",
+		},
+	}));
+}
+
+installDbMocks();
 
 // JWT mint: deterministic token, captured args so we can assert scope/run id.
 let mintArgs: unknown;
@@ -156,6 +169,10 @@ function baseArgs(overrides: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
+	// Re-assert our module mocks so a sibling suite's conflicting global
+	// `mock.module("@rox/db/client")` (registered at its own module-eval time)
+	// cannot leak into this suite depending on file load order.
+	installDbMocks();
 	relayCalls = [];
 	relayResponders = {};
 	dbResultQueue = [];

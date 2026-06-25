@@ -262,8 +262,19 @@ async function hasRecentDuplicateRun(args: {
  * blocking the user path. Failures are swallowed per-trigger (and logged) so one
  * bad pipeline never breaks the event source.
  */
+/**
+ * Injectable `runPipeline` seam. Production callers never pass it — the default
+ * is the imported implementation. It exists so tests can record/stub dispatched
+ * runs WITHOUT a process-global `mock.module("./run-pipeline")`, which in bun
+ * leaks across the whole directory's test run and was overriding the real
+ * `runPipeline` in the sibling `run-pipeline` suite (an order-independent but
+ * cross-file failure). Mirrors `RunPipelineDeps` in `./run-pipeline`.
+ */
+export type DispatchRunPipeline = (args: RunPipelineArgs) => Promise<unknown>;
+
 export async function dispatchPipelineEvent(
 	event: PipelineEvent,
+	runPipelineFn: DispatchRunPipeline = runPipeline,
 ): Promise<{ dispatched: number }> {
 	const candidateKinds = eventKindToTriggerKinds(event.kind);
 	if (candidateKinds.length === 0) return { dispatched: 0 };
@@ -375,7 +386,7 @@ export async function dispatchPipelineEvent(
 				continue;
 			}
 
-			await runPipeline(
+			await runPipelineFn(
 				buildDispatchedPipelineRunArgs({
 					organizationId: event.organizationId,
 					userId: pipeline.ownerUserId,
