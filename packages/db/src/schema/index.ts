@@ -30,6 +30,7 @@ export * from "./memory";
 export * from "./mesh";
 export * from "./note";
 export * from "./org-library";
+export * from "./personas";
 export * from "./pipeline";
 export * from "./profiles";
 export * from "./relations";
