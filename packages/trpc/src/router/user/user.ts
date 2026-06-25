@@ -6,6 +6,12 @@ import {
 	usageRequests,
 	users,
 } from "@rox/db/schema";
+import {
+	ACTIVATION_STEPS,
+	normalizeOnboardingStatus,
+	type OnboardingStatus,
+	REQUIRED_SURFACE_TOURS,
+} from "@rox/shared/onboarding";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -13,6 +19,78 @@ import { z } from "zod";
 import { generateImagePathname, uploadImage } from "../../lib/upload";
 import { protectedProcedure } from "../../trpc";
 import { ensureBalance } from "../economy/economy.service";
+
+const activationStepSchema = z.enum(ACTIVATION_STEPS);
+const surfaceTourIdSchema = z.enum(REQUIRED_SURFACE_TOURS);
+
+const onboardingProgressPatchSchema = z.object({
+	activation: z
+		.object({
+			completedAt: z.string().datetime().nullable().optional(),
+			currentStep: activationStepSchema.optional(),
+			completedSteps: z
+				.partialRecord(activationStepSchema, z.string().datetime())
+				.optional(),
+			projectId: z.string().nullable().optional(),
+			workspaceId: z.string().nullable().optional(),
+			providerSkippedAt: z.string().datetime().nullable().optional(),
+		})
+		.optional(),
+	tours: z
+		.object({
+			activeTourId: surfaceTourIdSchema.nullable().optional(),
+			activeStepId: z.string().nullable().optional(),
+			pausedAt: z.string().datetime().nullable().optional(),
+			completedSteps: z
+				.partialRecord(
+					surfaceTourIdSchema,
+					z.record(z.string(), z.string().datetime()),
+				)
+				.optional(),
+			completedTours: z
+				.partialRecord(surfaceTourIdSchema, z.string().datetime())
+				.optional(),
+			dismissedTours: z
+				.partialRecord(surfaceTourIdSchema, z.string().datetime())
+				.optional(),
+			lastRoute: z.string().nullable().optional(),
+		})
+		.optional(),
+});
+
+function mergeOnboardingStatus(
+	current: OnboardingStatus | null | undefined,
+	patch: z.infer<typeof onboardingProgressPatchSchema>,
+): OnboardingStatus {
+	const normalized = normalizeOnboardingStatus(current);
+
+	return normalizeOnboardingStatus({
+		activation: {
+			...normalized.activation,
+			...(patch.activation ?? {}),
+			completedSteps: {
+				...normalized.activation.completedSteps,
+				...(patch.activation?.completedSteps ?? {}),
+			},
+		},
+		tours: {
+			...normalized.tours,
+			...(patch.tours ?? {}),
+			completedSteps: {
+				...normalized.tours.completedSteps,
+				...(patch.tours?.completedSteps ?? {}),
+			},
+			completedTours: {
+				...normalized.tours.completedTours,
+				...(patch.tours?.completedTours ?? {}),
+			},
+			dismissedTours: {
+				...normalized.tours.dismissedTours,
+				...(patch.tours?.dismissedTours ?? {}),
+			},
+		},
+	});
+}
 
 export const userRouter = {
 	me: protectedProcedure.query(({ ctx }) => ctx.session.user),
@@ -126,10 +204,103 @@ export const userRouter = {
 			return updatedUser;
 		}),
 
+	onboardingProgress: protectedProcedure.query(async ({ ctx }) => {
+		const user = await db.query.users.findFirst({
+			where: eq(users.id, ctx.session.user.id),
+			columns: {
+				onboardedAt: true,
+				onboardingProgress: true,
+			},
+		});
+		const progress = normalizeOnboardingStatus(user?.onboardingProgress);
+
+		if (user?.onboardedAt && !progress.activation.completedAt) {
+			progress.activation.completedAt = user.onboardedAt.toISOString();
+			progress.activation.currentStep = "first_agent_action";
+		}
+
+		return progress;
+	}),
+
+	updateOnboardingProgress: protectedProcedure
+		.input(onboardingProgressPatchSchema)
+		.mutation(async ({ ctx, input }) => {
+			const user = await db.query.users.findFirst({
+				where: eq(users.id, ctx.session.user.id),
+				columns: {
+					onboardingProgress: true,
+				},
+			});
+			const next = mergeOnboardingStatus(user?.onboardingProgress, input);
+
+			await db
+				.update(users)
+				.set({ onboardingProgress: next })
+				.where(eq(users.id, ctx.session.user.id));
+
+			return next;
+		}),
+
+	completeActivation: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string().optional(),
+				workspaceId: z.string().optional(),
+				completionSource: z.string().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const completedAt = new Date();
+			const completedAtIso = completedAt.toISOString();
+			const user = await db.query.users.findFirst({
+				where: eq(users.id, ctx.session.user.id),
+				columns: {
+					onboardingProgress: true,
+				},
+			});
+			const next = mergeOnboardingStatus(user?.onboardingProgress, {
+				activation: {
+					completedAt: completedAtIso,
+					currentStep: "first_agent_action",
+					completedSteps: {
+						first_agent_action: completedAtIso,
+					},
+					projectId: input.projectId ?? null,
+					workspaceId: input.workspaceId ?? null,
+				},
+			});
+
+			const [updatedUser] = await db
+				.update(users)
+				.set({ onboardedAt: completedAt, onboardingProgress: next })
+				.where(eq(users.id, ctx.session.user.id))
+				.returning();
+
+			return updatedUser;
+		}),
+
 	completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+		const completedAt = new Date();
+		const completedAtIso = completedAt.toISOString();
+		const user = await db.query.users.findFirst({
+			where: eq(users.id, ctx.session.user.id),
+			columns: {
+				onboardingProgress: true,
+			},
+		});
+		const next = mergeOnboardingStatus(user?.onboardingProgress, {
+			activation: {
+				completedAt: completedAtIso,
+				currentStep: "first_agent_action",
+				completedSteps: {
+					first_agent_action: completedAtIso,
+				},
+			},
+		});
+
 		const [updatedUser] = await db
 			.update(users)
-			.set({ onboardedAt: new Date() })
+			.set({ onboardedAt: completedAt, onboardingProgress: next })
 			.where(eq(users.id, ctx.session.user.id))
 			.returning();
 		return updatedUser;
