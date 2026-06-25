@@ -1,19 +1,18 @@
 import { ExploringGroup } from "@rox/ui/ai-elements/exploring-group";
 import type { UIMessage } from "ai";
 import { getToolName, isToolUIPart } from "ai";
-import {
-	AlertCircleIcon,
-	FileIcon,
-	FileSearchIcon,
-	FolderTreeIcon,
-	SearchIcon,
-} from "lucide-react";
+import { AlertCircleIcon } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useTheme } from "renderer/stores";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { READ_ONLY_TOOLS } from "../../constants";
+import {
+	getToolIcon,
+	getToolTitle,
+	toActivityToolCall,
+} from "../../utils/activity-display";
 import {
 	getWorkspaceToolFilePath,
 	normalizeWorkspaceFilePath,
@@ -212,94 +211,22 @@ export function MessagePartsRenderer({
 						(p) => p.state !== "output-available" && p.state !== "output-error",
 					);
 					const exploringItems = groupParts.map((p) => {
+						// F39: verb label + icon + detail come from the SINGLE shared
+						// mapper (`@rox/chat/shared`) via the desktop activity adapter,
+						// replacing the old inline RU/EN switch.
 						const args = getArgs(p);
 						const name = normalizeToolName(getToolName(p));
 						const filePath = getWorkspaceToolFilePath({
 							toolName: name,
 							args,
 						});
-						let title = "Чтение";
-						let subtitle = "";
-						let icon = FileIcon;
-						switch (name) {
-							case "mastra_workspace_read_file":
-								title =
-									p.state !== "output-available" && p.state !== "output-error"
-										? "Reading"
-										: "Read";
-								subtitle = String(
-									args.path ??
-										args.filePath ??
-										args.file_path ??
-										args.file ??
-										"",
-								);
-								icon = FileIcon;
-								break;
-							case "mastra_workspace_list_files":
-								title =
-									p.state !== "output-available" && p.state !== "output-error"
-										? "Listing"
-										: "Listed";
-								subtitle = String(
-									args.path ??
-										args.directory ??
-										args.directoryPath ??
-										args.directory_path ??
-										args.root ??
-										args.cwd ??
-										"",
-								);
-								icon = FolderTreeIcon;
-								break;
-							case "mastra_workspace_file_stat":
-								title =
-									p.state !== "output-available" && p.state !== "output-error"
-										? "Checking"
-										: "Checked";
-								subtitle = String(
-									args.path ?? args.file_path ?? args.file ?? "",
-								);
-								icon = FileSearchIcon;
-								break;
-							case "mastra_workspace_search":
-								title =
-									p.state !== "output-available" && p.state !== "output-error"
-										? "Searching"
-										: "Searched";
-								subtitle = String(
-									args.query ??
-										args.pattern ??
-										args.regex ??
-										args.substring_pattern ??
-										args.text ??
-										"",
-								);
-								icon = SearchIcon;
-								break;
-							case "mastra_workspace_index":
-								title =
-									p.state !== "output-available" && p.state !== "output-error"
-										? "Indexing"
-										: "Indexed";
-								icon = SearchIcon;
-								break;
-							default:
-								title = name.replace("mastra_workspace_", "");
-								icon = FileIcon;
-								break;
-						}
-						// Show just filename for long paths
-						if (subtitle.includes("/")) {
-							subtitle = subtitle.split("/").pop() ?? subtitle;
-						}
+						const call = toActivityToolCall(p);
 						return {
-							icon,
-							title,
-							subtitle,
-							isPending:
-								p.state !== "output-available" && p.state !== "output-error",
-							isError: p.state === "output-error",
+							icon: getToolIcon(name),
+							title: getToolTitle(p),
+							subtitle: call.detail,
+							isPending: call.isPending,
+							isError: call.isError,
 							onClick: filePath ? () => openFileInPane(filePath) : undefined,
 						};
 					});
