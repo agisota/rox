@@ -18,6 +18,7 @@
 		"./wallpaper-layer": "./src/components/WallpaperLayer/index.ts",
 		"./presence-stack": "./src/components/PresenceStack/index.ts",
 		"./empty-state": "./src/components/EmptyState/index.ts",
+		"./shell-sidebar-region": "./src/components/ShellSidebarRegion/index.ts",
 		"./tag-filter-pill-bar": "./src/components/TagFilterPillBar/index.ts",
 		"./suggested-label-chips": "./src/components/SuggestedLabelChips/index.ts",
 		"./faceted-search-results": "./src/components/FacetedSearchResults/index.ts",

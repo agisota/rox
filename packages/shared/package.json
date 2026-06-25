@@ -335,6 +335,10 @@
 		"./right-panel-state": {
 			"types": "./src/right-panel-state.ts",
 			"default": "./src/right-panel-state.ts"
+		},
+		"./breakpoints": {
+			"types": "./src/breakpoints.ts",
+			"default": "./src/breakpoints.ts"
 		}
 	},
 	"scripts": {
