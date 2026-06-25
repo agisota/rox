@@ -1,22 +1,12 @@
 import { canInvite, type OrganizationRole } from "@rox/shared/auth";
-import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@rox/ui/dialog";
-import { Input } from "@rox/ui/input";
-import { Label } from "@rox/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@rox/ui/select";
+import { formatOrganizationRole, InviteForm } from "@rox/ui/org-management";
 import { toast } from "@rox/ui/sonner";
 import { useState } from "react";
 import { authClient } from "renderer/lib/auth-client";
@@ -30,16 +20,6 @@ interface InviteMemberDialogProps {
 	currentUserRole: OrganizationRole;
 }
 
-const ROLE_LABELS: Record<OrganizationRole, string> = {
-	owner: "Владелец",
-	admin: "Администратор",
-	member: "Участник",
-};
-
-function getRoleLabel(role: OrganizationRole): string {
-	return ROLE_LABELS[role];
-}
-
 export function InviteMemberDialog({
 	open,
 	onOpenChange,
@@ -48,14 +28,12 @@ export function InviteMemberDialog({
 	invitableRoles,
 	currentUserRole,
 }: InviteMemberDialogProps) {
-	const [email, setEmail] = useState("");
-	const [role, setRole] = useState<OrganizationRole>("member");
 	const [isInviting, setIsInviting] = useState(false);
 
-	const handleInvite = async () => {
+	const handleInvite = async (email: string, role: OrganizationRole) => {
 		if (!canInvite(currentUserRole, role)) {
 			toast.error(
-				`Нельзя приглашать пользователей с ролью «${getRoleLabel(role)}»`,
+				`Нельзя приглашать пользователей с ролью «${formatOrganizationRole(role)}»`,
 			);
 			return;
 		}
@@ -69,8 +47,6 @@ export function InviteMemberDialog({
 			});
 
 			toast.success(`Приглашение отправлено на ${email}`);
-			setEmail("");
-			setRole("member");
 			onOpenChange(false);
 		} catch (error) {
 			toast.error(
@@ -93,56 +69,12 @@ export function InviteMemberDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-4 py-4">
-					<div className="space-y-2">
-						<Label htmlFor="email">Эл. почта</Label>
-						<Input
-							id="email"
-							type="email"
-							placeholder="user@example.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && email && !isInviting) {
-									handleInvite();
-								}
-							}}
-							disabled={isInviting}
-						/>
-					</div>
-
-					<div className="space-y-2">
-						<Label htmlFor="role">Роль</Label>
-						<Select
-							value={role}
-							onValueChange={(val) => setRole(val as OrganizationRole)}
-						>
-							<SelectTrigger id="role" disabled={isInviting}>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{invitableRoles.map((r) => (
-									<SelectItem key={r} value={r}>
-										{getRoleLabel(r)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
-
-				<DialogFooter>
-					<Button
-						variant="outline"
-						onClick={() => onOpenChange(false)}
-						disabled={isInviting}
-					>
-						Отмена
-					</Button>
-					<Button onClick={handleInvite} disabled={isInviting || !email}>
-						{isInviting ? "Отправляем..." : "Отправить приглашение"}
-					</Button>
-				</DialogFooter>
+				<InviteForm
+					invitableRoles={invitableRoles}
+					isSubmitting={isInviting}
+					onSubmit={({ email, role }) => handleInvite(email, role)}
+					onCancel={() => onOpenChange(false)}
+				/>
 			</DialogContent>
 		</Dialog>
 	);

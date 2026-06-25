@@ -31,10 +31,17 @@ export const organizationMembersRouter = {
 			return db
 				.select({
 					id: users.id,
+					// Membership row id (distinct from the user id). Member-management
+					// UIs address better-auth's updateMemberRole/removeMember by this id
+					// (Hermes-borrow F27 web parity). Kept additive so existing MCP/CLI
+					// consumers are unaffected.
+					memberId: members.id,
+					userId: users.id,
 					name: users.name,
 					email: users.email,
 					image: users.image,
 					role: members.role,
+					createdAt: members.createdAt,
 				})
 				.from(members)
 				.innerJoin(users, eq(members.userId, users.id))

@@ -1,0 +1,1 @@
+export { TeamsSettings } from "./TeamsSettings";
