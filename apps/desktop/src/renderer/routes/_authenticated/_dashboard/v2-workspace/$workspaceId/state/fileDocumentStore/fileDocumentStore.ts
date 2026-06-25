@@ -1,6 +1,6 @@
 import type { workspaceTrpc } from "@rox/workspace-client";
 import type { FsWatchEvent } from "@rox/workspace-fs/client";
-import { isImageFile } from "shared/file-types";
+import { isBinaryReadableFile } from "shared/file-types";
 import type {
 	ConflictResolution,
 	ConflictState,
@@ -91,7 +91,7 @@ async function loadEntry(
 	options: { unlimited?: boolean } = {},
 ): Promise<void> {
 	const client = entry.trpcClient;
-	const readAsBinary = isImageFile(entry.absolutePath);
+	const readAsBinary = isBinaryReadableFile(entry.absolutePath);
 	const maxBytes = options.unlimited ? undefined : DEFAULT_MAX_BYTES;
 	try {
 		const result = await client.filesystem.readFile.query({
