@@ -495,6 +495,31 @@ export const chatSessionStatusValues = ["active", "archived"] as const;
 export const chatSessionStatusEnum = z.enum(chatSessionStatusValues);
 export type ChatSessionStatus = z.infer<typeof chatSessionStatusEnum>;
 
+// Mobile workspace surface cards (FN-016/FN-087) -----------------------------
+// Durable Claude session + terminal lifecycle, synced org-scoped so mobile/web/
+// desktop can render a live "is this running?" badge. Append-only string unions
+// backing Postgres pgEnums; map 1:1 onto `@rox/shared/workspace-status`
+// `SurfaceLifecycle`. Never reorder/remove existing members.
+export const durableSessionStatusValues = [
+	"starting",
+	"running",
+	"idle",
+	"ended",
+	"error",
+] as const;
+export const durableSessionStatusEnum = z.enum(durableSessionStatusValues);
+export type DurableSessionStatus = z.infer<typeof durableSessionStatusEnum>;
+
+export const terminalStatusValues = [
+	"starting",
+	"running",
+	"idle",
+	"ended",
+	"error",
+] as const;
+export const terminalStatusEnum = z.enum(terminalStatusValues);
+export type TerminalStatus = z.infer<typeof terminalStatusEnum>;
+
 // Journal & Memory (journal-memory epic) --------------------------------------
 // Per-user daily journal (AI-generated from chat sessions) + a curated memory
 // store. Append-only string unions backing Postgres pgEnums; never reorder/remove.

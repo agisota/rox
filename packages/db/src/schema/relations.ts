@@ -36,6 +36,7 @@ import {
 	automations,
 	chatSessions,
 	devicePresence,
+	durableSessions,
 	integrationConnections,
 	integrationInboundEvents,
 	projects,
@@ -44,6 +45,7 @@ import {
 	subscriptions,
 	taskStatuses,
 	tasks,
+	terminals,
 	usersSlackUsers,
 	v2Clients,
 	v2Hosts,
@@ -434,12 +436,47 @@ export const v2WorkspacesRelations = relations(
 			references: [users.id],
 		}),
 		chatSessions: many(chatSessions),
+		durableSessions: many(durableSessions),
+		terminals: many(terminals),
 		task: one(tasks, {
 			fields: [v2Workspaces.taskId],
 			references: [tasks.id],
 		}),
 	}),
 );
+
+export const durableSessionsRelations = relations(
+	durableSessions,
+	({ one }) => ({
+		organization: one(organizations, {
+			fields: [durableSessions.organizationId],
+			references: [organizations.id],
+		}),
+		workspace: one(v2Workspaces, {
+			fields: [durableSessions.workspaceId],
+			references: [v2Workspaces.id],
+		}),
+		host: one(v2Hosts, {
+			fields: [durableSessions.organizationId, durableSessions.hostId],
+			references: [v2Hosts.organizationId, v2Hosts.machineId],
+		}),
+	}),
+);
+
+export const terminalsRelations = relations(terminals, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [terminals.organizationId],
+		references: [organizations.id],
+	}),
+	workspace: one(v2Workspaces, {
+		fields: [terminals.workspaceId],
+		references: [v2Workspaces.id],
+	}),
+	host: one(v2Hosts, {
+		fields: [terminals.organizationId, terminals.hostId],
+		references: [v2Hosts.organizationId, v2Hosts.machineId],
+	}),
+}));
 
 export const secretsRelations = relations(secrets, ({ one }) => ({
 	organization: one(organizations, {

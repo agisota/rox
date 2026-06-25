@@ -7,6 +7,7 @@ import {
 	comments,
 	commentThreads,
 	devicePresence,
+	durableSessions,
 	githubPullRequests,
 	githubRepositories,
 	integrationConnections,
@@ -24,6 +25,7 @@ import {
 	tasks,
 	teamMembers,
 	teams,
+	terminals,
 	userAmbientSettings,
 	userPreferences,
 	v2Clients,
@@ -88,6 +90,12 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 	v2_clients: { orgColumn: v2Clients.organizationId },
 	v2_users_hosts: { orgColumn: v2UsersHosts.organizationId },
 	v2_workspaces: { orgColumn: v2Workspaces.organizationId },
+
+	// Mobile workspace surface cards (FN-016/FN-087): durable Claude sessions and
+	// terminals sync org-scoped (every org member sees the same workspace status),
+	// exactly like v2_workspaces.
+	durable_sessions: { orgColumn: durableSessions.organizationId },
+	terminals: { orgColumn: terminals.organizationId },
 	"auth.members": { orgColumn: members.organizationId },
 	"auth.invitations": { orgColumn: invitations.organizationId },
 	"auth.teams": { orgColumn: teams.organizationId },
