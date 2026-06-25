@@ -105,13 +105,13 @@
 }
 
 .rox-intro[data-intro-fallback="pending"] {
-	animation: rox-intro-fallback-exit 9.5s linear forwards;
+	animation: rox-intro-fallback-exit 8.5s linear forwards;
 }
 
 .rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
 	.rox-intro__slide--one {
 	opacity: 1;
-	animation: rox-intro-fallback-slide-one 9.5s linear forwards;
+	animation: rox-intro-fallback-slide-one 8.5s linear forwards;
 }
 
 @keyframes rox-intro-fallback-slide-one {
@@ -329,22 +329,32 @@
 	justify-content: flex-start;
 	min-height: 100svh;
 	overflow: hidden;
-	/* Multi-stop falloff (was a single 32%→transparent-62% jump) so the orange
-	 * glow ramps smoothly into the near-black surface — the extra stops + the
-	 * extended transparent point at 88% kill the hard banding ring. */
-	background:
-		radial-gradient(
-			140% 100% at 50% var(--rox-glow-y),
-			rgba(210, 86, 17, var(--rox-glow-a)),
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.72)) 12%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.5)) 24%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.32)) 36%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.18)) 48%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.09)) 62%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.03)) 78%,
-			transparent 100%
-		),
-		var(--rox-bg);
+	/* Stacking context so the blurred glow layer (::after, z-index -1) sits above
+	 * this solid surface but below the particle field + hero content. */
+	isolation: isolate;
+	background: var(--rox-bg);
+}
+
+/* Brand glow rendered as a heavily blurred layer instead of a raw CSS radial.
+ * A raw gradient on a near-black surface bands into visible contour lines on
+ * the sides; pushing it through filter: blur() resolves the 8-bit steps into a
+ * continuous ramp (no banding), and the over-wide footprint parks the ellipse's
+ * vertical side-contours off-screen. --rox-glow-a / --rox-glow-y still animate
+ * the breathing loop. */
+.rox-landing::after {
+	content: "";
+	position: absolute;
+	inset: -20% -25% 0;
+	z-index: -1;
+	pointer-events: none;
+	background: radial-gradient(
+		115% 85% at 50% var(--rox-glow-y),
+		rgba(210, 86, 17, var(--rox-glow-a)),
+		rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.45)) 34%,
+		rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.12)) 60%,
+		transparent 82%
+	);
+	filter: blur(64px);
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -381,8 +391,10 @@
 	inset: 0;
 	pointer-events: none;
 	background: radial-gradient(
-		120% 90% at 50% 40%,
-		transparent 32%,
+		135% 105% at 50% 40%,
+		transparent 30%,
+		rgba(10, 7, 5, 0.2) 52%,
+		rgba(10, 7, 5, 0.45) 74%,
 		rgba(10, 7, 5, 0.62) 100%
 	);
 }
