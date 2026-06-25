@@ -1,3 +1,4 @@
+import { permissionModeSchema } from "@rox/shared/chat-permission-mode";
 import { z } from "zod";
 import { protectedProcedure, router } from "../../index";
 
@@ -32,6 +33,10 @@ const messageMetadataSchema = z
 	.object({
 		model: z.string().optional(),
 		thinkingLevel: thinkingLevelSchema.optional(),
+		// The desktop-agent permission lever for this turn. Defaults to the safe
+		// `default` (every tool asks) on the client; absent means "leave runtime
+		// state untouched". The runtime maps it to the harness yolo/permissionRules.
+		permissionMode: permissionModeSchema.optional(),
 	})
 	.optional();
 

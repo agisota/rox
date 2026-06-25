@@ -15,11 +15,9 @@ import type { ChatStatus } from "ai";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatInputFooter } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter";
+import { usePermissionModePreference } from "renderer/components/Chat/ChatInterface/hooks/usePermissionModePreference";
 import { useSlashCommandExecutor } from "renderer/components/Chat/ChatInterface/hooks/useSlashCommandExecutor";
-import type {
-	ModelOption,
-	PermissionMode,
-} from "renderer/components/Chat/ChatInterface/types";
+import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import {
 	getDesktopChatModelOptions,
@@ -216,8 +214,12 @@ export function ChatPaneInterface({
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
 	);
-	const [permissionMode, setPermissionMode] =
-		useState<PermissionMode>("bypassPermissions");
+	// Persisted + shared with the v2 pane (one localStorage key). Defaults to the
+	// safe "default" (manual-confirm) instead of the previous in-memory
+	// "bypassPermissions" hardcode that reset every session — closing the
+	// desktop-agent security gap. The selected mode is threaded into each turn's
+	// metadata below so the runtime enforces it.
+	const [permissionMode, setPermissionMode] = usePermissionModePreference();
 	const [submitStatus, setSubmitStatus] = useState<ChatStatus | undefined>(
 		undefined,
 	);
@@ -597,6 +599,7 @@ export function ChatPaneInterface({
 					metadata: {
 						model: activeModel?.id,
 						thinkingLevel,
+						permissionMode,
 					},
 				};
 				immediateUserMessage =
@@ -678,6 +681,7 @@ export function ChatPaneInterface({
 			setRuntimeErrorMessage,
 			onUserMessageSubmitted,
 			thinkingLevel,
+			permissionMode,
 			clearDraftInStore,
 		],
 	);
@@ -734,6 +738,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: modelId,
 					thinkingLevel,
+					permissionMode,
 				},
 			};
 
@@ -808,6 +813,7 @@ export function ChatPaneInterface({
 		setRuntimeErrorMessage,
 		onUserMessageSubmitted,
 		thinkingLevel,
+		permissionMode,
 	]);
 
 	const handleStop = useCallback(
@@ -837,6 +843,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: activeModel?.id,
 					thinkingLevel,
+					permissionMode,
 				},
 			});
 			if (optimisticMessage) {
@@ -857,6 +864,7 @@ export function ChatPaneInterface({
 						metadata: {
 							model: activeModel?.id,
 							thinkingLevel,
+							permissionMode,
 						},
 					},
 				);
@@ -897,6 +905,7 @@ export function ChatPaneInterface({
 			sessionId,
 			setRuntimeErrorMessage,
 			thinkingLevel,
+			permissionMode,
 			clearDraftInStore,
 		],
 	);

@@ -68,6 +68,10 @@
 			"types": "./src/chat-models.ts",
 			"default": "./src/chat-models.ts"
 		},
+		"./chat-permission-mode": {
+			"types": "./src/chat-permission-mode.ts",
+			"default": "./src/chat-permission-mode.ts"
+		},
 		"./rox-ledger": {
 			"types": "./src/rox-ledger.ts",
 			"default": "./src/rox-ledger.ts"
