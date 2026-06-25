@@ -1,14 +1,19 @@
 import {
 	type AccumulatedContext,
+	ancestorsOf,
 	appendContextEntry,
 	createAccumulatedContext,
 	isSkillCallType,
 	loopBackEdgeKeys,
+	ReferenceResolutionError,
+	type ResolvableNode,
 	type ResolvedLoop,
+	type RoxBlockState,
 	type RoxEdge,
 	type RoxWorkflowState,
 	reachableFrom,
 	resolveLoops,
+	resolveRecordReferences,
 	skillSlugFromType,
 	stripLoopBackEdges,
 	validateGraph,
@@ -142,6 +147,20 @@ export class WorkflowExecutor {
 			incoming.set(edge.target, list);
 		}
 
+		// Cross-node references (#550): a node may reference any *reachable
+		// upstream* node's output via `{{<id|name>.path}}`. We scope that to the
+		// node's ancestors on the back-edge-stripped graph (a reference can only
+		// point backwards). Memoized so the reverse walk runs once per node.
+		const ancestorCache = new Map<string, Set<string>>();
+		const ancestorsFor = (blockId: string): Set<string> => {
+			let set = ancestorCache.get(blockId);
+			if (set == null) {
+				set = ancestorsOf(planState, blockId, () => true);
+				ancestorCache.set(blockId, set);
+			}
+			return set;
+		};
+
 		const active = new Map<string, boolean>();
 		const chosenHandle = new Map<string, string | undefined>();
 		const outputs = new Map<string, Record<string, unknown>>();
@@ -199,11 +218,68 @@ export class WorkflowExecutor {
 				blockId === seedNode &&
 				block.type !== "start" &&
 				liveEdges.length === 0;
-			const input =
+			const rawInput =
 				forceInput ??
 				(isNodeEntrySeed
 					? runInput
 					: mergeInputs(liveEdges.map((e) => outputs.get(e.source) ?? {})));
+
+			// Cross-node data passing (#550): expand `{{<id|name>.path}}` references
+			// in this node's input and config against the outputs of reachable
+			// upstream (ancestor) nodes that have already produced a value. An
+			// unresolved reference (unknown node / missing path) routes the node to
+			// `error` — never a silent `undefined`.
+			const resolvableNodes: ResolvableNode[] = [];
+			for (const ancestorId of ancestorsFor(blockId)) {
+				const out = outputs.get(ancestorId);
+				if (out == null) continue;
+				resolvableNodes.push({
+					id: ancestorId,
+					name: state.blocks[ancestorId]?.name,
+					output: out,
+				});
+			}
+			let input: Record<string, unknown>;
+			let resolvedSubBlocks = block.subBlocks;
+			if (resolvableNodes.length > 0) {
+				try {
+					input = resolveRecordReferences(rawInput, resolvableNodes);
+					if (block.subBlocks != null) {
+						resolvedSubBlocks = resolveRecordReferences(
+							block.subBlocks,
+							resolvableNodes,
+						);
+					}
+				} catch (err) {
+					if (err instanceof ReferenceResolutionError) {
+						const error = {
+							code: err.code,
+							message: err.message,
+							blockId,
+						};
+						chosenHandle.set(blockId, "error");
+						await record({
+							blockId,
+							blockType: block.type,
+							blockName: block.name,
+							status: "failed",
+							input: rawInput,
+							error,
+						});
+						return { status: "failed", steps, error };
+					}
+					throw err;
+				}
+			} else {
+				input = rawInput;
+			}
+			// A config-resolved view of the block: downstream branches read node
+			// config from `resolvedBlock.subBlocks` so `{{ref}}` placeholders in
+			// config fields are already expanded.
+			const resolvedBlock: RoxBlockState =
+				resolvedSubBlocks === block.subBlocks
+					? block
+					: { ...block, subBlocks: resolvedSubBlocks };
 
 			// Human approval: resolved decisions gate the branch; unresolved pause.
 			if (block.type === "human_approval") {
@@ -245,8 +321,8 @@ export class WorkflowExecutor {
 				// alongside the block name so the run-service can stamp it on the
 				// approval_requests row. Omitted when no message was configured.
 				const approvalMessage =
-					typeof block.subBlocks?.approvalMessage === "string"
-						? block.subBlocks.approvalMessage
+					typeof resolvedBlock.subBlocks?.approvalMessage === "string"
+						? resolvedBlock.subBlocks.approvalMessage
 						: undefined;
 				return withContext({
 					status: "waiting_approval",
@@ -286,7 +362,9 @@ export class WorkflowExecutor {
 				}
 				const result = await options.resolveSkillCall(slug, input);
 				if (result.error) {
-					const errorMode = String(block.subBlocks?.errorMode ?? "fail_parent");
+					const errorMode = String(
+						resolvedBlock.subBlocks?.errorMode ?? "fail_parent",
+					);
 					await record({
 						blockId,
 						blockType: block.type,
@@ -337,7 +415,7 @@ export class WorkflowExecutor {
 				// The NodeInspector + templates persist the bound role under
 				// `roleSlug`; older fixtures/seeds used `roleSkillSlug`. Read the
 				// editor key first, then fall back so legacy graphs still resolve.
-				const sub = block.subBlocks;
+				const sub = resolvedBlock.subBlocks;
 				const req: AgentRunRequest = {
 					blockId,
 					roleSkillSlug: String(sub?.roleSlug ?? sub?.roleSkillSlug ?? ""),
@@ -362,7 +440,9 @@ export class WorkflowExecutor {
 				};
 				const res = await options.resolveAgentRun(req);
 				if (res.error) {
-					const errorMode = String(block.subBlocks?.errorMode ?? "fail_parent");
+					const errorMode = String(
+						resolvedBlock.subBlocks?.errorMode ?? "fail_parent",
+					);
 					await record({
 						blockId,
 						blockType: block.type,
@@ -419,7 +499,7 @@ export class WorkflowExecutor {
 				handlers[block.type] ?? ((ctx) => ({ output: ctx.input }));
 			const handlerCtx: BlockHandlerContext = {
 				blockId,
-				block,
+				block: resolvedBlock,
 				input,
 				runInput,
 				resolveSecret,

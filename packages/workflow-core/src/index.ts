@@ -22,6 +22,7 @@ export * from "./circuit";
 export * from "./context/accumulatedContext";
 export * from "./errors";
 export * from "./evals";
+export * from "./expr";
 export * from "./graph";
 export * from "./policies";
 export * from "./prompt";

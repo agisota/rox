@@ -1,3 +1,4 @@
+export * from "./ancestors";
 export * from "./detectCycles";
 export * from "./loopWalk";
 export * from "./reachability";
