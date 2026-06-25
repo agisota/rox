@@ -7,6 +7,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useHotkey } from "renderer/hotkeys";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import {
 	tasksSearchFromFilters,
@@ -20,6 +21,7 @@ import {
 import { LinearCTA } from "./components/LinearCTA";
 import { PullRequestsContent } from "./components/PullRequestsContent";
 import { TableContent } from "./components/TableContent";
+import { TasksCommandPalette } from "./components/TasksCommandPalette";
 import { type TabValue, TasksTopBar } from "./components/TasksTopBar";
 import type { TaskWithStatus } from "./hooks/useTasksData";
 
@@ -219,6 +221,14 @@ export function TasksView({
 		});
 	};
 
+	const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+	useHotkey("OPEN_TASKS_PALETTE", () => setIsPaletteOpen((prev) => !prev), {
+		preventDefault: true,
+	});
+
+	const selectedCount =
+		typeTab === "issues" ? selectedIssues.length : selectedTasks.length;
+
 	const showTasks = typeTab === "tasks";
 	const showPRs = typeTab === "prs";
 	const showIssues = typeTab === "issues";
@@ -290,6 +300,18 @@ export function TasksView({
 					/>
 				)}
 			</div>
+
+			<TasksCommandPalette
+				open={isPaletteOpen}
+				onOpenChange={setIsPaletteOpen}
+				typeTab={typeTab}
+				viewMode={viewMode}
+				projectFilter={projectFilter}
+				selectedCount={selectedCount}
+				onTypeTabChange={handleTypeTabChange}
+				onViewModeChange={setViewMode}
+				onProjectFilterChange={handleProjectFilterChange}
+			/>
 		</div>
 	);
 }

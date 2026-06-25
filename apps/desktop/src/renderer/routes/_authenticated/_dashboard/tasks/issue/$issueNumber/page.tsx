@@ -16,6 +16,7 @@ import {
 	useNewWorkspaceDraftStore,
 } from "renderer/stores/new-workspace-draft";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
+import { TargetTaskLinks } from "../../components/shared/CrossLinkChips";
 import {
 	classifyGithubError,
 	GithubErrorCard,
@@ -181,6 +182,16 @@ function IssueDetailPage() {
 								<span>автор: {data.author}</span>
 							</>
 						)}
+					</div>
+
+					<div className="mb-6">
+						<TargetTaskLinks
+							projectId={projectId}
+							kind="issue"
+							targetNumber={data.number}
+							targetTitle={data.title}
+							targetUrl={data.url}
+						/>
 					</div>
 
 					{data.body.trim() ? (

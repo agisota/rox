@@ -148,9 +148,11 @@ export function PullRequestsContent({
 						hasNextPage={hasNextPage}
 						isFetchingNextPage={isFetchingNextPage}
 						onReachEnd={fetchNextPage}
+						onActivate={(pr) => handleOpenPreview(pr.prNumber)}
 						renderRow={(pr) => (
 							<PrRow
 								pr={pr}
+								projectId={projectFilter}
 								onOpen={handleOpenPreview}
 								onOpenUrl={handleOpenUrl}
 								onAddToWorkspace={handleAddToWorkspace}

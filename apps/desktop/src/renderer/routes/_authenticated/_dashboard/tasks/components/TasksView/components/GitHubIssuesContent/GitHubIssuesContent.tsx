@@ -200,9 +200,11 @@ export function GitHubIssuesContent({
 						hasNextPage={hasNextPage}
 						isFetchingNextPage={isFetchingNextPage}
 						onReachEnd={fetchNextPage}
+						onActivate={(issue) => handleOpenPreview(issue.issueNumber)}
 						renderRow={(issue) => (
 							<IssueRow
 								issue={issue}
+								projectId={projectFilter}
 								selected={selectedIssues.has(issue.issueNumber)}
 								onToggleSelect={toggleIssueSelection}
 								onOpen={handleOpenPreview}
