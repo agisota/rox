@@ -75,3 +75,23 @@ export const NAV_THEME: Record<"light" | "dark", Theme> = {
 		},
 	},
 };
+
+/**
+ * Native status-bar icon contrast derived from the active theme (Hermes-borrow
+ * F09).
+ *
+ * The mobile equivalent of the web `<meta name="theme-color">` / desktop glass
+ * accent: the OS status bar should track the *same* resolved theme. Under Expo
+ * SDK 56 the status bar is edge-to-edge (transparent strip; the screen's own
+ * theme-driven background shows through), so only the icon `style` is set here —
+ * `light` icons over the dark surface, `dark` over a light one. Derived (not
+ * hardcoded at the call site) so a future light theme / workspace accent flips
+ * the contrast in lock-step by selecting the matching scheme.
+ */
+export const STATUS_BAR_THEME: Record<
+	"light" | "dark",
+	{ style: "light" | "dark" }
+> = {
+	light: { style: "dark" },
+	dark: { style: "light" },
+};

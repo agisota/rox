@@ -9,6 +9,11 @@ export { QUOTES } from "./quotes";
 export type { Identifiable } from "./select";
 export { pickNext, pickNextIndex } from "./select";
 export {
+	CHROME_COLOR_VAR_PRIORITY,
+	type ChromeColorVar,
+	resolveChromeColor,
+} from "./theme-color";
+export {
 	type AppearanceSettings,
 	clampWindowOpacity,
 	DEFAULT_APPEARANCE_SETTINGS,
