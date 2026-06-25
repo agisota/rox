@@ -2,7 +2,7 @@
   "name": "@rox/desktop",
   "productName": "Rox",
   "description": "The last developer tool you'll ever need",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "main": "./dist/main/index.js",
   "resources": "src/resources",
   "repository": {
