@@ -1,4 +1,5 @@
 import type {
+	FileTreeDropResult,
 	FileTreeRenameEvent,
 	FileTreeRowDecoration,
 	FileTreeRowDecorationContext,
@@ -153,6 +154,7 @@ export function FilesTab({
 	const handlersRef = useRef({
 		onSelect(_path: string) {},
 		onRename(_event: FileTreeRenameEvent) {},
+		onDropComplete(_event: FileTreeDropResult) {},
 		renderRowDecoration(
 			_ctx: FileTreeRowDecorationContext,
 		): FileTreeRowDecoration | null {
@@ -167,6 +169,15 @@ export function FilesTab({
 		renaming: {
 			onRename: (event) => handlersRef.current.onRename(event),
 			onError: (message) => toast.error(message),
+		},
+		// Intra-tree drag-move (F34). Pierre owns the drag visuals + optimistic
+		// reparent; we persist the filesystem move in onDropComplete (and revert
+		// the row there on failure). External OS-file drags are handled separately
+		// by useFilesTabDrop on the wrapper — those carry "Files" and never start a
+		// Pierre row drag, so the two paths don't collide.
+		dragAndDrop: {
+			onDropComplete: (event) => handlersRef.current.onDropComplete(event),
+			onDropError: (message) => toast.error(message),
 		},
 		gitStatus: initialGitStatusEntriesRef.current,
 		icons: { set: "complete", colored: true },
@@ -237,17 +248,23 @@ export function FilesTab({
 		enabled: blameEnabled,
 		onBlameLoaded: repaintTree,
 	});
-	const { reveal, startCreating, handleRename, handleDelete, collapseAll } =
-		useFilesTabActions({
-			model,
-			bridge,
-			rootPath,
-			workspaceId,
-			selectedFilePath,
-			onSelectFile,
-			shouldAnimate,
-			onRevealed: setFlashRect,
-		});
+	const {
+		reveal,
+		startCreating,
+		handleRename,
+		handleDropComplete,
+		handleDelete,
+		collapseAll,
+	} = useFilesTabActions({
+		model,
+		bridge,
+		rootPath,
+		workspaceId,
+		selectedFilePath,
+		onSelectFile,
+		shouldAnimate,
+		onRevealed: setFlashRect,
+	});
 	const drop = useFilesTabDrop({ model, bridge, rootPath, workspaceId });
 
 	// Push live git status updates into Pierre.
@@ -279,6 +296,8 @@ export function FilesTab({
 	// Wire the ref-based handlers so Pierre's stable callbacks always reach
 	// the latest closures. Updated on every render — no diffing needed.
 	handlersRef.current.onRename = (event) => void handleRename(event);
+	handlersRef.current.onDropComplete = (event) =>
+		void handleDropComplete(event);
 	handlersRef.current.onSelect = (treePath) => {
 		const abs = toAbs(rootPath, treePath);
 		// Skip the reveal-induced echo. The reveal flow programmatically
