@@ -8,6 +8,11 @@ import {
 	USER_GIT_ENV_SIMPLE_GIT_OPTIONS,
 } from "@rox/shared/simple-git-options";
 import simpleGit, { type SimpleGit } from "simple-git";
+import {
+	execGitWithShellPath,
+	resetGitBinaryResolutionCache,
+	resolveGitBinary,
+} from "./git-client";
 
 function makeBlockedGitEnv(workRoot: string): Record<string, string> {
 	const globalConfig = join(workRoot, "global.gitconfig");
@@ -91,4 +96,35 @@ describe("simple-git user env options", () => {
 		const status = await git.raw(["status", "--short"]);
 		expect(status).toBe("");
 	});
+});
+
+describe("git binary resolution (Ф2 #507)", () => {
+	beforeEach(() => {
+		resetGitBinaryResolutionCache();
+	});
+
+	afterEach(() => {
+		resetGitBinaryResolutionCache();
+	});
+
+	test("resolves to the system git when git is on PATH", async () => {
+		// The test runner always has git on PATH (it shells out to it above), so
+		// the resolver must prefer system git — not the bundled fallback.
+		const resolution = await resolveGitBinary();
+		expect(resolution.source).toBe("system");
+		expect(resolution.binary).toBe("git");
+		// Longer timeout: the first resolution derives the login-shell PATH, which
+		// can take several seconds on a cold shell (heavy login profiles).
+	}, 30000);
+
+	test("caches the resolution across calls", async () => {
+		const first = await resolveGitBinary();
+		const second = await resolveGitBinary();
+		expect(second).toBe(first);
+	}, 30000);
+
+	test("the resolved binary runs git --version end to end", async () => {
+		const { stdout } = await execGitWithShellPath(["--version"]);
+		expect(stdout).toContain("git version");
+	}, 30000);
 });
