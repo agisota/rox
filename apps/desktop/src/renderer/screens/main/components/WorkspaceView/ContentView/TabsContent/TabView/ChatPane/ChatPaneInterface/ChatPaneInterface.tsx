@@ -1,5 +1,9 @@
 import { chatRuntimeServiceTrpc, chatServiceTrpc } from "@rox/chat/client";
 import {
+	extractTextsFromParts,
+	selectContextUsage,
+} from "@rox/shared/context-usage";
+import {
 	PromptInputAttachment,
 	type PromptInputMessage,
 	PromptInputProvider,
@@ -204,6 +208,8 @@ export function ChatPaneInterface({
 	onStartFreshSession,
 	onConsumeLaunchConfig,
 	onUserMessageSubmitted,
+	recents,
+	onSelectRecent,
 }: ChatPaneInterfaceProps) {
 	const { models: catalogModels, defaultModel } = useAvailableModels();
 	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
@@ -586,6 +592,20 @@ export function ChatPaneInterface({
 			isAwaitingAssistant,
 		});
 	}, [isAwaitingAssistant, messages, pendingUserTurn]);
+
+	// F42: live context-usage ring. Token counts are estimated from the displayed
+	// conversation text via the shared cross-platform selector so desktop, web,
+	// and mobile all compute identically; the window comes from the active model.
+	const contextUsage = useMemo(
+		() =>
+			selectContextUsage(
+				visibleMessages.flatMap((message) =>
+					extractTextsFromParts(message.content),
+				),
+				activeModel?.id,
+			),
+		[visibleMessages, activeModel?.id],
+	);
 
 	useEffect(() => {
 		if (isRunning) {
@@ -1108,6 +1128,8 @@ export function ChatPaneInterface({
 					onRestartUserMessage={handleResendUserMessage}
 					pendingQuestion={pendingQuestion}
 					answeredQuestionId={answeredQuestionId}
+					recents={recents}
+					onSelectRecent={onSelectRecent}
 				/>
 				<McpControls mcpUi={mcpUi} />
 				<ChatUploadFooter
@@ -1127,6 +1149,8 @@ export function ChatPaneInterface({
 					thinkingLevel={thinkingLevel}
 					setThinkingLevel={setThinkingLevel}
 					slashCommands={slashCommands}
+					usedTokens={contextUsage.usedTokens}
+					maxTokens={contextUsage.maxTokens}
 					sessionId={sessionId}
 					onError={setRuntimeErrorMessage}
 					onSend={handleSend}

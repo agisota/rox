@@ -1,7 +1,6 @@
 import {
 	Conversation,
 	ConversationContent,
-	ConversationEmptyState,
 	ConversationLoadingState,
 	ConversationScrollButton,
 	useConversationContext,
@@ -9,12 +8,12 @@ import {
 import { MessageRow } from "@rox/ui/motion";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef } from "react";
-import { HiMiniChatBubbleLeftRight } from "react-icons/hi2";
 import type {
 	ChatMessage,
 	ChatMessageListProps,
 } from "./ChatMessageList.types";
 import { AssistantMessage } from "./components/AssistantMessage";
+import { ChatEmptyState } from "./components/ChatEmptyState";
 import { ChatSearch } from "./components/ChatSearch";
 import { InterruptedFooter } from "./components/InterruptedFooter";
 import { MessageScrollbackRail } from "./components/MessageScrollbackRail";
@@ -103,6 +102,8 @@ export function ChatMessageList({
 	onCancelEditUserMessage,
 	onSubmitEditedUserMessage,
 	onRestartUserMessage,
+	recents,
+	onSelectRecent,
 }: ChatMessageListProps) {
 	const messageListRef = useRef<HTMLDivElement>(null);
 	const chatSearch = useChatMessageSearch({
@@ -209,11 +210,7 @@ export function ChatMessageList({
 					{shouldShowConversationLoading ? (
 						<ConversationLoadingState />
 					) : shouldShowEmptyState ? (
-						<ConversationEmptyState
-							title="Начните разговор"
-							description="Задайте любой вопрос, чтобы начать"
-							icon={<HiMiniChatBubbleLeftRight className="size-8" />}
-						/>
+						<ChatEmptyState />
 					) : (
 						<AnimatePresence initial={false}>
 							{renderedMessages.map((message, messageIndex) => {
@@ -334,7 +331,11 @@ export function ChatMessageList({
 				onFindPrevious={chatSearch.findPrevious}
 				onClose={chatSearch.closeSearch}
 			/>
-			<MessageScrollbackRail messages={renderedMessages} />
+			<MessageScrollbackRail
+				messages={renderedMessages}
+				recents={recents}
+				onSelectRecent={onSelectRecent}
+			/>
 			<ConversationScrollButton />
 			<ScrollAnchor
 				questionId={pendingQuestion?.questionId}

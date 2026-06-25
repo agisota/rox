@@ -1,34 +1,21 @@
-import type { CommandProvider } from "./types";
+import { createCommandRegistry } from "@rox/shared/command-palette";
+import type { CommandContext, CommandProvider } from "./types";
 
-const providers = new Map<string, CommandProvider>();
-const listeners = new Set<() => void>();
-let snapshot: CommandProvider[] = [];
-
-function rebuildSnapshot(): void {
-	snapshot = Array.from(providers.values());
-}
-
-function notify(): void {
-	rebuildSnapshot();
-	for (const listener of listeners) listener();
-}
+/**
+ * Desktop preserves its historical global-singleton registry by instantiating
+ * the shared (F44) registry once at module scope. The provider/snapshot/notify
+ * semantics now live in `@rox/shared/command-palette`.
+ */
+const registry = createCommandRegistry<CommandContext>();
 
 export function registerProvider(provider: CommandProvider): () => void {
-	providers.set(provider.id, provider);
-	notify();
-	return () => {
-		providers.delete(provider.id);
-		notify();
-	};
+	return registry.registerProvider(provider);
 }
 
 export function getProviders(): CommandProvider[] {
-	return snapshot;
+	return registry.getProviders() as CommandProvider[];
 }
 
 export function subscribeToProviders(listener: () => void): () => void {
-	listeners.add(listener);
-	return () => {
-		listeners.delete(listener);
-	};
+	return registry.subscribe(listener);
 }

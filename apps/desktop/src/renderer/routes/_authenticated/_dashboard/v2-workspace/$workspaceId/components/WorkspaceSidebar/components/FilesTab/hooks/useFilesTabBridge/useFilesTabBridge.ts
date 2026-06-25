@@ -6,6 +6,7 @@ import { useWorkspaceEvent } from "renderer/hooks/host-service/useWorkspaceEvent
 import { logger } from "renderer/lib/logger";
 import {
 	asDirectoryHandle,
+	parentRel,
 	stripTrailingSlash,
 	toAbs,
 	toRel,
@@ -15,6 +16,18 @@ interface UseFilesTabBridgeOptions {
 	model: FileTree;
 	workspaceId: string;
 	rootPath: string;
+	/**
+	 * Read the persisted expanded-directory set (relative paths, no trailing
+	 * slash; "" excluded) at the moment of root-load. Called once per
+	 * workspace/root change to drive depth-1 prefetch + re-expansion (F32).
+	 */
+	getPersistedExpandedDirs?: () => string[];
+	/**
+	 * Persist a directory's expansion transition (F32). Fired when a known dir
+	 * flips expanded ↔ collapsed in Pierre, including programmatic re-expansion
+	 * during root-load restore and `collapseAll`.
+	 */
+	onExpandedChange?: (relDir: string, expanded: boolean) => void;
 }
 
 export interface FilesTabBridge {
@@ -72,9 +85,24 @@ export function useFilesTabBridge({
 	model,
 	workspaceId,
 	rootPath,
+	getPersistedExpandedDirs,
+	onExpandedChange,
 }: UseFilesTabBridgeOptions): FilesTabBridge {
 	const utils = workspaceTrpc.useUtils();
 	const [isRefreshing, setIsRefreshing] = useState(false);
+
+	// Route the persistence callbacks through refs so the model.subscribe /
+	// root-load effects keep stable identities (and don't re-subscribe) while
+	// always reaching the latest closures — same ref pattern FilesTab uses for
+	// Pierre's handlers.
+	const getPersistedExpandedDirsRef = useRef(getPersistedExpandedDirs);
+	getPersistedExpandedDirsRef.current = getPersistedExpandedDirs;
+	const onExpandedChangeRef = useRef(onExpandedChange);
+	onExpandedChangeRef.current = onExpandedChange;
+
+	// Last-known expansion state per directory, so the subscribe loop can detect
+	// expand↔collapse transitions and persist only the edges (not every notify).
+	const expansionStateRef = useRef(new Map<string, boolean>());
 
 	// Sets/Maps are mutated in place (clear() on reset, never reassigned) so
 	// consumers can read `bridge.knownPaths` once and trust the reference
@@ -182,6 +210,47 @@ export function useFilesTabBridge({
 		}
 	}, [model, rootPath, workspaceId, utils.filesystem.listDirectory]);
 
+	// Restore the persisted expanded-directory set (F32): fetch root, then for
+	// every persisted dir, fetch its parent (so the row exists), expand it, and
+	// fetch its own children. Ancestors are restored before descendants (sorted
+	// by depth) so each expand target is already present. Parallelized within a
+	// depth tier; tiers run in order. Aborts if the workspace switched mid-flight.
+	const restoreExpandedDirs = useCallback(async (): Promise<void> => {
+		const persisted = getPersistedExpandedDirsRef.current?.();
+		if (!persisted || persisted.length === 0) return;
+		const startVersion = versionRef.current;
+
+		// Group by depth so a parent dir is always restored before its children.
+		const byDepth = new Map<number, string[]>();
+		for (const dir of persisted) {
+			if (!dir) continue;
+			const depth = dir.split("/").length;
+			const tier = byDepth.get(depth);
+			if (tier) tier.push(dir);
+			else byDepth.set(depth, [dir]);
+		}
+		const depths = Array.from(byDepth.keys()).sort((a, b) => a - b);
+
+		for (const depth of depths) {
+			if (versionRef.current !== startVersion) return;
+			await Promise.all(
+				(byDepth.get(depth) ?? []).map(async (dir) => {
+					// Parent must be loaded so this dir's row exists in Pierre.
+					await fetchDir(parentRel(dir));
+					if (versionRef.current !== startVersion) return;
+					const dirKey = `${dir}/`;
+					if (!knownPathsRef.current.has(dirKey)) return; // gone on disk
+					const handle = asDirectoryHandle(model.getItem(dirKey));
+					if (handle && !handle.isExpanded()) handle.expand();
+					// Seed expansion bookkeeping so the subscribe loop doesn't
+					// re-persist this as a fresh expand edge.
+					expansionStateRef.current.set(dir, true);
+					await fetchDir(dir);
+				}),
+			);
+		}
+	}, [model, fetchDir]);
+
 	// Reset + initial load on workspace switch. Bumping versionRef invalidates
 	// any in-flight fetches from the previous workspace.
 	useEffect(() => {
@@ -191,9 +260,10 @@ export function useFilesTabBridge({
 		loadedDirsRef.current.clear();
 		inflightDirsRef.current.clear();
 		pendingCreatesRef.current.clear();
+		expansionStateRef.current.clear();
 		model.resetPaths([]);
-		void fetchDir("");
-	}, [model, rootPath, workspaceId, fetchDir]);
+		void fetchDir("").then(() => restoreExpandedDirs());
+	}, [model, rootPath, workspaceId, fetchDir, restoreExpandedDirs]);
 
 	// On every model change, scan known directories and lazy-load any newly
 	// expanded ones. Pierre doesn't surface an explicit "expand" event, so we
@@ -203,10 +273,25 @@ export function useFilesTabBridge({
 			for (const path of knownPathsRef.current) {
 				if (!path.endsWith("/")) continue;
 				const dirRel = stripTrailingSlash(path);
-				if (loadedDirsRef.current.has(dirRel)) continue;
 				const handle = asDirectoryHandle(model.getItem(path));
-				if (handle?.isExpanded()) {
+				const expanded = handle?.isExpanded() ?? false;
+
+				// Lazy-load children of any directory that became expanded but
+				// isn't loaded yet.
+				if (expanded && !loadedDirsRef.current.has(dirRel)) {
 					void fetchDir(dirRel);
+				}
+
+				// Persist expand↔collapse edges (F32). Only fire on a real
+				// transition so a stable expanded subtree doesn't re-write the
+				// store on every notify. Skip root ("") — it's implicitly open.
+				if (!dirRel) continue;
+				const prev = expansionStateRef.current.get(dirRel);
+				if (prev !== expanded) {
+					expansionStateRef.current.set(dirRel, expanded);
+					if (prev !== undefined || expanded) {
+						onExpandedChangeRef.current?.(dirRel, expanded);
+					}
 				}
 			}
 		});

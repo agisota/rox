@@ -1,35 +1,15 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { canInvite, type OrganizationRole } from "@rox/shared/auth";
-import { Button } from "@rox/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@rox/ui/dialog";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@rox/ui/form";
-import { Input } from "@rox/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@rox/ui/select";
+import { formatOrganizationRole, InviteForm } from "@rox/ui/org-management";
 import { toast } from "@rox/ui/sonner";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { authClient } from "renderer/lib/auth-client";
-import { z } from "zod";
 
 interface InviteMemberDialogProps {
 	open: boolean;
@@ -40,29 +20,6 @@ interface InviteMemberDialogProps {
 	currentUserRole: OrganizationRole;
 }
 
-const ROLE_LABELS: Record<OrganizationRole, string> = {
-	owner: "Владелец",
-	admin: "Администратор",
-	member: "Участник",
-};
-
-function getRoleLabel(role: OrganizationRole): string {
-	return ROLE_LABELS[role];
-}
-
-const ORGANIZATION_ROLES = ["owner", "admin", "member"] as const;
-
-const inviteMemberFormSchema = z.object({
-	email: z
-		.string()
-		.trim()
-		.min(1, "Укажите эл. почту.")
-		.email("Введите корректный адрес эл. почты."),
-	role: z.enum(ORGANIZATION_ROLES),
-});
-
-type InviteMemberFormValues = z.infer<typeof inviteMemberFormSchema>;
-
 export function InviteMemberDialog({
 	open,
 	onOpenChange,
@@ -71,41 +28,25 @@ export function InviteMemberDialog({
 	invitableRoles,
 	currentUserRole,
 }: InviteMemberDialogProps) {
-	const form = useForm<InviteMemberFormValues>({
-		resolver: zodResolver(inviteMemberFormSchema),
-		defaultValues: {
-			email: "",
-			role: "member",
-		},
-	});
+	const [isInviting, setIsInviting] = useState(false);
 
-	// Reset to a clean state whenever the dialog re-opens.
-	useEffect(() => {
-		if (open) {
-			form.reset({ email: "", role: "member" });
-		}
-	}, [open, form]);
-
-	const isInviting = form.formState.isSubmitting;
-
-	const handleInvite = async (values: InviteMemberFormValues) => {
-		if (!canInvite(currentUserRole, values.role)) {
-			form.setError("role", {
-				type: "manual",
-				message: `Нельзя приглашать пользователей с ролью «${getRoleLabel(values.role)}»`,
-			});
+	const handleInvite = async (email: string, role: OrganizationRole) => {
+		if (!canInvite(currentUserRole, role)) {
+			toast.error(
+				`Нельзя приглашать пользователей с ролью «${formatOrganizationRole(role)}»`,
+			);
 			return;
 		}
 
+		setIsInviting(true);
 		try {
 			await authClient.organization.inviteMember({
 				organizationId,
-				email: values.email,
-				role: values.role,
+				email,
+				role,
 			});
 
-			toast.success(`Приглашение отправлено на ${values.email}`);
-			form.reset({ email: "", role: "member" });
+			toast.success(`Приглашение отправлено на ${email}`);
 			onOpenChange(false);
 		} catch (error) {
 			toast.error(
@@ -113,6 +54,8 @@ export function InviteMemberDialog({
 					? error.message
 					: "Не удалось отправить приглашение",
 			);
+		} finally {
+			setIsInviting(false);
 		}
 	};
 
@@ -126,74 +69,12 @@ export function InviteMemberDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<Form {...form}>
-					<form
-						className="space-y-4 py-4"
-						onSubmit={form.handleSubmit(handleInvite)}
-					>
-						<FormField
-							control={form.control}
-							name="email"
-							render={({ field }) => (
-								<FormItem className="space-y-2">
-									<FormLabel>Эл. почта</FormLabel>
-									<FormControl>
-										<Input
-											{...field}
-											type="email"
-											placeholder="user@example.com"
-											disabled={isInviting}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<FormField
-							control={form.control}
-							name="role"
-							render={({ field }) => (
-								<FormItem className="space-y-2">
-									<FormLabel>Роль</FormLabel>
-									<Select
-										value={field.value}
-										onValueChange={field.onChange}
-										disabled={isInviting}
-									>
-										<FormControl>
-											<SelectTrigger>
-												<SelectValue />
-											</SelectTrigger>
-										</FormControl>
-										<SelectContent>
-											{invitableRoles.map((r) => (
-												<SelectItem key={r} value={r}>
-													{getRoleLabel(r)}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => onOpenChange(false)}
-								disabled={isInviting}
-							>
-								Отмена
-							</Button>
-							<Button type="submit" disabled={isInviting}>
-								{isInviting ? "Отправляем..." : "Отправить приглашение"}
-							</Button>
-						</DialogFooter>
-					</form>
-				</Form>
+				<InviteForm
+					invitableRoles={invitableRoles}
+					isSubmitting={isInviting}
+					onSubmit={({ email, role }) => handleInvite(email, role)}
+					onCancel={() => onOpenChange(false)}
+				/>
 			</DialogContent>
 		</Dialog>
 	);

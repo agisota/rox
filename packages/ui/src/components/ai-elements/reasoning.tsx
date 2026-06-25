@@ -12,6 +12,7 @@ import {
 	CollapsibleTrigger,
 } from "../ui/collapsible";
 import { ShimmerLabel } from "./shimmer-label";
+import { useToolGroupItem } from "./tool-group";
 
 type ReasoningContextValue = {
 	isStreaming: boolean;
@@ -52,10 +53,23 @@ export const Reasoning = memo(
 		children,
 		...props
 	}: ReasoningProps) => {
+		// When the caller doesn't control `open`, follow the surrounding ToolGroup
+		// so expand-all / collapse-all drives this card. Standalone (no group) the
+		// hook is plain local state and behaves exactly as before. The group's
+		// open value feeds the controllable `prop`, and its setter is chained into
+		// `onChange` so the streaming auto-open/close keeps reporting to the group.
+		const groupItem = useToolGroupItem({ defaultOpen });
+		const isCallerControlled = open !== undefined;
+		const handleControlledChange = (next: boolean) => {
+			if (!isCallerControlled) {
+				groupItem.onOpenChange(next);
+			}
+			onOpenChange?.(next);
+		};
 		const [isOpen, setIsOpen] = useControllableState({
-			prop: open,
+			prop: isCallerControlled ? open : groupItem.open,
 			defaultProp: defaultOpen,
-			onChange: onOpenChange,
+			onChange: handleControlledChange,
 		});
 		const [duration, setDuration] = useControllableState({
 			prop: durationProp,

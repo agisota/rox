@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
+	getCsvDelimiter,
 	getImageExtensionFromMimeType,
 	getImageMimeType,
+	hasRenderedPreview,
+	isBinaryReadableFile,
+	isCsvFile,
+	isHtmlFile,
+	isPdfFile,
 	parseBase64DataUrl,
 } from "./file-types";
 
@@ -38,5 +44,36 @@ describe("file-types", () => {
 		expect(() => parseBase64DataUrl("not-a-data-url")).toThrow(
 			"Invalid data URL format",
 		);
+	});
+
+	test("detects pdf / csv / html by extension (case-insensitive)", () => {
+		expect(isPdfFile("doc.PDF")).toBe(true);
+		expect(isPdfFile("doc.txt")).toBe(false);
+		expect(isCsvFile("data.csv")).toBe(true);
+		expect(isCsvFile("data.tsv")).toBe(true);
+		expect(isCsvFile("data.json")).toBe(false);
+		expect(isHtmlFile("page.html")).toBe(true);
+		expect(isHtmlFile("page.htm")).toBe(true);
+		expect(isHtmlFile("page.css")).toBe(false);
+	});
+
+	test("picks the right csv delimiter", () => {
+		expect(getCsvDelimiter("data.csv")).toBe(",");
+		expect(getCsvDelimiter("data.tsv")).toBe("\t");
+	});
+
+	test("flags only images and pdfs as binary-readable", () => {
+		expect(isBinaryReadableFile("logo.png")).toBe(true);
+		expect(isBinaryReadableFile("doc.pdf")).toBe(true);
+		expect(isBinaryReadableFile("notes.csv")).toBe(false);
+		expect(isBinaryReadableFile("page.html")).toBe(false);
+		expect(isBinaryReadableFile("readme.md")).toBe(false);
+	});
+
+	test("hasRenderedPreview covers all preview formats", () => {
+		for (const path of ["a.md", "a.png", "a.pdf", "a.csv", "a.tsv", "a.html"]) {
+			expect(hasRenderedPreview(path)).toBe(true);
+		}
+		expect(hasRenderedPreview("a.ts")).toBe(false);
 	});
 });

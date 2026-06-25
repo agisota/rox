@@ -1,6 +1,8 @@
 "use client";
 
 import { ROX_CHAT_MODEL, ROX_CHAT_MODEL_NAME } from "@rox/shared/chat-models";
+import { selectContextUsage } from "@rox/shared/context-usage";
+import { ComposerContextRing } from "@rox/ui/ai-elements/composer-context-ring";
 import {
 	type PromptInputMessage,
 	PromptInputProvider,
@@ -10,9 +12,10 @@ import { toast } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
 import { blobToBase64, MicButton, type Recording } from "@rox/ui/voice";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { LuLoaderCircle, LuSparkles } from "react-icons/lu";
 import { trpcClient } from "@/trpc/client";
+import { IdentitySwitcherChip } from "../../../components/IdentitySwitcherChip";
 import { PreviewPromptComposer } from "../../../components/PreviewPromptComposer";
 import { deriveQuickChatReply } from "../../utils/deriveQuickChatReply";
 
@@ -98,6 +101,17 @@ export function WebQuickChatView() {
 		[isSending, messages, scrollToBottom],
 	);
 
+	// F42: live context-usage ring, computed by the shared cross-platform
+	// selector so web matches desktop/mobile for the same conversation + model.
+	const contextUsage = useMemo(
+		() =>
+			selectContextUsage(
+				messages.map((message) => message.text),
+				ROX_CHAT_MODEL.id,
+			),
+		[messages],
+	);
+
 	const isEmpty = messages.length === 0;
 
 	return (
@@ -173,15 +187,26 @@ export function WebQuickChatView() {
 							promptInputClassName="[&>[data-slot=input-group]]:rounded-[13px] [&>[data-slot=input-group]]:border-none [&>[data-slot=input-group]]:shadow-none [&>[data-slot=input-group]]:bg-transparent"
 							placeholder="Напишите сообщение…"
 							footerTools={
-								<span className="text-xs text-muted-foreground">
-									{ROX_CHAT_MODEL_NAME}
-								</span>
+								<div className="flex items-center gap-2">
+									<IdentitySwitcherChip />
+									<span className="text-xs text-muted-foreground">
+										{ROX_CHAT_MODEL_NAME}
+									</span>
+								</div>
 							}
 							message=""
 							submitDisabled={isSending}
+							enableSlashCommands
 							onSubmit={(submitted: PromptInputMessage) => {
 								void send(submitted.text ?? "");
 							}}
+							contextRing={
+								<ComposerContextRing
+									maxTokens={contextUsage.maxTokens}
+									modelId={ROX_CHAT_MODEL.id}
+									usedTokens={contextUsage.usedTokens}
+								/>
+							}
 							footerExtras={
 								<WebMicButton disabled={isSending || !dictationConfigured} />
 							}

@@ -35,22 +35,32 @@ export function useWorkspaceHotkeys({
 	paneRegistry: PaneRegistry<PaneViewerData>;
 	launcher: TerminalLauncher;
 }) {
-	const { setRightSidebarOpen, setRightSidebarTab } = useV2UserPreferences();
+	const { preferences, setRightSidebarState, setRightSidebarTab } =
+		useV2UserPreferences();
 	const visiblePresets = useMemo(
 		() => matchedPresets.filter((preset) => preset.pinnedToBar !== false),
 		[matchedPresets],
 	);
 
-	useHotkey("TOGGLE_SIDEBAR", () => {
-		setRightSidebarOpen((prev) => !prev);
-	});
+	// 3-state right files panel (F03 / #616): the toggle hotkey/intent flips
+	// between hidden and expanded (peek is reachable from the toggle button's
+	// modifier-click). Read the live state on each toggle so it stays correct
+	// regardless of which state the panel was last left in.
+	const rightSidebarState = preferences.rightSidebarState;
+	const toggleRightSidebar = useCallback(() => {
+		setRightSidebarState(
+			rightSidebarState === "hidden" ? "expanded" : "hidden",
+		);
+	}, [rightSidebarState, setRightSidebarState]);
+
+	useHotkey("TOGGLE_SIDEBAR", toggleRightSidebar);
 
 	useEffect(
 		() =>
 			useRightSidebarToggleIntent.subscribe((state, prev) => {
-				if (state.tick !== prev.tick) setRightSidebarOpen((open) => !open);
+				if (state.tick !== prev.tick) toggleRightSidebar();
 			}),
-		[setRightSidebarOpen],
+		[toggleRightSidebar],
 	);
 
 	// --- Tab creation ---
@@ -79,7 +89,7 @@ export function useWorkspaceHotkeys({
 	});
 
 	useHotkey("OPEN_DIFF_VIEWER", () => {
-		setRightSidebarOpen(true);
+		setRightSidebarState("expanded");
 		setRightSidebarTab("changes");
 
 		const state = store.getState();

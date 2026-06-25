@@ -2,7 +2,7 @@ import {
 	ChatRuntimeServiceProvider,
 	ChatServiceProvider,
 } from "@rox/chat/client";
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
@@ -13,6 +13,8 @@ import { isNewChatName, NEW_CHAT_NAME } from "renderer/stores/tabs/utils";
 import { TabContentContextMenu } from "../../TabContentContextMenu";
 import { BasePaneWindow, PaneToolbarActions } from "../components";
 import { ChatPaneInterface } from "./ChatPaneInterface";
+import { RoomVisibility } from "./components/RoomVisibility";
+import { SessionLabelPillBar } from "./components/SessionLabelPillBar";
 import { SessionSelector } from "./components/SessionSelector";
 import { useChatPaneController } from "./hooks/useChatPaneController";
 import { createChatRuntimeServiceIpcClient } from "./utils/chat-runtime-service-client";
@@ -88,6 +90,33 @@ export function ChatPane({
 		workspaceId,
 	});
 
+	// F10 tag pill-bar filter: ids matching the active label filter, or null
+	// (no label filter) to show the full IPC-driven session list unchanged.
+	const [filteredSessionIds, setFilteredSessionIds] = useState<string[] | null>(
+		null,
+	);
+	const visibleSessionItems = useMemo(() => {
+		if (filteredSessionIds === null) return sessionItems;
+		const allowed = new Set(filteredSessionIds);
+		return sessionItems.filter((session) => allowed.has(session.sessionId));
+	}, [sessionItems, filteredSessionIds]);
+
+	// Cross-session recents (~10) for the scrollback rail's Recents-flyout (F49).
+	// Reuses the controller's session list (already org-scoped, sorted by
+	// recency), excluding the current session so the flyout only offers jumps.
+	const railRecents = useMemo(
+		() =>
+			sessionItems
+				.filter((item) => item.sessionId !== sessionId)
+				.slice(0, 10)
+				.map((item) => ({
+					sessionId: item.sessionId,
+					title: item.title,
+					lastActiveAt: item.updatedAt,
+				})),
+		[sessionItems, sessionId],
+	);
+
 	const applySubmittedMessageFallbackTitle = useCallback(
 		(message: string) => {
 			const normalized = message.trim().replace(/\s+/g, " ");
@@ -143,9 +172,12 @@ export function ChatPane({
 					renderToolbar={(handlers) => (
 						<div className="flex h-full w-full items-center justify-between px-3">
 							<div className="flex min-w-0 flex-1 items-center gap-2 pr-2">
+								<SessionLabelPillBar
+									onFilteredSessionIdsChange={setFilteredSessionIds}
+								/>
 								<SessionSelector
 									currentSessionId={sessionId}
-									sessions={sessionItems}
+									sessions={visibleSessionItems}
 									fallbackTitle={paneName}
 									isSessionInitializing={isSessionInitializing}
 									onSelectSession={handleSelectSession}
@@ -155,6 +187,10 @@ export function ChatPane({
 								<SessionObjectLinkLauncher
 									sessionId={sessionId}
 									sessionTitle={paneName}
+								/>
+								<RoomVisibility
+									sessionId={sessionId}
+									organizationId={organizationId}
 								/>
 							</div>
 							<PaneToolbarActions
@@ -199,6 +235,8 @@ export function ChatPane({
 								onStartFreshSession={handleStartFreshSession}
 								onConsumeLaunchConfig={consumeLaunchConfig}
 								onUserMessageSubmitted={applySubmittedMessageFallbackTitle}
+								recents={railRecents}
+								onSelectRecent={handleSelectSession}
 							/>
 						</div>
 					</TabContentContextMenu>

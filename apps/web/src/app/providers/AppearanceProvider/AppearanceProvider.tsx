@@ -30,6 +30,7 @@ import {
 	useState,
 } from "react";
 import { applyGlass } from "./applyGlass";
+import { applyThemeColor } from "./applyThemeColor";
 import { readAppearanceSettings, writeAppearanceSettings } from "./storage";
 
 interface AppearanceContextValue {
@@ -89,6 +90,22 @@ export function AppearanceProvider({
 	useEffect(() => {
 		applyGlass(settings);
 	}, [settings]);
+
+	// Sync the native chrome <meta theme-color> with the resolved theme (F09).
+	// A single MutationObserver on the root drives every update: theme/skin flips
+	// (F08 root `class`), workspace-accent changes (F25 `--workspace-accent` on
+	// `style`), and glass tweaks (`applyGlass` above also mutates root
+	// `class`/`style`) all toggle the watched attributes, so the meta tag tracks
+	// them in lock-step. Runs once on mount for the initial paint.
+	useEffect(() => {
+		applyThemeColor();
+		const observer = new MutationObserver(() => applyThemeColor());
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class", "style", "data-theme"],
+		});
+		return () => observer.disconnect();
+	}, []);
 
 	// Wallpaper rotation timer (owned here, not in the component). Advances the
 	// displayed wallpaper every `wallpaperRotateSeconds` while auto-rotate is on.

@@ -1,0 +1,1 @@
+export { IdentitySwitcherChip } from "./IdentitySwitcherChip";

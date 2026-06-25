@@ -24,9 +24,16 @@
 import {
 	type ChatModelEnvSource,
 	isRoxHouseModel,
+	ROX_CHAT_MODEL_ID,
 	resolveChatWireModelId,
 	resolveRoxBaseUrl,
 } from "@rox/shared/chat-models";
+import {
+	buildLabelPrompt,
+	LABEL_SUGGESTION_INSTRUCTIONS,
+	parseSuggestedLabels,
+	type TranscriptTurn,
+} from "../label-suggestion";
 
 /**
  * Read a runtime secret lazily from `process.env`.
@@ -166,6 +173,52 @@ export async function runQuickChatCompletion(
 		throw new Error("Quick-chat returned an empty completion.");
 	}
 	return { status: "ok", reply: content };
+}
+
+/**
+ * Suggest 1–3 short topical labels from a chat transcript (F14 — AI auto-tags).
+ *
+ * Mirrors the auto-title pipeline but on the *organization* tag axis: it runs a
+ * single non-streaming completion against the Rox house model (the shared
+ * server key — one backend for every web/desktop/mobile client, no per-user
+ * provider key), then parses the reply into ≤3 normalized label names via
+ * {@link parseSuggestedLabels}. Reconcile against the session's manual labels is
+ * the caller's job (`reconcileSuggestions`), so this stays a pure "ask the
+ * model" step.
+ *
+ * Returns an empty array (never throws) when the transcript is empty or the Rox
+ * key is unset — label suggestion is an additive enrichment that must never
+ * break the chat flow (mirrors `persistQuickChatTurns`' best-effort contract).
+ * A genuine gateway failure surfaces as a thrown error the caller logs+swallows.
+ */
+export async function generateLabelsFromTranscript(args: {
+	turns: TranscriptTurn[];
+	signal?: AbortSignal;
+	envSource?: ChatModelEnvSource;
+}): Promise<string[]> {
+	const prompt = buildLabelPrompt(args.turns);
+	if (!prompt) {
+		return [];
+	}
+
+	const result = await runQuickChatCompletion({
+		modelId: ROX_CHAT_MODEL_ID,
+		messages: [
+			{ role: "system", content: LABEL_SUGGESTION_INSTRUCTIONS },
+			{ role: "user", content: prompt },
+		],
+		// Deterministic extraction — keep the model on-task, not creative.
+		reasoning: "high",
+		maxTokens: 64,
+		signal: args.signal,
+		envSource: args.envSource,
+	});
+
+	if (result.status !== "ok") {
+		// No Rox key / needs a per-user key on this path — no suggestions, no error.
+		return [];
+	}
+	return parseSuggestedLabels(result.reply);
 }
 
 /**

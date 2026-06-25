@@ -1,5 +1,11 @@
 import { Workspace } from "@rox/panes";
-import { AnimatedHeight, motionSpring, useShouldAnimate } from "@rox/ui/motion";
+import {
+	AnimatedHeight,
+	motionSpring,
+	RightPanelEdgePill,
+	rightPanelGeometry,
+	useShouldAnimate,
+} from "@rox/ui/motion";
 import { workspaceTrpc } from "@rox/workspace-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
@@ -122,13 +128,17 @@ function V2WorkspaceContent() {
 
 	const {
 		preferences: v2UserPreferences,
-		setRightSidebarOpen,
+		setRightSidebarState,
 		setRightSidebarTab,
 		setRightSidebarWidth,
 		setShowPresetsBar,
 	} = useV2UserPreferences();
 	const showPresetsBar = v2UserPreferences.showPresetsBar;
-	const sidebarOpen = v2UserPreferences.rightSidebarOpen;
+	// 3-state right files panel (F03 / #616): hidden | peek | expanded.
+	// `sidebarOpen` (peek or expanded) keeps the existing open/closed consumers
+	// working; the resting state drives width + edge-pill below.
+	const rightPanelState = v2UserPreferences.rightSidebarState;
+	const sidebarOpen = rightPanelState !== "hidden";
 	const { store, isLayoutHydrated, persistedPaneLayout } =
 		useV2WorkspacePaneLayout();
 	useClearActivePaneAttention({ store });
@@ -172,7 +182,7 @@ function V2WorkspaceContent() {
 		openFilePaths,
 	} = useWorkspaceFileNavigation({
 		store,
-		setRightSidebarOpen,
+		setRightSidebarState,
 		setRightSidebarTab,
 	});
 
@@ -241,19 +251,25 @@ function V2WorkspaceContent() {
 	// clicks and other openFilePane callers already have the sidebar open.
 	const handleQuickOpenSelectFile = useCallback(
 		(filePath: string, openInNewTab?: boolean) => {
-			setRightSidebarOpen(true);
+			setRightSidebarState("expanded");
 			setRightSidebarTab("files");
 			openFilePane(filePath, openInNewTab);
 		},
-		[openFilePane, setRightSidebarOpen, setRightSidebarTab],
+		[openFilePane, setRightSidebarState, setRightSidebarTab],
 	);
-	const defaultPaneActions = useDefaultPaneActions({ launcher });
+	const defaultPaneActions = useDefaultPaneActions({ launcher, workspaceId });
 	const onBeforeCloseTab = useDirtyTabCloseGuard();
 
 	// Fallback for rows persisted before the rightSidebarWidth field existed —
 	// the live collection skips zod defaults, so an older row reads undefined
 	// here and would render the ResizablePanel without a width (full-bleed).
-	const sidebarWidth = v2UserPreferences.rightSidebarWidth ?? 340;
+	// Peek snaps to the shared narrow width; expanded uses the persisted width
+	// (falling back to the default for rows older than the width field). The
+	// 240ms glide between the two widths is driven by the `motion.div` below.
+	const expandedWidth =
+		v2UserPreferences.rightSidebarWidth ?? rightPanelGeometry.expandedWidth;
+	const sidebarWidth =
+		rightPanelState === "peek" ? rightPanelGeometry.peekWidth : expandedWidth;
 	const [isSidebarResizing, setIsSidebarResizing] = useState(false);
 	const { onSidebarResizeDragging, onWorkspaceInteractionStateChange } =
 		useBrowserShellInteractionPassthrough({ sidebarOpen });
@@ -263,6 +279,18 @@ function V2WorkspaceContent() {
 			onSidebarResizeDragging(resizing);
 		},
 		[onSidebarResizeDragging],
+	);
+	// Dragging the handle commits a real width — promote peek → expanded so the
+	// user's deliberate resize sticks (the narrow peek snap is a transient
+	// preview, not a width the user is choosing).
+	const handleSidebarWidthChange = useCallback(
+		(width: number) => {
+			if (rightPanelState === "peek") {
+				setRightSidebarState("expanded");
+			}
+			setRightSidebarWidth(width);
+		},
+		[rightPanelState, setRightSidebarState, setRightSidebarWidth],
 	);
 	// Gate the right-sidebar presence transition on the user's motion preference
 	// (reduced motion / Off collapses it to an instant opacity swap).
@@ -384,47 +412,65 @@ function V2WorkspaceContent() {
 					</div>
 					{sidebarSlotEl &&
 						createPortal(
-							// AnimatePresence stays mounted inside the persistent slot so the
-							// right sidebar can play its exit animation; `sidebarOpen` gates the
-							// motion child rather than the portal itself.
-							<AnimatePresence initial={false}>
-								{sidebarOpen && (
-									<motion.div
-										key="right-sidebar"
-										className="flex h-full shrink-0"
-										initial={shouldAnimate ? { x: "100%", opacity: 0 } : false}
-										animate={{ x: 0, opacity: 1 }}
-										exit={
-											shouldAnimate ? { x: "100%", opacity: 0 } : { opacity: 0 }
-										}
-										transition={
-											shouldAnimate ? motionSpring.panel : { duration: 0 }
-										}
-									>
-										<ResizablePanel
-											width={sidebarWidth}
-											onWidthChange={setRightSidebarWidth}
-											isResizing={isSidebarResizing}
-											onResizingChange={handleSidebarResizingChange}
-											minWidth={240}
-											maxWidth={640}
-											handleSide="left"
-											onDoubleClickHandle={() => setRightSidebarWidth(340)}
+							// `relative` so the floating edge-pill (F03 / #616) can anchor to
+							// the slot's right edge while the panel is hidden.
+							<div className="relative flex h-full shrink-0">
+								{/* AnimatePresence stays mounted inside the persistent slot so the
+								    right sidebar can play its exit animation; `sidebarOpen` (peek
+								    or expanded) gates the motion child rather than the portal. */}
+								<AnimatePresence initial={false}>
+									{sidebarOpen && (
+										<motion.div
+											key="right-sidebar"
+											className="flex h-full shrink-0"
+											initial={
+												shouldAnimate ? { x: "100%", opacity: 0 } : false
+											}
+											animate={{ x: 0, opacity: 1 }}
+											exit={
+												shouldAnimate
+													? { x: "100%", opacity: 0 }
+													: { opacity: 0 }
+											}
+											transition={
+												shouldAnimate ? motionSpring.panel : { duration: 0 }
+											}
 										>
-											<WorkspaceSidebar
-												workspaceId={workspaceId}
-												onSelectFile={openFilePaneFromTreeClick}
-												onSelectDiffFile={openDiffPane}
-												onOpenComment={openCommentPane}
-												onOpenChat={addChatTab}
-												onSearch={handleQuickOpen}
-												selectedFilePath={selectedFilePath}
-												pendingReveal={pendingReveal}
-											/>
-										</ResizablePanel>
-									</motion.div>
-								)}
-							</AnimatePresence>,
+											<ResizablePanel
+												width={sidebarWidth}
+												onWidthChange={handleSidebarWidthChange}
+												isResizing={isSidebarResizing}
+												onResizingChange={handleSidebarResizingChange}
+												minWidth={rightPanelGeometry.peekWidth}
+												maxWidth={640}
+												handleSide="left"
+												onDoubleClickHandle={() =>
+													handleSidebarWidthChange(
+														rightPanelGeometry.expandedWidth,
+													)
+												}
+											>
+												<WorkspaceSidebar
+													workspaceId={workspaceId}
+													onSelectFile={openFilePaneFromTreeClick}
+													onSelectDiffFile={openDiffPane}
+													onOpenComment={openCommentPane}
+													onOpenChat={addChatTab}
+													onSearch={handleQuickOpen}
+													selectedFilePath={selectedFilePath}
+													pendingReveal={pendingReveal}
+												/>
+											</ResizablePanel>
+										</motion.div>
+									)}
+								</AnimatePresence>
+								{/* Floating reopen affordance — the only way back from `hidden`.
+								    One click → `expanded`. */}
+								<RightPanelEdgePill
+									visible={rightPanelState === "hidden"}
+									onOpen={() => setRightSidebarState("expanded")}
+								/>
+							</div>,
 							sidebarSlotEl,
 						)}
 				</WorkspaceGitStatusProvider>

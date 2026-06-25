@@ -278,6 +278,17 @@ export const HOTKEYS_REGISTRY = {
 		label: "Toggle Workspaces Sidebar",
 		category: "Layout",
 	},
+	TOGGLE_ZEN_MODE: {
+		key: {
+			mac: L("meta+."),
+			windows: L("ctrl+."),
+			linux: L("ctrl+."),
+		},
+		label: "Toggle Focus / Zen Mode",
+		category: "Layout",
+		description:
+			"Collapse the sidebars and dim chrome to focus on the canvas; toggle again to restore",
+	},
 	SPLIT_RIGHT: {
 		key: {
 			mac: L("meta+d"),

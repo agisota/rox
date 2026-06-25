@@ -39,8 +39,19 @@ export function createPierreTreeStyle({
 		"--trees-item-margin-x-override": "0",
 		"--trees-item-padding-x-override": "calc(var(--spacing) * 3)", // pl-3 / pr-3
 		"--trees-item-row-gap-override": "calc(var(--spacing) * 1.5)", // gap-1.5
+		// 14px (size-3.5) icon column. Pierre renders the directory chevron and
+		// the file-type icon in this same slot, so files and folders line up in
+		// one column at every depth (F31 aligned toggle-slot). The colored
+		// extension icons themselves come from `useFallthroughIcons` +
+		// `icons: { colored: true }`.
 		"--trees-icon-width-override": "calc(var(--spacing) * 3.5)", // size-3.5
 		"--trees-border-radius-override": "0",
+		// 1px nesting guide-line (F31). Pierre draws a `border-left` per ancestor
+		// level from this token; its default (`fg-muted` @ 25%) is nearly
+		// invisible against our surface, so lift it to a clearer border tint that
+		// matches the cross-platform `FileTreeRow` rail (`border-border/60`).
+		"--trees-indent-guide-bg-override":
+			"color-mix(in oklab, var(--border) 60%, transparent)",
 
 		// Surface
 		"--trees-bg-override":

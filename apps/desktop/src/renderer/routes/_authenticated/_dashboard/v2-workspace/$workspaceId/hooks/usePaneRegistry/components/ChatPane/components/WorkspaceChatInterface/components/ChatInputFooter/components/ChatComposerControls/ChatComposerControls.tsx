@@ -1,3 +1,4 @@
+import { ComposerContextRing } from "@rox/ui/ai-elements/composer-context-ring";
 import {
 	PromptInputFooter,
 	PromptInputSubmit,
@@ -16,8 +17,6 @@ import type {
 	PermissionMode,
 } from "renderer/components/Chat/ChatInterface/types";
 import { ModelPicker } from "../../../ModelPicker";
-import { getModelCapabilityMeta } from "../../../ModelPicker/utils/modelCapabilities";
-import { ContextUsageHud } from "../ContextUsageHud";
 
 interface ChatComposerControlsProps {
 	availableModels: ModelOption[];
@@ -38,11 +37,10 @@ interface ChatComposerControlsProps {
 	submitStatus?: ChatStatus;
 	submitDisabled?: boolean;
 	onStop: (event: React.MouseEvent) => void;
-	/**
-	 * Estimated tokens consumed by the current thread, used to drive the
-	 * context-budget HUD next to the model picker.
-	 */
-	usedTokens: number;
+	/** Estimated tokens currently in the conversation context window (F42 ring). */
+	usedTokens?: number;
+	/** Selected model's context window in tokens (F42 ring). */
+	maxTokens?: number;
 }
 
 export function ChatComposerControls({
@@ -61,10 +59,8 @@ export function ChatComposerControls({
 	submitDisabled,
 	onStop,
 	usedTokens,
+	maxTokens,
 }: ChatComposerControlsProps) {
-	const contextWindowTokens = selectedModel
-		? getModelCapabilityMeta(selectedModel.id).contextWindowTokens
-		: 0;
 	return (
 		<PromptInputFooter>
 			<PromptInputTools className="gap-1.5">
@@ -85,10 +81,14 @@ export function ChatComposerControls({
 					onLevelChange={setThinkingLevel}
 					className={PILL_BUTTON_CLASS}
 				/>
-				<ContextUsageHud
-					usedTokens={usedTokens}
-					maxTokens={contextWindowTokens}
-				/>
+				{maxTokens && maxTokens > 0 ? (
+					<ComposerContextRing
+						className={PILL_BUTTON_CLASS}
+						maxTokens={maxTokens}
+						modelId={selectedModel?.id}
+						usedTokens={usedTokens ?? 0}
+					/>
+				) : null}
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />

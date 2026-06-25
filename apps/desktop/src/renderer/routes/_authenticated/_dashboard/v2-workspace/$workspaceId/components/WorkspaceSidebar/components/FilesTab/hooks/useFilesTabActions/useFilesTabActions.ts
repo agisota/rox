@@ -1,4 +1,8 @@
-import type { FileTree, FileTreeRenameEvent } from "@pierre/trees";
+import type {
+	FileTree,
+	FileTreeDropResult,
+	FileTreeRenameEvent,
+} from "@pierre/trees";
 import { alert } from "@rox/ui/atoms/Alert";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
@@ -8,6 +12,7 @@ import {
 	deriveCreationParent,
 	pickPlaceholderName,
 } from "../../utils/creationPaths";
+import { resolveTreeMove } from "../../utils/resolveTreeMove";
 import { scrollTreeToRow } from "../../utils/scrollTreeToRow";
 import {
 	asDirectoryHandle,
@@ -45,6 +50,8 @@ export interface FilesTabActions {
 	startCreating(mode: "file" | "folder", parentAbs?: string): Promise<void>;
 	/** Commit a Pierre rename event — either finalizing a pending create or moving an existing path. */
 	handleRename(event: FileTreeRenameEvent): Promise<void>;
+	/** Persist an intra-tree drag-move once Pierre has optimistically reparented the rows. */
+	handleDropComplete(event: FileTreeDropResult): Promise<void>;
 	/** Confirm + delete a file/folder. */
 	handleDelete(absolutePath: string, name: string, isDirectory: boolean): void;
 	/** Collapse every expanded directory in the tree. */
@@ -300,6 +307,77 @@ export function useFilesTabActions({
 		],
 	);
 
+	const handleDropComplete = useCallback(
+		async (event: FileTreeDropResult): Promise<void> => {
+			if (!rootPath) return;
+
+			// Pierre reports the destination as the directory's tree key
+			// (trailing slash) or null for the worktree root. `resolveTreeMove`
+			// normalizes both to a slash-free relative dir.
+			const destDirRel = event.target.directoryPath
+				? stripTrailingSlash(event.target.directoryPath)
+				: "";
+
+			// Snapshot before any await so cleanup against a workspace the user
+			// switched away from mid-flight bails instead of mutating the new tree.
+			const versionToken = bridge.getVersion();
+
+			// Each dragged path is the row's pre-move tree key; folders carry a
+			// trailing slash. Pierre has already reparented every row on its side,
+			// so we only persist the filesystem move (and revert that one row on
+			// failure).
+			for (const draggedPath of event.draggedPaths) {
+				const isFolder = draggedPath.endsWith("/");
+				const resolution = resolveTreeMove(draggedPath, destDirRel, isFolder);
+				// Same-parent / into-self drops are no-ops Pierre wouldn't have
+				// applied either; skip silently.
+				if (!resolution.ok) continue;
+
+				const { sourcePath, destinationPath } = resolution;
+
+				// Mirror the rename path's bridge bookkeeping: rekey knownPaths and,
+				// for folders, every cached descendant so later reveals/reconcile
+				// don't target stale source keys.
+				bridge.knownPaths.delete(sourcePath);
+				bridge.knownPaths.add(destinationPath);
+				if (isFolder) {
+					bridge.rekeyDescendants(
+						stripTrailingSlash(sourcePath),
+						stripTrailingSlash(destinationPath),
+					);
+				}
+
+				try {
+					await movePath.mutateAsync({
+						workspaceId,
+						sourceAbsolutePath: toAbs(rootPath, sourcePath),
+						destinationAbsolutePath: toAbs(rootPath, destinationPath),
+					});
+				} catch (error) {
+					if (!bridge.isCurrent(versionToken)) return;
+					// Revert Pierre's optimistic reparent for this row only.
+					try {
+						model.move(destinationPath, sourcePath);
+						bridge.knownPaths.delete(destinationPath);
+						bridge.knownPaths.add(sourcePath);
+						if (isFolder) {
+							bridge.rekeyDescendants(
+								stripTrailingSlash(destinationPath),
+								stripTrailingSlash(sourcePath),
+							);
+						}
+					} catch {
+						// ignore — fs:events will reconcile
+					}
+					toast.error("Failed to move", {
+						description: error instanceof Error ? error.message : undefined,
+					});
+				}
+			}
+		},
+		[model, rootPath, workspaceId, movePath, bridge],
+	);
+
 	const handleDelete = useCallback(
 		(absolutePath: string, name: string, isDirectory: boolean): void => {
 			const itemType = isDirectory ? "folder" : "file";
@@ -338,5 +416,12 @@ export function useFilesTabActions({
 		}
 	}, [model, bridge.knownPaths]);
 
-	return { reveal, startCreating, handleRename, handleDelete, collapseAll };
+	return {
+		reveal,
+		startCreating,
+		handleRename,
+		handleDropComplete,
+		handleDelete,
+		collapseAll,
+	};
 }

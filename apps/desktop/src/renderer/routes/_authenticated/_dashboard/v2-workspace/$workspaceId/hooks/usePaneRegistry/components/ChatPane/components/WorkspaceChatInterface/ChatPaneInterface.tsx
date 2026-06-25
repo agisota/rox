@@ -1,6 +1,9 @@
 import { chatServiceTrpc } from "@rox/chat/client";
 import type { AppRouter } from "@rox/host-service";
-import { estimateThreadTokens } from "@rox/shared/chat-token-budget";
+import {
+	extractTextsFromParts,
+	selectContextUsage,
+} from "@rox/shared/context-usage";
 import {
 	PromptInputAttachment,
 	type PromptInputMessage,
@@ -667,17 +670,20 @@ export function ChatPaneInterface({
 		});
 	}, [isAwaitingAssistant, messages, pendingUserTurn]);
 
-	// Estimated tokens consumed by the current thread, fed to the composer's
-	// context-budget HUD. Derived from the visible thread text so it grows as
-	// the conversation does; see `@rox/shared/chat-token-budget`.
-	const usedTokens = useMemo(
+	// F42: live context-usage ring. Estimated from displayed conversation text via
+	// the shared cross-platform selector so every surface agrees for the same
+	// conversation + model; the window comes from the active model. This supersedes
+	// the origin/main `estimateThreadTokens` HUD: `contextUsage.usedTokens` feeds the
+	// same context-budget HUD while `contextUsage.maxTokens` adds the model window.
+	const contextUsage = useMemo(
 		() =>
-			estimateThreadTokens(
-				visibleMessages.map((message) => ({
-					text: getTextPreviewFromContent(message.content),
-				})),
+			selectContextUsage(
+				visibleMessages.flatMap((message) =>
+					extractTextsFromParts(message.content),
+				),
+				activeModel?.id,
 			),
-		[visibleMessages],
+		[visibleMessages, activeModel?.id],
 	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: sessionId resets the copied share state between sessions
@@ -1263,7 +1269,8 @@ export function ChatPaneInterface({
 					thinkingLevel={thinkingLevel}
 					setThinkingLevel={setThinkingLevel}
 					slashCommands={slashCommands}
-					usedTokens={usedTokens}
+					usedTokens={contextUsage.usedTokens}
+					maxTokens={contextUsage.maxTokens}
 					sessionId={sessionId}
 					workspaceId={workspaceId}
 					onError={setRuntimeErrorMessage}

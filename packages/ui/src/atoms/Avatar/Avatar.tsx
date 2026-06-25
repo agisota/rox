@@ -1,3 +1,4 @@
+import { identityGlyph } from "@rox/shared/identity-glyph";
 import { getInitials } from "@rox/shared/names";
 import { cva, type VariantProps } from "class-variance-authority";
 import {
@@ -40,16 +41,38 @@ const avatarFallbackVariants = cva("", {
 interface AvatarProps extends VariantProps<typeof avatarVariants> {
 	fullName?: string | null;
 	image?: string | null;
+	/**
+	 * Stable id/handle (user id, persona id, handle…). When set, the fallback is
+	 * coloured deterministically and shows a glyph instead of a muted "A", so the
+	 * same identity is the same colour everywhere (Hermes-borrow F24).
+	 */
+	seed?: string | null;
 	className?: string;
 }
 
-function Avatar({ className, size = "md", fullName, image }: AvatarProps) {
-	const fallbackText = fullName ? getInitials(fullName) : "A";
+function Avatar({
+	className,
+	size = "md",
+	fullName,
+	image,
+	seed,
+}: AvatarProps) {
+	const glyph = seed ? identityGlyph(seed, fullName ?? undefined) : null;
+	const fallbackText = fullName
+		? getInitials(fullName)
+		: (glyph?.initials ?? "A");
 
 	return (
 		<AvatarBase className={cn(avatarVariants({ size }), className)}>
 			{image && <AvatarImageBase src={image} />}
-			<AvatarFallbackBase className={cn(avatarFallbackVariants({ size }))}>
+			<AvatarFallbackBase
+				className={cn(avatarFallbackVariants({ size }))}
+				style={
+					glyph
+						? { backgroundColor: glyph.background, color: glyph.foreground }
+						: undefined
+				}
+			>
 				{fallbackText}
 			</AvatarFallbackBase>
 		</AvatarBase>

@@ -1,4 +1,5 @@
 import type {
+	FileTreeDropResult,
 	FileTreeRenameEvent,
 	FileTreeRowDecoration,
 	FileTreeRowDecorationContext,
@@ -10,19 +11,31 @@ import {
 	useFileTree as usePierreFileTree,
 } from "@pierre/trees/react";
 import type { AppRouter } from "@rox/host-service";
+import { FilePanelHeader } from "@rox/ui/atoms/FilePanelHeader";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@rox/ui/dropdown-menu";
 import { RevealFlash, useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { workspaceTrpc } from "@rox/workspace-client";
 import type { inferRouterOutputs } from "@trpc/server";
 import {
+	ChevronUp,
 	FilePlus,
 	FolderPlus,
 	FoldVertical,
 	Loader2,
+	MoreHorizontal,
 	RefreshCw,
+	Upload,
+	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGitStatusMap } from "renderer/hooks/host-service/useGitStatusMap";
+import { useExperimentalFeature } from "renderer/hooks/useExperimentalFeature";
 import {
 	ShadowClickHint,
 	usePierreRowClickPolicy,
@@ -30,12 +43,15 @@ import {
 } from "renderer/lib/clickPolicy";
 import { useFallthroughIcons } from "renderer/lib/fileIcons";
 import { createPierreTreeStyle } from "renderer/lib/pierreTree";
+import { useExpandedDirs } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useExpandedDirs";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import { PierreRowContextMenu } from "../PierreRowContextMenu";
+import { ArtifactsPanel } from "./components/ArtifactsPanel";
 import { FileMenuItems } from "./components/FileMenuItems";
 import { FilesTabDropOverlay } from "./components/FilesTabDropOverlay";
 import { FilesTabHeaderButton } from "./components/FilesTabHeaderButton";
 import { FolderMenuItems } from "./components/FolderMenuItems";
+import { TodosPanel } from "./components/TodosPanel";
 import {
 	FILE_EXPLORER_INDENT,
 	FILE_EXPLORER_OVERSCAN,
@@ -44,7 +60,11 @@ import {
 import { useFilesTabActions } from "./hooks/useFilesTabActions";
 import { useFilesTabBridge } from "./hooks/useFilesTabBridge";
 import { useFilesTabDrop } from "./hooks/useFilesTabDrop";
+import { useFileTreeBlame } from "./hooks/useFileTreeBlame";
+import { useFileTreeSizes } from "./hooks/useFileTreeSizes";
 import { buildPierreGitStatus } from "./utils/buildPierreGitStatus";
+import { formatBlameDecoration } from "./utils/formatBlameDecoration";
+import { formatFileSize } from "./utils/formatFileSize";
 import { stripTrailingSlash, toAbs, toRel } from "./utils/treePath";
 
 const TREE_STYLE = createPierreTreeStyle({
@@ -53,7 +73,20 @@ const TREE_STYLE = createPierreTreeStyle({
 	withSearchChrome: true,
 });
 
+// The size column (F31) renders through Pierre's decoration lane, which is
+// already right-aligned and muted; tabular figures keep the digits from
+// shifting as rows scroll. Pierre's decoration text variant has no className
+// hook, so we reach the shadow-DOM span via `unsafeCSS` (same escape hatch the
+// diff viewer uses).
+const TREE_UNSAFE_CSS = `
+	[data-item-section='decoration'] > span {
+		font-variant-numeric: tabular-nums;
+	}
+`;
+
 type GitStatusData = inferRouterOutputs<AppRouter>["git"]["getStatus"];
+
+type FilePanelTabId = "files" | "artifacts" | "todos";
 
 interface FilesTabProps {
 	onSelectFile: (absolutePath: string, openInNewTab?: boolean) => void;
@@ -64,6 +97,10 @@ interface FilesTabProps {
 	} | null;
 	workspaceId: string;
 	gitStatus: GitStatusData | undefined;
+	/** Open an artifact (canvas) by id from the Artifacts sub-tab. */
+	onSelectArtifact?: (canvasId: string) => void;
+	/** Close/hide the file panel from the header icon-row, when supported. */
+	onClose?: () => void;
 }
 
 export function FilesTab({
@@ -72,11 +109,24 @@ export function FilesTab({
 	pendingReveal,
 	workspaceId,
 	gitStatus,
+	onSelectArtifact,
+	onClose,
 }: FilesTabProps) {
 	const workspaceQuery = workspaceTrpc.workspace.get.useQuery({
 		id: workspaceId,
 	});
 	const rootPath = workspaceQuery.data?.worktreePath ?? "";
+
+	const [activePanelTab, setActivePanelTab] = useState<FilePanelTabId>("files");
+	const uploadInputRef = useRef<HTMLInputElement>(null);
+
+	// Artifacts count for the tablist badge — the same `canvas.list` query the
+	// Artifacts panel renders (shared cache, so no extra round-trip).
+	const artifactsQuery = workspaceTrpc.canvas.list.useQuery(
+		{ workspaceId },
+		{ enabled: !!workspaceId },
+	);
+	const artifactsCount = artifactsQuery.data?.length ?? 0;
 
 	const openInExternalEditor = useOpenInExternalEditor(workspaceId);
 	const filePolicy = useSidebarFilePolicy();
@@ -104,6 +154,7 @@ export function FilesTab({
 	const handlersRef = useRef({
 		onSelect(_path: string) {},
 		onRename(_event: FileTreeRenameEvent) {},
+		onDropComplete(_event: FileTreeDropResult) {},
 		renderRowDecoration(
 			_ctx: FileTreeRowDecorationContext,
 		): FileTreeRowDecoration | null {
@@ -119,11 +170,21 @@ export function FilesTab({
 			onRename: (event) => handlersRef.current.onRename(event),
 			onError: (message) => toast.error(message),
 		},
+		// Intra-tree drag-move (F34). Pierre owns the drag visuals + optimistic
+		// reparent; we persist the filesystem move in onDropComplete (and revert
+		// the row there on failure). External OS-file drags are handled separately
+		// by useFilesTabDrop on the wrapper — those carry "Files" and never start a
+		// Pierre row drag, so the two paths don't collide.
+		dragAndDrop: {
+			onDropComplete: (event) => handlersRef.current.onDropComplete(event),
+			onDropError: (message) => toast.error(message),
+		},
 		gitStatus: initialGitStatusEntriesRef.current,
 		icons: { set: "complete", colored: true },
 		itemHeight: FILE_EXPLORER_ROW_HEIGHT,
 		overscan: FILE_EXPLORER_OVERSCAN,
 		stickyFolders: true,
+		unsafeCSS: TREE_UNSAFE_CSS,
 		onSelectionChange: (paths) => {
 			const last = paths[paths.length - 1];
 			if (!last) return;
@@ -135,18 +196,75 @@ export function FilesTab({
 		renderRowDecoration: (ctx) => handlersRef.current.renderRowDecoration(ctx),
 	});
 
-	const bridge = useFilesTabBridge({ model, workspaceId, rootPath });
-	const { reveal, startCreating, handleRename, handleDelete, collapseAll } =
-		useFilesTabActions({
-			model,
-			bridge,
-			rootPath,
-			workspaceId,
-			selectedFilePath,
-			onSelectFile,
-			shouldAnimate,
-			onRevealed: setFlashRect,
-		});
+	// Persisted expanded-directory set (F32). The bridge reads the snapshot on
+	// root-load to prefetch + re-expand, and reports each expand/collapse edge
+	// back so it survives reload and syncs cross-device through the local-state
+	// collection.
+	const expandedDirsApi = useExpandedDirs(workspaceId);
+	const bridge = useFilesTabBridge({
+		model,
+		workspaceId,
+		rootPath,
+		getPersistedExpandedDirs: expandedDirsApi.getSnapshot,
+		onExpandedChange: expandedDirsApi.setExpanded,
+	});
+
+	// Re-apply the current git status to force Pierre to re-render its rows
+	// (and thus re-run `renderRowDecoration`). Read the entries from a ref so the
+	// callback identity stays stable for the size hook while still painting the
+	// latest status. Mirrors how `useFallthroughIcons` repaints via `setIcons`.
+	const gitStatusEntriesRef = useRef(initialGitStatusEntriesRef.current);
+	gitStatusEntriesRef.current = buildPierreGitStatus(
+		fileStatusByPath,
+		folderStatusByPath,
+		ignoredPaths,
+	);
+	const repaintTree = useCallback(() => {
+		model.setGitStatus(gitStatusEntriesRef.current);
+	}, [model]);
+
+	// Resolve per-file sizes for the tree (F31); repaint when a batch lands so
+	// the freshly-loaded sizes paint into Pierre's decoration lane.
+	const sizes = useFileTreeSizes({
+		model,
+		knownPaths: bridge.knownPaths,
+		workspaceId,
+		rootPath,
+		onSizesLoaded: repaintTree,
+	});
+
+	// Identity-aware tree blame (F35) is shared-workspace-only: in a solo
+	// workspace every file's last author is just "me", so it's pure noise —
+	// gate it on the same `collaboration.presence` signal that decides whether
+	// this workspace is collaborative (presence/byline surfaces use it too).
+	const presence = useExperimentalFeature("collaboration.presence");
+	const blameEnabled =
+		presence.state.enabled && presence.state.availability === "available";
+	const blame = useFileTreeBlame({
+		model,
+		knownPaths: bridge.knownPaths,
+		workspaceId,
+		rootPath,
+		enabled: blameEnabled,
+		onBlameLoaded: repaintTree,
+	});
+	const {
+		reveal,
+		startCreating,
+		handleRename,
+		handleDropComplete,
+		handleDelete,
+		collapseAll,
+	} = useFilesTabActions({
+		model,
+		bridge,
+		rootPath,
+		workspaceId,
+		selectedFilePath,
+		onSelectFile,
+		shouldAnimate,
+		onRevealed: setFlashRect,
+	});
 	const drop = useFilesTabDrop({ model, bridge, rootPath, workspaceId });
 
 	// Push live git status updates into Pierre.
@@ -178,6 +296,8 @@ export function FilesTab({
 	// Wire the ref-based handlers so Pierre's stable callbacks always reach
 	// the latest closures. Updated on every render — no diffing needed.
 	handlersRef.current.onRename = (event) => void handleRename(event);
+	handlersRef.current.onDropComplete = (event) =>
+		void handleDropComplete(event);
 	handlersRef.current.onSelect = (treePath) => {
 		const abs = toAbs(rootPath, treePath);
 		// Skip the reveal-induced echo. The reveal flow programmatically
@@ -190,11 +310,35 @@ export function FilesTab({
 		lastSelectedFromUserRef.current = abs;
 		onSelectFile(abs);
 	};
-	// No-op: Pierre's setGitStatus already renders its own per-row status
-	// indicator (and tints the row text), so a custom decoration here would
-	// duplicate it. Kept the wiring in place in case we want to layer
-	// something Pierre doesn't show (e.g. lock icons, debug markers).
-	handlersRef.current.renderRowDecoration = () => null;
+	// Pierre's right-aligned decoration lane carries one of two per-file signals.
+	// In a shared workspace, identity-aware blame (F35) wins the lane: the last
+	// author's initials + relative time, with the byte size folded into the hover
+	// title so it isn't lost. In a solo workspace blame is suppressed, so the lane
+	// falls back to the file size (F31). Folders carry neither. The git-status row
+	// tint is independent — Pierre paints it via `setGitStatus`, not this lane.
+	handlersRef.current.renderRowDecoration = (ctx) => {
+		if (ctx.item.kind === "directory") return null;
+		const size = sizes.getSize(ctx.item.path);
+		const sizeTitle = size == null ? null : `${size.toLocaleString()} B`;
+
+		if (blameEnabled) {
+			const fileBlame = blame.getBlame(ctx.item.path);
+			if (fileBlame) {
+				const decoration = formatBlameDecoration(fileBlame);
+				return {
+					text: decoration.text,
+					title: sizeTitle
+						? `${decoration.title} · ${sizeTitle}`
+						: decoration.title,
+				};
+			}
+			// Blame not resolved yet for this row: still surface the size rather
+			// than leaving the lane blank while blame loads in the background.
+		}
+
+		if (size == null) return null;
+		return { text: formatFileSize(size), title: sizeTitle ?? "" };
+	};
 
 	// Hint tooltip uses ShadowClickHint to anchor a single shadcn Tooltip
 	// over the hovered row's bounding rect — Pierre owns the row DOM inside
@@ -257,69 +401,152 @@ export function FilesTab({
 		],
 	);
 
+	// Icon-row (F30): parent / new file / new folder / refresh / upload / kebab /
+	// close. Only the Files sub-tab acts on the tree, so the file-mutating
+	// actions are disabled while Artifacts/Todos are active.
+	const onFilesTab = activePanelTab === "files";
+	const headerActions = (
+		<>
+			<FilesTabHeaderButton
+				icon={ChevronUp}
+				label="К корню"
+				onClick={collapseAll}
+			/>
+			<FilesTabHeaderButton
+				icon={FilePlus}
+				label="Новый файл"
+				onClick={() => void startCreating("file")}
+			/>
+			<FilesTabHeaderButton
+				icon={FolderPlus}
+				label="Новая папка"
+				onClick={() => void startCreating("folder")}
+			/>
+			<FilesTabHeaderButton
+				icon={RefreshCw}
+				label="Обновить"
+				loading={bridge.isRefreshing}
+				onClick={() => void bridge.doRefresh()}
+			/>
+			<FilesTabHeaderButton
+				icon={Upload}
+				label="Загрузить"
+				onClick={() => uploadInputRef.current?.click()}
+			/>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<button
+						type="button"
+						aria-label="Ещё"
+						className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-tertiary/20 hover:text-foreground"
+					>
+						<MoreHorizontal className="size-3" />
+					</button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end">
+					<DropdownMenuItem onSelect={() => collapseAll()}>
+						<FoldVertical className="size-3.5" />
+						Свернуть всё
+					</DropdownMenuItem>
+					<DropdownMenuItem onSelect={() => uploadInputRef.current?.click()}>
+						<Upload className="size-3.5" />
+						Загрузить файлы
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+			{onClose && (
+				<FilesTabHeaderButton icon={X} label="Закрыть" onClick={onClose} />
+			)}
+		</>
+	);
+
+	const panelHeader = (
+		<FilePanelHeader
+			breadcrumb={[{ id: "root", label: "Workspace" }]}
+			hiddenIndicator={ignoredPaths.size > 0}
+			gitBadge={gitStatus?.currentBranch?.name ?? undefined}
+			tabs={[
+				{ id: "files", label: "Файлы" },
+				{ id: "artifacts", label: "Артефакты", count: artifactsCount },
+				{ id: "todos", label: "Задачи" },
+			]}
+			activeTab={activePanelTab}
+			onTabChange={(id) => setActivePanelTab(id as FilePanelTabId)}
+			actions={onFilesTab ? headerActions : undefined}
+		/>
+	);
+
+	const uploadInput = (
+		<input
+			ref={uploadInputRef}
+			type="file"
+			multiple
+			className="hidden"
+			onChange={(e) => {
+				const files = e.target.files ? Array.from(e.target.files) : [];
+				drop.uploadFiles(files);
+				// Reset so picking the same file again re-fires onChange.
+				e.target.value = "";
+			}}
+		/>
+	);
+
 	if (!rootPath) {
 		return (
-			<div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-				{workspaceQuery.isLoading ? (
-					<>
-						<Loader2 className="size-3.5 animate-spin" />
-						<span>Загрузка файлов...</span>
-					</>
-				) : (
-					"Workspace worktree not available"
-				)}
+			<div className="flex h-full min-h-0 flex-col overflow-hidden">
+				{panelHeader}
+				<div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+					{workspaceQuery.isLoading ? (
+						<>
+							<Loader2 className="size-3.5 animate-spin" />
+							<span>Загрузка файлов...</span>
+						</>
+					) : (
+						"Workspace worktree not available"
+					)}
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: Drop zone for external file upload
-		<div
-			className="relative flex h-full min-h-0 flex-col overflow-hidden"
-			onClickCapture={handleClickCapture}
-			onDragOver={drop.onDragOver}
-			onDragLeave={drop.onDragLeave}
-			onDrop={drop.onDrop}
-		>
-			<ShadowClickHint hint={filePolicy.hint} findRow={findFileRow}>
-				<PierreFileTree
-					model={model}
-					className="flex-1 min-h-0"
-					style={TREE_STYLE}
-					header={
-						<div className="group flex h-6 items-center justify-end bg-background px-2 text-muted-foreground">
-							<div className="flex items-center gap-0.5">
-								<FilesTabHeaderButton
-									icon={FilePlus}
-									label="Новый файл"
-									onClick={() => void startCreating("file")}
-								/>
-								<FilesTabHeaderButton
-									icon={FolderPlus}
-									label="Новая папка"
-									onClick={() => void startCreating("folder")}
-								/>
-								<FilesTabHeaderButton
-									icon={RefreshCw}
-									label="Обновить"
-									loading={bridge.isRefreshing}
-									onClick={() => void bridge.doRefresh()}
-								/>
-								<FilesTabHeaderButton
-									icon={FoldVertical}
-									label="Свернуть всё"
-									onClick={collapseAll}
-								/>
-							</div>
-						</div>
-					}
-					renderContextMenu={renderContextMenu}
-				/>
-			</ShadowClickHint>
+		<div className="flex h-full min-h-0 flex-col overflow-hidden">
+			{panelHeader}
+			{uploadInput}
+			{activePanelTab === "artifacts" ? (
+				<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<ArtifactsPanel
+						workspaceId={workspaceId}
+						onSelectArtifact={onSelectArtifact}
+					/>
+				</div>
+			) : activePanelTab === "todos" ? (
+				<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<TodosPanel />
+				</div>
+			) : (
+				// biome-ignore lint/a11y/noStaticElementInteractions: Drop zone for external file upload
+				<div
+					className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+					onClickCapture={handleClickCapture}
+					onDragOver={drop.onDragOver}
+					onDragLeave={drop.onDragLeave}
+					onDrop={drop.onDrop}
+				>
+					<ShadowClickHint hint={filePolicy.hint} findRow={findFileRow}>
+						<PierreFileTree
+							model={model}
+							className="flex-1 min-h-0"
+							style={TREE_STYLE}
+							renderContextMenu={renderContextMenu}
+						/>
+					</ShadowClickHint>
 
-			{drop.dropTarget && <FilesTabDropOverlay target={drop.dropTarget} />}
+					{drop.dropTarget && <FilesTabDropOverlay target={drop.dropTarget} />}
 
-			<RevealFlash rect={flashRect} onDone={() => setFlashRect(null)} />
+					<RevealFlash rect={flashRect} onDone={() => setFlashRect(null)} />
+				</div>
+			)}
 		</div>
 	);
 }

@@ -1,4 +1,9 @@
 import {
+	skinToNavTokens,
+	skinToStyleTokens,
+} from "@rox/ui/theme/mobile-adapter";
+import { DEFAULT_SKIN_ID, getSkin } from "@rox/ui/theme/skins";
+import {
 	DarkTheme,
 	DefaultTheme,
 	type Theme,
@@ -75,3 +80,50 @@ export const NAV_THEME: Record<"light" | "dark", Theme> = {
 		},
 	},
 };
+
+/**
+ * Native status-bar icon contrast derived from the active theme (Hermes-borrow
+ * F09).
+ *
+ * The mobile equivalent of the web `<meta name="theme-color">` / desktop glass
+ * accent: the OS status bar should track the *same* resolved theme. Under Expo
+ * SDK 56 the status bar is edge-to-edge (transparent strip; the screen's own
+ * theme-driven background shows through), so only the icon `style` is set here —
+ * `light` icons over the dark surface, `dark` over a light one. Derived (not
+ * hardcoded at the call site) so a future light theme / workspace accent flips
+ * the contrast in lock-step by selecting the matching scheme.
+ */
+export const STATUS_BAR_THEME: Record<
+	"light" | "dark",
+	{ style: "light" | "dark" }
+> = {
+	light: { style: "dark" },
+	dark: { style: "light" },
+};
+
+/**
+ * F08 mobile skin adapter — layer a shared `@rox/ui/theme` skin over the base
+ * RN ramp.
+ *
+ * The Theme × Skin model lives once in `@rox/ui`; RN can't read CSS variables,
+ * so {@link skinToStyleTokens} resolves the skin to a plain token map that we
+ * merge over `THEME[mode]`. Omitted skin tokens fall through to the base ramp,
+ * exactly like the web skin layers over globals.css. `default` is a no-op merge.
+ */
+export function resolveSkinnedTheme(
+	mode: "light" | "dark",
+	skinId: string = DEFAULT_SKIN_ID,
+): (typeof THEME)["light"] {
+	const tokens = skinToStyleTokens(getSkin(skinId));
+	return { ...THEME[mode], ...tokens };
+}
+
+/** Navigation theme for a mode + skin (skin accent/background layered in). */
+export function resolveSkinnedNavTheme(
+	mode: "light" | "dark",
+	skinId: string = DEFAULT_SKIN_ID,
+): Theme {
+	const base = NAV_THEME[mode];
+	const overrides = skinToNavTokens(getSkin(skinId));
+	return { ...base, colors: { ...base.colors, ...overrides } };
+}

@@ -54,9 +54,11 @@ interface ChatInputFooterProps {
 	slashCommands: SlashCommand[];
 	/**
 	 * Estimated tokens consumed by the current thread; drives the context-budget
-	 * HUD in the composer controls.
+	 * HUD in the composer controls. Also feeds the F42 context-usage ring.
 	 */
 	usedTokens: number;
+	/** Selected model's context window in tokens (F42 ring). */
+	maxTokens?: number;
 	submitDisabled?: boolean;
 	renderAttachment?: (file: FileUIPart & { id: string }) => ReactNode;
 	onSubmitStart?: () => void;
@@ -92,6 +94,7 @@ export function ChatInputFooter({
 	setThinkingLevel,
 	slashCommands,
 	usedTokens,
+	maxTokens,
 	submitDisabled,
 	renderAttachment,
 	onSubmitStart,
@@ -248,6 +251,7 @@ export function ChatInputFooter({
 									submitDisabled={submitDisabled}
 									onStop={onStop}
 									usedTokens={usedTokens}
+									maxTokens={maxTokens}
 								/>
 							</PromptInput>
 						</div>

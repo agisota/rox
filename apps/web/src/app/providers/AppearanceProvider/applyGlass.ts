@@ -9,32 +9,37 @@
 
 import {
 	type AppearanceSettings,
+	BACKDROP_BLUR_PX,
+	BACKDROP_BLUR_VAR,
 	clampWindowOpacity,
+	GLASS_ROOT_CLASS,
+	SURFACE_OPACITY_VAR,
 } from "@rox/shared/appearance";
-
-/** Backdrop blur radius (px) applied when glass is enabled on web. */
-const BACKDROP_BLUR_PX = 24;
 
 /**
  * Apply glass settings to the document root: toggles the `.glass` class and
  * sets the opacity/blur CSS variables when enabled, removing them otherwise.
  * SSR-safe (no-op without a `document`) and safe to call on every change.
+ *
+ * Reads the same root class + CSS variable + blur contract as the F06
+ * pre-hydration first-paint script (`@rox/shared/appearance` `first-paint`), so
+ * the synchronous stamp and this runtime reader can never drift.
  */
 export function applyGlass(settings: AppearanceSettings): void {
 	if (typeof document === "undefined") return;
 	const root = document.documentElement;
 
 	if (!settings.glassEnabled) {
-		root.classList.remove("glass");
-		root.style.removeProperty("--surface-opacity");
-		root.style.removeProperty("--backdrop-blur");
+		root.classList.remove(GLASS_ROOT_CLASS);
+		root.style.removeProperty(SURFACE_OPACITY_VAR);
+		root.style.removeProperty(BACKDROP_BLUR_VAR);
 		return;
 	}
 
-	root.classList.add("glass");
+	root.classList.add(GLASS_ROOT_CLASS);
 	root.style.setProperty(
-		"--surface-opacity",
+		SURFACE_OPACITY_VAR,
 		String(clampWindowOpacity(settings.windowOpacity)),
 	);
-	root.style.setProperty("--backdrop-blur", `${BACKDROP_BLUR_PX}px`);
+	root.style.setProperty(BACKDROP_BLUR_VAR, `${BACKDROP_BLUR_PX}px`);
 }

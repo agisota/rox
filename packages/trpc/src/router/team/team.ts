@@ -1,11 +1,14 @@
 import { db } from "@rox/db/client";
 import { teams } from "@rox/db/schema";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
 import { verifyOrgAdmin } from "../integration/utils";
-import { requireActiveOrgId } from "../utils/active-org";
+import {
+	requireActiveOrgId,
+	requireActiveOrgMembership,
+} from "../utils/active-org";
 
 async function requireTeamInActiveOrg(teamId: string, organizationId: string) {
 	const team = await db.query.teams.findFirst({
@@ -21,6 +24,27 @@ async function requireTeamInActiveOrg(teamId: string, organizationId: string) {
 }
 
 export const teamRouter = {
+	/**
+	 * Lists teams in the active organization. Desktop reads teams from
+	 * Electric-synced collections; web has no Electric, so this query gives the
+	 * web teams panel the same data over tRPC (Hermes-borrow F27).
+	 */
+	list: protectedProcedure.query(async ({ ctx }) => {
+		const organizationId = await requireActiveOrgMembership(ctx);
+		return db
+			.select({
+				id: teams.id,
+				name: teams.name,
+				slug: teams.slug,
+				organizationId: teams.organizationId,
+				createdAt: teams.createdAt,
+				updatedAt: teams.updatedAt,
+			})
+			.from(teams)
+			.where(eq(teams.organizationId, organizationId))
+			.orderBy(asc(teams.createdAt));
+	}),
+
 	addMember: protectedProcedure
 		.input(
 			z.object({
