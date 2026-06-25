@@ -137,6 +137,36 @@ describe("makeHttpHandler", () => {
 		expect(calls).toHaveLength(0);
 	});
 
+	// Regression: IPv6 SSRF targets must be blocked through the FULL handler path
+	// (URL → hostFromUrl → isForbiddenHost), not only when isForbiddenHost is
+	// called with a single-bracket literal. Bun's `URL.hostname` keeps the IPv6
+	// brackets; a previous double-bracketing left every IPv6 target ALLOWED.
+	for (const url of [
+		"http://[::1]/x", // loopback
+		"http://[fe80::1]/x", // link-local
+		"http://[fc00::1]/x", // unique-local
+		"http://[::ffff:169.254.169.254]/latest/meta-data/", // metadata via IPv4-mapped
+		"http://[::ffff:127.0.0.1]/x", // loopback via IPv4-mapped
+	]) {
+		test(`SSRF IPv6 URL is rejected through the handler: ${url}`, async () => {
+			const { port, calls } = recordingPort(OK);
+			const res = await makeHttpHandler(port)(ctx({ url }));
+			expect(res.handle).toBe("error");
+			expect(res.error?.code).toBe("HTTP_SSRF_BLOCKED");
+			expect(calls).toHaveLength(0);
+		});
+	}
+
+	test("public IPv6 URL is allowed through the handler", async () => {
+		const { port, calls } = recordingPort(OK);
+		// 2606:4700:4700::1111 (Cloudflare DNS) — globally-routable unicast.
+		const res = await makeHttpHandler(port)(
+			ctx({ url: "http://[2606:4700:4700::1111]/x" }),
+		);
+		expect(res.handle).toBe("out");
+		expect(calls).toHaveLength(1);
+	});
+
 	test("SSRF guard runs after placeholder substitution (loopback via {{host}})", async () => {
 		const { port, calls } = recordingPort(OK);
 		const handler = makeHttpHandler(port);
