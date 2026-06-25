@@ -14,6 +14,7 @@ import { ScrollArea } from "@rox/ui/scroll-area";
 import { Skeleton } from "@rox/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@rox/ui/tabs";
 import { cn } from "@rox/ui/utils";
+import type { ReactNode } from "react";
 import { LuSearch } from "react-icons/lu";
 import {
 	INSTALL_STATE_FILTERS,
@@ -51,6 +52,8 @@ interface SkillsSidebarProps {
 	isLoading: boolean;
 	selectedId: string | null;
 	onSelect: (id: string) => void;
+	/** Optional action rendered in the header (e.g. "Новый скилл"). */
+	headerAction?: ReactNode;
 }
 
 export function SkillsSidebar({
@@ -69,17 +72,21 @@ export function SkillsSidebar({
 	isLoading,
 	selectedId,
 	onSelect,
+	headerAction,
 }: SkillsSidebarProps) {
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<div className="flex flex-col gap-3 border-b border-border px-4 py-4">
-				<div>
-					<h1 className="text-lg font-semibold text-foreground">
-						Библиотека скиллов
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Установленные навыки агентов.
-					</p>
+				<div className="flex items-start justify-between gap-2">
+					<div className="min-w-0">
+						<h1 className="text-lg font-semibold text-foreground">
+							Библиотека скиллов
+						</h1>
+						<p className="text-sm text-muted-foreground">
+							Установленные навыки агентов.
+						</p>
+					</div>
+					{headerAction && <div className="shrink-0">{headerAction}</div>}
 				</div>
 				<Tabs
 					value={tab}

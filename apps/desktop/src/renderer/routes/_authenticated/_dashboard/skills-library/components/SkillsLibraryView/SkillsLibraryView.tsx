@@ -15,12 +15,33 @@
  */
 
 import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@rox/ui/alert-dialog";
+import { Button } from "@rox/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@rox/ui/dialog";
+import {
 	Empty,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
 } from "@rox/ui/empty";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
 import {
 	AnimatedPresence,
 	motionSpring,
@@ -33,8 +54,8 @@ import {
 } from "@rox/ui/resizable";
 import { toast } from "@rox/ui/sonner";
 import { motion } from "motion/react";
-import { useMemo, useState } from "react";
-import { LuLibrary } from "react-icons/lu";
+import { useMemo, useRef, useState } from "react";
+import { LuLibrary, LuPlus } from "react-icons/lu";
 import { DashboardSurface } from "renderer/components/DashboardSurface";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useExternalActions } from "../../hooks/useExternalActions";
@@ -89,6 +110,39 @@ export function SkillsLibraryView() {
 	});
 
 	const installed = skills ?? [];
+
+	const utils = electronTrpc.useUtils();
+	// Dirty state of the currently-open detail pane, lifted so a skill switch can
+	// guard against losing unsaved edits.
+	const [detailDirty, setDetailDirty] = useState(false);
+	// A skill selection held back while the open editor has unsaved edits.
+	const [pendingSelectId, setPendingSelectId] = useState<string | null>(null);
+	const [createOpen, setCreateOpen] = useState(false);
+	const [newSkillName, setNewSkillName] = useState("");
+	// Save-and-switch hook installed by the detail pane is not available here, so
+	// the guard offers discard / cancel; the detail pane owns explicit save.
+	const detailDirtyRef = useRef(false);
+	detailDirtyRef.current = detailDirty;
+
+	const selectSkill = (id: string | null) => {
+		if (id === selectedId) return;
+		if (detailDirtyRef.current && id !== null) {
+			setPendingSelectId(id);
+			return;
+		}
+		setSelectedId(id);
+	};
+
+	const createSkillMutation =
+		electronTrpc.skillsLibrary.createSkill.useMutation({
+			onSuccess: (data) => {
+				toast.success(`Скилл «${data.slug}» создан`);
+				void utils.skillsLibrary.list.invalidate();
+				setSelectedId(data.id);
+				setTab("installed");
+			},
+			onError: (error) => toast.error(`Не удалось создать: ${error.message}`),
+		});
 
 	// --- Catalog model (curated packs + install state). ------------------------
 	const catalog = useMemo(() => {
@@ -196,7 +250,7 @@ export function SkillsLibraryView() {
 	};
 
 	const openInstalledFromCatalog = (skillId: string) => {
-		setSelectedId(skillId);
+		selectSkill(skillId);
 		setTab("installed");
 	};
 
@@ -232,7 +286,21 @@ export function SkillsLibraryView() {
 							totalInstalled={installed.length}
 							isLoading={isLoading}
 							selectedId={selectedId}
-							onSelect={setSelectedId}
+							onSelect={selectSkill}
+							headerAction={
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-7 gap-1 px-2 text-xs"
+									onClick={() => {
+										setNewSkillName("");
+										setCreateOpen(true);
+									}}
+								>
+									<LuPlus className="size-3.5" />
+									Новый скилл
+								</Button>
+							}
 						/>
 					</ResizablePanel>
 					<ResizableHandle withHandle />
@@ -252,6 +320,15 @@ export function SkillsLibraryView() {
 									key={selectedSkill.id}
 									skillId={selectedSkill.id}
 									onSaved={() => toast.success("Файл скилла сохранён")}
+									onDirtyChange={setDetailDirty}
+									onDeleted={() => {
+										setDetailDirty(false);
+										setSelectedId(null);
+									}}
+									onDuplicated={(newSkillId) => {
+										setDetailDirty(false);
+										setSelectedId(newSkillId);
+									}}
 								/>
 							) : (
 								<Empty className="m-auto">
@@ -295,6 +372,73 @@ export function SkillsLibraryView() {
 					)}
 				</AnimatedPresence>
 			</div>
+
+			{/* Create-skill prompt. */}
+			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Новый скилл</DialogTitle>
+						<DialogDescription>
+							Будет создан каталог в ~/.claude/skills со стартовым SKILL.md.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="skill-create-name">Имя скилла</Label>
+						<Input
+							id="skill-create-name"
+							value={newSkillName}
+							onChange={(e) => setNewSkillName(e.target.value)}
+							placeholder="my-skill"
+							autoFocus
+						/>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setCreateOpen(false)}>
+							Отмена
+						</Button>
+						<Button
+							disabled={!newSkillName.trim() || createSkillMutation.isPending}
+							onClick={() => {
+								if (!newSkillName.trim()) return;
+								createSkillMutation.mutate({ name: newSkillName.trim() });
+								setCreateOpen(false);
+							}}
+						>
+							Создать
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Unsaved-edits guard when switching to a different skill. */}
+			<AlertDialog
+				open={pendingSelectId !== null}
+				onOpenChange={(open) => {
+					if (!open) setPendingSelectId(null);
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Несохранённые изменения</AlertDialogTitle>
+						<AlertDialogDescription>
+							В открытом скилле есть несохранённые правки. Переключение откроет
+							другой скилл и отбросит их.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Отмена</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => {
+								setDetailDirty(false);
+								setSelectedId(pendingSelectId);
+								setPendingSelectId(null);
+							}}
+						>
+							Продолжить без сохранения
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</DashboardSurface>
 	);
 }
