@@ -21,6 +21,7 @@ import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
 import { AgendaView } from "./components/AgendaView/AgendaView";
 import { CalendarScopePopover } from "./components/CalendarScopePopover";
+import { CalendarSettingsPopover } from "./components/CalendarSettingsPopover";
 import { EventDialog, type EventDialogValue } from "./components/EventDialog";
 import { MonthView } from "./components/MonthView/MonthView";
 import { SubscribeFeedDialog } from "./components/SubscribeFeedDialog";
@@ -415,6 +416,13 @@ export function CalendarView() {
 						calendarId={firstCalendarId}
 						inputRef={importInputRef}
 					/>
+
+					{firstCalendar && (
+						<CalendarSettingsPopover
+							calendar={firstCalendar}
+							isOwner={ownsFirstCalendar}
+						/>
+					)}
 
 					{ownsFirstCalendar && firstCalendar && (
 						<SubscribeFeedDialog
