@@ -81,8 +81,10 @@ import {
 	type V2UserPreferencesRow,
 	v2TerminalPresetSchema,
 	v2UserPreferencesSchema,
+	type WorkspaceGovernanceItemRow,
 	type WorkspaceLocalStateRow,
 	type WorkspacesCreateInput,
+	workspaceGovernanceItemSchema,
 	workspaceLocalStateSchema,
 } from "./dashboardSidebarLocal";
 import { withReadHeal } from "./withReadHeal";
@@ -225,6 +227,15 @@ export interface OrgCollections {
 		LocalStorageCollectionUtils,
 		typeof v2TerminalPresetSchema,
 		z.input<typeof v2TerminalPresetSchema>
+	>;
+	// TODO(server): swap to an Electric/host-service shape once governance items
+	// (goals/tasks/missions) are persisted server-side. Local-only for now.
+	v2WorkspaceGovernance: Collection<
+		WorkspaceGovernanceItemRow,
+		string,
+		LocalStorageCollectionUtils,
+		typeof workspaceGovernanceItemSchema,
+		z.input<typeof workspaceGovernanceItemSchema>
 	>;
 	v2UserPreferences: Collection<
 		V2UserPreferencesRow,
@@ -1098,6 +1109,23 @@ function createOrgCollections(
 		}),
 	);
 
+	// TODO(server): governance items are local-only until a backend collection
+	// exists. Keyed by item id, indexed by workspaceId so the "Управление"
+	// section can live-query only its workspace's goals/tasks/missions.
+	const v2WorkspaceGovernance = createIndexedCollection(
+		localStorageCollectionOptions({
+			id: `v2_workspace_governance-${organizationId}`,
+			storageKey: `v2-workspace-governance-${organizationId}`,
+			schema: workspaceGovernanceItemSchema,
+			getKey: (item) => item.id,
+		}),
+	);
+	v2WorkspaceGovernance.createIndex(
+		(item) => item.workspaceId,
+		basicIndexConfig,
+	);
+	v2WorkspaceGovernance.createIndex((item) => item.kind, basicIndexConfig);
+
 	const v2UserPreferences = createCollection(
 		localStorageCollectionOptions(
 			withReadHeal(
@@ -1159,6 +1187,7 @@ function createOrgCollections(
 		v2WorkspaceLocalState,
 		v2SidebarSections,
 		v2TerminalPresets,
+		v2WorkspaceGovernance,
 		v2UserPreferences,
 		failedWorkspaceCreates,
 	};

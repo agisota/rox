@@ -61,7 +61,9 @@ export const workspaceLocalStateSchema = z.object({
 		sectionId: z.string().uuid().nullable().default(null),
 		changesFilter: changesFilterSchema.default({ kind: "all" }),
 		changesViewMode: z.enum(["folders", "tree"]).default("folders"),
-		activeTab: z.enum(["changes", "files", "review"]).default("changes"),
+		activeTab: z
+			.enum(["changes", "files", "review", "governance"])
+			.default("changes"),
 		isHidden: z.boolean().default(false),
 		/** Per-branch accent color (hex/oklch string) or null for default. */
 		color: z.string().nullable().default(null),

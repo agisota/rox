@@ -1,0 +1,1 @@
+export { GovernanceItemRow } from "./GovernanceItemRow";

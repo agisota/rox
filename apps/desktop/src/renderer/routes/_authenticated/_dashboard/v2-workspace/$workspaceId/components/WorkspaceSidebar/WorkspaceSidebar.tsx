@@ -13,6 +13,7 @@ import { FilesTab } from "./components/FilesTab";
 import { PRActionHeader } from "./components/PRActionHeader";
 import { SidebarHeader } from "./components/SidebarHeader";
 import { useChangesTab } from "./hooks/useChangesTab";
+import { useGovernanceTab } from "./hooks/useGovernanceTab";
 import { type OpenChatFn, usePRFlowDispatch } from "./hooks/usePRFlowDispatch";
 import { usePRFlowState } from "./hooks/usePRFlowState";
 import { useReviewTab } from "./hooks/useReviewTab";
@@ -25,9 +26,14 @@ import type { SidebarTabDefinition } from "./types";
 // tooltip through `selectActionButton`, independent of this flag.
 const CREATE_PR_BUTTON_ENABLED = true;
 
-type SidebarTabId = "changes" | "files" | "review";
+type SidebarTabId = "changes" | "files" | "review" | "governance";
 
-const VALID_TAB_IDS: readonly SidebarTabId[] = ["changes", "files", "review"];
+const VALID_TAB_IDS: readonly SidebarTabId[] = [
+	"changes",
+	"files",
+	"review",
+	"governance",
+];
 
 function isSidebarTabId(tab: string): tab is SidebarTabId {
 	return (VALID_TAB_IDS as readonly string[]).includes(tab);
@@ -151,6 +157,11 @@ export function WorkspaceSidebar({
 			: undefined,
 	});
 
+	const governanceTab = useGovernanceTab({
+		workspaceId,
+		onOpenChat: onOpenChat ?? (() => {}),
+	});
+
 	const { flowState, onRetry } = usePRFlowState(workspaceId);
 	const dispatch = usePRFlowDispatch({
 		onOpenChat: onOpenChat ?? (() => {}),
@@ -172,7 +183,12 @@ export function WorkspaceSidebar({
 		),
 	};
 
-	const tabs: SidebarTabDefinition[] = [filesTab, changesTab, reviewTab];
+	const tabs: SidebarTabDefinition[] = [
+		filesTab,
+		changesTab,
+		reviewTab,
+		governanceTab,
+	];
 	const activeTabDef = tabs.find((t) => t.id === activeTab);
 
 	return (
