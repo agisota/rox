@@ -3,6 +3,7 @@ import { Spinner } from "@rox/ui/spinner";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { LuLayoutGrid } from "react-icons/lu";
+import { ProjectSyncStatus } from "renderer/components/ProjectSyncStatus";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { logger } from "renderer/lib/logger";
@@ -89,6 +90,18 @@ export function ImportWorkspacesPage({
 		projectsQuery.data,
 		cloudWorkspacesQuery.data,
 	]);
+
+	// #537: local-first sync state per imported v2 project, surfaced from the host
+	// `project.list` row so each group header can show a "syncing…/retrying"
+	// indicator while the outbox links the cloud record. Refreshed by the page's
+	// `refresh` (which refetches `hostProjectListQuery`).
+	const syncStateByV2Id = useMemo(() => {
+		const map = new Map<string, "pending" | "synced" | "error">();
+		for (const p of hostProjectListQuery.data ?? []) {
+			map.set(p.id, p.syncState);
+		}
+		return map;
+	}, [hostProjectListQuery.data]);
 
 	const cloudWorkspaceKeys = useMemo(() => {
 		const set = new Set<string>();
@@ -363,27 +376,36 @@ export function ImportWorkspacesPage({
 			isRefreshing={isRefreshing}
 			headerAction={headerAction}
 		>
-			{Array.from(grouped.entries()).map(([projectV1Id, group]) => (
-				<div key={projectV1Id} className="mb-1.5 flex min-w-0 flex-col">
-					<div
-						className="truncate px-2.5 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70"
-						title={group.projectName}
-					>
-						{group.projectName}
+			{Array.from(grouped.entries()).map(([projectV1Id, group]) => {
+				const v2ProjectId = v2ProjectIdByV1Id.get(projectV1Id);
+				const syncState = v2ProjectId
+					? syncStateByV2Id.get(v2ProjectId)
+					: undefined;
+				return (
+					<div key={projectV1Id} className="mb-1.5 flex min-w-0 flex-col">
+						<div className="flex min-w-0 items-center gap-2 px-2.5 pt-2.5 pb-1">
+							<span
+								className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70"
+								title={group.projectName}
+							>
+								{group.projectName}
+							</span>
+							{syncState && <ProjectSyncStatus syncState={syncState} />}
+						</div>
+						{group.items.map((entry) => (
+							<WorkspaceRow
+								key={entry.workspace.id}
+								entry={entry}
+								status={adoptStates.get(entry.workspace.id) ?? IDLE}
+								disabled={isAdoptingAll}
+								onAdopt={() => {
+									void adoptWorkspace(entry);
+								}}
+							/>
+						))}
 					</div>
-					{group.items.map((entry) => (
-						<WorkspaceRow
-							key={entry.workspace.id}
-							entry={entry}
-							status={adoptStates.get(entry.workspace.id) ?? IDLE}
-							disabled={isAdoptingAll}
-							onAdopt={() => {
-								void adoptWorkspace(entry);
-							}}
-						/>
-					))}
-				</div>
-			))}
+				);
+			})}
 		</ImportPageShell>
 	);
 }

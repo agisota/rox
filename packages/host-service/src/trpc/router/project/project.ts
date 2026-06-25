@@ -69,6 +69,12 @@ export const projectRouter = router({
 				repoName: projects.repoName,
 				repoUrl: projects.repoUrl,
 				worktreeBaseDir: projects.worktreeBaseDir,
+				// #537: surface the local-first sync state so the renderer can show a
+				// per-project "syncing…/synced/retrying" indicator. `cloudId` is null
+				// until the outbox worker links the cloud row; on the synchronous-cloud
+				// path `syncState` is `synced`-by-construction.
+				cloudId: projects.cloudId,
+				syncState: projects.syncState,
 			})
 			.from(projects)
 			.all();
@@ -88,6 +94,9 @@ export const projectRouter = router({
 						worktreeBaseDir: projects.worktreeBaseDir,
 						branchPrefixMode: projects.branchPrefixMode,
 						branchPrefixCustom: projects.branchPrefixCustom,
+						// #537: same local-first sync fields as `list`, for a detail view.
+						cloudId: projects.cloudId,
+						syncState: projects.syncState,
 					})
 					.from(projects)
 					.where(eq(projects.id, input.projectId))
