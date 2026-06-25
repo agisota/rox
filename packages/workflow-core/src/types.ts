@@ -38,6 +38,10 @@ export type CoreBlockType =
 	| "embedding"
 	| "classifier"
 	| "structured_extract"
+	| "manual_input"
+	| "webhook"
+	| "schedule"
+	| "notify"
 	| "error_boundary";
 
 export interface RoxBlockState {

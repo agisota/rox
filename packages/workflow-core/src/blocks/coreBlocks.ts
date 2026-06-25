@@ -217,6 +217,38 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "low",
 	}),
+	defineBlock("manual_input", {
+		label: "Manual Input",
+		description:
+			"Entry node: forwards the run input into the graph, shaped by the node's typed fields.",
+		inputs: [],
+		outputs: [{ name: "out" }],
+		risk: "none",
+	}),
+	defineBlock("webhook", {
+		label: "Webhook",
+		description:
+			"Trigger node: an inbound HTTP event starts the graph at this node (bound via the pipeline_triggers registry).",
+		inputs: [],
+		outputs: [{ name: "out" }],
+		risk: "low",
+	}),
+	defineBlock("schedule", {
+		label: "Schedule",
+		description:
+			"Trigger node: a cron schedule dispatches a run that starts at this node (bound via the pipeline_triggers registry).",
+		inputs: [],
+		outputs: [{ name: "out" }],
+		risk: "low",
+	}),
+	defineBlock("notify", {
+		label: "Notify",
+		description:
+			"Output node: sends a message to a delivery channel; `out` continues the flow, `error` carries a delivery failure.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
