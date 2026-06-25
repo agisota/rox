@@ -6,6 +6,8 @@ import {
 } from "@rox/ui/ai-elements/message";
 import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
 import { AnimatedFileLink } from "@rox/ui/motion";
+import { toast } from "@rox/ui/sonner";
+import type { SynthesizedAudio } from "@rox/ui/voice";
 import { FileSearchIcon } from "lucide-react";
 import { type ReactNode, useCallback, useState } from "react";
 import { StreamingMessageText } from "renderer/components/Chat/ChatInterface/components/MessagePartsRenderer/components/StreamingMessageText";
@@ -13,6 +15,7 @@ import { ReasoningBlock } from "renderer/components/Chat/ChatInterface/component
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import { normalizeToolName } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { AttachmentChip } from "../AttachmentChip";
@@ -134,6 +137,7 @@ export function AssistantMessage({
 }: AssistantMessageProps) {
 	const addFileViewerPane = useTabsStore((store) => store.addFileViewerPane);
 	const { copyToClipboard } = useCopyToClipboard();
+	const ttsUtils = electronTrpc.useUtils();
 	const [copied, setCopied] = useState(false);
 	const fullText = getAssistantMessageText(message);
 	const handleCopyFull = useCallback(() => {
@@ -142,6 +146,22 @@ export function AssistantMessage({
 		setCopied(true);
 		setTimeout(() => setCopied(false), 1500);
 	}, [fullText, copyToClipboard]);
+	// FN-043 (#486): synthesize this reply to speech via the desktop edge-TTS
+	// router for the "Прослушать" button. Kept here (the desktop edge) so the
+	// shared ListenButton stays IPC-free and reusable on web/mobile.
+	const handleSynthesize = useCallback(
+		(text: string): Promise<SynthesizedAudio> =>
+			ttsUtils.client.tts.synthesize.mutate({ text }),
+		[ttsUtils],
+	);
+	const handleListenError = useCallback((error: unknown) => {
+		const detail = error instanceof Error ? error.message : "";
+		toast.error(
+			detail
+				? `Не удалось озвучить ответ: ${detail}`
+				: "Не удалось озвучить ответ",
+		);
+	}, []);
 	const showActions =
 		!isStreaming && Boolean(onRegenerate) && message.content.length > 0;
 	const nodes: ReactNode[] = [];
@@ -414,6 +434,8 @@ export function AssistantMessage({
 						onCopy={handleCopyFull}
 						onRegenerate={onRegenerate}
 						onRetry={onRetry ?? onRegenerate}
+						onSynthesize={handleSynthesize}
+						onListenError={handleListenError}
 					/>
 				) : null}
 			</MessageContent>

@@ -32,6 +32,7 @@ import { createSkillsLibraryRouter } from "./skills-library";
 import { createSpectreRouter } from "./spectre";
 import { createSystemRouter } from "./system";
 import { createTerminalRouter } from "./terminal";
+import { createTtsRouter } from "./tts";
 import { createUiStateRouter } from "./ui-state";
 import { createWindowRouter } from "./window";
 import { createWorkspacesRouter } from "./workspaces";
@@ -62,6 +63,7 @@ export const createAppRouter = (getWindow: () => BrowserWindow | null) => {
 		menu: createMenuRouter(),
 		external: createExternalRouter(),
 		settings: createSettingsRouter(),
+		tts: createTtsRouter(),
 		system: createSystemRouter(),
 		config: createConfigRouter(),
 		device: createDeviceRouter(),

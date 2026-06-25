@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `tts_voice` text;
