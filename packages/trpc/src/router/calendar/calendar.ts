@@ -215,6 +215,82 @@ async function getEventWithAccess(
 	return event;
 }
 
+/**
+ * #528 helper: compare an incoming `exdates` (Date[]) against the stored value
+ * (ISO `string[]`) as instant sets, order-insensitive. Used only to decide
+ * whether the timing anchor moved enough to warrant a reminder recompute.
+ */
+function sameExdates(incoming: Date[], stored: string[]): boolean {
+	if (incoming.length !== stored.length) return false;
+	const a = new Set(incoming.map((d) => d.getTime()));
+	for (const s of stored) {
+		if (!a.has(new Date(s).getTime())) return false;
+	}
+	return true;
+}
+
+/**
+ * #528: re-materialize `next_fire_at` for every SCHEDULED reminder of an event
+ * whose timing anchor (`dtstart` / `rrule` / `timezone`) just changed.
+ *
+ * `updateReminder` already recomputes on a reminder edit, but a plain
+ * `updateEvent` that reschedules the series/one-off left each reminder pointing
+ * at its OLD instant (it would keep firing at the stale time until re-saved).
+ * For each reminder we re-run the SAME pure {@link computeNextFireAt} the
+ * create/update reminder paths use, off the freshly-written event row:
+ *   - a future instant → write the new `next_fire_at` (kept `scheduled`);
+ *   - `null` (recurrence exhausted / one-off now in the past) → flip to `fired`
+ *     so the due-scan stops considering it, mirroring the post-fire terminal
+ *     state rather than leaving a `scheduled` row with a stale future key.
+ *
+ * Only `scheduled` rows are touched — already `fired`/`cancelled` reminders are
+ * terminal and must not be silently re-armed by an unrelated event edit.
+ */
+async function recomputeRemindersForEvent(
+	organizationId: string,
+	event: typeof calEvents.$inferSelect,
+): Promise<void> {
+	const reminders = await db
+		.select()
+		.from(calReminders)
+		.where(
+			and(
+				eq(calReminders.organizationId, organizationId),
+				eq(calReminders.eventId, event.id),
+				eq(calReminders.status, "scheduled"),
+			),
+		);
+	if (reminders.length === 0) return;
+
+	const now = new Date();
+	for (const reminder of reminders) {
+		// An `absolute` reminder fires at a fixed instant that does NOT depend on
+		// the event's anchor, so a dtstart/rrule/tz change can't move it — leave it
+		// untouched. Only `relative` (offset-before-occurrence) reminders re-derive.
+		if (reminder.offsetMinutes === null) continue;
+		const nextFireAt = computeNextFireAt({
+			event,
+			offsetMinutes: reminder.offsetMinutes,
+			absoluteFireAt: reminder.absoluteFireAt,
+			now,
+		});
+		await db
+			.update(calReminders)
+			.set(
+				nextFireAt
+					? { nextFireAt }
+					: // No future instant remains after the reschedule — retire it.
+						{ status: "fired" as const },
+			)
+			.where(
+				and(
+					eq(calReminders.id, reminder.id),
+					eq(calReminders.organizationId, organizationId),
+				),
+			);
+	}
+}
+
 function toExpandable(event: typeof calEvents.$inferSelect): ExpandableEvent {
 	return {
 		id: event.id,
@@ -751,6 +827,21 @@ export const calendarRouter = {
 					input.timezone ?? existing.timezone,
 				);
 			}
+
+			// #528: did this edit move the event's recurrence anchor? Only a real
+			// change to dtstart / rrule / timezone / exdates can shift a relative
+			// reminder's fire instant, so we gate the (write-bearing) reminder
+			// recompute on an actual delta — a pure title/description/location edit
+			// must NOT re-touch reminders.
+			const timingChanged =
+				(input.dtstart !== undefined &&
+					input.dtstart.getTime() !== existing.dtstart.getTime()) ||
+				(input.rrule !== undefined && input.rrule !== existing.rrule) ||
+				(input.timezone !== undefined &&
+					input.timezone !== existing.timezone) ||
+				(input.exdates !== undefined &&
+					!sameExdates(input.exdates, existing.exdates));
+
 			const [row] = await db
 				.update(calEvents)
 				.set({
@@ -775,6 +866,18 @@ export const calendarRouter = {
 					),
 				)
 				.returning();
+
+			// #528: when the event's timing anchor (dtstart / rrule / timezone /
+			// exdates) changes, every scheduled reminder's materialized
+			// `next_fire_at` is now stale and would keep firing at the OLD instant
+			// until the reminder is itself re-saved. Recompute each scheduled
+			// reminder's fire instant off the freshly-written row (which already
+			// reflects this update) via the same pure `computeNextFireAt` helper
+			// `updateReminder` uses, so a rescheduled series moves its reminders
+			// coherently.
+			if (row && timingChanged) {
+				await recomputeRemindersForEvent(organizationId, row);
+			}
 			return row;
 		}),
 
