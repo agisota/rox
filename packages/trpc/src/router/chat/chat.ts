@@ -1,22 +1,28 @@
 import { db, dbWs } from "@rox/db/client";
 import { chatSessionStatusEnum } from "@rox/db/enums";
-import { chatSessions, usageRequests } from "@rox/db/schema";
+import { chatMessages, chatSessions, usageRequests } from "@rox/db/schema";
 import { getCurrentTxid } from "@rox/db/utils";
 import {
 	AVAILABLE_CHAT_MODELS,
 	ROX_CHAT_MODEL_ID,
 } from "@rox/shared/chat-models";
+import type { MessageSearchResult } from "@rox/shared/search";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure } from "../../trpc";
+import {
+	buildFacetSearchSql,
+	normalizeSearchQuery,
+} from "../search/search-sql";
 import { requireActiveOrgId } from "../utils/active-org";
 import {
 	buildLabelFilterConditions,
 	listSessionsSchema,
 } from "./labels-schema";
 import { RECENTS_DEFAULT_LIMIT, recentsInputSchema } from "./recents-schema";
+import { searchMessagesSchema } from "./search-messages-schema";
 import {
 	type ChatCompletionResult,
 	deriveSessionTitle,
@@ -153,6 +159,81 @@ export const chatRouter = {
 				.limit(input?.limit ?? RECENTS_DEFAULT_LIMIT);
 
 			return { recents };
+		}),
+
+	/**
+	 * Full-text search over chat message CONTENT (Hermes-borrow F15).
+	 *
+	 * Backs the in-conversation filter box's async content lane: the UI shows an
+	 * instant title-match the keystroke after the user types (pure, client-side),
+	 * then layers these ranked, `<mark>`-highlighted content hits on top once they
+	 * resolve. Always org + author scoped (a user only searches their own message
+	 * history); `sessionId` narrows to ONE conversation, omitted = every session.
+	 *
+	 * Reuses the canonical `buildFacetSearchSql([chatMessages.content])` — the SAME
+	 * vector the `chat_messages_fts_idx` GIN index is built from — so the scan uses
+	 * the index and the highlighted snippet comes from `ts_headline` over the same
+	 * document. An empty/whitespace query short-circuits to empty without a DB hit.
+	 */
+	searchMessages: protectedProcedure
+		.input(searchMessagesSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = requireActiveOrgId(ctx);
+			const query = normalizeSearchQuery(input.query);
+			if (!query) {
+				return { results: [], totalCount: 0 };
+			}
+
+			const cm = buildFacetSearchSql({
+				query,
+				columns: [chatMessages.content],
+			});
+			const conds: SQL[] = [
+				eq(chatMessages.organizationId, organizationId),
+				eq(chatMessages.createdBy, ctx.session.user.id),
+				cm.match,
+			];
+			if (input.sessionId) {
+				conds.push(eq(chatMessages.sessionId, input.sessionId));
+			}
+
+			const [cnt, rows] = await Promise.all([
+				db
+					.select({ value: count() })
+					.from(chatMessages)
+					.where(and(...conds)),
+				db
+					.select({
+						id: chatMessages.id,
+						sessionId: chatMessages.sessionId,
+						role: chatMessages.role,
+						content: chatMessages.content,
+						snippet: cm.headline,
+						score: cm.rank,
+						createdAt: chatMessages.createdAt,
+					})
+					.from(chatMessages)
+					.where(and(...conds))
+					.orderBy(
+						desc(cm.rank),
+						desc(chatMessages.createdAt),
+						desc(chatMessages.id),
+					)
+					.limit(input.limit),
+			]);
+
+			const results: MessageSearchResult[] = rows.map((row) => ({
+				id: row.id,
+				sessionId: row.sessionId,
+				role: row.role,
+				title: deriveMessageTitle(row.content),
+				snippet: row.snippet && row.snippet.length > 0 ? row.snippet : null,
+				score:
+					typeof row.score === "number" ? row.score : Number(row.score) || 0,
+				createdAt: row.createdAt.toISOString(),
+			}));
+
+			return { results, totalCount: cnt[0]?.value ?? 0 };
 		}),
 
 	getSessionDetail: protectedProcedure
@@ -620,3 +701,18 @@ export const chatRouter = {
 			return { updated: !!updated };
 		}),
 } satisfies TRPCRouterRecord;
+
+/**
+ * Chat messages have no title — derive a short, scannable display line from the
+ * content's first non-empty line for a `searchMessages` result row (the full
+ * match is still highlighted in the `ts_headline` snippet). Mirrors the
+ * cross-entity search router's `deriveMessageTitle`.
+ */
+function deriveMessageTitle(content: string): string {
+	const firstLine = content
+		.split("\n")
+		.map((line) => line.trim())
+		.find((line) => line.length > 0);
+	if (!firstLine) return "Сообщение";
+	return firstLine.length > 80 ? `${firstLine.slice(0, 79)}…` : firstLine;
+}

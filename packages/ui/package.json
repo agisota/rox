@@ -19,6 +19,7 @@
 		"./presence-stack": "./src/components/PresenceStack/index.ts",
 		"./tag-filter-pill-bar": "./src/components/TagFilterPillBar/index.ts",
 		"./faceted-search-results": "./src/components/FacetedSearchResults/index.ts",
+		"./message-search-box": "./src/components/MessageSearchBox/index.ts",
 		"./room-visibility-badge": "./src/components/RoomVisibilityBadge/index.ts",
 		"./session-row": "./src/components/SessionRow/index.ts",
 		"./offline-shell": "./src/components/OfflineShell/index.ts",
