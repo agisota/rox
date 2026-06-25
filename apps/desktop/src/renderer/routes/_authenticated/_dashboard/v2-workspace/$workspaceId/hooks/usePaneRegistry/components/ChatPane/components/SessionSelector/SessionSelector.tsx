@@ -18,8 +18,8 @@ import {
 	HiMiniChevronRight,
 	HiMiniPlus,
 } from "react-icons/hi2";
-import { useChatPreferencesStore } from "renderer/stores/chat-preferences/store";
 import { getRelativeTime } from "renderer/screens/main/components/WorkspacesListView/utils";
+import { useChatPreferencesStore } from "renderer/stores/chat-preferences/store";
 import { SessionSelectorItem } from "./components/SessionSelectorItem";
 import { selectPinnedSessions } from "./utils/selectPinnedSessions/selectPinnedSessions";
 
@@ -51,10 +51,7 @@ const NEW_CHAT_LABEL = "Новый чат";
 // Localized headers for the shared `groupSessionsByAge` keys (F18). The `older`
 // bucket renders a relative label from its `olderAt` so far-back history reads
 // naturally instead of a flat "Older".
-const GROUP_LABELS: Record<
-	Exclude<SessionAgeGroupKey, "older">,
-	string
-> = {
+const GROUP_LABELS: Record<Exclude<SessionAgeGroupKey, "older">, string> = {
 	today: "Сегодня",
 	yesterday: "Вчера",
 	last7Days: "Последние 7 дней",
@@ -63,9 +60,7 @@ const GROUP_LABELS: Record<
 
 function sessionGroupLabel(group: SessionAgeGroup<SessionItem>): string {
 	if (group.key === "older") {
-		return group.olderAt !== null
-			? getRelativeTime(group.olderAt)
-			: "Ранее";
+		return group.olderAt !== null ? getRelativeTime(group.olderAt) : "Ранее";
 	}
 	return GROUP_LABELS[group.key];
 }
@@ -196,7 +191,9 @@ export function SessionSelector({
 											) : (
 												<HiMiniChevronDown className="size-3 shrink-0" />
 											)}
-											<span className="truncate">{sessionGroupLabel(group)}</span>
+											<span className="truncate">
+												{sessionGroupLabel(group)}
+											</span>
 										</button>
 										{!collapsed &&
 											group.sessions.map((session) => (

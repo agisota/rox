@@ -1,12 +1,11 @@
 import { describe, expect, it } from "bun:test";
-
-import type { SessionAgeGroupKey } from "./group-sessions";
 import {
 	type CollapsibleGroupKey,
 	isGroupCollapsed,
 	normalizeCollapseState,
 	toggleGroupCollapsed,
 } from "./group-collapse";
+import type { SessionAgeGroupKey } from "./group-sessions";
 
 const ALL_KEYS: readonly SessionAgeGroupKey[] = [
 	"today",
@@ -65,6 +64,8 @@ describe("normalizeCollapseState", () => {
 
 	it("respects a restricted valid-key set", () => {
 		const valid: CollapsibleGroupKey[] = ["older"];
-		expect(normalizeCollapseState(["today", "older"], valid)).toEqual(["older"]);
+		expect(normalizeCollapseState(["today", "older"], valid)).toEqual([
+			"older",
+		]);
 	});
 });
