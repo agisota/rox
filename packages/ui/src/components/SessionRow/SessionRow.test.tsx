@@ -20,6 +20,43 @@ describe("SessionRow", () => {
 		expect(html).toContain('data-density="compact"');
 	});
 
+	it("renders title #tag chips when onSelectTag + titleSegments are given (F13)", () => {
+		const html = renderToStaticMarkup(
+			<SessionRow
+				data={{
+					...BASE,
+					title: "plan #q3",
+					titleSegments: [
+						{ kind: "text", text: "plan " },
+						{ kind: "tag", text: "#q3", tag: "q3" },
+					],
+				}}
+				onSelect={() => {}}
+				onSelectTag={() => {}}
+			/>,
+		);
+		expect(html).toContain('data-chip-tag="q3"');
+		expect(html).toContain("#q3");
+	});
+
+	it("renders the plain title (no chips) without an onSelectTag handler", () => {
+		const html = renderToStaticMarkup(
+			<SessionRow
+				data={{
+					...BASE,
+					title: "plan #q3",
+					titleSegments: [
+						{ kind: "text", text: "plan " },
+						{ kind: "tag", text: "#q3", tag: "q3" },
+					],
+				}}
+				onSelect={() => {}}
+			/>,
+		);
+		expect(html).toContain("plan #q3");
+		expect(html).not.toContain("data-chip-tag");
+	});
+
 	it("falls back to the empty-title label for a blank title", () => {
 		const html = renderToStaticMarkup(
 			<SessionRow

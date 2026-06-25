@@ -13,6 +13,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { HashtagTitle } from "../HashtagTitle/HashtagTitle";
 import {
 	deriveLabelDots,
 	deriveSourceChips,
@@ -53,6 +54,17 @@ export interface SessionRowProps {
 	deleteLabel?: string;
 	/** Placeholder when `title` is empty. */
 	emptyTitleLabel?: string;
+	/**
+	 * Filter on a `#tag` clicked inside the title (Hermes-borrow F13). When set,
+	 * the title renders its inline `#tags` as clickable colour chips and a click
+	 * emits the canonical tag name; the host drops it into the live filter / F10
+	 * pill axis. Omit to render the title as plain text. The host parses the
+	 * title with `parseHashtagSegments` from `@rox/chat/shared` (the pure tag
+	 * tokenizer) and passes the segments via `data.titleSegments`.
+	 */
+	onSelectTag?: (tag: string) => void;
+	/** Tag names currently active in the filter (accent-filled title chips). */
+	activeTags?: readonly string[];
 	className?: string;
 }
 
@@ -74,11 +86,14 @@ export function SessionRow({
 	unpinLabel = "Unpin",
 	deleteLabel = "Delete",
 	emptyTitleLabel = "New Chat",
+	onSelectTag,
+	activeTags,
 	className,
 }: SessionRowProps) {
 	const {
 		sessionId,
 		title,
+		titleSegments,
 		isCurrent,
 		pinned,
 		labels,
@@ -86,6 +101,10 @@ export function SessionRow({
 		lineage,
 		timeLabel,
 	} = data;
+
+	// Render `#tag` chips only when the surface wires a filter handler and has
+	// parsed segments; otherwise the title stays plain text.
+	const showTagChips = Boolean(onSelectTag) && Boolean(titleSegments?.length);
 
 	const { dots, overflow } = deriveLabelDots(labels);
 	const chips = deriveSourceChips(sources);
@@ -99,14 +118,15 @@ export function SessionRow({
 			data-session-id={sessionId}
 			data-density={density}
 		>
-			<button
-				type="button"
-				className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left"
-				onClick={() => onSelect(sessionId)}
-			>
+			<div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
 				<span className="flex w-full min-w-0 items-center gap-1.5">
 					{dots.length > 0 && (
-						<span className="flex shrink-0 items-center gap-0.5">
+						<button
+							type="button"
+							aria-label={emptyTitleLabel}
+							className="flex shrink-0 items-center gap-0.5"
+							onClick={() => onSelect(sessionId)}
+						>
 							{dots.map((label) => (
 								<span
 									key={label.name}
@@ -122,16 +142,36 @@ export function SessionRow({
 									+{overflow}
 								</span>
 							)}
-						</span>
+						</button>
 					)}
-					<span
-						className={cn(
-							"min-w-0 flex-1 truncate text-xs",
-							isCurrent && "font-semibold",
-						)}
-					>
-						{title || emptyTitleLabel}
-					</span>
+					{/* The title selects the session; its inline `#tag` chips (F13)
+					    filter instead, so the clickable title lives as its own button
+					    rather than wrapping one (which would nest interactive elements). */}
+					{showTagChips ? (
+						<span
+							className={cn(
+								"min-w-0 flex-1 truncate text-left text-xs",
+								isCurrent && "font-semibold",
+							)}
+						>
+							<HashtagTitle
+								segments={titleSegments ?? []}
+								onSelectTag={onSelectTag}
+								activeTags={activeTags}
+							/>
+						</span>
+					) : (
+						<button
+							type="button"
+							onClick={() => onSelect(sessionId)}
+							className={cn(
+								"min-w-0 flex-1 truncate text-left text-xs",
+								isCurrent && "font-semibold",
+							)}
+						>
+							{title || emptyTitleLabel}
+						</button>
+					)}
 					{chips.length > 0 && (
 						<span className="flex shrink-0 items-center gap-1">
 							{chips.map((chip) => {
@@ -182,7 +222,7 @@ export function SessionRow({
 						)}
 					</span>
 				)}
-			</button>
+			</div>
 
 			{onSetPinned && (
 				<button

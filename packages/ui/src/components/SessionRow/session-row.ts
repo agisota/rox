@@ -12,6 +12,8 @@
  * needed for the row to support them.
  */
 
+import type { HashtagTitleSegment } from "../HashtagTitle/hashtag-title";
+
 /** A coloured label dot for the row (F12 — colour comes from `labelColor`). */
 export interface SessionRowLabel {
 	/** Stable key (the label name; also the `chat_sessions.labels` membership). */
@@ -43,6 +45,14 @@ export interface SessionRowLineage {
 export interface SessionRowData {
 	sessionId: string;
 	title: string;
+	/**
+	 * The title pre-parsed into text / `#tag` runs (Hermes-borrow F13). When the
+	 * row is given an `onSelectTag` handler, these segments render the title's
+	 * inline `#tags` as clickable chips; absent (or without a handler), the plain
+	 * `title` is shown. The host parses with `parseHashtagSegments` from
+	 * `@rox/chat/shared` so the tokenizer stays single-sourced.
+	 */
+	titleSegments?: readonly HashtagTitleSegment[];
 	/** Current/active session → bold title + active styling. */
 	isCurrent: boolean;
 	/** F19 pin state. Omit to hide the pin affordance entirely. */

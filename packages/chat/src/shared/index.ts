@@ -12,6 +12,14 @@ export {
 	type ActivityToolCall,
 	bucketActivityToolCalls,
 } from "./bucket-activity";
+export {
+	extractHashtags,
+	type HashtagSegment,
+	type HashtagTagSegment,
+	type HashtagTextSegment,
+	hasHashtags,
+	parseHashtagSegments,
+} from "./hashtag-tokens";
 export { tokenizeSlashCommandArguments } from "./slash-command-arguments";
 export {
 	findSlashCommandByNameOrAlias,

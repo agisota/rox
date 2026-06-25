@@ -2,6 +2,7 @@ import {
 	ChatRuntimeServiceProvider,
 	ChatServiceProvider,
 } from "@rox/chat/client";
+import { extractHashtags } from "@rox/chat/shared";
 import { useCallback, useMemo, useState } from "react";
 import type { MosaicBranch } from "react-mosaic-component";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";
@@ -94,11 +95,37 @@ export function ChatPane({
 	const [filteredSessionIds, setFilteredSessionIds] = useState<string[] | null>(
 		null,
 	);
+	// F13 hashtag-in-title filter (second tag axis): a `#tag` chip clicked in a
+	// session title narrows the list to titles carrying that tag. Purely
+	// presentational + client-side — orthogonal to the F10 label axis above and
+	// never touches `chat_sessions.labels`. Clicking the active tag clears it.
+	const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
+	const onSelectHashtag = useCallback((tag: string) => {
+		setActiveHashtag((current) =>
+			current?.toLowerCase() === tag.toLowerCase() ? null : tag,
+		);
+	}, []);
+	const activeHashtags = useMemo(
+		() => (activeHashtag ? [activeHashtag] : []),
+		[activeHashtag],
+	);
+
 	const visibleSessionItems = useMemo(() => {
-		if (filteredSessionIds === null) return sessionItems;
-		const allowed = new Set(filteredSessionIds);
-		return sessionItems.filter((session) => allowed.has(session.sessionId));
-	}, [sessionItems, filteredSessionIds]);
+		let items = sessionItems;
+		if (filteredSessionIds !== null) {
+			const allowed = new Set(filteredSessionIds);
+			items = items.filter((session) => allowed.has(session.sessionId));
+		}
+		if (activeHashtag) {
+			const wanted = activeHashtag.toLowerCase();
+			items = items.filter((session) =>
+				extractHashtags(session.title).some(
+					(tag) => tag.toLowerCase() === wanted,
+				),
+			);
+		}
+		return items;
+	}, [sessionItems, filteredSessionIds, activeHashtag]);
 
 	// Cross-session recents (~10) for the scrollback rail's Recents-flyout (F49).
 	// Reuses the controller's session list (already org-scoped, sorted by
@@ -182,6 +209,8 @@ export function ChatPane({
 									onSelectSession={handleSelectSession}
 									onNewChat={handleNewChat}
 									onDeleteSession={handleDeleteSession}
+									onSelectHashtag={onSelectHashtag}
+									activeHashtags={activeHashtags}
 								/>
 								<SessionObjectLinkLauncher
 									sessionId={sessionId}
