@@ -1,5 +1,6 @@
 import { snakeCamelMapper } from "@electric-sql/client";
 import type {
+	SelectDurableSession,
 	SelectInvitation,
 	SelectMember,
 	SelectOrganization,
@@ -7,6 +8,7 @@ import type {
 	SelectProject,
 	SelectTask,
 	SelectTaskStatus,
+	SelectTerminal,
 	SelectUser,
 	SelectUserPreferences,
 	SelectV2Workspace,
@@ -34,6 +36,8 @@ interface OrgCollections {
 	users: Collection<SelectUser>;
 	invitations: Collection<SelectInvitation>;
 	v2Workspaces: Collection<SelectV2Workspace>;
+	durableSessions: Collection<SelectDurableSession>;
+	terminals: Collection<SelectTerminal>;
 	userPreferences: Collection<SelectUserPreferences>;
 	orgSettings: Collection<SelectOrgSettings>;
 }
@@ -168,6 +172,35 @@ function createOrgCollections(
 		}),
 	);
 
+	// FN-016/FN-087 mobile workspace cards: durable Claude sessions + terminals,
+	// synced org-scoped (read-only on mobile) so the workspace-detail cards show a
+	// live status badge. Same Electric-shape pattern as v2_workspaces.
+	const durableSessions = createCollection(
+		electricCollectionOptions<SelectDurableSession>({
+			id: orgCollectionId("durable_sessions", organizationId),
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "durable_sessions", organizationId },
+				headers,
+				columnMapper,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
+	const terminals = createCollection(
+		electricCollectionOptions<SelectTerminal>({
+			id: orgCollectionId("terminals", organizationId),
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "terminals", organizationId },
+				headers,
+				columnMapper,
+			},
+			getKey: (item) => item.id,
+		}),
+	);
+
 	// F46 cross-device prefs — same Electric shapes + shared `prefs` mutations as
 	// desktop, so a pin/view/locale set on desktop appears here and vice versa.
 	const userPreferences = createCollection(
@@ -222,6 +255,8 @@ function createOrgCollections(
 		users,
 		invitations,
 		v2Workspaces,
+		durableSessions,
+		terminals,
 		userPreferences,
 		orgSettings,
 	};
