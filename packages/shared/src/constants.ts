@@ -89,6 +89,15 @@ export const ANALYTICS_EVENTS = {
 	ACCOUNT_CREATED: "account_created",
 	SIGNED_IN: "signed_in",
 	ONBOARDING_COMPLETED: "onboarding_completed",
+	ONBOARDING_ACTIVATION_STARTED: "onboarding_activation_started",
+	ONBOARDING_ACTIVATION_STEP_COMPLETED: "onboarding_activation_step_completed",
+	ONBOARDING_ACTIVATION_COMPLETED: "onboarding_activation_completed",
+	ONBOARDING_TOUR_STARTED: "onboarding_tour_started",
+	ONBOARDING_TOUR_STEP_COMPLETED: "onboarding_tour_step_completed",
+	ONBOARDING_TOUR_PAUSED: "onboarding_tour_paused",
+	ONBOARDING_TOUR_RESUMED: "onboarding_tour_resumed",
+	ONBOARDING_TOUR_COMPLETED: "onboarding_tour_completed",
+	ONBOARDING_ALL_COMPLETED: "onboarding_all_completed",
 	SESSION_STARTED: "session_started",
 } as const;
 
