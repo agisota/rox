@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { LuLoaderCircle, LuSparkles } from "react-icons/lu";
 import { trpcClient } from "@/trpc/client";
+import { IdentitySwitcherChip } from "../../../components/IdentitySwitcherChip";
 import { PreviewPromptComposer } from "../../../components/PreviewPromptComposer";
 import { deriveQuickChatReply } from "../../utils/deriveQuickChatReply";
 
@@ -186,9 +187,12 @@ export function WebQuickChatView() {
 							promptInputClassName="[&>[data-slot=input-group]]:rounded-[13px] [&>[data-slot=input-group]]:border-none [&>[data-slot=input-group]]:shadow-none [&>[data-slot=input-group]]:bg-transparent"
 							placeholder="Напишите сообщение…"
 							footerTools={
-								<span className="text-xs text-muted-foreground">
-									{ROX_CHAT_MODEL_NAME}
-								</span>
+								<div className="flex items-center gap-2">
+									<IdentitySwitcherChip />
+									<span className="text-xs text-muted-foreground">
+										{ROX_CHAT_MODEL_NAME}
+									</span>
+								</div>
 							}
 							message=""
 							submitDisabled={isSending}
