@@ -124,6 +124,25 @@ export const getPipelineRunSchema = z.object({
 	runId: z.string().uuid(),
 });
 
+/**
+ * Replay a saved pipeline run (issue #553). Whole-run replay re-fires the source
+ * run's persisted `input` as a fresh run; provenance (`parentRunId` + a
+ * `replay`-marked `triggerRef`) links it back to the source. The optional
+ * `fromStepBlockId` switches to a re-run-from-step: the executor enters at that
+ * node (existing `entryNodeId` seam) seeded from the recorded step's `input`.
+ */
+export const replayPipelineRunSchema = z.object({
+	pipelineId: z.string().uuid(),
+	/** The source run whose persisted `input`/steps seed the replay. */
+	runId: z.string().uuid(),
+	/**
+	 * When set, re-run from this node instead of the whole graph. The node's
+	 * recorded step `input` (the payload it received) seeds the new run, and the
+	 * executor enters at this block via `entryNodeId`.
+	 */
+	fromStepBlockId: z.string().min(1).optional(),
+});
+
 // ---------------------------------------------------------------------------
 // agentRole router inputs (CRUD on skills(kind="agent") + agentConfig preset)
 // ---------------------------------------------------------------------------
