@@ -6,11 +6,21 @@ import { Paperclip, Save, Send, TriangleAlert, X } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { formatSize } from "../lib/mailFormat";
 
-/** One locally-attached file pending send (name + size for the chip). */
+/** One attached file pending send (FN-141 / #701). */
 export interface DraftAttachment {
 	id: string;
 	name: string;
 	size: number;
+	/** MIME type, when known (from the picked File). */
+	contentType?: string;
+	/**
+	 * The picked browser File, present until the bytes are uploaded to R2. Held so
+	 * the send path can presign + PUT it. Absent once `key` is set (or when a
+	 * persisted draft is re-opened — its bytes already live in R2 at `key`).
+	 */
+	file?: File;
+	/** R2 object key once the file has been uploaded (#701); the send-ready handle. */
+	key?: string;
 }
 
 /** The editable fields of one composed message. */
@@ -70,11 +80,11 @@ export function parseRecipients(raw: string): string[] {
  * disabled server-side a persistent amber banner explains why and the send button
  * is inert — the form still composes (and saves) so a draft is never lost.
  *
- * ATTACHMENTS CAVEAT: `mail.send` (sendSchema) carries no attachment field yet —
- * staged files are shown + persisted locally but are NOT uploaded on send.
- * TODO(server): add an attachment-upload step (presigned R2 PUT, mirroring
- * `getAttachmentUrl`) + an `attachmentKeys` array on `sendSchema`, then upload
- * staged files before `send.mutate`.
+ * ATTACHMENTS (FN-141 / #701): a picked file is staged with its real `File`
+ * handle; on send the EmailView presigns an R2 PUT (`mail.presignAttachmentUpload`),
+ * uploads the bytes, and passes the returned key on `mail.send` (`attachments[]`),
+ * which persists `mail_attachments` + delivers via Resend. Re-opened persisted
+ * drafts carry the already-uploaded `key`, so they need no re-upload.
  */
 export function MailComposer({
 	draft,
@@ -114,6 +124,9 @@ export function MailComposer({
 			id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
 			name: f.name,
 			size: f.size,
+			contentType: f.type || "application/octet-stream",
+			// Hold the real File so the send path can presign + upload it to R2 (#701).
+			file: f,
 		}));
 		set({ attachments: [...attachments, ...staged] });
 	};

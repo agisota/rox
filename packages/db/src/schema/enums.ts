@@ -955,6 +955,18 @@ export const mailProviderValues = ["cloudflare", "resend"] as const;
 export const mailProviderEnum = z.enum(mailProviderValues);
 export type MailProvider = z.infer<typeof mailProviderEnum>;
 
+/**
+ * Server-backed folder placement of a mail thread (FN-135 / #697). `inbox` is the
+ * default landing folder; the rest are user-driven filing targets the left rail
+ * exposes (archive / spam / trash). `sent`/`drafts` are NOT placements — they are
+ * derived from message direction / the `mail_drafts` table — so they are
+ * intentionally absent here. APPEND-ONLY: never reorder/remove (Postgres pgEnum
+ * ordinals are stable); new placements are added at the end.
+ */
+export const mailFolderValues = ["inbox", "archive", "spam", "trash"] as const;
+export const mailFolderEnum = z.enum(mailFolderValues);
+export type MailFolder = z.infer<typeof mailFolderEnum>;
+
 // ---------------------------------------------------------------------------
 // Rox Workspace Suite — D4 XMPP / Jabber Federation (comms-suite epic, P0).
 // Makes the locked rox identity (`user_profiles.handle`, ROX-522) reachable on

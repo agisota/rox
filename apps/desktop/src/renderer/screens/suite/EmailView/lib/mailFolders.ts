@@ -67,25 +67,26 @@ export const MAIL_FOLDER_EMPTY: Record<
 };
 
 /**
- * System folders + smart filters of the left rail, in display order. Only
- * `inbox` is server-backed in P0; the rest are honest navigation targets that
- * surface their empty copy until the server exposes folder/flag columns.
+ * System folders + smart filters of the left rail, in display order. All but
+ * `sent` are server-backed (FN-135/139, #697/#699): folder placement + ⭐ flag +
+ * unread count + has-attachments live on the thread row, and drafts come from
+ * `mail.listDrafts`. `sent` awaits a dedicated outbound-direction feed.
  */
 export const MAIL_FOLDERS: readonly MailFolderDef[] = [
 	{ id: "inbox", label: "Входящие", kind: "folder", serverBacked: true },
 	{ id: "sent", label: "Отправленные", kind: "folder", serverBacked: false },
-	{ id: "drafts", label: "Черновики", kind: "folder", serverBacked: false },
-	{ id: "archive", label: "Архив", kind: "folder", serverBacked: false },
-	{ id: "spam", label: "Спам", kind: "folder", serverBacked: false },
-	{ id: "trash", label: "Корзина", kind: "folder", serverBacked: false },
-	{ id: "unread", label: "Непрочитанные", kind: "filter", serverBacked: false },
+	{ id: "drafts", label: "Черновики", kind: "folder", serverBacked: true },
+	{ id: "archive", label: "Архив", kind: "folder", serverBacked: true },
+	{ id: "spam", label: "Спам", kind: "folder", serverBacked: true },
+	{ id: "trash", label: "Корзина", kind: "folder", serverBacked: true },
+	{ id: "unread", label: "Непрочитанные", kind: "filter", serverBacked: true },
 	{
 		id: "attachments",
 		label: "С вложениями",
 		kind: "filter",
-		serverBacked: false,
+		serverBacked: true,
 	},
-	{ id: "flagged", label: "Помеченные", kind: "filter", serverBacked: false },
+	{ id: "flagged", label: "Помеченные", kind: "filter", serverBacked: true },
 ] as const;
 
 /** Fallback icon when an id is missing (defensive, never hit at runtime). */
