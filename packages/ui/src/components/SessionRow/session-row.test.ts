@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	deriveLabelDots,
+	derivePrimaryLabel,
 	deriveSourceChips,
 	hasWorktreeMeta,
 	LABEL_DOT_CAP,
@@ -73,6 +74,17 @@ describe("deriveLabelDots", () => {
 		const { dots, overflow } = deriveLabelDots([BUG, IDEA, DOCS], 1);
 		expect(dots).toEqual([BUG]);
 		expect(overflow).toBe(2);
+	});
+});
+
+describe("derivePrimaryLabel", () => {
+	it("returns null for no labels", () => {
+		expect(derivePrimaryLabel(undefined)).toBeNull();
+		expect(derivePrimaryLabel([])).toBeNull();
+	});
+
+	it("returns the first label as the primary dot source (F12)", () => {
+		expect(derivePrimaryLabel([IDEA, BUG, DOCS])).toBe(IDEA);
 	});
 });
 

@@ -15,6 +15,7 @@ export {
 export { SessionRow, type SessionRowProps } from "./SessionRow";
 export {
 	deriveLabelDots,
+	derivePrimaryLabel,
 	deriveSourceChips,
 	hasWorktreeMeta,
 	LABEL_DOT_CAP,
