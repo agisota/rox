@@ -23,6 +23,9 @@ export type CoreBlockType =
 	| "agent_run"
 	| "model"
 	| "http_request"
+	| "transform"
+	| "parser"
+	| "variable_set"
 	| "error_boundary";
 
 export interface RoxBlockState {

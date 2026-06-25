@@ -6,6 +6,9 @@ import {
 	type ModelGeneratePort,
 	makeHttpHandler,
 	makeModelHandler,
+	makeParserHandler,
+	makeTransformHandler,
+	makeVariableSetHandler,
 } from "@rox/workflow-runtime/handlers";
 import { pipelineHttpRequest } from "./http-port";
 import { generatePipelineText } from "./model-provider";
@@ -37,5 +40,8 @@ export function buildPipelineHandlers(): Record<string, BlockHandler> {
 	return {
 		model: makeModelHandler(modelGenerate),
 		http_request: makeHttpHandler(pipelineHttpRequest),
+		transform: makeTransformHandler(),
+		parser: makeParserHandler(),
+		variable_set: makeVariableSetHandler(),
 	};
 }
