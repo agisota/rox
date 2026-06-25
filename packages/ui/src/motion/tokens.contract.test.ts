@@ -5,6 +5,8 @@ import {
 	motionDuration,
 	motionShake,
 	motionSpring,
+	PANEL_SCENE_VT_NAME,
+	panelSceneMotion,
 	shakeVariants,
 	shellBootVariants,
 } from "./tokens";
@@ -53,5 +55,15 @@ describe("motion token contract (append-only lane)", () => {
 		expect(shakeVariants.rest).toBeDefined();
 		expect(shakeVariants.shake).toBeDefined();
 		expect(Array.isArray(motionShake.x)).toBe(true);
+	});
+
+	it("keeps the panel-scene tokens (case 054)", () => {
+		expect(panelSceneMotion.enterOffset).toBeGreaterThan(0);
+		expect(panelSceneMotion.exitOffset).toBeGreaterThan(0);
+		expect(panelSceneMotion.replaceFade).toBeGreaterThan(0);
+		expect(panelSceneMotion.replaceFade).toBeLessThan(1);
+		// Reuses the panel spring so the morph matches sidebar/zen geometry.
+		expect(panelSceneMotion.spring).toBe(motionSpring.panel);
+		expect(PANEL_SCENE_VT_NAME).toBe("rox-panel-scene");
 	});
 });

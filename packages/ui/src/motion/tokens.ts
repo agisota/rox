@@ -128,3 +128,31 @@ export const zenDensity = {
  * `false`/`undefined` for an instant reduced-motion fallback.
  */
 export const zenSceneTransition: Transition = motionSpring.panel;
+
+/**
+ * View-transition panel scene tokens — case 054 / PR-54 (#648). A single,
+ * platform-neutral geometry language for the right-panel open/close/replace
+ * scenes consumed by F03/F30 (panel), F05 (region reflow) and F56 (zen). The
+ * scene descriptor itself lives in `PanelScene.ts`; these tokens are the
+ * concrete numbers each surface animates toward.
+ *
+ * `enterOffset`/`exitOffset` are the slide distance (px) the panel travels in
+ * from / out to its trailing edge — used for the framer-motion `AnimatePresence`
+ * fallback (web/desktop) and as the Reanimated slide-over translation (mobile).
+ * `replaceFade` is the brief cross-dim a replaced panel dips to before the next
+ * one settles. Reuses {@link motionSpring.panel} so the morph matches the
+ * sidebar collapse / zen scene geometry.
+ */
+export const panelSceneMotion = {
+	/** Slide distance (px) for the entering panel (from the trailing edge). */
+	enterOffset: 24,
+	/** Slide distance (px) for the exiting panel (toward the trailing edge). */
+	exitOffset: 24,
+	/** Opacity a replaced panel dips to mid-swap before the next settles. */
+	replaceFade: 0.6,
+	/** Spring driving the open/close/replace morph. */
+	spring: motionSpring.panel,
+} as const;
+
+/** CSS `view-transition-name` namespace for the right-panel VT scenes (case 054). */
+export const PANEL_SCENE_VT_NAME = "rox-panel-scene" as const;

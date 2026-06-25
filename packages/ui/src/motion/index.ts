@@ -29,6 +29,8 @@ export * from "./MotionList";
 export * from "./MotionPressable";
 export * from "./MotionRoot";
 export * from "./MotionToast";
+export * from "./PanelScene";
+export * from "./PanelSceneSurface";
 export * from "./PopIn";
 export * from "./Pressable";
 export * from "./ProgressBar";
