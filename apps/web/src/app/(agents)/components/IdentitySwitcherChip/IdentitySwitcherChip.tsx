@@ -2,10 +2,42 @@
 
 import { authClient } from "@rox/auth/client";
 import { IdentitySwitcher } from "@rox/ui/atoms/IdentitySwitcher";
+import {
+	type ProfileDetail,
+	ProfileDetailCard,
+} from "@rox/ui/atoms/ProfileDetailCard";
 import { toast } from "@rox/ui/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useTRPC } from "@/trpc/react";
+
+/**
+ * Resolve a persona row's opaque `theme_json` (F21) into the typed fields the
+ * detail card renders. Tolerant by design — unknown/partial themes degrade to
+ * `null` rather than throwing, since the theme is intentionally free-form
+ * (personas-schema `passthrough`).
+ */
+function resolvePersonaTheme(theme: unknown): {
+	model: string | null;
+	gateway: string | null;
+	provider: string | null;
+	skills: readonly string[] | null;
+} {
+	const t =
+		theme && typeof theme === "object"
+			? (theme as Record<string, unknown>)
+			: {};
+	const asString = (v: unknown) => (typeof v === "string" ? v : null);
+	const skills = Array.isArray(t.skills)
+		? t.skills.filter((s): s is string => typeof s === "string")
+		: null;
+	return {
+		model: asString(t.model),
+		gateway: asString(t.gateway),
+		provider: asString(t.provider),
+		skills: skills && skills.length > 0 ? skills : null,
+	};
+}
 
 /**
  * Web container for the persona switcher chip (Hermes-borrow F22). Forks the
@@ -62,12 +94,38 @@ export function IdentitySwitcherChip({ className }: { className?: string }) {
 		return null;
 	}
 
+	// F23: resolve the active persona's theme into the detail-card props so the
+	// dropdown shows Status / Gateway / Model / Provider / Skills / Default space.
+	const theme = activePersona
+		? resolvePersonaTheme(activePersona.themeJson)
+		: null;
+	const detail: ProfileDetail | null =
+		activePersona && theme
+			? {
+					id: activePersona.id,
+					displayName: activePersona.displayName,
+					handle: activePersona.handle,
+					avatarUrl: activePersona.avatarUrl,
+					accentColor: activePersona.accentColor,
+					// Read-only display (F23); F47 owns live gateway/skills mutations.
+					// The online flag is derived from a resolved gateway until the
+					// gateway health surface lands.
+					gateway: theme.gateway,
+					gatewayOnline: Boolean(theme.gateway),
+					model: theme.model,
+					provider: theme.provider,
+					skills: theme.skills ?? undefined,
+					defaultSpace: session?.session?.activeOrganizationId ?? null,
+				}
+			: null;
+
 	return (
 		<IdentitySwitcher
 			className={className}
 			personas={personas ?? []}
 			activeId={activePersona?.id ?? null}
 			loading={personasLoading || activeLoading || setActive.isPending}
+			detail={detail ? <ProfileDetailCard persona={detail} /> : undefined}
 			onSelect={(personaId) => {
 				if (personaId === activePersona?.id) {
 					return;
