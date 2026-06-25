@@ -28,6 +28,7 @@ import { Slider } from "@rox/ui/slider";
 import { Switch } from "@rox/ui/switch";
 import { cn } from "@rox/ui/utils";
 import { useAppearance } from "@/app/providers/AppearanceProvider";
+import { ThemeSkinCard } from "./ThemeSkinCard";
 
 /** Rotation interval presets (seconds) offered for auto-rotate. */
 const ROTATE_PRESETS: readonly { label: string; seconds: number }[] = [
@@ -80,6 +81,8 @@ export function AppearanceSettingsForm() {
 
 	return (
 		<div className="flex flex-col gap-6">
+			<ThemeSkinCard />
+
 			<Card>
 				<CardHeader>
 					<CardTitle>Обои</CardTitle>
