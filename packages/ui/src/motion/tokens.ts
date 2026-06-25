@@ -99,3 +99,32 @@ export const motionShake = {
 	x: [0, -4, 4, -3, 3, -1, 0],
 	transition: { duration: 0.4, ease: ease.standard },
 };
+
+/**
+ * Focus / Zen mode chrome density — case 056 / PR-56 (#649). Shell-level zen
+ * collapses the side rails and dims the surrounding chrome so the canvas reads
+ * as the sole focus. These are the shared geometry/opacity tokens every host
+ * (desktop lead, web, mobile) animates toward; the on/off state itself lives in
+ * the platform-neutral `@rox/shared/zen-mode` store.
+ *
+ * `chromeDim` is the opacity the non-canvas chrome (top bar, rails, status)
+ * settles to while zen is active; `chromeRest` is its normal value. Drive a
+ * `motion` element's `animate={{ opacity }}` between them, gated on
+ * `useShouldAnimate('decorative')` — reduced-motion callers snap instantly by
+ * setting the target without a transition.
+ */
+export const zenDensity = {
+	/** Chrome opacity while zen mode is active. */
+	chromeDim: 0.4,
+	/** Chrome opacity at rest (zen inactive). */
+	chromeRest: 1,
+} as const;
+
+/**
+ * Shared collapse scene for the zen toggle — case 056 / PR-56 (#649). Reuses
+ * the `panel` spring (the same geometry language as the sidebar collapse in
+ * case 005) so the rail width morph and the chrome dim feel like one motion.
+ * Decorative tier: gate call sites on `useShouldAnimate('decorative')` and pass
+ * `false`/`undefined` for an instant reduced-motion fallback.
+ */
+export const zenSceneTransition: Transition = motionSpring.panel;

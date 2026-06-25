@@ -315,6 +315,10 @@
 		"./command-palette": {
 			"types": "./src/command-palette/index.ts",
 			"default": "./src/command-palette/index.ts"
+		},
+		"./zen-mode": {
+			"types": "./src/zen-mode.ts",
+			"default": "./src/zen-mode.ts"
 		}
 	},
 	"scripts": {

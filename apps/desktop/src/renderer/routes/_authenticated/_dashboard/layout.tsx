@@ -1,7 +1,10 @@
+import { useZenMode } from "@rox/ui/hooks/use-zen-mode";
 import {
 	RouteTransition,
 	shellBootVariants,
 	useShouldAnimate,
+	zenDensity,
+	zenSceneTransition,
 } from "@rox/ui/motion";
 import { eq } from "@tanstack/db";
 import { useLiveQuery } from "@tanstack/react-db";
@@ -65,6 +68,11 @@ function DashboardLayout() {
 	useDevSeedV2Sidebar();
 	// Case 002 / PR-02: one-shot first-mount entrance for the shell columns.
 	const shouldAnimate = useShouldAnimate("decorative");
+	// Case 056 / PR-56 (#649): shell-level Focus / Zen mode. The on/off state
+	// lives in the platform-neutral `@rox/shared/zen-mode` store; while active we
+	// collapse the side rails, expand the canvas, and dim the surrounding chrome.
+	const { isZen, toggleZen } = useZenMode();
+	const chromeOpacity = isZen ? zenDensity.chromeDim : zenDensity.chromeRest;
 	// Case 003 / PR-03: key the route transition on the TOP-LEVEL path segment
 	// only (e.g. `/v2-workspace`), never the full pathname — keying by params
 	// would remount the entire panes subtree on every workspace switch.
@@ -131,6 +139,7 @@ function DashboardLayout() {
 	useHotkey("NEW_WORKSPACE", () =>
 		openNewWorkspaceModal(currentWorkspace?.projectId),
 	);
+	useHotkey("TOGGLE_ZEN_MODE", () => toggleZen());
 
 	const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
@@ -169,7 +178,9 @@ function DashboardLayout() {
 		},
 	);
 
-	const sidebarPanel = isWorkspaceSidebarOpen && (
+	// Zen mode collapses the side rail entirely so the canvas takes the full
+	// width; toggling back restores the prior sidebar state untouched.
+	const sidebarPanel = isWorkspaceSidebarOpen && !isZen && (
 		<motion.div
 			className="flex h-full shrink-0"
 			variants={shouldAnimate ? shellBootVariants.sidebar : undefined}
@@ -205,7 +216,8 @@ function DashboardLayout() {
 	const sidebarOutsideColumn =
 		isV2CloudEnabled &&
 		isWorkspaceSidebarOpen &&
-		!isWorkspaceSidebarCollapsed();
+		!isWorkspaceSidebarCollapsed() &&
+		!isZen;
 
 	return (
 		<motion.div
@@ -220,7 +232,15 @@ function DashboardLayout() {
 				className="flex flex-1 flex-col min-w-0 min-h-0"
 				variants={shouldAnimate ? shellBootVariants.column : undefined}
 			>
-				<TopBar />
+				{/* Zen mode dims the chrome (top bar) toward the canvas. Animate
+				    when motion is allowed; otherwise snap to the target opacity. */}
+				<motion.div
+					animate={{ opacity: chromeOpacity }}
+					initial={false}
+					transition={shouldAnimate ? zenSceneTransition : { duration: 0 }}
+				>
+					<TopBar />
+				</motion.div>
 				<div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
 					{!sidebarOutsideColumn && sidebarPanel}
 					<RouteTransition
