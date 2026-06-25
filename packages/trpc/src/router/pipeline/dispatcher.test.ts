@@ -31,38 +31,70 @@ const dbThrow = {
 		throw new Error("dispatcher touched the DB on a short-circuited event");
 	},
 };
-mock.module("@rox/db/client", () => ({ db: dbThrow, dbWs: dbThrow }));
+// `mock.module` is process-global in bun and the LAST registration wins for
+// every already-loaded importer; the directory's file load order is not
+// deterministic. Sibling suites register their own conflicting `@rox/db/client`
+// / `@rox/db/schema` mocks at module-eval time, so without re-asserting ours per
+// test, whichever suite evaluated last silently won — the source of the
+// order-dependent (flaky) failures. `installDbMocks()` is invoked at module load
+// AND in `beforeEach` to keep this suite's DB view deterministic.
+function installDbMocks() {
+	mock.module("@rox/db/client", () => ({ db: dbThrow, dbWs: dbThrow }));
 
-mock.module("@rox/db/schema", () => ({
-	...realDbSchema,
-	pipelineTriggers: {
-		organizationId: "pipeline_triggers.organization_id",
-		enabled: "pipeline_triggers.enabled",
-		triggerKind: "pipeline_triggers.trigger_kind",
-		v2ProjectId: "pipeline_triggers.v2_project_id",
-	},
-	workflowDefinitions: {
-		id: "workflow_definitions.id",
-		organizationId: "workflow_definitions.organization_id",
-		engine: "workflow_definitions.engine",
-	},
-	workflowRuns: {
-		id: "workflow_runs.id",
-		workflowId: "workflow_runs.workflow_id",
-		organizationId: "workflow_runs.organization_id",
-		parentRunId: "workflow_runs.parent_run_id",
-		createdAt: "workflow_runs.created_at",
-		triggerRef: "workflow_runs.trigger_ref",
-	},
-}));
+	// `dispatcher.ts` imports the real `./run-pipeline` (we inject behaviour via the
+	// `dispatchPipelineEvent` arg instead of module-mocking it). That real module
+	// transitively loads `@rox/auth/server` → `@rox/email`, which validates
+	// `NEXT_PUBLIC_MARKETING_URL` at module load and throws in a headless env. Stub
+	// the leaf boundary — it is never exercised by these guard tests.
+	mock.module("@rox/auth/server", () => ({
+		mintUserJwt: async () => "jwt-test-token",
+	}));
+	mock.module("../automation/relay-client", () => ({
+		relayMutation: async () => ({}),
+		RelayDispatchError: class extends Error {},
+	}));
+	// `run-pipeline.ts` imports the tRPC `../../env`, which validates a large env
+	// schema at module load and throws in a headless run. The dispatcher guard
+	// tests never read it (they inject `runPipeline`), so a minimal stub suffices.
+	mock.module("../../env", () => ({
+		env: { RELAY_URL: "https://relay.test" },
+	}));
 
+	mock.module("@rox/db/schema", () => ({
+		...realDbSchema,
+		pipelineTriggers: {
+			organizationId: "pipeline_triggers.organization_id",
+			enabled: "pipeline_triggers.enabled",
+			triggerKind: "pipeline_triggers.trigger_kind",
+			v2ProjectId: "pipeline_triggers.v2_project_id",
+		},
+		workflowDefinitions: {
+			id: "workflow_definitions.id",
+			organizationId: "workflow_definitions.organization_id",
+			engine: "workflow_definitions.engine",
+		},
+		workflowRuns: {
+			id: "workflow_runs.id",
+			workflowId: "workflow_runs.workflow_id",
+			organizationId: "workflow_runs.organization_id",
+			parentRunId: "workflow_runs.parent_run_id",
+			createdAt: "workflow_runs.created_at",
+			triggerRef: "workflow_runs.trigger_ref",
+		},
+	}));
+}
+
+installDbMocks();
+
+// Records dispatched runs. Injected into `dispatchPipelineEvent` via its second
+// arg instead of a process-global `mock.module("./run-pipeline")` — the latter
+// leaked into the sibling `run-pipeline` suite and overrode the real
+// `runPipeline` under test there.
 let runPipelineCalls: unknown[] = [];
-mock.module("./run-pipeline", () => ({
-	runPipeline: async (args: unknown) => {
-		runPipelineCalls.push(args);
-		return { runId: "run-x", status: "succeeded" };
-	},
-}));
+const recordingRunPipeline = async (args: unknown) => {
+	runPipelineCalls.push(args);
+	return { runId: "run-x", status: "succeeded" };
+};
 
 const {
 	dispatchPipelineEvent,
@@ -87,6 +119,9 @@ function agentRunFinishedEvent(
 }
 
 beforeEach(() => {
+	// Re-assert this suite's DB mocks so a sibling suite's conflicting global
+	// `mock.module("@rox/db/client")` cannot leak in via nondeterministic load order.
+	installDbMocks();
 	runPipelineCalls = [];
 });
 
@@ -207,6 +242,7 @@ describe("dispatchPipelineEvent — loop-replay short-circuit", () => {
 			agentRunFinishedEvent({
 				payload: { nodeId: "node-a", roleSlug: "critic", iteration: 2 },
 			}),
+			recordingRunPipeline,
 		);
 		expect(result).toEqual({ dispatched: 0 });
 		expect(runPipelineCalls).toHaveLength(0);
@@ -222,6 +258,7 @@ describe("dispatchPipelineEvent — loop-replay short-circuit", () => {
 				agentRunFinishedEvent({
 					payload: { nodeId: "node-a", roleSlug: "critic", iteration: 0 },
 				}),
+				recordingRunPipeline,
 			),
 		).rejects.toThrow("dispatcher touched the DB");
 		expect(runPipelineCalls).toHaveLength(0);
