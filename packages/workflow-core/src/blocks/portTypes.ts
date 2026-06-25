@@ -61,5 +61,17 @@ export function arePortTypesCompatible(
 	const a = effectivePortType(source);
 	const b = effectivePortType(target);
 	if (a === ANY_PORT_TYPE || b === ANY_PORT_TYPE) return true;
-	return a === b;
+	if (a === b) return true;
+	// Text-bearing types interoperate (a `message`/`chunks` payload is consumable
+	// as `string` and vice-versa) — the most common real wire. Non-text shapes
+	// (vector/object/array/number/boolean) stay strict.
+	return TEXT_LIKE_PORT_TYPES.has(a) && TEXT_LIKE_PORT_TYPES.has(b);
 }
+
+/**
+ * Text-bearing port types that interoperate freely. An LLM/agent reply
+ * (`message`) and retrieved passages (`chunks`) are textual payloads a plain
+ * `string` input can consume, and vice-versa (e.g. an agent's `message` → a
+ * retrieval/classifier query, or `chunks` → a model prompt).
+ */
+const TEXT_LIKE_PORT_TYPES = new Set<string>(["string", "message", "chunks"]);

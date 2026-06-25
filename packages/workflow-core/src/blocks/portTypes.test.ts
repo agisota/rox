@@ -37,8 +37,20 @@ describe("portTypes", () => {
 		expect(arePortTypesCompatible("vector", "vector")).toBe(true);
 	});
 
-	test("two differing concrete types are incompatible", () => {
+	test("two differing non-text concrete types are incompatible", () => {
 		expect(arePortTypesCompatible("vector", "string")).toBe(false);
-		expect(arePortTypesCompatible("message", "chunks")).toBe(false);
+		expect(arePortTypesCompatible("vector", "object")).toBe(false);
+		expect(arePortTypesCompatible("number", "boolean")).toBe(false);
+		expect(arePortTypesCompatible("array", "message")).toBe(false);
+	});
+
+	test("text-bearing types (string/message/chunks) interoperate", () => {
+		// An agent reply (message) or retrieved passages (chunks) are textual
+		// payloads a string input can consume, and vice-versa — the most common
+		// real wire (RAG/classifier). Non-text shapes stay strict (above).
+		expect(arePortTypesCompatible("message", "string")).toBe(true);
+		expect(arePortTypesCompatible("chunks", "string")).toBe(true);
+		expect(arePortTypesCompatible("message", "chunks")).toBe(true);
+		expect(arePortTypesCompatible("string", "message")).toBe(true);
 	});
 });

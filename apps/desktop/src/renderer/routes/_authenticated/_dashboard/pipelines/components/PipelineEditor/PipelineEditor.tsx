@@ -25,6 +25,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
+import type { PipelineTemplate } from "../templates";
 import { autoLayoutGraph } from "./auto-layout";
 import {
 	defaultLabelForType,
@@ -42,6 +43,11 @@ import { RoleLibraryPanel } from "./RoleLibraryPanel";
 import { RunMonitorPanel } from "./RunMonitorPanel";
 import { ToolbarRunButton } from "./ToolbarRunButton";
 import { TriggerConfigPanel } from "./TriggerConfigPanel";
+import {
+	buildTemplateFromState,
+	insertTemplate,
+	isEmptyCanvas,
+} from "./templateGraph";
 import { useGraphHistory } from "./useGraphHistory";
 import { useRunTrace } from "./useRunTrace";
 
@@ -68,6 +74,15 @@ type AddNodeOptions = {
 	/** Auto-connect onto the reachable frontier (default true). */
 	autoConnect?: boolean;
 };
+
+/** Kebab-case slug seed from a free-form template name (RU-friendly, ascii-only). */
+function slugifyName(name: string): string {
+	return name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 48);
+}
 
 /** Generate a unique block id for a freshly-added node of the given type. */
 function newBlockId(type: string): string {
@@ -385,10 +400,18 @@ export function PipelineEditor({
 		[addNode],
 	);
 
-	// Replace the working graph with a template's graph (re-seeds the canvas).
+	// Apply a template from the gallery. An EMPTY canvas (start only) is replaced
+	// wholesale (the template keeps its own start); a NON-EMPTY canvas gets the
+	// template inserted as a subgraph — id-remapped, position-offset, and wired
+	// onto the current reachable frontier so existing nodes are never disturbed
+	// and the graph keeps a single start (issue #551 acceptance). Re-seeds + fits.
 	const handleApplyTemplate = useCallback(
-		(next: RoxWorkflowState) => {
-			history.record(graphRef.current);
+		(template: RoxWorkflowState) => {
+			const prev = graphRef.current;
+			const next = isEmptyCanvas(prev)
+				? template
+				: insertTemplate(prev, template, pickAnchorBlockId(prev)).state;
+			history.record(prev);
 			graphRef.current = next;
 			setGraph(next);
 			persist(next);
@@ -397,6 +420,28 @@ export function PipelineEditor({
 			requestAnimationFrame(() => canvasHandle.current?.fitView());
 		},
 		[history, persist],
+	);
+
+	// "Save as template": serialise the current graph into a session-local
+	// PipelineTemplate (builder, not hard-code) and surface it in the gallery's
+	// "Мои шаблоны" section so it can be re-inserted into any canvas.
+	const [savedTemplates, setSavedTemplates] = useState<PipelineTemplate[]>([]);
+	const handleSaveAsTemplate = useCallback(
+		(meta: { name: string; description: string }) => {
+			const slugSeed =
+				slugifyName(meta.name) || `template-${Date.now().toString(36)}`;
+			const template = buildTemplateFromState(graphRef.current, {
+				id: `saved-${Date.now().toString(36)}`,
+				name: meta.name,
+				description: meta.description,
+				slugSeed,
+				category: "Мои шаблоны",
+				icon: "Bookmark",
+			});
+			setSavedTemplates((prev) => [template, ...prev]);
+			toast.success(`Шаблон «${meta.name}» сохранён`);
+		},
+		[],
 	);
 
 	// Auto-layout: dagre LR reposition, re-seed the canvas, then fit.
@@ -560,6 +605,8 @@ export function PipelineEditor({
 							onOpenPalette={() => setPaletteOpen(true)}
 							onAutoLayout={handleAutoLayout}
 							onApplyTemplate={handleApplyTemplate}
+							savedTemplates={savedTemplates}
+							onSaveAsTemplate={handleSaveAsTemplate}
 							handleRef={canvasHandle}
 							showEmptyHint={showEmptyHint}
 							reseedKey={reseedKey}
