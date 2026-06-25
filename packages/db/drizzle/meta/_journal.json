@@ -743,6 +743,13 @@
       "when": 1782355785328,
       "tag": "0105_f46_user_preferences_org_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1782358030881,
+      "tag": "0106_agent_personas",
+      "breakpoints": true
     }
   ]
 }

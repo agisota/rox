@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@rox/auth/client";
+import { DualIdentityCard } from "@rox/ui/atoms/DualIdentityCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
 import { Drawer, DrawerContent, DrawerTitle } from "@rox/ui/drawer";
 import {
@@ -45,6 +46,21 @@ export function AgentsHeader() {
 	const activeOrganization = organizations?.find(
 		(org) => org.id === activeOrganizationId,
 	);
+
+	// Active agent-persona for the dual-identity card (Hermes-borrow F21). The
+	// card is the cross-platform `@rox/ui` atom; here we feed it the human
+	// (session) + the active persona (org-scoped pointer). Only fetch once we
+	// have an active org so the query is never sent before sign-in completes.
+	const { data: activePersona } = useQuery({
+		...trpc.personas.getActive.queryOptions(),
+		enabled: Boolean(activeOrganizationId),
+	});
+
+	const personaTheme = (activePersona?.themeJson ?? null) as {
+		model?: string | null;
+		gateway?: string | null;
+		skills?: string[] | null;
+	} | null;
 
 	const displayName = activeOrganization?.name ?? "Организация";
 
@@ -165,6 +181,34 @@ export function AgentsHeader() {
 		}
 	};
 
+	// Dual-identity card element, shared between the desktop dropdown and the
+	// mobile drawer (Hermes-borrow F21). Rendered only when a signed-in user is
+	// available so the human half always has a seed/name.
+	const identityCard = user ? (
+		<DualIdentityCard
+			human={{
+				id: user.id,
+				displayName: user.name ?? user.email ?? "Вы",
+				avatarUrl: user.image ?? null,
+				online: true,
+			}}
+			persona={
+				activePersona
+					? {
+							id: activePersona.id,
+							displayName: activePersona.displayName,
+							handle: activePersona.handle,
+							avatarUrl: activePersona.avatarUrl,
+							accentColor: activePersona.accentColor,
+							model: personaTheme?.model ?? null,
+							gateway: personaTheme?.gateway ?? null,
+							skills: personaTheme?.skills ?? undefined,
+						}
+					: null
+			}
+		/>
+	) : null;
+
 	const triggerButton = (
 		<button
 			type="button"
@@ -201,6 +245,9 @@ export function AgentsHeader() {
 							</div>
 							<p className="text-xs text-muted-foreground">{user?.email}</p>
 						</div>
+						{identityCard ? (
+							<div className="px-2 py-1">{identityCard}</div>
+						) : null}
 						<div className="my-1 h-px bg-border" />
 						{organizations && organizations.length > 1 && (
 							<>
@@ -264,6 +311,7 @@ export function AgentsHeader() {
 						<p className="text-xs text-muted-foreground">{user?.email}</p>
 					</div>
 				</DropdownMenuLabel>
+				{identityCard ? <div className="px-1 py-1">{identityCard}</div> : null}
 				<DropdownMenuSeparator />
 				{organizations && organizations.length > 1 && (
 					<>
