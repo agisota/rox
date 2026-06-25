@@ -1,19 +1,20 @@
 import { chatRuntimeServiceTrpc, chatServiceTrpc } from "@rox/chat/client";
 import {
-	extractTextsFromParts,
-	selectContextUsage,
-} from "@rox/shared/context-usage";
-import {
 	PromptInputAttachment,
 	type PromptInputMessage,
-	PromptInputProvider,
 	useProviderAttachments,
 } from "@rox/ui/ai-elements/prompt-input";
 import { toast } from "@rox/ui/sonner";
 import { useQuery } from "@tanstack/react-query";
-import type { ChatStatus } from "ai";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+	ChatFooterFrame,
+	ChatMessageFrame,
+	ChatSendMessageInput,
+} from "renderer/components/Chat/ChatInterface/ChatPaneShell";
+import { ChatPaneShell } from "renderer/components/Chat/ChatInterface/ChatPaneShell";
+import { sendMessageForSession } from "renderer/components/Chat/ChatInterface/ChatPaneShell/utils/sendMessage";
 import { ChatInputFooter } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter";
 import {
 	resolveActiveModel,
@@ -33,29 +34,16 @@ import {
 	getDesktopChatModelOptions,
 	isDesktopChatDevMode,
 } from "renderer/lib/dev-chat";
-import { logger } from "renderer/lib/logger";
 import { posthog } from "renderer/lib/posthog";
 import { useChatPreferencesStore } from "renderer/stores/chat-preferences";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { ChatMessageList } from "./components/ChatMessageList";
-import type { UserMessageRestartRequest } from "./components/ChatMessageList/ChatMessageList.types";
+import type { ChatPendingQuestion } from "./components/ChatMessageList/ChatMessageList.types";
 import { DraftSaver } from "./components/DraftSaver";
 import { McpControls } from "./components/McpControls";
 import { useMcpUi } from "./hooks/useMcpUi";
 import { useOptimisticUpload } from "./hooks/useOptimisticUpload";
 import type { ChatPaneInterfaceProps } from "./types";
-import { toOptimisticUserMessage } from "./utils/optimisticUserMessage";
-import {
-	type ChatSendMessageInput,
-	sendMessageForSession,
-	toSendFailureMessage,
-} from "./utils/sendMessage";
-import {
-	getVisibleMessagesWithPendingUserTurn,
-	type PendingUserTurn,
-	shouldClearPendingUserTurn,
-} from "./utils/transientUserTurn";
-import { uploadFiles } from "./utils/uploadFiles";
 
 type HarnessFilePayload = {
 	data: string;
@@ -149,50 +137,6 @@ function useAvailableModels(): {
 	});
 	const models = localModels.length > 0 ? localModels : (data?.models ?? []);
 	return { models, defaultModel: models[0] ?? null };
-}
-
-function toErrorMessage(error: unknown): string | null {
-	if (!error) return null;
-	if (typeof error === "string") return error;
-	if (error instanceof Error) return error.message;
-	return "Unknown chat error";
-}
-
-const AUTO_LAUNCH_MAX_RETRIES = 3;
-const AUTO_LAUNCH_RETRY_DELAY_MS = 1500;
-
-type ChatMessage = ChatRuntimeMessage;
-
-type InterruptedMessage = {
-	id: string;
-	sourceMessageId: string;
-	content: ChatMessage["content"];
-};
-
-type ChatAnalyticsProperties = Record<string, unknown>;
-
-function cloneMessageContent(
-	content: ChatMessage["content"],
-): ChatMessage["content"] {
-	if (typeof structuredClone === "function") {
-		return structuredClone(content);
-	}
-	try {
-		return JSON.parse(JSON.stringify(content)) as ChatMessage["content"];
-	} catch {
-		return content.map((part) => ({ ...part }));
-	}
-}
-
-function getLaunchConfigKey(
-	config: NonNullable<ChatPaneInterfaceProps["initialLaunchConfig"]>,
-): string {
-	return JSON.stringify({
-		initialPrompt: config.initialPrompt ?? null,
-		initialFiles: config.initialFiles ?? null,
-		model: config.metadata?.model ?? null,
-		retryCount: config.retryCount ?? null,
-	});
 }
 
 export function ChatPaneInterface({
@@ -302,39 +246,17 @@ export function ChatPaneInterface({
 	// desktop-agent security gap. The selected mode is threaded into each turn's
 	// metadata below so the runtime enforces it.
 	const [permissionMode, setPermissionMode] = usePermissionModePreference();
-	const [submitStatus, setSubmitStatus] = useState<ChatStatus | undefined>(
-		undefined,
-	);
 	const [runtimeError, setRuntimeError] = useState<string | null>(null);
-	const [interruptedMessage, setInterruptedMessage] =
-		useState<InterruptedMessage | null>(null);
-	const [approvalResponsePending, setApprovalResponsePending] = useState(false);
-	const [planResponsePending, setPlanResponsePending] = useState(false);
-	const [questionResponsePending, setQuestionResponsePending] = useState(false);
 	const [answeredQuestionId, setAnsweredQuestionId] = useState<string | null>(
 		null,
 	);
-	const [editingUserMessageId, setEditingUserMessageId] = useState<
-		string | null
-	>(null);
-	const [pendingUserTurn, setPendingUserTurn] =
-		useState<PendingUserTurn | null>(null);
-	const currentMcpScopeRef = useRef<string | null>(null);
-	const consumedLaunchConfigRef = useRef<string | null>(null);
 	const isSendingRef = useRef(false);
 	const previousSessionIdRef = useRef(sessionId);
-	const autoLaunchInFlightRef = useRef<string | null>(null);
-	const autoLaunchAttemptsRef = useRef<Record<string, number>>({});
-	const autoLaunchSessionLockRef = useRef<Record<string, string | null>>({});
-	const messagesLengthRef = useRef(0);
-	const autoLaunchRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	);
 	const chatRuntimeServiceTrpcUtils = chatRuntimeServiceTrpc.useUtils();
 	const authenticateMcpServerMutation =
 		chatRuntimeServiceTrpc.workspace.authenticateMcpServer.useMutation();
 	const captureChatEvent = useCallback(
-		(event: string, properties?: ChatAnalyticsProperties) => {
+		(event: string, properties?: Record<string, unknown>) => {
 			posthog.capture(event, {
 				workspace_id: workspaceId,
 				session_id: sessionId,
@@ -357,22 +279,15 @@ export function ChatPaneInterface({
 		enabled: Boolean(sessionId),
 		fps: 60,
 	});
-	const {
-		commands,
-		messages,
-		currentMessage,
-		isRunning = false,
-		isConversationLoading = false,
-		error = null,
-		activeTools,
-		toolInputBuffers,
-		activeSubagents,
-		pendingApproval = null,
-		pendingPlanApproval = null,
-		pendingQuestion = null,
-	} = chat;
-	const isAwaitingAssistant =
-		isRunning || submitStatus === "submitted" || submitStatus === "streaming";
+	const { commands } = chat;
+
+	const isRunning = Boolean(
+		(chat as unknown as { isRunning?: boolean }).isRunning,
+	);
+	const pendingQuestion =
+		(chat as unknown as { pendingQuestion?: ChatPendingQuestion })
+			.pendingQuestion ?? null;
+	const canAbort = isRunning;
 
 	const clearRuntimeError = useCallback(() => {
 		setRuntimeError(null);
@@ -400,43 +315,6 @@ export function ChatPaneInterface({
 		[captureChatEvent, selectedModel, setSelectedModelId],
 	);
 
-	const sendMessageToSession = useCallback(
-		async (targetSessionId: string, input: ChatSendMessageInput) => {
-			const queryInput = {
-				sessionId: targetSessionId,
-				...(cwd ? { cwd } : {}),
-			};
-			const optimisticMessage = toOptimisticUserMessage(input);
-			if (optimisticMessage) {
-				chatRuntimeServiceTrpcUtils.session.listMessages.setData(
-					queryInput,
-					(existingMessages = []) => [...existingMessages, optimisticMessage],
-				);
-			}
-
-			try {
-				await chatRuntimeServiceTrpcUtils.client.session.sendMessage.mutate({
-					sessionId: targetSessionId,
-					...(cwd ? { cwd } : {}),
-					...input,
-				});
-			} catch (error) {
-				if (optimisticMessage) {
-					chatRuntimeServiceTrpcUtils.session.listMessages.setData(
-						queryInput,
-						(existingMessages = []) =>
-							existingMessages.filter(
-								(message) => message.id !== optimisticMessage.id,
-							),
-					);
-				}
-				throw error;
-			}
-		},
-		[chatRuntimeServiceTrpcUtils, cwd],
-	);
-
-	const canAbort = Boolean(isRunning);
 	const loadMcpOverview = useCallback(
 		async (rootCwd: string) => {
 			if (!sessionId) {
@@ -475,44 +353,10 @@ export function ChatPaneInterface({
 	const resetMcpUi = mcpUi.resetUi;
 	const refreshMcpOverview = mcpUi.refreshOverview;
 
-	const captureInterruptedMessage =
-		useCallback((): InterruptedMessage | null => {
-			if (!isRunning) return null;
-			if (!currentMessage || currentMessage.role !== "assistant") return null;
-			if (currentMessage.content.length === 0) return null;
-			return {
-				id: `interrupted:${currentMessage.id}`,
-				sourceMessageId: currentMessage.id,
-				content: cloneMessageContent(currentMessage.content),
-			};
-		}, [currentMessage, isRunning]);
-
 	const stopActiveResponse = useCallback(async () => {
 		clearRuntimeError();
-		const snapshot = captureInterruptedMessage();
-		try {
-			await commands.stop();
-		} catch (error) {
-			setInterruptedMessage(null);
-			setRuntimeErrorMessage(
-				toErrorMessage(error) ?? "Failed to stop response",
-			);
-			return;
-		}
-		if (snapshot) {
-			setInterruptedMessage(snapshot);
-		}
-		captureChatEvent("chat_turn_aborted", {
-			model_id: activeModel?.id ?? null,
-		});
-	}, [
-		activeModel?.id,
-		captureChatEvent,
-		captureInterruptedMessage,
-		clearRuntimeError,
-		commands,
-		setRuntimeErrorMessage,
-	]);
+		await commands.stop();
+	}, [clearRuntimeError, commands]);
 
 	const { resolveSlashCommandInput } = useSlashCommandExecutor({
 		cwd,
@@ -531,20 +375,15 @@ export function ChatPaneInterface({
 		onTrackEvent: captureChatEvent,
 	});
 
+	// MCP overview refresh on session/cwd scope change. The shell owns the
+	// orchestration-body scope reset; here we only refresh the legacy-specific
+	// MCP overview the wrapper renders.
 	useEffect(() => {
-		const scopeKey = `${sessionId ?? "no-session"}::${cwd || "no-cwd"}`;
-		if (currentMcpScopeRef.current === scopeKey) return;
-		currentMcpScopeRef.current = scopeKey;
-		setSubmitStatus(undefined);
-		setRuntimeError(null);
-		setInterruptedMessage(null);
-		setPendingUserTurn(null);
-		setEditingUserMessageId(null);
 		resetMcpUi();
 		if (sessionId) {
 			void refreshMcpOverview();
 		}
-	}, [cwd, refreshMcpOverview, resetMcpUi, sessionId]);
+	}, [refreshMcpOverview, resetMcpUi, sessionId]);
 
 	const clearDraftInStore = useCallback(() => {
 		const { panes, setChatLaunchConfig } = useTabsStore.getState();
@@ -567,605 +406,269 @@ export function ChatPaneInterface({
 		}
 	}, [pendingQuestion, answeredQuestionId]);
 
-	useEffect(() => {
-		if (
-			shouldClearPendingUserTurn({
-				messages,
-				pendingUserTurn,
-				isAwaitingAssistant,
-			})
-		) {
-			setPendingUserTurn(null);
-		}
-	}, [isAwaitingAssistant, messages, pendingUserTurn]);
-
-	useEffect(() => {
-		if (!editingUserMessageId) return;
-		if (messages.some((message) => message.id === editingUserMessageId)) return;
-		setEditingUserMessageId(null);
-	}, [editingUserMessageId, messages]);
-
-	const visibleMessages = useMemo(() => {
-		return getVisibleMessagesWithPendingUserTurn({
-			messages,
-			pendingUserTurn,
-			isAwaitingAssistant,
-		});
-	}, [isAwaitingAssistant, messages, pendingUserTurn]);
-
-	// F42: live context-usage ring. Token counts are estimated from the displayed
-	// conversation text via the shared cross-platform selector so desktop, web,
-	// and mobile all compute identically; the window comes from the active model.
-	const contextUsage = useMemo(
-		() =>
-			selectContextUsage(
-				visibleMessages.flatMap((message) =>
-					extractTextsFromParts(message.content),
-				),
-				activeModel?.id,
-			),
-		[visibleMessages, activeModel?.id],
-	);
-
-	useEffect(() => {
-		if (isRunning) {
-			setSubmitStatus((previousStatus) =>
-				previousStatus === "submitted" || previousStatus === "streaming"
-					? "streaming"
-					: previousStatus,
-			);
-			return;
-		}
-		setSubmitStatus(undefined);
-	}, [isRunning]);
-
-	useEffect(() => {
-		messagesLengthRef.current = messages?.length ?? 0;
-	}, [messages]);
-
-	const handleSend = useCallback(
-		async (payload: { content: string; files?: HarnessFilePayload[] }) => {
-			let content = payload.content.trim();
-
-			const isSlashCommand = content.startsWith("/");
-			const slashCommandResult = await resolveSlashCommandInput(content);
-			if (slashCommandResult.handled) {
-				setSubmitStatus(undefined);
-				return;
-			}
-			content = slashCommandResult.nextText.trim();
-
-			if (!content && (!payload.files || payload.files.length === 0)) {
-				setSubmitStatus(undefined);
-				return;
-			}
-			setInterruptedMessage(null);
-			setSubmitStatus("submitted");
-			clearRuntimeError();
-
-			let effectiveSessionId = sessionId;
-			let immediateUserMessage: ReturnType<
-				typeof toOptimisticUserMessage
-			> | null = null;
-			let targetSessionId = effectiveSessionId;
-			try {
-				let preparedFiles = payload.files;
-				if (preparedFiles?.some((file) => file.uploaded === false)) {
-					if (!effectiveSessionId) {
-						const startResult = await onStartFreshSession();
-						if (!startResult.created || !startResult.sessionId) {
-							throw new Error(
-								startResult.errorMessage ??
-									"Failed to create a chat session. Please retry.",
-							);
-						}
-						effectiveSessionId = startResult.sessionId;
-					}
-
-					const uploadedFiles = await uploadFiles(
-						effectiveSessionId,
-						preparedFiles.map((file) => ({
-							type: "file",
-							url: file.data,
-							mediaType: file.mediaType,
-							filename: file.filename,
-						})),
-					);
-					preparedFiles = uploadedFiles.map((file) => ({
-						data: file.url,
-						mediaType: file.mediaType,
-						filename: file.filename,
-						uploaded: true,
-					}));
-				}
-
-				const sendInput: ChatSendMessageInput = {
-					payload: {
-						content,
-						...(preparedFiles?.length
-							? {
-									files: preparedFiles.map(({ data, filename, mediaType }) => ({
-										data,
-										mediaType,
-										filename,
-									})),
-								}
-							: {}),
-					},
-					metadata: {
-						model: activeModel?.id,
-						thinkingLevel,
-						permissionMode,
-					},
-				};
-				immediateUserMessage =
-					effectiveSessionId && !isSessionReady
-						? toOptimisticUserMessage(sendInput)
-						: null;
-				if (immediateUserMessage) {
-					setPendingUserTurn({
-						kind: "append",
-						message: immediateUserMessage,
-					});
-				}
-
-				isSendingRef.current = true;
-				const sendResult =
-					effectiveSessionId && effectiveSessionId !== sessionId
-						? {
-								targetSessionId: effectiveSessionId,
-								value: await sendMessageToSession(
-									effectiveSessionId,
-									sendInput,
-								),
-							}
-						: await sendMessageForSession({
-								currentSessionId: effectiveSessionId,
-								isSessionReady,
-								ensureSessionReady,
-								onStartFreshSession,
-								sendToCurrentSession: () => commands.sendMessage(sendInput),
-								sendToSession: (nextSessionId) =>
-									sendMessageToSession(nextSessionId, sendInput),
-							});
-				targetSessionId = sendResult.targetSessionId;
-				if (content) {
-					onUserMessageSubmitted?.(content);
-				}
-			} catch (error) {
-				isSendingRef.current = false;
-				const sendErrorMessage = toSendFailureMessage(error);
-				setSubmitStatus(undefined);
-				setRuntimeErrorMessage(sendErrorMessage);
-				if (immediateUserMessage) {
-					const failedImmediateUserMessage = immediateUserMessage;
-					setPendingUserTurn((previousTurn) =>
-						previousTurn?.kind === "append" &&
-						previousTurn.message.id === failedImmediateUserMessage.id
-							? null
-							: previousTurn,
-					);
-				}
-				if (error instanceof Error) throw error;
-				throw new Error(sendErrorMessage);
-			}
-
-			captureChatEvent("chat_message_sent", {
-				session_id: targetSessionId,
-				model_id: activeModel?.id ?? null,
-				mention_count: 0,
-				attachment_count: payload.files?.length ?? 0,
-				is_slash_command: isSlashCommand,
-				message_length: content.length,
-				turn_number: (messages?.length ?? 0) + 1,
-			});
-
-			clearDraftInStore();
-		},
-		[
-			activeModel?.id,
-			captureChatEvent,
-			clearRuntimeError,
-			commands,
+	const session = useMemo(
+		() => ({
 			isSessionReady,
-			messages?.length,
-			onStartFreshSession,
-			resolveSlashCommandInput,
-			ensureSessionReady,
-			sessionId,
-			sendMessageToSession,
-			setRuntimeErrorMessage,
-			onUserMessageSubmitted,
-			thinkingLevel,
-			permissionMode,
-			clearDraftInStore,
-		],
-	);
-
-	useEffect(() => {
-		if (!initialLaunchConfig) return;
-
-		const launchConfigKey = getLaunchConfigKey(initialLaunchConfig);
-		const attemptAutoLaunch = async (): Promise<void> => {
-			if (consumedLaunchConfigRef.current === launchConfigKey) return;
-			if (autoLaunchInFlightRef.current === launchConfigKey) return;
-
-			const prompt = initialLaunchConfig.initialPrompt?.trim();
-			const launchFiles = initialLaunchConfig.initialFiles;
-			if (!prompt && !launchFiles?.length) {
-				consumedLaunchConfigRef.current = launchConfigKey;
-				delete autoLaunchAttemptsRef.current[launchConfigKey];
-				delete autoLaunchSessionLockRef.current[launchConfigKey];
-				onConsumeLaunchConfig();
-				return;
-			}
-
-			const currentSessionKey = sessionId ?? null;
-			const lockedSession = autoLaunchSessionLockRef.current[launchConfigKey];
-			if (lockedSession === undefined) {
-				autoLaunchSessionLockRef.current[launchConfigKey] = currentSessionKey;
-			} else if (lockedSession !== currentSessionKey) {
-				// Don't send launch retries into a different user-selected session.
-				return;
-			}
-
-			const previousAttempts =
-				autoLaunchAttemptsRef.current[launchConfigKey] ?? 0;
-			const retryLimit =
-				initialLaunchConfig.retryCount ?? AUTO_LAUNCH_MAX_RETRIES;
-			if (previousAttempts >= retryLimit) return;
-
-			autoLaunchAttemptsRef.current[launchConfigKey] = previousAttempts + 1;
-			autoLaunchInFlightRef.current = launchConfigKey;
-			if (autoLaunchRetryTimerRef.current) {
-				clearTimeout(autoLaunchRetryTimerRef.current);
-				autoLaunchRetryTimerRef.current = null;
-			}
-
-			clearRuntimeError();
-			setSubmitStatus("submitted");
-
-			const modelId = initialLaunchConfig.metadata?.model ?? activeModel?.id;
-			const sendInput: ChatSendMessageInput = {
-				payload: {
-					content: prompt ?? "",
-					files: launchFiles,
-				},
-				metadata: {
-					model: modelId,
-					thinkingLevel,
-					permissionMode,
-				},
-			};
-
-			try {
-				const sendResult = await sendMessageForSession({
-					currentSessionId: autoLaunchSessionLockRef.current[launchConfigKey],
+			// The legacy create→ensure session-readiness ladder, reduced to pure
+			// resolution: create a fresh session when none exists, then (for the
+			// current session that isn't ready yet) await `ensureSessionReady`.
+			// The shell decides send-to-current vs send-to-other from the resolved
+			// id, so resolution and delivery stay separated. Behavior is pinned by
+			// the legacy `sendMessageForSession` characterization tests.
+			resolveSessionForSend: async (currentSessionId: string | null) => {
+				const { targetSessionId } = await sendMessageForSession({
+					currentSessionId,
 					isSessionReady,
 					ensureSessionReady,
 					onStartFreshSession,
-					sendToCurrentSession: () => commands.sendMessage(sendInput),
-					sendToSession: (nextSessionId) =>
-						sendMessageToSession(nextSessionId, sendInput),
+					sendToCurrentSession: async () => undefined,
+					sendToSession: async () => undefined,
 				});
-				if (prompt) {
-					onUserMessageSubmitted?.(prompt);
-				}
-
-				autoLaunchInFlightRef.current = null;
-				consumedLaunchConfigRef.current = launchConfigKey;
-				delete autoLaunchAttemptsRef.current[launchConfigKey];
-				delete autoLaunchSessionLockRef.current[launchConfigKey];
-				onConsumeLaunchConfig();
-
-				captureChatEvent("chat_message_sent", {
-					session_id: sendResult.targetSessionId,
-					model_id: modelId ?? null,
-					mention_count: 0,
-					attachment_count: launchFiles?.length ?? 0,
-					is_slash_command: false,
-					message_length: prompt?.length ?? 0,
-					turn_number: messagesLengthRef.current + 1,
-					send_trigger: "launch-config",
-				});
-			} catch (error) {
-				autoLaunchInFlightRef.current = null;
-
-				const sendErrorMessage = toSendFailureMessage(error);
-				setSubmitStatus(undefined);
-				setRuntimeErrorMessage(sendErrorMessage);
-				logger.debug("[chat] auto launch send failed", error);
-
-				const currentAttempts =
-					autoLaunchAttemptsRef.current[launchConfigKey] ??
-					previousAttempts + 1;
-				if (currentAttempts < retryLimit) {
-					autoLaunchRetryTimerRef.current = setTimeout(() => {
-						void attemptAutoLaunch();
-					}, AUTO_LAUNCH_RETRY_DELAY_MS);
-				}
-			}
-		};
-		void attemptAutoLaunch();
-
-		return () => {
-			if (autoLaunchRetryTimerRef.current) {
-				clearTimeout(autoLaunchRetryTimerRef.current);
-				autoLaunchRetryTimerRef.current = null;
-			}
-		};
-	}, [
-		activeModel?.id,
-		captureChatEvent,
-		clearRuntimeError,
-		commands,
-		ensureSessionReady,
-		initialLaunchConfig,
-		isSessionReady,
-		onConsumeLaunchConfig,
-		onStartFreshSession,
-		sendMessageToSession,
-		sessionId,
-		setRuntimeErrorMessage,
-		onUserMessageSubmitted,
-		thinkingLevel,
-		permissionMode,
-	]);
-
-	const handleStop = useCallback(
-		async (event: React.MouseEvent) => {
-			event.preventDefault();
-			await stopActiveResponse();
-		},
-		[stopActiveResponse],
+				return targetSessionId;
+			},
+			resetSession: async () => {
+				await onStartFreshSession();
+			},
+		}),
+		[ensureSessionReady, isSessionReady, onStartFreshSession],
 	);
 
-	const restartFromUserMessage = useCallback(
-		async (
-			request: UserMessageRestartRequest,
-			options?: { trigger?: "edit" | "resend" },
-		) => {
-			if (!sessionId) {
-				throw new Error("Chat session is still starting. Please retry.");
-			}
-
-			setInterruptedMessage(null);
-			setPendingUserTurn(null);
-			setSubmitStatus("submitted");
-			clearRuntimeError();
-
-			const optimisticMessage = toOptimisticUserMessage({
-				payload: request.payload,
-				metadata: {
-					model: activeModel?.id,
-					thinkingLevel,
-					permissionMode,
-				},
-			});
-			if (optimisticMessage) {
-				setPendingUserTurn({
-					kind: "restart",
-					prefixMessages: request.prefixMessages,
-					message: optimisticMessage,
+	const turn = useMemo(
+		() => ({
+			sendToSession: async (
+				targetSessionId: string,
+				input: ChatSendMessageInput,
+			) => {
+				// Plain delivery: the shell owns the optimistic `pendingUserTurn` for
+				// the other-session path, so the wrapper does NOT also write to the
+				// chat-runtime list cache (that double-optimism raced the polls).
+				await chatRuntimeServiceTrpcUtils.client.session.sendMessage.mutate({
+					sessionId: targetSessionId,
+					...(cwd ? { cwd } : {}),
+					...input,
 				});
-			}
-
-			try {
+			},
+			restartFromMessage: async (args: {
+				sessionId: string;
+				messageId: string;
+				payload: ChatSendMessageInput["payload"];
+				metadata: ChatSendMessageInput["metadata"];
+			}) => {
 				await chatRuntimeServiceTrpcUtils.client.session.restartFromMessage.mutate(
 					{
-						sessionId,
+						sessionId: args.sessionId,
 						...(cwd ? { cwd } : {}),
-						messageId: request.messageId,
-						payload: request.payload,
-						metadata: {
-							model: activeModel?.id,
-							thinkingLevel,
-							permissionMode,
-						},
+						messageId: args.messageId,
+						payload: args.payload,
+						metadata: args.metadata,
 					},
 				);
-				setEditingUserMessageId(null);
-				if (request.payload.content) {
-					onUserMessageSubmitted?.(request.payload.content);
-				}
-				captureChatEvent("chat_message_sent", {
-					session_id: sessionId,
-					model_id: activeModel?.id ?? null,
-					mention_count: 0,
-					attachment_count: request.payload.files?.length ?? 0,
-					is_slash_command: false,
-					message_length: request.payload.content.length,
-					turn_number: (messages?.length ?? 0) + 1,
-					send_trigger: options?.trigger ?? "resend",
-					restarted_from_message_id: request.messageId,
-				});
+			},
+		}),
+		[chatRuntimeServiceTrpcUtils, cwd],
+	);
 
-				clearDraftInStore();
-			} catch (error) {
-				setPendingUserTurn(null);
-				const sendErrorMessage = toSendFailureMessage(error);
-				setSubmitStatus(undefined);
-				setRuntimeErrorMessage(sendErrorMessage);
-				if (error instanceof Error) throw error;
-				throw new Error(sendErrorMessage);
-			}
-		},
-		[
-			activeModel?.id,
-			captureChatEvent,
-			chatRuntimeServiceTrpcUtils.client.session.restartFromMessage,
-			clearRuntimeError,
-			cwd,
-			messages,
-			onUserMessageSubmitted,
-			sessionId,
-			setRuntimeErrorMessage,
-			thinkingLevel,
-			permissionMode,
-			clearDraftInStore,
-		],
-	);
-	const handleResendUserMessage = useCallback(
-		async (request: UserMessageRestartRequest) => {
-			await restartFromUserMessage(request, { trigger: "resend" });
-		},
-		[restartFromUserMessage],
-	);
-	const handleSubmitEditedUserMessage = useCallback(
-		async (request: UserMessageRestartRequest) => {
-			await restartFromUserMessage(request, { trigger: "edit" });
-		},
-		[restartFromUserMessage],
-	);
-	const handleCancelEditUserMessage = useCallback(() => {
-		setEditingUserMessageId(null);
-	}, []);
-	const handleApprovalResponse = useCallback(
-		async (decision: "approve" | "decline" | "always_allow_category") => {
-			if (!pendingApproval?.toolCallId) return;
-			clearRuntimeError();
-			setApprovalResponsePending(true);
-			try {
-				await commands.respondToApproval({
-					payload: { decision },
-				});
-			} finally {
-				setApprovalResponsePending(false);
-			}
-		},
-		[clearRuntimeError, commands, pendingApproval?.toolCallId],
-	);
-	const handlePlanResponse = useCallback(
-		async (response: {
-			action: "approved" | "rejected";
-			feedback?: string;
-		}) => {
-			if (!pendingPlanApproval?.planId) return;
-			clearRuntimeError();
-			setPlanResponsePending(true);
-			try {
-				const feedback = response.feedback?.trim();
-				await commands.respondToPlan({
-					payload: {
-						planId: pendingPlanApproval.planId,
-						response: {
-							action: response.action,
-							...(feedback ? { feedback } : {}),
-						},
-					},
-				});
-			} finally {
-				setPlanResponsePending(false);
-			}
-		},
-		[clearRuntimeError, commands, pendingPlanApproval?.planId],
-	);
-	const handleQuestionResponse = useCallback(
-		async (questionId: string, answer: string) => {
-			const trimmedQuestionId = questionId.trim();
-			const trimmedAnswer = answer.trim();
-			if (!trimmedQuestionId || !trimmedAnswer) return;
-			clearRuntimeError();
-			setAnsweredQuestionId(trimmedQuestionId);
-			setQuestionResponsePending(true);
-			// Clear the orange dot immediately when the user submits their answer
+	const handleQuestionAnswered = useCallback(
+		(questionId: string) => {
+			setAnsweredQuestionId(questionId);
+			// Clear the orange dot immediately when the user submits their answer.
 			useTabsStore.getState().setPaneStatus(paneId, "idle");
-			try {
-				await commands.respondToQuestion({
-					payload: {
-						questionId: trimmedQuestionId,
-						answer: trimmedAnswer,
-					},
-				});
-			} catch (error) {
-				// Roll back optimistic UI if the RPC fails
-				setAnsweredQuestionId(null);
-				useTabsStore.getState().setPaneStatus(paneId, "permission");
-				throw error;
-			} finally {
-				setQuestionResponsePending(false);
-			}
 		},
-		[clearRuntimeError, commands, paneId],
+		[paneId],
+	);
+	const handleQuestionAnswerFailed = useCallback(
+		(questionId: string) => {
+			// Roll back optimistic UI if the respond RPC fails.
+			setAnsweredQuestionId((current) =>
+				current === questionId ? null : current,
+			);
+			useTabsStore.getState().setPaneStatus(paneId, "permission");
+		},
+		[paneId],
 	);
 
-	const errorMessage = runtimeError ?? toErrorMessage(error);
-
-	return (
-		<PromptInputProvider initialInput={initialLaunchConfig?.draftInput}>
+	const draftSaver = useMemo(
+		() => (
 			<DraftSaver
 				paneId={paneId}
 				sessionId={sessionId}
 				isSendingRef={isSendingRef}
 			/>
-			<div className="flex h-full flex-col bg-background">
-				<ChatMessageList
-					messages={visibleMessages}
-					isFocused={isFocused}
-					isRunning={canAbort}
-					isConversationLoading={isConversationLoading}
-					isAwaitingAssistant={isAwaitingAssistant}
-					currentMessage={currentMessage ?? null}
-					interruptedMessage={interruptedMessage}
-					workspaceId={workspaceId}
-					sessionId={sessionId}
-					organizationId={organizationId}
-					workspaceCwd={cwd}
-					activeTools={activeTools}
-					toolInputBuffers={toolInputBuffers}
-					activeSubagents={activeSubagents}
-					pendingApproval={pendingApproval}
-					isApprovalSubmitting={approvalResponsePending}
-					onApprovalRespond={handleApprovalResponse}
-					pendingPlanApproval={pendingPlanApproval}
-					isPlanSubmitting={planResponsePending}
-					onPlanRespond={handlePlanResponse}
-					editingUserMessageId={editingUserMessageId}
-					isEditSubmitting={isAwaitingAssistant}
-					onStartEditUserMessage={setEditingUserMessageId}
-					onCancelEditUserMessage={handleCancelEditUserMessage}
-					onSubmitEditedUserMessage={handleSubmitEditedUserMessage}
-					onRestartUserMessage={handleResendUserMessage}
-					pendingQuestion={pendingQuestion}
-					answeredQuestionId={answeredQuestionId}
-					recents={recents}
-					onSelectRecent={onSelectRecent}
-				/>
-				<McpControls mcpUi={mcpUi} />
+		),
+		[paneId, sessionId],
+	);
+
+	const features = useMemo(
+		() => ({
+			draftSaver,
+			onAfterSend: clearDraftInStore,
+			onQuestionAnswered: handleQuestionAnswered,
+			onQuestionAnswerFailed: handleQuestionAnswerFailed,
+		}),
+		[
+			clearDraftInStore,
+			draftSaver,
+			handleQuestionAnswered,
+			handleQuestionAnswerFailed,
+		],
+	);
+
+	const renderMessages = useCallback(
+		(frame: ChatMessageFrame<ChatRuntimeMessage>) => (
+			<ChatMessageList
+				messages={frame.messages}
+				isFocused={frame.isFocused}
+				isRunning={frame.isRunning}
+				isConversationLoading={frame.isConversationLoading}
+				isAwaitingAssistant={frame.isAwaitingAssistant}
+				currentMessage={frame.currentMessage}
+				interruptedMessage={frame.interruptedMessage}
+				workspaceId={frame.workspaceId}
+				sessionId={frame.sessionId}
+				organizationId={frame.organizationId}
+				workspaceCwd={frame.workspaceCwd}
+				activeTools={
+					frame.activeTools as React.ComponentProps<
+						typeof ChatMessageList
+					>["activeTools"]
+				}
+				toolInputBuffers={
+					frame.toolInputBuffers as React.ComponentProps<
+						typeof ChatMessageList
+					>["toolInputBuffers"]
+				}
+				activeSubagents={
+					frame.activeSubagents as React.ComponentProps<
+						typeof ChatMessageList
+					>["activeSubagents"]
+				}
+				pendingApproval={
+					frame.pendingApproval as React.ComponentProps<
+						typeof ChatMessageList
+					>["pendingApproval"]
+				}
+				isApprovalSubmitting={frame.isApprovalSubmitting}
+				onApprovalRespond={frame.onApprovalRespond}
+				pendingPlanApproval={
+					frame.pendingPlanApproval as React.ComponentProps<
+						typeof ChatMessageList
+					>["pendingPlanApproval"]
+				}
+				isPlanSubmitting={frame.isPlanSubmitting}
+				onPlanRespond={frame.onPlanRespond}
+				editingUserMessageId={frame.editingUserMessageId}
+				isEditSubmitting={frame.isEditSubmitting}
+				onStartEditUserMessage={frame.onStartEditUserMessage}
+				onCancelEditUserMessage={frame.onCancelEditUserMessage}
+				onSubmitEditedUserMessage={frame.onSubmitEditedUserMessage}
+				onRestartUserMessage={frame.onRestartUserMessage}
+				pendingQuestion={pendingQuestion}
+				answeredQuestionId={answeredQuestionId}
+				recents={recents}
+				onSelectRecent={onSelectRecent}
+			/>
+		),
+		[answeredQuestionId, onSelectRecent, pendingQuestion, recents],
+	);
+
+	const renderFooter = useCallback(
+		(frame: ChatFooterFrame) => {
+			const framePendingQuestion = frame.pendingQuestion as ChatPendingQuestion;
+			const onSendWithDraftGuard = async (payload: {
+				content: string;
+				files?: HarnessFilePayload[];
+			}) => {
+				// Flag the in-flight send so `DraftSaver` skips persisting the empty
+				// textarea that PromptInput clears on submit (otherwise the just-sent
+				// draft would be re-saved as blank). Mirrors the pre-cutover
+				// `isSendingRef.current = true` set inside the old inline handleSend.
+				isSendingRef.current = true;
+				try {
+					await frame.onSend(payload);
+				} catch (error) {
+					isSendingRef.current = false;
+					throw error;
+				}
+			};
+			return (
 				<ChatUploadFooter
-					cwd={cwd}
-					isFocused={isFocused}
-					error={errorMessage}
-					canAbort={canAbort}
-					submitStatus={submitStatus}
-					availableModels={availableModels}
-					selectedModel={activeModel}
-					setSelectedModel={handleSelectModel}
-					modelSelectorOpen={modelSelectorOpen}
+					cwd={frame.cwd}
+					isFocused={frame.isFocused}
+					error={runtimeError ?? frame.error}
+					canAbort={frame.canAbort}
+					submitStatus={frame.submitStatus}
+					availableModels={frame.availableModels}
+					selectedModel={frame.selectedModel}
+					setSelectedModel={frame.setSelectedModel}
+					modelSelectorOpen={frame.modelSelectorOpen}
 					setModelSelectorOpen={setModelSelectorOpen}
-					unresolvedModelId={unresolvedModelId}
-					permissionMode={permissionMode}
-					setPermissionMode={setPermissionMode}
-					thinkingLevel={thinkingLevel}
-					setThinkingLevel={setThinkingLevel}
-					slashCommands={slashCommands}
-					usedTokens={contextUsage.usedTokens}
-					maxTokens={contextUsage.maxTokens}
-					sessionId={sessionId}
-					onError={setRuntimeErrorMessage}
-					onSend={handleSend}
-					onSubmitStart={() => setSubmitStatus("submitted")}
-					onStop={handleStop}
-					pendingQuestion={
-						pendingQuestion?.questionId === answeredQuestionId
-							? null
-							: pendingQuestion
+					unresolvedModelId={frame.unresolvedModelId}
+					permissionMode={frame.permissionMode}
+					setPermissionMode={frame.setPermissionMode}
+					thinkingLevel={frame.thinkingLevel}
+					setThinkingLevel={frame.setThinkingLevel}
+					slashCommands={
+						frame.slashCommands as React.ComponentProps<
+							typeof ChatUploadFooter
+						>["slashCommands"]
 					}
-					isQuestionSubmitting={questionResponsePending}
-					onQuestionRespond={handleQuestionResponse}
-					onQuestionCancel={() => void stopActiveResponse()}
+					usedTokens={frame.usedTokens}
+					maxTokens={frame.maxTokens}
+					sessionId={frame.sessionId}
+					onError={frame.onError}
+					onSend={onSendWithDraftGuard}
+					onSubmitStart={frame.onSubmitStart}
+					onStop={frame.onStop}
+					pendingQuestion={
+						framePendingQuestion?.questionId === answeredQuestionId
+							? null
+							: framePendingQuestion
+					}
+					isQuestionSubmitting={frame.isQuestionSubmitting}
+					onQuestionRespond={frame.onQuestionRespond}
+					onQuestionCancel={frame.onQuestionCancel}
 				/>
-			</div>
-		</PromptInputProvider>
+			);
+		},
+		[answeredQuestionId, runtimeError],
+	);
+
+	const renderMcpControls = useCallback(
+		() => <McpControls mcpUi={mcpUi} />,
+		[mcpUi],
+	);
+
+	return (
+		<ChatPaneShell<ChatRuntimeMessage>
+			chat={chat}
+			sessionId={sessionId}
+			workspaceId={workspaceId}
+			organizationId={organizationId}
+			cwd={cwd}
+			isFocused={isFocused}
+			initialLaunchConfig={initialLaunchConfig}
+			onConsumeLaunchConfig={onConsumeLaunchConfig}
+			onUserMessageSubmitted={onUserMessageSubmitted}
+			onClearExternalError={clearRuntimeError}
+			availableModels={availableModels}
+			activeModel={activeModel}
+			selectedModel={selectedModel}
+			unresolvedModelId={unresolvedModelId}
+			onSelectModel={handleSelectModel}
+			modelSelectorOpen={modelSelectorOpen}
+			setModelSelectorOpen={setModelSelectorOpen}
+			permissionMode={permissionMode}
+			setPermissionMode={setPermissionMode}
+			thinkingLevel={thinkingLevel}
+			setThinkingLevel={setThinkingLevel}
+			slashCommands={slashCommands}
+			resolveSlashCommandInput={resolveSlashCommandInput}
+			session={session}
+			turn={turn}
+			features={features}
+			renderMessages={renderMessages}
+			renderFooter={renderFooter}
+			renderMcpControls={renderMcpControls}
+		/>
 	);
 }

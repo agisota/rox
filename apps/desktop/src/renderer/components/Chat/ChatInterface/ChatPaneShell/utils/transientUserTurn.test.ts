@@ -5,6 +5,14 @@ import {
 	shouldClearPendingUserTurn,
 } from "./transientUserTurn";
 
+/**
+ * Coverage for the shell's canonical transient-user-turn helpers. Ported from
+ * the per-tree `transientUserTurn.test.ts` copies that the #737 cutover removed
+ * (the v2 + legacy ChatPaneInterface trees now delegate this logic to the
+ * generic shell copy), so the optimistic append / restart-prefix / clear-gating
+ * behaviour stays pinned against the live code.
+ */
+
 type TestMessage = {
 	id: string;
 	role: "user" | "assistant";
@@ -28,16 +36,16 @@ function message(
 
 describe("getVisibleMessagesWithPendingUserTurn", () => {
 	it("appends a pending composer send until it is persisted", () => {
-		const messages = [message("u1", "user", "hello")] as TestMessage[];
-		const pendingUserTurn: PendingUserTurn = {
+		const messages = [message("u1", "user", "hello")];
+		const pendingUserTurn: PendingUserTurn<TestMessage> = {
 			kind: "append",
 			message: message("optimistic-1", "user", "follow up"),
 		};
 
 		expect(
 			getVisibleMessagesWithPendingUserTurn({
-				messages: messages as never,
-				pendingUserTurn: pendingUserTurn as never,
+				messages,
+				pendingUserTurn,
 				isAwaitingAssistant: true,
 			}),
 		).toHaveLength(2);
@@ -48,17 +56,17 @@ describe("getVisibleMessagesWithPendingUserTurn", () => {
 			message("u1", "user", "hey bos"),
 			message("a1", "assistant", "Hey! What can I help you with today?"),
 			message("u2", "user", "whats your model?"),
-		] as TestMessage[];
-		const pendingUserTurn: PendingUserTurn = {
+		];
+		const pendingUserTurn: PendingUserTurn<TestMessage> = {
 			kind: "restart",
-			prefixMessages: persistedMessages.slice(0, 2) as never,
+			prefixMessages: persistedMessages.slice(0, 2),
 			message: message("optimistic-2", "user", "whats your model?"),
 		};
 
 		expect(
 			getVisibleMessagesWithPendingUserTurn({
-				messages: persistedMessages as never,
-				pendingUserTurn: pendingUserTurn as never,
+				messages: persistedMessages,
+				pendingUserTurn,
 				isAwaitingAssistant: true,
 			}),
 		).toEqual([
@@ -71,8 +79,8 @@ describe("getVisibleMessagesWithPendingUserTurn", () => {
 
 describe("shouldClearPendingUserTurn", () => {
 	it("does not clear a restart overlay while the assistant is still pending", () => {
-		const messages = [message("u1", "user", "hello")] as TestMessage[];
-		const pendingUserTurn: PendingUserTurn = {
+		const messages = [message("u1", "user", "hello")];
+		const pendingUserTurn: PendingUserTurn<TestMessage> = {
 			kind: "restart",
 			prefixMessages: [],
 			message: message("optimistic-1", "user", "hello"),
@@ -80,16 +88,16 @@ describe("shouldClearPendingUserTurn", () => {
 
 		expect(
 			shouldClearPendingUserTurn({
-				messages: messages as never,
-				pendingUserTurn: pendingUserTurn as never,
+				messages,
+				pendingUserTurn,
 				isAwaitingAssistant: true,
 			}),
 		).toBe(false);
 	});
 
 	it("clears a restart overlay once the restarted user message is persisted and streaming is done", () => {
-		const messages = [message("u1", "user", "hello")] as TestMessage[];
-		const pendingUserTurn: PendingUserTurn = {
+		const messages = [message("u1", "user", "hello")];
+		const pendingUserTurn: PendingUserTurn<TestMessage> = {
 			kind: "restart",
 			prefixMessages: [],
 			message: message("optimistic-1", "user", "hello"),
@@ -97,8 +105,8 @@ describe("shouldClearPendingUserTurn", () => {
 
 		expect(
 			shouldClearPendingUserTurn({
-				messages: messages as never,
-				pendingUserTurn: pendingUserTurn as never,
+				messages,
+				pendingUserTurn,
 				isAwaitingAssistant: false,
 			}),
 		).toBe(true);

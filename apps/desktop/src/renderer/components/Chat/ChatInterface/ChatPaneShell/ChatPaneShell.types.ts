@@ -101,9 +101,19 @@ export interface ChatPaneShellFeatures {
 	/**
 	 * v2 framer-motion approval band. Supplied as a render-prop so the v2
 	 * wrapper can use ITS forked `PendingApprovalMessage` + motion stack; legacy
-	 * omits it.
+	 * omits it. The submit state + respond handler are passed explicitly (same
+	 * values the shell threads into the message frame) so the overlay never has
+	 * to reach into sibling render state.
 	 */
-	renderApprovalOverlay?: (pendingApproval: unknown) => ReactNode;
+	renderApprovalOverlay?: (
+		pendingApproval: unknown,
+		controls: {
+			isSubmitting: boolean;
+			onRespond: (
+				decision: "approve" | "decline" | "always_allow_category",
+			) => Promise<void>;
+		},
+	) => ReactNode;
 	/** legacy `clearDraftInStore()`; v2 omits. Called after a successful send. */
 	onAfterSend?: () => void;
 	/**
@@ -229,6 +239,14 @@ export interface ChatPaneShellProps<
 	initialLaunchConfig: ChatLaunchConfig | null;
 	onConsumeLaunchConfig?: () => void;
 	onUserMessageSubmitted?: (message: string) => void;
+	/**
+	 * Cleared at the start of every send / restart / auto-launch attempt. Lets a
+	 * wrapper that keeps its OWN error channel (MCP overview, slash-command, v2
+	 * share failures) drop a stale message the moment the user sends again —
+	 * preserving the pre-split single-`runtimeError` behavior where `handleSend`
+	 * began with `clearRuntimeError()`.
+	 */
+	onClearExternalError?: () => void;
 	// model selection (resolved by the wrapper)
 	availableModels: ModelOption[];
 	activeModel: ModelOption | null;

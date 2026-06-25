@@ -107,6 +107,7 @@ export function ChatPaneShell<
 	initialLaunchConfig,
 	onConsumeLaunchConfig,
 	onUserMessageSubmitted,
+	onClearExternalError,
 	availableModels,
 	activeModel,
 	selectedModel: _selectedModel,
@@ -351,15 +352,22 @@ export function ChatPaneShell<
 			setInterruptedMessage(null);
 			setSubmitStatus("submitted");
 			clearRuntimeError();
+			onClearExternalError?.();
 
 			let preparedFiles = payload.files;
 			let targetSessionId = sessionId;
 			let optimisticMessage: TMessage | null = null;
+			// The upload branch already resolves (creates + ensures) a session; track
+			// that so the send below reuses it instead of re-running the adapter's
+			// create→ensure ladder a second time (an extra round-trip the
+			// pre-shell code never made for a single send).
+			let sessionResolved = false;
 			try {
 				if (preparedFiles?.some((file) => file.uploaded === false)) {
 					// Files need a real session before they can be uploaded.
 					targetSessionId =
 						await session.resolveSessionForSend(targetSessionId);
+					sessionResolved = true;
 					const uploadedFiles = await uploadFiles(
 						targetSessionId,
 						preparedFiles.map((file) => ({
@@ -397,8 +405,9 @@ export function ChatPaneShell<
 					},
 				};
 
-				const resolvedSessionId =
-					await session.resolveSessionForSend(targetSessionId);
+				const resolvedSessionId = sessionResolved
+					? (targetSessionId as string)
+					: await session.resolveSessionForSend(targetSessionId);
 				targetSessionId = resolvedSessionId;
 
 				if (sessionId && resolvedSessionId === sessionId) {
@@ -452,6 +461,7 @@ export function ChatPaneShell<
 			commands,
 			messages?.length,
 			onAfterSend,
+			onClearExternalError,
 			onUserMessageSubmitted,
 			permissionMode,
 			resolveSlashCommandInput,
@@ -504,6 +514,7 @@ export function ChatPaneShell<
 			}
 
 			clearRuntimeError();
+			onClearExternalError?.();
 			setSubmitStatus("submitted");
 
 			const modelId = initialLaunchConfig.metadata?.model ?? activeModel?.id;
@@ -582,6 +593,7 @@ export function ChatPaneShell<
 		clearRuntimeError,
 		commands,
 		initialLaunchConfig,
+		onClearExternalError,
 		onConsumeLaunchConfig,
 		onUserMessageSubmitted,
 		permissionMode,
@@ -613,6 +625,7 @@ export function ChatPaneShell<
 			setPendingUserTurn(null);
 			setSubmitStatus("submitted");
 			clearRuntimeError();
+			onClearExternalError?.();
 
 			const optimisticMessage = toOptimisticUserMessage<TMessage>({
 				payload: request.payload,
@@ -673,6 +686,7 @@ export function ChatPaneShell<
 			clearRuntimeError,
 			messages,
 			onAfterSend,
+			onClearExternalError,
 			onUserMessageSubmitted,
 			permissionMode,
 			sessionId,
@@ -843,7 +857,10 @@ export function ChatPaneShell<
 				{renderMessages(messageFrame)}
 				{renderMcpControls()}
 				{features?.renderApprovalOverlay
-					? features.renderApprovalOverlay(pendingApproval)
+					? features.renderApprovalOverlay(pendingApproval, {
+							isSubmitting: approvalResponsePending,
+							onRespond: handleApprovalResponse,
+						})
 					: null}
 				{renderFooter(footerFrame)}
 			</div>
