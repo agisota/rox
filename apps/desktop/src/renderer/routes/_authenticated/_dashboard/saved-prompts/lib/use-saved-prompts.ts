@@ -1,43 +1,44 @@
 import { toast } from "@rox/ui/sonner";
 import { useCallback, useMemo } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import {
-	decodeBody,
-	EMPTY_METADATA,
-	encodeBody,
-	normalizeTags,
-} from "./prompt-metadata";
-import type { PromptEntry, PromptMetadata, RawSavedPrompt } from "./types";
+import type { PromptEntry, RawSavedPrompt } from "./types";
 import { parseVariableNames } from "./variables";
 
+function normalizeTags(tags: readonly string[]): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const raw of tags) {
+		const tag = raw.trim().replace(/\s+/g, " ");
+		if (tag.length === 0) continue;
+		const key = tag.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(tag);
+	}
+	return out;
+}
+
 function toEntry(row: RawSavedPrompt): PromptEntry {
-	const { body, metadata } = decodeBody(row.body);
 	return {
 		id: row.id,
 		title: row.title,
-		body,
+		body: row.body,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
-		tags: metadata.tags,
-		favorite: metadata.favorite,
-		useCount: metadata.useCount,
-		lastUsedAt: metadata.lastUsedAt,
-		variableNames: parseVariableNames(body),
-	};
-}
-
-function metadataOf(entry: PromptEntry): PromptMetadata {
-	return {
-		tags: entry.tags,
-		favorite: entry.favorite,
-		useCount: entry.useCount,
-		lastUsedAt: entry.lastUsedAt,
+		folder: row.folder ?? null,
+		tags: row.tags ?? [],
+		favorite: row.isFavorite,
+		useCount: row.copyCount,
+		lastUsedAt: row.lastUsedAt ?? null,
+		position: row.position ?? null,
+		variableNames: parseVariableNames(row.body),
 	};
 }
 
 export interface CreatePromptArgs {
 	title: string;
 	body: string;
+	folder?: string | null;
 	tags?: string[];
 	favorite?: boolean;
 }
@@ -46,17 +47,18 @@ export interface UpdatePromptArgs {
 	id: string;
 	title: string;
 	body: string;
+	folder?: string | null;
 	tags?: string[];
 	favorite?: boolean;
 }
 
 /**
- * Central data layer for the prompt library. Reads `savedPrompts.list`, decodes
- * each row into a `PromptEntry` (clean body + metadata + parsed variable names),
- * and exposes metadata-aware mutations that re-encode the hidden block before
- * writing back through the EXISTING create/update mutations. No new tRPC
- * procedures or schema columns are required — the surface stays fully
- * offline-first over the local `publicProcedure` router.
+ * Central data layer for the prompt library. Reads `savedPrompts.list`, maps
+ * each DB row into a `PromptEntry` (body + real metadata columns + parsed
+ * variable names), and exposes mutations that write directly to the schema
+ * columns — folders, tags, favorite, usage and drag-order all persist as real
+ * fields (no hidden body codec). Optimistic-free + offline-first over the local
+ * electron-tRPC `publicProcedure` router.
  */
 export function useSavedPrompts() {
 	const utils = electronTrpc.useUtils();
@@ -79,6 +81,16 @@ export function useSavedPrompts() {
 		);
 	}, [entries]);
 
+	const allFolders = useMemo<string[]>(() => {
+		const set = new Set<string>();
+		for (const entry of entries) {
+			if (entry.folder) set.add(entry.folder);
+		}
+		return Array.from(set).sort((a, b) =>
+			a.localeCompare(b, "ru", { sensitivity: "base" }),
+		);
+	}, [entries]);
+
 	const invalidate = useCallback(() => {
 		void utils.savedPrompts.list.invalidate();
 	}, [utils]);
@@ -95,38 +107,39 @@ export function useSavedPrompts() {
 		onSuccess: invalidate,
 		onError: (error) => toast.error(`Не удалось удалить: ${error.message}`),
 	});
+	const reorderMutation = electronTrpc.savedPrompts.reorder.useMutation({
+		onSuccess: invalidate,
+		onError: (error) =>
+			toast.error(`Не удалось сохранить порядок: ${error.message}`),
+	});
+	const incrementCopyMutation =
+		electronTrpc.savedPrompts.incrementCopy.useMutation({
+			onSuccess: invalidate,
+		});
 
 	const createPrompt = useCallback(
-		(args: CreatePromptArgs) => {
-			const metadata: PromptMetadata = {
-				...EMPTY_METADATA,
-				tags: normalizeTags(args.tags ?? []),
-				favorite: args.favorite ?? false,
-			};
-			return createMutation.mutateAsync({
+		(args: CreatePromptArgs) =>
+			createMutation.mutateAsync({
 				title: args.title.trim(),
-				body: encodeBody(args.body, metadata),
-			});
-		},
+				body: args.body,
+				folder: args.folder ?? null,
+				tags: normalizeTags(args.tags ?? []),
+				isFavorite: args.favorite ?? false,
+			}),
 		[createMutation],
 	);
 
 	const updatePrompt = useCallback(
-		(args: UpdatePromptArgs) => {
-			const existing = entries.find((entry) => entry.id === args.id);
-			const metadata: PromptMetadata = {
-				tags: normalizeTags(args.tags ?? existing?.tags ?? []),
-				favorite: args.favorite ?? existing?.favorite ?? false,
-				useCount: existing?.useCount ?? 0,
-				lastUsedAt: existing?.lastUsedAt ?? null,
-			};
-			return updateMutation.mutateAsync({
+		(args: UpdatePromptArgs) =>
+			updateMutation.mutateAsync({
 				id: args.id,
 				title: args.title.trim(),
-				body: encodeBody(args.body, metadata),
-			});
-		},
-		[entries, updateMutation],
+				body: args.body,
+				folder: args.folder,
+				tags: args.tags !== undefined ? normalizeTags(args.tags) : undefined,
+				isFavorite: args.favorite,
+			}),
+		[updateMutation],
 	);
 
 	const deletePrompt = useCallback(
@@ -134,42 +147,46 @@ export function useSavedPrompts() {
 		[deleteMutation],
 	);
 
-	const writeMetadata = useCallback(
-		(entry: PromptEntry, next: PromptMetadata) =>
+	const toggleFavorite = useCallback(
+		(entry: PromptEntry) =>
 			updateMutation.mutateAsync({
 				id: entry.id,
 				title: entry.title,
-				body: encodeBody(entry.body, next),
+				body: entry.body,
+				isFavorite: !entry.favorite,
 			}),
 		[updateMutation],
 	);
 
-	const toggleFavorite = useCallback(
-		(entry: PromptEntry) =>
-			writeMetadata(entry, {
-				...metadataOf(entry),
-				favorite: !entry.favorite,
+	const moveToFolder = useCallback(
+		(entry: PromptEntry, folder: string | null) =>
+			updateMutation.mutateAsync({
+				id: entry.id,
+				title: entry.title,
+				body: entry.body,
+				folder,
 			}),
-		[writeMetadata],
+		[updateMutation],
+	);
+
+	/** Persist a drag-reordered id list (dense 0..n positions). */
+	const reorder = useCallback(
+		(orderedIds: string[]) => reorderMutation.mutateAsync({ orderedIds }),
+		[reorderMutation],
 	);
 
 	/** Fire-and-forget usage bump on insert/copy (never blocks the action). */
 	const incrementUse = useCallback(
 		(entry: PromptEntry) => {
-			void writeMetadata(entry, {
-				...metadataOf(entry),
-				useCount: entry.useCount + 1,
-				lastUsedAt: Date.now(),
-			}).catch(() => {
-				// Usage tracking is best-effort; a failure must not surface.
-			});
+			incrementCopyMutation.mutate({ id: entry.id });
 		},
-		[writeMetadata],
+		[incrementCopyMutation],
 	);
 
 	return {
 		entries,
 		allTags,
+		allFolders,
 		isLoading: query.isLoading,
 		isError: query.isError,
 		refetch: query.refetch,
@@ -177,6 +194,8 @@ export function useSavedPrompts() {
 		updatePrompt,
 		deletePrompt,
 		toggleFavorite,
+		moveToFolder,
+		reorder,
 		incrementUse,
 		isCreating: createMutation.isPending,
 		isUpdating: updateMutation.isPending,
