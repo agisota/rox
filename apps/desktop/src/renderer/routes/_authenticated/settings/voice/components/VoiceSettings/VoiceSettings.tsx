@@ -1,7 +1,15 @@
 import { Label } from "@rox/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@rox/ui/select";
 import { toast } from "@rox/ui/sonner";
 import { Switch } from "@rox/ui/switch";
 import { Textarea } from "@rox/ui/textarea";
+import { ListenButton } from "@rox/ui/voice";
 import { ShieldCheckIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
@@ -60,6 +68,30 @@ export function VoiceSettings() {
 				utils.settings.getDictationEnabled.invalidate();
 			},
 		});
+
+	// --- TTS voice (FN-043 / #486) ------------------------------------------
+	// Voice used by the "Прослушать" button on agent replies. Persisted locally;
+	// the test button below reads a sample line aloud through the same edge-TTS
+	// path the chat button uses.
+	const { data: ttsVoices } = electronTrpc.tts.listVoices.useQuery();
+	const { data: ttsVoice } = electronTrpc.tts.getVoice.useQuery();
+	const setTtsVoice = electronTrpc.tts.setVoice.useMutation({
+		onMutate: async ({ voice }) => {
+			await utils.tts.getVoice.cancel();
+			const previous = utils.tts.getVoice.getData();
+			utils.tts.getVoice.setData(undefined, voice);
+			return { previous };
+		},
+		onError: (_err, _vars, context) => {
+			if (context?.previous !== undefined) {
+				utils.tts.getVoice.setData(undefined, context.previous);
+			}
+			toast.error("Не удалось сохранить голос озвучивания");
+		},
+		onSettled: () => {
+			utils.tts.getVoice.invalidate();
+		},
+	});
 
 	// --- Cloud ambient settings (source of truth for the server nudge job) ---
 	// Seeded once from `apiClient.ambient.get`; a failed read leaves it
@@ -185,6 +217,47 @@ export function VoiceSettings() {
 					onCheckedChange={(enabled) => setDictationEnabled.mutate({ enabled })}
 					disabled={isDictationLoading || setDictationEnabled.isPending}
 				/>
+			</div>
+
+			{/* FN-043 (#486): TTS voice for the "Прослушать" button on agent replies. */}
+			<div className="space-y-2">
+				<div className="flex items-center justify-between gap-4">
+					<div className="space-y-0.5 pr-6">
+						<Label htmlFor="tts-voice" className="font-medium text-sm">
+							Голос озвучивания
+						</Label>
+						<p className="text-muted-foreground text-xs">
+							Голос для кнопки «Прослушать» под ответами агента. Работает
+							бесплатно (edge-TTS), ключи не нужны.
+						</p>
+					</div>
+					<div className="flex items-center gap-2">
+						<Select
+							value={ttsVoice ?? undefined}
+							onValueChange={(voice) => setTtsVoice.mutate({ voice })}
+						>
+							<SelectTrigger id="tts-voice" className="w-[200px]">
+								<SelectValue placeholder="Выберите голос" />
+							</SelectTrigger>
+							<SelectContent>
+								{(ttsVoices ?? []).map((voice) => (
+									<SelectItem key={voice.id} value={voice.id}>
+										{voice.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<ListenButton
+							text="Привет! Так звучит выбранный голос Rox."
+							synthesize={(text) =>
+								utils.client.tts.synthesize.mutate({ text })
+							}
+							onError={() =>
+								toast.error("Не удалось воспроизвести образец голоса")
+							}
+						/>
+					</div>
+				</div>
 			</div>
 
 			<div className="flex items-center justify-between">
