@@ -41,6 +41,12 @@ export type IdentitySwitcherProps = {
 	loading?: boolean;
 	/** Label shown before any persona exists/loads. */
 	placeholder?: string;
+	/**
+	 * Detail-pane rendered below the persona list (Hermes-borrow F23) — typically
+	 * a `ProfileDetailCard` for the active persona. Optional so the bare chip is
+	 * unchanged for callers that don't supply one.
+	 */
+	detail?: React.ReactNode;
 	className?: string;
 };
 
@@ -62,6 +68,7 @@ export function IdentitySwitcher({
 	onSelect,
 	loading,
 	placeholder = "Персона",
+	detail,
 	className,
 }: IdentitySwitcherProps) {
 	const active = activeId
@@ -135,6 +142,14 @@ export function IdentitySwitcher({
 						) : null}
 					</DropdownMenuItem>
 				))}
+				{detail ? (
+					<>
+						<DropdownMenuSeparator />
+						<div className="p-1" data-testid="identity-switcher-detail">
+							{detail}
+						</div>
+					</>
+				) : null}
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
