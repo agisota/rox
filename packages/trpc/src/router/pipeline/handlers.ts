@@ -8,6 +8,7 @@ import {
 	type EmbedPort,
 	type ModelGeneratePort,
 	makeClassifierHandler,
+	makeCodeHandler,
 	makeConditionHandler,
 	makeDbQueryHandler,
 	makeDbWriteHandler,
@@ -29,6 +30,7 @@ import {
 	makeWebSearchHandler,
 	type StructuredExtractPort,
 } from "@rox/workflow-runtime/handlers";
+import { pipelineCodeExecute } from "./code-port";
 import { makePipelineDbQuery, makePipelineDbWrite } from "./db-port";
 import { pipelineHttpRequest } from "./http-port";
 import {
@@ -188,6 +190,12 @@ export function buildPipelineHandlers(
 	const handlers: Record<string, BlockHandler> = {
 		model: makeModelHandler(modelGenerate),
 		http_request: makeHttpHandler(pipelineHttpRequest),
+		// Code node (#526): runs untrusted author source in a hardened, resource- and
+		// time-bounded `worker_threads` sandbox with NO host fs/network/process access
+		// by default (see `code-port.ts`). Self-contained (no tenancy scope), so it is
+		// always registered; unsupported languages / timeouts / memory caps route to
+		// the node's `error` handle with a typed code.
+		code: makeCodeHandler(pipelineCodeExecute),
 		// Logic nodes are pure (no injected port): they branch on the merged input
 		// with a safe expression evaluator and route via `result.handle`.
 		condition: makeConditionHandler(),

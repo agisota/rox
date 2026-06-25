@@ -14,6 +14,36 @@
 
 import type { RoxEdge, RoxWorkflowState } from "../types";
 
+/**
+ * Canonical loop-iteration caps — the SINGLE source of truth shared across the
+ * runtime executor, the node registry's `maxIterations` config bound, and the
+ * pipeline editor's UI clamp (#527). Previously the UI clamped to 200 while the
+ * runtime hard-capped replays at 20, so a user entering e.g. 100 was silently
+ * capped — the UI, the config schema and the executor now all reference these so
+ * the value a user can enter is the value the runtime will honour.
+ *
+ * `MAX_LOOP_ITERATIONS` is the hard ceiling on feedback-loop body replays in one
+ * run (the cost/safety bound); `DEFAULT_MAX_LOOP_ITERATIONS` is the cap used when a
+ * loop declares none.
+ */
+export const DEFAULT_MAX_LOOP_ITERATIONS = 5;
+export const MAX_LOOP_ITERATIONS = 20;
+
+/**
+ * Clamp a configured loop cap into the supported `[1, MAX_LOOP_ITERATIONS]` range,
+ * falling back to {@link DEFAULT_MAX_LOOP_ITERATIONS} when unset / non-finite. Pure
+ * + shared so the executor's runtime cap and any UI/validation clamp cannot drift.
+ */
+export function clampLoopIterationCap(maxIterations?: number): number {
+	if (maxIterations == null || !Number.isFinite(maxIterations)) {
+		return DEFAULT_MAX_LOOP_ITERATIONS;
+	}
+	const floored = Math.floor(maxIterations);
+	if (floored < 1) return 1;
+	if (floored > MAX_LOOP_ITERATIONS) return MAX_LOOP_ITERATIONS;
+	return floored;
+}
+
 /** A resolved loop: its entry node, body nodes, and the back-edge(s) into entry. */
 export interface ResolvedLoop {
 	/** The loop id (key in `state.loops`). */

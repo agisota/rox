@@ -236,6 +236,55 @@ describe("makeAgentRunResolver composition", () => {
 		expect(seenMaxTurns).toBe(2);
 	});
 
+	test("ARS-10: per-node modelOverride + temperature reach runOnHost (#527 transport)", async () => {
+		let seenModel: string | undefined = "UNSET";
+		let seenTemp: number | undefined = -1;
+		const resolve = makeResolver({
+			loadRolePreset: async () => ({ preset: CHAT_PRESET }),
+			runOnHost: async (a) => {
+				seenModel = a.model;
+				seenTemp = a.temperature;
+				return {
+					kind: "chat",
+					sessionId: "sess",
+					message: "ok",
+					workspaceId: "ws-1",
+				};
+			},
+		});
+		// The node overrides model + temperature; previously these were resolved but
+		// dropped at the relay — now they must be transported to the host bridge.
+		await resolve(
+			req({ modelOverride: "anthropic/claude-x", temperature: 0.4 }),
+		);
+		expect(seenModel).toBe("anthropic/claude-x");
+		expect(seenTemp).toBe(0.4);
+	});
+
+	test("ARS-11: no model/temperature override → none sent (preset has none)", async () => {
+		// CHAT_PRESET declares neither model nor temperature, so with no node override
+		// the resolver sends neither — the host keeps its runtime default (regression
+		// guard that the additive transport stays additive).
+		let modelKeyPresent = true;
+		let tempKeyPresent = true;
+		const resolve = makeResolver({
+			loadRolePreset: async () => ({ preset: CHAT_PRESET }),
+			runOnHost: async (a) => {
+				modelKeyPresent = "model" in a;
+				tempKeyPresent = "temperature" in a;
+				return {
+					kind: "chat",
+					sessionId: "sess",
+					message: "ok",
+					workspaceId: "ws-1",
+				};
+			},
+		});
+		await resolve(req());
+		expect(modelKeyPresent).toBe(false);
+		expect(tempKeyPresent).toBe(false);
+	});
+
 	test("ARS-07: terminal preset dispatches as terminal and carries artifacts", async () => {
 		const resolve = makeResolver({
 			loadRolePreset: async () => ({

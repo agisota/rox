@@ -5,6 +5,7 @@
 // it re-exports free of runtime imports — type-only imports of workflow-core /
 // executor types only — so the subpath stays cycle-safe.
 export * from "./classifierHandler";
+export * from "./codeHandler";
 export * from "./conditionHandler";
 export * from "./dataHandlers";
 export * from "./dbQueryHandler";

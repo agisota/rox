@@ -133,9 +133,9 @@ export function makeAgentRunResolver(
 		// Merge the node's per-node overrides (NodeInspector #407 — forwarded on the
 		// request by the executor) OVER the role preset, within bounds. The pure
 		// merge lives in @rox/workflow-core; here we feed it the request fields.
-		// NOTE: only `maxTurns` is transported to the host today (`agents.runAndCapture`
-		// accepts no model/temperature); `config.model` / `config.temperature` are
-		// resolved here but not yet sent across the relay (see agent-run-host-bridge).
+		// `maxTurns`, `model` and `temperature` are ALL transported to the host now
+		// (#527): `agents.runAndCapture` accepts model/temperature and a chat agent's
+		// runtime switches to the resolved model for the run (see agent-run-host-bridge).
 		const config = resolveAgentRunNodeConfig({
 			preset,
 			subBlocks: {
@@ -164,6 +164,13 @@ export function makeAgentRunResolver(
 				prompt,
 				// Per-node maxTurns override (when set) already merged over the preset.
 				maxTurns: config.maxTurns,
+				// Per-node model/temperature (NodeInspector #407), resolved over the
+				// preset and now transported to the host runtime (#527). Additive: only
+				// sent when the resolved config selected a value.
+				...(config.model != null ? { model: config.model } : {}),
+				...(config.temperature != null
+					? { temperature: config.temperature }
+					: {}),
 				label: req.roleSkillSlug,
 			});
 
