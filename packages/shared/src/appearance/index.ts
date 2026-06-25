@@ -5,6 +5,15 @@
  * no-repeat selection helpers used by every platform.
  */
 
+export {
+	APPEARANCE_STORAGE_KEY,
+	BACKDROP_BLUR_PX,
+	BACKDROP_BLUR_VAR,
+	buildBfcacheResyncScript,
+	buildFirstPaintScript,
+	GLASS_ROOT_CLASS,
+	SURFACE_OPACITY_VAR,
+} from "./first-paint";
 export { QUOTES } from "./quotes";
 export type { Identifiable } from "./select";
 export { pickNext, pickNextIndex } from "./select";
