@@ -1159,6 +1159,7 @@
         "@rox/comms-core": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/host-provisioner": "workspace:*",
+        "@rox/mcp-v2": "workspace:*",
         "@rox/rtc": "workspace:*",
         "@rox/runtime-clients": "workspace:*",
         "@rox/shared": "workspace:*",

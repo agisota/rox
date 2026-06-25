@@ -67,3 +67,32 @@ describe("buildPipelineHandlers — I/O nodes (#547)", () => {
 		expect(handlers.schedule).toBeUndefined();
 	});
 });
+
+describe("buildPipelineHandlers — tool nodes (#545)", () => {
+	const SCOPE = {
+		organizationId: "org-1",
+		v2ProjectId: null,
+		userId: "user-1",
+		relayUrl: "https://relay.test",
+	};
+
+	test("web_search always registers (provider-abstraction, scope-independent)", () => {
+		// Always available: the port self-reports a typed not-configured error when
+		// no provider key is set, so the node is registered regardless of scope.
+		expect(buildPipelineHandlers().web_search).toBeDefined();
+		expect(buildPipelineHandlers(SCOPE).web_search).toBeDefined();
+	});
+
+	test("tool_call / mcp_tool register ONLY with a tenancy scope (org+actor bound)", () => {
+		// Without scope: the MCP ports cannot mint an org-scoped MCP context, so the
+		// nodes are not registered and fall back to pass-through (like the db nodes).
+		const noScope = buildPipelineHandlers();
+		expect(noScope.tool_call).toBeUndefined();
+		expect(noScope.mcp_tool).toBeUndefined();
+
+		// With scope: both are wired to the MCP layer and become executable.
+		const scoped = buildPipelineHandlers(SCOPE);
+		expect(scoped.tool_call).toBeDefined();
+		expect(scoped.mcp_tool).toBeDefined();
+	});
+});
