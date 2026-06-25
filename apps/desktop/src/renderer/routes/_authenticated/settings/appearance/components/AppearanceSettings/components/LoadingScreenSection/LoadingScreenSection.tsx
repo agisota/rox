@@ -3,6 +3,7 @@ import { Label } from "@rox/ui/label";
 import { Switch } from "@rox/ui/switch";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { SettingsCard } from "../../../../../components/SettingsCard";
+import { SETTING_ITEM_ID } from "../../../../../utils/settings-search";
 
 /** Representative quote used for the static settings preview. */
 const PREVIEW_QUOTE = QUOTES[0];
@@ -44,7 +45,7 @@ export function LoadingScreenSection() {
 	};
 
 	return (
-		<SettingsCard bare>
+		<SettingsCard bare anchorItemId={SETTING_ITEM_ID.APPEARANCE_LOADING_SCREEN}>
 			<div className="divide-y divide-border/60">
 				<div className="flex items-center justify-between gap-6 p-4">
 					<div className="min-w-0 flex-1">

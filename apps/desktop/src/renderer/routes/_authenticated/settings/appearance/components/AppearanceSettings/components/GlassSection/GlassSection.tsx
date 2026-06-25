@@ -7,6 +7,7 @@ import {
 	SettingsCard,
 	SettingsRow,
 } from "../../../../../components/SettingsCard";
+import { SETTING_ITEM_ID } from "../../../../../utils/settings-search";
 import {
 	applyAppearanceGlass,
 	DEFAULT_GLASS_WINDOW_OPACITY,
@@ -81,7 +82,7 @@ export function GlassSection() {
 	};
 
 	return (
-		<SettingsCard>
+		<SettingsCard anchorItemId={SETTING_ITEM_ID.APPEARANCE_GLASS}>
 			<SettingsRow
 				htmlFor="glass-enabled"
 				label="Остекление"

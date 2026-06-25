@@ -16,6 +16,7 @@ import {
 } from "renderer/stores/settings-state";
 import { NavigationControls } from "../_dashboard/components/NavigationControls";
 import { SearchResultsBanner } from "./components/SearchResultsBanner";
+import { SettingsDeepLinkFlash } from "./components/SettingsDeepLinkFlash";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import {
 	getPathFromSection,
@@ -96,6 +97,7 @@ function SettingsLayout() {
 
 	return (
 		<div className="flex flex-col h-screen w-screen bg-tertiary">
+			<SettingsDeepLinkFlash />
 			<div
 				className="drag flex h-12 w-full items-center gap-1.5 bg-tertiary"
 				style={{
