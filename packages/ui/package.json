@@ -22,6 +22,7 @@
 		"./room-visibility-badge": "./src/components/RoomVisibilityBadge/index.ts",
 		"./session-row": "./src/components/SessionRow/index.ts",
 		"./offline-shell": "./src/components/OfflineShell/index.ts",
+		"./onboarding-wizard-shell": "./src/components/OnboardingWizardShell/index.ts",
 		"./live-room-activity-panel": "./src/components/LiveRoomActivityPanel/index.ts",
 		"./workspace-switcher": "./src/components/WorkspaceSwitcher/index.ts",
 		"./org-management": "./src/components/OrgManagement/index.ts",

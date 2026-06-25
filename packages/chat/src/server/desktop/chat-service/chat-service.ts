@@ -558,6 +558,39 @@ export class ChatService {
 		return { models };
 	}
 
+	/**
+	 * Onboarding `/models` probe (F48, #637). Same network call as
+	 * {@link discoverCustomProviderModels}, but with onboarding semantics: it
+	 * never throws — it resolves `{ ok, models, error }` so the wizard's probe
+	 * state machine (idle → probing → ok | error) can map the outcome directly
+	 * to a status without a try/catch at every call site. The fetch logic is NOT
+	 * duplicated; this reuses the same endpoint helper as discovery.
+	 */
+	async probeCustomProviderModels(input: {
+		baseUrl: string;
+		apiKey?: string;
+	}): Promise<{ ok: boolean; models: string[]; error?: string }> {
+		const apiKey =
+			input.apiKey?.trim() ||
+			getStoredCustomProviderApiKey({
+				configPath: this.customProviderConfigPath,
+			}) ||
+			"";
+		try {
+			const models = await discoverCustomProviderModelsFromEndpoint({
+				baseUrl: input.baseUrl,
+				apiKey,
+			});
+			return { ok: true, models: models.map((m) => m.id) };
+		} catch (error) {
+			return {
+				ok: false,
+				models: [],
+				error: error instanceof Error ? error.message : String(error),
+			};
+		}
+	}
+
 	async startOpenAIOAuth(): Promise<{ url: string; instructions: string }> {
 		this.stopOpenAIOAuthLoopback();
 		this.pendingOpenAIOAuthCallbackUrl = null;

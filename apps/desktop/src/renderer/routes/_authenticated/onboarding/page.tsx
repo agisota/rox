@@ -1,4 +1,5 @@
 import { chatServiceTrpc } from "@rox/chat/client";
+import { DESKTOP_CAPABILITIES } from "@rox/shared/wizard";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
 import { DrawnCheck, motionDuration, useShouldAnimate } from "@rox/ui/motion";
@@ -36,6 +37,11 @@ function OnboardingDashboardPage() {
 	const [connectProvider, setConnectProvider] = useState<Provider | null>(null);
 	const [ghAuthOpen, setGhAuthOpen] = useState(false);
 	const shouldAnimateDecorative = useShouldAnimate("decorative");
+	// F48 (#637): the Electron-only dep installer is gated behind a capability
+	// flag from the shared wizard core. Desktop can install git/gh in-app
+	// (`true`); web/mobile hosts pass connect-only capabilities, so the same
+	// system step renders connect-only (no install affordance) on those surfaces.
+	const { canInstallDeps } = DESKTOP_CAPABILITIES;
 
 	const {
 		data: ghStatus,
@@ -149,10 +155,14 @@ function OnboardingDashboardPage() {
 							ghReady,
 						)}
 						recommended
-						actionLabel={toolsInstalled ? "Войти" : "Установить"}
+						actionLabel={
+							toolsInstalled || !canInstallDeps ? "Войти" : "Установить"
+						}
 						actionPending={installGitTools.isPending}
 						onAction={
-							toolsInstalled
+							// Connect-only hosts (web/mobile) can't install dev tools, so the
+							// install affordance is replaced by the connect/login path.
+							toolsInstalled || !canInstallDeps
 								? () => setGhAuthOpen(true)
 								: () => installGitTools.mutate()
 						}

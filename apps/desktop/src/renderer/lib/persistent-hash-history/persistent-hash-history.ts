@@ -77,6 +77,8 @@ const RESTORABLE_STATIC_ROUTES = [
 	"/create-organization",
 	"/sign-in",
 	"/onboarding",
+	"/onboarding/credential",
+	"/onboarding/finish",
 	"/onboarding/project",
 	"/settings",
 	"/automations",

@@ -220,6 +220,18 @@ export function createChatServiceRouter(service: ChatService) {
 						apiKey: input.apiKey,
 					});
 				}),
+			// Onboarding `/models` probe (F48, #637): same network call as
+			// discovery, but resolves `{ ok, models, error }` instead of throwing
+			// so the shared wizard probe state machine maps it straight to a
+			// status. Reuses the service helper — no duplicated fetch, no DB.
+			probeCustomProviderModels: t.procedure
+				.input(customProviderDiscoverInput)
+				.mutation(({ input }) => {
+					return service.probeCustomProviderModels({
+						baseUrl: input.baseUrl,
+						apiKey: input.apiKey,
+					});
+				}),
 			setCustomProviderConfig: t.procedure
 				.input(customProviderConfigInput)
 				.mutation(({ input }) => {

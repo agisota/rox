@@ -327,6 +327,10 @@
 		"./zen-mode": {
 			"types": "./src/zen-mode.ts",
 			"default": "./src/zen-mode.ts"
+		},
+		"./wizard": {
+			"types": "./src/wizard/index.ts",
+			"default": "./src/wizard/index.ts"
 		}
 	},
 	"scripts": {
