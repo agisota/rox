@@ -43,7 +43,7 @@ const CURSOR_LIGHT = "░▒▓";
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
 const SAFETY_TIMEOUT_MS = 18_000;
 /** Min on-screen time for the intro (logo holds out the remainder). */
-const MIN_INTRO_DURATION_MS = 10_100;
+const MIN_INTRO_DURATION_MS = 9_100;
 
 /** Delay the independent logo float until the one-shot reveal tween has landed. */
 const LOGO_FLOAT_DELAY_MS = 2_200;

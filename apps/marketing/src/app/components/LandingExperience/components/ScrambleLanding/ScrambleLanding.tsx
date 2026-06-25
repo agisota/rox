@@ -103,7 +103,7 @@ export function ScrambleLanding() {
 		// ── C. Living background: slow breathing of the brand glow ──────────
 		trackAnimation(
 			animate(container, {
-				"--rox-glow-a": [0.12, 0.2],
+				"--rox-glow-a": [0.1, 0.16],
 				"--rox-glow-y": ["-8%", "-3%"],
 				loop: true,
 				alternate: true,

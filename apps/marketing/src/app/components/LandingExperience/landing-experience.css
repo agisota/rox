@@ -105,13 +105,13 @@
 }
 
 .rox-intro[data-intro-fallback="pending"] {
-	animation: rox-intro-fallback-exit 10.5s linear forwards;
+	animation: rox-intro-fallback-exit 9.5s linear forwards;
 }
 
 .rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
 	.rox-intro__slide--one {
 	opacity: 1;
-	animation: rox-intro-fallback-slide-one 10.5s linear forwards;
+	animation: rox-intro-fallback-slide-one 9.5s linear forwards;
 }
 
 @keyframes rox-intro-fallback-slide-one {
@@ -334,13 +334,15 @@
 	 * extended transparent point at 88% kill the hard banding ring. */
 	background:
 		radial-gradient(
-			135% 90% at 50% var(--rox-glow-y),
+			140% 100% at 50% var(--rox-glow-y),
 			rgba(210, 86, 17, var(--rox-glow-a)),
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.55)) 20%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.28)) 38%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.12)) 56%,
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.04)) 72%,
-			transparent 88%
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.72)) 12%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.5)) 24%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.32)) 36%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.18)) 48%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.09)) 62%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.03)) 78%,
+			transparent 100%
 		),
 		var(--rox-bg);
 }
@@ -831,9 +833,12 @@
 	inset: 0;
 	z-index: 0;
 	pointer-events: none;
-	opacity: 0.075;
-	mix-blend-mode: overlay;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	/* Dither to break gradient banding on the near-black surface. `overlay`
+	 * collapses to nothing over black, so use `screen`: it adds faint luminance
+	 * noise that survives on the dark ramp and dissolves the contour stepping. */
+	opacity: 0.05;
+	mix-blend-mode: screen;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 .rox-landing__brand {
