@@ -58,6 +58,56 @@ export function useCalendarActions() {
 		}),
 	);
 
+	const updateCalendar = useMutation(
+		trpc.calendar.updateCalendar.mutationOptions({
+			onSuccess: async () => {
+				await invalidate();
+				toast.success("Календарь обновлён");
+			},
+			onError: onError("Не удалось обновить календарь"),
+		}),
+	);
+
+	const deleteCalendar = useMutation(
+		trpc.calendar.deleteCalendar.mutationOptions({
+			onSuccess: async () => {
+				await invalidate();
+				toast.success("Календарь удалён");
+			},
+			onError: onError("Не удалось удалить календарь"),
+		}),
+	);
+
+	/** Refresh the share list (ACL) for a calendar after a write. */
+	const invalidateShares = useCallback(
+		async (calendarId: string) => {
+			await queryClient.invalidateQueries({
+				queryKey: trpc.calendar.listShares.queryKey({ calendarId }),
+			});
+		},
+		[queryClient, trpc],
+	);
+
+	const shareCalendar = useMutation(
+		trpc.calendar.shareCalendar.mutationOptions({
+			onSuccess: async (_data, variables) => {
+				await invalidateShares(variables.calendarId);
+				toast.success("Доступ предоставлен");
+			},
+			onError: onError("Не удалось предоставить доступ"),
+		}),
+	);
+
+	const unshareCalendar = useMutation(
+		trpc.calendar.unshareCalendar.mutationOptions({
+			onSuccess: async (_data, variables) => {
+				await invalidateShares(variables.calendarId);
+				toast.success("Доступ отозван");
+			},
+			onError: onError("Не удалось отозвать доступ"),
+		}),
+	);
+
 	const createEvent = useMutation(
 		trpc.calendar.createEvent.mutationOptions({
 			onSuccess: async () => {
@@ -242,6 +292,11 @@ export function useCalendarActions() {
 
 	return {
 		createCalendar,
+		updateCalendar,
+		deleteCalendar,
+		shareCalendar,
+		unshareCalendar,
+		invalidateShares,
 		createEvent,
 		updateEvent,
 		deleteEvent,

@@ -19,6 +19,7 @@ import { useCalendarActions } from "../../hooks/useCalendarActions";
 import { buildMonthGrid, shiftMonth } from "../../utils/monthGrid";
 import { EventDialog, type EventDialogValue } from "../EventDialog";
 import { AgendaView } from "./AgendaView";
+import { CalendarSettingsButton } from "./components/CalendarSettingsButton";
 import { SubscribeFeedButton } from "./components/SubscribeFeedButton";
 import { MonthView, type OccurrenceItem } from "./MonthView";
 
@@ -275,6 +276,18 @@ export function CalendarScreen() {
 							e.target.value = "";
 						}}
 					/>
+					{firstCalendar && (
+						<CalendarSettingsButton
+							calendar={{
+								id: firstCalendar.id,
+								name: firstCalendar.name,
+								color: firstCalendar.color,
+								timezone: firstCalendar.timezone,
+								ownerUserId: firstCalendar.ownerUserId,
+							}}
+							isOwner={ownsFirstCalendar}
+						/>
+					)}
 					{ownsFirstCalendar && firstCalendar && (
 						<SubscribeFeedButton
 							calendarId={firstCalendar.id}
