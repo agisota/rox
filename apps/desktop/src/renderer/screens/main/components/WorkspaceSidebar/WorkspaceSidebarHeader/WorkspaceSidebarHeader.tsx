@@ -10,6 +10,7 @@ import {
 	useTasksFilterStore,
 } from "renderer/routes/_authenticated/_dashboard/tasks/stores/tasks-filter-state";
 import { STROKE_WIDTH } from "../constants";
+import { IdentityStatusLineBar } from "./IdentityStatusLineBar";
 import { NewWorkspaceButton } from "./NewWorkspaceButton";
 
 interface WorkspaceSidebarHeaderProps {
@@ -61,6 +62,7 @@ export function WorkspaceSidebarHeader({
 	if (isCollapsed) {
 		return (
 			<div className="flex flex-col items-center border-b border-border py-2 gap-2">
+				<IdentityStatusLineBar isCollapsed />
 				<Tooltip delayDuration={300}>
 					<TooltipTrigger asChild>
 						<button
@@ -107,6 +109,7 @@ export function WorkspaceSidebarHeader({
 
 	return (
 		<div className="flex flex-col gap-1 border-b border-border px-2 pt-2 pb-2">
+			<IdentityStatusLineBar />
 			<button
 				type="button"
 				onClick={handleWorkspacesClick}
