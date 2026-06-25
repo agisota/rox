@@ -372,13 +372,11 @@
 	height: 100svh;
 	z-index: 0;
 	pointer-events: none;
-	background: radial-gradient(
-		130% 95% at 50% 32%,
-		rgba(210, 86, 17, 0.12),
-		rgba(210, 86, 17, 0.05) 40%,
-		rgba(210, 86, 17, 0.015) 62%,
-		transparent 84%
-	);
+	/* No own radial here: a raw gradient on the near-black surface bands into a
+	 * visible vertical contour behind the particles. The warm top glow is now
+	 * provided by the blurred .rox-landing::after layer underneath, which can't
+	 * band. The field only hosts the particle canvas. */
+	background: transparent;
 }
 
 .rox-field canvas {
