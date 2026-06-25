@@ -35,7 +35,11 @@ import type { CommentPaneData, DiffFocusSide } from "../../../../../../types";
 import type { NormalizedComment } from "../../types";
 
 interface CommentsSectionProps {
-	workspaceId: string;
+	/**
+	 * Owning workspace. When absent (host-scoped PR detail view), comments stay
+	 * read-only: thread resolution requires a workspace-linked GitHub session.
+	 */
+	workspaceId?: string;
 	comments: NormalizedComment[];
 	isLoading: boolean;
 	onOpenComment?: (comment: CommentPaneData) => void;
@@ -147,7 +151,7 @@ export function CommentsSection({
 	}, [copyCommentList, openReviewComments]);
 
 	const handleResolveAll = useCallback(async () => {
-		if (resolvableThreadIds.length === 0) return;
+		if (!workspaceId || resolvableThreadIds.length === 0) return;
 
 		setIsResolvingAll(true);
 		try {
@@ -283,7 +287,7 @@ export function CommentsSection({
 					</CollapsibleTrigger>
 					{openReviewComments.length > 0 && (
 						<div className="mr-1.5 flex items-center gap-1">
-							{resolvableThreadIds.length > 0 && (
+							{workspaceId && resolvableThreadIds.length > 0 && (
 								<button
 									type="button"
 									className="flex shrink-0 items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground disabled:opacity-50"
