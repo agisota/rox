@@ -16,6 +16,9 @@ interface Settings {
 /** How much motion the app uses. The OS "Reduce motion" setting always wins. */
 export type AnimationPreference = Settings["animationPreference"];
 
+/** Default motion level, used by the "reset to default" affordance. */
+export const DEFAULT_ANIMATION_PREFERENCE: AnimationPreference = "full";
+
 /** Clamp range for {@link Settings.diffBackgroundOpacity}. */
 export const MIN_DIFF_BACKGROUND_OPACITY = 0.3;
 export const MAX_DIFF_BACKGROUND_OPACITY = 1;
@@ -40,7 +43,7 @@ export const useSettings = create<SettingsStore>()(
 			showDiffComments: true,
 			expandUnchanged: false,
 			diffBackgroundOpacity: DEFAULT_DIFF_BACKGROUND_OPACITY,
-			animationPreference: "full",
+			animationPreference: DEFAULT_ANIMATION_PREFERENCE,
 			update: (key, value) =>
 				set({
 					[key]:

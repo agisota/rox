@@ -1,3 +1,4 @@
+import { Button } from "@rox/ui/button";
 import { Slider } from "@rox/ui/slider";
 import { Switch } from "@rox/ui/switch";
 import { useEffect } from "react";
@@ -71,6 +72,14 @@ export function GlassSection() {
 		setGlass.mutate({ glassEnabled, windowOpacity: next });
 	};
 
+	const isOpacityDefault = windowOpacity === DEFAULT_GLASS_WINDOW_OPACITY;
+	const handleOpacityReset = () => {
+		setGlass.mutate({
+			glassEnabled,
+			windowOpacity: DEFAULT_GLASS_WINDOW_OPACITY,
+		});
+	};
+
 	return (
 		<SettingsCard>
 			<SettingsRow
@@ -103,15 +112,27 @@ export function GlassSection() {
 						</>
 					}
 				>
-					<Slider
-						aria-label="Непрозрачность окна"
-						className="w-44"
-						min={MIN_WINDOW_OPACITY}
-						max={MAX_WINDOW_OPACITY}
-						step={0.01}
-						value={[windowOpacity]}
-						onValueChange={handleOpacityChange}
-					/>
+					<div className="flex items-center gap-2">
+						<Slider
+							aria-label="Непрозрачность окна"
+							className="w-44"
+							min={MIN_WINDOW_OPACITY}
+							max={MAX_WINDOW_OPACITY}
+							step={0.01}
+							value={[windowOpacity]}
+							onValueChange={handleOpacityChange}
+						/>
+						{!isOpacityDefault && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="shrink-0"
+								onClick={handleOpacityReset}
+							>
+								Сбросить
+							</Button>
+						)}
+					</div>
 				</SettingsRow>
 			) : null}
 		</SettingsCard>

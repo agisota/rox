@@ -10,7 +10,6 @@ import { useEffect } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import {
-	type SettingsSection,
 	useSetSettingsSearchQuery,
 	useSettingsOriginRoute,
 	useSettingsSearchQuery,
@@ -19,6 +18,11 @@ import { NavigationControls } from "../_dashboard/components/NavigationControls"
 import { SearchResultsBanner } from "./components/SearchResultsBanner";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import {
+	getPathFromSection,
+	getSectionFromPath,
+	SECTION_ORDER,
+} from "./components/SettingsSidebar/settings-manifest";
+import {
 	getMatchCountBySection,
 	searchSettings,
 } from "./utils/settings-search";
@@ -26,74 +30,6 @@ import {
 export const Route = createFileRoute("/_authenticated/settings")({
 	component: SettingsLayout,
 });
-
-/**
- * Single source of truth for section ⇆ route mapping (Settings P0 hardening).
- *
- * Previously `SECTION_ORDER`, `getSectionFromPath` and `getPathFromSection`
- * were three hand-maintained lists that drifted: ringtones, voice, shares,
- * links, security, agents, api-keys, teams and integrations were missing from
- * one or more of them, so search auto-navigation could not land on those
- * sections and the path maps disagreed with the sidebar. They are now derived
- * from this one ordered manifest, whose order + membership matches the sidebar
- * nav groups (`GeneralSettings`) and the search registry (`SettingsSection`).
- *
- * `slug` is the URL segment under `/settings/`; `match` (optional) lists extra
- * pathname fragments that should resolve to this section (e.g. the `api-keys`
- * route maps to the `apikeys` registry section).
- */
-interface SettingsSectionRoute {
-	section: SettingsSection;
-	slug: string;
-	match?: string[];
-}
-
-const SETTINGS_SECTION_ROUTES: SettingsSectionRoute[] = [
-	// Личное
-	{ section: "account", slug: "account" },
-	{ section: "appearance", slug: "appearance" },
-	{ section: "ringtones", slug: "ringtones" },
-	// Редактор и процесс
-	{ section: "behavior", slug: "behavior" },
-	{ section: "keyboard", slug: "keyboard" },
-	{ section: "voice", slug: "voice" },
-	{ section: "git", slug: "git" },
-	{ section: "agents", slug: "agents" },
-	{ section: "terminal", slug: "terminal" },
-	{ section: "links", slug: "links" },
-	{ section: "shares", slug: "shares" },
-	{ section: "models", slug: "models" },
-	// Организация
-	{ section: "organization", slug: "organization" },
-	{ section: "teams", slug: "teams" },
-	{ section: "project", slug: "projects", match: ["/settings/project"] },
-	{ section: "hosts", slug: "hosts" },
-	{ section: "integrations", slug: "integrations" },
-	{ section: "apikeys", slug: "api-keys" },
-	// Система
-	{ section: "security", slug: "security" },
-	{ section: "permissions", slug: "permissions" },
-	{ section: "experimental", slug: "experimental" },
-];
-
-const SECTION_ORDER: SettingsSection[] = SETTINGS_SECTION_ROUTES.map(
-	(entry) => entry.section,
-);
-
-function getSectionFromPath(pathname: string): SettingsSection | null {
-	for (const entry of SETTINGS_SECTION_ROUTES) {
-		if (pathname.includes(`/settings/${entry.slug}`)) return entry.section;
-		if (entry.match?.some((fragment) => pathname.includes(fragment))) {
-			return entry.section;
-		}
-	}
-	return null;
-}
-
-function getPathFromSection(section: SettingsSection): string {
-	const entry = SETTINGS_SECTION_ROUTES.find((e) => e.section === section);
-	return entry ? `/settings/${entry.slug}` : "/settings/account";
-}
 
 function SettingsLayout() {
 	const { data: platform } = electronTrpc.window.getPlatform.useQuery();
