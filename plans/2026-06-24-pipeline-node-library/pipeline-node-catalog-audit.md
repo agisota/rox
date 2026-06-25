@@ -15,15 +15,16 @@ slice-2+ closes real gaps rather than assumptions.
 
 ## 1. Implemented executable node catalog (source of truth)
 
-The runtime understands **29** built-in block definitions, registered in
+The runtime understands **33** built-in block definitions, registered in
 `coreBlocks.ts`. Skill calls are dynamic (`skill_call:<slug>`) and registered
-separately. Verbatim list:
+separately. Verbatim list (registry order):
 
 ```
 start, response, condition, switch, merge, gate, route, loop, parallel, wait,
 delay, human_approval, skill_call, agent_run, model, http_request, transform,
 parser, variable_set, knowledge_retrieval, db_query, db_write, tool_call,
-mcp_tool, web_search, embedding, classifier, structured_extract, error_boundary
+mcp_tool, web_search, embedding, classifier, structured_extract, manual_input,
+webhook, schedule, notify, error_boundary
 ```
 
 ### Executable status taxonomy
@@ -71,11 +72,16 @@ Three execution seams exist (see `WorkflowExecutor.ts` + `handlers.ts`):
 | 26 | `embedding` | AI | `in` → `out`,`error` | ✅ handler | OpenAI `text-embedding-3-small`; routes to `error` if unconfigured (#548). |
 | 27 | `classifier` | AI | `in` → `out`,`error` | ✅ handler | Zero-shot LLM classify + route by class (#548). |
 | 28 | `structured_extract` | AI | `in` → `out`,`error` | ✅ handler | Forced-JSON LLM, schema-validated (#548). |
-| 29 | `error_boundary` | Logic | `in` → `ok`,`error` | ✅ structural | Catches errors from a wrapped sub-graph. |
+| 29 | `manual_input` | Input/Trigger | `in` → `out`,`error` | ✅ handler | Entry node; forwards run input shaped by typed `fields` (#547). |
+| 30 | `webhook` | Input/Trigger | `in` → `out`,`error` | ⚠️ trigger-layer | Registered; HTTP-event entry resolves via the trigger layer + `entryNodeId`, no executable handler (#547). |
+| 31 | `schedule` | Input/Trigger | `in` → `out`,`error` | ⚠️ trigger-layer | Registered; cron dispatch via the scheduler seam, no executable handler (#547). |
+| 32 | `notify` | Output | `in` → `out`,`error` | ✅ handler | Output node wired to the server-side notify port (channel → sender) (#547). |
+| 33 | `error_boundary` | Logic | `in` → `ok`,`error` | ⚠️ pass-through | Defined with `ok`/`error` ports but **no handler and no executor special-case** — falls through to the default pass-through, so the catch-subgraph branch is **not yet realized**. Follow-up: implement sub-graph error capture. |
 
-**Summary:** 21 fully executable now (handler or structural or resolver-seam) +
-3 scope-gated (executable in a real tenant run) + 5 design-time/pass-through
-follow-ups (`parallel` partial, `wait`, `delay`, `tool_call`, `mcp_tool`).
+**Summary:** 23 fully executable now (handler or structural or resolver-seam:
+incl. `manual_input`/`notify`) + 3 scope-gated (executable in a real tenant run)
++ 7 design-time/pass-through follow-ups (`parallel` partial, `wait`, `delay`,
+`tool_call`, `mcp_tool`, `webhook`/`schedule` trigger-layer, `error_boundary`).
 
 ---
 
@@ -100,7 +106,7 @@ yet implemented or partial; **n/a** = deliberately out of scope.
 | Data transform | ✔ Template/Code/Var Aggregator | ✔ Function/Transform | ✔ Custom Function | ✔ Data/ParseData | **parity** | `transform`, `parser`, `variable_set` |
 | AI-secondary (classify/extract/embed) | ✔ Classifier, Param Extractor | ✔ Embeddings | ✔ Embeddings, Output Parser | ✔ Embeddings, Structured Output | **parity** | `classifier`, `structured_extract`, `embedding` |
 | Code sandbox | ✔ Code | ✔ Code | ✔ Custom Function (JS) | ✔ Python node | **gap (n/a runtime)** | none — `code` not registered; sandbox is a later slice, Python/JS arbitrary runtime out of scope |
-| IO / trigger | ✔ Start, Webhook, Schedule | ✔ Start/Trigger/Webhook/Schedule | ✔ (server triggers) | ✔ Chat Input/Output | **partial gap** | `start` (✅); `manual_input`, `webhook`, `schedule`, `notify` not in registry (trigger-layer) |
+| IO / trigger | ✔ Start, Webhook, Schedule | ✔ Start/Trigger/Webhook/Schedule | ✔ (server triggers) | ✔ Chat Input/Output | **parity (partial exec)** | `start` (✅), `manual_input` (✅ handler), `notify` (✅ handler); `webhook`/`schedule` registered but trigger-layer (no executable handler) (#547) |
 | Human-in-the-loop | ✔ (some) | ✔ Human approval | ➖ | ➖ | **parity (Rox-ahead)** | `human_approval` |
 | Pause / wait | ✔ | ✔ | ➖ | ➖ | **partial gap** | `wait`, `delay` (registered, pass-through) |
 
@@ -135,9 +141,19 @@ scope-out. No duplicates with already-filed executor-issues.
 
 ### P3 — catalog breadth & UX surfacing
 
-- [ ] **Trigger-layer nodes** — `manual_input`, `webhook`, `schedule`, `notify`
-      from spec §catalog are not yet registered as block-definitions; they live
-      at the trigger layer and need design-time registry modules + executors.
+- [ ] **`webhook`/`schedule` executors** — both are registered block-definitions
+      (#547) but trigger-layer only: `webhook` resolves via the trigger layer +
+      `entryNodeId`, `schedule` via the scheduler seam; neither has an executable
+      handler yet. `manual_input`/`notify` are already handler-wired.
+- [ ] **`error_boundary` executor** — registered with `ok`/`error` ports but no
+      handler/executor special-case; it currently falls through to pass-through.
+      Implement sub-graph error capture so the catch branch fires.
+- [ ] **Data-passing: unknown/non-ancestor `{{node.field}}` ref** — a path-miss on
+      a known ancestor errors (`ReferenceResolutionError` → `error` handle), but a
+      reference to an unknown/non-ancestor node (`NOT_A_NODE_REF`) is left verbatim
+      and later collapses to an empty string. Tighten so a typo'd node ref also
+      surfaces an error rather than silently emptying (#550 contract). Needs a
+      design call to not break intentional literal `{{…}}` text.
 - [ ] **`code` sandbox node** — config-only per spec; arbitrary-code sandbox
       execution is an explicit later slice. Porting LangFlow/Flowise Python/JS
       runtimes is **out of scope (n/a)** per spec §Boundaries (license/arch).
@@ -166,5 +182,11 @@ scope-out. No duplicates with already-filed executor-issues.
 - [x] Recorded as a doc (not code) under `plans/2026-06-24-pipeline-node-library/`.
 - [x] No duplicates with filed executor-issues; links provided.
 
-**Node list verification:** the 29-node list in §1 matches verbatim
-`grep -oE 'defineBlock\("[a-z_]+"' packages/workflow-core/src/blocks/coreBlocks.ts`.
+**Node list verification:** the 33-node list in §1 matches verbatim
+`grep -oE 'defineBlock\("[a-z_]+"' packages/workflow-core/src/blocks/coreBlocks.ts | wc -l` → 33.
+
+> **Revision (2026-06-25, post-verifier):** corrected the catalog from a stale
+> 29-node snapshot to the current **33** (added `manual_input`/`webhook`/
+> `schedule`/`notify` from #547), and re-classified `error_boundary` from
+> "✅ structural" to "⚠️ pass-through (not realized)" — it has no handler or
+> executor special-case. Found by the adversarial verifier sweep over epic #525.
