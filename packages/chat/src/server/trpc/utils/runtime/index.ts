@@ -1,4 +1,5 @@
 export {
+	applyPermissionMode,
 	destroyRuntime,
 	generateAndSetTitle,
 	type LifecycleEvent,

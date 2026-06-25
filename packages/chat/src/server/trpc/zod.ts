@@ -1,4 +1,5 @@
 import type { Engine } from "@rox/chat/server/engine";
+import { permissionModeSchema } from "@rox/shared/chat-permission-mode";
 import { z } from "zod";
 
 // Derive the tRPC input payload types from the agent Engine surface so the zod
@@ -88,6 +89,9 @@ export const sendMessageInput = z.object({
 		.object({
 			model: z.string().optional(),
 			thinkingLevel: thinkingLevelSchema.optional(),
+			// Per-turn desktop-agent permission lever; the runtime maps it to the
+			// harness yolo/permissionRules so the chosen mode is enforced.
+			permissionMode: permissionModeSchema.optional(),
 		})
 		.optional(),
 });
@@ -101,6 +105,7 @@ export const restartFromMessageInput = z.object({
 		.object({
 			model: z.string().optional(),
 			thinkingLevel: thinkingLevelSchema.optional(),
+			permissionMode: permissionModeSchema.optional(),
 		})
 		.optional(),
 });

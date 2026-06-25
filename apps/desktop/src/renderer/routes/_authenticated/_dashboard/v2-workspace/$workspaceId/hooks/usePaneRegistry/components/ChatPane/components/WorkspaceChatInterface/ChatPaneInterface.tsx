@@ -357,14 +357,12 @@ export function ChatPaneInterface({
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
 	);
-	// Permission mode is now persisted (and defaults to the safer "default" /
-	// manual-confirm) instead of being hardwired to "bypassPermissions" in
-	// component state — closing the desktop-agent security gap noted in the
-	// surfaces spec (it previously reset every session). The composer selector
-	// already lets the user change it. Wiring the chosen mode through the turn
-	// metadata so the harness enforces it requires extending the shared
-	// host-service chat schema + runtime (out of this surface's scope — tracked
-	// as needsShared).
+	// Permission mode is persisted (and defaults to the safer "default" /
+	// manual-confirm) instead of being hardwired to "bypassPermissions" — closing
+	// the desktop-agent security gap noted in the surfaces spec (it previously
+	// reset every session). The selected mode is now also threaded into each
+	// turn's metadata below so the host-service runtime applies it to the harness
+	// (default → every tool asks; acceptEdits → edits auto-apply; bypass → yolo).
 	const [permissionMode, setPermissionMode] = usePermissionModePreference();
 	const [submitStatus, setSubmitStatus] = useState<ChatStatus | undefined>(
 		undefined,
@@ -782,6 +780,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: activeModel?.id,
 					thinkingLevel,
+					permissionMode,
 				},
 			};
 
@@ -848,6 +847,7 @@ export function ChatPaneInterface({
 			setRuntimeErrorMessage,
 			onUserMessageSubmitted,
 			thinkingLevel,
+			permissionMode,
 		],
 	);
 
@@ -902,6 +902,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: modelId,
 					thinkingLevel,
+					permissionMode,
 				},
 			};
 
@@ -974,6 +975,7 @@ export function ChatPaneInterface({
 		setRuntimeErrorMessage,
 		onUserMessageSubmitted,
 		thinkingLevel,
+		permissionMode,
 		onConsumeLaunchConfig,
 	]);
 
@@ -1004,6 +1006,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: activeModel?.id,
 					thinkingLevel,
+					permissionMode,
 				},
 			});
 			if (optimisticMessage) {
@@ -1023,6 +1026,7 @@ export function ChatPaneInterface({
 					metadata: {
 						model: activeModel?.id,
 						thinkingLevel,
+						permissionMode,
 					},
 				});
 				setEditingUserMessageId(null);
@@ -1059,6 +1063,7 @@ export function ChatPaneInterface({
 			sessionId,
 			setRuntimeErrorMessage,
 			thinkingLevel,
+			permissionMode,
 			workspaceId,
 		],
 	);

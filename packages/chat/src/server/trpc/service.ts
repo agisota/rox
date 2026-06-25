@@ -7,6 +7,7 @@ import superjson from "superjson";
 import { searchFiles } from "./utils/file-search";
 import { injectMemoryContext } from "./utils/memory-context";
 import {
+	applyPermissionMode,
 	authenticateRuntimeMcpServer,
 	destroyRuntime,
 	generateAndSetTitle,
@@ -369,6 +370,7 @@ export class ChatRuntimeService {
 						if (thinkingLevel) {
 							await runtime.engine.setState({ thinkingLevel });
 						}
+						await applyPermissionMode(runtime, input.metadata?.permissionMode);
 						void generateAndSetTitle(runtime, this.apiClient, {
 							submittedUserMessage:
 								submittedUserMessage.length > 0
