@@ -8,6 +8,8 @@ import {
 	motionSpring,
 	PANEL_SCENE_VT_NAME,
 	panelSceneMotion,
+	rightPanelGeometry,
+	rightPanelGlide,
 	shakeVariants,
 	shellBootVariants,
 } from "./tokens";
@@ -86,5 +88,15 @@ describe("motion token contract (append-only lane)", () => {
 		expect(gestureGrammar.edgeSwipe.openThreshold).toBeGreaterThan(0);
 		expect(gestureGrammar.longPress.duration).toBeGreaterThan(0);
 		expect(gestureGrammar.longPress.moveTolerance).toBeGreaterThan(0);
+	});
+
+	it("keeps the right-panel 3-state geometry + glide (F03 / #616)", () => {
+		expect(rightPanelGlide.duration).toBe(0.24);
+		expect(rightPanelGlide.ease).toEqual(ease.standard);
+		expect(rightPanelGeometry.hiddenWidth).toBe(0);
+		expect(rightPanelGeometry.peekWidth).toBe(200);
+		expect(rightPanelGeometry.expandedWidth).toBe(340);
+		expect(rightPanelGeometry.edgePillWidth).toBe(34);
+		expect(rightPanelGeometry.edgePillHeight).toBe(44);
 	});
 });

@@ -26,6 +26,24 @@ describe("healV2UserPreferences", () => {
 		expect(healed.fileLinks).toEqual(DEFAULT_V2_USER_PREFERENCES.fileLinks);
 	});
 
+	it("derives the 3-state rightSidebarState from legacy rightSidebarOpen (F03 / #616)", () => {
+		// Rows persisted before the rightSidebarState column only carry the legacy
+		// binary flag; heal must map open → expanded and closed → hidden.
+		expect(
+			healV2UserPreferences({ rightSidebarOpen: false }).rightSidebarState,
+		).toBe("hidden");
+		expect(
+			healV2UserPreferences({ rightSidebarOpen: true }).rightSidebarState,
+		).toBe("expanded");
+		// An explicit stored state wins over the legacy derivation.
+		expect(
+			healV2UserPreferences({
+				rightSidebarOpen: false,
+				rightSidebarState: "peek",
+			}).rightSidebarState,
+		).toBe("peek");
+	});
+
 	it("preserves the terminal presets initialization sentinel", () => {
 		const healed = healV2UserPreferences({
 			terminalPresetsInitialized: true,

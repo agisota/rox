@@ -233,3 +233,35 @@ export const gestureGrammar = {
 		moveTolerance: 10,
 	},
 } as const;
+
+/**
+ * Right files panel 3-state geometry — case F03 / #616. The favourite ④ panel
+ * glides between `hidden` (width 0 + floating edge-pill), `peek` (narrow snap),
+ * and `expanded` (full). The width morph is a 240ms standard-eased glide rather
+ * than a spring so the three snaps read as one deliberate motion language across
+ * every host (desktop lead, web docked, mobile slide-over). Essential tier:
+ * gate call sites on `useShouldAnimate('essential')` and pass `{ duration: 0 }`
+ * for the instant reduced-motion fallback.
+ */
+export const rightPanelGlide: Transition = {
+	duration: 0.24,
+	ease: ease.standard,
+};
+
+/**
+ * Geometry of the right files panel 3-state machine — case F03 / #616. Shared
+ * so the panel width per state and the floating edge-pill size stay identical
+ * across hosts. `peekWidth`/`expandedWidth` are defaults; a host may persist a
+ * user-resized `expanded` width and fall back to `expandedWidth`.
+ */
+export const rightPanelGeometry = {
+	/** Width (px) in the `hidden` state — fully collapsed. */
+	hiddenWidth: 0,
+	/** Width (px) of the narrow `peek` snap. */
+	peekWidth: 200,
+	/** Default width (px) of the full `expanded` panel. */
+	expandedWidth: 340,
+	/** Floating edge-pill footprint (px) — the reopen affordance when hidden. */
+	edgePillWidth: 34,
+	edgePillHeight: 44,
+} as const;

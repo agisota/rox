@@ -9,10 +9,20 @@ import { useV2UserPreferences } from "renderer/hooks/useV2UserPreferences";
 import { HotkeyLabel } from "renderer/hotkeys";
 
 export function RightSidebarToggle() {
-	const { preferences, setRightSidebarOpen } = useV2UserPreferences();
-	const isOpen = preferences.rightSidebarOpen;
+	const { preferences, setRightSidebarState } = useV2UserPreferences();
+	// 3-state right files panel (F03 / #616). Plain click toggles the panel
+	// between hidden and expanded (the familiar one-click open/close); ⌥/⇧ click
+	// drops it into the narrow peek snap so all three states are reachable from
+	// the toggle without a second control.
+	const isOpen = preferences.rightSidebarState !== "hidden";
 
-	const toggle = () => setRightSidebarOpen((prev) => !prev);
+	const toggle = (e: React.MouseEvent) => {
+		if (e.altKey || e.shiftKey) {
+			setRightSidebarState("peek");
+			return;
+		}
+		setRightSidebarState(isOpen ? "hidden" : "expanded");
+	};
 
 	const getToggleIcon = (isHovering: boolean) => {
 		if (!isOpen) {
