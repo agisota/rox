@@ -6,7 +6,8 @@ import { CommentsSection } from "../CommentsSection";
 import { PRHeader } from "../PRHeader";
 
 interface ReviewTabContentProps {
-	workspaceId: string;
+	/** Owning workspace. Absent in the host-scoped PR detail view (read-only). */
+	workspaceId?: string;
 	pr: NormalizedPR | null;
 	comments: NormalizedComment[];
 	isLoading: boolean;
