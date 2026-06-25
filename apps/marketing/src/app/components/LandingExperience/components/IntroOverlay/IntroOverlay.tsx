@@ -2,19 +2,8 @@
 
 import { animate, createTimeline, scrambleText, stagger } from "animejs";
 import Image from "next/image";
-import type { CSSProperties } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-	INTRO_BRAND,
-	INTRO_FEATURE_TAGS,
-	INTRO_LANGS,
-	INTRO_LEAD_WORD,
-} from "../../constants";
-import { CpuArchitecture } from "../CpuArchitecture";
-import {
-	type FeatureCloudPlacement,
-	layoutFeatureCloud,
-} from "./featureCloudLayout";
+import { useEffect, useRef } from "react";
+import { INTRO_LANGS, INTRO_LEAD_WORD } from "../../constants";
 
 interface IntroOverlayProps {
 	onComplete: () => void;
@@ -47,132 +36,31 @@ const SLIDE_ONE_ROWS = SLIDE_ONE_GRID.map((count, rowIndex) => ({
 const GRID_COLS = Math.max(...SLIDE_ONE_GRID);
 const GRID_ROWS = SLIDE_ONE_GRID.length;
 
-const INTRO_FEATURES = INTRO_FEATURE_TAGS.map((tag, index) => ({
-	...tag,
-	id: `intro-feature-${index}`,
-	index,
-}));
-
-type FeatureCloudStyle = CSSProperties &
-	Record<
-		"--rox-tag-x" | "--rox-tag-y" | "--rox-tag-rot" | "--rox-tag-scale",
-		string
-	>;
-
-function placementToStyle(
-	placement: FeatureCloudPlacement,
-	color: number,
-): FeatureCloudStyle {
-	return {
-		"--rox-tag-x": `${placement.xPct.toFixed(2)}%`,
-		"--rox-tag-y": `${placement.yPct.toFixed(2)}%`,
-		"--rox-tag-rot": `${placement.rotationDeg.toFixed(2)}deg`,
-		"--rox-tag-scale": placement.scale.toFixed(3),
-		color: `var(--rox-c-${color})`,
-	};
-}
-
-/**
- * Pick a responsive footprint + tag cap for the feature cloud from the live
- * container width. Narrow screens get a smaller font, more breathing room and a
- * lower cap so the scatter stays readable instead of cramming every tag in.
- */
-function getCloudSizing(width: number): {
-	fontPx: number;
-	gapPx: number;
-	maxTags: number;
-} {
-	if (width < 480) return { fontPx: 11, gapPx: 12, maxTags: 16 };
-	if (width < 760) return { fontPx: 12, gapPx: 14, maxTags: 24 };
-	if (width < 1100) return { fontPx: 13, gapPx: 16, maxTags: 34 };
-	return { fontPx: 14, gapPx: 18, maxTags: INTRO_FEATURE_TAGS.length };
-}
-
 /** Scramble cursor glyphs reused from the original anime.js demo. */
 const CURSOR_HEAVY = "░▒▓█";
 const CURSOR_LIGHT = "░▒▓";
 
 /** Hard ceiling so onComplete always fires even if the timeline stalls. */
 const SAFETY_TIMEOUT_MS = 18_000;
-const MIN_INTRO_DURATION_MS = 7_600;
+/** Min on-screen time for the intro (logo holds out the remainder). */
+const MIN_INTRO_DURATION_MS = 10_100;
 
 /** Delay the independent logo float until the one-shot reveal tween has landed. */
 const LOGO_FLOAT_DELAY_MS = 2_200;
+/** Start the breathing glow loop only after the reveal one-shot has settled. */
+const LOGO_GLOW_LOOP_DELAY_MS = 4_500;
 
 /**
- * Fullscreen one-shot intro that fills the screen with «Introducing» in many
- * languages, collapses it into the ROX wordmark (with the logo revealed beside
- * it), fans out the feature tags across the viewport width, then hands off to
- * the hero. Ports Julian Garnier's "Scramble Text timeline" CodePen onto the
- * Rox palette.
+ * Fullscreen one-shot intro: fills the screen with «Представляем» / «Introducing»
+ * across many languages, collapses it into the ROX wordmark, then reveals the
+ * Rox girl mark — centered, enlarged, with a breathing glow — and holds it
+ * before handing off to the hero. Ports Julian Garnier's "Scramble Text
+ * timeline" CodePen onto the Rox palette.
  */
 export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
-	const cloudRef = useRef<HTMLDivElement>(null);
 	const onCompleteRef = useRef(onComplete);
 	onCompleteRef.current = onComplete;
-
-	// Live container box for the feature cloud. Seed from the viewport so a
-	// collision-free layout exists on the very first render (the anime.js
-	// timeline queries `.rox-intro__feature` at mount).
-	const [cloudBox, setCloudBox] = useState(() => {
-		if (typeof window === "undefined") return { width: 1200, height: 620 };
-		const insetX = Math.min(176, window.innerWidth * 0.1);
-		const insetY = Math.min(176, window.innerHeight * 0.16);
-		return {
-			width: Math.max(280, window.innerWidth - insetX),
-			height: Math.max(320, window.innerHeight - insetY),
-		};
-	});
-
-	// Recompute the box on resize so the scatter stays inside the viewport.
-	useEffect(() => {
-		const measure = () => {
-			const node = cloudRef.current;
-			if (node) {
-				const rect = node.getBoundingClientRect();
-				if (rect.width > 0 && rect.height > 0) {
-					setCloudBox({ width: rect.width, height: rect.height });
-					return;
-				}
-			}
-			const insetX = Math.min(176, window.innerWidth * 0.1);
-			const insetY = Math.min(176, window.innerHeight * 0.16);
-			setCloudBox({
-				width: Math.max(280, window.innerWidth - insetX),
-				height: Math.max(320, window.innerHeight - insetY),
-			});
-		};
-		measure();
-		window.addEventListener("resize", measure);
-		return () => window.removeEventListener("resize", measure);
-	}, []);
-
-	// Collision-free placements for the feature tags, capped by viewport size.
-	const placedFeatures = useMemo(() => {
-		const { fontPx, gapPx, maxTags } = getCloudSizing(cloudBox.width);
-		const placements = layoutFeatureCloud(INTRO_FEATURES, {
-			width: cloudBox.width,
-			height: cloudBox.height,
-			fontPx,
-			gapPx,
-			maxTags,
-		});
-		return placements
-			.map((placement) => {
-				const tag = INTRO_FEATURES[placement.index];
-				if (!tag) return null;
-				return { tag, placement };
-			})
-			.filter(
-				(
-					entry,
-				): entry is {
-					tag: (typeof INTRO_FEATURES)[number];
-					placement: FeatureCloudPlacement;
-				} => entry !== null,
-			);
-	}, [cloudBox.width, cloudBox.height]);
 
 	useEffect(() => {
 		const root = rootRef.current;
@@ -183,7 +71,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 
 		const introStartedAt = window.performance.now();
 		let finished = false;
-		let fallbackStarted = false;
 		let finishQueued = false;
 		const fallbackTimers: number[] = [];
 		const queueFallbackTimer = (callback: () => void, delay: number) => {
@@ -195,9 +82,15 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				return;
 			}
 			finished = true;
+			// Smooth cross-fade: fade the overlay out over the still-mounted hero
+			// underneath, then unmount via onComplete.
+			root.style.transition = "opacity 600ms ease";
+			root.style.opacity = "0";
 			root.style.pointerEvents = "none";
-			root.style.visibility = "hidden";
-			onCompleteRef.current();
+			window.setTimeout(() => {
+				root.style.visibility = "hidden";
+				onCompleteRef.current();
+			}, 560);
 		};
 		const finishOnce = () => {
 			if (finished || finishQueued) {
@@ -228,51 +121,14 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 		);
 		const logo = select<HTMLElement>(".rox-intro__logo");
 		const logoImg = select<HTMLElement>(".rox-intro__logo img");
-		const cpuMark = select<HTMLElement>(".rox-intro__cpu");
-		const slide2 = select<HTMLElement>(".rox-intro__slide--two");
-		const slide2Words = select<HTMLElement>(
-			".rox-intro__slide--two .rox-intro__feature",
-		);
 
 		const timeline = createTimeline({
 			loop: false,
 			onComplete: finishOnce,
 		});
-		// When the tag cloud (beat 4) is revealed, the girl logo + CPU chip
-		// (beat 3) MUST be gone so the two beats never overlap on screen.
-		const hideLogoAndCpu = () => {
-			if (logo[0]) logo[0].style.opacity = "0";
-			if (cpuMark[0]) cpuMark[0].style.opacity = "0";
-		};
-		const showTagCloud = () => {
-			hideLogoAndCpu();
-			if (slide1[0]) slide1[0].style.opacity = "0";
-			if (slide2[0]) slide2[0].style.opacity = "1";
-		};
-		const startTimelineFallback = (showTagsImmediately = false) => {
-			if (finished || fallbackStarted) {
-				return;
-			}
-			fallbackStarted = true;
-			timeline.pause();
-			root.style.backgroundColor = "#000";
-			if (slide1[0]) slide1[0].style.opacity = "1";
-			if (slide2[0]) slide2[0].style.opacity = "0";
 
-			if (showTagsImmediately) {
-				showTagCloud();
-				queueFallbackTimer(finishOnce, 4000);
-				return;
-			}
-
-			queueFallbackTimer(() => {
-				if (finished) return;
-				showTagCloud();
-			}, 2200);
-			queueFallbackTimer(finishOnce, 6200);
-		};
-
-		// ── Slide 1: multilingual word grid collapses into the ROX wordmark ──
+		// ── Slide 1: multilingual word grid collapses into the ROX wordmark,
+		//    then the girl mark is revealed and held centered on screen. ──
 		timeline
 			.add(slide1, {
 				opacity: { to: 1, duration: 250, ease: "linear" },
@@ -377,123 +233,39 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				},
 				"<<",
 			)
-			.add(
-				cpuMark,
-				{
-					opacity: { to: 1 },
-					ease: "out(2)",
-					duration: 900,
-				},
-				"<+=200",
-			)
-			.add(cpuMark, { opacity: 1, duration: 900 }, "<+=200");
-
-		// ── Slide 2: feature tags scattered across the viewport width ───────
-		// The logo + CPU mark ("screen 2") must FULLY fade out before the
-		// feature cloud ("screen 3") is revealed — otherwise the two screens
-		// overlap and visually collapse into one. Hold the logo a beat longer,
-		// fade it over LOGO_FADE_MS, then swap slides and scramble in the
-		// features only once the fade has landed.
-		const LOGO_FADE_MS = 450;
-		timeline
-			.add(root, { backgroundColor: "#000" }, "<+=600")
-			.add(
-				logo,
-				{ opacity: { to: 0 }, ease: "out(2)", duration: LOGO_FADE_MS },
-				"<<",
-			)
-			.add(
-				cpuMark,
-				{ opacity: { to: 0 }, ease: "out(2)", duration: LOGO_FADE_MS },
-				"<<",
-			)
-			// Swap slides only once the logo/CPU fade has completed.
-			.set(slide1, { opacity: 0 }, `<+=${LOGO_FADE_MS}`)
-			.set(slide2, { opacity: 1 }, "<<")
-			// Seed the cloud words in the same "pre-reveal" state the hero's flank
-			// words use: invisible and scaled up large, ready to scramble/scale in.
-			// `scale` here is a standalone CSS property and composes on top of each
-			// tag's resting transform (translate + rotate + --rox-tag-scale), so the
-			// per-word positions/rotations/colors from featureCloudLayout survive.
-			.set(
-				slide2Words,
-				{
-					opacity: 0,
-					scale: 1.85,
-				},
-				"<<",
-			)
-			// Beat 4 entrance — mirror the hero reveal (slide1Flank, ≈282-318):
-			// scale-from-large + center-origin scrambleText with the same cursor
-			// glyphs and easing, instead of the old opacity/translateY drift.
-			// Unlike the hero flank (which blanks text via override:" "), the cloud
-			// words are tiny + scattered, so each word scrambles straight into its
-			// REAL label — staying legible through the reveal while keeping the
-			// hero's scale-from-large + center-origin stagger character.
-			.add(
-				slide2Words,
-				{
-					opacity: { to: 1, duration: 360, ease: "out(2)" },
-					scale: { to: 1, duration: 900, ease: "out(3)" },
-					innerHTML: scrambleText({
-						override: false,
-						from: "center",
-						duration: 640,
-						settleDuration: 360,
-						cursor: CURSOR_LIGHT,
-						perturbation: 0.25,
-					}),
-				},
-				stagger([60, 1500], {
-					from: "center",
-					ease: "out(3)",
-					start: "<<+=120",
-				}),
-			)
-			// Second scramble pass — a brief heavier-cursor shimmer that re-settles
-			// each word, echoing the hero center's resolve beat.
-			.add(
-				slide2Words,
-				{
-					innerHTML: scrambleText({
-						override: false,
-						from: "center",
-						duration: 520,
-						settleDuration: 320,
-						cursor: CURSOR_HEAVY,
-						perturbation: 0.3,
-					}),
-				},
-				stagger([30, 900], { from: "center", start: "<+=1200" }),
-			)
-			.add(root, { opacity: 1, duration: 1800 }, "<+=1100");
+			// Hold the girl on screen so the intro breathes before the handoff.
+			// The breathing glow + float loops run during this hold and the
+			// MIN_INTRO_DURATION floor wait that follows.
+			.add(slide1, { opacity: 0, duration: 1 }, "<+=400")
+			.add(logo, { opacity: 1, duration: 2600 }, "<<");
 
 		timeline.init();
 		timeline.restart();
 		timeline.play();
 
+		// Hard floor: always complete after the minimum on-screen time.
 		queueFallbackTimer(completeNow, MIN_INTRO_DURATION_MS);
+		// If the word grid never showed (anime failed to start), reveal the girl
+		// directly so the screen is never empty.
 		queueFallbackTimer(() => {
+			if (finished) return;
 			const slideOneOpacity = Number.parseFloat(
 				slide1[0] ? getComputedStyle(slide1[0]).opacity : "0",
 			);
-			if (slideOneOpacity < 0.05) {
-				startTimelineFallback();
-			}
-		}, 900);
-		queueFallbackTimer(() => {
-			const slideTwoOpacity = Number.parseFloat(
-				slide2[0] ? getComputedStyle(slide2[0]).opacity : "0",
+			const logoOpacity = Number.parseFloat(
+				logo[0] ? getComputedStyle(logo[0]).opacity : "0",
 			);
-			if (slideTwoOpacity < 0.05) {
-				startTimelineFallback(true);
+			if (slideOneOpacity < 0.05 && logoOpacity < 0.05 && logo[0]) {
+				logo[0].style.opacity = "1";
 			}
-		}, 4200);
+		}, 1200);
 
 		const prefersReducedMotion = window.matchMedia(
 			"(prefers-reduced-motion: reduce)",
 		).matches;
+
 		let logoFloat: { revert: () => void } | null = null;
+		let logoGlow: { revert: () => void } | null = null;
 		const logoFloatDelay = prefersReducedMotion
 			? undefined
 			: window.setTimeout(() => {
@@ -505,6 +277,18 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 						ease: "inOut(2)",
 					});
 				}, LOGO_FLOAT_DELAY_MS);
+		const logoGlowDelay = prefersReducedMotion
+			? undefined
+			: window.setTimeout(() => {
+					logoGlow = animate(logo, {
+						"--rox-logo-glow-a": [0.62, 0.96],
+						"--rox-logo-glow-scale": [1.0, 1.14],
+						loop: true,
+						alternate: true,
+						duration: 2200,
+						ease: "inOut(2)",
+					});
+				}, LOGO_GLOW_LOOP_DELAY_MS);
 
 		const safety = window.setTimeout(finishOnce, SAFETY_TIMEOUT_MS);
 
@@ -516,7 +300,11 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 			if (logoFloatDelay !== undefined) {
 				window.clearTimeout(logoFloatDelay);
 			}
+			if (logoGlowDelay !== undefined) {
+				window.clearTimeout(logoGlowDelay);
+			}
 			logoFloat?.revert();
+			logoGlow?.revert();
 			timeline.pause();
 			timeline.revert();
 		};
@@ -538,10 +326,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 				/>
 			</div>
 
-			<div className="rox-intro__cpu" aria-hidden="true">
-				<CpuArchitecture text={INTRO_BRAND} />
-			</div>
-
 			<div className="rox-intro__stage">
 				<div className="rox-intro__slide rox-intro__slide--one">
 					{SLIDE_ONE_ROWS.map((row) => (
@@ -559,20 +343,6 @@ export function IntroOverlay({ onComplete }: IntroOverlayProps) {
 							)}
 						</div>
 					))}
-				</div>
-
-				<div className="rox-intro__slide rox-intro__slide--two rox-intro__features">
-					<div ref={cloudRef} className="rox-intro__features-cloud">
-						{placedFeatures.map(({ tag, placement }) => (
-							<p
-								key={tag.id}
-								className="rox-intro__feature"
-								style={placementToStyle(placement, tag.color)}
-							>
-								{tag.text}
-							</p>
-						))}
-					</div>
 				</div>
 			</div>
 

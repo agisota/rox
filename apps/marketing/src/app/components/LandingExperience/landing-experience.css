@@ -105,42 +105,20 @@
 }
 
 .rox-intro[data-intro-fallback="pending"] {
-	animation: rox-intro-fallback-exit 8s linear forwards;
+	animation: rox-intro-fallback-exit 10.5s linear forwards;
 }
 
 .rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
 	.rox-intro__slide--one {
 	opacity: 1;
-	animation: rox-intro-fallback-slide-one 8s linear forwards;
-}
-
-.rox-intro[data-intro-fallback="pending"]:not([data-intro-js="enhanced"])
-	.rox-intro__slide--two {
-	opacity: 0;
-	animation: rox-intro-fallback-slide-two 8s linear forwards;
+	animation: rox-intro-fallback-slide-one 10.5s linear forwards;
 }
 
 @keyframes rox-intro-fallback-slide-one {
 	0%,
-	32% {
+	90% {
 		opacity: 1;
 	}
-	40%,
-	100% {
-		opacity: 0;
-	}
-}
-
-@keyframes rox-intro-fallback-slide-two {
-	0%,
-	34% {
-		opacity: 0;
-	}
-	44%,
-	78% {
-		opacity: 1;
-	}
-	88%,
 	100% {
 		opacity: 0;
 	}
@@ -246,10 +224,10 @@
 	--rox-logo-glow-scale: 0.6;
 
 	position: absolute;
-	top: 41%;
+	top: 50%;
 	left: 50%;
-	transform: translate(-50%, -100%);
-	margin-top: -8px;
+	transform: translate(-50%, -50%);
+	margin-top: 0;
 	opacity: 0;
 	z-index: 3;
 	pointer-events: none;
@@ -282,7 +260,7 @@
 }
 
 .rox-intro__logo img {
-	height: clamp(52px, 12vh, 112px);
+	height: clamp(120px, 24vh, 240px);
 	width: auto;
 	display: block;
 }
@@ -351,12 +329,18 @@
 	justify-content: flex-start;
 	min-height: 100svh;
 	overflow: hidden;
+	/* Multi-stop falloff (was a single 32%→transparent-62% jump) so the orange
+	 * glow ramps smoothly into the near-black surface — the extra stops + the
+	 * extended transparent point at 88% kill the hard banding ring. */
 	background:
 		radial-gradient(
-			120% 70% at 50% var(--rox-glow-y),
+			135% 90% at 50% var(--rox-glow-y),
 			rgba(210, 86, 17, var(--rox-glow-a)),
-			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.28)) 32%,
-			transparent 62%
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.55)) 20%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.28)) 38%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.12)) 56%,
+			rgba(210, 86, 17, calc(var(--rox-glow-a) * 0.04)) 72%,
+			transparent 88%
 		),
 		var(--rox-bg);
 }
@@ -377,9 +361,11 @@
 	z-index: 0;
 	pointer-events: none;
 	background: radial-gradient(
-		120% 80% at 50% 32%,
+		130% 95% at 50% 32%,
 		rgba(210, 86, 17, 0.12),
-		transparent 60%
+		rgba(210, 86, 17, 0.05) 40%,
+		rgba(210, 86, 17, 0.015) 62%,
+		transparent 84%
 	);
 }
 
@@ -845,7 +831,7 @@
 	inset: 0;
 	z-index: 0;
 	pointer-events: none;
-	opacity: 0.05;
+	opacity: 0.075;
 	mix-blend-mode: overlay;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
