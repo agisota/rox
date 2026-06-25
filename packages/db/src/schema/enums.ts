@@ -1016,3 +1016,14 @@ export const meshDeliveryStatusValues = [
 ] as const;
 export const meshDeliveryStatusEnum = z.enum(meshDeliveryStatusValues);
 export type MeshDeliveryStatus = z.infer<typeof meshDeliveryStatusEnum>;
+
+/**
+ * Workspace governance items (#517): the three kinds of entry in the v2
+ * workspace "Управление" panel — ЦЕЛИ (goals), ЗАДАЧИ (tasks), МИССИИ
+ * (missions). Mirrors the renderer-side `governanceKindSchema` so db/trpc/client
+ * agree on the same union. APPEND-ONLY: never reorder/remove values (pgEnum
+ * ordinal mapping).
+ */
+export const governanceKindValues = ["goal", "task", "mission"] as const;
+export const governanceKindEnum = z.enum(governanceKindValues);
+export type GovernanceKind = z.infer<typeof governanceKindEnum>;

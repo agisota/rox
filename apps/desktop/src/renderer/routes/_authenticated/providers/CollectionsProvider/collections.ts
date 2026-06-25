@@ -35,6 +35,7 @@ import type {
 	SelectV2UsersHosts,
 	SelectV2Workspace,
 	SelectWorkspace,
+	SelectWorkspaceGovernanceItem,
 } from "@rox/db/schema";
 import type { AppRouter as HostServiceAppRouter } from "@rox/host-service";
 import {
@@ -91,10 +92,8 @@ import {
 	type V2UserPreferencesRow,
 	v2TerminalPresetSchema,
 	v2UserPreferencesSchema,
-	type WorkspaceGovernanceItemRow,
 	type WorkspaceLocalStateRow,
 	type WorkspacesCreateInput,
-	workspaceGovernanceItemSchema,
 	workspaceLocalStateSchema,
 } from "./dashboardSidebarLocal";
 import { withReadHeal } from "./withReadHeal";
@@ -240,15 +239,9 @@ export interface OrgCollections {
 		typeof v2TerminalPresetSchema,
 		z.input<typeof v2TerminalPresetSchema>
 	>;
-	// TODO(server): swap to an Electric/host-service shape once governance items
-	// (goals/tasks/missions) are persisted server-side. Local-only for now.
-	v2WorkspaceGovernance: Collection<
-		WorkspaceGovernanceItemRow,
-		string,
-		LocalStorageCollectionUtils,
-		typeof workspaceGovernanceItemSchema,
-		z.input<typeof workspaceGovernanceItemSchema>
-	>;
+	// #517 "Управление" panel — org-scoped Electric collection (goals/tasks/
+	// missions), synced through the electric-proxy + governance tRPC router.
+	v2WorkspaceGovernance: Collection<SelectWorkspaceGovernanceItem>;
 	v2UserPreferences: Collection<
 		V2UserPreferencesRow,
 		string,
@@ -1201,19 +1194,57 @@ function createOrgCollections(
 		}),
 	);
 
-	// TODO(server): governance items are local-only until a backend collection
-	// exists. Keyed by item id, indexed by workspaceId so the "Управление"
-	// section can live-query only its workspace's goals/tasks/missions.
-	const v2WorkspaceGovernance = createIndexedCollection(
-		localStorageCollectionOptions({
-			id: `v2_workspace_governance-${organizationId}`,
-			storageKey: `v2-workspace-governance-${organizationId}`,
-			schema: workspaceGovernanceItemSchema,
+	// #517 "Управление" panel — org-scoped Electric collection. Keyed by item
+	// id, indexed by v2WorkspaceId so the section live-queries only its
+	// workspace's goals/tasks/missions. Writes round-trip through the
+	// `governance` tRPC router, which fills organization_id + created_by; the
+	// client supplies the create-input fields and the synced row replaces the
+	// optimistic one.
+	const v2WorkspaceGovernance = createPersistedElectricCollection(
+		electricCollectionOptions<SelectWorkspaceGovernanceItem>({
+			id: `workspace_governance_items-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: {
+					table: "workspace_governance_items",
+					organizationId,
+				},
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
 			getKey: (item) => item.id,
+			onInsert: async ({ transaction }) => {
+				const item = transaction.mutations[0].modified;
+				const result = await apiClient.governance.create.mutate({
+					id: item.id,
+					workspaceId: item.v2WorkspaceId,
+					kind: item.kind,
+					text: item.text,
+					order: item.order,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onUpdate: async ({ transaction }) => {
+				const { original, changes } = transaction.mutations[0];
+				const result = await apiClient.governance.update.mutate({
+					id: original.id,
+					text: changes.text,
+					order: changes.order,
+				});
+				return electricTxidMatch(result.txid);
+			},
+			onDelete: async ({ transaction }) => {
+				const item = transaction.mutations[0].original;
+				const result = await apiClient.governance.delete.mutate({
+					id: item.id,
+				});
+				return electricTxidMatch(result.txid);
+			},
 		}),
 	);
 	v2WorkspaceGovernance.createIndex(
-		(item) => item.workspaceId,
+		(item) => item.v2WorkspaceId,
 		basicIndexConfig,
 	);
 	v2WorkspaceGovernance.createIndex((item) => item.kind, basicIndexConfig);

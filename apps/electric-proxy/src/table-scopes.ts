@@ -31,6 +31,7 @@ import {
 	v2Projects,
 	v2UsersHosts,
 	v2Workspaces,
+	workspaceGovernanceItems,
 	workspaces,
 } from "@rox/db/schema";
 import type { PgColumn } from "drizzle-orm/pg-core";
@@ -179,6 +180,12 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 	github_pull_requests: { orgColumn: githubPullRequests.organizationId },
 	automations: { orgColumn: automations.organizationId },
 	automation_runs: { orgColumn: automationRuns.organizationId },
+
+	// #517 workspace governance (ЦЕЛИ/ЗАДАЧИ/МИССИИ): org-shared per workspace —
+	// every member of the org sees the same panel items, like `automations`.
+	workspace_governance_items: {
+		orgColumn: workspaceGovernanceItems.organizationId,
+	},
 
 	// C2: sandbox_images is per-project sandbox build config, org-scoped so the
 	// client can read its org's recipes; now syncable through electric-proxy.
