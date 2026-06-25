@@ -40,6 +40,7 @@ export interface VariableFillDrawerProps {
 		target: VariableFillTarget,
 		renderedText: string,
 		values: Record<string, string>,
+		cursor: number | null,
 	) => void;
 }
 
@@ -68,17 +69,18 @@ export function VariableFillDrawer({
 		setValues(initialVariableValues(variables, cachedValues));
 	}, [target, variables, cachedValues]);
 
-	const preview = useMemo(() => {
-		if (!target) return "";
-		return renderPrompt(target.prompt.body, values).text;
+	const rendered = useMemo(() => {
+		if (!target) return { text: "", cursor: null };
+		return renderPrompt(target.prompt.body, values);
 	}, [target, values]);
+	const preview = rendered.text;
 
 	const setValue = (name: string, value: string) =>
 		setValues((prev) => ({ ...prev, [name]: value }));
 
 	const commit = () => {
 		if (!target) return;
-		onCommit(target, preview, values);
+		onCommit(target, rendered.text, values, rendered.cursor);
 	};
 
 	const actionLabel = target?.action === "copy" ? "Скопировать" : "Вставить";
