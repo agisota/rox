@@ -47,6 +47,12 @@ export interface FilesTabDrop {
 	onDragOver(e: React.DragEvent<HTMLDivElement>): void;
 	onDragLeave(e: React.DragEvent<HTMLDivElement>): void;
 	onDrop(e: React.DragEvent<HTMLDivElement>): void;
+	/**
+	 * Upload an explicit list of files into the worktree root (F30 upload
+	 * button). Mirrors the drop path but takes a flat `File[]` from a file
+	 * picker, so it carries no nested-folder structure.
+	 */
+	uploadFiles(files: File[]): void;
 }
 
 /** A file to upload, keyed by its path relative to the drop destination. */
@@ -548,5 +554,15 @@ export function useFilesTabDrop({
 		[rootPath, workspaceId, uploadDropped],
 	);
 
-	return { dropTarget, onDragOver, onDragLeave, onDrop };
+	const uploadFiles = useCallback(
+		(files: File[]) => {
+			if (!rootPath || !workspaceId || files.length === 0) return;
+			// File-picker uploads land in the worktree root and carry no folder
+			// structure, so route them through the fallback (flat File[]) path.
+			void uploadDropped("", [], files);
+		},
+		[rootPath, workspaceId, uploadDropped],
+	);
+
+	return { dropTarget, onDragOver, onDragLeave, onDrop, uploadFiles };
 }
