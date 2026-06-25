@@ -1,4 +1,8 @@
 import { ROX_CHAT_MODEL } from "@rox/shared/chat-models";
+import {
+	getBuiltinSlashMenuEntries,
+	type SlashMenuEntry,
+} from "@rox/shared/command-palette";
 import { selectContextUsage } from "@rox/shared/context-usage";
 import { useLocalSearchParams } from "expo-router";
 import { Send } from "lucide-react-native";
@@ -26,6 +30,7 @@ import { buildSendRecipients } from "../../utils/buildSendRecipients";
 import { formatThreadTitle } from "../../utils/formatThreadTitle";
 import { ChatContextRing } from "./ChatContextRing";
 import { ChatMessageBubble } from "./ChatMessageBubble";
+import { ChatSlashCommandMenu } from "./ChatSlashCommandMenu";
 
 /**
  * Mobile chat thread view (comms suite). Mirrors `MailThreadScreen`:
@@ -117,6 +122,18 @@ export function ChatThreadScreen() {
 		} finally {
 			setTranscribing(false);
 		}
+	}, []);
+
+	// F45: shared slash-command menu. The same built-in commands and matcher the
+	// web/desktop composers use; selecting a command rewrites the draft (commands
+	// with arguments keep the slot open for typing, argument-less ones are ready
+	// to send).
+	const slashEntries = useMemo<SlashMenuEntry[]>(
+		() => getBuiltinSlashMenuEntries(),
+		[],
+	);
+	const handleSlashSelect = useCallback((entry: SlashMenuEntry) => {
+		setDraft(entry.argumentHint.trim() ? `/${entry.name} ` : `/${entry.name}`);
 	}, []);
 
 	// F42: live context-usage ring, computed by the same shared cross-platform
@@ -216,6 +233,11 @@ export function ChatThreadScreen() {
 						/>
 					</View>
 				) : null}
+				<ChatSlashCommandMenu
+					draft={draft}
+					entries={slashEntries}
+					onSelect={handleSlashSelect}
+				/>
 				<View className="flex-row items-end gap-2">
 					<Textarea
 						className="max-h-32 flex-1"
