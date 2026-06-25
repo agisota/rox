@@ -3,16 +3,14 @@ import {
 	getRoleSortPriority,
 	type OrganizationRole,
 } from "@rox/shared/auth";
-import { Avatar } from "@rox/ui/atoms/Avatar";
-import { Badge } from "@rox/ui/badge";
 import { Input } from "@rox/ui/input";
 import { Label } from "@rox/ui/label";
+import { MemberRow } from "@rox/ui/org-management";
 import { Skeleton } from "@rox/ui/skeleton";
 import { toast } from "@rox/ui/sonner";
 import {
 	Table,
 	TableBody,
-	TableCell,
 	TableHead,
 	TableHeader,
 	TableRow,
@@ -69,19 +67,6 @@ function SettingsRow({ label, hint, htmlFor, children }: SettingsRowProps) {
 			<div className="shrink-0">{children}</div>
 		</div>
 	);
-}
-
-function formatOrganizationRole(role: OrganizationRole): string {
-	switch (role) {
-		case "owner":
-			return "Владелец";
-		case "admin":
-			return "Администратор";
-		case "member":
-			return "Участник";
-		default:
-			return role;
-	}
 }
 
 export function OrganizationSettings({
@@ -453,49 +438,13 @@ export function OrganizationSettings({
 															member.userId === currentUserId;
 
 														return (
-															<TableRow key={member.memberId}>
-																<TableCell>
-																	<div className="flex items-center gap-3">
-																		<Avatar
-																			size="md"
-																			fullName={member.name}
-																			image={member.image}
-																		/>
-																		<div className="flex items-center gap-2">
-																			<span className="font-medium">
-																				{member.name || "Неизвестно"}
-																			</span>
-																			{isCurrentUserRow && (
-																				<Badge
-																					variant="secondary"
-																					className="text-[10px] h-4 px-1.5"
-																				>
-																					Вы
-																				</Badge>
-																			)}
-																		</div>
-																	</div>
-																</TableCell>
-																<TableCell className="text-muted-foreground">
-																	{member.email}
-																</TableCell>
-																<TableCell>
-																	<Badge
-																		variant={
-																			member.role === "owner"
-																				? "default"
-																				: "outline"
-																		}
-																		className="text-xs"
-																	>
-																		{formatOrganizationRole(member.role)}
-																	</Badge>
-																</TableCell>
-																<TableCell className="text-muted-foreground">
-																	{formatDate(member.createdAt)}
-																</TableCell>
-																<TableCell>
-																	{currentUserRole && (
+															<MemberRow
+																key={member.memberId}
+																member={member}
+																isCurrentUser={isCurrentUserRow}
+																addedLabel={formatDate(member.createdAt)}
+																actions={
+																	currentUserRole && (
 																		<MemberActions
 																			member={member}
 																			currentUserRole={currentUserRole}
@@ -508,9 +457,9 @@ export function OrganizationSettings({
 																				ownerCount,
 																			)}
 																		/>
-																	)}
-																</TableCell>
-															</TableRow>
+																	)
+																}
+															/>
 														);
 													})}
 												</TableBody>

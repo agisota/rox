@@ -14,6 +14,7 @@ import { z } from "zod";
 import { generateImagePathname, uploadImage } from "../../lib/upload";
 import { jwtProcedure, protectedProcedure, publicProcedure } from "../../trpc";
 import { verifyOrgAdmin } from "../integration/utils";
+import { organizationInvitationsRouter } from "./invitations";
 import { organizationMembersRouter } from "./members";
 
 async function getInvitationById(invitationId: string) {
@@ -56,6 +57,7 @@ function verificationMatchesInvitation({
 
 export const organizationRouter = {
 	members: organizationMembersRouter,
+	invitations: organizationInvitationsRouter,
 
 	getActive: protectedProcedure.query(async ({ ctx }) => {
 		const orgId = ctx.activeOrganizationId;
