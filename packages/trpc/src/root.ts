@@ -33,6 +33,7 @@ import {
 	pipelineRouter,
 	triggerRouter,
 } from "./router/pipeline";
+import { prefsRouter } from "./router/prefs";
 import { identityRouter, profileRouter } from "./router/profile";
 import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
@@ -94,6 +95,7 @@ export const appRouter = createTRPCRouter({
 	organization: organizationRouter,
 	pipeline: pipelineRouter,
 	pipelineTrigger: triggerRouter,
+	prefs: prefsRouter,
 	profile: profileRouter,
 	project: projectRouter,
 	ranking: rankingRouter,

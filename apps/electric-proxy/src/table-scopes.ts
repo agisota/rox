@@ -16,6 +16,7 @@ import {
 	members,
 	memoryImportJobs,
 	memoryItems,
+	orgSettings,
 	projects,
 	sandboxImages,
 	subscriptions,
@@ -24,6 +25,7 @@ import {
 	teamMembers,
 	teams,
 	userAmbientSettings,
+	userPreferences,
 	v2Clients,
 	v2Hosts,
 	v2Projects,
@@ -163,6 +165,15 @@ export const TABLE_SCOPES: Record<string, TableScope> = {
 		orgColumn: userAmbientSettings.organizationId,
 		userColumn: userAmbientSettings.createdBy,
 	},
+
+	// F46 cross-device prefs: the per-(org, user) prefs document syncs per-user
+	// (pins/views/locale follow the user), exactly like journal/memory.
+	user_preferences: {
+		orgColumn: userPreferences.organizationId,
+		userColumn: userPreferences.createdBy,
+	},
+	// org_settings is org-shared (every member sees the same org defaults).
+	org_settings: { orgColumn: orgSettings.organizationId },
 
 	github_repositories: { orgColumn: githubRepositories.organizationId },
 	github_pull_requests: { orgColumn: githubPullRequests.organizationId },

@@ -9,13 +9,14 @@ const CollectionsContext = createContext<Collections | null>(null);
 export function CollectionsProvider({ children }: { children: ReactNode }) {
 	const { data: session } = useSession();
 	const activeOrganizationId = session?.session?.activeOrganizationId;
+	const userId = session?.user?.id;
 
 	const collections = useMemo(() => {
-		if (!activeOrganizationId) return null;
-		return getCollections(activeOrganizationId);
-	}, [activeOrganizationId]);
+		if (!activeOrganizationId || !userId) return null;
+		return getCollections(activeOrganizationId, userId);
+	}, [activeOrganizationId, userId]);
 
-	if (!activeOrganizationId) {
+	if (!activeOrganizationId || !userId) {
 		return null;
 	}
 
