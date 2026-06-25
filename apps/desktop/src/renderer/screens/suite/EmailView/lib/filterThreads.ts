@@ -1,66 +1,50 @@
-import type { MailPlacement } from "./mailStore";
 import type { MailFolderId, MailThreadSummary } from "./mailTypes";
 
 /**
- * Client-side thread filtering for the mailbox.
+ * Client-side thread filtering for the mailbox — SERVER-BACKED (FN-135 / #697).
  *
- * The server `listThreads` feed is the owner's whole mailbox (no per-thread
- * folder/flag/direction columns yet — recon gap #1). To still ship a FULL client
- * the user-controlled organization (archive / trash / spam placement + the star
- * flag) is layered on top from the local {@link MailPlacement} store, so those
- * folders resolve to real, navigable views instead of dead empties:
+ * `mail.listThreads` now returns the real per-thread `folder` placement +
+ * `isFlagged` flag + `unreadCount` + `hasAttachments` aggregates, so the left
+ * rail resolves to authoritative server state instead of a localStorage overlay:
  *
- *   inbox       → threads with NO placement (the default mailbox)
- *   archive     → threads placed "archive"
- *   spam        → threads placed "spam"
- *   trash       → threads placed "trash"
- *   flagged     → starred threads (not in trash/spam)
- *   unread      → un-opened inbox threads (best-effort, see mailCounts caveat)
- *   sent        → not thread-row-derivable yet → empty (TODO server: direction)
- *   drafts      → served separately from the local draft store (not here)
- *   attachments → needs a per-thread rollup → empty (TODO server)
+ *   inbox       → folder === "inbox"
+ *   archive     → folder === "archive"
+ *   spam        → folder === "spam"
+ *   trash       → folder === "trash"
+ *   flagged     → isFlagged && folder not in {trash, spam}
+ *   unread      → folder === "inbox" && unreadCount > 0
+ *   attachments → hasAttachments && folder not in {trash, spam}
+ *   sent        → served by the dedicated sent feed (direction='outbound'), not here
+ *   drafts      → served from `mail.listDrafts` (not here)
  *
- * Search is a substring match over the normalized subject (a real `mail.search`
- * FTS endpoint over body/sender is the server follow-up). Pure + deterministic
- * so it stays trivially correct and swaps for a server query the day the columns
- * land — the call site does not change.
+ * Free-text search is delegated to the `mail.search` FTS endpoint upstream (the
+ * EmailView swaps the thread feed for search results), so this function no longer
+ * substring-filters: it only resolves the active folder over already-fetched
+ * rows. Pure + deterministic so it stays trivially correct.
  */
 export function filterThreads(
 	threads: MailThreadSummary[],
 	folder: MailFolderId,
-	search: string,
-	store: {
-		placement: Record<string, MailPlacement>;
-		flagged: Record<string, true>;
-		openedThreadIds: ReadonlySet<string>;
-	},
 ): MailThreadSummary[] {
-	const { placement, flagged, openedThreadIds } = store;
-
-	const inFolder = threads.filter((t) => {
-		const place = placement[t.id];
+	return threads.filter((t) => {
 		switch (folder) {
 			case "inbox":
-				return !place;
+				return t.folder === "inbox";
 			case "archive":
-				return place === "archive";
+				return t.folder === "archive";
 			case "spam":
-				return place === "spam";
+				return t.folder === "spam";
 			case "trash":
-				return place === "trash";
+				return t.folder === "trash";
 			case "flagged":
-				return Boolean(flagged[t.id]) && place !== "trash" && place !== "spam";
+				return t.isFlagged && t.folder !== "trash" && t.folder !== "spam";
 			case "unread":
-				return !place && !openedThreadIds.has(t.id) && t.messageCount > 1;
+				return t.folder === "inbox" && t.unreadCount > 0;
+			case "attachments":
+				return t.hasAttachments && t.folder !== "trash" && t.folder !== "spam";
 			default:
-				// sent / drafts / attachments are not thread-row-derivable here.
+				// sent / drafts are served by their own feeds, not from this page.
 				return false;
 		}
 	});
-
-	const q = search.trim().toLowerCase();
-	if (!q) return inFolder;
-	return inFolder.filter((t) =>
-		(t.subjectNorm ?? "").toLowerCase().includes(q),
-	);
 }

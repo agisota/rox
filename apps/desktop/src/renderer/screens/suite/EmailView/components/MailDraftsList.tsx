@@ -12,13 +12,10 @@ export interface MailDraftsListProps {
 }
 
 /**
- * Panel-2 variant shown for the Черновики folder. Drafts are persisted in the
- * local {@link SavedDraft} store (the server has no draft flow yet — recon gap
- * #6), so they render here instead of from `mail.listThreads`. Selecting one
- * re-opens it in the composer; the trash icon discards it.
- *
- * TODO(server): when `mail.saveDraft` / `mail.listDrafts` land, swap this for a
- * server-backed list and reconcile local drafts into it.
+ * Panel-2 variant shown for the Черновики folder. Drafts are SERVER-BACKED
+ * (FN-139 / #699): they come from `mail.listDrafts` (mapped to {@link SavedDraft})
+ * so they survive reload and sync across web/desktop/mobile. Selecting one
+ * re-opens it in the composer; the trash icon calls `mail.deleteDraft`.
  */
 export function MailDraftsList({
 	drafts,

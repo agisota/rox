@@ -22,12 +22,11 @@ export type MailThreadMessage =
 /**
  * The system folders + smart filters of the left rail.
  *
- * P0 reality: `listThreads` does not carry per-thread `direction`/`unread`
- * fields, so only `inbox` resolves to a real server-backed feed. The remaining
- * ids are first-class navigation targets that render an honest scoped state
- * until the server exposes folder/flag columns (see `needsShared`). They are
- * still enumerated here so the rail, keyboard, and routing treat folders
- * uniformly the day the server lands them.
+ * SERVER-BACKED (FN-135/139, #697/#699): `listThreads` now carries per-thread
+ * `folder` + `isFlagged` + `unreadCount` + `hasAttachments`, so inbox / archive /
+ * spam / trash / unread / flagged / attachments all resolve to real server state;
+ * drafts come from `mail.listDrafts`. `sent` is the only id still awaiting a
+ * dedicated server feed (an outbound-direction thread list).
  */
 export type MailFolderId =
 	| "inbox"

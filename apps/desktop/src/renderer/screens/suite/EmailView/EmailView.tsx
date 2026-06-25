@@ -6,7 +6,6 @@ import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { authClient } from "renderer/lib/auth-client";
 import { logger } from "renderer/lib/logger";
 import {
-	type DraftAttachment,
 	EMPTY_DRAFT,
 	type MailDraft,
 	parseRecipients,
@@ -28,19 +27,12 @@ import {
 	buildMailReplyContext,
 } from "./lib/mailReplyContext";
 import {
-	clearPlacement,
-	deleteDraft,
 	type MailPlacement,
-	newDraftId,
 	type SavedDraft,
-	setPlacement,
-	toggleFlag,
-	upsertDraft,
-	useMailDrafts,
-	useMailFlags,
-	useMailPlacements,
+	toSavedDraft,
 } from "./lib/mailStore";
 import type { MailFolderId } from "./lib/mailTypes";
+import { uploadDraftAttachments } from "./lib/uploadAttachments";
 import { useMailKeyboard } from "./lib/useMailKeyboard";
 
 /** What the inline composer is currently doing (drives prefill + title). */
@@ -58,18 +50,17 @@ type ComposeMode = "new" | "reply" | "replyAll" | "forward";
  *
  * IDENTITY: the account email is read from `authClient.useSession()`; the
  * routable `<handle>@rox.one` mailbox from `mail.provisionAddress` (idempotent).
- * Both flow into {@link MailHeader}. Server-side every mail procedure already
- * keys off `ctx.session.user.id`, so ownership needs no extra wiring.
  *
- * FOLDER/FLAG/DRAFT state the server cannot yet persist (archive/trash/spam,
- * the ⭐ flag, drafts — recon gaps #1/#2/#6) is modeled in the local
- * {@link useMailPlacements}/{@link useMailFlags}/{@link useMailDrafts} store; each
- * write is the exact seam a future `mail.*` mutation replaces. Read/list/send/
- * markRead all hit the REAL procedures.
+ * SERVER-BACKED (FN-135/138/139/141, #697/#698/#699/#701): folder placement +
+ * the ⭐ flag live on the `mail_threads` row (`mail.setFolder`/`mail.setFlag`);
+ * the unread badge is the real `unreadCount` aggregate from `mail.listThreads`;
+ * search hits the Postgres FTS `mail.search`; drafts persist via
+ * `mail.saveDraft`/`listDrafts`/`deleteDraft`; attachments upload to R2 (presigned
+ * PUT) before `mail.send`. Nothing in this surface uses localStorage anymore.
  *
- * Security invariants preserved: HTML bodies are DOMPurify-sanitized AND
- * rendered in a sandboxed iframe with remote images blocked by default
- * (`MailHtmlContent`); presigned R2 URLs are never logged.
+ * Security invariants preserved: HTML bodies are DOMPurify-sanitized AND rendered
+ * in a sandboxed iframe with remote images blocked by default; presigned R2 URLs
+ * are never logged.
  *
  * Cache-first (AGENTS.md #9): cached threads/bodies render while refetches run;
  * mutations invalidate rather than block the UI.
@@ -107,20 +98,18 @@ export function EmailView(props: EmailViewProps = {}) {
 	const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
 	const [outboundDisabled, setOutboundDisabled] = useState(false);
 	const [selected, setSelected] = useState<Set<string>>(new Set());
-	// Thread ids opened this session — drives the best-effort unread signal until
-	// the server exposes a real unread aggregate (mailCounts caveat).
-	const [openedThreadIds, setOpenedThreadIds] = useState<Set<string>>(
-		new Set(),
-	);
 	const searchRef = useRef<HTMLInputElement>(null);
 	// Holds the latest `openCompose` so the global Cmd+N listener (bound once)
 	// always invokes the current closure without re-subscribing every render.
 	const openComposeRef = useRef<(mode: ComposeMode) => void>(() => {});
 
-	// ---- Local organization store (folder/flag/draft seams) -----------------
-	const placement = useMailPlacements();
-	const flagged = useMailFlags();
-	const drafts = useMailDrafts();
+	// Debounced search term → the FTS query is only run for a non-trivial term.
+	const [debouncedSearch, setDebouncedSearch] = useState("");
+	useEffect(() => {
+		const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+		return () => clearTimeout(id);
+	}, [search]);
+	const isSearching = debouncedSearch.length > 0;
 
 	// ---- Data ---------------------------------------------------------------
 	const threadsQuery = useQuery(
@@ -131,10 +120,22 @@ export function EmailView(props: EmailViewProps = {}) {
 		[threadsQuery.data],
 	);
 
+	// FN-138 (#698): server-side FTS. Active only while a query is present; its
+	// results replace the folder feed (the rail still shows folder counts).
+	const searchQuery = useQuery({
+		...trpc.mail.search.queryOptions({ query: debouncedSearch, limit: 50 }),
+		enabled: isSearching,
+	});
+
+	// FN-139 (#699): server-backed drafts.
+	const draftsQuery = useQuery(trpc.mail.listDrafts.queryOptions());
+	const drafts: SavedDraft[] = useMemo(
+		() => (draftsQuery.data ?? []).map(toSavedDraft),
+		[draftsQuery.data],
+	);
+
 	// Provision (or re-affirm) the caller's <handle>@rox.one mailbox so the
-	// header can show the real sending address. Idempotent server-side; runs once
-	// when a session is present. Failures are non-fatal (header falls back to the
-	// account email).
+	// header can show the real sending address. Idempotent server-side.
 	const provision = useMutation(
 		trpc.mail.provisionAddress.mutationOptions({
 			onError: (error) =>
@@ -142,45 +143,34 @@ export function EmailView(props: EmailViewProps = {}) {
 		}),
 	);
 	const provisionMutate = provision.mutate;
-	// Provision once a session id is known; idempotent server-side so re-fires are
-	// safe. Deps are exhaustive (id + the stable mutate fn) — no suppression needed.
 	useEffect(() => {
 		if (session?.user?.id) provisionMutate({});
 	}, [session?.user?.id, provisionMutate]);
 	const mailboxAddress = provision.data?.address ?? null;
 
 	const visibleThreads = useMemo(() => {
-		const filtered = filterThreads(allThreads, folder, search, {
-			placement,
-			flagged,
-			openedThreadIds,
-		});
+		// While searching, the FTS results are the feed (already thread-rolled).
+		if (isSearching) {
+			const results = searchQuery.data ?? [];
+			if (readFilter === "unread") {
+				return results.filter((t) => t.unreadCount > 0);
+			}
+			return results;
+		}
+		const filtered = filterThreads(allThreads, folder);
 		if (readFilter === "unread") {
-			return filtered.filter(
-				(t) => !openedThreadIds.has(t.id) && t.messageCount > 1,
-			);
+			return filtered.filter((t) => t.unreadCount > 0);
 		}
 		return filtered;
-	}, [
-		allThreads,
-		folder,
-		search,
-		placement,
-		flagged,
-		openedThreadIds,
-		readFilter,
-	]);
+	}, [isSearching, searchQuery.data, allThreads, folder, readFilter]);
 
 	const counts = useMemo(
 		() =>
 			deriveMailCounts({
 				threads: allThreads,
-				placement,
-				flagged,
-				openedThreadIds,
 				draftCount: drafts.length,
 			}),
-		[allThreads, placement, flagged, openedThreadIds, drafts.length],
+		[allThreads, drafts.length],
 	);
 
 	const threadQuery = useQuery({
@@ -193,36 +183,79 @@ export function EmailView(props: EmailViewProps = {}) {
 		[threadQuery.data],
 	);
 
-	// ---- Mutations ----------------------------------------------------------
+	// ---- Mutations: invalidation helpers ------------------------------------
 	const invalidateThread = async () => {
 		if (!activeThreadId) return;
 		await queryClient.invalidateQueries({
 			queryKey: trpc.mail.getThread.queryKey({ threadId: activeThreadId }),
 		});
 	};
+	const invalidateThreads = async () => {
+		await queryClient.invalidateQueries({
+			queryKey: trpc.mail.listThreads.queryKey({ limit: 100 }),
+		});
+	};
+	const invalidateDrafts = async () => {
+		await queryClient.invalidateQueries({
+			queryKey: trpc.mail.listDrafts.queryKey(),
+		});
+	};
 
 	const markRead = useMutation(
 		trpc.mail.markRead.mutationOptions({
-			onSuccess: invalidateThread,
+			onSuccess: async () => {
+				await invalidateThread();
+				await invalidateThreads();
+			},
 			onError: (error) => logger.error("[EmailView] markRead failed", error),
 		}),
+	);
+
+	// FN-135 (#697): server folder placement + ⭐ flag.
+	const setFolderM = useMutation(
+		trpc.mail.setFolder.mutationOptions({
+			onSuccess: invalidateThreads,
+			onError: (error) => logger.error("[EmailView] setFolder failed", error),
+		}),
+	);
+	const setFlagM = useMutation(
+		trpc.mail.setFlag.mutationOptions({
+			onSuccess: invalidateThreads,
+			onError: (error) => logger.error("[EmailView] setFlag failed", error),
+		}),
+	);
+
+	// FN-139 (#699): server drafts.
+	const saveDraftM = useMutation(
+		trpc.mail.saveDraft.mutationOptions({
+			onSuccess: invalidateDrafts,
+			onError: (error) => logger.error("[EmailView] saveDraft failed", error),
+		}),
+	);
+	const deleteDraftM = useMutation(
+		trpc.mail.deleteDraft.mutationOptions({
+			onSuccess: invalidateDrafts,
+			onError: (error) => logger.error("[EmailView] deleteDraft failed", error),
+		}),
+	);
+
+	// FN-141 (#701): presign attachment uploads.
+	const presignM = useMutation(
+		trpc.mail.presignAttachmentUpload.mutationOptions(),
 	);
 
 	const send = useMutation(
 		trpc.mail.send.mutationOptions({
 			onSuccess: async () => {
-				await queryClient.invalidateQueries({
-					queryKey: trpc.mail.listThreads.queryKey({ limit: 100 }),
-				});
+				await invalidateThreads();
 				await invalidateThread();
-				// A sent draft is consumed.
-				if (activeDraftId) deleteDraft(activeDraftId);
+				// A sent draft is consumed (delete it server-side).
+				if (activeDraftId) deleteDraftM.mutate({ id: activeDraftId });
 				closeComposer();
 				toast.success("Письмо отправлено");
 			},
 			onError: (error) => {
 				logger.error("[EmailView] send failed", error);
-				// Surface a persistent banner when outbound is gated off server-side.
 				if (error.data?.code === "PRECONDITION_FAILED") {
 					setOutboundDisabled(true);
 				}
@@ -235,13 +268,6 @@ export function EmailView(props: EmailViewProps = {}) {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed on thread id
 	useEffect(() => {
 		if (!activeThreadId || messages.length === 0) return;
-		// Mark this thread as opened for the unread heuristic.
-		setOpenedThreadIds((prev) => {
-			if (prev.has(activeThreadId)) return prev;
-			const next = new Set(prev);
-			next.add(activeThreadId);
-			return next;
-		});
 		// Latest message expanded, rest collapsed (Gmail-like).
 		const latest = messages.at(-1);
 		setExpandedIds(new Set(latest ? [latest.id] : []));
@@ -319,35 +345,62 @@ export function EmailView(props: EmailViewProps = {}) {
 	};
 
 	const handleSaveDraft = () => {
-		const id = activeDraftId ?? newDraftId();
-		const saved: SavedDraft = {
-			id,
-			threadId:
-				composeMode === "reply" || composeMode === "replyAll"
-					? activeThreadId
-					: null,
-			to: draft.to,
-			cc: draft.cc,
-			bcc: draft.bcc,
-			subject: draft.subject,
-			body: draft.body,
-			attachments: draft.attachments as DraftAttachment[] | undefined,
-			updatedAt: Date.now(),
-		};
-		upsertDraft(saved);
-		setActiveDraftId(id);
-		toast.success("Черновик сохранён");
+		const replyThreadId =
+			composeMode === "reply" || composeMode === "replyAll"
+				? activeThreadId
+				: null;
+		saveDraftM.mutate(
+			{
+				id: activeDraftId ?? undefined,
+				threadId: replyThreadId ?? undefined,
+				to: draft.to,
+				cc: draft.cc,
+				bcc: draft.bcc,
+				subject: draft.subject,
+				body: draft.body,
+				attachments: (draft.attachments ?? []).map((a) => ({
+					filename: a.name,
+					sizeBytes: a.size,
+					contentType: a.contentType,
+					blobKey: a.key,
+				})),
+			},
+			{
+				onSuccess: (row) => {
+					if (row?.id) setActiveDraftId(row.id);
+					toast.success("Черновик сохранён");
+				},
+			},
+		);
 	};
 
-	const handleSend = () => {
+	const handleDeleteDraft = (id: string) => {
+		deleteDraftM.mutate({ id });
+		if (id === activeDraftId) closeComposer();
+	};
+
+	const handleSend = async () => {
 		const to = parseRecipients(draft.to);
 		const cc = parseRecipients(draft.cc);
 		const bcc = parseRecipients(draft.bcc);
 		if (to.length === 0 || !draft.body.trim()) return;
 
-		// TODO(server): upload `draft.attachments` to R2 (presigned PUT) and pass
-		// their keys here once `sendSchema` accepts attachments. Staged files are
-		// not yet transmitted.
+		// FN-141 (#701): upload any staged attachments to R2 (presigned PUT), then
+		// pass their keys on send. A presigned PUT + direct R2 upload keeps bytes
+		// off the tRPC request. Failure here aborts the send with a clear toast.
+		let attachmentRefs: Awaited<ReturnType<typeof uploadDraftAttachments>> = [];
+		if ((draft.attachments ?? []).length > 0) {
+			try {
+				attachmentRefs = await uploadDraftAttachments(
+					draft.attachments ?? [],
+					(input) => presignM.mutateAsync(input),
+				);
+			} catch (error) {
+				logger.error("[EmailView] attachment upload failed", error);
+				toast.error("Не удалось загрузить вложение");
+				return;
+			}
+		}
 
 		// RFC reply headers come from the thread context for reply/replyAll.
 		const replyCtx =
@@ -369,12 +422,13 @@ export function EmailView(props: EmailViewProps = {}) {
 			body: draft.body,
 			inReplyTo: replyCtx?.inReplyTo ?? undefined,
 			references: replyCtx?.references.length ? replyCtx.references : undefined,
+			attachments: attachmentRefs.length ? attachmentRefs : undefined,
 		});
 	};
 
-	// ---- Folder/flag actions (local store seams) ----------------------------
+	// ---- Folder/flag actions (server mutations) -----------------------------
 	const place = (id: string, target: MailPlacement, label: string) => {
-		setPlacement(id, target);
+		setFolderM.mutate({ threadId: id, folder: target });
 		if (id === activeThreadId) setActiveThreadId(null);
 		setSelected((prev) => {
 			if (!prev.has(id)) return prev;
@@ -388,39 +442,25 @@ export function EmailView(props: EmailViewProps = {}) {
 	const trashThread = (id: string) => place(id, "trash", "В корзине");
 	const spamThread = (id: string) => place(id, "spam", "Отмечено как спам");
 	const restoreThread = (id: string) => {
-		clearPlacement(id);
+		setFolderM.mutate({ threadId: id, folder: "inbox" });
 		toast.success("Возвращено во входящие");
 	};
-	const toggleStar = (id: string) => toggleFlag(id);
+	const toggleStar = (id: string) => setFlagM.mutate({ threadId: id });
 
-	// Toggle read/unread on a thread's last inbound message (real markRead).
+	// Toggle read/unread on a thread's inbound messages (real markRead).
 	const toggleThreadRead = (id: string) => {
-		// We only have message-level read state; flip the opened heuristic locally
-		// AND fire markRead on the thread's messages when it is the open thread.
-		setOpenedThreadIds((prev) => {
-			const next = new Set(prev);
-			if (next.has(id)) next.delete(id);
-			else next.add(id);
-			return next;
-		});
-		if (id === activeThreadId) {
-			const wasOpened = openedThreadIds.has(id);
-			for (const m of messages) {
-				if (m.direction === "inbound") {
-					markRead.mutate({ messageId: m.id, isRead: wasOpened });
-				}
+		if (id !== activeThreadId) return;
+		const anyUnread = messages.some(
+			(m) => m.direction === "inbound" && !m.isRead,
+		);
+		for (const m of messages) {
+			if (m.direction === "inbound") {
+				markRead.mutate({ messageId: m.id, isRead: anyUnread });
 			}
 		}
 	};
 
 	const markThreadUnread = () => {
-		if (activeThreadId) {
-			setOpenedThreadIds((prev) => {
-				const next = new Set(prev);
-				next.delete(activeThreadId);
-				return next;
-			});
-		}
 		const lastInbound = [...messages]
 			.reverse()
 			.find((m) => m.direction === "inbound");
@@ -445,16 +485,22 @@ export function EmailView(props: EmailViewProps = {}) {
 		for (const id of selected) fn(id);
 		clearSelection();
 	};
-	const bulkArchive = () => bulkApply((id) => setPlacement(id, "archive"));
-	const bulkTrash = () => bulkApply((id) => setPlacement(id, "trash"));
+	const bulkArchive = () =>
+		bulkApply((id) => setFolderM.mutate({ threadId: id, folder: "archive" }));
+	const bulkTrash = () =>
+		bulkApply((id) => setFolderM.mutate({ threadId: id, folder: "trash" }));
 	const bulkRead = () =>
-		bulkApply((id) =>
-			setOpenedThreadIds((prev) => {
-				const next = new Set(prev);
-				next.add(id);
-				return next;
-			}),
-		);
+		bulkApply((id) => {
+			// Mark the open thread's inbound messages read; others are invalidated by
+			// the listThreads refetch the folder mutation triggers elsewhere.
+			if (id === activeThreadId) {
+				for (const m of messages) {
+					if (m.direction === "inbound" && !m.isRead) {
+						markRead.mutate({ messageId: m.id, isRead: true });
+					}
+				}
+			}
+		});
 
 	// ---- Keyboard -----------------------------------------------------------
 	const moveSelection = (delta: number) => {
@@ -499,8 +545,6 @@ export function EmailView(props: EmailViewProps = {}) {
 	openComposeRef.current = openCompose;
 
 	// Cmd+N → compose (mirrors the header CTA + macOS new-message convention).
-	// Bound once; the handler dereferences `openComposeRef` so it never goes stale
-	// yet never re-subscribes (no changing deps → no churn on every keystroke).
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
@@ -530,7 +574,7 @@ export function EmailView(props: EmailViewProps = {}) {
 					onSend: handleSend,
 					onCancel: closeComposer,
 					onSaveDraft: handleSaveDraft,
-					sending: send.isPending,
+					sending: send.isPending || presignM.isPending,
 					outboundDisabled,
 					title:
 						composeMode === "new"
@@ -544,7 +588,11 @@ export function EmailView(props: EmailViewProps = {}) {
 			: null;
 
 	const activeThreadStarred = activeThreadId
-		? Boolean(flagged[activeThreadId])
+		? Boolean(
+				(isSearching ? searchQuery.data : allThreads)?.find(
+					(t) => t.id === activeThreadId,
+				)?.isFlagged,
+			)
 		: false;
 
 	return (
@@ -577,11 +625,11 @@ export function EmailView(props: EmailViewProps = {}) {
 						/>
 					}
 					list={
-						folder === "drafts" ? (
+						folder === "drafts" && !isSearching ? (
 							<MailDraftsList
 								drafts={drafts}
 								onOpen={openSavedDraft}
-								onDelete={deleteDraft}
+								onDelete={handleDeleteDraft}
 							/>
 						) : (
 							<MailThreadList
@@ -591,9 +639,14 @@ export function EmailView(props: EmailViewProps = {}) {
 								onSelect={setActiveThreadId}
 								readFilter={readFilter}
 								onReadFilterChange={setReadFilter}
-								isLoading={threadsQuery.isLoading}
-								openedThreadIds={openedThreadIds}
-								flagged={flagged}
+								isLoading={
+									isSearching ? searchQuery.isLoading : threadsQuery.isLoading
+								}
+								flagged={Object.fromEntries(
+									visibleThreads
+										.filter((t) => t.isFlagged)
+										.map((t) => [t.id, true as const]),
+								)}
 								selected={selected}
 								onToggleSelect={toggleSelect}
 								onClearSelection={clearSelection}

@@ -47,8 +47,6 @@ export interface MailThreadListProps {
 	readFilter: MailReadFilter;
 	onReadFilterChange: (value: MailReadFilter) => void;
 	isLoading: boolean;
-	/** Thread ids the user has opened (drives unread bold + the dot). */
-	openedThreadIds: ReadonlySet<string>;
 	/** Starred thread ids. */
 	flagged: Record<string, true>;
 	/** Selected ids for bulk operations. */
@@ -69,13 +67,12 @@ export interface MailThreadListProps {
  * light for a large mailbox. A sticky header carries the Все/Непрочитанные
  * segment and a bulk-action bar that appears when rows are selected. Each row
  * shows subject, a message-count preview, relative time, an unread dot/bold
- * weight (heuristic, see mailCounts), a star toggle, and hover actions
- * (archive/delete/read). A checkbox enables multi-select.
+ * weight (server-backed `unreadCount`, FN-135/#697), a star toggle, and hover
+ * actions (archive/delete/read). A checkbox enables multi-select.
  *
  * SENDER CAVEAT: `mail.listThreads` returns the flat thread row only (no
  * per-message sender). So the row leads with the subject; the per-message sender
- * surfaces in the reader. TODO(server): add a `lastSender` + `snippet` rollup to
- * `MailThreadSummary` to show a sender + body preview per row (Gmail-style).
+ * surfaces in the reader.
  *
  * Glass: `bg-card/55 backdrop-blur` panel; active row `bg-accent`, hover
  * `bg-accent/40`.
@@ -88,7 +85,6 @@ export function MailThreadList({
 	readFilter,
 	onReadFilterChange,
 	isLoading,
-	openedThreadIds,
 	flagged,
 	selected,
 	onToggleSelect,
@@ -190,12 +186,12 @@ export function MailThreadList({
 								const isActive = thread.id === activeThreadId;
 								const isSelected = selected.has(thread.id);
 								const isStarred = Boolean(flagged[thread.id]);
-								// Heuristic unread: never opened + more than the seed message.
+								// Server-backed unread (FN-135 / #697): the real count of
+								// inbound, still-unread messages in this thread.
 								const isUnread =
 									folder !== "trash" &&
 									folder !== "spam" &&
-									!openedThreadIds.has(thread.id) &&
-									thread.messageCount > 1;
+									thread.unreadCount > 0;
 
 								return (
 									<div
