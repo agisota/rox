@@ -4,6 +4,7 @@ import { cn } from "@rox/ui/utils";
 import { GoIssueClosed, GoIssueOpened } from "react-icons/go";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
 import { LuPlus } from "react-icons/lu";
+import { TargetTaskLinks } from "../../../../shared/CrossLinkChips";
 import { formatRelativeUpdatedAt } from "./relativeUpdatedAt";
 import type { IssueLabel, IssueListItem } from "./types";
 
@@ -14,6 +15,8 @@ interface IssueRowProps {
 	onOpen: (issueNumber: number) => void;
 	onOpenUrl: (url: string) => void;
 	onAddToWorkspace: (issue: IssueListItem) => void;
+	/** v2 project id, enabling the linked-task cross-chips on the row. */
+	projectId?: string | null;
 }
 
 /** Render a single GitHub label chip with its repo color, GitHub-style. */
@@ -45,6 +48,7 @@ export function IssueRow({
 	onOpen,
 	onOpenUrl,
 	onAddToWorkspace,
+	projectId,
 }: IssueRowProps) {
 	const isClosed = issue.state === "closed";
 	const StateIcon = isClosed ? GoIssueClosed : GoIssueOpened;
@@ -98,6 +102,24 @@ export function IssueRow({
 				<span className="hidden shrink-0 text-[11px] text-muted-foreground @xl:inline">
 					{relativeUpdatedAt}
 				</span>
+			)}
+
+			{projectId && (
+				// biome-ignore lint/a11y/noStaticElementInteractions: stops the row's open handler so chip clicks navigate cross-link instead
+				// biome-ignore lint/a11y/useKeyWithClickEvents: chips own their own keyboard handlers
+				<div
+					className="hidden shrink-0 @lg:flex"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<TargetTaskLinks
+						projectId={projectId}
+						kind="issue"
+						targetNumber={issue.issueNumber}
+						targetTitle={issue.title}
+						targetUrl={issue.url}
+						compact
+					/>
+				</div>
 			)}
 
 			<div className="flex items-center gap-1">

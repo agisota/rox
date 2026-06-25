@@ -69,6 +69,10 @@ import { logger } from "renderer/lib/logger";
 import superjson from "superjson";
 import { z } from "zod";
 import {
+	type TaskLinkRow,
+	taskLinkSchema,
+} from "../../_dashboard/tasks/linkage/schema";
+import {
 	type DashboardSidebarProjectRow,
 	type DashboardSidebarSectionRow,
 	dashboardSidebarProjectSchema,
@@ -250,6 +254,15 @@ export interface OrgCollections {
 		LocalStorageCollectionUtils,
 		typeof failedWorkspaceCreateSchema,
 		z.input<typeof failedWorkspaceCreateSchema>
+	>;
+	// Local-only cross-link model (task↔PR/issue) for the Tasks power-user layer.
+	// Indexed by taskId + targetNumber so the cross-chips live-query both ways.
+	taskLinks: Collection<
+		TaskLinkRow,
+		string,
+		LocalStorageCollectionUtils,
+		typeof taskLinkSchema,
+		z.input<typeof taskLinkSchema>
 	>;
 }
 
@@ -1153,6 +1166,17 @@ function createOrgCollections(
 		}),
 	);
 
+	const taskLinks = createIndexedCollection(
+		localStorageCollectionOptions({
+			id: `task_links-${organizationId}`,
+			storageKey: `task-links-${organizationId}`,
+			schema: taskLinkSchema,
+			getKey: (item) => item.id,
+		}),
+	);
+	taskLinks.createIndex((link) => link.taskId, basicIndexConfig);
+	taskLinks.createIndex((link) => link.targetNumber, basicIndexConfig);
+
 	return {
 		tasks,
 		taskStatuses,
@@ -1190,6 +1214,7 @@ function createOrgCollections(
 		v2WorkspaceGovernance,
 		v2UserPreferences,
 		failedWorkspaceCreates,
+		taskLinks,
 	};
 }
 

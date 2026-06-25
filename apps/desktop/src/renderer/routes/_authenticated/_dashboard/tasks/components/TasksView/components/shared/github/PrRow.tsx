@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
 import { LuCheck, LuCircleDot, LuClock, LuPlus, LuX } from "react-icons/lu";
 import { PRIcon } from "renderer/screens/main/components/PRIcon";
+import { TargetTaskLinks } from "../../../../shared/CrossLinkChips";
 import { formatRelativeUpdatedAt } from "./relativeUpdatedAt";
 import type {
 	ChecksStatus,
@@ -18,6 +19,8 @@ interface PrRowProps {
 	onOpen: (prNumber: number) => void;
 	onOpenUrl: (url: string) => void;
 	onAddToWorkspace: (pr: PrListItem) => void;
+	/** v2 project id, enabling the linked-task cross-chips on the row. */
+	projectId?: string | null;
 }
 
 const reviewDecisionConfig: Record<
@@ -150,7 +153,13 @@ function ChecksIndicator({
  * (enrichment lands or status flips) the pills layout-animate via framer-motion,
  * gated on the essential motion tier (`prefers-reduced-motion` → instant final).
  */
-export function PrRow({ pr, onOpen, onOpenUrl, onAddToWorkspace }: PrRowProps) {
+export function PrRow({
+	pr,
+	onOpen,
+	onOpenUrl,
+	onAddToWorkspace,
+	projectId,
+}: PrRowProps) {
 	const relativeUpdatedAt = formatRelativeUpdatedAt(pr.updatedAt);
 	// Essential tier: pills convey state, so they animate under `full`/`essential`
 	// but snap to final under `prefers-reduced-motion`/`off`.
@@ -210,6 +219,24 @@ export function PrRow({ pr, onOpen, onOpenUrl, onAddToWorkspace }: PrRowProps) {
 				<span className="hidden shrink-0 text-[11px] text-muted-foreground @xl:inline">
 					{relativeUpdatedAt}
 				</span>
+			)}
+
+			{projectId && (
+				// biome-ignore lint/a11y/noStaticElementInteractions: stops the row's open handler so chip clicks navigate cross-link instead
+				// biome-ignore lint/a11y/useKeyWithClickEvents: chips own their own keyboard handlers
+				<div
+					className="hidden shrink-0 @lg:flex"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<TargetTaskLinks
+						projectId={projectId}
+						kind="pr"
+						targetNumber={pr.prNumber}
+						targetTitle={pr.title}
+						targetUrl={pr.url}
+						compact
+					/>
+				</div>
 			)}
 
 			<div className="flex items-center gap-1">

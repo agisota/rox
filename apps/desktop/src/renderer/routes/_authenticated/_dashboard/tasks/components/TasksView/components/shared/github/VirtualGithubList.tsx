@@ -1,7 +1,9 @@
 import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
+import { cn } from "@rox/ui/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { motion } from "framer-motion";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
+import { useRovingListNavigation } from "./useRovingListNavigation";
 
 const ROW_HEIGHT = 44; // h-11
 const OVERSCAN = 12;
@@ -16,6 +18,13 @@ interface VirtualGithubListProps<T> {
 	hasNextPage: boolean;
 	isFetchingNextPage: boolean;
 	onReachEnd: () => void;
+	/**
+	 * Enables j/k/Enter roving navigation. When provided, the list captures
+	 * focus, tracks an active row, scrolls off-screen rows into view, and calls
+	 * this on Enter (or on click of the active row). Omit for a non-interactive
+	 * list.
+	 */
+	onActivate?: (item: T) => void;
 }
 
 /**
@@ -38,6 +47,7 @@ export function VirtualGithubList<T>({
 	hasNextPage,
 	isFetchingNextPage,
 	onReachEnd,
+	onActivate,
 }: VirtualGithubListProps<T>) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const shouldAnimate = useShouldAnimate("essential");
@@ -51,6 +61,25 @@ export function VirtualGithubList<T>({
 
 	const virtualItems = virtualizer.getVirtualItems();
 
+	const keyboardEnabled = onActivate != null;
+	const scrollToIndex = useCallback(
+		(index: number) => {
+			// Align off-screen rows into the window so the active row is always
+			// visible. The virtualizer mounts the row by index once scrolled.
+			virtualizer.scrollToIndex(index, { align: "auto" });
+		},
+		[virtualizer],
+	);
+	const { activeIndex, setActiveIndex, onKeyDown } = useRovingListNavigation({
+		itemCount: items.length,
+		enabled: keyboardEnabled,
+		scrollToIndex,
+		onActivate: (index) => {
+			const item = items[index];
+			if (item !== undefined) onActivate?.(item);
+		},
+	});
+
 	// Trigger the next page when the last virtual row enters the window. Done in
 	// an effect (not during render) to avoid setState-in-render loops.
 	const lastIndex = virtualItems[virtualItems.length - 1]?.index ?? -1;
@@ -61,7 +90,18 @@ export function VirtualGithubList<T>({
 	}, [lastIndex, hasNextPage, isFetchingNextPage, items.length, onReachEnd]);
 
 	return (
-		<div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
+		<div
+			ref={scrollRef}
+			className="flex-1 min-h-0 overflow-y-auto outline-none"
+			tabIndex={keyboardEnabled ? 0 : -1}
+			role="listbox"
+			aria-activedescendant={
+				keyboardEnabled && activeIndex >= 0
+					? `github-row-${activeIndex}`
+					: undefined
+			}
+			onKeyDown={keyboardEnabled ? onKeyDown : undefined}
+		>
 			<div
 				style={{ height: virtualizer.getTotalSize() }}
 				className="relative w-full"
@@ -72,11 +112,23 @@ export function VirtualGithubList<T>({
 						shouldAnimate && virtualRow.index < MAX_STAGGER_INDEX
 							? virtualRow.index * STAGGER_STEP
 							: 0;
+					const isActive = keyboardEnabled && virtualRow.index === activeIndex;
 					return (
 						<motion.div
 							key={getKey(item)}
+							id={`github-row-${virtualRow.index}`}
 							data-index={virtualRow.index}
-							className="absolute left-0 w-full"
+							role="option"
+							aria-selected={isActive}
+							className={cn(
+								"absolute left-0 w-full",
+								isActive && "bg-accent/60 ring-1 ring-inset ring-primary/40",
+							)}
+							onMouseEnter={
+								keyboardEnabled
+									? () => setActiveIndex(virtualRow.index)
+									: undefined
+							}
 							// Position via `top` (not transform) so framer-motion's opacity
 							// entrance can't fight the virtualizer's row offset. Opacity-only
 							// entrance keeps the row coordinate stable under windowing.
