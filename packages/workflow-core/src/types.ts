@@ -35,6 +35,9 @@ export type CoreBlockType =
 	| "tool_call"
 	| "mcp_tool"
 	| "web_search"
+	| "embedding"
+	| "classifier"
+	| "structured_extract"
 	| "error_boundary";
 
 export interface RoxBlockState {

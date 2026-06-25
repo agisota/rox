@@ -4,16 +4,19 @@
 // "Export named … not found" import-cycle hazard). Keep this file and the modules
 // it re-exports free of runtime imports — type-only imports of workflow-core /
 // executor types only — so the subpath stays cycle-safe.
+export * from "./classifierHandler";
 export * from "./conditionHandler";
 export * from "./dataHandlers";
 export * from "./dbQueryHandler";
 export * from "./dbWriteHandler";
+export * from "./embeddingHandler";
 export * from "./gateHandler";
 export * from "./httpHandler";
 export * from "./mcpToolHandler";
 export * from "./mergeHandler";
 export * from "./modelHandler";
 export * from "./ragHandler";
+export * from "./structuredExtractHandler";
 export * from "./switchHandler";
 export * from "./toolCallHandler";
 export * from "./webSearchHandler";
