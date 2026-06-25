@@ -1,3 +1,11 @@
+import {
+	type OrchestrationStepKind,
+	parseRoleModelMapping,
+	type RoleModelMapping,
+	type RoleModelSelection,
+	selectModelForStep,
+	serializeRoleModelMapping,
+} from "@rox/shared/agent-roles";
 import type { BranchPrefixMode } from "@rox/shared/workspace-launch";
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../../../db";
@@ -140,4 +148,42 @@ export function getHostAutoInitGit(db: HostDb): boolean {
  */
 export function getHostProjectsBaseDir(db: HostDb): string | null {
 	return ensureHostSettingsRow(db).projectsBaseDir ?? null;
+}
+
+/**
+ * Role→model routing (Ф3, #508). Reads the `role_model_mapping_json` column
+ * (seeding the row on first read) and normalizes it into a complete
+ * {@link RoleModelMapping}; a null/invalid column resolves to all-ROX/ROX, so a
+ * zero-config install routes every role to the house agent + house model.
+ */
+export function getHostRoleModelMapping(db: HostDb): RoleModelMapping {
+	return parseRoleModelMapping(ensureHostSettingsRow(db).roleModelMappingJson);
+}
+
+/** Persist a full role→model mapping; returns the re-read, normalized mapping. */
+export function setHostRoleModelMapping(
+	db: HostDb,
+	mapping: RoleModelMapping,
+): RoleModelMapping {
+	const roleModelMappingJson = serializeRoleModelMapping(mapping);
+	db.insert(hostSettings)
+		.values({ id: HOST_SETTINGS_ID, roleModelMappingJson })
+		.onConflictDoUpdate({
+			target: hostSettings.id,
+			set: { roleModelMappingJson },
+		})
+		.run();
+	return getHostRoleModelMapping(db);
+}
+
+/**
+ * Runtime routing entrypoint the orchestrator consumes at the agent-run
+ * boundary: given a dispatched step kind, resolve the role it belongs to and
+ * return that role's configured agent+model (ROX/ROX when unconfigured).
+ */
+export function resolveRoleModelForStep(
+	db: HostDb,
+	stepKind: OrchestrationStepKind,
+): RoleModelSelection {
+	return selectModelForStep(stepKind, getHostRoleModelMapping(db));
 }

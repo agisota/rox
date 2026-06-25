@@ -23,6 +23,17 @@ const dmgBackgroundPath = join(
 	"build/installer/background.tiff",
 );
 
+// Bundled portable git (Ф2, #507). Staged by scripts/prepare-portable-git.ts
+// into resources/git/<platform>-<arch>/ at package time, then copied outside
+// the asar so it's spawnable via process.resourcesPath. Included only when the
+// staged tree exists, so a dev/package build without it still packages cleanly;
+// the runtime resolver (git-client.ts) prefers the user's system git and only
+// falls back to this when no system git is found.
+const BUNDLED_GIT_FROM = "resources/git";
+const bundledGitExtraResources = existsSync(BUNDLED_GIT_FROM)
+	? [{ from: BUNDLED_GIT_FROM, to: "resources/git", filter: ["**/*"] }]
+	: [];
+
 const config: Configuration = {
 	appId: "com.rox.one",
 	productName,
@@ -82,6 +93,8 @@ const config: Configuration = {
 			to: "resources/preinstall",
 			filter: ["manifest.json", "*.tar.gz"],
 		},
+		// Portable git per platform/arch (present only when staged — see above).
+		...bundledGitExtraResources,
 	],
 
 	files: [
