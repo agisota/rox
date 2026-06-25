@@ -44,6 +44,7 @@ import { projectRouter } from "./router/project";
 import { rankingRouter } from "./router/ranking";
 import { rtcRouter } from "./router/rtc";
 import { runtimeRouter } from "./router/runtime";
+import { searchRouter } from "./router/search";
 import { shareRouter } from "./router/share";
 import { skillRouter } from "./router/skill";
 import { skillLibraryRouter } from "./router/skill-library";
@@ -108,6 +109,7 @@ export const appRouter = createTRPCRouter({
 	ranking: rankingRouter,
 	rtc: rtcRouter,
 	runtime: runtimeRouter,
+	search: searchRouter,
 	share: shareRouter,
 	skill: skillRouter,
 	support: supportRouter,
