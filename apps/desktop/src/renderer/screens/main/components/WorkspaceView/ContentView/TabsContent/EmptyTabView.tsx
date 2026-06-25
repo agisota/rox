@@ -1,4 +1,5 @@
 import type { ExternalApp } from "@rox/local-db";
+import { type EmptyStateChip, EmptyStateChips } from "@rox/ui/empty-state";
 import { useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import type { IconType } from "react-icons";
@@ -6,6 +7,7 @@ import { BsTerminalPlus } from "react-icons/bs";
 import { LuExternalLink, LuSearch, LuTrash2 } from "react-icons/lu";
 import { TbMessageCirclePlus, TbWorld } from "react-icons/tb";
 import { getAppOption } from "renderer/components/OpenInExternalDropdown";
+import { useEmptyStateSuggestions } from "renderer/hooks/useEmptyStateSuggestions";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useWorkspaceDeleteHandler } from "renderer/react-query/workspaces";
@@ -133,6 +135,37 @@ export function EmptyTabView({
 		quickOpenDisplay,
 	]);
 
+	// F57 (#650): AI-seeded starter chips from the shared suggestions endpoint,
+	// tinted by the active workspace. Dispatch tokens map back onto the existing
+	// tab handlers so a seeded chip starts the same action as its hotkey twin.
+	const { suggestions, isLoading: suggestionsLoading } =
+		useEmptyStateSuggestions({
+			surface: "tab",
+			workspaceName: workspace?.name,
+		});
+
+	const seededChips = useMemo<EmptyStateChip[]>(() => {
+		const dispatch: Record<string, (() => void) | undefined> = {
+			"new-chat": handleNewAgent,
+			"new-terminal": handleShowTerminal,
+			"new-browser": handleOpenBrowser,
+			"quick-open": onOpenQuickOpen,
+		};
+		return suggestions
+			.map((s) => {
+				const onSelect = dispatch[s.prompt];
+				if (!onSelect) return null;
+				return { id: s.id, label: s.label, onSelect };
+			})
+			.filter((c): c is EmptyStateChip => c !== null);
+	}, [
+		suggestions,
+		handleNewAgent,
+		handleShowTerminal,
+		handleOpenBrowser,
+		onOpenQuickOpen,
+	]);
+
 	return (
 		<div className="flex h-full flex-1 items-center justify-center px-6 py-10">
 			<div className="w-full max-w-xl">
@@ -159,6 +192,13 @@ export function EmptyTabView({
 						/>
 					))}
 				</div>
+				{(suggestionsLoading || seededChips.length > 0) && (
+					<EmptyStateChips
+						className="mt-6"
+						chips={seededChips}
+						chipsLoading={suggestionsLoading}
+					/>
+				)}
 				{workspace && (
 					<button
 						type="button"
