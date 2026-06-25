@@ -9,6 +9,13 @@ import {
 	DialogTitle,
 } from "@rox/ui/dialog";
 import { Input } from "@rox/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@rox/ui/select";
 import { toast } from "@rox/ui/sonner";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
@@ -26,6 +33,7 @@ export type EditorState =
 export interface PromptDraft {
 	title: string;
 	body: string;
+	folder: string | null;
 	tags: string[];
 	favorite: boolean;
 }
@@ -37,15 +45,21 @@ export interface PromptEditorSubmit extends PromptDraft {
 export interface PromptEditorDialogProps {
 	state: EditorState;
 	saving: boolean;
+	/** Existing folder names to offer in the folder picker. */
+	availableFolders: string[];
 	onClose: () => void;
 	onSubmit: (submit: PromptEditorSubmit) => void;
 }
+
+const NO_FOLDER = "__none__";
+const NEW_FOLDER = "__new__";
 
 function draftFromState(state: EditorState): PromptDraft {
 	if (state.mode === "edit") {
 		return {
 			title: state.prompt.title,
 			body: state.prompt.body,
+			folder: state.prompt.folder,
 			tags: state.prompt.tags,
 			favorite: state.prompt.favorite,
 		};
@@ -53,11 +67,11 @@ function draftFromState(state: EditorState): PromptDraft {
 	if (state.mode === "create" && state.seed) {
 		return state.seed;
 	}
-	return { title: "", body: "", tags: [], favorite: false };
+	return { title: "", body: "", folder: null, tags: [], favorite: false };
 }
 
 /**
- * Create/edit dialog upgraded from the bare Input+Textarea: mono body editor,
+ * Create/edit dialog: mono body editor, folder picker (existing or new),
  * tag combobox (chip add/remove), favorite toggle, and a live «Обнаруженные
  * переменные» readout parsed from the body so the user sees what fields a
  * consumer will be asked to fill.
@@ -65,6 +79,7 @@ function draftFromState(state: EditorState): PromptDraft {
 export function PromptEditorDialog({
 	state,
 	saving,
+	availableFolders,
 	onClose,
 	onSubmit,
 }: PromptEditorDialogProps) {
@@ -72,6 +87,9 @@ export function PromptEditorDialog({
 
 	const [title, setTitle] = useState("");
 	const [body, setBody] = useState("");
+	const [folder, setFolder] = useState<string | null>(null);
+	const [creatingFolder, setCreatingFolder] = useState(false);
+	const [newFolder, setNewFolder] = useState("");
 	const [tags, setTags] = useState<string[]>([]);
 	const [favorite, setFavorite] = useState(false);
 	const [tagInput, setTagInput] = useState("");
@@ -82,12 +100,40 @@ export function PromptEditorDialog({
 		const draft = draftFromState(state);
 		setTitle(draft.title);
 		setBody(draft.body);
+		setFolder(draft.folder);
+		setCreatingFolder(false);
+		setNewFolder("");
 		setTags(draft.tags);
 		setFavorite(draft.favorite);
 		setTagInput("");
 	}, [isOpen, state]);
 
 	const detectedVariables = useMemo(() => parseVariableNames(body), [body]);
+
+	const folderOptions = useMemo(() => {
+		const set = new Set(availableFolders);
+		if (folder) set.add(folder);
+		return Array.from(set).sort((a, b) =>
+			a.localeCompare(b, "ru", { sensitivity: "base" }),
+		);
+	}, [availableFolders, folder]);
+
+	const selectValue = creatingFolder
+		? NEW_FOLDER
+		: folder === null
+			? NO_FOLDER
+			: folder;
+
+	const handleFolderSelect = (value: string) => {
+		if (value === NEW_FOLDER) {
+			setCreatingFolder(true);
+			setFolder(null);
+			return;
+		}
+		setCreatingFolder(false);
+		setNewFolder("");
+		setFolder(value === NO_FOLDER ? null : value);
+	};
 
 	const commitTagInput = () => {
 		const next = normalizeTags([...tags, tagInput]);
@@ -104,10 +150,16 @@ export function PromptEditorDialog({
 			toast.error("Заполните название и текст промпта");
 			return;
 		}
+		const resolvedFolder = creatingFolder
+			? newFolder.trim().length > 0
+				? newFolder.trim()
+				: null
+			: folder;
 		onSubmit({
 			id: state.mode === "edit" ? state.prompt.id : undefined,
 			title: trimmedTitle,
 			body,
+			folder: resolvedFolder,
 			tags,
 			favorite,
 		});
@@ -151,6 +203,33 @@ export function PromptEditorDialog({
 								)}
 							/>
 						</Button>
+					</div>
+
+					<div className="flex items-center gap-2">
+						<Select value={selectValue} onValueChange={handleFolderSelect}>
+							<SelectTrigger className="flex-1" aria-label="Папка">
+								<SelectValue placeholder="Без папки" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={NO_FOLDER}>Без папки</SelectItem>
+								{folderOptions.map((name) => (
+									<SelectItem key={name} value={name}>
+										{name}
+									</SelectItem>
+								))}
+								<SelectItem value={NEW_FOLDER}>＋ Новая папка…</SelectItem>
+							</SelectContent>
+						</Select>
+						{creatingFolder && (
+							<Input
+								autoFocus
+								placeholder="Название папки"
+								value={newFolder}
+								onChange={(event) => setNewFolder(event.target.value)}
+								maxLength={120}
+								className="flex-1"
+							/>
+						)}
 					</div>
 
 					<Textarea

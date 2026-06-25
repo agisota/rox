@@ -1,3 +1,7 @@
+import type {
+	DraggableAttributes,
+	DraggableSyntheticListeners,
+} from "@dnd-kit/core";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
 import {
@@ -5,6 +9,9 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
 import { motionSpring, useShouldAnimate } from "@rox/ui/motion";
@@ -14,6 +21,9 @@ import { motion } from "framer-motion";
 import {
 	LuCopy,
 	LuEllipsisVertical,
+	LuFolder,
+	LuFolderInput,
+	LuGripVertical,
 	LuMessageSquarePlus,
 	LuPencil,
 	LuStar,
@@ -24,22 +34,33 @@ import type { PromptEntry } from "../../lib/types";
 
 export interface PromptCardProps {
 	prompt: PromptEntry;
+	availableFolders: string[];
 	onInsert: (prompt: PromptEntry) => void;
 	onCopy: (prompt: PromptEntry) => void;
 	onEdit: (prompt: PromptEntry) => void;
 	onDelete: (prompt: PromptEntry) => void;
 	onDuplicate: (prompt: PromptEntry) => void;
 	onToggleFavorite: (prompt: PromptEntry) => void;
+	onMoveToFolder: (prompt: PromptEntry, folder: string | null) => void;
+	/** dnd-kit drag-handle wiring (listeners + a11y attributes). */
+	dragHandleProps?: DraggableSyntheticListeners;
+	dragHandleAttributes?: DraggableAttributes;
+	isDragging?: boolean;
 }
 
 export function PromptCard({
 	prompt,
+	availableFolders,
 	onInsert,
 	onCopy,
 	onEdit,
 	onDelete,
 	onDuplicate,
 	onToggleFavorite,
+	onMoveToFolder,
+	dragHandleProps,
+	dragHandleAttributes,
+	isDragging,
 }: PromptCardProps) {
 	const animate = useShouldAnimate("essential");
 	const variableCount = prompt.variableNames.length;
@@ -50,10 +71,22 @@ export function PromptCard({
 				"group flex flex-col gap-2 rounded-lg border border-border bg-card p-4",
 				"transition-[border-color,box-shadow] hover:border-border/80 hover:shadow-sm",
 				"focus-within:border-border/80",
+				isDragging && "opacity-60 shadow-md",
 			)}
 		>
 			<div className="flex items-start justify-between gap-3">
-				<div className="flex min-w-0 flex-1 items-center gap-2">
+				<div className="flex min-w-0 flex-1 items-center gap-1.5">
+					{dragHandleProps && (
+						<button
+							type="button"
+							aria-label="Перетащить для сортировки"
+							className="shrink-0 cursor-grab touch-none rounded p-0.5 text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
+							{...dragHandleAttributes}
+							{...dragHandleProps}
+						>
+							<LuGripVertical className="size-4" />
+						</button>
+					)}
 					<FavoriteStar
 						active={prompt.favorite}
 						animate={animate}
@@ -95,6 +128,30 @@ export function PromptCard({
 							<DropdownMenuItem onClick={() => onDuplicate(prompt)}>
 								Дублировать
 							</DropdownMenuItem>
+							<DropdownMenuSub>
+								<DropdownMenuSubTrigger>
+									<LuFolderInput className="size-4" />В папку
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent>
+									<DropdownMenuItem
+										onClick={() => onMoveToFolder(prompt, null)}
+										disabled={prompt.folder === null}
+									>
+										Без папки
+									</DropdownMenuItem>
+									{availableFolders.length > 0 && <DropdownMenuSeparator />}
+									{availableFolders.map((folder) => (
+										<DropdownMenuItem
+											key={folder}
+											onClick={() => onMoveToFolder(prompt, folder)}
+											disabled={prompt.folder === folder}
+										>
+											<LuFolder className="size-4" />
+											{folder}
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuSubContent>
+							</DropdownMenuSub>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								variant="destructive"
@@ -112,8 +169,16 @@ export function PromptCard({
 				{prompt.body}
 			</p>
 
-			{(prompt.tags.length > 0 || variableCount > 0) && (
+			{(prompt.tags.length > 0 ||
+				variableCount > 0 ||
+				prompt.folder !== null) && (
 				<div className="flex flex-wrap items-center gap-1.5">
+					{prompt.folder !== null && (
+						<Badge variant="secondary" className="gap-1 font-normal">
+							<LuFolder className="size-3" />
+							{prompt.folder}
+						</Badge>
+					)}
 					{variableCount > 0 && (
 						<Badge variant="secondary" className="gap-1 font-mono">
 							<LuVariable className="size-3" />
