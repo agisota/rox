@@ -11,6 +11,19 @@
 /** Which transport a normalized inbox row originated from. */
 export type InboxSource = "chat" | "mail" | "system";
 
+/**
+ * The "go to source" target for a `source: "system"` row. A tagged union so the
+ * reader can dispatch the right primary action (open the PR in the browser,
+ * navigate to the workspace, open the automation, or reply to the agent)
+ * without parsing free-form strings. Platform-neutral: the renderer resolves
+ * each tag into a real `window.open(...)` / `navigate(...)` at the edge.
+ */
+export type SystemAction =
+	| { kind: "open-pr"; url: string }
+	| { kind: "open-workspace"; workspaceId: string }
+	| { kind: "open-automation"; automationId: string }
+	| { kind: "reply-agent"; workspaceId: string };
+
 /** Left-rail filter slice (a superset of {@link InboxSource} + triage views). */
 export type InboxFilter =
 	| "all"
@@ -41,6 +54,12 @@ export interface InboxItem {
 	timestamp: Date | null;
 	/** Caller's unread count for the thread (0 when read / unknown). */
 	unreadCount: number;
+	/**
+	 * Primary "go to source" action for a `source: "system"` row (PR / automation
+	 * / agent gate). Undefined for chat/mail rows, which route to their own
+	 * transport reader instead.
+	 */
+	systemAction?: SystemAction;
 }
 
 /** A snooze entry: a row hidden from the active stream until `until`. */

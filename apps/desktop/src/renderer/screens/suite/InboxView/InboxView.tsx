@@ -48,6 +48,7 @@ export function InboxView() {
 	const {
 		items,
 		totalUnread,
+		systemUnread,
 		isInitialLoading,
 		isError,
 		errorMessage,
@@ -147,6 +148,7 @@ export function InboxView() {
 						status={status}
 						onStatusChange={setStatus}
 						totalUnread={totalUnread}
+						systemUnread={systemUnread}
 					/>
 
 					<div className="flex min-h-0 flex-col">

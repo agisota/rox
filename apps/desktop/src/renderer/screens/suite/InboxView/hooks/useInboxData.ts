@@ -4,6 +4,7 @@ import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import type { InboxItem } from "../types";
 import { mergeInboxItems } from "../utils/normalizeInbox";
 import { sumThreadUnread } from "../utils/sumThreadUnread";
+import { useSystemEvents } from "./useSystemEvents";
 
 /**
  * The unified "All" stream backing the inbox list. Reads both transports
@@ -18,6 +19,8 @@ export interface UseInboxDataResult {
 	items: InboxItem[];
 	/** Total unread across all chat threads (drives the rail + sidebar badge). */
 	totalUnread: number;
+	/** Unread system events (drives the "Система" rail badge). */
+	systemUnread: number;
 	/** First-load (no cached rows in either transport yet). */
 	isInitialLoading: boolean;
 	/** Both transports resolved with zero rows. */
@@ -39,9 +42,11 @@ export function useInboxData(): UseInboxDataResult {
 	const chatThreads = chatQuery.data ?? [];
 	const mailThreads = mailQuery.data ?? [];
 
+	const { items: systemItems, unreadCount: systemUnread } = useSystemEvents();
+
 	const items = useMemo(
-		() => mergeInboxItems(chatThreads, mailThreads),
-		[chatThreads, mailThreads],
+		() => mergeInboxItems(chatThreads, mailThreads, systemItems),
+		[chatThreads, mailThreads, systemItems],
 	);
 
 	const totalUnread = useMemo(
@@ -64,6 +69,7 @@ export function useInboxData(): UseInboxDataResult {
 	return {
 		items,
 		totalUnread,
+		systemUnread,
 		isInitialLoading,
 		isEmpty,
 		isError,
