@@ -20,6 +20,7 @@ export const canvasNodeTypeSchema = z.enum([
 	"prompt",
 	"tool-call",
 	"canvas",
+	"freeform",
 ]);
 
 export const canvasNodeRefTypeSchema = z.enum([

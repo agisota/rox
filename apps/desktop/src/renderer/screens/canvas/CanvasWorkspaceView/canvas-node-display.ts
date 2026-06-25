@@ -105,6 +105,8 @@ function getNodeAccentClass(type: CanvasNode["type"]): string {
 		case "url":
 		case "canvas":
 			return "border-cyan-300/35 bg-cyan-950/35";
+		case "freeform":
+			return "border-orange-300/35 bg-orange-950/35";
 		case "text":
 			return "border-white/15 bg-slate-950/70";
 	}
