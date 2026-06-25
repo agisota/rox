@@ -1187,6 +1187,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
+        "@rox/mcp-v2": "workspace:*",
         "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "typescript": "6.0.3",

@@ -15,6 +15,7 @@ import {
 	makeGateHandler,
 	makeHttpHandler,
 	makeManualInputHandler,
+	makeMcpToolHandler,
 	makeMergeHandler,
 	makeModelHandler,
 	makeNotifyHandler,
@@ -22,6 +23,7 @@ import {
 	makeRagHandler,
 	makeStructuredExtractHandler,
 	makeSwitchHandler,
+	makeToolCallHandler,
 	makeTransformHandler,
 	makeVariableSetHandler,
 	makeWebSearchHandler,
@@ -30,6 +32,11 @@ import {
 import { makePipelineDbQuery, makePipelineDbWrite } from "./db-port";
 import { pipelineHttpRequest } from "./http-port";
 import {
+	type McpPortScope,
+	makePipelineMcpInvoke,
+	makePipelineToolInvoke,
+} from "./mcp-tool-port";
+import {
 	generatePipelineObject,
 	generatePipelineText,
 	pipelineEmbed,
@@ -37,6 +44,14 @@ import {
 import { pipelineNotify } from "./notify-port";
 import { makePipelineRetrieval, type RagPortScope } from "./rag-port";
 import { makePipelineWebSearch } from "./web-search-port";
+
+/**
+ * Tenant + actor scope a pipeline run threads into the handler factory. Extends
+ * the RAG/db org/project scope with the run's acting `userId` and `relayUrl`,
+ * which the MCP tool ports need to mint the org-scoped MCP context (the same
+ * JWT-mint the HTTP MCP route uses). `run-pipeline.ts` already has all three.
+ */
+export type PipelineHandlerScope = RagPortScope & McpPortScope;
 
 /**
  * Real LLM port for the `model` block: resolves provider credentials and runs a
@@ -155,10 +170,12 @@ const embed: EmbedPort = async (req) => {
  * TOOL NODES (#545): `web_search` is wired to a server-side provider port
  * (provider-abstraction in `web-search-port.ts`) — it self-reports a typed
  * `WEB_SEARCH_NOT_CONFIGURED` error when no provider key is set, so it is always
- * registered. `tool_call` and `mcp_tool` ship pure handlers + fake-port tests but
- * their real impure ports need an `McpContext` (bearer/userId/requestId) that a
- * pipeline run's `scope` does not carry; wiring them is a `run-pipeline` seam
- * follow-up, so both pass through unchanged until then.
+ * registered. `tool_call` and `mcp_tool` are wired to Rox's existing MCP layer
+ * (`@rox/mcp-v2` `AgentSourcePool`) via `mcp-tool-port.ts`: the port mints the
+ * org-scoped MCP context from the run's `userId`/org (the same JWT-mint the HTTP
+ * MCP route uses), connects the org's active MCP sources, and dispatches the
+ * call. Both are gated on `scope` because that context is org+actor bound — like
+ * the db/RAG nodes — so without a tenancy they fall back to pass-through.
  *
  * AI NODES (#548): classifier / structured_extract / embedding reuse the server
  * LLM/embedding provider (env credentials), so they need no tenancy scope and
@@ -166,7 +183,7 @@ const embed: EmbedPort = async (req) => {
  * are configured.
  */
 export function buildPipelineHandlers(
-	scope?: RagPortScope,
+	scope?: PipelineHandlerScope,
 ): Record<string, BlockHandler> {
 	const handlers: Record<string, BlockHandler> = {
 		model: makeModelHandler(modelGenerate),
@@ -213,6 +230,14 @@ export function buildPipelineHandlers(
 		// back to pass-through rather than running unscoped against the DB.
 		handlers.db_query = makeDbQueryHandler(makePipelineDbQuery(scope));
 		handlers.db_write = makeDbWriteHandler(makePipelineDbWrite(scope));
+		// Tool nodes (#545) reuse Rox's existing MCP layer (`@rox/mcp-v2`
+		// AgentSourcePool). `tool_call` resolves a tool by name across the org's
+		// connected MCP sources; `mcp_tool` calls the named tool on the bound source
+		// (slug). Both mint the org-scoped MCP context from `scope.userId`/org, so
+		// they are gated on `scope` like the db/RAG nodes — a node can never reach
+		// another organization's sources.
+		handlers.tool_call = makeToolCallHandler(makePipelineToolInvoke(scope));
+		handlers.mcp_tool = makeMcpToolHandler(makePipelineMcpInvoke(scope));
 	}
 	return handlers;
 }

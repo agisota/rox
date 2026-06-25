@@ -155,6 +155,10 @@ export async function runPipeline(
 		handlers: buildPipelineHandlers({
 			organizationId: args.organizationId,
 			v2ProjectId: args.pipeline.v2ProjectId ?? null,
+			// Actor + relay scope for the tool nodes (#545): the MCP ports mint the
+			// org-scoped MCP context from these (same JWT-mint as the HTTP MCP route).
+			userId: args.userId,
+			relayUrl: env.RELAY_URL,
 		}),
 		// Pipelines have no published output schema; the executor skips output
 		// validation when omitted.
