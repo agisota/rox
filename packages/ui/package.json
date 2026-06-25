@@ -17,6 +17,7 @@
 		"./quote-screen": "./src/components/QuoteScreen/index.ts",
 		"./wallpaper-layer": "./src/components/WallpaperLayer/index.ts",
 		"./presence-stack": "./src/components/PresenceStack/index.ts",
+		"./shell-sidebar-region": "./src/components/ShellSidebarRegion/index.ts",
 		"./tag-filter-pill-bar": "./src/components/TagFilterPillBar/index.ts",
 		"./faceted-search-results": "./src/components/FacetedSearchResults/index.ts",
 		"./room-visibility-badge": "./src/components/RoomVisibilityBadge/index.ts",

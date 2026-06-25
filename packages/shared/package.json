@@ -327,6 +327,10 @@
 		"./zen-mode": {
 			"types": "./src/zen-mode.ts",
 			"default": "./src/zen-mode.ts"
+		},
+		"./breakpoints": {
+			"types": "./src/breakpoints.ts",
+			"default": "./src/breakpoints.ts"
 		}
 	},
 	"scripts": {
