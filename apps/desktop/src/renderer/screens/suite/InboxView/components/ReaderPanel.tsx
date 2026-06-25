@@ -7,6 +7,7 @@ import {
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
 import { cn } from "@rox/ui/utils";
+import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
 	Archive,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import type { RefObject } from "react";
 import type { InboxItem } from "../types";
+import { openSystemSource } from "../utils/openSystemSource";
 import { ChatThreadReader } from "./ChatThreadReader";
 import { GLASS_PANEL } from "./glass";
 import { MailThreadReader } from "./MailThreadReader";
@@ -50,6 +52,7 @@ export function ReaderPanel({
 	onDone,
 }: ReaderPanelProps) {
 	const reduceMotion = useReducedMotion();
+	const navigate = useNavigate();
 
 	if (!item) {
 		return (
@@ -105,10 +108,15 @@ export function ReaderPanel({
 						<DropdownMenuItem onSelect={() => onDone(item)}>
 							<CheckCheck className="size-4" /> Готово
 						</DropdownMenuItem>
-						{item.source === "system" && (
+						{item.source === "system" && item.systemAction && (
 							<>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem onSelect={onClose}>
+								<DropdownMenuItem
+									onSelect={() => {
+										if (item.systemAction)
+											openSystemSource(item.systemAction, navigate);
+									}}
+								>
 									<ExternalLink className="size-4" /> Открыть источник
 								</DropdownMenuItem>
 							</>

@@ -66,14 +66,19 @@ export function normalizeMailThread(row: MailThreadRow): InboxItem {
 }
 
 /**
- * Merge + sort + dedupe the two transports into the unified stream. Rows are
+ * Merge + sort + dedupe the transports into the unified stream. Rows are
  * sorted newest-first by `timestamp` (nulls last) and de-duplicated by `key`
  * (`${source}:${threadId}`) so a transport that double-reports a thread never
  * yields two rows.
+ *
+ * `system` rows are pre-normalized {@link InboxItem}s (produced by
+ * `mergeSystemEvents`), so the system aggregator owns its own dedupe/sort and we
+ * only fold them into the unified key map here.
  */
 export function mergeInboxItems(
 	chat: readonly ChatThreadRow[],
 	mail: readonly MailThreadRow[],
+	system: readonly InboxItem[] = [],
 ): InboxItem[] {
 	const byKey = new Map<string, InboxItem>();
 	for (const row of chat) {
@@ -82,6 +87,9 @@ export function mergeInboxItems(
 	}
 	for (const row of mail) {
 		const item = normalizeMailThread(row);
+		byKey.set(item.key, item);
+	}
+	for (const item of system) {
 		byKey.set(item.key, item);
 	}
 	return [...byKey.values()].sort((a, b) => {

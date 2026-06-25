@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { InboxItem } from "../types";
 import {
 	type ChatThreadRow,
 	type MailThreadRow,
@@ -76,5 +77,39 @@ describe("mergeInboxItems", () => {
 			[mail({ id: "dated", lastMessageAt: new Date("2026-06-24T00:00:00Z") })],
 		);
 		expect(items.map((i) => i.key)).toEqual(["mail:dated", "chat:null-ts"]);
+	});
+
+	it("folds pre-normalized system rows into the unified stream", () => {
+		const system: InboxItem[] = [
+			{
+				key: "system:pr:1",
+				source: "system",
+				threadId: "pr:1",
+				title: "PR #1",
+				preview: "Ожидает ревью",
+				timestamp: new Date("2026-06-24T12:00:00Z"),
+				unreadCount: 1,
+				systemAction: { kind: "open-pr", url: "https://example.test/pr/1" },
+			},
+		];
+		const items = mergeInboxItems(
+			[chat({ id: "c", lastMessageAt: new Date("2026-06-24T01:00:00Z") })],
+			[mail({ id: "m", lastMessageAt: new Date("2026-06-24T02:00:00Z") })],
+			system,
+		);
+		expect(items.map((i) => i.key)).toEqual([
+			"system:pr:1",
+			"mail:m",
+			"chat:c",
+		]);
+		expect(items[0]?.systemAction).toEqual({
+			kind: "open-pr",
+			url: "https://example.test/pr/1",
+		});
+	});
+
+	it("defaults the system arg to empty (chat+mail only)", () => {
+		const items = mergeInboxItems([chat({ id: "c" })], [mail({ id: "m" })]);
+		expect(items).toHaveLength(2);
 	});
 });
