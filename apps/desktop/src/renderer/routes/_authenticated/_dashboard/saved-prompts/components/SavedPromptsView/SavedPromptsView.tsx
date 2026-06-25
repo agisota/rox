@@ -165,8 +165,8 @@ export function SavedPromptsView() {
 
 	// ── Insert / copy with variable handling ─────────────────────────────────
 	const finishInsert = useCallback(
-		(prompt: PromptEntry, text: string) => {
-			const outcome = insert(text);
+		(prompt: PromptEntry, text: string, cursor: number | null = null) => {
+			const outcome = insert({ text, cursor });
 			incrementUse(prompt);
 			if (outcome.mode === "in-place") {
 				toast.success("Промпт вставлен");
@@ -193,7 +193,8 @@ export function SavedPromptsView() {
 				setFillTarget({ prompt, action: "insert" });
 				return;
 			}
-			finishInsert(prompt, renderPrompt(prompt.body, {}).text);
+			const { text, cursor } = renderPrompt(prompt.body, {});
+			finishInsert(prompt, text, cursor);
 		},
 		[finishInsert],
 	);
@@ -214,10 +215,11 @@ export function SavedPromptsView() {
 			target: VariableFillTarget,
 			renderedText: string,
 			values: Record<string, string>,
+			cursor: number | null,
 		) => {
 			variableCache.write(target.prompt.id, values);
 			if (target.action === "insert") {
-				finishInsert(target.prompt, renderedText);
+				finishInsert(target.prompt, renderedText, cursor);
 			} else {
 				finishCopy(target.prompt, renderedText);
 			}

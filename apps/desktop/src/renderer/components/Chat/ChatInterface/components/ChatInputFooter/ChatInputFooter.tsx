@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusPromptOnPane } from "renderer/components/Chat/ChatInterface/hooks/useFocusPromptOnPane";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { useComposerInsertTarget } from "renderer/routes/_authenticated/_dashboard/saved-prompts/lib/use-insert-prompt";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import type { SlashCommand } from "../../hooks/useSlashCommands";
 import type { ModelOption, PermissionMode } from "../../types";
@@ -91,6 +92,11 @@ export function ChatInputFooter({
 	onQuestionCancel,
 }: ChatInputFooterProps) {
 	useFocusPromptOnPane(isFocused);
+
+	// Subscribe to the saved-prompts insert seam so "Сохранённые промпты" can
+	// deliver a prompt straight into this live composer (and so the inserter
+	// knows an in-place target exists while this composer is mounted).
+	useComposerInsertTarget();
 
 	// Focus the prompt when the question overlay dismisses (pendingQuestion → null).
 	// Uses rAF so the editor has time to mount, register its ref, and browser

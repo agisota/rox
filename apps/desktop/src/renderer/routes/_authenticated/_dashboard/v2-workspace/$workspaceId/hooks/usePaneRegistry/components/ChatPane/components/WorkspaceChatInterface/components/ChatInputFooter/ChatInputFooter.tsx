@@ -20,6 +20,7 @@ import type {
 	PermissionMode,
 } from "renderer/components/Chat/ChatInterface/types";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { useComposerInsertTarget } from "renderer/routes/_authenticated/_dashboard/saved-prompts/lib/use-insert-prompt";
 import { ChatComposerControls } from "./components/ChatComposerControls";
 import { ChatInputDropZone } from "./components/ChatInputDropZone";
 import { ChatShortcuts } from "./components/ChatShortcuts";
@@ -94,6 +95,11 @@ export function ChatInputFooter({
 	onQuestionCancel,
 }: ChatInputFooterProps) {
 	useFocusPromptOnPane(isFocused);
+
+	// Subscribe to the saved-prompts insert seam so "Сохранённые промпты" can
+	// deliver a prompt straight into this live composer (and so the inserter
+	// knows an in-place target exists while this pane is mounted).
+	useComposerInsertTarget();
 
 	// Re-focus the editor when the question overlay dismisses.
 	const { textInput } = usePromptInputController();
