@@ -13,7 +13,7 @@ export function ThinkingMessage() {
 						isShimmering={shouldAnimate}
 						duration={2.4}
 					>
-						Thinking
+						Думаю…
 					</ShimmerLabel>
 					<ThinkingDots className="text-sm text-muted-foreground" />
 				</span>

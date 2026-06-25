@@ -243,6 +243,22 @@ export const createFileViewerPane = (
 	};
 };
 
+/**
+ * Default display name for a freshly created chat pane/tab.
+ * Also used as a sentinel to detect an untitled chat that may receive an
+ * auto-generated title. The legacy English value ("New Chat") may still be
+ * present in persisted state, so comparisons should treat it as equivalent.
+ */
+export const NEW_CHAT_NAME = "Новый чат";
+export const LEGACY_NEW_CHAT_NAME = "New Chat";
+
+/**
+ * Returns true when a pane/tab name is the default "new chat" name,
+ * accounting for the legacy English value persisted before localization.
+ */
+export const isNewChatName = (name: string | undefined | null): boolean =>
+	name === NEW_CHAT_NAME || name === LEGACY_NEW_CHAT_NAME;
+
 export const createChatPane = (
 	tabId: string,
 	options?: AddChatTabOptions,
@@ -254,7 +270,7 @@ export const createChatPane = (
 		id,
 		tabId,
 		type: "chat",
-		name: "New Chat",
+		name: NEW_CHAT_NAME,
 		chat: {
 			sessionId,
 			launchConfig: options?.launchConfig ?? null,
@@ -350,7 +366,7 @@ export const createChatTabWithPane = (
 
 	const tab: Tab = {
 		id: tabId,
-		name: "New Chat",
+		name: NEW_CHAT_NAME,
 		workspaceId,
 		layout: pane.id,
 		createdAt: Date.now(),

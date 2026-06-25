@@ -12,6 +12,7 @@ import {
 	HiMiniChevronDown,
 	HiMiniPlus,
 } from "react-icons/hi2";
+import { isNewChatName, NEW_CHAT_NAME } from "renderer/stores/tabs/utils";
 import { getRelativeTime } from "../../../../../../../WorkspacesListView/utils";
 import { SessionSelectorItem } from "./components/SessionSelectorItem";
 
@@ -113,11 +114,11 @@ export function SessionSelector({
 		(session) => session.sessionId === currentSessionId,
 	);
 	const resolvedFallbackTitle =
-		fallbackTitle && fallbackTitle !== "New Chat" ? fallbackTitle : null;
+		fallbackTitle && !isNewChatName(fallbackTitle) ? fallbackTitle : null;
 	const currentTitle =
 		current?.title ||
 		resolvedFallbackTitle ||
-		(isSessionInitializing ? "Creating Chat" : "New Chat");
+		(isSessionInitializing ? "Создаём чат" : NEW_CHAT_NAME);
 
 	return (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -174,14 +175,14 @@ export function SessionSelector({
 										className="w-full rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 										onClick={loadMoreSessions}
 									>
-										Show more sessions
+										Показать ещё
 									</button>
 								</div>
 							)}
 						</>
 					) : (
 						<div className="px-2 py-1.5 text-xs text-muted-foreground">
-							No sessions yet
+							Пока нет сессий
 						</div>
 					)}
 				</div>
