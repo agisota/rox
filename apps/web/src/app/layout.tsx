@@ -31,11 +31,15 @@ export const metadata: Metadata = {
 	},
 };
 
+// Static SSR / first-paint fallback only (F06). Once the client mounts,
+// `AppearanceProvider` drives a dynamic `<meta name="theme-color">` from the
+// resolved theme/skin + workspace accent (F09), so the OS chrome tracks runtime
+// theme changes. Dark first to match the forced-dark first paint.
 export const viewport: Viewport = {
 	viewportFit: "cover",
 	themeColor: [
-		{ media: "(prefers-color-scheme: light)", color: "white" },
 		{ media: "(prefers-color-scheme: dark)", color: "black" },
+		{ media: "(prefers-color-scheme: light)", color: "white" },
 	],
 };
 
