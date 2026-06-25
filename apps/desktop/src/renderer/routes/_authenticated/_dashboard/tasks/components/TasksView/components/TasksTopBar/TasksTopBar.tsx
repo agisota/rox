@@ -183,6 +183,7 @@ export function TasksTopBar({
 					{showTaskOnlyControls && (
 						<>
 							<Button
+								data-onboarding-anchor="tasks-create"
 								variant="outline"
 								size="sm"
 								className="h-8 gap-1.5 px-3"

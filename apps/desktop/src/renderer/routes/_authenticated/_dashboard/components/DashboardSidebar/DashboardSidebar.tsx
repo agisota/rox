@@ -311,13 +311,18 @@ export function DashboardSidebar({
 								isCollapsed={isCollapsed}
 								onClick={() => navigate({ to: "/journal" })}
 							/>
-							<DashboardSidebarNavButton
-								label="Память"
-								icon={HiOutlineSparkles}
-								isActive={isMemoryOpen}
-								isCollapsed={isCollapsed}
-								onClick={() => navigate({ to: "/memory" })}
-							/>
+							<div
+								data-onboarding-anchor="nav-memory"
+								className={isCollapsed ? undefined : "w-full"}
+							>
+								<DashboardSidebarNavButton
+									label="Память"
+									icon={HiOutlineSparkles}
+									isActive={isMemoryOpen}
+									isCollapsed={isCollapsed}
+									onClick={() => navigate({ to: "/memory" })}
+								/>
+							</div>
 							<DashboardSidebarNavButton
 								label="Входящие"
 								icon={HiOutlineInbox}
@@ -368,6 +373,7 @@ export function DashboardSidebar({
 									<TooltipTrigger asChild>
 										<button
 											type="button"
+											data-onboarding-anchor="nav-settings"
 											aria-label="Настройки"
 											onClick={() => navigate({ to: "/settings/account" })}
 											className={cn(
@@ -385,6 +391,7 @@ export function DashboardSidebar({
 							) : (
 								<button
 									type="button"
+									data-onboarding-anchor="nav-settings"
 									onClick={() => navigate({ to: "/settings/account" })}
 									className={cn(
 										"group flex flex-1 min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",

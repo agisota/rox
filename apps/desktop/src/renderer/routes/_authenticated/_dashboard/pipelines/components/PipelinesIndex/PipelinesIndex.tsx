@@ -132,7 +132,10 @@ export function PipelinesIndex() {
 							</div>
 							<div className="flex flex-col gap-2">
 								<Label>Шаблон</Label>
-								<div className="grid gap-2">
+								<div
+									data-onboarding-anchor="pipeline-template"
+									className="grid gap-2"
+								>
 									{PIPELINE_TEMPLATES.map((template) => (
 										<button
 											key={template.id}
