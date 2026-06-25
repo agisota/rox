@@ -1,6 +1,6 @@
 /**
  * Zod inputs + pure helpers for the org chat-label registry (Hermes-borrow F11)
- * and the label filters on `chat.listSessions` (F10/F17).
+ * and the boolean label filters on `chat.listSessions` (F10/F17).
  *
  * A *chat label* is org-scoped presentation (colour + optional icon) keyed by
  * name; the label-to-session membership stays in `chat_sessions.labels` (a
@@ -12,6 +12,7 @@
  * persona/org (who/where) axis.
  */
 
+import { chatSessionStatusEnum } from "@rox/db/enums";
 import { identityGlyph } from "@rox/shared/identity-glyph";
 import { type Column, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -58,13 +59,18 @@ const labelFilterList = z.array(labelNameSchema).min(1);
 /**
  * Inputs for `chat.listSessions`. All optional and absent by default, so an
  * empty/absent input is byte-for-byte the previous behaviour (backward
- * compatible). `labelsAll` = session has *every* listed label; `labelsAny` =
- * session has *at least one*.
+ * compatible). The three boolean label axes AND-compose (F17):
+ *   - `labelsAll`  = session has *every* listed label (AND).
+ *   - `labelsAny`  = session has *at least one* listed label (OR).
+ *   - `labelsNone` = session has *none* of the listed labels (NOT).
+ * `status` further constrains the lifecycle facet (active|archived).
  */
 export const listSessionsSchema = z
 	.object({
 		labelsAny: labelFilterList.optional(),
 		labelsAll: labelFilterList.optional(),
+		labelsNone: labelFilterList.optional(),
+		status: chatSessionStatusEnum.optional(),
 	})
 	.optional();
 
@@ -89,6 +95,11 @@ export function defaultLabelColor(name: string): string {
  *   - `labelsAll` → `labels @> '["a","b"]'::jsonb` (contains ALL listed names).
  *   - `labelsAny` → OR of single-element containments (contains ANY listed name),
  *     since `@>` alone is all-or-nothing.
+ *   - `labelsNone` → NOT of an ANY-containment (F17 boolean NOT): session has
+ *     *none* of the listed names. `NOT (labels @> '["a"]' OR labels @> '["b"]')`.
+ *
+ * The three axes AND-compose: a session must match ALL of `labelsAll`, AT LEAST
+ * ONE of `labelsAny`, and NONE of `labelsNone` (any subset may be absent).
  *
  * Pure: takes the column + parsed names, returns SQL; no DB access.
  */
@@ -96,8 +107,9 @@ export function buildLabelFilterConditions(params: {
 	labelsColumn: Column;
 	labelsAny?: readonly string[];
 	labelsAll?: readonly string[];
+	labelsNone?: readonly string[];
 }): SQL[] {
-	const { labelsColumn, labelsAny, labelsAll } = params;
+	const { labelsColumn, labelsAny, labelsAll, labelsNone } = params;
 	const conditions: SQL[] = [];
 
 	if (labelsAll && labelsAll.length > 0) {
@@ -113,6 +125,15 @@ export function buildLabelFilterConditions(params: {
 		// OR the single-element containments together, wrapped in parens so it
 		// AND-composes safely with the surrounding session/org predicates.
 		conditions.push(sql`(${sql.join(anyClauses, sql` OR `)})`);
+	}
+
+	if (labelsNone && labelsNone.length > 0) {
+		const noneClauses = labelsNone.map(
+			(name) => sql`${labelsColumn} @> ${JSON.stringify([name])}::jsonb`,
+		);
+		// Exclude sessions that contain ANY of the listed names — the boolean NOT
+		// axis. `NOT (... OR ...)` keeps rows with none of the names.
+		conditions.push(sql`NOT (${sql.join(noneClauses, sql` OR `)})`);
 	}
 
 	return conditions;

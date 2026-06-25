@@ -107,18 +107,27 @@ describe("listSessionsSchema (label filters)", () => {
 		expect(listSessionsSchema.parse({})).toEqual({});
 	});
 
-	test("accepts labelsAny / labelsAll arrays", () => {
+	test("accepts labelsAny / labelsAll / labelsNone arrays + status (F17)", () => {
 		const parsed = listSessionsSchema.parse({
 			labelsAny: ["a", "b"],
 			labelsAll: ["c"],
+			labelsNone: ["d"],
+			status: "archived",
 		});
 		expect(parsed?.labelsAny).toEqual(["a", "b"]);
 		expect(parsed?.labelsAll).toEqual(["c"]);
+		expect(parsed?.labelsNone).toEqual(["d"]);
+		expect(parsed?.status).toBe("archived");
+	});
+
+	test("rejects an unknown status", () => {
+		expect(() => listSessionsSchema.parse({ status: "deleted" })).toThrow();
 	});
 
 	test("rejects an empty filter array (min 1)", () => {
 		expect(() => listSessionsSchema.parse({ labelsAny: [] })).toThrow();
 		expect(() => listSessionsSchema.parse({ labelsAll: [] })).toThrow();
+		expect(() => listSessionsSchema.parse({ labelsNone: [] })).toThrow();
 	});
 
 	test("rejects empty names inside a filter array", () => {
@@ -173,13 +182,29 @@ describe("buildLabelFilterConditions (jsonb @> builder)", () => {
 		expect(params).toContain(JSON.stringify(["c"]));
 	});
 
-	test("labelsAny + labelsAll → two conditions (AND-composed by caller)", () => {
+	test("labelsNone → NOT of OR-ed containments (F17 boolean NOT)", () => {
+		const conditions = buildLabelFilterConditions({
+			labelsColumn: col,
+			labelsNone: ["spam", "archived"],
+		});
+		expect(conditions).toHaveLength(1);
+		const first = conditions[0];
+		if (!first) throw new Error("expected one condition");
+		const { sql, params } = render(first);
+		expect(sql.startsWith("NOT (")).toBe(true);
+		expect(sql.match(/ OR /g)).toHaveLength(1);
+		expect(params).toContain(JSON.stringify(["spam"]));
+		expect(params).toContain(JSON.stringify(["archived"]));
+	});
+
+	test("labelsAny + labelsAll + labelsNone → three conditions (AND-composed)", () => {
 		const conditions = buildLabelFilterConditions({
 			labelsColumn: col,
 			labelsAny: ["a"],
 			labelsAll: ["b"],
+			labelsNone: ["c"],
 		});
-		expect(conditions).toHaveLength(2);
+		expect(conditions).toHaveLength(3);
 	});
 
 	test("binds names as parameters (no string interpolation / injection surface)", () => {
