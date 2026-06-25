@@ -299,6 +299,10 @@
 		"./identity-glyph": {
 			"types": "./src/identity-glyph.ts",
 			"default": "./src/identity-glyph.ts"
+		},
+		"./context-usage": {
+			"types": "./src/context-usage.ts",
+			"default": "./src/context-usage.ts"
 		}
 	},
 	"scripts": {

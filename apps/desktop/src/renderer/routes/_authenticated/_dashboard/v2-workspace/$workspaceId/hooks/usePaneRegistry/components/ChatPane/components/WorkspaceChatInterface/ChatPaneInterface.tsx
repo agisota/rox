@@ -1,6 +1,10 @@
 import { chatServiceTrpc } from "@rox/chat/client";
 import type { AppRouter } from "@rox/host-service";
 import {
+	extractTextsFromParts,
+	selectContextUsage,
+} from "@rox/shared/context-usage";
+import {
 	PromptInputAttachment,
 	type PromptInputMessage,
 	PromptInputProvider,
@@ -634,6 +638,20 @@ export function ChatPaneInterface({
 		});
 	}, [isAwaitingAssistant, messages, pendingUserTurn]);
 
+	// F42: live context-usage ring. Estimated from displayed conversation text via
+	// the shared cross-platform selector so every surface agrees for the same
+	// conversation + model; the window comes from the active model.
+	const contextUsage = useMemo(
+		() =>
+			selectContextUsage(
+				visibleMessages.flatMap((message) =>
+					extractTextsFromParts(message.content),
+				),
+				activeModel?.id,
+			),
+		[visibleMessages, activeModel?.id],
+	);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: sessionId resets the copied share state between sessions
 	useEffect(() => {
 		setLastSharedConversationUrl(null);
@@ -1209,6 +1227,8 @@ export function ChatPaneInterface({
 					thinkingLevel={thinkingLevel}
 					setThinkingLevel={setThinkingLevel}
 					slashCommands={slashCommands}
+					usedTokens={contextUsage.usedTokens}
+					maxTokens={contextUsage.maxTokens}
 					sessionId={sessionId}
 					workspaceId={workspaceId}
 					onError={setRuntimeErrorMessage}

@@ -35,6 +35,11 @@ type PreviewPromptComposerProps = {
 	onSubmit?: (message: PromptInputMessage) => void;
 	/** Extra footer controls rendered left of submit (e.g. a mic button). */
 	footerExtras?: ReactNode;
+	/**
+	 * Context-usage ring rendered in the left tools cluster, after `footerTools`
+	 * (F42). A `ReactNode` so the caller owns the live token inputs.
+	 */
+	contextRing?: ReactNode;
 	/** Submit busy/disabled state for the interactive mode. */
 	submitDisabled?: boolean;
 };
@@ -51,6 +56,7 @@ export function PreviewPromptComposer({
 	messageClassName,
 	onSubmit,
 	footerExtras,
+	contextRing,
 	submitDisabled,
 }: PreviewPromptComposerProps) {
 	const interactive = typeof onSubmit === "function";
@@ -77,6 +83,7 @@ export function PreviewPromptComposer({
 				<PromptInputFooter>
 					<PromptInputTools className={cn(footerToolsClassName)}>
 						{footerTools}
+						{contextRing}
 					</PromptInputTools>
 					<div className="flex items-center gap-2">
 						<PlusMenu disabled={!interactive} />

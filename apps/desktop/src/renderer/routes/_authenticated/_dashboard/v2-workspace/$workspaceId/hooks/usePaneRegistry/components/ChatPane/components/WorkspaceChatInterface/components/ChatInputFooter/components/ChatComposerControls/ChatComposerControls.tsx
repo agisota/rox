@@ -1,3 +1,4 @@
+import { ComposerContextRing } from "@rox/ui/ai-elements/composer-context-ring";
 import {
 	PromptInputFooter,
 	PromptInputSubmit,
@@ -34,6 +35,10 @@ interface ChatComposerControlsProps {
 	submitStatus?: ChatStatus;
 	submitDisabled?: boolean;
 	onStop: (event: React.MouseEvent) => void;
+	/** Estimated tokens currently in the conversation context window (F42 ring). */
+	usedTokens?: number;
+	/** Selected model's context window in tokens (F42 ring). */
+	maxTokens?: number;
 }
 
 export function ChatComposerControls({
@@ -50,6 +55,8 @@ export function ChatComposerControls({
 	submitStatus,
 	submitDisabled,
 	onStop,
+	usedTokens,
+	maxTokens,
 }: ChatComposerControlsProps) {
 	return (
 		<PromptInputFooter>
@@ -70,6 +77,14 @@ export function ChatComposerControls({
 					onLevelChange={setThinkingLevel}
 					className={PILL_BUTTON_CLASS}
 				/>
+				{maxTokens && maxTokens > 0 ? (
+					<ComposerContextRing
+						className={PILL_BUTTON_CLASS}
+						maxTokens={maxTokens}
+						modelId={selectedModel?.id}
+						usedTokens={usedTokens ?? 0}
+					/>
+				) : null}
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />
