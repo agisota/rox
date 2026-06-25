@@ -193,6 +193,30 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "low",
 	}),
+	defineBlock("embedding", {
+		label: "Embedding",
+		description:
+			"Embeds the input text into a fixed-dimension vector via the project's embedding provider; returns the vector + its dimensions.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("classifier", {
+		label: "Classifier",
+		description:
+			"Zero-shot LLM classification of the input text into one of the configured labels; returns the chosen label + score and routes by class.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("structured_extract", {
+		label: "Structured Extract",
+		description:
+			"LLM call with forced JSON output validated against the configured JSON schema; valid data goes to `out`, schema violations route to `error`.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
