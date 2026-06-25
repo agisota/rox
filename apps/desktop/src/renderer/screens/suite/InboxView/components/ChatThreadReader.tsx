@@ -1,5 +1,22 @@
 import { authClient } from "@rox/auth/client";
+import {
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@rox/ui/alert-dialog";
 import { Button } from "@rox/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@rox/ui/dialog";
+import { Label } from "@rox/ui/label";
 import { ScrollArea } from "@rox/ui/scroll-area";
 import { Skeleton } from "@rox/ui/skeleton";
 import { toast } from "@rox/ui/sonner";
@@ -48,6 +65,14 @@ export function ChatThreadReader({
 	const currentUserId = session.data?.user?.id;
 
 	const [body, setBody] = useState("");
+
+	// In-app dialog state replacing the native window.prompt / window.confirm:
+	// `editing` holds the message under edit (with its draft body); `deletingId`
+	// holds the id pending delete confirmation. Both close via setting to null.
+	const [editing, setEditing] = useState<{ id: string; draft: string } | null>(
+		null,
+	);
+	const [deletingId, setDeletingId] = useState<string | null>(null);
 
 	const setTypingRef = useRef<(typing: boolean) => void>(() => {});
 	const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -123,7 +148,10 @@ export function ChatThreadReader({
 
 	const editMessage = useMutation(
 		trpc.comms.editMessage.mutationOptions({
-			onSuccess: () => invalidate(),
+			onSuccess: async () => {
+				setEditing(null);
+				await invalidate();
+			},
 			onError: (error) => {
 				logger.error("[InboxView] editMessage failed", error);
 				toast.error("Не удалось изменить сообщение");
@@ -132,7 +160,10 @@ export function ChatThreadReader({
 	);
 	const deleteMessage = useMutation(
 		trpc.comms.deleteMessage.mutationOptions({
-			onSuccess: () => invalidate(),
+			onSuccess: async () => {
+				setDeletingId(null);
+				await invalidate();
+			},
 			onError: (error) => {
 				logger.error("[InboxView] deleteMessage failed", error);
 				toast.error("Не удалось удалить сообщение");
@@ -161,16 +192,24 @@ export function ChatThreadReader({
 		}
 	}, [threadId, lastMessageId]);
 
-	const handleEditMessage = (id: string, currentBody: string) => {
-		const next = window.prompt("Изменить сообщение", currentBody);
-		if (next === null) return;
-		const trimmed = next.trim();
-		if (trimmed.length === 0 || trimmed === currentBody) return;
-		editMessage.mutate({ messageId: id, body: trimmed });
+	const openEditDialog = (id: string, currentBody: string) => {
+		setEditing({ id, draft: currentBody });
 	};
-	const handleDeleteMessage = (id: string) => {
-		if (!window.confirm("Удалить это сообщение?")) return;
-		deleteMessage.mutate({ messageId: id });
+	const submitEdit = () => {
+		if (!editing) return;
+		const trimmed = editing.draft.trim();
+		if (trimmed.length === 0) return;
+		// No-op edits just close the dialog; nothing to persist.
+		const original = messages.find((m) => m.id === editing.id)?.body;
+		if (trimmed === original) {
+			setEditing(null);
+			return;
+		}
+		editMessage.mutate({ messageId: editing.id, body: trimmed });
+	};
+	const confirmDelete = () => {
+		if (!deletingId) return;
+		deleteMessage.mutate({ messageId: deletingId });
 	};
 
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -245,7 +284,7 @@ export function ChatThreadReader({
 														className="size-6"
 														aria-label="Изменить"
 														onClick={() =>
-															handleEditMessage(message.id, message.body)
+															openEditDialog(message.id, message.body)
 														}
 													>
 														<Pencil className="size-3.5" />
@@ -256,7 +295,7 @@ export function ChatThreadReader({
 														variant="ghost"
 														className="size-6"
 														aria-label="Удалить"
-														onClick={() => handleDeleteMessage(message.id)}
+														onClick={() => setDeletingId(message.id)}
 													>
 														<Trash2 className="size-3.5" />
 													</Button>
@@ -327,6 +366,93 @@ export function ChatThreadReader({
 					</Button>
 				</div>
 			</div>
+
+			<Dialog
+				open={editing !== null}
+				onOpenChange={(next) => {
+					if (!next) setEditing(null);
+				}}
+			>
+				<DialogContent className="max-w-[420px]">
+					<DialogHeader>
+						<DialogTitle>Изменить сообщение</DialogTitle>
+						<DialogDescription>
+							Отредактируйте текст и сохраните изменения.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex flex-col gap-1.5">
+						<Label htmlFor="inbox-edit-body">Сообщение</Label>
+						<Textarea
+							id="inbox-edit-body"
+							value={editing?.draft ?? ""}
+							onChange={(e) =>
+								setEditing((prev) =>
+									prev ? { ...prev, draft: e.target.value } : prev,
+								)
+							}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+									e.preventDefault();
+									submitEdit();
+								}
+							}}
+							rows={4}
+							className="resize-none"
+						/>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => setEditing(null)}
+							disabled={editMessage.isPending}
+						>
+							Отмена
+						</Button>
+						<Button
+							onClick={submitEdit}
+							disabled={
+								editMessage.isPending ||
+								(editing?.draft.trim().length ?? 0) === 0
+							}
+						>
+							{editMessage.isPending ? "Сохранение…" : "Сохранить"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<AlertDialog
+				open={deletingId !== null}
+				onOpenChange={(next) => {
+					if (!next) setDeletingId(null);
+				}}
+			>
+				<AlertDialogContent className="max-w-[340px]">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Удалить это сообщение?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Сообщение будет помечено как удалённое для всех участников
+							переписки.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter className="flex-row justify-end gap-2">
+						<Button
+							variant="ghost"
+							onClick={() => setDeletingId(null)}
+							disabled={deleteMessage.isPending}
+						>
+							Отмена
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={confirmDelete}
+							disabled={deleteMessage.isPending}
+						>
+							{deleteMessage.isPending ? "Удаление…" : "Удалить"}
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }
