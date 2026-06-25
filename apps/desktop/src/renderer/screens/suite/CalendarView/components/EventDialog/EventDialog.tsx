@@ -51,6 +51,12 @@ export interface EventDialogValue {
 	 * only" edits; undefined for one-off events or create mode.
 	 */
 	occurrenceStart?: Date;
+	/**
+	 * True when the clicked instance already carries a per-occurrence override
+	 * (its fields/time diverge from the series). Gates the "вернуть к серии"
+	 * action, which drops the override via `deleteOccurrenceOverride`.
+	 */
+	occurrenceOverridden?: boolean;
 }
 
 /** Scope of a recurring-event edit: this single instance vs the whole series. */
@@ -200,6 +206,7 @@ export function EventDialog({
 		deleteEvent,
 		updateOccurrence,
 		cancelOccurrence,
+		deleteOccurrenceOverride,
 		addAttendee,
 		removeAttendee,
 		rsvp,
@@ -303,6 +310,26 @@ export function EventDialog({
 		);
 	};
 
+	// Recurring instance with an existing per-occurrence override: drop the
+	// override so the instance reverts to the series values. Reversible (just
+	// deletes the override row); invalidates `listOccurrences` via the mutation.
+	const canResetOccurrence =
+		isRecurringInstance &&
+		Boolean(initial.occurrenceOverridden) &&
+		Boolean(initial.occurrenceStart);
+
+	const handleResetOccurrence = () => {
+		if (!initial.eventId || !initial.occurrenceStart) return;
+		if (!window.confirm("Вернуть это событие к значениям серии?")) return;
+		deleteOccurrenceOverride.mutate(
+			{
+				eventId: initial.eventId,
+				originalStart: initial.occurrenceStart,
+			},
+			{ onSuccess: () => onOpenChange(false) },
+		);
+	};
+
 	const submit = () => {
 		const dtstart = fromDatetimeLocal(start);
 		const dtend = fromDatetimeLocal(end);
@@ -368,7 +395,10 @@ export function EventDialog({
 		createEvent.isPending ||
 		updateEvent.isPending ||
 		updateOccurrence.isPending;
-	const deleting = deleteEvent.isPending || cancelOccurrence.isPending;
+	const deleting =
+		deleteEvent.isPending ||
+		cancelOccurrence.isPending ||
+		deleteOccurrenceOverride.isPending;
 	const attendeeBusy = addAttendee.isPending || removeAttendee.isPending;
 
 	return (
@@ -489,6 +519,23 @@ export function EventDialog({
 									Повтор и участники относятся ко всей серии и здесь не
 									меняются.
 								</p>
+							)}
+							{canResetOccurrence && (
+								<div className="flex items-center justify-between gap-2 pt-1">
+									<p className="text-muted-foreground text-xs">
+										Это событие изменено относительно серии.
+									</p>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="shrink-0"
+										onClick={handleResetOccurrence}
+										disabled={deleting || saving}
+									>
+										Вернуть к серии
+									</Button>
+								</div>
 							)}
 						</div>
 					)}

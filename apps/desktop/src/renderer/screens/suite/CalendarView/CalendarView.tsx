@@ -317,6 +317,12 @@ export function CalendarView() {
 			occurrenceStart: isInstance
 				? new Date(occurrence.originalStart ?? occurrence.start)
 				: undefined,
+			// Surface whether this instance carries an override so the dialog can
+			// offer "вернуть к серии" (deleteOccurrenceOverride) only when there is
+			// an override to drop.
+			occurrenceOverridden: isInstance
+				? Boolean(occurrence.overridden)
+				: undefined,
 		});
 		setDialogOpen(true);
 	};
