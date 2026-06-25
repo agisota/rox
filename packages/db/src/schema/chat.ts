@@ -16,6 +16,7 @@
  * `bunx drizzle-kit generate --name="..."` (see AGENTS.md).
  */
 
+import type { SavedViewRule } from "@rox/shared/chat-saved-view";
 import {
 	type AnyPgColumn,
 	index,
@@ -172,3 +173,63 @@ export const chatLabels = pgTable(
 
 export type InsertChatLabel = typeof chatLabels.$inferInsert;
 export type SelectChatLabel = typeof chatLabels.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// chat_saved_views — org-scoped named boolean tag filters / Smart Folders (F17)
+// ---------------------------------------------------------------------------
+
+/**
+ * Org-scoped registry of *Saved Views*: a named, reusable boolean tag filter
+ * over the chat list (Hermes-borrow F17). The filter expression lives in `rule`
+ * as a serialisable `SavedViewRule` jsonb (AND/OR/NOT label axes + status +
+ * untagged), authored once in the shared core (`@rox/shared/chat-saved-view`) so
+ * web, desktop, and mobile evaluate one definition. Built-in Smart Folders
+ * (Untagged / Has errors / CLI / …) are NOT stored here — they are fixed presets
+ * in the shared core; this table holds only user-created views.
+ *
+ * Mirrors the `chat_labels` org-scoped convention: org cascade FK, `created_by`
+ * set-null FK, org-leading index for Electric shape filtering, and a
+ * `(organization_id, name)` unique so a view name maps to one rule per org.
+ *
+ * NEVER hand-edit migrations — change this file then run
+ * `bunx drizzle-kit generate --name="..."` (see AGENTS.md).
+ */
+export const chatSavedViews = pgTable(
+	"chat_saved_views",
+	{
+		id: uuid().primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+
+		name: text().notNull(),
+		// Serialisable boolean tag-filter expression (the shared `SavedViewRule`).
+		// jsonb so the rule can evolve (new axes) without a migration; the shared
+		// zod schema validates shape on the tRPC edge before write.
+		rule: jsonb().$type<SavedViewRule>().notNull().default({}),
+		// Optional CSS colour for the view's rail chip (auto-coloured on create
+		// from `identityGlyph(name).background`, like `chat_labels.color`).
+		color: text(),
+
+		createdBy: uuid("created_by").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(t) => [
+		index("chat_saved_views_org_idx").on(t.organizationId),
+		uniqueIndex("chat_saved_views_org_name_unique").on(
+			t.organizationId,
+			t.name,
+		),
+	],
+);
+
+export type InsertChatSavedView = typeof chatSavedViews.$inferInsert;
+export type SelectChatSavedView = typeof chatSavedViews.$inferSelect;

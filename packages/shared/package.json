@@ -76,6 +76,10 @@
 			"types": "./src/chat-models.ts",
 			"default": "./src/chat-models.ts"
 		},
+		"./chat-saved-view": {
+			"types": "./src/chat-saved-view.ts",
+			"default": "./src/chat-saved-view.ts"
+		},
 		"./rox-ledger": {
 			"types": "./src/rox-ledger.ts",
 			"default": "./src/rox-ledger.ts"

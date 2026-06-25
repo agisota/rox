@@ -62,13 +62,21 @@ export const chatRouter = {
 				});
 			}
 
-			// Optional label filters (F10/F17). Absent params add no conditions, so
-			// the query is identical to the previous behaviour (backward compatible).
+			// Optional boolean label filters (F10/F17 — AND/OR/NOT). Absent params add
+			// no conditions, so the query is identical to the previous behaviour
+			// (backward compatible).
 			const labelConditions = buildLabelFilterConditions({
 				labelsColumn: chatSessions.labels,
 				labelsAny: input?.labelsAny,
 				labelsAll: input?.labelsAll,
+				labelsNone: input?.labelsNone,
 			});
+
+			// Optional lifecycle facet (F17 — drives e.g. the active/archived rail
+			// sections). Absent ⇒ no status predicate (all sessions).
+			const statusCondition = input?.status
+				? [eq(chatSessions.status, input.status)]
+				: [];
 
 			const sessions = await db
 				.select({
@@ -90,6 +98,7 @@ export const chatRouter = {
 						eq(chatSessions.createdBy, ctx.session.user.id),
 						eq(chatSessions.organizationId, organizationId),
 						...labelConditions,
+						...statusCondition,
 					),
 				)
 				.orderBy(desc(chatSessions.lastActiveAt))
