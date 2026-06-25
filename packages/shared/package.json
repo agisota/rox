@@ -307,6 +307,10 @@
 		"./context-usage": {
 			"types": "./src/context-usage.ts",
 			"default": "./src/context-usage.ts"
+		},
+		"./command-palette": {
+			"types": "./src/command-palette/index.ts",
+			"default": "./src/command-palette/index.ts"
 		}
 	},
 	"scripts": {
