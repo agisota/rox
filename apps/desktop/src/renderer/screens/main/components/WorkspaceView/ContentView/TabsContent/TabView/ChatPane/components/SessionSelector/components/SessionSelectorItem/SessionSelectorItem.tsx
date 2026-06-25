@@ -2,6 +2,7 @@ import { alert } from "@rox/ui/atoms/Alert";
 import { DropdownMenuItem } from "@rox/ui/dropdown-menu";
 import { toast } from "@rox/ui/sonner";
 import { HiMiniTrash } from "react-icons/hi2";
+import { NEW_CHAT_NAME } from "renderer/stores/tabs/utils";
 
 interface SessionSelectorItemProps {
 	sessionId: string;
@@ -28,7 +29,7 @@ export function SessionSelectorItem({
 			<span
 				className={`min-w-0 flex-1 truncate text-xs ${isCurrent ? "font-semibold" : ""}`}
 			>
-				{title || "New Chat"}
+				{title || NEW_CHAT_NAME}
 			</span>
 			{!isCurrent && (
 				<button
