@@ -34,9 +34,13 @@ import type {
 	OccurrenceItem,
 } from "./types";
 import { buildMonthGrid, shiftMonth } from "./utils/monthGrid";
+import {
+	anchorToParam,
+	type CalendarSearch,
+	type CalendarViewMode,
+	paramToAnchor,
+} from "./utils/searchParams";
 import { addUtcDays, startOfUtcDay, startOfUtcWeek } from "./utils/timeGrid";
-
-type CalendarViewMode = "month" | "week" | "day" | "agenda";
 
 const VIEW_TABS: { value: CalendarViewMode; label: string }[] = [
 	{ value: "month", label: "Месяц" },
@@ -154,10 +158,31 @@ function periodLabel(view: CalendarViewMode, anchor: Date): string {
  *
  * Cache-first (AGENTS.md rule 9): the last known occurrence set renders while a
  * range refetch is in flight; the skeleton only shows when there is genuinely no
- * data. View/anchor/scope are component-local state (URL-search persistence is
- * deferred — it needs the shared route's `validateSearch`, out of this folder).
+ * data.
+ *
+ * #538: view / anchor / scope are NO LONGER component-local — they are driven by
+ * the route's `?view=&anchor=&calendars=` search params (parsed by the shared
+ * route's `validateSearch`), so the navigation state survives reload and the
+ * router Back button. The route owns the URL write; this screen is the pure
+ * consumer that maps the params onto its grids and reports changes back up.
  */
-export function CalendarView() {
+export interface CalendarViewProps {
+	/** Active layout, from `?view=` (already defaulted/validated by the route). */
+	view: CalendarViewMode;
+	/** Anchor day as `YYYY-MM-DD`, from `?anchor=`. */
+	anchorParam: string;
+	/** Selected calendar ids, from `?calendars=` (`[]` = every readable one). */
+	calendarIds: string[];
+	/** Merge a partial change onto the route's search params. */
+	onSearchChange: (partial: Partial<CalendarSearch>) => void;
+}
+
+export function CalendarView({
+	view,
+	anchorParam,
+	calendarIds,
+	onSearchChange,
+}: CalendarViewProps) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 	const { data: session } = authClient.useSession();
@@ -165,11 +190,22 @@ export function CalendarView() {
 	const animateSwitch = useShouldAnimate("decorative");
 	const { updateEvent, updateOccurrence } = useCalendarActions();
 
-	const [view, setView] = useState<CalendarViewMode>("month");
-	const [anchor, setAnchor] = useState(() => new Date());
-	const [selectedCalendarIds, setSelectedCalendarIds] = useState<Set<string>>(
-		() => new Set(),
+	// URL-derived navigation state (#538). The anchor is a UTC day; the scope is a
+	// Set for the popover/grid APIs, rebuilt from the `calendars` param.
+	const anchor = useMemo(() => paramToAnchor(anchorParam), [anchorParam]);
+	const selectedCalendarIds = useMemo(
+		() => new Set(calendarIds),
+		[calendarIds],
 	);
+	const setView = useCallback(
+		(next: CalendarViewMode) => onSearchChange({ view: next }),
+		[onSearchChange],
+	);
+	const setAnchor = useCallback(
+		(next: Date) => onSearchChange({ anchor: anchorToParam(next) }),
+		[onSearchChange],
+	);
+
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [dialogValue, setDialogValue] = useState<EventDialogValue | null>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
@@ -270,12 +306,15 @@ export function CalendarView() {
 	const isEmpty = occurrences.length === 0;
 
 	const stepAnchor = (dir: 1 | -1) => {
-		setAnchor((current) => {
-			if (view === "month") return shiftMonth(current, dir);
-			if (view === "week") return addUtcDays(startOfUtcWeek(current), dir * 7);
-			if (view === "day") return addUtcDays(startOfUtcDay(current), dir);
-			return shiftMonth(current, dir);
-		});
+		// Compute the next anchor off the current URL-derived value, then write it
+		// back to `?anchor=` (the view determines the step granularity).
+		const next =
+			view === "week"
+				? addUtcDays(startOfUtcWeek(anchor), dir * 7)
+				: view === "day"
+					? addUtcDays(startOfUtcDay(anchor), dir)
+					: shiftMonth(anchor, dir);
+		setAnchor(next);
 	};
 
 	const openCreateDay = (day: Date) => {
@@ -368,13 +407,15 @@ export function CalendarView() {
 	};
 
 	const toggleCalendar = (calendarId: string) => {
-		setSelectedCalendarIds((prev) => {
-			const next = new Set(prev);
-			if (next.has(calendarId)) next.delete(calendarId);
-			else next.add(calendarId);
-			return next;
-		});
+		// Toggle membership in the scope, then persist the new id list to
+		// `?calendars=` (order-stable so the URL stays deterministic).
+		const next = new Set(selectedCalendarIds);
+		if (next.has(calendarId)) next.delete(calendarId);
+		else next.add(calendarId);
+		onSearchChange({ calendars: Array.from(next) });
 	};
+
+	const resetCalendars = () => onSearchChange({ calendars: [] });
 
 	const monthLabel = periodLabel(view, anchor);
 
@@ -433,7 +474,7 @@ export function CalendarView() {
 							calendars={calendars}
 							selected={selectedCalendarIds}
 							onToggle={toggleCalendar}
-							onReset={() => setSelectedCalendarIds(new Set())}
+							onReset={resetCalendars}
 						/>
 					)}
 
