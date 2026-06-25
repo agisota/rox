@@ -21,6 +21,7 @@ export type CoreBlockType =
 	| "human_approval"
 	| "skill_call"
 	| "agent_run"
+	| "model"
 	| "error_boundary";
 
 export interface RoxBlockState {

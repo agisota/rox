@@ -463,6 +463,7 @@ export class WorkflowExecutor {
 				status: "succeeded",
 				input,
 				output,
+				cost: result.cost,
 			});
 			if (block.type === "response") runOutput = output;
 			return undefined;

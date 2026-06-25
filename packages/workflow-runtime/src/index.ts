@@ -16,3 +16,4 @@ export * from "./context/Redactor";
 export * from "./executor/InMemoryRunRecorder";
 export * from "./executor/types";
 export * from "./executor/WorkflowExecutor";
+export * from "./handlers/modelHandler";
