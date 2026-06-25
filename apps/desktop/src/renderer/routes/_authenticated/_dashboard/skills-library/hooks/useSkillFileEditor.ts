@@ -34,6 +34,8 @@ export interface SkillFileEditorState {
 	readError: SkillFileReadError;
 	/** Explicit save (button / Cmd+S). No-op when not dirty or no active file. */
 	save: () => void;
+	/** Discard local edits and re-seed from disk (used after a save conflict). */
+	reloadFromDisk: () => void;
 }
 
 function classifyReadError(message: string, code?: string): SkillFileReadError {
@@ -64,6 +66,9 @@ export function useSkillFileEditor({
 
 	const [draft, setDraftState] = useState("");
 	const [original, setOriginal] = useState("");
+	// Hash of the content the current draft was seeded from. Sent with each
+	// write so the backend can reject a save when the file changed on disk.
+	const [baseHash, setBaseHash] = useState<string | null>(null);
 	const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	// Track which file the current draft belongs to, so a file switch re-seeds
 	// from server data instead of leaking the previous file's edits.
@@ -80,6 +85,7 @@ export function useSkillFileEditor({
 		}
 		setDraftState(fileData.content);
 		setOriginal(fileData.content);
+		setBaseHash(fileData.hash);
 		loadedKey.current = fileKey;
 	}, [fileData, fileKey, draft, original]);
 
@@ -88,13 +94,25 @@ export function useSkillFileEditor({
 		if (fileKey === null) {
 			setDraftState("");
 			setOriginal("");
+			setBaseHash(null);
 			loadedKey.current = null;
 		}
 	}, [fileKey]);
 
+	const reloadFromDisk = useCallback(() => {
+		if (relativePath === null) return;
+		// Force a re-seed even with unsaved edits, then refetch.
+		loadedKey.current = null;
+		void utils.skillsLibrary.readFile.invalidate({
+			id: skillId,
+			relativePath,
+		});
+	}, [relativePath, skillId, utils]);
+
 	const writeMutation = electronTrpc.skillsLibrary.writeFile.useMutation({
-		onSuccess: (_data, variables) => {
+		onSuccess: (data, variables) => {
 			setOriginal(variables.content);
+			setBaseHash(data.hash);
 			void utils.skillsLibrary.get.invalidate({ id: skillId });
 			void utils.skillsLibrary.readFile.invalidate({
 				id: skillId,
@@ -102,19 +120,46 @@ export function useSkillFileEditor({
 			});
 			onSaved?.();
 		},
-		onError: (mutationError) =>
-			toast.error(`Не удалось сохранить: ${mutationError.message}`),
+		onError: (mutationError) => {
+			if (mutationError.data?.code === "CONFLICT") {
+				toast.error("Файл изменился на диске после открытия", {
+					description:
+						"Перезагрузите содержимое с диска или перезапишите его своей версией.",
+					action: {
+						label: "Перезагрузить",
+						onClick: reloadFromDisk,
+					},
+					cancel: {
+						label: "Перезаписать",
+						onClick: () => forceSaveRef.current(),
+					},
+				});
+				return;
+			}
+			toast.error(`Не удалось сохранить: ${mutationError.message}`);
+		},
 	});
 
 	const isDirty = enabled && draft !== original;
 
 	const persist = useCallback(
-		(content: string) => {
+		(content: string, options?: { force?: boolean }) => {
 			if (relativePath === null) return;
-			writeMutation.mutate({ id: skillId, relativePath, content });
+			writeMutation.mutate({
+				id: skillId,
+				relativePath,
+				content,
+				// Omit the guard on an explicit overwrite so the user's version wins.
+				baseHash: options?.force ? undefined : (baseHash ?? undefined),
+			});
 		},
-		[relativePath, skillId, writeMutation],
+		[relativePath, skillId, writeMutation, baseHash],
 	);
+
+	// Stable ref to force-save the latest draft (used by the conflict toast's
+	// "overwrite" action, defined before `persist` in source order).
+	const forceSaveRef = useRef<() => void>(() => {});
+	forceSaveRef.current = () => persist(draft, { force: true });
 
 	const setDraft = useCallback((next: string) => {
 		setDraftState(next);
@@ -150,5 +195,6 @@ export function useSkillFileEditor({
 		isSaving: writeMutation.isPending,
 		readError,
 		save,
+		reloadFromDisk,
 	};
 }
