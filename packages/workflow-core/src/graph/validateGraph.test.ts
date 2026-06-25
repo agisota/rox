@@ -220,3 +220,135 @@ describe("validateGraph", () => {
 		}
 	});
 });
+
+describe("validateGraph — port-type compatibility", () => {
+	test("PORT-01: off by default (no resolveNodeType)", () => {
+		// embedding.out:vector → knowledge_retrieval.in:string is incompatible, but
+		// the type check is strictly opt-in, so without resolveNodeType it is silent.
+		const state = makeState(
+			{
+				start: { type: "start" },
+				emb: { type: "embedding" },
+				kr: { type: "knowledge_retrieval" },
+			},
+			[
+				{ source: "start", target: "emb" },
+				{
+					source: "emb",
+					target: "kr",
+					sourceHandle: "out",
+					targetHandle: "in",
+				},
+			],
+		);
+		expect(codes(validateGraph(state))).not.toContain(
+			WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES,
+		);
+	});
+
+	test("PORT-02: opt-in check flags an incompatible edge", () => {
+		const state = makeState(
+			{
+				start: { type: "start" },
+				emb: { type: "embedding" },
+				kr: { type: "knowledge_retrieval" },
+			},
+			[
+				{ source: "start", target: "emb" },
+				{
+					source: "emb",
+					target: "kr",
+					sourceHandle: "out",
+					targetHandle: "in",
+				},
+			],
+		);
+		const result = validateGraph(state, { resolveNodeType: getNodeType });
+		expect(codes(result)).toContain(WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES);
+	});
+
+	test("PORT-03: `any`/untyped source out-port passes", () => {
+		// start.out is untyped (`any`) → compatible with knowledge_retrieval.in:string.
+		const state = makeState(
+			{
+				start: { type: "start" },
+				kr: { type: "knowledge_retrieval" },
+				done: { type: "response" },
+			},
+			[
+				{ source: "start", target: "kr", targetHandle: "in" },
+				{ source: "kr", target: "done" },
+			],
+		);
+		expect(
+			codes(validateGraph(state, { resolveNodeType: getNodeType })),
+		).not.toContain(WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES);
+	});
+
+	test("PORT-04: matching concrete types pass", () => {
+		// classifier.out:string → embedding.in:string is an exact type match.
+		const state = makeState(
+			{
+				start: { type: "start" },
+				cls: { type: "classifier" },
+				emb: { type: "embedding" },
+				done: { type: "response" },
+			},
+			[
+				{ source: "start", target: "cls", targetHandle: "in" },
+				{
+					source: "cls",
+					target: "emb",
+					sourceHandle: "out",
+					targetHandle: "in",
+				},
+				{ source: "emb", target: "done" },
+			],
+		);
+		expect(
+			codes(validateGraph(state, { resolveNodeType: getNodeType })),
+		).not.toContain(WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES);
+	});
+
+	test("PORT-05: legacy untyped graph stays valid under the check", () => {
+		// The legacy node types carry no concrete in-port types → every wire
+		// resolves to `any` on the target side and the check never fires.
+		const state = makeState(
+			{
+				start: { type: "start" },
+				cond: { type: "condition", subBlocks: { expression: "x > 1" } },
+				done: { type: "response" },
+			},
+			[
+				{ source: "start", target: "cond" },
+				{ source: "cond", target: "done", sourceHandle: "true" },
+			],
+		);
+		const result = validateGraph(state, { resolveNodeType: getNodeType });
+		expect(codes(result)).not.toContain(
+			WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES,
+		);
+	});
+
+	test("PORT-06: disabled endpoint skips the check", () => {
+		const state = makeState(
+			{
+				start: { type: "start" },
+				emb: { type: "embedding", enabled: false },
+				kr: { type: "knowledge_retrieval" },
+			},
+			[
+				{ source: "start", target: "emb" },
+				{
+					source: "emb",
+					target: "kr",
+					sourceHandle: "out",
+					targetHandle: "in",
+				},
+			],
+		);
+		expect(
+			codes(validateGraph(state, { resolveNodeType: getNodeType })),
+		).not.toContain(WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES);
+	});
+});

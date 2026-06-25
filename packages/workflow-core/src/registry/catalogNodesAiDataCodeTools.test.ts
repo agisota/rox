@@ -147,9 +147,9 @@ describe("catalog node types — AI/Data/Code/Tools (Slice 1b)", () => {
 		expect(def.configSchema.safeParse({ topK: 1.5 }).success).toBe(false);
 	});
 
-	test("embedding: required model+input, vector out-port typed array", () => {
+	test("embedding: required model+input, vector out-port typed vector", () => {
 		const def = need("embedding");
-		expect(def.outputs.find((p) => p.name === "out")?.type).toBe("array");
+		expect(def.outputs.find((p) => p.name === "out")?.type).toBe("vector");
 		expect(def.fields.find((f) => f.key === "model")?.required).toBe(true);
 		expect(def.fields.find((f) => f.key === "input")?.required).toBe(true);
 		expect(

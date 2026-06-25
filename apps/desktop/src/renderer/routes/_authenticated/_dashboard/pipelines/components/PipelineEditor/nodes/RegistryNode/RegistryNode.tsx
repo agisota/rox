@@ -2,13 +2,12 @@ import { Handle, type NodeProps, Position } from "@rox/ui/ai-elements/flow";
 import { Badge } from "@rox/ui/badge";
 import { cn } from "@rox/ui/utils";
 import {
-	BRANCH_TONE_COLOR,
 	categoryAccent,
 	getNodeType,
 	NODE_CATEGORY_LABEL,
 	type NodePort,
-	portColor,
-	portTone,
+	portTypeColor,
+	portTypeLabel,
 } from "@rox/workflow-core";
 import type { PipelineFlowNode } from "../../graph-adapter";
 import { nodeConfigSummary } from "./nodeConfigSummary";
@@ -136,9 +135,14 @@ export function RegistryNode({ data, selected }: NodeProps<PipelineFlowNode>) {
 							>
 								<span
 									className="size-1.5 rounded-full"
-									style={{ backgroundColor: portColor(port) }}
+									style={{ backgroundColor: portTypeColor(port) }}
 								/>
 								{port.label ?? port.name}
+								{portTypeLabel(port) ? (
+									<span className="text-muted-foreground/70">
+										{` · ${portTypeLabel(port)}`}
+									</span>
+								) : null}
 							</span>
 						))}
 					</div>
@@ -180,8 +184,14 @@ function PortHandle({
 }) {
 	// Distribute N handles evenly across the node height (percent offsets).
 	const top = count <= 1 ? 50 : ((index + 1) / (count + 1)) * 100;
-	const tone = portTone(port);
-	const color = tone === "neutral" ? "var(--primary)" : BRANCH_TONE_COLOR[tone];
+	// Colour by the port's value type; `any`/untyped neutral ports fall back to
+	// the primary tone so legacy nodes look unchanged.
+	const typed = portTypeColor(port);
+	const color = typed === "#94a3b8" ? "var(--primary)" : typed;
+	const typeLabel = portTypeLabel(port);
+	const ariaLabel = typeLabel
+		? `${port.label ?? port.name} (${typeLabel})`
+		: (port.label ?? port.name);
 	return (
 		<Handle
 			id={port.name}
@@ -195,7 +205,8 @@ function PortHandle({
 				border: "2px solid var(--card)",
 				boxShadow: port.required ? `0 0 0 2px ${color}` : undefined,
 			}}
-			aria-label={port.label ?? port.name}
+			aria-label={ariaLabel}
+			data-port-type={port.type ?? "any"}
 		/>
 	);
 }

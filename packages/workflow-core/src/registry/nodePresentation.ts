@@ -144,3 +144,51 @@ export function portColor(port: NodePort): string {
 export function branchColorForPort(name: string): string {
 	return BRANCH_TONE_COLOR[branchToneForPort(name)];
 }
+
+/**
+ * Literal handle/legend colour per typed port value. Drives the by-type port
+ * dots on the canvas so a `vector` reads differently from a `message`. `any` (and
+ * an absent type) has no dedicated colour — those ports fall back to the branch
+ * tone (neutral/success/failure) so untyped legacy nodes look unchanged.
+ */
+const PORT_TYPE_COLOR: Record<string, string> = {
+	string: "#0ea5e9",
+	number: "#f59e0b",
+	boolean: "#8b5cf6",
+	object: "#6366f1",
+	array: "#14b8a6",
+	message: "#c4704f",
+	chunks: "#10b981",
+	rows: "#0891b2",
+	vector: "#d946ef",
+};
+
+/** Short RU-friendly label per typed port value (canvas legend + tooltip). */
+const PORT_TYPE_LABEL: Record<string, string> = {
+	any: "любой",
+	string: "строка",
+	number: "число",
+	boolean: "булево",
+	object: "объект",
+	array: "массив",
+	message: "сообщение",
+	chunks: "фрагменты",
+	rows: "строки БД",
+	vector: "вектор",
+};
+
+/**
+ * Resolve the handle colour for a typed port: prefer the by-type colour, then
+ * fall back to the branch tone for `any`/untyped ports (so success/failure
+ * branches keep their green/red and legacy ports stay neutral).
+ */
+export function portTypeColor(port: NodePort): string {
+	const byType = port.type ? PORT_TYPE_COLOR[port.type] : undefined;
+	return byType ?? portColor(port);
+}
+
+/** Human label for a port's value type, or undefined for `any`/untyped ports. */
+export function portTypeLabel(port: NodePort): string | undefined {
+	if (!port.type || port.type === "any") return undefined;
+	return PORT_TYPE_LABEL[port.type] ?? port.type;
+}

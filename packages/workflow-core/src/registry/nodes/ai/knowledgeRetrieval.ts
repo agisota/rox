@@ -20,8 +20,8 @@ export const knowledgeRetrievalNodeType: NodeTypeDefinition = {
 		iconClass: "text-primary",
 		miniMapColor: "#c4704f",
 	},
-	inputs: [{ name: "in", required: true }],
-	outputs: [{ name: "out" }, { name: "error" }],
+	inputs: [{ name: "in", required: true, type: "string" }],
+	outputs: [{ name: "out", type: "chunks" }, { name: "error" }],
 	configSchema: z
 		.object({
 			knowledgeBase: z.string().min(1).max(200).optional(),
