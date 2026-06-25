@@ -1,10 +1,17 @@
 import { cn } from "@rox/ui/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	type KeyboardEvent,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import type {
 	CalendarColorById,
 	EventsById,
 	OccurrenceItem,
 } from "../../types";
+import { isGridNavKey, nextGridIndex } from "../../utils/gridNav";
 import {
 	addUtcDays,
 	applyDragMove,
@@ -125,6 +132,17 @@ export function TimeGridView({
 	}, []);
 
 	const bodyRef = useRef<HTMLDivElement>(null);
+
+	// Roving focus across the day columns (Left/Right step between days; Up/Down
+	// are no-ops in this single-row strip). Enter/Space creates at the column's
+	// start. The active column is the only tabbable one.
+	const [activeCol, setActiveCol] = useState(0);
+	const colRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+	const focusColumn = (index: number) => {
+		setActiveCol(index);
+		colRefs.current[index]?.focus();
+	};
 
 	// Pointer drag/resize. We keep the block mounted and translate it via local
 	// preview state (no DOM teleport): window-level pointer listeners follow the
@@ -264,6 +282,31 @@ export function TimeGridView({
 		onCreateAt(snapPxToInstant(offsetY, dayStart));
 	};
 
+	const handleColumnKeyDown = (
+		e: KeyboardEvent<HTMLButtonElement>,
+		index: number,
+		dayStart: Date,
+	) => {
+		// Only react to keys aimed at the column itself, not ones bubbling up from
+		// a focused event block (which owns its own Enter/click handling).
+		if (e.target !== e.currentTarget) return;
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			// Keyboard create has no pointer Y, so anchor at the column's start.
+			onCreateAt(startOfUtcDay(dayStart));
+			return;
+		}
+		if (!isGridNavKey(e.key)) return;
+		const next = nextGridIndex(e.key, {
+			current: index,
+			count: columns.length,
+			columns: columns.length,
+		});
+		e.preventDefault();
+		if (next === null || next === index) return;
+		focusColumn(next);
+	};
+
 	return (
 		<div className="overflow-hidden rounded-lg border border-border bg-card/40">
 			{/* Header row: empty time-axis gutter + day headers */}
@@ -347,12 +390,15 @@ export function TimeGridView({
 			)}
 
 			{/* Scrollable timed body */}
+			{/* biome-ignore lint/a11y/useSemanticElements: the absolute-positioned time-axis layout cannot be a native <table>; ARIA grid is the documented escape hatch for time grids. */}
 			<div
 				ref={bodyRef}
 				className="grid max-h-[60dvh] overflow-y-auto"
 				style={{
 					gridTemplateColumns: `4rem repeat(${days}, minmax(0, 1fr))`,
 				}}
+				role="grid"
+				aria-label={days > 1 ? "Сетка недели" : "Сетка дня"}
 			>
 				{/* Time axis */}
 				<div className="relative border-r" style={{ height: DAY_BODY_HEIGHT }}>
@@ -368,14 +414,29 @@ export function TimeGridView({
 				</div>
 
 				{/* Day columns */}
-				{columns.map((col) => {
+				{columns.map((col, colIndex) => {
 					const isToday = col.dayStart.getTime() === todayDayStart;
+					const isActiveCol =
+						colIndex === Math.min(activeCol, columns.length - 1);
 					return (
+						// biome-ignore lint/a11y/useSemanticElements: the column is an interactive <button> by design (click/Enter creates an event); a <td> would lose native button semantics.
 						<button
 							key={col.key}
 							type="button"
-							onClick={(e) => handleSlotClick(e, col.dayStart)}
-							className="relative block border-r p-0 text-left last:border-r-0 hover:bg-accent/20"
+							ref={(el) => {
+								colRefs.current[colIndex] = el;
+							}}
+							role="gridcell"
+							tabIndex={isActiveCol ? 0 : -1}
+							onClick={(e) => {
+								setActiveCol(colIndex);
+								handleSlotClick(e, col.dayStart);
+							}}
+							onKeyDown={(e) => handleColumnKeyDown(e, colIndex, col.dayStart)}
+							className={cn(
+								"relative block border-r p-0 text-left last:border-r-0 hover:bg-accent/20",
+								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+							)}
 							style={{ height: DAY_BODY_HEIGHT }}
 							aria-label={`Создать событие — ${col.key}`}
 						>
