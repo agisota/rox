@@ -22,6 +22,7 @@ import {
 	loadToken,
 	parseAuthDeepLink,
 } from "lib/trpc/routers/auth/utils/auth-functions";
+import { setPopoutManager } from "lib/trpc/routers/popout";
 import { setSpectreManager } from "lib/trpc/routers/spectre";
 import { applyShellEnvToProcess } from "lib/trpc/routers/workspaces/utils/shell-env";
 import { env as mainEnv } from "main/env.main";
@@ -63,7 +64,16 @@ import {
 } from "./lib/terminal-host/client";
 import { disposeTray, initTray } from "./lib/tray";
 import { startNetworkLogger, stopNetworkLogger } from "./network-logger";
-import { MainWindow } from "./windows/main";
+import {
+	attachWindowToIpc,
+	detachWindowFromIpc,
+	MainWindow,
+} from "./windows/main";
+import {
+	createPopoutWindow,
+	loadPopout,
+	PopoutWindowManager,
+} from "./windows/popout";
 import {
 	createSpectreWindow,
 	loadSpectre,
@@ -240,6 +250,9 @@ let skipQuitConfirmation = false;
 let forceFullCleanup = false;
 // Spectre overlay assistant — created in whenReady, torn down on before-quit.
 let spectreManager: SpectreWindowManager | null = null;
+// Tear-off / popout window registry (F52) — created in whenReady, destroyed on
+// before-quit so detached panes never outlive the app.
+let popoutManager: PopoutWindowManager | null = null;
 
 export function setSkipQuitConfirmation(): void {
 	skipQuitConfirmation = true;
@@ -308,6 +321,7 @@ app.on("before-quit", async (event) => {
 		disposeTray();
 		unregisterSpectreShortcut(globalShortcut);
 		spectreManager?.destroy();
+		popoutManager?.destroyAll();
 		disposePushToTalkShortcut();
 	} catch (error) {
 		logger.error("[main] Cleanup during quit failed:", error);
@@ -517,6 +531,18 @@ if (!gotTheLock) {
 		// Hand the manager to the spectre tRPC router so the renderer can drive
 		// stealth/hide and stream grok-4.3 answers.
 		setSpectreManager(spectreManager);
+
+		// Tear-off / popout window registry (F52). Each popout is attached to the
+		// singleton trpc IPC handler so it is a live view onto the one core-state,
+		// and persists its own bounds independently of the main window.
+		popoutManager = new PopoutWindowManager({
+			createWindow: createPopoutWindow,
+			loadPopout,
+			attachIpc: attachWindowToIpc,
+			detachIpc: detachWindowFromIpc,
+		});
+		setPopoutManager(popoutManager);
+
 		const spectreShortcutOk = registerSpectreShortcut({
 			globalShortcut,
 			onToggle: () => {

@@ -247,7 +247,7 @@ function V2WorkspaceContent() {
 		},
 		[openFilePane, setRightSidebarOpen, setRightSidebarTab],
 	);
-	const defaultPaneActions = useDefaultPaneActions({ launcher });
+	const defaultPaneActions = useDefaultPaneActions({ launcher, workspaceId });
 	const onBeforeCloseTab = useDirtyTabCloseGuard();
 
 	// Fallback for rows persisted before the rightSidebarWidth field existed —
