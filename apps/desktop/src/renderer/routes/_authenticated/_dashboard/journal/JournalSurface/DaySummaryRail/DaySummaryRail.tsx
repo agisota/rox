@@ -5,11 +5,17 @@ import { useMemo } from "react";
 import { LuActivity, LuBellRing, LuTriangleAlert } from "react-icons/lu";
 import { dayKeyOf } from "../datetime";
 import { eventStatus, statusBucket } from "../types";
+import { ActivityHeatmap } from "./ActivityHeatmap";
 
 interface DaySummaryRailProps {
 	events: SelectJournalEvent[];
 	/** Horizontal variant for the <1024px collapse (renders inline counters). */
 	variant?: "rail" | "bar";
+	/**
+	 * Clicking a heatmap day asks the surface to scroll the reflection lane to
+	 * that `YYYY-MM-DD` day. Only wired for the `rail` variant.
+	 */
+	onSelectDay?: (day: string) => void;
 }
 
 interface DayCounts {
@@ -28,6 +34,7 @@ interface DayCounts {
 export function DaySummaryRail({
 	events,
 	variant = "rail",
+	onSelectDay,
 }: DaySummaryRailProps) {
 	const counts = useMemo<DayCounts>(() => {
 		const todayKey = dayKeyOf(new Date());
@@ -119,10 +126,19 @@ export function DaySummaryRail({
 						/>
 					</div>
 				</div>
+
+				<div className="mt-4 border-border/50 border-t pt-3">
+					<p className="mb-2 text-[10px] text-muted-foreground uppercase tracking-wider">
+						Активность
+					</p>
+					<ActivityHeatmap events={events} onSelectDay={onSelectDay ?? noop} />
+				</div>
 			</div>
 		</aside>
 	);
 }
+
+function noop() {}
 
 function StatRow({
 	icon,
