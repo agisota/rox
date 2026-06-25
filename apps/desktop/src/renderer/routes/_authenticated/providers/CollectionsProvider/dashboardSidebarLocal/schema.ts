@@ -69,6 +69,13 @@ export const workspaceLocalStateSchema = z.object({
 		labels: z.array(z.string()).default([]),
 	}),
 	paneLayout: paneWorkspaceStateSchema,
+	/**
+	 * Relative directory paths (no trailing slash; "" = root is implicit and
+	 * never stored) the user has expanded in the Files tree (F32). Persisted so
+	 * expansion survives reload; on root-load the bridge prefetches each entry's
+	 * children in parallel (depth-1) and re-expands the matching rows.
+	 */
+	expandedDirs: z.array(z.string()).default([]),
 	viewedFiles: z.array(z.string()).default([]),
 	recentlyViewedFiles: z
 		.array(
@@ -99,6 +106,7 @@ const SIDEBAR_STATE_DEFAULTS = {
 } as const;
 
 const WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS = {
+	expandedDirs: [] as string[],
 	viewedFiles: [] as string[],
 	recentlyViewedFiles: [] as Array<{
 		relativePath: string;
@@ -283,6 +291,8 @@ export function healWorkspaceLocalState(raw: unknown): WorkspaceLocalStateRow {
 	) as Partial<WorkspaceLocalStateRow["sidebarState"]>;
 	return {
 		...r,
+		expandedDirs:
+			r.expandedDirs ?? WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS.expandedDirs,
 		viewedFiles:
 			r.viewedFiles ?? WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS.viewedFiles,
 		recentlyViewedFiles:

@@ -42,6 +42,7 @@ import {
 } from "renderer/lib/clickPolicy";
 import { useFallthroughIcons } from "renderer/lib/fileIcons";
 import { createPierreTreeStyle } from "renderer/lib/pierreTree";
+import { useExpandedDirs } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useExpandedDirs";
 import { useOpenInExternalEditor } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/useOpenInExternalEditor";
 import { PierreRowContextMenu } from "../PierreRowContextMenu";
 import { ArtifactsPanel } from "./components/ArtifactsPanel";
@@ -184,7 +185,18 @@ export function FilesTab({
 		renderRowDecoration: (ctx) => handlersRef.current.renderRowDecoration(ctx),
 	});
 
-	const bridge = useFilesTabBridge({ model, workspaceId, rootPath });
+	// Persisted expanded-directory set (F32). The bridge reads the snapshot on
+	// root-load to prefetch + re-expand, and reports each expand/collapse edge
+	// back so it survives reload and syncs cross-device through the local-state
+	// collection.
+	const expandedDirsApi = useExpandedDirs(workspaceId);
+	const bridge = useFilesTabBridge({
+		model,
+		workspaceId,
+		rootPath,
+		getPersistedExpandedDirs: expandedDirsApi.getSnapshot,
+		onExpandedChange: expandedDirsApi.setExpanded,
+	});
 
 	// Re-apply the current git status to force Pierre to re-render its rows
 	// (and thus re-run `renderRowDecoration`). Read the entries from a ref so the

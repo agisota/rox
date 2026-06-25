@@ -100,6 +100,7 @@ describe("healWorkspaceLocalState", () => {
 			activeTab: "changes",
 			isHidden: false,
 		},
+		expandedDirs: ["src", "src/lib"],
 		viewedFiles: ["a.ts"],
 		recentlyViewedFiles: [],
 	};
@@ -118,16 +119,19 @@ describe("healWorkspaceLocalState", () => {
 		);
 		expect(healed.sidebarState.tabOrder).toBe(3);
 		expect(healed.viewedFiles).toEqual(["a.ts"]);
+		expect(healed.expandedDirs).toEqual(["src", "src/lib"]);
 	});
 
 	it("fills missing top-level optional fields", () => {
 		const stored = {
 			...baseStored,
+			expandedDirs: undefined,
 			viewedFiles: undefined,
 			recentlyViewedFiles: undefined,
 			workspaceRunTerminals: undefined,
 		};
 		const healed = healWorkspaceLocalState(stored);
+		expect(healed.expandedDirs).toEqual([]);
 		expect(healed.viewedFiles).toEqual([]);
 		expect(healed.recentlyViewedFiles).toEqual([]);
 		expect(healed.workspaceRunTerminals).toEqual({});
