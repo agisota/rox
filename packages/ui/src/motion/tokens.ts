@@ -156,3 +156,80 @@ export const panelSceneMotion = {
 
 /** CSS `view-transition-name` namespace for the right-panel VT scenes (case 054). */
 export const PANEL_SCENE_VT_NAME = "rox-panel-scene" as const;
+
+/**
+ * Shared gesture-grammar tokens — case 051 / PR-51 (#646). A single,
+ * platform-neutral grammar for the touch/pointer gestures every surface speaks:
+ * swipe-to-commit (archive/delete/quick-tag), pan-resize (drawers/panes),
+ * edge-swipe (open a drawer from the trailing/leading edge) and long-press
+ * (context menu). Web drawers (F05), desktop pane resize and RN list gestures
+ * all read these numbers so there are no per-platform magic constants.
+ *
+ * Distances are in px (CSS px on web/desktop, dp on RN — the host maps 1:1).
+ * Timings are in ms. The grammar descriptor lives in `GestureGrammar.ts`; these
+ * are the concrete thresholds each surface measures against. Every gesture
+ * routes through the motion governor (`useShouldAnimate` / `shouldAnimate`):
+ * under reduced / off energy the commit still fires (gestures are functional,
+ * not decorative) but the follow-through animation is simplified or removed.
+ */
+export const gestureGrammar = {
+	/**
+	 * Swipe-to-commit, the two-stage grammar (case 019 swipe tiers / quick-tag).
+	 * A horizontal pan past `previewThreshold` reveals the action affordance
+	 * (the swipe-tier background / quick-tag chip targets) without committing;
+	 * past `commitThreshold` releasing the pointer runs the primary action.
+	 * `velocityCommit` (px/s) is a fling shortcut: a fast flick commits even
+	 * before `commitThreshold` is reached.
+	 */
+	swipe: {
+		/** Pan distance (px) that reveals the action affordance / chip targets. */
+		previewThreshold: 56,
+		/** Pan distance (px) past which release commits the primary action. */
+		commitThreshold: 120,
+		/** Fling velocity (px/s) that commits regardless of distance. */
+		velocityCommit: 720,
+		/**
+		 * Width (px) of each quick-tag chip target exposed at stage two of a
+		 * two-stage swipe, so tagging happens without leaving the list.
+		 */
+		quickTagChipWidth: 64,
+	},
+	/**
+	 * Pan-resize for drawers (F05) and desktop panes. `minSize`/`maxSize` clamp
+	 * the dragged dimension (px); `snapThreshold` is how close to a rail the
+	 * drag must land to snap to it; `collapseThreshold` is the dimension below
+	 * which releasing collapses the surface entirely.
+	 */
+	panResize: {
+		/** Smallest allowed dimension (px) before the surface collapses. */
+		minSize: 200,
+		/** Largest allowed dimension (px). */
+		maxSize: 640,
+		/** Distance (px) from a snap rail within which the drag snaps to it. */
+		snapThreshold: 24,
+		/** Dimension (px) below which release collapses the surface. */
+		collapseThreshold: 120,
+	},
+	/**
+	 * Edge-swipe to open a drawer from a screen edge. `edgeWidth` is the px-wide
+	 * hot zone along the edge that starts capturing the gesture; `openThreshold`
+	 * is the pan distance past which release completes the open.
+	 */
+	edgeSwipe: {
+		/** Width (px) of the edge hot zone that starts the gesture. */
+		edgeWidth: 20,
+		/** Pan distance (px) past which release opens the drawer. */
+		openThreshold: 96,
+	},
+	/**
+	 * Long-press to open a context menu. `duration` (ms) is the press-and-hold
+	 * time before the menu fires; `moveTolerance` (px) is how far the pointer
+	 * may drift during the hold before it is treated as a pan/scroll instead.
+	 */
+	longPress: {
+		/** Press-and-hold time (ms) before the context menu fires. */
+		duration: 500,
+		/** Pointer drift (px) tolerated during the hold before it cancels. */
+		moveTolerance: 10,
+	},
+} as const;
