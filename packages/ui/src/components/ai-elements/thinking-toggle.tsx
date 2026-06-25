@@ -25,25 +25,28 @@ interface ThinkingLevelOption {
 	description: string;
 }
 
+// FN-051: RU-localized reasoning-effort labels (product is Russian-first). Kept
+// in sync with the segmented `ReasoningLevelSlider` (Выкл → Макс) so the
+// dropdown and the inline slider read identically across every chat surface.
 const DEFAULT_OPTION: ThinkingLevelOption = {
 	value: "off",
-	label: "Off",
-	description: "No extended thinking",
+	label: "Выкл",
+	description: "Без расширенного размышления",
 };
 
 const THINKING_LEVELS: ThinkingLevelOption[] = [
 	DEFAULT_OPTION,
-	{ value: "low", label: "Low", description: "Minimal reasoning effort" },
+	{ value: "low", label: "Низкий", description: "Минимальное усилие" },
 	{
 		value: "medium",
-		label: "Medium",
-		description: "Moderate reasoning effort",
+		label: "Средний",
+		description: "Умеренное усилие",
 	},
-	{ value: "high", label: "High", description: "Thorough reasoning effort" },
+	{ value: "high", label: "Высокий", description: "Тщательное усилие" },
 	{
 		value: "xhigh",
-		label: "Max",
-		description: "Maximum reasoning effort",
+		label: "Макс",
+		description: "Максимальное усилие",
 	},
 ];
 
@@ -85,13 +88,13 @@ export const ThinkingToggle = ({
 								<span>{activeOption.label}</span>
 								<ChevronDownIcon className="size-2.5 opacity-50" />
 								<span className="sr-only">
-									Extended thinking: {activeOption.label}
+									Размышление: {activeOption.label}
 								</span>
 							</Button>
 						</DropdownMenuTrigger>
 					</TooltipTrigger>
 					<TooltipContent>
-						<p>Extended thinking: {activeOption.label}</p>
+						<p>Размышление: {activeOption.label}</p>
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
