@@ -133,6 +133,10 @@ function OnboardingDashboardPage() {
 
 	return (
 		<>
+			<p className="text-sm text-muted-foreground">
+				Подключите Claude Code или Codex. Если продолжите без провайдера, проект
+				откроется, но агентские действия будут недоступны.
+			</p>
 			<motion.div
 				className="divide-y divide-border"
 				initial={shouldAnimateDecorative ? "hidden" : false}

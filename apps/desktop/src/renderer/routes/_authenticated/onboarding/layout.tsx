@@ -12,12 +12,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";
 import { track } from "renderer/lib/analytics";
-import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { logger } from "renderer/lib/logger";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
 import { OnboardingNavigation } from "./components/OnboardingNavigation";
+import { completeActivationStep } from "./onboarding-progress";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
 	component: OnboardingFlowLayout,
@@ -30,24 +30,34 @@ const STEPS = [
 	{
 		path: "/onboarding",
 		match: (p: string) => p === "/onboarding",
-		title: "Запуск Rox",
-		subtitle: "Подключите агентов и инструменты, чтобы начать работу.",
+		title: "Подключите агента",
+		subtitle:
+			"Rox должен уметь выполнять действия, а не только показывать интерфейс.",
 	},
 	{
 		path: "/onboarding/project",
 		match: (p: string) => p === "/onboarding/project",
-		title: "Покажите Rox, где находится код",
+		title: "Покажите Rox проект",
 		subtitle:
-			"Откройте папку или клонируйте репозиторий, чтобы завершить запуск.",
+			"Откройте repo или создайте безопасный тестовый проект для обучения.",
+	},
+	{
+		path: "/onboarding/workspace",
+		match: (p: string) => p === "/onboarding/workspace",
+		title: "Создайте первый workspace",
+		subtitle:
+			"Workspace связывает задачу, ветку, терминал, чат, изменения и PR.",
+	},
+	{
+		path: "/onboarding/first-agent-action",
+		match: (p: string) => p === "/onboarding/first-agent-action",
+		title: "Получите первый ответ агента",
+		subtitle: "Попросите Rox прочитать проект и вернуть короткий план.",
 	},
 ] as const;
 
 function OnboardingFlowLayout() {
-	const {
-		data: session,
-		isPending,
-		refetch: refetchSession,
-	} = authClient.useSession();
+	const { data: session, isPending } = authClient.useSession();
 	const { data: platform } = electronTrpc.window.getPlatform.useQuery();
 	const isMac = platform === undefined || platform === "darwin";
 	const chatClient = useMemo(() => createChatServiceIpcClient(), []);
@@ -76,30 +86,37 @@ function OnboardingFlowLayout() {
 		navigate({ to: target.path });
 	};
 
-	// Step 1 advances to the project step; the project step finishes onboarding
-	// itself the moment a project is added, so it has no footer Continue.
 	const handleContinue = isFirstStep
-		? () => navigate({ to: "/onboarding/project" })
+		? async () => {
+				setSkipping(true);
+				try {
+					await completeActivationStep("provider");
+				} catch (error) {
+					logger.error("[onboarding] provider progress failed", error);
+					toast.error("Не удалось сохранить шаг. Попробуйте ещё раз.");
+					setSkipping(false);
+					return;
+				}
+				setSkipping(false);
+				await navigate({ to: "/onboarding/project" });
+			}
 		: null;
 
-	// Skip is always available, including on the required gh-cli step — setup is
-	// non-blocking. It marks the user onboarded so the _authenticated gate stops
-	// redirecting here; unfinished steps can be completed later from Settings.
 	const handleSkip = async () => {
 		setSkipping(true);
-		track("onboarding_finished", { outcome: "skipped" });
+		track("onboarding_provider_skipped", { outcome: "limited" });
 		try {
-			await apiTrpcClient.user.completeOnboarding.mutate();
-			// Reactive refetch so the layout guards' useSession() sees onboardedAt
-			// before we navigate — otherwise the _authenticated guard bounces us back.
-			await refetchSession({ query: { disableCookieCache: true } });
+			await completeActivationStep("provider", {
+				providerSkippedAt: new Date().toISOString(),
+			});
 		} catch (error) {
-			logger.error("[onboarding] skip failed", error);
-			toast.error("Не удалось пропустить запуск. Попробуйте ещё раз.");
+			logger.error("[onboarding] provider skip failed", error);
+			toast.error("Не удалось сохранить ограничение. Попробуйте ещё раз.");
 			setSkipping(false);
 			return;
 		}
-		await navigate({ to: "/v2-workspaces", replace: true });
+		setSkipping(false);
+		await navigate({ to: "/onboarding/project" });
 	};
 
 	return (

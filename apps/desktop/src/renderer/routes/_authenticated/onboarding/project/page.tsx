@@ -1,4 +1,3 @@
-import { ANALYTICS_EVENTS } from "@rox/shared/constants";
 import { Button } from "@rox/ui/button";
 import { Card } from "@rox/ui/card";
 import { Input } from "@rox/ui/input";
@@ -8,16 +7,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { LuFolderOpen, LuGitBranch } from "react-icons/lu";
-import { track, trackEvent } from "renderer/lib/analytics";
-import { apiTrpcClient } from "renderer/lib/api-trpc-client";
-import { authClient } from "renderer/lib/auth-client";
+import { track } from "renderer/lib/analytics";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
 import { logger } from "renderer/lib/logger";
 import { useFinalizeProjectSetup } from "renderer/react-query/projects";
 import { useFolderFirstImport } from "renderer/routes/_authenticated/_dashboard/components/AddRepositoryModals/hooks/useFolderFirstImport";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
-import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
+import { completeActivationStep } from "../onboarding-progress";
 
 export const Route = createFileRoute("/_authenticated/onboarding/project/")({
 	component: OnboardingProjectPage,
@@ -34,10 +31,8 @@ const cardVariants = {
 
 function OnboardingProjectPage() {
 	const navigate = useNavigate();
-	const { refetch: refetchSession } = authClient.useSession();
 	const { activeHostUrl } = useLocalHostService();
 	const hostReady = activeHostUrl !== null;
-	const openNewWorkspaceModal = useOpenNewWorkspaceModal();
 	const { data: homeDir } = electronTrpc.window.getHomeDir.useQuery();
 	const cloneTargetDir = homeDir ? `${homeDir}/rox/projects` : null;
 	const [url, setUrl] = useState("");
@@ -49,29 +44,16 @@ function OnboardingProjectPage() {
 	});
 	const finalizeSetup = useFinalizeProjectSetup();
 
-	// Adding a project finishes onboarding: mark onboarded, then hand off to the
-	// dashboard's new-workspace modal pre-selected to the project just added.
 	const finish = async (projectId: string) => {
-		track("onboarding_finished", { outcome: "completed" });
-		trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
-			project_id: projectId,
-		});
+		track("onboarding_project_selected", { outcome: "completed" });
 		try {
-			await apiTrpcClient.user.completeOnboarding.mutate();
-			// Reactive refetch (not imperative getSession) so the layout guards'
-			// useSession() sees onboardedAt before we navigate — otherwise the
-			// _authenticated guard bounces /v2-workspaces back to /onboarding.
-			await refetchSession({ query: { disableCookieCache: true } });
+			await completeActivationStep("project", { projectId });
 		} catch (error) {
-			logger.error("[onboarding] completeOnboarding failed", error);
-			toast.error("Не удалось завершить запуск. Попробуйте ещё раз.");
+			logger.error("[onboarding] project progress failed", error);
+			toast.error("Не удалось сохранить проект. Попробуйте ещё раз.");
 			return;
 		}
-		// Land on the dashboard first, then open the modal. Opening it in the same
-		// tick as navigate mounts the Dialog mid-route-transition, which thrashes
-		// Radix's ref composition into a "Maximum update depth" loop.
-		await navigate({ to: "/v2-workspaces", replace: true });
-		openNewWorkspaceModal(projectId);
+		await navigate({ to: "/onboarding/workspace", replace: true });
 	};
 
 	const handleOpenFolder = async () => {
