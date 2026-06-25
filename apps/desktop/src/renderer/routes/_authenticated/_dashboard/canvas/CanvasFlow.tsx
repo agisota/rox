@@ -1,4 +1,9 @@
-import type { CanvasDocument, CanvasMutationBatch } from "@rox/shared/canvas";
+import type {
+	CanvasDocument,
+	CanvasMutationBatch,
+	FreehandPoint,
+} from "@rox/shared/canvas";
+import { freehandPointsToSvgPath } from "@rox/shared/canvas";
 import { Button } from "@rox/ui/button";
 import { cn } from "@rox/ui/utils";
 import type {
@@ -74,9 +79,13 @@ interface CanvasFlowProps {
 	/** Workspace owning the canvas; forwarded so ref-nodes can fetch live content. */
 	workspaceId?: string;
 	modeBadge: string;
+	/** When true, the pane captures pointer strokes for the freehand pen tool. */
+	penActive?: boolean;
 	onMutationBatch: (batch: CanvasMutationBatch, label: string) => void;
 	onSelectionChange: (selection: CanvasSelection) => void;
 	onCreateTextNodeAt: (position: { x: number; y: number }) => void;
+	/** Emitted on pen pointer-up with absolute-canvas stroke samples. */
+	onCreateFreeformNode?: (points: FreehandPoint[]) => void;
 	onDropEntityAt: (
 		position: { x: number; y: number },
 		payload: CanvasRefDragPayload,
@@ -100,9 +109,11 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 			disabled = false,
 			workspaceId,
 			modeBadge,
+			penActive = false,
 			onMutationBatch,
 			onSelectionChange,
 			onCreateTextNodeAt,
+			onCreateFreeformNode,
 			onDropEntityAt,
 			onOpenRefNode,
 		},
@@ -129,6 +140,63 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 		const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
 		const [isExporting, setIsExporting] = useState(false);
 		const [isDropActive, setIsDropActive] = useState(false);
+		// Live pen stroke: absolute-canvas samples captured during a drag. We keep
+		// a ref for the in-flight samples (no re-render per move) plus state for the
+		// rendered preview path so the stroke is visible while drawing.
+		const penPointsRef = useRef<FreehandPoint[]>([]);
+		const [penPreviewPath, setPenPreviewPath] = useState<string | null>(null);
+		const [isDrawing, setIsDrawing] = useState(false);
+
+		const handlePenPointerDown = useCallback(
+			(event: React.PointerEvent) => {
+				if (!penActive || disabled || event.button !== 0) return;
+				event.preventDefault();
+				event.stopPropagation();
+				event.currentTarget.setPointerCapture(event.pointerId);
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				penPointsRef.current = [
+					[position.x, position.y, event.pressure || 0.5],
+				];
+				setIsDrawing(true);
+				setPenPreviewPath(null);
+			},
+			[disabled, penActive, screenToFlowPosition],
+		);
+
+		const handlePenPointerMove = useCallback(
+			(event: React.PointerEvent) => {
+				if (!penActive || disabled || !isDrawing) return;
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				penPointsRef.current.push([
+					position.x,
+					position.y,
+					event.pressure || 0.5,
+				]);
+				setPenPreviewPath(freehandPointsToSvgPath(penPointsRef.current));
+			},
+			[disabled, isDrawing, penActive, screenToFlowPosition],
+		);
+
+		const finishPenStroke = useCallback(
+			(event: React.PointerEvent) => {
+				if (!isDrawing) return;
+				if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+					event.currentTarget.releasePointerCapture(event.pointerId);
+				}
+				const points = penPointsRef.current;
+				penPointsRef.current = [];
+				setIsDrawing(false);
+				setPenPreviewPath(null);
+				if (!disabled && points.length > 1) onCreateFreeformNode?.(points);
+			},
+			[disabled, isDrawing, onCreateFreeformNode],
+		);
 
 		useEffect(() => {
 			setNodes(projectedNodes);
@@ -449,9 +517,9 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 					minZoom={0.12}
 					nodeTypes={canvasNodeTypes}
 					nodes={nodes}
-					nodesConnectable={!disabled}
-					nodesDraggable={!disabled}
-					nodesFocusable={!disabled}
+					nodesConnectable={!disabled && !penActive}
+					nodesDraggable={!disabled && !penActive}
+					nodesFocusable={!disabled && !penActive}
 					onConnect={handleConnect}
 					onDoubleClick={handlePaneDoubleClick}
 					onEdgesChange={handleEdgesChange}
@@ -464,10 +532,12 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 					onNodesChange={handleNodesChange}
 					onNodesDelete={handleNodesDelete}
 					onSelectionChange={handleSelectionChange}
-					panOnDrag
+					panOnDrag={!penActive}
 					panOnScroll
 					proOptions={{ hideAttribution: true }}
-					selectionOnDrag
+					selectionOnDrag={!penActive}
+					elementsSelectable={!penActive}
+					zoomOnDoubleClick={!penActive}
 				>
 					<Background
 						color="color-mix(in srgb, white 6%, transparent)"
@@ -548,6 +618,35 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 						</div>
 					</Panel>
 				</ReactFlow>
+
+				{penActive ? (
+					<div
+						className="absolute inset-0 z-25 cursor-crosshair touch-none"
+						onPointerDown={handlePenPointerDown}
+						onPointerMove={handlePenPointerMove}
+						onPointerUp={finishPenStroke}
+						onPointerCancel={finishPenStroke}
+						data-testid="canvas-pen-layer"
+						data-pen-drawing={isDrawing ? "true" : undefined}
+					>
+						{penPreviewPath ? (
+							<svg
+								className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+								aria-hidden="true"
+							>
+								<g
+									transform={`translate(${instanceRef.current?.getViewport().x ?? 0}, ${instanceRef.current?.getViewport().y ?? 0}) scale(${instanceRef.current?.getViewport().zoom ?? 1})`}
+								>
+									<path
+										d={penPreviewPath}
+										fill="var(--sidebar-primary)"
+										opacity={0.85}
+									/>
+								</g>
+							</svg>
+						) : null}
+					</div>
+				) : null}
 
 				{isDropActive ? (
 					<div

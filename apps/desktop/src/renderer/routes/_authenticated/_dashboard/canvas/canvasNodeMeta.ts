@@ -9,6 +9,7 @@ import {
 	ListTodo,
 	type LucideIcon,
 	MessageSquare,
+	Pencil,
 	Sparkles,
 	StickyNote,
 	Terminal,
@@ -51,6 +52,7 @@ const CANVAS_NODE_META: Record<CanvasNodeType, CanvasNodeMeta> = {
 	prompt: { label: "Промпт", icon: Sparkles, accent: "#d9a441" },
 	"tool-call": { label: "Инструмент", icon: Terminal, accent: "#c97a5a" },
 	canvas: { label: "Холст", icon: Boxes, accent: "#e07850" },
+	freeform: { label: "Рисунок", icon: Pencil, accent: "#e07850" },
 };
 
 const FALLBACK_NODE_META: CanvasNodeMeta = {

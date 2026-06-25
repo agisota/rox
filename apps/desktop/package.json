@@ -220,6 +220,7 @@
 		"node-pty": "1.1.0",
 		"os-locale": "6.0.2",
 		"pdfjs-dist": "5.4.296",
+		"perfect-freehand": "1.2.2",
 		"pidtree": "0.6.0",
 		"pidusage": "4.0.1",
 		"posthog-js": "1.387.0",
