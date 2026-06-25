@@ -9,6 +9,7 @@ import { PostHogProvider } from "posthog-js/react";
 import { PostHogUserIdentifier } from "@/components/PostHogUserIdentifier";
 
 import { TRPCReactProvider } from "../trpc/react";
+import { WebCommandPaletteHost } from "./commandPalette/CommandPaletteHost";
 import {
 	AppearanceProvider,
 	AppearanceWallpaper,
@@ -29,6 +30,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 						<PostHogUserIdentifier />
 						<AppearanceWallpaper />
 						{children}
+						<WebCommandPaletteHost />
 						<ReactQueryDevtools initialIsOpen={false} />
 					</AppearanceProvider>
 				</ThemeProvider>
