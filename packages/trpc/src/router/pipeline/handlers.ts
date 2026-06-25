@@ -14,8 +14,10 @@ import {
 	makeEmbeddingHandler,
 	makeGateHandler,
 	makeHttpHandler,
+	makeManualInputHandler,
 	makeMergeHandler,
 	makeModelHandler,
+	makeNotifyHandler,
 	makeParserHandler,
 	makeRagHandler,
 	makeStructuredExtractHandler,
@@ -32,6 +34,7 @@ import {
 	generatePipelineText,
 	pipelineEmbed,
 } from "./model-provider";
+import { pipelineNotify } from "./notify-port";
 import { makePipelineRetrieval, type RagPortScope } from "./rag-port";
 import { makePipelineWebSearch } from "./web-search-port";
 
@@ -179,6 +182,16 @@ export function buildPipelineHandlers(
 		transform: makeTransformHandler(),
 		parser: makeParserHandler(),
 		variable_set: makeVariableSetHandler(),
+		// I/O nodes (#547). `manual_input` is a pure entry node: it forwards the
+		// run input shaped by its typed fields (no port). `notify` is an output
+		// node wired to the server-side notify port (channel → concrete sender);
+		// the port throws a typed not-configured error the handler routes to
+		// `error`. `webhook`/`schedule` are trigger nodes — they have no executable
+		// handler (a run STARTS at them via the pipeline_triggers registry +
+		// `entryNodeId` dispatch), so they pass through their `runInput` like any
+		// node-entry seed.
+		manual_input: makeManualInputHandler(),
+		notify: makeNotifyHandler(pipelineNotify),
 		// Tool node: provider-abstraction web search. Self-reports a typed
 		// not-configured error when no provider key is set, so always registered.
 		web_search: makeWebSearchHandler(makePipelineWebSearch()),
