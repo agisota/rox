@@ -21,6 +21,7 @@
 		"./faceted-search-results": "./src/components/FacetedSearchResults/index.ts",
 		"./room-visibility-badge": "./src/components/RoomVisibilityBadge/index.ts",
 		"./session-row": "./src/components/SessionRow/index.ts",
+		"./offline-shell": "./src/components/OfflineShell/index.ts",
 		"./live-room-activity-panel": "./src/components/LiveRoomActivityPanel/index.ts",
 		"./workspace-switcher": "./src/components/WorkspaceSwitcher/index.ts",
 		"./icons/preset-icons": "./src/assets/icons/preset-icons/index.ts",
