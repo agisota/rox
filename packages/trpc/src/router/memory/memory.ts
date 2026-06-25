@@ -141,6 +141,21 @@ export const memoryRouter = {
 			});
 		}),
 
+	/** Edit the body of an existing item, preserving its id/createdAt/provenance. */
+	update: protectedProcedure
+		.input(idInput.extend({ body: z.string().trim().min(1).max(4000) }))
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			return mutateOwnedItem(async (tx) => {
+				const [row] = await tx
+					.update(memoryItems)
+					.set({ body: input.body })
+					.where(ownItem(organizationId, ctx.session.user.id, input.id))
+					.returning({ id: memoryItems.id });
+				return row;
+			});
+		}),
+
 	/** Move an item to a different group. */
 	updateGroup: protectedProcedure
 		.input(idInput.extend({ category: categorySchema }))

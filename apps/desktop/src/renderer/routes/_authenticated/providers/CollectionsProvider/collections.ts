@@ -857,7 +857,22 @@ function createOrgCollections(
 					lastTxid = result.txid;
 				}
 
-				const handledFields = new Set(["status", "category"]);
+				if (changes.body !== undefined) {
+					const result = await apiClient.memory.update.mutate({
+						id: original.id,
+						body: changes.body,
+					});
+					lastTxid = result.txid;
+				}
+
+				// `updatedAt` is set optimistically client-side for instant UI, but the
+				// server stamps its own via $onUpdate — no separate sync needed.
+				const handledFields = new Set([
+					"status",
+					"category",
+					"body",
+					"updatedAt",
+				]);
 				const unsupportedFields = Object.keys(changes).filter(
 					(field) => !handledFields.has(field),
 				);
