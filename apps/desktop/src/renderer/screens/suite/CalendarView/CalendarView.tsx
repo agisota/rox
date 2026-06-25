@@ -13,7 +13,7 @@ import {
 	Plus,
 	Upload,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { authClient } from "renderer/lib/auth-client";
 import { logger } from "renderer/lib/logger";
@@ -163,6 +163,7 @@ export function CalendarView() {
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id ?? null;
 	const animateSwitch = useShouldAnimate("decorative");
+	const { updateEvent, updateOccurrence } = useCalendarActions();
 
 	const [view, setView] = useState<CalendarViewMode>("month");
 	const [anchor, setAnchor] = useState(() => new Date());
@@ -319,6 +320,34 @@ export function CalendarView() {
 		});
 		setDialogOpen(true);
 	};
+
+	/**
+	 * Persist a drag-MOVE or edge-RESIZE from the time grid. A one-off event
+	 * writes the whole series via `updateEvent`; a recurring instance writes a
+	 * "this event only" override via `updateOccurrence`, threading the clicked
+	 * instance's RECURRENCE-ID (`occurrence.originalStart`) back VERBATIM so the
+	 * server keys the override on the right slot (never recomputed client-side —
+	 * teleport/DST-safe). Both `dtstart`/`dtend` are sent as ISO UTC.
+	 */
+	const persistOccurrenceTime = useCallback(
+		(occurrence: OccurrenceItem, next: { start: Date; end: Date }) => {
+			const event = rawEvents.find((e) => e.id === occurrence.eventId);
+			if (!event) return;
+			const dtstart = next.start.toISOString();
+			const dtend = next.end.toISOString();
+			if (event.rrule) {
+				updateOccurrence.mutate({
+					eventId: event.id,
+					originalStart: occurrence.originalStart ?? occurrence.start,
+					dtstart,
+					dtend,
+				});
+			} else {
+				updateEvent.mutate({ eventId: event.id, dtstart, dtend });
+			}
+		},
+		[rawEvents, updateEvent, updateOccurrence],
+	);
 
 	const handleExport = async () => {
 		if (!firstCalendarId) return;
@@ -499,6 +528,8 @@ export function CalendarView() {
 								colorById={colorById}
 								onCreateAt={openCreateSlot}
 								onSelectEvent={openEdit}
+								onMoveOccurrence={persistOccurrenceTime}
+								onResizeOccurrence={persistOccurrenceTime}
 							/>
 						)}
 					</motion.div>
