@@ -2,6 +2,9 @@ import {
 	type AccumulatedContext,
 	ancestorsOf,
 	appendContextEntry,
+	DEFAULT_MAX_LOOP_ITERATIONS as CORE_DEFAULT_MAX_LOOP_ITERATIONS,
+	MAX_LOOP_ITERATIONS as CORE_MAX_LOOP_ITERATIONS,
+	clampLoopIterationCap,
 	createAccumulatedContext,
 	isSkillCallType,
 	loopBackEdgeKeys,
@@ -34,19 +37,18 @@ import type {
  * (critic → improver). The re-entrant loop walk in `execute` bounds each loop
  * body by `resolveLoopIterationCap(...)`, so a feedback loop cannot re-enter —
  * or append context — forever.
+ *
+ * Re-exported from `@rox/workflow-core` (the canonical home, #527) so the runtime
+ * cap, the node-registry config bound, and the pipeline editor's UI clamp share ONE
+ * source of truth and cannot drift. The names are preserved here for existing
+ * importers (the cross-run dispatcher + this module's tests).
  */
-export const DEFAULT_MAX_LOOP_ITERATIONS = 5;
-export const MAX_LOOP_ITERATIONS = 20;
+export const DEFAULT_MAX_LOOP_ITERATIONS = CORE_DEFAULT_MAX_LOOP_ITERATIONS;
+export const MAX_LOOP_ITERATIONS = CORE_MAX_LOOP_ITERATIONS;
 
 /** Clamp a configured loop cap into the supported `[1, MAX_LOOP_ITERATIONS]` range. */
 export function resolveLoopIterationCap(maxIterations?: number): number {
-	if (maxIterations == null || !Number.isFinite(maxIterations)) {
-		return DEFAULT_MAX_LOOP_ITERATIONS;
-	}
-	const floored = Math.floor(maxIterations);
-	if (floored < 1) return 1;
-	if (floored > MAX_LOOP_ITERATIONS) return MAX_LOOP_ITERATIONS;
-	return floored;
+	return clampLoopIterationCap(maxIterations);
 }
 
 /** Built-in handlers used when a block type has no injected handler. */

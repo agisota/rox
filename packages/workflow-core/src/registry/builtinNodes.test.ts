@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { MAX_LOOP_ITERATIONS } from "../graph/loopWalk";
 import {
 	BUILTIN_NODE_TYPES,
 	getNodeType,
@@ -56,7 +57,7 @@ describe("built-in node types", () => {
 		expect(def.fields.find((f) => f.key === "roleSlug")?.required).toBe(true);
 	});
 
-	test("loop configSchema validates maxIterations bounds", () => {
+	test("loop configSchema validates maxIterations bounds (runtime cap)", () => {
 		const def = getNodeType("loop");
 		if (!def) throw new Error("loop not registered");
 		expect(def.configSchema.safeParse({ maxIterations: 5 }).success).toBe(true);
@@ -67,6 +68,16 @@ describe("built-in node types", () => {
 		expect(def.configSchema.safeParse({ maxIterations: 999 }).success).toBe(
 			false,
 		);
+		// The upper bound mirrors the runtime loop-replay cap (#527): the cap value
+		// is accepted, one over is rejected — no silently-clamped values.
+		expect(
+			def.configSchema.safeParse({ maxIterations: MAX_LOOP_ITERATIONS })
+				.success,
+		).toBe(true);
+		expect(
+			def.configSchema.safeParse({ maxIterations: MAX_LOOP_ITERATIONS + 1 })
+				.success,
+		).toBe(false);
 	});
 
 	test("human_approval pauses the run and stores approvalMessage", () => {

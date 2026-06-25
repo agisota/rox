@@ -68,6 +68,60 @@ describe("buildPipelineHandlers — I/O nodes (#547)", () => {
 	});
 });
 
+describe("buildPipelineHandlers — code node (#526)", () => {
+	test("registers code wired to the real sandbox port (scope-independent)", () => {
+		// Self-contained sandbox (no tenancy): always registered.
+		expect(buildPipelineHandlers().code).toBeDefined();
+		expect(
+			buildPipelineHandlers({
+				organizationId: "org-1",
+				v2ProjectId: null,
+				userId: "user-1",
+				relayUrl: "https://relay.test",
+			}).code,
+		).toBeDefined();
+	});
+
+	test("runs author JS in the sandbox end-to-end and returns its output", async () => {
+		const handler = buildPipelineHandlers().code;
+		expect(handler).toBeDefined();
+		const res = await handler(
+			ctx(
+				"code",
+				{
+					language: "javascript",
+					source: "function main(input){ return { sum: input.a + input.b }; }",
+					inputs: { a: "a", b: "b" },
+				},
+				{ a: 2, b: 40 },
+			),
+		);
+		expect(res.handle).toBe("out");
+		expect(res.output).toEqual({ sum: 42 });
+	});
+
+	test("a sandbox escape attempt (process) is denied through the wired handler", async () => {
+		const handler = buildPipelineHandlers().code;
+		const res = await handler(
+			ctx("code", {
+				language: "javascript",
+				source: "function main(){ return { t: typeof process }; }",
+			}),
+		);
+		expect(res.handle).toBe("out");
+		expect(res.output).toEqual({ t: "undefined" });
+	});
+
+	test("python routes to the error handle (unsupported on this host)", async () => {
+		const handler = buildPipelineHandlers().code;
+		const res = await handler(
+			ctx("code", { language: "python", source: "def main(i):\n  return i" }),
+		);
+		expect(res.handle).toBe("error");
+		expect(res.error?.code).toBe("CODE_LANGUAGE_UNSUPPORTED");
+	});
+});
+
 describe("buildPipelineHandlers — tool nodes (#545)", () => {
 	const SCOPE = {
 		organizationId: "org-1",

@@ -4,6 +4,7 @@ import {
 	messageActionLabels,
 } from "@rox/ui/ai-elements/message";
 import { ease, motionDuration, useShouldAnimate } from "@rox/ui/motion";
+import { ListenButton, type SynthesizedAudio } from "@rox/ui/voice";
 import { motion } from "framer-motion";
 import {
 	CheckIcon,
@@ -21,6 +22,13 @@ interface AssistantMessageActionsProps {
 	onCopy: () => void;
 	onRegenerate: () => void;
 	onRetry: () => void;
+	/**
+	 * FN-043 (#486): synthesize the reply to speech for the "Прослушать" button.
+	 * Wired by the desktop edge to edge-TTS over tRPC; omitted → button hidden.
+	 */
+	onSynthesize?: (text: string) => Promise<SynthesizedAudio>;
+	/** Surfaces a synthesis/playback failure (e.g. a toast). */
+	onListenError?: (error: unknown) => void;
 }
 
 /**
@@ -37,6 +45,8 @@ export function AssistantMessageActions({
 	onCopy,
 	onRegenerate,
 	onRetry,
+	onSynthesize,
+	onListenError,
 }: AssistantMessageActionsProps) {
 	const shouldAnimate = useShouldAnimate();
 	const [spinKey, setSpinKey] = useState(0);
@@ -70,6 +80,15 @@ export function AssistantMessageActions({
 							<CopyIcon className="size-3.5" />
 						)}
 					</MessageAction>
+				) : null}
+				{/* FN-043 (#486): read the reply aloud via free edge-TTS. */}
+				{fullText && onSynthesize ? (
+					<ListenButton
+						text={fullText}
+						synthesize={onSynthesize}
+						onError={onListenError}
+						disabled={actionDisabled}
+					/>
 				) : null}
 				<MessageAction
 					className="size-7 text-muted-foreground hover:text-foreground"

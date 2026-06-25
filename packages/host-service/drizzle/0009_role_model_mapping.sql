@@ -1,0 +1,1 @@
+ALTER TABLE `host_settings` ADD `role_model_mapping_json` text;

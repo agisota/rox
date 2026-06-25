@@ -8,7 +8,11 @@
  * the rename/clamp/merge rules unit-testable without a DOM.
  */
 
-import type { RoxBlockState, RoxWorkflowState } from "@rox/workflow-core";
+import {
+	MAX_LOOP_ITERATIONS,
+	type RoxBlockState,
+	type RoxWorkflowState,
+} from "@rox/workflow-core";
 
 /** A single node-field patch. Absent keys are left untouched. */
 export type NodePatch = {
@@ -24,9 +28,15 @@ export type NodePatch = {
 
 /** Lower bound for a node `name` (mirrors createPipelineSchema: 1..120 trimmed). */
 export const NAME_MAX = 120;
-/** Loop iteration clamp (mirrors the inspector spec: integer 1..200). */
+/**
+ * Loop iteration clamp. The upper bound is the runtime's hard loop-replay cap
+ * (`MAX_LOOP_ITERATIONS` from `@rox/workflow-core`, #527) — previously this clamped
+ * to 200 while the executor capped replays at 20, so a user entering e.g. 100 was
+ * silently capped at run time. Mirroring the runtime cap here means the value the
+ * user can enter is the value the runtime will honour.
+ */
 export const MAX_ITERATIONS_MIN = 1;
-export const MAX_ITERATIONS_MAX = 200;
+export const MAX_ITERATIONS_MAX = MAX_LOOP_ITERATIONS;
 
 /**
  * Normalize a candidate node name. Returns the trimmed value when it is a
@@ -42,8 +52,9 @@ export function sanitizeName(raw: string): string | null {
 
 /**
  * Clamp/validate a loop `maxIterations` input. Returns an integer within
- * [1, 200], or `null` when the input is blank / non-numeric (caller deletes the
- * key so the node falls back to its default label).
+ * [{@link MAX_ITERATIONS_MIN}, {@link MAX_ITERATIONS_MAX}] (the runtime's loop cap),
+ * or `null` when the input is blank / non-numeric (caller deletes the key so the
+ * node falls back to its default label).
  */
 export function clampMaxIterations(raw: string): number | null {
 	const trimmed = raw.trim();

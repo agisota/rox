@@ -304,7 +304,13 @@ function sampleForField(defId: string, key: string, kind: string): unknown {
 		if (defId === "manual_input") return { f: "string" };
 		return { k: "v" };
 	}
-	if (kind === "number") return 1;
+	if (kind === "number") {
+		// Sandbox caps on the code node have a floor above 1; pick an in-range
+		// sample for those keys, generic 1 otherwise.
+		if (key === "timeoutMs") return 5_000;
+		if (key === "memoryLimitMb") return 128;
+		return 1;
+	}
 	if (kind === "select") {
 		if (key === "mode") return defId === "transform" ? "template" : "wait_all";
 		if (key === "kind") return "cron";

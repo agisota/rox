@@ -159,6 +159,18 @@ export interface AgentRunInput {
 	agent: string;
 	prompt: string;
 	maxTurns?: number;
+	/**
+	 * Effective model id for this run (pipeline NodeInspector override → role
+	 * preset), transported from the cloud bridge (#527). For a chat agent the
+	 * runtime switches to it for the turn (`metadata.model` → `engine.switchModel`);
+	 * undefined preserves the workspace/runtime default model.
+	 */
+	model?: string;
+	/**
+	 * Effective sampling temperature for this run (#527). Validated + forwarded to
+	 * the runtime where a temperature knob exists; undefined keeps the default.
+	 */
+	temperature?: number;
 	attachmentIds?: string[];
 	/**
 	 * Optional Agent-Native source (`agent_sources.id`) the run is scoped to,
@@ -236,6 +248,11 @@ async function runChatAgent(
 				content: input.prompt,
 				...(files.length > 0 ? { files } : {}),
 			},
+			// Per-node model override (#527): the chat runtime switches to it for this
+			// turn via `engine.switchModel`. Omitted ⇒ the runtime default model stands.
+			...(input.model != null && input.model.trim() !== ""
+				? { metadata: { model: input.model } }
+				: {}),
 		})
 		.catch((error) => {
 			logger.error(
@@ -339,6 +356,12 @@ export const agentsRouter = router({
 				agent: z.string().min(1),
 				prompt: z.string().min(1),
 				maxTurns: z.number().int().positive().max(200).default(8),
+				// Per-node model/temperature transported from the pipeline run (#527).
+				// `model` switches a chat agent's runtime model for the turn; both are
+				// optional so existing callers (no override) are unaffected. Temperature
+				// is bounded to the same [0, 2] range the NodeInspector clamps to.
+				model: z.string().min(1).optional(),
+				temperature: z.number().min(0).max(2).optional(),
 				attachmentIds: z.array(z.string().uuid()).optional(),
 			}),
 		)

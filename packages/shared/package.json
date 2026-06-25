@@ -36,6 +36,14 @@
 			"types": "./src/crm-contacts.ts",
 			"default": "./src/crm-contacts.ts"
 		},
+		"./object-comments": {
+			"types": "./src/object-comments.ts",
+			"default": "./src/object-comments.ts"
+		},
+		"./project-templates": {
+			"types": "./src/project-templates.ts",
+			"default": "./src/project-templates.ts"
+		},
 		"./calendar-share": {
 			"types": "./src/calendar-share.ts",
 			"default": "./src/calendar-share.ts"
@@ -136,6 +144,10 @@
 			"types": "./src/appearance/index.ts",
 			"default": "./src/appearance/index.ts"
 		},
+		"./tts": {
+			"types": "./src/tts/index.ts",
+			"default": "./src/tts/index.ts"
+		},
 		"./prefs": {
 			"types": "./src/prefs.ts",
 			"default": "./src/prefs.ts"
@@ -171,6 +183,14 @@
 		"./agent-catalog": {
 			"types": "./src/agent-catalog.ts",
 			"default": "./src/agent-catalog.ts"
+		},
+		"./agent-roles": {
+			"types": "./src/agent-roles.ts",
+			"default": "./src/agent-roles.ts"
+		},
+		"./git-binary": {
+			"types": "./src/git-binary.ts",
+			"default": "./src/git-binary.ts"
 		},
 		"./agent-identity": {
 			"types": "./src/agent-identity.ts",
@@ -355,6 +375,10 @@
 		"./memory-context": {
 			"types": "./src/memory-context.ts",
 			"default": "./src/memory-context.ts"
+		},
+		"./workspace-status": {
+			"types": "./src/workspace-status.ts",
+			"default": "./src/workspace-status.ts"
 		}
 	},
 	"scripts": {

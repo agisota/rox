@@ -1,23 +1,15 @@
 import { ChatServiceProvider } from "@rox/chat/client";
-import { motionDuration, useShouldAnimate } from "@rox/ui/motion";
-import { toast } from "@rox/ui/sonner";
 import {
 	createFileRoute,
 	Navigate,
 	Outlet,
 	useLocation,
-	useNavigate,
 } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { createChatServiceIpcClient } from "renderer/components/Chat/utils/chat-service-client";
-import { track } from "renderer/lib/analytics";
-import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
-import { logger } from "renderer/lib/logger";
 import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
-import { OnboardingNavigation } from "./components/OnboardingNavigation";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
 	component: OnboardingFlowLayout,
@@ -26,81 +18,31 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 	}),
 });
 
-const STEPS = [
-	{
-		path: "/onboarding",
-		match: (p: string) => p === "/onboarding",
-		title: "Запуск Rox",
-		subtitle: "Подключите агентов и инструменты, чтобы начать работу.",
-	},
-	{
-		path: "/onboarding/project",
-		match: (p: string) => p === "/onboarding/project",
-		title: "Покажите Rox, где находится код",
-		subtitle:
-			"Откройте папку или клонируйте репозиторий, чтобы завершить запуск.",
-	},
-] as const;
-
+/**
+ * Onboarding shell (Ф4, #509). The two-step provider/project flow is replaced
+ * by a single one-screen onboarding (Variant A) rendered by the index route, so
+ * this layout is a thin frame: the window drag bar, the already-onboarded
+ * redirect guard (bypassed via `?rerun=true` from Settings), and a full-bleed
+ * outlet. The screen owns its own Start / Skip controls.
+ */
 function OnboardingFlowLayout() {
-	const {
-		data: session,
-		isPending,
-		refetch: refetchSession,
-	} = authClient.useSession();
+	const { data: session, isPending } = authClient.useSession();
 	const { data: platform } = electronTrpc.window.getPlatform.useQuery();
 	const isMac = platform === undefined || platform === "darwin";
 	const chatClient = useMemo(() => createChatServiceIpcClient(), []);
 	const location = useLocation();
-	const navigate = useNavigate();
-	const [skipping, setSkipping] = useState(false);
 	const { rerun } = Route.useSearch();
-	const shouldAnimate = useShouldAnimate("essential");
 
 	if (isPending) return null;
 	// Already-onboarded users are redirected out — unless they explicitly
 	// relaunched the flow from Settings (?rerun=true).
-	if (session?.user?.onboardedAt && !rerun) {
+	if (
+		session?.user?.onboardedAt &&
+		!rerun &&
+		location.pathname === "/onboarding"
+	) {
 		return <Navigate to="/" replace />;
 	}
-
-	const currentStepIdx = STEPS.findIndex((s) => s.match(location.pathname));
-	const isOnMainStep = currentStepIdx >= 0;
-	const isFirstStep = currentStepIdx === 0;
-	const currentStep = isOnMainStep ? STEPS[currentStepIdx] : null;
-
-	const handleBack = () => {
-		if (currentStepIdx <= 0) return;
-		const target = STEPS[currentStepIdx - 1];
-		if (!target) return;
-		navigate({ to: target.path });
-	};
-
-	// Step 1 advances to the project step; the project step finishes onboarding
-	// itself the moment a project is added, so it has no footer Continue.
-	const handleContinue = isFirstStep
-		? () => navigate({ to: "/onboarding/project" })
-		: null;
-
-	// Skip is always available, including on the required gh-cli step — setup is
-	// non-blocking. It marks the user onboarded so the _authenticated gate stops
-	// redirecting here; unfinished steps can be completed later from Settings.
-	const handleSkip = async () => {
-		setSkipping(true);
-		track("onboarding_finished", { outcome: "skipped" });
-		try {
-			await apiTrpcClient.user.completeOnboarding.mutate();
-			// Reactive refetch so the layout guards' useSession() sees onboardedAt
-			// before we navigate — otherwise the _authenticated guard bounces us back.
-			await refetchSession({ query: { disableCookieCache: true } });
-		} catch (error) {
-			logger.error("[onboarding] skip failed", error);
-			toast.error("Не удалось пропустить запуск. Попробуйте ещё раз.");
-			setSkipping(false);
-			return;
-		}
-		await navigate({ to: "/v2-workspaces", replace: true });
-	};
 
 	return (
 		<ChatServiceProvider client={chatClient} queryClient={electronQueryClient}>
@@ -109,45 +51,9 @@ function OnboardingFlowLayout() {
 					className="drag h-12 w-full shrink-0"
 					style={{ paddingLeft: isMac ? "88px" : "16px" }}
 				/>
-				<div className="flex-1 overflow-auto">
-					{currentStep ? (
-						<div className="mx-auto flex w-full max-w-2xl flex-col px-8 pt-16 pb-6">
-							<AnimatePresence mode="wait" initial={false}>
-								<motion.div
-									key={currentStepIdx}
-									className="flex flex-col gap-10"
-									initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
-									animate={{ opacity: 1, y: 0 }}
-									exit={shouldAnimate ? { opacity: 0, y: -8 } : undefined}
-									transition={{ duration: motionDuration.fast }}
-								>
-									<div className="space-y-2">
-										<h1 className="text-2xl font-semibold text-foreground">
-											{currentStep.title}
-										</h1>
-										<p className="text-sm text-muted-foreground">
-											{currentStep.subtitle}
-										</p>
-									</div>
-									<Outlet />
-								</motion.div>
-							</AnimatePresence>
-						</div>
-					) : (
-						<Outlet />
-					)}
+				<div className="min-h-0 flex-1 overflow-auto">
+					<Outlet />
 				</div>
-				{isOnMainStep && (
-					<OnboardingNavigation
-						currentStep={currentStepIdx}
-						totalSteps={STEPS.length}
-						onBack={isFirstStep ? null : handleBack}
-						onContinue={handleContinue}
-						onSkip={handleSkip}
-						skipDisabled={skipping}
-						continueLabel="Продолжить"
-					/>
-				)}
 			</div>
 		</ChatServiceProvider>
 	);

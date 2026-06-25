@@ -127,6 +127,7 @@ CREATE TABLE settings (
   dictation_enabled INTEGER DEFAULT 1,
   ambient_capture_enabled INTEGER DEFAULT 0,
   voice_agent_context TEXT DEFAULT '',
+  tts_voice TEXT,
   push_to_talk_accelerator TEXT
 );
 CREATE TABLE browser_history (

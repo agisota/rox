@@ -68,6 +68,11 @@ export const metadata: Metadata = {
 	],
 	authors: [{ name: `${COMPANY.NAME} Team` }],
 	creator: COMPANY.NAME,
+	// #520: OG/Twitter images are intentionally NOT set here. The branded
+	// girl-mark card is produced by the App-Router `opengraph-image.tsx` file
+	// convention (premium-black + Victor Mono), which Next injects into the root
+	// metadata automatically. Hardcoding `/og-image.png` here would override that
+	// generated card with the old static banner.
 	openGraph: {
 		type: "website",
 		locale: "ru_RU",
@@ -75,20 +80,11 @@ export const metadata: Metadata = {
 		siteName: COMPANY.NAME,
 		title: `${COMPANY.NAME} - параллельные кодинг-агенты на твоей машине`,
 		description: siteDescription,
-		images: [
-			{
-				url: "/og-image.png",
-				width: 1200,
-				height: 630,
-				alt: `${COMPANY.NAME} - терминал для кодинг-агентов`,
-			},
-		],
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: `${COMPANY.NAME} - параллельные кодинг-агенты на твоей машине`,
 		description: siteDescription,
-		images: ["/og-image.png"],
 		creator: "@rox_sh",
 	},
 	robots: {
