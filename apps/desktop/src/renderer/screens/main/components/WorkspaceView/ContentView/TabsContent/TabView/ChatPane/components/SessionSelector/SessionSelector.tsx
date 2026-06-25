@@ -34,6 +34,10 @@ interface SessionSelectorProps {
 	onSelectSession: (sessionId: string) => void;
 	onNewChat: () => Promise<void>;
 	onDeleteSession: (sessionId: string) => Promise<void>;
+	/** Filter the list on a `#tag` clicked inside a session title (F13). */
+	onSelectHashtag?: (tag: string) => void;
+	/** Tag names currently active in the F13 hashtag filter (accent chips). */
+	activeHashtags?: readonly string[];
 }
 
 const SESSION_PAGE_SIZE = 20;
@@ -62,6 +66,8 @@ export function SessionSelector({
 	onSelectSession,
 	onNewChat,
 	onDeleteSession,
+	onSelectHashtag,
+	activeHashtags,
 }: SessionSelectorProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [visibleCount, setVisibleCount] = useState(SESSION_PAGE_SIZE);
@@ -141,6 +147,8 @@ export function SessionSelector({
 												setIsOpen(false);
 											}}
 											onDeleteSession={onDeleteSession}
+											onSelectHashtag={onSelectHashtag}
+											activeHashtags={activeHashtags}
 										/>
 									))}
 								</div>

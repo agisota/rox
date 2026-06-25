@@ -21,6 +21,7 @@
 		"./shell-sidebar-region": "./src/components/ShellSidebarRegion/index.ts",
 		"./tag-filter-pill-bar": "./src/components/TagFilterPillBar/index.ts",
 		"./suggested-label-chips": "./src/components/SuggestedLabelChips/index.ts",
+		"./hashtag-title": "./src/components/HashtagTitle/index.ts",
 		"./faceted-search-results": "./src/components/FacetedSearchResults/index.ts",
 		"./message-search-box": "./src/components/MessageSearchBox/index.ts",
 		"./room-visibility-badge": "./src/components/RoomVisibilityBadge/index.ts",

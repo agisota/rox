@@ -1,7 +1,9 @@
+import { parseHashtagSegments } from "@rox/chat/shared";
 import { alert } from "@rox/ui/atoms/Alert";
 import { DropdownMenuItem } from "@rox/ui/dropdown-menu";
 import { SessionRow, type SessionRowData } from "@rox/ui/session-row";
 import { toast } from "@rox/ui/sonner";
+import { useMemo } from "react";
 
 interface SessionSelectorItemProps {
 	sessionId: string;
@@ -9,6 +11,10 @@ interface SessionSelectorItemProps {
 	isCurrent: boolean;
 	onSelectSession: (sessionId: string) => void;
 	onDeleteSession: (sessionId: string) => Promise<void>;
+	/** Filter on a `#tag` clicked inside the title (F13). */
+	onSelectHashtag?: (tag: string) => void;
+	/** Tag names currently active in the F13 hashtag filter. */
+	activeHashtags?: readonly string[];
 }
 
 /**
@@ -23,8 +29,15 @@ export function SessionSelectorItem({
 	isCurrent,
 	onSelectSession,
 	onDeleteSession,
+	onSelectHashtag,
+	activeHashtags,
 }: SessionSelectorItemProps) {
-	const data: SessionRowData = { sessionId, title, isCurrent };
+	// Parse `#tags` out of the title once so the row can render them as chips.
+	const titleSegments = useMemo(
+		() => (onSelectHashtag ? parseHashtagSegments(title) : undefined),
+		[title, onSelectHashtag],
+	);
+	const data: SessionRowData = { sessionId, title, isCurrent, titleSegments };
 
 	const confirmDelete = () => {
 		alert({
@@ -60,6 +73,8 @@ export function SessionSelectorItem({
 				onDelete={confirmDelete}
 				deleteLabel="Удалить сессию"
 				emptyTitleLabel="New Chat"
+				onSelectTag={onSelectHashtag}
+				activeTags={activeHashtags}
 			/>
 		</DropdownMenuItem>
 	);
