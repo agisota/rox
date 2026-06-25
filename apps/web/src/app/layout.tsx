@@ -1,5 +1,6 @@
 import { Toaster } from "@rox/ui/sonner";
 import { cn } from "@rox/ui/utils";
+import { SerwistProvider } from "@serwist/next/react";
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Inter } from "next/font/google";
 
@@ -53,10 +54,12 @@ export default function RootLayout({
 					ibmPlexMono.variable,
 				)}
 			>
-				<Providers>
-					{children}
-					<Toaster />
-				</Providers>
+				<SerwistProvider swUrl="/sw.js">
+					<Providers>
+						{children}
+						<Toaster />
+					</Providers>
+				</SerwistProvider>
 			</body>
 		</html>
 	);

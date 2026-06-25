@@ -4,7 +4,8 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "next build",
+		"build": "next build && bun run build:sw",
+		"build:sw": "serwist build --config serwist.config.js",
 		"clean": "git clean -xdf .cache .next .turbo node_modules",
 		"dev": "dotenv -e ../../.env -- sh -c 'exec next dev --port ${WEB_PORT:-3000}'",
 		"start": "next start",
@@ -20,6 +21,7 @@
 		"@rox/ui": "workspace:*",
 		"@rox/workflow-core": "workspace:*",
 		"@sentry/nextjs": "10.46.0",
+		"@serwist/next": "9.5.11",
 		"@t3-oss/env-nextjs": "0.13.11",
 		"@tanstack/react-query": "5.100.9",
 		"@tanstack/react-query-devtools": "5.95.2",
@@ -45,12 +47,14 @@
 		"react-icons": "5.6.0",
 		"require-in-the-middle": "8.0.1",
 		"server-only": "0.0.1",
+		"serwist": "9.5.11",
 		"superjson": "2.2.6",
 		"zod": "4.3.6"
 	},
 	"devDependencies": {
 		"@happy-dom/global-registrator": "20.10.6",
 		"@rox/typescript": "workspace:*",
+		"@serwist/cli": "9.5.11",
 		"@tailwindcss/postcss": "4.2.2",
 		"@testing-library/dom": "10.4.1",
 		"@testing-library/react": "16.3.2",
