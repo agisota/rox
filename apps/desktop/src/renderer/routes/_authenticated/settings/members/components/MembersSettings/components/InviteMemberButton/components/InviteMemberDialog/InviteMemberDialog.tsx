@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { canInvite, type OrganizationRole } from "@rox/shared/auth";
 import { Button } from "@rox/ui/button";
 import {
@@ -8,8 +9,15 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@rox/ui/dialog";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@rox/ui/form";
 import { Input } from "@rox/ui/input";
-import { Label } from "@rox/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -18,8 +26,10 @@ import {
 	SelectValue,
 } from "@rox/ui/select";
 import { toast } from "@rox/ui/sonner";
-import { useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { authClient } from "renderer/lib/auth-client";
+import { z } from "zod";
 
 interface InviteMemberDialogProps {
 	open: boolean;
@@ -40,6 +50,19 @@ function getRoleLabel(role: OrganizationRole): string {
 	return ROLE_LABELS[role];
 }
 
+const ORGANIZATION_ROLES = ["owner", "admin", "member"] as const;
+
+const inviteMemberFormSchema = z.object({
+	email: z
+		.string()
+		.trim()
+		.min(1, "Укажите эл. почту.")
+		.email("Введите корректный адрес эл. почты."),
+	role: z.enum(ORGANIZATION_ROLES),
+});
+
+type InviteMemberFormValues = z.infer<typeof inviteMemberFormSchema>;
+
 export function InviteMemberDialog({
 	open,
 	onOpenChange,
@@ -48,29 +71,41 @@ export function InviteMemberDialog({
 	invitableRoles,
 	currentUserRole,
 }: InviteMemberDialogProps) {
-	const [email, setEmail] = useState("");
-	const [role, setRole] = useState<OrganizationRole>("member");
-	const [isInviting, setIsInviting] = useState(false);
+	const form = useForm<InviteMemberFormValues>({
+		resolver: zodResolver(inviteMemberFormSchema),
+		defaultValues: {
+			email: "",
+			role: "member",
+		},
+	});
 
-	const handleInvite = async () => {
-		if (!canInvite(currentUserRole, role)) {
-			toast.error(
-				`Нельзя приглашать пользователей с ролью «${getRoleLabel(role)}»`,
-			);
+	// Reset to a clean state whenever the dialog re-opens.
+	useEffect(() => {
+		if (open) {
+			form.reset({ email: "", role: "member" });
+		}
+	}, [open, form]);
+
+	const isInviting = form.formState.isSubmitting;
+
+	const handleInvite = async (values: InviteMemberFormValues) => {
+		if (!canInvite(currentUserRole, values.role)) {
+			form.setError("role", {
+				type: "manual",
+				message: `Нельзя приглашать пользователей с ролью «${getRoleLabel(values.role)}»`,
+			});
 			return;
 		}
 
-		setIsInviting(true);
 		try {
 			await authClient.organization.inviteMember({
 				organizationId,
-				email,
-				role,
+				email: values.email,
+				role: values.role,
 			});
 
-			toast.success(`Приглашение отправлено на ${email}`);
-			setEmail("");
-			setRole("member");
+			toast.success(`Приглашение отправлено на ${values.email}`);
+			form.reset({ email: "", role: "member" });
 			onOpenChange(false);
 		} catch (error) {
 			toast.error(
@@ -78,8 +113,6 @@ export function InviteMemberDialog({
 					? error.message
 					: "Не удалось отправить приглашение",
 			);
-		} finally {
-			setIsInviting(false);
 		}
 	};
 
@@ -93,56 +126,74 @@ export function InviteMemberDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-4 py-4">
-					<div className="space-y-2">
-						<Label htmlFor="email">Эл. почта</Label>
-						<Input
-							id="email"
-							type="email"
-							placeholder="user@example.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && email && !isInviting) {
-									handleInvite();
-								}
-							}}
-							disabled={isInviting}
-						/>
-					</div>
-
-					<div className="space-y-2">
-						<Label htmlFor="role">Роль</Label>
-						<Select
-							value={role}
-							onValueChange={(val) => setRole(val as OrganizationRole)}
-						>
-							<SelectTrigger id="role" disabled={isInviting}>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{invitableRoles.map((r) => (
-									<SelectItem key={r} value={r}>
-										{getRoleLabel(r)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
-
-				<DialogFooter>
-					<Button
-						variant="outline"
-						onClick={() => onOpenChange(false)}
-						disabled={isInviting}
+				<Form {...form}>
+					<form
+						className="space-y-4 py-4"
+						onSubmit={form.handleSubmit(handleInvite)}
 					>
-						Отмена
-					</Button>
-					<Button onClick={handleInvite} disabled={isInviting || !email}>
-						{isInviting ? "Отправляем..." : "Отправить приглашение"}
-					</Button>
-				</DialogFooter>
+						<FormField
+							control={form.control}
+							name="email"
+							render={({ field }) => (
+								<FormItem className="space-y-2">
+									<FormLabel>Эл. почта</FormLabel>
+									<FormControl>
+										<Input
+											{...field}
+											type="email"
+											placeholder="user@example.com"
+											disabled={isInviting}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="role"
+							render={({ field }) => (
+								<FormItem className="space-y-2">
+									<FormLabel>Роль</FormLabel>
+									<Select
+										value={field.value}
+										onValueChange={field.onChange}
+										disabled={isInviting}
+									>
+										<FormControl>
+											<SelectTrigger>
+												<SelectValue />
+											</SelectTrigger>
+										</FormControl>
+										<SelectContent>
+											{invitableRoles.map((r) => (
+												<SelectItem key={r} value={r}>
+													{getRoleLabel(r)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<DialogFooter>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => onOpenChange(false)}
+								disabled={isInviting}
+							>
+								Отмена
+							</Button>
+							<Button type="submit" disabled={isInviting}>
+								{isInviting ? "Отправляем..." : "Отправить приглашение"}
+							</Button>
+						</DialogFooter>
+					</form>
+				</Form>
 			</DialogContent>
 		</Dialog>
 	);

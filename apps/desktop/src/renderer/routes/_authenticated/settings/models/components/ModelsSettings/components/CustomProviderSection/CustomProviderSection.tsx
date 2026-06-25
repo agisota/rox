@@ -1,11 +1,21 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { chatServiceTrpc } from "@rox/chat/client";
 import { Badge } from "@rox/ui/badge";
 import { Button } from "@rox/ui/button";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@rox/ui/form";
 import { Input } from "@rox/ui/input";
-import { Label } from "@rox/ui/label";
 import { toast } from "@rox/ui/sonner";
 import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { HiOutlineCube } from "react-icons/hi2";
+import { z } from "zod";
 import { getStatusBadge, resolveProviderStatus } from "../../utils";
 import { SettingsSection } from "../SettingsSection";
 
@@ -26,9 +36,29 @@ function getErrorMessage(error: unknown, fallback: string): string {
 		: fallback;
 }
 
+/**
+ * Client-side schema for the custom-provider form. The Base URL gains a real
+ * URL check (the tRPC input only enforces `min(1)`), so an invalid endpoint
+ * shows an inline error before submit. The key is optional: when omitted the
+ * backend reuses the already-saved secret (the renderer never receives it).
+ */
+const customProviderFormSchema = z.object({
+	baseUrl: z
+		.string()
+		.trim()
+		.min(1, "Укажите Base URL.")
+		.url("Введите корректный URL (например, https://api.example.com/v1)."),
+	apiKey: z.string(),
+});
+
+type CustomProviderFormValues = z.infer<typeof customProviderFormSchema>;
+
+const EMPTY_FORM: CustomProviderFormValues = {
+	baseUrl: "",
+	apiKey: "",
+};
+
 export function CustomProviderSection() {
-	const [baseUrl, setBaseUrl] = useState("");
-	const [apiKey, setApiKey] = useState("");
 	const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
 
 	const { data: config, refetch } =
@@ -42,15 +72,26 @@ export function CustomProviderSection() {
 
 	const isSaving = setConfigMutation.isPending || clearConfigMutation.isPending;
 	const isDiscovering = discoverModelsMutation.isPending;
+	const isBusy = isSaving || isDiscovering;
+
+	const form = useForm<CustomProviderFormValues>({
+		resolver: zodResolver(customProviderFormSchema),
+		defaultValues: EMPTY_FORM,
+		mode: "onChange",
+	});
+
+	const hasSavedApiKey = config?.hasApiKey ?? false;
 
 	// Hydrate the form from the persisted config. The API key is never returned
-	// to the renderer (only `hasApiKey`); the input stays empty and shows a saved
-	// placeholder so the user can keep the stored key or overwrite it.
+	// to the renderer (only `hasApiKey`); the field stays empty and shows a saved
+	// placeholder so the user can keep the stored key or overwrite it. Re-hydrate
+	// only when the persisted Base URL changes so user edits aren't clobbered.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: sync only on persisted baseUrl change
 	useEffect(() => {
 		if (!config) return;
-		setBaseUrl(config.baseUrl);
+		form.reset({ baseUrl: config.baseUrl, apiKey: "" });
 		setDiscoveredModels(config.models);
-	}, [config]);
+	}, [config?.baseUrl]);
 
 	const status = useMemo(
 		() =>
@@ -62,29 +103,22 @@ export function CustomProviderSection() {
 	);
 	const badge = useMemo(() => getStatusBadge(status), [status]);
 
-	const hasSavedApiKey = config?.hasApiKey ?? false;
-	const effectiveApiKey = apiKey.trim();
-	const canConnect =
-		baseUrl.trim().length > 0 &&
-		(effectiveApiKey.length > 0 || hasSavedApiKey) &&
-		!isDiscovering &&
-		!isSaving;
-
 	/**
 	 * Connect (or refresh): parse `/v1/models` and persist the full list. The
 	 * picker surfaces every discovered model; Settings no longer asks the user to
 	 * pick a single one.
 	 */
-	const connectAndSave = async () => {
-		const trimmedBaseUrl = baseUrl.trim();
-		if (!trimmedBaseUrl) {
-			toast.error("Укажите Base URL.");
-			return;
-		}
+	const connectAndSave = async (values: CustomProviderFormValues) => {
+		const trimmedBaseUrl = values.baseUrl.trim();
+		const effectiveApiKey = values.apiKey.trim();
+
 		// Require a key only when none is saved yet. When a key is already stored,
 		// the backend reuses it — the renderer never receives the raw secret.
 		if (!effectiveApiKey && !hasSavedApiKey) {
-			toast.error("Укажите ключ API.");
+			form.setError("apiKey", {
+				type: "manual",
+				message: "Укажите ключ API.",
+			});
 			return;
 		}
 
@@ -107,7 +141,7 @@ export function CustomProviderSection() {
 				...(effectiveApiKey ? { apiKey: effectiveApiKey } : {}),
 				models: ids,
 			});
-			setApiKey("");
+			form.reset({ baseUrl: trimmedBaseUrl, apiKey: "" });
 			await refetch();
 			toast.success(`Свой провайдер сохранён — моделей: ${ids.length}`);
 		} catch (error) {
@@ -118,8 +152,7 @@ export function CustomProviderSection() {
 	const clearConfig = async () => {
 		try {
 			await clearConfigMutation.mutateAsync();
-			setBaseUrl("");
-			setApiKey("");
+			form.reset(EMPTY_FORM);
 			setDiscoveredModels([]);
 			await refetch();
 			toast.success("Свой провайдер удалён");
@@ -144,95 +177,95 @@ export function CustomProviderSection() {
 				) : null
 			}
 		>
-			<div className="space-y-3">
-				<div className="space-y-1.5">
-					<Label
-						htmlFor="custom-provider-base-url"
-						className="text-sm font-medium"
-					>
-						Base URL
-					</Label>
-					<Input
-						id="custom-provider-base-url"
-						value={baseUrl}
-						onChange={(event) => {
-							setBaseUrl(event.target.value);
-						}}
-						placeholder="https://api.example.com/v1"
-						className="font-mono"
-						disabled={isSaving || isDiscovering}
+			<Form {...form}>
+				<form
+					className="space-y-3"
+					onSubmit={form.handleSubmit(connectAndSave)}
+				>
+					<FormField
+						control={form.control}
+						name="baseUrl"
+						render={({ field }) => (
+							<FormItem className="space-y-1.5">
+								<FormLabel className="text-sm font-medium">Base URL</FormLabel>
+								<FormControl>
+									<Input
+										{...field}
+										placeholder="https://api.example.com/v1"
+										className="font-mono"
+										disabled={isBusy}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
 					/>
-				</div>
 
-				<div className="space-y-1.5">
-					<Label
-						htmlFor="custom-provider-api-key"
-						className="text-sm font-medium"
-					>
-						Ключ API
-					</Label>
-					<Input
-						id="custom-provider-api-key"
-						type="password"
-						value={apiKey}
-						onChange={(event) => {
-							setApiKey(event.target.value);
-						}}
-						placeholder={hasSavedApiKey ? "Сохранённый ключ API" : "sk-..."}
-						className="font-mono"
-						disabled={isSaving || isDiscovering}
+					<FormField
+						control={form.control}
+						name="apiKey"
+						render={({ field }) => (
+							<FormItem className="space-y-1.5">
+								<FormLabel className="text-sm font-medium">Ключ API</FormLabel>
+								<FormControl>
+									<Input
+										{...field}
+										type="password"
+										placeholder={
+											hasSavedApiKey ? "Сохранённый ключ API" : "sk-..."
+										}
+										className="font-mono"
+										disabled={isBusy}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
 					/>
-				</div>
 
-				<p className="text-xs text-muted-foreground">
-					Список моделей запрашивается по адресу{" "}
-					<span className="font-mono">{"{Base URL}/models"}</span>{" "}
-					(OpenAI-совместимо). Ключ сохраняется в локальном хранилище Rox.
-					{modelCount > 0 ? (
-						<>
-							{" "}
-							Найдено моделей: <span className="font-medium">{modelCount}</span>
-							.
-						</>
-					) : null}
-				</p>
+					<p className="text-xs text-muted-foreground">
+						Список моделей запрашивается по адресу{" "}
+						<span className="font-mono">{"{Base URL}/models"}</span>{" "}
+						(OpenAI-совместимо). Ключ сохраняется в локальном хранилище Rox.
+						{modelCount > 0 ? (
+							<>
+								{" "}
+								Найдено моделей:{" "}
+								<span className="font-medium">{modelCount}</span>.
+							</>
+						) : null}
+					</p>
 
-				<div className="flex items-center justify-end gap-2">
-					{hasSavedApiKey ? (
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => {
-								void connectAndSave();
-							}}
-							disabled={!canConnect}
-						>
-							{isDiscovering ? "Обновление…" : "Обновить список моделей"}
+					<div className="flex items-center justify-end gap-2">
+						{hasSavedApiKey ? (
+							<Button
+								type="submit"
+								variant="outline"
+								size="sm"
+								disabled={isBusy}
+							>
+								{isDiscovering ? "Обновление…" : "Обновить список моделей"}
+							</Button>
+						) : null}
+						{hasSavedApiKey ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => {
+									void clearConfig();
+								}}
+								disabled={isBusy}
+							>
+								Очистить
+							</Button>
+						) : null}
+						<Button type="submit" size="sm" disabled={isBusy}>
+							{isDiscovering || isSaving ? "Подключение…" : primaryLabel}
 						</Button>
-					) : null}
-					{hasSavedApiKey ? (
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => {
-								void clearConfig();
-							}}
-							disabled={isSaving || isDiscovering}
-						>
-							Очистить
-						</Button>
-					) : null}
-					<Button
-						size="sm"
-						onClick={() => {
-							void connectAndSave();
-						}}
-						disabled={!canConnect}
-					>
-						{isDiscovering || isSaving ? "Подключение…" : primaryLabel}
-					</Button>
-				</div>
-			</div>
+					</div>
+				</form>
+			</Form>
 		</SettingsSection>
 	);
 }
