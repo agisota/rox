@@ -59,6 +59,8 @@
 		"typecheck": "tsc --noEmit --emitDeclarationOnly false"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "3.0.64",
+		"@ai-sdk/openai": "3.0.36",
 		"@linear/sdk": "68.1.1",
 		"@rox/analytics": "workspace:*",
 		"@rox/auth": "workspace:*",
@@ -79,6 +81,7 @@
 		"@upstash/redis": "1.37.0",
 		"@vercel/blob": "2.3.2",
 		"@vercel/kv": "3.0.0",
+		"ai": "6.0.141",
 		"drizzle-orm": "0.45.2",
 		"posthog-node": "5.38.0",
 		"resend": "4.8.0",

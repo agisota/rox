@@ -18,6 +18,7 @@ import { env } from "../../env";
 import type { RunSkillTriggerKind } from "../skill/run-service";
 import { emitAgentRunFinished } from "./agent-run-events";
 import { makeAgentRunResolver } from "./agent-run-service";
+import { buildPipelineHandlers } from "./handlers";
 
 export interface RunPipelineArgs {
 	organizationId: string;
@@ -125,6 +126,9 @@ export async function runPipeline(
 	const executor = new WorkflowExecutor();
 	const result = await executor.execute(state, args.input, {
 		recorder: new DbRunRecorder(runId),
+		// Executor node handlers (model, and sibling issues' condition/http/db/…).
+		// agent_run/skill_call keep their dedicated resolver seams below.
+		handlers: buildPipelineHandlers(),
 		// Pipelines have no published output schema; the executor skips output
 		// validation when omitted.
 		entryNodeId: args.entryNodeId,

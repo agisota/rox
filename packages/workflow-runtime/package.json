@@ -7,6 +7,10 @@
 		".": {
 			"types": "./src/index.ts",
 			"default": "./src/index.ts"
+		},
+		"./handlers": {
+			"types": "./src/handlers/modelHandler.ts",
+			"default": "./src/handlers/modelHandler.ts"
 		}
 	},
 	"scripts": {

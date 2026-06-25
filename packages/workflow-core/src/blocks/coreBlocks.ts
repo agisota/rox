@@ -84,6 +84,14 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "high",
 	}),
+	defineBlock("model", {
+		label: "Model",
+		description:
+			"Single LLM call (system + user prompt) without an agent role; returns generated text + usage.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
