@@ -15,6 +15,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { entitySearchVectorSql } from "./_shared";
 import { organizations, users } from "./auth";
 import {
 	accessGranteeTypeValues,
@@ -184,6 +185,14 @@ export const tasks = pgTable(
 			table.externalId,
 		),
 		unique("tasks_org_slug_unique").on(table.organizationId, table.slug),
+		// Expression GIN index backing the F16 cross-entity search (Tool calls /
+		// tasks facet). Built from the SAME `entitySearchVectorSql` the search
+		// router uses so the indexed and queried expressions cannot drift. Covers
+		// the title plus the nullable description.
+		index("tasks_fts_idx").using(
+			"gin",
+			entitySearchVectorSql([table.title, table.description]),
+		),
 	],
 );
 

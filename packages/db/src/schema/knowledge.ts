@@ -15,8 +15,6 @@
  * file then run `bunx drizzle-kit generate --name="..."` (see AGENTS.md).
  */
 
-import type { AnyColumn, SQL } from "drizzle-orm";
-import { sql } from "drizzle-orm";
 import {
 	boolean,
 	index,
@@ -28,6 +26,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { notesSearchVectorSql } from "./_shared";
 import { organizations, users } from "./auth";
 import {
 	knowledgeDocumentTypeValues,
@@ -73,23 +72,13 @@ export type KnowledgeSourceRef = {
  * mixed Russian/English note content; `'english'`/`'russian'` would bias one
  * language and mangle the other.
  */
-export const NOTES_FTS_CONFIG = "simple" as const;
-
-/**
- * The shared `to_tsvector(...)` document vector over a doc's title + markdown.
- *
- * SINGLE SOURCE OF TRUTH for the FTS expression: the GIN index below and the
- * runtime query (packages/trpc .../notebooks/search-notes.ts re-exports this)
- * both call this helper, so the indexed expression and the query expression can
- * never drift. Any drift would make Postgres silently fall back to a seq scan.
- * Markdown is nullable; `coalesce(..,'')` keeps the expression total.
- */
-export function notesSearchVectorSql(columns: {
-	titleCol: AnyColumn;
-	markdownCol: AnyColumn;
-}): SQL {
-	return sql`to_tsvector('${sql.raw(NOTES_FTS_CONFIG)}', coalesce(${columns.titleCol}, '') || ' ' || coalesce(${columns.markdownCol}, ''))`;
-}
+// The FTS config + vector helpers live in the core `_shared` layer so every
+// entity schema (chat, journal, tasks, drive) can build an identically-shaped
+// search vector without a cross-domain import cycle. Re-exported here (and
+// `notesSearchVectorSql` is also imported above for the GIN index below) so the
+// existing notes index/query call sites keep their `./knowledge` import path.
+export { entitySearchVectorSql, NOTES_FTS_CONFIG } from "./_shared";
+export { notesSearchVectorSql };
 
 // ---------------------------------------------------------------------------
 // knowledge_documents — MDX notebook documents

@@ -764,6 +764,13 @@
       "when": 1782373938315,
       "tag": "0108_f47_profile_capabilities",
       "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1782375841917,
+      "tag": "0109_f16_cross_entity_search_fts_indexes",
+      "breakpoints": true
     }
   ]
 }

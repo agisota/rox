@@ -24,6 +24,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { entitySearchVectorSql } from "./_shared";
 import { organizations, users } from "./auth";
 import { journalEntryStatusValues, type MemoryCategory } from "./enums";
 import { automationRuns, automations } from "./schema";
@@ -99,6 +100,14 @@ export const journalEntries = pgTable(
 			t.organizationId,
 			t.createdBy,
 			t.day,
+		),
+		// Expression GIN index backing the F16 cross-entity search (Titles facet —
+		// journal reflections). Built from the SAME `entitySearchVectorSql` the
+		// search router uses so the indexed and queried expressions cannot drift.
+		// Only the narrative `reflection` is plain text; the other streams are jsonb.
+		index("journal_entries_fts_idx").using(
+			"gin",
+			entitySearchVectorSql([t.reflection]),
 		),
 	],
 );

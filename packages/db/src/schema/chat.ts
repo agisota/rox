@@ -27,6 +27,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { entitySearchVectorSql } from "./_shared";
 import { organizations, users } from "./auth";
 
 /** Author role of a chat message. */
@@ -101,6 +102,14 @@ export const chatMessages = pgTable(
 		),
 		// Branch lookups for Map/Flow views (children of a given message).
 		index("chat_messages_parent_idx").on(t.parentMessageId),
+		// Expression GIN index backing the F16 cross-entity search (Messages facet).
+		// Built from the SAME `entitySearchVectorSql` the search router uses, so the
+		// indexed expression and the query expression cannot drift (a drift would
+		// force a seq scan). Mirrors `knowledge_documents_fts_idx`.
+		index("chat_messages_fts_idx").using(
+			"gin",
+			entitySearchVectorSql([t.content]),
+		),
 	],
 );
 
