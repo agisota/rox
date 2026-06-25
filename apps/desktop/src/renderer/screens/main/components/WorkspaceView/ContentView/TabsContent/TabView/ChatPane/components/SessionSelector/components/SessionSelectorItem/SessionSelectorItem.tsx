@@ -1,7 +1,7 @@
 import { alert } from "@rox/ui/atoms/Alert";
 import { DropdownMenuItem } from "@rox/ui/dropdown-menu";
+import { SessionRow, type SessionRowData } from "@rox/ui/session-row";
 import { toast } from "@rox/ui/sonner";
-import { HiMiniTrash } from "react-icons/hi2";
 
 interface SessionSelectorItemProps {
 	sessionId: string;
@@ -11,6 +11,12 @@ interface SessionSelectorItemProps {
 	onDeleteSession: (sessionId: string) => Promise<void>;
 }
 
+/**
+ * Thin host wrapper around the shared `@rox/ui` `SessionRow` (Hermes-borrow
+ * F20): keeps the dropdown-item semantics and the delete-confirmation dialog +
+ * toast here, while the row's presentation lives once in `@rox/ui`. This call
+ * site has no pin affordance (legacy chat pane), so `onSetPinned` is omitted.
+ */
 export function SessionSelectorItem({
 	sessionId,
 	title,
@@ -18,6 +24,29 @@ export function SessionSelectorItem({
 	onSelectSession,
 	onDeleteSession,
 }: SessionSelectorItemProps) {
+	const data: SessionRowData = { sessionId, title, isCurrent };
+
+	const confirmDelete = () => {
+		alert({
+			title: "Удалить сессию чата",
+			description: "Вы уверены, что хотите удалить эту сессию?",
+			actions: [
+				{ label: "Отмена", variant: "outline", onClick: () => {} },
+				{
+					label: "Удалить",
+					variant: "destructive",
+					onClick: () => {
+						toast.promise(onDeleteSession(sessionId), {
+							loading: "Deleting session...",
+							success: "Session deleted",
+							error: "Failed to delete session",
+						});
+					},
+				},
+			],
+		});
+	};
+
 	return (
 		<DropdownMenuItem
 			className="group flex items-center gap-2"
@@ -25,40 +54,13 @@ export function SessionSelectorItem({
 				onSelectSession(sessionId);
 			}}
 		>
-			<span
-				className={`min-w-0 flex-1 truncate text-xs ${isCurrent ? "font-semibold" : ""}`}
-			>
-				{title || "New Chat"}
-			</span>
-			{!isCurrent && (
-				<button
-					type="button"
-					className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-					onClick={(event) => {
-						event.stopPropagation();
-						alert({
-							title: "Удалить сессию чата",
-							description: "Вы уверены, что хотите удалить эту сессию?",
-							actions: [
-								{ label: "Отмена", variant: "outline", onClick: () => {} },
-								{
-									label: "Удалить",
-									variant: "destructive",
-									onClick: () => {
-										toast.promise(onDeleteSession(sessionId), {
-											loading: "Deleting session...",
-											success: "Session deleted",
-											error: "Failed to delete session",
-										});
-									},
-								},
-							],
-						});
-					}}
-				>
-					<HiMiniTrash className="size-3" />
-				</button>
-			)}
+			<SessionRow
+				data={data}
+				onSelect={onSelectSession}
+				onDelete={confirmDelete}
+				deleteLabel="Удалить сессию"
+				emptyTitleLabel="New Chat"
+			/>
 		</DropdownMenuItem>
 	);
 }
