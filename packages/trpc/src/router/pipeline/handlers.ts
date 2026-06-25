@@ -4,9 +4,13 @@ import type { BlockHandler } from "@rox/workflow-runtime";
 // `run-pipeline.ts` is already evaluating (avoids "Export named … not found").
 import {
 	type ModelGeneratePort,
+	makeConditionHandler,
+	makeGateHandler,
 	makeHttpHandler,
+	makeMergeHandler,
 	makeModelHandler,
 	makeParserHandler,
+	makeSwitchHandler,
 	makeTransformHandler,
 	makeVariableSetHandler,
 } from "@rox/workflow-runtime/handlers";
@@ -32,14 +36,23 @@ const modelGenerate: ModelGeneratePort = async (req) => {
 /**
  * Assemble the per-block-type handler map injected into the WorkflowExecutor for
  * a pipeline run. DB-free composition: each executor node type (model,
- * http_request, and — added by sibling issues — condition/db/rag/tools/etc.)
- * registers its handler here, wired to its real port. `agent_run`/`skill_call` stay on their
- * dedicated resolver seams and are NOT part of this map.
+ * http_request, logic nodes, data nodes, and — added by sibling issues —
+ * rag/db/tools/etc.) registers its handler here, wired to its real port.
+ * `agent_run`/`skill_call` stay on their dedicated resolver seams and are NOT
+ * part of this map.
  */
 export function buildPipelineHandlers(): Record<string, BlockHandler> {
 	return {
 		model: makeModelHandler(modelGenerate),
 		http_request: makeHttpHandler(pipelineHttpRequest),
+		// Logic nodes are pure (no injected port): they branch on the merged input
+		// with a safe expression evaluator and route via `result.handle`.
+		condition: makeConditionHandler(),
+		switch: makeSwitchHandler(),
+		merge: makeMergeHandler(),
+		gate: makeGateHandler(),
+		route: makeGateHandler(),
+		// Data nodes are pure transforms over the merged input.
 		transform: makeTransformHandler(),
 		parser: makeParserHandler(),
 		variable_set: makeVariableSetHandler(),

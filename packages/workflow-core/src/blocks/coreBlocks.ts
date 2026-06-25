@@ -33,6 +33,27 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "default" }],
 		risk: "none",
 	}),
+	defineBlock("merge", {
+		label: "Merge",
+		description: "Joins multiple branches into one object.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }],
+		risk: "none",
+	}),
+	defineBlock("gate", {
+		label: "Gate",
+		description: "Routes the input to one of N outputs by predicate.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "default" }],
+		risk: "none",
+	}),
+	defineBlock("route", {
+		label: "Route",
+		description: "Routes the input to one of N outputs by predicate.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "default" }],
+		risk: "none",
+	}),
 	defineBlock("loop", {
 		label: "Loop",
 		description: "Iterates a sub-graph.",
