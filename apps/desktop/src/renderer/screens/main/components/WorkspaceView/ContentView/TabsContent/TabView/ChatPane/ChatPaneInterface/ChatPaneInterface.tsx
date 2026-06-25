@@ -1,9 +1,4 @@
-import {
-	chatRuntimeServiceTrpc,
-	chatServiceTrpc,
-	type UseChatDisplayReturn,
-	useChatDisplay,
-} from "@rox/chat/client";
+import { chatRuntimeServiceTrpc, chatServiceTrpc } from "@rox/chat/client";
 import {
 	PromptInputAttachment,
 	type PromptInputMessage,
@@ -23,6 +18,11 @@ import {
 import { resolveSelectableModels } from "renderer/components/Chat/ChatInterface/components/ModelPicker/utils/selectableModels";
 import { usePermissionModePreference } from "renderer/components/Chat/ChatInterface/hooks/usePermissionModePreference";
 import { useSlashCommandExecutor } from "renderer/components/Chat/ChatInterface/hooks/useSlashCommandExecutor";
+import {
+	type ChatRuntimeMessage,
+	useChatRuntimeChatTransport,
+	useChatDisplay as useTransportChatDisplay,
+} from "renderer/components/Chat/ChatInterface/transport";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import {
@@ -157,7 +157,7 @@ function toErrorMessage(error: unknown): string | null {
 const AUTO_LAUNCH_MAX_RETRIES = 3;
 const AUTO_LAUNCH_RETRY_DELAY_MS = 1500;
 
-type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
+type ChatMessage = ChatRuntimeMessage;
 
 type InterruptedMessage = {
 	id: string;
@@ -345,9 +345,9 @@ export function ChatPaneInterface({
 			{ enabled: Boolean(cwd) },
 		);
 
-	const chat = useChatDisplay({
+	const chatTransport = useChatRuntimeChatTransport({ cwd, sessionId });
+	const chat = useTransportChatDisplay(chatTransport, {
 		sessionId,
-		cwd,
 		enabled: Boolean(sessionId),
 		fps: 60,
 	});
