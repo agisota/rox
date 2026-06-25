@@ -52,6 +52,10 @@ export const markReadSchema = z.object({
 	lastReadMessageId: z.string().uuid(),
 });
 
+export const markUnreadSchema = z.object({
+	threadId: z.string().uuid(),
+});
+
 /** Edit an in-app message's body (T8/M). Author-only; body bounds mirror send. */
 export const editMessageSchema = z.object({
 	messageId: z.string().uuid(),

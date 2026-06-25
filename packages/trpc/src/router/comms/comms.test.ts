@@ -640,6 +640,73 @@ describe("comms.markRead", () => {
 	});
 });
 
+describe("comms.markUnread", () => {
+	const OLDER_MSG = "44444444-4444-4444-8444-444444444444";
+
+	test("404s when the thread is not in the org", async () => {
+		state.selectQueue = [[]]; // getThreadForOrg → empty
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.markUnread({ threadId: THREAD_ID }),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	test("forbids a non-participant", async () => {
+		state.selectQueue = [
+			[{ id: THREAD_ID, organizationId: "org-1" }], // getThreadForOrg
+			[], // participant probe → none
+		];
+		const caller = callerFor("org-1");
+		await expect(
+			caller.comms.markUnread({ threadId: THREAD_ID }),
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+		expect(state.updated).toHaveLength(0);
+	});
+
+	test("no-op when the thread has no not-own message (sole author)", async () => {
+		state.selectQueue = [
+			[{ id: THREAD_ID, organizationId: "org-1" }], // getThreadForOrg
+			[{ id: "p-1" }], // participant probe → caller participates
+			[], // latest not-own message → none
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.markUnread({ threadId: THREAD_ID });
+		expect(res).toEqual({ ok: true, unread: false });
+		// No watermark rewind on a no-op.
+		expect(state.updated).toHaveLength(0);
+	});
+
+	test("rewinds the watermark to the predecessor of the latest not-own message", async () => {
+		const createdAt = new Date();
+		state.selectQueue = [
+			[{ id: THREAD_ID, organizationId: "org-1" }], // getThreadForOrg
+			[{ id: "p-1" }], // participant probe
+			[{ id: MSG_ID, createdAt }], // latest not-own message
+			[{ id: OLDER_MSG }], // predecessor (older) message
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.markUnread({ threadId: THREAD_ID });
+		expect(res).toEqual({ ok: true, unread: true });
+		// Watermark rewound to the message BEFORE the latest inbound one, so that
+		// inbound message now counts as unread again.
+		expect(state.updated[0]?.lastReadMessageId).toBe(OLDER_MSG);
+	});
+
+	test("clears the watermark to null when the latest not-own message is the first message", async () => {
+		const createdAt = new Date();
+		state.selectQueue = [
+			[{ id: THREAD_ID, organizationId: "org-1" }], // getThreadForOrg
+			[{ id: "p-1" }], // participant probe
+			[{ id: MSG_ID, createdAt }], // latest not-own message
+			[], // no predecessor → clear watermark
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.comms.markUnread({ threadId: THREAD_ID });
+		expect(res).toEqual({ ok: true, unread: true });
+		expect(state.updated[0]?.lastReadMessageId).toBeNull();
+	});
+});
+
 describe("comms.updatePresence (I4)", () => {
 	test("requires an active organization", async () => {
 		const caller = callerFor(null);
