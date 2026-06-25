@@ -1,22 +1,26 @@
 import {
 	Message,
+	MessageBlockCopy,
 	MessageContent,
 	type MessageResponseProps,
 } from "@rox/ui/ai-elements/message";
 import { ShimmerLabel } from "@rox/ui/ai-elements/shimmer-label";
 import { AnimatedFileLink } from "@rox/ui/motion";
 import { FileSearchIcon } from "lucide-react";
-import { type ReactNode, useCallback } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { StreamingMessageText } from "renderer/components/Chat/ChatInterface/components/MessagePartsRenderer/components/StreamingMessageText";
 import { ReasoningBlock } from "renderer/components/Chat/ChatInterface/components/ReasoningBlock";
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import { normalizeToolName } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
+import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { AttachmentChip } from "../AttachmentChip";
 import { ImageHoverPreview } from "../ImageHoverPreview";
 import { PendingPlanApprovalMessage } from "../PendingPlanApprovalMessage";
 import { ActivityWorklogSection } from "./ActivityWorklogSection";
+import { AssistantMessageActions } from "./AssistantMessageActions";
+import { getAssistantMessageText } from "./getAssistantMessageText";
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
 type ChatMessageContent = ChatMessage["content"][number];
@@ -40,6 +44,14 @@ interface AssistantMessageProps {
 		action: "approved" | "rejected";
 		feedback?: string;
 	}) => Promise<void>;
+	/** F43: re-run the turn that produced this assistant answer (regenerate). */
+	onRegenerate?: () => void;
+	/** F43: retry the last request as-is (shown for interrupted answers). */
+	onRetry?: () => void;
+	/** F43: true when this answer was interrupted and can be retried. */
+	canRetry?: boolean;
+	/** F43: disable destructive actions while another turn is in flight. */
+	actionDisabled?: boolean;
 }
 
 function ImagePart({ data, mimeType }: { data: string; mimeType: string }) {
@@ -115,8 +127,23 @@ export function AssistantMessage({
 	pendingPlanToolCallId = null,
 	isPlanSubmitting = false,
 	onPlanRespond,
+	onRegenerate,
+	onRetry,
+	canRetry = false,
+	actionDisabled = false,
 }: AssistantMessageProps) {
 	const addFileViewerPane = useTabsStore((store) => store.addFileViewerPane);
+	const { copyToClipboard } = useCopyToClipboard();
+	const [copied, setCopied] = useState(false);
+	const fullText = getAssistantMessageText(message);
+	const handleCopyFull = useCallback(() => {
+		if (!fullText) return;
+		void copyToClipboard(fullText);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1500);
+	}, [fullText, copyToClipboard]);
+	const showActions =
+		!isStreaming && Boolean(onRegenerate) && message.content.length > 0;
 	const nodes: ReactNode[] = [];
 	const renderedToolCallIds = new Set<string>();
 	let didRenderPendingPlanApproval = false;
@@ -179,22 +206,34 @@ export function AssistantMessage({
 		}
 
 		if (part.type === "text") {
+			const blockText = part.text;
 			nodes.push(
-				<StreamingMessageText
+				<div
 					key={`${message.id}-${partIndex}`}
-					text={part.text}
-					isAnimating={isStreaming}
-					mermaid={{
-						config: {
-							theme: "default",
-						},
-					}}
-					components={{
-						a: AnimatedFileLink as NonNullable<
-							MessageResponseProps["components"]
-						>["a"],
-					}}
-				/>,
+					className="group/block relative"
+				>
+					<StreamingMessageText
+						text={blockText}
+						isAnimating={isStreaming}
+						mermaid={{
+							config: {
+								theme: "default",
+							},
+						}}
+						components={{
+							a: AnimatedFileLink as NonNullable<
+								MessageResponseProps["components"]
+							>["a"],
+						}}
+					/>
+					{!isStreaming && blockText.trim() ? (
+						<MessageBlockCopy
+							text={blockText}
+							onCopyText={copyToClipboard}
+							className="absolute top-0 right-0 size-7 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/block:opacity-100 group-focus-within/block:opacity-100"
+						/>
+					) : null}
+				</div>,
 			);
 			continue;
 		}
@@ -356,7 +395,7 @@ export function AssistantMessage({
 	flushActivityWorklog();
 
 	return (
-		<Message from="assistant">
+		<Message from="assistant" className="group/msg">
 			<MessageContent>
 				{nodes.length === 0 && isStreaming ? (
 					<ShimmerLabel className="text-sm text-muted-foreground">
@@ -366,6 +405,17 @@ export function AssistantMessage({
 					nodes
 				)}
 				{footer}
+				{showActions && onRegenerate ? (
+					<AssistantMessageActions
+						actionDisabled={actionDisabled}
+						copied={copied}
+						fullText={fullText}
+						canRetry={canRetry}
+						onCopy={handleCopyFull}
+						onRegenerate={onRegenerate}
+						onRetry={onRetry ?? onRegenerate}
+					/>
+				) : null}
 			</MessageContent>
 		</Message>
 	);
