@@ -2,6 +2,15 @@
  * Pure model for the node palette: turns the shared node-type registry into
  * categorized, searchable groups. Kept framework-free so the search/grouping
  * logic is unit-tested without rendering.
+ *
+ * Pattern provenance (sim vs dify — for future contributors, #594): the LEFT
+ * dock palette (category headers + per-category accent + search + draggable
+ * chips, in `NodePaletteDock.tsx`) borrows the sim.ai block-palette pattern. The
+ * RIGHT-panel typed inspector sections (see `NodeInspector/AutoForm/fieldSections`)
+ * borrow the sim.ai inspector pattern. The underlying data-driven model — ONE
+ * registry definition feeding palette + node + inspector + validator — follows
+ * the dify.ai pattern. We borrow PATTERNS from simstudioai/sim (Apache-2.0), not
+ * code.
  */
 
 import {

@@ -45,6 +45,7 @@ export const agentRunNodeType: NodeTypeDefinition = {
 			label: "Модель (переопределение)",
 			placeholder: "напр. gpt-5 (необязательно)",
 			maxLength: 200,
+			section: "Параметры модели",
 		},
 		{
 			key: "maxTurns",
@@ -54,6 +55,7 @@ export const agentRunNodeType: NodeTypeDefinition = {
 			min: 1,
 			max: 200,
 			step: 1,
+			section: "Параметры модели",
 		},
 		{
 			key: "temperature",
@@ -63,6 +65,7 @@ export const agentRunNodeType: NodeTypeDefinition = {
 			min: 0,
 			max: 2,
 			step: 0.1,
+			section: "Параметры модели",
 		},
 	],
 };

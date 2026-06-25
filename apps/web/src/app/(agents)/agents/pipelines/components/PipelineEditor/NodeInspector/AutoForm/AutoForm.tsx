@@ -23,6 +23,7 @@ import {
 	SELECT_NONE,
 } from "../fieldCommit";
 import type { NodePatchApi } from "../useNodePatch";
+import { groupFieldSections, shouldShowSectionHeadings } from "./fieldSections";
 
 type AutoFormProps = {
 	def: NodeTypeDefinition;
@@ -35,18 +36,42 @@ type AutoFormProps = {
  * replacing the per-type hand-forms. The five built-in types render the SAME
  * fields/labels/limits as before (their registry `fields` mirror the old forms).
  *
+ * sim.ai right-panel parity (#594): fields are grouped into typed sections by
+ * their optional `section` label (see {@link groupFieldSections}). A node with no
+ * sectioned fields renders one default group with no heading — i.e. the same flat
+ * form as before. Web mirror of the desktop AutoForm so both surfaces read the
+ * registry's typed sections identically (CLAUDE.md #4). Pattern provenance lives
+ * in `fieldSections.ts` (sim = palette + inspector sections, dify = registry).
+ *
  * Cache-first (AGENTS.md #9): values seed from `node.data.subBlocks` (display);
  * writes go through `patch.patchNode` (authoritative, debounced). Forms re-seed
  * on selection change because the parent keys the inspector by block id.
  */
 export function AutoForm({ def, node, patch }: AutoFormProps) {
+	const sections = groupFieldSections(def.fields);
+	const showHeadings = shouldShowSectionHeadings(sections);
+
 	return (
-		<div className="flex flex-col gap-3">
+		<div className="flex flex-col gap-4">
 			{def.inspectorHelp && (
 				<p className="text-[11px] text-muted-foreground">{def.inspectorHelp}</p>
 			)}
-			{def.fields.map((field) => (
-				<AutoField key={field.key} field={field} node={node} patch={patch} />
+			{sections.map((section) => (
+				<section key={section.label} className="flex flex-col gap-3">
+					{showHeadings && (
+						<h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+							{section.label}
+						</h4>
+					)}
+					{section.fields.map((field) => (
+						<AutoField
+							key={field.key}
+							field={field}
+							node={node}
+							patch={patch}
+						/>
+					))}
+				</section>
 			))}
 		</div>
 	);

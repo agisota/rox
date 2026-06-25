@@ -56,12 +56,14 @@ export const codeNodeType: NodeTypeDefinition = {
 			kind: "key-value",
 			label: "Входы (имя → выражение)",
 			description: "Что передать в код из контекста выполнения.",
+			section: "Входы и выходы",
 		},
 		{
 			key: "outputs",
 			kind: "key-value",
 			label: "Выходы (имя → тип)",
 			description: "Какие значения возвращает код.",
+			section: "Входы и выходы",
 		},
 	],
 };
