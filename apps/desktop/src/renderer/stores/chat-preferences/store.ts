@@ -1,4 +1,9 @@
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
+import {
+	type CollapsibleGroupKey,
+	type GroupCollapseState,
+	toggleGroupCollapsed,
+} from "@rox/ui/session-row";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
@@ -16,6 +21,13 @@ interface ChatPreferencesState {
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	defaultWorkspaceSurface: DefaultWorkspaceSurface;
 	setDefaultWorkspaceSurface: (surface: DefaultWorkspaceSurface) => void;
+	/**
+	 * Per-user collapsed chat-history groups (F18). Stores only the collapsed
+	 * keys, so the default — every group expanded — stays implicit. Persisted via
+	 * this store so the sidebar's grouping survives reloads.
+	 */
+	collapsedSessionGroups: GroupCollapseState;
+	toggleSessionGroupCollapsed: (key: CollapsibleGroupKey) => void;
 }
 
 export const useChatPreferencesStore = create<ChatPreferencesState>()(
@@ -25,6 +37,7 @@ export const useChatPreferencesStore = create<ChatPreferencesState>()(
 				selectedModelId: null,
 				thinkingLevel: "off" as ThinkingLevel,
 				defaultWorkspaceSurface: "chat" as DefaultWorkspaceSurface,
+				collapsedSessionGroups: [] as GroupCollapseState,
 
 				setSelectedModelId: (modelId) => {
 					set({ selectedModelId: modelId });
@@ -36,6 +49,15 @@ export const useChatPreferencesStore = create<ChatPreferencesState>()(
 
 				setDefaultWorkspaceSurface: (defaultWorkspaceSurface) => {
 					set({ defaultWorkspaceSurface });
+				},
+
+				toggleSessionGroupCollapsed: (key) => {
+					set((state) => ({
+						collapsedSessionGroups: toggleGroupCollapsed(
+							state.collapsedSessionGroups,
+							key,
+						),
+					}));
 				},
 			}),
 			{
