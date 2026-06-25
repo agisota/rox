@@ -9,7 +9,6 @@ import { FileSearchIcon } from "lucide-react";
 import { type ReactNode, useCallback } from "react";
 import { StreamingMessageText } from "renderer/components/Chat/ChatInterface/components/MessagePartsRenderer/components/StreamingMessageText";
 import { ReasoningBlock } from "renderer/components/Chat/ChatInterface/components/ReasoningBlock";
-import { ToolCallBlock } from "renderer/components/Chat/ChatInterface/components/ToolCallBlock";
 import type { ToolPart } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import { normalizeToolName } from "renderer/components/Chat/ChatInterface/utils/tool-helpers";
 import type { UseChatDisplayReturn } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/hooks/usePaneRegistry/components/ChatPane/hooks/useWorkspaceChatDisplay";
@@ -17,6 +16,7 @@ import { useTabsStore } from "renderer/stores/tabs/store";
 import { AttachmentChip } from "../AttachmentChip";
 import { ImageHoverPreview } from "../ImageHoverPreview";
 import { PendingPlanApprovalMessage } from "../PendingPlanApprovalMessage";
+import { ActivityWorklogSection } from "./ActivityWorklogSection";
 
 type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
 type ChatMessageContent = ChatMessage["content"][number];
@@ -109,8 +109,6 @@ export function AssistantMessage({
 	isStreaming,
 	workspaceId,
 	sessionId,
-	organizationId,
-	workspaceCwd,
 	previewToolParts = [],
 	footer,
 	pendingPlanApproval,
@@ -122,6 +120,21 @@ export function AssistantMessage({
 	const nodes: ReactNode[] = [];
 	const renderedToolCallIds = new Set<string>();
 	let didRenderPendingPlanApproval = false;
+	// F39: buffer consecutive tool parts so a run collapses into ONE persistent,
+	// verb-bucketed Activity worklog timeline instead of N standalone blocks.
+	let pendingToolParts: ToolPart[] = [];
+	const flushActivityWorklog = () => {
+		if (pendingToolParts.length === 0) return;
+		const runParts = pendingToolParts;
+		pendingToolParts = [];
+		nodes.push(
+			<ActivityWorklogSection
+				key={`${message.id}-activity-${runParts[0].toolCallId}`}
+				parts={runParts}
+				chatId={sessionId ?? message.id}
+			/>,
+		);
+	};
 	const handleAttachmentClick = useCallback(
 		(url: string, filename?: string) => {
 			addFileViewerPane(workspaceId, {
@@ -158,6 +171,12 @@ export function AssistantMessage({
 	};
 	for (let partIndex = 0; partIndex < message.content.length; partIndex++) {
 		const part = message.content[partIndex];
+
+		// F39: a non-tool part ends the current tool run — flush the worklog first
+		// so the timeline renders in transcript order.
+		if (part.type !== "tool_call" && part.type !== "tool_result") {
+			flushActivityWorklog();
+		}
 
 		if (part.type === "text") {
 			nodes.push(
@@ -274,22 +293,20 @@ export function AssistantMessage({
 				startAt: partIndex + 1,
 			});
 
-			nodes.push(
-				<ToolCallBlock
-					key={`${message.id}-tool-${part.id}`}
-					part={toToolPartFromCall({
-						part,
-						result,
-						isStreaming,
-					})}
-					workspaceId={workspaceId}
-					sessionId={sessionId}
-					organizationId={organizationId}
-					workspaceCwd={workspaceCwd}
-					isStreaming={isStreaming}
-				/>,
+			pendingToolParts.push(
+				toToolPartFromCall({
+					part,
+					result,
+					isStreaming,
+				}),
 			);
-			nodes.push(...getInlineToolStateNodes(part.id));
+
+			// Inline plan approval must appear after the buffered run, in order.
+			const inlineNodes = getInlineToolStateNodes(part.id);
+			if (inlineNodes.length > 0) {
+				flushActivityWorklog();
+				nodes.push(...inlineNodes);
+			}
 
 			if (resultIndex === partIndex + 1) {
 				partIndex++;
@@ -302,17 +319,13 @@ export function AssistantMessage({
 				continue;
 			}
 			renderedToolCallIds.add(part.id);
-			nodes.push(
-				<ToolCallBlock
-					key={`${message.id}-tool-result-${part.id}`}
-					part={toToolPartFromResult(part)}
-					workspaceId={workspaceId}
-					sessionId={sessionId}
-					organizationId={organizationId}
-					workspaceCwd={workspaceCwd}
-				/>,
-			);
-			nodes.push(...getInlineToolStateNodes(part.id));
+			pendingToolParts.push(toToolPartFromResult(part));
+
+			const inlineResultNodes = getInlineToolStateNodes(part.id);
+			if (inlineResultNodes.length > 0) {
+				flushActivityWorklog();
+				nodes.push(...inlineResultNodes);
+			}
 			continue;
 		}
 
@@ -331,18 +344,16 @@ export function AssistantMessage({
 
 	for (const previewPart of previewToolParts) {
 		if (renderedToolCallIds.has(previewPart.toolCallId)) continue;
-		nodes.push(
-			<ToolCallBlock
-				key={`${message.id}-tool-preview-${previewPart.toolCallId}`}
-				part={previewPart}
-				workspaceId={workspaceId}
-				sessionId={sessionId}
-				organizationId={organizationId}
-				workspaceCwd={workspaceCwd}
-			/>,
-		);
-		nodes.push(...getInlineToolStateNodes(previewPart.toolCallId));
+		pendingToolParts.push(previewPart);
+		const previewInlineNodes = getInlineToolStateNodes(previewPart.toolCallId);
+		if (previewInlineNodes.length > 0) {
+			flushActivityWorklog();
+			nodes.push(...previewInlineNodes);
+		}
 	}
+
+	// F39: flush any trailing tool run into a final Activity worklog.
+	flushActivityWorklog();
 
 	return (
 		<Message from="assistant">
