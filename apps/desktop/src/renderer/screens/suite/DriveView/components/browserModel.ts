@@ -1,4 +1,5 @@
 import type { DriveFile, DriveFolder, EntryRef } from "../types";
+import type { DriveDragData } from "../utils/dnd";
 
 /**
  * The single prop contract shared by {@link DriveListView} and
@@ -35,4 +36,13 @@ export interface DriveBrowserModel {
 	onCopyLinkFile: (file: DriveFile) => void;
 	onDeleteFolder: (folder: DriveFolder) => void;
 	onDeleteFile: (file: DriveFile) => void;
+
+	/**
+	 * Begin an internal drag for an entry: resolves the effective drag set
+	 * (single entry, or the whole multi-selection when the grabbed entry is part
+	 * of it) and the overlay label. Consumed by the draggable row/tile adapters.
+	 */
+	dragDataFor: (ref: EntryRef) => DriveDragData;
+	/** True while an internal item-move drag is active (suppresses OS-drop). */
+	isMoving: boolean;
 }

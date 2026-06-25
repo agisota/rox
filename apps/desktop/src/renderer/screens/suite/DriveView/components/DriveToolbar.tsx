@@ -1,3 +1,4 @@
+import { useDroppable } from "@dnd-kit/core";
 import {
 	Breadcrumb,
 	BreadcrumbEllipsis,
@@ -18,6 +19,7 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { Input } from "@rox/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@rox/ui/toggle-group";
+import { cn } from "@rox/ui/utils";
 import {
 	ArrowDownUp,
 	FolderPlus,
@@ -27,12 +29,15 @@ import {
 	Search,
 	Upload,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import type { SortField, SortState, ViewMode } from "../types";
 import {
+	type BreadcrumbSegment,
 	breadcrumbPath,
 	type FolderCrumb,
 	truncateSegments,
 } from "../utils/breadcrumbPath";
+import { dropTargetId } from "../utils/dnd";
 
 interface DriveToolbarProps {
 	stack: FolderCrumb[];
@@ -46,6 +51,8 @@ interface DriveToolbarProps {
 	onCreateFolder: () => void;
 	onUpload: () => void;
 	onOpenShares: () => void;
+	/** When true, each breadcrumb segment becomes a drag-to-move drop target. */
+	droppableSegments?: boolean;
 }
 
 const SORT_LABEL: Record<SortField, string> = {
@@ -72,6 +79,7 @@ export function DriveToolbar({
 	onCreateFolder,
 	onUpload,
 	onOpenShares,
+	droppableSegments = false,
 }: DriveToolbarProps) {
 	const segments = breadcrumbPath(stack);
 	const { head, collapsed, tail } = truncateSegments(segments);
@@ -86,11 +94,13 @@ export function DriveToolbar({
 								{head.label}
 							</BreadcrumbPage>
 						) : (
-							<BreadcrumbLink asChild>
-								<button type="button" onClick={() => onNavigate(head.id)}>
-									{head.label}
-								</button>
-							</BreadcrumbLink>
+							<CrumbDrop segment={head} enabled={droppableSegments}>
+								<BreadcrumbLink asChild>
+									<button type="button" onClick={() => onNavigate(head.id)}>
+										{head.label}
+									</button>
+								</BreadcrumbLink>
+							</CrumbDrop>
 						)}
 					</BreadcrumbItem>
 					{collapsed ? (
@@ -109,15 +119,17 @@ export function DriveToolbar({
 									{segment.label}
 								</BreadcrumbPage>
 							) : (
-								<BreadcrumbLink asChild>
-									<button
-										type="button"
-										className="max-w-40 truncate"
-										onClick={() => onNavigate(segment.id)}
-									>
-										{segment.label}
-									</button>
-								</BreadcrumbLink>
+								<CrumbDrop segment={segment} enabled={droppableSegments}>
+									<BreadcrumbLink asChild>
+										<button
+											type="button"
+											className="max-w-40 truncate"
+											onClick={() => onNavigate(segment.id)}
+										>
+											{segment.label}
+										</button>
+									</BreadcrumbLink>
+								</CrumbDrop>
 							)}
 						</BreadcrumbItem>
 					))}
@@ -214,5 +226,43 @@ export function DriveToolbar({
 				<span className="hidden lg:inline">Загрузить</span>
 			</Button>
 		</div>
+	);
+}
+
+/**
+ * Wraps a breadcrumb segment as a dnd-kit drop target so dragging entries onto
+ * an ancestor crumb (or «Диск» for the root) moves them there. Inert until a
+ * drag is active; when inert it renders the child untouched so normal
+ * navigation clicks are unaffected.
+ */
+function CrumbDrop({
+	segment,
+	enabled,
+	children,
+}: {
+	segment: BreadcrumbSegment;
+	enabled: boolean;
+	children: ReactNode;
+}) {
+	const target =
+		segment.id === null
+			? ({ kind: "root" } as const)
+			: ({ kind: "folder", id: segment.id } as const);
+	const { setNodeRef, isOver } = useDroppable({
+		id: dropTargetId(target),
+		data: { target },
+		disabled: !enabled,
+	});
+	if (!enabled) return <>{children}</>;
+	return (
+		<span
+			ref={setNodeRef}
+			className={cn(
+				"rounded-md transition-colors",
+				isOver && "bg-primary/15 ring-1 ring-primary/50",
+			)}
+		>
+			{children}
+		</span>
 	);
 }
