@@ -305,6 +305,7 @@ export function QuickChatView() {
 				<div className="mx-auto flex max-w-2xl flex-col gap-2 rounded-xl border border-border bg-card p-2">
 					<Textarea
 						ref={textareaRef}
+						data-onboarding-anchor="quick-chat-input"
 						value={input}
 						onChange={(event) => {
 							setInput(event.target.value);

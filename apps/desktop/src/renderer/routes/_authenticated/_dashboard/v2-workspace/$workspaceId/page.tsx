@@ -322,6 +322,7 @@ function V2WorkspaceContent() {
 				>
 					<div className="flex min-h-0 min-w-0 flex-1">
 						<div
+							data-onboarding-anchor="workspace-chat"
 							className="flex min-h-0 min-w-[320px] flex-1 flex-col overflow-hidden"
 							data-workspace-id={workspaceId}
 						>
