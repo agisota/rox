@@ -8,6 +8,10 @@
 			"types": "./src/async.ts",
 			"default": "./src/async.ts"
 		},
+		"./mcp-catalog": {
+			"types": "./src/mcp-catalog.ts",
+			"default": "./src/mcp-catalog.ts"
+		},
 		"./error": {
 			"types": "./src/error.ts",
 			"default": "./src/error.ts"
