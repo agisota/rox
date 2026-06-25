@@ -29,6 +29,7 @@ export type CoreBlockType =
 	| "transform"
 	| "parser"
 	| "variable_set"
+	| "knowledge_retrieval"
 	| "error_boundary";
 
 export interface RoxBlockState {

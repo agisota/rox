@@ -10,12 +10,14 @@ import {
 	makeMergeHandler,
 	makeModelHandler,
 	makeParserHandler,
+	makeRagHandler,
 	makeSwitchHandler,
 	makeTransformHandler,
 	makeVariableSetHandler,
 } from "@rox/workflow-runtime/handlers";
 import { pipelineHttpRequest } from "./http-port";
 import { generatePipelineText } from "./model-provider";
+import { makePipelineRetrieval, type RagPortScope } from "./rag-port";
 
 /**
  * Real LLM port for the `model` block: resolves provider credentials and runs a
@@ -36,13 +38,20 @@ const modelGenerate: ModelGeneratePort = async (req) => {
 /**
  * Assemble the per-block-type handler map injected into the WorkflowExecutor for
  * a pipeline run. DB-free composition: each executor node type (model,
- * http_request, logic nodes, data nodes, and — added by sibling issues —
- * rag/db/tools/etc.) registers its handler here, wired to its real port.
- * `agent_run`/`skill_call` stay on their dedicated resolver seams and are NOT
- * part of this map.
+ * http_request, logic nodes, data nodes, knowledge_retrieval, and — added by
+ * sibling issues — db/tools/etc.) registers its handler here, wired to its real
+ * port. `agent_run`/`skill_call` stay on their dedicated resolver seams and are
+ * NOT part of this map.
+ *
+ * `scope` carries the run's org/project tenancy. It is required to wire the
+ * `knowledge_retrieval` (RAG) port (org-scoped retrieval); when omitted (e.g.
+ * unit tests that only exercise model/http nodes) the RAG handler is left
+ * unregistered and a `knowledge_retrieval` node falls back to pass-through.
  */
-export function buildPipelineHandlers(): Record<string, BlockHandler> {
-	return {
+export function buildPipelineHandlers(
+	scope?: RagPortScope,
+): Record<string, BlockHandler> {
+	const handlers: Record<string, BlockHandler> = {
 		model: makeModelHandler(modelGenerate),
 		http_request: makeHttpHandler(pipelineHttpRequest),
 		// Logic nodes are pure (no injected port): they branch on the merged input
@@ -57,4 +66,8 @@ export function buildPipelineHandlers(): Record<string, BlockHandler> {
 		parser: makeParserHandler(),
 		variable_set: makeVariableSetHandler(),
 	};
+	if (scope) {
+		handlers.knowledge_retrieval = makeRagHandler(makePipelineRetrieval(scope));
+	}
+	return handlers;
 }

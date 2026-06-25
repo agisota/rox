@@ -145,6 +145,14 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "none",
 	}),
+	defineBlock("knowledge_retrieval", {
+		label: "Knowledge Retrieval",
+		description:
+			"RAG retrieval: fetches the most relevant chunks from a bound knowledge base for a query (top-K); returns the retrieved chunks + their source documents.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
