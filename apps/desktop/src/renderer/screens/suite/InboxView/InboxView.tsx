@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { DashboardSurface } from "renderer/components/DashboardSurface";
 import { SuiteQueryError } from "../components/SuiteQueryError";
+import { ComposeChatDialog } from "./components/ComposeChatDialog";
 import { ComposeMailDialog } from "./components/ComposeMailDialog";
 import { FilterRail } from "./components/FilterRail";
 import { ReaderPanel } from "./components/ReaderPanel";
@@ -40,6 +41,7 @@ export function InboxView() {
 	const search = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
 	const [activeKey, setActiveKey] = useState<string | null>(null);
 	const [composeOpen, setComposeOpen] = useState(false);
+	const [composeChatOpen, setComposeChatOpen] = useState(false);
 
 	const searchRef = useRef<HTMLInputElement>(null);
 	const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -124,7 +126,7 @@ export function InboxView() {
 			onSearch: () => searchRef.current?.focus(),
 			onGoAll: () => setFilter("all"),
 		},
-		!composeOpen,
+		!composeOpen && !composeChatOpen,
 	);
 
 	if (isError) {
@@ -156,7 +158,7 @@ export function InboxView() {
 							status={status}
 							onStatusChange={setStatus}
 							onCompose={() => setComposeOpen(true)}
-							onNewChat={() => setComposeOpen(true)}
+							onNewChat={() => setComposeChatOpen(true)}
 						/>
 						<div className="min-h-0 flex-1">
 							<ThreadColumn
@@ -197,6 +199,11 @@ export function InboxView() {
 			</div>
 
 			<ComposeMailDialog open={composeOpen} onOpenChange={setComposeOpen} />
+			<ComposeChatDialog
+				open={composeChatOpen}
+				onOpenChange={setComposeChatOpen}
+				onThreadCreated={(threadId) => setActiveKey(`chat:${threadId}`)}
+			/>
 		</DashboardSurface>
 	);
 }

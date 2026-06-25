@@ -169,6 +169,7 @@
         "@rox/auth": "workspace:*",
         "@rox/chat": "workspace:*",
         "@rox/collab": "workspace:*",
+        "@rox/comms-core": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/host-service": "workspace:*",
         "@rox/local-db": "workspace:*",

@@ -36,6 +36,16 @@ export {
 	type XmppSendFn,
 } from "./adapter";
 export {
+	buildChatDraft,
+	buildChatRecipients,
+	type ComposeChatDraft,
+	type ComposeChatMember,
+	canSendChatDraft,
+	filterMembers,
+	memberLabel,
+	toggleRecipient,
+} from "./compose";
+export {
 	type AuthVerdict,
 	DEFAULT_SPAM_THRESHOLD,
 	type SpamAuthSignals,
