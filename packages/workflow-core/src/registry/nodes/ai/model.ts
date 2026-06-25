@@ -47,6 +47,7 @@ export const modelNodeType: NodeTypeDefinition = {
 			label: "Системный промпт",
 			placeholder: "Инструкция/роль для модели (необязательно).",
 			maxLength: 8000,
+			section: "Промпт",
 		},
 		{
 			key: "userPrompt",
@@ -55,6 +56,7 @@ export const modelNodeType: NodeTypeDefinition = {
 			placeholder: "Запрос к модели (можно ссылаться на контекст).",
 			required: true,
 			maxLength: 8000,
+			section: "Промпт",
 		},
 		{
 			key: "temperature",
@@ -64,6 +66,7 @@ export const modelNodeType: NodeTypeDefinition = {
 			min: 0,
 			max: 2,
 			step: 0.1,
+			section: "Параметры генерации",
 		},
 		{
 			key: "maxTokens",
@@ -73,6 +76,7 @@ export const modelNodeType: NodeTypeDefinition = {
 			min: 1,
 			max: 200000,
 			step: 1,
+			section: "Параметры генерации",
 		},
 	],
 };

@@ -3,6 +3,14 @@
  * animation classes, so every node type lights up identically during a run
  * (dify/sim run-trace parity). The editor stamps `data.runStatus` onto each node
  * from the polled `getRun` steps; nodes call {@link runStatusClass} to render it.
+ *
+ * sim.ai run-trace parity (#594, cross-ref #525 — NOT duplicated here): the
+ * on-canvas overlay this drives already matches sim's run visual language —
+ * `running` pulses (sky), `waiting_approval` pulses (amber) for the inline
+ * human-approve gate, and `succeeded` settles to an emerald ring. #594 confirms
+ * this match rather than adding a second overlay; the inline approve action lives
+ * in `ApprovalNode`/`RunMonitorPanel`. Pattern borrowed from simstudioai/sim
+ * (Apache-2.0), implemented fresh.
  */
 
 import type { PipelineNodeData } from "../graph-adapter";

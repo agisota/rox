@@ -43,6 +43,15 @@ export interface NodeFieldDef {
 	kind: NodeFieldKind;
 	/** Field label (RU). */
 	label: string;
+	/**
+	 * Optional section heading (RU) the inspector groups this field under (the
+	 * sim.ai right-panel pattern: typed config split into labelled sections such
+	 * as "Основные" / "Параметры модели"). Fields with no `section` collapse into
+	 * a single default group, so simple node types render a flat form unchanged.
+	 * Fields keep their declared order within a section; sections appear in the
+	 * order their first field is declared.
+	 */
+	section?: string;
 	/** Optional placeholder / helper hint. */
 	placeholder?: string;
 	/** Optional helper text shown under the control. */

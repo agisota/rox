@@ -83,4 +83,14 @@ describe("AutoForm (registry-driven)", () => {
 		expect(html).toContain("Стартовый узел");
 		expect(html).not.toContain('data-slot="input"');
 	});
+
+	test("single-section type renders no section heading (flat form unchanged)", () => {
+		// loop has one (unsectioned) field → collapses to the default group with no
+		// heading chrome, i.e. the same flat form as before (#594). Section grouping
+		// logic for multi-section types is covered by fieldSections.test.ts (pure,
+		// no QueryClient/select needed — render tests skip select-bearing types for
+		// the same reason this file skips agent_run).
+		const html = render("loop", { maxIterations: 3 });
+		expect(html).not.toContain("Основные");
+	});
 });

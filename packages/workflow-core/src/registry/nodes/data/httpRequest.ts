@@ -60,6 +60,7 @@ export const httpRequestNodeType: NodeTypeDefinition = {
 			kind: "key-value",
 			label: "Заголовки (ключ → значение)",
 			description: "HTTP-заголовки запроса.",
+			section: "Дополнительно",
 		},
 		{
 			key: "body",
@@ -67,6 +68,7 @@ export const httpRequestNodeType: NodeTypeDefinition = {
 			label: "Тело запроса",
 			placeholder: "Сырое тело/шаблон (для POST/PUT/PATCH).",
 			maxLength: 20000,
+			section: "Дополнительно",
 		},
 	],
 };
