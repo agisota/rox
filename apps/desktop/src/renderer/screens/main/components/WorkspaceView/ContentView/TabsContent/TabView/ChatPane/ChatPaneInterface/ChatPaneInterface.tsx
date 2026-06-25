@@ -204,6 +204,8 @@ export function ChatPaneInterface({
 	onStartFreshSession,
 	onConsumeLaunchConfig,
 	onUserMessageSubmitted,
+	recents,
+	onSelectRecent,
 }: ChatPaneInterfaceProps) {
 	const { models: availableModels, defaultModel } = useAvailableModels();
 	const selectedModelId = useChatPreferencesStore(
@@ -1041,6 +1043,8 @@ export function ChatPaneInterface({
 					onRestartUserMessage={handleResendUserMessage}
 					pendingQuestion={pendingQuestion}
 					answeredQuestionId={answeredQuestionId}
+					recents={recents}
+					onSelectRecent={onSelectRecent}
 				/>
 				<McpControls mcpUi={mcpUi} />
 				<ChatUploadFooter

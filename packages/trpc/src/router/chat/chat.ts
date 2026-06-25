@@ -16,6 +16,7 @@ import {
 	buildLabelFilterConditions,
 	listSessionsSchema,
 } from "./labels-schema";
+import { RECENTS_DEFAULT_LIMIT, recentsInputSchema } from "./recents-schema";
 import {
 	type ChatCompletionResult,
 	deriveSessionTitle,
@@ -111,6 +112,45 @@ export const chatRouter = {
 				.orderBy(usageRequests.createdAt);
 
 			return { sessions, usageRequests: usageRows };
+		}),
+
+	/**
+	 * Cross-session recent jumps (F49). Returns the most recently active chat
+	 * sessions for the active organization (org-scoped, owned by the caller),
+	 * ordered by `lastActiveAt`. Powers the scrollback rail's Recents-flyout so
+	 * users can hop between conversations without leaving the rail. Default ~10;
+	 * capped at 25.
+	 */
+	recents: protectedProcedure
+		.input(recentsInputSchema)
+		.query(async ({ ctx, input }) => {
+			const organizationId = ctx.activeOrganizationId;
+
+			if (!organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "No active organization selected",
+				});
+			}
+
+			const recents = await db
+				.select({
+					sessionId: chatSessions.id,
+					title: chatSessions.title,
+					v2WorkspaceId: chatSessions.v2WorkspaceId,
+					lastActiveAt: chatSessions.lastActiveAt,
+				})
+				.from(chatSessions)
+				.where(
+					and(
+						eq(chatSessions.createdBy, ctx.session.user.id),
+						eq(chatSessions.organizationId, organizationId),
+					),
+				)
+				.orderBy(desc(chatSessions.lastActiveAt))
+				.limit(input?.limit ?? RECENTS_DEFAULT_LIMIT);
+
+			return { recents };
 		}),
 
 	getSessionDetail: protectedProcedure
