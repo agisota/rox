@@ -4,5 +4,6 @@
 // "Export named … not found" import-cycle hazard). Keep this file and the modules
 // it re-exports free of runtime imports — type-only imports of workflow-core /
 // executor types only — so the subpath stays cycle-safe.
+export * from "./dataHandlers";
 export * from "./httpHandler";
 export * from "./modelHandler";

@@ -100,6 +100,30 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "medium",
 	}),
+	defineBlock("transform", {
+		label: "Transform",
+		description:
+			"Reshapes the payload: render a template string or map output fields from safe expressions over the input.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "none",
+	}),
+	defineBlock("parser", {
+		label: "Parser",
+		description:
+			"Parses an input string (JSON / CSV / regex-extract) into structured data; parse failures route to error.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "none",
+	}),
+	defineBlock("variable_set", {
+		label: "Variable Set",
+		description:
+			"Writes a named value (literal or expression) onto the flowing context for downstream nodes.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "none",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
