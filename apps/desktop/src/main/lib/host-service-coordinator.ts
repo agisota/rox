@@ -308,7 +308,7 @@ export class HostServiceCoordinator extends EventEmitter {
 	 * tracked in this process (e.g. a stale manifest left by a CLI-spawned
 	 * host-service) — then removes the manifest so callers can't pick up the
 	 * stale entry, and respawns. Used by the recovery path for
-	 * agisota/set#4299 where a wedged host-service keeps serving
+	 * agisota/rox#4299 where a wedged host-service keeps serving
 	 * stale state.
 	 */
 	async reset(
