@@ -157,7 +157,12 @@ export function WallpaperSection() {
 												aria-hidden
 												className="absolute inset-0"
 												style={{
-													background: previewBackground(wallpaper.source),
+													// FN-047: photo wallpapers ship a small `thumb` crop —
+													// preview that instead of the full-res source so the
+													// settings grid stays light.
+													background: previewBackground(
+														wallpaper.thumb ?? wallpaper.source,
+													),
 												}}
 											/>
 											{isSelected ? (
