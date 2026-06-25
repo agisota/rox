@@ -4,6 +4,7 @@ import { Avatar } from "@rox/ui/atoms/Avatar";
 import { Badge } from "@rox/ui/badge";
 import { cn } from "@rox/ui/utils";
 import { format } from "date-fns";
+import { setCanvasRefDragData } from "renderer/routes/_authenticated/_dashboard/canvas/canvasRefDrag";
 import { PriorityIcon } from "../../../../components/shared/PriorityIcon";
 import type { TaskWithStatus } from "../../../../hooks/useTasksData";
 
@@ -48,6 +49,14 @@ export function KanbanCard({ task, onClick, overlay }: KanbanCardProps) {
 			{...listeners}
 			role="button"
 			tabIndex={0}
+			draggable={!overlay}
+			onDragStart={(event) =>
+				setCanvasRefDragData(event.dataTransfer, {
+					refType: "task",
+					refId: task.id,
+					label: task.title,
+				})
+			}
 			className={cn(
 				"bg-card border border-border/60 rounded-md px-3 py-2.5 cursor-grab active:cursor-grabbing hover:bg-accent/30 transition-colors group",
 				isDragging && "opacity-40",

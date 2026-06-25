@@ -54,6 +54,11 @@ import {
 	toReactFlowEdges,
 	toReactFlowNodes,
 } from "./canvasFlowAdapter";
+import {
+	type CanvasRefDragPayload,
+	hasCanvasRefDragType,
+	readCanvasRefDragData,
+} from "./canvasRefDrag";
 import { canvasNodeTypes } from "./RoxCanvasNode";
 
 export interface CanvasSelection {
@@ -70,6 +75,10 @@ interface CanvasFlowProps {
 	onMutationBatch: (batch: CanvasMutationBatch, label: string) => void;
 	onSelectionChange: (selection: CanvasSelection) => void;
 	onCreateTextNodeAt: (position: { x: number; y: number }) => void;
+	onDropEntityAt: (
+		position: { x: number; y: number },
+		payload: CanvasRefDragPayload,
+	) => void;
 	onOpenRefNode: (nodeId: string) => void;
 }
 
@@ -91,6 +100,7 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 			onMutationBatch,
 			onSelectionChange,
 			onCreateTextNodeAt,
+			onDropEntityAt,
 			onOpenRefNode,
 		},
 		ref,
@@ -115,6 +125,7 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 		const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
 		const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
 		const [isExporting, setIsExporting] = useState(false);
+		const [isDropActive, setIsDropActive] = useState(false);
 
 		useEffect(() => {
 			setNodes(projectedNodes);
@@ -256,6 +267,43 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 			[disabled, onCreateTextNodeAt, screenToFlowPosition],
 		);
 
+		// External drag-n-drop of workspace entities onto the canvas. We only
+		// intercept drags carrying our ref MIME type so native pane interactions
+		// (pan/zoom/selection-rect, double-click create) stay untouched.
+		const handleDragOver = useCallback(
+			(event: React.DragEvent) => {
+				if (disabled || !hasCanvasRefDragType(event.dataTransfer)) return;
+				event.preventDefault();
+				event.dataTransfer.dropEffect = "copy";
+				if (!isDropActive) setIsDropActive(true);
+			},
+			[disabled, isDropActive],
+		);
+
+		const handleDragLeave = useCallback((event: React.DragEvent) => {
+			// Only clear when the cursor truly leaves the wrapper, not when moving
+			// between child nodes (relatedTarget still inside the wrapper).
+			const next = event.relatedTarget;
+			if (next instanceof Node && event.currentTarget.contains(next)) return;
+			setIsDropActive(false);
+		}, []);
+
+		const handleDrop = useCallback(
+			(event: React.DragEvent) => {
+				setIsDropActive(false);
+				if (disabled) return;
+				const payload = readCanvasRefDragData(event.dataTransfer);
+				if (!payload) return;
+				event.preventDefault();
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				onDropEntityAt({ x: position.x, y: position.y }, payload);
+			},
+			[disabled, onDropEntityAt, screenToFlowPosition],
+		);
+
 		const handleNodeDoubleClick = useCallback(
 			(_event: React.MouseEvent, node: RoxFlowNode) => {
 				if (node.data.refType) onOpenRefNode(node.id);
@@ -373,7 +421,16 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 		const selectionCount = selectedNodeIds.length + selectedEdgeIds.length;
 
 		return (
-			<div ref={flowWrapperRef} className="h-full w-full">
+			// biome-ignore lint/a11y/noStaticElementInteractions: drop target for native HTML5 DnD of workspace entities; keyboard create path is the existing double-click handler
+			<div
+				ref={flowWrapperRef}
+				className="relative h-full w-full"
+				onDragOver={handleDragOver}
+				onDragLeave={handleDragLeave}
+				onDrop={handleDrop}
+				data-drop-active={isDropActive ? "true" : undefined}
+				data-testid="canvas-drop-zone"
+			>
 				<ReactFlow
 					className="canvas-react-flow"
 					colorMode="dark"
@@ -488,6 +545,17 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 						</div>
 					</Panel>
 				</ReactFlow>
+
+				{isDropActive ? (
+					<div
+						className="pointer-events-none absolute inset-3 z-20 flex items-center justify-center rounded-xl border-2 border-[var(--sidebar-primary)] border-dashed bg-[var(--sidebar-primary)]/8"
+						data-testid="canvas-drop-hint"
+					>
+						<span className="glass-panel rounded-lg border border-border/60 px-3 py-1.5 font-mono text-[var(--sidebar-primary)] text-xs">
+							Отпустите, чтобы добавить ссылку на холст
+						</span>
+					</div>
+				) : null}
 			</div>
 		);
 	},
