@@ -28,6 +28,7 @@ import type { DriveBrowserModel } from "./components/browserModel";
 import { CreateFolderDialog } from "./components/CreateFolderDialog";
 import { DeleteAlert, type DeleteTarget } from "./components/DeleteAlert";
 import { DriveEmptyState } from "./components/DriveEmptyState";
+import { DriveFolderTree } from "./components/DriveFolderTree";
 import { DriveGridView } from "./components/DriveGridView";
 import { DriveListView } from "./components/DriveListView";
 import { DriveToolbar } from "./components/DriveToolbar";
@@ -131,6 +132,17 @@ export function DriveView() {
 
 	const navigateTo = useCallback((targetId: string | null) => {
 		setStack((prev) => truncateStackTo(prev, targetId));
+	}, []);
+
+	// Tree-node click: if the folder is already on the visited stack, truncate
+	// back to it (same as a breadcrumb click); otherwise drill into it (push),
+	// reusing the same navigation model the main area uses.
+	const openOrNavigate = useCallback((folder: { id: string; name: string }) => {
+		setStack((prev) => {
+			const index = prev.findIndex((crumb) => crumb.id === folder.id);
+			if (index !== -1) return prev.slice(0, index + 1);
+			return [...prev, { id: folder.id, name: folder.name }];
+		});
 	}, []);
 
 	// --- selection (modifier-aware) -------------------------------------------
@@ -347,24 +359,34 @@ export function DriveView() {
 
 	return (
 		<DashboardSurface width="full" bare>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: container keyboard shortcuts */}
-			<div
-				className="relative grid h-full min-h-0 grid-cols-[240px_1fr] overflow-hidden"
-				onKeyDown={onKeyDown}
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCenter}
+				onDragStart={onDragStart}
+				onDragEnd={onDragEnd}
+				onDragCancel={onDragCancel}
 			>
-				{/* Left rail */}
-				<aside className="flex min-h-0 flex-col justify-end border-border/60 border-r p-3">
-					<QuotaCard />
-				</aside>
-
-				{/* Main column */}
-				<DndContext
-					sensors={sensors}
-					collisionDetection={closestCenter}
-					onDragStart={onDragStart}
-					onDragEnd={onDragEnd}
-					onDragCancel={onDragCancel}
+				{/* biome-ignore lint/a11y/noStaticElementInteractions: container keyboard shortcuts */}
+				<div
+					className="relative grid h-full min-h-0 grid-cols-[240px_1fr] overflow-hidden"
+					onKeyDown={onKeyDown}
 				>
+					{/* Left rail: lazy folder tree (top) + sticky QuotaCard (bottom) */}
+					<aside className="flex min-h-0 flex-col gap-3 border-border/60 border-r p-3">
+						<DriveFolderTree
+							path={stack}
+							activeId={folderId}
+							onNavigate={(folder) =>
+								folder === null ? navigateTo(null) : openOrNavigate(folder)
+							}
+							droppable={activeDrag !== null}
+						/>
+						<div className="mt-auto">
+							<QuotaCard />
+						</div>
+					</aside>
+
+					{/* Main column */}
 					<div className="flex min-h-0 flex-col">
 						<DriveToolbar
 							stack={stack}
@@ -435,70 +457,70 @@ export function DriveView() {
 							</div>
 						) : null}
 					</DragOverlay>
-				</DndContext>
 
-				{/* Hidden picker */}
-				<input
-					ref={fileInputRef}
-					type="file"
-					multiple
-					className="hidden"
-					onChange={(event) => {
-						const chosen = event.target.files
-							? Array.from(event.target.files)
-							: [];
-						onFilesChosen(chosen);
-						event.target.value = "";
-					}}
-				/>
+					{/* Hidden picker */}
+					<input
+						ref={fileInputRef}
+						type="file"
+						multiple
+						className="hidden"
+						onChange={(event) => {
+							const chosen = event.target.files
+								? Array.from(event.target.files)
+								: [];
+							onFilesChosen(chosen);
+							event.target.value = "";
+						}}
+					/>
 
-				{/* Overlays */}
-				<UploadTray
-					items={upload.items}
-					onRetry={(id) => void upload.retry(id)}
-					onDismiss={upload.dismiss}
-					onClear={upload.clearCompleted}
-				/>
-				<PreviewSheet
-					file={previewFile}
-					onOpenChange={(open) => {
-						if (!open) setPreviewFile(null);
-					}}
-					getPreviewUrl={actions.getPreviewUrl}
-					onDownload={(fileId) => void actions.download(fileId)}
-					onShare={(file) =>
-						setShareTarget({ kind: "file", id: file.id, name: file.name })
-					}
-				/>
-				<ShareDialog
-					target={shareTarget}
-					onOpenChange={(open) => {
-						if (!open) setShareTarget(null);
-					}}
-				/>
-				<SharesSheet open={sharesOpen} onOpenChange={setSharesOpen} />
-				<CreateFolderDialog
-					open={createOpen}
-					pending={actions.createFolder.isPending}
-					onOpenChange={setCreateOpen}
-					onCreate={(name) =>
-						actions.createFolder.mutate(
-							{ name, parentId: folderId },
-							{ onSuccess: () => setCreateOpen(false) },
-						)
-					}
-				/>
-				<DeleteAlert
-					target={deleteTarget}
-					pending={
-						actions.deleteFile.isPending || actions.deleteFolder.isPending
-					}
-					onConfirm={confirmDelete}
-					onOpenChange={(open) => {
-						if (!open) setDeleteTarget(null);
-					}}
-				/>
-			</div>
+					{/* Overlays */}
+					<UploadTray
+						items={upload.items}
+						onRetry={(id) => void upload.retry(id)}
+						onDismiss={upload.dismiss}
+						onClear={upload.clearCompleted}
+					/>
+					<PreviewSheet
+						file={previewFile}
+						onOpenChange={(open) => {
+							if (!open) setPreviewFile(null);
+						}}
+						getPreviewUrl={actions.getPreviewUrl}
+						onDownload={(fileId) => void actions.download(fileId)}
+						onShare={(file) =>
+							setShareTarget({ kind: "file", id: file.id, name: file.name })
+						}
+					/>
+					<ShareDialog
+						target={shareTarget}
+						onOpenChange={(open) => {
+							if (!open) setShareTarget(null);
+						}}
+					/>
+					<SharesSheet open={sharesOpen} onOpenChange={setSharesOpen} />
+					<CreateFolderDialog
+						open={createOpen}
+						pending={actions.createFolder.isPending}
+						onOpenChange={setCreateOpen}
+						onCreate={(name) =>
+							actions.createFolder.mutate(
+								{ name, parentId: folderId },
+								{ onSuccess: () => setCreateOpen(false) },
+							)
+						}
+					/>
+					<DeleteAlert
+						target={deleteTarget}
+						pending={
+							actions.deleteFile.isPending || actions.deleteFolder.isPending
+						}
+						onConfirm={confirmDelete}
+						onOpenChange={(open) => {
+							if (!open) setDeleteTarget(null);
+						}}
+					/>
+				</div>
+			</DndContext>
 		</DashboardSurface>
 	);
 }
