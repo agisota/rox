@@ -752,6 +752,22 @@ function createOrgCollections(
 				onError: handleElectricSyncError,
 			},
 			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				// Pin/favorite (F19): the only client-driven update to a chat session
+				// is toggling `pinned`. Mirror the delete path — call the org-scoped
+				// `chat.setPinned` mutation and match its txid so the optimistic
+				// reorder is confirmed once Electric syncs the write back down.
+				const mutation = transaction.mutations[0];
+				const result = await apiClient.chat.setPinned.mutate({
+					sessionId: mutation.modified.id,
+					organizationId,
+					pinned: mutation.modified.pinned,
+				});
+				if (!result.updated) {
+					throw new Error("Chat session pin was not updated");
+				}
+				return electricTxidMatch(result.txid);
+			},
 			onDelete: async ({ transaction }) => {
 				const item = transaction.mutations[0].original;
 				const result = await apiClient.chat.deleteSession.mutate({

@@ -237,6 +237,23 @@ export function useOptimisticCollectionActions() {
 						collections.chatSessions.delete(sessionId),
 					);
 				},
+				// Pin/favorite (F19): optimistic toggle. `pinnedAt` is set locally so
+				// the sticky-top group orders most-recently-pinned-first before the
+				// server write syncs back; the server is the source of truth on sync.
+				setPinned: (sessionId: string, pinned: boolean) => {
+					if (isDesktopChatDevMode()) return null;
+
+					return runChatSessionMutation(
+						pinned
+							? "Failed to pin chat session"
+							: "Failed to unpin chat session",
+						() =>
+							collections.chatSessions.update(sessionId, (draft) => {
+								draft.pinned = pinned;
+								draft.pinnedAt = pinned ? new Date() : null;
+							}),
+					);
+				},
 			},
 			v2Hosts: {
 				renameHost: (hostId: string, name: string) =>

@@ -69,6 +69,8 @@ export const chatRouter = {
 					workspaceId: chatSessions.workspaceId,
 					v2WorkspaceId: chatSessions.v2WorkspaceId,
 					status: chatSessions.status,
+					pinned: chatSessions.pinned,
+					pinnedAt: chatSessions.pinnedAt,
 					labels: chatSessions.labels,
 					createdAt: chatSessions.createdAt,
 					updatedAt: chatSessions.updatedAt,
@@ -172,6 +174,8 @@ export const chatRouter = {
 					workspaceId: chatSessions.workspaceId,
 					v2WorkspaceId: chatSessions.v2WorkspaceId,
 					status: chatSessions.status,
+					pinned: chatSessions.pinned,
+					pinnedAt: chatSessions.pinnedAt,
 					labels: chatSessions.labels,
 					createdAt: chatSessions.createdAt,
 					updatedAt: chatSessions.updatedAt,
@@ -436,6 +440,49 @@ export const chatRouter = {
 				.returning({ id: chatSessions.id });
 
 			return { updated: !!updated };
+		}),
+
+	setPinned: protectedProcedure
+		.input(
+			z.object({
+				sessionId: z.uuid(),
+				organizationId: z.uuid(),
+				pinned: z.boolean(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = requireActiveOrgId(ctx);
+			if (input.organizationId !== organizationId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Organization mismatch",
+				});
+			}
+
+			const result = await dbWs.transaction(async (tx) => {
+				const [updated] = await tx
+					.update(chatSessions)
+					.set({
+						pinned: input.pinned,
+						pinnedAt: input.pinned ? new Date() : null,
+					})
+					.where(
+						and(
+							eq(chatSessions.id, input.sessionId),
+							eq(chatSessions.organizationId, organizationId),
+							eq(chatSessions.createdBy, ctx.session.user.id),
+						),
+					)
+					.returning({ id: chatSessions.id });
+
+				if (!updated) return { updated, txid: null };
+				const txid = await getCurrentTxid(tx);
+
+				return { updated, txid };
+			});
+			const { updated, txid } = result;
+
+			return { updated: !!updated, txid };
 		}),
 
 	setLabels: protectedProcedure

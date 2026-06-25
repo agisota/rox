@@ -1,22 +1,26 @@
 import { alert } from "@rox/ui/atoms/Alert";
 import { DropdownMenuItem } from "@rox/ui/dropdown-menu";
 import { toast } from "@rox/ui/sonner";
-import { HiMiniTrash } from "react-icons/hi2";
+import { HiMiniStar, HiMiniTrash, HiOutlineStar } from "react-icons/hi2";
 
 interface SessionSelectorItemProps {
 	sessionId: string;
 	title: string;
 	isCurrent: boolean;
+	pinned: boolean;
 	onSelectSession: (sessionId: string) => void;
 	onDeleteSession: (sessionId: string) => Promise<void>;
+	onSetPinned: (sessionId: string, pinned: boolean) => Promise<void>;
 }
 
 export function SessionSelectorItem({
 	sessionId,
 	title,
 	isCurrent,
+	pinned,
 	onSelectSession,
 	onDeleteSession,
+	onSetPinned,
 }: SessionSelectorItemProps) {
 	return (
 		<DropdownMenuItem
@@ -30,6 +34,32 @@ export function SessionSelectorItem({
 			>
 				{title || "Новый чат"}
 			</span>
+			<button
+				type="button"
+				title={pinned ? "Открепить" : "Закрепить"}
+				aria-label={pinned ? "Открепить сессию" : "Закрепить сессию"}
+				className={`shrink-0 rounded p-0.5 transition-opacity hover:bg-muted ${
+					pinned
+						? "text-amber-500 opacity-100"
+						: "opacity-0 group-hover:opacity-100"
+				}`}
+				onClick={(event) => {
+					event.stopPropagation();
+					toast.promise(onSetPinned(sessionId, !pinned), {
+						loading: pinned ? "Открепление…" : "Закрепление…",
+						success: pinned ? "Сессия откреплена" : "Сессия закреплена",
+						error: pinned
+							? "Не удалось открепить сессию"
+							: "Не удалось закрепить сессию",
+					});
+				}}
+			>
+				{pinned ? (
+					<HiMiniStar className="size-3" />
+				) : (
+					<HiOutlineStar className="size-3" />
+				)}
+			</button>
 			{!isCurrent && (
 				<button
 					type="button"
