@@ -20,6 +20,7 @@
 		"./tag-filter-pill-bar": "./src/components/TagFilterPillBar/index.ts",
 		"./room-visibility-badge": "./src/components/RoomVisibilityBadge/index.ts",
 		"./live-room-activity-panel": "./src/components/LiveRoomActivityPanel/index.ts",
+		"./workspace-switcher": "./src/components/WorkspaceSwitcher/index.ts",
 		"./icons/preset-icons": "./src/assets/icons/preset-icons/index.ts",
 		"./icons/preset-icons/*": "./src/assets/icons/preset-icons/*.svg",
 		"./atoms/*": "./src/atoms/*/index.ts",
