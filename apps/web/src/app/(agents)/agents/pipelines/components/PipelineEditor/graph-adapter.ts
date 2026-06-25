@@ -43,6 +43,12 @@ export type PipelineNodeData = {
 	blockId: string;
 	/** Canvas node kind. */
 	kind: PipelineNodeKind;
+	/**
+	 * Live run-trace status for this block during an active pipeline run
+	 * (`running`/`succeeded`/`failed`/`waiting_approval`/`pending`). Set by the
+	 * editor from polled `getRun` steps; absent when no run is active.
+	 */
+	runStatus?: string;
 	/** Persisted workflow block type. Can be broader than the rendered kind. */
 	blockType: string;
 	/** Human-facing label. */

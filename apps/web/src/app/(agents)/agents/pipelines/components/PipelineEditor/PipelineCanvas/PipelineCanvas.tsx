@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas } from "@rox/ui/ai-elements/canvas";
+import { Connection as TemporaryConnectionLine } from "@rox/ui/ai-elements/connection";
 import { Controls } from "@rox/ui/ai-elements/controls";
 import {
 	addEdge,
@@ -18,10 +19,19 @@ import {
 	useNodesState,
 	useReactFlow,
 } from "@rox/ui/ai-elements/flow";
+import { Panel } from "@rox/ui/ai-elements/panel";
 import { Button } from "@rox/ui/button";
 import type { RoxWorkflowState } from "@rox/workflow-core";
-import { LayoutTemplate } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LayoutTemplate, Plus, Sparkles, Wand2 } from "lucide-react";
+import {
+	useCallback,
+	useEffect,
+	useImperativeHandle,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { canConnect } from "../connection-rules";
 import type { PipelineFlowEdge, PipelineFlowNode } from "../graph-adapter";
 import { NodePalette, PALETTE_DND_MIME } from "../NodePalette";
 import { PIPELINE_EDGE_TYPES, PIPELINE_NODE_TYPES } from "../nodes";
@@ -35,9 +45,11 @@ const NEW_EDGE_DEFAULTS = {
 	markerEnd: { type: MarkerType.ArrowClosed },
 } as const;
 
+/** Imperative handle the editor uses to fit/centre after an auto-layout. */
 export type PipelineCanvasHandle = {
-	getNodes: () => PipelineFlowNode[];
-	getEdges: () => PipelineFlowEdge[];
+	fitView: () => void;
+	/** Flow coordinates of the current viewport centre (palette pick target). */
+	getViewportCenter: () => { x: number; y: number };
 };
 
 type PipelineCanvasProps = {
@@ -52,29 +64,52 @@ type PipelineCanvasProps = {
 	onSelectNode: (nodeId: string | null) => void;
 	/** Called (debounced by the parent) whenever nodes/edges change. */
 	onGraphChange: (nodes: PipelineFlowNode[], edges: PipelineFlowEdge[]) => void;
-	/** Add a node of the given registry type (optionally bound + positioned). */
+	/** Add a node of the given registry type at a default position (palette click). */
 	onAddNode: (
 		type: string,
-		opts?: {
-			roleSlug?: string;
-			label?: string;
-			position?: { x: number; y: number };
-		},
+		opts?: { roleSlug?: string; label?: string },
 	) => void;
+	/** Drop a node at a precise flow position (drag-from-palette). */
+	onDropNode: (
+		type: string,
+		position: { x: number; y: number },
+		roleSlug?: string,
+		label?: string,
+	) => void;
+	/** Open the cmdk add-node command palette. */
+	onOpenPalette: () => void;
+	/** Run the dagre auto-layout. */
+	onAutoLayout: () => void;
 	/** Replace the working graph with a template's graph. */
 	onApplyTemplate: (next: RoxWorkflowState) => void;
+	/** Imperative handle (fitView / viewport centre). */
+	handleRef: React.Ref<PipelineCanvasHandle>;
+	/** Whether the canvas is empty apart from the start node (show hint overlay). */
+	showEmptyHint: boolean;
+	/**
+	 * Monotonic counter the editor bumps to force a full canvas re-seed from
+	 * `initialNodes`/`initialEdges` even when the structural signature is
+	 * unchanged — used after an auto-layout (positions move but ids/edges don't),
+	 * which must NOT be folded into the position-independent signature (that would
+	 * clobber in-progress drags). Undo/redo also bumps this.
+	 */
+	reseedKey: number;
 };
 
 /**
  * The interactive pipeline canvas. A left dock palette (categorized, searchable,
  * drag-n-drop) adds nodes; the canvas renders registry-driven nodes with typed
  * ports and branch-coloured edges; a MiniMap (tinted by registry category) and
- * zoom controls aid navigation; a templates gallery seeds whole graphs.
+ * zoom controls aid navigation; a templates gallery seeds whole graphs. A
+ * top-left panel exposes the cmdk add-node palette, the dagre auto-layout, and
+ * the templates gallery (desktop parity). Connections are guarded by
+ * `isValidConnection` (no self-loop / into-start / duplicate).
  *
  * Node/edge state is owned here via xyflow's controlled hooks; the parent passes
  * derived nodes/edges and receives change callbacks to persist back to
  * `RoxWorkflowState`. Cache-first (AGENTS.md #9): existing nodes always render;
- * an incoming external graph re-syncs only when its structural signature changes.
+ * an incoming external graph re-syncs only when its structural signature changes,
+ * or when `reseedKey` is bumped (auto-layout / undo/redo move positions only).
  */
 export function PipelineCanvas({
 	nodes: initialNodes,
@@ -84,32 +119,71 @@ export function PipelineCanvas({
 	onSelectNode,
 	onGraphChange,
 	onAddNode,
+	onDropNode,
+	onOpenPalette,
+	onAutoLayout,
 	onApplyTemplate,
+	handleRef,
+	showEmptyHint,
+	reseedKey,
 }: PipelineCanvasProps) {
 	const [nodes, setNodes] = useNodesState<PipelineFlowNode>(initialNodes);
 	const [edges, setEdges] = useEdgesState<PipelineFlowEdge>(initialEdges);
 	const [galleryOpen, setGalleryOpen] = useState(false);
-	const { screenToFlowPosition } = useReactFlow();
+	const flow = useReactFlow();
+	const wrapperRef = useRef<HTMLDivElement>(null);
 
 	// Keep a ref to the latest graph so the parent can read it on demand (save).
 	const latest = useRef({ nodes, edges });
 	latest.current = { nodes, edges };
 
+	useImperativeHandle(
+		handleRef,
+		() => ({
+			fitView: () => flow.fitView({ duration: 300, padding: 0.2 }),
+			getViewportCenter: () => {
+				const el = wrapperRef.current;
+				const rect = el?.getBoundingClientRect();
+				if (!rect) return { x: 0, y: 0 };
+				return flow.screenToFlowPosition({
+					x: rect.left + rect.width / 2,
+					y: rect.top + rect.height / 2,
+				});
+			},
+		}),
+		[flow],
+	);
+
 	// Re-sync when the persisted graph identity changes (e.g. template applied,
-	// pipeline switched). We compare by a structural signature so local drags
-	// don't clobber in-progress edits.
+	// pipeline switched). We compare by a structural signature that is
+	// position-INDEPENDENT so a local node drag never re-seeds mid-gesture (the
+	// drag is already reflected via handleNodesChange). Position-moving operations
+	// that must re-seed without a structural change (auto-layout, undo/redo) are
+	// driven explicitly by `reseedKey` below.
 	const incomingSignature = useMemo(
 		() => signatureOf(initialNodes, initialEdges),
 		[initialNodes, initialEdges],
 	);
 	const appliedSignature = useRef(incomingSignature);
+	const appliedReseedKey = useRef(reseedKey);
 	useEffect(() => {
-		if (incomingSignature !== appliedSignature.current) {
+		if (
+			incomingSignature !== appliedSignature.current ||
+			reseedKey !== appliedReseedKey.current
+		) {
 			appliedSignature.current = incomingSignature;
+			appliedReseedKey.current = reseedKey;
 			setNodes(initialNodes);
 			setEdges(initialEdges);
 		}
-	}, [incomingSignature, initialNodes, initialEdges, setNodes, setEdges]);
+	}, [
+		incomingSignature,
+		reseedKey,
+		initialNodes,
+		initialEdges,
+		setNodes,
+		setEdges,
+	]);
 
 	// Mark selection on the nodes so custom renderers can show the ring.
 	const decoratedNodes = useMemo(
@@ -134,6 +208,17 @@ export function PipelineCanvas({
 			onGraphChange(latest.current.nodes, next);
 		},
 		[setEdges, onGraphChange],
+	);
+
+	// Typed-port guard: reject self-loops, edges into start, and duplicates.
+	const isValidConnection = useCallback(
+		(connection: Connection | Edge) =>
+			canConnect(
+				connection as Connection,
+				latest.current.nodes,
+				latest.current.edges,
+			),
+		[],
 	);
 
 	const handleNodesChange = useCallback(
@@ -179,12 +264,11 @@ export function PipelineCanvas({
 		onSelectNode(null);
 	}, [onSelectNode]);
 
-	// Drag-n-drop add: drop a palette entry to create a node at the drop point.
+	// --- Drag-from-palette (native HTML DnD) -----------------------------------
 	const handleDragOver = useCallback((event: React.DragEvent) => {
-		if (event.dataTransfer.types.includes(PALETTE_DND_MIME)) {
-			event.preventDefault();
-			event.dataTransfer.dropEffect = "copy";
-		}
+		if (!event.dataTransfer.types.includes(PALETTE_DND_MIME)) return;
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "copy";
 	}, []);
 
 	const handleDrop = useCallback(
@@ -199,17 +283,13 @@ export function PipelineCanvas({
 				return;
 			}
 			if (!payload.type) return;
-			const position = screenToFlowPosition({
+			const position = flow.screenToFlowPosition({
 				x: event.clientX,
 				y: event.clientY,
 			});
-			onAddNode(payload.type, {
-				roleSlug: payload.roleSlug,
-				label: payload.label,
-				position,
-			});
+			onDropNode(payload.type, position, payload.roleSlug, payload.label);
 		},
-		[onAddNode, screenToFlowPosition],
+		[flow, onDropNode],
 	);
 
 	return (
@@ -219,6 +299,7 @@ export function PipelineCanvas({
 			    <Canvas> inside; this wrapper relays palette drag-n-drop to add a
 			    node at the cursor (role=application so it's not a "static" element). */}
 			<div
+				ref={wrapperRef}
 				className="relative min-w-0 flex-1"
 				role="application"
 				aria-label="Холст пайплайна"
@@ -230,6 +311,8 @@ export function PipelineCanvas({
 					edges={edges as Edge[]}
 					nodeTypes={PIPELINE_NODE_TYPES}
 					edgeTypes={PIPELINE_EDGE_TYPES}
+					connectionLineComponent={TemporaryConnectionLine}
+					isValidConnection={isValidConnection}
 					// The canvas primitive defaults its node/edge generics to the base
 					// xyflow types; our change handlers are typed against the concrete
 					// pipeline node (a structural subtype), so we cast at the prop boundary.
@@ -256,19 +339,46 @@ export function PipelineCanvas({
 						nodeStrokeWidth={2}
 						maskColor="color-mix(in oklab, var(--sidebar) 70%, transparent)"
 					/>
+					<Panel
+						position="top-left"
+						className="flex max-w-[min(42rem,calc(100vw-24rem))] flex-wrap items-center gap-1"
+					>
+						<Button
+							size="sm"
+							variant="default"
+							aria-label="Добавить узел"
+							onClick={onOpenPalette}
+						>
+							<Plus className="size-3.5" /> Добавить узел
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Авто-раскладка графа"
+							onClick={onAutoLayout}
+						>
+							<Wand2 className="size-3.5" /> Авто-раскладка
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Шаблоны пайплайнов"
+							onClick={() => setGalleryOpen(true)}
+						>
+							<LayoutTemplate className="size-3.5" /> Шаблоны
+						</Button>
+					</Panel>
 				</Canvas>
 
-				{/* Templates gallery trigger (top-right). */}
-				<div className="pointer-events-none absolute right-3 top-3 z-10">
-					<Button
-						size="sm"
-						variant="secondary"
-						className="pointer-events-auto shadow-sm"
-						onClick={() => setGalleryOpen(true)}
-					>
-						<LayoutTemplate className="size-3.5" /> Шаблоны
-					</Button>
-				</div>
+				{/* Empty-graph hint overlay (start only) — non-interactive. */}
+				{showEmptyHint && (
+					<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+						<div className="flex items-center gap-2 rounded-md border bg-card/80 px-4 py-2 text-xs text-muted-foreground backdrop-blur">
+							<Sparkles className="size-3.5 text-primary" />
+							Перетащите узел из палитры слева или выберите шаблон
+						</div>
+					</div>
+				)}
 
 				<TemplateGallery
 					open={galleryOpen}
@@ -283,7 +393,12 @@ export function PipelineCanvas({
 	);
 }
 
-/** Structural signature used to detect when an externally-provided graph changes. */
+/**
+ * Structural signature used to detect when an externally-provided graph changes.
+ * Position-INDEPENDENT on purpose: a node drag must not trigger a re-seed (that
+ * would clobber the in-progress gesture). Includes the source branch handle so a
+ * branch rewire still re-seeds. Position-only operations re-seed via `reseedKey`.
+ */
 function signatureOf(
 	nodes: PipelineFlowNode[],
 	edges: PipelineFlowEdge[],
