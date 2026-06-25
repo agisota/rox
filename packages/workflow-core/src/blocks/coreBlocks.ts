@@ -92,6 +92,14 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "low",
 	}),
+	defineBlock("http_request", {
+		label: "HTTP Request",
+		description:
+			"Calls an external HTTP(S) endpoint (method, url, headers, body) with SSRF protection; returns status, headers, and body.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
