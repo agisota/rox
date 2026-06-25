@@ -264,10 +264,14 @@ describe("catalog node types — AI/Data/Code/Tools (Slice 1b)", () => {
 
 	// --- CODE -----------------------------------------------------------------
 
-	test("code: language enum + required source, in/out ports (config only)", () => {
+	test("code: language enum + required source, typed in/out ports + sandbox caps", () => {
 		const def = need("code");
 		expect(def.category).toBe(NodeCategory.Code);
 		expect(def.outputs.map((p) => p.name)).toEqual(["out", "error"]);
+		// Ports are typed (#530 port-typing): the canvas colours edges + the
+		// validator's basic port-compat check reads these.
+		expect(def.inputs.find((p) => p.name === "in")?.type).toBe("object");
+		expect(def.outputs.find((p) => p.name === "out")?.type).toBe("object");
 		expect(def.fields.find((f) => f.key === "language")?.required).toBe(true);
 		expect(def.fields.find((f) => f.key === "source")?.required).toBe(true);
 		expect(
@@ -282,6 +286,26 @@ describe("catalog node types — AI/Data/Code/Tools (Slice 1b)", () => {
 			false,
 		);
 		expect(def.configSchema.safeParse({ source: "" }).success).toBe(false);
+		// Sandbox caps (#526): timeout/memory accepted within bounds, rejected past.
+		expect(
+			def.configSchema.safeParse({
+				language: "javascript",
+				source: "return 1",
+				timeoutMs: 5000,
+				memoryLimitMb: 128,
+			}).success,
+		).toBe(true);
+		expect(def.configSchema.safeParse({ timeoutMs: 30001 }).success).toBe(
+			false,
+		);
+		expect(def.configSchema.safeParse({ memoryLimitMb: 4 }).success).toBe(
+			false,
+		);
+		// The sandbox caps render as inspector number fields.
+		expect(def.fields.find((f) => f.key === "timeoutMs")?.kind).toBe("number");
+		expect(def.fields.find((f) => f.key === "memoryLimitMb")?.kind).toBe(
+			"number",
+		);
 	});
 
 	// --- TOOLS ----------------------------------------------------------------
@@ -414,7 +438,18 @@ describe("catalog node types — AI/Data/Code/Tools (Slice 1b)", () => {
 /** Per-field sample that satisfies the AI/Data/Code/Tools schemas. */
 function sampleForField(key: string, kind: string): unknown {
 	if (kind === "key-value") return { k: "v" };
-	if (kind === "number") return 1;
+	if (kind === "number") {
+		// A few numeric fields have a floor above 1 (sandbox caps on the code node),
+		// so pick an in-range sample per key; everything else accepts the generic 1.
+		switch (key) {
+			case "timeoutMs":
+				return 5_000;
+			case "memoryLimitMb":
+				return 128;
+			default:
+				return 1;
+		}
+	}
 	if (kind === "select") {
 		switch (key) {
 			case "method":
