@@ -16,11 +16,13 @@ import {
 	makeSwitchHandler,
 	makeTransformHandler,
 	makeVariableSetHandler,
+	makeWebSearchHandler,
 } from "@rox/workflow-runtime/handlers";
 import { makePipelineDbQuery, makePipelineDbWrite } from "./db-port";
 import { pipelineHttpRequest } from "./http-port";
 import { generatePipelineText } from "./model-provider";
 import { makePipelineRetrieval, type RagPortScope } from "./rag-port";
+import { makePipelineWebSearch } from "./web-search-port";
 
 /**
  * Real LLM port for the `model` block: resolves provider credentials and runs a
@@ -50,6 +52,24 @@ const modelGenerate: ModelGeneratePort = async (req) => {
  * `knowledge_retrieval` (RAG) port (org-scoped retrieval); when omitted (e.g.
  * unit tests that only exercise model/http nodes) the RAG handler is left
  * unregistered and a `knowledge_retrieval` node falls back to pass-through.
+ *
+ * TOOL NODES (#545): `web_search` is wired here to a server-side provider port
+ * (Tavily; provider-abstraction in `web-search-port.ts`) — it self-reports a
+ * typed `WEB_SEARCH_NOT_CONFIGURED` error when no provider key is set, so it is
+ * always registered. `tool_call` and `mcp_tool` are intentionally NOT registered
+ * yet and fall back to pass-through:
+ *   - Their pure handlers (`makeToolCallHandler` / `makeMcpToolHandler`) and port
+ *     contracts ship in `@rox/workflow-runtime/handlers` and are unit-tested
+ *     against fake ports.
+ *   - The real impure ports cannot be wired in this slice: Rox's MCP layer
+ *     (`@rox/mcp-v2` `AgentSourcePool` / `McpDownstreamClient`) needs an
+ *     `McpContext` (bearer token, userId, requestId) to resolve+call downstream
+ *     tools, but a pipeline run's `scope` only carries `organizationId` +
+ *     `v2ProjectId`. There is also no standalone "project tool registry" seam —
+ *     project tools are surfaced through the same MCP downstream sources. Wiring
+ *     these requires threading an `McpContext` (or a credential-bearing caller)
+ *     into `buildPipelineHandlers`, which is a `run-pipeline` seam change tracked
+ *     as a follow-up. Until then both nodes pass through unchanged.
  */
 export function buildPipelineHandlers(
 	scope?: RagPortScope,
@@ -68,6 +88,9 @@ export function buildPipelineHandlers(
 		transform: makeTransformHandler(),
 		parser: makeParserHandler(),
 		variable_set: makeVariableSetHandler(),
+		// Tool node: provider-abstraction web search (Tavily). Self-reports a typed
+		// not-configured error when no provider key is set, so always registered.
+		web_search: makeWebSearchHandler(makePipelineWebSearch()),
 	};
 	if (scope) {
 		handlers.knowledge_retrieval = makeRagHandler(makePipelineRetrieval(scope));

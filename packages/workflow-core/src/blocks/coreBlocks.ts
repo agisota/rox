@@ -169,6 +169,30 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "high",
 	}),
+	defineBlock("tool_call", {
+		label: "Tool Call",
+		description:
+			"Invokes a registered project tool by id with an arguments map; returns the tool result.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
+	defineBlock("mcp_tool", {
+		label: "MCP Tool",
+		description:
+			"Calls a tool exposed by a bound MCP server with an arguments map; returns the tool result.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
+	defineBlock("web_search", {
+		label: "Web Search",
+		description:
+			"Runs a query against the configured web-search provider and returns the top results.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
