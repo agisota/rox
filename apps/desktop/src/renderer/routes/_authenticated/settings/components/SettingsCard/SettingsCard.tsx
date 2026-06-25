@@ -1,5 +1,7 @@
 import { cn } from "@rox/ui/utils";
 import type { ReactNode } from "react";
+import { settingItemAnchorId } from "../../utils/settings-deeplink";
+import type { SettingItemId } from "../../utils/settings-search";
 
 /**
  * Shared glass settings primitive (Settings P0 hardening).
@@ -40,6 +42,12 @@ interface SettingsCardProps {
 	 * the `divided` prop is ignored.
 	 */
 	bare?: boolean;
+	/**
+	 * Registry item this card represents. When set, the card renders a stable
+	 * deep-link anchor id (`#setting-item-<id>`) so the command palette can jump
+	 * straight here and flash it on arrival (#592).
+	 */
+	anchorItemId?: SettingItemId;
 }
 
 export function SettingsCard({
@@ -48,9 +56,11 @@ export function SettingsCard({
 	className,
 	divided = true,
 	bare = false,
+	anchorItemId,
 }: SettingsCardProps) {
 	return (
 		<div
+			id={anchorItemId ? settingItemAnchorId(anchorItemId) : undefined}
 			className={cn(
 				// Solid fallback (glass off / non-mac) + shared glass-panel hook.
 				"glass-panel overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground",

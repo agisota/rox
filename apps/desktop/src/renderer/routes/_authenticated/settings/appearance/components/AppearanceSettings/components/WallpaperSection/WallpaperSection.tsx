@@ -7,6 +7,7 @@ import { CheckIcon } from "lucide-react";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import { useWallpaperStore } from "renderer/stores/wallpaper";
 import { SettingsCard } from "../../../../../components/SettingsCard";
+import { SETTING_ITEM_ID } from "../../../../../utils/settings-search";
 import {
 	DEFAULT_ROTATE_SECONDS,
 	formatRotateInterval,
@@ -113,7 +114,7 @@ export function WallpaperSection() {
 	};
 
 	return (
-		<SettingsCard bare>
+		<SettingsCard bare anchorItemId={SETTING_ITEM_ID.APPEARANCE_WALLPAPER}>
 			<div className="divide-y divide-border/60">
 				<div className="flex items-center justify-between gap-6 p-4">
 					<div className="min-w-0 flex-1">

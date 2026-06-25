@@ -2376,6 +2376,13 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 	},
 ];
 
+/** Look up a registry item by its id, or `undefined` if unknown. */
+export function getSettingsItem(
+	itemId: SettingItemId,
+): SettingsItem | undefined {
+	return SETTINGS_ITEMS.find((item) => item.id === itemId);
+}
+
 export function searchSettings(query: string): SettingsItem[] {
 	return matchSettings(query, SETTINGS_ITEMS);
 }

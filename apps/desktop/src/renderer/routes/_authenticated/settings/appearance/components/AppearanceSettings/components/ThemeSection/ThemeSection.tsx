@@ -37,6 +37,7 @@ import {
 	type Theme,
 } from "shared/themes";
 import { SettingsCard } from "../../../../../components/SettingsCard";
+import { SETTING_ITEM_ID } from "../../../../../utils/settings-search";
 import { ThemeLibraryCombobox } from "./components/ThemeLibraryCombobox";
 
 const MAX_THEME_FILE_SIZE = 256 * 1024; // 256 KB
@@ -281,7 +282,7 @@ export function ThemeSection() {
 	};
 
 	return (
-		<SettingsCard bare>
+		<SettingsCard bare anchorItemId={SETTING_ITEM_ID.APPEARANCE_THEME}>
 			<div className="divide-y divide-border/60">
 				<ThemeRow
 					label="Тема"
