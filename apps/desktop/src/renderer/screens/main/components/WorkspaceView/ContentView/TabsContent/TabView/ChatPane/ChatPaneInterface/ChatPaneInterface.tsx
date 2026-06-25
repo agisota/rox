@@ -10,11 +10,17 @@ import {
 	PromptInputProvider,
 	useProviderAttachments,
 } from "@rox/ui/ai-elements/prompt-input";
+import { toast } from "@rox/ui/sonner";
 import { useQuery } from "@tanstack/react-query";
 import type { ChatStatus } from "ai";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatInputFooter } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter";
+import {
+	resolveActiveModel,
+	unresolvedModelMessage,
+} from "renderer/components/Chat/ChatInterface/components/ModelPicker/utils/activeModelResolution";
+import { resolveSelectableModels } from "renderer/components/Chat/ChatInterface/components/ModelPicker/utils/selectableModels";
 import { usePermissionModePreference } from "renderer/components/Chat/ChatInterface/hooks/usePermissionModePreference";
 import { useSlashCommandExecutor } from "renderer/components/Chat/ChatInterface/hooks/useSlashCommandExecutor";
 import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
@@ -199,17 +205,87 @@ export function ChatPaneInterface({
 	onConsumeLaunchConfig,
 	onUserMessageSubmitted,
 }: ChatPaneInterfaceProps) {
-	const { models: availableModels, defaultModel } = useAvailableModels();
+	const { models: catalogModels, defaultModel } = useAvailableModels();
+	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+	// Merge the user's custom OpenAI-compatible provider models into the catalog
+	// (persisted + live `/v1/models` refresh on picker-open) so a selected custom
+	// id resolves against the SAME superset the picker shows — closing the legacy
+	// pane's silent-fallback path where `useAvailableModels()` only knew the
+	// catalog and a custom selection quietly snapped back to the house model.
+	const { data: customProviderConfig } =
+		chatServiceTrpc.auth.getCustomProviderConfig.useQuery();
+	const discoverCustomModels =
+		chatServiceTrpc.auth.discoverCustomProviderModels.useMutation();
+	const [liveCustomModelIds, setLiveCustomModelIds] = useState<string[]>([]);
+	const customProviderBaseUrl = customProviderConfig?.baseUrl;
+	const customProviderHasApiKey = customProviderConfig?.hasApiKey ?? false;
+	const runDiscoverCustomModels = discoverCustomModels.mutateAsync;
+	useEffect(() => {
+		if (!modelSelectorOpen) return;
+		if (!customProviderBaseUrl || !customProviderHasApiKey) {
+			setLiveCustomModelIds([]);
+			return;
+		}
+		let cancelled = false;
+		void runDiscoverCustomModels({ baseUrl: customProviderBaseUrl })
+			.then((result) => {
+				if (cancelled) return;
+				setLiveCustomModelIds(result.models.map((model) => model.id));
+			})
+			.catch(() => {
+				if (cancelled) return;
+				// The list stays on the persisted entries, but the failure is no
+				// longer swallowed: signal that `/v1/models` is unreachable.
+				setLiveCustomModelIds([]);
+				toast.error(
+					"Не удалось получить модели custom-провайдера — проверьте, что /v1/models доступен",
+				);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		modelSelectorOpen,
+		customProviderBaseUrl,
+		customProviderHasApiKey,
+		runDiscoverCustomModels,
+	]);
+	const availableModels = useMemo(
+		() =>
+			resolveSelectableModels({
+				models: catalogModels,
+				customProviderConfig,
+				discoveredModelIds: liveCustomModelIds,
+			}),
+		[catalogModels, customProviderConfig, liveCustomModelIds],
+	);
 	const selectedModelId = useChatPreferencesStore(
 		(state) => state.selectedModelId,
 	);
 	const setSelectedModelId = useChatPreferencesStore(
 		(state) => state.setSelectedModelId,
 	);
-	const selectedModel =
-		availableModels.find((model) => model.id === selectedModelId) ?? null;
-	const activeModel = selectedModel ?? defaultModel;
-	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+	// Resolve the active model WITHOUT the historical silent swap: an unresolved
+	// persisted custom selection now yields an explicit `unresolvedModelId`.
+	const { activeModel, selectedModel, unresolvedModelId } = useMemo(
+		() =>
+			resolveActiveModel({
+				selectedModelId,
+				availableModels,
+				defaultModel,
+			}),
+		[selectedModelId, availableModels, defaultModel],
+	);
+	const signaledUnresolvedRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!unresolvedModelId) {
+			signaledUnresolvedRef.current = null;
+			return;
+		}
+		if (signaledUnresolvedRef.current === unresolvedModelId) return;
+		signaledUnresolvedRef.current = unresolvedModelId;
+		toast.error(unresolvedModelMessage(unresolvedModelId));
+	}, [unresolvedModelId]);
 	const thinkingLevel = useChatPreferencesStore((state) => state.thinkingLevel);
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
@@ -1045,6 +1121,7 @@ export function ChatPaneInterface({
 					setSelectedModel={handleSelectModel}
 					modelSelectorOpen={modelSelectorOpen}
 					setModelSelectorOpen={setModelSelectorOpen}
+					unresolvedModelId={unresolvedModelId}
 					permissionMode={permissionMode}
 					setPermissionMode={setPermissionMode}
 					thinkingLevel={thinkingLevel}
