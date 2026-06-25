@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import * as realDbSchema from "@rox/db/schema";
 import type { TRPCRouterRecord } from "@trpc/server";
 import * as realDrizzleOrm from "drizzle-orm";
 import {
