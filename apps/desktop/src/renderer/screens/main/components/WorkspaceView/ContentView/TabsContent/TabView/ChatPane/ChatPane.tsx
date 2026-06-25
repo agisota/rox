@@ -12,6 +12,7 @@ import type { SplitPaneOptions, Tab } from "renderer/stores/tabs/types";
 import { TabContentContextMenu } from "../../TabContentContextMenu";
 import { BasePaneWindow, PaneToolbarActions } from "../components";
 import { ChatPaneInterface } from "./ChatPaneInterface";
+import { RoomVisibility } from "./components/RoomVisibility";
 import { SessionLabelPillBar } from "./components/SessionLabelPillBar";
 import { SessionSelector } from "./components/SessionSelector";
 import { useChatPaneController } from "./hooks/useChatPaneController";
@@ -169,6 +170,10 @@ export function ChatPane({
 								<SessionObjectLinkLauncher
 									sessionId={sessionId}
 									sessionTitle={paneName}
+								/>
+								<RoomVisibility
+									sessionId={sessionId}
+									organizationId={organizationId}
 								/>
 							</div>
 							<PaneToolbarActions
