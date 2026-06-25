@@ -7,6 +7,11 @@
  * them, once per thread, as a delimited system block so every agent run is
  * memory-aware.
  *
+ * The order/budget contract (which items get injected, in what order) lives in
+ * `@rox/shared/memory-context` so the desktop "Что увидит агент" preview can
+ * reuse the exact same selection without any server dependency. This module owns
+ * only the injection side effect.
+ *
  * Data path: this package runs in the host-service process and has no direct DB
  * access, so it reads through the existing `memory.list` tRPC procedure on the
  * main API (org + user scoping is enforced server-side from the authenticated
@@ -16,139 +21,26 @@
  * builder.
  */
 
+import {
+	buildMemoryContextBlock,
+	MEMORY_CONTEXT_MAX_CHARS,
+	MEMORY_CONTEXT_MAX_ITEMS,
+	type MemoryContextCategory,
+	type MemoryContextItem,
+} from "@rox/shared/memory-context";
 import type { AppRouter } from "@rox/trpc";
 import type { createTRPCClient } from "@trpc/client";
 
-/** Memory categories, mirrored from `@rox/db` (no DB dep in this package). */
-export type MemoryContextCategory =
-	| "projects"
-	| "identity"
-	| "instructions"
-	| "career"
-	| "general";
-
-/** Minimal shape the builder needs from a `memory_items` row. */
-export interface MemoryContextItem {
-	category: MemoryContextCategory;
-	body: string;
-	updatedAt: Date | string;
-}
-
-/** Max number of items injected, to bound context cost. */
-export const MEMORY_CONTEXT_MAX_ITEMS = 25;
-
-/** Soft character budget for the rendered item bodies, to bound context cost. */
-export const MEMORY_CONTEXT_MAX_CHARS = 4000;
+export {
+	buildMemoryContextBlock,
+	MEMORY_CONTEXT_MAX_CHARS,
+	MEMORY_CONTEXT_MAX_ITEMS,
+	type MemoryContextCategory,
+	type MemoryContextItem,
+};
 
 /** Reminder type tag persisted with the injected system message. */
 export const MEMORY_CONTEXT_REMINDER_TYPE = "rox_user_memory";
-
-/**
- * Categories surfaced first regardless of recency: how-to-work-with-me and
- * who-the-user-is matter on every turn, so they lead the block.
- */
-const PRIORITY_CATEGORIES: ReadonlySet<MemoryContextCategory> = new Set([
-	"instructions",
-	"identity",
-]);
-
-/**
- * RU headers, matching the MemoryView group labels
- * (`apps/desktop/.../MemoryView/groups.ts` MEMORY_GROUPS) so the injected block
- * reads the same as the UI the user curated.
- */
-const CATEGORY_HEADERS: Record<MemoryContextCategory, string> = {
-	projects: "Проекты",
-	identity: "Личное",
-	instructions: "Предпочтения и правила",
-	career: "Карьера и история",
-	general: "Общие правила и принципы",
-};
-
-/** Fixed display order of category groups inside the rendered block. */
-const CATEGORY_ORDER: readonly MemoryContextCategory[] = [
-	"instructions",
-	"identity",
-	"projects",
-	"career",
-	"general",
-];
-
-const BLOCK_PREAMBLE =
-	"Учитывай известные факты о пользователе (его память и предпочтения):";
-
-function toTime(value: Date | string): number {
-	const time = value instanceof Date ? value.getTime() : Date.parse(value);
-	return Number.isNaN(time) ? 0 : time;
-}
-
-/**
- * Order approved items per contract: `instructions` + `identity` always first,
- * then everything else most-recent-first (updatedAt desc). Within the priority
- * tier, ordering is also updatedAt desc. Then cap by item count AND character
- * budget (whichever binds first), so a few huge memories can't blow the budget.
- */
-function selectItems(items: readonly MemoryContextItem[]): MemoryContextItem[] {
-	const sorted = [...items].sort((a, b) => {
-		const aPriority = PRIORITY_CATEGORIES.has(a.category) ? 1 : 0;
-		const bPriority = PRIORITY_CATEGORIES.has(b.category) ? 1 : 0;
-		if (aPriority !== bPriority) return bPriority - aPriority;
-		return toTime(b.updatedAt) - toTime(a.updatedAt);
-	});
-
-	const selected: MemoryContextItem[] = [];
-	let usedChars = 0;
-	for (const item of sorted) {
-		if (selected.length >= MEMORY_CONTEXT_MAX_ITEMS) break;
-		const body = item.body.trim();
-		if (!body) continue;
-		// Always allow the first item even if it alone exceeds the budget, so a
-		// single long memory is still injected rather than silently dropped.
-		if (
-			selected.length > 0 &&
-			usedChars + body.length > MEMORY_CONTEXT_MAX_CHARS
-		)
-			continue;
-		selected.push({ ...item, body });
-		usedChars += body.length;
-	}
-	return selected;
-}
-
-/**
- * Build the delimited system block from approved memory items, grouped by
- * category with RU headers. Returns `null` when there is nothing to inject, so
- * the caller is a true no-op for users with no approved memories.
- */
-export function buildMemoryContextBlock(
-	items: readonly MemoryContextItem[],
-): string | null {
-	const selected = selectItems(items);
-	if (selected.length === 0) return null;
-
-	const grouped = new Map<MemoryContextCategory, string[]>();
-	for (const item of selected) {
-		const bucket = grouped.get(item.category);
-		if (bucket) bucket.push(item.body);
-		else grouped.set(item.category, [item.body]);
-	}
-
-	const sections: string[] = [];
-	for (const category of CATEGORY_ORDER) {
-		const bodies = grouped.get(category);
-		if (!bodies || bodies.length === 0) continue;
-		const lines = bodies.map((body) => `- ${body}`).join("\n");
-		sections.push(`## ${CATEGORY_HEADERS[category]}\n${lines}`);
-	}
-
-	return [
-		"<user_memory>",
-		BLOCK_PREAMBLE,
-		"",
-		sections.join("\n\n"),
-		"</user_memory>",
-	].join("\n");
-}
 
 type ApiClient = ReturnType<typeof createTRPCClient<AppRouter>>;
 

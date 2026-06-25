@@ -303,6 +303,10 @@
 		"./comms-events": {
 			"types": "./src/comms-events.ts",
 			"default": "./src/comms-events.ts"
+		},
+		"./memory-context": {
+			"types": "./src/memory-context.ts",
+			"default": "./src/memory-context.ts"
 		}
 	},
 	"scripts": {

@@ -13,7 +13,7 @@ import { useShouldAnimate } from "@rox/ui/motion";
 import { toast } from "@rox/ui/sonner";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Highlighter from "react-highlight-words";
 import {
 	HiOutlineEllipsisHorizontal,
@@ -26,6 +26,11 @@ import {
 	MEMORY_GROUPS,
 } from "renderer/screens/memory/MemoryView/groups";
 import { provenanceLabel } from "../../lib/provenance";
+import {
+	findSimilarCluster,
+	type SimilarityCluster,
+} from "../../lib/similarity";
+import { ProvenancePopover } from "../ProvenancePopover";
 
 interface MemoryRowProps {
 	item: SelectMemoryItem;
@@ -35,6 +40,14 @@ interface MemoryRowProps {
 	showCategory?: boolean;
 	/** Pulse the row once (command-palette "jump to memory"). */
 	flash?: boolean;
+	/**
+	 * Other approved items to scan for near-duplicates of this row (typically the
+	 * siblings in the same category). When two or more cross the similarity
+	 * threshold, a passive "N похожих" chip appears.
+	 */
+	similarCandidates?: readonly SelectMemoryItem[];
+	/** Open the merge sheet for a detected near-duplicate cluster. */
+	onShowSimilar?: (cluster: SimilarityCluster) => void;
 }
 
 /**
@@ -59,6 +72,8 @@ export function MemoryRow({
 	searchWords = [],
 	showCategory = false,
 	flash = false,
+	similarCandidates,
+	onShowSimilar,
 }: MemoryRowProps) {
 	const collections = useCollections();
 	const shouldAnimate = useShouldAnimate();
@@ -130,6 +145,15 @@ export function MemoryRow({
 
 	const provenance = provenanceLabel(item);
 
+	// Passive near-duplicate detection over the provided candidates. Only the
+	// seed-rooted cluster is computed here; the chip shows the count of *other*
+	// members so the user sees "N похожих".
+	const cluster = useMemo(() => {
+		if (!similarCandidates || similarCandidates.length === 0) return null;
+		return findSimilarCluster(item, similarCandidates);
+	}, [item, similarCandidates]);
+	const similarCount = cluster ? cluster.members.length - 1 : 0;
+
 	return (
 		<div
 			id={`memory-row-${item.id}`}
@@ -185,15 +209,29 @@ export function MemoryRow({
 					</button>
 				)}
 
-				{provenance && !editing && (
-					<p className="mt-0.5 text-[10px] text-muted-foreground/70">
-						{provenance}
-					</p>
+				{!editing && (provenance || similarCount > 0) && (
+					<div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+						{provenance && (
+							<span className="text-[10px] text-muted-foreground/70">
+								{provenance}
+							</span>
+						)}
+						{similarCount > 0 && cluster && onShowSimilar && (
+							<button
+								type="button"
+								onClick={() => onShowSimilar(cluster)}
+								className="rounded-full bg-amber-500/10 px-1.5 py-px font-medium text-[10px] text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+							>
+								{similarCount} похожих
+							</button>
+						)}
+					</div>
 				)}
 			</div>
 
 			{!editing && (
 				<div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
+					<ProvenancePopover item={item} />
 					<button
 						type="button"
 						aria-label="Изменить"
