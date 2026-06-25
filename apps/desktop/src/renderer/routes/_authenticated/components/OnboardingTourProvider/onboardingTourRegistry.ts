@@ -1,16 +1,7 @@
-export const REQUIRED_SURFACE_TOUR_IDS = [
-	"workspaces",
-	"workspace",
-	"quick_chat",
-	"tasks_pr",
-	"automations",
-	"pipelines",
-	"skills_library",
-	"memory",
-	"settings",
-] as const;
+import type { SurfaceTourId } from "@rox/shared/onboarding";
+import { REQUIRED_SURFACE_TOURS } from "@rox/shared/onboarding";
 
-export type SurfaceTourId = (typeof REQUIRED_SURFACE_TOUR_IDS)[number];
+export const REQUIRED_SURFACE_TOUR_IDS = REQUIRED_SURFACE_TOURS;
 
 export interface OnboardingTourStep {
 	id: string;

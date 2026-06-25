@@ -729,6 +729,13 @@
       "when": 1782287829874,
       "tag": "0103_comms_messages_org_scoped_external_uniq",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1782425287302,
+      "tag": "0104_add_onboarding_progress",
+      "breakpoints": true
     }
   ]
 }

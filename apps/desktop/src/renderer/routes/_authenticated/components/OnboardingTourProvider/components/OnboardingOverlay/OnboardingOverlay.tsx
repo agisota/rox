@@ -38,8 +38,17 @@ function escapeAnchorSelector(anchor: string) {
 }
 
 function findAnchorTarget(anchor: string) {
-	return document.querySelector<HTMLElement>(
-		`[data-onboarding-anchor="${escapeAnchorSelector(anchor)}"]`,
+	const targets = Array.from(
+		document.querySelectorAll<HTMLElement>(
+			`[data-onboarding-anchor="${escapeAnchorSelector(anchor)}"]`,
+		),
+	);
+
+	return (
+		targets.find((target) => {
+			const rect = target.getBoundingClientRect();
+			return rect.width > 0 && rect.height > 0;
+		}) ?? null
 	);
 }
 

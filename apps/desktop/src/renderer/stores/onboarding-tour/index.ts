@@ -1,2 +1,2 @@
-export type { OnboardingTourUiState, SurfaceTourId } from "./store";
+export type { OnboardingTourUiState } from "./store";
 export { useOnboardingTourStore } from "./store";

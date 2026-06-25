@@ -1,3 +1,4 @@
+import type { SurfaceTourId } from "@rox/shared/onboarding";
 import { create } from "zustand";
 import {
 	createJSONStorage,
@@ -5,8 +6,6 @@ import {
 	persist,
 	type StateStorage,
 } from "zustand/middleware";
-
-export type SurfaceTourId = string;
 
 export interface OnboardingTourUiState {
 	activeTourId: SurfaceTourId | null;
