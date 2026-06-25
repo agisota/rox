@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { savedPrompts } from "@rox/local-db";
+import { savedPrompts } from "@rox/local-db/schema/schema";
 import { eq } from "drizzle-orm";
 import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 import type { LocalDb } from "main/lib/local-db";

@@ -1,4 +1,10 @@
-import { savedPrompts } from "@rox/local-db";
+// Import the table from its defining module (`@rox/local-db/schema/schema`)
+// rather than a barrel. Bun's ESM linker intermittently fails to resolve the
+// most recently added binding (`savedPrompts`) through any `export *` barrel
+// when the whole desktop test graph loads in one process, surfacing as
+// `SyntaxError: Export named 'savedPrompts' not found`. Importing directly from
+// the source module bypasses the star re-export entirely.
+import { savedPrompts } from "@rox/local-db/schema/schema";
 import { eq, like, or, sql } from "drizzle-orm";
 import type { LocalDb } from "main/lib/local-db";
 
