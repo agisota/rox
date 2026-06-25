@@ -72,6 +72,18 @@ function resendSendFn(apiKey: string): ResendSendFn {
 			text: payload.text,
 			...(payload.html ? { html: payload.html } : {}),
 			...(payload.headers ? { headers: payload.headers } : {}),
+			// FN-141 (#701): outbound attachments delivered to Resend by remote URL
+			// (a presigned R2 GET) so bytes are never inlined into this request.
+			...(payload.attachments
+				? {
+						attachments: payload.attachments.map((a) => ({
+							filename: a.filename,
+							...(a.path ? { path: a.path } : {}),
+							...(a.content ? { content: a.content } : {}),
+							...(a.contentType ? { contentType: a.contentType } : {}),
+						})),
+					}
+				: {}),
 		});
 		if (error) {
 			throw new Error(`Resend send failed: ${error.message}`);

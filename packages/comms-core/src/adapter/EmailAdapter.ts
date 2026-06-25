@@ -99,6 +99,24 @@ export interface EmailRawInbound {
 // Outbound payload (adapter → injected Resend send fn)
 // ---------------------------------------------------------------------------
 
+/**
+ * One outbound attachment in the Resend-shaped payload (FN-141 / #701).
+ * Resend accepts either inline `content` (base64/Buffer) or a remote `path`
+ * (a URL it fetches). Mail attachments live in R2, so the router supplies a
+ * short-TTL presigned GET URL as `path` — bytes are never inlined into the
+ * payload (mirrors DQ1: bodies/attachments stay in R2).
+ */
+export interface EmailOutboundAttachment {
+	/** Filename shown to the recipient. */
+	filename: string;
+	/** Remote URL Resend fetches the bytes from (a presigned R2 GET). */
+	path?: string;
+	/** Inline content, when not delivered by URL. */
+	content?: string;
+	/** Optional explicit content type. */
+	contentType?: string;
+}
+
 /** The RFC-shaped payload the adapter hands the injected Resend send fn. */
 export interface EmailOutboundPayload {
 	from: string;
@@ -111,6 +129,8 @@ export interface EmailOutboundPayload {
 	html?: string;
 	/** Threading headers so replies thread in the recipient's client. */
 	headers?: Record<string, string>;
+	/** Outbound attachments (URL-delivered from R2; FN-141 / #701). */
+	attachments?: EmailOutboundAttachment[];
 }
 
 /** Injected transport: send the payload, return the provider message id. */
@@ -227,6 +247,7 @@ export class EmailAdapter implements TransportAdapter<EmailRawInbound> {
 		const cc = readStringArray(meta.cc);
 		const bcc = readStringArray(meta.bcc);
 		const replyTo = readString(meta.replyTo);
+		const attachments = readAttachments(meta.attachments);
 
 		const payload: EmailOutboundPayload = {
 			from,
@@ -238,6 +259,7 @@ export class EmailAdapter implements TransportAdapter<EmailRawInbound> {
 			text: draft.body,
 			...(draft.bodyHtml ? { html: draft.bodyHtml } : {}),
 			...(Object.keys(headers).length > 0 ? { headers } : {}),
+			...(attachments.length > 0 ? { attachments } : {}),
 		};
 
 		const { id } = await this.sendFn(payload);
@@ -267,4 +289,32 @@ function readString(value: unknown): string | undefined {
 function readStringArray(value: unknown): string[] {
 	if (!Array.isArray(value)) return [];
 	return value.filter((v): v is string => typeof v === "string");
+}
+
+/**
+ * Narrow a jsonb `attachments` value into the Resend-shaped outbound attachment
+ * list (FN-141 / #701). Each entry needs a `filename` plus a delivery source
+ * (`path` URL or inline `content`); entries missing both are dropped so a
+ * malformed metadata value can never produce an attachment with no bytes.
+ */
+function readAttachments(value: unknown): EmailOutboundAttachment[] {
+	if (!Array.isArray(value)) return [];
+	const out: EmailOutboundAttachment[] = [];
+	for (const raw of value) {
+		if (typeof raw !== "object" || raw === null) continue;
+		const rec = raw as Record<string, unknown>;
+		const filename = readString(rec.filename);
+		const path = readString(rec.path);
+		const content = readString(rec.content);
+		if (!filename || (!path && !content)) continue;
+		out.push({
+			filename,
+			...(path ? { path } : {}),
+			...(content ? { content } : {}),
+			...(readString(rec.contentType)
+				? { contentType: rec.contentType as string }
+				: {}),
+		});
+	}
+	return out;
 }
