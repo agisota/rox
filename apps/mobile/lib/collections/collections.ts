@@ -3,12 +3,18 @@ import type {
 	SelectInvitation,
 	SelectMember,
 	SelectOrganization,
+	SelectOrgSettings,
 	SelectProject,
 	SelectTask,
 	SelectTaskStatus,
 	SelectUser,
+	SelectUserPreferences,
 	SelectV2Workspace,
 } from "@rox/db/schema";
+import {
+	pickOrgSettingsPatch,
+	pickUserPreferencesPatch,
+} from "@rox/shared/prefs";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import type { Collection } from "@tanstack/react-db";
 import { createCollection } from "@tanstack/react-db";
@@ -28,6 +34,8 @@ interface OrgCollections {
 	users: Collection<SelectUser>;
 	invitations: Collection<SelectInvitation>;
 	v2Workspaces: Collection<SelectV2Workspace>;
+	userPreferences: Collection<SelectUserPreferences>;
+	orgSettings: Collection<SelectOrgSettings>;
 }
 
 const collectionsCache = new Map<string, OrgCollections>();
@@ -48,7 +56,10 @@ const organizationsCollection = createCollection(
 	}),
 );
 
-function createOrgCollections(organizationId: string): OrgCollections {
+function createOrgCollections(
+	organizationId: string,
+	userId: string,
+): OrgCollections {
 	const headers = {
 		Cookie: () => authClient.getCookie() || "",
 	};
@@ -157,6 +168,52 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		}),
 	);
 
+	// F46 cross-device prefs — same Electric shapes + shared `prefs` mutations as
+	// desktop, so a pin/view/locale set on desktop appears here and vice versa.
+	const userPreferences = createCollection(
+		electricCollectionOptions<SelectUserPreferences>({
+			id: `user_preferences-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "user_preferences", organizationId, userId },
+				headers,
+				columnMapper,
+			},
+			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				const { changes } = transaction.mutations[0];
+				const patch = pickUserPreferencesPatch(changes.values);
+				const result = await apiClient.prefs.update.mutate({
+					patch,
+					updatedAt: Date.now(),
+				});
+				return { txid: result.txid };
+			},
+		}),
+	);
+
+	const orgSettings = createCollection(
+		electricCollectionOptions<SelectOrgSettings>({
+			id: `org_settings-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "org_settings", organizationId },
+				headers,
+				columnMapper,
+			},
+			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				const { changes } = transaction.mutations[0];
+				const patch = pickOrgSettingsPatch(changes.values);
+				const result = await apiClient.prefs.updateOrg.mutate({
+					patch,
+					updatedAt: Date.now(),
+				});
+				return { txid: result.txid };
+			},
+		}),
+	);
+
 	return {
 		tasks,
 		taskStatuses,
@@ -165,15 +222,23 @@ function createOrgCollections(organizationId: string): OrgCollections {
 		users,
 		invitations,
 		v2Workspaces,
+		userPreferences,
+		orgSettings,
 	};
 }
 
-export function getCollections(organizationId: string) {
-	if (!collectionsCache.has(organizationId)) {
-		collectionsCache.set(organizationId, createOrgCollections(organizationId));
+export function getCollections(organizationId: string, userId: string) {
+	// Cache per (org, user): the user_preferences shape is user-scoped, so it
+	// must not be reused across users in one org.
+	const cacheKey = `${organizationId}:${userId}`;
+	if (!collectionsCache.has(cacheKey)) {
+		collectionsCache.set(
+			cacheKey,
+			createOrgCollections(organizationId, userId),
+		);
 	}
 
-	const orgCollections = collectionsCache.get(organizationId);
+	const orgCollections = collectionsCache.get(cacheKey);
 	if (!orgCollections) {
 		throw new Error(`Collections not found for org: ${organizationId}`);
 	}

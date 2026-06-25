@@ -116,6 +116,10 @@
 			"types": "./src/appearance/index.ts",
 			"default": "./src/appearance/index.ts"
 		},
+		"./prefs": {
+			"types": "./src/prefs.ts",
+			"default": "./src/prefs.ts"
+		},
 		"./canvas": {
 			"types": "./src/canvas/index.ts",
 			"default": "./src/canvas/index.ts"

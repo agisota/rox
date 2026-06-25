@@ -20,6 +20,7 @@ import type {
 	SelectMemoryImportJob,
 	SelectMemoryItem,
 	SelectOrganization,
+	SelectOrgSettings,
 	SelectProject,
 	SelectSubscription,
 	SelectTask,
@@ -27,6 +28,7 @@ import type {
 	SelectTeam,
 	SelectTeamMember,
 	SelectUser,
+	SelectUserPreferences,
 	SelectV2Client,
 	SelectV2Host,
 	SelectV2Project,
@@ -35,6 +37,10 @@ import type {
 	SelectWorkspace,
 } from "@rox/db/schema";
 import type { AppRouter as HostServiceAppRouter } from "@rox/host-service";
+import {
+	pickOrgSettingsPatch,
+	pickUserPreferencesPatch,
+} from "@rox/shared/prefs";
 import type { AppRouter } from "@rox/trpc";
 import { BasicIndex } from "@tanstack/db";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
@@ -190,6 +196,8 @@ export interface OrgCollections {
 	chatSessions: Collection<SelectChatSession>;
 	journalEntries: Collection<SelectJournalEntry>;
 	journalEvents: Collection<SelectJournalEvent>;
+	userPreferences: Collection<SelectUserPreferences>;
+	orgSettings: Collection<SelectOrgSettings>;
 	memoryItems: Collection<SelectMemoryItem>;
 	memoryImportJobs: Collection<SelectMemoryImportJob>;
 	artifacts: Collection<SelectArtifact>;
@@ -1016,6 +1024,61 @@ function createOrgCollections(
 	accessGrants.createIndex((grant) => grant.resourceId, basicIndexConfig);
 	accessGrants.createIndex((grant) => grant.granteeId, basicIndexConfig);
 
+	// F46 cross-device prefs. The per-user prefs document syncs via Electric
+	// (user+org-scoped shape, mirrors journal/memory). The renderer mutates the
+	// row's `values` doc; the onUpdate maps the changed value fields to a partial
+	// patch and forwards it to the shared `prefs.update` mutation, which applies
+	// per-field LWW on the server (so an offline edit reconciles, never blanks).
+	const userPreferencesCollection = createPersistedElectricCollection(
+		electricCollectionOptions<SelectUserPreferences>({
+			id: `user_preferences-${organizationId}-${userId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "user_preferences", organizationId, userId },
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				const { changes } = transaction.mutations[0];
+				const patch = pickUserPreferencesPatch(changes.values);
+				if (Object.keys(patch).length === 0) return undefined;
+				const result = await apiClient.prefs.update.mutate({
+					patch,
+					updatedAt: Date.now(),
+				});
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+
+	// org_settings is org-shared (every member reads the same defaults); writes
+	// are owner/admin-gated server-side.
+	const orgSettingsCollection = createPersistedElectricCollection(
+		electricCollectionOptions<SelectOrgSettings>({
+			id: `org_settings-${organizationId}`,
+			shapeOptions: {
+				url: electricUrl,
+				params: { table: "org_settings", organizationId },
+				headers: electricHeaders,
+				columnMapper,
+				onError: handleElectricSyncError,
+			},
+			getKey: (item) => item.id,
+			onUpdate: async ({ transaction }) => {
+				const { changes } = transaction.mutations[0];
+				const patch = pickOrgSettingsPatch(changes.values);
+				if (Object.keys(patch).length === 0) return undefined;
+				const result = await apiClient.prefs.updateOrg.mutate({
+					patch,
+					updatedAt: Date.now(),
+				});
+				return electricTxidMatch(result.txid);
+			},
+		}),
+	);
+
 	const v2SidebarProjects = createIndexedCollection(
 		localStorageCollectionOptions({
 			id: `v2_sidebar_projects-${organizationId}`,
@@ -1132,6 +1195,8 @@ function createOrgCollections(
 		chatSessions,
 		journalEntries,
 		journalEvents,
+		userPreferences: userPreferencesCollection,
+		orgSettings: orgSettingsCollection,
 		memoryItems,
 		memoryImportJobs,
 		artifacts,

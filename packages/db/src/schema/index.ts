@@ -31,6 +31,7 @@ export * from "./mesh";
 export * from "./note";
 export * from "./org-library";
 export * from "./pipeline";
+export * from "./preferences";
 export * from "./profiles";
 export * from "./relations";
 export * from "./runtime";
