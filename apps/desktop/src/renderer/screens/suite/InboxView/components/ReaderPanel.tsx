@@ -152,7 +152,10 @@ export function ReaderPanel({
 								composerRef={composerRef}
 							/>
 						) : item.source === "mail" ? (
-							<MailThreadReader threadId={item.threadId} />
+							<MailThreadReader
+								threadId={item.threadId}
+								composerRef={composerRef}
+							/>
 						) : (
 							<SystemEventCard item={item} />
 						)}
