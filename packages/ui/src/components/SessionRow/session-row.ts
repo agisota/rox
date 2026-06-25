@@ -127,6 +127,18 @@ export function deriveLabelDots(
 	return { dots, overflow: Math.max(0, labels.length - dots.length) };
 }
 
+/**
+ * The session's primary label — the first entry, whose colour drives the F12
+ * per-row dot. `null` when the session has no labels (the row then renders an
+ * empty placeholder slot so titled and untitled rows stay vertically aligned).
+ * Pure so the same `labels` yields the same primary dot on every surface.
+ */
+export function derivePrimaryLabel(
+	labels: readonly SessionRowLabel[] | undefined,
+): SessionRowLabel | null {
+	return labels?.[0] ?? null;
+}
+
 /** Whether the fork badge should render (only for an explicit `fork` lineage). */
 export function showsForkBadge(
 	lineage: SessionRowLineage | undefined,

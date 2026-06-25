@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import {
-	deriveLabelDots,
+	derivePrimaryLabel,
 	deriveSourceChips,
 	hasWorktreeMeta,
 	type SessionRowData,
@@ -87,7 +87,7 @@ export function SessionRow({
 		timeLabel,
 	} = data;
 
-	const { dots, overflow } = deriveLabelDots(labels);
+	const primaryLabel = derivePrimaryLabel(labels);
 	const chips = deriveSourceChips(sources);
 	const showFork = showsForkBadge(lineage);
 	const showDelete = Boolean(onDelete) && !isCurrent;
@@ -105,25 +105,6 @@ export function SessionRow({
 				onClick={() => onSelect(sessionId)}
 			>
 				<span className="flex w-full min-w-0 items-center gap-1.5">
-					{dots.length > 0 && (
-						<span className="flex shrink-0 items-center gap-0.5">
-							{dots.map((label) => (
-								<span
-									key={label.name}
-									role="img"
-									className="size-2 rounded-full"
-									style={{ backgroundColor: label.color }}
-									title={label.name}
-									aria-label={label.name}
-								/>
-							))}
-							{overflow > 0 && (
-								<span className="text-[10px] text-muted-foreground">
-									+{overflow}
-								</span>
-							)}
-						</span>
-					)}
 					<span
 						className={cn(
 							"min-w-0 flex-1 truncate text-xs",
@@ -132,6 +113,25 @@ export function SessionRow({
 					>
 						{title || emptyTitleLabel}
 					</span>
+					{/*
+					 * F12 per-row colour dot: a 6px dot coloured from the session's
+					 * primary (first) label, rendered as a flex-sibling between the
+					 * title and the time — NOT inside the truncating title — so a long
+					 * title can never clip it. When there is no primary label the slot
+					 * stays present but transparent so labelled and unlabelled rows keep
+					 * the same horizontal rhythm.
+					 */}
+					{primaryLabel ? (
+						<span
+							role="img"
+							className="size-1.5 shrink-0 rounded-full"
+							style={{ backgroundColor: primaryLabel.color }}
+							title={primaryLabel.name}
+							aria-label={primaryLabel.name}
+						/>
+					) : (
+						<span aria-hidden className="size-1.5 shrink-0 rounded-full" />
+					)}
 					{chips.length > 0 && (
 						<span className="flex shrink-0 items-center gap-1">
 							{chips.map((chip) => {

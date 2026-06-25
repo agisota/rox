@@ -31,14 +31,38 @@ describe("SessionRow", () => {
 		expect(html).toContain("Новый чат");
 	});
 
-	it("renders a colour dot from the label colour (F12)", () => {
+	it("renders a colour dot from the primary label colour (F12)", () => {
 		const html = renderToStaticMarkup(
 			<SessionRow
-				data={{ ...BASE, labels: [{ name: "Bug", color: "rgb(1, 2, 3)" }] }}
+				data={{
+					...BASE,
+					labels: [
+						{ name: "Bug", color: "rgb(1, 2, 3)" },
+						{ name: "Idea", color: "rgb(9, 9, 9)" },
+					],
+				}}
 				onSelect={() => {}}
 			/>,
 		);
+		// Colour comes from the first (primary) label only.
 		expect(html).toContain("rgb(1, 2, 3)");
+		expect(html).not.toContain("rgb(9, 9, 9)");
+		expect(html).toContain('aria-label="Bug"');
+		// The dot is a sibling after the title, not before it (so a long title
+		// can't clip it inside the truncating title span).
+		expect(html.indexOf("Refactor auth")).toBeLessThan(
+			html.indexOf("rgb(1, 2, 3)"),
+		);
+	});
+
+	it("keeps an empty placeholder dot slot when there is no label (F12)", () => {
+		const html = renderToStaticMarkup(
+			<SessionRow data={BASE} onSelect={() => {}} />,
+		);
+		// Slot still renders for alignment, but carries no colour and is hidden.
+		expect(html).toContain("rounded-full");
+		expect(html).toContain('aria-hidden="true"');
+		expect(html).not.toContain("background-color");
 	});
 
 	it("renders a pin affordance only when onSetPinned is provided", () => {
