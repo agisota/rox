@@ -355,6 +355,10 @@
 		"./memory-context": {
 			"types": "./src/memory-context.ts",
 			"default": "./src/memory-context.ts"
+		},
+		"./workspace-status": {
+			"types": "./src/workspace-status.ts",
+			"default": "./src/workspace-status.ts"
 		}
 	},
 	"scripts": {
