@@ -131,3 +131,20 @@ export interface Commit {
 	author: string;
 	date: string;
 }
+
+/**
+ * Last-author blame for a single file (F35). Identity-aware tree blame surfaces
+ * who last touched a file in the Files tab. Fully serializable (no Date, no
+ * functions) so the same payload crosses the relay to web/desktop/mobile and
+ * the author→identity glyph resolution stays in shared (`@rox/shared`).
+ */
+export interface BlameAuthor {
+	/** Author display name from the most recent commit touching the file. */
+	name: string;
+	/** Author email — the stable seed for the identity glyph / avatar colour. */
+	email: string;
+	/** Commit timestamp as epoch milliseconds (UTC), for relative-time display. */
+	timestamp: number;
+	/** Full commit SHA of the most recent commit touching the file. */
+	commit: string;
+}

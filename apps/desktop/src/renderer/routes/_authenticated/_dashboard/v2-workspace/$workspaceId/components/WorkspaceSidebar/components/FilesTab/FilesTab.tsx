@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGitStatusMap } from "renderer/hooks/host-service/useGitStatusMap";
+import { useExperimentalFeature } from "renderer/hooks/useExperimentalFeature";
 import {
 	ShadowClickHint,
 	usePierreRowClickPolicy,
@@ -44,8 +45,10 @@ import {
 import { useFilesTabActions } from "./hooks/useFilesTabActions";
 import { useFilesTabBridge } from "./hooks/useFilesTabBridge";
 import { useFilesTabDrop } from "./hooks/useFilesTabDrop";
+import { useFileTreeBlame } from "./hooks/useFileTreeBlame";
 import { useFileTreeSizes } from "./hooks/useFileTreeSizes";
 import { buildPierreGitStatus } from "./utils/buildPierreGitStatus";
+import { formatBlameDecoration } from "./utils/formatBlameDecoration";
 import { formatFileSize } from "./utils/formatFileSize";
 import { stripTrailingSlash, toAbs, toRel } from "./utils/treePath";
 
@@ -174,6 +177,22 @@ export function FilesTab({
 		rootPath,
 		onSizesLoaded: repaintTree,
 	});
+
+	// Identity-aware tree blame (F35) is shared-workspace-only: in a solo
+	// workspace every file's last author is just "me", so it's pure noise —
+	// gate it on the same `collaboration.presence` signal that decides whether
+	// this workspace is collaborative (presence/byline surfaces use it too).
+	const presence = useExperimentalFeature("collaboration.presence");
+	const blameEnabled =
+		presence.state.enabled && presence.state.availability === "available";
+	const blame = useFileTreeBlame({
+		model,
+		knownPaths: bridge.knownPaths,
+		workspaceId,
+		rootPath,
+		enabled: blameEnabled,
+		onBlameLoaded: repaintTree,
+	});
 	const { reveal, startCreating, handleRename, handleDelete, collapseAll } =
 		useFilesTabActions({
 			model,
@@ -228,16 +247,34 @@ export function FilesTab({
 		lastSelectedFromUserRef.current = abs;
 		onSelectFile(abs);
 	};
-	// Surface the file size (F31) in Pierre's right-aligned decoration lane.
-	// Folders show no size; files show a human-readable size once `getMetadata`
-	// has resolved it (the lane stays empty until then). The git-status row tint
-	// is independent — Pierre paints it via `setGitStatus`, not this lane.
+	// Pierre's right-aligned decoration lane carries one of two per-file signals.
+	// In a shared workspace, identity-aware blame (F35) wins the lane: the last
+	// author's initials + relative time, with the byte size folded into the hover
+	// title so it isn't lost. In a solo workspace blame is suppressed, so the lane
+	// falls back to the file size (F31). Folders carry neither. The git-status row
+	// tint is independent — Pierre paints it via `setGitStatus`, not this lane.
 	handlersRef.current.renderRowDecoration = (ctx) => {
 		if (ctx.item.kind === "directory") return null;
 		const size = sizes.getSize(ctx.item.path);
+		const sizeTitle = size == null ? null : `${size.toLocaleString()} B`;
+
+		if (blameEnabled) {
+			const fileBlame = blame.getBlame(ctx.item.path);
+			if (fileBlame) {
+				const decoration = formatBlameDecoration(fileBlame);
+				return {
+					text: decoration.text,
+					title: sizeTitle
+						? `${decoration.title} · ${sizeTitle}`
+						: decoration.title,
+				};
+			}
+			// Blame not resolved yet for this row: still surface the size rather
+			// than leaving the lane blank while blame loads in the background.
+		}
+
 		if (size == null) return null;
-		const text = formatFileSize(size);
-		return { text, title: `${size.toLocaleString()} B` };
+		return { text: formatFileSize(size), title: sizeTitle ?? "" };
 	};
 
 	// Hint tooltip uses ShadowClickHint to anchor a single shadcn Tooltip
