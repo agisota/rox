@@ -82,9 +82,13 @@ function resolveStringMap(
 export function isForbiddenHost(host: string): boolean {
 	if (host.length === 0) return true;
 
-	// Normalize bracketed IPv6 literals from a URL host (`[::1]` → `::1`).
+	// Normalize bracketed IPv6 literals from a URL host (`[::1]` → `::1`). Strip
+	// every surrounding bracket pair so a host is parsed uniformly regardless of
+	// how the runtime bracketed it (Bun's `URL.hostname` already returns `[::1]`
+	// with brackets — defend against double-bracketing too, which previously left
+	// `[::1]` un-parseable and silently ALLOWED every IPv6 SSRF target).
 	let candidate = host;
-	if (candidate.startsWith("[") && candidate.endsWith("]")) {
+	while (candidate.startsWith("[") && candidate.endsWith("]")) {
 		candidate = candidate.slice(1, -1);
 	}
 
@@ -115,9 +119,11 @@ export function isForbiddenHost(host: string): boolean {
 }
 
 function hostFromUrl(url: URL): string {
-	// `URL.hostname` strips the IPv6 brackets; re-add them so `isForbiddenHost`
-	// can normalize uniformly and `ipaddr` parses the literal.
-	return url.hostname.includes(":") ? `[${url.hostname}]` : url.hostname;
+	// Return the host verbatim. `isForbiddenHost` strips any surrounding IPv6
+	// brackets itself, so we must NOT add a second pair here — Bun's
+	// `URL.hostname` already keeps the brackets (`[::1]`), and re-bracketing
+	// produced `[[::1]]`, which the guard could not parse and so allowed.
+	return url.hostname;
 }
 
 /**
