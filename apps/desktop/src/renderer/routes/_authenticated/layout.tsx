@@ -26,6 +26,7 @@ import { DaemonAutoUpdateFailureDialog } from "renderer/routes/_authenticated/co
 import { DashboardNewWorkspaceModal } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal";
 import { FirstLaunchPermissionsGate } from "renderer/routes/_authenticated/components/FirstLaunchPermissionsGate";
 import { FocusMode } from "renderer/routes/_authenticated/components/FocusMode";
+import { OnboardingTourProvider } from "renderer/routes/_authenticated/components/OnboardingTourProvider";
 import { QuoteLoader } from "renderer/routes/_authenticated/components/QuoteLoader";
 import { V1ImportModal } from "renderer/routes/_authenticated/components/V1ImportModal";
 import { WallpaperBackground } from "renderer/routes/_authenticated/components/WallpaperBackground";
@@ -220,24 +221,26 @@ function AuthenticatedLayout() {
 							poolOptions={{ workerFactory: createPierreWorker, poolSize: 8 }}
 							highlighterOptions={{ preferredHighlighter: "shiki-wasm" }}
 						>
-							<WallpaperBackground />
-							<AgentHooks />
-							<FileMenuListener />
-							<V2NotificationController />
-							<DaemonAutoUpdateFailureDialog />
-							<FirstLaunchPermissionsGate />
-							<Outlet />
-							<QuoteLoader />
-							<FocusMode />
-							<V1ImportModal />
-							<WorkspaceInitEffects />
-							{isV2CloudEnabled ? (
-								<DashboardNewWorkspaceModal />
-							) : (
-								<NewWorkspaceModal />
-							)}
-							<InitGitDialog />
-							<TeardownLogsDialog />
+							<OnboardingTourProvider>
+								<WallpaperBackground />
+								<AgentHooks />
+								<FileMenuListener />
+								<V2NotificationController />
+								<DaemonAutoUpdateFailureDialog />
+								<FirstLaunchPermissionsGate />
+								<Outlet />
+								<QuoteLoader />
+								<FocusMode />
+								<V1ImportModal />
+								<WorkspaceInitEffects />
+								{isV2CloudEnabled ? (
+									<DashboardNewWorkspaceModal />
+								) : (
+									<NewWorkspaceModal />
+								)}
+								<InitGitDialog />
+								<TeardownLogsDialog />
+							</OnboardingTourProvider>
 						</WorkerPoolContextProvider>
 					</DeletingWorkspacesProvider>
 				</LocalHostServiceProvider>
