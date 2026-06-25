@@ -21,7 +21,7 @@ export const modelNodeType: NodeTypeDefinition = {
 		miniMapColor: "#c4704f",
 	},
 	inputs: [{ name: "in" }],
-	outputs: [{ name: "out" }, { name: "error" }],
+	outputs: [{ name: "out", type: "message" }, { name: "error" }],
 	configSchema: z
 		.object({
 			model: z.string().min(1).max(200).optional(),

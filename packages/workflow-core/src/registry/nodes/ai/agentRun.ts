@@ -20,7 +20,7 @@ export const agentRunNodeType: NodeTypeDefinition = {
 		miniMapColor: "#c4704f",
 	},
 	inputs: [{ name: "in" }],
-	outputs: [{ name: "out" }, { name: "error" }],
+	outputs: [{ name: "out", type: "message" }, { name: "error" }],
 	configSchema: z
 		.object({
 			roleSlug: z.string().min(1).optional(),

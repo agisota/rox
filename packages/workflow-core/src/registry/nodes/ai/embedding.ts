@@ -17,8 +17,8 @@ export const embeddingNodeType: NodeTypeDefinition = {
 		iconClass: "text-primary",
 		miniMapColor: "#c4704f",
 	},
-	inputs: [{ name: "in", required: true }],
-	outputs: [{ name: "out", type: "array" }, { name: "error" }],
+	inputs: [{ name: "in", required: true, type: "string" }],
+	outputs: [{ name: "out", type: "vector" }, { name: "error" }],
 	configSchema: z
 		.object({
 			model: z.string().min(1).max(200).optional(),

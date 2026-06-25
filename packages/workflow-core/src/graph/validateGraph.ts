@@ -1,4 +1,5 @@
 import { isSkillCallType } from "../blocks/blockDefinition";
+import { arePortTypesCompatible } from "../blocks/portTypes";
 import { WorkflowErrorCode, type WorkflowIssue } from "../errors";
 import type { NodeTypeDefinition } from "../registry/nodeTypeDefinition";
 import { validateNodeConfig } from "../registry/validateNodeConfig";
@@ -187,6 +188,47 @@ export function validateGraph(
 				issues.push(...validateSkillInputMapping(mapping, inputSchema, id));
 			}
 		}
+	}
+
+	// 5b. Edge port-type compatibility (opt-in, additive). Only runs when a
+	// `resolveNodeType` is provided and port checks aren't disabled. For each edge
+	// we compare the source out-port type (by `sourceHandle`, default `out`) with
+	// the target in-port type (by `targetHandle`, default the node's sole/first
+	// input). `any` — and any absent type, i.e. a legacy untyped port — is
+	// compatible with everything, so existing graphs stay valid; only two
+	// concrete, differing types are flagged. Disabled endpoints and edges touching
+	// an unknown/unregistered type are skipped.
+	if (options.resolveNodeType && options.checkPorts !== false) {
+		const resolveNodeType = options.resolveNodeType;
+		state.edges.forEach((edge, i) => {
+			const source = blocks[edge.source];
+			const target = blocks[edge.target];
+			if (!source || !target) return;
+			if (!isEnabled(state, edge.source) || !isEnabled(state, edge.target)) {
+				return;
+			}
+
+			const sourceType = resolveNodeType(source.type);
+			const targetType = resolveNodeType(target.type);
+			if (!sourceType || !targetType) return;
+
+			const outName = edge.sourceHandle ?? "out";
+			const outPort = sourceType.outputs.find((p) => p.name === outName);
+			const inName = edge.targetHandle;
+			const inPort = inName
+				? targetType.inputs.find((p) => p.name === inName)
+				: targetType.inputs[0];
+			if (!outPort || !inPort) return;
+
+			if (!arePortTypesCompatible(outPort.type, inPort.type)) {
+				issues.push({
+					code: WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES,
+					severity: "error",
+					edgeId: edge.id ?? `#${i}`,
+					message: `Несовместимые типы портов: «${outPort.type}» (${source.name ?? edge.source}.${outName}) → «${inPort.type}» (${target.name ?? edge.target}.${inPort.name}).`,
+				});
+			}
+		});
 	}
 
 	const hasError = issues.some((issue) => issue.severity === "error");

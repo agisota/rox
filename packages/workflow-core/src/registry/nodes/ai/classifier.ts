@@ -19,8 +19,8 @@ export const classifierNodeType: NodeTypeDefinition = {
 		iconClass: "text-primary",
 		miniMapColor: "#c4704f",
 	},
-	inputs: [{ name: "in", required: true }],
-	outputs: [{ name: "out" }, { name: "error" }],
+	inputs: [{ name: "in", required: true, type: "string" }],
+	outputs: [{ name: "out", type: "string" }, { name: "error" }],
 	configSchema: z
 		.object({
 			model: z.string().min(1).max(200).optional(),
