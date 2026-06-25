@@ -196,6 +196,7 @@ export function WebQuickChatView() {
 							}
 							message=""
 							submitDisabled={isSending}
+							enableSlashCommands
 							onSubmit={(submitted: PromptInputMessage) => {
 								void send(submitted.text ?? "");
 							}}
