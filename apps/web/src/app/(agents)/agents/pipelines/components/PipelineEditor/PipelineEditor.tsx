@@ -12,10 +12,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTRPC } from "@/trpc/react";
 import {
+	defaultLabelForType,
 	flowToState,
 	type PipelineFlowEdge,
 	type PipelineFlowNode,
-	type PipelineNodeKind,
 	stateToEdges,
 	stateToNodes,
 } from "./graph-adapter";
@@ -40,9 +40,9 @@ type PipelineEditorProps = {
 };
 
 /** Generate a unique block id for a freshly-added node. */
-function newBlockId(kind: PipelineNodeKind): string {
+function newBlockId(type: string): string {
 	const stamp = Math.random().toString(36).slice(2, 8);
-	return `${kind}_${stamp}`;
+	return `${type}_${stamp}`;
 }
 
 /**
@@ -177,30 +177,29 @@ export function PipelineEditor({
 	);
 
 	const addNode = useCallback(
-		(kind: PipelineNodeKind, roleSlug?: string, label?: string) => {
+		(
+			type: string,
+			opts?: {
+				roleSlug?: string;
+				label?: string;
+				position?: { x: number; y: number };
+			},
+		) => {
 			const prev = graphRef.current;
-			const id = newBlockId(kind);
+			const id = newBlockId(type);
 			const count = Object.keys(prev.blocks).length;
 			const next: RoxWorkflowState = {
 				...prev,
 				blocks: {
 					...prev.blocks,
 					[id]: {
-						type: kind,
-						name:
-							label ??
-							(kind === "agent_run"
-								? "Агент"
-								: kind === "loop"
-									? "Цикл"
-									: kind === "human_approval"
-										? "Подтверждение"
-										: "Финал"),
-						position: {
+						type,
+						name: opts?.label ?? defaultLabelForType(type),
+						position: opts?.position ?? {
 							x: 180 + (count % 4) * 280,
 							y: 360 + Math.floor(count / 4) * 180,
 						},
-						subBlocks: roleSlug ? { roleSlug } : undefined,
+						subBlocks: opts?.roleSlug ? { roleSlug: opts.roleSlug } : undefined,
 					},
 				},
 			};
@@ -212,8 +211,18 @@ export function PipelineEditor({
 	);
 
 	const addRoleNode = useCallback(
-		(roleSlug: string, label: string) => addNode("agent_run", roleSlug, label),
+		(roleSlug: string, label: string) =>
+			addNode("agent_run", { roleSlug, label }),
 		[addNode],
+	);
+
+	// Replace the whole working graph (used by the templates gallery insert).
+	const applyTemplate = useCallback(
+		(next: RoxWorkflowState) => {
+			setSelectedNodeId(null);
+			applyGraphChange({ ...next, id: graphRef.current.id });
+		},
+		[applyGraphChange],
 	);
 
 	const validation = validateQuery.data;
@@ -256,9 +265,11 @@ export function PipelineEditor({
 							nodes={nodes}
 							edges={edges}
 							selectedNodeId={selectedNodeId}
+							v2ProjectId={v2ProjectId}
 							onSelectNode={setSelectedNodeId}
 							onGraphChange={handleGraphChange}
-							onAddNode={(kind) => addNode(kind)}
+							onAddNode={addNode}
+							onApplyTemplate={applyTemplate}
 						/>
 					</ReactFlowProvider>
 				</div>

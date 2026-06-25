@@ -18,27 +18,29 @@ import {
 } from "@rox/ui/ai-elements/flow";
 import { Panel } from "@rox/ui/ai-elements/panel";
 import { Button } from "@rox/ui/button";
+import type { RoxWorkflowState } from "@rox/workflow-core";
 import { Background, BackgroundVariant, MiniMap } from "@xyflow/react";
-import { Plus, Sparkles, Wand2 } from "lucide-react";
+import { LayoutTemplate, Plus, Sparkles, Wand2 } from "lucide-react";
 import {
 	useCallback,
 	useEffect,
 	useImperativeHandle,
 	useMemo,
 	useRef,
+	useState,
 } from "react";
 import { canConnect } from "../connection-rules";
-import type {
-	PipelineFlowEdge,
-	PipelineFlowNode,
-	PipelineNodeKind,
-} from "../graph-adapter";
+import type { PipelineFlowEdge, PipelineFlowNode } from "../graph-adapter";
+import { NodePaletteDock } from "../NodePaletteDock";
 import { isNodeDrag, readNodeDragData } from "../node-drag";
-import { miniMapColorForNodeType } from "../node-kinds";
 import { PIPELINE_EDGE_TYPES, PIPELINE_NODE_TYPES } from "../nodes";
+import { TemplateGallery } from "../TemplateGallery";
+import { miniMapColorForType } from "./miniMapColor";
 
-const ANIMATED_EDGE_DEFAULTS = {
-	type: "animated",
+/** New edges are branch-coloured + arrow-tipped (default `out` branch). */
+const NEW_EDGE_DEFAULTS = {
+	type: "branch",
+	data: { branch: "out" },
 	markerEnd: { type: MarkerType.ArrowClosed },
 } as const;
 
@@ -56,14 +58,23 @@ type PipelineCanvasProps = {
 	edges: PipelineFlowEdge[];
 	/** Currently-selected node id (for panel sync). */
 	selectedNodeId: string | null;
+	/** Project scope for the palette's role list. */
+	v2ProjectId?: string;
 	onSelectNode: (nodeId: string | null) => void;
 	/** Called (debounced by the parent) whenever nodes/edges change. */
 	onGraphChange: (nodes: PipelineFlowNode[], edges: PipelineFlowEdge[]) => void;
-	/** Add a node of the given kind at a default position (toolbar fallback). */
-	onAddNode: (kind: PipelineNodeKind) => void;
+	/**
+	 * Add a node of the given registry type at a default position (palette
+	 * click-to-add / toolbar fallback). Accepts any registry id (widened from the
+	 * five kinds so the whole catalog is addable).
+	 */
+	onAddNode: (
+		type: string,
+		opts?: { roleSlug?: string; label?: string },
+	) => void;
 	/** Drop a node at a precise flow position (drag-from-palette). */
 	onDropNode: (
-		kind: PipelineNodeKind,
+		type: string,
 		position: { x: number; y: number },
 		roleSlug?: string,
 		label?: string,
@@ -72,6 +83,8 @@ type PipelineCanvasProps = {
 	onOpenPalette: () => void;
 	/** Run the dagre auto-layout. */
 	onAutoLayout: () => void;
+	/** Replace the working graph with a template's graph. */
+	onApplyTemplate: (next: RoxWorkflowState) => void;
 	/** Imperative handle (fitView / viewport centre). */
 	handleRef: React.Ref<PipelineCanvasHandle>;
 	/** Whether the canvas is empty apart from the start node (show hint overlay). */
@@ -87,29 +100,33 @@ type PipelineCanvasProps = {
 };
 
 /**
- * The interactive pipeline canvas: draggable agent-role/loop/approval nodes,
- * connectable edges (with a typed-port guard), selection, drag-from-palette drop,
- * a MiniMap, a dotted background, and live graph-change notifications. Wires the
- * `@rox/ui/ai-elements` xyflow primitives to the Agent Pipelines graph model and
- * fills in the unused core pieces (MiniMap, Background dots, DnD,
- * isValidConnection, temporary connection line) per the dify/sim parity spec.
+ * The interactive pipeline canvas: a left-dock searchable, categorized,
+ * drag-n-drop palette adds nodes; the canvas renders registry-driven nodes with
+ * typed ports and branch-coloured edges; a MiniMap (tinted by registry category)
+ * and zoom controls aid navigation; a templates gallery seeds whole graphs.
+ * Wires the `@rox/ui/ai-elements` xyflow primitives to the Agent Pipelines graph
+ * model and fills in MiniMap, Background dots, DnD, isValidConnection, and the
+ * temporary connection line per the dify/sim parity spec.
  */
 export function PipelineCanvas({
 	nodes: initialNodes,
 	edges: initialEdges,
 	selectedNodeId,
+	v2ProjectId,
 	onSelectNode,
 	onGraphChange,
 	onAddNode,
 	onDropNode,
 	onOpenPalette,
 	onAutoLayout,
+	onApplyTemplate,
 	handleRef,
 	showEmptyHint,
 	reseedKey,
 }: PipelineCanvasProps) {
 	const [nodes, setNodes] = useNodesState<PipelineFlowNode>(initialNodes);
 	const [edges, setEdges] = useEdgesState<PipelineFlowEdge>(initialEdges);
+	const [galleryOpen, setGalleryOpen] = useState(false);
 	const flow = useReactFlow();
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -177,19 +194,10 @@ export function PipelineCanvas({
 
 	const handleConnect = useCallback<OnConnect>(
 		(connection: Connection) => {
-			// Colour the edge by its source branch handle (Да=emerald, body=sky, …).
-			const stroke = edgeStrokeForHandle(connection.sourceHandle);
+			// Carry the source branch handle so the edge colours/labels correctly.
+			const branch = connection.sourceHandle ?? "out";
 			const next = addEdge(
-				{
-					...connection,
-					...ANIMATED_EDGE_DEFAULTS,
-					...(stroke
-						? {
-								style: { stroke },
-								markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
-							}
-						: {}),
-				},
+				{ ...connection, ...NEW_EDGE_DEFAULTS, data: { branch } },
 				latest.current.edges,
 			) as PipelineFlowEdge[];
 			latest.current = { nodes: latest.current.nodes, edges: next };
@@ -303,145 +311,118 @@ export function PipelineCanvas({
 	);
 
 	return (
-		<div ref={wrapperRef} className="relative h-full w-full">
-			<Canvas
-				nodes={decoratedNodes as Node[]}
-				edges={edges as Edge[]}
-				nodeTypes={PIPELINE_NODE_TYPES}
-				edgeTypes={PIPELINE_EDGE_TYPES}
-				connectionLineComponent={TemporaryConnectionLine}
-				isValidConnection={isValidConnection}
-				// The canvas primitive defaults its node/edge generics to the base xyflow
-				// types; our change handlers are typed against the concrete pipeline node
-				// (a structural subtype), so we cast at the prop boundary.
-				onNodesChange={
-					handleNodesChange as (changes: NodeChange<Node>[]) => void
-				}
-				onEdgesChange={
-					handleEdgesChange as (changes: EdgeChange<Edge>[]) => void
-				}
-				onConnect={handleConnect}
-				onNodeClick={handleNodeClick}
-				onPaneClick={handlePaneClick}
-				onDrop={handleDrop}
-				onDragOver={handleDragOver}
-				aria-label="Холст пайплайна агентов"
-			>
-				{/*
-				 * Dotted grid overlay (dify parity) on top of the solid sidebar
-				 * background the Canvas primitive already renders. xyflow requires a
-				 * unique `id` when more than one <Background> is stacked, else the SVG
-				 * patterns collide.
-				 */}
-				<Background
-					id="pipeline-dots"
-					variant={BackgroundVariant.Dots}
-					gap={14}
-					size={2}
-					className="opacity-60"
-				/>
-				<Controls showInteractive={false} />
-				<MiniMap
-					position="bottom-right"
-					pannable
-					zoomable
-					nodeColor={(node) => miniMapColorForNodeType(node.type)}
-					maskColor="rgba(10,10,10,0.6)"
-					className="!bg-card/80 rounded-md border backdrop-blur"
-					aria-label="Миникарта пайплайна"
-					// Click a node on the minimap -> select it + open the inspector AND
-					// recentre the main viewport on it (navigate, not inert).
-					onNodeClick={handleMiniMapNodeClick}
-					// Click empty minimap space -> recentre the main viewport on that
-					// flow coordinate (pan-to-location), keeping the current zoom.
-					onClick={handleMiniMapClick}
-				/>
-				<Panel
-					position="top-left"
-					className="flex max-w-[min(42rem,calc(100vw-24rem))] flex-wrap items-center gap-1"
+		<div className="flex h-full w-full">
+			<NodePaletteDock v2ProjectId={v2ProjectId} onAddNode={onAddNode} />
+			<div ref={wrapperRef} className="relative h-full min-w-0 flex-1">
+				<Canvas
+					nodes={decoratedNodes as Node[]}
+					edges={edges as Edge[]}
+					nodeTypes={PIPELINE_NODE_TYPES}
+					edgeTypes={PIPELINE_EDGE_TYPES}
+					connectionLineComponent={TemporaryConnectionLine}
+					isValidConnection={isValidConnection}
+					// The canvas primitive defaults its node/edge generics to the base xyflow
+					// types; our change handlers are typed against the concrete pipeline node
+					// (a structural subtype), so we cast at the prop boundary.
+					onNodesChange={
+						handleNodesChange as (changes: NodeChange<Node>[]) => void
+					}
+					onEdgesChange={
+						handleEdgesChange as (changes: EdgeChange<Edge>[]) => void
+					}
+					onConnect={handleConnect}
+					onNodeClick={handleNodeClick}
+					onPaneClick={handlePaneClick}
+					onDrop={handleDrop}
+					onDragOver={handleDragOver}
+					aria-label="Холст пайплайна агентов"
 				>
-					<Button
-						size="sm"
-						variant="default"
-						aria-label="Добавить узел"
-						onClick={onOpenPalette}
+					{/*
+					 * Dotted grid overlay (dify parity) on top of the solid sidebar
+					 * background the Canvas primitive already renders. xyflow requires a
+					 * unique `id` when more than one <Background> is stacked, else the SVG
+					 * patterns collide.
+					 */}
+					<Background
+						id="pipeline-dots"
+						variant={BackgroundVariant.Dots}
+						gap={14}
+						size={2}
+						className="opacity-60"
+					/>
+					<Controls showInteractive={false} />
+					<MiniMap
+						position="bottom-right"
+						pannable
+						zoomable
+						nodeColor={(node) =>
+							miniMapColorForType(
+								(node.data as { blockType?: string })?.blockType,
+							)
+						}
+						nodeStrokeWidth={2}
+						maskColor="rgba(10,10,10,0.6)"
+						className="!bg-card/80 rounded-md border backdrop-blur"
+						aria-label="Миникарта пайплайна"
+						// Click a node on the minimap -> select it + open the inspector AND
+						// recentre the main viewport on it (navigate, not inert).
+						onNodeClick={handleMiniMapNodeClick}
+						// Click empty minimap space -> recentre the main viewport on that
+						// flow coordinate (pan-to-location), keeping the current zoom.
+						onClick={handleMiniMapClick}
+					/>
+					<Panel
+						position="top-left"
+						className="flex max-w-[min(42rem,calc(100vw-24rem))] flex-wrap items-center gap-1"
 					>
-						<Plus className="size-3.5" /> Добавить узел
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						aria-label="Авто-раскладка графа"
-						onClick={onAutoLayout}
-					>
-						<Wand2 className="size-3.5" /> Авто-раскладка
-					</Button>
-					{/* Fallback kind buttons for narrow windows / no-cmdk muscle memory. */}
-					<span className="mx-1 hidden h-4 w-px bg-border sm:block" />
-					<Button
-						size="sm"
-						variant="ghost"
-						className="hidden sm:inline-flex"
-						aria-label="Добавить узел: Агент"
-						onClick={() => onAddNode("agent_run")}
-					>
-						<Plus className="size-3.5" /> Агент
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						className="hidden sm:inline-flex"
-						aria-label="Добавить узел: Цикл"
-						onClick={() => onAddNode("loop")}
-					>
-						<Plus className="size-3.5" /> Цикл
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						className="hidden md:inline-flex"
-						aria-label="Добавить узел: Подтверждение"
-						onClick={() => onAddNode("human_approval")}
-					>
-						<Plus className="size-3.5" /> Подтверждение
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						className="hidden md:inline-flex"
-						aria-label="Добавить узел: Финал"
-						onClick={() => onAddNode("response")}
-					>
-						<Plus className="size-3.5" /> Финал
-					</Button>
-				</Panel>
-			</Canvas>
+						<Button
+							size="sm"
+							variant="default"
+							aria-label="Добавить узел"
+							onClick={onOpenPalette}
+						>
+							<Plus className="size-3.5" /> Добавить узел
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Авто-раскладка графа"
+							onClick={onAutoLayout}
+						>
+							<Wand2 className="size-3.5" /> Авто-раскладка
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Шаблоны пайплайнов"
+							onClick={() => setGalleryOpen(true)}
+						>
+							<LayoutTemplate className="size-3.5" /> Шаблоны
+						</Button>
+					</Panel>
+				</Canvas>
 
-			{/* Empty-graph hint overlay (start only) — non-interactive. */}
-			{showEmptyHint && (
-				<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-					<div className="flex items-center gap-2 rounded-md border bg-card/80 px-4 py-2 text-xs text-muted-foreground backdrop-blur">
-						<Sparkles className="size-3.5 text-primary" />
-						Перетащите роль из библиотеки или нажмите «+ Добавить узел»
+				{/* Empty-graph hint overlay (start only) — non-interactive. */}
+				{showEmptyHint && (
+					<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+						<div className="flex items-center gap-2 rounded-md border bg-card/80 px-4 py-2 text-xs text-muted-foreground backdrop-blur">
+							<Sparkles className="size-3.5 text-primary" />
+							Перетащите узел из палитры слева или выберите шаблон
+						</div>
 					</div>
-				</div>
-			)}
+				)}
+
+				<TemplateGallery
+					open={galleryOpen}
+					onOpenChange={setGalleryOpen}
+					onInsert={(state) => {
+						onApplyTemplate(state);
+						setGalleryOpen(false);
+					}}
+				/>
+			</div>
 		</div>
 	);
-}
-
-/** Edge stroke colour for a branch source handle (matches the node port colour). */
-function edgeStrokeForHandle(handle: string | null | undefined): string | null {
-	switch (handle) {
-		case "approved":
-			return "#10b981";
-		case "rejected":
-			return "#f43f5e";
-		case "body":
-			return "#0ea5e9";
-		default:
-			return null;
-	}
 }
 
 /**

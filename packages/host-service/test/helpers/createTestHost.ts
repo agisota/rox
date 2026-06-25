@@ -61,6 +61,13 @@ export interface TestHostOptions {
 	 * the final host (or the test's own cleanup) removes it.
 	 */
 	keepData?: boolean;
+	/**
+	 * Run the production first-launch setting seeds in `createApp` (what
+	 * `serve.ts` does on a real boot — currently: enable local-first create when
+	 * never chosen). Defaults off so existing tests boot with the schema defaults;
+	 * the enable-by-default seed suite opts in to exercise the real boot hook.
+	 */
+	seedDefaults?: boolean;
 }
 
 export interface TestHost {
@@ -120,6 +127,9 @@ export async function createTestHost(
 	const fakeApi = createFakeApiClient(options.apiOverrides);
 
 	const createOptions: CreateAppOptions = {
+		// Off by default: existing tests rely on the schema/getter defaults. The
+		// enable-by-default seed suite passes `true` to exercise the real boot seed.
+		seedDefaults: options.seedDefaults ?? false,
 		config: {
 			organizationId:
 				options.organizationId ?? "00000000-0000-0000-0000-000000000001",

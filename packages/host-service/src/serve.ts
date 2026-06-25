@@ -76,6 +76,13 @@ async function main(): Promise<void> {
 	});
 
 	const { app, injectWebSocket, api, db } = createApp({
+		// First-launch setting seeds run on the real host-service boot (after
+		// migrations, before the server listens): enable instant local-first
+		// create when the user has never chosen. Idempotent + kill-switch-safe —
+		// it only writes a null `local_first_create` column, never overriding an
+		// explicit choice. The test harness omits this so regression tests keep
+		// the OFF defaults.
+		seedDefaults: true,
 		config: {
 			organizationId: env.ORGANIZATION_ID,
 			dbPath: env.HOST_DB_PATH,

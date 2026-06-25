@@ -27,6 +27,7 @@ import { PullRequestRuntimeManager } from "./runtime/pull-requests";
 import { registerWorkspaceTerminalRoute } from "./terminal/terminal";
 import { TerminalAgentStore } from "./terminal-agents";
 import { appRouter } from "./trpc/router";
+import { seedLocalFirstCreateDefault } from "./trpc/router/settings/host-settings";
 import { defaultWorktreesRoot } from "./trpc/router/workspace-creation/shared/worktree-paths";
 import {
 	execGh as defaultExecGh,
@@ -78,6 +79,15 @@ export interface CreateAppOptions {
 	 * leaks child processes — which is what hung the integration tests in CI.
 	 */
 	agentPreinstaller?: AgentPreinstaller;
+	/**
+	 * Run one-time first-launch setting seeds at startup (currently: enable
+	 * instant local-first create when the user has never chosen). Production
+	 * (`serve.ts`) sets this `true`. Defaults to false (omitted) so the test
+	 * harness boots with the schema/getter defaults untouched — keeping the
+	 * create-path regression tests on the OFF synchronous-cloud path. Each seed
+	 * is itself idempotent and never overrides an explicit user choice.
+	 */
+	seedDefaults?: boolean;
 }
 
 export interface CreateAppResult {
@@ -102,6 +112,36 @@ export function createApp(options: CreateAppOptions): CreateAppResult {
 		options.api ??
 		createApiClient(config.cloudApiUrl, providers.auth, config.organizationId);
 	const db = options.db ?? createDb(config.dbPath, config.migrationsFolder);
+
+	// One-time enablement seed for instant local-first create. Runs AFTER
+	// migrations (createDb migrates) and synchronously BEFORE the server starts
+	// serving create calls, so a fresh real install gets offline-first create on
+	// its very first project. Idempotent and kill-switch-safe: it only writes
+	// when the `local_first_create` column is null (never chosen), so an explicit
+	// user OFF (or a prior seed's ON) is never overridden and survives restarts.
+	// The schema/getter DEFAULT stays OFF — only the seeded row value changes
+	// runtime behavior.
+	//
+	// OPT-IN (`seedDefaults`): production (`serve.ts`) passes `true`. The test
+	// harness leaves it false so the create-path REGRESSION tests, which rely on
+	// the OFF getter default rather than setting the flag explicitly, keep
+	// exercising the synchronous-cloud path. Tests that want the seeded behavior
+	// call `seedLocalFirstCreateDefault(db)` themselves (see the seed suites).
+	if (options.seedDefaults) {
+		try {
+			const seeded = seedLocalFirstCreateDefault(db);
+			if (seeded) {
+				logger.info(
+					"[host-service] seeded localFirstCreate=ON (first launch, no prior user choice)",
+				);
+			}
+		} catch (err) {
+			// Never let a seed write brick startup; create simply stays on today's
+			// proven synchronous-cloud path (the OFF default) if this somehow throws.
+			logger.warn("[host-service] localFirstCreate seed failed:", err);
+		}
+	}
+
 	const git = options.git ?? createGitFactory(providers.credentials);
 	const github =
 		options.github ??

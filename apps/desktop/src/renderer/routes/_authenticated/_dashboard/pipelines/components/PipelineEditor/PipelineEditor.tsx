@@ -27,10 +27,10 @@ import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
 import { autoLayoutGraph } from "./auto-layout";
 import {
+	defaultLabelForType,
 	flowToState,
 	type PipelineFlowEdge,
 	type PipelineFlowNode,
-	type PipelineNodeKind,
 	stateToEdges,
 	stateToNodes,
 } from "./graph-adapter";
@@ -69,26 +69,10 @@ type AddNodeOptions = {
 	autoConnect?: boolean;
 };
 
-/** Generate a unique block id for a freshly-added node. */
-function newBlockId(kind: PipelineNodeKind): string {
+/** Generate a unique block id for a freshly-added node of the given type. */
+function newBlockId(type: string): string {
 	const stamp = Math.random().toString(36).slice(2, 8);
-	return `${kind}_${stamp}`;
-}
-
-/** Default RU label for a node kind. */
-function defaultLabel(kind: PipelineNodeKind): string {
-	switch (kind) {
-		case "agent_run":
-			return "Агент";
-		case "loop":
-			return "Цикл";
-		case "human_approval":
-			return "Подтверждение";
-		case "response":
-			return "Финал";
-		default:
-			return "Узел";
-	}
+	return `${type}_${stamp}`;
 }
 
 /** Whether a block is enabled (mirrors validateGraph's reachability predicate). */
@@ -328,9 +312,9 @@ export function PipelineEditor({
 	);
 
 	const addNode = useCallback(
-		(kind: PipelineNodeKind, opts: AddNodeOptions = {}) => {
+		(type: string, opts: AddNodeOptions = {}) => {
 			const prev = graphRef.current;
-			const id = newBlockId(kind);
+			const id = newBlockId(type);
 			const count = Object.keys(prev.blocks).length;
 			const autoConnect = opts.autoConnect ?? true;
 			const anchor = autoConnect ? pickAnchorBlockId(prev) : null;
@@ -343,8 +327,8 @@ export function PipelineEditor({
 				blocks: {
 					...prev.blocks,
 					[id]: {
-						type: kind,
-						name: opts.label ?? defaultLabel(kind),
+						type,
+						name: opts.label ?? defaultLabelForType(type),
 						position,
 						subBlocks: opts.roleSlug ? { roleSlug: opts.roleSlug } : undefined,
 					},
@@ -377,21 +361,21 @@ export function PipelineEditor({
 	// Drop from palette/role-library: place at the cursor + auto-connect.
 	const handleDropNode = useCallback(
 		(
-			kind: PipelineNodeKind,
+			type: string,
 			position: { x: number; y: number },
 			roleSlug?: string,
 			label?: string,
 		) => {
-			addNode(kind, { position, roleSlug, label, autoConnect: true });
+			addNode(type, { position, roleSlug, label, autoConnect: true });
 		},
 		[addNode],
 	);
 
 	// cmdk palette pick: place at the viewport centre + auto-connect.
 	const handlePalettePick = useCallback(
-		(kind: PipelineNodeKind, roleSlug?: string, label?: string) => {
+		(type: string, roleSlug?: string, label?: string) => {
 			const center = canvasHandle.current?.getViewportCenter();
-			addNode(kind, {
+			addNode(type, {
 				roleSlug,
 				label,
 				position: center,
@@ -399,6 +383,20 @@ export function PipelineEditor({
 			});
 		},
 		[addNode],
+	);
+
+	// Replace the working graph with a template's graph (re-seeds the canvas).
+	const handleApplyTemplate = useCallback(
+		(next: RoxWorkflowState) => {
+			history.record(graphRef.current);
+			graphRef.current = next;
+			setGraph(next);
+			persist(next);
+			setSelectedNodeId(null);
+			setReseedKey((k) => k + 1);
+			requestAnimationFrame(() => canvasHandle.current?.fitView());
+		},
+		[history, persist],
 	);
 
 	// Auto-layout: dagre LR reposition, re-seed the canvas, then fit.
@@ -554,12 +552,14 @@ export function PipelineEditor({
 							nodes={nodes}
 							edges={edges}
 							selectedNodeId={selectedNodeId}
+							v2ProjectId={v2ProjectId}
 							onSelectNode={setSelectedNodeId}
 							onGraphChange={handleGraphChange}
-							onAddNode={(kind) => addNode(kind)}
+							onAddNode={(type, opts) => addNode(type, opts)}
 							onDropNode={handleDropNode}
 							onOpenPalette={() => setPaletteOpen(true)}
 							onAutoLayout={handleAutoLayout}
+							onApplyTemplate={handleApplyTemplate}
 							handleRef={canvasHandle}
 							showEmptyHint={showEmptyHint}
 							reseedKey={reseedKey}
