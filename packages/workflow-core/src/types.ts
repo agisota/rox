@@ -30,6 +30,8 @@ export type CoreBlockType =
 	| "parser"
 	| "variable_set"
 	| "knowledge_retrieval"
+	| "db_query"
+	| "db_write"
 	| "error_boundary";
 
 export interface RoxBlockState {

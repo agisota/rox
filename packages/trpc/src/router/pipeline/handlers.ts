@@ -5,6 +5,8 @@ import type { BlockHandler } from "@rox/workflow-runtime";
 import {
 	type ModelGeneratePort,
 	makeConditionHandler,
+	makeDbQueryHandler,
+	makeDbWriteHandler,
 	makeGateHandler,
 	makeHttpHandler,
 	makeMergeHandler,
@@ -15,6 +17,7 @@ import {
 	makeTransformHandler,
 	makeVariableSetHandler,
 } from "@rox/workflow-runtime/handlers";
+import { makePipelineDbQuery, makePipelineDbWrite } from "./db-port";
 import { pipelineHttpRequest } from "./http-port";
 import { generatePipelineText } from "./model-provider";
 import { makePipelineRetrieval, type RagPortScope } from "./rag-port";
@@ -68,6 +71,12 @@ export function buildPipelineHandlers(
 	};
 	if (scope) {
 		handlers.knowledge_retrieval = makeRagHandler(makePipelineRetrieval(scope));
+		// db nodes are tenant-bounded: their ports are built from the run's org
+		// scope, so a node can never read or mutate another organization's data.
+		// Gated on `scope` for the same reason as RAG — without a tenancy they fall
+		// back to pass-through rather than running unscoped against the DB.
+		handlers.db_query = makeDbQueryHandler(makePipelineDbQuery(scope));
+		handlers.db_write = makeDbWriteHandler(makePipelineDbWrite(scope));
 	}
 	return handlers;
 }
