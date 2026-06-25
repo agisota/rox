@@ -10,6 +10,7 @@ import { TopBar } from "./components/TopBar";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { useInboxData } from "./hooks/useInboxData";
 import { useInboxKeyboard } from "./hooks/useInboxKeyboard";
+import { useToggleThreadUnread } from "./hooks/useToggleThreadUnread";
 import { useTriage } from "./hooks/useTriage";
 import type { InboxFilter, InboxItem, InboxStatusFilter } from "./types";
 import { useCommsStream } from "./useCommsStream";
@@ -57,6 +58,7 @@ export function InboxView() {
 		refetch,
 	} = useInboxData();
 	const triage = useTriage();
+	const toggleThreadUnread = useToggleThreadUnread();
 
 	// The visible (filtered) stream.
 	const visible = useMemo(
@@ -120,8 +122,9 @@ export function InboxView() {
 			onDone: () => {
 				if (activeItem) triage.archive(activeItem.key, "Готово");
 			},
-			onToggleUnread: () =>
-				setStatus((s) => (s === "unread" ? "all" : "unread")),
+			// `u` toggles the ACTIVE thread's read-state — NOT the global
+			// unread/all filter (that stays on the segment control only).
+			onToggleUnread: () => toggleThreadUnread(activeItem),
 			onReply: () => composerRef.current?.focus(),
 			onSearch: () => searchRef.current?.focus(),
 			onGoAll: () => setFilter("all"),
