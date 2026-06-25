@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	ease,
+	gestureGrammar,
 	motionDuration,
 	motionShake,
 	motionSpring,
@@ -65,5 +66,25 @@ describe("motion token contract (append-only lane)", () => {
 		// Reuses the panel spring so the morph matches sidebar/zen geometry.
 		expect(panelSceneMotion.spring).toBe(motionSpring.panel);
 		expect(PANEL_SCENE_VT_NAME).toBe("rox-panel-scene");
+	});
+
+	it("keeps the gesture-grammar thresholds (case 051)", () => {
+		// Swipe-to-commit: preview reveals before commit fires.
+		expect(gestureGrammar.swipe.previewThreshold).toBeLessThan(
+			gestureGrammar.swipe.commitThreshold,
+		);
+		expect(gestureGrammar.swipe.velocityCommit).toBeGreaterThan(0);
+		expect(gestureGrammar.swipe.quickTagChipWidth).toBeGreaterThan(0);
+		// Pan-resize: collapse below min, min below max, snap window positive.
+		expect(gestureGrammar.panResize.minSize).toBeLessThan(
+			gestureGrammar.panResize.maxSize,
+		);
+		expect(gestureGrammar.panResize.collapseThreshold).toBeGreaterThan(0);
+		expect(gestureGrammar.panResize.snapThreshold).toBeGreaterThan(0);
+		// Edge-swipe + long-press timings.
+		expect(gestureGrammar.edgeSwipe.edgeWidth).toBeGreaterThan(0);
+		expect(gestureGrammar.edgeSwipe.openThreshold).toBeGreaterThan(0);
+		expect(gestureGrammar.longPress.duration).toBeGreaterThan(0);
+		expect(gestureGrammar.longPress.moveTolerance).toBeGreaterThan(0);
 	});
 });
