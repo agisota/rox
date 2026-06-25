@@ -355,7 +355,7 @@ function AssistantMessageImpl({
 			<MessageContent>
 				{nodes.length === 0 && isStreaming ? (
 					<ShimmerLabel className="text-sm text-muted-foreground">
-						Thinking...
+						Думаю…
 					</ShimmerLabel>
 				) : (
 					nodes

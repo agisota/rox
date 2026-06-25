@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { sampleCanvasDocument } from "@rox/shared/canvas";
 import {
+	createAddFreeformNodeBatch,
+	createAddRefNodeBatch,
 	createAddTextNodeBatch,
 	createConnectNodesBatch,
 	createDeleteElementsBatch,
@@ -126,6 +128,58 @@ describe("mutation batch builders", () => {
 		}
 	});
 
+	it("creates a ref node add batch with ref type/id and rounded position", () => {
+		const batch = createAddRefNodeBatch({
+			document: sampleCanvasDocument,
+			baseVersion,
+			actorId,
+			position: { x: 80.4, y: 19.9 },
+			payload: { refType: "note", refId: "note-42", label: "Заметка" },
+		});
+		expect(batch.mutations).toHaveLength(1);
+		const mutation = batch.mutations[0];
+		expect(mutation?.type).toBe("node.add");
+		if (mutation?.type === "node.add") {
+			expect(mutation.node.type).toBe("note");
+			expect(mutation.node.position).toEqual({ x: 80, y: 20 });
+			expect(mutation.node.title).toBe("Заметка");
+			expect(mutation.node.ref).toEqual({
+				type: "note",
+				id: "note-42",
+				preview: "Заметка",
+			});
+		}
+	});
+
+	it("maps session/file/task ref types to their node types and carries path", () => {
+		const session = createAddRefNodeBatch({
+			document: sampleCanvasDocument,
+			baseVersion,
+			actorId,
+			position: { x: 0, y: 0 },
+			payload: { refType: "session", refId: "s1", label: "Сессия" },
+		}).mutations[0];
+		if (session?.type === "node.add") {
+			expect(session.node.type).toBe("chat-session");
+		}
+		const file = createAddRefNodeBatch({
+			document: sampleCanvasDocument,
+			baseVersion,
+			actorId,
+			position: { x: 0, y: 0 },
+			payload: {
+				refType: "file",
+				refId: "f1",
+				label: "main.ts",
+				path: "src/main.ts",
+			},
+		}).mutations[0];
+		if (file?.type === "node.add") {
+			expect(file.node.type).toBe("file");
+			expect(file.node.ref?.path).toBe("src/main.ts");
+		}
+	});
+
 	it("connects two nodes with a directed edge mutation", () => {
 		const batch = createConnectNodesBatch({
 			document: sampleCanvasDocument,
@@ -213,5 +267,72 @@ describe("mutation batch builders", () => {
 				nodeIds: ["node-session", "ghost"],
 			}),
 		).toThrow();
+	});
+
+	it("creates a freeform node add batch from pointer samples", () => {
+		const batch = createAddFreeformNodeBatch({
+			document: sampleCanvasDocument,
+			baseVersion,
+			actorId,
+			points: [
+				[100, 100, 0.5],
+				[120, 140, 0.6],
+				[160, 130, 0.4],
+			],
+		});
+		expect(batch).not.toBeNull();
+		const mutation = batch?.mutations[0];
+		expect(mutation?.type).toBe("node.add");
+		if (mutation?.type === "node.add") {
+			expect(mutation.node.type).toBe("freeform");
+			expect(typeof mutation.node.metadata.path).toBe("string");
+			expect((mutation.node.metadata.path as string).length).toBeGreaterThan(0);
+			expect(mutation.node.size?.width).toBeGreaterThan(0);
+			expect(mutation.node.size?.height).toBeGreaterThan(0);
+			// Stroke normalised into node-local coords: origin sits left/above min.
+			expect(mutation.node.position.x).toBeLessThanOrEqual(100);
+			expect(mutation.node.position.y).toBeLessThanOrEqual(100);
+		}
+	});
+
+	it("returns null for an empty freeform stroke", () => {
+		expect(
+			createAddFreeformNodeBatch({
+				document: sampleCanvasDocument,
+				baseVersion,
+				actorId,
+				points: [],
+			}),
+		).toBeNull();
+	});
+});
+
+describe("freeform projection", () => {
+	it("projects a freeform node's metadata path into node data", () => {
+		const freeformDoc = {
+			...sampleCanvasDocument,
+			nodes: [
+				{
+					id: "node-draw",
+					type: "freeform" as const,
+					position: { x: 0, y: 0 },
+					size: { width: 120, height: 80 },
+					tags: [],
+					locked: false,
+					collapsed: false,
+					metadata: {
+						path: "M 0 0 Q 10 10 20 0 Z",
+						color: "#e07850",
+						viewBox: { width: 120, height: 80 },
+					},
+				},
+			],
+		};
+		const nodes = toReactFlowNodes(freeformDoc);
+		const draw = nodes.find((node) => node.id === "node-draw");
+		expect(draw?.data.nodeType).toBe("freeform");
+		expect(draw?.data.freeformPath).toBe("M 0 0 Q 10 10 20 0 Z");
+		expect(draw?.data.freeformViewBox).toEqual({ width: 120, height: 80 });
+		expect(draw?.data.freeformColor).toBe("#e07850");
 	});
 });

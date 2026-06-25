@@ -43,6 +43,10 @@ import { ChatMessageList } from "./components/ChatMessageList";
 import type { UserMessageRestartRequest } from "./components/ChatMessageList/ChatMessageList.types";
 import { PendingApprovalMessage } from "./components/ChatMessageList/components/PendingApprovalMessage/PendingApprovalMessage";
 import { McpControls } from "./components/McpControls";
+import {
+	resolveActiveModel,
+	unresolvedModelMessage,
+} from "./components/ModelPicker/utils/activeModelResolution";
 import { resolveSelectableModels } from "./components/ModelPicker/utils/selectableModels";
 import { useMcpUi } from "./hooks/useMcpUi";
 import { useOptimisticUpload } from "./hooks/useOptimisticUpload";
@@ -324,7 +328,15 @@ export function ChatPaneInterface({
 				setLiveCustomModelIds(result.models.map((model) => model.id));
 			})
 			.catch(() => {
-				// Discovery is best-effort; keep the persisted list on failure.
+				if (cancelled) return;
+				// Discovery is best-effort for the *list* (we keep the persisted
+				// entries), but the failure is no longer swallowed silently: signal
+				// it so the user knows their custom provider's `/v1/models` is
+				// unreachable and a freshly-added model may be missing.
+				setLiveCustomModelIds([]);
+				toast.error(
+					"Не удалось получить модели custom-провайдера — проверьте, что /v1/models доступен",
+				);
 			});
 		return () => {
 			cancelled = true;
@@ -354,21 +366,41 @@ export function ChatPaneInterface({
 	const setSelectedModelId = useChatPreferencesStore(
 		(state) => state.setSelectedModelId,
 	);
-	const selectedModel =
-		availableModels.find((model) => model.id === selectedModelId) ?? null;
-	const activeModel = selectedModel ?? defaultModel;
+	// Resolve the active model WITHOUT the historical silent fallback: when a
+	// persisted custom-provider id can't be found (discovery failed / provider
+	// reconfigured) we get an explicit `unresolvedModelId` instead of quietly
+	// pretending the house model was the user's choice.
+	const { activeModel, selectedModel, unresolvedModelId } = useMemo(
+		() =>
+			resolveActiveModel({
+				selectedModelId,
+				availableModels,
+				defaultModel,
+			}),
+		[selectedModelId, availableModels, defaultModel],
+	);
+	// Surface the unresolved selection once per distinct id so the user isn't
+	// silently downgraded to ROX R1 while believing they're on their custom model.
+	const signaledUnresolvedRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!unresolvedModelId) {
+			signaledUnresolvedRef.current = null;
+			return;
+		}
+		if (signaledUnresolvedRef.current === unresolvedModelId) return;
+		signaledUnresolvedRef.current = unresolvedModelId;
+		toast.error(unresolvedModelMessage(unresolvedModelId));
+	}, [unresolvedModelId]);
 	const thinkingLevel = useChatPreferencesStore((state) => state.thinkingLevel);
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
 	);
-	// Permission mode is now persisted (and defaults to the safer "default" /
-	// manual-confirm) instead of being hardwired to "bypassPermissions" in
-	// component state — closing the desktop-agent security gap noted in the
-	// surfaces spec (it previously reset every session). The composer selector
-	// already lets the user change it. Wiring the chosen mode through the turn
-	// metadata so the harness enforces it requires extending the shared
-	// host-service chat schema + runtime (out of this surface's scope — tracked
-	// as needsShared).
+	// Permission mode is persisted (and defaults to the safer "default" /
+	// manual-confirm) instead of being hardwired to "bypassPermissions" — closing
+	// the desktop-agent security gap noted in the surfaces spec (it previously
+	// reset every session). The selected mode is now also threaded into each
+	// turn's metadata below so the host-service runtime applies it to the harness
+	// (default → every tool asks; acceptEdits → edits auto-apply; bypass → yolo).
 	const [permissionMode, setPermissionMode] = usePermissionModePreference();
 	const [submitStatus, setSubmitStatus] = useState<ChatStatus | undefined>(
 		undefined,
@@ -640,7 +672,9 @@ export function ChatPaneInterface({
 
 	// F42: live context-usage ring. Estimated from displayed conversation text via
 	// the shared cross-platform selector so every surface agrees for the same
-	// conversation + model; the window comes from the active model.
+	// conversation + model; the window comes from the active model. This supersedes
+	// the origin/main `estimateThreadTokens` HUD: `contextUsage.usedTokens` feeds the
+	// same context-budget HUD while `contextUsage.maxTokens` adds the model window.
 	const contextUsage = useMemo(
 		() =>
 			selectContextUsage(
@@ -800,6 +834,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: activeModel?.id,
 					thinkingLevel,
+					permissionMode,
 				},
 			};
 
@@ -866,6 +901,7 @@ export function ChatPaneInterface({
 			setRuntimeErrorMessage,
 			onUserMessageSubmitted,
 			thinkingLevel,
+			permissionMode,
 		],
 	);
 
@@ -920,6 +956,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: modelId,
 					thinkingLevel,
+					permissionMode,
 				},
 			};
 
@@ -992,6 +1029,7 @@ export function ChatPaneInterface({
 		setRuntimeErrorMessage,
 		onUserMessageSubmitted,
 		thinkingLevel,
+		permissionMode,
 		onConsumeLaunchConfig,
 	]);
 
@@ -1022,6 +1060,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: activeModel?.id,
 					thinkingLevel,
+					permissionMode,
 				},
 			});
 			if (optimisticMessage) {
@@ -1041,6 +1080,7 @@ export function ChatPaneInterface({
 					metadata: {
 						model: activeModel?.id,
 						thinkingLevel,
+						permissionMode,
 					},
 				});
 				setEditingUserMessageId(null);
@@ -1077,6 +1117,7 @@ export function ChatPaneInterface({
 			sessionId,
 			setRuntimeErrorMessage,
 			thinkingLevel,
+			permissionMode,
 			workspaceId,
 		],
 	);
@@ -1222,6 +1263,7 @@ export function ChatPaneInterface({
 					setSelectedModel={handleSelectModel}
 					modelSelectorOpen={modelSelectorOpen}
 					setModelSelectorOpen={setModelSelectorOpen}
+					unresolvedModelId={unresolvedModelId}
 					permissionMode={permissionMode}
 					setPermissionMode={setPermissionMode}
 					thinkingLevel={thinkingLevel}

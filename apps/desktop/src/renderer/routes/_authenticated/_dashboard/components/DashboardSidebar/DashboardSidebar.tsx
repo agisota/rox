@@ -38,6 +38,7 @@ import {
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { useDashboardSidebarState } from "renderer/routes/_authenticated/hooks/useDashboardSidebarState";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
+import { useUnreadCount } from "renderer/screens/suite/InboxView";
 import { useSurfaceVisibilityStore } from "renderer/stores/surface-visibility";
 import { DashboardSidebarHeader } from "./components/DashboardSidebarHeader";
 import { DashboardSidebarHelpMenu } from "./components/DashboardSidebarHelpMenu";
@@ -124,6 +125,7 @@ export function DashboardSidebar({
 	const isNotesOpen = !!matchRoute({ to: "/notes", fuzzy: true });
 	const isEmailOpen = !!matchRoute({ to: "/email", fuzzy: true });
 	const isInboxOpen = !!matchRoute({ to: "/inbox", fuzzy: true });
+	const inboxUnread = useUnreadCount();
 	const { activeHostUrl } = useLocalHostService();
 	const v2RouteMatch = matchRoute({ to: "/v2-workspace/$workspaceId" });
 	const activeV2WorkspaceId = v2RouteMatch ? v2RouteMatch.workspaceId : null;
@@ -341,6 +343,7 @@ export function DashboardSidebar({
 										icon={HiOutlineInbox}
 										isActive={isInboxOpen}
 										isCollapsed={isCollapsed}
+										badgeCount={inboxUnread}
 										onClick={() => navigate({ to: "/inbox" })}
 									/>
 								)}

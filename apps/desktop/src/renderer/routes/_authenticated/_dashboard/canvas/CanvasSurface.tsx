@@ -1,4 +1,4 @@
-import type { CanvasMutationBatch } from "@rox/shared/canvas";
+import type { CanvasMutationBatch, FreehandPoint } from "@rox/shared/canvas";
 import {
 	createInverseCanvasMutationBatch,
 	rebaseCanvasMutationBatch,
@@ -22,6 +22,7 @@ import {
 	Boxes,
 	Download,
 	FileJson,
+	Pencil,
 	Plus,
 	Redo2,
 	TerminalSquare,
@@ -34,7 +35,12 @@ import {
 	getCanvasCapabilityCopy,
 	getCanvasRiskLabel,
 } from "./canvasCapabilityLabels";
-import { createAddTextNodeBatch } from "./canvasFlowAdapter";
+import {
+	createAddFreeformNodeBatch,
+	createAddRefNodeBatch,
+	createAddTextNodeBatch,
+} from "./canvasFlowAdapter";
+import type { CanvasRefDragPayload } from "./canvasRefDrag";
 
 interface CanvasSurfaceProps {
 	workspaceId?: string;
@@ -121,6 +127,7 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 	const [historyPast, setHistoryPast] = useState<CanvasHistoryEntry[]>([]);
 	const [historyFuture, setHistoryFuture] = useState<CanvasHistoryEntry[]>([]);
 	const [paletteOpen, setPaletteOpen] = useState(false);
+	const [penActive, setPenActive] = useState(false);
 	const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 	const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -339,6 +346,38 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 				}),
 				"Текстовый узел",
 			);
+		},
+		[activeDocument, activeIndex, submitBatch, workspaceId],
+	);
+
+	const handleDropEntityAt = useCallback(
+		(position: { x: number; y: number }, payload: CanvasRefDragPayload) => {
+			if (!workspaceId || !activeDocument || !activeIndex) return;
+			submitBatch(
+				createAddRefNodeBatch({
+					document: activeDocument,
+					baseVersion: activeIndex.revision,
+					actorId: "renderer",
+					position,
+					payload,
+				}),
+				"Ссылка на холст",
+			);
+		},
+		[activeDocument, activeIndex, submitBatch, workspaceId],
+	);
+
+	const handleCreateFreeformNode = useCallback(
+		(points: FreehandPoint[]) => {
+			if (!workspaceId || !activeDocument || !activeIndex) return;
+			const batch = createAddFreeformNodeBatch({
+				document: activeDocument,
+				baseVersion: activeIndex.revision,
+				actorId: "renderer",
+				points,
+			});
+			if (!batch) return;
+			submitBatch(batch, "Рисунок пером");
 		},
 		[activeDocument, activeIndex, submitBatch, workspaceId],
 	);
@@ -768,6 +807,17 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 					</Button>
 					<Button
 						size="icon-sm"
+						variant={penActive ? "default" : "ghost"}
+						disabled={!activeCanvasId || patchCanvas.isPending}
+						onClick={() => setPenActive((active) => !active)}
+						title="Перо · рисование от руки"
+						aria-pressed={penActive}
+						data-testid="canvas-pen-toggle"
+					>
+						<Pencil />
+					</Button>
+					<Button
+						size="icon-sm"
 						variant="ghost"
 						disabled={!activeCanvasId || patchCanvas.isPending}
 						onClick={handleAddTextNodeCenter}
@@ -814,7 +864,7 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 						<p className="font-mono text-sm">Запуск локального холста…</p>
 					</div>
 				) : activeDocument && activeIndex ? (
-					activeDocument.nodes.length === 0 ? (
+					activeDocument.nodes.length === 0 && !penActive ? (
 						<EmptyDocumentState onAddNode={handleAddTextNodeCenter} />
 					) : (
 						<ReactFlowProvider>
@@ -824,12 +874,20 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 								disabled={patchCanvas.isPending}
 								document={activeDocument}
 								modeBadge={
-									patchCanvas.isPending ? "Сохранение" : "Холст · хост"
+									penActive
+										? "Перо · рисование"
+										: patchCanvas.isPending
+											? "Сохранение"
+											: "Холст · хост"
 								}
+								penActive={penActive}
+								onCreateFreeformNode={handleCreateFreeformNode}
 								onCreateTextNodeAt={handleCreateTextNodeAt}
+								onDropEntityAt={handleDropEntityAt}
 								onMutationBatch={submitBatch}
 								onOpenRefNode={handleOpenRefNode}
 								onSelectionChange={setSelection}
+								workspaceId={workspaceId}
 							/>
 						</ReactFlowProvider>
 					)

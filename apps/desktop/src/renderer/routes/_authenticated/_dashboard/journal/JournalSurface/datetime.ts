@@ -69,3 +69,11 @@ export function relativeTime(value: Date | string): string {
 export function absoluteTime(value: Date | string): string {
 	return format(asUtcWallClock(value), "d MMMM yyyy, HH:mm", { locale: ru });
 }
+
+/**
+ * Stable DOM anchor id for a reflection day, so the activity heatmap can scroll
+ * the reflection lane to a given `YYYY-MM-DD` day via `scrollIntoView`.
+ */
+export function reflectionDayAnchorId(day: string): string {
+	return `reflection-day-${day}`;
+}

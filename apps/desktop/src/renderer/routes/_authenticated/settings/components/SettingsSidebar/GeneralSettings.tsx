@@ -3,228 +3,36 @@ import { cn } from "@rox/ui/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
-import {
-	HiOutlineBeaker,
-	HiOutlineBell,
-	HiOutlineBuildingOffice2,
-	HiOutlineCommandLine,
-	HiOutlineComputerDesktop,
-	HiOutlineCpuChip,
-	HiOutlineFolder,
-	HiOutlineKey,
-	HiOutlineLink,
-	HiOutlineLockClosed,
-	HiOutlinePaintBrush,
-	HiOutlinePuzzlePiece,
-	HiOutlineShare,
-	HiOutlineShieldCheck,
-	HiOutlineSparkles,
-	HiOutlineUser,
-	HiOutlineUserGroup,
-	HiOutlineViewColumns,
-} from "react-icons/hi2";
-import { LuBrain, LuGitBranch, LuKeyboard, LuMic } from "react-icons/lu";
 import { useIsV2CloudEnabled } from "renderer/hooks/useIsV2CloudEnabled";
 import { electronTrpc } from "renderer/lib/electron-trpc";
 import type { SettingsSection } from "renderer/stores/settings-state";
 import { getAllowedSectionsForVariant } from "../../utils/settings-search";
+import {
+	SETTINGS_GROUP_ORDER,
+	SETTINGS_MANIFEST,
+	type SettingsGroupLabel,
+	type SettingsManifestEntry,
+} from "./settings-manifest";
+import { SETTINGS_SECTION_ICONS } from "./settings-manifest-icons";
 
 interface GeneralSettingsProps {
 	matchCounts: Partial<Record<SettingsSection, number>> | null;
 }
 
-type SettingsRoute =
-	| "/settings/account"
-	| "/settings/organization"
-	| "/settings/teams"
-	| "/settings/appearance"
-	| "/settings/surfaces"
-	| "/settings/ringtones"
-	| "/settings/keyboard"
-	| "/settings/voice"
-	| "/settings/behavior"
-	| "/settings/git"
-	| "/settings/agents"
-	| "/settings/terminal"
-	| "/settings/links"
-	| "/settings/shares"
-	| "/settings/models"
-	| "/settings/experimental"
-	| "/settings/integrations"
-	| "/settings/api-keys"
-	| "/settings/security"
-	| "/settings/permissions"
-	| "/settings/projects"
-	| "/settings/hosts";
-
-interface SectionItem {
-	id: SettingsRoute;
-	section: SettingsSection;
-	label: string;
-	icon: React.ReactNode;
-	macOnly?: boolean;
-}
-
 interface SectionGroup {
-	label: string;
-	items: SectionItem[];
+	label: SettingsGroupLabel;
+	items: SettingsManifestEntry[];
 }
 
-const SECTION_GROUPS: SectionGroup[] = [
-	{
-		label: "Личное",
-		items: [
-			{
-				id: "/settings/account",
-				section: "account",
-				label: "Аккаунт",
-				icon: <HiOutlineUser className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/appearance",
-				section: "appearance",
-				label: "Внешний вид",
-				icon: <HiOutlinePaintBrush className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/surfaces",
-				section: "surfaces",
-				label: "Поверхности",
-				icon: <HiOutlineViewColumns className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/ringtones",
-				section: "ringtones",
-				label: "Уведомления",
-				icon: <HiOutlineBell className="h-4 w-4" />,
-			},
-		],
-	},
-	{
-		label: "Редактор и процесс",
-		items: [
-			{
-				id: "/settings/behavior",
-				section: "behavior",
-				label: "Общие",
-				icon: <HiOutlineSparkles className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/keyboard",
-				section: "keyboard",
-				label: "Клавиатура",
-				icon: <LuKeyboard className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/voice",
-				section: "voice",
-				label: "Голос",
-				icon: <LuMic className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/git",
-				section: "git",
-				label: "Git и worktrees",
-				icon: <LuGitBranch className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/agents",
-				section: "agents",
-				label: "Агенты",
-				icon: <HiOutlineCpuChip className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/terminal",
-				section: "terminal",
-				label: "Терминал",
-				icon: <HiOutlineCommandLine className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/links",
-				section: "links",
-				label: "Ссылки",
-				icon: <HiOutlineLink className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/shares",
-				section: "shares",
-				label: "Публичные ссылки",
-				icon: <HiOutlineShare className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/models",
-				section: "models",
-				label: "Модели",
-				icon: <LuBrain className="h-4 w-4" />,
-			},
-		],
-	},
-	{
-		label: "Организация",
-		items: [
-			{
-				id: "/settings/organization",
-				section: "organization",
-				label: "Организация",
-				icon: <HiOutlineBuildingOffice2 className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/teams",
-				section: "teams",
-				label: "Команды",
-				icon: <HiOutlineUserGroup className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/projects",
-				section: "project",
-				label: "Проекты",
-				icon: <HiOutlineFolder className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/hosts",
-				section: "hosts",
-				label: "Хосты",
-				icon: <HiOutlineComputerDesktop className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/integrations",
-				section: "integrations",
-				label: "Интеграции",
-				icon: <HiOutlinePuzzlePiece className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/api-keys",
-				section: "apikeys",
-				label: "API-ключи",
-				icon: <HiOutlineKey className="h-4 w-4" />,
-			},
-		],
-	},
-	{
-		label: "Система",
-		items: [
-			{
-				id: "/settings/security",
-				section: "security",
-				label: "Безопасность",
-				icon: <HiOutlineLockClosed className="h-4 w-4" />,
-			},
-			{
-				id: "/settings/permissions",
-				section: "permissions",
-				label: "Разрешения",
-				icon: <HiOutlineShieldCheck className="h-4 w-4" />,
-				macOnly: true,
-			},
-			{
-				id: "/settings/experimental",
-				section: "experimental",
-				label: "Эксперименты",
-				icon: <HiOutlineBeaker className="h-4 w-4" />,
-			},
-		],
-	},
-];
+/**
+ * Sidebar nav groups derived from the shared {@link SETTINGS_MANIFEST}. The
+ * sidebar, the route map (`layout.tsx`) and the search registry all consume the
+ * same manifest, so nav/route/search can no longer drift (see #591).
+ */
+const SECTION_GROUPS: SectionGroup[] = SETTINGS_GROUP_ORDER.map((label) => ({
+	label,
+	items: SETTINGS_MANIFEST.filter((entry) => entry.group === label),
+}));
 
 export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 	const matchRoute = useMatchRoute();
@@ -256,17 +64,18 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 							{group.label}
 						</h2>
 						<nav className="flex flex-col">
-							{filteredItems.map((section) => {
+							{filteredItems.map((item) => {
+								const to = `/settings/${item.slug}`;
 								const isActive = !!matchRoute({
-									to: section.id,
+									to,
 									fuzzy: true,
 								});
-								const count = matchCounts?.[section.section];
+								const count = matchCounts?.[item.section];
 
 								return (
 									<Link
-										key={section.id}
-										to={section.id}
+										key={item.section}
+										to={to}
 										className={cn(
 											"relative flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors text-left",
 											isActive
@@ -284,8 +93,8 @@ export function GeneralSettings({ matchCounts }: GeneralSettingsProps) {
 												transition={motionSpring.snappy}
 											/>
 										)}
-										{section.icon}
-										<span className="flex-1">{section.label}</span>
+										{SETTINGS_SECTION_ICONS[item.section]}
+										<span className="flex-1">{item.label}</span>
 										{count !== undefined && count > 0 && (
 											<span className="text-xs text-muted-foreground bg-accent/50 px-1.5 py-0.5 rounded">
 												{count}

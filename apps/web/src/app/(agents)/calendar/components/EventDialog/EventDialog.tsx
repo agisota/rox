@@ -24,7 +24,7 @@ import { Switch } from "@rox/ui/switch";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
 import { useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTRPC } from "@/trpc/react";
 import { useCalendarActions } from "../../hooks/useCalendarActions";
@@ -53,6 +53,12 @@ export interface EventDialogValue {
 	 * only" edits; undefined for one-off events or create mode.
 	 */
 	occurrenceStart?: Date;
+	/**
+	 * True when the clicked instance already carries a per-occurrence override
+	 * (its fields/time diverge from the series). Gates the "вернуть к серии"
+	 * action, which drops the override via `deleteOccurrenceOverride`.
+	 */
+	occurrenceOverridden?: boolean;
 }
 
 /** Scope of a recurring-event edit: this single instance vs the whole series. */
@@ -197,6 +203,7 @@ export function EventDialog({
 		deleteEvent,
 		updateOccurrence,
 		cancelOccurrence,
+		deleteOccurrenceOverride,
 		addAttendee,
 		removeAttendee,
 		rsvp,
@@ -300,6 +307,26 @@ export function EventDialog({
 		);
 	};
 
+	// Recurring instance with an existing per-occurrence override: drop the
+	// override so the instance reverts to the series values. Reversible (just
+	// deletes the override row); invalidates `listOccurrences` via the mutation.
+	const canResetOccurrence =
+		isRecurringInstance &&
+		Boolean(initial.occurrenceOverridden) &&
+		Boolean(initial.occurrenceStart);
+
+	const handleResetOccurrence = () => {
+		if (!initial.eventId || !initial.occurrenceStart) return;
+		if (!window.confirm("Вернуть это событие к значениям серии?")) return;
+		deleteOccurrenceOverride.mutate(
+			{
+				eventId: initial.eventId,
+				originalStart: initial.occurrenceStart,
+			},
+			{ onSuccess: () => onOpenChange(false) },
+		);
+	};
+
 	const submit = () => {
 		const dtstart = fromDatetimeLocal(start);
 		const dtend = fromDatetimeLocal(end);
@@ -365,7 +392,10 @@ export function EventDialog({
 		createEvent.isPending ||
 		updateEvent.isPending ||
 		updateOccurrence.isPending;
-	const deleting = deleteEvent.isPending || cancelOccurrence.isPending;
+	const deleting =
+		deleteEvent.isPending ||
+		cancelOccurrence.isPending ||
+		deleteOccurrenceOverride.isPending;
 	const attendeeBusy = addAttendee.isPending || removeAttendee.isPending;
 
 	return (
@@ -486,6 +516,23 @@ export function EventDialog({
 									Повтор и участники относятся ко всей серии и здесь не
 									меняются.
 								</p>
+							)}
+							{canResetOccurrence && (
+								<div className="flex items-center justify-between gap-2 pt-1">
+									<p className="text-muted-foreground text-xs">
+										Это событие изменено относительно серии.
+									</p>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="shrink-0"
+										onClick={handleResetOccurrence}
+										disabled={deleting || saving}
+									>
+										Вернуть к серии
+									</Button>
+								</div>
 							)}
 						</div>
 					)}
@@ -745,38 +792,158 @@ interface EventRemindersProps {
 	eventId: string;
 }
 
+/** The trigger kind a reminder form is editing: a relative preset or an
+ * absolute date-time. `"custom"` is the relative escape hatch (arbitrary
+ * minutes) so any persisted offset can be edited even if it is not a preset. */
+type ReminderFormTrigger = "relative" | "custom" | "absolute";
+
+/** Draft state shared by the add row and the per-row edit form. */
+interface ReminderDraft {
+	channel: ReminderChannel;
+	trigger: ReminderFormTrigger;
+	/** Selected preset value when `trigger === "relative"`. */
+	preset: string;
+	/** Free-form minutes when `trigger === "custom"`. */
+	offsetMinutes: string;
+	/** `datetime-local` string when `trigger === "absolute"`. */
+	absolute: string;
+}
+
+const EMPTY_DRAFT: ReminderDraft = {
+	channel: "in_app",
+	trigger: "relative",
+	preset: REMINDER_PRESETS[1]?.value ?? "10m",
+	offsetMinutes: "15",
+	absolute: "",
+};
+
+/** Seed a draft from a persisted reminder so the edit form opens pre-filled. */
+function draftFromReminder(reminder: EventReminder): ReminderDraft {
+	const channel = (reminder.channel as ReminderChannel) ?? "in_app";
+	if (reminder.triggerKind === "absolute" && reminder.absoluteFireAt) {
+		return {
+			channel,
+			trigger: "absolute",
+			preset: EMPTY_DRAFT.preset,
+			offsetMinutes: EMPTY_DRAFT.offsetMinutes,
+			absolute: toDatetimeLocal(new Date(reminder.absoluteFireAt)),
+		};
+	}
+	const offset = reminder.offsetMinutes ?? 0;
+	const preset = REMINDER_PRESETS.find((p) => p.offsetMinutes === offset);
+	return {
+		channel,
+		trigger: preset ? "relative" : "custom",
+		preset: preset?.value ?? EMPTY_DRAFT.preset,
+		offsetMinutes: String(offset),
+		absolute: "",
+	};
+}
+
 /**
- * Edit-mode reminders block: the caller's own reminders for the event, plus a
- * preset + channel add row and per-row delete. Cache-first (AGENTS.md rule 9):
- * persisted rows in `data` render immediately; `isLoading`/`isReady` only gate
- * the empty/loading branch when there is no data yet.
+ * Resolve a draft to the `{ channel, trigger, offsetMinutes?, absoluteFireAt? }`
+ * payload the router's create/update mutations accept, or `null` when the draft
+ * is incomplete (e.g. absolute selected with no date). The relative branch sends
+ * `absoluteFireAt: null` and the absolute branch `offsetMinutes: null` so an
+ * edit that switches trigger kind clears the now-unused column.
+ */
+function draftToReminderInput(draft: ReminderDraft): {
+	channel: ReminderChannel;
+	trigger: "relative" | "absolute";
+	offsetMinutes: number | null;
+	absoluteFireAt: Date | null;
+} | null {
+	if (draft.trigger === "absolute") {
+		const absoluteFireAt = fromDatetimeLocal(draft.absolute);
+		if (!absoluteFireAt) return null;
+		return {
+			channel: draft.channel,
+			trigger: "absolute",
+			offsetMinutes: null,
+			absoluteFireAt,
+		};
+	}
+	let offsetMinutes: number;
+	if (draft.trigger === "relative") {
+		const match = REMINDER_PRESETS.find((p) => p.value === draft.preset);
+		if (!match) return null;
+		offsetMinutes = match.offsetMinutes;
+	} else {
+		const parsed = Number.parseInt(draft.offsetMinutes, 10);
+		if (!Number.isFinite(parsed) || parsed < 0) return null;
+		offsetMinutes = parsed;
+	}
+	return {
+		channel: draft.channel,
+		trigger: "relative",
+		offsetMinutes,
+		absoluteFireAt: null,
+	};
+}
+
+/**
+ * Edit-mode reminders block: the caller's own reminders for the event, plus an
+ * add row (relative preset / arbitrary minutes / absolute date-time + channel),
+ * per-row inline edit via `updateReminder`, and per-row delete. Cache-first
+ * (AGENTS.md rule 9): persisted rows in `data` render immediately; `isLoading`
+ * only gates the empty/loading branch when there is no data yet.
  */
 function EventReminders({ eventId }: EventRemindersProps) {
 	const trpc = useTRPC();
-	const { createReminder, deleteReminder } = useCalendarActions();
+	const { createReminder, updateReminder, deleteReminder } =
+		useCalendarActions();
 	const remindersQuery = useQuery(
 		trpc.calendar.listReminders.queryOptions({ eventId }),
 	);
 	const reminders = remindersQuery.data ?? [];
 
-	const [preset, setPreset] = useState(REMINDER_PRESETS[1]?.value ?? "10m");
-	const [channel, setChannel] = useState<ReminderChannel>("in_app");
+	const [draft, setDraft] = useState<ReminderDraft>(EMPTY_DRAFT);
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const [editDraft, setEditDraft] = useState<ReminderDraft>(EMPTY_DRAFT);
 
 	const addReminder = () => {
-		const match = REMINDER_PRESETS.find((p) => p.value === preset);
-		if (!match) return;
-		createReminder.mutate({
-			eventId,
-			channel,
-			trigger: "relative",
-			offsetMinutes: match.offsetMinutes,
-		});
+		const input = draftToReminderInput(draft);
+		if (!input) return;
+		createReminder.mutate(
+			{ eventId, ...input },
+			{
+				onSuccess: () => {
+					setDraft(EMPTY_DRAFT);
+					void remindersQuery.refetch();
+				},
+			},
+		);
+	};
+
+	const startEdit = (reminder: EventReminder) => {
+		setEditingId(reminder.id);
+		setEditDraft(draftFromReminder(reminder));
+	};
+
+	const saveEdit = () => {
+		if (!editingId) return;
+		const input = draftToReminderInput(editDraft);
+		if (!input) return;
+		updateReminder.mutate(
+			{ reminderId: editingId, ...input },
+			{
+				onSuccess: () => {
+					setEditingId(null);
+					void remindersQuery.refetch();
+				},
+			},
+		);
 	};
 
 	const onDelete = (reminderId: string) => {
 		deleteReminder.mutate(
 			{ reminderId },
-			{ onSuccess: () => void remindersQuery.refetch() },
+			{
+				onSuccess: () => {
+					if (editingId === reminderId) setEditingId(null);
+					void remindersQuery.refetch();
+				},
+			},
 		);
 	};
 
@@ -786,23 +953,62 @@ function EventReminders({ eventId }: EventRemindersProps) {
 
 			{reminders.length > 0 ? (
 				<ul className="space-y-1">
-					{reminders.map((reminder) => (
-						<li
-							key={reminder.id}
-							className="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-sm"
-						>
-							<span className="truncate">{reminderLabel(reminder)}</span>
-							<button
-								type="button"
-								aria-label="Удалить напоминание"
-								className="text-muted-foreground hover:text-foreground disabled:opacity-50"
-								disabled={deleteReminder.isPending}
-								onClick={() => onDelete(reminder.id)}
+					{reminders.map((reminder) =>
+						editingId === reminder.id ? (
+							<li key={reminder.id} className="rounded-md border p-2">
+								<ReminderForm draft={editDraft} onChange={setEditDraft} />
+								<div className="flex justify-end gap-2 pt-2">
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={() => setEditingId(null)}
+									>
+										Отмена
+									</Button>
+									<Button
+										type="button"
+										variant="secondary"
+										size="sm"
+										onClick={saveEdit}
+										disabled={
+											updateReminder.isPending ||
+											!draftToReminderInput(editDraft)
+										}
+									>
+										Сохранить
+									</Button>
+								</div>
+							</li>
+						) : (
+							<li
+								key={reminder.id}
+								className="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-sm"
 							>
-								<X className="size-3.5" />
-							</button>
-						</li>
-					))}
+								<span className="truncate">{reminderLabel(reminder)}</span>
+								<span className="flex shrink-0 items-center gap-2">
+									<button
+										type="button"
+										aria-label="Редактировать напоминание"
+										className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+										disabled={updateReminder.isPending}
+										onClick={() => startEdit(reminder)}
+									>
+										<Pencil className="size-3.5" />
+									</button>
+									<button
+										type="button"
+										aria-label="Удалить напоминание"
+										className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+										disabled={deleteReminder.isPending}
+										onClick={() => onDelete(reminder.id)}
+									>
+										<X className="size-3.5" />
+									</button>
+								</span>
+							</li>
+						),
+					)}
 				</ul>
 			) : remindersQuery.isLoading ? (
 				<p className="text-muted-foreground text-xs">Загрузка напоминаний…</p>
@@ -810,40 +1016,104 @@ function EventReminders({ eventId }: EventRemindersProps) {
 				<p className="text-muted-foreground text-xs">Напоминаний пока нет.</p>
 			)}
 
-			<div className="flex gap-2 pt-1">
-				<Select value={preset} onValueChange={setPreset}>
-					<SelectTrigger className="flex-1">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						{REMINDER_PRESETS.map((p) => (
-							<SelectItem key={p.value} value={p.value}>
-								{p.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				<Select
-					value={channel}
-					onValueChange={(v) => setChannel(v as ReminderChannel)}
-				>
-					<SelectTrigger className="w-36">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="in_app">В приложении</SelectItem>
-						<SelectItem value="email">Email</SelectItem>
-					</SelectContent>
-				</Select>
-				<Button
-					type="button"
-					variant="secondary"
-					onClick={addReminder}
-					disabled={createReminder.isPending}
-				>
-					Добавить
-				</Button>
+			<div className="space-y-2 pt-1">
+				<ReminderForm draft={draft} onChange={setDraft} />
+				<div className="flex justify-end">
+					<Button
+						type="button"
+						variant="secondary"
+						onClick={addReminder}
+						disabled={createReminder.isPending || !draftToReminderInput(draft)}
+					>
+						Добавить
+					</Button>
+				</div>
 			</div>
+		</div>
+	);
+}
+
+interface ReminderFormProps {
+	draft: ReminderDraft;
+	onChange: (draft: ReminderDraft) => void;
+}
+
+/** Shared reminder editor: trigger kind + (preset | minutes | datetime) + channel. */
+function ReminderForm({ draft, onChange }: ReminderFormProps) {
+	return (
+		<div className="space-y-2">
+			<div className="flex gap-2">
+				<Select
+					value={draft.trigger}
+					onValueChange={(v) =>
+						onChange({ ...draft, trigger: v as ReminderFormTrigger })
+					}
+				>
+					<SelectTrigger className="w-40">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="relative">Относительно начала</SelectItem>
+						<SelectItem value="custom">Своё смещение</SelectItem>
+						<SelectItem value="absolute">Конкретное время</SelectItem>
+					</SelectContent>
+				</Select>
+
+				{draft.trigger === "relative" && (
+					<Select
+						value={draft.preset}
+						onValueChange={(v) => onChange({ ...draft, preset: v })}
+					>
+						<SelectTrigger className="flex-1">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{REMINDER_PRESETS.map((p) => (
+								<SelectItem key={p.value} value={p.value}>
+									{p.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				)}
+
+				{draft.trigger === "custom" && (
+					<Input
+						type="number"
+						min={0}
+						className="flex-1"
+						value={draft.offsetMinutes}
+						onChange={(e) =>
+							onChange({ ...draft, offsetMinutes: e.target.value })
+						}
+						placeholder="Минут до начала"
+					/>
+				)}
+
+				{draft.trigger === "absolute" && (
+					<Input
+						type="datetime-local"
+						className="flex-1"
+						value={draft.absolute}
+						onChange={(e) => onChange({ ...draft, absolute: e.target.value })}
+					/>
+				)}
+			</div>
+
+			<Select
+				value={draft.channel}
+				onValueChange={(v) =>
+					onChange({ ...draft, channel: v as ReminderChannel })
+				}
+			>
+				<SelectTrigger className="w-full">
+					<SelectValue />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="in_app">В приложении</SelectItem>
+					<SelectItem value="email">Email</SelectItem>
+				</SelectContent>
+			</Select>
 		</div>
 	);
 }

@@ -14,6 +14,15 @@ export function defaultWorktreesRoot(): string {
 	return join(homedir(), "rox", "worktrees");
 }
 
+// Default root new projects are created under. Mirrors `defaultWorktreesRoot`:
+// a visible, top-level `~/rox` folder. A null `host_settings.projectsBaseDir`
+// resolves to this at read time (see `getHostProjectsBaseDir`), so upgraders
+// who never set it keep the historical `~/rox/projects` parent (the create
+// path joins `projects` onto this root).
+export function defaultProjectsRoot(): string {
+	return join(homedir(), "rox");
+}
+
 export function normalizeWorktreeBaseDir(
 	input: string | null | undefined,
 ): string | null {

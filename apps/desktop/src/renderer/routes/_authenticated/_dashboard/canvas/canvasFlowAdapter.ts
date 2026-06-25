@@ -5,10 +5,21 @@ import type {
 	CanvasNode,
 	CanvasPoint,
 	CanvasSize,
+	FreehandPoint,
+	FreehandStrokeOptions,
+} from "@rox/shared/canvas";
+import {
+	freehandPointsToSvgPath,
+	getFreehandBounds,
+	translateFreehandPoints,
 } from "@rox/shared/canvas";
 import type { Connection, Edge, Node } from "@xyflow/react";
 import { MarkerType } from "@xyflow/react";
 import { getCanvasNodeMeta } from "./canvasNodeMeta";
+import {
+	type CanvasRefDragPayload,
+	canvasNodeTypeForRef,
+} from "./canvasRefDrag";
 
 /** Terracotta accent used for directed edges + arrowheads. */
 export const CANVAS_EDGE_COLOR = "var(--sidebar-primary)";
@@ -21,10 +32,22 @@ export interface RoxCanvasNodeData {
 	refType?: string;
 	refLabel?: string;
 	refPreview?: string;
+	/** Full node ref, forwarded so the live preview layer can resolve content. */
+	nodeRef?: CanvasNode["ref"];
+	/** Inline node text, used as the cache-first note fallback. */
+	nodeText?: string;
+	/** Workspace the canvas belongs to; needed to query live ref content. */
+	workspaceId?: string;
 	tags: string[];
 	locked: boolean;
 	collapsed: boolean;
 	accent: string;
+	/** SVG path `d` (node-local coords) for `freeform` pen-drawn nodes. */
+	freeformPath?: string;
+	/** Intrinsic stroke bounds (px) the path was authored at, for scaling. */
+	freeformViewBox?: { width: number; height: number };
+	/** Stroke fill colour for freeform nodes. */
+	freeformColor?: string;
 	[key: string]: unknown;
 }
 
@@ -53,9 +76,56 @@ function getNodeHeight(node: CanvasNode): number {
 	return node.size?.height ?? DEFAULT_NODE_HEIGHT;
 }
 
-export function toReactFlowNodes(document: CanvasDocument): RoxFlowNode[] {
+/** Default stroke colour for freeform pen nodes. */
+export const CANVAS_FREEFORM_COLOR = "var(--sidebar-primary)";
+
+interface FreeformNodeProjection {
+	freeformPath: string;
+	freeformViewBox: { width: number; height: number };
+	freeformColor: string;
+}
+
+/**
+ * Read the freeform stroke geometry stored on `node.metadata` by
+ * {@link createAddFreeformNodeBatch}. Returns `undefined` when the node is not
+ * a freeform node or carries no valid path string.
+ */
+export function readFreeformProjection(
+	node: CanvasNode,
+): FreeformNodeProjection | undefined {
+	if (node.type !== "freeform") return undefined;
+	const path = node.metadata.path;
+	if (typeof path !== "string" || path.length === 0) return undefined;
+	const viewBox = node.metadata.viewBox;
+	const width =
+		viewBox && typeof viewBox === "object" && "width" in viewBox
+			? Number((viewBox as { width: unknown }).width)
+			: undefined;
+	const height =
+		viewBox && typeof viewBox === "object" && "height" in viewBox
+			? Number((viewBox as { height: unknown }).height)
+			: undefined;
+	const color =
+		typeof node.metadata.color === "string"
+			? node.metadata.color
+			: (node.color?.value ?? CANVAS_FREEFORM_COLOR);
+	return {
+		freeformPath: path,
+		freeformViewBox: {
+			width: Number.isFinite(width) && width ? width : getNodeWidth(node),
+			height: Number.isFinite(height) && height ? height : getNodeHeight(node),
+		},
+		freeformColor: color,
+	};
+}
+
+export function toReactFlowNodes(
+	document: CanvasDocument,
+	workspaceId?: string,
+): RoxFlowNode[] {
 	return document.nodes.map((node) => {
 		const meta = getCanvasNodeMeta(node.type);
+		const freeform = readFreeformProjection(node);
 		return {
 			id: node.id,
 			type: "roxCanvasNode",
@@ -71,10 +141,16 @@ export function toReactFlowNodes(document: CanvasDocument): RoxFlowNode[] {
 				refType: node.ref?.type,
 				refLabel: node.ref ? `${node.ref.type} · ${node.ref.id}` : undefined,
 				refPreview: node.ref?.preview,
+				nodeRef: node.ref,
+				nodeText: node.text,
+				workspaceId,
 				tags: node.tags,
 				locked: node.locked,
 				collapsed: node.collapsed,
 				accent: meta.accent,
+				freeformPath: freeform?.freeformPath,
+				freeformViewBox: freeform?.freeformViewBox,
+				freeformColor: freeform?.freeformColor,
 			},
 			style: {
 				width: getNodeWidth(node),
@@ -188,6 +264,110 @@ export function createAddTextNodeBatch({
 					locked: false,
 					collapsed: false,
 					metadata: {},
+				},
+			},
+		],
+	};
+}
+
+/**
+ * Build a `node.add` batch for a workspace entity dropped onto the canvas.
+ * Mirrors {@link createAddTextNodeBatch} but produces a ref-node so live
+ * content and double-click-open work immediately: `ref.type`/`ref.id` come from
+ * the {@link CanvasRefDragPayload} and the node `type` is derived via
+ * `canvasNodeTypeForRef`.
+ */
+export function createAddRefNodeBatch({
+	document,
+	baseVersion,
+	actorId,
+	position,
+	payload,
+}: BatchBaseInput & {
+	position: CanvasPoint;
+	payload: CanvasRefDragPayload;
+}): CanvasMutationBatch {
+	return {
+		...createBatchBase({ document, baseVersion, actorId }),
+		mutations: [
+			{
+				type: "node.add",
+				node: {
+					id: `node-${crypto.randomUUID()}`,
+					type: canvasNodeTypeForRef(payload.refType),
+					position: { x: Math.round(position.x), y: Math.round(position.y) },
+					size: { width: DEFAULT_NODE_WIDTH, height: DEFAULT_NODE_HEIGHT },
+					title: payload.label,
+					ref: {
+						type: payload.refType,
+						id: payload.refId,
+						preview: payload.label,
+						...(payload.path ? { path: payload.path } : {}),
+					},
+					tags: [],
+					locked: false,
+					collapsed: false,
+					metadata: {},
+				},
+			},
+		],
+	};
+}
+
+/** Padding (px) added around the raw stroke bounds for the node box. */
+const FREEFORM_PADDING = 12;
+
+/**
+ * Build a `node.add` batch for a pen-drawn stroke. The absolute-canvas pointer
+ * samples are normalised to node-local coordinates, smoothed via
+ * perfect-freehand into an SVG path, and persisted on `metadata.path` together
+ * with the authoring `viewBox` and stroke `color`. The node `type` is
+ * `freeform`, so it scales/moves/deletes like any other canvas node while the
+ * renderer paints the SVG inside it.
+ *
+ * Returns `null` when the stroke has no points (nothing to persist).
+ */
+export function createAddFreeformNodeBatch({
+	document,
+	baseVersion,
+	actorId,
+	points,
+	color = CANVAS_FREEFORM_COLOR,
+	strokeOptions,
+}: BatchBaseInput & {
+	points: FreehandPoint[];
+	color?: string;
+	strokeOptions?: FreehandStrokeOptions;
+}): CanvasMutationBatch | null {
+	if (points.length === 0) return null;
+	const bounds = getFreehandBounds(points);
+	const originX = bounds.minX - FREEFORM_PADDING;
+	const originY = bounds.minY - FREEFORM_PADDING;
+	const width = Math.max(bounds.width + FREEFORM_PADDING * 2, 1);
+	const height = Math.max(bounds.height + FREEFORM_PADDING * 2, 1);
+	const localPoints = translateFreehandPoints(points, originX, originY);
+	const path = freehandPointsToSvgPath(localPoints, strokeOptions);
+	if (path.length === 0) return null;
+	return {
+		...createBatchBase({ document, baseVersion, actorId }),
+		mutations: [
+			{
+				type: "node.add",
+				node: {
+					id: `node-${crypto.randomUUID()}`,
+					type: "freeform",
+					position: { x: Math.round(originX), y: Math.round(originY) },
+					size: { width: Math.round(width), height: Math.round(height) },
+					title: "Рисунок",
+					tags: [],
+					locked: false,
+					collapsed: false,
+					color: { value: color },
+					metadata: {
+						path,
+						color,
+						viewBox: { width: Math.round(width), height: Math.round(height) },
+					},
 				},
 			},
 		],

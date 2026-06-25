@@ -11,13 +11,16 @@ import { useCollections } from "renderer/routes/_authenticated/providers/Collect
 import { ImportPanel } from "renderer/screens/memory/MemoryView/components/ImportPanel";
 import { MemorySuggestions } from "renderer/screens/memory/MemoryView/components/MemorySuggestions";
 import { MEMORY_GROUPS } from "renderer/screens/memory/MemoryView/groups";
+import { AgentContextPreview } from "./components/AgentContextPreview";
 import { MemoryCommandPalette } from "./components/MemoryCommandPalette";
 import { MemoryGroupEditable } from "./components/MemoryGroupEditable";
 import { MemorySkeleton } from "./components/MemorySkeleton";
 import { type CategoryFilter, SearchHeader } from "./components/SearchHeader";
 import { SearchResults } from "./components/SearchResults";
+import { SimilarSheet } from "./components/SimilarSheet";
 import { useMemorySearch } from "./hooks/useMemorySearch";
 import { toSearchWords } from "./lib/highlight";
+import type { SimilarityCluster } from "./lib/similarity";
 
 const SEARCH_DEBOUNCE_MS = 200;
 
@@ -89,6 +92,14 @@ export function MemoryView() {
 	const [rankedIds, setRankedIds] = useState<string[]>([]);
 	const [flashId, setFlashId] = useState<string | null>(null);
 	const [paletteOpen, setPaletteOpen] = useState(false);
+	const [similarCluster, setSimilarCluster] =
+		useState<SimilarityCluster | null>(null);
+	const [similarOpen, setSimilarOpen] = useState(false);
+
+	const showSimilar = useCallback((cluster: SimilarityCluster) => {
+		setSimilarCluster(cluster);
+		setSimilarOpen(true);
+	}, []);
 
 	const importPanelRef = useRef<HTMLDivElement>(null);
 	const searchInputRef = useRef<HTMLInputElement>(null);
@@ -239,6 +250,10 @@ export function MemoryView() {
 
 			<MemorySuggestions items={suggested} />
 
+			{isReady && !isSearching && approved.length > 0 && (
+				<AgentContextPreview approved={approved} />
+			)}
+
 			{!isReady ? (
 				<MemorySkeleton />
 			) : isSearching ? (
@@ -246,6 +261,8 @@ export function MemoryView() {
 					items={searchResults}
 					searchWords={searchWords}
 					flashId={flashId}
+					approved={approved}
+					onShowSimilar={showSimilar}
 				/>
 			) : (
 				<div className="space-y-5">
@@ -260,6 +277,7 @@ export function MemoryView() {
 							items={approvedByCategory.get(group.category) ?? []}
 							isReady={isReady}
 							flashId={flashId}
+							onShowSimilar={showSimilar}
 						/>
 					))}
 				</div>
@@ -272,6 +290,12 @@ export function MemoryView() {
 				onJump={jumpTo}
 				onAddNew={focusAdd}
 				onOpenImport={openImport}
+			/>
+
+			<SimilarSheet
+				cluster={similarCluster}
+				open={similarOpen}
+				onOpenChange={setSimilarOpen}
 			/>
 		</DashboardSurface>
 	);

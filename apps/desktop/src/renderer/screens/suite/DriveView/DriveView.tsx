@@ -1,7 +1,18 @@
+import {
+	closestCenter,
+	DndContext,
+	type DragEndEvent,
+	DragOverlay,
+	type DragStartEvent,
+	PointerSensor,
+	TouchSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
 import { AnimatedPresence } from "@rox/ui/motion";
 import { cn } from "@rox/ui/utils";
 import { useQuery } from "@tanstack/react-query";
-import { UploadCloud } from "lucide-react";
+import { Folder as FolderIcon, UploadCloud } from "lucide-react";
 import {
 	type KeyboardEvent as ReactKeyboardEvent,
 	useCallback,
@@ -17,6 +28,7 @@ import type { DriveBrowserModel } from "./components/browserModel";
 import { CreateFolderDialog } from "./components/CreateFolderDialog";
 import { DeleteAlert, type DeleteTarget } from "./components/DeleteAlert";
 import { DriveEmptyState } from "./components/DriveEmptyState";
+import { DriveFolderTree } from "./components/DriveFolderTree";
 import { DriveGridView } from "./components/DriveGridView";
 import { DriveListView } from "./components/DriveListView";
 import { DriveToolbar } from "./components/DriveToolbar";
@@ -37,6 +49,12 @@ import {
 	refKey,
 } from "./types";
 import { type FolderCrumb, truncateStackTo } from "./utils/breadcrumbPath";
+import {
+	type DriveDragData,
+	type DriveDropTarget,
+	dragRefs,
+	isDropAllowed,
+} from "./utils/dnd";
 
 /**
  * Desktop Drive — a fast, glass, RU-localized file manager over the per-user
@@ -114,6 +132,17 @@ export function DriveView() {
 
 	const navigateTo = useCallback((targetId: string | null) => {
 		setStack((prev) => truncateStackTo(prev, targetId));
+	}, []);
+
+	// Tree-node click: if the folder is already on the visited stack, truncate
+	// back to it (same as a breadcrumb click); otherwise drill into it (push),
+	// reusing the same navigation model the main area uses.
+	const openOrNavigate = useCallback((folder: { id: string; name: string }) => {
+		setStack((prev) => {
+			const index = prev.findIndex((crumb) => crumb.id === folder.id);
+			if (index !== -1) return prev.slice(0, index + 1);
+			return [...prev, { id: folder.id, name: folder.name }];
+		});
 	}, []);
 
 	// --- selection (modifier-aware) -------------------------------------------
@@ -199,7 +228,70 @@ export function DriveView() {
 		},
 		[upload, folderId],
 	);
-	const drop = useDriveDrop(onFilesChosen, true);
+	// --- internal drag-to-move (dnd-kit) --------------------------------------
+	// Disable the OS-file-drop scrim while an internal item-move drag is active
+	// so the two never fight; OS drags additionally carry `Files` (checked in
+	// useDriveDrop), this guard just hides the upload affordance during a move.
+	const [activeDrag, setActiveDrag] = useState<DriveDragData | null>(null);
+	const drop = useDriveDrop(onFilesChosen, activeDrag === null);
+
+	const sensors = useSensors(
+		// 6px activation distance so a click still selects without starting a drag.
+		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+		useSensor(TouchSensor, {
+			activationConstraint: { delay: 180, tolerance: 8 },
+		}),
+	);
+
+	const dragDataFor = useCallback(
+		(ref: EntryRef): DriveDragData => {
+			const refs = dragRefs(ref, selected, orderedRefs);
+			const nameOf = (r: EntryRef) =>
+				r.kind === "folder"
+					? folders.find((f) => f.id === r.id)?.name
+					: files.find((f) => f.id === r.id)?.name;
+			const label =
+				refs.length > 1 ? `${refs.length} объект.` : (nameOf(ref) ?? "Объект");
+			return { ref, refs, label };
+		},
+		[selected, orderedRefs, folders, files],
+	);
+
+	const onDragStart = useCallback((event: DragStartEvent) => {
+		const data = event.active.data.current as DriveDragData | undefined;
+		if (data) setActiveDrag(data);
+	}, []);
+
+	const onDragCancel = useCallback(() => setActiveDrag(null), []);
+
+	const onDragEnd = useCallback(
+		(event: DragEndEvent) => {
+			const data = event.active.data.current as DriveDragData | undefined;
+			const target = event.over?.data.current as
+				| { target?: DriveDropTarget }
+				| undefined;
+			setActiveDrag(null);
+			if (!data || !target?.target) return;
+			const dropTarget = target.target;
+			if (!isDropAllowed(data.refs, dropTarget, folderId)) return;
+			const targetFolderId = dropTarget.kind === "root" ? null : dropTarget.id;
+			for (const ref of data.refs) {
+				if (ref.kind === "folder") {
+					actions.moveFolder.mutate({
+						folderId: ref.id,
+						parentId: targetFolderId,
+					});
+				} else {
+					actions.moveFile.mutate({
+						fileId: ref.id,
+						folderId: targetFolderId,
+					});
+				}
+			}
+			setSelected(new Set());
+		},
+		[actions, folderId],
+	);
 
 	// --- keyboard model -------------------------------------------------------
 	const onKeyDown = useCallback(
@@ -261,143 +353,174 @@ export function DriveView() {
 			setDeleteTarget({ kind: "folder", id: folder.id, name: folder.name }),
 		onDeleteFile: (file) =>
 			setDeleteTarget({ kind: "file", id: file.id, name: file.name }),
+		dragDataFor,
+		isMoving: activeDrag !== null,
 	};
 
 	return (
 		<DashboardSurface width="full" bare>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: container keyboard shortcuts */}
-			<div
-				className="relative grid h-full min-h-0 grid-cols-[240px_1fr] overflow-hidden"
-				onKeyDown={onKeyDown}
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCenter}
+				onDragStart={onDragStart}
+				onDragEnd={onDragEnd}
+				onDragCancel={onDragCancel}
 			>
-				{/* Left rail */}
-				<aside className="flex min-h-0 flex-col justify-end border-border/60 border-r p-3">
-					<QuotaCard />
-				</aside>
+				{/* biome-ignore lint/a11y/noStaticElementInteractions: container keyboard shortcuts */}
+				<div
+					className="relative grid h-full min-h-0 grid-cols-[240px_1fr] overflow-hidden"
+					onKeyDown={onKeyDown}
+				>
+					{/* Left rail: lazy folder tree (top) + sticky QuotaCard (bottom) */}
+					<aside className="flex min-h-0 flex-col gap-3 border-border/60 border-r p-3">
+						<DriveFolderTree
+							path={stack}
+							activeId={folderId}
+							onNavigate={(folder) =>
+								folder === null ? navigateTo(null) : openOrNavigate(folder)
+							}
+							droppable={activeDrag !== null}
+						/>
+						<div className="mt-auto">
+							<QuotaCard />
+						</div>
+					</aside>
 
-				{/* Main column */}
-				<div className="flex min-h-0 flex-col">
-					<DriveToolbar
-						stack={stack}
-						onNavigate={navigateTo}
-						query={searchRaw}
-						onQuery={setSearchRaw}
-						view={view}
-						onView={setView}
-						sort={sort}
-						onSort={toggleSort}
-						onCreateFolder={() => setCreateOpen(true)}
-						onUpload={triggerPicker}
-						onOpenShares={() => setSharesOpen(true)}
+					{/* Main column */}
+					<div className="flex min-h-0 flex-col">
+						<DriveToolbar
+							stack={stack}
+							onNavigate={navigateTo}
+							query={searchRaw}
+							onQuery={setSearchRaw}
+							view={view}
+							onView={setView}
+							sort={sort}
+							onSort={toggleSort}
+							onCreateFolder={() => setCreateOpen(true)}
+							onUpload={triggerPicker}
+							onOpenShares={() => setSharesOpen(true)}
+							droppableSegments={activeDrag !== null}
+						/>
+
+						{/* biome-ignore lint/a11y/noStaticElementInteractions: whole-area file drop zone */}
+						<div
+							className="relative flex min-h-0 flex-1 flex-col"
+							onDragEnter={drop.onDragEnter}
+							onDragOver={drop.onDragOver}
+							onDragLeave={drop.onDragLeave}
+							onDrop={drop.onDrop}
+						>
+							{listing.isError ? (
+								<div className="p-6">
+									<SuiteQueryError
+										message={listing.error.message}
+										onRetry={() => listing.refetch()}
+									/>
+								</div>
+							) : !hasData && listing.isLoading ? (
+								<LoadingState view={view} />
+							) : isEmpty ? (
+								<DriveEmptyState
+									isRoot={stack.length === 0}
+									onUpload={triggerPicker}
+									onCreateFolder={() => setCreateOpen(true)}
+								/>
+							) : view === "list" ? (
+								<DriveListView {...model} sort={sort} onSort={toggleSort} />
+							) : (
+								<DriveGridView {...model} />
+							)}
+
+							{/* Drag scrim */}
+							<AnimatedPresence>
+								{drop.isDragging ? (
+									<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
+										<div className="glass-panel flex flex-col items-center gap-2 rounded-2xl border border-primary/40 border-dashed px-10 py-8">
+											<UploadCloud className="size-9 text-primary" />
+											<p className="font-medium text-foreground text-sm">
+												Отпустите, чтобы загрузить
+											</p>
+										</div>
+									</div>
+								) : null}
+							</AnimatedPresence>
+						</div>
+					</div>
+
+					{/* Ghost of the dragged entry / multi-selection. */}
+					<DragOverlay dropAnimation={null}>
+						{activeDrag ? (
+							<div className="glass-panel pointer-events-none flex items-center gap-2 rounded-lg border border-primary/40 px-3 py-1.5 text-sm shadow-lg">
+								<FolderIcon className="size-4 text-primary" />
+								<span className="font-medium">{activeDrag.label}</span>
+							</div>
+						) : null}
+					</DragOverlay>
+
+					{/* Hidden picker */}
+					<input
+						ref={fileInputRef}
+						type="file"
+						multiple
+						className="hidden"
+						onChange={(event) => {
+							const chosen = event.target.files
+								? Array.from(event.target.files)
+								: [];
+							onFilesChosen(chosen);
+							event.target.value = "";
+						}}
 					/>
 
-					{/* biome-ignore lint/a11y/noStaticElementInteractions: whole-area file drop zone */}
-					<div
-						className="relative flex min-h-0 flex-1 flex-col"
-						onDragEnter={drop.onDragEnter}
-						onDragOver={drop.onDragOver}
-						onDragLeave={drop.onDragLeave}
-						onDrop={drop.onDrop}
-					>
-						{listing.isError ? (
-							<div className="p-6">
-								<SuiteQueryError
-									message={listing.error.message}
-									onRetry={() => listing.refetch()}
-								/>
-							</div>
-						) : !hasData && listing.isLoading ? (
-							<LoadingState view={view} />
-						) : isEmpty ? (
-							<DriveEmptyState
-								isRoot={stack.length === 0}
-								onUpload={triggerPicker}
-								onCreateFolder={() => setCreateOpen(true)}
-							/>
-						) : view === "list" ? (
-							<DriveListView {...model} sort={sort} onSort={toggleSort} />
-						) : (
-							<DriveGridView {...model} />
-						)}
-
-						{/* Drag scrim */}
-						<AnimatedPresence>
-							{drop.isDragging ? (
-								<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
-									<div className="glass-panel flex flex-col items-center gap-2 rounded-2xl border border-primary/40 border-dashed px-10 py-8">
-										<UploadCloud className="size-9 text-primary" />
-										<p className="font-medium text-foreground text-sm">
-											Отпустите, чтобы загрузить
-										</p>
-									</div>
-								</div>
-							) : null}
-						</AnimatedPresence>
-					</div>
+					{/* Overlays */}
+					<UploadTray
+						items={upload.items}
+						onRetry={(id) => void upload.retry(id)}
+						onDismiss={upload.dismiss}
+						onClear={upload.clearCompleted}
+					/>
+					<PreviewSheet
+						file={previewFile}
+						onOpenChange={(open) => {
+							if (!open) setPreviewFile(null);
+						}}
+						getPreviewUrl={actions.getPreviewUrl}
+						onDownload={(fileId) => void actions.download(fileId)}
+						onShare={(file) =>
+							setShareTarget({ kind: "file", id: file.id, name: file.name })
+						}
+					/>
+					<ShareDialog
+						target={shareTarget}
+						onOpenChange={(open) => {
+							if (!open) setShareTarget(null);
+						}}
+					/>
+					<SharesSheet open={sharesOpen} onOpenChange={setSharesOpen} />
+					<CreateFolderDialog
+						open={createOpen}
+						pending={actions.createFolder.isPending}
+						onOpenChange={setCreateOpen}
+						onCreate={(name) =>
+							actions.createFolder.mutate(
+								{ name, parentId: folderId },
+								{ onSuccess: () => setCreateOpen(false) },
+							)
+						}
+					/>
+					<DeleteAlert
+						target={deleteTarget}
+						pending={
+							actions.deleteFile.isPending || actions.deleteFolder.isPending
+						}
+						onConfirm={confirmDelete}
+						onOpenChange={(open) => {
+							if (!open) setDeleteTarget(null);
+						}}
+					/>
 				</div>
-
-				{/* Hidden picker */}
-				<input
-					ref={fileInputRef}
-					type="file"
-					multiple
-					className="hidden"
-					onChange={(event) => {
-						const chosen = event.target.files
-							? Array.from(event.target.files)
-							: [];
-						onFilesChosen(chosen);
-						event.target.value = "";
-					}}
-				/>
-
-				{/* Overlays */}
-				<UploadTray
-					items={upload.items}
-					onRetry={(id) => void upload.retry(id)}
-					onDismiss={upload.dismiss}
-					onClear={upload.clearCompleted}
-				/>
-				<PreviewSheet
-					file={previewFile}
-					onOpenChange={(open) => {
-						if (!open) setPreviewFile(null);
-					}}
-					getPreviewUrl={actions.getPreviewUrl}
-					onDownload={(fileId) => void actions.download(fileId)}
-					onShare={(file) =>
-						setShareTarget({ kind: "file", id: file.id, name: file.name })
-					}
-				/>
-				<ShareDialog
-					target={shareTarget}
-					onOpenChange={(open) => {
-						if (!open) setShareTarget(null);
-					}}
-				/>
-				<SharesSheet open={sharesOpen} onOpenChange={setSharesOpen} />
-				<CreateFolderDialog
-					open={createOpen}
-					pending={actions.createFolder.isPending}
-					onOpenChange={setCreateOpen}
-					onCreate={(name) =>
-						actions.createFolder.mutate(
-							{ name, parentId: folderId },
-							{ onSuccess: () => setCreateOpen(false) },
-						)
-					}
-				/>
-				<DeleteAlert
-					target={deleteTarget}
-					pending={
-						actions.deleteFile.isPending || actions.deleteFolder.isPending
-					}
-					onConfirm={confirmDelete}
-					onOpenChange={(open) => {
-						if (!open) setDeleteTarget(null);
-					}}
-				/>
-			</div>
+			</DndContext>
 		</DashboardSurface>
 	);
 }

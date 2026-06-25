@@ -141,6 +141,12 @@ CREATE TABLE saved_prompts (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
+  folder TEXT,
+  tags TEXT DEFAULT '[]',
+  is_favorite INTEGER DEFAULT false NOT NULL,
+  copy_count INTEGER DEFAULT 0 NOT NULL,
+  last_used_at INTEGER,
+  position INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

@@ -13,6 +13,10 @@ import {
 	resolveChatWireModelId,
 	resolveRoxFallbackWireModelId,
 } from "@rox/shared/chat-models";
+import {
+	type PermissionMode,
+	permissionModeToHarnessState,
+} from "@rox/shared/chat-permission-mode";
 import { eq } from "drizzle-orm";
 import type { HostDb } from "../../db";
 import { workspaces } from "../../db/schema";
@@ -47,6 +51,7 @@ interface ChatSendMessageInput {
 	metadata?: {
 		model?: string;
 		thinkingLevel?: ChatThinkingLevel;
+		permissionMode?: PermissionMode;
 	};
 }
 
@@ -273,6 +278,28 @@ function buildRoxFallbackState(
 	return { fallbackWireModelId, payload, attempted: false };
 }
 
+/**
+ * Apply the turn's permission mode to the runtime before the message runs.
+ *
+ * The mode is the desktop-agent safety lever: it decides whether edit/execute
+ * tool calls auto-run or stop at an approval gate. We translate it to the
+ * harness state slice (`yolo` + per-category `permissionRules`) via the shared
+ * mapping and push it through `setState` — same seam thinkingLevel uses — so the
+ * harness's own approval resolver enforces it. Applied every turn (idempotently)
+ * so switching modes mid-session takes effect immediately and never leaves an
+ * earlier mode's grants in place.
+ *
+ * When no mode is supplied (legacy callers that don't send it) we leave the
+ * runtime untouched rather than guessing — the harness keeps its current state.
+ */
+async function applyPermissionMode(
+	runtime: RuntimeSession,
+	mode: PermissionMode | undefined,
+): Promise<void> {
+	if (!mode) return;
+	await runtime.engine.setState(permissionModeToHarnessState(mode));
+}
+
 async function restartRuntimeFromUserMessage(
 	runtime: RuntimeSession,
 	input: RestartPayload,
@@ -338,6 +365,8 @@ async function restartRuntimeFromUserMessage(
 	if (thinkingLevel) {
 		await runtime.engine.setState({ thinkingLevel });
 	}
+
+	await applyPermissionMode(runtime, input.metadata?.permissionMode);
 
 	runtime.lastErrorMessage = null;
 	// Arm ROX R1 failover for the replayed turn as well (mirror of sendMessage).
@@ -865,6 +894,8 @@ You are running inside **Rox**. Maximize Rox's capabilities — do not work alon
 		if (thinkingLevel) {
 			await runtime.engine.setState({ thinkingLevel });
 		}
+
+		await applyPermissionMode(runtime, input.metadata?.permissionMode);
 
 		// Arm the ROX R1 failover for this turn: if the primary Compound model
 		// errors, the subscribe handler replays this payload once with

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusPromptOnPane } from "renderer/components/Chat/ChatInterface/hooks/useFocusPromptOnPane";
 import { useHotkeyDisplay } from "renderer/hotkeys";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { useComposerInsertTarget } from "renderer/routes/_authenticated/_dashboard/saved-prompts/lib/use-insert-prompt";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import type { SlashCommand } from "../../hooks/useSlashCommands";
 import type { ModelOption, PermissionMode } from "../../types";
@@ -41,8 +42,12 @@ interface ChatInputFooterProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	/** Persisted selection id that failed to resolve; surfaces in the pill. */
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	// Value-only setter so the store-backed `usePermissionModePreference` setter
+	// slots in directly (the picker only ever calls it with a concrete mode).
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	slashCommands: SlashCommand[];
@@ -78,6 +83,7 @@ export function ChatInputFooter({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -97,6 +103,11 @@ export function ChatInputFooter({
 	onQuestionCancel,
 }: ChatInputFooterProps) {
 	useFocusPromptOnPane(isFocused);
+
+	// Subscribe to the saved-prompts insert seam so "Сохранённые промпты" can
+	// deliver a prompt straight into this live composer (and so the inserter
+	// knows an in-place target exists while this composer is mounted).
+	useComposerInsertTarget();
 
 	// Focus the prompt when the question overlay dismisses (pendingQuestion → null).
 	// Uses rAF so the editor has time to mount, register its ref, and browser
@@ -286,6 +297,7 @@ export function ChatInputFooter({
 									setSelectedModel={setSelectedModel}
 									modelSelectorOpen={modelSelectorOpen}
 									setModelSelectorOpen={setModelSelectorOpen}
+									unresolvedModelId={unresolvedModelId}
 									permissionMode={permissionMode}
 									setPermissionMode={setPermissionMode}
 									thinkingLevel={thinkingLevel}

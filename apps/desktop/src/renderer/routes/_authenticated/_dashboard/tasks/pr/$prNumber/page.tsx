@@ -10,6 +10,15 @@ import { MarkdownRenderer } from "renderer/components/MarkdownRenderer";
 import { useHostUrl } from "renderer/hooks/host-service/useHostTargetUrl";
 import { useOnlineStatus } from "renderer/hooks/useOnlineStatus";
 import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { ReviewTabContent } from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/hooks/useReviewTab/components/ReviewTabContent";
+import {
+	normalizeReviewDecision,
+	normalizeThreadsToComments,
+} from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/hooks/useReviewTab/normalize";
+import type {
+	NormalizedComment,
+	NormalizedPR,
+} from "renderer/routes/_authenticated/_dashboard/v2-workspace/$workspaceId/components/WorkspaceSidebar/hooks/useReviewTab/types";
 import {
 	normalizePRState,
 	PRIcon,
@@ -20,6 +29,7 @@ import {
 	useNewWorkspaceDraftStore,
 } from "renderer/stores/new-workspace-draft";
 import { useOpenNewWorkspaceModal } from "renderer/stores/new-workspace-modal";
+import { TargetTaskLinks } from "../../components/shared/CrossLinkChips";
 import {
 	classifyGithubError,
 	GithubErrorCard,
@@ -55,11 +65,11 @@ function PullRequestDetailPage() {
 	}, [search]);
 
 	const { data, isLoading, error, refetch } = useQuery({
-		queryKey: ["pull-request-detail", projectId, hostUrl, prNumber],
+		queryKey: ["pull-request-review", projectId, hostUrl, prNumber],
 		queryFn: async () => {
 			if (!hostUrl || !projectId) return null;
 			const client = getHostServiceClientByUrl(hostUrl);
-			return client.pullRequests.getContent.query({
+			return client.pullRequests.getReview.query({
 				projectId,
 				prNumber,
 			});
@@ -69,6 +79,31 @@ function PullRequestDetailPage() {
 		staleTime: 30_000,
 		gcTime: 10 * 60_000,
 	});
+
+	const normalizedPR = useMemo<NormalizedPR | null>(() => {
+		if (!data) return null;
+		return {
+			number: data.number,
+			url: data.url,
+			title: data.title,
+			state: normalizePRState(data.state, data.isDraft),
+			reviewDecision: normalizeReviewDecision(data.reviewDecision),
+			checksStatus: data.checksStatus,
+			checks: data.checks.map((c) => ({
+				name: c.name,
+				status: c.status,
+				url: c.url ?? undefined,
+			})),
+		};
+	}, [data]);
+
+	const comments = useMemo<NormalizedComment[]>(() => {
+		if (!data) return [];
+		return normalizeThreadsToComments({
+			reviewThreads: data.reviewThreads,
+			conversationComments: data.conversationComments,
+		});
+	}, [data]);
 
 	const handleBack = () => {
 		navigate({ to: "/tasks", search: backSearch });
@@ -185,12 +220,34 @@ function PullRequestDetailPage() {
 						)}
 					</div>
 
+					<div className="mb-6">
+						<TargetTaskLinks
+							projectId={projectId}
+							kind="pr"
+							targetNumber={data.number}
+							targetTitle={data.title}
+							targetUrl={data.url}
+						/>
+					</div>
+
 					{data.body.trim() ? (
 						<MarkdownRenderer content={data.body} />
 					) : (
 						<p className="text-sm text-muted-foreground italic">
 							Описание не предоставлено.
 						</p>
+					)}
+
+					{normalizedPR && (
+						<div className="mt-8 border-t border-border pt-4">
+							<ReviewTabContent
+								pr={normalizedPR}
+								comments={comments}
+								isLoading={isLoading}
+								isError={false}
+								isCommentsLoading={isLoading}
+							/>
+						</div>
 					)}
 				</div>
 			</ScrollArea>

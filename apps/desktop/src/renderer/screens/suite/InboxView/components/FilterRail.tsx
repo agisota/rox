@@ -27,6 +27,17 @@ const PRIMARY: readonly RailEntry[] = [
 	{ id: "system", label: "Система", icon: Bell },
 ];
 
+/** Per-entry unread badge: "Все" shows chat unread, "Система" shows system unread. */
+function badgeFor(
+	id: InboxFilter,
+	totalUnread: number,
+	systemUnread: number,
+): number {
+	if (id === "all") return totalUnread;
+	if (id === "system") return systemUnread;
+	return 0;
+}
+
 const SECONDARY: readonly RailEntry[] = [
 	{ id: "snoozed", label: "Сохранённое", icon: Clock },
 	{ id: "archive", label: "Архив", icon: Archive },
@@ -39,6 +50,8 @@ export interface FilterRailProps {
 	onStatusChange: (status: InboxStatusFilter) => void;
 	/** Total unread, shown as a glass pill on "Все". */
 	totalUnread: number;
+	/** Unread system events, shown as a glass pill on "Система". */
+	systemUnread: number;
 }
 
 /**
@@ -53,6 +66,7 @@ export function FilterRail({
 	status,
 	onStatusChange,
 	totalUnread,
+	systemUnread,
 }: FilterRailProps) {
 	return (
 		<nav
@@ -64,7 +78,7 @@ export function FilterRail({
 					key={entry.id}
 					entry={entry}
 					active={filter === entry.id}
-					badge={entry.id === "all" ? totalUnread : 0}
+					badge={badgeFor(entry.id, totalUnread, systemUnread)}
 					onClick={() => onFilterChange(entry.id)}
 				/>
 			))}

@@ -1,5 +1,5 @@
+export { findLatestAssistantErrorMessage } from "renderer/components/Chat/ChatInterface/transport";
 export {
-	findLatestAssistantErrorMessage,
 	type UseChatDisplayReturn,
 	useChatDisplay,
 } from "./useWorkspaceChatDisplay";

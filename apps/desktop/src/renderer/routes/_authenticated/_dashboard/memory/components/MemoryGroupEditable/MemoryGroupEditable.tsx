@@ -7,6 +7,7 @@ import { HiOutlinePlus } from "react-icons/hi2";
 import { authClient } from "renderer/lib/auth-client";
 import { useCollections } from "renderer/routes/_authenticated/providers/CollectionsProvider";
 import { DEFAULT_MEMORIES } from "renderer/screens/memory/MemoryView/default-memories";
+import type { SimilarityCluster } from "../../lib/similarity";
 import { MemoryRow } from "../MemoryRow";
 
 interface MemoryGroupEditableProps {
@@ -22,6 +23,8 @@ interface MemoryGroupEditableProps {
 	isReady: boolean;
 	/** Id to pulse once after a command-palette jump. */
 	flashId?: string | null;
+	/** Open the merge sheet for a detected near-duplicate cluster. */
+	onShowSimilar?: (cluster: SimilarityCluster) => void;
 }
 
 /**
@@ -38,6 +41,7 @@ export function MemoryGroupEditable({
 	items,
 	isReady,
 	flashId,
+	onShowSimilar,
 }: MemoryGroupEditableProps) {
 	const collections = useCollections();
 	const { data: session } = authClient.useSession();
@@ -98,7 +102,12 @@ export function MemoryGroupEditable({
 				<MotionList className="mb-3 space-y-1.5">
 					{items.map((item) => (
 						<MotionListItem key={item.id}>
-							<MemoryRow item={item} flash={flashId === item.id} />
+							<MemoryRow
+								item={item}
+								flash={flashId === item.id}
+								similarCandidates={items}
+								onShowSimilar={onShowSimilar}
+							/>
 						</MotionListItem>
 					))}
 				</MotionList>

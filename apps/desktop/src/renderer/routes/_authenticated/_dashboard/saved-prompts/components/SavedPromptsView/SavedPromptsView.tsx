@@ -1,3 +1,18 @@
+import {
+	closestCenter,
+	DndContext,
+	type DragEndEvent,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Button } from "@rox/ui/button";
 import { Input } from "@rox/ui/input";
 import { Kbd } from "@rox/ui/kbd";
@@ -26,8 +41,7 @@ import { useVariableCache } from "../../lib/use-variable-cache";
 import { hasVariables, renderPrompt } from "../../lib/variables";
 import type { DefaultPrompt } from "./default-prompts";
 import { EmptySeedGallery } from "./EmptySeedGallery";
-import { LeftRail } from "./LeftRail";
-import { PromptCard } from "./PromptCard";
+import { folderFromDroppableId, LeftRail } from "./LeftRail";
 import {
 	type EditorState,
 	PromptEditorDialog,
@@ -35,6 +49,7 @@ import {
 } from "./PromptEditorDialog";
 import { QuickPicker } from "./QuickPicker";
 import { SkeletonCards } from "./SkeletonCards";
+import { SortablePromptRow } from "./SortablePromptRow";
 import { TagFilterRow } from "./TagFilterRow";
 import {
 	VariableFillDrawer,
@@ -58,10 +73,21 @@ const listFade = {
 	transition: { duration: motionDuration.base, ease: ease.standard },
 } as const;
 
+/** Manual-order comparator: explicit `position` first (nulls last), then recency. */
+function byManualOrder(a: PromptEntry, b: PromptEntry): number {
+	const pa = a.position;
+	const pb = b.position;
+	if (pa !== null && pb !== null) return pa - pb;
+	if (pa !== null) return -1;
+	if (pb !== null) return 1;
+	return b.updatedAt - a.updatedAt;
+}
+
 export function SavedPromptsView() {
 	const {
 		entries,
 		allTags,
+		allFolders,
 		isLoading,
 		isError,
 		refetch,
@@ -69,6 +95,8 @@ export function SavedPromptsView() {
 		updatePrompt,
 		deletePrompt,
 		toggleFavorite,
+		moveToFolder,
+		reorder,
 		incrementUse,
 		isCreating,
 		isUpdating,
@@ -86,9 +114,18 @@ export function SavedPromptsView() {
 	const [editor, setEditor] = useState<EditorState>({ mode: "closed" });
 	const [fillTarget, setFillTarget] = useState<VariableFillTarget | null>(null);
 	const [pickerOpen, setPickerOpen] = useState(false);
+	/** Local optimistic order applied while a reorder write is in flight. */
+	const [orderOverride, setOrderOverride] = useState<string[] | null>(null);
 
 	const searchRef = useRef<HTMLInputElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
+	);
 
 	// ── Derived counts for the rail ──────────────────────────────────────────
 	const favoriteCount = useMemo(
@@ -104,6 +141,14 @@ export function SavedPromptsView() {
 			).length,
 		[entries],
 	);
+	const frequentCount = useMemo(
+		() => entries.filter((entry) => entry.useCount > 0).length,
+		[entries],
+	);
+	const unfiledCount = useMemo(
+		() => entries.filter((entry) => entry.folder === null).length,
+		[entries],
+	);
 	const tagCounts = useMemo(() => {
 		const counts = new Map<string, number>();
 		for (const entry of entries) {
@@ -113,6 +158,17 @@ export function SavedPromptsView() {
 		}
 		return allTags.map((tag) => ({ tag, count: counts.get(tag) ?? 0 }));
 	}, [entries, allTags]);
+	const folderCounts = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const entry of entries) {
+			if (entry.folder)
+				counts.set(entry.folder, (counts.get(entry.folder) ?? 0) + 1);
+		}
+		return allFolders.map((folder) => ({
+			folder,
+			count: counts.get(folder) ?? 0,
+		}));
+	}, [entries, allFolders]);
 
 	// ── Filter → search → sort pipeline ──────────────────────────────────────
 	const railFiltered = useMemo(() => {
@@ -123,8 +179,18 @@ export function SavedPromptsView() {
 				return entries
 					.filter((entry) => entry.lastUsedAt !== null)
 					.sort((a, b) => (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0));
+			case "frequent":
+				return entries
+					.filter((entry) => entry.useCount > 0)
+					.sort((a, b) => b.useCount - a.useCount);
 			case "tag":
 				return entries.filter((entry) => entry.tags.includes(railFilter.tag));
+			case "folder":
+				return entries.filter((entry) =>
+					railFilter.folder === ""
+						? entry.folder === null
+						: entry.folder === railFilter.folder,
+				);
 			default:
 				return entries;
 		}
@@ -143,16 +209,41 @@ export function SavedPromptsView() {
 		[search, deferredQuery],
 	);
 
-	// Favorites first only on the default/"all" view (recent keeps its order).
+	// Manual drag-order is only meaningful on a plain (unsearched, untag-filtered)
+	// rail view. Recent/frequent keep their own sort; search keeps relevance.
+	const isManualOrder =
+		(railFilter.kind === "all" || railFilter.kind === "folder") &&
+		selectedTags.length === 0 &&
+		deferredQuery.trim().length === 0;
+
 	const visiblePrompts = useMemo(() => {
-		if (railFilter.kind === "recent" || deferredQuery.trim().length > 0) {
-			return searched;
+		if (!isManualOrder) return searched;
+		const sorted = [...searched].sort(byManualOrder);
+		if (orderOverride === null) return sorted;
+		const byId = new Map(sorted.map((entry) => [entry.id, entry]));
+		const ordered = orderOverride
+			.map((id) => byId.get(id))
+			.filter((entry): entry is PromptEntry => entry !== undefined);
+		// Append any not covered by the override (e.g. freshly created).
+		for (const entry of sorted) {
+			if (!orderOverride.includes(entry.id)) ordered.push(entry);
 		}
-		return [...searched].sort((a, b) => {
-			if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
-			return b.updatedAt - a.updatedAt;
-		});
-	}, [searched, railFilter, deferredQuery]);
+		return ordered;
+	}, [searched, isManualOrder, orderOverride]);
+
+	const visibleIds = useMemo(
+		() => visiblePrompts.map((entry) => entry.id),
+		[visiblePrompts],
+	);
+
+	// Drop the optimistic override once the server data reflects it.
+	useEffect(() => {
+		if (orderOverride === null) return;
+		const settled =
+			orderOverride.length === visibleIds.length &&
+			orderOverride.every((id, index) => visibleIds[index] === id);
+		if (settled) setOrderOverride(null);
+	}, [orderOverride, visibleIds]);
 
 	// ── Virtualization ───────────────────────────────────────────────────────
 	const rowHeight = density === "compact" ? 96 : 132;
@@ -165,8 +256,8 @@ export function SavedPromptsView() {
 
 	// ── Insert / copy with variable handling ─────────────────────────────────
 	const finishInsert = useCallback(
-		(prompt: PromptEntry, text: string) => {
-			const outcome = insert(text);
+		(prompt: PromptEntry, text: string, cursor: number | null = null) => {
+			const outcome = insert({ text, cursor });
 			incrementUse(prompt);
 			if (outcome.mode === "in-place") {
 				toast.success("Промпт вставлен");
@@ -193,7 +284,8 @@ export function SavedPromptsView() {
 				setFillTarget({ prompt, action: "insert" });
 				return;
 			}
-			finishInsert(prompt, renderPrompt(prompt.body, {}).text);
+			const { text, cursor } = renderPrompt(prompt.body, {});
+			finishInsert(prompt, text, cursor);
 		},
 		[finishInsert],
 	);
@@ -214,10 +306,11 @@ export function SavedPromptsView() {
 			target: VariableFillTarget,
 			renderedText: string,
 			values: Record<string, string>,
+			cursor: number | null,
 		) => {
 			variableCache.write(target.prompt.id, values);
 			if (target.action === "insert") {
-				finishInsert(target.prompt, renderedText);
+				finishInsert(target.prompt, renderedText, cursor);
 			} else {
 				finishCopy(target.prompt, renderedText);
 			}
@@ -238,6 +331,7 @@ export function SavedPromptsView() {
 					id: submit.id,
 					title: submit.title,
 					body: submit.body,
+					folder: submit.folder,
 					tags: submit.tags,
 					favorite: submit.favorite,
 				}).then(onDone("Промпт обновлён"));
@@ -245,6 +339,7 @@ export function SavedPromptsView() {
 				void createPrompt({
 					title: submit.title,
 					body: submit.body,
+					folder: submit.folder,
 					tags: submit.tags,
 					favorite: submit.favorite,
 				}).then(onDone("Промпт сохранён"));
@@ -259,6 +354,7 @@ export function SavedPromptsView() {
 			seed: {
 				title: `${prompt.title} (копия)`,
 				body: prompt.body,
+				folder: prompt.folder,
 				tags: prompt.tags,
 				favorite: false,
 			},
@@ -272,6 +368,53 @@ export function SavedPromptsView() {
 			);
 		},
 		[createPrompt],
+	);
+
+	const handleCreateFolder = useCallback((folder: string) => {
+		setRailFilter({ kind: "folder", folder });
+		setEditor({
+			mode: "create",
+			seed: { title: "", body: "", folder, tags: [], favorite: false },
+		});
+	}, []);
+
+	const handleMoveToFolder = useCallback(
+		(prompt: PromptEntry, folder: string | null) => {
+			void moveToFolder(prompt, folder).then(() =>
+				toast.success(folder ? `Перемещено в «${folder}»` : "Убрано из папки"),
+			);
+		},
+		[moveToFolder],
+	);
+
+	// ── Drag-and-drop: reorder (over a card) or file (over a folder rail) ─────
+	const handleDragEnd = useCallback(
+		(event: DragEndEvent) => {
+			const { active, over } = event;
+			if (!over) return;
+			const activeId = String(active.id);
+			const overId = String(over.id);
+
+			// Dropped onto a folder rail → file the prompt there.
+			const targetFolder = folderFromDroppableId(overId);
+			if (targetFolder !== undefined) {
+				const prompt = entries.find((entry) => entry.id === activeId);
+				if (prompt && prompt.folder !== targetFolder) {
+					handleMoveToFolder(prompt, targetFolder);
+				}
+				return;
+			}
+
+			// Dropped onto another card → reorder (manual layouts only).
+			if (!isManualOrder || activeId === overId) return;
+			const oldIndex = visibleIds.indexOf(activeId);
+			const newIndex = visibleIds.indexOf(overId);
+			if (oldIndex < 0 || newIndex < 0) return;
+			const nextOrder = arrayMove(visibleIds, oldIndex, newIndex);
+			setOrderOverride(nextOrder);
+			void reorder(nextOrder);
+		},
+		[entries, isManualOrder, visibleIds, reorder, handleMoveToFolder],
 	);
 
 	// ── Cmd/Ctrl+K quick-picker + ⌘F search focus ────────────────────────────
@@ -309,172 +452,191 @@ export function SavedPromptsView() {
 
 	return (
 		<DashboardSurface bare>
-			<div className="flex h-full w-full min-h-0 flex-col overflow-hidden">
-				{/* Header */}
-				<header className="flex flex-col gap-3 border-b border-border px-6 py-4">
-					<div className="flex items-start justify-between gap-3">
-						<div className="min-w-0">
-							<h1 className="text-lg font-semibold text-foreground">
-								Сохранённые промпты
-							</h1>
-							<p className="text-sm text-muted-foreground">
-								Библиотека готовых промптов — переиспользуйте их в любом чате.
-							</p>
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCenter}
+				onDragEnd={handleDragEnd}
+			>
+				<div className="flex h-full w-full min-h-0 flex-col overflow-hidden">
+					{/* Header */}
+					<header className="flex flex-col gap-3 border-b border-border px-6 py-4">
+						<div className="flex items-start justify-between gap-3">
+							<div className="min-w-0">
+								<h1 className="text-lg font-semibold text-foreground">
+									Сохранённые промпты
+								</h1>
+								<p className="text-sm text-muted-foreground">
+									Библиотека готовых промптов — переиспользуйте их в любом чате.
+								</p>
+							</div>
+							<div className="flex shrink-0 items-center gap-2">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="outline"
+											onClick={() => setPickerOpen(true)}
+											className="gap-2"
+										>
+											<LuSearch className="size-4" />
+											<Kbd>⌘K</Kbd>
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Быстрый выбор промпта</TooltipContent>
+								</Tooltip>
+								<Button onClick={() => setEditor({ mode: "create" })}>
+									<LuPlus className="size-4" />
+									Новый промпт
+								</Button>
+							</div>
 						</div>
-						<div className="flex shrink-0 items-center gap-2">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										variant="outline"
-										onClick={() => setPickerOpen(true)}
-										className="gap-2"
-									>
-										<LuSearch className="size-4" />
-										<Kbd>⌘K</Kbd>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>Быстрый выбор промпта</TooltipContent>
-							</Tooltip>
-							<Button onClick={() => setEditor({ mode: "create" })}>
-								<LuPlus className="size-4" />
-								Новый промпт
-							</Button>
-						</div>
-					</div>
 
-					<div className="flex items-center gap-2">
-						<div className="relative flex-1">
-							<LuSearch className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-							<Input
-								ref={searchRef}
-								placeholder="Поиск по названию, тексту и тегам…"
-								value={query}
-								onChange={(event) => setQuery(event.target.value)}
-								onKeyDown={(event) => {
-									if (event.key === "Escape") setQuery("");
-								}}
-								className="pl-8"
-							/>
-						</div>
-						<DensityToggle density={density} onChange={setDensity} />
-					</div>
-				</header>
-
-				{/* Two-pane body */}
-				<div className="flex min-h-0 flex-1 overflow-hidden">
-					{hasPrompts && (
-						<LeftRail
-							filter={railFilter}
-							onFilterChange={setRailFilter}
-							totalCount={entries.length}
-							favoriteCount={favoriteCount}
-							recentCount={recentCount}
-							tags={tagCounts}
-						/>
-					)}
-
-					<div className="flex min-h-0 min-w-0 flex-1 flex-col">
-						{hasPrompts && allTags.length > 0 && (
-							<div className="border-b border-border">
-								<TagFilterRow
-									tags={allTags}
-									selected={selectedTags}
-									onToggle={toggleTag}
-									onClear={() => setSelectedTags([])}
+						<div className="flex items-center gap-2">
+							<div className="relative flex-1">
+								<LuSearch className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+								<Input
+									ref={searchRef}
+									placeholder="Поиск по названию, тексту и тегам…"
+									value={query}
+									onChange={(event) => setQuery(event.target.value)}
+									onKeyDown={(event) => {
+										if (event.key === "Escape") setQuery("");
+									}}
+									className="pl-8"
 								/>
 							</div>
+							<DensityToggle density={density} onChange={setDensity} />
+						</div>
+					</header>
+
+					{/* Two-pane body */}
+					<div className="flex min-h-0 flex-1 overflow-hidden">
+						{hasPrompts && (
+							<LeftRail
+								filter={railFilter}
+								onFilterChange={setRailFilter}
+								totalCount={entries.length}
+								favoriteCount={favoriteCount}
+								recentCount={recentCount}
+								frequentCount={frequentCount}
+								unfiledCount={unfiledCount}
+								tags={tagCounts}
+								folders={folderCounts}
+								onCreateFolder={handleCreateFolder}
+							/>
 						)}
 
-						<div
-							ref={scrollRef}
-							className="min-h-0 flex-1 overflow-y-auto px-6 py-4"
-						>
-							{isError ? (
-								<ErrorBanner onRetry={() => void refetch()} />
-							) : isLoading ? (
-								<SkeletonCards />
-							) : !hasPrompts ? (
-								<EmptySeedGallery
-									saving={isCreating}
-									onSave={handleSeedSave}
-									onInsert={(example) => {
-										const outcome = insert(example.body);
-										if (outcome.mode === "in-place") {
-											toast.success("Промпт вставлен");
-										} else {
-											void copyToClipboard(example.body);
-											toast.success(
-												"Промпт скопирован — откройте чат, чтобы вставить",
-											);
-										}
-									}}
-									onCopy={(example) => {
-										void copyToClipboard(example.body);
-										toast.success("Скопировано в буфер обмена");
-									}}
-								/>
-							) : noResults ? (
-								<NoResults onClear={clearFilters} />
-							) : (
-								<div
-									style={{
-										height: virtualizer.getTotalSize(),
-										position: "relative",
-										width: "100%",
-									}}
-								>
-									{/*
-									 * Virtualized rows own their vertical placement via an inline
-									 * `translateY`, so we deliberately do NOT use MotionList/
-									 * MotionListItem here (their `y` stagger would fight the
-									 * positioning transform). Each card fades in via an
-									 * opacity-only entrance that leaves the transform untouched.
-									 */}
-									{virtualizer.getVirtualItems().map((virtualRow) => {
-										const prompt = visiblePrompts[virtualRow.index];
-										return (
-											<motion.div
-												key={prompt.id}
-												data-index={virtualRow.index}
-												ref={virtualizer.measureElement}
-												initial={listFade.initial}
-												animate={listFade.animate}
-												transition={listFade.transition}
-												style={{
-													position: "absolute",
-													top: 0,
-													left: 0,
-													width: "100%",
-													transform: `translateY(${virtualRow.start}px)`,
-												}}
-												className="pb-2"
-											>
-												<PromptCard
-													prompt={prompt}
-													onInsert={handleInsert}
-													onCopy={handleCopy}
-													onEdit={(target) =>
-														setEditor({ mode: "edit", prompt: target })
-													}
-													onDelete={(target) => deletePrompt(target.id)}
-													onDuplicate={handleDuplicate}
-													onToggleFavorite={(target) =>
-														void toggleFavorite(target)
-													}
-												/>
-											</motion.div>
-										);
-									})}
+						<div className="flex min-h-0 min-w-0 flex-1 flex-col">
+							{hasPrompts && allTags.length > 0 && (
+								<div className="border-b border-border">
+									<TagFilterRow
+										tags={allTags}
+										selected={selectedTags}
+										onToggle={toggleTag}
+										onClear={() => setSelectedTags([])}
+									/>
 								</div>
 							)}
+
+							<div
+								ref={scrollRef}
+								className="min-h-0 flex-1 overflow-y-auto px-6 py-4"
+							>
+								{isError ? (
+									<ErrorBanner onRetry={() => void refetch()} />
+								) : isLoading ? (
+									<SkeletonCards />
+								) : !hasPrompts ? (
+									<EmptySeedGallery
+										saving={isCreating}
+										onSave={handleSeedSave}
+										onInsert={(example) => {
+											const outcome = insert(example.body);
+											if (outcome.mode === "in-place") {
+												toast.success("Промпт вставлен");
+											} else {
+												void copyToClipboard(example.body);
+												toast.success(
+													"Промпт скопирован — откройте чат, чтобы вставить",
+												);
+											}
+										}}
+										onCopy={(example) => {
+											void copyToClipboard(example.body);
+											toast.success("Скопировано в буфер обмена");
+										}}
+									/>
+								) : noResults ? (
+									<NoResults onClear={clearFilters} />
+								) : (
+									<SortableContext
+										items={visibleIds}
+										strategy={verticalListSortingStrategy}
+									>
+										<div
+											style={{
+												height: virtualizer.getTotalSize(),
+												position: "relative",
+												width: "100%",
+											}}
+										>
+											{/*
+											 * Virtualized rows own their vertical placement via an
+											 * inline `translateY`. Each row fades in via an
+											 * opacity-only entrance that leaves the transform
+											 * untouched; the sortable wrapper layers its own drag
+											 * transform on top only while dragging.
+											 */}
+											{virtualizer.getVirtualItems().map((virtualRow) => {
+												const prompt = visiblePrompts[virtualRow.index];
+												return (
+													<motion.div
+														key={prompt.id}
+														data-index={virtualRow.index}
+														ref={virtualizer.measureElement}
+														initial={listFade.initial}
+														animate={listFade.animate}
+														transition={listFade.transition}
+														style={{
+															position: "absolute",
+															top: 0,
+															left: 0,
+															width: "100%",
+															transform: `translateY(${virtualRow.start}px)`,
+														}}
+														className="pb-2"
+													>
+														<SortablePromptRow
+															prompt={prompt}
+															sortable={isManualOrder}
+															availableFolders={allFolders}
+															onInsert={handleInsert}
+															onCopy={handleCopy}
+															onEdit={(target) =>
+																setEditor({ mode: "edit", prompt: target })
+															}
+															onDelete={(target) => deletePrompt(target.id)}
+															onDuplicate={handleDuplicate}
+															onToggleFavorite={(target) =>
+																void toggleFavorite(target)
+															}
+															onMoveToFolder={handleMoveToFolder}
+														/>
+													</motion.div>
+												);
+											})}
+										</div>
+									</SortableContext>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			</DndContext>
 
 			<PromptEditorDialog
 				state={editor}
 				saving={isCreating || isUpdating}
+				availableFolders={allFolders}
 				onClose={() => setEditor({ mode: "closed" })}
 				onSubmit={handleEditorSubmit}
 			/>

@@ -9,6 +9,7 @@ import { electronQueryClient } from "renderer/providers/ElectronTRPCProvider";
 import { SessionObjectLinkLauncher } from "renderer/routes/_authenticated/components/ProjectObjectGraph";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import type { SplitPaneOptions, Tab } from "renderer/stores/tabs/types";
+import { isNewChatName, NEW_CHAT_NAME } from "renderer/stores/tabs/utils";
 import { TabContentContextMenu } from "../../TabContentContextMenu";
 import { BasePaneWindow, PaneToolbarActions } from "../components";
 import { ChatPaneInterface } from "./ChatPaneInterface";
@@ -67,7 +68,7 @@ export function ChatPane({
 }: ChatPaneProps) {
 	const isFocused = useTabsStore((s) => s.focusedPaneIds[tabId] === paneId);
 	const equalizePaneSplits = useTabsStore((s) => s.equalizePaneSplits);
-	const paneName = useTabsStore((s) => s.panes[paneId]?.name ?? "New Chat");
+	const paneName = useTabsStore((s) => s.panes[paneId]?.name ?? NEW_CHAT_NAME);
 	const setTabAutoTitle = useTabsStore((s) => s.setTabAutoTitle);
 	const setPaneAutoTitle = useTabsStore((s) => s.setPaneAutoTitle);
 	const {
@@ -135,11 +136,11 @@ export function ChatPane({
 			const tabName = tab?.name?.trim() ?? "";
 			const hasCustomTabTitle = Boolean(tab?.userTitle?.trim());
 			const shouldSetPaneTitle =
-				paneName.length === 0 || paneName === "New Chat";
+				paneName.length === 0 || isNewChatName(paneName);
 			const shouldSetTabTitle =
 				!hasCustomTabTitle &&
 				(tabName.length === 0 ||
-					tabName === "New Chat" ||
+					isNewChatName(tabName) ||
 					(tabPaneCount === 1 && pane?.type === "chat"));
 
 			if (shouldSetPaneTitle) {

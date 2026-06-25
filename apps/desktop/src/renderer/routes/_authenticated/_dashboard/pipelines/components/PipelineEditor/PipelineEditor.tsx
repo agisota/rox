@@ -25,12 +25,13 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
+import type { PipelineTemplate } from "../templates";
 import { autoLayoutGraph } from "./auto-layout";
 import {
+	defaultLabelForType,
 	flowToState,
 	type PipelineFlowEdge,
 	type PipelineFlowNode,
-	type PipelineNodeKind,
 	stateToEdges,
 	stateToNodes,
 } from "./graph-adapter";
@@ -42,6 +43,11 @@ import { RoleLibraryPanel } from "./RoleLibraryPanel";
 import { RunMonitorPanel } from "./RunMonitorPanel";
 import { ToolbarRunButton } from "./ToolbarRunButton";
 import { TriggerConfigPanel } from "./TriggerConfigPanel";
+import {
+	buildTemplateFromState,
+	insertTemplate,
+	isEmptyCanvas,
+} from "./templateGraph";
 import { useGraphHistory } from "./useGraphHistory";
 import { useRunTrace } from "./useRunTrace";
 
@@ -69,26 +75,19 @@ type AddNodeOptions = {
 	autoConnect?: boolean;
 };
 
-/** Generate a unique block id for a freshly-added node. */
-function newBlockId(kind: PipelineNodeKind): string {
-	const stamp = Math.random().toString(36).slice(2, 8);
-	return `${kind}_${stamp}`;
+/** Kebab-case slug seed from a free-form template name (RU-friendly, ascii-only). */
+function slugifyName(name: string): string {
+	return name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 48);
 }
 
-/** Default RU label for a node kind. */
-function defaultLabel(kind: PipelineNodeKind): string {
-	switch (kind) {
-		case "agent_run":
-			return "Агент";
-		case "loop":
-			return "Цикл";
-		case "human_approval":
-			return "Подтверждение";
-		case "response":
-			return "Финал";
-		default:
-			return "Узел";
-	}
+/** Generate a unique block id for a freshly-added node of the given type. */
+function newBlockId(type: string): string {
+	const stamp = Math.random().toString(36).slice(2, 8);
+	return `${type}_${stamp}`;
 }
 
 /** Whether a block is enabled (mirrors validateGraph's reachability predicate). */
@@ -328,9 +327,9 @@ export function PipelineEditor({
 	);
 
 	const addNode = useCallback(
-		(kind: PipelineNodeKind, opts: AddNodeOptions = {}) => {
+		(type: string, opts: AddNodeOptions = {}) => {
 			const prev = graphRef.current;
-			const id = newBlockId(kind);
+			const id = newBlockId(type);
 			const count = Object.keys(prev.blocks).length;
 			const autoConnect = opts.autoConnect ?? true;
 			const anchor = autoConnect ? pickAnchorBlockId(prev) : null;
@@ -343,8 +342,8 @@ export function PipelineEditor({
 				blocks: {
 					...prev.blocks,
 					[id]: {
-						type: kind,
-						name: opts.label ?? defaultLabel(kind),
+						type,
+						name: opts.label ?? defaultLabelForType(type),
 						position,
 						subBlocks: opts.roleSlug ? { roleSlug: opts.roleSlug } : undefined,
 					},
@@ -377,21 +376,21 @@ export function PipelineEditor({
 	// Drop from palette/role-library: place at the cursor + auto-connect.
 	const handleDropNode = useCallback(
 		(
-			kind: PipelineNodeKind,
+			type: string,
 			position: { x: number; y: number },
 			roleSlug?: string,
 			label?: string,
 		) => {
-			addNode(kind, { position, roleSlug, label, autoConnect: true });
+			addNode(type, { position, roleSlug, label, autoConnect: true });
 		},
 		[addNode],
 	);
 
 	// cmdk palette pick: place at the viewport centre + auto-connect.
 	const handlePalettePick = useCallback(
-		(kind: PipelineNodeKind, roleSlug?: string, label?: string) => {
+		(type: string, roleSlug?: string, label?: string) => {
 			const center = canvasHandle.current?.getViewportCenter();
-			addNode(kind, {
+			addNode(type, {
 				roleSlug,
 				label,
 				position: center,
@@ -399,6 +398,50 @@ export function PipelineEditor({
 			});
 		},
 		[addNode],
+	);
+
+	// Apply a template from the gallery. An EMPTY canvas (start only) is replaced
+	// wholesale (the template keeps its own start); a NON-EMPTY canvas gets the
+	// template inserted as a subgraph — id-remapped, position-offset, and wired
+	// onto the current reachable frontier so existing nodes are never disturbed
+	// and the graph keeps a single start (issue #551 acceptance). Re-seeds + fits.
+	const handleApplyTemplate = useCallback(
+		(template: RoxWorkflowState) => {
+			const prev = graphRef.current;
+			const next = isEmptyCanvas(prev)
+				? template
+				: insertTemplate(prev, template, pickAnchorBlockId(prev)).state;
+			history.record(prev);
+			graphRef.current = next;
+			setGraph(next);
+			persist(next);
+			setSelectedNodeId(null);
+			setReseedKey((k) => k + 1);
+			requestAnimationFrame(() => canvasHandle.current?.fitView());
+		},
+		[history, persist],
+	);
+
+	// "Save as template": serialise the current graph into a session-local
+	// PipelineTemplate (builder, not hard-code) and surface it in the gallery's
+	// "Мои шаблоны" section so it can be re-inserted into any canvas.
+	const [savedTemplates, setSavedTemplates] = useState<PipelineTemplate[]>([]);
+	const handleSaveAsTemplate = useCallback(
+		(meta: { name: string; description: string }) => {
+			const slugSeed =
+				slugifyName(meta.name) || `template-${Date.now().toString(36)}`;
+			const template = buildTemplateFromState(graphRef.current, {
+				id: `saved-${Date.now().toString(36)}`,
+				name: meta.name,
+				description: meta.description,
+				slugSeed,
+				category: "Мои шаблоны",
+				icon: "Bookmark",
+			});
+			setSavedTemplates((prev) => [template, ...prev]);
+			toast.success(`Шаблон «${meta.name}» сохранён`);
+		},
+		[],
 	);
 
 	// Auto-layout: dagre LR reposition, re-seed the canvas, then fit.
@@ -554,12 +597,16 @@ export function PipelineEditor({
 							nodes={nodes}
 							edges={edges}
 							selectedNodeId={selectedNodeId}
+							v2ProjectId={v2ProjectId}
 							onSelectNode={setSelectedNodeId}
 							onGraphChange={handleGraphChange}
-							onAddNode={(kind) => addNode(kind)}
+							onAddNode={(type, opts) => addNode(type, opts)}
 							onDropNode={handleDropNode}
 							onOpenPalette={() => setPaletteOpen(true)}
 							onAutoLayout={handleAutoLayout}
+							onApplyTemplate={handleApplyTemplate}
+							savedTemplates={savedTemplates}
+							onSaveAsTemplate={handleSaveAsTemplate}
 							handleRef={canvasHandle}
 							showEmptyHint={showEmptyHint}
 							reseedKey={reseedKey}

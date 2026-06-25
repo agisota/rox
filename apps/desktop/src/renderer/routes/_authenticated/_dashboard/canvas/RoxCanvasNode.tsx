@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Lock } from "lucide-react";
 import type { RoxFlowNode } from "./canvasFlowAdapter";
 import { getCanvasNodeMeta } from "./canvasNodeMeta";
+import { RefNodePreview } from "./RefNodePreview";
 
 const HANDLE_CLASS =
 	"!size-2.5 !rounded-full !border-[1.5px] !border-background !bg-[var(--sidebar-primary)]";
@@ -18,6 +19,47 @@ export function RoxCanvasNode({ data, selected }: NodeProps<RoxFlowNode>) {
 	const meta = getCanvasNodeMeta(data.nodeType);
 	const Icon = meta.icon;
 	const isRef = Boolean(data.refType);
+	const isFreeform = data.nodeType === "freeform" && Boolean(data.freeformPath);
+
+	if (isFreeform && data.freeformPath && data.freeformViewBox) {
+		return (
+			<motion.div
+				initial={{ opacity: 0, scale: 0.96 }}
+				animate={{ opacity: 1, scale: 1 }}
+				exit={{ opacity: 0, scale: 0.96 }}
+				transition={{ duration: 0.18, ease: "easeOut" }}
+				className={cn(
+					"group relative h-full w-full",
+					selected &&
+						"rounded-md shadow-[0_0_0_2px_var(--sidebar-primary)] outline-none",
+				)}
+				data-canvas-node-id={data.canvasNodeId}
+				data-testid="canvas-flow-node"
+				data-node-type="freeform"
+			>
+				<NodeResizer
+					color="var(--sidebar-primary)"
+					isVisible={selected && !data.locked}
+					keepAspectRatio
+					minHeight={24}
+					minWidth={24}
+				/>
+				<svg
+					className="pointer-events-none h-full w-full"
+					viewBox={`0 0 ${data.freeformViewBox.width} ${data.freeformViewBox.height}`}
+					preserveAspectRatio="none"
+					role="img"
+					aria-label="Рисунок на холсте"
+				>
+					<title>Рисунок на холсте</title>
+					<path
+						d={data.freeformPath}
+						fill={data.freeformColor ?? "var(--sidebar-primary)"}
+					/>
+				</svg>
+			</motion.div>
+		);
+	}
 
 	return (
 		<motion.div
@@ -72,7 +114,11 @@ export function RoxCanvasNode({ data, selected }: NodeProps<RoxFlowNode>) {
 					<h3 className="line-clamp-2 font-mono font-semibold text-foreground text-sm leading-snug">
 						{data.title}
 					</h3>
-					{data.body ? (
+					{isRef ? (
+						<div className="mt-1.5 min-h-0 flex-1">
+							<RefNodePreview data={data} />
+						</div>
+					) : data.body ? (
 						<p className="mt-1.5 line-clamp-3 text-muted-foreground text-xs leading-relaxed">
 							{data.body}
 						</p>

@@ -33,6 +33,27 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "default" }],
 		risk: "none",
 	}),
+	defineBlock("merge", {
+		label: "Merge",
+		description: "Joins multiple branches into one object.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }],
+		risk: "none",
+	}),
+	defineBlock("gate", {
+		label: "Gate",
+		description: "Routes the input to one of N outputs by predicate.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "default" }],
+		risk: "none",
+	}),
+	defineBlock("route", {
+		label: "Route",
+		description: "Routes the input to one of N outputs by predicate.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "default" }],
+		risk: "none",
+	}),
 	defineBlock("loop", {
 		label: "Loop",
 		description: "Iterates a sub-graph.",
@@ -83,6 +104,150 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		inputs: [{ name: "in" }],
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "high",
+	}),
+	defineBlock("model", {
+		label: "Model",
+		description:
+			"Single LLM call (system + user prompt) without an agent role; returns generated text + usage.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("http_request", {
+		label: "HTTP Request",
+		description:
+			"Calls an external HTTP(S) endpoint (method, url, headers, body) with SSRF protection; returns status, headers, and body.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
+	defineBlock("transform", {
+		label: "Transform",
+		description:
+			"Reshapes the payload: render a template string or map output fields from safe expressions over the input.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "none",
+	}),
+	defineBlock("parser", {
+		label: "Parser",
+		description:
+			"Parses an input string (JSON / CSV / regex-extract) into structured data; parse failures route to error.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "none",
+	}),
+	defineBlock("variable_set", {
+		label: "Variable Set",
+		description:
+			"Writes a named value (literal or expression) onto the flowing context for downstream nodes.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "none",
+	}),
+	defineBlock("knowledge_retrieval", {
+		label: "Knowledge Retrieval",
+		description:
+			"RAG retrieval: fetches the most relevant chunks from a bound knowledge base for a query (top-K); returns the retrieved chunks + their source documents.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("db_query", {
+		label: "DB Query",
+		description:
+			"Runs a parametrized read-only SELECT against the org-scoped database (DDL/DML rejected); returns the matched rows.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
+	defineBlock("db_write", {
+		label: "DB Write",
+		description:
+			"Runs a parametrized INSERT/UPDATE/DELETE against the org-scoped database in a transaction (rolled back on error); returns affected row count.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "high",
+	}),
+	defineBlock("tool_call", {
+		label: "Tool Call",
+		description:
+			"Invokes a registered project tool by id with an arguments map; returns the tool result.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
+	defineBlock("mcp_tool", {
+		label: "MCP Tool",
+		description:
+			"Calls a tool exposed by a bound MCP server with an arguments map; returns the tool result.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
+	defineBlock("web_search", {
+		label: "Web Search",
+		description:
+			"Runs a query against the configured web-search provider and returns the top results.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("embedding", {
+		label: "Embedding",
+		description:
+			"Embeds the input text into a fixed-dimension vector via the project's embedding provider; returns the vector + its dimensions.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("classifier", {
+		label: "Classifier",
+		description:
+			"Zero-shot LLM classification of the input text into one of the configured labels; returns the chosen label + score and routes by class.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("structured_extract", {
+		label: "Structured Extract",
+		description:
+			"LLM call with forced JSON output validated against the configured JSON schema; valid data goes to `out`, schema violations route to `error`.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
+	}),
+	defineBlock("manual_input", {
+		label: "Manual Input",
+		description:
+			"Entry node: forwards the run input into the graph, shaped by the node's typed fields.",
+		inputs: [],
+		outputs: [{ name: "out" }],
+		risk: "none",
+	}),
+	defineBlock("webhook", {
+		label: "Webhook",
+		description:
+			"Trigger node: an inbound HTTP event starts the graph at this node (bound via the pipeline_triggers registry).",
+		inputs: [],
+		outputs: [{ name: "out" }],
+		risk: "low",
+	}),
+	defineBlock("schedule", {
+		label: "Schedule",
+		description:
+			"Trigger node: a cron schedule dispatches a run that starts at this node (bound via the pipeline_triggers registry).",
+		inputs: [],
+		outputs: [{ name: "out" }],
+		risk: "low",
+	}),
+	defineBlock("notify", {
+		label: "Notify",
+		description:
+			"Output node: sends a message to a delivery channel; `out` continues the flow, `error` carries a delivery failure.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "low",
 	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",

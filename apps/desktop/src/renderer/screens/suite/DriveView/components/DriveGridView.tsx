@@ -1,3 +1,4 @@
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { AspectRatio } from "@rox/ui/aspect-ratio";
 import { Button } from "@rox/ui/button";
 import {
@@ -18,8 +19,10 @@ import {
 	Share2,
 	Trash2,
 } from "lucide-react";
+import { type CSSProperties, useCallback } from "react";
 import { formatFileSize } from "../../utils/formatFileSize";
 import { type EntryRef, refKey } from "../types";
+import { dragId, dropTargetId } from "../utils/dnd";
 import { fileIcon } from "../utils/fileKind";
 import type { DriveBrowserModel } from "./browserModel";
 import { EntryContextMenu } from "./EntryContextMenu";
@@ -65,26 +68,73 @@ export function DriveGridView(model: DriveBrowserModel) {
 	);
 }
 
+interface TileDnd {
+	setNodeRef?: (node: HTMLElement | null) => void;
+	listeners?: Record<string, unknown>;
+	attributes?: Record<string, unknown>;
+	style?: CSSProperties;
+	isDragging?: boolean;
+	isOver?: boolean;
+}
+
+/** Wire a tile as a dnd-kit draggable; folder tiles are additionally droppable. */
+function useTileDnd(
+	model: DriveBrowserModel,
+	ref: EntryRef,
+	droppable: boolean,
+): TileDnd {
+	const draggable = useDraggable({
+		id: dragId(ref),
+		data: model.dragDataFor(ref),
+	});
+	const droppableState = useDroppable({
+		id: dropTargetId({ kind: "folder", id: ref.id }),
+		data: { target: { kind: "folder", id: ref.id } },
+		disabled: !droppable || !model.isMoving,
+	});
+	const setNodeRef = useCallback(
+		(node: HTMLElement | null) => {
+			draggable.setNodeRef(node);
+			if (droppable) droppableState.setNodeRef(node);
+		},
+		[draggable, droppableState, droppable],
+	);
+	return {
+		setNodeRef,
+		listeners: draggable.listeners as Record<string, unknown> | undefined,
+		attributes: draggable.attributes as unknown as Record<string, unknown>,
+		isDragging: draggable.isDragging,
+		isOver: droppable ? droppableState.isOver : false,
+	};
+}
+
 function TileShell({
 	selected,
 	onClick,
 	onDoubleClick,
 	children,
+	dnd,
 }: {
 	selected: boolean;
 	onClick: (mods: { metaKey: boolean; shiftKey: boolean }) => void;
 	onDoubleClick: () => void;
 	children: React.ReactNode;
+	dnd?: TileDnd;
 }) {
 	return (
 		<MotionPressable>
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: file tile holds a nested kebab button; cannot be a <button>. Keyboard handled below. */}
 			<div
+				ref={dnd?.setNodeRef}
+				style={dnd?.style}
 				className={cn(
 					"group relative flex flex-col gap-2 rounded-xl border p-2.5 transition-colors",
 					selected
 						? "border-primary/50 bg-primary/10 ring-1 ring-primary/50"
 						: "border-border/60 hover:bg-accent/30",
+					dnd?.isDragging && "opacity-40",
+					dnd?.isOver &&
+						"border-primary/50 bg-primary/15 ring-1 ring-primary/50",
 				)}
 				onClick={(event) =>
 					onClick({
@@ -99,6 +149,8 @@ function TileShell({
 						onDoubleClick();
 					}
 				}}
+				{...dnd?.attributes}
+				{...dnd?.listeners}
 			>
 				{children}
 			</div>
@@ -118,6 +170,7 @@ function FolderTile({
 	renaming: boolean;
 }) {
 	const ref: EntryRef = { kind: "folder", id: folder.id };
+	const dnd = useTileDnd(model, ref, true);
 	return (
 		<EntryContextMenu
 			actions={{
@@ -133,6 +186,7 @@ function FolderTile({
 				selected={selected}
 				onClick={(mods) => model.onSelect(ref, mods)}
 				onDoubleClick={() => model.onOpenFolder(folder)}
+				dnd={dnd}
 			>
 				<AspectRatio
 					ratio={4 / 3}
@@ -167,6 +221,7 @@ function FileTile({
 	renaming: boolean;
 }) {
 	const ref: EntryRef = { kind: "file", id: file.id };
+	const dnd = useTileDnd(model, ref, false);
 	const Icon = fileIcon(file.mediaType, file.name);
 	return (
 		<EntryContextMenu
@@ -185,6 +240,7 @@ function FileTile({
 				selected={selected}
 				onClick={(mods) => model.onSelect(ref, mods)}
 				onDoubleClick={() => model.onOpenFile(file)}
+				dnd={dnd}
 			>
 				<AspectRatio
 					ratio={4 / 3}

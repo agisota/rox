@@ -6,7 +6,10 @@ export interface ModelOption {
 	provider: string;
 }
 
-export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions";
+// Re-export the cross-platform canonical permission mode so the renderer, the
+// host-service turn schema, and the runtime all share one definition (see
+// `@rox/shared/chat-permission-mode`).
+export type { PermissionMode } from "@rox/shared/chat-permission-mode";
 
 export type McpServerState = "enabled" | "disabled" | "invalid";
 export type McpServerTransport = "remote" | "local" | "unknown";

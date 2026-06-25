@@ -1,5 +1,8 @@
 import { isSkillCallType } from "../blocks/blockDefinition";
+import { arePortTypesCompatible } from "../blocks/portTypes";
 import { WorkflowErrorCode, type WorkflowIssue } from "../errors";
+import type { NodeTypeDefinition } from "../registry/nodeTypeDefinition";
+import { validateNodeConfig } from "../registry/validateNodeConfig";
 import { validateSkillInputMapping } from "../schema/validateSkillInputMapping";
 import type {
 	JsonSchema,
@@ -21,6 +24,22 @@ export interface ValidateGraphOptions {
 	strictBlockTypes?: boolean;
 	/** Predicate for known block types (used only when strictBlockTypes). */
 	isKnownBlockType?: (type: string) => boolean;
+	/**
+	 * Resolve a block type to its registry definition. When provided, registered
+	 * blocks get registry-driven required-config + (basic) port checks. Unknown
+	 * types are skipped (forward-compatible). Pass `getNodeType` from
+	 * `@rox/workflow-core/registry`.
+	 *
+	 * Opt-in (default: undefined) so the legacy default behaviour — and every
+	 * existing graph/test — is unchanged.
+	 */
+	resolveNodeType?: (type: string) => NodeTypeDefinition | undefined;
+	/**
+	 * When a {@link resolveNodeType} is provided, also enforce that required input
+	 * ports are wired (an incoming edge exists). Default: true. Required-config
+	 * validation always runs when `resolveNodeType` is provided.
+	 */
+	checkPorts?: boolean;
 }
 
 function isEnabled(state: RoxWorkflowState, id: string): boolean {
@@ -118,7 +137,10 @@ export function validateGraph(
 		}
 	}
 
-	// 5. Per-block checks: unknown types + skill input mappings.
+	// Index incoming edges per target for the registry port check.
+	const incomingTargets = new Set(state.edges.map((edge) => edge.target));
+
+	// 5. Per-block checks: unknown types + skill input mappings + registry config.
 	for (const id of ids) {
 		const block = blocks[id];
 		if (!block) continue;
@@ -134,6 +156,27 @@ export function validateGraph(
 				message: `Unknown block type "${block.type}".`,
 			});
 		}
+
+		// Registry-driven required-config + basic port checks (opt-in). Only runs
+		// for registered types; unknown types are skipped (forward-compatible) and
+		// disabled blocks are never config-flagged.
+		const nodeType = options.resolveNodeType?.(block.type);
+		if (nodeType && isEnabled(state, id)) {
+			issues.push(...validateNodeConfig(nodeType, block, id));
+
+			if (options.checkPorts !== false) {
+				const requiresIncoming = nodeType.inputs.some((port) => port.required);
+				if (requiresIncoming && !incomingTargets.has(id)) {
+					issues.push({
+						code: WorkflowErrorCode.MISSING_REQUIRED_PORT,
+						severity: "error",
+						blockId: id,
+						message: `Узел "${block.name ?? id}" требует входящую связь.`,
+					});
+				}
+			}
+		}
+
 		if (isSkillCallType(block.type) && options.resolveSkillInputSchema) {
 			const inputSchema = options.resolveSkillInputSchema(block.type);
 			if (inputSchema) {
@@ -145,6 +188,47 @@ export function validateGraph(
 				issues.push(...validateSkillInputMapping(mapping, inputSchema, id));
 			}
 		}
+	}
+
+	// 5b. Edge port-type compatibility (opt-in, additive). Only runs when a
+	// `resolveNodeType` is provided and port checks aren't disabled. For each edge
+	// we compare the source out-port type (by `sourceHandle`, default `out`) with
+	// the target in-port type (by `targetHandle`, default the node's sole/first
+	// input). `any` — and any absent type, i.e. a legacy untyped port — is
+	// compatible with everything, so existing graphs stay valid; only two
+	// concrete, differing types are flagged. Disabled endpoints and edges touching
+	// an unknown/unregistered type are skipped.
+	if (options.resolveNodeType && options.checkPorts !== false) {
+		const resolveNodeType = options.resolveNodeType;
+		state.edges.forEach((edge, i) => {
+			const source = blocks[edge.source];
+			const target = blocks[edge.target];
+			if (!source || !target) return;
+			if (!isEnabled(state, edge.source) || !isEnabled(state, edge.target)) {
+				return;
+			}
+
+			const sourceType = resolveNodeType(source.type);
+			const targetType = resolveNodeType(target.type);
+			if (!sourceType || !targetType) return;
+
+			const outName = edge.sourceHandle ?? "out";
+			const outPort = sourceType.outputs.find((p) => p.name === outName);
+			const inName = edge.targetHandle;
+			const inPort = inName
+				? targetType.inputs.find((p) => p.name === inName)
+				: targetType.inputs[0];
+			if (!outPort || !inPort) return;
+
+			if (!arePortTypesCompatible(outPort.type, inPort.type)) {
+				issues.push({
+					code: WorkflowErrorCode.INCOMPATIBLE_PORT_TYPES,
+					severity: "error",
+					edgeId: edge.id ?? `#${i}`,
+					message: `Несовместимые типы портов: «${outPort.type}» (${source.name ?? edge.source}.${outName}) → «${inPort.type}» (${target.name ?? edge.target}.${inPort.name}).`,
+				});
+			}
+		});
 	}
 
 	const hasError = issues.some((issue) => issue.severity === "error");

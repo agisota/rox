@@ -18,6 +18,7 @@ import { env } from "../../env";
 import type { RunSkillTriggerKind } from "../skill/run-service";
 import { emitAgentRunFinished } from "./agent-run-events";
 import { makeAgentRunResolver } from "./agent-run-service";
+import { buildPipelineHandlers } from "./handlers";
 
 export interface RunPipelineArgs {
 	organizationId: string;
@@ -42,6 +43,29 @@ export interface RunPipelineArgs {
 	 */
 	parentRunId?: string;
 }
+
+/**
+ * Injectable seams for `runPipeline`. Real callers never pass these — the
+ * defaults wire the production resolver / emit / executor. They exist so tests
+ * can substitute those collaborators WITHOUT a process-global
+ * `mock.module("./agent-run-service" | "./agent-run-events" |
+ * "@rox/workflow-runtime")`, which in bun leaks across every sibling test file
+ * in the directory (the same module registry is shared for the whole run) and
+ * made the sibling `agent-run-service` / `agent-run-events` suites
+ * order-dependently flaky. This mirrors the executor's existing `resolveAgentRun`
+ * injection style.
+ */
+export interface RunPipelineDeps {
+	makeAgentRunResolver: typeof makeAgentRunResolver;
+	emitAgentRunFinished: typeof emitAgentRunFinished;
+	createExecutor: () => Pick<WorkflowExecutor, "execute">;
+}
+
+const defaultRunPipelineDeps: RunPipelineDeps = {
+	makeAgentRunResolver,
+	emitAgentRunFinished,
+	createExecutor: () => new WorkflowExecutor(),
+};
 
 export interface RunPipelineResult {
 	runId: string;
@@ -90,6 +114,7 @@ class DbRunRecorder implements RunRecorder {
  */
 export async function runPipeline(
 	args: RunPipelineArgs,
+	deps: RunPipelineDeps = defaultRunPipelineDeps,
 ): Promise<RunPipelineResult> {
 	const state = args.pipeline.draftState;
 
@@ -114,7 +139,7 @@ export async function runPipeline(
 	if (!run) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 	const runId = run.id;
 
-	const resolveAgentRun = makeAgentRunResolver({
+	const resolveAgentRun = deps.makeAgentRunResolver({
 		organizationId: args.organizationId,
 		userId: args.userId,
 		v2ProjectId: args.pipeline.v2ProjectId ?? null,
@@ -122,9 +147,15 @@ export async function runPipeline(
 		runId,
 	});
 
-	const executor = new WorkflowExecutor();
+	const executor = deps.createExecutor();
 	const result = await executor.execute(state, args.input, {
 		recorder: new DbRunRecorder(runId),
+		// Executor node handlers (model, and sibling issues' condition/http/db/…).
+		// agent_run/skill_call keep their dedicated resolver seams below.
+		handlers: buildPipelineHandlers({
+			organizationId: args.organizationId,
+			v2ProjectId: args.pipeline.v2ProjectId ?? null,
+		}),
 		// Pipelines have no published output schema; the executor skips output
 		// validation when omitted.
 		entryNodeId: args.entryNodeId,
@@ -134,7 +165,7 @@ export async function runPipeline(
 		// `agent_run_finished` event (+ `file_or_artifact_created` per artifact) so
 		// downstream pipelines / feedback nodes can trigger off it.
 		onAgentRunFinished: (info) =>
-			emitAgentRunFinished(
+			deps.emitAgentRunFinished(
 				{
 					organizationId: args.organizationId,
 					v2ProjectId: args.pipeline.v2ProjectId ?? null,

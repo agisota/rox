@@ -25,6 +25,7 @@ const keys = {
 	mailListThreads: () => ["mail", "listThreads"] as const,
 	mailGetThread: ({ threadId }: { threadId: string }) =>
 		["mail", "getThread", threadId] as const,
+	systemListThreads: () => ["system", "listThreads"] as const,
 };
 
 // NOTE: typed slightly more strictly than the web mirror because the desktop
@@ -135,5 +136,44 @@ describe("applyCommsStreamEvent", () => {
 		});
 		expect(invalidated).toContainEqual(["comms", "listThreads"]);
 		expect(invalidated).not.toContainEqual(["mail", "listThreads"]);
+	});
+
+	test("system event invalidates the system list only (no chat/mail leak)", () => {
+		const { queryClient, invalidated } = makeClient();
+		applyCommsStreamEvent(queryClient, keys, event({ transport: "system" }), {
+			openThreadId: null,
+			transport: "chat",
+		});
+		expect(invalidated).toContainEqual(["system", "listThreads"]);
+		// Strictly invalidate-only: must NOT fall through to chat or mail.
+		expect(invalidated).not.toContainEqual(["comms", "listThreads"]);
+		expect(invalidated).not.toContainEqual(["mail", "listThreads"]);
+	});
+
+	test("system event never refreshes an open thread (no optimistic rows)", () => {
+		const { queryClient, invalidated } = makeClient();
+		applyCommsStreamEvent(
+			queryClient,
+			keys,
+			event({ transport: "system", threadId: "sys-open" }),
+			{ openThreadId: "sys-open", transport: "chat" },
+		);
+		expect(invalidated).toContainEqual(["system", "listThreads"]);
+		expect(invalidated).not.toContainEqual(["comms", "getThread", "sys-open"]);
+	});
+
+	test("system event is a no-op when no system surface is wired", () => {
+		const { queryClient, invalidated } = makeClient();
+		const { systemListThreads: _omitted, ...chatMailKeys } = keys;
+		applyCommsStreamEvent(
+			queryClient,
+			chatMailKeys,
+			event({ transport: "system" }),
+			{ openThreadId: null, transport: "chat" },
+		);
+		// Without a system surface, the event leaks nowhere — not into chat/mail.
+		expect(invalidated).not.toContainEqual(["comms", "listThreads"]);
+		expect(invalidated).not.toContainEqual(["mail", "listThreads"]);
+		expect(invalidated).toHaveLength(0);
 	});
 });

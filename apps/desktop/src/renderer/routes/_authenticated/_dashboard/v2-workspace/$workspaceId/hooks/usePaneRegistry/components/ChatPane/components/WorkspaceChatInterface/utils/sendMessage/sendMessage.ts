@@ -1,3 +1,4 @@
+import type { PermissionMode } from "@rox/shared/chat-permission-mode";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
 
 export type ChatSendMessageInput = {
@@ -12,6 +13,7 @@ export type ChatSendMessageInput = {
 	metadata: {
 		model?: string;
 		thinkingLevel?: ThinkingLevel;
+		permissionMode?: PermissionMode;
 	};
 };
 

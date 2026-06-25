@@ -5,6 +5,7 @@ import { EmojiTextInput } from "renderer/components/EmojiTextInput";
 import { MarkdownEditor } from "renderer/components/MarkdownEditor";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { useProjectFileSearch } from "../../../hooks/useProjectFileSearch";
+import { EditViaChatComposer } from "../EditViaChatComposer";
 
 export function AutomationBody({
 	automation,
@@ -70,6 +71,22 @@ export function AutomationBody({
 				}}
 				placeholder="Добавьте промпт, например: ищи сбои в $sentry"
 				searchFiles={searchFiles}
+			/>
+
+			<EditViaChatComposer
+				automationId={automation.id}
+				currentPrompt={prompt}
+				isSaving={setPromptMutation.isPending}
+				onApply={async (nextPrompt) => {
+					// Reflect the regenerated prompt in the editor immediately, then
+					// persist a new version via the existing mutation. Sync the ref so
+					// the prop-driven effect above does not clobber the optimistic value.
+					setPrompt(nextPrompt);
+					lastSyncedPromptRef.current = nextPrompt;
+					if (nextPrompt !== automation.prompt) {
+						await setPromptMutation.mutateAsync(nextPrompt);
+					}
+				}}
 			/>
 		</div>
 	);

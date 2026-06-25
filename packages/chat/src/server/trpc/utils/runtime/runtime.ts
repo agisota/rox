@@ -1,4 +1,8 @@
 import type { Engine, EngineBundle } from "@rox/chat/server/engine";
+import {
+	type PermissionMode,
+	permissionModeToHarnessState,
+} from "@rox/shared/chat-permission-mode";
 import type { AppRouter } from "@rox/trpc";
 import type { createTRPCClient } from "@trpc/client";
 import { generateTitleFromMessage } from "../../../desktop";
@@ -67,7 +71,27 @@ interface RuntimeRestartPayload {
 	metadata?: {
 		model?: string;
 		thinkingLevel?: ThinkingLevel;
+		permissionMode?: PermissionMode;
 	};
+}
+
+/**
+ * Apply the turn's permission mode to the runtime before the message runs.
+ *
+ * The mode is the desktop-agent safety lever: it decides whether edit/execute
+ * tool calls auto-run or stop at an approval gate. We translate it to the
+ * harness state slice (`yolo` + per-category `permissionRules`) via the shared
+ * mapping and push it through `setState` — same seam thinkingLevel uses. Applied
+ * every turn (idempotently) so switching modes mid-session takes effect
+ * immediately and never leaves an earlier mode's grants in place. When no mode
+ * is supplied we leave the runtime untouched.
+ */
+export async function applyPermissionMode(
+	runtime: RuntimeSession,
+	mode: PermissionMode | undefined,
+): Promise<void> {
+	if (!mode) return;
+	await runtime.engine.setState(permissionModeToHarnessState(mode));
 }
 
 /**
@@ -397,6 +421,8 @@ export async function restartRuntimeFromUserMessage(
 	if (thinkingLevel) {
 		await runtime.engine.setState({ thinkingLevel });
 	}
+
+	await applyPermissionMode(runtime, input.metadata?.permissionMode);
 
 	runtime.lastErrorMessage = null;
 	if (beforeSend) await beforeSend();

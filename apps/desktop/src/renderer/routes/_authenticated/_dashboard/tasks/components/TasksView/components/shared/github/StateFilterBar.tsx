@@ -7,13 +7,13 @@ import { LuRefreshCw } from "react-icons/lu";
  * host `includeClosed` flag (open = false, the rest = true) plus a client-side
  * post-filter on normalized state, so it needs no backend change.
  *
- * The "На ревью" segment from the spec is intentionally NOT shipped here: it
- * requires `reviewDecision` from the host `searchPullRequests` JSON, which the
- * current procedure does not return. Added as a backend follow-up
- * (see surface summary → needsShared) rather than faked.
+ * The "На ревью" segment fetches the open set (`includeClosed=false`) and then
+ * client-side post-filters to PRs whose `reviewDecision === 'review_required'`,
+ * now that the host listing returns the `reviewDecision` field. The post-filter
+ * follows the same pattern as the merged/closed split in `usePullRequestSearch`.
  */
 
-export type PrStateFilter = "open" | "merged" | "closed";
+export type PrStateFilter = "open" | "review" | "merged" | "closed";
 export type IssueStateFilter = "open" | "closed";
 
 interface SegmentDef<T extends string> {
@@ -23,6 +23,7 @@ interface SegmentDef<T extends string> {
 
 const PR_SEGMENTS: SegmentDef<PrStateFilter>[] = [
 	{ value: "open", label: "Открытые" },
+	{ value: "review", label: "На ревью" },
 	{ value: "merged", label: "Влитые" },
 	{ value: "closed", label: "Закрытые" },
 ];

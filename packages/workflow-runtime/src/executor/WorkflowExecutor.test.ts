@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { JsonSchema, RoxWorkflowState } from "@rox/workflow-core";
+import {
+	makeTransformHandler,
+	makeVariableSetHandler,
+} from "../handlers/dataHandlers";
 import { InMemoryRunRecorder } from "./InMemoryRunRecorder";
 import type { BlockHandler, ExecuteOptions } from "./types";
 import { WorkflowExecutor } from "./WorkflowExecutor";
@@ -1097,5 +1101,41 @@ describe("WorkflowExecutor", () => {
 		expect(r.accumulatedContext?.entries.map((e) => e.role)).toEqual([
 			"target",
 		]);
+	});
+
+	test("RUN-DATA-01: variable_set propagates a variable to a downstream node", async () => {
+		const wf = state(
+			{
+				start: { type: "start" },
+				setVar: {
+					type: "variable_set",
+					subBlocks: { key: "total", value: "price * qty" },
+				},
+				shape: {
+					type: "transform",
+					subBlocks: { mode: "mapping", mapping: { grandTotal: "total" } },
+				},
+				response: { type: "response" },
+			},
+			[
+				{ source: "start", target: "setVar" },
+				{ source: "setVar", target: "shape" },
+				{ source: "shape", target: "response" },
+			],
+		);
+		const recorder = new InMemoryRunRecorder();
+		const handlers: Record<string, BlockHandler> = {
+			variable_set: makeVariableSetHandler(),
+			transform: makeTransformHandler(),
+		};
+		const result = await exec.execute(
+			wf,
+			{ price: 10, qty: 4 },
+			{ handlers, recorder },
+		);
+		expect(result.status).toBe("succeeded");
+		// `total` was computed in variable_set, threaded as input to transform,
+		// and read by the downstream mapping expression.
+		expect(result.output).toEqual({ grandTotal: 40 });
 	});
 });

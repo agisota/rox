@@ -31,8 +31,9 @@ export interface UseIssueSearchResult {
  * {@link IssueListItem}, applies the segmented open/closed filter client-side,
  * and classifies failures for the resilient error card.
  *
- * NOTE: the host procedure does not return `labels`, so `labels` is always `[]`
- * here; rendering real label chips needs a backend change (needsShared).
+ * The host procedure now returns `labels` + `updatedAt`, so the label chips and
+ * relative time light up automatically; both still degrade ([] / null) when
+ * GitHub has no data.
  */
 export function useIssueSearch(
 	projectFilter: string | null,
@@ -91,8 +92,9 @@ export function useIssueSearch(
 			url: issue.url,
 			state: issue.state.toLowerCase() === "closed" ? "closed" : "open",
 			authorLogin: issue.authorLogin,
-			// Host does not return labels yet — see needsShared.
-			labels: [],
+			// Host wire now returns `{ name, color }` labels matching IssueLabel.
+			labels: issue.labels ?? [],
+			updatedAt: issue.updatedAt ?? null,
 		}));
 	}, [query.data]);
 

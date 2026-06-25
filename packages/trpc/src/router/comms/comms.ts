@@ -22,6 +22,7 @@ import {
 	getThreadSchema,
 	listThreadsSchema,
 	markReadSchema,
+	markUnreadSchema,
 	sendMessageSchema,
 	updatePresenceSchema,
 } from "./schema";
@@ -515,6 +516,98 @@ export const commsRouter = {
 				});
 			}
 			return { ok: true as const };
+		}),
+
+	/**
+	 * Mark a thread the caller participates in as UNREAD again (hotkey `u`, the
+	 * per-thread inverse of {@link markRead}). This is a real read-state mutation
+	 * on the active thread — NOT the global unread/all inbox filter toggle.
+	 *
+	 * Watermark mechanics: unread is "not-own messages created strictly after the
+	 * caller's `last_read_message_id` watermark" (see {@link countUnreadByThread}).
+	 * To force the thread back to ≥1 unread we rewind the caller's watermark to the
+	 * message immediately PRECEDING the latest not-own message — so that latest
+	 * inbound message (and anything after it) counts as unread again. If there is
+	 * no preceding message, we clear the watermark to NULL (all not-own unread).
+	 * If the thread has no not-own message at all (caller is the sole author), the
+	 * call is a no-op: there is nothing the caller could have left unread.
+	 */
+	markUnread: protectedProcedure
+		.input(markUnreadSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const userId = ctx.session.user.id;
+			await getThreadForOrg(organizationId, input.threadId);
+
+			// The caller must participate in the thread (the watermark lives on the
+			// caller's participant row). Probe + scope in one go.
+			const [membership] = await db
+				.select({ id: commsParticipants.id })
+				.from(commsParticipants)
+				.where(
+					and(
+						eq(commsParticipants.organizationId, organizationId),
+						eq(commsParticipants.threadId, input.threadId),
+						eq(commsParticipants.userId, userId),
+					),
+				)
+				.limit(1);
+			if (!membership) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Not a participant of this thread",
+				});
+			}
+
+			// Newest-first not-own messages; we need the latest (to make unread) and
+			// the one before it (the new watermark). NULL author = external inbound,
+			// which is "not own", so `is distinct from` includes those rows.
+			const latestNotOwn = await db
+				.select({ id: commsMessages.id, createdAt: commsMessages.createdAt })
+				.from(commsMessages)
+				.where(
+					and(
+						eq(commsMessages.organizationId, organizationId),
+						eq(commsMessages.threadId, input.threadId),
+						sql`${commsMessages.authorUserId} is distinct from ${userId}`,
+					),
+				)
+				.orderBy(desc(commsMessages.createdAt))
+				.limit(1);
+
+			// Sole-author / empty thread: nothing to mark unread.
+			if (latestNotOwn.length === 0) {
+				return { ok: true as const, unread: false as const };
+			}
+
+			// The new watermark is the newest message strictly OLDER than the latest
+			// not-own message (any author — the watermark is a position, not a sender).
+			// None → clear to NULL so every not-own message counts as unread.
+			const [predecessor] = await db
+				.select({ id: commsMessages.id })
+				.from(commsMessages)
+				.where(
+					and(
+						eq(commsMessages.organizationId, organizationId),
+						eq(commsMessages.threadId, input.threadId),
+						sql`${commsMessages.createdAt} < ${latestNotOwn[0]?.createdAt}`,
+					),
+				)
+				.orderBy(desc(commsMessages.createdAt))
+				.limit(1);
+
+			await db
+				.update(commsParticipants)
+				.set({ lastReadMessageId: predecessor?.id ?? null })
+				.where(
+					and(
+						eq(commsParticipants.organizationId, organizationId),
+						eq(commsParticipants.threadId, input.threadId),
+						eq(commsParticipants.userId, userId),
+					),
+				);
+
+			return { ok: true as const, unread: true as const };
 		}),
 
 	/**

@@ -50,10 +50,48 @@ export function useDriveActions(folderId: string | null) {
 		}),
 	);
 
+	/**
+	 * Optimistically drop the moved entry out of the current folder listing so a
+	 * drag-to-move feels instant, snapshotting the previous cache for rollback if
+	 * the server rejects the move (e.g. BAD_REQUEST for a folder into its own
+	 * descendant). On settle we always re-invalidate so the source folder
+	 * reconciles with the server truth.
+	 */
+	const listingKey = useCallback(
+		() => trpc.drive.listFolder.queryKey({ folderId }),
+		[trpc, folderId],
+	);
+
+	const optimisticRemove = useCallback(
+		(predicate: (id: string) => boolean) => {
+			const key = listingKey();
+			const previous = queryClient.getQueryData(key);
+			queryClient.setQueryData(key, (current) => {
+				if (!current) return current;
+				return {
+					...current,
+					folders: current.folders.filter((f) => !predicate(f.id)),
+					files: current.files.filter((f) => !predicate(f.id)),
+				};
+			});
+			return previous;
+		},
+		[queryClient, listingKey],
+	);
+
 	const moveFolder = useMutation(
 		trpc.drive.moveFolder.mutationOptions({
-			onSuccess: invalidateListing,
-			onError: onError("Не удалось переместить папку"),
+			onMutate: (variables) => {
+				const previous = optimisticRemove((id) => id === variables.folderId);
+				return { previous };
+			},
+			onError: (error, _variables, context) => {
+				if (context?.previous !== undefined) {
+					queryClient.setQueryData(listingKey(), context.previous);
+				}
+				onError("Не удалось переместить папку")(error);
+			},
+			onSettled: invalidateListing,
 		}),
 	);
 
@@ -77,8 +115,17 @@ export function useDriveActions(folderId: string | null) {
 
 	const moveFile = useMutation(
 		trpc.drive.moveFile.mutationOptions({
-			onSuccess: invalidateListing,
-			onError: onError("Не удалось переместить файл"),
+			onMutate: (variables) => {
+				const previous = optimisticRemove((id) => id === variables.fileId);
+				return { previous };
+			},
+			onError: (error, _variables, context) => {
+				if (context?.previous !== undefined) {
+					queryClient.setQueryData(listingKey(), context.previous);
+				}
+				onError("Не удалось переместить файл")(error);
+			},
+			onSettled: invalidateListing,
 		}),
 	);
 

@@ -733,6 +733,17 @@ export const HOTKEYS_REGISTRY = {
 		category: "Help",
 		description: "Open the global command palette",
 	},
+	OPEN_TASKS_PALETTE: {
+		key: {
+			mac: L("meta+k"),
+			windows: L("ctrl+k"),
+			linux: L("ctrl+k"),
+		},
+		label: "Open Tasks Palette",
+		category: "Help",
+		description:
+			"Open the pane-scoped command palette in the tasks view (jump project, switch tab/view, run selected)",
+	},
 } as const satisfies Record<string, HotkeyRegistryDefinition>;
 
 export type HotkeyId = keyof typeof HOTKEYS_REGISTRY;

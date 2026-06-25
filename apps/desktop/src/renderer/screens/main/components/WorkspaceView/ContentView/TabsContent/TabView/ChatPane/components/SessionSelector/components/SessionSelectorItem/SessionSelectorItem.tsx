@@ -2,6 +2,7 @@ import { alert } from "@rox/ui/atoms/Alert";
 import { DropdownMenuItem } from "@rox/ui/dropdown-menu";
 import { SessionRow, type SessionRowData } from "@rox/ui/session-row";
 import { toast } from "@rox/ui/sonner";
+import { NEW_CHAT_NAME } from "renderer/stores/tabs/utils";
 
 interface SessionSelectorItemProps {
 	sessionId: string;
@@ -59,7 +60,7 @@ export function SessionSelectorItem({
 				onSelect={onSelectSession}
 				onDelete={confirmDelete}
 				deleteLabel="Удалить сессию"
-				emptyTitleLabel="New Chat"
+				emptyTitleLabel={NEW_CHAT_NAME}
 			/>
 		</DropdownMenuItem>
 	);

@@ -134,7 +134,11 @@ export function PullRequestsContent({
 					<GithubEmptyState
 						icon={GoGitPullRequest}
 						message={
-							stateFilter === "open" ? "Нет открытых PR." : "PR не найдены."
+							stateFilter === "open"
+								? "Нет открытых PR."
+								: stateFilter === "review"
+									? "Нет PR на ревью."
+									: "PR не найдены."
 						}
 					/>
 				) : (
@@ -144,9 +148,11 @@ export function PullRequestsContent({
 						hasNextPage={hasNextPage}
 						isFetchingNextPage={isFetchingNextPage}
 						onReachEnd={fetchNextPage}
+						onActivate={(pr) => handleOpenPreview(pr.prNumber)}
 						renderRow={(pr) => (
 							<PrRow
 								pr={pr}
+								projectId={projectFilter}
 								onOpen={handleOpenPreview}
 								onOpenUrl={handleOpenUrl}
 								onAddToWorkspace={handleAddToWorkspace}

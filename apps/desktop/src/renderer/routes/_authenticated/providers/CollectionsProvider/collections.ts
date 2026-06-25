@@ -75,6 +75,10 @@ import { logger } from "renderer/lib/logger";
 import superjson from "superjson";
 import { z } from "zod";
 import {
+	type TaskLinkRow,
+	taskLinkSchema,
+} from "../../_dashboard/tasks/linkage/schema";
+import {
 	type DashboardSidebarProjectRow,
 	type DashboardSidebarSectionRow,
 	dashboardSidebarProjectSchema,
@@ -87,8 +91,10 @@ import {
 	type V2UserPreferencesRow,
 	v2TerminalPresetSchema,
 	v2UserPreferencesSchema,
+	type WorkspaceGovernanceItemRow,
 	type WorkspaceLocalStateRow,
 	type WorkspacesCreateInput,
+	workspaceGovernanceItemSchema,
 	workspaceLocalStateSchema,
 } from "./dashboardSidebarLocal";
 import { withReadHeal } from "./withReadHeal";
@@ -234,6 +240,15 @@ export interface OrgCollections {
 		typeof v2TerminalPresetSchema,
 		z.input<typeof v2TerminalPresetSchema>
 	>;
+	// TODO(server): swap to an Electric/host-service shape once governance items
+	// (goals/tasks/missions) are persisted server-side. Local-only for now.
+	v2WorkspaceGovernance: Collection<
+		WorkspaceGovernanceItemRow,
+		string,
+		LocalStorageCollectionUtils,
+		typeof workspaceGovernanceItemSchema,
+		z.input<typeof workspaceGovernanceItemSchema>
+	>;
 	v2UserPreferences: Collection<
 		V2UserPreferencesRow,
 		string,
@@ -247,6 +262,15 @@ export interface OrgCollections {
 		LocalStorageCollectionUtils,
 		typeof failedWorkspaceCreateSchema,
 		z.input<typeof failedWorkspaceCreateSchema>
+	>;
+	// Local-only cross-link model (task↔PR/issue) for the Tasks power-user layer.
+	// Indexed by taskId + targetNumber so the cross-chips live-query both ways.
+	taskLinks: Collection<
+		TaskLinkRow,
+		string,
+		LocalStorageCollectionUtils,
+		typeof taskLinkSchema,
+		z.input<typeof taskLinkSchema>
 	>;
 }
 
@@ -881,7 +905,22 @@ function createOrgCollections(
 					lastTxid = result.txid;
 				}
 
-				const handledFields = new Set(["status", "category"]);
+				if (changes.body !== undefined) {
+					const result = await apiClient.memory.update.mutate({
+						id: original.id,
+						body: changes.body,
+					});
+					lastTxid = result.txid;
+				}
+
+				// `updatedAt` is set optimistically client-side for instant UI, but the
+				// server stamps its own via $onUpdate — no separate sync needed.
+				const handledFields = new Set([
+					"status",
+					"category",
+					"body",
+					"updatedAt",
+				]);
 				const unsupportedFields = Object.keys(changes).filter(
 					(field) => !handledFields.has(field),
 				);
@@ -1162,6 +1201,23 @@ function createOrgCollections(
 		}),
 	);
 
+	// TODO(server): governance items are local-only until a backend collection
+	// exists. Keyed by item id, indexed by workspaceId so the "Управление"
+	// section can live-query only its workspace's goals/tasks/missions.
+	const v2WorkspaceGovernance = createIndexedCollection(
+		localStorageCollectionOptions({
+			id: `v2_workspace_governance-${organizationId}`,
+			storageKey: `v2-workspace-governance-${organizationId}`,
+			schema: workspaceGovernanceItemSchema,
+			getKey: (item) => item.id,
+		}),
+	);
+	v2WorkspaceGovernance.createIndex(
+		(item) => item.workspaceId,
+		basicIndexConfig,
+	);
+	v2WorkspaceGovernance.createIndex((item) => item.kind, basicIndexConfig);
+
 	const v2UserPreferences = createCollection(
 		localStorageCollectionOptions(
 			withReadHeal(
@@ -1188,6 +1244,17 @@ function createOrgCollections(
 			getKey: (item) => item.id,
 		}),
 	);
+
+	const taskLinks = createIndexedCollection(
+		localStorageCollectionOptions({
+			id: `task_links-${organizationId}`,
+			storageKey: `task-links-${organizationId}`,
+			schema: taskLinkSchema,
+			getKey: (item) => item.id,
+		}),
+	);
+	taskLinks.createIndex((link) => link.taskId, basicIndexConfig);
+	taskLinks.createIndex((link) => link.targetNumber, basicIndexConfig);
 
 	return {
 		tasks,
@@ -1225,8 +1292,10 @@ function createOrgCollections(
 		v2WorkspaceLocalState,
 		v2SidebarSections,
 		v2TerminalPresets,
+		v2WorkspaceGovernance,
 		v2UserPreferences,
 		failedWorkspaceCreates,
+		taskLinks,
 	};
 }
 

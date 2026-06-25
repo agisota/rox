@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { getHostId, getHostName } from "@rox/shared/host-info";
 import { TRPCError } from "@trpc/server";
 import { workspaces } from "../../../../db/schema";
@@ -105,4 +106,55 @@ export async function ensureMainWorkspaceStrict(
 		.run();
 
 	return { id: cloudRow.id };
+}
+
+export interface LocalMainWorkspace {
+	/** Local workspace id (later linked to a cloud id by the outbox worker). */
+	id: string;
+	/** Branch the workspace points at (synthesized when HEAD is detached). */
+	branch: string;
+}
+
+/**
+ * Local-first sibling of `ensureMainWorkspaceStrict`: inserts ONLY the local
+ * `workspaces` row with a fresh LOCAL id and returns it, making ZERO cloud
+ * calls (no `host.ensure`, no `v2Workspace.create`). The cloud mirror is
+ * enqueued in `sync_outbox` and linked later by `OutboxSyncManager`.
+ *
+ * Relaxes the strict detached-HEAD throw to non-blocking: a local-only project
+ * must open instantly even if `git init` left an unusual HEAD, so a detached or
+ * unresolvable HEAD synthesizes a stable `main` label rather than failing the
+ * create. This branch is captured into both the local `workspaces` row and the
+ * enqueued `workspace.create` outbox payload AT THIS POINT; the worker forwards
+ * the captured branch verbatim when it drains (it does NOT re-read git at drain
+ * time — see `createCloudMainWorkspace`). If the local repo later checks out a
+ * different branch, the cloud main workspace keeps the captured label; the
+ * server-side idempotent upsert (one main workspace per host) patches the branch
+ * on a subsequent create with the same (projectId, hostId, type='main').
+ */
+export async function ensureMainWorkspaceLocal(
+	ctx: Pick<EnsureMainWorkspaceContext, "db" | "git">,
+	projectId: string,
+	repoPath: string,
+): Promise<LocalMainWorkspace> {
+	const git = await ctx.git(repoPath);
+	const branch = (await getCurrentBranchName(git)) ?? "main";
+	const id = randomUUID();
+
+	ctx.db
+		.insert(workspaces)
+		.values({
+			id,
+			projectId,
+			worktreePath: repoPath,
+			branch,
+			syncState: "pending",
+		})
+		.onConflictDoUpdate({
+			target: workspaces.id,
+			set: { projectId, worktreePath: repoPath, branch },
+		})
+		.run();
+
+	return { id, branch };
 }

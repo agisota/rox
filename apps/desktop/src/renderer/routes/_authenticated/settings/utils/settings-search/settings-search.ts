@@ -31,6 +31,9 @@ export const SETTING_ITEM_ID = {
 	RINGTONES_NOTIFICATION: "ringtones-notification",
 
 	KEYBOARD_SHORTCUTS: "keyboard-shortcuts",
+
+	VOICE_DICTATION: "voice-dictation",
+	VOICE_AMBIENT: "voice-ambient",
 	BEHAVIOR_CONFIRM_QUIT: "behavior-confirm-quit",
 	BEHAVIOR_FILE_OPEN_MODE: "behavior-file-open-mode",
 	BEHAVIOR_RESOURCE_MONITOR: "behavior-resource-monitor",
@@ -156,6 +159,9 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.RINGTONES_NOTIFICATION]: "shared",
 
 	[SETTING_ITEM_ID.KEYBOARD_SHORTCUTS]: "shared",
+
+	[SETTING_ITEM_ID.VOICE_DICTATION]: "shared",
+	[SETTING_ITEM_ID.VOICE_AMBIENT]: "shared",
 
 	[SETTING_ITEM_ID.BEHAVIOR_CONFIRM_QUIT]: "shared",
 	[SETTING_ITEM_ID.BEHAVIOR_FILE_OPEN_MODE]: "v1",
@@ -853,6 +859,55 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"привязки",
 			"команды",
 			"настроить",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.VOICE_DICTATION,
+		section: "voice",
+		title: "Голосовой ввод",
+		description: "Диктовка голосом и транскрипция в текст",
+		keywords: [
+			"voice",
+			"dictation",
+			"dictate",
+			"speech",
+			"transcription",
+			"microphone",
+			"mic",
+			"push to talk",
+			"speech to text",
+			"голос",
+			"голосовой ввод",
+			"диктовка",
+			"речь",
+			"транскрипция",
+			"микрофон",
+			"нажми и говори",
+			"речь в текст",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.VOICE_AMBIENT,
+		section: "voice",
+		title: "Фоновый агент",
+		description:
+			"Always-on фоновый голосовой агент и контекст для пост-обработки",
+		keywords: [
+			"voice",
+			"ambient",
+			"always on",
+			"background agent",
+			"context",
+			"consent",
+			"privacy",
+			"persona",
+			"голос",
+			"фоновый агент",
+			"всегда включён",
+			"контекст",
+			"согласие",
+			"конфиденциальность",
+			"персона",
 		],
 	},
 	{
@@ -2320,6 +2375,13 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 		],
 	},
 ];
+
+/** Look up a registry item by its id, or `undefined` if unknown. */
+export function getSettingsItem(
+	itemId: SettingItemId,
+): SettingsItem | undefined {
+	return SETTINGS_ITEMS.find((item) => item.id === itemId);
+}
 
 export function searchSettings(query: string): SettingsItem[] {
 	return matchSettings(query, SETTINGS_ITEMS);

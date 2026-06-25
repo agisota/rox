@@ -1,4 +1,9 @@
-import type { CanvasDocument, CanvasMutationBatch } from "@rox/shared/canvas";
+import type {
+	CanvasDocument,
+	CanvasMutationBatch,
+	FreehandPoint,
+} from "@rox/shared/canvas";
+import { freehandPointsToSvgPath } from "@rox/shared/canvas";
 import { Button } from "@rox/ui/button";
 import { cn } from "@rox/ui/utils";
 import type {
@@ -54,6 +59,11 @@ import {
 	toReactFlowEdges,
 	toReactFlowNodes,
 } from "./canvasFlowAdapter";
+import {
+	type CanvasRefDragPayload,
+	hasCanvasRefDragType,
+	readCanvasRefDragData,
+} from "./canvasRefDrag";
 import { canvasNodeTypes } from "./RoxCanvasNode";
 
 export interface CanvasSelection {
@@ -66,10 +76,20 @@ interface CanvasFlowProps {
 	document: CanvasDocument;
 	baseVersion: number;
 	disabled?: boolean;
+	/** Workspace owning the canvas; forwarded so ref-nodes can fetch live content. */
+	workspaceId?: string;
 	modeBadge: string;
+	/** When true, the pane captures pointer strokes for the freehand pen tool. */
+	penActive?: boolean;
 	onMutationBatch: (batch: CanvasMutationBatch, label: string) => void;
 	onSelectionChange: (selection: CanvasSelection) => void;
 	onCreateTextNodeAt: (position: { x: number; y: number }) => void;
+	/** Emitted on pen pointer-up with absolute-canvas stroke samples. */
+	onCreateFreeformNode?: (points: FreehandPoint[]) => void;
+	onDropEntityAt: (
+		position: { x: number; y: number },
+		payload: CanvasRefDragPayload,
+	) => void;
 	onOpenRefNode: (nodeId: string) => void;
 }
 
@@ -87,10 +107,14 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 			document,
 			baseVersion,
 			disabled = false,
+			workspaceId,
 			modeBadge,
+			penActive = false,
 			onMutationBatch,
 			onSelectionChange,
 			onCreateTextNodeAt,
+			onCreateFreeformNode,
+			onDropEntityAt,
 			onOpenRefNode,
 		},
 		ref,
@@ -103,8 +127,8 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 		> | null>(null);
 
 		const projectedNodes = useMemo(
-			() => toReactFlowNodes(document),
-			[document],
+			() => toReactFlowNodes(document, workspaceId),
+			[document, workspaceId],
 		);
 		const projectedEdges = useMemo(
 			() => toReactFlowEdges(document),
@@ -115,6 +139,64 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 		const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
 		const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
 		const [isExporting, setIsExporting] = useState(false);
+		const [isDropActive, setIsDropActive] = useState(false);
+		// Live pen stroke: absolute-canvas samples captured during a drag. We keep
+		// a ref for the in-flight samples (no re-render per move) plus state for the
+		// rendered preview path so the stroke is visible while drawing.
+		const penPointsRef = useRef<FreehandPoint[]>([]);
+		const [penPreviewPath, setPenPreviewPath] = useState<string | null>(null);
+		const [isDrawing, setIsDrawing] = useState(false);
+
+		const handlePenPointerDown = useCallback(
+			(event: React.PointerEvent) => {
+				if (!penActive || disabled || event.button !== 0) return;
+				event.preventDefault();
+				event.stopPropagation();
+				event.currentTarget.setPointerCapture(event.pointerId);
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				penPointsRef.current = [
+					[position.x, position.y, event.pressure || 0.5],
+				];
+				setIsDrawing(true);
+				setPenPreviewPath(null);
+			},
+			[disabled, penActive, screenToFlowPosition],
+		);
+
+		const handlePenPointerMove = useCallback(
+			(event: React.PointerEvent) => {
+				if (!penActive || disabled || !isDrawing) return;
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				penPointsRef.current.push([
+					position.x,
+					position.y,
+					event.pressure || 0.5,
+				]);
+				setPenPreviewPath(freehandPointsToSvgPath(penPointsRef.current));
+			},
+			[disabled, isDrawing, penActive, screenToFlowPosition],
+		);
+
+		const finishPenStroke = useCallback(
+			(event: React.PointerEvent) => {
+				if (!isDrawing) return;
+				if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+					event.currentTarget.releasePointerCapture(event.pointerId);
+				}
+				const points = penPointsRef.current;
+				penPointsRef.current = [];
+				setIsDrawing(false);
+				setPenPreviewPath(null);
+				if (!disabled && points.length > 1) onCreateFreeformNode?.(points);
+			},
+			[disabled, isDrawing, onCreateFreeformNode],
+		);
 
 		useEffect(() => {
 			setNodes(projectedNodes);
@@ -256,6 +338,43 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 			[disabled, onCreateTextNodeAt, screenToFlowPosition],
 		);
 
+		// External drag-n-drop of workspace entities onto the canvas. We only
+		// intercept drags carrying our ref MIME type so native pane interactions
+		// (pan/zoom/selection-rect, double-click create) stay untouched.
+		const handleDragOver = useCallback(
+			(event: React.DragEvent) => {
+				if (disabled || !hasCanvasRefDragType(event.dataTransfer)) return;
+				event.preventDefault();
+				event.dataTransfer.dropEffect = "copy";
+				if (!isDropActive) setIsDropActive(true);
+			},
+			[disabled, isDropActive],
+		);
+
+		const handleDragLeave = useCallback((event: React.DragEvent) => {
+			// Only clear when the cursor truly leaves the wrapper, not when moving
+			// between child nodes (relatedTarget still inside the wrapper).
+			const next = event.relatedTarget;
+			if (next instanceof Node && event.currentTarget.contains(next)) return;
+			setIsDropActive(false);
+		}, []);
+
+		const handleDrop = useCallback(
+			(event: React.DragEvent) => {
+				setIsDropActive(false);
+				if (disabled) return;
+				const payload = readCanvasRefDragData(event.dataTransfer);
+				if (!payload) return;
+				event.preventDefault();
+				const position = screenToFlowPosition({
+					x: event.clientX,
+					y: event.clientY,
+				});
+				onDropEntityAt({ x: position.x, y: position.y }, payload);
+			},
+			[disabled, onDropEntityAt, screenToFlowPosition],
+		);
+
 		const handleNodeDoubleClick = useCallback(
 			(_event: React.MouseEvent, node: RoxFlowNode) => {
 				if (node.data.refType) onOpenRefNode(node.id);
@@ -373,7 +492,16 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 		const selectionCount = selectedNodeIds.length + selectedEdgeIds.length;
 
 		return (
-			<div ref={flowWrapperRef} className="h-full w-full">
+			// biome-ignore lint/a11y/noStaticElementInteractions: drop target for native HTML5 DnD of workspace entities; keyboard create path is the existing double-click handler
+			<div
+				ref={flowWrapperRef}
+				className="relative h-full w-full"
+				onDragOver={handleDragOver}
+				onDragLeave={handleDragLeave}
+				onDrop={handleDrop}
+				data-drop-active={isDropActive ? "true" : undefined}
+				data-testid="canvas-drop-zone"
+			>
 				<ReactFlow
 					className="canvas-react-flow"
 					colorMode="dark"
@@ -389,9 +517,9 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 					minZoom={0.12}
 					nodeTypes={canvasNodeTypes}
 					nodes={nodes}
-					nodesConnectable={!disabled}
-					nodesDraggable={!disabled}
-					nodesFocusable={!disabled}
+					nodesConnectable={!disabled && !penActive}
+					nodesDraggable={!disabled && !penActive}
+					nodesFocusable={!disabled && !penActive}
 					onConnect={handleConnect}
 					onDoubleClick={handlePaneDoubleClick}
 					onEdgesChange={handleEdgesChange}
@@ -404,10 +532,12 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 					onNodesChange={handleNodesChange}
 					onNodesDelete={handleNodesDelete}
 					onSelectionChange={handleSelectionChange}
-					panOnDrag
+					panOnDrag={!penActive}
 					panOnScroll
 					proOptions={{ hideAttribution: true }}
-					selectionOnDrag
+					selectionOnDrag={!penActive}
+					elementsSelectable={!penActive}
+					zoomOnDoubleClick={!penActive}
 				>
 					<Background
 						color="color-mix(in srgb, white 6%, transparent)"
@@ -488,6 +618,46 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 						</div>
 					</Panel>
 				</ReactFlow>
+
+				{penActive ? (
+					<div
+						className="absolute inset-0 z-25 cursor-crosshair touch-none"
+						onPointerDown={handlePenPointerDown}
+						onPointerMove={handlePenPointerMove}
+						onPointerUp={finishPenStroke}
+						onPointerCancel={finishPenStroke}
+						data-testid="canvas-pen-layer"
+						data-pen-drawing={isDrawing ? "true" : undefined}
+					>
+						{penPreviewPath ? (
+							<svg
+								className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+								aria-hidden="true"
+							>
+								<g
+									transform={`translate(${instanceRef.current?.getViewport().x ?? 0}, ${instanceRef.current?.getViewport().y ?? 0}) scale(${instanceRef.current?.getViewport().zoom ?? 1})`}
+								>
+									<path
+										d={penPreviewPath}
+										fill="var(--sidebar-primary)"
+										opacity={0.85}
+									/>
+								</g>
+							</svg>
+						) : null}
+					</div>
+				) : null}
+
+				{isDropActive ? (
+					<div
+						className="pointer-events-none absolute inset-3 z-20 flex items-center justify-center rounded-xl border-2 border-[var(--sidebar-primary)] border-dashed bg-[var(--sidebar-primary)]/8"
+						data-testid="canvas-drop-hint"
+					>
+						<span className="glass-panel rounded-lg border border-border/60 px-3 py-1.5 font-mono text-[var(--sidebar-primary)] text-xs">
+							Отпустите, чтобы добавить ссылку на холст
+						</span>
+					</div>
+				) : null}
 			</div>
 		);
 	},

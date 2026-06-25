@@ -73,3 +73,68 @@ describe("canConnect", () => {
 		).toBe(false);
 	});
 });
+
+/**
+ * A registry-typed node: the canvas `kind` stays generic (`agent_run`) while the
+ * persisted `blockType` is a real registry id, so `getNodeType` resolves its
+ * typed ports (mirrors how the catalog renders through the generic node).
+ */
+function typedNode(id: string, blockType: string): PipelineFlowNode {
+	return {
+		id,
+		type: "pipelineRegistry",
+		position: { x: 0, y: 0 },
+		data: { blockId: id, kind: "agent_run", blockType, label: id },
+	};
+}
+
+describe("canConnect — typed-port compatibility", () => {
+	const typedNodes: PipelineFlowNode[] = [
+		node("start", "start"),
+		typedNode("emb", "embedding"),
+		typedNode("kr", "knowledge_retrieval"),
+		typedNode("cls", "classifier"),
+	];
+
+	test("rejects an incompatible typed edge (vector → string)", () => {
+		// embedding.out:vector dragged into knowledge_retrieval.in:string.
+		expect(
+			canConnect(
+				{
+					source: "emb",
+					target: "kr",
+					sourceHandle: "out",
+					targetHandle: "in",
+				},
+				typedNodes,
+				[],
+			),
+		).toBe(false);
+	});
+
+	test("allows a matching typed edge (string → string)", () => {
+		// classifier.out:string → embedding.in:string is an exact match.
+		expect(
+			canConnect(
+				{
+					source: "cls",
+					target: "emb",
+					sourceHandle: "out",
+					targetHandle: "in",
+				},
+				typedNodes,
+				[],
+			),
+		).toBe(true);
+	});
+
+	test("allows an `any`/untyped source (start.out → string input)", () => {
+		expect(
+			canConnect(
+				{ source: "start", target: "kr", targetHandle: "in" },
+				typedNodes,
+				[],
+			),
+		).toBe(true);
+	});
+});

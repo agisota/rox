@@ -54,6 +54,8 @@ export interface BlockHandlerResult {
 	output?: Record<string, unknown>;
 	/** For condition/switch blocks: the output handle that fired. */
 	handle?: string;
+	/** Cost of the block (e.g. LLM token usage) recorded on the succeeded step. */
+	cost?: RunCost;
 	error?: WorkflowRunError;
 }
 

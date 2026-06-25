@@ -36,6 +36,14 @@
 			"types": "./src/crm-contacts.ts",
 			"default": "./src/crm-contacts.ts"
 		},
+		"./calendar-share": {
+			"types": "./src/calendar-share.ts",
+			"default": "./src/calendar-share.ts"
+		},
+		"./chat-token-budget": {
+			"types": "./src/chat-token-budget.ts",
+			"default": "./src/chat-token-budget.ts"
+		},
 		"./issue-board": {
 			"types": "./src/issue-board.ts",
 			"default": "./src/issue-board.ts"
@@ -75,6 +83,10 @@
 		"./chat-models": {
 			"types": "./src/chat-models.ts",
 			"default": "./src/chat-models.ts"
+		},
+		"./chat-permission-mode": {
+			"types": "./src/chat-permission-mode.ts",
+			"default": "./src/chat-permission-mode.ts"
 		},
 		"./rox-ledger": {
 			"types": "./src/rox-ledger.ts",
@@ -339,6 +351,10 @@
 		"./breakpoints": {
 			"types": "./src/breakpoints.ts",
 			"default": "./src/breakpoints.ts"
+		},
+		"./memory-context": {
+			"types": "./src/memory-context.ts",
+			"default": "./src/memory-context.ts"
 		}
 	},
 	"scripts": {
@@ -351,6 +367,7 @@
 		"@zap-studio/retry": "0.3.0",
 		"friendly-words": "1.3.1",
 		"jose": "6.2.2",
+		"perfect-freehand": "1.2.2",
 		"rrule": "2.8.1",
 		"zod": "4.3.6"
 	},

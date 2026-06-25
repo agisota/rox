@@ -1,9 +1,4 @@
-import {
-	chatRuntimeServiceTrpc,
-	chatServiceTrpc,
-	type UseChatDisplayReturn,
-	useChatDisplay,
-} from "@rox/chat/client";
+import { chatRuntimeServiceTrpc, chatServiceTrpc } from "@rox/chat/client";
 import {
 	extractTextsFromParts,
 	selectContextUsage,
@@ -14,16 +9,25 @@ import {
 	PromptInputProvider,
 	useProviderAttachments,
 } from "@rox/ui/ai-elements/prompt-input";
+import { toast } from "@rox/ui/sonner";
 import { useQuery } from "@tanstack/react-query";
 import type { ChatStatus } from "ai";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatInputFooter } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter";
+import {
+	resolveActiveModel,
+	unresolvedModelMessage,
+} from "renderer/components/Chat/ChatInterface/components/ModelPicker/utils/activeModelResolution";
+import { resolveSelectableModels } from "renderer/components/Chat/ChatInterface/components/ModelPicker/utils/selectableModels";
+import { usePermissionModePreference } from "renderer/components/Chat/ChatInterface/hooks/usePermissionModePreference";
 import { useSlashCommandExecutor } from "renderer/components/Chat/ChatInterface/hooks/useSlashCommandExecutor";
-import type {
-	ModelOption,
-	PermissionMode,
-} from "renderer/components/Chat/ChatInterface/types";
+import {
+	type ChatRuntimeMessage,
+	useChatRuntimeChatTransport,
+	useChatDisplay as useTransportChatDisplay,
+} from "renderer/components/Chat/ChatInterface/transport";
+import type { ModelOption } from "renderer/components/Chat/ChatInterface/types";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import {
 	getDesktopChatModelOptions,
@@ -157,7 +161,7 @@ function toErrorMessage(error: unknown): string | null {
 const AUTO_LAUNCH_MAX_RETRIES = 3;
 const AUTO_LAUNCH_RETRY_DELAY_MS = 1500;
 
-type ChatMessage = NonNullable<UseChatDisplayReturn["messages"]>[number];
+type ChatMessage = ChatRuntimeMessage;
 
 type InterruptedMessage = {
 	id: string;
@@ -207,23 +211,97 @@ export function ChatPaneInterface({
 	recents,
 	onSelectRecent,
 }: ChatPaneInterfaceProps) {
-	const { models: availableModels, defaultModel } = useAvailableModels();
+	const { models: catalogModels, defaultModel } = useAvailableModels();
+	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+	// Merge the user's custom OpenAI-compatible provider models into the catalog
+	// (persisted + live `/v1/models` refresh on picker-open) so a selected custom
+	// id resolves against the SAME superset the picker shows — closing the legacy
+	// pane's silent-fallback path where `useAvailableModels()` only knew the
+	// catalog and a custom selection quietly snapped back to the house model.
+	const { data: customProviderConfig } =
+		chatServiceTrpc.auth.getCustomProviderConfig.useQuery();
+	const discoverCustomModels =
+		chatServiceTrpc.auth.discoverCustomProviderModels.useMutation();
+	const [liveCustomModelIds, setLiveCustomModelIds] = useState<string[]>([]);
+	const customProviderBaseUrl = customProviderConfig?.baseUrl;
+	const customProviderHasApiKey = customProviderConfig?.hasApiKey ?? false;
+	const runDiscoverCustomModels = discoverCustomModels.mutateAsync;
+	useEffect(() => {
+		if (!modelSelectorOpen) return;
+		if (!customProviderBaseUrl || !customProviderHasApiKey) {
+			setLiveCustomModelIds([]);
+			return;
+		}
+		let cancelled = false;
+		void runDiscoverCustomModels({ baseUrl: customProviderBaseUrl })
+			.then((result) => {
+				if (cancelled) return;
+				setLiveCustomModelIds(result.models.map((model) => model.id));
+			})
+			.catch(() => {
+				if (cancelled) return;
+				// The list stays on the persisted entries, but the failure is no
+				// longer swallowed: signal that `/v1/models` is unreachable.
+				setLiveCustomModelIds([]);
+				toast.error(
+					"Не удалось получить модели custom-провайдера — проверьте, что /v1/models доступен",
+				);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		modelSelectorOpen,
+		customProviderBaseUrl,
+		customProviderHasApiKey,
+		runDiscoverCustomModels,
+	]);
+	const availableModels = useMemo(
+		() =>
+			resolveSelectableModels({
+				models: catalogModels,
+				customProviderConfig,
+				discoveredModelIds: liveCustomModelIds,
+			}),
+		[catalogModels, customProviderConfig, liveCustomModelIds],
+	);
 	const selectedModelId = useChatPreferencesStore(
 		(state) => state.selectedModelId,
 	);
 	const setSelectedModelId = useChatPreferencesStore(
 		(state) => state.setSelectedModelId,
 	);
-	const selectedModel =
-		availableModels.find((model) => model.id === selectedModelId) ?? null;
-	const activeModel = selectedModel ?? defaultModel;
-	const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+	// Resolve the active model WITHOUT the historical silent swap: an unresolved
+	// persisted custom selection now yields an explicit `unresolvedModelId`.
+	const { activeModel, selectedModel, unresolvedModelId } = useMemo(
+		() =>
+			resolveActiveModel({
+				selectedModelId,
+				availableModels,
+				defaultModel,
+			}),
+		[selectedModelId, availableModels, defaultModel],
+	);
+	const signaledUnresolvedRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!unresolvedModelId) {
+			signaledUnresolvedRef.current = null;
+			return;
+		}
+		if (signaledUnresolvedRef.current === unresolvedModelId) return;
+		signaledUnresolvedRef.current = unresolvedModelId;
+		toast.error(unresolvedModelMessage(unresolvedModelId));
+	}, [unresolvedModelId]);
 	const thinkingLevel = useChatPreferencesStore((state) => state.thinkingLevel);
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
 	);
-	const [permissionMode, setPermissionMode] =
-		useState<PermissionMode>("bypassPermissions");
+	// Persisted + shared with the v2 pane (one localStorage key). Defaults to the
+	// safe "default" (manual-confirm) instead of the previous in-memory
+	// "bypassPermissions" hardcode that reset every session — closing the
+	// desktop-agent security gap. The selected mode is threaded into each turn's
+	// metadata below so the runtime enforces it.
+	const [permissionMode, setPermissionMode] = usePermissionModePreference();
 	const [submitStatus, setSubmitStatus] = useState<ChatStatus | undefined>(
 		undefined,
 	);
@@ -273,9 +351,9 @@ export function ChatPaneInterface({
 			{ enabled: Boolean(cwd) },
 		);
 
-	const chat = useChatDisplay({
+	const chatTransport = useChatRuntimeChatTransport({ cwd, sessionId });
+	const chat = useTransportChatDisplay(chatTransport, {
 		sessionId,
-		cwd,
 		enabled: Boolean(sessionId),
 		fps: 60,
 	});
@@ -617,6 +695,7 @@ export function ChatPaneInterface({
 					metadata: {
 						model: activeModel?.id,
 						thinkingLevel,
+						permissionMode,
 					},
 				};
 				immediateUserMessage =
@@ -698,6 +777,7 @@ export function ChatPaneInterface({
 			setRuntimeErrorMessage,
 			onUserMessageSubmitted,
 			thinkingLevel,
+			permissionMode,
 			clearDraftInStore,
 		],
 	);
@@ -754,6 +834,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: modelId,
 					thinkingLevel,
+					permissionMode,
 				},
 			};
 
@@ -828,6 +909,7 @@ export function ChatPaneInterface({
 		setRuntimeErrorMessage,
 		onUserMessageSubmitted,
 		thinkingLevel,
+		permissionMode,
 	]);
 
 	const handleStop = useCallback(
@@ -857,6 +939,7 @@ export function ChatPaneInterface({
 				metadata: {
 					model: activeModel?.id,
 					thinkingLevel,
+					permissionMode,
 				},
 			});
 			if (optimisticMessage) {
@@ -877,6 +960,7 @@ export function ChatPaneInterface({
 						metadata: {
 							model: activeModel?.id,
 							thinkingLevel,
+							permissionMode,
 						},
 					},
 				);
@@ -917,6 +1001,7 @@ export function ChatPaneInterface({
 			sessionId,
 			setRuntimeErrorMessage,
 			thinkingLevel,
+			permissionMode,
 			clearDraftInStore,
 		],
 	);
@@ -1058,6 +1143,7 @@ export function ChatPaneInterface({
 					setSelectedModel={handleSelectModel}
 					modelSelectorOpen={modelSelectorOpen}
 					setModelSelectorOpen={setModelSelectorOpen}
+					unresolvedModelId={unresolvedModelId}
 					permissionMode={permissionMode}
 					setPermissionMode={setPermissionMode}
 					thinkingLevel={thinkingLevel}

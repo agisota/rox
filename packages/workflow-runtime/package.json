@@ -7,6 +7,10 @@
 		".": {
 			"types": "./src/index.ts",
 			"default": "./src/index.ts"
+		},
+		"./handlers": {
+			"types": "./src/handlers/index.ts",
+			"default": "./src/handlers/index.ts"
 		}
 	},
 	"scripts": {
@@ -16,6 +20,8 @@
 	},
 	"dependencies": {
 		"@rox/workflow-core": "workspace:*",
+		"expr-eval": "2.0.2",
+		"ipaddr.js": "2.2.0",
 		"zod": "4.3.6"
 	},
 	"devDependencies": {

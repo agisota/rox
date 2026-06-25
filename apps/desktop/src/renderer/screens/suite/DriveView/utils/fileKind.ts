@@ -99,12 +99,13 @@ export function fileIcon(mediaType: string, name: string): IconComponent {
 	return ICON_BY_KIND[fileKind(mediaType, name)];
 }
 
-/** Kinds that can be rendered inline in the preview sheet (P0 scope). */
+/** Kinds that can be rendered inline in the preview sheet. */
 export function isPreviewable(kind: FileKind): boolean {
 	return (
 		kind === "image" ||
 		kind === "video" ||
 		kind === "audio" ||
+		kind === "pdf" ||
 		kind === "text" ||
 		kind === "code"
 	);
