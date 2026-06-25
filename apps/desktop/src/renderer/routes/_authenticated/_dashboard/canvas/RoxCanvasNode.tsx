@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Lock } from "lucide-react";
 import type { RoxFlowNode } from "./canvasFlowAdapter";
 import { getCanvasNodeMeta } from "./canvasNodeMeta";
+import { RefNodePreview } from "./RefNodePreview";
 
 const HANDLE_CLASS =
 	"!size-2.5 !rounded-full !border-[1.5px] !border-background !bg-[var(--sidebar-primary)]";
@@ -72,7 +73,11 @@ export function RoxCanvasNode({ data, selected }: NodeProps<RoxFlowNode>) {
 					<h3 className="line-clamp-2 font-mono font-semibold text-foreground text-sm leading-snug">
 						{data.title}
 					</h3>
-					{data.body ? (
+					{isRef ? (
+						<div className="mt-1.5 min-h-0 flex-1">
+							<RefNodePreview data={data} />
+						</div>
+					) : data.body ? (
 						<p className="mt-1.5 line-clamp-3 text-muted-foreground text-xs leading-relaxed">
 							{data.body}
 						</p>

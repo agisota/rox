@@ -71,6 +71,8 @@ interface CanvasFlowProps {
 	document: CanvasDocument;
 	baseVersion: number;
 	disabled?: boolean;
+	/** Workspace owning the canvas; forwarded so ref-nodes can fetch live content. */
+	workspaceId?: string;
 	modeBadge: string;
 	onMutationBatch: (batch: CanvasMutationBatch, label: string) => void;
 	onSelectionChange: (selection: CanvasSelection) => void;
@@ -96,6 +98,7 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 			document,
 			baseVersion,
 			disabled = false,
+			workspaceId,
 			modeBadge,
 			onMutationBatch,
 			onSelectionChange,
@@ -113,8 +116,8 @@ export const CanvasFlow = forwardRef<CanvasFlowHandle, CanvasFlowProps>(
 		> | null>(null);
 
 		const projectedNodes = useMemo(
-			() => toReactFlowNodes(document),
-			[document],
+			() => toReactFlowNodes(document, workspaceId),
+			[document, workspaceId],
 		);
 		const projectedEdges = useMemo(
 			() => toReactFlowEdges(document),

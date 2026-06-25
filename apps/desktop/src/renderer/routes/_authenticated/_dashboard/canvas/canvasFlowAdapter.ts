@@ -25,6 +25,12 @@ export interface RoxCanvasNodeData {
 	refType?: string;
 	refLabel?: string;
 	refPreview?: string;
+	/** Full node ref, forwarded so the live preview layer can resolve content. */
+	nodeRef?: CanvasNode["ref"];
+	/** Inline node text, used as the cache-first note fallback. */
+	nodeText?: string;
+	/** Workspace the canvas belongs to; needed to query live ref content. */
+	workspaceId?: string;
 	tags: string[];
 	locked: boolean;
 	collapsed: boolean;
@@ -57,7 +63,10 @@ function getNodeHeight(node: CanvasNode): number {
 	return node.size?.height ?? DEFAULT_NODE_HEIGHT;
 }
 
-export function toReactFlowNodes(document: CanvasDocument): RoxFlowNode[] {
+export function toReactFlowNodes(
+	document: CanvasDocument,
+	workspaceId?: string,
+): RoxFlowNode[] {
 	return document.nodes.map((node) => {
 		const meta = getCanvasNodeMeta(node.type);
 		return {
@@ -75,6 +84,9 @@ export function toReactFlowNodes(document: CanvasDocument): RoxFlowNode[] {
 				refType: node.ref?.type,
 				refLabel: node.ref ? `${node.ref.type} · ${node.ref.id}` : undefined,
 				refPreview: node.ref?.preview,
+				nodeRef: node.ref,
+				nodeText: node.text,
+				workspaceId,
 				tags: node.tags,
 				locked: node.locked,
 				collapsed: node.collapsed,

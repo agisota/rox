@@ -852,6 +852,7 @@ export function CanvasSurface({ workspaceId }: CanvasSurfaceProps) {
 								onMutationBatch={submitBatch}
 								onOpenRefNode={handleOpenRefNode}
 								onSelectionChange={setSelection}
+								workspaceId={workspaceId}
 							/>
 						</ReactFlowProvider>
 					)
