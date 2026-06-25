@@ -18,9 +18,26 @@ import {
 } from "@rox/ui/ai-elements/flow";
 import { Panel } from "@rox/ui/ai-elements/panel";
 import { Button } from "@rox/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@rox/ui/dialog";
+import { Input } from "@rox/ui/input";
+import { Label } from "@rox/ui/label";
+import { Textarea } from "@rox/ui/textarea";
 import type { RoxWorkflowState } from "@rox/workflow-core";
 import { Background, BackgroundVariant, MiniMap } from "@xyflow/react";
-import { LayoutTemplate, Plus, Sparkles, Wand2 } from "lucide-react";
+import {
+	BookmarkPlus,
+	LayoutTemplate,
+	Plus,
+	Sparkles,
+	Wand2,
+} from "lucide-react";
 import {
 	useCallback,
 	useEffect,
@@ -29,6 +46,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { PipelineTemplate } from "../../templates";
 import { canConnect } from "../connection-rules";
 import type { PipelineFlowEdge, PipelineFlowNode } from "../graph-adapter";
 import { NodePaletteDock } from "../NodePaletteDock";
@@ -83,8 +101,12 @@ type PipelineCanvasProps = {
 	onOpenPalette: () => void;
 	/** Run the dagre auto-layout. */
 	onAutoLayout: () => void;
-	/** Replace the working graph with a template's graph. */
+	/** Apply a gallery template (replace empty canvas / insert into non-empty). */
 	onApplyTemplate: (next: RoxWorkflowState) => void;
+	/** Session-local "Save as template" results, shown first in the gallery. */
+	savedTemplates: readonly PipelineTemplate[];
+	/** Serialise the current graph into a session-local template. */
+	onSaveAsTemplate: (meta: { name: string; description: string }) => void;
 	/** Imperative handle (fitView / viewport centre). */
 	handleRef: React.Ref<PipelineCanvasHandle>;
 	/** Whether the canvas is empty apart from the start node (show hint overlay). */
@@ -120,6 +142,8 @@ export function PipelineCanvas({
 	onOpenPalette,
 	onAutoLayout,
 	onApplyTemplate,
+	savedTemplates,
+	onSaveAsTemplate,
 	handleRef,
 	showEmptyHint,
 	reseedKey,
@@ -127,6 +151,7 @@ export function PipelineCanvas({
 	const [nodes, setNodes] = useNodesState<PipelineFlowNode>(initialNodes);
 	const [edges, setEdges] = useEdgesState<PipelineFlowEdge>(initialEdges);
 	const [galleryOpen, setGalleryOpen] = useState(false);
+	const [saveOpen, setSaveOpen] = useState(false);
 	const flow = useReactFlow();
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -365,6 +390,14 @@ export function PipelineCanvas({
 						>
 							<LayoutTemplate className="size-3.5" /> Шаблоны
 						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							aria-label="Сохранить как шаблон"
+							onClick={() => setSaveOpen(true)}
+						>
+							<BookmarkPlus className="size-3.5" /> Сохранить как шаблон
+						</Button>
 					</Panel>
 				</Canvas>
 
@@ -381,13 +414,113 @@ export function PipelineCanvas({
 				<TemplateGallery
 					open={galleryOpen}
 					onOpenChange={setGalleryOpen}
+					extraTemplates={savedTemplates}
 					onInsert={(state) => {
 						onApplyTemplate(state);
 						setGalleryOpen(false);
 					}}
 				/>
+
+				<SaveTemplateDialog
+					open={saveOpen}
+					onOpenChange={setSaveOpen}
+					onSave={(meta) => {
+						onSaveAsTemplate(meta);
+						setSaveOpen(false);
+					}}
+				/>
 			</div>
 		</div>
+	);
+}
+
+/**
+ * "Save as template" dialog: a name + optional description, then serialise the
+ * current graph into a session-local template (the parent's `onSaveAsTemplate`
+ * runs the builder). Name is required; the description defaults to a short hint.
+ */
+function SaveTemplateDialog({
+	open,
+	onOpenChange,
+	onSave,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onSave: (meta: { name: string; description: string }) => void;
+}) {
+	const [name, setName] = useState("");
+	const [description, setDescription] = useState("");
+
+	// Reset the fields whenever the dialog re-opens.
+	useEffect(() => {
+		if (open) {
+			setName("");
+			setDescription("");
+		}
+	}, [open]);
+
+	const trimmed = name.trim();
+	const submit = () => {
+		if (trimmed.length === 0) return;
+		onSave({
+			name: trimmed,
+			description:
+				description.trim() || "Сохранено из текущего графа редактора.",
+		});
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="sm:max-w-md">
+				<DialogHeader>
+					<DialogTitle>Сохранить как шаблон</DialogTitle>
+					<DialogDescription>
+						Текущий граф станет шаблоном, доступным в галерее для вставки.
+					</DialogDescription>
+				</DialogHeader>
+				<div className="space-y-3">
+					<div className="space-y-1.5">
+						<Label htmlFor="template-name">Название</Label>
+						<Input
+							id="template-name"
+							autoFocus
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") submit();
+							}}
+							placeholder="Например: Мой RAG-бот"
+						/>
+					</div>
+					<div className="space-y-1.5">
+						<Label htmlFor="template-description">Описание</Label>
+						<Textarea
+							id="template-description"
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							placeholder="Короткое описание шаблона (необязательно)."
+							rows={3}
+						/>
+					</div>
+				</div>
+				<DialogFooter>
+					<Button
+						variant="ghost"
+						onClick={() => onOpenChange(false)}
+						type="button"
+					>
+						Отмена
+					</Button>
+					<Button
+						onClick={submit}
+						disabled={trimmed.length === 0}
+						type="button"
+					>
+						Сохранить
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
