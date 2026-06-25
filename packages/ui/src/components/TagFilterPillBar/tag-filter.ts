@@ -8,7 +8,7 @@
  * the persona/org (who/where) axis.
  */
 
-import { identityGlyph } from "@rox/shared/identity-glyph";
+import { resolveLabelColor } from "@rox/shared/label-style";
 
 /** An org chat label as surfaced by `chatLabels.list` (the colour registry). */
 export interface TagLabel {
@@ -18,6 +18,11 @@ export interface TagLabel {
 	name: string;
 	/** Ready-to-use CSS colour for the dot; falls back to the auto-colour. */
 	color?: string | null;
+	/**
+	 * Optional icon token (emoji or `lucide:<name>`); `null`/absent shows the
+	 * plain colour dot. Parsed by `parseLabelIcon` (F11 colour/icon studio).
+	 */
+	icon?: string | null;
 }
 
 /**
@@ -36,7 +41,7 @@ export const ALL_TAGS_FILTER: TagFilterState = { kind: "all" };
 
 /** Resolve a label's dot colour, defaulting to the deterministic auto-colour. */
 export function labelColor(label: TagLabel): string {
-	return label.color ?? identityGlyph(label.name).background;
+	return resolveLabelColor(label.color, label.name);
 }
 
 /** Whether `name` is currently part of an active `labels` filter. */
@@ -77,6 +82,8 @@ export interface TagPill {
 	/** For `label` pills: the membership name and its dot colour. */
 	name?: string;
 	color?: string;
+	/** For `label` pills: the raw icon token (emoji or `lucide:<name>`), if any. */
+	icon?: string | null;
 }
 
 /**
@@ -112,6 +119,7 @@ export function deriveTagPills(
 			active: isLabelActive(filter, label.name),
 			name: label.name,
 			color: labelColor(label),
+			icon: label.icon ?? null,
 		});
 	}
 

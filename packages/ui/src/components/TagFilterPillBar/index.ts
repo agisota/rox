@@ -1,3 +1,5 @@
+export { LabelIconGlyph, type LabelIconGlyphProps } from "./LabelIconGlyph";
+export { LabelStudio, type LabelStudioProps } from "./LabelStudio";
 export {
 	TagFilterPillBar,
 	type TagFilterPillBarProps,

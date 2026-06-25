@@ -12,6 +12,8 @@ import {
 	ContextMenuTrigger,
 } from "../ui/context-menu";
 import { Input } from "../ui/input";
+import { LabelIconGlyph } from "./LabelIconGlyph";
+import { LabelStudio } from "./LabelStudio";
 import {
 	deriveTagPills,
 	type TagFilterState,
@@ -32,6 +34,8 @@ export interface TagFilterPillBarProps {
 	onRenameLabel?: (label: TagLabel, name: string) => void;
 	/** Recolour a label (`chatLabels.update`). */
 	onRecolorLabel?: (label: TagLabel, color: string) => void;
+	/** Set/clear a label's icon (`chatLabels.update`); `null` clears it (F11). */
+	onSetLabelIcon?: (label: TagLabel, icon: string | null) => void;
 	/** Delete a label (`chatLabels.delete`). */
 	onDeleteLabel?: (label: TagLabel) => void;
 	className?: string;
@@ -58,11 +62,16 @@ export function TagFilterPillBar({
 	onCreateLabel,
 	onRenameLabel,
 	onRecolorLabel,
+	onSetLabelIcon,
 	onDeleteLabel,
 	className,
 }: TagFilterPillBarProps) {
 	const pills = deriveTagPills(labels, filter);
 	const labelById = new Map(labels.map((label) => [label.id, label]));
+	// The label whose colour/icon studio is open (`null` when closed). Lifted to
+	// the bar so the studio popover anchors on the pill but is driven by the
+	// context-menu "Customise…" action.
+	const [studioLabelId, setStudioLabelId] = useState<string | null>(null);
 
 	return (
 		<div
@@ -89,14 +98,43 @@ export function TagFilterPillBar({
 					<LabelPill pill={pill} onSelect={() => onSelectPill(pill)} />
 				);
 
-				// No mutation handlers → plain pill (no context menu).
-				if (!label || (!onRenameLabel && !onRecolorLabel && !onDeleteLabel)) {
+				// No mutation handlers → plain pill (no context menu, no studio).
+				if (
+					!label ||
+					(!onRenameLabel &&
+						!onRecolorLabel &&
+						!onSetLabelIcon &&
+						!onDeleteLabel)
+				) {
 					return <span key={pill.key}>{labelPill}</span>;
 				}
 
+				// The colour/icon studio anchors on the pill; the context menu's
+				// "Customise…" toggles it open. When neither recolour nor icon
+				// handlers are wired the studio is skipped and the pill stands alone.
+				const canStudio = Boolean(onRecolorLabel || onSetLabelIcon);
+				const anchored =
+					canStudio && label ? (
+						<LabelStudio
+							label={label}
+							open={studioLabelId === label.id}
+							onOpenChange={(next) => setStudioLabelId(next ? label.id : null)}
+							onRecolor={(color) => onRecolorLabel?.(label, color)}
+							onSetIcon={
+								onSetLabelIcon
+									? (icon) => onSetLabelIcon(label, icon)
+									: undefined
+							}
+						>
+							{labelPill}
+						</LabelStudio>
+					) : (
+						labelPill
+					);
+
 				return (
 					<ContextMenu key={pill.key}>
-						<ContextMenuTrigger asChild>{labelPill}</ContextMenuTrigger>
+						<ContextMenuTrigger asChild>{anchored}</ContextMenuTrigger>
 						<ContextMenuContent className="w-44">
 							{onRenameLabel && (
 								<ContextMenuItem
@@ -110,19 +148,9 @@ export function TagFilterPillBar({
 									Rename
 								</ContextMenuItem>
 							)}
-							{onRecolorLabel && (
-								<ContextMenuItem
-									onSelect={() => {
-										const next = window.prompt(
-											"Label colour (CSS)",
-											pill.color,
-										);
-										if (next?.trim()) {
-											onRecolorLabel(label, next.trim());
-										}
-									}}
-								>
-									Recolour
+							{canStudio && (
+								<ContextMenuItem onSelect={() => setStudioLabelId(label.id)}>
+									Colour &amp; icon…
 								</ContextMenuItem>
 							)}
 							{onDeleteLabel && (
@@ -196,11 +224,17 @@ function LabelPill({
 					: "text-muted-foreground hover:bg-muted hover:text-foreground",
 			)}
 		>
-			<span
-				aria-hidden
-				className="size-1.5 shrink-0 rounded-full"
-				style={{ backgroundColor: pill.color }}
-			/>
+			{pill.icon ? (
+				// An explicit icon (emoji/Lucide) stands in for the colour dot, but
+				// is still tinted with the label colour so the pill keeps its hue.
+				<LabelIconGlyph icon={pill.icon} className="size-3 shrink-0" />
+			) : (
+				<span
+					aria-hidden
+					className="size-1.5 shrink-0 rounded-full"
+					style={{ backgroundColor: pill.color }}
+				/>
+			)}
 			{pill.label}
 		</button>
 	);
