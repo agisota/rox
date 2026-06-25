@@ -40,6 +40,12 @@ export default async function Image({
 		filePath: "rox-logo-light.png",
 		mime: "image/png",
 	});
+	// #520: brand the card with the Rox girl-mark (the #484 brand wave left
+	// og-images out of scope). Rendered next to the wordmark in the brand row.
+	const markDataUri = readFileAsDataUri({
+		filePath: "brand/girl-mark.png",
+		mime: "image/png",
+	});
 
 	if (!entry) {
 		return new ImageResponse(
@@ -154,21 +160,33 @@ export default async function Image({
 						alignItems: "center",
 					}}
 				>
-					{logoDataUri ? (
-						// biome-ignore lint/a11y/useAltText: ImageResponse requires native <img>
-						// biome-ignore lint/performance/noImgElement: ImageResponse requires native <img>
-						<img src={logoDataUri} height={120} />
-					) : (
-						<div
-							style={{
-								fontSize: 48,
-								fontWeight: 700,
-								color: "#ffffff",
-							}}
-						>
-							Rox
-						</div>
-					)}
+					<div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+						{markDataUri ? (
+							// biome-ignore lint/a11y/useAltText: ImageResponse requires native <img>
+							// biome-ignore lint/performance/noImgElement: ImageResponse requires native <img>
+							<img
+								src={markDataUri}
+								width={96}
+								height={96}
+								style={{ borderRadius: 20 }}
+							/>
+						) : null}
+						{logoDataUri ? (
+							// biome-ignore lint/a11y/useAltText: ImageResponse requires native <img>
+							// biome-ignore lint/performance/noImgElement: ImageResponse requires native <img>
+							<img src={logoDataUri} height={120} />
+						) : (
+							<div
+								style={{
+									fontSize: 48,
+									fontWeight: 700,
+									color: "#ffffff",
+								}}
+							>
+								Rox
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>,
