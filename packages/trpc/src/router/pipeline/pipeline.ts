@@ -16,6 +16,7 @@ import { protectedProcedure } from "../../trpc";
 import { requireActiveOrgMembership } from "../utils/active-org";
 import { getPipelineForOrg } from "./access";
 import { ingestPipelineEvent } from "./ingest-event";
+import { buildReplayArgs } from "./replay";
 import { runPipeline } from "./run-pipeline";
 import {
 	createPipelineSchema,
@@ -24,6 +25,7 @@ import {
 	listPipelineRunsSchema,
 	listPipelinesSchema,
 	pipelineIdSchema,
+	replayPipelineRunSchema,
 	runPipelineSchema,
 	updatePipelineGraphSchema,
 	validatePipelineSchema,
@@ -279,5 +281,92 @@ export const pipelineRouter = {
 				.where(eq(workflowRunSteps.runId, input.runId))
 				.orderBy(workflowRunSteps.startedAt);
 			return { run, steps };
+		}),
+
+	/**
+	 * Replay a saved run (issue #553). Whole-run replay re-fires the source run's
+	 * persisted `input` as a fresh run, threading the source's `accumulatedContext`
+	 * seed so the replay starts from the same originating message. Provenance is
+	 * stamped via `parentRunId` (the source run) + a `replay`-marked `triggerRef`,
+	 * so the trace UI / dispatcher can tell a replay from an original.
+	 *
+	 * With `fromStepBlockId` set it becomes a re-run-from-step: the executor enters
+	 * at that node (existing `entryNodeId` seam) seeded from that step's recorded
+	 * `input` (the payload the node received from its upstream).
+	 *
+	 * Reuses {@link runPipeline} verbatim — replay is "run again with a recorded
+	 * input", not a new execution path.
+	 */
+	replayRun: protectedProcedure
+		.input(replayPipelineRunSchema)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = await requireActiveOrgMembership(ctx);
+			const pipeline = await getPipelineForOrg(
+				organizationId,
+				input.pipelineId,
+			);
+
+			// Authorize + load the source run (org- and pipeline-scoped, mirroring
+			// getRun) — never replay a run from another org/pipeline.
+			const [sourceRun] = await db
+				.select()
+				.from(workflowRuns)
+				.where(
+					and(
+						eq(workflowRuns.id, input.runId),
+						eq(workflowRuns.organizationId, organizationId),
+						eq(workflowRuns.workflowId, input.pipelineId),
+					),
+				)
+				.limit(1);
+			if (!sourceRun) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Run not found" });
+			}
+
+			const replayArgs = buildReplayArgs({
+				organizationId,
+				userId: ctx.session.user.id,
+				pipeline,
+				sourceRun,
+				fromStepBlockId: input.fromStepBlockId,
+			});
+
+			// A re-run-from-step seeds the entry node's input from its recorded step.
+			if (input.fromStepBlockId) {
+				const [step] = await db
+					.select()
+					.from(workflowRunSteps)
+					.where(
+						and(
+							eq(workflowRunSteps.runId, input.runId),
+							eq(workflowRunSteps.blockId, input.fromStepBlockId),
+						),
+					)
+					.limit(1);
+				if (!step) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "Cannot re-run from a step that has no recorded execution",
+					});
+				}
+				// The node re-receives the exact payload it got the first time.
+				replayArgs.input = (step.input as Record<string, unknown>) ?? {};
+				replayArgs.entryNodeId = input.fromStepBlockId;
+			}
+
+			const result = await runPipeline(replayArgs);
+
+			// Replays inherit human_approval gates exactly like runOnce.
+			if (result.status === "waiting_approval" && result.approvalBlockId) {
+				await db.insert(approvalRequests).values({
+					organizationId,
+					runId: result.runId,
+					blockId: result.approvalBlockId,
+					status: "pending",
+					requestedByUserId: ctx.session.user.id,
+					title: result.approvalMessage ?? null,
+				});
+			}
+			return result;
 		}),
 } satisfies TRPCRouterRecord;
