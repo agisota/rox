@@ -97,6 +97,11 @@ export const hostSettings = sqliteTable("host_settings", {
 	// Whether create auto-runs `git init` for a folder that isn't a repo yet.
 	// Null resolves to true (today's behavior: empty/template always init).
 	autoInitGit: integer("auto_init_git", { mode: "boolean" }),
+	// Role→model routing (Ф3, #508): JSON `Record<AgentRole, {agentId, modelId}>`
+	// for the 5 orchestration roles. Null/invalid resolves to the all-ROX/ROX
+	// default at read time (`getHostRoleModelMapping`), so a fresh row and every
+	// upgrader run on ROX/ROX with zero config.
+	roleModelMappingJson: text("role_model_mapping_json"),
 });
 
 export const pullRequests = sqliteTable(
