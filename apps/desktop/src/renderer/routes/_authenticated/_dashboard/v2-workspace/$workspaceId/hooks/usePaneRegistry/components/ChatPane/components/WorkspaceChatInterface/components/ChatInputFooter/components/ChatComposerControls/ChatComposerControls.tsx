@@ -16,6 +16,8 @@ import type {
 	PermissionMode,
 } from "renderer/components/Chat/ChatInterface/types";
 import { ModelPicker } from "../../../ModelPicker";
+import { getModelCapabilityMeta } from "../../../ModelPicker/utils/modelCapabilities";
+import { ContextUsageHud } from "../ContextUsageHud";
 
 interface ChatComposerControlsProps {
 	availableModels: ModelOption[];
@@ -36,6 +38,11 @@ interface ChatComposerControlsProps {
 	submitStatus?: ChatStatus;
 	submitDisabled?: boolean;
 	onStop: (event: React.MouseEvent) => void;
+	/**
+	 * Estimated tokens consumed by the current thread, used to drive the
+	 * context-budget HUD next to the model picker.
+	 */
+	usedTokens: number;
 }
 
 export function ChatComposerControls({
@@ -53,7 +60,11 @@ export function ChatComposerControls({
 	submitStatus,
 	submitDisabled,
 	onStop,
+	usedTokens,
 }: ChatComposerControlsProps) {
+	const contextWindowTokens = selectedModel
+		? getModelCapabilityMeta(selectedModel.id).contextWindowTokens
+		: 0;
 	return (
 		<PromptInputFooter>
 			<PromptInputTools className="gap-1.5">
@@ -73,6 +84,10 @@ export function ChatComposerControls({
 					level={thinkingLevel}
 					onLevelChange={setThinkingLevel}
 					className={PILL_BUTTON_CLASS}
+				/>
+				<ContextUsageHud
+					usedTokens={usedTokens}
+					maxTokens={contextWindowTokens}
 				/>
 			</PromptInputTools>
 			<div className="flex items-center gap-2">

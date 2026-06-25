@@ -32,6 +32,10 @@
 			"types": "./src/calendar-share.ts",
 			"default": "./src/calendar-share.ts"
 		},
+		"./chat-token-budget": {
+			"types": "./src/chat-token-budget.ts",
+			"default": "./src/chat-token-budget.ts"
+		},
 		"./issue-board": {
 			"types": "./src/issue-board.ts",
 			"default": "./src/issue-board.ts"

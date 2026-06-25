@@ -52,6 +52,11 @@ interface ChatInputFooterProps {
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	slashCommands: SlashCommand[];
+	/**
+	 * Estimated tokens consumed by the current thread; drives the context-budget
+	 * HUD in the composer controls.
+	 */
+	usedTokens: number;
 	submitDisabled?: boolean;
 	renderAttachment?: (file: FileUIPart & { id: string }) => ReactNode;
 	onSubmitStart?: () => void;
@@ -86,6 +91,7 @@ export function ChatInputFooter({
 	thinkingLevel,
 	setThinkingLevel,
 	slashCommands,
+	usedTokens,
 	submitDisabled,
 	renderAttachment,
 	onSubmitStart,
@@ -241,6 +247,7 @@ export function ChatInputFooter({
 									submitStatus={submitStatus}
 									submitDisabled={submitDisabled}
 									onStop={onStop}
+									usedTokens={usedTokens}
 								/>
 							</PromptInput>
 						</div>

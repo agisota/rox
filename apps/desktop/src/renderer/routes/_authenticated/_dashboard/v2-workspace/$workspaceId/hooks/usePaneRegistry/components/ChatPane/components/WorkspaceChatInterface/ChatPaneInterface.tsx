@@ -1,5 +1,6 @@
 import { chatServiceTrpc } from "@rox/chat/client";
 import type { AppRouter } from "@rox/host-service";
+import { estimateThreadTokens } from "@rox/shared/chat-token-budget";
 import {
 	PromptInputAttachment,
 	type PromptInputMessage,
@@ -666,6 +667,19 @@ export function ChatPaneInterface({
 		});
 	}, [isAwaitingAssistant, messages, pendingUserTurn]);
 
+	// Estimated tokens consumed by the current thread, fed to the composer's
+	// context-budget HUD. Derived from the visible thread text so it grows as
+	// the conversation does; see `@rox/shared/chat-token-budget`.
+	const usedTokens = useMemo(
+		() =>
+			estimateThreadTokens(
+				visibleMessages.map((message) => ({
+					text: getTextPreviewFromContent(message.content),
+				})),
+			),
+		[visibleMessages],
+	);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: sessionId resets the copied share state between sessions
 	useEffect(() => {
 		setLastSharedConversationUrl(null);
@@ -1249,6 +1263,7 @@ export function ChatPaneInterface({
 					thinkingLevel={thinkingLevel}
 					setThinkingLevel={setThinkingLevel}
 					slashCommands={slashCommands}
+					usedTokens={usedTokens}
 					sessionId={sessionId}
 					workspaceId={workspaceId}
 					onError={setRuntimeErrorMessage}
