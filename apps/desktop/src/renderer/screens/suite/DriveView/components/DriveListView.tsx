@@ -1,3 +1,4 @@
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Button } from "@rox/ui/button";
 import {
 	DropdownMenu,
@@ -19,7 +20,13 @@ import {
 	Share2,
 	Trash2,
 } from "lucide-react";
-import { type ReactNode, useMemo, useRef } from "react";
+import {
+	type CSSProperties,
+	type ReactNode,
+	useCallback,
+	useMemo,
+	useRef,
+} from "react";
 import { formatFileSize } from "../../utils/formatFileSize";
 import {
 	type EntryRef,
@@ -27,6 +34,7 @@ import {
 	type SortField,
 	type SortState,
 } from "../types";
+import { dragId, dropTargetId } from "../utils/dnd";
 import { fileIcon } from "../utils/fileKind";
 import type { DriveBrowserModel } from "./browserModel";
 import { EntryContextMenu } from "./EntryContextMenu";
@@ -180,25 +188,40 @@ export function DriveListView(props: DriveListViewProps) {
 	);
 }
 
+interface RowDnd {
+	setNodeRef?: (node: HTMLElement | null) => void;
+	style?: CSSProperties;
+	listeners?: Record<string, unknown>;
+	attributes?: Record<string, unknown>;
+	isDragging?: boolean;
+	isOver?: boolean;
+}
+
 function RowShell({
 	selected,
 	onClick,
 	onDoubleClick,
 	children,
+	dnd,
 }: {
 	selected: boolean;
 	onClick: (event: { metaKey: boolean; shiftKey: boolean }) => void;
 	onDoubleClick: () => void;
 	children: ReactNode;
+	dnd?: RowDnd;
 }) {
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: file row holds a nested kebab button; cannot be a <button>. role="row" + keyboard below.
 		<div
+			ref={dnd?.setNodeRef}
+			style={dnd?.style}
 			className={cn(
 				"group grid h-10 grid-cols-[1fr_7rem_9rem_2.5rem] items-center gap-3 rounded-md px-3 text-sm transition-colors",
 				selected
 					? "bg-primary/10 ring-1 ring-primary/50"
 					: "hover:bg-accent/40",
+				dnd?.isDragging && "opacity-40",
+				dnd?.isOver && "bg-primary/15 ring-1 ring-primary/50",
 			)}
 			onClick={(event) =>
 				onClick({
@@ -213,10 +236,43 @@ function RowShell({
 					onDoubleClick();
 				}
 			}}
+			{...dnd?.attributes}
+			{...dnd?.listeners}
 		>
 			{children}
 		</div>
 	);
+}
+
+/** Wire an entry row as a dnd-kit draggable; folders are additionally droppable. */
+function useRowDnd(
+	model: DriveBrowserModel,
+	ref: EntryRef,
+	droppable: boolean,
+): RowDnd {
+	const draggable = useDraggable({
+		id: dragId(ref),
+		data: model.dragDataFor(ref),
+	});
+	const droppableState = useDroppable({
+		id: dropTargetId({ kind: "folder", id: ref.id }),
+		data: { target: { kind: "folder", id: ref.id } },
+		disabled: !droppable || !model.isMoving,
+	});
+	const setNodeRef = useCallback(
+		(node: HTMLElement | null) => {
+			draggable.setNodeRef(node);
+			if (droppable) droppableState.setNodeRef(node);
+		},
+		[draggable, droppableState, droppable],
+	);
+	return {
+		setNodeRef,
+		listeners: draggable.listeners as Record<string, unknown> | undefined,
+		attributes: draggable.attributes as unknown as Record<string, unknown>,
+		isDragging: draggable.isDragging,
+		isOver: droppable ? droppableState.isOver : false,
+	};
 }
 
 function FolderRow({
@@ -231,6 +287,7 @@ function FolderRow({
 	renaming: boolean;
 }) {
 	const ref: EntryRef = { kind: "folder", id: folder.id };
+	const dnd = useRowDnd(model, ref, true);
 	return (
 		<EntryContextMenu
 			actions={{
@@ -246,6 +303,7 @@ function FolderRow({
 				selected={selected}
 				onClick={(mods) => model.onSelect(ref, mods)}
 				onDoubleClick={() => model.onOpenFolder(folder)}
+				dnd={dnd}
 			>
 				<div className="flex min-w-0 items-center gap-2">
 					<Folder className="size-4 shrink-0 text-primary" />
@@ -281,6 +339,7 @@ function FileRow({
 	renaming: boolean;
 }) {
 	const ref: EntryRef = { kind: "file", id: file.id };
+	const dnd = useRowDnd(model, ref, false);
 	const Icon = fileIcon(file.mediaType, file.name);
 	return (
 		<EntryContextMenu
@@ -299,6 +358,7 @@ function FileRow({
 				selected={selected}
 				onClick={(mods) => model.onSelect(ref, mods)}
 				onDoubleClick={() => model.onOpenFile(file)}
+				dnd={dnd}
 			>
 				<div className="flex min-w-0 items-center gap-2">
 					<Icon className="size-4 shrink-0 text-muted-foreground" />
