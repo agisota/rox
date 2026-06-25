@@ -1,353 +1,539 @@
-import { chatServiceTrpc } from "@rox/chat/client";
-import { Badge } from "@rox/ui/badge";
+import {
+	AGENT_ROLE_DESCRIPTIONS,
+	AGENT_ROLE_LABELS,
+	AGENT_ROLES,
+	type AgentRole,
+	defaultModelForAgent,
+	defaultRoleModelMapping,
+	modelOptionsForAgent,
+	ROLE_AGENT_OPTIONS,
+	type RoleModelMapping,
+} from "@rox/shared/agent-roles";
 import { Button } from "@rox/ui/button";
-import { DrawnCheck, motionDuration, useShouldAnimate } from "@rox/ui/motion";
+import { Card } from "@rox/ui/card";
 import { toast } from "@rox/ui/sonner";
 import { Spinner } from "@rox/ui/spinner";
 import { cn } from "@rox/ui/utils";
-import { createFileRoute } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
-import { type ReactNode, useState } from "react";
-import { FaAws } from "react-icons/fa";
-import { HiArrowUpRight } from "react-icons/hi2";
-import { SiGithub, SiOpenai } from "react-icons/si";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { LuCheck, LuFolderOpen } from "react-icons/lu";
+import { SiGithub } from "react-icons/si";
+import { track } from "renderer/lib/analytics";
+import { apiTrpcClient } from "renderer/lib/api-trpc-client";
+import { authClient } from "renderer/lib/auth-client";
 import { electronTrpc } from "renderer/lib/electron-trpc";
+import { getHostServiceClientByUrl } from "renderer/lib/host-service-client";
+import { logger } from "renderer/lib/logger";
+import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
 import { GhAuthDialog } from "./components/GhAuthDialog";
-import {
-	type Provider,
-	ProviderConnectModal,
-} from "./components/ProviderConnectModal";
-import { ClaudeLogo } from "./providers/components/ClaudeLogo";
 
 export const Route = createFileRoute("/_authenticated/onboarding/")({
-	component: OnboardingDashboardPage,
+	component: OnboardingScreen,
 });
 
-const rowVariants = {
-	hidden: { opacity: 0, y: 6 },
-	show: (i: number) => ({
-		opacity: 1,
-		y: 0,
-		transition: { duration: motionDuration.fast, delay: i * 0.06 },
-	}),
-};
+/**
+ * One-screen onboarding (Ф4, #509 — Variant A). Two columns:
+ *   LEFT (~2/3) "Команда агентов": 5 role rows, each [Agent ▾][Model ▾],
+ *     ROX/ROX preselected, wired to the Ф3 role→model host setting (#508).
+ *   RIGHT (~1/3) "Рабочая область": projects-folder picker (writes the Phase-1
+ *     `projectsBaseDir`), git + gh status (reads Ф2, #507), and auto-init-git
+ *     (host `autoInitGit`) + background cloud-sync (host `localFirstCreate`)
+ *     toggles.
+ * Nothing blocks: ROX/ROX requires zero action and [Start ▸] / [Skip] both go
+ * straight into the app.
+ */
+function OnboardingScreen() {
+	const navigate = useNavigate();
+	const { refetch: refetchSession } = authClient.useSession();
+	const { activeHostUrl } = useLocalHostService();
+	const hostReady = activeHostUrl !== null;
 
-function OnboardingDashboardPage() {
-	const [connectProvider, setConnectProvider] = useState<Provider | null>(null);
+	const [mapping, setMapping] = useState<RoleModelMapping>(() =>
+		defaultRoleModelMapping(),
+	);
+	const [projectsBaseDir, setProjectsBaseDir] = useState<string | null>(null);
+	const [defaultBaseDir, setDefaultBaseDir] = useState<string>("~/rox");
+	const [autoInitGit, setAutoInitGit] = useState(true);
+	const [cloudSync, setCloudSync] = useState(false);
+	const [finishing, setFinishing] = useState(false);
 	const [ghAuthOpen, setGhAuthOpen] = useState(false);
-	const shouldAnimateDecorative = useShouldAnimate("decorative");
 
-	const {
-		data: ghStatus,
-		refetch: refetchGh,
-		isFetching: isFetchingGh,
-	} = electronTrpc.system.detectGhCli.useQuery();
-	const {
-		data: gitStatus,
-		refetch: refetchGit,
-		isFetching: isFetchingGit,
-	} = electronTrpc.system.detectGit.useQuery();
-	const {
-		data: anthropicStatus,
-		refetch: refetchAnthropic,
-		isFetching: isFetchingAnthropic,
-	} = chatServiceTrpc.auth.getAnthropicStatus.useQuery();
-	const {
-		data: openAIStatus,
-		refetch: refetchOpenAI,
-		isFetching: isFetchingOpenAI,
-	} = chatServiceTrpc.auth.getOpenAIStatus.useQuery();
+	const gitStatus = electronTrpc.system.detectGit.useQuery();
+	const ghStatus = electronTrpc.system.detectGhCli.useQuery();
+	const selectDirectory = electronTrpc.window.selectDirectory.useMutation();
+	const installGitTools = electronTrpc.system.installGitTools.useMutation();
 
-	const ghInstalled = ghStatus?.installed === true;
-	const gitInstalled = gitStatus?.installed === true;
-	const ghAuthenticated = ghInstalled && ghStatus?.authenticated === true;
-	// The CLI row is "ready" only once both binaries exist and gh is logged in.
-	const ghReady = ghAuthenticated && gitInstalled;
-	const toolsInstalled = ghInstalled && gitInstalled;
-	const claudeConnected =
-		!!anthropicStatus?.authenticated && !anthropicStatus.issue;
-	const codexConnected = !!openAIStatus?.authenticated && !openAIStatus.issue;
-
-	// Auto-pull the connected GitHub account once gh is authenticated.
-	const { data: githubUsername } =
-		electronTrpc.system.getGitHubUsername.useQuery(undefined, {
-			enabled: ghAuthenticated,
-		});
-
-	const installGitTools = electronTrpc.system.installGitTools.useMutation({
-		onSuccess: async (result) => {
-			// Steps that can't be auto-installed (e.g. gh via apt on Linux) carry
-			// their own manual link; prefer it so we route to the right page.
-			const manualStep = result.steps.find(
-				(step) => step.status === "manual" && step.manualInstallUrl,
-			);
-			const failed = result.steps.find((step) => step.status === "failed");
-			if (result.packageManagerMissing) {
-				toast.error(
-					"Не найден менеджер пакетов для автоустановки. Откройте инструкцию по ручной установке.",
-				);
-				window.open(result.manualInstallUrl, "_blank", "noopener,noreferrer");
-			} else if (result.sudoUnavailable) {
-				toast.error(
-					"Нет прав sudo без пароля. Откройте инструкцию по ручной установке.",
-				);
-				window.open(result.manualInstallUrl, "_blank", "noopener,noreferrer");
-			} else if (!result.ok) {
-				toast.error(
-					failed?.error
-						? `Установка не удалась: ${failed.error}. Откройте инструкцию по ручной установке.`
-						: "Не удалось установить git/gh. Откройте инструкцию по ручной установке.",
-				);
-				// A failed install must never be a dead end — always offer the link.
-				window.open(
-					manualStep?.manualInstallUrl ?? result.manualInstallUrl,
-					"_blank",
-					"noopener,noreferrer",
-				);
-			} else {
-				if (manualStep) {
-					// git installed, but gh needs a manual step (Linux apt has no gh).
-					toast.info(
-						"git установлен. GitHub CLI установите по инструкции вручную.",
-					);
-					window.open(
-						manualStep.manualInstallUrl,
-						"_blank",
-						"noopener,noreferrer",
-					);
-				} else {
-					toast.success("git и GitHub CLI установлены.");
-				}
+	// Load the persisted host settings once the local host is up. The ROX/ROX
+	// defaults are already shown from local state, so the screen is interactive
+	// before this resolves and never blocks on it.
+	useEffect(() => {
+		if (!activeHostUrl) return;
+		const host = getHostServiceClientByUrl(activeHostUrl);
+		let cancelled = false;
+		void (async () => {
+			try {
+				const [roleModel, location, localFirst] = await Promise.all([
+					host.settings.roleModel.get.query(),
+					host.settings.projectsLocation.get.query(),
+					host.settings.localFirst.get.query(),
+				]);
+				if (cancelled) return;
+				setMapping(roleModel.mapping);
+				setProjectsBaseDir(location.projectsBaseDir);
+				setDefaultBaseDir(location.defaultProjectsBaseDir);
+				setAutoInitGit(localFirst.autoInitGit);
+				setCloudSync(localFirst.localFirstCreate);
+			} catch (error) {
+				logger.error("[onboarding] failed to load host settings", error);
 			}
-			await Promise.all([refetchGit(), refetchGh()]);
-		},
-		onError: (error) => {
-			toast.error(error.message || "Не удалось запустить установку git/gh.");
-		},
-	});
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [activeHostUrl]);
 
-	const ghDescription =
-		ghAuthenticated && githubUsername
-			? `Аккаунт: @${githubUsername}`
-			: "Клонируйте, отправляйте изменения и создавайте PR.";
+	const persistMapping = useCallback(
+		(next: RoleModelMapping) => {
+			setMapping(next);
+			if (!activeHostUrl) return;
+			const host = getHostServiceClientByUrl(activeHostUrl);
+			host.settings.roleModel.set.mutate({ mapping: next }).catch((error) => {
+				logger.error("[onboarding] failed to save role mapping", error);
+				toast.error("Не удалось сохранить роли. Попробуйте ещё раз.");
+			});
+		},
+		[activeHostUrl],
+	);
+
+	const setRoleAgent = useCallback(
+		(role: AgentRole, agentId: string) => {
+			persistMapping({
+				...mapping,
+				[role]: { agentId, modelId: defaultModelForAgent(agentId) },
+			});
+		},
+		[mapping, persistMapping],
+	);
+
+	const setRoleModel = useCallback(
+		(role: AgentRole, modelId: string) => {
+			persistMapping({
+				...mapping,
+				[role]: { agentId: mapping[role].agentId, modelId },
+			});
+		},
+		[mapping, persistMapping],
+	);
+
+	const chooseFolder = useCallback(async () => {
+		if (!activeHostUrl) return;
+		const result = await selectDirectory.mutateAsync({
+			title: "Выберите папку для проектов",
+			defaultPath: projectsBaseDir ?? defaultBaseDir,
+		});
+		if (result.canceled || !result.path) return;
+		try {
+			const host = getHostServiceClientByUrl(activeHostUrl);
+			const saved = await host.settings.projectsLocation.set.mutate({
+				path: result.path,
+			});
+			setProjectsBaseDir(saved.projectsBaseDir);
+		} catch (error) {
+			logger.error("[onboarding] failed to save projects folder", error);
+			toast.error("Не удалось сохранить папку проектов.");
+		}
+	}, [activeHostUrl, defaultBaseDir, projectsBaseDir, selectDirectory]);
+
+	const setLocalFirstFlag = useCallback(
+		(patch: { autoInitGit?: boolean; localFirstCreate?: boolean }) => {
+			if (!activeHostUrl) return;
+			const host = getHostServiceClientByUrl(activeHostUrl);
+			host.settings.localFirst.set.mutate(patch).catch((error) => {
+				logger.error("[onboarding] failed to save toggle", error);
+				toast.error("Не удалось сохранить настройку.");
+			});
+		},
+		[activeHostUrl],
+	);
+
+	const finish = useCallback(
+		async (outcome: "completed" | "skipped") => {
+			setFinishing(true);
+			track("onboarding_finished", { outcome });
+			try {
+				await apiTrpcClient.user.completeOnboarding.mutate();
+				// Reactive refetch so the _authenticated guard sees onboardedAt before
+				// we navigate, otherwise it bounces us straight back to onboarding.
+				await refetchSession({ query: { disableCookieCache: true } });
+			} catch (error) {
+				logger.error("[onboarding] completeOnboarding failed", error);
+				toast.error("Не удалось завершить запуск. Попробуйте ещё раз.");
+				setFinishing(false);
+				return;
+			}
+			await navigate({ to: "/v2-workspaces", replace: true });
+		},
+		[navigate, refetchSession],
+	);
+
+	const displayFolder = projectsBaseDir ?? defaultBaseDir;
 
 	return (
-		<>
-			<motion.div
-				className="divide-y divide-border"
-				initial={shouldAnimateDecorative ? "hidden" : false}
-				animate="show"
-			>
-				<motion.div custom={0} variants={rowVariants}>
-					<OnboardingRow
-						icon={<SiGithub className="size-4.5" />}
-						chipClassName="bg-foreground text-background"
-						name="GitHub CLI"
-						description={ghDescription}
-						status={rowStatus(
-							isFetchingGh || isFetchingGit || installGitTools.isPending,
-							ghReady,
-						)}
-						recommended
-						actionLabel={toolsInstalled ? "Войти" : "Установить"}
-						actionPending={installGitTools.isPending}
-						onAction={
-							toolsInstalled
-								? () => setGhAuthOpen(true)
-								: () => installGitTools.mutate()
-						}
-						onRecheck={() => {
-							void refetchGh();
-							void refetchGit();
-						}}
-					/>
-				</motion.div>
-				<motion.div custom={1} variants={rowVariants}>
-					<OnboardingRow
-						icon={<ClaudeLogo className="size-4.5 text-white" />}
-						chipClassName="bg-[#D97757]"
-						name="Claude Code"
-						description="Агент Anthropic для работы с кодом."
-						status={rowStatus(isFetchingAnthropic, claudeConnected)}
-						actionLabel="Войти"
-						onAction={() => setConnectProvider("anthropic")}
-						onRecheck={() => void refetchAnthropic()}
-					/>
-				</motion.div>
-				<motion.div custom={2} variants={rowVariants}>
-					<OnboardingRow
-						icon={<SiOpenai className="size-4.5" />}
-						chipClassName="bg-foreground text-background"
-						name="Codex"
-						description="Агент OpenAI для работы с кодом."
-						status={rowStatus(isFetchingOpenAI, codexConnected)}
-						actionLabel="Войти"
-						onAction={() => setConnectProvider("openai")}
-						onRecheck={() => void refetchOpenAI()}
-					/>
-				</motion.div>
-				<motion.div custom={3} variants={rowVariants}>
-					<OnboardingRow
-						icon={<FaAws className="size-4.5" />}
-						chipClassName="bg-foreground text-background"
-						name="Другие провайдеры"
-						description="Bedrock, Vertex и другие."
-						status="disconnected"
-						actionLabel="Документация провайдеров"
-						actionIcon={<HiArrowUpRight className="size-3.5" />}
-						onAction={() =>
-							window.open(
-								"https://docs.rox.one/providers",
-								"_blank",
-								"noopener,noreferrer",
-							)
-						}
-					/>
-				</motion.div>
-			</motion.div>
+		<div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-8 px-8 pt-10 pb-6">
+			<div className="space-y-2">
+				<h1 className="font-semibold text-2xl text-foreground">Запуск Rox</h1>
+				<p className="text-muted-foreground text-sm">
+					Команда агентов по умолчанию работает на ROX. Ничего настраивать не
+					нужно — нажмите «Начать».
+				</p>
+			</div>
 
-			<ProviderConnectModal
-				provider={connectProvider}
-				onOpenChange={(open) => {
-					if (!open) setConnectProvider(null);
-				}}
-			/>
+			<div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-3">
+				<RoleTeamPanel
+					mapping={mapping}
+					onAgentChange={setRoleAgent}
+					onModelChange={setRoleModel}
+				/>
+				<WorkspacePanel
+					folder={displayFolder}
+					onChooseFolder={chooseFolder}
+					choosingFolder={selectDirectory.isPending}
+					hostReady={hostReady}
+					gitInstalled={gitStatus.data?.installed === true}
+					gitChecking={gitStatus.isFetching}
+					ghInstalled={ghStatus.data?.installed === true}
+					ghAuthenticated={ghStatus.data?.authenticated === true}
+					ghChecking={ghStatus.isFetching}
+					installingTools={installGitTools.isPending}
+					onInstallGh={() => installGitTools.mutate()}
+					onSignInGithub={() => setGhAuthOpen(true)}
+					autoInitGit={autoInitGit}
+					onAutoInitChange={(next) => {
+						setAutoInitGit(next);
+						setLocalFirstFlag({ autoInitGit: next });
+					}}
+					cloudSync={cloudSync}
+					onCloudSyncChange={(next) => {
+						setCloudSync(next);
+						setLocalFirstFlag({ localFirstCreate: next });
+					}}
+				/>
+			</div>
+
+			<div className="flex items-center justify-end gap-3 border-border border-t pt-5">
+				<Button
+					type="button"
+					variant="ghost"
+					onClick={() => void finish("skipped")}
+					disabled={finishing}
+				>
+					Пропустить
+				</Button>
+				<Button
+					type="button"
+					onClick={() => void finish("completed")}
+					disabled={finishing}
+				>
+					{finishing && <Spinner className="size-3.5" />}
+					Начать
+				</Button>
+			</div>
 
 			<GhAuthDialog
 				open={ghAuthOpen}
 				onOpenChange={setGhAuthOpen}
-				onExit={() => void refetchGh()}
+				onExit={() => void ghStatus.refetch()}
 			/>
-		</>
+		</div>
 	);
 }
 
-type RowStatus = "loading" | "connected" | "disconnected";
-
-function rowStatus(isFetching: boolean, connected: boolean): RowStatus {
-	if (isFetching) return "loading";
-	return connected ? "connected" : "disconnected";
+interface RoleTeamPanelProps {
+	mapping: RoleModelMapping;
+	onAgentChange: (role: AgentRole, agentId: string) => void;
+	onModelChange: (role: AgentRole, modelId: string) => void;
 }
 
-interface OnboardingRowProps {
-	icon: ReactNode;
-	chipClassName?: string;
-	name: string;
-	description: string;
-	status: RowStatus;
-	recommended?: boolean;
-	actionLabel: string;
-	actionIcon?: ReactNode;
-	/** When true the action button is disabled and shows a spinner. */
-	actionPending?: boolean;
-	onAction: () => void;
-	onRecheck?: () => void;
-}
-
-function OnboardingRow({
-	icon,
-	chipClassName,
-	name,
-	description,
-	status,
-	recommended,
-	actionLabel,
-	actionIcon,
-	actionPending,
-	onAction,
-	onRecheck,
-}: OnboardingRowProps) {
-	const shouldAnimateEssential = useShouldAnimate("essential");
-	const shouldAnimateDecorative = useShouldAnimate("decorative");
-
+function RoleTeamPanel({
+	mapping,
+	onAgentChange,
+	onModelChange,
+}: RoleTeamPanelProps) {
 	return (
-		<div className="flex items-center gap-4 py-7 first:pt-0 last:pb-0">
-			<div
-				className={cn(
-					"flex size-9 shrink-0 items-center justify-center rounded-md",
-					chipClassName ?? "bg-muted text-foreground",
-				)}
-			>
-				{icon}
+		<Card className="gap-4 p-6 lg:col-span-2">
+			<div className="space-y-1">
+				<p className="font-medium text-foreground text-sm">Команда агентов</p>
+				<p className="text-muted-foreground text-xs">
+					Каждая роль направляется на выбранный агент и модель.
+				</p>
 			</div>
+			<div className="flex flex-col divide-y divide-border">
+				{AGENT_ROLES.map((role) => (
+					<RoleRow
+						key={role}
+						role={role}
+						selection={mapping[role]}
+						onAgentChange={onAgentChange}
+						onModelChange={onModelChange}
+					/>
+				))}
+			</div>
+		</Card>
+	);
+}
+
+interface RoleRowProps {
+	role: AgentRole;
+	selection: RoleModelMapping[AgentRole];
+	onAgentChange: (role: AgentRole, agentId: string) => void;
+	onModelChange: (role: AgentRole, modelId: string) => void;
+}
+
+function RoleRow({
+	role,
+	selection,
+	onAgentChange,
+	onModelChange,
+}: RoleRowProps) {
+	const modelOptions = modelOptionsForAgent(selection.agentId);
+	return (
+		<div className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
 			<div className="min-w-0 flex-1">
-				<p className="text-sm font-medium text-foreground">{name}</p>
-				<p className="text-xs text-muted-foreground">{description}</p>
+				<p className="font-medium text-foreground text-sm">
+					{AGENT_ROLE_LABELS[role]}
+				</p>
+				<p className="truncate text-muted-foreground text-xs">
+					{AGENT_ROLE_DESCRIPTIONS[role]}
+				</p>
 			</div>
-			<div className="flex shrink-0 items-center gap-2">
-				<AnimatePresence initial={false} mode="wait">
-					{status === "loading" && (
-						<motion.span
-							key="loading"
-							className="flex items-center gap-1.5 px-3 text-sm text-muted-foreground"
-							initial={shouldAnimateEssential ? { opacity: 0, y: 4 } : false}
-							animate={{ opacity: 1, y: 0 }}
-							exit={shouldAnimateEssential ? { opacity: 0, y: -4 } : undefined}
-							transition={{ duration: motionDuration.fast }}
-						>
-							<motion.span
-								className="flex items-center gap-1.5"
-								animate={
-									shouldAnimateDecorative
-										? { opacity: [0.6, 1, 0.6] }
-										: { opacity: 1 }
-								}
-								transition={
-									shouldAnimateDecorative
-										? { duration: 1.4, ease: "easeInOut", repeat: Infinity }
-										: { duration: 0 }
-								}
-							>
-								<Spinner className="size-3.5" />
-								Проверка…
-							</motion.span>
-						</motion.span>
-					)}
-					{status === "connected" && (
-						<motion.div
-							key="connected"
-							initial={shouldAnimateEssential ? { opacity: 0, y: 4 } : false}
-							animate={{ opacity: 1, y: 0 }}
-							exit={shouldAnimateEssential ? { opacity: 0, y: -4 } : undefined}
-							transition={{ duration: motionDuration.fast }}
-						>
-							<Button
-								type="button"
-								size="sm"
-								variant="ghost"
-								onClick={onRecheck}
-								disabled={!onRecheck}
-								className="text-emerald-500 hover:text-emerald-500"
-							>
-								<DrawnCheck className="size-3.5" />
-								Подключено
-							</Button>
-						</motion.div>
-					)}
-					{status === "disconnected" && (
-						<motion.div
-							key="disconnected"
-							className="flex items-center gap-2"
-							initial={shouldAnimateEssential ? { opacity: 0, y: 4 } : false}
-							animate={{ opacity: 1, y: 0 }}
-							exit={shouldAnimateEssential ? { opacity: 0, y: -4 } : undefined}
-							transition={{ duration: motionDuration.fast }}
-						>
-							{recommended && <Badge variant="outline">Рекомендуется</Badge>}
-							<Button
-								type="button"
-								size="sm"
-								onClick={onAction}
-								disabled={actionPending}
-							>
-								{actionPending && <Spinner className="size-3.5" />}
-								{actionLabel}
-								{!actionPending && actionIcon}
-							</Button>
-						</motion.div>
-					)}
-				</AnimatePresence>
-			</div>
+			<RoleSelect
+				ariaLabel={`Агент для роли ${AGENT_ROLE_LABELS[role]}`}
+				value={selection.agentId}
+				onChange={(value) => onAgentChange(role, value)}
+				options={ROLE_AGENT_OPTIONS.map((o) => ({
+					value: o.id,
+					label: o.label,
+				}))}
+			/>
+			<RoleSelect
+				ariaLabel={`Модель для роли ${AGENT_ROLE_LABELS[role]}`}
+				value={selection.modelId}
+				onChange={(value) => onModelChange(role, value)}
+				options={modelOptions}
+			/>
 		</div>
+	);
+}
+
+interface RoleSelectProps {
+	ariaLabel: string;
+	value: string;
+	onChange: (value: string) => void;
+	options: ReadonlyArray<{ value: string; label: string }>;
+}
+
+function RoleSelect({ ariaLabel, value, onChange, options }: RoleSelectProps) {
+	// A known value that isn't in the option list (e.g. a custom model id) still
+	// renders so we never silently drop a stored selection.
+	const hasValue = options.some((o) => o.value === value);
+	return (
+		<select
+			aria-label={ariaLabel}
+			value={value}
+			onChange={(event) => onChange(event.target.value)}
+			className={cn(
+				"h-9 w-36 shrink-0 rounded-md border border-input bg-transparent px-2 text-foreground text-sm",
+				"focus:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-input/30",
+			)}
+		>
+			{!hasValue && <option value={value}>{value}</option>}
+			{options.map((option) => (
+				<option key={option.value} value={option.value}>
+					{option.label}
+				</option>
+			))}
+		</select>
+	);
+}
+
+interface WorkspacePanelProps {
+	folder: string;
+	onChooseFolder: () => void;
+	choosingFolder: boolean;
+	hostReady: boolean;
+	gitInstalled: boolean;
+	gitChecking: boolean;
+	ghInstalled: boolean;
+	ghAuthenticated: boolean;
+	ghChecking: boolean;
+	installingTools: boolean;
+	onInstallGh: () => void;
+	onSignInGithub: () => void;
+	autoInitGit: boolean;
+	onAutoInitChange: (next: boolean) => void;
+	cloudSync: boolean;
+	onCloudSyncChange: (next: boolean) => void;
+}
+
+function WorkspacePanel({
+	folder,
+	onChooseFolder,
+	choosingFolder,
+	hostReady,
+	gitInstalled,
+	gitChecking,
+	ghInstalled,
+	ghAuthenticated,
+	ghChecking,
+	installingTools,
+	onInstallGh,
+	onSignInGithub,
+	autoInitGit,
+	onAutoInitChange,
+	cloudSync,
+	onCloudSyncChange,
+}: WorkspacePanelProps) {
+	return (
+		<Card className="gap-5 p-6">
+			<div className="space-y-1">
+				<p className="font-medium text-foreground text-sm">Рабочая область</p>
+				<p className="text-muted-foreground text-xs">
+					Где Rox создаёт проекты и как работает с Git.
+				</p>
+			</div>
+
+			<div className="space-y-1.5">
+				<p className="text-muted-foreground text-xs">Папка проектов</p>
+				<div className="flex items-center gap-2">
+					<div className="flex h-9 min-w-0 flex-1 items-center overflow-x-auto whitespace-nowrap rounded-md border bg-transparent px-3 dark:bg-input/30">
+						<span className="font-mono text-foreground text-sm" title={folder}>
+							{folder}
+						</span>
+					</div>
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						className="size-9 shrink-0"
+						onClick={onChooseFolder}
+						disabled={!hostReady || choosingFolder}
+						aria-label="Выбрать папку проектов"
+					>
+						<LuFolderOpen className="size-4" />
+					</Button>
+				</div>
+			</div>
+
+			<div className="space-y-2">
+				<StatusLine
+					label="Git"
+					checking={gitChecking}
+					// git is always available: detected, or the bundled portable git.
+					ok
+					value={gitInstalled ? "Обнаружен" : "Встроенный ✓"}
+				/>
+				<div className="flex items-center justify-between gap-2">
+					<StatusLine
+						label="GitHub CLI"
+						checking={ghChecking}
+						ok={ghAuthenticated}
+						value={
+							ghAuthenticated
+								? "Подключено"
+								: ghInstalled
+									? "Не выполнен вход"
+									: "Не установлен"
+						}
+					/>
+					{!ghChecking &&
+						(ghAuthenticated ? null : ghInstalled ? (
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={onSignInGithub}
+							>
+								<SiGithub className="size-3.5" />
+								Войти
+							</Button>
+						) : (
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={onInstallGh}
+								disabled={installingTools}
+							>
+								{installingTools && <Spinner className="size-3.5" />}
+								Установить
+							</Button>
+						))}
+				</div>
+			</div>
+
+			<div className="space-y-2 border-border border-t pt-4">
+				<ToggleRow
+					label="Инициализировать Git в новых проектах"
+					checked={autoInitGit}
+					onChange={onAutoInitChange}
+				/>
+				<ToggleRow
+					label="Облачная синхронизация (в фоне)"
+					checked={cloudSync}
+					onChange={onCloudSyncChange}
+				/>
+			</div>
+		</Card>
+	);
+}
+
+interface StatusLineProps {
+	label: string;
+	checking: boolean;
+	ok: boolean;
+	value: string;
+}
+
+function StatusLine({ label, checking, ok, value }: StatusLineProps) {
+	return (
+		<div className="flex items-center gap-2 text-sm">
+			<span className="text-muted-foreground">{label}:</span>
+			{checking ? (
+				<span className="flex items-center gap-1.5 text-muted-foreground">
+					<Spinner className="size-3.5" />
+					Проверка…
+				</span>
+			) : (
+				<span
+					className={cn(
+						"flex items-center gap-1.5",
+						ok ? "text-emerald-500" : "text-foreground",
+					)}
+				>
+					{ok && <LuCheck className="size-3.5" />}
+					{value}
+				</span>
+			)}
+		</div>
+	);
+}
+
+interface ToggleRowProps {
+	label: string;
+	checked: boolean;
+	onChange: (next: boolean) => void;
+}
+
+function ToggleRow({ label, checked, onChange }: ToggleRowProps) {
+	return (
+		<label className="flex cursor-pointer items-center gap-2.5 text-foreground text-sm">
+			<input
+				type="checkbox"
+				checked={checked}
+				onChange={(event) => onChange(event.target.checked)}
+				className="size-4 rounded border-input accent-primary"
+			/>
+			{label}
+		</label>
 	);
 }
