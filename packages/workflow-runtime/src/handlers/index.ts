@@ -10,4 +10,5 @@ export * from "./gateHandler";
 export * from "./httpHandler";
 export * from "./mergeHandler";
 export * from "./modelHandler";
+export * from "./ragHandler";
 export * from "./switchHandler";

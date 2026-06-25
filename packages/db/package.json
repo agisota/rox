@@ -24,6 +24,10 @@
 			"types": "./src/schema/auth.ts",
 			"default": "./src/schema/auth.ts"
 		},
+		"./schema/knowledge": {
+			"types": "./src/schema/knowledge.ts",
+			"default": "./src/schema/knowledge.ts"
+		},
 		"./seed-default-statuses": {
 			"types": "./src/seed-default-statuses.ts",
 			"default": "./src/seed-default-statuses.ts"

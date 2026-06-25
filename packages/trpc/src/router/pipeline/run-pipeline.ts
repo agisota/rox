@@ -152,7 +152,10 @@ export async function runPipeline(
 		recorder: new DbRunRecorder(runId),
 		// Executor node handlers (model, and sibling issues' condition/http/db/…).
 		// agent_run/skill_call keep their dedicated resolver seams below.
-		handlers: buildPipelineHandlers(),
+		handlers: buildPipelineHandlers({
+			organizationId: args.organizationId,
+			v2ProjectId: args.pipeline.v2ProjectId ?? null,
+		}),
 		// Pipelines have no published output schema; the executor skips output
 		// validation when omitted.
 		entryNodeId: args.entryNodeId,
