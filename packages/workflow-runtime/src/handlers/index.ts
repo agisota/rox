@@ -6,6 +6,8 @@
 // executor types only — so the subpath stays cycle-safe.
 export * from "./conditionHandler";
 export * from "./dataHandlers";
+export * from "./dbQueryHandler";
+export * from "./dbWriteHandler";
 export * from "./gateHandler";
 export * from "./httpHandler";
 export * from "./mergeHandler";

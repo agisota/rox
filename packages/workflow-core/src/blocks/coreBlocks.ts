@@ -153,6 +153,22 @@ export const CORE_BLOCKS: BlockDefinition[] = [
 		outputs: [{ name: "out" }, { name: "error" }],
 		risk: "low",
 	}),
+	defineBlock("db_query", {
+		label: "DB Query",
+		description:
+			"Runs a parametrized read-only SELECT against the org-scoped database (DDL/DML rejected); returns the matched rows.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "medium",
+	}),
+	defineBlock("db_write", {
+		label: "DB Write",
+		description:
+			"Runs a parametrized INSERT/UPDATE/DELETE against the org-scoped database in a transaction (rolled back on error); returns affected row count.",
+		inputs: [{ name: "in" }],
+		outputs: [{ name: "out" }, { name: "error" }],
+		risk: "high",
+	}),
 	defineBlock("error_boundary", {
 		label: "Error Boundary",
 		description: "Catches errors from a wrapped sub-graph.",
