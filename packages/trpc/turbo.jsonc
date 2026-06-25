@@ -1,0 +1,22 @@
+{
+	// Package Configuration (https://turbo.build/repo/docs/reference/package-configurations)
+	//
+	// `@rox/trpc` and `@rox/mcp-v2` form a package-graph cycle: `@rox/mcp-v2`
+	// statically imports `@rox/trpc` (caller/crypto), while `@rox/trpc` only
+	// *lazily* loads `@rox/mcp-v2` (`await import("@rox/mcp-v2")` in
+	// `src/router/pipeline/mcp-tool-port.ts`, with locally-declared types).
+	//
+	// The root tasks declare `dependsOn: ["^build"]`, which makes turbo's
+	// topological edge `@rox/trpc#build -> @rox/mcp-v2#build` (and back) a hard
+	// task-graph cycle that fails Build/Typecheck/Test. None of these internal
+	// packages emit build artifacts (no `build` script; exports point at `.ts`
+	// source), so the `^build` edge is a pure ordering constraint with no
+	// compiled-output dependency. Dropping it for this package breaks the cycle
+	// without changing what gets compiled.
+	"extends": ["//"],
+	"tasks": {
+		"build": { "dependsOn": [] },
+		"typecheck": { "dependsOn": [] },
+		"test": { "dependsOn": [] }
+	}
+}

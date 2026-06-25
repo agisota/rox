@@ -1159,7 +1159,6 @@
         "@rox/comms-core": "workspace:*",
         "@rox/db": "workspace:*",
         "@rox/host-provisioner": "workspace:*",
-        "@rox/mcp-v2": "workspace:*",
         "@rox/rtc": "workspace:*",
         "@rox/runtime-clients": "workspace:*",
         "@rox/shared": "workspace:*",
@@ -1182,6 +1181,7 @@
         "zod": "4.3.6",
       },
       "devDependencies": {
+        "@rox/mcp-v2": "workspace:*",
         "@rox/typescript": "workspace:*",
         "@types/node": "24.12.0",
         "typescript": "6.0.3",
