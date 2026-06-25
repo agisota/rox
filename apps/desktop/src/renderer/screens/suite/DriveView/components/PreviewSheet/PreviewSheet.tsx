@@ -8,10 +8,18 @@ import {
 	SheetTitle,
 } from "@rox/ui/sheet";
 import { Download, Loader2, Share2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { formatFileSize } from "../../utils/formatFileSize";
-import type { DriveFile } from "../types";
-import { fileIcon, fileKind, isPreviewable } from "../utils/fileKind";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { formatFileSize } from "../../../utils/formatFileSize";
+import type { DriveFile } from "../../types";
+import { fileIcon, fileKind, isPreviewable } from "../../utils/fileKind";
+import { ImageLightbox } from "./ImageLightbox";
+
+// Lazy: pulls react-pdf + the pdf.js worker into a separate chunk that only
+// loads when a PDF is actually previewed, keeping the worker out of the main
+// renderer bundle.
+const PdfViewer = lazy(() =>
+	import("./PdfViewer").then((m) => ({ default: m.PdfViewer })),
+);
 
 interface PreviewSheetProps {
 	file: DriveFile | null;
@@ -28,7 +36,7 @@ type PreviewState =
 	| { phase: "error"; message: string };
 
 /** Map non-clean scan states to explicit RU messages (router withholds URL). */
-function scanStateMessage(status: DriveFile["status"]): string | null {
+export function scanStateMessage(status: DriveFile["status"]): string | null {
 	if (status === "clean") return null;
 	if (status === "quarantined") return "Файл не прошёл проверку безопасности";
 	return "Файл ещё обрабатывается";
@@ -42,9 +50,9 @@ function scanStateMessage(status: DriveFile["status"]): string | null {
  * + share. Non-clean files surface their scan state instead of a URL, matching
  * the server-side gate.
  *
- * P0 scope deliberately keeps PDF/lightbox to the generic card + download path;
- * the spec routes rich image-lightbox / paged-PDF rendering to P1
- * (yet-another-react-lightbox / react-pdf).
+ * Images open in a zoom/pan lightbox (`yet-another-react-lightbox` + Zoom) and
+ * PDFs in a lazily-loaded paged viewer (`react-pdf`); unsupported kinds keep the
+ * generic card + download fallback.
  */
 export function PreviewSheet({
 	file,
@@ -150,7 +158,12 @@ export function PreviewSheet({
 							</p>
 						</div>
 					) : state.phase === "ready" ? (
-						<PreviewBody kind={kind} url={state.url} text={textBody} />
+						<PreviewBody
+							kind={kind}
+							url={state.url}
+							text={textBody}
+							name={file?.name ?? "Предпросмотр"}
+						/>
 					) : null}
 				</div>
 
@@ -183,18 +196,27 @@ function PreviewBody({
 	kind,
 	url,
 	text,
+	name,
 }: {
 	kind: ReturnType<typeof fileKind>;
 	url: string;
 	text: string | null;
+	name: string;
 }) {
 	if (kind === "image") {
+		return <ImageLightbox url={url} alt={name} />;
+	}
+	if (kind === "pdf") {
 		return (
-			<img
-				src={url}
-				alt="Предпросмотр"
-				className="mx-auto max-h-full max-w-full rounded-lg object-contain"
-			/>
+			<Suspense
+				fallback={
+					<div className="flex h-full items-center justify-center">
+						<Loader2 className="size-6 animate-spin text-muted-foreground" />
+					</div>
+				}
+			>
+				<PdfViewer url={url} />
+			</Suspense>
 		);
 	}
 	if (kind === "video") {

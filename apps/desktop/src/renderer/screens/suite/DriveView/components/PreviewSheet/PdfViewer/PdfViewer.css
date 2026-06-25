@@ -1,0 +1,17 @@
+/* Center the rendered page canvas inside the scroll container and round its
+   corners to match the glass surface. */
+.rox-pdf-document {
+	display: flex;
+	justify-content: center;
+	padding: 0.75rem;
+}
+
+.rox-pdf-page {
+	border-radius: var(--radius, 0.625rem);
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+.rox-pdf-page canvas {
+	border-radius: var(--radius, 0.625rem);
+}
