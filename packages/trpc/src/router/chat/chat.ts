@@ -17,6 +17,7 @@ import {
 	normalizeSearchQuery,
 } from "../search/search-sql";
 import { requireActiveOrgId } from "../utils/active-org";
+import { reconcileSuggestions, type TranscriptTurn } from "./label-suggestion";
 import {
 	buildLabelFilterConditions,
 	listSessionsSchema,
@@ -26,6 +27,7 @@ import { searchMessagesSchema } from "./search-messages-schema";
 import {
 	type ChatCompletionResult,
 	deriveSessionTitle,
+	generateLabelsFromTranscript,
 	persistQuickChatTurns,
 	runQuickChatCompletion,
 } from "./utils/chat-completion";
@@ -699,6 +701,83 @@ export const chatRouter = {
 				.returning({ id: chatSessions.id });
 
 			return { updated: !!updated };
+		}),
+
+	/**
+	 * AI auto-tags from transcript (F14). Mirrors the auto-title pipeline on the
+	 * organization tag axis: given a chat's transcript, the Rox house model
+	 * proposes ≤3 short topical labels the renderer shows as dismissible
+	 * ghost-chips. Accepting a chip writes membership via the existing
+	 * `chat.setLabels`; this procedure only *suggests* — it never mutates
+	 * `chat_sessions.labels`.
+	 *
+	 * Org-scoped (the session must belong to the active org and the caller). The
+	 * idle-reconcile contract is the *trigger*: the host calls this on settling,
+	 * not on every message (mirrors how `generateAndSetTitle` only fires on the
+	 * first turn / every 10th), so the model stays off the per-message hot path.
+	 *
+	 * Respects the manual override: suggestions are reconciled against the
+	 * session's current `labels` so an already-applied (manual or accepted) tag is
+	 * never re-proposed and nothing the user set is overwritten. This procedure
+	 * never mutates the session — accepting a chip writes via `chat.setLabels`.
+	 */
+	generateLabelsFromTranscript: protectedProcedure
+		.input(
+			z.object({
+				sessionId: z.uuid(),
+				/** Journal-readable transcript turns (the host extracts these). */
+				turns: z
+					.array(
+						z.object({
+							role: z.enum(["system", "user", "assistant"]),
+							content: z.string().max(32_000),
+						}),
+					)
+					.min(1)
+					.max(50),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const organizationId = requireActiveOrgId(ctx);
+
+			const [session] = await db
+				.select({
+					id: chatSessions.id,
+					labels: chatSessions.labels,
+				})
+				.from(chatSessions)
+				.where(
+					and(
+						eq(chatSessions.id, input.sessionId),
+						eq(chatSessions.organizationId, organizationId),
+						eq(chatSessions.createdBy, ctx.session.user.id),
+					),
+				)
+				.limit(1);
+
+			if (!session) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Chat session not found",
+				});
+			}
+
+			let suggestions: string[];
+			try {
+				suggestions = await generateLabelsFromTranscript({
+					turns: input.turns as TranscriptTurn[],
+				});
+			} catch (error) {
+				// A genuine gateway failure must never break the chat flow — log and
+				// return no suggestions (mirrors `generateAndSetTitle`'s catch).
+				console.warn("[chat] Label suggestion failed:", error);
+				return { suggestions: [] as string[] };
+			}
+
+			// Respect the manual override: never re-propose a tag the session
+			// already carries (manual or previously accepted).
+			const fresh = reconcileSuggestions(suggestions, session.labels ?? []);
+			return { suggestions: fresh };
 		}),
 } satisfies TRPCRouterRecord;
 
