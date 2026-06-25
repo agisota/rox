@@ -28,6 +28,8 @@ interface ChatComposerControlsProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	/** Persisted selection id that failed to resolve; surfaces in the pill. */
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
 	// Value-only setter so the store-backed `usePermissionModePreference` setter
 	// slots in directly (the picker only ever calls it with a concrete mode).
@@ -50,6 +52,7 @@ export function ChatComposerControls({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -98,6 +101,7 @@ export function ChatComposerControls({
 					onSelectModel={setSelectedModel}
 					open={modelSelectorOpen}
 					onOpenChange={setModelSelectorOpen}
+					unresolvedModelId={unresolvedModelId}
 				/>
 				<ReasoningLevelSlider
 					level={thinkingLevel}

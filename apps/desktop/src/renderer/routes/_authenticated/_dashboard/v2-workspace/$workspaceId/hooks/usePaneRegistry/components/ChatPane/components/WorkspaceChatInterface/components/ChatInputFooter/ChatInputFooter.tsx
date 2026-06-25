@@ -42,6 +42,8 @@ interface ChatInputFooterProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	/** Persisted selection id that failed to resolve; surfaces in the pill. */
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
 	// Value-only setter so the store-backed `usePermissionModePreference` setter
 	// (and a plain `useState` dispatcher) both satisfy this prop. The composer
@@ -78,6 +80,7 @@ export function ChatInputFooter({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -229,6 +232,7 @@ export function ChatInputFooter({
 									setSelectedModel={setSelectedModel}
 									modelSelectorOpen={modelSelectorOpen}
 									setModelSelectorOpen={setModelSelectorOpen}
+									unresolvedModelId={unresolvedModelId}
 									permissionMode={permissionMode}
 									setPermissionMode={setPermissionMode}
 									thinkingLevel={thinkingLevel}

@@ -39,6 +39,10 @@ import { ChatMessageList } from "./components/ChatMessageList";
 import type { UserMessageRestartRequest } from "./components/ChatMessageList/ChatMessageList.types";
 import { PendingApprovalMessage } from "./components/ChatMessageList/components/PendingApprovalMessage/PendingApprovalMessage";
 import { McpControls } from "./components/McpControls";
+import {
+	resolveActiveModel,
+	unresolvedModelMessage,
+} from "./components/ModelPicker/utils/activeModelResolution";
 import { resolveSelectableModels } from "./components/ModelPicker/utils/selectableModels";
 import { useMcpUi } from "./hooks/useMcpUi";
 import { useOptimisticUpload } from "./hooks/useOptimisticUpload";
@@ -320,7 +324,15 @@ export function ChatPaneInterface({
 				setLiveCustomModelIds(result.models.map((model) => model.id));
 			})
 			.catch(() => {
-				// Discovery is best-effort; keep the persisted list on failure.
+				if (cancelled) return;
+				// Discovery is best-effort for the *list* (we keep the persisted
+				// entries), but the failure is no longer swallowed silently: signal
+				// it so the user knows their custom provider's `/v1/models` is
+				// unreachable and a freshly-added model may be missing.
+				setLiveCustomModelIds([]);
+				toast.error(
+					"Не удалось получить модели custom-провайдера — проверьте, что /v1/models доступен",
+				);
 			});
 		return () => {
 			cancelled = true;
@@ -350,9 +362,31 @@ export function ChatPaneInterface({
 	const setSelectedModelId = useChatPreferencesStore(
 		(state) => state.setSelectedModelId,
 	);
-	const selectedModel =
-		availableModels.find((model) => model.id === selectedModelId) ?? null;
-	const activeModel = selectedModel ?? defaultModel;
+	// Resolve the active model WITHOUT the historical silent fallback: when a
+	// persisted custom-provider id can't be found (discovery failed / provider
+	// reconfigured) we get an explicit `unresolvedModelId` instead of quietly
+	// pretending the house model was the user's choice.
+	const { activeModel, selectedModel, unresolvedModelId } = useMemo(
+		() =>
+			resolveActiveModel({
+				selectedModelId,
+				availableModels,
+				defaultModel,
+			}),
+		[selectedModelId, availableModels, defaultModel],
+	);
+	// Surface the unresolved selection once per distinct id so the user isn't
+	// silently downgraded to ROX R1 while believing they're on their custom model.
+	const signaledUnresolvedRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!unresolvedModelId) {
+			signaledUnresolvedRef.current = null;
+			return;
+		}
+		if (signaledUnresolvedRef.current === unresolvedModelId) return;
+		signaledUnresolvedRef.current = unresolvedModelId;
+		toast.error(unresolvedModelMessage(unresolvedModelId));
+	}, [unresolvedModelId]);
 	const thinkingLevel = useChatPreferencesStore((state) => state.thinkingLevel);
 	const setThinkingLevel = useChatPreferencesStore(
 		(state) => state.setThinkingLevel,
@@ -1209,6 +1243,7 @@ export function ChatPaneInterface({
 					setSelectedModel={handleSelectModel}
 					modelSelectorOpen={modelSelectorOpen}
 					setModelSelectorOpen={setModelSelectorOpen}
+					unresolvedModelId={unresolvedModelId}
 					permissionMode={permissionMode}
 					setPermissionMode={setPermissionMode}
 					thinkingLevel={thinkingLevel}
