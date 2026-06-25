@@ -22,6 +22,7 @@ export type CoreBlockType =
 	| "skill_call"
 	| "agent_run"
 	| "model"
+	| "http_request"
 	| "error_boundary";
 
 export interface RoxBlockState {
