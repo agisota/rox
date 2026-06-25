@@ -124,6 +124,10 @@
 			"types": "./src/prefs.ts",
 			"default": "./src/prefs.ts"
 		},
+		"./offline-queue": {
+			"types": "./src/offline-queue.ts",
+			"default": "./src/offline-queue.ts"
+		},
 		"./canvas": {
 			"types": "./src/canvas/index.ts",
 			"default": "./src/canvas/index.ts"
