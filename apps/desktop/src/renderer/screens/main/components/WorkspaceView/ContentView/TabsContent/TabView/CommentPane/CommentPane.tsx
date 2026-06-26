@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@rox/ui/avatar";
-import { mermaid } from "@streamdown/mermaid";
 import {
 	type ReactNode,
 	useCallback,
@@ -25,6 +24,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import { logger } from "renderer/lib/logger";
+import { streamdownMermaidPlugins } from "renderer/lib/streamdown-mermaid";
 import { electronTrpcClient } from "renderer/lib/trpc-client";
 import { useTabsStore } from "renderer/stores/tabs/store";
 import { useTheme } from "renderer/stores/theme";
@@ -196,8 +196,6 @@ export function CommentPane({
 	);
 }
 
-const mermaidPlugins = { mermaid };
-
 const MERMAID_DARK_VARS = {
 	background: "#1e1e2e",
 	primaryColor: "#313244",
@@ -246,7 +244,7 @@ function CommentCodeBlock({
 		return (
 			<Streamdown
 				mode="static"
-				plugins={mermaidPlugins}
+				plugins={streamdownMermaidPlugins}
 				mermaid={{
 					config: {
 						theme: "base",

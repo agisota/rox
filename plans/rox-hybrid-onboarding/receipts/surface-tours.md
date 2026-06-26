@@ -20,7 +20,7 @@ Changed:
 Verified:
 - `bun test apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/onboardingTourRegistry.test.ts`: passed, 2 tests, 88 expects.
 - `bunx @biomejs/biome@2.4.2 check <changed Lane D files>`: passed after formatting one registry file.
-- Integrated desktop typecheck is now covered by `receipts/integration.md`; current full `@rox/desktop` typecheck is blocked by non-onboarding files outside this PR diff.
+- Integrated desktop typecheck is now covered by `receipts/integration.md`; current scoped typecheck passes across the desktop and shared/server packages touched by onboarding.
 - `rg -n "data-onboarding-anchor=\"...\" apps/desktop/src/renderer/routes/_authenticated`: confirmed all required nav and inner anchor names are present.
 
 Integration notes:

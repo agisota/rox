@@ -20,7 +20,7 @@
 - `bunx biome check apps/desktop/src/renderer/stores/onboarding-tour/store.ts apps/desktop/src/renderer/stores/onboarding-tour/index.ts apps/desktop/src/renderer/stores/onboarding-tour/store.test.ts apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/OnboardingTourProvider.tsx apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/index.ts apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingOverlay/OnboardingOverlay.tsx apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingOverlay/index.ts apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingResumeButton/OnboardingResumeButton.tsx apps/desktop/src/renderer/routes/_authenticated/components/OnboardingTourProvider/components/OnboardingResumeButton/index.ts apps/desktop/src/renderer/routes/_authenticated/layout.tsx`
   - Result: pass, no fixes needed after scoped `--write` formatting pass.
 - `bun run typecheck --filter=@rox/desktop`
-  - Integrated result: blocked by non-onboarding files outside this PR diff; see `receipts/integration.md`.
+  - Integrated result: pass; see `receipts/integration.md`.
 
 ## Unresolved risks
 
