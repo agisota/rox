@@ -56,6 +56,7 @@ export function SearchHeader({
 				<HiOutlineMagnifyingGlass className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-muted-foreground" />
 				<Input
 					ref={inputRef}
+					data-onboarding-anchor="memory-search"
 					value={query}
 					onChange={(e) => onQueryChange(e.target.value)}
 					placeholder="Искать в памяти…"

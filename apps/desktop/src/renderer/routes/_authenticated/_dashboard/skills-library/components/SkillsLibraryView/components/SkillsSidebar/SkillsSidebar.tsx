@@ -104,6 +104,7 @@ export function SkillsSidebar({
 				<div className="relative">
 					<LuSearch className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 size-4 text-muted-foreground" />
 					<Input
+						data-onboarding-anchor="skill-search"
 						value={search}
 						onChange={(event) => onSearchChange(event.target.value)}
 						placeholder="Поиск скиллов"

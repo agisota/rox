@@ -26,6 +26,7 @@ import { DaemonAutoUpdateFailureDialog } from "renderer/routes/_authenticated/co
 import { DashboardNewWorkspaceModal } from "renderer/routes/_authenticated/components/DashboardNewWorkspaceModal";
 import { FirstLaunchPermissionsGate } from "renderer/routes/_authenticated/components/FirstLaunchPermissionsGate";
 import { FocusMode } from "renderer/routes/_authenticated/components/FocusMode";
+import { OnboardingTourProvider } from "renderer/routes/_authenticated/components/OnboardingTourProvider";
 import { QuoteLoader } from "renderer/routes/_authenticated/components/QuoteLoader";
 import { V1ImportModal } from "renderer/routes/_authenticated/components/V1ImportModal";
 import { WallpaperBackground } from "renderer/routes/_authenticated/components/WallpaperBackground";
@@ -65,6 +66,7 @@ function AuthenticatedLayout() {
 	const utils = electronTrpc.useUtils();
 	const shownWorkspaceInitWarningsRef = useRef(new Set<string>());
 	const isV2CloudEnabled = useIsV2CloudEnabled();
+	const isOnboardingRoute = location.pathname.startsWith("/onboarding");
 
 	const isSignedIn = env.SKIP_ENV_VALIDATION || !!session?.user;
 	const activeOrganizationId = env.SKIP_ENV_VALIDATION
@@ -226,7 +228,13 @@ function AuthenticatedLayout() {
 							<V2NotificationController />
 							<DaemonAutoUpdateFailureDialog />
 							<FirstLaunchPermissionsGate />
-							<Outlet />
+							{isOnboardingRoute ? (
+								<Outlet />
+							) : (
+								<OnboardingTourProvider>
+									<Outlet />
+								</OnboardingTourProvider>
+							)}
 							<QuoteLoader />
 							<FocusMode />
 							<V1ImportModal />

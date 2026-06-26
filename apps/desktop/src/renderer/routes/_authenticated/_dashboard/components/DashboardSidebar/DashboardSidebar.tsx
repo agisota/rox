@@ -334,6 +334,7 @@ export function DashboardSidebar({
 										icon={HiOutlineSparkles}
 										isActive={isMemoryOpen}
 										isCollapsed={isCollapsed}
+										onboardingAnchor="nav-memory"
 										onClick={() => navigate({ to: "/memory" })}
 									/>
 								)}
@@ -400,6 +401,7 @@ export function DashboardSidebar({
 										<button
 											type="button"
 											aria-label="Настройки"
+											data-onboarding-anchor="nav-settings"
 											onClick={() => navigate({ to: "/settings/account" })}
 											className={cn(
 												"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -416,6 +418,7 @@ export function DashboardSidebar({
 							) : (
 								<button
 									type="button"
+									data-onboarding-anchor="nav-settings"
 									onClick={() => navigate({ to: "/settings/account" })}
 									className={cn(
 										"group flex flex-1 min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",

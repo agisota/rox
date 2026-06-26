@@ -20,6 +20,10 @@
 			"types": "./src/constants.ts",
 			"default": "./src/constants.ts"
 		},
+		"./onboarding": {
+			"types": "./src/onboarding/index.ts",
+			"default": "./src/onboarding/index.ts"
+		},
 		"./unified-search-results": {
 			"types": "./src/unified-search-results.ts",
 			"default": "./src/unified-search-results.ts"

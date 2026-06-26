@@ -1,3 +1,4 @@
+import type { OnboardingStatus } from "@rox/shared/onboarding";
 import { sql } from "drizzle-orm";
 import {
 	boolean,
@@ -23,6 +24,7 @@ export const users = authSchema.table(
 		image: text("image"),
 		organizationIds: uuid("organization_ids").array().default([]).notNull(),
 		onboardedAt: timestamp("onboarded_at"),
+		onboardingProgress: jsonb("onboarding_progress").$type<OnboardingStatus>(),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 		updatedAt: timestamp("updated_at")
 			.defaultNow()

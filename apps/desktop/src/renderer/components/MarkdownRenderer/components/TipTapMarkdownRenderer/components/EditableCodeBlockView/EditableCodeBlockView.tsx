@@ -4,7 +4,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@rox/ui/dropdown-menu";
-import { mermaid } from "@streamdown/mermaid";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import { useState } from "react";
@@ -16,14 +15,13 @@ import {
 	HiOutlineEye,
 } from "react-icons/hi2";
 import { useCopyToClipboard } from "renderer/hooks/useCopyToClipboard";
+import { streamdownMermaidPlugins } from "renderer/lib/streamdown-mermaid";
 import {
 	FILE_VIEW_CODE_BLOCK_LANGUAGES,
 	getCodeBlockLanguageLabel,
 } from "renderer/lib/tiptap/code-block-languages";
 import { useTheme } from "renderer/stores";
 import { Streamdown } from "streamdown";
-
-const mermaidPlugins = { mermaid };
 
 export function EditableCodeBlockView({
 	node,
@@ -144,7 +142,7 @@ export function EditableCodeBlockView({
 				<div contentEditable={false} className="w-full [&_.min-h-28]:min-h-80">
 					<Streamdown
 						mode="static"
-						plugins={mermaidPlugins}
+						plugins={streamdownMermaidPlugins}
 						mermaid={{ config: { theme: isDark ? "dark" : "default" } }}
 					>
 						{`\`\`\`\`mermaid\n${mermaidSource}\n\`\`\`\``}

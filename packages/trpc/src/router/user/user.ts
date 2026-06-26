@@ -1,4 +1,4 @@
-import { db } from "@rox/db/client";
+import { db, dbWs } from "@rox/db/client";
 import {
 	members,
 	roxBalances,
@@ -6,6 +6,13 @@ import {
 	usageRequests,
 	users,
 } from "@rox/db/schema";
+import {
+	ACTIVATION_STEPS,
+	normalizeOnboardingStatus,
+	type OnboardingStatus,
+	REQUIRED_SURFACE_TOURS,
+	type SurfaceTourId,
+} from "@rox/shared/onboarding";
 import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -13,6 +20,178 @@ import { z } from "zod";
 import { generateImagePathname, uploadImage } from "../../lib/upload";
 import { protectedProcedure } from "../../trpc";
 import { ensureBalance } from "../economy/economy.service";
+
+const activationStepSchema = z.enum(ACTIVATION_STEPS);
+const surfaceTourIdSchema = z.enum(REQUIRED_SURFACE_TOURS);
+const POSTGRES_UNDEFINED_COLUMN = "42703";
+
+const onboardingProgressPatchSchema = z.object({
+	activation: z
+		.object({
+			completedAt: z.string().datetime().nullable().optional(),
+			currentStep: activationStepSchema.optional(),
+			completedSteps: z
+				.partialRecord(activationStepSchema, z.string().datetime())
+				.optional(),
+			projectId: z.string().nullable().optional(),
+			workspaceId: z.string().nullable().optional(),
+			providerSkippedAt: z.string().datetime().nullable().optional(),
+		})
+		.optional(),
+	tours: z
+		.object({
+			activeTourId: surfaceTourIdSchema.nullable().optional(),
+			activeStepId: z.string().nullable().optional(),
+			pausedAt: z.string().datetime().nullable().optional(),
+			completedSteps: z
+				.partialRecord(
+					surfaceTourIdSchema,
+					z.record(z.string(), z.string().datetime()),
+				)
+				.optional(),
+			completedTours: z
+				.partialRecord(surfaceTourIdSchema, z.string().datetime())
+				.optional(),
+			dismissedTours: z
+				.partialRecord(surfaceTourIdSchema, z.string().datetime())
+				.optional(),
+			lastRoute: z.string().nullable().optional(),
+		})
+		.optional(),
+});
+
+function mergeTourCompletedSteps(
+	current: OnboardingStatus["tours"]["completedSteps"],
+	patch?: OnboardingStatus["tours"]["completedSteps"],
+): OnboardingStatus["tours"]["completedSteps"] {
+	if (!patch) {
+		return current;
+	}
+
+	const next = { ...current };
+	for (const [tourId, completedSteps] of Object.entries(patch) as [
+		SurfaceTourId,
+		Record<string, string>,
+	][]) {
+		next[tourId] = {
+			...(next[tourId] ?? {}),
+			...completedSteps,
+		};
+	}
+
+	return next;
+}
+
+function mergeOnboardingStatus(
+	current: OnboardingStatus | null | undefined,
+	patch: z.infer<typeof onboardingProgressPatchSchema>,
+): OnboardingStatus {
+	const normalized = normalizeOnboardingStatus(current);
+
+	return normalizeOnboardingStatus({
+		activation: {
+			...normalized.activation,
+			...(patch.activation ?? {}),
+			completedSteps: {
+				...normalized.activation.completedSteps,
+				...(patch.activation?.completedSteps ?? {}),
+			},
+		},
+		tours: {
+			...normalized.tours,
+			...(patch.tours ?? {}),
+			completedSteps: mergeTourCompletedSteps(
+				normalized.tours.completedSteps,
+				patch.tours?.completedSteps,
+			),
+			completedTours: {
+				...normalized.tours.completedTours,
+				...(patch.tours?.completedTours ?? {}),
+			},
+			dismissedTours: {
+				...normalized.tours.dismissedTours,
+				...(patch.tours?.dismissedTours ?? {}),
+			},
+		},
+	});
+}
+
+function getErrorCode(error: unknown): string | undefined {
+	if (typeof error !== "object" || error === null || !("code" in error)) {
+		return undefined;
+	}
+
+	const code = (error as { code?: unknown }).code;
+	return typeof code === "string" ? code : undefined;
+}
+
+function isOnboardingProgressColumnMissing(error: unknown) {
+	const message = error instanceof Error ? error.message : "";
+	return (
+		getErrorCode(error) === POSTGRES_UNDEFINED_COLUMN &&
+		message.includes("onboarding_progress")
+	);
+}
+
+function normalizeOnboardingStatusFromUser(
+	user:
+		| { onboardedAt: Date | null; onboardingProgress?: OnboardingStatus | null }
+		| null
+		| undefined,
+) {
+	const progress = normalizeOnboardingStatus(user?.onboardingProgress);
+
+	if (user?.onboardedAt && !progress.activation.completedAt) {
+		progress.activation.completedAt = user.onboardedAt.toISOString();
+		progress.activation.currentStep = "first_agent_action";
+	}
+
+	return progress;
+}
+
+async function findUserOnboardedAt(userId: string) {
+	const [user] = await db
+		.select({ onboardedAt: users.onboardedAt })
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+
+	if (!user) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "User not found",
+		});
+	}
+
+	return user;
+}
+
+async function updateOnboardedAtOnly(userId: string, completedAt: Date) {
+	const [updatedUser] = await db
+		.update(users)
+		.set({ onboardedAt: completedAt })
+		.where(eq(users.id, userId))
+		.returning({
+			id: users.id,
+			name: users.name,
+			email: users.email,
+			emailVerified: users.emailVerified,
+			image: users.image,
+			organizationIds: users.organizationIds,
+			onboardedAt: users.onboardedAt,
+			createdAt: users.createdAt,
+			updatedAt: users.updatedAt,
+		});
+
+	if (!updatedUser) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "User not found",
+		});
+	}
+
+	return updatedUser;
+}
 
 export const userRouter = {
 	me: protectedProcedure.query(({ ctx }) => ctx.session.user),
@@ -126,13 +305,167 @@ export const userRouter = {
 			return updatedUser;
 		}),
 
+	onboardingProgress: protectedProcedure.query(async ({ ctx }) => {
+		try {
+			const user = await db.query.users.findFirst({
+				where: eq(users.id, ctx.session.user.id),
+				columns: {
+					onboardedAt: true,
+					onboardingProgress: true,
+				},
+			});
+
+			return normalizeOnboardingStatusFromUser(user);
+		} catch (error) {
+			if (!isOnboardingProgressColumnMissing(error)) {
+				throw error;
+			}
+
+			return normalizeOnboardingStatusFromUser(
+				await findUserOnboardedAt(ctx.session.user.id),
+			);
+		}
+	}),
+
+	updateOnboardingProgress: protectedProcedure
+		.input(onboardingProgressPatchSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await dbWs.transaction(async (tx) => {
+					const [user] = await tx
+						.select({ onboardingProgress: users.onboardingProgress })
+						.from(users)
+						.where(eq(users.id, ctx.session.user.id))
+						.for("update")
+						.limit(1);
+
+					if (!user) {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "User not found",
+						});
+					}
+
+					const next = mergeOnboardingStatus(user.onboardingProgress, input);
+
+					await tx
+						.update(users)
+						.set({ onboardingProgress: next })
+						.where(eq(users.id, ctx.session.user.id));
+
+					return next;
+				});
+			} catch (error) {
+				if (!isOnboardingProgressColumnMissing(error)) {
+					throw error;
+				}
+
+				const current = normalizeOnboardingStatusFromUser(
+					await findUserOnboardedAt(ctx.session.user.id),
+				);
+				return mergeOnboardingStatus(current, input);
+			}
+		}),
+
+	completeActivation: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string().optional(),
+				workspaceId: z.string().optional(),
+				completionSource: z.string().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const completedAt = new Date();
+			const completedAtIso = completedAt.toISOString();
+			try {
+				return await dbWs.transaction(async (tx) => {
+					const [user] = await tx
+						.select({ onboardingProgress: users.onboardingProgress })
+						.from(users)
+						.where(eq(users.id, ctx.session.user.id))
+						.for("update")
+						.limit(1);
+
+					if (!user) {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "User not found",
+						});
+					}
+
+					const next = mergeOnboardingStatus(user.onboardingProgress, {
+						activation: {
+							completedAt: completedAtIso,
+							currentStep: "first_agent_action",
+							completedSteps: {
+								first_agent_action: completedAtIso,
+							},
+							projectId: input.projectId ?? null,
+							workspaceId: input.workspaceId ?? null,
+						},
+					});
+
+					const [updatedUser] = await tx
+						.update(users)
+						.set({ onboardedAt: completedAt, onboardingProgress: next })
+						.where(eq(users.id, ctx.session.user.id))
+						.returning();
+
+					return updatedUser;
+				});
+			} catch (error) {
+				if (!isOnboardingProgressColumnMissing(error)) {
+					throw error;
+				}
+
+				return updateOnboardedAtOnly(ctx.session.user.id, completedAt);
+			}
+		}),
+
 	completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
-		const [updatedUser] = await db
-			.update(users)
-			.set({ onboardedAt: new Date() })
-			.where(eq(users.id, ctx.session.user.id))
-			.returning();
-		return updatedUser;
+		const completedAt = new Date();
+		const completedAtIso = completedAt.toISOString();
+		try {
+			return await dbWs.transaction(async (tx) => {
+				const [user] = await tx
+					.select({ onboardingProgress: users.onboardingProgress })
+					.from(users)
+					.where(eq(users.id, ctx.session.user.id))
+					.for("update")
+					.limit(1);
+
+				if (!user) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "User not found",
+					});
+				}
+
+				const next = mergeOnboardingStatus(user.onboardingProgress, {
+					activation: {
+						completedAt: completedAtIso,
+						currentStep: "first_agent_action",
+						completedSteps: {
+							first_agent_action: completedAtIso,
+						},
+					},
+				});
+
+				const [updatedUser] = await tx
+					.update(users)
+					.set({ onboardedAt: completedAt, onboardingProgress: next })
+					.where(eq(users.id, ctx.session.user.id))
+					.returning();
+				return updatedUser;
+			});
+		} catch (error) {
+			if (!isOnboardingProgressColumnMissing(error)) {
+				throw error;
+			}
+
+			return updateOnboardedAtOnly(ctx.session.user.id, completedAt);
+		}
 	}),
 
 	uploadAvatar: protectedProcedure

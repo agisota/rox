@@ -1,10 +1,8 @@
 import { ShowCode } from "@rox/ui/ai-elements/show-code";
-import { mermaid } from "@streamdown/mermaid";
 import type { ReactNode } from "react";
+import { streamdownMermaidPlugins } from "renderer/lib/streamdown-mermaid";
 import { useTheme } from "renderer/stores";
 import { Streamdown } from "streamdown";
-
-const mermaidPlugins = { mermaid };
 
 interface CodeNode {
 	position?: {
@@ -42,7 +40,7 @@ export function CodeBlock({ children, className, node }: CodeBlockProps) {
 		return (
 			<Streamdown
 				mode="static"
-				plugins={mermaidPlugins}
+				plugins={streamdownMermaidPlugins}
 				mermaid={{ config: { theme: isDark ? "dark" : "default" } }}
 			>
 				{`\`\`\`mermaid\n${codeString}\n\`\`\``}
