@@ -29,6 +29,8 @@ export const SETTING_ITEM_ID = {
 	APPEARANCE_WALLPAPER: "appearance-wallpaper",
 	APPEARANCE_LOADING_SCREEN: "appearance-loading-screen",
 
+	SURFACES_SIDEBAR: "surfaces-sidebar",
+
 	RINGTONES_NOTIFICATION: "ringtones-notification",
 
 	KEYBOARD_SHORTCUTS: "keyboard-shortcuts",
@@ -157,6 +159,8 @@ export const SETTING_ITEM_VARIANT: Record<SettingItemId, SettingVariant> = {
 	[SETTING_ITEM_ID.APPEARANCE_GLASS]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_WALLPAPER]: "shared",
 	[SETTING_ITEM_ID.APPEARANCE_LOADING_SCREEN]: "shared",
+
+	[SETTING_ITEM_ID.SURFACES_SIDEBAR]: "shared",
 
 	[SETTING_ITEM_ID.RINGTONES_NOTIFICATION]: "shared",
 
@@ -828,6 +832,42 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 			"переход",
 			"фокус",
 			"заставка",
+		],
+	},
+	{
+		id: SETTING_ITEM_ID.SURFACES_SIDEBAR,
+		section: "surfaces",
+		title: "Поверхности",
+		description: "Показ и скрытие разделов боковой панели",
+		keywords: [
+			"surfaces",
+			"surface",
+			"sidebar",
+			"dashboard",
+			"visibility",
+			"show",
+			"hide",
+			"mail",
+			"drive",
+			"calendar",
+			"notes",
+			"inbox",
+			"journal",
+			"memory",
+			"поверхности",
+			"поверхность",
+			"боковая панель",
+			"панель",
+			"видимость",
+			"показать",
+			"скрыть",
+			"почта",
+			"диск",
+			"календарь",
+			"заметки",
+			"входящие",
+			"журнал",
+			"память",
 		],
 	},
 	{
@@ -2439,6 +2479,10 @@ export const SETTINGS_ITEMS: SettingsItem[] = [
 
 export function searchSettings(query: string): SettingsItem[] {
 	return matchSettings(query, SETTINGS_ITEMS);
+}
+
+export function getSettingsItem(itemId: SettingItemId): SettingsItem | null {
+	return SETTINGS_ITEMS.find((item) => item.id === itemId) ?? null;
 }
 
 export function getMatchCountBySection(

@@ -46,8 +46,9 @@ interface ChatInputFooterProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	slashCommands: SlashCommand[];
@@ -65,6 +66,8 @@ interface ChatInputFooterProps {
 	isQuestionSubmitting?: boolean;
 	onQuestionRespond?: (questionId: string, answer: string) => Promise<void>;
 	onQuestionCancel?: () => void;
+	usedTokens?: number;
+	maxTokens?: number;
 }
 
 export function ChatInputFooter({
@@ -79,6 +82,7 @@ export function ChatInputFooter({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -94,6 +98,8 @@ export function ChatInputFooter({
 	isQuestionSubmitting,
 	onQuestionRespond,
 	onQuestionCancel,
+	usedTokens,
+	maxTokens,
 }: ChatInputFooterProps) {
 	useFocusPromptOnPane(isFocused);
 
@@ -269,6 +275,7 @@ export function ChatInputFooter({
 									setSelectedModel={setSelectedModel}
 									modelSelectorOpen={modelSelectorOpen}
 									setModelSelectorOpen={setModelSelectorOpen}
+									unresolvedModelId={unresolvedModelId}
 									permissionMode={permissionMode}
 									setPermissionMode={setPermissionMode}
 									thinkingLevel={thinkingLevel}
@@ -280,6 +287,8 @@ export function ChatInputFooter({
 									onDictationComplete={handleDictationComplete}
 									dictationTranscribing={transcribing}
 									dictationConfigured={dictationConfigured}
+									usedTokens={usedTokens}
+									maxTokens={maxTokens}
 								/>
 							</PromptInput>
 						</div>

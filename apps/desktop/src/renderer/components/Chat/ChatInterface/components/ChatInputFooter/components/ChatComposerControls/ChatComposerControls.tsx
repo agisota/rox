@@ -29,8 +29,9 @@ interface ChatComposerControlsProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	canAbort: boolean;
@@ -41,6 +42,8 @@ interface ChatComposerControlsProps {
 	dictationTranscribing?: boolean;
 	/** Server-side Whisper availability (voice.isConfigured). Off → mic disabled. */
 	dictationConfigured?: boolean;
+	usedTokens?: number;
+	maxTokens?: number;
 }
 
 export function ChatComposerControls({
@@ -49,6 +52,7 @@ export function ChatComposerControls({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId: _unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -60,6 +64,8 @@ export function ChatComposerControls({
 	onDictationComplete,
 	dictationTranscribing,
 	dictationConfigured,
+	usedTokens: _usedTokens,
+	maxTokens: _maxTokens,
 }: ChatComposerControlsProps) {
 	// Plain dictation can be turned off in Settings → Voice. Cache-first: only
 	// treat as off once we've explicitly read `false` (undefined = loading → keep

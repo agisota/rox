@@ -131,7 +131,8 @@ CREATE TABLE settings (
   dictation_enabled INTEGER DEFAULT 1,
   ambient_capture_enabled INTEGER DEFAULT 0,
   voice_agent_context TEXT DEFAULT '',
-  push_to_talk_accelerator TEXT
+  push_to_talk_accelerator TEXT,
+  tts_voice TEXT
 );
 CREATE TABLE browser_history (
   id TEXT PRIMARY KEY,
@@ -145,6 +146,12 @@ CREATE TABLE saved_prompts (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
+  folder TEXT,
+  tags TEXT DEFAULT '[]',
+  is_favorite INTEGER NOT NULL DEFAULT 0,
+  copy_count INTEGER NOT NULL DEFAULT 0,
+  last_used_at INTEGER,
+  position INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -195,6 +202,9 @@ describe("migration journal", () => {
 		for (let index = 1; index < journal.entries.length; index += 1) {
 			const previous = journal.entries[index - 1];
 			const current = journal.entries[index];
+			if (!previous || !current) {
+				throw new Error(`Missing migration journal entry at index ${index}`);
+			}
 			expect(
 				current.when,
 				`${current.tag} must run after ${previous.tag}`,
@@ -413,6 +423,19 @@ describe("settings round-trip", () => {
 		expect(row.dictationEnabled).toBe(true);
 		expect(row.ambientCaptureEnabled).toBe(false);
 		expect(row.voiceAgentContext).toBe("");
+		expect(row.ttsVoice).toBeNull();
+	});
+
+	test("round-trips the selected TTS voice", () => {
+		const row = single(
+			db
+				.insert(settings)
+				.values({ id: 1, ttsVoice: "en-US-AriaNeural" })
+				.returning()
+				.all(),
+		);
+
+		expect(row.ttsVoice).toBe("en-US-AriaNeural");
 	});
 });
 
@@ -440,6 +463,9 @@ describe("browser history + saved prompts round-trip", () => {
 		);
 		expect(row.id).toBeTypeOf("string");
 		expect(row.title).toBe("Snippet");
+		expect(row.tags).toEqual([]);
+		expect(row.isFavorite).toBe(false);
+		expect(row.copyCount).toBe(0);
 
 		const all = db.select().from(savedPrompts).all();
 		expect(all).toHaveLength(1);

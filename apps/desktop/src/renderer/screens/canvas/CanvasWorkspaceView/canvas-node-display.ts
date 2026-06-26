@@ -25,6 +25,7 @@ export const productionCanvasNodeTypes = [
 	"prompt",
 	"tool-call",
 	"canvas",
+	"freeform",
 ] as const satisfies readonly CanvasNode["type"][];
 
 export const canvasEntityTypeLabels = [
@@ -42,6 +43,7 @@ export const canvasEntityTypeLabels = [
 	"Промпт",
 	"Вызов инструмента",
 	"Канвас",
+	"Рисунок",
 ] as const;
 
 const fallbackNodeCards: DisplayNodeCard[] = [
@@ -105,6 +107,8 @@ function getNodeAccentClass(type: CanvasNode["type"]): string {
 		case "url":
 		case "canvas":
 			return "border-cyan-300/35 bg-cyan-950/35";
+		case "freeform":
+			return "border-rose-300/35 bg-rose-950/35";
 		case "text":
 			return "border-white/15 bg-slate-950/70";
 	}

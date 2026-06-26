@@ -17,19 +17,27 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
+import { autoLayoutGraph } from "./auto-layout";
 import {
+	defaultLabelForType,
 	flowToState,
 	type PipelineFlowEdge,
 	type PipelineFlowNode,
-	type PipelineNodeKind,
 	stateToEdges,
 	stateToNodes,
 } from "./graph-adapter";
 import { NodeInspector, useNodePatch } from "./NodeInspector";
-import { PipelineCanvas } from "./PipelineCanvas";
+import { NodePalette } from "./NodePalette";
+import { PipelineCanvas, type PipelineCanvasHandle } from "./PipelineCanvas";
 import { RoleLibraryPanel } from "./RoleLibraryPanel";
 import { RunMonitorPanel } from "./RunMonitorPanel";
 import { TriggerConfigPanel } from "./TriggerConfigPanel";
+import {
+	buildTemplateFromState,
+	insertTemplate,
+	isEmptyCanvas,
+} from "./templateGraph";
+import { useRunTrace } from "./useRunTrace";
 
 const SAVE_DEBOUNCE_MS = 800;
 
@@ -46,9 +54,18 @@ type PipelineEditorProps = {
 };
 
 /** Generate a unique block id for a freshly-added node. */
-function newBlockId(kind: PipelineNodeKind): string {
+function newBlockId(kind: string): string {
 	const stamp = Math.random().toString(36).slice(2, 8);
 	return `${kind}_${stamp}`;
+}
+
+function slugifyTemplateName(name: string): string {
+	const slug = name
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+	return slug || "saved-template";
 }
 
 /**
@@ -75,12 +92,28 @@ export function PipelineEditor({
 		"idle",
 	);
 	const [rolesPanelOpen, setRolesPanelOpen] = useState(true);
+	const [nodePaletteOpen, setNodePaletteOpen] = useState(false);
+	const [savedTemplates, setSavedTemplates] = useState<
+		ReturnType<typeof buildTemplateFromState>[]
+	>([]);
+	const [reseedKey, setReseedKey] = useState(0);
+	const canvasHandle = useRef<PipelineCanvasHandle>(null);
 
 	const pipelineId = initialPipeline.id;
 	const v2ProjectId = initialPipeline.v2ProjectId ?? undefined;
 	const validateInput = useMemo(() => ({ pipelineId }), [pipelineId]);
+	const runTrace = useRunTrace(pipelineId);
 
-	const nodes = useMemo(() => stateToNodes(graph), [graph]);
+	const nodes = useMemo(() => {
+		const statuses = runTrace.runStatusByBlockId;
+		return stateToNodes(graph).map((node) => ({
+			...node,
+			data: {
+				...node.data,
+				runStatus: statuses[node.id],
+			},
+		}));
+	}, [graph, runTrace.runStatusByBlockId]);
 	const edges = useMemo(() => stateToEdges(graph), [graph]);
 
 	const selectedNode = useMemo(
@@ -184,7 +217,14 @@ export function PipelineEditor({
 	);
 
 	const addNode = useCallback(
-		(kind: PipelineNodeKind, roleSlug?: string, label?: string) => {
+		(
+			kind: string,
+			opts?: {
+				roleSlug?: string;
+				label?: string;
+				position?: { x: number; y: number };
+			},
+		) => {
 			const prev = graphRef.current;
 			const id = newBlockId(kind);
 			const count = Object.keys(prev.blocks).length;
@@ -195,19 +235,19 @@ export function PipelineEditor({
 					[id]: {
 						type: kind,
 						name:
-							label ??
+							opts?.label ??
 							(kind === "agent_run"
 								? "Агент"
 								: kind === "loop"
 									? "Цикл"
 									: kind === "human_approval"
 										? "Подтверждение"
-										: "Финал"),
-						position: {
+										: defaultLabelForType(kind)),
+						position: opts?.position ?? {
 							x: 180 + (count % 4) * 280,
 							y: 360 + Math.floor(count / 4) * 180,
 						},
-						subBlocks: roleSlug ? { roleSlug } : undefined,
+						subBlocks: opts?.roleSlug ? { roleSlug: opts.roleSlug } : undefined,
 					},
 				},
 			};
@@ -219,8 +259,57 @@ export function PipelineEditor({
 	);
 
 	const addRoleNode = useCallback(
-		(roleSlug: string, label: string) => addNode("agent_run", roleSlug, label),
+		(roleSlug: string, label: string) =>
+			addNode("agent_run", { roleSlug, label }),
 		[addNode],
+	);
+
+	const dropNode = useCallback(
+		(
+			kind: string,
+			position: { x: number; y: number },
+			roleSlug?: string,
+			label?: string,
+		) => addNode(kind, { position, roleSlug, label }),
+		[addNode],
+	);
+
+	const autoLayout = useCallback(() => {
+		applyGraphChange(autoLayoutGraph(graphRef.current));
+		setReseedKey((key) => key + 1);
+		requestAnimationFrame(() => canvasHandle.current?.fitView());
+	}, [applyGraphChange]);
+
+	const applyTemplate = useCallback(
+		(template: RoxWorkflowState) => {
+			const prev = graphRef.current;
+			const next = isEmptyCanvas(prev)
+				? template
+				: insertTemplate(prev, template, selectedNodeId ?? "start").state;
+			applyGraphChange(next);
+			setReseedKey((key) => key + 1);
+		},
+		[applyGraphChange, selectedNodeId],
+	);
+
+	const saveAsTemplate = useCallback(
+		(meta: { name: string; description: string }) => {
+			const slug = slugifyTemplateName(meta.name);
+			const id = `${slug}-${Date.now().toString(36)}`;
+			setSavedTemplates((templates) => [
+				buildTemplateFromState(graphRef.current, {
+					id,
+					name: meta.name,
+					description: meta.description,
+					slugSeed: slug,
+					category: "Мои шаблоны",
+					icon: "BookmarkPlus",
+				}),
+				...templates,
+			]);
+			toast.success("Шаблон сохранён в текущей сессии");
+		},
+		[],
 	);
 
 	const validation = validateQuery.data;
@@ -300,9 +389,31 @@ export function PipelineEditor({
 							nodes={nodes}
 							edges={edges}
 							selectedNodeId={selectedNodeId}
+							v2ProjectId={v2ProjectId}
 							onSelectNode={setSelectedNodeId}
 							onGraphChange={handleGraphChange}
-							onAddNode={(kind) => addNode(kind)}
+							onAddNode={addNode}
+							onDropNode={dropNode}
+							onOpenPalette={() => setNodePaletteOpen(true)}
+							onAutoLayout={autoLayout}
+							onApplyTemplate={applyTemplate}
+							savedTemplates={savedTemplates}
+							onSaveAsTemplate={saveAsTemplate}
+							handleRef={canvasHandle}
+							showEmptyHint={isEmptyCanvas(graph)}
+							reseedKey={reseedKey}
+						/>
+						<NodePalette
+							open={nodePaletteOpen}
+							onOpenChange={setNodePaletteOpen}
+							v2ProjectId={v2ProjectId}
+							onPick={(kind, roleSlug, label) => {
+								addNode(kind, {
+									roleSlug,
+									label,
+									position: canvasHandle.current?.getViewportCenter(),
+								});
+							}}
 						/>
 					</ReactFlowProvider>
 				</div>
@@ -347,7 +458,11 @@ export function PipelineEditor({
 									/>
 								</TabsContent>
 								<TabsContent value="runs" className="min-h-0 flex-1">
-									<RunMonitorPanel pipelineId={pipelineId} />
+									<RunMonitorPanel
+										pipelineId={pipelineId}
+										activeRunId={runTrace.activeRunId}
+										onSelectRun={runTrace.setActiveRunId}
+									/>
 								</TabsContent>
 							</Tabs>
 						)}

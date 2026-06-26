@@ -32,6 +32,9 @@ export type ChangesFilter = z.infer<typeof changesFilterSchema>;
 
 export type ChangesViewMode = "folders" | "tree";
 
+export const rightSidebarStateSchema = z.enum(["hidden", "peek", "expanded"]);
+export type RightSidebarState = z.infer<typeof rightSidebarStateSchema>;
+
 const workspaceRunStateSchema = z.enum([
 	"running",
 	"stopped-by-user",
@@ -81,6 +84,7 @@ export const workspaceLocalStateSchema = z.object({
 			}),
 		)
 		.default([]),
+	expandedDirs: z.array(z.string()).default([]),
 	workspaceRunTerminals: z
 		.record(z.string(), workspaceRunTerminalStateSchema)
 		.default({}),
@@ -107,6 +111,7 @@ const WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS = {
 		absolutePath: string;
 		lastAccessedAt: number;
 	}>,
+	expandedDirs: [] as string[],
 	workspaceRunTerminals: {} as Record<
 		string,
 		z.infer<typeof workspaceRunTerminalStateSchema>
@@ -247,6 +252,7 @@ export const v2UserPreferencesSchema = z.object({
 	sidebarFileLinks: linkTierMapSchema.default(DEFAULT_SIDEBAR_FILE_LINKS),
 	terminalPresetsInitialized: z.boolean().default(false),
 	rightSidebarOpen: z.boolean().default(true),
+	rightSidebarState: rightSidebarStateSchema.default("expanded"),
 	rightSidebarTab: z.enum(["changes", "files"]).default("changes"),
 	rightSidebarWidth: z.number().default(340),
 	deleteLocalBranch: z.boolean().default(false),
@@ -264,6 +270,7 @@ export const DEFAULT_V2_USER_PREFERENCES: V2UserPreferencesRow = {
 	sidebarFileLinks: DEFAULT_SIDEBAR_FILE_LINKS,
 	terminalPresetsInitialized: false,
 	rightSidebarOpen: true,
+	rightSidebarState: "expanded",
 	rightSidebarTab: "changes",
 	rightSidebarWidth: 340,
 	deleteLocalBranch: false,
@@ -290,6 +297,8 @@ export function healWorkspaceLocalState(raw: unknown): WorkspaceLocalStateRow {
 		recentlyViewedFiles:
 			r.recentlyViewedFiles ??
 			WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS.recentlyViewedFiles,
+		expandedDirs:
+			r.expandedDirs ?? WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS.expandedDirs,
 		workspaceRunTerminals:
 			r.workspaceRunTerminals ??
 			WORKSPACE_LOCAL_STATE_OPTIONAL_DEFAULTS.workspaceRunTerminals,

@@ -21,6 +21,7 @@ const allNodeTypes = [
 	"prompt",
 	"tool-call",
 	"canvas",
+	"freeform",
 ] as const satisfies readonly CanvasNode["type"][];
 
 describe("canvas node display mapping", () => {
@@ -41,6 +42,7 @@ describe("canvas node display mapping", () => {
 			"Промпт",
 			"Вызов инструмента",
 			"Канвас",
+			"Рисунок",
 		]);
 	});
 
@@ -62,7 +64,7 @@ describe("canvas node display mapping", () => {
 				title: `${type} title`,
 				text: type === "text" || type === "code" ? `${type} body` : undefined,
 				ref:
-					type === "text"
+					type === "text" || type === "freeform"
 						? undefined
 						: {
 								type:

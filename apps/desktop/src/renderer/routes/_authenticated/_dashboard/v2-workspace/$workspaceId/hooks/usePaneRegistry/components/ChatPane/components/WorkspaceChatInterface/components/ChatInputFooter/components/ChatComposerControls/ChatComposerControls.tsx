@@ -32,8 +32,9 @@ interface ChatComposerControlsProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
-	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
+	setPermissionMode: (mode: PermissionMode) => void;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	canAbort: boolean;
@@ -43,6 +44,8 @@ interface ChatComposerControlsProps {
 	onDictationComplete?: (recording: Recording, locked: boolean) => void;
 	dictationTranscribing?: boolean;
 	dictationConfigured?: boolean;
+	usedTokens?: number;
+	maxTokens?: number;
 }
 
 export function ChatComposerControls({
@@ -51,6 +54,7 @@ export function ChatComposerControls({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
+	unresolvedModelId: _unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -62,6 +66,8 @@ export function ChatComposerControls({
 	onDictationComplete,
 	dictationTranscribing,
 	dictationConfigured,
+	usedTokens: _usedTokens,
+	maxTokens: _maxTokens,
 }: ChatComposerControlsProps) {
 	const dictationEnabled =
 		electronTrpc.settings.getDictationEnabled.useQuery().data;
