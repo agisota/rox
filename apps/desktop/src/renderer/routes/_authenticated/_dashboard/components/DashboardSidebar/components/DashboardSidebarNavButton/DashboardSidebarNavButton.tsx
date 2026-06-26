@@ -9,6 +9,7 @@ export interface DashboardSidebarNavButtonProps {
 	isActive: boolean;
 	isCollapsed: boolean;
 	onClick: () => void;
+	onboardingAnchor?: string;
 	/**
 	 * Optional unread badge. Expanded: a glass `tabular-nums` pill (`>99 → 99+`)
 	 * that springs on increment via {@link AnimatedNumber}. Collapsed: a small
@@ -39,6 +40,7 @@ export function DashboardSidebarNavButton({
 	isActive,
 	isCollapsed,
 	onClick,
+	onboardingAnchor,
 	badgeCount,
 }: DashboardSidebarNavButtonProps) {
 	const hasBadge = (badgeCount ?? 0) > 0;
@@ -49,6 +51,7 @@ export function DashboardSidebarNavButton({
 				<TooltipTrigger asChild>
 					<button
 						type="button"
+						data-onboarding-anchor={onboardingAnchor}
 						aria-label={
 							hasBadge ? `${label} (${formatBadge(badgeCount ?? 0)})` : label
 						}
@@ -77,6 +80,7 @@ export function DashboardSidebarNavButton({
 	return (
 		<button
 			type="button"
+			data-onboarding-anchor={onboardingAnchor}
 			onClick={onClick}
 			className={cn(
 				"group flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 font-medium text-sm transition-colors",

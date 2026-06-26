@@ -11,6 +11,7 @@ import {
 	ANALYTICS_EVENTS,
 	type AnalyticsEventName,
 } from "@rox/shared/constants";
+import type { ActivationStep, SurfaceTourId } from "@rox/shared/onboarding";
 
 export { ANALYTICS_EVENTS };
 export type { AnalyticsEventName };
@@ -97,6 +98,50 @@ export interface AnalyticsEventMap {
 	};
 	[ANALYTICS_EVENTS.SIGNED_IN]: { method?: string };
 	[ANALYTICS_EVENTS.ONBOARDING_COMPLETED]: { project_id?: string };
+	[ANALYTICS_EVENTS.ONBOARDING_ACTIVATION_STARTED]: {
+		route?: string;
+		completion_source?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_ACTIVATION_STEP_COMPLETED]: {
+		step_id: ActivationStep;
+		route?: string;
+		project_id?: string;
+		workspace_id?: string;
+		provider?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_ACTIVATION_COMPLETED]: {
+		project_id?: string;
+		workspace_id?: string;
+		completion_source?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_TOUR_STARTED]: {
+		surface: SurfaceTourId;
+		step_id?: string;
+		route?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_TOUR_STEP_COMPLETED]: {
+		surface: SurfaceTourId;
+		step_id: string;
+		route?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_TOUR_PAUSED]: {
+		surface: SurfaceTourId;
+		step_id: string;
+		route?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_TOUR_RESUMED]: {
+		surface: SurfaceTourId;
+		step_id?: string;
+		route?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_TOUR_COMPLETED]: {
+		surface: SurfaceTourId;
+		route?: string;
+		completion_source?: string;
+	};
+	[ANALYTICS_EVENTS.ONBOARDING_ALL_COMPLETED]: {
+		completion_source?: string;
+	};
 	[ANALYTICS_EVENTS.SESSION_STARTED]: { app?: string };
 }
 

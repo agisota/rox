@@ -185,6 +185,7 @@ export function TasksTopBar({
 							<Button
 								variant="outline"
 								size="sm"
+								data-onboarding-anchor="tasks-create"
 								className="h-8 gap-1.5 px-3"
 								onClick={() => setIsCreateTaskOpen(true)}
 							>

@@ -137,6 +137,8 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Рабочие пространства"
+							data-onboarding-anchor="nav-workspaces"
 							onClick={handleWorkspacesClick}
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -155,6 +157,8 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Автоматизации"
+							data-onboarding-anchor="nav-automations"
 							onClick={handleAutomationsClick}
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -175,6 +179,7 @@ export function DashboardSidebarHeader({
 							type="button"
 							onClick={handlePipelinesClick}
 							aria-label="Пайплайны"
+							data-onboarding-anchor="nav-pipelines"
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
 								isPipelinesOpen
@@ -192,6 +197,8 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Задачи"
+							data-onboarding-anchor="nav-tasks-pr"
 							onClick={handleTasksClick}
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -210,6 +217,8 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Библиотека скиллов"
+							data-onboarding-anchor="nav-skills-library"
 							onClick={handleSkillsLibraryClick}
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -228,6 +237,7 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label="Сохранённые промпты"
 							onClick={handleSavedPromptsClick}
 							className={cn(
 								"flex size-8 items-center justify-center rounded-md transition-colors",
@@ -246,6 +256,7 @@ export function DashboardSidebarHeader({
 					<TooltipTrigger asChild>
 						<button
 							type="button"
+							aria-label={`Новое рабочее пространство (${shortcutText})`}
 							onClick={() => openModal()}
 							className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
 						>
@@ -315,6 +326,7 @@ export function DashboardSidebarHeader({
 
 			<button
 				type="button"
+				data-onboarding-anchor="nav-workspaces"
 				onClick={handleWorkspacesClick}
 				className={cn(
 					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
@@ -329,6 +341,7 @@ export function DashboardSidebarHeader({
 
 			<button
 				type="button"
+				data-onboarding-anchor="nav-automations"
 				onClick={handleAutomationsClick}
 				className={cn(
 					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
@@ -343,6 +356,7 @@ export function DashboardSidebarHeader({
 
 			<button
 				type="button"
+				data-onboarding-anchor="nav-pipelines"
 				onClick={handlePipelinesClick}
 				className={cn(
 					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
@@ -357,6 +371,7 @@ export function DashboardSidebarHeader({
 
 			<button
 				type="button"
+				data-onboarding-anchor="nav-tasks-pr"
 				onClick={handleTasksClick}
 				className={cn(
 					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
@@ -371,6 +386,7 @@ export function DashboardSidebarHeader({
 
 			<button
 				type="button"
+				data-onboarding-anchor="nav-skills-library"
 				onClick={handleSkillsLibraryClick}
 				className={cn(
 					"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",

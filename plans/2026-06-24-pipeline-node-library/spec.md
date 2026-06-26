@@ -16,7 +16,7 @@ Data-driven node-type **registry** on the existing `workflow-core` engine. Each 
 
 ## Architecture / data flow
 
-```
+```text
 NodeType registry (packages/workflow-core/src/registry/*)
   defines: id, category, label, icon, color, ports(in/out, typed), configSchema(zod), validate?, executor?(later)
         │
@@ -32,7 +32,7 @@ RoxWorkflowState.blocks[id] = { type:<registry id>, name, enabled, position, sub
 run-pipeline executor registry (LATER slice) dispatches block.type -> executor
 ```
 
-`RoxBlockState.type` widens from a 5-member union to a registry-validated string (additive; jsonb, **no DB migration** — `workflowBlockSchema.subBlocks` is already `z.record(z.string(), z.unknown())`).
+`RoxBlockState.type` widens from a 5-member union to a registry-validated string (additive; jsonb, **no DB migration for stored graph data** — `workflowBlockSchema.subBlocks` is already `z.record(z.string(), z.unknown())`). If a future slice adds DB CHECK constraints or API validators for registry keys, update those boundary checks separately.
 
 ## Components (units, each small + testable)
 
@@ -41,7 +41,7 @@ run-pipeline executor registry (LATER slice) dispatches block.type -> executor
 3. **`validateGraph`** — generalized to drive required-config + port-type checks from the registry (keep existing graph-level checks: start integrity, unreachable, etc.).
 4. **Web `PipelineEditor`** — generalize:
    - `graph-adapter.ts` round-trips arbitrary registry types (already mostly generic).
-   - `NodeInspector` renders an **auto-form** from the selected node's `configSchema` (field renderers: text, number(min/max), select(model/agent/role/knowledge-base/db), textarea, key-value, expression, boolean) — replaces the per-type hand-forms (keep behavior for the 5 existing types).
+   - `NodeInspector` renders an **auto-form** from the selected node's `configSchema` (field renderers: text, number(min/max), select(model/agent/role/knowledge_documents/knowledge_links/db), textarea, key-value, expression, boolean) — replaces the per-type hand-forms (keep behavior for the 5 existing types).
    - `PipelineCanvas` palette: categorized, searchable, drag-n-drop add (replaces the 4 fixed toolbar buttons); node render shows category icon/color + typed ports; edges labeled/colored (success/failure/condition branches); node groups; minimap/zoom.
 5. **Desktop `PipelineEditor`** — mirror the web generalization (parity).
 6. **Templates** — `templates.ts` expands to a declarative gallery (many: RAG bot, tool-using agent, classifier-router, ETL, review-with-gate, etc.) + an "insert template" gallery UI on the canvas.
@@ -76,6 +76,7 @@ TDD per unit: registry register/get/list; each node module's configSchema valida
 ## Build slices (this spec = Slice 1)
 
 - **1a Foundation:** registry + generalize types/validate/graph-adapter/NodeInspector(auto-form)/canvas-palette; migrate the 5 existing types into registry modules; keep green.
+- Registry IDs and xyflow node keys may differ during migration (for example, canonical `start` can continue mapping to the current `pipelineStart` key), so the adapter owns that mapping without implying runtime behavior changes.
 - **1b Catalog:** the node-type modules above (design-time) by category.
 - **1c Canvas+Templates:** beautiful render (icons/colors/typed ports/labeled-colored edges/groups), categorized searchable drag palette, templates gallery (many) + insert UI; desktop parity.
 - **Slice 2 (separate):** per-type execution registry + Code sandbox.

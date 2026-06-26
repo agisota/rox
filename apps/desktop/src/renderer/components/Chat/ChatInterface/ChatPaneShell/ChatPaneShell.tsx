@@ -853,7 +853,10 @@ export function ChatPaneShell<
 	return (
 		<PromptInputProvider initialInput={initialLaunchConfig?.draftInput}>
 			{features?.draftSaver}
-			<div className="relative flex h-full w-full flex-col bg-background">
+			<div
+				className="relative flex h-full w-full flex-col bg-background"
+				data-onboarding-anchor="workspace-chat"
+			>
 				{renderMessages(messageFrame)}
 				{renderMcpControls()}
 				{features?.renderApprovalOverlay

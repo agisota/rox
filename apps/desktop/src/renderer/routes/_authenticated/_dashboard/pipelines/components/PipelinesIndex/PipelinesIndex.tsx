@@ -137,6 +137,11 @@ export function PipelinesIndex() {
 										<button
 											key={template.id}
 											type="button"
+											data-onboarding-anchor={
+												template.id === PIPELINE_TEMPLATES[0]?.id
+													? "pipeline-template"
+													: undefined
+											}
 											aria-pressed={template.id === templateId}
 											aria-label={`Выбрать шаблон: ${template.name}`}
 											onClick={() => setTemplateId(template.id)}

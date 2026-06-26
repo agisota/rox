@@ -586,6 +586,7 @@ function AutomationsPage() {
 						type="button"
 						variant="outline"
 						size="sm"
+						data-onboarding-anchor="automation-create"
 						className="h-8 gap-1.5 px-3"
 						onClick={() => setCreateOpen(true)}
 					>
