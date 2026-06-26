@@ -131,7 +131,7 @@ export function SavedPromptsView() {
 			<div className="flex-1 overflow-y-auto px-6 py-4">
 				{prompts.length === 0 ? (
 					isLoading ? null : (
-						<div className="mx-auto flex max-w-3xl flex-col gap-3">
+						<div className="flex w-full flex-col gap-3">
 							<div className="flex flex-col gap-1 pt-2">
 								<h2 className="text-sm font-medium text-foreground">
 									Примеры — сохраните себе
@@ -141,7 +141,7 @@ export function SavedPromptsView() {
 									создайте свой.
 								</p>
 							</div>
-							<ul className="flex flex-col gap-2">
+							<ul className="grid gap-3 xl:grid-cols-2">
 								{DEFAULT_SAVED_PROMPTS.map((example) => (
 									<li
 										key={example.id}
@@ -202,7 +202,7 @@ export function SavedPromptsView() {
 						</div>
 					)
 				) : (
-					<ul className="mx-auto flex max-w-3xl flex-col gap-2">
+					<ul className="grid gap-3 xl:grid-cols-2">
 						{prompts.map((prompt) => (
 							<li
 								key={prompt.id}

@@ -27,20 +27,20 @@ describe("canvas node display mapping", () => {
 	it("covers every production CanvasNode type in the workbench presentation layer", () => {
 		expect(productionCanvasNodeTypes).toEqual(allNodeTypes);
 		expect(canvasEntityTypeLabels).toEqual([
-			"Text",
-			"Note",
-			"Chat session",
-			"Message",
-			"Artifact",
-			"File",
+			"Текст",
+			"Заметка",
+			"Чат-сессия",
+			"Сообщение",
+			"Артефакт",
+			"Файл",
 			"URL",
-			"Image",
+			"Изображение",
 			"PDF",
-			"Code",
-			"Task",
-			"Prompt",
-			"Tool call",
-			"Canvas",
+			"Код",
+			"Задача",
+			"Промпт",
+			"Вызов инструмента",
+			"Канвас",
 		]);
 	});
 
@@ -97,10 +97,10 @@ describe("canvas node display mapping", () => {
 			expect(card.className).toContain("border-");
 		}
 		expect(cards.find((card) => card.id === "image-node")?.meta).toBe(
-			"file ref · image-ref",
+			"file · image-ref",
 		);
 		expect(cards.find((card) => card.id === "text-node")?.meta).toBe(
-			"text node · CanvasDocument entity",
+			"text · сущность CanvasDocument",
 		);
 	});
 });

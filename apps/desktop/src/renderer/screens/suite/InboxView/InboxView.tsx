@@ -247,9 +247,8 @@ function ChatTab({
 	}
 
 	return (
-		<div className="grid h-[calc(100vh-260px)] min-h-96 grid-cols-[280px_1fr] gap-3">
-			{/* Thread list */}
-			<div className="overflow-y-auto rounded-lg border border-border">
+		<div className="flex h-[calc(100vh-260px)] min-h-96 min-w-0 gap-4">
+			<div className="w-[clamp(20rem,28vw,26rem)] min-w-72 max-w-[45vw] resize-x overflow-y-auto overflow-x-hidden rounded-lg border border-border bg-card/80">
 				{threads.map((t) => (
 					<button
 						key={t.id}
@@ -285,8 +284,7 @@ function ChatTab({
 				))}
 			</div>
 
-			{/* Thread reader + composer */}
-			<div className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border">
+			<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card/80">
 				{activeThreadId === null ? (
 					<div className="flex h-full flex-col items-center justify-center gap-2 text-center">
 						<MessagesSquare className="size-8 text-muted-foreground" />
@@ -484,7 +482,6 @@ export function InboxView() {
 			title="Входящие"
 			description="Чат и почта в одном месте"
 			icon={Inbox}
-			className="max-w-6xl"
 		>
 			<TransportTabs value={transport} onChange={setTransport} />
 			<div className="mt-4">

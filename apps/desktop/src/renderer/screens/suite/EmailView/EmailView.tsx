@@ -18,14 +18,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	ArrowDownLeft,
 	ArrowUpRight,
+	AtSign,
 	Download,
 	Mail,
 	Paperclip,
 	PenSquare,
 	Send,
+	UserRound,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
+import { authClient } from "renderer/lib/auth-client";
 import { logger } from "renderer/lib/logger";
 import { SuiteQueryError } from "../components/SuiteQueryError";
 import { SuiteScreen } from "../components/SuiteScreen";
@@ -73,6 +76,7 @@ export interface EmailViewProps {
 export function EmailView(props: EmailViewProps = {}) {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
+	const { data: session } = authClient.useSession();
 
 	const [internalThreadId, setInternalThreadId] = useState<string | null>(null);
 	const isControlled = props.activeThreadId !== undefined;
@@ -91,7 +95,21 @@ export function EmailView(props: EmailViewProps = {}) {
 	const threadsQuery = useQuery(
 		trpc.mail.listThreads.queryOptions({ limit: 50 }),
 	);
+	const mailboxQuery = useQuery(trpc.mail.getMailbox.queryOptions());
 	const threads = threadsQuery.data ?? [];
+	const mailbox = mailboxQuery.data?.address ?? null;
+	const sessionUser = session?.user;
+	const loginEmail = sessionUser?.email ?? "Аккаунт загружается";
+	const loginName = sessionUser?.name?.trim() || loginEmail;
+	const mailboxAddress = mailbox?.address ?? "Почтовый ящик @rox.one не создан";
+	const mailboxStatus =
+		mailbox?.status === "active"
+			? "Активен"
+			: mailbox?.status === "disabled"
+				? "Отключён"
+				: mailbox?.status === "grace"
+					? "Переходный период"
+					: "Нужна настройка";
 
 	const threadQuery = useQuery({
 		...trpc.mail.getThread.queryOptions({ threadId: activeThreadId ?? "" }),
@@ -154,7 +172,6 @@ export function EmailView(props: EmailViewProps = {}) {
 			title="Почта"
 			description="Входящие, чтение и отправка"
 			icon={Mail}
-			className="max-w-6xl"
 			actions={
 				<Button onClick={() => setComposeOpen(true)}>
 					<PenSquare className="size-4" /> Написать
@@ -167,6 +184,34 @@ export function EmailView(props: EmailViewProps = {}) {
 					onRetry={() => threadsQuery.refetch()}
 				/>
 			)}
+
+			<div className="mb-4 grid w-full gap-3 rounded-lg border border-border bg-card/80 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.9fr)]">
+				<div className="flex min-w-0 items-center gap-3">
+					<div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+						<UserRound className="size-4" />
+					</div>
+					<div className="min-w-0">
+						<p className="truncate text-sm font-medium">{loginName}</p>
+						<p className="truncate text-muted-foreground text-xs">
+							Вход выполнен: {loginEmail}
+						</p>
+					</div>
+				</div>
+				<div className="flex min-w-0 items-center justify-between gap-3 rounded-md border border-border bg-background/70 px-3 py-2">
+					<div className="flex min-w-0 items-center gap-2">
+						<AtSign className="size-4 shrink-0 text-muted-foreground" />
+						<div className="min-w-0">
+							<p className="truncate text-sm font-medium">{mailboxAddress}</p>
+							<p className="truncate text-muted-foreground text-xs">
+								Адрес для входящих и исходящих писем Rox
+							</p>
+						</div>
+					</div>
+					<Badge variant={mailbox?.status === "active" ? "default" : "outline"}>
+						{mailboxStatus}
+					</Badge>
+				</div>
+			</div>
 
 			{threads.length === 0 && threadsQuery.isLoading && (
 				<div className="space-y-2">
@@ -187,9 +232,8 @@ export function EmailView(props: EmailViewProps = {}) {
 			)}
 
 			{threads.length > 0 && (
-				<div className="grid h-[calc(100vh-220px)] min-h-96 grid-cols-[280px_1fr] gap-3">
-					{/* Thread list */}
-					<div className="overflow-y-auto rounded-lg border border-border">
+				<div className="flex h-[calc(100vh-220px)] min-h-96 min-w-0 gap-4">
+					<div className="w-[clamp(20rem,28vw,26rem)] min-w-72 max-w-[45vw] resize-x overflow-y-auto overflow-x-hidden rounded-lg border border-border bg-card/80">
 						{threads.map((thread) => (
 							<button
 								key={thread.id}
@@ -215,8 +259,7 @@ export function EmailView(props: EmailViewProps = {}) {
 						))}
 					</div>
 
-					{/* Thread reader */}
-					<div className="overflow-hidden rounded-lg border border-border">
+					<div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-card/80">
 						{activeThreadId === null ? (
 							<div className="flex h-full flex-col items-center justify-center text-center">
 								<Mail className="mb-3 size-8 text-muted-foreground" />
@@ -313,7 +356,6 @@ export function EmailView(props: EmailViewProps = {}) {
 				</div>
 			)}
 
-			{/* Compose dialog */}
 			<Dialog open={composeOpen} onOpenChange={setComposeOpen}>
 				<DialogContent className="max-h-[min(720px,calc(100dvh-2rem))] overflow-y-auto">
 					<DialogHeader>

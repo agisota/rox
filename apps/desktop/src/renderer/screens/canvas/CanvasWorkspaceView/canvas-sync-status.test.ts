@@ -12,7 +12,7 @@ describe("canvas sync status", () => {
 				activeCanvasId: "canvas-1",
 				isFetching: false,
 			}),
-		).toBe("Sync idle: no workspace");
+		).toBe("Синхронизация неактивна: workspace не открыт");
 
 		expect(
 			getCanvasSyncStatus({
@@ -20,7 +20,7 @@ describe("canvas sync status", () => {
 				activeCanvasId: null,
 				isFetching: false,
 			}),
-		).toBe("Sync waiting: no active canvas");
+		).toBe("Ожидание синхронизации: нет активного канваса");
 	});
 
 	it("reports active canonical refresh state and bounded polling fallback", () => {
@@ -30,7 +30,7 @@ describe("canvas sync status", () => {
 				activeCanvasId: "canvas-1",
 				isFetching: true,
 			}),
-		).toBe("Live sync: refreshing canonical document");
+		).toBe("Live sync: обновляем сохраненный документ");
 
 		expect(
 			getCanvasSyncStatus({
@@ -40,7 +40,7 @@ describe("canvas sync status", () => {
 				lastRefreshAt: new Date("2026-06-17T18:37:57.340Z"),
 				refreshIntervalMs: CANVAS_ACTIVE_REFRESH_INTERVAL_MS,
 			}),
-		).toBe("Live sync: polling every 5s · last 18:37:57 UTC");
+		).toBe("Live sync: опрос каждые 5s · последнее обновление 18:37:57 UTC");
 	});
 
 	it("surfaces refresh errors as retrying live sync instead of silent staleness", () => {
@@ -51,6 +51,6 @@ describe("canvas sync status", () => {
 				isFetching: false,
 				lastRefreshError: "network offline",
 			}),
-		).toBe("Live sync: retrying after network offline");
+		).toBe("Live sync: повтор после network offline");
 	});
 });

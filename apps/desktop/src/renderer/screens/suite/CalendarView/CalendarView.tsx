@@ -16,7 +16,10 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Clock,
+	Download,
 	MapPin,
+	Plus,
+	Upload,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
@@ -65,6 +68,13 @@ interface AgendaItem {
 	allDay?: boolean;
 }
 
+interface CalendarDayCell {
+	key: string;
+	date: Date;
+	isCurrentMonth: boolean;
+	isToday: boolean;
+}
+
 function formatTime(date: Date): string {
 	return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
@@ -75,6 +85,27 @@ function formatDayHeading(date: Date): string {
 		day: "numeric",
 		month: "long",
 	});
+}
+
+function buildMonthGrid(anchor: Date): CalendarDayCell[] {
+	const firstOfMonth = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+	const gridStart = new Date(firstOfMonth);
+	const mondayOffset = (firstOfMonth.getDay() + 6) % 7;
+	gridStart.setDate(firstOfMonth.getDate() - mondayOffset);
+
+	const todayKey = dayKey(new Date());
+	const cells: CalendarDayCell[] = [];
+	for (let index = 0; index < 42; index += 1) {
+		const date = new Date(gridStart);
+		date.setDate(gridStart.getDate() + index);
+		cells.push({
+			key: dayKey(date),
+			date,
+			isCurrentMonth: date.getMonth() === anchor.getMonth(),
+			isToday: dayKey(date) === todayKey,
+		});
+	}
+	return cells;
 }
 
 /**
@@ -183,6 +214,8 @@ export function CalendarView() {
 		}
 		return [...byDay.entries()].sort(([a], [b]) => (a < b ? -1 : 1));
 	}, [occurrences]);
+	const groupedByDay = useMemo(() => new Map(grouped), [grouped]);
+	const monthCells = useMemo(() => buildMonthGrid(anchor), [anchor]);
 
 	const selectedEvent = selected
 		? (eventsById.get(selected.eventId) ?? null)
@@ -208,7 +241,31 @@ export function CalendarView() {
 			description="Повестка событий по месяцам, RSVP"
 			icon={CalendarDays}
 			actions={
-				<div className="flex items-center gap-1">
+				<div className="flex flex-wrap items-center justify-end gap-1">
+					<Button
+						size="sm"
+						variant="outline"
+						disabled
+						title="Создание событий будет доступно после подключения календарного редактора."
+					>
+						<Plus className="size-4" /> Событие
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						disabled
+						title="Импорт .ics будет доступен после подключения безопасного парсера календарей."
+					>
+						<Upload className="size-4" /> Импорт .ics
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						disabled
+						title="Экспорт .ics будет доступен после подключения экспортера календарей."
+					>
+						<Download className="size-4" /> Экспорт .ics
+					</Button>
 					{ownsFirstCalendar && firstCalendar && (
 						<SubscribeFeedDialog
 							calendarId={firstCalendar.id}
@@ -263,60 +320,144 @@ export function CalendarView() {
 				</div>
 			)}
 
-			{isEmpty && occQuery.isSuccess && (
-				<div className="flex flex-col items-center justify-center rounded-lg border border-border border-dashed py-20 text-center">
-					<CalendarDays className="mb-3 size-8 text-muted-foreground" />
-					<span className="text-foreground text-sm">Событий нет</span>
-					<span className="mt-1 max-w-sm text-muted-foreground text-xs">
-						В этом месяце запланированных событий не найдено.
-					</span>
-				</div>
-			)}
-
-			{!isEmpty && (
-				<div className="space-y-6">
-					{grouped.map(([key, items]) => (
-						<div key={key}>
-							<h2 className="mb-2 font-medium text-muted-foreground text-sm capitalize">
-								{formatDayHeading(items[0]?.start ?? new Date())}
-							</h2>
-							<div className="space-y-1.5">
-								{items.map((item) => {
-									const event = eventsById.get(item.eventId);
-									// Per-occurrence override wins over the series value.
-									const allDay = item.allDay ?? event?.allDay;
-									const title = item.title ?? event?.title ?? "Событие";
-									const location = item.location ?? event?.location;
-									return (
-										<button
-											key={item.key}
-											type="button"
-											onClick={() =>
-												setSelected({
-													eventId: item.eventId,
-													originalStart: item.originalStart,
-												})
-											}
-											className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/50"
-										>
-											<span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-												{allDay ? "весь день" : formatTime(item.start)}
+			{occQuery.isSuccess && (
+				<div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.8fr)]">
+					<section className="min-w-0 rounded-lg border border-border bg-card/80">
+						<div className="grid grid-cols-7 border-border border-b text-center text-muted-foreground text-xs">
+							{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
+								<div key={day} className="px-2 py-2">
+									{day}
+								</div>
+							))}
+						</div>
+						<div className="grid grid-cols-7">
+							{monthCells.map((cell) => {
+								const items = groupedByDay.get(cell.key) ?? [];
+								return (
+									<div
+										key={cell.key}
+										className={cn(
+											"min-h-28 border-border border-r border-b p-2 last:border-r-0",
+											!cell.isCurrentMonth &&
+												"bg-muted/20 text-muted-foreground",
+											cell.isToday && "bg-primary/5",
+										)}
+									>
+										<div className="mb-1 flex items-center justify-between gap-2">
+											<span
+												className={cn(
+													"font-medium text-xs tabular-nums",
+													cell.isToday &&
+														"rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground",
+												)}
+											>
+												{cell.date.getDate()}
 											</span>
-											<span className="min-w-0 flex-1 truncate text-sm">
-												{title}
-											</span>
-											{location && (
-												<span className="hidden shrink-0 items-center gap-1 text-muted-foreground text-xs sm:flex">
-													<MapPin className="size-3" />
-													<span className="max-w-32 truncate">{location}</span>
+											{items.length > 2 && (
+												<span className="text-muted-foreground text-[10px]">
+													+{items.length - 2}
 												</span>
 											)}
-										</button>
-									);
-								})}
-							</div>
+										</div>
+										<div className="space-y-1">
+											{items.slice(0, 2).map((item) => {
+												const event = eventsById.get(item.eventId);
+												const allDay = item.allDay ?? event?.allDay;
+												const title = item.title ?? event?.title ?? "Событие";
+												return (
+													<button
+														key={item.key}
+														type="button"
+														onClick={() =>
+															setSelected({
+																eventId: item.eventId,
+																originalStart: item.originalStart,
+															})
+														}
+														className="block w-full truncate rounded border border-border bg-background/80 px-1.5 py-1 text-left text-[11px] transition-colors hover:border-primary/50"
+														title={title}
+													>
+														<span className="text-muted-foreground tabular-nums">
+															{allDay ? "" : `${formatTime(item.start)} `}
+														</span>
+														{title}
+													</button>
+												);
+											})}
+										</div>
+									</div>
+								);
+							})}
 						</div>
-					))}
+					</section>
+
+					<section className="min-w-0 rounded-lg border border-border bg-card/80 p-4">
+						<div className="mb-3 flex items-center justify-between gap-2">
+							<div>
+								<h2 className="font-medium text-sm">Повестка месяца</h2>
+								<p className="text-muted-foreground text-xs">
+									События раскрываются из календарной сетки и списка.
+								</p>
+							</div>
+							<Badge variant="outline">{occurrences.length}</Badge>
+						</div>
+
+						{isEmpty ? (
+							<div className="flex min-h-52 flex-col items-center justify-center rounded-lg border border-border border-dashed px-4 text-center">
+								<CalendarDays className="mb-3 size-8 text-muted-foreground" />
+								<span className="text-foreground text-sm">Событий нет</span>
+								<span className="mt-1 max-w-sm text-muted-foreground text-xs">
+									В этом месяце запланированных событий не найдено.
+								</span>
+							</div>
+						) : (
+							<div className="max-h-[calc(100vh-320px)] space-y-6 overflow-y-auto pr-1">
+								{grouped.map(([key, items]) => (
+									<div key={key}>
+										<h3 className="mb-2 font-medium text-muted-foreground text-sm capitalize">
+											{formatDayHeading(items[0]?.start ?? new Date())}
+										</h3>
+										<div className="space-y-1.5">
+											{items.map((item) => {
+												const event = eventsById.get(item.eventId);
+												const allDay = item.allDay ?? event?.allDay;
+												const title = item.title ?? event?.title ?? "Событие";
+												const location = item.location ?? event?.location;
+												return (
+													<button
+														key={item.key}
+														type="button"
+														onClick={() =>
+															setSelected({
+																eventId: item.eventId,
+																originalStart: item.originalStart,
+															})
+														}
+														className="flex w-full items-center gap-3 rounded-lg border border-border bg-background/80 px-3 py-2.5 text-left transition-colors hover:border-primary/50"
+													>
+														<span className="shrink-0 text-muted-foreground text-xs tabular-nums">
+															{allDay ? "весь день" : formatTime(item.start)}
+														</span>
+														<span className="min-w-0 flex-1 truncate text-sm">
+															{title}
+														</span>
+														{location && (
+															<span className="hidden shrink-0 items-center gap-1 text-muted-foreground text-xs sm:flex">
+																<MapPin className="size-3" />
+																<span className="max-w-32 truncate">
+																	{location}
+																</span>
+															</span>
+														)}
+													</button>
+												);
+											})}
+										</div>
+									</div>
+								))}
+							</div>
+						)}
+					</section>
 				</div>
 			)}
 

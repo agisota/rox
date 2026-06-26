@@ -1,6 +1,7 @@
 import { WorkspaceClientProvider as WorkspaceTrpcProvider } from "@rox/workspace-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
+import { HostStatusInline } from "renderer/components/HostStatusInline";
 import { env } from "renderer/env.renderer";
 import { getHostServiceHeaders } from "renderer/lib/host-service-auth";
 import { useLocalHostService } from "renderer/routes/_authenticated/providers/LocalHostServiceProvider";
@@ -36,13 +37,26 @@ function saveLastActiveCanvasWorkspaceId(workspaceId: string): void {
 	}
 }
 
+function getHostServiceStatusLabel(status: string): string {
+	switch (status) {
+		case "running":
+			return "хост готов";
+		case "starting":
+			return "хост запускается";
+		case "stopped":
+			return "хост остановлен";
+		default:
+			return "статус уточняется";
+	}
+}
+
 function createE2ECanvasWorkspace(
 	machineId: string | null,
 ): AccessibleV2Workspace | null {
 	if (!machineId) return null;
 	return {
 		id: E2E_CANVAS_FIXTURE.workspaceId,
-		name: "Canvas smoke workspace",
+		name: "Проверочное пространство канваса",
 		branch: "main",
 		type: "main",
 		createdAt: new Date("2026-06-17T00:00:00.000Z"),
@@ -51,11 +65,11 @@ function createE2ECanvasWorkspace(
 		createdByImage: null,
 		isCreatedByCurrentUser: false,
 		projectId: E2E_CANVAS_FIXTURE.projectId,
-		projectName: "Rox Canvas Smoke",
+		projectName: "Проверочный проект канваса Rox",
 		projectRepoId: null,
 		projectGithubOwner: "agisota",
 		hostId: machineId,
-		hostName: "This device",
+		hostName: "Это устройство",
 		hostIsOnline: true,
 		hostType: "local-device",
 		isInSidebar: true,
@@ -65,7 +79,12 @@ function createE2ECanvasWorkspace(
 
 function CanvasPage() {
 	const { all, pinned } = useAccessibleV2Workspaces();
-	const { activeHostUrl, machineId } = useLocalHostService();
+	const {
+		activeHostUrl,
+		activeOrganizationName,
+		hostServiceStatus,
+		machineId,
+	} = useLocalHostService();
 	const lastActiveWorkspaceId = useMemo(readLastActiveCanvasWorkspaceId, []);
 	const e2eFallbackWorkspace = env.E2E_AUTH_BYPASS
 		? createE2ECanvasWorkspace(machineId)
@@ -89,8 +108,25 @@ function CanvasPage() {
 
 	if (!activeHostUrl) {
 		return (
-			<div className="flex h-full w-full items-center justify-center bg-background text-sm text-muted-foreground">
-				Starting local Canvas workspace...
+			<div className="flex h-full w-full items-center justify-center bg-background px-6 text-sm text-foreground">
+				<section className="w-full max-w-xl rounded-md border bg-card p-5 shadow-sm">
+					<p className="font-medium text-base">Канвас ожидает локальный хост</p>
+					<p className="mt-2 text-muted-foreground">
+						Чтобы открыть рабочий канвас, Rox должен подключиться к локальному
+						хост-сервису для выбранного рабочего пространства.
+					</p>
+					<div className="mt-4 rounded-md border bg-background/70 p-3">
+						<HostStatusInline />
+						<p className="mt-2 text-muted-foreground text-xs">
+							Статус: {getHostServiceStatusLabel(hostServiceStatus)}.
+							Организация: {activeOrganizationName ?? "не выбрана"}.
+						</p>
+					</div>
+					<p className="mt-4 text-muted-foreground text-xs">
+						Если подключение не запускается, откройте Настройки -&gt; Хосты и
+						проверьте локальный хост этого устройства.
+					</p>
+				</section>
 			</div>
 		);
 	}

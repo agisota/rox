@@ -141,6 +141,25 @@ beforeEach(() => {
 	setDriveStorageForTest(undefined);
 });
 
+describe("mail.getMailbox", () => {
+	test("requires an active organization", async () => {
+		const caller = callerFor(null);
+		await expect(caller.mail.getMailbox()).rejects.toMatchObject({
+			code: "FORBIDDEN",
+		});
+	});
+
+	test("returns the provisioned primary address without writing", async () => {
+		state.selectQueue = [
+			[{ id: "addr-1", address: "mark@rox.one", status: "active" }],
+		];
+		const caller = callerFor("org-1");
+		const res = await caller.mail.getMailbox();
+		expect(res.address?.address).toBe("mark@rox.one");
+		expect(state.inserted).toHaveLength(0);
+	});
+});
+
 describe("mail.provisionAddress", () => {
 	test("requires an active organization", async () => {
 		const caller = callerFor(null);

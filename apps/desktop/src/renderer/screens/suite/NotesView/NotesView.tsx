@@ -1,4 +1,9 @@
 import { splitHighlightedSnippet } from "@rox/shared/knowledge/notes-search";
+import {
+	extractTags,
+	normalizeWikiLinkTarget,
+	parseWikiLinks,
+} from "@rox/shared/knowledge/wikilinks";
 import { Button } from "@rox/ui/button";
 import {
 	Dialog,
@@ -29,11 +34,13 @@ import {
 	ChevronUp,
 	FileText,
 	FolderInput,
+	GitBranch,
 	Notebook,
 	Plus,
 	Search,
+	Tags,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDebouncedValue } from "renderer/hooks/useDebouncedValue";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
 import { logger } from "renderer/lib/logger";
@@ -134,6 +141,21 @@ export function NotesView() {
 		...trpc.notes.getNote.queryOptions({ noteId: activeNoteId ?? "" }),
 		enabled: activeNoteId !== null,
 	});
+	const backlinkSearchTitle = noteQuery.data?.title.trim() ?? "";
+	const backlinksQuery = useQuery({
+		...trpc.notes.searchNotes.queryOptions({
+			query: backlinkSearchTitle,
+			notebookId: activeNotebookId ?? undefined,
+			limit: 8,
+		}),
+		enabled:
+			activeNoteId !== null &&
+			activeNotebookId !== null &&
+			backlinkSearchTitle.length > 0,
+	});
+	const likelyBacklinks = (backlinksQuery.data ?? []).filter(
+		(note) => note.id !== activeNoteId,
+	);
 
 	// --- note body editor (single-player baseline + collaborative-when-gated) ---
 	// The reader pane is an editable markdown editor whose body autosaves through
@@ -324,13 +346,25 @@ export function NotesView() {
 	};
 
 	const otherNotebooks = notebooks.filter((nb) => nb.id !== activeNotebookId);
+	const notesBySlug = useMemo(() => {
+		return new Map(
+			notes.map((note) => [normalizeWikiLinkTarget(note.title), note]),
+		);
+	}, [notes]);
+	const outgoingLinks = useMemo(
+		() => parseWikiLinks(editorMarkdown),
+		[editorMarkdown],
+	);
+	const noteTags = useMemo(() => {
+		const storedTags = (noteQuery.data?.tags ?? []) as string[];
+		return [...new Set([...storedTags, ...extractTags(editorMarkdown)])];
+	}, [editorMarkdown, noteQuery.data?.tags]);
 
 	return (
 		<SuiteScreen
 			title="Заметки"
 			description="Блокноты и markdown-заметки"
 			icon={BookText}
-			className="max-w-6xl"
 			actions={
 				<Button onClick={() => setNotebookDialogOpen(true)}>
 					<Plus className="size-4" /> Новый блокнот
@@ -363,30 +397,36 @@ export function NotesView() {
 			)}
 
 			{notebooks.length > 0 && (
-				<div className="grid h-[calc(100vh-220px)] min-h-96 grid-cols-[200px_240px_1fr] gap-3">
-					{/* Notebooks column */}
-					<div className="overflow-y-auto rounded-lg border border-border">
-						{notebooks.map((notebook) => (
-							<button
-								key={notebook.id}
-								type="button"
-								onClick={() => {
-									setActiveNotebookId(notebook.id);
-									setActiveNoteId(null);
-								}}
-								className={cn(
-									"flex w-full items-center gap-2 border-border border-b px-3 py-2.5 text-left text-sm last:border-b-0 transition-colors hover:bg-accent/40",
-									notebook.id === activeNotebookId && "bg-accent",
-								)}
-							>
-								<span className="shrink-0">{notebook.icon ?? "📓"}</span>
-								<span className="truncate">{notebook.name}</span>
-							</button>
-						))}
+				<div className="flex h-[calc(100vh-220px)] min-h-96 min-w-0 gap-4">
+					<div className="w-[clamp(14rem,17vw,20rem)] min-w-52 max-w-[30vw] resize-x overflow-hidden rounded-lg border border-border bg-card/85">
+						<div className="border-border border-b px-3 py-3">
+							<p className="font-medium text-sm">Хранилище</p>
+							<p className="mt-0.5 text-muted-foreground text-xs">
+								{notebooks.length} блокнот(ов), {notes.length} заметка(и)
+							</p>
+						</div>
+						<div className="max-h-full overflow-y-auto">
+							{notebooks.map((notebook) => (
+								<button
+									key={notebook.id}
+									type="button"
+									onClick={() => {
+										setActiveNotebookId(notebook.id);
+										setActiveNoteId(null);
+									}}
+									className={cn(
+										"flex w-full items-center gap-2 border-border border-b px-3 py-2.5 text-left text-sm last:border-b-0 transition-colors hover:bg-accent/40",
+										notebook.id === activeNotebookId && "bg-accent",
+									)}
+								>
+									<span className="shrink-0">{notebook.icon ?? "📓"}</span>
+									<span className="truncate">{notebook.name}</span>
+								</button>
+							))}
+						</div>
 					</div>
 
-					{/* Notes column */}
-					<div className="flex flex-col overflow-hidden rounded-lg border border-border">
+					<div className="flex w-[clamp(18rem,22vw,24rem)] min-w-64 max-w-[34vw] resize-x flex-col overflow-hidden rounded-lg border border-border bg-card/80">
 						<div className="flex items-center justify-between border-border border-b px-2 py-1.5">
 							<span className="text-muted-foreground text-xs">Заметки</span>
 							<Button
@@ -561,8 +601,7 @@ export function NotesView() {
 						</div>
 					</div>
 
-					{/* Note reader */}
-					<div className="overflow-hidden rounded-lg border border-border">
+					<div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-card/85">
 						{activeNoteId === null ? (
 							<div className="flex h-full flex-col items-center justify-center text-center">
 								<FileText className="mb-3 size-8 text-muted-foreground" />
@@ -586,13 +625,103 @@ export function NotesView() {
 										</span>
 									) : null}
 								</div>
-								<div className="flex min-h-0 flex-1 flex-col px-4 py-3">
-									<CollaborativeNoteEditor
-										key={noteQuery.data.id}
-										noteId={noteQuery.data.id}
-										value={editorMarkdown}
-										onChange={handleEditorChange}
-									/>
+								<div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(15rem,22rem)] gap-3 p-3 max-xl:grid-cols-1">
+									<div className="flex min-h-0 flex-col">
+										<CollaborativeNoteEditor
+											key={noteQuery.data.id}
+											noteId={noteQuery.data.id}
+											value={editorMarkdown}
+											onChange={handleEditorChange}
+										/>
+									</div>
+									<aside className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-md border border-border bg-background/70 p-3">
+										<section>
+											<div className="mb-2 flex items-center gap-2 text-muted-foreground text-xs uppercase">
+												<Tags className="size-3.5" />
+												Теги
+											</div>
+											{noteTags.length === 0 ? (
+												<p className="text-muted-foreground text-xs">
+													Добавьте #tag в текст заметки.
+												</p>
+											) : (
+												<div className="flex flex-wrap gap-1.5">
+													{noteTags.map((tag) => (
+														<span
+															key={tag}
+															className="rounded border border-border bg-muted/60 px-2 py-0.5 text-xs"
+														>
+															#{tag}
+														</span>
+													))}
+												</div>
+											)}
+										</section>
+
+										<section>
+											<div className="mb-2 flex items-center gap-2 text-muted-foreground text-xs uppercase">
+												<GitBranch className="size-3.5" />
+												Связи
+											</div>
+											{outgoingLinks.length === 0 ? (
+												<p className="text-muted-foreground text-xs">
+													Свяжите заметки через [[название]].
+												</p>
+											) : (
+												<div className="space-y-1.5">
+													{outgoingLinks.map((link) => {
+														const linkedNote = notesBySlug.get(link.target);
+														return (
+															<button
+																key={`${link.raw}:${link.target}`}
+																type="button"
+																disabled={!linkedNote}
+																onClick={() => {
+																	if (linkedNote)
+																		setActiveNoteId(linkedNote.id);
+																}}
+																className="flex w-full items-center justify-between gap-2 rounded border border-border bg-muted/50 px-2 py-1.5 text-left text-xs transition-colors enabled:hover:bg-accent disabled:cursor-default"
+															>
+																<span className="truncate">
+																	{link.alias ?? link.target}
+																</span>
+																<span className="shrink-0 text-muted-foreground">
+																	{linkedNote ? "открыть" : "нет заметки"}
+																</span>
+															</button>
+														);
+													})}
+												</div>
+											)}
+										</section>
+
+										<section>
+											<div className="mb-2 text-muted-foreground text-xs uppercase">
+												Вероятные обратные ссылки
+											</div>
+											{backlinksQuery.isFetching &&
+											likelyBacklinks.length === 0 ? (
+												<p className="text-muted-foreground text-xs">Поиск…</p>
+											) : likelyBacklinks.length === 0 ? (
+												<p className="text-muted-foreground text-xs">
+													Пока нет заметок, которые явно ссылаются на текущую.
+												</p>
+											) : (
+												<div className="space-y-1.5">
+													{likelyBacklinks.map((note) => (
+														<button
+															key={note.id}
+															type="button"
+															onClick={() => setActiveNoteId(note.id)}
+															className="w-full rounded border border-border bg-muted/50 px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+														>
+															<span className="line-clamp-1">{note.title}</span>
+														</button>
+													))}
+												</div>
+											)}
+										</section>
+									</aside>
 								</div>
 							</div>
 						) : (

@@ -19,6 +19,8 @@ import {
 	FolderPlus,
 	HardDrive,
 	Link2,
+	LoaderCircle,
+	Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { useCloudTrpc as useTRPC } from "renderer/lib/api-trpc-react";
@@ -32,8 +34,36 @@ interface Crumb {
 	name: string;
 }
 
+type ShareDialogState = {
+	url: string;
+	targetKind: "file" | "folder";
+};
+
 /** Public share base — files/folders resolve at `rox.one/d/<token>`. */
 const SHARE_BASE = "https://rox.one/d";
+
+function getErrorMessage(error: unknown) {
+	if (error instanceof Error) return error.message;
+	return "";
+}
+
+function getDriveActionErrorDescription(error: unknown, fallback: string) {
+	const message = getErrorMessage(error);
+
+	if (/object storage|R2 credentials/i.test(message)) {
+		return "Drive storage на backend не настроен: отсутствуют R2 credentials. Публичное скачивание файлов недоступно до настройки storage.";
+	}
+
+	if (/still being processed/i.test(message)) {
+		return "Файл еще обрабатывается. Ссылку можно создать после завершения загрузки и проверки.";
+	}
+
+	if (/safety scan/i.test(message)) {
+		return "Файл заблокирован проверкой безопасности, поэтому публичная ссылка для него недоступна.";
+	}
+
+	return message || fallback;
+}
 
 /**
  * Drive folder/file browser (Suite P0). Reads `drive.listFolder` for the current
@@ -49,12 +79,18 @@ export function DriveView() {
 	const trpc = useTRPC();
 	const queryClient = useQueryClient();
 
-	const [trail, setTrail] = useState<Crumb[]>([{ id: null, name: "Drive" }]);
+	const [trail, setTrail] = useState<Crumb[]>([{ id: null, name: "Диск" }]);
 	const currentFolderId = trail[trail.length - 1]?.id ?? null;
 
 	const [createOpen, setCreateOpen] = useState(false);
 	const [folderName, setFolderName] = useState("");
-	const [shareUrl, setShareUrl] = useState<string | null>(null);
+	const [shareDialog, setShareDialog] = useState<ShareDialogState | null>(null);
+	const [organizeResult, setOrganizeResult] = useState<{
+		movedCount: number;
+		createdFolderCount: number;
+		targets: { folderName: string }[];
+	} | null>(null);
+	const [organizeError, setOrganizeError] = useState<string | null>(null);
 
 	const listQuery = useQuery(
 		trpc.drive.listFolder.queryOptions({ folderId: currentFolderId }),
@@ -82,15 +118,57 @@ export function DriveView() {
 		trpc.drive.createShare.mutationOptions({
 			onSuccess: (row) => {
 				const url = `${SHARE_BASE}/${row.token}`;
-				setShareUrl(url);
+				setShareDialog({
+					url,
+					targetKind: row.fileId ? "file" : "folder",
+				});
 				void navigator.clipboard?.writeText(url).then(
 					() => toast.success("Ссылка скопирована"),
 					() => toast.success("Ссылка создана"),
 				);
 			},
 			onError: (error) => {
+				const description = getDriveActionErrorDescription(
+					error,
+					"Backend не создал публичную ссылку. Повторите позже.",
+				);
 				logger.error("[DriveView] createShare failed", error);
-				toast.error("Не удалось создать ссылку");
+				toast.error("Не удалось создать ссылку", { description });
+			},
+		}),
+	);
+
+	const organizeFolder = useMutation(
+		trpc.drive.organizeFolder.mutationOptions({
+			onMutate: () => {
+				setOrganizeResult(null);
+				setOrganizeError(null);
+			},
+			onSuccess: async (result) => {
+				await queryClient.invalidateQueries({
+					queryKey: trpc.drive.listFolder.queryKey({
+						folderId: currentFolderId,
+					}),
+				});
+				setOrganizeResult(result);
+
+				if (result.movedCount === 0) {
+					toast.success("На диске уже порядок");
+					return;
+				}
+
+				toast.success("Файлы разложены по папкам", {
+					description: `${result.movedCount} файл(ов), ${result.createdFolderCount} новая папка(и).`,
+				});
+			},
+			onError: (error) => {
+				const description = getDriveActionErrorDescription(
+					error,
+					"Backend не выполнил безопасную сортировку текущей папки. Файлы не изменены.",
+				);
+				setOrganizeError(description);
+				logger.error("[DriveView] organizeFolder failed", error);
+				toast.error("Не удалось навести порядок", { description });
 			},
 		}),
 	);
@@ -109,16 +187,31 @@ export function DriveView() {
 
 	return (
 		<SuiteScreen
-			title="Drive"
+			title="Диск"
 			description="Файлы и папки, общий доступ по ссылке"
 			icon={HardDrive}
 			actions={
-				<Button onClick={() => setCreateOpen(true)}>
-					<FolderPlus className="size-4" /> Новая папка
-				</Button>
+				<>
+					<Button
+						variant="outline"
+						disabled={organizeFolder.isPending || listQuery.isLoading}
+						aria-label="Навести порядок в текущей папке"
+						title="Разложить файлы в текущей папке по типам: документы, изображения, медиа, архивы, код и прочее."
+						onClick={() => organizeFolder.mutate({ folderId: currentFolderId })}
+					>
+						{organizeFolder.isPending ? (
+							<LoaderCircle className="size-4 animate-spin" />
+						) : (
+							<Sparkles className="size-4" />
+						)}
+						Навести порядок
+					</Button>
+					<Button onClick={() => setCreateOpen(true)}>
+						<FolderPlus className="size-4" /> Новая папка
+					</Button>
+				</>
 			}
 		>
-			{/* Breadcrumb trail */}
 			<nav className="mb-4 flex flex-wrap items-center gap-1 text-sm">
 				{trail.map((crumb, index) => (
 					<span key={crumb.id ?? "root"} className="flex items-center gap-1">
@@ -136,6 +229,34 @@ export function DriveView() {
 					</span>
 				))}
 			</nav>
+
+			{organizeResult && (
+				<div className="mb-4 rounded-lg border border-border bg-card/80 px-4 py-3 text-sm">
+					<p className="font-medium text-foreground">
+						{organizeResult.movedCount > 0
+							? `Разложено файлов: ${organizeResult.movedCount}`
+							: "В текущей папке нечего раскладывать"}
+					</p>
+					<p className="mt-1 text-muted-foreground text-xs">
+						{organizeResult.movedCount > 0
+							? `Папок создано: ${organizeResult.createdFolderCount}. Направления: ${organizeResult.targets
+									.map((target) => target.folderName)
+									.join(", ")}.`
+							: "Создайте или загрузите файлы, чтобы авто-сортировка перенесла их по типам."}
+					</p>
+				</div>
+			)}
+
+			{organizeError && (
+				<div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+					<p className="font-medium text-foreground">
+						Наведение порядка недоступно
+					</p>
+					<p className="mt-1 cursor-text select-text text-muted-foreground text-xs">
+						{organizeError}
+					</p>
+				</div>
+			)}
 
 			{listQuery.isError && (
 				<SuiteQueryError
@@ -157,13 +278,14 @@ export function DriveView() {
 					<FilePlus className="mb-3 size-8 text-muted-foreground" />
 					<span className="text-foreground text-sm">Папка пуста</span>
 					<span className="mt-1 max-w-sm text-muted-foreground text-xs">
-						Создайте подпапку, чтобы организовать файлы.
+						Создайте подпапку. Когда здесь появится файл или папка, рядом будет
+						кнопка «Поделиться».
 					</span>
 				</div>
 			)}
 
 			{!isEmpty && (
-				<div className="overflow-hidden rounded-lg border border-border">
+				<div className="overflow-hidden rounded-lg border border-border bg-card/80">
 					{folders.map((folder) => (
 						<div
 							key={folder.id}
@@ -179,12 +301,14 @@ export function DriveView() {
 							</button>
 							<Button
 								size="sm"
-								variant="ghost"
+								variant="outline"
 								aria-label={`Поделиться папкой ${folder.name}`}
+								className="shrink-0 gap-1.5"
 								disabled={createShare.isPending}
 								onClick={() => createShare.mutate({ folderId: folder.id })}
 							>
 								<Link2 className="size-4" />
+								<span>Поделиться</span>
 							</Button>
 						</div>
 					))}
@@ -202,19 +326,20 @@ export function DriveView() {
 							</span>
 							<Button
 								size="sm"
-								variant="ghost"
+								variant="outline"
 								aria-label={`Поделиться файлом ${file.name}`}
+								className="shrink-0 gap-1.5"
 								disabled={createShare.isPending}
 								onClick={() => createShare.mutate({ fileId: file.id })}
 							>
 								<Link2 className="size-4" />
+								<span>Поделиться</span>
 							</Button>
 						</div>
 					))}
 				</div>
 			)}
 
-			{/* Create folder dialog */}
 			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
 				<DialogContent>
 					<DialogHeader>
@@ -256,23 +381,24 @@ export function DriveView() {
 				</DialogContent>
 			</Dialog>
 
-			{/* Share link dialog */}
 			<Dialog
-				open={shareUrl !== null}
+				open={shareDialog !== null}
 				onOpenChange={(open) => {
-					if (!open) setShareUrl(null);
+					if (!open) setShareDialog(null);
 				}}
 			>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Ссылка для доступа</DialogTitle>
 						<DialogDescription>
-							Любой, у кого есть ссылка, сможет открыть этот ресурс.
+							{shareDialog?.targetKind === "folder"
+								? "Папка доступна по публичной ссылке. Массовое скачивание папок пока не включено."
+								: "Файл доступен по публичной ссылке. Если storage backend не настроен, создание такой ссылки блокируется заранее."}
 						</DialogDescription>
 					</DialogHeader>
 					<Input
 						readOnly
-						value={shareUrl ?? ""}
+						value={shareDialog?.url ?? ""}
 						className="cursor-text select-text"
 						onFocus={(e) => e.currentTarget.select()}
 					/>
@@ -280,9 +406,9 @@ export function DriveView() {
 						<Button
 							variant="outline"
 							onClick={() => {
-								if (shareUrl) {
+								if (shareDialog?.url) {
 									void navigator.clipboard
-										?.writeText(shareUrl)
+										?.writeText(shareDialog.url)
 										.then(() => toast.success("Ссылка скопирована"));
 								}
 							}}

@@ -273,7 +273,7 @@ export function CanvasWorkspaceView({
 	const [importExportState, setImportExportState] = useState<ImportExportState>(
 		{
 			status: "idle",
-			message: "Ready for JSON Canvas import/export.",
+			message: "Готово к импорту и экспорту JSON Canvas.",
 		},
 	);
 	const canvasListQuery = workspaceTrpc.canvas.list.useQuery(
@@ -319,7 +319,7 @@ export function CanvasWorkspaceView({
 			});
 			setImportExportState({
 				status: "success",
-				message: "Undid persisted Canvas mutation.",
+				message: "Сохраненная правка канваса отменена.",
 			});
 		},
 		onError: (error) => {
@@ -344,7 +344,7 @@ export function CanvasWorkspaceView({
 			});
 			setImportExportState({
 				status: "success",
-				message: "Redid persisted Canvas mutation.",
+				message: "Сохраненная правка канваса повторена.",
 			});
 		},
 		onError: (error) => {
@@ -382,7 +382,7 @@ export function CanvasWorkspaceView({
 			});
 			setImportExportState({
 				status: "success",
-				message: `Imported JSON Canvas as ${result.document.id}.`,
+				message: `JSON Canvas импортирован: ${result.document.id}.`,
 			});
 			setImportJsonText("");
 		},
@@ -409,8 +409,8 @@ export function CanvasWorkspaceView({
 		if (createCanvas.isPending) return;
 		createCanvas.mutate({
 			workspaceId,
-			title: "Production Canvas Workspace",
-			description: "Rox workspace canvas backed by CanvasDocument storage.",
+			title: "Рабочий канвас",
+			description: "Канвас Rox с сохранением в CanvasDocument.",
 		});
 	}, [
 		canvasListQuery.data,
@@ -463,12 +463,12 @@ export function CanvasWorkspaceView({
 	);
 	const refCount = activeDocument?.nodes.filter((node) => node.ref).length ?? 0;
 	const canvasStatus = !workspaceId
-		? "No workspace selected"
+		? "Рабочее пространство не выбрано"
 		: activeCanvasQuery.isFetching || canvasListQuery.isFetching
-			? "Loading canonical document"
+			? "Загружаем сохраненный документ"
 			: activeDocument
-				? `Revision ${activeIndex?.revision ?? 0} · ${activeDocument.nodes.length} nodes · ${activeDocument.edges.length} edges`
-				: "Ready";
+				? `Ревизия ${activeIndex?.revision ?? 0} · ${activeDocument.nodes.length} узлов · ${activeDocument.edges.length} связей`
+				: "Готово";
 	const persistedPatches = historyQuery.data?.patches ?? [];
 	const lastPersistedPatch = persistedPatches.at(-1);
 	const canServerUndo = persistedPatches.length > 0;
@@ -545,7 +545,7 @@ export function CanvasWorkspaceView({
 	]);
 
 	const submitCanvasMutationBatch = useCallback(
-		(batch: CanvasMutationBatch, label = "Canvas edit") => {
+		(batch: CanvasMutationBatch, label = "Правка канваса") => {
 			if (!workspaceId || !activeDocument || !activeIndex) return;
 			let undoBatch: CanvasMutationBatch;
 			try {
@@ -594,8 +594,8 @@ export function CanvasWorkspaceView({
 		if (!workspaceId || createCanvas.isPending) return;
 		createCanvas.mutate({
 			workspaceId,
-			title: "Production Canvas Workspace",
-			description: "Rox workspace canvas backed by CanvasDocument storage.",
+			title: "Рабочий канвас",
+			description: "Канвас Rox с сохранением в CanvasDocument.",
 		});
 	}, [createCanvas, workspaceId]);
 
@@ -612,7 +612,7 @@ export function CanvasWorkspaceView({
 				actor: {
 					id: "renderer",
 					type: "user",
-					label: "Canvas Workspace",
+					label: "Канвас",
 				},
 				mutations: [
 					{
@@ -625,8 +625,8 @@ export function CanvasWorkspaceView({
 								y: 130 + activeDocument.nodes.length * 34,
 							},
 							size: { width: 280, height: 160 },
-							title: "Text card",
-							text: "New canvas card persisted as a CanvasMutation batch.",
+							title: "Текстовая карточка",
+							text: "Новая карточка сохранена как CanvasMutation batch.",
 							tags: [],
 							locked: false,
 							collapsed: false,
@@ -635,7 +635,7 @@ export function CanvasWorkspaceView({
 					},
 				],
 			},
-			"Add text node",
+			"Добавить текстовый узел",
 		);
 	}, [
 		activeCanvasId,
@@ -661,7 +661,7 @@ export function CanvasWorkspaceView({
 
 	const handleCanvasMutationBatch = useCallback(
 		(batch: CanvasMutationBatch) => {
-			submitCanvasMutationBatch(batch, "Canvas edit");
+			submitCanvasMutationBatch(batch, "Правка канваса");
 		},
 		[submitCanvasMutationBatch],
 	);
@@ -687,7 +687,7 @@ export function CanvasWorkspaceView({
 					setHistoryFuture((current) => [...current, entry].slice(-50));
 					setImportExportState({
 						status: "success",
-						message: `Undid: ${entry.label}.`,
+						message: `Отменено: ${entry.label}.`,
 					});
 				},
 				onError: (error) => {
@@ -730,7 +730,7 @@ export function CanvasWorkspaceView({
 					setHistoryPast((current) => [...current, entry].slice(-50));
 					setImportExportState({
 						status: "success",
-						message: `Redid: ${entry.label}.`,
+						message: `Повторено: ${entry.label}.`,
 					});
 				},
 				onError: (error) => {
@@ -756,7 +756,7 @@ export function CanvasWorkspaceView({
 		if (!workspaceId || !activeCanvasId) return;
 		setImportExportState({
 			status: "idle",
-			message: "Exporting JSON Canvas...",
+			message: "Экспорт JSON Canvas...",
 		});
 		try {
 			const result = await utils.canvas.exportJsonCanvas.fetch({
@@ -773,8 +773,8 @@ export function CanvasWorkspaceView({
 			setImportExportState({
 				status: "success",
 				message: copied
-					? "Exported JSON Canvas and copied it to clipboard."
-					: "Exported JSON Canvas into the preview field.",
+					? "JSON Canvas экспортирован и скопирован в буфер."
+					: "JSON Canvas экспортирован в поле предпросмотра.",
 			});
 		} catch (error) {
 			setImportExportState({
@@ -790,7 +790,7 @@ export function CanvasWorkspaceView({
 			const jsonCanvas = JSON.parse(importJsonText);
 			importJsonCanvas.mutate({
 				workspaceId,
-				title: "Imported JSON Canvas",
+				title: "Импортированный JSON Canvas",
 				jsonCanvas,
 			});
 		} catch (error) {
@@ -836,65 +836,70 @@ export function CanvasWorkspaceView({
 		() => [
 			{
 				id: "canvas.addTextNode",
-				title: "Add text node",
-				description: "Create a text CanvasNode through a node.add mutation.",
-				shortcut: "Click toolbar",
+				title: "Добавить текстовый узел",
+				description: "Создать текстовый CanvasNode через node.add mutation.",
+				shortcut: "Кнопка на панели",
 				disabled: !activeCanvasId || patchCanvas.isPending,
 				disabledReason: !activeCanvasId
-					? "Open a persisted Canvas before adding nodes."
+					? "Откройте сохраненный канвас перед добавлением узлов."
 					: patchCanvas.isPending
-						? "A Canvas mutation is already being saved."
+						? "Изменение канваса уже сохраняется."
 						: undefined,
 				keywords: ["node", "text", "card", "create"],
 				run: handleAddTextNode,
 			},
 			{
 				id: "canvas.undo",
-				title: "Undo canvas mutation",
+				title: "Отменить изменение канваса",
 				description:
-					"Apply the inverse CanvasMutationBatch to the active document.",
+					"Применить обратный CanvasMutationBatch к активному документу.",
 				shortcut: "Cmd/Ctrl+Z",
 				disabled: !canUndo,
-				disabledReason: !canUndo ? "No Canvas mutations to undo." : undefined,
+				disabledReason: !canUndo
+					? "Нет изменений канваса для отмены."
+					: undefined,
 				keywords: ["history", "rollback", "mutation"],
 				run: handleUndo,
 			},
 			{
 				id: "canvas.redo",
-				title: "Redo canvas mutation",
-				description: "Rebase and replay the stored redo CanvasMutationBatch.",
+				title: "Повторить изменение канваса",
+				description:
+					"Перебазировать и повторить сохраненный CanvasMutationBatch.",
 				shortcut: "Cmd/Ctrl+Shift+Z",
 				disabled: !canRedo,
-				disabledReason: !canRedo ? "No Canvas mutations to redo." : undefined,
+				disabledReason: !canRedo
+					? "Нет изменений канваса для повтора."
+					: undefined,
 				keywords: ["history", "replay", "mutation"],
 				run: handleRedo,
 			},
 			{
 				id: "canvas.exportJsonCanvas",
-				title: "Export JSON Canvas",
+				title: "Экспортировать JSON Canvas",
 				description:
-					"Serialize the current CanvasDocument through the JSON Canvas codec.",
+					"Сериализовать текущий CanvasDocument через JSON Canvas codec.",
 				shortcut: "Cmd/Ctrl+Shift+E",
 				disabled: !activeCanvasId,
 				disabledReason: !activeCanvasId
-					? "Open a persisted Canvas before exporting."
+					? "Откройте сохраненный канвас перед экспортом."
 					: undefined,
 				keywords: ["json", "obsidian", "export", "interop"],
 				run: () => void handleExportJsonCanvas(),
 			},
 			{
 				id: "canvas.importJsonCanvas",
-				title: "Import JSON Canvas",
+				title: "Импортировать JSON Canvas",
 				description:
-					"Parse the import textarea and create a new persisted canvas.",
+					"Прочитать поле импорта и создать новый сохраненный канвас.",
 				disabled:
 					!workspaceId || importJsonCanvas.isPending || !importJsonText.trim(),
 				disabledReason: !workspaceId
-					? "Open a workspace before importing JSON Canvas."
+					? "Откройте workspace перед импортом JSON Canvas."
 					: importJsonCanvas.isPending
-						? "A JSON Canvas import is already running."
+						? "Импорт JSON Canvas уже выполняется."
 						: !importJsonText.trim()
-							? "Paste JSON Canvas into the import field first."
+							? "Сначала вставьте JSON Canvas в поле импорта."
 							: undefined,
 				keywords: ["json", "obsidian", "import", "interop"],
 				run: handleImportJsonCanvas,
@@ -902,7 +907,7 @@ export function CanvasWorkspaceView({
 			...capabilityItems.slice(0, 12).map((capability) => ({
 				id: capability.id,
 				title: capability.label,
-				description: `Run ${capability.id} against the active CanvasDocument.`,
+				description: `Запустить ${capability.id} для активного CanvasDocument.`,
 				disabled: Boolean(
 					getCanvasCapabilityDisabledReason({
 						hasActiveCanvas: Boolean(activeCanvasId),
@@ -983,7 +988,7 @@ export function CanvasWorkspaceView({
 						</div>
 						<div>
 							<h1 className="font-semibold text-lg tracking-tight">
-								{activeDocument?.title ?? "Canvas Workspace"}
+								{activeDocument?.title ?? "Канвас"}
 							</h1>
 							<p className="text-white/50 text-xs">{canvasStatus}</p>
 						</div>
@@ -1001,7 +1006,7 @@ export function CanvasWorkspaceView({
 							disabled={!canUndo}
 							title="Cmd/Ctrl+Z"
 						>
-							Undo
+							Отмена
 						</button>
 						<button
 							type="button"
@@ -1010,7 +1015,7 @@ export function CanvasWorkspaceView({
 							disabled={!canRedo}
 							title="Cmd/Ctrl+Shift+Z"
 						>
-							Redo
+							Повтор
 						</button>
 						<button
 							type="button"
@@ -1018,7 +1023,7 @@ export function CanvasWorkspaceView({
 							onClick={() => setCanvasCommandPaletteOpen(true)}
 							title="Cmd/Ctrl+Shift+P"
 						>
-							Commands
+							Команды
 						</button>
 						<button
 							type="button"
@@ -1027,7 +1032,7 @@ export function CanvasWorkspaceView({
 							disabled={!activeCanvasId}
 							title="Cmd/Ctrl+Shift+E"
 						>
-							Export
+							Экспорт
 						</button>
 						<button
 							type="button"
@@ -1035,7 +1040,7 @@ export function CanvasWorkspaceView({
 							onClick={handleAddTextNode}
 							disabled={!activeCanvasId || patchCanvas.isPending}
 						>
-							Add text node
+							Текст
 						</button>
 						<button
 							type="button"
@@ -1043,7 +1048,7 @@ export function CanvasWorkspaceView({
 							onClick={handleCreateCanvas}
 							disabled={!workspaceId || createCanvas.isPending}
 						>
-							New canvas
+							Новый канвас
 						</button>
 					</div>
 				</header>
@@ -1055,10 +1060,10 @@ export function CanvasWorkspaceView({
 								<div className="flex items-center justify-between gap-4">
 									<div>
 										<p className="font-medium text-cyan-100 text-sm uppercase tracking-[0.18em]">
-											Canvas command palette
+											Команды канваса
 										</p>
 										<p className="mt-1 text-white/50 text-xs">
-											Context-aware actions for the active CanvasDocument.
+											Действия для активного CanvasDocument.
 										</p>
 									</div>
 									<button
@@ -1071,7 +1076,7 @@ export function CanvasWorkspaceView({
 								</div>
 								<input
 									className="mt-4 w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/45"
-									placeholder="Search Canvas actions, capabilities, import/export..."
+									placeholder="Поиск действий, возможностей, импорта и экспорта..."
 									value={canvasCommandQuery}
 									onChange={(event) =>
 										setCanvasCommandQuery(event.target.value)
@@ -1116,7 +1121,7 @@ export function CanvasWorkspaceView({
 								))}
 								{filteredCanvasCommands.length === 0 ? (
 									<p className="px-4 py-8 text-center text-sm text-white/45">
-										No Canvas command matches this query.
+										Нет команд канваса по этому запросу.
 									</p>
 								) : null}
 							</div>
@@ -1141,12 +1146,12 @@ export function CanvasWorkspaceView({
 						<div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
 							<div className="mb-3 flex items-center gap-2 text-white/70 text-xs uppercase tracking-[0.18em]">
 								<HiOutlineMagnifyingGlass className="size-4" />
-								Library
+								Библиотека
 							</div>
 							<div className="space-y-2 text-sm">
 								{(canvasListQuery.data?.length
 									? canvasListQuery.data.map((canvas) => canvas.title)
-									: ["Production workspace", "Agent runs", "Notes graph"]
+									: ["Рабочее пространство", "Запуски агентов", "Граф заметок"]
 								).map((item, index) => (
 									<button
 										key={item}
@@ -1167,7 +1172,7 @@ export function CanvasWorkspaceView({
 						<div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
 							<div className="mb-3 flex items-center gap-2 text-white/70 text-xs uppercase tracking-[0.18em]">
 								<HiOutlineDocumentText className="size-4" />
-								Entity-backed nodes
+								Узлы из объектов
 							</div>
 							<div className="flex flex-wrap gap-2">
 								{canvasEntityTypeLabels.map((type) => (
@@ -1184,7 +1189,7 @@ export function CanvasWorkspaceView({
 
 					<main className="relative min-h-0 overflow-hidden">
 						<div className="absolute left-5 top-5 z-20 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/35 p-2 shadow-2xl backdrop-blur-xl">
-							{["Select", "Text", "Note", "Session", "Edge", "Group"].map(
+							{["Выбор", "Текст", "Заметка", "Сессия", "Связь", "Группа"].map(
 								(tool, index) => (
 									<button
 										key={tool}
@@ -1203,10 +1208,10 @@ export function CanvasWorkspaceView({
 						</div>
 						<div className="absolute right-5 top-5 z-20 rounded-2xl border border-white/10 bg-black/35 px-3 py-2 text-white/60 text-xs backdrop-blur-xl">
 							<div>
-								Zoom 86% · Grid on ·{" "}
+								Масштаб 86% · Сетка включена ·{" "}
 								{activeDocument
-									? "Autosaved canonical document"
-									: "Projection preview"}
+									? "Автосохранение документа"
+									: "Предпросмотр проекции"}
 							</div>
 							<div
 								className="mt-1 font-mono text-cyan-100/65"
@@ -1256,22 +1261,22 @@ export function CanvasWorkspaceView({
 						<div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
 							<div className="flex items-center gap-2 text-white/70 text-xs uppercase tracking-[0.18em]">
 								<HiOutlineChatBubbleLeftRight className="size-4" />
-								Selection
+								Выбор
 							</div>
 							<h2 className="mt-3 font-semibold text-white">
-								{activeDocument?.title ?? "Selected graph context"}
+								{activeDocument?.title ?? "Контекст графа"}
 							</h2>
 							<p className="mt-2 text-sm text-white/55">
 								{activeDocument
-									? `${activeDocument.nodes.length} nodes, ${activeDocument.edges.length} directed edges, ${refCount} entity refs. ${selectedEntityCount} selected. Writes emit CanvasMutation batches.`
-									: "Entity-backed Rox canvas projection. Open from a workspace to load canonical persistence."}
+									? `${activeDocument.nodes.length} узлов, ${activeDocument.edges.length} направленных связей, ${refCount} ссылок на объекты. Выбрано: ${selectedEntityCount}. Изменения сохраняются как CanvasMutation batch.`
+									: "Проекция канваса Rox на объектах. Откройте workspace, чтобы загрузить сохраненное состояние."}
 							</p>
 						</div>
 
 						<div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
 							<div className="flex items-center gap-2 text-white/70 text-xs uppercase tracking-[0.18em]">
 								<HiOutlineBolt className="size-4" />
-								Capabilities
+								Возможности
 							</div>
 							<div className="mt-3 space-y-2">
 								{capabilityItems.map((capability) => (
@@ -1325,7 +1330,7 @@ export function CanvasWorkspaceView({
 						<div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
 							<div className="flex items-center gap-2 text-white/70 text-xs uppercase tracking-[0.18em]">
 								<HiOutlineDocumentText className="size-4" />
-								Import / Export
+								Импорт / экспорт
 							</div>
 							<div className="mt-3 grid grid-cols-2 gap-2">
 								<button
@@ -1334,7 +1339,7 @@ export function CanvasWorkspaceView({
 									disabled={!activeCanvasId}
 									onClick={() => void handleExportJsonCanvas()}
 								>
-									Export JSON
+									Экспорт JSON
 								</button>
 								<button
 									type="button"
@@ -1346,15 +1351,16 @@ export function CanvasWorkspaceView({
 									}
 									onClick={handleImportJsonCanvas}
 								>
-									Import JSON
+									Импорт JSON
 								</button>
 							</div>
 							<div className="mt-3 rounded-xl border border-white/8 bg-black/25 px-3 py-2 text-white/55 text-xs">
-								History: {historyPast.length} undo · {historyFuture.length} redo
+								История: {historyPast.length} отмена · {historyFuture.length}{" "}
+								повтор
 							</div>
 							<textarea
 								className="mt-3 min-h-24 w-full resize-y rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-white/70 outline-none placeholder:text-white/25 focus:border-cyan-300/35"
-								placeholder='Paste Obsidian JSON Canvas here, then run "Import JSON".'
+								placeholder="Вставьте Obsidian JSON Canvas и нажмите «Импорт JSON»."
 								value={importJsonText}
 								onChange={(event) => setImportJsonText(event.target.value)}
 							/>
@@ -1363,7 +1369,7 @@ export function CanvasWorkspaceView({
 									className="mt-3 max-h-32 min-h-20 w-full resize-y rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-white/60 outline-none"
 									readOnly
 									value={exportedJsonText}
-									aria-label="Exported JSON Canvas"
+									aria-label="Экспортированный JSON Canvas"
 								/>
 							) : null}
 							<div

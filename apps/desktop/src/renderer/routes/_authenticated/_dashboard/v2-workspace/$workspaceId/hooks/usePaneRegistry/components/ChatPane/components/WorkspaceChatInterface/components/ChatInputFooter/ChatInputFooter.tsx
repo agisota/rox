@@ -6,7 +6,10 @@ import {
 	usePromptInputController,
 } from "@rox/ui/ai-elements/prompt-input";
 import type { ThinkingLevel } from "@rox/ui/ai-elements/thinking-toggle";
+import { toast } from "@rox/ui/sonner";
+import { blobToBase64, type Recording } from "@rox/ui/voice";
 import { workspaceTrpc } from "@rox/workspace-client";
+import { useQuery } from "@tanstack/react-query";
 import type { ChatStatus, FileUIPart } from "ai";
 import type React from "react";
 import type { ReactNode } from "react";
@@ -20,6 +23,8 @@ import type {
 	PermissionMode,
 } from "renderer/components/Chat/ChatInterface/types";
 import { useHotkeyDisplay } from "renderer/hotkeys";
+import { electronTrpc } from "renderer/lib/electron-trpc";
+import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import { ChatComposerControls } from "./components/ChatComposerControls";
 import { ChatInputDropZone } from "./components/ChatInputDropZone";
 import { ChatShortcuts } from "./components/ChatShortcuts";
@@ -115,6 +120,13 @@ export function ChatInputFooter({
 	}, []);
 
 	const trpcUtils = workspaceTrpc.useUtils();
+	const electronUtils = electronTrpc.useUtils();
+	const { data: voiceConfig } = useQuery({
+		queryKey: ["voice", "isConfigured"],
+		queryFn: () => apiClient.voice.isConfigured.query(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const dictationConfigured = voiceConfig?.configured;
 	const searchFiles = useCallback(
 		async (query: string) => {
 			const { matches } = await trpcUtils.filesystem.searchFiles.fetch({
@@ -149,6 +161,43 @@ export function ChatInputFooter({
 		[linkedIssues, onSend],
 	);
 
+	const [transcribing, setTranscribing] = useState(false);
+	const handleDictationComplete = useCallback(
+		async (recording: Recording, locked: boolean) => {
+			setTranscribing(true);
+			try {
+				const audioBase64 = await blobToBase64(recording.blob);
+				const voiceAgentContext =
+					await electronUtils.settings.getVoiceAgentContext
+						.fetch()
+						.catch(() => "");
+				const result = await apiClient.voice.transcribe.mutate({
+					audioBase64,
+					mimeType: recording.mimeType,
+					durationMs: recording.durationMs,
+					voiceAgentContext: voiceAgentContext?.trim() || undefined,
+				});
+				const text = (result.processed?.ru || result.rawText || "").trim();
+				if (!text) {
+					toast.info("Не удалось распознать речь");
+					return;
+				}
+				if (locked) {
+					const prev = textInput.value;
+					textInput.setInput(prev ? `${prev} ${text}` : text);
+					textInput.focus();
+				} else {
+					void handleSend({ text, files: [] });
+				}
+			} catch {
+				toast.error("Ошибка расшифровки — запись сохранена для повтора");
+			} finally {
+				setTranscribing(false);
+			}
+		},
+		[textInput, handleSend, electronUtils],
+	);
+
 	return (
 		<ChatInputDropZone className="bg-background px-4 py-3">
 			{(dragType) => (
@@ -180,7 +229,7 @@ export function ChatInputFooter({
 						>
 							{showFocusHint && (
 								<span className="pointer-events-none absolute top-3 right-3 z-10 text-xs text-muted-foreground/50 [:focus-within>&]:hidden">
-									{focusShortcutText} to focus
+									{focusShortcutText} — фокус
 								</span>
 							)}
 							<PromptInput
@@ -228,6 +277,9 @@ export function ChatInputFooter({
 									submitStatus={submitStatus}
 									submitDisabled={submitDisabled}
 									onStop={onStop}
+									onDictationComplete={handleDictationComplete}
+									dictationTranscribing={transcribing}
+									dictationConfigured={dictationConfigured}
 								/>
 							</PromptInput>
 						</div>

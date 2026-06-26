@@ -21,15 +21,15 @@ export function getCanvasSyncStatus({
 	refreshIntervalMs = CANVAS_ACTIVE_REFRESH_INTERVAL_MS,
 	workspaceId,
 }: CanvasSyncStatusInput): string {
-	if (!workspaceId) return "Sync idle: no workspace";
-	if (!activeCanvasId) return "Sync waiting: no active canvas";
-	if (lastRefreshError) return `Live sync: retrying after ${lastRefreshError}`;
-	if (isFetching) return "Live sync: refreshing canonical document";
+	if (!workspaceId) return "Синхронизация неактивна: workspace не открыт";
+	if (!activeCanvasId) return "Ожидание синхронизации: нет активного канваса";
+	if (lastRefreshError) return `Live sync: повтор после ${lastRefreshError}`;
+	if (isFetching) return "Live sync: обновляем сохраненный документ";
 
 	const refreshSeconds = Math.max(1, Math.round(refreshIntervalMs / 1000));
 	const lastRefresh = lastRefreshAt
-		? ` · last ${formatRefreshTime(lastRefreshAt)} UTC`
+		? ` · последнее обновление ${formatRefreshTime(lastRefreshAt)} UTC`
 		: "";
 
-	return `Live sync: polling every ${refreshSeconds}s${lastRefresh}`;
+	return `Live sync: опрос каждые ${refreshSeconds}s${lastRefresh}`;
 }

@@ -272,6 +272,12 @@ async function resolveRoxRecipientUserIds(
 }
 
 export const mailRouter = {
+	getMailbox: protectedProcedure.query(async ({ ctx }) => {
+		await requireActiveOrgMembership(ctx);
+		const address = await getPrimaryAddress(ctx.session.user.id);
+		return { address };
+	}),
+
 	/**
 	 * Provision (or re-affirm) the caller's routable `<handle>@rox.one` address.
 	 * Idempotent: the global UNIQUE on `address` guards duplicates. The handle is

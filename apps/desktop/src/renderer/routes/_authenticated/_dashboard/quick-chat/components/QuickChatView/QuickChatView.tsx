@@ -13,6 +13,13 @@ import {
 } from "@rox/ui/dropdown-menu";
 import { Textarea } from "@rox/ui/textarea";
 import { cn } from "@rox/ui/utils";
+import {
+	blobToBase64,
+	MicButton,
+	type MicButtonControls,
+	type Recording,
+} from "@rox/ui/voice";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -22,6 +29,9 @@ import {
 	LuSettings,
 	LuSparkles,
 } from "react-icons/lu";
+import { getDictationDisabledReason } from "renderer/components/Chat/ChatInterface/components/ChatInputFooter/components/ChatComposerControls/dictationAffordance";
+import { useHotkey } from "renderer/hotkeys";
+import { electronTrpc } from "renderer/lib/electron-trpc";
 import { logger } from "renderer/lib/logger";
 import { apiClient } from "renderer/routes/_authenticated/providers/CollectionsProvider/collections";
 import { useQuickChatDraftStore } from "renderer/stores/quick-chat-draft";
@@ -77,6 +87,7 @@ export function QuickChatView() {
 	const [input, setInput] = useState("");
 	const [messages, setMessages] = useState<QuickChatMessage[]>([]);
 	const [isSending, setIsSending] = useState(false);
+	const [isTranscribing, setIsTranscribing] = useState(false);
 	// Set when the house model reports `not-configured`: instead of a dead
 	// assistant bubble we surface an inline actionable banner and disable send so
 	// the user can fix it (add a key / switch model) rather than dead-end.
@@ -87,6 +98,24 @@ export function QuickChatView() {
 	const sessionIdRef = useRef<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const micControlsRef = useRef<MicButtonControls | null>(null);
+
+	const { data: voiceConfig } = useQuery({
+		queryKey: ["voice", "isConfigured"],
+		queryFn: () => apiClient.voice.isConfigured.query(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const dictationEnabled =
+		electronTrpc.settings.getDictationEnabled.useQuery().data;
+	const { data: permissionStatus } =
+		electronTrpc.permissions.getStatus.useQuery();
+	const electronUtils = electronTrpc.useUtils();
+	const micDisabledReason = getDictationDisabledReason({
+		dictationEnabled,
+		dictationConfigured: voiceConfig?.configured,
+		microphoneGranted: permissionStatus?.microphone,
+	});
+	const micDisabled = micDisabledReason !== undefined;
 
 	// Fill the composer from a starter chip and focus it so the user can edit or
 	// send. Reuses the same `setInput` path as the saved-prompts draft handoff.
@@ -99,6 +128,54 @@ export function QuickChatView() {
 			textarea.setSelectionRange(caret, caret);
 		}
 	}, []);
+
+	const appendDictatedText = useCallback((text: string) => {
+		setInput((prev) => (prev.trim().length > 0 ? `${prev} ${text}` : text));
+		setNotConfigured(false);
+		requestAnimationFrame(() => {
+			const textarea = textareaRef.current;
+			if (!textarea) return;
+			textarea.focus();
+			const caret = textarea.value.length;
+			textarea.setSelectionRange(caret, caret);
+		});
+	}, []);
+
+	const handleDictationComplete = useCallback(
+		async (recording: Recording) => {
+			setIsTranscribing(true);
+			try {
+				const audioBase64 = await blobToBase64(recording.blob);
+				const voiceAgentContext =
+					await electronUtils.settings.getVoiceAgentContext
+						.fetch()
+						.catch(() => "");
+				const result = await apiClient.voice.transcribe.mutate({
+					audioBase64,
+					mimeType: recording.mimeType,
+					durationMs: recording.durationMs,
+					voiceAgentContext: voiceAgentContext?.trim() || undefined,
+				});
+				const text = (result.processed?.ru || result.rawText || "").trim();
+				if (!text) return;
+				appendDictatedText(text);
+			} catch (error) {
+				logger.error("[quick-chat] dictation failed", error);
+			} finally {
+				setIsTranscribing(false);
+			}
+		},
+		[appendDictatedText, electronUtils],
+	);
+
+	const handleMicReady = useCallback((controls: MicButtonControls | null) => {
+		micControlsRef.current = controls;
+	}, []);
+
+	useHotkey("DICTATE", () => {
+		if (micDisabled) return;
+		micControlsRef.current?.toggle();
+	});
 
 	// Pick up a prompt staged from the "Сохранённые промпты" view, if any.
 	useEffect(() => {
@@ -368,9 +445,19 @@ export function QuickChatView() {
 							))}
 						</div>
 
+						<div className="ml-auto flex size-8 items-center justify-center">
+							<MicButton
+								onComplete={handleDictationComplete}
+								transcribing={isTranscribing}
+								disabled={micDisabled}
+								disabledReason={micDisabledReason}
+								onReady={handleMicReady}
+							/>
+						</div>
+
 						<Button
 							size="icon"
-							className="ml-auto size-8 rounded-full"
+							className="size-8 rounded-full"
 							disabled={input.trim().length === 0 || isSending || notConfigured}
 							onClick={() => void send()}
 							aria-label="Отправить"

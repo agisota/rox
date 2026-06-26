@@ -51,8 +51,8 @@ export function JournalView() {
 	);
 
 	return (
-		<div className="h-full overflow-y-auto">
-			<div className="mx-auto max-w-3xl px-6 py-8">
+		<div className="h-full min-w-0 overflow-y-auto bg-background/85">
+			<div className="w-full px-6 py-8">
 				<header className="mb-6">
 					<h1 className="font-semibold text-2xl text-foreground">Журнал</h1>
 					<p className="mt-1 text-muted-foreground text-sm">
@@ -60,7 +60,7 @@ export function JournalView() {
 					</p>
 				</header>
 
-				<Tabs defaultValue="reflection">
+				<Tabs defaultValue="reflection" className="w-full">
 					<TabsList className="mb-6">
 						<TabsTrigger value="reflection">Рефлексия</TabsTrigger>
 						<TabsTrigger value="feed">Лента</TabsTrigger>

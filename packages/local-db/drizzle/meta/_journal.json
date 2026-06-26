@@ -330,6 +330,13 @@
       "when": 1783000000000,
       "tag": "0046_push_to_talk_accelerator",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "6",
+      "when": 1784500000000,
+      "tag": "0047_add_ui_font_settings",
+      "breakpoints": true
     }
   ]
 }

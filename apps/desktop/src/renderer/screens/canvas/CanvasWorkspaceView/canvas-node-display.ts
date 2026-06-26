@@ -28,58 +28,58 @@ export const productionCanvasNodeTypes = [
 ] as const satisfies readonly CanvasNode["type"][];
 
 export const canvasEntityTypeLabels = [
-	"Text",
-	"Note",
-	"Chat session",
-	"Message",
-	"Artifact",
-	"File",
+	"Текст",
+	"Заметка",
+	"Чат-сессия",
+	"Сообщение",
+	"Артефакт",
+	"Файл",
 	"URL",
-	"Image",
+	"Изображение",
 	"PDF",
-	"Code",
-	"Task",
-	"Prompt",
-	"Tool call",
-	"Canvas",
+	"Код",
+	"Задача",
+	"Промпт",
+	"Вызов инструмента",
+	"Канвас",
 ] as const;
 
 const fallbackNodeCards: DisplayNodeCard[] = [
 	{
 		id: "session",
-		label: "Live agent session",
-		title: "Claude planning session",
-		meta: "Session node · streaming context",
+		label: "Живая сессия агента",
+		title: "Планирование с агентом",
+		meta: "Узел сессии · потоковый контекст",
 		className: "left-[9%] top-[15%] w-72 border-sky-400/35 bg-sky-950/45",
 	},
 	{
 		id: "note",
-		label: "Note",
-		title: "Canvas implementation invariants",
-		meta: "Note ref · markdown source of truth",
+		label: "Заметка",
+		title: "Инварианты реализации канваса",
+		meta: "Ссылка на заметку · markdown как источник",
 		className: "left-[39%] top-[9%] w-80 border-amber-300/35 bg-amber-950/35",
 	},
 	{
 		id: "artifact",
-		label: "Artifact",
-		title: "JSON Canvas import report",
-		meta: "Artifact ref · generated output",
+		label: "Артефакт",
+		title: "Отчет импорта JSON Canvas",
+		meta: "Ссылка на артефакт · результат генерации",
 		className:
 			"right-[11%] top-[25%] w-72 border-emerald-300/35 bg-emerald-950/35",
 	},
 	{
 		id: "message",
-		label: "Message cluster",
-		title: "Selected graph context",
-		meta: "6 messages · 3 backlinks",
+		label: "Кластер сообщений",
+		title: "Выбранный контекст графа",
+		meta: "6 сообщений · 3 обратные ссылки",
 		className:
 			"left-[27%] bottom-[16%] w-72 border-fuchsia-300/35 bg-fuchsia-950/35",
 	},
 	{
 		id: "task",
-		label: "Task bundle",
-		title: "Storage/RPC verification gates",
-		meta: "Task nodes · acceptance matrix",
+		label: "Пакет задач",
+		title: "Проверки Storage/RPC",
+		meta: "Узлы задач · матрица приемки",
 		className:
 			"right-[20%] bottom-[12%] w-80 border-violet-300/35 bg-violet-950/35",
 	},
@@ -118,9 +118,9 @@ export function documentNodesToCards(
 		return [
 			{
 				id: "empty-document",
-				label: "Persisted CanvasDocument",
+				label: "Сохраненный CanvasDocument",
 				title: document.title,
-				meta: "Empty graph · create a node to emit a CanvasMutation batch",
+				meta: "Пустой граф · создайте узел, чтобы отправить CanvasMutation batch",
 				className:
 					"left-[22%] top-[24%] w-96 border-cyan-300/35 bg-cyan-950/35",
 			},
@@ -131,8 +131,8 @@ export function documentNodesToCards(
 		label: node.type,
 		title: node.title ?? node.text ?? node.ref?.preview ?? node.id,
 		meta: node.ref
-			? `${node.ref.type} ref · ${node.ref.id}`
-			: `${node.type} node · CanvasDocument entity`,
+			? `${node.ref.type} · ${node.ref.id}`
+			: `${node.type} · сущность CanvasDocument`,
 		className: getNodeAccentClass(node.type),
 		style: {
 			left: `${Math.max(node.position.x, 24)}px`,

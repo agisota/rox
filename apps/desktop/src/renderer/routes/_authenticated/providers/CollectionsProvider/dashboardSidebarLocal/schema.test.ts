@@ -151,6 +151,18 @@ describe("healWorkspaceLocalState", () => {
 		expect(healed.sidebarState.isHidden).toBe(false);
 	});
 
+	it("preserves the management sidebar tab", () => {
+		const healed = healWorkspaceLocalState({
+			...baseStored,
+			sidebarState: {
+				...baseStored.sidebarState,
+				activeTab: "management",
+			},
+		});
+
+		expect(healed.sidebarState.activeTab).toBe("management");
+	});
+
 	it("does not throw on null/non-object input (parser must never throw)", () => {
 		// Heal must never throw — a throw would take down the entire collection
 		// load (loadFromStorage swallows the error and returns an empty Map).

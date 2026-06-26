@@ -1,5 +1,7 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
 import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 
@@ -115,6 +117,8 @@ CREATE TABLE settings (
   file_open_mode TEXT,
   show_presets_bar INTEGER,
   use_compact_terminal_add_button INTEGER,
+  ui_font_family TEXT DEFAULT 'SF UI Display Pro',
+  ui_font_size INTEGER DEFAULT 12,
   terminal_font_family TEXT DEFAULT 'Geist Mono',
   terminal_font_size INTEGER DEFAULT 12,
   editor_font_family TEXT DEFAULT 'SF UI Display Pro',
@@ -176,6 +180,27 @@ beforeEach(() => {
 
 afterEach(() => {
 	sqlite.close();
+});
+
+describe("migration journal", () => {
+	test("keeps migration timestamps strictly increasing", () => {
+		const journalPath = resolve(
+			import.meta.dir,
+			"../../drizzle/meta/_journal.json",
+		);
+		const journal = JSON.parse(readFileSync(journalPath, "utf8")) as {
+			entries: { tag: string; when: number }[];
+		};
+
+		for (let index = 1; index < journal.entries.length; index += 1) {
+			const previous = journal.entries[index - 1];
+			const current = journal.entries[index];
+			expect(
+				current.when,
+				`${current.tag} must run after ${previous.tag}`,
+			).toBeGreaterThan(previous.when);
+		}
+	});
 });
 
 describe("projects round-trip", () => {
@@ -380,6 +405,7 @@ describe("settings round-trip", () => {
 
 		expect(row.branchPrefixMode).toBe("custom");
 		expect(row.branchPrefixCustom).toBe("rox");
+		expect(row.uiFontFamily).toBe("SF UI Display Pro");
 		expect(row.terminalFontFamily).toBe("Geist Mono");
 		expect(row.editorFontFamily).toBe("SF UI Display Pro");
 		expect(row.terminalPresets?.[0]?.commands).toEqual(["bun dev"]);

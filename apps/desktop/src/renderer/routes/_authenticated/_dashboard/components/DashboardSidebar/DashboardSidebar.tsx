@@ -298,7 +298,7 @@ export function DashboardSidebar({
 							)}
 						>
 							<DashboardSidebarNavButton
-								label="Canvas"
+								label="Канвас"
 								icon={HiOutlineRectangleGroup}
 								isActive={isCanvasOpen}
 								isCollapsed={isCollapsed}
@@ -326,7 +326,7 @@ export function DashboardSidebar({
 								onClick={() => navigate({ to: "/inbox" })}
 							/>
 							<DashboardSidebarNavButton
-								label="Drive"
+								label="Диск"
 								icon={HiOutlineFolder}
 								isActive={isDriveOpen}
 								isCollapsed={isCollapsed}

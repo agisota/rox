@@ -21,6 +21,7 @@ import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";
 import { PermissionModePicker } from "../../../PermissionModePicker";
 import { PlusMenu } from "../../../PlusMenu";
+import { getDictationDisabledReason } from "./dictationAffordance";
 
 interface ChatComposerControlsProps {
 	availableModels: ModelOption[];
@@ -67,7 +68,14 @@ export function ChatComposerControls({
 	// into `disabled` (and the hotkey gate) below.
 	const dictationEnabled =
 		electronTrpc.settings.getDictationEnabled.useQuery().data;
-	const dictationOff = dictationEnabled === false;
+	const { data: permissionStatus } =
+		electronTrpc.permissions.getStatus.useQuery();
+	const micDisabledReason = getDictationDisabledReason({
+		dictationEnabled,
+		dictationConfigured,
+		microphoneGranted: permissionStatus?.microphone,
+	});
+	const micDisabled = micDisabledReason !== undefined;
 
 	// Desktop keyboard shortcut for dictation. The shared MicButton is hotkey-free;
 	// it hands us a stable toggle via onReady and we bind DICTATE (Ctrl+Shift+D) to
@@ -79,7 +87,7 @@ export function ChatComposerControls({
 		micControlsRef.current = controls;
 	}, []);
 	useHotkey("DICTATE", () => {
-		if (dictationOff) return;
+		if (micDisabled) return;
 		micControlsRef.current?.toggle();
 	});
 
@@ -105,17 +113,13 @@ export function ChatComposerControls({
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />
-				{/* Hidden (not merely disabled) when the user turns dictation off in
-				    Settings → Voice — matches the prior desktop behavior. The
-				    voice.isConfigured gate stays on `disabled`. */}
-				{!dictationOff && (
-					<MicButton
-						onComplete={onDictationComplete}
-						transcribing={dictationTranscribing}
-						disabled={!dictationConfigured}
-						onReady={handleMicReady}
-					/>
-				)}
+				<MicButton
+					onComplete={onDictationComplete}
+					transcribing={dictationTranscribing}
+					disabled={micDisabled}
+					disabledReason={micDisabledReason}
+					onReady={handleMicReady}
+				/>
 				<PromptInputSubmit
 					className="size-[23px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
 					status={submitStatus}

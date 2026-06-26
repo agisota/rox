@@ -24,6 +24,8 @@ import type {
 export const DEFAULT_SETTINGS_BRANCH_PREFIX_MODE =
 	"custom" satisfies BranchPrefixMode;
 export const DEFAULT_SETTINGS_BRANCH_PREFIX_CUSTOM = "rox";
+export const DEFAULT_SETTINGS_UI_FONT_FAMILY = "SF UI Display Pro";
+export const DEFAULT_SETTINGS_UI_FONT_SIZE = 12;
 export const DEFAULT_SETTINGS_EDITOR_FONT_FAMILY = "SF UI Display Pro";
 export const DEFAULT_SETTINGS_EDITOR_FONT_SIZE = 12;
 export const DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY = "Geist Mono";
@@ -236,6 +238,8 @@ export const settings = sqliteTable("settings", {
 	useCompactTerminalAddButton: integer("use_compact_terminal_add_button", {
 		mode: "boolean",
 	}),
+	uiFontFamily: text("ui_font_family").default(DEFAULT_SETTINGS_UI_FONT_FAMILY),
+	uiFontSize: integer("ui_font_size").default(DEFAULT_SETTINGS_UI_FONT_SIZE),
 	terminalFontFamily: text("terminal_font_family").default(
 		DEFAULT_SETTINGS_TERMINAL_FONT_FAMILY,
 	),

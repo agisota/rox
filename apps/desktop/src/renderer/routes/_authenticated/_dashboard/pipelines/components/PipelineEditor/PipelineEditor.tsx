@@ -274,8 +274,25 @@ export function PipelineEditor({
 					</Button>
 				</div>
 			</div>
+			{validation && !validation.valid && (
+				<div className="border-b border-destructive/25 bg-destructive/10 px-4 py-2 text-destructive text-xs">
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+						<span className="font-medium">
+							Запуск недоступен: {validation.issues.length} проблем(ы)
+						</span>
+						{validation.issues.slice(0, 4).map((issue) => (
+							<span
+								key={`${issue.code}:${issue.blockId ?? issue.edgeId ?? issue.path ?? issue.message}`}
+								className="cursor-text select-text"
+							>
+								{issue.blockId ? `${issue.blockId}: ` : ""}
+								{issue.message}
+							</span>
+						))}
+					</div>
+				</div>
+			)}
 
-			{/* Body: canvas + side panels */}
 			<div className="flex min-h-0 flex-1 overflow-hidden">
 				<div className="relative h-full min-w-0 flex-1 basis-0">
 					<ReactFlowProvider>
