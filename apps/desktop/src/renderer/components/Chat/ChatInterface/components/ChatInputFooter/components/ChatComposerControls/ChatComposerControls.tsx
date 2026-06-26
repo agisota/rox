@@ -1,4 +1,3 @@
-import { ComposerContextRing } from "@rox/ui/ai-elements/composer-context-ring";
 import {
 	PromptInputFooter,
 	PromptInputSubmit,
@@ -22,6 +21,7 @@ import type { ModelOption, PermissionMode } from "../../../../types";
 import { ModelPicker } from "../../../ModelPicker";
 import { PermissionModePicker } from "../../../PermissionModePicker";
 import { PlusMenu } from "../../../PlusMenu";
+import { getDictationDisabledReason } from "./dictationAffordance";
 
 interface ChatComposerControlsProps {
 	availableModels: ModelOption[];
@@ -29,12 +29,8 @@ interface ChatComposerControlsProps {
 	setSelectedModel: React.Dispatch<React.SetStateAction<ModelOption | null>>;
 	modelSelectorOpen: boolean;
 	setModelSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
-	/** Persisted selection id that failed to resolve; surfaces in the pill. */
-	unresolvedModelId?: string | null;
 	permissionMode: PermissionMode;
-	// Value-only setter so the store-backed `usePermissionModePreference` setter
-	// slots in directly (the picker only ever calls it with a concrete mode).
-	setPermissionMode: (mode: PermissionMode) => void;
+	setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
 	thinkingLevel: ThinkingLevel;
 	setThinkingLevel: (level: ThinkingLevel) => void;
 	canAbort: boolean;
@@ -45,10 +41,6 @@ interface ChatComposerControlsProps {
 	dictationTranscribing?: boolean;
 	/** Server-side Whisper availability (voice.isConfigured). Off → mic disabled. */
 	dictationConfigured?: boolean;
-	/** Estimated tokens currently in the conversation context window. */
-	usedTokens?: number;
-	/** Selected model's context window in tokens. */
-	maxTokens?: number;
 }
 
 export function ChatComposerControls({
@@ -57,7 +49,6 @@ export function ChatComposerControls({
 	setSelectedModel,
 	modelSelectorOpen,
 	setModelSelectorOpen,
-	unresolvedModelId,
 	permissionMode,
 	setPermissionMode,
 	thinkingLevel,
@@ -69,8 +60,6 @@ export function ChatComposerControls({
 	onDictationComplete,
 	dictationTranscribing,
 	dictationConfigured,
-	usedTokens,
-	maxTokens,
 }: ChatComposerControlsProps) {
 	// Plain dictation can be turned off in Settings → Voice. Cache-first: only
 	// treat as off once we've explicitly read `false` (undefined = loading → keep
@@ -79,7 +68,14 @@ export function ChatComposerControls({
 	// into `disabled` (and the hotkey gate) below.
 	const dictationEnabled =
 		electronTrpc.settings.getDictationEnabled.useQuery().data;
-	const dictationOff = dictationEnabled === false;
+	const { data: permissionStatus } =
+		electronTrpc.permissions.getStatus.useQuery();
+	const micDisabledReason = getDictationDisabledReason({
+		dictationEnabled,
+		dictationConfigured,
+		microphoneGranted: permissionStatus?.microphone,
+	});
+	const micDisabled = micDisabledReason !== undefined;
 
 	// Desktop keyboard shortcut for dictation. The shared MicButton is hotkey-free;
 	// it hands us a stable toggle via onReady and we bind DICTATE (Ctrl+Shift+D) to
@@ -91,7 +87,7 @@ export function ChatComposerControls({
 		micControlsRef.current = controls;
 	}, []);
 	useHotkey("DICTATE", () => {
-		if (dictationOff) return;
+		if (micDisabled) return;
 		micControlsRef.current?.toggle();
 	});
 
@@ -108,35 +104,22 @@ export function ChatComposerControls({
 					onSelectModel={setSelectedModel}
 					open={modelSelectorOpen}
 					onOpenChange={setModelSelectorOpen}
-					unresolvedModelId={unresolvedModelId}
 				/>
 				<ReasoningLevelSlider
 					level={thinkingLevel}
 					onLevelChange={setThinkingLevel}
 					className={PILL_BUTTON_CLASS}
 				/>
-				{maxTokens && maxTokens > 0 ? (
-					<ComposerContextRing
-						className={PILL_BUTTON_CLASS}
-						maxTokens={maxTokens}
-						modelId={selectedModel?.id}
-						usedTokens={usedTokens ?? 0}
-					/>
-				) : null}
 			</PromptInputTools>
 			<div className="flex items-center gap-2">
 				<PlusMenu />
-				{/* Hidden (not merely disabled) when the user turns dictation off in
-				    Settings → Voice — matches the prior desktop behavior. The
-				    voice.isConfigured gate stays on `disabled`. */}
-				{!dictationOff && (
-					<MicButton
-						onComplete={onDictationComplete}
-						transcribing={dictationTranscribing}
-						disabled={!dictationConfigured}
-						onReady={handleMicReady}
-					/>
-				)}
+				<MicButton
+					onComplete={onDictationComplete}
+					transcribing={dictationTranscribing}
+					disabled={micDisabled}
+					disabledReason={micDisabledReason}
+					onReady={handleMicReady}
+				/>
 				<PromptInputSubmit
 					className="size-[23px] rounded-full border border-transparent bg-foreground/10 shadow-none p-[5px] hover:bg-foreground/20"
 					status={submitStatus}

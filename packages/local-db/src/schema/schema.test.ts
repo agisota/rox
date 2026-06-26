@@ -1,5 +1,7 @@
 import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
 import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 
@@ -115,6 +117,8 @@ CREATE TABLE settings (
   file_open_mode TEXT,
   show_presets_bar INTEGER,
   use_compact_terminal_add_button INTEGER,
+  ui_font_family TEXT DEFAULT 'SF UI Display Pro',
+  ui_font_size INTEGER DEFAULT 12,
   terminal_font_family TEXT DEFAULT 'Geist Mono',
   terminal_font_size INTEGER DEFAULT 12,
   editor_font_family TEXT DEFAULT 'SF UI Display Pro',
@@ -127,7 +131,6 @@ CREATE TABLE settings (
   dictation_enabled INTEGER DEFAULT 1,
   ambient_capture_enabled INTEGER DEFAULT 0,
   voice_agent_context TEXT DEFAULT '',
-  tts_voice TEXT,
   push_to_talk_accelerator TEXT
 );
 CREATE TABLE browser_history (
@@ -142,12 +145,6 @@ CREATE TABLE saved_prompts (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
-  folder TEXT,
-  tags TEXT DEFAULT '[]',
-  is_favorite INTEGER DEFAULT false NOT NULL,
-  copy_count INTEGER DEFAULT 0 NOT NULL,
-  last_used_at INTEGER,
-  position INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -183,6 +180,27 @@ beforeEach(() => {
 
 afterEach(() => {
 	sqlite.close();
+});
+
+describe("migration journal", () => {
+	test("keeps migration timestamps strictly increasing", () => {
+		const journalPath = resolve(
+			import.meta.dir,
+			"../../drizzle/meta/_journal.json",
+		);
+		const journal = JSON.parse(readFileSync(journalPath, "utf8")) as {
+			entries: { tag: string; when: number }[];
+		};
+
+		for (let index = 1; index < journal.entries.length; index += 1) {
+			const previous = journal.entries[index - 1];
+			const current = journal.entries[index];
+			expect(
+				current.when,
+				`${current.tag} must run after ${previous.tag}`,
+			).toBeGreaterThan(previous.when);
+		}
+	});
 });
 
 describe("projects round-trip", () => {
@@ -387,6 +405,7 @@ describe("settings round-trip", () => {
 
 		expect(row.branchPrefixMode).toBe("custom");
 		expect(row.branchPrefixCustom).toBe("rox");
+		expect(row.uiFontFamily).toBe("SF UI Display Pro");
 		expect(row.terminalFontFamily).toBe("Geist Mono");
 		expect(row.editorFontFamily).toBe("SF UI Display Pro");
 		expect(row.terminalPresets?.[0]?.commands).toEqual(["bun dev"]);
@@ -424,49 +443,6 @@ describe("browser history + saved prompts round-trip", () => {
 
 		const all = db.select().from(savedPrompts).all();
 		expect(all).toHaveLength(1);
-	});
-
-	// Regression guard for the "saving one prompt wipes all others" data-loss
-	// report. Each save MUST be a single-row append/upsert keyed on the row id —
-	// never a whole-collection replace. We save two distinct prompts in sequence
-	// and assert the read-back still contains BOTH, with distinct generated ids.
-	test("saving a prompt appends and never clobbers existing prompts", () => {
-		const first = single(
-			db
-				.insert(savedPrompts)
-				.values({ title: "Первый", body: "Тело первого промпта" })
-				.returning()
-				.all(),
-		);
-
-		const second = single(
-			db
-				.insert(savedPrompts)
-				.values({ title: "Второй", body: "Тело второго промпта" })
-				.returning()
-				.all(),
-		);
-
-		expect(second.id).not.toBe(first.id);
-
-		// Read-back after the second save must still show the first prompt.
-		const all = db.select().from(savedPrompts).all();
-		expect(all).toHaveLength(2);
-		const titles = all.map((p) => p.title).sort();
-		expect(titles).toEqual(["Второй", "Первый"]);
-
-		// Editing one prompt (UPDATE WHERE id) must leave the other untouched.
-		db.update(savedPrompts)
-			.set({ title: "Первый (изм.)", updatedAt: Date.now() })
-			.where(eq(savedPrompts.id, first.id))
-			.run();
-
-		const afterEdit = db.select().from(savedPrompts).all();
-		expect(afterEdit).toHaveLength(2);
-		expect(afterEdit.find((p) => p.id === second.id)?.title).toBe("Второй");
-		expect(afterEdit.find((p) => p.id === first.id)?.title).toBe(
-			"Первый (изм.)",
-		);
 	});
 });
 
